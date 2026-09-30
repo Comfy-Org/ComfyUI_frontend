@@ -18,8 +18,8 @@ const emit = defineEmits<{ pick: [] }>()
 const examples = computed<readonly PlaygroundExample[]>(() => [
   {
     id: 'crossview-example',
-    title: rc('reshoot.pick.exampleTitle', {}, { locale: locale }),
-    specs: [rc('reshoot.pick.exampleMeta', {}, { locale: locale })],
+    title: rc('reshoot.pick.exampleTitle', {}, { locale }),
+    specs: [rc('reshoot.pick.exampleMeta', {}, { locale })],
     values: {},
     outputUrl: RESHOOT_EXAMPLE.clip,
     mediaKind: 'video'
@@ -32,7 +32,7 @@ const examples = computed<readonly PlaygroundExample[]>(() => [
 <template>
   <ExamplesTab
     :examples="examples"
-    :gallery-label="rc('reshoot.title', {}, { locale: locale })"
+    :gallery-label="rc('reshoot.title', {}, { locale })"
     :active-id="activeId"
     :locale
     @open="emit('pick')"

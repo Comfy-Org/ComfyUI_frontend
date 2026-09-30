@@ -20,7 +20,7 @@ export function getWhatIsDescription(
       description: dirDesc,
       count: model.workflowCount
     },
-    { locale: locale }
+    { locale }
   )
 }
 
@@ -40,6 +40,6 @@ export function getFaqPricingAnswer(
       ? 'models.faq.isFree.cloudAnswer'
       : 'models.faq.isFree.localAnswer',
     { name: model.displayName },
-    { locale: locale }
+    { locale }
   )
 }

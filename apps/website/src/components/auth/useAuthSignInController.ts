@@ -212,11 +212,7 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
     const severity = severityForAuthError(classification)
     addToast({
       severity,
-      summary: t(
-        severity === 'warn' ? 'g.warning' : 'g.error',
-        {},
-        { locale: locale }
-      ),
+      summary: t(severity === 'warn' ? 'g.warning' : 'g.error', {}, { locale }),
       detail: signInErrorMessage(classification, locale, hostname)
     })
   }

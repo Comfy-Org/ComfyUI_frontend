@@ -9,14 +9,14 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const painNumbers = [1, 2, 3, 4] as const
 
 const pains = painNumbers.map((n) =>
-  t(`platform.builderProblem.${n}`, {}, { locale: locale })
+  t(`platform.builderProblem.${n}`, {}, { locale })
 )
 </script>
 
 <template>
   <section class="mx-auto max-w-9xl px-6 py-10 lg:py-14">
     <SectionHeader max-width="xl" heading-size="compact">
-      {{ t('platform.builderProblem.heading', {}, { locale: locale }) }}
+      {{ t('platform.builderProblem.heading', {}, { locale }) }}
     </SectionHeader>
 
     <ul class="mx-auto mt-8 max-w-2xl space-y-3">

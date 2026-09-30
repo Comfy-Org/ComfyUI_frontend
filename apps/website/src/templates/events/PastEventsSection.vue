@@ -52,7 +52,7 @@ const items = computed<CardArticleGalleryItem[]>(() =>
     return {
       id: event.id,
       filterKey: event.category,
-      category: t(`events.category.${event.category}`, {}, { locale: locale }),
+      category: t(`events.category.${event.category}`, {}, { locale }),
       title: event.title[locale] || event.title.en,
       date: cardDate(event.startDateTime),
       media: media && {
@@ -83,11 +83,9 @@ const tabs = computed(() =>
     items.value.some((item) => item.filterKey === category)
   ).map((category) => ({
     key: category,
-    label: t(
-      `events.category.${category}`,
-      {},
-      { locale: locale }
-    ).toLocaleUpperCase(locale)
+    label: t(`events.category.${category}`, {}, { locale }).toLocaleUpperCase(
+      locale
+    )
   }))
 )
 </script>
@@ -95,14 +93,14 @@ const tabs = computed(() =>
 <template>
   <CardArticleGallery01
     class="lg:px-20"
-    :title="t('events.past.title', {}, { locale: locale })"
+    :title="t('events.past.title', {}, { locale })"
     title-align="center"
     :items
     layout="two-column"
     title-clamp
     :tabs
-    :all-label="t('events.past.filterAll', {}, { locale: locale })"
+    :all-label="t('events.past.filterAll', {}, { locale })"
     :page-size="PAST_EVENTS_PAGE_SIZE"
-    :load-more-label="t('events.past.loadMore', {}, { locale: locale })"
+    :load-more-label="t('events.past.loadMore', {}, { locale })"
   />
 </template>

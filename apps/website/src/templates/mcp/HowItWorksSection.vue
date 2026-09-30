@@ -13,15 +13,15 @@ const stepNumbers = [1, 2, 3] as const
 
 const steps: FeatureStep[] = stepNumbers.map((n) => ({
   id: String(n),
-  number: t(`mcp.howItWorks.step${n}.number`, {}, { locale: locale }),
-  title: t(`mcp.howItWorks.step${n}.title`, {}, { locale: locale }),
-  description: t(`mcp.howItWorks.step${n}.description`, {}, { locale: locale })
+  number: t(`mcp.howItWorks.step${n}.number`, {}, { locale }),
+  title: t(`mcp.howItWorks.step${n}.title`, {}, { locale }),
+  description: t(`mcp.howItWorks.step${n}.description`, {}, { locale })
 }))
 </script>
 
 <template>
   <FeatureGrid02
-    :heading="t('mcp.howItWorks.heading', {}, { locale: locale })"
+    :heading="t('mcp.howItWorks.heading', {}, { locale })"
     :steps="steps"
     :primary-cta="ctas.installMcp"
     :secondary-cta="ctas.docs"

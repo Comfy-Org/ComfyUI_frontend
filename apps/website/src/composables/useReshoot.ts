@@ -199,7 +199,7 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
   const clipError = computed(() => {
     const s = clipSeconds.value
     return upload.value && s !== undefined && Number.isFinite(s) && !clipFits(s)
-      ? rc('reshoot.clipLength', { seconds: s.toFixed(1) }, { locale: locale })
+      ? rc('reshoot.clipLength', { seconds: s.toFixed(1) }, { locale })
       : undefined
   })
 
@@ -276,17 +276,15 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
   const priceNote = computed(() => {
     if (quote.value) return quoteNote(quote.value, locale, run.value)
     return quoteFailed.value
-      ? rc('reshoot.quote.failed', {}, { locale: locale })
+      ? rc('reshoot.quote.failed', {}, { locale })
       : undefined
   })
   /** Why the viewport cannot show a read scene, if it cannot. */
   const notice = computed(() => {
     if (!picked.value) return undefined
-    if (unavailable.value)
-      return rc('reshoot.unavailable', {}, { locale: locale })
+    if (unavailable.value) return rc('reshoot.unavailable', {}, { locale })
     if (scene.value.phase === 'failed') return scene.value.note
-    if (gate.value === 'signedOut')
-      return rc('reshoot.signIn', {}, { locale: locale })
+    if (gate.value === 'signedOut') return rc('reshoot.signIn', {}, { locale })
     return undefined
   })
   const stage = computed(() =>
@@ -338,7 +336,7 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
     return t(
       key,
       { workspace: session.value?.workspace.name ?? '' },
-      { locale: locale }
+      { locale }
     )
   }
 

@@ -51,7 +51,7 @@ const siblings = computed(() =>
 <template>
   <section
     class="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4"
-    :aria-label="tc('cinematic.stage.label', {}, { locale: locale })"
+    :aria-label="tc('cinematic.stage.label', {}, { locale })"
   >
     <header
       class="flex min-h-11 items-center justify-between gap-3 border-b border-transparency-white-t8 px-5 py-1"
@@ -60,7 +60,7 @@ const siblings = computed(() =>
       <span
         class="shrink-0 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
       >
-        {{ t('workshop.output.title', {}, { locale: locale }) }}
+        {{ t('workshop.output.title', {}, { locale }) }}
       </span>
       <CinematicTakeBar
         v-if="current"
@@ -109,10 +109,10 @@ const siblings = computed(() =>
           {{ aspect }}
         </span>
         <p class="text-base font-semibold text-primary-warm-white">
-          {{ tc('cinematic.stage.emptyTitle', {}, { locale: locale }) }}
+          {{ tc('cinematic.stage.emptyTitle', {}, { locale }) }}
         </p>
         <p class="text-sm text-primary-warm-gray">
-          {{ tc('cinematic.stage.emptyBody', {}, { locale: locale }) }}
+          {{ tc('cinematic.stage.emptyBody', {}, { locale }) }}
         </p>
       </div>
     </div>

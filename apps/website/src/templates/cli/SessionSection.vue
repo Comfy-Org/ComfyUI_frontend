@@ -10,10 +10,10 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 <template>
   <section class="mx-auto max-w-9xl px-6 py-16 lg:py-24">
     <SectionHeader max-width="xl">
-      {{ t('cli.session.heading', {}, { locale: locale }) }}
+      {{ t('cli.session.heading', {}, { locale }) }}
       <template #subtitle>
         <p class="mt-4 text-sm text-smoke-700 lg:text-base">
-          {{ t('cli.session.subtitle', {}, { locale: locale }) }}
+          {{ t('cli.session.subtitle', {}, { locale }) }}
         </p>
       </template>
     </SectionHeader>
@@ -26,7 +26,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
     >
       <VideoPlayer
         :locale="locale"
-        :aria-label="t('cli.session.alt', {}, { locale: locale })"
+        :aria-label="t('cli.session.alt', {}, { locale })"
         src="https://media.comfy.org/website/cli/terminal-session-v2-1280.mp4"
         poster="https://media.comfy.org/website/cli/terminal-session-v2-poster.jpg"
         autoplay
@@ -39,7 +39,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
     </div>
 
     <p class="sr-only">
-      {{ t('cli.session.transcript', {}, { locale: locale }) }}
+      {{ t('cli.session.transcript', {}, { locale }) }}
     </p>
   </section>
 </template>

@@ -24,7 +24,7 @@ const mode = defineModel<'image' | 'video'>({ required: true })
       )
     "
     role="group"
-    :aria-label="tc('cinematic.video.mode', {}, { locale: locale })"
+    :aria-label="tc('cinematic.video.mode', {}, { locale })"
   >
     <button
       v-for="option in ['image', 'video'] as const"
@@ -47,7 +47,7 @@ const mode = defineModel<'image' | 'video'>({ required: true })
             ? 'cinematic.video.image'
             : 'cinematic.video.video',
           {},
-          { locale: locale }
+          { locale }
         )
       }}
     </button>

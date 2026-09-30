@@ -54,7 +54,7 @@ const expansionLabel = computed(() =>
   t(
     expanded.value ? 'events.directory.readLess' : 'events.directory.readMore',
     {},
-    { locale: locale }
+    { locale }
   )
 )
 // A clamped paragraph overflows its own box; re-measuring on resize keeps
@@ -111,7 +111,7 @@ useResizeObserver(descEl, ([entry]) => {
           size="xxs"
           class="uppercase"
         >
-          {{ t('events.directory.pastBadge', {}, { locale: locale }) }}
+          {{ t('events.directory.pastBadge', {}, { locale }) }}
         </Badge>
       </div>
 

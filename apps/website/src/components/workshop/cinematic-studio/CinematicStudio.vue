@@ -173,7 +173,7 @@ function generateOn(slug: string) {
           role="status"
           class="mb-2 text-xs text-primary-comfy-canvas"
         >
-          {{ tc('cinematic.references.unreadable', {}, { locale: locale }) }}
+          {{ tc('cinematic.references.unreadable', {}, { locale }) }}
         </p>
         <CinematicModeSwitch
           v-if="hasVideo"

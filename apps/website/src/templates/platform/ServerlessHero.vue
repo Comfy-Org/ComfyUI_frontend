@@ -17,9 +17,9 @@ const desktop = useMediaQuery('(min-width: 1024px)', { ssrWidth: 1024 })
   <HeroSplit01
     :locale="locale"
     compact
-    :title="t('platform.serverlessHero.heading', {}, { locale: locale })"
+    :title="t('platform.serverlessHero.heading', {}, { locale })"
     title-class="text-primary-comfy-yellow text-3xl/tight font-light tracking-normal md:text-4xl/tight lg:text-5xl/tight"
-    :subtitle="t('platform.serverlessHero.subtitle', {}, { locale: locale })"
+    :subtitle="t('platform.serverlessHero.subtitle', {}, { locale })"
     :primary-cta="{
       ...ctas.getStarted,
       href: 'https://platform.comfy.org/?onboarding=comfyapi'

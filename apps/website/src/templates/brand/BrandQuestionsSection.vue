@@ -14,11 +14,11 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
     class="mx-auto max-w-9xl px-6 pt-10 pb-24 lg:px-20 lg:pt-12 lg:pb-32"
   >
     <SectionHeader align="start" max-width="xl">
-      {{ t('brand.questions.heading', {}, { locale: locale }) }}
+      {{ t('brand.questions.heading', {}, { locale }) }}
     </SectionHeader>
 
     <p class="mt-6 max-w-2xl text-sm/[1.6] text-primary-warm-gray">
-      {{ t('brand.questions.body', {}, { locale: locale }) }}
+      {{ t('brand.questions.body', {}, { locale }) }}
       <Button
         as="a"
         variant="inline"
@@ -26,7 +26,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
         target="_blank"
         rel="noopener noreferrer"
       >
-        {{ t('brand.questions.contact', {}, { locale: locale }) }}
+        {{ t('brand.questions.contact', {}, { locale }) }}
       </Button>
     </p>
   </section>

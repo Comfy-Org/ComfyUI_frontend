@@ -12,7 +12,7 @@ const { href, locale = 'en' } = defineProps<{
 <template>
   <div class="mt-8 flex justify-center">
     <Button as="a" :href variant="default" size="lg">
-      {{ t('customers.story.readMore', {}, { locale: locale }) }}
+      {{ t('customers.story.readMore', {}, { locale }) }}
       <template #append>
         <span class="text-base" aria-hidden="true">↗</span>
       </template>

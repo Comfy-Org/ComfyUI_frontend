@@ -47,7 +47,7 @@ const navOptions: readonly NavOption[] = [
 <template>
   <nav
     class="mt-8 scrollbar-none flex gap-3 overflow-x-auto lg:flex-col lg:overflow-visible"
-    :aria-label="t('learning.categoryNav', {}, { locale: locale })"
+    :aria-label="t('learning.categoryNav', {}, { locale })"
   >
     <a
       v-for="option in navOptions"
@@ -63,7 +63,7 @@ const navOptions: readonly NavOption[] = [
     >
       <span class="flex items-baseline justify-between gap-6">
         <span class="text-xs font-semibold tracking-wide uppercase">
-          {{ t(option.labelKey, {}, { locale: locale }) }}
+          {{ t(option.labelKey, {}, { locale }) }}
         </span>
         <span
           class="text-xs tabular-nums"
@@ -84,7 +84,7 @@ const navOptions: readonly NavOption[] = [
             : 'text-primary-warm-gray'
         "
       >
-        {{ t(option.blurbKey, {}, { locale: locale }) }}
+        {{ t(option.blurbKey, {}, { locale }) }}
       </span>
     </a>
   </nav>

@@ -16,8 +16,8 @@ const ctas = mcpCtas(locale)
     :locale="locale"
     class="min-h-[calc(100svh-5rem)] lg:min-h-[calc(100svh-6.75rem)]"
     badge-text="MCP"
-    :title="t('mcp.hero.heading', {}, { locale: locale })"
-    :subtitle="t('mcp.hero.subtitle', {}, { locale: locale })"
+    :title="t('mcp.hero.heading', {}, { locale })"
+    :subtitle="t('mcp.hero.subtitle', {}, { locale })"
     :primary-cta="ctas.installMcp"
     :secondary-cta="ctas.docs"
   >

@@ -24,10 +24,10 @@ const { tutorial, locale = 'en' } = defineProps<{
     <div class="flex flex-col gap-4">
       <div class="flex items-center gap-3">
         <Badge variant="accent">
-          {{ t('learning.featuredBadge', {}, { locale: locale }) }}
+          {{ t('learning.featuredBadge', {}, { locale }) }}
         </Badge>
         <Badge variant="category">
-          {{ t(categoryLabelKeys[tutorial.category], {}, { locale: locale }) }}
+          {{ t(categoryLabelKeys[tutorial.category], {}, { locale }) }}
         </Badge>
       </div>
       <h2
@@ -42,7 +42,7 @@ const { tutorial, locale = 'en' } = defineProps<{
       </h2>
       <ul class="flex flex-wrap gap-2">
         <li v-for="tag in tutorial.tags" :key="tag">
-          <Badge variant="subtle">{{ t(tag, {}, { locale: locale }) }}</Badge>
+          <Badge variant="subtle">{{ t(tag, {}, { locale }) }}</Badge>
         </li>
       </ul>
       <div v-if="tutorial.href">
@@ -56,9 +56,7 @@ const { tutorial, locale = 'en' } = defineProps<{
           size="default"
           class="ps-0"
         >
-          {{
-            t(tutorial.ctaLabelKey ?? 'cta.tryWorkflow', {}, { locale: locale })
-          }}
+          {{ t(tutorial.ctaLabelKey ?? 'cta.tryWorkflow', {}, { locale }) }}
         </ButtonPill>
       </div>
     </div>
@@ -66,7 +64,7 @@ const { tutorial, locale = 'en' } = defineProps<{
     <a
       :href="localizeHref(tutorialPath(tutorial), locale)"
       class="group relative block aspect-video overflow-hidden rounded-3xl"
-      :aria-label="`${t('player.play', {}, { locale: locale })} ${tutorial.title[locale] || tutorial.title.en}`"
+      :aria-label="`${t('player.play', {}, { locale })} ${tutorial.title[locale] || tutorial.title.en}`"
     >
       <img :src="tutorial.poster" alt="" class="size-full object-cover" />
       <PlayOverlay class="text-white" />

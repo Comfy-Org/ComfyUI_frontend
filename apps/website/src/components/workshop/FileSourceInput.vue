@@ -84,14 +84,14 @@ const prompt = computed(() => {
         ? 'workshop.field.selectOrDropImages'
         : 'workshop.field.selectOrDropFiles',
       { count: allowed },
-      { locale: locale }
+      { locale }
     )
   return t(
     imageOnly.value
       ? 'workshop.field.selectOrDropImage'
       : 'workshop.field.selectOrDropFile',
     {},
-    { locale: locale }
+    { locale }
   )
 })
 
@@ -114,7 +114,7 @@ const rejectionMessage = computed(() => {
     limit: uploadLimit.value,
     ...(limit.value === undefined ? {} : { count: limit.value })
   }
-  return `${t(rejection.value, named, { locale: locale })} ${t(unchanged, {}, { locale: locale })}`
+  return `${t(rejection.value, named, { locale })} ${t(unchanged, {}, { locale })}`
 })
 
 function accepts(file: File): boolean {
@@ -230,11 +230,7 @@ function putBack() {
       data-testid="removed-file-undo"
     >
       {{
-        t(
-          'workshop.field.removedFile',
-          { name: removed.file.name },
-          { locale: locale }
-        )
+        t('workshop.field.removedFile', { name: removed.file.name }, { locale })
       }}
       <button
         type="button"
@@ -242,7 +238,7 @@ function putBack() {
         :disabled
         @click="putBack"
       >
-        {{ t('workshop.field.undoRemove', {}, { locale: locale }) }}
+        {{ t('workshop.field.undoRemove', {}, { locale }) }}
       </button>
     </p>
     <ul v-if="selectedFiles.length" class="flex min-w-0 flex-col gap-2">
@@ -276,11 +272,7 @@ function putBack() {
       <span class="text-2xs">
         <template v-if="acceptedTypes">{{ acceptedTypes }} · </template>
         {{
-          t(
-            'workshop.field.uploadLimit',
-            { limit: uploadLimit },
-            { locale: locale }
-          )
+          t('workshop.field.uploadLimit', { limit: uploadLimit }, { locale })
         }}
       </span>
     </label>

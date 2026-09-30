@@ -43,7 +43,7 @@ const revealed = defineModel<boolean>('revealed', { required: true })
     "
     :key="current.id"
     :src="current.output.url"
-    :aria-label="tc('cinematic.video.preview', {}, { locale: locale })"
+    :aria-label="tc('cinematic.video.preview', {}, { locale })"
     controls
     playsinline
     preload="metadata"
@@ -63,14 +63,14 @@ const revealed = defineModel<boolean>('revealed', { required: true })
   >
     <EyeOff class="size-5 text-primary-warm-white" aria-hidden="true" />
     <span class="text-sm text-primary-warm-white">
-      {{ t('workshop.output.nsfw', {}, { locale: locale }) }}
+      {{ t('workshop.output.nsfw', {}, { locale }) }}
     </span>
     <button
       type="button"
       class="h-8 rounded-full px-4 text-xs font-bold tracking-wider text-primary-warm-white uppercase ring-1 ring-transparency-white-t20 ring-inset hover:bg-transparency-white-t8"
       @click="revealed = true"
     >
-      {{ t('workshop.output.reveal', {}, { locale: locale }) }}
+      {{ t('workshop.output.reveal', {}, { locale }) }}
     </button>
   </div>
 </template>

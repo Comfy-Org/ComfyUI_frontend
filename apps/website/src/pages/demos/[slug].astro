@@ -64,11 +64,11 @@ const learningResource: JsonLdNode = {
   mainEntityId={learningId}
   breadcrumbs={[
     {
-      name: t('breadcrumb.home', {}, { locale: locale }),
+      name: t('breadcrumb.home', {}, { locale }),
       url: absoluteUrl(Astro.site, '/')
     },
     {
-      name: t('demos.breadcrumb.demos', {}, { locale: locale }),
+      name: t('demos.breadcrumb.demos', {}, { locale }),
       url: absoluteUrl(Astro.site, '/demos/')
     },
     { name: title }

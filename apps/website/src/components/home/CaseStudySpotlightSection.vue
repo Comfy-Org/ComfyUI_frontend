@@ -46,17 +46,17 @@ const routes = getRoutes(locale)
           <p
             class="text-sm font-bold tracking-widest text-primary-comfy-yellow uppercase"
           >
-            {{ t('caseStudy.label', {}, { locale: locale }) }}
+            {{ t('caseStudy.label', {}, { locale }) }}
           </p>
           <h2
             class="mt-7 text-3xl leading-[135%] font-medium whitespace-pre-line text-primary-comfy-canvas"
           >
-            {{ t('caseStudy.heading', {}, { locale: locale }) }}
+            {{ t('caseStudy.heading', {}, { locale }) }}
           </h2>
           <p
             class="mt-5 text-[17px] leading-[160%] font-light text-primary-comfy-canvas"
           >
-            {{ t('caseStudy.subheading', {}, { locale: locale }) }}
+            {{ t('caseStudy.subheading', {}, { locale }) }}
           </p>
         </div>
 
@@ -66,14 +66,14 @@ const routes = getRoutes(locale)
             variant="solid"
             class="font-bold"
           >
-            {{ t('caseStudy.watchStory', {}, { locale: locale }) }}
+            {{ t('caseStudy.watchStory', {}, { locale }) }}
           </BrandButton>
           <BrandButton
             :href="routes.customers"
             variant="outline"
             class="font-bold"
           >
-            {{ t('caseStudy.seeAll', {}, { locale: locale }) }}
+            {{ t('caseStudy.seeAll', {}, { locale }) }}
           </BrandButton>
         </div>
       </div>

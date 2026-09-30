@@ -78,11 +78,11 @@ const thumbs = computed(() =>
           shot: take.shot,
           take: take.letter
         },
-        { locale: locale }
+        { locale }
       ),
       description:
         kind === 'unpaid'
-          ? tc('cinematic.state.noCredits', {}, { locale: locale })
+          ? tc('cinematic.state.noCredits', {}, { locale })
           : undefined,
       class: cn(
         'grid h-12 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-xl border-2 bg-transparency-white-t4 transition-opacity focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none focus-visible:ring-inset',
@@ -99,7 +99,7 @@ const thumbs = computed(() =>
 
 <template>
   <nav
-    :aria-label="tc('cinematic.stage.sequence', {}, { locale: locale })"
+    :aria-label="tc('cinematic.stage.sequence', {}, { locale })"
     class="flex max-w-full items-center gap-2 overflow-x-auto"
   >
     <button

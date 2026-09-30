@@ -49,11 +49,11 @@ const kinds = computed(() =>
   shown.map((kind) => ({
     kind,
     icon: ICONS[kind],
-    label: tc(REFERENCE_SLOTS[kind].label, {}, { locale: locale }),
+    label: tc(REFERENCE_SLOTS[kind].label, {}, { locale }),
     file: files[kind].value,
     detail:
       files[kind].value?.name ??
-      tc(REFERENCE_SLOTS[kind].action, {}, { locale: locale }),
+      tc(REFERENCE_SLOTS[kind].action, {}, { locale }),
     preview: kind === 'video' ? undefined : previews[kind].value
   }))
 )
@@ -62,7 +62,7 @@ const cover = computed(
   () => attached.value.find((entry) => entry.preview)?.preview
 )
 const heading = computed(() =>
-  tc('cinematic.section.references', {}, { locale: locale })
+  tc('cinematic.section.references', {}, { locale })
 )
 
 const inputs: Partial<Record<ReferenceKind, HTMLInputElement>> = {}
@@ -95,9 +95,7 @@ const itemClass =
     <span class="flex h-full">
       <DropdownMenuRoot>
         <DropdownMenuTrigger
-          :aria-label="
-            tc('cinematic.composer.references', {}, { locale: locale })
-          "
+          :aria-label="tc('cinematic.composer.references', {}, { locale })"
           :class="
             cn(
               'relative grid size-9 shrink-0 place-items-center rounded-xl border border-dashed border-transparency-white-t20 text-primary-comfy-canvas outline-none hover:border-primary-warm-white/50 hover:text-primary-warm-white focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 data-[state=open]:border-primary-warm-white',
@@ -132,7 +130,7 @@ const itemClass =
             >
               {{ heading }}
               <span>{{
-                tc('cinematic.reference.optional', {}, { locale: locale })
+                tc('cinematic.reference.optional', {}, { locale })
               }}</span>
             </DropdownMenuLabel>
             <DropdownMenuItem
@@ -177,7 +175,7 @@ const itemClass =
                 @select="remove(entry.kind)"
               >
                 <X class="size-4 shrink-0" aria-hidden="true" />
-                {{ tc('cinematic.reference.remove', {}, { locale: locale }) }}:
+                {{ tc('cinematic.reference.remove', {}, { locale }) }}:
                 {{ entry.label }}
               </DropdownMenuItem>
             </template>

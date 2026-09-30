@@ -21,8 +21,8 @@ const {
 const estimate = computed(() => {
   if (!estimateKey) return undefined
   return estimateCount
-    ? t(estimateKey, { count: estimateCount }, { locale: locale })
-    : t(estimateKey, {}, { locale: locale })
+    ? t(estimateKey, { count: estimateCount }, { locale })
+    : t(estimateKey, {}, { locale })
 })
 </script>
 

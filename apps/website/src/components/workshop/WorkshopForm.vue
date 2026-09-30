@@ -27,7 +27,7 @@ if (Object.keys(values.value).length === 0) {
     class="rounded-2xl border border-primary-comfy-canvas/10 bg-primary-comfy-canvas/5 p-6"
   >
     <h2 class="text-xl font-semibold text-primary-comfy-canvas">
-      {{ t('workshop.model.inputs', {}, { locale: locale }) }}
+      {{ t('workshop.model.inputs', {}, { locale }) }}
     </h2>
     <form class="mt-6 flex flex-col gap-6" @submit.prevent>
       <WorkshopField
@@ -42,7 +42,7 @@ if (Object.keys(values.value).length === 0) {
         disabled
         class="mt-2 rounded-full bg-primary-comfy-yellow px-5 py-3 font-medium text-primary-comfy-ink opacity-50"
       >
-        {{ t('workshop.model.runNext', {}, { locale: locale }) }}
+        {{ t('workshop.model.runNext', {}, { locale }) }}
       </button>
     </form>
   </section>

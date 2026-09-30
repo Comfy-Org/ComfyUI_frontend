@@ -45,9 +45,9 @@ const reasons: CloudReason[] = [
         <span
           class="font-formula-narrow text-lg font-bold tracking-wide text-primary-comfy-yellow"
         >
-          {{ t('cloud.reason.2.badge.onlyOn', {}, { locale: locale }) }}
+          {{ t('cloud.reason.2.badge.onlyOn', {}, { locale }) }}
           <img src="/icons/logo.svg" alt="Comfy" class="inline-block h-5" />
-          {{ t('cloud.reason.2.badge.cloud', {}, { locale: locale }) }}
+          {{ t('cloud.reason.2.badge.cloud', {}, { locale }) }}
         </span>
       </div>
     </template>

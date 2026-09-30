@@ -34,8 +34,8 @@ function priceClause(priceEstimate: string | undefined, locale: Locale) {
   if (!credits) return undefined
   const unit = per?.slice(1).toLowerCase()
   return unit
-    ? t('workshop.model.meta.price', { credits, unit }, { locale: locale })
-    : t('workshop.model.meta.priceNoUnit', { credits }, { locale: locale })
+    ? t('workshop.model.meta.price', { credits, unit }, { locale })
+    : t('workshop.model.meta.priceNoUnit', { credits }, { locale })
 }
 
 export function modelMetaDescription(
@@ -49,25 +49,17 @@ export function modelMetaDescription(
   const summary = cleanSummary(page.model.summary)
   const who =
     provider && !nameCarriesProvider(name, provider)
-      ? t(
-          'workshop.model.meta.byProvider',
-          { name, provider },
-          { locale: locale }
-        )
+      ? t('workshop.model.meta.byProvider', { name, provider }, { locale })
       : name
   const lead = (shown: string | undefined) =>
     shown
-      ? t(
-          'workshop.model.meta.lead',
-          { who, summary: shown },
-          { locale: locale }
-        )
-      : t('workshop.model.meta.leadNoSummary', { who }, { locale: locale })
+      ? t('workshop.model.meta.lead', { who, summary: shown }, { locale })
+      : t('workshop.model.meta.leadNoSummary', { who }, { locale })
   const compose = (...parts: (string | undefined)[]) =>
     parts.filter(Boolean).join(locale === 'en' ? ' ' : '')
   const price = priceClause(page.priceEstimate, locale)
-  const cta = t('workshop.model.meta.cta', {}, { locale: locale })
-  const ctaShort = t('workshop.model.meta.ctaShort', {}, { locale: locale })
+  const cta = t('workshop.model.meta.cta', {}, { locale })
+  const ctaShort = t('workshop.model.meta.ctaShort', {}, { locale })
 
   const fitting =
     [

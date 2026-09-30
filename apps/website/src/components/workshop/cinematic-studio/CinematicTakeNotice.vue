@@ -65,34 +65,34 @@ const NOTICE = {
 
 const title = computed(() => {
   if (kind.value === 'cancelled')
-    return tc('cinematic.state.cancelled', {}, { locale: locale })
+    return tc('cinematic.state.cancelled', {}, { locale })
   if (kind.value === 'noCredits')
-    return tc('cinematic.state.noCredits', {}, { locale: locale })
+    return tc('cinematic.state.noCredits', {}, { locale })
   if (kind.value === 'blocked')
-    return tc('cinematic.state.blocked', {}, { locale: locale })
-  return tc('cinematic.state.failed', {}, { locale: locale })
+    return tc('cinematic.state.blocked', {}, { locale })
+  return tc('cinematic.state.failed', {}, { locale })
 })
 const body = computed(() => {
   if (take.status === 'cancelled')
-    return t('workshop.output.cancelled', {}, { locale: locale })
+    return t('workshop.output.cancelled', {}, { locale })
   if (kind.value === 'noCredits' && memberWorkspace !== undefined)
     return t(
       'workshop.error.memberNoCredits',
       {
         workspace: memberWorkspace
       },
-      { locale: locale }
+      { locale }
     )
   if (kind.value === 'rejected')
-    return t('workshop.error.inputRejected', {}, { locale: locale })
+    return t('workshop.error.inputRejected', {}, { locale })
   if (
     kind.value === 'blocked' &&
     take.status === 'failed' &&
     take.runSlug &&
     refusesRealFaces(take.runSlug)
   )
-    return t('workshop.error.policyRealFaces', {}, { locale: locale })
-  return t(failureLabelKey[take.reason], {}, { locale: locale })
+    return t('workshop.error.policyRealFaces', {}, { locale })
+  return t(failureLabelKey[take.reason], {}, { locale })
 })
 const requestId = computed(() =>
   take.status === 'failed' ? take.requestId : undefined
@@ -126,7 +126,7 @@ const requestId = computed(() =>
       <CinematicCreditAction
         v-if="kind === 'noCredits'"
         :member="memberWorkspace !== undefined"
-        :retry-label="t('workshop.error.retry', {}, { locale: locale })"
+        :retry-label="t('workshop.error.retry', {}, { locale })"
         :locale
         @retry="emit('retry')"
       />
@@ -136,11 +136,11 @@ const requestId = computed(() =>
         class="rounded-full"
         @click="emit('editScene')"
       >
-        {{ tc('cinematic.state.editScene', {}, { locale: locale }) }}
+        {{ tc('cinematic.state.editScene', {}, { locale }) }}
       </Button>
       <template v-else>
         <Button size="sm" class="rounded-full" @click="emit('retry')">
-          {{ t('workshop.error.retry', {}, { locale: locale }) }}
+          {{ t('workshop.error.retry', {}, { locale }) }}
         </Button>
         <Button
           v-if="kind === 'failed' && otherModel"
@@ -150,11 +150,7 @@ const requestId = computed(() =>
           @click="emit('switchModel', otherModel.slug)"
         >
           {{
-            tc(
-              'cinematic.state.tryOn',
-              { model: otherModel.name },
-              { locale: locale }
-            )
+            tc('cinematic.state.tryOn', { model: otherModel.name }, { locale })
           }}
         </Button>
       </template>
@@ -163,11 +159,11 @@ const requestId = computed(() =>
       v-if="requestId"
       class="flex items-center gap-1 font-mono text-[11px] text-primary-warm-gray"
     >
-      {{ t('workshop.run.requestId', {}, { locale: locale }) }} {{ requestId }}
+      {{ t('workshop.run.requestId', {}, { locale }) }} {{ requestId }}
       <CopyTextButton
         :value="requestId"
-        :label="t('workshop.run.copyRequestId', {}, { locale: locale })"
-        :copied-label="t('workshop.api.copied', {}, { locale: locale })"
+        :label="t('workshop.run.copyRequestId', {}, { locale })"
+        :copied-label="t('workshop.api.copied', {}, { locale })"
         icon-class="size-3"
         class="h-6 min-w-6 rounded-md px-1"
       />

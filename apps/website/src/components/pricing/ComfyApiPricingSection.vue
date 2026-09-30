@@ -23,17 +23,17 @@ const learnMoreHref = computed(() => getRoutes(locale).platformComfyApi)
     class="mx-auto max-w-9xl scroll-mt-24 px-6 py-10 lg:scroll-mt-36 lg:py-14"
   >
     <SectionHeader max-width="xl" heading-size="subsection">
-      {{ t('pricing.comfyApi.heading', {}, { locale: locale }) }}
+      {{ t('pricing.comfyApi.heading', {}, { locale }) }}
       <template #subtitle>
         <p class="mt-4 text-sm text-smoke-700">
-          {{ t('pricing.comfyApi.subtitle', {}, { locale: locale }) }}
+          {{ t('pricing.comfyApi.subtitle', {}, { locale }) }}
         </p>
         <p v-if="showLearnMoreCta" class="mt-4 text-sm">
           <a
             :href="learnMoreHref"
             class="rounded-sm text-primary-comfy-canvas underline underline-offset-4 transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
           >
-            {{ t('pricing.comfyApi.learnMore', {}, { locale: locale }) }}
+            {{ t('pricing.comfyApi.learnMore', {}, { locale }) }}
           </a>
         </p>
       </template>

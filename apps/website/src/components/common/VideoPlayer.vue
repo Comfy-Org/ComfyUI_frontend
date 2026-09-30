@@ -349,8 +349,8 @@ function toggleFullscreen() {
         size="sm"
         :aria-label="
           playing
-            ? t('player.pause', {}, { locale: locale })
-            : t('player.play', {}, { locale: locale })
+            ? t('player.pause', {}, { locale })
+            : t('player.play', {}, { locale })
         "
         @click="playing = !playing"
       />
@@ -359,8 +359,8 @@ function toggleFullscreen() {
         class="flex size-8 items-center justify-center rounded-lg bg-primary-comfy-yellow lg:size-10"
         :aria-label="
           muted
-            ? t('player.unmute', {}, { locale: locale })
-            : t('player.mute', {}, { locale: locale })
+            ? t('player.unmute', {}, { locale })
+            : t('player.mute', {}, { locale })
         "
         @click="muted = !muted"
       >
@@ -385,8 +385,8 @@ function toggleFullscreen() {
         :variant="playButtonVariant"
         :aria-label="
           playing
-            ? t('player.pause', {}, { locale: locale })
-            : t('player.play', {}, { locale: locale })
+            ? t('player.pause', {}, { locale })
+            : t('player.play', {}, { locale })
         "
         @click.stop="playing = !playing"
       />
@@ -409,8 +409,8 @@ function toggleFullscreen() {
         size="sm"
         :aria-label="
           playing
-            ? t('player.pause', {}, { locale: locale })
-            : t('player.play', {}, { locale: locale })
+            ? t('player.pause', {}, { locale })
+            : t('player.play', {}, { locale })
         "
         @click="playing = !playing"
       />
@@ -421,7 +421,7 @@ function toggleFullscreen() {
         class="relative h-1 flex-1 cursor-pointer rounded-full bg-white/20 select-none"
         role="slider"
         tabindex="0"
-        :aria-label="t('player.seek', {}, { locale: locale })"
+        :aria-label="t('player.seek', {}, { locale })"
         :aria-valuemin="0"
         :aria-valuemax="effectiveDuration || 0"
         :aria-valuenow="displayTime"
@@ -445,7 +445,7 @@ function toggleFullscreen() {
         v-if="!hideFullscreen"
         type="button"
         class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-comfy-yellow lg:size-10"
-        :aria-label="t('player.fullscreen', {}, { locale: locale })"
+        :aria-label="t('player.fullscreen', {}, { locale })"
         @click="toggleFullscreen"
       >
         <svg
@@ -477,8 +477,8 @@ function toggleFullscreen() {
         "
         :aria-label="
           ccEnabled
-            ? t('player.subtitlesOff', {}, { locale: locale })
-            : t('player.subtitlesOn', {}, { locale: locale })
+            ? t('player.subtitlesOff', {}, { locale })
+            : t('player.subtitlesOn', {}, { locale })
         "
         @click="toggleCC"
       >
@@ -491,8 +491,8 @@ function toggleFullscreen() {
         class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-comfy-yellow lg:size-10"
         :aria-label="
           muted
-            ? t('player.unmute', {}, { locale: locale })
-            : t('player.mute', {}, { locale: locale })
+            ? t('player.unmute', {}, { locale })
+            : t('player.mute', {}, { locale })
         "
         @click="muted = !muted"
       >

@@ -30,10 +30,10 @@ const frame = defineModel<number>('frame', { required: true })
       v-if="disabled"
       class="rounded-xl bg-transparency-white-t8 px-3 py-2 text-xs text-primary-warm-white"
     >
-      {{ rc('reshoot.needsDepth', {}, { locale: locale }) }}
+      {{ rc('reshoot.needsDepth', {}, { locale }) }}
     </p>
     <p class="text-xs/relaxed text-primary-warm-gray">
-      {{ rc('reshoot.move.help', {}, { locale: locale }) }}
+      {{ rc('reshoot.move.help', {}, { locale }) }}
     </p>
     <ul v-if="keys.length" class="flex flex-wrap gap-1.5">
       <li
@@ -53,11 +53,7 @@ const frame = defineModel<number>('frame', { required: true })
           :disabled
           class="flex h-full items-center gap-1 pl-2.5"
           :aria-label="
-            rc(
-              'reshoot.move.goTo',
-              { time: frameTime(key.frame) },
-              { locale: locale }
-            )
+            rc('reshoot.move.goTo', { time: frameTime(key.frame) }, { locale })
           "
           @click="frame = key.frame"
         >
@@ -74,7 +70,7 @@ const frame = defineModel<number>('frame', { required: true })
             rc(
               'reshoot.move.remove',
               { time: frameTime(key.frame) },
-              { locale: locale }
+              { locale }
             )
           "
           @click="emit('remove', key.frame)"

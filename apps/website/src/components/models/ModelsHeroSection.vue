@@ -31,7 +31,7 @@ const {
     <p
       class="mt-6 max-w-2xl text-sm text-pretty text-primary-comfy-canvas lg:text-base"
     >
-      {{ t('hero.subtitle', {}, { locale: locale }) }}
+      {{ t('hero.subtitle', {}, { locale }) }}
     </p>
     <BrandButton
       :href="ctaHref"
@@ -39,7 +39,7 @@ const {
       size="lg"
       class="mt-10 px-8 py-4 uppercase"
     >
-      {{ t('models.list.heroCta', { name: modelName }, { locale: locale }) }}
+      {{ t('models.list.heroCta', { name: modelName }, { locale }) }}
     </BrandButton>
     <div class="mt-16 w-full max-w-5xl">
       <video

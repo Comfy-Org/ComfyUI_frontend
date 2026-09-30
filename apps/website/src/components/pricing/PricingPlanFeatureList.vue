@@ -43,7 +43,7 @@ const { locale = 'en' } = defineProps<{
       class="flex flex-col gap-2"
     >
       <p v-if="group.titleKey" class="text-sm text-primary-comfy-canvas">
-        {{ t(group.titleKey, {}, { locale: locale }) }}
+        {{ t(group.titleKey, {}, { locale }) }}
       </p>
       <ul class="space-y-2">
         <li
@@ -70,7 +70,7 @@ const { locale = 'en' } = defineProps<{
               t(
                 `pricing.plan.feature.status.${feature.status ?? 'included'}`,
                 {},
-                { locale: locale }
+                { locale }
               )
             }}:
           </span>
@@ -82,7 +82,7 @@ const { locale = 'en' } = defineProps<{
                 : statusTextClass[feature.status ?? 'included']
             "
           >
-            {{ t(feature.text, {}, { locale: locale }) }}
+            {{ t(feature.text, {}, { locale }) }}
           </span>
         </li>
       </ul>

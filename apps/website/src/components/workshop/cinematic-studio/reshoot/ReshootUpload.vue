@@ -40,14 +40,14 @@ function drop(event: DragEvent) {
 
 <template>
   <aside
-    :aria-label="rc('reshoot.clip.yours', {}, { locale: locale })"
+    :aria-label="rc('reshoot.clip.yours', {}, { locale })"
     class="flex flex-col gap-3.5 rounded-2xl bg-primary-comfy-ink-light p-4"
     data-testid="reshoot-pick"
   >
     <h2
       class="text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
     >
-      {{ rc('reshoot.clip.yours', {}, { locale: locale }) }}
+      {{ rc('reshoot.clip.yours', {}, { locale }) }}
     </h2>
     <label
       :class="
@@ -62,15 +62,15 @@ function drop(event: DragEvent) {
     >
       <Upload class="size-7 text-primary-comfy-canvas" aria-hidden="true" />
       <span class="text-base font-semibold text-primary-warm-white">
-        {{ rc('reshoot.pick.drop', {}, { locale: locale }) }}
+        {{ rc('reshoot.pick.drop', {}, { locale }) }}
       </span>
       <span class="text-xs/relaxed text-balance text-primary-warm-gray">
-        {{ rc('reshoot.clip.help', {}, { locale: locale }) }}
+        {{ rc('reshoot.clip.help', {}, { locale }) }}
       </span>
       <span
         class="mt-2 rounded-full px-5 py-2.5 text-sm font-semibold text-primary-warm-white ring-1 ring-transparency-white-t20 transition-colors ring-inset group-hover/drop:bg-transparency-white-t8"
       >
-        {{ rc('reshoot.pick.upload', {}, { locale: locale }) }}
+        {{ rc('reshoot.pick.upload', {}, { locale }) }}
       </span>
       <input type="file" accept="video/*" class="sr-only" @change="choose" />
     </label>
@@ -80,11 +80,7 @@ function drop(event: DragEvent) {
       class="text-sm text-destructive-light"
     >
       {{
-        rc(
-          'reshoot.clip.length',
-          { seconds: tooLong.toFixed(1) },
-          { locale: locale }
-        )
+        rc('reshoot.clip.length', { seconds: tooLong.toFixed(1) }, { locale })
       }}
     </p>
   </aside>

@@ -44,7 +44,7 @@ function workspaceTier(workspace: WorkspaceWithRole): string {
   return t(
     workspace.role === 'member' ? 'nav.roleMember' : 'nav.roleOwner',
     {},
-    { locale: locale }
+    { locale }
   )
 }
 
@@ -87,7 +87,7 @@ const surfaceClass =
     <DropdownMenuSubTrigger
       ref="trigger"
       data-testid="account-workspace"
-      :aria-label="t('nav.workspaces', {}, { locale: locale })"
+      :aria-label="t('nav.workspaces', {}, { locale })"
       class="grid size-8 shrink-0 cursor-pointer place-items-center rounded-lg text-primary-warm-gray outline-none hover:bg-transparency-white-t8 hover:text-primary-warm-white focus-visible:bg-transparency-white-t8 focus-visible:text-primary-warm-white"
     >
       <ArrowLeftRight class="size-4" aria-hidden="true" />
@@ -103,13 +103,13 @@ const surfaceClass =
         <p
           class="px-3 pt-1 pb-2 text-[11px] font-bold tracking-wider text-primary-warm-gray uppercase"
         >
-          {{ t('nav.workspaces', {}, { locale: locale }) }}
+          {{ t('nav.workspaces', {}, { locale }) }}
         </p>
         <p
           v-if="workspaces === 'loading'"
           class="px-3 py-2 text-xs text-primary-comfy-canvas/55"
         >
-          {{ t('nav.workspacesLoading', {}, { locale: locale }) }}
+          {{ t('nav.workspacesLoading', {}, { locale }) }}
         </p>
         <DropdownMenuItem
           v-else-if="workspaces === 'error'"
@@ -117,11 +117,11 @@ const surfaceClass =
           data-testid="account-workspaces-retry"
           @select.prevent="emit('retry')"
         >
-          <span>{{ t('nav.workspacesError', {}, { locale: locale }) }}</span>
+          <span>{{ t('nav.workspacesError', {}, { locale }) }}</span>
           <span
             class="shrink-0 cursor-pointer font-bold text-primary-comfy-yellow"
           >
-            {{ t('workshop.error.retry', {}, { locale: locale }) }}
+            {{ t('workshop.error.retry', {}, { locale }) }}
           </span>
         </DropdownMenuItem>
         <p
@@ -129,7 +129,7 @@ const surfaceClass =
           class="px-3 py-2 text-xs text-primary-comfy-canvas/55"
           data-testid="account-workspaces-empty"
         >
-          {{ t('nav.workspacesEmpty', {}, { locale: locale }) }}
+          {{ t('nav.workspacesEmpty', {}, { locale }) }}
         </p>
         <template v-else>
           <DropdownMenuItem

@@ -75,11 +75,11 @@ const otherModel = computed(() => {
 <template>
   <section
     class="flex min-h-0 min-w-0 flex-1 flex-col items-center justify-center gap-3 px-4 pt-6 pb-10 sm:px-8 lg:px-14"
-    :aria-label="tc('cinematic.stage.label', {}, { locale: locale })"
+    :aria-label="tc('cinematic.stage.label', {}, { locale })"
   >
     <template v-if="current">
       <h1 class="sr-only">
-        {{ tc('cinematic.title', {}, { locale: locale }) }}
+        {{ tc('cinematic.title', {}, { locale }) }}
       </h1>
       <div
         data-testid="cinematic-take-column"

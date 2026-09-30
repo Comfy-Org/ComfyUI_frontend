@@ -36,7 +36,7 @@ function heroSection(page: Page, locale: Locale) {
   return page.locator('section').filter({
     has: page.getByRole('heading', {
       level: 1,
-      name: t('events.hero.title', {}, { locale: locale })
+      name: t('events.hero.title', {}, { locale })
     })
   })
 }
@@ -45,7 +45,7 @@ function heroSection(page: Page, locale: Locale) {
 function countLabel(count: number, locale: Locale) {
   const key =
     count === 1 ? 'events.directory.countOne' : 'events.directory.count'
-  return t(key, { count }, { locale: locale })
+  return t(key, { count }, { locale })
 }
 
 // Expected filter results restated from the raw event data, so the spec never
@@ -109,7 +109,7 @@ function directorySection(page: Page, locale: Locale) {
   return page.locator('section').filter({
     has: page.getByRole('heading', {
       level: 2,
-      name: t('events.directory.title', {}, { locale: locale })
+      name: t('events.directory.title', {}, { locale })
     })
   })
 }
@@ -118,7 +118,7 @@ function pastSection(page: Page, locale: Locale) {
   return page.locator('section').filter({
     has: page.getByRole('heading', {
       level: 2,
-      name: t('events.past.title', {}, { locale: locale })
+      name: t('events.past.title', {}, { locale })
     })
   })
 }
@@ -129,9 +129,7 @@ test.describe('Events page — desktop @smoke', () => {
   }) => {
     for (const [path, locale] of LOCALES) {
       await page.goto(path)
-      await expect(page).toHaveTitle(
-        t('events.page.title', {}, { locale: locale })
-      )
+      await expect(page).toHaveTitle(t('events.page.title', {}, { locale }))
       await expect(page.locator('meta[name="robots"]')).toHaveCount(0)
     }
   })
@@ -145,27 +143,27 @@ test.describe('Events page — desktop @smoke', () => {
       await expect(
         hero.getByRole('heading', {
           level: 1,
-          name: t('events.hero.title', {}, { locale: locale })
+          name: t('events.hero.title', {}, { locale })
         })
       ).toBeVisible()
       await expect(
-        hero.getByText(t('events.hero.eyebrow', {}, { locale: locale }), {
+        hero.getByText(t('events.hero.eyebrow', {}, { locale }), {
           exact: true
         })
       ).toBeVisible()
       await expect(
-        hero.getByText(t('events.hero.subtitle', {}, { locale: locale }), {
+        hero.getByText(t('events.hero.subtitle', {}, { locale }), {
           exact: true
         })
       ).toBeVisible()
       await expect(
         hero.getByRole('link', {
-          name: t('events.hero.browseEvents', {}, { locale: locale })
+          name: t('events.hero.browseEvents', {}, { locale })
         })
       ).toHaveAttribute('href', '#events-directory')
       await expect(
         hero.getByRole('link', {
-          name: t('events.hero.hostAnEvent', {}, { locale: locale })
+          name: t('events.hero.hostAnEvent', {}, { locale })
         })
       ).toHaveAttribute('href', '#host-an-event')
     }
@@ -189,10 +187,10 @@ test.describe('Events page — desktop @smoke', () => {
         .locator('[aria-hidden="false"]')
         .getByRole('link')
       const nextSlide = hero.getByRole('button', {
-        name: t('events.hero.nextSlide', {}, { locale: locale })
+        name: t('events.hero.nextSlide', {}, { locale })
       })
       const prevSlide = hero.getByRole('button', {
-        name: t('events.hero.prevSlide', {}, { locale: locale })
+        name: t('events.hero.prevSlide', {}, { locale })
       })
       const slideTitle = (index: number) =>
         featuredEvents[index].title[locale] || featuredEvents[index].title.en
@@ -289,13 +287,13 @@ test.describe('Events page — desktop @smoke', () => {
       await expect(
         page.getByRole('heading', {
           level: 2,
-          name: t('events.directory.title', {}, { locale: locale })
+          name: t('events.directory.title', {}, { locale })
         })
       ).toBeVisible()
       await expect(
         page.getByRole('heading', {
           level: 2,
-          name: t('events.host.title', {}, { locale: locale })
+          name: t('events.host.title', {}, { locale })
         })
       ).toBeVisible()
     }
@@ -313,7 +311,7 @@ test.describe('Events page — desktop @smoke', () => {
     for (const [path, locale] of LOCALES) {
       await page.goto(path)
       const cta = page.getByRole('link', {
-        name: t('events.host.applyToHost', {}, { locale: locale })
+        name: t('events.host.applyToHost', {}, { locale })
       })
       await expect(cta).toHaveCount(1)
       await expect(cta).toHaveAttribute('href', href)
@@ -656,7 +654,7 @@ test.describe('Events page — desktop @smoke', () => {
 
       const agenda = section.getByTestId('events-directory-agenda')
       const calendarTab = section.getByRole('button', {
-        name: t('events.directory.view.calendar', {}, { locale: locale })
+        name: t('events.directory.view.calendar', {}, { locale })
       })
       await expect(async () => {
         await calendarTab.click()
@@ -836,14 +834,14 @@ test.describe('Events page — desktop @smoke', () => {
       const section = page.locator('section').filter({
         has: page.getByRole('heading', {
           level: 2,
-          name: t('events.host.title', {}, { locale: locale })
+          name: t('events.host.title', {}, { locale })
         })
       })
       await section.scrollIntoViewIfNeeded()
 
       const step = (n: 1 | 2 | 3 | 4 | 5) =>
         section.getByRole('button', {
-          name: `${n}. ${t(`events.host.step${n}.title`, {}, { locale: locale })}`
+          name: `${n}. ${t(`events.host.step${n}.title`, {}, { locale })}`
         })
 
       // The first step is open on load; the rest are collapsed.
@@ -852,9 +850,7 @@ test.describe('Events page — desktop @smoke', () => {
         await expect(step(n)).toHaveAttribute('aria-expanded', 'false')
       }
       await expect(
-        section.getByText(
-          t('events.host.step1.whoTitle', {}, { locale: locale })
-        )
+        section.getByText(t('events.host.step1.whoTitle', {}, { locale }))
       ).toBeVisible()
 
       // Opening another step closes the first — single-select.
@@ -866,7 +862,7 @@ test.describe('Events page — desktop @smoke', () => {
       }).toPass()
       await expect(step(1)).toHaveAttribute('aria-expanded', 'false')
       await expect(
-        section.getByText(t('events.host.step2.body', {}, { locale: locale }))
+        section.getByText(t('events.host.step2.body', {}, { locale }))
       ).toBeVisible()
 
       // The trigger is a real button, so the keyboard reaches it.
@@ -907,10 +903,10 @@ test.describe('Events page — desktop @smoke', () => {
       // menu renders inside the top-layer dialog. Retry until the island
       // hydrates and the click lands.
       const addToCalendar = dialog.getByRole('button', {
-        name: t('events.calendar.addToCalendar', {}, { locale: locale })
+        name: t('events.calendar.addToCalendar', {}, { locale })
       })
       const googleItem = dialog.getByRole('menuitem', {
-        name: t('events.calendar.google', {}, { locale: locale })
+        name: t('events.calendar.google', {}, { locale })
       })
       await expect(async () => {
         await addToCalendar.click()
@@ -928,7 +924,7 @@ test.describe('Events page — desktop @smoke', () => {
       // island hydrates and the click lands; once the navigation has happened
       // the button is gone, so only click while it is still there.
       const closeButton = dialog.getByRole('button', {
-        name: t('events.videoDialog.close', {}, { locale: locale })
+        name: t('events.videoDialog.close', {}, { locale })
       })
       await expect(async () => {
         if (await closeButton.isVisible()) await closeButton.click()
@@ -955,7 +951,7 @@ test.describe('Events page — desktop @smoke', () => {
       // LOAD MORE reveals another page per click and disappears once every
       // card is shown.
       const loadMore = section.getByRole('button', {
-        name: t('events.past.loadMore', {}, { locale: locale })
+        name: t('events.past.loadMore', {}, { locale })
       })
       while (pastCardEvents.length > (await cards.count())) {
         const shown = await cards.count()

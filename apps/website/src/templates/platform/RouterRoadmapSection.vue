@@ -26,59 +26,43 @@ const cards: readonly {
 }[] = [
   {
     id: 'workflow',
-    title: routerT('platform.router.roadmap.1.title', {}, { locale: locale }),
+    title: routerT('platform.router.roadmap.1.title', {}, { locale }),
     description: routerT(
       'platform.router.roadmap.1.description',
       {},
-      { locale: locale }
+      { locale }
     ),
-    details: routerT(
-      'platform.router.roadmap.1.details',
-      {},
-      { locale: locale }
-    )
+    details: routerT('platform.router.roadmap.1.details', {}, { locale })
   },
   {
     id: 'strategy',
-    title: routerT('platform.router.roadmap.2.title', {}, { locale: locale }),
+    title: routerT('platform.router.roadmap.2.title', {}, { locale }),
     description: routerT(
       'platform.router.roadmap.2.description',
       {},
-      { locale: locale }
+      { locale }
     ),
-    details: routerT(
-      'platform.router.roadmap.2.details',
-      {},
-      { locale: locale }
-    )
+    details: routerT('platform.router.roadmap.2.details', {}, { locale })
   },
   {
     id: 'use-case',
-    title: routerT('platform.router.roadmap.3.title', {}, { locale: locale }),
+    title: routerT('platform.router.roadmap.3.title', {}, { locale }),
     description: routerT(
       'platform.router.roadmap.3.description',
       {},
-      { locale: locale }
+      { locale }
     ),
-    details: routerT(
-      'platform.router.roadmap.3.details',
-      {},
-      { locale: locale }
-    )
+    details: routerT('platform.router.roadmap.3.details', {}, { locale })
   },
   {
     id: 'byok',
-    title: routerT('platform.router.roadmap.4.title', {}, { locale: locale }),
+    title: routerT('platform.router.roadmap.4.title', {}, { locale }),
     description: routerT(
       'platform.router.roadmap.4.description',
       {},
-      { locale: locale }
+      { locale }
     ),
-    details: routerT(
-      'platform.router.roadmap.4.details',
-      {},
-      { locale: locale }
-    )
+    details: routerT('platform.router.roadmap.4.details', {}, { locale })
   }
 ]
 
@@ -144,20 +128,16 @@ function panelStyle(index: number, expanded: boolean): CSSProperties {
 <template>
   <section class="mx-auto max-w-9xl px-6 py-10 lg:py-14">
     <SectionHeader
-      :label="
-        routerT('platform.router.roadmap.eyebrow', {}, { locale: locale })
-      "
+      :label="routerT('platform.router.roadmap.eyebrow', {}, { locale })"
       max-width="xl"
       heading-size="compact"
     >
-      {{ routerT('platform.router.roadmap.heading', {}, { locale: locale }) }}
+      {{ routerT('platform.router.roadmap.heading', {}, { locale }) }}
       <template #subtitle>
         <p
           class="mx-auto mt-4 max-w-2xl text-sm text-pretty text-primary-comfy-canvas/70"
         >
-          {{
-            routerT('platform.router.roadmap.subtitle', {}, { locale: locale })
-          }}
+          {{ routerT('platform.router.roadmap.subtitle', {}, { locale }) }}
         </p>
       </template>
     </SectionHeader>
@@ -216,7 +196,7 @@ function panelStyle(index: number, expanded: boolean): CSSProperties {
             t(
               isExpanded(card.id) ? 'ui.readLess' : 'ui.readMore',
               {},
-              { locale: locale }
+              { locale }
             )
           }}
           <span class="sr-only">{{ card.title }}</span>
@@ -231,9 +211,7 @@ function panelStyle(index: number, expanded: boolean): CSSProperties {
 
     <div class="mt-8 flex justify-center">
       <Button as="a" :href="externalLinks.docsComfyRouter" variant="outline">
-        {{
-          routerT('platform.router.roadmap.learnMore', {}, { locale: locale })
-        }}
+        {{ routerT('platform.router.roadmap.learnMore', {}, { locale }) }}
       </Button>
     </div>
   </section>

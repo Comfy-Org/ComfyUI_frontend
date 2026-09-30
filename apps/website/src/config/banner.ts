@@ -68,14 +68,14 @@ export function getBannerData(
 
   return {
     id: config.id,
-    title: t(config.titleKey, {}, { locale: locale }),
+    title: t(config.titleKey, {}, { locale }),
     description: config.descriptionKey
-      ? t(config.descriptionKey, {}, { locale: locale })
+      ? t(config.descriptionKey, {}, { locale })
       : undefined,
     link: link
       ? {
           href: localizeHref(link.href, locale),
-          title: t(link.titleKey, {}, { locale: locale }),
+          title: t(link.titleKey, {}, { locale }),
           target,
           rel: resolveRel({ target: target ?? '_self' }),
           buttonVariant: link.buttonVariant

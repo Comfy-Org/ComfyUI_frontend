@@ -31,13 +31,13 @@ const tileClass = (id: string) =>
 
 <template>
   <nav
-    :aria-label="rc('reshoot.takes', {}, { locale: locale })"
+    :aria-label="rc('reshoot.takes', {}, { locale })"
     class="flex max-w-full items-center gap-2 overflow-x-auto p-1"
   >
     <button
       type="button"
       :aria-current="selected === 'aim'"
-      :aria-label="rc('reshoot.take.aim', {}, { locale: locale })"
+      :aria-label="rc('reshoot.take.aim', {}, { locale })"
       :class="cn(tileClass('aim'), 'text-primary-warm-white')"
       @click="emit('select', 'aim')"
     >

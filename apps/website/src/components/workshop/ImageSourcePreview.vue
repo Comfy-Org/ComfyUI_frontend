@@ -19,7 +19,7 @@ const source = useSourceUrl(
 const failedSource = ref<string>()
 const expanded = ref(false)
 const expandLabel = computed(
-  () => `${t('workshop.output.expand', {}, { locale: locale })} ${name}`
+  () => `${t('workshop.output.expand', {}, { locale })} ${name}`
 )
 </script>
 
@@ -45,7 +45,7 @@ const expandLabel = computed(
     </DialogTrigger>
 
     <SourceLightbox
-      :close-label="t('workshop.output.collapse', {}, { locale: locale })"
+      :close-label="t('workshop.output.collapse', {}, { locale })"
       data-testid="image-source-dialog"
       @dismiss="expanded = false"
     >
@@ -66,7 +66,7 @@ const expandLabel = computed(
   >
     <ImageOff class="size-5 text-primary-warm-gray" aria-hidden="true" />
     <span class="sr-only">{{
-      t('workshop.field.imagePreviewUnavailable', {}, { locale: locale })
+      t('workshop.field.imagePreviewUnavailable', {}, { locale })
     }}</span>
   </span>
 </template>

@@ -60,7 +60,7 @@ function shortfallNote(shot: ShotEstimate, balance: number): string {
       credits: formatCreditRange(shot.total, locale),
       balance: balance.toLocaleString(locale)
     },
-    { locale: locale }
+    { locale }
   )
 }
 
@@ -86,10 +86,10 @@ const GATE_NOTES: Partial<
 const note = computed(() => {
   if (shortfall.value) return shortfall.value.note
   if (gate === 'unavailable')
-    return tc('cinematic.output.unavailable', {}, { locale: locale })
+    return tc('cinematic.output.unavailable', {}, { locale })
   const key = GATE_NOTES[gate]
   return key
-    ? t(key, { workspace: workspaceName ?? '' }, { locale: locale })
+    ? t(key, { workspace: workspaceName ?? '' }, { locale })
     : undefined
 })
 
@@ -141,8 +141,8 @@ const reduceLabel = computed(() => {
   const takes = reduceTo.value
   if (takes === undefined) return undefined
   return takes === 1
-    ? tc('cinematic.credits.reduceOne', {}, { locale: locale })
-    : tc('cinematic.credits.reduce', { takes }, { locale: locale })
+    ? tc('cinematic.credits.reduceOne', {}, { locale })
+    : tc('cinematic.credits.reduce', { takes }, { locale })
 })
 const showCost = computed(
   () =>

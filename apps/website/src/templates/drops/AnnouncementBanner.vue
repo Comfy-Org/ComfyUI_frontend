@@ -84,7 +84,7 @@ const { isVisible, close, persistHidden } = useBannerDismissal(version)
           <div v-if="dismissible" class="flex flex-1 justify-end">
             <IconButton
               type="button"
-              :aria-label="t('nav.close', {}, { locale: locale })"
+              :aria-label="t('nav.close', {}, { locale })"
               @click="close"
             >
               <X class="size-5" aria-hidden="true" />

@@ -22,12 +22,8 @@ const stepNumbers = [1, 2, 3] as const
 
 const steps = stepNumbers.map((number) => ({
   number,
-  title: t(`platform.howItWorks.${number}.title`, {}, { locale: locale }),
-  description: t(
-    `platform.howItWorks.${number}.description`,
-    {},
-    { locale: locale }
-  )
+  title: t(`platform.howItWorks.${number}.title`, {}, { locale }),
+  description: t(`platform.howItWorks.${number}.description`, {}, { locale })
 }))
 
 const APPS = ['internal tool', 'application', 'website', 'workflow'] as const
@@ -77,10 +73,10 @@ watchEffect(() => {
 <template>
   <section class="mx-auto max-w-9xl px-6 py-10 lg:py-14">
     <SectionHeader max-width="xl" heading-size="compact">
-      {{ t('platform.serverlessDeploy.heading', {}, { locale: locale }) }}
+      {{ t('platform.serverlessDeploy.heading', {}, { locale }) }}
       <template #subtitle>
         <p class="mx-auto mt-4 max-w-2xl text-sm text-smoke-700">
-          {{ t('platform.serverlessDeploy.subtitle', {}, { locale: locale }) }}
+          {{ t('platform.serverlessDeploy.subtitle', {}, { locale }) }}
         </p>
       </template>
     </SectionHeader>

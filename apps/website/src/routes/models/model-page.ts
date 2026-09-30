@@ -66,9 +66,9 @@ export async function prepareModelPage(
           {
             provider: relatedProvider
           },
-          { locale: locale }
+          { locale }
         )
-      : t('workshop.model.related', {}, { locale: locale }),
+      : t('workshop.model.related', {}, { locale }),
     successor: model.successorSlug
       ? getWorkshopModel(model.successorSlug)
       : undefined,
@@ -77,7 +77,7 @@ export async function prepareModelPage(
       model.useCases?.length === 1 ? model.useCases[0] : undefined
     ),
     useCaseLabel: useCase
-      ? t(useCaseLabelKey[useCase], {}, { locale: locale })
+      ? t(useCaseLabelKey[useCase], {}, { locale })
       : undefined,
     tags,
     ...splitShownTags(tags)

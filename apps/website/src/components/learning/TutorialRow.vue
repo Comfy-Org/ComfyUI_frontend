@@ -24,7 +24,7 @@ const { tutorial, locale = 'en' } = defineProps<{
     <a
       :href="localizeHref(tutorialPath(tutorial), locale)"
       class="group/thumb relative block aspect-video w-full shrink-0 overflow-hidden rounded-2xl md:w-36 lg:w-44"
-      :aria-label="`${t('player.play', {}, { locale: locale })} ${tutorial.title[locale] || tutorial.title.en}`"
+      :aria-label="`${t('player.play', {}, { locale })} ${tutorial.title[locale] || tutorial.title.en}`"
     >
       <img
         :src="tutorial.poster"
@@ -38,7 +38,7 @@ const { tutorial, locale = 'en' } = defineProps<{
     <div class="w-full min-w-0 md:w-auto md:flex-1">
       <div class="flex items-center gap-2">
         <Badge variant="category" size="xs">
-          {{ t(categoryLabelKeys[tutorial.category], {}, { locale: locale }) }}
+          {{ t(categoryLabelKeys[tutorial.category], {}, { locale }) }}
         </Badge>
       </div>
       <h3 class="mt-1 text-sm/snug text-primary-comfy-canvas lg:text-base/snug">
@@ -51,9 +51,7 @@ const { tutorial, locale = 'en' } = defineProps<{
       </h3>
       <ul class="mt-2 flex flex-wrap gap-2">
         <li v-for="tag in tutorial.tags" :key="tag">
-          <Badge variant="subtle" size="xs">{{
-            t(tag, {}, { locale: locale })
-          }}</Badge>
+          <Badge variant="subtle" size="xs">{{ t(tag, {}, { locale }) }}</Badge>
         </li>
       </ul>
     </div>
@@ -69,7 +67,7 @@ const { tutorial, locale = 'en' } = defineProps<{
       size="default"
       class="ps-0"
     >
-      {{ t(tutorial.ctaLabelKey ?? 'cta.tryWorkflow', {}, { locale: locale }) }}
+      {{ t(tutorial.ctaLabelKey ?? 'cta.tryWorkflow', {}, { locale }) }}
     </ButtonPill>
   </li>
 </template>

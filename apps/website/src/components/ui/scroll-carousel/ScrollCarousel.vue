@@ -63,7 +63,7 @@ const progressPercent = computed(() => `${progress.value * 100}%`)
       <button
         type="button"
         class="flex size-10 items-center justify-center rounded-full border border-white/20 text-white/60 transition-colors hover:border-white/40"
-        :aria-label="t('carousel.previous', {}, { locale: locale })"
+        :aria-label="t('carousel.previous', {}, { locale })"
         @click="scroll(-1)"
       >
         <img
@@ -76,7 +76,7 @@ const progressPercent = computed(() => `${progress.value * 100}%`)
       <button
         type="button"
         class="flex size-10 items-center justify-center rounded-full bg-primary-comfy-yellow transition-opacity hover:opacity-90"
-        :aria-label="t('carousel.next', {}, { locale: locale })"
+        :aria-label="t('carousel.next', {}, { locale })"
         @click="scroll(1)"
       >
         <img src="/icons/arrow-right.svg" alt="" class="size-3" />

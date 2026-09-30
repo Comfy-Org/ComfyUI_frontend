@@ -35,17 +35,17 @@ const faqPage = faqPageNode(
   mainEntityId={organizationId(siteUrl)}
   breadcrumbs={[
     {
-      name: t('breadcrumb.home', {}, { locale: locale }),
+      name: t('breadcrumb.home', {}, { locale }),
       url: absoluteUrl(Astro.site, '/zh-CN')
     },
-    { name: t('breadcrumb.contact', {}, { locale: locale }) }
+    { name: t('breadcrumb.contact', {}, { locale }) }
   ]}
   extraJsonLd={[faqPage]}
 >
   <FormSection locale="zh-CN" client:load />
   <FAQSplit01
     client:visible
-    heading={t('contact.faq.heading', {}, { locale: locale })}
+    heading={t('contact.faq.heading', {}, { locale })}
     faqs={faqs}
   />
 </BaseLayout>

@@ -11,8 +11,5 @@ const faqs = fdctFaqs(locale)
 </script>
 
 <template>
-  <FAQSplit01
-    :heading="t('fdct.faq.title', {}, { locale: locale })"
-    :faqs="faqs"
-  />
+  <FAQSplit01 :heading="t('fdct.faq.title', {}, { locale })" :faqs="faqs" />
 </template>

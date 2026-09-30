@@ -28,21 +28,21 @@ const slides = computed<FeaturedSplitSlide[]>(() =>
         type: slide.media.type,
         src: slide.media.src,
         poster: slide.media.poster,
-        alt: t(slide.media.ariaLabelKey, {}, { locale: locale })
+        alt: t(slide.media.ariaLabelKey, {}, { locale })
       },
-      eyebrow: t('modelRelease.eyebrow', {}, { locale: locale }),
-      title: t(slide.titleKey, {}, { locale: locale }),
-      body: t(slide.bodyKey, {}, { locale: locale }),
+      eyebrow: t('modelRelease.eyebrow', {}, { locale }),
+      title: t(slide.titleKey, {}, { locale }),
+      body: t(slide.bodyKey, {}, { locale }),
       primaryCta: {
-        label: t(slide.exploreLabelKey, {}, { locale: locale }),
+        label: t(slide.exploreLabelKey, {}, { locale }),
         href: workshopUrl ?? routes[slide.exploreRoute]
       },
       secondaryCta: {
-        label: t(slide.tryCta.labelKey, {}, { locale: locale }),
+        label: t(slide.tryCta.labelKey, {}, { locale }),
         href: workshopUrl ?? slide.tryCta.href,
         newTab: !workshopUrl
       },
-      tags: slide.tagKeys.map((key) => t(key, {}, { locale: locale })),
+      tags: slide.tagKeys.map((key) => t(key, {}, { locale })),
       autoplayMs: slide.autoplayMs
     }
   })

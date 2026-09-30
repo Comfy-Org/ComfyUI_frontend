@@ -17,6 +17,6 @@ const href = getRoutes(locale).hubApps
     data-testid="apps-back"
   >
     <ChevronLeft class="size-4" aria-hidden="true" />
-    {{ tc('cinematic.backToApps', {}, { locale: locale }) }}
+    {{ tc('cinematic.backToApps', {}, { locale }) }}
   </a>
 </template>

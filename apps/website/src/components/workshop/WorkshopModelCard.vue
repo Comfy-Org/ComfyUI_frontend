@@ -35,10 +35,10 @@ const workflowModels = computed(() =>
 )
 const providerName = computed(() =>
   model.type === 'APP'
-    ? t('workshop.card.comfyApp', {}, { locale: locale })
+    ? t('workshop.card.comfyApp', {}, { locale })
     : (workflowModels.value?.join(', ') ??
       model.provider ??
-      t('workshop.card.partnerNode', {}, { locale: locale }))
+      t('workshop.card.partnerNode', {}, { locale }))
 )
 
 const logo = computed(

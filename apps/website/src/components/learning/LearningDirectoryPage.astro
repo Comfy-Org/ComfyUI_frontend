@@ -36,9 +36,9 @@ const { locale, url } = pageContext(
   Astro.currentLocale
 )
 
-const learningTitle = t('learning.title', {}, { locale: locale })
+const learningTitle = t('learning.title', {}, { locale })
 const label = category
-  ? t(categoryLabelKeys[category], {}, { locale: locale })
+  ? t(categoryLabelKeys[category], {}, { locale })
   : undefined
 const title = learningMetaTitle(locale, category)
 const description = learningMetaDescription(locale, category)

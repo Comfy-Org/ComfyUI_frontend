@@ -40,16 +40,16 @@ const successMessage = computed(() =>
         {
           email: submittedEmail.value
         },
-        { locale: locale }
+        { locale }
       )
     : ''
 )
 
 const errorMessage = computed(() => {
   if (status.value === 'invalid')
-    return t('download.emailForm.invalidEmail', {}, { locale: locale })
+    return t('download.emailForm.invalidEmail', {}, { locale })
   if (status.value === 'error')
-    return t('download.emailForm.error', {}, { locale: locale })
+    return t('download.emailForm.error', {}, { locale })
   return ''
 })
 
@@ -96,7 +96,7 @@ async function onSubmit() {
       @submit.prevent="onSubmit"
     >
       <h2 class="text-[17px] font-medium text-primary-comfy-yellow">
-        {{ t('download.emailForm.heading', {}, { locale: locale }) }}
+        {{ t('download.emailForm.heading', {}, { locale }) }}
       </h2>
       <input
         v-model="decoy"
@@ -113,14 +113,10 @@ async function onSubmit() {
           type="email"
           required
           autocomplete="email"
-          :aria-label="
-            t('download.emailForm.emailLabel', {}, { locale: locale })
-          "
+          :aria-label="t('download.emailForm.emailLabel', {}, { locale })"
           :aria-invalid="status === 'invalid' || undefined"
           :aria-describedby="errorMessage ? errorMessageId : undefined"
-          :placeholder="
-            t('download.emailForm.placeholder', {}, { locale: locale })
-          "
+          :placeholder="t('download.emailForm.placeholder', {}, { locale })"
           class="h-16 w-full rounded-3xl border border-primary-comfy-canvas bg-transparency-white-t4 pr-14 pl-4 text-[13px] font-semibold text-primary-comfy-canvas placeholder:text-primary-comfy-canvas/60"
         />
         <IconButton
@@ -130,7 +126,7 @@ async function onSubmit() {
           class="absolute right-4 rounded-xl"
           :disabled="status === 'pending'"
           :aria-busy="status === 'pending'"
-          :aria-label="t('download.emailForm.submit', {}, { locale: locale })"
+          :aria-label="t('download.emailForm.submit', {}, { locale })"
         >
           <span
             v-if="status === 'pending'"

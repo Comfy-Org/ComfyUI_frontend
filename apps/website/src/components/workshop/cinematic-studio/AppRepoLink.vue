@@ -32,11 +32,7 @@ const { repo, locale = 'en' } = defineProps<{
       aria-hidden="true"
     />
     {{
-      tc(
-        repo ? 'cinematic.repo.view' : 'cinematic.repo.soon',
-        {},
-        { locale: locale }
-      )
+      tc(repo ? 'cinematic.repo.view' : 'cinematic.repo.soon', {}, { locale })
     }}
     <ArrowUpRight v-if="repo" class="size-3.5" aria-hidden="true" />
   </component>

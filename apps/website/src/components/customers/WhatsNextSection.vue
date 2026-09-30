@@ -24,9 +24,7 @@ const {
 <template>
   <section class="px-4 py-16 lg:px-20 lg:py-24">
     <h2 class="mb-10 text-2xl font-light text-primary-comfy-canvas lg:text-3xl">
-      {{
-        t('customers.story.whatsNext' as TranslationKey, {}, { locale: locale })
-      }}
+      {{ t('customers.story.whatsNext' as TranslationKey, {}, { locale }) }}
     </h2>
 
     <GlassCard
@@ -58,11 +56,7 @@ const {
           >
             {{
               ctaLabel ??
-              t(
-                'customers.story.viewArticle' as TranslationKey,
-                {},
-                { locale: locale }
-              )
+              t('customers.story.viewArticle' as TranslationKey, {}, { locale })
             }}
           </span>
         </a>

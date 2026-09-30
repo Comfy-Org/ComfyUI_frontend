@@ -41,7 +41,7 @@ const labels: Record<Kind, TranslationKey> = {
     >
       <span class="overflow-hidden">
         <span class="pl-1.5 text-2xs/none whitespace-nowrap">
-          {{ t(labels[kind], {}, { locale: locale }) }}
+          {{ t(labels[kind], {}, { locale }) }}
         </span>
       </span>
     </span>

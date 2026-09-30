@@ -55,12 +55,12 @@ onMounted(() => {
       class="relative z-10 min-h-96 justify-center"
       :heading="
         badgeOnly
-          ? t('platform.hero.badge', {}, { locale: locale })
+          ? t('platform.hero.badge', {}, { locale })
           : headingLead
-            ? `${headingLead} ${t('platform.hero.badge', {}, { locale: locale })}`
+            ? `${headingLead} ${t('platform.hero.badge', {}, { locale })}`
             : headingAfterBadge
-              ? `${t('platform.hero.badge', {}, { locale: locale })} ${headingAfterBadge}`
-              : t('platform.closing.heading', {}, { locale: locale })
+              ? `${t('platform.hero.badge', {}, { locale })} ${headingAfterBadge}`
+              : t('platform.closing.heading', {}, { locale })
       "
       :subtitle
       :subtitle-class="badgeOnly ? 'mt-6' : undefined"
@@ -71,8 +71,7 @@ onMounted(() => {
         <template v-if="visual === 'columns'">
           <span v-if="!badgeOnly" class="block">
             {{
-              headingLead ??
-              t('platform.closing.headingLead', {}, { locale: locale })
+              headingLead ?? t('platform.closing.headingLead', {}, { locale })
             }}
           </span>
           <PlatformHeroBadge
@@ -103,7 +102,7 @@ onMounted(() => {
           </span>
         </template>
         <template v-else>
-          {{ t('platform.closing.heading', {}, { locale: locale }) }}
+          {{ t('platform.closing.heading', {}, { locale }) }}
         </template>
       </template>
     </CtaCenter01>

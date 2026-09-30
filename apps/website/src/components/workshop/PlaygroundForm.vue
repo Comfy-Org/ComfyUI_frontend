@@ -132,7 +132,7 @@ function onAdvancedToggle(event: Event) {
       <summary
         class="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase select-none hover:text-primary-warm-white [&::-webkit-details-marker]:hidden"
       >
-        {{ t('workshop.form.advanced', {}, { locale: locale }) }}
+        {{ t('workshop.form.advanced', {}, { locale }) }}
         <ChevronDown
           class="size-4 transition-transform group-open:rotate-180"
           aria-hidden="true"

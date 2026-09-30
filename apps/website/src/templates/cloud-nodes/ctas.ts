@@ -15,16 +15,16 @@ export function cloudNodesCtas(locale: Locale): {
 } {
   return {
     getStarted: {
-      label: t('cloudNodesLaunch.cta.getStarted', {}, { locale: locale }),
+      label: t('cloudNodesLaunch.cta.getStarted', {}, { locale }),
       href: getRoutes(locale).download
     },
     docs: {
-      label: t('cloudNodesLaunch.cta.docs', {}, { locale: locale }),
+      label: t('cloudNodesLaunch.cta.docs', {}, { locale }),
       href: externalLinks.docsCloudNodes,
       target: '_blank'
     },
     update: {
-      label: t('cloudNodesLaunch.cta.update', {}, { locale: locale }),
+      label: t('cloudNodesLaunch.cta.update', {}, { locale }),
       href: externalLinks.docsUpdateComfyUI,
       target: '_blank'
     }

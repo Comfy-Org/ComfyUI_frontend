@@ -369,9 +369,7 @@ watch(
   <div
     ref="stageRef"
     role="img"
-    :aria-label="
-      t('platform.serverlessVisual.ariaLabel', {}, { locale: locale })
-    "
+    :aria-label="t('platform.serverlessVisual.ariaLabel', {}, { locale })"
     :data-pattern="patternIndex"
     :data-phase="phase"
     :data-reset-indicator-progress="resetIndicatorProgress"

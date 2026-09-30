@@ -20,7 +20,7 @@ const {
     class="inline-flex w-fit shrink-0 items-center rounded-full border border-primary-comfy-orange/50 bg-primary-comfy-ink/70 px-3 py-1 text-xs font-medium text-primary-comfy-orange backdrop-blur-md"
     data-testid="model-incomplete-badge"
   >
-    {{ t('workshop.model.incomplete', {}, { locale: locale }) }}
+    {{ t('workshop.model.incomplete', {}, { locale }) }}
   </span>
   <div
     v-else-if="reason"
@@ -28,10 +28,10 @@ const {
     data-testid="model-incomplete-notice"
   >
     <p class="mb-2 font-bold">
-      {{ t('workshop.model.incomplete', {}, { locale: locale }) }}
+      {{ t('workshop.model.incomplete', {}, { locale }) }}
     </p>
     <p>
-      {{ t('workshop.model.missingInputSchema', {}, { locale: locale }) }}
+      {{ t('workshop.model.missingInputSchema', {}, { locale }) }}
     </p>
   </div>
 </template>

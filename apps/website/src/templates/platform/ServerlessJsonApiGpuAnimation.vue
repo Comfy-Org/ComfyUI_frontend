@@ -20,9 +20,7 @@ const { locale = 'en', compact = false } = defineProps<{
     "
   >
     <iframe
-      :title="
-        t('platform.serverlessHero.animationTitle', {}, { locale: locale })
-      "
+      :title="t('platform.serverlessHero.animationTitle', {}, { locale })"
       :src="`/assets/platform/serverless/json-api-gpu-animation.html?v=astronaut-quality-2${compact ? '&layout=compact' : ''}`"
       class="absolute inset-0 size-full border-0"
       loading="eager"

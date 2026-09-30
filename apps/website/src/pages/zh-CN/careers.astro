@@ -34,7 +34,7 @@ const { locale, url } = pageContext(
 )
 const roles = itemListNode(
   url,
-  t('breadcrumb.careers', {}, { locale: locale }),
+  t('breadcrumb.careers', {}, { locale }),
   departments.flatMap((department) =>
     department.roles.map((role) => ({ name: role.title, url: role.jobUrl }))
   )
@@ -48,10 +48,10 @@ const roles = itemListNode(
   mainEntityId={jsonLdId(url, 'itemlist')}
   breadcrumbs={[
     {
-      name: t('breadcrumb.home', {}, { locale: locale }),
+      name: t('breadcrumb.home', {}, { locale }),
       url: absoluteUrl(Astro.site, '/zh-CN')
     },
-    { name: t('breadcrumb.careers', {}, { locale: locale }) }
+    { name: t('breadcrumb.careers', {}, { locale }) }
   ]}
   extraJsonLd={[roles]}
 >

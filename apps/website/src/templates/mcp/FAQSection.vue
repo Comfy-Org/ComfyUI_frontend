@@ -9,14 +9,11 @@ const faqNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const
 
 const faqs = faqNumbers.map((n) => ({
   id: String(n),
-  question: t(`mcp.faq.${n}.q`, {}, { locale: locale }),
-  answer: t(`mcp.faq.${n}.a`, {}, { locale: locale })
+  question: t(`mcp.faq.${n}.q`, {}, { locale }),
+  answer: t(`mcp.faq.${n}.a`, {}, { locale })
 }))
 </script>
 
 <template>
-  <FAQSplit01
-    :heading="t('mcp.faq.heading', {}, { locale: locale })"
-    :faqs="faqs"
-  />
+  <FAQSplit01 :heading="t('mcp.faq.heading', {}, { locale })" :faqs="faqs" />
 </template>

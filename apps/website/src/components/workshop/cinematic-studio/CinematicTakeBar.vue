@@ -62,14 +62,12 @@ async function onKeydown(event: KeyboardEvent) {
 <template>
   <div class="flex max-w-full min-w-0 items-center gap-2.5">
     <span class="shrink-0 text-sm font-semibold text-primary-warm-white">
-      {{
-        tc('cinematic.stage.shot', { number: current.shot }, { locale: locale })
-      }}
+      {{ tc('cinematic.stage.shot', { number: current.shot }, { locale }) }}
     </span>
     <div
       v-if="takePicker && siblings.length > 1"
       role="radiogroup"
-      :aria-label="tc('cinematic.stage.takes', {}, { locale: locale })"
+      :aria-label="tc('cinematic.stage.takes', {}, { locale })"
       class="flex gap-1"
       @keydown="onKeydown"
     >
@@ -82,7 +80,7 @@ async function onKeydown(event: KeyboardEvent) {
         :tabindex="take.id === current.id ? 0 : -1"
         :aria-description="
           isUnpaid(take)
-            ? tc('cinematic.state.noCredits', {}, { locale: locale })
+            ? tc('cinematic.state.noCredits', {}, { locale })
             : undefined
         "
         :class="
@@ -109,8 +107,8 @@ async function onKeydown(event: KeyboardEvent) {
       :href="current.output.url"
       :download="current.output.fileName"
       class="grid size-8 shrink-0 place-items-center rounded-lg text-primary-comfy-canvas hover:bg-transparency-white-t8"
-      :aria-label="tc('cinematic.stage.download', {}, { locale: locale })"
-      :title="t('workshop.output.expires', {}, { locale: locale })"
+      :aria-label="tc('cinematic.stage.download', {}, { locale })"
+      :title="t('workshop.output.expires', {}, { locale })"
       @click="captureDownload"
     >
       <Download class="size-4" aria-hidden="true" />

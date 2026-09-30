@@ -41,7 +41,7 @@ const motion = defineModel<ReshootMotion>('motion', { required: true })
 const motionOptions = computed(() =>
   RESHOOT_MOTIONS.map((id) => ({
     id,
-    label: rc(`reshoot.motion.${id}`, {}, { locale: locale })
+    label: rc(`reshoot.motion.${id}`, {}, { locale })
   }))
 )
 const motionValue = computed({
@@ -72,11 +72,9 @@ const left = (at: number) => `${(at / Math.max(1, frames - 1)) * 100}%`
       <button
         type="button"
         :aria-label="
-          rc(playing ? 'reshoot.pause' : 'reshoot.play', {}, { locale: locale })
+          rc(playing ? 'reshoot.pause' : 'reshoot.play', {}, { locale })
         "
-        :title="
-          rc(playing ? 'reshoot.pause' : 'reshoot.play', {}, { locale: locale })
-        "
+        :title="rc(playing ? 'reshoot.pause' : 'reshoot.play', {}, { locale })"
         class="grid size-9 shrink-0 place-items-center rounded-full text-primary-warm-white ring-1 ring-transparency-white-t20 ring-inset hover:bg-transparency-white-t8"
         @click="playing = !playing"
       >
@@ -90,7 +88,7 @@ const left = (at: number) => `${(at / Math.max(1, frames - 1)) * 100}%`
           :min="0"
           :max="frames - 1"
           :step="1"
-          :aria-label="rc('reshoot.move.frame', {}, { locale: locale })"
+          :aria-label="rc('reshoot.move.frame', {}, { locale })"
           :aria-valuetext="frameTime(frame)"
           class="w-full accent-primary-comfy-yellow"
         />
@@ -99,11 +97,7 @@ const left = (at: number) => `${(at / Math.max(1, frames - 1)) * 100}%`
           :key="key.frame"
           type="button"
           :aria-label="
-            rc(
-              'reshoot.move.goTo',
-              { time: frameTime(key.frame) },
-              { locale: locale }
-            )
+            rc('reshoot.move.goTo', { time: frameTime(key.frame) }, { locale })
           "
           :class="
             cn(
@@ -139,11 +133,7 @@ const left = (at: number) => `${(at / Math.max(1, frames - 1)) * 100}%`
       >
         <KeyRound class="size-3.5" aria-hidden="true" />
         {{
-          rc(
-            keyed ? 'reshoot.move.unkey' : 'reshoot.move.key',
-            {},
-            { locale: locale }
-          )
+          rc(keyed ? 'reshoot.move.unkey' : 'reshoot.move.key', {}, { locale })
         }}
       </button>
     </div>
@@ -152,20 +142,20 @@ const left = (at: number) => `${(at / Math.max(1, frames - 1)) * 100}%`
         <CinematicMenu
           v-model="motionValue"
           :options="motionOptions"
-          :heading="rc('reshoot.move.motion', {}, { locale: locale })"
+          :heading="rc('reshoot.move.motion', {}, { locale })"
           trigger-class="h-9 gap-2 border border-transparency-white-t8 px-3 text-sm text-primary-warm-white hover:border-transparency-white-t20"
         >
           <span class="text-primary-warm-gray">
-            {{ rc('reshoot.move.motion', {}, { locale: locale }) }}
+            {{ rc('reshoot.move.motion', {}, { locale }) }}
           </span>
-          {{ rc(`reshoot.motion.${motion}`, {}, { locale: locale }) }}
+          {{ rc(`reshoot.motion.${motion}`, {}, { locale }) }}
         </CinematicMenu>
         <button
           type="button"
           class="h-9 rounded-xl px-3 text-xs text-primary-warm-gray hover:text-primary-warm-white"
           @click="emit('clear')"
         >
-          {{ rc('reshoot.move.clear', {}, { locale: locale }) }}
+          {{ rc('reshoot.move.clear', {}, { locale }) }}
         </button>
       </template>
       <p v-else class="text-xs text-primary-warm-gray">
@@ -173,7 +163,7 @@ const left = (at: number) => `${(at / Math.max(1, frames - 1)) * 100}%`
           rc(
             keys.length ? 'reshoot.move.oneKey' : 'reshoot.move.noKeys',
             {},
-            { locale: locale }
+            { locale }
           )
         }}
       </p>

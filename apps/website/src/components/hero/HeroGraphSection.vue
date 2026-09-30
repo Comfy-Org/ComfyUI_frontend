@@ -26,7 +26,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
         variant="outline"
         class="font-bold uppercase"
       >
-        {{ t('hero.getStartedFree', {}, { locale: locale }) }}
+        {{ t('hero.getStartedFree', {}, { locale }) }}
       </BrandButton>
     </div>
   </section>

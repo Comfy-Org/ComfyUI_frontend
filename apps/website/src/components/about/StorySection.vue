@@ -21,19 +21,19 @@ const investors = [
       <span
         class="text-xs font-semibold tracking-widest text-primary-comfy-yellow uppercase"
       >
-        {{ t('about.story.label', {}, { locale: locale }) }}
+        {{ t('about.story.label', {}, { locale }) }}
       </span>
       <h2
         class="mt-6 text-3xl font-light text-primary-comfy-canvas lg:text-5xl"
       >
-        {{ t('about.story.headingBefore', {}, { locale: locale })
+        {{ t('about.story.headingBefore', {}, { locale })
         }}<span class="text-primary-comfy-yellow">{{
-          t('about.story.headingHighlight', {}, { locale: locale })
+          t('about.story.headingHighlight', {}, { locale })
         }}</span
-        >{{ t('about.story.headingAfter', {}, { locale: locale }) }}
+        >{{ t('about.story.headingAfter', {}, { locale }) }}
       </h2>
       <p class="mt-8 text-base/relaxed text-primary-warm-white lg:text-lg">
-        {{ t('about.story.body', {}, { locale: locale }) }}
+        {{ t('about.story.body', {}, { locale }) }}
       </p>
     </div>
 
@@ -70,7 +70,7 @@ const investors = [
       <p
         class="mt-6 max-w-3xl text-sm/relaxed text-primary-warm-white lg:text-base"
       >
-        {{ t('about.story.investorsBody', {}, { locale: locale }) }}
+        {{ t('about.story.investorsBody', {}, { locale }) }}
       </p>
       <div class="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:gap-6">
         <div
@@ -92,12 +92,12 @@ const investors = [
       class="mx-auto mt-12 max-w-5xl rounded-4xl bg-primary-comfy-yellow p-10 lg:p-16"
     >
       <p class="text-xl/relaxed font-medium text-primary-comfy-ink lg:text-3xl">
-        {{ t('about.quote.text', {}, { locale: locale }) }}
+        {{ t('about.quote.text', {}, { locale }) }}
       </p>
       <p
         class="mt-8 text-sm font-semibold text-primary-comfy-ink/70 lg:text-base"
       >
-        {{ t('about.quote.attribution', {}, { locale: locale }) }}
+        {{ t('about.quote.attribution', {}, { locale }) }}
       </p>
     </div>
   </section>

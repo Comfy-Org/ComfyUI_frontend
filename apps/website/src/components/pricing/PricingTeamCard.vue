@@ -56,7 +56,7 @@ const teamCreditsLabel = computed(() =>
       ? 'pricing.creditsLabelYearly'
       : 'pricing.creditsLabel',
     {},
-    { locale: locale }
+    { locale }
   )
 )
 
@@ -75,7 +75,7 @@ const teamSaving = computed<string | undefined>(() => {
       pct,
       amount: fmtPrice(base - discounted)
     },
-    { locale: locale }
+    { locale }
   )
 })
 
@@ -115,16 +115,16 @@ const ctaHref = computed(() =>
           class="flex flex-col items-start gap-2 lg:flex-row lg:items-center lg:gap-4"
         >
           <PricingPlanLabel
-            :label="t('pricing.plan.team.label', {}, { locale: locale })"
+            :label="t('pricing.plan.team.label', {}, { locale })"
           />
           <p class="text-sm text-primary-warm-gray">
-            {{ t('pricing.team.description', {}, { locale: locale }) }}
+            {{ t('pricing.team.description', {}, { locale }) }}
           </p>
         </div>
 
         <PricingPrice
           :price="fmtPrice(selectedTeamPrice)"
-          :period="t('pricing.plan.period', {}, { locale: locale })"
+          :period="t('pricing.plan.period', {}, { locale })"
           :original-price="
             selectedTeamTier.basePrice !== selectedTeamPrice
               ? fmtPrice(selectedTeamTier.basePrice)
@@ -144,8 +144,8 @@ const ctaHref = computed(() =>
             :max="teamCreditTiers.length - 1"
             :step="1"
             :ticks="teamCreditTiers.length"
-            :thumb-label="t('pricing.team.sliderLabel', {}, { locale: locale })"
-            :thumb-value-text="`${teamCredits.toLocaleString('en-US')} ${teamCreditsLabel}, ${fmtPrice(selectedTeamPrice)} ${t('pricing.plan.period', {}, { locale: locale })}`"
+            :thumb-label="t('pricing.team.sliderLabel', {}, { locale })"
+            :thumb-value-text="`${teamCredits.toLocaleString('en-US')} ${teamCreditsLabel}, ${fmtPrice(selectedTeamPrice)} ${t('pricing.plan.period', {}, { locale })}`"
           >
             <template #tick="{ index, active }">
               <CreditsIcon
@@ -183,7 +183,7 @@ const ctaHref = computed(() =>
 
         <div class="mt-8">
           <Button :href="ctaHref" class="w-full" variant="outline">
-            {{ t('pricing.plan.team.cta', {}, { locale: locale }) }}
+            {{ t('pricing.plan.team.cta', {}, { locale }) }}
           </Button>
         </div>
       </div>

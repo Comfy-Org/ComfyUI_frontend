@@ -27,7 +27,7 @@ const { messages } = useAuthToasts()
         v-for="message in messages"
         :key="message.id"
         :message="message"
-        :close-label="t('auth.toast.close', {}, { locale: locale })"
+        :close-label="t('auth.toast.close', {}, { locale })"
         @close="removeToast"
       />
     </TransitionGroup>

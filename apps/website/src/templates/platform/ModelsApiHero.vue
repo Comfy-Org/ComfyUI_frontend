@@ -16,23 +16,19 @@ const routes = getRoutes(locale)
   <HeroSplit01
     :locale="locale"
     compact
-    :badge-text="routerT('platform.router.badge.label', {}, { locale: locale })"
-    :title="t('platform.modelsHero.heading', {}, { locale: locale })"
+    :badge-text="routerT('platform.router.badge.label', {}, { locale })"
+    :title="t('platform.modelsHero.heading', {}, { locale })"
     title-class="text-primary-comfy-yellow text-3xl/tight font-light tracking-[-1.44px] md:text-4xl/tight lg:text-5xl/tight"
     class="lg:items-stretch"
     media-wrapper-class="hidden min-w-0 lg:flex lg:flex-col"
-    :subtitle="t('platform.modelsHero.subtitle', {}, { locale: locale })"
+    :subtitle="t('platform.modelsHero.subtitle', {}, { locale })"
     :primary-cta="{
-      label: t('platform.modelsHero.getApiKey', {}, { locale: locale }),
+      label: t('platform.modelsHero.getApiKey', {}, { locale }),
       href: externalLinks.routerApiKeys,
       target: '_blank'
     }"
     :secondary-cta="{
-      label: routerT(
-        'platform.router.cta.browseModels',
-        {},
-        { locale: locale }
-      ),
+      label: routerT('platform.router.cta.browseModels', {}, { locale }),
       href: routes.workshop
     }"
   >
@@ -40,20 +36,20 @@ const routes = getRoutes(locale)
       <div class="mt-8 lg:hidden">
         <CodeTabs
           :tabs="routerCodeTabs"
-          :label="t('platform.products.models.title', {}, { locale: locale })"
+          :label="t('platform.products.models.title', {}, { locale })"
           content-class="bg-[#2a2230]"
-          :copy-label="t('ui.copy', {}, { locale: locale })"
-          :copied-label="t('ui.copied', {}, { locale: locale })"
+          :copy-label="t('ui.copy', {}, { locale })"
+          :copied-label="t('ui.copied', {}, { locale })"
         />
       </div>
     </template>
     <template #media>
       <CodeTabs
         :tabs="routerCodeTabs"
-        :label="t('platform.products.models.title', {}, { locale: locale })"
+        :label="t('platform.products.models.title', {}, { locale })"
         content-class="bg-[#2a2230]"
-        :copy-label="t('ui.copy', {}, { locale: locale })"
-        :copied-label="t('ui.copied', {}, { locale: locale })"
+        :copy-label="t('ui.copy', {}, { locale })"
+        :copied-label="t('ui.copied', {}, { locale })"
         fill
       />
     </template>

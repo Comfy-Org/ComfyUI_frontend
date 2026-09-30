@@ -69,12 +69,12 @@ const submitDisabled = computed(
 )
 
 const passwordRulesCopy = computed(() => ({
-  requirements: t('validation.password.requirements', {}, { locale: locale }),
-  length: t('validation.password.lengthRange', {}, { locale: locale }),
-  uppercase: t('validation.password.uppercase', {}, { locale: locale }),
-  lowercase: t('validation.password.lowercase', {}, { locale: locale }),
-  number: t('validation.password.number', {}, { locale: locale }),
-  special: t('validation.password.special', {}, { locale: locale })
+  requirements: t('validation.password.requirements', {}, { locale }),
+  length: t('validation.password.lengthRange', {}, { locale }),
+  uppercase: t('validation.password.uppercase', {}, { locale }),
+  lowercase: t('validation.password.lowercase', {}, { locale }),
+  number: t('validation.password.number', {}, { locale }),
+  special: t('validation.password.special', {}, { locale })
 }))
 
 const fieldId = (field: Field) => `workshop-${mode}-${field}`
@@ -143,7 +143,7 @@ defineExpose({ resetTurnstile })
             : 'mb-1 text-base text-primary-comfy-canvas/70'
         "
       >
-        {{ t('auth.email.label', {}, { locale: locale }) }}
+        {{ t('auth.email.label', {}, { locale }) }}
       </label>
       <input
         :id="fieldId('email')"
@@ -151,7 +151,7 @@ defineExpose({ resetTurnstile })
         :type="mode === 'signUp' ? 'email' : 'text'"
         name="email"
         autocomplete="email"
-        :placeholder="t('auth.email.placeholder', {}, { locale: locale })"
+        :placeholder="t('auth.email.placeholder', {}, { locale })"
         :class="AUTH_FIELD_CLASS"
         :aria-invalid="Boolean(fieldErrors.email)"
         @input="validateField('email')"
@@ -174,7 +174,7 @@ defineExpose({ resetTurnstile })
             : 'mb-1 text-base text-primary-comfy-canvas/70'
         "
       >
-        {{ t('auth.password.label', {}, { locale: locale }) }}
+        {{ t('auth.password.label', {}, { locale }) }}
       </label>
       <AuthPasswordField
         :id="fieldId('password')"
@@ -187,12 +187,12 @@ defineExpose({ resetTurnstile })
               ? 'auth.password.newPlaceholder'
               : 'auth.password.placeholder',
             {},
-            { locale: locale }
+            { locale }
           )
         "
         :invalid="Boolean(fieldErrors.password)"
-        :show-label="t('auth.password.show', {}, { locale: locale })"
-        :hide-label="t('auth.password.hide', {}, { locale: locale })"
+        :show-label="t('auth.password.show', {}, { locale })"
+        :hide-label="t('auth.password.hide', {}, { locale })"
         @input="validateField('password')"
       />
       <PasswordRules
@@ -217,7 +217,7 @@ defineExpose({ resetTurnstile })
         class="mt-1 self-start text-sm text-primary-comfy-canvas/70 underline"
         @click="emit('forgotPassword', $event)"
       >
-        {{ t('auth.signIn.forgotPassword', {}, { locale: locale }) }}
+        {{ t('auth.signIn.forgotPassword', {}, { locale }) }}
       </a>
     </div>
 
@@ -226,19 +226,17 @@ defineExpose({ resetTurnstile })
         :for="fieldId('confirmPassword')"
         class="mb-2 text-base font-medium opacity-80"
       >
-        {{ t('auth.confirmPassword.label', {}, { locale: locale }) }}
+        {{ t('auth.confirmPassword.label', {}, { locale }) }}
       </label>
       <AuthPasswordField
         :id="fieldId('confirmPassword')"
         v-model="values.confirmPassword"
         name="confirmPassword"
         autocomplete="new-password"
-        :placeholder="
-          t('auth.confirmPassword.placeholder', {}, { locale: locale })
-        "
+        :placeholder="t('auth.confirmPassword.placeholder', {}, { locale })"
         :invalid="Boolean(fieldErrors.confirmPassword)"
-        :show-label="t('auth.password.show', {}, { locale: locale })"
-        :hide-label="t('auth.password.hide', {}, { locale: locale })"
+        :show-label="t('auth.password.show', {}, { locale })"
+        :hide-label="t('auth.password.hide', {}, { locale })"
         @input="validateField('confirmPassword')"
       />
       <small
@@ -257,8 +255,8 @@ defineExpose({ resetTurnstile })
       v-model:unavailable="unavailable"
       :site-key="WORKSHOP_TURNSTILE_SITE_KEY"
       theme="dark"
-      :expired-message="t('auth.turnstile.expired', {}, { locale: locale })"
-      :failed-message="t('auth.turnstile.failed', {}, { locale: locale })"
+      :expired-message="t('auth.turnstile.expired', {}, { locale })"
+      :failed-message="t('auth.turnstile.failed', {}, { locale })"
       error-class="text-red-500"
     />
     <small
@@ -268,7 +266,7 @@ defineExpose({ resetTurnstile })
       aria-live="polite"
       class="opacity-80"
     >
-      {{ t('auth.turnstile.submitBlockedHint', {}, { locale: locale }) }}
+      {{ t('auth.turnstile.submitBlockedHint', {}, { locale }) }}
     </small>
 
     <button
@@ -284,8 +282,8 @@ defineExpose({ resetTurnstile })
       <span :class="cn(loading && 'sr-only')">
         {{
           mode === 'signUp'
-            ? t('auth.signUp.submit', {}, { locale: locale })
-            : t('auth.signIn.submit', {}, { locale: locale })
+            ? t('auth.signUp.submit', {}, { locale })
+            : t('auth.signIn.submit', {}, { locale })
         }}
       </span>
     </button>

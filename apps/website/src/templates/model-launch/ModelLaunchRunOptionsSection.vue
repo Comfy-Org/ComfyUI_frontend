@@ -33,10 +33,10 @@ const cards = [
       <h2
         class="text-3xl font-light tracking-tight text-primary-comfy-canvas lg:text-5xl/tight"
       >
-        {{ t(runOptions.headingKey, {}, { locale: locale }) }}
+        {{ t(runOptions.headingKey, {}, { locale }) }}
       </h2>
       <p class="mt-6 max-w-xl text-sm font-light text-primary-comfy-canvas/70">
-        {{ t(runOptions.subtitleKey, {}, { locale: locale }) }}
+        {{ t(runOptions.subtitleKey, {}, { locale }) }}
       </p>
     </div>
 
@@ -46,11 +46,9 @@ const cards = [
       <ProductCard
         v-for="card in cards"
         :key="card.product"
-        :title="t(`products.${card.product}.title`, {}, { locale: locale })"
-        :description="
-          t(`products.${card.product}.description`, {}, { locale: locale })
-        "
-        :cta="t(runOptions.ctaKey, {}, { locale: locale })"
+        :title="t(`products.${card.product}.title`, {}, { locale })"
+        :description="t(`products.${card.product}.description`, {}, { locale })"
+        :cta="t(runOptions.ctaKey, {}, { locale })"
         :href="card.href"
         :bg="card.bg"
       />

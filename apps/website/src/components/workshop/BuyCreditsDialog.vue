@@ -527,21 +527,17 @@ const stepperClass =
 <template>
   <Dialog v-model:open="open">
     <DialogContent
-      :close-label="t('workshop.credits.close', {}, { locale: locale })"
+      :close-label="t('workshop.credits.close', {}, { locale })"
       class="flex flex-col gap-6 sm:max-w-xl"
       data-testid="buy-credits-dialog"
     >
       <template v-if="step === 'checkout'">
         <div class="flex flex-col gap-2">
           <DialogTitle class="pr-16">
-            {{
-              t('workshop.credits.checkoutOpenedTitle', {}, { locale: locale })
-            }}
+            {{ t('workshop.credits.checkoutOpenedTitle', {}, { locale }) }}
           </DialogTitle>
           <DialogDescription class="text-base text-primary-comfy-canvas/70">
-            {{
-              t('workshop.credits.checkoutOpenedBody', {}, { locale: locale })
-            }}
+            {{ t('workshop.credits.checkoutOpenedBody', {}, { locale }) }}
           </DialogDescription>
         </div>
         <div class="mt-2 flex flex-wrap items-center justify-end gap-3">
@@ -552,7 +548,7 @@ const stepperClass =
             data-testid="buy-credits-checkout-close"
             @click="open = false"
           >
-            {{ t('workshop.credits.close', {}, { locale: locale }) }}
+            {{ t('workshop.credits.close', {}, { locale }) }}
           </Button>
           <Button
             v-if="lastCheckout"
@@ -564,7 +560,7 @@ const stepperClass =
             class="px-5"
             data-testid="buy-credits-open-checkout"
           >
-            {{ t('workshop.credits.openCheckout', {}, { locale: locale }) }}
+            {{ t('workshop.credits.openCheckout', {}, { locale }) }}
             <template #append>
               <ExternalLink class="size-4" aria-hidden="true" />
             </template>
@@ -575,10 +571,10 @@ const stepperClass =
       <template v-else-if="step === 'waiting'">
         <div class="flex flex-col gap-2">
           <DialogTitle class="pr-16">
-            {{ t('workshop.credits.waitingTitle', {}, { locale: locale }) }}
+            {{ t('workshop.credits.waitingTitle', {}, { locale }) }}
           </DialogTitle>
           <DialogDescription class="text-base text-primary-comfy-canvas/70">
-            {{ t('workshop.credits.waitingBody', {}, { locale: locale }) }}
+            {{ t('workshop.credits.waitingBody', {}, { locale }) }}
           </DialogDescription>
         </div>
         <p
@@ -589,13 +585,13 @@ const stepperClass =
             class="size-4 animate-spin text-primary-comfy-yellow"
             aria-hidden="true"
           />
-          {{ t('workshop.credits.waitingPolling', {}, { locale: locale }) }}
+          {{ t('workshop.credits.waitingPolling', {}, { locale }) }}
         </p>
         <p
           v-if="lastCheckout"
           class="flex flex-wrap items-center gap-2 text-sm text-primary-warm-gray"
         >
-          {{ t('workshop.credits.reopenPrompt', {}, { locale: locale }) }}
+          {{ t('workshop.credits.reopenPrompt', {}, { locale }) }}
           <a
             :href="lastCheckout.url"
             target="_blank"
@@ -603,11 +599,11 @@ const stepperClass =
             class="text-primary-comfy-yellow underline-offset-4 hover:underline"
             data-testid="buy-credits-reopen"
           >
-            {{ t('workshop.credits.reopen', {}, { locale: locale }) }}
+            {{ t('workshop.credits.reopen', {}, { locale }) }}
           </a>
         </p>
         <p class="text-sm text-primary-warm-gray">
-          {{ t('workshop.credits.closingIsSafe', {}, { locale: locale }) }}
+          {{ t('workshop.credits.closingIsSafe', {}, { locale }) }}
         </p>
       </template>
 
@@ -621,11 +617,7 @@ const stepperClass =
         <div class="flex flex-col gap-2">
           <DialogTitle class="px-8 text-center" data-testid="buy-credits-done">
             {{
-              t(
-                'workshop.credits.done',
-                { n: format(landedDelta) },
-                { locale: locale }
-              )
+              t('workshop.credits.done', { n: format(landedDelta) }, { locale })
             }}
           </DialogTitle>
           <DialogDescription
@@ -637,7 +629,7 @@ const stepperClass =
                 {
                   workspace: topUpWorkspaceName
                 },
-                { locale: locale }
+                { locale }
               )
             }}
           </DialogDescription>
@@ -648,9 +640,7 @@ const stepperClass =
         >
           <div class="flex items-baseline justify-between">
             <dt class="text-primary-warm-gray">
-              {{
-                t('workshop.credits.previousBalance', {}, { locale: locale })
-              }}
+              {{ t('workshop.credits.previousBalance', {}, { locale }) }}
             </dt>
             <dd class="text-primary-warm-gray tabular-nums">
               {{ format(previousCredits) }}
@@ -658,7 +648,7 @@ const stepperClass =
           </div>
           <div class="flex items-baseline justify-between">
             <dt class="text-primary-warm-gray">
-              {{ t('workshop.credits.added', {}, { locale: locale }) }}
+              {{ t('workshop.credits.added', {}, { locale }) }}
             </dt>
             <dd class="text-primary-warm-gray tabular-nums">
               +{{ format(landedDelta) }}
@@ -668,7 +658,7 @@ const stepperClass =
             class="flex items-baseline justify-between border-t border-transparency-white-t8 pt-2"
           >
             <dt class="text-primary-comfy-canvas">
-              {{ t('workshop.credits.newBalance', {}, { locale: locale }) }}
+              {{ t('workshop.credits.newBalance', {}, { locale }) }}
             </dt>
             <dd
               class="flex items-center gap-1.5 font-bold text-primary-warm-white tabular-nums"
@@ -684,7 +674,7 @@ const stepperClass =
           data-testid="buy-credits-resume"
           @click="finish"
         >
-          {{ t('workshop.credits.resume', {}, { locale: locale }) }}
+          {{ t('workshop.credits.resume', {}, { locale }) }}
         </Button>
       </template>
 
@@ -697,12 +687,12 @@ const stepperClass =
         </span>
         <div class="flex flex-col gap-2">
           <DialogTitle class="px-8 text-center" data-testid="buy-credits-held">
-            {{ t('workshop.credits.heldTitle', {}, { locale: locale }) }}
+            {{ t('workshop.credits.heldTitle', {}, { locale }) }}
           </DialogTitle>
           <DialogDescription
             class="px-8 text-center text-base text-primary-comfy-canvas/70"
           >
-            {{ t('workshop.credits.heldBody', {}, { locale: locale }) }}
+            {{ t('workshop.credits.heldBody', {}, { locale }) }}
           </DialogDescription>
         </div>
         <div
@@ -710,7 +700,7 @@ const stepperClass =
           class="flex flex-col gap-1 rounded-2xl bg-transparency-white-t4 px-4 py-3"
         >
           <span class="text-xs text-primary-warm-gray">
-            {{ t('workshop.credits.heldSupport', {}, { locale: locale }) }}
+            {{ t('workshop.credits.heldSupport', {}, { locale }) }}
           </span>
           <span
             class="font-mono text-sm text-primary-warm-white"
@@ -727,7 +717,7 @@ const stepperClass =
             data-testid="buy-credits-held-close"
             @click="finish"
           >
-            {{ t('workshop.credits.close', {}, { locale: locale }) }}
+            {{ t('workshop.credits.close', {}, { locale }) }}
           </Button>
           <Button
             as="a"
@@ -738,7 +728,7 @@ const stepperClass =
             class="px-5"
             data-testid="buy-credits-support"
           >
-            {{ t('workshop.credits.contactSupport', {}, { locale: locale }) }}
+            {{ t('workshop.credits.contactSupport', {}, { locale }) }}
           </Button>
         </div>
       </template>
@@ -746,10 +736,10 @@ const stepperClass =
       <template v-else>
         <div class="flex flex-col gap-2">
           <DialogTitle class="pr-16">
-            {{ t('workshop.credits.title', {}, { locale: locale }) }}
+            {{ t('workshop.credits.title', {}, { locale }) }}
           </DialogTitle>
           <DialogDescription class="text-base text-primary-comfy-canvas/70">
-            {{ t('workshop.credits.body', {}, { locale: locale }) }}
+            {{ t('workshop.credits.body', {}, { locale }) }}
           </DialogDescription>
         </div>
 
@@ -783,14 +773,14 @@ const stepperClass =
             data-testid="buy-credits-custom"
           >
             <span class="text-sm text-primary-warm-gray">
-              {{ t('workshop.credits.custom', {}, { locale: locale }) }}
+              {{ t('workshop.credits.custom', {}, { locale }) }}
             </span>
             <span class="flex items-center gap-3">
               <button
                 type="button"
                 :class="stepperClass"
                 :disabled="usd <= MIN_TOP_UP_USD"
-                :aria-label="t('workshop.credits.less', {}, { locale: locale })"
+                :aria-label="t('workshop.credits.less', {}, { locale })"
                 data-testid="buy-credits-less"
                 @click="setAmount(usd - 5)"
               >
@@ -805,7 +795,7 @@ const stepperClass =
                 type="button"
                 :class="stepperClass"
                 :disabled="usd >= MAX_TOP_UP_USD"
-                :aria-label="t('workshop.credits.more', {}, { locale: locale })"
+                :aria-label="t('workshop.credits.more', {}, { locale })"
                 data-testid="buy-credits-more"
                 @click="setAmount(usd + 5)"
               >
@@ -821,7 +811,7 @@ const stepperClass =
           class="text-sm text-red-400"
           data-testid="checkout-error"
         >
-          {{ t('workshop.error.checkoutFailed', {}, { locale: locale }) }}
+          {{ t('workshop.error.checkoutFailed', {}, { locale }) }}
         </p>
 
         <div class="mt-2 flex flex-wrap items-center justify-end gap-3">
@@ -833,7 +823,7 @@ const stepperClass =
             data-testid="buy-credits-cancel"
             @click="open = false"
           >
-            {{ t('workshop.credits.cancel', {}, { locale: locale }) }}
+            {{ t('workshop.credits.cancel', {}, { locale }) }}
           </Button>
           <Button
             size="lg"
@@ -842,7 +832,7 @@ const stepperClass =
             data-testid="buy-credits-continue"
             @click="continueToCheckout"
           >
-            {{ t('workshop.credits.continue', {}, { locale: locale }) }}
+            {{ t('workshop.credits.continue', {}, { locale }) }}
             <template #append>
               <ExternalLink class="size-4" aria-hidden="true" />
             </template>

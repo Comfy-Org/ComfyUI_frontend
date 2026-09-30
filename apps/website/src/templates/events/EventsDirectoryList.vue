@@ -56,21 +56,21 @@ onMounted(async () => {
     <p
       class="shrink-0 border-b border-white/10 px-6 py-4 text-xs font-semibold tracking-widest text-primary-comfy-canvas uppercase"
     >
-      {{ t('events.directory.allEvents', {}, { locale: locale }) }}
+      {{ t('events.directory.allEvents', {}, { locale }) }}
     </p>
 
     <p
       v-if="rows.length === 0"
       class="px-6 py-8 text-sm text-primary-comfy-canvas/70"
     >
-      {{ t('events.directory.empty', {}, { locale: locale }) }}
+      {{ t('events.directory.empty', {}, { locale }) }}
     </p>
 
     <ul
       v-else
       ref="listElement"
       class="divide-y divide-white/8 overflow-y-auto"
-      :aria-label="t('events.directory.allEvents', {}, { locale: locale })"
+      :aria-label="t('events.directory.allEvents', {}, { locale })"
     >
       <EventsDirectoryRow
         v-for="row in rows"

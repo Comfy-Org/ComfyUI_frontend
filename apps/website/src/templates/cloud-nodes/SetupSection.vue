@@ -12,19 +12,15 @@ const stepNumbers = [1, 2, 3, 4] as const
 
 const steps = stepNumbers.map((n) => ({
   id: String(n),
-  title: t(`cloudNodesLaunch.setup.step${n}.label`, {}, { locale: locale }),
-  description: t(
-    `cloudNodesLaunch.setup.step${n}.description`,
-    {},
-    { locale: locale }
-  )
+  title: t(`cloudNodesLaunch.setup.step${n}.label`, {}, { locale }),
+  description: t(`cloudNodesLaunch.setup.step${n}.description`, {}, { locale })
 }))
 </script>
 
 <template>
   <section id="setup" class="scroll-mt-24">
     <BenefitsGrid01
-      :heading="t('cloudNodesLaunch.setup.heading', {}, { locale: locale })"
+      :heading="t('cloudNodesLaunch.setup.heading', {}, { locale })"
       :benefits="steps"
       :primary-cta="ctas.update"
     />

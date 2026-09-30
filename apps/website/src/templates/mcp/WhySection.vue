@@ -10,17 +10,17 @@ const reasonNumbers = [1, 2, 3, 4] as const
 
 const reasons: Reason[] = reasonNumbers.map((n) => ({
   id: String(n),
-  title: t(`mcp.why.${n}.title`, {}, { locale: locale }),
-  description: t(`mcp.why.${n}.description`, {}, { locale: locale })
+  title: t(`mcp.why.${n}.title`, {}, { locale }),
+  description: t(`mcp.why.${n}.description`, {}, { locale })
 }))
 </script>
 
 <template>
   <ReasonsSplit01
-    :heading="t('mcp.why.heading', {}, { locale: locale })"
-    :heading-highlight="t('mcp.why.headingHighlight', {}, { locale: locale })"
+    :heading="t('mcp.why.heading', {}, { locale })"
+    :heading-highlight="t('mcp.why.headingHighlight', {}, { locale })"
     highlight-class="text-primary-comfy-yellow"
-    :subtitle="t('mcp.why.subtitle', {}, { locale: locale })"
+    :subtitle="t('mcp.why.subtitle', {}, { locale })"
     :reasons="reasons"
   />
 </template>

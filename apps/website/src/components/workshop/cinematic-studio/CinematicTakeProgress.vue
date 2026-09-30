@@ -24,7 +24,7 @@ const elapsed = computed(() => Math.max(0, now.value - take.startedAt))
     v-if="elapsed >= LONG_WAIT_MS"
     class="absolute inset-x-4 top-4 mx-auto w-fit rounded-full border border-transparency-white-t8 bg-primary-comfy-ink/80 px-3.5 py-2 text-center text-xs text-primary-comfy-canvas"
   >
-    {{ tc('cinematic.stage.longWait', {}, { locale: locale }) }}
+    {{ tc('cinematic.stage.longWait', {}, { locale }) }}
   </p>
   <figcaption
     role="status"
@@ -42,7 +42,7 @@ const elapsed = computed(() => Math.max(0, now.value - take.startedAt))
             shot: take.shot,
             take: take.letter
           },
-          { locale: locale }
+          { locale }
         )
       }}
       <span class="text-primary-warm-gray tabular-nums">

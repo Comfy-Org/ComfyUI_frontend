@@ -21,7 +21,7 @@ function nodeCountLabel(nodeCount: number): string {
     new Intl.PluralRules(locale).select(nodeCount) === 'one'
       ? 'cloudNodes.card.nodeCountOne'
       : 'cloudNodes.card.nodeCountOther'
-  return t(key, { count: nodeCount }, { locale: locale })
+  return t(key, { count: nodeCount }, { locale })
 }
 </script>
 
@@ -50,7 +50,7 @@ function nodeCountLabel(nodeCount: number): string {
         <p class="text-sm/relaxed text-primary-warm-gray">
           {{
             pack.description ||
-            t('cloudNodes.card.unavailableDescription', {}, { locale: locale })
+            t('cloudNodes.card.unavailableDescription', {}, { locale })
           }}
         </p>
       </div>
@@ -63,10 +63,10 @@ function nodeCountLabel(nodeCount: number): string {
           rel="noopener noreferrer"
           class="font-semibold text-primary-comfy-yellow underline hover:text-primary-comfy-yellow/85"
         >
-          {{ t('cloudNodes.card.viewRepo', {}, { locale: locale }) }}
+          {{ t('cloudNodes.card.viewRepo', {}, { locale }) }}
         </a>
         <span v-else class="text-primary-warm-gray">
-          {{ t('cloudNodes.card.viewRepo', {}, { locale: locale }) }}
+          {{ t('cloudNodes.card.viewRepo', {}, { locale }) }}
         </span>
         <span class="text-primary-warm-gray">•</span>
         <span class="text-primary-comfy-canvas">{{

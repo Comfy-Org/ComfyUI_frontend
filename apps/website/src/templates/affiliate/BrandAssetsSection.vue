@@ -19,10 +19,10 @@ const assets = affiliateBrandAssets.map((asset) => ({
 
 <template>
   <BrandAssetsGrid01
-    :heading="t('affiliate.assets.heading', {}, { locale: locale })"
-    :subheading="t('affiliate.assets.subheading', {}, { locale: locale })"
+    :heading="t('affiliate.assets.heading', {}, { locale })"
+    :subheading="t('affiliate.assets.subheading', {}, { locale })"
     :cta="{
-      label: t('affiliate.assets.ctaLabel', {}, { locale: locale }),
+      label: t('affiliate.assets.ctaLabel', {}, { locale }),
       href: routes.brand
     }"
     :assets="assets"

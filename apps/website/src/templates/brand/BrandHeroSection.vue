@@ -15,17 +15,17 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
     <p
       class="text-sm font-extrabold tracking-[0.7px] text-primary-comfy-yellow uppercase"
     >
-      {{ t('brand.hero.label', {}, { locale: locale }) }}
+      {{ t('brand.hero.label', {}, { locale }) }}
     </p>
     <h1
       class="mx-auto mt-6 max-w-4xl text-4xl/[1.3] font-light tracking-[-0.03em] text-primary-comfy-canvas md:text-5xl lg:text-6.5xl"
     >
-      {{ t('brand.hero.heading', {}, { locale: locale }) }}
+      {{ t('brand.hero.heading', {}, { locale }) }}
     </h1>
     <p
       class="mx-auto mt-6 max-w-2xl text-[17px]/[1.6] font-light text-primary-comfy-canvas/80"
     >
-      {{ t('brand.hero.subheading', {}, { locale: locale }) }}
+      {{ t('brand.hero.subheading', {}, { locale }) }}
     </p>
 
     <div
@@ -39,7 +39,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
         variant="default"
         class="h-12 w-full px-5 text-sm font-extrabold sm:w-auto"
       >
-        {{ t('brand.hero.viewGuidelines', {}, { locale: locale }) }}
+        {{ t('brand.hero.viewGuidelines', {}, { locale }) }}
       </Button>
       <Button
         as="a"
@@ -48,7 +48,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
         variant="outline"
         class="h-12 w-full px-5 text-sm font-extrabold sm:w-auto"
       >
-        {{ t('brand.hero.downloadLogos', {}, { locale: locale }) }}
+        {{ t('brand.hero.downloadLogos', {}, { locale }) }}
       </Button>
     </div>
   </section>

@@ -106,9 +106,7 @@ const revealClass =
           <button
             ref="prevArrow"
             type="button"
-            :aria-label="
-              t('workshop.sections.scrollBack', {}, { locale: locale })
-            "
+            :aria-label="t('workshop.sections.scrollBack', {}, { locale })"
             :class="cn(arrowClass, 'left-0 -translate-x-1/2')"
             data-testid="card-row-prev"
             @click="page(-1)"
@@ -120,9 +118,7 @@ const revealClass =
           <button
             ref="nextArrow"
             type="button"
-            :aria-label="
-              t('workshop.sections.scrollForward', {}, { locale: locale })
-            "
+            :aria-label="t('workshop.sections.scrollForward', {}, { locale })"
             :class="cn(arrowClass, 'right-0 translate-x-1/2')"
             data-testid="card-row-next"
             @click="page(1)"

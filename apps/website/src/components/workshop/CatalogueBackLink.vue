@@ -33,7 +33,7 @@ onMounted(() => {
   const url = new URL(catalogueHref, location.origin)
   url.searchParams.set('useCase', shelf)
   href.value = `${url.pathname}${url.search}${url.hash}`
-  category.value = t(useCaseLabelKey[shelf], {}, { locale: locale })
+  category.value = t(useCaseLabelKey[shelf], {}, { locale })
 })
 </script>
 
@@ -46,8 +46,8 @@ onMounted(() => {
     <ChevronLeft class="size-4" aria-hidden="true" />
     {{
       category
-        ? t('workshop.model.backTo', { category }, { locale: locale })
-        : (fallback ?? t('workshop.model.back', {}, { locale: locale }))
+        ? t('workshop.model.backTo', { category }, { locale })
+        : (fallback ?? t('workshop.model.back', {}, { locale }))
     }}
   </a>
 </template>

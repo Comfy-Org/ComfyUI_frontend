@@ -42,9 +42,7 @@ async function choose(event: Event) {
       type="button"
       role="radio"
       :aria-checked="colors.length > 0"
-      :aria-label="
-        tc('cinematic.grade.fromImageAction', {}, { locale: locale })
-      "
+      :aria-label="tc('cinematic.grade.fromImageAction', {}, { locale })"
       class="group flex flex-col gap-2 text-left"
       data-testid="cinematic-grade-image"
       @click="input?.click()"
@@ -96,7 +94,7 @@ async function choose(event: Event) {
               ? 'cinematic.grade.yourPalette'
               : 'cinematic.grade.fromImage',
             {},
-            { locale: locale }
+            { locale }
           )
         }}
       </span>
@@ -108,14 +106,14 @@ async function choose(event: Event) {
       @click="emit('edit')"
     >
       <Pencil class="size-3.5" aria-hidden="true" />
-      {{ tc('cinematic.grade.edit', {}, { locale: locale }) }}
+      {{ tc('cinematic.grade.edit', {}, { locale }) }}
     </button>
     <span
       v-if="unreadable"
       role="status"
       class="px-1 text-xs text-primary-comfy-canvas"
     >
-      {{ tc('cinematic.colors.sampleError', {}, { locale: locale }) }}
+      {{ tc('cinematic.colors.sampleError', {}, { locale }) }}
     </span>
     <input
       ref="input"

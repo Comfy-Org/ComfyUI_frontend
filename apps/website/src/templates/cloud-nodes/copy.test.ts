@@ -58,7 +58,7 @@ describe('cloud-nodes copy', () => {
 
   it.for(locales)('has non-empty copy in %s', (locale) => {
     const empty = allKeys.filter(
-      (key) => t(key as TranslationKey, {}, { locale: locale }).trim() === ''
+      (key) => t(key as TranslationKey, {}, { locale }).trim() === ''
     )
     expect(empty).toEqual([])
   })

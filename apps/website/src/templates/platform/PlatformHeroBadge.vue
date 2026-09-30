@@ -46,7 +46,7 @@ const {
         :class="cn('flex items-center gap-2', centerText && 'translate-y-1')"
       >
         <slot name="label">
-          {{ label ?? t('platform.hero.badge', {}, { locale: locale }) }}
+          {{ label ?? t('platform.hero.badge', {}, { locale }) }}
         </slot>
       </span>
     </span>

@@ -32,11 +32,11 @@ const description =
   mainEntityId={productId}
   breadcrumbs={[
     {
-      name: t('breadcrumb.home', {}, { locale: locale }),
+      name: t('breadcrumb.home', {}, { locale }),
       url: absoluteUrl(Astro.site, '/')
     },
     { name: 'Comfy Cloud', url: absoluteUrl(Astro.site, '/cloud') },
-    { name: t('breadcrumb.pricing', {}, { locale: locale }) }
+    { name: t('breadcrumb.pricing', {}, { locale }) }
   ]}
   extraJsonLd={[
     productNode({

@@ -115,11 +115,7 @@ export const learningHeading = (
   locale: Locale,
   category?: LearningCategory
 ): string =>
-  t(
-    category ? categoryHeadingKeys[category] : 'learning.title',
-    {},
-    { locale: locale }
-  )
+  t(category ? categoryHeadingKeys[category] : 'learning.title', {}, { locale })
 
 /** Visible lead-in for a directory page. */
 export const learningDescription = (
@@ -129,7 +125,7 @@ export const learningDescription = (
   t(
     category ? categoryDescriptionKeys[category] : 'learning.tagline',
     {},
-    { locale: locale }
+    { locale }
   )
 
 /** Document / social title for a directory page. */
@@ -140,7 +136,7 @@ export const learningMetaTitle = (
   t(
     category ? categoryMetaTitleKeys[category] : 'learning.metaTitle',
     {},
-    { locale: locale }
+    { locale }
   )
 
 /** Meta description for a directory page, written for the SERP rather than
@@ -154,7 +150,7 @@ export const learningMetaDescription = (
       ? categoryMetaDescriptionKeys[category]
       : 'learning.metaDescription',
     {},
-    { locale: locale }
+    { locale }
   )
 
 /** Meta keywords for the root directory page only. */
@@ -890,12 +886,12 @@ export const learningCrumbs = (
   locale: Locale,
   category?: LearningCategory
 ): LearningCrumb[] => [
-  { name: t('breadcrumb.home', {}, { locale: locale }), path: '/' },
-  { name: t('learning.title', {}, { locale: locale }), path: '/learning/' },
+  { name: t('breadcrumb.home', {}, { locale }), path: '/' },
+  { name: t('learning.title', {}, { locale }), path: '/learning/' },
   ...(category
     ? [
         {
-          name: t(categoryLabelKeys[category], {}, { locale: locale }),
+          name: t(categoryLabelKeys[category], {}, { locale }),
           path: categoryPath(category)
         }
       ]
@@ -910,7 +906,7 @@ export const tutorialDescription = (
   if (tutorial.description)
     return tutorial.description[locale] || tutorial.description.en
   const title = tutorial.title[locale] || tutorial.title.en
-  const label = t(categoryLabelKeys[tutorial.category], {}, { locale: locale })
+  const label = t(categoryLabelKeys[tutorial.category], {}, { locale })
   return locale === 'zh-CN'
     ? `观看《${title}》教程：一个可亲自体验的 ComfyUI ${label} 实战工作流。`
     : `Watch the ${title} tutorial: a hands-on ComfyUI ${label} workflow you can try yourself.`

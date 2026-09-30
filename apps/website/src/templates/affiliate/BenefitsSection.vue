@@ -16,10 +16,10 @@ const benefits = affiliateBenefits.map((benefit) => ({
 
 <template>
   <BenefitsGrid01
-    :heading="t('affiliate.benefits.heading', {}, { locale: locale })"
+    :heading="t('affiliate.benefits.heading', {}, { locale })"
     :benefits="benefits"
     :primary-cta="{
-      label: t('affiliate.hero.apply', {}, { locale: locale }),
+      label: t('affiliate.hero.apply', {}, { locale }),
       href: externalLinks.affiliateApplicationForm,
       target: '_blank'
     }"

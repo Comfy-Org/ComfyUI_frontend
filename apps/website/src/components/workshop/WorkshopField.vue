@@ -65,9 +65,7 @@ function onText(event: Event) {
     value !== '' &&
     !parseWorkshopJsonInput(value, field.jsonSchema).success
 
-  error.value = invalid
-    ? t('workshop.model.invalidJson', {}, { locale: locale })
-    : ''
+  error.value = invalid ? t('workshop.model.invalidJson', {}, { locale }) : ''
   input.setCustomValidity(error.value)
   set(value)
 }
@@ -95,7 +93,7 @@ function onMedia(event: Event) {
       {
         count: field.maxItems
       },
-      { locale: locale }
+      { locale }
     )
     input.setCustomValidity(error.value)
     // Clear the picker too. Leaving it listing files the form has discarded
@@ -176,7 +174,7 @@ const acceptByType = {
       @change="onSelect"
     >
       <option v-if="field.defaultValue === undefined" value="">
-        {{ t('workshop.model.select', {}, { locale: locale }) }}
+        {{ t('workshop.model.select', {}, { locale }) }}
       </option>
       <!--
         `selected` rather than relying on the select's `:value`. A `value`

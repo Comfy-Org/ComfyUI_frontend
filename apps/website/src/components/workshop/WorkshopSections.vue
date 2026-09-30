@@ -108,7 +108,7 @@ function rememberModel(
               :data-testid="`section-${section.useCase}-open`"
               @click="emit('open', section.useCase)"
             >
-              {{ t(labelKey[section.useCase], {}, { locale: locale }) }}
+              {{ t(labelKey[section.useCase], {}, { locale }) }}
             </button>
           </h2>
         </template>
@@ -123,11 +123,7 @@ function rememberModel(
           >
             <span class="tabular-nums">
               {{
-                t(
-                  'workshop.sections.seeAll',
-                  { n: section.total },
-                  { locale: locale }
-                )
+                t('workshop.sections.seeAll', { n: section.total }, { locale })
               }}
             </span>
             <ChevronRight
@@ -165,7 +161,7 @@ function rememberModel(
               data-testid="section-other-formats-open"
               @click="emit('open', 'other')"
             >
-              {{ t('workshop.sections.otherFormats', {}, { locale: locale }) }}
+              {{ t('workshop.sections.otherFormats', {}, { locale }) }}
             </button>
           </h2>
         </template>
@@ -185,7 +181,7 @@ function rememberModel(
                   {
                     n: otherFormats.length
                   },
-                  { locale: locale }
+                  { locale }
                 )
               }}
             </span>
@@ -219,7 +215,7 @@ function rememberModel(
         id="section-other"
         class="mb-5 flex items-baseline gap-2 text-xl font-medium text-primary-warm-white"
       >
-        {{ t('workshop.filter.other', {}, { locale: locale }) }}
+        {{ t('workshop.filter.other', {}, { locale }) }}
         <span class="text-sm text-primary-warm-gray tabular-nums">
           {{ unplaced.length }}
         </span>

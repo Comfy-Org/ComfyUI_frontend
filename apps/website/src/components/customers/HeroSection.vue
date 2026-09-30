@@ -49,19 +49,19 @@ function handleLogoLoad() {
         class="order-1 flex flex-col items-center lg:order-2 lg:w-7/12 lg:items-start lg:pt-16 lg:pl-12"
       >
         <SectionLabel ref="labelRef">
-          {{ t('customers.hero.label', {}, { locale: locale }) }}
+          {{ t('customers.hero.label', {}, { locale }) }}
         </SectionLabel>
         <h1
           ref="headingRef"
           class="mt-4 text-4xl/tight font-light text-primary-comfy-canvas lg:text-6xl"
         >
-          {{ t('customers.hero.heading', {}, { locale: locale }) }}
+          {{ t('customers.hero.heading', {}, { locale }) }}
         </h1>
         <p
           ref="bodyRef"
           class="mt-6 max-w-lg text-base text-primary-comfy-canvas"
         >
-          {{ t('customers.hero.body', {}, { locale: locale }) }}
+          {{ t('customers.hero.body', {}, { locale }) }}
         </p>
       </div>
     </div>

@@ -35,7 +35,7 @@ const label = computed(() =>
   t(
     kind === 'models' ? 'workshop.search.label' : 'workshop.hub.search',
     {},
-    { locale: locale }
+    { locale }
   )
 )
 const shortLabel = computed(() =>
@@ -44,7 +44,7 @@ const shortLabel = computed(() =>
       ? 'workshop.search.short'
       : 'workshop.catalogue.searchWorkflows',
     {},
-    { locale: locale }
+    { locale }
   )
 )
 const showLabel = computed(() =>
@@ -53,7 +53,7 @@ const showLabel = computed(() =>
       ? 'workshop.search.show'
       : 'workshop.catalogue.showWorkflows',
     { n: matches.value },
-    { locale: locale }
+    { locale }
   )
 )
 
@@ -133,7 +133,7 @@ const clearButtonClass =
       <button
         v-if="query"
         type="button"
-        :aria-label="t('workshop.search.clear', {}, { locale: locale })"
+        :aria-label="t('workshop.search.clear', {}, { locale })"
         data-testid="workshop-search-clear"
         :class="clearButtonClass"
         @click="query = ''"
@@ -170,7 +170,7 @@ const clearButtonClass =
               <button
                 v-if="query"
                 type="button"
-                :aria-label="t('workshop.search.clear', {}, { locale: locale })"
+                :aria-label="t('workshop.search.clear', {}, { locale })"
                 :class="clearButtonClass"
                 @click="query = ''"
               >
@@ -179,7 +179,7 @@ const clearButtonClass =
             </div>
             <button
               type="button"
-              :aria-label="t('workshop.search.close', {}, { locale: locale })"
+              :aria-label="t('workshop.search.close', {}, { locale })"
               class="grid size-10 shrink-0 cursor-pointer place-items-center rounded-xl bg-white/8 text-primary-warm-gray hover:text-primary-warm-white"
               data-testid="workshop-search-sheet-close"
               @click="sheetOpen = false"
@@ -212,7 +212,7 @@ const clearButtonClass =
               data-testid="workshop-search-sheet-clear"
               @click="clearSheet"
             >
-              {{ t('workshop.filter.clearAll', {}, { locale: locale }) }}
+              {{ t('workshop.filter.clearAll', {}, { locale }) }}
             </button>
             <button
               type="button"

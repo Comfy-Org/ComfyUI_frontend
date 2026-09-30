@@ -31,7 +31,7 @@ const cards = [
     >
       {{ t('cloud.audience.headingBefore', {}, { locale })
       }}<span class="text-white">{{
-        t('cloud.audience.headingHighlight', {}, { locale: locale })
+        t('cloud.audience.headingHighlight', {}, { locale })
       }}</span
       >{{ t('cloud.audience.headingAfter', {}, { locale }) }}
     </h2>
@@ -45,7 +45,7 @@ const cards = [
       >
         <img
           :src="card.image"
-          :alt="t(card.titleKey, {}, { locale: locale })"
+          :alt="t(card.titleKey, {}, { locale })"
           class="aspect-4/3 w-full rounded-4xl object-cover"
           loading="lazy"
           decoding="async"
@@ -56,7 +56,7 @@ const cards = [
             <p
               class="text-sm font-bold tracking-widest text-primary-comfy-yellow uppercase"
             >
-              {{ t(card.labelKey, {}, { locale: locale }) }}
+              {{ t(card.labelKey, {}, { locale }) }}
             </p>
 
             <CardArrow hover="group" class="shrink-0" />
@@ -65,11 +65,11 @@ const cards = [
           <h3
             class="mt-8 text-3xl/tight font-light whitespace-pre-line text-primary-comfy-canvas"
           >
-            {{ t(card.titleKey, {}, { locale: locale }) }}
+            {{ t(card.titleKey, {}, { locale }) }}
           </h3>
 
           <p class="mt-8 text-base/normal text-primary-comfy-canvas">
-            {{ t(card.descriptionKey, {}, { locale: locale }) }}
+            {{ t(card.descriptionKey, {}, { locale }) }}
           </p>
         </div>
       </a>

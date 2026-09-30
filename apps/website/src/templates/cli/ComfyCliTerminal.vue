@@ -132,7 +132,7 @@ onUnmounted(() => clearTimeout(timer))
     ref="root"
     data-testid="cli-terminal"
     role="img"
-    :aria-label="t('cli.hero.terminalAria', {}, { locale: locale })"
+    :aria-label="t('cli.hero.terminalAria', {}, { locale })"
     class="flex flex-col overflow-hidden rounded-5xl bg-white/4"
   >
     <div class="flex items-center gap-2 border-b border-white/10 px-5 py-4">

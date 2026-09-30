@@ -28,7 +28,7 @@ const months = computed(() => groupRowsByMonth(rows))
       v-if="months.length === 0"
       class="px-6 py-8 text-sm text-primary-comfy-canvas/70"
     >
-      {{ t('events.directory.empty', {}, { locale: locale }) }}
+      {{ t('events.directory.empty', {}, { locale }) }}
     </p>
 
     <template v-else>

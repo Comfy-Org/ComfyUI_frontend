@@ -32,171 +32,171 @@ useFrameScrub(canvasRef, {
 
 const topColumns: { title: string; links: FooterLink[] }[] = [
   {
-    title: t('footer.products', {}, { locale: locale }),
+    title: t('footer.products', {}, { locale }),
     links: [
       {
-        label: t('nav.comfyLocal', {}, { locale: locale }),
+        label: t('nav.comfyLocal', {}, { locale }),
         href: routes.download
       },
       {
-        label: t('nav.comfyCloud', {}, { locale: locale }),
+        label: t('nav.comfyCloud', {}, { locale }),
         href: routes.cloud
       },
       {
-        label: t('nav.developerPlatform', {}, { locale: locale }),
+        label: t('nav.developerPlatform', {}, { locale }),
         href: routes.platform
       },
       {
-        label: t('nav.comfyEnterprise', {}, { locale: locale }),
+        label: t('nav.comfyEnterprise', {}, { locale }),
         href: routes.enterprise
       },
-      { label: t('nav.pricing', {}, { locale: locale }), href: routes.pricing },
-      { label: t('nav.mcpServer', {}, { locale: locale }), href: routes.mcp },
+      { label: t('nav.pricing', {}, { locale }), href: routes.pricing },
+      { label: t('nav.mcpServer', {}, { locale }), href: routes.mcp },
       {
-        label: t('nav.comfyAgent', {}, { locale: locale }),
+        label: t('nav.comfyAgent', {}, { locale }),
         href: routes.agent
       },
-      { label: t('nav.comfyCli', {}, { locale: locale }), href: routes.cli }
+      { label: t('nav.comfyCli', {}, { locale }), href: routes.cli }
     ]
   },
   {
-    title: t('footer.models', {}, { locale: locale }),
+    title: t('footer.models', {}, { locale }),
     links: [
       {
-        label: t('footer.modelCatalogue', {}, { locale: locale }),
+        label: t('footer.modelCatalogue', {}, { locale }),
         href: routes.workshop
       },
       {
-        label: t('nav.supportedModels', {}, { locale: locale }),
+        label: t('nav.supportedModels', {}, { locale }),
         href: routes.models
       },
       {
-        label: t('footer.minimaxH3', {}, { locale: locale }),
+        label: t('footer.minimaxH3', {}, { locale }),
         href: routes.minimax
       },
       {
-        label: t('footer.minimaxMusic3', {}, { locale: locale }),
+        label: t('footer.minimaxMusic3', {}, { locale }),
         href: routes.minimaxMusic3
       },
       {
-        label: t('footer.minimaxLicense', {}, { locale: locale }),
+        label: t('footer.minimaxLicense', {}, { locale }),
         href: routes.minimaxLicense
       },
       {
-        label: t('footer.seedance', {}, { locale: locale }),
+        label: t('footer.seedance', {}, { locale }),
         href: routes.seedance
       },
       {
-        label: t('footer.wanAnimate2', {}, { locale: locale }),
+        label: t('footer.wanAnimate2', {}, { locale }),
         href: routes.wanAnimate2
       },
-      { label: t('footer.ltx', {}, { locale: locale }), href: routes.ltx },
+      { label: t('footer.ltx', {}, { locale }), href: routes.ltx },
       {
-        label: t('footer.geminiOmni', {}, { locale: locale }),
+        label: t('footer.geminiOmni', {}, { locale }),
         href: routes.geminiOmni
       },
-      { label: t('footer.wan3', {}, { locale: locale }), href: routes.wan3 },
+      { label: t('footer.wan3', {}, { locale }), href: routes.wan3 },
       {
-        label: t('footer.chatgptImage25', {}, { locale: locale }),
+        label: t('footer.chatgptImage25', {}, { locale }),
         href: routes.chatgptImage25
       },
       {
-        label: t('footer.qwenImage21', {}, { locale: locale }),
+        label: t('footer.qwenImage21', {}, { locale }),
         href: routes.qwenImage21
       },
-      { label: t('footer.flux3', {}, { locale: locale }), href: routes.flux3 }
+      { label: t('footer.flux3', {}, { locale }), href: routes.flux3 }
     ]
   },
   {
-    title: t('footer.resources', {}, { locale: locale }),
+    title: t('footer.resources', {}, { locale }),
     links: [
       {
-        label: t('nav.learning', {}, { locale: locale }),
+        label: t('nav.learning', {}, { locale }),
         href: routes.learning
       },
       {
-        label: t('nav.customerStories', {}, { locale: locale }),
+        label: t('nav.customerStories', {}, { locale }),
         href: routes.customers
       },
       {
-        label: t('footer.workflows', {}, { locale: locale }),
+        label: t('footer.workflows', {}, { locale }),
         href: externalLinks.workflows
       },
       {
-        label: t('footer.useCases', {}, { locale: locale }),
+        label: t('footer.useCases', {}, { locale }),
         href: externalLinks.workflowUseCases
       },
       {
-        label: t('nav.launches', {}, { locale: locale }),
+        label: t('nav.launches', {}, { locale }),
         href: routes.launches
       },
-      { label: t('nav.fdct', {}, { locale: locale }), href: routes.fdct },
+      { label: t('nav.fdct', {}, { locale }), href: routes.fdct },
       {
-        label: t('footer.blog', {}, { locale: locale }),
+        label: t('footer.blog', {}, { locale }),
         href: externalLinks.blog,
         external: true
       },
       {
-        label: t('nav.discord', {}, { locale: locale }),
+        label: t('nav.discord', {}, { locale }),
         href: externalLinks.discord,
         external: true
       },
       {
-        label: t('nav.github', {}, { locale: locale }),
+        label: t('nav.github', {}, { locale }),
         href: externalLinks.github,
         external: true
       },
       {
-        label: t('nav.docs', {}, { locale: locale }),
+        label: t('nav.docs', {}, { locale }),
         href: externalLinks.docs,
         external: true
       },
       {
-        label: t('nav.youtube', {}, { locale: locale }),
+        label: t('nav.youtube', {}, { locale }),
         href: externalLinks.youtube,
         external: true
       },
       {
-        label: t('nav.instagram', {}, { locale: locale }),
+        label: t('nav.instagram', {}, { locale }),
         href: externalLinks.instagram,
         external: true
       },
       {
-        label: t('nav.x', {}, { locale: locale }),
+        label: t('nav.x', {}, { locale }),
         href: externalLinks.x,
         external: true
       },
       {
-        label: t('nav.linkedin', {}, { locale: locale }),
+        label: t('nav.linkedin', {}, { locale }),
         href: externalLinks.linkedin,
         external: true
       },
       {
-        label: t('footer.affiliateProgram', {}, { locale: locale }),
+        label: t('footer.affiliateProgram', {}, { locale }),
         href: routes.affiliates
       }
     ]
   },
   {
-    title: t('footer.company', {}, { locale: locale }),
+    title: t('footer.company', {}, { locale }),
     links: [
-      { label: t('footer.about', {}, { locale: locale }), href: routes.about },
-      { label: t('nav.careers', {}, { locale: locale }), href: routes.careers },
-      { label: t('nav.brand', {}, { locale: locale }), href: routes.brand },
+      { label: t('footer.about', {}, { locale }), href: routes.about },
+      { label: t('nav.careers', {}, { locale }), href: routes.careers },
+      { label: t('nav.brand', {}, { locale }), href: routes.brand },
       {
-        label: t('footer.termsOfService', {}, { locale: locale }),
+        label: t('footer.termsOfService', {}, { locale }),
         href: routes.termsOfService
       },
       {
-        label: t('footer.enterpriseMsa', {}, { locale: locale }),
+        label: t('footer.enterpriseMsa', {}, { locale }),
         href: routes.enterpriseMsa
       },
       {
-        label: t('footer.privacyPolicy', {}, { locale: locale }),
+        label: t('footer.privacyPolicy', {}, { locale }),
         href: routes.privacyPolicy
       },
       {
-        label: t('footer.trustSafety', {}, { locale: locale }),
+        label: t('footer.trustSafety', {}, { locale }),
         href: externalLinks.trustCenter,
         external: true
       }
@@ -205,21 +205,21 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
 ]
 
 const contactColumn: { title: string; links: FooterLink[] } = {
-  title: t('footer.contact', {}, { locale: locale }),
+  title: t('footer.contact', {}, { locale }),
   links: [
-    { label: t('footer.sales', {}, { locale: locale }), href: routes.contact },
+    { label: t('footer.sales', {}, { locale }), href: routes.contact },
     {
-      label: t('footer.support', {}, { locale: locale }),
+      label: t('footer.support', {}, { locale }),
       href: externalLinks.support,
       external: true
     },
     {
-      label: t('footer.cloudStatus', {}, { locale: locale }),
+      label: t('footer.cloudStatus', {}, { locale }),
       href: externalLinks.cloudStatus,
       external: true
     },
     {
-      label: t('footer.press', {}, { locale: locale }),
+      label: t('footer.press', {}, { locale }),
       href: 'mailto:press@comfy.org'
     }
   ]
@@ -236,7 +236,7 @@ const contactColumn: { title: string; links: FooterLink[] } = {
     >
       <!-- Tagline -->
       <p class="text-2xl font-medium tracking-wide uppercase lg:text-3xl">
-        {{ t('footer.tagline', {}, { locale: locale }) }}
+        {{ t('footer.tagline', {}, { locale }) }}
       </p>
 
       <!-- Link columns -->
@@ -262,7 +262,7 @@ const contactColumn: { title: string; links: FooterLink[] } = {
         <!-- Bottom bar -->
         <div class="flex justify-center gap-6 lg:justify-end">
           <p class="text-sm">
-            {{ t('footer.location', {}, { locale: locale }) }}
+            {{ t('footer.location', {}, { locale }) }}
           </p>
           <p class="text-sm">&copy; {{ new Date().getFullYear() }} Comfy Org</p>
         </div>

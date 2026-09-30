@@ -18,8 +18,5 @@ const faqs = faq.items.map((item) => ({
 </script>
 
 <template>
-  <FAQSplit01
-    :heading="t(faq.headingKey, {}, { locale: locale })"
-    :faqs="faqs"
-  />
+  <FAQSplit01 :heading="t(faq.headingKey, {}, { locale })" :faqs="faqs" />
 </template>

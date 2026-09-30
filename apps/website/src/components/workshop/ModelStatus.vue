@@ -25,8 +25,8 @@ const {
     >
       {{
         shown === 'deprecated'
-          ? t('workshop.model.deprecated', {}, { locale: locale })
-          : t('workshop.model.degraded', {}, { locale: locale })
+          ? t('workshop.model.deprecated', {}, { locale })
+          : t('workshop.model.degraded', {}, { locale })
       }}
     </span>
     <p
@@ -35,7 +35,7 @@ const {
       data-testid="model-status-banner"
     >
       <template v-if="shown === 'deprecated'">
-        {{ t('workshop.model.deprecatedBody', {}, { locale: locale }) }}
+        {{ t('workshop.model.deprecatedBody', {}, { locale }) }}
         <a
           v-if="successor?.href"
           :href="successor.href"
@@ -47,14 +47,14 @@ const {
               {
                 successor: successor.name
               },
-              { locale: locale }
+              { locale }
             )
           }}
           →
         </a>
       </template>
       <template v-else>
-        {{ t('workshop.model.degradedBody', {}, { locale: locale }) }}
+        {{ t('workshop.model.degradedBody', {}, { locale }) }}
       </template>
     </p>
   </template>

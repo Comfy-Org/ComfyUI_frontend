@@ -22,7 +22,7 @@ const items = computed<CardWorkflowItem[]>(() =>
 
 <template>
   <CardWorkflowGallery01
-    :title="t('fdct.projects.title', {}, { locale: locale })"
+    :title="t('fdct.projects.title', {}, { locale })"
     title-align="center"
     :items
   />

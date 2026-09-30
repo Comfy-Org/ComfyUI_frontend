@@ -45,7 +45,7 @@ onMounted(() => {
       <button
         type="button"
         class="grid size-9 place-items-center rounded-lg text-primary-comfy-canvas hover:bg-transparency-white-t8"
-        :aria-label="tc('cinematic.picker.close', {}, { locale: locale })"
+        :aria-label="tc('cinematic.picker.close', {}, { locale })"
         @click="emit('close')"
       >
         <X class="size-4" aria-hidden="true" />

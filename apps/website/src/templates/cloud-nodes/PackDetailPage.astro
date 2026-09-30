@@ -24,7 +24,7 @@ const { siteUrl, locale, url } = pageContext(
 const fallbackDescription = t(
   'cloudNodes.card.unavailableDescription',
   {},
-  { locale: locale }
+  { locale }
 )
 const description = pack.description || fallbackDescription
 const title = t(
@@ -32,7 +32,7 @@ const title = t(
   {
     pack: pack.displayName
   },
-  { locale: locale }
+  { locale }
 )
 const metaDescription = t(
   'cloudNodes.detail.metaDescription',
@@ -41,7 +41,7 @@ const metaDescription = t(
     nodeCount: pack.nodes.length,
     description
   },
-  { locale: locale }
+  { locale }
 )
 
 const softwareId = jsonLdId(url, 'software')
@@ -72,7 +72,7 @@ const software = softwareApplicationNode({
   mainEntityId={softwareId}
   breadcrumbs={[
     {
-      name: t('breadcrumb.home', {}, { locale: locale }),
+      name: t('breadcrumb.home', {}, { locale }),
       url: absoluteUrl(Astro.site, localizeHref('/', locale))
     },
     {
@@ -80,7 +80,7 @@ const software = softwareApplicationNode({
       url: absoluteUrl(Astro.site, localizeHref('/cloud/', locale))
     },
     {
-      name: t('breadcrumb.supportedNodes', {}, { locale: locale }),
+      name: t('breadcrumb.supportedNodes', {}, { locale }),
       url: absoluteUrl(
         Astro.site,
         localizeHref('/cloud/supported-nodes/', locale)

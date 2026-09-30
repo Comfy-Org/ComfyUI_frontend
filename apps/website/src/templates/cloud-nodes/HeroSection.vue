@@ -14,7 +14,7 @@ const HERO_POSTER =
 
 const featureNumbers = [1, 2, 3] as const
 const features = featureNumbers.map((n) =>
-  t(`cloudNodesLaunch.hero.feature${n}`, {}, { locale: locale })
+  t(`cloudNodesLaunch.hero.feature${n}`, {}, { locale })
 )
 </script>
 
@@ -24,19 +24,15 @@ const features = featureNumbers.map((n) =>
     class="min-h-[calc(100svh-5rem)] lg:min-h-[calc(100svh-6.75rem)]"
     badge-text="CLOUD NODES"
     beta
-    :title="t('cloudNodesLaunch.hero.title', {}, { locale: locale })"
-    :title-highlight="
-      t('cloudNodesLaunch.hero.titleHighlight', {}, { locale: locale })
-    "
-    :subtitle="t('cloudNodesLaunch.hero.subtitle', {}, { locale: locale })"
+    :title="t('cloudNodesLaunch.hero.title', {}, { locale })"
+    :title-highlight="t('cloudNodesLaunch.hero.titleHighlight', {}, { locale })"
+    :subtitle="t('cloudNodesLaunch.hero.subtitle', {}, { locale })"
     :features="features"
     :primary-cta="ctas.getStarted"
     :secondary-cta="ctas.docs"
     :video-src="HERO_VIDEO"
     :video-poster="HERO_POSTER"
-    :video-aria-label="
-      t('cloudNodesLaunch.hero.videoAlt', {}, { locale: locale })
-    "
+    :video-aria-label="t('cloudNodesLaunch.hero.videoAlt', {}, { locale })"
     video-autoplay
     video-loop
     video-minimal

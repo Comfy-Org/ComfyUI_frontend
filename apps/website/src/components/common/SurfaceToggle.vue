@@ -15,14 +15,14 @@ const routes = getRoutes(locale)
 const surfaces = [
   {
     id: 'mcp' as const,
-    name: t('surfaces.mcp.name', {}, { locale: locale }),
-    tagline: t('surfaces.mcp.tagline', {}, { locale: locale }),
+    name: t('surfaces.mcp.name', {}, { locale }),
+    tagline: t('surfaces.mcp.tagline', {}, { locale }),
     href: routes.mcp
   },
   {
     id: 'cli' as const,
-    name: t('surfaces.cli.name', {}, { locale: locale }),
-    tagline: t('surfaces.cli.tagline', {}, { locale: locale }),
+    name: t('surfaces.cli.name', {}, { locale }),
+    tagline: t('surfaces.cli.tagline', {}, { locale }),
     href: routes.cli
   }
 ]
@@ -33,7 +33,7 @@ const surfaceClass =
 
 <template>
   <nav
-    :aria-label="t('surfaces.tabsLabel', {}, { locale: locale })"
+    :aria-label="t('surfaces.tabsLabel', {}, { locale })"
     class="inline-flex flex-wrap gap-2"
   >
     <template v-for="surface in surfaces" :key="surface.id">

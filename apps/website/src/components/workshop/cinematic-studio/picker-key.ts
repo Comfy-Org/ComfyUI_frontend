@@ -19,7 +19,6 @@ export function pickerGroups(key?: PickerKey): readonly DirectionGroup[] {
 }
 
 export function popoverTitle(key: PickerKey, locale: Locale): string {
-  if (key === 'camera')
-    return tc('cinematic.section.camera', {}, { locale: locale })
-  return tc(pickerGroups(key)[0].title, {}, { locale: locale })
+  if (key === 'camera') return tc('cinematic.section.camera', {}, { locale })
+  return tc(pickerGroups(key)[0].title, {}, { locale })
 }

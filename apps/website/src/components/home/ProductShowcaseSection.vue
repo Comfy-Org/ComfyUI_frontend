@@ -20,22 +20,22 @@ interface Feature {
 
 const features: Feature[] = [
   {
-    title: t('showcase.feature1.title', {}, { locale: locale }),
-    description: t('showcase.feature1.description', {}, { locale: locale }),
+    title: t('showcase.feature1.title', {}, { locale }),
+    description: t('showcase.feature1.description', {}, { locale }),
     // Vector scene from Comfy-Org/comfy-website-animations, replacing the
     // node-workflow.webm capture this slide used to play.
     lottie: '/animations/scene-1/scene-01.json'
   },
   {
-    title: t('showcase.feature2.title', {}, { locale: locale }),
-    description: t('showcase.feature2.description', {}, { locale: locale }),
+    title: t('showcase.feature2.title', {}, { locale }),
+    description: t('showcase.feature2.description', {}, { locale }),
     // Replaces ui-overview.webm. Source ships 22MB of PNGs embedded as base64;
     // extracted to external WebP, which is why this is 804KB rather than 29MB.
     lottie: '/animations/scene-2/scene-02.json'
   },
   {
-    title: t('showcase.feature3.title', {}, { locale: locale }),
-    description: t('showcase.feature3.description', {}, { locale: locale }),
+    title: t('showcase.feature3.title', {}, { locale }),
+    description: t('showcase.feature3.description', {}, { locale }),
     // Replaces video-showcase.webm. Not Lottie: the source is a bespoke player
     // driving real <video> layers behind animated rounded-rect masks, ported
     // into VideoMaskScene.
@@ -44,9 +44,9 @@ const features: Feature[] = [
 ]
 
 const badgeSegments = [
-  { text: t('showcase.badgeHow', {}, { locale: locale }) },
+  { text: t('showcase.badgeHow', {}, { locale }) },
   { logoSrc: '/icons/logo.svg', logoAlt: 'Comfy' },
-  { text: t('showcase.badgeWorks', {}, { locale: locale }) }
+  { text: t('showcase.badgeWorks', {}, { locale }) }
 ]
 
 const activeIndex = ref(0)
@@ -67,10 +67,10 @@ useIntersectionObserver(sectionRef, ([entry]) => {
     <div class="flex flex-col items-center text-center">
       <NodeBadge :segments="badgeSegments" segment-class="" />
       <p class="mt-12 max-w-xl text-sm/relaxed text-primary-comfy-canvas">
-        {{ t('showcase.subtitle1', {}, { locale: locale }) }}
+        {{ t('showcase.subtitle1', {}, { locale }) }}
       </p>
       <p class="mt-4 max-w-xl text-sm/relaxed text-primary-comfy-canvas">
-        {{ t('showcase.subtitle2', {}, { locale: locale }) }}
+        {{ t('showcase.subtitle2', {}, { locale }) }}
       </p>
     </div>
 

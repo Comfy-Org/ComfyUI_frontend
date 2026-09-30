@@ -10,17 +10,16 @@ const DAY = 24 * HOUR
 
 /** The rolling free-run period as a reader says it: today, this week, per 12 hours. */
 function periodPhrase(seconds: number, locale: Locale): string {
-  if (seconds === DAY) return rc('reshoot.period.day', {}, { locale: locale })
-  if (seconds === 7 * DAY)
-    return rc('reshoot.period.week', {}, { locale: locale })
+  if (seconds === DAY) return rc('reshoot.period.day', {}, { locale })
+  if (seconds === 7 * DAY) return rc('reshoot.period.week', {}, { locale })
   if (seconds % DAY === 0)
-    return rc('reshoot.period.days', { n: seconds / DAY }, { locale: locale })
+    return rc('reshoot.period.days', { n: seconds / DAY }, { locale })
   return rc(
     'reshoot.period.hours',
     {
       n: Math.max(1, Math.round(seconds / HOUR))
     },
-    { locale: locale }
+    { locale }
   )
 }
 
@@ -37,7 +36,7 @@ const credits = (price: number, locale: Locale) =>
     {
       price: price.toLocaleString(locale)
     },
-    { locale: locale }
+    { locale }
   )
 
 function exhausted(
@@ -47,9 +46,9 @@ function exhausted(
 ): string {
   const when =
     inSeconds === undefined
-      ? rc('reshoot.quote.later', {}, { locale: locale })
+      ? rc('reshoot.quote.later', {}, { locale })
       : relativeTime(inSeconds, locale)
-  const note = rc('reshoot.quote.exhausted', { when }, { locale: locale })
+  const note = rc('reshoot.quote.exhausted', { when }, { locale })
   return price > 0 ? `${note} · ${credits(price, locale)}` : note
 }
 
@@ -81,13 +80,13 @@ function priceText(quote: ReshootQuote, run: ReshootRun, locale: Locale) {
   if (price !== undefined) return credits(price, locale)
   const rate = perSecondRate(quote, run.size)
   if (rate === undefined)
-    return rc('reshoot.quote.priceUnknown', {}, { locale: locale })
+    return rc('reshoot.quote.priceUnknown', {}, { locale })
   return rc(
     'reshoot.quote.perSecond',
     {
       rate: rate.toLocaleString(locale)
     },
-    { locale: locale }
+    { locale }
   )
 }
 
@@ -108,16 +107,16 @@ export function quoteNote(
             runs: allowance.runs,
             period: periodPhrase(allowance.period_seconds, locale)
           },
-          { locale: locale }
+          { locale }
         )
-      : rc('reshoot.quote.freeOnly', {}, { locale: locale })
+      : rc('reshoot.quote.freeOnly', {}, { locale })
   if (
     quote.next_run === 'paid' ||
     quote.blocked_reason === 'insufficient_credits'
   )
     return priceText(quote, run, locale)
   if (quote.blocked_reason === 'concurrent_run_limit')
-    return rc('reshoot.error.busy', {}, { locale: locale })
+    return rc('reshoot.error.busy', {}, { locale })
   const resets = quote.resets_at ? Date.parse(quote.resets_at) : NaN
   return exhausted(
     Number.isFinite(resets) ? Math.max(0, (resets - now) / 1000) : undefined,
@@ -135,7 +134,7 @@ export function failureNote(error: unknown, locale: Locale, price = 0): string {
     case 'free_runs_exhausted':
       return exhausted(retry, price, locale)
     case 'concurrent_run_limit':
-      return rc('reshoot.error.busy', {}, { locale: locale })
+      return rc('reshoot.error.busy', {}, { locale })
     case 'unmetered_rate_limited':
     case 'upload_rate_limited':
       return rc(
@@ -150,10 +149,10 @@ export function failureNote(error: unknown, locale: Locale, price = 0): string {
       )
     case 'app_unavailable':
     case 'not_found':
-      return rc('reshoot.unavailable', {}, { locale: locale })
+      return rc('reshoot.unavailable', {}, { locale })
     case 'unauthorized':
-      return rc('reshoot.signIn', {}, { locale: locale })
+      return rc('reshoot.signIn', {}, { locale })
     default:
-      return rc('reshoot.error.failed', {}, { locale: locale })
+      return rc('reshoot.error.failed', {}, { locale })
   }
 }

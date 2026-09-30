@@ -68,7 +68,7 @@ function actionFor(example: PlaygroundExample, active = false) {
     : active
       ? 'workshop.examples.using'
       : 'workshop.examples.use'
-  return t(key, {}, { locale: locale })
+  return t(key, {}, { locale })
 }
 </script>
 
@@ -82,14 +82,14 @@ function actionFor(example: PlaygroundExample, active = false) {
               ? 'workshop.examples.samples'
               : 'workshop.examples.start',
             {},
-            { locale: locale }
+            { locale }
           )
         }}
       </h2>
     </div>
 
     <p v-if="!examples.length" class="text-sm text-primary-warm-gray">
-      {{ t('workshop.examples.empty', {}, { locale: locale }) }}
+      {{ t('workshop.examples.empty', {}, { locale }) }}
     </p>
 
     <!-- A phone scrolls the examples sideways, edge to edge; from a tablet up
@@ -116,7 +116,7 @@ function actionFor(example: PlaygroundExample, active = false) {
             :aria-label="`${example.title}: ${
               example.sampleOnly
                 ? actionFor(example)
-                : t('workshop.examples.open', {}, { locale: locale })
+                : t('workshop.examples.open', {}, { locale })
             }`"
             :aria-current="example.id === activeId ? 'true' : undefined"
             class="group flex w-full cursor-pointer flex-col gap-2 text-left outline-none"

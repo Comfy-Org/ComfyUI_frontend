@@ -29,7 +29,7 @@ function isCardCopied(hex: string) {
 
 const liveMessage = computed(() =>
   copied.value
-    ? `${t('brand.colors.copied', {}, { locale: locale })} ${copiedValue.value}`
+    ? `${t('brand.colors.copied', {}, { locale })} ${copiedValue.value}`
     : ''
 )
 </script>
@@ -37,10 +37,10 @@ const liveMessage = computed(() =>
 <template>
   <section class="mx-auto max-w-9xl px-6 py-10 lg:px-20 lg:py-12">
     <SectionHeader align="start" max-width="xl">
-      {{ t('brand.colors.heading', {}, { locale: locale }) }}
+      {{ t('brand.colors.heading', {}, { locale }) }}
       <template #subtitle>
         <p class="mt-4 max-w-2xl text-sm/[1.45] text-primary-warm-gray">
-          {{ t('brand.colors.subheading', {}, { locale: locale }) }}
+          {{ t('brand.colors.subheading', {}, { locale }) }}
         </p>
       </template>
     </SectionHeader>
@@ -67,7 +67,7 @@ const liveMessage = computed(() =>
           class="flex flex-1 items-center justify-center text-center text-sm font-semibold"
           aria-hidden="true"
         >
-          {{ t('brand.colors.copied', {}, { locale: locale }) }}
+          {{ t('brand.colors.copied', {}, { locale }) }}
           {{ copiedValue }}
         </div>
         <template v-else>
@@ -80,7 +80,7 @@ const liveMessage = computed(() =>
               <dd>
                 <button
                   type="button"
-                  :aria-label="`${t('brand.colors.copy', {}, { locale: locale })} ${row} ${color[row]}`"
+                  :aria-label="`${t('brand.colors.copy', {}, { locale })} ${row} ${color[row]}`"
                   class="cursor-pointer text-left hover:underline"
                   @click.stop="copyValue(color.hex, color[row])"
                 >

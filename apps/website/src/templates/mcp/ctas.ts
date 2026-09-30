@@ -19,12 +19,12 @@ export function mcpCtas(locale: Locale): {
 } {
   return {
     docs: {
-      label: t('mcp.hero.viewDocs', {}, { locale: locale }),
+      label: t('mcp.hero.viewDocs', {}, { locale }),
       href: externalLinks.docsMcp,
       target: '_blank'
     },
     installMcp: {
-      label: t('mcp.hero.installMcp', {}, { locale: locale }),
+      label: t('mcp.hero.installMcp', {}, { locale }),
       href: '#setup'
     }
   }

@@ -13,15 +13,15 @@ const stepNumbers = [1, 2, 3] as const
 
 const steps: FeatureStep[] = stepNumbers.map((n) => ({
   id: String(n),
-  number: t(`cli.howItWorks.step${n}.number`, {}, { locale: locale }),
-  title: t(`cli.howItWorks.step${n}.title`, {}, { locale: locale }),
-  description: t(`cli.howItWorks.step${n}.description`, {}, { locale: locale })
+  number: t(`cli.howItWorks.step${n}.number`, {}, { locale }),
+  title: t(`cli.howItWorks.step${n}.title`, {}, { locale }),
+  description: t(`cli.howItWorks.step${n}.description`, {}, { locale })
 }))
 </script>
 
 <template>
   <FeatureGrid02
-    :heading="t('cli.howItWorks.heading', {}, { locale: locale })"
+    :heading="t('cli.howItWorks.heading', {}, { locale })"
     :steps="steps"
     :primary-cta="ctas.installCli"
     :secondary-cta="ctas.docs"

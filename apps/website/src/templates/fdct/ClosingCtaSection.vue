@@ -11,9 +11,9 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 <template>
   <CtaCenter01
-    :heading="t('fdct.closing.title', {}, { locale: locale })"
+    :heading="t('fdct.closing.title', {}, { locale })"
     :primary-cta="{
-      label: t('fdct.hero.contactCta', {}, { locale: locale }),
+      label: t('fdct.hero.contactCta', {}, { locale }),
       href: localizeHref(fdctPage.ctas.contact, locale)
     }"
   />

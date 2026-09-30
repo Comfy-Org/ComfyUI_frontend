@@ -10,27 +10,27 @@ const routes = getRoutes(locale)
 const steps = [
   {
     number: '1',
-    title: t('getStarted.step1.title', {}, { locale: locale }),
+    title: t('getStarted.step1.title', {}, { locale }),
     description: '',
     links: [
       {
-        label: t('getStarted.step1.downloadLocal', {}, { locale: locale }),
+        label: t('getStarted.step1.downloadLocal', {}, { locale }),
         href: routes.download
       },
       {
-        label: t('getStarted.step1.launchCloud', {}, { locale: locale }),
+        label: t('getStarted.step1.launchCloud', {}, { locale }),
         href: externalLinks.cloudCta('getstarted_try_cloud')
       }
     ]
   },
   {
     number: '2',
-    title: t('getStarted.step2.title', {}, { locale: locale })
+    title: t('getStarted.step2.title', {}, { locale })
   },
   {
     number: '3',
-    title: t('getStarted.step3.title', {}, { locale: locale }),
-    description: t('getStarted.step3.description', {}, { locale: locale })
+    title: t('getStarted.step3.title', {}, { locale }),
+    description: t('getStarted.step3.description', {}, { locale })
   }
 ]
 </script>
@@ -45,10 +45,10 @@ const steps = [
         class="sticky top-20 shrink-0 bg-primary-comfy-ink py-2 lg:top-28 lg:w-115 lg:self-start"
       >
         <h2 class="text-5xl font-light text-primary-comfy-canvas">
-          {{ t('getStarted.heading', {}, { locale: locale }) }}
+          {{ t('getStarted.heading', {}, { locale }) }}
         </h2>
         <p class="mt-8 text-base text-primary-comfy-canvas">
-          {{ t('getStarted.subheading', {}, { locale: locale }) }}
+          {{ t('getStarted.subheading', {}, { locale }) }}
         </p>
       </div>
 
@@ -79,16 +79,12 @@ const steps = [
             v-else-if="step.number === '2'"
             class="flex-1 text-sm text-primary-comfy-canvas"
           >
-            {{ t('getStarted.step2.descriptionPrefix', {}, { locale: locale })
+            {{ t('getStarted.step2.descriptionPrefix', {}, { locale })
             }}<a
               :href="externalLinks.workflows"
               class="text-primary-comfy-yellow hover:underline"
-              >{{
-                t('getStarted.step2.descriptionLink', {}, { locale: locale })
-              }}</a
-            >{{
-              t('getStarted.step2.descriptionSuffix', {}, { locale: locale })
-            }}
+              >{{ t('getStarted.step2.descriptionLink', {}, { locale }) }}</a
+            >{{ t('getStarted.step2.descriptionSuffix', {}, { locale }) }}
           </p>
           <p v-if="step.links" class="flex-1 text-sm">
             <template v-for="(link, i) in step.links" :key="link.href">
@@ -102,7 +98,7 @@ const steps = [
                 v-if="i < step.links.length - 1"
                 class="text-primary-comfy-canvas"
               >
-                {{ t('getStarted.step1.or', {}, { locale: locale }) }}
+                {{ t('getStarted.step1.or', {}, { locale }) }}
               </span>
             </template>
             <span class="text-primary-comfy-canvas">.</span>

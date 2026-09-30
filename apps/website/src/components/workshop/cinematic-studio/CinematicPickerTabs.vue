@@ -24,7 +24,7 @@ const active = defineModel<DirectionPart>({ required: true })
       class="h-9 min-w-0 truncate rounded-lg px-1 text-xs font-semibold text-primary-comfy-canvas hover:bg-transparency-white-t8 aria-pressed:bg-primary-warm-white aria-pressed:text-primary-comfy-ink"
       @click="active = group.part"
     >
-      {{ tc(group.title, {}, { locale: locale }) }}
+      {{ tc(group.title, {}, { locale }) }}
     </button>
   </div>
 </template>

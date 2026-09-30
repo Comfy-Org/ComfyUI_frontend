@@ -37,10 +37,10 @@ const camera = computed(() => {
     directionOption(group.part, direction)
   )
   return {
-    value: tc(body.label, {}, { locale: locale }),
+    value: tc(body.label, {}, { locale }),
     specs: specs
       .filter((option) => option.id !== 'auto')
-      .map((option) => tc(option.label, {}, { locale: locale }))
+      .map((option) => tc(option.label, {}, { locale }))
   }
 })
 
@@ -49,8 +49,8 @@ const rows = computed(() =>
     const { label, option } = shownOption(group.part, direction, colors)
     return {
       key: group.part,
-      title: tc(group.title, {}, { locale: locale }),
-      value: tc(label, {}, { locale: locale }),
+      title: tc(group.title, {}, { locale }),
+      value: tc(label, {}, { locale }),
       option
     }
   })
@@ -83,7 +83,7 @@ const rowClass = (key: PickerKey) =>
         aria-hidden="true"
       />
       <span class="w-14 shrink-0 text-xs text-primary-warm-gray">
-        {{ tc('cinematic.section.camera', {}, { locale: locale }) }}
+        {{ tc('cinematic.section.camera', {}, { locale }) }}
       </span>
       <span
         class="flex min-w-0 flex-1 items-center gap-2 max-sm:flex-col max-sm:items-start max-sm:gap-1"

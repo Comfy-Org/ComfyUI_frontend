@@ -20,12 +20,10 @@ const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true })
     >
       <div>
         <p class="text-lg font-bold text-primary-comfy-canvas">
-          {{ routerT('platform.router.migrate.title', {}, { locale: locale }) }}
+          {{ routerT('platform.router.migrate.title', {}, { locale }) }}
         </p>
         <p class="mt-1 text-sm text-pretty text-primary-comfy-canvas">
-          {{
-            routerT('platform.router.migrate.subtitle', {}, { locale: locale })
-          }}
+          {{ routerT('platform.router.migrate.subtitle', {}, { locale }) }}
         </p>
       </div>
       <BrandButton
@@ -41,24 +39,14 @@ const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true })
               aria-hidden="true"
             >
               {{
-                routerT(
-                  'platform.router.migrate.copyPrompt',
-                  {},
-                  { locale: locale }
-                )
+                routerT('platform.router.migrate.copyPrompt', {}, { locale })
               }}
             </span>
             <span
               :class="cn('[grid-area:1/1]', !copied && 'invisible')"
               aria-hidden="true"
             >
-              {{
-                routerT(
-                  'platform.router.migrate.copied',
-                  {},
-                  { locale: locale }
-                )
-              }}
+              {{ routerT('platform.router.migrate.copied', {}, { locale }) }}
             </span>
             <span class="sr-only">
               {{
@@ -67,7 +55,7 @@ const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true })
                     ? 'platform.router.migrate.copied'
                     : 'platform.router.migrate.copyPrompt',
                   {},
-                  { locale: locale }
+                  { locale }
                 )
               }}
             </span>

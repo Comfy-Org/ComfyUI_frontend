@@ -9,14 +9,14 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const criteria = (['item1', 'item2', 'item3', 'item4', 'item5'] as const).map(
   (item) => ({
     id: item,
-    label: t(`fdct.whatYouGet.${item}`, {}, { locale: locale })
+    label: t(`fdct.whatYouGet.${item}`, {}, { locale })
   })
 )
 </script>
 
 <template>
   <ChecklistSplit01
-    :subheading="t('fdct.whatYouGet.title', {}, { locale: locale })"
+    :subheading="t('fdct.whatYouGet.title', {}, { locale })"
     :criteria="criteria"
   />
 </template>

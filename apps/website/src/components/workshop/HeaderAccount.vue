@@ -273,13 +273,13 @@ const formattedCredits = computed(() =>
 )
 function formatCredits(credits: number): string {
   const key = credits === 1 ? 'auth.header.credit' : 'auth.header.credits'
-  return `${credits.toLocaleString(locale)} ${t(key, {}, { locale: locale })}`
+  return `${credits.toLocaleString(locale)} ${t(key, {}, { locale })}`
 }
 
 // The chip shows the bare number; the label keeps the unit for a reader
 // who cannot see which chip it is.
 const accountLabel = computed(() => {
-  const account = t('nav.accountMenu', {}, { locale: locale })
+  const account = t('nav.accountMenu', {}, { locale })
   const current = balance.value
   return current.status === 'ok'
     ? `${account}, ${formatCredits(current.credits)}`
@@ -317,7 +317,7 @@ async function signOutFromMenu() {
       @focus="prepareSignInHref"
       @click="goToSignIn"
     >
-      {{ t('auth.header.signIn', {}, { locale: locale }) }}
+      {{ t('auth.header.signIn', {}, { locale }) }}
     </a>
 
     <button
@@ -334,7 +334,7 @@ async function signOutFromMenu() {
             ? 'auth.header.sessionRetrying'
             : 'auth.header.sessionRetry',
           {},
-          { locale: locale }
+          { locale }
         )
       }}
     </button>
@@ -345,7 +345,7 @@ async function signOutFromMenu() {
       aria-busy="true"
       class="flex h-10 items-center rounded-2xl border border-primary-comfy-canvas/25 px-4 text-xs font-bold tracking-wider text-primary-comfy-canvas/70 uppercase"
     >
-      {{ t('auth.header.signingIn', {}, { locale: locale }) }}
+      {{ t('auth.header.signingIn', {}, { locale }) }}
     </span>
 
     <HeaderAccountMenu

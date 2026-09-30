@@ -4,7 +4,7 @@ import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-const lines = t('hero.title', {}, { locale: locale }).split('\n')
+const lines = t('hero.title', {}, { locale }).split('\n')
 
 // Sizing is em-relative to the inherited font size so the lockup scales with
 // whatever context renders it (canvas overlay or mobile flow).

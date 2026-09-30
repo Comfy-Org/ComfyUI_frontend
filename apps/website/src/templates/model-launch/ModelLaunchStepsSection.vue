@@ -28,7 +28,7 @@ const descriptionParts = (step: ModelLaunchSteps['items'][number]) =>
       <h2
         class="text-3xl font-light tracking-tight text-primary-comfy-canvas lg:text-5xl/tight"
       >
-        {{ t(steps.headingKey, {}, { locale: locale }) }}
+        {{ t(steps.headingKey, {}, { locale }) }}
       </h2>
     </div>
 
@@ -48,7 +48,7 @@ const descriptionParts = (step: ModelLaunchSteps['items'][number]) =>
         <p
           class="text-sm/tight font-extrabold tracking-wider text-primary-comfy-yellow uppercase"
         >
-          {{ t(steps.stepLabelKey, {}, { locale: locale }) }}
+          {{ t(steps.stepLabelKey, {}, { locale }) }}
           {{ stepNumber(index) }}
         </p>
         <p class="text-2xl/snug font-medium text-primary-warm-white">
@@ -93,7 +93,7 @@ const descriptionParts = (step: ModelLaunchSteps['items'][number]) =>
         size="lg"
         class="w-full p-4 text-center sm:w-auto sm:min-w-52"
       >
-        {{ t(steps.primaryCta.labelKey, {}, { locale: locale }) }}
+        {{ t(steps.primaryCta.labelKey, {}, { locale }) }}
       </BrandButton>
       <BrandButton
         v-if="steps.secondaryCta"
@@ -103,7 +103,7 @@ const descriptionParts = (step: ModelLaunchSteps['items'][number]) =>
         size="lg"
         class="w-full p-4 text-center sm:w-auto sm:min-w-52"
       >
-        {{ t(steps.secondaryCta.labelKey, {}, { locale: locale }) }}
+        {{ t(steps.secondaryCta.labelKey, {}, { locale }) }}
       </BrandButton>
     </div>
   </section>

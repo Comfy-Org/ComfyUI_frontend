@@ -39,7 +39,7 @@ export function taskLabelFor(model: WorkshopModel, locale: Locale): string {
         },
         { locale }
       )
-    : t(modalityLabelKey[modalityOf(model)], {}, { locale: locale })
+    : t(modalityLabelKey[modalityOf(model)], {}, { locale })
 }
 
 /**

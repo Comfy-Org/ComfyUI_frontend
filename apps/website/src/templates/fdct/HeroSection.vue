@@ -13,17 +13,17 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
   <HeroSplit01
     :locale
     :badge-text="
-      t('fdct.hero.eyebrow', {}, { locale: locale }).toLocaleUpperCase(locale)
+      t('fdct.hero.eyebrow', {}, { locale }).toLocaleUpperCase(locale)
     "
-    :title="t('fdct.hero.title', {}, { locale: locale })"
-    :subtitle="t('fdct.hero.subtitle', {}, { locale: locale })"
+    :title="t('fdct.hero.title', {}, { locale })"
+    :subtitle="t('fdct.hero.subtitle', {}, { locale })"
     :primary-cta="{
-      label: t('fdct.hero.contactCta', {}, { locale: locale }),
+      label: t('fdct.hero.contactCta', {}, { locale }),
       href: localizeHref(fdctPage.ctas.contact, locale)
     }"
     video-autoplay
     video-loop
-    :video-aria-label="t('fdct.hero.title', {}, { locale: locale })"
+    :video-aria-label="t('fdct.hero.title', {}, { locale })"
     video-src="https://media.comfy.org/website/fdct/FDCT_V6.mp4"
     video-poster="https://media.comfy.org/website/fdct/FDCT_V4_thumb.jpeg"
   />

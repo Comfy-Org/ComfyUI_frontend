@@ -113,7 +113,7 @@ const {
             :show-logo="badgeShowLogo"
           />
           <Badge v-if="beta" variant="accent" size="xs">
-            {{ t('nav.badgeBeta', {}, { locale: locale }) }}
+            {{ t('nav.badgeBeta', {}, { locale }) }}
           </Badge>
         </slot>
       </div>

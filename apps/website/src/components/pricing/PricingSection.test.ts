@@ -13,7 +13,7 @@ const MONTHS_PER_YEAR = 12
 const LOCALES: Locale[] = ['en', 'zh-CN']
 
 function firstNumber(key: TranslationKey, locale: Locale): number {
-  const match = /[\d,]+/.exec(t(key, {}, { locale: locale }))
+  const match = /[\d,]+/.exec(t(key, {}, { locale }))
   if (!match) throw new Error(`no number in ${key} (${locale})`)
   return Number(match[0].replaceAll(',', ''))
 }

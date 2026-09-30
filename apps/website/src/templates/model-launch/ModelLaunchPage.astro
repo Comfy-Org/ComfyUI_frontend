@@ -32,12 +32,12 @@ const { locale, url } = pageContext(
 const routes = getRoutes(locale)
 
 const crumbs = [
-  { label: t('breadcrumb.home', {}, { locale: locale }), href: routes.home },
+  { label: t('breadcrumb.home', {}, { locale }), href: routes.home },
   {
-    label: t('models.breadcrumb.models', {}, { locale: locale }),
+    label: t('models.breadcrumb.models', {}, { locale }),
     href: routes.models
   },
-  { label: t(page.breadcrumbLabelKey, {}, { locale: locale }) }
+  { label: t(page.breadcrumbLabelKey, {}, { locale }) }
 ]
 
 const breadcrumbs = crumbs.map((crumb) =>
@@ -63,15 +63,15 @@ const sectionOrder = page.sectionOrder ?? DEFAULT_SECTION_ORDER
 ---
 
 <BaseLayout
-  title={t(page.metaTitleKey, {}, { locale: locale })}
-  description={t(page.metaDescriptionKey, {}, { locale: locale })}
+  title={t(page.metaTitleKey, {}, { locale })}
+  description={t(page.metaDescriptionKey, {}, { locale })}
   breadcrumbs={breadcrumbs}
   extraJsonLd={faqPage ? [faqPage] : []}
 >
   <BreadcrumbBar
     crumbs={crumbs}
-    updated={t(page.breadcrumbUpdatedKey, {}, { locale: locale })}
-    label={t('ui.breadcrumb', {}, { locale: locale })}
+    updated={t(page.breadcrumbUpdatedKey, {}, { locale })}
+    label={t('ui.breadcrumb', {}, { locale })}
   />
   <ModelLaunchHeroSection client:load hero={page.hero} locale={locale} />
   {sectionOrder.map((section) => {

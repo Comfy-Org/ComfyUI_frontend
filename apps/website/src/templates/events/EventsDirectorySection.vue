@@ -98,21 +98,17 @@ const selectedEventId = computed(() =>
 
 // Names a cluster badge for screen readers: the count plus what a click does.
 const clusterLabel = (labels: string[]) =>
-  t(
-    'events.directory.clusterLabel',
-    { count: labels.length },
-    { locale: locale }
-  )
+  t('events.directory.clusterLabel', { count: labels.length }, { locale })
 
 // Heading of the popup a still-coincident cluster opens on the map.
 const clusterPopupTitle = (count: number) =>
-  t('events.directory.clusterPopupTitle', { count }, { locale: locale })
+  t('events.directory.clusterPopupTitle', { count }, { locale })
 
 const countLabel = computed(() => {
   const count = visibleEvents.value.length
   const key =
     count === 1 ? 'events.directory.countOne' : 'events.directory.count'
-  return t(key, { count }, { locale: locale })
+  return t(key, { count }, { locale })
 })
 
 // Switching tabs leaves `filters` untouched, so search and both filters carry
@@ -156,13 +152,13 @@ const caretClass =
       <h2
         class="mt-4 text-3xl font-light tracking-tight text-primary-warm-white lg:text-5xl"
       >
-        {{ t('events.directory.title', {}, { locale: locale }) }}
+        {{ t('events.directory.title', {}, { locale }) }}
       </h2>
 
       <p
         class="mt-6 text-base font-light text-balance text-primary-comfy-canvas lg:text-lg"
       >
-        {{ t('events.directory.lead', {}, { locale: locale }) }}
+        {{ t('events.directory.lead', {}, { locale }) }}
       </p>
     </div>
 
@@ -171,7 +167,7 @@ const caretClass =
       data-testid="events-directory-controls"
     >
       <label for="events-directory-search" class="sr-only">
-        {{ t('events.directory.searchLabel', {}, { locale: locale }) }}
+        {{ t('events.directory.searchLabel', {}, { locale }) }}
       </label>
       <div class="relative flex-1">
         <Search
@@ -182,9 +178,7 @@ const caretClass =
           id="events-directory-search"
           v-model="filters.query"
           type="search"
-          :placeholder="
-            t('events.directory.searchPlaceholder', {}, { locale: locale })
-          "
+          :placeholder="t('events.directory.searchPlaceholder', {}, { locale })"
           :class="
             cn(
               controlClass,
@@ -195,7 +189,7 @@ const caretClass =
       </div>
 
       <label for="events-directory-type" class="sr-only">
-        {{ t('events.directory.typeLabel', {}, { locale: locale }) }}
+        {{ t('events.directory.typeLabel', {}, { locale }) }}
       </label>
       <div class="relative">
         <select
@@ -204,21 +198,21 @@ const caretClass =
           :class="selectClass"
         >
           <option :value="DIRECTORY_FILTER_ALL">
-            {{ t('events.directory.allTypes', {}, { locale: locale }) }}
+            {{ t('events.directory.allTypes', {}, { locale }) }}
           </option>
           <option
             v-for="category in EVENT_CATEGORIES"
             :key="category"
             :value="category"
           >
-            {{ t(`events.category.${category}`, {}, { locale: locale }) }}
+            {{ t(`events.category.${category}`, {}, { locale }) }}
           </option>
         </select>
         <ChevronDown :class="caretClass" aria-hidden="true" />
       </div>
 
       <label for="events-directory-organizer" class="sr-only">
-        {{ t('events.directory.organizerLabel', {}, { locale: locale }) }}
+        {{ t('events.directory.organizerLabel', {}, { locale }) }}
       </label>
       <div class="relative">
         <select
@@ -227,14 +221,14 @@ const caretClass =
           :class="selectClass"
         >
           <option :value="DIRECTORY_FILTER_ALL">
-            {{ t('events.directory.allOrganizers', {}, { locale: locale }) }}
+            {{ t('events.directory.allOrganizers', {}, { locale }) }}
           </option>
           <option
             v-for="organizer in EVENT_ORGANIZERS"
             :key="organizer"
             :value="organizer"
           >
-            {{ t(`events.organizer.${organizer}`, {}, { locale: locale }) }}
+            {{ t(`events.organizer.${organizer}`, {}, { locale }) }}
           </option>
         </select>
         <ChevronDown :class="caretClass" aria-hidden="true" />
@@ -242,7 +236,7 @@ const caretClass =
 
       <template v-if="view !== 'calendar'">
         <label for="events-directory-sort" class="sr-only">
-          {{ t('events.directory.sortLabel', {}, { locale: locale }) }}
+          {{ t('events.directory.sortLabel', {}, { locale }) }}
         </label>
         <div class="relative">
           <select
@@ -251,10 +245,10 @@ const caretClass =
             :class="selectClass"
           >
             <option value="latest">
-              {{ t('events.directory.sortLatest', {}, { locale: locale }) }}
+              {{ t('events.directory.sortLatest', {}, { locale }) }}
             </option>
             <option value="oldest">
-              {{ t('events.directory.sortOldest', {}, { locale: locale }) }}
+              {{ t('events.directory.sortOldest', {}, { locale }) }}
             </option>
           </select>
           <ChevronDown :class="caretClass" aria-hidden="true" />
@@ -263,7 +257,7 @@ const caretClass =
 
       <div
         role="group"
-        :aria-label="t('events.directory.viewLabel', {}, { locale: locale })"
+        :aria-label="t('events.directory.viewLabel', {}, { locale })"
         class="flex gap-1 rounded-2xl border border-white/15 p-1.5"
       >
         <button
@@ -282,7 +276,7 @@ const caretClass =
           @click="view = entry.key"
         >
           <component :is="entry.icon" class="size-3.5" aria-hidden="true" />
-          {{ t(`events.directory.view.${entry.key}`, {}, { locale: locale }) }}
+          {{ t(`events.directory.view.${entry.key}`, {}, { locale }) }}
         </button>
       </div>
     </div>
@@ -293,7 +287,7 @@ const caretClass =
     >
       <MapPins01
         :markers
-        :region-label="t('events.directory.mapLabel', {}, { locale: locale })"
+        :region-label="t('events.directory.mapLabel', {}, { locale })"
         :cluster-label="clusterLabel"
         :popup-title="clusterPopupTitle"
         class="h-80 sm:h-96 lg:h-140"

@@ -97,7 +97,7 @@ function frameTone(take: Take): string | undefined {
       <LoaderCircle
         v-if="!loaded && !withheld"
         class="size-5 animate-spin text-primary-warm-gray"
-        :aria-label="tc('cinematic.stage.loadingTake', {}, { locale: locale })"
+        :aria-label="tc('cinematic.stage.loadingTake', {}, { locale })"
       />
     </template>
     <CinematicTakeProgress

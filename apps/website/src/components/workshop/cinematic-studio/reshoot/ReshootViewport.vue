@@ -66,7 +66,7 @@ const analyzing = computed(() =>
         ? 'reshoot.stage.queued'
         : 'reshoot.analyzing',
     {},
-    { locale: locale }
+    { locale }
   )
 )
 
@@ -181,10 +181,10 @@ const DOLLY_BUTTONS = [
       >
         <Move3d class="size-3.5 shrink-0" aria-hidden="true" />
         <span class="truncate pointer-coarse:hidden">
-          {{ rc('reshoot.dragHint.label', {}, { locale: locale }) }}
+          {{ rc('reshoot.dragHint.label', {}, { locale }) }}
         </span>
         <span class="hidden truncate pointer-coarse:inline">
-          {{ rc('reshoot.dragHint.touch', {}, { locale: locale }) }}
+          {{ rc('reshoot.dragHint.touch', {}, { locale }) }}
         </span>
       </span>
       <span
@@ -203,7 +203,7 @@ const DOLLY_BUTTONS = [
         v-for="{ step, label, icon } in DOLLY_BUTTONS"
         :key="label"
         type="button"
-        :aria-label="rc(label, {}, { locale: locale })"
+        :aria-label="rc(label, {}, { locale })"
         class="grid size-9 place-items-center rounded-full bg-primary-comfy-ink/80 text-primary-warm-white"
         @pointerdown.stop
         @click="dolly(step)"

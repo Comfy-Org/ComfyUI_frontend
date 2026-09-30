@@ -41,7 +41,7 @@ const { stop } = useIntersectionObserver(
       <h2
         class="text-3xl font-light tracking-tight text-primary-comfy-canvas lg:text-5xl/tight"
       >
-        {{ t(gallery.headingKey, {}, { locale: locale }) }}
+        {{ t(gallery.headingKey, {}, { locale }) }}
       </h2>
     </div>
 
@@ -103,8 +103,8 @@ const { stop } = useIntersectionObserver(
             <Badge :variant="card.tier === 'free' ? 'accent' : 'callout'">
               {{
                 card.tier === 'free'
-                  ? t('modelLaunch.tagFree', {}, { locale: locale })
-                  : t('modelLaunch.tagPremium', {}, { locale: locale })
+                  ? t('modelLaunch.tagFree', {}, { locale })
+                  : t('modelLaunch.tagPremium', {}, { locale })
               }}
             </Badge>
             <span class="text-xs text-primary-warm-gray">
@@ -149,8 +149,8 @@ const { stop } = useIntersectionObserver(
           <CopyTextButton
             class="-mr-2 -mb-2"
             :value="card.prompt[locale] || card.prompt.en"
-            :label="t('modelLaunch.copyPrompt', {}, { locale: locale })"
-            :copied-label="t('ui.copied', {}, { locale: locale })"
+            :label="t('modelLaunch.copyPrompt', {}, { locale })"
+            :copied-label="t('ui.copied', {}, { locale })"
           />
         </div>
       </article>

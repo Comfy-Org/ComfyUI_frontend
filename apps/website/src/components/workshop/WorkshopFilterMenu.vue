@@ -90,7 +90,7 @@ const groups = computed<FacetSheetGroup[]>(() => [
         ? 'workshop.catalogue.categories'
         : 'workshop.launch.label',
       {},
-      { locale: locale }
+      { locale }
     ),
     options: useCaseOptions,
     selected: useCases.value
@@ -99,7 +99,7 @@ const groups = computed<FacetSheetGroup[]>(() => [
     ? [
         {
           key: 'model',
-          label: t('workshop.hub.models', {}, { locale: locale }),
+          label: t('workshop.hub.models', {}, { locale }),
           options: modelOptions,
           selected: models.value
         }
@@ -112,7 +112,7 @@ const selectedCount = computed(() =>
 )
 
 const label = computed(() =>
-  filterLabel(groups.value, t('workshop.filter.label', {}, { locale: locale }))
+  filterLabel(groups.value, t('workshop.filter.label', {}, { locale }))
 )
 
 function toggle(facet: string, value: string) {
@@ -138,21 +138,20 @@ defineExpose({ focus: () => trigger.value?.focus() })
 
 const sheetLabels = computed(() => ({
   title: label.value,
-  search: t('workshop.filter.search', {}, { locale: locale }),
-  noMatches: t('workshop.filter.noMatches', {}, { locale: locale }),
-  applied: (n: number) =>
-    t('workshop.filter.applied', { n }, { locale: locale }),
-  clearAll: t('workshop.filter.clearAll', {}, { locale: locale }),
+  search: t('workshop.filter.search', {}, { locale }),
+  noMatches: t('workshop.filter.noMatches', {}, { locale }),
+  applied: (n: number) => t('workshop.filter.applied', { n }, { locale }),
+  clearAll: t('workshop.filter.clearAll', {}, { locale }),
   show: (n: number) =>
     t(
       kind === 'models'
         ? 'workshop.search.show'
         : 'workshop.catalogue.showWorkflows',
       { n },
-      { locale: locale }
+      { locale }
     ),
-  close: t('workshop.search.close', {}, { locale: locale }),
-  resize: t('workshop.filter.resize', {}, { locale: locale })
+  close: t('workshop.search.close', {}, { locale }),
+  resize: t('workshop.filter.resize', {}, { locale })
 }))
 </script>
 

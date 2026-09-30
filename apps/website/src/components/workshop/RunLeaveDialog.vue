@@ -57,16 +57,16 @@ const offersToKeep = computed(() => action === 'leaveSaved')
 <template>
   <Dialog v-model:open="open">
     <DialogContent
-      :close-label="t(COPY[action].stay, {}, { locale: locale })"
+      :close-label="t(COPY[action].stay, {}, { locale })"
       class="flex flex-col gap-6 sm:max-w-xl"
       data-testid="run-leave-dialog"
     >
       <div class="flex flex-col gap-2">
         <DialogTitle class="pr-16">
-          {{ t(COPY[action].title, {}, { locale: locale }) }}
+          {{ t(COPY[action].title, {}, { locale }) }}
         </DialogTitle>
         <DialogDescription class="text-base text-primary-comfy-canvas/70">
-          {{ t(COPY[action].body, {}, { locale: locale }) }}
+          {{ t(COPY[action].body, {}, { locale }) }}
         </DialogDescription>
         <a
           v-if="assetsHref"
@@ -76,7 +76,7 @@ const offersToKeep = computed(() => action === 'leaveSaved')
           class="mt-1 inline-flex w-fit items-center gap-1.5 rounded-lg text-sm font-medium text-primary-comfy-yellow underline-offset-4 transition-colors outline-none hover:underline focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
           data-testid="run-leave-assets"
         >
-          {{ t('workshop.run.savedAssets', {}, { locale: locale }) }}
+          {{ t('workshop.run.savedAssets', {}, { locale }) }}
           <ExternalLink class="size-3.5" aria-hidden="true" />
         </a>
       </div>
@@ -93,8 +93,8 @@ const offersToKeep = computed(() => action === 'leaveSaved')
         >
           {{
             offersToKeep
-              ? t('workshop.run.savedKeep', {}, { locale: locale })
-              : t(COPY[action].stay, {}, { locale: locale })
+              ? t('workshop.run.savedKeep', {}, { locale })
+              : t(COPY[action].stay, {}, { locale })
           }}
         </Button>
         <Button
@@ -103,7 +103,7 @@ const offersToKeep = computed(() => action === 'leaveSaved')
           data-testid="run-leave-confirm"
           @click="emit('leave')"
         >
-          {{ t(COPY[action].confirm, {}, { locale: locale }) }}
+          {{ t(COPY[action].confirm, {}, { locale }) }}
         </Button>
       </div>
     </DialogContent>

@@ -31,7 +31,7 @@ const people = technologists(locale).map((person) => ({
     {
       name: person.nickname ?? person.name.split(' ')[0]
     },
-    { locale: locale }
+    { locale }
   ),
   workflows: workflowsOf(person)
 }))
@@ -39,9 +39,9 @@ const people = technologists(locale).map((person) => ({
 
 <template>
   <TeamGrid01
-    :heading="t('fdct.technologists.title', {}, { locale: locale })"
-    :lead="t('fdct.technologists.lead', {}, { locale: locale })"
+    :heading="t('fdct.technologists.title', {}, { locale })"
+    :lead="t('fdct.technologists.lead', {}, { locale })"
     :people="people"
-    :close-label="t('fdct.technologists.close', {}, { locale: locale })"
+    :close-label="t('fdct.technologists.close', {}, { locale })"
   />
 </template>

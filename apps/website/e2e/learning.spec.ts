@@ -18,11 +18,11 @@ import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
 const thumbnailLinkName = (title: string, locale: 'en' | 'zh-CN') =>
-  `${t('player.play', {}, { locale: locale })} ${title}`
+  `${t('player.play', {}, { locale })} ${title}`
 
 const categoryNav = (page: Page, locale: 'en' | 'zh-CN' = 'en') =>
   page.getByRole('navigation', {
-    name: t('learning.categoryNav', {}, { locale: locale })
+    name: t('learning.categoryNav', {}, { locale })
   })
 
 // Rendered copy pinned as literals (en) rather than re-derived from the

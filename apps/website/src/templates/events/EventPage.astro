@@ -73,11 +73,11 @@ const mainEntityId = videoJsonLd?.['@id'] ?? eventJsonLd?.['@id']
 
 const breadcrumbs = [
   {
-    name: t('breadcrumb.home', {}, { locale: locale }),
+    name: t('breadcrumb.home', {}, { locale }),
     url: absoluteUrl(Astro.site, localizeHref('/', locale))
   },
   {
-    name: t('breadcrumb.events', {}, { locale: locale }),
+    name: t('breadcrumb.events', {}, { locale }),
     url: absoluteUrl(Astro.site, localizeHref('/events/', locale))
   },
   { name: title }

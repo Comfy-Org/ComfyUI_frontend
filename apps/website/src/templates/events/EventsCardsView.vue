@@ -39,13 +39,13 @@ const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
     v-if="rows.length === 0"
     class="rounded-3xl border border-white/10 px-6 py-10 text-center text-sm text-primary-comfy-canvas/70"
   >
-    {{ t('events.directory.empty', {}, { locale: locale }) }}
+    {{ t('events.directory.empty', {}, { locale }) }}
   </p>
 
   <ul
     v-else
     class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
-    :aria-label="t('events.directory.allEvents', {}, { locale: locale })"
+    :aria-label="t('events.directory.allEvents', {}, { locale })"
   >
     <li v-for="row in rows" :key="row.event.id">
       <Card

@@ -84,18 +84,18 @@ watch(
 const layoutOptions = computed(() =>
   LAYOUTS.map((option) => ({
     id: option.id,
-    label: studioT(option.label, {}, { locale: locale })
+    label: studioT(option.label, {}, { locale })
   }))
 )
 const appOptions = computed(() =>
   [
     {
       id: 'studio',
-      label: studioT('cinematic.title', {}, { locale: locale })
+      label: studioT('cinematic.title', {}, { locale })
     },
     {
       id: 'reshoot',
-      label: studioT('reshoot.title', {}, { locale: locale })
+      label: studioT('reshoot.title', {}, { locale })
     }
   ].filter((option) =>
     shownApps.value.some((candidate) => candidate.appId === option.id)
@@ -177,8 +177,8 @@ function pickApp(id: string) {
       :layout
       :apps="appOptions"
       :layouts="layoutOptions"
-      :app-heading="studioT('cinematic.ux.app', {}, { locale: locale })"
-      :layout-heading="studioT('cinematic.ux.heading', {}, { locale: locale })"
+      :app-heading="studioT('cinematic.ux.app', {}, { locale })"
+      :layout-heading="studioT('cinematic.ux.heading', {}, { locale })"
       @update:app="pickApp"
       @update:layout="pickLayout"
     />
@@ -193,13 +193,13 @@ function pickApp(id: string) {
         class="flex min-h-[60svh] flex-col items-center justify-center gap-3 text-center"
       >
         <p class="text-base font-semibold text-primary-warm-white">
-          {{ studioT('cinematic.unavailable.title', {}, { locale: locale }) }}
+          {{ studioT('cinematic.unavailable.title', {}, { locale }) }}
         </p>
         <a
           :href="workshopHref"
           class="text-sm text-primary-comfy-yellow underline underline-offset-4"
         >
-          {{ studioT('cinematic.unavailable.link', {}, { locale: locale }) }}
+          {{ studioT('cinematic.unavailable.link', {}, { locale }) }}
         </a>
       </div>
     </template>

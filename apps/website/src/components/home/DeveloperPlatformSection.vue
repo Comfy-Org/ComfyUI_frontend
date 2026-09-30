@@ -14,6 +14,6 @@ const routes = getRoutes(locale)
     visual="shader"
     badge-only
     :primary-href="routes.platform"
-    :subtitle="t('home.platform.body', {}, { locale: locale })"
+    :subtitle="t('home.platform.body', {}, { locale })"
   />
 </template>

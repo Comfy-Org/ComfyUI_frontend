@@ -12,16 +12,16 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 <template>
   <section class="mx-auto max-w-9xl px-6 py-10 lg:px-20 lg:py-12">
     <SectionHeader align="start" max-width="xl">
-      {{ t('brand.trademark.heading', {}, { locale: locale }) }}
+      {{ t('brand.trademark.heading', {}, { locale }) }}
     </SectionHeader>
 
     <div
       class="mt-6 flex max-w-4xl flex-col gap-4 text-sm/[1.6] text-primary-warm-gray"
     >
-      <p>{{ t('brand.trademark.body1', {}, { locale: locale }) }}</p>
-      <p>{{ t('brand.trademark.body2', {}, { locale: locale }) }}</p>
+      <p>{{ t('brand.trademark.body1', {}, { locale }) }}</p>
+      <p>{{ t('brand.trademark.body2', {}, { locale }) }}</p>
       <p>
-        {{ t('brand.trademark.body3', {}, { locale: locale }) }}
+        {{ t('brand.trademark.body3', {}, { locale }) }}
         <Button
           as="a"
           variant="inline"
@@ -29,7 +29,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
           target="_blank"
           rel="noopener noreferrer"
         >
-          {{ t('brand.trademark.contact', {}, { locale: locale }) }}
+          {{ t('brand.trademark.contact', {}, { locale }) }}
         </Button>
       </p>
     </div>

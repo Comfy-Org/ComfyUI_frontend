@@ -16,7 +16,7 @@ const faqs = affiliateFaqs.map((faq) => ({
 
 <template>
   <FAQSplit01
-    :heading="t('affiliate.faq.heading', {}, { locale: locale })"
+    :heading="t('affiliate.faq.heading', {}, { locale })"
     :faqs="faqs"
   />
 </template>

@@ -25,12 +25,6 @@ const { label = 'new' } = defineProps<{
       )
     "
   >
-    {{
-      t(
-        label === 'beta' ? 'nav.badgeBeta' : 'nav.badgeNew',
-        {},
-        { locale: locale }
-      )
-    }}
+    {{ t(label === 'beta' ? 'nav.badgeBeta' : 'nav.badgeNew', {}, { locale }) }}
   </Badge>
 </template>

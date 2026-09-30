@@ -122,7 +122,7 @@ onUnmounted(() => {
     >
       <!-- Close button -->
       <button
-        :aria-label="t('gallery.detail.close', {}, { locale: locale })"
+        :aria-label="t('gallery.detail.close', {}, { locale })"
         class="group absolute right-10 z-10 flex size-10 cursor-pointer items-center justify-center rounded-2xl border-2 border-primary-comfy-yellow bg-primary-comfy-ink transition-colors hover:bg-primary-comfy-yellow lg:top-8 lg:right-26"
         @click="emit('close')"
       >
@@ -157,7 +157,7 @@ onUnmounted(() => {
             size="lg"
             class="mt-24"
           >
-            {{ t('gallery.detail.visitHub', {}, { locale: locale }) }}
+            {{ t('gallery.detail.visitHub', {}, { locale }) }}
           </BrandButton>
         </div>
 
@@ -244,7 +244,7 @@ onUnmounted(() => {
             size="lg"
             class="mt-6 w-full"
           >
-            {{ t('gallery.detail.visitHub', {}, { locale: locale }) }}
+            {{ t('gallery.detail.visitHub', {}, { locale }) }}
           </BrandButton>
         </div>
       </div>

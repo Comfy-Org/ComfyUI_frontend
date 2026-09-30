@@ -177,16 +177,16 @@ watch(
 
 const ctaButtons = [
   {
-    full: t('nav.downloadLocal', {}, { locale: locale }),
-    short: t('nav.ctaDesktopCore', {}, { locale: locale }),
-    ariaLabel: t('nav.downloadLocal', {}, { locale: locale }),
+    full: t('nav.downloadLocal', {}, { locale }),
+    short: t('nav.ctaDesktopCore', {}, { locale }),
+    ariaLabel: t('nav.downloadLocal', {}, { locale }),
     href: routes.download,
     primary: false
   },
   {
-    full: t('nav.launchCloud', {}, { locale: locale }),
-    short: t('nav.ctaCloudCore', {}, { locale: locale }),
-    ariaLabel: t('nav.launchCloud', {}, { locale: locale }),
+    full: t('nav.launchCloud', {}, { locale }),
+    short: t('nav.ctaCloudCore', {}, { locale }),
+    ariaLabel: t('nav.launchCloud', {}, { locale }),
     href: externalLinks.cloudCta('nav_try_cloud'),
     primary: true
   }

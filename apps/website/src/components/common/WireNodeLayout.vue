@@ -176,12 +176,12 @@ onMounted(() => {
       <div v-if="variant === 'split'" class="flex w-64 shrink-0 flex-col gap-3">
         <div class="rounded-2xl border border-white/10 bg-white/5 px-6 py-5">
           <p class="text-2xl font-light text-primary-comfy-canvas">
-            {{ t(titleBeforeKey, {}, { locale: locale }) }}
+            {{ t(titleBeforeKey, {}, { locale }) }}
             <br />
             <span
               class="mb-0.5 inline-block h-5 w-16 bg-primary-comfy-yellow align-middle"
               style="mask: url(/icons/logo.svg) no-repeat center / contain"
-            />{{ t(titleAfterKey, {}, { locale: locale }) }}
+            />{{ t(titleAfterKey, {}, { locale }) }}
           </p>
         </div>
         <div
@@ -190,7 +190,7 @@ onMounted(() => {
           <span
             class="text-xs font-bold tracking-wider text-primary-comfy-canvas"
           >
-            {{ t(labelKey, {}, { locale: locale }) }}
+            {{ t(labelKey, {}, { locale }) }}
           </span>
           <span
             ref="ifYouDotRef"
@@ -203,7 +203,7 @@ onMounted(() => {
         class="flex w-72 shrink-0 items-center justify-between gap-3 rounded-[40px] border border-white/10 bg-white/5 p-8"
       >
         <span class="text-2xl font-light text-primary-warm-white">
-          {{ t(labelKey, {}, { locale: locale }) }}
+          {{ t(labelKey, {}, { locale }) }}
         </span>
         <span
           ref="ifYouDotRef"
@@ -241,7 +241,7 @@ onMounted(() => {
                 class="mt-1.5 size-2.5 shrink-0 rounded-full bg-primary-comfy-yellow"
               />
               <p class="text-base text-primary-comfy-canvas">
-                {{ t(reason, {}, { locale: locale }) }}
+                {{ t(reason, {}, { locale }) }}
               </p>
             </div>
           </div>
@@ -303,12 +303,12 @@ onMounted(() => {
     <template v-if="variant === 'split'">
       <div class="rounded-2xl border border-white/10 bg-white/5 px-6 py-5">
         <p class="text-2xl font-light text-primary-comfy-canvas">
-          {{ t(titleBeforeKey, {}, { locale: locale }) }}
+          {{ t(titleBeforeKey, {}, { locale }) }}
           <br />
           <span
             class="mb-0.5 inline-block h-5 w-16 bg-primary-comfy-yellow align-middle"
             style="mask: url(/icons/logo.svg) no-repeat center / contain"
-          />{{ t(titleAfterKey, {}, { locale: locale }) }}
+          />{{ t(titleAfterKey, {}, { locale }) }}
         </p>
       </div>
 
@@ -318,7 +318,7 @@ onMounted(() => {
         <span
           class="text-xs font-bold tracking-wider text-primary-comfy-canvas"
         >
-          {{ t(labelKey, {}, { locale: locale }) }}
+          {{ t(labelKey, {}, { locale }) }}
         </span>
         <span
           ref="mobileIfYouDotRef"
@@ -331,7 +331,7 @@ onMounted(() => {
       class="relative rounded-[40px] border border-white/10 bg-white/5 px-8 py-7"
     >
       <span class="text-2xl font-light text-primary-warm-white">
-        {{ t(labelKey, {}, { locale: locale }) }}
+        {{ t(labelKey, {}, { locale }) }}
       </span>
       <span
         class="absolute bottom-0 left-1/2 z-20 size-3 -translate-x-1/2 translate-y-1/2 rounded-full bg-primary-comfy-yellow"
@@ -376,7 +376,7 @@ onMounted(() => {
             class="mt-1.5 size-2.5 shrink-0 rounded-full bg-primary-comfy-yellow"
           />
           <p class="text-base text-primary-comfy-canvas">
-            {{ t(reason, {}, { locale: locale }) }}
+            {{ t(reason, {}, { locale }) }}
           </p>
           <span
             v-if="variant === 'split'"

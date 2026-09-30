@@ -16,7 +16,7 @@ const { locale = 'en', comparison } = defineProps<{
       <h2
         class="text-3xl font-light tracking-tight text-primary-comfy-canvas lg:text-5xl/tight"
       >
-        {{ t(comparison.headingKey, {}, { locale: locale }) }}
+        {{ t(comparison.headingKey, {}, { locale }) }}
       </h2>
     </div>
 

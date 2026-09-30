@@ -16,7 +16,7 @@ const source = useSourceUrl(
   () => src
 )
 const expandLabel = computed(
-  () => `${t('workshop.output.expand', {}, { locale: locale })} ${name}`
+  () => `${t('workshop.output.expand', {}, { locale })} ${name}`
 )
 const expanded = ref(false)
 </script>
@@ -43,7 +43,7 @@ const expanded = ref(false)
     </DialogTrigger>
 
     <SourceLightbox
-      :close-label="t('workshop.output.collapse', {}, { locale: locale })"
+      :close-label="t('workshop.output.collapse', {}, { locale })"
       data-testid="video-source-dialog"
       @dismiss="expanded = false"
     >

@@ -24,13 +24,13 @@ const { models, locale = 'en' } = defineProps<{
           <p
             class="mb-5 text-sm font-medium tracking-widest text-primary-comfy-yellow uppercase"
           >
-            {{ t('workshop.hero.eyebrow', {}, { locale: locale }) }}
+            {{ t('workshop.hero.eyebrow', {}, { locale }) }}
           </p>
           <h2 class="text-5xl font-light text-primary-comfy-canvas">
-            {{ t('home.workshop.heading', {}, { locale: locale }) }}
+            {{ t('home.workshop.heading', {}, { locale }) }}
           </h2>
           <p class="mt-6 max-w-2xl text-base text-primary-comfy-canvas/70">
-            {{ t('home.workshop.subheading', {}, { locale: locale }) }}
+            {{ t('home.workshop.subheading', {}, { locale }) }}
           </p>
         </div>
 
@@ -38,7 +38,7 @@ const { models, locale = 'en' } = defineProps<{
           href="/workshop/"
           class="inline-flex shrink-0 items-center gap-2 rounded-full border border-primary-comfy-canvas/25 px-6 py-3 text-sm text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow"
         >
-          {{ t('home.workshop.browseAll', {}, { locale: locale }) }}
+          {{ t('home.workshop.browseAll', {}, { locale }) }}
           <ArrowRight aria-hidden="true" class="size-4" />
         </a>
       </div>

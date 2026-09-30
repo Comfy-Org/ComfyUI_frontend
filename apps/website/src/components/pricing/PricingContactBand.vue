@@ -30,9 +30,9 @@ const isExternalHref = computed(() => Boolean(href?.startsWith('http')))
       <div
         class="flex flex-col gap-6 lg:col-span-2 lg:flex-row lg:items-center"
       >
-        <PricingPlanLabel :label="t(labelKey, {}, { locale: locale })" />
+        <PricingPlanLabel :label="t(labelKey, {}, { locale })" />
         <p class="text-primary-warm-white">
-          {{ t(descriptionKey, {}, { locale: locale }) }}
+          {{ t(descriptionKey, {}, { locale }) }}
         </p>
       </div>
       <Button
@@ -42,7 +42,7 @@ const isExternalHref = computed(() => Boolean(href?.startsWith('http')))
         :rel="isExternalHref ? 'noopener noreferrer' : undefined"
         variant="outline"
       >
-        {{ t(ctaKey, {}, { locale: locale }) }}
+        {{ t(ctaKey, {}, { locale }) }}
       </Button>
     </div>
   </PricingCard>

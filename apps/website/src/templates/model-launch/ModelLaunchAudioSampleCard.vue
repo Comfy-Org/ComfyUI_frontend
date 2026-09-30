@@ -37,8 +37,8 @@ const { locale = 'en', card } = defineProps<{
       <CopyTextButton
         class="-mr-2 -mb-2"
         :value="card.prompt[locale] || card.prompt.en"
-        :label="t('modelLaunch.copyPrompt', {}, { locale: locale })"
-        :copied-label="t('ui.copied', {}, { locale: locale })"
+        :label="t('modelLaunch.copyPrompt', {}, { locale })"
+        :copied-label="t('ui.copied', {}, { locale })"
       />
     </div>
   </article>

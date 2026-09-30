@@ -9,8 +9,8 @@ const locale = 'zh-CN' as const
 ---
 
 <BaseLayout
-  title={t('launches.page.title', {}, { locale: locale })}
-  description={t('launches.page.description', {}, { locale: locale })}
+  title={t('launches.page.title', {}, { locale })}
+  description={t('launches.page.description', {}, { locale })}
 >
   <HeroSection locale={locale} client:load />
   <DropsSection locale={locale} />

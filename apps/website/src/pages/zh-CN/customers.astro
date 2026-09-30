@@ -25,8 +25,8 @@ const { siteUrl, url, locale } = pageContext(
   Astro.url.pathname,
   Astro.currentLocale
 )
-const collectionLabel = t('nav.customerStories', {}, { locale: locale })
-const homeLabel = t('breadcrumb.home', {}, { locale: locale })
+const collectionLabel = t('nav.customerStories', {}, { locale })
+const homeLabel = t('breadcrumb.home', {}, { locale })
 
 const storyList = itemListNode(
   url,
@@ -73,7 +73,7 @@ const videoNodes = customerVideoStories.map((story) =>
 >
   <BreadcrumbBar
     crumbs={[{ label: homeLabel, href: '/zh-CN/' }, { label: collectionLabel }]}
-    label={t('ui.breadcrumb', {}, { locale: locale })}
+    label={t('ui.breadcrumb', {}, { locale })}
   />
   <HeroSection locale="zh-CN" client:load />
   <WatchSection stories={watchCards} locale="zh-CN" />

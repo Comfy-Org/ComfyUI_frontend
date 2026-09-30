@@ -98,7 +98,7 @@ function organizationNode(siteUrl: string, locale: Locale): JsonLdNode {
       width: 512,
       height: 512
     },
-    description: t('hero.subtitle', {}, { locale: locale }),
+    description: t('hero.subtitle', {}, { locale }),
     contactPoint: {
       '@type': 'ContactPoint',
       contactType: 'customer support',

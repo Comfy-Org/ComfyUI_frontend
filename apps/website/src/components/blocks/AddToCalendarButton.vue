@@ -36,10 +36,10 @@ const {
 }>()
 
 const labels = computed(() => ({
-  trigger: t('events.calendar.addToCalendar', {}, { locale: locale }),
-  google: t('events.calendar.google', {}, { locale: locale }),
-  apple: t('events.calendar.apple', {}, { locale: locale }),
-  outlook: t('events.calendar.outlook', {}, { locale: locale })
+  trigger: t('events.calendar.addToCalendar', {}, { locale }),
+  google: t('events.calendar.google', {}, { locale }),
+  apple: t('events.calendar.apple', {}, { locale }),
+  outlook: t('events.calendar.outlook', {}, { locale })
 }))
 
 const externalRel = resolveRel({ target: '_blank' })

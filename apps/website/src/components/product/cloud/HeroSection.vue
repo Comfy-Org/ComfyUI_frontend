@@ -382,13 +382,13 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       <h1
         class="mt-6 text-3xl/tight font-light whitespace-pre-line text-primary-comfy-canvas md:text-4xl/tight lg:max-w-2xl lg:text-5xl/tight"
       >
-        {{ t('cloud.hero.heading', {}, { locale: locale }) }}
+        {{ t('cloud.hero.heading', {}, { locale }) }}
       </h1>
 
       <p
         class="mt-6 max-w-lg text-sm text-primary-comfy-canvas lg:mt-6 lg:text-base"
       >
-        {{ t('cloud.hero.subtitle', {}, { locale: locale }) }}
+        {{ t('cloud.hero.subtitle', {}, { locale }) }}
       </p>
 
       <div class="mt-8">
@@ -397,7 +397,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
           size="lg"
           class="text-center lg:min-w-60 lg:p-4"
         >
-          {{ t('cloud.hero.cta', {}, { locale: locale }) }}
+          {{ t('cloud.hero.cta', {}, { locale }) }}
         </BrandButton>
       </div>
     </div>

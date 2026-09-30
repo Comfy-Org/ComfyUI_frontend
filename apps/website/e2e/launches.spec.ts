@@ -20,7 +20,7 @@ function heroSection(page: Page, locale: Locale) {
   return page.locator('section').filter({
     has: page.getByRole('heading', {
       level: 1,
-      name: t('launches.hero.title', {}, { locale: locale })
+      name: t('launches.hero.title', {}, { locale })
     })
   })
 }
@@ -29,7 +29,7 @@ function ctaSection(page: Page, locale: Locale) {
   return page.locator('section').filter({
     has: page.getByRole('heading', {
       level: 2,
-      name: t('launches.cta.heading', {}, { locale: locale })
+      name: t('launches.cta.heading', {}, { locale })
     })
   })
 }
@@ -38,7 +38,7 @@ function dropsSection(page: Page, locale: Locale) {
   return page.locator('section').filter({
     has: page.getByRole('heading', {
       level: 2,
-      name: t('launches.section.title', {}, { locale: locale })
+      name: t('launches.section.title', {}, { locale })
     })
   })
 }
@@ -93,7 +93,7 @@ test.describe('Launches landing — desktop @smoke', () => {
     ] as const) {
       await page.goto(path)
       const primary = heroSection(page, locale).getByRole('link', {
-        name: t('launches.hero.primary', {}, { locale: locale })
+        name: t('launches.hero.primary', {}, { locale })
       })
       await expect(primary).toBeVisible()
       await expect(primary).toHaveAttribute('href', expectedHref)
@@ -106,7 +106,7 @@ test.describe('Launches landing — desktop @smoke', () => {
     for (const [path, locale] of LOCALES) {
       await page.goto(path)
       const secondary = heroSection(page, locale).getByRole('link', {
-        name: t('launches.hero.secondary', {}, { locale: locale })
+        name: t('launches.hero.secondary', {}, { locale })
       })
       await expect(secondary).toBeVisible()
       await expect(secondary).toHaveAttribute('href', CLOUD_URL)
@@ -124,12 +124,12 @@ test.describe('Launches landing — desktop @smoke', () => {
       await expect(
         section.getByRole('heading', {
           level: 2,
-          name: t('launches.cta.heading', {}, { locale: locale })
+          name: t('launches.cta.heading', {}, { locale })
         })
       ).toBeVisible()
 
       const primary = section.getByRole('link', {
-        name: t('launches.cta.primary', {}, { locale: locale })
+        name: t('launches.cta.primary', {}, { locale })
       })
       await expect(primary).toBeVisible()
       await expect(primary).toHaveAttribute('href', externalLinks.cloud)
@@ -137,7 +137,7 @@ test.describe('Launches landing — desktop @smoke', () => {
       await expect(primary).toHaveAttribute('rel', 'noopener noreferrer')
 
       const secondary = section.getByRole('link', {
-        name: t('launches.cta.secondary', {}, { locale: locale })
+        name: t('launches.cta.secondary', {}, { locale })
       })
       await expect(secondary).toBeVisible()
       await expect(secondary).toHaveAttribute('href', externalLinks.workflows)
@@ -156,7 +156,7 @@ test.describe('Launches landing — desktop @smoke', () => {
       await expect(
         section.getByRole('heading', {
           level: 2,
-          name: t('launches.section.title', {}, { locale: locale })
+          name: t('launches.section.title', {}, { locale })
         })
       ).toBeVisible()
 

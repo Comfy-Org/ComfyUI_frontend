@@ -58,11 +58,7 @@ async function clear() {
         type="button"
         class="-me-1 flex size-6 shrink-0 cursor-pointer items-center justify-center text-content-muted transition-colors outline-none hover:text-content-bright focus-visible:text-content-bright"
         :aria-label="
-          t(
-            'workshop.filter.remove',
-            { filter: chip.label },
-            { locale: locale }
-          )
+          t('workshop.filter.remove', { filter: chip.label }, { locale })
         "
         @click="remove(index)"
       >
@@ -75,7 +71,7 @@ async function clear() {
       data-testid="workshop-filter-chips-clear"
       @click="clear"
     >
-      {{ t('workshop.filter.clear', {}, { locale: locale }) }}
+      {{ t('workshop.filter.clear', {}, { locale }) }}
     </button>
   </div>
 </template>

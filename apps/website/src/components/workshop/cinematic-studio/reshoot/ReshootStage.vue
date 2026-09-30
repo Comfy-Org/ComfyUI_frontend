@@ -98,7 +98,7 @@ const fileName = computed(
 
 <template>
   <section
-    :aria-label="rc('reshoot.title', {}, { locale: locale })"
+    :aria-label="rc('reshoot.title', {}, { locale })"
     class="flex min-h-0 w-full flex-1 flex-col items-center gap-3 max-lg:contents"
   >
     <div
@@ -150,14 +150,14 @@ const fileName = computed(
             rc(
               isFullscreen ? 'reshoot.collapse' : 'reshoot.expand',
               {},
-              { locale: locale }
+              { locale }
             )
           "
           :title="
             rc(
               isFullscreen ? 'reshoot.collapse' : 'reshoot.expand',
               {},
-              { locale: locale }
+              { locale }
             )
           "
           class="absolute top-3 right-3 z-10 grid size-9 place-items-center rounded-full bg-primary-comfy-ink/80 text-primary-warm-white opacity-70 transition-opacity group-hover/frame:opacity-100 hover:bg-primary-comfy-ink focus-visible:opacity-100"
@@ -186,7 +186,7 @@ const fileName = computed(
         <template v-if="current">
           {{
             current.id === 'example'
-              ? rc('reshoot.take.exampleHelp', {}, { locale: locale })
+              ? rc('reshoot.take.exampleHelp', {}, { locale })
               : takeLabel(current, locale)
           }}
         </template>

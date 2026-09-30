@@ -13,19 +13,17 @@ const { locale = 'en', cta } = defineProps<{
 
 <template>
   <CtaCenter01
-    :heading="t(cta.headingKey, {}, { locale: locale })"
-    :subtitle="
-      cta.subtitleKey ? t(cta.subtitleKey, {}, { locale: locale }) : undefined
-    "
+    :heading="t(cta.headingKey, {}, { locale })"
+    :subtitle="cta.subtitleKey ? t(cta.subtitleKey, {}, { locale }) : undefined"
     :primary-cta="{
-      label: t(cta.primaryCta.labelKey, {}, { locale: locale }),
+      label: t(cta.primaryCta.labelKey, {}, { locale }),
       href: cta.primaryCta.href,
       target: cta.primaryCta.target
     }"
     :secondary-cta="
       cta.secondaryCta
         ? {
-            label: t(cta.secondaryCta.labelKey, {}, { locale: locale }),
+            label: t(cta.secondaryCta.labelKey, {}, { locale }),
             href: cta.secondaryCta.href,
             target: cta.secondaryCta.target
           }

@@ -119,7 +119,7 @@ function messageForError(error: FieldErrorCode): string {
         field.presentation?.imageAspectRatio?.maximum ?? videoWidthMaximum()
       )
     },
-    { locale: locale }
+    { locale }
   )
 }
 
@@ -141,13 +141,9 @@ function formatValue(value: string | number | boolean): string {
   const optionLabel = field.presentation?.optionLabels?.[String(value)]
   if (optionLabel) return optionLabel
   if (typeof value === 'boolean')
-    return t(
-      value ? 'workshop.field.on' : 'workshop.field.off',
-      {},
-      { locale: locale }
-    )
+    return t(value ? 'workshop.field.on' : 'workshop.field.off', {}, { locale })
   if (value === 'auto' || value === 'adaptive')
-    return t('workshop.field.auto', {}, { locale: locale })
+    return t('workshop.field.auto', {}, { locale })
   const label =
     typeof value === 'number'
       ? new Intl.NumberFormat(locale).format(value)
@@ -162,8 +158,8 @@ function formatValue(value: string | number | boolean): string {
       ? new Intl.NumberFormat(locale).format(Number(value.slice(0, -1)))
       : label
   return value === -1 || value === '-1'
-    ? t('workshop.field.auto', {}, { locale: locale })
-    : t('workshop.field.seconds', { value: seconds }, { locale: locale })
+    ? t('workshop.field.auto', {}, { locale })
+    : t('workshop.field.seconds', { value: seconds }, { locale })
 }
 
 const hasEmptyOption = computed(
@@ -399,11 +395,7 @@ function booleanValue(fallback = false): boolean {
           :value="numberValue() ?? ''"
           :disabled
           :aria-label="
-            t(
-              'workshop.field.exactValue',
-              { label: field.label },
-              { locale: locale }
-            )
+            t('workshop.field.exactValue', { label: field.label }, { locale })
           "
           :aria-required="field.required || undefined"
           :aria-invalid="invalid()"
@@ -433,7 +425,7 @@ function booleanValue(fallback = false): boolean {
             {
               value: formatValue(declaredDefault)
             },
-            { locale: locale }
+            { locale }
           )
         }}
       </p>
@@ -515,11 +507,7 @@ function booleanValue(fallback = false): boolean {
           class="bg-primary-comfy-ink"
         >
           {{
-            t(
-              'workshop.field.chooseValue',
-              { label: field.label },
-              { locale: locale }
-            )
+            t('workshop.field.chooseValue', { label: field.label }, { locale })
           }}
         </option>
         <option
@@ -592,13 +580,13 @@ function booleanValue(fallback = false): boolean {
       @change="onOptionalToggle"
     >
       <option value="" :selected="values[field.name] === undefined">
-        {{ t('workshop.field.providerDefault', {}, { locale: locale }) }}
+        {{ t('workshop.field.providerDefault', {}, { locale }) }}
       </option>
       <option value="true" :selected="values[field.name] === true">
-        {{ t('workshop.field.on', {}, { locale: locale }) }}
+        {{ t('workshop.field.on', {}, { locale }) }}
       </option>
       <option value="false" :selected="values[field.name] === false">
-        {{ t('workshop.field.off', {}, { locale: locale }) }}
+        {{ t('workshop.field.off', {}, { locale }) }}
       </option>
     </select>
 

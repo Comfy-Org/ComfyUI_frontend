@@ -36,7 +36,7 @@ const buttonClass =
       ref="audio"
       :src
       preload="metadata"
-      :aria-label="t('workshop.output.title', {}, { locale: locale })"
+      :aria-label="t('workshop.output.title', {}, { locale })"
       data-testid="output-audio"
       @loadeddata="emit('loaded', src)"
       @play="emit('playbackStarted', src)"
@@ -50,7 +50,7 @@ const buttonClass =
         t(
           playing ? 'workshop.output.pause' : 'workshop.output.play',
           {},
-          { locale: locale }
+          { locale }
         )
       "
       :class="buttonClass"
@@ -67,7 +67,7 @@ const buttonClass =
       :max="seconds"
       step="0.01"
       :disabled="!seconds"
-      :aria-label="t('player.seek', {}, { locale: locale })"
+      :aria-label="t('player.seek', {}, { locale })"
       class="min-w-0 flex-1 accent-primary-comfy-yellow"
     />
     <span
@@ -81,7 +81,7 @@ const buttonClass =
         t(
           muted ? 'workshop.output.soundOn' : 'workshop.output.soundOff',
           {},
-          { locale: locale }
+          { locale }
         )
       "
       :class="cn(buttonClass, !muted && 'text-primary-warm-white')"

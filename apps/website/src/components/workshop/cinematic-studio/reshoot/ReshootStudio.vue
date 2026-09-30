@@ -111,10 +111,10 @@ const { leavingTo, leave, stay } = useCinematicLeaveGuard(
           aria-hidden="true"
         />
         <p class="text-base text-primary-comfy-canvas">
-          {{ rc('reshoot.empty.title', {}, { locale: locale }) }}
+          {{ rc('reshoot.empty.title', {}, { locale }) }}
         </p>
         <p class="text-xs text-primary-warm-gray">
-          {{ rc('reshoot.empty.hint', {}, { locale: locale }) }}
+          {{ rc('reshoot.empty.hint', {}, { locale }) }}
         </p>
       </div>
       <ReshootStage

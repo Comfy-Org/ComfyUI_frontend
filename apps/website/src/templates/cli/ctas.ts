@@ -19,12 +19,12 @@ export function cliCtas(locale: Locale): {
 } {
   return {
     docs: {
-      label: t('cli.hero.viewDocs', {}, { locale: locale }),
+      label: t('cli.hero.viewDocs', {}, { locale }),
       href: externalLinks.docsCli,
       target: '_blank'
     },
     installCli: {
-      label: t('cli.hero.installCli', {}, { locale: locale }),
+      label: t('cli.hero.installCli', {}, { locale }),
       href: '#setup'
     }
   }

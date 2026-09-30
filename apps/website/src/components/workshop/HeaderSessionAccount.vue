@@ -27,7 +27,7 @@ const creditsUnit = computed(() =>
   t(
     credits.value === 1 ? 'auth.header.credit' : 'auth.header.credits',
     {},
-    { locale: locale }
+    { locale }
   )
 )
 </script>
@@ -51,7 +51,7 @@ const creditsUnit = computed(() =>
     <span
       role="img"
       data-testid="header-session-account"
-      :aria-label="`${t('auth.header.account', {}, { locale: locale })}, ${user.email}`"
+      :aria-label="`${t('auth.header.account', {}, { locale })}, ${user.email}`"
       :title="user.email"
       class="grid size-10 shrink-0 place-items-center rounded-full border border-transparency-white-t20 bg-transparency-white-t4 text-xs font-bold text-primary-warm-white"
     >

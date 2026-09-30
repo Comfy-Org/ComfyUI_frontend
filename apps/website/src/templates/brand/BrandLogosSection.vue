@@ -17,10 +17,10 @@ const assets = affiliateBrandAssets.map((asset) =>
 <template>
   <section id="logos" class="mx-auto max-w-9xl px-6 py-10 lg:px-20 lg:py-12">
     <SectionHeader align="start" max-width="xl">
-      {{ t('brand.logos.heading', {}, { locale: locale }) }}
+      {{ t('brand.logos.heading', {}, { locale }) }}
       <template #subtitle>
         <p class="mt-4 max-w-2xl text-sm/[1.45] text-primary-warm-gray">
-          {{ t('brand.logos.subheading', {}, { locale: locale }) }}
+          {{ t('brand.logos.subheading', {}, { locale }) }}
         </p>
       </template>
     </SectionHeader>

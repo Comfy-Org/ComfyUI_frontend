@@ -21,7 +21,7 @@ const chipClass =
   <AddToCalendarButton v-if="row.calendar" :event="row.calendar" :locale>
     <template #trigger>
       <button type="button" :class="chipClass">
-        {{ t('events.directory.saveTheDate', {}, { locale: locale }) }}
+        {{ t('events.directory.saveTheDate', {}, { locale }) }}
       </button>
     </template>
   </AddToCalendarButton>

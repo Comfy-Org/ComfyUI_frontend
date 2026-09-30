@@ -10,7 +10,7 @@ const faqNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const
 export function cliFaqs(locale: Locale) {
   return faqNumbers.map((n) => ({
     id: String(n),
-    question: t(`cli.faq.${n}.q`, {}, { locale: locale }),
-    answer: t(`cli.faq.${n}.a`, {}, { locale: locale })
+    question: t(`cli.faq.${n}.q`, {}, { locale }),
+    answer: t(`cli.faq.${n}.a`, {}, { locale })
   }))
 }

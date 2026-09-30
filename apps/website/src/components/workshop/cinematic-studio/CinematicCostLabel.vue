@@ -26,7 +26,7 @@ function perTake(shot: ShotEstimate): string | undefined {
       takes: shot.takes,
       credits: formatCreditRange(shot.perTake, locale)
     },
-    { locale: locale }
+    { locale }
   )
 }
 
@@ -38,13 +38,13 @@ const cost = computed(() =>
           {
             credits: formatCreditRange(estimate.total, locale)
           },
-          { locale: locale }
+          { locale }
         ),
         detail: perTake(estimate)
       }
     : {
-        label: tc('cinematic.credits.varies', {}, { locale: locale }),
-        hint: tc('cinematic.credits.variesHint', {}, { locale: locale })
+        label: tc('cinematic.credits.varies', {}, { locale }),
+        hint: tc('cinematic.credits.variesHint', {}, { locale })
       }
 )
 </script>

@@ -56,28 +56,24 @@ const selectedProvider = ref<RouterProvider>(providerOptions[0].id)
     <h2
       class="text-center text-2xl/tight font-light text-balance text-primary-comfy-canvas lg:text-3xl/tight"
     >
-      {{ routerT('platform.router.code.heading', {}, { locale: locale }) }}
+      {{ routerT('platform.router.code.heading', {}, { locale }) }}
     </h2>
     <div class="mt-8">
       <CodeTabs
         :tabs="routerCodeTabs"
-        :label="routerT('platform.router.code.heading', {}, { locale: locale })"
+        :label="routerT('platform.router.code.heading', {}, { locale })"
         :selected-index="ROUTER_PROVIDERS.indexOf(selectedProvider)"
         picker="dropdown"
         content-class="bg-[#2a2230]"
-        :copy-label="t('ui.copy', {}, { locale: locale })"
-        :copied-label="t('ui.copied', {}, { locale: locale })"
+        :copy-label="t('ui.copy', {}, { locale })"
+        :copied-label="t('ui.copied', {}, { locale })"
       >
         <template #controls>
           <RadioGroupRoot
             v-model="selectedProvider"
             orientation="horizontal"
             :aria-label="
-              routerT(
-                'platform.router.code.providerLabel',
-                {},
-                { locale: locale }
-              )
+              routerT('platform.router.code.providerLabel', {}, { locale })
             "
             class="flex w-full max-w-full items-center rounded-2xl border border-white/15 bg-primary-comfy-ink p-1 sm:w-auto"
           >
@@ -99,7 +95,7 @@ const selectedProvider = ref<RouterProvider>(providerOptions[0].id)
       </CodeTabs>
     </div>
     <p class="mt-6 text-center text-sm text-primary-comfy-canvas/70">
-      {{ routerT('platform.router.code.supporting', {}, { locale: locale }) }}
+      {{ routerT('platform.router.code.supporting', {}, { locale }) }}
     </p>
   </section>
 </template>

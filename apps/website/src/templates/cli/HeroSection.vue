@@ -18,7 +18,7 @@ const clients = [
   'Gemini CLI',
   'OpenClaw',
   'Hermes',
-  t('cli.hero.clientAnyShell', {}, { locale: locale })
+  t('cli.hero.clientAnyShell', {}, { locale })
 ]
 </script>
 
@@ -29,8 +29,8 @@ const clients = [
       :locale="locale"
       class="min-h-[calc(100svh-5rem)] lg:min-h-[calc(100svh-6.75rem)]"
       badge-text="CLI"
-      :title="t('cli.hero.heading', {}, { locale: locale })"
-      :subtitle="t('cli.hero.subtitle', {}, { locale: locale })"
+      :title="t('cli.hero.heading', {}, { locale })"
+      :subtitle="t('cli.hero.subtitle', {}, { locale })"
       :primary-cta="ctas.installCli"
       :secondary-cta="ctas.docs"
     >
@@ -46,7 +46,7 @@ const clients = [
         <p
           class="text-xs font-bold tracking-widest text-white/40 uppercase lg:text-sm"
         >
-          {{ t('cli.hero.clientsLabel', {}, { locale: locale }) }}
+          {{ t('cli.hero.clientsLabel', {}, { locale }) }}
         </p>
         <p
           v-for="client in clients"

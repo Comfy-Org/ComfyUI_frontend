@@ -63,18 +63,18 @@ const zone = computed(() => cameraZone(camera))
 <template>
   <div class="flex flex-col gap-2">
     <p class="text-center text-xs text-primary-warm-gray">
-      {{ rc('reshoot.aim.globe', {}, { locale: locale }) }}
+      {{ rc('reshoot.aim.globe', {}, { locale }) }}
     </p>
     <ReshootGlobe :clip :camera :disabled :locale @aim="emit('aim', $event)" />
     <ReshootZone :zone class="mx-auto mb-1">
-      {{ rc(`reshoot.zone.${zone}`, {}, { locale: locale }) }}
+      {{ rc(`reshoot.zone.${zone}`, {}, { locale }) }}
     </ReshootZone>
     <ReshootBarField
       v-for="{ axis, label, format, hint } in MAIN"
       :key="axis"
       :model-value="camera[axis]"
-      :label="rc(label, {}, { locale: locale })"
-      :hint="hint && rc(hint, {}, { locale: locale })"
+      :label="rc(label, {}, { locale })"
+      :hint="hint && rc(hint, {}, { locale })"
       :display="format(camera[axis])"
       v-bind="CAMERA_RANGES[axis]"
       :disabled
@@ -85,7 +85,7 @@ const zone = computed(() => cameraZone(camera))
         v-for="{ axis, label, format } in MORE"
         :key="axis"
         :model-value="camera[axis]"
-        :label="rc(label, {}, { locale: locale })"
+        :label="rc(label, {}, { locale })"
         :display="format(camera[axis])"
         v-bind="CAMERA_RANGES[axis]"
         :disabled
@@ -101,11 +101,11 @@ const zone = computed(() => cameraZone(camera))
             :disabled
             class="accent-primary-comfy-yellow"
           />
-          {{ rc('reshoot.keepAim', {}, { locale: locale }) }}
+          {{ rc('reshoot.keepAim', {}, { locale }) }}
         </label>
         <InfoTooltip
-          :text="rc('reshoot.keepAimHelp', {}, { locale: locale })"
-          :label="rc('reshoot.keepAimHelp', {}, { locale: locale })"
+          :text="rc('reshoot.keepAimHelp', {}, { locale })"
+          :label="rc('reshoot.keepAimHelp', {}, { locale })"
         />
       </div>
     </div>

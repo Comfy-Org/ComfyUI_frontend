@@ -32,10 +32,10 @@ const quotes = creatorReviews.map((review) => ({
         <h3
           class="text-2xl font-medium text-primary-comfy-ink lg:text-3xl/tight"
         >
-          {{ t(reviews.highlight.titleKey, {}, { locale: locale }) }}
+          {{ t(reviews.highlight.titleKey, {}, { locale }) }}
         </h3>
         <p class="mt-4 text-base/relaxed font-light text-primary-comfy-ink">
-          {{ t(reviews.highlight.descriptionKey, {}, { locale: locale }) }}
+          {{ t(reviews.highlight.descriptionKey, {}, { locale }) }}
         </p>
       </div>
 
@@ -45,14 +45,14 @@ const quotes = creatorReviews.map((review) => ({
         size="sm"
         class="h-12 shrink-0 px-5 uppercase"
       >
-        {{ t(reviews.highlight.ctaKey, {}, { locale: locale }) }}
+        {{ t(reviews.highlight.ctaKey, {}, { locale }) }}
       </BrandButton>
     </div>
 
     <h2
       class="mt-20 text-center text-3xl font-light tracking-tight text-primary-comfy-canvas lg:mt-28 lg:text-5xl/tight"
     >
-      {{ t(reviews.headingKey, {}, { locale: locale }) }}
+      {{ t(reviews.headingKey, {}, { locale }) }}
     </h2>
 
     <ScrollCarousel

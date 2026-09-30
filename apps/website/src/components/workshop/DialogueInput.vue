@@ -66,14 +66,12 @@ function remove(index: number) {
       class="flex min-w-0 flex-col gap-2 rounded-2xl border border-transparency-white-t20 p-4"
     >
       <legend class="px-1 text-xs font-bold text-primary-warm-white">
-        {{
-          t('workshop.dialogue.turn', { number: index + 1 }, { locale: locale })
-        }}
+        {{ t('workshop.dialogue.turn', { number: index + 1 }, { locale }) }}
       </legend>
       <label
         :for="`${name}-${index}-text`"
         class="text-xs text-primary-warm-gray"
-        >{{ t('workshop.dialogue.text', {}, { locale: locale }) }}</label
+        >{{ t('workshop.dialogue.text', {}, { locale }) }}</label
       >
       <textarea
         :id="`${name}-${index}-text`"
@@ -86,7 +84,7 @@ function remove(index: number) {
       <label
         :for="`${name}-${index}-voice`"
         class="text-xs text-primary-warm-gray"
-        >{{ t('workshop.dialogue.voice', {}, { locale: locale }) }}</label
+        >{{ t('workshop.dialogue.voice', {}, { locale }) }}</label
       >
       <input
         :id="`${name}-${index}-voice`"
@@ -102,7 +100,7 @@ function remove(index: number) {
         class="self-start rounded-lg px-2 py-1 text-xs text-primary-warm-white underline focus-visible:outline-primary-comfy-yellow"
         @click="remove(index)"
       >
-        {{ t('workshop.dialogue.remove', {}, { locale: locale }) }}
+        {{ t('workshop.dialogue.remove', {}, { locale }) }}
       </button>
     </fieldset>
     <button
@@ -111,7 +109,7 @@ function remove(index: number) {
       class="self-start rounded-lg border border-transparency-white-t20 px-4 py-2 text-sm text-primary-warm-white focus-visible:outline-primary-comfy-yellow disabled:opacity-50"
       @click="add"
     >
-      {{ t('workshop.dialogue.add', {}, { locale: locale }) }}
+      {{ t('workshop.dialogue.add', {}, { locale }) }}
     </button>
   </div>
 </template>

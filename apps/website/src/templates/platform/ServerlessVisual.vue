@@ -126,9 +126,7 @@ watch(
   <div
     ref="stageRef"
     role="img"
-    :aria-label="
-      t('platform.serverlessVisual.ariaLabel', {}, { locale: locale })
-    "
+    :aria-label="t('platform.serverlessVisual.ariaLabel', {}, { locale })"
     class="relative aspect-16/7 min-h-72 w-full overflow-hidden rounded-3xl bg-primary-comfy-ink font-mono"
   >
     <div

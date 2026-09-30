@@ -20,7 +20,7 @@ const { groupedNodes } = useNodesByCategory(() => nodes)
     <summary
       class="cursor-pointer list-none text-sm font-semibold text-primary-comfy-canvas"
     >
-      {{ t('cloudNodes.card.nodesHeading', {}, { locale: locale }) }}
+      {{ t('cloudNodes.card.nodesHeading', {}, { locale }) }}
     </summary>
 
     <div class="mt-4 flex flex-col gap-5">

@@ -6,7 +6,7 @@ import { modelTitle } from './model-title'
 
 const nameOfLength = (length: number) => 'x'.repeat(length)
 const full = (name: string, locale: Locale = 'en') =>
-  t('workshop.model.meta.title', { name }, { locale: locale })
+  t('workshop.model.meta.title', { name }, { locale })
 const unbranded = (name: string) =>
   t('workshop.model.meta.titleUnbranded', { name }, { locale: 'en' })
 const apiOnly = (name: string) =>

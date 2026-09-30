@@ -82,11 +82,11 @@ const tools: {
 ]
 
 const rows: FeatureRow[] = tools.map(({ n, media, altKey }) => {
-  const alt = altKey ? t(altKey, {}, { locale: locale }) : undefined
+  const alt = altKey ? t(altKey, {}, { locale }) : undefined
   return {
     id: String(n),
-    title: t(`mcp.tools.${n}.title`, {}, { locale: locale }),
-    description: t(`mcp.tools.${n}.description`, {}, { locale: locale }),
+    title: t(`mcp.tools.${n}.title`, {}, { locale }),
+    description: t(`mcp.tools.${n}.description`, {}, { locale }),
     media: { ...media, alt }
   }
 })
@@ -95,13 +95,13 @@ const rows: FeatureRow[] = tools.map(({ n, media, altKey }) => {
 <template>
   <FeatureRows01
     :locale="locale"
-    :heading="t('mcp.tools.heading', {}, { locale: locale })"
+    :heading="t('mcp.tools.heading', {}, { locale })"
     :rows="rows"
   >
     <template #media>
       <VideoPlayer
         :locale="locale"
-        :aria-label="t('mcp.tools.film.alt', {}, { locale: locale })"
+        :aria-label="t('mcp.tools.film.alt', {}, { locale })"
         src="https://media.comfy.org/website/mcp/launch-film.mp4"
         autoplay
         lazy-autoplay

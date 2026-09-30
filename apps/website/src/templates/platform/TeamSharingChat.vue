@@ -159,7 +159,7 @@ watchEffect(() => {
               )
             "
           >
-            <span>{{ t(message.text, {}, { locale: locale }) }}</span>
+            <span>{{ t(message.text, {}, { locale }) }}</span>
             <div
               v-if="message.endpoint"
               class="mt-1 break-all text-primary-comfy-yellow"
@@ -170,7 +170,7 @@ watchEffect(() => {
               v-if="message.snippet"
               class="mt-2 overflow-x-auto rounded-lg bg-primary-comfy-ink/60 px-2 py-1.5 font-mono text-2xs break-all whitespace-pre-wrap text-primary-warm-white/90"
             >
-              {{ t(message.snippet, {}, { locale: locale }) }}
+              {{ t(message.snippet, {}, { locale }) }}
             </div>
           </div>
         </div>

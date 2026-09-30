@@ -136,8 +136,8 @@ function handleScrubberKeydown(e: KeyboardEvent) {
         size="sm"
         :aria-label="
           playing
-            ? t('player.pause', {}, { locale: locale })
-            : t('player.play', {}, { locale: locale })
+            ? t('player.pause', {}, { locale })
+            : t('player.play', {}, { locale })
         "
         @click="playing = !playing"
       />
@@ -147,7 +147,7 @@ function handleScrubberKeydown(e: KeyboardEvent) {
         class="relative h-1 flex-1 cursor-pointer rounded-full bg-white/20 select-none"
         role="slider"
         tabindex="0"
-        :aria-label="t('player.seek', {}, { locale: locale })"
+        :aria-label="t('player.seek', {}, { locale })"
         :aria-valuemin="0"
         :aria-valuemax="duration || 0"
         :aria-valuenow="displayTime"

@@ -29,7 +29,7 @@ const isVideo = (media: GalleryMedia) => media.src.endsWith('.webm')
 <template>
   <section
     class="mx-auto max-w-9xl px-6 pb-16 md:pb-24 lg:px-16"
-    :aria-label="t('platform.modelsGallery.ariaLabel', {}, { locale: locale })"
+    :aria-label="t('platform.modelsGallery.ariaLabel', {}, { locale })"
   >
     <div class="grid grid-cols-2 gap-2 lg:grid-cols-3">
       <component
@@ -55,7 +55,7 @@ const isVideo = (media: GalleryMedia) => media.src.endsWith('.webm')
             :key="activeMedia(card).src"
             :src="activeMedia(card).src"
             :poster="activeMedia(card).posterSrc"
-            :aria-label="t(card.titleKey, {}, { locale: locale })"
+            :aria-label="t(card.titleKey, {}, { locale })"
             class="absolute inset-0 size-full object-cover"
             autoplay
             loop
@@ -74,7 +74,7 @@ const isVideo = (media: GalleryMedia) => media.src.endsWith('.webm')
             v-else
             :key="activeMedia(card).src"
             :src="activeMedia(card).src"
-            :alt="t(card.titleKey, {}, { locale: locale })"
+            :alt="t(card.titleKey, {}, { locale })"
             class="absolute inset-0 size-full object-cover"
             loading="lazy"
             decoding="async"
@@ -102,7 +102,7 @@ const isVideo = (media: GalleryMedia) => media.src.endsWith('.webm')
         <p
           class="absolute bottom-3 left-4 text-base/tight font-medium whitespace-pre-line text-primary-warm-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] lg:bottom-4 lg:text-lg"
         >
-          {{ t(card.titleKey, {}, { locale: locale }) }}
+          {{ t(card.titleKey, {}, { locale }) }}
         </p>
       </component>
     </div>

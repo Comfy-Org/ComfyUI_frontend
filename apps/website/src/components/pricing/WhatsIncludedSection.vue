@@ -71,7 +71,7 @@ const features: IncludedFeature[] = [
         <h2
           class="text-3xl/tight font-light whitespace-pre-line text-primary-comfy-canvas"
         >
-          {{ t('pricing.included.heading', {}, { locale: locale }) }}
+          {{ t('pricing.included.heading', {}, { locale }) }}
         </h2>
       </div>
 
@@ -97,12 +97,12 @@ const features: IncludedFeature[] = [
               class="mt-0.5 size-4 shrink-0 text-primary-comfy-yellow"
             />
             <p class="text-sm font-medium text-primary-comfy-canvas">
-              {{ t(feature.titleKey, {}, { locale: locale }) }}
+              {{ t(feature.titleKey, {}, { locale }) }}
               <span
                 v-if="feature.isComingSoon"
                 class="block text-primary-comfy-canvas/55"
               >
-                {{ t('pricing.included.comingSoon', {}, { locale: locale }) }}
+                {{ t('pricing.included.comingSoon', {}, { locale }) }}
               </span>
             </p>
           </div>
@@ -110,7 +110,7 @@ const features: IncludedFeature[] = [
           <SafeRichText
             as="p"
             class="mt-3 text-sm/relaxed text-primary-comfy-canvas/55 lg:mt-0"
-            :html="t(feature.descriptionKey, {}, { locale: locale })"
+            :html="t(feature.descriptionKey, {}, { locale })"
           />
         </div>
       </div>

@@ -13,7 +13,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       <h1
         class="max-w-4xl text-3xl font-light text-primary-comfy-canvas lg:text-5xl"
       >
-        {{ rc('reshoot.title', {}, { locale: locale }) }}
+        {{ rc('reshoot.title', {}, { locale }) }}
       </h1>
       <AppRepoLink
         :repo="workshopAppRepo('reshoot')"
@@ -22,10 +22,10 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       />
     </div>
     <p class="text-lg text-primary-warm-gray">
-      {{ rc('reshoot.pick.lead', {}, { locale: locale }) }}
+      {{ rc('reshoot.pick.lead', {}, { locale }) }}
     </p>
     <p class="text-xs text-primary-warm-gray/80">
-      {{ rc('reshoot.credit', {}, { locale: locale }) }}
+      {{ rc('reshoot.credit', {}, { locale }) }}
     </p>
   </header>
 </template>

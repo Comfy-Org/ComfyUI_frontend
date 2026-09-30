@@ -28,7 +28,7 @@ export function cliPageJsonLd(
         url,
         applicationCategory: 'DeveloperApplication',
         firstParty: true,
-        description: t('cli.meta.description', {}, { locale: locale }),
+        description: t('cli.meta.description', {}, { locale }),
         operatingSystem: 'macOS, Windows, Linux',
         codeRepository: externalLinks.comfyCliRepo,
         isFree: true

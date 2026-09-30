@@ -16,7 +16,7 @@ const steps = affiliateHowItWorksSteps.map((step) => ({
 
 <template>
   <StepsGrid01
-    :heading="t('affiliate.howItWorks.heading', {}, { locale: locale })"
+    :heading="t('affiliate.howItWorks.heading', {}, { locale })"
     :steps="steps"
   />
 </template>

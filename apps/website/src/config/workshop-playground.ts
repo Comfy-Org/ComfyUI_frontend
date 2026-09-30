@@ -651,7 +651,7 @@ export function exampleAlt(
           name: modelName,
           n: sample[1]
         },
-        { locale: locale }
+        { locale }
       )
     : `${modelName}: ${title}`
 }

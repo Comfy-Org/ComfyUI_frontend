@@ -21,15 +21,15 @@ const emit = defineEmits<{ start: [shot: StarterShot] }>()
       <h1
         class="flex items-center gap-3 text-3xl font-semibold tracking-tight text-primary-warm-white lg:text-5xl"
       >
-        {{ tc('cinematic.title', {}, { locale: locale }) }}
+        {{ tc('cinematic.title', {}, { locale }) }}
         <span
           class="rounded-full border border-transparency-white-t20 px-2 py-0.5 font-mono text-[10px] font-normal tracking-wider text-primary-comfy-canvas uppercase lg:text-xs"
         >
-          {{ tc('cinematic.beta', {}, { locale: locale }) }}
+          {{ tc('cinematic.beta', {}, { locale }) }}
         </span>
       </h1>
       <p class="max-w-xl text-sm text-primary-comfy-canvas lg:text-base">
-        {{ tc('cinematic.firstRun.body', {}, { locale: locale }) }}
+        {{ tc('cinematic.firstRun.body', {}, { locale }) }}
       </p>
       <AppRepoLink :repo="workshopAppRepo('studio')" :locale />
     </div>
@@ -53,7 +53,7 @@ const emit = defineEmits<{ start: [shot: StarterShot] }>()
           <span
             class="text-sm text-primary-comfy-canvas group-hover:text-primary-warm-white group-aria-pressed:text-primary-warm-white"
           >
-            {{ tc(shot.label, {}, { locale: locale }) }}
+            {{ tc(shot.label, {}, { locale }) }}
           </span>
         </button>
       </li>

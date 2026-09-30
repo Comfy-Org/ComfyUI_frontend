@@ -29,10 +29,10 @@ const { softwareId, nodes: cliJsonLd } = cliPageJsonLd(siteUrl, url, locale)
   mainEntityId={softwareId}
   breadcrumbs={[
     {
-      name: t('breadcrumb.home', {}, { locale: locale }),
+      name: t('breadcrumb.home', {}, { locale }),
       url: absoluteUrl(Astro.site, '/')
     },
-    { name: t('breadcrumb.cli', {}, { locale: locale }) }
+    { name: t('breadcrumb.cli', {}, { locale }) }
   ]}
   extraJsonLd={cliJsonLd}
   keywords={[

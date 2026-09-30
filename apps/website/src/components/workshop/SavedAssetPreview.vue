@@ -61,7 +61,7 @@ const downloadLabel = computed(() =>
       ? 'workshop.output.openOriginal'
       : 'workshop.output.download',
     {},
-    { locale: locale }
+    { locale }
   )
 )
 
@@ -111,11 +111,11 @@ function touchEnd(event: TouchEvent) {
         @touchend.passive="touchEnd"
       >
         <DialogTitle class="sr-only">
-          {{ t('workshop.assets.title', {}, { locale: locale }) }}
+          {{ t('workshop.assets.title', {}, { locale }) }}
         </DialogTitle>
         <button
           type="button"
-          :aria-label="t('workshop.output.collapse', {}, { locale: locale })"
+          :aria-label="t('workshop.output.collapse', {}, { locale })"
           class="absolute top-6 right-6 grid size-8 cursor-pointer place-items-center rounded-lg bg-primary-comfy-ink/70 text-primary-warm-white transition-colors hover:text-primary-comfy-yellow"
           data-testid="saved-asset-close"
           @click="emit('close')"
@@ -128,7 +128,7 @@ function touchEnd(event: TouchEvent) {
             :kind="media.kind"
             :url="media.url"
             :asset-id="media.assetId"
-            :alt="t('workshop.assets.title', {}, { locale: locale })"
+            :alt="t('workshop.assets.title', {}, { locale })"
             controls
             class="max-h-[80dvh] w-auto max-w-full rounded-2xl object-contain"
           />
@@ -161,14 +161,14 @@ function touchEnd(event: TouchEvent) {
             aria-hidden="true"
           />
           <p class="text-sm text-primary-warm-white">
-            {{ t('workshop.assets.generating', {}, { locale: locale }) }}
+            {{ t('workshop.assets.generating', {}, { locale }) }}
           </p>
           <p
             v-if="cancelFailed"
             role="alert"
             class="text-xs text-primary-comfy-red"
           >
-            {{ t('workshop.assets.cancelError', {}, { locale: locale }) }}
+            {{ t('workshop.assets.cancelError', {}, { locale }) }}
           </p>
           <Button
             variant="outline"
@@ -176,7 +176,7 @@ function touchEnd(event: TouchEvent) {
             :disabled="cancelling"
             @click="emit('cancel')"
           >
-            {{ t('workshop.run.cancel', {}, { locale: locale }) }}
+            {{ t('workshop.run.cancel', {}, { locale }) }}
           </Button>
         </template>
 
@@ -186,11 +186,11 @@ function touchEnd(event: TouchEvent) {
           class="max-w-sm text-center text-sm text-primary-warm-white"
           data-testid="saved-asset-not-saved"
         >
-          {{ t('workshop.assets.notSaved', {}, { locale: locale }) }}
+          {{ t('workshop.assets.notSaved', {}, { locale }) }}
         </p>
 
         <p v-else role="status" class="text-sm text-primary-warm-gray">
-          {{ t('workshop.assets.loadingMedia', {}, { locale: locale }) }}
+          {{ t('workshop.assets.loadingMedia', {}, { locale }) }}
         </p>
       </DialogContent>
     </DialogPortal>

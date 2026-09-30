@@ -131,14 +131,14 @@ onMounted(() => {
       class="text-sm/6 text-primary-comfy-canvas"
       role="status"
     >
-      {{ t('hubspotForm.embedLoadErrorPrefix', {}, { locale: locale }) }}
+      {{ t('hubspotForm.embedLoadErrorPrefix', {}, { locale }) }}
       <a
         class="text-primary-comfy-yellow underline"
         href="mailto:hello@comfy.org"
       >
         hello@comfy.org
       </a>
-      {{ t('hubspotForm.embedLoadErrorSuffix', {}, { locale: locale }) }}
+      {{ t('hubspotForm.embedLoadErrorSuffix', {}, { locale }) }}
     </p>
     <div
       v-else

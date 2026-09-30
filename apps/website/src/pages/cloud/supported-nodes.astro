@@ -39,11 +39,11 @@ const packList = itemListNode(
   mainEntityId={jsonLdId(url, 'itemlist')}
   breadcrumbs={[
     {
-      name: t('breadcrumb.home', {}, { locale: locale }),
+      name: t('breadcrumb.home', {}, { locale }),
       url: absoluteUrl(Astro.site, '/')
     },
     { name: 'Comfy Cloud', url: absoluteUrl(Astro.site, '/cloud') },
-    { name: t('breadcrumb.supportedNodes', {}, { locale: locale }) }
+    { name: t('breadcrumb.supportedNodes', {}, { locale }) }
   ]}
   extraJsonLd={[packList]}
 >

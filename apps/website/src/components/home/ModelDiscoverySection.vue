@@ -46,7 +46,7 @@ const rowLabel = computed(() =>
       ? 'modelDiscovery.workflowRowLabel'
       : 'modelDiscovery.rowLabel',
     {},
-    { locale: locale }
+    { locale }
   )
 )
 const browseLabel = computed(() =>
@@ -55,7 +55,7 @@ const browseLabel = computed(() =>
       ? 'modelDiscovery.browseWorkflows'
       : 'modelDiscovery.browse',
     {},
-    { locale: locale }
+    { locale }
   )
 )
 const browseHref = computed(() =>
@@ -97,17 +97,17 @@ const cardClass =
         <p
           class="text-sm font-bold tracking-widest text-primary-comfy-yellow uppercase"
         >
-          {{ t('modelDiscovery.label', {}, { locale: locale }) }}
+          {{ t('modelDiscovery.label', {}, { locale }) }}
         </p>
         <h2
           class="mt-4 text-3.5xl/tight font-light whitespace-pre-line text-primary-comfy-canvas lg:text-5xl"
         >
-          {{ t('modelDiscovery.heading', {}, { locale: locale }) }}
+          {{ t('modelDiscovery.heading', {}, { locale }) }}
         </h2>
         <p
           class="mt-4 max-w-xl text-sm font-light text-primary-comfy-canvas/80 lg:text-base/snug"
         >
-          {{ t('modelDiscovery.subtitle', {}, { locale: locale }) }}
+          {{ t('modelDiscovery.subtitle', {}, { locale }) }}
         </p>
 
         <!-- The catalogue's own control, taught here: whoever presses it on

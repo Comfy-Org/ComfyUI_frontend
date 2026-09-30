@@ -22,13 +22,13 @@ const emit = defineEmits<{ choose: [id: string] }>()
 <template>
   <div
     role="radiogroup"
-    :aria-label="tc(group.title, {}, { locale: locale })"
+    :aria-label="tc(group.title, {}, { locale })"
     class="flex min-w-0 flex-col gap-1.5 rounded-xl border border-transparency-white-t8 p-2"
   >
     <h3
       class="py-2 text-center text-sm font-semibold text-primary-warm-white max-sm:hidden"
     >
-      {{ tc(group.title, {}, { locale: locale }) }}
+      {{ tc(group.title, {}, { locale }) }}
     </h3>
     <button
       v-for="option in group.options"
@@ -46,9 +46,7 @@ const emit = defineEmits<{ choose: [id: string] }>()
       "
       @click="emit('choose', option.id)"
     >
-      <span class="truncate">{{
-        tc(option.label, {}, { locale: locale })
-      }}</span>
+      <span class="truncate">{{ tc(option.label, {}, { locale }) }}</span>
       <CinematicOptionIcon
         :part="group.part"
         :option="option.id"

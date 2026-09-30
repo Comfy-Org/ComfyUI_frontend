@@ -28,10 +28,10 @@ const { siteUrl, locale } = pageContext(
   mainEntityId={comfyUiSoftwareId(siteUrl)}
   breadcrumbs={[
     {
-      name: t('breadcrumb.home', {}, { locale: locale }),
+      name: t('breadcrumb.home', {}, { locale }),
       url: absoluteUrl(Astro.site, '/zh-CN')
     },
-    { name: t('breadcrumb.download', {}, { locale: locale }) }
+    { name: t('breadcrumb.download', {}, { locale }) }
   ]}
   extraJsonLd={[
     comfyUiApplicationNode(siteUrl),

@@ -39,8 +39,8 @@ const article = articleNode({
   locale
 })
 
-const homeLabel = t('breadcrumb.home', {}, { locale: locale })
-const collectionLabel = t('nav.customerStories', {}, { locale: locale })
+const homeLabel = t('breadcrumb.home', {}, { locale })
+const collectionLabel = t('nav.customerStories', {}, { locale })
 const relatedVideo = customerVideoForStory(storySlug(entry.id))
 ---
 
@@ -68,7 +68,7 @@ const relatedVideo = customerVideoForStory(storySlug(entry.id))
       { label: collectionLabel, href: '/zh-CN/customers/' },
       { label: entry.data.title }
     ]}
-    label={t('ui.breadcrumb', {}, { locale: locale })}
+    label={t('ui.breadcrumb', {}, { locale })}
   />
   <DetailHeroSection
     label={entry.data.category}
@@ -82,7 +82,7 @@ const relatedVideo = customerVideoForStory(storySlug(entry.id))
       href={`/customers/videos/${relatedVideo.slug}/`}
       class="text-sm font-semibold tracking-wide text-primary-comfy-yellow uppercase hover:underline"
     >
-      {t('customers.article.watchVideo', {}, { locale: locale })}
+      {t('customers.article.watchVideo', {}, { locale })}
     </a>
   </div>}
   <WhatsNextSection

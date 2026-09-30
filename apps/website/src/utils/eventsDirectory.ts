@@ -154,7 +154,7 @@ export function pastCtaLabel(event: ComfyEvent, locale: Locale): string {
   return t(
     eventVideoId(event) ? 'events.past.watchNow' : 'events.past.learnMore',
     {},
-    { locale: locale }
+    { locale }
   )
 }
 
@@ -168,7 +168,7 @@ function registerOf(
       newTab: event.link.newTab ?? false,
       label: event.ctaLabel
         ? localized(event.ctaLabel, locale)
-        : t('events.directory.learnMore', {}, { locale: locale })
+        : t('events.directory.learnMore', {}, { locale })
     }
   }
   // An upcoming livestream without an outbound link still has a public
@@ -179,7 +179,7 @@ function registerOf(
     return {
       href: localized(href, locale),
       newTab: true,
-      label: t('events.directory.learnMore', {}, { locale: locale })
+      label: t('events.directory.learnMore', {}, { locale })
     }
   }
   return undefined
@@ -208,7 +208,7 @@ function watchOf(event: ComfyEvent, locale: Locale): DirectoryRow['watch'] {
 function locationOf(event: ComfyEvent, locale: Locale): string {
   return event.location
     ? localized(event.location, locale)
-    : t('events.directory.virtual', {}, { locale: locale })
+    : t('events.directory.virtual', {}, { locale })
 }
 
 function directoryRow(
@@ -220,7 +220,7 @@ function directoryRow(
   return {
     event,
     upcoming,
-    category: t(`events.category.${event.category}`, {}, { locale: locale }),
+    category: t(`events.category.${event.category}`, {}, { locale }),
     title: localized(event.title, locale),
     description: localized(event.description, locale),
     date: eventDateLabel(event, locale),

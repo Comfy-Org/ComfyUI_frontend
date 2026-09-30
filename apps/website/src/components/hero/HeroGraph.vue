@@ -135,7 +135,7 @@ function wrapperStyle(key: ElementKey) {
           variant="outline"
           class="pointer-events-auto font-bold uppercase"
         >
-          {{ t('hero.getStartedFree', {}, { locale: locale }) }}
+          {{ t('hero.getStartedFree', {}, { locale }) }}
         </BrandButton>
       </div>
 

@@ -9,7 +9,7 @@ const faqNumbers = [1, 2, 3, 4] as const
 export function contactFaqs(locale: Locale) {
   return faqNumbers.map((n) => ({
     id: String(n),
-    question: t(`contact.faq.q${n}`, {}, { locale: locale }),
-    answer: t(`contact.faq.a${n}`, {}, { locale: locale })
+    question: t(`contact.faq.q${n}`, {}, { locale }),
+    answer: t(`contact.faq.a${n}`, {}, { locale })
   }))
 }

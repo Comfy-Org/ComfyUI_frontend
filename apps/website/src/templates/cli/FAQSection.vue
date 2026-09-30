@@ -10,8 +10,5 @@ const faqs = cliFaqs(locale)
 </script>
 
 <template>
-  <FAQSplit01
-    :heading="t('cli.faq.heading', {}, { locale: locale })"
-    :faqs="faqs"
-  />
+  <FAQSplit01 :heading="t('cli.faq.heading', {}, { locale })" :faqs="faqs" />
 </template>

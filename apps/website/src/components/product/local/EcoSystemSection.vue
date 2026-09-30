@@ -18,10 +18,10 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       <div class="flex flex-1 flex-col justify-between p-6">
         <div>
           <h2 class="text-3xl font-light text-primary-comfy-canvas lg:text-4xl">
-            {{ t('download.ecosystem.heading', {}, { locale: locale }) }}
+            {{ t('download.ecosystem.heading', {}, { locale }) }}
           </h2>
           <p class="mt-6 text-sm text-primary-comfy-canvas/70">
-            {{ t('download.ecosystem.description', {}, { locale: locale }) }}
+            {{ t('download.ecosystem.description', {}, { locale }) }}
           </p>
         </div>
 
@@ -38,7 +38,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
                 class="size-5 icon-mask mask-[url('/icons/social/github.svg')]"
                 aria-hidden="true"
               />
-              {{ t('download.hero.installGithub', {}, { locale: locale }) }}
+              {{ t('download.hero.installGithub', {}, { locale }) }}
             </span>
           </BrandButton>
         </div>

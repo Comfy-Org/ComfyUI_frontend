@@ -75,12 +75,8 @@ function openDetail(index: number) {
   modalOpen.value = true
 }
 
-const title = t(
-  'models.list.creations.title',
-  { name: modelName },
-  { locale: locale }
-)
-const ctaLabel = t('models.list.creations.cta', {}, { locale: locale })
+const title = t('models.list.creations.title', { name: modelName }, { locale })
+const ctaLabel = t('models.list.creations.cta', {}, { locale })
 </script>
 
 <template>

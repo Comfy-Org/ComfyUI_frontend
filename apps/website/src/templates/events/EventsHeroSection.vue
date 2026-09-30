@@ -34,16 +34,16 @@ const slides = computed<FeaturedSlide[]>(() =>
 <template>
   <section class="pt-24 pb-16 lg:pt-30 lg:pb-24">
     <HeroCentered01
-      :eyebrow="t('events.hero.eyebrow', {}, { locale: locale })"
-      :title="t('events.hero.title', {}, { locale: locale })"
-      :subtitle="t('events.hero.subtitle', {}, { locale: locale })"
+      :eyebrow="t('events.hero.eyebrow', {}, { locale })"
+      :title="t('events.hero.title', {}, { locale })"
+      :subtitle="t('events.hero.subtitle', {}, { locale })"
     >
       <div class="mt-8 flex flex-wrap justify-center gap-4">
         <Button as="a" href="#events-directory">
-          {{ t('events.hero.browseEvents', {}, { locale: locale }) }}
+          {{ t('events.hero.browseEvents', {}, { locale }) }}
         </Button>
         <Button as="a" variant="outline" href="#host-an-event">
-          {{ t('events.hero.hostAnEvent', {}, { locale: locale }) }}
+          {{ t('events.hero.hostAnEvent', {}, { locale }) }}
         </Button>
       </div>
     </HeroCentered01>
@@ -51,8 +51,8 @@ const slides = computed<FeaturedSlide[]>(() =>
     <div class="mt-12 lg:mt-20">
       <FeaturedCarousel01
         :slides
-        :prev-label="t('events.hero.prevSlide', {}, { locale: locale })"
-        :next-label="t('events.hero.nextSlide', {}, { locale: locale })"
+        :prev-label="t('events.hero.prevSlide', {}, { locale })"
+        :next-label="t('events.hero.nextSlide', {}, { locale })"
       />
     </div>
   </section>

@@ -13,7 +13,7 @@ describe('routerT', () => {
         routerT(
           'platform.router.coverage.browseAll',
           { count: 120 },
-          { locale: locale }
+          { locale }
         )
       ).toBe(expected)
     }

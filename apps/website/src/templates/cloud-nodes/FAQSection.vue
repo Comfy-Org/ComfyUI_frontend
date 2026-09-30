@@ -9,14 +9,14 @@ const faqNumbers = [1, 2, 3, 4, 5, 6, 7] as const
 
 const faqs = faqNumbers.map((n) => ({
   id: String(n),
-  question: t(`cloudNodesLaunch.faq.${n}.q`, {}, { locale: locale }),
-  answer: t(`cloudNodesLaunch.faq.${n}.a`, {}, { locale: locale })
+  question: t(`cloudNodesLaunch.faq.${n}.q`, {}, { locale }),
+  answer: t(`cloudNodesLaunch.faq.${n}.a`, {}, { locale })
 }))
 </script>
 
 <template>
   <FAQSplit01
-    :heading="t('cloudNodesLaunch.faq.heading', {}, { locale: locale })"
+    :heading="t('cloudNodesLaunch.faq.heading', {}, { locale })"
     :faqs="faqs"
   />
 </template>

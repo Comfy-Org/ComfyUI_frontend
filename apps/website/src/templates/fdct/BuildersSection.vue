@@ -18,12 +18,12 @@ const reasons: TranslationKey[] = [
 <template>
   <section class="px-6 py-24 lg:px-20 lg:py-32">
     <SectionHeader>
-      {{ t('fdct.builders.title', {}, { locale: locale }) }}
+      {{ t('fdct.builders.title', {}, { locale }) }}
       <template #subtitle>
         <p
           class="mx-auto mt-6 max-w-xl text-base font-light text-primary-comfy-canvas lg:text-lg"
         >
-          {{ t('fdct.builders.lead', {}, { locale: locale }) }}
+          {{ t('fdct.builders.lead', {}, { locale }) }}
         </p>
       </template>
     </SectionHeader>

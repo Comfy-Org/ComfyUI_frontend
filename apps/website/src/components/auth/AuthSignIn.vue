@@ -31,7 +31,7 @@ const mode = ref<AuthMode>(initialMode)
 
 function show(next: AuthMode): void {
   mode.value = next
-  document.title = t(TITLES[next], {}, { locale: locale })
+  document.title = t(TITLES[next], {}, { locale })
 }
 
 function switchMode(next: AuthMode): void {

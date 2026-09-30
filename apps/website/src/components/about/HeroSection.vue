@@ -48,26 +48,26 @@ useHeroAnimation({
         class="order-1 flex flex-col items-center lg:order-2 lg:w-7/12 lg:items-start lg:pt-16 lg:pl-12"
       >
         <SectionLabel ref="labelRef">
-          {{ t('about.hero.label', {}, { locale: locale }) }}
+          {{ t('about.hero.label', {}, { locale }) }}
         </SectionLabel>
         <h1
           ref="headingRef"
           class="mt-4 text-4xl/tight font-light text-primary-comfy-canvas lg:text-6xl"
         >
-          {{ t('about.hero.heading', {}, { locale: locale }) }}
+          {{ t('about.hero.heading', {}, { locale }) }}
         </h1>
         <p
           ref="bodyRef"
           class="mt-6 max-w-sm text-base text-primary-comfy-canvas"
         >
-          {{ t('about.hero.body', {}, { locale: locale }) }}
+          {{ t('about.hero.body', {}, { locale }) }}
         </p>
         <div ref="ctaRef" class="mt-8">
           <BrandButton
             :href="locale === 'zh-CN' ? '/zh-CN/careers/' : '/careers/'"
             variant="outline"
           >
-            {{ t('about.hero.cta', {}, { locale: locale }) }}
+            {{ t('about.hero.cta', {}, { locale }) }}
           </BrandButton>
         </div>
       </div>

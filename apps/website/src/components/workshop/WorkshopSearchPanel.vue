@@ -42,12 +42,9 @@ const suggestions = computed(() =>
 )
 
 function sourceOf(model: WorkshopModel): string | undefined {
-  if (model.type === 'APP')
-    return t('workshop.card.comfyApp', {}, { locale: locale })
+  if (model.type === 'APP') return t('workshop.card.comfyApp', {}, { locale })
   if (model.routerId === undefined) return model.models?.join(', ')
-  return (
-    model.provider ?? t('workshop.card.partnerNode', {}, { locale: locale })
-  )
+  return model.provider ?? t('workshop.card.partnerNode', {}, { locale })
 }
 </script>
 
@@ -73,7 +70,7 @@ function sourceOf(model: WorkshopModel): string | undefined {
               ? 'workshop.search.models'
               : 'workshop.hub.workflows',
             {},
-            { locale: locale }
+            { locale }
           )
         }}
         <span class="tabular-nums opacity-60">({{ matching.length }})</span>
@@ -114,7 +111,7 @@ function sourceOf(model: WorkshopModel): string | undefined {
     </section>
 
     <p v-else-if="query.trim()" class="p-2 text-sm text-primary-warm-gray">
-      {{ t('workshop.hub.facets.noResults', {}, { locale: locale }) }}
+      {{ t('workshop.hub.facets.noResults', {}, { locale }) }}
     </p>
   </div>
 </template>

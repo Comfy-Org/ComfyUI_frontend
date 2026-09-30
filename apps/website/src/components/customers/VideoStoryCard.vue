@@ -70,7 +70,7 @@ const { story, locale = 'en' } = defineProps<{
           <img src="/icons/arrow-right.svg" alt="" class="ml-0.5 size-3" />
         </span>
         <span class="text-primary-comfy-canvas">
-          {{ t('customers.video.watchStory', {}, { locale: locale }) }}
+          {{ t('customers.video.watchStory', {}, { locale }) }}
         </span>
       </div>
     </div>

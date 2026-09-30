@@ -41,13 +41,13 @@ const segmentClass =
 <template>
   <div
     role="group"
-    :aria-label="tc('cinematic.composer.format', {}, { locale: locale })"
+    :aria-label="tc('cinematic.composer.format', {}, { locale })"
     class="flex h-9 shrink-0 items-center overflow-hidden rounded-xl text-[13px] whitespace-nowrap ring-1 ring-transparency-white-t8 ring-inset"
   >
     <CinematicMenu
       v-model="aspectValue"
       :options="aspectOptions"
-      :heading="tc('cinematic.output.aspect', {}, { locale: locale })"
+      :heading="tc('cinematic.output.aspect', {}, { locale })"
       :trigger-class="segmentClass"
       tooltip
     >
@@ -63,7 +63,7 @@ const segmentClass =
     <CinematicMenu
       v-model="resolutionValue"
       :options="resolutionOptions"
-      :heading="tc('cinematic.output.resolution', {}, { locale: locale })"
+      :heading="tc('cinematic.output.resolution', {}, { locale })"
       :trigger-class="segmentClass"
       tooltip
     >
@@ -73,7 +73,7 @@ const segmentClass =
     <CinematicMenu
       v-model="takesValue"
       :options="takeOptions"
-      :heading="tc('cinematic.output.takes', {}, { locale: locale })"
+      :heading="tc('cinematic.output.takes', {}, { locale })"
       :trigger-class="segmentClass"
       tooltip
     >

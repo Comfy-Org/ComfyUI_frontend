@@ -32,7 +32,7 @@ const {
       size="lg"
       class="w-full p-4 text-center lg:w-auto lg:min-w-52"
     >
-      {{ t(primaryCta.labelKey, {}, { locale: locale }) }}
+      {{ t(primaryCta.labelKey, {}, { locale }) }}
     </BrandButton>
     <BrandButton
       v-if="secondaryCta"
@@ -42,7 +42,7 @@ const {
       size="lg"
       class="w-full p-4 text-center lg:w-auto lg:min-w-52"
     >
-      {{ t(secondaryCta.labelKey, {}, { locale: locale }) }}
+      {{ t(secondaryCta.labelKey, {}, { locale }) }}
     </BrandButton>
   </div>
 </template>

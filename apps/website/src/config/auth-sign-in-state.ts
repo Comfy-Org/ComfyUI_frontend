@@ -65,8 +65,8 @@ function localizedAuthErrorCopy(locale: Locale): AuthErrorCopy {
         t(`auth.errors.${code}`, {}, { locale })
       ])
     ),
-    generic: t('auth.errors.generic', {}, { locale: locale }),
-    signupBlocked: t('auth.errors.signupBlocked', {}, { locale: locale })
+    generic: t('auth.errors.generic', {}, { locale }),
+    signupBlocked: t('auth.errors.signupBlocked', {}, { locale })
   }
 }
 
@@ -88,7 +88,7 @@ export function signInErrorMessage(
           domain: hostname,
           email: SUPPORT_EMAIL
         },
-        { locale: locale }
+        { locale }
       )
     : authErrorMessage(classification, localizedAuthErrorCopy(locale))
 }

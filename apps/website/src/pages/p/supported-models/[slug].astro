@@ -69,11 +69,11 @@ const whatIsRest = whatIsBacklinkUrl
   mainEntityId={softwareId}
   breadcrumbs={[
     {
-      name: t('breadcrumb.home', {}, { locale: locale }),
+      name: t('breadcrumb.home', {}, { locale }),
       url: absoluteUrl(Astro.site, '/')
     },
     {
-      name: t('models.breadcrumb.models', {}, { locale: locale }),
+      name: t('models.breadcrumb.models', {}, { locale }),
       url: absoluteUrl(Astro.site, '/p/supported-models/')
     },
     { name: displayName }
@@ -149,7 +149,7 @@ const whatIsRest = whatIsBacklinkUrl
 
   <section class="mx-auto max-w-7xl px-6 py-16 lg:px-8">
     <h2 class="text-2xl font-bold text-primary-comfy-canvas lg:text-3xl">
-      {t('models.whatIs.heading', { name: displayName }, { locale: locale })}
+      {t('models.whatIs.heading', { name: displayName }, { locale })}
     </h2>
     <p
       class="mt-4 max-w-3xl text-base/relaxed text-primary-comfy-canvas/70 lg:text-lg/relaxed"
@@ -189,7 +189,7 @@ const whatIsRest = whatIsBacklinkUrl
   </section>
 
   <FAQSplit01
-    heading={t('models.faq.heading', {}, { locale: locale })}
+    heading={t('models.faq.heading', {}, { locale })}
     faqs={faqs}
     client:visible
   />

@@ -84,7 +84,7 @@ onUnmounted(() => {
     @cancel.prevent="closeDialog"
   >
     <button
-      :aria-label="t('events.videoDialog.close', {}, { locale: locale })"
+      :aria-label="t('events.videoDialog.close', {}, { locale })"
       class="group absolute top-8 right-10 z-10 flex size-10 cursor-pointer items-center justify-center rounded-2xl border-2 border-primary-comfy-yellow bg-primary-comfy-ink transition-colors hover:bg-primary-comfy-yellow lg:right-26"
       @click="closeDialog"
     >

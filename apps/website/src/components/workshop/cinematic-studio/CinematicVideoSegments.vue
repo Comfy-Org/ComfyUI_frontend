@@ -45,14 +45,14 @@ const segmentClass =
 <template>
   <div
     role="group"
-    :aria-label="tc('cinematic.composer.format', {}, { locale: locale })"
+    :aria-label="tc('cinematic.composer.format', {}, { locale })"
     class="flex h-9 shrink-0 items-center overflow-hidden rounded-xl text-[13px] whitespace-nowrap ring-1 ring-transparency-white-t8 ring-inset [&>*+*]:border-l [&>*+*]:border-transparency-white-t8"
   >
     <CinematicMenu
       v-if="aspectOptions.length"
       v-model="aspectValue"
       :options="aspectOptions"
-      :heading="tc('cinematic.video.aspect', {}, { locale: locale })"
+      :heading="tc('cinematic.video.aspect', {}, { locale })"
       :trigger-class="segmentClass"
       tooltip
     >
@@ -68,7 +68,7 @@ const segmentClass =
       v-if="resolutionOptions.length"
       v-model="resolutionValue"
       :options="resolutionOptions"
-      :heading="tc('cinematic.video.resolution', {}, { locale: locale })"
+      :heading="tc('cinematic.video.resolution', {}, { locale })"
       :trigger-class="segmentClass"
       tooltip
     >
@@ -78,7 +78,7 @@ const segmentClass =
       v-if="durationOptions.length"
       v-model="durationValue"
       :options="durationOptions"
-      :heading="tc('cinematic.video.duration', {}, { locale: locale })"
+      :heading="tc('cinematic.video.duration', {}, { locale })"
       :trigger-class="segmentClass"
       tooltip
     >
@@ -86,12 +86,12 @@ const segmentClass =
     </CinematicMenu>
     <CinematicTooltip
       v-if="video.audioField"
-      :text="tc('cinematic.video.audio', {}, { locale: locale })"
+      :text="tc('cinematic.video.audio', {}, { locale })"
     >
       <button
         type="button"
         :aria-pressed="audio"
-        :aria-label="tc('cinematic.video.audio', {}, { locale: locale })"
+        :aria-label="tc('cinematic.video.audio', {}, { locale })"
         :class="
           cn(
             'flex h-full items-center gap-2 px-3 text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t4 hover:text-primary-warm-white',
@@ -102,14 +102,14 @@ const segmentClass =
       >
         <Volume2 v-if="audio" class="size-4" aria-hidden="true" />
         <VolumeX v-else class="size-4" aria-hidden="true" />
-        {{ tc('cinematic.video.audioTag', {}, { locale: locale }) }}
+        {{ tc('cinematic.video.audioTag', {}, { locale }) }}
       </button>
     </CinematicTooltip>
     <span
       v-if="!aspectOptions.length && !durationOptions.length"
       class="px-3 text-primary-warm-gray"
     >
-      {{ tc('cinematic.video.modelDecides', {}, { locale: locale }) }}
+      {{ tc('cinematic.video.modelDecides', {}, { locale }) }}
     </span>
   </div>
 </template>

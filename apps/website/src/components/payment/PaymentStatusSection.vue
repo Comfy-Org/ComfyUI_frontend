@@ -73,29 +73,29 @@ const iconRingClass =
       </div>
 
       <SectionLabel>{{
-        t(`payment.${status}.label`, {}, { locale: locale })
+        t(`payment.${status}.label`, {}, { locale })
       }}</SectionLabel>
 
       <h1
         class="text-4xl/tight font-light text-primary-comfy-canvas md:text-5xl/tight lg:text-6xl/tight"
       >
-        {{ t(`payment.${status}.title`, {}, { locale: locale }) }}
+        {{ t(`payment.${status}.title`, {}, { locale }) }}
       </h1>
 
       <p
         class="max-w-xl text-base font-light text-primary-comfy-canvas/80 lg:text-lg"
       >
-        {{ t(`payment.${status}.subtitle`, {}, { locale: locale }) }}
+        {{ t(`payment.${status}.subtitle`, {}, { locale }) }}
       </p>
 
       <div
         class="mt-2 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-center"
       >
         <BrandButton :href="primaryHref" variant="solid" size="nav">
-          {{ t(`payment.${status}.primaryCta`, {}, { locale: locale }) }}
+          {{ t(`payment.${status}.primaryCta`, {}, { locale }) }}
         </BrandButton>
         <BrandButton :href="secondaryHref" variant="outline" size="nav">
-          {{ t(`payment.${status}.secondaryCta`, {}, { locale: locale }) }}
+          {{ t(`payment.${status}.secondaryCta`, {}, { locale }) }}
         </BrandButton>
       </div>
 
@@ -103,16 +103,14 @@ const iconRingClass =
         v-if="status === 'failed'"
         class="max-w-xl text-sm font-light text-primary-comfy-canvas/60"
       >
-        {{ t('payment.failed.statusPrompt.prefix', {}, { locale: locale }) }}
+        {{ t('payment.failed.statusPrompt.prefix', {}, { locale }) }}
         <a
           :href="externalLinks.cloudStatus"
           class="rounded-sm text-primary-comfy-yellow underline underline-offset-4 transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
         >
-          {{
-            t('payment.failed.statusPrompt.statusLink', {}, { locale: locale })
-          }}
+          {{ t('payment.failed.statusPrompt.statusLink', {}, { locale }) }}
         </a>
-        {{ t('payment.failed.statusPrompt.suffix', {}, { locale: locale }) }}
+        {{ t('payment.failed.statusPrompt.suffix', {}, { locale }) }}
       </p>
     </div>
   </section>

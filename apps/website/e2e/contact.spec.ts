@@ -39,7 +39,7 @@ test.describe('Contact form embed @smoke', () => {
       await expect(
         page.getByRole('heading', {
           level: 1,
-          name: t('contact.form.heading', {}, { locale: locale })
+          name: t('contact.form.heading', {}, { locale })
         })
       ).toBeVisible()
 
@@ -72,7 +72,7 @@ test.describe('Contact social proof @smoke', () => {
       const formSection = page.locator('section', {
         has: page.getByRole('heading', {
           level: 1,
-          name: t('contact.form.heading', {}, { locale: locale })
+          name: t('contact.form.heading', {}, { locale })
         })
       })
 

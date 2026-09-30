@@ -34,25 +34,25 @@ const MEDIA_BASE = 'https://media.comfy.org/website/homepage/use-case'
 
 const industries: Industry[] = [
   {
-    label: t('industries.vfx', {}, { locale: locale }),
+    label: t('industries.vfx', {}, { locale }),
     primarySrc: `${MEDIA_BASE}/left1.webm`,
     secondarySrc: `${MEDIA_BASE}/right1.webm`,
     ambientSrc: '/industries/ambient-vfx-animation.webm'
   },
   {
-    label: t('industries.advertising', {}, { locale: locale }),
+    label: t('industries.advertising', {}, { locale }),
     primarySrc: `${MEDIA_BASE}/left2.webm`,
     secondarySrc: `${MEDIA_BASE}/right2.webm`,
     ambientSrc: '/industries/ambient-advertising.webm'
   },
   {
-    label: t('industries.gaming', {}, { locale: locale }),
+    label: t('industries.gaming', {}, { locale }),
     primarySrc: `${MEDIA_BASE}/left3.webm`,
     secondarySrc: '/industries/secondary-gaming.webm',
     ambientSrc: '/industries/ambient-gaming.webm'
   },
   {
-    label: t('industries.ecommerce', {}, { locale: locale }),
+    label: t('industries.ecommerce', {}, { locale }),
     primarySrc: `${MEDIA_BASE}/left4.webm`,
     secondarySrc: `${MEDIA_BASE}/right4.webm`,
     ambientSrc: '/industries/ambient-ecommerce-fashion.webm',
@@ -150,16 +150,16 @@ const ambientClipId = `industries-ambient-${uid}`
           <p
             class="text-sm font-bold tracking-widest text-primary-comfy-yellow uppercase"
           >
-            {{ t('industries.label', {}, { locale: locale }) }}
+            {{ t('industries.label', {}, { locale }) }}
           </p>
           <p class="max-w-md text-lg/relaxed text-primary-warm-gray">
-            {{ t('industries.body', {}, { locale: locale }) }}
+            {{ t('industries.body', {}, { locale }) }}
           </p>
         </div>
 
         <nav
           class="flex flex-col items-start gap-7"
-          :aria-label="t('industries.navLabel', {}, { locale: locale })"
+          :aria-label="t('industries.navLabel', {}, { locale })"
           @pointerenter="hovering = true"
           @pointerleave="((hovering = false), resume())"
         >
@@ -189,7 +189,7 @@ const ambientClipId = `industries-ambient-${uid}`
           variant="outline"
           class="font-bold"
         >
-          {{ t('industries.cta', {}, { locale: locale }) }}
+          {{ t('industries.cta', {}, { locale }) }}
         </BrandButton>
       </div>
 

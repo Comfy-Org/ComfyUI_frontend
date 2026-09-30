@@ -48,52 +48,52 @@ export function buildModelFaqs(
       ? 'models.faq.templates.singular'
       : 'models.faq.templates.plural',
     values,
-    { locale: locale }
+    { locale }
   )
   const howToUse = t(
     model.docsUrl
       ? 'models.faq.howToUse.withDocs'
       : 'models.faq.howToUse.withoutDocs',
     { ...values, templates, url: model.docsUrl ?? '' },
-    { locale: locale }
+    { locale }
   )
 
   return [
     {
       id: 'what-is',
-      question: t('models.faq.whatIs.question', values, { locale: locale }),
+      question: t('models.faq.whatIs.question', values, { locale }),
       answer: getWhatIsDescription(
         model,
         t(
           dirDescriptionKeys[model.directory] ??
             'models.dirDescription.default',
           {},
-          { locale: locale }
+          { locale }
         ),
         locale
       )
     },
     {
       id: 'how-to-use',
-      question: t('models.faq.howToUse.question', values, { locale: locale }),
+      question: t('models.faq.howToUse.question', values, { locale }),
       answer: howToUse
     },
     {
       id: 'workflow-count',
       question: t('models.faq.workflowCount.question', values, {
-        locale: locale
+        locale
       }),
       answer: t(
         model.workflowCount === 1
           ? 'models.faq.workflowCount.singular'
           : 'models.faq.workflowCount.plural',
         values,
-        { locale: locale }
+        { locale }
       )
     },
     {
       id: 'is-free',
-      question: t('models.faq.isFree.question', values, { locale: locale }),
+      question: t('models.faq.isFree.question', values, { locale }),
       answer: getFaqPricingAnswer(model, locale)
     }
   ]

@@ -66,7 +66,7 @@ const canRetry = computed(
             ? 'workshop.run.preparingSession'
             : 'workshop.run.switchPersonal',
           {},
-          { locale: locale }
+          { locale }
         )
       }}
     </Button>
@@ -76,14 +76,14 @@ const canRetry = computed(
       class="rounded-full"
       @click="requestWorkshopBuyCredits"
     >
-      {{ t('workshop.run.buyCredits', {}, { locale: locale }) }}
+      {{ t('workshop.run.buyCredits', {}, { locale }) }}
     </Button>
     <span
       v-if="personal.failed.value"
       role="alert"
       class="text-xs text-primary-comfy-red"
     >
-      {{ t('nav.workspaceSwitchError', {}, { locale: locale }) }}
+      {{ t('nav.workspaceSwitchError', {}, { locale }) }}
     </span>
   </span>
 </template>

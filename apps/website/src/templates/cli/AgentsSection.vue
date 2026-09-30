@@ -39,13 +39,13 @@ const features: {
   <section class="mx-auto max-w-9xl px-6 py-16 lg:py-24">
     <SectionHeader
       max-width="xl"
-      :label="t('cli.agents.label', {}, { locale: locale })"
+      :label="t('cli.agents.label', {}, { locale })"
       align="start"
     >
-      {{ t('cli.agents.heading', {}, { locale: locale }) }}
+      {{ t('cli.agents.heading', {}, { locale }) }}
       <template #subtitle>
         <p class="mt-4 max-w-xl text-sm text-smoke-700 lg:text-base">
-          {{ t('cli.agents.subtitle', {}, { locale: locale }) }}
+          {{ t('cli.agents.subtitle', {}, { locale }) }}
         </p>
       </template>
     </SectionHeader>
@@ -62,10 +62,10 @@ const features: {
           {{ feature.command }}
         </p>
         <h3 class="text-2xl font-light text-primary-comfy-canvas">
-          {{ t(feature.titleKey, {}, { locale: locale }) }}
+          {{ t(feature.titleKey, {}, { locale }) }}
         </h3>
         <p class="text-sm text-primary-comfy-canvas/70">
-          {{ t(feature.descriptionKey, {}, { locale: locale }) }}
+          {{ t(feature.descriptionKey, {}, { locale }) }}
         </p>
       </article>
     </div>

@@ -40,7 +40,7 @@ function offersFrom(
 ): PricingOffer[] {
   return tiers.flatMap((tier) =>
     cycles.flatMap((cycle) => {
-      const display = t(priceKeysOf(tier)[cycle], {}, { locale: locale }).trim()
+      const display = t(priceKeysOf(tier)[cycle], {}, { locale }).trim()
       const match = /^\$(\d+(?:\.\d+)?)$/.exec(display)
       if (!match) {
         console.warn(
@@ -50,7 +50,7 @@ function offersFrom(
       }
       return [
         {
-          name: `${t(tier.labelKey, {}, { locale: locale })} (${t(`pricing.cycle.${cycle}`, {}, { locale: locale })})`,
+          name: `${t(tier.labelKey, {}, { locale })} (${t(`pricing.cycle.${cycle}`, {}, { locale })})`,
           price: match[1],
           cycle,
           url: subscribeUrl(tier.slug, cycle)

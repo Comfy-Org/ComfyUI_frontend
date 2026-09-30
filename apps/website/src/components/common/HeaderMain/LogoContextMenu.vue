@@ -22,12 +22,12 @@ const routes = getRoutes(locale)
 const svgAssets = [
   {
     id: 'logo',
-    label: t('nav.copyLogoSvg', {}, { locale: locale }),
+    label: t('nav.copyLogoSvg', {}, { locale }),
     svg: logoSvg
   },
   {
     id: 'logomark',
-    label: t('nav.copyLogomarkSvg', {}, { locale: locale }),
+    label: t('nav.copyLogomarkSvg', {}, { locale }),
     svg: logomarkSvg
   }
 ]
@@ -56,14 +56,14 @@ const itemClass =
           <span role="status" aria-live="polite">
             <template v-if="copied && copiedSvg === asset.svg">
               <Check class="size-4" aria-hidden="true" />
-              {{ t('nav.copied', {}, { locale: locale }) }}
+              {{ t('nav.copied', {}, { locale }) }}
             </template>
             <template v-else>{{ asset.label }}</template>
           </span>
         </ContextMenuItem>
         <ContextMenuItem as-child>
           <a :href="routes.brand" :class="itemClass">
-            {{ t('nav.brandAssets', {}, { locale: locale }) }}
+            {{ t('nav.brandAssets', {}, { locale }) }}
           </a>
         </ContextMenuItem>
       </ContextMenuContent>

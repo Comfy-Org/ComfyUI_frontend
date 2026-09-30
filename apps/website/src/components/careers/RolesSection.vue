@@ -95,7 +95,7 @@ function scrollToDepartment(deptKey: string) {
             <h2
               class="text-3xl font-light text-primary-comfy-canvas md:text-4xl"
             >
-              {{ t('careers.roles.heading', {}, { locale: locale }) }}
+              {{ t('careers.roles.heading', {}, { locale }) }}
             </h2>
             <CategoryNav
               v-if="hasRoles"
@@ -113,7 +113,7 @@ function scrollToDepartment(deptKey: string) {
             class="text-base text-primary-warm-gray md:text-lg"
             data-testid="careers-roles-empty"
           >
-            {{ t('careers.roles.empty', {}, { locale: locale }) }}
+            {{ t('careers.roles.empty', {}, { locale }) }}
           </p>
 
           <div

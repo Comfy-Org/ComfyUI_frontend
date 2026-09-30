@@ -11,12 +11,8 @@ const { locale } = pageContext(
 ---
 
 <BaseLayout
-  title={t('workshop.credits.openingMetaTitle', {}, { locale: locale })}
-  description={t(
-    'workshop.credits.openingMetaDescription',
-    {},
-    { locale: locale }
-  )}
+  title={t('workshop.credits.openingMetaTitle', {}, { locale })}
+  description={t('workshop.credits.openingMetaDescription', {}, { locale })}
   noindex
 >
   <main class="flex min-h-dvh items-center justify-center px-6 py-16">
@@ -30,13 +26,13 @@ const { locale } = pageContext(
       <p
         class="text-xs font-bold tracking-wider text-primary-warm-gray uppercase"
       >
-        {t('workshop.credits.openingLabel', {}, { locale: locale })}
+        {t('workshop.credits.openingLabel', {}, { locale })}
       </p>
       <h1 class="text-4xl font-bold text-primary-warm-white">
-        {t('workshop.credits.openingTitle', {}, { locale: locale })}
+        {t('workshop.credits.openingTitle', {}, { locale })}
       </h1>
       <p class="text-primary-warm-gray">
-        {t('workshop.credits.openingBody', {}, { locale: locale })}
+        {t('workshop.credits.openingBody', {}, { locale })}
       </p>
     </div>
   </main>

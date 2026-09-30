@@ -25,12 +25,10 @@ const { id, locale = 'en' } = defineProps<{
     />
     <div class="flex min-w-0 flex-col gap-1">
       <p class="font-bold">
-        {{
-          t('workshop.field.frameRatioMismatchTitle', {}, { locale: locale })
-        }}
+        {{ t('workshop.field.frameRatioMismatchTitle', {}, { locale }) }}
       </p>
       <p>
-        {{ t('workshop.field.frameRatioMismatch', {}, { locale: locale }) }}
+        {{ t('workshop.field.frameRatioMismatch', {}, { locale }) }}
       </p>
     </div>
   </div>

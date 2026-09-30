@@ -33,7 +33,7 @@ const items = computed<CardArticleGalleryItem[]>(() =>
 
 <template>
   <CardArticleGallery01
-    :title="t('launches.section.title', {}, { locale: locale })"
+    :title="t('launches.section.title', {}, { locale })"
     :items
     layout="mixed"
   />

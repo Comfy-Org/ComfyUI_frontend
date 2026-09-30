@@ -45,7 +45,7 @@ const storageRates = groupStorageRatesForDisplay(rateCard.storage)
     key: rate.key,
     price: formatUsdPerGbMonth(rate.pricePerGbMonthUsd),
     credits: formatCreditsPerGbMonth(rate.creditsPerGbMonth),
-    title: t('platform.pricing.storage.title', {}, { locale: locale })
+    title: t('platform.pricing.storage.title', {}, { locale })
   }))
 
 const storageExampleAmount = formatStorageExampleAmount(
@@ -73,12 +73,10 @@ const mobileStorageRows = storageRates.map((rate) => ({
 <template>
   <component :is="rootTag" :id="rootId" :class="rootClass">
     <SectionHeader v-if="!bare" max-width="xl" :heading-size="headingSize">
-      {{ heading ?? t('platform.pricing.heading', {}, { locale: locale }) }}
+      {{ heading ?? t('platform.pricing.heading', {}, { locale }) }}
       <template #subtitle>
         <p class="mt-4 text-sm text-smoke-700">
-          {{
-            subtitle ?? t('platform.pricing.subtitle', {}, { locale: locale })
-          }}
+          {{ subtitle ?? t('platform.pricing.subtitle', {}, { locale }) }}
         </p>
         <p v-if="note" class="mt-2 text-xs text-smoke-700/80">
           {{ note }}
@@ -91,7 +89,7 @@ const mobileStorageRows = storageRates.map((rate) => ({
         <p
           class="text-xs font-bold tracking-widest text-primary-comfy-yellow uppercase"
         >
-          {{ t('platform.pricing.gpuColumn', {}, { locale: locale }) }}
+          {{ t('platform.pricing.gpuColumn', {}, { locale }) }}
         </p>
         <ul class="mt-5 space-y-5">
           <li
@@ -120,7 +118,7 @@ const mobileStorageRows = storageRates.map((rate) => ({
           </li>
         </ul>
         <p class="mt-6 text-xs text-primary-warm-gray">
-          {{ t('platform.pricing.billedPerSecond', {}, { locale: locale }) }}
+          {{ t('platform.pricing.billedPerSecond', {}, { locale }) }}
         </p>
       </article>
 
@@ -128,7 +126,7 @@ const mobileStorageRows = storageRates.map((rate) => ({
         <p
           class="text-xs font-bold tracking-widest text-primary-comfy-yellow uppercase"
         >
-          {{ t('platform.pricing.storageColumn', {}, { locale: locale }) }}
+          {{ t('platform.pricing.storageColumn', {}, { locale }) }}
         </p>
         <ul class="mt-5 space-y-5">
           <li
@@ -154,14 +152,14 @@ const mobileStorageRows = storageRates.map((rate) => ({
           </li>
         </ul>
         <p class="mt-6 text-xs/relaxed text-primary-warm-gray">
-          {{ t('platform.pricing.storageNote', {}, { locale: locale }) }}
+          {{ t('platform.pricing.storageNote', {}, { locale }) }}
           {{
             t(
               'platform.pricing.storageExample',
               {
                 amount: storageExampleAmount
               },
-              { locale: locale }
+              { locale }
             )
           }}
         </p>
@@ -180,28 +178,16 @@ const mobileStorageRows = storageRates.map((rate) => ({
                   class="text-xs font-bold tracking-widest text-primary-comfy-yellow uppercase"
                 >
                   <th class="px-2 py-4" scope="col">
-                    {{
-                      t('platform.pricing.gpuColumn', {}, { locale: locale })
-                    }}
+                    {{ t('platform.pricing.gpuColumn', {}, { locale }) }}
                   </th>
                   <th class="p-4" scope="col">
-                    {{
-                      t('platform.pricing.vramColumn', {}, { locale: locale })
-                    }}
+                    {{ t('platform.pricing.vramColumn', {}, { locale }) }}
                   </th>
                   <th class="p-4 text-right" scope="col">
-                    {{
-                      t('platform.pricing.priceColumn', {}, { locale: locale })
-                    }}
+                    {{ t('platform.pricing.priceColumn', {}, { locale }) }}
                   </th>
                   <th class="px-2 py-4 text-right" scope="col">
-                    {{
-                      t(
-                        'platform.pricing.creditsColumn',
-                        {},
-                        { locale: locale }
-                      )
-                    }}
+                    {{ t('platform.pricing.creditsColumn', {}, { locale }) }}
                   </th>
                 </tr>
               </thead>
@@ -234,7 +220,7 @@ const mobileStorageRows = storageRates.map((rate) => ({
             </table>
           </div>
           <p class="mt-auto px-2 pt-6 text-xs text-primary-warm-gray">
-            {{ t('platform.pricing.billedPerSecond', {}, { locale: locale }) }}
+            {{ t('platform.pricing.billedPerSecond', {}, { locale }) }}
           </p>
         </article>
 
@@ -246,27 +232,13 @@ const mobileStorageRows = storageRates.map((rate) => ({
                   class="text-xs font-bold tracking-widest text-primary-comfy-yellow uppercase"
                 >
                   <th class="px-2 py-4" scope="col">
-                    {{
-                      t(
-                        'platform.pricing.storageColumn',
-                        {},
-                        { locale: locale }
-                      )
-                    }}
+                    {{ t('platform.pricing.storageColumn', {}, { locale }) }}
                   </th>
                   <th class="p-4 text-right" scope="col">
-                    {{
-                      t('platform.pricing.priceColumn', {}, { locale: locale })
-                    }}
+                    {{ t('platform.pricing.priceColumn', {}, { locale }) }}
                   </th>
                   <th class="px-2 py-4 text-right" scope="col">
-                    {{
-                      t(
-                        'platform.pricing.creditsColumn',
-                        {},
-                        { locale: locale }
-                      )
-                    }}
+                    {{ t('platform.pricing.creditsColumn', {}, { locale }) }}
                   </th>
                 </tr>
               </thead>
@@ -298,14 +270,14 @@ const mobileStorageRows = storageRates.map((rate) => ({
             </table>
           </div>
           <p class="mt-auto px-2 pt-6 text-xs/relaxed text-primary-warm-gray">
-            {{ t('platform.pricing.storageNote', {}, { locale: locale }) }}
+            {{ t('platform.pricing.storageNote', {}, { locale }) }}
             {{
               t(
                 'platform.pricing.storageExample',
                 {
                   amount: storageExampleAmount
                 },
-                { locale: locale }
+                { locale }
               )
             }}
           </p>

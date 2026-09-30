@@ -12,14 +12,14 @@ const routes = getRoutes(locale)
 
 <template>
   <CtaCenter01
-    :heading="t('affiliate.cta.heading', {}, { locale: locale })"
+    :heading="t('affiliate.cta.heading', {}, { locale })"
     :primary-cta="{
-      label: t('affiliate.cta.apply', {}, { locale: locale }),
+      label: t('affiliate.cta.apply', {}, { locale }),
       href: externalLinks.affiliateApplicationForm,
       target: '_blank'
     }"
     :terms-link="{
-      label: t('affiliate.cta.termsLabel', {}, { locale: locale }),
+      label: t('affiliate.cta.termsLabel', {}, { locale }),
       href: routes.affiliateTerms
     }"
   />

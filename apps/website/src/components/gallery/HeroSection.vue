@@ -12,7 +12,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
     class="mx-auto flex max-w-9xl flex-col items-center px-6 pt-36 pb-16 text-center"
   >
     <SectionLabel>
-      {{ t('gallery.label', {}, { locale: locale }) }}
+      {{ t('gallery.label', {}, { locale }) }}
     </SectionLabel>
     <h1
       class="mt-4 max-w-3xl text-3xl font-light tracking-tight text-primary-comfy-canvas lg:text-5xl"
@@ -22,7 +22,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       >{{ t('gallery.heroTitleAfter', {}, { locale }) }}
     </h1>
     <p class="mt-4 max-w-lg text-sm text-primary-comfy-canvas lg:text-base">
-      {{ t('gallery.heroSubtitle', {}, { locale: locale }) }}
+      {{ t('gallery.heroSubtitle', {}, { locale }) }}
     </p>
   </section>
 </template>

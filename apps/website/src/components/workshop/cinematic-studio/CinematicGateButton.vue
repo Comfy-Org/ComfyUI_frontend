@@ -54,7 +54,7 @@ const switchLabel = computed(() =>
       ? 'workshop.run.preparingSession'
       : 'workshop.run.switchPersonal',
     {},
-    { locale: locale }
+    { locale }
   )
 )
 </script>
@@ -67,7 +67,7 @@ const switchLabel = computed(() =>
     :class="buttonClass"
     @click="leaveForSignIn($event, signInHref)"
   >
-    {{ t('workshop.run.signIn', {}, { locale: locale }) }}
+    {{ t('workshop.run.signIn', {}, { locale }) }}
   </Button>
   <Button
     v-else-if="gate === 'pending'"
@@ -75,7 +75,7 @@ const switchLabel = computed(() =>
     :class="buttonClass"
     data-testid="cinematic-generate"
   >
-    {{ tc('cinematic.output.checking', {}, { locale: locale }) }}
+    {{ tc('cinematic.output.checking', {}, { locale }) }}
   </Button>
   <Button
     v-else-if="rendering"
@@ -83,7 +83,7 @@ const switchLabel = computed(() =>
     :class="buttonClass"
     @click="emit('cancel')"
   >
-    {{ tc('cinematic.output.cancel', {}, { locale: locale }) }}
+    {{ tc('cinematic.output.cancel', {}, { locale }) }}
   </Button>
   <TooltipProvider v-else :delay-duration="150">
     <TooltipRoot :disabled="!tooltip">
@@ -94,7 +94,7 @@ const switchLabel = computed(() =>
           :aria-description="note"
           @click="requestWorkshopBuyCredits"
         >
-          {{ t('workshop.run.buyCredits', {}, { locale: locale }) }}
+          {{ t('workshop.run.buyCredits', {}, { locale }) }}
         </Button>
         <Button
           v-else-if="gate === 'memberNoCredits'"
@@ -113,7 +113,7 @@ const switchLabel = computed(() =>
             data-testid="cinematic-generate"
             @click="emit('generate')"
           >
-            {{ tc('cinematic.output.generate', {}, { locale: locale }) }}
+            {{ tc('cinematic.output.generate', {}, { locale }) }}
           </Button>
         </span>
       </TooltipTrigger>
@@ -133,6 +133,6 @@ const switchLabel = computed(() =>
     role="alert"
     class="text-xs text-primary-comfy-red"
   >
-    {{ t('nav.workspaceSwitchError', {}, { locale: locale }) }}
+    {{ t('nav.workspaceSwitchError', {}, { locale }) }}
   </p>
 </template>

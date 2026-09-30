@@ -98,11 +98,8 @@ const modelOptions = computed(() =>
     label: model.name,
     logo: model.logo,
     meta: model.degraded
-      ? tc('cinematic.model.degraded', {}, { locale: locale })
-      : videoTags(
-          model.video,
-          tc('cinematic.video.audioTag', {}, { locale: locale })
-        )
+      ? tc('cinematic.model.degraded', {}, { locale })
+      : videoTags(model.video, tc('cinematic.video.audioTag', {}, { locale }))
   }))
 )
 const model = computed(() =>
@@ -110,30 +107,26 @@ const model = computed(() =>
 )
 
 const bodyLabel = computed(() =>
-  tc(directionOption('body', direction).label, {}, { locale: locale })
+  tc(directionOption('body', direction).label, {}, { locale })
 )
 const cameraSummary = computed(
   () =>
-    `${tc('cinematic.section.camera', {}, { locale: locale })}: ${cameraGroups
+    `${tc('cinematic.section.camera', {}, { locale })}: ${cameraGroups
       .map((group) =>
-        tc(directionOption(group.part, direction).label, {}, { locale: locale })
+        tc(directionOption(group.part, direction).label, {}, { locale })
       )
       .join(' · ')}`
 )
 const focalLabel = computed(() => {
   const focal = directionOption('focal', direction)
-  return focal.id === 'auto'
-    ? undefined
-    : tc(focal.label, {}, { locale: locale })
+  return focal.id === 'auto' ? undefined : tc(focal.label, {}, { locale })
 })
 const cameraLabel = computed(
   () =>
-    `${tc('cinematic.section.camera', {}, { locale: locale })}: ${focalLabel.value ?? bodyLabel.value}`
+    `${tc('cinematic.section.camera', {}, { locale })}: ${focalLabel.value ?? bodyLabel.value}`
 )
 const blockedNote = computed(() =>
-  blocked
-    ? tc(blocked.key, { model: blocked.model }, { locale: locale })
-    : undefined
+  blocked ? tc(blocked.key, { model: blocked.model }, { locale }) : undefined
 )
 const canGenerate = computed(
   () => gate === 'ready' && scene.value.trim().length > 0 && !blockedNote.value
@@ -155,7 +148,7 @@ const chipClass = (key: PickerKey) =>
   <div
     class="flex w-full flex-col overflow-hidden rounded-3xl border border-transparency-white-t8 bg-primary-comfy-ink-light shadow-[0_20px_60px_rgb(0_0_0/0.35)]"
     role="group"
-    :aria-label="tc('cinematic.composer.label', {}, { locale: locale })"
+    :aria-label="tc('cinematic.composer.label', {}, { locale })"
   >
     <div class="flex flex-wrap items-start gap-x-2.5 gap-y-1 px-4 pt-3.5 pb-3">
       <CinematicReferenceMenu
@@ -167,13 +160,13 @@ const chipClass = (key: PickerKey) =>
         :locale
       />
       <label for="cinematic-scene" class="sr-only">
-        {{ tc('cinematic.section.scene', {}, { locale: locale }) }}
+        {{ tc('cinematic.section.scene', {}, { locale }) }}
       </label>
       <textarea
         id="cinematic-scene"
         v-model="scene"
         rows="1"
-        :placeholder="tc('cinematic.scene.placeholder', {}, { locale: locale })"
+        :placeholder="tc('cinematic.scene.placeholder', {}, { locale })"
         class="field-sizing-content max-h-[calc(4lh+0.375rem)] min-h-9 flex-1 resize-none bg-transparent pt-1.5 text-base/relaxed text-primary-warm-white outline-none placeholder:text-primary-warm-gray"
         @keydown.enter.meta.prevent="generateFromKeyboard"
         @keydown.enter.ctrl.prevent="generateFromKeyboard"
@@ -195,7 +188,7 @@ const chipClass = (key: PickerKey) =>
         <CinematicMenu
           v-model="modelSlug"
           :options="modelOptions"
-          :heading="tc('cinematic.model.heading', {}, { locale: locale })"
+          :heading="tc('cinematic.model.heading', {}, { locale })"
           tooltip
           trigger-class="h-9 shrink-0 gap-2 rounded-xl px-3 text-[13px] whitespace-nowrap text-primary-warm-white hover:bg-transparency-white-t8"
         >

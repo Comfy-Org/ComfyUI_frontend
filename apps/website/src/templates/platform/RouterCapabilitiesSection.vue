@@ -10,12 +10,8 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const rows: FeatureRow[] = [
   {
     id: 'integrate',
-    title: routerT('platform.router.section1.heading', {}, { locale: locale }),
-    description: routerT(
-      'platform.router.section1.body',
-      {},
-      { locale: locale }
-    ),
+    title: routerT('platform.router.section1.heading', {}, { locale }),
+    description: routerT('platform.router.section1.body', {}, { locale }),
     media: {
       type: 'image',
       src: 'https://media.comfy.org/website/router/integrate-once-v2.webp',
@@ -24,12 +20,8 @@ const rows: FeatureRow[] = [
   },
   {
     id: 'route',
-    title: routerT('platform.router.section2.heading', {}, { locale: locale }),
-    description: routerT(
-      'platform.router.section2.body',
-      {},
-      { locale: locale }
-    ),
+    title: routerT('platform.router.section2.heading', {}, { locale }),
+    description: routerT('platform.router.section2.body', {}, { locale }),
     media: {
       type: 'image',
       src: 'https://media.comfy.org/website/router/provider-comfy.webp',
@@ -38,12 +30,8 @@ const rows: FeatureRow[] = [
   },
   {
     id: 'queue',
-    title: routerT('platform.router.section3.heading', {}, { locale: locale }),
-    description: routerT(
-      'platform.router.section3.body',
-      {},
-      { locale: locale }
-    ),
+    title: routerT('platform.router.section3.heading', {}, { locale }),
+    description: routerT('platform.router.section3.body', {}, { locale }),
     media: {
       type: 'image',
       src: 'https://media.comfy.org/website/router/model-stream.webp',
@@ -87,13 +75,7 @@ const supportedProviders = [
     <p
       class="text-center text-xs font-bold tracking-widest text-primary-comfy-yellow uppercase"
     >
-      {{
-        routerT(
-          'platform.router.section2.providersLabel',
-          {},
-          { locale: locale }
-        )
-      }}
+      {{ routerT('platform.router.section2.providersLabel', {}, { locale }) }}
     </p>
     <RouterProviderLogoRow
       :animated="false"

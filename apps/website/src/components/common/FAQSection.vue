@@ -33,24 +33,15 @@ const {
 
 const title = computed(
   () =>
-    heading ??
-    (headingKey === undefined ? '' : t(headingKey, {}, { locale: locale }))
+    heading ?? (headingKey === undefined ? '' : t(headingKey, {}, { locale }))
 )
 
 const faqs = computed<readonly FaqItem[]>(
   () =>
     items ??
     Array.from({ length: faqCount }, (_, i) => ({
-      question: t(
-        `${faqPrefix}.${i + 1}.q` as TranslationKey,
-        {},
-        { locale: locale }
-      ),
-      answer: t(
-        `${faqPrefix}.${i + 1}.a` as TranslationKey,
-        {},
-        { locale: locale }
-      )
+      question: t(`${faqPrefix}.${i + 1}.q` as TranslationKey, {}, { locale }),
+      answer: t(`${faqPrefix}.${i + 1}.a` as TranslationKey, {}, { locale })
     }))
 )
 
@@ -139,7 +130,7 @@ function toggle(index: number) {
           v-if="footerKey"
           as="p"
           class="mt-8 text-sm text-primary-comfy-canvas/70 [&_a]:text-primary-comfy-yellow [&_a]:underline"
-          :html="t(footerKey, {}, { locale: locale })"
+          :html="t(footerKey, {}, { locale })"
         />
       </div>
     </div>

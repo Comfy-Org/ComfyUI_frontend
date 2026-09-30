@@ -70,7 +70,7 @@ const announceCurrentSlide = () => {
       current: activeIndex.value + 1,
       total: slides.length
     },
-    { locale: locale }
+    { locale }
   )
 }
 
@@ -137,9 +137,9 @@ const providerMask = (provider: keyof typeof PROVIDER_ICON) => ({
     <div
       role="group"
       :aria-roledescription="
-        t('auth.hero.carouselRoleDescription', {}, { locale: locale })
+        t('auth.hero.carouselRoleDescription', {}, { locale })
       "
-      :aria-label="t('auth.hero.carouselLabel', {}, { locale: locale })"
+      :aria-label="t('auth.hero.carouselLabel', {}, { locale })"
       class="flex min-h-0 w-full max-w-3xl flex-1 flex-col gap-4 xl:gap-5 2xl:gap-6"
     >
       <p class="sr-only" role="status" aria-live="polite">
@@ -158,7 +158,7 @@ const providerMask = (provider: keyof typeof PROVIDER_ICON) => ({
             :key="slide.id"
             role="group"
             :aria-roledescription="
-              t('auth.hero.slideRoleDescription', {}, { locale: locale })
+              t('auth.hero.slideRoleDescription', {}, { locale })
             "
             :aria-label="slide.title"
             :aria-hidden="index !== activeIndex"
@@ -229,7 +229,7 @@ const providerMask = (provider: keyof typeof PROVIDER_ICON) => ({
         <button
           type="button"
           :class="NAV_BUTTON_CLASS"
-          :aria-label="t('auth.hero.previousSlide', {}, { locale: locale })"
+          :aria-label="t('auth.hero.previousSlide', {}, { locale })"
           @click="goToPrevious"
         >
           <ChevronLeft class="size-6" aria-hidden="true" />
@@ -237,7 +237,7 @@ const providerMask = (provider: keyof typeof PROVIDER_ICON) => ({
         <button
           type="button"
           :class="NAV_BUTTON_CLASS"
-          :aria-label="t('auth.hero.nextSlide', {}, { locale: locale })"
+          :aria-label="t('auth.hero.nextSlide', {}, { locale })"
           @click="goToNext"
         >
           <ChevronRight class="size-6" aria-hidden="true" />

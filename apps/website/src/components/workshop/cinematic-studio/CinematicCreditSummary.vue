@@ -43,15 +43,13 @@ const skipped = computed(() => takes.filter(isUnpaid))
             failed: skipped.length,
             total: takes.length
           },
-          { locale: locale }
+          { locale }
         )
       }}
     </span>
     <CinematicCreditAction
       :member="memberWorkspace !== undefined"
-      :retry-label="
-        tc('cinematic.credits.retrySkipped', {}, { locale: locale })
-      "
+      :retry-label="tc('cinematic.credits.retrySkipped', {}, { locale })"
       :locale
       @retry="
         emit(

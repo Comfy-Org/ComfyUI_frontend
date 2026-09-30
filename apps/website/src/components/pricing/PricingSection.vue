@@ -54,7 +54,7 @@ function originalPriceFor(plan: PricingPlan): string | undefined {
   return billingPeriod.value === 'yearly' &&
     plan.yearlyPriceKey &&
     plan.priceKey
-    ? t(plan.priceKey, {}, { locale: locale })
+    ? t(plan.priceKey, {}, { locale })
     : undefined
 }
 
@@ -78,7 +78,7 @@ function creditsLabelFor(plan: PricingPlan): string {
       ? 'pricing.creditsLabelYearly'
       : 'pricing.creditsLabel',
     {},
-    { locale: locale }
+    { locale }
   )
 }
 
@@ -88,7 +88,7 @@ const planCards = computed(() =>
     priceKey: displayPriceKey(plan),
     originalPrice: originalPriceFor(plan),
     yearlyTotal: plan.yearlyTotalKey
-      ? t(plan.yearlyTotalKey, {}, { locale: locale })
+      ? t(plan.yearlyTotalKey, {}, { locale })
       : undefined,
     creditsKey: displayCreditsKey(plan),
     creditsLabel: creditsLabelFor(plan),
@@ -105,12 +105,12 @@ const planCards = computed(() =>
         :is="headingLevel"
         class="font-formula text-4xl font-light text-primary-comfy-canvas lg:text-5xl"
       >
-        {{ t('pricing.title', {}, { locale: locale }) }}
+        {{ t('pricing.title', {}, { locale }) }}
       </component>
       <p
         class="mx-auto mt-3 max-w-xl text-base text-pretty text-primary-comfy-canvas"
       >
-        {{ t('pricing.subtitle', {}, { locale: locale }) }}
+        {{ t('pricing.subtitle', {}, { locale }) }}
       </p>
     </div>
 
@@ -125,7 +125,7 @@ const planCards = computed(() =>
           class="min-w-40 text-2xs sm:min-w-48 sm:text-xs"
         >
           <span class="inline-block">{{
-            t('pricing.period.monthly', {}, { locale: locale })
+            t('pricing.period.monthly', {}, { locale })
           }}</span>
         </ToggleGroupItem>
         <ToggleGroupItem
@@ -133,7 +133,7 @@ const planCards = computed(() =>
           class="min-w-40 text-2xs sm:min-w-48 sm:text-xs"
         >
           <span class="inline-block">{{
-            t('pricing.period.yearly', {}, { locale: locale })
+            t('pricing.period.yearly', {}, { locale })
           }}</span>
         </ToggleGroupItem>
       </ToggleGroup>
@@ -165,18 +165,18 @@ const planCards = computed(() =>
       >
         <div class="flex items-center gap-4">
           <PricingPlanLabel
-            :label="t(plan.labelKey, {}, { locale: locale })"
+            :label="t(plan.labelKey, {}, { locale })"
             class="inline-block text-base uppercase"
           />
           <Badge v-if="plan.isPopular" variant="callout" size="xs">
-            {{ t('pricing.badge.popular', {}, { locale: locale }) }}</Badge
+            {{ t('pricing.badge.popular', {}, { locale }) }}</Badge
           >
         </div>
 
         <PricingPrice
           v-if="priceKey"
-          :price="t(priceKey, {}, { locale: locale })"
-          :period="t('pricing.plan.period', {}, { locale: locale })"
+          :price="t(priceKey, {}, { locale })"
+          :period="t('pricing.plan.period', {}, { locale })"
           :original-price="originalPrice"
           :billing-period="billingPeriod"
           :yearly-total="yearlyTotal"
@@ -189,7 +189,7 @@ const planCards = computed(() =>
 
         <PricingCredits
           v-if="creditsKey"
-          :credits="t(creditsKey, {}, { locale: locale })"
+          :credits="t(creditsKey, {}, { locale })"
           :label="creditsLabel"
           :estimate-key="estimateKey"
           :locale
@@ -201,7 +201,7 @@ const planCards = computed(() =>
             variant="outline"
             class="w-full text-center"
           >
-            {{ t(plan.ctaKey, {}, { locale: locale }) }}
+            {{ t(plan.ctaKey, {}, { locale }) }}
           </Button>
         </div>
       </PricingCard>
@@ -222,7 +222,7 @@ const planCards = computed(() =>
     </div>
 
     <p class="mt-12 text-xs text-primary-comfy-canvas/70">
-      {{ t('pricing.footnote', {}, { locale: locale }) }}
+      {{ t('pricing.footnote', {}, { locale }) }}
     </p>
   </section>
 </template>

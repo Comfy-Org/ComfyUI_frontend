@@ -15,15 +15,10 @@ export function modelTitle(model: { name: string }, locale: Locale = 'en') {
   const fitting = (
     ['workshop.model.meta.title', 'workshop.model.meta.titleUnbranded'] as const
   )
-    .map((key) => t(key, { name: model.name }, { locale: locale }))
+    .map((key) => t(key, { name: model.name }, { locale }))
     .find((title) => title.length <= TITLE_MAX)
   if (fitting) return fitting
   const apiKey = 'workshop.model.meta.titleApi'
-  const nameBudget =
-    TITLE_MAX - t(apiKey, { name: '' }, { locale: locale }).length
-  return t(
-    apiKey,
-    { name: shortenAtWord(model.name, nameBudget) },
-    { locale: locale }
-  )
+  const nameBudget = TITLE_MAX - t(apiKey, { name: '' }, { locale }).length
+  return t(apiKey, { name: shortenAtWord(model.name, nameBudget) }, { locale })
 }

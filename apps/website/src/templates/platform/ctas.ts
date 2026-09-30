@@ -18,12 +18,12 @@ export function platformCtas(locale: Locale): {
 } {
   return {
     getStarted: {
-      label: t('platform.hero.getStarted', {}, { locale: locale }),
+      label: t('platform.hero.getStarted', {}, { locale }),
       href: externalLinks.platform,
       target: '_blank'
     },
     docs: {
-      label: t('platform.hero.readDocs', {}, { locale: locale }),
+      label: t('platform.hero.readDocs', {}, { locale }),
       href: externalLinks.docsPlatform,
       target: '_blank'
     }

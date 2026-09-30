@@ -36,8 +36,8 @@ const segments = computed(() =>
     const { label, option } = shownOption(group.part, direction, colors)
     return {
       part: group.part,
-      title: tc(group.title, {}, { locale: locale }),
-      label: tc(label, {}, { locale: locale }),
+      title: tc(group.title, {}, { locale }),
+      label: tc(label, {}, { locale }),
       option
     }
   })
@@ -47,7 +47,7 @@ const segments = computed(() =>
 <template>
   <div
     role="group"
-    :aria-label="tc('cinematic.section.direction', {}, { locale: locale })"
+    :aria-label="tc('cinematic.section.direction', {}, { locale })"
     class="flex h-9 shrink-0 items-center overflow-hidden rounded-xl ring-1 ring-transparency-white-t8 ring-inset"
   >
     <template v-for="(segment, index) in segments" :key="segment.part">

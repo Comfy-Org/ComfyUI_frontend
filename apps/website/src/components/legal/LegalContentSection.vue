@@ -128,7 +128,7 @@ function scrollToSection(id: string) {
 }
 
 function listItems(key: TranslationKey): string[] {
-  return t(key, {}, { locale: locale }).split('\n')
+  return t(key, {}, { locale }).split('\n')
 }
 </script>
 
@@ -146,7 +146,7 @@ function listItems(key: TranslationKey): string[] {
           <summary
             class="flex cursor-pointer items-center justify-between px-4 py-3 text-sm font-semibold tracking-wide text-primary-comfy-canvas select-none"
           >
-            <span>{{ t(tocLabelKey, {}, { locale: locale }) }}</span>
+            <span>{{ t(tocLabelKey, {}, { locale }) }}</span>
             <span
               :class="
                 mobileTocOpen
@@ -181,12 +181,12 @@ function listItems(key: TranslationKey): string[] {
 
         <nav
           class="hidden lg:sticky lg:top-32 lg:block"
-          :aria-label="t(tocLabelKey, {}, { locale: locale })"
+          :aria-label="t(tocLabelKey, {}, { locale })"
         >
           <p
             class="mb-4 text-xs font-semibold tracking-widest text-primary-warm-gray uppercase"
           >
-            {{ t(tocLabelKey, {}, { locale: locale }) }}
+            {{ t(tocLabelKey, {}, { locale }) }}
           </p>
           <ul class="space-y-2">
             <li v-for="item in tocItems" :key="item.id">
@@ -227,7 +227,7 @@ function listItems(key: TranslationKey): string[] {
               v-if="block.type === 'paragraph'"
               as="p"
               class="mt-4 text-sm/relaxed text-primary-comfy-canvas lg:text-base/relaxed"
-              :html="t(block.key, {}, { locale: locale })"
+              :html="t(block.key, {}, { locale })"
             />
             <ul
               v-else

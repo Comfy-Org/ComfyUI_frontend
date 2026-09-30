@@ -73,7 +73,7 @@ const workspaceRole = computed(() =>
   t(
     session.role === 'member' ? 'nav.roleMember' : 'nav.roleOwner',
     {},
-    { locale: locale }
+    { locale }
   )
 )
 
@@ -186,11 +186,11 @@ const surfaceClass =
             role="alert"
             data-testid="account-workspace-switch-error"
           >
-            {{ t('nav.workspaceSwitchError', {}, { locale: locale }) }}
+            {{ t('nav.workspaceSwitchError', {}, { locale }) }}
           </p>
 
           <p v-if="balanceError" class="px-4 pb-3 text-xs text-red-400">
-            {{ t('auth.header.balanceError', {}, { locale: locale }) }}
+            {{ t('auth.header.balanceError', {}, { locale }) }}
           </p>
 
           <DropdownMenuItem
@@ -201,7 +201,7 @@ const surfaceClass =
           >
             <Coins class="size-4 text-primary-warm-gray" aria-hidden="true" />
             <span class="flex-1 text-left">
-              {{ t('workshop.run.buyCredits', {}, { locale: locale }) }}
+              {{ t('workshop.run.buyCredits', {}, { locale }) }}
             </span>
           </DropdownMenuItem>
         </div>
@@ -219,7 +219,7 @@ const surfaceClass =
           <DropdownMenuItem as-child>
             <button
               type="button"
-              :aria-label="t('nav.signOut', {}, { locale: locale })"
+              :aria-label="t('nav.signOut', {}, { locale })"
               class="flex h-8 shrink-0 cursor-pointer items-center gap-2 rounded-md px-2 text-sm text-primary-warm-gray transition-colors outline-none hover:bg-transparency-white-t8 hover:text-primary-warm-white focus-visible:bg-transparency-white-t8 focus-visible:text-primary-warm-white"
               data-testid="account-sign-out"
               @click="emit('signOut')"
@@ -227,7 +227,7 @@ const surfaceClass =
               <span
                 class="hidden group-focus-within/footer:inline group-hover/footer:inline"
               >
-                {{ t('nav.signOut', {}, { locale: locale }) }}
+                {{ t('nav.signOut', {}, { locale }) }}
               </span>
               <LogOut class="size-4" aria-hidden="true" />
             </button>

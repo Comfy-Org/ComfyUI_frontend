@@ -42,20 +42,20 @@ const markerOffset = computed(
       <p
         class="text-sm font-medium tracking-widest text-primary-comfy-yellow uppercase"
       >
-        {{ tc('cinematic.hub.eyebrow', {}, { locale: locale }) }}
+        {{ tc('cinematic.hub.eyebrow', {}, { locale }) }}
       </p>
       <h1 class="text-3xl font-light text-primary-comfy-canvas lg:text-5xl">
-        {{ tc('cinematic.hub.heading', {}, { locale: locale }) }}
+        {{ tc('cinematic.hub.heading', {}, { locale }) }}
       </h1>
       <p class="max-w-2xl text-base text-content-secondary">
-        {{ tc('cinematic.hub.subtitle', {}, { locale: locale }) }}
+        {{ tc('cinematic.hub.subtitle', {}, { locale }) }}
       </p>
     </header>
 
     <div
       class="relative mb-8 grid w-fit grid-cols-3 rounded-2xl bg-transparency-white-t8 p-1"
       role="group"
-      :aria-label="tc('cinematic.hub.tabs', {}, { locale: locale })"
+      :aria-label="tc('cinematic.hub.tabs', {}, { locale })"
     >
       <div class="pointer-events-none absolute inset-1 grid grid-cols-3">
         <div
@@ -78,22 +78,22 @@ const markerOffset = computed(
         "
         @click="tab = option"
       >
-        {{ tc(TAB_LABEL[option], {}, { locale: locale }) }}
+        {{ tc(TAB_LABEL[option], {}, { locale }) }}
       </button>
     </div>
 
     <template v-if="tab === 'apps'">
       <p class="mb-6 text-sm text-content-secondary">
-        {{ tc('cinematic.hub.appsIntro', {}, { locale: locale }) }}
+        {{ tc('cinematic.hub.appsIntro', {}, { locale }) }}
       </p>
       <ul class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <CinematicAppCard
           v-for="app in apps"
           :key="app.key"
-          :name="tc(app.name, {}, { locale: locale })"
-          :summary="tc(app.summary, {}, { locale: locale })"
-          :badge="tc(app.badge, {}, { locale: locale })"
-          :meta="app.meta && tc(app.meta, {}, { locale: locale })"
+          :name="tc(app.name, {}, { locale })"
+          :summary="tc(app.summary, {}, { locale })"
+          :badge="tc(app.badge, {}, { locale })"
+          :meta="app.meta && tc(app.meta, {}, { locale })"
           :image="app.image"
           :href="app.href"
         />
@@ -104,7 +104,7 @@ const markerOffset = computed(
       class="flex flex-col items-start gap-3 rounded-3xl bg-hub-surface p-8"
     >
       <p class="text-base text-content-bright">
-        {{ tc('cinematic.hub.elsewhere', {}, { locale: locale }) }}
+        {{ tc('cinematic.hub.elsewhere', {}, { locale }) }}
       </p>
       <a
         :href="HUB_PROTOTYPE"
@@ -112,7 +112,7 @@ const markerOffset = computed(
         rel="noopener noreferrer"
         class="text-sm text-primary-comfy-yellow underline underline-offset-4"
       >
-        {{ tc('cinematic.hub.openHub', {}, { locale: locale }) }}
+        {{ tc('cinematic.hub.openHub', {}, { locale }) }}
       </a>
     </div>
   </section>

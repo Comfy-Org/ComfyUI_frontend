@@ -74,7 +74,7 @@ const duration = formatDuration(story.durationSeconds)
         class="mb-16 scroll-mt-24 lg:scroll-mt-36"
       >
         <h2 class="mb-6 text-2xl font-light text-primary-comfy-canvas">
-          {{ t('customers.watch.transcript', {}, { locale: locale }) }}
+          {{ t('customers.watch.transcript', {}, { locale }) }}
         </h2>
         <p
           v-for="(paragraph, index) in transcript"
@@ -93,10 +93,10 @@ const duration = formatDuration(story.durationSeconds)
           variant="default"
           size="lg"
         >
-          {{ t('customers.watch.readWrittenStory', {}, { locale: locale }) }}
+          {{ t('customers.watch.readWrittenStory', {}, { locale }) }}
         </Button>
         <Button as="a" :href="routes.customers" variant="outline" size="lg">
-          {{ t('customers.watch.browseAll', {}, { locale: locale }) }}
+          {{ t('customers.watch.browseAll', {}, { locale }) }}
         </Button>
       </div>
     </div>

@@ -23,10 +23,10 @@ const { locale = 'en' } = defineProps<{
   >
     <div>
       <p class="text-lg font-bold text-primary-comfy-canvas">
-        {{ t(titleKey, {}, { locale: locale }) }}
+        {{ t(titleKey, {}, { locale }) }}
       </p>
       <p class="mt-1 text-sm text-primary-comfy-canvas">
-        {{ t(subtitleKey, {}, { locale: locale }) }}
+        {{ t(subtitleKey, {}, { locale }) }}
       </p>
     </div>
     <BrandButton
@@ -36,7 +36,7 @@ const { locale = 'en' } = defineProps<{
       size="xs"
       class="shrink-0 self-start sm:self-auto"
     >
-      {{ t(cta.labelKey, {}, { locale: locale }) }}
+      {{ t(cta.labelKey, {}, { locale }) }}
     </BrandButton>
   </div>
 </template>

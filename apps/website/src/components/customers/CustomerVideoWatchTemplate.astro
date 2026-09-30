@@ -67,8 +67,8 @@ const transcript = story.captions[0]
   ? await fetchTranscript(story.captions[0].src)
   : []
 
-const homeLabel = t('breadcrumb.home', {}, { locale: locale })
-const collectionLabel = t('nav.customerStories', {}, { locale: locale })
+const homeLabel = t('breadcrumb.home', {}, { locale })
+const collectionLabel = t('nav.customerStories', {}, { locale })
 ---
 
 <BaseLayout
@@ -89,7 +89,7 @@ const collectionLabel = t('nav.customerStories', {}, { locale: locale })
       { label: collectionLabel, href: routes.customers },
       { label: story.title }
     ]}
-    label={t('ui.breadcrumb', {}, { locale: locale })}
+    label={t('ui.breadcrumb', {}, { locale })}
   />
   <CustomerWatchPage
     story={story}
@@ -104,7 +104,7 @@ const collectionLabel = t('nav.customerStories', {}, { locale: locale })
       image={nextStory.poster}
       href={customerVideoPath(nextStory.slug)}
       locale={locale}
-      ctaLabel={t('customers.video.watchStory', {}, { locale: locale })}
+      ctaLabel={t('customers.video.watchStory', {}, { locale })}
     />
   )}
 </BaseLayout>

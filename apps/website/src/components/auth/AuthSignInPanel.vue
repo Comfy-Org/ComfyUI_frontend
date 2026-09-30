@@ -67,8 +67,8 @@ const {
     >
       {{
         mode === 'signUp'
-          ? t('auth.signUp.heading', {}, { locale: locale })
-          : t('auth.signIn.heading', {}, { locale: locale })
+          ? t('auth.signUp.heading', {}, { locale })
+          : t('auth.signIn.heading', {}, { locale })
       }}
     </h1>
 
@@ -76,7 +76,7 @@ const {
       class="mt-8 mb-0 text-base/snug font-medium text-primary-comfy-canvas xl:text-lg/snug"
     >
       <template v-if="mode === 'signUp'">
-        {{ t('auth.signUp.haveAccount', {}, { locale: locale }) }}
+        {{ t('auth.signUp.haveAccount', {}, { locale }) }}
         <a
           href="/login/"
           :class="
@@ -88,11 +88,11 @@ const {
           :aria-disabled="busy || undefined"
           @click="switchMode('signIn', $event)"
         >
-          {{ t('auth.signUp.signInLink', {}, { locale: locale }) }}
+          {{ t('auth.signUp.signInLink', {}, { locale }) }}
         </a>
       </template>
       <template v-else>
-        {{ t('auth.signIn.newHere', {}, { locale: locale }) }}
+        {{ t('auth.signIn.newHere', {}, { locale }) }}
         <a
           href="/signup/"
           :class="
@@ -104,11 +104,9 @@ const {
           :aria-disabled="busy || undefined"
           @click="switchMode('signUp', $event)"
         >
-          {{ t('auth.signIn.signUpLink', {}, { locale: locale }) }}
+          {{ t('auth.signIn.signUpLink', {}, { locale }) }}
         </a>
-        <span>{{
-          ' ' + t('auth.signIn.freeRunsSuffix', {}, { locale: locale })
-        }}</span>
+        <span>{{ ' ' + t('auth.signIn.freeRunsSuffix', {}, { locale }) }}</span>
       </template>
     </p>
 
@@ -119,7 +117,7 @@ const {
       aria-atomic="true"
       :class="cn('mt-4 w-full', AUTH_MESSAGE_WARN_CLASS)"
     >
-      {{ t('auth.signIn.insecureContextWarning', {}, { locale: locale }) }}
+      {{ t('auth.signIn.insecureContextWarning', {}, { locale }) }}
     </div>
 
     <div class="mt-12 flex flex-col gap-4 xl:gap-6">
@@ -129,14 +127,14 @@ const {
             t(
               mode === 'signUp' ? 'auth.signUp.google' : 'auth.signIn.google',
               {},
-              { locale: locale }
+              { locale }
             )
           "
           :github-label="
             t(
               mode === 'signUp' ? 'auth.signUp.github' : 'auth.signIn.github',
               {},
-              { locale: locale }
+              { locale }
             )
           "
           :button-class="`${AUTH_BRAND_GHOST_BUTTON_CLASS} w-full gap-3`"
@@ -150,9 +148,7 @@ const {
           class="my-0 text-xs/5 text-primary-comfy-canvas/60"
           data-testid="google-sso-in-app-browser-notice"
         >
-          {{
-            t('auth.signIn.googleSsoInAppBrowserNotice', {}, { locale: locale })
-          }}
+          {{ t('auth.signIn.googleSsoInAppBrowserNotice', {}, { locale }) }}
         </p>
 
         <button
@@ -161,7 +157,7 @@ const {
           :disabled="busy"
           @click="showEmail()"
         >
-          {{ t('auth.signIn.useEmailInstead', {}, { locale: locale }) }}
+          {{ t('auth.signIn.useEmailInstead', {}, { locale }) }}
         </button>
       </template>
 
@@ -185,7 +181,7 @@ const {
           aria-atomic="true"
           :class="cn('w-full', AUTH_MESSAGE_WARN_CLASS)"
         >
-          {{ t('auth.signUp.regionRestrictionChina', {}, { locale: locale }) }}
+          {{ t('auth.signUp.regionRestrictionChina', {}, { locale }) }}
         </div>
         <AuthEmailForm
           v-else
@@ -209,7 +205,7 @@ const {
                 ? 'auth.signIn.backToSocialLogin'
                 : 'auth.signIn.backToSocialSignIn',
               {},
-              { locale: locale }
+              { locale }
             )
           }}
         </button>
@@ -221,7 +217,7 @@ const {
         class="my-0 flex items-center gap-2 text-sm text-primary-comfy-canvas/70"
       >
         <AuthSpinnerIcon />
-        <span>{{ t(progressKey, {}, { locale: locale }) }}</span>
+        <span>{{ t(progressKey, {}, { locale }) }}</span>
       </p>
 
       <template v-if="state.step === 'signedIn' && state.messageKey">
@@ -231,7 +227,7 @@ const {
           aria-atomic="true"
           :class="AUTH_MESSAGE_ERROR_CLASS"
         >
-          {{ t(state.messageKey, {}, { locale: locale }) }}
+          {{ t(state.messageKey, {}, { locale }) }}
         </div>
         <button
           v-if="state.messageKey === 'auth.signIn.error.session'"
@@ -239,7 +235,7 @@ const {
           :class="AUTH_LINK_BUTTON_CLASS"
           @click="retryMint"
         >
-          {{ t('auth.signIn.retry', {}, { locale: locale }) }}
+          {{ t('auth.signIn.retry', {}, { locale }) }}
         </button>
       </template>
     </div>

@@ -14,13 +14,13 @@ const routes = getRoutes(locale)
 
 <template>
   <HeroLivestream01
-    :title="t('launches.hero.title', {}, { locale: locale })"
+    :title="t('launches.hero.title', {}, { locale })"
     :primary-cta="{
-      label: t('launches.hero.primary', {}, { locale: locale }),
+      label: t('launches.hero.primary', {}, { locale }),
       href: routes.download
     }"
     :secondary-cta="{
-      label: t('launches.hero.secondary', {}, { locale: locale }),
+      label: t('launches.hero.secondary', {}, { locale }),
       href: externalLinks.cloud,
       target: '_blank'
     }"
@@ -29,9 +29,7 @@ const routes = getRoutes(locale)
     :end-date-time="livestream.endDateTime"
   >
     <template #visual>
-      <LaunchesHeroLogo
-        :label="t('launches.hero.visualAlt', {}, { locale: locale })"
-      />
+      <LaunchesHeroLogo :label="t('launches.hero.visualAlt', {}, { locale })" />
     </template>
   </HeroLivestream01>
 </template>
