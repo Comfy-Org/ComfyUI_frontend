@@ -816,7 +816,7 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   })
 
-  it('(b4q) drops a stopped expired mailbox once its own hydrate settles', async () => {
+  it('(b4q) hands a stopped expired mailbox to the successor once it settles', async () => {
     vi.useFakeTimers()
     try {
       const conversation = useAgentConversationStore()
@@ -846,9 +846,67 @@ describe('useAgentSession (v1 composition root)', () => {
       deliverFirst([])
       await vi.advanceTimersByTimeAsync(0)
 
-      // A successor adopts whatever registration it finds for the thread, so
-      // a mailbox left behind replays that stale `done` over the live turn
-      // this hydrate restores.
+      // The successor restores that same turn as streaming, so the captured
+      // `done` is owed to it -- dropping it is the stranded turn this whole
+      // change is against, and (b4d) states the same invariant.
+      const second = fakeRest({
+        getMessages: vi.fn(
+          async (): Promise<AgentMessages> => [
+            historyRow(1, 'user', 'turn-1', 'go'),
+            {
+              ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+              content: {},
+              status: 'streaming'
+            }
+          ]
+        )
+      })
+      conversation.setThreadId('th-1')
+      const successor = useAgentSession({
+        rest: second,
+        events: fakeEvents().source
+      })
+      successor.start()
+      await vi.waitFor(() => expect(second.getMessages).toHaveBeenCalledOnce())
+      await vi.advanceTimersByTimeAsync(0)
+
+      await vi.waitFor(() => expect(conversation.activeTurnId).toBeNull())
+      expect(successor.isStreaming.value).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  // The other side of (b4q): parking those frames restores the bounds that
+  // were suspended while the GET was outstanding, so the mailbox they wait in
+  // is a bounded one rather than a permanent registration.
+  it('(b4r) expires a stopped mailbox on the TTL its settlement re-arms', async () => {
+    vi.useFakeTimers()
+    try {
+      const conversation = useAgentConversationStore()
+      let deliverFirst: ((history: AgentMessages) => void) | undefined
+      const first = fakeRest({
+        getMessages: vi.fn(
+          () =>
+            new Promise<AgentMessages>((resolve) => {
+              deliverFirst = resolve
+            })
+        )
+      })
+      const { source, emit } = fakeEvents()
+      conversation.setThreadId('th-1')
+      const stopping = useAgentSession({ rest: first, events: source })
+      stopping.start()
+      await vi.waitFor(() => expect(first.getMessages).toHaveBeenCalledOnce())
+
+      await vi.advanceTimersByTimeAsync(30_001)
+      emit(done('msg-1'))
+      await vi.advanceTimersByTimeAsync(5 * 60_000 + 1)
+      stopping.stop()
+      assert(deliverFirst !== undefined)
+      deliverFirst([])
+      await vi.advanceTimersByTimeAsync(5 * 60_000 + 1)
+
       const second = fakeRest({
         getMessages: vi.fn(
           async (): Promise<AgentMessages> => [

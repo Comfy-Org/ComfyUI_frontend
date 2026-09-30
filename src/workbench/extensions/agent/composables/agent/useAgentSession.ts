@@ -503,6 +503,18 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function retireHydrationCapture(buffer: HydrationBuffer): void {
     if (hydrationBuffers.get(buffer.threadId) !== buffer) return
     hydrationBuffers.delete(buffer.threadId)
+    mailboxHydration(buffer)
+  }
+
+  /**
+   * Parks a buffer where a later hydrate of its thread can claim it, under a
+   * fresh TTL and the cap. Re-armed rather than reused, because a buffer
+   * reaching here a second time -- captured before its session stopped, and
+   * only now settled -- skipped the first TTL while it was still pending.
+   */
+  function mailboxHydration(buffer: HydrationBuffer): void {
+    if (buffer.mailboxRetirement !== undefined)
+      clearTimeout(buffer.mailboxRetirement)
     hydrationMailboxes.delete(buffer.threadId)
     hydrationMailboxes.set(buffer.threadId, buffer)
     buffer.mailboxRetirement = setTimeout(() => {
@@ -569,7 +581,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
     // pending the cap could not evict any of them, so the count is brought
     // back under it as they settle.
     enforceMailboxCap()
-    if (stopped) return
+    if (stopped) {
+      // Nothing here can replay, but these frames are owed to the successor
+      // -- discarding a captured `done` strands the very turn its hydrate
+      // will restore as streaming. Parked instead, and now under bounds that
+      // bite: no longer pending, so the fresh TTL and the cap both apply.
+      if (events.length === 0) return
+      buffer.events.push(...events)
+      mailboxHydration(buffer)
+      return
+    }
     for (const event of events) {
       try {
         handleAgentEvent(event)
