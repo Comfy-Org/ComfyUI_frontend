@@ -116,7 +116,7 @@ test('hides Re-shoot from the Apps tab and closes its page while its flag is off
   context
 }) => {
   await mockFlags(context, { apps: true, workflows: false, reshoot: false })
-  await page.goto('/models/?type=apps')
+  await page.goto('/hub/models/?type=apps')
   const cards = page.getByTestId('app-shelf').getByRole('link')
   await expect(cards).toHaveCount(1)
   await expect(cards.first()).toHaveAttribute(
