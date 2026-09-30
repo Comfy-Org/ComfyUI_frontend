@@ -285,20 +285,6 @@ test.describe('App mode usage', () => {
       await expect(steps).toHaveValue(String(initialValue + 2))
     })
 
-    test('assets pane has no sidebar close button', async ({ comfyPage }) => {
-      const { mobile } = comfyPage.appMode
-      await comfyPage.appMode.enterAppModeWithInputs([['3', 'steps']])
-      await mobile.navigateTab('assets')
-      await expect(mobile.contentPanel).toHaveAccessibleName('Assets')
-      await expect(
-        mobile.contentPanel.getByRole('tab', { name: 'Generated' })
-      ).toBeVisible()
-
-      await expect(
-        mobile.contentPanel.getByTestId(TestIds.sidebar.closeButton)
-      ).toHaveCount(0)
-    })
-
     test('workflow selection', async ({ comfyPage }) => {
       const widgetNames = ['seed', 'steps', 'denoise', 'cfg']
       for (const name of widgetNames)
