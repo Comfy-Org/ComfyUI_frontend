@@ -3,7 +3,10 @@ import type { GetStaticPaths } from 'astro'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import CinematicStudioPage from '../../components/workshop/cinematic-studio/CinematicStudioPage.vue'
 import { getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
-import { runnableCinematicModels } from '../../lib/workshop/cinematic-studio/models'
+import {
+  runnableCinematicModels,
+  runnableCinematicVideoModels
+} from '../../lib/workshop/cinematic-studio/models'
 import { priceCinematicModels } from '../../lib/workshop/cinematic-studio/pricing'
 import { tc } from '../../lib/workshop/cinematic-studio/copy'
 import { appModels, appPagePaths } from '../../config/workshop-app-content'
@@ -18,10 +21,15 @@ interface Props {
 const { model } = Astro.props
 const app = model.appId
 
-const models = await priceCinematicModels(
-  runnableCinematicModels(getRouterWorkshopModelDetail),
-  getRouterWorkshopModelDetail
-)
+// Video models carry no estimate: the pricing rules have none that match a
+// studio clip, so the credit gate only asks for a positive balance.
+const models = [
+  ...(await priceCinematicModels(
+    runnableCinematicModels(getRouterWorkshopModelDetail),
+    getRouterWorkshopModelDetail
+  )),
+  ...runnableCinematicVideoModels(getRouterWorkshopModelDetail)
+]
 if (!models.length) throw new Error('Cinematic Studio has no runnable models')
 ---
 

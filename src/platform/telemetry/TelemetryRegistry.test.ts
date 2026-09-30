@@ -13,6 +13,7 @@ import type {
   AgentPanelOpenedMetadata,
   AgentPaywallCtaMetadata,
   AgentPaywallShownMetadata,
+  AgentStarterPromptClickedMetadata,
   AgentWorkflowAppliedMetadata,
   BillingTelemetryEvent,
   CheckoutJourneyTelemetryEvent,
@@ -298,13 +299,25 @@ describe('TelemetryRegistry', () => {
       thread_id: 'th-1',
       workflow_id: 'w1',
       client_message_id: 'cm-1',
-      input_method: 'typed'
+      input_method: 'typed',
+      starter_prompt_id: null,
+      starter_prompt_click_id: null
     } satisfies AgentMessageSentMetadata
+    const starterPromptClickedMetadata = {
+      prompt_id: 'generate_image',
+      prompt_index: 0,
+      prompt_count: 5,
+      prompt_text_hash: 'deadbeef',
+      locale: 'en',
+      click_id: 'click-1',
+      draft_was_empty: true
+    } satisfies AgentStarterPromptClickedMetadata
     const consentShownMetadata = {
       trigger: 'button_click'
     } satisfies AgentConsentShownMetadata
     const consentResolvedMetadata = {
-      decision: 'accepted'
+      decision: 'dismissed',
+      save_error_shown: true
     } satisfies AgentConsentResolvedMetadata
     const onboardingStepMetadata = {
       step: 2,
@@ -318,10 +331,12 @@ describe('TelemetryRegistry', () => {
       target: 'active_tab_open'
     } satisfies AgentWorkflowAppliedMetadata
     const paywallShownMetadata = {
-      reason: 'subscription_inactive'
+      reason: 'subscription_inactive',
+      surface: 'credits_exhausted'
     } satisfies AgentPaywallShownMetadata
     const paywallCtaMetadata = {
-      cta: 'add_credits'
+      cta: 'add_credits',
+      surface: 'refused_send'
     } satisfies AgentPaywallCtaMetadata
 
     const cases: Array<{
@@ -363,6 +378,12 @@ describe('TelemetryRegistry', () => {
         expected: { ...messageSentMetadata },
         invoke: (registry) =>
           registry.trackAgentMessageSent(messageSentMetadata)
+      },
+      {
+        method: 'trackAgentStarterPromptClicked',
+        expected: { ...starterPromptClickedMetadata },
+        invoke: (registry) =>
+          registry.trackAgentStarterPromptClicked(starterPromptClickedMetadata)
       },
       {
         method: 'trackAgentConsentShown',
@@ -481,6 +502,22 @@ describe('TelemetryRegistry', () => {
             exit: 'already_offered',
             stage: 'offer',
             retry_armed: false
+          })
+      },
+      {
+        method: 'trackAgentConsentOfferExited',
+        expected: {
+          exit: 'scope_changed_after_read',
+          stage: 'request',
+          retry_armed: false,
+          trigger: 'button_click'
+        },
+        invoke: (registry) =>
+          registry.trackAgentConsentOfferExited({
+            exit: 'scope_changed_after_read',
+            stage: 'request',
+            retry_armed: false,
+            trigger: 'button_click'
           })
       },
       {

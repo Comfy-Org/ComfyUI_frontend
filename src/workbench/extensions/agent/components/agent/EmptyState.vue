@@ -5,12 +5,29 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
 
-const { userName } = defineProps<{ userName?: string }>()
-const emit = defineEmits<{ insert: [text: string] }>()
+import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
+import { starterPromptAttribution } from '../../utils/starterPrompts'
 
-const { t, tm } = useI18n()
+const { userName } = defineProps<{ userName?: string }>()
+const emit = defineEmits<{
+  insert: [text: string, prompt: AgentStarterPromptAttribution]
+}>()
+
+const { t, tm, locale } = useI18n()
 
 const prompts = computed(() => tm('agent.suggestedPrompts') as string[])
+
+/**
+ * One emit per click, carrying the slot's stable id rather than its text. Fires
+ * on click only — not on render or focus — so the count is a count of choices.
+ */
+function onPromptClick(prompt: string, index: number): void {
+  emit(
+    'insert',
+    prompt,
+    starterPromptAttribution(prompt, index, prompts.value.length, locale.value)
+  )
+}
 
 const promptIcons = [
   'icon-[lucide--lightbulb]',
@@ -45,7 +62,7 @@ const promptIcons = [
           variant="secondary"
           size="md"
           class="w-full max-w-full min-w-0 justify-start rounded-full px-3 text-sm @min-[460px]:w-auto"
-          @click="emit('insert', prompt)"
+          @click="onPromptClick(prompt, index)"
         >
           <span
             :class="

@@ -162,6 +162,243 @@
       "promoRenews": "Renews at {amount} on {date}"
     },
     "error": "Error",
+    "totalDueToday": "Total due today",
+    "paymentMethod": "Payment method",
+    "payAndSubscribe": "Pay and subscribe",
+    "methodChoice": "Choose how you would like to pay.",
+    "billingAddress": "Billing address",
+    "alipayRenewalNote": "Alipay renews this plan automatically each period until you cancel.",
+    "unavailable": "The payment form isn't available right now. Please try again later.",
+    "fullPage": {
+      "logo": "Comfy",
+      "planName": "{tier} Plan",
+      "terms": {
+        "agreement": "By continuing, you agree to Comfy Org's {terms} and {privacy}, and authorize Comfy Org to charge your payment method each billing period until you cancel.",
+        "terms": "Terms",
+        "privacyPolicy": "Privacy Policy"
+      },
+      "tabs": {
+        "saved": "Saved",
+        "new": "Add new payment"
+      },
+      "saved": {
+        "alipay": "Alipay",
+        "last4": "·· {last4}",
+        "selectLabel": "Choose a saved payment method"
+      },
+      "railFailed": {
+        "column": {
+          "title": "The payment form couldn't load",
+          "body": "Nothing has been charged. Check your connection and try again — your order details are unaffected."
+        },
+        "element": {
+          "title": "The payment form couldn't load",
+          "body": "Nothing has been charged. Check your connection and try again, or pay with a saved payment method."
+        },
+        "saved": {
+          "title": "Your saved payment methods couldn't load",
+          "body": "Nothing has been charged. Try again, or pay with a new payment method."
+        },
+        "retry": "Try again"
+      },
+      "outcome": {
+        "declined": {
+          "title": "Payment declined",
+          "body": "Your card couldn't be charged. Try another card, or contact your bank if this looks wrong."
+        },
+        "processing_error": {
+          "title": "Payment couldn't be processed",
+          "body": "There was a technical problem on the payment side. Try again, or refresh the page if it keeps happening."
+        },
+        "not_completed": {
+          "title": "Payment not completed",
+          "body": "Your payment wasn't completed, so you haven't been charged. Pay to try again, or use a different payment method."
+        },
+        "promo_expired": {
+          "title": "Your promo code expired",
+          "body": "The {code} code expired, so the total was updated. Review the new total before paying. You have not been charged."
+        },
+        "price_updated": {
+          "title": "The price has updated",
+          "body": "Your quote expired, so the numbers were refreshed. Review the new total before paying. You have not been charged."
+        },
+        "reportedIssue": "Reported issue: {reason}",
+        "reasons": {
+          "card_declined": "Card declined",
+          "insufficient_funds": "Insufficient funds",
+          "expired_card": "Expired card",
+          "incorrect_cvc": "Incorrect security code",
+          "authentication_required": "Authentication required",
+          "authentication_failed": "Authentication failed",
+          "processing_error": "Processing error",
+          "checkout_expired": "Checkout expired",
+          "generic": "Unspecified"
+        },
+        "contactSupport": "Contact support"
+      },
+      "keepSubscription": {
+        "title": "Your plan was set to end on {date}",
+        "titleUndated": "Your plan was set to end",
+        "checkbox": "Keep my subscription and renew it",
+        "required": "Check the box to keep your subscription, then pay.",
+        "body": {
+          "upgrade": "Upgrading keeps your subscription, and it renews that day at {amount}.",
+          "downgrade": "Switching to {plan} keeps your subscription, and it renews that day at {amount}.",
+          "to_yearly": "Switching to yearly keeps your subscription. It renews on {date} at {amount}.",
+          "to_yearly_undated": "Switching to yearly keeps your subscription, and it renews a year from today at {amount}.",
+          "to_monthly": "Switching to monthly keeps your subscription, and it renews that day at {amount}.",
+          "commitment": "Changing your commitment keeps your subscription, and it renews that day at {amount}.",
+          "other": "This change keeps your subscription, and it renews that day at {amount}."
+        }
+      },
+      "phase": {
+        "challenge": "Nothing has been charged yet.",
+        "processing": "This payment is already processing and can't be canceled.",
+        "redirecting": "Taking you to {method} to finish paying. Nothing has been charged yet.",
+        "redirectingUnnamed": "Taking you to your payment provider to finish paying. Nothing has been charged yet.",
+        "methods": {
+          "alipay": "Alipay"
+        },
+        "completeVerification": "Complete verification",
+        "cancel": "Cancel payment"
+      },
+      "ending": {
+        "thisWorkspace": "this workspace",
+        "perMonth": "{currency} / mo",
+        "perYear": "{currency} / yr",
+        "copy": "Copy code",
+        "copied": "Copied",
+        "closeTab": "You can close this tab now.",
+        "closingIn": "Closing in {seconds}…",
+        "closeLine": "You can close this page. We'll email your invoice once this goes through and this page will automatically update.",
+        "actions": {
+          "close": "Close",
+          "retry": "Try again",
+          "view_plans": "View plans"
+        },
+        "success": {
+          "title": "You're all set",
+          "body": "Your plan for {workspace} has been successfully updated."
+        },
+        "completed": {
+          "title": "You're all set",
+          "body": "A payment on this workspace completed — check your plan in settings.",
+          "codeLabel": "Your reference for this payment:"
+        },
+        "already_completed": {
+          "title": "Already completed",
+          "body": "This payment for {workspace} already went through. You won't be charged again.",
+          "codeLabel": "Your reference for this payment:"
+        },
+        "in_progress": {
+          "title": "Payment in progress",
+          "body": "Your bank is still settling this payment. This can take up to a day. Nothing more is needed from you.",
+          "warning": "{dontPayAgain}, you could be charged twice.",
+          "dontPayAgain": "Don't pay again",
+          "codeLabel": "If nothing has changed after 24 hours, contact support with this code:"
+        },
+        "received": {
+          "title": "Payment received",
+          "body": "Your payment went through and you should receive your credits or subscription soon. You won't be charged again.",
+          "codeLabel": "If nothing has changed after 24 hours, contact support with this code:"
+        },
+        "unconfirmed": {
+          "title": "We couldn't confirm your payment",
+          "body": "Your payment may or may not have gone through. Don't pay again yet, you could be charged twice.",
+          "codeLabel": "If this page still can't confirm it after a few minutes, contact support with this code:"
+        },
+        "refused": {
+          "title": "Checkout not available",
+          "body": {
+            "owner": "Billing for this workspace is managed by its owner. Ask them to make this change.",
+            "sales_managed": "Your plan is managed by our team. Contact your account manager to make changes.",
+            "unfinished": "A previous payment didn’t finish. Finish or cancel it in your billing settings.",
+            "change_scheduled": "Your plan is set to change to {plan} on {date}. Cancel that change in your billing settings to make a different one.",
+            "change_unnamed": "Your plan already has a change scheduled. Cancel it in your billing settings to make a different one.",
+            "unknown": "Checkout isn’t available for this workspace right now. Contact support with the code below."
+          },
+          "codeLabel": "If this is an error, contact support with this code:"
+        },
+        "plan_unavailable": {
+          "title": "This plan isn't available",
+          "body": "The plan in your link isn't available. Nothing has been charged. See our current plans instead.",
+          "codeLabel": "If you think this is a mistake, contact support with this code:"
+        },
+        "load_failed": {
+          "title": "Couldn't load your checkout",
+          "body": {
+            "capabilities": "We couldn't check whether this workspace can check out, so checkout can't open yet. Try again, or contact support if this keeps happening.",
+            "quote": "We couldn't load your quote. Nothing has been charged. Try again, or contact support if this keeps happening.",
+            "recheck": "We couldn't check your recent payments, so checkout can't open yet. Try again, or contact support if this keeps happening."
+          },
+          "codeLabel": "If this keeps happening, contact support with this code:"
+        }
+      },
+      "summary": {
+        "label": "Order summary",
+        "verb": {
+          "subscribe": "Subscribe to {plan}",
+          "upgrade": "Upgrade to {plan}",
+          "switch": "Switch to {plan}",
+          "change": "Change to {plan}"
+        },
+        "scoped": "{action} · {workspace}",
+        "planWithCadence": "{tier} {cadence}",
+        "cadence": {
+          "monthly": "Monthly",
+          "yearly": "Yearly"
+        },
+        "rate": {
+          "monthly": "/ mo",
+          "yearly": "/ yr"
+        },
+        "credits": {
+          "perMonth": "credits per month",
+          "perYear": "credits per year",
+          "bare": "credits",
+          "addedToday": "credits added today",
+          "addedTodayExpire": "credits added today (expire {date})",
+          "refillMonthlyAfter": "credits refill monthly after {date}",
+          "refillYearlyAfter": "credits refill yearly after {date}"
+        },
+        "item": {
+          "prorated": "{plan} - Prorated",
+          "remainingTime": "Remaining time for {plan} plan, less unused time from {current} plan",
+          "billedMonthly": "{amount} /mo, billed monthly",
+          "billedYearly": "Billed yearly",
+          "rateMonthly": "{amount} /mo",
+          "rateYearly": "{amount} /yr",
+          "refillsMonthly": "Credits refill to {credits} each month",
+          "refillsYearly": "Credits refill to {credits} each year",
+          "startsMonthly": "Starts {date}, billed monthly",
+          "startsYearly": "Starts {date}, billed yearly"
+        },
+        "subtotal": "Subtotal",
+        "discount": {
+          "fallbackLabel": "Promo code",
+          "amount": "−{amount}"
+        },
+        "promo": {
+          "add": "Add promo code",
+          "field": "Promo code",
+          "apply": "Apply",
+          "dismiss": "Close promo code",
+          "remove": "Remove {code}",
+          "invalid": "This code isn't valid.",
+          "unchecked": "We couldn't check this code. Try again."
+        },
+        "trailing": {
+          "renewsAt": "Renews at {amount} on {date}",
+          "renewsAtAmount": "Renews at {amount}",
+          "creditsKept": "Existing credits are kept",
+          "creditsOverlap": "This month's credits stay valid until {date}",
+          "keepUntil": "You'll keep {plan} until {date}",
+          "keepCommitmentUntil": "You'll keep {plan} at {rate} until {date}",
+          "zeroDue": "You won't be charged today. Your payment method renews the plan at {amount} on {date}.",
+          "zeroDueUndated": "You won't be charged today. Your payment method renews the plan at {amount}."
+        }
+      }
+    },
     "invite": {
       "title": "Invite your team",
       "subtext": "You can also invite people later from Settings",
@@ -208,7 +445,8 @@
       "INVALID_PLAN": "That link names a plan we can't read.",
       "INVALID_CORRELATION_ID": "That link carries a reference we can't read.",
       "INVALID_WORKSPACE_ID": "That link names a workspace we can't read.",
-      "INVALID_TEAM_CREDIT_STOP_ID": "That link names a credit amount we can't read."
+      "INVALID_TEAM_CREDIT_STOP_ID": "That link names a credit amount we can't read.",
+      "INVALID_PROMOTION_CODE": "That link carries a promo code we can't read."
     },
     "failure": {
       "unknown": "Something went wrong. Please try again.",
@@ -226,7 +464,9 @@
       "REACTIVATION_CONFIRMATION_REQUIRED": "Confirm the reactivation charge before continuing.",
       "CONFLICTING_PAYMENT_METHOD": "That request named two payment methods; choose one.",
       "MISSING_PAYMENT_METHOD_URL": "The billing service asked for a payment step but didn't say where.",
-      "OPERATION_ALREADY_PENDING": "A payment you started earlier is still going through. It has to finish before you can choose a different plan."
+      "OPERATION_ALREADY_PENDING": "A payment you started earlier is still going through. It has to finish before you can choose a different plan.",
+      "QUOTE_STALE": "Your quote changed. Review the updated amount and try again.",
+      "QUOTE_REFRESH_FAILED": "Your quote expired and couldn't be refreshed. Choose your plan again."
     },
     "tier": {
       "unknown": "Plan",

@@ -13,6 +13,7 @@ import WorkshopHero from './WorkshopHero.vue'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
 import CatalogueTabs from './CatalogueTabs.vue'
 import type { CatalogueTab } from './CatalogueTabs.vue'
+import type { WorkshopPageType } from '../../scripts/workshop-analytics'
 import {
   captureWorkshopEvent,
   useWorkshopAppsEnabled,
@@ -20,6 +21,7 @@ import {
 } from '../../scripts/posthog'
 import type { CatalogueApp } from '../../lib/workshop/catalogue-apps'
 import { ac } from '../../lib/workshop/catalogue-apps'
+import { isWorkshopModelShown } from '../../scripts/workshop-model-flags'
 
 const WorkflowCatalogue = defineAsyncComponent(
   () => import('./WorkflowCatalogue.vue')
@@ -45,17 +47,22 @@ if (typeof location !== 'undefined') {
   }
   if (requested === 'apps') selectedTab.value = 'apps'
 }
+const shownModels = computed(() =>
+  models.filter((model) => isWorkshopModelShown(model))
+)
 const routerModels = computed(() =>
-  models.filter((model) => model.routerId !== undefined)
+  shownModels.value.filter((model) => model.routerId !== undefined)
 )
 const workflows = computed(() =>
-  models.filter(
+  shownModels.value.filter(
     (model): model is WorkflowWorkshopModel =>
       model.type === 'CLOUD' || model.type === 'SERVERLESS'
   )
 )
 const apps = computed(() =>
-  models.filter((model): model is AppWorkshopModel => model.type === 'APP')
+  shownModels.value.filter(
+    (model): model is AppWorkshopModel => model.type === 'APP'
+  )
 )
 const appCards = computed<readonly CatalogueApp[]>(() =>
   apps.value.map((app) => ({
@@ -71,14 +78,17 @@ const availableTabs = computed<readonly CatalogueTab[]>(() => [
   ...(workflows.value.length ? (['workflows'] as const) : []),
   ...(appsEnabled.value && apps.value.length ? (['apps'] as const) : [])
 ])
-const heroSubtitle = {
+const activeTab = computed(() =>
+  availableTabs.value.includes(selectedTab.value) ? selectedTab.value : 'models'
+)
+
+// Each tab says what its own listing is for, in Eric's words.
+const SUBTITLE_KEY = {
   models: 'workshop.hero.subtitle',
   workflows: 'workshop.catalogue.workflowsSubtitle',
   apps: 'workshop.catalogue.appsSubtitle'
 } as const satisfies Record<CatalogueTab, TranslationKey>
-const activeTab = computed(() =>
-  availableTabs.value.includes(selectedTab.value) ? selectedTab.value : 'models'
-)
+const subtitleKey = computed(() => SUBTITLE_KEY[activeTab.value])
 
 const focusTabs = ref(false)
 function changeTab(tab: CatalogueTab) {
@@ -98,15 +108,19 @@ const viewedTabs = new Set<CatalogueTab>()
 watch(
   () => (mounted.value && enabled.value ? activeTab.value : undefined),
   (tab) => {
-    if (!tab || tab === 'apps' || viewedTabs.has(tab)) return
+    if (!tab || viewedTabs.has(tab)) return
     viewedTabs.add(tab)
+    const catalogues = {
+      models: { model_count: routerModels.value.length, page_type: 'model' },
+      workflows: { model_count: workflows.value.length, page_type: 'workflow' },
+      apps: { model_count: apps.value.length, page_type: 'app' }
+    } as const satisfies Record<
+      CatalogueTab,
+      { model_count: number; page_type: WorkshopPageType }
+    >
     captureWorkshopEvent({
       name: 'catalogue_viewed',
-      properties: {
-        model_count:
-          tab === 'models' ? routerModels.value.length : workflows.value.length,
-        page_type: tab === 'models' ? 'model' : 'workflow'
-      }
+      properties: catalogues[tab]
     })
   }
 )
@@ -117,7 +131,8 @@ watch(
     v-if="!inSection"
     :eyebrow="t('workshop.catalogue.eyebrow', locale)"
     :heading="t('workshop.hero.heading', locale)"
-    :subtitle="t(heroSubtitle[activeTab], locale)"
+    :subtitle="t(subtitleKey, locale)"
+    :subtitle-space="availableTabs.map((tab) => t(SUBTITLE_KEY[tab], locale))"
   />
   <WorkshopModelsGrid
     v-if="activeTab === 'models'"

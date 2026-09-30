@@ -230,6 +230,7 @@
     "uploadFailed": "Upload failed: {reason}",
     "capture": "capture",
     "nodes": "Nodes",
+    "jobs": "Jobs",
     "nodesCount": "{count} node | {count} nodes",
     "addNode": "Add a node...",
     "filterBy": "Filter by:",
@@ -434,6 +435,7 @@
     "sourceGamut": "Source gamut",
     "dither": "Dither",
     "clipWarnings": "Clip warnings",
+    "checkerboard": "Show transparency",
     "fitView": "Fit",
     "histogram": "Histogram",
     "resolution": "Resolution",
@@ -2875,6 +2877,7 @@
     "resubscribeSuccess": "Subscription reactivated successfully",
     "resubscribeFailed": "Failed to reactivate subscription",
     "subscribeFailed": "Failed to subscribe",
+    "plansLoadFailed": "Failed to load plans",
     "canceledCard": {
       "title": "Your subscription has been canceled",
       "description": "You won't be charged again. Your features remain active until {date}.",
@@ -3274,7 +3277,8 @@
     "billingStatus": {
       "warning": {
         "title": "Payment failed",
-        "bodyNoDate": "Your payment failed to process. Update payment to avoid a pause."
+        "bodyNoDate": "Your payment failed to process. Update payment to avoid a pause.",
+        "bodyWithAmount": "Your payment of {amount} failed to process. Pay the invoice or update payment to avoid a pause."
       },
       "paused": {
         "title": "Subscription paused",
@@ -3301,7 +3305,8 @@
         "title": "Your plan changes to {plan} on {date}",
         "body": "Your current plan stays active until then."
       },
-      "updatePayment": "Update payment"
+      "updatePayment": "Update payment",
+      "payInvoice": "Pay invoice"
     },
     "invite": "Invite",
     "inviteMember": "Invite member",

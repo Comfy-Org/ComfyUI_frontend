@@ -5,6 +5,7 @@ import {
   normalizeRoute
 } from './locales'
 import type { Locale } from './locales'
+import type { AppWorkshopModel } from './models-catalogue'
 
 const baseRoutes = {
   home: '/',
@@ -176,6 +177,13 @@ export function getRoutes(locale: Locale = DEFAULT_LOCALE): Routes {
   ) as Routes
 }
 
+const workshopAppRepos: Readonly<
+  Partial<Record<AppWorkshopModel['appId'], string>>
+> = {
+  studio: 'https://github.com/Comfy-Org/comfy-cinematic-studio',
+  reshoot: 'https://github.com/Comfy-Org/comfy-reshoot'
+}
+
 export const externalLinks = {
   affiliateApplicationForm: 'https://forms.gle/RS8L2ttcuGap4Q1v6',
   apiKeys: 'https://platform.comfy.org/profile/api-keys',
@@ -194,6 +202,7 @@ export const externalLinks = {
   comfyCliRepo: 'https://github.com/Comfy-Org/comfy-cli',
   comfyMcpRepo: 'https://github.com/Comfy-Org/comfy-mcp',
   docsInAppAgent: 'https://docs.comfy.org/agent-tools/in-app-agent',
+  workshopAppRepos,
   docsCli: 'https://docs.comfy.org/agent-tools/cli',
   // Markdown variant handed to agents in the "ask your agent" cards, same
   // rationale as docsMcpMd below.

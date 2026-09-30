@@ -7,7 +7,8 @@ import type { Ref } from 'vue'
 import {
   captureWorkshopEvent,
   useWorkshopAppsEnabled,
-  useWorkshopEnabled
+  useWorkshopEnabled,
+  useWorkshopFlag
 } from '../../scripts/posthog'
 import ModelsCatalogue from './ModelsCatalogue.vue'
 import type { WorkshopModel } from '../../config/models-catalogue'
@@ -16,13 +17,18 @@ vi.mock(import('../../scripts/posthog'))
 
 let enabled: Ref<boolean>
 let appsEnabled: Ref<boolean>
+let reshootFlag: Ref<boolean>
 
 beforeEach(() => {
   history.replaceState(null, '', '/models/')
   enabled = ref(false)
   appsEnabled = ref(true)
+  reshootFlag = ref(true)
   vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(enabled))
   vi.mocked(useWorkshopAppsEnabled).mockReturnValue(readonly(appsEnabled))
+  vi.mocked(useWorkshopFlag).mockImplementation((name) =>
+    readonly(name === 'workshop-reshoot-app-enabled' ? reshootFlag : ref(false))
+  )
 })
 
 const launchModels: WorkshopModel[] = [
@@ -78,6 +84,7 @@ const launchModels: WorkshopModel[] = [
     type: 'APP',
     appId: 'reshoot',
     slug: 'apps/reshoot',
+    flag: 'workshop-reshoot-app-enabled',
     name: 'Re-shoot a video',
     href: '/models/apps/reshoot/',
     workflowCount: 0,
@@ -114,12 +121,12 @@ describe('ModelsCatalogue', () => {
     {
       locale: 'zh-CN',
       tab: 'workflows',
-      subtitle: '借助由 AI 模型驱动的多步骤工作流，把你的创意变成完整的成果。'
+      subtitle: '用由 AI 模型驱动的多步骤工作流，把你的想法变成完成的作品。'
     },
     {
       locale: 'zh-CN',
       tab: 'apps',
-      subtitle: '用整合多个工作流的应用，挑战更大的创意。'
+      subtitle: '用把多个工作流组合在一起的应用，挑战更大的想法。'
     }
   ] as const)(
     'introduces the $tab tab in its own words ($locale)',
@@ -164,6 +171,26 @@ describe('ModelsCatalogue', () => {
 
   // The line under the title belongs to the half that is open, so the eyebrow
   // is what has to hold still: it names the whole catalogue, not the tab.
+  // Each listing is for something different, so the line under the heading
+  // has to change with the tab rather than describe models on all three.
+  it('gives each tab its own subtitle', async () => {
+    const user = userEvent.setup()
+    render(ModelsCatalogue, { props: { models: launchModels } })
+
+    const hero = () => screen.getByTestId('workshop-hero')
+    expect(hero()).toHaveTextContent('Try the latest AI models')
+
+    await user.click(screen.getByRole('button', { name: 'Workflows' }))
+    await waitFor(() =>
+      expect(hero()).toHaveTextContent('Turn your ideas into finished results')
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Apps' }))
+    await waitFor(() =>
+      expect(hero()).toHaveTextContent('Take on bigger ideas with apps')
+    )
+  })
+
   it('names the Hub in the eyebrow on every tab', async () => {
     const user = userEvent.setup()
     render(ModelsCatalogue, { props: { models: launchModels } })
@@ -265,6 +292,29 @@ describe('ModelsCatalogue', () => {
     expect(screen.queryByRole('button', { name: /Browse all apps/ })).toBeNull()
   })
 
+  it('hides an app whose PostHog flag is off, and shows it once it turns on', async () => {
+    const user = userEvent.setup()
+    reshootFlag.value = false
+    render(ModelsCatalogue, { props: { models: launchModels } })
+    await user.click(screen.getByRole('button', { name: 'Apps' }))
+    const hrefs = () =>
+      within(screen.getByTestId('app-shelf'))
+        .getAllByRole('link')
+        .map((link) => link.getAttribute('href'))
+
+    await waitFor(() =>
+      expect(hrefs()).toEqual(['/models/apps/cinematic-studio/'])
+    )
+
+    reshootFlag.value = true
+    await waitFor(() =>
+      expect(hrefs()).toEqual([
+        '/models/apps/cinematic-studio/',
+        '/models/apps/reshoot/'
+      ])
+    )
+  })
+
   it.for([
     {
       name: 'apps off',
@@ -346,6 +396,12 @@ describe('ModelsCatalogue', () => {
     expect(captureWorkshopEvent).toHaveBeenLastCalledWith({
       name: 'catalogue_viewed',
       properties: { model_count: 1, page_type: 'model' }
+    })
+    await user.click(screen.getByRole('button', { name: 'Apps' }))
+    expect(captureWorkshopEvent).toHaveBeenCalledTimes(3)
+    expect(captureWorkshopEvent).toHaveBeenLastCalledWith({
+      name: 'catalogue_viewed',
+      properties: { model_count: 2, page_type: 'app' }
     })
   })
 

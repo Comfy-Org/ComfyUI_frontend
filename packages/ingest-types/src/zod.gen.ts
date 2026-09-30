@@ -767,6 +767,23 @@ export const zResubscribeRequest = z.object({
 })
 
 /**
+ * The newest open renewal invoice of the workspace's Stripe subscription (active, or canceled but not yet ended). Returned only to workspace owners on the stripe billing rail while billing_status is payment_failed, and not while a payment for it is processing. hosted_invoice_url is a bearer payment link.
+ */
+export const zRenewalInvoice = z.object({
+  amount_due: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  currency: z.string(),
+  hosted_invoice_url: z.string(),
+  next_payment_attempt: z.string().datetime().optional()
+})
+
+/**
  * Response after a queue management action (delete or clear).
  */
 export const zQueueManageResponse = z.object({
@@ -1332,6 +1349,18 @@ export const zMember = z.object({
   name: z.string(),
   role: z.enum(['owner', 'member'])
 })
+
+/**
+ * 400 for a missing `filename` or a `res` that is not a number, on the media routes served outside the generated wrapper.
+ */
+export const zMediaQueryError = z.object({
+  error: z.string()
+})
+
+/**
+ * A 400 from a media route served outside the generated wrapper: ErrorResponse, or MediaQueryError for a bad query parameter.
+ */
+export const zMediaBadRequestError = z.union([zErrorResponse, zMediaQueryError])
 
 /**
  * Paginated list of workspaces the authenticated user belongs to.
@@ -2400,6 +2429,7 @@ export const zBillingStatusResponse = z.object({
   pending_billing_op_type: z.enum(['subscription', 'topup']).optional(),
   plan_slug: z.string().optional(),
   renewal_date: z.string().datetime().optional(),
+  renewal_invoice: zRenewalInvoice.optional(),
   scheduled_change: zScheduledPlanChange.nullable(),
   scoped_effective_has_funds: z.record(z.boolean()).optional(),
   scoped_has_funds: z.record(z.boolean()).optional(),
@@ -2442,6 +2472,7 @@ export const zBillingOpStatusResponse = z.object({
       'authentication_required',
       'authentication_failed',
       'processing_error',
+      'payment_not_completed',
       'generic'
     ])
     .optional(),
@@ -2921,6 +2952,23 @@ export const zAssetCreatedWritable = zAssetWritable.and(
 )
 
 /**
+ * The workspace a media request reads from, where a media tag cannot
+ * send `X-Comfy-Workspace-ID`. It applies only while
+ * `web_session_enabled` is on for the user; with it off, and always on
+ * the `CookieAuth` cookie, it is ignored.
+ *
+ * On a `WebSessionAuth` request it selects the workspace: a workspace
+ * the user cannot access is 403 `workspace_access_denied`, and a
+ * malformed value, or one that disagrees with `X-Comfy-Workspace-ID`,
+ * is 400 `workspace_id_invalid`. A token or API key keeps its own
+ * workspace, and naming another is 400 `workspace_id_invalid`. A cookie
+ * request that names no workspace looks a filename up across all of the
+ * user's workspaces, and an asset id up in the personal one.
+ *
+ */
+export const zMediaWorkspaceId = z.string()
+
+/**
  * JWKS response
  */
 export const zGetJwksResponse = zJwksResponse
@@ -3171,7 +3219,11 @@ export const zGetAssetContentPath = z.object({
 })
 
 export const zGetAssetContentQuery = z.object({
-  disposition: z.enum(['inline', 'attachment']).optional().default('attachment')
+  disposition: z
+    .enum(['inline', 'attachment'])
+    .optional()
+    .default('attachment'),
+  workspace_id: z.string().optional()
 })
 
 /**
@@ -4180,7 +4232,8 @@ export const zGetUsersInfoResponse = z.object({
 })
 
 export const zGetVhsQueryVideoQuery = z.object({
-  filename: z.string()
+  filename: z.string(),
+  workspace_id: z.string().optional()
 })
 
 /**
@@ -4198,14 +4251,30 @@ export const zGetVhsQueryVideoResponse = z.object({
 export const zGetVhsViewAudioQuery = z.object({
   filename: z.string(),
   type: z.string().optional(),
-  subfolder: z.string().optional()
+  subfolder: z.string().optional(),
+  channel: z.string().optional(),
+  res: z.number().int().gte(64).lte(1024).optional(),
+  workspace_id: z.string().optional()
 })
+
+/**
+ * JPEG thumbnail for `res`
+ */
+export const zGetVhsViewAudioResponse = z.string()
 
 export const zGetVhsViewVideoQuery = z.object({
   filename: z.string(),
   type: z.string().optional(),
-  subfolder: z.string().optional()
+  subfolder: z.string().optional(),
+  channel: z.string().optional(),
+  res: z.number().int().gte(64).lte(1024).optional(),
+  workspace_id: z.string().optional()
 })
+
+/**
+ * JPEG thumbnail for `res`
+ */
+export const zGetVhsViewVideoResponse = z.string()
 
 export const zViewFileQuery = z.object({
   filename: z.string(),
@@ -4217,7 +4286,8 @@ export const zViewFileQuery = z.object({
   workflow: z.string().optional(),
   timestamp: z.number().int().optional(),
   channel: z.string().optional(),
-  res: z.number().int().gte(64).lte(1024).optional()
+  res: z.number().int().gte(64).lte(1024).optional(),
+  workspace_id: z.string().optional()
 })
 
 /**
@@ -4230,8 +4300,16 @@ export const zGetLegacyViewMetadataPath = z.object({
 })
 
 export const zGetApiViewVideoAliasQuery = z.object({
-  filename: z.string()
+  filename: z.string(),
+  channel: z.string().optional(),
+  res: z.number().int().gte(64).lte(1024).optional(),
+  workspace_id: z.string().optional()
 })
+
+/**
+ * JPEG thumbnail for `res`
+ */
+export const zGetApiViewVideoAliasResponse = z.string()
 
 /**
  * Empty object for workflow templates
@@ -4608,8 +4686,16 @@ export const zGetTemplateProxyPath = z.object({
 })
 
 export const zGetViewCompatAliasQuery = z.object({
-  filename: z.string()
+  filename: z.string(),
+  channel: z.string().optional(),
+  res: z.number().int().gte(64).lte(1024).optional(),
+  workspace_id: z.string().optional()
 })
+
+/**
+ * JPEG thumbnail for `res`
+ */
+export const zGetViewCompatAliasResponse = z.string()
 
 export const zGetWebsocketQuery = z.object({
   token: z.string().optional(),

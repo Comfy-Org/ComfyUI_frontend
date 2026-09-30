@@ -51,11 +51,9 @@ test.describe('Customer-story internal links @smoke', () => {
   }) => {
     await page.goto('/pricing')
 
-    await expect(
-      page.getByRole('link', {
-        name: t('pricing.enterprise.learnMore', 'en'),
-        exact: true
-      })
-    ).toHaveAttribute('href', '/enterprise')
+    await expect(page.getByTestId('enterprise-cta')).toHaveAttribute(
+      'href',
+      '/enterprise'
+    )
   })
 })
