@@ -27,9 +27,12 @@ const {
   locked = false,
   reopening = false,
   outcome,
-  consent
+  consent,
+  purchase = 'plan'
 } = defineProps<
   PayContext & {
+    /** A top-up buys credits once, so it authorizes no recurring charge. */
+    purchase?: 'plan' | 'credits'
     disabled: boolean
     loading?: boolean
     /** The submit area's phase; only the visible pay action carries one, so the page has one live region. */
@@ -51,6 +54,29 @@ const emit = defineEmits<{
 }>()
 
 const { t, te } = useI18n()
+
+/** A plan authorizes a charge each period; a top-up authorizes one. */
+const PURCHASE_COPY = {
+  plan: {
+    pay: 'checkout.payAndSubscribe',
+    agreement: 'checkout.fullPage.terms.agreement'
+  },
+  credits: {
+    pay: 'checkout.fullPage.payForCredits',
+    agreement: 'checkout.fullPage.terms.agreementOnce'
+  }
+} as const
+
+const payLabel = computed(() => t(PURCHASE_COPY[purchase].pay))
+
+const terms = computed(() => ({
+  agreement: t(PURCHASE_COPY[purchase].agreement, {
+    terms: '{terms}',
+    privacy: '{privacy}'
+  }),
+  terms: t('checkout.fullPage.terms.terms'),
+  privacyPolicy: t('checkout.fullPage.terms.privacyPolicy')
+}))
 
 /** Support is for a payment that failed; a notice over a fresh price is not one. */
 const supportLink = computed(() =>
@@ -154,7 +180,7 @@ const SECONDARY_BUTTON =
           aria-hidden="true"
         />
         <span :class="cn(loading && 'sr-only')">
-          {{ t('checkout.payAndSubscribe') }}
+          {{ payLabel }}
         </span>
       </button>
       <button
@@ -177,16 +203,7 @@ const SECONDARY_BUTTON =
       >
         {{ t('checkout.fullPage.outcome.contactSupport') }}
       </a>
-      <CheckoutTermsNote
-        :copy="{
-          agreement: t('checkout.fullPage.terms.agreement', {
-            terms: '{terms}',
-            privacy: '{privacy}'
-          }),
-          terms: t('checkout.fullPage.terms.terms'),
-          privacyPolicy: t('checkout.fullPage.terms.privacyPolicy')
-        }"
-      />
+      <CheckoutTermsNote :copy="terms" />
     </div>
   </div>
 </template>

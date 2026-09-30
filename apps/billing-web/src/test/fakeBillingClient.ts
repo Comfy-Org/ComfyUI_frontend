@@ -28,6 +28,8 @@ import type {
   SubscriptionCommandResult,
   SubscriptionPreview,
   TerminalBillingOperation,
+  TopupQuoteResult,
+  TopupResult,
   WorkspaceInviteCommands
 } from '@comfyorg/account-core/billing'
 import type { BillingClient } from '@comfyorg/account-ui/billing'
@@ -61,6 +63,8 @@ export interface FakeBillingClientOptions {
   readonly capabilities?: Partial<BillingCapabilities>
   readonly denials?: CapabilitiesSnapshot['denials']
   readonly status?: BillingStatusData
+  readonly topupQuote?: TopupQuoteResult
+  readonly topup?: TopupResult
 }
 
 export interface FakeBillingClient {
@@ -85,6 +89,10 @@ export interface FakeBillingClient {
   >
   readonly resubscribe: Mock<BillingClient['commands']['resubscribe']>
   readonly recover: Mock<BillingClient['lifecycle']['recover']>
+  readonly quoteTopup: Mock<BillingClient['topup']['quoteTopup']>
+  readonly createTopupCheckout: Mock<
+    BillingClient['topup']['createTopupCheckout']
+  >
   readonly readCapabilities: Mock<BillingClient['capabilities']['read']>
   readonly invalidateCapabilities: BillingClient['capabilities']['invalidate']
   readonly readStatus: Mock<BillingClient['status']['read']>
@@ -126,7 +134,9 @@ export function createFakeBillingClient(
       occupied_seats: 1,
       scheduled_change: null,
       team_credit_stop: null
-    }
+    },
+    topupQuote = { status: 'error', code: 'REQUEST_FAILED' },
+    topup: topupOutcome = { status: 'error', code: 'REQUEST_FAILED' }
   } = options
 
   const operations = new Map<string, BillingOperationState>()
@@ -182,6 +192,15 @@ export function createFakeBillingClient(
       return outcome
     })
   }
+  const quoteTopup: Mock<BillingClient['topup']['quoteTopup']> = vi.fn(
+    async () => topupQuote
+  )
+  const createTopupCheckout: Mock<
+    BillingClient['topup']['createTopupCheckout']
+  > = vi.fn(async () => {
+    if ('operation' in topupOutcome) publishOperation(topupOutcome.operation)
+    return topupOutcome
+  })
   const cancelSubscription = commandOf(cancelOutcome)
   const resubscribe = commandOf(resubscribeOutcome)
   const capabilitiesSnapshot: CapabilitiesSnapshot = {
@@ -279,7 +298,8 @@ export function createFakeBillingClient(
       dispose: () => {}
     },
     topup: {
-      createTopupCheckout: unusedByHostedSurfaces('topup.createTopupCheckout'),
+      quoteTopup,
+      createTopupCheckout,
       createHostedTopupCheckout: unusedByHostedSurfaces(
         'topup.createHostedTopupCheckout'
       )
@@ -324,6 +344,8 @@ export function createFakeBillingClient(
     cancelSubscription,
     resubscribe,
     recover,
+    quoteTopup,
+    createTopupCheckout,
     readCapabilities,
     invalidateCapabilities,
     readStatus,

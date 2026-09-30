@@ -159,6 +159,22 @@ describe('endingOf with the receipt the server reported', () => {
       }
     },
     {
+      name: "this page's own top-up, which bought credits and no plan",
+      page: {
+        kind: 'terminal',
+        operation: {
+          ...settledWith({ amountChargedCents: 1500, creditsAdded: 3165 }),
+          kind: 'topup'
+        },
+        attribution: 'started'
+      },
+      screen: {
+        kind: 'success',
+        purchase: 'credits',
+        receipt: { amountChargedCents: 1500, creditsAdded: 3165 }
+      }
+    },
+    {
       name: 'a payment already through, with its plan and credits',
       page: {
         kind: 'terminal',

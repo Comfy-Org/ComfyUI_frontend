@@ -344,6 +344,41 @@ describe('CheckoutEnding', () => {
       ).not.toBeInTheDocument()
     })
 
+    it('77-3783: a top-up Success counts the credits added and what they cost, and names no plan', () => {
+      renderEnding({
+        kind: 'success',
+        purchase: 'credits',
+        receipt: { creditsAdded: 3165, amountChargedCents: 1500 }
+      })
+
+      expect(
+        screen.getByRole('heading', { name: '3,165 credits added' })
+      ).toBeInTheDocument()
+      expect(
+        screen.getByText('Credits for Acme Team have been successfully added.')
+      ).toBeInTheDocument()
+      expect(screen.getByTestId('checkout-ending-receipt')).toHaveTextContent(
+        'Added+3,165Amount paid$15.00'
+      )
+      expect(
+        screen.queryByTestId('checkout-ending-plan')
+      ).not.toBeInTheDocument()
+    })
+
+    it('a top-up Success the server has not counted yet claims no number', () => {
+      renderEnding({ kind: 'success', purchase: 'credits' })
+
+      expect(
+        screen.getByRole('heading', { name: "You're all set" })
+      ).toBeInTheDocument()
+      expect(
+        screen.getByText('Credits for Acme Team have been successfully added.')
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByTestId('checkout-ending-plan')
+      ).not.toBeInTheDocument()
+    })
+
     it('390-4947: Payment received confirms the payment and shows the credits still adding', () => {
       renderEnding({
         kind: 'received',

@@ -178,4 +178,19 @@ describe('CheckoutPayAction', () => {
       expect(pay).toHaveProperty('disabled', disabled)
     }
   )
+
+  it('buys credits once, authorizing no recurring charge', () => {
+    render(CheckoutPayAction, {
+      props: { disabled: false, purchase: 'credits' },
+      global: { plugins: [createBillingI18n()] }
+    })
+
+    expect(
+      screen.getByRole('button', { name: 'Pay and add credits' })
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/each billing period/)).not.toBeInTheDocument()
+    expect(
+      screen.getByText(/By continuing, you agree to Comfy Org's/)
+    ).toBeInTheDocument()
+  })
 })

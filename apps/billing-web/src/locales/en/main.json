@@ -171,9 +171,11 @@
     "unavailable": "The payment form isn't available right now. Please try again later.",
     "fullPage": {
       "logo": "Comfy",
+      "payForCredits": "Pay and add credits",
       "planName": "{tier} Plan",
       "terms": {
         "agreement": "By continuing, you agree to Comfy Org's {terms} and {privacy}, and authorize Comfy Org to charge your payment method each billing period until you cancel.",
+        "agreementOnce": "By continuing, you agree to Comfy Org's {terms} and {privacy}, and authorize Comfy Org to charge your payment method once for these credits.",
         "terms": "Terms",
         "privacyPolicy": "Privacy Policy"
       },
@@ -292,6 +294,11 @@
           "title": "You're all set",
           "body": "Your plan for {workspace} has been successfully updated."
         },
+        "success_credits": {
+          "title": "You're all set",
+          "titleCounted": "{count} credits added",
+          "body": "Credits for {workspace} have been successfully added."
+        },
         "completed": {
           "title": "You're all set",
           "body": "A payment for {workspace} went through. Check your plan in settings for the details.",
@@ -357,7 +364,8 @@
           "subscribe": "Subscribe to {plan}",
           "upgrade": "Upgrade to {plan}",
           "switch": "Switch to {plan}",
-          "change": "Change to {plan}"
+          "change": "Change to {plan}",
+          "topUp": "Add credits"
         },
         "scoped": "{action} · {workspace}",
         "planWithCadence": "{tier} {cadence}",
@@ -390,7 +398,9 @@
           "startsMonthly": "Starts {date}, billed monthly",
           "startsYearly": "Starts {date}, billed yearly",
           "comparedMonthly": "{amount} {listAmount} /mo, billed monthly",
-          "comparedYearly": "{amount} {listAmount} /yr, billed yearly"
+          "comparedYearly": "{amount} {listAmount} /yr, billed yearly",
+          "credits": "Credits",
+          "creditsExpire": "Expire {date}"
         },
         "discount": {
           "fallbackLabel": "Promo code",

@@ -75,8 +75,27 @@ const emit = defineEmits<{ close: []; retry: []; viewPlans: [] }>()
 const { t, locale } = useI18n()
 const { coded } = useHostedCopy()
 
+const R = 'checkout.fullPage.ending.receipt'
+const credits = (count: number) =>
+  new Intl.NumberFormat(locale.value).format(count)
+const money = (cents: number) => formatQuoteMoney(cents, 'usd', locale.value)
+
 const ending = computed(() => ENDINGS[screen.kind])
-const copyKey = computed(() => `checkout.fullPage.ending.${screen.kind}`)
+const copyKey = computed(() =>
+  screen.kind === 'success' && screen.purchase === 'credits'
+    ? 'checkout.fullPage.ending.success_credits'
+    : `checkout.fullPage.ending.${screen.kind}`
+)
+/** A top-up's Success leads with the credits the server counted, when it has. */
+const title = computed(() => {
+  const added =
+    screen.kind === 'success' && screen.purchase === 'credits'
+      ? screen.receipt?.creditsAdded
+      : undefined
+  return added === undefined
+    ? t(`${copyKey.value}.title`)
+    : t(`${copyKey.value}.titleCounted`, { count: credits(added) })
+})
 const bodyKey = computed(() => {
   if (screen.kind === 'refused') return `${copyKey.value}.body.${screen.copy}`
   if (screen.kind === 'load_failed')
@@ -109,11 +128,6 @@ const showsCode = computed(
 const creditsAdded = computed(() =>
   'receipt' in screen ? screen.receipt?.creditsAdded : undefined
 )
-
-const R = 'checkout.fullPage.ending.receipt'
-const credits = (count: number) =>
-  new Intl.NumberFormat(locale.value).format(count)
-const money = (cents: number) => formatQuoteMoney(cents, 'usd', locale.value)
 
 /** Each row the receipt shows, as label and value; a plan row needs the plan's name. */
 const receiptRows = computed(() =>
@@ -161,7 +175,7 @@ function act() {
         <h1
           class="m-0 text-2xl font-semibold text-balance text-base-foreground sm:whitespace-nowrap"
         >
-          {{ t(`${copyKey}.title`) }}
+          {{ title }}
         </h1>
         <p class="m-0 text-sm/5 text-muted-foreground">
           {{ t(bodyKey, bodyParams) }}
