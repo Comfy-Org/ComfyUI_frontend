@@ -1,0 +1,59 @@
+name: 'CI: Block do-not-merge'
+
+# Fails the PR check whenever a `do-not-merge` label is present. The label
+# marks PRs that exist only for ephemeral testing, or that must not merge yet.
+# Ported from Comfy-Org/cloud's ci-block-do-not-merge.yml, adapted for this
+# repo's merge queue.
+#
+# Runs in both contexts so it can be a single required status check without
+# stalling the queue.
+#   * pull_request evaluates the PR's labels. Red while `do-not-merge` is set,
+#     green once it is removed. A red required check keeps the PR out of the
+#     merge queue in the first place.
+#   * merge_group always passes. A labeled PR cannot enter the queue, so there
+#     is nothing to re-check; this only reports the same check name so branch
+#     protection resolves in the queue context.
+#
+# Advisory until required: to make it a hard gate, after this has run once on an
+# open PR, mark `Block do-not-merge` as a required status check in branch
+# protection (and merge queue settings). Until then it is a red flag only.
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review, labeled, unlabeled]
+  merge_group:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  block-do-not-merge:
+    name: Block do-not-merge
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: Fail if do-not-merge label is present
+        if: github.event_name == 'pull_request'
+        env:
+          PR_LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+        run: |
+          set -euo pipefail
+          if echo "$PR_LABELS" | jq -e 'index("do-not-merge")' > /dev/null; then
+            echo "::error::PR has the \`do-not-merge\` label. Remove the label before merging."
+            {
+              echo "## Blocked by \`do-not-merge\` label"
+              echo ""
+              echo "Remove the \`do-not-merge\` label to unblock this check."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "No do-not-merge label. OK."
+
+      - name: Merge queue, label gate already enforced pre-queue
+        if: github.event_name == 'merge_group'
+        run: |
+          echo "merge_group context: a do-not-merge PR cannot enter the queue. OK."
