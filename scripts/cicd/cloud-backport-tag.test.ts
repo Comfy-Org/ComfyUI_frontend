@@ -130,7 +130,7 @@ describe('cloud backport tag workflow', () => {
       'github.event.pull_request.head.repo.full_name == github.repository'
     )
     expect(dispatchJob.concurrency?.group).toBe(
-      'cloud-dispatch-${{ github.event.pull_request.head.ref || github.ref_name }}'
+      'cloud-dispatch-${{ github.run_id }}'
     )
     expect(dispatchJob.concurrency?.['cancel-in-progress']).toBe(false)
     expect(dispatchWorkflow.concurrency).toBeUndefined()
