@@ -110,7 +110,7 @@ class AgentNewChatServer {
 
   /** `response` fires on headers, so a body read can still be in flight. */
   async settled(): Promise<void> {
-    while (this.recording.size > 0) await Promise.all([...this.recording])
+    while (this.recording.size > 0) await Promise.all(this.recording)
   }
 
   private async recordAccepted(response: Response): Promise<void> {
