@@ -35,6 +35,11 @@ describe('WorkspaceMembersPanelContent', () => {
   beforeEach(() => {
     const workspaceUI = vi.mocked(useWorkspaceUI())
     workspaceUI.workspaceRole = computed(() => 'owner')
+    const ownerPermissions = workspaceUI.permissions.value
+    workspaceUI.permissions = computed(() => ({
+      ...ownerPermissions,
+      canViewPendingInvites: true
+    }))
     workspaceStore = useTeamWorkspaceStore()
     vi.mocked(workspaceStore.fetchMembers).mockResolvedValue([])
     vi.mocked(workspaceStore.fetchPendingInvites).mockResolvedValue([])
@@ -66,6 +71,27 @@ describe('WorkspaceMembersPanelContent', () => {
       ).not.toBeInTheDocument()
     )
     expect(workspaceStore.fetchMembers).toHaveBeenCalledTimes(2)
+  })
+
+  it('skips the invites fetch for members who cannot view pending invites', async () => {
+    const workspaceUI = vi.mocked(useWorkspaceUI())
+    const permissions = workspaceUI.permissions.value
+    workspaceUI.permissions = computed(() => ({
+      ...permissions,
+      canViewPendingInvites: false
+    }))
+    vi.mocked(workspaceStore.fetchPendingInvites).mockRejectedValue(
+      new Error('403')
+    )
+
+    renderComponent()
+    await Promise.resolve()
+
+    expect(workspaceStore.fetchMembers).toHaveBeenCalled()
+    expect(workspaceStore.fetchPendingInvites).not.toHaveBeenCalled()
+    expect(
+      screen.queryByText('workspacePanel.members.loadFailed')
+    ).not.toBeInTheDocument()
   })
 
   it('shows no error state when both fetches succeed', async () => {

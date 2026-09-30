@@ -31,6 +31,11 @@ const stubs = {
 beforeEach(() => {
   const workspaceUI = vi.mocked(useWorkspaceUI())
   workspaceUI.workspaceRole = computed(() => 'owner')
+  const ownerPermissions = workspaceUI.permissions.value
+  workspaceUI.permissions = computed(() => ({
+    ...ownerPermissions,
+    canViewPendingInvites: true
+  }))
   Object.assign(useTeamWorkspaceStore(), { workspaceName: 'Acme Team' })
   vi.mocked(useTeamWorkspaceStore().fetchMembers).mockResolvedValue([])
   vi.mocked(useTeamWorkspaceStore().fetchPendingInvites).mockResolvedValue([])

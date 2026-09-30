@@ -24,7 +24,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 
 const workspaceStore = useTeamWorkspaceStore()
 const { fetchMembers, fetchPendingInvites } = workspaceStore
-const { workspaceRole } = useWorkspaceUI()
+const { workspaceRole, permissions } = useWorkspaceUI()
 
 const loadFailed = ref(false)
 
@@ -32,7 +32,7 @@ async function load() {
   loadFailed.value = false
   const results = await Promise.allSettled([
     fetchMembers(),
-    fetchPendingInvites()
+    ...(permissions.value.canViewPendingInvites ? [fetchPendingInvites()] : [])
   ])
   loadFailed.value = results.some((result) => result.status === 'rejected')
 }

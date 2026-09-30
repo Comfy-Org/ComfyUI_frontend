@@ -818,7 +818,11 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     const current = workspaces.value.find((w) => w.id === workspaceId)
     if (current) {
       updateWorkspace(workspaceId, {
-        members: current.members.filter((m) => m.id !== userId)
+        members: current.members.filter((m) => m.id !== userId),
+        totalMembers:
+          current.totalMembers === undefined
+            ? undefined
+            : Math.max(0, current.totalMembers - 1)
       })
     }
   }
