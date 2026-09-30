@@ -92,7 +92,9 @@ describe('agentAttachCapability', () => {
     ['song.mp3', 'probe'],
     ['mesh.glb', 'reference'],
     ['notes.md', 'retain'],
-    ['workflow.json', 'retain']
+    ['workflow.json', 'retain'],
+    ['logo.svg', 'retain'],
+    ['photo.avif', 'retain']
   ] as const)('reports %s as %s', ([name, capability]) => {
     expect(agentAttachCapability(name)).toBe(capability)
   })

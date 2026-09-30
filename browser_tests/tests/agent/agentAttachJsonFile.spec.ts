@@ -15,11 +15,7 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
  * The rest of the agreed list (PM-1855) has no asset to drive a real upload
  * with, and is pinned by the unit suite over attachableFiles instead.
  */
-const ACCEPTED_FIXTURES = [
-  { file: 'default.json', capability: 'reference' },
-  { file: 'animated_triangle.glb', capability: 'reference' },
-  { file: 'cube.obj', capability: 'reference' }
-] as const
+const ACCEPTED_FIXTURES = ['default.json', 'animated_triangle.glb', 'cube.obj']
 
 test.describe(
   'Agent panel attachment file types',
@@ -53,7 +49,7 @@ test.describe(
       expect(AGENT_ATTACH_ACCEPT).toContain('.json')
     })
 
-    for (const { file } of ACCEPTED_FIXTURES) {
+    for (const file of ACCEPTED_FIXTURES) {
       test(`attaches ${file} picked through the file browser`, async ({
         agentPanel
       }) => {

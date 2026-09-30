@@ -2797,7 +2797,9 @@ export const zAgentRunMode = z.object({
 /**
  * Attachment extensions that are accepted so a user can keep them beside a workflow, and
  * nothing more. No upload-backed node input takes a text file, so unlike the reference tier
- * these cannot be wired into a graph either.
+ * these cannot be wired into a graph either. .svg and .avif are here for the same reason from
+ * the other direction: they are images the turn cannot decode (svg is in the registry's
+ * undecodable set, avif is unregistered), so view_asset would fail on either.
  *
  */
 export const zAgentRetainedAttachmentExtension = z.enum([
@@ -2809,13 +2811,14 @@ export const zAgentRetainedAttachmentExtension = z.enum([
   '.yaml',
   '.yml',
   '.xml',
-  '.log'
+  '.log',
+  '.svg',
+  '.avif'
 ])
 
 /**
  * Attachment extensions the agent can name and wire into a graph but cannot read — every
- * format Load3D opens EXCEPT .usdz, which the accepted list rejects, plus the two image
- * formats that are attachable but not decodable into a turn (.svg, .avif).
+ * format Load3D opens EXCEPT .usdz, which the accepted list rejects.
  *
  */
 export const zAgentReferenceAttachmentExtension = z.enum([
@@ -2827,9 +2830,7 @@ export const zAgentReferenceAttachmentExtension = z.enum([
   '.ply',
   '.spz',
   '.splat',
-  '.ksplat',
-  '.svg',
-  '.avif'
+  '.ksplat'
 ])
 
 /**

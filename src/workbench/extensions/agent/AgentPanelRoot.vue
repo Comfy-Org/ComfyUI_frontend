@@ -1652,7 +1652,15 @@ async function attachDroppedAsset(event: DragEvent): Promise<boolean> {
   // shared media taxonomy, which files .usdz as 3D while the accepted list
   // rejects it, so a .usdz card used to stage silently here and then fail the
   // turn at submit.
-  if (!agentAttachCapability(asset.name)) {
+  // `asset.name` is the card's DISPLAY name, which a user can rename to
+  // anything — including something with no extension to judge — while `ref` is
+  // the stored filename the server will resolve. Judge the display name first
+  // (it is what the user sees) and fall back to the ref, so a renamed but valid
+  // asset is not refused for the rename.
+  if (
+    !agentAttachCapability(asset.name) &&
+    !(asset.ref && agentAttachCapability(asset.ref))
+  ) {
     toast.add({
       severity: 'warn',
       detail: t('agent.attachmentTypeNotAccepted', { name: asset.name }),
@@ -1679,7 +1687,7 @@ async function attachDroppedAsset(event: DragEvent): Promise<boolean> {
   if (result === 'unsupported')
     toast.add({
       severity: 'warn',
-      detail: t('agent.assetNotAttachable'),
+      detail: t('agent.attachmentTypeNotAccepted', { name: asset.name }),
       life: 5000
     })
   return result === 'uploaded'

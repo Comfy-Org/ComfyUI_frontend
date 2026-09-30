@@ -191,9 +191,13 @@ export function useAttachment(options: UseAttachmentOptions) {
   // is only a picker hint, and "All Files" defeats it.
   async function addFiles(files: Iterable<File>): Promise<boolean> {
     const { attachable, rejected } = partitionAttachableFiles(files)
-    for (const file of rejected) {
+    // One message for the whole batch: dropping a folder of unsupported files
+    // would otherwise stack that many simultaneous 5-second toasts.
+    if (rejected.length > 0) {
       options.onError?.(
-        i18n.global.t('agent.attachmentTypeNotAccepted', { name: file.name })
+        i18n.global.t('agent.attachmentTypeNotAccepted', {
+          name: rejected.map((file) => file.name).join(', ')
+        })
       )
     }
     const staged = attachable

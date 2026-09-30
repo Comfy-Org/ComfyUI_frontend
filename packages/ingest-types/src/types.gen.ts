@@ -4660,7 +4660,9 @@ export type AgentRunMode = {
 /**
  * Attachment extensions that are accepted so a user can keep them beside a workflow, and
  * nothing more. No upload-backed node input takes a text file, so unlike the reference tier
- * these cannot be wired into a graph either.
+ * these cannot be wired into a graph either. .svg and .avif are here for the same reason from
+ * the other direction: they are images the turn cannot decode (svg is in the registry's
+ * undecodable set, avif is unregistered), so view_asset would fail on either.
  *
  */
 export type AgentRetainedAttachmentExtension =
@@ -4673,11 +4675,12 @@ export type AgentRetainedAttachmentExtension =
   | '.yml'
   | '.xml'
   | '.log'
+  | '.svg'
+  | '.avif'
 
 /**
  * Attachment extensions the agent can name and wire into a graph but cannot read — every
- * format Load3D opens EXCEPT .usdz, which the accepted list rejects, plus the two image
- * formats that are attachable but not decodable into a turn (.svg, .avif).
+ * format Load3D opens EXCEPT .usdz, which the accepted list rejects.
  *
  */
 export type AgentReferenceAttachmentExtension =
@@ -4690,8 +4693,6 @@ export type AgentReferenceAttachmentExtension =
   | '.spz'
   | '.splat'
   | '.ksplat'
-  | '.svg'
-  | '.avif'
 
 /**
  * Attachment extensions the agent can only describe from metadata. A subset of the containers
@@ -4728,7 +4729,7 @@ export type AgentPostMessageRequest = {
    * in says what the agent can do with it, and the tiers differ sharply — a client that
    * presents them as one flat list misleads the user.
    *
-   * The constraint is expressed as three enums rather than on this array because the array
+   * The constraint is expressed as extension enums rather than on this array because the array
    * carries FILENAMES, not content types: an extension is what both ends can actually agree
    * on, and the upload route this list references stores no MIME type for what it accepts.
    *

@@ -67,7 +67,7 @@ describe('useAttachment', () => {
     expect(attached).toBe(false)
     expect(upload).not.toHaveBeenCalled()
     expect(registry.chips).toEqual([])
-    expect(onError).toHaveBeenCalledTimes(2)
+    expect(onError).toHaveBeenCalledTimes(1)
     expect(onError.mock.calls.flat().join(' ')).toContain('doc.pdf')
     expect(onError.mock.calls.flat().join(' ')).toContain('clip.wmv')
   })
