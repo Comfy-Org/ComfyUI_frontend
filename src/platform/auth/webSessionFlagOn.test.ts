@@ -1,6 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { User, UserCredential } from 'firebase/auth'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { setActivePinia } from 'pinia'
 import { effectScope } from 'vue'
 
 import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
@@ -8,6 +9,11 @@ import { COMFY_CLIENT } from '@comfyorg/account-core/requestAuth'
 import { SessionTokenError } from '@comfyorg/account-core/sessionTokenMint'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import {
+  markInteractiveSignIn,
+  takeInteractiveSignIn
+} from '@/platform/auth/session/interactiveSignInMarker'
+import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import {
@@ -31,6 +37,7 @@ import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { api } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
 import type { useExtensionService } from '@/services/extensionService'
+import { createDisposablePinia } from '@/testing/pinia'
 import { useAuthStore } from '@/stores/authStore'
 import type { ComfyExtension } from '@/types/comfy'
 import {
@@ -52,6 +59,10 @@ const identity = vi.hoisted(() => {
       userObservers.clear()
       tokenObservers.clear()
       state.user = null
+    },
+    resolve(user: User | null) {
+      state.user = user
+      userObservers.forEach((observer) => observer(user))
     },
     signIn(user: User) {
       state.user = user
@@ -150,10 +161,23 @@ function sessionBody(userId: string) {
   }
 }
 
-function installServer(initial: ServerSession) {
-  const server = { session: initial, requests: [] as SessionRequest[] }
+function installServer(
+  initial: ServerSession,
+  features: Record<string, boolean> = {}
+) {
+  const server = {
+    session: initial,
+    requests: [] as SessionRequest[],
+    dropPosts: false
+  }
+
+  const answerElsewhere = (pathname: string): Response =>
+    pathname === '/api/features'
+      ? jsonResponse({ unified_web_session: true, ...features })
+      : jsonResponse({ id: 'customer-1' }, 201)
 
   const answerSession = (method: string): Response => {
+    if (method === 'POST' && server.dropPosts) throw new TypeError('reloaded')
     if (method === 'POST') {
       server.session = { userId: 'user-a' }
       return jsonResponse({ success: true })
@@ -174,11 +198,8 @@ function installServer(initial: ServerSession) {
     vi.fn<typeof fetch>(async (input, init) => {
       const url = new URL(String(input), location.href)
       const method = (init?.method ?? 'GET').toUpperCase()
-      if (url.pathname === '/api/features') {
-        return jsonResponse({ unified_web_session: true })
-      }
       if (url.pathname !== '/api/auth/session') {
-        return jsonResponse({ id: 'customer-1' }, 201)
+        return answerElsewhere(url.pathname)
       }
       server.requests.push({
         method,
@@ -1314,6 +1335,167 @@ describe.for([{ unified: false }, { unified: true }])(
 
       await expect(authStore.getWorkspaceAuthToken()).resolves.toBeUndefined()
       expect(ingest.mints).toBe(0)
+    })
+  }
+)
+
+describe.for([{ unified: false }, { unified: true }])(
+  'signing in again after a sign-out (unified_cloud_auth $unified)',
+  ({ unified }) => {
+    const pages: Disposable[] = []
+    const methodsSince = (server: ReturnType<typeof installServer>) =>
+      methodsOf(server.requests)
+
+    const startPage = async (user: User | null) => {
+      const page = createDisposablePinia()
+      pages.push(page)
+      setActivePinia(page.pinia)
+      useAuthStore()
+      identity.resolve(user)
+      const webSession = useCloudWebSessionStore()
+      webSession.start()
+      await webSession.whenReady()
+      return webSession
+    }
+
+    const signInThenReload = async () => {
+      const server = installServer('revoked', { unified_cloud_auth: unified })
+      await refreshRemoteConfig({ useAuth: false })
+      await startPage(null)
+      server.dropPosts = true
+      await useAuthStore().login('user-a@example.com', 'password')
+      await vi.advanceTimersByTimeAsync(0)
+      server.dropPosts = false
+      server.requests.length = 0
+      firebaseSignOut.mockClear()
+      return server
+    }
+
+    beforeEach(() => {
+      identity.reset()
+      sessionStorage.clear()
+      firebaseSignOut.mockReset()
+      firebaseSignOut.mockImplementation(async () => identity.signOut())
+      vi.spyOn(api, 'resetSocket').mockResolvedValue()
+    })
+
+    afterEach(() => {
+      pages.splice(0).forEach((page) => page[Symbol.dispose]())
+      remoteConfig.value = {}
+    })
+
+    it('creates the session once on the reload after an interactive sign-in, then signs in', async () => {
+      const server = await signInThenReload()
+
+      await startPage(USER_A)
+
+      expect(methodsSince(server)).toEqual(['POST', 'GET', 'GET'])
+      expect(server.requests[0].authorization).toBe('Bearer firebase-id-token')
+      expect(await webSessionSend()).toBeDefined()
+      expect(firebaseSignOut).not.toHaveBeenCalled()
+    })
+
+    it('consumes the marker on the first boot', async () => {
+      const server = await signInThenReload()
+      await startPage(USER_A)
+      server.session = 'revoked'
+      server.requests.length = 0
+      firebaseSignOut.mockClear()
+
+      await startPage(USER_A)
+
+      expect(methodsSince(server)).toEqual(['GET'])
+      expect(firebaseSignOut).toHaveBeenCalledOnce()
+    })
+
+    it.for([
+      {
+        name: 'no marker: a genuine remote sign-out',
+        mark: () => {},
+        waitMs: 0
+      },
+      {
+        name: 'a marker for another user',
+        mark: () => markInteractiveSignIn('user-b'),
+        waitMs: 0
+      },
+      {
+        name: 'an expired marker',
+        mark: () => markInteractiveSignIn('user-a'),
+        waitMs: 3 * 60_000
+      }
+    ])(
+      'treats a revoked session as remote with $name',
+      async ({ mark, waitMs }) => {
+        const server = installServer('revoked', { unified_cloud_auth: unified })
+        await refreshRemoteConfig({ useAuth: false })
+        mark()
+        await vi.advanceTimersByTimeAsync(waitMs)
+
+        await startPage(USER_A)
+
+        expect(methodsSince(server)).toEqual(['GET'])
+        expect(await webSessionSend()).toBeUndefined()
+        expect(firebaseSignOut).toHaveBeenCalledOnce()
+      }
+    )
+
+    it('keeps the marker when a pending sign-in fails to create the session, so the next load retries', async () => {
+      const server = installServer('revoked', { unified_cloud_auth: unified })
+      await refreshRemoteConfig({ useAuth: false })
+      const page = createDisposablePinia()
+      pages.push(page)
+      setActivePinia(page.pinia)
+      useAuthStore()
+      server.dropPosts = true
+      await useAuthStore().login('user-a@example.com', 'password')
+      const webSession = useCloudWebSessionStore()
+      webSession.start()
+      await webSession.whenReady()
+      server.dropPosts = false
+      await refreshRemoteConfig({ useAuth: false })
+      server.requests.length = 0
+
+      await startPage(USER_A)
+
+      expect(methodsSince(server)).toEqual(['POST', 'GET', 'GET'])
+    })
+
+    it('carries a sign-in made while the flag read false to the reload where it reads true', async () => {
+      const features = {
+        unified_web_session: false,
+        unified_cloud_auth: unified
+      }
+      const server = installServer('revoked', features)
+      await refreshRemoteConfig({ useAuth: false })
+      const loginPage = createDisposablePinia()
+      pages.push(loginPage)
+      setActivePinia(loginPage.pinia)
+      await useAuthStore().login('user-a@example.com', 'password')
+      features.unified_web_session = true
+      await refreshRemoteConfig({ useAuth: false })
+      server.requests.length = 0
+
+      await startPage(USER_A)
+
+      expect(methodsSince(server)).toEqual(['POST', 'GET', 'GET'])
+      expect(await webSessionSend()).toBeDefined()
+    })
+
+    it('rejects a marker stamped in the future', () => {
+      markInteractiveSignIn('user-a')
+      vi.setSystemTime(Date.now() - 60_000)
+
+      expect(takeInteractiveSignIn('user-a')).toBe(false)
+    })
+
+    it('reads a marker back only once', () => {
+      markInteractiveSignIn('user-a')
+
+      expect([
+        takeInteractiveSignIn('user-a'),
+        takeInteractiveSignIn('user-a')
+      ]).toEqual([true, false])
     })
   }
 )
