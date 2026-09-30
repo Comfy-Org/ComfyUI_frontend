@@ -101,6 +101,8 @@ export const useAgentConversationStore = defineStore(
     const backgroundTurns = new Map<string, BackgroundTurn>()
     let hydratedMessageIds = new Set<string>()
     let hydratedAssistantTurnIds = new Set<TurnId>()
+    const demotedSnapshotByStash = new Map<TurnId, TurnId>()
+    const restoredBackgroundMessageIds = new Set<TurnId>()
     const reportedPaywallImpressions = new Set<TurnId>()
     const approvalShownAtByAsk = new Map<string, number>()
     const shownApprovalIds = new Set<string>()
@@ -422,17 +424,33 @@ export const useAgentConversationStore = defineStore(
     }
 
     function resumeBackgroundTurn(): void {
+      const resumable = backgroundTurnToResume()
+      if (!resumable) return
+      const { entry, resumedThreadId } = resumable
+      backgroundTurns.delete(entry.messageId)
+      replaceSnapshotWithBackgroundTurn(entry, resumedThreadId)
+    }
+
+    function backgroundTurnToResume():
+      | { entry: BackgroundTurn; resumedThreadId: string }
+      | undefined {
       const resumedThreadId = threadId.value
-      if (resumedThreadId === null) return
+      if (resumedThreadId === null) return undefined
       const entry = latestBackgroundTurn(resumedThreadId)
-      if (!entry) return
+      if (!entry) return undefined
       // A turn started while this resume was in flight holds the slot, and the
       // stash is the older of the two. Taking the slot anyway would orphan the
       // newer turn's transport -- the same leak in the other direction. Leave
       // the stash where it is: it still receives its own frames as a
       // background turn, and a later resume can restore it.
-      if (transport !== null && !activeFromSnapshot) return
-      backgroundTurns.delete(entry.messageId)
+      if (transport !== null && !activeFromSnapshot) return undefined
+      return { entry, resumedThreadId }
+    }
+
+    function replaceSnapshotWithBackgroundTurn(
+      entry: BackgroundTurn,
+      resumedThreadId: string
+    ): void {
       // A snapshot the stash could not be matched to installed its own live
       // row, and this stash is about to take the slot. Ownership matching
       // cannot close that gap alone: a multi-row turn's acknowledgement row
@@ -449,13 +467,13 @@ export const useAgentConversationStore = defineStore(
       const kept = messages.value.filter((m) => m.id !== entry.message.id)
       // Called before the branch, not inside it: it pops the duplicate row and
       // its user text whether or not this entry turns out to be settled.
-      const poppedHydratedCopy = removeHydratedCopy(entry, kept)
-      if (persistedCopyOutlivesEntry(entry, poppedHydratedCopy)) {
-        retireBackgroundTurn(entry)
+      const replacedIndex = removeHydratedCopy(entry, kept)
+      if (retirePersistedBackgroundTurn(entry, replacedIndex !== undefined))
         return
-      }
       restoreBackgroundUserText(entry)
-      const index = kept.push(entry.message) - 1
+      const index = replacedIndex ?? kept.length
+      kept.splice(index, 0, entry.message)
+      restoredBackgroundMessageIds.add(entry.messageId)
       messages.value = kept
       if (entry.settled) {
         retireBackgroundTurn(entry)
@@ -490,6 +508,15 @@ export const useAgentConversationStore = defineStore(
         !poppedHydratedCopy &&
         hydratedMessageIds.has(entry.messageId)
       )
+    }
+
+    function retirePersistedBackgroundTurn(
+      entry: BackgroundTurn,
+      poppedHydratedCopy: boolean
+    ): boolean {
+      if (!persistedCopyOutlivesEntry(entry, poppedHydratedCopy)) return false
+      retireBackgroundTurn(entry)
+      return true
     }
 
     /**
@@ -543,18 +570,36 @@ export const useAgentConversationStore = defineStore(
     function removeHydratedCopy(
       entry: BackgroundTurn,
       kept: AssistantMessage[]
-    ): boolean {
-      if (kept.length !== messages.value.length) return false
+    ): number | undefined {
+      const demotedSnapshotId = demotedSnapshotByStash.get(entry.messageId)
+      demotedSnapshotByStash.delete(entry.messageId)
+      if (demotedSnapshotId !== undefined) {
+        const index = kept.findIndex(
+          (message) => message.id === demotedSnapshotId
+        )
+        if (index !== -1) {
+          kept.splice(index, 1)
+          userTexts.value.delete(demotedSnapshotId)
+          return index
+        }
+      }
+      if (kept.length !== messages.value.length) return undefined
       const last = kept.at(-1)
-      if (!last || hydratedAssistantTurnIds.has(last.id)) return false
+      if (
+        !last ||
+        hydratedAssistantTurnIds.has(last.id) ||
+        restoredBackgroundMessageIds.has(last.id)
+      )
+        return undefined
       if (
         entry.userText === undefined ||
         userTexts.value.get(last.id) !== entry.userText
       )
-        return false
+        return undefined
+      const index = kept.length - 1
       kept.pop()
       userTexts.value.delete(last.id)
-      return true
+      return index
     }
 
     function settleBackgroundTurn(turnId: string): TurnId | null {
@@ -655,6 +700,8 @@ export const useAgentConversationStore = defineStore(
       forgetAllApprovals()
       hydratedMessageIds = new Set()
       hydratedAssistantTurnIds = new Set()
+      demotedSnapshotByStash.clear()
+      restoredBackgroundMessageIds.clear()
       reportedPaywallImpressions.clear()
       undeliverableAskReporter.reset()
       departedTurns.clear()
@@ -674,6 +721,8 @@ export const useAgentConversationStore = defineStore(
       latestWorkflowId.value = transcript.latestWorkflowId
       hydratedMessageIds = transcript.rowIds
       hydratedAssistantTurnIds = transcript.assistantTurnIds
+      demotedSnapshotByStash.clear()
+      restoredBackgroundMessageIds.clear()
       dropAttachmentPreviews()
       const rememberedNames =
         threadId.value === null
@@ -729,13 +778,14 @@ export const useAgentConversationStore = defineStore(
     ): NormalizedAgentTranscript['pending'] {
       const pending = transcript.pending
       if (!pending) return undefined
-      const ownsPending = [...backgroundTurns.values()].some(
+      const owner = [...backgroundTurns.values()].find(
         (stashed) =>
           stashed.threadId === threadId.value &&
           (stashed.messageId === pending.messageId ||
             stashed.message.id === pending.message.id)
       )
-      if (!ownsPending) return pending
+      if (!owner) return pending
+      demotedSnapshotByStash.set(owner.messageId, pending.message.id)
       settleLiveMessage(pending.message)
       return undefined
     }

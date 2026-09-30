@@ -489,6 +489,8 @@ describe('useAgentConversationStore', () => {
     store.resumeBackgroundTurn()
     store.resumeBackgroundTurn()
 
+    expect(store.messages.find((m) => m.id === 't1')?.streaming).toBe(false)
+    expect(messageTexts(store, 't1')).toEqual(['older and complete'])
     expect(store.messages.find((m) => m.id === 't2')?.streaming).toBe(false)
     expect(messageTexts(store, 't2')).toEqual(['newer'])
 
