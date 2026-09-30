@@ -248,15 +248,11 @@ test.describe(
       await page.setViewportSize({ width: 900, height: 900 })
 
       await expect
-        .poll(async () => (await panel.boundingBox())?.width ?? 0)
-        .toBeLessThan(960)
-      const box = await panel.boundingBox()
-      expect(box).not.toBeNull()
-      expect(box!.x).toBeGreaterThanOrEqual(-1)
-      expect(box!.x + box!.width).toBeLessThanOrEqual(901)
-
-      expect(box!.x).toBe(0)
-      expect(box!.width).toBe(900)
+        .poll(async () => {
+          const box = await panel.boundingBox()
+          return box && { x: box.x, width: box.width }
+        })
+        .toEqual({ x: 0, width: 900 })
 
       // Still maximized, so the header offers to minimize rather than maximize.
       await expect(

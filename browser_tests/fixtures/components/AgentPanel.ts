@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import frMessages from '@/locales/fr/main.json' with { type: 'json' }
 
 export class AgentPanel {
   public readonly root: Locator
@@ -105,6 +106,19 @@ export class AgentPanel {
 
     await expect(this.root).toBeVisible({ timeout })
     return this.root
+  }
+
+  async close(): Promise<void> {
+    await this.root
+      .getByRole('button', { name: enMessages.g.close, exact: true })
+      .or(
+        this.root.getByRole('button', {
+          name: frMessages.g.close,
+          exact: true
+        })
+      )
+      .click()
+    await expect(this.root).toHaveCount(0)
   }
 
   async selectWorkflow(name: string = 'Unsaved Workflow'): Promise<void> {
