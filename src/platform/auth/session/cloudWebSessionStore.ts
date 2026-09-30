@@ -11,7 +11,8 @@ import type {
 import type {
   WebSession,
   WebSessionErrorCode,
-  WebSessionOptions
+  WebSessionOptions,
+  WebSessionUser
 } from '@comfyorg/account-core/webSession'
 import type { RequestAuthorizer } from '@comfyorg/account-core/requestAuth'
 import { createRequestAuthorizer } from '@comfyorg/account-core/requestAuth'
@@ -20,6 +21,7 @@ import {
   SessionTokenError
 } from '@comfyorg/account-core/sessionTokenMint'
 import { readWebSession } from '@comfyorg/account-core/webSession'
+import { resolveUnifiedWebSession } from '@comfyorg/account-core/webSessionFlag'
 import { createWebSessionIdentity } from '@comfyorg/account-core/webSessionIdentity'
 import {
   createWebCrossTabRefreshPort,
@@ -36,6 +38,7 @@ import {
   provideWebSessionRequests,
   WebSessionTokenError
 } from '@/platform/auth/session/webSessionFetch'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -109,6 +112,16 @@ function sessionOptions(): WebSessionOptions {
   }
 }
 
+/** The per-user flag for a tab with no token, read on the session cookie. */
+async function sessionFlagOn(): Promise<boolean> {
+  if (useFeatureFlags().flags.unifiedWebSessionEnabled) return true
+  return resolveUnifiedWebSession({
+    probe: async () => remoteConfig.value.web_session_probe === true,
+    cloudBaseUrl: window.location.origin,
+    fetchImpl: (input, init) => fetch(input, init)
+  })
+}
+
 function createCloudIdentity(): WebSessionIdentity {
   const visibility = createWebVisibilityPort()
   const crossTab = createWebCrossTabRefreshPort<WebSessionSharedMessage>()
@@ -142,12 +155,13 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
   let pendingSignIn: InteractiveSignIn | null = null
   let reread: WebSession | null = null
   let releaseRequests = () => {}
-  const signedInUserId = shallowRef<string>()
+  let sessionFlagRead: Promise<boolean> | undefined
+  const signedInUser = shallowRef<WebSessionUser>()
 
   watch(
     () =>
-      signedInUserId.value &&
-      JSON.stringify([signedInUserId.value, teamWorkspaceId()]),
+      signedInUser.value &&
+      JSON.stringify([signedInUser.value.id, teamWorkspaceId()]),
     (socketScope) => {
       if (socketScope) void api.reconnectSocket()
     }
@@ -185,12 +199,36 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     if (decided) return identity !== null
     decided = true
     if (!useFeatureFlags().flags.unifiedWebSessionEnabled) return false
+    begin()
+    return true
+  }
+
+  function startOn(): void {
+    if (decided) return
+    decided = true
+    begin()
+  }
+
+  /**
+   * For a tab with no provider login: true once the session cookie alone
+   * signs it in. A flag that reads off leaves the page load undecided.
+   */
+  async function signInFromSession(): Promise<boolean> {
+    if (!decided) {
+      sessionFlagRead ??= sessionFlagOn()
+      if (await sessionFlagRead) startOn()
+    }
+    await ready
+    return currentSession() !== undefined
+  }
+
+  function begin(): void {
     const session = createCloudIdentity()
     identity = session
     session.subscribe((state) => {
       reread = null
-      signedInUserId.value =
-        state.phase === 'signed_in' ? state.session.user.id : undefined
+      signedInUser.value =
+        state.phase === 'signed_in' ? state.session.user : undefined
     })
     const mint = createSessionTokenMint({
       ...sessionOptions(),
@@ -234,7 +272,6 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     ready = whenSettled(session)
     void bootAfter(session, pendingSignIn)
     pendingSignIn = null
-    return true
   }
 
   /** Only after an interactive sign-in; a token refresh never calls this. */
@@ -300,6 +337,8 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
 
   return {
     start,
+    signInFromSession,
+    signedInUser,
     isActive: () => identity !== null,
     whenReady: () => ready,
     signedInInteractively,

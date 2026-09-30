@@ -149,7 +149,7 @@ if (isCloud) {
 
     // Pass authenticated users
     const authHeader = await authStore.getAuthHeader()
-    const isLoggedIn = !!authHeader
+    const isLoggedIn = !!authHeader || (await authStore.signInFromSession())
     preserveLoggedOutShareAuthAttribution(to.query, isLoggedIn)
 
     // Allow public routes

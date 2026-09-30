@@ -12,6 +12,9 @@ export const useCurrentUser = () => {
   const apiKeyStore = useApiKeyAuthStore()
 
   const firebaseUser = computed(() => authStore.currentUser)
+  const sessionUserId = computed(() =>
+    firebaseUser.value ? undefined : authStore.userId
+  )
   // A Firebase session takes precedence on every auth rail (see
   // authStore.getUserAuthHeader), so a stored key behind a Firebase login is
   // not an API-key session.
@@ -19,7 +22,10 @@ export const useCurrentUser = () => {
     () => apiKeyStore.isAuthenticated && firebaseUser.value === null
   )
   const isLoggedIn = computed(
-    () => isApiKeyLogin.value || firebaseUser.value !== null
+    () =>
+      isApiKeyLogin.value ||
+      firebaseUser.value !== null ||
+      sessionUserId.value !== undefined
   )
   const isAuthInitialized = computed(() => authStore.isInitialized)
 
@@ -32,7 +38,7 @@ export const useCurrentUser = () => {
       return { id: firebaseUser.value.uid }
     }
 
-    return null
+    return sessionUserId.value ? { id: sessionUserId.value } : null
   })
 
   const onUserResolved = (callback: (user: AuthUserInfo) => void) =>
@@ -58,7 +64,7 @@ export const useCurrentUser = () => {
     if (isApiKeyLogin.value) {
       return apiKeyStore.currentUser?.email
     }
-    return firebaseUser.value?.email
+    return firebaseUser.value ? firebaseUser.value.email : authStore.userEmail
   })
 
   const providerName = computed(() => {

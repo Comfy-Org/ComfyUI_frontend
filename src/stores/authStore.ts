@@ -18,7 +18,10 @@ import { t } from '@/i18n'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch'
-import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
+import {
+  webSessionRequests,
+  webSessionResourceHeader
+} from '@/platform/auth/session/webSessionFetch'
 import { fetchWithUnifiedRemint } from '@/platform/auth/unified/remintRetry'
 import { DISTRIBUTION, isCloud } from '@/platform/distribution/types'
 import { clearOnboardingReplay } from '@/platform/onboarding/onboardingReplay'
@@ -136,10 +139,21 @@ export const useAuthStore = defineStore('auth', () => {
 
   const buildApiUrl = (path: string) => `${getComfyApiBaseUrl()}${path}`
 
+  /** The web session's user, for a tab signed in with no Firebase user. */
+  const sessionOnlyUser = computed(() =>
+    currentUser.value ? undefined : useCloudWebSessionStore().signedInUser
+  )
+
   // Getters
-  const isAuthenticated = computed(() => !!currentUser.value)
-  const userEmail = computed(() => currentUser.value?.email)
-  const userId = computed(() => currentUser.value?.uid)
+  const isAuthenticated = computed(
+    () => !!currentUser.value || !!sessionOnlyUser.value
+  )
+  const userEmail = computed(
+    () => currentUser.value?.email ?? sessionOnlyUser.value?.email
+  )
+  const userId = computed(
+    () => currentUser.value?.uid ?? sessionOnlyUser.value?.id
+  )
 
   function getShareAuthMetadata() {
     const shareId = getPreservedQueryParam(
@@ -334,7 +348,22 @@ export const useAuthStore = defineStore('auth', () => {
       : await getFirebaseAuthHeader()
 
   const currentUserIdentity = (): string | null =>
-    currentUser.value?.uid ?? useApiKeyAuthStore().getApiKey()
+    userId.value ?? useApiKeyAuthStore().getApiKey()
+
+  /** True when the web session alone signs in a tab with no Firebase user or API key. */
+  const signInFromSession = async (): Promise<boolean> => {
+    if (!isCloud || currentUser.value || useApiKeyAuthStore().getApiKey()) {
+      return false
+    }
+    return useCloudWebSessionStore().signInFromSession()
+  }
+
+  /** comfy-api reads no cookie, so a session-only tab sends its minted token. */
+  const getCustomerAuthHeader = async (): Promise<Readonly<
+    Record<string, string>
+  > | null> =>
+    (sessionOnlyUser.value && (await webSessionResourceHeader())) ||
+    (await getUserAuthHeader())
 
   /**
    * Response data from a user-scoped endpoint belongs to the identity that
@@ -473,7 +502,7 @@ export const useAuthStore = defineStore('auth', () => {
     isFetchingBalance.value = true
     const requestOwner = currentUserIdentity()
     try {
-      const authHeader = await getUserAuthHeader()
+      const authHeader = await getCustomerAuthHeader()
       if (!authHeader) {
         throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
       }
@@ -530,7 +559,7 @@ export const useAuthStore = defineStore('auth', () => {
     const sessionIdentity = completedUser?.uid ?? currentUserIdentity()
     const authHeader = completedUser
       ? headerFromToken(await completedUser.getIdToken())
-      : await getUserAuthHeader()
+      : await getCustomerAuthHeader()
     if (!authHeader) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
@@ -790,7 +819,7 @@ export const useAuthStore = defineStore('auth', () => {
     requestBodyContent: CreditPurchasePayload
   ): Promise<CreditPurchaseResponse> => {
     const requestOwner = currentUserIdentity()
-    const authHeader = await getUserAuthHeader()
+    const authHeader = await getCustomerAuthHeader()
     if (!authHeader) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
@@ -842,7 +871,7 @@ export const useAuthStore = defineStore('auth', () => {
     targetTier?: BillingPortalTargetTier
   ): Promise<AccessBillingPortalResponse> => {
     const requestOwner = currentUserIdentity()
-    const authHeader = await getUserAuthHeader()
+    const authHeader = await getCustomerAuthHeader()
     if (!authHeader) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
@@ -911,6 +940,7 @@ export const useAuthStore = defineStore('auth', () => {
     getFirebaseAuthHeaderOrThrow,
     getUserAuthHeader,
     currentUserIdentity,
+    signInFromSession,
     getWorkspaceAuthHeader,
     getWorkspaceAuthHeaderOrThrow,
     getAuthToken,

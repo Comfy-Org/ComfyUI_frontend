@@ -270,6 +270,44 @@ describe('WorkspaceAuthGate', () => {
     })
   })
 
+  describe('cloud builds - signed in by the web session alone', () => {
+    beforeEach(() => {
+      Object.assign(useAuthStore(), { isInitialized: true, currentUser: null })
+      vi.spyOn(useAuthStore(), 'signInFromSession').mockResolvedValue(true)
+    })
+
+    it('loads the workspace on the session without a Firebase mint', async () => {
+      mockRefreshRemoteConfig.mockImplementation(async () => {
+        vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
+      })
+      vi.mocked(useWorkspaceAuthStore().getUnifiedToken).mockReturnValue(
+        undefined
+      )
+
+      mountComponent()
+      await flushPromises()
+
+      expect(mockRefreshRemoteConfig).toHaveBeenCalledWith({
+        useAuth: true,
+        signal: expect.any(AbortSignal)
+      })
+      expect(useWorkspaceAuthStore().mintAtLogin).not.toHaveBeenCalled()
+      expect(useTeamWorkspaceStore().initialize).toHaveBeenCalledOnce()
+      expect(screen.getByTestId('slot-content')).toBeInTheDocument()
+    })
+
+    it('stays signed out when the session does not sign the tab in', async () => {
+      vi.mocked(useAuthStore().signInFromSession).mockResolvedValue(false)
+
+      mountComponent()
+      await flushPromises()
+
+      expect(screen.getByTestId('slot-content')).toBeInTheDocument()
+      expect(mockRefreshRemoteConfig).not.toHaveBeenCalled()
+      expect(useTeamWorkspaceStore().initialize).not.toHaveBeenCalled()
+    })
+  })
+
   describe('cloud builds - authenticated user', () => {
     beforeEach(() => {
       Object.assign(useAuthStore(), { isInitialized: true })

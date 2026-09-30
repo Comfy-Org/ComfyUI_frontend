@@ -117,8 +117,7 @@ async function initialize(): Promise<void> {
   const controller = new AbortController()
   initializationController = controller
 
-  const authStore = useAuthStore()
-  const { isInitialized, currentUser } = storeToRefs(authStore)
+  const { isInitialized } = storeToRefs(useAuthStore())
 
   try {
     // Step 1: Wait for Firebase auth to resolve
@@ -134,7 +133,9 @@ async function initialize(): Promise<void> {
 
     // Step 2: If not authenticated, nothing more to do
     // Unauthenticated users don't have workspace context
-    if (!currentUser.value) {
+    const signedIn = await signedInVia()
+    if (generation !== initializationGeneration) return
+    if (!signedIn) {
       initializationState.value = 'ready'
       return
     }
@@ -158,7 +159,9 @@ async function initialize(): Promise<void> {
 
     const { flags } = useFeatureFlags()
     const workspaceAuthStore = useWorkspaceAuthStore()
-    if (flags.unifiedCloudAuthEnabled) {
+    // The unified Cloud JWT is minted from Firebase; the session needs none.
+    const unifiedMint = flags.unifiedCloudAuthEnabled && signedIn === 'firebase'
+    if (unifiedMint) {
       const authenticated = await workspaceAuthStore.mintAtLogin()
       if (generation !== initializationGeneration) return
       if (!authenticated) {
@@ -169,10 +172,7 @@ async function initialize(): Promise<void> {
     await initializeWorkspaceMode()
     if (generation !== initializationGeneration) return
     void billingCapabilities.initialize(controller.signal)
-    if (
-      flags.unifiedCloudAuthEnabled &&
-      !workspaceAuthStore.getUnifiedToken()
-    ) {
+    if (unifiedMint && !workspaceAuthStore.getUnifiedToken()) {
       throw new Error('Unified cloud auth was cleared during workspace setup')
     }
 
@@ -191,6 +191,13 @@ async function initialize(): Promise<void> {
     if (generation !== initializationGeneration) return
     errorPanel.value?.focus()
   }
+}
+
+/** How this tab is signed in: Firebase, the web session alone, or not at all. */
+async function signedInVia(): Promise<'firebase' | 'session' | null> {
+  const authStore = useAuthStore()
+  if (authStore.currentUser) return 'firebase'
+  return (await authStore.signInFromSession()) ? 'session' : null
 }
 
 function isRetryableInitializationError(error: unknown): boolean {
