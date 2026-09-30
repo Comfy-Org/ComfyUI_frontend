@@ -68,6 +68,7 @@ test.describe(
 
     test('carries the nodes, the group and the node modes the user can see', async ({
       agentConversation,
+      comfyPage,
       page
     }) => {
       test.setTimeout(90_000)
@@ -123,6 +124,8 @@ test.describe(
           .toEqual({ muted: MODE_MUTED, bypassed: MODE_BYPASSED })
       })
 
+      await comfyPage.nextFrame()
+
       // Read straight off the rendered canvas: what the user can point at.
       const onScreenNodeIds =
         await agentConversation.vueNodes.nodes.evaluateAll((nodes) =>
@@ -169,7 +172,8 @@ test.describe(
     // so "the agent cannot mute" is not a vocabulary gap; if it reproduces, it
     // reproduces here, where the op reaches the canvas.
     test('mutes a node when the agent sets its mode, and the user can see it', async ({
-      agentConversation
+      agentConversation,
+      comfyPage
     }) => {
       test.setTimeout(90_000)
 
@@ -190,6 +194,8 @@ test.describe(
           }
         ])
       })
+
+      await comfyPage.nextFrame()
 
       await test.step('the node is drawn muted', async () => {
         await expect(target).toHaveCSS('opacity', MUTED_OPACITY)
