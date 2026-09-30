@@ -43,13 +43,13 @@ const activeTab = computed(
         <div class="mt-10 flex flex-col gap-4">
           <TabsList
             :aria-label="t('modelLaunch.beforeAfter.tabsLabel', locale)"
-            class="scrollbar-none flex w-full max-w-full overflow-x-auto rounded-2xl border border-white/15 bg-primary-comfy-ink p-1 sm:w-auto sm:self-start"
+            class="flex w-full max-w-full rounded-2xl border border-white/15 bg-primary-comfy-ink p-1 sm:w-auto sm:self-start"
           >
             <TabsTrigger
               v-for="tab in beforeAfter.tabs"
               :key="tab.id"
               :value="tab.id"
-              class="flex-1 cursor-pointer rounded-xl px-1 py-2 text-center text-[10px] font-bold tracking-normal whitespace-nowrap text-smoke-700 uppercase transition-colors hover:text-primary-comfy-canvas focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none data-[state=active]:bg-secondary-mauve data-[state=active]:text-primary-warm-white sm:flex-none sm:px-5 sm:text-xs sm:tracking-wider lg:px-2 lg:text-[11px] lg:tracking-normal xl:px-5 xl:text-xs xl:tracking-wider"
+              class="flex flex-1 cursor-pointer items-center justify-center rounded-xl px-1 py-2 text-center text-[10px]/tight font-bold tracking-normal text-smoke-700 uppercase transition-colors hover:text-primary-comfy-canvas focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none data-[state=active]:bg-secondary-mauve data-[state=active]:text-primary-warm-white sm:flex-none sm:px-5 sm:text-xs sm:tracking-wider sm:whitespace-nowrap lg:px-2 lg:text-[11px] lg:tracking-normal xl:px-5 xl:text-xs xl:tracking-wider"
             >
               {{ tab.label[locale] || tab.label.en }}
             </TabsTrigger>
