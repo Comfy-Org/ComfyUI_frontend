@@ -17,6 +17,9 @@ const { locale = 'en', gallery } = defineProps<{
   locale?: Locale
 }>()
 
+const showCardMeta = gallery.cardMeta !== 'none'
+const showCardLink = gallery.ctaVariant !== 'none'
+
 // The cards sit well below the fold; defer their videos until the section
 // nears the viewport instead of fetching all of them during first paint.
 const sectionRef = useTemplateRef<HTMLElement>('sectionRef')
@@ -98,8 +101,11 @@ const { stop } = useIntersectionObserver(
           </div>
         </div>
 
-        <div class="mt-5 flex items-center justify-between gap-3">
-          <div class="flex items-center gap-3">
+        <div
+          v-if="showCardMeta || showCardLink"
+          class="mt-5 flex items-center justify-between gap-3"
+        >
+          <div v-if="showCardMeta" class="flex items-center gap-3">
             <Badge :variant="card.tier === 'free' ? 'accent' : 'callout'">
               {{
                 card.tier === 'free'
@@ -113,6 +119,7 @@ const { stop } = useIntersectionObserver(
           </div>
 
           <IconButton
+            v-if="showCardLink"
             as="a"
             :href="card.href"
             target="_blank"
@@ -121,7 +128,7 @@ const { stop } = useIntersectionObserver(
             size="sm"
             :class="
               cn(
-                'rounded-xl text-primary-comfy-ink hover:text-primary-comfy-ink',
+                'ml-auto rounded-xl text-primary-comfy-ink hover:text-primary-comfy-ink',
                 gallery.ctaVariant === 'accent'
                   ? 'bg-primary-comfy-yellow hover:opacity-90'
                   : 'bg-primary-warm-gray hover:bg-primary-comfy-yellow'

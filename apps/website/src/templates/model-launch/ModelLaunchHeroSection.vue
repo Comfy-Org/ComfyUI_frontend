@@ -70,7 +70,14 @@ const isContentFirst = hero.layout === 'content-first'
 
     <component
       :is="headingTag"
-      class="max-w-3xl text-4xl font-light tracking-tight whitespace-pre-line text-primary-comfy-canvas lg:text-6xl/tight"
+      :class="
+        cn(
+          'max-w-3xl text-4xl font-light tracking-tight whitespace-pre-line text-primary-comfy-canvas',
+          hero.titleSize === 'compact'
+            ? 'lg:text-5xl/tight'
+            : 'lg:text-6xl/tight'
+        )
+      "
     >
       {{ t(hero.titleKey, locale)
       }}<span v-if="hero.titleRestKey" class="text-primary-comfy-canvas/80">{{
@@ -298,7 +305,14 @@ const isContentFirst = hero.layout === 'content-first'
     >
       <component
         :is="headingTag"
-        class="text-4xl font-light tracking-tight whitespace-pre-line text-primary-comfy-canvas lg:text-6xl/tight"
+        :class="
+          cn(
+            'text-4xl font-light tracking-tight whitespace-pre-line text-primary-comfy-canvas',
+            hero.titleSize === 'compact'
+              ? 'lg:text-5xl/tight'
+              : 'lg:text-6xl/tight'
+          )
+        "
       >
         {{ t(hero.titleKey, locale)
         }}<span v-if="hero.titleRestKey" class="text-primary-comfy-canvas/80">{{

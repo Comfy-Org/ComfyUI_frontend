@@ -54,6 +54,27 @@ describe.for(pages)('$name launch page config', ({ page }) => {
     expect(new Set(ids).size).toBe(ids.length)
   })
 
+  it('gives every compare tab a unique id, copy in both locales, and a clip pair', () => {
+    if (!page.compare) return
+    const tabs = page.compare.tabs
+    // An empty tab list would render a heading over nothing.
+    expect(tabs, 'compare tabs').not.toHaveLength(0)
+    expect(new Set(tabs.map((tab) => tab.id)).size).toBe(tabs.length)
+    for (const tab of tabs) {
+      for (const locale of ['en', 'zh-CN'] as const) {
+        expect(tab.label[locale] || tab.label.en, `${tab.id} label`).not.toBe(
+          ''
+        )
+        expect(
+          tab.caption[locale] || tab.caption.en,
+          `${tab.id} caption`
+        ).not.toBe('')
+      }
+      expect(tab.beforeSrc, `${tab.id} beforeSrc`).toMatch(VIDEO_URL)
+      expect(tab.afterSrc, `${tab.id} afterSrc`).toMatch(VIDEO_URL)
+    }
+  })
+
   it('translates every referenced key in both locales', () => {
     // Every key the ModelLaunchPage contract can render, optional ones included.
     const keys = [
@@ -70,6 +91,8 @@ describe.for(pages)('$name launch page config', ({ page }) => {
       page.hero.promptBar?.sampleKey,
       page.hero.promptBar?.cta.labelKey,
       ...(page.hero.badgeKeys ?? []),
+      page.compare?.headingKey,
+      page.compare?.bodyKey,
       page.gallery?.headingKey,
       page.pricing?.banner?.titleKey,
       page.pricing?.banner?.subtitleKey,

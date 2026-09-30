@@ -61,6 +61,9 @@ export interface ModelLaunchHero {
   // include a wordmark.
   logoSize?: 'default' | 'large'
   titleKey: TranslationKey
+  // 'compact' drops the desktop heading one size, for long titles or pages
+  // designed with a quieter hero. Overlay heroes keep their own scale.
+  titleSize?: 'default' | 'compact'
   // Rendered muted directly after `titleKey`, for the two-tone Figma heading.
   titleRestKey?: TranslationKey
   descriptionKey?: TranslationKey
@@ -97,9 +100,13 @@ interface ModelLaunchGalleryCard {
 
 export interface ModelLaunchGallery {
   headingKey: TranslationKey
-  // 'accent' paints the per-card link solid yellow. Defaults to the muted
+  // 'accent' paints the per-card link solid yellow; 'none' drops the link
+  // button, for galleries that only show work. Defaults to the muted
   // treatment /minimax ships, so opting in cannot restyle a live page.
-  ctaVariant?: 'muted' | 'accent'
+  ctaVariant?: 'muted' | 'accent' | 'none'
+  // 'none' drops the tier badge and note under each card, so a gallery can
+  // show the work alone.
+  cardMeta?: 'default' | 'none'
   cards: readonly ModelLaunchGalleryCard[]
 }
 
@@ -184,6 +191,25 @@ export interface ModelLaunchComparison {
   rows: readonly ModelLaunchComparisonRow[]
 }
 
+interface ModelLaunchCompareTab {
+  id: string
+  label: LocalizedText
+  // One line under the tabs, e.g. "15 fps in, 60 fps out."
+  caption: LocalizedText
+  // Two renders of the same clip; the slider reveals `afterSrc` to the right
+  // of the divider.
+  beforeSrc: string
+  afterSrc: string
+}
+
+// A tabbed before/after video slider, e.g. the RTX Video effects on
+// /nvidia-rtx. Each tab swaps in its own clip pair and caption.
+export interface ModelLaunchCompare {
+  headingKey: TranslationKey
+  bodyKey?: TranslationKey
+  tabs: readonly ModelLaunchCompareTab[]
+}
+
 export interface ModelLaunchRunOptions {
   headingKey: TranslationKey
   subtitleKey: TranslationKey
@@ -208,6 +234,7 @@ export interface ModelLaunchReviews {
 // The optional body sections, in the order they render between the hero and the
 // run-options footer. hero/runOptions/reviews are fixed and are not listed here.
 export type ModelLaunchSection =
+  | 'compare'
   | 'gallery'
   | 'audioGallery'
   | 'steps'
@@ -221,6 +248,7 @@ export type ModelLaunchSection =
 // reorders its sections with `sectionOrder` rather than editing the template,
 // so one page's layout never moves another's.
 export const DEFAULT_SECTION_ORDER: readonly ModelLaunchSection[] = [
+  'compare',
   'gallery',
   'audioGallery',
   'pricing',
@@ -238,6 +266,7 @@ export interface ModelLaunchPage {
   hero: ModelLaunchHero
   // Absent on announcement pages, which render hero, run options and reviews
   // only until the model ships.
+  compare?: ModelLaunchCompare
   gallery?: ModelLaunchGallery
   audioGallery?: ModelLaunchAudioGallery
   pricing?: ModelLaunchPricing

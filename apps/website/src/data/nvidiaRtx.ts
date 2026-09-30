@@ -1,4 +1,5 @@
 import type {
+  ModelLaunchCompare,
   ModelLaunchMedia,
   ModelLaunchPage
 } from '../templates/model-launch/types'
@@ -11,9 +12,11 @@ const nvidiaRtxLinks = {
   cloud: externalLinks.cloudCta('nvidia_rtx')
 } as const
 
-// Stand-in media until the NVIDIA RTX hero and gallery renders reach
-// media.comfy.org; swap these for the supplied files before this page ships.
+// Stand-in media until the NVIDIA RTX hero, gallery, and before/after clips
+// reach media.comfy.org; swap these for the supplied files before this page
+// ships.
 const placeholderMediaBase = 'https://media.comfy.org/website/chatgpt-image-2.5'
+const placeholderClipBase = 'https://media.comfy.org/website'
 
 const media = {
   vaporwave: { kind: 'image', src: `${placeholderMediaBase}/vaporwave.webp` },
@@ -29,6 +32,43 @@ const media = {
 
 const localNote = { en: 'Runs locally', 'zh-CN': '本地运行' }
 
+const compare: ModelLaunchCompare = {
+  headingKey: 'nvidiaRtx.compare.heading',
+  bodyKey: 'nvidiaRtx.compare.body',
+  tabs: [
+    {
+      id: 'super-resolution',
+      label: { en: 'Super Resolution', 'zh-CN': '超分辨率' },
+      caption: {
+        en: 'Same clip, more resolution.',
+        'zh-CN': '同一段视频，更高的分辨率。'
+      },
+      beforeSrc: `${placeholderClipBase}/flux-3/card-1.webm`,
+      afterSrc: `${placeholderClipBase}/flux-3/card-2.webm`
+    },
+    {
+      id: 'frame-generation',
+      label: { en: 'Frame Generation', 'zh-CN': '帧生成' },
+      caption: {
+        en: '15 fps in, 60 fps out.',
+        'zh-CN': '输入 15 fps，输出 60 fps。'
+      },
+      beforeSrc: `${placeholderClipBase}/cloud/ai-models/wan-22.webm`,
+      afterSrc: `${placeholderClipBase}/cloud/ai-models/gpt-image-2.webm`
+    },
+    {
+      id: 'true-hdr',
+      label: { en: 'TrueHDR', 'zh-CN': 'TrueHDR' },
+      caption: {
+        en: 'SDR in, HDR out. Best viewed on an HDR display.',
+        'zh-CN': '输入 SDR，输出 HDR。建议在 HDR 显示器上观看。'
+      },
+      beforeSrc: `${placeholderClipBase}/local/racer.webm`,
+      afterSrc: `${placeholderClipBase}/gemini-omni/card-1.webm`
+    }
+  ]
+}
+
 export const nvidiaRtxPage: ModelLaunchPage = {
   metaTitleKey: 'nvidiaRtx.meta.title',
   metaDescriptionKey: 'nvidiaRtx.meta.description',
@@ -40,6 +80,7 @@ export const nvidiaRtxPage: ModelLaunchPage = {
     logoSrc: '/icons/ai-models/nvidia.png',
     logoSize: 'large',
     titleKey: 'nvidiaRtx.hero.title',
+    titleSize: 'compact',
     descriptionKey: 'nvidiaRtx.hero.description',
     badgeKeys: [
       'nvidiaRtx.hero.tagUpscale',
@@ -56,9 +97,11 @@ export const nvidiaRtxPage: ModelLaunchPage = {
       target: '_blank'
     }
   },
+  compare,
   gallery: {
     headingKey: 'nvidiaRtx.gallery.heading',
-    ctaVariant: 'accent',
+    ctaVariant: 'none',
+    cardMeta: 'none',
     cards: [
       {
         id: 'vaporwave-atmosphere',
@@ -252,7 +295,7 @@ export const nvidiaRtxPage: ModelLaunchPage = {
       }
     ]
   },
-  sectionOrder: ['gallery', 'steps', 'faq'],
+  sectionOrder: ['compare', 'gallery', 'steps', 'faq'],
   runOptions: {
     headingKey: 'nvidiaRtx.runOptions.heading',
     subtitleKey: 'nvidiaRtx.runOptions.subtitle',
