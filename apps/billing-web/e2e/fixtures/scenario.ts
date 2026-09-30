@@ -19,6 +19,8 @@ export interface CloudScenario {
   paymentMethods: SavedPaymentMethod[]
   preview: PreviewSubscribeResponse
   operations: Record<string, BillingOpStatusResponse>
+  /** `billing_web_checkout_ui`, answered only to an authenticated `/features` read, as the real Cloud does. */
+  checkoutUi?: string
 }
 
 const HOUR_MS = 60 * 60 * 1000
@@ -63,6 +65,11 @@ export function succeededOperation(id: string): BillingOpStatusResponse {
 /** Genuinely still pending: no next action, no verdict yet. */
 export function pendingOperation(id: string): BillingOpStatusResponse {
   return { id, status: 'pending', started_at: new Date().toISOString() }
+}
+
+/** In flight past the bank's challenge: the charge can no longer be called back. */
+export function processingOperation(id: string): BillingOpStatusResponse {
+  return { ...pendingOperation(id), authentication_state: 'processing' }
 }
 
 export function declinedOperation(id: string): BillingOpStatusResponse {

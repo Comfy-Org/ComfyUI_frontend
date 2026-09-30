@@ -1,9 +1,11 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Slots } from 'vue'
 import { h } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import PendingInvitesList from './PendingInvitesList.vue'
 
@@ -19,7 +21,11 @@ vi.mock<unknown>(import('@/components/button/MoreButton.vue'), () => ({
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: { en: {} },
+  messages: {
+    en: {
+      workspacePanel: { members: { expiredOn: 'Expired {date}' } }
+    }
+  },
   missingWarn: false,
   fallbackWarn: false
 })
@@ -47,6 +53,10 @@ function renderComponent(invites: WorkspacePendingInvite[]) {
 }
 
 describe('PendingInvitesList', () => {
+  afterEach(() => {
+    Reflect.deleteProperty(document, 'execCommand')
+  })
+
   it('shows the empty state without action buttons when there are no invites', () => {
     renderComponent([])
 
@@ -100,6 +110,12 @@ describe('PendingInvitesList', () => {
       `${window.location.origin}/?invite=tok-9`
     )
     expect(mockMenuClose).toHaveBeenCalled()
+    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        severity: 'success',
+        summary: 'workspacePanel.inviteLinks.copiedToast'
+      })
+    )
   })
 
   it('hides the copy item for expired invites without a token', () => {
@@ -112,14 +128,39 @@ describe('PendingInvitesList', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('swallows a rejected clipboard write and keeps the copy item usable', async () => {
+  it('marks token-less invites as expired and leaves live ones with a plain date', () => {
+    renderComponent([
+      createInvite({
+        id: 'inv-expired',
+        email: 'stale@example.com',
+        expiryDate: new Date('2025-04-01T12:00:00Z')
+      }),
+      createInvite({
+        id: 'inv-live',
+        email: 'fresh@example.com',
+        token: 'tok-live',
+        expiryDate: new Date('2025-06-15T12:00:00Z')
+      })
+    ])
+
+    expect(screen.getByText(/^Expired Apr 1, 2025$/)).toBeInTheDocument()
+    expect(screen.queryByText(/Expired Jun 15, 2025/)).toBeNull()
+    expect(screen.getByText('stale@example.com')).toBeInTheDocument()
+    expect(screen.getByText('fresh@example.com')).toBeInTheDocument()
+  })
+
+  it('reports a rejected clipboard write with an error toast and keeps the copy item usable', async () => {
     const writeText = vi.fn<(text: string) => Promise<void>>()
     writeText.mockRejectedValue(new Error('denied'))
     Object.defineProperty(navigator, 'clipboard', {
       value: { writeText },
       configurable: true
     })
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    Object.defineProperty(document, 'execCommand', {
+      value: vi.fn().mockReturnValue(false),
+      configurable: true
+    })
+    vi.spyOn(console, 'error').mockImplementation(() => {})
     renderComponent([createInvite({ token: 'tok-9' })])
 
     await userEvent.click(
@@ -128,16 +169,19 @@ describe('PendingInvitesList', () => {
       })
     )
 
-    // The failure is silent by design, so the only guarantee is that nothing
-    // escapes as an unhandled rejection and the item stays available to retry.
     expect(writeText).toHaveBeenCalledWith(
       `${window.location.origin}/?invite=tok-9`
+    )
+    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        severity: 'error',
+        summary: 'workspacePanel.inviteLinks.copyFailedToast'
+      })
     )
     expect(
       screen.getByRole('button', {
         name: 'workspacePanel.members.actions.copyInviteLink'
       })
     ).toBeInTheDocument()
-    consoleError.mockRestore()
   })
 })

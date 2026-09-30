@@ -49,7 +49,7 @@ test.describe('Customers @smoke', () => {
     await expect(watchHeading).toBeVisible()
 
     for (const story of customerVideoStories) {
-      const card = page.locator(`a[href="/customers/videos/${story.slug}"]`)
+      const card = page.locator(`a[href="/customers/videos/${story.slug}/"]`)
       await expect(card).toBeVisible()
       await expect(card).toContainText(story.company)
       await expect(card).toContainText(t('customers.video.watchStory', 'en'))
@@ -106,7 +106,7 @@ test.describe('Customers @smoke', () => {
           links
             .map((link) => link.getAttribute('href'))
             .filter((href): href is string =>
-              /^\/customers\/[a-z0-9-]+$/.test(href ?? '')
+              /^\/customers\/[a-z0-9-]+\/$/.test(href ?? '')
             )
         )
       ])

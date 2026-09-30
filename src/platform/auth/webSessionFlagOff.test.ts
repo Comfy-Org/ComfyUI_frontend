@@ -8,12 +8,21 @@ import type { ExchangeTokenResponse } from '@comfyorg/ingest-types'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
+import {
+  bootCloudIdentity,
+  cloudSignIn
+} from '@/platform/auth/session/cloudIdentityBoot'
+import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { TOKEN_REFRESH_BUFFER_MS } from '@/platform/workspace/workspaceConstants'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
-import { resultItemPreviewUrl, resultItemUrl } from '@/utils/resultItemUrl'
+import {
+  resultItemPreviewUrl,
+  resultItemUrl,
+  resultItemVhsAdvancedPreviewUrl
+} from '@/utils/resultItemUrl'
 import type { useExtensionService } from '@/services/extensionService'
 import type { ComfyApp } from '@/scripts/app'
 import type { ComfyExtension } from '@/types/comfy'
@@ -32,6 +41,10 @@ const identity = vi.hoisted(() => {
       userObservers.clear()
       tokenObservers.clear()
       state.user = null
+    },
+    resolve(user: User | null) {
+      state.user = user
+      userObservers.forEach((observer) => observer(user))
     },
     signIn(user: User) {
       state.user = user
@@ -87,9 +100,7 @@ vi.mock(import('@/services/extensionService'), () => ({
 
 vi.mock(import('@/platform/telemetry'))
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 await import('@/extensions/core/cloudSessionCookie')
 
@@ -279,7 +290,10 @@ const MEDIA_ITEM = {
 
 const MEDIA_URLS = [
   '/api/view?filename=output.png&type=output&subfolder=',
-  '/api/view?filename=output.png&type=output&subfolder=&res=512'
+  '/api/view?filename=output.png&type=output&subfolder=&res=512',
+  '/api/viewvideo?filename=output.png&type=output&subfolder=',
+  '/api/vhs/viewaudio?filename=a.wav',
+  '/api/assets/asset-1/content?disposition=inline'
 ]
 
 const SIGN_OUT: RecordedRequest[] = [
@@ -305,6 +319,7 @@ const CUSTOMER_PROVISIONING: RecordedRequest = {
 interface FlowGolden {
   signIn: RecordedRequest[]
   tokenRefresh: RecordedRequest[]
+  runToken: string
   apiCall: RecordedRequest[]
   socket: RecordedRequest[]
   signOut: RecordedRequest[]
@@ -313,6 +328,7 @@ interface FlowGolden {
 const UNIFIED_CLOUD_AUTH_OFF: FlowGolden = {
   signIn: [SESSION_POST, CUSTOMER_PROVISIONING],
   tokenRefresh: [SESSION_POST],
+  runToken: 'firebase-id-token',
   apiCall: [
     {
       method: 'GET',
@@ -345,6 +361,7 @@ const UNIFIED_CLOUD_AUTH_OFF: FlowGolden = {
 const UNIFIED_CLOUD_AUTH_ON: FlowGolden = {
   signIn: [TOKEN_MINT, SESSION_POST, CUSTOMER_PROVISIONING],
   tokenRefresh: [TOKEN_MINT, SESSION_POST],
+  runToken: 'cloud-jwt-2',
   apiCall: [
     {
       method: 'GET',
@@ -437,6 +454,10 @@ describe('cloud auth requests with unified_web_session off', () => {
       )
       recorder.take()
 
+      const runToken = await useAuthStore().getWorkspaceAuthToken()
+      expect(runToken).toBe(golden.runToken)
+      expect(recorder.take()).toEqual([])
+
       await api.fetchApi('/queue')
       await api.fetchApi('/prompt', {
         method: 'POST',
@@ -450,7 +471,10 @@ describe('cloud auth requests with unified_web_session off', () => {
 
       expect([
         resultItemUrl(MEDIA_ITEM),
-        resultItemPreviewUrl(MEDIA_ITEM)
+        resultItemPreviewUrl(MEDIA_ITEM),
+        resultItemVhsAdvancedPreviewUrl(MEDIA_ITEM),
+        api.apiURL('/vhs/viewaudio?filename=a.wav'),
+        api.apiURL('/assets/asset-1/content?disposition=inline')
       ]).toEqual(MEDIA_URLS)
 
       expect(recorder.socketCloses).toBe(0)
@@ -486,4 +510,68 @@ describe('cloud auth requests with unified_web_session off', () => {
       ).toEqual([])
     }
   )
+})
+
+describe.for([
+  { name: 'unified_cloud_auth off', features: { unified_cloud_auth: false } },
+  { name: 'unified_cloud_auth on', features: { unified_cloud_auth: true } },
+  {
+    name: 'unified_cloud_auth off, unified_web_session false',
+    features: { unified_cloud_auth: false, unified_web_session: false }
+  },
+  {
+    name: 'unified_cloud_auth on, unified_web_session false',
+    features: { unified_cloud_auth: true, unified_web_session: false }
+  }
+])(
+  'cloud sign-in at boot with unified_web_session off ($name)',
+  ({ features }) => {
+    beforeEach(() => {
+      identity.reset()
+    })
+
+    afterEach(() => {
+      remoteConfig.value = {}
+    })
+
+    it.for([
+      { name: 'a Firebase login', user: FIREBASE_USER, expected: 'signed_in' },
+      { name: 'no login', user: null, expected: 'signed_out' }
+    ])('reads $name from tokens alone', async ({ user, expected }) => {
+      const recorder = installFetchRecorder(features)
+      await refreshRemoteConfig({ useAuth: false })
+      useAuthStore()
+      identity.resolve(user)
+
+      await bootCloudIdentity()
+      await expect(cloudSignIn()).resolves.toBe(expected)
+
+      expect(
+        recorder.all.filter(({ path }) => path === '/api/auth/session')
+      ).toEqual([])
+    })
+  }
+)
+describe('an interactive sign-in with unified_web_session off', () => {
+  beforeEach(() => {
+    identity.reset()
+    sessionStorage.clear()
+  })
+
+  afterEach(() => {
+    remoteConfig.value = {}
+  })
+
+  it('never consumes the marker and sends no session request', async () => {
+    const recorder = installFetchRecorder({ unified_cloud_auth: false })
+    await refreshRemoteConfig({ useAuth: false })
+
+    await useAuthStore().login('user-a@example.com', 'password')
+
+    expect(useCloudWebSessionStore().start()).toBe(false)
+    expect(sessionStorage.length).toBe(1)
+    expect(
+      recorder.all.filter(({ path }) => path === '/api/auth/session')
+    ).toEqual([])
+  })
 })

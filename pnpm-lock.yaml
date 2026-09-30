@@ -76,8 +76,8 @@ catalogs:
       specifier: ^2.0.1
       version: 2.0.1
     '@playwright/test':
-      specifier: ^1.61.1
-      version: 1.61.1
+      specifier: ^1.63.0
+      version: 1.63.0
     '@primeuix/utils':
       specifier: ^0.3.2
       version: 0.3.2
@@ -665,6 +665,9 @@ importers:
       minisearch:
         specifier: 'catalog:'
         version: 7.2.0
+      mixpanel-browser:
+        specifier: 'catalog:'
+        version: 2.81.0
       pinia:
         specifier: 'catalog:'
         version: 4.0.2(@vue/devtools-api@8.1.5)(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3))
@@ -695,6 +698,9 @@ importers:
       typegpu:
         specifier: 'catalog:'
         version: 0.8.2
+      uuid:
+        specifier: 'catalog:'
+        version: 11.1.1
       vee-validate:
         specifier: 'catalog:'
         version: 4.15.1(vue@3.5.42(typescript@6.0.3))
@@ -734,7 +740,7 @@ importers:
         version: 2.0.1(pinia@4.0.2(@vue/devtools-api@8.1.5)(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3)))
       '@playwright/test':
         specifier: 'catalog:'
-        version: 1.61.1
+        version: 1.63.0
       '@sentry/vite-plugin':
         specifier: 'catalog:'
         version: 4.9.1
@@ -867,9 +873,6 @@ importers:
       markdown-table:
         specifier: 'catalog:'
         version: 3.0.4
-      mixpanel-browser:
-        specifier: 'catalog:'
-        version: 2.81.0
       monocart-coverage-reports:
         specifier: 'catalog:'
         version: 2.12.12
@@ -930,9 +933,6 @@ importers:
       unplugin-vue-components:
         specifier: 'catalog:'
         version: 32.1.0(esbuild@0.28.1)(rolldown@1.2.6)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))(vue@3.5.42(typescript@6.0.3))
-      uuid:
-        specifier: 'catalog:'
-        version: 11.1.1
       vite:
         specifier: ^8.2.2
         version: 8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0)
@@ -981,6 +981,9 @@ importers:
       '@comfyorg/design-system':
         specifier: workspace:*
         version: link:../../packages/design-system
+      '@comfyorg/shared-frontend-utils':
+        specifier: workspace:*
+        version: link:../../packages/shared-frontend-utils
       '@comfyorg/tailwind-utils':
         specifier: workspace:*
         version: link:../../packages/tailwind-utils
@@ -993,6 +996,12 @@ importers:
       firebase:
         specifier: 'catalog:'
         version: 11.10.0
+      primeicons:
+        specifier: 'catalog:'
+        version: 7.0.0
+      reka-ui:
+        specifier: 'catalog:'
+        version: 2.6.2(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3))
       vue:
         specifier: 'catalog:'
         version: 3.5.42(typescript@6.0.3)
@@ -1008,7 +1017,7 @@ importers:
         version: link:../../packages/ingest-types
       '@playwright/test':
         specifier: 'catalog:'
-        version: 1.61.1
+        version: 1.63.0
       '@tailwindcss/vite':
         specifier: 'catalog:'
         version: 4.3.2(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
@@ -1111,6 +1120,9 @@ importers:
       cva:
         specifier: 'catalog:'
         version: 1.0.0-beta.4(typescript@6.0.3)
+      es-toolkit:
+        specifier: ^1.39.9
+        version: 1.49.0
       firebase:
         specifier: 'catalog:'
         version: 11.10.0
@@ -1163,9 +1175,12 @@ importers:
       '@comfyorg/sdk':
         specifier: 'catalog:'
         version: 0.2.0
+      '@hey-api/openapi-ts':
+        specifier: 0.97.3
+        version: 0.97.3(magicast@0.5.4)(typescript@6.0.3)
       '@playwright/test':
         specifier: 'catalog:'
-        version: 1.61.1
+        version: 1.63.0
       '@storybook/vue3-vite':
         specifier: 'catalog:'
         version: 10.5.6(esbuild@0.28.1)(storybook@10.5.6(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))(vue@3.5.42(typescript@6.0.3))
@@ -1263,7 +1278,16 @@ importers:
       '@comfyorg/account-core':
         specifier: workspace:^
         version: link:../account-core
+      primeicons:
+        specifier: ^7.0.0
+        version: 7.0.0
     devDependencies:
+      '@comfyorg/design-system':
+        specifier: workspace:^
+        version: link:../design-system
+      '@comfyorg/tailwind-utils':
+        specifier: workspace:^
+        version: link:../tailwind-utils
       '@stripe/stripe-js':
         specifier: 'catalog:'
         version: 9.12.1
@@ -1288,6 +1312,9 @@ importers:
       happy-dom:
         specifier: 'catalog:'
         version: 20.14.5
+      reka-ui:
+        specifier: 'catalog:'
+        version: 2.6.2(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3))
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -1336,6 +1363,9 @@ importers:
       '@iconify/utils':
         specifier: 'catalog:'
         version: 3.1.4
+      cva:
+        specifier: 'catalog:'
+        version: 1.0.0-beta.4(typescript@6.0.3)
       tailwindcss-primeui:
         specifier: 'catalog:'
         version: 0.6.1(tailwindcss@4.3.2)
@@ -3782,9 +3812,9 @@ packages:
     resolution: {integrity: sha512-SEeaJLb3qBNF/OaXnaR1NmmBbFYk1zC0ZH/52fATcRPLFg/p791YrcyFFy44Bo9sLaGuSuLp5Q6axbb/O+v/RA==}
     engines: {node: ^14.18.0 || >=16.0.0}
 
-  '@playwright/test@1.61.1':
-    resolution: {integrity: sha512-8nKv6+0RJSL9FE4jYOEGXnPeM/Hg12qZpmqzZjRh3qM0Y7c3z1mrOTfFLids72RDQYVh9WpLEfR5WdpNX4fkig==}
-    engines: {node: '>=18'}
+  '@playwright/test@1.63.0':
+    resolution: {integrity: sha512-oxMK4vllB9RK5NQ2l1pq1IfOf2AvnEuj/vYGDj0H2nMtmtZpKtCwt/l00GEO6xjGfpBNAvjovvYdCm50dRQkpQ==}
+    engines: {node: '>=20'}
     hasBin: true
 
   '@polka/url@1.0.0-next.29':
@@ -6582,11 +6612,6 @@ packages:
     resolution: {integrity: sha512-w8ZNZr2mKIc7qeNaQ9AVPT1+iFaI+Avd4xudVOvdDJ8VytREi1Ft5Ih7hd9jjehod8vAM5GMsfQ/TpPf4EyoEA==}
     engines: {node: '>=14.14'}
 
-  fsevents@2.3.2:
-    resolution: {integrity: sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==}
-    engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
-    os: [darwin]
-
   fsevents@2.3.3:
     resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
@@ -8118,14 +8143,14 @@ packages:
   pkg-types@2.3.1:
     resolution: {integrity: sha512-y+ichcgc2LrADuhLNAx8DFjVfgz91pRxfZdI3UDhxHvcVEZsenLO+7XaU5vOp0u/7V/wZ+plyuQxtrDlZJ+yeg==}
 
-  playwright-core@1.61.1:
-    resolution: {integrity: sha512-h7Qlt6m4REp25qvIdvbDtVmD4LqVXfpRxhORv9L0jzETM05p4fuPJ3dKyuSXQxDSbXnmS79HAgi9589lGSpLkg==}
-    engines: {node: '>=18'}
+  playwright-core@1.63.0:
+    resolution: {integrity: sha512-rYCsBF/M5HjUch52bbtVONEFjv6Xu8sm8h72dNlR5bzIE1fvC/bxgspzkjSfU+MweEMmPM8KJebG6nnyxo5mCg==}
+    engines: {node: '>=20'}
     hasBin: true
 
-  playwright@1.61.1:
-    resolution: {integrity: sha512-DWnY5o3YbLWK4GovuAVwpqL+1VwGNdUGrRr++8j8PtQQzvAVZUIMjKQ90fY689sEJZJBbZVw1rXaOKSTitkzPQ==}
-    engines: {node: '>=18'}
+  playwright@1.63.0:
+    resolution: {integrity: sha512-+7ziBLidS4NaNCdt57SUDT+wYmmd5fmiQejUic/kb+YsYSCPyOOE9sebzMjNmQrsnNpDJqd4WHvV/8lfKfUDUg==}
+    engines: {node: '>=20'}
     hasBin: true
 
   possible-typed-array-names@1.1.0:
@@ -12214,9 +12239,9 @@ snapshots:
 
   '@pkgr/core@0.3.6': {}
 
-  '@playwright/test@1.61.1':
+  '@playwright/test@1.63.0':
     dependencies:
-      playwright: 1.61.1
+      playwright: 1.63.0
 
   '@polka/url@1.0.0-next.29': {}
 
@@ -15201,9 +15226,6 @@ snapshots:
       jsonfile: 6.2.1
       universalify: 2.0.1
 
-  fsevents@2.3.2:
-    optional: true
-
   fsevents@2.3.3:
     optional: true
 
@@ -17129,13 +17151,11 @@ snapshots:
       exsolve: 1.1.0
       pathe: 2.0.3
 
-  playwright-core@1.61.1: {}
+  playwright-core@1.63.0: {}
 
-  playwright@1.61.1:
+  playwright@1.63.0:
     dependencies:
-      playwright-core: 1.61.1
-    optionalDependencies:
-      fsevents: 2.3.2
+      playwright-core: 1.63.0
 
   possible-typed-array-names@1.1.0: {}
 

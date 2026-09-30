@@ -6,7 +6,7 @@ import { routerT } from './routerCopy'
 import ModelsApiHero from './ModelsApiHero.vue'
 
 describe('ModelsApiHero', () => {
-  it('presents the Comfy Router title, beta badge, and code tabs', () => {
+  it('presents the Comfy Router title and code tabs without a beta badge', () => {
     render(ModelsApiHero, { props: { locale: 'en' } })
 
     expect(screen.getByText('ROUTER', { exact: true })).toBeTruthy()
@@ -21,15 +21,13 @@ describe('ModelsApiHero', () => {
     ).toBeTruthy()
     for (const panel of screen.getAllByRole('tabpanel'))
       expect(panel).toHaveTextContent('client.models.run')
-    expect(
-      screen.getAllByText(t('nav.badgeBeta', 'en')).length
-    ).toBeGreaterThan(0)
+    expect(screen.queryByText(t('nav.badgeBeta', 'en'))).toBeNull()
     const browseModels = screen.getAllByRole('link', {
       name: routerT('platform.router.cta.browseModels', 'en')
     })
     expect(browseModels.length).toBeGreaterThan(0)
     for (const link of browseModels)
-      expect(link.getAttribute('href')).toBe('/models')
+      expect(link.getAttribute('href')).toBe('/hub/models/')
   })
 
   it('sends the get-key link as a Router onboarding arrival', () => {

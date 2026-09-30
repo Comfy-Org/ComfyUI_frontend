@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import type { AspectRatio } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import type { Reel } from '../../../lib/workshop/cinematic-studio/reel'
@@ -52,39 +54,52 @@ const siblings = computed(() =>
     :aria-label="tc('cinematic.stage.label', locale)"
   >
     <header
-      class="border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
+      class="flex min-h-11 items-center justify-between gap-3 border-b border-transparency-white-t8 px-5 py-1"
+      data-testid="cinematic-output-header"
     >
-      {{ t('workshop.output.title', locale) }}
+      <span
+        class="shrink-0 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
+      >
+        {{ t('workshop.output.title', locale) }}
+      </span>
+      <CinematicTakeBar
+        v-if="current"
+        :current
+        :siblings
+        :model-name="modelName"
+        :take-picker="false"
+        :locale
+      />
     </header>
     <div
-      class="flex min-h-72 flex-col items-center justify-center gap-4 p-4 sm:p-6 lg:min-h-112"
+      :class="
+        cn(
+          'flex flex-col items-center justify-center gap-4 sm:min-h-72 sm:p-6 lg:min-h-112',
+          !current && 'min-h-72 p-4'
+        )
+      "
+      data-testid="cinematic-output-body"
     >
       <template v-if="current">
         <CinematicTakeFrame
+          class="max-sm:rounded-none"
           :current
           :member-workspace="memberWorkspace"
           :locale
           @retry="emit('retry', current.id)"
         />
-        <CinematicTakeBar
-          :current
-          :siblings
-          :model-name="modelName"
-          :locale
-          @select="emit('select', $event)"
-        />
         <CinematicCreditSummary
           :takes="siblings"
           :member-workspace="memberWorkspace"
           :locale
-          class="w-full"
+          class="w-full max-sm:px-4"
           @retry="emit('retry', ...$event)"
         />
       </template>
 
       <div
         v-else
-        class="flex max-w-3xl flex-col items-center justify-center gap-2 rounded-md bg-transparency-white-t4 p-6 text-center transition-[aspect-ratio] duration-300"
+        class="flex max-w-3xl flex-col items-center justify-center gap-2 rounded-xl p-6 text-center transition-[aspect-ratio] duration-300"
         :style="framedStyle(aspect, '60vh')"
         data-testid="cinematic-frame-preview"
       >
@@ -106,6 +121,7 @@ const siblings = computed(() =>
       :takes="reel.takes"
       :current-id="current?.id"
       :locale
+      class="border-t border-transparency-white-t8 px-4 py-3"
       @select="emit('select', $event)"
     />
   </section>

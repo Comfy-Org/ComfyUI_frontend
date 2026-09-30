@@ -102,6 +102,7 @@ export interface GeneratedExample {
   readonly node?: { readonly id: string; readonly displayName: string }
   readonly fields?: readonly GeneratedField[]
   readonly values: WorkshopExampleValues
+  readonly prompt?: string
 }
 
 export interface GeneratedModel {
@@ -120,7 +121,6 @@ interface WorkshopPresentation {
   readonly name: string
   readonly workflowCount: number
   readonly recommendedRank?: number
-  readonly href: string
   readonly incompleteReason?: 'missing-input-schema'
   readonly provider?: string
   readonly modality?: Modality
@@ -139,15 +139,20 @@ interface WorkshopPresentation {
   readonly summary?: string
   readonly status?: ModelStatus
   readonly successorSlug?: string
+  /** PostHog flag this entry is shown behind (workshop-model-availability.json). */
+  readonly flag?: string
 }
 
 export type RouterWorkshopModel = WorkshopPresentation & {
   readonly type?: 'MODEL'
+  /** Absent for a disabled model: it has no built page to link to. */
+  readonly href?: string
   readonly routerId: string
   readonly workflowId?: never
 }
 
 export type WorkflowWorkshopModel = WorkshopPresentation & {
+  readonly href: string
   readonly categoryLabel?: { readonly en: string; readonly 'zh-CN': string }
   readonly categoryOrder?: number
   readonly categoryHighlight?: boolean
@@ -159,7 +164,19 @@ export type WorkflowWorkshopModel = WorkshopPresentation & {
   readonly author?: string
 }
 
-export type WorkshopModel = RouterWorkshopModel | WorkflowWorkshopModel
+export type AppWorkshopModel = WorkshopPresentation & {
+  readonly type: 'APP'
+  readonly href: string
+  /** Which app page runs it: see `WorkshopAppEntry.app`. */
+  readonly appId: 'studio' | 'reshoot'
+  readonly routerId?: never
+  readonly workflowId?: never
+}
+
+export type WorkshopModel =
+  | RouterWorkshopModel
+  | WorkflowWorkshopModel
+  | AppWorkshopModel
 
 interface WorkshopDetailPresentation {
   readonly nodeDisplayName?: string
@@ -185,8 +202,12 @@ export type WorkshopModelDetail =
   | RouterWorkshopModelDetail
   | WorkflowWorkshopModelDetail
 
+export function isWorkflowSlug(slug: string): boolean {
+  return slug.startsWith('workflows/')
+}
+
 export function workshopExecutionId(model: WorkshopModel): string {
-  return model.routerId ?? model.workflowId
+  return model.routerId ?? model.workflowId ?? model.slug
 }
 
 // makes it image/video/audio-to-X, anything else is text-to-X.
@@ -461,7 +482,7 @@ function searchText(model: WorkshopModel): string {
   return [
     model.name,
     model.provider ?? '',
-    ...(model.routerId === undefined
+    ...(model.type === 'CLOUD' || model.type === 'SERVERLESS'
       ? [model.category ?? '', model.author ?? '', ...(model.models ?? [])]
       : []),
     ...useCasesFor(model).map((value) => value.replaceAll('-', ' ')),

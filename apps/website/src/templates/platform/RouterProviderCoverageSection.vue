@@ -78,21 +78,15 @@ const linkedDocs = new Map(
   ])
 )
 
-const moreModels = routerT(
-  'platform.router.coverage.moreModels',
-  locale
-).replace(
-  '{count}',
-  String(
+const moreModels = routerT('platform.router.coverage.moreModels', locale, {
+  count:
     ROUTER_CATALOG_MODEL_COUNT -
-      ROUTER_PROVIDER_COVERAGE.length -
-      ROUTER_COMFY_ONLY_PREVIEW.length
-  )
-)
-const browseAll = routerT('platform.router.coverage.browseAll', locale).replace(
-  '{count}',
-  String(ROUTER_CATALOG_MODEL_COUNT)
-)
+    ROUTER_PROVIDER_COVERAGE.length -
+    ROUTER_COMFY_ONLY_PREVIEW.length
+})
+const browseAll = routerT('platform.router.coverage.browseAll', locale, {
+  count: ROUTER_CATALOG_MODEL_COUNT
+})
 </script>
 
 <template>
@@ -155,7 +149,7 @@ const browseAll = routerT('platform.router.coverage.browseAll', locale).replace(
         </p>
         <Button
           as="a"
-          :href="getRoutes(locale).modelsShowcase"
+          :href="getRoutes(locale).workshop"
           variant="outline"
           class="pointer-events-auto h-12 rounded-full text-sm"
         >

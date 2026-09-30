@@ -183,7 +183,10 @@ export async function runMissingModelPipeline({
       '[Missing Model Pipeline] Missing model verification failed:',
       err
     )
-    reportError(err, { errorType: 'missing_model_verification_failed' })
+    reportError(err, {
+      surface: 'assets',
+      errorType: 'missing_model_verification_failed'
+    })
     useToastStore().add({
       severity: 'warn',
       summary: st(
