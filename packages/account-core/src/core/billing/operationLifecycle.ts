@@ -559,18 +559,26 @@ export function createBillingOperationLifecycle(
       presentation: input.presentation,
       resumed: input.resumed
     })
-    // A resumed operation without a served link is announced by its first
-    // status, never before it: the status read names it but not what it waits
-    // on, and a checkout parked on a card must not be announced as processing
-    // for the length of a poll. A served link already says what it waits on.
+    startObserving(record, input, state)
+    return record
+  }
+
+  // A resumed operation without a served link is announced by its first
+  // status, never before it: the status read names it but not what it waits
+  // on, and a checkout parked on a card must not be announced as processing
+  // for the length of a poll. A served link already says what it waits on.
+  function startObserving(
+    record: OperationRecord,
+    input: AdoptInput,
+    state: PendingBillingOperation
+  ) {
     if (input.initialStatus !== undefined) {
       dispatch(record, { type: 'status_polled', status: input.initialStatus })
       continueOrExpire(record)
-    } else {
-      if (!input.resumed || state.actionUrl !== undefined) publish(record)
-      void poll(record)
+      return
     }
-    return record
+    if (!input.resumed || state.actionUrl !== undefined) publish(record)
+    void poll(record)
   }
 
   function routeFor(
