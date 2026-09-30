@@ -1,7 +1,7 @@
 <template>
   <div class="w-80 pt-1">
     <div class="py-2">
-      <span class="text-md pl-3 font-semibold text-neutral-500">
+      <span class="pl-3 text-base font-semibold text-neutral-500">
         {{ $t('manager.selectVersion') }}
       </span>
     </div>

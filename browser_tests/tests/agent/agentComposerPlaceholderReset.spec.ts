@@ -1,28 +1,8 @@
 import { expect } from '@playwright/test'
-import type { Page } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
-
-async function waitForCanvasViewToSettle(page: Page): Promise<void> {
-  await page.waitForFunction(
-    () =>
-      new Promise<boolean>((resolve) => {
-        const { ds } = window.app!.canvas
-        const [scale, offsetX, offsetY] = [ds.scale, ds.offset[0], ds.offset[1]]
-        requestAnimationFrame(() =>
-          requestAnimationFrame(() =>
-            resolve(
-              ds.scale === scale &&
-                ds.offset[0] === offsetX &&
-                ds.offset[1] === offsetY
-            )
-          )
-        )
-      })
-  )
-}
 
 test.describe(
   'Agent composer placeholder reset (PM-1331)',
@@ -66,7 +46,7 @@ test.describe(
       await expect(
         comfyPage.page.getByTestId('node-selection-mode-banner')
       ).toBeVisible()
-      await waitForCanvasViewToSettle(comfyPage.page)
+      await comfyPage.canvasOps.waitForViewToSettle()
 
       const [{ x, y }, { width, height }] = await Promise.all([
         node.getPosition(),

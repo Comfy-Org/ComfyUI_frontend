@@ -20,9 +20,6 @@ vi.mock(import('@/platform/support/feedbackDialog'), () => ({
 }))
 
 vi.mock(import('@/platform/telemetry'))
-const telemetryProvider = useTelemetry()
-assert.exists(telemetryProvider)
-const telemetry = vi.mocked(telemetryProvider)
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
@@ -44,6 +41,7 @@ describe('openFeedbackDialog (agent)', () => {
   it('opens the approved agent form with bounded context when Agent is enabled', () => {
     useAgentPanelStore().enabled = true
     useCurrentUser().userEmail = computed(() => 'alpha@example.com')
+    useCurrentUser().resolvedUserInfo = computed(() => ({ id: 'user-264' }))
     const conversation = useAgentConversationStore()
     conversation.setThreadId('thread-264')
     conversation.recordUser(toTurnId('turn-private'), 'private prompt', [
@@ -58,12 +56,27 @@ describe('openFeedbackDialog (agent)', () => {
       title: 'Share Feedback',
       hiddenFields: [
         'email=alpha@example.com',
+        'userid=user-264',
         'source=agent-panel',
         'version=1.55.4',
         'os=MacIntel',
         'session=thread-264'
       ].join(',')
     })
+  })
+
+  it('carries the user id when no thread has started, so the response stays traceable without a session', () => {
+    useAgentPanelStore().enabled = true
+    useCurrentUser().resolvedUserInfo = computed(() => ({ id: 'user-264' }))
+
+    openFeedbackDialog('agent-panel')
+
+    expect(openTypeformDialog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        hiddenFields:
+          'userid=user-264,source=agent-panel,version=1.55.4,os=MacIntel'
+      })
+    )
   })
 
   it('omits missing optional context rather than sending placeholders', () => {
@@ -104,6 +117,8 @@ describe('openFeedbackDialog (agent)', () => {
 
     openFeedbackDialog('agent-panel')
 
+    const telemetry = useTelemetry()
+    assert.exists(telemetry)
     expect(telemetry.trackUiButtonClicked).toHaveBeenCalledWith({
       button_id: 'feedback_button_clicked',
       element_group: 'agent-panel'

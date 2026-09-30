@@ -471,7 +471,10 @@ async function copyReport() {
     })
     await copyCollectedReport(report)
   } catch (error) {
-    reportError(error, { errorType: 'crdt_dev_panel_report_copy_failed' })
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'crdt_dev_panel_report_copy_failed'
+    })
     reportCopyState.value = { status: 'failed', report: null }
   }
 }
@@ -1106,7 +1109,7 @@ function fmtTime(at: number): string {
           </button>
         </div>
         <div v-if="reportCopyState.status === 'failed'" class="mt-2">
-          <p role="alert" class="text-danger m-0">
+          <p role="alert" class="m-0 text-destructive-background">
             {{
               reportCopyState.report === null
                 ? t('agent.diagnosticReport.collectionFailed')

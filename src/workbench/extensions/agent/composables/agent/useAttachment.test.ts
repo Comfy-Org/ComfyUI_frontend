@@ -273,6 +273,7 @@ describe('useAttachment', () => {
     expect(registry.chips).toEqual([])
     expect(onError).toHaveBeenCalledOnce()
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
       errorType: 'agent_attachment_upload_failed',
       tags: {
         failure_kind: 'caught_unexpected',
@@ -530,6 +531,7 @@ describe('useAttachment', () => {
       expect(upload).not.toHaveBeenCalled()
       expect(onError).toHaveBeenCalledWith('stuck.mp4 could not be uploaded')
       expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'agent',
         errorType: 'agent_attachment_fetch_failed',
         tags: expect.objectContaining({
           feature_area: 'agent',

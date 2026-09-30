@@ -47,6 +47,30 @@ describe('projectSubscriptionResult', () => {
         'This payment method has insufficient funds. Try another payment method or contact your bank.'
     },
     {
+      phase: 'failed',
+      operation: {
+        ...failedOperation(),
+        declineReason: 'authentication_failed'
+      },
+      detail: "We couldn't complete payment verification. Please try again."
+    },
+    {
+      phase: 'failed',
+      operation: {
+        ...failedOperation(),
+        declineReason: 'authentication_required'
+      },
+      detail: "We couldn't complete payment verification. Please try again."
+    },
+    {
+      phase: 'failed',
+      operation: {
+        ...failedOperation(),
+        declineReason: 'payment_not_completed'
+      },
+      detail: "We couldn't complete payment verification. Please try again."
+    },
+    {
       phase: 'timed_out',
       operation: settledOperation('timed_out'),
       detail: "We couldn't update your subscription. Please try again."
@@ -123,6 +147,15 @@ describe('projectSubscriptionResult', () => {
         status: undefined,
         code: 'SUPERSEDED',
         message: "We couldn't update your subscription. Please try again."
+      }
+    ],
+    [
+      { status: 'error', code: 'OPERATION_ALREADY_PENDING' },
+      {
+        status: undefined,
+        code: 'OPERATION_ALREADY_PENDING',
+        message:
+          'A payment you started earlier is still going through. It has to finish before you can choose a different plan.'
       }
     ]
   ] as const)('surfaces %o as a workspace error', ([failure, expected]) => {

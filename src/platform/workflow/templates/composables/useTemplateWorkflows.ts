@@ -1,6 +1,9 @@
 import { computed, onScopeDispose, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { isCloud } from '@/platform/distribution/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -11,9 +14,13 @@ import type {
   TemplateInfo,
   WorkflowTemplates
 } from '@/platform/workflow/templates/types/template'
+import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
+
+import { prepareTemplateInputs } from '../services/templateInputService'
 
 type TemplateLoadResult = 'loaded' | 'graph-failed' | 'not-started'
 
@@ -33,6 +40,7 @@ export function useTemplateWorkflows() {
   const { t } = useI18n()
   const workflowTemplatesStore = useWorkflowTemplatesStore()
   const dialogStore = useDialogStore()
+  const { trackFeatureUsed } = useSurveyFeatureTracking('example-workflows')
 
   // State
   const selectedTemplate = ref<WorkflowTemplates | null>(null)
@@ -136,7 +144,10 @@ export function useTemplateWorkflows() {
   }
 
   function reportTemplateError(error: unknown) {
-    reportError(error, { errorType: 'error_loading_template' })
+    reportError(error, {
+      surface: 'graph',
+      errorType: 'error_loading_template'
+    })
     showTemplateError(t('templateWorkflows.error.loading'))
   }
 
@@ -151,7 +162,57 @@ export function useTemplateWorkflows() {
       (template) =>
         template.name === id && template.sourceModule === sourceModule
     )
-    return { json, template }
+    if (isCloud || sourceModule !== 'default' || !template?.io?.inputs?.length)
+      return { json, template }
+
+    const toast = useToastStore()
+    const progress = {
+      severity: 'info' as const,
+      summary: t('templateWorkflows.preparingMedia')
+    }
+    let preparedJson = json
+    const errors: unknown[] = []
+    try {
+      const workflow = await validateComfyWorkflow(json)
+      if (!workflow) return { json, template }
+      const result = await prepareTemplateInputs(
+        workflow,
+        template.io.inputs,
+        signal,
+        useSettingStore().get('Comfy.Workflow.NamedValuesRestore'),
+        () => {
+          toast.add(progress)
+        }
+      )
+      errors.push(...result.errors)
+      preparedJson = result.workflow
+      if (result.uploadedCount > 0) {
+        await useAssetsStore().inputAssets.invalidate()
+        await app.reloadNodeDefs()
+      }
+      signal.throwIfAborted()
+    } catch (error) {
+      signal.throwIfAborted()
+      errors.push(error)
+    } finally {
+      toast.remove(progress)
+    }
+    if (errors.length) {
+      reportError(
+        new AggregateError(errors, 'Template sample preparation failed'),
+        {
+          surface: 'graph',
+          errorType: 'error_loading_template_media'
+        }
+      )
+      toast.add({
+        severity: 'warn',
+        summary: t('g.warning'),
+        detail: t('templateWorkflows.error.preparingMedia'),
+        life: 8000
+      })
+    }
+    return { json: preparedJson, template }
   }
 
   async function loadTemplateGraph(
@@ -169,6 +230,11 @@ export function useTemplateWorkflows() {
       if (loadedWorkflow === false) return 'graph-failed'
 
       updateTemplateEducation(template?.isPartnerNode, loadedWorkflow)
+      // Counted here rather than at the call site: only this path means the
+      // template reached the canvas. A failed load never showed the user the
+      // compacted-vs-exploded layout the survey asks about, so it must not
+      // push them toward the eligibility threshold.
+      trackFeatureUsed()
       return 'loaded'
     } catch (error) {
       reportTemplateError(error)

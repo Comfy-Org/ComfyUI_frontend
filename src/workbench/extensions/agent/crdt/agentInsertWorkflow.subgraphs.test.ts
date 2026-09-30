@@ -8,14 +8,6 @@
  * types promoted together, subgraph-instance id collisions, several
  * instances of one definition in a single op, and coexistence with a
  * pre-existing instance.
- *
- * NOTE: an interior node that is ITSELF a subgraph instance (a subgraph
- * nested inside another subgraph, as opposed to two sibling definitions)
- * does not currently materialize through this pipeline — its `type` still
- * names the un-remapped blueprint definition id, which nothing registers on
- * the live side, so it falls back to a plain, widget-less node. That gap is
- * outside this PR's fix scope; it is called out in the PR description as a
- * follow-up rather than silently asserted around.
  */
 import { applyOps, mint } from '@comfyorg/comfy-multi-player'
 import type {
@@ -38,14 +30,11 @@ import {
   enableSubgraphNodeCreation
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { graphScopeOf } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import { AgentCrdtProjection } from './agentCrdtProjection'
-import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import { FollowerDoc } from './followerDoc'
-import { createGraphMutations } from './graphMutations'
 
 class NumberWidgetNode extends LGraphNode {
   constructor() {
@@ -146,15 +135,7 @@ function setWidgetOp(
 
 function bindProjection(workflowId: string, graph: LGraph) {
   const follower = new FollowerDoc()
-  const projection = new AgentCrdtProjection(
-    createGraphMutations({
-      getScope: () => graphScopeOf(graph),
-      layout: { createNode: () => {}, deleteNodes: () => {} },
-      placement: inertPlacementPort
-    }),
-    () => graph,
-    () => follower.doc
-  )
+  const projection = new AgentCrdtProjection(() => graph)
   projection.bind(workflowId, follower)
   onTestFinished(() => {
     projection.destroy()
@@ -170,8 +151,7 @@ function bindProjection(workflowId: string, graph: LGraph) {
       update,
       actor: 'agent:test',
       opIds
-    })
-    projection.reconcileLiveGraph(workflowId)
+    }).applied
     return committed
   }
   return deliver
@@ -189,14 +169,11 @@ function serializeBlueprint(graph: LGraph): InsertWorkflowOp['workflow'] {
   ) as InsertWorkflowOp['workflow']
 }
 
-/**
- * A subgraph host's `widgets_values` is a named record when it promotes
- * named widgets, even though `LGraphNode`'s general type only declares the
- * positional-array shape `ISerialisedNode` uses. Read it through this one
- * narrow accessor rather than asserting at every call site.
- */
+/** The host's live promoted widgets, by name. */
 function promotedWidgetValues(node: SubgraphNode): Record<string, unknown> {
-  return node.widgets_values as unknown as Record<string, unknown>
+  return Object.fromEntries(
+    node.widgets.map((widget) => [widget.name, widget.value])
+  )
 }
 
 describe('insert_workflow materializes subgraphs correctly', () => {
@@ -367,8 +344,6 @@ describe('insert_workflow materializes subgraphs correctly', () => {
 
     const [instance] = findSubgraphInstances(graph)
     expect(instance).toBeDefined()
-    // Read through the host's keyed `widgets_values` rather than the live
-    // `widgets` array: both promoted values land here correctly.
     expect(promotedWidgetValues(instance)).toEqual({
       mode: 'randomize',
       steps: 77
@@ -652,5 +627,62 @@ describe('insert_workflow materializes subgraphs correctly', () => {
     expect(promotedWidgetValues(instance)).toEqual({
       enabled: true
     })
+  })
+
+  it('materializes a subgraph instance nested inside another subgraph, with its widget visible', () => {
+    const graph = new LGraph()
+    onTestFinished(enableSubgraphNodeCreation(graph))
+
+    const blueprintGraph = new LGraph()
+    const subgraphB = createTestSubgraph({
+      rootGraph: blueprintGraph,
+      inputs: [{ name: 'value', type: 'NUMBER' }]
+    })
+    blueprintGraph.subgraphs.set(subgraphB.id, subgraphB)
+    const leafB = LiteGraph.createNode('number-widget')
+    if (!leafB) throw new Error('Failed to create number-widget node')
+    leafB.id = toNodeId(90)
+    subgraphB.add(leafB)
+    subgraphB.inputNode.slots[0].connect(leafB.inputs[0], leafB)
+
+    const subgraphA = createTestSubgraph({ rootGraph: blueprintGraph })
+    blueprintGraph.subgraphs.set(subgraphA.id, subgraphA)
+    const interiorHostB = createTestSubgraphNode(subgraphB, {
+      parentGraph: subgraphA,
+      id: 91
+    })
+    interiorHostB.widgets[0].value = 42
+    subgraphA.add(interiorHostB)
+
+    const hostA = createTestSubgraphNode(subgraphA, { id: 1 })
+    blueprintGraph.add(hostA)
+
+    const workflow = serializeBlueprint(blueprintGraph)
+    expect(workflow.definitions?.subgraphs).toHaveLength(2)
+
+    const hostDoc = mint({ nodes: [], links: [] }, CATALOG)
+    onTestFinished(() => hostDoc.destroy())
+    const op = insertOp(workflow)
+    expect(applyOps(hostDoc, [op], CATALOG).outcomes).toEqual([
+      { op_id: op.op_id, outcome: 'applied' }
+    ])
+
+    const deliver = bindProjection('wf-nested-subgraph-instance', graph)
+    expect(deliver(Y.encodeStateAsUpdate(hostDoc), [op.op_id])).toBe(true)
+
+    const rootInstances = findSubgraphInstances(graph)
+    expect(rootInstances).toHaveLength(1)
+    const [rootInstance] = rootInstances
+
+    const interiorInstances = rootInstance.subgraph.nodes.filter(
+      (node): node is SubgraphNode => node instanceof SubgraphNode
+    )
+    expect(interiorInstances).toHaveLength(1)
+    const [interiorInstance] = interiorInstances
+    expect(interiorInstance.has_errors).not.toBe(true)
+    expect(interiorInstance.widgets.map((widget) => widget.name)).toEqual([
+      'value'
+    ])
+    expect(interiorInstance.widgets[0]?.value).toBe(42)
   })
 })

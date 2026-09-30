@@ -1,4 +1,8 @@
-import { WORKSHOP_LOCAL_DEV, WORKSHOP_DEPLOY_ENV } from 'astro:env/client'
+import {
+  WORKSHOP_DEPLOY_ENV,
+  WORKSHOP_INCLUDED,
+  WORKSHOP_LOCAL_DEV
+} from 'astro:env/client'
 import { posthog } from 'posthog-js'
 import { readonly, ref } from 'vue'
 import type { Ref } from 'vue'
@@ -18,6 +22,7 @@ import type { TurnstileMode } from '@comfyorg/account-core/turnstile'
 
 import type { Platform } from '@/composables/useDownloadUrl'
 import type { ConnectionId, McpClientId } from '@/config/mcpClients'
+import { WORKSHOP_CLOUD_ENV } from '../config/workshop-env'
 import type { WorkshopAnalyticsEvent } from './workshop-analytics'
 import { captureWorkshopHealth } from './workshop-datadog'
 
@@ -37,6 +42,8 @@ const ANALYTICS_EVENT = {
   mcpConnectionTabClicked: 'website:mcp_connection_tab_clicked',
   mcpClientTabClicked: 'website:mcp_client_tab_clicked',
   routerRoadmapCardExpanded: 'website:router_roadmap_card_expanded',
+  agentFaqExpanded: 'website:agent_faq_expanded',
+  agentUsecaseVideoPlayed: 'website:agent_usecase_video_played',
   // Shared with the cloud app so one PostHog funnel covers auth outcomes
   // across every surface.
   authRefreshSucceeded: SESSION_TELEMETRY_EVENT.refreshSucceeded,
@@ -88,6 +95,14 @@ type AnalyticsEvent =
       properties: { card: RouterRoadmapCardId }
     }
   | {
+      name: typeof ANALYTICS_EVENT.agentFaqExpanded
+      properties: { question: string }
+    }
+  | {
+      name: typeof ANALYTICS_EVENT.agentUsecaseVideoPlayed
+      properties: { video: string }
+    }
+  | {
       name:
         | typeof ANALYTICS_EVENT.authRefreshSucceeded
         | typeof ANALYTICS_EVENT.authRefreshFailed
@@ -111,11 +126,48 @@ let initialized = false
 
 const WORKSHOP_AUTH_FLAG = 'workshop-auth'
 const WORKSHOP_ENABLED_FLAG = 'workshop-enabled'
+const WORKSHOP_WORKFLOWS_FLAG = 'workshop-workflows-enabled'
+const WORKSHOP_APPS_FLAG = 'workshop-apps-enabled'
 const WORKSHOP_TURNSTILE_FLAG = 'workshop-signup-turnstile'
 
 const VISIBILITY_OVERRIDE =
   WORKSHOP_LOCAL_DEV && import.meta.env.PUBLIC_WORKSHOP_ENABLED === '1'
 const workshopEnabled = ref(VISIBILITY_OVERRIDE)
+const WORKFLOWS_OVERRIDE =
+  WORKSHOP_LOCAL_DEV &&
+  import.meta.env.PUBLIC_WORKSHOP_WORKFLOWS_ENABLED === '1'
+const workshopWorkflowsEnabled = ref(WORKFLOWS_OVERRIDE)
+const APPS_OVERRIDE =
+  WORKSHOP_LOCAL_DEV && import.meta.env.PUBLIC_WORKSHOP_APPS_ENABLED === '1'
+const workshopAppsEnabled = ref(APPS_OVERRIDE)
+// Flags named by content (workshop-model-availability.json `flag`), read on
+// demand from PostHog in every environment. Outside Vercel production a build
+// can also force some on: PUBLIC_WORKSHOP_FLAG_OVERRIDES=a,b.
+const FLAG_OVERRIDES = new Set(
+  WORKSHOP_DEPLOY_ENV !== 'production'
+    ? (import.meta.env.PUBLIC_WORKSHOP_FLAG_OVERRIDES ?? '')
+        .split(',')
+        .map((name) => name.trim())
+        .filter(Boolean)
+    : []
+)
+const namedFlags = new Map<string, Ref<boolean>>()
+// PostHog's stored answers are only this visitor's once an answer has landed
+// for their identity; until then a flag first asked for must not read them.
+let namedFlagsAnswered = false
+
+function resetNamedFlags(): void {
+  namedFlagsAnswered = false
+  for (const [name, flag] of namedFlags) flag.value = FLAG_OVERRIDES.has(name)
+}
+
+function readNamedFlags(options?: { send_event: boolean }): void {
+  namedFlagsAnswered = true
+  for (const [name, flag] of namedFlags)
+    flag.value =
+      FLAG_OVERRIDES.has(name) ||
+      posthog.isFeatureEnabled(name, options) === true
+}
 // Default to the resolved public experience. The gate only leaves it once
 // `awaitFlagAnswer()` starts a real flag fetch (and arms the timeout), so an
 // environment that never initializes PostHog — local dev, no key, SSR — shows
@@ -142,12 +194,46 @@ function awaitFlagAnswer(): void {
   flagResolutionTimer = setTimeout(markFlagResolved, FLAG_RESOLUTION_TIMEOUT_MS)
 }
 
+const EXCLUDED_OFF = readonly(ref(false))
+const EXCLUDED_SETTLED = readonly(ref(true))
+
+/** A build without Workshop answers "off, settled" whatever PostHog says. */
+function unlessExcluded(
+  state: Ref<boolean>,
+  excluded: Readonly<Ref<boolean>>
+): Readonly<Ref<boolean>> {
+  return WORKSHOP_INCLUDED ? readonly(state) : excluded
+}
+
 export function useWorkshopEnabled(): Readonly<Ref<boolean>> {
-  return readonly(workshopEnabled)
+  return unlessExcluded(workshopEnabled, EXCLUDED_OFF)
+}
+
+export function useWorkshopWorkflowsEnabled(): Readonly<Ref<boolean>> {
+  return unlessExcluded(workshopWorkflowsEnabled, EXCLUDED_OFF)
+}
+
+export function useWorkshopAppsEnabled(): Readonly<Ref<boolean>> {
+  return unlessExcluded(workshopAppsEnabled, EXCLUDED_OFF)
+}
+
+/** Whether the PostHog flag `name` is on for this visitor; off until known. */
+export function useWorkshopFlag(name: string): Readonly<Ref<boolean>> {
+  let flag = namedFlags.get(name)
+  if (!flag) {
+    flag = ref(
+      FLAG_OVERRIDES.has(name) ||
+        (initialized &&
+          namedFlagsAnswered &&
+          posthog.isFeatureEnabled(name, { send_event: false }) === true)
+    )
+    namedFlags.set(name, flag)
+  }
+  return readonly(flag)
 }
 
 export function useWorkshopEnabledSettled(): Readonly<Ref<boolean>> {
-  return readonly(workshopEnabledSettled)
+  return unlessExcluded(workshopEnabledSettled, EXCLUDED_SETTLED)
 }
 
 export interface WorkshopIdentity {
@@ -167,6 +253,20 @@ function isStaff({ email, emailVerified }: WorkshopIdentity): boolean {
   )
 }
 
+// One PostHog project serves every build, so flags are evaluated with the
+// Workshop family and Vercel environment: a release condition on
+// workshop_cloud_env (prod, staging, test) turns a flag on per environment.
+// posthog.reset() clears these, so they are set again after every reset.
+function tagFlagEnvironment(reloadFeatureFlags: boolean): void {
+  posthog.setPersonPropertiesForFlags(
+    {
+      workshop_cloud_env: WORKSHOP_CLOUD_ENV,
+      workshop_deploy_env: WORKSHOP_DEPLOY_ENV || 'local'
+    },
+    reloadFeatureFlags
+  )
+}
+
 function identifyInPostHog(user: WorkshopIdentity): void {
   if (isStaff(user)) posthog.identify(user.uid, { comfy_staff: true })
   else posthog.identify(user.uid)
@@ -178,6 +278,9 @@ function refreshFlagForSameIdentity(user: WorkshopIdentity | null): void {
     posthog.isFeatureEnabled(WORKSHOP_ENABLED_FLAG, { send_event: false })
   if (cachedAnswer !== undefined) return
   workshopEnabled.value = VISIBILITY_OVERRIDE
+  workshopWorkflowsEnabled.value = WORKFLOWS_OVERRIDE
+  workshopAppsEnabled.value = APPS_OVERRIDE
+  resetNamedFlags()
   awaitFlagAnswer()
   posthog.reloadFeatureFlags()
 }
@@ -188,9 +291,15 @@ function adoptNewIdentity(
   waitForIdentityAnswer: boolean
 ): void {
   workshopEnabled.value = VISIBILITY_OVERRIDE
+  workshopWorkflowsEnabled.value = WORKFLOWS_OVERRIDE
+  workshopAppsEnabled.value = APPS_OVERRIDE
+  resetNamedFlags()
   if (waitForIdentityAnswer) awaitFlagAnswer()
   else markFlagResolved()
-  if (persistedUid) posthog.reset()
+  if (persistedUid) {
+    posthog.reset()
+    tagFlagEnvironment(false)
+  }
   if (user) identifyInPostHog(user)
   posthog.reloadFeatureFlags()
 }
@@ -212,6 +321,9 @@ export function identifyWorkshopUser(user: WorkshopIdentity | null): void {
   } catch (error) {
     workshopUser = previous
     workshopEnabled.value = VISIBILITY_OVERRIDE
+    workshopWorkflowsEnabled.value = WORKFLOWS_OVERRIDE
+    workshopAppsEnabled.value = APPS_OVERRIDE
+    resetNamedFlags()
     markFlagResolved()
     console.error('PostHog identity failed', error)
   }
@@ -252,6 +364,7 @@ export function initPostHog() {
       before_send: createPostHogBeforeSend()
     })
     initialized = true
+    tagFlagEnvironment(true)
     const persistedAnswer = posthog.isFeatureEnabled(WORKSHOP_ENABLED_FLAG, {
       send_event: false
     })
@@ -263,6 +376,16 @@ export function initPostHog() {
       (!expectedUid && !persistedUid)
     if (persistedAnswer !== undefined && persistedIdentityMatches) {
       workshopEnabled.value = VISIBILITY_OVERRIDE || persistedAnswer
+      workshopWorkflowsEnabled.value =
+        WORKFLOWS_OVERRIDE ||
+        posthog.isFeatureEnabled(WORKSHOP_WORKFLOWS_FLAG, {
+          send_event: false
+        }) === true
+      workshopAppsEnabled.value =
+        APPS_OVERRIDE ||
+        posthog.isFeatureEnabled(WORKSHOP_APPS_FLAG, { send_event: false }) ===
+          true
+      readNamedFlags({ send_event: false })
       markFlagResolved()
     }
     posthog.onFeatureFlags((_flags, _variants, context) => {
@@ -273,6 +396,12 @@ export function initPostHog() {
       workshopEnabled.value =
         VISIBILITY_OVERRIDE ||
         posthog.isFeatureEnabled(WORKSHOP_ENABLED_FLAG) === true
+      workshopWorkflowsEnabled.value =
+        WORKFLOWS_OVERRIDE ||
+        posthog.isFeatureEnabled(WORKSHOP_WORKFLOWS_FLAG) === true
+      workshopAppsEnabled.value =
+        APPS_OVERRIDE || posthog.isFeatureEnabled(WORKSHOP_APPS_FLAG) === true
+      readNamedFlags()
       markFlagResolved()
       if (!OVERRIDDEN_ON) {
         workshopAuthEnabled.value =
@@ -358,6 +487,20 @@ export function captureRouterRoadmapCardExpanded(
   captureEvent({
     name: ANALYTICS_EVENT.routerRoadmapCardExpanded,
     properties: { card }
+  })
+}
+
+export function captureAgentFaqExpanded(question: string): void {
+  captureEvent({
+    name: ANALYTICS_EVENT.agentFaqExpanded,
+    properties: { question }
+  })
+}
+
+export function captureAgentUsecaseVideoPlayed(video: string): void {
+  captureEvent({
+    name: ANALYTICS_EVENT.agentUsecaseVideoPlayed,
+    properties: { video }
   })
 }
 

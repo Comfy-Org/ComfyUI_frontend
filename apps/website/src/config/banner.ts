@@ -52,7 +52,7 @@ export const bannerConfig: BannerConfig = {
   targetSections: ['sitewide'],
   titleKey: 'launches.banner.text',
   link: {
-    href: '/platform/router',
+    href: '/agent/',
     titleKey: 'launches.banner.cta',
     buttonVariant: 'underlineLink'
   }

@@ -1,11 +1,17 @@
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick, ref, watch } from 'vue'
 
+import { reportError } from '@/platform/telemetry/reportError'
+
 import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
 import { zAgentMessages, zAgentWsEvent } from '../../schemas/agentApiSchema'
 import type { AgentChatEvent } from '../../services/agent/agentEventTransport'
 
 import { useAgentConversationStore } from './agentConversationStore'
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 const chat = (raw: unknown): AgentChatEvent => zAgentWsEvent.parse(raw)
 const thinking = (id: string, delta: string): AgentChatEvent =>
@@ -33,6 +39,29 @@ const done = (id: string): AgentChatEvent =>
   chat({
     type: 'agent_message_done',
     data: { message_id: id, thread_id: 'th', usage: null }
+  })
+const runApproval = (
+  id: string,
+  askId: string,
+  overrides: Record<string, unknown> = {}
+): AgentChatEvent =>
+  chat({
+    type: 'agent_ask',
+    data: {
+      message_id: id,
+      thread_id: 'th',
+      ask_id: askId,
+      kind: 'run_approval',
+      prompt: 'Run workflow?',
+      options: [
+        { id: 'run', label: 'Run' },
+        { id: 'cancel', label: 'Cancel' }
+      ],
+      min_selections: 1,
+      max_selections: 1,
+      allow_other: false,
+      ...overrides
+    }
   })
 const askResolved = (id: string, askId: string): AgentChatEvent =>
   chat({
@@ -476,9 +505,7 @@ describe('useAgentConversationStore', () => {
     store.ingest(delta('assistant-message-1', 'Running now.'))
 
     expect(
-      store.messages[0].parts.some(
-        (part) => (part as { type: string }).type === 'runApproval'
-      )
+      store.messages[0].parts.some((part) => part.type === 'runApproval')
     ).toBe(false)
     expect(partTexts(store)).toContain('Running now.')
     expect(store.isStreaming).toBe(true)
@@ -535,6 +562,30 @@ describe('useAgentConversationStore', () => {
     expect(store.threadId).toBeNull()
   })
 
+  it('scopes approval dedupe and timing to the conversation that owns them', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    expect(store.recordApprovalShown('ask-1', 1_000)).toBe(true)
+    expect(store.recordApprovalShown('ask-1', 2_000)).toBe(false)
+    expect(store.approvalShownAt('ask-1')).toBe(1_000)
+
+    // Remount hydration of the same thread keeps the shown state: a replayed
+    // approval card must not re-emit or restart the decision timer.
+    store.setThreadId('th')
+    store.hydrate([])
+    expect(store.approvalShownAt('ask-1')).toBe(1_000)
+    expect(store.recordApprovalShown('ask-1', 3_000)).toBe(false)
+
+    // Leaving the thread drops its abandoned asks with it.
+    store.setThreadId('th-other')
+    expect(store.approvalShownAt('ask-1')).toBeUndefined()
+    expect(store.recordApprovalShown('ask-1', 4_000)).toBe(true)
+
+    store.reset()
+    expect(store.approvalShownAt('ask-1')).toBeUndefined()
+    expect(store.recordApprovalShown('ask-1', 5_000)).toBe(true)
+  })
+
   it('snapshots local workflow references on the submitted turn', () => {
     const store = useAgentConversationStore()
     store.startTurn(T1)
@@ -579,6 +630,96 @@ describe('useAgentConversationStore', () => {
       )
     ).toBe(true)
     revoke.mockRestore()
+  })
+
+  it('keeps attachment labels scoped to their thread after blob previews expire', () => {
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const store = useAgentConversationStore()
+    const storageRef = 'a'.repeat(64)
+    const history = (turn: string) => {
+      const user = historyRow(1, 'user', turn, 'use this')
+      user.content = {
+        text: 'use this',
+        attachments: [storageRef],
+        attachment_refs: [{ name: storageRef, kind: 'image' }]
+      }
+      return [user, historyRow(2, 'assistant', turn, 'Done')]
+    }
+
+    store.setThreadId('thread-a')
+    store.recordUser(T1, 'use this', [
+      { name: 'Beach photo.png', ref: storageRef, previewUrl: 'blob:beach' }
+    ])
+    store.hydrate(history('turn-a'))
+
+    expect(revoke).toHaveBeenCalledWith('blob:beach')
+    expect(store.entries[0]).toMatchObject({
+      role: 'user',
+      attachments: [
+        {
+          name: 'Beach photo.png',
+          ref: storageRef,
+          kind: 'image'
+        }
+      ]
+    })
+
+    store.setThreadId('thread-b')
+    store.hydrate(history('turn-b'))
+    expect(store.entries[0]).toMatchObject({
+      role: 'user',
+      attachments: [{ name: storageRef, ref: storageRef, kind: 'image' }]
+    })
+  })
+
+  it('keeps a persisted display name ahead of a remembered label', () => {
+    const store = useAgentConversationStore()
+    const storageRef = 'a'.repeat(64)
+    const user = historyRow(1, 'user', T1, 'use this')
+    user.content = {
+      text: 'use this',
+      attachments: [storageRef],
+      attachment_refs: [
+        {
+          name: storageRef,
+          display_name: 'first.png',
+          kind: 'image'
+        }
+      ]
+    }
+
+    store.setThreadId('thread-a')
+    store.recordUser(T1, 'use this', [{ name: 'second.png', ref: storageRef }])
+    store.hydrate([user, historyRow(2, 'assistant', T1, 'Done')])
+
+    expect(store.entries[0]).toMatchObject({
+      role: 'user',
+      attachments: [{ name: 'first.png', ref: storageRef, kind: 'image' }]
+    })
+  })
+
+  it('clears remembered attachment labels on reset', () => {
+    const store = useAgentConversationStore()
+    const storageRef = 'a'.repeat(64)
+    const user = historyRow(1, 'user', T1, 'use this')
+    user.content = {
+      text: 'use this',
+      attachments: [storageRef],
+      attachment_refs: [{ name: storageRef, kind: 'image' }]
+    }
+
+    store.setThreadId('thread-a')
+    store.recordUser(T1, 'use this', [
+      { name: 'Beach photo.png', ref: storageRef }
+    ])
+    store.reset()
+    store.setThreadId('thread-a')
+    store.hydrate([user, historyRow(2, 'assistant', T1, 'Done')])
+
+    expect(store.entries[0]).toMatchObject({
+      role: 'user',
+      attachments: [{ name: storageRef, ref: storageRef, kind: 'image' }]
+    })
   })
 
   it('keeps a stashed background turn across reset so returning to the thread resumes it', () => {
@@ -701,7 +842,14 @@ describe('useAgentConversationStore', () => {
     const assistant = historyRow(2, 'assistant', 'turn-a', 'Done')
     assistant.content = {
       text: 'Done',
-      tool_calls: [{ id: 'call-1', tool_name: 'search_nodes', status: 'ok' }]
+      tool_calls: [
+        {
+          id: 'audit-1',
+          tool_call_id: 'call-1',
+          tool_name: 'search_nodes',
+          status: 'success'
+        }
+      ]
     }
     const store = useAgentConversationStore()
 
@@ -721,7 +869,14 @@ describe('useAgentConversationStore', () => {
     const threadAAssistant = historyRow(2, 'assistant', 'turn-a', 'Done A')
     threadAAssistant.content = {
       text: 'Done A',
-      tool_calls: [{ id: 'call-a', tool_name: 'search_nodes', status: 'ok' }]
+      tool_calls: [
+        {
+          id: 'audit-a',
+          tool_call_id: 'call-a',
+          tool_name: 'search_nodes',
+          status: 'success'
+        }
+      ]
     }
     const threadA = [
       historyRow(1, 'user', 'turn-a', 'Find a node'),
@@ -804,32 +959,301 @@ describe('useAgentConversationStore', () => {
     expect(store.isStreaming).toBe(false)
   })
 
-  it('resolves existing paywalls without resurrecting them after funds run out again', () => {
+  it('resolves existing paywalls without resurrecting them', () => {
     const store = useAgentConversationStore()
     store.recordPaywall(T1, 'subscribe')
+    store.resolvePaywalls()
 
-    store.setPaywallsResolved(true)
-    store.setPaywallsResolved(false)
-
-    expect(store.messages[0].parts).toEqual([])
-    expect(store.entries[0]).toMatchObject({ role: 'user', text: 'subscribe' })
-
-    store.recordPaywall(T2, 'top up')
-    expect(store.messages[1].parts).toEqual([
+    expect(store.entries).toMatchObject([{ role: 'user', text: 'subscribe' }])
+    expect(store.messages[0].parts).toEqual([
       { type: 'paywall', message: undefined }
     ])
-  })
-
-  it('shows a later paywall after resolving an earlier one', () => {
-    const store = useAgentConversationStore()
-    store.recordPaywall(T1, 'subscribe')
-    store.setPaywallsResolved(true)
 
     store.recordPaywall(T2, 'continue')
-
-    expect(store.messages[0].parts).toEqual([])
-    expect(store.messages[1].parts).toEqual([
-      { type: 'paywall', message: undefined }
+    expect(store.entries.map((entry) => entry.role)).toEqual([
+      'user',
+      'user',
+      'assistant'
     ])
+  })
+  describe('a dropped approval ask is reported', () => {
+    it('reports when the socket-drop teardown left nothing to route the ask to', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(delta('t1', 'building your workflow'))
+
+      // What onStatus(false) does today: settle the active turn locally and
+      // empty the background map, while the server keeps running the turn.
+      store.abortActiveTurn()
+      store.dropBackgroundTurns()
+
+      // The server, still running, now asks the user to approve the run.
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+
+      expect(
+        store.messages.some((message) =>
+          message.parts.some((part) => part.type === 'runApproval')
+        )
+      ).toBe(false)
+      expect(reportError).toHaveBeenCalledTimes(1)
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'failure_delivering_agent_approval_ask',
+          level: 'warning',
+          tags: expect.objectContaining({
+            reason: 'no-live-turn',
+            ask_kind: 'run_approval'
+          })
+        })
+      )
+    })
+
+    it('stays quiet when the ask reaches its turn', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(delta('t1', 'building your workflow'))
+
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+
+      expect(store.messages[0].parts).toContainEqual(
+        expect.objectContaining({
+          type: 'runApproval',
+          askId: 'turn-1:call-1'
+        })
+      )
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('stays quiet for every non-ask frame the same routing drops', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.abortActiveTurn()
+      store.dropBackgroundTurns()
+
+      store.ingest(delta('t1', 'more text'))
+      store.ingest(thinking('t1', 'still thinking'))
+      store.ingest(done('t1'))
+
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('stays quiet for an ask belonging to an untracked thread', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.abortActiveTurn()
+
+      store.ingest(
+        chat({
+          ...runApproval('t1', 'turn-1:call-1'),
+          data: {
+            ...runApproval('t1', 'turn-1:call-1').data,
+            thread_id: 'another-thread'
+          }
+        })
+      )
+
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('reports the same dropped ask only once', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.abortActiveTurn()
+
+      const ask = runApproval('t1', 'turn-1:call-1')
+      store.ingest(ask)
+      store.ingest(ask)
+
+      expect(reportError).toHaveBeenCalledTimes(1)
+    })
+
+    it('dedupes one ask across the transport and store routing paths', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.stashActiveTurn()
+      store.ingest(done('t1'))
+
+      const ask = runApproval('t1', 'turn-1:call-1')
+      store.ingest(ask)
+      store.dropBackgroundTurns()
+      store.ingest(ask)
+
+      expect(reportError).toHaveBeenCalledTimes(1)
+    })
+
+    it('reports a late ask after hydrate retires an active turn', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+
+      store.hydrate([])
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({ reason: 'no-live-turn' })
+        })
+      )
+    })
+
+    it('reports a late ask after resume discards a settled turn', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.stashActiveTurn()
+      store.ingest(done('t1'))
+
+      store.hydrate([])
+      store.resumeBackgroundTurn()
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({ reason: 'settled-turn' })
+        })
+      )
+    })
+
+    it('reports after a dropped background turn', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.stashActiveTurn()
+      store.dropBackgroundTurns()
+
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({ reason: 'no-live-turn' })
+        })
+      )
+    })
+
+    it('preserves the settled reason when dropping background turns', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.stashActiveTurn()
+      store.ingest(done('t1'))
+      store.dropBackgroundTurns()
+
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({ reason: 'settled-turn' })
+        })
+      )
+    })
+
+    it('records malformed background settlement before deleting the turn', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.stashActiveTurn()
+      store.settleBackgroundTurn(T1)
+
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({ reason: 'settled-turn' })
+        })
+      )
+    })
+
+    it('reports after a settled active turn', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(done('t1'))
+
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({ reason: 'settled-turn' })
+        })
+      )
+    })
+
+    it('keeps an aborted identity after an unrelated turn starts', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.abortActiveTurn()
+      store.startTurn(T2)
+
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({ reason: 'no-live-turn' })
+        })
+      )
+    })
+
+    it('records an aborted turn under the thread that owns its transport', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('original-thread')
+      store.startTurn(T1)
+      store.setThreadId('replacement-thread')
+      store.abortActiveTurn()
+
+      store.ingest(
+        chat({
+          ...runApproval('t1', 'turn-1:call-1'),
+          data: {
+            ...runApproval('t1', 'turn-1:call-1').data,
+            thread_id: 'original-thread'
+          }
+        })
+      )
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({ reason: 'no-live-turn' })
+        })
+      )
+    })
+
+    it('reports an ask kind the panel has no card for', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(delta('t1', 'building your workflow'))
+
+      store.ingest(runApproval('t1', 'turn-1:call-1', { kind: 'pick_a_model' }))
+
+      expect(
+        store.messages[0].parts.some((part) => part.type === 'runApproval')
+      ).toBe(false)
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'failure_delivering_agent_approval_ask',
+          tags: expect.objectContaining({
+            reason: 'unknown-kind',
+            ask_kind: 'pick_a_model'
+          })
+        })
+      )
+    })
   })
 })

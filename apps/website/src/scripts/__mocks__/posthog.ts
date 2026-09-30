@@ -10,6 +10,9 @@ const workshopTurnstileMode = readonly(ref<'off'>('off'))
 
 const posthog: typeof realPosthog = {
   useWorkshopEnabled: vi.fn(() => workshopEnabled),
+  useWorkshopWorkflowsEnabled: vi.fn(() => workshopEnabled),
+  useWorkshopAppsEnabled: vi.fn(() => workshopEnabled),
+  useWorkshopFlag: vi.fn(() => workshopEnabled),
   useWorkshopEnabledSettled: vi.fn(() => workshopEnabledSettled),
   useWorkshopAuthFlag: vi.fn(() => workshopAuthFlag),
   useWorkshopTurnstileMode: vi.fn(() => workshopTurnstileMode),
@@ -23,6 +26,8 @@ const posthog: typeof realPosthog = {
   captureMcpConnectionTabClick: vi.fn(),
   captureMcpClientTabClick: vi.fn(),
   captureRouterRoadmapCardExpanded: vi.fn(),
+  captureAgentFaqExpanded: vi.fn(),
+  captureAgentUsecaseVideoPlayed: vi.fn(),
   captureAuthRefreshSucceeded: vi.fn(),
   captureSignupRollbackFailure: vi.fn(),
   captureAuthRefreshFailed: vi.fn(),
@@ -33,6 +38,9 @@ const posthog: typeof realPosthog = {
 
 const {
   useWorkshopEnabled,
+  useWorkshopWorkflowsEnabled,
+  useWorkshopAppsEnabled,
+  useWorkshopFlag,
   useWorkshopEnabledSettled,
   useWorkshopAuthFlag,
   useWorkshopTurnstileMode,
@@ -46,6 +54,8 @@ const {
   captureMcpConnectionTabClick,
   captureMcpClientTabClick,
   captureRouterRoadmapCardExpanded,
+  captureAgentFaqExpanded,
+  captureAgentUsecaseVideoPlayed,
   captureAuthRefreshSucceeded,
   captureSignupRollbackFailure,
   captureAuthRefreshFailed,
@@ -56,6 +66,9 @@ const {
 
 export {
   useWorkshopEnabled,
+  useWorkshopWorkflowsEnabled,
+  useWorkshopAppsEnabled,
+  useWorkshopFlag,
   useWorkshopEnabledSettled,
   useWorkshopAuthFlag,
   useWorkshopTurnstileMode,
@@ -69,6 +82,8 @@ export {
   captureMcpConnectionTabClick,
   captureMcpClientTabClick,
   captureRouterRoadmapCardExpanded,
+  captureAgentFaqExpanded,
+  captureAgentUsecaseVideoPlayed,
   captureAuthRefreshSucceeded,
   captureSignupRollbackFailure,
   captureAuthRefreshFailed,

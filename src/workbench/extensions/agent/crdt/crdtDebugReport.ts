@@ -203,6 +203,7 @@ async function attempt<T>(label: string, load: () => Promise<T>) {
     return { label, ok: true as const, value }
   } catch (error) {
     reportError(error, {
+      surface: 'agent',
       errorType: 'agent_crdt_debug_report_source_failed',
       tags: { source: label },
       level: 'warning'
