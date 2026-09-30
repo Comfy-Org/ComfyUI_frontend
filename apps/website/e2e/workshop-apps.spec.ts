@@ -324,5 +324,27 @@ test('makes a Cinematic Studio grade palette from an uploaded image', async ({
     'Your palette'
   )
   await page.getByRole('button', { name: 'Edit palette' }).click()
-  await expect(page.getByLabel(/^Color 1: #/)).toBeVisible()
+  await page.getByLabel(/^Color 1: #/).click()
+  const hex = page.getByRole('textbox', { name: 'Hex color' })
+  await hex.fill('#3b1b6e')
+  await hex.press('Enter')
+  await expect(page.getByLabel('Color 1: #3b1b6e')).toBeVisible()
+  await expect(page.getByRole('button', { name: /^Grade/ })).toContainText(
+    'Your palette'
+  )
+})
+
+test('offers the starting frame beside the Cinematic Studio scene in video mode', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/hub/apps/cinematic-studio/')
+
+  await page.getByRole('button', { name: 'Video', exact: true }).click()
+
+  await expect(
+    page.getByRole('button', { name: 'Add a starting frame' })
+  ).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'References' })).toHaveCount(0)
 })
