@@ -411,6 +411,19 @@ export const useWorkflowService = () => {
     return workflowStore.activeWorkflow
   }
 
+  // A superseded open leaves the workflow as it found it. A saved file drops
+  // what it fetched, including a draft's modified mark, so a later save cannot
+  // write an empty graph; a temporary one has no remote copy to refetch, so it
+  // keeps its content, as closing it does.
+  function discardSupersededLoad(
+    workflow: ComfyWorkflow,
+    wasModified: boolean
+  ): void {
+    if (workflow.isTemporary) return
+    workflow.unload()
+    workflow.isModified = wasModified
+  }
+
   const openWorkflow = (
     workflow: ComfyWorkflow,
     options: {
@@ -440,11 +453,12 @@ export const useWorkflowService = () => {
           return false
         }
         const loadFromRemote = !workflow.isLoaded
+        const wasModified = workflow.isModified
         if (loadFromRemote) {
           await workflow.load()
         }
         if (options.isCurrent?.() === false) {
-          if (loadFromRemote) workflow.unload()
+          if (loadFromRemote) discardSupersededLoad(workflow, wasModified)
           useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
           return false
         }
