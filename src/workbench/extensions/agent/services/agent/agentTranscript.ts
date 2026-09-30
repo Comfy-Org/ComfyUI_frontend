@@ -99,12 +99,8 @@ function parseUserAttachments(
 ): UserAttachment[] | undefined {
   const attachments = Array.isArray(content?.attachments)
     ? parseAttachments(content.attachments)
-    : []
-  const normalized =
-    attachments.length > 0
-      ? attachments
-      : parseAttachments(content?.attachment_refs)
-  return normalized.length > 0 ? normalized : undefined
+    : parseAttachments(content?.attachment_refs)
+  return attachments.length > 0 ? attachments : undefined
 }
 
 /**

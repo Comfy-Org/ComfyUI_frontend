@@ -57,11 +57,6 @@ const references = [
 
 for (const scenario of [
   {
-    name: 'references when filenames are present but empty',
-    assets: [firstImage],
-    historyContent: { attachments: [], attachment_refs: [references[0]] }
-  },
-  {
     name: 'one image from filenames',
     assets: [firstImage],
     historyContent: { attachments: [firstImage.filename] }
