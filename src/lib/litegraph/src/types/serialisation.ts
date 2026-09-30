@@ -112,6 +112,16 @@ export interface ISerialisedNode {
    */
   widgets_values?: TWidgetValue[]
   widgets_values_named?: Record<string, TWidgetValue>
+  /**
+   * Lossless widget identity in serialization order, emitted when a node has
+   * duplicate serializable widget names. Unlike `widgets_values_named`, this
+   * representation distinguishes those widget instances.
+   */
+  widgets_values_ordered?: Array<{
+    name: string
+    occurrence: number
+    value: TWidgetValue
+  }>
   extensions?: ExtensionPayload
 }
 

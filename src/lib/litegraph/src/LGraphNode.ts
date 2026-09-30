@@ -188,6 +188,8 @@ function legacyValue<T>(value: T): T | undefined {
 function serialiseWidgetValues(widgets: IBaseWidget[]) {
   const positional: TWidgetValue[] = []
   const named: Record<string, TWidgetValue> = {}
+  const ordered: NonNullable<ISerialisedNode['widgets_values_ordered']> = []
+  const occurrences = new Map<string, number>()
   for (const widget of widgets) {
     if (widget.serialize === false) continue
     const value = widget.value
@@ -197,12 +199,24 @@ function serialiseWidgetValues(widgets: IBaseWidget[]) {
         : (value ?? null)
     positional.push(serialisedValue)
     named[widget.name] = serialisedValue
+    const occurrence = occurrences.get(widget.name) ?? 0
+    ordered.push({ name: widget.name, occurrence, value: serialisedValue })
+    occurrences.set(widget.name, occurrence + 1)
   }
-  return { widgets_values: positional, widgets_values_named: named }
+  return {
+    widgets_values: positional,
+    widgets_values_named: named,
+    ...(ordered.some(({ occurrence }) => occurrence > 0)
+      ? { widgets_values_ordered: ordered }
+      : {})
+  }
 }
 
 export function createWidgetRestorationState(
-  info: Pick<ISerialisedNode, 'widgets_values' | 'widgets_values_named'>,
+  info: Pick<
+    ISerialisedNode,
+    'widgets_values' | 'widgets_values_named' | 'widgets_values_ordered'
+  >,
   fallbackNames?: readonly string[]
 ) {
   const positional = Array.from(info.widgets_values ?? [])
@@ -219,6 +233,10 @@ export function createWidgetRestorationState(
   return {
     positional,
     named: named ? { ...named } : undefined,
+    ordered: info.widgets_values_ordered?.map((entry) => ({
+      ...entry,
+      value: structuredClone(entry.value)
+    })),
     restoreNamed: Boolean(
       named && (LiteGraph.namedValuesRestore || fallbackNames)
     )
@@ -1227,13 +1245,17 @@ export class LGraphNode
         }
 
         let positionalIndex = 0
+        const occurrences = new Map<string, number>()
         for (const widget of this.widgets) {
           if (widget.serialize === false) continue
+          const occurrence = occurrences.get(widget.name) ?? 0
+          occurrences.set(widget.name, occurrence + 1)
           const restored = useWidgetValueStore().getRestoredWidgetValue(
             graphId,
             this.id,
             widget.name,
-            positionalIndex++
+            positionalIndex++,
+            occurrence
           )
           if (restored) widget.value = restored.value
         }
@@ -2314,11 +2336,18 @@ export class LGraphNode
     const positionalIndex =
       this.widgets.filter((candidate) => candidate.serialize !== false).length -
       1
+    const occurrence = this.widgets
+      .slice(0, -1)
+      .filter(
+        (candidate) =>
+          candidate.serialize !== false && candidate.name === widget.name
+      ).length
     const restored = useWidgetValueStore().getRestoredWidgetValue(
       this.graph?.rootGraph.id ?? zeroUuid,
       this.id,
       widget.name,
-      positionalIndex
+      positionalIndex,
+      occurrence
     )
     if (restored) widget.value = restored.value
 

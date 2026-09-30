@@ -1,4 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
+import { mint, project } from '@comfyorg/comfy-multi-player'
+import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { addDynamicCombo } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
@@ -8,6 +10,7 @@ import type {
   IBaseWidget,
   TWidgetValue
 } from '@/lib/litegraph/src/types/widgets'
+import { toNodeId } from '@/types/nodeId'
 import { sortWidgetValuesByInputOrder } from '@/workbench/utils/nodeDefOrderingUtil'
 
 describe('LGraphNode widget ordering', () => {
@@ -284,6 +287,49 @@ describe('LGraphNode widget ordering', () => {
         trim: { start_time: 1.5, duration: 4 },
         crop: { x: 10, y: 20, width: 100, height: 50 }
       })
+    })
+
+    it('round trips duplicate widget names losslessly through multiplayer', () => {
+      const first = {
+        trim: { start_time: 1, duration: 2 },
+        extension_only: { untouched: true }
+      }
+      const second = {
+        crop: { x: 1, y: 2, width: 3, height: 4 },
+        unknown_key: ['kept', 2]
+      }
+      node.id = toNodeId(1)
+      node.type = 'DuplicateWidgets'
+      node.addWidget('videoedit', 'same', first, null, {})
+      node.addWidget('videoedit', 'same', second, null, {})
+      node.serialize_widgets = true
+
+      const serialized = node.serialize()
+      expect(serialized.widgets_values_ordered).toStrictEqual([
+        { name: 'same', occurrence: 0, value: first },
+        { name: 'same', occurrence: 1, value: second }
+      ])
+
+      const catalog: WidgetCatalog = {
+        types: { DuplicateWidgets: { widget_order: ['same', 'same'] } }
+      }
+      const workflow: WorkflowJSON = {
+        nodes: [serialized as unknown as WorkflowJSON['nodes'][number]],
+        links: []
+      }
+      const [roundTripped] = project(mint(workflow, catalog), catalog).nodes
+      const restored = new LGraphNode('Restored')
+      restored.addWidget('videoedit', 'same', {}, null, {})
+      restored.addWidget('videoedit', 'same', {}, null, {})
+      restored.configure(roundTripped as unknown as ISerialisedNode)
+
+      expect(restored.widgets!.map((widget) => widget.value)).toStrictEqual([
+        first,
+        second
+      ])
+      expect(roundTripped.widgets_values_ordered).toStrictEqual(
+        serialized.widgets_values_ordered
+      )
     })
 
     it('should support specifying order for legacy workflows', () => {

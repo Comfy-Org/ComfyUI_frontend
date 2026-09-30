@@ -148,7 +148,12 @@ function dynamicComboWidget(
               graphId,
               node.id,
               name,
-              positionalIndex
+              positionalIndex,
+              widgets
+                .slice(0, widgets.indexOf(addedWidget))
+                .filter(
+                  (widget) => widget.serialize !== false && widget.name === name
+                ).length
             )
           : undefined
       if (!restored && removed?.type === addedWidget.type) {
