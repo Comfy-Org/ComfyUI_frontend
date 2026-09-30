@@ -39,6 +39,19 @@ interface ReportContext {
   author: string
 }
 
+interface CliOptions extends ReportContext {
+  /** Empty unless the unit baseline is further back than the direct parent. */
+  unitSpanFrom: string
+  unitSpanTo: string
+}
+
+type MetricLabel = 'Unit' | 'E2E'
+
+const BASELINE_DESCRIPTION: Record<MetricLabel, string> = {
+  Unit: 'last measured merge',
+  E2E: 'last whole merge'
+}
+
 interface SlackBlock {
   type: 'section'
   text: {
@@ -142,25 +155,12 @@ function readE2eSnapshot(): CoverageSnapshot {
   }
 }
 
-/**
- * Unit coverage is not assembled from shards here: the report job runs only
- * once every shard has passed, so there is no partial merge to detect. A run
- * that failed its coverage floor is still reported, and writes its tracefile
- * before asserting, so the only truncation risk is a crash mid-write — which
- * `MIN_SOURCE_FILES` catches when it is gross and tolerates when it is not.
- * The sidecar carries the span, and the workflow writes it only when the
- * baseline is not the direct parent.
- */
-function readUnitSnapshot(): CoverageSnapshot {
+function readUnitSnapshot(spanFrom: string, spanTo: string): CoverageSnapshot {
   return {
     current: parseLcov(join(UNIT_COVERAGE_DIR, 'lcov.info')),
     baseline: parseLcov(join(UNIT_BASELINE_DIR, 'lcov.info')),
-    currentSha: readCoverageMetadata(
-      join(UNIT_COVERAGE_DIR, COVERAGE_METADATA_FILE)
-    )?.sourceSha,
-    baselineSha: readCoverageMetadata(
-      join(UNIT_BASELINE_DIR, COVERAGE_METADATA_FILE)
-    )?.sourceSha
+    currentSha: spanTo || undefined,
+    baselineSha: spanFrom || undefined
   }
 }
 
@@ -224,19 +224,25 @@ function buildMilestoneBlock(label: string, milestone: number): SlackBlock {
   }
 }
 
-function parseArgs(argv: string[]): ReportContext {
-  let prUrl = ''
-  let prNumber = ''
-  let author = ''
-
+function flagsIn(argv: string[]): Map<string, string> {
+  const flags = new Map<string, string>()
   for (const arg of argv) {
-    if (arg.startsWith('--pr-url=')) prUrl = arg.slice('--pr-url='.length)
-    else if (arg.startsWith('--pr-number='))
-      prNumber = arg.slice('--pr-number='.length)
-    else if (arg.startsWith('--author=')) author = arg.slice('--author='.length)
+    const separator = arg.indexOf('=')
+    if (!arg.startsWith('--') || separator === -1) continue
+    flags.set(arg.slice(2, separator), arg.slice(separator + 1))
   }
+  return flags
+}
 
-  return { prUrl, prNumber, author }
+function parseArgs(argv: string[]): CliOptions {
+  const flags = flagsIn(argv)
+  return {
+    prUrl: flags.get('pr-url') ?? '',
+    prNumber: flags.get('pr-number') ?? '',
+    author: flags.get('author') ?? '',
+    unitSpanFrom: flags.get('unit-span-from') ?? '',
+    unitSpanTo: flags.get('unit-span-to') ?? ''
+  }
 }
 
 function formatCoverageRow(
@@ -248,40 +254,23 @@ function formatCoverageRow(
   return `*${label}:*  ${formatPct(baseline.percentage)} → ${formatPct(current.percentage)}  (${formatDelta(delta)})`
 }
 
-interface MetricSource {
-  label: string
-  snapshot: CoverageSnapshot
-  baselineDescription: string
-}
-
 interface ReportedMetric {
-  label: string
+  label: MetricLabel
   current: CoverageData
   baseline: CoverageData
   delta: number
-  baselineDescription: string
   currentSha?: string
   baselineSha?: string
 }
 
-function reportable({
-  label,
-  snapshot,
-  baselineDescription
-}: MetricSource): ReportedMetric | null {
-  const { current, baseline, currentSha, baselineSha } = snapshot
+function reportable(
+  label: MetricLabel,
+  { current, baseline, currentSha, baselineSha }: CoverageSnapshot
+): ReportedMetric | null {
   if (current === null || baseline === null) return null
   const delta = current.percentage - baseline.percentage
   if (Math.abs(delta) < MIN_DELTA) return null
-  return {
-    label,
-    current,
-    baseline,
-    delta,
-    baselineDescription,
-    currentSha,
-    baselineSha
-  }
+  return { label, current, baseline, delta, currentSha, baselineSha }
 }
 
 function direction(deltas: number[]): Direction {
@@ -297,11 +286,11 @@ function direction(deltas: number[]): Direction {
 function spanNote(metric: ReportedMetric): string | null {
   if (metric.baselineSha === undefined) return null
 
-  const head =
+  const through =
     metric.currentSha === undefined
       ? ''
-      : ` to \`${shortSha(metric.currentSha)}\``
-  return `_${metric.label} measured from ${metric.baselineDescription} (\`${shortSha(metric.baselineSha)}\`)${head}; this span may cover several merges._`
+      : ` through \`${shortSha(metric.currentSha)}\``
+  return `_${metric.label} coverage compared against \`${shortSha(metric.baselineSha)}\` (${BASELINE_DESCRIPTION[metric.label]})${through}; this span may cover several merges._`
 }
 
 function progressLine(label: string, data: CoverageData): string {
@@ -322,18 +311,9 @@ export function buildPayload(
   e2e: CoverageSnapshot,
   context: ReportContext
 ): SlackPayload | null {
-  const reported = [
-    reportable({
-      label: 'Unit',
-      snapshot: unit,
-      baselineDescription: 'the last measured merge'
-    }),
-    reportable({
-      label: 'E2E',
-      snapshot: e2e,
-      baselineDescription: 'the last whole merge'
-    })
-  ].filter((metric): metric is ReportedMetric => metric !== null)
+  const reported = [reportable('Unit', unit), reportable('E2E', e2e)].filter(
+    (metric) => metric !== null
+  )
 
   if (reported.length === 0) return null
 
@@ -355,9 +335,7 @@ export function buildPayload(
   if (unit.current) summaryLines.push(progressLine('unit', unit.current))
   if (e2e.current) summaryLines.push(progressLine('e2e', e2e.current))
 
-  const spans = reported
-    .map(spanNote)
-    .filter((note): note is string => note !== null)
+  const spans = reported.map(spanNote).filter((note) => note !== null)
   if (spans.length > 0) summaryLines.push('', ...spans)
 
   const blocks: SlackBlock[] = [
@@ -380,9 +358,13 @@ export function buildPayload(
 }
 
 function main() {
-  const context = parseArgs(process.argv.slice(2))
+  const options = parseArgs(process.argv.slice(2))
 
-  const payload = buildPayload(readUnitSnapshot(), readE2eSnapshot(), context)
+  const payload = buildPayload(
+    readUnitSnapshot(options.unitSpanFrom, options.unitSpanTo),
+    readE2eSnapshot(),
+    options
+  )
   if (payload === null) process.exit(0)
 
   process.stdout.write(JSON.stringify(payload))

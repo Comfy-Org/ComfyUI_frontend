@@ -9,13 +9,9 @@ on:
   merge_group:
   workflow_dispatch:
 
-# main pushes add the commit to the group so they never supersede each other.
-# Sharing a group let each merge cancel the run measuring the one before it,
-# and a cancelled run is never reported — the notifier skips any run that did
-# not reach a verdict, and a run cancelled before the report job uploads no
-# coverage to report. Only main's coverage is reported, so only main needs
-# this. The ref stays in the key — dropping it would let the same commit
-# pushed to a release branch cancel main's run.
+# main pushes get their own group so every merge is measured; other refs
+# still supersede. The ref stays in the key so a release-branch push of the
+# same commit cannot cancel main's run.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && github.sha || '' }}
   cancel-in-progress: true
