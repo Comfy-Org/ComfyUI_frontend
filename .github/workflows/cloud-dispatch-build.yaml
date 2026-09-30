@@ -45,11 +45,12 @@ jobs:
         github.event.action == 'labeled' &&
         contains(fromJSON('["preview","preview-cpu","preview-gpu"]'), github.event.label.name)))
     # Keep skipped label events out of the lane. Do not cancel an accepted run:
-    # each dispatch is fire-and-forget, so cancellation can lose a deployment.
+    # retain the running dispatch and coalesce queued pushes to the newest one.
     concurrency:
-      group: cloud-dispatch-${{ github.run_id }}
+      group: cloud-dispatch-${{ github.event.pull_request.head.ref || github.ref_name }}
       cancel-in-progress: false
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
       pull-requests: read
@@ -90,7 +91,7 @@ jobs:
               # Existing testcloud/staging/release path: no PR context.
               PR_NUMBER=""
               VARIANT=""
-            elif [[ "${BRANCH}" == cloud/* ]]; then
+            elif [[ "${BRANCH}" =~ ^cloud/[0-9] ]]; then
               echo "::error::Unrecognized cloud release branch '${BRANCH}'; expected cloud/x.y"
               exit 1
             else

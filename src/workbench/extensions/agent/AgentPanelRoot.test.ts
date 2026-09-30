@@ -4550,9 +4550,8 @@ describe('AgentPanelRoot workflow binding', () => {
     vi.mocked(useTelemetry())!.trackAgentStarterPromptClicked.mockClear()
     renderWithSelectedTarget()
 
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'List my saved workflows' })
-    )
+    const prompt = i18n.global.t('agent.suggestedPrompts.cloud.1')
+    await userEvent.click(await screen.findByRole('button', { name: prompt }))
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await screen.findByRole('button', { name: 'Stop' })
 
@@ -4563,7 +4562,7 @@ describe('AgentPanelRoot workflow binding', () => {
     ).toEqual([
       [
         {
-          prompt_id: 'list_workflows',
+          prompt_id: 'slot_2',
           prompt_index: 1,
           prompt_count: 5,
           prompt_text_hash: expect.stringMatching(/^[0-9a-f]{8}$/),
@@ -4583,7 +4582,7 @@ describe('AgentPanelRoot workflow binding', () => {
             workflow_id: 'wf-42',
             client_message_id: 'client-message-2',
             input_method: 'suggestion',
-            starter_prompt_id: 'list_workflows',
+            starter_prompt_id: 'slot_2',
             starter_prompt_click_id: 'client-message-1'
           }
         ]
