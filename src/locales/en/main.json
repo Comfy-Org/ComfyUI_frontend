@@ -3331,11 +3331,6 @@
       }
     },
     "billingStatus": {
-      "warning": {
-        "title": "Payment failed",
-        "bodyNoDate": "Your payment failed to process. Update payment to avoid a pause.",
-        "bodyWithAmount": "Your payment of {amount} failed to process. Pay the invoice or update payment to avoid a pause."
-      },
       "paused": {
         "title": "Subscription paused",
         "body": "This workspace's subscription is paused. Update payment to resume.",
