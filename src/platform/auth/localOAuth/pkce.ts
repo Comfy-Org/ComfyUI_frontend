@@ -1,5 +1,5 @@
 export const LOCAL_OAUTH_CLIENT_ID = 'comfyui-local'
-export const LOCAL_OAUTH_CALLBACK_PATH = '/comfy-oauth-callback.html'
+const LOCAL_OAUTH_CALLBACK_PATH = '/comfy-oauth-callback.html'
 export const LOCAL_OAUTH_CHANNEL = 'comfy-local-oauth'
 export const LOCAL_OAUTH_MESSAGE_TYPE = 'comfy-local-oauth-callback'
 
