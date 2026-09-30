@@ -8,28 +8,23 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useExternalLink } from '@/composables/useExternalLink'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useModelStore } from '@/stores/modelStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { resetOnboardingState } from '@/platform/onboarding/onboardingReset'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useLitegraphService } from '@/services/litegraphService'
+import { useCommandStore } from '@/stores/commandStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { fromPartial } from '@total-typescript/shoehorn'
 
-const mockRunMintPortsIntentionalClear = vi.hoisted(() =>
-  vi.fn(<T>(clear: () => T): T => clear())
-)
-vi.mock<unknown>(
-  import('@/workbench/extensions/agent/crdt/mintPortWiring'),
-  () => ({
-    runMintPortsIntentionalClear: mockRunMintPortsIntentionalClear
-  })
-)
+vi.mock(import('@/core/graph/subgraph/promotionUtils'), { spy: true })
 
 vi.mock<unknown>(
   import('@/components/sidebar/tabs/ModelLibrarySidebarTab.vue'),
@@ -52,8 +47,14 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
     copyToClipboard: vi.fn(),
     pasteFromClipboard: vi.fn(),
     selectItems: vi.fn(),
+    select: vi.fn(),
     deleteSelected: vi.fn(),
     selectOnly: false,
+    state: { selectionChanged: false },
+    graph: {
+      add: vi.fn(),
+      convertToSubgraph: vi.fn(() => ({ node: {} }))
+    },
     canvas: {
       dispatchEvent: vi.fn(),
       addEventListener: vi.fn(),
@@ -101,14 +102,11 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 vi.mock(import('firebase/auth'))
 
-vi.mock<unknown>(
-  import('@/platform/workflow/core/services/workflowService'),
-  () => ({
-    useWorkflowService: vi.fn(() => ({}))
-  })
-)
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 vi.mock(import('@/services/dialogService'))
+
+vi.mock(import('@/platform/onboarding/onboardingReset'))
 
 vi.mock(import('@/services/litegraphService'))
 
@@ -133,7 +131,14 @@ vi.mock(import('@/composables/node/startModelNodeDragFromAsset'), () => ({
 }))
 
 const mockChangeTracker = vi.hoisted(() => ({
-  captureCanvasState: vi.fn()
+  captureCanvasState: vi.fn(),
+  undo: vi.fn(),
+  redo: vi.fn()
+}))
+
+const mockUnpackSubgraph = vi.hoisted(() => vi.fn())
+vi.mock<unknown>(import('@/composables/graph/useSubgraphOperations'), () => ({
+  useSubgraphOperations: () => ({ unpackSubgraph: mockUnpackSubgraph })
 }))
 
 let mockWorkflowStore: ReturnType<typeof useWorkflowStore>
@@ -236,7 +241,6 @@ describe('useCoreCommands', () => {
     useSettingStore().settingValues['Comfy.ConfirmClear'] = false
 
     global.confirm = vi.fn().mockReturnValue(true)
-    mockRunMintPortsIntentionalClear.mockClear()
   })
 
   describe('ClearWorkflow command', () => {
@@ -250,7 +254,6 @@ describe('useCoreCommands', () => {
 
       expect(app.clean).toHaveBeenCalled()
       expect(app.rootGraph.clear).toHaveBeenCalled()
-      expect(mockRunMintPortsIntentionalClear).toHaveBeenCalledOnce()
       expect(api.dispatchCustomEvent).toHaveBeenCalledWith('graphCleared')
     })
 
@@ -266,7 +269,6 @@ describe('useCoreCommands', () => {
 
       expect(app.clean).not.toHaveBeenCalled()
       expect(app.rootGraph.clear).not.toHaveBeenCalled()
-      expect(mockRunMintPortsIntentionalClear).not.toHaveBeenCalled()
 
       const subgraph = app.canvas.subgraph
       expect(subgraph.remove).toHaveBeenCalledTimes(2)
@@ -293,6 +295,107 @@ describe('useCoreCommands', () => {
       expect(app.clean).not.toHaveBeenCalled()
       expect(app.rootGraph.clear).not.toHaveBeenCalled()
       expect(api.dispatchCustomEvent).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('Replay Onboarding command', () => {
+    function findCommand() {
+      const command = useCoreCommands().find(
+        (cmd) => cmd.id === 'Comfy.Onboarding.Replay'
+      )
+      if (!command) throw new Error('Missing Comfy.Onboarding.Replay command')
+      return command
+    }
+
+    beforeEach(() => {
+      vi.stubGlobal('location', { assign: vi.fn(), reload: vi.fn() })
+      vi.mocked(useDialogService().confirm).mockResolvedValue(true)
+      vi.mocked(resetOnboardingState).mockResolvedValue({ status: 'ready' })
+      useSettingStore().settingValues['Comfy.DevMode'] = true
+    })
+
+    it('does nothing outside developer mode', async () => {
+      useSettingStore().settingValues['Comfy.DevMode'] = false
+
+      await findCommand().function()
+
+      expect(useDialogService().confirm).not.toHaveBeenCalled()
+      expect(resetOnboardingState).not.toHaveBeenCalled()
+    })
+
+    it('does nothing when confirmation is declined', async () => {
+      vi.mocked(useDialogService().confirm).mockResolvedValue(false)
+
+      await findCommand().function()
+
+      expect(resetOnboardingState).not.toHaveBeenCalled()
+      expect(location.reload).not.toHaveBeenCalled()
+    })
+
+    it('reports reset failures without navigating', async () => {
+      vi.mocked(resetOnboardingState).mockResolvedValue({
+        status: 'failed',
+        cause: 'failed'
+      })
+
+      await findCommand().function()
+
+      expect(useToastStore().add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
+      expect(location.assign).not.toHaveBeenCalled()
+      expect(location.reload).not.toHaveBeenCalled()
+    })
+
+    it('navigates to the cloud root after resetting', async () => {
+      mockDistributionState.isCloud = true
+
+      await findCommand().function()
+
+      expect(location.assign).toHaveBeenCalledWith('/')
+      expect(location.reload).not.toHaveBeenCalled()
+    })
+
+    it('reloads the current page off cloud', async () => {
+      await findCommand().function()
+
+      expect(location.reload).toHaveBeenCalledOnce()
+      expect(location.assign).not.toHaveBeenCalled()
+    })
+
+    it('deduplicates concurrent executions', async () => {
+      let finishReset: (() => void) | undefined
+      vi.mocked(resetOnboardingState).mockReturnValue(
+        new Promise((resolve) => {
+          finishReset = () => resolve({ status: 'ready' })
+        })
+      )
+      const command = findCommand()
+
+      const first = command.function()
+      const second = command.function()
+      await vi.waitFor(() =>
+        expect(resetOnboardingState).toHaveBeenCalledOnce()
+      )
+      finishReset?.()
+      await Promise.all([first, second])
+
+      expect(useDialogService().confirm).toHaveBeenCalledOnce()
+      expect(location.reload).toHaveBeenCalledOnce()
+    })
+
+    it('allows another execution after an earlier one is declined', async () => {
+      vi.mocked(useDialogService().confirm)
+        .mockResolvedValueOnce(false)
+        .mockResolvedValueOnce(true)
+      const command = findCommand()
+
+      await command.function()
+      await command.function()
+
+      expect(useDialogService().confirm).toHaveBeenCalledTimes(2)
+      expect(resetOnboardingState).toHaveBeenCalledOnce()
+      expect(location.reload).toHaveBeenCalledOnce()
     })
   })
 
@@ -350,9 +453,10 @@ describe('useCoreCommands', () => {
       app.canvas.selectedItems = new Set([
         selectedItem
       ]) as typeof app.canvas.selectedItems
-      app.canvas.selectOnly = true
+      useCommandStore().setInteractionMode({ isSelectOnly: () => true })
+      useCommandStore().registerCommands(useCoreCommands())
 
-      await findCommand('Comfy.Canvas.DeleteSelectedItems').function()
+      await useCommandStore().execute('Comfy.Canvas.DeleteSelectedItems')
 
       expect(app.canvas.deleteSelected).not.toHaveBeenCalled()
       expect(app.canvas.setDirty).not.toHaveBeenCalled()
@@ -580,17 +684,13 @@ describe('useCoreCommands', () => {
 
       const commandPromise = findCmd('Comfy.RefreshNodeDefinitions').function()
 
-      expect(
-        vi.mocked(useMissingModelStore().refreshMissingModels)
-      ).not.toHaveBeenCalled()
+      expect(useMissingModelStore().refreshMissingModels).not.toHaveBeenCalled()
       resolveComboRefresh()
       await commandPromise
 
       expect(app.refreshComboInNodes).toHaveBeenCalled()
-      expect(vi.mocked(useModelStore().refresh)).toHaveBeenCalled()
-      expect(
-        vi.mocked(useMissingModelStore().refreshMissingModels)
-      ).toHaveBeenCalledWith({
+      expect(useModelStore().refresh).toHaveBeenCalled()
+      expect(useMissingModelStore().refreshMissingModels).toHaveBeenCalledWith({
         reloadDefs: false
       })
       expect(order.indexOf('missing')).toBeGreaterThan(
@@ -604,9 +704,7 @@ describe('useCoreCommands', () => {
       await expect(
         findCmd('Comfy.RefreshNodeDefinitions').function()
       ).rejects.toThrow('boom')
-      expect(
-        vi.mocked(useMissingModelStore().refreshMissingModels)
-      ).not.toHaveBeenCalled()
+      expect(useMissingModelStore().refreshMissingModels).not.toHaveBeenCalled()
     })
 
     it('Comfy.RefreshNodeDefinitions skips missing model refresh on cloud', async () => {
@@ -615,10 +713,8 @@ describe('useCoreCommands', () => {
       await findCmd('Comfy.RefreshNodeDefinitions').function()
 
       expect(app.refreshComboInNodes).toHaveBeenCalled()
-      expect(vi.mocked(useModelStore().refresh)).toHaveBeenCalled()
-      expect(
-        vi.mocked(useMissingModelStore().refreshMissingModels)
-      ).not.toHaveBeenCalled()
+      expect(useModelStore().refresh).toHaveBeenCalled()
+      expect(useMissingModelStore().refreshMissingModels).not.toHaveBeenCalled()
     })
   })
 

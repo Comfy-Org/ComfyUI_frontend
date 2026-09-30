@@ -103,6 +103,7 @@ class ManageTemplates extends ComfyDialog {
         templates = await res.json()
       } catch (error) {
         reportError(error, {
+          surface: 'graph',
           errorType: 'failure_loading_node_templates',
           tags: {
             failure_kind: 'caught_unexpected',
@@ -323,9 +324,8 @@ class ManageTemplates extends ComfyDialog {
                       this.templates.splice(item.dataset.id * 1, 1)
                       void this.store()
                       // update the rows index, setTimeout ensures that the list is updated
-                      const that = this
-                      setTimeout(function () {
-                        that.element
+                      setTimeout(() => {
+                        this.element
                           .querySelectorAll('.templateManagerRow')
                           // @ts-expect-error fixme ts strict error
                           .forEach((el: HTMLElement, i) => {

@@ -1,5 +1,8 @@
-# Required gate: on relevant PRs and relevant merge candidates, execute every
-# registry pack's frontend JS in both supported renderers.
+# On relevant PRs, execute every registry pack's frontend JS in both supported
+# renderers. Not in the ProtectMain ruleset, so it does not run on merge_group:
+# a check the queue never waits for only competes with the required ones for
+# runners. Restore the merge_group trigger if `ecosystem-matrix` becomes
+# required.
 #
 # The corpus is a mirror of the frontend JS of EVERY registry pack (~5,100
 # packs). Only the executable surface is kept - .js/.mjs plus the text assets
@@ -25,11 +28,9 @@
 name: 'CI: Custom Nodes Ecosystem Matrix'
 
 on:
-  # Required workflows must emit their aggregate check for every candidate.
-  # A paths filter would leave unrelated PRs and merge-queue commits waiting
-  # forever for a check GitHub never creates.
+  # The aggregate check is emitted for every PR. A paths filter here would
+  # leave unrelated PRs waiting forever for a check GitHub never creates.
   pull_request:
-  merge_group:
   # Refreshes the corpus and writes the baseline every relevant PR measures.
   # Actions cache scoping means only a default-branch run can produce an entry
   # that other branches restore.
@@ -48,7 +49,7 @@ permissions:
 
 concurrency:
   group: ecosystem-matrix-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   PYTHON_VERSION: '3.11'
@@ -63,7 +64,7 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
-      should-run: ${{ github.event_name == 'pull_request' && github.event.pull_request.changed_files >= 3000 || steps.changes.outputs.should-run }}
+      should-run: ${{ github.event_name == 'pull_request' && github.event.pull_request.changed_files >= 3000 || steps.changes.outputs.should-run-source }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -595,7 +596,7 @@ jobs:
             true) ;;
             false)
               case "$EVENT_NAME" in
-                pull_request | merge_group) ;;
+                pull_request) ;;
                 *) echo "::error::change detection returned false for $EVENT_NAME"; exit 1 ;;
               esac
               ;;

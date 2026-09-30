@@ -1,48 +1,30 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useBillingRouting } from '@/composables/billing/useBillingRouting'
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useTelemetry } from '@/platform/telemetry'
 import { AuthStoreError } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import TopUpCreditsDialogContentLegacy from './TopUpCreditsDialogContentLegacy.vue'
 
-const mockShowSettings = vi.fn()
 const mockToastAdd = vi.fn()
 
-const mockIsSubscriptionEnabled = vi.fn(() => true)
 const mockShouldUseWorkspaceBilling = vi.hoisted(() => ({ value: false }))
 
 vi.mock(import('@/composables/auth/useAuthActions'))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
-  useBillingRouting: () => ({
-    shouldUseWorkspaceBilling: {
-      get value() {
-        return mockShouldUseWorkspaceBilling.value
-      }
-    }
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingRouting'))
 
-vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useSubscription'),
-  () => ({
-    useSubscription: () => ({
-      isSubscriptionEnabled: mockIsSubscriptionEnabled
-    })
-  })
-)
+vi.mock(import('@/platform/cloud/subscription/composables/useSubscription'))
 
-vi.mock<unknown>(
-  import('@/platform/settings/composables/useSettingsDialog'),
-  () => ({
-    useSettingsDialog: () => ({ show: mockShowSettings })
-  })
-)
+vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 
 vi.mock(import('@/platform/telemetry'))
 
@@ -52,7 +34,7 @@ vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
 }))
 
 vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
 
   () => ({
     useToast: () => ({ add: mockToastAdd })
@@ -116,7 +98,10 @@ async function clickBuyCredits() {
 
 describe('TopUpCreditsDialogContentLegacy', () => {
   beforeEach(() => {
-    mockIsSubscriptionEnabled.mockReturnValue(true)
+    useBillingRouting().shouldUseWorkspaceBilling = computed(
+      () => mockShouldUseWorkspaceBilling.value
+    )
+    vi.mocked(useSubscription().isSubscriptionEnabled).mockReturnValue(true)
     mockShouldUseWorkspaceBilling.value = false
   })
 
@@ -129,8 +114,8 @@ describe('TopUpCreditsDialogContentLegacy', () => {
     await clickBuyCredits()
 
     expect(useAuthActions().purchaseCreditsDirect).toHaveBeenCalledWith(50)
-    expect(vi.mocked(useDialogStore().closeDialog)).toHaveBeenCalled()
-    expect(mockShowSettings).toHaveBeenCalledWith('workspace')
+    expect(useDialogStore().closeDialog).toHaveBeenCalled()
+    expect(useSettingsDialog().show).toHaveBeenCalledWith('workspace')
     expect(mockClearPendingTopup).not.toHaveBeenCalled()
   })
 
@@ -140,11 +125,11 @@ describe('TopUpCreditsDialogContentLegacy', () => {
     await user.click(screen.getByRole('button', { name: 'Close' }))
 
     expect(mockClearPendingTopup).toHaveBeenCalled()
-    expect(vi.mocked(useDialogStore().closeDialog)).toHaveBeenCalled()
+    expect(useDialogStore().closeDialog).toHaveBeenCalled()
   })
 
   it('shows Plan & Credits when no billing rail is active', async () => {
-    mockIsSubscriptionEnabled.mockReturnValue(false)
+    vi.mocked(useSubscription().isSubscriptionEnabled).mockReturnValue(false)
     vi.mocked(useAuthActions().purchaseCreditsDirect).mockResolvedValue(
       undefined
     )
@@ -152,7 +137,7 @@ describe('TopUpCreditsDialogContentLegacy', () => {
     renderDialog()
     await clickBuyCredits()
 
-    expect(mockShowSettings).toHaveBeenCalledWith('workspace')
+    expect(useSettingsDialog().show).toHaveBeenCalledWith('workspace')
   })
 
   it('shows the workspace settings panel when workspace billing is active', async () => {
@@ -164,7 +149,7 @@ describe('TopUpCreditsDialogContentLegacy', () => {
     renderDialog()
     await clickBuyCredits()
 
-    expect(mockShowSettings).toHaveBeenCalledWith('workspace')
+    expect(useSettingsDialog().show).toHaveBeenCalledWith('workspace')
   })
 
   it('tracks the failure and surfaces a toast when the purchase rejects', async () => {
@@ -187,7 +172,7 @@ describe('TopUpCreditsDialogContentLegacy', () => {
         summary: 'Purchase Failed'
       })
     )
-    expect(mockShowSettings).not.toHaveBeenCalled()
+    expect(useSettingsDialog().show).not.toHaveBeenCalled()
   })
 
   it('categorizes an auth-store rejection with an HTTP status via the shared classifier', async () => {
@@ -226,6 +211,47 @@ describe('TopUpCreditsDialogContentLegacy', () => {
       failure_category: 'network'
     })
   })
+
+  it.for([
+    {
+      name: 'a checkout that opens stays pending',
+      purchase: () => Promise.resolve(),
+      expectedEvents: [
+        [{ operation: 'topup', stage: 'started', outcome: 'pending' }]
+      ]
+    },
+    {
+      name: 'a rejected purchase closes as failed',
+      purchase: () => Promise.reject(new Error('declined')),
+      expectedEvents: [
+        [{ operation: 'topup', stage: 'started', outcome: 'pending' }],
+        [
+          {
+            operation: 'topup',
+            stage: 'failed',
+            outcome: 'failure',
+            failure_category: 'unknown'
+          }
+        ]
+      ]
+    }
+  ])(
+    'opens every purchase attempt with one started event: $name',
+    async ({ purchase, expectedEvents }) => {
+      vi.mocked(useAuthActions().purchaseCreditsDirect).mockImplementation(
+        purchase
+      )
+
+      renderDialog()
+      await clickBuyCredits()
+
+      const telemetry = useTelemetry()
+      assert.exists(telemetry)
+      expect(vi.mocked(telemetry.trackBillingEvent).mock.calls).toEqual(
+        expectedEvents
+      )
+    }
+  )
 
   it('uses the same bounded category when the rejection is not an Error', async () => {
     vi.mocked(useAuthActions().purchaseCreditsDirect).mockRejectedValue('boom')

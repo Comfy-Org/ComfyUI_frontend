@@ -29,7 +29,9 @@ const defaultFlags: FeatureFlags = {
   hostedBillingWebEnabled: false,
   showSignInButton: undefined,
   unifiedCloudAuthEnabled: false,
+  unifiedWebSessionEnabled: false,
   billingControlEnabled: false,
+  memberCreditLimitsEnabled: false,
   legacyBillingMigrationEnabled: false,
   embeddedCheckoutEnabled: false,
   billingSdkTopupEnabled: false,
@@ -42,7 +44,8 @@ const defaultFlags: FeatureFlags = {
   signupTurnstileMode: 'off',
   supportsModelTypeTags: false,
   onboardingTourEnabled: false,
-  assetsEnabled: false
+  assetsEnabled: false,
+  agentInAppExperienceEnabled: false
 }
 
 const featureFlags: ReturnType<typeof realUseFeatureFlags> = {

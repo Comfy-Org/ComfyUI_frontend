@@ -16,6 +16,15 @@ import { toError } from '@/utils/errorUtil'
  */
 export const REPORTED_ERROR_PREFIX = '[Reported error]: '
 
+export type Surface =
+  | 'agent'
+  | 'billing'
+  | 'graph'
+  | 'auth'
+  | 'assets'
+  | 'workspace'
+  | 'platform'
+
 export interface ReportErrorOptions {
   /**
    * Stable machine-readable slug for this failure mode. Lands as the
@@ -23,6 +32,8 @@ export interface ReportErrorOptions {
    * `error_type` RUM context field.
    */
   errorType: string
+  /** Product surface responsible for acting on this failure. */
+  surface: Surface
   tags?: Record<string, string | number | boolean | undefined>
   context?: Record<string, unknown>
   level?: 'warning' | 'error'
@@ -61,23 +72,37 @@ const MAX_PENDING_REPORTS = 25
 
 const isDatadogRumLive = () => datadogRum.getInitConfiguration() !== undefined
 
+const definedEntriesOf = <V>(
+  values: Record<string, V> | undefined
+): Record<string, Exclude<V, undefined>> =>
+  Object.fromEntries(
+    Object.entries(values ?? {}).filter(
+      (entry): entry is [string, Exclude<V, undefined>] =>
+        entry[1] !== undefined
+    )
+  )
+
 /** Written from `options`, so a caller tag of the same name never lands. */
-const RESERVED_TAG_KEYS = new Set(['error_type', 'level'])
+const RESERVED_TAG_KEYS = new Set(['error_type', 'level', 'surface'])
 
 let dispatching = false
 
-const definedEntriesOf = (
+const definedTagsOf = (
   tags: ReportErrorOptions['tags']
 ): Record<string, string | number | boolean> =>
   Object.fromEntries(
     Object.entries(tags ?? {}).filter(
-      ([key, value]) =>
-        !RESERVED_TAG_KEYS.has(key) &&
-        (typeof value === 'string' ||
-          typeof value === 'number' ||
-          typeof value === 'boolean')
+      (entry): entry is [string, string | number | boolean] => {
+        const [key, value] = entry
+        return (
+          !RESERVED_TAG_KEYS.has(key) &&
+          (typeof value === 'string' ||
+            typeof value === 'number' ||
+            typeof value === 'boolean')
+        )
+      }
     )
-  ) as Record<string, string | number | boolean>
+  )
 
 type DesktopCaptureException = (
   error: { message: string; stack?: string },
@@ -102,6 +127,7 @@ function desktopExceptionSink(): DesktopCaptureException | undefined {
 function dispatchToDesktop(
   error: Error,
   errorType: string,
+  surface: Surface,
   tags: Record<string, string | number | boolean>,
   level?: ReportErrorOptions['level']
 ): boolean {
@@ -114,7 +140,12 @@ function dispatchToDesktop(
         message: error.message,
         ...(error.stack ? { stack: error.stack } : {})
       },
-      { ...tags, error_type: errorType, ...(level ? { level } : {}) }
+      {
+        ...tags,
+        error_type: errorType,
+        surface,
+        ...(level ? { level } : {})
+      }
     )
     return true
   } catch (reporterFailure) {
@@ -132,8 +163,9 @@ function dispatch(
   options: ReportErrorOptions,
   alreadyDelivered: DeliveryState = NO_DELIVERY
 ): DeliveryState {
-  const { errorType, context, level } = options
-  const tags = definedEntriesOf(options.tags)
+  const { errorType, surface, level } = options
+  const context = definedEntriesOf(options.context)
+  const tags = definedTagsOf(options.tags)
   const sentryLive = !alreadyDelivered.sentry && isSentryEnabled()
   const datadogLive = !alreadyDelivered.datadog && isDatadogRumLive()
   let sentryDelivered = alreadyDelivered.sentry
@@ -145,7 +177,7 @@ function dispatch(
     if (sentryLive) {
       try {
         captureException(error, {
-          tags: { ...tags, error_type: errorType },
+          tags: { ...tags, error_type: errorType, surface },
           extra: context,
           level
         })
@@ -169,6 +201,7 @@ function dispatch(
           ...context,
           ...tags,
           error_type: errorType,
+          surface,
           ...(level ? { level } : {})
         })
         datadogDelivered = true
@@ -184,7 +217,7 @@ function dispatch(
     dispatching = false
   }
   if (!desktopDelivered) {
-    desktopDelivered = dispatchToDesktop(error, errorType, tags, level)
+    desktopDelivered = dispatchToDesktop(error, errorType, surface, tags, level)
   }
 
   return {

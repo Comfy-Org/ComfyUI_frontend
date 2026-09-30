@@ -54,6 +54,9 @@ const REACTIVATION_CONFIRMATION_REQUIRED_SERVER_CODE =
 const NOT_SCHEDULED_FOR_CANCELLATION_SERVER_CODE =
   'NOT_SCHEDULED_FOR_CANCELLATION'
 const ALREADY_CANCELED_SERVER_CODE = 'ALREADY_CANCELED'
+const SUBSCRIPTION_QUOTE_STALE_SERVER_CODE = 'SUBSCRIPTION_QUOTE_STALE'
+const SUBSCRIPTION_CHANGE_IN_PROGRESS_SERVER_CODE =
+  'SUBSCRIPTION_CHANGE_IN_PROGRESS'
 
 export type SubscribeInput = z.infer<typeof zSubscribeRequest>
 
@@ -73,6 +76,8 @@ export type SubscriptionCommandCode =
   | 'NO_ACTIVE_SUBSCRIPTION'
   /** The server asked for a hosted payment step but offered no page for it. */
   | 'MISSING_PAYMENT_METHOD_URL'
+  /** The quote no longer matches what the server would charge; re-preview. */
+  | 'QUOTE_STALE'
 
 export type SubscriptionCommandFailure =
   | BillingFailure
@@ -218,14 +223,11 @@ function coded(code: SubscriptionCommandCode): SubscriptionCommandFailure {
 }
 
 /**
- * A server code the caller's request already satisfies is a success, but
- * only from a 4xx: a 5xx echoing the code is an upstream failure that
- * happens to carry it, and the requested state cannot be assumed to hold.
+ * A server code is trusted as state only from a 4xx: a 5xx echoing the code
+ * is an upstream failure that happens to carry it, and the state it names
+ * cannot be assumed to hold.
  */
-function alreadyInRequestedState(
-  failure: BillingFailure,
-  serverCode: string
-): boolean {
+function refusedWith(failure: BillingFailure, serverCode: string): boolean {
   return (
     matchesServerCode(failure, serverCode) &&
     failure.httpStatus !== undefined &&
@@ -234,16 +236,27 @@ function alreadyInRequestedState(
   )
 }
 
+/**
+ * The server's refusal because another subscription operation is still open
+ * is the same answer the lifecycle gives when it sees that operation first.
+ */
+function refusedWhilePending(failure: BillingFailure): BillingFailure {
+  return refusedWith(failure, SUBSCRIPTION_CHANGE_IN_PROGRESS_SERVER_CODE)
+    ? { ...failure, code: 'OPERATION_ALREADY_PENDING' }
+    : failure
+}
+
 function mapServerCode(
   failure: BillingFailure,
   alreadyHeldCode: string
 ): IssueOutcome {
-  if (alreadyInRequestedState(failure, alreadyHeldCode)) {
+  // A server code the caller's request already satisfies is a success.
+  if (refusedWith(failure, alreadyHeldCode)) {
     return { status: 'already_held' }
   }
   return matchesServerCode(failure, NO_ACTIVE_SUBSCRIPTION_SERVER_CODE)
     ? coded('NO_ACTIVE_SUBSCRIPTION')
-    : failure
+    : refusedWhilePending(failure)
 }
 
 function dropEmpty(value: string | undefined): string | undefined {
@@ -352,12 +365,17 @@ export function createBillingCommands(
       key
     )
     if (response.status === 'error') {
-      return matchesServerCode(
-        response,
-        REACTIVATION_CONFIRMATION_REQUIRED_SERVER_CODE
-      )
-        ? coded('REACTIVATION_CONFIRMATION_REQUIRED')
-        : response
+      if (
+        matchesServerCode(
+          response,
+          REACTIVATION_CONFIRMATION_REQUIRED_SERVER_CODE
+        )
+      ) {
+        return coded('REACTIVATION_CONFIRMATION_REQUIRED')
+      }
+      return refusedWith(response, SUBSCRIPTION_QUOTE_STALE_SERVER_CODE)
+        ? coded('QUOTE_STALE')
+        : refusedWhilePending(response)
     }
     const { billing_op_id, status, payment_method_url } = response.value.data
     if (status !== 'needs_payment_method') {

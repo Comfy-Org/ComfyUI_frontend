@@ -7,7 +7,7 @@ import { waitForIsland } from './fixtures/islands'
 
 const PATH = '/affiliates'
 const APPLY_URL = 'https://forms.gle/RS8L2ttcuGap4Q1v6'
-const TERMS_PATH = '/affiliates/terms'
+const TERMS_PATH = '/affiliates/terms/'
 const FAQ_COUNT = affiliateFaqs.length
 const FIRST_FAQ = affiliateFaqs[0]
 const HERO_HEADING_TEXT = `${t('affiliate.hero.headingHighlight', 'en')} ${t('affiliate.hero.headingMuted', 'en')}`
@@ -71,10 +71,8 @@ test.describe('Affiliates landing — desktop interactions', () => {
           'script[type="application/ld+json"]'
         )
       )
-      const match = scripts.find((s) =>
-        (s.textContent ?? '').includes('FAQPage')
-      )
-      return match?.textContent ?? null
+      const match = scripts.find((s) => s.text.includes('FAQPage'))
+      return match?.text ?? null
     })
     expect(faqJsonLd, 'FAQ JSON-LD script').not.toBeNull()
     const graph = JSON.parse(faqJsonLd!)['@graph'] as {

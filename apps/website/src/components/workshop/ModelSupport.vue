@@ -17,7 +17,7 @@ const {
 <template>
   <span
     v-if="reason && variant === 'pill'"
-    class="inline-flex w-fit shrink-0 items-center rounded-full border border-primary-comfy-orange/50 bg-primary-comfy-ink px-3 py-1 text-xs font-medium text-primary-comfy-orange"
+    class="inline-flex w-fit shrink-0 items-center rounded-full border border-primary-comfy-orange/50 bg-primary-comfy-ink/70 px-3 py-1 text-xs font-medium text-primary-comfy-orange backdrop-blur-md"
     data-testid="model-incomplete-badge"
   >
     {{ t('workshop.model.incomplete', locale) }}

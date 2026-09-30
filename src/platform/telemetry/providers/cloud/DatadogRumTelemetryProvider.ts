@@ -149,7 +149,7 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
         ...(executionStageStartedAt !== undefined && {
           execution_duration_ms: workflowEndedAt - executionStageStartedAt
         }),
-        ...(workflowContext ?? {}),
+        ...workflowContext,
         ...(originViewId && { origin_view_id: originViewId })
       }
     })

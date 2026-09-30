@@ -70,7 +70,7 @@ describe('affiliate terms i18n', () => {
     // Guards against re-introducing /zh-CN/affiliates/terms, which would
     // serve an unreviewed translation of legal-reviewed copy. See the
     // comment on LOCALE_INVARIANT_ROUTE_KEYS in src/config/routes.ts.
-    expect(getRoutes('en').affiliateTerms).toBe('/affiliates/terms')
-    expect(getRoutes('zh-CN').affiliateTerms).toBe('/affiliates/terms')
+    expect(getRoutes('en').affiliateTerms).toBe('/affiliates/terms/')
+    expect(getRoutes('zh-CN').affiliateTerms).toBe('/affiliates/terms/')
   })
 })
