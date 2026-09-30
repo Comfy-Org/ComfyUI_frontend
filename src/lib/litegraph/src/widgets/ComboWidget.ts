@@ -8,11 +8,11 @@ import type {
   IComboWidget,
   IStringComboWidget
 } from '@/lib/litegraph/src/types/widgets'
+import { extensionValue } from '@/lib/litegraph/src/utils/extensionValue'
 import { warnDeprecated } from '@/lib/litegraph/src/utils/feedback'
 import { findComboValueIndex } from '@/lib/litegraph/src/utils/widget'
 
 import { BaseSteppedWidget } from './BaseSteppedWidget'
-import { extensionValue } from './BaseWidget'
 import type { WidgetEventOptions } from './BaseWidget'
 
 /**
