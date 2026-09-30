@@ -9257,11 +9257,6 @@ Enterprise`
     'zh-CN': '企业版的限制由合同约定。'
   },
   'pricing.comfyApi.learnMore': { en: 'Learn More', 'zh-CN': '了解更多' },
-  'pricing.comfyApi.landingHeading': { en: 'Pricing', 'zh-CN': '定价' },
-  'pricing.comfyApi.landingSubtitle': {
-    en: 'Only pay for what you use.',
-    'zh-CN': '只为你用到的部分付费。'
-  },
   'pricing.minimaxLicense.heading': {
     en: 'MiniMax license pricing',
     'zh-CN': 'MiniMax 许可定价'

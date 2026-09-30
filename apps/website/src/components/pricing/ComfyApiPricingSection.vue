@@ -8,19 +8,10 @@ import PlatformPricingSection from '../../templates/platform/PricingSection.vue'
 import SectionHeader from '../common/SectionHeader.vue'
 import ComfyApiPlanLimitsSection from './ComfyApiPlanLimitsSection.vue'
 
-const {
-  locale = 'en',
-  showLearnMoreCta = false,
-  heading,
-  subtitle
-} = defineProps<{
+const { locale = 'en', showLearnMoreCta = false } = defineProps<{
   locale?: Locale
   /** Link to the dedicated Comfy API page — omit on that page itself. */
   showLearnMoreCta?: boolean
-  /** Override the default "Comfy API pricing" heading, e.g. for a page that already sets the product context. */
-  heading?: string
-  /** Override the default subtitle alongside a custom `heading`. */
-  subtitle?: string
 }>()
 
 const learnMoreHref = computed(() => getRoutes(locale).platformComfyApi)
@@ -32,10 +23,10 @@ const learnMoreHref = computed(() => getRoutes(locale).platformComfyApi)
     class="mx-auto max-w-9xl scroll-mt-24 px-6 py-10 lg:scroll-mt-36 lg:py-14"
   >
     <SectionHeader max-width="xl" heading-size="subsection">
-      {{ heading ?? t('pricing.comfyApi.heading', locale) }}
+      {{ t('pricing.comfyApi.heading', locale) }}
       <template #subtitle>
         <p class="mt-4 text-sm text-smoke-700">
-          {{ subtitle ?? t('pricing.comfyApi.subtitle', locale) }}
+          {{ t('pricing.comfyApi.subtitle', locale) }}
         </p>
         <p v-if="showLearnMoreCta" class="mt-4 text-sm">
           <a

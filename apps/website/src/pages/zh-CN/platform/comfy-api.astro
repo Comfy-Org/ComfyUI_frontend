@@ -18,17 +18,9 @@ import { t } from '../../../i18n/translations'
   <ServerlessHero locale="zh-CN" client:load />
   <ServerlessHowItWorksSection locale="zh-CN" client:visible />
   <ServerlessDeploySection locale="zh-CN" client:visible />
-  <ServerlessCustomerProofSection
-    locale="zh-CN"
-    showCreativeApps
-    showCustomerProof
-  />
   <ServerlessScaleSection locale="zh-CN" client:visible />
-  <ComfyApiPricingSection
-    locale="zh-CN"
-    heading={t('pricing.comfyApi.landingHeading', 'zh-CN')}
-    subtitle={t('pricing.comfyApi.landingSubtitle', 'zh-CN')}
-  />
+  <ServerlessCustomerProofSection locale="zh-CN" showCustomerProof />
+  <ComfyApiPricingSection locale="zh-CN" />
   <ClosingCtaSection
     locale="zh-CN"
     heading-after-badge={t('platform.closing.headingAfterBadge', 'zh-CN')}
