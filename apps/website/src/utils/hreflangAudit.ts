@@ -9,7 +9,7 @@ import type { Alternate } from './hreflangRoutes'
 
 import { isExcludedFromSitemap } from '../config/indexing'
 import { DEFAULT_LOCALE, LOCALE_CODES, LOCALES } from '../config/locales'
-import { redirects } from '../config/redirects'
+import { astroRedirects } from '../config/redirects'
 import { supportsLocaleRoute } from '../config/routes'
 import { unprefixed } from './hreflangRoutes'
 
@@ -99,7 +99,7 @@ function isClustered(
     alternates.length > 0 ||
     (clusterEligibleLocales(path, origin).length > 1 &&
       !isExcludedFromSitemap(`${origin}${route}`) &&
-      !Object.hasOwn(redirects, route.replace(/\/$/, '')))
+      !Object.hasOwn(astroRedirects, route.replace(/\/$/, '')))
   )
 }
 

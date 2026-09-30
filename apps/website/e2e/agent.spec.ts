@@ -5,8 +5,8 @@ import { tAgent } from '../src/components/agent/agentTranslations'
 import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
-const PATH_EN = '/agent'
-const PATH_ZH = '/zh-CN/agent'
+const PATH_EN = '/agent/'
+const PATH_ZH = '/zh-CN/agent/'
 const CANONICAL: Record<'en' | 'zh-CN', string> = {
   en: 'https://comfy.org/agent/',
   'zh-CN': 'https://comfy.org/zh-CN/agent/'
@@ -79,7 +79,7 @@ async function assertLandingPage(
     page.getByRole('link', {
       name: tAgent('agentPage.faq.6.linkLabel', locale)
     })
-  ).toHaveAttribute('href', locale === 'en' ? '/pricing' : '/zh-CN/pricing')
+  ).toHaveAttribute('href', locale === 'en' ? '/pricing/' : '/zh-CN/pricing/')
 }
 
 test.describe('Agent landing — desktop @smoke', () => {

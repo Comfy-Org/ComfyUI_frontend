@@ -7,6 +7,7 @@ import { provideStudioSwitchGuard } from '../../../composables/useStudioSwitchGu
 import type { AppWorkshopModel } from '../../../config/models-catalogue'
 import type { WorkshopAppId } from '../../../lib/workshop/apps'
 import { workshopAppHref } from '../../../lib/workshop/apps'
+import { getRoutes } from '../../../config/routes'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
@@ -36,6 +37,8 @@ const {
   initialApp?: WorkshopAppId
   locale?: Locale
 }>()
+
+const workshopHref = getRoutes(locale).workshop
 
 const LAYOUTS = [
   { id: 'e', label: 'cinematic.ux.composer' },
@@ -105,7 +108,7 @@ function showApp(id: WorkshopAppId) {
   const name = appOptions.value.find((option) => option.id === id)?.label
   if (name) document.title = `${name} - Comfy`
   const url = new URL(window.location.href)
-  url.pathname = `${workshopAppHref(id, locale)}/`
+  url.pathname = workshopAppHref(id, locale)
   url.searchParams.delete('app')
   window.history.replaceState(window.history.state, '', url)
 }
@@ -185,7 +188,7 @@ function pickApp(id: string) {
           {{ tc('cinematic.unavailable.title', locale) }}
         </p>
         <a
-          href="/models/"
+          :href="workshopHref"
           class="text-sm text-primary-comfy-yellow underline underline-offset-4"
         >
           {{ tc('cinematic.unavailable.link', locale) }}
