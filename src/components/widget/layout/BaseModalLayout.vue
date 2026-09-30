@@ -74,7 +74,7 @@
           <slot name="contentFilter" />
           <h2
             v-if="!hasLeftPanel"
-            class="text-xxl m-0 px-6 pt-2 pb-6 capitalize select-none"
+            class="m-0 px-6 pt-2 pb-6 text-2xl capitalize select-none"
           >
             {{ contentTitle }}
           </h2>
@@ -140,7 +140,7 @@ import { computed, inject, ref, useSlots, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import type { ButtonVariants } from '@/components/ui/button/button.variants'
+import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 

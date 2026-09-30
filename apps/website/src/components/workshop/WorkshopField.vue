@@ -88,10 +88,9 @@ function onMedia(event: Event) {
   const input = event.target as HTMLInputElement
   const files = [...(input.files ?? [])]
   if (field.maxItems !== undefined && files.length > field.maxItems) {
-    error.value = t('workshop.model.maxFiles', locale).replace(
-      '{count}',
-      String(field.maxItems)
-    )
+    error.value = t('workshop.model.maxFiles', locale, {
+      count: field.maxItems
+    })
     input.setCustomValidity(error.value)
     // Clear the picker too. Leaving it listing files the form has discarded
     // is what made this look like nothing happened, and keeping a previously
@@ -145,7 +144,7 @@ const acceptByType = {
       :maxlength="field.maxLength"
       :aria-describedby="describedBy"
       rows="5"
-      class="focus:border-primary-comfy-yellow min-h-32 resize-y rounded-xl border border-primary-comfy-canvas/15 bg-primary-comfy-canvas/5 px-4 py-3 font-mono text-sm text-primary-comfy-canvas outline-none"
+      class="min-h-32 resize-y rounded-xl border border-primary-comfy-canvas/15 bg-primary-comfy-canvas/5 px-4 py-3 font-mono text-sm text-primary-comfy-canvas outline-none focus:border-primary-comfy-yellow"
       @input="onText"
     />
     <input
@@ -158,7 +157,7 @@ const acceptByType = {
       :maxlength="field.maxLength"
       :list="field.suggestions ? `${field.name}-suggestions` : undefined"
       :aria-describedby="describedBy"
-      class="focus:border-primary-comfy-yellow h-11 rounded-xl border border-primary-comfy-canvas/15 bg-primary-comfy-canvas/5 px-4 text-sm text-primary-comfy-canvas outline-none"
+      class="h-11 rounded-xl border border-primary-comfy-canvas/15 bg-primary-comfy-canvas/5 px-4 text-sm text-primary-comfy-canvas outline-none focus:border-primary-comfy-yellow"
       @input="onText"
     />
     <select
@@ -167,7 +166,7 @@ const acceptByType = {
       :value="values[field.name] ?? field.defaultValue"
       :required="field.required"
       :aria-describedby="describedBy"
-      class="focus:border-primary-comfy-yellow h-11 rounded-xl border border-primary-comfy-canvas/15 bg-primary-comfy-ink px-4 text-sm text-primary-comfy-canvas outline-none"
+      class="h-11 rounded-xl border border-primary-comfy-canvas/15 bg-primary-comfy-ink px-4 text-sm text-primary-comfy-canvas outline-none focus:border-primary-comfy-yellow"
       @change="onSelect"
     >
       <option v-if="field.defaultValue === undefined" value="">
@@ -198,7 +197,7 @@ const acceptByType = {
       :max="field.max"
       :step="field.step"
       :aria-describedby="describedBy"
-      class="focus:border-primary-comfy-yellow h-11 rounded-xl border border-primary-comfy-canvas/15 bg-primary-comfy-canvas/5 px-4 text-sm text-primary-comfy-canvas outline-none"
+      class="h-11 rounded-xl border border-primary-comfy-canvas/15 bg-primary-comfy-canvas/5 px-4 text-sm text-primary-comfy-canvas outline-none focus:border-primary-comfy-yellow"
       @input="onNumber"
     />
     <button
@@ -235,7 +234,7 @@ const acceptByType = {
       :multiple="field.multiple"
       :accept="acceptByType[field.accept]"
       :aria-describedby="describedBy"
-      class="file:bg-primary-comfy-yellow rounded-xl border border-dashed border-primary-comfy-canvas/20 bg-primary-comfy-canvas/5 p-4 text-sm text-primary-comfy-canvas file:mr-4 file:rounded-full file:border-0 file:px-4 file:py-2 file:text-primary-comfy-ink"
+      class="rounded-xl border border-dashed border-primary-comfy-canvas/20 bg-primary-comfy-canvas/5 p-4 text-sm text-primary-comfy-canvas file:mr-4 file:rounded-full file:border-0 file:bg-primary-comfy-yellow file:px-4 file:py-2 file:text-primary-comfy-ink"
       @change="onMedia"
     />
     <!--

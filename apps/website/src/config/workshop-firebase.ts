@@ -8,14 +8,16 @@
 import type { User, UserCredential } from 'firebase/auth'
 import { getAdditionalUserInfo } from 'firebase/auth'
 
-import { createFirebaseIdentity } from '@comfyorg/account/firebase'
+import { createFirebaseIdentity } from '@comfyorg/account-core/firebase'
+import type { PopupSignInOptions } from '@comfyorg/account-core/firebase'
 import {
   CUSTOMER_PROVISIONING_PATH,
   customerProvisioningRequest,
   signUpWithProvisioning
-} from '@comfyorg/account/provisioning'
+} from '@comfyorg/account-core/provisioning'
 
 import { captureSignupRollbackFailure } from '../scripts/posthog'
+import { createTimeoutSignal } from '../utils/abortSignal'
 import {
   WORKSHOP_FIREBASE_OPTIONS,
   WORKSHOP_ROUTER_BASE_URL
@@ -25,14 +27,11 @@ import {
 const WORKSHOP_APP_NAME = 'workshop'
 /** Ceiling on the provisioning POST; a hung request must not strand sign-in. */
 const PROVISIONING_TIMEOUT_MS = 15_000
-/** Bounds email sign-in and password reset so a stalled request never pins the
- *  form busy; popup and account creation stay unbounded by the package. */
-const FIREBASE_ACTION_TIMEOUT_MS = 15_000
 
 const identity = createFirebaseIdentity({
   options: WORKSHOP_FIREBASE_OPTIONS,
   appName: WORKSHOP_APP_NAME,
-  actionTimeoutMs: FIREBASE_ACTION_TIMEOUT_MS
+  watchPopupSignIn: true
 })
 
 /** The slice of a Firebase user this call needs; injectable in tests. */
@@ -73,7 +72,7 @@ export async function provisionCustomer(
       authHeaders: { Authorization: `Bearer ${token}` },
       signupSource: 'comfy-workshop',
       turnstileToken,
-      signal: AbortSignal.timeout(PROVISIONING_TIMEOUT_MS)
+      signal: createTimeoutSignal(PROVISIONING_TIMEOUT_MS)
     })
   )
   if (!response.ok) {
@@ -81,12 +80,16 @@ export async function provisionCustomer(
   }
 }
 
-export function signInWorkshopWithGoogle(): Promise<UserCredential> {
-  return identity.signInWithGoogle()
+export function signInWorkshopWithGoogle(
+  options?: PopupSignInOptions
+): Promise<UserCredential> {
+  return identity.signInWithGoogle(options)
 }
 
-export function signInWorkshopWithGitHub(): Promise<UserCredential> {
-  return identity.signInWithGitHub()
+export function signInWorkshopWithGitHub(
+  options?: PopupSignInOptions
+): Promise<UserCredential> {
+  return identity.signInWithGitHub(options)
 }
 
 // Split from sign-in so the consumer can gate it: disabling the rollout during
@@ -147,6 +150,5 @@ export function signOutWorkshop(): Promise<void> {
   return identity.signOut()
 }
 
-/** Fires with the restored user (or null) once Firebase settles, then on every change. */
-/** The identity the session client attaches; only the package can mint one. */
+/** Reached only through workshop-account's lazy port, so this chunk stays off the flag-off path. */
 export const workshopIdentity = identity

@@ -14,7 +14,7 @@ beforeEach(async () => {
   await mkdir(join(root, 'src/content'), { recursive: true })
   await mkdir(join(root, 'src/data'), { recursive: true })
   await writeFile(
-    join(root, 'src/config/models-catalogue.ts'),
+    join(root, 'src/config/workshop-browse-content.ts'),
     'export const models = [{ name: "Unreleased model" }]'
   )
   await writeFile(
@@ -47,21 +47,36 @@ async function compile(entry: string, ssr = false) {
   })
 }
 
-describe('disabled Workshop client boundary', () => {
+describe('Workshop client boundary', () => {
   it.for([
-    'import { models } from "./src/config/models-catalogue"; console.log(models)',
-    'import("./src/config/models-catalogue").then(({models}) => console.log(models))',
+    'import { models } from "./src/config/workshop-browse-content"; console.log(models)',
+    'import("./src/config/workshop-browse-content").then(({models}) => console.log(models))',
     'import models from "./src/content/workshop-models.json"; console.log(models)'
   ])('rejects catalogue data in emitted client chunks: %s', async (entry) => {
     await expect(compile(entry)).rejects.toThrow(
-      /.*\.js contains server-only Workshop catalogue data from .*\/src\/(config|content)\//
+      /.*\.js contains server catalogue data from .*\/src\/(config|content)\//
     )
   })
 
   it('allows the server to resolve catalogue data', async () => {
     await expect(
-      compile('export { models } from "./src/config/models-catalogue"', true)
+      compile(
+        'export { models } from "./src/config/workshop-browse-content"',
+        true
+      )
     ).resolves.toBeDefined()
+  })
+
+  it('rejects a prepared workflow graph imported as raw JSONL', async () => {
+    await writeFile(
+      join(root, 'src/content/workshop-workflows.jsonl'),
+      '{"cloud":{"workflow":{"1":{"class_type":"LoadImage"}}}}\n'
+    )
+    await expect(
+      compile(
+        'import data from "./src/content/workshop-workflows.jsonl?raw"; console.log(data)'
+      )
+    ).rejects.toThrow('contains server catalogue data')
   })
 
   it.for([
@@ -78,7 +93,7 @@ describe('disabled Workshop client boundary', () => {
     await writeFile(join(root, 'src', path), '[{"name":"Unreleased model"}]')
     await expect(
       compile(`import data from "./src/${path}"; console.log(data)`)
-    ).rejects.toThrow(/.* contains server-only Workshop .*\/workshop-/)
+    ).rejects.toThrow(/contains server catalogue data from .*\/workshop-/)
   })
 
   it('rejects sibling catalogue data in a lazy chunk', async () => {
@@ -90,7 +105,7 @@ describe('disabled Workshop client boundary', () => {
       compile(
         'import("./src/data/workshop-thumbnail-labels.json").then(({default: labels}) => console.log(labels))'
       )
-    ).rejects.toThrow(/.* contains server-only Workshop .*\/workshop-/)
+    ).rejects.toThrow(/contains server catalogue data from .*\/workshop-/)
   })
 
   it('allows ordinary site JSON outside the catalogue boundary', async () => {
@@ -100,13 +115,13 @@ describe('disabled Workshop client boundary', () => {
     ).resolves.toBeDefined()
   })
 
-  it('allows catalogue code in an explicitly enabled client build', async () => {
+  it('rejects catalogue code in an enabled client build', async () => {
     vi.stubEnv('WORKSHOP_IN_BUILD', '1')
     await expect(
       compile(
-        'import { models } from "./src/config/models-catalogue"; console.log(models)'
+        'import { models } from "./src/config/workshop-browse-content"; console.log(models)'
       )
-    ).resolves.toBeDefined()
+    ).rejects.toThrow('contains server catalogue data')
   })
 
   it('rejects server-only catalogue data even in an enabled client build', async () => {
@@ -115,17 +130,17 @@ describe('disabled Workshop client boundary', () => {
       compile(
         'import models from "./src/content/workshop-models.json"; console.log(models)'
       )
-    ).rejects.toThrow(/server-only Workshop catalogue data/)
+    ).rejects.toThrow(/contains server catalogue data/)
   })
 
   it('does not reject ordinary marketing copy or erased type-only imports', async () => {
     await writeFile(
-      join(root, 'src/config/models-catalogue.ts'),
+      join(root, 'src/config/workshop-browse-content.ts'),
       'export interface Model { name: string }; export const models = [{ name: "Unreleased model" }]'
     )
     await expect(
       compile(
-        'import type { Model } from "./src/config/models-catalogue"; const title: Model = {name: "Models catalogue"}; console.log(title)'
+        'import type { Model } from "./src/config/workshop-browse-content"; const title: Model = {name: "Models catalogue"}; console.log(title)'
       )
     ).resolves.toBeDefined()
   })

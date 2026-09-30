@@ -272,11 +272,6 @@ for (const mode of ['litegraph', 'vue'] as const) {
         'Escape during ghost placement inside a subgraph cancels the ghost without exiting the subgraph',
         { tag: ['@subgraph'] },
         async ({ comfyPage }) => {
-          await comfyPage.searchBoxV2.setup()
-          await comfyPage.settings.setSetting(
-            'Comfy.NodeSearchBoxImpl.FollowCursor',
-            true
-          )
           await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
 
           if (mode === 'vue') {

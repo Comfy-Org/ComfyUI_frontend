@@ -80,6 +80,9 @@ describe('persistent model results', () => {
     expect(grid).toContain(
       '| test-enabled | prod / page-defaults | Router rejected the mapped inputs | Published |'
     )
+    expect(grid).toContain(
+      'for the customer that owns the test credential; it does not validate credits, entitlements or concurrency for other customers'
+    )
     expect(grid).toContain('Disabled on the site: Provider rejects defaults')
     expect(grid).not.toContain('Fixed and retested')
     expect(grid).toContain('Pages disabled on the site: 1.')

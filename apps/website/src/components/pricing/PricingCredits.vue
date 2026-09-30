@@ -20,8 +20,9 @@ const {
 
 const estimate = computed(() => {
   if (!estimateKey) return undefined
-  const text = t(estimateKey, locale)
-  return estimateCount ? text.replace('{count}', estimateCount) : text
+  return estimateCount
+    ? t(estimateKey, locale, { count: estimateCount })
+    : t(estimateKey, locale)
 })
 </script>
 
@@ -29,10 +30,10 @@ const estimate = computed(() => {
   <div class="mt-6">
     <div class="flex items-center gap-2">
       <CreditsIcon
-        class="text-primary-comfy-orange size-4 shrink-0"
+        class="size-4 shrink-0 text-primary-comfy-orange"
         aria-hidden="true"
       />
-      <span class="ppformula-text-center text-sm text-primary-warm-white">
+      <span class="inline-block text-sm text-primary-warm-white">
         <span class="font-extrabold">
           {{ credits }}
         </span>

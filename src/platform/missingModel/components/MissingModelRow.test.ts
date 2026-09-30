@@ -17,6 +17,7 @@ import {
 } from '@/platform/missingModel/missingModelDownload'
 import type { MissingModelViewModel } from '@/platform/missingModel/types'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { api } from '@/scripts/api'
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 const mockIsDesktop = vi.hoisted(() => ({ value: false }))
@@ -38,7 +39,7 @@ const mockUploadContext = vi.hoisted(() => ({
 }))
 const mockUploadCallbacks = vi.hoisted(() => ({
   onUploadSuccess: undefined as
-    | ((result: UploadModelSuccess) => Promise<unknown> | unknown)
+    | ((result: UploadModelSuccess) => unknown)
     | undefined
 }))
 
@@ -46,22 +47,14 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     get rootGraph() {
       return mockRootGraph.value
+    },
+    get rootGraphOrUndefined() {
+      return mockRootGraph.value
     }
   }
 }))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    addEventListener: vi.fn(
-      (event: string, handler: (event: CustomEvent) => void) => {
-        mockApiListeners.set(event, handler)
-      }
-    ),
-    apiURL: vi.fn((path: string) => path),
-    fetchApi: vi.fn(),
-    getServerFeature: vi.fn(() => false)
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
   getActiveGraphNodeIds: vi.fn(() => new Set()),
@@ -81,9 +74,7 @@ vi.mock<unknown>(
   import('@/platform/assets/composables/useModelUpload'),
   () => ({
     useModelUpload: (
-      onUploadSuccess?: (
-        result: UploadModelSuccess
-      ) => Promise<unknown> | unknown,
+      onUploadSuccess?: (result: UploadModelSuccess) => unknown,
       uploadContext?: UploadModelDialogContext | UploadModelContextResolver
     ) => {
       mockUploadCallbacks.onUploadSuccess = onUploadSuccess
@@ -179,6 +170,10 @@ describe('MissingModelRow', () => {
     mockIsDesktop.value = false
     mockRootGraph.value = null
     mockApiListeners.clear()
+    vi.mocked(api.addEventListener).mockImplementation((event, handler) => {
+      if (handler) mockApiListeners.set(event, handler)
+    })
+    vi.mocked(api.getServerFeature).mockReturnValue(false)
     mockUploadContext.resolver = undefined
     mockUploadCallbacks.onUploadSuccess = undefined
     mockDownloadModel.mockResolvedValue(undefined)

@@ -1,5 +1,9 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { computed, ref } from 'vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useRoute, useRouter } from 'vue-router'
+import type { LocationQueryRaw } from 'vue-router'
 
 import type { TeamCreditStops } from '@/platform/workspace/api/workspaceApi'
 
@@ -16,69 +20,27 @@ vi.mock(
   () => preservedQueryMocks
 )
 
-const mockRouteQuery = vi.hoisted(() => ({
-  value: {} as Record<string, string>
-}))
-const mockRouterReplace = vi.hoisted(() => vi.fn(async () => undefined))
+vi.mock(import('vue-router'))
 
-vi.mock<unknown>(import('vue-router'), () => ({
-  useRoute: () => ({
-    query: mockRouteQuery.value
-  }),
-  useRouter: () => ({
-    replace: mockRouterReplace
-  })
-}))
+import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
-const mockShowPricingTable = vi.hoisted(() => vi.fn())
-
-vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
-  () => ({
-    useSubscriptionDialog: () => ({
-      showPricingTable: mockShowPricingTable
-    })
-  })
+vi.mock(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
 
 const mockPermissions = vi.hoisted(() => ({
   value: { canManageSubscription: true }
 }))
-const mockTeamCreditStops = vi.hoisted(() => ({
-  value: null as TeamCreditStops | null
-}))
-const mockFetchPlans = vi.hoisted(() => vi.fn())
+const mockTeamCreditStops = ref<TeamCreditStops | null>(null)
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    teamCreditStops: mockTeamCreditStops,
-    fetchPlans: mockFetchPlans
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 const mockCanOpenPricingSurface = vi.hoisted(() => ({ value: true }))
-const mockInitializeCapabilities = vi.hoisted(() =>
-  vi.fn(async () => undefined)
-)
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useWorkspaceUI'),
-  () => ({
-    useWorkspaceUI: () => ({
-      permissions: mockPermissions,
-      canOpenPricingSurface: mockCanOpenPricingSurface
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({
-      initialize: mockInitializeCapabilities
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 const TEAM_CREDIT_STOPS = {
   default_stop_index: 2,
@@ -96,95 +58,112 @@ const TEAM_CREDIT_STOPS = {
   }))
 } satisfies TeamCreditStops
 
+function setRouteQuery(value: LocationQueryRaw) {
+  const query = useRoute().query
+  for (const key of Object.keys(query)) delete query[key]
+  Object.assign(query, value)
+}
+
 describe('usePricingTableUrlLoader', () => {
   beforeEach(() => {
-    mockRouteQuery.value = {}
+    const workspaceUI = useWorkspaceUI()
+    const defaultPermissions = workspaceUI.permissions.value
+    workspaceUI.permissions = computed(() => ({
+      ...defaultPermissions,
+      ...mockPermissions.value
+    }))
+    workspaceUI.canOpenPricingSurface = computed(
+      () => mockCanOpenPricingSurface.value
+    )
+    const billing = useBillingContext()
+    billing.teamCreditStops = computed(() => mockTeamCreditStops.value)
+    vi.mocked(useBillingContext).mockReturnValue(billing)
+
     mockPermissions.value = { canManageSubscription: true }
     mockCanOpenPricingSurface.value = true
-    mockInitializeCapabilities.mockClear()
-    mockInitializeCapabilities.mockResolvedValue(undefined)
+
     mockTeamCreditStops.value = TEAM_CREDIT_STOPS
-    mockFetchPlans.mockResolvedValue(undefined)
-    mockShowPricingTable.mockResolvedValue(undefined)
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
   })
 
   it('does nothing when no pricing param present', async () => {
-    mockRouteQuery.value = {}
+    setRouteQuery({})
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).not.toHaveBeenCalled()
-    expect(mockRouterReplace).not.toHaveBeenCalled()
+    expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
+    expect(useRouter().replace).not.toHaveBeenCalled()
   })
 
   it('opens the pricing table for any owner capability', async () => {
-    mockRouteQuery.value = { pricing: '1' }
+    setRouteQuery({ pricing: '1' })
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).toHaveBeenCalledWith(
+    expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith(
       expect.objectContaining({ reason: 'deep_link' })
     )
-    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
   })
 
   it('never opens for a sales-managed workspace, even from a deep link', async () => {
-    mockRouteQuery.value = { pricing: '1' }
+    setRouteQuery({ pricing: '1' })
     mockCanOpenPricingSurface.value = false
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).not.toHaveBeenCalled()
-    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+    expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
   })
 
   it('resolves the capability snapshot before deciding', async () => {
-    mockRouteQuery.value = { pricing: '1' }
+    setRouteQuery({ pricing: '1' })
     mockCanOpenPricingSurface.value = true
-    mockInitializeCapabilities.mockImplementation(async () => {
-      mockCanOpenPricingSurface.value = false
-    })
+    vi.mocked(useBillingCapabilities().initialize).mockImplementation(
+      async () => {
+        mockCanOpenPricingSurface.value = false
+      }
+    )
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockInitializeCapabilities).toHaveBeenCalledOnce()
-    expect(mockShowPricingTable).not.toHaveBeenCalled()
+    expect(useBillingCapabilities().initialize).toHaveBeenCalledOnce()
+    expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
   })
 
   it('opens on the team tab for ?pricing=team', async () => {
-    mockRouteQuery.value = { pricing: 'team' }
+    setRouteQuery({ pricing: 'team' })
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).toHaveBeenCalledWith(
+    expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith(
       expect.objectContaining({ reason: 'deep_link', planMode: 'team' })
     )
   })
 
   it('opens on the personal tab for ?pricing=personal', async () => {
-    mockRouteQuery.value = { pricing: 'personal' }
+    setRouteQuery({ pricing: 'personal' })
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).toHaveBeenCalledWith(
+    expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith(
       expect.objectContaining({ reason: 'deep_link', planMode: 'personal' })
     )
   })
 
   it('opens the selected plan confirmation from a marketing deep link', async () => {
-    mockRouteQuery.value = { pricing: 'creator', cycle: 'monthly' }
+    setRouteQuery({ pricing: 'creator', cycle: 'monthly' })
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).toHaveBeenCalledWith({
+    expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
       planMode: 'personal',
       initialCheckout: {
@@ -193,32 +172,32 @@ describe('usePricingTableUrlLoader', () => {
         billingCycle: 'monthly'
       }
     })
-    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
   })
 
   it('is a silent no-op for a member', async () => {
-    mockRouteQuery.value = { pricing: '1' }
+    setRouteQuery({ pricing: '1' })
     mockPermissions.value = { canManageSubscription: false }
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).not.toHaveBeenCalled()
+    expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
   })
 
   it('denies selected-plan entry and strips its params for a member', async () => {
-    mockRouteQuery.value = {
+    setRouteQuery({
       pricing: 'creator',
       cycle: 'monthly',
       other: 'param'
-    }
+    })
     mockPermissions.value = { canManageSubscription: false }
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).not.toHaveBeenCalled()
-    expect(mockRouterReplace).toHaveBeenCalledWith({
+    expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
+    expect(useRouter().replace).toHaveBeenCalledWith({
       query: { other: 'param' }
     })
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
@@ -227,7 +206,7 @@ describe('usePricingTableUrlLoader', () => {
   })
 
   it('restores a preserved Team selection with its catalog values', async () => {
-    mockRouteQuery.value = {}
+    setRouteQuery({})
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue({
       pricing: 'team',
       stop: 'team_700',
@@ -240,7 +219,7 @@ describe('usePricingTableUrlLoader', () => {
     expect(preservedQueryMocks.hydratePreservedQuery).toHaveBeenCalledWith(
       'pricing'
     )
-    expect(mockShowPricingTable).toHaveBeenCalledWith({
+    expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
       planMode: 'team',
       initialCheckout: {
@@ -254,40 +233,40 @@ describe('usePricingTableUrlLoader', () => {
         billingCycle: 'yearly'
       }
     })
-    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
   })
 
   it('strips but does not open for an empty param', async () => {
-    mockRouteQuery.value = { pricing: '' }
+    setRouteQuery({ pricing: '' })
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).not.toHaveBeenCalled()
-    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+    expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
       'pricing'
     )
   })
 
   it('strips but does not open for a non-string param', async () => {
-    mockRouteQuery.value = { pricing: fromAny<string, unknown>(['array']) }
+    setRouteQuery({ pricing: ['array'] })
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).not.toHaveBeenCalled()
-    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+    expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
   })
 
   it('strips but does not open for an unrecognized pricing value', async () => {
-    mockRouteQuery.value = { pricing: 'garbage' }
+    setRouteQuery({ pricing: 'garbage' })
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).not.toHaveBeenCalled()
-    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+    expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
   })
 
   it.for<Record<string, string>>([
@@ -295,13 +274,13 @@ describe('usePricingTableUrlLoader', () => {
     { cycle: 'monthly' },
     { stop: 'team_700', cycle: 'yearly', other: 'param' }
   ])('cleans orphaned pricing state: %o', async (query) => {
-    mockRouteQuery.value = query
+    setRouteQuery(query)
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).not.toHaveBeenCalled()
-    expect(mockRouterReplace).toHaveBeenCalledWith({
+    expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
+    expect(useRouter().replace).toHaveBeenCalledWith({
       query: 'other' in query ? { other: 'param' } : {}
     })
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
@@ -318,8 +297,8 @@ describe('usePricingTableUrlLoader', () => {
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).not.toHaveBeenCalled()
-    expect(mockRouterReplace).toHaveBeenCalledWith({
+    expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
+    expect(useRouter().replace).toHaveBeenCalledWith({
       query: { other: 'param' }
     })
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
@@ -332,13 +311,13 @@ describe('usePricingTableUrlLoader', () => {
     { pricing: 'creator', cycle: 'weekly' },
     { pricing: 'founder', cycle: 'yearly' }
   ])('strips but does not open an unsupported checkout: %o', async (query) => {
-    mockRouteQuery.value = query
+    setRouteQuery(query)
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).not.toHaveBeenCalled()
-    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+    expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
   })
 
   it.for(
@@ -351,16 +330,16 @@ describe('usePricingTableUrlLoader', () => {
   )(
     'opens $catalogStop.id $billingCycle from the API catalog',
     async ({ catalogStop, billingCycle }) => {
-      mockRouteQuery.value = {
+      setRouteQuery({
         pricing: 'team',
         stop: catalogStop.id,
         cycle: billingCycle
-      }
+      })
 
       const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
       await loadPricingTableFromUrl()
 
-      expect(mockShowPricingTable).toHaveBeenCalledWith({
+      expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
         reason: 'deep_link',
         planMode: 'team',
         initialCheckout: {
@@ -374,26 +353,28 @@ describe('usePricingTableUrlLoader', () => {
           billingCycle
         }
       })
-      expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+      expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
     }
   )
 
   it('fetches the Team catalog before resolving a selected stop', async () => {
-    mockRouteQuery.value = {
+    setRouteQuery({
       pricing: 'team',
       stop: 'team_700',
       cycle: 'yearly'
-    }
-    mockTeamCreditStops.value = null
-    mockFetchPlans.mockImplementationOnce(async () => {
-      mockTeamCreditStops.value = TEAM_CREDIT_STOPS
     })
+    mockTeamCreditStops.value = null
+    vi.mocked(useBillingContext().fetchPlans).mockImplementationOnce(
+      async () => {
+        mockTeamCreditStops.value = TEAM_CREDIT_STOPS
+      }
+    )
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockFetchPlans).toHaveBeenCalledOnce()
-    expect(mockShowPricingTable).toHaveBeenCalledWith(
+    expect(useBillingContext().fetchPlans).toHaveBeenCalledOnce()
+    expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith(
       expect.objectContaining({
         initialCheckout: expect.objectContaining({
           planMode: 'team',
@@ -404,57 +385,59 @@ describe('usePricingTableUrlLoader', () => {
   })
 
   it('falls back to the Team table when the catalog fetch fails', async () => {
-    mockRouteQuery.value = {
+    setRouteQuery({
       pricing: 'team',
       stop: 'team_700',
       cycle: 'yearly'
-    }
+    })
     mockTeamCreditStops.value = null
-    mockFetchPlans.mockRejectedValueOnce(new Error('catalog unavailable'))
+    vi.mocked(useBillingContext().fetchPlans).mockRejectedValueOnce(
+      new Error('catalog unavailable')
+    )
     vi.spyOn(console, 'error').mockImplementation(() => {})
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).toHaveBeenCalledWith({
+    expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
       planMode: 'team'
     })
-    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
   })
 
   it('falls back when the catalog remains unavailable after fetching', async () => {
-    mockRouteQuery.value = {
+    setRouteQuery({
       pricing: 'team',
       stop: 'team_700',
       cycle: 'yearly'
-    }
+    })
     mockTeamCreditStops.value = null
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).toHaveBeenCalledWith({
+    expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
       planMode: 'team'
     })
   })
 
   it('falls back to the Team table for a stop absent from the catalog', async () => {
-    mockRouteQuery.value = {
+    setRouteQuery({
       pricing: 'team',
       stop: 'unknown',
       cycle: 'monthly'
-    }
+    })
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).toHaveBeenCalledWith({
+    expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
       planMode: 'team'
     })
-    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
   })
 
   it.for([
@@ -464,25 +447,25 @@ describe('usePricingTableUrlLoader', () => {
     { pricing: 'team', stop: 'team_700', cycle: 'weekly' },
     { pricing: 'personal', stop: 'team_700', cycle: 'yearly' }
   ])('fails closed for an invalid Team selection: %o', async (query) => {
-    mockRouteQuery.value = fromAny<Record<string, string>, unknown>(query)
+    setRouteQuery(query)
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).not.toHaveBeenCalled()
-    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+    expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
   })
 
   it.for([
     { pricing: 'team', stop: ['team_700'], cycle: 'yearly' },
     { pricing: 'team', stop: 'team_700', cycle: ['yearly'] }
   ])('fails closed for array Team params: %o', async (query) => {
-    mockRouteQuery.value = fromAny<Record<string, string>, unknown>(query)
+    setRouteQuery(query)
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).not.toHaveBeenCalled()
-    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+    expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
   })
 })

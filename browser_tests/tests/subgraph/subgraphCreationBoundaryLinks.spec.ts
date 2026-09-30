@@ -2,6 +2,8 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
+test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
+
 const SUBGRAPH_LINKS_EXPECTED = {
   rootLinks: [
     '4:0->HOST:0',
@@ -22,7 +24,6 @@ test(
   { tag: ['@slow', '@subgraph', '@vue-nodes'] },
   async ({ comfyPage }) => {
     await test.step('Select both nodes in the default workflow', async () => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
       await comfyPage.workflow.loadWorkflow('default')
 
       // VAE Decode sits past the right edge of the 1280px canvas at the default
@@ -32,11 +33,13 @@ test(
       const vaeDecode = await comfyPage.vueNodes.getFixtureByTitle('VAE Decode')
       await expect(vaeDecode.header).toBeInViewport({ ratio: 1 })
 
-      await comfyPage.nodeOps.selectNodes(['KSampler', 'VAE Decode'])
-      expect(
-        await comfyPage.nodeOps.getSelectedNodeIds(),
-        'both nodes must be selected, or the conversion under test is not the one being asserted'
-      ).toEqual(['3', '8'])
+      await comfyPage.vueNodes.selectNodes(['3', '8'])
+      await expect
+        .poll(() => comfyPage.nodeOps.getSelectedNodeIds(), {
+          message:
+            'both nodes must be selected, or the conversion under test is not the one being asserted'
+        })
+        .toEqual(['3', '8'])
     })
 
     await test.step('Convert and verify the boundary links', async () => {

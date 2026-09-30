@@ -1,3 +1,5 @@
+import { computed } from 'vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Component } from 'vue'
 import type DowngradeContent from '@/platform/workspace/components/dialogs/DowngradeRemoveMembersDialogContent.vue'
@@ -34,25 +36,23 @@ const {
   }
 })
 
-vi.mock(import('@/i18n'), () => ({
-  t: (key: string) => key
-}))
+vi.mock(import('@/i18n'))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({ trackEvent: vi.fn() })
-}))
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  const billing = useBillingContext()
+  billing.canAccessSubscriptionFeatures = computed(() => true)
+  billing.isFreeTier = computed(() => false)
+  billing.type = computed(() => 'legacy')
+  vi.mocked(useBillingContext).mockReturnValue(billing)
+})
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    canAccessSubscriptionFeatures: { value: true },
-    isFreeTier: { value: false },
-    type: { value: 'legacy' }
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useDowngradeToPersonal'),
@@ -107,9 +107,7 @@ describe('showDowngradeToPersonalDialog', () => {
 
     expect(calls).toEqual(['refresh', 'downgrade'])
     expect(downgradeToPersonal).toHaveBeenCalledWith('standard-monthly')
-    expect(
-      vi.mocked(useDialogStore().showDialog<Component, typeof DowngradeContent>)
-    ).not.toHaveBeenCalled()
+    expect(useDialogStore().showDialog).not.toHaveBeenCalled()
   })
 
   it('returns the downgrade result from the no-members fast path', async () => {
@@ -130,15 +128,11 @@ describe('showDowngradeToPersonalDialog', () => {
     const resultPromise =
       useDialogService().showDowngradeToPersonalDialog(options)
     await vi.waitFor(() =>
-      expect(
-        vi.mocked(
-          useDialogStore().showDialog<Component, typeof DowngradeContent>
-        )
-      ).toHaveBeenCalledOnce()
+      expect(useDialogStore().showDialog).toHaveBeenCalledOnce()
     )
 
     expect(downgradeToPersonal).not.toHaveBeenCalled()
-    expect(vi.mocked(useDialogStore().closeDialog)).toHaveBeenCalledWith({
+    expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
       key: 'downgrade-remove-members'
     })
     const [args] = vi.mocked(
@@ -170,11 +164,7 @@ describe('showDowngradeToPersonalDialog', () => {
     const resultPromise =
       useDialogService().showDowngradeToPersonalDialog(options)
     await vi.waitFor(() =>
-      expect(
-        vi.mocked(
-          useDialogStore().showDialog<Component, typeof DowngradeContent>
-        )
-      ).toHaveBeenCalledOnce()
+      expect(useDialogStore().showDialog).toHaveBeenCalledOnce()
     )
 
     expect(downgradeToPersonal).not.toHaveBeenCalled()
@@ -202,11 +192,7 @@ describe('showDowngradeToPersonalDialog', () => {
     const resultPromise =
       useDialogService().showDowngradeToPersonalDialog(options)
     await vi.waitFor(() =>
-      expect(
-        vi.mocked(
-          useDialogStore().showDialog<Component, typeof DowngradeContent>
-        )
-      ).toHaveBeenCalledOnce()
+      expect(useDialogStore().showDialog).toHaveBeenCalledOnce()
     )
     const [args] = vi.mocked(
       useDialogStore().showDialog<Component, typeof DowngradeContent>
@@ -238,11 +224,7 @@ describe('showDowngradeToPersonalDialog', () => {
     const resultPromise =
       useDialogService().showDowngradeToPersonalDialog(options)
     await vi.waitFor(() =>
-      expect(
-        vi.mocked(
-          useDialogStore().showDialog<Component, typeof DowngradeContent>
-        )
-      ).toHaveBeenCalledOnce()
+      expect(useDialogStore().showDialog).toHaveBeenCalledOnce()
     )
     const [args] = vi.mocked(
       useDialogStore().showDialog<Component, typeof DowngradeContent>
@@ -285,11 +267,7 @@ describe('showDowngradeToPersonalDialog', () => {
     const resultPromise =
       useDialogService().showDowngradeToPersonalDialog(options)
     await vi.waitFor(() =>
-      expect(
-        vi.mocked(
-          useDialogStore().showDialog<Component, typeof DowngradeContent>
-        )
-      ).toHaveBeenCalledOnce()
+      expect(useDialogStore().showDialog).toHaveBeenCalledOnce()
     )
     const [args] = vi.mocked(
       useDialogStore().showDialog<Component, typeof DowngradeContent>
@@ -303,7 +281,7 @@ describe('showDowngradeToPersonalDialog', () => {
       args.props.onConfirm('standard-monthly', false)
     ).rejects.toThrow(ReactivationConfirmationRequiredError)
 
-    expect(vi.mocked(useDialogStore().updateDialog)).toHaveBeenCalledWith({
+    expect(useDialogStore().updateDialog).toHaveBeenCalledWith({
       key: 'downgrade-remove-members',
       contentProps: { requiresReactivation: true, chargeCents: 1500 }
     })
@@ -348,11 +326,7 @@ describe('showDowngradeToPersonalDialog', () => {
     const resultPromise =
       useDialogService().showDowngradeToPersonalDialog(options)
     await vi.waitFor(() =>
-      expect(
-        vi.mocked(
-          useDialogStore().showDialog<Component, typeof DowngradeContent>
-        )
-      ).toHaveBeenCalledOnce()
+      expect(useDialogStore().showDialog).toHaveBeenCalledOnce()
     )
     const [args] = vi.mocked(
       useDialogStore().showDialog<Component, typeof DowngradeContent>
@@ -365,7 +339,7 @@ describe('showDowngradeToPersonalDialog', () => {
       args.props.onConfirm('standard-monthly', true)
     ).rejects.toThrow(ReactivationAmountChangedError)
 
-    expect(vi.mocked(useDialogStore().updateDialog)).toHaveBeenCalledWith({
+    expect(useDialogStore().updateDialog).toHaveBeenCalledWith({
       key: 'downgrade-remove-members',
       contentProps: { requiresReactivation: true, chargeCents: 2000 }
     })
@@ -393,11 +367,7 @@ describe('showDowngradeToPersonalDialog', () => {
     const resultPromise =
       useDialogService().showDowngradeToPersonalDialog(options)
     await vi.waitFor(() =>
-      expect(
-        vi.mocked(
-          useDialogStore().showDialog<Component, typeof DowngradeContent>
-        )
-      ).toHaveBeenCalledOnce()
+      expect(useDialogStore().showDialog).toHaveBeenCalledOnce()
     )
 
     useDialogStore().dialogStack = []
@@ -410,15 +380,13 @@ describe('showDowngradeToPersonalDialog', () => {
 
     await useDialogService().showDowngradeToPersonalDialog(options)
 
-    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledWith(
+    expect(useToastStore().add).toHaveBeenCalledWith(
       expect.objectContaining({
         severity: 'error',
         detail: 'Outstanding balance'
       })
     )
-    expect(
-      vi.mocked(useDialogStore().showDialog<Component, typeof DowngradeContent>)
-    ).not.toHaveBeenCalled()
+    expect(useDialogStore().showDialog).not.toHaveBeenCalled()
   })
 
   it('toasts and aborts when the member refresh fails', async () => {
@@ -427,12 +395,10 @@ describe('showDowngradeToPersonalDialog', () => {
 
     await useDialogService().showDowngradeToPersonalDialog(options)
 
-    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledWith(
+    expect(useToastStore().add).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'error', detail: 'network' })
     )
-    expect(
-      vi.mocked(useDialogStore().showDialog<Component, typeof DowngradeContent>)
-    ).not.toHaveBeenCalled()
+    expect(useDialogStore().showDialog).not.toHaveBeenCalled()
     expect(downgradeToPersonal).not.toHaveBeenCalled()
   })
 
@@ -441,15 +407,13 @@ describe('showDowngradeToPersonalDialog', () => {
 
     await useDialogService().showDowngradeToPersonalDialog(options)
 
-    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledWith(
+    expect(useToastStore().add).toHaveBeenCalledWith(
       expect.objectContaining({
         severity: 'error',
         detail: 'Outstanding balance'
       })
     )
-    expect(
-      vi.mocked(useDialogStore().showDialog<Component, typeof DowngradeContent>)
-    ).not.toHaveBeenCalled()
+    expect(useDialogStore().showDialog).not.toHaveBeenCalled()
     expect(downgradeToPersonal).not.toHaveBeenCalled()
   })
 })

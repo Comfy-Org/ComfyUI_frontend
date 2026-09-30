@@ -51,16 +51,25 @@ describe('DynamicGroup input specifications', () => {
     ).toBeUndefined()
   })
 
-  it('resolves an explicitly declared optional constructor field', () => {
-    const spec: InputSpec = ['STRING', {}]
-    expect(
-      resolveDynamicInputSpec(
-        { required: {}, optional: { constructor: spec } },
-        'constructor',
-        () => undefined
-      )
-    ).toEqual({ spec: ['STRING', {}], isOptional: true })
-  })
+  it.for(['constructor', 'loras.0.constructor'])(
+    'resolves an explicitly declared optional field: %s',
+    (name) => {
+      const spec: InputSpec = ['STRING', {}]
+      const optional = { constructor: spec }
+      expect(
+        resolveDynamicInputSpec(
+          {
+            required: {
+              loras: ['COMFY_DYNAMICGROUP_V3', { template: { optional } }]
+            },
+            optional
+          },
+          name,
+          () => undefined
+        )
+      ).toEqual({ spec: ['STRING', {}], isOptional: true })
+    }
+  )
 
   it('requires a separator before a numeric field name', () => {
     const numeric: ComfyInputsSpec = {

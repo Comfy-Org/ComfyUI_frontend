@@ -8,7 +8,9 @@ import {
   groupPlaygroundFields,
   schemaForModel,
   isVideoUrl,
+  videoPosterUrl,
   restoreFormValues,
+  urlUploadField,
   validateForm
 } from './workshop-playground'
 import type { GeneratedField } from './models-catalogue'
@@ -37,6 +39,32 @@ const generatedFields: GeneratedField[] = [
     required: false
   }
 ]
+
+describe('urlUploadField', () => {
+  it.for([
+    { maxUploadBytes: 500 * 1024 * 1024, expected: 500 * 1024 * 1024 },
+    { maxUploadBytes: undefined, expected: MAX_UPLOAD_BYTES }
+  ])('uses upload limit $expected', ({ maxUploadBytes, expected }) => {
+    expect(
+      urlUploadField({
+        kind: 'text',
+        name: 'video',
+        label: 'Video',
+        required: false,
+        multiline: false,
+        presentation: {
+          label: 'Video',
+          help: '',
+          hidden: false,
+          advanced: false,
+          control: 'text-box',
+          urlUpload: 'video',
+          maxUploadBytes
+        }
+      })?.maxBytes
+    ).toBe(expected)
+  })
+})
 
 describe('restoreFormValues', () => {
   it('restores only field-typed scalars and preserves deliberate clearing without fake uploads', () => {
@@ -437,6 +465,19 @@ describe('isVideoUrl', () => {
     expect(isVideoUrl('https://cdn.example/output.mp4?sig=abc')).toBe(true)
     expect(isVideoUrl('https://cdn.example/output.mp4#t=0')).toBe(true)
     expect(isVideoUrl('https://cdn.example/output.png')).toBe(false)
+  })
+})
+
+describe('videoPosterUrl', () => {
+  it.for([
+    ['https://cdn.example/clip.mp4', 'https://cdn.example/clip.mp4#t=0.1'],
+    [
+      'https://cdn.example/clip.mp4?sig=abc',
+      'https://cdn.example/clip.mp4?sig=abc#t=0.1'
+    ],
+    ['https://cdn.example/clip.mp4#t=2', 'https://cdn.example/clip.mp4#t=2']
+  ])('points %s at a frame to paint', ([url, expected]) => {
+    expect(videoPosterUrl(url)).toBe(expected)
   })
 })
 

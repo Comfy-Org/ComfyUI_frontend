@@ -1,7 +1,28 @@
 <template>
   <div class="grow overflow-auto pt-6">
+    <!-- Upsell Banner -->
+    <MemberUpsellBanner
+      v-if="
+        !isPlanLoading &&
+        ((isInPersonalWorkspace && maxSeats === 1) || isPlanEnded) &&
+        permissions.canManageSubscription
+      "
+      :variant="
+        isPlanEnded
+          ? isSalesManagedPlan
+            ? 'contactSales'
+            : 'reactivate'
+          : 'upgrade'
+      "
+      :enterprise="isEnterprisePlan"
+      @action="
+        isPlanEnded && isSalesManagedPlan
+          ? handleContactSales()
+          : showTeamPlans()
+      "
+    />
     <div
-      class="border-inter flex size-full flex-col gap-2 rounded-2xl border border-interface-stroke p-6"
+      class="flex size-full flex-col gap-2 rounded-2xl border border-interface-stroke p-6"
     >
       <!-- Section Header -->
       <div class="flex w-full items-center gap-9">
@@ -28,7 +49,7 @@
               {{
                 $t(
                   'workspacePanel.members.pendingInvitesCount',
-                  pendingInvites.length
+                  livePendingCount
                 )
               }}
             </template>
@@ -96,10 +117,7 @@
               @click="activeView = 'pending'"
             >
               {{
-                $t(
-                  'workspacePanel.members.tabs.pendingCount',
-                  pendingInvites.length
-                )
+                $t('workspacePanel.members.tabs.pendingCount', livePendingCount)
               }}
             </Button>
           </div>
@@ -197,16 +215,6 @@
         </div>
       </div>
     </div>
-    <!-- Upsell Banner -->
-    <MemberUpsellBanner
-      v-if="
-        !isPlanLoading &&
-        ((isInPersonalWorkspace && maxSeats === 1) || isCancelled) &&
-        permissions.canManageSubscription
-      "
-      :reactivate="hasLapsedTeamPlan"
-      @show-plans="showTeamPlans()"
-    />
     <!-- Need More Members Footer -->
     <div v-if="hasMemberSeats" class="flex items-center pt-2">
       <p class="text-sm text-muted-foreground">
@@ -225,12 +233,14 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
 import MemberListItem from '@/platform/workspace/components/dialogs/settings/MemberListItem.vue'
 import MemberUpsellBanner from '@/platform/workspace/components/dialogs/settings/MemberUpsellBanner.vue'
 import PendingInvitesList from '@/platform/workspace/components/dialogs/settings/PendingInvitesList.vue'
 import WorkspaceMenuButton from '@/platform/workspace/components/dialogs/settings/WorkspaceMenuButton.vue'
+import { ENTERPRISE_URL } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useMembersPanel } from '@/platform/workspace/composables/useMembersPanel'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -242,9 +252,10 @@ const {
   activeView,
   maxSeats,
   isInPersonalWorkspace,
-  hasLapsedTeamPlan,
+  isPlanEnded,
+  isSalesManagedPlan,
+  isEnterprisePlan,
   hasMemberSeats,
-  isCancelled,
   isPlanLoading,
   hasMultipleMembers,
   showSearch,
@@ -269,7 +280,17 @@ const {
   handleRevokeInvite
 } = useMembersPanel()
 
+const livePendingCount = computed(
+  () => pendingInvites.value.filter((invite) => invite.token).length
+)
+
 function handleContactUs() {
   window.open(TEAM_PLAN_REQUEST_URL, '_blank', 'noopener,noreferrer')
+}
+
+// The ended-banner action: a sales-managed plan's route back is the
+// enterprise page, not the team-plan request form the footer link uses.
+function handleContactSales() {
+  window.open(ENTERPRISE_URL, '_blank', 'noopener,noreferrer')
 }
 </script>

@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
@@ -9,9 +8,9 @@ const labels = {
   title: 'Filters',
   search: 'Search filters',
   noMatches: 'No matches',
-  applied: '{n} applied',
+  applied: (n: number) => `${n} applied`,
   clearAll: 'Clear all',
-  show: 'Show {n}',
+  show: (n: number) => `Show ${n}`,
   close: 'Close',
   resize: 'Resize filters'
 }
@@ -116,8 +115,26 @@ describe('FacetSheet', () => {
     expect(screen.getByRole('tabpanel', { name: /^Media/ })).toBeTruthy()
 
     await view.rerender({ groups: [groups[0]], labels, resultCount: 1 })
-    expect(
-      screen.getByRole('tab', { name: /^Provider/, selected: true })
-    ).toBeTruthy()
+    expect(screen.queryByRole('tablist')).toBeNull()
+    expect(screen.queryByRole('tab')).toBeNull()
+    expect(await screen.findByRole('region', { name: 'Provider' })).toBeTruthy()
+  })
+
+  it('labels a lone group without exposing an inoperable tab', async () => {
+    const view = render(FacetSheet, {
+      props: { groups, labels, resultCount: 2 }
+    })
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('tab', { name: /^Media/ }))
+    expect(screen.getByRole('tab', { name: /^Media/ })).toBeEnabled()
+
+    await view.rerender({ groups: [groups[1]], labels, resultCount: 1 })
+
+    expect(screen.queryByRole('tablist')).toBeNull()
+    expect(screen.queryByRole('tab')).toBeNull()
+    expect(screen.getByRole('region', { name: 'Media' })).toHaveAttribute(
+      'tabindex',
+      '-1'
+    )
   })
 })

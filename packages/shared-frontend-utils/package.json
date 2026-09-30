@@ -11,10 +11,12 @@
     "./loadExternalScript": "./src/loadExternalScript.ts",
     "./networkUtil": "./src/networkUtil.ts",
     "./nodePricing": "./src/nodePricing.ts",
-    "./piiUtil": "./src/piiUtil.ts"
+    "./piiUtil": "./src/piiUtil.ts",
+    "./urlSafety": "./src/urlSafety.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "test": "vitest run",
+    "typecheck": "tsx ../../scripts/vue-tsc-native.ts --noEmit"
   },
   "dependencies": {
     "@comfyorg/object-info-parser": "workspace:*",
@@ -23,6 +25,8 @@
     "jsonata": "catalog:"
   },
   "devDependencies": {
-    "typescript": "catalog:"
+    "@vitest/coverage-v8": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

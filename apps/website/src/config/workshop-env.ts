@@ -53,6 +53,14 @@ export const WORKSHOP_CREDITS_URL = new URL(
   WORKSHOP_CLOUD_BASE_URL
 ).href
 
+/** Where "see all" sends a reader whose assets outgrew the strip. Cloud owns
+ * the full library; the website only ever shows the most recent few. The
+ * param opens Cloud's Assets panel — see `useAssetsUrlLoader` in the app. */
+export const WORKSHOP_ASSETS_URL = new URL(
+  '/?assets=1',
+  WORKSHOP_CLOUD_BASE_URL
+).href
+
 // Public web-app configs, same values the platform app ships in
 // src/config/firebase.ts. Staging and test both validate tokens from the dev
 // project; prod validates the prod project.
@@ -98,3 +106,16 @@ const TURNSTILE_SITE_KEYS: Record<WorkshopCloudEnv, string> = {
 
 export const WORKSHOP_TURNSTILE_SITE_KEY =
   TURNSTILE_SITE_KEYS[WORKSHOP_CLOUD_ENV]
+
+/**
+ * Re-shoot's app proxy id in each family's comfy-api catalog
+ * (`services/comfy-api/appproxy/apps/*.yaml` in the cloud repo). Public: the
+ * proxy still requires a signed-in caller and meters them.
+ */
+const RESHOOT_PROXY_IDS: Record<WorkshopCloudEnv, string | undefined> = {
+  prod: '82be5491-e1a0-494f-a913-4d7fe1ad4c12',
+  staging: '134a601f-c481-4af6-90d5-baeb18973abf',
+  test: 'f470a58e-bd04-4204-a8b2-2012b7266e74'
+}
+
+export const WORKSHOP_RESHOOT_PROXY_ID = RESHOOT_PROXY_IDS[WORKSHOP_CLOUD_ENV]

@@ -26,7 +26,9 @@ describe('OrbitHandles', () => {
   it('exposes three pickable handle meshes tagged with handleType', () => {
     const meshes = handles.pickableMeshes()
     expect(meshes).toHaveLength(3)
-    const types = meshes.map((m) => m.userData.handleType).sort()
+    const types = meshes
+      .map((m) => m.userData.handleType)
+      .sort((a, b) => a.localeCompare(b))
     expect(types).toEqual(['distance', 'pitch', 'yaw'])
   })
 

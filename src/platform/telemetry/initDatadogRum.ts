@@ -4,7 +4,9 @@ import { datadogRum } from '@datadog/browser-rum'
 import { rumBeforeSend } from './datadogRumBeforeSend'
 import { trackUserManualRefresh } from './manualRefreshTracker'
 
-const DATADOG_ENV_BY_HOSTNAME = new Map([
+export type DeployEnv = 'prod-v2' | 'stg-v2' | 'test-v2'
+
+const DATADOG_ENV_BY_HOSTNAME = new Map<string, DeployEnv>([
   ['cloud.comfy.org', 'prod-v2'],
   ['stagingcloud.comfy.org', 'stg-v2'],
   ['testcloud.comfy.org', 'test-v2']
@@ -63,7 +65,7 @@ async function initializeDatadogRum(env: string): Promise<void> {
  */
 export function resolveDeployEnv(
   hostname = window.location.hostname
-): string | undefined {
+): DeployEnv | undefined {
   return (
     DATADOG_ENV_BY_HOSTNAME.get(hostname) ??
     (hostname.endsWith('.testenvs.comfy.org') ? 'test-v2' : undefined)
