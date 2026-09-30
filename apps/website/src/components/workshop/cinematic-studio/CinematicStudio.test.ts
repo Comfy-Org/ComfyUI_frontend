@@ -1523,12 +1523,12 @@ describe('CinematicStudio', () => {
     }
   )
 
-  it('leads back to the Apps tab of the catalogue', async () => {
+  it('leads back to the apps page of the hub', async () => {
     render(CinematicStudioPage, { props: { apps: appModels, models } })
 
     expect(
       await screen.findByRole('link', { name: tc('cinematic.backToApps') })
-    ).toHaveAttribute('href', '/hub/models/?type=apps')
+    ).toHaveAttribute('href', '/hub/apps/')
   })
 
   it('shows every setting in the side panel, with Format last before the run button', async () => {
