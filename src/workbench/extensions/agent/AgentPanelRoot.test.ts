@@ -5034,7 +5034,6 @@ describe('AgentPanelRoot workflow binding', () => {
     mockMessagesEndpoint('wf-42')
     const { unmount } = renderWithSelectedTarget()
     await sendFromComposer('work here')
-    vi.useFakeTimers()
     telemetry.trackAgentWorkflowApplied.mockClear()
 
     ws.emit('agent_active_tab', {
@@ -5068,7 +5067,6 @@ describe('AgentPanelRoot workflow binding', () => {
       )
       const { unmount } = renderWithSelectedTarget()
       await sendFromComposer('work here')
-      vi.useFakeTimers()
       telemetry.trackAgentWorkflowApplied.mockClear()
       let finishOpen: ((opened: boolean) => void) | undefined
       workflowService.openWorkflow.mockImplementationOnce(async (tab) => {

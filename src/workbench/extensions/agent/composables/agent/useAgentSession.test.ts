@@ -2742,7 +2742,6 @@ describe('app:agent_error telemetry (TEL-8)', () => {
     const rest = fakeRest({
       postMessage: vi.fn(async () => {
         throw new AgentResponseUnreadableError(
-          '/agent/threads/new/messages',
           new SyntaxError('Unexpected end of JSON input')
         )
       })

@@ -98,17 +98,15 @@ export interface AgentSessionDeps {
 const THREAD_STORAGE_KEY = 'Comfy.Agent.ThreadId'
 const PREPARE_TIMEOUT_MS = 3000
 
-const NON_RETRYABLE_REQUEST_STATUSES = new Set([
-  400, 401, 403, 404, 405, 409, 410, 422
-])
-
 export function isRetryableRequestFailure(
   error: unknown,
   accepted: boolean
 ): boolean {
   if (accepted) return false
-  if (error instanceof AgentApiError)
-    return !NON_RETRYABLE_REQUEST_STATUSES.has(error.status)
+  if (error instanceof AgentApiError) {
+    if ([408, 425, 429].includes(error.status)) return true
+    return error.status < 400 || error.status >= 500
+  }
   return true
 }
 
@@ -201,11 +199,22 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const visible = uiTreatment !== 'none'
     const priorVisible = malformedStreamReports.get(turnId)
     if (priorVisible === true || (priorVisible === false && !visible)) return
+    if (
+      !malformedStreamReports.has(turnId) &&
+      malformedStreamReports.size >= 32
+    )
+      return
     malformedStreamReports.set(turnId, visible)
     reportError(new Error('Malformed agent stream event'), {
       errorType: 'agent_malformed_stream_event',
       tags: { ui_treatment: uiTreatment, event_type: eventType },
-      context: { issues: cause.issues }
+      context: {
+        issues: cause.issues.slice(0, 10).map(({ code, path, message }) => ({
+          code,
+          path,
+          message
+        }))
+      }
     })
     trackAgentError(
       'malformed_stream_event',
@@ -329,6 +338,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const origin: TurnOrigin =
       originContext === undefined ? null : { tabPath: originContext.tabPath }
     let accepted = false
+    let requestStarted = false
     try {
       if (workflow?.prepare)
         await Promise.race([
@@ -411,6 +421,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
             : input
         )
       }
+      requestStarted = true
       const ack = await postTurn(threadAtSend)
       accepted = true
       if (generation !== loadGeneration) return false
@@ -488,7 +499,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
         text,
         `${i18n.global.t('agent.sendFailed')}: ${message}`
       )
-      const turnAccepted = accepted || isUnreadableAckFailure(error)
+      const turnAccepted =
+        accepted || (requestStarted && isUnreadableAckFailure(error))
       reportError(error, { errorType: 'agent_send_message_failed' })
       trackAgentError(
         'request_failed',
@@ -616,9 +628,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (!parsed.success) {
       const messageId = (raw as { data?: { message_id?: unknown } }).data
         ?.message_id
+      const wireTurnId =
+        typeof messageId === 'string' ? (messageId as TurnId) : null
       const reportedTurnId =
-        typeof messageId === 'string'
-          ? (messageId as TurnId)
+        wireTurnId !== null && conversationStore.hasPendingTurn(wireTurnId)
+          ? wireTurnId
           : conversationStore.activeTurnId
       let uiTreatment: AgentErrorMetadata['ui_treatment'] = 'none'
       if (type === 'agent_message_done') {
