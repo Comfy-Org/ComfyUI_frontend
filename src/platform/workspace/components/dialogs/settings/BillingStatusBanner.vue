@@ -53,14 +53,23 @@
         >
           {{ $t('workspacePanel.billingStatus.ending.reactivate') }}
         </Button>
-        <Button
-          v-else-if="banner.action === 'updatePayment'"
-          variant="inverted"
-          size="lg"
-          @click="handleUpdatePayment"
-        >
-          {{ $t('workspacePanel.billingStatus.updatePayment') }}
-        </Button>
+        <template v-else-if="banner.action === 'updatePayment'">
+          <Button
+            v-if="banner.payInvoiceUrl"
+            variant="inverted"
+            size="lg"
+            @click="handlePayInvoice(banner.payInvoiceUrl)"
+          >
+            {{ $t('workspacePanel.billingStatus.payInvoice') }}
+          </Button>
+          <Button
+            :variant="banner.payInvoiceUrl ? 'secondary' : 'inverted'"
+            size="lg"
+            @click="handleUpdatePayment"
+          >
+            {{ $t('workspacePanel.billingStatus.updatePayment') }}
+          </Button>
+        </template>
       </div>
     </div>
   </div>
@@ -82,8 +91,9 @@ import { useDialogService } from '@/services/dialogService'
 
 type BannerAction = 'addCredits' | 'reactivate' | 'updatePayment'
 
-const { t, d } = useI18n()
-const { renewalDate, subscription, manageSubscription } = useBillingContext()
+const { t, d, locale } = useI18n()
+const { renewalDate, renewalInvoice, subscription, manageSubscription } =
+  useBillingContext()
 const { permissions, canReactivatePlan } = useWorkspaceUI()
 const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
 const { kind, dismiss } = useBillingBanner()
@@ -118,6 +128,7 @@ interface BannerView {
   body: string
   action: BannerAction | null
   dismissible: boolean
+  payInvoiceUrl?: string
 }
 
 const bs = 'workspacePanel.billingStatus'
@@ -130,13 +141,75 @@ const pausedView = (): BannerView => ({
   dismissible: false
 })
 
-const paymentFailedView = (): BannerView => ({
-  muted: false,
-  title: t(`${bs}.warning.title`),
-  body: t(`${bs}.warning.bodyNoDate`),
-  action: 'updatePayment',
-  dismissible: false
-})
+// Stripe's own decimal lists (docs.stripe.com/currencies), not Intl's display
+// precision: Stripe charges ISK, UGX and HUF with two decimals.
+const STRIPE_ZERO_DECIMAL = new Set([
+  'BIF',
+  'CLP',
+  'DJF',
+  'GNF',
+  'JPY',
+  'KMF',
+  'KRW',
+  'MGA',
+  'PYG',
+  'RWF',
+  'VND',
+  'VUV',
+  'XAF',
+  'XOF',
+  'XPF'
+])
+const STRIPE_THREE_DECIMAL = new Set(['BHD', 'JOD', 'KWD', 'OMR', 'TND'])
+
+function stripeDecimals(code: string): number {
+  if (STRIPE_ZERO_DECIMAL.has(code)) return 0
+  return STRIPE_THREE_DECIMAL.has(code) ? 3 : 2
+}
+
+// Intl formats any well-formed code (e.g. ZZZ); only real ISO codes are shown.
+const KNOWN_CURRENCIES = new Set(Intl.supportedValuesOf('currency'))
+
+function formatAmountDue(amountDue: number, currency: string): string | null {
+  const code = currency.toUpperCase()
+  if (!KNOWN_CURRENCIES.has(code)) return null
+  try {
+    const format = new Intl.NumberFormat(locale.value, {
+      style: 'currency',
+      currency: code
+    })
+    return format.format(amountDue / 10 ** stripeDecimals(code))
+  } catch {
+    return null
+  }
+}
+
+// Only an https payment page is opened; anything else hides the action.
+function safeInvoiceUrl(value: string | undefined): string | undefined {
+  if (!value) return undefined
+  try {
+    return new URL(value).protocol === 'https:' ? value : undefined
+  } catch {
+    return undefined
+  }
+}
+
+const paymentFailedView = (): BannerView => {
+  const invoice = renewalInvoice.value
+  const amount = invoice
+    ? formatAmountDue(invoice.amount_due, invoice.currency)
+    : null
+  return {
+    muted: false,
+    title: t(`${bs}.warning.title`),
+    body: amount
+      ? t(`${bs}.warning.bodyWithAmount`, { amount })
+      : t(`${bs}.warning.bodyNoDate`),
+    action: 'updatePayment',
+    dismissible: false,
+    payInvoiceUrl: safeInvoiceUrl(invoice?.hosted_invoice_url)
+  }
+}
 
 const outOfCreditsBody = (): string => {
   if (canTopUp.value) {
@@ -210,6 +283,9 @@ const banner = computed<BannerView | null>(() => {
 
 function handleAddCredits() {
   void dialogService.showTopUpCreditsDialog()
+}
+function handlePayInvoice(url: string) {
+  window.open(url, '_blank', 'noopener,noreferrer')
 }
 function handleUpdatePayment() {
   void manageSubscription()

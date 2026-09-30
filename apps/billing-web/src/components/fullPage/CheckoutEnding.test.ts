@@ -51,7 +51,7 @@ describe('CheckoutEnding', () => {
     {
       reason: 'subscription_change_in_progress',
       code: 'SUBSCRIPTION_CHANGE_IN_PROGRESS',
-      body: UNKNOWN
+      body: 'Your plan already has a change scheduled. Cancel it in your billing settings to make a different one.'
     },
     { reason: 'not_a_member', code: 'NOT_A_MEMBER', body: UNKNOWN },
     { reason: 'unspecified', code: 'UNSPECIFIED', body: UNKNOWN }
@@ -78,6 +78,34 @@ describe('CheckoutEnding', () => {
           .queryAllByRole('button')
           .filter((button) => button.textContent.trim() !== '')
       ).toEqual([])
+    }
+  )
+
+  it.for([
+    { duration: 'MONTHLY', plan: 'Pro' },
+    { duration: 'ANNUAL', plan: 'Pro Yearly' }
+  ] as const)(
+    'a refusal for a change already scheduled to $duration names it $plan and the full date it takes effect',
+    ({ duration, plan }) => {
+      const ending = endingOf({
+        kind: 'refused',
+        reason: 'subscription_change_in_progress',
+        scheduled: {
+          plan: { tier: 'PRO', duration },
+          effectiveAt: '2026-10-28T00:00:00.000Z'
+        }
+      })
+      if (ending === undefined) throw new Error('a refusal is an ending')
+      renderEnding(ending)
+
+      expect(
+        screen.getByText(
+          `Your plan is set to change to ${plan} on October 28, 2026. Cancel that change in your billing settings to make a different one.`
+        )
+      ).toBeInTheDocument()
+      expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
+        'SUBSCRIPTION_CHANGE_IN_PROGRESS'
+      )
     }
   )
 
@@ -154,7 +182,7 @@ describe('CheckoutEnding', () => {
       closeLine: false
     },
     {
-      ending: { kind: 'load_failed', code: 'REQUEST_FAILED' },
+      ending: { kind: 'load_failed', cause: 'quote', code: 'REQUEST_FAILED' },
       title: "Couldn't load your checkout",
       body: "We couldn't load your quote. Nothing has been charged. Try again, or contact support if this keeps happening.",
       codeLabel: 'If this keeps happening, contact support with this code:',
@@ -163,16 +191,16 @@ describe('CheckoutEnding', () => {
       closeLine: false
     },
     {
-      ending: { kind: 'recheck_failed', code: 'REQUEST_FAILED' },
+      ending: { kind: 'load_failed', cause: 'recheck', code: 'REQUEST_FAILED' },
       title: "Couldn't load your checkout",
-      body: "We couldn't check this workspace's payments, so we can't show your checkout yet. Try again, or contact support if this keeps happening.",
+      body: "We couldn't check your recent payments, so checkout can't open yet. Try again, or contact support if this keeps happening.",
       codeLabel: 'If this keeps happening, contact support with this code:',
       action: 'Try again',
       support: true,
       closeLine: false
     }
   ])(
-    '$ending.kind reads as designed',
+    '$ending.kind reads as designed: $body',
     ({ ending, title, body, codeLabel, action, support, closeLine }) => {
       renderEnding(ending)
 
@@ -212,12 +240,12 @@ describe('CheckoutEnding', () => {
   it.for<{ ending: EndingScreen; action: Action; event: string }>([
     { ending: { kind: 'success' }, action: 'Close', event: 'close' },
     {
-      ending: { kind: 'load_failed', code: 'REQUEST_FAILED' },
+      ending: { kind: 'load_failed', cause: 'quote', code: 'REQUEST_FAILED' },
       action: 'Try again',
       event: 'retry'
     },
     {
-      ending: { kind: 'recheck_failed', code: 'REQUEST_FAILED' },
+      ending: { kind: 'load_failed', cause: 'recheck', code: 'REQUEST_FAILED' },
       action: 'Try again',
       event: 'retry'
     },

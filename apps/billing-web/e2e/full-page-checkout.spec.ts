@@ -102,7 +102,10 @@ test('360-4874: with no saved method a failed form takes the column, and Try aga
   await expect(page.getByText(FORM_FAILED)).toBeHidden()
 })
 
-test('opens on the saved method and subscribes with it, no card token', async ({
+const savedPicker = (page: Page) =>
+  page.getByRole('combobox', { name: 'Choose a saved payment method' })
+
+test('opens on a lone saved method as a static row and subscribes with it, no card token', async ({
   page,
   cloud,
   signIn
@@ -110,9 +113,8 @@ test('opens on the saved method and subscribes with it, no card token', async ({
   await signIn(CHECKOUT)
 
   await expect(tab(page, 'Saved')).toHaveAttribute('aria-selected', 'true')
-  await expect(
-    page.getByRole('combobox', { name: 'Choose a saved payment method' })
-  ).toContainText('·· 4242')
+  await expect(page.getByText('·· 4242')).toBeVisible()
+  await expect(savedPicker(page)).toBeHidden()
   await expect(page.getByText('Billing address')).toBeHidden()
   await payButton(page).click()
 
@@ -125,6 +127,36 @@ test('opens on the saved method and subscribes with it, no card token', async ({
     (request) => request.path === '/billing/subscribe'
   )
   expect(subscribe?.body).not.toHaveProperty('confirmation_token')
+})
+
+test('two saved methods keep the picker, and Pay charges the one picked', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.paymentMethods = [
+    ...cloud.scenario.paymentMethods,
+    {
+      id: 'pm_e2e_mastercard',
+      type: 'card',
+      brand: 'mastercard',
+      last4: '4402',
+      is_default: false
+    }
+  ]
+  await signIn(CHECKOUT)
+
+  await expect(savedPicker(page)).toContainText('·· 4242')
+  await savedPicker(page).click()
+  await page.getByRole('option', { name: /4402/ }).click()
+  await expect(savedPicker(page)).toContainText('·· 4402')
+  await payButton(page).click()
+
+  await expect
+    .poll(() =>
+      cloud.requests.find((request) => request.path === '/billing/subscribe')
+    )
+    .toMatchObject({ body: { saved_payment_method_id: 'pm_e2e_mastercard' } })
 })
 
 test('368-15319: a failed form beside a saved method stays inside Add new, and Saved stays payable', async ({
@@ -180,9 +212,7 @@ test('368-15401: a failed saved-methods read errors on Saved only, and Add new s
   healthy = true
   await page.getByRole('button', { name: 'Try again' }).click()
 
-  await expect(
-    page.getByRole('combobox', { name: 'Choose a saved payment method' })
-  ).toContainText('·· 4242')
+  await expect(page.getByText('·· 4242')).toBeVisible()
   await expect(page.getByText(SAVED_FAILED)).toBeHidden()
   await expect(payButton(page)).toBeEnabled()
 })
