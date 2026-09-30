@@ -14,12 +14,14 @@ import {
 } from '../src/config/workshop-json-schema'
 import {
   parseRouterOpenApiSnapshot,
+  routerAltProvidersSchema,
   routerInputSchema
 } from '../src/config/workshop-router-openapi'
 import { workshopRouterIndexSchema } from '../src/config/workshop-router-index'
 import { curateWorkshopInputs } from './workshop-input-presentation'
 import { creatorFormFor, creatorVariantsFor } from './workshop-creator-forms'
 import availabilityOverrides from '../src/data/workshop-router-availability.json'
+import pinnedAltProviders from '../src/data/workshop-router-alt-providers.json'
 import { isDirectExecution } from './script-entry-point'
 import { adaptRouterModel } from './router-model-adapters'
 
@@ -153,7 +155,8 @@ export function compileWorkshopContracts(
 export function compileWorkshopIndex(
   rawSnapshots: unknown,
   rawContracts: unknown,
-  rawAvailability: unknown = availabilityOverrides
+  rawAvailability: unknown = availabilityOverrides,
+  rawAltProviders: unknown = pinnedAltProviders
 ): string {
   const availability = new Map(
     Object.entries(
@@ -175,6 +178,16 @@ export function compileWorkshopIndex(
   const contracts = z.array(workshopContractRecordSchema).parse(rawContracts)
   const byId = new Map(contracts.map((contract) => [contract.id, contract]))
   const snapshotIds = new Set(snapshots.map((snapshot) => snapshot.id))
+  const altProviderPins = new Map(
+    Object.entries(
+      z
+        .object({
+          docsCommit: z.string().regex(/^[a-f0-9]{40}$/),
+          models: z.record(z.string(), routerAltProvidersSchema)
+        })
+        .parse(rawAltProviders).models
+    )
+  )
   if (
     byId.size !== contracts.length ||
     snapshotIds.size !== snapshots.length ||
@@ -200,6 +213,23 @@ export function compileWorkshopIndex(
         const output = Object.hasOwn(responses, '200')
           ? responses['200']
           : undefined
+        const snapshotAltProviders =
+          snapshot.document['x-comfy-router-alt-providers']
+        if (snapshotAltProviders && altProviderPins.has(snapshot.id))
+          throw new Error(
+            `Drop the pinned alt providers now the Router snapshot carries them: ${snapshot.id}`
+          )
+        const altProviders = (
+          snapshotAltProviders ??
+          altProviderPins.get(snapshot.id) ??
+          []
+        ).map(({ provider, model_id }) => {
+          if (!model_id.startsWith(`${provider}/`))
+            throw new Error(
+              `Alt provider leg ${model_id} is not served by ${provider}: ${snapshot.id}`
+            )
+          return { provider, routerId: model_id }
+        })
         const description = contract
           ? contract.inputSchema.description
           : snapshot.document['x-comfy-output-schema-authored']
@@ -209,6 +239,7 @@ export function compileWorkshopIndex(
           id: snapshot.id,
           catalogId: contract?.catalogId ?? snapshot.id,
           ...(typeof description === 'string' ? { description } : {}),
+          ...(altProviders.length ? { altProviders } : {}),
           ...(override ? { unavailableReason: override.reason } : {}),
           ...(!contract ? { incompleteReason: 'missing-input-schema' } : {})
         }

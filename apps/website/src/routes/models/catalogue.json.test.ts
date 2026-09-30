@@ -7,6 +7,11 @@ import { authoredWorkshopModels } from '../../config/workshop-browse-content'
 import { workshopPages } from '../../config/workshop-page-content'
 import { GET } from './catalogue.json'
 
+async function fetchPayload() {
+  vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockResolvedValue(GET()))
+  return fetchModelsCatalogue()
+}
+
 it('serves the catalogue cards, apps included, as JSON', async () => {
   const response = GET()
 
@@ -38,4 +43,21 @@ it('fails the catalogue parse when a disabled model leaks into the payload', asy
   )
 
   await expect(fetchModelsCatalogue()).rejects.toThrow()
+})
+
+it("names the alt-provider Router IDs that serve an entry's model", async () => {
+  const payload = await fetchPayload()
+  const kling = payload.filter((entry) => entry.routerId === 'kling/kling-v3')
+
+  expect(kling.length).toBeGreaterThan(0)
+  for (const entry of kling)
+    expect('servedBy' in entry && entry.servedBy).toEqual([
+      { provider: 'higgsfield', routerId: 'higgsfield/higgsfield-kling-3-std' }
+    ])
+  const legs = payload.flatMap((entry) =>
+    'servedBy' in entry ? (entry.servedBy ?? []) : []
+  )
+  expect(legs.length).toBeGreaterThan(0)
+  for (const { provider, routerId } of legs)
+    expect(routerId).toMatch(new RegExp(`^${provider}/[^/]+$`))
 })

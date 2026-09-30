@@ -1,0 +1,129 @@
+{
+  "docsCommit": "7c71fbcb8fe449121cf93f57d5d287e6340a396a",
+  "models": {
+    "byteplus/dreamina-seedance-2-0-260128": [
+      {
+        "provider": "fal",
+        "model_id": "fal/fal-seedance-2.0"
+      },
+      {
+        "provider": "higgsfield",
+        "model_id": "higgsfield/higgsfield-seedance-2.0"
+      },
+      {
+        "provider": "runware",
+        "model_id": "runware/runware-seedance-2.0"
+      },
+      {
+        "provider": "wavespeed",
+        "model_id": "wavespeed/wavespeed-seedance-2.0"
+      }
+    ],
+    "byteplus/dreamina-seedance-2-5-260628": [
+      {
+        "provider": "fal",
+        "model_id": "fal/fal-seedance-2.5"
+      },
+      {
+        "provider": "higgsfield",
+        "model_id": "higgsfield/higgsfield-seedance-2.5"
+      },
+      {
+        "provider": "runware",
+        "model_id": "runware/runware-seedance-2.5"
+      },
+      {
+        "provider": "wavespeed",
+        "model_id": "wavespeed/wavespeed-seedance-2.5"
+      }
+    ],
+    "kling/kling-3.0-turbo": [
+      {
+        "provider": "higgsfield",
+        "model_id": "higgsfield/higgsfield-kling-3-turbo"
+      }
+    ],
+    "kling/kling-v3": [
+      {
+        "provider": "higgsfield",
+        "model_id": "higgsfield/higgsfield-kling-3-std"
+      }
+    ],
+    "openai/gpt-image-2": [
+      {
+        "provider": "fal",
+        "model_id": "fal/fal-gpt-image-2"
+      },
+      {
+        "provider": "runware",
+        "model_id": "runware/runware-gpt-image-2"
+      },
+      {
+        "provider": "wavespeed",
+        "model_id": "wavespeed/wavespeed-gpt-image-2"
+      }
+    ],
+    "openai/gpt-image-2.5-flare": [
+      {
+        "provider": "fal",
+        "model_id": "fal/fal-gpt-image-2.5-flare"
+      },
+      {
+        "provider": "runware",
+        "model_id": "runware/runware-gpt-image-2.5-flare"
+      },
+      {
+        "provider": "wavespeed",
+        "model_id": "wavespeed/wavespeed-gpt-image-2.5-flare"
+      }
+    ],
+    "openai/gpt-image-2.5-sunburst": [
+      {
+        "provider": "fal",
+        "model_id": "fal/fal-gpt-image-2.5-sunburst"
+      },
+      {
+        "provider": "runware",
+        "model_id": "runware/runware-gpt-image-2.5-sunburst"
+      },
+      {
+        "provider": "wavespeed",
+        "model_id": "wavespeed/wavespeed-gpt-image-2.5-sunburst"
+      }
+    ],
+    "vertexai/gemini-3-pro-image": [
+      {
+        "provider": "fal",
+        "model_id": "fal/fal-nano-banana-pro"
+      },
+      {
+        "provider": "runware",
+        "model_id": "runware/runware-nano-banana-pro"
+      },
+      {
+        "provider": "wavespeed",
+        "model_id": "wavespeed/wavespeed-nano-banana-pro"
+      }
+    ],
+    "vertexai/gemini-3.1-flash-image": [
+      {
+        "provider": "fal",
+        "model_id": "fal/fal-nano-banana-2"
+      },
+      {
+        "provider": "runware",
+        "model_id": "runware/runware-nano-banana-2"
+      },
+      {
+        "provider": "wavespeed",
+        "model_id": "wavespeed/wavespeed-nano-banana-2"
+      }
+    ],
+    "wan/wan3.0-video": [
+      {
+        "provider": "higgsfield",
+        "model_id": "higgsfield/higgsfield-wan-3"
+      }
+    ]
+  }
+}

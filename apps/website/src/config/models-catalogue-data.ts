@@ -41,6 +41,9 @@ const presentationSchema = z.object({
 export const routerModelSchema = presentationSchema.extend({
   type: z.literal('MODEL').optional(),
   routerId: z.string(),
+  servedBy: z
+    .array(z.object({ provider: z.string(), routerId: z.string() }))
+    .optional(),
   workflowId: z.never().optional()
 })
 
