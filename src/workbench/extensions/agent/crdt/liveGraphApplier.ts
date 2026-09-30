@@ -699,14 +699,16 @@ export class LiveGraphApplier {
       try {
         this.setPromotedWidgetValue(node, widget, value)
       } catch (error) {
-        reportError(error, {
+        const options = {
+          surface: 'agent',
           errorType: 'agent_graph_apply_failed',
           tags: { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
           context: {
             nodeId: String(node.id),
             widget: name
           }
-        })
+        } as const
+        reportError(error, options)
       }
     }
   }
