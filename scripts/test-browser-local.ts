@@ -1,12 +1,19 @@
 import { spawnSync } from 'node:child_process'
 
-const command = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
-const result = spawnSync(command, ['test:browser', ...process.argv.slice(2)], {
+import { getPnpmInvocation } from './test-browser-local.utils'
+
+const args = ['test:browser', ...process.argv.slice(2)]
+const invocation = getPnpmInvocation(args)
+const configuredUrl = process.env.PLAYWRIGHT_TEST_URL
+const result = spawnSync(invocation.command, invocation.args, {
   env: {
     ...process.env,
     PLAYWRIGHT_TEST_URL:
-      process.env.PLAYWRIGHT_TEST_URL ?? 'http://localhost:5173'
+      configuredUrl && configuredUrl.trim()
+        ? configuredUrl
+        : 'http://localhost:5173'
   },
+  shell: invocation.shell,
   stdio: 'inherit'
 })
 
