@@ -198,7 +198,7 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import Button from '@/components/ui/button/Button.vue'
 import type { ChannelMode } from '@/composables/useHdrViewer'
 import { CHANNEL_MODES, useHdrViewer } from '@/composables/useHdrViewer'
-import { GAMUT_NAMES } from '@/renderer/hdr/colorGamut'
+import { GAMUT_NAMES } from '@/platform/hdr/colorGamut'
 import { toFullResolutionUrl } from '@/utils/hdrFormatUtil'
 import { histogramToPath } from '@/utils/histogramUtil'
 
