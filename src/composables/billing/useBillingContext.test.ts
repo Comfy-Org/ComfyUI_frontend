@@ -1,5 +1,16 @@
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { effectScope, nextTick } from 'vue'
+
+import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useAgentDockMount'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type {
@@ -231,10 +242,38 @@ describe('useBillingContext', () => {
       renewalDate: '2025-01-01T00:00:00Z',
       endDate: null,
       isCancelled: false,
-      hasFunds: true
+      hasFunds: true,
+      agentHasFunds: true
     })
   })
 
+  it('re-arms the exhaustion impression after workspace-scoped Agent funds recover while the dock is closed', async () => {
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    mockBillingRail.value = 'stripe'
+    mockBillingStatus.value = {
+      ...DEFAULT_BILLING_STATUS,
+      has_funds: false,
+      scoped_effective_has_funds: { agent: false }
+    }
+    const scope = effectScope()
+    onTestFinished(() => scope.stop())
+    const billing = scope.run(useSharedBillingContext)
+    assert.exists(billing)
+    const dock = scope.run(useAgentDockMount)
+    assert.exists(dock)
+    const agentPanelStore = useAgentPanelStore()
+    agentPanelStore.isOpen = false
+    agentPanelStore.reportedExhaustionIdentity = 'account-a:workspace-a'
+
+    await billing.fetchStatus()
+    expect(dock.docked.value).toBe(false)
+
+    mockBillingStatus.value.scoped_effective_has_funds = { agent: true }
+    await billing.fetchStatus()
+    await nextTick()
+
+    expect(agentPanelStore.reportedExhaustionIdentity).toBeNull()
+  })
   it('provides balance info from legacy billing', () => {
     mockBillingRail.value = 'legacy_stripe'
     const { balance } = useBillingContext()

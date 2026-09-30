@@ -1,11 +1,17 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { createPinia, setActivePinia } from 'pinia'
+import { computed, nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import type { SubscriptionInfo } from '@/composables/billing/types'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import { useAgentDockMount } from './useAgentDockMount'
 
 vi.mock('@/platform/telemetry', () => ({ useTelemetry: () => undefined }))
+vi.mock(import('@/composables/billing/useBillingContext'))
+const billingContext = useBillingContext()
 const { loadDockedAgentPanel } = vi.hoisted(() => ({
   loadDockedAgentPanel: vi.fn(() => ({ name: 'DockedAgentPanel' }))
 }))
@@ -30,6 +36,36 @@ describe('useAgentDockMount', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
+    vi.mocked(useBillingContext).mockReturnValue({
+      ...billingContext,
+      subscription: computed(() =>
+        fromPartial<SubscriptionInfo>({
+          hasFunds: false,
+          agentHasFunds: false
+        })
+      )
+    })
+  })
+
+  it('re-arms exhaustion after funds recover while the panel is closed', async () => {
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    const subscription = ref({ hasFunds: false, agentHasFunds: false })
+    vi.mocked(useBillingContext).mockReturnValue({
+      ...billingContext,
+      subscription: computed(() =>
+        fromPartial<SubscriptionInfo>(subscription.value)
+      )
+    })
+    const store = useAgentPanelStore()
+    store.reportedExhaustionIdentity = 'account-a:workspace-a'
+
+    const { docked } = useAgentDockMount()
+    expect(docked.value).toBe(false)
+
+    subscription.value = { hasFunds: false, agentHasFunds: true }
+    await nextTick()
+
+    expect(store.reportedExhaustionIdentity).toBeNull()
   })
 
   it('returns an inert mount on non-cloud distributions', () => {

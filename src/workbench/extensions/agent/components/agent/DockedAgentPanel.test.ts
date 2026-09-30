@@ -1,22 +1,29 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
-import { defineComponent, nextTick, ref } from 'vue'
+import { computed, defineComponent, nextTick, ref } from 'vue'
 
+import type { SubscriptionInfo } from '@/composables/billing/types'
 import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 
 import DockedAgentPanel from './DockedAgentPanel.vue'
 
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => undefined
 }))
-vi.mock('@/platform/telemetry/reportError', () => ({ reportError: vi.fn() }))
+vi.mock(import('@/composables/billing/useBillingContext'))
+const billingContext = useBillingContext()
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 const fetchApi = vi.hoisted(() =>
   vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
@@ -75,6 +82,15 @@ describe('DockedAgentPanel', () => {
     vi.mocked(reportError).mockClear()
     rootLiveness.live = 0
     rootLiveness.maxLive = 0
+    vi.mocked(useBillingContext).mockReturnValue({
+      ...billingContext,
+      subscription: computed(() =>
+        fromPartial<SubscriptionInfo>({
+          hasFunds: false,
+          agentHasFunds: false
+        })
+      )
+    })
   })
 
   it('docks the panel at the store width when enabled and open', async () => {
