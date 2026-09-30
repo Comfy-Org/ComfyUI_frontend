@@ -1170,6 +1170,28 @@ describe('createBillingCommands', () => {
       expect(h.readCredits).not.toHaveBeenCalled()
     })
 
+    it.for([
+      { httpStatus: 400, expected: 'QUOTE_STALE' },
+      { httpStatus: 503, expected: 'REQUEST_FAILED' }
+    ])(
+      'a subscribe answered $httpStatus SUBSCRIPTION_QUOTE_STALE is $expected',
+      async ({ httpStatus, expected }) => {
+        const h = harness({
+          status: FREE,
+          script: {
+            [POST_SUBSCRIBE]: [
+              serverError(httpStatus, 'SUBSCRIPTION_QUOTE_STALE')
+            ]
+          }
+        })
+
+        await expect(h.commands.subscribe(PLAN)).resolves.toMatchObject({
+          status: 'error',
+          code: expected
+        })
+      }
+    )
+
     it('surfaces REACTIVATION_CONFIRMATION_REQUIRED for the host to re-preview', async () => {
       const h = harness({
         status: FREE,

@@ -793,9 +793,35 @@ export interface AgentConsentResolvedMetadata extends Record<string, unknown> {
    */
   save_error_shown: boolean
 }
+export type AgentInputMethod = 'typed' | 'suggestion' | 'edited'
+export type AgentStarterPromptId =
+  | 'generate_image'
+  | 'list_workflows'
+  | 'find_workflow'
+  | 'explain_selected_node'
+  | 'build_video_workflow'
+  | 'unregistered'
+export interface AgentStarterPromptClickedMetadata extends Record<
+  string,
+  unknown
+> {
+  prompt_id: AgentStarterPromptId
+  prompt_index: number
+  prompt_count: number
+  prompt_text_hash: string
+  locale: string
+  click_id: string
+  draft_was_empty: boolean
+}
 export interface AgentMessageSentMetadata extends Record<string, unknown> {
   attachment_count: number
   node_tag_count: number
+  thread_id: string | null
+  workflow_id: string | null
+  client_message_id: string
+  input_method: AgentInputMethod
+  starter_prompt_id: AgentStarterPromptId | null
+  starter_prompt_click_id: string | null
 }
 export interface AgentNodeTaggedMetadata extends Record<string, unknown> {
   source: 'mention_picker'
@@ -1514,6 +1540,9 @@ export interface TelemetryProvider {
   trackAgentConsentShown?(metadata: AgentConsentShownMetadata): void
   trackAgentConsentResolved?(metadata: AgentConsentResolvedMetadata): void
   trackAgentMessageSent?(metadata: AgentMessageSentMetadata): void
+  trackAgentStarterPromptClicked?(
+    metadata: AgentStarterPromptClickedMetadata
+  ): void
   trackAgentNodeTagged?(metadata: AgentNodeTaggedMetadata): void
   trackAgentAttachButtonClicked?(): void
   trackAgentWorkflowApplied?(metadata: AgentWorkflowAppliedMetadata): void
@@ -1690,6 +1719,7 @@ export const TelemetryEvents = {
   AGENT_CONSENT_SHOWN: 'app:agent_consent_shown',
   AGENT_CONSENT_RESOLVED: 'app:agent_consent_resolved',
   AGENT_MESSAGE_SENT: 'app:agent_message_sent',
+  AGENT_STARTER_PROMPT_CLICKED: 'app:agent_starter_prompt_clicked',
   AGENT_NODE_TAGGED: 'app:agent_node_tagged',
   AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',
   AGENT_WORKFLOW_APPLIED: 'app:agent_workflow_applied',

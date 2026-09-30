@@ -58,7 +58,7 @@ import { createDeferredStripeChallengePort } from '@/session/stripeChallengePort
 import { useWorkspaceInvites } from '@/session/workspaceInvites'
 
 const { locale, t } = useI18n()
-const { refusal } = useHostedCopy()
+const { coded, refusal } = useHostedCopy()
 const { copy, successCopy, inviteCopy, tierName } = useCheckoutCopy()
 const invites = useWorkspaceInvites()
 const { entry } = useBillingEntry()
@@ -502,6 +502,15 @@ async function pay(choice: PaymentChoice) {
     // The quote did not say so, the server did: price it again and ask.
     serverDemandsReactivation.value = true
     await quotePlan(planSlug.value, teamCreditStopId.value)
+    return
+  }
+  if (result.code === 'QUOTE_STALE') {
+    quoteIsCurrent.value = false
+    const requoted = await quotePlan(planSlug.value, teamCreditStopId.value)
+    submitFailure.value = coded(
+      'failure',
+      requoted?.status === 'ok' ? 'QUOTE_STALE' : 'QUOTE_REFRESH_FAILED'
+    )
     return
   }
   submitFailure.value = refusal(result)
