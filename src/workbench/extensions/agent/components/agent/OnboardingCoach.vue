@@ -28,6 +28,7 @@ const { steps, storageKey } = defineProps<{
   steps: CoachStep[]
   storageKey?: string
 }>()
+const emit = defineEmits<{ finished: [] }>()
 
 const { active, index, step, isLast, next, finish } = useOnboarding(
   () => steps,
@@ -70,6 +71,17 @@ function resolveTargets(): void {
   bounds.update()
   toolbarBounds.update()
   scheduleTargetRetry()
+}
+
+function onNext(): void {
+  const finished = isLast.value
+  next()
+  if (finished) emit('finished')
+}
+
+function onSkip(): void {
+  finish()
+  emit('finished')
 }
 
 const targetObserver = new MutationObserver(resolveTargets)
@@ -167,7 +179,7 @@ useEventListener(
     if (!active.value || !target.value || event.key !== 'Escape') return
     event.preventDefault()
     event.stopPropagation()
-    finish()
+    onSkip()
   },
   { capture: true }
 )
@@ -222,10 +234,10 @@ useEventListener(
               </p>
             </div>
             <div class="flex justify-end gap-3">
-              <Button variant="secondary" size="md" @click="finish">{{
+              <Button variant="secondary" size="md" @click="onSkip">{{
                 $t('agent.skip')
               }}</Button>
-              <Button variant="inverted" size="md" @click="next">{{
+              <Button variant="inverted" size="md" @click="onNext">{{
                 $t(isLast ? 'onboardingCoachmarks.done' : 'g.next')
               }}</Button>
             </div>
