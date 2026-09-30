@@ -373,7 +373,6 @@
           "startsMonthly": "Starts {date}, billed monthly",
           "startsYearly": "Starts {date}, billed yearly"
         },
-        "subtotal": "Subtotal",
         "discount": {
           "fallbackLabel": "Promo code",
           "amount": "−{amount}"
