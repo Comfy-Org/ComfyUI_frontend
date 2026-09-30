@@ -1,5 +1,6 @@
 import {
   zAgentProbeableAttachmentExtension,
+  zAgentReadableAttachmentExtension,
   zAgentReferenceAttachmentExtension,
   zAgentRetainedAttachmentExtension,
   zAgentViewableAttachmentExtension
@@ -9,12 +10,21 @@ import {
  * What the agent can do with an attachment, straight off the server contract.
  *
  * The tiers are not interchangeable and the composer must not present them as
- * one list: `view` means the model sees the content, `probe` means it reads
- * metadata and never the content, `reference` means it knows the file exists
- * and can wire it into a graph node, and `retain` means it knows the file
- * exists and nothing more — no node in the catalog loads a text file.
+ * one list: `view` means the model sees the content, `read` means it reads the
+ * contents verbatim, `probe` means it reads metadata and never the content,
+ * `reference` means it knows the file exists as a mesh, and `retain` means it
+ * knows the file exists and nothing more.
+ *
+ * `read` describes CONTENT ACCESS only. Whether a format can also be wired into
+ * a graph is a separate axis, so text gaining a node input later does not move
+ * it out of this tier.
  */
-export type AgentAttachCapability = 'view' | 'probe' | 'reference' | 'retain'
+export type AgentAttachCapability =
+  | 'view'
+  | 'probe'
+  | 'read'
+  | 'reference'
+  | 'retain'
 
 /**
  * Derived from the generated enums rather than hand-listed here, so the accept
@@ -31,6 +41,9 @@ const CAPABILITY_BY_EXTENSION = new Map<string, AgentAttachCapability>([
   ),
   ...zAgentReferenceAttachmentExtension.options.map(
     (extension) => [extension, 'reference'] as const
+  ),
+  ...zAgentReadableAttachmentExtension.options.map(
+    (extension) => [extension, 'read'] as const
   ),
   ...zAgentRetainedAttachmentExtension.options.map(
     (extension) => [extension, 'retain'] as const

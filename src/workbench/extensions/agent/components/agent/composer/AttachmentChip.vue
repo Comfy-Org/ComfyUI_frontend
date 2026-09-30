@@ -38,28 +38,31 @@ const kindIconClass = computed(() =>
    invisible: it reads an image's pixels, a clip's duration only, and nothing at
    all inside a mesh or a text file. Without this the chip looks identical either
    way and the user assumes it was read. */
-const capabilityLabel = computed(() => {
-  // The stored ref decides when it can: an asset card's name is a display
-  // label that need not carry a judgeable extension, and a chip with no
-  // capability text is the one case this affordance exists to prevent.
-  switch (
-    capability ??
-    agentAttachCapability(name) ??
-    agentAttachCapability(refName ?? '') ??
-    'unknown'
-  ) {
-    case 'view':
-      return t('agent.attachmentCapabilityView')
-    case 'probe':
-      return t('agent.attachmentCapabilityProbe')
-    case 'reference':
-      return t('agent.attachmentCapabilityReference')
-    case 'retain':
-      return t('agent.attachmentCapabilityRetain')
-    default:
-      return t('agent.attachmentCapabilityUnknown')
-  }
-})
+/* Keyed by a Record rather than a switch so adding a tier to the server contract
+   fails TYPECHECK here until its copy exists, instead of falling through to the
+   unknown string and quietly under-describing the file. */
+const CAPABILITY_MESSAGE: Record<AgentAttachCapability | 'unknown', string> = {
+  view: 'agent.attachmentCapabilityView',
+  probe: 'agent.attachmentCapabilityProbe',
+  read: 'agent.attachmentCapabilityRead',
+  reference: 'agent.attachmentCapabilityReference',
+  retain: 'agent.attachmentCapabilityRetain',
+  unknown: 'agent.attachmentCapabilityUnknown'
+}
+
+const capabilityLabel = computed(() =>
+  // Admission's recorded capability first: it judged the real local filename.
+  // The stored ref beats the display label after that, since a card's label
+  // need not carry a judgeable extension at all.
+  t(
+    CAPABILITY_MESSAGE[
+      capability ??
+        agentAttachCapability(name) ??
+        agentAttachCapability(refName ?? '') ??
+        'unknown'
+    ]
+  )
+)
 </script>
 
 <template>

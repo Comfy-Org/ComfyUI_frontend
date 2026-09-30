@@ -5335,6 +5335,7 @@
     "attachmentNamesOverflow": "{names} and {count} more",
     "attachmentCountExceeded": "Only {count} files can be attached to one message",
     "attachmentCapabilityProbe": "The agent can read this file's format and length, but not what it contains",
+    "attachmentCapabilityRead": "The agent can read this file's contents",
     "attachmentCapabilityReference": "The agent can load this file in the graph, but can't read what it contains",
     "attachmentCapabilityRetain": "Attached for reference only — the agent can't read this file or load it in the graph",
     "attachmentCapabilityUnknown": "The agent will verify this file type when the message is sent",

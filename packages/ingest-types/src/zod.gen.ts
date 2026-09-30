@@ -2796,25 +2796,14 @@ export const zAgentRunMode = z.object({
 
 /**
  * Attachment extensions that are accepted so a user can keep them beside a workflow, and
- * nothing more. No upload-backed node input takes a text file, so unlike the reference tier
- * these cannot be wired into a graph either. .svg and .avif are here for the same reason from
- * the other direction: they are images the turn cannot decode (svg is in the registry's
- * undecodable set, avif is unregistered), so view_asset would fail on either.
+ * nothing more — the agent can neither read the contents nor wire the file in.
+ *
+ * .avif is the only one: it is an image the turn cannot decode (no registry entry, so
+ * view_asset would fail) and it is not text, so read_asset would return mojibake. It stays
+ * accepted because it was attachable before the policy existed.
  *
  */
-export const zAgentRetainedAttachmentExtension = z.enum([
-  '.md',
-  '.markdown',
-  '.txt',
-  '.json',
-  '.csv',
-  '.yaml',
-  '.yml',
-  '.xml',
-  '.log',
-  '.svg',
-  '.avif'
-])
+export const zAgentRetainedAttachmentExtension = z.enum(['.avif'])
 
 /**
  * Attachment extensions the agent can recognize as 3D but cannot read. They are exactly the
@@ -2833,6 +2822,31 @@ export const zAgentReferenceAttachmentExtension = z.enum([
   '.spz',
   '.splat',
   '.ksplat'
+])
+
+/**
+ * Attachment extensions whose contents the agent reads verbatim, with read_asset. The bytes
+ * are decoded as UTF-8 and returned as text, bounded and truncation-marked.
+ *
+ * This tier describes CONTENT ACCESS only and says nothing about whether the file can be
+ * wired into a graph. Those are separate questions, so a format becoming a node input later
+ * does not move it out of this tier.
+ *
+ * .svg is here rather than with the images because it is XML: view_asset cannot decode it,
+ * but its markup is exactly what a caller would want read.
+ *
+ */
+export const zAgentReadableAttachmentExtension = z.enum([
+  '.md',
+  '.markdown',
+  '.txt',
+  '.json',
+  '.csv',
+  '.yaml',
+  '.yml',
+  '.xml',
+  '.log',
+  '.svg'
 ])
 
 /**
@@ -2955,18 +2969,19 @@ export const zAgentCancelAccepted = z.object({
  * all. Cloud does not currently populate Load3D's model_file choices from uploaded meshes,
  * so the agent is explicitly told not to wire or run one either. The cloud turn registers
  * neither a shell nor a file-read tool, by design: it is a shared multi-tenant pod.
- * - `retain`: the file is attached and nothing more. The agent is told it is there and can
- * neither read it nor wire it in. Kept separate from `reference` because no node in the
- * catalog takes a text file on an upload-backed input — Load3D/Load3DAdvanced take a mesh,
- * LoadImage/LoadAudio/LoadVideo take media, and nothing takes .md or .csv. Telling the user
- * the agent could "use this in the graph" would be false for this tier, and would send the
- * model hunting for a loader that does not exist.
+ * - `read`: the agent reads the contents verbatim with read_asset — UTF-8 decoded, bounded
+ * and truncation-marked. The tier describes CONTENT ACCESS only; whether the file can also
+ * be wired into a graph is a separate axis, so a format gaining an upload-backed node input
+ * later stays in this tier.
+ * - `retain`: the file is attached and nothing more — neither readable nor wirable. Only
+ * .avif, which the turn cannot decode as an image and is not text.
  *
  * The union of the four arrays is the accepted list. Anything absent is rejected.
  *
  */
 export const zAgentAttachmentPolicy = z.object({
   probe: z.array(zAgentProbeableAttachmentExtension),
+  read: z.array(zAgentReadableAttachmentExtension),
   reference: z.array(zAgentReferenceAttachmentExtension),
   retain: z.array(zAgentRetainedAttachmentExtension),
   view: z.array(zAgentViewableAttachmentExtension)
