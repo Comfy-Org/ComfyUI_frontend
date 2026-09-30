@@ -15,7 +15,10 @@ import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
 import type { BillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
-import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
+import {
+  PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+  claimPendingCheckoutTerminal
+} from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 
 const {
   mockGetCheckoutAttribution,
@@ -1919,7 +1922,150 @@ describe('useSubscription', () => {
           useTelemetry()?.trackMonthlySubscriptionSucceeded
         ).toHaveBeenCalled()
       })
-      expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({ operation: 'resubscribe' })
+      )
+    })
+
+    it.for([
+      {
+        name: 'a plain new subscribe closes with one checkout success',
+        attempt: {
+          attempt_id: 'attempt-new',
+          tier: 'creator',
+          cycle: 'yearly',
+          checkout_type: 'new',
+          payment_intent_source: 'out_of_credits'
+        },
+        status: {
+          subscription_tier: 'CREATOR',
+          subscription_duration: 'ANNUAL'
+        },
+        expectedEvents: [
+          [
+            {
+              operation: 'subscription_checkout',
+              stage: 'succeeded',
+              outcome: 'success',
+              checkout_attempt_id: 'attempt-new',
+              tier: 'creator',
+              cycle: 'yearly',
+              checkout_type: 'new',
+              payment_intent_source: 'out_of_credits'
+            }
+          ]
+        ]
+      },
+      {
+        name: 'a portal plan change never opened a checkout, so it reports none',
+        attempt: {
+          attempt_id: 'attempt-change',
+          tier: 'pro',
+          cycle: 'monthly',
+          checkout_type: 'change',
+          previous_tier: 'creator'
+        },
+        status: { subscription_tier: 'PRO', subscription_duration: 'MONTHLY' },
+        expectedEvents: []
+      },
+      {
+        name: 'a resubscribe closes only its own funnel',
+        attempt: {
+          attempt_id: 'attempt-resubscribe',
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new',
+          operation: 'resubscribe',
+          resubscribe_source: 'pricing_dialog',
+          previous_cancel_at: '2025-11-16'
+        },
+        status: {
+          subscription_tier: 'STANDARD',
+          subscription_duration: 'MONTHLY'
+        },
+        expectedEvents: [
+          [
+            {
+              operation: 'resubscribe',
+              stage: 'succeeded',
+              outcome: 'success',
+              source: 'pricing_dialog',
+              checkout_attempt_id: 'attempt-resubscribe'
+            }
+          ]
+        ]
+      }
+    ])(
+      'reports a timely success to the funnel that opened it: $name',
+      async ({ attempt, status, expectedEvents }) => {
+        localStorage.setItem(
+          PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+          JSON.stringify({ ...attempt, started_at_ms: Date.now() })
+        )
+        mockGetBillingStatus.mockResolvedValue({
+          is_active: true,
+          has_funds: true,
+          renewal_date: '2025-11-16',
+          ...status
+        })
+
+        useCurrentUser().isLoggedIn = computed(() => true)
+        useSubscriptionWithScope()
+
+        await vi.waitFor(() => {
+          expect(
+            localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
+          ).toBeNull()
+        })
+        expect(mockTelemetry.trackBillingEvent.mock.calls).toEqual(
+          expectedEvents
+        )
+      }
+    )
+
+    it('still reports a late success for a plan change after its timeout', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-late-change',
+          started_at_ms: Date.now(),
+          tier: 'pro',
+          cycle: 'monthly',
+          checkout_type: 'change',
+          previous_tier: 'creator'
+        })
+      )
+      claimPendingCheckoutTerminal('attempt-late-change', 'completion_missing')
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: true,
+        has_funds: true,
+        renewal_date: '2025-11-16',
+        subscription_tier: 'PRO',
+        subscription_duration: 'MONTHLY'
+      })
+
+      useCurrentUser().isLoggedIn = computed(() => true)
+      useSubscriptionWithScope()
+
+      await vi.waitFor(() => {
+        expect(
+          localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
+        ).toBeNull()
+      })
+      expect(mockTelemetry.trackBillingEvent.mock.calls).toEqual([
+        [
+          {
+            operation: 'subscription_checkout',
+            stage: 'succeeded',
+            outcome: 'success',
+            checkout_attempt_id: 'attempt-late-change',
+            tier: 'pro',
+            cycle: 'monthly',
+            checkout_type: 'change',
+            recovery_outcome: 'late_success'
+          }
+        ]
+      ])
     })
 
     it('rechecks pending checkout attempts when the document becomes visible', async () => {
