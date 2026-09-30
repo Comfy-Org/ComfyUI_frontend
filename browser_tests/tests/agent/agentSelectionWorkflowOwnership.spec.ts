@@ -11,7 +11,6 @@ import {
   referenceWorkflow
 } from '@e2e/fixtures/agentInlineReferencesFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
-import { Topbar } from '@e2e/fixtures/components/Topbar'
 
 test.use({
   connectWebSocketToServer: false,

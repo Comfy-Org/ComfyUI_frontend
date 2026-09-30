@@ -7,7 +7,6 @@ import {
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
-import { Topbar } from '@e2e/fixtures/components/Topbar'
 
 const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
