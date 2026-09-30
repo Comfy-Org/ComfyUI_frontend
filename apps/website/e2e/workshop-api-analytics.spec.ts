@@ -40,17 +40,21 @@ async function expectApiActions(
 ) {
   await expect
     .poll(() => captured, { timeout: 15_000 })
-    .toContainEqual({
-      event: 'website:workshop_api_snippet_copied',
-      properties: expect.objectContaining({
-        ...model,
-        snippet_language: 'curl'
-      })
-    })
-  expect(captured).toContainEqual({
-    event: 'website:workshop_api_key_clicked',
-    properties: expect.objectContaining(model)
-  })
+    .toEqual(
+      expect.arrayContaining([
+        {
+          event: 'website:workshop_api_snippet_copied',
+          properties: expect.objectContaining({
+            ...model,
+            snippet_language: 'curl'
+          })
+        },
+        {
+          event: 'website:workshop_api_key_clicked',
+          properties: expect.objectContaining(model)
+        }
+      ])
+    )
 }
 
 test('the model API tab reports snippet copies and Get API key clicks', async ({
