@@ -124,6 +124,7 @@ import { createAgentEventSource } from './services/agent/agentEventSource'
 import { createStandaloneAgentEventSource } from './services/agent/standaloneAgentEventSource'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { agentMessageText } from './utils/agentMessageText'
+import { deriveSessionTitle } from './utils/sessionTitle'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentConsentStore } from './stores/agent/agentConsentStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
@@ -1313,6 +1314,33 @@ const currentChatReady = computed(
     threadId.value === history.activeId &&
     selectedTarget.value !== null
 )
+
+// The transcript for the acknowledged active thread has loaded - narrower
+// than `currentChatReady`, which also waits on workflow-target restoration
+// that has nothing to do with whether `entries` is safe to read here.
+const activeTranscriptReady = computed(
+  () => isTranscriptReady.value && threadId.value === history.activeId
+)
+
+// The active chat's displayed title (mirrors AgentPanel's `sessionTitle`)
+// can become known - from a manual rename, or simply once the first user
+// message loads - before the cached thread-list entry reflects it: that
+// list is a snapshot from the last `refreshHistory` call, and nothing else
+// pushes title updates into it (the server generates titles asynchronously
+// with no push event for when they land). Patch the list optimistically
+// whenever this changes so the history screen doesn't show a stale title
+// until its next refetch. Gated on `activeTranscriptReady` so a thread
+// mid-swap (its entries loaded, but not yet the acknowledged active
+// thread) can't leak its title into another thread's still-visible entry.
+const activeSessionTitle = computed(() => {
+  if (!activeTranscriptReady.value) return undefined
+  return history.titleFor(threadId.value) ?? deriveSessionTitle(entries.value)
+})
+
+watch(activeSessionTitle, (title) => {
+  if (threadId.value !== null && title)
+    history.patchTitle(threadId.value, title)
+})
 
 async function onSelectHistory(
   id: string,

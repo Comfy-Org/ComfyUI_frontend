@@ -37,6 +37,7 @@ import type { ConversationEntry } from '../../stores/agent/agentConversationStor
 import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from '../../stores/agent/agentPanelStore'
 import type { AgentPanelView } from '../../stores/agent/agentPanelStore'
+import { deriveSessionTitle } from '../../utils/sessionTitle'
 
 import AgentFeedbackCaption from './AgentFeedbackCaption.vue'
 import ChatHistoryScreen from './ChatHistoryScreen.vue'
@@ -257,14 +258,7 @@ function onWorkflowTargetRequired(): void {
 
 const { t } = useI18n()
 
-const sessionTitle = computed(() => {
-  if (customTitle) return customTitle
-  const firstUser = entries.find(
-    (entry): entry is Extract<ConversationEntry, { role: 'user' }> =>
-      entry.role === 'user'
-  )
-  return firstUser?.text.trim().slice(0, 60) || undefined
-})
+const sessionTitle = computed(() => customTitle || deriveSessionTitle(entries))
 
 const renaming = ref(false)
 const renameDraft = ref('')

@@ -182,6 +182,49 @@ describe('useAgentChatHistoryStore', () => {
     expect(store.sessions.map(({ id }) => id)).toEqual(['a'])
   })
 
+  it('patches a cached session title in place without touching others', () => {
+    const store = useAgentChatHistoryStore()
+    store.replaceAll([session('a', 1), session('b', 2)])
+
+    store.patchTitle('a', 'Clear entire canvas')
+
+    expect(store.sessions.map((s) => ({ id: s.id, title: s.title }))).toEqual([
+      { id: 'a', title: 'Clear entire canvas' },
+      { id: 'b', title: 'b' }
+    ])
+  })
+
+  it('reflects a patched title in the grouped list immediately', () => {
+    const store = useAgentChatHistoryStore()
+    store.replaceAll([session('a', NOW - 1_000)])
+    store.setActive('a')
+
+    store.patchTitle('a', 'Clear entire canvas')
+
+    expect(store.grouped.current[0]).toMatchObject({
+      id: 'a',
+      title: 'Clear entire canvas'
+    })
+  })
+
+  it('ignores a whitespace-only title patch', () => {
+    const store = useAgentChatHistoryStore()
+    store.replaceAll([session('a', 1)])
+
+    store.patchTitle('a', '   ')
+
+    expect(store.sessions[0]?.title).toBe('a')
+  })
+
+  it('is a no-op when the session is not yet cached', () => {
+    const store = useAgentChatHistoryStore()
+    store.replaceAll([session('a', 1)])
+
+    store.patchTitle('unknown-thread', 'Clear entire canvas')
+
+    expect(store.sessions.map((s) => s.id)).toEqual(['a'])
+  })
+
   it('removes a session with no server request', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch')
     const store = useAgentChatHistoryStore()

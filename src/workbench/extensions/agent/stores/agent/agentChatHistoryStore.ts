@@ -106,6 +106,20 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
     )
   }
 
+  // Optimistic cache patch for a title the caller already knows (e.g. the
+  // active chat's displayed title), so the history list doesn't flash a
+  // stale title until the next full `replaceAll` refetch catches up. A
+  // no-op when the thread isn't cached yet; the next refetch adds it.
+  function patchTitle(id: string, title: string): void {
+    const trimmed = title.trim()
+    if (trimmed === '') return
+    sessions.value = sessions.value.map((session) =>
+      session.id === id && session.title !== trimmed
+        ? { ...session, title: trimmed }
+        : session
+    )
+  }
+
   function setActive(id: string | null): void {
     activeId.value = id
   }
@@ -118,6 +132,7 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
     rename,
     remove,
     replaceAll,
+    patchTitle,
     setActive
   }
 })
