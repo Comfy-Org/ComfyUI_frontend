@@ -31,11 +31,11 @@ describe('measureViewport', () => {
     expect(vp.physicalHeight).toBe(1200)
   })
 
-  it('preserves sub-1 DPR (e.g. chromium-0.5x test matrix)', () => {
+  it('clamps sub-1 DPR to one backing pixel per CSS pixel', () => {
     const vp = measureViewport(800, 600, 0.5, 0)
-    expect(vp.dpr).toBe(0.5)
-    expect(vp.physicalWidth).toBe(400)
-    expect(vp.physicalHeight).toBe(300)
+    expect(vp.dpr).toBe(1)
+    expect(vp.physicalWidth).toBe(800)
+    expect(vp.physicalHeight).toBe(600)
   })
 
   it('falls back to 1 for invalid (non-positive) DPR', () => {

@@ -15,7 +15,7 @@ let currentGeneration = 0
 const appliedViewportByCanvas = new WeakMap<HTMLCanvasElement, CanvasViewport>()
 
 function normalizeDpr(rawDpr: number): number {
-  return rawDpr > 0 && Number.isFinite(rawDpr) ? rawDpr : 1
+  return rawDpr > 0 && Number.isFinite(rawDpr) ? Math.max(rawDpr, 1) : 1
 }
 
 function measureViewport(
@@ -24,8 +24,8 @@ function measureViewport(
   rawDpr: number,
   prevGeneration?: number
 ): CanvasViewport {
-  // Preserve raw DPR so sub-1 displays (e.g. chromium-0.5x) keep their
-  // native scale. Only fall back to 1 for invalid values.
+  // Keep at least one backing pixel per CSS pixel. DPR values below one are
+  // valid browser inputs, but using them directly makes the canvas blurry.
   const dpr = normalizeDpr(rawDpr)
   return Object.freeze({
     cssWidth,
