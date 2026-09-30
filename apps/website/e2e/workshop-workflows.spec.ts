@@ -609,3 +609,27 @@ test('the examples belong to the playground, not to Details or API', async ({
   await page.getByRole('tab', { name: 'Playground', exact: true }).click()
   await expect(examples).toBeVisible()
 })
+
+test('a workflow card spends its tag line on the whole name while hovered', async ({
+  page,
+  context
+}) => {
+  await mockWorkflowVisibility(context, true)
+  await page.goto('/hub/workflows/')
+
+  const card = page
+    .locator('[data-testid="workshop-model-card"][data-kind="workflow"]')
+    .first()
+  const name = card.getByTestId('model-card-name')
+  await expect(card.getByTestId('model-card-task')).toBeVisible()
+  const resting = await card.boundingBox()
+
+  await card.hover()
+
+  await expect(card.getByTestId('model-card-task')).toBeHidden()
+  await expect(name).toBeVisible()
+  expect((await card.boundingBox())?.height).toBeCloseTo(
+    resting?.height ?? 0,
+    0
+  )
+})

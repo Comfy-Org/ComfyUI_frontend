@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import type { WorkshopModel } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -88,17 +90,33 @@ const pillClass =
       </span>
     </div>
 
-    <div class="flex flex-col gap-3 px-3">
+    <!-- A workflow carries one tag, so hovering can spend its line on the
+        name instead. A model carries several and keeps them. -->
+    <div :class="cn('flex flex-col gap-3 px-3', workflow && 'h-13 lg:h-14')">
       <!-- The mark over the artwork already says who answers for this, so the
           line under it is the card's own name and nothing else. -->
       <h3
-        class="truncate text-xs font-medium text-content-bright lg:text-sm"
+        :class="
+          cn(
+            'text-xs font-medium text-content-bright lg:text-sm',
+            workflow
+              ? 'line-clamp-1 group-hover:line-clamp-2 group-focus-visible:line-clamp-2'
+              : 'truncate'
+          )
+        "
         :title="model.name"
         data-testid="model-card-name"
       >
         {{ cardName }}
       </h3>
-      <div class="flex h-6 min-w-0 items-center gap-1.5 overflow-hidden">
+      <div
+        :class="
+          cn(
+            'flex h-6 min-w-0 items-center gap-1.5 overflow-hidden',
+            workflow && 'group-hover:hidden group-focus-visible:hidden'
+          )
+        "
+      >
         <span :class="pillClass" data-testid="model-card-task">
           {{ taskLabel }}
         </span>
