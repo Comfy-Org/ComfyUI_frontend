@@ -146,6 +146,10 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const requestedWidth = computed(() =>
     maximized.value ? PANEL_MAX_WIDTH : draggedWidth.value
   )
+  const isOverlay = computed(
+    () =>
+      windowWidth.value <= requestedWidth.value + reservedWorkspaceWidth.value
+  )
 
   const isMaximized = computed(() => maximized.value)
 
@@ -230,7 +234,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     flagsSettled,
     width,
     requestedWidth,
-    reservedWorkspaceWidth,
+    isOverlay,
     isMaximized,
     dismissedSelectionSignature,
     open,

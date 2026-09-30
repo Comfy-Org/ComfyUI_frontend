@@ -187,6 +187,31 @@ describe('DockedAgentPanel', () => {
     expect(store.width).toBe(420)
   })
 
+  it.for(['pointerup', 'pointercancel'] as const)(
+    'stops resizing on document %s',
+    async (terminationEvent) => {
+      window.innerWidth = 1920
+      const store = openPanel()
+      const user = userEvent.setup()
+      renderPanel()
+
+      const handle = screen.getByTestId('agent-panel-resize-handle')
+      handle.setPointerCapture = () => {}
+      await user.pointer({
+        keys: '[MouseLeft>]',
+        target: handle,
+        coords: { x: 800, y: 10 }
+      })
+      await user.pointer({ coords: { x: 750, y: 10 } })
+      expect(store.width).toBe(470)
+
+      await fireEvent(document, new PointerEvent(terminationEvent))
+      await user.pointer({ coords: { x: 700, y: 10 } })
+
+      expect(store.width).toBe(470)
+    }
+  )
+
   it('settles to one live root and the live turn survives both mode switches through rehydration', async () => {
     openPanel()
     const linearMode = ref(false)

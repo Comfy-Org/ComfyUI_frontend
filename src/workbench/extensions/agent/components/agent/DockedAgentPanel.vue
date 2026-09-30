@@ -99,13 +99,9 @@ const {
   isVisible: docked,
   width,
   requestedWidth,
-  reservedWorkspaceWidth
+  isOverlay
 } = storeToRefs(agentPanelStore)
 const { width: viewportWidth } = useWindowSize()
-const isOverlay = computed(
-  () =>
-    viewportWidth.value <= requestedWidth.value + reservedWorkspaceWidth.value
-)
 const panelWidth = computed(() =>
   Math.min(
     isOverlay.value ? requestedWidth.value : width.value,

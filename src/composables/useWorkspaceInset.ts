@@ -1,4 +1,4 @@
-import { getCurrentScope, onScopeDispose, watchEffect } from 'vue'
+import { onScopeDispose, watchEffect } from 'vue'
 
 /**
  * Width consumed by docked surfaces on the right of the workspace.
@@ -25,7 +25,6 @@ function publishCurrentInset(): void {
 }
 
 export function useWorkspaceInsetRight(widthPx: () => number): void {
-  if (!getCurrentScope()) return
   const publisher = Symbol()
   watchEffect(() => {
     insetPublishers.set(publisher, widthPx())

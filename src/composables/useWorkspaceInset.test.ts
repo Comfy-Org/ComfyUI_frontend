@@ -84,10 +84,4 @@ describe('useWorkspaceInsetRight', () => {
 
     expect(readInset()).toBe('960px')
   })
-
-  it('ignores publishers without an owning Vue scope', () => {
-    useWorkspaceInsetRight(() => 420)
-
-    expect(readInset()).toBe('')
-  })
 })
