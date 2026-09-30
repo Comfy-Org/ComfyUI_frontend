@@ -181,6 +181,11 @@ const doneIn = (threadId: string, id: string) =>
     type: 'agent_message_done',
     data: { message_id: id, thread_id: threadId, usage: null }
   })
+
+function emitDeltaBurst(emit: (raw: unknown) => void, count: number): void {
+  for (let index = 0; index < count; index++)
+    emit(delta('msg-1', `chunk-${index} `))
+}
 const historyRow = (
   seq: number,
   role: 'user' | 'assistant',
@@ -604,10 +609,10 @@ describe('useAgentSession (v1 composition root)', () => {
       session.start()
       await session.sendMessage('go')
       void session.loadThread('th-1')
-      emit(done('msg-1'))
       session.stop()
 
       await vi.advanceTimersByTimeAsync(30_001)
+      emit(done('msg-1'))
       const reopened = useAgentSession({ rest, events: fakeEvents().source })
       reopened.start()
       await vi.waitFor(() => expect(rest.getMessages).toHaveBeenCalledTimes(2))
@@ -623,15 +628,27 @@ describe('useAgentSession (v1 composition root)', () => {
     try {
       const conversation = useAgentConversationStore()
       conversation.setThreadId('thread-a')
-      const historyFor = (threadId: string): AgentMessages => [
-        { ...historyRow(1, 'user', 'turn-a', 'go'), thread_id: threadId },
-        {
-          ...historyRow(2, 'assistant', 'turn-a', '', 'msg-a'),
-          thread_id: threadId,
-          content: {},
-          status: 'streaming'
-        }
-      ]
+      const historyFor = (threadId: string): AgentMessages => {
+        const suffix = threadId === 'thread-a' ? 'a' : 'b'
+        return [
+          {
+            ...historyRow(1, 'user', `turn-${suffix}`, 'go'),
+            thread_id: threadId
+          },
+          {
+            ...historyRow(
+              2,
+              'assistant',
+              `turn-${suffix}`,
+              '',
+              `msg-${suffix}`
+            ),
+            thread_id: threadId,
+            content: {},
+            status: 'streaming'
+          }
+        ]
+      }
       let historyCalls = 0
       const rest = fakeRest({
         getMessages: vi.fn((threadId: string) =>
@@ -649,17 +666,88 @@ describe('useAgentSession (v1 composition root)', () => {
       const { source, emit } = fakeEvents()
       const reopened = useAgentSession({ rest, events: source })
       reopened.start()
-      await vi.waitFor(() => expect(conversation.activeTurnId).toBe('msg-a'))
+      await vi.waitFor(() => expect(conversation.activeTurnId).toBe('msg-b'))
 
-      await vi.advanceTimersByTimeAsync(30_001)
       emit(doneIn('thread-a', 'msg-a'))
+      await vi.advanceTimersByTimeAsync(30_001)
       await reopened.loadThread('thread-a')
 
-      expect(conversation.activeTurnId).toBe('msg-a')
-      expect(reopened.isStreaming.value).toBe(true)
+      expect(conversation.activeTurnId).toBeNull()
+      expect(reopened.isStreaming.value).toBe(false)
     } finally {
       vi.useRealTimers()
     }
+  })
+
+  it('(b4l) preserves a same-thread handoff through 29,999 ms', async () => {
+    vi.useFakeTimers()
+    try {
+      const conversation = useAgentConversationStore()
+      const rest = fakeRest({
+        getMessages: vi
+          .fn<(threadId: string) => Promise<AgentMessages>>()
+          .mockImplementationOnce(() => new Promise(() => {}))
+          .mockResolvedValueOnce([
+            historyRow(1, 'user', 'turn-1', 'go'),
+            {
+              ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+              content: {},
+              status: 'streaming'
+            }
+          ])
+      })
+      const { source, emit } = fakeEvents()
+      const first = useAgentSession({ rest, events: source })
+      first.start()
+      await first.sendMessage('go')
+      void first.loadThread('th-1')
+      emit(done('msg-1'))
+      first.stop()
+
+      await vi.advanceTimersByTimeAsync(29_999)
+      const reopened = useAgentSession({ rest, events: fakeEvents().source })
+      reopened.start()
+
+      await vi.waitFor(() => {
+        expect(conversation.messages).toHaveLength(1)
+        expect(conversation.activeTurnId).toBeNull()
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(b4m) bounds a hung hydrate queue without dropping its terminal frame', async () => {
+    const conversation = useAgentConversationStore()
+    let deliverHistory: ((history: AgentMessages) => void) | undefined
+    const rest = fakeRest({
+      getMessages: vi.fn(
+        () =>
+          new Promise<AgentMessages>((resolve) => {
+            deliverHistory = resolve
+          })
+      )
+    })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    await session.sendMessage('go')
+    void session.loadThread('th-1')
+    emitDeltaBurst(emit, 300)
+    emit(done('msg-1'))
+
+    assert(deliverHistory !== undefined)
+    deliverHistory([
+      historyRow(1, 'user', 'turn-1', 'go'),
+      {
+        ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+        content: {},
+        status: 'streaming'
+      }
+    ])
+
+    await vi.waitFor(() => expect(conversation.activeTurnId).toBeNull())
+    expect(session.isStreaming.value).toBe(false)
   })
 
   it('(b4i) replays a buffered done after history hydration rejects', async () => {

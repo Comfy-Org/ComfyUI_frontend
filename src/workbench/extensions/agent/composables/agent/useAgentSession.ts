@@ -133,12 +133,17 @@ interface HydrationBuffer {
   threadId: string
   events: AgentWsEvent[]
   retirement?: ReturnType<typeof setTimeout>
+  mailboxRetirement?: ReturnType<typeof setTimeout>
 }
 
 // Hydration outlives the panel that initiated it. Keep frames at page scope so
 // a remounted session can claim them before installing the restored transport.
 const hydrationBuffers = new Map<string, HydrationBuffer>()
+const hydrationMailboxes = new Map<string, HydrationBuffer>()
 const HYDRATION_HANDOFF_MS = 30_000
+const HYDRATION_MAILBOX_MS = 5 * 60_000
+const MAX_HYDRATION_EVENTS = 256
+const MAX_HYDRATION_MAILBOXES = 32
 
 const NON_RETRYABLE_REQUEST_STATUSES = new Set([
   400, 401, 403, 404, 405, 409, 410, 422
@@ -432,7 +437,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
    * thread is what makes "one buffer per thread" unrepresentable rather than
    * merely maintained.
    */
-  const ownedHydrations = new Set<HydrationBuffer>()
   let stopped = false
 
   function bufferFor(
@@ -452,9 +456,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
    * settled transport drop what they cannot place.
    */
   function armHydration(threadId: string): HydrationBuffer {
-    const superseded = hydrationBuffers.get(threadId)
+    const superseded =
+      hydrationBuffers.get(threadId) ?? hydrationMailboxes.get(threadId)
     if (superseded?.retirement !== undefined)
       clearTimeout(superseded.retirement)
+    if (superseded?.mailboxRetirement !== undefined)
+      clearTimeout(superseded.mailboxRetirement)
+    hydrationMailboxes.delete(threadId)
     const buffer: HydrationBuffer = {
       threadId,
       // Moved, not copied: a superseded hydrate still drains from its own
@@ -462,9 +470,33 @@ export function useAgentSession(deps: AgentSessionDeps) {
       // into whatever is active by then.
       events: superseded?.events.splice(0) ?? []
     }
-    ownedHydrations.add(buffer)
     hydrationBuffers.set(threadId, buffer)
+    buffer.retirement = setTimeout(
+      () => retireHydrationCapture(buffer),
+      HYDRATION_HANDOFF_MS
+    )
     return buffer
+  }
+
+  function retireHydrationCapture(buffer: HydrationBuffer): void {
+    if (hydrationBuffers.get(buffer.threadId) !== buffer) return
+    hydrationBuffers.delete(buffer.threadId)
+    hydrationMailboxes.delete(buffer.threadId)
+    hydrationMailboxes.set(buffer.threadId, buffer)
+    buffer.mailboxRetirement = setTimeout(() => {
+      if (hydrationMailboxes.get(buffer.threadId) === buffer)
+        hydrationMailboxes.delete(buffer.threadId)
+      buffer.events.length = 0
+    }, HYDRATION_MAILBOX_MS)
+    while (hydrationMailboxes.size > MAX_HYDRATION_MAILBOXES) {
+      const oldest = hydrationMailboxes.entries().next().value
+      if (oldest === undefined) break
+      const [threadId, retired] = oldest
+      hydrationMailboxes.delete(threadId)
+      if (retired.mailboxRetirement !== undefined)
+        clearTimeout(retired.mailboxRetirement)
+      retired.events.length = 0
+    }
   }
 
   /**
@@ -482,10 +514,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
    */
   function drainHydration(buffer: HydrationBuffer): void {
     if (stopped) return
-    ownedHydrations.delete(buffer)
     if (buffer.retirement !== undefined) clearTimeout(buffer.retirement)
+    if (buffer.mailboxRetirement !== undefined)
+      clearTimeout(buffer.mailboxRetirement)
     if (hydrationBuffers.get(buffer.threadId) === buffer)
       hydrationBuffers.delete(buffer.threadId)
+    if (hydrationMailboxes.get(buffer.threadId) === buffer)
+      hydrationMailboxes.delete(buffer.threadId)
     for (const event of buffer.events.splice(0)) handleAgentEvent(event)
   }
 
@@ -515,8 +550,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (conversationStore.threadId !== threadId || !isCurrent()) return false
       conversationStore.hydrate(history)
       rememberSnapshotTurn(conversationStore.activeTurnId)
-      drainHydration(buffer)
       readyThreadId.value = threadId
+      drainHydration(buffer)
       const workflowReady = await workflow?.restored?.(
         conversationStore.latestWorkflowId,
         isCurrent
@@ -561,14 +596,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     unsubscribeStatus?.()
     unsubscribe = null
     unsubscribeStatus = null
-    for (const buffer of ownedHydrations) {
-      buffer.retirement = setTimeout(() => {
-        if (hydrationBuffers.get(buffer.threadId) === buffer)
-          hydrationBuffers.delete(buffer.threadId)
-        buffer.events.length = 0
-        ownedHydrations.delete(buffer)
-      }, HYDRATION_HANDOFF_MS)
-    }
     const stoppedGeneration = ownedGeneration
     queueMicrotask(() => {
       if (stoppedGeneration !== sessionGeneration) return
@@ -1169,9 +1196,20 @@ export function useAgentSession(deps: AgentSessionDeps) {
    * already on the store is not one of them -- it has a transport waiting.
    */
   function heldForHydration(event: AgentWsEvent): boolean {
-    if (event.data.message_id === conversationStore.activeTurnId) return false
+    if (
+      event.data.thread_id === conversationStore.threadId &&
+      event.data.message_id === conversationStore.activeTurnId
+    )
+      return false
     const buffer = bufferFor(event.data.thread_id)
     if (buffer === undefined) return false
+    if (buffer.events.length >= MAX_HYDRATION_EVENTS) {
+      const replace = buffer.events.findIndex(
+        (held) => held.type !== 'agent_message_done'
+      )
+      if (replace === -1 && event.type !== 'agent_message_done') return true
+      buffer.events.splice(Math.max(0, replace), 1)
+    }
     buffer.events.push(event)
     return true
   }
