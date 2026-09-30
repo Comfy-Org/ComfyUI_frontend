@@ -155,6 +155,20 @@ test('sends an old catalogue link for the Apps tab to the hub apps page', async 
   await expect(page.getByTestId('app-shelf')).toBeVisible()
 })
 
+test('keeps an old catalogue link for the Apps tab on the models catalogue while the apps flag is off', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: false, workflows: true })
+  await page.goto('/hub/models/?type=apps')
+  await expect(
+    page.getByRole('searchbox', {
+      name: 'Search models, providers, and categories'
+    })
+  ).toBeVisible()
+  await expect(page).toHaveURL('/hub/models/?type=apps')
+})
+
 test('shows the showcase instead of the hub apps page while the apps flag is off', async ({
   page,
   context

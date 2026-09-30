@@ -126,6 +126,11 @@ function createContent() {
         const { default: ModelPage } = await import('./ModelPage.vue')
         return () => h(ModelPage, { page: { ...page, model } })
       }
+      if (
+        section === 'models' &&
+        new URLSearchParams(location.search).has('type')
+      )
+        await (await import('./forwardLegacySection')).forwardLegacySection()
       const [{ default: ModelsCatalogue }, models] = await Promise.all([
         import('./ModelsCatalogue.vue'),
         fetchModelsCatalogue()

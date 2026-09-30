@@ -1,5 +1,5 @@
 import { render, screen, within } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { readonly, ref, createSSRApp, h, nextTick } from 'vue'
 import type { Ref } from 'vue'
 import { renderToString } from 'vue/server-renderer'
@@ -155,6 +155,88 @@ describe('Models page entry', () => {
       ).toBeNull()
     }
   )
+
+  describe('an old ?type= catalogue link', () => {
+    let replace: ReturnType<typeof vi.fn<(url: string | URL) => void>>
+    let fetchData: ReturnType<typeof vi.fn<typeof fetch>>
+
+    beforeEach(() => {
+      replace = vi.fn()
+      vi.spyOn(window.location, 'replace').mockImplementation(replace)
+      fetchData = vi
+        .fn<typeof fetch>()
+        .mockResolvedValue(Response.json(workshopModels))
+      vi.stubGlobal('fetch', fetchData)
+      enabled.value = true
+    })
+
+    afterEach(() => {
+      window.history.replaceState({}, '', '/')
+    })
+
+    it.for([
+      {
+        link: '/hub/models/?type=workflows&q=kling#top',
+        turnOn: () => {
+          workflowsEnabled.value = true
+        },
+        target: '/hub/workflows/?q=kling#top'
+      },
+      {
+        link: '/hub/models/?type=workflow',
+        turnOn: () => {
+          workflowsEnabled.value = true
+        },
+        target: '/hub/workflows/'
+      },
+      {
+        link: '/hub/models/?model=LTX-2.3&type=apps',
+        turnOn: () => {
+          appsEnabled.value = true
+        },
+        target: '/hub/apps/?model=LTX-2.3'
+      }
+    ])(
+      'forwards $link to its section once the flags answer with it on',
+      async ({ link, turnOn, target }) => {
+        window.history.replaceState({}, '', link)
+        settled.value = false
+        render(ModelsPage)
+        await vi.waitFor(() =>
+          expect(useWorkshopEnabledSettled).toHaveBeenCalled()
+        )
+        expect(screen.getByTestId('models-loading')).toBeTruthy()
+        expect(replace).not.toHaveBeenCalled()
+
+        turnOn()
+        settled.value = true
+        await vi.waitFor(() =>
+          expect(replace).toHaveBeenCalledExactlyOnceWith(
+            new URL(target, location.origin).href
+          )
+        )
+        expect(screen.getByTestId('models-loading')).toBeTruthy()
+        expect(fetchData).not.toHaveBeenCalled()
+      }
+    )
+
+    it.for([
+      { link: '/hub/models/?type=workflows', workshop: true },
+      { link: '/hub/models/?type=apps', workshop: true },
+      { link: '/hub/models/?type=workflows', workshop: false }
+    ])(
+      'keeps the models catalogue for $link while its section is off (workshop $workshop)',
+      async ({ link, workshop }) => {
+        window.history.replaceState({}, '', link)
+        enabled.value = workshop
+        workflowsEnabled.value = !workshop
+        appsEnabled.value = !workshop
+        render(ModelsPage)
+        expect(await screen.findByTestId('workshop-search')).toBeTruthy()
+        expect(replace).not.toHaveBeenCalled()
+      }
+    )
+  })
 
   it('keeps a workflow page behind its gate while the workshop flag is off', async () => {
     const fetchData = vi.fn<typeof fetch>()

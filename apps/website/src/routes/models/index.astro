@@ -2,7 +2,6 @@
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import { workshopModels } from '../../config/workshop-browse-content'
 import ModelsPage from '../../components/workshop/ModelsPage.vue'
-import { getRoutes } from '../../config/routes'
 import { t } from '../../i18n/translations'
 import {
   workshopEyebrowClass,
@@ -11,28 +10,12 @@ import {
 import { modelsHubMeta } from './models-hub-meta'
 
 const { title, description } = modelsHubMeta(workshopModels)
-const { hubWorkflows, hubApps } = getRoutes('en')
 const directory = workshopModels.toSorted((a, b) =>
   a.name.localeCompare(b.name, 'en', { numeric: true })
 )
 ---
 
 <BaseLayout {title} {description} preloadFonts={['Medium']}>
-  <script slot="head" is:inline define:vars={{ hubWorkflows, hubApps }}>
-    const params = new URLSearchParams(location.search)
-    const type = params.get('type')
-    const section =
-      type === 'apps'
-        ? hubApps
-        : type === 'workflows' || type === 'workflow'
-          ? hubWorkflows
-          : undefined
-    if (section) {
-      params.delete('type')
-      const query = params.toString()
-      location.replace(`${section}${query ? `?${query}` : ''}${location.hash}`)
-    }
-  </script>
   <div
     class="mx-auto max-w-10xl px-6 pt-8 pb-4 max-sm:pt-5 lg:px-8 lg:pt-12 sm:short:pb-3"
   >
