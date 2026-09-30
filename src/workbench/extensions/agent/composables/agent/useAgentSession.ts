@@ -132,12 +132,13 @@ const PREPARE_TIMEOUT_MS = 3000
 interface HydrationBuffer {
   threadId: string
   events: AgentWsEvent[]
-  owner: symbol
+  retirement?: ReturnType<typeof setTimeout>
 }
 
 // Hydration outlives the panel that initiated it. Keep frames at page scope so
 // a remounted session can claim them before installing the restored transport.
 const hydrationBuffers = new Map<string, HydrationBuffer>()
+const HYDRATION_HANDOFF_MS = 30_000
 
 const NON_RETRYABLE_REQUEST_STATUSES = new Set([
   400, 401, 403, 404, 405, 409, 410, 422
@@ -431,7 +432,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
    * thread is what makes "one buffer per thread" unrepresentable rather than
    * merely maintained.
    */
-  const hydrationOwner = Symbol('agent-session-hydration')
+  const ownedHydrations = new Set<HydrationBuffer>()
   let stopped = false
 
   function bufferFor(
@@ -452,14 +453,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
    */
   function armHydration(threadId: string): HydrationBuffer {
     const superseded = hydrationBuffers.get(threadId)
+    if (superseded?.retirement !== undefined)
+      clearTimeout(superseded.retirement)
     const buffer: HydrationBuffer = {
       threadId,
-      owner: hydrationOwner,
       // Moved, not copied: a superseded hydrate still drains from its own
       // `finally`, and a frame left behind there is replayed a second time
       // into whatever is active by then.
       events: superseded?.events.splice(0) ?? []
     }
+    ownedHydrations.add(buffer)
     hydrationBuffers.set(threadId, buffer)
     return buffer
   }
@@ -478,7 +481,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
    * live hydrate's frames with nowhere to be held.
    */
   function drainHydration(buffer: HydrationBuffer): void {
-    if (buffer.owner !== hydrationOwner || stopped) return
+    if (stopped) return
+    ownedHydrations.delete(buffer)
+    if (buffer.retirement !== undefined) clearTimeout(buffer.retirement)
     if (hydrationBuffers.get(buffer.threadId) === buffer)
       hydrationBuffers.delete(buffer.threadId)
     for (const event of buffer.events.splice(0)) handleAgentEvent(event)
@@ -556,6 +561,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
     unsubscribeStatus?.()
     unsubscribe = null
     unsubscribeStatus = null
+    for (const buffer of ownedHydrations) {
+      buffer.retirement = setTimeout(() => {
+        if (hydrationBuffers.get(buffer.threadId) === buffer)
+          hydrationBuffers.delete(buffer.threadId)
+        buffer.events.length = 0
+        ownedHydrations.delete(buffer)
+      }, HYDRATION_HANDOFF_MS)
+    }
     const stoppedGeneration = ownedGeneration
     queueMicrotask(() => {
       if (stoppedGeneration !== sessionGeneration) return

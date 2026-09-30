@@ -574,9 +574,92 @@ describe('useAgentSession (v1 composition root)', () => {
     reopened.start()
 
     await vi.waitFor(() => {
+      expect(conversation.messages.map((message) => message.id)).toEqual([
+        'turn-1'
+      ])
       expect(reopened.isStreaming.value).toBe(false)
       expect(conversation.activeTurnId).toBeNull()
     })
+  })
+
+  it('(b4j) retires a stopped hydration buffer when no successor claims it', async () => {
+    vi.useFakeTimers()
+    try {
+      const conversation = useAgentConversationStore()
+      const rest = fakeRest({
+        getMessages: vi
+          .fn<(threadId: string) => Promise<AgentMessages>>()
+          .mockImplementationOnce(() => new Promise(() => {}))
+          .mockResolvedValueOnce([
+            historyRow(1, 'user', 'turn-1', 'go'),
+            {
+              ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+              content: {},
+              status: 'streaming'
+            }
+          ])
+      })
+      const { source, emit } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      await session.sendMessage('go')
+      void session.loadThread('th-1')
+      emit(done('msg-1'))
+      session.stop()
+
+      await vi.advanceTimersByTimeAsync(30_001)
+      const reopened = useAgentSession({ rest, events: fakeEvents().source })
+      reopened.start()
+      await vi.waitFor(() => expect(rest.getMessages).toHaveBeenCalledTimes(2))
+      await vi.waitFor(() => expect(conversation.activeTurnId).toBe('msg-1'))
+      expect(reopened.isStreaming.value).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(b4k) retires stopped thread A while its successor hydrates thread B', async () => {
+    vi.useFakeTimers()
+    try {
+      const conversation = useAgentConversationStore()
+      conversation.setThreadId('thread-a')
+      const historyFor = (threadId: string): AgentMessages => [
+        { ...historyRow(1, 'user', 'turn-a', 'go'), thread_id: threadId },
+        {
+          ...historyRow(2, 'assistant', 'turn-a', '', 'msg-a'),
+          thread_id: threadId,
+          content: {},
+          status: 'streaming'
+        }
+      ]
+      let historyCalls = 0
+      const rest = fakeRest({
+        getMessages: vi.fn((threadId: string) =>
+          threadId === 'thread-a' && ++historyCalls === 1
+            ? new Promise<AgentMessages>(() => {})
+            : Promise.resolve(historyFor(threadId))
+        )
+      })
+      const first = useAgentSession({ rest, events: fakeEvents().source })
+      first.start()
+      first.stop()
+      await Promise.resolve()
+
+      conversation.setThreadId('thread-b')
+      const { source, emit } = fakeEvents()
+      const reopened = useAgentSession({ rest, events: source })
+      reopened.start()
+      await vi.waitFor(() => expect(conversation.activeTurnId).toBe('msg-a'))
+
+      await vi.advanceTimersByTimeAsync(30_001)
+      emit(doneIn('thread-a', 'msg-a'))
+      await reopened.loadThread('thread-a')
+
+      expect(conversation.activeTurnId).toBe('msg-a')
+      expect(reopened.isStreaming.value).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('(b4i) replays a buffered done after history hydration rejects', async () => {
