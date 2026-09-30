@@ -335,8 +335,18 @@ const turnStartedAt = new Map<TurnId, number>()
  * reach the continuation that acks. One owner: armed while a send is in
  * flight, consumed exactly once at ack.
  */
-let sendInFlight = false
+interface SendInFlight {
+  generation: number
+  owner: string | null
+}
+
+let sendGeneration = 0
+let sendInFlight: SendInFlight | null = null
 let stopPendingAck: { method: AgentStopMethod | undefined } | null = null
+
+function ownsSendSlot(slot: SendInFlight): boolean {
+  return sendInFlight?.generation === slot.generation
+}
 
 function consumeStopPendingAck() {
   const pending = stopPendingAck
@@ -490,7 +500,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     reportedWorkflowBind = null
     pendingWorkflowBind = null
     turnStartedAt.clear()
-    sendInFlight = false
+    sendInFlight = null
     stopPendingAck = null
     sending.value = false
     everLive = false
@@ -1215,8 +1225,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return false
     }
     promptEditState.value = { phase: 'idle' }
+    const sendSlot = {
+      generation: ++sendGeneration,
+      owner: getStorageIdentity()
+    }
     sending.value = true
-    sendInFlight = true
+    sendInFlight = sendSlot
     stopPendingAck = null
     try {
       return await performSend(
@@ -1228,8 +1242,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
         clientMessageId
       )
     } finally {
-      sending.value = false
-      sendInFlight = false
+      if (ownsSendSlot(sendSlot)) {
+        sending.value = false
+        sendInFlight = null
+      }
     }
   }
 
@@ -1363,7 +1379,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       // The POST has not acked yet; remember the intent and cancel on ack.
       // sendInFlight, not this instance's sending: the panel that posted may
       // have been remounted, and the stop arrives through the new instance.
-      if (sendInFlight) stopPendingAck = { method }
+      if (sendInFlight?.owner === getStorageIdentity())
+        stopPendingAck = { method }
       return
     }
     if (isStoppingTurn(turnId)) return

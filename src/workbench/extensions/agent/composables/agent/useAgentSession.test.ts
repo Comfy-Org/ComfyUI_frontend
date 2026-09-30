@@ -457,6 +457,52 @@ describe('useAgentSession (v1 composition root)', () => {
     await Promise.resolve()
   })
 
+  it("does not let owner A's completion release owner B's send slot", async () => {
+    const acknowledgements: Array<(ack: AgentTurnAccepted) => void> = []
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(
+      () =>
+        new Promise<AgentTurnAccepted>((resolve) => {
+          acknowledgements.push(resolve)
+        })
+    )
+    const cancelMessage = vi.fn().mockResolvedValue(undefined)
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage, cancelMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    const ownerASend = session.sendMessage('account A turn')
+    await vi.waitFor(() => expect(postMessage).toHaveBeenCalledOnce())
+
+    setStorageIdentity('user-b')
+    setStorageWorkspaceId('personal')
+    const ownerBSend = session.sendMessage('account B turn')
+    await vi.waitFor(() => expect(postMessage).toHaveBeenCalledTimes(2))
+
+    acknowledgements[0]?.({
+      thread_id: 'thread-a',
+      message_id: 'message-a'
+    })
+    await expect(ownerASend).resolves.toBe(false)
+    expect(session.isSending.value).toBe(true)
+    await expect(session.sendMessage('must stay blocked')).resolves.toBe(false)
+    expect(postMessage).toHaveBeenCalledTimes(2)
+
+    await session.stopTurn('button')
+    acknowledgements[1]?.({
+      thread_id: 'thread-b',
+      message_id: 'message-b'
+    })
+    await expect(ownerBSend).resolves.toBe(true)
+    await vi.waitFor(() =>
+      expect(cancelMessage).toHaveBeenCalledWith('thread-b', 'message-b')
+    )
+
+    setStorageIdentity('user-test')
+    session.stop()
+  })
+
   it('resets public and delayed session state when the storage owner changes', async () => {
     let rejectAnswer: ((error: Error) => void) | undefined
     const answerAsk = vi.fn<AgentRestClient['answerAsk']>(
