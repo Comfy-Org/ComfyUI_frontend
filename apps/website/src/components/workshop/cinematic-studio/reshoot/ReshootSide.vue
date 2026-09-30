@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import InfoTooltip from '@/components/ui/tooltip/InfoTooltip.vue'
@@ -9,9 +9,10 @@ import type {
   CameraKey,
   ReshootAspect,
   ReshootCamera,
-  ReshootMotion,
   ReshootSize
 } from '../../../../lib/workshop/cinematic-studio/reshoot'
+import { clipFits } from '../../../../lib/workshop/cinematic-studio/reshoot'
+import { fileSecondsOf } from '../../../../lib/workshop/cinematic-studio/reshoot-clip'
 import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
 import type { Locale } from '../../../../i18n/translations'
 import CinematicGenerateAction from '../CinematicGenerateAction.vue'
@@ -28,6 +29,8 @@ const {
   keys,
   depth,
   frames,
+  clipError,
+  error,
   gate,
   canGenerate,
   priceNote,
@@ -40,7 +43,12 @@ const {
   camera: Readonly<ReshootCamera>
   keys: readonly CameraKey[]
   depth: DepthState
-  frames: number
+  /** Frames the run will use, once the clip's length is known. */
+  frames?: number
+  /** Why this clip cannot be used, if it cannot. */
+  clipError?: string
+  /** The last failed depth read, said above its Try again button. */
+  error?: string
   gate: StudioGate
   canGenerate: boolean
   priceNote?: string
@@ -50,35 +58,62 @@ const {
 
 const emit = defineEmits<{
   aim: [patch: Partial<ReshootCamera>]
-  key: []
   removeKey: [frame: number]
-  clearKeys: []
+  analyze: []
   generate: []
 }>()
 
 const upload = defineModel<File | undefined>('upload')
 const aspect = defineModel<ReshootAspect>('aspect', { required: true })
 const size = defineModel<ReshootSize>('size', { required: true })
-const seed = defineModel<number>('seed', { required: true })
+const seed = defineModel<number | undefined>('seed')
+/** Empty is random; a number, whole and not negative, is a fixed seed. */
+const seedText = computed({
+  get: () => (seed.value === undefined ? '' : String(seed.value)),
+  // a number field's v-model already hands over a number, or '' when empty
+  set: (entry: string | number) => {
+    const value = typeof entry === 'number' ? entry : Number.parseFloat(entry)
+    seed.value = Number.isFinite(value)
+      ? Math.max(0, Math.floor(value))
+      : undefined
+  }
+})
 const keepAim = defineModel<boolean>('keepAim', { required: true })
 const frame = defineModel<number>('frame', { required: true })
-const motion = defineModel<ReshootMotion>('motion', { required: true })
 const prompt = defineModel<string>('prompt', { required: true })
 
 const ready = computed(() => depth === 'ready')
-const framesLabel = computed(() =>
-  rc('reshoot.frames', locale, {
-    frames,
-    seconds: (frames / 24).toFixed(1)
-  })
+const analyzing = computed(() => depth === 'analyzing')
+const failed = computed(() => !!error && !ready.value && !analyzing.value)
+const framesText = computed(() =>
+  frames === undefined
+    ? ''
+    : rc('reshoot.frames', locale, {
+        frames,
+        seconds: (frames / 24).toFixed(1)
+      })
 )
 
-function choose(event: Event) {
+// A replacement is checked before it takes the current clip's place, as on
+// the first pick: one outside 5 to 15 seconds is turned away and the clip
+// already in use stays.
+const rejected = ref<string>()
+async function choose(event: Event) {
   const input = event.target
   if (!(input instanceof HTMLInputElement)) return
   const file = input.files?.[0]
   input.value = ''
-  if (file) upload.value = file
+  if (!file) return
+  const seconds = await fileSecondsOf(file)
+  if (Number.isFinite(seconds) && !clipFits(seconds)) {
+    rejected.value = rc('reshoot.clip.rejected', locale, {
+      name: file.name,
+      seconds: seconds.toFixed(1)
+    })
+    return
+  }
+  rejected.value = undefined
+  upload.value = file
 }
 </script>
 
@@ -106,9 +141,12 @@ function choose(event: Event) {
           </span>
           <span class="truncate text-[11px] text-primary-warm-gray">
             {{
-              ready
-                ? `${rc('reshoot.clip.ready', locale)} · ${framesLabel}`
-                : rc('reshoot.aim.reading', locale)
+              clipError ??
+              (ready
+                ? `${rc('reshoot.clip.ready', locale)} · ${framesText}`
+                : analyzing
+                  ? rc('reshoot.aim.reading', locale)
+                  : framesText)
             }}
           </span>
         </span>
@@ -124,6 +162,14 @@ function choose(event: Event) {
           />
         </label>
       </div>
+      <p
+        v-if="rejected"
+        role="alert"
+        data-testid="reshoot-clip-rejected"
+        class="-mt-2 px-1 text-[11px]/relaxed text-primary-warm-white"
+      >
+        {{ rejected }}
+      </p>
       <ReshootAimRig
         v-model:keep-aim="keepAim"
         :clip
@@ -139,14 +185,10 @@ function choose(event: Event) {
         >
           <ReshootMoveControls
             v-model:frame="frame"
-            v-model:motion="motion"
             :keys
-            :frames
             :disabled="!ready"
             :locale
-            @key="emit('key')"
             @remove="emit('removeKey', $event)"
-            @clear="emit('clearKeys')"
           />
         </ReshootDisclosure>
         <ReshootDisclosure :label="rc('reshoot.advanced', locale)">
@@ -182,17 +224,29 @@ function choose(event: Event) {
                 {{ rc('reshoot.prompt.dialogue', locale) }}
               </p>
             </div>
-            <label class="flex items-center justify-between gap-3 text-xs">
-              <span class="font-semibold text-primary-comfy-canvas">
-                {{ rc('reshoot.seed', locale) }}
-              </span>
+            <div class="flex items-center justify-between gap-3 text-xs">
+              <div class="flex items-center gap-1.5">
+                <label
+                  for="reshoot-seed"
+                  class="font-semibold text-primary-comfy-canvas"
+                >
+                  {{ rc('reshoot.seed', locale) }}
+                </label>
+                <InfoTooltip
+                  :text="rc('reshoot.seed.help', locale)"
+                  :label="rc('reshoot.seed.help', locale)"
+                />
+              </div>
               <input
-                v-model.number="seed"
+                id="reshoot-seed"
+                v-model.lazy="seedText"
                 type="number"
                 min="0"
-                class="h-9 w-28 rounded-xl bg-transparency-white-t4 px-3 font-mono text-sm text-primary-warm-white tabular-nums outline-none focus-visible:ring-1 focus-visible:ring-primary-comfy-yellow/60"
+                step="1"
+                :placeholder="rc('reshoot.seed.random', locale)"
+                class="h-9 w-28 rounded-xl bg-transparency-white-t4 px-3 font-mono text-sm text-primary-warm-white tabular-nums outline-none placeholder:font-sans placeholder:text-primary-warm-gray focus-visible:ring-1 focus-visible:ring-primary-comfy-yellow/60"
               />
-            </label>
+            </div>
           </div>
         </ReshootDisclosure>
       </div>
@@ -202,7 +256,32 @@ function choose(event: Event) {
     <footer
       class="flex flex-col gap-3 rounded-b-2xl border-t border-transparency-white-t8 p-4"
     >
-      <p class="text-center text-[11px] text-primary-warm-gray">
+      <!-- The scene is read on its own when a clip is picked; a failed
+           read waits here to be tried again. -->
+      <div
+        v-if="failed"
+        role="alert"
+        class="flex items-center gap-3 rounded-xl bg-transparency-white-t8 py-2 pr-2 pl-3"
+      >
+        <p
+          class="min-w-0 flex-1 text-[11px] wrap-break-word text-primary-warm-white"
+        >
+          {{ rc('reshoot.failed', locale) }}: {{ error }}
+        </p>
+        <Button
+          size="sm"
+          variant="outline"
+          class="shrink-0 rounded-full"
+          data-testid="reshoot-analyze"
+          @click="emit('analyze')"
+        >
+          {{ rc('reshoot.tryAgain', locale) }}
+        </Button>
+      </div>
+      <p
+        v-else-if="ready || analyzing"
+        class="text-center text-[11px] text-primary-warm-gray"
+      >
         {{
           rc(ready ? 'reshoot.generate.note' : 'reshoot.generate.wait', locale)
         }}

@@ -7,7 +7,13 @@ import type {
   DepthState,
   ReshootTake
 } from '../../../../composables/useReshoot'
-import type { ReshootCamera } from '../../../../lib/workshop/cinematic-studio/reshoot'
+import type {
+  CameraKey,
+  ReshootCamera,
+  ReshootMotion
+} from '../../../../lib/workshop/cinematic-studio/reshoot'
+import type { Pose } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/camera'
+import type { Geometry } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
 import type { ReshootRunPhase } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/run'
 import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
 import type { Locale } from '../../../../i18n/translations'
@@ -15,6 +21,7 @@ import type { ReshootSound, ReshootView } from './output'
 import ReshootOutputBar from './ReshootOutputBar.vue'
 import ReshootTakes from './ReshootTakes.vue'
 import ReshootTakeView from './ReshootTakeView.vue'
+import ReshootTimeline from './ReshootTimeline.vue'
 import ReshootViewport from './ReshootViewport.vue'
 import { takeLabel } from './take-label'
 
@@ -29,6 +36,11 @@ const {
   selected,
   current,
   cancellable = false,
+  geometry,
+  pose,
+  keepAim = true,
+  keys = [],
+  keyed = false,
   locale = 'en'
 } = defineProps<{
   clip: string
@@ -41,6 +53,11 @@ const {
   selected: string
   current?: ReshootTake
   cancellable?: boolean
+  geometry?: Geometry
+  pose?: Pose
+  keepAim?: boolean
+  keys?: readonly CameraKey[]
+  keyed?: boolean
   locale?: Locale
 }>()
 
@@ -49,7 +66,16 @@ const emit = defineEmits<{
   select: [id: string]
   cancel: []
   reuse: []
+  key: []
+  clearKeys: []
 }>()
+
+const frame = defineModel<number>('frame', { default: 0 })
+const motion = defineModel<ReshootMotion>('motion', { default: 'smooth' })
+// the timeline belongs to aiming: live depth and no take in the frame
+const aiming = computed(() =>
+  !current && step === 2 && depth === 'ready' && geometry ? geometry : undefined
+)
 
 const frameEl = useTemplateRef<HTMLElement>('frameEl')
 const { isFullscreen, toggle: toggleFullscreen } = useFullscreen(frameEl)
@@ -111,6 +137,10 @@ const fileName = computed(
           :stage
           :notice
           :aimable="step === 2"
+          :geometry
+          :pose
+          :keep-aim="keepAim"
+          :frame
           :locale
           @aim="emit('aim', $event)"
         />
@@ -129,8 +159,20 @@ const fileName = computed(
           <Maximize2 v-else class="size-4" aria-hidden="true" />
         </button>
       </div>
+      <ReshootTimeline
+        v-if="aiming"
+        v-model:frame="frame"
+        v-model:motion="motion"
+        :frames="aiming.frames"
+        :fps="aiming.fps"
+        :keys
+        :keyed
+        :locale
+        @key="emit('key')"
+        @clear="emit('clearKeys')"
+      />
       <p
-        class="min-h-4 text-xs text-primary-warm-gray"
+        class="min-h-4 text-xs text-primary-warm-gray max-lg:order-last"
         data-testid="reshoot-take-caption"
       >
         <template v-if="current">
@@ -145,7 +187,7 @@ const fileName = computed(
         :takes
         :selected
         :locale
-        class="-ml-1 self-start"
+        class="-ml-1 self-start max-lg:order-last"
         @select="emit('select', $event)"
       />
     </div>

@@ -7,14 +7,14 @@ import {
 } from '@vueuse/core'
 import { computed, ref, useId, useTemplateRef, watchEffect } from 'vue'
 
+import TeamSharingChat from './TeamSharingChat.vue'
+
 import SectionHeader from '../../components/common/SectionHeader.vue'
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
-const outerTrackId = `how-it-works-outer-${useId()}`
-const innerTrackId = `how-it-works-inner-${useId()}`
 const endpointClipId = `how-it-works-clip-${useId()}`
 const endpointFadeId = `how-it-works-fade-${useId()}`
 
@@ -25,44 +25,6 @@ const steps = stepNumbers.map((number) => ({
   title: t(`platform.howItWorks.${number}.title`, locale),
   description: t(`platform.howItWorks.${number}.description`, locale)
 }))
-
-const TEAM_OUTER_PATH =
-  'M188 -43.68 C204.64 -43.68 221.28 -38.56 235.36 -29.6 L385.12 57.44 C403.04 67.68 413.28 86.88 413.28 107.36 V268.64 C413.28 289.12 403.04 308.32 385.12 318.56 L235.36 405.6 C205.92 422.24 170.08 422.24 140.64 405.6 L-9.12 318.56 C-27.04 308.32 -37.28 289.12 -37.28 268.64 V107.36 C-37.28 86.88 -27.04 67.68 -9.12 57.44 L140.64 -29.6 C154.72 -38.56 171.36 -43.68 188 -43.68 Z'
-const TEAM_INNER_PATH =
-  'M188 22.8 C201.2 22.8 213.1 26.7 225 33.3 L317.5 87.5 C332 95.5 341.3 111.4 341.3 128.5 V247.5 C341.3 264.6 332 280.5 317.5 288.5 L225 342.7 C202.6 356 173.4 356 151 342.7 L58.5 288.5 C44 280.5 34.7 264.6 34.7 247.5 V128.5 C34.7 111.4 44 95.5 58.5 87.5 L151 33.3 C162.1 26.7 174.8 22.8 188 22.8 Z'
-
-const TEAM = [
-  {
-    initials: 'JP',
-    x: -37.28,
-    y: 188,
-    track: `#${outerTrackId}`,
-    delay: '-13.5s'
-  },
-  {
-    initials: 'JN',
-    x: 310.24,
-    y: 13.92,
-    track: `#${outerTrackId}`,
-    delay: '-1.8s'
-  },
-  {
-    initials: 'BH',
-    x: 271.25,
-    y: 315.6,
-    track: `#${innerTrackId}`,
-    delay: '-7.2s'
-  }
-] as const
-
-const TEAM_OUTLINES = [
-  ['dotted', 'yellow', 'purple'],
-  ['dotted', 'purple', 'yellow'],
-  ['yellow', 'dotted', 'purple'],
-  ['yellow', 'purple', 'dotted'],
-  ['purple', 'dotted', 'yellow'],
-  ['purple', 'yellow', 'dotted']
-] as const
 
 const APPS = ['internal tool', 'application', 'website', 'workflow'] as const
 
@@ -79,16 +41,8 @@ const root = useTemplateRef<HTMLElement>('root')
 const visible = useElementVisibility(root)
 const documentVisibility = useDocumentVisibility()
 const workflowIndex = ref(0)
-const outlineIndex = ref(0)
 
 const workflow = computed(() => WORKFLOWS[workflowIndex.value])
-const team = computed(() =>
-  TEAM.map((member, index) => ({
-    ...member,
-    outline: TEAM_OUTLINES[outlineIndex.value][index]
-  }))
-)
-
 // The dashed connectors animate stroke-dashoffset, which cannot be composited,
 // so they are parked on the same condition as the rotation above rather than
 // running behind a scrolled-past section. Reduced motion is handled by the
@@ -96,16 +50,10 @@ const team = computed(() =>
 const animated = computed(
   () => visible.value && documentVisibility.value === 'visible'
 )
-const orbiting = computed(() => animated.value && !prefersReducedMotion())
 
 const { pause, resume } = useIntervalFn(
   () => {
     workflowIndex.value = (workflowIndex.value + 1) % WORKFLOWS.length
-    outlineIndex.value =
-      (outlineIndex.value +
-        1 +
-        Math.floor(Math.random() * (TEAM_OUTLINES.length - 1))) %
-      TEAM_OUTLINES.length
   },
   CYCLE_INTERVAL_MS,
   { immediate: false }
@@ -145,7 +93,14 @@ watchEffect(() => {
         <article class="h-full">
           <div
             aria-hidden="true"
-            class="flex h-72 items-center justify-center overflow-hidden rounded-2xl border border-transparency-white-t4 bg-primary-comfy-ink p-4"
+            :class="
+              cn(
+                'flex h-72 items-center justify-center overflow-hidden rounded-2xl',
+                step.number === 2
+                  ? 'bg-transparent'
+                  : 'border border-transparency-white-t4 bg-primary-comfy-ink p-4'
+              )
+            "
           >
             <div
               v-if="step.number === 1"
@@ -274,85 +229,7 @@ watchEffect(() => {
               v-else-if="step.number === 2"
               class="flex size-full items-center justify-center"
             >
-              <svg
-                viewBox="-72 -78 520 532"
-                class="size-full"
-                aria-hidden="true"
-              >
-                <path
-                  :id="outerTrackId"
-                  :d="TEAM_OUTER_PATH"
-                  class="fill-none stroke-primary-comfy-plum"
-                />
-                <path
-                  :id="innerTrackId"
-                  :d="TEAM_INNER_PATH"
-                  class="fill-none stroke-primary-comfy-plum"
-                />
-                <g
-                  v-for="member in team"
-                  :key="member.initials"
-                  :transform="
-                    orbiting ? undefined : `translate(${member.x} ${member.y})`
-                  "
-                >
-                  <animateMotion
-                    v-if="orbiting"
-                    dur="18s"
-                    :begin="member.delay"
-                    repeatCount="indefinite"
-                  >
-                    <mpath :href="member.track" />
-                  </animateMotion>
-                  <circle
-                    cx="0"
-                    cy="0"
-                    r="28"
-                    :class="
-                      cn(
-                        'fill-primary-comfy-ink transition-[stroke] duration-700 motion-reduce:transition-none',
-                        member.outline === 'purple'
-                          ? 'stroke-primary-comfy-plum'
-                          : 'stroke-primary-comfy-yellow',
-                        animated &&
-                          member.outline === 'dotted' &&
-                          'animate-dash-flow'
-                      )
-                    "
-                    :stroke-width="member.outline === 'purple' ? 1 : 2.5"
-                    :stroke-dasharray="
-                      member.outline === 'dotted' ? '7 6' : undefined
-                    "
-                  />
-                  <text
-                    x="0"
-                    y="5"
-                    text-anchor="middle"
-                    class="fill-primary-comfy-yellow font-[Menlo,Monaco,Consolas,monospace] text-base"
-                  >
-                    {{ member.initials }}
-                  </text>
-                </g>
-                <rect
-                  x="74"
-                  y="163"
-                  width="228"
-                  height="48"
-                  rx="24"
-                  class="fill-primary-comfy-ink-light"
-                />
-                <Transition name="crossfade" mode="out-in">
-                  <text
-                    :key="workflow.endpoint"
-                    x="188"
-                    y="193"
-                    text-anchor="middle"
-                    class="fill-primary-comfy-yellow font-[Menlo,Monaco,Consolas,monospace] text-2xl tracking-[0.7px]"
-                  >
-                    {{ workflow.endpoint }}
-                  </text>
-                </Transition>
-              </svg>
+              <TeamSharingChat :locale :endpoint="workflow.endpoint" />
             </div>
 
             <div v-else class="flex size-full items-center justify-center">

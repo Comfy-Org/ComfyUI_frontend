@@ -23,7 +23,8 @@ const label = computed(() => t('download.hero.downloadLocal', locale))
 
 const ICONS: Record<Platform, string> = {
   windows: '/icons/os/windows.svg',
-  mac: '/icons/os/apple.svg'
+  mac: '/icons/os/apple.svg',
+  linux: '/icons/os/linux.svg'
 }
 
 interface ButtonSpec {

@@ -6,7 +6,6 @@ import { h, ref } from 'vue'
 import {
   DEFAULT_CAMERA,
   RESHOOT_ASPECTS,
-  RESHOOT_FRAMES,
   RESHOOT_MOTIONS,
   RESHOOT_SIZES
 } from '../../../../lib/workshop/cinematic-studio/reshoot'
@@ -21,7 +20,6 @@ describe('ReshootSide', () => {
     camera: DEFAULT_CAMERA,
     keys: [],
     depth: 'ready' as const,
-    frames: RESHOOT_FRAMES,
     gate: 'ready' as const,
     canGenerate: true,
     aspect: RESHOOT_ASPECTS[0],
