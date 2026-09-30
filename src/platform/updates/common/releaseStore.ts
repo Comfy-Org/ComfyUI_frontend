@@ -263,7 +263,7 @@ export const useReleaseStore = defineStore('release', () => {
       return
     }
 
-    // Older cores treat --disable-api-nodes as offline too, so skip for both
+    // --disable-api-nodes is a deprecated alias for --offline; --disable-partner-nodes stays online
     if (
       systemStatsStore.systemStats?.system.argv?.some((arg) =>
         OFFLINE_ARGS.includes(arg)

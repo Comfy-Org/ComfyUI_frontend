@@ -352,6 +352,19 @@ describe('useReleaseStore', () => {
       expect(store.isLoading).toBe(false)
     })
 
+    it('should fetch normally with --disable-partner-nodes, which keeps the frontend online', async () => {
+      const store = useReleaseStore()
+      const releaseService = useReleaseService()
+      const systemStatsStore = useSystemStatsStore()
+      systemStatsStore.systemStats!.system.argv = ['--disable-partner-nodes']
+      vi.mocked(releaseService.getReleases).mockResolvedValue([mockRelease])
+
+      await store.initialize()
+
+      expect(releaseService.getReleases).toHaveBeenCalled()
+      expect(store.releases).toEqual([mockRelease])
+    })
+
     it('should fetch normally when --disable-api-nodes is not present', async () => {
       const store = useReleaseStore()
       const releaseService = useReleaseService()
