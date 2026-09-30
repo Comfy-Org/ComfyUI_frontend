@@ -3,13 +3,14 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import type {
   AgentThreadListResponse,
   AgentThreadSummary,
+  BillingStatus,
   SubscriptionTier
 } from '@comfyorg/ingest-types'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Mocked } from 'vitest'
-import { computed, defineComponent, h, nextTick, ref } from 'vue'
+import { computed, defineComponent, h, nextTick, reactive, ref } from 'vue'
 import { useClipboard } from '@vueuse/core'
 
 vi.mock(import('firebase/auth'))
@@ -207,16 +208,21 @@ vi.mock(
 const paywallWorkspace = vi.hoisted(() => ({
   role: 'owner' as 'owner' | 'member' | undefined
 }))
-const paywallCapabilities = vi.hoisted(() => ({
+const paywallCapabilities = reactive({
   canTopUp: true,
   canSubscribeSelfServe: true,
   isReady: true,
-  hasResolvedCapabilities: true
-}))
+  hasResolvedCapabilities: true,
+  snapshotAuthoritative: true
+})
 const paywallBilling = vi.hoisted(() => ({
-  tier: 'STANDARD' as SubscriptionTier | null
+  tier: 'STANDARD' as SubscriptionTier | null,
+  type: 'workspace' as 'workspace' | 'legacy',
+  status: 'paid' as BillingStatus | null,
+  fetchStatus: vi.fn<() => Promise<void>>()
 }))
 const paywallHasFunds = ref<boolean | null>(false)
+const paywallAgentHasFunds = ref<boolean | undefined>()
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'), {
   spy: true
@@ -295,9 +301,15 @@ beforeEach(() => {
       subscription: computed(() =>
         paywallHasFunds.value === null
           ? null
-          : fromPartial({ hasFunds: paywallHasFunds.value })
+          : fromPartial({
+              hasFunds: paywallHasFunds.value,
+              agentHasFunds: paywallAgentHasFunds.value ?? paywallHasFunds.value
+            })
       ),
-      tier: computed(() => paywallBilling.tier)
+      tier: computed(() => paywallBilling.tier),
+      type: computed(() => paywallBilling.type),
+      billingStatus: computed(() => paywallBilling.status),
+      fetchStatus: paywallBilling.fetchStatus
     })
   )
   vi.mocked(useBillingCapabilities).mockReturnValue(
@@ -309,6 +321,9 @@ beforeEach(() => {
       isReady: computed(() => paywallCapabilities.isReady),
       hasResolvedCapabilities: computed(
         () => paywallCapabilities.hasResolvedCapabilities
+      ),
+      snapshotAuthoritative: computed(
+        () => paywallCapabilities.snapshotAuthoritative
       )
     })
   )
@@ -394,8 +409,13 @@ beforeEach(() => {
   paywallCapabilities.canSubscribeSelfServe = true
   paywallCapabilities.isReady = true
   paywallCapabilities.hasResolvedCapabilities = true
+  paywallCapabilities.snapshotAuthoritative = true
   paywallBilling.tier = 'STANDARD'
+  paywallBilling.type = 'workspace'
+  paywallBilling.status = 'paid'
+  paywallBilling.fetchStatus.mockReset().mockResolvedValue(undefined)
   paywallHasFunds.value = false
+  paywallAgentHasFunds.value = undefined
 })
 
 const zAgentWsEventForTest = (raw: unknown): AgentChatEvent =>
@@ -738,6 +758,24 @@ describe('AgentPanelRoot onboarding', () => {
   })
 })
 
+function inlinePaywall() {
+  return within(screen.getByTestId('agent-conversation'))
+}
+
+function findInlinePaywallButton(name: string): Promise<HTMLElement> {
+  return vi.waitFor(() => inlinePaywall().getByRole('button', { name }))
+}
+
+function queryInlinePaywallButton(name: string): HTMLElement | null {
+  const view = screen.queryByTestId('agent-conversation')
+  return view ? within(view).queryByRole('button', { name }) : null
+}
+
+function queryInlinePaywallText(text: string): HTMLElement | null {
+  const view = screen.queryByTestId('agent-conversation')
+  return view ? within(view).queryByText(text) : null
+}
+
 describe('AgentPanelRoot paywall actions', () => {
   beforeEach(() => {
     ws.clear()
@@ -754,14 +792,14 @@ describe('AgentPanelRoot paywall actions', () => {
       thinking: false
     })
 
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'Upgrade plan' })
-    )
+    await userEvent.click(await findInlinePaywallButton('Upgrade plan'))
     expect(openAccountPrecondition).toHaveBeenCalledExactlyOnceWith(
       'subscription'
     )
 
-    await userEvent.click(screen.getByRole('button', { name: 'Add credits' }))
+    await userEvent.click(
+      inlinePaywall().getByRole('button', { name: 'Add credits' })
+    )
     expect(openAccountPrecondition.mock.calls).toEqual([
       ['subscription'],
       ['credits']
@@ -779,9 +817,7 @@ describe('AgentPanelRoot paywall actions', () => {
       thinking: false
     })
 
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'Subscribe' })
-    )
+    await userEvent.click(await findInlinePaywallButton('Subscribe'))
 
     expect(openAccountPrecondition).toHaveBeenCalledExactlyOnceWith(
       'subscription'
@@ -796,14 +832,12 @@ describe('AgentPanelRoot paywall actions', () => {
       'continue'
     )
 
-    expect(
-      await screen.findByRole('button', { name: 'Subscribe' })
-    ).toBeInTheDocument()
+    expect(await findInlinePaywallButton('Subscribe')).toBeInTheDocument()
 
     paywallHasFunds.value = true
 
     await vi.waitFor(() =>
-      expect(screen.queryByText('Out of credits')).not.toBeInTheDocument()
+      expect(queryInlinePaywallText('Out of credits')).not.toBeInTheDocument()
     )
   })
 
@@ -814,16 +848,14 @@ describe('AgentPanelRoot paywall actions', () => {
       toTurnId('msg-paywall'),
       'continue'
     )
-    expect(
-      await screen.findByRole('button', { name: 'Subscribe' })
-    ).toBeInTheDocument()
+    expect(await findInlinePaywallButton('Subscribe')).toBeInTheDocument()
 
     panel.unmount()
     paywallHasFunds.value = true
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
     await vi.waitFor(() =>
-      expect(screen.queryByText('Out of credits')).not.toBeInTheDocument()
+      expect(queryInlinePaywallText('Out of credits')).not.toBeInTheDocument()
     )
   })
 
@@ -838,9 +870,7 @@ describe('AgentPanelRoot paywall actions', () => {
       'render one more frame'
     )
 
-    expect(
-      await screen.findByRole('button', { name: 'Subscribe' })
-    ).toBeInTheDocument()
+    expect(await findInlinePaywallButton('Subscribe')).toBeInTheDocument()
   })
 
   it('keeps a resolved paywall hidden while billing state is unknown', async () => {
@@ -850,20 +880,16 @@ describe('AgentPanelRoot paywall actions', () => {
       toTurnId('msg-paywall'),
       'continue'
     )
-    expect(
-      await screen.findByRole('button', { name: 'Subscribe' })
-    ).toBeInTheDocument()
+    expect(await findInlinePaywallButton('Subscribe')).toBeInTheDocument()
 
     paywallHasFunds.value = true
     await vi.waitFor(() =>
-      expect(
-        screen.queryByRole('button', { name: 'Subscribe' })
-      ).not.toBeInTheDocument()
+      expect(queryInlinePaywallButton('Subscribe')).not.toBeInTheDocument()
     )
 
     paywallHasFunds.value = null
     await nextTick()
-    expect(screen.queryByText('Out of credits')).not.toBeInTheDocument()
+    expect(queryInlinePaywallText('Out of credits')).not.toBeInTheDocument()
   })
 
   it('shows only a new denial after funds run out again', async () => {
@@ -873,20 +899,16 @@ describe('AgentPanelRoot paywall actions', () => {
       toTurnId('msg-paywall'),
       'continue'
     )
-    expect(
-      await screen.findByRole('button', { name: 'Subscribe' })
-    ).toBeInTheDocument()
+    expect(await findInlinePaywallButton('Subscribe')).toBeInTheDocument()
 
     paywallHasFunds.value = true
     await vi.waitFor(() =>
-      expect(
-        screen.queryByRole('button', { name: 'Subscribe' })
-      ).not.toBeInTheDocument()
+      expect(queryInlinePaywallButton('Subscribe')).not.toBeInTheDocument()
     )
 
     paywallHasFunds.value = false
     await nextTick()
-    expect(screen.queryByText('Out of credits')).not.toBeInTheDocument()
+    expect(queryInlinePaywallText('Out of credits')).not.toBeInTheDocument()
 
     useAgentConversationStore().recordPaywall(
       toTurnId('msg-paywall-2'),
@@ -894,7 +916,7 @@ describe('AgentPanelRoot paywall actions', () => {
     )
     await vi.waitFor(() =>
       expect(
-        screen.getByRole('button', { name: 'Subscribe' })
+        inlinePaywall().getByRole('button', { name: 'Subscribe' })
       ).toBeInTheDocument()
     )
   })
@@ -915,9 +937,7 @@ describe('AgentPanelRoot paywall actions', () => {
     await screen.findByText(
       'This workspace has used all its credits. Ask your workspace owner to add more.'
     )
-    expect(
-      screen.queryByRole('button', { name: 'Add credits' })
-    ).not.toBeInTheDocument()
+    expect(queryInlinePaywallButton('Add credits')).not.toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: /upgrade|subscribe/i })
     ).not.toBeInTheDocument()
@@ -936,9 +956,7 @@ describe('AgentPanelRoot paywall actions', () => {
         thinking: false
       })
 
-      expect(
-        await screen.findByRole('button', { name: 'Add credits' })
-      ).toBeInTheDocument()
+      expect(await findInlinePaywallButton('Add credits')).toBeInTheDocument()
       expect(
         screen.queryByRole('button', { name: /upgrade|subscribe/i })
       ).not.toBeInTheDocument()
@@ -956,9 +974,7 @@ describe('AgentPanelRoot paywall actions', () => {
       thinking: false
     })
 
-    expect(
-      await screen.findByRole('button', { name: 'Add credits' })
-    ).toBeInTheDocument()
+    expect(await findInlinePaywallButton('Add credits')).toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: /upgrade|subscribe/i })
     ).not.toBeInTheDocument()
@@ -975,12 +991,8 @@ describe('AgentPanelRoot paywall actions', () => {
       thinking: false
     })
 
-    expect(
-      await screen.findByRole('button', { name: 'Subscribe' })
-    ).toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'Add credits' })
-    ).not.toBeInTheDocument()
+    expect(await findInlinePaywallButton('Subscribe')).toBeInTheDocument()
+    expect(queryInlinePaywallButton('Add credits')).not.toBeInTheDocument()
   })
 
   it('shows sales-managed remediation for a ready owner with no self-serve capability', async () => {

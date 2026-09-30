@@ -18,6 +18,8 @@ import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
+import type { AgentPaywallSurface } from '@/platform/telemetry/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { formatWorkflowSyncErrorDetail } from '@/workbench/extensions/agent/crdt/workflowSyncErrorDetail'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -102,7 +104,9 @@ import type { DraftSnapshot } from './services/agent/agentRestClient'
 import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
 import {
   DEFAULT_AGENT_PAYWALL_PRESENTATION,
-  resolveAgentPaywallPresentation
+  resolveAgentPaywallPresentation,
+  toAgentPaywallCta,
+  toAgentPaywallReason
 } from './services/agent/agentPaywallPresentation'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { createStandaloneAgentEventSource } from './services/agent/standaloneAgentEventSource'
@@ -128,17 +132,28 @@ const { t } = useI18n()
 const toast = useToastStore()
 const { open: openAccountPrecondition } = useAccountPreconditionDialog()
 const { workspaceRole } = useWorkspaceUI()
-const { subscription, tier: subscriptionTier } = useBillingContext()
+const {
+  subscription,
+  tier: subscriptionTier,
+  type: billingType,
+  billingStatus,
+  fetchStatus: refreshBillingStatus
+} = useBillingContext()
 const conversationStore = useAgentConversationStore()
 watch(
   subscription,
   (currentSubscription) => {
-    if (currentSubscription?.hasFunds) conversationStore.resolvePaywalls()
+    if (currentSubscription?.agentHasFunds) conversationStore.resolvePaywalls()
   },
   { immediate: true }
 )
-const { canTopUp, canSubscribeSelfServe, hasResolvedCapabilities } =
-  useBillingCapabilities()
+const {
+  canTopUp,
+  canSubscribeSelfServe,
+  hasResolvedCapabilities,
+  isReady: capabilityReadSettled,
+  snapshotAuthoritative
+} = useBillingCapabilities()
 const paywallPresentation = computed(() => {
   if (isCloud && !hasResolvedCapabilities.value && !canTopUp.value) {
     return DEFAULT_AGENT_PAYWALL_PRESENTATION
@@ -155,6 +170,7 @@ const sidebarTabStore = useSidebarTabStore()
 const { isBuilderMode } = useAppMode()
 
 const { resolvedUserInfo, userDisplayName } = useCurrentUser()
+const teamWorkspaceStore = useTeamWorkspaceStore()
 const userName = computed(
   () => userDisplayName.value?.trim().split(/\s+/)[0] || undefined
 )
@@ -166,14 +182,107 @@ const events =
     ? createStandaloneAgentEventSource()
     : createAgentEventSource(api)
 
-function onPaywallAction(action: AgentPaywallAction): void {
-  openAccountPrecondition(action === 'addCredits' ? 'credits' : 'subscription')
+function onPaywallAction(
+  action: AgentPaywallAction,
+  surface: AgentPaywallSurface
+): void {
+  useTelemetry()?.trackAgentPaywallCtaClicked({
+    cta: toAgentPaywallCta(action),
+    surface
+  })
+  if (action === 'addCredits') {
+    if (canTopUp.value) {
+      useTelemetry()?.trackAddApiCreditButtonClicked({
+        source: 'agent_paywall'
+      })
+    }
+    openAccountPrecondition('credits')
+    return
+  }
+  openAccountPrecondition('subscription')
+}
+
+const { messages: conversationMessages, entries: conversationEntries } =
+  storeToRefs(conversationStore)
+watch(
+  () =>
+    capabilityReadSettled.value
+      ? conversationMessages.value
+          .filter((message) =>
+            message.parts.some((part) => part.type === 'paywall')
+          )
+          .map((message) => message.id)
+      : [],
+  (paywallMessageIds) => {
+    const telemetry = useTelemetry()
+    if (!telemetry) return
+    for (const id of paywallMessageIds) {
+      if (!conversationStore.claimPaywallImpression(id)) continue
+      telemetry.trackAgentPaywallShown({
+        reason: snapshotAuthoritative.value
+          ? toAgentPaywallReason(paywallPresentation.value)
+          : 'unknown',
+        surface: 'refused_send'
+      })
+    }
+  },
+  { immediate: true }
+)
+
+const agentHasFunds = computed(() => subscription.value?.agentHasFunds)
+const creditsExhausted = computed(() => {
+  if (billingType.value !== 'workspace') return false
+  if (!capabilityReadSettled.value) return false
+  if (agentHasFunds.value !== false) return false
+  if (
+    billingStatus.value === 'paused' ||
+    billingStatus.value === 'payment_failed'
+  )
+    return false
+  return ['subscribed', 'subscriptionRequired', 'local'].includes(
+    paywallPresentation.value.kind
+  )
+})
+
+const showStandingPaywall = computed(() => {
+  if (!creditsExhausted.value) return false
+  const latestEntry = conversationEntries.value.at(-1)
+  return !(
+    latestEntry?.role === 'assistant' &&
+    latestEntry.parts.some((part) => part.type === 'paywall')
+  )
+})
+
+const agentPanelStore = useAgentPanelStore()
+const billingIdentity = computed(
+  () =>
+    `${resolvedUserInfo.value?.id ?? 'anonymous'}:${teamWorkspaceStore.workspaceId ?? 'none'}`
+)
+
+watch(billingIdentity, () => {
+  agentPanelStore.reportedExhaustionIdentity = null
+})
+
+function onStandingPaywallShown(): void {
+  if (
+    !showStandingPaywall.value ||
+    agentPanelStore.reportedExhaustionIdentity === billingIdentity.value
+  )
+    return
+  const telemetry = useTelemetry()
+  if (!telemetry) return
+  agentPanelStore.reportedExhaustionIdentity = billingIdentity.value
+  telemetry.trackAgentPaywallShown({
+    reason: snapshotAuthoritative.value
+      ? toAgentPaywallReason(paywallPresentation.value)
+      : 'unknown',
+    surface: 'credits_exhausted'
+  })
 }
 
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const bindingStore = useAgentWorkflowTabBindingStore()
-const agentPanelStore = useAgentPanelStore()
 const composerStore = useAgentComposerStore()
 const { selectedWorkflow: selectedTarget } = storeToRefs(agentPanelStore)
 const { dismissedSelectionSignature, enabled: agentEnabled } =
@@ -692,17 +801,25 @@ function resumedTurnTabPath(): string | null {
 // Adoption (onWorkflowAdopted) and tab activation (onAgentActiveTab) are the
 // primary spinner setters; the non-idle branch only re-arms it after the
 // stash/resume flip of a panel remount, where those setters never run.
-let observedActivityStatus = false
+let wasTurnActive = false
 watch(
   [status, conversationTurnId],
   ([value, turnId]) => {
+    const completedTurn = wasTurnActive && value === 'idle'
     if (value === 'idle') {
       // The immediate idle value on remount is a hydration snapshot, not a
       // completed turn. A real idle transition is observed after this pass.
-      if (observedActivityStatus) graphActivity.finishTurn()
+      if (completedTurn) graphActivity.finishTurn()
     } else graphActivity.startTurn(turnId)
-    observedActivityStatus = true
+    wasTurnActive = value !== 'idle'
     if (value === 'idle') {
+      if (completedTurn && billingType.value === 'workspace') {
+        void refreshBillingStatus().catch((error: unknown) => {
+          reportError(error, {
+            errorType: 'error_refreshing_agent_billing_status'
+          })
+        })
+      }
       const completedPath = tabActivity.editingTabPath
       tabActivity.setEditing(null)
       if (completedPath !== null) tabActivity.markModified(completedPath)
@@ -1379,6 +1496,7 @@ function onPanelDrop(event: DragEvent): void {
       :workflow-detached="workflowDetached"
       :get-mention-nodes="mentionableNodes"
       :paywall-presentation="paywallPresentation"
+      :credits-exhausted="showStandingPaywall"
       @send="onSend"
       @stop="onStop"
       @attach="onAttach"
@@ -1393,6 +1511,7 @@ function onPanelDrop(event: DragEvent): void {
       @open-workflow="onOpenApprovalWorkflow"
       @open-reference-workflow="onNavigateToReferenceWorkflow"
       @paywall-action="onPaywallAction"
+      @standing-paywall-shown="onStandingPaywallShown"
       @new-chat="onNewChat"
       @toggle-size="agentPanelStore.toggleMaximize()"
       @close="onClosePanel"
