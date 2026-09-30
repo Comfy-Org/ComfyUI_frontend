@@ -50,7 +50,8 @@ const {
   gate,
   canGenerate,
   priceNote,
-  session
+  session,
+  unavailable
 } = reshoot
 
 reportStudioBusy(() => reshoot.rendering.value)
@@ -72,7 +73,8 @@ const { leavingTo, leave, stay } = useCinematicLeaveGuard(
     >
       <ReshootUpload v-if="!picked" :locale @pick="reshoot.pick" />
       <!-- A failed read is said once, beside its Try again button; the
-           viewport keeps the notices that no button can fix. -->
+           viewport keeps the notices that no button can fix, including a
+           read that failed because the app is not available. -->
       <ReshootSide
         v-else
         v-model:upload="upload"
@@ -90,7 +92,7 @@ const { leavingTo, leave, stay } = useCinematicLeaveGuard(
         :depth
         :frames
         :clip-error="clipError"
-        :error="depth === 'failed' ? notice : undefined"
+        :error="depth === 'failed' && !unavailable ? notice : undefined"
         :gate
         :can-generate="canGenerate"
         :price-note="priceNote"
@@ -125,7 +127,7 @@ const { leavingTo, leave, stay } = useCinematicLeaveGuard(
         :camera="view"
         :depth
         :stage
-        :notice="depth === 'failed' ? undefined : notice"
+        :notice="depth === 'failed' && !unavailable ? undefined : notice"
         :step
         :takes
         :selected

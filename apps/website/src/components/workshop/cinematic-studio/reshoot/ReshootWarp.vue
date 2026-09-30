@@ -70,6 +70,10 @@ function draw() {
   })
 }
 
+// Decoding outlives the component when it is unmounted mid-way (a re-read
+// remounts it): whatever finishes after that is closed, not drawn.
+let disposed = false
+
 onMounted(async () => {
   if (!canvas.value) return
   try {
@@ -85,14 +89,21 @@ onMounted(async () => {
     emit('unsupported')
     return
   }
-  bitmaps.value = await Promise.all(
+  const decoded = await Promise.all(
     geometry.jpegs.map((jpeg) => createImageBitmap(jpeg))
   )
+  if (disposed) {
+    for (const bitmap of decoded) bitmap.close()
+    return
+  }
+  bitmaps.value = decoded
   draw()
 })
 
 onBeforeUnmount(() => {
+  disposed = true
   renderer.value?.dispose()
+  renderer.value = undefined
   for (const bitmap of bitmaps.value) bitmap.close()
 })
 

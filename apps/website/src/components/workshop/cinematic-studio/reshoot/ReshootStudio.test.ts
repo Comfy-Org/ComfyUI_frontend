@@ -8,6 +8,7 @@ import {
   fakeTransport,
   signIn
 } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/__fixtures__/reshootFakes'
+import { ReshootError } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/transport'
 import { reshootTransport } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/transport-config'
 import ReshootStudio from './ReshootStudio.vue'
 
@@ -167,5 +168,54 @@ describe('Re-shoot on one screen', () => {
     expect(
       screen.getByRole('button', { name: 'Aim', current: true })
     ).toBeInTheDocument()
+  })
+
+  describe('a failed scene reading', () => {
+    const failed = 'Something went wrong. Try again.'
+    const unavailable = 'Re-shoot is not available right now. Try again later.'
+
+    it('is said once, beside Try again, not in the preview as well', async () => {
+      const transport = fakeTransport()
+      vi.mocked(transport.submit).mockRejectedValueOnce(
+        new ReshootError('server_error')
+      )
+      vi.mocked(reshootTransport).mockReturnValue(transport)
+      const user = setup()
+      await pickExample(user)
+
+      expect(screen.getAllByText(new RegExp(failed))).toHaveLength(1)
+      expect(screen.getByRole('alert')).toHaveTextContent(failed)
+      expect(screen.getByTestId('reshoot-analyze')).toBeInTheDocument()
+      expect(screen.getByTestId('reshoot-viewport')).not.toHaveTextContent(
+        failed
+      )
+    })
+
+    it('leaves "not available" to the preview once the app turns out to be unavailable', async () => {
+      const transport = fakeTransport()
+      vi.mocked(transport.submit).mockRejectedValueOnce(
+        new ReshootError('server_error')
+      )
+      // The price answers only after the reading has failed.
+      vi.mocked(transport.quote).mockImplementation(
+        () =>
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new ReshootError('app_unavailable')), 5000)
+          )
+      )
+      vi.mocked(reshootTransport).mockReturnValue(transport)
+      const user = setup()
+      await pickExample(user)
+      expect(screen.getByTestId('reshoot-analyze')).toBeInTheDocument()
+
+      await vi.advanceTimersByTimeAsync(3000)
+
+      expect(screen.getByTestId('reshoot-viewport')).toHaveTextContent(
+        unavailable
+      )
+      // Trying the reading again cannot help, so there is no button for it.
+      expect(screen.queryByTestId('reshoot-analyze')).toBeNull()
+      expect(screen.getAllByText(unavailable)).toHaveLength(1)
+    })
   })
 })
