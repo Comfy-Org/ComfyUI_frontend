@@ -1,23 +1,23 @@
 import { describe, expect, it } from 'vitest'
 
-import { savedSidebarPercent } from './splitterWidthUtil'
+import { savedPanelPercent } from './splitterWidthUtil'
 
-describe(savedSidebarPercent, () => {
+describe(savedPanelPercent, () => {
   it.for([
-    { state: '[30,70]', location: 'left', expected: 30 },
-    { state: '[70,30]', location: 'right', expected: 30 },
-    { state: '[25,50,25]', location: 'right', expected: 25 },
-    { state: null, location: 'left', expected: null },
-    { state: 'not json', location: 'left', expected: null },
-    { state: '{"a":1}', location: 'left', expected: null },
-    { state: '[]', location: 'left', expected: null },
-    { state: '["30",70]', location: 'left', expected: null },
-    { state: '[0,100]', location: 'left', expected: null },
-    { state: '[100,0]', location: 'left', expected: null }
+    { state: '[30,70]', edge: 'first', expected: 30 },
+    { state: '[70,30]', edge: 'last', expected: 30 },
+    { state: '[25,50,25]', edge: 'last', expected: 25 },
+    { state: null, edge: 'first', expected: null },
+    { state: 'not json', edge: 'first', expected: null },
+    { state: '{"a":1}', edge: 'first', expected: null },
+    { state: '[]', edge: 'first', expected: null },
+    { state: '["30",70]', edge: 'first', expected: null },
+    { state: '[0,100]', edge: 'first', expected: null },
+    { state: '[100,0]', edge: 'first', expected: null }
   ] as const)(
-    'reads $state for a $location sidebar as $expected',
-    ({ state, location, expected }) => {
-      expect(savedSidebarPercent(() => state, ['key'], location)).toBe(expected)
+    'reads $state for the $edge panel as $expected',
+    ({ state, edge, expected }) => {
+      expect(savedPanelPercent(() => state, ['key'], edge)).toBe(expected)
     }
   )
 
@@ -29,10 +29,10 @@ describe(savedSidebarPercent, () => {
     }
 
     expect(
-      savedSidebarPercent(
+      savedPanelPercent(
         (key) => states[key] ?? null,
         ['missing', 'broken', 'with-offside', 'plain'],
-        'left'
+        'first'
       )
     ).toBe(35)
   })
@@ -43,8 +43,6 @@ describe(savedSidebarPercent, () => {
       return '[30,70]'
     }
 
-    expect(savedSidebarPercent(readState, ['blocked', 'plain'], 'left')).toBe(
-      30
-    )
+    expect(savedPanelPercent(readState, ['blocked', 'plain'], 'first')).toBe(30)
   })
 })

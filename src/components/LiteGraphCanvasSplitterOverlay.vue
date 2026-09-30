@@ -158,7 +158,6 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useWindowSize } from '@vueuse/core'
 import type { MaybeElement } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import Splitter from 'primevue/splitter'
@@ -186,7 +185,7 @@ import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { savedSidebarPercent } from '@/utils/splitterWidthUtil'
+import { savedPanelPercent } from '@/utils/splitterWidthUtil'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 const workspaceStore = useWorkspaceStore()
@@ -394,26 +393,42 @@ const sidebarWidthKey = computed(() => {
   return unifiedWidth.value ? base : `${base}.${sidebarTabKey.value}`
 })
 
-const { width: windowWidth } = useWindowSize()
-
 function workspaceWidthAt(percent: number) {
-  return Math.round((percent / 100) * (windowWidth.value - SIDE_TOOLBAR_WIDTH))
+  return Math.round((percent / 100) * (window.innerWidth - SIDE_TOOLBAR_WIDTH))
 }
 
+function savedPercent(stateKeys: string[], edge: 'first' | 'last') {
+  return savedPanelPercent(
+    (stateKey) => localStorage.getItem(stateKey),
+    stateKeys,
+    edge
+  )
+}
+
+const offsideStateKey = computed(
+  () => `${sidebarTabKey.value}-${sidebarLocation.value}-with-offside`
+)
+
 function defaultSidebarWidth() {
-  const base = sidebarTabKey.value
-  const location = sidebarLocation.value
+  const plainStateKey =
+    sidebarLocation.value === 'left'
+      ? sidebarTabKey.value
+      : `${sidebarTabKey.value}-right`
   const percent =
-    savedSidebarPercent(
-      (stateKey) => localStorage.getItem(stateKey),
-      [
-        sidebarStateKey.value,
-        location === 'left' ? base : `${base}-right`,
-        `${base}-${location}-with-offside`
-      ],
-      location
+    savedPercent(
+      [plainStateKey, offsideStateKey.value],
+      sidebarLocation.value === 'left' ? 'first' : 'last'
     ) ?? SIDE_PANEL_SIZE
   return Math.max(SIDEBAR_MIN_WIDTH, workspaceWidthAt(percent))
+}
+
+function defaultOffsideWidth() {
+  const percent =
+    savedPercent(
+      [offsideStateKey.value],
+      sidebarLocation.value === 'left' ? 'last' : 'first'
+    ) ?? SIDE_PANEL_SIZE
+  return workspaceWidthAt(percent)
 }
 
 const { onResizeStart: markResizedPanels, onResizeEnd: savePanelWidths } =
@@ -427,12 +442,11 @@ const { onResizeStart: markResizedPanels, onResizeEnd: savePanelWidths } =
       {
         ref: offsidePanelRef,
         storageKey: 'Comfy.RightSidePanel.Width',
-        defaultWidth: () => workspaceWidthAt(SIDE_PANEL_SIZE)
+        defaultWidth: defaultOffsideWidth
       }
     ],
     [
       splitterRefreshKey,
-      windowWidth,
       sidebarWidthKey,
       sidebarPanelVisible,
       focusMode,

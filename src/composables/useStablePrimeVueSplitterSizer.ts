@@ -6,14 +6,14 @@ import type { MaybeRefOrGetter, WatchSource } from 'vue'
 
 import { StorageSerializers, unrefElement, useStorage } from '@vueuse/core'
 import type { MaybeComputedElementRef } from '@vueuse/core'
-import { nextTick, watch } from 'vue'
+import { nextTick, toValue, watch } from 'vue'
 
 interface PanelConfig {
   ref: MaybeComputedElementRef
   storageKey: MaybeRefOrGetter<string>
   /**
-   * Pixel width to pin the panel at while nothing is stored. It is not
-   * persisted, so a panel the user never resized follows this default.
+   * Pixel width to store and pin the panel at the first time it renders with
+   * nothing stored.
    */
   defaultWidth?: () => number | null
 }
@@ -38,13 +38,12 @@ export function useStablePrimeVueSplitterSizer(
   watchSources: WatchSource[]
 ) {
   const storedWidths = panels.map((panel) => ({
-    ref: panel.ref,
-    defaultWidth: panel.defaultWidth,
+    ...panel,
     width: useStorage<number | null>(panel.storageKey, null, undefined, {
       serializer: StorageSerializers.number
     })
   }))
-  let resizedPanels = new Set<Element>()
+  let resizeStart = new Map<Element, { width: number; storageKey: string }>()
 
   function resolveElement(
     ref: MaybeComputedElementRef
@@ -61,10 +60,12 @@ export function useStablePrimeVueSplitterSizer(
   function applyStoredWidths() {
     for (const { ref, width, defaultWidth } of storedWidths) {
       const el = resolveElement(ref)
-      const pinnedWidth = isUsableWidth(width.value)
-        ? width.value
-        : defaultWidth?.()
-      if (el && isUsableWidth(pinnedWidth)) pin(el, pinnedWidth)
+      if (!el) continue
+      if (!isUsableWidth(width.value)) {
+        const initialWidth = defaultWidth?.()
+        if (isUsableWidth(initialWidth)) width.value = initialWidth
+      }
+      if (isUsableWidth(width.value)) pin(el, width.value)
     }
   }
 
@@ -73,21 +74,37 @@ export function useStablePrimeVueSplitterSizer(
       originalEvent.target instanceof Element
         ? originalEvent.target.closest('.p-splitter-gutter')
         : null
-    resizedPanels = new Set(
-      [gutter?.previousElementSibling, gutter?.nextElementSibling].filter(
-        (el): el is Element => el != null
-      )
+    const besideGutter = [
+      gutter?.previousElementSibling,
+      gutter?.nextElementSibling
+    ]
+    resizeStart = new Map(
+      storedWidths.flatMap(({ ref, storageKey }) => {
+        const el = resolveElement(ref)
+        if (!el || !besideGutter.includes(el)) return []
+        const start = { width: el.offsetWidth, storageKey: toValue(storageKey) }
+        return [[el, start] as const]
+      })
     )
   }
 
   function onResizeEnd(_event: SplitterResizeEndEvent) {
-    for (const { ref, width } of storedWidths) {
+    for (const { ref, width, storageKey } of storedWidths) {
       const el = resolveElement(ref)
-      if (!el || el.offsetWidth === 0 || !resizedPanels.has(el)) continue
+      const start = el && resizeStart.get(el)
+      if (
+        !el ||
+        !start ||
+        el.offsetWidth === 0 ||
+        el.offsetWidth === start.width ||
+        toValue(storageKey) !== start.storageKey
+      ) {
+        continue
+      }
       width.value = el.offsetWidth
       pin(el, el.offsetWidth)
     }
-    resizedPanels.clear()
+    resizeStart.clear()
   }
 
   watch(
