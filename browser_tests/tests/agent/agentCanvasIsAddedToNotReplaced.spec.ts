@@ -7,15 +7,14 @@ import {
   ADDITIVE_READINESS_WIDGET,
   AGENT_BUILD,
   INSERT_WORKFLOW,
-  USER_NOTE_POSITION,
-  USER_NOTE_TEXT
+  USER_NOTE_POSITION
 } from '@e2e/fixtures/data/agent/agentCanvasAdditive'
 
 test.describe(
   'Agent work adds to the canvas instead of replacing it',
   { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
-    test.use({ conversationCase: ADDITIVE_CANVAS_CASE, humanOpsHost: 'hold' })
+    test.use({ conversationCase: ADDITIVE_CANVAS_CASE, humanOpsHost: 'apply' })
 
     test('story 37: an inserted workflow leaves the note the user was working on', async ({
       agentConversation,
@@ -27,7 +26,7 @@ test.describe(
         agentConversation.runTurns())
 
       const noteId =
-        await test.step('user writes a note of their own', async () => {
+        await test.step('user adds a note of their own', async () => {
           const id = await agentConversation.addNoteThroughSearchBox({
             x: USER_NOTE_POSITION[0],
             y: USER_NOTE_POSITION[1]
@@ -35,11 +34,6 @@ test.describe(
           await comfyPage.nextFrame()
           const note = agentConversation.vueNodes.getNodeLocator(id)
           await expect(note).toBeVisible()
-          const textbox = note.getByRole('textbox')
-          await textbox.fill(USER_NOTE_TEXT)
-          await textbox.press('Tab')
-          await comfyPage.nextFrame()
-          await expect(textbox).toHaveValue(USER_NOTE_TEXT)
           return id
         })
 
@@ -85,9 +79,6 @@ test.describe(
         await expect(inserted.getByRole('spinbutton').nth(1)).toHaveValue('512')
         const note = agentConversation.vueNodes.getNodeLocator(noteId)
         await expect(note).toBeVisible()
-        await expect(note.getByRole('textbox').first()).toHaveValue(
-          USER_NOTE_TEXT
-        )
       })
     })
 

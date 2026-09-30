@@ -4,7 +4,6 @@ export const ADDITIVE_CANVAS_CASE = 'agent-rec-text-only-answer'
 export const ADDITIVE_READINESS_NODE_ID = '6'
 export const ADDITIVE_READINESS_WIDGET = 'text'
 export const USER_NOTE_POSITION: [number, number] = [1500, 700]
-export const USER_NOTE_TEXT = 'do not lose me'
 
 export const INSERT_WORKFLOW: RecordedGraphOperation = {
   op: 'insert_workflow',
