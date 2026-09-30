@@ -68,7 +68,6 @@ test.describe(
 
     test('carries the nodes, the group and the node modes the user can see', async ({
       agentConversation,
-      comfyPage,
       page
     }) => {
       test.setTimeout(90_000)
@@ -96,16 +95,18 @@ test.describe(
           return id
         })
 
-      await test.step('user groups it with Ctrl+G', async () => {
-        await agentConversation.vueNodes.selectNode(addedId)
-        await expect(agentConversation.vueNodes.selectedNodes).toHaveCount(1)
-        await page.keyboard.press('Control+g')
-        await expect
-          .poll(() =>
-            page.evaluate(() => window.app!.graph.serialize().groups.length)
-          )
-          .toBe(1)
-      })
+      const canvasGroup =
+        await test.step('user groups it with Ctrl+G', async () => {
+          await agentConversation.vueNodes.selectNode(addedId)
+          await expect(agentConversation.vueNodes.selectedNodes).toHaveCount(1)
+          await page.keyboard.press('Control+g')
+          await expect
+            .poll(() =>
+              page.evaluate(() => window.app!.graph.serialize().groups.length)
+            )
+            .toBe(1)
+          return page.evaluate(() => window.app!.graph.serialize().groups[0])
+        })
 
       await test.step('user mutes one seed node and bypasses another', async () => {
         await agentConversation.vueNodes.selectNode('6')
@@ -124,7 +125,10 @@ test.describe(
           .toEqual({ muted: MODE_MUTED, bypassed: MODE_BYPASSED })
       })
 
-      await comfyPage.nextFrame()
+      await page.evaluate(
+        () =>
+          new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+      )
 
       // Read straight off the rendered canvas: what the user can point at.
       const onScreenNodeIds =
@@ -155,7 +159,7 @@ test.describe(
       })
 
       await test.step('story 48: the group the user made is in the draft', () => {
-        expect(draft.groups ?? []).toHaveLength(1)
+        expect(draft.groups ?? []).toEqual([canvasGroup])
       })
 
       await test.step('story 49: the muted and bypassed nodes are not reported as active', () => {
@@ -173,7 +177,7 @@ test.describe(
     // reproduces here, where the op reaches the canvas.
     test('mutes a node when the agent sets its mode, and the user can see it', async ({
       agentConversation,
-      comfyPage
+      page
     }) => {
       test.setTimeout(90_000)
 
@@ -195,7 +199,10 @@ test.describe(
         ])
       })
 
-      await comfyPage.nextFrame()
+      await page.evaluate(
+        () =>
+          new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+      )
 
       await test.step('the node is drawn muted', async () => {
         await expect(target).toHaveCSS('opacity', MUTED_OPACITY)
