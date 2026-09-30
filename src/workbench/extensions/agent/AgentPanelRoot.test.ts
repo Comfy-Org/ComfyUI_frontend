@@ -2264,10 +2264,7 @@ describe('AgentPanelRoot attach flow', () => {
             headers: { 'Content-Type': 'application/json' }
           })
         }
-        return new Response('{"threads":[]}', {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' }
-        })
+        return json(200, agentThreadList())
       })
     )
 
@@ -2729,6 +2726,7 @@ describe('AgentPanelRoot history', () => {
 
   it('surfaces a thread-list failure via the host error modal', async () => {
     executionErrors.showErrorOverlay.mockClear()
+    telemetry.trackAgentError.mockClear()
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => new Response('{}', { status: 500 }))
@@ -2742,6 +2740,15 @@ describe('AgentPanelRoot history', () => {
     expect(executionErrors.lastPromptError).toMatchObject({
       type: 'agent_api_failed'
     })
+    expect(telemetry.trackAgentError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error_class: 'thread_list_load_failed',
+        failure_stage: 'pre_acceptance',
+        retryable: true,
+        turn_accepted: false,
+        ui_treatment: 'error_overlay'
+      })
+    )
     expect(useAgentChatHistoryStore().sessions).toHaveLength(0)
   })
 
@@ -4914,6 +4921,7 @@ describe('AgentPanelRoot workflow binding', () => {
     mockMessagesEndpoint('wf-42')
 
     await renderAndSend('work here')
+    telemetry.trackAgentError.mockClear()
     workflowService.openWorkflow.mockRejectedValueOnce(new Error('disk full'))
 
     ws.emit('agent_active_tab', {
@@ -4927,6 +4935,15 @@ describe('AgentPanelRoot workflow binding', () => {
         expect.objectContaining({ path: 'workflows/Video test.json' })
       )
     )
+    expect(telemetry.trackAgentError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error_class: 'workflow_open_failed',
+        failure_stage: 'post_acceptance',
+        retryable: false,
+        turn_accepted: true,
+        ui_treatment: 'error_overlay'
+      })
+    )
     await vi.waitFor(() =>
       expect(
         workflowStore.getWorkflowByPath('workflows/Video test.json')
@@ -4939,6 +4956,7 @@ describe('AgentPanelRoot workflow binding', () => {
     mockMessagesEndpoint('wf-42')
 
     await renderAndSend('work here')
+    telemetry.trackAgentError.mockClear()
     workflowService.openWorkflow.mockResolvedValueOnce(false)
 
     ws.emit('agent_active_tab', {
@@ -4961,6 +4979,12 @@ describe('AgentPanelRoot workflow binding', () => {
       useAgentWorkflowTabBindingStore().tabPathFor('wf-77')
     ).toBeUndefined()
     expect(telemetry.trackAgentWorkflowApplied).not.toHaveBeenCalled()
+    expect(telemetry.trackAgentError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error_class: 'workflow_open_failed',
+        ui_treatment: 'toast'
+      })
+    )
   })
 
   it('agent_active_tab strips dotfile prefixes hidden behind whitespace', async () => {
