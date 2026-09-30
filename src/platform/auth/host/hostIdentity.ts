@@ -14,7 +14,7 @@ export interface HostUser {
 }
 
 /** `inactive` means Firebase owns identity for this page load. */
-export type HostIdentityState =
+type HostIdentityState =
   | { status: 'inactive' }
   | { status: 'signed_out' }
   | { status: 'signed_in'; user: HostUser }
