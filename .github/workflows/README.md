@@ -41,10 +41,15 @@ The phrase is case-sensitive. Other people's comments, bot comments, inline
 review comments, and quoted or embedded phrases do not count. The check links
 to the author's comment so the bypass is visible.
 
+Use this for urgent changes when an approver is unavailable. The comment records
+that review is deferred, not completed. Once `approval-policy` passes, use
+**Add to merge queue**, not GitHub's bypass option. CI and the merge queue remain
+mandatory; the workflow neither merges the PR nor grants GitHub bypass rights.
+
 The override applies to the entire PR, including later pushes and merge groups.
-Edit or delete all matching comments to revoke it. This is an explicit opt-out
-from required review, available to any human PR author, including fork authors.
-It does not bypass CI, merge-queue requirements, or other GitHub protections.
+Edit or delete all matching comments to revoke it. Any human PR author,
+including a fork author, can request it. The workflow does not enforce an
+urgency threshold, a waiting period, or eventual review after merge.
 
 1. Create a dedicated GitHub App and install it on `Comfy-Org/ComfyUI_frontend`.
    Grant repository **Checks: write**, **Contents: read**, and **Pull requests:
@@ -73,11 +78,22 @@ It does not bypass CI, merge-queue requirements, or other GitHub protections.
    Set native required approvals to **0** in both `ProtectMain` and
    `ProtectMainReview`, and audit any other rulesets or branch protection
    applying to `main`. Keep the pull-request requirement itself. Leave
-   required CODEOWNERS review and last-push approval disabled. Retain the
-   existing bypass actors and unrelated protections. A required check cannot
+   required CODEOWNERS review and last-push approval disabled. Retain
+   unrelated protections. A required check cannot
    waive native approval requirements, so retaining one approval would block
    the zero-approval author override. Verify effective merge eligibility,
    including outstanding changes-requested reviews, before rollout is complete.
+7. Remove broad bypass grants from authors who will use deferred approval.
+   `ProtectMain` currently grants `RepositoryRole` 5 an `always` bypass over
+   its review, CI, and merge-queue rules together. Remove that entry to require
+   those authors to use the queue. If separate emergency bypass rights must
+   remain, put mandatory CI and merge-queue rules in a separate active `main`
+   ruleset with no bypass grants for those authors. Review-only bypass grants
+   cannot waive a separate ruleset's queue requirement.
+8. Verify with an affected author's account that `To Be Reviewed` allows queue
+   entry with zero approvals, failing CI still prevents merging, and direct
+   merge without the queue is unavailable. A successful `approval-policy`
+   check alone does not prove that GitHub enforces the queue.
 
 Each evaluation also refreshes active merge-group checks. A group passes
 only if every included PR has an eligible approval or its own author override,
