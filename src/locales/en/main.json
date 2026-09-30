@@ -435,6 +435,7 @@
     "sourceGamut": "Source gamut",
     "dither": "Dither",
     "clipWarnings": "Clip warnings",
+    "checkerboard": "Show transparency",
     "fitView": "Fit",
     "histogram": "Histogram",
     "resolution": "Resolution",
