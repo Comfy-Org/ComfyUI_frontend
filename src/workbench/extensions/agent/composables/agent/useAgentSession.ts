@@ -466,6 +466,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return true
     } catch (error) {
       return handleHistoryLoadError(error, threadId, isCurrent, stashedTurn)
+    } finally {
+      drainHydration(buffer)
     }
   }
 
@@ -481,8 +483,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
         conversationStore.setThreadId(null)
       localStorage.removeItem(threadStorageKey)
       return false
-    } finally {
-      drainHydration(buffer)
     }
     reportError(error, { errorType: 'agent_history_load_failed' })
     pushError(error instanceof Error ? error.message : String(error))
