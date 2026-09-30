@@ -115,6 +115,19 @@ describe('Agent target deletion', () => {
       selected: undefined
     },
     {
+      event: 'deleting a closed saved target after it is reopened',
+      act: async ({ workflows, target }: TargetSetup) => {
+        saveTarget(target)
+        await workflows.closeWorkflow(target)
+        await nextTick()
+        workflows.openWorkflowsInBackground({ right: [target.path] })
+        await nextTick()
+        await workflows.deleteWorkflow(target)
+      },
+      unavailable: false,
+      selected: undefined
+    },
+    {
       event: 'only closing the target',
       act: async ({ workflows, target }: TargetSetup) =>
         workflows.closeWorkflow(target),

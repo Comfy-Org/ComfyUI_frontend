@@ -25,9 +25,10 @@ type TargetTracking =
   | { mode: 'uninitialized' }
   | { mode: 'following' }
   | { mode: 'restoring' }
+  | { mode: 'retained'; workflow: ComfyWorkflow }
   | {
       mode: 'retained'
-      workflow: ComfyWorkflow | null
+      workflow: null
       closedPath?: string
       unavailable?: true
     }
@@ -78,6 +79,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const targetUnavailable = computed(
     () =>
       targetTracking.value.mode === 'retained' &&
+      targetTracking.value.workflow === null &&
       targetTracking.value.unavailable === true
   )
   const canRestoreWorkflow = computed(
@@ -114,7 +116,10 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   }
 
   function setWorkflowTarget(workflow: ComfyWorkflow | null): void {
-    targetTracking.value = { mode: 'retained', workflow }
+    targetTracking.value =
+      workflow === null
+        ? { mode: 'retained', workflow: null }
+        : { mode: 'retained', workflow }
   }
 
   function markWorkflowTargetUnavailable(): void {
@@ -125,24 +130,29 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     }
   }
 
+  function detachClosedTarget(workflow: ComfyWorkflow): void {
+    targetTracking.value = workflow.isTemporary
+      ? { mode: 'retained', workflow: null }
+      : { mode: 'retained', workflow: null, closedPath: workflow.path }
+  }
+
   // Only a retained target can become detached. A following target belongs to
-  // the editor, including its replacement when the visible tab closes.
+  // the editor, including its replacement when the visible tab closes. Once a
+  // closed target reopens it is just another tab, so it is no longer tracked.
   watch(
     () => [targetTracking.value, ...workflowStore.openWorkflows],
     () => {
       const target = targetTracking.value
-      if (
-        target.mode === 'retained' &&
-        target.workflow !== null &&
-        !workflowStore.openWorkflows.includes(target.workflow)
+      if (target.mode !== 'retained') return
+      if (target.workflow !== null) {
+        if (!workflowStore.openWorkflows.includes(target.workflow))
+          detachClosedTarget(target.workflow)
+      } else if (
+        workflowStore.openWorkflows.some(
+          ({ path }) => path === target.closedPath
+        )
       )
-        targetTracking.value = {
-          mode: 'retained',
-          workflow: null,
-          ...(target.workflow.isTemporary
-            ? {}
-            : { closedPath: target.workflow.path })
-        }
+        setWorkflowTarget(null)
     }
   )
 
@@ -168,7 +178,11 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
 
   function followClosedTargetRename(oldPath: string, newPath: string): void {
     const target = targetTracking.value
-    if (target.mode === 'retained' && target.closedPath === oldPath)
+    if (
+      target.mode === 'retained' &&
+      target.workflow === null &&
+      target.closedPath === oldPath
+    )
       targetTracking.value = { ...target, closedPath: newPath }
   }
 
