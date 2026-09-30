@@ -2258,10 +2258,7 @@ describe('AgentPanelRoot attach flow', () => {
             headers: { 'Content-Type': 'application/json' }
           })
         }
-        return new Response('{"threads":[]}', {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' }
-        })
+        return json(200, agentThreadList())
       })
     )
 
