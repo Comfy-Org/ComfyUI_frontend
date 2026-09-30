@@ -160,13 +160,22 @@
     "skip": "דלג",
     "stop": "עצור",
     "stopShortcut": "Esc",
-    "suggestedPrompts": [
-      "צור ברווז צהוב עם מסכת הוקי",
-      "הצג את תהליכי העבודה השמורים שלי",
-      "מצא את תהליך העבודה הטוב ביותר להגדלת רזולוציה של עור",
-      "הסבר את הצומת שנבחר",
-      "בנה תהליך עבודה להמרת תמונה לווידאו עם 3 מודלים"
-    ],
+    "suggestedPrompts": {
+      "cloud": [
+        "יצירת גיליון דמות של אסטרונאוט",
+        "הפיכת תמונת המוצר לפרסומת קצרה",
+        "הסבר על הצמתים שנבחרו",
+        "תהליך העבודה הטוב ביותר להגדלת תמונה ל-4K",
+        "תיקון השגיאות בתהליך עבודה זה"
+      ],
+      "local": [
+        "יצירת דיוקן מציאותי של אסטרונאוט",
+        "תהליך עבודה מתמונה לווידאו שמתאים ל-GPU שלי",
+        "הסבר על הצמתים שנבחרו",
+        "עזרה בהתקנת הצמתים החסרים עבור תהליך עבודה זה",
+        "תיקון השגיאות בתהליך עבודה זה"
+      ]
+    },
     "switchWorkflow": "החלף תהליך עבודה",
     "switchWorkflowForNodes": "עברו אל {workflowName} כדי להוסיף צמתים.",
     "targetFollowsVisibleWorkflow": "תהליך העבודה המיועד עוקב אחר הלשונית הגלויה עד שתבחר יעד, צומתי ייחוס או תשלח הודעה.",
@@ -2752,6 +2761,9 @@
     "installationQueue": "תור ההתקנות",
     "installingDependencies": "מתקין תלויות...",
     "lastUpdated": "עודכן לאחרונה",
+    "latestActive": "הפעילה העדכנית ביותר",
+    "latestInstallable": "הניתנת להתקנה העדכנית ביותר",
+    "latestStableVersion": "היציבה העדכנית ביותר",
     "latestVersion": "האחרונה",
     "legacyManagerSearchTip": "מחפש את ComfyUI-Manager? ניתן להפעיל את ממשק המנהל הישן על-ידי הפעלת ComfyUI עם הדגל --enable-manager-legacy-ui.",
     "legacyManagerUI": "שימוש בממשק הישן",
@@ -2773,10 +2785,13 @@
       "updatesAvailable": "עדכונים זמינים"
     },
     "nightlyVersion": "Nightly",
+    "noActiveVersions": "לחבילה זו אין מהדורות פעילות.",
+    "noActiveVersionsFlagged": "לחבילה זו אין מהדורות פעילות. בחרו מהדורה מסומנת כדי לבקש התקנה, בכפוף להגדרות האבטחה של Manager.",
     "noDescription": "אין תיאור זמין",
     "noNodesFound": "לא נמצאו צמתים",
     "noNodesFoundDescription": "לא ניתן היה לנתח את צמתי החבילה, או שהחבילה היא הרחבת פרונטאנד בלבד ואין בה צמתים.",
     "noResultsFound": "לא נמצאו תוצאות התואמות לחיפוש שלך.",
+    "noUpdateVersion": "אין מהדורה זמינה עבור אפשרות העדכון שנבחרה.",
     "nodePack": "חבילת צמתים",
     "nodePackInfo": "מידע על חבילת הצמתים",
     "notAvailable": "לא זמין",
@@ -2784,9 +2799,11 @@
       "nodeIdRequired": "מזהה צומת נדרש לצורך ההתקנה"
     },
     "packsSelected": "חבילות נבחרו",
+    "queueWaitingToContinue": "משימות ממתינות. נסו שוב כדי להמשיך.",
     "repository": "מאגר",
     "restartToApplyChanges": "כדי להחיל את השינויים, אנא הפעל מחדש את ComfyUI",
     "restartingBackend": "מפעיל מחדש את השרת כדי להחיל את השינויים...",
+    "retryQueueStart": "נסה שוב",
     "searchPlaceholder": "חיפוש",
     "selectVersion": "בחירת גרסה",
     "selected": "נבחר",
@@ -2827,9 +2844,15 @@
     },
     "update": "עדכון",
     "updateAll": "עדכון הכול",
+    "updateFailed": "לא ניתן היה לשנות את גרסת החבילה. נסו שוב.",
+    "updateLatestActiveTooltip": "מעבר לגרסה הפעילה העדכנית ביותר (ברירת מחדל).",
+    "updateLatestInstallableTooltip": "מעבר לגרסה העדכנית ביותר הניתנת להתקנה, כולל מהדורות מסומנות וממתינות. הגדרות האבטחה של Manager עדיין חלות.",
+    "updateOptions": "אפשרויות עדכון",
     "updateSelected": "עדכון הנבחרים",
+    "updateVersionInstalled": "גרסה {version} כבר מותקנת.",
     "updatingAllPacks": "מעדכן את כל החבילות",
-    "version": "גרסה"
+    "version": "גרסה",
+    "versionLoadFailed": "לא ניתן היה לטעון גרסאות. סגרו בורר זה ונסו שוב."
   },
   "maskEditor": {
     "activateLayer": "הפעלת השכבה",

@@ -160,13 +160,22 @@
     "skip": "Passer",
     "stop": "Arrêter",
     "stopShortcut": "Esc",
-    "suggestedPrompts": [
-      "Générez un canard jaune avec un masque de hockey",
-      "Listez mes workflows enregistrés",
-      "Trouvez le meilleur workflow pour l’agrandissement de la peau",
-      "Expliquez le nœud sélectionné",
-      "Créez un workflow d’image à vidéo avec 3 modèles"
-    ],
+    "suggestedPrompts": {
+      "cloud": [
+        "Générez une fiche de personnage d’un astronaute",
+        "Transformez l’image du produit en une courte publicité",
+        "Expliquez les nœuds sélectionnés",
+        "Meilleur workflow de mise à l’échelle d’image pour la 4K",
+        "Corrigez les erreurs de ce workflow"
+      ],
+      "local": [
+        "Générez un portrait réaliste d’un astronaute",
+        "Un workflow d’image à vidéo adapté à mon GPU",
+        "Expliquez les nœuds sélectionnés",
+        "Aidez-moi à installer les nœuds manquants de ce workflow",
+        "Corrigez les erreurs de ce workflow"
+      ]
+    },
     "switchWorkflow": "Changer de workflow",
     "switchWorkflowForNodes": "Passez à {workflowName} pour ajouter des nœuds.",
     "targetFollowsVisibleWorkflow": "Le workflow cible suit l’onglet visible jusqu’à ce que vous choisissiez une cible, des nœuds de référence ou envoyiez un message.",
@@ -2752,6 +2761,9 @@
     "installationQueue": "File d'attente d'installation",
     "installingDependencies": "Installation des dépendances...",
     "lastUpdated": "Dernière mise à jour",
+    "latestActive": "Dernière version active",
+    "latestInstallable": "Dernière version installable",
+    "latestStableVersion": "Dernière version stable",
     "latestVersion": "Dernière",
     "legacyManagerSearchTip": "Vous cherchez ComfyUI-Manager ? Vous pouvez activer l’interface du gestionnaire hérité en lançant ComfyUI avec le paramètre --enable-manager-legacy-ui.",
     "legacyManagerUI": "Utiliser l'interface utilisateur héritée",
@@ -2773,10 +2785,13 @@
       "updatesAvailable": "Mises à jour disponibles"
     },
     "nightlyVersion": "Nocturne",
+    "noActiveVersions": "Ce pack ne comporte aucune version active.",
+    "noActiveVersionsFlagged": "Ce pack ne comporte aucune version active. Sélectionnez une version signalée pour demander son installation, sous réserve des paramètres de sécurité du Manager.",
     "noDescription": "Aucune description disponible",
     "noNodesFound": "Aucun nœud trouvé",
     "noNodesFoundDescription": "Les nœuds du pack n'ont pas pu être analysés, ou le pack est une extension frontend uniquement et n'a pas de nœuds.",
     "noResultsFound": "Aucun résultat trouvé correspondant à votre recherche.",
+    "noUpdateVersion": "Aucune version n’est disponible pour l’option de mise à jour sélectionnée.",
     "nodePack": "Pack de Nœuds",
     "nodePackInfo": "Informations sur le pack de nœuds",
     "notAvailable": "Non disponible",
@@ -2784,9 +2799,11 @@
       "nodeIdRequired": "L'identifiant du nœud est requis pour l'installation"
     },
     "packsSelected": "Packs sélectionnés",
+    "queueWaitingToContinue": "Des tâches sont en attente. Réessayez pour continuer.",
     "repository": "Référentiel",
     "restartToApplyChanges": "Pour appliquer les modifications, veuillez redémarrer ComfyUI",
     "restartingBackend": "Redémarrage du backend pour appliquer les modifications...",
+    "retryQueueStart": "Réessayer",
     "searchPlaceholder": "Recherche",
     "selectVersion": "Sélectionner la version",
     "selected": "Sélectionné",
@@ -2827,9 +2844,15 @@
     },
     "update": "Mettre à jour",
     "updateAll": "Tout mettre à jour",
+    "updateFailed": "Impossible de modifier la version du package. Veuillez réessayer.",
+    "updateLatestActiveTooltip": "Passer à la dernière version active (par défaut).",
+    "updateLatestInstallableTooltip": "Passer à la dernière version installable, y compris les versions signalées et en attente. Les paramètres de sécurité du Manager s’appliquent toujours.",
+    "updateOptions": "Options de mise à jour",
     "updateSelected": "Mettre à jour la sélection",
+    "updateVersionInstalled": "La version {version} est déjà installée.",
     "updatingAllPacks": "Mise à jour de tous les paquets",
-    "version": "Version"
+    "version": "Version",
+    "versionLoadFailed": "Les versions n’ont pas pu être chargées. Fermez ce sélecteur et réessayez."
   },
   "maskEditor": {
     "activateLayer": "Activer le calque",
