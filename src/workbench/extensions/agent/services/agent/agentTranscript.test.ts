@@ -138,7 +138,12 @@ describe('normalizeAgentTranscript', () => {
     const transcript = normalizeAgentTranscript([message])
 
     expect(transcript.userAttachments.get(toTurnId('turn-a'))).toEqual([
-      { name: 'ComfyUI_00002_.png', ref: 'ComfyUI_00002_.png' }
+      {
+        name: 'ComfyUI_00002_.png',
+        ref: 'ComfyUI_00002_.png',
+        id: 'asset-1',
+        kind: 'image'
+      }
     ])
   })
 
@@ -152,7 +157,46 @@ describe('normalizeAgentTranscript', () => {
     const transcript = normalizeAgentTranscript([message])
 
     expect(transcript.userAttachments.get(toTurnId('turn-a'))).toEqual([
-      { name: 'ComfyUI_00002_.png', ref: 'ComfyUI_00002_.png' }
+      { name: 'ComfyUI_00002_.png', ref: 'ComfyUI_00002_.png', kind: 'image' }
+    ])
+  })
+
+  it('keeps an empty attachments list authoritative over stale refs', () => {
+    const message = row(1, 'user', 'turn-a', 'no attachment', 'row-1')
+    message.content = {
+      attachments: [],
+      attachment_refs: [{ name: 'stale.png', kind: 'image' }]
+    }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.userAttachments.get(toTurnId('turn-a'))).toBeUndefined()
+  })
+
+  it('uses a persisted display name without changing the storage ref', () => {
+    const message = row(1, 'user', 'turn-a', '', 'row-1')
+    message.content = {
+      text: 'inspect this',
+      attachments: ['content-hash'],
+      attachment_refs: [
+        {
+          name: 'content-hash',
+          display_name: 'Beach photo.png',
+          id: 'asset-1',
+          kind: 'image'
+        }
+      ]
+    }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.userAttachments.get(toTurnId('turn-a'))).toEqual([
+      {
+        name: 'Beach photo.png',
+        ref: 'content-hash',
+        id: 'asset-1',
+        kind: 'image'
+      }
     ])
   })
 
@@ -202,6 +246,106 @@ describe('normalizeAgentTranscript', () => {
       )
     }
   )
+
+  it.for([
+    {
+      label: 'several files in their recorded order',
+      attachments: ['poster.png', 'clip.mp4', 'score.mp3'],
+      expected: [
+        { name: 'poster.png', ref: 'poster.png' },
+        { name: 'clip.mp4', ref: 'clip.mp4' },
+        { name: 'score.mp3', ref: 'score.mp3' }
+      ]
+    },
+    {
+      label: 'the same filename twice, uncollapsed',
+      attachments: ['crop.png', 'crop.png'],
+      expected: [
+        { name: 'crop.png', ref: 'crop.png' },
+        { name: 'crop.png', ref: 'crop.png' }
+      ]
+    }
+  ])('restores $label', ({ attachments, expected }) => {
+    const message = row(1, 'user', 'turn-a', 'use these', 'row-1')
+    message.content = { text: 'use these', attachments }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.userAttachments.get(toTurnId('turn-a'))).toEqual(expected)
+  })
+
+  it('restores an attachment-only turn that carries no prompt text', () => {
+    const message = row(1, 'user', 'turn-a', '', 'row-1')
+    message.content = { attachments: ['silent.png'] }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.userTexts.get(toTurnId('turn-a'))).toBe('')
+    expect(transcript.userAttachments.get(toTurnId('turn-a'))).toEqual([
+      { name: 'silent.png', ref: 'silent.png' }
+    ])
+  })
+
+  it("keeps a turn's attachments off a sibling turn that has none", () => {
+    const withFile = row(1, 'user', 'turn-a', 'first', 'row-1')
+    withFile.content = { text: 'first', attachments: ['only-here.png'] }
+
+    const transcript = normalizeAgentTranscript([
+      withFile,
+      row(2, 'assistant', 'turn-a', 'Got it', 'row-2'),
+      row(3, 'user', 'turn-b', 'second', 'row-3'),
+      row(4, 'assistant', 'turn-b', 'Sure', 'row-4')
+    ])
+
+    expect(transcript.userAttachments).toEqual(
+      new Map([['turn-a', [{ name: 'only-here.png', ref: 'only-here.png' }]]])
+    )
+  })
+
+  /** PM-1643 / PM-717: metadata preserved in persisted attachment refs. */
+  describe('persisted attachment resolution', () => {
+    it('keeps the resolved asset id and media kind the server persisted on a ref', () => {
+      const bareDigest = 'a'.repeat(64)
+      const message = row(1, 'user', 'turn-a', 'check this clip', 'row-1')
+      message.content = {
+        text: 'check this clip',
+        attachments: [bareDigest],
+        attachment_refs: [{ name: bareDigest, id: 'asset-42', kind: 'video' }]
+      }
+
+      const transcript = normalizeAgentTranscript([message])
+
+      expect(transcript.userAttachments.get(toTurnId('turn-a'))).toEqual([
+        expect.objectContaining({ id: 'asset-42', kind: 'video' })
+      ])
+    })
+
+    it('resolves a padded name against the trimmed ref the server stored', () => {
+      const message = row(1, 'user', 'turn-a', 'check this clip', 'row-1')
+      message.content = {
+        text: 'check this clip',
+        attachments: [' clip.dat '],
+        attachment_refs: [{ name: 'clip.dat', id: 'asset-7', kind: 'video' }]
+      }
+
+      const transcript = normalizeAgentTranscript([message])
+
+      expect(transcript.userAttachments.get(toTurnId('turn-a'))).toEqual([
+        { name: ' clip.dat ', ref: ' clip.dat ', id: 'asset-7', kind: 'video' }
+      ])
+    })
+
+    it('drops a blank name persisted under attachments', () => {
+      const message = row(1, 'user', 'turn-a', '', 'row-1')
+      message.content = { attachments: ['', '   ', 'real.png'] }
+
+      const transcript = normalizeAgentTranscript([message])
+
+      expect(transcript.userAttachments.get(toTurnId('turn-a'))).toEqual([
+        { name: 'real.png', ref: 'real.png' }
+      ])
+    })
+  })
 
   it('restores persisted tool calls as ToolPart entries ahead of the reply text', () => {
     const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')

@@ -632,6 +632,96 @@ describe('useAgentConversationStore', () => {
     revoke.mockRestore()
   })
 
+  it('keeps attachment labels scoped to their thread after blob previews expire', () => {
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const store = useAgentConversationStore()
+    const storageRef = 'a'.repeat(64)
+    const history = (turn: string) => {
+      const user = historyRow(1, 'user', turn, 'use this')
+      user.content = {
+        text: 'use this',
+        attachments: [storageRef],
+        attachment_refs: [{ name: storageRef, kind: 'image' }]
+      }
+      return [user, historyRow(2, 'assistant', turn, 'Done')]
+    }
+
+    store.setThreadId('thread-a')
+    store.recordUser(T1, 'use this', [
+      { name: 'Beach photo.png', ref: storageRef, previewUrl: 'blob:beach' }
+    ])
+    store.hydrate(history('turn-a'))
+
+    expect(revoke).toHaveBeenCalledWith('blob:beach')
+    expect(store.entries[0]).toMatchObject({
+      role: 'user',
+      attachments: [
+        {
+          name: 'Beach photo.png',
+          ref: storageRef,
+          kind: 'image'
+        }
+      ]
+    })
+
+    store.setThreadId('thread-b')
+    store.hydrate(history('turn-b'))
+    expect(store.entries[0]).toMatchObject({
+      role: 'user',
+      attachments: [{ name: storageRef, ref: storageRef, kind: 'image' }]
+    })
+  })
+
+  it('keeps a persisted display name ahead of a remembered label', () => {
+    const store = useAgentConversationStore()
+    const storageRef = 'a'.repeat(64)
+    const user = historyRow(1, 'user', T1, 'use this')
+    user.content = {
+      text: 'use this',
+      attachments: [storageRef],
+      attachment_refs: [
+        {
+          name: storageRef,
+          display_name: 'first.png',
+          kind: 'image'
+        }
+      ]
+    }
+
+    store.setThreadId('thread-a')
+    store.recordUser(T1, 'use this', [{ name: 'second.png', ref: storageRef }])
+    store.hydrate([user, historyRow(2, 'assistant', T1, 'Done')])
+
+    expect(store.entries[0]).toMatchObject({
+      role: 'user',
+      attachments: [{ name: 'first.png', ref: storageRef, kind: 'image' }]
+    })
+  })
+
+  it('clears remembered attachment labels on reset', () => {
+    const store = useAgentConversationStore()
+    const storageRef = 'a'.repeat(64)
+    const user = historyRow(1, 'user', T1, 'use this')
+    user.content = {
+      text: 'use this',
+      attachments: [storageRef],
+      attachment_refs: [{ name: storageRef, kind: 'image' }]
+    }
+
+    store.setThreadId('thread-a')
+    store.recordUser(T1, 'use this', [
+      { name: 'Beach photo.png', ref: storageRef }
+    ])
+    store.reset()
+    store.setThreadId('thread-a')
+    store.hydrate([user, historyRow(2, 'assistant', T1, 'Done')])
+
+    expect(store.entries[0]).toMatchObject({
+      role: 'user',
+      attachments: [{ name: storageRef, ref: storageRef, kind: 'image' }]
+    })
+  })
+
   it('keeps a stashed background turn across reset so returning to the thread resumes it', () => {
     const store = useAgentConversationStore()
     store.setThreadId('th')
