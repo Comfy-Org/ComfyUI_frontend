@@ -7763,6 +7763,67 @@
       }
     }
   },
+  "HeyGenImageToVideoNode": {
+    "description": "הנפשת תמונה לסרטון עם דיאלוג וצליל מסונכרנים באמצעות HeyGen Video 1.0. התמונה משמשת כפריים הראשון.",
+    "display_name": "HeyGen Video 1.0 תמונה לווידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenReferenceToVideoNode": {
+    "description": "יצירת סרטון עם דיאלוג וצליל מסונכרנים מפרומפט טקסטואלי באמצעות HeyGen Video 1.0. ניתן לחבר עד 12 תמונות, סרטונים וקטעי שמע להפניה, ולהזכיר אותם בפרומפט בתור {'@'}Image1, {'@'}Video1, {'@'}Audio1.",
+    "display_name": "HeyGen Video 1.0 הפניה לווידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "model_aspect_ratio": {
+        "name": "יחס_גובה-רוחב"
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenTalkingPhotoNode": {
     "description": "הנפש כל תמונה של אדם לסרטון מדבר מסונכרן שפתיים (HeyGen Avatar IV). ניתן להניע באמצעות תסריט טקסט או אודיו משלך.",
     "display_name": "HeyGen Talking Photo",
@@ -8376,6 +8437,42 @@
       }
     }
   },
+  "IdeogramEditApi": {
+    "description": "עריכה או שילוב של עד 5 תמונות בהנחיית פרומפט טקסטואלי באמצעות Ideogram 4.5. התמונה כולה מרונדרת מחדש, וניתן לשנות את גודלה או את יחס הגובה-רוחב שלה; כדי להשאיר פיקסלים שלא נערכו ללא שינוי, יש להשתמש ב-Ideogram 4.5 Precise Edit.",
+    "display_name": "Ideogram 4.5 עריכה",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שבו יש להשתמש."
+      },
+      "model_height": {
+        "name": "גובה"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_quality": {
+        "name": "איכות"
+      },
+      "model_seed": {
+        "name": "זרע"
+      },
+      "model_size": {
+        "name": "גודל"
+      },
+      "model_width": {
+        "name": "רוחב"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramPImage": {
     "description": "יוצר תמונות באמצעות P-Image, מודל טקסט-לתמונה מהיר של Ideogram. טיפוגרפיה חזקה ופוטוריאליזם; תומך ב־Ideogram 4.0 structured JSON captions לטקסט, צבעים ופריסה מדויקים.",
     "display_name": "Ideogram & Pruna P-Image",
@@ -8415,6 +8512,70 @@
       "1": {
         "name": "final_prompt",
         "tooltip": "הפרומפט שממנו התמונה נוצרה בפועל (הכיתוב המובנה המשוכתב כאשר prompt_upsampling הופעל, אחרת הפרומפט שלכם). ניתן להזינו שוב עם prompt_upsampling ב־OFF ואותו seed כדי לשחזר את התמונה."
+      }
+    }
+  },
+  "IdeogramPreciseEditApi": {
+    "description": "עריכת תמונה בהנחיית פרומפט טקסטואלי באמצעות העריכה המדויקת של Ideogram 4.5: רק מה שהפרומפט מבקש משתנה, פיקסלים שלא נערכו נשארים זהים והפלט שומר על גודל תמונה 1 (תמונות הגדולות מכ־4 MP מוקטנות תחילה). אפשר לקבל עד 4 תמונות להפניה.",
+    "display_name": "Ideogram 4.5 עריכה מדויקת",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שבו יש להשתמש."
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_quality": {
+        "name": "איכות"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramTextToImageApi": {
+    "description": "יצירת תמונות מפרומפט טקסטואלי באמצעות Ideogram 4.5.",
+    "display_name": "Ideogram 4.5 טקסט לתמונה",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שבו יש להשתמש."
+      },
+      "model_magic_prompt": {
+        "name": "magic_prompt"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_quality": {
+        "name": "איכות"
+      },
+      "model_seed": {
+        "name": "זרע"
+      },
+      "model_size": {
+        "name": "גודל"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "הכיתוב המובנה שממנו נוצרה התמונה. הזינו אותו מחדש כאשר magic_prompt מוגדר ל-'off' ובאותו seed כדי לשחזר את התמונה."
       }
     }
   },

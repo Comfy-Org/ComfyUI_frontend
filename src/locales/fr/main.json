@@ -84,6 +84,7 @@
     "historyCurrent": "En cours",
     "historyEarlier": "Antérieures",
     "historyEmpty": "Aucune conversation pour le moment",
+    "historyOpenFailed": "Impossible d’ouvrir. Sélectionnez cette discussion pour réessayer.",
     "historyToday": "Aujourd’hui",
     "historyYesterday": "Hier",
     "latest": "Dernier",
@@ -169,19 +170,30 @@
     "skip": "Passer",
     "stop": "Arrêter",
     "stopShortcut": "Échap",
-    "suggestedPrompts": [
-      "Générez un canard jaune avec un masque de hockey",
-      "Listez mes workflows enregistrés",
-      "Trouvez le meilleur workflow pour l’agrandissement de la peau",
-      "Expliquez le nœud sélectionné",
-      "Créez un workflow d’image à vidéo avec 3 modèles"
-    ],
+    "suggestedPrompts": {
+      "cloud": [
+        "Générer une fiche de personnage d’astronaute",
+        "Transformer l’image du produit en une courte publicité",
+        "Expliquer les nœuds sélectionnés",
+        "Meilleur workflow d’agrandissement d’image pour la 4K",
+        "Corriger les erreurs dans ce workflow"
+      ],
+      "local": [
+        "Générer un portrait réaliste d’un astronaute",
+        "Un workflow image-vers-vidéo adapté à mon GPU",
+        "Expliquer les nœuds sélectionnés",
+        "M’aider à installer les nœuds manquants pour ce workflow",
+        "Corriger les erreurs dans ce workflow"
+      ]
+    },
     "switchWorkflow": "Changer de workflow",
     "switchWorkflowForNodes": "Basculez vers {workflowName} pour ajouter des nœuds.",
     "takeTour": "Faire la visite guidée",
     "targetFollowsVisibleWorkflow": "Le workflow cible suit l’onglet visible jusqu’à ce que vous choisissiez une cible, des nœuds de référence ou envoyiez un message.",
     "targetForThisChat": "Cible de l’agent pour cette discussion",
     "targetNavigationUnavailable": "Cette cible de workflow n'est plus disponible.",
+    "targetWorkflowOpenFailed": "Impossible d’ouvrir le workflow cible.",
+    "targetWorkflowUnavailable": "Le workflow cible n’est plus disponible.",
     "thinking": "Réflexion...",
     "title": "Comfy Agent",
     "toolForgettingPreference": "Oubli d’une préférence",
@@ -543,6 +555,15 @@
       "expired": "La vérification a expiré. Veuillez recommencer le défi.",
       "failed": "Échec de la vérification. Veuillez réessayer.",
       "submitBlockedHint": "Veuillez compléter le défi de vérification ci-dessus pour activer l'inscription."
+    },
+    "webSession": {
+      "token": {
+        "ended": "Votre session a expiré. Connectez-vous à nouveau pour continuer.",
+        "identityChanged": "Votre session a changé. Rechargez la page pour continuer.",
+        "refused": "Votre demande a été refusée. Rechargez la page et réessayez.",
+        "unavailable": "Nous n’avons pas pu joindre votre compte. Réessayez dans un instant.",
+        "workspaceDenied": "Vous n’avez pas accès à cet espace de travail. Contactez l’assistance si le problème persiste."
+      }
     }
   },
   "batch": {
@@ -648,6 +669,46 @@
     "saveAs": "Enregistrer sous",
     "switchToOutputs": "Passer aux sorties",
     "viewApp": "Voir l’application"
+  },
+  "cameraAngle": {
+    "cameraView": "Caméra",
+    "cameraViewTooltip": "Déplacer la caméra autour du sujet",
+    "faces": {
+      "back": "ARRIÈRE",
+      "bottom": "DESSOUS",
+      "left": "GAUCHE",
+      "right": "DROITE",
+      "top": "DESSUS"
+    },
+    "hidePreview": "Masquer l’aperçu du cadrage",
+    "horizontal": {
+      "back": "Arrière",
+      "backLeft": "Arrière gauche",
+      "backRight": "Arrière droit",
+      "front": "Face",
+      "frontLeft": "Avant gauche",
+      "frontRight": "Avant droit",
+      "left": "Côté gauche",
+      "right": "Côté droit"
+    },
+    "horizontalLabel": "Angle horizontal",
+    "objectView": "Objet",
+    "objectViewTooltip": "Regarder à travers la caméra et faire tourner le sujet",
+    "preview": "Aperçu",
+    "showPreview": "Afficher l’aperçu du cadrage",
+    "vertical": {
+      "elevated": "Surélevé",
+      "eyeLevel": "À hauteur des yeux",
+      "highAngle": "Plongée",
+      "lowAngle": "Contre-plongée"
+    },
+    "verticalLabel": "Angle vertical",
+    "zoom": {
+      "closeUp": "Gros plan",
+      "medium": "Plan moyen",
+      "wide": "Plan large"
+    },
+    "zoomLabel": "Cadrage"
   },
   "clipboard": {
     "errorMessage": "Échec de la copie dans le presse-papiers",
@@ -1901,6 +1962,7 @@
     "itemsSelected": "Aucun élément sélectionné | {count} élément sélectionné | {count} éléments sélectionnés",
     "job": "Tâche",
     "jobIdCopied": "ID du travail copié dans le presse-papiers",
+    "jobs": "Tâches",
     "keybinding": "Raccourci clavier",
     "keybindingAlreadyExists": "Le raccourci clavier existe déjà",
     "keybindingListAriaLabel": "Raccourcis clavier : {combos}",
@@ -2190,6 +2252,7 @@
       "r": "R",
       "rgb": "RVB"
     },
+    "checkerboard": "Afficher la transparence",
     "clipWarnings": "Avertissements de clipping",
     "dither": "Tramage",
     "exposure": "Exposition",
@@ -4922,6 +4985,7 @@
     "failedToFetchBalance": "Échec de la récupération du solde : {error}",
     "failedToFetchLogs": "Échec de la récupération des journaux du serveur",
     "failedToFetchSubscription": "Échec de la récupération du statut d'abonnement : {error}",
+    "failedToInitializeCameraAngleViewer": "Impossible d’initialiser la visionneuse d’angle de caméra. Essayez de recharger la page.",
     "failedToInitializeCameraInfoViewer": "Impossible d’initialiser la visionneuse d’informations de la caméra. Essayez de recharger la page.",
     "failedToInitializeLoad3dViewer": "Échec de l'initialisation du visualiseur 3D",
     "failedToInitiateCreditPurchase": "Échec de l'initiation de l'achat de crédits : {error}",
@@ -5199,6 +5263,7 @@
         "memberBody": "L'abonnement de cet espace de travail est en pause. Les administrateurs de votre espace de travail doivent mettre à jour le mode de paiement.",
         "title": "Abonnement en pause"
       },
+      "payInvoice": "Payer la facture",
       "planChange": {
         "body": "Votre forfait actuel reste actif jusque-là.",
         "title": "Votre forfait passe à {plan} le {date}"
@@ -5206,6 +5271,7 @@
       "updatePayment": "Mettre à jour le paiement",
       "warning": {
         "bodyNoDate": "Votre dernier paiement n'a pas abouti. Mettez à jour le paiement pour éviter une pause.",
+        "bodyWithAmount": "Le traitement de votre paiement de {amount} a échoué. Payez la facture ou mettez à jour le paiement pour éviter une interruption.",
         "title": "Paiement refusé"
       }
     },
@@ -5248,8 +5314,15 @@
       "copied": "Copié !",
       "copyAll": "Copier le lien d’invitation | Copier tous les liens ({count})",
       "copyLink": "Copier le lien d’invitation",
+      "invalidBody": "Il a peut-être expiré ou a été remplacé. Demandez un nouveau lien à la personne qui vous a invité.",
+      "invalidDismiss": "J’ai compris",
+      "invalidTitle": "Ce lien d’invitation n’est plus valide",
       "sentLead": "Chaque invitation possède un lien personnel que vous pouvez partager directement :",
-      "sentTitle": "{count} invitation envoyée | {count} invitations envoyées"
+      "sentTitle": "{count} invitation envoyée | {count} invitations envoyées",
+      "switchAccount": "Changer de compte",
+      "wrongAccountBody": "Vous êtes connecté en tant que {email}. Connectez-vous avec l’adresse e-mail qui a reçu cette invitation pour l’accepter.",
+      "wrongAccountBodyGeneric": "Cette invitation a été envoyée à une adresse e-mail différente de celle avec laquelle vous êtes connecté. Connectez-vous avec l’adresse e-mail qui l’a reçue.",
+      "wrongAccountTitle": "Cette invitation a été envoyée à une autre adresse e-mail"
     },
     "inviteMember": "Inviter un membre",
     "inviteMemberDialog": {

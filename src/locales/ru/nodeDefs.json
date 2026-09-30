@@ -7763,6 +7763,67 @@
       }
     }
   },
+  "HeyGenImageToVideoNode": {
+    "description": "Анимирует изображение в видео с синхронизированными диалогом и звуком с помощью HeyGen Video 1.0. Изображение используется в качестве первого кадра.",
+    "display_name": "HeyGen Video 1.0: изображение в видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель"
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "model_prompt": {
+        "name": "запрос"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "model_seed": {
+        "name": "сид"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenReferenceToVideoNode": {
+    "description": "Создаёт видео с синхронизированными диалогом и звуком из текстового запроса с помощью HeyGen Video 1.0. При необходимости подключите до 12 референсных изображений, видео и аудиоклипов и упомяните их в запросе как {'@'}Image1, {'@'}Video1, {'@'}Audio1.",
+    "display_name": "HeyGen Video 1.0: референс в видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель"
+      },
+      "model_aspect_ratio": {
+        "name": "соотношение_сторон"
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "model_prompt": {
+        "name": "запрос"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "model_seed": {
+        "name": "сид"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenTalkingPhotoNode": {
     "description": "Анимируйте любое изображение человека в синхронизированное с губами говорящee видео (HeyGen Avatar IV). Управляйте им с помощью текстового сценария или собственного аудио.",
     "display_name": "HeyGen Talking Photo",
@@ -8376,6 +8437,42 @@
       }
     }
   },
+  "IdeogramEditApi": {
+    "description": "Редактирует или объединяет до 5 изображений по текстовому запросу с помощью Ideogram 4.5. Повторно рендерит всё изображение и может изменить его размер или соотношение сторон; используйте Ideogram 4.5 Precise Edit, чтобы не затронутые пиксели оставались неизменными.",
+    "display_name": "Ideogram 4.5: редактирование",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Используемая модель."
+      },
+      "model_height": {
+        "name": "высота"
+      },
+      "model_prompt": {
+        "name": "запрос"
+      },
+      "model_quality": {
+        "name": "качество"
+      },
+      "model_seed": {
+        "name": "сид"
+      },
+      "model_size": {
+        "name": "размер"
+      },
+      "model_width": {
+        "name": "ширина"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramPImage": {
     "description": "Генерирует изображения с помощью P-Image, быстрого текст-в-изображение модели от Ideogram. Сильная типографика и фотореализм; поддерживает структурированные JSON-подписи Ideogram 4.0 для точного текста, цветов и макета.",
     "display_name": "Ideogram & Pruna P-Image",
@@ -8415,6 +8512,70 @@
       "1": {
         "name": "final_prompt",
         "tooltip": "Запрос, по которому фактически было сгенерировано изображение (переписанная структурированная подпись при работе prompt_upsampling, иначе ваш запрос). Используйте его с prompt_upsampling OFF и тем же сидом для воспроизведения этого изображения."
+      }
+    }
+  },
+  "IdeogramPreciseEditApi": {
+    "description": "Редактирует изображение по текстовому запросу с помощью точного редактирования Ideogram 4.5: изменяется только то, что указано в запросе, не затронутые пиксели остаются идентичными, а результат сохраняет размер изображения 1 (изображения больше ~4 МП сначала уменьшаются). Поддерживает до 4 референсных изображений.",
+    "display_name": "Ideogram 4.5: точное редактирование",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Используемая модель."
+      },
+      "model_prompt": {
+        "name": "запрос"
+      },
+      "model_quality": {
+        "name": "качество"
+      },
+      "model_seed": {
+        "name": "сид"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramTextToImageApi": {
+    "description": "Создаёт изображения из текстового запроса с помощью Ideogram 4.5.",
+    "display_name": "Ideogram 4.5: текст в изображение",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Используемая модель."
+      },
+      "model_magic_prompt": {
+        "name": "магический_промпт"
+      },
+      "model_prompt": {
+        "name": "промпт"
+      },
+      "model_quality": {
+        "name": "качество"
+      },
+      "model_seed": {
+        "name": "сид"
+      },
+      "model_size": {
+        "name": "размер"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "итоговый_промпт",
+        "tooltip": "Структурированное описание, по которому было сгенерировано изображение. Передайте его обратно с magic_prompt, установленным в значение «off», и тем же сидом, чтобы воспроизвести изображение."
       }
     }
   },

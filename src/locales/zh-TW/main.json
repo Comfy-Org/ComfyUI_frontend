@@ -84,6 +84,7 @@
     "historyCurrent": "目前",
     "historyEarlier": "更早",
     "historyEmpty": "尚無對話",
+    "historyOpenFailed": "無法開啟。請選取此對話以重試。",
     "historyToday": "今天",
     "historyYesterday": "昨天",
     "latest": "最新",
@@ -169,19 +170,30 @@
     "skip": "略過",
     "stop": "停止",
     "stopShortcut": "Esc",
-    "suggestedPrompts": [
-      "生成一隻戴著冰球面具的黃色鴨子",
-      "列出我儲存的工作流程",
-      "尋找最適合皮膚放大的工作流程",
-      "說明所選節點",
-      "建立使用 3 個模型的圖像轉影片工作流程"
-    ],
+    "suggestedPrompts": {
+      "cloud": [
+        "生成太空人的角色設定圖",
+        "將產品圖片製作成短篇廣告",
+        "說明所選節點",
+        "適用於 4K 的最佳影像放大工作流程",
+        "修正此工作流程中的錯誤"
+      ],
+      "local": [
+        "生成寫實風格的太空人肖像",
+        "適合我的 GPU 的圖像轉影片工作流程",
+        "說明所選節點",
+        "協助我安裝此工作流程缺少的節點",
+        "修正此工作流程中的錯誤"
+      ]
+    },
     "switchWorkflow": "切換工作流程",
     "switchWorkflowForNodes": "切換至 {workflowName} 以新增節點。",
     "takeTour": "開始導覽",
     "targetFollowsVisibleWorkflow": "目標工作流程會跟隨目前可見的分頁，直到您選擇目標、參照節點或傳送訊息為止。",
     "targetForThisChat": "此聊天的代理目標",
     "targetNavigationUnavailable": "此工作流程目標已無法使用。",
+    "targetWorkflowOpenFailed": "無法開啟目標工作流程。",
+    "targetWorkflowUnavailable": "目標工作流程已無法使用。",
     "thinking": "思考中...",
     "title": "Comfy Agent",
     "toolForgettingPreference": "正在移除偏好設定",
@@ -543,6 +555,15 @@
       "expired": "驗證已過期。請重新完成驗證挑戰。",
       "failed": "驗證失敗。請再試一次。",
       "submitBlockedHint": "請先完成上方驗證挑戰以啟用註冊。"
+    },
+    "webSession": {
+      "token": {
+        "ended": "您的工作階段已結束。請重新登入以繼續。",
+        "identityChanged": "您的工作階段已變更。請重新載入以繼續。",
+        "refused": "您的要求遭到拒絕。請重新載入頁面後再試一次。",
+        "unavailable": "無法連線至您的帳戶。請稍後再試。",
+        "workspaceDenied": "您沒有此工作區的存取權。若持續發生此問題，請聯絡支援團隊。"
+      }
     }
   },
   "batch": {
@@ -648,6 +669,46 @@
     "saveAs": "另存新檔",
     "switchToOutputs": "切換到輸出",
     "viewApp": "查看應用程式"
+  },
+  "cameraAngle": {
+    "cameraView": "相機",
+    "cameraViewTooltip": "將相機環繞主體移動",
+    "faces": {
+      "back": "背面",
+      "bottom": "底部",
+      "left": "左側",
+      "right": "右側",
+      "top": "頂部"
+    },
+    "hidePreview": "隱藏鏡頭預覽",
+    "horizontal": {
+      "back": "背面",
+      "backLeft": "左後方",
+      "backRight": "右後方",
+      "front": "正面",
+      "frontLeft": "左前方",
+      "frontRight": "右前方",
+      "left": "左側",
+      "right": "右側"
+    },
+    "horizontalLabel": "水平角度",
+    "objectView": "物件",
+    "objectViewTooltip": "透過相機視角旋轉主體",
+    "preview": "預覽",
+    "showPreview": "顯示鏡頭預覽",
+    "vertical": {
+      "elevated": "較高位置",
+      "eyeLevel": "平視",
+      "highAngle": "高角度",
+      "lowAngle": "低角度"
+    },
+    "verticalLabel": "垂直角度",
+    "zoom": {
+      "closeUp": "特寫",
+      "medium": "中景",
+      "wide": "遠景"
+    },
+    "zoomLabel": "鏡頭景別"
   },
   "clipboard": {
     "errorMessage": "複製到剪貼簿失敗",
@@ -1901,6 +1962,7 @@
     "itemsSelected": "未選取任何項目 | 已選取 {count} 個項目 | 已選取 {count} 個項目",
     "job": "工作",
     "jobIdCopied": "工作 ID 已複製到剪貼簿",
+    "jobs": "工作",
     "keybinding": "快捷鍵",
     "keybindingAlreadyExists": "快捷鍵已存在於",
     "keybindingListAriaLabel": "快捷鍵：{combos}",
@@ -2190,6 +2252,7 @@
       "r": "R",
       "rgb": "RGB"
     },
+    "checkerboard": "顯示透明區域",
     "clipWarnings": "裁切警告",
     "dither": "抖動",
     "exposure": "曝光",
@@ -4922,6 +4985,7 @@
     "failedToFetchBalance": "取得餘額失敗：{error}",
     "failedToFetchLogs": "無法取得伺服器日誌",
     "failedToFetchSubscription": "無法取得訂閱狀態：{error}",
+    "failedToInitializeCameraAngleViewer": "無法初始化相機角度檢視器。請嘗試重新載入頁面。",
     "failedToInitializeCameraInfoViewer": "無法初始化相機資訊檢視器。請嘗試重新載入頁面。",
     "failedToInitializeLoad3dViewer": "無法初始化 3D 檢視器",
     "failedToInitiateCreditPurchase": "啟動點數購買失敗：{error}",
@@ -5199,6 +5263,7 @@
         "memberBody": "此工作區的訂閱已暫停。請聯絡工作區管理員更新付款方式。",
         "title": "訂閱已暫停"
       },
+      "payInvoice": "支付發票",
       "planChange": {
         "body": "您目前的方案將持續有效至該日期。",
         "title": "您的方案將於 {date} 變更為 {plan}"
@@ -5206,6 +5271,7 @@
       "updatePayment": "更新付款方式",
       "warning": {
         "bodyNoDate": "您的上次付款未成功。請更新付款方式以避免暫停。",
+        "bodyWithAmount": "您的 {amount} 付款處理失敗。請支付發票或更新付款方式，以避免服務暫停。",
         "title": "付款失敗"
       }
     },
@@ -5248,8 +5314,15 @@
       "copied": "已複製！",
       "copyAll": "複製邀請連結 | 複製全部連結（{count}）",
       "copyLink": "複製邀請連結",
+      "invalidBody": "連結可能已過期或被替換。請向邀請你的人索取新的連結。",
+      "invalidDismiss": "知道了",
+      "invalidTitle": "此邀請連結已失效",
       "sentLead": "每封邀請都有專屬連結，您可以直接分享：",
-      "sentTitle": "已送出 {count} 封邀請 | 已送出 {count} 封邀請"
+      "sentTitle": "已送出 {count} 封邀請 | 已送出 {count} 封邀請",
+      "switchAccount": "切換帳號",
+      "wrongAccountBody": "你目前以 {email} 登入。請使用收到此邀請的電子郵件地址登入以接受邀請。",
+      "wrongAccountBodyGeneric": "此邀請寄送到的電子郵件地址與你目前登入的地址不同。請使用收到邀請的電子郵件地址登入。",
+      "wrongAccountTitle": "此邀請是寄送到其他電子郵件地址"
     },
     "inviteMember": "邀請成員",
     "inviteMemberDialog": {

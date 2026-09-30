@@ -7763,6 +7763,67 @@
       }
     }
   },
+  "HeyGenImageToVideoNode": {
+    "description": "حرّك صورة إلى فيديو مع حوار وصوت متزامنين باستخدام HeyGen Video 1.0. تُستخدم الصورة كالإطار الأول.",
+    "display_name": "HeyGen Video 1.0 من صورة إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_prompt": {
+        "name": "الموجّه"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenReferenceToVideoNode": {
+    "description": "أنشئ فيديو بحوار وصوت متزامنين من موجّه نصي باستخدام HeyGen Video 1.0. يمكنك اختياريًا توصيل ما يصل إلى 12 صورة وفيديو ومقطعًا صوتيًا مرجعيًا والإشارة إليها في الموجّه بالشكل {'@'}Image1، {'@'}Video1، {'@'}Audio1.",
+    "display_name": "HeyGen Video 1.0 من مرجع إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_aspect_ratio": {
+        "name": "نسبة_الأبعاد"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_prompt": {
+        "name": "الموجّه"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenTalkingPhotoNode": {
     "description": "حوّل أي صورة لشخص إلى فيديو متكلم متزامن مع حركة الشفاه (HeyGen Avatar IV). يمكنك تحريكها بنص مكتوب أو صوتك الخاص.",
     "display_name": "HeyGen صورة متحركة ناطقة",
@@ -8376,6 +8437,42 @@
       }
     }
   },
+  "IdeogramEditApi": {
+    "description": "يحرّر أو يدمج ما يصل إلى 5 صور بتوجيه من موجّه نصي باستخدام Ideogram 4.5. يعيد تصيير الصورة كاملةً ويمكنه تغيير حجمها أو نسبة أبعادها؛ استخدم Ideogram 4.5 Precise Edit للإبقاء على وحدات البكسل غير المعدّلة دون تغيير.",
+    "display_name": "تحرير Ideogram 4.5",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المراد استخدامه."
+      },
+      "model_height": {
+        "name": "الارتفاع"
+      },
+      "model_prompt": {
+        "name": "الموجّه"
+      },
+      "model_quality": {
+        "name": "الجودة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      },
+      "model_size": {
+        "name": "الحجم"
+      },
+      "model_width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramPImage": {
     "description": "يولّد صورًا باستخدام P-Image، نموذج Ideogram السريع لتحويل النص إلى صورة. يتميز بقوة في الطباعة والواقعية الفوتوغرافية؛ يدعم تسميات JSON المنظمة لإصدار Ideogram 4.0 من أجل نصوص دقيقة، ألوان وتخطيط محدد.",
     "display_name": "Ideogram وPruna P-Image",
@@ -8415,6 +8512,70 @@
       "1": {
         "name": "final_prompt",
         "tooltip": "الوصف الذي تم توليد الصورة بناءً عليه فعليًا (التسمية المنظمة المعاد كتابتها عند تشغيل prompt_upsampling، أو وصفك الأصلي). أعد استخدامه مع prompt_upsampling على إيقاف OFF ونفس البذرة لإعادة إنتاج هذه الصورة."
+      }
+    }
+  },
+  "IdeogramPreciseEditApi": {
+    "description": "يحرّر صورة بتوجيه من موجّه نصي باستخدام التحرير الدقيق في Ideogram 4.5: لا يتغير إلا ما يطلبه الموجّه، وتبقى وحدات البكسل غير المعدّلة متطابقة، ويحافظ الناتج على حجم الصورة 1 (تُصغّر الصور التي تزيد عن نحو 4 ميغابكسل أولًا). يقبل ما يصل إلى 4 صور مرجعية.",
+    "display_name": "تحرير دقيق في Ideogram 4.5",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المراد استخدامه."
+      },
+      "model_prompt": {
+        "name": "الموجّه"
+      },
+      "model_quality": {
+        "name": "الجودة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramTextToImageApi": {
+    "description": "ينشئ صورًا من موجّه نصي باستخدام Ideogram 4.5.",
+    "display_name": "Ideogram 4.5 من نص إلى صورة",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المراد استخدامه."
+      },
+      "model_magic_prompt": {
+        "name": "magic_prompt"
+      },
+      "model_prompt": {
+        "name": "موجّه"
+      },
+      "model_quality": {
+        "name": "الجودة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      },
+      "model_size": {
+        "name": "الحجم"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "الوصف التوضيحي المنظّم الذي تم توليد الصورة منه. أعد تمريره مع ضبط magic_prompt على 'off' واستخدام البذرة نفسها لإعادة إنتاج الصورة."
       }
     }
   },
