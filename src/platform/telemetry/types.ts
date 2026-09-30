@@ -1342,6 +1342,12 @@ type BillingTimedOut = {
   failure_category: 'poll_timeout'
 }
 
+/** The stage one attempt at a billing operation settled on. */
+export type BillingOperationTerminal =
+  | BillingSucceeded
+  | (BillingFailed & { decline_reason?: BillingDeclineReason })
+  | BillingTimedOut
+
 type SubscriptionCheckoutBillingEvent = {
   operation: 'subscription_checkout'
   billing_op_id?: string
@@ -1386,12 +1392,7 @@ type BillingOperationBillingEvent = {
    * true duration.
    */
   duration_ms?: number
-} & (
-  | BillingStarted
-  | BillingSucceeded
-  | (BillingFailed & { decline_reason?: BillingDeclineReason })
-  | BillingTimedOut
-)
+} & (BillingStarted | BillingOperationTerminal)
 
 type ResubscribeBillingEvent = {
   operation: 'resubscribe'

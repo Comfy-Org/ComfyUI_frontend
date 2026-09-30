@@ -37,7 +37,8 @@ export interface WebSessionOptions {
 const UNAUTHORIZED_CODES: Readonly<Record<string, WebSessionErrorCode>> = {
   no_session: 'NO_SESSION',
   session_expired: 'SESSION_EXPIRED',
-  session_revoked: 'SESSION_REVOKED'
+  session_revoked: 'SESSION_REVOKED',
+  TOKEN_REVOKED: 'SESSION_REVOKED'
 }
 
 const FORBIDDEN_CODES: Readonly<Record<string, WebSessionErrorCode>> = {

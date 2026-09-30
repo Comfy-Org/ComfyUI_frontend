@@ -9015,8 +9015,8 @@ Enterprise`
     'zh-CN': 'ROUTER'
   },
   'platform.serverlessDeploy.copy': {
-    en: 'Copy commands',
-    'zh-CN': '复制命令'
+    en: 'Copy prompt',
+    'zh-CN': '复制提示词'
   },
   'platform.serverlessDeploy.copied': {
     en: 'Copied',
