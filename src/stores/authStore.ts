@@ -153,6 +153,14 @@ export const useAuthStore = defineStore('auth', () => {
   )
   const userId = computed(() => sessionUser.value?.id ?? currentUser.value?.uid)
 
+  function currentUserIdentity(): string | null {
+    return (
+      sessionUser.value?.id ??
+      currentUser.value?.uid ??
+      useApiKeyAuthStore().getApiKey()
+    )
+  }
+
   function getShareAuthMetadata() {
     const shareId = getPreservedQueryParam(
       PRESERVED_QUERY_NAMESPACES.SHARE_AUTH,
@@ -348,11 +356,6 @@ export const useAuthStore = defineStore('auth', () => {
   const getCustomerAuthHeader = async (): Promise<Readonly<
     Record<string, string>
   > | null> => (await webSessionResourceHeader()) ?? (await getUserAuthHeader())
-
-  const currentUserIdentity = (): string | null =>
-    sessionUser.value?.id ??
-    currentUser.value?.uid ??
-    useApiKeyAuthStore().getApiKey()
 
   const currentUserCredentialIdentity = (): string | null =>
     currentUser.value?.uid ?? useApiKeyAuthStore().getApiKey()
