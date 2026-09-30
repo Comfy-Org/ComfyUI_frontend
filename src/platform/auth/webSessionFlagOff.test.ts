@@ -100,9 +100,7 @@ vi.mock(import('@/services/extensionService'), () => ({
 
 vi.mock(import('@/platform/telemetry'))
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 await import('@/extensions/core/cloudSessionCookie')
 

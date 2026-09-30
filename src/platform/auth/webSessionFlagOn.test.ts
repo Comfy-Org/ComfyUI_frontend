@@ -135,9 +135,7 @@ vi.mock(import('@/views/UserSelectView.vue'), async () => ({
 
 vi.mock(import('@/platform/telemetry'))
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 await import('@/extensions/core/cloudSessionCookie')
 const { default: router } = await import('@/router')
