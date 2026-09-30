@@ -16,6 +16,7 @@ type CapturedImageUploadOptions = {
   folder?: ResultItemType
   onUploadStart?: (files: File[]) => void
   onUploadError?: () => void
+  accept?: string
 }
 
 const mocks = vi.hoisted(() => ({
@@ -106,6 +107,16 @@ describe('useImageUploadWidget', () => {
     mocks.capturedUploadOptions = undefined
     mocks.captureCanvasState.mockClear()
     vi.stubGlobal('requestAnimationFrame', vi.fn())
+  })
+
+  it('offers AVIF in the image upload picker', () => {
+    const { node } = createUploadNode()
+
+    construct(node)
+
+    expect(mocks.capturedUploadOptions?.accept?.split(',')).toContain(
+      'image/avif'
+    )
   })
 
   it('emits onWidgetChanged after upload changes the combo widget value', () => {
