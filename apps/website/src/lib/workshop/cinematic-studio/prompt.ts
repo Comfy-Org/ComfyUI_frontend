@@ -9,7 +9,6 @@ export interface CinematicBrief {
   /** A video shot asks for motion rather than a still. */
   readonly video?: boolean
   readonly cast: boolean
-  readonly palette: boolean
   /** Colours sent as words; `mainColor` indexes the dominant one. */
   readonly colors?: readonly string[]
   readonly mainColor?: number
@@ -48,7 +47,6 @@ export function cinematicPromptSegments(
   const camera = phrases(CAMERA_PARTS, brief.direction)
   const look = phrases(LOOK_PARTS, brief.direction)
   const scene = brief.scene.trim()
-  const castIndex = brief.cast ? 1 : 0
   const segments: (PromptSegment | false)[] = [
     !!shot && { text: sentence(shot), source: 'direction' },
     !!scene && { text: scene, source: 'scene' },
@@ -65,10 +63,6 @@ export function cinematicPromptSegments(
     look.length > 0 && { text: sentence(look.join(', ')), source: 'direction' },
     brief.cast && {
       text: 'Keep the character from reference image 1.',
-      source: 'reference'
-    },
-    brief.palette && {
-      text: `Match the color palette of reference image ${castIndex + 1}.`,
       source: 'reference'
     },
     ...colorPromptSentences(brief.colors ?? [], brief.mainColor).map(

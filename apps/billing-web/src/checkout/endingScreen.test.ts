@@ -62,6 +62,15 @@ describe('endingOf', () => {
       screen: { kind: 'success' }
     },
     {
+      name: "this page's own Pay, found settled after a reload or a provider's page",
+      page: {
+        kind: 'terminal',
+        operation: succeededOperation('op_mine'),
+        attribution: 'returned'
+      },
+      screen: { kind: 'success' }
+    },
+    {
       name: "this page's own Pay settled on the spot",
       page: { kind: 'terminal', attribution: 'started' },
       screen: { kind: 'success' }

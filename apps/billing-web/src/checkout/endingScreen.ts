@@ -129,7 +129,8 @@ const TERMINAL_KIND = {
 function terminalEnding(
   page: Extract<CheckoutPage, { kind: 'terminal' }>
 ): EndingScreen {
-  if (page.attribution === 'started') return { kind: 'success' }
+  if (page.attribution === 'started' || page.attribution === 'returned')
+    return { kind: 'success' }
   const kind = TERMINAL_KIND[page.attribution]
   return page.operation === undefined
     ? { kind }

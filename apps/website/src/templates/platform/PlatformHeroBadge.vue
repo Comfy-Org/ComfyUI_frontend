@@ -43,12 +43,7 @@ const {
       "
     >
       <span
-        :class="
-          cn(
-            'flex items-center gap-2',
-            centerText ? 'translate-y-1' : 'translate-y-0.5'
-          )
-        "
+        :class="cn('flex items-center gap-2', centerText && 'translate-y-1')"
       >
         <slot name="label">
           {{ label ?? t('platform.hero.badge', locale) }}

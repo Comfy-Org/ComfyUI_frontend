@@ -39,6 +39,6 @@ describe('ServerlessCustomerProofSection', () => {
       screen.getByRole('link', {
         name: t('platform.serverlessCaseStudy.linkLabel', 'en')
       })
-    ).toHaveAttribute('href', '/customers/svedka-silverside')
+    ).toHaveAttribute('href', '/customers/svedka-silverside/')
   })
 })

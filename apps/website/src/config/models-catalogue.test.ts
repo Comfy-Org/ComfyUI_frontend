@@ -30,6 +30,7 @@ import {
   useCaseFor,
   useCasesFor
 } from './models-catalogue'
+import { hubModelSlugs } from './hub-models'
 
 const fixture: WorkshopModel[] = [
   {
@@ -397,7 +398,10 @@ describe('workshopModels', () => {
       workshopModels.length
     )
     expect(
-      workshopModels.every((model) => model.href === `/models/${model.slug}/`)
+      workshopModels.every(
+        (model) =>
+          model.href === `/hub/models/${hubModelSlugs.get(model.slug)}/`
+      )
     ).toBe(true)
   })
 

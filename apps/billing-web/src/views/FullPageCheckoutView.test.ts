@@ -10,7 +10,10 @@ import type {
   PreviewSubscribeResult,
   SavedPaymentMethod
 } from '@comfyorg/account-core/billing'
-import { readBillingErrorCode } from '@comfyorg/account-core/billing'
+import {
+  OPERATION_POLL_TIMING,
+  readBillingErrorCode
+} from '@comfyorg/account-core/billing'
 import type { AccountCredential } from '@comfyorg/account-core/session'
 import { BILLING_CLIENT_KEY } from '@comfyorg/account-ui/billing'
 import type { StripePaymentPhase } from '@comfyorg/account-ui/billing/stripe'
@@ -384,17 +387,6 @@ describe('FullPageCheckoutView', () => {
     await nextTick()
 
     expect(fake.subscribe).not.toHaveBeenCalled()
-  })
-
-  it('keeps Pay disabled for a quote the server does not allow', async () => {
-    await renderCheckout({
-      preview: { status: 'ok', value: previewOf({ allowed: false }) }
-    })
-    await screen.findByText('Subscribe to Creator Plan · Acme Team')
-    reportPhase({ phase: 'payment_element_ready', element: 'payment' })
-    await nextTick()
-
-    expect(payButton()).toBeDisabled()
   })
 
   it('leaves the form for the waiting state once money is in flight, so a second click cannot charge twice', async () => {
@@ -935,12 +927,20 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
 
   it.for<{
     name: string
-    declineReason: 'authentication_failed' | 'processing_error'
+    declineReason:
+      | 'authentication_failed'
+      | 'payment_not_completed'
+      | 'processing_error'
     title: string
   }>([
     {
       name: 'a challenge the customer did not complete',
       declineReason: 'authentication_failed',
+      title: 'Payment not completed'
+    },
+    {
+      name: 'a payment the customer did not approve',
+      declineReason: 'payment_not_completed',
       title: 'Payment not completed'
     },
     {
@@ -1309,6 +1309,25 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
     expect(screen.getByRole('checkbox')).toHaveAttribute('aria-invalid', 'true')
   })
 
+  it('locks the keep-subscription box, ticked, while its Pay is in flight', async () => {
+    const fake = await payReady({
+      preview: {
+        status: 'ok',
+        value: previewOf({ requires_reactivation_confirmation: true })
+      }
+    })
+    const box = screen.getByRole('checkbox', {
+      name: 'Keep my subscription and renew it'
+    })
+    await userEvent.click(box)
+    fake.subscribe.mockImplementation(() => new Promise(() => {}))
+
+    form.emit('confirm', 'ctoken_1')
+
+    await waitFor(() => expect(box).toBeDisabled())
+    expect(box).toBeChecked()
+  })
+
   it('re-quotes and asks unticked when the server wants the consent, with Pay still live', async () => {
     const fake = await payReady({
       subscribe: { status: 'error', code: 'REACTIVATION_CONFIRMATION_REQUIRED' }
@@ -1418,7 +1437,7 @@ describe('FullPageCheckoutView mount reconciliation', () => {
     expect(form.mounts).toBe(1)
   })
 
-  it('renders the waiting state, never a form, for money already in flight, and follows it to Already completed', async () => {
+  it('renders the waiting state over a locked form for money already in flight, and follows it to Already completed', async () => {
     const fake = await renderCheckout({
       recover: { status: 'ok', value: processingOperation('op_reloaded') }
     })
@@ -1430,7 +1449,7 @@ describe('FullPageCheckoutView mount reconciliation', () => {
     expect(
       screen.getByText('Subscribe to Creator Plan · Acme Team')
     ).toBeInTheDocument()
-    expect(form.mounts).toBe(0)
+    await waitFor(() => expect(form.locked()).toBe(true))
     expect(payButton()).toBeDisabled()
 
     fake.publishOperation(succeededOperation('op_reloaded'))
@@ -1447,7 +1466,6 @@ describe('FullPageCheckoutView mount reconciliation', () => {
       'op_reloaded'
     )
     expect(screen.queryByTestId('checkout-ending-plan')).not.toBeInTheDocument()
-    expect(form.mounts).toBe(0)
   })
 
   it.for<{
@@ -1468,7 +1486,7 @@ describe('FullPageCheckoutView mount reconciliation', () => {
     })
 
     expect(await waitingStatus()).toBeInTheDocument()
-    expect(form.mounts).toBe(0)
+    await waitFor(() => expect(form.locked()).toBe(true))
   })
 
   it('renders capture with Pay live for an operation parked on a payment method (rule 4)', async () => {
@@ -1508,15 +1526,33 @@ describe('FullPageCheckoutView mount reconciliation', () => {
     expect(form.mounts).toBe(1)
   })
 
-  it('lands on Already completed for a payment the server already settled', async () => {
+  it('lands on Already completed for a payment the server already settled when the quote refuses this link again', async () => {
     await renderCheckout({
-      recover: { status: 'ok', value: succeededOperation('op_done') }
+      recover: { status: 'ok', value: succeededOperation('op_done') },
+      preview: { status: 'ok', value: previewOf({ allowed: false }) }
     })
 
     expect(
       await screen.findByRole('heading', { name: 'Already completed' })
     ).toBeInTheDocument()
+    expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
+      'op_done'
+    )
     expect(form.mounts).toBe(0)
+  })
+
+  it('opens the form over a settled payment when the quote still sells this link', async () => {
+    await renderCheckout({
+      recover: { status: 'ok', value: succeededOperation('op_done') }
+    })
+
+    expect(
+      await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('heading', { name: 'Already completed' })
+    ).not.toBeInTheDocument()
+    expect(form.mounts).toBe(1)
   })
 
   it('resolves a fresh capture, on its card, when the money it arrived on declines', async () => {
@@ -1700,7 +1736,7 @@ describe('FullPageCheckoutView re-reconciliation', () => {
     await capturePromisesFlushed()
 
     expect(screen.getByTestId('checkout-waiting')).toBeInTheDocument()
-    expect(form.mounts).toBe(0)
+    expect(form.locked()).toBe(true)
   })
 
   it('listens on a channel scoped to the signed-in user and the workspace, and lets go on unmount', async () => {
@@ -1778,6 +1814,117 @@ describe('FullPageCheckoutView re-reconciliation', () => {
     await screen.findByRole('heading', { name: 'Already completed' })
 
     expect(siblings.published).toEqual([])
+  })
+})
+
+describe("FullPageCheckoutView over this tab's own payment", () => {
+  beforeEach(() => {
+    form.mounts = 0
+    siblings.reset()
+  })
+
+  const awaited = <T extends BillingOperationState>(operation: T): T => ({
+    ...operation,
+    awaitedHere: true
+  })
+  const couldNotConfirm = (id: string): BillingOperationState => ({
+    ...awaited(succeededOperation(id)),
+    phase: 'reconciliation_needed'
+  })
+  const ON_PRO: FakeBillingClientOptions = {
+    status: {
+      is_active: true,
+      has_funds: true,
+      max_seats: 1,
+      occupied_seats: 1,
+      plan_slug: 'pro_monthly',
+      scheduled_change: null,
+      team_credit_stop: null
+    },
+    plans: {
+      status: 'ok',
+      value: {
+        plans: [
+          planOf(),
+          planOf({ slug: 'pro_monthly', tier: 'PRO', price_cents: 5000n })
+        ]
+      }
+    }
+  }
+
+  it("asks the lifecycle for this tab's settled payment too", async () => {
+    const fake = await renderCheckout()
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+
+    expect(fake.recover).toHaveBeenCalledWith({ includeSettled: true })
+  })
+
+  it('ends on Checkout not available, never a dead form, when the quote refuses a link nothing here paid', async () => {
+    await renderCheckout({
+      preview: { status: 'ok', value: previewOf({ allowed: false }) }
+    })
+
+    expect(
+      await screen.findByRole('heading', { name: 'Checkout not available' })
+    ).toBeInTheDocument()
+    expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
+      'UNSPECIFIED'
+    )
+    expect(
+      screen.queryByRole('button', { name: 'Pay and subscribe' })
+    ).not.toBeInTheDocument()
+    expect(form.mounts).toBe(0)
+  })
+
+  it('is Success, naming the plan the server now lists, for its own payment that went through while it was on a provider page', async () => {
+    await renderCheckout({
+      ...ON_PRO,
+      recover: { status: 'ok', value: awaited(succeededOperation('op_mine')) },
+      preview: { status: 'ok', value: previewOf({ allowed: false }) }
+    })
+
+    expect(
+      await screen.findByRole('heading', { name: "You're all set" })
+    ).toBeInTheDocument()
+    const plan = await screen.findByTestId('checkout-ending-plan')
+    expect(plan).toHaveTextContent('Pro')
+    expect(plan).toHaveTextContent('$50.00')
+    expect(plan).not.toHaveTextContent('Creator')
+    expect(form.mounts).toBe(0)
+  })
+
+  it('keeps re-reading a payment it could not confirm, and resolves forward to Success when it settles', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
+    const fake = await renderCheckout({
+      ...ON_PRO,
+      recover: { status: 'ok', value: couldNotConfirm('op_mine') }
+    })
+    expect(
+      await screen.findByRole('heading', {
+        name: "We couldn't confirm your payment"
+      })
+    ).toBeInTheDocument()
+    expect(fake.recover).toHaveBeenCalledOnce()
+
+    vi.advanceTimersByTime(OPERATION_POLL_TIMING.parkedMs)
+    await waitFor(() => expect(fake.recover).toHaveBeenCalledTimes(2))
+    expect(
+      screen.getByRole('heading', { name: "We couldn't confirm your payment" })
+    ).toBeInTheDocument()
+
+    fake.recover.mockImplementationOnce(async () => {
+      fake.publishOperation(awaited(succeededOperation('op_mine')))
+      return { status: 'ok', value: awaited(succeededOperation('op_mine')) }
+    })
+    vi.advanceTimersByTime(OPERATION_POLL_TIMING.parkedMs)
+
+    expect(
+      await screen.findByRole('heading', { name: "You're all set" })
+    ).toBeInTheDocument()
+    expect(await screen.findByTestId('checkout-ending-plan')).toHaveTextContent(
+      'Pro'
+    )
+    expect(fake.subscribe).not.toHaveBeenCalled()
   })
 })
 
@@ -1973,6 +2120,126 @@ describe('FullPageCheckoutView payment authentication', () => {
     expect(fake.subscribe).not.toHaveBeenCalled()
   })
 
+  it('keeps Complete verification hidden while a reload re-opens the challenge on its own, over the locked form', async () => {
+    let answer: (leavesPage: boolean) => void = () => {}
+    nextStep.leavesPage = new Promise((resolve) => {
+      answer = resolve
+    })
+    const fake = await renderCheckout({
+      recover: {
+        status: 'ok',
+        value: challengedOperation('op_reload', 'required')
+      }
+    })
+    await waitFor(() => expect(nextStep.asked).toBe(1))
+    await waitFor(() => expect(form.locked()).toBe(true))
+
+    expect(footnote()).toHaveTextContent(PHASE_A)
+    expect(screen.getByTestId('checkout-waiting')).not.toHaveAttribute(
+      'aria-busy'
+    )
+    expect(payButton()).toHaveAttribute('aria-busy', 'true')
+    expect(
+      screen.queryByRole('button', { name: 'Complete verification' })
+    ).not.toBeInTheDocument()
+
+    answer(false)
+
+    await waitFor(() =>
+      expect(fake.reportChallengeStarted).toHaveBeenCalledExactlyOnceWith(
+        'op_reload'
+      )
+    )
+  })
+
+  it('keeps the phase and Complete verification for a reload mid-challenge when the card form cannot load, with no saved method', async () => {
+    stripeKey.value = undefined
+    try {
+      const fake = await renderCheckout({
+        recover: {
+          status: 'ok',
+          value: challengedOperation('op_reload', 'required')
+        }
+      })
+      await waitFor(() =>
+        expect(fake.reportChallengeStarted).toHaveBeenCalledOnce()
+      )
+      await capturePromisesFlushed()
+
+      expect(footnote()).toHaveTextContent(PHASE_A)
+      expect(
+        screen.getByRole('button', { name: 'Complete verification' })
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByText("The payment form couldn't load")
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Try again' })
+      ).not.toBeInTheDocument()
+    } finally {
+      stripeKey.value = 'pk_test_example'
+    }
+  })
+
+  it("keeps the phase over a failed Add new tab when another tab's payment is in flight", async () => {
+    const fake = await renderQuoted({
+      paymentMethods: { status: 'ok', value: [VISA] }
+    })
+    reportPhase({
+      phase: 'payment_element_failed',
+      element: 'payment',
+      element_phase: 'mount'
+    })
+    await userEvent.click(tab('Add new payment'))
+
+    fake.publishOperation(processingOperation('op_sibling'))
+    await waitingStatus()
+
+    expect(footnote()).toHaveTextContent(PHASE_B)
+    expect(payButton()).toBeDisabled()
+    expect(
+      screen.queryByRole('button', { name: 'Try again' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('marks only the skeleton blocks busy while the quote loads, so the phase line is still announced', async () => {
+    await renderCheckout(
+      {
+        recover: {
+          status: 'ok',
+          value: challengedOperation('op_reload', 'required')
+        }
+      },
+      (fake) =>
+        fake.previewSubscribe.mockImplementation(() => new Promise(() => {}))
+    )
+    await waitFor(() => expect(footnote()).toHaveTextContent(PHASE_A))
+
+    const blocks = screen.getAllByTestId('checkout-skeleton')
+    expect(blocks).toHaveLength(2)
+    for (const block of blocks) {
+      expect(block).toHaveAttribute('aria-busy', 'true')
+      expect(block).not.toContainElement(footnote())
+    }
+    expect(screen.getByTestId('checkout-waiting')).not.toHaveAttribute(
+      'aria-busy'
+    )
+  })
+
+  it('loads afresh when restored from the back-forward cache after an Alipay Pay left, since its challenge froze with the page', async () => {
+    const reload = vi
+      .spyOn(window.location, 'reload')
+      .mockImplementation(() => {})
+    const fake = await payHeld('alipay')
+    fake.publishOperation(challengedOperation('op_3ds', 'in_progress'))
+    await waitFor(() => expect(footnote()).toHaveTextContent(ALIPAY))
+
+    window.dispatchEvent(pageShow(true))
+
+    expect(reload).toHaveBeenCalledOnce()
+    expect(fake.recover).toHaveBeenCalledOnce()
+  })
+
   it.for<{
     name: string
     operation: PendingBillingOperation
@@ -2002,15 +2269,15 @@ describe('FullPageCheckoutView payment authentication', () => {
         recover: { status: 'ok', value: operation }
       })
 
-      const complete = await screen.findByRole('button', {
-        name: 'Complete verification'
-      })
+      await waitFor(() => expect(form.locked()).toBe(true))
       await capturePromisesFlushed()
       expect(footnote()).toHaveTextContent(PHASE_A)
       expect(fake.reportChallengeStarted).not.toHaveBeenCalled()
       expect(assign).not.toHaveBeenCalled()
 
-      await userEvent.click(complete)
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Complete verification' })
+      )
 
       if (opens === 'challenge')
         expect(fake.reportChallengeStarted).toHaveBeenCalledExactlyOnceWith(

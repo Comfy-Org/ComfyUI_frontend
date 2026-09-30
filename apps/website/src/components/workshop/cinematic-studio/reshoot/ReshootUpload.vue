@@ -5,6 +5,7 @@ import { ref } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { clipFits } from '../../../../lib/workshop/cinematic-studio/reshoot'
+import { fileSecondsOf } from '../../../../lib/workshop/cinematic-studio/reshoot-clip'
 import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
 import type { Locale } from '../../../../i18n/translations'
 
@@ -15,21 +16,8 @@ const emit = defineEmits<{ pick: [file: File] }>()
 const over = ref(false)
 const tooLong = ref<number>()
 
-function duration(file: File): Promise<number> {
-  return new Promise((resolve) => {
-    const video = document.createElement('video')
-    const url = URL.createObjectURL(file)
-    video.preload = 'metadata'
-    video.onloadedmetadata = video.onerror = () => {
-      URL.revokeObjectURL(url)
-      resolve(video.duration)
-    }
-    video.src = url
-  })
-}
-
 async function accept(file: File) {
-  const seconds = await duration(file)
+  const seconds = await fileSecondsOf(file)
   tooLong.value =
     Number.isFinite(seconds) && !clipFits(seconds) ? seconds : undefined
   if (tooLong.value === undefined) emit('pick', file)

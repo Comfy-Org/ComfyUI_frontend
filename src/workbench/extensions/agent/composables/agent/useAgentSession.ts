@@ -98,6 +98,7 @@ export interface AgentSessionDeps {
   rest: AgentRestClient
   events: AgentEventSource
   onThreadStarted?: (source: AgentSessionThreadStartSource) => void
+  onThreadActivated?: (threadId: string | null) => void
   onAskResolved?: (askId: string) => void
   workflow?: {
     /** Resolve fresh versus restored startup before asynchronous hydration. */
@@ -116,7 +117,7 @@ export interface AgentSessionDeps {
     restored?(
       workflowId: string | undefined,
       isCurrent: () => boolean
-    ): Promise<void> | void
+    ): Promise<boolean> | boolean
     prepare?(): Promise<void>
     /** The server refused this workflow id; forget every cached trace of it. */
     disowned?(workflowId: string): void
@@ -220,7 +221,14 @@ function disownsWorkflow(error: unknown): boolean {
 }
 
 export function useAgentSession(deps: AgentSessionDeps) {
-  const { rest, events, onThreadStarted, onAskResolved, workflow } = deps
+  const {
+    rest,
+    events,
+    onThreadStarted,
+    onThreadActivated,
+    onAskResolved,
+    workflow
+  } = deps
   const threadStorageKey = StorageKeys.agentThread(getWorkspaceId())
   clearLegacyAgentStorage()
 
@@ -278,6 +286,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   const notices = ref<SessionNotice[]>([])
+  const readyThreadId = ref<string | null>(null)
   const promptEditState = ref<PromptEditState>({ phase: 'idle' })
   const sending = ref(false)
   const answeringAskIds = ref<ReadonlySet<string>>(new Set())
@@ -335,15 +344,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     )
   }
 
-  function start(): void {
-    ownedGeneration = ++sessionGeneration
-    everLive = false
-    const surviving = conversationStore.threadId
-    const stored =
-      conversationStore.messages.length === 0
-        ? localStorage.getItem(threadStorageKey)
-        : null
-    workflow?.initialize?.(surviving !== null || stored !== null)
+  function initializeWorkflowContext(hasThread: boolean): void {
+    workflow?.initialize?.(hasThread)
     // The binding only outlives a remount together with its thread: a page
     // with no surviving thread has no resumed turn the binding could serve.
     if (
@@ -353,29 +355,68 @@ export function useAgentSession(deps: AgentSessionDeps) {
       rememberedWorkflowId = null
       boundWorkflowId.value = null
     }
+  }
+
+  function start({ restore = true }: { restore?: boolean } = {}): void {
+    readyThreadId.value = null
+    ownedGeneration = ++sessionGeneration
+    everLive = false
+    const surviving = conversationStore.threadId
+    const stored =
+      conversationStore.messages.length === 0
+        ? localStorage.getItem(threadStorageKey)
+        : null
+    const initialThreadId = surviving ?? stored
+    initializeWorkflowContext(initialThreadId !== null)
     unsubscribe = events.subscribe(onRaw)
     if (events.onStatus) unsubscribeStatus = events.onStatus(onStatus)
-    if (surviving !== null) {
-      const generation = ++loadGeneration
-      const isCurrent = () =>
-        generation === loadGeneration && ownedGeneration === sessionGeneration
-      const stashedTurn = conversationStore.activeTurnId !== null
-      conversationStore.stashActiveTurn()
-      void hydrateFromServer(surviving, isCurrent, stashedTurn).then(() => {
-        if (isCurrent() && conversationStore.threadId === surviving)
-          conversationStore.resumeBackgroundTurn()
-      })
+    if (!restore) return
+    if (initialThreadId === null) {
+      onThreadActivated?.(null)
       return
     }
-    if (stored !== null) {
-      const generation = ++loadGeneration
-      conversationStore.setThreadId(stored)
-      void hydrateFromServer(
-        stored,
-        () =>
-          generation === loadGeneration && ownedGeneration === sessionGeneration
-      )
+    void restoreInitialThread(initialThreadId, surviving)
+  }
+
+  async function restoreInitialThread(
+    initialThreadId: string,
+    surviving: string | null
+  ): Promise<void> {
+    const generation = ++loadGeneration
+    const isCurrent = () =>
+      generation === loadGeneration && ownedGeneration === sessionGeneration
+    const stashedTurn = beginInitialThread(initialThreadId, surviving)
+    const ready = await hydrateFromServer(
+      initialThreadId,
+      isCurrent,
+      stashedTurn
+    )
+    if (isCurrent()) settleInitialThread(initialThreadId, surviving, ready)
+  }
+
+  /** Returns whether a surviving thread's active turn was stashed. */
+  function beginInitialThread(
+    initialThreadId: string,
+    surviving: string | null
+  ): boolean {
+    if (surviving === null) {
+      conversationStore.setThreadId(initialThreadId)
+      return false
     }
+    const stashedTurn = conversationStore.activeTurnId !== null
+    conversationStore.stashActiveTurn()
+    return stashedTurn
+  }
+
+  function settleInitialThread(
+    initialThreadId: string,
+    surviving: string | null,
+    ready: boolean
+  ): void {
+    if (ready) onThreadActivated?.(initialThreadId)
+    else if (conversationStore.threadId === null) onThreadActivated?.(null)
+    if (surviving !== null && conversationStore.threadId === surviving)
+      conversationStore.resumeBackgroundTurn()
   }
 
   async function hydrateFromServer(
@@ -387,7 +428,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
       const history = await rest.getMessages(threadId)
       if (conversationStore.threadId !== threadId || !isCurrent()) return false
       conversationStore.hydrate(history)
-      await workflow?.restored?.(conversationStore.latestWorkflowId, isCurrent)
+      readyThreadId.value = threadId
+      const workflowReady = await workflow?.restored?.(
+        conversationStore.latestWorkflowId,
+        isCurrent
+      )
+      if (workflowReady === false) return false
       if (conversationStore.threadId !== threadId || !isCurrent()) return false
       return true
     } catch (error) {
@@ -405,7 +451,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (error instanceof AgentApiError && error.status === 404) {
       if (conversationStore.threadId === threadId)
         conversationStore.setThreadId(null)
-      localStorage.removeItem(threadStorageKey)
+      if (localStorage.getItem(threadStorageKey) === threadId)
+        localStorage.removeItem(threadStorageKey)
       return false
     }
     reportError(error, { errorType: 'agent_history_load_failed' })
@@ -418,6 +465,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function stop(): void {
+    readyThreadId.value = null
     unsubscribe?.()
     unsubscribeStatus?.()
     unsubscribe = null
@@ -600,6 +648,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): void {
     const startsThread = conversationStore.threadId === null
     conversationStore.setThreadId(ack.thread_id)
+    onThreadActivated?.(ack.thread_id)
     localStorage.setItem(threadStorageKey, ack.thread_id)
     if (ack.workflow_id !== undefined) {
       const boundAtAck = boundWorkflowId.value
@@ -623,6 +672,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       workflowReferences
     )
     conversationStore.startTurn(turnId)
+    readyThreadId.value = ack.thread_id
     recordTurnStarted(turnId, startsThread)
     const pendingStop = consumeStopPendingAck()
     if (pendingStop !== null) void stopTurn(pendingStop.method)
@@ -907,10 +957,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function newChat(
     source?: Exclude<AgentSessionThreadStartSource, 'first_open'>
   ): void {
+    readyThreadId.value = null
     loadGeneration++
     promptEditState.value = { phase: 'idle' }
     conversationStore.stashActiveTurn()
     conversationStore.reset()
+    onThreadActivated?.(null)
     boundWorkflowId.value = null
     rememberedWorkflowId = null
     pendingWorkflowBind = null
@@ -923,11 +975,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
     return rest.listThreads()
   }
 
-  async function loadThread(threadId: string): Promise<boolean> {
+  async function loadThread(
+    threadId: string,
+    isNavigationCurrent: () => boolean = () => true
+  ): Promise<boolean> {
+    readyThreadId.value = null
     const generation = ++loadGeneration
     promptEditState.value = { phase: 'idle' }
     const isCurrent = () =>
-      generation === loadGeneration && ownedGeneration === sessionGeneration
+      generation === loadGeneration &&
+      ownedGeneration === sessionGeneration &&
+      isNavigationCurrent()
     const stashedTurn = conversationStore.activeTurnId !== null
     conversationStore.stashActiveTurn()
     boundWorkflowId.value = null
@@ -935,9 +993,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
     pendingWorkflowBind = null
     malformedStreamReports.clear()
     conversationStore.setThreadId(threadId)
-    localStorage.setItem(threadStorageKey, threadId)
     const hydrated = await hydrateFromServer(threadId, isCurrent, stashedTurn)
-    if (hydrated && isCurrent()) conversationStore.resumeBackgroundTurn()
+    if (hydrated && isCurrent()) {
+      localStorage.setItem(threadStorageKey, threadId)
+      onThreadActivated?.(threadId)
+      conversationStore.resumeBackgroundTurn()
+    }
     return hydrated && isCurrent()
   }
 
@@ -1048,6 +1109,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
     bindWorkflow,
     reportWorkflowBound,
     isSending,
+    isTranscriptReady: computed(
+      () =>
+        readyThreadId.value !== null &&
+        readyThreadId.value === conversationStore.threadId
+    ),
     editableTurnId,
     start,
     stop,

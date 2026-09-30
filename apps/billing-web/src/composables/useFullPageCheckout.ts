@@ -1,4 +1,4 @@
-import { tryOnScopeDispose } from '@vueuse/core'
+import { tryOnScopeDispose, useIntervalFn } from '@vueuse/core'
 import { computed, shallowReadonly, shallowRef, watch } from 'vue'
 
 import {
@@ -15,7 +15,10 @@ import type {
   SubscribeInput,
   SubscriptionPreview
 } from '@comfyorg/account-core/billing'
-import { matchesServerCode } from '@comfyorg/account-core/billing'
+import {
+  OPERATION_POLL_TIMING,
+  matchesServerCode
+} from '@comfyorg/account-core/billing'
 import type { BillingEntry } from '@comfyorg/billing-contract'
 import { buildReturnUrl } from '@comfyorg/billing-contract'
 
@@ -89,11 +92,15 @@ function capabilityStop(
   }
 }
 
-/** A quote the page cannot capture: a team plan named without its stop. */
+/**
+ * A quote the page cannot capture: one the server refuses, or a team plan
+ * named without its stop.
+ */
 function quotedStop(
   quoted: SubscriptionPreview,
   arrival: PlannedEntry
 ): CheckoutPageEvent | undefined {
+  if (!quoted.allowed) return { type: 'notAllowed' }
   if (quoted.new_plan.tier === 'TEAM' && arrival.teamCreditStopId === undefined)
     return { type: 'planUnavailable', reason: 'team_stop_missing' }
   return undefined
@@ -187,7 +194,7 @@ export function useFullPageCheckout() {
 
   async function reconcileOnce(): Promise<void> {
     const mine = ++generation
-    const recovered = await lifecycle.recover()
+    const recovered = await lifecycle.recover({ includeSettled: true })
     if (mine !== generation) return
     dispatch(reconciledEvent(recovered))
   }
@@ -370,6 +377,9 @@ export function useFullPageCheckout() {
     void readCapture()
   }
 
+  /** Set while Stripe says where a challenge this page means to re-open runs. */
+  const reopening = shallowRef(false)
+
   /**
    * Money this page is waiting on reopens the bank's challenge on its own,
    * once per challenge, as long as Stripe runs it inside this page: a reload
@@ -380,10 +390,14 @@ export function useFullPageCheckout() {
   watch(
     () => challengeToReopen(page.value),
     async (clientSecret) => {
+      reopening.value = clientSecret !== undefined
       if (clientSecret === undefined) return
-      if (await challengePort.leavesPage(clientSecret)) return
+      const leavesPage = await challengePort
+        .leavesPage(clientSecret)
+        .catch(() => true)
       if (challengeToReopen(page.value) !== clientSecret) return
-      checkout.continueVerification()
+      if (!leavesPage) checkout.continueVerification()
+      reopening.value = false
     }
   )
 
@@ -436,6 +450,46 @@ export function useFullPageCheckout() {
     const kind = page.value.kind
     return kind === 'waiting' || kind === 'unconfirmed'
   }
+
+  /**
+   * "We couldn't confirm your payment" promises to update on its own, but the
+   * lifecycle stops polling an operation the server parked for a human. The
+   * page re-reads it on the parked cadence until it settles either way.
+   */
+  const recheckUnconfirmed = useIntervalFn(
+    () => void reconcile(),
+    OPERATION_POLL_TIMING.parkedMs,
+    { immediate: false }
+  )
+  watch(
+    () => page.value.kind === 'unconfirmed',
+    (unconfirmed) =>
+      unconfirmed ? recheckUnconfirmed.resume() : recheckUnconfirmed.pause()
+  )
+
+  /** A returned payment names the plan the server now lists, never the fresh quote. */
+  async function readSettledPlan() {
+    const [read, catalog] = await Promise.all([status.read(), plans.read()])
+    const slug = read.status === 'ok' ? read.value.status.plan_slug : undefined
+    const listed =
+      slug !== undefined && catalog.status === 'ok'
+        ? catalog.value.data.plans.find((plan) => plan.slug === slug)
+        : undefined
+    if (!listed) return
+    const { tier, duration, price_cents } = listed
+    dispatch({
+      type: 'settledPlanRead',
+      plan: { tier, duration, price_cents }
+    })
+  }
+
+  watch(
+    () =>
+      page.value.kind === 'terminal' && page.value.attribution === 'returned',
+    (returned) => {
+      if (returned) void readSettledPlan()
+    }
+  )
 
   function onPaymentPhase(phase: StripePaymentPhase) {
     if (phase.phase === 'payment_element_ready' && phase.element === 'payment')
@@ -641,6 +695,7 @@ export function useFullPageCheckout() {
     promo,
     promoLive,
     pay,
+    reopening: shallowReadonly(reopening),
     continueVerification: checkout.continueVerification
   }
 }
