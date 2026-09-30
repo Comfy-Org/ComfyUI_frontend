@@ -180,6 +180,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   function reportSettleFailure(cause: unknown, errorType: string): void {
     reportError(cause, {
       errorType,
+      surface: 'agent',
       tags: { feature_area: 'agent', operation: 'sync', outcome: 'degraded' }
     })
   }
