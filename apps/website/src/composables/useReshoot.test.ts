@@ -521,6 +521,18 @@ describe('useReshoot: seeds and clips', () => {
     expect(reshoot.canGenerate.value).toBe(false)
   })
 
+  it('reads a clip whose length the browser cannot tell', async () => {
+    // A blocked or unplayable clip reports NaN: the node decides, not the page.
+    vi.mocked(clipSecondsOf).mockResolvedValue(Number.NaN)
+    const reshoot = start()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(reshoot.clipError.value).toBeUndefined()
+
+    await readScene(reshoot)
+    expect(transport.upload).toHaveBeenCalled()
+    expect(reshoot.depth.value).toBe('ready')
+  })
+
   it('times a clip that fits before its scene is read', async () => {
     vi.mocked(clipSecondsOf).mockResolvedValue(10)
     const reshoot = start()

@@ -193,13 +193,14 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
     const available = Math.floor(Math.min(s, MAX_SECONDS) * FPS)
     return available - ((available - 5) % 17)
   })
-  const clipError = computed(() =>
-    clipSeconds.value !== undefined && !clipFits(clipSeconds.value)
-      ? rc('reshoot.clipLength', locale, {
-          seconds: clipSeconds.value.toFixed(1)
-        })
+  // Only a length the browser could read turns a clip away, as on Change: an
+  // unreadable one (NaN) is left for the node to judge.
+  const clipError = computed(() => {
+    const s = clipSeconds.value
+    return s !== undefined && Number.isFinite(s) && !clipFits(s)
+      ? rc('reshoot.clipLength', locale, { seconds: s.toFixed(1) })
       : undefined
-  )
+  })
 
   // The node takes its pivot from frame 0, and so does the page; the pivot
   // found here is the one the generation is told to orbit.
