@@ -679,6 +679,37 @@ describe('ComfyApp', () => {
       ])
     })
 
+    it('closes every beforeLoadGraph when a newer load overtakes an older one', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      let releaseFirstLoad!: () => void
+      const firstLoadBlocked = new Promise<void>((resolve) => {
+        releaseFirstLoad = resolve
+      })
+      let beforeLoadCount = 0
+      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+        async (hook: string) => {
+          if (hook === 'beforeLoadGraph' && ++beforeLoadCount === 1) {
+            await firstLoadBlocked
+          }
+        }
+      )
+
+      const olderLoad = app.loadGraphData(createWorkflowGraphData(), false)
+      await app.loadGraphData(createWorkflowGraphData(), false)
+      releaseFirstLoad()
+      await olderLoad
+
+      const hooks = mockExtensionService.invokeExtensionsAsync.mock.calls.map(
+        ([hook]) => hook
+      )
+      const opened = hooks.filter((hook) => hook === 'beforeLoadGraph')
+      const closed = hooks.filter(
+        (hook) => hook === 'afterConfigureGraph' || hook === 'onGraphLoadError'
+      )
+      expect(closed).toHaveLength(opened.length)
+    })
+
     it('brackets an API JSON import with graph-load hooks', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       const graph = new LGraph()
