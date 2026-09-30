@@ -11,7 +11,8 @@ test.describe(
     test.use({
       agentConsentAccepted: false,
       initialLocalStorage: {
-        'Comfy.AgentConsent.AutoShown.test-user-e2e.ws-personal': 'true'
+        'Comfy.AgentConsent.AutoShown.test-user-e2e.ws-personal': 'true',
+        'Comfy.AgentPanel.onboarded.test-user-e2e.ws-personal': 'true'
       }
     })
 
@@ -84,6 +85,77 @@ test.describe(
         .click()
       await expect.poll(() => postedMessages).toHaveLength(1)
     })
+  }
+)
+
+test.describe(
+  'Fresh signed-in Agent consent and tour sequencing',
+  { tag: ['@cloud', '@ui'] },
+  () => {
+    test.use({ agentConsentAccepted: false })
+
+    for (const tourAction of ['finish', 'skip'] as const) {
+      test(`resumes one held send after the user ${tourAction === 'finish' ? 'finishes' : 'skips'} the tour`, async ({
+        agentPanel,
+        comfyPage,
+        postedMessages
+      }) => {
+        const page = comfyPage.page
+        const consent = page.getByRole('dialog', {
+          name: enMessages.agent.consent.title
+        })
+
+        await expect(agentPanel.root).toBeVisible()
+        await expect(consent).toHaveCount(0)
+        await agentPanel.selectWorkflow()
+        await agentPanel.composer.fill('Build a product photo workflow')
+        await agentPanel.sendButton.click()
+
+        await expect(consent).toBeVisible()
+        expect(postedMessages).toHaveLength(0)
+        await consent
+          .getByRole('button', { name: enMessages.agent.consent.accept })
+          .click()
+
+        const coachTitles = [
+          enMessages.agent.coachTitle,
+          enMessages.agent.coachWorkflowTitle,
+          enMessages.agent.coachGraphTitle,
+          enMessages.agent.coachHistoryTitle
+        ]
+        await expect(
+          page.getByRole('dialog', { name: coachTitles[0] })
+        ).toBeVisible()
+        expect(postedMessages).toHaveLength(0)
+
+        if (tourAction === 'skip') {
+          await page
+            .getByRole('dialog', { name: coachTitles[0] })
+            .getByRole('button', { name: enMessages.agent.skip })
+            .click()
+        } else {
+          for (const [index, title] of coachTitles.entries()) {
+            await page
+              .getByRole('dialog', { name: title })
+              .getByRole('button', {
+                name:
+                  index === coachTitles.length - 1
+                    ? enMessages.onboardingCoachmarks.done
+                    : enMessages.g.next
+              })
+              .click()
+          }
+        }
+
+        await expect.poll(() => postedMessages).toHaveLength(1)
+        await agentPanel.openButton.click()
+        await expect(agentPanel.root).toHaveCount(0)
+        await agentPanel.openButton.click()
+        await expect(agentPanel.root).toBeVisible()
+        await expect(consent).toHaveCount(0)
+        await expect.poll(() => postedMessages).toHaveLength(1)
+      })
+    }
   }
 )
 
