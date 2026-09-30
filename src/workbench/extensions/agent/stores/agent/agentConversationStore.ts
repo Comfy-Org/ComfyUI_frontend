@@ -132,6 +132,16 @@ export const useAgentConversationStore = defineStore(
       if (index >= 0) messages.value[index] = message
     }
 
+    function rememberAttachmentNames(attachments: UserAttachment[]): void {
+      const currentThreadId = threadId.value
+      if (currentThreadId === null) return
+      const names = attachmentNamesByThread.get(currentThreadId) ?? new Map()
+      for (const attachment of attachments) {
+        if (attachment.ref) names.set(attachment.ref, attachment.name)
+      }
+      attachmentNamesByThread.set(currentThreadId, names)
+    }
+
     function recordUser(
       turnId: TurnId,
       text: string,
@@ -142,13 +152,7 @@ export const useAgentConversationStore = defineStore(
       userTexts.value.set(turnId, text)
       if (attachments !== undefined && attachments.length > 0) {
         userAttachments.value.set(turnId, attachments)
-        if (threadId.value !== null) {
-          const names = attachmentNamesByThread.get(threadId.value) ?? new Map()
-          for (const attachment of attachments) {
-            if (attachment.ref) names.set(attachment.ref, attachment.name)
-          }
-          attachmentNamesByThread.set(threadId.value, names)
-        }
+        rememberAttachmentNames(attachments)
       }
       if (tags !== undefined && tags.length > 0)
         userTags.value.set(turnId, tags)

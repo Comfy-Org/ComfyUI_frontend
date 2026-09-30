@@ -121,7 +121,7 @@ function inspect(asset: ReplyAsset): void {
   if (asset.kind === '3D') {
     useDialogStore().showDialog({
       key: 'asset-3d-viewer',
-      title: assetNames.value[asset.url] || asset.label || asset.filename,
+      title: assetNames.value[asset.url] || asset.filename,
       component: Load3dViewerContent,
       props: { modelUrl: asset.url },
       dialogComponentProps: {
@@ -241,7 +241,7 @@ function stopPreview(event: Event): void {
         v-for="asset in visibleAudio"
         :key="asset.url"
         :asset
-        :title="assetNames[asset.url] || asset.label || asset.filename"
+        :title="assetNames[asset.url] || asset.filename"
       />
       <Button
         v-if="audioCollapsible"

@@ -9,6 +9,7 @@ import Tag from '@/components/chip/Tag.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { api } from '@/scripts/api'
+import type { MediaType } from '@/utils/formatUtil'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 import type { UserAttachment } from '../../../stores/agent/agentConversationStore'
@@ -126,34 +127,41 @@ const splitAttachments = computed(() => {
   const grid: ReplyAsset[] = []
   const plain: UserAttachment[] = []
   for (const item of attachments) {
-    const kind = item.kind ?? getMediaTypeFromFilename(item.name)
-    const url =
-      item.previewUrl ??
-      (item.ref
-        ? api.apiURL(
-            `/view?filename=${encodeURIComponent(item.ref)}&type=input`
-          )
-        : undefined)
-    if (
-      url &&
-      (kind === 'image' ||
-        kind === 'video' ||
-        kind === 'audio' ||
-        kind === '3D')
-    ) {
-      const filename = item.ref ?? item.name
-      grid.push({
-        url,
-        filename,
-        kind,
-        label: filename === item.name ? undefined : item.name
-      })
-    } else {
-      plain.push(item)
-    }
+    const asset = gridAsset(item)
+    if (asset) grid.push(asset)
+    else plain.push(item)
   }
   return { grid, plain }
 })
+
+const GRID_KINDS: ReadonlySet<MediaType> = new Set<ReplyAsset['kind']>([
+  'image',
+  'video',
+  'audio',
+  '3D'
+])
+
+function isGridKind(kind: MediaType): kind is ReplyAsset['kind'] {
+  return GRID_KINDS.has(kind)
+}
+
+function gridAsset(item: UserAttachment): ReplyAsset | undefined {
+  const kind = item.kind ?? getMediaTypeFromFilename(item.name)
+  if (!isGridKind(kind)) return undefined
+  const url =
+    item.previewUrl ??
+    (item.ref
+      ? api.apiURL(`/view?filename=${encodeURIComponent(item.ref)}&type=input`)
+      : undefined)
+  if (!url) return undefined
+  const filename = item.ref ?? item.name
+  return {
+    url,
+    filename,
+    kind,
+    label: filename === item.name ? undefined : item.name
+  }
+}
 </script>
 
 <template>
