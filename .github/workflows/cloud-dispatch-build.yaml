@@ -50,6 +50,7 @@ jobs:
       group: cloud-dispatch-${{ github.event.pull_request.head.ref || github.ref_name }}
       cancel-in-progress: false
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
       pull-requests: read
