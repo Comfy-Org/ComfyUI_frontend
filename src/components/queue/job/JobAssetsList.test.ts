@@ -192,6 +192,16 @@ describe('JobAssetsList', () => {
 
     await user.tab()
 
+    const list = screen.getByRole('region', { name: 'Jobs' })
+    expect(list).not.toHaveFocus()
+    expect(list).toHaveAttribute('tabindex', '-1')
+  })
+
+  it('leaves an empty job list out of the tab order', async () => {
+    const { user } = renderJobAssetsList({ displayedJobGroups: [] })
+
+    await user.tab()
+
     expect(screen.getByRole('region', { name: 'Jobs' })).not.toHaveFocus()
   })
 

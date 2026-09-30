@@ -1,7 +1,7 @@
 <template>
   <div
     ref="scrollContainer"
-    tabindex="0"
+    :tabindex="flatRows.length ? 0 : -1"
     role="region"
     :aria-label="$t('g.jobs')"
     v-bind="$attrs"
