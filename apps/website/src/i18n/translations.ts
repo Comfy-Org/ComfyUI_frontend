@@ -10560,6 +10560,7 @@ Enterprise`
     'zh-CN': '此模型的原生 Router 请求映射尚未验证。调用前请查看 Router 文档。'
   },
   'workshop.api.copied': { en: 'Copied', 'zh-CN': '已复制' },
+  'workshop.api.copyEndpoint': { en: 'Copy endpoint', 'zh-CN': '复制接口地址' },
   'workshop.api.getKey': { en: 'Get API key', 'zh-CN': '获取 API 密钥' },
   'workshop.api.downloadGraph': {
     en: 'Download the API graph',
@@ -10979,10 +10980,6 @@ Enterprise`
     'zh-CN': '在 platform.comfy.org 上为 {workspace} 添加积分'
   },
   'workshop.hub.tryNow': { en: 'Try now', 'zh-CN': '立即试用' },
-  'workshop.cinematic.openInStudio': {
-    en: 'Open in Cinematic Studio',
-    'zh-CN': '在 Cinematic Studio 中打开'
-  },
   'workshop.hub.tag.partnerNodes': {
     en: 'Partner Nodes',
     'zh-CN': '合作伙伴节点'

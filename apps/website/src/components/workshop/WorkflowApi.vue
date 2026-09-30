@@ -111,7 +111,8 @@ const facts = computed(() => {
           {
             label: t('workshop.api.needsEndpoint'),
             value: `POST ${endpoint}`,
-            mono: true
+            mono: true,
+            copyLabel: t('workshop.api.copyEndpoint')
           }
         ]
       : []),

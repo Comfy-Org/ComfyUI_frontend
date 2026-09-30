@@ -4,11 +4,7 @@ import { resolveModelRouterRender } from '../../../config/router-render'
 import { workshopContract } from '../../../config/workshop-contract-catalog'
 import { getAuthoredRouterWorkshopModelDetail } from '../../../config/workshop-router-content'
 import type { CinematicModel } from './models'
-import {
-  cinematicStudioHref,
-  runnableCinematicModels,
-  videoShotBlock
-} from './models'
+import { runnableCinematicModels, videoShotBlock } from './models'
 
 const SEEDREAM = 'byteplus--seedream-5-pro--generate-images'
 const FLUX = 'bfl--flux-2-pro--generate-images'
@@ -44,21 +40,6 @@ describe('runnableCinematicModels', () => {
         aspects: ['21:9', '16:9', '4:3', '3:2', '2:3', '1:1', '9:16']
       }
     ])
-  })
-})
-
-describe('cinematicStudioHref', () => {
-  it('links a supported model to the studio with it preselected', () => {
-    expect(
-      cinematicStudioHref(
-        'bfl--flux-2-pro--generate-images',
-        '/cinematic-studio'
-      )
-    ).toBe('/cinematic-studio?model=bfl--flux-2-pro--generate-images')
-  })
-
-  it('does not link a model the studio cannot run', () => {
-    expect(cinematicStudioHref('kling-ai', '/cinematic-studio')).toBeUndefined()
   })
 })
 

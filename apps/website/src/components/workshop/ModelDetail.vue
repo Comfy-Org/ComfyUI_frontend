@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Clapperboard, Download, ExternalLink, Play } from '@lucide/vue'
+import { Download, ExternalLink, Play } from '@lucide/vue'
 import { useEventListener, useMounted, useTimestamp } from '@vueuse/core'
 import {
   computed,
@@ -60,8 +60,6 @@ import { releaseRouterOutputs } from '../../config/workshop-response'
 import { retainRunHistory } from '../../config/workshop-run-history'
 import { reportWorkshopRun } from '../../config/workshop-run-state'
 import { modelDocsHref } from '../../lib/workshop/model-docs'
-import { cinematicStudioHref } from '../../lib/workshop/cinematic-studio/models'
-import { getRoutes } from '../../config/routes'
 import { linkLeavingPage } from '../../lib/workshop/leaving-link'
 import { routerSavesAssets } from '../../lib/workshop/asset-saving'
 import type { WorkshopSession } from '../../config/workshop-session-state'
@@ -76,8 +74,7 @@ import {
   captureWorkshopEvent,
   useWorkshopEnabled,
   useWorkshopEnabledSettled,
-  useWorkshopAuthFlag,
-  useWorkshopAppsEnabled
+  useWorkshopAuthFlag
 } from '../../scripts/posthog'
 import type { WorkshopRunAnalytics } from '../../scripts/workshop-analytics'
 import {
@@ -270,14 +267,9 @@ const sessionFailure = computed(() => account.value?.sessionFailure.value)
 const settled = computed(() => account.value?.settled.value ?? false)
 const balance = computed(() => account.value?.balance.value)
 const authEnabled = useWorkshopAuthFlag()
-const studioEnabled = useWorkshopAppsEnabled()
 const mounted = useMounted()
 const signInHref = useSignInHref(locale)
 const docsHref = modelDocsHref(model)
-const studioHref = cinematicStudioHref(
-  model.slug,
-  getRoutes(locale).cinematicStudio
-)
 
 watch(
   () => mounted.value && workshopEnabled.value,
@@ -915,25 +907,11 @@ function useInCode() {
         </button>
       </div>
       <a
-        v-if="studioHref && studioEnabled"
-        :href="studioHref"
-        class="mb-2 ml-auto inline-flex h-8 shrink-0 items-center gap-2 rounded-full border border-transparency-white-t20 px-3 text-[13px] whitespace-nowrap text-primary-warm-white transition-colors hover:border-primary-warm-white/50 max-sm:hidden"
-        data-testid="model-studio-link"
-      >
-        <Clapperboard class="size-4" aria-hidden="true" />
-        {{ t('workshop.cinematic.openInStudio', locale) }}
-      </a>
-      <a
         v-if="docsHref"
         :href="docsHref"
         target="_blank"
         rel="noopener noreferrer"
-        :class="
-          cn(
-            'inline-flex shrink-0 items-center gap-1.5 pb-3 text-sm leading-none font-bold tracking-wider whitespace-nowrap text-primary-warm-white uppercase transition-colors hover:text-primary-comfy-yellow',
-            !(studioHref && studioEnabled) && 'ml-auto'
-          )
-        "
+        class="ml-auto inline-flex shrink-0 items-center gap-1.5 pb-3 text-sm leading-none font-bold tracking-wider whitespace-nowrap text-primary-warm-white uppercase transition-colors hover:text-primary-comfy-yellow"
         data-testid="model-docs-link"
       >
         {{ t('workshop.hub.docs', locale) }}
