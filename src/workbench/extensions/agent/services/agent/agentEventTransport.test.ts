@@ -509,7 +509,7 @@ describe('agentEventTransport run approval', () => {
     )
   })
 
-  it('reports an unknown ask kind once with a bounded tag', () => {
+  it('reports an unknown ask kind once with a bounded-cardinality tag', () => {
     const unknownKind = 'x'.repeat(100)
     drive([
       runApproval('unknown-1', unknownKind),
@@ -522,19 +522,49 @@ describe('agentEventTransport run approval', () => {
       expect.objectContaining({
         tags: {
           reason: 'unknown-kind',
-          ask_kind: 'x'.repeat(64)
-        }
+          ask_kind: 'other'
+        },
+        context: expect.objectContaining({
+          askKind: unknownKind
+        })
       })
     )
   })
 
-  it('bounds reported ask identities and evicts the oldest', () => {
+  it('caps reports per session', () => {
     const asks = Array.from({ length: 33 }, (_, index) =>
       runApproval(`unknown-${index}`, 'unsupported')
     )
     drive([...asks, asks[0]])
 
-    expect(reportError).toHaveBeenCalledTimes(34)
+    expect(reportError).toHaveBeenCalledTimes(32)
+  })
+
+  it('reports distinct failure reasons for the same ask once each', () => {
+    const message = createAssistantMessage(T)
+    const transport = createAgentEventTransport(message, vi.fn())
+    const ask = runApproval('same-ask', 'unsupported')
+
+    transport.ingest(ask)
+    transport.settle()
+    transport.ingest(ask)
+    transport.ingest(ask)
+
+    expect(reportError).toHaveBeenCalledTimes(2)
+    expect(reportError).toHaveBeenNthCalledWith(
+      1,
+      expect.any(Error),
+      expect.objectContaining({
+        tags: expect.objectContaining({ reason: 'unknown-kind' })
+      })
+    )
+    expect(reportError).toHaveBeenNthCalledWith(
+      2,
+      expect.any(Error),
+      expect.objectContaining({
+        tags: expect.objectContaining({ reason: 'settled-turn' })
+      })
+    )
   })
 })
 

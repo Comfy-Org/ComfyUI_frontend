@@ -942,7 +942,7 @@ describe('useAgentConversationStore', () => {
       expect(reportError).not.toHaveBeenCalled()
     })
 
-    it('stays quiet for an ask belonging to an untracked thread', () => {
+    it('reports an ask belonging to an untracked thread', () => {
       const store = useAgentConversationStore()
       store.setThreadId('th')
       store.startTurn(T1)
@@ -958,7 +958,12 @@ describe('useAgentConversationStore', () => {
         })
       )
 
-      expect(reportError).not.toHaveBeenCalled()
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({ reason: 'no-live-turn' })
+        })
+      )
     })
 
     it('reports the same dropped ask only once', () => {
@@ -1151,7 +1156,10 @@ describe('useAgentConversationStore', () => {
           errorType: 'failure_delivering_agent_approval_ask',
           tags: expect.objectContaining({
             reason: 'unknown-kind',
-            ask_kind: 'pick_a_model'
+            ask_kind: 'other'
+          }),
+          context: expect.objectContaining({
+            askKind: 'pick_a_model'
           })
         })
       )

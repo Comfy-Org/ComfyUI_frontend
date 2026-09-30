@@ -316,7 +316,7 @@ export const useAgentConversationStore = defineStore(
           eventMessageId === undefined
             ? undefined
             : departedTurns.get(departedTurnKey(eventThreadId, eventMessageId))
-        if (reason) reportUndeliverableAsk(event, reason)
+        reportUndeliverableAsk(event, reason ?? 'no-live-turn')
         return
       }
       if (event.type === 'agent_message_done') {
