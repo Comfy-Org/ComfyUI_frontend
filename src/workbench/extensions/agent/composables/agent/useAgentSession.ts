@@ -819,28 +819,36 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (hydrated && isCurrent()) conversationStore.resumeBackgroundTurn()
   }
 
+  function malformedEventTurnId(raw: object): TurnId | undefined {
+    const messageId = (raw as { data?: { message_id?: unknown } }).data
+      ?.message_id
+    return typeof messageId === 'string' ? (messageId as TurnId) : undefined
+  }
+
+  function settleMalformedDoneEvent(
+    type: string,
+    turnId: TurnId | undefined
+  ): AgentErrorMetadata['ui_treatment'] {
+    if (type !== 'agent_message_done') return 'none'
+    if (turnId !== undefined && turnId !== conversationStore.activeTurnId) {
+      conversationStore.settleBackgroundTurn(turnId)
+      return 'none'
+    }
+    conversationStore.abortActiveTurn()
+    return 'error_overlay'
+  }
+
   function handleMalformedEvent(
     raw: object,
     type: string,
     error: ZodError
   ): void {
-    const messageId = (raw as { data?: { message_id?: unknown } }).data
-      ?.message_id
-    const turnId =
-      typeof messageId === 'string' ? (messageId as TurnId) : undefined
+    const turnId = malformedEventTurnId(raw)
     const reportedTurnId =
       turnId !== undefined && conversationStore.hasPendingTurn(turnId)
         ? turnId
         : conversationStore.activeTurnId
-    let uiTreatment: AgentErrorMetadata['ui_treatment'] = 'none'
-    if (type === 'agent_message_done') {
-      if (turnId === undefined || turnId === conversationStore.activeTurnId) {
-        conversationStore.abortActiveTurn()
-        uiTreatment = 'error_overlay'
-      } else {
-        conversationStore.settleBackgroundTurn(turnId)
-      }
-    }
+    const uiTreatment = settleMalformedDoneEvent(type, turnId)
     if (
       trackMalformedStreamEvent(error, type, reportedTurnId, uiTreatment) &&
       uiTreatment === 'error_overlay'
