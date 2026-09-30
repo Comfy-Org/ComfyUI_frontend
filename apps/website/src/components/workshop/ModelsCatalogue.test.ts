@@ -84,6 +84,7 @@ const launchModels: WorkshopModel[] = [
     type: 'APP',
     appId: 'reshoot',
     slug: 'apps/reshoot',
+    flag: 'workshop-reshoot-app-enabled',
     name: 'Re-shoot a video',
     href: '/models/apps/reshoot/',
     workflowCount: 0,

@@ -1082,11 +1082,14 @@ describe('CinematicStudio', () => {
         props: { apps: appModels, models, initialApp: app }
       })
 
-      await vi.waitFor(() =>
+      await vi.waitFor(() => {
         expect(
           screen.queryAllByText(tc('cinematic.unavailable.title'))
         ).toHaveLength(open ? 0 : 1)
-      )
+        expect(
+          screen.queryAllByTestId(app === 'reshoot' ? 'reshoot' : 'cinematic')
+        ).toHaveLength(open ? 1 : 0)
+      })
     }
   )
 

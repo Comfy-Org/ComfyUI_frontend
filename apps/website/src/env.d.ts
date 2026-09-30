@@ -20,7 +20,7 @@ declare global {
     readonly PUBLIC_WORKSHOP_ENABLED?: string
     readonly PUBLIC_WORKSHOP_WORKFLOWS_ENABLED?: string
     readonly PUBLIC_WORKSHOP_APPS_ENABLED?: string
-    /** Local dev only: comma-separated PostHog flags to treat as on. */
+    /** Any build but Vercel production: comma-separated PostHog flags to force on. Production reads them from PostHog only. */
     readonly PUBLIC_WORKSHOP_FLAG_OVERRIDES?: string
     readonly PUBLIC_WORKSHOP_ROUTER_RUN?: string
     readonly PUBLIC_WORKSHOP_SAVE_ASSETS?: string

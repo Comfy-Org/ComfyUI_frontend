@@ -18,6 +18,7 @@ import type { TurnstileMode } from '@comfyorg/account-core/turnstile'
 
 import type { Platform } from '@/composables/useDownloadUrl'
 import type { ConnectionId, McpClientId } from '@/config/mcpClients'
+import { WORKSHOP_CLOUD_ENV } from '../config/workshop-env'
 import type { WorkshopAnalyticsEvent } from './workshop-analytics'
 import { captureWorkshopHealth } from './workshop-datadog'
 
@@ -136,9 +137,10 @@ const APPS_OVERRIDE =
   WORKSHOP_LOCAL_DEV && import.meta.env.PUBLIC_WORKSHOP_APPS_ENABLED === '1'
 const workshopAppsEnabled = ref(APPS_OVERRIDE)
 // Flags named by content (workshop-model-availability.json `flag`), read on
-// demand. Local dev can turn some on: PUBLIC_WORKSHOP_FLAG_OVERRIDES=a,b.
+// demand from PostHog in every environment. Outside Vercel production a build
+// can also force some on: PUBLIC_WORKSHOP_FLAG_OVERRIDES=a,b.
 const FLAG_OVERRIDES = new Set(
-  WORKSHOP_LOCAL_DEV
+  WORKSHOP_DEPLOY_ENV !== 'production'
     ? (import.meta.env.PUBLIC_WORKSHOP_FLAG_OVERRIDES ?? '')
         .split(',')
         .map((name) => name.trim())
@@ -236,6 +238,20 @@ function isStaff({ email, emailVerified }: WorkshopIdentity): boolean {
   )
 }
 
+// One PostHog project serves every build, so flags are evaluated with the
+// Workshop family and Vercel environment: a release condition on
+// workshop_cloud_env (prod, staging, test) turns a flag on per environment.
+// posthog.reset() clears these, so they are set again after every reset.
+function tagFlagEnvironment(reloadFeatureFlags: boolean): void {
+  posthog.setPersonPropertiesForFlags(
+    {
+      workshop_cloud_env: WORKSHOP_CLOUD_ENV,
+      workshop_deploy_env: WORKSHOP_DEPLOY_ENV || 'local'
+    },
+    reloadFeatureFlags
+  )
+}
+
 function identifyInPostHog(user: WorkshopIdentity): void {
   if (isStaff(user)) posthog.identify(user.uid, { comfy_staff: true })
   else posthog.identify(user.uid)
@@ -265,7 +281,10 @@ function adoptNewIdentity(
   resetNamedFlags()
   if (waitForIdentityAnswer) awaitFlagAnswer()
   else markFlagResolved()
-  if (persistedUid) posthog.reset()
+  if (persistedUid) {
+    posthog.reset()
+    tagFlagEnvironment(false)
+  }
   if (user) identifyInPostHog(user)
   posthog.reloadFeatureFlags()
 }
@@ -330,6 +349,7 @@ export function initPostHog() {
       before_send: createPostHogBeforeSend()
     })
     initialized = true
+    tagFlagEnvironment(true)
     const persistedAnswer = posthog.isFeatureEnabled(WORKSHOP_ENABLED_FLAG, {
       send_event: false
     })

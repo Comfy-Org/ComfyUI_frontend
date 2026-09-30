@@ -50,7 +50,7 @@ const appsEnabled = useWorkshopAppsEnabled()
 const layout = ref('d')
 const app = ref<WorkshopAppId>(initialApp)
 const shownApps = computed(() =>
-  apps.filter((candidate) => isWorkshopModelShown(candidate.slug))
+  apps.filter((candidate) => isWorkshopModelShown(candidate))
 )
 const studioEnabled = computed(
   () =>

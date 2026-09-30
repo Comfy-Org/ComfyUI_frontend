@@ -48,7 +48,7 @@ if (typeof location !== 'undefined') {
   if (requested === 'apps') selectedTab.value = 'apps'
 }
 const shownModels = computed(() =>
-  models.filter((model) => isWorkshopModelShown(model.slug))
+  models.filter((model) => isWorkshopModelShown(model))
 )
 const routerModels = computed(() =>
   shownModels.value.filter((model) => model.routerId !== undefined)
