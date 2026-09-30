@@ -35,6 +35,7 @@ const {
   refreshable = false,
   memberWorkspace,
   cancelledMessage,
+  policyMessage,
   locale = 'en'
 } = defineProps<{
   state: RunState
@@ -51,6 +52,8 @@ const {
    * and is over. The same status, two different things to say.
    */
   cancelledMessage?: string
+  /** Why this page's provider blocks content, when its rule is known. */
+  policyMessage?: string
   locale?: Locale
 }>()
 
@@ -102,6 +105,7 @@ function failureMessage(failure: Extract<RunState, { status: 'failed' }>) {
     return t('workshop.error.memberNoCredits', locale, {
       workspace: memberWorkspace
     })
+  if (failure.reason === 'policy' && policyMessage) return policyMessage
   return t(failureTranslationKey(failure), locale)
 }
 

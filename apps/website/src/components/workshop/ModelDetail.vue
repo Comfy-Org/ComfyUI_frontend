@@ -87,7 +87,10 @@ import {
 } from '../../scripts/workshop-analytics'
 import ApiTab from './ApiTab.vue'
 import ExamplesTab from './ExamplesTab.vue'
-import { frameRatioRule } from '../../config/workshop-model-restrictions'
+import {
+  frameRatioRule,
+  refusesRealFaces
+} from '../../config/workshop-model-restrictions'
 import PlaygroundForm from './PlaygroundForm.vue'
 import PlaygroundOutput from './PlaygroundOutput.vue'
 import ExampleReplaceDialog from './ExampleReplaceDialog.vue'
@@ -1138,6 +1141,11 @@ function useInCode() {
           :now
           :modality="model.modality"
           :locale
+          :policy-message="
+            refusesRealFaces(model.slug)
+              ? t('workshop.error.policyRealFaces', locale)
+              : undefined
+          "
           :member-workspace="
             session?.role === 'member' ? session.workspace.name : undefined
           "

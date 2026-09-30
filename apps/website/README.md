@@ -190,11 +190,13 @@ with the refreshed snapshot.
 
 The hub has one page per section, linked by the catalogue tabs: `/hub/models/`,
 `/hub/workflows/` and `/hub/apps/`. The workflows and apps pages show the
-showcase until their flag is on, and stay noindex: `/hub/workflows/` lifts with
-`launchedWorkflowPages`, `/hub/apps/` has no switch yet. Being noindex, neither
-has a markdown twin. Old `/hub/models/?type=workflows` and `?type=apps` links
-replace themselves with the section page in the browser, keeping the other
-query parameters.
+showcase until their flag is on. Both are always noindex and left out of the
+sitemap, whatever `launchedWorkflowPages` says (it launches only the
+`/hub/workflows/<slug>/` pages), so neither has a markdown twin. Old
+`/hub/models/?type=workflows` and `?type=apps` links replace themselves with
+the section page in the browser, keeping the other query parameters, once that
+section's flag is on for the visitor; otherwise they stay on the models
+catalogue.
 
 ## Hub workflows routing
 

@@ -35,6 +35,7 @@ import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { openHostedBillingTab } from '@/platform/workspace/billing/openHostedBillingTab'
 import { registerRefreshOnReturn } from '@/platform/workspace/billing/refreshOnReturn'
 import type { SettledSubscribeResponse } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
+import { SettledOperationError } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
 import { readOnRail } from '@/platform/workspace/composables/readOnRail'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
@@ -1188,7 +1189,8 @@ export function useSubscriptionCheckout(
         confirmReactivation,
         prorationAt: previewData.value?.is_immediate
           ? previewData.value.proration_at
-          : undefined
+          : undefined,
+        attemptStartedAt
       })
 
       if (response) {
@@ -1482,6 +1484,7 @@ export function useSubscriptionCheckout(
       ...(errorCode && { error_code: errorCode }),
       duration_ms: Date.now() - context.attemptStartedAt
     })
+    if (error instanceof SettledOperationError) return
     telemetry?.trackBillingEvent({
       operation: 'operation',
       stage: 'failed',
@@ -1533,18 +1536,20 @@ export function useSubscriptionCheckout(
           billing_op_id: response.billing_op_id,
           duration_ms: durationMs
         })
-        telemetry?.trackBillingEvent({
-          operation: 'operation',
-          stage: 'succeeded',
-          outcome: 'success',
-          operation_type: 'subscription',
-          tier: context.tier,
-          cycle: context.cycle,
-          checkout_type: context.checkoutType,
-          payment_intent_source: paymentIntentSource,
-          billing_op_id: response.billing_op_id,
-          duration_ms: durationMs
-        })
+        if (!response.operationObserved) {
+          telemetry?.trackBillingEvent({
+            operation: 'operation',
+            stage: 'succeeded',
+            outcome: 'success',
+            operation_type: 'subscription',
+            tier: context.tier,
+            cycle: context.cycle,
+            checkout_type: context.checkoutType,
+            payment_intent_source: paymentIntentSource,
+            billing_op_id: response.billing_op_id,
+            duration_ms: durationMs
+          })
+        }
         if (response.requiredPayment) {
           telemetry?.trackMonthlySubscriptionSucceeded({
             tier: context.tier,
@@ -1768,7 +1773,8 @@ export function useSubscriptionCheckout(
         confirmReactivation,
         prorationAt: previewData.value?.is_immediate
           ? previewData.value.proration_at
-          : undefined
+          : undefined,
+        attemptStartedAt
       })
 
       if (response) {
