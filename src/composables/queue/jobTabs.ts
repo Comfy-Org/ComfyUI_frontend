@@ -8,5 +8,5 @@ export const jobTabLabelKeys: Record<JobTab, string> = {
 }
 
 export function getVisibleJobTabs(hasFailedJobs: boolean): readonly JobTab[] {
-  return hasFailedJobs ? jobTabs : jobTabs.filter((tab) => tab !== 'Failed')
+  return jobTabs.filter((tab) => hasFailedJobs || tab !== 'Failed')
 }

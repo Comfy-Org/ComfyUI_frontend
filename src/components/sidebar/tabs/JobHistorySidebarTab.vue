@@ -54,6 +54,7 @@
         <div
           :id="`tabpanel-${selectedJobTab}`"
           role="tabpanel"
+          tabindex="0"
           :aria-labelledby="`tab-${selectedJobTab}`"
           class="flex min-h-0 flex-1 flex-col"
         >
