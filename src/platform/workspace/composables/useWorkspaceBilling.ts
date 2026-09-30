@@ -256,6 +256,9 @@ export function useWorkspaceBilling(): WorkspaceBilling {
   )
   const tier = computed(() => statusData.value?.subscription_tier ?? null)
   const renewalDate = computed(() => statusData.value?.renewal_date ?? null)
+  const renewalInvoice = computed(
+    () => statusData.value?.renewal_invoice ?? null
+  )
 
   const plans = computed(() => billingPlans.plans.value)
   const currentPlanSlug = computed(
@@ -803,6 +806,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     subscriptionStatus,
     tier,
     renewalDate,
+    renewalInvoice,
     readAndAdoptPendingOperation,
 
     // Actions
