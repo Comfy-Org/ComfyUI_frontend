@@ -127,8 +127,8 @@ export function useFullPageCheckout() {
   const { entry, error: unreadableLink } = useBillingEntry()
   const { session } = useBillingWebSession()
   const billedWorkspace = useBilledWorkspace()
-  const { capabilities, lifecycle, status } = useBillingClient<
-    'capabilities' | 'lifecycle' | 'status'
+  const { capabilities, lifecycle, plans, status } = useBillingClient<
+    'capabilities' | 'lifecycle' | 'plans' | 'status'
   >(undefined)
   const { preview, quote } = usePreviewSubscribe()
   const saved = usePaymentMethods({ immediate: false })
@@ -241,6 +241,35 @@ export function useFullPageCheckout() {
     return asked
   }
 
+  /**
+   * A refusal for a change already scheduled names that change as the
+   * server has it: the date from its status, the plan from its catalog.
+   */
+  async function withScheduledChange(
+    stopped: CheckoutPageEvent
+  ): Promise<CheckoutPageEvent> {
+    if (
+      stopped.type !== 'refused' ||
+      stopped.reason !== 'subscription_change_in_progress'
+    )
+      return stopped
+    const [read, catalog] = await Promise.all([status.read(), plans.read()])
+    const change =
+      read.status === 'ok' ? read.value.status.scheduled_change : undefined
+    const listed =
+      change && catalog.status === 'ok'
+        ? catalog.value.data.plans.find(
+            (plan) => plan.slug === change.plan_slug
+          )
+        : undefined
+    if (!change || !listed) return stopped
+    const { tier, duration } = listed
+    return {
+      ...stopped,
+      scheduled: { plan: { tier, duration }, effectiveAt: change.effective_at }
+    }
+  }
+
   /** A capture read again after the page went back to resolving keeps the applied code, or says it lapsed. */
   async function captureEvent(
     arrival: PlannedEntry
@@ -254,7 +283,7 @@ export function useFullPageCheckout() {
       ])
     if (expiredPromo !== undefined) promo.expire()
     const stopped = capabilityStop(allowed)
-    if (stopped !== undefined) return stopped
+    if (stopped !== undefined) return withScheduledChange(stopped)
     if (quoted.status === 'error')
       return 'serverCode' in quoted &&
         matchesServerCode(quoted, UNKNOWN_PLAN_SERVER_CODE)

@@ -133,6 +133,11 @@ describe('payVerdictOf', () => {
       expected: { kind: 'requote', because: 'reactivation_required' }
     },
     {
+      name: 'a stale quote as account-core normalizes it',
+      result: { status: 'error', code: 'QUOTE_STALE' },
+      expected: { kind: 'requote', because: 'quote_expired' }
+    },
+    {
       name: 'an unreachable billing service',
       result: { status: 'error', code: 'REQUEST_FAILED' },
       expected: { kind: 'failure', code: 'REQUEST_FAILED' }
