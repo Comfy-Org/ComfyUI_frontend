@@ -179,7 +179,10 @@ export function getRoutes(locale: Locale = DEFAULT_LOCALE): Routes {
 
 const workshopAppRepos: Readonly<
   Partial<Record<AppWorkshopModel['appId'], string>>
-> = {}
+> = {
+  studio: 'https://github.com/Comfy-Org/comfy-cinematic-studio',
+  reshoot: 'https://github.com/Comfy-Org/comfy-reshoot'
+}
 
 export const externalLinks = {
   affiliateApplicationForm: 'https://forms.gle/RS8L2ttcuGap4Q1v6',
