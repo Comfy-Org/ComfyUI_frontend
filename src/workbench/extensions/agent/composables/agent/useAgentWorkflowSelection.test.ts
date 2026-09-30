@@ -56,7 +56,8 @@ function setup() {
           resolver,
           canSelectTarget: () => true,
           warnWorkflowUnavailable: vi.fn(),
-          warnRestoreFailed
+          warnRestoreFailed,
+          recoverWorkflow: vi.fn().mockResolvedValue(null)
         })
         return () => null
       }

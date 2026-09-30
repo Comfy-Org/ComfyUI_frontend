@@ -1,4 +1,9 @@
 import { expect, mergeTests } from '@playwright/test'
+import type {
+  AgentGetDraftResponse,
+  GetUserdataResponse,
+  WorkflowListResponse
+} from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
@@ -110,172 +115,192 @@ test.describe(
       page,
       workflowSelection
     }, testInfo) => {
-      await new AgentPanel(page).open()
-      const panel = page.locator('#agent-panel-root')
-      const targetPicker = panel.getByRole('button', {
-        name: enMessages.agent.switchWorkflow
-      })
-      await targetPicker.click()
-      await page
-        .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-        .click()
-      await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
-      workflowSelection.finishSave(true)
-      await expect(targetPicker).toHaveText('Unsaved Workflow')
-      await page
-        .getByRole('button', {
-          name: enMessages.sideToolbar.newBlankWorkflow,
-          exact: true
-        })
-        .click()
-      await targetPicker.click()
-      await page
-        .getByRole('menuitemradio', {
-          name: 'Unsaved Workflow (2)',
-          exact: true
-        })
-        .click()
-      await expect.poll(() => workflowSelection.savedPaths.length).toBe(2)
-      workflowSelection.finishSave(true)
-      await expect(targetPicker).toHaveText('Unsaved Workflow (2)')
-      const tabs = page.getByTestId('workflow-tab')
-      await tabs.first().hover()
-      await tabs
-        .first()
-        .getByRole('button', { name: enMessages.g.close })
-        .click()
-      await expect(tabs).toHaveCount(1)
-
-      const composer = panel.getByRole('textbox', { includeHidden: true })
-      await composer.fill('Start in this workflow')
-      await composer.press('Enter')
-      await expect.poll(() => workflowSelection.postedMessages.length).toBe(1)
-      await expect(composer).toHaveText('Start in this workflow')
-      await composer.fill('@')
-      await panel
-        .getByRole('menuitem', {
-          name: enMessages.agent.workflows,
-          exact: true
-        })
-        .click()
-      await panel
-        .getByRole('menuitem', { name: 'Unsaved Workflow', exact: true })
-        .click()
-      await composer.pressSequentially('Use this workflow as inspiration')
-      await expect(tabs).toHaveCount(1)
-      await panel.getByRole('button', { name: enMessages.g.close }).click()
-      await expect(panel).toHaveCount(0)
-      await page
-        .getByRole('button', {
-          name: enMessages.agent.entryButton,
-          exact: true
-        })
-        .click()
-      await expect(composer).toHaveText(
-        'Unsaved Workflow Use this workflow as inspiration'
-      )
-      await expect(targetPicker).toHaveText('Unsaved Workflow (2)')
-      const chip = panel.getByTestId('workflow-reference-chip')
-      const open = chip.getByRole('button', {
-        name: 'Open Unsaved Workflow',
-        exact: true
-      })
-      const remove = chip.getByRole('button', {
-        name: 'Remove Unsaved Workflow reference'
-      })
-      await expect(remove).toHaveCSS('opacity', '0')
-      await open.hover()
-      await expect(remove).toHaveCSS('opacity', '1')
-      const chipBox = await open.boundingBox()
-      const removeBox = await remove.boundingBox()
-      expect(chipBox).not.toBeNull()
-      expect(removeBox).not.toBeNull()
-      expect(removeBox!.y).toBeLessThan(chipBox!.y)
-      expect(removeBox!.x + removeBox!.width).toBeGreaterThan(
-        chipBox!.x + chipBox!.width
-      )
-      await testInfo.attach('workflow-chip-hover', {
-        body: await panel.screenshot({
-          path: testInfo.outputPath('workflow-chip-hover.png')
-        }),
-        contentType: 'image/png'
-      })
-
-      // Simulate the original unsaved tab disappearing before the user
-      // follows its chat reference. It is no longer open, cloud-listed, or
-      // locally persisted, so navigation must recover the Agent draft rather
-      // than silently fail or open the currently selected workflow.
-      await page.route('**/api/workflows?*', (route) =>
-        route.fulfill(
-          jsonRoute({
-            data: [],
-            pagination: {
-              offset: 0,
-              limit: 100,
-              total: 0,
-              has_more: false
-            }
+      const { targetPicker, composer, chip, open, remove } =
+        await test.step('set up a closed workflow reference', async () => {
+          await new AgentPanel(page).open()
+          const panel = page.locator('#agent-panel-root')
+          const targetPicker = panel.getByRole('button', {
+            name: enMessages.agent.switchWorkflow
           })
-        )
-      )
-      await page.route('**/api/userdata?*', (route) =>
-        route.fulfill(jsonRoute([]))
-      )
-      await page.route('**/api/agent/draft?*', (route) =>
-        route.fulfill(
-          jsonRoute({
-            content: {
-              version: 0.4,
-              last_node_id: 7,
-              last_link_id: 0,
-              nodes: [
-                {
-                  id: 7,
-                  type: 'KSampler',
-                  title: 'Recovered Draft Marker',
-                  pos: [0, 0],
-                  size: [320, 300],
-                  flags: {},
-                  order: 0,
-                  mode: 0,
-                  properties: {}
-                }
-              ],
-              links: []
-            },
-            version: 1
+          await targetPicker.click()
+          await page
+            .getByRole('menuitemradio', {
+              name: 'Unsaved Workflow',
+              exact: true
+            })
+            .click()
+          await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
+          workflowSelection.finishSave(true)
+          await expect(targetPicker).toHaveText('Unsaved Workflow')
+          await page
+            .getByRole('button', {
+              name: enMessages.sideToolbar.newBlankWorkflow,
+              exact: true
+            })
+            .click()
+          await targetPicker.click()
+          await page
+            .getByRole('menuitemradio', {
+              name: 'Unsaved Workflow (2)',
+              exact: true
+            })
+            .click()
+          await expect.poll(() => workflowSelection.savedPaths.length).toBe(2)
+          workflowSelection.finishSave(true)
+          await expect(targetPicker).toHaveText('Unsaved Workflow (2)')
+          const tabs = page.getByTestId('workflow-tab')
+          await tabs.first().hover()
+          await tabs
+            .first()
+            .getByRole('button', { name: enMessages.g.close })
+            .click()
+          await expect(tabs).toHaveCount(1)
+
+          const composer = panel.getByRole('textbox', { includeHidden: true })
+          await composer.fill('Start in this workflow')
+          await composer.press('Enter')
+          await expect
+            .poll(() => workflowSelection.postedMessages.length)
+            .toBe(1)
+          await expect(composer).toHaveText('Start in this workflow')
+          await composer.fill('@')
+          await panel
+            .getByRole('menuitem', {
+              name: enMessages.agent.workflows,
+              exact: true
+            })
+            .click()
+          await panel
+            .getByRole('menuitem', { name: 'Unsaved Workflow', exact: true })
+            .click()
+          await composer.pressSequentially('Use this workflow as inspiration')
+          await expect(tabs).toHaveCount(1)
+          await panel.getByRole('button', { name: enMessages.g.close }).click()
+          await expect(panel).toHaveCount(0)
+          await page
+            .getByRole('button', {
+              name: enMessages.agent.entryButton,
+              exact: true
+            })
+            .click()
+          await expect(composer).toHaveText(
+            'Unsaved Workflow Use this workflow as inspiration'
+          )
+          await expect(targetPicker).toHaveText('Unsaved Workflow (2)')
+          const chip = panel.getByTestId('workflow-reference-chip')
+          const open = chip.getByRole('button', {
+            name: 'Open Unsaved Workflow',
+            exact: true
           })
+          const remove = chip.getByRole('button', {
+            name: 'Remove Unsaved Workflow reference'
+          })
+          await expect(remove).toHaveCSS('opacity', '0')
+          await open.hover()
+          await expect(remove).toHaveCSS('opacity', '1')
+          const chipBox = await open.boundingBox()
+          const removeBox = await remove.boundingBox()
+          expect(chipBox).not.toBeNull()
+          expect(removeBox).not.toBeNull()
+          expect(removeBox!.y).toBeLessThan(chipBox!.y)
+          expect(removeBox!.x + removeBox!.width).toBeGreaterThan(
+            chipBox!.x + chipBox!.width
+          )
+          await testInfo.attach('workflow-chip-hover', {
+            body: await panel.screenshot({
+              path: testInfo.outputPath('workflow-chip-hover.png')
+            }),
+            contentType: 'image/png'
+          })
+          return { targetPicker, composer, chip, open, remove }
+        })
+
+      await test.step('recover the closed workflow from its durable draft', async () => {
+        // The original tab is no longer open, cloud-listed, or locally
+        // persisted, so navigation must use the durable Agent draft.
+        await page.route('**/api/workflows?*', (route) =>
+          route.fulfill(
+            jsonRoute({
+              data: [],
+              pagination: {
+                offset: 0,
+                limit: 100,
+                total: 0,
+                has_more: false
+              }
+            } satisfies WorkflowListResponse)
+          )
         )
-      )
-      await open.click()
-      await expect(new Topbar(page).getActiveTab()).toHaveText(
-        'Unsaved Workflow'
-      )
-      await expect(targetPicker).toHaveText('Unsaved Workflow (2)')
-      await expect(composer).toHaveText(
-        'Unsaved Workflow Use this workflow as inspiration'
-      )
-      await expect(chip).toBeVisible()
-      expect(workflowSelection.postedMessages).toHaveLength(1)
-      await testInfo.attach('recovered-workflow-reference', {
-        body: await page.screenshot({
-          path: testInfo.outputPath('recovered-workflow-reference.png')
-        }),
-        contentType: 'image/png'
+        await page.route('**/api/userdata?*', (route) =>
+          route.fulfill(jsonRoute([] satisfies GetUserdataResponse))
+        )
+        await page.route('**/api/agent/draft?*', (route) =>
+          route.fulfill(
+            jsonRoute({
+              content: {
+                version: 0.4,
+                last_node_id: 7,
+                last_link_id: 0,
+                nodes: [
+                  {
+                    id: 7,
+                    type: 'KSampler',
+                    title: 'Recovered Draft Marker',
+                    pos: [0, 0],
+                    size: [320, 300],
+                    flags: {},
+                    order: 0,
+                    mode: 0,
+                    properties: {}
+                  }
+                ],
+                links: []
+              },
+              version: 1
+            } satisfies AgentGetDraftResponse)
+          )
+        )
+        await open.click()
+        await expect(new Topbar(page).getActiveTab()).toHaveText(
+          'Unsaved Workflow'
+        )
+        await expect
+          .poll(() =>
+            page.evaluate(() =>
+              window.app!.graph.nodes.some(
+                ({ title }) => title === 'Recovered Draft Marker'
+              )
+            )
+          )
+          .toBe(true)
+        await expect(targetPicker).toHaveText('Unsaved Workflow (2)')
+        await expect(composer).toHaveText(
+          'Unsaved Workflow Use this workflow as inspiration'
+        )
+        await expect(chip).toBeVisible()
+        expect(workflowSelection.postedMessages).toHaveLength(1)
+        await testInfo.attach('recovered-workflow-reference', {
+          body: await page.screenshot({
+            path: testInfo.outputPath('recovered-workflow-reference.png')
+          }),
+          contentType: 'image/png'
+        })
       })
 
-      await open.focus()
-      await open.press('Tab')
-      await expect(remove).toBeFocused()
-      await expect(remove).toHaveCSS('opacity', '1')
-      await remove.press('Enter')
-      await expect(chip).toHaveCount(0)
-      await expect(composer).toHaveText('Use this workflow as inspiration')
-      await expect(targetPicker).toHaveText('Unsaved Workflow (2)')
-      await expect(new Topbar(page).getActiveTab()).toHaveText(
-        'Unsaved Workflow'
-      )
-      expect(workflowSelection.postedMessages).toHaveLength(1)
+      await test.step('remove the recovered workflow reference', async () => {
+        await open.focus()
+        await open.press('Tab')
+        await expect(remove).toBeFocused()
+        await expect(remove).toHaveCSS('opacity', '1')
+        await remove.press('Enter')
+        await expect(chip).toHaveCount(0)
+        await expect(composer).toHaveText('Use this workflow as inspiration')
+        await expect(targetPicker).toHaveText('Unsaved Workflow (2)')
+        await expect(new Topbar(page).getActiveTab()).toHaveText(
+          'Unsaved Workflow'
+        )
+        expect(workflowSelection.postedMessages).toHaveLength(1)
+      })
     })
 
     test('explains disabled node references until the selected workflow is visible', async ({

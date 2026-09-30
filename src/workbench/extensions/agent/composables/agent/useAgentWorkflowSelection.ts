@@ -216,12 +216,32 @@ export function useAgentWorkflowSelection({
     if (!workflowSelection.value) void refreshCloudWorkflowIds()
   }
 
-  async function closeRecoveredWorkflow(
-    target: ComfyWorkflow | null,
+  async function resolveRestoredWorkflow(
+    workflowId: string,
+    isCurrent: () => boolean
+  ): Promise<{
     recovered: boolean
-  ): Promise<void> {
-    if (recovered && target !== null)
-      await workflowService.closeWorkflow(target, { warnIfUnsaved: false })
+    target: ComfyWorkflow | null
+    workflowWasDeleted: boolean
+  }> {
+    let target = cachedOpenWorkflowFor(workflowId)
+    let workflowWasDeleted = false
+    if (target === null) {
+      const listed = await refreshCloudWorkflowIds()
+      if (!isCurrent())
+        return { recovered: false, target: null, workflowWasDeleted: false }
+      workflowWasDeleted = listed && !isCloudWorkflowListed(workflowId)
+      target = workflowWasDeleted
+        ? null
+        : (boundOrOpenWorkflowFor(workflowId) ?? storedWorkflowFor(workflowId))
+    }
+    if (target !== null) return { recovered: false, target, workflowWasDeleted }
+    try {
+      target = await recoverWorkflow(workflowId)
+      return { recovered: target !== null, target, workflowWasDeleted }
+    } catch {
+      return { recovered: false, target: null, workflowWasDeleted }
+    }
   }
 
   async function onWorkflowRestored(
@@ -238,28 +258,11 @@ export function useAgentWorkflowSelection({
       isSessionCurrent() &&
       canRestoreWorkflow.value
     if (workflowId === undefined) return true
-    let target = cachedOpenWorkflowFor(workflowId)
-    let recovered = false
-    if (target === null) {
-      const listed = await refreshCloudWorkflowIds()
-      if (!isCurrent()) return false
-      // A successful listing without the id means the workflow is gone, even
-      // when a stale local binding still names a tab; a failed listing stays
-      // a retryable restoration failure.
-      if (listed && !isCloudWorkflowListed(workflowId)) {
-        panelStore.markWorkflowTargetUnavailable()
-        return true
-      }
-      target =
-        boundOrOpenWorkflowFor(workflowId) ?? storedWorkflowFor(workflowId)
-    }
-    if (target === null) {
-      try {
-        target = await recoverWorkflow(workflowId)
-        recovered = target !== null
-      } catch {
-        target = null
-      }
+    const { target, recovered, workflowWasDeleted } =
+      await resolveRestoredWorkflow(workflowId, isCurrent)
+    if (target === null && workflowWasDeleted) {
+      panelStore.markWorkflowTargetUnavailable()
+      return true
     }
     if (!isCurrent()) {
       await closeRecoveredWorkflow(target, recovered)

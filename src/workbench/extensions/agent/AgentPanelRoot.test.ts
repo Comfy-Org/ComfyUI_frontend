@@ -6188,7 +6188,7 @@ describe('AgentPanelRoot workflow binding', () => {
       useAgentWorkflowTabBindingStore().tabPathFor('wf-closed-unsaved')
     ).toBe(recovered?.path)
     expect(useToastStore().messagesToAdd).toHaveLength(0)
-    expect(workflowService.saveWorkflowAs).not.toHaveBeenCalled()
+    expect(useWorkflowService().saveWorkflowAs).not.toHaveBeenCalled()
   })
 
   it('restores the previous workflow when draft recovery becomes stale while opening', async () => {
@@ -6199,13 +6199,15 @@ describe('AgentPanelRoot workflow binding', () => {
       finishOpening = resolve
     })
     let recovered: ComfyWorkflow | null = null
-    workflowService.openWorkflow.mockImplementationOnce(async (tab) => {
-      recovered = tab
-      await opening
-      workflowStore.openWorkflowsInBackground({ right: [tab.path] })
-      workflowStore.activeWorkflow = await tab.load()
-      return true
-    })
+    vi.mocked(useWorkflowService()).openWorkflow.mockImplementationOnce(
+      async (tab) => {
+        recovered = tab
+        await opening
+        workflowStore.openWorkflowsInBackground({ right: [tab.path] })
+        workflowStore.activeWorkflow = await tab.load()
+        return true
+      }
+    )
     vi.stubGlobal(
       'fetch',
       vi.fn(async (url: string) => {
@@ -6244,15 +6246,16 @@ describe('AgentPanelRoot workflow binding', () => {
 
     const view = render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await vi.waitFor(() =>
-      expect(workflowService.openWorkflow).toHaveBeenCalledWith(
-        expect.objectContaining({ filename: 'Recovered Workflow' })
+      expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
+        expect.objectContaining({ filename: 'Recovered Workflow' }),
+        { isCurrent: expect.any(Function) }
       )
     )
     view.unmount()
     finishOpening()
 
     await vi.waitFor(() => {
-      expect(workflowService.closeWorkflow).toHaveBeenCalledWith(
+      expect(useWorkflowService().closeWorkflow).toHaveBeenCalledWith(
         expect.objectContaining({ filename: 'Recovered Workflow' }),
         { warnIfUnsaved: false }
       )
@@ -6305,7 +6308,9 @@ describe('AgentPanelRoot workflow binding', () => {
     await vi.waitFor(() =>
       expect(useAgentPanelStore().selectedWorkflow?.path).toBe(saved.path)
     )
-    expect(workflowService.openWorkflow).toHaveBeenCalledWith(saved)
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(saved, {
+      isCurrent: expect.any(Function)
+    })
     expect(
       workflowStore.openWorkflows.filter(
         ({ filename }) => filename === 'Recovered Workflow'
@@ -9244,7 +9249,7 @@ describe('AgentPanelRoot workflow binding', () => {
     renderWithSelectedTarget()
     const conversation = useAgentConversationStore()
     useAgentPanelStore().retainWorkflowTarget()
-    const historyMessageId = 'history-message' as TurnId
+    const historyMessageId = toTurnId('history-message')
     conversation.startTurn(historyMessageId)
     conversation.recordUser(
       historyMessageId,
@@ -9278,7 +9283,7 @@ describe('AgentPanelRoot workflow binding', () => {
     mockMessagesEndpoint('wf-cloud-current')
     renderWithSelectedTarget()
     const conversation = useAgentConversationStore()
-    const historyMessageId = 'history-message' as TurnId
+    const historyMessageId = toTurnId('history-message')
     conversation.startTurn(historyMessageId)
     conversation.recordUser(
       historyMessageId,
@@ -9329,16 +9334,14 @@ describe('AgentPanelRoot workflow binding', () => {
 
     await vi.waitFor(() => {
       expect(
-        workflowStore.openWorkflows.filter(
-          ({ filename }) => filename === 'Recovered Workflow'
-        )
+        workflowStore.openWorkflows.filter(({ path }) => path !== current.path)
       ).toHaveLength(1)
       expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-reference')).toBe(
         workflowStore.activeWorkflow?.path
       )
       expect(useAgentPanelStore().selectedWorkflow?.path).toBe(current.path)
-      expect(workflowService.closeWorkflow).toHaveBeenCalledWith(
-        expect.objectContaining({ filename: 'Recovered Workflow' }),
+      expect(useWorkflowService().closeWorkflow).toHaveBeenCalledWith(
+        expect.objectContaining({ filename: 'reference' }),
         { warnIfUnsaved: false }
       )
     })
@@ -9349,7 +9352,7 @@ describe('AgentPanelRoot workflow binding', () => {
     mockMessagesEndpoint('wf-cloud-current')
     renderWithSelectedTarget()
     const conversation = useAgentConversationStore()
-    const historyMessageId = 'history-message' as TurnId
+    const historyMessageId = toTurnId('history-message')
     conversation.startTurn(historyMessageId)
     conversation.recordUser(
       historyMessageId,
@@ -9399,8 +9402,8 @@ describe('AgentPanelRoot workflow binding', () => {
     releaseDraft()
 
     await vi.waitFor(() => {
-      expect(workflowService.closeWorkflow).toHaveBeenCalledWith(
-        expect.objectContaining({ filename: 'Recovered Workflow' }),
+      expect(useWorkflowService().closeWorkflow).toHaveBeenCalledWith(
+        expect.objectContaining({ filename: 'reference' }),
         { warnIfUnsaved: false }
       )
       expect(workflowStore.openWorkflows.map(({ path }) => path)).toEqual([

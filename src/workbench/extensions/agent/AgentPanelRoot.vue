@@ -1057,13 +1057,31 @@ async function onOpenApprovalWorkflow(
 
 let referenceNavigationGeneration = 0
 
+async function resolveReferenceWorkflow(
+  workflowId: string,
+  workflowName: string,
+  isCurrent: () => boolean
+): Promise<{ recovered: boolean; target: ComfyWorkflow | null }> {
+  let target = openWorkflowFor(workflowId)
+  if (target === null) {
+    await Promise.all([
+      refreshCloudWorkflowIds(),
+      workflowStore.syncWorkflows()
+    ])
+    if (!isCurrent()) return { recovered: false, target: null }
+    target = storedWorkflowFor(workflowId)
+  }
+  if (target !== null) return { recovered: false, target }
+  target = await recoverWorkflow(workflowId, workflowName)
+  return { recovered: target !== null, target }
+}
+
 async function onNavigateToReferenceWorkflow(
   workflowId: string,
   workflowName: string
 ): Promise<void> {
   const generation = ++referenceNavigationGeneration
   const isCurrent = () => generation === referenceNavigationGeneration
-  let target: ComfyWorkflow | null = null
   let recoveredTarget: ComfyWorkflow | null = null
   async function closeRecovered(): Promise<void> {
     if (recoveredTarget === null) return
@@ -1074,19 +1092,12 @@ async function onNavigateToReferenceWorkflow(
     })
   }
   try {
-    target = openWorkflowFor(workflowId)
-    if (target === null) {
-      await Promise.all([
-        refreshCloudWorkflowIds(),
-        workflowStore.syncWorkflows()
-      ])
-      if (!isCurrent()) return
-      target = storedWorkflowFor(workflowId)
-    }
-    if (target === null) {
-      target = await recoverWorkflow(workflowId, workflowName)
-      recoveredTarget = target
-    }
+    const { target, recovered } = await resolveReferenceWorkflow(
+      workflowId,
+      workflowName,
+      isCurrent
+    )
+    if (recovered) recoveredTarget = target
     if (!isCurrent()) {
       await closeRecovered()
       return
