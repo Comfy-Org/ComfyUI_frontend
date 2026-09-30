@@ -102,6 +102,7 @@ export const nvidiaRtxPage: ModelLaunchPage = {
     headingKey: 'nvidiaRtx.gallery.heading',
     ctaVariant: 'none',
     cardMeta: 'none',
+    mobileVisibleCards: 3,
     cards: [
       {
         id: 'vaporwave-atmosphere',

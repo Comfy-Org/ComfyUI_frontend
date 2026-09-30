@@ -23,7 +23,7 @@ const activeTab = computed(
   <section class="mx-auto max-w-9xl px-6 py-16 lg:px-20 lg:py-24">
     <TabsRoot
       v-model="activeId"
-      class="flex flex-col-reverse items-stretch gap-10 rounded-5xl bg-transparency-white-t4 p-2 lg:flex-row lg:gap-8"
+      class="flex flex-col items-stretch gap-10 rounded-5xl bg-transparency-white-t4 p-2 lg:flex-row lg:gap-8"
     >
       <div class="flex min-w-0 flex-1 flex-col justify-between p-6">
         <div>

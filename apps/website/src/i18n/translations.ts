@@ -7653,6 +7653,7 @@ Enterprise`
     'zh-CN': 'Gemini Omni 1.1 Flash'
   },
   'modelLaunch.copyPrompt': { en: 'Copy prompt', 'zh-CN': '复制提示词' },
+  'modelLaunch.loadMore': { en: 'Load more', 'zh-CN': '加载更多' },
   'modelLaunch.compare.tabsLabel': { en: 'Comparison', 'zh-CN': '对比项目' },
   'modelLaunch.compare.sliderLabel': {
     en: 'Comparison slider',

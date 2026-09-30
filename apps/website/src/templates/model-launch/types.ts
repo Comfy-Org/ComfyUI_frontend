@@ -107,6 +107,9 @@ export interface ModelLaunchGallery {
   // 'none' drops the tier badge and note under each card, so a gallery can
   // show the work alone.
   cardMeta?: 'default' | 'none'
+  // Below the md breakpoint, show only this many cards until the visitor
+  // taps Load more. Wider viewports always show every card.
+  mobileVisibleCards?: number
   cards: readonly ModelLaunchGalleryCard[]
 }
 

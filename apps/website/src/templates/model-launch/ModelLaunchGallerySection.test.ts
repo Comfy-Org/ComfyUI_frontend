@@ -1,3 +1,4 @@
+import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it } from 'vitest'
 
@@ -59,4 +60,31 @@ describe('ModelLaunchGallerySection', () => {
       expect(screen.getByText('One.')).toBeVisible()
     }
   )
+
+  it('collapses cards past the mobile limit until Load more is pressed', async () => {
+    const user = userEvent.setup()
+    render(ModelLaunchGallerySection, {
+      props: { gallery: { ...gallery, mobileVisibleCards: 1 } }
+    })
+    const [first, second] = screen.getAllByRole('article')
+
+    expect(first).not.toHaveClass('hidden')
+    expect(second).toHaveClass('hidden', 'md:block')
+
+    await user.click(screen.getByRole('button', { name: 'Load more' }))
+
+    expect(second).not.toHaveClass('hidden')
+    expect(screen.queryByRole('button', { name: 'Load more' })).toBeNull()
+  })
+
+  it('offers no Load more when every card already fits the mobile limit', () => {
+    render(ModelLaunchGallerySection, {
+      props: { gallery: { ...gallery, mobileVisibleCards: 2 } }
+    })
+
+    expect(screen.queryByRole('button', { name: 'Load more' })).toBeNull()
+    for (const article of screen.getAllByRole('article')) {
+      expect(article).not.toHaveClass('hidden')
+    }
+  })
 })
