@@ -134,6 +134,7 @@ export const useAgentConversationStore = defineStore(
     let hydratedTurnIdsByRowId = new Map<string, TurnId>()
     let hydratedAssistantTurnIds = new Set<TurnId>()
     let hydratedStreamingTurnIds = new Set<TurnId>()
+    let hydratedUnsettledCallIds = new Set<string>()
     const reportedPaywallImpressions = new Set<TurnId>()
     const approvalShownAtByAsk = new Map<string, number>()
     const shownApprovalIds = new Set<string>()
@@ -748,6 +749,13 @@ export const useAgentConversationStore = defineStore(
      * alone, so an unresolved one would otherwise spin forever. A surviving
      * transport takes the row's state as-is, since it is handed the part and
      * can still settle it from a later frame.
+     *
+     * A row whose own status was still `pending`/`running` is not evidence of
+     * anything: its part was forced terminal only so a restored row could not
+     * spin, and `ok` then reads as failure. Applying that to a live call still
+     * in flight paints a red cross on it, so it is left to the transport that
+     * is still watching it -- and taken only when no transport remains, where
+     * a terminal part beats one nothing can ever finish.
      */
     function adoptHydratedTools(
       live: AssistantMessage,
@@ -770,7 +778,9 @@ export const useAgentConversationStore = defineStore(
         } else if (
           part.state === 'done' &&
           !holdsOwnOutcome(alreadyLive) &&
-          !transport?.wouldGateOnCanvasSync(alreadyLive)
+          !(
+            transport !== undefined && hydratedUnsettledCallIds.has(part.callId)
+          )
         ) {
           settleFromRow(alreadyLive, part)
         }
@@ -1068,6 +1078,7 @@ export const useAgentConversationStore = defineStore(
       hydratedTurnIdsByRowId = new Map()
       hydratedAssistantTurnIds = new Set()
       hydratedStreamingTurnIds = new Set()
+      hydratedUnsettledCallIds = new Set()
       reportedPaywallImpressions.clear()
       undeliverableAskReporter.reset()
       departedTurns.clear()
@@ -1088,6 +1099,7 @@ export const useAgentConversationStore = defineStore(
       hydratedTurnIdsByRowId = transcript.turnIdsByRowId
       hydratedAssistantTurnIds = transcript.assistantTurnIds
       hydratedStreamingTurnIds = transcript.streamingTurnIds
+      hydratedUnsettledCallIds = transcript.unsettledCallIds
       dropAttachmentPreviews()
       const namesByTurn =
         threadId.value === null

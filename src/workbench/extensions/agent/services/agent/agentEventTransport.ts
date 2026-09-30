@@ -99,14 +99,6 @@ export interface AgentEventTransport {
   /** Whether this transport already observed the matching ask resolution. */
   hasResolvedAsk: (askId: string) => boolean
   /**
-   * PM-1575: whether this transport would hold this part's success back for
-   * canvas catch-up. A caller settling a part from another source has to ask,
-   * or it flips the part to `done` and the gated branch of
-   * `resolveToolCallState` -- which only ever sets `pendingCanvasSync`, never
-   * `state` -- has nothing left to hold, failing the gate open for good.
-   */
-  wouldGateOnCanvasSync: (part: ToolPart) => boolean
-  /**
    * PM-1575: called whenever the bound workflow's CRDT follower applies a
    * fresh doc update, so any tool-call parts this transport held back
    * pending canvas catch-up (see `shouldAwaitCanvasSync` below) can settle to
@@ -438,18 +430,28 @@ export function createAgentEventTransport(
     closeOpenThinking()
     message.thinking = false
     message.thinkingText = undefined
-    const trailingText = message.parts.findLast(
-      (part): part is TextPart => part.type === 'text'
+    // Where a new part would go: after everything but the trailing approval
+    // card.
+    const insertAt =
+      message.parts.findLastIndex((part) => part.type !== 'runApproval') + 1
+    // Reused only if it already sits in that trailing run. A text part closed
+    // off by a later tool call is BEFORE it, and appending there would put the
+    // recovered reply -- and every delta after it, since this becomes the open
+    // part -- above the tool card it followed.
+    const trailingIndex = message.parts.findLastIndex(
+      (part) => part.type === 'text'
     )
-    const target = openText ?? trailingText
+    const target =
+      openText ??
+      (trailingIndex >= insertAt - 1 && trailingIndex >= 0
+        ? (message.parts[trailingIndex] as TextPart)
+        : undefined)
     if (target) {
       target.text += text
       target.state = 'streaming'
       openText = target
       return
     }
-    const insertAt =
-      message.parts.findLastIndex((part) => part.type !== 'runApproval') + 1
     const part: TextPart = { type: 'text', text, state: 'streaming' }
     message.parts.splice(insertAt, 0, part)
     openText = part
@@ -563,8 +565,6 @@ export function createAgentEventTransport(
     appendReplyText,
     openDraft: () => draft,
     hasResolvedAsk: (askId) => resolvedAskIds.has(askId),
-    wouldGateOnCanvasSync: (part) =>
-      CANVAS_MUTATING_TOOLS.has(part.name) && shouldAwaitCanvasSync(),
     notifyCanvasCaughtUp,
     hasPendingCanvasSync,
     dispose

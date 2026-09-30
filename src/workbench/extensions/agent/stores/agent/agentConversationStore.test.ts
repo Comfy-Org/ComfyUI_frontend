@@ -1903,16 +1903,52 @@ describe('useAgentConversationStore', () => {
   })
 
   /**
-   * PM-1575: the row can report success for a canvas-mutating call the live
-   * transport is still holding for canvas catch-up. Settling it from the row
-   * is the premature success glyph the gate exists to prevent, and it cannot
-   * be undone -- the gated branch of `resolveToolCallState` only ever sets
-   * `pendingCanvasSync`, never `state`, so the real terminal frame finds
-   * nothing left to hold and the gate stays open.
+   * The recovered tail belongs after the tool call, not on the text part the
+   * call closed off. Appending to that one also makes it the open part, so
+   * every later delta lands above the tool card too.
    */
-  it('leaves a gated canvas call held even when the row reports it succeeded', () => {
+  it('recovers a missing reply tail below the tool call it followed', () => {
     const store = useAgentConversationStore()
-    store.setCanvasSyncGate(() => true)
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'find a node')
+    store.ingest(delta('t1', 'Checking. '))
+    store.ingest(toolCall('t1', 'search_nodes', 'success'))
+    store.stashActiveTurn()
+
+    const streamingRow = historyRow(
+      2,
+      'assistant',
+      'server-turn',
+      'Checking. All done.',
+      't1'
+    )
+    streamingRow.status = 'streaming'
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'find a node'),
+      streamingRow
+    ])
+    store.resumeBackgroundTurn()
+
+    expect(store.messages[0].parts.map((part) => part.type)).toEqual([
+      'text',
+      'tool',
+      'text'
+    ])
+    expect(partTexts(store)).toEqual(['Checking. ', 'All done.'])
+  })
+
+  /**
+   * A row still calling the tool `running` was forced terminal on the way in
+   * so a restored transcript could not spin, and `ok` then reads as failure.
+   * Handing that to a live call still in flight paints a red cross on a tool
+   * that is still working; the transport still watching it settles it.
+   */
+  it('leaves a live call in flight when the row had not finished it either', () => {
+    const store = useAgentConversationStore()
     store.setThreadId('th')
     store.startTurn(T1)
     store.recordUser(T1, 'add a node')
@@ -1922,7 +1958,9 @@ describe('useAgentConversationStore', () => {
     const streamingRow = historyRow(2, 'assistant', 'server-turn', '', 't1')
     streamingRow.status = 'streaming'
     streamingRow.content = {
-      tool_calls: [{ id: 'call-add_node', tool_name: 'add_node', status: 'ok' }]
+      tool_calls: [
+        { id: 'call-add_node', tool_name: 'add_node', status: 'running' }
+      ]
     }
     store.setThreadId('th-other')
     store.hydrate([])
@@ -1933,11 +1971,11 @@ describe('useAgentConversationStore', () => {
     ])
     store.resumeBackgroundTurn()
 
-    expect(
-      store.messages[0].parts.filter((part) => part.type === 'tool')
-    ).toEqual([
+    const tools = store.messages[0].parts.filter((part) => part.type === 'tool')
+    expect(tools).toEqual([
       expect.objectContaining({ callId: 'call-add_node', state: 'streaming' })
     ])
+    expect(tools[0]).not.toHaveProperty('ok')
   })
 
   /**

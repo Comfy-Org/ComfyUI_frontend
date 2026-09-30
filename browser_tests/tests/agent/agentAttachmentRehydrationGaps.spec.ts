@@ -112,7 +112,14 @@ test(
   }
 )
 
-/** PM-1705: the service persists the resolved asset name beside its storage ref. */
+/**
+ * PM-1705, pinning the CLIENT half of a repair whose server half is not
+ * written yet: `attachmentRefsForRow` currently emits `{name, id?, kind?}`, so
+ * the `display_name` mocked here is a shape no shipped server returns. It
+ * fixes the contract the panel will read, so the label lands the moment the
+ * service records it; until then a hash-named library asset still shows its
+ * digest after a reload.
+ */
 test(
   'labels a refreshed attachment with the filename the user attached',
   { tag: ['@cloud', '@ui'] },

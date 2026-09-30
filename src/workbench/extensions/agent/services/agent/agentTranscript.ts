@@ -60,6 +60,12 @@ export interface NormalizedAgentTranscript {
   assistantTurnIds: Set<TurnId>
   /** Turns the service still considers unfinished, by its own row status. */
   streamingTurnIds: Set<TurnId>
+  /**
+   * Tool calls whose persisted status was still `pending`/`running`. Their
+   * parts are forced terminal so a restored row cannot spin, which makes the
+   * part itself unable to say whether the service ever watched the call end.
+   */
+  unsettledCallIds: Set<string>
   pending?: {
     messageId: TurnId
     message: AssistantMessage
@@ -87,12 +93,18 @@ function isAttachmentKind(value: unknown): value is AttachmentKind {
 }
 
 /**
- * One `attachment_refs` entry, as the
- * `{name, id?, kind?, display_name?}` the server wrote, reduced to the trimmed
- * name it is keyed by and the resolution it carries. Optional fields are
- * omitted rather than stored empty, matching the writer
- * (`attachmentRefsForRow`, services/agent/server/agent_handler.go), so an
- * unresolved attachment reads the same as one written before ids existed.
+ * One `attachment_refs` entry, reduced to the trimmed name it is keyed by and
+ * the resolution it carries. Optional fields are omitted rather than stored
+ * empty, matching the writer (`attachmentRefsForRow`,
+ * services/agent/server/agent_handler.go), so an unresolved attachment reads
+ * the same as one written before ids existed.
+ *
+ * That writer emits `{name, id?, kind?}` only. `display_name` is read ahead of
+ * it: a library asset is attached under its content hash, so until the server
+ * records the name the user attached, nothing in the row can carry it and the
+ * digest stays the label. Reading it now means the repair needs no client
+ * change -- but no shipped server writes it, so it is never exercised in
+ * production today.
  *
  * The name is trimmed for the KEY only, because the two keys disagree about
  * whitespace: the writer trims a ref's name while `attachments` is stored
@@ -142,7 +154,8 @@ function resolvedAttachmentRefs(
 /**
  * A persisted user row carries `attachments` (the uploaded input filenames
  * from the original request) and `attachment_refs` (the server's own
- * resolution of those same filenames, as `{name, id?, kind?}`). Either one
+ * resolution of those same filenames, as `{name, id?, kind?}` -- see
+ * `resolvedAttachmentRef` on the `display_name` this also reads). Either one
  * names the same input-namespace filenames the live send path uses as
  * `SentAttachment.ref`, so either is enough to rebuild the preview grid.
  *
@@ -256,7 +269,8 @@ function toolCallOk(
  */
 function parseToolCallEntry(
   entry: unknown,
-  isLive: boolean
+  isLive: boolean,
+  unsettledCallIds?: Set<string>
 ): ToolPart | undefined {
   const parsed = zPersistedToolCallSummary.safeParse(entry)
   if (!parsed.success) return undefined
@@ -269,6 +283,12 @@ function parseToolCallEntry(
   } = parsed.data
   const state = toolCallPartState(status, isLive)
   const ok = toolCallOk(status, state)
+  // `state` is forced terminal for a non-live row so a restored call does not
+  // spin forever, and `ok` then reads as failure. Neither is evidence the
+  // service watched this call end, so the raw status is recorded separately
+  // for callers that still have a transport able to finish it.
+  if (status === 'pending' || status === 'running')
+    unsettledCallIds?.add(toolCallId ?? id)
   const durationMs =
     typeof rawDuration === 'number' &&
     Number.isFinite(rawDuration) &&
@@ -297,13 +317,14 @@ function parseToolCallEntry(
  */
 function parseToolCalls(
   content: Record<string, unknown> | undefined,
-  isLive: boolean
+  isLive: boolean,
+  unsettledCallIds?: Set<string>
 ): ToolPart[] | undefined {
   const raw = content?.tool_calls
   if (!Array.isArray(raw)) return undefined
   const parts = new Map<string, ToolPart>()
   for (const entry of raw as unknown[]) {
-    const part = parseToolCallEntry(entry, isLive)
+    const part = parseToolCallEntry(entry, isLive, unsettledCallIds)
     if (part) parts.set(part.callId, part)
   }
   return parts.size > 0 ? [...parts.values()] : undefined
@@ -327,9 +348,10 @@ function appendAssistantContent(
   message: AssistantMessage,
   row: AgentMessages[number],
   text: string,
-  isLive: boolean
+  isLive: boolean,
+  unsettledCallIds: Set<string>
 ): void {
-  const toolCalls = parseToolCalls(row.content, isLive)
+  const toolCalls = parseToolCalls(row.content, isLive, unsettledCallIds)
   if (toolCalls) {
     const existingCallIds = new Set(
       message.parts.flatMap((part) =>
@@ -376,12 +398,19 @@ function pendingRunApproval(
 function applyAssistantRow(
   row: AgentMessages[number],
   message: AssistantMessage,
-  text: string
+  text: string,
+  unsettledCallIds: Set<string>
 ): NormalizedAgentTranscript['pending'] {
   message.streaming = false
   const runApproval =
     row.status === 'streaming' ? pendingRunApproval(row) : undefined
-  appendAssistantContent(message, row, text, runApproval !== undefined)
+  appendAssistantContent(
+    message,
+    row,
+    text,
+    runApproval !== undefined,
+    unsettledCallIds
+  )
 
   if (!runApproval) {
     message.parts = message.parts.filter((part) => part.type !== 'runApproval')
@@ -460,10 +489,11 @@ function recordAssistantRow(
   row: AgentMessages[number],
   turnId: TurnId,
   text: string,
-  assistants: Map<TurnId, AssistantMessage>
+  assistants: Map<TurnId, AssistantMessage>,
+  unsettledCallIds: Set<string>
 ): NormalizedAgentTranscript['pending'] {
   const message = assistants.get(turnId) ?? createAssistantMessage(turnId)
-  const rowPending = applyAssistantRow(row, message, text)
+  const rowPending = applyAssistantRow(row, message, text, unsettledCallIds)
   assistants.set(turnId, message)
   return rowPending
 }
@@ -483,6 +513,7 @@ export function normalizeAgentTranscript(
     AgentMessages[number]['status']
   >()
   const pendingByTurn = new Map<TurnId, NormalizedAgentTranscript['pending']>()
+  const unsettledCallIds = new Set<string>()
   let latestWorkflowId: string | undefined
 
   for (const row of [...history].sort((a, b) => a.seq - b.seq)) {
@@ -503,7 +534,13 @@ export function normalizeAgentTranscript(
     }
     if (row.role === 'assistant') {
       latestAssistantStatus.set(turnId, row.status)
-      const rowPending = recordAssistantRow(row, turnId, text, assistants)
+      const rowPending = recordAssistantRow(
+        row,
+        turnId,
+        text,
+        assistants,
+        unsettledCallIds
+      )
       if (rowPending) pendingByTurn.set(turnId, rowPending)
       else pendingByTurn.delete(turnId)
     }
@@ -537,6 +574,7 @@ export function normalizeAgentTranscript(
     turnIdsByRowId,
     assistantTurnIds: new Set(assistants.keys()),
     streamingTurnIds,
+    unsettledCallIds,
     pending
   }
 }
