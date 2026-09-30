@@ -13,6 +13,8 @@ import { stringToLocale } from '@/utils/formatUtil'
 import { useReleaseService } from './releaseService'
 import type { ReleaseNote } from './releaseService'
 
+const OFFLINE_ARGS = ['--offline', '--disable-api-nodes']
+
 // Store for managing release notes
 export const useReleaseStore = defineStore('release', () => {
   // State
@@ -261,9 +263,11 @@ export const useReleaseStore = defineStore('release', () => {
       return
     }
 
-    // Skip fetching if API nodes are disabled via argv
+    // Older cores treat --disable-api-nodes as offline too, so skip for both
     if (
-      systemStatsStore.systemStats?.system.argv?.includes('--disable-api-nodes')
+      systemStatsStore.systemStats?.system.argv?.some((arg) =>
+        OFFLINE_ARGS.includes(arg)
+      )
     ) {
       return
     }

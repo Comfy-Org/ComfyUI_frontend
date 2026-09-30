@@ -452,12 +452,32 @@ describe('useReleaseStore', () => {
     })
   })
 
-  describe('--disable-api-nodes argument handling', () => {
-    it('should skip fetchReleases when --disable-api-nodes is present', async () => {
+  describe('offline argument handling', () => {
+    it.for(['--offline', '--disable-api-nodes'])(
+      'should skip fetchReleases when %s is present',
+      async (arg) => {
+        const store = useReleaseStore()
+        const releaseService = useReleaseService()
+        const systemStatsStore = useSystemStatsStore()
+        systemStatsStore.systemStats!.system.argv = [arg]
+
+        await store.fetchReleases()
+
+        expect(releaseService.getReleases).not.toHaveBeenCalled()
+        expect(store.isLoading).toBe(false)
+      }
+    )
+
+    it('should skip fetchReleases when --offline is among other args', async () => {
       const store = useReleaseStore()
       const releaseService = useReleaseService()
       const systemStatsStore = useSystemStatsStore()
-      systemStatsStore.systemStats!.system.argv = ['--disable-api-nodes']
+      systemStatsStore.systemStats!.system.argv = [
+        '--port',
+        '8080',
+        '--offline',
+        '--verbose'
+      ]
 
       await store.fetchReleases()
 
