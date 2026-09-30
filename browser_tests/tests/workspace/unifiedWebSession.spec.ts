@@ -218,7 +218,8 @@ test.describe('Unified web session', { tag: '@cloud' }, () => {
 
     test('boots on the session: no login page, the session user, a Run on the cookie, no Firebase traffic', async ({
       comfyPage,
-      firebaseRequests
+      firebaseRequests,
+      credentialedFeatureReads
     }) => {
       const page = comfyPage.page
       await mockPromptAccepted(page)
@@ -240,6 +241,10 @@ test.describe('Unified web session', { tag: '@cloud' }, () => {
       expect(headers['x-csrf-token']).toBe(WEB_SESSION_CSRF_TOKEN)
       expect(headers['authorization']).toBeUndefined()
       expect(firebaseRequests).toEqual([])
+      expect(credentialedFeatureReads.length).toBeGreaterThan(0)
+      expect(credentialedFeatureReads[0].headers()['x-comfy-client']).toMatch(
+        /^@comfyorg\/account-core\//
+      )
     })
   })
 })
