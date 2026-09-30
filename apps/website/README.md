@@ -304,7 +304,7 @@ Workshop apps (Cinematic Studio and Re-shoot) are gated separately by the
 page's Open in Studio link. `/cinematic-studio` and the old
 `/models/apps/<slug>/` addresses redirect to the app pages. The built apps are
 listed in `src/config/hub-app-names.json`; `hub-app-names.test.ts` fails until
-you refresh it with `vitest -u`. Local development also accepts
+you add or remove the app there too. Local development also accepts
 `PUBLIC_WORKSHOP_APPS_ENABLED=1`.
 
 `src/config/workflow-render.ts` implements the shared workflow request and polling
