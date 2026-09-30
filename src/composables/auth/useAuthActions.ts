@@ -74,15 +74,14 @@ export const useAuthActions = () => {
     }
 
   const reportError = (error: unknown) => {
-    if (error instanceof SsoRequiredError) {
-      toastStore.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('auth.errors.ssoRequired')
-      })
+    const classification = classifyAuthError(error)
+    // The auth pages show the SSO form inline instead.
+    if (
+      error instanceof SsoRequiredError ||
+      classification.kind === 'sso-required'
+    ) {
       return
     }
-    const classification = classifyAuthError(error)
     // Ref: https://firebase.google.com/docs/auth/admin/errors
     const severity = severityForAuthError(classification)
     const summary = t(severity === 'warn' ? 'g.warning' : 'g.error')

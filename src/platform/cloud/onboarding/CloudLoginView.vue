@@ -29,7 +29,12 @@
       {{ t(ssoErrorMessageKey(ssoError)) }}
       <button
         type="button"
-        class="ml-1 cursor-pointer border-none bg-transparent p-0 font-[inherit] text-current underline"
+        :class="
+          cn(
+            CLOUD_AUTH_LINK_BUTTON_CLASS,
+            'mt-0 ml-1 self-auto text-sm text-current sm:text-sm'
+          )
+        "
         @click="retrySso"
       >
         {{ t('auth.sso.tryAgain') }}
@@ -75,7 +80,11 @@
       </template>
 
       <template v-else>
-        <CloudSignInForm :auth-error="authError" @submit="signInWithEmail" />
+        <CloudSignInForm
+          :auth-error="authError"
+          :busy="ssoBusy"
+          @submit="signInWithEmail"
+        />
 
         <button
           type="button"
@@ -93,6 +102,8 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
+
+import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 import Message from '@/components/ui/message/Message.vue'
@@ -112,7 +123,7 @@ const route = useRoute()
 const router = useRouter()
 const authActions = useAuthActions()
 const ssoPromptStore = useSsoPromptStore()
-const { ssoError, redirectIfSso } = useSsoSignIn()
+const { ssoError, busy: ssoBusy, redirectIfSso } = useSsoSignIn()
 
 const {
   authError,

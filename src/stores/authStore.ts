@@ -119,6 +119,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   // State
   const loading = ref(false)
+  const ssoPromptStore = useSsoPromptStore()
   const currentUser = ref<User | null>(null)
   const isInitialized = ref(false)
   const customerProvisionedIdentity = ref<string | null>(null)
@@ -669,7 +670,7 @@ export const useAuthStore = defineStore('auth', () => {
     } = {}
   ): Promise<T> => {
     loading.value = true
-    useSsoPromptStore().dismiss()
+    ssoPromptStore.dismiss()
 
     try {
       const result = await action()
@@ -682,7 +683,7 @@ export const useAuthStore = defineStore('auth', () => {
     } catch (error) {
       const email = ssoRefusalEmail(error, options.email)
       if (email !== null) {
-        useSsoPromptStore().show(email)
+        ssoPromptStore.show(email)
         // The org refuses this credential everywhere, so do not keep it.
         await firebaseIdentity
           .signOut()

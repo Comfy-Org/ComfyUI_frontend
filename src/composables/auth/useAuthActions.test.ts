@@ -501,16 +501,12 @@ describe('useAuthActions.reportError', () => {
       )
     ],
     ['an SSO org refusing the account', new SsoRequiredError('a@corp.example')]
-  ] as const)('tells the user to use SSO for %s', ([, error]) => {
+  ] as const)('leaves %s to the inline SSO notice', ([, error]) => {
     const { reportError } = useAuthActions()
 
     reportError(error)
 
-    expect(mockToastStore.add).toHaveBeenCalledWith({
-      severity: 'error',
-      summary: 'g.error',
-      detail: 'auth.errors.ssoRequired'
-    })
+    expect(mockToastStore.add).not.toHaveBeenCalled()
     expect(mockToastErrorHandler).not.toHaveBeenCalled()
   })
 

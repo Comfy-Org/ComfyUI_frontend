@@ -92,14 +92,15 @@ import { signInSchema } from '@/schemas/signInSchema'
 import type { SignInData } from '@/schemas/signInSchema'
 import { useAuthStore } from '@/stores/authStore'
 
+const { busy = false } = defineProps<{
+  authError?: string
+  busy?: boolean
+}>()
+
 const authStore = useAuthStore()
-const loading = computed(() => authStore.loading)
+const loading = computed(() => authStore.loading || busy)
 
 const { t } = useI18n()
-
-defineProps<{
-  authError?: string
-}>()
 
 const emit = defineEmits<{
   submit: [values: SignInData]

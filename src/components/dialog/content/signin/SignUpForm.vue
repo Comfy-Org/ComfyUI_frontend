@@ -88,17 +88,19 @@ const {
   fieldClass = 'h-10',
   submitClass,
   submitVariant = 'secondary',
-  submitSize = 'lg'
+  submitSize = 'lg',
+  busy = false
 } = defineProps<{
   fieldClass?: HTMLAttributes['class']
   submitClass?: HTMLAttributes['class']
   submitVariant?: ButtonVariants['variant']
   submitSize?: ButtonVariants['size']
+  busy?: boolean
 }>()
 
 const { t } = useI18n()
 const authStore = useAuthStore()
-const loading = computed(() => authStore.loading)
+const loading = computed(() => authStore.loading || busy)
 
 const { enabled: turnstileEnabled } = useTurnstile()
 const {

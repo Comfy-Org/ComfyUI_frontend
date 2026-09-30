@@ -147,6 +147,55 @@ describe('CloudLoginView email sign-in discovers SSO first', () => {
   })
 })
 
+describe('CloudLoginView discover lifecycle', () => {
+  function deferDiscover() {
+    let answer!: (response: Response) => void
+    const pending = new Promise<Response>((resolve) => {
+      answer = resolve
+    })
+    const stubs = stubDiscover(() => pending)
+    return { ...stubs, answer }
+  }
+
+  it('ignores a second submit while discover is in flight', async () => {
+    const { fetchSpy, answer } = deferDiscover()
+    const user = userEvent.setup()
+    await renderLoginView()
+    await user.click(
+      screen.getByRole('button', { name: 'auth.login.useEmailInstead' })
+    )
+
+    await user.click(screen.getByRole('button', { name: 'submit-email' }))
+    await user.click(screen.getByRole('button', { name: 'submit-email' }))
+    answer(new Response(JSON.stringify({ sso: false })))
+
+    await waitFor(() =>
+      expect(useAuthActions().signInWithEmail).toHaveBeenCalledOnce()
+    )
+    expect(fetchSpy).toHaveBeenCalledOnce()
+  })
+
+  it('neither redirects nor signs in after the page is left mid-discover', async () => {
+    const { fetchSpy, assign, answer } = deferDiscover()
+    const user = userEvent.setup()
+    const { unmount } = await renderLoginView()
+    await user.click(
+      screen.getByRole('button', { name: 'auth.login.useEmailInstead' })
+    )
+    await user.click(screen.getByRole('button', { name: 'submit-email' }))
+    await waitFor(() => expect(fetchSpy).toHaveBeenCalledOnce())
+
+    unmount()
+    answer(new Response(JSON.stringify({ sso: true })))
+
+    await expect
+      .poll(() => fetchSpy.mock.calls[0][1]?.signal?.aborted)
+      .toBe(true)
+    expect(assign).not.toHaveBeenCalled()
+    expect(useAuthActions().signInWithEmail).not.toHaveBeenCalled()
+  })
+})
+
 describe('CloudLoginView Continue with SSO', () => {
   async function continueWithSso(url = '/cloud/login') {
     const user = userEvent.setup()

@@ -69,6 +69,38 @@ describe('CloudSignInForm', () => {
   })
 })
 
+describe('CloudSignInForm busy state', () => {
+  it('shows loading on submit while the page is busy', () => {
+    render(CloudSignInForm, {
+      props: { busy: true },
+      global: {
+        plugins: [
+          createRouter({
+            history: createMemoryHistory(),
+            routes: [
+              {
+                path: '/cloud/forgot-password',
+                name: 'cloud-forgot-password',
+                component: { template: '<div />' }
+              }
+            ]
+          }),
+          PrimeVue,
+          createI18n({
+            legacy: false,
+            locale: 'en',
+            messages: { en: enMessages }
+          })
+        ]
+      }
+    })
+
+    const submit = submitButton()
+    expect(submit).toBeDisabled()
+    expect(submit).toHaveAttribute('aria-busy', 'true')
+  })
+})
+
 describe('CloudSignInForm password manager support', () => {
   it('marks the email field for autofill with a stable id', () => {
     renderRealForm()

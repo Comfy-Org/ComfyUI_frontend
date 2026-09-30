@@ -73,6 +73,7 @@
           v-else
           ref="signUpForm"
           :auth-error="authError"
+          :busy="ssoBusy"
           :field-class="CLOUD_AUTH_FIELD_CLASS"
           submit-variant="brand-solid"
           submit-size="brand"
@@ -121,7 +122,7 @@ const route = useRoute()
 const authActions = useAuthActions()
 const telemetry = useTelemetry()
 const ssoPromptStore = useSsoPromptStore()
-const { redirectIfSso } = useSsoSignIn()
+const { busy: ssoBusy, redirectIfSso } = useSsoSignIn()
 const ssoPrompt = computed(() => ssoPromptStore.prompt)
 
 const { status: regionStatus } = useRegionGate()

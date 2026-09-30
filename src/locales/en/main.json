@@ -2630,31 +2630,31 @@
       "backToSocialLogin": "Sign up with Google or Github instead",
       "backToGithubLogin": "Sign up with Github instead"
     },
-      "sso": {
-        "continueWithSso": "Continue with SSO",
-        "emailLabel": "Work email",
-        "emailPlaceholder": "Enter your work email",
-        "continue": "Continue with SSO",
-        "notSetUp": "This email isn't set up for single sign-on. Sign in with Google, GitHub, or email instead.",
-        "invalidEmail": "Enter a valid work email address.",
-        "unavailable": "We couldn't check single sign-on right now. Try again, or use another sign-in option.",
-        "tryAgain": "Try again",
-        "errors": {
-          "unavailable": "Single sign-on is unavailable right now. Please try again in a moment.",
-          "expired": "Your sign-in expired or was started in another browser. Please start again.",
-          "notConfigured": "Single sign-on isn't set up for your organization yet. Contact your IT admin.",
-          "orgDisabled": "Single sign-on is turned off for your organization. Contact your IT admin.",
-          "orgNotReady": "Your organization's Comfy workspace isn't set up yet. Contact your IT admin.",
-          "orgMismatch": "You signed in to a different organization than the one for this email. Please try again with your work account.",
-          "notProvisioned": "Your organization hasn't given you access to Comfy yet. Contact your IT admin.",
-          "suspended": "Your organization has removed your access. Contact your IT admin.",
-          "accountDeleted": "This account is scheduled for deletion. Contact support@comfy.org if this is a mistake.",
-          "accountConflict": "More than one Comfy account uses this email. Contact support@comfy.org.",
-          "idpError": "Your identity provider didn't complete the sign-in. Please try again.",
-          "rateLimited": "Too many sign-in attempts. Please wait a few minutes and try again.",
-          "failed": "We couldn't sign you in with single sign-on. Please try again."
-        }
-      },
+    "sso": {
+      "continueWithSso": "Continue with SSO",
+      "emailLabel": "Work email",
+      "emailPlaceholder": "Enter your work email",
+      "continue": "Continue with SSO",
+      "notSetUp": "This email isn't set up for single sign-on. Sign in with Google, GitHub, or email instead.",
+      "invalidEmail": "Enter a valid work email address.",
+      "unavailable": "We couldn't check single sign-on right now. Try again, or use another sign-in option.",
+      "tryAgain": "Try again",
+      "errors": {
+        "unavailable": "Single sign-on is unavailable right now. Please try again in a moment.",
+        "expired": "Your sign-in expired or was started in another browser. Please start again.",
+        "notConfigured": "Single sign-on isn't set up for your organization yet. Contact your IT admin.",
+        "orgDisabled": "Single sign-on is turned off for your organization. Contact your IT admin.",
+        "orgNotReady": "Your organization's Comfy workspace isn't set up yet. Contact your IT admin.",
+        "orgMismatch": "You signed in to a different organization than the one for this email. Please try again with your work account.",
+        "notProvisioned": "Your organization hasn't given you access to Comfy yet. Contact your IT admin.",
+        "suspended": "Your organization has removed your access. Contact your IT admin.",
+        "accountDeleted": "This account is scheduled for deletion. Contact support@comfy.org if this is a mistake.",
+        "accountConflict": "More than one Comfy account uses this email. Contact support@comfy.org.",
+        "idpError": "Your identity provider didn't complete the sign-in. Please try again.",
+        "rateLimited": "Too many sign-in attempts. Please wait a few minutes and try again.",
+        "failed": "We couldn't sign you in with single sign-on. Please try again."
+      }
+    },
     "signup": {
       "title": "Create an account",
       "alreadyHaveAccount": "Already have an account?",
