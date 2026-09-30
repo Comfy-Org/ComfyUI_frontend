@@ -2829,4 +2829,16 @@ describe('store construction order', () => {
     await expect(workspaceAuth.mintAtLogin()).resolves.toBe(true)
     expect(workspaceAuth.getUnifiedToken()).toBe('construction-token')
   })
+
+  it('observes a user replayed synchronously during store construction', () => {
+    const port = replayIdentityPort(() => mockUser, 'sync')
+    vi.mocked(firebaseAuth.onAuthStateChanged).mockImplementation(
+      (_, callback) => port.register(callback as IdentityObserver)
+    )
+
+    const store = useAuthStore()
+
+    expect(store.currentUser).toEqual(mockUser)
+    expect(store.isInitialized).toBe(true)
+  })
 })
