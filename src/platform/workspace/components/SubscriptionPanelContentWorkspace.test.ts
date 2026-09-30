@@ -159,7 +159,8 @@ const mockSubscription = computed<SubscriptionInfo | null>(() =>
         renewalDate: mockRenewalDate.value,
         endDate: mockEndDate.value,
         isCancelled: mockSubscriptionStatus.value === 'canceled',
-        hasFunds: true
+        hasFunds: true,
+        agentHasFunds: true
       }
     : null
 )

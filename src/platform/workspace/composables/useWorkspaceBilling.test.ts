@@ -297,6 +297,8 @@ describe('useWorkspaceBilling', () => {
     it('maps status response into subscription info', async () => {
       mockWorkspaceApi.getBillingStatus.mockResolvedValue({
         ...activeStatus,
+        scoped_effective_has_funds: { agent: false },
+        scoped_has_funds: { agent: false },
         billing_rail: 'stripe',
         subscription_status: 'canceled',
         cancel_at: '2026-06-01T00:00:00Z'
@@ -313,7 +315,8 @@ describe('useWorkspaceBilling', () => {
         renewalDate: '2026-05-01T00:00:00Z',
         endDate: '2026-06-01T00:00:00Z',
         isCancelled: true,
-        hasFunds: true
+        hasFunds: true,
+        agentHasFunds: false
       })
       expect(billing.canAccessSubscriptionFeatures.value).toBe(true)
       expect(billing.isFreeTier.value).toBe(false)
@@ -321,6 +324,30 @@ describe('useWorkspaceBilling', () => {
         useTeamWorkspaceStore().setWorkspaceBillingRail
       ).toHaveBeenCalledWith('workspace-1', 'stripe')
     })
+
+    it.for([
+      { sharedFunds: true, scopedAgentFunds: undefined, expected: true },
+      { sharedFunds: false, scopedAgentFunds: undefined, expected: false },
+      { sharedFunds: true, scopedAgentFunds: false, expected: false },
+      { sharedFunds: false, scopedAgentFunds: true, expected: true }
+    ])(
+      'maps shared=$sharedFunds and scoped Agent=$scopedAgentFunds to $expected',
+      async ({ sharedFunds, scopedAgentFunds, expected }) => {
+        mockWorkspaceApi.getBillingStatus.mockResolvedValue({
+          ...activeStatus,
+          has_funds: sharedFunds,
+          scoped_effective_has_funds:
+            scopedAgentFunds === undefined
+              ? undefined
+              : { agent: scopedAgentFunds }
+        })
+
+        const billing = setupBilling()
+        await billing.fetchStatus()
+
+        expect(billing.subscription.value?.agentHasFunds).toBe(expected)
+      }
+    )
 
     it('maps a scheduled plan change into subscription info', async () => {
       const scheduledChange = {
