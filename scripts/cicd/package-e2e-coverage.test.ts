@@ -315,10 +315,9 @@ describe('completeness gate wiring', () => {
     expect(steps.map((step) => field(step, 'id')).filter(Boolean)).toContain(
       'e2e-meta'
     )
-    expect(field(save, 'if')).toContain(
-      "steps.e2e-meta.outputs.complete == 'true'"
+    expect(field(save, 'if')).toBe(
+      "success() && steps.e2e-meta.outputs.complete == 'true' && steps.e2e-order.outputs.usable == 'true' && hashFiles('temp/e2e-coverage/coverage.lcov') != ''\n"
     )
-    expect(field(save, 'if')).toContain('success()')
   })
 })
 // The measurement policies themselves are covered by
@@ -346,6 +345,23 @@ describe('per-merge measurement wiring', () => {
       'pnpm exec tsx scripts/cicd/coverage-e2e-order.ts'
     )
     expect(commands).toContain('scripts/cicd/post-slack-coverage-report.sh')
+  })
+
+  // Calling the scripts is not enough: the walk must be skipped when no PR
+  // owns the commit, and the span must be passed only when there is one, or
+  // every direct-parent report claims to cover several merges.
+  it('runs the baseline walk only for a commit a PR owns', () => {
+    const resolve = notifyStep((step) => field(step, 'id') === 'unit-baseline')
+
+    expect(field(resolve, 'if')).toBe("steps.pr-meta.outputs.skip != 'true'")
+  })
+
+  it('passes the span only when the baseline is not the direct parent', () => {
+    const generate = notifyStep((step) => field(step, 'id') === 'slack-payload')
+
+    expect(field(generate, 'env', 'UNIT_SPAN_FROM')).toBe(
+      "${{ steps.unit-baseline.outputs.spanned == 'true' && steps.unit-baseline.outputs.ancestor || '' }}"
+    )
   })
 
   // Resolving by commit here would re-pick the newest run for that sha —
@@ -407,10 +423,11 @@ describe('per-merge measurement wiring', () => {
     expect(
       jobSteps(readWorkflow(NOTIFY)).map((step) => field(step, 'id'))
     ).toContain('e2e-order')
-    expect(String(field(save, 'if'))).toContain(
-      "steps.e2e-order.outputs.usable == 'true'"
+    // Whole value, not its pieces: `success() || ...` contains both and would
+    // save a baseline after a rejected post.
+    expect(field(save, 'if')).toBe(
+      "success() && steps.e2e-meta.outputs.complete == 'true' && steps.e2e-order.outputs.usable == 'true' && hashFiles('temp/e2e-coverage/coverage.lcov') != ''\n"
     )
-    expect(String(field(save, 'if'))).toContain('success()')
   })
 
   // continue-on-error would keep the run green and let success() advance the

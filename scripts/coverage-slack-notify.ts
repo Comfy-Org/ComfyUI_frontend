@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { parseArgs } from 'node:util'
 
 import {
   COVERAGE_METADATA_FILE,
@@ -224,24 +225,24 @@ function buildMilestoneBlock(label: string, milestone: number): SlackBlock {
   }
 }
 
-function flagsIn(argv: string[]): Map<string, string> {
-  const flags = new Map<string, string>()
-  for (const arg of argv) {
-    const separator = arg.indexOf('=')
-    if (!arg.startsWith('--') || separator === -1) continue
-    flags.set(arg.slice(2, separator), arg.slice(separator + 1))
-  }
-  return flags
-}
+function parseOptions(argv: string[]): CliOptions {
+  const { values } = parseArgs({
+    args: argv,
+    options: {
+      'pr-url': { type: 'string', default: '' },
+      'pr-number': { type: 'string', default: '' },
+      author: { type: 'string', default: '' },
+      'unit-span-from': { type: 'string', default: '' },
+      'unit-span-to': { type: 'string', default: '' }
+    }
+  })
 
-function parseArgs(argv: string[]): CliOptions {
-  const flags = flagsIn(argv)
   return {
-    prUrl: flags.get('pr-url') ?? '',
-    prNumber: flags.get('pr-number') ?? '',
-    author: flags.get('author') ?? '',
-    unitSpanFrom: flags.get('unit-span-from') ?? '',
-    unitSpanTo: flags.get('unit-span-to') ?? ''
+    prUrl: values['pr-url'],
+    prNumber: values['pr-number'],
+    author: values.author,
+    unitSpanFrom: values['unit-span-from'],
+    unitSpanTo: values['unit-span-to']
   }
 }
 
@@ -358,7 +359,7 @@ export function buildPayload(
 }
 
 function main() {
-  const options = parseArgs(process.argv.slice(2))
+  const options = parseOptions(process.argv.slice(2))
 
   const payload = buildPayload(
     readUnitSnapshot(options.unitSpanFrom, options.unitSpanTo),

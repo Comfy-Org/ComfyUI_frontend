@@ -1,8 +1,8 @@
 /**
  * Read-only GitHub REST access for workflow steps that outgrew an inline
  * `actions/github-script` block. That action supplies an authenticated client
- * and retries for free; a step that runs a `tsx` module instead — so its logic
- * can be imported and tested — has to bring both.
+ * and opt-in retries; a step that runs a `tsx` module instead, so its logic
+ * can be imported and tested, has to bring both.
  */
 const ATTEMPTS = 3
 const RETRY_DELAY_MS = 2_000

@@ -1,11 +1,8 @@
 #!/usr/bin/env tsx
 /**
  * Decides whether the latest E2E coverage can be reported under this commit.
- *
- * Wired into `coverage-slack-notify.yaml` as the `e2e-order` step, which gates
- * both the E2E row and the saved baseline on the `usable` output.
  */
-import { appendFileSync, rmSync } from 'node:fs'
+import { rmSync } from 'node:fs'
 import { join } from 'node:path'
 
 import {
@@ -13,6 +10,7 @@ import {
   readCoverageMetadata
 } from '../coverage-metadata'
 import { isMainModule } from '../isMainModule'
+import { setOutput } from './actions-output'
 import { fetchGitHubJson, isRecord } from './github-rest'
 
 const CURRENT_DIR = 'temp/e2e-coverage'
@@ -45,7 +43,9 @@ export interface E2eOrder {
   withheld: Withheld[]
 }
 
-const USABLE: E2eOrder = { usable: true, withheld: [] }
+function ordered(): E2eOrder {
+  return { usable: true, withheld: [] }
+}
 
 function withholding(target: Withheld['target'], reason: string): E2eOrder {
   return { usable: false, withheld: [{ target, reason }] }
@@ -89,7 +89,7 @@ export async function orderE2eCoverage(
     }
   }
 
-  if (baseline === null) return USABLE
+  if (baseline === null) return ordered()
 
   // An identified baseline must not be replaced by a measurement that cannot
   // be placed against it. A baseline with no sha is the opposite case and is
@@ -104,7 +104,7 @@ export async function orderE2eCoverage(
   // Re-reporting the same measurement is the steady state between E2E runs,
   // not an anomaly: the delta is zero, and re-saving it leaves the baseline
   // exactly where it was.
-  if (baseline === current) return USABLE
+  if (baseline === current) return ordered()
 
   const toCurrent = await compare(baseline, current)
   if (toCurrent === 'unknown') {
@@ -120,7 +120,7 @@ export async function orderE2eCoverage(
     )
   }
 
-  return USABLE
+  return ordered()
 }
 
 function sourceShaIn(dir: string): string | null {
@@ -139,7 +139,7 @@ function isRelation(value: unknown): value is CommitRelation {
 }
 
 function githubCompare(repository: string): Compare {
-  return async (base, head) => {
+  async function compare(base: string, head: string): Promise<CommitRelation> {
     try {
       const comparison = await fetchGitHubJson(
         `/repos/${repository}/compare/${base}...${head}`
@@ -153,15 +153,8 @@ function githubCompare(repository: string): Compare {
       return 'unknown'
     }
   }
-}
 
-function setUsable(usable: boolean) {
-  const file = process.env.GITHUB_OUTPUT
-  if (!file) {
-    process.stdout.write(`usable=${usable}\n`)
-    return
-  }
-  appendFileSync(file, `usable=${usable}\n`)
+  return compare
 }
 
 async function main() {
@@ -190,7 +183,7 @@ async function main() {
     rmSync(directory, { recursive: true, force: true })
   }
 
-  setUsable(usable)
+  setOutput('usable', String(usable))
 }
 
 if (isMainModule(import.meta.url)) {

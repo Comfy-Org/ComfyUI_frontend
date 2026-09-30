@@ -1,13 +1,9 @@
 #!/usr/bin/env tsx
 /**
  * Picks the commit whose `unit-coverage` artifact a merge is measured against.
- *
- * Wired into `coverage-slack-notify.yaml` as the `unit-baseline` step, which
- * passes the resolved run id straight to the artifact download.
  */
-import { appendFileSync } from 'node:fs'
-
 import { isMainModule } from '../isMainModule'
+import { setOutput } from './actions-output'
 import { fetchGitHubJson, isRecord } from './github-rest'
 
 /** Beyond this the walk gives up and unit is left out of that report. */
@@ -32,15 +28,15 @@ export interface History {
   liveArtifactsOf(runId: number): Promise<string[]>
 }
 
-export interface UnitBaseline {
-  /** Commit to compare against, or `null` when none was measured. */
-  ancestor: string | null
-  runId: number | null
-  /** The ancestor is further back than the direct parent. */
-  spanned: boolean
-  /** Oldest commit the walk rejected, so a give-up can say how far it got. */
-  lastChecked?: string | null
-}
+export type UnitBaseline =
+  | { ancestor: string; runId: number; spanned: boolean }
+  | {
+      ancestor: null
+      runId: null
+      spanned: false
+      /** Oldest commit the walk rejected, or `null` at a root commit. */
+      lastChecked: string | null
+    }
 
 /**
  * A cancelled run can still hold coverage, because its upload is an `always()`
@@ -107,7 +103,12 @@ function workflowRunsOf(page: unknown): WorkflowRun[] {
   )
 }
 
-function liveArtifactNamesOf(page: unknown): string[] {
+/**
+ * The listing endpoint still returns expired artifacts, and selecting a run on
+ * the strength of one leaves the download empty, so unit silently drops out of
+ * the report.
+ */
+export function liveArtifactNamesOf(page: unknown): string[] {
   if (!isRecord(page) || !Array.isArray(page.artifacts)) return []
   return page.artifacts.flatMap((artifact: unknown) =>
     isRecord(artifact) &&
@@ -145,17 +146,9 @@ function githubHistory(repository: string): History {
 }
 
 function setOutputs(baseline: UnitBaseline) {
-  const lines = [
-    `ancestor=${baseline.ancestor ?? ''}`,
-    `run-id=${baseline.runId ?? ''}`,
-    `spanned=${baseline.spanned}`
-  ]
-  const file = process.env.GITHUB_OUTPUT
-  if (!file) {
-    process.stdout.write(`${lines.join('\n')}\n`)
-    return
-  }
-  appendFileSync(file, `${lines.join('\n')}\n`)
+  setOutput('ancestor', baseline.ancestor ?? '')
+  setOutput('run-id', String(baseline.runId ?? ''))
+  setOutput('spanned', String(baseline.spanned))
 }
 
 async function main() {
