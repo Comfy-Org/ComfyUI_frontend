@@ -241,6 +241,34 @@ test('a declined Pay leaves the card above an unchanged Pay, with support one cl
   await expect(page).toHaveURL(/\/v1\/checkout\?/)
 })
 
+test('314-10612: a Pay the server refuses is the processing error card with its sentence, and support quotes the code', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.paymentMethods = []
+  cloud.reply('POST', '/billing/subscribe', () => ({
+    status: 500,
+    body: {
+      code: 'INTERNAL',
+      message: 'Billing is temporarily unavailable. Please try again shortly.'
+    }
+  }))
+  await signIn(CHECKOUT)
+
+  await payButton(page).click()
+
+  const card = page.getByRole('alert')
+  await expect(card).toContainText("Payment couldn't be processed")
+  await expect(card).toContainText(
+    'Billing is temporarily unavailable. Please try again shortly.'
+  )
+  await expect(payButton(page)).toBeEnabled()
+  await expect(
+    page.getByRole('link', { name: 'Contact support' })
+  ).toHaveAttribute('href', /Error%20code%3A%20REQUEST_FAILED/)
+})
+
 test('553-9297: a plan change on a plan set to end needs the keep-subscription tick: Pay without it sends nothing, with it sends the consent', async ({
   page,
   cloud,

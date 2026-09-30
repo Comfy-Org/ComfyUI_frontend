@@ -76,15 +76,12 @@ type PlannedEntry = BillingEntry & { plan: string }
 /** What the quote answers for a plan slug the catalog does not have. */
 const UNKNOWN_PLAN_SERVER_CODE = 'INVALID_PLAN'
 
-/** No Stripe key resolved, so a card form could never mount. */
-const PAYMENT_PROVIDER_UNAVAILABLE = 'PAYMENT_PROVIDER_UNAVAILABLE'
-
 /** A capability read that ends the page before any quote: unreadable, or refused. */
 function capabilityStop(
   allowed: BillingResult<CapabilitiesSnapshot>
 ): CheckoutPageEvent | undefined {
   if (allowed.status === 'error')
-    return { type: 'unavailable', code: allowed.code }
+    return { type: 'capabilitiesFailed', code: allowed.code }
   if (allowed.value.capabilities.can_subscribe_self_serve) return undefined
   return {
     type: 'refused',
@@ -92,17 +89,33 @@ function capabilityStop(
   }
 }
 
-/** A quote the page cannot capture: a team plan with no stop, or a card form with no key to mount on. */
+/** A quote the page cannot capture: a team plan named without its stop. */
 function quotedStop(
   quoted: SubscriptionPreview,
-  arrival: PlannedEntry,
-  stripeKey: string | undefined
+  arrival: PlannedEntry
 ): CheckoutPageEvent | undefined {
   if (quoted.new_plan.tier === 'TEAM' && arrival.teamCreditStopId === undefined)
     return { type: 'planUnavailable', reason: 'team_stop_missing' }
-  if (quoted.transition_type === 'new_subscription' && stripeKey === undefined)
-    return { type: 'unavailable', code: PAYMENT_PROVIDER_UNAVAILABLE }
   return undefined
+}
+
+/**
+ * How a quote collects the money: a new subscription on a card form, which
+ * arrives failed with no Stripe key to mount on, or a plan change on the
+ * method on file, which needs no key.
+ */
+function railOf(
+  quoted: SubscriptionPreview,
+  saved: SavedArrival,
+  stripeKey: string | undefined
+) {
+  if (quoted.transition_type !== 'new_subscription')
+    return { method: 'on_file' } as const
+  return {
+    method: 'collect',
+    saved,
+    ...(stripeKey === undefined ? { element: 'failed' as const } : {})
+  } as const
 }
 
 /**
@@ -300,20 +313,17 @@ export function useFullPageCheckout() {
         matchesServerCode(quoted, UNKNOWN_PLAN_SERVER_CODE)
         ? { type: 'planUnavailable', reason: 'retired' }
         : { type: 'unavailable', code: quoted.code }
-    const unquotable = quotedStop(quoted.value, arrival, stripeKey)
+    const unquotable = quotedStop(quoted.value, arrival)
     if (unquotable !== undefined) return unquotable
     const facts = {
       reactivation: consentAsked(asksReactivation(quoted.value)),
       ...(expiredPromo === undefined ? {} : { expiredPromo })
     }
-    return quoted.value.transition_type === 'new_subscription'
-      ? {
-          type: 'quoted',
-          method: 'collect',
-          saved: arrivalOf(methods),
-          ...facts
-        }
-      : { type: 'quoted', method: 'on_file', ...facts }
+    return {
+      type: 'quoted',
+      ...railOf(quoted.value, arrivalOf(methods), stripeKey),
+      ...facts
+    }
   }
 
   /** Capture never renders before reconciliation has answered (rule 3). */
@@ -446,13 +456,6 @@ export function useFullPageCheckout() {
       !promo.busy.value
   )
 
-  const payFailure = computed(() => {
-    const result = checkout.result.value
-    if (result === undefined) return undefined
-    const verdict = payVerdictOf(result)
-    return verdict.kind === 'failure' ? verdict.code : undefined
-  })
-
   /**
    * Back to the product, with a settled payment's outcome and reference, or
    * to the workspace's Plan & Credits settings when this family has no
@@ -483,16 +486,18 @@ export function useFullPageCheckout() {
     else window.location.assign(returnLink.value)
   }
 
-  /** The live catalog, on the Team tab when the link asked for a team plan. */
-  const viewPlansLink = computed(() =>
-    pricingTableUrl(
-      page.value.kind === 'plan_unavailable' &&
-        page.value.reason === 'team_stop_missing'
-        ? 'team'
-        : 'default',
-      billedWorkspace()
-    )
-  )
+  /**
+   * The live catalog, on the Team tab when the link asked for a team plan:
+   * one the quote named without its stop, or a link that carries a stop.
+   */
+  const viewPlansLink = computed(() => {
+    const current = page.value
+    const asksTeam =
+      entry.value?.teamCreditStopId !== undefined ||
+      (current.kind === 'plan_unavailable' &&
+        current.reason === 'team_stop_missing')
+    return pricingTableUrl(asksTeam ? 'team' : 'default', billedWorkspace())
+  })
 
   /** Try again re-runs the whole resolve in place: the re-read and the capture read. */
   function retryLoad() {
@@ -552,10 +557,8 @@ export function useFullPageCheckout() {
       }
       checkout.reset()
       dispatch({ type: 'payFailed', outcome: verdict.outcome })
-    } else if (verdict.kind === 'requote') {
-      await requote(verdict.because, arrival)
     } else {
-      dispatch({ type: 'payFailed' })
+      await requote(verdict.because, arrival)
     }
   }
 
@@ -619,7 +622,6 @@ export function useFullPageCheckout() {
     preview,
     canPay,
     submitting,
-    payFailure,
     returnLink,
     viewPlansLink,
     openedByScript,

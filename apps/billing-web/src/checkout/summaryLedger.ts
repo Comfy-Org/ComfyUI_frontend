@@ -277,9 +277,16 @@ export function namedPlan(
     : context.tierName(plan.tier)
 }
 
-/** A team plan is one tier at many commitments, so the kept one is named by its rate. */
+/**
+ * A team plan is one tier at many commitments, so the kept one is named by
+ * its rate. A kept yearly plan always names its cadence.
+ */
 function keptPlanLine(r: QuoteReading, current: Plan, until: string): string {
-  const plan = namedPlan(r, current, r.cadenceChanges)
+  const plan = namedPlan(
+    r,
+    current,
+    r.cadenceChanges || current.duration === 'ANNUAL'
+  )
   if (!r.commitChange)
     return r.t(`${S}.trailing.keepUntil`, { plan, date: until })
   return r.t(`${S}.trailing.keepCommitmentUntil`, {
@@ -321,7 +328,11 @@ function proratedLedger(r: QuoteReading): FamilyLedger {
         refillsToLine(r)
       ]
     }),
-    trailing: [r.t(`${S}.trailing.creditsKept`, {}), renewalLine(r)]
+    trailing: [
+      r.t(`${S}.trailing.creditsKept`, {}),
+      renewalLine(r),
+      ...zeroDueLine(r)
+    ]
   }
 }
 
@@ -346,14 +357,10 @@ function grantIsAllowance(r: QuoteReading): boolean {
 }
 
 function chargeNowTrailing(r: QuoteReading): string[] {
-  const { quote, current } = r
+  const { current } = r
   const overlapUntil =
     r.cadenceChanges && current?.duration === 'MONTHLY'
       ? current.period_end
-      : undefined
-  const zeroDueRenewal =
-    quote.transition_type === 'new_subscription' && r.dueCents === 0
-      ? quote.renewal_at
       : undefined
   return [
     renewalLine(r),
@@ -364,14 +371,19 @@ function chargeNowTrailing(r: QuoteReading): string[] {
             date: r.date(overlapUntil)
           })
         ]),
-    ...(zeroDueRenewal === undefined
-      ? []
-      : [
-          r.t(`${S}.trailing.zeroDue`, {
-            amount: r.money(r.recurringCents),
-            date: r.date(zeroDueRenewal)
-          })
-        ])
+    ...zeroDueLine(r)
+  ]
+}
+
+/** A $0 total still collects a method, so the summary says what it will pay. */
+function zeroDueLine(r: QuoteReading): string[] {
+  if (r.dueCents !== 0) return []
+  const amount = r.money(r.recurringCents)
+  const renewsAt = r.quote.renewal_at
+  return [
+    renewsAt === undefined
+      ? r.t(`${S}.trailing.zeroDueUndated`, { amount })
+      : r.t(`${S}.trailing.zeroDue`, { amount, date: r.date(renewsAt) })
   ]
 }
 

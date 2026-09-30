@@ -89,6 +89,64 @@ test('a tier upgrade reads the prorated charge and a dated credits delta', async
   ])
 })
 
+test('294-8224: an upgrade a code takes to $0 says what the payment method on file will pay', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  const preview = cloud.scenario.preview
+  cloud.scenario.preview = {
+    ...preview,
+    transition_type: 'upgrade',
+    amount_due_cents: 0,
+    cost_today_cents: 5000,
+    renewal_amount_cents: 5000,
+    renewal_at: RENEWAL_AT,
+    promotion_code: 'FREEMONTH',
+    discounts: [
+      { kind: 'promotion', code: 'FREEMONTH', amount_off_cents: 5000 }
+    ],
+    current_plan: {
+      ...preview.new_plan,
+      slug: 'creator_monthly',
+      tier: 'CREATOR',
+      price_cents: 3500
+    }
+  }
+  await signIn(CHECKOUT)
+
+  await expectSummary(page, [
+    'Total due today$0.00',
+    "You won't be charged today. Your payment method renews the plan at $50.00 on July 28, 2026."
+  ])
+})
+
+test('294-8445: a yearly to yearly downgrade names the kept plan with its cadence', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  const preview = cloud.scenario.preview
+  cloud.scenario.preview = {
+    ...preview,
+    transition_type: 'downgrade',
+    is_immediate: false,
+    effective_at: RENEWAL_AT,
+    amount_due_cents: 0,
+    cost_today_cents: 0,
+    new_plan: { ...preview.new_plan, duration: 'ANNUAL' },
+    current_plan: {
+      ...preview.new_plan,
+      slug: 'creator_yearly',
+      tier: 'CREATOR',
+      duration: 'ANNUAL'
+    }
+  }
+  await signIn(CHECKOUT)
+
+  await expectSummary(page, ["You'll keep Creator Yearly until July 28, 2026"])
+})
+
 test('a held discount and an entered code read as rows, with no Subtotal the quote never reported', async ({
   page,
   cloud,
