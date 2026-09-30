@@ -43,6 +43,7 @@ import {
   buildSubscribeRequest,
   checkoutReturnUrl
 } from '@/checkout/subscribeRequest'
+import { acceptsPromoCode } from '@/checkout/summaryLedger'
 import { useBilledWorkspace } from '@/composables/useBilledWorkspace'
 import { useCheckoutPromo } from '@/composables/useCheckoutPromo'
 import { BILLING_WEB_ENV } from '@/config/env'
@@ -225,11 +226,21 @@ export function useFullPageCheckout() {
   const promo = useCheckoutPromo({
     prefill: entry.value,
     live: () => promoLive.value,
-    requote: (promotionCode) => {
+    requote: async (promotionCode) => {
       const arrival = entry.value
-      return arrival?.plan === undefined
-        ? Promise.resolve({ status: 'error', code: 'REQUEST_FAILED' })
-        : quoteArrival({ ...arrival, plan: arrival.plan }, promotionCode)
+      if (arrival?.plan === undefined)
+        return { status: 'error', code: 'REQUEST_FAILED' }
+      const quoted = await quoteArrival(
+        { ...arrival, plan: arrival.plan },
+        promotionCode
+      )
+      if (quoted.status === 'ok')
+        dispatch({
+          type: 'requoted',
+          reactivation: consentAsked(asksReactivation(quoted.value)),
+          priceUpdated: false
+        })
+      return quoted
     }
   })
 
@@ -310,6 +321,7 @@ export function useFullPageCheckout() {
     const arrival = entry.value
     if (arrival?.plan === undefined) return
     const event = await captureEvent({ ...arrival, plan: arrival.plan })
+    if (preview.value && !acceptsPromoCode(preview.value)) promo.withdraw()
     await reconciliationSettled()
     dispatch(event)
   }

@@ -216,7 +216,7 @@
         },
         "promo_expired": {
           "title": "Your promo code expired",
-          "body": "The {code} code expired, so the total was updated. Review the new total before paying — you have not been charged."
+          "body": "The {code} code expired, so the total was updated. Review the new total before paying. You have not been charged."
         },
         "price_updated": {
           "title": "The price has updated",
