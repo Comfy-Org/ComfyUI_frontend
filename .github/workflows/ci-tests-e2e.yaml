@@ -139,7 +139,7 @@ jobs:
 
   unit:
     needs: preflight
-    if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
+    if: ${{ !cancelled() && needs.preflight.result == 'success' && (github.event_name == 'pull_request' || github.event_name == 'merge_group') }}
     uses: ./.github/workflows/ci-tests-unit.yaml
     permissions:
       contents: read
@@ -160,7 +160,7 @@ jobs:
 
   ecosystem:
     needs: preflight
-    if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
+    if: ${{ !cancelled() && needs.preflight.result == 'success' && (github.event_name == 'pull_request' || github.event_name == 'merge_group') }}
     uses: ./.github/workflows/ci-ecosystem-matrix.yaml
     permissions:
       contents: read
@@ -170,7 +170,7 @@ jobs:
   # Sharded chromium tests
   playwright-tests-chromium-sharded:
     needs: [changes, setup, preflight]
-    if: needs.changes.outputs.should-run == 'true'
+    if: ${{ !cancelled() && needs.preflight.result == 'success' && needs.changes.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     container:
@@ -235,7 +235,7 @@ jobs:
   # shard, so it was the critical path of every merge-group entry.
   playwright-tests-cloud-sharded:
     needs: [changes, setup, preflight]
-    if: needs.changes.outputs.should-run == 'true'
+    if: ${{ !cancelled() && needs.preflight.result == 'success' && needs.changes.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     container:
@@ -286,7 +286,7 @@ jobs:
     # Ideally, each shard runs test in 6 minutes, but allow up to 30 minutes
     timeout-minutes: 30
     needs: [changes, setup, preflight]
-    if: needs.changes.outputs.should-run == 'true'
+    if: ${{ !cancelled() && needs.preflight.result == 'success' && needs.changes.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/comfy-org/comfyui-ci-container:0.0.22
@@ -449,7 +449,7 @@ jobs:
   # Records video only for tests newly added in this PR, to keep cost bounded.
   playwright-video-new-tests:
     needs: [changes, setup, preflight]
-    if: ${{ github.event_name == 'pull_request' && needs.changes.outputs.should-run == 'true' }}
+    if: ${{ !cancelled() && needs.preflight.result == 'success' && github.event_name == 'pull_request' && needs.changes.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     container:
@@ -709,6 +709,8 @@ jobs:
       cancel-in-progress: false
     if: >-
       ${{
+        !cancelled() &&
+        needs.preflight.result == 'success' &&
         needs.changes.outputs.should-run == 'true' &&
         github.event_name == 'pull_request' &&
         github.event.pull_request.head.repo.fork == false &&
