@@ -47,7 +47,7 @@ jobs:
     # Keep skipped label events out of the lane. Do not cancel an accepted run:
     # each dispatch is fire-and-forget, so cancellation can lose a deployment.
     concurrency:
-      group: cloud-dispatch-${{ github.event.pull_request.head.ref || github.ref_name }}
+      group: cloud-dispatch-${{ github.run_id }}
       cancel-in-progress: false
     runs-on: ubuntu-latest
     permissions:
