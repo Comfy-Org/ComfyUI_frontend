@@ -1,7 +1,9 @@
 import type { Pinia } from 'pinia'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useAgentDockMount'
@@ -34,6 +36,9 @@ describe('the agentPanel store id', () => {
     setActivePinia(pinia)
     vi.stubGlobal('__DISTRIBUTION__', 'cloud')
     vi.stubGlobal('devicePixelRatio', 1)
+    vi.mocked(useBillingContext).mockReturnValue({
+      subscription: ref({ hasFunds: false, agentHasFunds: false })
+    } as ReturnType<typeof useBillingContext>)
   })
 
   it('resolves the full panel shape even though the dock mount registers it first', () => {

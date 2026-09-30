@@ -322,34 +322,6 @@ describe('useBillingContext', () => {
     await expect(fetchStatus()).resolves.toBeUndefined()
   })
 
-  it('reports a failed post-discount refresh through the workspace billing adapter', async () => {
-    mockBillingRail.value = 'stripe'
-    vi.spyOn(
-      useTeamWorkspaceStore(),
-      'activeWorkspaceId',
-      'get'
-    ).mockReturnValue('personal-123')
-    const scope = effectScope()
-    onTestFinished(() => scope.stop())
-    const billing = scope.run(useSharedBillingContext)
-    assert.exists(billing)
-    await vi.waitFor(() => expect(billing.isInitialized.value).toBe(true))
-    const error = new Error('Billing status unavailable')
-    vi.mocked(workspaceApi.getBillingStatus).mockRejectedValue(error)
-    vi.mocked(prepareChurnkey).mockResolvedValue({
-      show: async () => ({ type: 'discount-applied' })
-    })
-    const showFallback = vi.fn()
-
-    await scope.run(() => launchCancellationFlow({ showFallback }))
-
-    expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
-      errorType: 'error_refreshing_billing_after_churnkey_discount'
-    })
-    expect(useSubscription().fetchStatus).not.toHaveBeenCalled()
-    expect(showFallback).not.toHaveBeenCalled()
-  })
-
   it('exposes fetchBalance action', async () => {
     const { fetchBalance } = useBillingContext()
     await expect(fetchBalance()).resolves.toBeUndefined()

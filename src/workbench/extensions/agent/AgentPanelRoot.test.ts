@@ -27,8 +27,13 @@ vi.hoisted(() => {
 
 vi.mock(import('firebase/auth'))
 vi.mock<unknown>(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 import { i18n } from '@/i18n'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { setupInlinePromptEditorDom } from './components/agent/composer/inlinePromptEditorTestSetup'
 
@@ -222,11 +227,11 @@ vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({
+  useCurrentUser: vi.fn(() => ({
     isLoggedIn: { value: true },
     userDisplayName: { value: 'Jo Rivera' },
     resolvedUserInfo: { value: { id: 'account-a' } }
-  })
+  }))
 }))
 
 const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
@@ -1769,9 +1774,13 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
 
   it('reports a new identity only after its standing card is shown', async () => {
     const accountId = ref('account-a')
-    useCurrentUser().resolvedUserInfo = computed(() => ({
-      id: accountId.value
-    }))
+    vi.mocked(useCurrentUser).mockReturnValue(
+      fromPartial({
+        isLoggedIn: computed(() => true),
+        userDisplayName: computed(() => 'Jo Rivera'),
+        resolvedUserInfo: computed(() => ({ id: accountId.value }))
+      })
+    )
     paywallHasFunds.value = false
     const firstPanel = render(AgentPanelRoot, {
       global: { plugins: [i18n] }
