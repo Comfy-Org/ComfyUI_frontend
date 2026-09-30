@@ -935,6 +935,85 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   })
 
+  it('(b4t) evicts the oldest stopped mailbox when pending hydrates settle over the cap', async () => {
+    vi.useFakeTimers()
+    try {
+      const conversation = useAgentConversationStore()
+      const pending: Array<{
+        resolve: (history: AgentMessages) => void
+        session: ReturnType<typeof useAgentSession>
+      }> = []
+
+      for (let index = 0; index < 33; index++) {
+        const thread = `cap-thread-${index}`
+        let resolveHistory: ((history: AgentMessages) => void) | undefined
+        const rest = fakeRest({
+          getMessages: vi.fn(
+            () =>
+              new Promise<AgentMessages>((resolve) => {
+                resolveHistory = resolve
+              })
+          )
+        })
+        const { source, emit } = fakeEvents()
+        const session = useAgentSession({ rest, events: source })
+        conversation.setThreadId(thread)
+        session.start()
+        await vi.waitFor(() => expect(rest.getMessages).toHaveBeenCalledOnce())
+        await vi.advanceTimersByTimeAsync(30_001)
+        emit(doneIn(thread, `cap-message-${index}`))
+        session.stop()
+        assert(resolveHistory !== undefined)
+        pending.push({ resolve: resolveHistory, session })
+      }
+
+      for (const { resolve } of pending) resolve([])
+      for (let index = 0; index < 5; index++) await Promise.resolve()
+
+      async function restore(index: number): Promise<boolean> {
+        const thread = `cap-thread-${index}`
+        const message = `cap-message-${index}`
+        conversation.setThreadId(thread)
+        const successor = useAgentSession({
+          rest: fakeRest({
+            getMessages: vi.fn(
+              async (): Promise<AgentMessages> => [
+                {
+                  ...historyRow(1, 'user', `cap-turn-${index}`, 'go'),
+                  thread_id: thread
+                },
+                {
+                  ...historyRow(
+                    2,
+                    'assistant',
+                    `cap-turn-${index}`,
+                    '',
+                    message
+                  ),
+                  thread_id: thread,
+                  content: {},
+                  status: 'streaming'
+                }
+              ]
+            )
+          }),
+          events: fakeEvents().source
+        })
+        successor.start()
+        await vi.advanceTimersByTimeAsync(0)
+        const streaming = successor.isStreaming.value
+        successor.stop()
+        conversation.abortActiveTurn()
+        return streaming
+      }
+
+      expect(await restore(0)).toBe(true)
+      expect(await restore(32)).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('(b4k) retires stopped thread A while its successor hydrates thread B', async () => {
     vi.useFakeTimers()
     try {

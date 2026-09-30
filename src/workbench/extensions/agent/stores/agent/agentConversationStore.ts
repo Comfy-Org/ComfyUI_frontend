@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 
 import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
 import type {
@@ -44,13 +44,21 @@ interface BackgroundTurn {
   settled: boolean
 }
 
+interface ActiveTurnSlot {
+  origin: 'local' | 'snapshot' | 'background'
+  turnId: TurnId
+  index: number
+  threadId: string | null
+  message: AssistantMessage
+  transport: AgentEventTransport
+}
+
 const MAX_DEPARTED_TURNS = 32
 
 export const useAgentConversationStore = defineStore(
   'agentConversation',
   () => {
     const messages = ref<AssistantMessage[]>([])
-    const activeTurnId = ref<TurnId | null>(null)
     const threadId = ref<string | null>(null)
     const userTexts = ref(new Map<TurnId, string>())
     const userAttachments = ref(new Map<TurnId, UserAttachment[]>())
@@ -59,17 +67,7 @@ export const useAgentConversationStore = defineStore(
     const attachmentNamesByThread = new Map<string, Map<string, string>>()
     const latestWorkflowId = ref<string>()
     const resolvedPaywallIds = ref(new Set<TurnId>())
-    let transport: AgentEventTransport | null = null
-    let activeTransportThreadId: string | null = null
-    let liveMessage: AssistantMessage | null = null
-    /**
-     * Whether the occupied slot holds a row `hydrate()` restored from a
-     * transcript rather than a turn started here. Only such a row is safe for
-     * `resumeBackgroundTurn` to settle on its way past: a turn this client
-     * started is genuinely live, and a send can take the slot between the
-     * hydrate and the resume.
-     */
-    let activeFromSnapshot = false
+    const activeSlot = shallowRef<ActiveTurnSlot | null>(null)
     // PM-1575: whether a newly-created transport should hold a tool-call's
     // chat "done" state back until canvas catch-up is confirmed (see
     // agentEventTransport.ts). Defaults to never deferring, so a caller that
@@ -108,7 +106,7 @@ export const useAgentConversationStore = defineStore(
     const shownApprovalIds = new Set<string>()
     const undeliverableAskReporter = createUndeliverableAskReporter()
     const departedTurns = new Map<string, 'no-live-turn' | 'settled-turn'>()
-    const activeIndex = ref(-1)
+    const activeTurnId = computed(() => activeSlot.value?.turnId ?? null)
 
     function recordApprovalShown(askId: string, shownAt: number): boolean {
       if (shownApprovalIds.has(askId)) return false
@@ -139,11 +137,11 @@ export const useAgentConversationStore = defineStore(
     }
 
     function replaceActive(message: AssistantMessage): void {
-      // PM-1575: looked up by id, not `activeIndex.value`. A turn's own
+      // PM-1575: looked up by id, not the active slot's index. A turn's own
       // transport keeps emitting after settle -- notifyCanvasCaughtUp() can
       // still land on it while a tool-call part is held pending canvas
       // catch-up (see settledActiveTransports below) -- and by then
-      // clearActive() has already reset activeIndex.value to -1, even though
+      // clearActive() has already released the active slot, even though
       // the settled message is still sitting in `messages` at its own slot.
       const index = messages.value.findIndex((m) => m.id === message.id)
       if (index >= 0) messages.value[index] = message
@@ -230,23 +228,26 @@ export const useAgentConversationStore = defineStore(
     }
 
     function startTurn(turnId: TurnId): void {
-      if (transport) abortActiveTurn()
+      if (activeSlot.value) abortActiveTurn()
       const message = createAssistantMessage(turnId)
-      liveMessage = message
-      activeTurnId.value = turnId
-      activeIndex.value = messages.value.push(message) - 1
-      activeTransportThreadId = threadId.value
-      transport = createAgentEventTransport(
+      activeSlot.value = {
+        origin: 'local',
+        turnId,
+        index: messages.value.push(message) - 1,
+        threadId: threadId.value,
         message,
-        replaceActive,
-        () => canvasSyncGate(),
-        () => canvasSyncOutcomeCount(),
-        reportUndeliverableAskData
-      )
+        transport: createAgentEventTransport(
+          message,
+          replaceActive,
+          () => canvasSyncGate(),
+          () => canvasSyncOutcomeCount(),
+          reportUndeliverableAskData
+        )
+      }
     }
 
     function ingest(event: AgentChatEvent): void {
-      const activeTransport = transport
+      const activeTransport = activeSlot.value?.transport
       if (activeTransport && event.data.message_id === activeTurnId.value) {
         ingestActiveTurnEvent(event, activeTransport)
         return
@@ -332,7 +333,7 @@ export const useAgentConversationStore = defineStore(
       eventThreadId: string | undefined
     ): void {
       if (eventThreadId === undefined || eventThreadId === threadId.value)
-        transport?.ingest(event)
+        activeSlot.value?.transport.ingest(event)
       else soleLiveBackgroundTurn(eventThreadId)?.transport.ingest(event)
     }
 
@@ -377,7 +378,7 @@ export const useAgentConversationStore = defineStore(
      * pending.
      */
     function notifyCanvasCaughtUp(): void {
-      transport?.notifyCanvasCaughtUp()
+      activeSlot.value?.transport.notifyCanvasCaughtUp()
       for (const settledTransport of settledActiveTransports) {
         settledTransport.notifyCanvasCaughtUp()
         if (!settledTransport.hasPendingCanvasSync())
@@ -388,7 +389,8 @@ export const useAgentConversationStore = defineStore(
     }
 
     function abortActiveTurn(): void {
-      if (!transport) return
+      const slot = activeSlot.value
+      if (!slot) return
       rememberDepartedActiveTurn('no-live-turn')
       // Before `settle()`, which publishes a clone: `settle()` clears the
       // streaming flag and the open text but not an approval ask, since only
@@ -396,28 +398,29 @@ export const useAgentConversationStore = defineStore(
       // behind, the ask renders an enabled card whose answer `answerAsk`
       // drops for want of an active turn. Cleaning after the settle would
       // touch only this message, never the snapshot already in `messages`.
-      if (liveMessage !== null) settleLiveMessage(liveMessage)
-      transport.settle()
+      settleLiveMessage(slot.message)
+      slot.transport.settle()
       // Not `settledActiveTransports`: an abort is not a natural completion
       // whose held parts might still catch up, so flush them to `done` and
       // cancel their timers now rather than leaving them reachable only by
       // their own STALE_AFTER_MS fallback (or, worse, orphaned).
-      transport.dispose()
+      slot.transport.dispose()
       clearActive()
     }
 
     function stashActiveTurn(): void {
-      if (!transport || liveMessage === null) return
-      if (threadId.value === null || activeTurnId.value === null) {
+      const slot = activeSlot.value
+      if (!slot) return
+      if (threadId.value === null) {
         abortActiveTurn()
         return
       }
-      backgroundTurns.set(activeTurnId.value, {
+      backgroundTurns.set(slot.turnId, {
         threadId: threadId.value,
-        messageId: activeTurnId.value,
-        message: liveMessage,
-        transport,
-        userText: userTexts.value.get(liveMessage.id),
+        messageId: slot.turnId,
+        message: slot.message,
+        transport: slot.transport,
+        userText: userTexts.value.get(slot.message.id),
         settled: false
       })
       clearActive()
@@ -443,7 +446,8 @@ export const useAgentConversationStore = defineStore(
       // newer turn's transport -- the same leak in the other direction. Leave
       // the stash where it is: it still receives its own frames as a
       // background turn, and a later resume can restore it.
-      if (transport !== null && !activeFromSnapshot) return undefined
+      if (activeSlot.value !== null && activeSlot.value.origin !== 'snapshot')
+        return undefined
       return { entry, resumedThreadId }
     }
 
@@ -459,7 +463,7 @@ export const useAgentConversationStore = defineStore(
       // carries the first. Settling what we replace is what makes the outcome
       // independent of which of them coincide -- left alone, that row's
       // transport is unreachable and it streams for good.
-      if (transport !== null && activeFromSnapshot) abortActiveTurn()
+      if (activeSlot.value?.origin === 'snapshot') abortActiveTurn()
       // The stash keys a turn by its message_id while hydrate() re-keys the same
       // turn by the server's turn_id; row.id bridges the two. Matching turns by
       // identity, not by shared user text, is what stops a repeated prompt from
@@ -487,11 +491,14 @@ export const useAgentConversationStore = defineStore(
       index: number,
       resumedThreadId: string
     ): void {
-      activeTurnId.value = entry.messageId
-      activeIndex.value = index
-      activeTransportThreadId = resumedThreadId
-      transport = entry.transport
-      liveMessage = entry.message
+      activeSlot.value = {
+        origin: 'background',
+        turnId: entry.messageId,
+        index,
+        threadId: resumedThreadId,
+        message: entry.message,
+        transport: entry.transport
+      }
     }
 
     /**
@@ -650,18 +657,13 @@ export const useAgentConversationStore = defineStore(
     function rememberDepartedActiveTurn(
       reason: 'no-live-turn' | 'settled-turn'
     ): void {
-      if (activeTransportThreadId === null || activeTurnId.value === null)
-        return
-      rememberDepartedTurn(activeTransportThreadId, activeTurnId.value, reason)
+      const slot = activeSlot.value
+      if (slot === null || slot.threadId === null) return
+      rememberDepartedTurn(slot.threadId, slot.turnId, reason)
     }
 
     function clearActive(): void {
-      transport = null
-      activeFromSnapshot = false
-      activeTransportThreadId = null
-      liveMessage = null
-      activeIndex.value = -1
-      activeTurnId.value = null
+      activeSlot.value = null
     }
 
     // PM-1575: reset() and hydrate() both discard the active transport (if
@@ -671,7 +673,7 @@ export const useAgentConversationStore = defineStore(
     // and write a stale snapshot back over transcript content hydrate() has
     // since replaced under the same turn id.
     function disposeActiveAndSettledTransports(): void {
-      transport?.dispose()
+      activeSlot.value?.transport.dispose()
       for (const settledTransport of settledActiveTransports)
         settledTransport.dispose()
       settledActiveTransports.clear()
@@ -709,7 +711,7 @@ export const useAgentConversationStore = defineStore(
     }
 
     function hydrate(history: AgentMessages): void {
-      if (transport) rememberDepartedActiveTurn('no-live-turn')
+      if (activeSlot.value) rememberDepartedActiveTurn('no-live-turn')
       disposeActiveAndSettledTransports()
       clearActive()
       const transcript = normalizeAgentTranscript(history)
@@ -742,18 +744,20 @@ export const useAgentConversationStore = defineStore(
       )
       const pending = unstashedLiveTurn(transcript)
       if (pending) {
-        liveMessage = pending.message
-        activeTurnId.value = pending.messageId
-        activeIndex.value = messages.value.indexOf(pending.message)
-        activeTransportThreadId = threadId.value
-        activeFromSnapshot = true
-        transport = createAgentEventTransport(
-          pending.message,
-          replaceActive,
-          () => canvasSyncGate(),
-          () => canvasSyncOutcomeCount(),
-          reportUndeliverableAskData
-        )
+        activeSlot.value = {
+          origin: 'snapshot',
+          turnId: pending.messageId,
+          index: messages.value.indexOf(pending.message),
+          threadId: threadId.value,
+          message: pending.message,
+          transport: createAgentEventTransport(
+            pending.message,
+            replaceActive,
+            () => canvasSyncGate(),
+            () => canvasSyncOutcomeCount(),
+            reportUndeliverableAskData
+          )
+        }
       }
     }
 
@@ -825,7 +829,7 @@ export const useAgentConversationStore = defineStore(
     )
 
     const activeMessage = computed(() =>
-      activeIndex.value >= 0 ? messages.value[activeIndex.value] : null
+      activeSlot.value === null ? null : messages.value[activeSlot.value.index]
     )
     const activeMessageId = computed(() => activeMessage.value?.id ?? null)
     const isStreaming = computed(() => activeMessage.value?.streaming ?? false)

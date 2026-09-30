@@ -578,10 +578,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (hydrationMailboxes.get(buffer.threadId) === buffer)
       hydrationMailboxes.delete(buffer.threadId)
     const events = buffer.events.splice(0)
-    // Re-asserted here as well as on retirement: while every mailbox was
-    // pending the cap could not evict any of them, so the count is brought
-    // back under it as they settle.
-    enforceMailboxCap()
     if (stopped) {
       // Nothing here can replay, but these frames are owed to the successor
       // -- discarding a captured `done` strands the very turn its hydrate
