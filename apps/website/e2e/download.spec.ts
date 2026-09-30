@@ -259,7 +259,7 @@ test.describe('Download page @smoke', () => {
       const hero = heroLocator(page)
 
       const windowsBtn = hero.getByRole('link', {
-        name: 'DOWNLOAD DESKTOP Windows x64 (including Snapdragon)'
+        name: 'DOWNLOAD DESKTOP Windows x64'
       })
       await expect(windowsBtn).toBeVisible()
       await expect(windowsBtn).toHaveAttribute(

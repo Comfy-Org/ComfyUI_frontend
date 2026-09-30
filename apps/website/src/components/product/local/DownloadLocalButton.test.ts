@@ -150,7 +150,7 @@ describe('DownloadLocalButton', () => {
       userAgent: UA.windows,
       buttons: [
         [
-          'DOWNLOAD DESKTOP Windows x64 (including Snapdragon)',
+          'DOWNLOAD DESKTOP Windows x64',
           'https://comfy.org/download/windows/nsis/x64'
         ]
       ]
@@ -170,7 +170,7 @@ describe('DownloadLocalButton', () => {
       userAgent: UA.freeBsd,
       buttons: [
         [
-          'DOWNLOAD DESKTOP Windows x64 (including Snapdragon)',
+          'DOWNLOAD DESKTOP Windows x64',
           'https://comfy.org/download/windows/nsis/x64'
         ],
         [
