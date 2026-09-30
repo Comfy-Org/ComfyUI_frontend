@@ -7763,6 +7763,67 @@
       }
     }
   },
+  "HeyGenImageToVideoNode": {
+    "description": "Анимируйте изображение в видео с синхронизированными речью и звуком с помощью HeyGen Video 1.0. Изображение используется как первый кадр.",
+    "display_name": "HeyGen Video 1.0: из изображения в видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель"
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "model_prompt": {
+        "name": "запрос"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "model_seed": {
+        "name": "сид"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenReferenceToVideoNode": {
+    "description": "Создавайте видео с синхронизированными речью и звуком по текстовому запросу с помощью HeyGen Video 1.0. При необходимости подключите до 12 референсных изображений, видео и аудиоклипов и упомяните их в запросе как {'@'}Image1, {'@'}Video1, {'@'}Audio1.",
+    "display_name": "HeyGen Video 1.0: референсы в видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "model_prompt": {
+        "name": "запрос"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "model_seed": {
+        "name": "сид"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenTalkingPhotoNode": {
     "description": "Анимируйте любое изображение человека в синхронизированное с губами говорящee видео (HeyGen Avatar IV). Управляйте им с помощью текстового сценария или собственного аудио.",
     "display_name": "HeyGen Talking Photo",
@@ -8376,6 +8437,42 @@
       }
     }
   },
+  "IdeogramEditApi": {
+    "description": "Редактирует или объединяет до 5 изображений по текстовому запросу с помощью Ideogram 4.5. Повторно отрисовывает всё изображение и может изменить его размер или соотношение сторон; используйте Ideogram 4.5 Precise Edit, чтобы сохранить нетронутые пиксели без изменений.",
+    "display_name": "Ideogram 4.5: редактирование",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Используемая модель."
+      },
+      "model_height": {
+        "name": "высота"
+      },
+      "model_prompt": {
+        "name": "запрос"
+      },
+      "model_quality": {
+        "name": "качество"
+      },
+      "model_seed": {
+        "name": "сид"
+      },
+      "model_size": {
+        "name": "размер"
+      },
+      "model_width": {
+        "name": "ширина"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramPImage": {
     "description": "Генерирует изображения с помощью P-Image, быстрого текст-в-изображение модели от Ideogram. Сильная типографика и фотореализм; поддерживает структурированные JSON-подписи Ideogram 4.0 для точного текста, цветов и макета.",
     "display_name": "Ideogram & Pruna P-Image",
@@ -8415,6 +8512,70 @@
       "1": {
         "name": "final_prompt",
         "tooltip": "Запрос, по которому фактически было сгенерировано изображение (переписанная структурированная подпись при работе prompt_upsampling, иначе ваш запрос). Используйте его с prompt_upsampling OFF и тем же сидом для воспроизведения этого изображения."
+      }
+    }
+  },
+  "IdeogramPreciseEditApi": {
+    "description": "Редактирует изображение по текстовому запросу с помощью точного редактирования Ideogram 4.5: изменяется только то, что указано в запросе, нетронутые пиксели остаются идентичными, а результат сохраняет размер изображения 1 (изображения размером более ~4 МП сначала уменьшаются). Поддерживает до 4 референсных изображений.",
+    "display_name": "Ideogram 4.5: точное редактирование",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Используемая модель."
+      },
+      "model_prompt": {
+        "name": "запрос"
+      },
+      "model_quality": {
+        "name": "качество"
+      },
+      "model_seed": {
+        "name": "сид"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramTextToImageApi": {
+    "description": "Создаёт изображения по текстовому запросу с помощью Ideogram 4.5.",
+    "display_name": "Ideogram 4.5: текст в изображение",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Используемая модель."
+      },
+      "model_magic_prompt": {
+        "name": "magic_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "Структурированное описание, на основе которого было сгенерировано изображение. Передайте его обратно, установив magic_prompt в значение «off» и используя тот же seed, чтобы воспроизвести изображение."
       }
     }
   },
@@ -18587,6 +18748,9 @@
   "QwenImageDiffsynthControlnet": {
     "display_name": "QwenImageDiffsynthControlnet",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
       "image": {
         "name": "изображение"
       },
@@ -18598,6 +18762,9 @@
       },
       "model_patch": {
         "name": "патч_модели"
+      },
+      "start_percent": {
+        "name": "start_percent"
       },
       "strength": {
         "name": "интенсивность"
@@ -29794,8 +29961,12 @@
     }
   },
   "ZImageFunControlnet": {
-    "display_name": "ZImageFunControlnet",
+    "description": "Применяет Z-Image или Qwen Image 2.1 Fun ControlNet, загруженный с помощью Load Model Patch.",
+    "display_name": "Применить Fun ControlNet",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
       "image": {
         "name": "изображение"
       },
@@ -29810,6 +29981,9 @@
       },
       "model_patch": {
         "name": "model_patch"
+      },
+      "start_percent": {
+        "name": "start_percent"
       },
       "strength": {
         "name": "интенсивность"
