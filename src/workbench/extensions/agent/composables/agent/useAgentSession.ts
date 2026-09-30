@@ -807,7 +807,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       ?.message_id
     const turnId =
       typeof messageId === 'string' ? (messageId as TurnId) : undefined
-    let reportedTurnId =
+    const reportedTurnId =
       turnId !== undefined && conversationStore.hasPendingTurn(turnId)
         ? turnId
         : conversationStore.activeTurnId
@@ -817,8 +817,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         conversationStore.abortActiveTurn()
         uiTreatment = 'error_overlay'
       } else {
-        reportedTurnId =
-          conversationStore.settleBackgroundTurn(turnId) ?? reportedTurnId
+        conversationStore.settleBackgroundTurn(turnId)
       }
     }
     if (
