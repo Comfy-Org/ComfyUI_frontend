@@ -135,9 +135,10 @@ describe('ModelsCatalogue', () => {
         props: { models: launchModels, locale, section: tab }
       })
 
-      expect(await screen.findByTestId('workshop-hero')).toHaveTextContent(
-        subtitle
-      )
+      const hero = await screen.findByTestId('workshop-hero')
+      expect(
+        within(hero).getByText(subtitle, { exact: false })
+      ).toHaveAttribute('aria-hidden', 'false')
     }
   )
 

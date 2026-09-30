@@ -11,6 +11,7 @@ import './ModelsCatalogue.vue'
 import { prepareModelPage } from '../../routes/models/model-page'
 import {
   useWorkshopAppsEnabled,
+  captureWorkshopEvent,
   useWorkshopEnabled,
   useWorkshopEnabledSettled,
   useWorkshopWorkflowsEnabled,
@@ -97,14 +98,13 @@ describe('Models page entry', () => {
     const html = await renderToString(
       createSSRApp({
         render: () =>
-          h(
-            ModelsPage,
-            { section: 'workflows' },
-            { heading: () => h('h1', 'ComfyUI workflows') }
-          )
+          h(ModelsPage, {
+            section: 'workflows',
+            heading: 'ComfyUI workflows'
+          })
       })
     )
-    expect(html).toContain('<h1>ComfyUI workflows</h1>')
+    expect(html).toMatch(/<h1\b[^>]*>ComfyUI workflows<\/h1>/)
     expect(html).toContain('workshop-loading')
   })
 
@@ -132,9 +132,8 @@ describe('Models page entry', () => {
       )
       enabled.value = true
       render(ModelsPage, {
-        props: { section },
+        props: { section, heading: 'Section heading' },
         slots: {
-          heading: '<h1>Section heading</h1>',
           fallback: '<h1>Public Models</h1>'
         }
       })
@@ -155,6 +154,55 @@ describe('Models page entry', () => {
       ).toBeNull()
     }
   )
+
+  it('switches the loaded catalogue and heading without fetching its data again', async () => {
+    const fetchData = vi
+      .fn<typeof fetch>()
+      .mockImplementation(async () => Response.json(workshopPages))
+    vi.stubGlobal('fetch', fetchData)
+    enabled.value = true
+    workflowsEnabled.value = true
+    appsEnabled.value = true
+    const view = render(ModelsPage, {
+      props: { section: 'models', heading: 'Models heading' },
+      slots: { fallback: '<h1>Public Models</h1>' }
+    })
+    expect(await screen.findByTestId('workshop-search')).toBeVisible()
+
+    await view.rerender({ section: 'workflows', heading: 'Workflows heading' })
+    expect(await screen.findByTestId('workflow-catalogue')).toBeVisible()
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      'Workflows heading'
+    )
+    await view.rerender({ section: 'apps', heading: 'Apps heading' })
+    expect(await screen.findByTestId('apps-catalogue')).toBeVisible()
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      'Apps heading'
+    )
+    await view.rerender({ section: 'models', heading: 'Models heading' })
+    expect(await screen.findByTestId('workshop-search')).toBeVisible()
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      'Models heading'
+    )
+    expect(fetchData).toHaveBeenCalledExactlyOnceWith('/models/catalogue.json')
+    expect(
+      vi
+        .mocked(captureWorkshopEvent)
+        .mock.calls.flatMap(([event]) =>
+          event.name === 'catalogue_viewed' ? [event.properties.page_type] : []
+        )
+    ).toEqual(['model', 'workflow', 'app', 'model'])
+
+    enabled.value = false
+    await view.rerender({ section: 'apps', heading: 'Apps heading' })
+    expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent(
+      'Public Models'
+    )
+    expect(screen.queryByTestId('apps-catalogue')).toBeNull()
+    await view.rerender({ section: 'models', heading: 'Models heading' })
+    expect(await screen.findByTestId('workshop-search')).toBeVisible()
+    expect(fetchData).toHaveBeenCalledOnce()
+  })
 
   it('keeps a workflow page behind its gate while the workshop flag is off', async () => {
     const fetchData = vi.fn<typeof fetch>()

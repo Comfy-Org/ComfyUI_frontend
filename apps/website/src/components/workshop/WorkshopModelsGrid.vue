@@ -41,8 +41,13 @@ import WorkshopSearchField from './WorkshopSearchField.vue'
 import WorkshopSections from './WorkshopSections.vue'
 import WorkshopSortMenu from './WorkshopSortMenu.vue'
 
-const { models, locale = 'en' } = defineProps<{
+const {
+  models,
+  initialSearch,
+  locale = 'en'
+} = defineProps<{
   models: readonly WorkshopModel[]
+  initialSearch?: string
   locale?: Locale
 }>()
 
@@ -59,7 +64,7 @@ const browseAll = defineModel<boolean>('browseAll', { default: false })
 let scrollReady = false
 
 function readAddress() {
-  const initial = parseCatalogSearch(location.search)
+  const initial = parseCatalogSearch(initialSearch ?? location.search)
   query.value = initial.query ?? ''
   selectedUseCases.value = openedUseCases(initial.useCase ?? 'all')
   legacyModalities.value = [...initial.modalities]
