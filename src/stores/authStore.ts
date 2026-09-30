@@ -88,6 +88,7 @@ async function webSessionRunToken(
   if (result.status === 'ok') return result.credential.token
   if (result.httpStatus !== 401) {
     reportError(new Error(`Run token mint failed: ${result.code}`), {
+      surface: 'auth',
       errorType: 'web_session_run_token_failure',
       level: 'warning',
       tags: { failure_code: result.code, http_status: result.httpStatus ?? 0 }

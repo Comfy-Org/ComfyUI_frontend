@@ -250,6 +250,7 @@ function reportRejectedHumanOps(
       `The doc host rejected ${rejected.length} local edit(s): ${failed?.message ?? 'no diagnostics'}`
     ),
     {
+      surface: 'agent',
       errorType: 'agent_crdt_human_ops_rejected',
       context: {
         workflowId,

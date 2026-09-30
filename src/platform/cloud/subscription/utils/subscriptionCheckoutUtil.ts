@@ -75,6 +75,7 @@ async function getCheckoutAttributionPayload(): Promise<CheckoutAttributionMetad
   if (attribution.ok) return attribution.attribution
 
   reportError(attribution.error, {
+    surface: 'billing',
     errorType: 'cloud_checkout_attribution_fallback',
     tags: {
       failure_kind: 'degraded',
