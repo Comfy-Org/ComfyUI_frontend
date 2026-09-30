@@ -431,7 +431,7 @@ function defaultOffsideWidth() {
       [offsideStateKey.value],
       sidebarLocation.value === 'left' ? 'last' : 'first'
     ) ?? SIDE_PANEL_SIZE
-  return Math.max(SIDEBAR_MIN_WIDTH, workspaceWidthAt(percent))
+  return workspaceWidthAt(percent)
 }
 
 const { onResizeStart: markResizedPanels, onResizeEnd: savePanelWidths } =
