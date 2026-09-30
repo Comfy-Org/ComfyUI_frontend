@@ -330,26 +330,31 @@ describe('tAround', () => {
 
   it.for<{
     key: TranslationKey
+    locale: Locale
     slot: string
     named: Record<string, string | number>
     error: string
   }>([
     {
       key: 'models.faq.whatIs.localAnswer',
+      locale: 'en',
       slot: 'name',
       named: { description: 'a model', count: 3 },
-      error: 'repeats slot {name}'
+      error:
+        'Translation models.faq.whatIs.localAnswer in en repeats slot {name}'
     },
     {
       key: 'models.list.heroTitle',
+      locale: 'zh-CN',
       slot: 'creators',
       named: { name: 'Flux', brand: 'ComfyUI' },
-      error: 'missing slot {creators}'
+      error:
+        'Translation models.list.heroTitle in zh-CN is missing slot {creators}'
     }
   ])(
     'throws "$error" for a slot that is not in the message exactly once',
-    ({ key, slot, named, error }) => {
-      expect(() => tAround(key, 'en', slot, named)).toThrow(error)
+    ({ key, locale, slot, named, error }) => {
+      expect(() => tAround(key, locale, slot, named)).toThrow(error)
     }
   )
 })
