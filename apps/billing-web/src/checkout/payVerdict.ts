@@ -12,10 +12,7 @@ import {
 import type { InlineOutcome, OperationOutcome } from '@/checkout/checkoutPage'
 
 /** The server refused the quote the customer consented to; re-price before asking again. */
-const STALE_QUOTE_SERVER_CODES = [
-  'PRORATION_QUOTE_EXPIRED',
-  'SUBSCRIPTION_QUOTE_STALE'
-] as const
+const STALE_QUOTE_SERVER_CODES = ['PRORATION_QUOTE_EXPIRED'] as const
 
 /**
  * What a Pay's result asks of the page. `settled` needs nothing from
@@ -39,6 +36,8 @@ export function payVerdictOf(result: SubscriptionCommandResult): PayVerdict {
     )
       return { kind: 'requote', because: 'quote_expired' }
     switch (result.code) {
+      case 'QUOTE_STALE':
+        return { kind: 'requote', because: 'quote_expired' }
       case 'REACTIVATION_CONFIRMATION_REQUIRED':
         return { kind: 'requote', because: 'reactivation_required' }
       case 'OPERATION_ALREADY_PENDING':

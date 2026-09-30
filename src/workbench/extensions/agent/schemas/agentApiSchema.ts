@@ -7,6 +7,7 @@ import {
   zAgentRunMode as zGeneratedAgentRunMode,
   zAgentThreadListResponse as zGeneratedAgentThreadListResponse,
   zAgentTurnAccepted as zGeneratedAgentTurnAccepted,
+  zToolCallSummary,
   zWorkflowListResponse
 } from '@comfyorg/ingest-types/zod'
 import type {
@@ -97,37 +98,50 @@ export type AgentRunModeValue = AgentRunModePreference['mode']
 /**
  * One entry of a persisted assistant row's `content.tool_calls` (see
  * `agentTranscript.ts`'s `parseToolCallEntry`), the reload-path counterpart
- * to the live WebSocket's `zAgentToolCallData` above. `status` is
- * deliberately `z.string()` rather than a closed enum: an unrecognized value
- * must still surface as a failed `ToolPart` (`toolCallOk` treats anything
- * other than `pending`/`running`/`ok`/`success` as failure), so schema
- * validation should reject a malformed *entry* (missing `id`/`tool_name`),
- * not an unfamiliar *status* string or a bad `duration_ms` — `duration_ms` is
- * `z.unknown().optional()` so a NaN/Infinity/negative value there doesn't
- * sink the whole entry; `parseToolCallEntry` narrows it separately and just
- * omits it. `status` is likewise `.optional()`: an entry that omits it
- * entirely must still survive validation (`toolCallPartState`/`toolCallOk`
- * already treat `undefined` as terminal-and-failed, matching the old
- * parser's behavior for a status-less call).
+ * to the live WebSocket's `zAgentToolCallData` above. Sourced from the
+ * generated `ToolCallSummary` schema (Comfy-Org/cloud#10360), but relaxed:
+ * the generated schema requires `tool_call_id`, narrows `status` to the
+ * closed `'success' | 'error'` wire vocabulary, and requires `duration_ms`
+ * to be an integer, which is only true for rows persisted after that
+ * backend change landed. Real historical rows can still carry a bare `id`
+ * with no `tool_call_id`, a `status` of `'ok'` (an older success alias —
+ * see `toolCallOk` in `agentTranscript.ts`), or a non-integer `duration_ms`.
+ * `parseToolCallEntry` picks only the fields it actually reads from this,
+ * so an unrelated field (e.g. a strict `started_at`/`finished_at` datetime)
+ * never gates the entry.
  */
-export const zPersistedToolCallSummary = z
+export const zPersistedToolCallSummary = zToolCallSummary.extend({
+  id: z.string(),
+  tool_call_id: z.string().optional(),
+  status: z.string(),
+  duration_ms: z.number().optional()
+})
+
+/**
+ * The message-parse boundary's `content.tool_calls` field is deliberately
+ * `z.array(z.unknown())`, not the stricter `zPersistedToolCallSummary`
+ * above: `agentRestClient.ts`'s `request()` calls `.parse()` (throws) on
+ * the whole `AgentMessages` array, so a single non-conforming historical
+ * tool-call row must never fail the entire conversation-history load.
+ * `agentTranscript.ts`'s `parseToolCallEntry` runs its own `safeParse`
+ * per entry and degrades just that one row instead.
+ *
+ * The generated `AgentMessage.content` schema also keeps a
+ * `[key: string]: unknown` index signature on its TS type but no matching
+ * `.passthrough()` on its zod schema — the `.passthrough()` below re-widens
+ * it so a persisted row's other `content` fields (`text`, `attachments`,
+ * `attachment_refs`, `workflow_references`, ...; see `agentTranscript.ts`)
+ * keep parsing.
+ */
+const zAgentMessageContent = z
   .object({
-    id: z.string(),
-    // The provider tool-use id a LIVE `agent_tool_call` frame carries as
-    // `tool_call_id` (see `zAgentToolCallData` above). `parseToolCallEntry`
-    // prefers this over `id` when building `callId` so a restored `ToolPart`
-    // is keyed the same way a live frame for the same call will be, and can
-    // be updated in place rather than rendered as an unmatched duplicate.
-    // Optional: rows recorded before `tool_call_id` existed have none.
-    tool_call_id: z.string().optional(),
-    tool_name: z.string(),
-    status: z.string().optional(),
-    duration_ms: z.unknown().optional()
+    tool_calls: z.array(z.unknown()).optional()
   })
   .passthrough()
 
 export const zAgentMessage = zGeneratedAgentMessage
   .extend({
+    content: zAgentMessageContent.optional(),
     pending_ask: zAgentPendingAsk.optional()
   })
   .passthrough()
