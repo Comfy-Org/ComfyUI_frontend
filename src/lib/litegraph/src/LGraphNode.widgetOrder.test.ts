@@ -332,6 +332,29 @@ describe('LGraphNode widget ordering', () => {
       )
     })
 
+    it('keeps ordered values aligned with positional onSerialize changes', () => {
+      node.addWidget('number', 'same', 1, null, {})
+      node.addWidget('number', 'same', 2, null, {})
+      node.serialize_widgets = true
+      node.onSerialize = (serialized) => {
+        serialized.widgets_values = [10, 20]
+      }
+
+      const serialized = node.serialize()
+      const restored = new LGraphNode('Restored')
+      restored.addWidget('number', 'same', 0, null, {})
+      restored.addWidget('number', 'same', 0, null, {})
+      restored.configure(serialized)
+
+      expect(serialized.widgets_values_ordered).toStrictEqual([
+        { name: 'same', occurrence: 0, value: 10 },
+        { name: 'same', occurrence: 1, value: 20 }
+      ])
+      expect(restored.widgets!.map((widget) => widget.value)).toStrictEqual([
+        10, 20
+      ])
+    })
+
     it('should support specifying order for legacy workflows', () => {
       node.addWidget('number', 'steps', 0, null, {})
       node.addWidget('number', 'seed', 0, null, {})

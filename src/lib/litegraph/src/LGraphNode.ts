@@ -1331,6 +1331,7 @@ export class LGraphNode
     const { widgets } = this
     if (widgets?.length && this.serialize_widgets)
       Object.assign(o, serialiseWidgetValues(widgets))
+    const generatedOrderedWidgetValues = o.widgets_values_ordered
 
     if (!o.type && this.constructor.type) o.type = this.constructor.type
 
@@ -1350,6 +1351,22 @@ export class LGraphNode
           }
         : undefined
     )
+    if (
+      generatedOrderedWidgetValues &&
+      serialised.widgets_values_ordered === generatedOrderedWidgetValues
+    ) {
+      const positional = serialised.widgets_values
+      if (positional?.length === generatedOrderedWidgetValues.length) {
+        serialised.widgets_values_ordered = generatedOrderedWidgetValues.map(
+          (entry, index) => ({
+            ...entry,
+            value: structuredClone(positional[index])
+          })
+        )
+      } else {
+        delete serialised.widgets_values_ordered
+      }
+    }
     if (hookResult)
       console.warn(
         "node onSerialize shouldn't return anything, data should be stored in the object pass in the first parameter"
