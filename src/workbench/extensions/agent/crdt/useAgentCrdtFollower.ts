@@ -550,7 +550,7 @@ function startAgentCrdtFollower(
     recordDevEvent('doc_reseed_result', detail)
     const code = typeof detail.code === 'string' ? detail.code : undefined
     if (detail.ok !== true && isRetryableReseedCode(code)) {
-      reseedAttempted.delete(detail.workflowId as string)
+      reseedAttempted.delete(detail.workflowId)
       lifecycle.onSubscribeRefused(code)
       return
     }
