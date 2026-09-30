@@ -30,6 +30,12 @@ export interface BillingEntry extends OptionalEntryValues {
   readonly intent: BillingIntent
   readonly product: BillingProduct
   readonly returnTo: ReturnTarget
+  /**
+   * A `promo` value outside the identifier charset, exactly as the link
+   * carried it. Checkout shows it refused in the field; it never reaches a
+   * URL and never voids the rest of the request.
+   */
+  readonly unreadablePromotionCode?: string
 }
 
 export type BillingEntryErrorCode =
@@ -59,19 +65,33 @@ function parseRoute(pathname: string): RouteResult {
   return { status: 'ok', intent }
 }
 
+type OptionalFields = OptionalEntryValues &
+  Pick<BillingEntry, 'unreadablePromotionCode'>
+
 type OptionalFieldsResult =
-  | { readonly status: 'ok'; readonly values: OptionalEntryValues }
+  | { readonly status: 'ok'; readonly values: OptionalFields }
   | { readonly status: 'error'; readonly code: InvalidIdentifierCode }
 
+/** A promo code only prefills a field, so an unreadable one is the field's error, not the link's. */
 function parseOptionalFields(params: URLSearchParams): OptionalFieldsResult {
   const values: Partial<Record<OptionalEntryKey, string>> = {}
+  let unreadablePromotionCode: string | undefined
   for (const field of OPTIONAL_ENTRY_FIELDS) {
     const raw = params.get(field.param)
     if (raw === null) continue
-    if (!isContractIdentifier(raw)) return { status: 'error', code: field.code }
-    values[field.key] = raw
+    if (isContractIdentifier(raw)) values[field.key] = raw
+    else if (field.key === 'promotionCode') unreadablePromotionCode = raw
+    else return { status: 'error', code: field.code }
   }
-  return { status: 'ok', values }
+  return {
+    status: 'ok',
+    values: {
+      ...values,
+      ...(unreadablePromotionCode === undefined
+        ? {}
+        : { unreadablePromotionCode })
+    }
+  }
 }
 
 /**

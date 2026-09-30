@@ -422,6 +422,6 @@ describe('AuthForgotPassword', () => {
     expect(
       assign,
       'a cross-origin destination maps to the safe Workshop-home fallback, never the raw value'
-    ).toHaveBeenCalledWith('/login/?returnTo=%2Fmodels%2F')
+    ).toHaveBeenCalledWith('/login/?returnTo=%2Fhub%2Fmodels%2F')
   })
 })

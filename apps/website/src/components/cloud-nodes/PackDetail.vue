@@ -19,7 +19,9 @@ const { pack, locale = 'en' } = defineProps<{
 }>()
 
 const backHref =
-  locale === 'zh-CN' ? '/zh-CN/cloud/supported-nodes' : '/cloud/supported-nodes'
+  locale === 'zh-CN'
+    ? '/zh-CN/cloud/supported-nodes/'
+    : '/cloud/supported-nodes/'
 
 const { groupedNodes } = useNodesByCategory(() => pack.nodes)
 </script>
@@ -38,7 +40,7 @@ const { groupedNodes } = useNodesByCategory(() => pack.nodes)
       </a>
 
       <div
-        class="bg-transparency-white-t5 overflow-hidden rounded-3xl border border-primary-warm-gray/20"
+        class="overflow-hidden rounded-3xl border border-primary-warm-gray/20 bg-transparency-white-t4"
       >
         <PackBanner
           :banner-url="pack.bannerUrl"

@@ -21,13 +21,13 @@ function nodeCountLabel(nodeCount: number): string {
     new Intl.PluralRules(locale).select(nodeCount) === 'one'
       ? 'cloudNodes.card.nodeCountOne'
       : 'cloudNodes.card.nodeCountOther'
-  return t(key, locale).replace('{count}', String(nodeCount))
+  return t(key, locale, { count: nodeCount })
 }
 </script>
 
 <template>
   <article
-    class="bg-transparency-white-t5 flex h-full flex-col overflow-hidden rounded-3xl border border-primary-warm-gray/20"
+    class="flex h-full flex-col overflow-hidden rounded-3xl border border-primary-warm-gray/20 bg-transparency-white-t4"
     data-testid="cloud-node-pack-card"
   >
     <PackBanner

@@ -66,7 +66,10 @@ const AgentPanelRoot = defineAsyncComponent({
   loader: () => import('@/workbench/extensions/agent/AgentPanelRoot.vue'),
   errorComponent: AgentPanelLoadError,
   onError: (error, _retry, fail) => {
-    reportError(error, { errorType: 'agent_panel_load_failure' })
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'agent_panel_load_failure'
+    })
     fail()
   }
 })
@@ -81,7 +84,10 @@ const { isVisible: docked, width } = storeToRefs(agentPanelStore)
 const agentRunModeStore = useAgentRunModeStore()
 
 void agentRunModeStore.load().catch((error: unknown) => {
-  reportError(error, { errorType: 'agent_run_mode_load_failure' })
+  reportError(error, {
+    surface: 'agent',
+    errorType: 'agent_run_mode_load_failure'
+  })
 })
 
 const isResizing = ref(false)

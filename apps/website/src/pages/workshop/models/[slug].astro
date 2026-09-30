@@ -47,11 +47,6 @@ const { model, related } = Astro.props
       </span>
     </nav>
 
-    {/*
-      A div, not a header. `markdown-twin.ts` drops HEADER along with the
-      site chrome, so wrapping the hero in one leaves every model's llms.txt
-      entry with a title and nothing else. The h1 still carries the heading.
-    */}
     <div class="mb-12 max-w-4xl">
       <p class="text-sm tracking-widest text-primary-comfy-yellow uppercase">
         {model.provider}

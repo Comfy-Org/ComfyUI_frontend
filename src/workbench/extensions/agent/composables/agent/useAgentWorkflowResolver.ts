@@ -32,6 +32,7 @@ export function useAgentWorkflowResolver({
   listCloudWorkflows
 }: WorkflowResolverDeps) {
   const cloudIndex = ref<WorkflowReferenceMetadata[]>([])
+  const listedCloudIds = ref<ReadonlySet<string>>(new Set())
   let refreshGeneration = 0
   const cloudIdsByName = computed(() => {
     const counts = new Map<string, number>()
@@ -49,6 +50,7 @@ export function useAgentWorkflowResolver({
     try {
       const entries = await listCloudWorkflows()
       if (generation !== refreshGeneration) return false
+      listedCloudIds.value = new Set(entries.map(({ id }) => id))
       cloudIndex.value = entries.flatMap(({ id, name }) =>
         name === undefined ? [] : [{ id, name }]
       )
@@ -56,6 +58,7 @@ export function useAgentWorkflowResolver({
     } catch (error) {
       if (generation !== refreshGeneration) return false
       reportError(error, {
+        surface: 'agent',
         errorType: 'agent_cloud_workflow_ids_refresh_failed'
       })
       return false
@@ -103,10 +106,7 @@ export function useAgentWorkflowResolver({
   }
 
   function indexedNameFor(workflowId: string): string | undefined {
-    for (const [name, id] of cloudIdsByName.value) {
-      if (id === workflowId) return name
-    }
-    return undefined
+    return cloudIndex.value.find(({ id }) => id === workflowId)?.name
   }
 
   /**
@@ -120,7 +120,7 @@ export function useAgentWorkflowResolver({
     const indexedName = indexedNameFor(workflowId)
     const boundName = cloudWorkflowName(bound)
     if (indexedName === undefined || indexedName === boundName) return false
-    const boundId = cloudIdsByName.value.get(boundName)
+    const boundId = cloudIndex.value.find(({ name }) => name === boundName)?.id
     return boundId !== undefined && boundId !== workflowId
   }
 
@@ -144,6 +144,19 @@ export function useAgentWorkflowResolver({
 
   function boundOrOpenWorkflowFor(workflowId: string): ComfyWorkflow | null {
     return resolveWorkflow(workflowId, workflows.openWorkflows)
+  }
+
+  function cachedOpenWorkflowFor(workflowId: string): ComfyWorkflow | null {
+    if (indexedNameFor(workflowId) === undefined) return null
+    const target = boundOrOpenWorkflowFor(workflowId)
+    return target !== null && workflows.openWorkflows.includes(target)
+      ? target
+      : null
+  }
+
+  /** Whether the last successful Cloud listing included `workflowId`. */
+  function isCloudWorkflowListed(workflowId: string): boolean {
+    return listedCloudIds.value.has(workflowId)
   }
 
   function storedWorkflowFor(workflowId: string): ComfyWorkflow | null {
@@ -179,8 +192,8 @@ export function useAgentWorkflowResolver({
         return true
       })
       return [
-        ...open.toSorted((a, b) => a.name.localeCompare(b.name)),
-        ...saved.toSorted((a, b) => a.name.localeCompare(b.name))
+        ...[...open].sort((a, b) => a.name.localeCompare(b.name)),
+        ...[...saved].sort((a, b) => a.name.localeCompare(b.name))
       ]
     }
   )
@@ -217,7 +230,9 @@ export function useAgentWorkflowResolver({
     cloudIdFor,
     cloudWorkflowName,
     boundOrOpenWorkflowFor,
+    cachedOpenWorkflowFor,
     storedWorkflowFor,
+    isCloudWorkflowListed,
     openWorkflowFor,
     availableWorkflowReferences,
     openTabsSnapshot,

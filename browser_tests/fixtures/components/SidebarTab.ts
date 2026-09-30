@@ -92,8 +92,8 @@ export class NodeLibrarySidebarTabV2 extends SidebarTab {
 
   constructor(public override readonly page: Page) {
     super(page, 'node-library')
-    this.searchInput = page.getByPlaceholder('Search...')
     this.sidebarContent = page.locator('.sidebar-content-container')
+    this.searchInput = this.sidebarContent.getByPlaceholder('Search Nodes...')
     this.allTab = this.getTab('All nodes')
     this.essentialsTab = this.getTab('Essentials')
     this.sortButton = this.sidebarContent.getByRole('button', { name: 'Sort' })
@@ -339,8 +339,6 @@ export class AssetsSidebarTab extends SidebarTab {
 
   // --- Panel chrome ---
   public readonly panelHeader: Locator
-  /** The sidebar panel. Not the scroller — VirtualGrid's root owns overflow. */
-  public readonly contentPanel: Locator
 
   // --- Loading ---
   public readonly skeletonLoaders: Locator
@@ -380,7 +378,6 @@ export class AssetsSidebarTab extends SidebarTab {
     this.sortZToA = page.getByText('Name (Z → A)')
     this.sortLongestFirst = page.getByText('Generation time (longest first)')
     this.sortFastestFirst = page.getByText('Generation time (fastest first)')
-    this.contentPanel = page.locator('.sidebar-content-container')
     this.assetCards = page.locator(
       '.sidebar-content-container [data-asset-id][data-selected]'
     )

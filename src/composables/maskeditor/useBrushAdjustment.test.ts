@@ -9,9 +9,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: { registerExtension: vi.fn() }
-}))
+vi.mock(import('@/scripts/app'))
 
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { useBrushAdjustment } from './useBrushAdjustment'

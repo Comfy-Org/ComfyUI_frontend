@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { ESLint } from 'eslint'
-import { describe, expect, it } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 
 import lintStaged from '../../lint-staged.config'
 
@@ -43,11 +43,17 @@ debugger
 
   it('formats after ESLint fixes and typechecks an Astro-only commit', () => {
     const commands = lintStaged([`${process.cwd()}/${filePath}`])
-    const lintCommand = `pnpm exec eslint --cache --fix --no-warn-ignored "${filePath}"`
+    assert(Array.isArray(commands))
+    const lintCommand = commands.find(
+      (command) =>
+        command.startsWith('pnpm exec eslint ') &&
+        command.includes('--fix') &&
+        command.endsWith(`"${filePath}"`)
+    )
     const formatCommand =
       'pnpm --dir apps/website exec prettier --write "src/pages/lint-coverage.astro"'
 
-    expect(commands).toContain(lintCommand)
+    assert.exists(lintCommand)
     expect(commands.indexOf(formatCommand)).toBeGreaterThan(
       commands.indexOf(lintCommand)
     )

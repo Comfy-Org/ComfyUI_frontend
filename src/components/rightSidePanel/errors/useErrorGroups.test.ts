@@ -41,18 +41,7 @@ vi.mock(import('@/services/comfyRegistryService'), () => ({
     })
 }))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    isGraphReady: true,
-    rootGraph: {
-      serialize: vi.fn(() => ({})),
-      getNodeById: vi.fn()
-    },
-    get rootGraphOrUndefined() {
-      return this.rootGraph
-    }
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@/utils/graphTraversalUtil'), { spy: true })
 

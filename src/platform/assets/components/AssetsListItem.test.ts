@@ -148,6 +148,7 @@ describe('AssetsListItem', () => {
     })
 
     expect(screen.getByRole('img')).toBeInTheDocument()
+    expect(screen.getByRole('img')).toHaveAttribute('draggable', 'false')
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- no ARIA role for <video> in happy-dom
     expect(container.querySelector('video')).not.toBeInTheDocument()
     expect(

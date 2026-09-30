@@ -1,48 +1,29 @@
 import { getActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 
-import type { AuditLog } from '@/services/customerEventsService'
-import { EventType } from '@/services/customerEventsService'
+import {
+  EventType,
+  useCustomerEventsService
+} from '@/services/customerEventsService'
 
+import { useBillingRouting } from '@/composables/billing/useBillingRouting'
+import { useTelemetry } from '@/platform/telemetry'
+import type { BillingEventsResponse } from '@/platform/workspace/api/workspaceApi'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import UsageLogsTable from './UsageLogsTable.vue'
 
-const mockCustomerEventsService = vi.hoisted(() => ({
-  getMyEvents: vi.fn(),
-  formatEventType: vi.fn(),
-  getEventSeverity: vi.fn(),
-  formatAmount: vi.fn(),
-  formatDate: vi.fn(),
-  hasAdditionalInfo: vi.fn(),
-  getTooltipContent: vi.fn(),
-  error: { value: null as string | null },
-  isLoading: { value: false }
-}))
+vi.mock(import('@/services/customerEventsService'))
 
-vi.mock<unknown>(import('@/services/customerEventsService'), () => ({
-  useCustomerEventsService: () => mockCustomerEventsService,
-  EventType: {
-    CREDIT_ADDED: 'credit_added',
-    ACCOUNT_CREATED: 'account_created',
-    API_USAGE_STARTED: 'api_usage_started',
-    API_USAGE_COMPLETED: 'api_usage_completed'
-  }
-}))
-
-const mockTelemetry = vi.hoisted(() => ({
-  trackApiCreditTopupSucceeded: vi.fn()
-}))
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => mockTelemetry
-}))
+vi.mock(import('@/platform/telemetry'))
 
 const mockPendingTopup = vi.hoisted(() => ({
   isPendingTopupCompleted: vi.fn().mockReturnValue(true)
@@ -51,42 +32,9 @@ vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
   usePendingTopup: () => mockPendingTopup
 }))
 
-const mockBillingRouting = vi.hoisted(() => ({
-  shouldUseWorkspaceBilling: false
-}))
-vi.mock<unknown>(
-  import('@/composables/billing/useBillingRouting'),
-  async () => {
-    const { ref } = await import('vue')
-    const shouldUseWorkspaceBilling = ref(false)
-    Object.defineProperty(mockBillingRouting, 'shouldUseWorkspaceBilling', {
-      get: () => shouldUseWorkspaceBilling.value,
-      set: (value: boolean) => {
-        shouldUseWorkspaceBilling.value = value
-      }
-    })
-    return {
-      useBillingRouting: () => ({ shouldUseWorkspaceBilling })
-    }
-  }
-)
+vi.mock(import('@/composables/billing/useBillingRouting'))
 
-const mockWorkspaceApi = vi.hoisted(() => ({
-  getBillingEvents: vi.fn()
-}))
-vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
-  workspaceApi: mockWorkspaceApi,
-  // readOnRail throws this on a failed read, so the real one has to exist.
-  WorkspaceApiError: class WorkspaceApiError extends Error {
-    constructor(
-      message: string,
-      readonly status?: number,
-      readonly code?: string
-    ) {
-      super(message)
-    }
-  }
-}))
+vi.mock(import('@/platform/workspace/api/workspaceApi'))
 
 // The table only ever calls `readEvents`; the other five are here so the
 // factory satisfies `BillingReadRail` and the module type stays checked.
@@ -133,10 +81,14 @@ async function flushMicrotasks() {
   await nextTick()
 }
 
+function setWorkspaceBilling(value: boolean) {
+  useBillingRouting().shouldUseWorkspaceBilling = computed(() => value)
+}
+
 function makeEventsResponse(
-  events: Partial<AuditLog>[],
+  events: BillingEventsResponse['events'],
   overrides: Record<string, unknown> = {}
-) {
+): BillingEventsResponse {
   return {
     events,
     total: events.length,
@@ -171,63 +123,21 @@ describe('UsageLogsTable', () => {
   ])
 
   beforeEach(() => {
-    mockCustomerEventsService.getMyEvents.mockResolvedValue(mockEventsResponse)
-    mockWorkspaceApi.getBillingEvents.mockResolvedValue(mockEventsResponse)
+    setWorkspaceBilling(false)
+    vi.when(useCustomerEventsService().getMyEvents)
+      .calledWith({ page: 1, limit: 7 })
+      .thenResolve(mockEventsResponse)
+    vi.mocked(workspaceApi.getBillingEvents).mockResolvedValue(
+      mockEventsResponse
+    )
     mockBillingReadRail.readEvents.mockResolvedValue({
       status: 'ok',
       value: mockEventsResponse
     })
     mockBillingReadRail.enabled = false
-    mockBillingRouting.shouldUseWorkspaceBilling = false
-    mockCustomerEventsService.formatEventType.mockImplementation(
-      (type: string) => {
-        switch (type) {
-          case EventType.CREDIT_ADDED:
-            return 'Credits Added'
-          case EventType.ACCOUNT_CREATED:
-            return 'Account Created'
-          case EventType.API_USAGE_COMPLETED:
-            return 'API Usage'
-          default:
-            return type
-        }
-      }
+    vi.mocked(useCustomerEventsService().getTooltipContent).mockReturnValue(
+      '<strong>Transaction Id:</strong> txn-123'
     )
-    mockCustomerEventsService.getEventSeverity.mockImplementation(
-      (type: string) => {
-        switch (type) {
-          case EventType.CREDIT_ADDED:
-            return 'success'
-          case EventType.ACCOUNT_CREATED:
-            return 'info'
-          case EventType.API_USAGE_COMPLETED:
-            return 'warning'
-          default:
-            return 'info'
-        }
-      }
-    )
-    mockCustomerEventsService.formatAmount.mockImplementation(
-      (amount: number) => {
-        if (!amount) return '0.00'
-        return (amount / 100).toFixed(2)
-      }
-    )
-    mockCustomerEventsService.formatDate.mockImplementation(
-      (dateString: string) => new Date(dateString).toLocaleDateString()
-    )
-    mockCustomerEventsService.hasAdditionalInfo.mockImplementation(
-      (event: AuditLog) => {
-        const { amount, api_name, model, ...otherParams } =
-          event.params as Record<string, unknown>
-        return Object.keys(otherParams).length > 0
-      }
-    )
-    mockCustomerEventsService.getTooltipContent.mockImplementation(
-      () => '<strong>Transaction Id:</strong> txn-123'
-    )
-    mockCustomerEventsService.error.value = null
-    mockCustomerEventsService.isLoading.value = false
   })
 
   function renderComponent() {
@@ -251,19 +161,19 @@ describe('UsageLogsTable', () => {
     it('loads activity on mount without an external refresh', async () => {
       await renderLoaded()
 
-      expect(mockCustomerEventsService.getMyEvents).toHaveBeenCalledTimes(1)
+      expect(useCustomerEventsService().getMyEvents).toHaveBeenCalledTimes(1)
     })
 
     it('loads activity on mount on the workspace billing rail', async () => {
-      mockBillingRouting.shouldUseWorkspaceBilling = true
+      setWorkspaceBilling(true)
 
       await renderLoaded()
 
-      expect(mockWorkspaceApi.getBillingEvents).toHaveBeenCalledTimes(1)
+      expect(workspaceApi.getBillingEvents).toHaveBeenCalledTimes(1)
     })
 
     it('shows a loading spinner while the initial load is in flight', () => {
-      mockCustomerEventsService.getMyEvents.mockReturnValue(
+      vi.mocked(useCustomerEventsService().getMyEvents).mockReturnValue(
         new Promise(() => {})
       )
 
@@ -274,8 +184,8 @@ describe('UsageLogsTable', () => {
     })
 
     it('shows error message when service returns null', async () => {
-      mockCustomerEventsService.getMyEvents.mockResolvedValue(null)
-      mockCustomerEventsService.error.value = 'Failed to load events'
+      vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValue(null)
+      useCustomerEventsService().error.value = 'Failed to load events'
 
       renderComponent()
 
@@ -285,7 +195,7 @@ describe('UsageLogsTable', () => {
     })
 
     it('shows a localized fallback instead of a raw Error message', async () => {
-      mockCustomerEventsService.getMyEvents.mockRejectedValue(
+      vi.mocked(useCustomerEventsService().getMyEvents).mockRejectedValue(
         new Error('Network error')
       )
 
@@ -302,8 +212,8 @@ describe('UsageLogsTable', () => {
     })
 
     it('shows a localized fallback when the service reports no message', async () => {
-      mockCustomerEventsService.getMyEvents.mockResolvedValue(null)
-      mockCustomerEventsService.error.value = null
+      vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValue(null)
+      useCustomerEventsService().error.value = null
 
       renderComponent()
 
@@ -327,15 +237,15 @@ describe('UsageLogsTable', () => {
     it('renders event type badges', async () => {
       await renderLoaded()
 
-      expect(mockCustomerEventsService.formatEventType).toHaveBeenCalled()
-      expect(mockCustomerEventsService.getEventSeverity).toHaveBeenCalled()
+      expect(useCustomerEventsService().formatEventType).toHaveBeenCalled()
+      expect(useCustomerEventsService().getEventSeverity).toHaveBeenCalled()
     })
 
     it('renders credit added details with formatted amount', async () => {
       await renderLoaded()
 
       expect(screen.getByText(/Added \$/)).toBeInTheDocument()
-      expect(mockCustomerEventsService.formatAmount).toHaveBeenCalled()
+      expect(useCustomerEventsService().formatAmount).toHaveBeenCalled()
     })
 
     it('renders API usage details with api name and model', async () => {
@@ -346,7 +256,7 @@ describe('UsageLogsTable', () => {
     })
 
     it('renders account created details', async () => {
-      mockCustomerEventsService.getMyEvents.mockResolvedValue(
+      vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValue(
         makeEventsResponse([
           {
             event_id: 'event-3',
@@ -367,11 +277,13 @@ describe('UsageLogsTable', () => {
     it('renders formatted dates', async () => {
       await renderLoaded()
 
-      expect(mockCustomerEventsService.formatDate).toHaveBeenCalled()
+      expect(useCustomerEventsService().formatDate).toHaveBeenCalled()
     })
 
     it('renders info buttons for events with additional info', async () => {
-      mockCustomerEventsService.hasAdditionalInfo.mockReturnValue(true)
+      vi.mocked(useCustomerEventsService().hasAdditionalInfo).mockReturnValue(
+        true
+      )
 
       await renderLoaded()
 
@@ -382,7 +294,9 @@ describe('UsageLogsTable', () => {
     })
 
     it('does not render info buttons when no additional info', async () => {
-      mockCustomerEventsService.hasAdditionalInfo.mockReturnValue(false)
+      vi.mocked(useCustomerEventsService().hasAdditionalInfo).mockReturnValue(
+        false
+      )
 
       await renderLoaded()
 
@@ -396,7 +310,7 @@ describe('UsageLogsTable', () => {
     it('calls getMyEvents with initial page params', async () => {
       await renderLoaded()
 
-      expect(mockCustomerEventsService.getMyEvents).toHaveBeenCalledWith({
+      expect(useCustomerEventsService().getMyEvents).toHaveBeenCalledWith({
         page: 1,
         limit: 7
       })
@@ -407,7 +321,7 @@ describe('UsageLogsTable', () => {
     it('calls getMyEvents on refresh with page 1', async () => {
       await renderLoaded()
 
-      expect(mockCustomerEventsService.getMyEvents).toHaveBeenCalledWith({
+      expect(useCustomerEventsService().getMyEvents).toHaveBeenCalledWith({
         page: 1,
         limit: 7
       })
@@ -416,25 +330,29 @@ describe('UsageLogsTable', () => {
 
   describe('billing events source', () => {
     it('uses workspaceApi.getBillingEvents on the workspace billing flow', async () => {
-      mockBillingRouting.shouldUseWorkspaceBilling = true
+      setWorkspaceBilling(true)
 
       await renderLoaded()
 
-      expect(mockWorkspaceApi.getBillingEvents).toHaveBeenCalledWith({
+      expect(workspaceApi.getBillingEvents).toHaveBeenCalledWith({
         page: 1,
         limit: 7
       })
-      expect(mockCustomerEventsService.getMyEvents).not.toHaveBeenCalled()
+      expect(useCustomerEventsService().getMyEvents).not.toHaveBeenCalled()
     })
 
     it('discards a stale legacy response when routing flips mid-fetch', async () => {
+      const workspaceBilling = ref(false)
+      useBillingRouting().shouldUseWorkspaceBilling = computed(
+        () => workspaceBilling.value
+      )
       let resolveLegacy!: (value: ReturnType<typeof makeEventsResponse>) => void
-      mockCustomerEventsService.getMyEvents.mockReturnValue(
+      vi.mocked(useCustomerEventsService().getMyEvents).mockReturnValue(
         new Promise((resolve) => {
           resolveLegacy = resolve
         })
       )
-      mockWorkspaceApi.getBillingEvents.mockResolvedValue(
+      vi.mocked(workspaceApi.getBillingEvents).mockResolvedValue(
         makeEventsResponse([
           {
             event_id: 'workspace-1',
@@ -447,7 +365,7 @@ describe('UsageLogsTable', () => {
 
       renderComponent()
 
-      mockBillingRouting.shouldUseWorkspaceBilling = true
+      workspaceBilling.value = true
       await waitFor(() => {
         expect(screen.getByText('WorkspaceAPI')).toBeInTheDocument()
       })
@@ -470,14 +388,18 @@ describe('UsageLogsTable', () => {
     })
 
     it('runs top-up completion telemetry for a superseded response', async () => {
+      const workspaceBilling = ref(false)
+      useBillingRouting().shouldUseWorkspaceBilling = computed(
+        () => workspaceBilling.value
+      )
       mockPendingTopup.isPendingTopupCompleted.mockReturnValue(true)
       let resolveLegacy!: (value: ReturnType<typeof makeEventsResponse>) => void
-      mockCustomerEventsService.getMyEvents.mockReturnValue(
+      vi.mocked(useCustomerEventsService().getMyEvents).mockReturnValue(
         new Promise((resolve) => {
           resolveLegacy = resolve
         })
       )
-      mockWorkspaceApi.getBillingEvents.mockResolvedValue(
+      vi.mocked(workspaceApi.getBillingEvents).mockResolvedValue(
         makeEventsResponse([
           {
             event_id: 'workspace-1',
@@ -490,7 +412,7 @@ describe('UsageLogsTable', () => {
 
       renderComponent()
 
-      mockBillingRouting.shouldUseWorkspaceBilling = true
+      workspaceBilling.value = true
       await waitFor(() => {
         expect(screen.getByText('WorkspaceAPI')).toBeInTheDocument()
       })
@@ -509,9 +431,37 @@ describe('UsageLogsTable', () => {
         expect(mockPendingTopup.isPendingTopupCompleted).toHaveBeenCalledWith(
           legacyResponse.events
         )
-        expect(mockTelemetry.trackApiCreditTopupSucceeded).toHaveBeenCalled()
+        expect(useTelemetry()?.trackApiCreditTopupSucceeded).toHaveBeenCalled()
       })
     })
+
+    it.for([
+      {
+        name: 'a completed legacy top-up closes as succeeded',
+        completed: true,
+        expectedEvents: [
+          [{ operation: 'topup', stage: 'succeeded', outcome: 'success' }]
+        ]
+      },
+      {
+        name: 'no completed top-up reports nothing',
+        completed: false,
+        expectedEvents: []
+      }
+    ])(
+      'reports top-up completion to the billing funnel: $name',
+      async ({ completed, expectedEvents }) => {
+        mockPendingTopup.isPendingTopupCompleted.mockReturnValue(completed)
+
+        await renderLoaded()
+
+        const telemetry = useTelemetry()
+        assert.exists(telemetry)
+        expect(vi.mocked(telemetry.trackBillingEvent).mock.calls).toEqual(
+          expectedEvents
+        )
+      }
+    )
 
     it('skips top-up telemetry when no completion is pending', async () => {
       mockPendingTopup.isPendingTopupCompleted.mockReturnValue(false)
@@ -521,7 +471,9 @@ describe('UsageLogsTable', () => {
       expect(mockPendingTopup.isPendingTopupCompleted).toHaveBeenCalledWith(
         mockEventsResponse.events
       )
-      expect(mockTelemetry.trackApiCreditTopupSucceeded).not.toHaveBeenCalled()
+      expect(
+        useTelemetry()?.trackApiCreditTopupSucceeded
+      ).not.toHaveBeenCalled()
     })
   })
 
@@ -539,15 +491,15 @@ describe('UsageLogsTable', () => {
     )
 
     const readers = {
-      legacy: () => mockCustomerEventsService.getMyEvents,
-      workspaceApi: () => mockWorkspaceApi.getBillingEvents,
+      legacy: () => useCustomerEventsService().getMyEvents,
+      workspaceApi: () => workspaceApi.getBillingEvents,
       rail: () => mockBillingReadRail.readEvents
     }
 
     function onTheRail(
       result: unknown = { status: 'ok', value: railResponse }
     ) {
-      mockBillingRouting.shouldUseWorkspaceBilling = true
+      setWorkspaceBilling(true)
       mockBillingReadRail.enabled = true
       mockBillingReadRail.readEvents.mockResolvedValue(result)
     }
@@ -560,7 +512,7 @@ describe('UsageLogsTable', () => {
     ] as const)(
       'serves the page from $serves with workspaceBilling=$workspaceBilling rail=$rail',
       async ({ workspaceBilling, rail, serves }) => {
-        mockBillingRouting.shouldUseWorkspaceBilling = workspaceBilling
+        setWorkspaceBilling(workspaceBilling)
         mockBillingReadRail.enabled = rail
 
         await renderLoaded()
@@ -683,13 +635,13 @@ describe('UsageLogsTable', () => {
       expect(mockPendingTopup.isPendingTopupCompleted).toHaveBeenCalledWith(
         railResponse.events
       )
-      expect(mockTelemetry.trackApiCreditTopupSucceeded).toHaveBeenCalled()
+      expect(useTelemetry()?.trackApiCreditTopupSucceeded).toHaveBeenCalled()
     })
   })
 
   describe('EventType integration', () => {
     it('renders credit_added event with correct detail template', async () => {
-      mockCustomerEventsService.getMyEvents.mockResolvedValue(
+      vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValue(
         makeEventsResponse([
           {
             event_id: 'event-1',
@@ -703,11 +655,11 @@ describe('UsageLogsTable', () => {
       await renderLoaded()
 
       expect(screen.getByText(/Added \$/)).toBeInTheDocument()
-      expect(mockCustomerEventsService.formatAmount).toHaveBeenCalled()
+      expect(useCustomerEventsService().formatAmount).toHaveBeenCalled()
     })
 
     it('renders api_usage_completed event with correct detail template', async () => {
-      mockCustomerEventsService.getMyEvents.mockResolvedValue(
+      vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValue(
         makeEventsResponse([
           {
             event_id: 'event-2',

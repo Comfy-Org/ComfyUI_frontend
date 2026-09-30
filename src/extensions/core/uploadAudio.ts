@@ -338,6 +338,7 @@ app.registerExtension({
 
         const handleRecordingStartFailure = (error: unknown) => {
           reportError(error, {
+            surface: 'assets',
             errorType: 'failure_starting_audio_recorder',
             tags: {
               failure_kind: 'caught_unexpected',

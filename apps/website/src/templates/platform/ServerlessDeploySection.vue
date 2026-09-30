@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { Check, Copy } from '@lucide/vue'
+import { useClipboard } from '@vueuse/core'
+
 import SectionHeader from '../../components/common/SectionHeader.vue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -18,6 +21,11 @@ const deployTranscript = [
   '$ comfy deploy up',
   '✔ Endpoint live → https://your-build.run.comfy.app'
 ]
+const deployCommands = deployTranscript
+  .filter((line) => line.startsWith('$ '))
+  .map((line) => line.slice(2))
+  .join('\n')
+const { copy, copied } = useClipboard({ source: deployCommands, legacy: true })
 </script>
 
 <template>
@@ -33,8 +41,28 @@ const deployTranscript = [
       </template>
     </SectionHeader>
 
-    <div class="mx-auto mt-8 max-w-3xl">
+    <div class="relative mx-auto mt-8 max-w-3xl">
+      <button
+        type="button"
+        class="absolute top-3 right-3 z-10 flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-primary-comfy-canvas hover:bg-transparency-white-t4 focus-visible:outline-2 focus-visible:outline-primary-comfy-yellow"
+        :aria-label="
+          t(
+            copied
+              ? 'platform.serverlessDeploy.copied'
+              : 'platform.serverlessDeploy.copy',
+            locale
+          )
+        "
+        @click="copy()"
+      >
+        <component
+          :is="copied ? Check : Copy"
+          class="size-4"
+          aria-hidden="true"
+        />
+      </button>
       <LiveTerminal
+        class="[&_pre]:pt-14"
         :lines="deployTranscript"
         :label="t('platform.serverlessDeploy.heading', locale)"
       />

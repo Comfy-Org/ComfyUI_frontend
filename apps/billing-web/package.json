@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "test:coverage": "vitest run --coverage",
     "test:unit": "vitest run",
-    "typecheck": "vue-tsc --noEmit -p tsconfig.json",
+    "typecheck": "tsx ../../scripts/vue-tsc-native.ts --noEmit -p tsconfig.json",
     "test:e2e": "playwright test",
     "test:e2e:local": "cross-env PLAYWRIGHT_LOCAL=1 playwright test"
   },
@@ -19,10 +19,13 @@
     "@comfyorg/account-ui": "workspace:*",
     "@comfyorg/billing-contract": "workspace:*",
     "@comfyorg/design-system": "workspace:*",
+    "@comfyorg/shared-frontend-utils": "workspace:*",
     "@comfyorg/tailwind-utils": "workspace:*",
     "@stripe/stripe-js": "catalog:",
     "@vueuse/core": "catalog:",
     "firebase": "catalog:",
+    "primeicons": "catalog:",
+    "reka-ui": "catalog:",
     "vue": "catalog:",
     "vue-i18n": "catalog:",
     "vue-router": "catalog:"
@@ -44,7 +47,6 @@
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vitest": "catalog:",
-    "vue-tsc": "catalog:"
+    "vitest": "catalog:"
   }
 }

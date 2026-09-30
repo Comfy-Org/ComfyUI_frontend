@@ -7,12 +7,14 @@ import {
   ref,
   watch
 } from 'vue'
+import type { Component } from 'vue'
 import { useMounted } from '@vueuse/core'
 
 import type { Locale } from '../../../i18n/translations.ts'
 import { t } from '../../../i18n/translations.ts'
 import { externalLinks, getRoutes } from '../../../config/routes.ts'
 import { subscribeToWorkshopBuyCredits } from '../../../config/workshop-buy-credits.ts'
+import { resolveWorkshopAccountSource } from '../../../config/workshop-account-source.ts'
 import {
   useWorkshopAuthFlag,
   useWorkshopEnabled
@@ -20,6 +22,7 @@ import {
 import GitHubStarBadge from '../GitHubStarBadge.vue'
 import HeaderMainDesktop from './HeaderMainDesktop.vue'
 import HeaderMainMobile from './HeaderMainMobile.vue'
+import LogoContextMenu from './LogoContextMenu.vue'
 import Button from '@/components/ui/button/Button.vue'
 
 const {
@@ -41,12 +44,24 @@ const showWorkshop = computed(
 const showAccount = computed(
   () => showWorkshop.value && workshopAuthEnabled.value
 )
-const HeaderAccount = defineAsyncComponent(
-  () => import('../../workshop/HeaderAccount.vue')
-)
-const BuyCreditsDialog = defineAsyncComponent(
-  () => import('../../workshop/BuyCreditsDialog.vue')
-)
+// Each loader waits for the account source, so a visitor the web session
+// knows never mounts an island that would start Firebase.
+const HeaderAccount = defineAsyncComponent(async () => {
+  const [source, firebaseHeader] = await Promise.all([
+    resolveWorkshopAccountSource(),
+    import('../../workshop/HeaderAccount.vue')
+  ])
+  return source === 'session'
+    ? import('../../workshop/HeaderSessionAccount.vue')
+    : firebaseHeader
+})
+const BuyCreditsDialog = defineAsyncComponent<Component>(async () => {
+  const [source, dialog] = await Promise.all([
+    resolveWorkshopAccountSource(),
+    import('../../workshop/BuyCreditsDialog.vue')
+  ])
+  return source === 'session' ? { render: () => null } : dialog
+})
 const buyingCredits = ref(false)
 const buyCreditsDialogMounted = ref(false)
 let stopBuyCreditsRequests: (() => void) | undefined
@@ -88,26 +103,28 @@ const ctaButtons = [
     class="sticky top-0 z-50 flex items-center justify-between gap-4 bg-primary-comfy-ink px-6 py-5 lg:gap-4 lg:px-[clamp(0.25rem,4vw,5rem)] lg:py-8"
     aria-label="Main navigation"
   >
-    <a
-      :href="routes.home"
-      class="inline-grid h-10 shrink-0 grid-cols-1 grid-rows-1 transition-[width]"
-      aria-label="Comfy home"
-    >
-      <img
-        src="/icons/logomark.svg"
-        alt="Comfy"
-        class="col-span-full row-span-full h-8"
-      />
-      <div
-        class="relative col-span-full row-span-full h-10 w-0 overflow-clip transition-[width] 2xl:w-36"
+    <LogoContextMenu :locale>
+      <a
+        :href="routes.home"
+        class="inline-grid h-10 shrink-0 grid-cols-1 grid-rows-1 transition-[width]"
+        aria-label="Comfy home"
       >
         <img
-          src="/icons/logo.svg"
+          src="/icons/logomark.svg"
           alt="Comfy"
-          class="absolute top-0 left-0 h-10 w-36 max-w-none object-contain object-left"
+          class="col-span-full row-span-full h-8"
         />
-      </div>
-    </a>
+        <div
+          class="relative col-span-full row-span-full h-10 w-0 overflow-clip transition-[width] 2xl:w-36"
+        >
+          <img
+            src="/icons/logo.svg"
+            alt="Comfy"
+            class="absolute top-0 left-0 h-10 w-36 max-w-none object-contain object-left"
+          />
+        </div>
+      </a>
+    </LogoContextMenu>
 
     <!-- Desktop nav links -->
     <HeaderMainDesktop

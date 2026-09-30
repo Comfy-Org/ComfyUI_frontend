@@ -53,24 +53,11 @@ function deriveFieldsForDefinition(
     media = [],
     files = []
   } = definition
-  const rawProperties = parameters.properties
-  const properties =
-    rawProperties &&
-    typeof rawProperties === 'object' &&
-    !Array.isArray(rawProperties)
-      ? Object.fromEntries(
-          Object.entries(rawProperties).map(([name, value]) => [
-            name,
-            value && typeof value === 'object' && !Array.isArray(value)
-              ? resolveSchemaReference(value, parameters)
-              : value
-          ])
-        )
-      : {}
+  const properties = resolveFormProperties(parameters)
   const fields = deriveWorkshopFields(
     { ...parameters, properties },
     roles,
-    definition.source === 'router' ? [] : undefined
+    definition.source === 'router' || definition.inputs ? [] : undefined
   ).filter((field) => !definition.inputs?.[field.name]?.hidden)
   const bodyEditor = usesRequestBodyEditor(definition)
   const names = new Set([
@@ -188,4 +175,20 @@ function deriveFieldsForDefinition(
       })
     )
   ]
+}
+
+function resolveFormProperties(parameters: WorkshopModelEntry['parameters']) {
+  const rawProperties = parameters.properties
+  return rawProperties &&
+    typeof rawProperties === 'object' &&
+    !Array.isArray(rawProperties)
+    ? Object.fromEntries(
+        Object.entries(rawProperties).map(([name, value]) => [
+          name,
+          value && typeof value === 'object' && !Array.isArray(value)
+            ? resolveSchemaReference(value, parameters)
+            : value
+        ])
+      )
+    : {}
 }

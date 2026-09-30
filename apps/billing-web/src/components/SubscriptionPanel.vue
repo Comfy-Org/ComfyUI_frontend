@@ -1,74 +1,41 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute, useRouter } from 'vue-router'
 
-import type { BillingPlansData } from '@comfyorg/account-core/billing'
-import { usePlans, usePreviewSubscribe } from '@comfyorg/account-ui/billing'
-import { billingIntentPath } from '@comfyorg/billing-contract'
+import type { BillingStatusData } from '@comfyorg/account-core/billing'
+import { useBillingClient, usePlans } from '@comfyorg/account-ui/billing'
 
-import PlanCard from '@/components/PlanCard.vue'
 import SubscriptionActions from '@/components/SubscriptionActions.vue'
-import SubscriptionQuote from '@/components/SubscriptionQuote.vue'
 import { useHostedCopy } from '@/composables/useHostedCopy'
 
-type CatalogPlan = BillingPlansData['plans'][number]
-
 const { t } = useI18n()
-const { coded, money } = useHostedCopy()
-const route = useRoute()
-const router = useRouter()
+const { refusal, date, planName } = useHostedCopy()
 const { plans, loading, failure, refresh } = usePlans()
-const {
-  preview,
-  loading: quoting,
-  failure: quoteFailure,
-  quote
-} = usePreviewSubscribe()
 
-const selectedSlug = ref<string | undefined>()
+const { status } = useBillingClient<'status'>(undefined)
 
-const currentSlug = computed(() => plans.value?.current_plan_slug)
+const billingStatus = ref<BillingStatusData | undefined>()
 
-function planCard(plan: CatalogPlan) {
-  const seats = Number(plan.max_seats)
-  return {
-    slug: plan.slug,
-    props: {
-      name: t('hosted.plan.name', {
-        tier: coded('tier', plan.tier),
-        duration: coded('duration', plan.duration)
-      }),
-      price: money(plan.price_cents),
-      credits: t('hosted.plan.credits', { amount: money(plan.credits_cents) }),
-      seats: t('hosted.plan.seats', { count: seats }, seats),
-      available: plan.availability.available,
-      current: plan.slug === currentSlug.value,
-      reason: plan.availability.available
-        ? undefined
-        : coded('availability', plan.availability.reason)
-    }
-  }
+async function readStatus() {
+  const result = await status.read()
+  billingStatus.value = result.status === 'ok' ? result.value.status : undefined
 }
 
-const cards = computed(() => (plans.value?.plans ?? []).map(planCard))
-const currentName = computed(
-  () => cards.value.find((card) => card.props.current)?.props.name
-)
+onMounted(() => void readStatus())
 
-async function selectPlan(slug: string) {
-  selectedSlug.value = slug
-  await quote({ planSlug: slug })
+async function subscriptionChanged() {
+  await Promise.all([refresh(), readStatus()])
 }
 
-/** The entry's product and return target travel with the plan the customer chose. */
-function goToCheckout() {
-  if (selectedSlug.value === undefined) return
-  void router.push({
-    path: billingIntentPath('checkout'),
-    query: { ...route.query, plan: selectedSlug.value }
-  })
-}
+const endsAt = computed(() => billingStatus.value?.cancel_at)
+
+const currentName = computed(() => {
+  const catalog = plans.value
+  const current = catalog?.plans.find(
+    (plan) => plan.slug === catalog.current_plan_slug
+  )
+  return current ? planName(current) : undefined
+})
 </script>
 
 <template>
@@ -77,7 +44,7 @@ function goToCheckout() {
       {{ t('hosted.loading') }}
     </p>
     <p v-if="failure" class="m-0 text-sm text-destructive-background">
-      {{ coded('failure', failure.code) }}
+      {{ refusal(failure) }}
     </p>
 
     <p class="m-0 text-sm text-muted-foreground">
@@ -87,24 +54,10 @@ function goToCheckout() {
           : t('hosted.subscription.noPlan')
       }}
     </p>
+    <p v-if="endsAt" class="m-0 text-sm text-muted-foreground">
+      {{ t('hosted.subscription.endsOn', { date: date(endsAt) }) }}
+    </p>
 
-    <SubscriptionActions @changed="refresh" />
-
-    <ul class="m-0 grid list-none gap-3 p-0 sm:grid-cols-2">
-      <PlanCard
-        v-for="card in cards"
-        :key="card.slug"
-        v-bind="card.props"
-        @choose="selectPlan(card.slug)"
-      />
-    </ul>
-
-    <SubscriptionQuote
-      v-if="selectedSlug"
-      :preview="preview"
-      :loading="quoting"
-      :failure-code="quoteFailure?.code"
-      @checkout="goToCheckout"
-    />
+    <SubscriptionActions @changed="subscriptionChanged" />
   </section>
 </template>

@@ -15,9 +15,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   }
 }))
 
-vi.mock(import('@vueuse/core'), () => ({
-  useEventListener: vi.fn().mockReturnValue(vi.fn())
-}))
+vi.mock(import('@vueuse/core'))
 
 describe('useServerLogs', () => {
   it('should initialize with empty logs array', () => {
