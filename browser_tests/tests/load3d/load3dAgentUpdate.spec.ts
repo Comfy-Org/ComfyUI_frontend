@@ -58,73 +58,88 @@ test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
     load3dAgent,
     page
   }) => {
-    load3dAgent.setModelFromAgent('cube.obj')
-    await load3dAgent.expectModel('cube.obj')
-    await load3dAgent.viewer.waitForModelLoaded()
-
     const viewer = new Load3DViewerHelper(page)
-    await load3dAgent.viewer.openViewerButton.click()
-    await viewer.waitForOpen()
-    await page.setViewportSize({ width: 500, height: 800 })
-
-    const viewport = page.viewportSize()
-    expect(viewport).not.toBeNull()
-    if (!viewport) throw new Error('Viewport size not available')
-
-    await expect(async () => {
-      const dialogBox = await viewer.dialog.boundingBox()
-      const panelBox = await page
-        .getByTestId('docked-agent-panel')
-        .boundingBox()
-      expect(dialogBox).not.toBeNull()
-      expect(panelBox).not.toBeNull()
-      if (!dialogBox || !panelBox) return
-
-      expect(dialogBox.x).toBeGreaterThanOrEqual(0)
-      expect(dialogBox.y).toBeGreaterThanOrEqual(0)
-      expect(dialogBox.x + dialogBox.width).toBeLessThanOrEqual(panelBox.x + 1)
-      expect(dialogBox.y + dialogBox.height).toBeLessThanOrEqual(
-        viewport.height + 1
-      )
-    }).toPass({ timeout: 5000 })
-
-    await page.setViewportSize({ width: 400, height: 800 })
     const panel = page.getByTestId('docked-agent-panel')
-    await expect(panel).toBeVisible()
-    await expect(panel).toHaveCSS('position', 'fixed')
-    await expect
-      .poll(() =>
-        page.evaluate(() =>
-          document.documentElement.style.getPropertyValue(
-            '--workspace-inset-right'
+
+    await test.step('open the viewer from an agent-updated node', async () => {
+      load3dAgent.setModelFromAgent('cube.obj')
+      await load3dAgent.expectModel('cube.obj')
+      await load3dAgent.viewer.waitForModelLoaded()
+      await load3dAgent.viewer.openViewerButton.click()
+      await viewer.waitForOpen()
+    })
+
+    await test.step('keep the viewer outside the docked Agent panel', async () => {
+      await page.setViewportSize({ width: 500, height: 800 })
+
+      const viewport = page.viewportSize()
+      expect(viewport).not.toBeNull()
+      if (!viewport) throw new Error('Viewport size not available')
+
+      await expect(async () => {
+        const dialogBox = await viewer.dialog.boundingBox()
+        const panelBox = await panel.boundingBox()
+        expect(dialogBox).not.toBeNull()
+        expect(panelBox).not.toBeNull()
+        if (!dialogBox || !panelBox) return
+
+        expect(dialogBox.x).toBeGreaterThanOrEqual(0)
+        expect(dialogBox.y).toBeGreaterThanOrEqual(0)
+        expect(dialogBox.x + dialogBox.width).toBeLessThanOrEqual(
+          panelBox.x + 1
+        )
+        expect(dialogBox.y + dialogBox.height).toBeLessThanOrEqual(
+          viewport.height + 1
+        )
+      }).toPass({ timeout: 5000 })
+    })
+
+    await test.step('keep both overlays inside the narrow viewport', async () => {
+      await page.setViewportSize({ width: 400, height: 800 })
+      await expect(panel).toBeVisible()
+      await expect(panel).toHaveCSS('position', 'fixed')
+      await expect
+        .poll(() =>
+          page.evaluate(() =>
+            document.documentElement.style.getPropertyValue(
+              '--workspace-inset-right'
+            )
           )
         )
+        .toBe('0px')
+      await expect(async () => {
+        const dialogBox = await viewer.dialog.boundingBox()
+        const panelBox = await panel.boundingBox()
+        expect(dialogBox).not.toBeNull()
+        expect(panelBox).not.toBeNull()
+        if (!dialogBox || !panelBox) return
+
+        expect(dialogBox.width).toBeGreaterThan(0)
+        expect(dialogBox.x).toBeGreaterThanOrEqual(0)
+        expect(dialogBox.x + dialogBox.width).toBeLessThanOrEqual(401)
+        expect(panelBox.width).toBeGreaterThan(0)
+        expect(panelBox.x).toBeGreaterThanOrEqual(0)
+        expect(panelBox.x + panelBox.width).toBeLessThanOrEqual(401)
+      }).toPass({ timeout: 5000 })
+    })
+
+    await test.step('restore the viewer and Agent panel controls', async () => {
+      await page.setViewportSize({ width: 1280, height: 800 })
+      await viewer.cancelButton.click()
+      await viewer.waitForClosed()
+
+      const agentPanel = new AgentPanel(page)
+      await expect(agentPanel.openButton).toHaveAttribute(
+        'aria-pressed',
+        'true'
       )
-      .toBe('0px')
-    await expect(async () => {
-      const dialogBox = await viewer.dialog.boundingBox()
-      const panelBox = await panel.boundingBox()
-      expect(dialogBox).not.toBeNull()
-      expect(panelBox).not.toBeNull()
-      if (!dialogBox || !panelBox) return
-
-      expect(dialogBox.width).toBeGreaterThan(0)
-      expect(dialogBox.x).toBeGreaterThanOrEqual(0)
-      expect(dialogBox.x + dialogBox.width).toBeLessThanOrEqual(401)
-      expect(panelBox.width).toBeGreaterThan(0)
-      expect(panelBox.x).toBeGreaterThanOrEqual(0)
-      expect(panelBox.x + panelBox.width).toBeLessThanOrEqual(401)
-    }).toPass({ timeout: 5000 })
-
-    await page.setViewportSize({ width: 1280, height: 800 })
-    await viewer.cancelButton.click()
-    await viewer.waitForClosed()
-
-    const agentPanel = new AgentPanel(page)
-    await expect(agentPanel.openButton).toHaveAttribute('aria-pressed', 'true')
-    await agentPanel.openButton.click()
-    await expect(agentPanel.root).toBeHidden()
-    await expect(agentPanel.openButton).toHaveAttribute('aria-pressed', 'false')
-    await agentPanel.open()
+      await agentPanel.openButton.click()
+      await expect(agentPanel.root).toBeHidden()
+      await expect(agentPanel.openButton).toHaveAttribute(
+        'aria-pressed',
+        'false'
+      )
+      await agentPanel.open()
+    })
   })
 })
