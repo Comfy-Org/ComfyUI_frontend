@@ -1,8 +1,29 @@
 import { describe, expect, it } from 'vitest'
 
-import { hubModelHref, oldModelLinks } from './hub-models'
+import {
+  HUB_APPS_PATH,
+  HUB_MODELS_PATH,
+  HUB_WORKFLOWS_PATH,
+  hubAppHref,
+  hubAppSlugs,
+  hubModelHref,
+  oldModelLinks
+} from './hub-models'
+import { getRoutes } from './routes'
 
 describe('hub model addresses', () => {
+  it('agrees with routes.ts on every hub page and app page', () => {
+    const routes = getRoutes()
+    expect([routes.workshop, routes.hubWorkflows, routes.hubApps]).toEqual([
+      `${HUB_MODELS_PATH}/`,
+      `${HUB_WORKFLOWS_PATH}/`,
+      `${HUB_APPS_PATH}/`
+    ])
+    expect([routes.cinematicStudio, routes.reshoot]).toEqual(
+      hubAppSlugs.map(hubAppHref)
+    )
+  })
+
   it('moves a model page under /hub/models by its new slug', () => {
     expect(hubModelHref('bfl--flux-2-max--generate-images')).toBe(
       '/hub/models/flux-2-max-text-to-image/'
