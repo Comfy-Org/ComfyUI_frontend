@@ -35,8 +35,8 @@ fi
 # invalid_auth, so the status code proves nothing.
 if [[ "$(jq -r '.ok' <<< "$RESPONSE" 2>/dev/null)" != true ]]; then
   REASON=$(jq -r '.error // empty' <<< "$RESPONSE" 2>/dev/null) || REASON=''
-  # A proxy error page is not JSON, so fall back to the raw body. It carries no
-  # token; the payload was sent in a header.
+  # A proxy error page is not JSON, so fall back to the raw body. It carries
+  # no token: the token was sent in a header, not in the body.
   [[ -n "$REASON" ]] || REASON=$(printf '%.300s' "$RESPONSE" | tr '\n' ' ')
   echo "::error::Slack rejected the coverage report: ${REASON:-empty response}"
   exit 1
