@@ -8,7 +8,7 @@ import {
 } from '@/platform/workspace/utils/checkoutJourney'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@/platform/telemetry'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
@@ -365,6 +365,10 @@ describe('billingOperationStore', () => {
     })
 
     describe('a resumed operation', () => {
+      afterEach(() => {
+        useBillingOperationStore().clearOperation('op-resumed')
+      })
+
       function serveFirstRead() {
         let serve: (status: BillingOpStatusResponse) => void = () => {}
         vi.mocked(workspaceApi.getBillingOpStatus).mockReturnValueOnce(
@@ -420,8 +424,8 @@ describe('billingOperationStore', () => {
         }
       )
 
-      it('announces a served verification link at once', () => {
-        serveFirstRead()
+      it('announces a served verification link at once', async () => {
+        const serve = serveFirstRead()
         const store = useBillingOperationStore()
         void store.startOperation(
           'op-resumed',
@@ -435,6 +439,8 @@ describe('billingOperationStore', () => {
           summary: 'billingOperation.subscriptionActionRequired',
           group: 'billing-operation'
         })
+        serve('in_progress')
+        await vi.advanceTimersByTimeAsync(0)
       })
     })
   })
