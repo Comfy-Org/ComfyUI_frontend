@@ -7,12 +7,12 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { attachPreview } from '@/platform/assets/utils/assetPreviewUtil'
 import { getAssetFileUrl } from '@/platform/assets/utils/assetUrlUtil'
 import { reportError } from '@/platform/telemetry/reportError'
-import { renderHdrThumbnail } from '@/platform/hdr/hdrThumbnail'
 import type { PagedList } from '@/utils/pagedList'
 import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 
 async function generatePreview(asset: AssetItem, list: PagedList<AssetItem>) {
   try {
+    const { renderHdrThumbnail } = await import('@/platform/hdr/hdrThumbnail')
     const blob = await renderHdrThumbnail(getAssetFileUrl(asset), asset.name)
     await attachPreview(asset, blob)
     await list.invalidate()
