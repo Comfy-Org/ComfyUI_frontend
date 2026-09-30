@@ -1570,7 +1570,7 @@ describe('Composer', () => {
           composer.value?.insert(
             text,
             attribution ?? {
-              promptId: 'generate_image',
+              promptId: 'slot_1',
               promptIndex: 0,
               promptCount: 5,
               promptTextHash: 'deadbeef',
