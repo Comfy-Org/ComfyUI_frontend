@@ -1,11 +1,16 @@
-import type { BrowserContext } from '@playwright/test'
+import type { BrowserContext, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
+import {
+  MODELS_WORKSPACE_TOKEN,
+  test as signedInTest
+} from './fixtures/modelsAccount'
+import { mockReshootProxy } from './fixtures/reshootProxy'
 
 async function mockFlags(
   context: BrowserContext,
-  flags: { apps: boolean; workflows: boolean }
+  flags: { apps: boolean; workflows: boolean; auth?: boolean }
 ) {
   await context.route('**/t.comfy.org/**', (route) =>
     /\/(flags|decide)\//.test(route.request().url())
@@ -15,12 +20,47 @@ async function mockFlags(
             featureFlags: {
               'workshop-enabled': true,
               'workshop-apps-enabled': flags.apps,
-              'workshop-workflows-enabled': flags.workflows
+              'workshop-workflows-enabled': flags.workflows,
+              ...(flags.auth ? { 'workshop-auth': true } : {})
             },
             featureFlagPayloads: {}
           }
         })
       : route.abort('blockedbyclient')
+  )
+}
+
+/**
+ * Signs in with a workspace, opens Re-shoot on the example clip and waits
+ * for the app proxy (mocked) to read its scene, so the viewport is aimable.
+ */
+async function openReadReshootScene(
+  page: Page,
+  context: BrowserContext,
+  account: { email: string; password: string }
+) {
+  await mockFlags(context, { apps: true, workflows: false, auth: true })
+  // Firebase waits for gapi's onload, which the empty stub never calls.
+  await context.route('https://apis.google.com/js/api.js*', (route) =>
+    route.abort('blockedbyclient')
+  )
+  const proxy = await mockReshootProxy(page, MODELS_WORKSPACE_TOKEN)
+  await page.goto('/login/')
+  await page.getByRole('button', { name: 'Use email instead' }).click()
+  await page.getByLabel('Email').fill(account.email)
+  await page.getByLabel('Password', { exact: true }).fill(account.password)
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+  await expect(page).toHaveURL('/')
+
+  await page.goto('/models/apps/reshoot/')
+  await page.getByText('Sci-fi pilot').first().click()
+  await expect(page.getByTestId('reshoot-drag-hint')).toBeVisible()
+  expect(proxy).toEqual(
+    expect.arrayContaining([
+      'POST /assets',
+      'POST /jobs',
+      'GET /jobs/e2e-reshoot-analyze/outputs/geo/content'
+    ])
   )
 }
 
@@ -104,50 +144,46 @@ test('asks Safari for a first frame on the Re-shoot example video tile', async (
   )
 })
 
-test('@mobile keeps the Re-shoot aim badges to one line on a phone', async ({
-  page,
-  context
-}) => {
-  await mockFlags(context, { apps: true, workflows: false })
-  await page.goto('/models/apps/reshoot/')
-  await page.getByText('Sci-fi pilot').first().click()
+signedInTest(
+  '@mobile keeps the Re-shoot aim badges to one line on a phone',
+  async ({ page, context, modelsAccount }) => {
+    await openReadReshootScene(page, context, modelsAccount)
 
-  const viewport = page.getByTestId('reshoot-viewport').first()
-  await expect(
-    viewport.getByText('Drag to orbit', { exact: true })
-  ).toBeVisible()
-  await expect(viewport.getByText(/Scroll to move closer/)).toBeHidden()
+    const viewport = page.getByTestId('reshoot-viewport').first()
+    await expect(
+      viewport.getByText('Drag to orbit', { exact: true })
+    ).toBeVisible()
+    await expect(viewport.getByText(/Scroll to move closer/)).toBeHidden()
 
-  for (const badge of [
-    viewport.getByTestId('reshoot-drag-hint'),
-    viewport.getByTestId('reshoot-angle-readout')
-  ]) {
-    const box = await badge.boundingBox()
-    expect(box?.height).toBeLessThan(40)
+    for (const badge of [
+      viewport.getByTestId('reshoot-drag-hint'),
+      viewport.getByTestId('reshoot-angle-readout')
+    ]) {
+      const box = await badge.boundingBox()
+      expect(box?.height).toBeLessThan(40)
+    }
   }
-})
+)
 
-test('@mobile pins the Re-shoot preview while the camera controls scroll under it', async ({
-  page,
-  context
-}) => {
-  await mockFlags(context, { apps: true, workflows: false })
-  await page.goto('/models/apps/reshoot/')
-  await page.getByText('Sci-fi pilot').first().click()
+signedInTest(
+  '@mobile pins the Re-shoot preview while the camera controls scroll under it',
+  async ({ page, context, modelsAccount }) => {
+    await openReadReshootScene(page, context, modelsAccount)
 
-  const frame = page.getByTestId('reshoot-frame')
-  const distance = page.getByRole('slider', { name: /Distance/ })
-  await page.getByTestId('reshoot-action').scrollIntoViewIfNeeded()
-  const pinned = await frame.boundingBox()
-  expect(pinned?.y).toBeGreaterThanOrEqual(0)
-  expect(pinned?.y).toBeLessThan(120)
+    const frame = page.getByTestId('reshoot-frame')
+    const distance = page.getByRole('slider', { name: /Distance/ })
+    await page.getByTestId('reshoot-action').scrollIntoViewIfNeeded()
+    const pinned = await frame.boundingBox()
+    expect(pinned?.y).toBeGreaterThanOrEqual(0)
+    expect(pinned?.y).toBeLessThan(120)
 
-  const before = Number(await distance.inputValue())
-  await page.getByRole('button', { name: 'Move the camera closer' }).tap()
-  await expect
-    .poll(async () => Number(await distance.inputValue()))
-    .toBeLessThan(before)
-})
+    const before = Number(await distance.inputValue())
+    await page.getByRole('button', { name: 'Move the camera closer' }).tap()
+    await expect
+      .poll(async () => Number(await distance.inputValue()))
+      .toBeLessThan(before)
+  }
+)
 
 test('shows a preview frame for every Cinematic Studio shot option', async ({
   page,
