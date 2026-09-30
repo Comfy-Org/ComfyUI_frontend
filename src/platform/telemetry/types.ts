@@ -795,11 +795,11 @@ export interface AgentConsentResolvedMetadata extends Record<string, unknown> {
 }
 export type AgentInputMethod = 'typed' | 'suggestion' | 'edited'
 export type AgentStarterPromptId =
-  | 'generate_image'
-  | 'list_workflows'
-  | 'find_workflow'
-  | 'explain_selected_node'
-  | 'build_video_workflow'
+  | 'slot_1'
+  | 'slot_2'
+  | 'slot_3'
+  | 'slot_4'
+  | 'slot_5'
   | 'unregistered'
 export interface AgentStarterPromptClickedMetadata extends Record<
   string,
