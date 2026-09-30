@@ -4,6 +4,10 @@ import { useSlots } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SplitReveal from './SplitReveal.vue'
+import {
+  workshopEyebrowClass,
+  workshopHeadingClass
+} from './workshopHeadingClasses'
 
 // The copy arrives resolved, so the hero belongs to whichever catalogue renders
 // it rather than to one section's translation table.
@@ -35,14 +39,11 @@ const slots = useSlots()
     data-testid="workshop-hero"
   >
     <slot name="eyebrow">
-      <p
-        v-if="eyebrow"
-        class="mb-5 text-sm font-medium tracking-widest text-primary-comfy-yellow uppercase max-sm:mb-2"
-      >
+      <p v-if="eyebrow" :class="workshopEyebrowClass">
         <SplitReveal :text="eyebrow" />
       </p>
     </slot>
-    <h1 class="text-3xl font-light text-primary-comfy-canvas lg:text-5xl">
+    <h1 :class="workshopHeadingClass">
       <SplitReveal :text="heading" :delay="90" />
     </h1>
     <div

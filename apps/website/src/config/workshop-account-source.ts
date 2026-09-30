@@ -10,10 +10,16 @@ export type WorkshopAccountSource = 'session' | 'firebase'
 /** Past this, the Firebase header mounts for the page load and never swaps. */
 export const ACCOUNT_SOURCE_CAP_MS = 800
 
-function decideAccountSource(): Promise<WorkshopAccountSource> {
-  return new Promise((resolve) => {
+interface Decision {
+  readonly resolution: Promise<WorkshopAccountSource>
+  readonly stop: () => void
+}
+
+function decideAccountSource(): Decision {
+  let stopped = false
+  let stop: (() => void) | undefined
+  const resolution = new Promise<WorkshopAccountSource>((resolve) => {
     let capped = false
-    let stop: (() => void) | undefined
     const cap = setTimeout(() => {
       capped = true
       stop?.()
@@ -35,23 +41,36 @@ function decideAccountSource(): Promise<WorkshopAccountSource> {
         )
       })
       .then((boot) => {
-        if (!boot || capped) return
+        if (!boot || capped || stopped) return
         stop = boot(decide)
       })
       .catch(() => {
         if (!capped) decide('firebase')
       })
   })
+  return {
+    resolution,
+    stop: () => {
+      stopped = true
+      stop?.()
+    }
+  }
 }
 
-let resolution: Promise<WorkshopAccountSource> | undefined
+let decision: Decision | undefined
 
 /** Settles once per page load, at the latest when the cap fires. */
 export function resolveWorkshopAccountSource(): Promise<WorkshopAccountSource> {
-  resolution ??= decideAccountSource()
-  return resolution
+  decision ??= decideAccountSource()
+  return decision.resolution
+}
+
+/** Ends the web session this page booted; the next resolve decides afresh. */
+export function stopWorkshopAccountSource(): void {
+  decision?.stop()
+  decision = undefined
 }
 
 export function resetWorkshopAccountSource() {
-  resolution = undefined
+  decision = undefined
 }

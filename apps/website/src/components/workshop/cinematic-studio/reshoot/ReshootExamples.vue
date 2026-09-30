@@ -32,6 +32,7 @@ const examples = computed<readonly PlaygroundExample[]>(() => [
 <template>
   <ExamplesTab
     :examples="examples"
+    :gallery-label="rc('reshoot.title', locale)"
     :active-id="activeId"
     :locale
     @open="emit('pick')"

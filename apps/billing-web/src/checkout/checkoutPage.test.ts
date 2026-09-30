@@ -11,6 +11,7 @@ import type {
   PaymentTab,
   RailView,
   SavedArrival,
+  SettledPlan,
   SubmitPhase,
   WaitingOn
 } from '@/checkout/checkoutPage'
@@ -640,6 +641,7 @@ const changed = (
   ...(outcome === undefined ? {} : { outcome })
 })
 const settledOnTheSpot: CheckoutPageEvent = { type: 'paySettled' }
+const notAllowed: CheckoutPageEvent = { type: 'notAllowed' }
 const declinedElsewhere: OperationOutcome = {
   kind: 'declined',
   reason: 'card_declined',
@@ -680,13 +682,18 @@ describe('reduceCheckoutPage reconciliation', () => {
       expected: { kind: 'capture', outcome: declinedElsewhere }
     },
     {
-      name: 'a success found on mount is Already completed, unattributed',
-      events: [reconciled(succeededOperation()), quoted(0)],
+      name: 'a success found on mount that the quote refuses again is Already completed, unattributed',
+      events: [reconciled(succeededOperation()), notAllowed],
       expected: {
         kind: 'terminal',
         operation: succeededOperation(),
         attribution: 'settled'
       }
+    },
+    {
+      name: 'a success found on mount gives way to a quote that can be paid',
+      events: [reconciled(succeededOperation()), quoted(0)],
+      expected: collect('loading')
     },
     {
       name: 'a failure found on mount opens capture on its card',
@@ -841,6 +848,7 @@ describe('reduceCheckoutPage reconciliation', () => {
       name: 'a terminal is sticky against a later re-read',
       events: [
         reconciled(succeededOperation()),
+        notAllowed,
         reconciled(undefined),
         reconciled(pendingOperation())
       ],
@@ -1117,9 +1125,98 @@ describe('reduceCheckoutPage endings', () => {
       from: replay([planUnavailable]),
       event: tryAgain
     },
-    { name: 'a quote over unconfirmed', from: UNCONFIRMED, event: quoted(0) }
+    { name: 'a quote over unconfirmed', from: UNCONFIRMED, event: quoted(0) },
+    {
+      name: 'a refused quote over capture',
+      from: collect('ready'),
+      event: notAllowed
+    },
+    {
+      name: 'a refused quote over unconfirmed',
+      from: UNCONFIRMED,
+      event: notAllowed
+    }
   ])('ignores $name', ({ from, event }) => {
     expect(reduceCheckoutPage(from, event)).toBe(from)
+  })
+})
+
+describe("reduceCheckoutPage over this tab's own operation", () => {
+  const awaited = <T extends BillingOperationState>(operation: T): T => ({
+    ...operation,
+    awaitedHere: true
+  })
+  const PRO: SettledPlan = {
+    tier: 'PRO',
+    duration: 'MONTHLY',
+    price_cents: 5000n
+  }
+  const RETURNED: CheckoutPage = {
+    kind: 'terminal',
+    operation: awaited(succeededOperation()),
+    attribution: 'returned'
+  }
+
+  it.for<{
+    name: string
+    events: CheckoutPageEvent[]
+    expected: CheckoutPage
+  }>([
+    {
+      name: 'a quote the server refuses, with nothing of this tab settled, is Checkout not available',
+      events: [reconciled(undefined), notAllowed],
+      expected: { kind: 'refused', reason: 'unspecified' }
+    },
+    {
+      name: 'its own payment found settled on a return is Success, whatever the quote says',
+      events: [reconciled(awaited(succeededOperation())), quoted(0)],
+      expected: RETURNED
+    },
+    {
+      name: 'its own payment still settling on a return resolves forward to Success',
+      events: [
+        reconciled(awaited(settlingOperation())),
+        changed(awaited(succeededOperation()))
+      ],
+      expected: RETURNED
+    },
+    {
+      name: 'its own payment the server could not confirm resolves forward to Success',
+      events: [
+        reconciled(awaited(parkedForAHuman())),
+        changed(awaited(succeededOperation()))
+      ],
+      expected: RETURNED
+    },
+    {
+      name: 'unconfirmed resolves forward to Payment received',
+      events: [reconciled(parkedForAHuman()), changed(receivedOperation())],
+      expected: { kind: 'waiting', operation: receivedOperation() }
+    },
+    {
+      name: "Success over its own returned payment takes the server's plan",
+      events: [
+        reconciled(awaited(succeededOperation())),
+        { type: 'settledPlanRead', plan: PRO }
+      ],
+      expected: { ...RETURNED, plan: PRO }
+    },
+    {
+      name: "a plan read over this page's own Pay changes nothing",
+      events: [
+        ...live,
+        submitted,
+        changed(succeededOperation()),
+        { type: 'settledPlanRead', plan: PRO }
+      ],
+      expected: {
+        kind: 'terminal',
+        operation: succeededOperation(),
+        attribution: 'started'
+      }
+    }
+  ])('$name', ({ events, expected }) => {
+    expect(replay(events)).toEqual(expected)
   })
 })
 

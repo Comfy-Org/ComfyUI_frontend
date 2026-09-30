@@ -54,7 +54,7 @@ const {
     class="mx-auto max-w-9xl px-6 py-10 lg:py-14"
   >
     <a
-      href="/customers/svedka-silverside"
+      href="/customers/svedka-silverside/"
       :aria-label="t('platform.serverlessCaseStudy.linkLabel', locale)"
       class="mx-auto flex w-full shrink-0 snap-start flex-col justify-between rounded-3xl bg-transparency-white-t4 p-8 lg:w-3/4 lg:p-12"
     >

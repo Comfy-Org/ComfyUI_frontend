@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { defineAsyncComponent, h, shallowRef, watch } from 'vue'
+import { useMounted } from '@vueuse/core'
+import { WORKSHOP_INCLUDED } from 'astro:env/client'
+import { computed, defineAsyncComponent, h, shallowRef, watch } from 'vue'
 import type { FunctionalComponent } from 'vue'
 
+import { isWorkflowSlug } from '../../config/models-catalogue'
 import { fetchModelsCatalogue } from '../../config/models-catalogue-data'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import { t } from '../../i18n/translations'
@@ -16,10 +19,13 @@ const { slug, workflowId } = defineProps<{
 }>()
 
 const loadingLabel = t('workshop.load.pending', 'en')
+const isWorkflow = computed(() => (slug ? isWorkflowSlug(slug) : false))
+const mounted = useMounted()
 const workflowsEnabled = useWorkshopWorkflowsEnabled()
 const recoveringWorkflow = shallowRef(false)
 const savedWorkflow = shallowRef(false)
-const session = workflowId ? useWorkshopSession().session : undefined
+const session =
+  WORKSHOP_INCLUDED && workflowId ? useWorkshopSession().session : undefined
 watch(
   [
     () => workflowId,
@@ -86,7 +92,7 @@ function createContent() {
   return defineAsyncComponent({
     loader: async () => {
       if (slug) {
-        const preload = slug.startsWith('workflows/')
+        const preload = isWorkflowSlug(slug)
           ? import('./WorkflowPage.vue')
           : import('./ModelPage.vue')
         void preload.catch(() => undefined)
@@ -114,8 +120,7 @@ function createContent() {
         h(
           'div',
           {
-            class:
-              'max-w-10xl mx-auto px-6 pt-8 pb-16 max-sm:pt-5 max-sm:pb-10 lg:px-8 lg:pt-12 lg:pb-24'
+            class: 'max-w-10xl mx-auto px-6 pb-16 max-sm:pb-10 lg:px-8 lg:pb-24'
           },
           [
             h(ModelsCatalogue, {
@@ -144,8 +149,9 @@ const Content = shallowRef(createContent())
 
 <template>
   <WorkshopGate
-    :keep-mounted="Boolean(slug)"
-    :allowed="!slug?.startsWith('workflows/') || workflowsEnabled"
+    v-if="isWorkflow"
+    keep-mounted
+    :allowed="workflowsEnabled"
     :retain-granted="recoveringWorkflow"
     :allow-recovery="savedWorkflow"
   >
@@ -157,4 +163,6 @@ const Content = shallowRef(createContent())
       <slot name="fallback" />
     </template>
   </WorkshopGate>
+  <component :is="Content" v-else-if="mounted" />
+  <WorkshopLoading v-else :label="loadingLabel" />
 </template>
