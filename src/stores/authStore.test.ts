@@ -6,7 +6,15 @@ import { FirebaseError } from 'firebase/app'
 import type { Auth, User, UserCredential } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
 import type { Mock } from 'vitest'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
 import { useTelemetry } from '@/platform/telemetry'
 
@@ -31,6 +39,7 @@ import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuth
 import { api } from '@/scripts/api'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
+import { useLocalOAuthStore } from '@/platform/auth/localOAuth/localOAuthStore'
 import type { IdentityObserver } from '@/utils/__tests__/stubAccountIdentityPort'
 import { replayIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 
@@ -2750,6 +2759,56 @@ describe('useAuthStore in local/desktop distribution', () => {
       mintSpy,
       'mintAtLogin is gated on isCloud; local/desktop has no Cloud workspace JWT to mint'
     ).not.toHaveBeenCalled()
+  })
+
+  describe('browser sign-in session (cloud OAuth, no Firebase user)', () => {
+    const SESSION_KEY = 'Comfy.LocalOAuth.Session'
+
+    beforeEach(async () => {
+      authStateCallback(null)
+      await vi.waitFor(() => expect(store.currentUser).toBeNull())
+      localStorage.setItem(
+        SESSION_KEY,
+        JSON.stringify({
+          accessToken: 'oauth-access',
+          refreshToken: 'oauth-refresh',
+          expiresAt: Date.now() + 10 * 60_000,
+          cloudBaseUrl: 'https://cloud.example',
+          userId: 'sso-user'
+        })
+      )
+      onTestFinished(() => localStorage.removeItem(SESSION_KEY))
+    })
+
+    it('is the credential app.ts forwards as auth_token_comfy_org', async () => {
+      await expect(store.getWorkspaceAuthToken()).resolves.toBe('oauth-access')
+    })
+
+    it('outranks a stored API key on user-scoped comfy-api calls', async () => {
+      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
+        'X-API-KEY': 'stored-key'
+      })
+
+      await expect(store.getUserAuthHeader()).resolves.toEqual({
+        Authorization: 'Bearer oauth-access'
+      })
+    })
+
+    it('ranks below a Firebase session', async () => {
+      authStateCallback(mockUser)
+      await vi.waitFor(() => expect(store.currentUser).not.toBeNull())
+
+      await expect(store.getUserAuthHeader()).resolves.toEqual({
+        Authorization: 'Bearer mock-id-token'
+      })
+    })
+
+    it('is cleared by sign-out', async () => {
+      await store.logout()
+
+      expect(useLocalOAuthStore().isAuthenticated).toBe(false)
+      await expect(store.getWorkspaceAuthToken()).resolves.toBeUndefined()
+    })
   })
 })
 

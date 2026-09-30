@@ -101,6 +101,22 @@
           </p>
         </template>
 
+        <template v-if="showBrowserSignIn">
+          <Button
+            type="button"
+            class="h-10"
+            variant="secondary"
+            data-testid="browser-sign-in-button"
+            @click="signInWithBrowser"
+          >
+            <i class="pi pi-globe mr-2" />
+            {{ t('auth.login.signInWithBrowser') }}
+          </Button>
+          <small class="-mt-4 text-center text-muted">
+            {{ t('auth.login.signInWithBrowserHelp') }}
+          </small>
+        </template>
+
         <template v-if="!isCloud">
           <Button
             type="button"
@@ -176,6 +192,10 @@ import Button from '@/components/ui/button/Button.vue'
 import Message from '@/components/ui/message/Message.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useLocalOAuthStore } from '@/platform/auth/localOAuth/localOAuthStore'
+import { supportsBrowserSignIn } from '@/platform/auth/localOAuth/pkce'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useSocialSignIn } from '@/platform/auth/social/useSocialSignIn'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import {
@@ -244,6 +264,31 @@ const signUpWithEmail = async (values: SignUpData, turnstileToken?: string) => {
 }
 
 const { status: regionStatus } = useRegionGate()
+
+const { flags } = useFeatureFlags()
+const localOAuthStore = useLocalOAuthStore()
+const showBrowserSignIn = computed(
+  () =>
+    !isCloud &&
+    flags.browserSignInEnabled &&
+    supportsBrowserSignIn(window.location)
+)
+// A second click restarts sign-in, so the button never locks.
+const signInWithBrowser = async () => {
+  const result = await localOAuthStore.signIn()
+  if (result === 'signed_in') {
+    onSuccess()
+  } else if (result === 'popup_blocked' || result === 'failed') {
+    useToastStore().add({
+      severity: 'error',
+      summary:
+        result === 'popup_blocked'
+          ? t('auth.login.browserSignInPopupBlocked')
+          : t('auth.login.browserSignInFailed'),
+      life: 5000
+    })
+  }
+}
 
 onUnmounted(() => {
   authActions.accessError.value = false

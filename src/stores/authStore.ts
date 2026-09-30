@@ -16,6 +16,7 @@ import {
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
+import { useLocalOAuthStore } from '@/platform/auth/localOAuth/localOAuthStore'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
@@ -311,8 +312,21 @@ export const useAuthStore = defineStore('auth', () => {
       }
     }
 
-    return useApiKeyAuthStore().getAuthHeader()
+    return (
+      (await getBrowserSessionHeader()) ?? useApiKeyAuthStore().getAuthHeader()
+    )
   }
+
+  /**
+   * Local-only browser sign-in (cloud OAuth). Ranks after a Firebase session
+   * and before a stored API key on every rail.
+   */
+  const hasBrowserSession = (): boolean =>
+    !isCloud &&
+    currentUser.value === null &&
+    useLocalOAuthStore().isAuthenticated
+  const getBrowserSessionHeader = async (): Promise<AuthHeader | null> =>
+    hasBrowserSession() ? useLocalOAuthStore().getAuthHeader() : null
 
   /**
    * Returns Firebase auth header for user-scoped endpoints (e.g., /customers/*).
@@ -330,11 +344,14 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const getUserAuthHeader = async (): Promise<AuthHeader | null> =>
     currentUser.value === null
-      ? useApiKeyAuthStore().getAuthHeader()
+      ? ((await getBrowserSessionHeader()) ??
+        useApiKeyAuthStore().getAuthHeader())
       : await getFirebaseAuthHeader()
 
   const currentUserIdentity = (): string | null =>
-    currentUser.value?.uid ?? useApiKeyAuthStore().getApiKey()
+    currentUser.value?.uid ??
+    (hasBrowserSession() ? useLocalOAuthStore().userId : null) ??
+    useApiKeyAuthStore().getApiKey()
 
   /**
    * Response data from a user-scoped endpoint belongs to the identity that
@@ -363,6 +380,8 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     if (currentUser.value === null) {
+      const browserHeader = await getBrowserSessionHeader()
+      if (browserHeader) return browserHeader
       const apiKeyHeader = useApiKeyAuthStore().getAuthHeader()
       if (apiKeyHeader) return apiKeyHeader
     }
@@ -415,6 +434,9 @@ export const useAuthStore = defineStore('auth', () => {
     if (flags.unifiedCloudAuthEnabled) {
       return useWorkspaceAuthStore().getUnifiedToken()
     }
+
+    // The OAuth token is already bound to the workspace picked at consent.
+    if (hasBrowserSession()) return useLocalOAuthStore().getAccessToken()
 
     if (currentUser.value === null && useApiKeyAuthStore().isAuthenticated) {
       return undefined
@@ -772,6 +794,7 @@ export const useAuthStore = defineStore('auth', () => {
   const logout = async (): Promise<void> =>
     executeAuthAction(async () => {
       await useCloudWebSessionStore().signOut()
+      if (!isCloud) useLocalOAuthStore().signOut()
       await firebaseIdentity.signOut()
     })
 

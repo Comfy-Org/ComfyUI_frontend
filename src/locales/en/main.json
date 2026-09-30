@@ -2587,6 +2587,10 @@
     "login": {
       "title": "Log in to your account",
       "useApiKey": "Comfy API Key",
+      "signInWithBrowser": "Sign in with browser",
+      "signInWithBrowserHelp": "Use this for company single sign-on (SSO).",
+      "browserSignInPopupBlocked": "Allow pop-ups for this page, then try again.",
+      "browserSignInFailed": "Browser sign-in did not complete. Please try again.",
       "signInOrSignUp": "Sign In / Sign Up",
       "forgotPasswordError": "Failed to send password reset email",
       "passwordResetSent": "Password reset email sent",

@@ -126,6 +126,7 @@ export type RemoteConfig = GetFeaturesResponses[200] & {
   // Raw, unvalidated wire value ('stripe' | 'billing_web' by contract). Always
   // funnel it through normalizeHostedBillingDestination before trusting it.
   hosted_billing_destination?: string
+  browser_sign_in_enabled?: boolean
   unified_cloud_auth?: boolean
   unified_web_session?: boolean
   // Wire key carries the server's own spelling; see ServerFeatureFlag.

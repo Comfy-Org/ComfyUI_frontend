@@ -40,6 +40,7 @@ export enum ServerFeatureFlag {
   COMFYHUB_PROFILE_GATE_ENABLED = 'comfyhub_profile_gate_enabled',
   HOSTED_BILLING_DESTINATION = 'hosted_billing_destination',
   SHOW_SIGNIN_BUTTON = 'show_signin_button',
+  BROWSER_SIGN_IN_ENABLED = 'browser_sign_in_enabled',
   UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
   UNIFIED_WEB_SESSION = 'unified_web_session',
   BILLING_CONTROL_ENABLED = 'billing_control_enabled',
@@ -282,6 +283,16 @@ export function useFeatureFlags() {
         undefined
       )
     },
+    /** Local-only "Sign in with browser" (cloud OAuth + PKCE, for SSO users). */
+    get browserSignInEnabled() {
+      if (isCloud) return false
+
+      return resolveFlag(
+        ServerFeatureFlag.BROWSER_SIGN_IN_ENABLED,
+        remoteConfig.value.browser_sign_in_enabled,
+        false
+      )
+    },
     get unifiedCloudAuthEnabled() {
       if (!isCloud) return false
 
@@ -441,6 +452,7 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.HOSTED_BILLING_DESTINATION]:
         flags.hostedBillingDestination,
       [ServerFeatureFlag.SHOW_SIGNIN_BUTTON]: flags.showSignInButton,
+      [ServerFeatureFlag.BROWSER_SIGN_IN_ENABLED]: flags.browserSignInEnabled,
       [ServerFeatureFlag.UNIFIED_CLOUD_AUTH]: flags.unifiedCloudAuthEnabled,
       [ServerFeatureFlag.BILLING_CONTROL_ENABLED]: flags.billingControlEnabled,
       [ServerFeatureFlag.LEGACY_BILLING_MIGRATION_ENABLED]:
