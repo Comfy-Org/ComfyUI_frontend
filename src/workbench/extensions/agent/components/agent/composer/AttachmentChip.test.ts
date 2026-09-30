@@ -100,8 +100,16 @@ describe('AttachmentChip', () => {
     // label: a card's label is free text a user can rename to anything, while
     // the ref is the identity the server judges. The two disagreed here, and
     // the label was winning.
+    // capability: 'unknown' is the shape EVERY production caller emits —
+    // admission coerces an unjudgeable ref with `agentAttachCapability(ref) ??
+    // 'unknown'`. Omitting it made this test pass against a shape nothing
+    // sends, while the real path short-circuited on the truthy string.
     it('falls back to the stored ref before the display label', () => {
-      renderChip({ name: 'cat.png', refName: 'notes.md' })
+      renderChip({
+        name: 'cat.png',
+        refName: 'notes.md',
+        capability: 'unknown'
+      })
       expect(screen.getByTestId('agent-attachment-chip')).toHaveAttribute(
         'title',
         expect.stringContaining("read this file's contents")

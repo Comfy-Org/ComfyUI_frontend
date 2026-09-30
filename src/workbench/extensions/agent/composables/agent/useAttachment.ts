@@ -273,12 +273,17 @@ export function useAttachment(options: UseAttachmentOptions) {
       )
     }
 
+    // Sized BEFORE the cap is applied. Slicing first let an oversized file
+    // inside the window consume one of the 25 slots and push a perfectly
+    // valid file out of the turn, and made the limit message count a batch
+    // that would in fact have fit. isTooLarge raises its own per-file toast,
+    // so filtering early costs no notification.
+    const sized = attachable.filter((file) => !isTooLarge(file))
     const room = Math.max(0, MAX_TURN_ATTACHMENTS - options.stagedCount())
-    if (attachable.length > room) reportTurnLimit()
+    if (sized.length > room) reportTurnLimit()
 
-    const staged = attachable
+    const staged = sized
       .slice(0, room)
-      .filter((file) => !isTooLarge(file))
       .map((file) => ({ file, id: stage(file.name) }))
     let uploaded = 0
     await Promise.all(
