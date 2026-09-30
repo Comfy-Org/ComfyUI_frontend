@@ -5620,6 +5620,7 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(telemetry.trackAgentError).toHaveBeenCalledWith(
         expect.objectContaining({
           error_class: 'workflow_open_failed',
+          retryable: true,
           ui_treatment: 'toast'
         })
       )
@@ -6092,6 +6093,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(telemetry.trackAgentError).toHaveBeenCalledWith(
       expect.objectContaining({
         error_class: 'workflow_open_failed',
+        retryable: true,
         ui_treatment: 'toast'
       })
     )

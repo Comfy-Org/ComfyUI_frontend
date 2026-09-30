@@ -675,10 +675,11 @@ function warnWorkflowUnavailable(): void {
 }
 
 function trackWorkflowOpenFailure(
-  uiTreatment: AgentErrorMetadata['ui_treatment']
+  uiTreatment: AgentErrorMetadata['ui_treatment'],
+  retryable = false
 ): void {
   trackAgentError('workflow_open_failed', 'post_acceptance', uiTreatment, {
-    retryable: false
+    retryable
   })
 }
 
@@ -1051,7 +1052,7 @@ async function activateExistingAgentTab(
   if (stale()) return false
   if (!opened) {
     warnWorkflowUnavailable()
-    trackWorkflowOpenFailure('toast')
+    trackWorkflowOpenFailure('toast', true)
     return false
   }
   bindingStore.bind(data.workflow_id, bound.path)
@@ -1093,7 +1094,7 @@ async function createAndActivateAgentTab(
     await workflowService.closeWorkflow(tab, { warnIfUnsaved: false })
     if (!stale()) {
       warnWorkflowUnavailable()
-      trackWorkflowOpenFailure('toast')
+      trackWorkflowOpenFailure('toast', true)
     }
     return false
   }
