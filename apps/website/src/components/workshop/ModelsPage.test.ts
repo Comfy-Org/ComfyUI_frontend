@@ -160,6 +160,19 @@ describe('Models page entry', () => {
     let replace: ReturnType<typeof vi.fn<(url: string | URL) => void>>
     let fetchData: ReturnType<typeof vi.fn<typeof fetch>>
 
+    // ModelsPage reads the settled flag once during setup, synchronously inside
+    // render(). The forward reads it again only after its chunk loads, right
+    // before it starts watching the flags, so a read past the setup count means
+    // the forward is pending on the flags.
+    function renderUntilForwardPending() {
+      const settledReads = vi.mocked(useWorkshopEnabledSettled).mock.calls
+      const view = render(ModelsPage)
+      const setupReads = settledReads.length
+      return vi
+        .waitFor(() => expect(settledReads.length).toBeGreaterThan(setupReads))
+        .then(() => view)
+    }
+
     beforeEach(() => {
       replace = vi.fn()
       vi.spyOn(window.location, 'replace').mockImplementation(replace)
@@ -201,10 +214,7 @@ describe('Models page entry', () => {
       async ({ link, turnOn, target }) => {
         window.history.replaceState({}, '', link)
         settled.value = false
-        render(ModelsPage)
-        await vi.waitFor(() =>
-          expect(useWorkshopEnabledSettled).toHaveBeenCalled()
-        )
+        await renderUntilForwardPending()
         expect(screen.getByTestId('models-loading')).toBeTruthy()
         expect(replace).not.toHaveBeenCalled()
 
@@ -307,10 +317,7 @@ describe('Models page entry', () => {
     it('does not forward a visitor who moved on before the flags answered', async () => {
       window.history.replaceState({}, '', '/hub/models/?type=workflows')
       settled.value = false
-      render(ModelsPage)
-      await vi.waitFor(() =>
-        expect(useWorkshopEnabledSettled).toHaveBeenCalled()
-      )
+      await renderUntilForwardPending()
 
       window.history.replaceState({}, '', '/hub/models/?q=kling')
       workflowsEnabled.value = true
@@ -335,10 +342,7 @@ describe('Models page entry', () => {
     it('stops forwarding once the page unmounts', async () => {
       window.history.replaceState({}, '', '/hub/models/?type=workflows')
       settled.value = false
-      const { unmount } = render(ModelsPage)
-      await vi.waitFor(() =>
-        expect(useWorkshopEnabledSettled).toHaveBeenCalled()
-      )
+      const { unmount } = await renderUntilForwardPending()
 
       unmount()
       workflowsEnabled.value = true
