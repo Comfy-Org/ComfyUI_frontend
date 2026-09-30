@@ -26,7 +26,7 @@ describe('Workshop apps', () => {
 
   it('opens the page each app links to elsewhere on the site', () => {
     for (const app of appModels)
-      expect(app.href).toBe(`${workshopAppHref(app.appId, 'en')}/`)
+      expect(app.href).toBe(workshopAppHref(app.appId, 'en'))
   })
 
   it('keeps app lines out of the workflows and rejects a malformed one', () => {

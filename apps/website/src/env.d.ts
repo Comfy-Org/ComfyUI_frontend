@@ -20,6 +20,8 @@ declare global {
     readonly PUBLIC_WORKSHOP_ENABLED?: string
     readonly PUBLIC_WORKSHOP_WORKFLOWS_ENABLED?: string
     readonly PUBLIC_WORKSHOP_APPS_ENABLED?: string
+    /** Any build but Vercel production: comma-separated PostHog flags to force on. Production reads them from PostHog only. */
+    readonly PUBLIC_WORKSHOP_FLAG_OVERRIDES?: string
     readonly PUBLIC_WORKSHOP_ROUTER_RUN?: string
     readonly PUBLIC_WORKSHOP_SAVE_ASSETS?: string
     /** `astro dev` only: the local CrossView dev proxy, e.g. http://127.0.0.1:4329. */

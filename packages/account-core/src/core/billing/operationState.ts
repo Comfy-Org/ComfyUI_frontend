@@ -72,6 +72,13 @@ export type BillingOperationIdentity = BillingPresentationState & {
   readonly observedAt: number
   /** When the attempt began, before the command was issued; telemetry durations count from here. */
   readonly attemptStartedAt: number
+  /**
+   * This tab issued the operation and was still waiting on its outcome when
+   * it adopted it: from its own command, or after a reload or a return from
+   * a provider page. Absent for an operation another tab issued, and for one
+   * this tab already saw succeed.
+   */
+  readonly awaitedHere?: true
 }
 
 /**
@@ -178,6 +185,7 @@ function identityOf(state: BillingOperationState): BillingOperationIdentity {
     scope: state.scope,
     observedAt: state.observedAt,
     attemptStartedAt: state.attemptStartedAt,
+    ...(state.awaitedHere ? { awaitedHere: true } : {}),
     ...presentationOf(state)
   }
 }

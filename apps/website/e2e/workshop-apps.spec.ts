@@ -10,7 +10,12 @@ import { mockReshootProxy } from './fixtures/reshootProxy'
 
 async function mockFlags(
   context: BrowserContext,
-  flags: { apps: boolean; workflows: boolean; auth?: boolean }
+  flags: {
+    apps: boolean
+    workflows: boolean
+    auth?: boolean
+    reshoot?: boolean
+  }
 ) {
   await context.route('**/t.comfy.org/**', (route) =>
     /\/(flags|decide)\//.test(route.request().url())
@@ -21,6 +26,7 @@ async function mockFlags(
               'workshop-enabled': true,
               'workshop-apps-enabled': flags.apps,
               'workshop-workflows-enabled': flags.workflows,
+              'workshop-reshoot-app-enabled': flags.reshoot ?? true,
               ...(flags.auth ? { 'workshop-auth': true } : {})
             },
             featureFlagPayloads: {}
@@ -91,7 +97,7 @@ test('lists both apps in the catalogue Apps tab, on /models/apps/ pages', async 
   context
 }) => {
   await mockFlags(context, { apps: true, workflows: false })
-  await page.goto('/models/?type=apps')
+  await page.goto('/hub/models/?type=apps')
   const shelf = page.getByTestId('app-shelf')
   const cards = shelf.getByRole('link')
   await expect(cards).toHaveCount(2)
@@ -105,6 +111,33 @@ test('lists both apps in the catalogue Apps tab, on /models/apps/ pages', async 
   ).toHaveCount(0)
 })
 
+test('hides Re-shoot from the Apps tab and closes its page while its flag is off', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false, reshoot: false })
+  await page.goto('/hub/models/?type=apps')
+  const cards = page.getByTestId('app-shelf').getByRole('link')
+  await expect(cards).toHaveCount(1)
+  await expect(cards.first()).toHaveAttribute(
+    'href',
+    '/models/apps/cinematic-studio/'
+  )
+
+  await page.goto('/models/apps/reshoot/')
+  await expect(page.getByText('Cinematic Studio is not open yet')).toBeVisible()
+  await expect(page.getByTestId('reshoot')).toHaveCount(0)
+})
+
+test('opens Re-shoot once its flag is on', async ({ page, context }) => {
+  await mockFlags(context, { apps: true, workflows: false, reshoot: true })
+  await page.goto('/models/apps/reshoot/')
+  await expect(page.getByTestId('reshoot')).toBeVisible()
+  await expect(page.getByText('Cinematic Studio is not open yet')).toHaveCount(
+    0
+  )
+})
+
 test('sends the old studio address to the app page it named', async ({
   page,
   context
@@ -114,21 +147,29 @@ test('sends the old studio address to the app page it named', async ({
   await expect(page).toHaveURL(/\/models\/apps\/reshoot\/\?ux=d&model=flux$/)
 })
 
-test.describe('GitHub link before an app repo is published', () => {
-  for (const path of [
-    '/models/apps/cinematic-studio/',
-    '/models/apps/reshoot/'
+test.describe('GitHub links to published app repositories', () => {
+  for (const { path, repo } of [
+    {
+      path: '/models/apps/cinematic-studio/',
+      repo: 'https://github.com/Comfy-Org/comfy-cinematic-studio'
+    },
+    {
+      path: '/models/apps/reshoot/',
+      repo: 'https://github.com/Comfy-Org/comfy-reshoot'
+    }
   ])
-    test(`shows a placeholder, not a link, on ${path}`, async ({
+    test(`links to the app repository on ${path}`, async ({
       page,
       context
     }) => {
       await mockFlags(context, { apps: true, workflows: false })
       await page.goto(path)
-      await expect(page.getByText('GitHub · Coming soon')).toHaveCount(1)
-      await expect(
-        page.getByRole('link', { name: 'View on GitHub' })
-      ).toHaveCount(0)
+      await expect(page.getByText('GitHub · Coming soon')).toHaveCount(0)
+      const link = page.getByRole('link', { name: 'View on GitHub' })
+      await expect(link).toBeVisible()
+      await expect(link).toHaveAttribute('href', repo)
+      await expect(link).toHaveAttribute('target', '_blank')
+      await expect(link).toHaveAttribute('rel', 'noopener noreferrer')
     })
 })
 
@@ -184,6 +225,20 @@ signedInTest(
       .toBeLessThan(before)
   }
 )
+
+test('keeps the Re-shoot camera help behind info buttons', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/models/apps/reshoot/')
+  await page.getByText('Sci-fi pilot').first().click()
+
+  const help = 'Distance is approximate; angles give the most control.'
+  await expect(page.getByText(help)).toBeHidden()
+  await page.getByRole('button', { name: help }).hover()
+  await expect(page.getByText(help).first()).toBeVisible()
+})
 
 test('shows a preview frame for every Cinematic Studio shot option', async ({
   page,

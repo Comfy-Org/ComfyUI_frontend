@@ -15,8 +15,8 @@ const HERO_POSTER_SRC =
 
 // CTA hrefs in this config must be absolute (modelLaunchPages.test.ts), so the
 // contact and H3 routes are spelled out rather than taken from baseRoutes.
-const CONTACT_HREF = 'https://comfy.org/contact'
-const MINIMAX_H3_HREF = 'https://comfy.org/minimax-h3'
+const CONTACT_HREF = 'https://comfy.org/contact/'
+const MINIMAX_H3_HREF = 'https://comfy.org/minimax-h3/'
 const MINIMAX_H3_DESIGN_HREF =
   'https://design.minimax.io/tools/minimax-h3-comfyui'
 const MINIMAX_H3_LICENSE_REQUEST_HREF = 'https://platform.minimax.io/h3-license'

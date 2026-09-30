@@ -4,6 +4,7 @@ import {
   AGENT_COPY_PASTE_SCENARIO,
   agentCopyPasteTest as test
 } from '@e2e/fixtures/AgentCopyPasteDriver'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 
 test.describe(
   'Copy and paste beside the agent panel',
@@ -62,7 +63,7 @@ test.describe(
 
       await test.step('copy in the empty composer', async () => {
         await agentCopyPaste.revealAndSelectNode(source.id)
-        await agentCopyPaste.composer.click()
+        await new AgentPanel(page).clickBelowFirstPromptLine()
         await agentCopyPaste.clipboard.copy()
       })
 

@@ -156,6 +156,7 @@ export type {
   BillingOperationLifecycle,
   BillingOperationLifecycleOptions,
   BillingOperationTelemetryEvent,
+  BillingRecoverOptions,
   IssuedBillingOperation,
   PresentationSwitchOutcome
 } from './operationLifecycle.js'

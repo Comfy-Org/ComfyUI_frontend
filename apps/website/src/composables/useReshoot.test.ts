@@ -1,9 +1,10 @@
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, defineComponent, ref } from 'vue'
+import { computed, defineComponent, nextTick, ref } from 'vue'
 
 import { refreshWorkshopCredits } from '../config/workshop-credits'
 import { useWorkshopSession } from '../config/workshop-session-state'
+import { clipSecondsOf } from '../lib/workshop/cinematic-studio/reshoot-clip'
 import { readGeometry } from '../lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
 import {
   FREE_QUOTE,
@@ -28,6 +29,11 @@ vi.mock(
   import('../lib/workshop/cinematic-studio/reshoot-engine/cvgeo'),
   () => ({ readGeometry: vi.fn() })
 )
+// jsdom never loads video metadata; each test says how long its clip is.
+vi.mock(import('../lib/workshop/cinematic-studio/reshoot-clip'), () => ({
+  clipSecondsOf: vi.fn(),
+  fileSecondsOf: vi.fn()
+}))
 
 let transport: ReshootTransport
 
@@ -55,6 +61,7 @@ beforeEach(() => {
   transport = fakeTransport()
   vi.mocked(reshootTransport).mockReturnValue(transport)
   vi.mocked(readGeometry).mockResolvedValue(fakeGeometry())
+  vi.mocked(clipSecondsOf).mockReset()
   vi.stubGlobal(
     'fetch',
     vi.fn(async () => new Response(new Blob(['clip'], { type: 'video/mp4' })))
@@ -363,5 +370,192 @@ describe('useReshoot', () => {
 
     expect(transport.submit).toHaveBeenCalledTimes(submits + 1)
     expect(reshoot.current.value?.status).toBe('done')
+  })
+})
+
+type Graph = Record<string, { inputs: Record<string, unknown> }>
+
+/** The camera node of the generate workflow sent for the latest take. */
+function sentCamera() {
+  const calls = vi.mocked(transport.submit).mock.calls
+  const graph = calls[calls.length - 1][0] as Graph
+  return graph['5'].inputs
+}
+
+function sentSeed() {
+  const calls = vi.mocked(transport.submit).mock.calls
+  return (calls[calls.length - 1][0] as Graph)['30'].inputs.noise_seed
+}
+
+describe('useReshoot: the camera move', () => {
+  it('shoots a keyed move from its first key, with every key sent', async () => {
+    const reshoot = start()
+    await readScene(reshoot)
+    reshoot.aim({ azimuth: 10 })
+    reshoot.frame.value = 0
+    reshoot.toggleKey()
+    reshoot.frame.value = 40
+    await nextTick()
+    reshoot.aim({ azimuth: -20 })
+    reshoot.toggleKey()
+    // Aimed on a key, the key moves and the one camera does not.
+    reshoot.frame.value = 0
+    await nextTick()
+    reshoot.aim({ azimuth: 33 })
+    expect(reshoot.camera.azimuth).toBe(10)
+
+    void reshoot.generate()
+    await vi.advanceTimersByTimeAsync(2_500)
+
+    const camera = sentCamera()
+    expect(camera.azimuth).toBe(33)
+    expect(camera.use_keyframes).toBe(true)
+    const keyframes = JSON.parse(String(camera.keyframes)) as {
+      f: number
+      az: number
+    }[]
+    expect(keyframes.map(({ f, az }) => [f, az])).toEqual([
+      [1, 33],
+      [41, -20]
+    ])
+    expect(reshoot.current.value?.camera.azimuth).toBe(33)
+  })
+
+  it('only tries a pose between keys, until Key writes it', async () => {
+    const reshoot = start()
+    await readScene(reshoot)
+    reshoot.frame.value = 0
+    reshoot.toggleKey()
+    reshoot.frame.value = 40
+    await nextTick()
+    reshoot.toggleKey()
+    const keysBefore = JSON.stringify(reshoot.keys.value)
+    const cameraBefore = { ...reshoot.camera }
+
+    reshoot.frame.value = 20
+    await nextTick()
+    reshoot.aim({ elevation: 12 })
+    expect(reshoot.view.value.elevation).toBe(12)
+    expect(reshoot.onKey.value).toBe(false)
+    expect(JSON.stringify(reshoot.keys.value)).toBe(keysBefore)
+    expect({ ...reshoot.camera }).toEqual(cameraBefore)
+
+    // Moving the playhead lets the tried pose go.
+    reshoot.frame.value = 21
+    await nextTick()
+    expect(reshoot.view.value.elevation).not.toBe(12)
+
+    reshoot.frame.value = 20
+    await nextTick()
+    reshoot.aim({ elevation: 12 })
+    reshoot.toggleKey()
+    expect(reshoot.keys.value.map((key) => key.frame)).toEqual([0, 20, 40])
+    expect(reshoot.keys.value[1].camera.elevation).toBe(12)
+  })
+
+  it('takes a key away with the same button', async () => {
+    const reshoot = start()
+    await readScene(reshoot)
+    reshoot.frame.value = 5
+    reshoot.toggleKey()
+    expect(reshoot.onKey.value).toBe(true)
+    reshoot.toggleKey()
+    expect(reshoot.keys.value).toEqual([])
+    expect(reshoot.onKey.value).toBe(false)
+  })
+
+  it('shoots a single key as a held camera, not a move', async () => {
+    const reshoot = start()
+    await readScene(reshoot)
+    reshoot.frame.value = 0
+    reshoot.aim({ azimuth: 15 })
+    reshoot.toggleKey()
+
+    void reshoot.generate()
+    await vi.advanceTimersByTimeAsync(2_500)
+
+    expect(sentCamera()).toMatchObject({
+      azimuth: 15,
+      use_keyframes: false,
+      keyframes: ''
+    })
+  })
+})
+
+describe('useReshoot: seeds and clips', () => {
+  it('draws a new seed every take unless one is fixed', async () => {
+    const random = vi
+      .spyOn(Math, 'random')
+      .mockReturnValueOnce(0.25)
+      .mockReturnValueOnce(0.75)
+    const reshoot = start()
+    await readScene(reshoot)
+
+    void reshoot.generate()
+    await vi.advanceTimersByTimeAsync(2_500)
+    expect(sentSeed()).toBe(0.25 * 2 ** 32)
+    void reshoot.generate()
+    await vi.advanceTimersByTimeAsync(2_500)
+    expect(sentSeed()).toBe(0.75 * 2 ** 32)
+
+    reshoot.seed.value = 7
+    void reshoot.generate()
+    await vi.advanceTimersByTimeAsync(2_500)
+    expect(sentSeed()).toBe(7)
+    random.mockRestore()
+  })
+
+  const chosen = () =>
+    new File([new Blob(['clip'])], 'mine.mp4', { type: 'video/mp4' })
+
+  it('turns away a chosen clip too long for the node, and says why', async () => {
+    const reshoot = start()
+    await vi.advanceTimersByTimeAsync(0)
+    vi.mocked(clipSecondsOf).mockResolvedValue(30)
+
+    reshoot.pick(chosen())
+    await vi.advanceTimersByTimeAsync(2_500)
+
+    expect(reshoot.clipError.value).toBe(
+      'This clip is 30.0 s. Use one between 5 and 15 seconds.'
+    )
+    // A read that started before the length was known is retired.
+    expect(reshoot.depth.value).toBe('none')
+    expect(reshoot.canGenerate.value).toBe(false)
+  })
+
+  it('reads a chosen clip whose length the browser cannot tell', async () => {
+    // A blocked or unplayable clip reports NaN: the node decides, not the page.
+    const reshoot = start()
+    await vi.advanceTimersByTimeAsync(0)
+    vi.mocked(clipSecondsOf).mockResolvedValue(Number.NaN)
+
+    reshoot.pick(chosen())
+    await vi.advanceTimersByTimeAsync(2_500)
+
+    expect(reshoot.clipError.value).toBeUndefined()
+    expect(reshoot.depth.value).toBe('ready')
+  })
+
+  it('reads the bundled example whatever length the browser reports', async () => {
+    // e2e serves external media as a tiny stand-in: 0.1 s must not block it.
+    vi.mocked(clipSecondsOf).mockResolvedValue(0.1)
+    const reshoot = start()
+    await readScene(reshoot)
+
+    expect(reshoot.clipError.value).toBeUndefined()
+    expect(reshoot.depth.value).toBe('ready')
+  })
+
+  it('times a clip that fits before its scene is read', async () => {
+    vi.mocked(clipSecondsOf).mockResolvedValue(10)
+    const reshoot = start()
+    await vi.advanceTimersByTimeAsync(0)
+    // 240 frames at 24 fps, cut to H3's 17k + 5 grid.
+    expect(reshoot.frames.value).toBe(226)
+    expect(reshoot.clipError.value).toBeUndefined()
+
+    await readScene(reshoot)
+    expect(reshoot.frames.value).toBe(97)
   })
 })

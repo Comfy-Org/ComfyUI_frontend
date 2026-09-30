@@ -87,6 +87,8 @@ export function useCheckoutPromo({
     dismiss: () => intend({ type: 'dismissed' }),
     apply,
     remove,
-    expire: () => dispatch({ type: 'expired' })
+    expire: () => dispatch({ type: 'expired' }),
+    /** The quote takes no code, so whatever the link carried is dropped. */
+    withdraw: () => dispatch({ type: 'dismissed' })
   }
 }
