@@ -649,13 +649,7 @@ async function handleBuy() {
       }
     }
 
-    const terminal =
-      response instanceof UncreditedTopupResponse
-        ? response.terminal
-        : RESPONSE_TERMINALS[response.status]
-    if (terminal) {
-      reportTerminal(attemptStartedAt, terminal, response.billing_op_id)
-    }
+    reportResponseTerminal(response, attemptStartedAt)
 
     if (response.status === 'completed') {
       if (
@@ -745,6 +739,19 @@ const RESPONSE_TERMINALS: Record<
     failure_category: 'provider_decline'
   },
   pending: undefined
+}
+
+function reportResponseTerminal(
+  response: CreateTopupResponse,
+  attemptStartedAt: number
+) {
+  const terminal =
+    response instanceof UncreditedTopupResponse
+      ? response.terminal
+      : RESPONSE_TERMINALS[response.status]
+  if (terminal) {
+    reportTerminal(attemptStartedAt, terminal, response.billing_op_id)
+  }
 }
 
 function reportTerminal(
