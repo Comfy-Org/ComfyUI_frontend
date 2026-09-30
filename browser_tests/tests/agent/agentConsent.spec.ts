@@ -444,7 +444,10 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
 })
 
 test.describe('Automatic agent consent', { tag: ['@cloud', '@ui'] }, () => {
-  test.use({ agentConsentAccepted: false })
+  test.use({
+    agentConsentAccepted: false,
+    agentPanelInitiallyOpen: true
+  })
 
   test('offers once on first load and remains available manually after Skip', async ({
     comfyPage,
@@ -541,19 +544,22 @@ test.describe(
         ).toBeNull()
       })
 
-      await test.step('Taking the blank canvas presents the deferred offer', async () => {
+      await test.step('Taking the blank canvas leaves the activated panel available for a message', async () => {
         await page.getByTestId('getting-started-blank').click()
         await expect(gettingStarted).toHaveCount(0)
-        await expect(consent).toBeVisible()
+        await expect(consent).toHaveCount(0)
         await expect(agentPanel.root).toBeVisible()
         expect(agentConsentWrites).toHaveLength(0)
+        expect(
+          await page.evaluate((key) => localStorage.getItem(key), autoShownKey)
+        ).toBeNull()
       })
     })
   }
 )
 
 test.describe(
-  'Automatic agent consent behind a desktop sign-in approval',
+  'Agent activation behind a desktop sign-in approval',
   { tag: ['@cloud', '@ui'] },
   () => {
     test.use({ agentConsentAccepted: false })
@@ -569,7 +575,7 @@ test.describe(
       )
     })
 
-    test('waits for the approval before offering Agent', async ({
+    test('waits for the approval before leaving Agent available', async ({
       comfyPage,
       agentPanel,
       agentConsentReads
@@ -589,7 +595,8 @@ test.describe(
         'Comfy.AgentConsent.AutoShown.test-user-e2e.ws-personal'
 
       await test.step('Boot again on a desktop sign-in link with the offer unspent', async () => {
-        await expect(consent).toBeVisible()
+        await expect(consent).toHaveCount(0)
+        await expect(agentPanel.root).toBeVisible()
         await page.evaluate((key) => localStorage.removeItem(key), autoShownKey)
         const readsBeforeLink = agentConsentReads.length
         await comfyPage.goto({
@@ -614,10 +621,11 @@ test.describe(
         ).toBeNull()
       })
 
-      await test.step('Approving clears the screen and the offer follows', async () => {
+      await test.step('Approving clears the screen without covering the activated panel', async () => {
         await approve.click()
         await expect(approval).toHaveCount(0)
-        await expect(consent).toBeVisible()
+        await expect(consent).toHaveCount(0)
+        await expect(agentPanel.root).toBeVisible()
       })
     })
   }

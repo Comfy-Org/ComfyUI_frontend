@@ -174,6 +174,12 @@ vi.mock(import('@/composables/useFeatureFlags'), () => ({
 const flush = (): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, 0))
 
+const offerExited = async () =>
+  vi.mocked(
+    (await import('@/platform/telemetry')).useTelemetry()!
+      .trackAgentConsentOfferExited
+  )
+
 const notOffered = async () =>
   vi.mocked(
     (await import('@/platform/telemetry')).useTelemetry()!
@@ -305,6 +311,12 @@ describe('AgentPanel extension flag gate', () => {
     )
 
     expect(agentStore.isVisible).toBe(true)
+    if (user)
+      expect(await offerExited()).toHaveBeenCalledWith({
+        exit: 'activation_opened_panel',
+        stage: 'offer',
+        retry_armed: false
+      })
   })
 
   it('waits for the general onboarding decision before activation', async () => {

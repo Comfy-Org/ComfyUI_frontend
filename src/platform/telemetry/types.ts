@@ -652,6 +652,8 @@ export type AgentConsentOfferExit =
   | 'offer_in_flight'
   /** The card has already been on screen for this scope this page load. */
   | 'card_already_seen'
+  /** Panel activation owns consent timing, so the automatic offer is dropped. */
+  | 'activation_opened_panel'
   /** The one-shot auto-show key for this scope is already burned. */
   | 'already_offered'
   /** The first-run startup probe rejected. */
