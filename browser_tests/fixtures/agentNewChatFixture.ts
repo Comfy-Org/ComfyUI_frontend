@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test'
-import type { Page, Response, Route } from '@playwright/test'
+import type { Page, Request, Response, Route } from '@playwright/test'
 import type {
   AgentPostMessageRequest,
   AgentThreadListResponse
@@ -28,6 +28,37 @@ interface AcceptedThread {
   workflowId: string
 }
 
+function tryPostDataJson(request: Request): unknown {
+  try {
+    return request.postDataJSON()
+  } catch {
+    return undefined
+  }
+}
+
+async function readAck(
+  response: Response
+): Promise<{ thread: AcceptedThread } | { failure: string }> {
+  const accepted = zAgentTurnAccepted.safeParse(
+    await response.json().catch(() => undefined)
+  )
+  // postDataJSON() throws on a non-JSON body, inside an unawaited listener.
+  const posted = zAgentPostMessageRequest.safeParse(
+    tryPostDataJson(response.request())
+  )
+  if (!accepted.success || !posted.success)
+    return {
+      failure: `${response.url()}: ${(accepted.error ?? posted.error)?.message}`
+    }
+  return {
+    thread: {
+      id: accepted.data.thread_id,
+      title: posted.data.content,
+      workflowId: accepted.data.workflow_id ?? posted.data.workflow_id ?? ''
+    }
+  }
+}
+
 function threadIdOf(url: string): string {
   const match = MESSAGES_PATH.exec(new URL(url).pathname)
   if (match === null)
@@ -49,11 +80,16 @@ class AgentNewChatServer {
   private readonly posted: PostedTurn[] = []
   private readonly accepted: AcceptedThread[] = []
   private readonly ackFailures: string[] = []
+  private readonly recording = new Set<Promise<void>>()
 
   constructor(private readonly page: Page) {}
 
   async install(): Promise<void> {
-    this.page.on('response', (response) => this.recordAccepted(response))
+    this.page.on('response', (response) => {
+      const record = this.recordAccepted(response)
+      this.recording.add(record)
+      void record.finally(() => this.recording.delete(record))
+    })
     await this.page.route('**/api/agent/threads', (route) =>
       route.fulfill(jsonRoute(this.threadList()))
     )
@@ -70,6 +106,11 @@ class AgentNewChatServer {
     return this.ackFailures
   }
 
+  /** `response` fires on headers, so a body read can still be in flight. */
+  async settled(): Promise<void> {
+    while (this.recording.size > 0) await Promise.all([...this.recording])
+  }
+
   private async recordAccepted(response: Response): Promise<void> {
     const request = response.request()
     if (
@@ -81,21 +122,9 @@ class AgentNewChatServer {
       this.ackFailures.push(`${response.status()} ${response.url()}`)
       return
     }
-    const accepted = zAgentTurnAccepted.safeParse(
-      await response.json().catch(() => undefined)
-    )
-    const posted = zAgentPostMessageRequest.safeParse(request.postDataJSON())
-    if (!accepted.success || !posted.success) {
-      this.ackFailures.push(
-        `${response.url()}: ${(accepted.error ?? posted.error)?.message}`
-      )
-      return
-    }
-    this.accepted.push({
-      id: accepted.data.thread_id,
-      title: posted.data.content,
-      workflowId: posted.data.workflow_id ?? ''
-    })
+    const outcome = await readAck(response)
+    if ('failure' in outcome) this.ackFailures.push(outcome.failure)
+    else this.accepted.push(outcome.thread)
   }
 
   private answerPost(route: Route): Promise<void> {
@@ -147,6 +176,7 @@ export const agentNewChatTest = agentConversationTest.extend<{
     const server = new AgentNewChatServer(page)
     await server.install()
     await use(server)
+    await server.settled()
     expect(server.failedAcks()).toEqual([])
   }
 })
