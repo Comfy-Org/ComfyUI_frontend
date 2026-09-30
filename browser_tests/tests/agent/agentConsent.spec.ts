@@ -444,7 +444,10 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
 })
 
 test.describe('Automatic agent consent', { tag: ['@cloud', '@ui'] }, () => {
-  test.use({ agentConsentAccepted: false })
+  test.use({
+    agentConsentAccepted: false,
+    agentPanelInitiallyOpen: true
+  })
 
   test('offers once on first load and remains available manually after Skip', async ({
     comfyPage,
@@ -541,19 +544,22 @@ test.describe(
         ).toBeNull()
       })
 
-      await test.step('Taking the blank canvas presents the deferred offer', async () => {
+      await test.step('Taking the blank canvas leaves the activated panel available for a message', async () => {
         await page.getByTestId('getting-started-blank').click()
         await expect(gettingStarted).toHaveCount(0)
-        await expect(consent).toBeVisible()
+        await expect(consent).toHaveCount(0)
         await expect(agentPanel.root).toBeVisible()
         expect(agentConsentWrites).toHaveLength(0)
+        expect(
+          await page.evaluate((key) => localStorage.getItem(key), autoShownKey)
+        ).toBeNull()
       })
     })
   }
 )
 
 test.describe(
-  'Automatic agent consent behind a desktop sign-in approval',
+  'Agent activation behind a desktop sign-in approval',
   { tag: ['@cloud', '@ui'] },
   () => {
     test.use({ agentConsentAccepted: false })
@@ -569,7 +575,7 @@ test.describe(
       )
     })
 
-    test('waits for the approval before offering Agent', async ({
+    test('waits for the approval before leaving Agent available', async ({
       comfyPage,
       agentPanel,
       agentConsentReads
@@ -589,7 +595,8 @@ test.describe(
         'Comfy.AgentConsent.AutoShown.test-user-e2e.ws-personal'
 
       await test.step('Boot again on a desktop sign-in link with the offer unspent', async () => {
-        await expect(consent).toBeVisible()
+        await expect(consent).toHaveCount(0)
+        await expect(agentPanel.root).toBeVisible()
         await page.evaluate((key) => localStorage.removeItem(key), autoShownKey)
         const readsBeforeLink = agentConsentReads.length
         await comfyPage.goto({
@@ -614,11 +621,111 @@ test.describe(
         ).toBeNull()
       })
 
-      await test.step('Approving clears the screen and the offer follows', async () => {
+      await test.step('Approving clears the screen without covering the activated panel', async () => {
         await approve.click()
         await expect(approval).toHaveCount(0)
-        await expect(consent).toBeVisible()
+        await expect(consent).toHaveCount(0)
+        await expect(agentPanel.root).toBeVisible()
       })
+    })
+  }
+)
+
+test.describe(
+  'Fresh signed-in Agent consent and tour sequencing',
+  { tag: ['@cloud', '@ui'] },
+  () => {
+    test.use({ agentConsentAccepted: false })
+
+    for (const tourAction of ['finish', 'skip'] as const) {
+      test(`resumes one held send after the user ${tourAction === 'finish' ? 'finishes' : 'skips'} the tour`, async ({
+        agentPanel,
+        comfyPage,
+        postedMessages
+      }) => {
+        const page = comfyPage.page
+        const consent = page.getByRole('dialog', {
+          name: enMessages.agent.consent.title
+        })
+
+        await expect(agentPanel.root).toBeVisible()
+        await expect(consent).toHaveCount(0)
+        await agentPanel.selectWorkflow()
+        await agentPanel.composer.fill('Build a product photo workflow')
+        await agentPanel.sendButton.click()
+
+        await expect(consent).toBeVisible()
+        expect(postedMessages).toHaveLength(0)
+        await consent
+          .getByRole('button', { name: enMessages.agent.consent.accept })
+          .click()
+
+        const coachTitles = [
+          enMessages.agent.coachTitle,
+          enMessages.agent.coachWorkflowTitle,
+          enMessages.agent.coachGraphTitle,
+          enMessages.agent.coachHistoryTitle
+        ]
+        await expect(
+          page.getByRole('dialog', { name: coachTitles[0] })
+        ).toBeVisible()
+        expect(postedMessages).toHaveLength(0)
+
+        if (tourAction === 'skip') {
+          await page
+            .getByRole('dialog', { name: coachTitles[0] })
+            .getByRole('button', { name: enMessages.agent.skip })
+            .click()
+        } else {
+          for (const [index, title] of coachTitles.entries()) {
+            await page
+              .getByRole('dialog', { name: title })
+              .getByRole('button', {
+                name:
+                  index === coachTitles.length - 1
+                    ? enMessages.onboardingCoachmarks.done
+                    : enMessages.g.next
+              })
+              .click()
+          }
+        }
+
+        await expect.poll(() => postedMessages).toHaveLength(1)
+        await agentPanel.openButton.click()
+        await expect(agentPanel.root).toHaveCount(0)
+        await agentPanel.openButton.click()
+        await expect(agentPanel.root).toBeVisible()
+        await expect(consent).toHaveCount(0)
+        await expect.poll(() => postedMessages).toHaveLength(1)
+      })
+    }
+
+    test('resumes the held send when App Mode defers the active tour', async ({
+      agentPanel,
+      comfyPage,
+      postedMessages
+    }) => {
+      const page = comfyPage.page
+      const consent = page.getByRole('dialog', {
+        name: enMessages.agent.consent.title
+      })
+      const coach = page.getByRole('dialog', {
+        name: enMessages.agent.coachTitle
+      })
+
+      await agentPanel.selectWorkflow()
+      await agentPanel.composer.fill('Build a product photo workflow')
+      await agentPanel.sendButton.click()
+      await consent
+        .getByRole('button', { name: enMessages.agent.consent.accept })
+        .click()
+
+      await expect(coach).toBeVisible()
+      expect(postedMessages).toHaveLength(0)
+      await comfyPage.command.executeCommand('Comfy.ToggleLinear')
+
+      await expect(coach).toHaveCount(0)
+      await expect.poll(() => postedMessages).toHaveLength(1)
     })
   }
 )

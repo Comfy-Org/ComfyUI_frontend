@@ -30,6 +30,7 @@ const { steps, storageKey } = defineProps<{
   steps: CoachStep[]
   storageKey?: string
 }>()
+const emit = defineEmits<{ finished: [] }>()
 
 const { active, index, step, isLast, next, finish } = useOnboarding(
   () => steps,
@@ -89,13 +90,16 @@ function reportStep(action: AgentOnboardingAction): void {
 }
 
 function onNext(): void {
+  const finished = isLast.value
   reportStep(isLast.value ? 'finish' : 'next')
   next()
+  if (finished) emit('finished')
 }
 
 function onSkip(): void {
   reportStep('skip')
   finish()
+  emit('finished')
 }
 
 const targetObserver = new MutationObserver(resolveTargets)

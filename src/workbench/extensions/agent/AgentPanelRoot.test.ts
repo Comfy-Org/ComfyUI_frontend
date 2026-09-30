@@ -28,6 +28,7 @@ vi.mock(import('firebase/auth'))
 vi.mock<unknown>(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 import { i18n } from '@/i18n'
+import type { AgentConsentTrigger } from '@/platform/telemetry/types'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { setupInlinePromptEditorDom } from './components/agent/composer/inlinePromptEditorTestSetup'
 
@@ -74,6 +75,15 @@ const getServerFeature = vi.hoisted(() =>
 )
 const focusNodeInstance = vi.hoisted(() => vi.fn())
 const socketSend = vi.hoisted(() => vi.fn())
+const withConsent = vi.hoisted(() =>
+  vi.fn<(trigger: AgentConsentTrigger, onAccept: () => void) => Promise<void>>(
+    async (_trigger, onAccept) => onAccept()
+  )
+)
+
+vi.mock<unknown>(import('./composables/agent/useAgentConsent'), () => ({
+  useAgentConsent: () => ({ withConsent })
+}))
 
 vi.mock<unknown>(import('@/composables/canvas/useFocusNode'), () => ({
   useFocusNode: () => ({ focusNodeInstance })
@@ -3140,6 +3150,72 @@ describe('AgentPanelRoot workflow binding', () => {
     }
   )
 
+  it('keeps the first send pending until consent succeeds, then resumes it', async () => {
+    makeTab('wf-42')
+    const bodies = mockMessagesEndpoint('wf-42')
+    Object.assign(useAgentConsentStore(), { accepted: false })
+    let accept = () => {}
+    withConsent.mockImplementationOnce(
+      (_trigger, onAccept) =>
+        new Promise<void>((resolve) => {
+          accept = () => {
+            onAccept()
+            resolve()
+          }
+        })
+    )
+    renderWithSelectedTarget()
+
+    const textbox = screen.getByRole('textbox')
+    await userEvent.click(textbox)
+    await userEvent.paste('build me a workflow')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(withConsent).toHaveBeenCalledExactlyOnceWith(
+      'first_message',
+      expect.any(Function)
+    )
+    expect(bodies).toHaveLength(0)
+
+    accept()
+    await screen.findByRole('button', { name: 'Stop' })
+    await waitFor(() => expect(bodies).toHaveLength(1))
+  })
+
+  it('does not resume a consent-held send after closing in App Mode', async () => {
+    makeTab('wf-42')
+    const bodies = mockMessagesEndpoint('wf-42')
+    const settleSubmission = vi.spyOn(
+      useAgentComposerStore(),
+      'settleSubmission'
+    )
+    Object.assign(useAgentConsentStore(), { accepted: false })
+    let accept = () => {}
+    withConsent.mockImplementationOnce(
+      (_trigger, onAccept) =>
+        new Promise<void>((resolve) => {
+          accept = () => {
+            onAccept()
+            resolve()
+          }
+        })
+    )
+    const { unmount } = renderWithSelectedTarget()
+
+    const textbox = screen.getByRole('textbox')
+    await userEvent.click(textbox)
+    await userEvent.paste('build me a workflow')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    canvasStore.linearMode = true
+    useAgentPanelStore().close('close_button')
+    unmount()
+    accept()
+    await waitFor(() =>
+      expect(settleSubmission).toHaveBeenCalledWith(expect.any(Number), false)
+    )
+    expect(bodies).toHaveLength(0)
+  })
   it('reports a message sent from an empty-state suggestion chip as a suggestion', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
