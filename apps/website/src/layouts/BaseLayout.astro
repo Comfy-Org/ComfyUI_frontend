@@ -324,7 +324,9 @@ const structuredData = head.emitStructuredData
     <main class="overflow-x-clip">
       <slot />
     </main>
-    {!minimal && <SiteFooter locale={locale} client:load />}
+    {!minimal && (
+      <SiteFooter locale={locale} client:visible={{ rootMargin: '200px' }} />
+    )}
 
     <Analytics />
 

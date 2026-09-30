@@ -669,6 +669,55 @@ describe('ModelDetail', () => {
     expect(captureWorkshopEvent).not.toHaveBeenCalled()
   })
 
+  it('reports API key clicks and snippet copies with the model and language', async () => {
+    await mountDetail({
+      model: { ...runnable, defaults: { prompt: 'A landscape' } }
+    })
+    const visitor = user()
+    await visitor.click(screen.getByRole('tab', { name: 'API' }))
+    await visitor.click(await screen.findByTestId('snippet-curl'))
+    await visitor.click(screen.getByRole('button', { name: 'Copy snippet' }))
+    const getKey = screen.getByRole('link', { name: 'Get API key' })
+    getKey.addEventListener('click', (event) => event.preventDefault(), {
+      once: true
+    })
+    await visitor.click(getKey)
+    const model = { model_slug: runnable.slug, page_type: 'model' }
+    expect(captureWorkshopEvent).toHaveBeenCalledWith({
+      name: 'api_snippet_copied',
+      properties: expect.objectContaining({
+        ...model,
+        snippet_language: 'curl'
+      })
+    })
+    expect(captureWorkshopEvent).toHaveBeenCalledWith({
+      name: 'api_key_clicked',
+      properties: expect.objectContaining(model)
+    })
+  })
+
+  it('reports no API key clicks or snippet copies while Models is hidden', async () => {
+    await mountDetail({
+      model: { ...runnable, defaults: { prompt: 'A landscape' } }
+    })
+    const visitor = user()
+    await visitor.click(screen.getByRole('tab', { name: 'API' }))
+    await screen.findByRole('button', { name: 'Copy snippet' })
+    auth.workshopEnabled.value = false
+    await nextTick()
+    await visitor.click(screen.getByRole('button', { name: 'Copy snippet' }))
+    const getKey = screen.getByRole('link', { name: 'Get API key' })
+    getKey.addEventListener('click', (event) => event.preventDefault(), {
+      once: true
+    })
+    await visitor.click(getKey)
+    const names = vi
+      .mocked(captureWorkshopEvent)
+      .mock.calls.map(([event]) => event.name)
+    expect(names).not.toContain('api_snippet_copied')
+    expect(names).not.toContain('api_key_clicked')
+  })
+
   it.for(['load', 'error'] as const)(
     'correlates an HTTP success with the primary image %s outcome',
     async (event) => {
