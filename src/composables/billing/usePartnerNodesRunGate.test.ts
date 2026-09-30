@@ -55,7 +55,8 @@ async function storeApiKeyStillValidating() {
   vi.spyOn(useAuthStore(), 'createCustomer').mockReturnValue(
     new Promise(() => {})
   )
-  await useApiKeyAuthStore().storeApiKey('stored-key')
+  void useApiKeyAuthStore().storeApiKey('stored-key')
+  await vi.waitFor(() => expect(useApiKeyAuthStore().isValidating).toBe(true))
 }
 
 function setup() {

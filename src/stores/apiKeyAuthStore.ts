@@ -21,6 +21,7 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
   const { wrapWithErrorHandlingAsync, toastErrorHandler } = useErrorHandling()
 
   const currentUser = ref<ComfyApiUser | null>(null)
+  const isValidating = ref(false)
   const isAuthenticated = computed(() => !!currentUser.value)
 
   const initializeUserFromApiKey = async (watchedApiKey: string) => {
@@ -44,10 +45,12 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
   watch(
     apiKey,
     async (watchedApiKey) => {
+      const explicitSubmissionIsValidating = isValidating.value
       currentUser.value = null
       if (watchedApiKey) {
         await nextTick()
         if (apiKey.value !== watchedApiKey) return
+        if (explicitSubmissionIsValidating) return
         void initializeUserFromApiKey(watchedApiKey)
       }
     },
@@ -67,14 +70,22 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
   }
 
   const storeApiKey = wrapWithErrorHandlingAsync(async (newApiKey: string) => {
-    apiKey.value = newApiKey
-    toastStore.add({
-      severity: 'success',
-      summary: t('auth.apiKey.stored'),
-      detail: t('auth.apiKey.storedDetail'),
-      life: 5000
-    })
-    return true
+    isValidating.value = true
+    try {
+      apiKey.value = newApiKey
+      currentUser.value = null
+      await initializeUserFromApiKey(newApiKey)
+      if (apiKey.value !== newApiKey || !isAuthenticated.value) return false
+      toastStore.add({
+        severity: 'success',
+        summary: t('auth.apiKey.stored'),
+        detail: t('auth.apiKey.storedDetail'),
+        life: 5000
+      })
+      return true
+    } finally {
+      isValidating.value = false
+    }
   }, reportError)
 
   const clearStoredApiKey = wrapWithErrorHandlingAsync(async () => {
@@ -107,6 +118,7 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
   return {
     // State
     currentUser,
+    isValidating,
     isAuthenticated,
 
     // Actions
