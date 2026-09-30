@@ -2,11 +2,8 @@ import type {
   AgentPostMessageRequest,
   UploadImageResponse
 } from '@comfyorg/ingest-types'
-import {
-  zAgentAttachmentRejected,
-  zUploadImageResponse
-} from '@comfyorg/ingest-types/zod'
-import type { z } from 'zod'
+import { zUploadImageResponse } from '@comfyorg/ingest-types/zod'
+import { z } from 'zod'
 
 import { api } from '@/scripts/api'
 
@@ -33,6 +30,12 @@ import type {
 } from '../../schemas/agentApiSchema'
 
 const CLOUD_WORKFLOW_PAGE_SIZE = 100
+
+const zAttachmentRejectionMessage = z.object({
+  rejected: z.array(z.string()),
+  rejected_count: z.number().int(),
+  type: z.literal('ATTACHMENT_TYPE_NOT_ACCEPTED')
+})
 
 export class AgentApiError extends Error {
   readonly status: number
@@ -126,7 +129,7 @@ function getErrorMessage(body: unknown, fallback: string): string {
   //
   // rejected_count, not rejected.length: the array is capped server-side, so
   // counting it would tell the user fewer files were refused than actually were.
-  const refused = zAgentAttachmentRejected.safeParse(body)
+  const refused = zAttachmentRejectionMessage.safeParse(body)
   if (refused.success) {
     return refusedAttachmentsMessage(
       refused.data.rejected,
