@@ -119,12 +119,12 @@ const locked = computed(() => isLocked(page.value))
 function cancelPayment() {}
 
 /**
- * The plan this page's own Pay bought: as its quote priced it, or, once a
- * reload or a provider's page took that quote away, as the server now lists it.
+ * The plan a settled payment bought: as this page's own quote priced it, or,
+ * for any payment it did not price here, as the server's catalog lists it.
  */
 const boughtPlan = computed(() => {
   const current = page.value
-  if (current.kind === 'terminal' && current.attribution === 'returned')
+  if (current.kind === 'terminal' && current.attribution !== 'started')
     return current.plan && { ...current.plan, currency: 'usd' }
   const quoted = preview.value
   return quoted && { ...quoted.new_plan, currency: quoted.currency ?? 'usd' }

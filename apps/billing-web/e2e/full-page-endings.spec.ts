@@ -109,6 +109,63 @@ test('a reload after its own Pay went through renders Already completed on every
   expect(subscribeRequests(cloud)).toHaveLength(1)
 })
 
+const RECEIPT_PLAN = { slug: 'pro_monthly', duration: 'MONTHLY' } as const
+
+test('77-4068: a Pay that goes through counts the credits the server says it added', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.operations.op_subscribe = {
+    ...succeededOperation('op_subscribe'),
+    amount_charged_cents: 5000,
+    credits_added: 10_000,
+    plan: RECEIPT_PLAN
+  }
+  await signIn(CHECKOUT)
+  await payButton(page).click()
+
+  await expect(heading(page, "You're all set")).toBeVisible()
+  await expect(page.getByTestId('checkout-ending-plan')).toContainText(
+    '10,000 credits added'
+  )
+})
+
+test('390-4947 / 328-4444: a charge whose credits are still landing reads Payment received, then Already completed names the plan once they land', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.operations.op_subscribe = {
+    ...succeededOperation('op_subscribe'),
+    amount_charged_cents: 5000,
+    plan: RECEIPT_PLAN
+  }
+  await signIn(CHECKOUT)
+  await payButton(page).click()
+
+  await expect(heading(page, 'Payment received')).toBeVisible()
+  const receipt = page.getByTestId('checkout-ending-receipt')
+  await expect(receipt).toContainText('Payment$50.00')
+  await expect(receipt).toContainText('Credits addedAdding…')
+  await expect(receipt).toContainText('PlanPro')
+  await expect(code(page)).toHaveText('op_subscribe')
+
+  cloud.scenario.operations.op_subscribe = {
+    ...cloud.scenario.operations.op_subscribe,
+    credits_added: 10_000
+  }
+  settleOnServer(cloud)
+  await page.reload()
+
+  await expect(heading(page, 'Already completed')).toBeVisible()
+  await expect(page.getByTestId('checkout-ending-plan')).toContainText(
+    'Pro$50.00 USD / mo10,000 credits added'
+  )
+  await expect(code(page)).toBeHidden()
+  expect(subscribeRequests(cloud)).toHaveLength(1)
+})
+
 test('a later checkout in the same tab for a plan still for sale opens the form, not the old payment', async ({
   page,
   signIn

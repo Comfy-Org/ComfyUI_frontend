@@ -235,6 +235,120 @@ describe('CheckoutEnding', () => {
     expect(screen.getByTestId('checkout-ending-plan')).toHaveTextContent(
       'Pro$50.00 USD / mo'
     )
+    expect(screen.queryByText(/credits added/)).not.toBeInTheDocument()
+  })
+
+  it('77-4068: Success counts the credits the server says it added', () => {
+    renderEnding({ kind: 'success', receipt: { creditsAdded: 6858 } })
+
+    expect(screen.getByTestId('checkout-ending-plan')).toHaveTextContent(
+      'Pro$50.00 USD / mo6,858 credits added'
+    )
+  })
+
+  describe('the receipt the server reported', () => {
+    const RECEIPT_PLAN = { slug: 'pro_monthly', duration: 'MONTHLY' } as const
+
+    it.for<EndingScreen>([
+      {
+        kind: 'already_completed',
+        code: 'op_old',
+        receipt: { plan: RECEIPT_PLAN, creditsAdded: 6858 }
+      },
+      {
+        kind: 'completed',
+        code: 'op_seen',
+        receipt: { plan: RECEIPT_PLAN, creditsAdded: 6858 }
+      }
+    ])(
+      '328-4444: $kind names the plan its receipt names, in place of the reference',
+      (ending) => {
+        renderEnding(ending)
+
+        expect(screen.getByTestId('checkout-ending-plan')).toHaveTextContent(
+          'Pro$50.00 USD / mo6,858 credits added'
+        )
+        expect(
+          screen.queryByTestId('checkout-ending-code')
+        ).not.toBeInTheDocument()
+      }
+    )
+
+    it('keeps the reference when the catalog cannot list the plan a receipt names', () => {
+      render(CheckoutEnding, {
+        props: {
+          screen: {
+            kind: 'already_completed',
+            code: 'op_old',
+            receipt: { plan: RECEIPT_PLAN }
+          },
+          workspace: 'Acme Team'
+        },
+        global: { plugins: [createBillingI18n()] }
+      })
+
+      expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
+        'op_old'
+      )
+      expect(
+        screen.queryByTestId('checkout-ending-plan')
+      ).not.toBeInTheDocument()
+    })
+
+    it('410-5225: a top-up already completed reads Added and Amount paid, and no balance', () => {
+      renderEnding({
+        kind: 'already_completed',
+        code: 'op_topup',
+        receipt: { creditsAdded: 3000, amountChargedCents: 1500 }
+      })
+
+      expect(screen.getByTestId('checkout-ending-receipt')).toHaveTextContent(
+        'Added+3,000Amount paid$15.00'
+      )
+      expect(screen.queryByText(/balance/i)).not.toBeInTheDocument()
+      expect(
+        screen.queryByTestId('checkout-ending-plan')
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryByTestId('checkout-ending-code')
+      ).not.toBeInTheDocument()
+    })
+
+    it('390-4947: Payment received confirms the payment and shows the credits still adding', () => {
+      renderEnding({
+        kind: 'received',
+        code: 'op_r',
+        receipt: { amountChargedCents: 3500, plan: RECEIPT_PLAN }
+      })
+
+      expect(screen.getByTestId('checkout-ending-receipt')).toHaveTextContent(
+        'Payment$35.00Credits addedAdding…PlanPro'
+      )
+      expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
+        'op_r'
+      )
+    })
+
+    it('390-4947: a top-up still adding its credits names no plan', () => {
+      renderEnding({
+        kind: 'received',
+        code: 'op_r',
+        receipt: { amountChargedCents: 2500 }
+      })
+
+      expect(screen.getByTestId('checkout-ending-receipt')).toHaveTextContent(
+        'Payment$25.00Credits addedAdding…'
+      )
+      expect(screen.queryByText('Plan')).not.toBeInTheDocument()
+    })
+
+    it('keeps Payment received card-less while the charge is not confirmed', () => {
+      renderEnding({ kind: 'received', code: 'op_r' })
+
+      expect(
+        screen.queryByTestId('checkout-ending-receipt')
+      ).not.toBeInTheDocument()
+    })
   })
 
   it.for<{ ending: EndingScreen; action: Action; event: string }>([

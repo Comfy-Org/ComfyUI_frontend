@@ -2,6 +2,7 @@
 import { useI18n } from 'vue-i18n'
 
 import type { SummaryLedger } from '@/checkout/summaryLedger'
+import LedgerRows from '@/components/fullPage/summary/LedgerRows.vue'
 
 const { ledger } = defineProps<{ ledger: SummaryLedger }>()
 
@@ -32,44 +33,7 @@ const { t } = useI18n()
     </p>
   </div>
 
-  <template v-if="ledger.items.length + ledger.discounts.length > 0">
-    <hr class="mt-8 mb-0 border-border-default" />
-    <ul class="m-0 flex list-none flex-col gap-4 p-0 pt-6">
-      <li
-        v-for="(row, index) in ledger.items"
-        :key="`item-${index}`"
-        class="flex flex-col gap-1"
-      >
-        <div class="flex items-baseline justify-between gap-4">
-          <span class="text-sm font-semibold text-base-foreground">
-            {{ row.label }}
-          </span>
-          <span class="shrink-0 text-sm text-base-foreground tabular-nums">
-            {{ row.amount }}
-          </span>
-        </div>
-        <span
-          v-for="subline in row.sublines"
-          :key="subline"
-          class="text-xs text-muted-foreground"
-        >
-          {{ subline }}
-        </span>
-      </li>
-      <li
-        v-for="(row, index) in ledger.discounts"
-        :key="`discount-${index}`"
-        class="flex items-baseline justify-between gap-4"
-      >
-        <span class="text-sm font-semibold text-base-foreground">
-          {{ row.label }}
-        </span>
-        <span class="shrink-0 text-sm text-muted-foreground tabular-nums">
-          {{ row.amount }}
-        </span>
-      </li>
-    </ul>
-  </template>
+  <LedgerRows :ledger />
 
   <div class="pt-4 empty:hidden">
     <slot />

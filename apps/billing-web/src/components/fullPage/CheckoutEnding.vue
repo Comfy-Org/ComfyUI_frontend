@@ -2,10 +2,16 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { formatQuoteMoney } from '@comfyorg/account-ui/billing/checkout'
 import { buttonVariants } from '@comfyorg/design-system/button.variants'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { EndingKind, EndingScreen } from '@/checkout/endingScreen'
+import type {
+  EndingKind,
+  EndingScreen,
+  ReceiptRow
+} from '@/checkout/endingScreen'
+import { endingReceipt } from '@/checkout/endingScreen'
 import { longDate } from '@/checkout/longDate'
 import { supportLinkWithCode } from '@/checkout/payVerdict'
 import { namedPlan } from '@/checkout/summaryLedger'
@@ -92,6 +98,47 @@ const bodyParams = computed(() =>
     : { workspace }
 )
 const code = computed(() => ('code' in screen ? screen.code : undefined))
+const receipt = computed(() => endingReceipt(screen))
+/** A plan card stands in for the reference; without the plan's listing the code stays. */
+const planCard = computed(() => (receipt.value.namesPlan ? plan : undefined))
+const showsCode = computed(
+  () =>
+    code.value !== undefined &&
+    planCard.value === undefined &&
+    !receipt.value.rowsReplaceCode
+)
+const creditsAdded = computed(() =>
+  'receipt' in screen ? screen.receipt?.creditsAdded : undefined
+)
+
+const R = 'checkout.fullPage.ending.receipt'
+const credits = (count: number) =>
+  new Intl.NumberFormat(locale.value).format(count)
+const money = (cents: number) => formatQuoteMoney(cents, 'usd', locale.value)
+
+/** Each row the receipt shows, as label and value; a plan row needs the plan's name. */
+const receiptRows = computed(() =>
+  receipt.value.rows.flatMap((row) => {
+    const value = rowValue(row)
+    return value === undefined
+      ? []
+      : [{ kind: row.kind, label: t(`${R}.${row.kind}`), value }]
+  })
+)
+
+function rowValue(row: ReceiptRow): string | undefined {
+  switch (row.kind) {
+    case 'payment':
+    case 'amount_paid':
+      return money(row.cents)
+    case 'adding':
+      return t(`${R}.addingValue`)
+    case 'added':
+      return t(`${R}.creditCount`, { count: credits(row.credits) })
+    case 'plan':
+      return plan?.name
+  }
+}
 const supportLink = computed(() => supportLinkWithCode(code.value))
 const primary = computed(() => ending.value.primary)
 
@@ -135,21 +182,47 @@ function act() {
       </div>
 
       <div
-        v-if="screen.kind === 'success' && plan"
+        v-if="planCard"
         class="flex w-full flex-col gap-2 rounded-lg bg-secondary-background p-6 text-left"
         data-testid="checkout-ending-plan"
       >
         <p class="m-0 text-base font-bold text-base-foreground">
-          {{ plan.name }}
+          {{ planCard.name }}
         </p>
         <p class="m-0 text-base-foreground tabular-nums">
-          <span class="text-[2rem] font-semibold">{{ plan.price }}</span>
-          {{ plan.period }}
+          <span class="text-[2rem] font-semibold">{{ planCard.price }}</span>
+          {{ planCard.period }}
+        </p>
+        <p
+          v-if="creditsAdded !== undefined"
+          class="m-0 flex items-center gap-1.5 text-sm text-muted-foreground"
+        >
+          <i class="icon-[lucide--coins] size-4 shrink-0" aria-hidden="true" />
+          <span class="tabular-nums">
+            {{ t(`${R}.creditsAddedLine`, { count: credits(creditsAdded) }) }}
+          </span>
         </p>
       </div>
 
+      <dl
+        v-if="receiptRows.length > 0"
+        class="m-0 flex w-full flex-col gap-2 rounded-lg bg-secondary-background p-4 text-left text-sm"
+        data-testid="checkout-ending-receipt"
+      >
+        <div
+          v-for="row in receiptRows"
+          :key="row.kind"
+          class="flex items-baseline justify-between gap-4"
+        >
+          <dt class="text-muted-foreground">{{ row.label }}</dt>
+          <dd class="m-0 text-base-foreground tabular-nums">
+            {{ row.value }}
+          </dd>
+        </div>
+      </dl>
+
       <EndingCodeCard
-        v-if="code !== undefined"
+        v-if="showsCode && code !== undefined"
         :label="t(`${copyKey}.codeLabel`)"
         :code
       />
