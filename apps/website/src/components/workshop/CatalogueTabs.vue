@@ -31,9 +31,12 @@ const hrefs = {
   workflows: routes.hubWorkflows,
   apps: routes.hubApps
 } as const satisfies Record<CatalogueTab, string>
-const marker = computed(
-  () => `translateX(${tabs.indexOf(active.value) * 100}%)`
-)
+const markerStyle = computed(() => ({
+  transform: `translateX(${tabs.indexOf(active.value) * 100}%)`,
+  // Each hub section is its own page, so the marker cannot transition from
+  // the tab it left: named, the browser carries it across the navigation.
+  viewTransitionName: links ? 'catalogue-marker' : undefined
+}))
 const columns = computed(() =>
   tabs.length === 2 ? 'grid-cols-2' : 'grid-cols-3'
 )
@@ -62,7 +65,8 @@ const tabClass = (tab: CatalogueTab) =>
     <div :class="cn('pointer-events-none absolute inset-1 grid', columns)">
       <div
         class="rounded-xl bg-transparency-white-t20 transition-transform duration-300 ease-out motion-reduce:transition-none"
-        :style="{ transform: marker }"
+        :style="markerStyle"
+        data-testid="catalogue-marker"
       />
     </div>
     <template v-for="tab in tabs" :key="tab">

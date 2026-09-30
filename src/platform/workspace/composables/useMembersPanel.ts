@@ -134,17 +134,30 @@ export function useMembersPanel() {
   // shapes report a terminal plan: subscription_status 'ended', and a
   // cancelled row whose access has already closed (the backend reconciles
   // that shape into 'ended' on read, but a stale payload can still carry
-  // it). Scoped to team plans: a lapsed personal subscription belongs to
-  // the upgrade banner, not the team-ended treatment.
+  // it). Scoped by subscription shape, not seat capacity: when a plan
+  // truly ends the backend collapses max_seats to the no-plan default of 1
+  // (observed on test: ended + ENTERPRISE + max_seats 1), so a seat gate
+  // reads the flagship ended workspace as "seatless" and hides the very
+  // explanation this state exists to show. A lapsed personal subscription
+  // stays out via the team/sales-managed gate instead.
   const isPlanTerminal = computed(
     () =>
       subscriptionStatus.value === 'ended' ||
       (subscriptionStatus.value === 'canceled' &&
         !canAccessSubscriptionFeatures.value)
   )
-  const isPlanEnded = computed(
-    () => hasMemberSeats.value && isPlanTerminal.value
-  )
+  // Qualifying for the treatment needs a KNOWN signal — the team classifier
+  // or a real tier that is sales-managed. A terminal payload with no tier
+  // and no team signal is most plausibly a lapsed personal subscription,
+  // which belongs to the upgrade banner. (The nullish fail-close in
+  // isSalesManagedPlan below governs only the route back once a workspace
+  // is already in the treatment.)
+  const isPlanEnded = computed(() => {
+    if (!isPlanTerminal.value) return false
+    if (hasTeamPlan.value) return true
+    const tier = subscription.value?.tier
+    return tier != null && isSalesManagedTier(tier)
+  })
   // Sales-managed, not strictly ENTERPRISE: isSalesManagedTier() treats an
   // unrecognized tier as sales-managed too, so an ended unknown/future plan
   // routes to Contact sales rather than borrowing the self-serve Reactivate
@@ -180,7 +193,10 @@ export function useMembersPanel() {
   })
 
   const uiConfig = computed(() => {
-    if (!hasMemberSeats.value) {
+    // An ended plan keeps the members-table presentation: the collapsed
+    // seat limit (see isPlanEnded) must not demote the page to the seatless
+    // layout, or the roster and the banner's context disappear together.
+    if (!hasMemberSeats.value && !isPlanEnded.value) {
       return {
         ...workspaceUiConfig.value,
         showMembersList: false,
@@ -235,15 +251,16 @@ export function useMembersPanel() {
       (hasMultipleMembers.value || pendingInvites.value.length > 0)
   )
 
-  // An ended plan resolves can_invite_members false, but hiding the control
-  // from the owner leaves no explanation — keep it visible and disabled, with
-  // the banner carrying the route back. Members stay hidden (role denial).
+  // On the real ended payload can_invite_members stays TRUE — the server
+  // grants it from the owner role alone (ResolveBillingWritePermissions),
+  // and the disabled state carries the denial. The second disjunct is the
+  // guarantee for any rail that resolves the capability false: an owner
+  // keeps a visible, disabled control with the banner carrying the route
+  // back. Members stay hidden (role denial).
   const showInviteButton = computed(() =>
     isCloud
       ? canInviteMembers.value ||
-        (isPlanEnded.value &&
-          hasMemberSeats.value &&
-          permissions.value.canManageSubscription)
+        (isPlanEnded.value && permissions.value.canManageSubscription)
       : workspaceRole.value === 'owner'
   )
 

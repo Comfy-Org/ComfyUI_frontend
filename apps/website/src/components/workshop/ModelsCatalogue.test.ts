@@ -136,9 +136,7 @@ describe('ModelsCatalogue', () => {
       })
 
       const hero = await screen.findByTestId('workshop-hero')
-      const introduction = within(hero).getByTestId('split-reveal')
-      expect(introduction).toBeVisible()
-      expect(introduction).toHaveTextContent(subtitle)
+      expect(within(hero).getByText(subtitle, { exact: false })).toBeVisible()
     }
   )
 

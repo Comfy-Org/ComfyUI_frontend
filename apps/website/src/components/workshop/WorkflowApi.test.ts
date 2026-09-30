@@ -68,18 +68,12 @@ describe('WorkflowApi', () => {
   it.for([
     {
       tab: 'Python',
-      shows: [
-        'Comfy(api_key=…) + run(workflow, api_key=…)',
-        'client.assets.from_url(url)'
-      ],
+      shows: ['COMFY_API_KEY', 'Uploaded by the code'],
       hides: ['/api/prompt', 'X-API-Key']
     },
     {
       tab: 'TypeScript',
-      shows: [
-        'new Comfy({ apiKey }) + run(workflow, { apiKey })',
-        'client.assets.fromUrl(url)'
-      ],
+      shows: ['COMFY_API_KEY', 'Uploaded by the code'],
       hides: ['/api/prompt', 'X-API-Key']
     },
     {
@@ -89,7 +83,7 @@ describe('WorkflowApi', () => {
         'X-API-Key + extra_data.api_key_comfy_org',
         'Uploaded before the call'
       ],
-      hides: ['assets.from']
+      hides: ['Uploaded by the code']
     }
   ])(
     'lists what the $tab code needs beside it',

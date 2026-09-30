@@ -23,7 +23,7 @@ const errors = pagedModels.flatMap((model) => {
   return [
     ...auditModelPage(html, model.name),
     ...auditMediaLabels(html),
-    ...auditExampleGallery(html, examplesOf(model.slug))
+    ...auditExampleGallery(html, examplesOf(model.slug).length)
   ].map((error) => `${model.href}: ${error}`)
 })
 

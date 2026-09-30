@@ -338,7 +338,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     void billingOperationStore.startOperation(
       status.pending_billing_op_id,
       resumeModeFor(status.pending_billing_op_type),
-      undefined,
+      { resumed: true },
       status.action_url
     )
     return true
