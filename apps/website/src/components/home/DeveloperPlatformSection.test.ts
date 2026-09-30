@@ -11,7 +11,7 @@ describe('DeveloperPlatformSection', () => {
 
     expect(
       screen.getByRole('heading', {
-        name: `${t('platform.hero.badge', 'en')} ${t('nav.badgeBeta', 'en')}`
+        name: t('platform.hero.badge', 'en')
       })
     ).toBeTruthy()
     expect(screen.getByText(t('home.platform.body', 'en'))).toBeTruthy()
@@ -36,7 +36,7 @@ describe('DeveloperPlatformSection', () => {
 
     expect(
       screen.getByRole('heading', {
-        name: `${t('platform.hero.badge', 'zh-CN')} ${t('nav.badgeBeta', 'zh-CN')}`
+        name: t('platform.hero.badge', 'zh-CN')
       })
     ).toBeTruthy()
     expect(

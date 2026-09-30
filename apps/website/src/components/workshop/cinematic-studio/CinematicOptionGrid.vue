@@ -6,6 +6,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { DirectionGroup } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import CinematicCheckBadge from './CinematicCheckBadge.vue'
 
 const {
   group,
@@ -24,7 +25,7 @@ const emit = defineEmits<{ choose: [id: string] }>()
   <div
     role="radiogroup"
     :aria-label="tc(group.title, locale)"
-    class="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-4"
+    class="grid grid-cols-2 gap-x-4 gap-y-5"
   >
     <button
       v-for="option in group.options"
@@ -55,7 +56,7 @@ const emit = defineEmits<{ choose: [id: string] }>()
           v-else-if="!option.palette"
           class="grid size-full place-items-center text-primary-warm-gray"
         >
-          <CircleDashed class="size-6" aria-hidden="true" />
+          <CircleDashed class="size-8" aria-hidden="true" />
         </span>
         <template v-else>
           <span
@@ -65,6 +66,7 @@ const emit = defineEmits<{ choose: [id: string] }>()
             :style="{ backgroundColor: color }"
           />
         </template>
+        <CinematicCheckBadge v-if="selected === option.id" />
       </span>
       <span
         class="truncate px-1 text-sm text-primary-comfy-canvas group-hover:text-primary-warm-white"

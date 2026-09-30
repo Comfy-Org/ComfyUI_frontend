@@ -604,7 +604,7 @@ importers:
         version: 14.4.0(vue@3.5.42(typescript@6.0.3))
       '@vueuse/integrations':
         specifier: 'catalog:'
-        version: 14.4.0(axios@1.18.1)(fuse.js@7.0.0)(vue@3.5.42(typescript@6.0.3))
+        version: 14.4.0(axios@1.18.1(debug@4.4.3))(fuse.js@7.0.0)(vue@3.5.42(typescript@6.0.3))
       '@vueuse/router':
         specifier: ^14.4.0
         version: 14.4.0(vue-router@5.2.0(@vue/compiler-sfc@3.5.42)(esbuild@0.28.1)(pinia@4.0.2(@vue/devtools-api@8.1.5)(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3)))(rolldown@1.2.6)(vite@8.2.2(@types/node@26.6.3)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))(vue@3.5.42(typescript@6.0.3)))(vue@3.5.42(typescript@6.0.3))
@@ -665,6 +665,9 @@ importers:
       minisearch:
         specifier: 'catalog:'
         version: 7.2.0
+      mixpanel-browser:
+        specifier: 'catalog:'
+        version: 2.81.0
       pinia:
         specifier: 'catalog:'
         version: 4.0.2(@vue/devtools-api@8.1.5)(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3))
@@ -695,6 +698,9 @@ importers:
       typegpu:
         specifier: 'catalog:'
         version: 0.8.2
+      uuid:
+        specifier: 'catalog:'
+        version: 11.1.1
       vee-validate:
         specifier: 'catalog:'
         version: 4.15.1(vue@3.5.42(typescript@6.0.3))
@@ -867,9 +873,6 @@ importers:
       markdown-table:
         specifier: 'catalog:'
         version: 3.0.4
-      mixpanel-browser:
-        specifier: 'catalog:'
-        version: 2.81.0
       monocart-coverage-reports:
         specifier: 'catalog:'
         version: 2.12.12
@@ -930,9 +933,6 @@ importers:
       unplugin-vue-components:
         specifier: 'catalog:'
         version: 32.1.0(esbuild@0.28.1)(rolldown@1.2.6)(vite@8.2.2(@types/node@26.6.3)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))(vue@3.5.42(typescript@6.0.3))
-      uuid:
-        specifier: 'catalog:'
-        version: 11.1.1
       vite:
         specifier: ^8.2.2
         version: 8.2.2(@types/node@26.6.3)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0)
@@ -981,6 +981,9 @@ importers:
       '@comfyorg/design-system':
         specifier: workspace:*
         version: link:../../packages/design-system
+      '@comfyorg/shared-frontend-utils':
+        specifier: workspace:*
+        version: link:../../packages/shared-frontend-utils
       '@comfyorg/tailwind-utils':
         specifier: workspace:*
         version: link:../../packages/tailwind-utils
@@ -993,6 +996,12 @@ importers:
       firebase:
         specifier: 'catalog:'
         version: 11.10.0
+      primeicons:
+        specifier: 'catalog:'
+        version: 7.0.0
+      reka-ui:
+        specifier: 'catalog:'
+        version: 2.6.2(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3))
       vue:
         specifier: 'catalog:'
         version: 3.5.42(typescript@6.0.3)
@@ -1163,6 +1172,9 @@ importers:
       '@comfyorg/sdk':
         specifier: 'catalog:'
         version: 0.2.0
+      '@hey-api/openapi-ts':
+        specifier: 0.97.3
+        version: 0.97.3(magicast@0.5.4)(typescript@6.0.3)
       '@playwright/test':
         specifier: 'catalog:'
         version: 1.61.1
@@ -1263,7 +1275,16 @@ importers:
       '@comfyorg/account-core':
         specifier: workspace:^
         version: link:../account-core
+      primeicons:
+        specifier: ^7.0.0
+        version: 7.0.0
     devDependencies:
+      '@comfyorg/design-system':
+        specifier: workspace:^
+        version: link:../design-system
+      '@comfyorg/tailwind-utils':
+        specifier: workspace:^
+        version: link:../tailwind-utils
       '@stripe/stripe-js':
         specifier: 'catalog:'
         version: 9.12.1
@@ -1288,6 +1309,9 @@ importers:
       happy-dom:
         specifier: 'catalog:'
         version: 20.14.5
+      reka-ui:
+        specifier: 'catalog:'
+        version: 2.6.2(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3))
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -1336,6 +1360,9 @@ importers:
       '@iconify/utils':
         specifier: 'catalog:'
         version: 3.1.4
+      cva:
+        specifier: 'catalog:'
+        version: 1.0.0-beta.4(typescript@6.0.3)
       tailwindcss-primeui:
         specifier: 'catalog:'
         version: 0.6.1(tailwindcss@4.3.2)
@@ -4647,6 +4674,9 @@ packages:
 
   '@types/node@24.13.3':
     resolution: {integrity: sha512-Dh8vAsV36ig5wa9OX4pXvMc9D3Veibfw2wix0CUwYODLD8nkj9UsLjASr49nPg+2eKzxhBV+v7L8pXvT4e639Q==}
+
+  '@types/node@25.9.5':
+    resolution: {integrity: sha512-OScDchr2fwuUmWdf4kZ9h7PcJiYDVInhJizG/biAq3cAvqwYktuy/TYGGdZNMtNTFUP7rnb0NU4TUdm82kt4Rg==}
 
   '@types/node@26.6.3':
     resolution: {integrity: sha512-dsqMQQoeTLqu9wynDD00q573mNzso3IdQOAfHRJqLCcmCFPoGo9A1bDpUcv/9tnKpErQWv9uKeGfl37EIS02Yg==}
@@ -9120,6 +9150,9 @@ packages:
   undici-types@7.18.2:
     resolution: {integrity: sha512-AsuCzffGHJybSaRrmr5eHr81mwJU3kjw6M+uprWvCXiNeN9SOGwQ3Jn8jb8m3Z6izVgknn1R0FTCEAP2QrLY/w==}
 
+  undici-types@7.24.6:
+    resolution: {integrity: sha512-WRNW+sJgj5OBN4/0JpHFqtqzhpbnV0GuB+OozA9gCL7a993SmU+1JBZCzLNxYsbMfIeDL+lTsphD5jN5N+n0zg==}
+
   undici-types@8.9.0:
     resolution: {integrity: sha512-KTDyRTYX8sWmKXAikPHHSyc63CRPETMctyjKFupcC6OBLXT3xsN0e9aF7m+mIXutFWpUXuedtowG7iLOzp0kQg==}
 
@@ -13068,6 +13101,10 @@ snapshots:
     dependencies:
       undici-types: 7.18.2
 
+  '@types/node@25.9.5':
+    dependencies:
+      undici-types: 7.24.6
+
   '@types/node@26.6.3':
     dependencies:
       undici-types: 8.9.0
@@ -13083,7 +13120,7 @@ snapshots:
 
   '@types/sax@1.2.7':
     dependencies:
-      '@types/node': 26.6.3
+      '@types/node': 25.9.5
 
   '@types/semver@7.8.0': {}
 
@@ -13728,7 +13765,7 @@ snapshots:
       '@vueuse/shared': 14.4.0(vue@3.5.42(typescript@6.0.3))
       vue: 3.5.42(typescript@6.0.3)
 
-  '@vueuse/integrations@14.4.0(axios@1.18.1)(fuse.js@7.0.0)(vue@3.5.42(typescript@6.0.3))':
+  '@vueuse/integrations@14.4.0(axios@1.18.1(debug@4.4.3))(fuse.js@7.0.0)(vue@3.5.42(typescript@6.0.3))':
     dependencies:
       '@vueuse/core': 14.4.0(vue@3.5.42(typescript@6.0.3))
       '@vueuse/shared': 14.4.0(vue@3.5.42(typescript@6.0.3))
@@ -18367,6 +18404,8 @@ snapshots:
   uncrypto@0.1.3: {}
 
   undici-types@7.18.2: {}
+
+  undici-types@7.24.6: {}
 
   undici-types@8.9.0: {}
 

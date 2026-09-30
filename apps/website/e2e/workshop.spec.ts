@@ -243,9 +243,35 @@ test.describe('Models catalog', () => {
     await expect(page.getByTestId('workshop-hero')).toBeVisible()
   })
 
+  // A row loads eight whatever its total says, so a row holding fewer than
+  // eight cards is showing its whole shelf and has nothing left to open.
+  test('a shelf showing everything stops promising more', async ({ page }) => {
+    await page.goto('/models/')
+    const sections = page.getByTestId('workshop-sections')
+    await expect(sections).toBeVisible()
+    await expect(
+      sections.getByTestId('workshop-model-card').first()
+    ).toBeVisible()
+    const shelves = sections
+      .locator('[data-testid^="section-"]')
+      .filter({ has: page.getByTestId('workshop-model-card') })
+    const count = await shelves.count()
+    expect(count).toBeGreaterThan(1)
+
+    let complete = 0
+    for (let index = 0; index < count; index++) {
+      const shelf = shelves.nth(index)
+      if ((await shelf.getByTestId('workshop-model-card').count()) >= 8)
+        continue
+      complete++
+      await expect(shelf.locator('[data-testid$="-see-all"]')).toHaveCount(0)
+    }
+    expect(complete).toBeGreaterThan(0)
+  })
+
   test('the rows listing opens the whole catalogue', async ({ page }) => {
     await page.goto('/models/')
-    await page.getByTestId('browse-all').click()
+    await page.getByTestId('browse-all-end').click()
 
     await expect(page.getByTestId('workshop-sections')).toHaveCount(0)
     const heading = page.getByRole('heading', { level: 1 })
@@ -261,6 +287,21 @@ test.describe('Models catalog', () => {
     ).toHaveCount(promisedCount)
 
     await page.getByTestId('section-back').click()
+    await expect(page.getByTestId('workshop-sections')).toBeVisible()
+  })
+
+  test('an opened shelf reads as a chosen filter', async ({ page }) => {
+    await page.goto('/models/')
+    await page.getByTestId('section-generate-videos-open').click()
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(
+      'Generate videos'
+    )
+    await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
+    await page.getByTestId('workshop-filter').click()
+    await expect(page.getByTestId('workshop-filter-applied')).toHaveText(
+      '1 selected'
+    )
+    await page.getByTestId('workshop-filter-clear').click()
     await expect(page.getByTestId('workshop-sections')).toBeVisible()
   })
 
@@ -505,6 +546,65 @@ test.describe('Models catalog', () => {
 })
 
 test.describe('Model playground', () => {
+  test('keeps a long prompt whole instead of scrolling it out of sight', async ({
+    page
+  }) => {
+    await page.goto(MODEL_PATH)
+    const prompt = page.getByTestId('field-prompt')
+    const hidden = () =>
+      prompt.evaluate((box) => box.scrollHeight - box.clientHeight)
+    const height = () => prompt.evaluate((box) => box.clientHeight)
+
+    await prompt.fill(
+      Array.from({ length: 12 }, (_, line) => `Line ${line + 1}.`).join('\n')
+    )
+    await expect.poll(hidden).toBeLessThanOrEqual(1)
+    const tall = await height()
+
+    await prompt.fill('One line.')
+    await expect.poll(height).toBeLessThan(tall)
+    await expect.poll(hidden).toBeLessThanOrEqual(1)
+  })
+
+  test('keeps a long prompt whole when the layout narrows under it', async ({
+    page
+  }) => {
+    await page.goto(MODEL_PATH)
+    const prompt = page.getByTestId('field-prompt')
+    const hidden = () =>
+      prompt.evaluate((box) => box.scrollHeight - box.clientHeight)
+
+    await prompt.fill(
+      'A slow push-in on a glass teapot lit from behind by a low winter sun, steam rising and catching the light while the room around it stays in shadow, the reflections on the table kept sharp and the background soft, with no people, no text and no logos anywhere in the frame.'
+    )
+    await expect.poll(hidden).toBeLessThanOrEqual(1)
+
+    await page.setViewportSize({ width: 380, height: 900 })
+
+    await expect.poll(hidden).toBeLessThanOrEqual(1)
+  })
+
+  test('stops the prompt box short of swallowing the window', async ({
+    page
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 800 })
+    await page.goto(MODEL_PATH)
+    const prompt = page.getByTestId('field-prompt')
+
+    await prompt.fill(
+      Array.from({ length: 60 }, (_, line) => `Line ${line + 1}.`).join('\n')
+    )
+
+    // A prompt this long would bury the rest of the form, so the box keeps a
+    // share of the window and scrolls what is left.
+    await expect
+      .poll(() => prompt.evaluate((box) => box.clientHeight))
+      .toBeLessThan(800)
+    await expect
+      .poll(() => prompt.evaluate((box) => box.scrollHeight - box.clientHeight))
+      .toBeGreaterThan(1)
+  })
+
   test('puts data-declared parameters in the Advanced disclosure', async ({
     page
   }) => {
@@ -567,7 +667,7 @@ test.describe('Model playground', () => {
 
     await page
       .getByRole('navigation', { name: 'Main navigation', exact: true })
-      .getByRole('link', { name: 'Models', exact: true })
+      .getByRole('link', { name: 'Hub', exact: true })
       .click()
     await page.getByTestId('workshop-search').fill('Seedream 4.5 Image Edit')
     await page.getByRole('link', { name: /Seedream 4\.5 Image Edit/ }).click()
@@ -685,6 +785,13 @@ test.describe('Model playground', () => {
     await prompt.fill('')
 
     await page.getByTestId('example-card').first().click()
+    const dialog = page.getByTestId('example-replace-dialog')
+    await expect(dialog.getByRole('heading')).toHaveText('Load this example?')
+    await expect(dialog.getByRole('button')).toHaveCount(2)
+    await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeVisible()
+    await expect(
+      dialog.getByRole('button', { name: 'Load example' })
+    ).toBeVisible()
     await page.getByTestId('example-replace-keep').click()
 
     await expect(page.getByTestId('example-replace-dialog')).toHaveCount(0)

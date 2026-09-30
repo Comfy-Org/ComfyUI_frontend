@@ -58,6 +58,7 @@
     "playwright.config.ts",
     "playwright.i18n.config.ts",
     "vite.config.mts",
+    "vitest.network.setup.ts",
     "vitest.config.ts"
     // "vitest.setup.ts",
   ],

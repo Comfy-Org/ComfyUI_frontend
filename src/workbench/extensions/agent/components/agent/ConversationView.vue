@@ -195,7 +195,7 @@ watch(
 </script>
 
 <template>
-  <div class="relative h-full">
+  <div data-testid="agent-conversation" class="relative h-full">
     <div
       ref="scrollContainer"
       data-testid="agent-conversation-scroll"

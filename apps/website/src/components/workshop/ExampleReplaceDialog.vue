@@ -16,11 +16,12 @@ const emit = defineEmits<{ replace: [] }>()
   <Dialog v-model:open="open">
     <DialogContent
       :close-label="t('workshop.examples.replaceKeep', locale)"
-      class="flex flex-col gap-8 sm:max-w-md"
+      hide-close
+      class="flex flex-col gap-6 sm:max-w-md"
       data-testid="example-replace-dialog"
     >
       <div class="flex flex-col gap-3">
-        <DialogTitle class="pr-16">
+        <DialogTitle>
           {{ t('workshop.examples.replaceTitle', locale) }}
         </DialogTitle>
         <DialogDescription class="text-base text-primary-comfy-canvas/70">

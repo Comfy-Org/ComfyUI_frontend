@@ -3,13 +3,14 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import type {
   AgentThreadListResponse,
   AgentThreadSummary,
+  BillingStatus,
   SubscriptionTier
 } from '@comfyorg/ingest-types'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Mocked } from 'vitest'
-import { computed, defineComponent, h, nextTick, ref } from 'vue'
+import { computed, defineComponent, h, nextTick, reactive, ref } from 'vue'
 import type { Ref } from 'vue'
 import { useClipboard } from '@vueuse/core'
 
@@ -35,6 +36,7 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useTelemetry } from '@/platform/telemetry'
+import type { AgentConsentTrigger } from '@/platform/telemetry/types'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { app } from '@/scripts/app'
@@ -70,6 +72,15 @@ const getServerFeature = vi.hoisted(() =>
 )
 const focusNodeInstance = vi.hoisted(() => vi.fn())
 const socketSend = vi.hoisted(() => vi.fn())
+const withConsent = vi.hoisted(() =>
+  vi.fn<(trigger: AgentConsentTrigger, onAccept: () => void) => Promise<void>>(
+    async (_trigger, onAccept) => onAccept()
+  )
+)
+
+vi.mock<unknown>(import('./composables/agent/useAgentConsent'), () => ({
+  useAgentConsent: () => ({ withConsent })
+}))
 
 vi.mock<unknown>(import('@/composables/canvas/useFocusNode'), () => ({
   useFocusNode: () => ({ focusNodeInstance })
@@ -208,17 +219,21 @@ vi.mock(
 const paywallWorkspace = vi.hoisted(() => ({
   role: 'owner' as 'owner' | 'member' | undefined
 }))
-const paywallCapabilities = vi.hoisted(() => ({
+const paywallCapabilities = reactive({
   canTopUp: true,
   canSubscribeSelfServe: true,
   isReady: true,
   hasResolvedCapabilities: true,
   snapshotAuthoritative: true
-}))
+})
 const paywallBilling = vi.hoisted(() => ({
-  tier: 'STANDARD' as SubscriptionTier | null
+  tier: 'STANDARD' as SubscriptionTier | null,
+  type: 'workspace' as 'workspace' | 'legacy',
+  status: 'paid' as BillingStatus | null,
+  fetchStatus: vi.fn<() => Promise<void>>()
 }))
 const paywallHasFunds = ref<boolean | null>(false)
+const paywallAgentHasFunds = ref<boolean | undefined>()
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'), {
   spy: true
@@ -238,27 +253,27 @@ import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivitySto
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
-import { attachMintPortWiring } from './crdt/mintPortWiring'
-import type { MintPortWiring, MintPortWiringDeps } from './crdt/mintPortWiring'
+import { attachDocOpMinter } from './crdt/docOpMinter'
+import type { DocOpMinter, DocOpMinterDeps } from './crdt/docOpMinter'
 
-const mintPortWiringDeps = vi.hoisted(() => ({
-  current: null as MintPortWiringDeps | null
+const docOpMinterDeps = vi.hoisted(() => ({
+  current: null as DocOpMinterDeps | null
 }))
-vi.mock(import('./crdt/mintPortWiring'), { spy: true })
+vi.mock(import('./crdt/docOpMinter'), { spy: true })
 
-// The mock replaces the real `attachMintPortWiring` body entirely. It only
+// The mock replaces the real `attachDocOpMinter` body entirely. It only
 // captures `deps` for assertions below — it must NOT reproduce any of that
 // body's own behaviour (e.g. the doc-bound probe registration), or a test
 // against the reimplementation could stay green while the real one breaks.
 // The doc-bound probe's registration/disposal is covered directly against
-// the real `attachMintPortWiring` in `mintPortWiring.test.ts`.
-function stubAttachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
-  mintPortWiringDeps.current = deps
-  return fromPartial<MintPortWiring>({
+// the real `attachDocOpMinter` in `docOpMinter.test.ts`.
+function stubAttachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
+  docOpMinterDeps.current = deps
+  return fromPartial<DocOpMinter>({
     detach: vi.fn()
   })
 }
-vi.mocked(attachMintPortWiring).mockImplementation(stubAttachMintPortWiring)
+vi.mocked(attachDocOpMinter).mockImplementation(stubAttachDocOpMinter)
 
 import AgentPanelRoot from './AgentPanelRoot.vue'
 import DockedAgentPanel from './components/agent/DockedAgentPanel.vue'
@@ -301,9 +316,15 @@ beforeEach(() => {
       subscription: computed(() =>
         paywallHasFunds.value === null
           ? null
-          : fromPartial({ hasFunds: paywallHasFunds.value })
+          : fromPartial({
+              hasFunds: paywallHasFunds.value,
+              agentHasFunds: paywallAgentHasFunds.value ?? paywallHasFunds.value
+            })
       ),
-      tier: computed(() => paywallBilling.tier)
+      tier: computed(() => paywallBilling.tier),
+      type: computed(() => paywallBilling.type),
+      billingStatus: computed(() => paywallBilling.status),
+      fetchStatus: paywallBilling.fetchStatus
     })
   )
   vi.mocked(useBillingCapabilities).mockReturnValue(
@@ -388,8 +409,8 @@ beforeEach(() => {
   Object.assign(appMock.rootGraph, { subgraphs: new Map(), id: undefined })
   appMock.isGraphReady = false
   appMock.canvas = undefined
-  mintPortWiringDeps.current = null
-  vi.mocked(attachMintPortWiring).mockImplementation(stubAttachMintPortWiring)
+  docOpMinterDeps.current = null
+  vi.mocked(attachDocOpMinter).mockImplementation(stubAttachDocOpMinter)
   vi.mocked(useWorkflowService()).saveWorkflow.mockClear()
   vi.mocked(useWorkflowService()).saveWorkflowAs.mockClear()
   vi.mocked(useWorkflowService()).openWorkflow.mockClear()
@@ -413,7 +434,11 @@ beforeEach(() => {
   paywallCapabilities.hasResolvedCapabilities = true
   paywallCapabilities.snapshotAuthoritative = true
   paywallBilling.tier = 'STANDARD'
+  paywallBilling.type = 'workspace'
+  paywallBilling.status = 'paid'
+  paywallBilling.fetchStatus.mockReset().mockResolvedValue(undefined)
   paywallHasFunds.value = false
+  paywallAgentHasFunds.value = undefined
 })
 
 const zAgentWsEventForTest = (raw: unknown): AgentChatEvent =>
@@ -793,6 +818,35 @@ describe('AgentPanelRoot onboarding', () => {
   })
 })
 
+/**
+ * The transcript, for assertions that mean the INLINE paywall card - the one
+ * rendered against the turn a 402 refused. The panel now also has a standing
+ * credits-exhausted card beside the composer, and both render the same
+ * component with the same copy, so an unscoped
+ * `getByRole('button', { name: 'Subscribe' })` no longer says which it found.
+ */
+function inlinePaywall() {
+  return within(screen.getByTestId('agent-conversation'))
+}
+
+function findInlinePaywallButton(name: string): Promise<HTMLElement> {
+  return vi.waitFor(() => inlinePaywall().getByRole('button', { name }))
+}
+
+function queryInlinePaywallButton(name: string): HTMLElement | null {
+  const view = screen.queryByTestId('agent-conversation')
+  return view ? within(view).queryByRole('button', { name }) : null
+}
+
+function findInlinePaywallText(text: string): Promise<HTMLElement> {
+  return vi.waitFor(() => inlinePaywall().getByText(text))
+}
+
+function queryInlinePaywallText(text: string): HTMLElement | null {
+  const view = screen.queryByTestId('agent-conversation')
+  return view ? within(view).queryByText(text) : null
+}
+
 describe('AgentPanelRoot paywall actions', () => {
   beforeEach(() => {
     ws.clear()
@@ -809,15 +863,15 @@ describe('AgentPanelRoot paywall actions', () => {
       thinking: false
     })
 
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'Upgrade plan' })
-    )
+    await userEvent.click(await findInlinePaywallButton('Upgrade plan'))
     expect(openAccountPrecondition).toHaveBeenCalledExactlyOnceWith(
       'subscription',
       { source: 'agent_paywall' }
     )
 
-    await userEvent.click(screen.getByRole('button', { name: 'Add credits' }))
+    await userEvent.click(
+      inlinePaywall().getByRole('button', { name: 'Add credits' })
+    )
     expect(openAccountPrecondition.mock.calls).toEqual([
       ['subscription', { source: 'agent_paywall' }],
       ['credits', { source: 'agent_paywall' }]
@@ -835,9 +889,7 @@ describe('AgentPanelRoot paywall actions', () => {
       thinking: false
     })
 
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'Subscribe' })
-    )
+    await userEvent.click(await findInlinePaywallButton('Subscribe'))
 
     expect(openAccountPrecondition).toHaveBeenCalledExactlyOnceWith(
       'subscription',
@@ -853,14 +905,12 @@ describe('AgentPanelRoot paywall actions', () => {
       'continue'
     )
 
-    expect(
-      await screen.findByRole('button', { name: 'Subscribe' })
-    ).toBeInTheDocument()
+    expect(await findInlinePaywallButton('Subscribe')).toBeInTheDocument()
 
     paywallHasFunds.value = true
 
     await vi.waitFor(() =>
-      expect(screen.queryByText('Out of credits')).not.toBeInTheDocument()
+      expect(queryInlinePaywallText('Out of credits')).not.toBeInTheDocument()
     )
   })
 
@@ -871,16 +921,14 @@ describe('AgentPanelRoot paywall actions', () => {
       toTurnId('msg-paywall'),
       'continue'
     )
-    expect(
-      await screen.findByRole('button', { name: 'Subscribe' })
-    ).toBeInTheDocument()
+    expect(await findInlinePaywallButton('Subscribe')).toBeInTheDocument()
 
     panel.unmount()
     paywallHasFunds.value = true
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
     await vi.waitFor(() =>
-      expect(screen.queryByText('Out of credits')).not.toBeInTheDocument()
+      expect(queryInlinePaywallText('Out of credits')).not.toBeInTheDocument()
     )
   })
 
@@ -895,9 +943,7 @@ describe('AgentPanelRoot paywall actions', () => {
       'render one more frame'
     )
 
-    expect(
-      await screen.findByRole('button', { name: 'Subscribe' })
-    ).toBeInTheDocument()
+    expect(await findInlinePaywallButton('Subscribe')).toBeInTheDocument()
   })
 
   it('keeps a resolved paywall hidden while billing state is unknown', async () => {
@@ -907,20 +953,16 @@ describe('AgentPanelRoot paywall actions', () => {
       toTurnId('msg-paywall'),
       'continue'
     )
-    expect(
-      await screen.findByRole('button', { name: 'Subscribe' })
-    ).toBeInTheDocument()
+    expect(await findInlinePaywallButton('Subscribe')).toBeInTheDocument()
 
     paywallHasFunds.value = true
     await vi.waitFor(() =>
-      expect(
-        screen.queryByRole('button', { name: 'Subscribe' })
-      ).not.toBeInTheDocument()
+      expect(queryInlinePaywallButton('Subscribe')).not.toBeInTheDocument()
     )
 
     paywallHasFunds.value = null
     await nextTick()
-    expect(screen.queryByText('Out of credits')).not.toBeInTheDocument()
+    expect(queryInlinePaywallText('Out of credits')).not.toBeInTheDocument()
   })
 
   it('shows only a new denial after funds run out again', async () => {
@@ -930,20 +972,16 @@ describe('AgentPanelRoot paywall actions', () => {
       toTurnId('msg-paywall'),
       'continue'
     )
-    expect(
-      await screen.findByRole('button', { name: 'Subscribe' })
-    ).toBeInTheDocument()
+    expect(await findInlinePaywallButton('Subscribe')).toBeInTheDocument()
 
     paywallHasFunds.value = true
     await vi.waitFor(() =>
-      expect(
-        screen.queryByRole('button', { name: 'Subscribe' })
-      ).not.toBeInTheDocument()
+      expect(queryInlinePaywallButton('Subscribe')).not.toBeInTheDocument()
     )
 
     paywallHasFunds.value = false
     await nextTick()
-    expect(screen.queryByText('Out of credits')).not.toBeInTheDocument()
+    expect(queryInlinePaywallText('Out of credits')).not.toBeInTheDocument()
 
     useAgentConversationStore().recordPaywall(
       toTurnId('msg-paywall-2'),
@@ -951,7 +989,7 @@ describe('AgentPanelRoot paywall actions', () => {
     )
     await vi.waitFor(() =>
       expect(
-        screen.getByRole('button', { name: 'Subscribe' })
+        inlinePaywall().getByRole('button', { name: 'Subscribe' })
       ).toBeInTheDocument()
     )
   })
@@ -972,9 +1010,7 @@ describe('AgentPanelRoot paywall actions', () => {
     await screen.findByText(
       'This workspace has used all its credits. Ask your workspace owner to add more.'
     )
-    expect(
-      screen.queryByRole('button', { name: 'Add credits' })
-    ).not.toBeInTheDocument()
+    expect(queryInlinePaywallButton('Add credits')).not.toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: /upgrade|subscribe/i })
     ).not.toBeInTheDocument()
@@ -993,9 +1029,7 @@ describe('AgentPanelRoot paywall actions', () => {
         thinking: false
       })
 
-      expect(
-        await screen.findByRole('button', { name: 'Add credits' })
-      ).toBeInTheDocument()
+      expect(await findInlinePaywallButton('Add credits')).toBeInTheDocument()
       expect(
         screen.queryByRole('button', { name: /upgrade|subscribe/i })
       ).not.toBeInTheDocument()
@@ -1013,9 +1047,7 @@ describe('AgentPanelRoot paywall actions', () => {
       thinking: false
     })
 
-    expect(
-      await screen.findByRole('button', { name: 'Add credits' })
-    ).toBeInTheDocument()
+    expect(await findInlinePaywallButton('Add credits')).toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: /upgrade|subscribe/i })
     ).not.toBeInTheDocument()
@@ -1032,12 +1064,8 @@ describe('AgentPanelRoot paywall actions', () => {
       thinking: false
     })
 
-    expect(
-      await screen.findByRole('button', { name: 'Subscribe' })
-    ).toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'Add credits' })
-    ).not.toBeInTheDocument()
+    expect(await findInlinePaywallButton('Subscribe')).toBeInTheDocument()
+    expect(queryInlinePaywallButton('Add credits')).not.toBeInTheDocument()
   })
 
   it('shows sales-managed remediation for a ready owner with no self-serve capability', async () => {
@@ -1053,13 +1081,11 @@ describe('AgentPanelRoot paywall actions', () => {
     })
 
     expect(
-      await screen.findByText(
+      await findInlinePaywallText(
         'This workspace is billed through your Comfy account team. Contact them to add credits.'
       )
     ).toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'Add credits' })
-    ).not.toBeInTheDocument()
+    expect(queryInlinePaywallButton('Add credits')).not.toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: /upgrade|subscribe/i })
     ).not.toBeInTheDocument()
@@ -1122,6 +1148,7 @@ describe('AgentPanelRoot paywall telemetry', () => {
     vi.mocked(useTelemetry())!.trackAgentPaywallShown.mockClear()
     vi.mocked(useTelemetry())!.trackAgentPaywallCtaClicked.mockClear()
     vi.mocked(useTelemetry())!.trackAddApiCreditButtonClicked.mockClear()
+    vi.mocked(useTelemetry())!.trackSubscription.mockClear()
 
     canTopUp = ref(true)
     canSubscribeSelfServe = ref(true)
@@ -1130,7 +1157,10 @@ describe('AgentPanelRoot paywall telemetry', () => {
     snapshotAuthoritative = ref(true)
     workspaceRole = ref<'owner' | 'member' | undefined>('owner')
     tier = ref<SubscriptionTier | null>('STANDARD')
-    hasFunds = ref(false)
+    // Funded, so the standing credits-exhausted card stays off and every
+    // assertion below is unambiguously about the refusal-driven inline card.
+    // The standing surface has its own describe.
+    hasFunds = ref(true)
 
     vi.mocked(useBillingCapabilities).mockReturnValue(
       fromPartial({
@@ -1145,7 +1175,10 @@ describe('AgentPanelRoot paywall telemetry', () => {
     vi.mocked(useBillingContext).mockReturnValue(
       fromPartial({
         subscription: computed(() => fromPartial({ hasFunds: hasFunds.value })),
-        tier
+        tier,
+        type: computed(() => 'workspace'),
+        billingStatus: computed(() => 'paid'),
+        fetchStatus: vi.fn().mockResolvedValue(undefined)
       })
     )
   })
@@ -1201,7 +1234,8 @@ describe('AgentPanelRoot paywall telemetry', () => {
 
       await waitFor(() =>
         expect(useTelemetry()!.trackAgentPaywallShown).toHaveBeenCalledWith({
-          reason
+          reason,
+          surface: 'refused_send'
         })
       )
     }
@@ -1298,7 +1332,8 @@ describe('AgentPanelRoot paywall telemetry', () => {
       expect(
         useTelemetry()!.trackAgentPaywallShown
       ).toHaveBeenCalledExactlyOnceWith({
-        reason: 'subscription_inactive'
+        reason: 'subscription_inactive',
+        surface: 'refused_send'
       })
     )
   })
@@ -1326,7 +1361,8 @@ describe('AgentPanelRoot paywall telemetry', () => {
       expect(
         useTelemetry()!.trackAgentPaywallShown
       ).toHaveBeenCalledExactlyOnceWith({
-        reason: 'subscription_inactive'
+        reason: 'subscription_inactive',
+        surface: 'refused_send'
       })
     )
   })
@@ -1349,7 +1385,8 @@ describe('AgentPanelRoot paywall telemetry', () => {
       expect(
         useTelemetry()!.trackAgentPaywallShown
       ).toHaveBeenCalledExactlyOnceWith({
-        reason: 'unknown'
+        reason: 'unknown',
+        surface: 'refused_send'
       })
     )
   })
@@ -1367,7 +1404,8 @@ describe('AgentPanelRoot paywall telemetry', () => {
       expect(
         useTelemetry()!.trackAgentPaywallShown
       ).toHaveBeenCalledExactlyOnceWith({
-        reason: 'unknown'
+        reason: 'unknown',
+        surface: 'refused_send'
       })
     )
   })
@@ -1383,7 +1421,7 @@ describe('AgentPanelRoot paywall telemetry', () => {
 
     expect(
       useTelemetry()!.trackAgentPaywallCtaClicked
-    ).toHaveBeenCalledExactlyOnceWith({ cta })
+    ).toHaveBeenCalledExactlyOnceWith({ cta, surface: 'refused_send' })
   })
 
   it('reports the Subscribe CTA as subscribe', async () => {
@@ -1397,7 +1435,10 @@ describe('AgentPanelRoot paywall telemetry', () => {
 
     expect(
       useTelemetry()!.trackAgentPaywallCtaClicked
-    ).toHaveBeenCalledExactlyOnceWith({ cta: 'subscribe' })
+    ).toHaveBeenCalledExactlyOnceWith({
+      cta: 'subscribe',
+      surface: 'refused_send'
+    })
   })
 
   it('attributes the add-credits click to the agent paywall', async () => {
@@ -1425,6 +1466,507 @@ describe('AgentPanelRoot paywall telemetry', () => {
     expect(
       useTelemetry()!.trackAddApiCreditButtonClicked
     ).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    { button: 'Subscribe', canSubscriberTopUp: false },
+    { button: 'Upgrade plan', canSubscriberTopUp: true }
+  ])(
+    'carries agent_paywall to the subscribe event from the $button CTA',
+    async ({ button, canSubscriberTopUp }) => {
+      canTopUp.value = canSubscriberTopUp
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      showPaywall()
+
+      await userEvent.click(await screen.findByRole('button', { name: button }))
+
+      expect(useTelemetry()!.trackSubscription).toHaveBeenCalledExactlyOnceWith(
+        'subscribe_clicked',
+        { current_tier: 'standard', reason: 'agent_paywall' }
+      )
+    }
+  )
+
+  it('does not report a subscribe click for the add-credits CTA', async () => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    showPaywall()
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Add credits' })
+    )
+
+    expect(useTelemetry()!.trackSubscription).not.toHaveBeenCalled()
+  })
+})
+
+/**
+ * The standing credits-exhausted surface.
+ *
+ * Distinct from the describes above, which cover the inline card raised by a
+ * turn POST that came back 402/`no_funds`. That card was the ONLY route to
+ * `app:agent_paywall_shown`, so a user who met the ceiling any other way - a
+ * turn that died at the agent runtime's own LLM hop, or one who simply did not
+ * type again - got no upgrade path. These cases pin the surface that reads the
+ * funds signal directly instead of waiting for a refusal to carry it.
+ */
+describe('AgentPanelRoot standing credits-exhausted paywall', () => {
+  const STANDING = 'agent-credits-exhausted-paywall'
+
+  beforeEach(() => {
+    ws.clear()
+    openAccountPrecondition.mockClear()
+    telemetry.trackAgentPaywallShown.mockClear()
+    telemetry.trackAgentPaywallCtaClicked.mockClear()
+    telemetry.trackAddApiCreditButtonClicked.mockClear()
+  })
+
+  it.for([
+    {
+      subscription: null,
+      effectiveFunds: true
+    },
+    {
+      subscription: 'STANDARD' as const,
+      effectiveFunds: true
+    }
+  ])(
+    'stays hidden for subscription=$subscription with effective funds',
+    async ({ subscription, effectiveFunds }) => {
+      paywallBilling.tier = subscription
+      paywallHasFunds.value = effectiveFunds
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      await screen.findByRole('textbox')
+
+      expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+    }
+  )
+
+  it.for([
+    {
+      subscription: null,
+      effectiveFunds: false
+    },
+    {
+      subscription: 'STANDARD' as const,
+      effectiveFunds: false
+    }
+  ])(
+    'shows for subscription=$subscription without effective funds',
+    async ({ subscription, effectiveFunds }) => {
+      paywallBilling.tier = subscription
+      paywallHasFunds.value = effectiveFunds
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+      expect(await screen.findByTestId(STANDING)).toBeInTheDocument()
+    }
+  )
+
+  it('shows an upgrade path when the workspace is out of credits, with no refusal first', async () => {
+    paywallHasFunds.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    const card = await screen.findByTestId(STANDING)
+
+    expect(
+      within(card).getByRole('button', { name: 'Add credits' })
+    ).toBeInTheDocument()
+  })
+
+  it('allows a new turn while the standing card is visible', async () => {
+    const messageBodies: unknown[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.endsWith('/api/agent/threads'))
+          return json(200, agentThreadList())
+        messageBodies.push(JSON.parse(String(init?.body)))
+        return json(202, { thread_id: 'th-1', message_id: 'm-1' })
+      })
+    )
+    paywallHasFunds.value = false
+    workflowStore.activeWorkflow = addTab('workflows/current.json')
+    renderWithSelectedTarget()
+    await screen.findByTestId(STANDING)
+
+    await sendFromComposer('continue anyway')
+
+    expect(messageBodies).toHaveLength(1)
+    expect(messageBodies[0]).toMatchObject({ content: 'continue anyway' })
+  })
+
+  it('reports the impression against the credits_exhausted surface', async () => {
+    paywallHasFunds.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await waitFor(() =>
+      expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledExactlyOnceWith({
+        reason: 'no_funds',
+        surface: 'credits_exhausted'
+      })
+    )
+  })
+
+  it('attributes its CTA to the credits_exhausted surface and opens the credits flow', async () => {
+    paywallHasFunds.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const card = await screen.findByTestId(STANDING)
+
+    await userEvent.click(
+      within(card).getByRole('button', { name: 'Add credits' })
+    )
+
+    expect(
+      telemetry.trackAgentPaywallCtaClicked
+    ).toHaveBeenCalledExactlyOnceWith({
+      cta: 'add_credits',
+      surface: 'credits_exhausted'
+    })
+    expect(openAccountPrecondition).toHaveBeenCalledExactlyOnceWith('credits', {
+      source: 'agent_paywall'
+    })
+  })
+
+  it('stays hidden while the workspace has funds', async () => {
+    paywallHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+    expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
+  })
+
+  it('stays hidden while Agent-scoped gratis can fund the turn', async () => {
+    paywallHasFunds.value = false
+    paywallAgentHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+    expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
+  })
+
+  it('stays hidden on the legacy rail whose unloaded balance reads as false', async () => {
+    paywallHasFunds.value = false
+    paywallBilling.type = 'legacy'
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+  })
+
+  it.for(['payment_failed', 'paused'] as const)(
+    'defers to the %s billing-recovery surface',
+    async (status) => {
+      paywallHasFunds.value = false
+      paywallBilling.status = status
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      await screen.findByRole('textbox')
+
+      expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+    }
+  )
+
+  // `null` is "not loaded yet", not "no funds". Treating it as exhaustion would
+  // flash an out-of-credits card at every funded user on every cold start.
+  it('stays hidden while the billing read has not answered', async () => {
+    paywallHasFunds.value = null
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+    expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
+  })
+
+  // An unsettled capability read cannot say which remediation is right, and a
+  // card naming the wrong one is worse than no card. Same gate the inline
+  // card's impression already used.
+  it('waits for the capability read to settle before showing anything', async () => {
+    paywallHasFunds.value = false
+    paywallCapabilities.isReady = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    await nextTick()
+
+    expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+    expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
+  })
+
+  // `unavailable` renders a body with no action at all, so standing it up would
+  // be noise the user cannot act on.
+  it('stays hidden when the presentation offers no remediation', async () => {
+    paywallHasFunds.value = false
+    paywallCapabilities.canTopUp = false
+    paywallCapabilities.hasResolvedCapabilities = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    await nextTick()
+
+    expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+  })
+
+  it('stays hidden when the current member cannot act on billing', async () => {
+    paywallHasFunds.value = false
+    paywallWorkspace.role = 'member'
+    paywallCapabilities.canTopUp = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+  })
+
+  // Two cards with identical copy is a bug, not redundancy. The inline one is
+  // anchored to the turn that was refused, so it wins.
+  it('yields to an inline paywall card rather than duplicating it', async () => {
+    paywallHasFunds.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByTestId(STANDING)
+
+    useAgentConversationStore().recordPaywall(
+      toTurnId('msg-paywall'),
+      'continue'
+    )
+
+    await waitFor(() =>
+      expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+    )
+    expect(await findInlinePaywallButton('Add credits')).toBeInTheDocument()
+  })
+
+  it('shows the standing card when a normal reply follows an older unresolved inline card', async () => {
+    paywallHasFunds.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const conversation = useAgentConversationStore()
+    conversation.recordPaywall(toTurnId('msg-paywall'), 'continue')
+    await waitFor(() =>
+      expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+    )
+
+    conversation.messages.push({
+      id: toTurnId('msg-later'),
+      role: 'assistant',
+      parts: [{ type: 'text', text: 'Later reply', state: 'done' }],
+      streaming: false,
+      thinking: false
+    })
+
+    expect(await screen.findByTestId(STANDING)).toBeInTheDocument()
+  })
+
+  it('returns after the inline paywall is resolved and credits run out again', async () => {
+    paywallHasFunds.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByTestId(STANDING)
+
+    useAgentConversationStore().recordPaywall(
+      toTurnId('msg-paywall'),
+      'continue'
+    )
+    await waitFor(() =>
+      expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+    )
+
+    paywallHasFunds.value = true
+    await waitFor(() =>
+      expect(queryInlinePaywallButton('Add credits')).not.toBeInTheDocument()
+    )
+    paywallHasFunds.value = false
+
+    expect(await screen.findByTestId(STANDING)).toBeInTheDocument()
+  })
+
+  it('reports only after returning from chat history', async () => {
+    paywallHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await screen.findByRole('heading', { name: i18n.global.t('agent.history') })
+
+    paywallHasFunds.value = false
+    await nextTick()
+    expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.backToPreviousChat')
+      })
+    )
+
+    await waitFor(() =>
+      expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledExactlyOnceWith({
+        reason: 'no_funds',
+        surface: 'credits_exhausted'
+      })
+    )
+  })
+
+  it('reports a new identity only after its standing card is shown', async () => {
+    const accountId = ref('account-a')
+    useCurrentUser().resolvedUserInfo = computed(() => ({
+      id: accountId.value
+    }))
+    paywallHasFunds.value = false
+    const firstPanel = render(AgentPanelRoot, {
+      global: { plugins: [i18n] }
+    })
+    await screen.findByTestId(STANDING)
+    await waitFor(() =>
+      expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+    )
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await screen.findByRole('heading', { name: i18n.global.t('agent.history') })
+    accountId.value = 'account-b'
+    await nextTick()
+
+    expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.backToPreviousChat')
+      })
+    )
+    await waitFor(() =>
+      expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(2)
+    )
+
+    firstPanel.unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByTestId(STANDING)
+
+    expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(2)
+  })
+
+  it('disappears once funds arrive', async () => {
+    paywallHasFunds.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByTestId(STANDING)
+
+    paywallHasFunds.value = true
+
+    await waitFor(() =>
+      expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+    )
+  })
+
+  // One impression per exhaustion episode: the surface is standing, so a
+  // per-render report would make impressions a function of session length.
+  it('reports one impression per exhaustion episode, not per re-evaluation', async () => {
+    paywallHasFunds.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByTestId(STANDING)
+    await waitFor(() =>
+      expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+    )
+
+    paywallCapabilities.canSubscribeSelfServe = false
+    await nextTick()
+    await nextTick()
+
+    expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not re-arm the impression when capabilities refresh while still exhausted', async () => {
+    paywallHasFunds.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByTestId(STANDING)
+    await waitFor(() =>
+      expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+    )
+
+    paywallCapabilities.isReady = false
+    await nextTick()
+    paywallCapabilities.isReady = true
+    await screen.findByTestId(STANDING)
+
+    expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not report the same exhaustion episode after a panel remount', async () => {
+    paywallHasFunds.value = false
+    const firstPanel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByTestId(STANDING)
+    await waitFor(() =>
+      expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+    )
+
+    firstPanel.unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByTestId(STANDING)
+
+    expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+  })
+  it('refreshes workspace billing after an active turn becomes idle', async () => {
+    paywallHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const conversation = useAgentConversationStore()
+    const turnId = toTurnId('billing-refresh')
+
+    conversation.startTurn(turnId)
+    await nextTick()
+    paywallBilling.fetchStatus.mockClear()
+    conversation.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_message_done',
+        data: { message_id: turnId, thread_id: 'th', usage: null }
+      })
+    )
+
+    await waitFor(() =>
+      expect(paywallBilling.fetchStatus).toHaveBeenCalledOnce()
+    )
+  })
+
+  it('does not refresh workspace status for a legacy billing turn', async () => {
+    paywallHasFunds.value = true
+    paywallBilling.type = 'legacy'
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const conversation = useAgentConversationStore()
+    const turnId = toTurnId('legacy-billing-refresh')
+
+    conversation.startTurn(turnId)
+    paywallBilling.fetchStatus.mockClear()
+    conversation.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_message_done',
+        data: { message_id: turnId, thread_id: 'th', usage: null }
+      })
+    )
+    await nextTick()
+
+    expect(paywallBilling.fetchStatus).not.toHaveBeenCalled()
+  })
+
+  it('reports a rejected post-turn billing refresh', async () => {
+    const refreshError = new Error('status unavailable')
+    paywallHasFunds.value = true
+    paywallBilling.fetchStatus.mockRejectedValueOnce(refreshError)
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const conversation = useAgentConversationStore()
+    const turnId = toTurnId('failed-billing-refresh')
+
+    conversation.startTurn(turnId)
+    paywallBilling.fetchStatus.mockClear()
+    conversation.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_message_done',
+        data: { message_id: turnId, thread_id: 'th', usage: null }
+      })
+    )
+
+    await waitFor(() =>
+      expect(reportError).toHaveBeenCalledWith(refreshError, {
+        errorType: 'error_refreshing_agent_billing_status'
+      })
+    )
   })
 })
 
@@ -1457,6 +1999,15 @@ describe('AgentPanelRoot session notices', () => {
       type: 'agent_api_failed',
       details: i18n.global.t('agent.malformedEvent')
     })
+    expect(telemetry.trackAgentError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error_class: 'malformed_stream_event',
+        failure_stage: 'pre_acceptance',
+        retryable: false,
+        turn_accepted: false,
+        ui_treatment: 'error_overlay'
+      })
+    )
   })
 })
 
@@ -1705,7 +2256,7 @@ async function expectLaterClickCannotRestoreAccumulatedNodes(
 
 // Records what actually reached the upload endpoint, so an exclusion can be
 // asserted on the request rather than on a chip that has not rendered yet.
-function stubUploadFetch(uploaded: string[] = []): string[] {
+function stubUploadFetch(uploaded: string[] = [], status = 200): string[] {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -1716,7 +2267,9 @@ function stubUploadFetch(uploaded: string[] = []): string[] {
         const file = body.get('image')
         if (file instanceof File) uploaded.push(file.name)
       }
-      return json(200, { name: 'uploaded', subfolder: '', type: 'input' })
+      return status === 200
+        ? json(200, { name: 'uploaded', subfolder: '', type: 'input' })
+        : json(status, {})
     })
   )
   return uploaded
@@ -1785,7 +2338,9 @@ describe('AgentPanelRoot attach flow', () => {
       thread_id: null,
       workflow_id: 'wf-42',
       client_message_id: 'client-message-1',
-      input_method: 'typed'
+      input_method: 'typed',
+      starter_prompt_id: null,
+      starter_prompt_click_id: null
     })
 
     expect(screen.getByAltText('cat.png')).toBeInTheDocument()
@@ -2002,6 +2557,104 @@ describe('AgentPanelRoot attach flow', () => {
         telemetry.trackAgentAttachButtonClicked
       ).toHaveBeenCalledExactlyOnceWith({ method: 'drag_drop' })
     )
+  })
+
+  it('attaches a screenshot pasted into the composer and uploads it', async () => {
+    const uploaded = stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+
+    const clipboard = new DataTransfer()
+    clipboard.items.add(new File(['x'], 'image.png', { type: 'image/png' }))
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste(clipboard)
+
+    expect(
+      within(await screen.findByTestId('composer-asset-section')).getByText(
+        'image.png'
+      )
+    ).toBeInTheDocument()
+    await vi.waitFor(() => expect(uploaded).toEqual(['image.png']))
+  })
+
+  // A spreadsheet or document copy puts a bitmap on the clipboard next to the
+  // text, so neither representation may be dropped for the other.
+  it('keeps both the attachment and the text of a mixed clipboard', async () => {
+    const uploaded = stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+
+    const clipboard = new DataTransfer()
+    clipboard.items.add(new File(['x'], 'image.png', { type: 'image/png' }))
+    clipboard.setData('text/plain', 'Q3 revenue by region')
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste(clipboard)
+
+    expect(
+      within(await screen.findByTestId('composer-asset-section')).getByText(
+        'image.png'
+      )
+    ).toBeInTheDocument()
+    expect(screen.getByRole('textbox')).toHaveTextContent(
+      'Q3 revenue by region'
+    )
+    await vi.waitFor(() => expect(uploaded).toEqual(['image.png']))
+  })
+
+  // Pasting happens inside the composer, like typing or a drop; only the +
+  // menu's attach leaves the panel for the OS picker and ends node picking.
+  it('keeps picking nodes when a screenshot is pasted into the composer', async () => {
+    const uploaded = stubUploadFetch()
+    const selection = await startVueNodeSelection()
+
+    const clipboard = new DataTransfer()
+    clipboard.items.add(new File(['x'], 'image.png', { type: 'image/png' }))
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste(clipboard)
+
+    await vi.waitFor(() => expect(uploaded).toEqual(['image.png']))
+    expect(useAgentNodeSelectionStore().isActive).toBe(true)
+    expect([...selection.selectedItems]).toEqual(selection.nodes)
+  })
+
+  async function renderAndPasteScreenshot(): Promise<void> {
+    renderWithSelectedTarget()
+    await nextTick()
+    telemetry.trackAgentAttachButtonClicked.mockClear()
+    const clipboard = new DataTransfer()
+    clipboard.items.add(new File(['x'], 'image.png', { type: 'image/png' }))
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste(clipboard)
+  }
+
+  it('tracks a pasted attachment as a paste once its upload lands', async () => {
+    const uploaded = stubUploadFetch()
+
+    await renderAndPasteScreenshot()
+
+    await vi.waitFor(() => expect(uploaded).toEqual(['image.png']))
+    await vi.waitFor(() =>
+      expect(
+        telemetry.trackAgentAttachButtonClicked
+      ).toHaveBeenCalledExactlyOnceWith({ method: 'paste' })
+    )
+  })
+
+  it('tracks no paste when the pasted upload is rejected', async () => {
+    stubUploadFetch([], 500)
+
+    await renderAndPasteScreenshot()
+
+    await vi.waitFor(() =>
+      expect(useToastStore().messagesToAdd).toContainEqual(
+        expect.objectContaining({
+          severity: 'warn',
+          detail: 'image.png could not be uploaded'
+        })
+      )
+    )
+    await nextTick()
+    expect(telemetry.trackAgentAttachButtonClicked).not.toHaveBeenCalled()
   })
 
   it('names every approved format in the picker accept list', async () => {
@@ -2825,6 +3478,7 @@ describe('AgentPanelRoot attach flow', () => {
     ).toBeInTheDocument()
 
     executionErrors.showErrorOverlay.mockClear()
+    vi.mocked(reportError).mockClear()
     failUpload()
     await vi.waitFor(() =>
       expect(screen.queryByText('cat.png')).not.toBeInTheDocument()
@@ -2839,7 +3493,7 @@ describe('AgentPanelRoot attach flow', () => {
         detail: 'cat.png could not be uploaded'
       })
     )
-    expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
       errorType: 'agent_attachment_upload_failed',
       tags: {
         failure_kind: 'caught_unexpected',
@@ -3253,6 +3907,7 @@ describe('AgentPanelRoot history', () => {
 
   it('surfaces a thread-list failure via the host error modal', async () => {
     executionErrors.showErrorOverlay.mockClear()
+    telemetry.trackAgentError.mockClear()
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => new Response('{}', { status: 500 }))
@@ -3266,6 +3921,15 @@ describe('AgentPanelRoot history', () => {
     expect(executionErrors.lastPromptError).toMatchObject({
       type: 'agent_api_failed'
     })
+    expect(telemetry.trackAgentError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error_class: 'thread_list_load_failed',
+        failure_stage: 'pre_acceptance',
+        retryable: true,
+        turn_accepted: false,
+        ui_treatment: 'error_overlay'
+      })
+    )
     expect(useAgentChatHistoryStore().sessions).toHaveLength(0)
   })
 
@@ -3805,17 +4469,85 @@ describe('AgentPanelRoot workflow binding', () => {
             thread_id,
             workflow_id: 'wf-42',
             client_message_id: 'client-message-1',
-            input_method: 'typed'
+            input_method: 'typed',
+            starter_prompt_id: null,
+            starter_prompt_click_id: null
           }
         ]
       ])
     }
   )
 
+  it('keeps the first send pending until consent succeeds, then resumes it', async () => {
+    makeTab('wf-42')
+    const bodies = mockMessagesEndpoint('wf-42')
+    Object.assign(useAgentConsentStore(), { accepted: false })
+    let accept = () => {}
+    withConsent.mockImplementationOnce(
+      (_trigger, onAccept) =>
+        new Promise<void>((resolve) => {
+          accept = () => {
+            onAccept()
+            resolve()
+          }
+        })
+    )
+    renderWithSelectedTarget()
+
+    const textbox = screen.getByRole('textbox')
+    await userEvent.click(textbox)
+    await userEvent.paste('build me a workflow')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(withConsent).toHaveBeenCalledExactlyOnceWith(
+      'first_message',
+      expect.any(Function)
+    )
+    expect(bodies).toHaveLength(0)
+
+    accept()
+    await screen.findByRole('button', { name: 'Stop' })
+    await waitFor(() => expect(bodies).toHaveLength(1))
+  })
+
+  it('does not resume a consent-held send after the panel unmounts', async () => {
+    makeTab('wf-42')
+    const bodies = mockMessagesEndpoint('wf-42')
+    const settleSubmission = vi.spyOn(
+      useAgentComposerStore(),
+      'settleSubmission'
+    )
+    Object.assign(useAgentConsentStore(), { accepted: false })
+    let accept = () => {}
+    withConsent.mockImplementationOnce(
+      (_trigger, onAccept) =>
+        new Promise<void>((resolve) => {
+          accept = () => {
+            onAccept()
+            resolve()
+          }
+        })
+    )
+    const { unmount } = renderWithSelectedTarget()
+
+    const textbox = screen.getByRole('textbox')
+    await userEvent.click(textbox)
+    await userEvent.paste('build me a workflow')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    unmount()
+    accept()
+    await waitFor(() =>
+      expect(settleSubmission).toHaveBeenCalledWith(expect.any(Number), false)
+    )
+    expect(bodies).toHaveLength(0)
+  })
+
   it('reports a message sent from an empty-state suggestion chip as a suggestion', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
     vi.mocked(useTelemetry())!.trackAgentMessageSent.mockClear()
+    vi.mocked(useTelemetry())!.trackAgentStarterPromptClicked.mockClear()
     renderWithSelectedTarget()
 
     await userEvent.click(
@@ -3824,6 +4556,23 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await screen.findByRole('button', { name: 'Stop' })
 
+    // The click is reported when it happens, so it holds the first minted id and
+    // the send that follows holds the second.
+    expect(
+      vi.mocked(useTelemetry())!.trackAgentStarterPromptClicked.mock.calls
+    ).toEqual([
+      [
+        {
+          prompt_id: 'list_workflows',
+          prompt_index: 1,
+          prompt_count: 5,
+          prompt_text_hash: expect.stringMatching(/^[0-9a-f]{8}$/),
+          locale: 'en',
+          click_id: 'client-message-1',
+          draft_was_empty: true
+        }
+      ]
+    ])
     expect(vi.mocked(useTelemetry())!.trackAgentMessageSent.mock.calls).toEqual(
       [
         [
@@ -3832,8 +4581,10 @@ describe('AgentPanelRoot workflow binding', () => {
             node_tag_count: 0,
             thread_id: null,
             workflow_id: 'wf-42',
-            client_message_id: 'client-message-1',
-            input_method: 'suggestion'
+            client_message_id: 'client-message-2',
+            input_method: 'suggestion',
+            starter_prompt_id: 'list_workflows',
+            starter_prompt_click_id: 'client-message-1'
           }
         ]
       ]
@@ -3877,7 +4628,9 @@ describe('AgentPanelRoot workflow binding', () => {
             thread_id: null,
             workflow_id: 'wf-42',
             client_message_id: 'client-message-1',
-            input_method: 'typed'
+            input_method: 'typed',
+            starter_prompt_id: null,
+            starter_prompt_click_id: null
           }
         ]
       ]
@@ -3910,7 +4663,9 @@ describe('AgentPanelRoot workflow binding', () => {
             thread_id: null,
             workflow_id: 'wf-77',
             client_message_id: 'client-message-1',
-            input_method: 'typed'
+            input_method: 'typed',
+            starter_prompt_id: null,
+            starter_prompt_click_id: null
           }
         ]
       ]
@@ -5438,6 +6193,7 @@ describe('AgentPanelRoot workflow binding', () => {
     )
 
     await renderAndSend('work here')
+    vi.useFakeTimers()
 
     ws.emit('agent_active_tab', {
       workflow_id: 'wf-new',
@@ -5445,7 +6201,8 @@ describe('AgentPanelRoot workflow binding', () => {
       thread_id: 'th-1'
     })
     const activity = useWorkflowTabActivityStore()
-    await vi.waitFor(() => expect(activity.creatingTab).toBe(true))
+    await vi.advanceTimersByTimeAsync(0)
+    expect(activity.creatingTab).toBe(true)
 
     ws.emit('agent_active_tab', { workflow_id: 'wf-42', thread_id: 'th-1' })
     resolveLookup?.(json(404, { error: 'none' }))
@@ -5538,12 +6295,14 @@ describe('AgentPanelRoot workflow binding', () => {
     await renderAndSend('work here')
     const activity = useWorkflowTabActivityStore()
     expect(activity.editingTabPath).toBe('workflows/current.json')
+    vi.useFakeTimers()
 
     ws.emit('agent_active_tab', {
       workflow_id: 'wf-77',
       name: 'Video test',
       thread_id: 'th-1'
     })
+    await vi.advanceTimersByTimeAsync(500)
 
     await vi.waitFor(() =>
       expect(activity.editingTabPath).toBe('workflows/Video test.json')
@@ -5751,6 +6510,26 @@ describe('AgentPanelRoot workflow binding', () => {
         target: 'active_tab_switch'
       })
     )
+  })
+
+  it('agent_active_tab reports when a bound tab cannot be opened', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    await renderAndSend('work here')
+    telemetry.trackAgentError.mockClear()
+    vi.mocked(useWorkflowService()).openWorkflow.mockResolvedValueOnce(false)
+
+    ws.emit('agent_active_tab', { workflow_id: 'wf-42', thread_id: 'th-1' })
+
+    await vi.waitFor(() =>
+      expect(telemetry.trackAgentError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error_class: 'workflow_open_failed',
+          ui_treatment: 'toast'
+        })
+      )
+    )
+    expect(useTelemetry()!.trackAgentWorkflowApplied).not.toHaveBeenCalled()
   })
 
   // A browser tab closed without the SPA's own unbind() left 'wf-abandoned'
@@ -5978,12 +6757,14 @@ describe('AgentPanelRoot workflow binding', () => {
     await renderAndSend('work here')
     const mint = vi.spyOn(workflowStore, 'createNewTemporary')
     telemetry.trackAgentWorkflowBound.mockClear()
+    vi.useFakeTimers()
 
     ws.emit('agent_active_tab', {
       workflow_id: 'wf-77',
       name: 'Video test',
       thread_id: 'th-1'
     })
+    await vi.advanceTimersByTimeAsync(500)
 
     await vi.waitFor(() =>
       expect(useWorkflowService().openWorkflow).toHaveBeenCalled()
@@ -6026,12 +6807,14 @@ describe('AgentPanelRoot workflow binding', () => {
       await renderAndSend('work here')
       vi.mocked(useWorkflowService()).openWorkflow.mockResolvedValueOnce(false)
       vi.mocked(useTelemetry())!.trackAgentWorkflowApplied.mockClear()
+      vi.useFakeTimers()
 
       ws.emit('agent_active_tab', {
         workflow_id: 'wf-other',
         name: 'Other',
         thread_id: 'th-1'
       })
+      await vi.advanceTimersByTimeAsync(500)
 
       await vi.waitFor(() =>
         expect(useToastStore().messagesToAdd).toContainEqual(
@@ -6174,12 +6957,14 @@ describe('AgentPanelRoot workflow binding', () => {
     mockMessagesEndpoint('wf-42')
 
     await renderAndSend('work here')
+    vi.useFakeTimers()
 
     ws.emit('agent_active_tab', {
       workflow_id: 'wf-88',
       name: 'a/b',
       thread_id: 'th-1'
     })
+    await vi.advanceTimersByTimeAsync(500)
     await vi.waitFor(() =>
       expect(
         workflowStore.getWorkflowByPath('workflows/a-b.json')
@@ -6191,6 +6976,7 @@ describe('AgentPanelRoot workflow binding', () => {
       name: '  ',
       thread_id: 'th-1'
     })
+    await vi.advanceTimersByTimeAsync(500)
     await vi.waitFor(() =>
       expect(
         workflowStore.getWorkflowByPath('workflows/Unsaved Workflow.json')
@@ -6198,20 +6984,21 @@ describe('AgentPanelRoot workflow binding', () => {
     )
   })
 
-  it('agent_active_tab closes the minted tab when opening it fails', async () => {
+  it('agent_active_tab reports when a minted tab cannot be opened', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
 
     await renderAndSend('work here')
-    vi.mocked(useWorkflowService()).openWorkflow.mockRejectedValueOnce(
-      new Error('disk full')
-    )
+    telemetry.trackAgentError.mockClear()
+    vi.mocked(useWorkflowService()).openWorkflow.mockResolvedValueOnce(false)
+    vi.useFakeTimers()
 
     ws.emit('agent_active_tab', {
       workflow_id: 'wf-77',
       name: 'Video test',
       thread_id: 'th-1'
     })
+    await vi.advanceTimersByTimeAsync(500)
 
     await vi.waitFor(() =>
       expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
@@ -6223,20 +7010,31 @@ describe('AgentPanelRoot workflow binding', () => {
         workflowStore.getWorkflowByPath('workflows/Video test.json')
       ).toBeNull()
     )
+    expect(telemetry.trackAgentError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error_class: 'workflow_open_failed',
+        ui_treatment: 'toast'
+      })
+    )
   })
 
-  it('agent_active_tab closes the minted tab when opening it reports failure', async () => {
+  it('agent_active_tab closes the minted tab when opening it throws', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
 
     await renderAndSend('work here')
-    vi.mocked(useWorkflowService()).openWorkflow.mockResolvedValueOnce(false)
+    telemetry.trackAgentError.mockClear()
+    vi.mocked(useWorkflowService()).openWorkflow.mockRejectedValueOnce(
+      new Error('open boom')
+    )
+    vi.useFakeTimers()
 
     ws.emit('agent_active_tab', {
       workflow_id: 'wf-77',
       name: 'Video test',
       thread_id: 'th-1'
     })
+    await vi.advanceTimersByTimeAsync(500)
 
     await vi.waitFor(() =>
       expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
@@ -6252,6 +7050,15 @@ describe('AgentPanelRoot workflow binding', () => {
       useAgentWorkflowTabBindingStore().tabPathFor('wf-77')
     ).toBeUndefined()
     expect(useTelemetry()!.trackAgentWorkflowApplied).not.toHaveBeenCalled()
+    expect(telemetry.trackAgentError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error_class: 'workflow_open_failed',
+        failure_stage: 'post_acceptance',
+        retryable: false,
+        turn_accepted: true,
+        ui_treatment: 'error_overlay'
+      })
+    )
   })
 
   it('agent_active_tab strips dotfile prefixes hidden behind whitespace', async () => {
@@ -6259,12 +7066,14 @@ describe('AgentPanelRoot workflow binding', () => {
     mockMessagesEndpoint('wf-42')
 
     await renderAndSend('work here')
+    vi.useFakeTimers()
 
     ws.emit('agent_active_tab', {
       workflow_id: 'wf-95',
       name: ' .hidden',
       thread_id: 'th-1'
     })
+    await vi.advanceTimersByTimeAsync(500)
     await vi.waitFor(() =>
       expect(
         workflowStore.getWorkflowByPath('workflows/hidden.json')
@@ -6277,14 +7086,17 @@ describe('AgentPanelRoot workflow binding', () => {
     mockMessagesEndpoint('wf-42')
 
     await renderAndSend('work here')
+    vi.useFakeTimers()
 
     ws.emit('agent_active_tab', { workflow_id: 'wf-a', thread_id: 'th-1' })
+    await vi.advanceTimersByTimeAsync(500)
     await vi.waitFor(() =>
       expect(
         workflowStore.getWorkflowByPath('workflows/Unsaved Workflow.json')
       ).not.toBeNull()
     )
     ws.emit('agent_active_tab', { workflow_id: 'wf-b', thread_id: 'th-1' })
+    await vi.advanceTimersByTimeAsync(500)
     await vi.waitFor(() =>
       expect(
         workflowStore.getWorkflowByPath('workflows/Unsaved Workflow (2).json')
@@ -6322,27 +7134,30 @@ describe('AgentPanelRoot workflow binding', () => {
     )
 
     await renderAndSend('work here')
+    vi.useFakeTimers()
 
     ws.emit('agent_active_tab', { workflow_id: 'wf-42', thread_id: 'th-1' })
-    await vi.waitFor(() => expect(resolveSlowOpen).toBeDefined())
+    await vi.advanceTimersByTimeAsync(0)
+    expect(resolveSlowOpen).toBeDefined()
     ws.emit('agent_active_tab', {
       workflow_id: 'wf-quick',
       name: 'Quick tab',
       thread_id: 'th-1'
     })
 
-    await new Promise((resolve) => setTimeout(resolve))
+    await vi.advanceTimersByTimeAsync(0)
     expect(useWorkflowService().openWorkflow).toHaveBeenCalledTimes(1)
     expect(
       workflowStore.getWorkflowByPath('workflows/Quick tab.json')
     ).toBeNull()
     resolveSlowOpen?.()
+    await vi.advanceTimersByTimeAsync(500)
     await vi.waitFor(() =>
       expect(
         workflowStore.getWorkflowByPath('workflows/Quick tab.json')
       ).not.toBeNull()
     )
-    await new Promise((resolve) => setTimeout(resolve))
+    await vi.advanceTimersByTimeAsync(0)
 
     expect(workflowStore.activeWorkflow?.filename).toBe('Quick tab')
     expect(tab).not.toBe(workflowStore.activeWorkflow)
@@ -6353,6 +7168,7 @@ describe('AgentPanelRoot workflow binding', () => {
     mockMessagesEndpoint('wf-42')
 
     await renderAndSend('work here')
+    vi.useFakeTimers()
 
     // Hold the SLOW tab's open so the newer activation lands mid-flight.
     let releaseSlowOpen: (() => void) | undefined
@@ -6367,20 +7183,22 @@ describe('AgentPanelRoot workflow binding', () => {
       name: 'Slow tab',
       thread_id: 'th-1'
     })
-    await vi.waitFor(() => expect(releaseSlowOpen).toBeDefined())
+    await vi.advanceTimersByTimeAsync(500)
+    expect(releaseSlowOpen).toBeDefined()
     ws.emit('agent_active_tab', {
       workflow_id: 'wf-fast',
       name: 'Fast tab',
       thread_id: 'th-1'
     })
     releaseSlowOpen?.()
+    await vi.advanceTimersByTimeAsync(500)
 
     await vi.waitFor(() =>
       expect(
         workflowStore.getWorkflowByPath('workflows/Fast tab.json')
       ).not.toBeNull()
     )
-    await new Promise((resolve) => setTimeout(resolve))
+    await vi.advanceTimersByTimeAsync(0)
 
     // The superseded activation closed its own minted tab and bound nothing.
     expect(
@@ -6398,6 +7216,7 @@ describe('AgentPanelRoot workflow binding', () => {
     mockMessagesEndpoint('wf-42')
 
     await renderAndSend('work here')
+    vi.useFakeTimers()
 
     ws.emit('agent_active_tab', {
       workflow_id: 'wf-a',
@@ -6409,13 +7228,14 @@ describe('AgentPanelRoot workflow binding', () => {
       name: 'B tab',
       thread_id: 'th-1'
     })
+    await vi.advanceTimersByTimeAsync(500)
 
     await vi.waitFor(() =>
       expect(
         workflowStore.getWorkflowByPath('workflows/B tab.json')
       ).not.toBeNull()
     )
-    await new Promise((resolve) => setTimeout(resolve))
+    await vi.advanceTimersByTimeAsync(0)
 
     expect(workflowStore.getWorkflowByPath('workflows/A tab.json')).toBeNull()
     expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-b')).toBe(
@@ -8174,7 +8994,9 @@ describe('AgentPanelRoot workflow binding', () => {
       thread_id: null,
       workflow_id: null,
       client_message_id: 'client-message-1',
-      input_method: 'typed'
+      input_method: 'typed',
+      starter_prompt_id: null,
+      starter_prompt_click_id: null
     })
     expect(screen.getByText('VAEDecode #7')).toBeInTheDocument()
     expect(screen.queryByText(/KSampler/)).not.toBeInTheDocument()
@@ -9035,16 +9857,16 @@ describe('AgentPanelRoot workflow binding', () => {
 
     appMock.isGraphReady = true
     Object.assign(appMock.rootGraph, { id: 'graph-a' })
-    expect(mintPortWiringDeps.current?.getGraph()?.id).toBe('graph-a')
+    expect(docOpMinterDeps.current?.getGraph()?.id).toBe('graph-a')
 
     // A workflow switch rebuilds the canvas against a new root graph without
-    // touching agentPanelStore.enabled or isBoundWorkflowActive, so the mint
-    // port wiring's own doc-bound predicate (covered directly against the
-    // real `attachMintPortWiring` in `mintPortWiring.test.ts`) has to read
-    // this live graph at mint time to follow the swap.
+    // touching agentPanelStore.enabled or isBoundWorkflowActive, so the
+    // minter's own doc-bound predicate (covered directly against the real
+    // `attachDocOpMinter` in `docOpMinter.test.ts`) has to read this live
+    // graph at mint time to follow the swap.
     Object.assign(appMock.rootGraph, { id: 'graph-b' })
 
-    expect(mintPortWiringDeps.current?.getGraph()?.id).toBe('graph-b')
+    expect(docOpMinterDeps.current?.getGraph()?.id).toBe('graph-b')
   })
 
   it('wires getGraph() to null before the graph is ready', async () => {
@@ -9055,7 +9877,7 @@ describe('AgentPanelRoot workflow binding', () => {
     Object.assign(appMock.rootGraph, { id: 'graph-a' })
     appMock.isGraphReady = false
 
-    expect(mintPortWiringDeps.current?.getGraph()).toBeNull()
+    expect(docOpMinterDeps.current?.getGraph()).toBeNull()
   })
 
   it("reports the bound workflow's own stored root graph id once bound", async () => {
@@ -9065,7 +9887,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await renderAndSend('add an upscaler')
 
     await vi.waitFor(() =>
-      expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+      expect(docOpMinterDeps.current?.boundRootGraphId()).toBe(
         toRootGraphId('wf-42')
       )
     )
@@ -9074,7 +9896,7 @@ describe('AgentPanelRoot workflow binding', () => {
   it('leaves the bound root graph id null while no workflow is bound and active', () => {
     renderWithSelectedTarget()
 
-    expect(mintPortWiringDeps.current?.boundRootGraphId()).toBeNull()
+    expect(docOpMinterDeps.current?.boundRootGraphId()).toBeNull()
   })
 
   it("reports the newly bound workflow's root graph id after an active-tab switch, even though the previously bound workflow stayed correct while its tab was inactive", async () => {
@@ -9088,7 +9910,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await renderAndSend('start on A')
 
     await vi.waitFor(() =>
-      expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+      expect(docOpMinterDeps.current?.boundRootGraphId()).toBe(
         toRootGraphId('wf-a')
       )
     )
@@ -9097,7 +9919,7 @@ describe('AgentPanelRoot workflow binding', () => {
     // still report wf-a here, so this alone would not catch a regression.
     workflowStore.activeWorkflow = addTab('workflows/elsewhere.json')
     await nextTick()
-    expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+    expect(docOpMinterDeps.current?.boundRootGraphId()).toBe(
       toRootGraphId('wf-a')
     )
 
@@ -9107,7 +9929,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await vi.waitFor(() =>
       expect(workflowStore.activeWorkflow?.path).toBe(tabB.path)
     )
-    expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+    expect(docOpMinterDeps.current?.boundRootGraphId()).toBe(
       toRootGraphId('wf-b')
     )
   })
@@ -9119,7 +9941,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await renderAndSend('add an upscaler')
 
     await vi.waitFor(() =>
-      expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+      expect(docOpMinterDeps.current?.boundRootGraphId()).toBe(
         toRootGraphId('wf-42')
       )
     )
@@ -9128,7 +9950,7 @@ describe('AgentPanelRoot workflow binding', () => {
     // mints a fresh uuid) without boundWorkflowId itself ever changing.
     tab.activeState = fromPartial<ComfyWorkflowJSON>({ id: 'wf-42-rotated' })
 
-    expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+    expect(docOpMinterDeps.current?.boundRootGraphId()).toBe(
       toRootGraphId('wf-42-rotated')
     )
   })

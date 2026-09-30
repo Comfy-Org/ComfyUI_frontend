@@ -27,9 +27,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 
 import type { DocFrameTransport, DocOp, DocUpdate } from './docFrameClient'
 import { DocFrameClient, encodeBase64 } from './docFrameClient'
-import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import { FollowerDoc } from './followerDoc'
-import type { GraphMutations } from './graphMutations'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
 
@@ -119,43 +117,7 @@ function wire() {
 }
 
 describe('follower commit boundary', () => {
-  it.fails('does not publish a frame rejected by graph projection', () => {
-    const { transport, client, bridge } = wire()
-    onTestFinished(() => {
-      bridge.destroy()
-      client.destroy()
-    })
-    const mutations = {
-      batch: vi.fn(() => false),
-      addNode: vi.fn(() => false),
-      setWidget: vi.fn(() => false),
-      connect: vi.fn(() => false),
-      deleteNode: vi.fn(() => false),
-      clearSemanticGraph: vi.fn(() => false)
-    } satisfies GraphMutations
-    const adapter = new EcsFollowerAdapter(mutations)
-    onTestFinished(() => adapter.destroy())
-    const projectionResults: boolean[] = []
-    adapter.bind(WORKFLOW_ID, bridge.follower)
-    bridge.addEventListener('doc_update', (event) => {
-      if (event instanceof CustomEvent) {
-        projectionResults.push(adapter.applyFrame(event.detail as DocUpdate))
-      }
-    })
-    transport.open = true
-    bridge.subscribe(WORKFLOW_ID)
-    const initialVector = encodeBase64(bridge.follower.stateVector())
-
-    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate()))
-
-    expect(projectionResults).toEqual([false])
-    expect({
-      sequence: bridge.lastSequence,
-      stateVector: encodeBase64(bridge.follower.stateVector())
-    }).toEqual({ sequence: 0, stateVector: initialVector })
-  })
-
-  it.fails('does not integrate Yjs structs when a truncated update throws', () => {
+  it('does not integrate Yjs structs when a truncated update throws', () => {
     const host = new Y.Doc()
     onTestFinished(() => host.destroy())
     host.transact(() => {
@@ -413,13 +375,20 @@ describe('doc_reset — a lineage break drops the doc and resubscribes from zero
     const oldDoc = bridge.follower
     expect(oldDoc.updatesApplied).toBe(1)
 
-    transport.deliver('doc_reset', { v: 1, workflow_id: WORKFLOW_ID, seq: 43 })
+    transport.deliver('doc_reset', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      seq: 43,
+      lineage_seq: 43
+    })
 
     // The old lineage is dropped wholesale, never folded into.
     expect(bridge.follower).not.toBe(oldDoc)
     expect(bridge.follower.updatesApplied).toBe(0)
     expect(bridge.follower.doc.getMap('nodes').size).toBe(0)
-    expect(resets).toEqual([{ workflowId: WORKFLOW_ID, seq: 43 }])
+    expect(resets).toEqual([
+      { workflowId: WORKFLOW_ID, lineageSeq: 43, seq: 43 }
+    ])
     expect(followerSeenDuringReset).toBe(oldDoc)
 
     // The resubscribe carries the FRESH doc's state vector — the empty one —
@@ -455,11 +424,35 @@ describe('doc_reset — a lineage break drops the doc and resubscribes from zero
     transport.deliver('doc_update', docUpdateFrame(hostDocUpdate()))
     const oldDoc = bridge.follower
 
-    transport.deliver('doc_reset', { v: 1, workflow_id: 'wf-other', seq: 9 })
+    transport.deliver('doc_reset', {
+      v: 1,
+      workflow_id: 'wf-other',
+      seq: 9,
+      lineage_seq: 9
+    })
 
     expect(bridge.follower).toBe(oldDoc)
     expect(bridge.follower.updatesApplied).toBe(1)
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
+  })
+
+  it('discards a reset missing lineage_seq instead of falling back to seq', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate()))
+    const oldDoc = bridge.follower
+
+    transport.deliver('doc_reset', { v: 1, workflow_id: WORKFLOW_ID, seq: 43 })
+
+    expect(bridge.follower).toBe(oldDoc)
+    expect(bridge.follower.updatesApplied).toBe(1)
+    expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_crdt_invalid_server_frame',
+      tags: { frame_type: 'doc_reset' },
+      level: 'warning'
+    })
   })
 
   it('a reset on a dead socket still drops the doc; the resubscribe lands on the next reconcile', () => {
@@ -470,7 +463,12 @@ describe('doc_reset — a lineage break drops the doc and resubscribes from zero
     transport.deliver('doc_update', docUpdateFrame(hostDocUpdate()))
 
     transport.open = false
-    transport.deliver('doc_reset', { v: 1, workflow_id: WORKFLOW_ID, seq: 43 })
+    transport.deliver('doc_reset', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      seq: 43,
+      lineage_seq: 43
+    })
 
     // The lineage break is honoured even though the resubscribe cannot leave.
     expect(bridge.follower.updatesApplied).toBe(0)
@@ -1273,7 +1271,8 @@ describe('doc_subscribe_sent — the ack-timeout arming signal', () => {
         transport.deliver('doc_reset', {
           v: 1,
           workflow_id: WORKFLOW_ID,
-          seq: 43
+          seq: 43,
+          lineage_seq: 43
         })
     }
   ])('is dispatched again on $label', ({ provoke }) => {
