@@ -790,56 +790,8 @@ async function onAgentActiveTab(
   const stale = () => generation !== activeTabGeneration
   if (stale()) return
   try {
-    const bound = boundOrOpenWorkflowFor(data.workflow_id)
-    if (bound) {
-      const opened = await workflowService.openWorkflow(bound)
-      if (stale()) return
-      if (!opened) {
-        warnWorkflowUnavailable()
-        return
-      }
-      // boundOrOpenWorkflowFor can resolve by cloud name, which leaves no binding behind
-      // for everything downstream that only reads tabPathFor.
-      bindingStore.bind(data.workflow_id, bound.path)
-      if (status.value !== 'idle') tabActivity.setEditing(bound.path)
-      bindWorkflow(data.workflow_id)
-      useTelemetry()?.trackAgentWorkflowApplied({
-        workflow_id: data.workflow_id,
-        target: 'active_tab_switch'
-      })
-      return
-    }
-    const creatingStartedAt = Date.now()
-    tabActivity.setCreating(true)
-    const remainingCreatingTime =
-      CREATING_TAB_MIN_DURATION_MS - (Date.now() - creatingStartedAt)
-    if (remainingCreatingTime > 0)
-      await new Promise((resolve) => setTimeout(resolve, remainingCreatingTime))
-    if (stale()) return
-    const tab = workflowStore.createNewTemporary(
-      agentTabFilename(data.name),
-      agentTabGraph
-    )
-    tabActivity.setCreating(false)
-    let opened: boolean
-    try {
-      opened = await workflowService.openWorkflow(tab)
-    } catch (error) {
-      await workflowService.closeWorkflow(tab, { warnIfUnsaved: false })
-      throw error
-    }
-    if (stale() || !opened) {
-      await workflowService.closeWorkflow(tab, { warnIfUnsaved: false })
-      if (!stale()) warnWorkflowUnavailable()
-      return
-    }
-    if (status.value !== 'idle') tabActivity.setEditing(tab.path)
-    bindingStore.bind(data.workflow_id, tab.path)
-    bindWorkflow(data.workflow_id)
-    useTelemetry()?.trackAgentWorkflowApplied({
-      workflow_id: data.workflow_id,
-      target: 'active_tab_open'
-    })
+    if (await openBoundAgentTab(data, stale)) return
+    await openNewAgentTab(data, stale)
   } catch (error) {
     if (stale()) return
     bindWorkflow(data.workflow_id)
@@ -850,6 +802,71 @@ async function onAgentActiveTab(
   } finally {
     tabActivity.setCreating(false)
   }
+}
+
+async function openBoundAgentTab(
+  data: AgentActiveTabData,
+  stale: () => boolean
+): Promise<boolean> {
+  const bound = boundOrOpenWorkflowFor(data.workflow_id)
+  if (!bound) return false
+
+  const opened = await workflowService.openWorkflow(bound)
+  if (stale()) return true
+  if (!opened) {
+    warnWorkflowUnavailable()
+    return true
+  }
+
+  // boundOrOpenWorkflowFor can resolve by cloud name, which leaves no binding behind
+  // for everything downstream that only reads tabPathFor.
+  bindingStore.bind(data.workflow_id, bound.path)
+  if (status.value !== 'idle') tabActivity.setEditing(bound.path)
+  bindWorkflow(data.workflow_id)
+  useTelemetry()?.trackAgentWorkflowApplied({
+    workflow_id: data.workflow_id,
+    target: 'active_tab_switch'
+  })
+  return true
+}
+
+async function openNewAgentTab(
+  data: AgentActiveTabData,
+  stale: () => boolean
+): Promise<void> {
+  const creatingStartedAt = Date.now()
+  tabActivity.setCreating(true)
+  const remainingCreatingTime =
+    CREATING_TAB_MIN_DURATION_MS - (Date.now() - creatingStartedAt)
+  if (remainingCreatingTime > 0)
+    await new Promise((resolve) => setTimeout(resolve, remainingCreatingTime))
+  if (stale()) return
+
+  const tab = workflowStore.createNewTemporary(
+    agentTabFilename(data.name),
+    agentTabGraph
+  )
+  tabActivity.setCreating(false)
+  let opened: boolean
+  try {
+    opened = await workflowService.openWorkflow(tab)
+  } catch (error) {
+    await workflowService.closeWorkflow(tab, { warnIfUnsaved: false })
+    throw error
+  }
+  if (stale() || !opened) {
+    await workflowService.closeWorkflow(tab, { warnIfUnsaved: false })
+    if (!stale()) warnWorkflowUnavailable()
+    return
+  }
+
+  if (status.value !== 'idle') tabActivity.setEditing(tab.path)
+  bindingStore.bind(data.workflow_id, tab.path)
+  bindWorkflow(data.workflow_id)
+  useTelemetry()?.trackAgentWorkflowApplied({
+    workflow_id: data.workflow_id,
+    target: 'active_tab_open'
+  })
 }
 
 start()
