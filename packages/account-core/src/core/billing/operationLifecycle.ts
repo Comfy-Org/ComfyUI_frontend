@@ -56,6 +56,7 @@ import type {
 } from './operationState.js'
 import {
   BillingOpStatusSchema,
+  isGrantLanding,
   isTerminal,
   reduceBillingOperation,
   validateActionUrl
@@ -63,6 +64,11 @@ import {
 import { selectBillingPresentation } from './presentation.js'
 import { readValidatedBillingResponse } from './sharedRead.js'
 import type { BillingStatusData, BillingStatusReader } from './status.js'
+
+/** Settled, but a later read may still change what the operation reports. */
+function isStillSettling(state: BillingOperationState): boolean {
+  return state.phase === 'reconciliation_needed' || isGrantLanding(state)
+}
 
 export function operationRoute(operationId: string): string {
   return `/billing/ops/${encodeURIComponent(operationId)}`
@@ -515,8 +521,9 @@ export function createBillingOperationLifecycle(
   /**
    * An id is observed afresh once this tab has stopped learning anything new
    * about it: its poll budget ran out or it left the scope. One the server
-   * parked for reconciliation is observed afresh only for a caller reading
-   * settled operations, since the reconciliation may since have settled it.
+   * parked for reconciliation, or a success whose credits were still landing,
+   * is observed afresh only for a caller reading settled operations, since
+   * the server may since have settled it or recorded the grant.
    */
   function adopt(input: AdoptInput, includeSettled = false): OperationRecord {
     const existing = operations.get(input.id)
@@ -524,7 +531,7 @@ export function createBillingOperationLifecycle(
       existing !== undefined &&
       existing.state.phase !== 'timed_out' &&
       existing.state.phase !== 'superseded' &&
-      !(includeSettled && existing.state.phase === 'reconciliation_needed')
+      !(includeSettled && isStillSettling(existing.state))
     ) {
       return existing
     }

@@ -110,6 +110,7 @@ export type {
   BillingOpStatus,
   BillingOperationEvent,
   BillingOperationIdentity,
+  BillingOperationReceipt,
   BillingOperationKind,
   BillingOperationPhase,
   BillingOperationServerPhase,
@@ -120,10 +121,12 @@ export type {
   EmbeddedChallenge,
   FailedBillingOperation,
   HostedBillingDestination,
-  PendingBillingOperation
+  PendingBillingOperation,
+  SucceededBillingOperation
 } from './operationState.js'
 export {
   isBlockedOnCustomerPhase,
+  isGrantLanding,
   isTerminal,
   reduceBillingOperation,
   validateActionUrl
