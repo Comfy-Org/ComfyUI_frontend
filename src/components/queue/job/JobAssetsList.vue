@@ -1,9 +1,11 @@
 <template>
   <div
     ref="scrollContainer"
+    tabindex="0"
+    role="region"
+    :aria-label="$t('g.jobs')"
     v-bind="$attrs"
     data-testid="job-assets-list"
-    tabindex="0"
     class="h-full overflow-y-auto pb-4"
     @scroll="onListScroll"
   >

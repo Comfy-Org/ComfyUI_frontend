@@ -181,7 +181,18 @@ describe('JobAssetsList', () => {
 
     await user.tab()
 
-    expect(screen.getByTestId('job-assets-list')).toHaveFocus()
+    expect(screen.getByRole('region', { name: 'Jobs' })).toHaveFocus()
+  })
+
+  it('lets callers opt the scroll container out of the tab order', async () => {
+    const { user } = renderJobAssetsList({
+      attrs: { tabindex: '-1' },
+      jobs: [buildJob({ id: 'job-1' })]
+    })
+
+    await user.tab()
+
+    expect(screen.getByRole('region', { name: 'Jobs' })).not.toHaveFocus()
   })
 
   it('forwards parent attrs to the scroll container', () => {
