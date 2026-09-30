@@ -1033,7 +1033,7 @@ export interface AddCreditsClickMetadata {
     | 'agent_paywall'
 }
 
-export type AgentPaywallReason =
+type AgentPaywallReason =
   | 'no_funds'
   | 'subscription_inactive'
   | 'member_cannot_pay'
@@ -1061,7 +1061,7 @@ export interface AgentPaywallShownMetadata {
   surface: AgentPaywallSurface
 }
 
-export type AgentPaywallCta = 'subscribe' | 'add_credits' | 'upgrade'
+type AgentPaywallCta = 'subscribe' | 'add_credits' | 'upgrade'
 
 export interface AgentPaywallCtaMetadata {
   cta: AgentPaywallCta
