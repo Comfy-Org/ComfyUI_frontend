@@ -97,7 +97,7 @@ import type { DragAndScaleState } from './DragAndScale'
 import { LGraphCanvas } from './LGraphCanvas'
 import { Rectangle } from './infrastructure/Rectangle'
 import { LGraphGroup } from './LGraphGroup'
-import { LGraphNode } from './LGraphNode'
+import { LGraphNode, schedulePromotedInputPrune } from './LGraphNode'
 import {
   LLink,
   registerLinkTopology,
@@ -1882,6 +1882,23 @@ export class LGraph
   removeFloatingLink(link: LLink): void {
     if (this.floatingLinks.get(link.id) !== link) return
     unregisterLinkTopology(link)
+
+    if (link.target_id !== UNASSIGNED_NODE_ID) {
+      const targetNode = this.getNodeById(link.target_id)
+      if (
+        targetNode &&
+        link.target_slot >= 0 &&
+        link.target_slot < targetNode.inputs.length
+      ) {
+        // The prune deferred by a retained floating link gets its second
+        // chance once this link is gone.
+        schedulePromotedInputPrune(
+          targetNode,
+          this,
+          targetNode.inputs[link.target_slot]
+        )
+      }
+    }
 
     const reroutes = LLink.getReroutes(this, link)
     for (const reroute of reroutes) {

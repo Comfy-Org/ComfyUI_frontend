@@ -77,6 +77,8 @@ export type ISerialisableNodeInput = Omit<
 > & {
   link?: number | null
   widget?: { name: string }
+  /** Input synthesised by widget promotion; lets demotion reclaim it after reload. */
+  _createdByPromotion?: boolean
 }
 export type ISerialisableNodeOutput = Omit<
   INodeOutputSlot,

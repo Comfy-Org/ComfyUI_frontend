@@ -128,6 +128,7 @@ import {
   isWidgetInputSlot,
   outputAsSerialisable
 } from './node/slotUtils'
+import type { PromotionAwareInputSlot } from './node/slotUtils'
 import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import type { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
 import type { NodeLike } from './types/NodeLike'
@@ -183,6 +184,27 @@ function legacyArrayItem<T>(items: readonly T[], index: number): T | undefined {
 
 function legacyValue<T>(value: T): T | undefined {
   return value
+}
+
+export function schedulePromotedInputPrune(
+  node: LGraphNode,
+  graph: LGraph,
+  input: INodeInputSlot
+): void {
+  if ((input as PromotionAwareInputSlot)._createdByPromotion !== true) return
+  // Deferred so a replacement link reconnecting within this tick
+  // keeps the synthetic slot; only a final unlink prunes it.
+  queueMicrotask(() => {
+    if (node.graph !== graph) return
+    // A sibling prune may have removed an earlier slot since scheduling.
+    const slotIndex = node.inputs.indexOf(input)
+    if (slotIndex === -1) return
+    if (inputHasLink(graph, node.id, slotIndex)) return
+    // A retained floating link still targets this slot; its removal in
+    // LGraph.removeFloatingLink reschedules the prune.
+    if (slotFloatingLinks(graph, 'input', node.id, slotIndex).length > 0) return
+    node.removeInput(slotIndex)
+  })
 }
 
 function serialiseWidgetValues(widgets: IBaseWidget[]) {
@@ -3436,6 +3458,7 @@ export class LGraphNode
           link_info,
           input
         )
+        schedulePromotedInputPrune(target, graph, input)
       }
       this.onConnectionsChange?.(
         NodeSlotType.OUTPUT,
@@ -3510,6 +3533,7 @@ export class LGraphNode
         // Let SubgraphInput do the disconnect.
         if (link_info.origin_id === SUBGRAPH_INPUT_ID && 'inputNode' in graph) {
           graph.inputNode._disconnectNodeInput(this, input, link_info)
+          schedulePromotedInputPrune(this, graph, input)
           return true
         }
 
@@ -3548,6 +3572,8 @@ export class LGraphNode
           link_info,
           output
         )
+
+        schedulePromotedInputPrune(this, graph, input)
       }
     }
 

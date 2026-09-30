@@ -3,6 +3,8 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetId } from '@/types/widgetId'
 
+import type { PromotedHostInput } from './SubgraphNode'
+
 export function createPromotedWidgetStoreProjection(
   input: INodeInputSlot,
   id: WidgetId
@@ -35,6 +37,24 @@ export function createPromotedWidgetStoreProjection(
     },
     set options(next) {
       store.setOptions(id, next)
+    },
+    get serialize() {
+      return store.getWidget(id)?.serialize
+    },
+    set serialize(next) {
+      const state = store.getWidget(id)
+      if (state) state.serialize = next
+    },
+    get disabled() {
+      return store.getWidget(id)?.disabled
+    },
+    set disabled(next) {
+      const state = store.getWidget(id)
+      if (state) state.disabled = next
+      // Every host of a subgraph definition resolves the same interior
+      // widget, so the assignment stays a host-local override that
+      // syncPromotedWidgetState will not reverse.
+      ;(input as PromotedHostInput)._disabledOverride = true
     },
     get value() {
       return store.getWidget(id)?.value

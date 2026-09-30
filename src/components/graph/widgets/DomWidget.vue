@@ -156,6 +156,8 @@ onMounted(() => {
     widget.element,
     widget.options.selectOn ?? ['focus', 'click'],
     () => {
+      if (!widgetState.active || !widgetState.visible) return
+
       const lgCanvas = canvasStore.canvas
       if (!lgCanvas) return
 

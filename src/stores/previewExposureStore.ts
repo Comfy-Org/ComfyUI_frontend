@@ -164,6 +164,7 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
   }
 
   return {
+    exposures,
     getExposures,
     getExposuresAsPromotionShape,
     setExposures,

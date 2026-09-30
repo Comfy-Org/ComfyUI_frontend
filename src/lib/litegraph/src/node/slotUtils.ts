@@ -58,6 +58,10 @@ function shallowCloneCommonProps(slot: CommonIoSlotProps): CommonIoSlotProps {
   }
 }
 
+export type PromotionAwareInputSlot = INodeInputSlot & {
+  _createdByPromotion?: boolean
+}
+
 export function inputAsSerialisable(
   slot: INodeInputSlot,
   node: LGraphNode,
@@ -66,6 +70,8 @@ export function inputAsSerialisable(
   const widgetOrPos = slot.widget
     ? { widget: { name: slot.widget.name } }
     : { pos: slot.pos }
+  const createdByPromotion =
+    (slot as PromotionAwareInputSlot)._createdByPromotion === true
   const link = node.graph
     ? (inputLinkId(node.graph, node.id, slotIndex) ?? null)
     : null
@@ -73,6 +79,7 @@ export function inputAsSerialisable(
   return {
     ...shallowCloneCommonProps(slot),
     ...widgetOrPos,
+    ...(createdByPromotion ? { _createdByPromotion: true } : {}),
     link
   }
 }

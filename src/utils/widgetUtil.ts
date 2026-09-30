@@ -1,4 +1,5 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { PromotedHostInput } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -62,7 +63,12 @@ export function renameWidget(
 
   widget.label = label
   if (widgetState) widgetState.label = label
-  if (input) input.label = label
+  if (input) {
+    input.label = label
+    if (input.widgetId) {
+      ;(input as PromotedHostInput)._labelCustomized = true
+    }
+  }
 
   // Fires for all node types; listeners guard against non-subgraph nodes.
   node.graph?.trigger('node:slot-label:changed', {
