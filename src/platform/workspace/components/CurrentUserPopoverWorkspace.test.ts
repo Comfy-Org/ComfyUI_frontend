@@ -174,7 +174,8 @@ describe('CurrentUserPopoverWorkspace', () => {
           scheduledChange: null,
           renewalDate: null,
           endDate: null,
-          hasFunds: true
+          hasFunds: true,
+          agentHasFunds: true
         }) satisfies SubscriptionInfo
     )
     billingContext.balance = computed(

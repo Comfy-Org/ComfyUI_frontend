@@ -1767,19 +1767,6 @@ Enterprise`
     'zh-CN': '出错了，请重试。'
   },
 
-  // Download – CloudBannerSection
-  'download.cloud.prefix': {
-    en: 'Need more power?',
-    'zh-CN': '需要更强算力？'
-  },
-  'download.cloud.cta': {
-    en: 'TRY COMFY CLOUD',
-    'zh-CN': '试试 COMFY CLOUD'
-  },
-  'download.cloud.suffix': {
-    en: 'Powerful GPUs, same workflow, same results, from anywhere.',
-    'zh-CN': '强大 GPU，同样的工作流，同样的结果，随时随地。'
-  },
   // Cloud – HeroSection
   'cloud.hero.heading': {
     en: 'The full power of\nComfyUI — from\nanywhere.',
@@ -8759,6 +8746,7 @@ Enterprise`
     en: 'Developer Platform',
     'zh-CN': '开发者平台'
   },
+  'nav.comfyRouter': { en: 'Comfy Router', 'zh-CN': 'Comfy Router' },
   'platform.meta.title': {
     en: 'Developer Platform',
     'zh-CN': '开发者平台'

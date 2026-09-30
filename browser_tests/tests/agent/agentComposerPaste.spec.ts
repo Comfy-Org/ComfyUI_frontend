@@ -77,9 +77,7 @@ test(
     await canvas.click()
     await canvas.press('Control+c')
 
-    await new AgentPanel(page).open()
-    const panel = page.locator('#agent-panel-root')
-    await expect(panel).toBeVisible()
+    const panel = await new AgentPanel(page).open()
 
     const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
     await composer.click()

@@ -32,6 +32,7 @@ import {
   failedOperation,
   hostedPendingOperation,
   pendingOperation,
+  planOf,
   previewOf,
   succeededOperation
 } from '@/test/fakeBillingClient'
@@ -476,6 +477,74 @@ describe('FullPageCheckoutView', () => {
     expect(form.mounts).toBe(0)
   })
 
+  const SCHEDULED_CHANGE = {
+    plan_slug: 'pro_yearly',
+    effective_at: '2026-10-28T00:00:00.000Z',
+    team_credit_stop: null
+  }
+  const PRO_YEARLY = planOf({
+    slug: 'pro_yearly',
+    tier: 'PRO',
+    duration: 'ANNUAL'
+  })
+  const CHANGE_NAMED =
+    'Your plan is set to change to Pro Yearly on October 28, 2026. Cancel that change in your billing settings to make a different one.'
+  const CHANGE_UNNAMED =
+    'Your plan already has a change scheduled. Cancel it in your billing settings to make a different one.'
+
+  it.for<{
+    name: string
+    scheduled: typeof SCHEDULED_CHANGE | null
+    catalog: ReturnType<typeof planOf>[]
+    body: string
+  }>([
+    {
+      name: 'names the scheduled plan from the catalog and the date the server set',
+      scheduled: SCHEDULED_CHANGE,
+      catalog: [PRO_YEARLY],
+      body: CHANGE_NAMED
+    },
+    {
+      name: 'falls back when the catalog does not carry the scheduled plan',
+      scheduled: SCHEDULED_CHANGE,
+      catalog: [planOf()],
+      body: CHANGE_UNNAMED
+    },
+    {
+      name: 'falls back when the status names no scheduled change',
+      scheduled: null,
+      catalog: [PRO_YEARLY],
+      body: CHANGE_UNNAMED
+    }
+  ])(
+    'a refusal for a change already scheduled $name',
+    async ({ scheduled, catalog, body }) => {
+      await renderCheckout({
+        capabilities: {},
+        denials: {
+          can_subscribe_self_serve: 'subscription_change_in_progress'
+        },
+        plans: {
+          status: 'ok',
+          value: { current_plan_slug: 'creator_monthly', plans: catalog }
+        },
+        status: {
+          is_active: true,
+          has_funds: true,
+          max_seats: 1,
+          occupied_seats: 1,
+          scheduled_change: scheduled,
+          team_credit_stop: null
+        }
+      })
+
+      expect(await screen.findByText(body)).toBeInTheDocument()
+      expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
+        'SUBSCRIPTION_CHANGE_IN_PROGRESS'
+      )
+    }
+  )
+
   it.for<{ name: string; returnTo: string; href: string }>([
     {
       name: 'the product that sent the customer, in the billed workspace',
@@ -653,15 +722,23 @@ describe('FullPageCheckoutView saved methods and rail failures', () => {
     expect(request).not.toHaveProperty('confirmation_token')
   })
 
-  it('180-6640: shows the saved card as its brand and last four, with no Change link', async () => {
-    await renderQuoted({ paymentMethods: { status: 'ok', value: [VISA] } })
+  it('180-6640: shows a lone saved card as a static row of its brand and last four, and charges it', async () => {
+    const fake = await renderQuoted({
+      paymentMethods: { status: 'ok', value: [VISA] }
+    })
 
-    const picker = savedPicker()
-    expect(picker).toHaveTextContent('visa')
-    expect(picker).toHaveTextContent('·· 4242')
+    expect(screen.getByText('visa')).toBeInTheDocument()
+    expect(screen.getByText('·· 4242')).toBeInTheDocument()
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: 'Change' })
     ).not.toBeInTheDocument()
+    await userEvent.click(payButton())
+
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalledOnce())
+    expect(fake.subscribe.mock.calls[0][0]).toMatchObject({
+      saved_payment_method_id: 'pm_visa'
+    })
   })
 
   it('charges the saved method picked from the list', async () => {
@@ -1436,6 +1513,11 @@ describe('FullPageCheckoutView mount reconciliation', () => {
       })
     ).toBeInTheDocument()
     expect(
+      screen.getByText(
+        "We couldn't check your recent payments, so checkout can't open yet. Try again, or contact support if this keeps happening."
+      )
+    ).toBeInTheDocument()
+    expect(
       screen.queryByText(/Nothing has been charged/)
     ).not.toBeInTheDocument()
     expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
@@ -2169,14 +2251,7 @@ describe('FullPageCheckoutView promo codes', () => {
   it('a code that lapsed before Pay: back to capture, chip gone, the expired card instead of a decline', async () => {
     const fake = await renderCheckout(
       {
-        subscribe: {
-          status: 'error',
-          code: 'REQUEST_FAILED',
-          serverCode: readBillingErrorCode({
-            code: 'SUBSCRIPTION_QUOTE_STALE',
-            message: 'stale'
-          })
-        }
+        subscribe: { status: 'error', code: 'QUOTE_STALE' }
       },
       quotesByCode
     )

@@ -91,13 +91,13 @@ describe('endingOf', () => {
     },
     {
       name: 'a checkout that could not load',
-      page: { kind: 'unavailable', code: 'REQUEST_FAILED' },
-      screen: { kind: 'load_failed', code: 'REQUEST_FAILED' }
+      page: { kind: 'unavailable', cause: 'quote', code: 'REQUEST_FAILED' },
+      screen: { kind: 'load_failed', cause: 'quote', code: 'REQUEST_FAILED' }
     },
     {
       name: "a re-read of the workspace's payments that failed",
-      page: { kind: 'recheck_failed', code: 'REQUEST_FAILED' },
-      screen: { kind: 'recheck_failed', code: 'REQUEST_FAILED' }
+      page: { kind: 'unavailable', cause: 'recheck', code: 'REQUEST_FAILED' },
+      screen: { kind: 'load_failed', cause: 'recheck', code: 'REQUEST_FAILED' }
     },
     {
       name: 'a plan the catalog lacks',
