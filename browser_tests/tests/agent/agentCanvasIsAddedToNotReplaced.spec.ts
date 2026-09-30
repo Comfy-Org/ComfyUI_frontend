@@ -99,6 +99,14 @@ test.describe(
         await expect(agentConversation.vueNodes.nodes).toHaveCount(
           nodesBefore + 1
         )
+        const inserted = agentConversation.vueNodes.getNodeLocator(
+          String(INSERTED_NODE_ID)
+        )
+        await expect(
+          inserted.getByText('Empty Latent Image', { exact: true })
+        ).toBeVisible()
+        await expect(inserted.getByRole('spinbutton').nth(0)).toHaveValue('512')
+        await expect(inserted.getByRole('spinbutton').nth(1)).toHaveValue('512')
         const note = agentConversation.vueNodes.getNodeLocator(noteId)
         await expect(note).toBeVisible()
         await expect(note.getByRole('textbox').first()).toHaveValue(
@@ -131,6 +139,18 @@ test.describe(
       await expect(agentConversation.vueNodes.nodes).toHaveCount(
         nodesBefore + AGENT_BUILD.length
       )
+      for (const [index, width] of [512, 768].entries()) {
+        const built = agentConversation.vueNodes.getNodeLocator(
+          String(990001 + index)
+        )
+        await expect(
+          built.getByText('Empty Latent Image', { exact: true })
+        ).toBeVisible()
+        await expect(built.getByRole('spinbutton').nth(0)).toHaveValue(
+          String(width)
+        )
+        await expect(built.getByRole('spinbutton').nth(1)).toHaveValue('512')
+      }
 
       // The same batch again, the way a retried or re-echoed delivery arrives.
       // A build that is applied twice must leave one copy, not two.
