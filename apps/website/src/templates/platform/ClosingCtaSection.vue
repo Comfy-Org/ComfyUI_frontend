@@ -55,11 +55,11 @@ onMounted(() => {
       class="relative z-10 min-h-96 justify-center"
       :heading="
         badgeOnly
-          ? `${t('platform.hero.badge', locale)} ${t('nav.badgeBeta', locale)}`
+          ? t('platform.hero.badge', locale)
           : headingLead
-            ? `${headingLead} ${t('platform.hero.badge', locale)} ${t('nav.badgeBeta', locale)}`
+            ? `${headingLead} ${t('platform.hero.badge', locale)}`
             : headingAfterBadge
-              ? `${t('platform.hero.badge', locale)} ${t('nav.badgeBeta', locale)} ${headingAfterBadge}`
+              ? `${t('platform.hero.badge', locale)} ${headingAfterBadge}`
               : t('platform.closing.heading', locale)
       "
       :subtitle

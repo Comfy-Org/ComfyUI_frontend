@@ -7,17 +7,32 @@ import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
 
 interface WorkflowJob {
+  if?: string
+  steps?: Array<{
+    env?: Record<string, string>
+    id?: string
+    uses?: string
+    with?: Record<string, string | boolean>
+  }>
   'timeout-minutes'?: number
 }
 
 interface Workflow {
   concurrency?: { group?: string; 'cancel-in-progress'?: boolean }
   jobs?: Record<string, WorkflowJob>
+  on?: {
+    push?: { branches?: string[]; 'tags-ignore'?: string[] }
+  }
 }
 
 const workflow = parse(
   readFileSync('.github/workflows/cloud-backport-tag.yaml', 'utf8')
 ) as Workflow
+const dispatchWorkflowSource = readFileSync(
+  '.github/workflows/cloud-dispatch-build.yaml',
+  'utf8'
+)
+const dispatchWorkflow = parse(dispatchWorkflowSource) as Workflow
 const targetSha = 'a'.repeat(40)
 const otherSha = 'b'.repeat(40)
 const tagObjectSha = 'c'.repeat(40)
@@ -63,7 +78,12 @@ fi
 
 function runTagScript(
   scenario: string,
-  options: { containment?: string; event?: string; sha?: string } = {}
+  options: {
+    containment?: string
+    event?: string
+    sha?: string
+    token?: string
+  } = {}
 ) {
   const directory = mkdtempSync(join(tmpdir(), 'cloud-backport-tag-'))
   const binary = join(directory, 'gh')
@@ -80,6 +100,7 @@ function runTagScript(
       ...process.env,
       BRANCH: 'cloud/1.54',
       EVENT_NAME: options.event ?? 'workflow_dispatch',
+      GH_TOKEN: options.token ?? 'test-token',
       FAKE_CONTAINMENT: options.containment ?? 'behind',
       FAKE_GH_COUNT_FILE: count,
       FAKE_SCENARIO: scenario,
@@ -96,6 +117,20 @@ function runTagScript(
 }
 
 describe('cloud backport tag workflow', () => {
+  it('dispatches branch pushes without dispatching tags or deleted branches', () => {
+    expect(dispatchWorkflow.on?.push?.branches).toEqual(['**'])
+    expect(dispatchWorkflow.on?.push?.['tags-ignore']).toEqual(['**'])
+    expect(dispatchWorkflow.jobs?.dispatch.if).toContain(
+      "github.event_name != 'push' || github.event.deleted == false"
+    )
+    expect(dispatchWorkflow.concurrency?.group).toBe(
+      'cloud-dispatch-${{ github.event.pull_request.head.ref || github.ref_name }}'
+    )
+    expect(dispatchWorkflowSource).toContain(
+      '[[ "${BRANCH}" =~ ^cloud/[0-9]+\\.[0-9]+$ ]]'
+    )
+  })
+
   it('keeps every event distinct and bounds the API-only job', () => {
     expect(workflow.concurrency?.group).toContain(
       'github.event.pull_request.number'
@@ -103,14 +138,41 @@ describe('cloud backport tag workflow', () => {
     expect(workflow.concurrency?.group).toContain('github.run_id')
     expect(workflow.concurrency?.['cancel-in-progress']).toBe(false)
     expect(workflow.jobs?.['create-tag']?.['timeout-minutes']).toBe(10)
+    expect(workflow.jobs?.['create-tag']?.if).toBe(
+      "(github.event_name == 'workflow_dispatch' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)) || (github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'backport'))\n"
+    )
+    const steps = workflow.jobs?.['create-tag']?.steps
+    const checkout = steps?.find((step) =>
+      step.uses?.startsWith('actions/checkout')
+    )
+    const tagStep = steps?.find((step) => step.id === 'tag')
+    expect(checkout?.with?.ref).toBe(
+      '${{ github.event.repository.default_branch }}'
+    )
+    expect(tagStep?.env?.GH_TOKEN).toBe('${{ secrets.PR_GH_TOKEN }}')
+  })
+
+  it('fails closed when the release token is absent', () => {
+    const result = runTagScript('same', { token: '' })
+
+    expect(result.status).not.toBe(0)
+    expect(result.stderr).toContain(
+      'PR_GH_TOKEN is required for cloud tag reconciliation'
+    )
   })
 
   it('accepts existing same, different, and annotated tags without moving them', () => {
-    for (const scenario of ['same', 'different', 'annotated']) {
+    for (const scenario of ['same', 'annotated']) {
       const result = runTagScript(scenario)
       expect(result.status).toBe(0)
-      expect(result.stdout).toContain('already exists')
+      expect(result.stdout).toContain('already exists at')
+      expect(result.stdout).toContain('skipping')
     }
+
+    const different = runTagScript('different')
+    expect(different.status).toBe(0)
+    expect(different.stdout).toContain('first release marker is preserved')
+    expect(different.stdout).not.toContain('refs/tags/cloud/v1.54.16')
   })
 
   it('creates a missing lightweight tag through the refs API', () => {

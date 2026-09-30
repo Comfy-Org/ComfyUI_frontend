@@ -230,6 +230,7 @@
     "uploadFailed": "Upload failed: {reason}",
     "capture": "capture",
     "nodes": "Nodes",
+    "jobs": "Jobs",
     "nodesCount": "{count} node | {count} nodes",
     "addNode": "Add a node...",
     "filterBy": "Filter by:",
@@ -3275,7 +3276,8 @@
     "billingStatus": {
       "warning": {
         "title": "Payment failed",
-        "bodyNoDate": "Your payment failed to process. Update payment to avoid a pause."
+        "bodyNoDate": "Your payment failed to process. Update payment to avoid a pause.",
+        "bodyWithAmount": "Your payment of {amount} failed to process. Pay the invoice or update payment to avoid a pause."
       },
       "paused": {
         "title": "Subscription paused",
@@ -3302,7 +3304,8 @@
         "title": "Your plan changes to {plan} on {date}",
         "body": "Your current plan stays active until then."
       },
-      "updatePayment": "Update payment"
+      "updatePayment": "Update payment",
+      "payInvoice": "Pay invoice"
     },
     "invite": "Invite",
     "inviteMember": "Invite member",

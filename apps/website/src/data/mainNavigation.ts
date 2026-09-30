@@ -91,7 +91,12 @@ export function getMainNavigation(
             {
               label: t('nav.developerPlatform', locale),
               href: routes.platform,
-              badge: 'beta'
+              badge: 'new'
+            },
+            {
+              label: t('nav.comfyRouter', locale),
+              href: routes.platformRouter,
+              badge: 'new'
             },
             {
               label: t('nav.comfyEnterprise', locale),
@@ -99,8 +104,7 @@ export function getMainNavigation(
             },
             {
               label: t('nav.managedBuilds', locale),
-              href: routes.managedBuilds,
-              badge: 'beta'
+              href: routes.managedBuilds
             }
           ]
         },

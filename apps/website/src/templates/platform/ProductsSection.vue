@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import ProductHeroBadge from '../../components/common/ProductHeroBadge.vue'
 import { brandButtonVariants } from '../../components/common/brandButton.variants'
-import Badge from '../../components/ui/badge/Badge.vue'
 import { getRoutes } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -42,9 +41,6 @@ const modelsTabs = modelsApiCodeTabs
             :show-connector="false"
             aria-hidden="true"
           />
-          <Badge variant="accent" size="xs">
-            {{ t('nav.badgeBeta', locale) }}
-          </Badge>
         </h3>
         <p class="mt-3 text-sm/relaxed font-light text-primary-comfy-canvas">
           {{ t('platform.products.serverless.description', locale) }}

@@ -23,6 +23,7 @@ import CinematicScenarioMenu from './CinematicScenarioMenu.vue'
 import CinematicStudio from './CinematicStudio.vue'
 import CinematicStudioPanel from './CinematicStudioPanel.vue'
 import ReshootStudio from './reshoot/ReshootStudio.vue'
+import { isWorkshopModelShown } from '../../../scripts/workshop-model-flags'
 
 const {
   apps,
@@ -45,9 +46,17 @@ const LAYOUTS = [
 const APPS = ['studio', 'reshoot'] as const
 const reviewing = WORKSHOP_DEPLOY_ENV !== 'production'
 
-const studioEnabled = useWorkshopAppsEnabled()
+const appsEnabled = useWorkshopAppsEnabled()
 const layout = ref('d')
 const app = ref<WorkshopAppId>(initialApp)
+const shownApps = computed(() =>
+  apps.filter((candidate) => isWorkshopModelShown(candidate))
+)
+const studioEnabled = computed(
+  () =>
+    appsEnabled.value &&
+    shownApps.value.some((candidate) => candidate.appId === app.value)
+)
 const workshopEnabled = useWorkshopEnabled()
 const mounted = useMounted()
 const viewedApps = new Set<WorkshopAppId>()
@@ -73,10 +82,14 @@ watch(
 const layoutOptions = computed(() =>
   LAYOUTS.map((option) => ({ id: option.id, label: tc(option.label, locale) }))
 )
-const appOptions = computed(() => [
-  { id: 'studio', label: tc('cinematic.title', locale) },
-  { id: 'reshoot', label: rc('reshoot.title', locale) }
-])
+const appOptions = computed(() =>
+  [
+    { id: 'studio', label: tc('cinematic.title', locale) },
+    { id: 'reshoot', label: rc('reshoot.title', locale) }
+  ].filter((option) =>
+    shownApps.value.some((candidate) => candidate.appId === option.id)
+  )
+)
 
 onMounted(() => {
   const params = new URLSearchParams(window.location.search)
@@ -138,7 +151,7 @@ function pickApp(id: string) {
 
 <template>
   <WorkshopGate :allowed="studioEnabled">
-    <CinematicAppsHub v-if="layout === 'hub'" :models="apps" :locale />
+    <CinematicAppsHub v-if="layout === 'hub'" :models="shownApps" :locale />
     <ReshootStudio v-else-if="app === 'reshoot'" :locale />
     <CinematicStudioPanel
       v-else-if="layout === 'd'"

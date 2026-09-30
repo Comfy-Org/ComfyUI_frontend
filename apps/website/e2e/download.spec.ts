@@ -86,11 +86,11 @@ test.describe('Download page @smoke', () => {
     )
   })
 
-  test('CloudBannerSection is visible with cloud link', async ({ page }) => {
+  test('CloudBannerSection is not shown', async ({ page }) => {
     await page.goto('/download')
-    const link = page.getByRole('link', { name: /TRY COMFY CLOUD/i })
-    await expect(link).toBeVisible()
-    await expect(link).toHaveAttribute('href', 'https://cloud.comfy.org')
+    await expect(
+      page.getByRole('link', { name: /TRY COMFY CLOUD/i })
+    ).toHaveCount(0)
   })
 
   test('HeroSection heading and subtitle are visible', async ({ page }) => {
@@ -446,8 +446,8 @@ test.describe('Download page mobile @mobile', () => {
     await page.goto('/download')
   })
 
-  test('CloudBannerSection is visible', async ({ page }) => {
-    await expect(page.getByText(/Need more power/)).toBeVisible()
+  test('CloudBannerSection is not shown', async ({ page }) => {
+    await expect(page.getByText(/Need more power/)).toHaveCount(0)
   })
 
   test('HeroSection heading is visible', async ({ page }) => {
