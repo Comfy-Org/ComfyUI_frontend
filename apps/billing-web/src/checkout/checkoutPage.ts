@@ -337,6 +337,19 @@ type StopEvent = Extract<
   }
 >
 
+const STOP_EVENT: Readonly<Record<StopEvent['type'], true>> = {
+  refused: true,
+  unavailable: true,
+  capabilitiesFailed: true,
+  recheckFailed: true,
+  planUnavailable: true,
+  notAllowed: true
+}
+
+function isStopEvent(event: CheckoutPageEvent): event is StopEvent {
+  return Object.hasOwn(STOP_EVENT, event.type)
+}
+
 /**
  * The page a read that ends resolving leaves behind. A refused quote over a
  * success this tab already saw is that success revisited; any other is a
@@ -375,14 +388,9 @@ export function reduceCheckoutPage(
 ): CheckoutPage {
   if (isRailEvent(event)) return reduceRail(page, event)
   if (isAttemptEvent(event)) return reduceAttempt(page, event)
+  if (isStopEvent(event))
+    return page.kind === 'resolving' ? stoppedOn(page, event) : page
   switch (event.type) {
-    case 'refused':
-    case 'unavailable':
-    case 'capabilitiesFailed':
-    case 'recheckFailed':
-    case 'planUnavailable':
-    case 'notAllowed':
-      return page.kind === 'resolving' ? stoppedOn(page, event) : page
     case 'settledPlanRead':
       return page.kind === 'terminal' && page.attribution === 'returned'
         ? { ...page, plan: event.plan }
