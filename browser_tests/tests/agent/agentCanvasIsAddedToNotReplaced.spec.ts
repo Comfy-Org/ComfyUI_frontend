@@ -63,7 +63,8 @@ test.describe(
     test.use({ conversationCase: CASE, humanOpsHost: 'apply' })
 
     test('story 37: an inserted workflow leaves the note the user was working on', async ({
-      agentConversation
+      agentConversation,
+      comfyPage
     }) => {
       test.setTimeout(90_000)
 
@@ -76,6 +77,7 @@ test.describe(
             x: USER_NODE_POSITION[0],
             y: USER_NODE_POSITION[1]
           })
+          await comfyPage.nextFrame()
           const note = agentConversation.vueNodes.getNodeLocator(id)
           await expect(note).toBeVisible()
           await note.getByRole('textbox').fill(USER_NOTE_TEXT)
@@ -94,6 +96,8 @@ test.describe(
           READINESS_SIGNAL_WIDGET,
           'insert_workflow frame landed'
         ))
+
+      await comfyPage.nextFrame()
 
       await test.step("the insert added a node and kept the user's note", async () => {
         await expect(agentConversation.vueNodes.nodes).toHaveCount(
@@ -116,7 +120,8 @@ test.describe(
     })
 
     test('story 32: a redelivered build does not leave a second copy', async ({
-      agentConversation
+      agentConversation,
+      comfyPage
     }) => {
       test.setTimeout(90_000)
 
@@ -134,6 +139,8 @@ test.describe(
           READINESS_SIGNAL_WIDGET,
           'agent build landed'
         ))
+
+      await comfyPage.nextFrame()
 
       await expect(agentConversation.vueNodes.nodes).toHaveCount(
         nodesBefore + AGENT_BUILD.length
@@ -161,6 +168,8 @@ test.describe(
           READINESS_SIGNAL_WIDGET,
           'agent build redelivered'
         ))
+
+      await comfyPage.nextFrame()
 
       await test.step('the canvas holds one copy of the build', async () => {
         await expect(agentConversation.vueNodes.nodes).toHaveCount(
