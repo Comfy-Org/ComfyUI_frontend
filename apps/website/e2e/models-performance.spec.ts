@@ -69,7 +69,14 @@ test('the footer loads its animation when it approaches the viewport', async ({
   expect(frames).toEqual([])
 
   const frameLoaded = page.waitForResponse(/\/footer-logo-seq\//)
-  await page.getByRole('contentinfo').scrollIntoViewIfNeeded()
+  const footer = page.getByRole('contentinfo')
+  await footer.evaluate((element) =>
+    window.scrollTo({
+      top: element.getBoundingClientRect().top + scrollY - innerHeight * 1.5,
+      behavior: 'instant'
+    })
+  )
+  await expect(footer).not.toBeInViewport()
   expect((await frameLoaded).ok()).toBe(true)
 })
 
