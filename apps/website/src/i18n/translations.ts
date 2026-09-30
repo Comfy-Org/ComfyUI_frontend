@@ -32,11 +32,11 @@ const translations = {
   'workshop.catalogue.show': { en: 'Browse', 'zh-CN': '浏览' },
   'workshop.catalogue.workflowsSubtitle': {
     en: 'Turn your ideas into finished results with multi-step workflows powered by AI models.',
-    'zh-CN': '借助由 AI 模型驱动的多步骤工作流，把你的创意变成完整的成果。'
+    'zh-CN': '用由 AI 模型驱动的多步骤工作流，把你的想法变成完成的作品。'
   },
   'workshop.catalogue.appsSubtitle': {
     en: 'Take on bigger ideas with apps that bring multiple workflows together.',
-    'zh-CN': '用整合多个工作流的应用，挑战更大的创意。'
+    'zh-CN': '用把多个工作流组合在一起的应用，挑战更大的想法。'
   },
   'workshop.catalogue.noWorkflows': {
     en: 'No workflows match your search and filters.',
@@ -1767,19 +1767,6 @@ Enterprise`
     'zh-CN': '出错了，请重试。'
   },
 
-  // Download – CloudBannerSection
-  'download.cloud.prefix': {
-    en: 'Need more power?',
-    'zh-CN': '需要更强算力？'
-  },
-  'download.cloud.cta': {
-    en: 'TRY COMFY CLOUD',
-    'zh-CN': '试试 COMFY CLOUD'
-  },
-  'download.cloud.suffix': {
-    en: 'Powerful GPUs, same workflow, same results, from anywhere.',
-    'zh-CN': '强大 GPU，同样的工作流，同样的结果，随时随地。'
-  },
   // Cloud – HeroSection
   'cloud.hero.heading': {
     en: 'The full power of\nComfyUI — from\nanywhere.',
@@ -2292,22 +2279,6 @@ Enterprise`
   'pricing.feature.shortRuntime': {
     en: '30 minute max workflow runtime',
     'zh-CN': '单个工作流最长运行 30 分钟'
-  },
-  'pricing.feature.apiConcurrency1': {
-    en: 'Run up to 1 concurrent workflow via Cloud API',
-    'zh-CN': '通过 Cloud API 最多并发运行 1 个工作流'
-  },
-  'pricing.feature.apiConcurrency3': {
-    en: 'Run up to 3 concurrent workflows via Cloud API',
-    'zh-CN': '通过 Cloud API 最多并发运行 3 个工作流'
-  },
-  'pricing.feature.apiConcurrency5': {
-    en: 'Run up to 5 concurrent workflows via Cloud API',
-    'zh-CN': '通过 Cloud API 最多并发运行 5 个工作流'
-  },
-  'pricing.feature.apiConcurrency25': {
-    en: 'Run up to 25 concurrent workflows via Cloud API',
-    'zh-CN': '通过 Cloud API 最多并发运行 25 个工作流'
   },
   'pricing.feature.addCredits': {
     en: 'Add more credits anytime',
@@ -8759,6 +8730,7 @@ Enterprise`
     en: 'Developer Platform',
     'zh-CN': '开发者平台'
   },
+  'nav.comfyRouter': { en: 'Comfy Router', 'zh-CN': 'Comfy Router' },
   'platform.meta.title': {
     en: 'Developer Platform',
     'zh-CN': '开发者平台'
@@ -8816,6 +8788,38 @@ Enterprise`
     'zh-CN':
       'Builder 将你的 ComfyUI 工作流和环境打包成可复现的构建。将该构建部署到 Comfy API，并按需扩展。'
   },
+  'platform.howItWorks.chat.channel': {
+    en: 'creative-team',
+    'zh-CN': '创意团队'
+  },
+  'platform.howItWorks.chat.message': {
+    en: "here's the link",
+    'zh-CN': '链接在这里'
+  },
+  'platform.howItWorks.chat.reply': {
+    en: 'got it!',
+    'zh-CN': '收到！'
+  },
+  'platform.howItWorks.chat.messageReady': {
+    en: 'The workflow is ready to try',
+    'zh-CN': '工作流可以试用了'
+  },
+  'platform.howItWorks.chat.replyTesting': {
+    en: 'Testing it now!',
+    'zh-CN': '现在就来试！'
+  },
+  'platform.howItWorks.chat.messagePreview': {
+    en: 'Preview is live',
+    'zh-CN': '预览已上线'
+  },
+  'platform.howItWorks.chat.replySharing': {
+    en: "I'll share it with the team",
+    'zh-CN': '我会分享给团队'
+  },
+  'platform.howItWorks.chat.placeholder': {
+    en: 'Message your team',
+    'zh-CN': '发送消息给团队'
+  },
   'platform.howItWorks.1.title': {
     en: 'Deploy your workflow as an API',
     'zh-CN': '把工作流部署为 API'
@@ -8848,6 +8852,44 @@ Enterprise`
   'platform.serverlessDeploy.tabWorkflow': {
     en: 'Start with your workflow',
     'zh-CN': '从你的工作流开始'
+  },
+  'platform.serverlessApps.eyebrow': {
+    en: 'CREATIVE APPS',
+    'zh-CN': '创意应用'
+  },
+  'platform.serverlessApps.heading': {
+    en: 'Build the app, not just the workflow.',
+    'zh-CN': '构建应用，而不只是工作流。'
+  },
+  'platform.serverlessApps.body': {
+    en: 'Deploy your ComfyUI workflows as APIs behind customer-facing products, internal tools, and automated creative pipelines. Build the experience your users need without exposing the graph.',
+    'zh-CN':
+      '将 ComfyUI 工作流作为 API 部署在面向客户的产品、内部工具和自动化创意流程之后。在不暴露工作流图的情况下，构建用户所需的体验。'
+  },
+  'platform.serverlessApps.browseApps': {
+    en: 'Browse apps',
+    'zh-CN': '浏览应用'
+  },
+  'platform.serverlessApps.videoLabel': {
+    en: 'Creative app powered by Comfy API',
+    'zh-CN': '由 Comfy API 驱动的创意应用'
+  },
+  'platform.serverlessCaseStudy.quote': {
+    en: 'We build creative systems that have to hold up at brand scale. Comfy API lets us package a ComfyUI workflow once and deploy it as an endpoint our team and tools can call, so our time goes into the creative, not the infrastructure.',
+    'zh-CN':
+      '我们构建的创意系统必须能够支撑品牌级规模。Comfy API 让我们一次打包 ComfyUI 工作流，并将其部署为团队和工具都能调用的端点，让我们把时间投入创意，而不是基础设施。'
+  },
+  'platform.serverlessCaseStudy.name': {
+    en: 'PJ Pereira',
+    'zh-CN': 'PJ Pereira'
+  },
+  'platform.serverlessCaseStudy.role': {
+    en: 'Co-founder of Silverside AI',
+    'zh-CN': 'Silverside AI 联合创始人'
+  },
+  'platform.serverlessCaseStudy.linkLabel': {
+    en: 'Read the Silverside AI customer story',
+    'zh-CN': '阅读 Silverside AI 客户案例'
   },
   'platform.serverlessScale.heading': {
     en: 'Built for teams',
@@ -8960,6 +9002,10 @@ Enterprise`
     en: 'Package all your custom nodes, LoRAs, models, and Python dependencies into an autoscaling endpoint.',
     'zh-CN':
       '将你的所有自定义节点、LoRA、模型和 Python 依赖打包成一个自动扩缩的端点。'
+  },
+  'platform.serverlessHero.animationTitle': {
+    en: 'Comfy image pipeline and GPU orchestration animation',
+    'zh-CN': 'Comfy 图像管线与 GPU 编排动画'
   },
   'platform.modelsGallery.ariaLabel': {
     en: 'Sample outputs from partner models',
@@ -9134,14 +9180,33 @@ Enterprise`
     en: 'Contact sales',
     'zh-CN': '联系销售'
   },
-  'pricing.resourceCosts.subtitle': {
-    en: 'Only pay for what you use. Rates below apply to the Comfy API, billed by the GPU second.',
-    'zh-CN': '按实际用量付费。以下费率适用于 Comfy API，按 GPU 秒计费。'
+  'pricing.comfyApi.heading': {
+    en: 'Comfy API pricing',
+    'zh-CN': 'Comfy API 定价'
   },
-  'pricing.resourceCosts.heading': {
-    en: 'Developer Platform pricing',
-    'zh-CN': '开发者平台定价'
+  'pricing.comfyApi.subtitle': {
+    en: 'Comfy API is a separate product from your Comfy Cloud plan, for teams building on Comfy Cloud programmatically. GPU time and storage are billed by the second; release, deployment, and concurrency limits apply to each plan below.',
+    'zh-CN':
+      'Comfy API 是独立于你的 Comfy Cloud 套餐之外的产品，面向以编程方式构建于 Comfy Cloud 平台之上的团队。GPU 时间与存储按秒计费；下方列出了各套餐的版本、部署与并发限制。'
   },
+  'pricing.comfyApi.metricColumn': { en: 'Limit', 'zh-CN': '限制项' },
+  'pricing.comfyApi.metric.releases': {
+    en: 'Total releases limit',
+    'zh-CN': '版本总数上限'
+  },
+  'pricing.comfyApi.metric.deployments': {
+    en: 'Total deployments limit',
+    'zh-CN': '部署总数上限'
+  },
+  'pricing.comfyApi.metric.concurrency': {
+    en: 'Max worker concurrency (per deployment)',
+    'zh-CN': '最大工作节点并发数（每个部署）'
+  },
+  'pricing.comfyApi.enterpriseNote': {
+    en: 'Enterprise limits are determined by your contract.',
+    'zh-CN': '企业版的限制由合同约定。'
+  },
+  'pricing.comfyApi.learnMore': { en: 'Learn More', 'zh-CN': '了解更多' },
   'pricing.minimaxLicense.heading': {
     en: 'MiniMax license pricing',
     'zh-CN': 'MiniMax 许可定价'
@@ -9187,55 +9252,21 @@ Enterprise`
     en: 'Storage',
     'zh-CN': '存储'
   },
-  'platform.pricing.storage.standardUnder1tb': {
-    en: 'Standard network storage, under 1 TB',
-    'zh-CN': '网络存储——标准，1 TB 以下'
-  },
-  'platform.pricing.storage.standardOver1tb': {
-    en: 'Standard network storage, 1 TB and above',
-    'zh-CN': '网络存储——标准，1 TB 及以上'
-  },
-  'platform.pricing.storage.highPerformance': {
-    en: 'High-performance network storage',
-    'zh-CN': '网络存储——高性能'
-  },
-  'platform.pricing.storage.containerDisk': {
-    en: 'Container disk',
-    'zh-CN': '容器磁盘'
-  },
-  'platform.pricing.storage.networkTitle': {
-    en: 'Network storage',
+  'platform.pricing.storage.title': {
+    en: 'Network Storage',
     'zh-CN': '网络存储'
   },
-  'platform.pricing.storage.sub.standardUnder1tb': {
-    en: 'Standard, under 1 TB',
-    'zh-CN': '标准，1 TB 以下'
-  },
-  'platform.pricing.storage.sub.standardOver1tb': {
-    en: 'Standard, 1 TB and above',
-    'zh-CN': '标准，1 TB 及以上'
-  },
-  'platform.pricing.storage.sub.highPerformance': {
-    en: 'High performance',
-    'zh-CN': '高性能'
-  },
-  'platform.pricing.storage.sub.containerDisk': {
-    en: 'Per-worker local filesystem',
-    'zh-CN': '每个工作节点的本地文件系统'
-  },
   'platform.pricing.storageNote': {
-    en: "Models live on persistent network storage shared across a deployment's workers. Container disk is each worker's local filesystem and is billed separately.",
-    'zh-CN':
-      '模型存放在网络存储上——持久化并在部署的所有工作节点间共享。容器磁盘是每个工作节点自己的本地文件系统，单独计费。'
+    en: "Models live on persistent network storage shared across a deployment's workers.",
+    'zh-CN': '模型存放在网络存储上——持久化并在部署的所有工作节点间共享。'
   },
   'platform.pricing.billedPerSecond': {
     en: 'Billed by the GPU second',
     'zh-CN': '按 GPU 秒计费'
   },
   'platform.pricing.storageExample': {
-    en: 'Worked example: 500 GB of models on standard network storage = {amount}/mo + GPU time.',
-    'zh-CN':
-      '示例：500 GB 模型存放在标准网络存储上 = 每月 {amount} + GPU 时间。'
+    en: 'For example: 20 GB of models = {amount}/mo + GPU time.',
+    'zh-CN': '示例：20 GB 模型 = 每月 {amount} + GPU 时间。'
   },
   'platform.pricing.modelsNote': {
     en: 'Comfy Router usage shows per-output prices on each model card and draws from the same credit pool.',
@@ -9465,7 +9496,7 @@ Enterprise`
   },
 
   // Workshop – header account + nav
-  'nav.workshop': { en: 'Models', 'zh-CN': '模型' },
+  'nav.workshop': { en: 'Hub', 'zh-CN': 'Hub' },
   'nav.comfyWorkshop': { en: 'Browse Models', 'zh-CN': '浏览模型' },
   'nav.cinematicStudio': { en: 'Cinematic Studio', 'zh-CN': '电影工作室' },
   'nav.signIn': { en: 'Sign in', 'zh-CN': '登录' },
@@ -9726,6 +9757,7 @@ Enterprise`
   },
   'workshop.card.partnerNode': { en: 'Partner node', 'zh-CN': '合作伙伴节点' },
   'workshop.card.comfyApp': { en: 'Comfy app', 'zh-CN': 'Comfy 应用' },
+  'workshop.card.comfyApi': { en: 'Comfy API', 'zh-CN': 'Comfy API' },
   'workshop.card.runs': { en: '{n} runs', 'zh-CN': '{n} 次运行' },
   'workshop.card.creditsPerRun': { en: 'credits / run', 'zh-CN': '积分 / 次' },
   'workshop.card.from': { en: 'from', 'zh-CN': '起' },
@@ -9965,6 +9997,14 @@ Enterprise`
     en: 'Replace {name}',
     'zh-CN': '替换 {name}'
   },
+  'workshop.field.removedFile': {
+    en: '{name} removed',
+    'zh-CN': '已移除 {name}'
+  },
+  'workshop.field.undoRemove': {
+    en: 'Put it back',
+    'zh-CN': '撤销移除'
+  },
   'workshop.field.removeNamedFile': {
     en: 'Remove {name}',
     'zh-CN': '移除 {name}'
@@ -10181,20 +10221,20 @@ Enterprise`
     'zh-CN': '切换并取消'
   },
   'workshop.examples.replaceTitle': {
-    en: 'Replace your inputs?',
-    'zh-CN': '要替换你的输入吗？'
+    en: 'Load this example?',
+    'zh-CN': '要载入这个示例吗？'
   },
   'workshop.examples.replaceBody': {
-    en: 'This example comes with its own inputs. What you wrote will be replaced.',
-    'zh-CN': '该示例自带输入内容，你填写的内容将被替换。'
+    en: 'It comes with its own inputs, so what you filled in will be replaced.',
+    'zh-CN': '它自带输入内容，你填写的内容会被替换。'
   },
   'workshop.examples.replaceKeep': {
-    en: 'Keep mine',
-    'zh-CN': '保留我的内容'
+    en: 'Cancel',
+    'zh-CN': '取消'
   },
   'workshop.examples.replaceConfirm': {
-    en: 'Use the example',
-    'zh-CN': '使用该示例'
+    en: 'Load example',
+    'zh-CN': '载入示例'
   },
   'workshop.run.policy': {
     en: 'Disabled by your workspace policy',
@@ -10236,10 +10276,6 @@ Enterprise`
     'zh-CN': '预览已缩短。请在下方下载完整响应。'
   },
   'workshop.output.example': { en: 'Example', 'zh-CN': '示例' },
-  'workshop.output.exampleHint': {
-    en: 'Run {model} to make your own.',
-    'zh-CN': '运行 {model} 以生成你自己的结果。'
-  },
   'workshop.run.preparingSession': {
     en: 'Checking your session…',
     'zh-CN': '正在检查登录状态…',
@@ -10446,6 +10482,10 @@ Enterprise`
   },
   'workshop.api.copied': { en: 'Copied', 'zh-CN': '已复制' },
   'workshop.api.getKey': { en: 'Get API key', 'zh-CN': '获取 API 密钥' },
+  'workshop.api.downloadGraph': {
+    en: 'Download the API graph',
+    'zh-CN': '下载 API 节点图'
+  },
   'workshop.api.docs': { en: 'Router docs', 'zh-CN': 'Router 文档' },
   'workshop.api.needs': { en: 'What you need', 'zh-CN': '你需要准备的' },
   'workshop.api.needsEndpoint': { en: 'Endpoint', 'zh-CN': '接口地址' },
@@ -10596,6 +10636,10 @@ Enterprise`
     en: 'API documentation',
     'zh-CN': 'API 文档'
   },
+  'workshop.workflow.apiSteps': {
+    en: 'The whole call, step by step',
+    'zh-CN': '完整调用步骤'
+  },
   'workshop.workflow.apiUploads': {
     en: 'Upload media first',
     'zh-CN': '先上传媒体'
@@ -10618,10 +10662,6 @@ Enterprise`
     en: 'POST /api/prompt returns prompt_id. Poll GET /api/jobs/{prompt_id}?short_link=ephemeral_tool_chain with your credential. Selected outputs contain temporary short_url links; read the job again to refresh them.',
     'zh-CN':
       'POST /api/prompt 返回 prompt_id。使用凭证轮询 GET /api/jobs/{prompt_id}?short_link=ephemeral_tool_chain。选定输出包含临时 short_url 链接；再次读取运行即可刷新链接。'
-  },
-  'workshop.workflow.exampleHint': {
-    en: 'An example from this template.',
-    'zh-CN': '此模板的示例。'
   },
   'workshop.output.refreshLink': {
     en: 'Refresh download link',
@@ -10856,13 +10896,6 @@ Enterprise`
     'zh-CN': '在 platform.comfy.org 上为 {workspace} 添加积分'
   },
   'workshop.hub.tryNow': { en: 'Try now', 'zh-CN': '立即试用' },
-  'workshop.cinematic.badge': { en: 'New · Beta', 'zh-CN': '新 · 测试版' },
-  'workshop.cinematic.summary': {
-    en: 'Direct a shot with a real camera, light and grade, then run it on any image model.',
-    'zh-CN':
-      '用真实的摄影机、光线与调色导演一个镜头，然后在任意图像模型上运行。'
-  },
-  'workshop.cinematic.cta': { en: 'Open studio', 'zh-CN': '打开工作室' },
   'workshop.cinematic.openInStudio': {
     en: 'Open in Cinematic Studio',
     'zh-CN': '在 Cinematic Studio 中打开'

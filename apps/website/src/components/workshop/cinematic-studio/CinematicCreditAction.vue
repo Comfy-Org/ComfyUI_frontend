@@ -4,10 +4,9 @@ import { computed, ref, watch } from 'vue'
 import Button from '@/components/ui/button/Button.vue'
 import { usePersonalWorkspaceSwitch } from '../../../composables/usePersonalWorkspaceSwitch'
 import { requestWorkshopBuyCredits } from '../../../config/workshop-buy-credits'
-import {
-  useTopUpWatch,
-  useWorkshopCredits
-} from '../../../config/workshop-credits'
+import { useTopUpWatch } from '../../../config/workshop-credits'
+import { useWorkshopModelBalance } from '../../../config/workshop-model-balance'
+import { useWorkshopSession } from '../../../config/workshop-session-state'
 import type { Locale } from '../../../i18n/translations'
 import { t } from '../../../i18n/translations'
 
@@ -25,7 +24,7 @@ const emit = defineEmits<{ retry: [] }>()
 
 const topUp = useTopUpWatch()
 const personal = usePersonalWorkspaceSwitch()
-const { balance } = useWorkshopCredits()
+const balance = useWorkshopModelBalance(useWorkshopSession().session)
 
 const credits = computed(() =>
   balance.value.status === 'ok' ? balance.value.credits : undefined

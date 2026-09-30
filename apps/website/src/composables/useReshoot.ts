@@ -1,0 +1,532 @@
+import { useMounted, useObjectUrl } from '@vueuse/core'
+import { computed, onScopeDispose, reactive, ref, shallowRef, watch } from 'vue'
+
+import { refreshWorkshopCredits } from '../config/workshop-credits'
+import { useWorkshopSession } from '../config/workshop-session-state'
+import type { Locale } from '../i18n/translations'
+import { t } from '../i18n/translations'
+import { studioGate } from '../lib/workshop/cinematic-studio/gate'
+import type {
+  CameraKey,
+  ReshootAspect,
+  ReshootCamera,
+  ReshootMotion,
+  ReshootSize
+} from '../lib/workshop/cinematic-studio/reshoot'
+import {
+  DEFAULT_CAMERA,
+  RESHOOT_EXAMPLE,
+  RESHOOT_FRAMES,
+  withKey
+} from '../lib/workshop/cinematic-studio/reshoot'
+import { rc } from '../lib/workshop/cinematic-studio/reshoot-copy'
+import {
+  estimatePivot,
+  focalPx
+} from '../lib/workshop/cinematic-studio/reshoot-engine/camera'
+import type { Geometry } from '../lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
+import { readGeometry } from '../lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
+import type { ReshootRun } from '../lib/workshop/cinematic-studio/reshoot-engine/notes'
+import {
+  failureNote,
+  quoteNote,
+  runPrice
+} from '../lib/workshop/cinematic-studio/reshoot-engine/notes'
+import type { ReshootRunPhase } from '../lib/workshop/cinematic-studio/reshoot-engine/run'
+import {
+  downloadOutput,
+  runJob
+} from '../lib/workshop/cinematic-studio/reshoot-engine/run'
+import type {
+  ReshootQuote,
+  ReshootTransport
+} from '../lib/workshop/cinematic-studio/reshoot-engine/transport'
+import { ReshootError } from '../lib/workshop/cinematic-studio/reshoot-engine/transport'
+import { reshootTransport } from '../lib/workshop/cinematic-studio/reshoot-engine/transport-config'
+import type { ReshootClip } from '../lib/workshop/cinematic-studio/reshoot-engine/workflow'
+import {
+  analyzeWorkflow,
+  generateSeconds,
+  generateWorkflow
+} from '../lib/workshop/cinematic-studio/reshoot-engine/workflow'
+import { useWorkshopAuthFlag } from '../scripts/posthog'
+
+/** Waits before asking for the price again after a failed quote. */
+const QUOTE_RETRY_MS = [5_000, 15_000, 30_000, 60_000]
+/** Quote failures that waiting cannot fix: no such app, or signed out. */
+const QUOTE_FINAL = new Set(['not_found', 'unauthorized'])
+
+/** Read scenes kept for reuse: the 480p and 768p reads of two clips. */
+const MAX_READ_SCENES = 4
+
+export type DepthState = 'none' | 'analyzing' | 'ready' | 'failed'
+
+export interface ReshootTake {
+  readonly id: string
+  readonly n: number
+  readonly camera: Readonly<ReshootCamera>
+  readonly keys: number
+  readonly status: 'rendering' | 'done' | 'cancelled' | 'failed'
+  readonly startedAt: number
+  readonly phase?: ReshootRunPhase
+  readonly url?: string
+  readonly warpUrl?: string
+  /** The same take with the clip's own sound instead of the generated one. */
+  readonly originalUrl?: string
+  readonly note?: string
+}
+
+/** Reading the scene: the clip's depth, which aiming and generating need. */
+type Scene =
+  | { readonly phase: 'none' }
+  | {
+      readonly phase: 'analyzing'
+      readonly stage?: ReshootRunPhase
+    }
+  | {
+      readonly phase: 'ready'
+      readonly clip: ReshootClip
+      readonly geometry: Geometry
+    }
+  | { readonly phase: 'failed'; readonly note: string }
+
+const EXAMPLE_TAKE: ReshootTake = {
+  id: 'example',
+  n: 0,
+  camera: DEFAULT_CAMERA,
+  keys: 0,
+  status: 'done',
+  startedAt: 0,
+  url: RESHOOT_EXAMPLE.result
+}
+
+/**
+ * The Re-shoot app's state and runs. Picking a clip, or changing its framing,
+ * reads its depth again on the deployment (free, but signed in); Generate is
+ * the metered run, priced by the app proxy's quote.
+ */
+export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
+  const { user, session, sessionFailure, settled, ensureFresh } =
+    useWorkshopSession()
+  const authEnabled = useWorkshopAuthFlag()
+  const mounted = useMounted()
+  const transport = reshootTransport(async () => {
+    const credential = await ensureFresh()
+    if (credential?.status !== 'ok') throw new ReshootError('unauthorized')
+    return credential.session.token
+  })
+
+  const upload = shallowRef<File>()
+  const uploadUrl = useObjectUrl(upload)
+  const clip = computed(() => uploadUrl.value ?? RESHOOT_EXAMPLE.clip)
+  const clipName = computed(() => upload.value?.name ?? RESHOOT_EXAMPLE.name)
+  const isExample = computed(() => upload.value === undefined)
+  const picked = ref(false)
+
+  const aspect = ref<ReshootAspect>('source')
+  const size = ref<ReshootSize>('480p')
+  const scene = shallowRef<Scene>({ phase: 'none' })
+  const step = ref<1 | 2>(1)
+  const camera = reactive<ReshootCamera>({ ...DEFAULT_CAMERA })
+  const keepAim = ref(true)
+  const frame = ref(0)
+  const keys = ref<CameraKey[]>([])
+  const motion = ref<ReshootMotion>('smooth')
+  const prompt = ref('')
+  const seed = ref(42)
+  const takes = ref<ReshootTake[]>([EXAMPLE_TAKE])
+  const selected = ref<string>('example')
+  const quote = shallowRef<ReshootQuote>()
+  /**
+   * The last quote request answered. A metered transport answers with the
+   * price, the unmetered dev transport with nothing; one that failed leaves
+   * the price unknown, so Generate waits rather than run without showing it.
+   */
+  const quoteSettled = ref(false)
+  const unavailable = ref(transport === undefined)
+
+  const depth = computed<DepthState>(() => scene.value.phase)
+  const rendering = computed(() =>
+    takes.value.some((take) => take.status === 'rendering')
+  )
+  const current = computed(() =>
+    takes.value.find((take) => take.id === selected.value)
+  )
+  const frames = computed(() =>
+    scene.value.phase === 'ready' ? scene.value.geometry.frames : RESHOOT_FRAMES
+  )
+
+  const quoteRefusesCredit = computed(
+    () =>
+      !rendering.value && quote.value?.blocked_reason === 'insufficient_credits'
+  )
+  const gate = computed(() =>
+    studioGate({
+      runEnabled: !unavailable.value,
+      modelRunnable: true,
+      mounted: mounted.value,
+      authAvailable: authEnabled.value && !sessionFailure.value,
+      sessionSettled: settled.value && !(user.value && !session.value),
+      role: session.value?.role,
+      credits: quoteRefusesCredit.value ? 0 : undefined
+    })
+  )
+  const canGenerate = computed(
+    () =>
+      gate.value === 'ready' &&
+      depth.value === 'ready' &&
+      !rendering.value &&
+      quoteSettled.value &&
+      quote.value?.next_run !== 'blocked'
+  )
+  const run = computed<ReshootRun>(() => ({
+    size: size.value,
+    seconds:
+      scene.value.phase === 'ready'
+        ? generateSeconds(scene.value.geometry.frames, scene.value.geometry.fps)
+        : undefined
+  }))
+  /** The last quote request failed, so the price is unknown and Generate waits. */
+  const quoteFailed = ref(false)
+  const priceNote = computed(() => {
+    if (quote.value) return quoteNote(quote.value, locale, run.value)
+    return quoteFailed.value ? rc('reshoot.quote.failed', locale) : undefined
+  })
+  /** Why the viewport cannot show a read scene, if it cannot. */
+  const notice = computed(() => {
+    if (!picked.value) return undefined
+    if (unavailable.value) return rc('reshoot.unavailable', locale)
+    if (scene.value.phase === 'failed') return scene.value.note
+    if (gate.value === 'signedOut') return rc('reshoot.signIn', locale)
+    return undefined
+  })
+  const stage = computed(() =>
+    scene.value.phase === 'analyzing' ? scene.value.stage : undefined
+  )
+
+  let quoteRequest = 0
+  let quoteRetry: ReturnType<typeof setTimeout> | undefined
+  let quoteFailures = 0
+  function settleQuote(next: ReshootQuote | undefined, settled: boolean) {
+    quote.value = next
+    quoteSettled.value = settled
+    quoteFailed.value = false
+    quoteFailures = 0
+  }
+  /** A failed quote: the price is unknown, so ask again unless waiting cannot help. */
+  function quoteFailedWith(error: unknown) {
+    const code = error instanceof ReshootError ? error.code : ''
+    const final = QUOTE_FINAL.has(code)
+    quote.value = undefined
+    quoteSettled.value = false
+    quoteFailed.value = !final
+    if (code === 'app_unavailable') unavailable.value = true
+    if (final) return
+    const delay =
+      QUOTE_RETRY_MS[Math.min(quoteFailures, QUOTE_RETRY_MS.length - 1)]
+    quoteFailures += 1
+    quoteRetry = setTimeout(() => void refreshQuote(), delay)
+  }
+  async function refreshQuote() {
+    const request = ++quoteRequest
+    clearTimeout(quoteRetry)
+    if (!transport || !session.value) return settleQuote(undefined, false)
+    try {
+      const next = await transport.quote()
+      if (request !== quoteRequest) return
+      settleQuote(next, true)
+      unavailable.value = false
+    } catch (error) {
+      if (request === quoteRequest) quoteFailedWith(error)
+    }
+  }
+
+  function noCreditsNote() {
+    const key =
+      session.value?.role === 'member'
+        ? 'workshop.error.memberNoCredits'
+        : 'workshop.error.noCreditsCloud'
+    return t(key, locale).replace(
+      '{workspace}',
+      session.value?.workspace.name ?? ''
+    )
+  }
+
+  function noteFor(error: unknown): string {
+    if (error instanceof ReshootError && error.code === 'insufficient_credits')
+      return noCreditsNote()
+    return failureNote(
+      error,
+      locale,
+      quote.value ? runPrice(quote.value, run.value) : undefined
+    )
+  }
+
+  const uploads = new WeakMap<File, string>()
+  let example: Promise<File> | undefined
+  function exampleFile(): Promise<File> {
+    example ??= fetch(RESHOOT_EXAMPLE.clip)
+      .then((response) => {
+        if (!response.ok)
+          throw new Error(`example clip: HTTP ${response.status}`)
+        return response.blob()
+      })
+      .then(
+        (blob) =>
+          new File([blob], RESHOOT_EXAMPLE.name, {
+            type: blob.type || 'video/mp4'
+          })
+      )
+    example.catch(() => (example = undefined))
+    return example
+  }
+
+  /**
+   * Scenes already read, by clip and settings: analyses are rate limited.
+   * Each holds depth and frame images, so only the most recent few are kept.
+   */
+  const reads = new Map<string, Geometry>()
+  function remember(key: string, geometry: Geometry) {
+    reads.delete(key)
+    reads.set(key, geometry)
+    for (const oldest of reads.keys()) {
+      if (reads.size <= MAX_READ_SCENES) break
+      reads.delete(oldest)
+    }
+  }
+  async function readScene(
+    via: ReshootTransport,
+    clip: ReshootClip,
+    signal: AbortSignal
+  ) {
+    const job = await runJob(
+      via,
+      analyzeWorkflow(clip),
+      (stage) => {
+        if (!signal.aborted) scene.value = { phase: 'analyzing', stage }
+      },
+      signal
+    )
+    const bytes = await downloadOutput(via, job, '.cvgeo', signal)
+    return readGeometry(await bytes.arrayBuffer())
+  }
+
+  /** The chosen clip, uploaded once, and its scene, read once per settings. */
+  async function clipScene(via: ReshootTransport, signal: AbortSignal) {
+    const file = upload.value ?? (await exampleFile())
+    const video = uploads.get(file) ?? (await via.upload(file, signal))
+    uploads.set(file, video)
+    const clip = { video, aspect: aspect.value, size: size.value }
+    const key = `${video}|${clip.aspect}|${clip.size}`
+    const geometry = reads.get(key) ?? (await readScene(via, clip, signal))
+    remember(key, geometry)
+    return { clip, geometry }
+  }
+
+  let analysis: AbortController | undefined
+  async function analyze() {
+    analysis?.abort()
+    const controller = new AbortController()
+    analysis = controller
+    selected.value = 'aim'
+    if (!transport || unavailable.value || !session.value) {
+      scene.value = { phase: 'none' }
+      return
+    }
+    const { signal } = controller
+    scene.value = { phase: 'analyzing' }
+    try {
+      const { clip, geometry } = await clipScene(transport, signal)
+      if (signal.aborted) return
+      scene.value = { phase: 'ready', clip, geometry }
+      frame.value = Math.min(frame.value, geometry.frames - 1)
+      step.value = 2
+      if (!quoteSettled.value) void refreshQuote()
+    } catch (error) {
+      if (!signal.aborted)
+        scene.value = { phase: 'failed', note: noteFor(error) }
+    }
+  }
+
+  watch([aspect, size], () => {
+    if (picked.value) void analyze()
+  })
+  watch(
+    upload,
+    () => {
+      keys.value = []
+      scene.value = { phase: 'none' }
+      if (picked.value) void analyze()
+    },
+    { flush: 'sync' }
+  )
+  watch(
+    () => [session.value?.uid, session.value?.workspace.id],
+    () => {
+      void refreshQuote()
+      if (picked.value && depth.value === 'none') void analyze()
+    },
+    { immediate: true }
+  )
+
+  function pick(file?: File) {
+    picked.value = true
+    if (upload.value === file) void analyze()
+    else upload.value = file
+  }
+
+  function updateTake(id: string, patch: Partial<ReshootTake>) {
+    takes.value = takes.value.map((take) =>
+      take.id === id ? { ...take, ...patch } : take
+    )
+  }
+
+  const runs = new Map<string, AbortController>()
+  const objectUrls: string[] = []
+  const objectUrl = (blob?: Blob) => {
+    if (!blob) return undefined
+    const url = URL.createObjectURL(blob)
+    objectUrls.push(url)
+    return url
+  }
+
+  async function generate() {
+    const read = scene.value
+    if (!canGenerate.value || !transport || read.phase !== 'ready') return
+    const n = takes.value.length
+    const id = `take-${n}`
+    takes.value = [
+      ...takes.value,
+      {
+        id,
+        n,
+        camera: { ...camera },
+        keys: keys.value.length,
+        status: 'rendering',
+        startedAt: Date.now()
+      }
+    ]
+    selected.value = id
+    const controller = new AbortController()
+    runs.set(id, controller)
+    const { signal } = controller
+    const { geometry } = read
+    try {
+      const job = await runJob(
+        transport,
+        generateWorkflow({
+          clip: read.clip,
+          seconds: generateSeconds(geometry.frames, geometry.fps),
+          camera,
+          keepAim: keepAim.value,
+          pivot: estimatePivot(
+            geometry.depth[0],
+            geometry.width,
+            geometry.height,
+            focalPx(geometry.width, camera.fov)
+          ),
+          keys: keys.value,
+          motion: motion.value,
+          prompt: prompt.value,
+          seed: seed.value
+        }),
+        (phase) => updateTake(id, { phase }),
+        signal
+      )
+      const optional = (part: string) =>
+        downloadOutput(transport, job, part, signal).catch(() => undefined)
+      const [video, warp, original] = await Promise.all([
+        downloadOutput(transport, job, 'result', signal),
+        optional('warp'),
+        optional('original-audio')
+      ])
+      if (signal.aborted) return
+      updateTake(id, {
+        status: 'done',
+        url: objectUrl(video),
+        warpUrl: objectUrl(warp),
+        originalUrl: objectUrl(original)
+      })
+    } catch (error) {
+      if (!signal.aborted)
+        updateTake(id, { status: 'failed', note: noteFor(error) })
+    } finally {
+      runs.delete(id)
+      void refreshQuote()
+      void refreshWorkshopCredits({ force: true })
+    }
+  }
+
+  function cancel() {
+    runs.forEach((controller) => controller.abort())
+    takes.value = takes.value.map((take) =>
+      take.status === 'rendering' ? { ...take, status: 'cancelled' } : take
+    )
+  }
+
+  function aim(patch: Partial<ReshootCamera>) {
+    Object.assign(camera, patch)
+    selected.value = 'aim'
+  }
+
+  function addKey() {
+    keys.value = withKey(keys.value, {
+      frame: frame.value,
+      camera: { ...camera }
+    })
+  }
+
+  function removeKey(at: number) {
+    keys.value = keys.value.filter((key) => key.frame !== at)
+  }
+
+  function reuse(id: string) {
+    const take = takes.value.find((entry) => entry.id === id)
+    if (take) aim(take.camera)
+  }
+
+  onScopeDispose(() => {
+    clearTimeout(quoteRetry)
+    quoteRequest += 1
+    analysis?.abort()
+    runs.forEach((controller) => controller.abort())
+    objectUrls.forEach((url) => URL.revokeObjectURL(url))
+  })
+
+  return {
+    upload,
+    clip,
+    clipName,
+    isExample,
+    picked,
+    aspect,
+    size,
+    depth,
+    stage,
+    notice,
+    frames,
+    step,
+    camera,
+    keepAim,
+    frame,
+    keys,
+    motion,
+    prompt,
+    seed,
+    takes,
+    selected,
+    current,
+    rendering,
+    gate,
+    canGenerate,
+    priceNote,
+    session,
+    pick,
+    generate,
+    cancel,
+    aim,
+    addKey,
+    removeKey,
+    reuse
+  }
+}

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { appModels } from '../../config/workshop-app-content'
-import { workshopAppHref, workshopApps } from './apps'
+import { workshopAppHref, workshopAppRepo, workshopApps } from './apps'
 
 describe('workshopAppHref', () => {
   it.for([
@@ -18,5 +18,17 @@ describe('workshopAppHref', () => {
     expect(
       workshopApps('en', appModels).find(({ key }) => key === 'reshoot')?.image
     ).toBe('/images/cinematic-studio/train.jpg')
+  })
+})
+
+describe('workshopAppRepo', () => {
+  it.for([
+    {
+      app: 'studio',
+      repo: 'https://github.com/Comfy-Org/comfy-cinematic-studio'
+    },
+    { app: 'reshoot', repo: 'https://github.com/Comfy-Org/comfy-reshoot' }
+  ] as const)('links $app to its published repository', ({ app, repo }) => {
+    expect(workshopAppRepo(app)).toBe(repo)
   })
 })

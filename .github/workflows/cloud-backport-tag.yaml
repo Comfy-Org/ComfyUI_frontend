@@ -1,69 +1,68 @@
 ---
 name: Cloud Backport Tag
 
+# Tags a cloud release branch `cloud/v<package.json version>` once a labelled
+# backport PR merges into it.
+#
+# The tag is created through the Git refs REST API instead of `git push`.
+# Pushing a ref with the default GITHUB_TOKEN runs GitHub's workflow-file
+# check, which on this repo times out and rejects the push:
+#   "Unable to determine if workflow can be created or updated due to
+#    timeout; `workflows` scope may be required."
+# (actions/checkout#2287). Every cloud tag run from 2026-09-17 onward failed
+# that way, so cloud/1.53 and cloud/1.54 shipped a week of untagged backports.
+# Creating the ref via the API points at a commit that already exists on the
+# branch and does not go through that check.
+#
+# `workflow_dispatch` re-creates a missing tag at an explicit historical
+# commit, or at the current branch head when no commit is supplied.
+
 on:
   pull_request:
     types: ['closed']
     branches: [cloud/*]
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'cloud/x.y branch whose release version should be tagged'
+        required: true
+        type: string
+      commit:
+        description: 'Optional 40-character commit SHA (defaults to branch head)'
+        required: false
+        type: string
+
+# Give each merged commit and manual recovery its own group. Branch-level
+# concurrency keeps only one pending run and can silently drop an older tag
+# when several backports merge in a burst.
+concurrency:
+  group: cloud-backport-tag-${{ github.event_name == 'workflow_dispatch' && github.run_id || github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: false
 
 jobs:
   create-tag:
     if: >
-      github.event.pull_request.merged == true &&
-      contains(github.event.pull_request.labels.*.name, 'backport')
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.merged == true &&
+      contains(github.event.pull_request.labels.*.name, 'backport'))
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: write
-      pull-requests: read
 
     steps:
-      - name: Checkout merge commit
-        uses: actions/checkout@v7
+      - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.pull_request.merge_commit_sha }}
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version-file: '.nvmrc'
+          # The privileged runner must never come from an operator-selected ref.
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
 
       - name: Create tag for cloud backport
         id: tag
-        run: |
-          set -euo pipefail
-
-          BRANCH="${{ github.event.pull_request.base.ref }}"
-          if [[ ! "$BRANCH" =~ ^cloud/([0-9]+)\.([0-9]+)$ ]]; then
-            echo "::error::Base branch '$BRANCH' is not a cloud/x.y branch"
-            exit 1
-          fi
-
-          MAJOR="${BASH_REMATCH[1]}"
-          MINOR="${BASH_REMATCH[2]}"
-
-          VERSION=$(node -p "require('./package.json').version")
-          if [[ "$VERSION" =~ ^${MAJOR}\.${MINOR}\.([0-9]+)(-.+)?$ ]]; then
-            PATCH="${BASH_REMATCH[1]}"
-            SUFFIX="${BASH_REMATCH[2]:-}"
-          else
-            echo "::error::Version '${VERSION}' does not match cloud branch '${BRANCH}'"
-            exit 1
-          fi
-
-          TAG="cloud/v${VERSION}"
-
-          if git ls-remote --tags origin "${TAG}" | grep -Fq "refs/tags/${TAG}"; then
-            echo "::notice::Tag ${TAG} already exists; skipping"
-            echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          git tag "${TAG}" "${{ github.event.pull_request.merge_commit_sha }}"
-          git push origin "${TAG}"
-          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
-          {
-            echo "Created tag: ${TAG}"
-            echo "Branch: ${BRANCH}"
-            echo "Version: ${VERSION}"
-            echo "Commit: ${{ github.event.pull_request.merge_commit_sha }}"
-          } >> "$GITHUB_STEP_SUMMARY"
+        env:
+          # The refs API returned HTTP 403 with GITHUB_TOKEN in live recovery.
+          GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
+          EVENT_NAME: ${{ github.event_name }}
+          BRANCH: ${{ github.event_name == 'workflow_dispatch' && inputs.branch || github.event.pull_request.base.ref }}
+          SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.commit || github.event.pull_request.merge_commit_sha }}
+        run: bash scripts/cicd/cloud-backport-tag.sh

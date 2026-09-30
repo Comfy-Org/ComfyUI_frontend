@@ -157,23 +157,27 @@ describe('HostTelemetrySink', () => {
     )
   })
 
-  it('forwards agent paywall impressions with their reason', () => {
+  it('forwards agent paywall impressions with their reason and surface', () => {
     new HostTelemetrySink().trackAgentPaywallShown({
-      reason: 'subscription_inactive'
+      reason: 'subscription_inactive',
+      surface: 'credits_exhausted'
     })
 
     expect(state.capture).toHaveBeenCalledExactlyOnceWith(
       TelemetryEvents.AGENT_PAYWALL_SHOWN,
-      { reason: 'subscription_inactive' }
+      { reason: 'subscription_inactive', surface: 'credits_exhausted' }
     )
   })
 
-  it('forwards agent paywall CTA clicks with their cta', () => {
-    new HostTelemetrySink().trackAgentPaywallCtaClicked({ cta: 'add_credits' })
+  it('forwards agent paywall CTA clicks with their cta and surface', () => {
+    new HostTelemetrySink().trackAgentPaywallCtaClicked({
+      cta: 'add_credits',
+      surface: 'refused_send'
+    })
 
     expect(state.capture).toHaveBeenCalledExactlyOnceWith(
       TelemetryEvents.AGENT_PAYWALL_CTA_CLICKED,
-      { cta: 'add_credits' }
+      { cta: 'add_credits', surface: 'refused_send' }
     )
   })
 
@@ -277,7 +281,9 @@ describe('HostTelemetrySink', () => {
           thread_id: 'thread-1',
           workflow_id: 'workflow-1',
           client_message_id: 'client-message-1',
-          input_method: 'suggestion'
+          input_method: 'suggestion',
+          starter_prompt_id: 'list_workflows',
+          starter_prompt_click_id: 'click-1'
         }),
       properties: {
         attachment_count: 2,
@@ -285,7 +291,9 @@ describe('HostTelemetrySink', () => {
         thread_id: 'thread-1',
         workflow_id: 'workflow-1',
         client_message_id: 'client-message-1',
-        input_method: 'suggestion'
+        input_method: 'suggestion',
+        starter_prompt_id: 'list_workflows',
+        starter_prompt_click_id: 'click-1'
       }
     },
     {
@@ -297,7 +305,9 @@ describe('HostTelemetrySink', () => {
           thread_id: null,
           workflow_id: null,
           client_message_id: 'client-message-2',
-          input_method: 'typed'
+          input_method: 'typed',
+          starter_prompt_id: null,
+          starter_prompt_click_id: null
         }),
       properties: {
         attachment_count: 0,
@@ -305,7 +315,31 @@ describe('HostTelemetrySink', () => {
         thread_id: null,
         workflow_id: null,
         client_message_id: 'client-message-2',
-        input_method: 'typed'
+        input_method: 'typed',
+        starter_prompt_id: null,
+        starter_prompt_click_id: null
+      }
+    },
+    {
+      name: TelemetryEvents.AGENT_STARTER_PROMPT_CLICKED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentStarterPromptClicked({
+          prompt_id: 'explain_selected_node',
+          prompt_index: 3,
+          prompt_count: 5,
+          prompt_text_hash: 'deadbeef',
+          locale: 'en',
+          click_id: 'click-1',
+          draft_was_empty: false
+        }),
+      properties: {
+        prompt_id: 'explain_selected_node',
+        prompt_index: 3,
+        prompt_count: 5,
+        prompt_text_hash: 'deadbeef',
+        locale: 'en',
+        click_id: 'click-1',
+        draft_was_empty: false
       }
     },
     {

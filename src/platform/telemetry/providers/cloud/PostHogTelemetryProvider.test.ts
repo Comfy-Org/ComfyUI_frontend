@@ -468,7 +468,9 @@ describe('PostHogTelemetryProvider', () => {
         thread_id: 'thread-1',
         workflow_id: 'workflow-1',
         client_message_id: 'client-message-1',
-        input_method: 'suggestion'
+        input_method: 'suggestion',
+        starter_prompt_id: 'list_workflows',
+        starter_prompt_click_id: 'click-1'
       })
 
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
@@ -479,7 +481,37 @@ describe('PostHogTelemetryProvider', () => {
           thread_id: 'thread-1',
           workflow_id: 'workflow-1',
           client_message_id: 'client-message-1',
-          input_method: 'suggestion'
+          input_method: 'suggestion',
+          starter_prompt_id: 'list_workflows',
+          starter_prompt_click_id: 'click-1'
+        }
+      )
+    })
+
+    it('captures a starter prompt click with its slot identity', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackAgentStarterPromptClicked({
+        prompt_id: 'find_workflow',
+        prompt_index: 2,
+        prompt_count: 5,
+        prompt_text_hash: 'deadbeef',
+        locale: 'en',
+        click_id: 'click-1',
+        draft_was_empty: true
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.AGENT_STARTER_PROMPT_CLICKED,
+        {
+          prompt_id: 'find_workflow',
+          prompt_index: 2,
+          prompt_count: 5,
+          prompt_text_hash: 'deadbeef',
+          locale: 'en',
+          click_id: 'click-1',
+          draft_was_empty: true
         }
       )
     })
@@ -854,14 +886,23 @@ describe('PostHogTelemetryProvider', () => {
       {
         event: TelemetryEvents.AGENT_PAYWALL_SHOWN,
         track: (provider: PostHogTelemetryProvider) =>
-          provider.trackAgentPaywallShown({ reason: 'subscription_inactive' }),
-        properties: { reason: 'subscription_inactive' }
+          provider.trackAgentPaywallShown({
+            reason: 'subscription_inactive',
+            surface: 'credits_exhausted'
+          }),
+        properties: {
+          reason: 'subscription_inactive',
+          surface: 'credits_exhausted'
+        }
       },
       {
         event: TelemetryEvents.AGENT_PAYWALL_CTA_CLICKED,
         track: (provider: PostHogTelemetryProvider) =>
-          provider.trackAgentPaywallCtaClicked({ cta: 'add_credits' }),
-        properties: { cta: 'add_credits' }
+          provider.trackAgentPaywallCtaClicked({
+            cta: 'add_credits',
+            surface: 'refused_send'
+          }),
+        properties: { cta: 'add_credits', surface: 'refused_send' }
       }
     ])('captures $event', async ({ event, track, properties }) => {
       const provider = createProvider()
