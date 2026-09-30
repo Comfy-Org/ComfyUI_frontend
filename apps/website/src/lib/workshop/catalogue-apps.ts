@@ -1,4 +1,3 @@
-import { getRoutes } from '../../config/routes'
 import type { Locale, LocalizedText } from '../../i18n/translations'
 
 /**
@@ -10,9 +9,12 @@ const copy = {
   allApps: { en: 'All apps', 'zh-CN': '全部应用' },
   browseAllApps: { en: 'Browse all apps', 'zh-CN': '浏览全部应用' },
   studioName: { en: 'Cinematic Studio', 'zh-CN': '电影工作室' },
-  studioTask: { en: 'Image to Video', 'zh-CN': '图像转视频' },
+  studioTask: {
+    en: 'Direct your shot like a film set',
+    'zh-CN': '像在片场一样执导镜头'
+  },
   reshootName: { en: 'Re-shoot a video', 'zh-CN': '重拍视频' },
-  reshootTask: { en: 'Video to Video', 'zh-CN': '视频转视频' }
+  reshootTask: { en: 'Re-shoot from any angle', 'zh-CN': '从任意角度重拍' }
 } as const satisfies Record<string, LocalizedText>
 
 export function ac(key: keyof typeof copy, locale: Locale = 'en'): string {
@@ -25,24 +27,4 @@ export interface CatalogueApp {
   readonly task: string
   readonly href: string
   readonly image?: string
-}
-
-export function catalogueApps(locale: Locale = 'en'): CatalogueApp[] {
-  const routes = getRoutes(locale)
-  return [
-    {
-      key: 'cinematic-studio',
-      name: ac('studioName', locale),
-      task: ac('studioTask', locale),
-      href: routes.cinematicStudio,
-      image: '/images/cinematic-studio/neon-street.jpg'
-    },
-    {
-      key: 'reshoot',
-      name: ac('reshootName', locale),
-      task: ac('reshootTask', locale),
-      href: routes.reshoot,
-      image: '/images/cinematic-studio/train.jpg'
-    }
-  ]
 }

@@ -53,10 +53,7 @@
             @click="activeView = 'pending'"
           >
             {{
-              $t(
-                'workspacePanel.members.tabs.pendingCount',
-                pendingInvites.length
-              )
+              $t('workspacePanel.members.tabs.pendingCount', livePendingCount)
             }}
           </Button>
         </div>
@@ -329,6 +326,10 @@ const emptyStateMessage = computed(() => {
     ? t('workspacePanel.members.noMembersMatch', { query })
     : t('workspacePanel.members.noMembers')
 })
+
+const livePendingCount = computed(
+  () => pendingInvites.value.filter((invite) => invite.token).length
+)
 
 function handleContactUs() {
   window.open(TEAM_PLAN_REQUEST_URL, '_blank', 'noopener,noreferrer')

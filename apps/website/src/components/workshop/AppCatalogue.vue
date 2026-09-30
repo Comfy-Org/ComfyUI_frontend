@@ -5,14 +5,14 @@ import { computed, nextTick, watch } from 'vue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import type { CatalogueApp } from '../../lib/workshop/catalogue-apps'
-import { ac, catalogueApps } from '../../lib/workshop/catalogue-apps'
+import { ac } from '../../lib/workshop/catalogue-apps'
 import CardRow from './CardRow.vue'
 import WorkshopAppCard from './WorkshopAppCard.vue'
 
 const ROW_LIMIT = 8
 
-const { apps: given, locale = 'en' } = defineProps<{
-  apps?: readonly CatalogueApp[]
+const { apps, locale = 'en' } = defineProps<{
+  apps: readonly CatalogueApp[]
   locale?: Locale
 }>()
 
@@ -21,9 +21,8 @@ const emit = defineEmits<{ section: [boolean] }>()
 watch(browseAll, (value) => emit('section', value), { immediate: true })
 watch(browseAll, () => void nextTick(() => window.scrollTo({ top: 0 })))
 
-const apps = computed(() => given ?? catalogueApps(locale))
-const shelf = computed(() => apps.value.slice(0, ROW_LIMIT))
-const hasMore = computed(() => apps.value.length > ROW_LIMIT)
+const shelf = computed(() => apps.slice(0, ROW_LIMIT))
+const hasMore = computed(() => apps.length > ROW_LIMIT)
 </script>
 
 <template>
@@ -38,7 +37,7 @@ const hasMore = computed(() => apps.value.length > ROW_LIMIT)
         <ChevronLeft class="size-4" aria-hidden="true" />
         {{ t('workshop.sections.back', locale) }}
       </button>
-      <h1
+      <h2
         class="mt-3 mb-4 scroll-mt-24 text-3xl font-bold text-primary-warm-white sm:text-4xl lg:scroll-mt-32"
       >
         {{ ac('allApps', locale) }}
@@ -46,7 +45,7 @@ const hasMore = computed(() => apps.value.length > ROW_LIMIT)
           class="text-base font-normal text-primary-warm-gray tabular-nums"
           >{{ apps.length }}</span
         >
-      </h1>
+      </h2>
     </template>
     <div
       class="sticky top-20 z-30 -mx-1 mb-8 flex flex-wrap items-center gap-3 bg-page px-1 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26"

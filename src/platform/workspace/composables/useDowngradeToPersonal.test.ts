@@ -139,6 +139,7 @@ describe('useDowngradeToPersonal', () => {
             renewalDate: null,
             endDate: null,
             hasFunds: true,
+            agentHasFunds: true,
             ...mockSubscription.value
           }
         : null
@@ -313,7 +314,8 @@ describe('useDowngradeToPersonal', () => {
         {
           returnUrl: 'https://platform.test/payment/success',
           cancelUrl: 'https://platform.test/payment/failed',
-          confirmReactivation: false
+          confirmReactivation: false,
+          attemptStartedAt: expect.any(Number)
         }
       )
     })
@@ -352,7 +354,8 @@ describe('useDowngradeToPersonal', () => {
         {
           returnUrl: 'https://platform.test/payment/success',
           cancelUrl: 'https://platform.test/payment/failed',
-          confirmReactivation: true
+          confirmReactivation: true,
+          attemptStartedAt: expect.any(Number)
         }
       )
     })
@@ -468,7 +471,8 @@ describe('useDowngradeToPersonal', () => {
         {
           returnUrl: 'https://platform.test/payment/success',
           cancelUrl: 'https://platform.test/payment/failed',
-          confirmReactivation: false
+          confirmReactivation: false,
+          attemptStartedAt: expect.any(Number)
         }
       )
     })
@@ -494,7 +498,8 @@ describe('useDowngradeToPersonal', () => {
         {
           returnUrl: 'https://platform.test/payment/success',
           cancelUrl: 'https://platform.test/payment/failed',
-          confirmReactivation: false
+          confirmReactivation: false,
+          attemptStartedAt: expect.any(Number)
         }
       )
     })

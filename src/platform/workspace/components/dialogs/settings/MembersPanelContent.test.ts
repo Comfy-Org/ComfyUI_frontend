@@ -196,7 +196,8 @@ const i18n = createI18n({
           totalMembersUnlimited:
             '{count} total member. | {count} total members.',
           noInvites: 'No pending invites',
-          noInvitesMatch: 'No invites match "{query}"'
+          noInvitesMatch: 'No invites match "{query}"',
+          tabs: { pendingCount: 'Pending ({count})' }
         }
       }
     }
@@ -335,6 +336,24 @@ describe('MembersPanelContent', () => {
     })
   })
 
+  describe('pending invite counts', () => {
+    it('counts only live invites in the Pending tab, keeping expired rows listed', () => {
+      mockActiveView.value = 'pending'
+      mockPendingInvites.value = [
+        createInvite({ id: 'inv-live', token: 'tok-live' }),
+        createInvite({ id: 'inv-exp-1', email: 'a@example.com' }),
+        createInvite({ id: 'inv-exp-2', email: 'b@example.com' })
+      ]
+      mockFilteredPendingInvites.value = mockPendingInvites.value
+      renderComponent()
+
+      expect(screen.getByText('Pending (1)')).toBeInTheDocument()
+      expect(screen.queryByText('Pending (3)')).toBeNull()
+      expect(screen.getByText('a@example.com')).toBeInTheDocument()
+      expect(screen.getByText('b@example.com')).toBeInTheDocument()
+    })
+  })
+
   describe('Team plan member list', () => {
     it('keeps the workspace menu in the controls row beside Invite', () => {
       renderComponent()
@@ -438,11 +457,9 @@ describe('MembersPanelContent', () => {
 
   describe('pending invites tab', () => {
     it('shows pending tab button when configured', () => {
-      mockPendingInvites.value = [createInvite()]
+      mockPendingInvites.value = [createInvite({ token: 'tok-1' })]
       renderComponent()
-      expect(
-        screen.getByText(/workspacePanel\.members\.tabs\.pendingCount/)
-      ).toBeTruthy()
+      expect(screen.getByText('Pending (1)')).toBeTruthy()
     })
 
     it('triggers handleRevokeInvite from the row menu cancel item', async () => {

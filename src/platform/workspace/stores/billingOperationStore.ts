@@ -34,6 +34,7 @@ import {
   legacyOperationActionHold,
   needsCustomerAttention
 } from '@/platform/workspace/billing/customerAttention'
+import { resolveStripePublishableKey } from '@/platform/workspace/billing/stripePublishableKey'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
@@ -598,7 +599,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     })
 
     try {
-      const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+      const publishableKey = resolveStripePublishableKey()
       const stripe = publishableKey ? await loadStripe(publishableKey) : null
       if (!stripe) {
         setAuthenticationFailed(
@@ -863,6 +864,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       })
     } catch (error) {
       reportError(error, {
+        surface: 'billing',
         errorType: 'failure_handling_billing_operation_success',
         context: { billing_op_id: opId }
       })
@@ -1032,6 +1034,19 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         duration_ms: now - operation.businessAttemptStartedAt
       })
     }
+    if (operation.downgradeToPersonal) {
+      telemetry?.trackBillingEvent({
+        operation: 'downgrade_to_personal',
+        stage: 'failed',
+        outcome: 'failure',
+        member_removal_count: operation.downgradeToPersonal.memberRemovalCount,
+        member_removal_failures:
+          operation.downgradeToPersonal.memberRemovalFailures,
+        target_tier: operation.downgradeToPersonal.targetTier,
+        failure_category: 'reconciliation_needed',
+        duration_ms: now - operation.downgradeToPersonal.startedAt
+      })
+    }
     resolveTerminal(opId)
   }
 
@@ -1158,6 +1173,9 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       case 'authentication_failed':
       case 'authentication_required':
       case 'payment_intent_authentication_failure':
+      case 'payment_not_completed':
+      case 'payment_method_customer_decline':
+      case 'payment_intent_payment_attempt_expired':
         return t('billingOperation.authenticationFailedDetail')
       case 'processing_error':
       case 'issuer_not_available':

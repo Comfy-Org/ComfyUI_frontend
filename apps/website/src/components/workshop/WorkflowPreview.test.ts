@@ -58,6 +58,23 @@ describe('WorkflowPreview', () => {
     for (const name of template.models) expect(runsOn).toHaveTextContent(name)
   })
 
+  // The frame takes the pointer so a drag pans the graph, and a captured press
+  // hands its click to the frame instead of whatever it started on. The way to
+  // the full-size export sits inside that frame, so it has to be let through.
+  it('lets a press on the full-size link reach the link', () => {
+    render(WorkflowPreview, { props: { model, cloudHref } })
+
+    const frame = screen.getByTestId('workflow-graph')
+    screen
+      .getByTestId('workflow-graph-full')
+      .dispatchEvent(
+        new PointerEvent('pointerdown', { bubbles: true, pointerId: 1 })
+      )
+
+    expect(frame.className).toContain('cursor-grab')
+    expect(frame.className).not.toContain('cursor-grabbing')
+  })
+
   // Three of the design's six facts; the other three — how often it has run,
   // whether its weights are open, and when it was added — have no data behind
   // them anywhere in the catalogue.
@@ -112,7 +129,49 @@ describe('WorkflowPreview', () => {
     expect(
       await screen.findByRole('img', { name: /nodes of this workflow/i })
     ).toBeTruthy()
+    expect(await screen.findByText('SaveVideo')).toBeTruthy()
     expect(fetch).toHaveBeenCalledWith(template.downloadUrl)
+  })
+
+  it('waits to download the graph until its tab first opens', async () => {
+    servingGraph(async () => Response.json(graphJson()))
+    const { rerender } = render(WorkflowPreview, {
+      props: { model, cloudHref, active: false }
+    })
+
+    expect(fetch).not.toHaveBeenCalled()
+
+    await rerender({ model, cloudHref, active: true })
+    await waitFor(() => expect(fetch).toHaveBeenCalledOnce())
+    expect(fetch).toHaveBeenCalledWith(template.downloadUrl)
+
+    await rerender({ model, cloudHref, active: false })
+    await rerender({ model, cloudHref, active: true })
+    expect(fetch).toHaveBeenCalledOnce()
+  })
+
+  it('replaces the graph when the workflow changes', async () => {
+    servingGraph(async () => Response.json(graphJson()))
+    const { rerender } = render(WorkflowPreview, {
+      props: { model, cloudHref }
+    })
+    await waitFor(() => expect(fetch).toHaveBeenCalledOnce())
+
+    const nextUrl = '/workflow-graphs/next-workflow.json'
+    await rerender({
+      model: {
+        ...model,
+        slug: 'workflows/next-workflow',
+        workflow: {
+          ...model.workflow,
+          template: { ...template, downloadUrl: nextUrl }
+        }
+      },
+      cloudHref
+    })
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2))
+    expect(fetch).toHaveBeenLastCalledWith(nextUrl)
   })
 
   // The flat export is what this page showed before, so it is what a graph

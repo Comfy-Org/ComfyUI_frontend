@@ -348,7 +348,7 @@ export function useMembersPanel() {
           roleMenuItem(member, 'member', t('workspaceSwitcher.roleMember'))
         ]
       },
-      ...(flags.billingControlEnabled && member.role === 'member'
+      ...(flags.memberCreditLimitsEnabled && member.role === 'member'
         ? [creditLimitItem]
         : []),
       {

@@ -402,6 +402,7 @@ function useBillingCapabilitiesInternal() {
         // would emit one warning a minute for as long as the tab is open.
         if (!denied && !firstFailure) return
         reportError(error, {
+          surface: 'workspace',
           errorType: 'billing_capabilities_read_failure',
           level: 'warning',
           tags: {

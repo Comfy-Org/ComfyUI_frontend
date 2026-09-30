@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
+import { ref } from 'vue'
 
 import type {
   Direction,
@@ -10,7 +8,8 @@ import type {
 } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
-import Button from '@/components/ui/button/Button.vue'
+import CinematicColors from './CinematicColors.vue'
+import CinematicGradeImageTile from './CinematicGradeImageTile.vue'
 import CinematicOptionGrid from './CinematicOptionGrid.vue'
 import CinematicOptionList from './CinematicOptionList.vue'
 import CinematicPickerTabs from './CinematicPickerTabs.vue'
@@ -20,13 +19,11 @@ const {
   groups,
   direction,
   title,
-  start,
   locale = 'en'
 } = defineProps<{
   groups: readonly DirectionGroup[]
   direction: Direction
   title: string
-  start?: DirectionPart
   locale?: Locale
 }>()
 
@@ -35,26 +32,30 @@ const emit = defineEmits<{
   close: []
 }>()
 
+const colors = defineModel<readonly string[]>('colors', { required: true })
+const mainColor = defineModel<number | undefined>('mainColor')
+
 const multiple = groups.length > 1
-const visual = groups.some((group) =>
-  group.options.some((option) => option.preview || option.palette)
-)
-const tabbed = multiple && visual
-const activePart = ref(start ?? groups[0].part)
-const activeGroup = computed(
-  () => groups.find((group) => group.part === activePart.value) ?? groups[0]
-)
+const activePart = ref(groups[0].part)
+const editing = ref(false)
 
 function choose(part: DirectionPart, id: string) {
+  if (part === 'grade') {
+    colors.value = []
+    mainColor.value = undefined
+  }
   emit('choose', part, id)
   if (!multiple) emit('close')
-  if (tabbed) advance(part)
 }
 
-function advance(part: DirectionPart) {
-  const next = groups[groups.findIndex((group) => group.part === part) + 1]
-  if (next) activePart.value = next.part
+function usePalette(sampled: readonly string[]) {
+  colors.value = sampled
+  mainColor.value = undefined
+  emit('choose', 'grade', 'auto')
 }
+
+const selectedIn = (part: DirectionPart) =>
+  part === 'grade' && colors.value.length ? '' : direction[part]
 </script>
 
 <template>
@@ -64,22 +65,9 @@ function advance(part: DirectionPart) {
       v-model="activePart"
       :groups
       :locale
-      :class="cn('mb-3', tabbed ? 'grid-cols-5' : 'grid-cols-4 sm:hidden')"
+      class="mb-3 grid-cols-4 sm:hidden"
     />
-    <CinematicOptionGrid
-      v-if="tabbed"
-      :key="activeGroup.part"
-      :group="activeGroup"
-      :selected="direction[activeGroup.part]"
-      :locale
-      @choose="choose(activeGroup.part, $event)"
-    />
-    <div v-if="tabbed" class="mt-3 flex justify-end">
-      <Button size="sm" class="rounded-full" @click="emit('close')">
-        {{ tc('cinematic.picker.done', locale) }}
-      </Button>
-    </div>
-    <div v-else-if="multiple" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <div v-if="multiple" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       <CinematicOptionList
         v-for="group in groups"
         :key="group.part"
@@ -90,15 +78,33 @@ function advance(part: DirectionPart) {
         @choose="choose(group.part, $event)"
       />
     </div>
+    <div v-else-if="editing && colors.length" class="flex flex-col gap-3">
+      <CinematicColors v-model="colors" v-model:main="mainColor" :locale />
+      <button
+        type="button"
+        class="h-9 self-end rounded-xl bg-primary-warm-white px-4 text-sm font-semibold text-primary-comfy-ink hover:bg-primary-warm-white/90"
+        @click="editing = false"
+      >
+        {{ tc('cinematic.grade.done', locale) }}
+      </button>
+    </div>
     <template v-else>
       <CinematicOptionGrid
         v-for="group in groups"
         :key="group.part"
         :group
-        :selected="direction[group.part]"
+        :selected="selectedIn(group.part)"
         :locale
         @choose="choose(group.part, $event)"
-      />
+      >
+        <CinematicGradeImageTile
+          v-if="group.part === 'grade'"
+          :colors
+          :locale
+          @picked="usePalette"
+          @edit="editing = true"
+        />
+      </CinematicOptionGrid>
     </template>
   </CinematicPopover>
 </template>

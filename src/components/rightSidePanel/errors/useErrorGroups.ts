@@ -44,7 +44,7 @@ import {
   tryNormalizeNodeExecutionId
 } from '@/types/nodeIdentification'
 
-import type { MissingResourceAbsorption } from './missingResourceAbsorption'
+import type { MissingResourceAbsorption } from '@/utils/missingResourceAbsorption'
 import { useErrorClassification } from './useErrorClassification'
 
 const PROMPT_CARD_ID = '__prompt__'

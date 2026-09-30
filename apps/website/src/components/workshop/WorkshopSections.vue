@@ -89,7 +89,7 @@ function rememberModel(
   model: WorkshopModel,
   event: MouseEvent
 ) {
-  rememberShelfOnClick(shelf, model.href, event)
+  if (model.href) rememberShelfOnClick(shelf, model.href, event)
 }
 </script>
 
@@ -124,12 +124,7 @@ function rememberModel(
             @click="emit('open', section.useCase)"
           >
             <span class="tabular-nums">
-              {{
-                t('workshop.sections.seeAll', locale).replace(
-                  '{n}',
-                  `${section.total}`
-                )
-              }}
+              {{ t('workshop.sections.seeAll', locale, { n: section.total }) }}
             </span>
             <ChevronRight
               class="size-4 transition-transform group-hover:translate-x-0.5"
@@ -181,10 +176,9 @@ function rememberModel(
           >
             <span class="tabular-nums">
               {{
-                t('workshop.sections.seeAll', locale).replace(
-                  '{n}',
-                  `${otherFormats.length}`
-                )
+                t('workshop.sections.seeAll', locale, {
+                  n: otherFormats.length
+                })
               }}
             </span>
             <ChevronRight

@@ -28,7 +28,6 @@ import { t } from '../../i18n/translations'
 const {
   state,
   now,
-  modelName,
   modality,
   earlier = [],
   attachments = [],
@@ -36,11 +35,11 @@ const {
   refreshable = false,
   memberWorkspace,
   cancelledMessage,
+  policyMessage,
   locale = 'en'
 } = defineProps<{
   state: RunState
   now: number
-  modelName: string
   modality?: Modality
   earlier?: readonly RunRecord[]
   attachments?: readonly RunOutput[]
@@ -53,6 +52,8 @@ const {
    * and is over. The same status, two different things to say.
    */
   cancelledMessage?: string
+  /** Why this page's provider blocks content, when its rule is known. */
+  policyMessage?: string
   locale?: Locale
 }>()
 
@@ -101,10 +102,10 @@ const statusMessage = computed(() => {
 
 function failureMessage(failure: Extract<RunState, { status: 'failed' }>) {
   if (failure.reason === 'noCredits' && memberWorkspace !== undefined)
-    return t('workshop.error.memberNoCredits', locale).replace(
-      '{workspace}',
-      memberWorkspace
-    )
+    return t('workshop.error.memberNoCredits', locale, {
+      workspace: memberWorkspace
+    })
+  if (failure.reason === 'policy' && policyMessage) return policyMessage
   return t(failureTranslationKey(failure), locale)
 }
 
@@ -267,10 +268,7 @@ const runStops = computed<RunStop[]>(() =>
           record,
           output: record.output,
           nsfw: record.output.nsfw === true,
-          name: t('workshop.output.earlierRun', locale).replace(
-            '{number}',
-            String(index + 1)
-          ),
+          name: t('workshop.output.earlierRun', locale, { number: index + 1 }),
           testId: `earlier-run-${index}`
         })),
         {
@@ -294,7 +292,12 @@ const earlierClass = (active: boolean) =>
 
 <template>
   <section
-    class="flex min-h-96 flex-col overflow-hidden rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4"
+    :class="
+      cn(
+        'flex flex-col overflow-hidden rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4',
+        !shown && 'min-h-96'
+      )
+    "
     data-testid="playground-output"
     :data-state="state.status"
   >
@@ -455,6 +458,7 @@ const earlierClass = (active: boolean) =>
     <template v-else-if="shown">
       <div
         class="relative aspect-video max-h-[70dvh] w-full flex-1 overflow-hidden bg-black/20"
+        data-testid="output-media"
       >
         <div
           :key="currentUrl"
@@ -465,7 +469,7 @@ const earlierClass = (active: boolean) =>
             v-if="currentUrl && shown.kind === 'video' && !blurred"
             :src="currentUrl"
             :locale
-            :aria-label="t('workshop.output.title', locale)"
+            :aria-label="shown.alt ?? t('workshop.output.title', locale)"
             class="size-full rounded-none border-0"
             fit="contain"
             controls-on-hover
@@ -478,7 +482,7 @@ const earlierClass = (active: boolean) =>
           <img
             v-else-if="currentUrl && shown.kind === 'image' && !blurred"
             :src="currentUrl"
-            :alt="t('workshop.output.title', locale)"
+            :alt="shown.alt ?? t('workshop.output.title', locale)"
             class="size-full object-contain"
             @load="emit('delivery', currentUrl, 'succeeded')"
             @error="emit('delivery', currentUrl, 'failed')"
@@ -566,12 +570,7 @@ const earlierClass = (active: boolean) =>
           v-for="(url, index) in outputs"
           :key="index"
           type="button"
-          :aria-label="
-            t('workshop.output.select', locale).replace(
-              '{n}',
-              String(index + 1)
-            )
-          "
+          :aria-label="t('workshop.output.select', locale, { n: index + 1 })"
           :aria-pressed="index === selected"
           :data-testid="`output-thumb-${index}`"
           :class="
@@ -648,20 +647,6 @@ const earlierClass = (active: boolean) =>
       >
         {{ t('workshop.output.truncated', locale) }}
       </p>
-      <p
-        v-if="state.status === 'example'"
-        class="border-t border-transparency-white-t8 px-5 py-2 text-xs text-primary-warm-gray"
-        data-testid="output-example-hint"
-      >
-        <slot name="example-hint">
-          {{
-            t('workshop.output.exampleHint', locale).replace(
-              '{model}',
-              modelName
-            )
-          }}
-        </slot>
-      </p>
       <div
         v-if="state.status === 'succeeded'"
         class="flex flex-col gap-2 border-t border-transparency-white-t8 p-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end"
@@ -726,7 +711,7 @@ const earlierClass = (active: boolean) =>
           </button>
           <img
             :src="currentUrl"
-            :alt="t('workshop.output.title', locale)"
+            :alt="shown?.alt ?? t('workshop.output.title', locale)"
             class="max-h-full max-w-full rounded-2xl object-contain"
           />
         </DialogContent>

@@ -7,7 +7,7 @@ import WorkshopAppCard from './WorkshopAppCard.vue'
 const app: CatalogueApp = {
   key: 'reshoot',
   name: 'Re-shoot a video',
-  task: 'Video to Video',
+  task: 'Re-shoot from any angle',
   href: '/cinematic-studio?app=reshoot'
 }
 
@@ -20,7 +20,7 @@ describe('WorkshopAppCard', () => {
       screen.getByRole('heading', { name: 'Re-shoot a video' })
     ).toBeVisible()
     expect(screen.getByTestId('app-card-task')).toHaveTextContent(
-      'Video to Video'
+      'Re-shoot from any angle'
     )
   })
 

@@ -1,15 +1,21 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, useTemplateRef } from 'vue'
+import { Maximize2 } from '@lucide/vue'
+import { useMounted } from '@vueuse/core'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 
 import type { GraphPicture } from '../../lib/workshop/workflow-graph'
 import { linkPath, readGraphPicture } from '../../lib/workshop/workflow-graph'
+import { openingView } from '../../lib/workshop/workflow-graph-view'
 import { t } from '../../i18n/translations'
+import WorkflowGraphControls from './WorkflowGraphControls.vue'
 import WorkflowGraphNode from './WorkflowGraphNode.vue'
 
 const {
   source,
   samples = [],
-  fallback
+  fallback,
+  fullHref,
+  active = true
 } = defineProps<{
   /** Where the template JSON is published. */
   source: string
@@ -17,18 +23,39 @@ const {
   samples?: readonly string[]
   /** The flat export, for when the JSON cannot be read. */
   fallback?: string
+  /** The flat export opened at full size, from the panel's own corner. */
+  fullHref?: string
+  /** Whether the graph is on screen; it is not fetched until it first is. */
+  active?: boolean
 }>()
 
 const picture = ref<GraphPicture>()
 const failed = ref(false)
 
+const statusText = computed(() =>
+  failed.value
+    ? t('workshop.workflow.graphFailed')
+    : t('workshop.workflow.graphLoading')
+)
+
 const frame = useTemplateRef<HTMLDivElement>('frame')
+const canvas = useTemplateRef<SVGSVGElement>('canvas')
 const scale = ref(1)
 const panX = ref(0)
 const panY = ref(0)
 const dragging = ref(false)
 
-onMounted(async () => {
+const mounted = useMounted()
+watch(
+  () => mounted.value && active,
+  (visible) => {
+    if (!visible) return
+    void load()
+  },
+  { once: true }
+)
+
+async function load() {
   try {
     const response = await fetch(source)
     if (!response.ok) throw new Error(String(response.status))
@@ -36,49 +63,70 @@ onMounted(async () => {
     // Nothing to draw reads to the reader exactly as a refusal does.
     if (drawn.nodes.length === 0) throw new Error('empty')
     picture.value = drawn
+    applyOpeningView(drawn)
   } catch {
     failed.value = true
   }
-})
+}
 
-const transform = computed(
-  () => `translate(${panX.value} ${panY.value}) scale(${scale.value})`
-)
+// Zoom about the middle of the drawing: published graphs sit thousands of
+// units from the origin, so scaling about (0, 0) would carry them off-screen.
+const transform = computed(() => {
+  if (!picture.value) return undefined
+  const [x, y, width, height] = picture.value.viewBox.split(' ').map(Number)
+  const cx = x + width / 2
+  const cy = y + height / 2
+  return `translate(${panX.value} ${panY.value}) translate(${cx} ${cy}) scale(${scale.value}) translate(${-cx} ${-cy})`
+})
 
 function zoomBy(factor: number) {
   scale.value = Math.min(3, Math.max(0.2, scale.value * factor))
 }
 
 function reset() {
+  if (picture.value) return applyOpeningView(picture.value)
   scale.value = 1
   panX.value = 0
   panY.value = 0
 }
 
+function applyOpeningView(drawn: GraphPicture) {
+  const view = openingView(
+    drawn,
+    frame.value?.clientWidth ?? 0,
+    frame.value?.clientHeight ?? 0
+  )
+  scale.value = view.scale
+  panX.value = view.panX
+  panY.value = view.panY
+}
+
 function onPointerDown(event: PointerEvent) {
+  // Capturing a press on a control would retarget its click to the frame, so
+  // the zoom buttons and the link out to the full-size export never fire.
+  if ((event.target as Element).closest('button, a')) return
   dragging.value = true
   frame.value?.setPointerCapture(event.pointerId)
 }
 
 function onPointerMove(event: PointerEvent) {
   if (!dragging.value) return
-  panX.value += event.movementX
-  panY.value += event.movementY
+  // The pan is in drawing units; the pointer moves in screen pixels.
+  const pixelsPerUnit = canvas.value?.getScreenCTM()?.a || 1
+  panX.value += event.movementX / pixelsPerUnit
+  panY.value += event.movementY / pixelsPerUnit
 }
 
 function onPointerUp(event: PointerEvent) {
   dragging.value = false
   frame.value?.releasePointerCapture(event.pointerId)
 }
-
-const control =
-  'inline-flex size-7 cursor-pointer items-center justify-center rounded-lg text-content-secondary transition-colors hover:bg-transparency-white-t8 hover:text-content-bright'
 </script>
 
 <template>
   <div
     ref="frame"
-    class="relative h-112 touch-none overflow-hidden rounded-2xl bg-hub-surface select-none lg:h-128"
+    class="relative h-112 touch-pan-y overflow-hidden rounded-2xl bg-hub-surface select-none lg:h-128"
     :class="dragging ? 'cursor-grabbing' : 'cursor-grab'"
     data-testid="workflow-graph"
     @pointerdown="onPointerDown"
@@ -88,6 +136,7 @@ const control =
   >
     <svg
       v-if="picture"
+      ref="canvas"
       :viewBox="picture.viewBox"
       class="size-full"
       role="img"
@@ -148,42 +197,26 @@ const control =
       v-else
       class="flex size-full items-center justify-center text-sm text-content-muted"
     >
-      {{
-        failed
-          ? t('workshop.workflow.graphFailed')
-          : t('workshop.workflow.graphLoading')
-      }}
+      {{ statusText }}
     </p>
 
-    <span
-      v-if="picture"
-      class="pointer-events-none absolute top-3 left-3 rounded-full bg-black/50 px-2 py-0.5 text-3xs/4 font-bold tracking-wider text-content-secondary uppercase backdrop-blur-md"
+    <a
+      v-if="fullHref"
+      :href="fullHref"
+      target="_blank"
+      rel="noopener"
+      class="absolute top-3 right-3 inline-flex size-9 items-center justify-center rounded-xl bg-black/50 text-content-secondary backdrop-blur-md transition-colors hover:text-content-bright focus-visible:text-content-bright focus-visible:outline-primary-comfy-yellow"
+      data-testid="workflow-graph-full"
     >
-      {{ t('workshop.workflow.graphHint') }}
-    </span>
+      <Maximize2 class="size-4" aria-hidden="true" />
+      <span class="sr-only">{{ t('workshop.workflow.fullPreview') }}</span>
+    </a>
 
-    <div
+    <WorkflowGraphControls
       v-if="picture"
-      class="absolute right-3 bottom-3 flex items-center gap-1 rounded-xl bg-black/50 p-1 backdrop-blur-md"
-    >
-      <button type="button" :class="control" @click="zoomBy(1 / 1.2)">
-        <span aria-hidden="true">&minus;</span>
-        <span class="sr-only">{{ t('workshop.workflow.zoomOut') }}</span>
-      </button>
-      <span class="px-1 font-mono text-2xs text-content-secondary tabular-nums">
-        {{ Math.round(scale * 100) }}%
-      </span>
-      <button type="button" :class="control" @click="zoomBy(1.2)">
-        <span aria-hidden="true">+</span>
-        <span class="sr-only">{{ t('workshop.workflow.zoomIn') }}</span>
-      </button>
-      <button
-        type="button"
-        class="cursor-pointer rounded-lg px-2 text-2xs text-content-secondary transition-colors hover:text-content-bright"
-        @click="reset"
-      >
-        {{ t('workshop.workflow.zoomReset') }}
-      </button>
-    </div>
+      :scale
+      @zoom="zoomBy"
+      @reset="reset"
+    />
   </div>
 </template>

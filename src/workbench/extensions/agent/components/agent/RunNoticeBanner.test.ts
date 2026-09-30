@@ -73,6 +73,18 @@ describe('RunNoticeBanner', () => {
     expect(localStorage.getItem(STORAGE_KEY)).toBe('true')
   })
 
+  it('says the target is unavailable despite educational dismissal, without actions', () => {
+    localStorage.setItem(STORAGE_KEY, 'true')
+    render(RunNoticeBanner, {
+      props: { context: 'unavailable' },
+      global: { plugins: [i18n] }
+    })
+    expect(screen.getByRole('note')).toHaveTextContent(
+      i18n.global.t('agent.targetWorkflowUnavailable')
+    )
+    expect(screen.queryByRole('button')).toBeNull()
+  })
+
   it('explains all three ways to decide the target', () => {
     render(RunNoticeBanner, {
       props: { context: 'following', workflowName: 'portrait' },
