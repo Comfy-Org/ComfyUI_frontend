@@ -302,7 +302,7 @@ describe('TelemetryRegistry', () => {
       starter_prompt_click_id: null
     } satisfies AgentMessageSentMetadata
     const starterPromptClickedMetadata = {
-      prompt_id: 'generate_image',
+      prompt_id: 'slot_1',
       prompt_index: 0,
       prompt_count: 5,
       prompt_text_hash: 'deadbeef',
