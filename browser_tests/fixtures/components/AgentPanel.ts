@@ -17,6 +17,7 @@ export class AgentPanel {
   public readonly composerAssetSection: Locator
   public readonly attachmentChips: Locator
   public readonly composer: Locator
+  public readonly composerPromptArea: Locator
   public readonly sendButton: Locator
 
   constructor(private readonly page: Page) {
@@ -44,6 +45,7 @@ export class AgentPanel {
     this.composerAssetSection = this.root.getByTestId('composer-asset-section')
     this.attachmentChips = this.root.getByTestId('agent-attachment-chip')
     this.composer = this.root.getByRole('textbox', { name: /^Describe ideas/ })
+    this.composerPromptArea = this.root.getByTestId('composer-inline-input')
     this.sendButton = this.root.getByRole('button', {
       name: enMessages.agent.send
     })
@@ -81,6 +83,15 @@ export class AgentPanel {
     await this.workflowPicker.click()
     await this.page.getByRole('menuitemradio', { name, exact: true }).click()
     await expect(this.workflowPicker).toHaveText(name)
+  }
+
+  /** Clicks the empty bottom-left corner of the prompt area, below any text. */
+  async clickBelowFirstPromptLine(): Promise<void> {
+    const box = await this.composerPromptArea.boundingBox()
+    if (!box) throw new Error('Composer prompt area is not visible')
+    await this.composerPromptArea.click({
+      position: { x: 8, y: box.height - 6 }
+    })
   }
 
   async sendMessage(message: string): Promise<void> {

@@ -8,6 +8,7 @@ import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 // Minimal node used only to prove the clipboard leak; the bug is not
@@ -80,11 +81,11 @@ test(
     await page
       .getByRole('button', { name: enMessages.agent.entryButton })
       .click()
-    const panel = page.locator('#agent-panel-root')
-    await expect(panel).toBeVisible()
+    const agentPanel = new AgentPanel(page)
+    await expect(agentPanel.root).toBeVisible()
 
-    const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
-    await composer.click()
+    const composer = agentPanel.composer
+    await agentPanel.clickBelowFirstPromptLine()
 
     const pastedText = 'a plain text prompt, not a node'
     await page.evaluate(

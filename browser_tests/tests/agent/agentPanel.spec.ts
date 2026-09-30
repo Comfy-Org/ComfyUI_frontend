@@ -325,6 +325,19 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         panel.getByText('What do you want to make?')
       ).toBeInViewport()
     })
+
+    test('starts typing from a click below the first prompt line', async ({
+      agentPanel,
+      comfyPage
+    }) => {
+      await agentPanel.open()
+
+      await agentPanel.clickBelowFirstPromptLine()
+
+      await expect(agentPanel.composer).toBeFocused()
+      await comfyPage.page.keyboard.type('hello')
+      await expect(agentPanel.composer).toHaveText('hello')
+    })
   })
 
   test('keeps a failed prompt available to retry', async ({
