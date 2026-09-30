@@ -232,6 +232,74 @@ describe('useStablePrimeVueSplitterSizer', () => {
     }
   )
 
+  it('keeps the gesture start width across repeated resize starts', async () => {
+    const stored = useKeyedStorage({ panel: 618 })
+    const panelRef = createPanel(618)
+    const handle = gutterHandleBetween(
+      panelRef.value,
+      document.createElement('div')
+    )
+    const { onResizeStart, onResizeEnd } = useStablePrimeVueSplitterSizer(
+      [{ ref: panelRef, storageKey: 'panel' }],
+      [ref(0)]
+    )
+    await flushWatcher()
+
+    onResizeStart(resizeStartEvent(handle))
+    setRenderedWidth(panelRef.value, 500)
+    onResizeStart(resizeStartEvent(handle))
+    setRenderedWidth(panelRef.value, 312)
+    onResizeStart(resizeStartEvent(handle))
+    onResizeEnd(resizeEndEvent())
+
+    expect(stored.get('panel')).toBe(312)
+    expect(panelRef.value.style.flexBasis).toBe('312px')
+  })
+
+  it.for([
+    {
+      case: 'both panels are rendered',
+      offsideWidth: 300,
+      reservedWidth: 160,
+      sidebarMax: 'calc((100% - 160px) * 0.5714)',
+      offsideMax: 'calc((100% - 160px) * 0.4286)'
+    },
+    {
+      case: 'the other panel is hidden',
+      offsideWidth: 0,
+      reservedWidth: 160,
+      sidebarMax: 'calc((100% - 160px) * 1.0000)',
+      offsideMax: ''
+    },
+    {
+      case: 'no width is reserved',
+      offsideWidth: 300,
+      reservedWidth: undefined,
+      sidebarMax: '',
+      offsideMax: ''
+    }
+  ])(
+    'caps pinned panels by a shared width budget when $case',
+    async ({ offsideWidth, reservedWidth, sidebarMax, offsideMax }) => {
+      useKeyedStorage({ sidebar: 400, offside: 300 })
+      const sidebarRef = createPanel(400)
+      const offsideRef = createPanel(offsideWidth)
+
+      useStablePrimeVueSplitterSizer(
+        [
+          { ref: sidebarRef, storageKey: 'sidebar' },
+          { ref: offsideRef, storageKey: 'offside' }
+        ],
+        [ref(0)],
+        { reservedWidth }
+      )
+      await flushWatcher()
+
+      expect(sidebarRef.value.style.maxWidth).toBe(sidebarMax)
+      expect(offsideRef.value.style.maxWidth).toBe(offsideMax)
+    }
+  )
+
   it('reads a width persisted by a previous session', async () => {
     vi.mocked(useStorage).mockRestore()
     localStorage.setItem('test-persisted-width', '350')

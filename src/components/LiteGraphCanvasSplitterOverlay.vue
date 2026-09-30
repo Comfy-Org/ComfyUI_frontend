@@ -40,13 +40,9 @@
               sidebarLocation === 'left'
                 ? cn(
                     'side-bar-panel pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden',
-                    sidePanelMaxWidth,
                     sidebarPanelVisible && 'min-w-78'
                   )
-                : cn(
-                    'pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden',
-                    sidePanelMaxWidth
-                  )
+                : 'pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden'
             "
             :min-size="
               sidebarLocation === 'left' ? SIDEBAR_MIN_SIZE : BUILDER_MIN_SIZE
@@ -121,13 +117,9 @@
               sidebarLocation === 'right'
                 ? cn(
                     'side-bar-panel pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden',
-                    sidePanelMaxWidth,
                     sidebarPanelVisible && 'min-w-78'
                   )
-                : cn(
-                    'pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden',
-                    sidePanelMaxWidth
-                  )
+                : 'pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden'
             "
             :min-size="
               sidebarLocation === 'right' ? SIDEBAR_MIN_SIZE : BUILDER_MIN_SIZE
@@ -173,6 +165,7 @@ import { useAppMode } from '@/composables/useAppMode'
 import { useStablePrimeVueSplitterSizer } from '@/composables/useStablePrimeVueSplitterSizer'
 import {
   BUILDER_MIN_SIZE,
+  CENTER_PANEL_MIN_WIDTH,
   CENTER_PANEL_SIZE,
   SIDEBAR_MIN_SIZE,
   SIDEBAR_MIN_WIDTH,
@@ -280,16 +273,6 @@ const lastPanelVisible = computed(
 const bothSidePanelsVisible = computed(
   () =>
     !focusMode.value && sidebarPanelVisible.value && showOffsideSplitter.value
-)
-
-/**
- * Side panels are pinned in pixels, so cap each against the splitter's width
- * to keep the center panel reachable when the window narrows or the agent
- * panel opens. The cap must not depend on the other panel, or opening it would
- * resize this one.
- */
-const sidePanelMaxWidth = computed(() =>
-  isSelectMode.value ? undefined : 'max-w-3/5'
 )
 
 const centerPanelDefaultSize = computed(() =>
@@ -454,7 +437,8 @@ const { onResizeStart: markResizedPanels, onResizeEnd: savePanelWidths } =
       sidebarPanelVisible,
       focusMode,
       agentNodeSelectionActive
-    ]
+    ],
+    { reservedWidth: CENTER_PANEL_MIN_WIDTH }
   )
 
 function onSplitterResizeStart(event: SplitterResizeStartEvent) {
