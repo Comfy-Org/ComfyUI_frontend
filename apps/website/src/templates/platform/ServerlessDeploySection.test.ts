@@ -13,14 +13,11 @@ describe('ServerlessDeploySection', () => {
     const user = userEvent.setup()
     render(ServerlessDeploySection, { props: { locale: 'en' } })
 
-    await user.click(screen.getByRole('button', { name: 'Copy commands' }))
+    await user.click(screen.getByRole('button', { name: 'Copy prompt' }))
 
-    expect(await navigator.clipboard.readText())
-      .toBe(`Install comfy-cli and read its build skill:
-
-\`pip install -U comfy-cli\`, then \`comfy skills show comfy-build\`.
-
-It covers packaging a local ComfyUI install — models, custom nodes, dependency pins — into a build on platform.comfy.org and cutting a release. \`comfy skills show comfy-deploy\` covers running that release as a serverless endpoint.`)
+    expect(await navigator.clipboard.readText()).toBe(
+      t('platform.serverlessDeploy.prompt', 'en')
+    )
     expect(screen.getByRole('button', { name: 'Copied' })).toBeTruthy()
   })
   it('presents the agent prompt as a live terminal', () => {
@@ -47,6 +44,16 @@ It covers packaging a local ComfyUI install — models, custom nodes, dependency
     ]) {
       expect(transcript).toContain(line)
     }
+  })
+  it('localizes the prompt for zh-CN', async () => {
+    const user = userEvent.setup()
+    render(ServerlessDeploySection, { props: { locale: 'zh-CN' } })
+
+    await user.click(screen.getByRole('button', { name: '复制提示词' }))
+
+    expect(await navigator.clipboard.readText()).toBe(
+      t('platform.serverlessDeploy.prompt', 'zh-CN')
+    )
   })
 })
 import userEvent from '@testing-library/user-event'

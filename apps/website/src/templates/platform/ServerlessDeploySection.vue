@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Check, Copy } from '@lucide/vue'
 import { useClipboard } from '@vueuse/core'
+import { computed } from 'vue'
 
 import SectionHeader from '../../components/common/SectionHeader.vue'
 import type { Locale } from '../../i18n/translations'
@@ -11,12 +12,10 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 // The prompt to paste into a coding agent; the copy button puts it on the
 // clipboard verbatim.
-const deployPrompt = `Install comfy-cli and read its build skill:
-
-\`pip install -U comfy-cli\`, then \`comfy skills show comfy-build\`.
-
-It covers packaging a local ComfyUI install — models, custom nodes, dependency pins — into a build on platform.comfy.org and cutting a release. \`comfy skills show comfy-deploy\` covers running that release as a serverless endpoint.`
-const deployTranscript = deployPrompt.split('\n')
+const deployPrompt = computed(() =>
+  t('platform.serverlessDeploy.prompt', locale)
+)
+const deployTranscript = computed(() => deployPrompt.value.split('\n'))
 const { copy, copied } = useClipboard({ source: deployPrompt, legacy: true })
 </script>
 
