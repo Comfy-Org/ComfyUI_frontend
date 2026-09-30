@@ -141,9 +141,10 @@ interface InFlight {
   /** Successful `sendOps` calls: each may still draw one result. */
   sends: number
   /**
-   * One throw report per delivery of these ops: armed at mint and re-armed
-   * by the silence-resend, which is a second delivery. `resume()` continues
-   * the delivery that `suspend()` parked, so it deliberately does not re-arm.
+   * One throw report per delivery of these ops: armed when the batch enters
+   * flight and re-armed by the silence-resend, which is a second delivery.
+   * `resume()` continues the delivery that `suspend()` parked, so it
+   * deliberately does not re-arm.
    */
   reportedThrow: boolean
   resent: boolean

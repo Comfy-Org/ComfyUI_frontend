@@ -16,7 +16,7 @@ const NEW_CHAT_THREAD_ID = '4b8e2c6a-1d3f-4e57-9a80-2c7d5e9f1b33'
 const NEW_CHAT_TURN_ID = '9f1d3b5c-7a2e-4c68-8d41-6e0a2b4c8d55'
 const FRESH_WORKFLOW_ID = 'c2d4e6f8-0a1b-4c3d-9e5f-7a8b9c0d1e2f'
 const MESSAGES_PATH = /\/api\/agent\/threads\/([^/]+)\/messages$/
-/** Each pass drains the acks in flight; a later one can only be a turn they triggered. */
+/** Drain waves, not time: a pass awaits the acks enrolled when it began. */
 const SETTLE_PASSES = 10
 
 interface PostedTurn {
@@ -109,8 +109,11 @@ class AgentNewChatServer {
     })
     await this.page.route('**/api/agent/threads', async (route) => {
       // The list is built from acks recorded off the response event, so a
-      // turn still being read would otherwise be missing a row.
-      await this.settled()
+      // turn still being read would otherwise be missing a row. Answer the
+      // request either way: a stalled route outshouts its own diagnostic.
+      await this.settled().catch((error: unknown) => {
+        this.ackFailures.push(`${route.request().url()}: ${String(error)}`)
+      })
       await route.fulfill(jsonRoute(this.threadList()))
     })
     await this.page.route('**/api/agent/threads/*/messages', (route) =>
@@ -132,6 +135,7 @@ class AgentNewChatServer {
       if (this.recording.size === 0) return
       await Promise.all(this.recording)
     }
+    if (this.recording.size === 0) return
     throw new Error(
       `Agent turn acks still recording after ${SETTLE_PASSES} passes`
     )
