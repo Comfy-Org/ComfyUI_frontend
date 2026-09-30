@@ -569,6 +569,12 @@ describe('reduceCheckoutPage after Pay', () => {
     )
   })
 
+  it('holds the keep-subscription tick while a Pay is in flight', () => {
+    const sent = replay([quoted(0, true), ready, tick(true), submitted])
+
+    expect(reduceCheckoutPage(sent, tick(false))).toBe(sent)
+  })
+
   it.for<{ name: string; event: CheckoutPageEvent }>([
     { name: 'a decline', event: declined },
     { name: 'a new Pay', event: submitted },
@@ -1192,6 +1198,71 @@ const capturing = (
   rail: { method: 'collect', element: 'ready', saved: 'none', tab: 'new' },
   reactivation: 'not_required',
   attempt
+})
+
+describe('reduceCheckoutPage waiting under a locked form', () => {
+  it.for<{ name: string; events: CheckoutPageEvent[]; expected: CheckoutPage }>(
+    [
+      {
+        name: 'money found on arrival takes the card rail the quote asks for',
+        events: [reconciled(challengedOperation()), quoted(0)],
+        expected: {
+          kind: 'waiting',
+          operation: challengedOperation(),
+          rail: {
+            method: 'collect',
+            element: 'loading',
+            saved: 'none',
+            tab: 'new'
+          }
+        }
+      },
+      {
+        name: 'a plan change found in flight takes the method on file',
+        events: [reconciled(challengedOperation()), quotedOnFile],
+        expected: {
+          kind: 'waiting',
+          operation: challengedOperation(),
+          rail: { method: 'on_file' }
+        }
+      },
+      {
+        name: 'the rail stays as the operation moves',
+        events: [
+          reconciled(challengedOperation()),
+          quoted(1),
+          changed(settlingOperation())
+        ],
+        expected: {
+          kind: 'waiting',
+          operation: settlingOperation(),
+          rail: {
+            method: 'collect',
+            element: 'loading',
+            saved: 'ready',
+            tab: 'saved'
+          }
+        }
+      },
+      {
+        name: "another tab's money keeps this tab's form under the lock",
+        events: [...live, reconciled(challengedOperation())],
+        expected: {
+          kind: 'waiting',
+          operation: challengedOperation(),
+          sibling: true,
+          rail: {
+            method: 'collect',
+            element: 'ready',
+            saved: 'none',
+            tab: 'new'
+          }
+        }
+      }
+    ]
+  )('$name', ({ events, expected }) => {
+    expect(replay(events)).toEqual(expected)
+  })
 })
 
 describe('submitPhaseOf', () => {

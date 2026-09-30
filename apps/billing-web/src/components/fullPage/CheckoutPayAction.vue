@@ -24,6 +24,8 @@ const {
   loading = false,
   phase,
   canCancel = false,
+  locked = false,
+  reopening = false,
   outcome,
   consent
 } = defineProps<
@@ -34,6 +36,10 @@ const {
     phase?: SubmitPhase
     /** Cancel payment renders only once the server can cancel a pending payment. */
     canCancel?: boolean
+    /** Money is on its way, so the consent it was sent with stands. */
+    locked?: boolean
+    /** The page is re-opening the challenge on its own; offering it too would flash. */
+    reopening?: boolean
   }
 >()
 
@@ -83,9 +89,12 @@ const challenge = computed(() =>
   phase?.kind === 'challenge' ? phase.operation : undefined
 )
 
-/** A challenge the page is not showing turns Pay into the one way back to it. */
+/** A challenge the page is not showing, and is not about to, turns Pay into the one way back to it. */
 const reopenable = computed(
-  () => challenge.value !== undefined && isChallengeReopenable(challenge.value)
+  () =>
+    !reopening &&
+    challenge.value !== undefined &&
+    isChallengeReopenable(challenge.value)
 )
 
 const PRIMARY_BUTTON =
@@ -105,6 +114,7 @@ const SECONDARY_BUTTON =
     <KeepSubscriptionNotice
       v-if="consent"
       :consent
+      :locked
       @confirm="emit('confirmReactivation', $event)"
     />
     <div class="flex flex-col gap-4">

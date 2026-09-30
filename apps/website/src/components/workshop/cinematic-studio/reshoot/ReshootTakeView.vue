@@ -79,7 +79,9 @@ const shown = computed(() => {
           rc(
             take.phase === 'starting'
               ? 'reshoot.stage.starting'
-              : 'reshoot.generatingHelp',
+              : take.phase === 'queued'
+                ? 'reshoot.stage.queued'
+                : 'reshoot.generatingHelp',
             locale
           )
         }}
@@ -95,14 +97,16 @@ const shown = computed(() => {
     </div>
     <div
       v-else-if="take.status === 'failed'"
-      role="status"
-      class="flex max-w-sm flex-col items-center gap-2 text-center"
+      role="alert"
+      class="flex max-w-md flex-col items-center gap-2 px-6 text-center"
     >
-      <p class="flex items-center gap-2.5 text-sm text-primary-comfy-canvas">
+      <p class="flex items-center gap-2.5 text-sm text-primary-warm-white">
         <CircleStop class="size-4" aria-hidden="true" />
         {{ rc('reshoot.take.failed', locale) }}
       </p>
-      <p class="text-xs text-primary-warm-gray">{{ take.note }}</p>
+      <p class="text-xs wrap-break-word text-primary-warm-gray">
+        {{ take.note }}
+      </p>
     </div>
     <p
       v-else

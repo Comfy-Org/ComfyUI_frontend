@@ -1737,9 +1737,9 @@ Enterprise`
   // Download – meta (decoupled from the hero subtitle so SERP copy can carry
   // the download queries without changing the visible hero)
   'download.meta.description': {
-    en: 'Download ComfyUI for Windows or macOS, or install from GitHub. The full open source engine, free forever, running on your own hardware.',
+    en: 'Download ComfyUI for Windows, macOS, or Linux, or install from GitHub. The full open source engine, free forever, running on your own hardware.',
     'zh-CN':
-      '下载适用于 Windows 或 macOS 的 ComfyUI，也可从 GitHub 安装。完整的开源引擎，永久免费，在你自己的硬件上运行。'
+      '下载适用于 Windows、macOS 或 Linux 的 ComfyUI，也可从 GitHub 安装。完整的开源引擎，永久免费，在你自己的硬件上运行。'
   },
 
   // Download – HeroSection

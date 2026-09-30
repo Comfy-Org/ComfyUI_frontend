@@ -31,12 +31,6 @@ on:
 
 permissions: {}
 
-concurrency:
-  # Use the head branch for labeled PRs so the label and push producers share
-  # one deployment lane for the same preview.
-  group: cloud-dispatch-${{ github.event.pull_request.head.ref || github.ref_name }}
-  cancel-in-progress: true
-
 jobs:
   dispatch:
     # Fork guard: prevent forks from dispatching to the cloud repo. Forked PRs
@@ -47,9 +41,14 @@ jobs:
       github.repository == 'Comfy-Org/ComfyUI_frontend' &&
       (github.event_name != 'push' || github.event.deleted == false) &&
       (github.event_name != 'pull_request' ||
-       (github.event.pull_request.head.repo.fork == false &&
+       (github.event.pull_request.head.repo.full_name == github.repository &&
         github.event.action == 'labeled' &&
         contains(fromJSON('["preview","preview-cpu","preview-gpu"]'), github.event.label.name)))
+    # Keep skipped label events out of the lane. Do not cancel an accepted run:
+    # each dispatch is fire-and-forget, so cancellation can lose a deployment.
+    concurrency:
+      group: cloud-dispatch-${{ github.run_id }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -91,6 +90,9 @@ jobs:
               # Existing testcloud/staging/release path: no PR context.
               PR_NUMBER=""
               VARIANT=""
+            elif [[ "${BRANCH}" == cloud/* ]]; then
+              echo "::error::Unrecognized cloud release branch '${BRANCH}'; expected cloud/x.y"
+              exit 1
             else
               # Feature-branch push: dispatch only when the branch has an open PR
               # carrying a preview label, so we keep that PR's preview env fresh
