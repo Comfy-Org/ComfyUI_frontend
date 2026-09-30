@@ -79,7 +79,7 @@ const { aspectOptions, resolutionOptions, aspectValue, resolutionValue } =
         class="grid size-8 place-items-center rounded-lg text-primary-warm-gray outline-none hover:text-primary-warm-white focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 disabled:opacity-40"
         :disabled="takes <= 1"
         :aria-label="tc('cinematic.output.fewerTakes', locale)"
-        @click="takes = takes - 1"
+        @click="takes = Math.max(1, takes - 1)"
       >
         <Minus class="size-3.5" aria-hidden="true" />
       </button>
@@ -95,7 +95,7 @@ const { aspectOptions, resolutionOptions, aspectValue, resolutionValue } =
         class="grid size-8 place-items-center rounded-lg text-primary-warm-gray outline-none hover:text-primary-warm-white focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 disabled:opacity-40"
         :disabled="takes >= MAX_TAKES"
         :aria-label="tc('cinematic.output.moreTakes', locale)"
-        @click="takes = takes + 1"
+        @click="takes = Math.min(MAX_TAKES, takes + 1)"
       >
         <Plus class="size-3.5" aria-hidden="true" />
       </button>
