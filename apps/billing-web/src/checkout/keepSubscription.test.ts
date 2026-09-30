@@ -50,7 +50,7 @@ describe('keepSubscriptionCopy', () => {
         new_plan: { ...previewOf().new_plan, duration: 'ANNUAL' },
         cost_next_period_cents: 30_000
       },
-      body: 'Switching to yearly keeps your subscription. It renews at $300.00.'
+      body: 'Switching to yearly keeps your subscription, and it renews a year from today at $300.00.'
     },
     {
       name: 'yearly to monthly at period end',
@@ -66,6 +66,27 @@ describe('keepSubscriptionCopy', () => {
         cost_next_period_cents: 70_000
       },
       body: 'Changing your commitment keeps your subscription, and it renews that day at $700.00.'
+    },
+    {
+      name: 'team monthly to team yearly, a billing period change',
+      quote: {
+        transition_type: 'duration_change',
+        new_plan: { ...team('TEAM'), duration: 'ANNUAL' },
+        current_plan: team('TEAM'),
+        renewal_at: '2027-07-28T00:00:00.000Z',
+        cost_next_period_cents: 700_000
+      },
+      body: 'Switching to yearly keeps your subscription. It renews on July 28, 2027 at $7,000.00.'
+    },
+    {
+      name: 'team yearly to team monthly, a billing period change',
+      quote: {
+        transition_type: 'duration_change',
+        new_plan: team('TEAM'),
+        current_plan: { ...team('TEAM'), duration: 'ANNUAL' },
+        cost_next_period_cents: 70_000
+      },
+      body: 'Switching to monthly keeps your subscription, and it renews that day at $700.00.'
     },
     {
       name: 'a change the quote does not classify',

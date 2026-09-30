@@ -861,6 +861,53 @@ export interface AgentOnboardingStepMetadata extends Record<string, unknown> {
  * then reworded stays `suggestion`, because the chip is still what it came from.
  */
 export type AgentInputMethod = 'typed' | 'suggestion' | 'edited'
+/**
+ * A starter prompt by the slot it occupies in the empty state, not by the text
+ * it shows: the copy is owned elsewhere and changes without the funnel
+ * changing. `unregistered` means the rendered set is larger than this union —
+ * a prompt was appended to either English distribution list without a matching
+ * entry in `starterPrompts.ts`, so that extra chip reads as an unmapped slot.
+ */
+export type AgentStarterPromptId =
+  | 'slot_1'
+  | 'slot_2'
+  | 'slot_3'
+  | 'slot_4'
+  | 'slot_5'
+  | 'unregistered'
+export interface AgentStarterPromptClickedMetadata extends Record<
+  string,
+  unknown
+> {
+  prompt_id: AgentStarterPromptId
+  /** Slot position, so a reorder is visible rather than silently re-labelling. */
+  prompt_index: number
+  /** Size of the rendered set, so a set that grew or shrank is visible too. */
+  prompt_count: number
+  /**
+   * FNV-1a of the *displayed* text, 8 hex chars. Here so a copy change under a
+   * stable `prompt_id` is detectable — without it, a before/after read cannot
+   * tell a better slot from a rewritten one. Not the text itself (job `Don't`
+   * #3), and not reversible.
+   */
+  prompt_text_hash: string
+  /** The i18n locale that produced `prompt_text_hash`; two locales are two hashes of one prompt. */
+  locale: string
+  /**
+   * Minted per click. Carried onto every `app:agent_message_sent` attempt
+   * attributable to this click as `starter_prompt_click_id`. Retries mint a
+   * new `client_message_id` but retain this id, so click conversion must count
+   * distinct `starter_prompt_click_id` values rather than send events. A click
+   * with no matching send attempt never converted.
+   */
+  click_id: string
+  /**
+   * Whether the composer was empty when the chip was clicked. Inserting
+   * appends, so `false` means the submitted text is a mix of this prompt and
+   * something else — do not read those as a clean per-prompt outcome.
+   */
+  draft_was_empty: boolean
+}
 export interface AgentMessageSentMetadata extends Record<string, unknown> {
   attachment_count: number
   node_tag_count: number
@@ -881,6 +928,15 @@ export interface AgentMessageSentMetadata extends Record<string, unknown> {
    */
   client_message_id: string
   input_method: AgentInputMethod
+  /**
+   * Which starter prompt supplied this draft, `null` when none did. The last
+   * chip clicked before the send wins, because inserting appends and the send
+   * is one message. Starter-prompt suggestions always carry a non-null ID and
+   * use `input_method: 'suggestion'`.
+   */
+  starter_prompt_id: AgentStarterPromptId | null
+  /** `click_id` of the `app:agent_starter_prompt_clicked` this send came from, `null` when typed. */
+  starter_prompt_click_id: string | null
 }
 export interface AgentNodeTaggedMetadata extends Record<string, unknown> {
   source: 'mention_picker'
@@ -935,6 +991,23 @@ export type AgentThreadStartSource =
   | 'history_delete'
 export interface AgentThreadStartedMetadata extends Record<string, unknown> {
   source: AgentThreadStartSource
+}
+
+export type AgentErrorClass =
+  | 'request_failed'
+  | 'malformed_stream_event'
+  | 'cancel_failed'
+  | 'history_load_failed'
+  | 'ask_answer_failed'
+  | 'thread_list_load_failed'
+  | 'workflow_open_failed'
+export interface AgentErrorMetadata extends Record<string, unknown> {
+  error_class: AgentErrorClass
+  failure_stage: 'pre_acceptance' | 'post_acceptance'
+  retryable: boolean
+  turn_accepted: boolean
+  /** `none` is a failure the user was never shown. */
+  ui_treatment: 'inline_notice' | 'error_overlay' | 'toast' | 'none'
 }
 
 /**
@@ -1083,14 +1156,33 @@ export type AgentPaywallReason =
   | 'sales_managed'
   | 'unknown'
 
+/**
+ * Which moment put the paywall in front of the user. The two are not
+ * interchangeable and collapsing them made the funnel unreadable:
+ *
+ * - `refused_send` is reactive — a turn POST came back 402/`no_funds`, so the
+ *   user had to compose and send a message to discover they could not.
+ * - `credits_exhausted` is standing — the client already knows the workspace
+ *   has no funds and says so beside the composer, without a refusal first.
+ *
+ * Reported because `app:agent_paywall_shown` alone cannot tell a rise in
+ * impressions caused by the standing surface from one caused by more users
+ * being refused. Without the split, "the paywall is showing more" is
+ * ambiguous between the fix working and the product getting worse.
+ */
+export type AgentPaywallSurface = 'refused_send' | 'credits_exhausted'
+
 export interface AgentPaywallShownMetadata {
   reason: AgentPaywallReason
+  surface: AgentPaywallSurface
 }
 
 export type AgentPaywallCta = 'subscribe' | 'add_credits' | 'upgrade'
 
 export interface AgentPaywallCtaMetadata {
   cta: AgentPaywallCta
+  /** The surface whose impression this click follows. */
+  surface: AgentPaywallSurface
 }
 
 export interface SubscriptionCancellationMetadata {
@@ -1701,11 +1793,15 @@ export interface TelemetryProvider {
   trackAgentOnboardingShown?(): void
   trackAgentOnboardingStep?(metadata: AgentOnboardingStepMetadata): void
   trackAgentMessageSent?(metadata: AgentMessageSentMetadata): void
+  trackAgentStarterPromptClicked?(
+    metadata: AgentStarterPromptClickedMetadata
+  ): void
   trackAgentNodeTagged?(metadata: AgentNodeTaggedMetadata): void
   trackAgentAttachButtonClicked?(
     metadata: AgentAttachButtonClickedMetadata
   ): void
   trackAgentWorkflowApplied?(metadata: AgentWorkflowAppliedMetadata): void
+  trackAgentError?(metadata: AgentErrorMetadata): void
   trackAgentStopClicked?(metadata: AgentStopClickedMetadata): void
   trackAgentWorkflowBound?(metadata: AgentWorkflowBoundMetadata): void
   trackAgentRunApprovalShown?(metadata: AgentRunApprovalShownMetadata): void
@@ -1901,9 +1997,11 @@ export const TelemetryEvents = {
   AGENT_ONBOARDING_SHOWN: 'app:agent_onboarding_shown',
   AGENT_ONBOARDING_STEP: 'app:agent_onboarding_step',
   AGENT_MESSAGE_SENT: 'app:agent_message_sent',
+  AGENT_STARTER_PROMPT_CLICKED: 'app:agent_starter_prompt_clicked',
   AGENT_NODE_TAGGED: 'app:agent_node_tagged',
   AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',
   AGENT_WORKFLOW_APPLIED: 'app:agent_workflow_applied',
+  AGENT_ERROR: 'app:agent_error',
   AGENT_STOP_CLICKED: 'app:agent_stop_clicked',
   AGENT_WORKFLOW_BOUND: 'app:agent_workflow_bound',
   AGENT_RUN_APPROVAL_SHOWN: 'app:agent_run_approval_shown',

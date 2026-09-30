@@ -48,6 +48,13 @@ export class AgentApiError extends Error {
   }
 }
 
+export class AgentResponseUnreadableError extends Error {
+  constructor(route: string, cause: unknown) {
+    super(`Unreadable agent response body from ${route}`, { cause })
+    this.name = 'AgentResponseUnreadableError'
+  }
+}
+
 export type OpenTabsSnapshot = Pick<
   AgentPostMessageRequest,
   'open_tabs' | 'current_tab'
@@ -339,7 +346,13 @@ export function createAgentRestClient() {
   ): Promise<T> {
     const response = await api.fetchApi(route, init)
     if (!response.ok) throw await toApiError(response)
-    return schema.parse(await response.json())
+    let payload: unknown
+    try {
+      payload = await response.json()
+    } catch (error) {
+      throw new AgentResponseUnreadableError(route, error)
+    }
+    return schema.parse(payload)
   }
 
   function jsonInit(method: string, body: unknown): RequestInit {

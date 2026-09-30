@@ -9,7 +9,7 @@ import SubscriptionActions from '@/components/SubscriptionActions.vue'
 import { useHostedCopy } from '@/composables/useHostedCopy'
 
 const { t } = useI18n()
-const { coded, date } = useHostedCopy()
+const { refusal, date, planName } = useHostedCopy()
 const { plans, loading, failure, refresh } = usePlans()
 
 const { status } = useBillingClient<'status'>(undefined)
@@ -34,12 +34,7 @@ const currentName = computed(() => {
   const current = catalog?.plans.find(
     (plan) => plan.slug === catalog.current_plan_slug
   )
-  return current
-    ? t('hosted.plan.name', {
-        tier: coded('tier', current.tier),
-        duration: coded('duration', current.duration)
-      })
-    : undefined
+  return current ? planName(current) : undefined
 })
 </script>
 
@@ -49,7 +44,7 @@ const currentName = computed(() => {
       {{ t('hosted.loading') }}
     </p>
     <p v-if="failure" class="m-0 text-sm text-destructive-background">
-      {{ coded('failure', failure.code) }}
+      {{ refusal(failure) }}
     </p>
 
     <p class="m-0 text-sm text-muted-foreground">
