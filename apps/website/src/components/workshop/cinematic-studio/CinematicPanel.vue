@@ -20,7 +20,7 @@ import type { CinematicVideoCapabilities } from '../../../lib/workshop/cinematic
 import { videoTags } from '../../../lib/workshop/cinematic-studio/video'
 import type { ShotBlock } from '../../../composables/useCinematicShot'
 import type { StudioImage } from '../../../lib/workshop/cinematic-studio/take-image'
-import CinematicColors from './CinematicColors.vue'
+import CinematicCharacterButton from './CinematicCharacterButton.vue'
 import CinematicGenerateAction from './CinematicGenerateAction.vue'
 import CinematicMenu from './CinematicMenu.vue'
 import CinematicOutputControls from './CinematicOutputControls.vue'
@@ -42,6 +42,7 @@ const {
   credits,
   showCredits = true,
   openPicker,
+  colors = [],
   locale = 'en'
 } = defineProps<{
   models: readonly CinematicModel[]
@@ -55,6 +56,8 @@ const {
   credits?: number
   showCredits?: boolean
   openPicker?: PickerKey
+  /** The visitor's own palette, shown on the Grade row. */
+  colors?: readonly string[]
   locale?: Locale
 }>()
 
@@ -72,9 +75,6 @@ const aspect = defineModel<AspectRatio>('aspect', { required: true })
 const resolution = defineModel<Resolution>('resolution', { required: true })
 const takes = defineModel<number>('takes', { required: true })
 const cast = defineModel<StudioImage | undefined>('cast')
-const palette = defineModel<StudioImage | undefined>('palette')
-const colors = defineModel<readonly string[]>('colors', { required: true })
-const mainColor = defineModel<number | undefined>('mainColor')
 const duration = defineModel<number | undefined>('duration')
 const videoResolution = defineModel<string | undefined>('videoResolution')
 const audio = defineModel<boolean>('audio', { default: false })
@@ -124,6 +124,7 @@ const cardClass =
           v-model="modelSlug"
           :options="modelOptions"
           :heading="tc('cinematic.model.heading', locale)"
+          :show-heading="false"
           side="bottom"
           :trigger-class="cn(cardClass, 'h-11 gap-3 px-3')"
         >
@@ -147,19 +148,22 @@ const cardClass =
         v-model:enhance="enhance"
         :video="!!video"
         :locale
-      />
+      >
+        <CinematicCharacterButton v-if="!video" v-model="cast" :locale />
+      </CinematicSceneField>
       <section class="flex flex-col gap-2">
         <h2 :class="labelClass">
           {{ tc('cinematic.section.shot', locale) }}
         </h2>
         <CinematicShotList
           :direction
+          :colors
           :open-picker="openPicker"
           :locale
           @open="emit('open', $event)"
         />
       </section>
-      <section class="flex flex-col gap-2">
+      <section v-if="video" class="flex flex-col gap-2">
         <div class="flex items-center justify-between">
           <h2 :class="labelClass">
             {{ tc('cinematic.section.references', locale) }}
@@ -168,7 +172,7 @@ const cardClass =
             {{ tc('cinematic.reference.optional', locale) }}
           </span>
         </div>
-        <div v-if="video" class="grid grid-cols-2 gap-2">
+        <div class="grid grid-cols-2 gap-2">
           <CinematicReferenceSlot
             v-if="slots.includes('video')"
             v-model="sourceVideo"
@@ -189,11 +193,6 @@ const cardClass =
             :locale
           />
         </div>
-        <div v-else class="grid grid-cols-2 gap-2">
-          <CinematicReferenceSlot v-model="cast" kind="cast" :locale />
-          <CinematicReferenceSlot v-model="palette" kind="palette" :locale />
-        </div>
-        <CinematicColors v-model="colors" v-model:main="mainColor" :locale />
       </section>
       <section class="flex flex-col gap-2">
         <h2 :class="labelClass">
@@ -213,7 +212,7 @@ const cardClass =
           v-model:aspect="aspect"
           v-model:resolution="resolution"
           v-model:takes="takes"
-          :aspects="shotAspects(model, !!(cast || palette))"
+          :aspects="shotAspects(model, !!cast)"
           :locale
         />
       </section>
