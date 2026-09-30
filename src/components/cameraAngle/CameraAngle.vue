@@ -4,7 +4,7 @@
     bottom-class="h-12"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
-    @viewport-pointerdown="openPreset = null"
+    @pointerdown.capture="openPreset = null"
   >
     <template #top>
       <button

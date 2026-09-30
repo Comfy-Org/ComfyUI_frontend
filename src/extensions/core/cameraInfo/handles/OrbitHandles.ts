@@ -18,6 +18,13 @@ const HOVER_GLOW_OPACITY = 0.6
 const HOVER_SCALE = 1.35
 
 export type OrbitHandleType = 'yaw' | 'pitch' | 'distance'
+const ORBIT_HANDLE_TYPES: Record<OrbitHandleType, true> = {
+  yaw: true,
+  pitch: true,
+  distance: true
+}
+export const isOrbitHandleType = (value: string): value is OrbitHandleType =>
+  Object.hasOwn(ORBIT_HANDLE_TYPES, value)
 
 const DEG2RAD = Math.PI / 180
 

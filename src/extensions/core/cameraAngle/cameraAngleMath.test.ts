@@ -33,7 +33,7 @@ import type { CameraAngleState } from './types'
 const FRONT: CameraAngleState = { horizontal: 0, vertical: 0, zoom: 5 }
 
 describe('term buckets', () => {
-  it.each([
+  it.for<[angle: number, key: string]>([
     [0, 'front'],
     [22, 'front'],
     [23, 'frontRight'],
@@ -42,27 +42,27 @@ describe('term buckets', () => {
     [270, 'left'],
     [338, 'front'],
     [-45, 'frontLeft']
-  ])('maps %d° to the %s sector', (angle, key) => {
+  ])('maps %d° to the %s sector', ([angle, key]) => {
     expect(horizontalTerm(angle).key).toBe(key)
   })
 
-  it.each([
+  it.for<[angle: number, key: string]>([
     [-30, 'lowAngle'],
     [-15, 'eyeLevel'],
     [14, 'eyeLevel'],
     [15, 'elevated'],
     [45, 'highAngle']
-  ])('maps %d° elevation to %s', (angle, key) => {
+  ])('maps %d° elevation to %s', ([angle, key]) => {
     expect(verticalTerm(angle).key).toBe(key)
   })
 
-  it.each([
+  it.for<[zoom: number, key: string]>([
     [0, 'wide'],
     [1.9, 'wide'],
     [2, 'medium'],
     [6, 'closeUp'],
     [10, 'closeUp']
-  ])('maps zoom %d to %s', (zoom, key) => {
+  ])('maps zoom %d to %s', ([zoom, key]) => {
     expect(distanceTerm(zoom).key).toBe(key)
   })
 

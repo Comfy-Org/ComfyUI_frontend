@@ -1,6 +1,9 @@
 import * as THREE from 'three'
 
-import { OrbitHandles } from '@/extensions/core/cameraInfo/handles/OrbitHandles'
+import {
+  OrbitHandles,
+  isOrbitHandleType
+} from '@/extensions/core/cameraInfo/handles/OrbitHandles'
 import type { OrbitHandleType } from '@/extensions/core/cameraInfo/handles/OrbitHandles'
 import { pickHandleAtPointer } from '@/extensions/core/cameraInfo/handles/handlePicking'
 import { PointerInteraction } from '@/extensions/core/cameraInfo/handles/pointerInteraction'
@@ -212,13 +215,14 @@ export class CameraAngleViewport {
   private pickHandle(position: PointerPosition): OrbitHandleType | null {
     if (this.viewMode !== 'camera') return null
     this.updatePointer(position)
-    return pickHandleAtPointer<OrbitHandleType>(
+    const picked = pickHandleAtPointer(
       this.raycaster,
       this.pointerNdc,
       this.viewport.cameraManager.activeCamera,
       this.orbitHandles.pickableMeshes(),
       this.canvas
     )
+    return picked !== null && isOrbitHandleType(picked) ? picked : null
   }
 
   private dragHandle(type: OrbitHandleType, position: PointerPosition): void {

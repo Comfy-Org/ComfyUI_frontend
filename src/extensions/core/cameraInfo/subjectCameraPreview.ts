@@ -23,13 +23,20 @@ interface InsetPreviewLayout {
   marginBottom: number
 }
 
+const DEFAULT_LAYOUT: InsetPreviewLayout = {
+  width: PREVIEW_WIDTH,
+  height: PREVIEW_HEIGHT,
+  marginRight: PREVIEW_PADDING,
+  marginBottom: PREVIEW_PADDING
+}
+
 export interface InsetPreviewTarget {
   renderer: PreviewRenderer
   canvas: { width: number; height: number }
   scene: THREE.Scene
   camera: THREE.Camera
   hidden: readonly Hideable[]
-  layout?: Partial<InsetPreviewLayout>
+  layout?: InsetPreviewLayout
   borderColor?: THREE.ColorRepresentation
   backgroundColor?: THREE.ColorRepresentation
 }
@@ -87,28 +94,30 @@ function withPreviewAspect(
   render()
 }
 
+function fitsCanvas(
+  { width, height, marginRight, marginBottom }: InsetPreviewLayout,
+  canvas: InsetPreviewTarget['canvas']
+): boolean {
+  return (
+    width > 0 &&
+    height > 0 &&
+    canvas.width >= width + marginRight * 2 &&
+    canvas.height >= height + marginBottom + PREVIEW_PADDING
+  )
+}
+
 export function renderInsetPreview({
   renderer,
   canvas,
   scene,
   camera,
   hidden,
-  layout,
+  layout = DEFAULT_LAYOUT,
   borderColor = PREVIEW_BORDER_COLOR,
   backgroundColor = PREVIEW_BACKGROUND_COLOR
 }: InsetPreviewTarget): void {
-  const width = layout?.width ?? PREVIEW_WIDTH
-  const height = layout?.height ?? PREVIEW_HEIGHT
-  const marginRight = layout?.marginRight ?? PREVIEW_PADDING
-  const marginBottom = layout?.marginBottom ?? PREVIEW_PADDING
-  if (
-    width <= 0 ||
-    height <= 0 ||
-    canvas.width < width + marginRight * 2 ||
-    canvas.height < height + marginBottom + PREVIEW_PADDING
-  ) {
-    return
-  }
+  if (!fitsCanvas(layout, canvas)) return
+  const { width, height, marginRight, marginBottom } = layout
 
   const restore = hidden
     .filter((item) => item.isVisible())

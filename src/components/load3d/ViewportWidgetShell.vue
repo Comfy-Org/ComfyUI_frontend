@@ -1,11 +1,15 @@
 <template>
-  <div class="relative size-full min-h-[300px]" @mousedown.stop>
+  <div
+    class="relative size-full min-h-[300px]"
+    @pointerdown.stop
+    @mousedown.stop
+  >
     <div
       ref="container"
       class="relative size-full"
       data-capture-wheel="true"
       tabindex="-1"
-      @pointerdown.stop="onViewportPointerdown"
+      @pointerdown.stop="focusContainer"
       @contextmenu.stop.prevent
       @mouseenter="emit('mouseenter')"
       @mouseleave="emit('mouseleave')"
@@ -48,15 +52,13 @@ const { bottomClass } = defineProps<{ bottomClass?: string }>()
 const emit = defineEmits<{
   mouseenter: []
   mouseleave: []
-  viewportPointerdown: []
 }>()
 
 const container = ref<HTMLElement | null>(null)
 const toolbar = ref<HTMLElement | null>(null)
 
-function onViewportPointerdown() {
+function focusContainer() {
   container.value?.focus()
-  emit('viewportPointerdown')
 }
 
 defineExpose({ container, toolbar })

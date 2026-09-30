@@ -1,7 +1,9 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { useElementSize } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick } from 'vue'
+import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
@@ -40,7 +42,6 @@ const i18n = createI18n({
 type ApiMocks = Record<string, ReturnType<typeof vi.fn>>
 
 const holder = vi.hoisted(() => ({
-  toolbarWidth: null as { value: number } | null,
   state: null as { value: Record<string, number> } | null,
   viewMode: null as { value: string } | null,
   prompt: null as { value: string } | null,
@@ -48,15 +49,9 @@ const holder = vi.hoisted(() => ({
   api: null as ApiMocks | null
 }))
 
-vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => {
-  const { ref } = await import('vue')
-  const width = ref(600)
-  holder.toolbarWidth = width
-  return {
-    ...(await importOriginal()),
-    useElementSize: () => ({ width, height: ref(400) })
-  }
-})
+const toolbarWidth = ref(600)
+
+vi.mock(import('@vueuse/core'), { spy: true })
 
 vi.mock<unknown>(import('@/composables/useCameraAngle'), async () => {
   const { ref } = await import('vue')
@@ -160,7 +155,10 @@ describe('CameraAngle', () => {
     holder.state!.value = { horizontal: 0, vertical: 0, zoom: 5 }
     holder.viewMode!.value = 'camera'
     holder.previewVisible!.value = false
-    holder.toolbarWidth!.value = 600
+    toolbarWidth.value = 600
+    vi.mocked(useElementSize).mockImplementation(() =>
+      fromPartial({ width: toolbarWidth, height: ref(400) })
+    )
     Object.values(api()).forEach((fn) => fn.mockClear())
   })
 
@@ -211,7 +209,7 @@ describe('CameraAngle', () => {
       'Object'
     )
 
-    holder.toolbarWidth!.value = 300
+    toolbarWidth.value = 300
     await nextTick()
 
     const button = screen.getByRole('button', { name: 'Object' })
@@ -263,10 +261,12 @@ describe('CameraAngle', () => {
     await user.click(within(zoom).getByTestId('open'))
     expect(openStates()).toEqual(['false', 'false', 'true'])
 
-    await user.click(within(horizontal).getByTestId('close'))
+    within(horizontal).getByTestId('close').focus()
+    await user.keyboard('{Enter}')
     expect(openStates()).toEqual(['false', 'false', 'true'])
 
-    await user.click(within(zoom).getByTestId('close'))
+    within(zoom).getByTestId('close').focus()
+    await user.keyboard('{Enter}')
     expect(openStates()).toEqual(['false', 'false', 'false'])
   })
 
@@ -281,5 +281,17 @@ describe('CameraAngle', () => {
 
     await user.pointer({ keys: '[MouseLeft>]', target: container })
     expect(vertical.dataset.open).toBe('false')
+  })
+
+  it('closes the open preset select when a toolbar control is pressed', async () => {
+    renderComponent()
+    const user = userEvent.setup()
+    const [horizontal] = screen.getAllByTestId('preset-select')
+
+    await user.click(within(horizontal).getByTestId('open'))
+    expect(horizontal.dataset.open).toBe('true')
+
+    await user.click(screen.getByRole('button', { name: 'Object' }))
+    expect(horizontal.dataset.open).toBe('false')
   })
 })

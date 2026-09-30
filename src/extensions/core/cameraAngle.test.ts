@@ -1,102 +1,88 @@
-import { describe, expect, it, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { beforeAll, describe, expect, it, vi } from 'vitest'
 
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { useExtensionService } from '@/services/extensionService'
+import type { ComfyApp } from '@/scripts/app'
 import type { ComfyExtension } from '@/types/comfy'
+import { graphToPrompt } from '@/utils/executionUtil'
 
-interface WidgetCtorArgs {
-  name: string
-  type?: string
-  options: {
-    serialize?: boolean
-    getValue?: () => unknown
-    setValue?: (value: unknown) => void
-  }
+const registerExtension = vi.hoisted(() =>
+  vi.fn<(ext: ComfyExtension) => void>()
+)
+
+vi.mock(import('@/services/extensionService'), () => ({
+  useExtensionService: () =>
+    fromPartial<ReturnType<typeof useExtensionService>>({ registerExtension })
+}))
+
+class CameraAngleNode extends LGraphNode {
+  static comfyClass = 'CameraAngle'
 }
 
-const { state } = vi.hoisted(() => ({
-  state: {
-    extension: null as ComfyExtension | null,
-    addWidget: vi.fn(),
-    lastCtorArgs: null as WidgetCtorArgs | null
-  }
-}))
-
-vi.mock('@/services/extensionService', () => ({
-  useExtensionService: () => ({
-    registerExtension: (ext: ComfyExtension) => {
-      state.extension = ext
-    }
-  })
-}))
-
-vi.mock('@/scripts/domWidget', () => ({
-  ComponentWidgetImpl: class {
-    name: string
-    type = 'custom'
-    options: WidgetCtorArgs['options']
-    constructor(args: WidgetCtorArgs) {
-      state.lastCtorArgs = args
-      this.name = args.name
-      this.options = args.options
-    }
-    get value() {
-      return this.options.getValue?.()
-    }
-    set value(next: unknown) {
-      this.options.setValue?.(next)
-    }
-  },
-  addWidget: state.addWidget
-}))
-
-await import('./cameraAngle')
-
-function makeNode(comfyClass: string) {
-  return {
-    constructor: { comfyClass },
-    size: [100, 100] as [number, number],
-    setSize: vi.fn()
-  }
+class OtherNode extends LGraphNode {
+  static comfyClass = 'SomethingElse'
 }
 
-async function createViewWidget() {
-  const widgets = await state.extension!.getCustomWidgets!({} as never)
-  const build = widgets.CAMERA_ANGLE_VIEW
+let extension: ComfyExtension
+
+beforeAll(async () => {
+  await import('./cameraAngle')
+  expect(registerExtension).toHaveBeenCalledOnce()
+  extension = registerExtension.mock.calls[0][0]
+})
+
+async function addCameraAngleNode(graph: LGraph) {
+  const node = new CameraAngleNode('CameraAngle')
+  node.comfyClass = 'CameraAngle'
+  node.serialize_widgets = true
+  node.addWidget('number', 'horizontal', 45, () => undefined, {})
+  graph.add(node)
+
+  const widgets = await extension.getCustomWidgets?.(fromPartial<ComfyApp>({}))
+  const build = widgets?.CAMERA_ANGLE_VIEW
   if (!build) throw new Error('CAMERA_ANGLE_VIEW widget not registered')
-  const result = build(
-    makeNode('CameraAngle') as never,
-    'view',
-    [] as never,
-    {} as never
-  )
-  if (!result) throw new Error('widget was not created')
-  const widget = 'name' in result ? result : result.widget
-  if (!widget) throw new Error('widget was not created')
-  return widget
+  build(node, 'view', ['CAMERA_ANGLE_VIEW', {}], fromPartial<ComfyApp>({}))
+
+  const view = node.widgets?.find((widget) => widget.name === 'view')
+  if (!view) throw new Error('view widget was not added to the node')
+  return { node, view }
 }
 
 describe('Comfy.CameraAngle extension', () => {
-  it('registers a non-prompt view widget that remembers a valid view mode', async () => {
-    const widget = await createViewWidget()
+  it('saves the view mode in the workflow but leaves it out of the prompt', async () => {
+    const graph = new LGraph()
+    const { node, view } = await addCameraAngleNode(graph)
 
-    expect(state.addWidget).toHaveBeenCalledWith(expect.anything(), widget)
-    expect(state.lastCtorArgs?.options.serialize).toBe(false)
-    expect(widget.value).toBe('camera')
+    view.value = 'object'
 
-    widget.value = 'object'
-    expect(widget.value).toBe('object')
+    expect(node.serialize().widgets_values_named).toEqual({
+      horizontal: 45,
+      view: 'object'
+    })
+    const { output } = await graphToPrompt(graph)
+    expect(output[String(node.id)].inputs).toEqual({ horizontal: 45 })
+  })
 
-    widget.value = 'not-a-mode'
-    expect(widget.value).toBe('object')
+  it('ignores values that are not a view mode', async () => {
+    const { view } = await addCameraAngleNode(new LGraph())
+
+    expect(view.value).toBe('camera')
+    view.value = 'object'
+    view.value = 'not-a-mode'
+    expect(view.value).toBe('object')
   })
 
   it('enlarges CameraAngle nodes only', () => {
-    const node = makeNode('CameraAngle')
-    const other = makeNode('SomethingElse')
+    const node = new CameraAngleNode('CameraAngle')
+    const other = new OtherNode('SomethingElse')
+    node.size = [100, 100]
+    other.size = [100, 100]
 
-    state.extension!.nodeCreated!(node as never, {} as never)
-    state.extension!.nodeCreated!(other as never, {} as never)
+    extension.nodeCreated?.(node, fromPartial<ComfyApp>({}))
+    extension.nodeCreated?.(other, fromPartial<ComfyApp>({}))
 
-    expect(node.setSize).toHaveBeenCalledWith([360, 480])
-    expect(other.setSize).not.toHaveBeenCalled()
+    expect(Array.from(node.size)).toEqual([360, 480])
+    expect(Array.from(other.size)).toEqual([100, 100])
   })
 })
