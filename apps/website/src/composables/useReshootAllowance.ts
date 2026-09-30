@@ -53,7 +53,7 @@ export function useReshootAllowance(
   )
 
   function record(at = Date.now()) {
-    runs.value = [...pruneRuns(runs.value, limit, at), at]
+    runs.value = [...pruneRuns(readRuns(key.value), limit, at), at]
     writeRuns(key.value, runs.value)
   }
 

@@ -424,16 +424,17 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
     return readGeometry(await bytes.arrayBuffer())
   }
 
-  /** A read not kept from before counts against the hourly depth ceiling. */
-  function freshRead(
+  /** A read that finishes, not one kept from before, counts against the hourly ceiling. */
+  async function freshRead(
     via: ReshootTransport,
     clip: ReshootClip,
     signal: AbortSignal
   ) {
     if (depthAllowance.allowance.value.left === 0)
       throw new ReshootError(DEPTH_LIMIT)
-    depthAllowance.record()
-    return readScene(via, clip, signal)
+    const geometry = await readScene(via, clip, signal)
+    if (!signal.aborted) depthAllowance.record()
+    return geometry
   }
 
   /** The chosen clip, uploaded once, and its scene, read once per settings. */

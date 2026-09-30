@@ -104,46 +104,41 @@ describe('ReshootSide', () => {
     ).toBeInTheDocument()
   })
 
-  it.for([
-    {
-      depth: 'failed' as const,
-      reason: { error: 'The deployment is not ready.' },
-      title: rc('reshoot.pending.depthFailed'),
-      retry: true
-    },
-    {
-      depth: 'none' as const,
-      reason: { blocked: rc('reshoot.signIn') },
-      title: rc('reshoot.pending.depthWaiting'),
-      retry: false
-    }
-  ])(
-    'says why the depth is not ready ($depth) instead of showing dead controls',
-    async ({ depth, reason, title, retry }) => {
-      const analyze = vi.fn()
-      render({
-        setup: () => () =>
-          h(ReshootSide, {
-            ...props,
-            ...reason,
-            depth,
-            size: RESHOOT_SIZES[0],
-            onAnalyze: analyze
-          })
-      })
-      const step = screen.getByTestId('reshoot-depth-step')
+  function renderPending(extra: Record<string, unknown>) {
+    const analyze = vi.fn()
+    render({
+      setup: () => () =>
+        h(ReshootSide, {
+          ...props,
+          ...extra,
+          size: RESHOOT_SIZES[0],
+          onAnalyze: analyze
+        })
+    })
+    return analyze
+  }
 
-      expect(step).toHaveTextContent(title)
-      expect(step).toHaveTextContent(Object.values(reason)[0])
-      expect(screen.getByTestId('reshoot-aim-controls')).toHaveAttribute(
-        'inert'
-      )
-      if (retry) {
-        await userEvent.click(screen.getByTestId('reshoot-analyze'))
-        expect(analyze).toHaveBeenCalledOnce()
-      } else {
-        expect(screen.queryByTestId('reshoot-analyze')).toBeNull()
-      }
-    }
-  )
+  it('says what failed in a depth read and offers to try again', async () => {
+    const analyze = renderPending({
+      depth: 'failed',
+      error: 'The deployment is not ready.'
+    })
+    const step = screen.getByTestId('reshoot-depth-step')
+
+    expect(step).toHaveTextContent(rc('reshoot.pending.depthFailed'))
+    expect(step).toHaveTextContent('The deployment is not ready.')
+    expect(screen.getByTestId('reshoot-aim-controls')).toHaveAttribute('inert')
+    await userEvent.click(screen.getByTestId('reshoot-analyze'))
+    expect(analyze).toHaveBeenCalledOnce()
+  })
+
+  it('says why a depth read has not started, without a retry', () => {
+    renderPending({ depth: 'none', blocked: rc('reshoot.signIn') })
+    const step = screen.getByTestId('reshoot-depth-step')
+
+    expect(step).toHaveTextContent(rc('reshoot.pending.depthWaiting'))
+    expect(step).toHaveTextContent(rc('reshoot.signIn'))
+    expect(screen.getByTestId('reshoot-aim-controls')).toHaveAttribute('inert')
+    expect(screen.queryByTestId('reshoot-analyze')).toBeNull()
+  })
 })

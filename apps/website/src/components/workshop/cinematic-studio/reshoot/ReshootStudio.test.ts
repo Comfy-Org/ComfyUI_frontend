@@ -186,12 +186,15 @@ describe('Re-shoot on one screen', () => {
     const limit = () => screen.getByTestId('reshoot-limit')
     expect(limit()).toHaveTextContent('3 of 3 takes left this hour')
 
-    for (const left of [2, 1, 0]) {
+    const takeAndCancel = async () => {
       await user.click(screen.getByTestId('reshoot-action'))
       await user.click(screen.getByRole('button', { name: 'Cancel' }))
-      if (left > 0)
-        expect(limit()).toHaveTextContent(`${left} of 3 takes left this hour`)
     }
+    await takeAndCancel()
+    expect(limit()).toHaveTextContent('2 of 3 takes left this hour')
+    await takeAndCancel()
+    expect(limit()).toHaveTextContent('1 of 3 takes left this hour')
+    await takeAndCancel()
 
     expect(limit()).toHaveTextContent('No takes left this hour')
     expect(screen.getByTestId('reshoot-action')).toBeDisabled()
