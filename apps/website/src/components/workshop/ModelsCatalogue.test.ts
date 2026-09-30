@@ -7,7 +7,8 @@ import type { Ref } from 'vue'
 import {
   captureWorkshopEvent,
   useWorkshopAppsEnabled,
-  useWorkshopEnabled
+  useWorkshopEnabled,
+  useWorkshopFlag
 } from '../../scripts/posthog'
 import ModelsCatalogue from './ModelsCatalogue.vue'
 import type { WorkshopModel } from '../../config/models-catalogue'
@@ -16,13 +17,18 @@ vi.mock(import('../../scripts/posthog'))
 
 let enabled: Ref<boolean>
 let appsEnabled: Ref<boolean>
+let reshootFlag: Ref<boolean>
 
 beforeEach(() => {
   history.replaceState(null, '', '/models/')
   enabled = ref(false)
   appsEnabled = ref(true)
+  reshootFlag = ref(true)
   vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(enabled))
   vi.mocked(useWorkshopAppsEnabled).mockReturnValue(readonly(appsEnabled))
+  vi.mocked(useWorkshopFlag).mockImplementation((name) =>
+    readonly(name === 'workshop-reshoot-app-enabled' ? reshootFlag : ref(false))
+  )
 })
 
 const launchModels: WorkshopModel[] = [
@@ -78,6 +84,7 @@ const launchModels: WorkshopModel[] = [
     type: 'APP',
     appId: 'reshoot',
     slug: 'apps/reshoot',
+    flag: 'workshop-reshoot-app-enabled',
     name: 'Re-shoot a video',
     href: '/models/apps/reshoot/',
     workflowCount: 0,
@@ -271,6 +278,29 @@ describe('ModelsCatalogue', () => {
       )
     ).toBeVisible()
     expect(screen.queryByRole('button', { name: /Browse all apps/ })).toBeNull()
+  })
+
+  it('hides an app whose PostHog flag is off, and shows it once it turns on', async () => {
+    const user = userEvent.setup()
+    reshootFlag.value = false
+    render(ModelsCatalogue, { props: { models: launchModels } })
+    await user.click(screen.getByRole('button', { name: 'Apps' }))
+    const hrefs = () =>
+      within(screen.getByTestId('app-shelf'))
+        .getAllByRole('link')
+        .map((link) => link.getAttribute('href'))
+
+    await waitFor(() =>
+      expect(hrefs()).toEqual(['/models/apps/cinematic-studio/'])
+    )
+
+    reshootFlag.value = true
+    await waitFor(() =>
+      expect(hrefs()).toEqual([
+        '/models/apps/cinematic-studio/',
+        '/models/apps/reshoot/'
+      ])
+    )
   })
 
   it.for([

@@ -34,7 +34,8 @@ const presentationSchema = z.object({
   useCases: z.array(z.enum(USE_CASES)).optional(),
   summary: z.string().optional(),
   status: z.enum(['deprecated', 'degraded']).optional(),
-  successorSlug: z.string().optional()
+  successorSlug: z.string().optional(),
+  flag: z.string().optional()
 })
 
 export const routerModelSchema = presentationSchema.extend({

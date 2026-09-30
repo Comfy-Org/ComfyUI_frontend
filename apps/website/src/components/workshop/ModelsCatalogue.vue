@@ -21,6 +21,7 @@ import {
 } from '../../scripts/posthog'
 import type { CatalogueApp } from '../../lib/workshop/catalogue-apps'
 import { ac } from '../../lib/workshop/catalogue-apps'
+import { isWorkshopModelShown } from '../../scripts/workshop-model-flags'
 
 const WorkflowCatalogue = defineAsyncComponent(
   () => import('./WorkflowCatalogue.vue')
@@ -46,17 +47,22 @@ if (typeof location !== 'undefined') {
   }
   if (requested === 'apps') selectedTab.value = 'apps'
 }
+const shownModels = computed(() =>
+  models.filter((model) => isWorkshopModelShown(model))
+)
 const routerModels = computed(() =>
-  models.filter((model) => model.routerId !== undefined)
+  shownModels.value.filter((model) => model.routerId !== undefined)
 )
 const workflows = computed(() =>
-  models.filter(
+  shownModels.value.filter(
     (model): model is WorkflowWorkshopModel =>
       model.type === 'CLOUD' || model.type === 'SERVERLESS'
   )
 )
 const apps = computed(() =>
-  models.filter((model): model is AppWorkshopModel => model.type === 'APP')
+  shownModels.value.filter(
+    (model): model is AppWorkshopModel => model.type === 'APP'
+  )
 )
 const appCards = computed<readonly CatalogueApp[]>(() =>
   apps.value.map((app) => ({

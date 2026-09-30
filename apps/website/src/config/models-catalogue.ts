@@ -139,6 +139,8 @@ interface WorkshopPresentation {
   readonly summary?: string
   readonly status?: ModelStatus
   readonly successorSlug?: string
+  /** PostHog flag this entry is shown behind (workshop-model-availability.json). */
+  readonly flag?: string
 }
 
 export type RouterWorkshopModel = WorkshopPresentation & {

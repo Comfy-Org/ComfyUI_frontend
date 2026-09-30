@@ -10,7 +10,12 @@ import { mockReshootProxy } from './fixtures/reshootProxy'
 
 async function mockFlags(
   context: BrowserContext,
-  flags: { apps: boolean; workflows: boolean; auth?: boolean }
+  flags: {
+    apps: boolean
+    workflows: boolean
+    auth?: boolean
+    reshoot?: boolean
+  }
 ) {
   await context.route('**/t.comfy.org/**', (route) =>
     /\/(flags|decide)\//.test(route.request().url())
@@ -21,6 +26,7 @@ async function mockFlags(
               'workshop-enabled': true,
               'workshop-apps-enabled': flags.apps,
               'workshop-workflows-enabled': flags.workflows,
+              'workshop-reshoot-app-enabled': flags.reshoot ?? true,
               ...(flags.auth ? { 'workshop-auth': true } : {})
             },
             featureFlagPayloads: {}
@@ -103,6 +109,33 @@ test('lists both apps in the catalogue Apps tab, on /models/apps/ pages', async 
   await expect(
     page.getByRole('button', { name: /Browse all apps/ })
   ).toHaveCount(0)
+})
+
+test('hides Re-shoot from the Apps tab and closes its page while its flag is off', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false, reshoot: false })
+  await page.goto('/models/?type=apps')
+  const cards = page.getByTestId('app-shelf').getByRole('link')
+  await expect(cards).toHaveCount(1)
+  await expect(cards.first()).toHaveAttribute(
+    'href',
+    '/models/apps/cinematic-studio/'
+  )
+
+  await page.goto('/models/apps/reshoot/')
+  await expect(page.getByText('Cinematic Studio is not open yet')).toBeVisible()
+  await expect(page.getByTestId('reshoot')).toHaveCount(0)
+})
+
+test('opens Re-shoot once its flag is on', async ({ page, context }) => {
+  await mockFlags(context, { apps: true, workflows: false, reshoot: true })
+  await page.goto('/models/apps/reshoot/')
+  await expect(page.getByTestId('reshoot')).toBeVisible()
+  await expect(page.getByText('Cinematic Studio is not open yet')).toHaveCount(
+    0
+  )
 })
 
 test('sends the old studio address to the app page it named', async ({
