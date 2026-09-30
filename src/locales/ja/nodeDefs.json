@@ -7763,6 +7763,67 @@
       }
     }
   },
+  "HeyGenImageToVideoNode": {
+    "description": "HeyGen Video 1.0 を使用して、画像を同期したセリフと音声付きの動画にアニメーション化します。画像は最初のフレームとして使用されます。",
+    "display_name": "HeyGen Video 1.0 画像から動画",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "model_seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenReferenceToVideoNode": {
+    "description": "HeyGen Video 1.0 を使用して、テキストプロンプトから同期したセリフと音声付きの動画を生成します。オプションで最大12個の参照画像、動画、音声クリップを接続し、プロンプト内で {'@'}Image1、{'@'}Video1、{'@'}Audio1 として指定できます。",
+    "display_name": "HeyGen Video 1.0 参照から動画",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "model_seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenTalkingPhotoNode": {
     "description": "人物の画像をリップシンクされたトーキングビデオ（HeyGen Avatar IV）にアニメーション化します。テキストスクリプトまたは自身の音声で操作できます。",
     "display_name": "HeyGen トーキングフォト",
@@ -8376,6 +8437,42 @@
       }
     }
   },
+  "IdeogramEditApi": {
+    "description": "Ideogram 4.5 を使用して、テキストプロンプトに従い最大5枚の画像を編集または結合します。画像全体を再レンダリングするため、サイズやアスペクト比を変更できます。編集していないピクセルを変更せずに保持するには、Ideogram 4.5 Precise Edit を使用してください。",
+    "display_name": "Ideogram 4.5 編集",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "使用するモデル。"
+      },
+      "model_height": {
+        "name": "高さ"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_seed": {
+        "name": "シード"
+      },
+      "model_size": {
+        "name": "サイズ"
+      },
+      "model_width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramPImage": {
     "description": "P-Image（Ideogramの高速テキストから画像生成モデル）を使用して画像を生成します。強力なタイポグラフィとフォトリアリズムを実現し、Ideogram 4.0の構造化JSONキャプションによる正確なテキスト、色、レイアウト指定に対応しています。",
     "display_name": "Ideogram & Pruna P-Image",
@@ -8415,6 +8512,70 @@
       "1": {
         "name": "final_prompt",
         "tooltip": "実際に画像生成に使用されたプロンプト（prompt_upsamplingが有効な場合は書き換え後の構造化キャプション、無効な場合は入力プロンプト）。prompt_upsamplingをOFF、同じシードで再入力すると同じ画像を再現できます。"
+      }
+    }
+  },
+  "IdeogramPreciseEditApi": {
+    "description": "Ideogram 4.5 の精密編集を使用して、テキストプロンプトに従い画像を編集します。プロンプトで指定された部分のみが変更され、未変更のピクセルは同一のまま保持され、出力は画像1のサイズを維持します（約4 MPを超える画像は先に縮小されます）。最大4枚の参照画像を受け付けます。",
+    "display_name": "Ideogram 4.5 精密編集",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "使用するモデル。"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramTextToImageApi": {
+    "description": "Ideogram 4.5 を使用して、テキストプロンプトから画像を生成します。",
+    "display_name": "Ideogram 4.5 テキストから画像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "使用するモデル。"
+      },
+      "model_magic_prompt": {
+        "name": "magic_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "画像の生成元となった構造化キャプションです。magic_promptを'off'に設定し、同じseedで再入力すると画像を再現できます。"
       }
     }
   },
@@ -18587,6 +18748,9 @@
   "QwenImageDiffsynthControlnet": {
     "display_name": "QwenImageDiffsynthControlnet",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
       "image": {
         "name": "画像"
       },
@@ -18598,6 +18762,9 @@
       },
       "model_patch": {
         "name": "モデルパッチ"
+      },
+      "start_percent": {
+        "name": "start_percent"
       },
       "strength": {
         "name": "強度"
@@ -29794,8 +29961,12 @@
     }
   },
   "ZImageFunControlnet": {
-    "display_name": "ZImageFunControlnet",
+    "description": "Load Model Patchで読み込んだZ-ImageまたはQwen Image 2.1 Fun ControlNetを適用します。",
+    "display_name": "Fun ControlNetを適用",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
       "image": {
         "name": "画像"
       },
@@ -29810,6 +29981,9 @@
       },
       "model_patch": {
         "name": "モデルパッチ"
+      },
+      "start_percent": {
+        "name": "start_percent"
       },
       "strength": {
         "name": "強度"

@@ -7763,6 +7763,67 @@
       }
     }
   },
+  "HeyGenImageToVideoNode": {
+    "description": "HeyGen Video 1.0을 사용하여 이미지를 동기화된 대화와 사운드가 포함된 비디오로 애니메이션화합니다. 이미지는 첫 번째 프레임으로 사용됩니다.",
+    "display_name": "HeyGen Video 1.0 이미지를 비디오로",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenReferenceToVideoNode": {
+    "description": "HeyGen Video 1.0을 사용하여 텍스트 프롬프트로 동기화된 대화와 사운드가 포함된 비디오를 생성합니다. 선택적으로 최대 12개의 참조 이미지, 비디오 및 오디오 클립을 연결하고 프롬프트에서 {'@'}Image1, {'@'}Video1, {'@'}Audio1로 언급할 수 있습니다.",
+    "display_name": "HeyGen Video 1.0 참조 이미지를 비디오로",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenTalkingPhotoNode": {
     "description": "사람의 이미지를 입 모양이 동기화된 토킹 비디오(헤이젠 아바타 IV)로 애니메이션화합니다. 텍스트 스크립트나 직접 녹음한 오디오로 구동할 수 있습니다.",
     "display_name": "HeyGen 토킹 포토",
@@ -8376,6 +8437,42 @@
       }
     }
   },
+  "IdeogramEditApi": {
+    "description": "Ideogram 4.5를 사용하여 텍스트 프롬프트의 안내에 따라 최대 5개의 이미지를 편집하거나 결합합니다. 전체 이미지를 다시 렌더링하며 크기 또는 종횡비를 변경할 수 있습니다. 수정하지 않은 픽셀을 그대로 유지하려면 Ideogram 4.5 Precise Edit를 사용하세요.",
+    "display_name": "Ideogram 4.5 편집",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "사용할 모델입니다."
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "size"
+      },
+      "model_width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramPImage": {
     "description": "Ideogram의 빠른 텍스트-투-이미지 모델인 P-Image를 사용하여 이미지를 생성합니다. 강력한 타이포그래피와 포토리얼리즘을 제공하며, 정확한 텍스트, 색상 및 레이아웃을 위한 Ideogram 4.0 구조화 JSON 캡션을 지원합니다.",
     "display_name": "Ideogram & Pruna P-Image",
@@ -8415,6 +8512,70 @@
       "1": {
         "name": "final_prompt",
         "tooltip": "실제로 이미지가 생성된 프롬프트(프롬프트 업샘플링이 실행된 경우 재작성된 구조화 캡션, 아니면 입력한 프롬프트). prompt_upsampling을 OFF로 하고 동일한 시드로 다시 입력하면 이 이미지를 재현할 수 있습니다."
+      }
+    }
+  },
+  "IdeogramPreciseEditApi": {
+    "description": "Ideogram 4.5 정밀 편집을 사용하여 텍스트 프롬프트의 안내에 따라 이미지를 편집합니다. 프롬프트에서 요청한 부분만 변경되고 수정하지 않은 픽셀은 동일하게 유지되며, 출력은 이미지 1의 크기를 유지합니다(약 4 MP를 초과하는 이미지는 먼저 축소됨). 최대 4개의 참조 이미지를 사용할 수 있습니다.",
+    "display_name": "Ideogram 4.5 정밀 편집",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "사용할 모델입니다."
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramTextToImageApi": {
+    "description": "Ideogram 4.5를 사용하여 텍스트 프롬프트에서 이미지를 생성합니다.",
+    "display_name": "Ideogram 4.5 텍스트를 이미지로",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "사용할 모델입니다."
+      },
+      "model_magic_prompt": {
+        "name": "magic_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "이미지가 생성된 구조화된 캡션입니다. magic_prompt를 'off'로 설정하고 동일한 seed와 함께 다시 입력하여 이미지를 재현하세요."
       }
     }
   },
@@ -18587,6 +18748,9 @@
   "QwenImageDiffsynthControlnet": {
     "display_name": "QwenImageDiffsynthControlnet",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
       "image": {
         "name": "이미지"
       },
@@ -18598,6 +18762,9 @@
       },
       "model_patch": {
         "name": "모델 패치"
+      },
+      "start_percent": {
+        "name": "start_percent"
       },
       "strength": {
         "name": "강도"
@@ -29794,8 +29961,12 @@
     }
   },
   "ZImageFunControlnet": {
-    "display_name": "ZImageFunControlnet",
+    "description": "Load Model Patch로 로드한 Z-Image 또는 Qwen Image 2.1 Fun ControlNet을 적용합니다.",
+    "display_name": "Fun ControlNet 적용",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
       "image": {
         "name": "이미지"
       },
@@ -29810,6 +29981,9 @@
       },
       "model_patch": {
         "name": "모델 패치"
+      },
+      "start_percent": {
+        "name": "start_percent"
       },
       "strength": {
         "name": "강도"

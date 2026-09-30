@@ -7763,6 +7763,67 @@
       }
     }
   },
+  "HeyGenImageToVideoNode": {
+    "display_name": "HeyGen Video 1.0 Image to Video",
+    "description": "Animate an image into a video with synchronized dialogue and sound using HeyGen Video 1.0. The image is used as the first frame.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenReferenceToVideoNode": {
+    "display_name": "HeyGen Video 1.0 Reference to Video",
+    "description": "Generate a video with synchronized dialogue and sound from a text prompt using HeyGen Video 1.0. Optionally connect up to 12 reference images, videos, and audio clips and mention them in the prompt as {'@'}Image1, {'@'}Video1, {'@'}Audio1.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenTalkingPhotoNode": {
     "display_name": "HeyGen Talking Photo",
     "description": "Animate any image of a person into a lip-synced talking video (HeyGen Avatar IV). Drive it with a text script or your own audio.",
@@ -8376,6 +8437,42 @@
       }
     }
   },
+  "IdeogramEditApi": {
+    "display_name": "Ideogram 4.5 Edit",
+    "description": "Edits or combines up to 5 images guided by a text prompt using Ideogram 4.5. Re-renders the whole image and can change its size or aspect ratio; use Ideogram 4.5 Precise Edit to keep untouched pixels unchanged.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "size"
+      },
+      "model_width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramPImage": {
     "display_name": "Ideogram & Pruna P-Image",
     "description": "Generates images using P-Image, Ideogram's fast text-to-image model. Strong typography and photorealism; supports Ideogram 4.0 structured JSON captions for exact text, colors and layout.",
@@ -8415,6 +8512,70 @@
       "1": {
         "name": "final_prompt",
         "tooltip": "The prompt the image was actually generated from (the rewritten structured caption when prompt_upsampling ran, else your prompt). Feed it back with prompt_upsampling OFF and the same seed to reproduce this image."
+      }
+    }
+  },
+  "IdeogramPreciseEditApi": {
+    "display_name": "Ideogram 4.5 Precise Edit",
+    "description": "Edits an image guided by a text prompt using Ideogram 4.5 precise editing: only what the prompt asks for changes, untouched pixels stay identical and the output keeps the size of image 1 (images above ~4 MP are scaled down first). Accepts up to 4 reference images.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramTextToImageApi": {
+    "display_name": "Ideogram 4.5 Text to Image",
+    "description": "Generates images from a text prompt using Ideogram 4.5.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_magic_prompt": {
+        "name": "magic_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "The structured caption the image was generated from. Feed it back with magic_prompt set to 'off' and the same seed to reproduce the image."
       }
     }
   },
@@ -18604,6 +18765,12 @@
       },
       "mask": {
         "name": "mask"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "end_percent": {
+        "name": "end_percent"
       }
     }
   },
@@ -29833,7 +30000,8 @@
     }
   },
   "ZImageFunControlnet": {
-    "display_name": "Apply Z-Image Fun ControlNet",
+    "display_name": "Apply Fun ControlNet",
+    "description": "Applies a Z-Image or Qwen Image 2.1 Fun ControlNet loaded with Load Model Patch.",
     "inputs": {
       "model": {
         "name": "model"
@@ -29855,6 +30023,12 @@
       },
       "mask": {
         "name": "mask"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "end_percent": {
+        "name": "end_percent"
       }
     }
   }
