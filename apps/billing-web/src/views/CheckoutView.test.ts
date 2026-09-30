@@ -87,7 +87,10 @@ vi.mock(import('@/session/stripeChallengePort'), () => ({
     getKey: () => string | undefined | Promise<string | undefined>
   ) => {
     void Promise.resolve(getKey()).then((key) => challengeMocks.createPort(key))
-    return { handleNextAction: challengeMocks.handleNextAction }
+    return {
+      handleNextAction: challengeMocks.handleNextAction,
+      leavesPage: () => Promise.resolve(true)
+    }
   }
 }))
 
