@@ -3299,7 +3299,7 @@ describe('AgentPanelRoot attach flow', () => {
       getData: (type: string) =>
         type === 'application/x-comfy-asset-info'
           ? JSON.stringify({
-              filename: 'report.pdf',
+              filename: 'photo.png',
               type: 'input',
               attachment_ref: 'blake3:abcdef0123456789',
               media_kind: 'image'
@@ -3316,6 +3316,40 @@ describe('AgentPanelRoot attach flow', () => {
         String(detail).includes('not a file type')
       )
     ).toBe(false)
+  })
+
+  it('refuses an asset card whose stored name is an unaccepted type', async () => {
+    // .usdz is the one extension the shared media taxonomy calls non-'other'
+    // while the accept list rejects it, so it is the only card that can reach
+    // the fast path and still be refused by the server. The ref is the stored
+    // hash and carries no extension, so judging the ref alone returned
+    // 'unknown' and the NAME was never consulted — the card took a chip, the
+    // server dropped the reference, and the turn answered 200 saying nothing.
+    stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+
+    dispatchDrag(screen.getByRole('textbox'), 'drop', {
+      types: ['application/x-comfy-asset-info'],
+      getData: () =>
+        JSON.stringify({
+          filename: 'scene.usdz',
+          type: 'input',
+          attachment_ref: 'blake3:abcdef0123456789',
+          media_kind: '3D'
+        })
+    })
+
+    await vi.waitFor(() =>
+      expect(
+        useToastStore().messagesToAdd.some(({ detail }) =>
+          String(detail).includes('scene.usdz')
+        )
+      ).toBe(true)
+    )
+    expect(
+      screen.queryByTestId('agent-attachment-chip')
+    ).not.toBeInTheDocument()
   })
 
   it('refuses an asset card once the turn is already full', async () => {

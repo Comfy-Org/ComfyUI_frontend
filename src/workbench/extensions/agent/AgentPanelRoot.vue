@@ -1658,8 +1658,15 @@ function warnAttachment(detail: string): void {
  * sees the real File.
  */
 function droppedAssetVerdict(asset: DroppedAsset): AgentAttachVerdict {
-  if (asset.ref) return agentAttachRefVerdict(asset.ref)
-  return agentAttachVerdict(asset.name)
+  // Falls THROUGH on `unknown` rather than stopping there. A library asset's
+  // ref is its stored hash, which carries no extension, so returning that
+  // verdict meant the name was never consulted for any cloud asset — and the
+  // only thing left before staging was `asset.kind !== 'other'`, which reads
+  // the media taxonomy rather than the accept list. .usdz is non-'other' and
+  // NOT accepted, so it took a chip, the server refused it, and the turn
+  // still answered 200 with nothing said.
+  const fromRef = asset.ref ? agentAttachRefVerdict(asset.ref) : 'unknown'
+  return fromRef === 'unknown' ? agentAttachVerdict(asset.name) : fromRef
 }
 
 function warnDroppedAssetResult(
