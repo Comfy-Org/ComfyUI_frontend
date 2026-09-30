@@ -447,13 +447,28 @@ const coachDeferredBy = computed(() =>
       ? 'tour_active'
       : null
 )
+const coachCompletionWaiters = new Set<() => void>()
+function releaseCoachCompletionWaiters(): void {
+  for (const resolve of coachCompletionWaiters) resolve()
+  coachCompletionWaiters.clear()
+}
 watch(
   [consentAccepted, onboardingKey, coachDeferredBy],
   ([accepted, key, reason]) => {
     if (accepted && key && !hasSeenCoach(key)) trackCoachDeferral(key, reason)
+    if (reason !== null) releaseCoachCompletionWaiters()
   },
   { immediate: true }
 )
+const coachRef = ref<InstanceType<typeof OnboardingCoach>>()
+
+async function waitForCoachCompletion(): Promise<void> {
+  const key = onboardingKey.value
+  if (!key || hasSeenCoach(key)) return
+  await nextTick()
+  if (coachDeferredBy.value !== null || !coachRef.value) return
+  await new Promise<void>((resolve) => coachCompletionWaiters.add(resolve))
+}
 function toSelectedNode(node: LGraphNode): SelectedNode {
   return {
     id: String(node.id),
@@ -1056,7 +1071,11 @@ start()
 void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
   ++activeTabGeneration
-  if (composerStore.submission?.id === consentHeldSubmissionId)
+  releaseCoachCompletionWaiters()
+  if (
+    (coachDeferredBy.value === null || !agentPanelStore.isVisible) &&
+    composerStore.submission?.id === consentHeldSubmissionId
+  )
     composerStore.invalidateSubmission()
   docOpMinter.detach()
   restoreOpMinter.detach()
@@ -1197,6 +1216,7 @@ async function consentAllowsSubmission(
     await withConsent(() => {
       hasConsent = true
     })
+    if (hasConsent) await waitForCoachCompletion()
   } finally {
     if (consentHeldSubmissionId === submissionId)
       consentHeldSubmissionId = undefined
@@ -1601,8 +1621,10 @@ function onPanelDrop(event: DragEvent): void {
     </AgentPanel>
     <OnboardingCoach
       v-if="consentAccepted && onboardingKey && coachDeferredBy === null"
+      ref="coachRef"
       :steps="coachSteps"
       :storage-key="onboardingKey"
+      @finished="releaseCoachCompletionWaiters"
     />
   </div>
 </template>
