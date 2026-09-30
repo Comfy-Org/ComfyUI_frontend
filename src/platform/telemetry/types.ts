@@ -795,12 +795,19 @@ export interface AgentConsentResolvedMetadata extends Record<string, unknown> {
   save_error_shown: boolean
 }
 export type AgentInputMethod = 'typed' | 'suggestion' | 'edited'
+/**
+ * A starter prompt by the slot it occupies in the empty state, not by the text
+ * it shows: the copy is owned elsewhere and changes without the funnel
+ * changing. `unregistered` means the rendered set is larger than this union —
+ * a prompt was appended to either English distribution list without a matching
+ * entry in `starterPrompts.ts`, so that extra chip reads as an unmapped slot.
+ */
 export type AgentStarterPromptId =
-  | 'generate_image'
-  | 'list_workflows'
-  | 'find_workflow'
-  | 'explain_selected_node'
-  | 'build_video_workflow'
+  | 'slot_1'
+  | 'slot_2'
+  | 'slot_3'
+  | 'slot_4'
+  | 'slot_5'
   | 'unregistered'
 export interface AgentStarterPromptClickedMetadata extends Record<
   string,
