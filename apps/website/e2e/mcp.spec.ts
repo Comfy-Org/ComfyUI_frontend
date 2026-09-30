@@ -39,7 +39,7 @@ test.describe('MCP page @smoke', () => {
       exact: true
     })
     await expect(agentLink).toBeVisible()
-    await expect(agentLink).toHaveAttribute('href', '/agent')
+    await expect(agentLink).toHaveAttribute('href', '/agent/')
     await expect(
       page.getByRole('link', { name: 'Join the waitlist' })
     ).toHaveCount(0)

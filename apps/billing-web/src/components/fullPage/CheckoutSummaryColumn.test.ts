@@ -24,7 +24,7 @@ const UPGRADE: SummaryLedger = {
       sublines: ['Unused time from Creator plan']
     }
   ],
-  adjustments: [],
+  discounts: [],
   chips: [],
   acceptsPromo: true,
   total: '$32.50',
@@ -35,7 +35,6 @@ const LANDMARKS = [
   'Pro Plan - Prorated',
   '$50.00',
   'Unused time from Creator plan',
-  'Subtotal',
   'Total due today',
   'Renews at $100.00 on July 28, 2026'
 ]
@@ -93,22 +92,6 @@ describe('CheckoutSummaryColumn', () => {
     ])
   })
 
-  it('divides above a Subtotal when the ledger has one', () => {
-    renderColumn({ ...UPGRADE, subtotal: '$32.50' })
-
-    expect(ledgerOutline()).toEqual([
-      '---',
-      'Pro Plan - Prorated',
-      '$50.00',
-      'Unused time from Creator plan',
-      '---',
-      'Subtotal',
-      '---',
-      'Total due today',
-      'Renews at $100.00 on July 28, 2026'
-    ])
-  })
-
   it('renders a $0 due quote as the headline and the total, with no row between', () => {
     renderColumn({
       family: 'charge_now',
@@ -116,7 +99,7 @@ describe('CheckoutSummaryColumn', () => {
       headline: { amount: '$0', currency: 'USD' },
       credits: { count: '1,772,400', qualifier: 'credits per year' },
       items: [],
-      adjustments: [],
+      discounts: [],
       chips: [],
       acceptsPromo: true,
       total: '$0.00',
@@ -131,15 +114,16 @@ describe('CheckoutSummaryColumn', () => {
     expect(screen.getByText('$0.00')).toBeInTheDocument()
   })
 
-  it('prices a held discount, then the Subtotal an entered code applied to', () => {
+  it('lists every discount row in the ledger order, above the chips', () => {
     render(CheckoutSummaryColumn, {
       props: {
         ledger: {
           ...UPGRADE,
           items: [UPGRADE.items[0]],
-          adjustments: [{ label: 'Education discount', amount: '−$10.00' }],
-          subtotal: '$40.00',
-          promo: { label: 'Promo code', amount: '−$7.50' }
+          discounts: [
+            { label: 'Promo code', amount: '−$7.50' },
+            { label: 'Education discount', amount: '−$10.00' }
+          ]
         }
       },
       slots: { default: '<p>chips and entry</p>' },
@@ -148,12 +132,10 @@ describe('CheckoutSummaryColumn', () => {
 
     const expected = [
       'Pro Plan - Prorated',
-      'Education discount',
-      '−$10.00',
-      'Subtotal',
-      '$40.00',
       'Promo code',
       '−$7.50',
+      'Education discount',
+      '−$10.00',
       'chips and entry',
       'Total due today'
     ]
@@ -178,33 +160,33 @@ describe('CheckoutSummaryColumn', () => {
   })
 })
 
-describe('CheckoutSummaryColumn held discounts', () => {
-  const held = (...rows: [string, string][]): SummaryLedger => ({
+describe('CheckoutSummaryColumn discount rows', () => {
+  const discounted = (...rows: [string, string][]): SummaryLedger => ({
     ...UPGRADE,
     items: [UPGRADE.items[0]],
-    adjustments: rows.map(([label, amount]) => ({ label, amount }))
+    discounts: rows.map(([label, amount]) => ({ label, amount }))
   })
-  const heldRows = () =>
+  const discountRows = () =>
     screen
       .getAllByRole('listitem')
       .map((row) => row.textContent.trim())
       .filter((text) => /discount|Promo code/.test(text))
 
-  it('re-prices two unnamed held discounts as rows of their own', async () => {
+  it('re-prices two unnamed discounts as rows of their own', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     const { rerender } = renderColumn(
-      held(['Promo code', '−$10.00'], ['Education discount', '−$4.00'])
+      discounted(['Promo code', '−$10.00'], ['Education discount', '−$4.00'])
     )
 
     await rerender({
-      ledger: held(
+      ledger: discounted(
         ['Education discount', '−$4.00'],
         ['Promo code', '−$10.00'],
         ['Promo code', '−$5.00']
       )
     })
 
-    expect(heldRows()).toEqual([
+    expect(discountRows()).toEqual([
       'Education discount−$4.00',
       'Promo code−$10.00',
       'Promo code−$5.00'

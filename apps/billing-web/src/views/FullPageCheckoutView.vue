@@ -10,7 +10,8 @@ import {
 
 import {
   PENDING_PAYMENT_CANCEL_AVAILABLE,
-  isLocked
+  isLocked,
+  submitPhaseOf
 } from '@/checkout/checkoutPage'
 import { endingOf } from '@/checkout/endingScreen'
 import type { EndingPlan } from '@/components/fullPage/CheckoutEnding.vue'
@@ -34,8 +35,6 @@ const {
   page,
   preview,
   canPay,
-  submitting,
-  payFailure,
   returnLink,
   viewPlansLink,
   openedByScript,
@@ -53,15 +52,27 @@ const {
   promo,
   promoLive,
   pay,
+  reopening,
   continueVerification,
   reconcile
 } = useFullPageCheckout()
 
 // A page restored from the back-forward cache is whatever it was when the
 // customer left, which may be a form over money that has since moved (rule 16).
+// One that left for a payment method's own site loads afresh instead: the
+// challenge it handed over froze with it and never settles.
 useEventListener(window, 'pageshow', (event: PageTransitionEvent) => {
-  if (event.persisted) void reconcile()
+  if (!event.persisted) return
+  if (leftForProvider()) window.location.reload()
+  else void reconcile()
 })
+
+function leftForProvider() {
+  const current = page.value
+  return (
+    current.kind === 'capture' && submitPhaseOf(current).kind === 'redirecting'
+  )
+}
 
 const quote = computed(() =>
   page.value.kind === 'capture' || page.value.kind === 'waiting'
@@ -100,12 +111,6 @@ const keepSubscription = computed(() => {
   })
 })
 
-const payFailureCopy = computed(() =>
-  payFailure.value === undefined
-    ? undefined
-    : coded('failure', payFailure.value)
-)
-
 const ending = computed(() => endingOf(page.value))
 
 const locked = computed(() => isLocked(page.value))
@@ -113,22 +118,33 @@ const locked = computed(() => isLocked(page.value))
 /** The server cannot cancel a pending payment yet; the click has nowhere honest to go. */
 function cancelPayment() {}
 
-/** The plan this page's own Pay bought, as its quote priced it. */
-const endingPlan = computed<EndingPlan | undefined>(() => {
+/**
+ * The plan this page's own Pay bought: as its quote priced it, or, once a
+ * reload or a provider's page took that quote away, as the server now lists it.
+ */
+const boughtPlan = computed(() => {
+  const current = page.value
+  if (current.kind === 'terminal' && current.attribution === 'returned')
+    return current.plan && { ...current.plan, currency: 'usd' }
   const quoted = preview.value
-  if (!quoted) return undefined
+  return quoted && { ...quoted.new_plan, currency: quoted.currency ?? 'usd' }
+})
+
+const endingPlan = computed<EndingPlan | undefined>(() => {
+  const plan = boughtPlan.value
+  if (!plan) return undefined
   return {
-    name: coded('tier', quoted.new_plan.tier),
+    name: coded('tier', plan.tier),
     price: formatQuoteMoney(
-      quoted.new_plan.price_cents,
-      quoted.currency ?? 'usd',
+      Number(plan.price_cents),
+      plan.currency,
       locale.value
     ),
     period: t(
-      isAnnualDuration(quoted.new_plan.duration)
+      isAnnualDuration(plan.duration)
         ? 'checkout.fullPage.ending.perYear'
         : 'checkout.fullPage.ending.perMonth',
-      { currency: (quoted.currency ?? 'usd').toUpperCase() }
+      { currency: plan.currency.toUpperCase() }
     )
   }
 })
@@ -190,9 +206,8 @@ function viewPlans() {
         :charge
         :publishable-key="stripeKey ?? ''"
         :can-pay="canPay"
-        :submitting
+        :reopening
         :can-cancel="PENDING_PAYMENT_CANCEL_AVAILABLE"
-        :failure="payFailureCopy"
         :keep-subscription="keepSubscription"
         :saved-methods="savedMethods"
         @phase="onPaymentPhase"

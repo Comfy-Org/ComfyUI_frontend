@@ -1,6 +1,10 @@
 import type { Request } from '@playwright/test'
 
-import type { ListMembersResponse } from '@comfyorg/ingest-types'
+import type {
+  ExchangeTokenRequest,
+  ListMembersResponse
+} from '@comfyorg/ingest-types'
+import { zExchangeTokenRequest } from '@comfyorg/ingest-types/zod'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
@@ -9,30 +13,41 @@ import {
   WEB_SESSION,
   WEB_SESSION_COOKIE,
   WEB_SESSION_FEATURES,
+  WEB_SESSION_MINT,
   currentWorkspace
 } from '@e2e/fixtures/data/webSession'
-import { WORKSPACE_SWITCHER_WORKSPACES } from '@e2e/fixtures/data/workspaceSwitcher'
+import {
+  TEAM_WORKSPACE,
+  WORKSPACE_SWITCHER_WORKSPACES
+} from '@e2e/fixtures/data/workspaceSwitcher'
+import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { mockWorkspaceList } from '@e2e/fixtures/utils/workspaceMocks'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
+interface TokenMint {
+  body: ExchangeTokenRequest
+  authorization: string | undefined
+  workspace: string | undefined
+}
+
 interface WebSessionFixtures {
-  tokenMints: string[]
+  tokenMints: TokenMint[]
   workspaceReads: Request[]
 }
 
-/**
- * Boots the cloud app with `unified_web_session` on, through the merged
- * `/api/features` body, and a cookie session answered from typed mocks.
- * `tokenMints` and `workspaceReads` record requests from before navigation.
- */
 export const webSessionTest = comfyPageFixture.extend<WebSessionFixtures>({
   tokenMints: async ({ context }, use) => {
-    const mints: string[] = []
+    const mints: TokenMint[] = []
     context.on('request', (request) => {
       if (new URL(request.url()).pathname.startsWith('/api/auth/token')) {
-        mints.push(`${request.method()} ${request.url()}`)
+        const headers = request.headers()
+        mints.push({
+          body: zExchangeTokenRequest.parse(request.postDataJSON()),
+          authorization: headers['authorization'],
+          workspace: headers['x-comfy-workspace-id']
+        })
       }
     })
     await use(mints)
@@ -66,6 +81,12 @@ export const webSessionTest = comfyPageFixture.extend<WebSessionFixtures>({
       if (route.request().method() !== 'GET') return route.fallback()
       await route.fulfill(jsonRoute(WEB_SESSION))
     })
+
+    await page.route('**/api/auth/token', (route) =>
+      route.fulfill(jsonRoute(WEB_SESSION_MINT))
+    )
+
+    await mockBilling(page, { workspaceId: TEAM_WORKSPACE.id })
 
     await mockWorkspaceList(page, WORKSPACE_SWITCHER_WORKSPACES)
 

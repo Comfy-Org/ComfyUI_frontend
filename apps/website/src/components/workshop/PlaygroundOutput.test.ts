@@ -316,6 +316,20 @@ describe('PlaygroundOutput', () => {
     expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
   })
 
+  it('explains the page’s own rule when it names why content gets blocked', () => {
+    render(PlaygroundOutput, {
+      props: {
+        state: { status: 'failed', reason: 'policy', fieldErrors: {} },
+        now: 0,
+        policyMessage: 'Seedance refuses realistic faces.'
+      }
+    })
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Seedance refuses realistic faces.'
+    )
+  })
+
   it.for([
     { locale: 'en' as const, label: 'Add credits' },
     { locale: 'zh-CN' as const, label: '添加积分' }
@@ -410,6 +424,45 @@ describe('PlaygroundOutput', () => {
     )
     expect(screen.queryByTestId('output-download')).toBeNull()
     expect(screen.getByRole('img').getAttribute('src')).toContain('example')
+  })
+
+  it('names the expanded image by the alt its output carries', async () => {
+    const user = userEvent.setup()
+    render(PlaygroundOutput, {
+      props: {
+        state: succeeded({
+          ...output('example'),
+          alt: 'Seedream 4.5: Neon street'
+        }),
+        now: 2_000
+      }
+    })
+    await user.click(screen.getByRole('button', { name: 'Expand' }))
+    const dialog = await screen.findByRole('dialog')
+    expect(
+      within(dialog).getByRole('img', { name: 'Seedream 4.5: Neon street' })
+    ).toBeTruthy()
+  })
+
+  it('labels a shipped example video by its example', () => {
+    render(PlaygroundOutput, {
+      props: {
+        state: {
+          status: 'example',
+          output: {
+            kind: 'video',
+            url: 'https://example.com/example.mp4',
+            fileName: 'example.mp4',
+            alt: 'Seedance 2.5: Neon street'
+          }
+        },
+        modality: 'video',
+        now: 0
+      }
+    })
+    expect(
+      screen.getByLabelText('Seedance 2.5: Neon street', { selector: 'video' })
+    ).toHaveAttribute('src', 'https://example.com/example.mp4')
   })
 
   it('shows the latest run and switches to an earlier one on demand', async () => {

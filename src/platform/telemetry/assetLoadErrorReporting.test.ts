@@ -39,6 +39,7 @@ describe('asset load error reporting', () => {
             'Resource load failed: https://cloud.comfy.org/assets/app.css'
         }),
         expect.objectContaining({
+          surface: 'platform',
           errorType: 'resource_load_error',
           tags: { tag_name: 'link' }
         })
@@ -64,7 +65,10 @@ describe('asset load error reporting', () => {
         expect.objectContaining({
           message: 'Resource load failed: /assets/app.css'
         }),
-        expect.objectContaining({ errorType: 'resource_load_error' })
+        expect.objectContaining({
+          surface: 'platform',
+          errorType: 'resource_load_error'
+        })
       )
     })
 
@@ -73,7 +77,10 @@ describe('asset load error reporting', () => {
 
       expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
         expect.objectContaining({ message: 'Resource load failed: http://[' }),
-        expect.objectContaining({ errorType: 'resource_load_error' })
+        expect.objectContaining({
+          surface: 'platform',
+          errorType: 'resource_load_error'
+        })
       )
     })
 
@@ -86,7 +93,10 @@ describe('asset load error reporting', () => {
 
       expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
         error,
-        expect.objectContaining({ errorType: 'vite_preload_error' })
+        expect.objectContaining({
+          surface: 'platform',
+          errorType: 'vite_preload_error'
+        })
       )
       expect(consoleError).not.toHaveBeenCalled()
     })

@@ -118,11 +118,13 @@ const fill = computed(() =>
     v-if="active"
     ref="banner"
     :aria-label="t('workshop.sections.featured', locale)"
-    class="relative isolate overflow-hidden rounded-4.5xl border border-transparency-white-t8"
+    class="relative isolate overflow-hidden rounded-3xl border border-transparency-white-t8"
     data-testid="section-featured"
   >
+    <!-- The floor is the tallest slide, a name that needs two lines, so the
+      frame is the same on every tab while a name that fits keeps to one. -->
     <div
-      class="group relative flex min-h-68 short:min-h-48 sm:short:min-h-50"
+      class="group relative flex min-h-72 short:min-h-60 sm:short:min-h-65"
       data-testid="featured-slide"
     >
       <a
@@ -159,7 +161,7 @@ const fill = computed(() =>
       />
 
       <div
-        class="pointer-events-none relative flex w-full min-w-0 flex-col justify-end gap-3 p-7 pt-7 pb-12 max-sm:p-5 max-sm:pb-11 sm:max-w-2xl sm:justify-center lg:p-9 lg:pt-8 lg:pb-12"
+        class="pointer-events-none relative flex w-full min-w-0 flex-col justify-end gap-3 px-7 pt-7 pb-16 max-sm:px-5 max-sm:pt-5 sm:max-w-2xl sm:justify-center lg:px-9 lg:pt-8"
       >
         <div class="flex flex-wrap items-center gap-2">
           <Badge
@@ -181,7 +183,7 @@ const fill = computed(() =>
         </div>
 
         <h2
-          class="text-2xl font-bold text-balance text-primary-warm-white lg:text-3xl"
+          class="line-clamp-2 text-2xl font-bold text-balance text-primary-warm-white lg:text-3xl"
         >
           {{ active.title }}
         </h2>

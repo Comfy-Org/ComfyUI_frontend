@@ -471,7 +471,10 @@ async function copyReport() {
     })
     await copyCollectedReport(report)
   } catch (error) {
-    reportError(error, { errorType: 'crdt_dev_panel_report_copy_failed' })
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'crdt_dev_panel_report_copy_failed'
+    })
     reportCopyState.value = { status: 'failed', report: null }
   }
 }

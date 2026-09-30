@@ -4,7 +4,7 @@ import { computed, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { DepthState } from '../../../../composables/useReshootDemo'
+import type { DepthState } from '../../../../composables/useReshoot'
 import type { ReshootCamera } from '../../../../lib/workshop/cinematic-studio/reshoot'
 import {
   cameraZone,
@@ -12,31 +12,61 @@ import {
   viewTransform
 } from '../../../../lib/workshop/cinematic-studio/reshoot'
 import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
+import type { ReshootRunPhase } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/run'
 import type { Locale } from '../../../../i18n/translations'
+import type { Pose } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/camera'
+import type { Geometry } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
+import ReshootWarp from './ReshootWarp.vue'
 import ReshootZone from './ReshootZone.vue'
 
 const {
   clip,
   camera,
   depth,
+  stage,
+  notice,
   aimable,
+  geometry,
+  pose,
+  keepAim = true,
+  frame = 0,
   locale = 'en'
 } = defineProps<{
   clip: string
   camera: Readonly<ReshootCamera>
   depth: DepthState
+  stage?: ReshootRunPhase
+  notice?: string
   aimable: boolean
+  /** The analysed clip; with it, the view is the real warp, not a tilt. */
+  geometry?: Geometry
+  pose?: Pose
+  keepAim?: boolean
+  frame?: number
+  /** Where the analysis stands while it runs. */
   locale?: Locale
 }>()
+
+const noWebgl = ref(false)
+const live = computed(
+  () => ready.value && !!geometry && !!pose && !noWebgl.value
+)
 
 const emit = defineEmits<{ aim: [patch: Partial<ReshootCamera>] }>()
 
 const ready = computed(() => aimable && depth === 'ready')
 const transform = computed(() =>
-  ready.value ? viewTransform(camera) : undefined
+  ready.value && !live.value ? viewTransform(camera) : undefined
 )
-const notice = computed(() =>
-  depth === 'stale' ? rc('reshoot.stale', locale) : undefined
+const analyzing = computed(() =>
+  rc(
+    stage === 'starting'
+      ? 'reshoot.stage.starting'
+      : stage === 'queued'
+        ? 'reshoot.stage.queued'
+        : 'reshoot.analyzing',
+    locale
+  )
 )
 
 const dragFrom = ref<{ x: number; y: number; tilts: boolean }>()
@@ -102,7 +132,17 @@ const DOLLY_BUTTONS = [
     @pointercancel="dragFrom = undefined"
     @wheel="zoom"
   >
+    <ReshootWarp
+      v-if="live && geometry && pose"
+      :geometry
+      :pose
+      :hfov="camera.fov"
+      :keep-aim="keepAim"
+      :frame
+      @unsupported="noWebgl = true"
+    />
     <video
+      v-else
       :src="clip"
       autoplay
       muted
@@ -121,7 +161,7 @@ const DOLLY_BUTTONS = [
           class="size-4 text-primary-comfy-yellow motion-safe:animate-spin"
           aria-hidden="true"
         />
-        {{ rc('reshoot.analyzing', locale) }}
+        {{ analyzing }}
       </span>
     </div>
     <p

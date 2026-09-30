@@ -26,6 +26,14 @@ const translations = {
     'zh-CN': '在 Comfy 上浏览并运行最新的 AI 图像、视频和音频模型。'
   },
   'workshop.hero.eyebrow': { en: 'Models', 'zh-CN': '模型' },
+  'workshop.catalogue.heading': {
+    en: 'ComfyUI models',
+    'zh-CN': 'ComfyUI 模型'
+  },
+  'workshop.catalogue.directory': {
+    en: 'All models A to Z',
+    'zh-CN': '全部模型（A 到 Z）'
+  },
   'workshop.catalogue.apps': { en: 'Apps', 'zh-CN': '应用' },
   'workshop.catalogue.eyebrow': { en: 'Hub', 'zh-CN': 'Hub' },
   'workshop.catalogue.categories': { en: 'Categories', 'zh-CN': '分类' },
@@ -67,12 +75,27 @@ const translations = {
     'zh-CN': '显示 {n} 个工作流'
   },
   'workshop.hero.heading': {
-    en: 'What will you make next?',
-    'zh-CN': '接下来你想创造什么？'
+    en: 'ComfyUI models',
+    'zh-CN': 'ComfyUI 模型'
   },
   'workshop.hero.subtitle': {
-    en: 'Try the latest AI models with your own ideas, right in your browser.',
-    'zh-CN': '用你自己的创意试用最新的 AI 模型，就在浏览器中。'
+    en: 'What will you make next? Try the latest AI models with your own ideas, right in your browser.',
+    'zh-CN':
+      '接下来你想创造什么？用你自己的创意试用最新的 AI 模型，就在浏览器中。'
+  },
+  'models.hub.meta.title': {
+    en: 'ComfyUI Models: Run AI Image, Video & Audio Models - Comfy',
+    'zh-CN': 'ComfyUI 模型：运行 AI 图像、视频和音频模型 - Comfy'
+  },
+  'models.hub.meta.description': {
+    en: 'Browse {count} AI model in ComfyUI, including {names}. Try it in your browser, then call it from your code. | Browse {count} AI models in ComfyUI, including {names}. Try any model in your browser, then call it from your code.',
+    'zh-CN':
+      '在 ComfyUI 中浏览 {count} 个 AI 模型，包括 {names}。在浏览器中试用任意模型，然后在你的代码中调用它。'
+  },
+  'models.hub.meta.descriptionWithoutNames': {
+    en: 'Browse {count} AI model in ComfyUI. Try it in your browser, then call it from your code. | Browse {count} AI models in ComfyUI. Try any model in your browser, then call it from your code.',
+    'zh-CN':
+      '在 ComfyUI 中浏览 {count} 个 AI 模型。在浏览器中试用任意模型，然后在你的代码中调用它。'
   },
   'workshop.search.label': {
     en: 'Search models, providers, and categories',
@@ -1714,9 +1737,9 @@ Enterprise`
   // Download – meta (decoupled from the hero subtitle so SERP copy can carry
   // the download queries without changing the visible hero)
   'download.meta.description': {
-    en: 'Download ComfyUI for Windows or macOS, or install from GitHub. The full open source engine, free forever, running on your own hardware.',
+    en: 'Download ComfyUI for Windows, macOS, or Linux, or install from GitHub. The full open source engine, free forever, running on your own hardware.',
     'zh-CN':
-      '下载适用于 Windows 或 macOS 的 ComfyUI，也可从 GitHub 安装。完整的开源引擎，永久免费，在你自己的硬件上运行。'
+      '下载适用于 Windows、macOS 或 Linux 的 ComfyUI，也可从 GitHub 安装。完整的开源引擎，永久免费，在你自己的硬件上运行。'
   },
 
   // Download – HeroSection
@@ -1767,19 +1790,6 @@ Enterprise`
     'zh-CN': '出错了，请重试。'
   },
 
-  // Download – CloudBannerSection
-  'download.cloud.prefix': {
-    en: 'Need more power?',
-    'zh-CN': '需要更强算力？'
-  },
-  'download.cloud.cta': {
-    en: 'TRY COMFY CLOUD',
-    'zh-CN': '试试 COMFY CLOUD'
-  },
-  'download.cloud.suffix': {
-    en: 'Powerful GPUs, same workflow, same results, from anywhere.',
-    'zh-CN': '强大 GPU，同样的工作流，同样的结果，随时随地。'
-  },
   // Cloud – HeroSection
   'cloud.hero.heading': {
     en: 'The full power of\nComfyUI — from\nanywhere.',
@@ -2120,9 +2130,9 @@ Enterprise`
     'zh-CN': '常见问题'
   },
   'cloud.faq.footer': {
-    en: 'For pricing, plans, credits, and billing details, see the <a href="/cloud/pricing#faq" class="text-primary-comfy-yellow underline">Pricing FAQs</a>.',
+    en: 'For pricing, plans, credits, and billing details, see the <a href="/pricing/#faq" class="text-primary-comfy-yellow underline">Pricing FAQs</a>.',
     'zh-CN':
-      '有关定价、计划、积分和账单的详细信息，请查看<a href="/zh-CN/cloud/pricing#faq" class="text-primary-comfy-yellow underline">定价常见问题</a>。'
+      '有关定价、计划、积分和账单的详细信息，请查看<a href="/zh-CN/pricing/#faq" class="text-primary-comfy-yellow underline">定价常见问题</a>。'
   },
   'cloud.faq.1.q': {
     en: 'What is Comfy Cloud / ComfyUI Cloud?',
@@ -2227,9 +2237,9 @@ Enterprise`
     'zh-CN': 'Comfy Cloud 的费用是多少？'
   },
   'cloud.faq.12.a': {
-    en: 'Plans start at $20/mo with a credit-based model. For full pricing details — credits, plans, Team plan, billing, and refunds — see the <a href="/cloud/pricing#faq" class="text-primary-comfy-yellow underline">Pricing FAQs</a>.',
+    en: 'Plans start at $20/mo with a credit-based model. For full pricing details — credits, plans, Team plan, billing, and refunds — see the <a href="/pricing/#faq" class="text-primary-comfy-yellow underline">Pricing FAQs</a>.',
     'zh-CN':
-      '计划起价为每月 $20，采用基于积分的模式。如需完整的定价详情——积分、计划、团队计划、账单和退款——请查看 <a href="/zh-CN/cloud/pricing#faq" class="text-primary-comfy-yellow underline">定价常见问题</a>。'
+      '计划起价为每月 $20，采用基于积分的模式。如需完整的定价详情——积分、计划、团队计划、账单和退款——请查看 <a href="/zh-CN/pricing/#faq" class="text-primary-comfy-yellow underline">定价常见问题</a>。'
   },
 
   'buildWhat.row1': {
@@ -2252,6 +2262,8 @@ Enterprise`
     en: 'Yearly (Up to 20% off)',
     'zh-CN': '按年（最高 20% 优惠）'
   },
+  'pricing.cycle.monthly': { en: 'monthly', 'zh-CN': '按月' },
+  'pricing.cycle.yearly': { en: 'yearly', 'zh-CN': '按年' },
   'pricing.period.billedMonthly': { en: 'Billed monthly', 'zh-CN': '按月计费' },
   'pricing.period.billedYearly': {
     en: '{total} billed yearly',
@@ -2292,22 +2304,6 @@ Enterprise`
   'pricing.feature.shortRuntime': {
     en: '30 minute max workflow runtime',
     'zh-CN': '单个工作流最长运行 30 分钟'
-  },
-  'pricing.feature.apiConcurrency1': {
-    en: 'Run up to 1 concurrent workflow via Cloud API',
-    'zh-CN': '通过 Cloud API 最多并发运行 1 个工作流'
-  },
-  'pricing.feature.apiConcurrency3': {
-    en: 'Run up to 3 concurrent workflows via Cloud API',
-    'zh-CN': '通过 Cloud API 最多并发运行 3 个工作流'
-  },
-  'pricing.feature.apiConcurrency5': {
-    en: 'Run up to 5 concurrent workflows via Cloud API',
-    'zh-CN': '通过 Cloud API 最多并发运行 5 个工作流'
-  },
-  'pricing.feature.apiConcurrency25': {
-    en: 'Run up to 25 concurrent workflows via Cloud API',
-    'zh-CN': '通过 Cloud API 最多并发运行 25 个工作流'
   },
   'pricing.feature.addCredits': {
     en: 'Add more credits anytime',
@@ -3587,9 +3583,9 @@ Enterprise`
     'zh-CN': '需要付费吗？'
   },
   'mcp.faq.6.a': {
-    en: "On the local connection, runs on your own hardware are free, and the server is open source. Partner models are the exception: they run on partner infrastructure and spend Comfy credits from your account, so you sign in before using them. On the cloud connection, connecting and searching are free, and running a generation uses Comfy Cloud credits — you need a [subscription of any tier](https://comfy.org/cloud/pricing); a credit top-up alone isn't enough. Either way, your agent confirms with you before it spends.",
+    en: "On the local connection, runs on your own hardware are free, and the server is open source. Partner models are the exception: they run on partner infrastructure and spend Comfy credits from your account, so you sign in before using them. On the cloud connection, connecting and searching are free, and running a generation uses Comfy Cloud credits — you need a [subscription of any tier](https://comfy.org/pricing/); a credit top-up alone isn't enough. Either way, your agent confirms with you before it spends.",
     'zh-CN':
-      '本地连接方面，在你自己硬件上的生成是免费的，服务器也是开源的。合作伙伴模型是例外：它们在合作伙伴的基础设施上运行，消耗你 Comfy 账户中的积分，因此使用前需要登录。云端连接方面，连接和搜索免费，运行生成会使用 Comfy Cloud 积分——你需要[任意套餐的订阅](https://comfy.org/cloud/pricing)，仅充值积分是不够的。无论哪种方式，智能体在消费前都会先与你确认。'
+      '本地连接方面，在你自己硬件上的生成是免费的，服务器也是开源的。合作伙伴模型是例外：它们在合作伙伴的基础设施上运行，消耗你 Comfy 账户中的积分，因此使用前需要登录。云端连接方面，连接和搜索免费，运行生成会使用 Comfy Cloud 积分——你需要[任意套餐的订阅](https://comfy.org/pricing/)，仅充值积分是不够的。无论哪种方式，智能体在消费前都会先与你确认。'
   },
   'mcp.faq.7.q': {
     en: 'Is Comfy MCP open source?',
@@ -4124,18 +4120,18 @@ Enterprise`
     'zh-CN': 'CLI 还是 MCP：该用哪个？'
   },
   'cli.faq.2.a': {
-    en: 'Both drive the same engine with the same account. Comfy MCP is for interactive agent work in chat: results come back in the session. The CLI is for automation: batch runs, CI, shell pipelines, and outputs saved to disk with --download or emitted as --json. Many teams run both and let the agent pick per task. Comfy MCP lives at https://comfy.org/mcp.',
+    en: 'Both drive the same engine with the same account. Comfy MCP is for interactive agent work in chat: results come back in the session. The CLI is for automation: batch runs, CI, shell pipelines, and outputs saved to disk with --download or emitted as --json. Many teams run both and let the agent pick per task. Comfy MCP lives at https://comfy.org/mcp/.',
     'zh-CN':
-      '两者驱动同一个引擎、共用同一个账户。Comfy MCP 适合对话中的交互式智能体工作：结果直接返回会话。CLI 适合自动化：批量运行、CI、shell 管线，输出用 --download 存盘或以 --json 输出。很多团队两个都用，让智能体按任务选择。Comfy MCP 见 https://comfy.org/mcp。'
+      '两者驱动同一个引擎、共用同一个账户。Comfy MCP 适合对话中的交互式智能体工作：结果直接返回会话。CLI 适合自动化：批量运行、CI、shell 管线，输出用 --download 存盘或以 --json 输出。很多团队两个都用，让智能体按任务选择。Comfy MCP 见 https://comfy.org/mcp/。'
   },
   'cli.faq.3.q': {
     en: 'Does it cost anything?',
     'zh-CN': '需要付费吗？'
   },
   'cli.faq.3.a': {
-    en: 'The CLI is free and open source. With a Comfy account you can browse templates, models, and nodes at no cost, and runs on your own hardware are free. Partner models are the exception: they run on partner infrastructure and spend Comfy credits. Cloud runs spend credits too, either added directly or through an existing [Comfy Cloud subscription](https://comfy.org/cloud/pricing).',
+    en: 'The CLI is free and open source. With a Comfy account you can browse templates, models, and nodes at no cost, and runs on your own hardware are free. Partner models are the exception: they run on partner infrastructure and spend Comfy credits. Cloud runs spend credits too, either added directly or through an existing [Comfy Cloud subscription](https://comfy.org/pricing/).',
     'zh-CN':
-      'CLI 免费且开源。有 Comfy 账户即可免费浏览模板、模型和节点，在你自己硬件上的运行也是免费的。合作伙伴模型是例外：它们在合作伙伴的基础设施上运行，消耗 Comfy 积分。云端运行同样消耗积分，可以直接添加，也可以使用现有的 [Comfy Cloud 订阅](https://comfy.org/cloud/pricing)。'
+      'CLI 免费且开源。有 Comfy 账户即可免费浏览模板、模型和节点，在你自己硬件上的运行也是免费的。合作伙伴模型是例外：它们在合作伙伴的基础设施上运行，消耗 Comfy 积分。云端运行同样消耗积分，可以直接添加，也可以使用现有的 [Comfy Cloud 订阅](https://comfy.org/pricing/)。'
   },
   'cli.faq.4.q': {
     en: 'How does cloud vs local routing work?',
@@ -4346,6 +4342,7 @@ Enterprise`
   },
   'footer.products': { en: 'Products', 'zh-CN': '产品' },
   'footer.models': { en: 'Models', 'zh-CN': '模型' },
+  'footer.modelCatalogue': { en: 'ComfyUI Models', 'zh-CN': 'ComfyUI 模型' },
   'footer.resources': { en: 'Resources', 'zh-CN': '资源' },
   'footer.company': { en: 'Company', 'zh-CN': '公司' },
   'footer.contact': { en: 'Contact', 'zh-CN': '联系我们' },
@@ -4382,9 +4379,9 @@ Enterprise`
   // ── Privacy Policy ────────────────────────────────────────────────
   'privacy.intro.label': { en: 'INTRO', 'zh-CN': '简介' },
   'privacy.intro.block.0': {
-    en: 'Your privacy is important to us. It is Comfy Organization Inc\'s policy to respect your privacy and comply with any applicable law and regulation regarding any personal information we may collect about you, including across our website, <a href="https://www.comfy.org" class="text-white underline">https://www.comfy.org</a>, and other sites we own and operate.',
+    en: 'Your privacy is important to us. It is Comfy Organization Inc\'s policy to respect your privacy and comply with any applicable law and regulation regarding any personal information we may collect about you, including across our website, <a href="https://comfy.org/" class="text-white underline">https://www.comfy.org</a>, and other sites we own and operate.',
     'zh-CN':
-      '您的隐私对我们非常重要。Comfy Organization Inc 的政策是尊重您的隐私，并遵守有关我们可能收集的您的个人信息的任何适用法律和法规，包括在我们的网站 <a href="https://www.comfy.org" class="text-white underline">https://www.comfy.org</a> 以及我们拥有和运营的其他网站上。'
+      '您的隐私对我们非常重要。Comfy Organization Inc 的政策是尊重您的隐私，并遵守有关我们可能收集的您的个人信息的任何适用法律和法规，包括在我们的网站 <a href="https://comfy.org/" class="text-white underline">https://www.comfy.org</a> 以及我们拥有和运营的其他网站上。'
   },
   'privacy.intro.block.1': {
     en: 'Personal information is any information about you which can be used to identify you. This includes information about you as a person (such as name, address, and date of birth), your devices, payment details, and even information about how you use a website or online service.',
@@ -4397,9 +4394,9 @@ Enterprise`
       '如果我们的网站包含指向第三方网站和服务的链接，请注意这些网站和服务有自己的隐私政策。在访问任何第三方内容的链接后，您应阅读其发布的关于如何收集和使用个人信息的隐私政策信息。本隐私政策不适用于您离开我们网站后的任何活动。'
   },
   'privacy.intro.block.3': {
-    en: 'This policy is effective as of April 18, 2025. For information specific to Comfy Desktop (the local install application), including named processors, lawful basis under GDPR/UK GDPR, retention periods, and your rights, see our <a href="/privacy/desktop" class="text-white underline">Desktop Privacy Policy</a>.',
+    en: 'This policy is effective as of April 18, 2025. For information specific to Comfy Desktop (the local install application), including named processors, lawful basis under GDPR/UK GDPR, retention periods, and your rights, see our <a href="/privacy/desktop/" class="text-white underline">Desktop Privacy Policy</a>.',
     'zh-CN':
-      '本政策自 2025 年 4 月 18 日起生效。有关 Comfy Desktop（本地安装应用程序）的具体信息，包括指定的数据处理方、GDPR/UK GDPR 下的合法依据、保留期限以及您的权利，请参阅我们的<a href="/zh-CN/privacy/desktop" class="text-white underline">Desktop 隐私政策</a>。'
+      '本政策自 2025 年 4 月 18 日起生效。有关 Comfy Desktop（本地安装应用程序）的具体信息，包括指定的数据处理方、GDPR/UK GDPR 下的合法依据、保留期限以及您的权利，请参阅我们的<a href="/zh-CN/privacy/desktop/" class="text-white underline">Desktop 隐私政策</a>。'
   },
   'privacy.information-we-collect.label': {
     en: 'INFORMATION',
@@ -6104,18 +6101,18 @@ Enterprise`
     'zh-CN': '如何获取 MiniMax 商业许可？'
   },
   'contact.faq.a1': {
-    en: 'Comfy is the only official reseller of MiniMax commercial-use licenses, covering MiniMax H3 plus MiniMax Audio & Music for running the models locally on your own hardware. Licenses come in two tiers, Professional and Enterprise. Request a license through this form, or read more on the [MiniMax Commercial License page](https://comfy.org/minimax/license).',
+    en: 'Comfy is the only official reseller of MiniMax commercial-use licenses, covering MiniMax H3 plus MiniMax Audio & Music for running the models locally on your own hardware. Licenses come in two tiers, Professional and Enterprise. Request a license through this form, or read more on the [MiniMax Commercial License page](https://comfy.org/minimax/license/).',
     'zh-CN':
-      'Comfy 是 MiniMax 商业使用许可的唯一官方经销商，涵盖 MiniMax H3 以及 MiniMax 音频与音乐模型，面向在自有硬件上本地运行模型的场景。许可分为专业版和企业版两个级别。通过此表单申请许可，或在 [MiniMax 商业许可页面](https://comfy.org/zh-CN/minimax/license)了解更多。'
+      'Comfy 是 MiniMax 商业使用许可的唯一官方经销商，涵盖 MiniMax H3 以及 MiniMax 音频与音乐模型，面向在自有硬件上本地运行模型的场景。许可分为专业版和企业版两个级别。通过此表单申请许可，或在 [MiniMax 商业许可页面](https://comfy.org/zh-CN/minimax/license/)了解更多。'
   },
   'contact.faq.q2': {
     en: 'What are Forward Deployed Creatives?',
     'zh-CN': '什么是前沿驻场创意人才？'
   },
   'contact.faq.a2': {
-    en: 'Comfy experts who embed with your team, build production workflows in your environment, train LoRAs on your style, and teach your team to run and extend everything they build. Tell us what you are making through this form, or [meet the Forward Deployed Creatives](https://comfy.org/forward-deployed-creatives).',
+    en: 'Comfy experts who embed with your team, build production workflows in your environment, train LoRAs on your style, and teach your team to run and extend everything they build. Tell us what you are making through this form, or [meet the Forward Deployed Creatives](https://comfy.org/forward-deployed-creatives/).',
     'zh-CN':
-      'Comfy 专家驻场加入你的团队，在你的环境中构建生产级工作流，用你的风格训练 LoRA，并教会你的团队运行和扩展他们构建的一切。通过此表单告诉我们你在做什么，或[认识前沿驻场创意人才](https://comfy.org/zh-CN/forward-deployed-creatives)。'
+      'Comfy 专家驻场加入你的团队，在你的环境中构建生产级工作流，用你的风格训练 LoRA，并教会你的团队运行和扩展他们构建的一切。通过此表单告诉我们你在做什么，或[认识前沿驻场创意人才](https://comfy.org/zh-CN/forward-deployed-creatives/)。'
   },
   'contact.faq.q3': {
     en: 'What does Comfy Enterprise include?',
@@ -6404,9 +6401,9 @@ Enterprise`
       'ComfyUI 是免费且开源的。{name} 的权重文件可从 Hugging Face 下载。仅在 Comfy Cloud 上运行时才需要为算力付费；在您自己的硬件上进行本地推理始终是免费的。'
   },
   'models.faq.isFree.cloudAnswer': {
-    en: 'This model runs exclusively on Comfy Cloud. Pay-per-compute pricing applies - see comfy.org/cloud/pricing',
+    en: 'This model runs exclusively on Comfy Cloud. Pay-per-compute pricing applies - see comfy.org/pricing',
     'zh-CN':
-      '此模型仅在 Comfy Cloud 上运行。按算力用量付费，详情请参阅 comfy.org/cloud/pricing。'
+      '此模型仅在 Comfy Cloud 上运行。按算力用量付费，详情请参阅 comfy.org/pricing。'
   },
   'models.dirDescription.diffusion_models': {
     en: 'a diffusion model that generates images or video from text and image prompts',
@@ -6563,9 +6560,9 @@ Enterprise`
     'zh-CN': 'Wan 2.2\n文字转视频'
   },
   'models.list.contact.heading': {
-    en: 'Pick a model and explore what the community has built. <a href="https://comfy.org/workflows" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">Browse Comfy Workflows</a> for the newest workflows.',
+    en: 'Pick a model and explore what the community has built. <a href="https://comfy.org/workflows/" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">Browse Comfy Workflows</a> for the newest workflows.',
     'zh-CN':
-      '选择一个模型，浏览社区的创作成果。<a href="https://comfy.org/workflows" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">访问 Comfy Workflows</a> 查看最新工作流。'
+      '选择一个模型，浏览社区的创作成果。<a href="https://comfy.org/workflows/" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">访问 Comfy Workflows</a> 查看最新工作流。'
   },
 
   // Payment status pages
@@ -6683,9 +6680,9 @@ Enterprise`
     'zh-CN': '可用于您内容的品牌 Logo'
   },
   'affiliate.assets.subheading': {
-    en: 'Banners, screenshots, and talking points are in your affiliate dashboard after approval. Get the <a href="https://comfy.org/brand" class="text-primary-comfy-yellow underline">full brand assets here</a>.',
+    en: 'Banners, screenshots, and talking points are in your affiliate dashboard after approval. Get the <a href="https://comfy.org/brand/" class="text-primary-comfy-yellow underline">full brand assets here</a>.',
     'zh-CN':
-      '横幅图、截图和宣传文案将在获批后于联盟仪表盘中提供。点击<a href="https://comfy.org/brand" class="text-primary-comfy-yellow underline">此处获取完整品牌素材</a>。'
+      '横幅图、截图和宣传文案将在获批后于联盟仪表盘中提供。点击<a href="https://comfy.org/brand/" class="text-primary-comfy-yellow underline">此处获取完整品牌素材</a>。'
   },
   'affiliate.assets.ctaLabel': {
     en: 'Go to brand portal',
@@ -8759,6 +8756,7 @@ Enterprise`
     en: 'Developer Platform',
     'zh-CN': '开发者平台'
   },
+  'nav.comfyRouter': { en: 'Comfy Router', 'zh-CN': 'Comfy Router' },
   'platform.meta.title': {
     en: 'Developer Platform',
     'zh-CN': '开发者平台'
@@ -8816,6 +8814,38 @@ Enterprise`
     'zh-CN':
       'Builder 将你的 ComfyUI 工作流和环境打包成可复现的构建。将该构建部署到 Comfy API，并按需扩展。'
   },
+  'platform.howItWorks.chat.channel': {
+    en: 'creative-team',
+    'zh-CN': '创意团队'
+  },
+  'platform.howItWorks.chat.message': {
+    en: "here's the link",
+    'zh-CN': '链接在这里'
+  },
+  'platform.howItWorks.chat.reply': {
+    en: 'got it!',
+    'zh-CN': '收到！'
+  },
+  'platform.howItWorks.chat.messageReady': {
+    en: 'The workflow is ready to try',
+    'zh-CN': '工作流可以试用了'
+  },
+  'platform.howItWorks.chat.replyTesting': {
+    en: 'Testing it now!',
+    'zh-CN': '现在就来试！'
+  },
+  'platform.howItWorks.chat.messagePreview': {
+    en: 'Preview is live',
+    'zh-CN': '预览已上线'
+  },
+  'platform.howItWorks.chat.replySharing': {
+    en: "I'll share it with the team",
+    'zh-CN': '我会分享给团队'
+  },
+  'platform.howItWorks.chat.placeholder': {
+    en: 'Message your team',
+    'zh-CN': '发送消息给团队'
+  },
   'platform.howItWorks.1.title': {
     en: 'Deploy your workflow as an API',
     'zh-CN': '把工作流部署为 API'
@@ -8848,6 +8878,44 @@ Enterprise`
   'platform.serverlessDeploy.tabWorkflow': {
     en: 'Start with your workflow',
     'zh-CN': '从你的工作流开始'
+  },
+  'platform.serverlessApps.eyebrow': {
+    en: 'CREATIVE APPS',
+    'zh-CN': '创意应用'
+  },
+  'platform.serverlessApps.heading': {
+    en: 'Build the app, not just the workflow.',
+    'zh-CN': '构建应用，而不只是工作流。'
+  },
+  'platform.serverlessApps.body': {
+    en: 'Deploy your ComfyUI workflows as APIs behind customer-facing products, internal tools, and automated creative pipelines. Build the experience your users need without exposing the graph.',
+    'zh-CN':
+      '将 ComfyUI 工作流作为 API 部署在面向客户的产品、内部工具和自动化创意流程之后。在不暴露工作流图的情况下，构建用户所需的体验。'
+  },
+  'platform.serverlessApps.browseApps': {
+    en: 'Browse apps',
+    'zh-CN': '浏览应用'
+  },
+  'platform.serverlessApps.videoLabel': {
+    en: 'Creative app powered by Comfy API',
+    'zh-CN': '由 Comfy API 驱动的创意应用'
+  },
+  'platform.serverlessCaseStudy.quote': {
+    en: 'At Silverside, Comfy workflows are where our creative expertise becomes infrastructure. We build production pipelines then serve them through Comfy API so our clients can run the same proven workflows at scale. It lets a small team deliver enterprise-grade creative output.',
+    'zh-CN':
+      '在 Silverside，Comfy 工作流将我们的创意专长转化为基础设施。我们构建生产流水线，再通过 Comfy API 提供服务，让客户能够大规模运行同样经过验证的工作流。这让小团队也能交付企业级创意成果。'
+  },
+  'platform.serverlessCaseStudy.name': {
+    en: 'Allie Wrubel',
+    'zh-CN': 'Allie Wrubel'
+  },
+  'platform.serverlessCaseStudy.role': {
+    en: 'Head of Technology at Silverside AI',
+    'zh-CN': 'Silverside AI 技术负责人'
+  },
+  'platform.serverlessCaseStudy.linkLabel': {
+    en: 'Read the Silverside AI customer story',
+    'zh-CN': '阅读 Silverside AI 客户案例'
   },
   'platform.serverlessScale.heading': {
     en: 'Built for teams',
@@ -8925,6 +8993,18 @@ Enterprise`
     en: 'Comfy Router',
     'zh-CN': 'Comfy Router'
   },
+  'platform.products.models.badgeLabel': {
+    en: 'ROUTER',
+    'zh-CN': 'ROUTER'
+  },
+  'platform.serverlessDeploy.copy': {
+    en: 'Copy commands',
+    'zh-CN': '复制命令'
+  },
+  'platform.serverlessDeploy.copied': {
+    en: 'Copied',
+    'zh-CN': '已复制'
+  },
   'platform.products.models.description': {
     en: 'Use thousands of the latest models in one API. Call Seedance, Minimax H3, Nano Banana, and GPT-Image.',
     'zh-CN':
@@ -8960,6 +9040,10 @@ Enterprise`
     en: 'Package all your custom nodes, LoRAs, models, and Python dependencies into an autoscaling endpoint.',
     'zh-CN':
       '将你的所有自定义节点、LoRA、模型和 Python 依赖打包成一个自动扩缩的端点。'
+  },
+  'platform.serverlessHero.animationTitle': {
+    en: 'Comfy image pipeline and GPU orchestration animation',
+    'zh-CN': 'Comfy 图像管线与 GPU 编排动画'
   },
   'platform.modelsGallery.ariaLabel': {
     en: 'Sample outputs from partner models',
@@ -9134,14 +9218,33 @@ Enterprise`
     en: 'Contact sales',
     'zh-CN': '联系销售'
   },
-  'pricing.resourceCosts.subtitle': {
-    en: 'Only pay for what you use. Rates below apply to the Comfy API, billed by the GPU second.',
-    'zh-CN': '按实际用量付费。以下费率适用于 Comfy API，按 GPU 秒计费。'
+  'pricing.comfyApi.heading': {
+    en: 'Comfy API pricing',
+    'zh-CN': 'Comfy API 定价'
   },
-  'pricing.resourceCosts.heading': {
-    en: 'Developer Platform pricing',
-    'zh-CN': '开发者平台定价'
+  'pricing.comfyApi.subtitle': {
+    en: 'Comfy API is a separate product from your Comfy Cloud plan, for teams building on Comfy Cloud programmatically. GPU time and storage are billed by the second; release, deployment, and concurrency limits apply to each plan below.',
+    'zh-CN':
+      'Comfy API 是独立于你的 Comfy Cloud 套餐之外的产品，面向以编程方式构建于 Comfy Cloud 平台之上的团队。GPU 时间与存储按秒计费；下方列出了各套餐的版本、部署与并发限制。'
   },
+  'pricing.comfyApi.metricColumn': { en: 'Limit', 'zh-CN': '限制项' },
+  'pricing.comfyApi.metric.releases': {
+    en: 'Total releases limit',
+    'zh-CN': '版本总数上限'
+  },
+  'pricing.comfyApi.metric.deployments': {
+    en: 'Total deployments limit',
+    'zh-CN': '部署总数上限'
+  },
+  'pricing.comfyApi.metric.concurrency': {
+    en: 'Max worker concurrency (per deployment)',
+    'zh-CN': '最大工作节点并发数（每个部署）'
+  },
+  'pricing.comfyApi.enterpriseNote': {
+    en: 'Enterprise limits are determined by your contract.',
+    'zh-CN': '企业版的限制由合同约定。'
+  },
+  'pricing.comfyApi.learnMore': { en: 'Learn More', 'zh-CN': '了解更多' },
   'pricing.minimaxLicense.heading': {
     en: 'MiniMax license pricing',
     'zh-CN': 'MiniMax 许可定价'
@@ -9187,55 +9290,21 @@ Enterprise`
     en: 'Storage',
     'zh-CN': '存储'
   },
-  'platform.pricing.storage.standardUnder1tb': {
-    en: 'Standard network storage, under 1 TB',
-    'zh-CN': '网络存储——标准，1 TB 以下'
-  },
-  'platform.pricing.storage.standardOver1tb': {
-    en: 'Standard network storage, 1 TB and above',
-    'zh-CN': '网络存储——标准，1 TB 及以上'
-  },
-  'platform.pricing.storage.highPerformance': {
-    en: 'High-performance network storage',
-    'zh-CN': '网络存储——高性能'
-  },
-  'platform.pricing.storage.containerDisk': {
-    en: 'Container disk',
-    'zh-CN': '容器磁盘'
-  },
-  'platform.pricing.storage.networkTitle': {
-    en: 'Network storage',
+  'platform.pricing.storage.title': {
+    en: 'Network Storage',
     'zh-CN': '网络存储'
   },
-  'platform.pricing.storage.sub.standardUnder1tb': {
-    en: 'Standard, under 1 TB',
-    'zh-CN': '标准，1 TB 以下'
-  },
-  'platform.pricing.storage.sub.standardOver1tb': {
-    en: 'Standard, 1 TB and above',
-    'zh-CN': '标准，1 TB 及以上'
-  },
-  'platform.pricing.storage.sub.highPerformance': {
-    en: 'High performance',
-    'zh-CN': '高性能'
-  },
-  'platform.pricing.storage.sub.containerDisk': {
-    en: 'Per-worker local filesystem',
-    'zh-CN': '每个工作节点的本地文件系统'
-  },
   'platform.pricing.storageNote': {
-    en: "Models live on persistent network storage shared across a deployment's workers. Container disk is each worker's local filesystem and is billed separately.",
-    'zh-CN':
-      '模型存放在网络存储上——持久化并在部署的所有工作节点间共享。容器磁盘是每个工作节点自己的本地文件系统，单独计费。'
+    en: "Models live on persistent network storage shared across a deployment's workers.",
+    'zh-CN': '模型存放在网络存储上——持久化并在部署的所有工作节点间共享。'
   },
   'platform.pricing.billedPerSecond': {
     en: 'Billed by the GPU second',
     'zh-CN': '按 GPU 秒计费'
   },
   'platform.pricing.storageExample': {
-    en: 'Worked example: 500 GB of models on standard network storage = {amount}/mo + GPU time.',
-    'zh-CN':
-      '示例：500 GB 模型存放在标准网络存储上 = 每月 {amount} + GPU 时间。'
+    en: 'For example: 20 GB of models = {amount}/mo + GPU time.',
+    'zh-CN': '示例：20 GB 模型 = 每月 {amount} + GPU 时间。'
   },
   'platform.pricing.modelsNote': {
     en: 'Comfy Router usage shows per-output prices on each model card and draws from the same credit pool.',
@@ -9726,7 +9795,6 @@ Enterprise`
   },
   'workshop.card.partnerNode': { en: 'Partner node', 'zh-CN': '合作伙伴节点' },
   'workshop.card.comfyApp': { en: 'Comfy app', 'zh-CN': 'Comfy 应用' },
-  'workshop.card.comfyApi': { en: 'Comfy API', 'zh-CN': 'Comfy API' },
   'workshop.card.runs': { en: '{n} runs', 'zh-CN': '{n} 次运行' },
   'workshop.card.creditsPerRun': { en: 'credits / run', 'zh-CN': '积分 / 次' },
   'workshop.card.from': { en: 'from', 'zh-CN': '起' },
@@ -9749,20 +9817,49 @@ Enterprise`
   'workshop.empty.clear': { en: 'Clear filters', 'zh-CN': '清除筛选' },
 
   // Workshop – model detail
-  'workshop.model.meta.description': {
-    en: 'Run {name} in your browser, then call it from your code.',
-    'zh-CN': '在浏览器中运行 {name}，然后从代码中调用它。'
+  'workshop.model.meta.byProvider': {
+    en: '{name} by {provider}',
+    'zh-CN': '{name}（{provider}）'
+  },
+  'workshop.model.meta.lead': {
+    en: '{who}: {summary}',
+    'zh-CN': '{who}：{summary}'
+  },
+  'workshop.model.meta.leadNoSummary': { en: '{who}.', 'zh-CN': '{who}。' },
+  'workshop.model.meta.cta': {
+    en: 'Run it in your browser or call it via API.',
+    'zh-CN': '在浏览器中运行，或通过 API 调用。'
+  },
+  'workshop.model.meta.ctaShort': {
+    en: 'Run it in your browser or via API.',
+    'zh-CN': '可在浏览器或 API 中运行。'
+  },
+  'workshop.model.meta.price': {
+    en: 'Typical cost: {credits} credits per {unit}.',
+    'zh-CN': '默认设置下约 {credits} 积分。'
+  },
+  'workshop.model.meta.priceNoUnit': {
+    en: 'Typical cost: {credits} credits.',
+    'zh-CN': '默认设置下约 {credits} 积分。'
   },
   'workshop.model.tabs.playground': { en: 'Playground', 'zh-CN': 'Playground' },
   'workshop.model.tabs.api': { en: 'API', 'zh-CN': 'API' },
   'workshop.model.tabs.details': { en: 'Details', 'zh-CN': '详情' },
+  'workshop.model.meta.title': {
+    en: '{name} API & Playground - Comfy',
+    'zh-CN': '{name} API 与 Playground - Comfy'
+  },
+  'workshop.model.meta.titleUnbranded': {
+    en: '{name} API & Playground',
+    'zh-CN': '{name} API 与 Playground'
+  },
+  'workshop.model.meta.titleApi': {
+    en: '{name} API - Comfy',
+    'zh-CN': '{name} API - Comfy'
+  },
   'workshop.model.relatedProvider': {
     en: 'More from {provider}',
     'zh-CN': '{provider} 的更多模型'
-  },
-  'workshop.model.relatedShort': {
-    en: 'More models',
-    'zh-CN': '更多模型'
   },
   'workshop.model.browseAllShort': {
     en: 'Browse all',
@@ -10122,6 +10219,19 @@ Enterprise`
   'workshop.dialogue.voice': { en: 'Voice ID', 'zh-CN': '音色 ID' },
   'workshop.dialogue.add': { en: 'Add turn', 'zh-CN': '添加一段' },
   'workshop.dialogue.remove': { en: 'Remove turn', 'zh-CN': '移除此段' },
+  'workshop.run.rollingOut': {
+    en: 'Running in the browser is rolling out. Call this model through the API or run it in ComfyUI.',
+    'zh-CN':
+      '浏览器内运行正在逐步开放。你可以通过 API 调用此模型，或在 ComfyUI 中运行。'
+  },
+  'workshop.run.resolvingAvailability': {
+    en: 'Just a moment…',
+    'zh-CN': '请稍候…'
+  },
+  'workshop.run.rollingOutApi': {
+    en: 'See the API',
+    'zh-CN': '查看 API'
+  },
   'workshop.run.mappingUnavailable': {
     en: 'This model cannot be run from the browser yet.',
     'zh-CN': '此模型尚未启用 Comfy Router 执行。'
@@ -10341,6 +10451,11 @@ Enterprise`
     'zh-CN':
       '模型提供商因内容政策阻止了输入或生成的输出。请检查提示词和参考文件后再运行。'
   },
+  'workshop.error.policyRealFaces': {
+    en: 'Seedance blocks realistic human faces, even AI-generated ones. Try an image without one or a stylized character, or check your prompt.',
+    'zh-CN':
+      'Seedance 会拦截逼真的人脸，包括 AI 生成的人脸。请换一张不含人脸的图片或使用风格化角色，也可以检查一下提示词。'
+  },
   'workshop.error.noCredits': {
     en: 'Not enough credits. Add credits to continue.',
     'zh-CN': '积分不足。请添加积分后继续。'
@@ -10505,6 +10620,10 @@ Enterprise`
   'workshop.examples.using': {
     en: 'Loaded',
     'zh-CN': '已填入表单'
+  },
+  'workshop.examples.sampleAlt': {
+    en: '{name} example output {n}',
+    'zh-CN': '{name} 示例输出 {n}'
   },
   'workshop.examples.empty': {
     en: 'No examples yet for this model.',

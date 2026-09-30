@@ -352,6 +352,15 @@ describe('clipboard ID allocation', () => {
       throw finalizationError
     }
     const canvas = createCanvas(rootGraph)
+    const changeEvents: Array<{ nodeCount: number; subType: string }> = []
+    const emitEvent = canvas.emitEvent.bind(canvas)
+    vi.spyOn(canvas, 'emitEvent').mockImplementation((detail) => {
+      changeEvents.push({
+        nodeCount: rootGraph.nodes.length,
+        subType: detail.subType
+      })
+      emitEvent(detail)
+    })
 
     expect(() =>
       canvas._deserializeItems(
@@ -360,6 +369,10 @@ describe('clipboard ID allocation', () => {
       )
     ).toThrow(finalizationError)
     expect(rootGraph.nodes).toEqual([])
+    expect(changeEvents).toEqual([
+      { nodeCount: 0, subType: 'before-change' },
+      { nodeCount: 0, subType: 'after-change' }
+    ])
   })
 })
 

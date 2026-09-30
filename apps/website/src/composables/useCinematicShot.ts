@@ -72,7 +72,6 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
   const resolution = ref<Resolution>('2K')
   const takes = ref(1)
   const cast = shallowRef<StudioImage>()
-  const palette = shallowRef<StudioImage>()
   const colors = ref<readonly string[]>([])
   const mainColor = ref<number>()
   const duration = ref<number>()
@@ -96,15 +95,12 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
     enhance: enhance.value,
     video: mode.value === 'video',
     cast: mode.value === 'image' && !!cast.value,
-    palette: mode.value === 'image' && !!palette.value,
     colors: colors.value,
     mainColor: mainColor.value
   }))
   const references = computed(() =>
     mode.value === 'image'
-      ? [cast.value, palette.value].filter(
-          (image): image is StudioImage => !!image
-        )
+      ? [cast.value].filter((image): image is StudioImage => !!image)
       : []
   )
   const model = computed(() =>
@@ -322,7 +318,6 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
     resolution,
     takes,
     cast,
-    palette,
     colors,
     mainColor,
     references,

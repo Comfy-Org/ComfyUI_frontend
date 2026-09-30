@@ -244,7 +244,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   ): void {
     if (reported.has(key)) return
     reported.add(key)
-    reportError(new Error(message), { errorType, context })
+    reportError(new Error(message), { surface: 'agent', errorType, context })
   }
 
   /** True when `graph` is the bound document's root graph. */

@@ -35,6 +35,7 @@ const {
   refreshable = false,
   memberWorkspace,
   cancelledMessage,
+  policyMessage,
   locale = 'en'
 } = defineProps<{
   state: RunState
@@ -51,6 +52,8 @@ const {
    * and is over. The same status, two different things to say.
    */
   cancelledMessage?: string
+  /** Why this page's provider blocks content, when its rule is known. */
+  policyMessage?: string
   locale?: Locale
 }>()
 
@@ -102,6 +105,7 @@ function failureMessage(failure: Extract<RunState, { status: 'failed' }>) {
     return t('workshop.error.memberNoCredits', locale, {
       workspace: memberWorkspace
     })
+  if (failure.reason === 'policy' && policyMessage) return policyMessage
   return t(failureTranslationKey(failure), locale)
 }
 
@@ -465,7 +469,7 @@ const earlierClass = (active: boolean) =>
             v-if="currentUrl && shown.kind === 'video' && !blurred"
             :src="currentUrl"
             :locale
-            :aria-label="t('workshop.output.title', locale)"
+            :aria-label="shown.alt ?? t('workshop.output.title', locale)"
             class="size-full rounded-none border-0"
             fit="contain"
             controls-on-hover
@@ -478,7 +482,7 @@ const earlierClass = (active: boolean) =>
           <img
             v-else-if="currentUrl && shown.kind === 'image' && !blurred"
             :src="currentUrl"
-            :alt="t('workshop.output.title', locale)"
+            :alt="shown.alt ?? t('workshop.output.title', locale)"
             class="size-full object-contain"
             @load="emit('delivery', currentUrl, 'succeeded')"
             @error="emit('delivery', currentUrl, 'failed')"
@@ -707,7 +711,7 @@ const earlierClass = (active: boolean) =>
           </button>
           <img
             :src="currentUrl"
-            :alt="t('workshop.output.title', locale)"
+            :alt="shown?.alt ?? t('workshop.output.title', locale)"
             class="max-h-full max-w-full rounded-2xl object-contain"
           />
         </DialogContent>

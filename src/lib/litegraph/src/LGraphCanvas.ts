@@ -4358,21 +4358,22 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       if (result) rollbackClipboardPaste(graph, result)
     }
 
-    const closingErrors: unknown[] = []
+    let graphClosingError: unknown
     try {
       graph.afterChange()
     } catch (error) {
-      closingErrors.push(error)
+      graphClosingError = error
+      if (!operationError && result) rollbackClipboardPaste(graph, result)
     }
+
+    const closingErrors: unknown[] = []
+    if (graphClosingError) closingErrors.push(graphClosingError)
     try {
       this.emitAfterChange()
     } catch (error) {
       closingErrors.push(error)
     }
 
-    if (!operationError && closingErrors.length && result) {
-      rollbackClipboardPaste(graph, result)
-    }
     if (operationError && closingErrors.length) {
       const combinedError = new AggregateError(
         [operationError, ...closingErrors],
@@ -8902,7 +8903,8 @@ function rollbackClipboardPaste(
       }
     } catch (error) {
       reportError(error, {
-        errorType: 'failure_rolling_back_clipboard_item'
+        errorType: 'failure_rolling_back_clipboard_item',
+        surface: 'graph'
       })
     }
   }
@@ -8914,7 +8916,8 @@ function rollbackClipboardPaste(
     graph.releaseSubgraphs(registeredSubgraphs)
   } catch (error) {
     reportError(error, {
-      errorType: 'failure_rolling_back_clipboard_subgraphs'
+      errorType: 'failure_rolling_back_clipboard_subgraphs',
+      surface: 'graph'
     })
   }
 }

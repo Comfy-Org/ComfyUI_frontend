@@ -15,7 +15,6 @@ import KeepSubscriptionNotice from '@/components/fullPage/KeepSubscriptionNotice
 
 /** What the last Pay left, and the consent a plan set to end needs, around the button. */
 export interface PayContext {
-  readonly failure?: string
   readonly outcome?: Exclude<InlineOutcome, { kind: 'reconciling' }>
   readonly consent?: KeepSubscriptionConsent
 }
@@ -25,7 +24,8 @@ const {
   loading = false,
   phase,
   canCancel = false,
-  failure,
+  locked = false,
+  reopening = false,
   outcome,
   consent
 } = defineProps<
@@ -36,6 +36,10 @@ const {
     phase?: SubmitPhase
     /** Cancel payment renders only once the server can cancel a pending payment. */
     canCancel?: boolean
+    /** Money is on its way, so the consent it was sent with stands. */
+    locked?: boolean
+    /** The page is re-opening the challenge on its own; offering it too would flash. */
+    reopening?: boolean
   }
 >()
 
@@ -50,7 +54,9 @@ const { t, te } = useI18n()
 
 /** Support is for a payment that failed; a notice over a fresh price is not one. */
 const supportLink = computed(() =>
-  outcome !== undefined && 'operationId' in outcome
+  outcome !== undefined &&
+  ('operationId' in outcome ||
+    (outcome.kind === 'processing_error' && 'code' in outcome))
     ? supportLinkFor(outcome)
     : undefined
 )
@@ -83,9 +89,12 @@ const challenge = computed(() =>
   phase?.kind === 'challenge' ? phase.operation : undefined
 )
 
-/** A challenge the page is not showing turns Pay into the one way back to it. */
+/** A challenge the page is not showing, and is not about to, turns Pay into the one way back to it. */
 const reopenable = computed(
-  () => challenge.value !== undefined && isChallengeReopenable(challenge.value)
+  () =>
+    !reopening &&
+    challenge.value !== undefined &&
+    isChallengeReopenable(challenge.value)
 )
 
 const PRIMARY_BUTTON =
@@ -102,16 +111,10 @@ const SECONDARY_BUTTON =
       :key="`${outcome.kind}:${'operationId' in outcome ? outcome.operationId : ''}`"
       :outcome
     />
-    <p
-      v-if="failure"
-      role="alert"
-      class="m-0 text-sm text-destructive-background"
-    >
-      {{ failure }}
-    </p>
     <KeepSubscriptionNotice
       v-if="consent"
       :consent
+      :locked
       @confirm="emit('confirmReactivation', $event)"
     />
     <div class="flex flex-col gap-4">

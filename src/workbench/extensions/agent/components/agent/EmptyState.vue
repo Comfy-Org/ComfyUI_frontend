@@ -4,6 +4,8 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
+import { FALLBACK_LOCALE } from '@/i18n'
+import { isCloud } from '@/platform/distribution/types'
 
 import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
 import { starterPromptAttribution } from '../../utils/starterPrompts'
@@ -13,9 +15,15 @@ const emit = defineEmits<{
   insert: [text: string, prompt: AgentStarterPromptAttribution]
 }>()
 
-const { t, tm, locale } = useI18n()
+const { t, te, tm, locale } = useI18n()
 
-const prompts = computed(() => tm('agent.suggestedPrompts') as string[])
+const promptKey = isCloud
+  ? 'agent.suggestedPrompts.cloud'
+  : 'agent.suggestedPrompts.local'
+const prompts = computed(() => tm(promptKey) as string[])
+const promptLocale = computed(() =>
+  te(`${promptKey}.0`, locale.value) ? locale.value : FALLBACK_LOCALE
+)
 
 /**
  * One emit per click, carrying the slot's stable id rather than its text. Fires
@@ -25,16 +33,21 @@ function onPromptClick(prompt: string, index: number): void {
   emit(
     'insert',
     prompt,
-    starterPromptAttribution(prompt, index, prompts.value.length, locale.value)
+    starterPromptAttribution(
+      prompt,
+      index,
+      prompts.value.length,
+      promptLocale.value
+    )
   )
 }
 
 const promptIcons = [
-  'icon-[lucide--lightbulb]',
-  'icon-[lucide--list]',
-  'icon-[lucide--search]',
-  'icon-[lucide--message-circle-warning]',
-  'icon-[lucide--workflow]'
+  'icon-[lucide--image]',
+  'icon-[lucide--video]',
+  'icon-[lucide--message-circle-question-mark]',
+  isCloud ? 'icon-[lucide--scan-search]' : 'icon-[lucide--puzzle]',
+  'icon-[lucide--message-circle-warning]'
 ]
 </script>
 

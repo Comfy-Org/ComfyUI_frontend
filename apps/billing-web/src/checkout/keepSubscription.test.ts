@@ -41,7 +41,7 @@ describe('keepSubscriptionCopy', () => {
         renewal_at: '2027-07-28T00:00:00.000Z',
         cost_next_period_cents: 30_000
       },
-      body: 'Switching to yearly keeps your subscription. It renews on July 28, 2027 at $300.00.'
+      body: 'Switching to yearly keeps your subscription. It renews on July\u00A028,\u00A02027 at $300.00.'
     },
     {
       name: 'monthly to yearly on a quote that names no renewal date',
@@ -50,7 +50,7 @@ describe('keepSubscriptionCopy', () => {
         new_plan: { ...previewOf().new_plan, duration: 'ANNUAL' },
         cost_next_period_cents: 30_000
       },
-      body: 'Switching to yearly keeps your subscription. It renews at $300.00.'
+      body: 'Switching to yearly keeps your subscription, and it renews a year from today at $300.00.'
     },
     {
       name: 'yearly to monthly at period end',
@@ -68,13 +68,34 @@ describe('keepSubscriptionCopy', () => {
       body: 'Changing your commitment keeps your subscription, and it renews that day at $700.00.'
     },
     {
+      name: 'team monthly to team yearly, a billing period change',
+      quote: {
+        transition_type: 'duration_change',
+        new_plan: { ...team('TEAM'), duration: 'ANNUAL' },
+        current_plan: team('TEAM'),
+        renewal_at: '2027-07-28T00:00:00.000Z',
+        cost_next_period_cents: 700_000
+      },
+      body: 'Switching to yearly keeps your subscription. It renews on July\u00A028,\u00A02027 at $7,000.00.'
+    },
+    {
+      name: 'team yearly to team monthly, a billing period change',
+      quote: {
+        transition_type: 'duration_change',
+        new_plan: team('TEAM'),
+        current_plan: { ...team('TEAM'), duration: 'ANNUAL' },
+        cost_next_period_cents: 70_000
+      },
+      body: 'Switching to monthly keeps your subscription, and it renews that day at $700.00.'
+    },
+    {
       name: 'a change the quote does not classify',
       quote: { transition_type: 'new_subscription' },
       body: 'This change keeps your subscription, and it renews that day at $28.00.'
     }
   ])('words $name from the quote', ({ quote, body }) => {
     expect(keepSubscriptionCopy(previewOf(quote), CANCEL_AT, context)).toEqual({
-      title: 'Your plan was set to end on July 28, 2026',
+      title: 'Your plan was set to end on July\u00A028,\u00A02026',
       body
     })
   })
@@ -105,8 +126,8 @@ describe('keepSubscriptionCopy', () => {
           context
         )
       ).toEqual({
-        title: 'Your plan was set to end on July 28, 2026',
-        body: 'Switching to yearly keeps your subscription. It renews on July 28, 2027 at $28.00.'
+        title: 'Your plan was set to end on July\u00A028,\u00A02026',
+        body: 'Switching to yearly keeps your subscription. It renews on July\u00A028,\u00A02027 at $28.00.'
       })
     })
   })

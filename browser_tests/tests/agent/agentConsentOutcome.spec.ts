@@ -19,7 +19,10 @@ test.describe(
   'Automatic consent card outcome',
   { tag: ['@cloud', '@ui'] },
   () => {
-    test.use({ agentConsentAccepted: false })
+    test.use({
+      agentConsentAccepted: false,
+      agentPanelInitiallyOpen: true
+    })
 
     test('reports a dismissal when Escape closes the automatic card', async ({
       comfyPage,

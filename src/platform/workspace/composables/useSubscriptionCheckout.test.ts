@@ -1649,6 +1649,7 @@ describe('useSubscriptionCheckout', () => {
         'Update your payment method before changing plans'
       )
       expect(mockReportError).toHaveBeenCalledWith(portalError, {
+        surface: 'workspace',
         errorType: 'billing_portal_open_failure'
       })
       expect(globalThis.location.href).toBe(
@@ -1674,6 +1675,7 @@ describe('useSubscriptionCheckout', () => {
       )
 
       expect(mockReportError).toHaveBeenCalledWith(portalError, {
+        surface: 'workspace',
         errorType: 'billing_portal_open_failure'
       })
       expect(mockToastAdd).toHaveBeenCalledWith(
@@ -1828,6 +1830,7 @@ describe('useSubscriptionCheckout', () => {
 
         expect(mockGetPaymentPortalUrl).not.toHaveBeenCalled()
         expect(mockReportError).toHaveBeenCalledWith(portalError, {
+          surface: 'workspace',
           errorType: 'billing_portal_open_failure'
         })
         expect(mockToastAdd).toHaveBeenCalledWith(
@@ -3011,7 +3014,8 @@ describe('useSubscriptionCheckout', () => {
         billingCycle: 'monthly',
         returnUrl: 'https://app.test/subscribe',
         cancelUrl: 'https://platform.comfy.org/payment/failed',
-        confirmReactivation: false
+        confirmReactivation: false,
+        attemptStartedAt: expect.any(Number)
       })
       expect(checkout.checkoutStep.value).toBe('success')
       expect(useTelemetry()?.trackBeginCheckout).toHaveBeenCalledWith(
@@ -4328,7 +4332,8 @@ describe('useSubscriptionCheckout', () => {
       expect(mockSubscribe).toHaveBeenCalledWith('standard-yearly', {
         returnUrl: 'https://app.test/subscribe',
         cancelUrl: 'https://platform.comfy.org/payment/failed',
-        confirmReactivation: false
+        confirmReactivation: false,
+        attemptStartedAt: expect.any(Number)
       })
       expect(checkout.checkoutStep.value).toBe('success')
       expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({

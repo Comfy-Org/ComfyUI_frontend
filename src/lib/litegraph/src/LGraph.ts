@@ -457,6 +457,7 @@ function serialiseStoredNodes(owner: LGraph, sortNodes: boolean) {
         ? `live node ${missingAdapter.id} has no stored state`
         : `${ordered.length} stored nodes do not match ${adapters.size} live nodes`
     reportError(new Error('Graph serialization state mismatch'), {
+      surface: 'graph',
       errorType: 'graph_serialization_state_mismatch',
       context: { graphId: owner.id, mismatch }
     })
@@ -2551,6 +2552,7 @@ export class LGraph
           `Cannot unpack: node type "${unavailableNodeType}" is not registered`
         ),
         {
+          surface: 'graph',
           errorType: 'error_unpacking_subgraph_node_type',
           context: {
             subgraphNodeId: subgraphNode.id,
@@ -2566,6 +2568,7 @@ export class LGraph
       reportError(
         new Error('Cannot unpack subgraph: unresolvable inner link'),
         {
+          surface: 'graph',
           errorType: 'error_unpacking_subgraph_link',
           context: {
             subgraphNodeId: subgraphNode.id,
@@ -2653,6 +2656,7 @@ export class LGraph
         : undefined
       if (link.origin_id === SUBGRAPH_INPUT_ID && !hostInput) {
         reportError(new Error('Missing host input when unpacking subgraph'), {
+          surface: 'graph',
           errorType: 'subgraph_unpack_missing_host_input',
           context: { linkId: link.id, subgraphNodeId: subgraphNode.id }
         })
