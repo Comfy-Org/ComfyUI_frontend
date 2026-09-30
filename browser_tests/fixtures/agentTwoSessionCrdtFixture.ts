@@ -23,6 +23,7 @@ import {
 import { waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { isValidDocOpsBatch, parseWireOps } from '@e2e/fixtures/agentWireFrame'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
@@ -41,7 +42,6 @@ const SOCKET_SID = 'b6f0a2c1-8e34-4d21-9c07-2a1b3c4d5e60'
 const PANEL_MOUNT_TIMEOUT = 30_000
 const SUBSCRIBE_TIMEOUT = 15_000
 
-const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 const SEND_LABEL = enMessages.agent.send
 const STOP_LABEL = enMessages.agent.stop
 const NEW_CHAT_LABEL = enMessages.agent.newChat
@@ -101,6 +101,7 @@ interface ClientDocFrame {
  */
 export class AgentTwoSessionCrdtHarness {
   readonly panel: Locator
+  readonly agentPanel: AgentPanel
   readonly vueNodes: VueNodeHelpers
   readonly topbar: Topbar
 
@@ -121,7 +122,8 @@ export class AgentTwoSessionCrdtHarness {
 
   constructor(private readonly page: Page) {
     this.template = loadAgentConversation(TEMPLATE_CASE).workflow
-    this.panel = page.locator('#agent-panel-root')
+    this.agentPanel = new AgentPanel(page)
+    this.panel = this.agentPanel.root
     this.vueNodes = new VueNodeHelpers(page)
     this.topbar = new Topbar(page)
   }
@@ -171,8 +173,7 @@ export class AgentTwoSessionCrdtHarness {
     // Await object_info so the replayed node types are registered before the
     // first catch-up materializes them.
     await objectInfo
-    await this.page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
-    await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
+    await this.agentPanel.open(PANEL_MOUNT_TIMEOUT)
     await this.selectHomeTarget()
   }
 
@@ -534,8 +535,7 @@ export class AgentTwoSessionCrdtHarness {
       return
     }
     this.subscribes.set(workflowId, this.subscribeCount(workflowId) + 1)
-    for (const waiter of [...(this.subscribeWaiters.get(workflowId) ?? [])])
-      waiter()
+    for (const waiter of this.subscribeWaiters.get(workflowId) ?? []) waiter()
   }
 
   private async mockAgentApi(): Promise<void> {
