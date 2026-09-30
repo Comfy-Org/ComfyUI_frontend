@@ -85,8 +85,13 @@ const ANALYZE_JOB = {
  * Answers the Re-shoot app proxy on any Router origin and proxy id. Every
  * request must carry the workspace token the signed-in session minted.
  * Returns the `METHOD path` of each call, in order, below the proxy id.
+ * `overrides` answers a call differently, keyed by its `METHOD path`.
  */
-export async function mockReshootProxy(page: Page, workspaceToken: string) {
+export async function mockReshootProxy(
+  page: Page,
+  workspaceToken: string,
+  overrides: Record<string, (request: Request) => Answer> = {}
+) {
   const calls: string[] = []
   const geometry = reshootGeometry()
   const answers = new Map<string, (request: Request) => Answer>(
@@ -101,7 +106,8 @@ export async function mockReshootProxy(page: Page, workspaceToken: string) {
       [`GET /jobs/${ANALYZE_JOB.id}/outputs/geo/content`]: () => ({
         contentType: 'application/octet-stream',
         body: geometry
-      })
+      }),
+      ...overrides
     })
   )
   await page.route(/\/app-proxy\/[^/]+\//, async (route: Route) => {
