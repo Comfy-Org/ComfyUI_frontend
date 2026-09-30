@@ -396,6 +396,7 @@ function operationEvents() {
 }
 
 const STARTED = { stage: 'started' } as const
+const LIFECYCLE_STARTED = { stage: 'started', billing_op_id: 'op-1' } as const
 const SUCCEEDED = { stage: 'succeeded', billing_op_id: 'op-1' } as const
 const DECLINED = {
   stage: 'failed',
@@ -479,7 +480,7 @@ describe('billing operation telemetry ownership on the SDK rail', () => {
         { status: 'succeeded' }
       ),
       drive: driveLegacyStripeCheckoutSubscribe,
-      expected: [STARTED, SUCCEEDED]
+      expected: [LIFECYCLE_STARTED, SUCCEEDED]
     },
     {
       name: 'downgrade to personal succeeds',
@@ -513,7 +514,7 @@ describe('billing operation telemetry ownership on the SDK rail', () => {
         { status: 'succeeded' }
       ),
       drive: driveWorkspaceBilling('resubscribe'),
-      expected: [STARTED, SUCCEEDED]
+      expected: [LIFECYCLE_STARTED, SUCCEEDED]
     },
     {
       name: 'top-up succeeds',
