@@ -8,20 +8,34 @@ import { isWorkflowSlug } from '../../config/models-catalogue'
 import { fetchModelsCatalogue } from '../../config/models-catalogue-data'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import { t } from '../../i18n/translations'
-import { useWorkshopWorkflowsEnabled } from '../../scripts/posthog'
+import {
+  useWorkshopAppsEnabled,
+  useWorkshopWorkflowsEnabled
+} from '../../scripts/posthog'
 
+import type { CatalogueTab } from './CatalogueTabs.vue'
 import WorkshopGate from './WorkshopGate.vue'
 import WorkshopLoading from './WorkshopLoading.vue'
 
-const { slug, workflowId } = defineProps<{
+const {
+  slug,
+  workflowId,
+  section = 'models'
+} = defineProps<{
   slug?: string
   workflowId?: string
+  section?: CatalogueTab
 }>()
 
 const loadingLabel = t('workshop.load.pending', 'en')
 const isWorkflow = computed(() => (slug ? isWorkflowSlug(slug) : false))
 const mounted = useMounted()
 const workflowsEnabled = useWorkshopWorkflowsEnabled()
+const appsEnabled = useWorkshopAppsEnabled()
+const gateAllows = computed(() => {
+  if (isWorkflow.value || section === 'workflows') return workflowsEnabled.value
+  return section === 'apps' ? appsEnabled.value : undefined
+})
 const recoveringWorkflow = shallowRef(false)
 const savedWorkflow = shallowRef(false)
 const session =
@@ -129,7 +143,8 @@ function createContent() {
                   model.routerId !== undefined ||
                   model.type === 'APP' ||
                   workflowsEnabled.value
-              )
+              ),
+              section
             })
           ]
         )
@@ -149,14 +164,16 @@ const Content = shallowRef(createContent())
 
 <template>
   <WorkshopGate
-    v-if="isWorkflow"
-    keep-mounted
-    :allowed="workflowsEnabled"
+    v-if="gateAllows !== undefined"
+    :keep-mounted="isWorkflow"
+    :allowed="gateAllows"
     :retain-granted="recoveringWorkflow"
     :allow-recovery="savedWorkflow"
   >
+    <slot name="heading" />
     <component :is="Content" />
     <template #loading>
+      <slot name="heading" />
       <WorkshopLoading :label="loadingLabel" />
     </template>
     <template #fallback>

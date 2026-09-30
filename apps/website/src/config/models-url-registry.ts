@@ -1,5 +1,6 @@
 import type { WorkshopDisplayEntry } from '../content/workshop-display.schema'
 import {
+  HUB_APPS_PATH,
   HUB_MODELS_PATH,
   HUB_WORKFLOWS_PATH,
   hubModelAliases,
@@ -11,10 +12,11 @@ import { workshopDisplayEntries } from './workshop-browse-content'
 
 const MODELS_BASE_PATH = '/models'
 
-type PageKind = 'hub' | 'model' | 'workflow' | 'app' | 'reserved'
+type PageKind = 'hub' | 'section' | 'model' | 'workflow' | 'app' | 'reserved'
 
 const navigableKinds: ReadonlySet<string> = new Set<PageKind>([
   'hub',
+  'section',
   'model',
   'workflow',
   'app'
@@ -62,6 +64,8 @@ export function modelsUrlEntries({
   })
   return [
     { path: HUB_MODELS_PATH, kind: 'hub' },
+    { path: HUB_WORKFLOWS_PATH, kind: 'section' },
+    { path: HUB_APPS_PATH, kind: 'section' },
     {
       path: MODELS_BASE_PATH,
       kind: 'alias',
@@ -150,7 +154,7 @@ const modelsUrlRegistry = buildModelsUrlRegistry(
     apps: slugsOfType(['APP']),
     aliases: hubModelAliases
   }),
-  [MODELS_BASE_PATH, HUB_MODELS_PATH, HUB_WORKFLOWS_PATH]
+  [MODELS_BASE_PATH, HUB_MODELS_PATH, HUB_WORKFLOWS_PATH, HUB_APPS_PATH]
 )
 
 export const modelsUrlRoots = modelsUrlRegistry.roots

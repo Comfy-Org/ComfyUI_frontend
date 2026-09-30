@@ -31,6 +31,8 @@ const modelPages = workshopModels.flatMap(({ href, routerId, slug }) =>
 
 const MODELS_PAGES_BY_KIND = [
   ['hub', '/hub/models/'],
+  ['section', '/hub/workflows/'],
+  ['section', '/hub/apps/'],
   ['model', `/hub/models/${hubModelSlug}/`],
   ['alias', '/models/'],
   ['alias', `/models/${modelSlug}/`],
@@ -252,6 +254,26 @@ describe('model page launch', () => {
       modelPages.every(({ href }) => isIndexableModelPage(href, 'all', false))
     ).toBe(true)
   })
+
+  it.for([
+    { path: '/hub/workflows/', workflowsLaunched: false, indexable: false },
+    { path: '/hub/workflows/', workflowsLaunched: true, indexable: true },
+    { path: '/hub/apps/', workflowsLaunched: true, indexable: false }
+  ])(
+    'indexes $path with workflows launched $workflowsLaunched: $indexable',
+    ({ path, workflowsLaunched, indexable }) => {
+      expect(isIndexableModelPage(path, 'all', workflowsLaunched)).toBe(
+        indexable
+      )
+      expect(
+        !isExcludedFromSitemap(
+          `https://comfy.org${path}`,
+          'all',
+          workflowsLaunched
+        )
+      ).toBe(indexable)
+    }
+  )
 
   it('fails loudly when model page URLs drift from the Router id map', () => {
     const movedModelPaths = modelPages.map(({ slug }) => `/models/${slug}`)

@@ -10,7 +10,7 @@ import {
   normalizePath,
   parseLlmsTxtLinks
 } from '../lib/llms-txt'
-import { isNoindexPathname } from './indexing'
+import { isExcludedFromSitemap } from './indexing'
 import { getRoutes } from './routes'
 import { modelsBuildRoutes } from '../integrations/workshop-release-gate'
 import { appPagePaths } from './workshop-app-content'
@@ -57,7 +57,7 @@ const LLMS_TXT_NOINDEX_EXCEPTIONS = new Set([
 
 /**
  * A page kept out of search indexes has no business in llms.txt either, so
- * the noindex policy in ./indexing is the second source of exclusions.
+ * the sitemap policy in ./indexing is the second source of exclusions.
  * Deriving it rather than restating it means a launch that lifts noindex
  * also starts requiring the page here, instead of leaving a second list to
  * remember.
@@ -65,7 +65,8 @@ const LLMS_TXT_NOINDEX_EXCEPTIONS = new Set([
 function isExcludedPage(page: string): boolean {
   return (
     EXCLUDED_PAGES.has(page) ||
-    (isNoindexPathname(page) && !LLMS_TXT_NOINDEX_EXCEPTIONS.has(page))
+    (isExcludedFromSitemap(`https://comfy.org${page}`) &&
+      !LLMS_TXT_NOINDEX_EXCEPTIONS.has(page))
   )
 }
 

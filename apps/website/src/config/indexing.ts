@@ -1,4 +1,5 @@
 import { isProductionBuild } from './build-env'
+import { HUB_WORKFLOWS_PATH } from './hub-models'
 import { LOCALE_CODES, LOCALES } from './locales'
 import type { ModelPageLaunch } from './model-page-launch'
 import { launchedModelPages, launchedWorkflowPages } from './model-page-launch'
@@ -109,6 +110,10 @@ export function isIndexableModelPage(
 ): boolean {
   const kind = modelsUrlKind(pathname)
   if (kind === 'workflow') return workflowsLaunched
+  if (kind === 'section')
+    return (
+      normalizePathname(pathname) === HUB_WORKFLOWS_PATH && workflowsLaunched
+    )
   if (kind !== 'model') return false
   const routerId = routerIdByModelPage.get(normalizePathname(pathname))
   return (

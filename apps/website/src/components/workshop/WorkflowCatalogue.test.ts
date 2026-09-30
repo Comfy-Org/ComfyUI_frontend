@@ -53,7 +53,7 @@ function visibleOutcomes() {
     .map((card) => card.getAttribute('href'))
 }
 
-beforeEach(() => history.replaceState(null, '', '/models/?type=workflows'))
+beforeEach(() => history.replaceState(null, '', '/hub/workflows/'))
 
 describe('workflow catalogue ordering and shared links', () => {
   it('uses editorial category and outcome order, then sorts all results by name', async () => {
@@ -167,7 +167,7 @@ describe('workflow catalogue ordering and shared links', () => {
     history.replaceState(
       null,
       '',
-      '/models/?type=workflows&model=Wan+2.2&model=Nano+Banana'
+      '/hub/workflows/?model=Wan+2.2&model=Nano+Banana'
     )
     render(WorkflowCatalogue, { props: { models } })
     await waitFor(() =>
@@ -183,7 +183,7 @@ describe('workflow catalogue ordering and shared links', () => {
     history.replaceState(
       null,
       '',
-      '/models/?type=workflows&q=image&category=video&category=unknown'
+      '/hub/workflows/?q=image&category=video&category=unknown'
     )
     render(WorkflowCatalogue, { props: { models } })
     await waitFor(() =>

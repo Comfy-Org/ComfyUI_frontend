@@ -11,7 +11,7 @@ import {
 import { workshopDisplayEntries } from './workshop-browse-content'
 
 const hub: ModelsUrlEntry = { path: '/models', kind: 'hub' }
-const roots = ['/models', '/hub/models', '/hub/workflows']
+const roots = ['/models', '/hub/models', '/hub/workflows', '/hub/apps']
 
 const sources = {
   models: new Map([['acme--image--generate-images', 'acme-image']]),
@@ -24,6 +24,8 @@ describe('models URL registry', () => {
   it.for<[string, string | undefined]>([
     ['/hub/models/', 'hub'],
     ['/models/', 'alias'],
+    ['/hub/workflows/', 'section'],
+    ['/hub/apps/', 'section'],
     ['/hub/models/acme-image/', 'model'],
     ['/models/acme--image--generate-images/', 'alias'],
     ['/models/acme--image--generate-images/page.json', 'reserved'],
@@ -120,7 +122,7 @@ describe('models URL registry', () => {
     [
       'an address outside every root',
       [hub, { path: '/workflows/new', kind: 'model' }],
-      '/workflows/new is outside /models, /hub/models, /hub/workflows'
+      '/workflows/new is outside /models, /hub/models, /hub/workflows, /hub/apps'
     ]
   ])('rejects a registry with %s', ([, entries, message]) => {
     expect(() => buildModelsUrlRegistry(entries, roots)).toThrow(message)
@@ -195,9 +197,15 @@ describe('models URL registry', () => {
     const registry = buildModelsUrlRegistry(modelsUrlEntries(sources), [
       '/models/',
       '/hub/models/',
-      '/hub/workflows/'
+      '/hub/workflows/',
+      '/hub/apps/'
     ])
-    expect(registry.roots).toEqual(['/models', '/hub/models', '/hub/workflows'])
+    expect(registry.roots).toEqual([
+      '/models',
+      '/hub/models',
+      '/hub/workflows',
+      '/hub/apps'
+    ])
     expect(modelsUrlKind('/hub/models/acme-image/', registry)).toBe('model')
     expect(
       unregisteredModelsPaths(

@@ -97,6 +97,32 @@ const translations = {
     'zh-CN':
       '在 ComfyUI 中浏览 {count} 个 AI 模型。在浏览器中试用任意模型，然后在你的代码中调用它。'
   },
+  'hub.workflows.meta.title': {
+    en: 'ComfyUI Workflows: Multi-Step AI Image & Video Workflows - Comfy',
+    'zh-CN': 'ComfyUI 工作流：多步骤 AI 图像与视频工作流 - Comfy'
+  },
+  'hub.workflows.meta.description': {
+    en: 'Browse ComfyUI workflows that chain AI models into finished images and videos, and run any of them right in your browser.',
+    'zh-CN':
+      '浏览把多个 AI 模型串联成完整图像和视频的 ComfyUI 工作流，并直接在浏览器中运行任意一个。'
+  },
+  'hub.workflows.heading': {
+    en: 'ComfyUI workflows',
+    'zh-CN': 'ComfyUI 工作流'
+  },
+  'hub.apps.meta.title': {
+    en: 'ComfyUI Apps: Creative Tools Built from Workflows - Comfy',
+    'zh-CN': 'ComfyUI 应用：由工作流组合而成的创作工具 - Comfy'
+  },
+  'hub.apps.meta.description': {
+    en: 'Take on bigger ideas with ComfyUI apps that bring multiple workflows together, and open them right in your browser.',
+    'zh-CN':
+      '用把多个工作流组合在一起的 ComfyUI 应用挑战更大的想法，并直接在浏览器中打开它们。'
+  },
+  'hub.apps.heading': {
+    en: 'ComfyUI apps',
+    'zh-CN': 'ComfyUI 应用'
+  },
   'workshop.search.label': {
     en: 'Search models, providers, and categories',
     'zh-CN': '搜索模型、提供商、分类...'
