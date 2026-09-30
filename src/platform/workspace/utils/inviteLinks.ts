@@ -48,12 +48,16 @@ export async function copyTextSilently(text: string): Promise<boolean> {
       const copied = document.execCommand('copy')
       if (!copied) {
         reportError(new Error('execCommand copy reported failure'), {
-          errorType: 'error_copying_invite_link'
+          errorType: 'error_copying_invite_link',
+          surface: 'workspace'
         })
       }
       return copied
     } catch (error) {
-      reportError(error, { errorType: 'error_copying_invite_link' })
+      reportError(error, {
+        errorType: 'error_copying_invite_link',
+        surface: 'workspace'
+      })
       return false
     } finally {
       el.remove()
