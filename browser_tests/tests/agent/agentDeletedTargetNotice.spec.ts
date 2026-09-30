@@ -4,6 +4,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { agentTest } from '@e2e/fixtures/agentPanelFixture'
 import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { ConfirmDialog } from '@e2e/fixtures/components/ConfirmDialog'
 import { ContextMenu } from '@e2e/fixtures/components/ContextMenu'
 import { WorkflowsSidebarTab } from '@e2e/fixtures/components/SidebarTab'
@@ -18,16 +19,9 @@ test.describe(
       page,
       workflowSelection
     }) => {
-      await page
-        .getByRole('button', {
-          name: enMessages.agent.entryButton,
-          exact: true
-        })
-        .click()
-      const panel = page.locator('#agent-panel-root')
-      const targetPicker = panel.getByRole('button', {
-        name: enMessages.agent.switchWorkflow
-      })
+      const agentPanel = new AgentPanel(page)
+      const panel = await agentPanel.open()
+      const targetPicker = agentPanel.workflowPicker
       await targetPicker.click()
       await page
         .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
