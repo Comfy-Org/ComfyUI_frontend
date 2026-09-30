@@ -106,9 +106,9 @@ test.describe(
         const inserted = agentConversation.vueNodes.getNodeLocator(
           String(INSERTED_NODE_ID)
         )
-        await expect(
-          inserted.getByText('Empty Latent Image', { exact: true })
-        ).toBeVisible()
+        await expect(inserted.getByTestId('node-title')).toContainText(
+          'Empty Latent Image'
+        )
         await expect(inserted.getByRole('spinbutton').nth(0)).toHaveValue('512')
         await expect(inserted.getByRole('spinbutton').nth(1)).toHaveValue('512')
         const note = agentConversation.vueNodes.getNodeLocator(noteId)
@@ -149,9 +149,9 @@ test.describe(
         const built = agentConversation.vueNodes.getNodeLocator(
           String(990001 + index)
         )
-        await expect(
-          built.getByText('Empty Latent Image', { exact: true })
-        ).toBeVisible()
+        await expect(built.getByTestId('node-title')).toContainText(
+          'Empty Latent Image'
+        )
         await expect(built.getByRole('spinbutton').nth(0)).toHaveValue(
           String(width)
         )
