@@ -769,6 +769,14 @@ describe('createOpSender', () => {
     ])
   })
 
+  it('detach settles an unflushed oversized admission in wire-sized chunks', () => {
+    sender.admit(Array.from({ length: 300 }, (_, index) => addNode(index)))
+
+    sender.detach()
+
+    expect(settled.map((outcome) => outcome.ops.length)).toEqual([256, 44])
+  })
+
   it('does not attribute a late anonymous result from an aborted batch to the next batch', () => {
     sender.enqueue([addNode(1)])
     sender.abortAll()

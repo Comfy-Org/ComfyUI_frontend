@@ -284,9 +284,8 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   }
 
   function drainOutstanding(notify: (outcome: BatchOutcome) => void): void {
+    seal()
     const queued = queue.splice(0)
-    const admitted = open
-    open = null
     if (inFlight) {
       const batch = inFlight
       if (batch.timer) clearTimeout(batch.timer)
@@ -299,9 +298,6 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     }
     for (const batch of queued) {
       notify({ state: 'undeliverable', ops: batch.ops })
-    }
-    if (admitted) {
-      notify({ state: 'undeliverable', ops: admitted.ops })
     }
   }
 
