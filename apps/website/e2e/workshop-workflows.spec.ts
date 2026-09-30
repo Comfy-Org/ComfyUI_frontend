@@ -590,3 +590,22 @@ test('the examples below the form read and mark themselves like a model page', a
   await expect(example).toHaveAttribute('aria-current', 'true')
   await expect(page.getByTestId('workflow-example-chosen')).toHaveCount(1)
 })
+
+test('the examples belong to the playground, not to Details or API', async ({
+  page,
+  context
+}) => {
+  await mockWorkflowVisibility(context, true)
+  await page.goto('/hub/workflows/change-material/')
+
+  const examples = page.getByRole('heading', { name: 'Try an example' })
+  await expect(examples).toBeVisible()
+
+  for (const tab of ['Details', 'API']) {
+    await page.getByRole('tab', { name: tab, exact: true }).click()
+    await expect(examples).toBeHidden()
+  }
+
+  await page.getByRole('tab', { name: 'Playground', exact: true }).click()
+  await expect(examples).toBeVisible()
+})
