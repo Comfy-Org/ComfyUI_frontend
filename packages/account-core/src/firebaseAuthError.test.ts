@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  authErrorEmail,
   authErrorMessage,
   classifyAuthError,
   severityForAuthError
@@ -50,6 +51,17 @@ describe('classifyAuthError', () => {
       ),
       'beforeUserCreated rejections collapse the code to auth/internal-error, so the message is the only channel'
     ).toEqual({ kind: 'signup-blocked', code: 'auth/internal-error' })
+  })
+
+  it('detects the blocking function sso_required ref from the message', () => {
+    expect(
+      classifyAuthError(
+        firebaseError(
+          'auth/internal-error',
+          'Firebase: HTTP Cloud Function returned an error: {"error":{"status":"PERMISSION_DENIED","message":"Use your organization sign-in (ref: sso_required)"}} (auth/internal-error).'
+        )
+      )
+    ).toEqual({ kind: 'sso-required', code: 'auth/internal-error' })
   })
 
   it('classifies any other auth/* code as a plain auth error carrying its code', () => {
@@ -150,6 +162,24 @@ describe('authErrorMessage resolves a classification against host copy', () => {
     }
   )
 
+  it.for([
+    [
+      'the host sso-required line',
+      { ...hostCopy, ssoRequired: 'Use SSO.' },
+      'Use SSO.'
+    ],
+    ['the generic line for a host without one', hostCopy, hostCopy.generic]
+  ] as const)('resolves sso_required to %s', ([, copy, expected]) => {
+    expect(
+      authErrorMessage(
+        classifyAuthError(
+          firebaseError('auth/internal-error', 'denied (ref: sso_required)')
+        ),
+        copy
+      )
+    ).toBe(expected)
+  })
+
   it('gives the host generic line for a non-Firebase failure', () => {
     expect(
       authErrorMessage(classifyAuthError(new Error('boom')), hostCopy)
@@ -163,5 +193,20 @@ describe('authErrorMessage resolves a classification against host copy', () => {
         hostCopy
       )
     ).toBe(hostCopy.generic)
+  })
+})
+
+describe('authErrorEmail', () => {
+  it.for([
+    [
+      'the email Firebase attached',
+      { code: 'auth/internal-error', customData: { email: 'a@corp.example' } },
+      'a@corp.example'
+    ],
+    ['nothing when customData has no email', { customData: {} }, undefined],
+    ['nothing for a plain error', new Error('boom'), undefined],
+    ['nothing for null', null, undefined]
+  ] as const)('reads %s', ([, error, expected]) => {
+    expect(authErrorEmail(error)).toBe(expected)
   })
 })

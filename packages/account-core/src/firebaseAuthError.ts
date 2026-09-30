@@ -34,6 +34,7 @@ const UNAUTHORIZED_DOMAIN_CODES: readonly string[] = [
 export type AuthErrorClassification =
   | { kind: 'unauthorized-domain'; code: string }
   | { kind: 'signup-blocked'; code: string }
+  | { kind: 'sso-required'; code: string }
   | { kind: 'popup-dismissed'; code: string }
   | { kind: 'auth'; code: string }
   | { kind: 'unknown' }
@@ -64,6 +65,10 @@ export function classifyAuthError(error: unknown): AuthErrorClassification {
   if (error.message.toLowerCase().includes('signup_blocked')) {
     return { kind: 'signup-blocked', code: error.code }
   }
+  // Same channel: the blocking function refuses SSO domains with `(ref: sso_required)`.
+  if (error.message.toLowerCase().includes('sso_required')) {
+    return { kind: 'sso-required', code: error.code }
+  }
   if (POPUP_DISMISSED_CODES.includes(error.code)) {
     return { kind: 'popup-dismissed', code: error.code }
   }
@@ -91,6 +96,8 @@ export function severityForAuthError(
 export type AuthErrorCopy = Readonly<Record<string, string>> & {
   readonly generic: string
   readonly signupBlocked: string
+  /** Optional so hosts adopt it on their own schedule; generic until then. */
+  readonly ssoRequired?: string
 }
 
 /** Resolved to the invalid-credential line whatever table is in play. */
@@ -114,6 +121,8 @@ export function authErrorMessage(
   switch (classification.kind) {
     case 'signup-blocked':
       return copy.signupBlocked
+    case 'sso-required':
+      return copy.ssoRequired ?? copy.generic
     case 'popup-dismissed':
     case 'auth':
       if (ENUMERATION_NEUTRAL_CODES.has(classification.code)) {
@@ -124,4 +133,15 @@ export function authErrorMessage(
     case 'unknown':
       return copy.generic
   }
+}
+
+/** The email Firebase attaches to some auth failures, for prefilling a retry. */
+export function authErrorEmail(error: unknown): string | undefined {
+  if (typeof error !== 'object' || error === null) return undefined
+  if (!('customData' in error)) return undefined
+  const { customData } = error
+  if (typeof customData !== 'object' || customData === null) return undefined
+  return 'email' in customData && typeof customData.email === 'string'
+    ? customData.email
+    : undefined
 }
