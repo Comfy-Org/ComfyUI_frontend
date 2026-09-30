@@ -35,12 +35,14 @@ import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useAppMode } from '@/composables/useAppMode'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { fetchDroppedAsset, getDroppedAsset } from '@/utils/eventUtils'
+import type { DroppedAsset } from '@/utils/eventUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
 import {
   AGENT_ATTACH_ACCEPT,
   agentAttachVerdict,
   isAgentAttachable
 } from './utils/attachableFiles'
+import type { AgentAttachVerdict } from './utils/attachableFiles'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -1635,40 +1637,41 @@ function onPanelDragLeave(): void {
   if (assetDragDepth === 0) assetDragActive.value = false
 }
 
-async function attachDroppedAsset(event: DragEvent): Promise<boolean> {
-  const asset = event.dataTransfer && getDroppedAsset(event.dataTransfer)
-  if (!asset) {
-    toast.add({
-      severity: 'warn',
-      detail: t('agent.assetNotAttachable'),
-      life: 5000
-    })
-    return false
-  }
+function warnAttachment(detail: string): void {
+  toast.add({ severity: 'warn', detail, life: 5000 })
+}
 
-  // An asset card is the fourth way a file reaches the composer, and the only
-  // one that can skip the upload — so it has to consult the same policy the
-  // other three do. `asset.kind !== 'other'` is NOT that check: it reads the
-  // shared media taxonomy, which files .usdz as 3D while the accepted list
-  // rejects it, so a .usdz card used to stage silently here and then fail the
-  // turn at submit.
-  // Two strings of unequal authority, so the AUTHORITATIVE one is asked first:
-  // `ref` is the stored filename the server resolves and re-checks, while
-  // `asset.name` is the card's display label, which need not carry a judgeable
-  // extension at all. Only when the ref says nothing does the label get a vote,
-  // and only when neither can judge does the drop fall through to the deferred
-  // fetch below, which sees the real File.
-  const verdict =
+/**
+ * An asset card is the fourth way a file reaches the composer and the only one
+ * that can skip the upload, so it has to consult the same policy the other
+ * three do. `asset.kind !== 'other'` is NOT that check — it reads the shared
+ * media taxonomy, which files .usdz as 3D while the accepted list rejects it.
+ *
+ * Two strings of unequal authority, so the AUTHORITATIVE one is asked first:
+ * `ref` is the stored filename the server resolves and re-checks, while `name`
+ * is the card's display label, which need not carry a judgeable extension at
+ * all. `unknown` from both leaves the decision to the deferred fetch, which
+ * sees the real File.
+ */
+function droppedAssetVerdict(asset: DroppedAsset): AgentAttachVerdict {
+  return (
     [asset.ref, asset.name]
       .filter((candidate): candidate is string => Boolean(candidate))
       .map(agentAttachVerdict)
       .find((candidate) => candidate !== 'unknown') ?? 'unknown'
-  if (verdict === 'rejected') {
-    toast.add({
-      severity: 'warn',
-      detail: t('agent.attachmentTypeNotAccepted', { name: asset.name }, 1),
-      life: 5000
-    })
+  )
+}
+
+async function attachDroppedAsset(event: DragEvent): Promise<boolean> {
+  const asset = event.dataTransfer && getDroppedAsset(event.dataTransfer)
+  if (!asset) {
+    warnAttachment(t('agent.assetNotAttachable'))
+    return false
+  }
+
+  const refused = t('agent.attachmentTypeNotAccepted', { name: asset.name }, 1)
+  if (droppedAssetVerdict(asset) === 'rejected') {
+    warnAttachment(refused)
     return false
   }
 
@@ -1684,22 +1687,17 @@ async function attachDroppedAsset(event: DragEvent): Promise<boolean> {
   }
 
   // fetchDroppedAsset answers undefined for a missing URI, a non-ok response
-  // and a thrown fetch alike, so the two outcomes are told apart here instead.
-  // Reporting a 404 as a refused file type tells the user something specific
-  // and false about their file.
+  // and a thrown fetch alike, so the outcomes are told apart here instead.
+  // Reporting a 404 as a refused file type is specific and false.
   let fetched: File | undefined
   const result = await attachment.addDeferredFile(asset.name, async () => {
     fetched = await fetchDroppedAsset(asset)
     return fetched && isAgentAttachable(fetched) ? fetched : undefined
   })
   if (result === 'unsupported')
-    toast.add({
-      severity: 'warn',
-      detail: fetched
-        ? t('agent.attachmentTypeNotAccepted', { name: asset.name }, 1)
-        : t('agent.assetFetchFailed', { name: asset.name }),
-      life: 5000
-    })
+    warnAttachment(
+      fetched ? refused : t('agent.assetFetchFailed', { name: asset.name })
+    )
   return result === 'uploaded'
 }
 
