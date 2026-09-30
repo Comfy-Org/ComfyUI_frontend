@@ -227,6 +227,118 @@ describe('HostTelemetrySink', () => {
 
   it.for([
     {
+      name: TelemetryEvents.AGENT_MESSAGE_FEEDBACK,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentMessageFeedback({
+          message_id: 'message-1',
+          turn_id: 'message-1',
+          vote: 'up',
+          workflow_id: 'workflow-1'
+        }),
+      properties: {
+        message_id: 'message-1',
+        turn_id: 'message-1',
+        vote: 'up',
+        workflow_id: 'workflow-1'
+      }
+    },
+    {
+      name: TelemetryEvents.AGENT_PANEL_OPENED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentPanelOpened({ source: 'topbar_button' }),
+      properties: { source: 'topbar_button' }
+    },
+    {
+      name: TelemetryEvents.AGENT_PANEL_CLOSED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentPanelClosed({
+          source: 'close_button',
+          open_duration_ms: 1234
+        }),
+      properties: { source: 'close_button', open_duration_ms: 1234 }
+    },
+    {
+      name: TelemetryEvents.AGENT_ENTRY_BUTTON_CLICKED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentEntryButtonClicked({ resulting_state: 'opened' }),
+      properties: { resulting_state: 'opened' }
+    },
+    {
+      name: TelemetryEvents.AGENT_CLOSE_BUTTON_CLICKED,
+      track: (sink: HostTelemetrySink) => sink.trackAgentCloseButtonClicked(),
+      properties: undefined
+    },
+    {
+      name: TelemetryEvents.AGENT_MESSAGE_SENT,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentMessageSent({
+          attachment_count: 2,
+          node_tag_count: 1,
+          thread_id: 'thread-1',
+          workflow_id: 'workflow-1',
+          client_message_id: 'client-message-1',
+          input_method: 'suggestion',
+          starter_prompt_id: 'list_workflows',
+          starter_prompt_click_id: 'click-1'
+        }),
+      properties: {
+        attachment_count: 2,
+        node_tag_count: 1,
+        thread_id: 'thread-1',
+        workflow_id: 'workflow-1',
+        client_message_id: 'client-message-1',
+        input_method: 'suggestion',
+        starter_prompt_id: 'list_workflows',
+        starter_prompt_click_id: 'click-1'
+      }
+    },
+    {
+      name: TelemetryEvents.AGENT_MESSAGE_SENT,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentMessageSent({
+          attachment_count: 0,
+          node_tag_count: 0,
+          thread_id: null,
+          workflow_id: null,
+          client_message_id: 'client-message-2',
+          input_method: 'typed',
+          starter_prompt_id: null,
+          starter_prompt_click_id: null
+        }),
+      properties: {
+        attachment_count: 0,
+        node_tag_count: 0,
+        thread_id: null,
+        workflow_id: null,
+        client_message_id: 'client-message-2',
+        input_method: 'typed',
+        starter_prompt_id: null,
+        starter_prompt_click_id: null
+      }
+    },
+    {
+      name: TelemetryEvents.AGENT_STARTER_PROMPT_CLICKED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentStarterPromptClicked({
+          prompt_id: 'explain_selected_node',
+          prompt_index: 3,
+          prompt_count: 5,
+          prompt_text_hash: 'deadbeef',
+          locale: 'en',
+          click_id: 'click-1',
+          draft_was_empty: false
+        }),
+      properties: {
+        prompt_id: 'explain_selected_node',
+        prompt_index: 3,
+        prompt_count: 5,
+        prompt_text_hash: 'deadbeef',
+        locale: 'en',
+        click_id: 'click-1',
+        draft_was_empty: false
+      }
+    },
+    {
       name: TelemetryEvents.AGENT_CONSENT_SHOWN,
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentConsentShown({ trigger: 'first_load' }),
@@ -235,8 +347,11 @@ describe('HostTelemetrySink', () => {
     {
       name: TelemetryEvents.AGENT_CONSENT_RESOLVED,
       track: (sink: HostTelemetrySink) =>
-        sink.trackAgentConsentResolved({ decision: 'accepted' }),
-      properties: { decision: 'accepted' }
+        sink.trackAgentConsentResolved({
+          decision: 'dismissed',
+          save_error_shown: true
+        }),
+      properties: { decision: 'dismissed', save_error_shown: true }
     },
     {
       name: TelemetryEvents.AGENT_ONBOARDING_SHOWN,
@@ -248,6 +363,18 @@ describe('HostTelemetrySink', () => {
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentOnboardingStep({ step: 4, action: 'finish' }),
       properties: { step: 4, action: 'finish' }
+    },
+    {
+      name: TelemetryEvents.AGENT_NODE_TAGGED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentNodeTagged({ source: 'mention_picker' }),
+      properties: { source: 'mention_picker' }
+    },
+    {
+      name: TelemetryEvents.AGENT_ATTACH_BUTTON_CLICKED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentAttachButtonClicked({ method: 'drag_drop' }),
+      properties: { method: 'drag_drop' }
     },
     {
       name: TelemetryEvents.AGENT_STOP_CLICKED,
@@ -310,95 +437,6 @@ describe('HostTelemetrySink', () => {
       properties: { source: 'new_chat_button' }
     },
     {
-      name: TelemetryEvents.AGENT_CONSENT_NOT_OFFERED,
-      track: (sink: HostTelemetrySink) =>
-        sink.trackAgentConsentNotOffered({ reason: 'tour_active' }),
-      properties: { reason: 'tour_active' }
-    },
-    {
-      name: TelemetryEvents.AGENT_ONBOARDING_NOT_SHOWN,
-      track: (sink: HostTelemetrySink) =>
-        sink.trackAgentOnboardingNotShown({
-          reason: 'target_missing',
-          step: 2
-        }),
-      properties: { reason: 'target_missing', step: 2 }
-    },
-    {
-      name: TelemetryEvents.AGENT_MESSAGE_FEEDBACK,
-      track: (sink: HostTelemetrySink) =>
-        sink.trackAgentMessageFeedback({
-          message_id: 'message-1',
-          turn_id: 'message-1',
-          vote: 'up',
-          workflow_id: 'workflow-1'
-        }),
-      properties: {
-        message_id: 'message-1',
-        turn_id: 'message-1',
-        vote: 'up',
-        workflow_id: 'workflow-1'
-      }
-    },
-    {
-      name: TelemetryEvents.AGENT_PANEL_OPENED,
-      track: (sink: HostTelemetrySink) =>
-        sink.trackAgentPanelOpened({ source: 'topbar_button' }),
-      properties: { source: 'topbar_button' }
-    },
-    {
-      name: TelemetryEvents.AGENT_PANEL_CLOSED,
-      track: (sink: HostTelemetrySink) =>
-        sink.trackAgentPanelClosed({
-          source: 'close_button',
-          open_duration_ms: 1234
-        }),
-      properties: { source: 'close_button', open_duration_ms: 1234 }
-    },
-    {
-      name: TelemetryEvents.AGENT_ENTRY_BUTTON_CLICKED,
-      track: (sink: HostTelemetrySink) =>
-        sink.trackAgentEntryButtonClicked({ resulting_state: 'opened' }),
-      properties: { resulting_state: 'opened' }
-    },
-    {
-      name: TelemetryEvents.AGENT_CLOSE_BUTTON_CLICKED,
-      track: (sink: HostTelemetrySink) => sink.trackAgentCloseButtonClicked(),
-      properties: undefined
-    },
-    {
-      name: TelemetryEvents.AGENT_MESSAGE_SENT,
-      track: (sink: HostTelemetrySink) =>
-        sink.trackAgentMessageSent({
-          attachment_count: 2,
-          node_tag_count: 1,
-          thread_id: 'thread-1',
-          workflow_id: 'workflow-1',
-          client_message_id: 'client-message-1',
-          input_method: 'typed'
-        }),
-      properties: {
-        attachment_count: 2,
-        node_tag_count: 1,
-        thread_id: 'thread-1',
-        workflow_id: 'workflow-1',
-        client_message_id: 'client-message-1',
-        input_method: 'typed'
-      }
-    },
-    {
-      name: TelemetryEvents.AGENT_NODE_TAGGED,
-      track: (sink: HostTelemetrySink) =>
-        sink.trackAgentNodeTagged({ source: 'mention_picker' }),
-      properties: { source: 'mention_picker' }
-    },
-    {
-      name: TelemetryEvents.AGENT_ATTACH_BUTTON_CLICKED,
-      track: (sink: HostTelemetrySink) =>
-        sink.trackAgentAttachButtonClicked({ method: 'drag_drop' }),
-      properties: { method: 'drag_drop' }
-    },
-    {
       name: TelemetryEvents.AGENT_WORKFLOW_APPLIED,
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentWorkflowApplied({
@@ -409,6 +447,51 @@ describe('HostTelemetrySink', () => {
         workflow_id: 'workflow-1',
         target: 'active_tab_switch'
       }
+    },
+    {
+      name: TelemetryEvents.AGENT_CONSENT_NOT_OFFERED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentConsentNotOffered({ reason: 'tour_active' }),
+      properties: { reason: 'tour_active' }
+    },
+    {
+      name: TelemetryEvents.AGENT_CONSENT_OFFER_EXITED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentConsentOfferExited({
+          exit: 'workspace_switching',
+          stage: 'offer',
+          retry_armed: true
+        }),
+      properties: {
+        exit: 'workspace_switching',
+        stage: 'offer',
+        retry_armed: true
+      }
+    },
+    {
+      name: TelemetryEvents.AGENT_CONSENT_OFFER_EXITED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentConsentOfferExited({
+          exit: 'scope_probe_failed',
+          stage: 'request',
+          retry_armed: false,
+          trigger: 'first_load'
+        }),
+      properties: {
+        exit: 'scope_probe_failed',
+        stage: 'request',
+        retry_armed: false,
+        trigger: 'first_load'
+      }
+    },
+    {
+      name: TelemetryEvents.AGENT_ONBOARDING_NOT_SHOWN,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentOnboardingNotShown({
+          reason: 'target_missing',
+          step: 2
+        }),
+      properties: { reason: 'target_missing', step: 2 }
     }
   ])('forwards $name to the host bridge', ({ name, track, properties }) => {
     track(new HostTelemetrySink())

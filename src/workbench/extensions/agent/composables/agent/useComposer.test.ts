@@ -1,8 +1,24 @@
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
+import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
 import type { ComposerAttachment } from './useComposer'
 import { useComposer } from './useComposer'
+
+vi.mock(import('@/platform/telemetry'))
+const telemetryProvider = useTelemetry()
+assert.exists(telemetryProvider)
+const telemetry = vi.mocked(telemetryProvider)
+
+const CHIP: AgentStarterPromptAttribution = {
+  promptId: 'list_workflows',
+  promptIndex: 1,
+  promptCount: 5,
+  promptTextHash: 'deadbeef',
+  locale: 'en'
+}
 
 function setup(streaming = false) {
   const onSend =
@@ -129,9 +145,32 @@ describe('useComposer', () => {
     const store = useAgentComposerStore()
     expect(store.promptOrigin).toBe('typed')
 
-    composer.insert('Upscale this image')
+    composer.insert('Upscale this image', CHIP)
 
     expect(store.promptOrigin).toBe('suggestion')
+  })
+
+  it('reports an identified starter-prompt click and stores its send attribution', () => {
+    vi.clearAllMocks()
+    const { composer } = setup()
+    const store = useAgentComposerStore()
+
+    composer.insert('List my saved workflows', CHIP)
+
+    expect(telemetry.trackAgentStarterPromptClicked).toHaveBeenCalledWith({
+      prompt_id: 'list_workflows',
+      prompt_index: 1,
+      prompt_count: 5,
+      prompt_text_hash: 'deadbeef',
+      locale: 'en',
+      click_id: expect.any(String),
+      draft_was_empty: true
+    })
+    const [[event]] = telemetry.trackAgentStarterPromptClicked.mock.calls
+    expect(store.starterPrompt).toEqual({
+      id: 'list_workflows',
+      clickId: event.click_id
+    })
   })
 
   it('a recreated composer rehydrates the pending draft and attachments', () => {
