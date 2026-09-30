@@ -55,6 +55,7 @@ describe('useTeamPlan', () => {
             renewalDate: null,
             endDate: null,
             hasFunds: true,
+            agentHasFunds: true,
             ...mockSubscription.value
           }
         : null

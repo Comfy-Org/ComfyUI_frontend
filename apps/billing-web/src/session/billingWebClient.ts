@@ -121,6 +121,7 @@ function composeBillingWebClient(
     scopeSource,
     statusReader: status,
     pointerStorage,
+    retainSettledPointer: true,
     embeddedCheckoutAvailable: () => billingWebStripeKey() !== undefined
   })
 

@@ -4,16 +4,19 @@ import { BILLING_OPERATION_TELEMETRY_EVENT } from '@comfyorg/account-core/billin
 import type { BillingTelemetryEvent } from '@/platform/telemetry/types'
 
 /**
- * The lifecycle's event onto the `billing.operation.*` payload the poller
- * emits today, so a dashboard cannot tell which rail observed the operation.
+ * The lifecycle's event onto the poller's `billing.operation.*` stages, so
+ * both rails count in one funnel; only this rail sets `presentation` and
+ * `resumed`.
  */
 export function toBillingTelemetryEvent(
   event: BillingOperationTelemetryEvent
 ): BillingTelemetryEvent {
-  const terminal = {
+  const shared = {
     operation: 'operation',
     operation_type: event.operation_type,
     billing_op_id: event.billing_op_id,
+    presentation: event.presentation,
+    resumed: event.resumed,
     ...(event.duration_ms === undefined
       ? {}
       : { duration_ms: event.duration_ms })
@@ -21,27 +24,23 @@ export function toBillingTelemetryEvent(
 
   switch (event.name) {
     case BILLING_OPERATION_TELEMETRY_EVENT.started:
-      return {
-        operation: 'operation',
-        operation_type: event.operation_type,
-        stage: 'started',
-        outcome: 'pending'
-      }
+      return { ...shared, stage: 'started', outcome: 'pending' }
     case BILLING_OPERATION_TELEMETRY_EVENT.succeeded:
-      return { ...terminal, stage: 'succeeded', outcome: 'success' }
+      return { ...shared, stage: 'succeeded', outcome: 'success' }
     case BILLING_OPERATION_TELEMETRY_EVENT.timeout:
       return {
-        ...terminal,
+        ...shared,
         stage: 'timeout',
         outcome: 'failure',
         failure_category: 'poll_timeout'
       }
     case BILLING_OPERATION_TELEMETRY_EVENT.failed:
       return {
-        ...terminal,
+        ...shared,
         stage: 'failed',
         outcome: 'failure',
-        failure_category: event.failure_category ?? 'provider_decline'
+        failure_category: event.failure_category ?? 'provider_decline',
+        decline_reason: event.decline_reason
       }
   }
 }

@@ -16,9 +16,12 @@ import {
   resolveReturnTarget
 } from '@comfyorg/billing-contract'
 
+import { pricingTableUrl } from '@/checkout/cloudLinks'
+import { awaitCheckoutUiVariant } from '@/config/checkoutUi'
 import { BILLING_WEB_ENV } from '@/config/env'
 import { recordBillingEntry } from '@/entry/billingEntry'
 import {
+  billingWebLivePhase,
   billingWebPhase,
   onBillingWebEntryWorkspace
 } from '@/session/billingWebAuth'
@@ -74,18 +77,26 @@ const routes: RouteRecordRaw[] = [
 
 export type BillingWebSessionPhase = SessionSnapshot['phase']
 
-/** Plan selection is the host app's: billing-web only takes a chosen plan to checkout. */
-function hostOwnsPlanSelection(entry: BillingEntry): boolean {
-  return (
-    entry.intent === 'pricing' ||
-    (entry.intent === 'checkout' && entry.plan === undefined)
-  )
+const isPlanlessCheckout = (entry: BillingEntry) =>
+  entry.intent === 'checkout' && entry.plan === undefined
+
+/**
+ * Only a tab already signed in when the link is routed can keep a planless
+ * checkout, and only on its customer's full-page flag. Anyone else is sent
+ * back synchronously, without waiting on sign-in or asking for the flag.
+ */
+function fullPageKeepsPlanless(): false | Promise<boolean> {
+  if (billingWebLivePhase.value !== 'authenticated') return false
+  return awaitCheckoutUiVariant().then((variant) => variant === 'full_page')
 }
 
 /** Echoes the host's own workspace back, leaving this tab's binding alone. */
-function hostReturnHref(entry: BillingEntry): string | undefined {
+function returnHref(
+  target: ReturnTarget,
+  entry: BillingEntry
+): string | undefined {
   return buildReturnUrl({
-    target: entry.returnTo,
+    target,
     environment: BILLING_WEB_ENV,
     workspace: entry.workspaceId
   })?.href
@@ -94,19 +105,44 @@ function hostReturnHref(entry: BillingEntry): string | undefined {
 const CHECKOUT_PATH = billingIntentPath('checkout')
 const CHECKOUT_FALLBACK_RETURN: ReturnTarget = 'comfyui_credits'
 
+const linkUrl = (fullPath: string) =>
+  new URL(fullPath, 'https://billing.invalid')
+
+function followsLinkReturn(url: URL): boolean {
+  const target = url.searchParams.get('return_to')
+  return (
+    target !== null &&
+    resolveReturnTarget(target, BILLING_WEB_ENV) !== undefined
+  )
+}
+
 /**
  * A checkout's `return_to` is optional. One that is missing, outside the
  * registry, or without a destination in this family is ignored, never
  * followed, and the checkout returns to Plan & Credits instead.
  */
 function withCheckoutReturn(fullPath: string): string {
-  const url = new URL(fullPath, 'https://billing.invalid')
-  if (url.pathname !== CHECKOUT_PATH) return fullPath
-  const target = url.searchParams.get('return_to')
-  if (target !== null && resolveReturnTarget(target, BILLING_WEB_ENV))
-    return fullPath
+  const url = linkUrl(fullPath)
+  if (url.pathname !== CHECKOUT_PATH || followsLinkReturn(url)) return fullPath
   url.searchParams.set('return_to', CHECKOUT_FALLBACK_RETURN)
   return `${url.pathname}${url.search}`
+}
+
+/**
+ * Where a checkout that names no plan goes to have one picked. Platform has
+ * no pricing table, so its link goes back to its own `return_to`, or to
+ * Platform's billing page when that is not one billing may follow.
+ */
+function planPickerHref(
+  entry: BillingEntry,
+  followsReturn: boolean
+): string | undefined {
+  if (entry.product !== 'platform')
+    return pricingTableUrl(
+      entry.teamCreditStopId === undefined ? 'default' : 'team',
+      entry.workspaceId
+    )
+  return returnHref(followsReturn ? entry.returnTo : 'platform_billing', entry)
 }
 
 function leaveForHost(href: string): void {
@@ -123,10 +159,11 @@ function leaveForHost(href: string): void {
  * and signing in would not repair it. The sign-in page is the one route that
  * leaves the entry alone, because it is where that visitor was sent. The app's
  * own entry path carries no product request and clears what a previous link
- * left behind. A link that still needs a plan chosen goes back to its host
- * before any session is asked for; with nowhere to go back to, it is an entry
- * error. The phase is read on every route, sign-in included, because it is
- * what settles which sign-in this page load runs on.
+ * left behind. A link that still needs a plan chosen goes where one is picked
+ * before any session is asked for, unless the full-page flag of a tab that is
+ * already signed in keeps a planless checkout to explain it; with nowhere to
+ * go back to, it is an entry error. The phase is read on every route, sign-in
+ * included, because it is what settles which sign-in this page load runs on.
  */
 export function createBillingRouter(
   history: RouterHistory = createWebHistory(import.meta.env.BASE_URL),
@@ -137,6 +174,7 @@ export function createBillingRouter(
   leave: (href: string) => void = leaveForHost
 ) {
   const router = createRouter({ history, routes })
+  let latestNavigation = 0
 
   function recordUnknownReturn(): boolean {
     recordBillingEntry({ status: 'error', code: 'UNKNOWN_RETURN_TARGET' })
@@ -144,8 +182,7 @@ export function createBillingRouter(
   }
 
   /** False once the link has left this tab for its host. */
-  function sendToHost(entry: BillingEntry): boolean {
-    const href = hostReturnHref(entry)
+  function sendToHost(href: string | undefined): boolean {
     if (href === undefined) return recordUnknownReturn()
     leave(href)
     return false
@@ -157,20 +194,45 @@ export function createBillingRouter(
     return true
   }
 
-  function readEntry(fullPath: string): boolean {
+  /**
+   * The tab stays unbound to the link's workspace until the flag answers, and
+   * an answer that arrives after a newer navigation started acts on nothing.
+   */
+  function readPlanless(
+    entry: BillingEntry,
+    pickPlanAt: string | undefined
+  ): boolean | Promise<boolean> {
+    const kept = fullPageKeepsPlanless()
+    if (kept === false) return sendToHost(pickPlanAt)
+    const navigation = latestNavigation
+    return kept.then((full) => {
+      if (navigation !== latestNavigation) return false
+      return full ? admitEntry(entry) : sendToHost(pickPlanAt)
+    })
+  }
+
+  function readEntry(fullPath: string): boolean | Promise<boolean> {
     const result = parseBillingEntry(withCheckoutReturn(fullPath))
     if (result.status === 'error') {
       recordBillingEntry(result)
       return true
     }
     const { entry } = result
-    if (hostOwnsPlanSelection(entry)) return sendToHost(entry)
+    if (entry.intent === 'pricing')
+      return sendToHost(returnHref(entry.returnTo, entry))
+    if (isPlanlessCheckout(entry))
+      return readPlanless(
+        entry,
+        planPickerHref(entry, followsLinkReturn(linkUrl(fullPath)))
+      )
     return admitEntry(entry)
   }
 
   router.beforeEach(async (to) => {
+    latestNavigation += 1
     if (to.path === APP_ENTRY_PATH) recordBillingEntry(undefined)
-    else if (to.path !== SIGN_IN_PATH && !readEntry(to.fullPath)) return false
+    else if (to.path !== SIGN_IN_PATH && !(await readEntry(to.fullPath)))
+      return false
     const phase = await readPhase()
     if (to.path === SIGN_IN_PATH || phase === 'authenticated') return true
     return { path: SIGN_IN_PATH, query: { returnTo: to.fullPath } }

@@ -8,21 +8,23 @@ import type {
   LookPart
 } from '../../../lib/workshop/cinematic-studio/catalog'
 import {
-  directionOption,
   gradeGroup,
   lookGroups
 } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
-import CinematicDirectionIcon from './CinematicDirectionIcon.vue'
+import { shownOption } from '../../../lib/workshop/cinematic-studio/grade-image'
+import CinematicDirectionThumb from './CinematicDirectionThumb.vue'
 import CinematicTooltip from './CinematicTooltip.vue'
 
 const {
   direction,
   open,
+  colors,
   locale = 'en'
 } = defineProps<{
   direction: Direction
+  colors?: readonly string[]
   open?: string
   locale?: Locale
 }>()
@@ -31,13 +33,12 @@ const emit = defineEmits<{ open: [part: LookPart | 'grade'] }>()
 
 const segments = computed(() =>
   [...lookGroups, gradeGroup].map((group) => {
-    const option = directionOption(group.part, direction)
+    const { label, option } = shownOption(group.part, direction, colors)
     return {
       part: group.part,
       title: tc(group.title, locale),
-      label: tc(option.label, locale),
-      option: option.id,
-      palette: option.palette
+      label: tc(label, locale),
+      option
     }
   })
 )
@@ -69,24 +70,7 @@ const segments = computed(() =>
           "
           @click="emit('open', segment.part)"
         >
-          <span
-            v-if="segment.palette"
-            class="flex size-6 shrink-0 overflow-hidden rounded-md"
-            aria-hidden="true"
-          >
-            <span
-              v-for="(color, stripe) in segment.palette"
-              :key="stripe"
-              class="h-full flex-1"
-              :style="{ backgroundColor: color }"
-            />
-          </span>
-          <CinematicDirectionIcon
-            v-else
-            :part="segment.part"
-            :option="segment.option"
-            class="size-7 shrink-0 text-primary-warm-white"
-          />
+          <CinematicDirectionThumb :option="segment.option" class="h-6 w-9" />
         </button>
       </CinematicTooltip>
     </template>

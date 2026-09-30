@@ -7,6 +7,9 @@ import type {
 
 import { externalLinks } from '../config/routes'
 import { t } from '../i18n/translations'
+import { categoryPath } from './learningPaths'
+
+export { categoryPath, tutorialPath } from './learningPaths'
 
 export type LearningCategory = 'basics' | 'vfx' | 'animations' | 'ads'
 
@@ -861,14 +864,6 @@ export const getTutorialByCategoryAndSlug = (
 export const youtubeEmbedUrl = (id: string): string =>
   `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=1&rel=0`
 
-/** Canonical path for a category's directory page (wrap with localizeHref for zh-CN). */
-export const categoryPath = (category: LearningCategory): string =>
-  `/learning/${category}`
-
-/** Canonical path for a tutorial's detail page (wrap with localizeHref for zh-CN). */
-export const tutorialPath = (tutorial: LearningTutorial): string =>
-  `${categoryPath(tutorial.category)}/${tutorial.slug}`
-
 export interface LearningCrumb {
   name: string
   path: string
@@ -883,7 +878,7 @@ export const learningCrumbs = (
   category?: LearningCategory
 ): LearningCrumb[] => [
   { name: t('breadcrumb.home', locale), path: '/' },
-  { name: t('learning.title', locale), path: '/learning' },
+  { name: t('learning.title', locale), path: '/learning/' },
   ...(category
     ? [
         {

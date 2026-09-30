@@ -1,8 +1,7 @@
-import { storeToRefs } from 'pinia'
-
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { PendingSubscriptionCheckoutAttempt } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 import {
   createPendingSubscriptionCheckoutAttempt,
   persistPendingSubscriptionCheckoutAttempt,
@@ -11,15 +10,18 @@ import {
 import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import type {
   CheckoutAttributionMetadata,
   PaymentIntentSource
 } from '@/platform/telemetry/types'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 
 import type { BillingCycle } from './subscriptionTierRank'
+import { loadCheckoutAttributionModule } from './checkoutAttributionLoader'
 
 type CheckoutTier = TierKey | `${TierKey}-yearly`
 
@@ -28,17 +30,63 @@ const getCheckoutTier = (
   billingCycle: BillingCycle
 ): CheckoutTier => (billingCycle === 'yearly' ? `${tierKey}-yearly` : tierKey)
 
+type CheckoutAttributionStage = 'module_load' | 'collect'
+
+type CheckoutAttributionOutcome =
+  | { ok: true; attribution: CheckoutAttributionMetadata }
+  | { ok: false; error: unknown; stage: CheckoutAttributionStage }
+
 const getCheckoutAttributionForCloud =
-  async (): Promise<CheckoutAttributionMetadata> => {
+  async (): Promise<CheckoutAttributionOutcome> => {
     if (__DISTRIBUTION__ !== 'cloud') {
-      return {}
+      return { ok: true, attribution: {} }
     }
 
-    const { getCheckoutAttribution } =
-      await import('@/platform/telemetry/utils/checkoutAttribution')
+    let attributionModule
+    try {
+      attributionModule = await loadCheckoutAttributionModule()
+    } catch (error) {
+      return { ok: false, error, stage: 'module_load' }
+    }
 
-    return getCheckoutAttribution()
+    const getCheckoutAttribution = attributionModule.getCheckoutAttribution
+
+    if (typeof getCheckoutAttribution !== 'function') {
+      return {
+        ok: false,
+        error: new TypeError('Checkout attribution module is unavailable'),
+        stage: 'module_load'
+      }
+    }
+
+    try {
+      return {
+        ok: true,
+        attribution: await getCheckoutAttribution()
+      }
+    } catch (error) {
+      return { ok: false, error, stage: 'collect' }
+    }
   }
+
+async function getCheckoutAttributionPayload(): Promise<CheckoutAttributionMetadata> {
+  const attribution = await getCheckoutAttributionForCloud()
+  if (attribution.ok) return attribution.attribution
+
+  reportError(attribution.error, {
+    surface: 'billing',
+    errorType: 'cloud_checkout_attribution_fallback',
+    tags: {
+      failure_kind: 'degraded',
+      feature_area: 'billing',
+      operation: 'load',
+      outcome: 'degraded',
+      attribution_stage: attribution.stage
+    },
+    level: 'warning'
+  })
+  return {}
+}
 
 const checkoutAuthHeader = async (authStore: ReturnType<typeof useAuthStore>) =>
   (await webSessionResourceHeader()) ??
@@ -70,32 +118,52 @@ export async function performSubscriptionCheckout(
 ): Promise<void> {
   if (!isCloud) return
 
+  const telemetry = useTelemetry()
+  const pendingAttempt = createPendingSubscriptionCheckoutAttempt({
+    tier: tierKey,
+    cycle: currentBillingCycle,
+    checkout_type: 'new',
+    payment_intent_source: options.paymentIntentSource,
+    owner_id: useAuthStore().userId ?? undefined,
+    workspace_id: useTeamWorkspaceStore().activeWorkspaceId,
+    start_reported: true
+  })
+  const attemptEvent = {
+    operation: 'subscription_checkout',
+    checkout_attempt_id: pendingAttempt.attempt_id,
+    tier: tierKey,
+    cycle: currentBillingCycle,
+    checkout_type: 'new',
+    payment_intent_source: options.paymentIntentSource
+  } as const
+  telemetry?.trackBillingEvent({
+    ...attemptEvent,
+    stage: 'started',
+    outcome: 'pending'
+  })
+
   try {
-    await initiateSubscriptionCheckout(tierKey, currentBillingCycle, options)
+    await initiateSubscriptionCheckout(pendingAttempt, options)
   } catch (error) {
-    useTelemetry()?.trackBillingEvent({
-      operation: 'subscription_checkout',
+    telemetry?.trackBillingEvent({
+      ...attemptEvent,
       stage: 'failed',
       outcome: 'failure',
-      tier: tierKey,
-      cycle: currentBillingCycle,
-      checkout_type: 'new',
-      payment_intent_source: options.paymentIntentSource,
-      failure_category: categorizeBillingApiError(error)
+      failure_category: categorizeBillingApiError(error),
+      duration_ms: Date.now() - pendingAttempt.started_at_ms
     })
     throw error
   }
 }
 
 async function initiateSubscriptionCheckout(
-  tierKey: TierKey,
-  currentBillingCycle: BillingCycle,
+  pendingAttempt: PendingSubscriptionCheckoutAttempt,
   options: PerformSubscriptionCheckoutOptions
 ): Promise<void> {
   const { openInNewTab = true, paymentIntentSource } = options
+  const { tier: tierKey, cycle: currentBillingCycle } = pendingAttempt
 
   const authStore = useAuthStore()
-  const { userId } = storeToRefs(authStore)
   const telemetry = useTelemetry()
   const authHeader = await checkoutAuthHeader(authStore)
 
@@ -104,15 +172,7 @@ async function initiateSubscriptionCheckout(
   }
 
   const checkoutTier = getCheckoutTier(tierKey, currentBillingCycle)
-  let checkoutAttribution: CheckoutAttributionMetadata = {}
-  try {
-    checkoutAttribution = await getCheckoutAttributionForCloud()
-  } catch (error) {
-    console.warn(
-      '[SubscriptionCheckout] Failed to collect checkout attribution',
-      error
-    )
-  }
+  const checkoutAttribution = await getCheckoutAttributionPayload()
   const checkoutPayload = { ...checkoutAttribution }
 
   const response = await authStore.fetchWithCustomerRecovery(
@@ -137,41 +197,67 @@ async function initiateSubscriptionCheckout(
 
   const data = await response.json()
 
-  if (data.checkout_url) {
-    const pendingAttempt = createPendingSubscriptionCheckoutAttempt({
-      tier: tierKey,
-      cycle: currentBillingCycle,
-      checkout_type: 'new',
-      payment_intent_source: paymentIntentSource
-    })
+  completeSubscriptionCheckout(data.checkout_url, {
+    tierKey,
+    currentBillingCycle,
+    paymentIntentSource,
+    openInNewTab,
+    pendingAttempt,
+    checkoutAttribution,
+    telemetry
+  })
+}
 
-    if (userId.value) {
-      telemetry?.trackBeginCheckout(
-        withPendingCheckoutAttemptId(
-          {
-            user_id: userId.value,
-            tier: tierKey,
-            cycle: currentBillingCycle,
-            checkout_type: 'new',
-            ...(paymentIntentSource
-              ? { payment_intent_source: paymentIntentSource }
-              : {}),
-            ...checkoutAttribution
-          },
-          pendingAttempt
-        )
-      )
-    }
+interface CheckoutCompletionContext {
+  tierKey: TierKey
+  currentBillingCycle: BillingCycle
+  paymentIntentSource?: PaymentIntentSource
+  openInNewTab: boolean
+  pendingAttempt: PendingSubscriptionCheckoutAttempt
+  checkoutAttribution: CheckoutAttributionMetadata
+  telemetry: ReturnType<typeof useTelemetry>
+}
 
-    if (openInNewTab) {
-      const checkoutWindow = window.open(data.checkout_url, '_blank')
-      if (!checkoutWindow) {
-        return
-      }
-      persistPendingSubscriptionCheckoutAttempt(pendingAttempt)
-    } else {
-      persistPendingSubscriptionCheckoutAttempt(pendingAttempt)
-      globalThis.location.href = data.checkout_url
+function trackBeginCheckout(context: CheckoutCompletionContext) {
+  const { pendingAttempt, paymentIntentSource } = context
+  const userId = pendingAttempt.owner_id
+  if (!userId) return
+
+  context.telemetry?.trackBeginCheckout(
+    withPendingCheckoutAttemptId(
+      {
+        user_id: userId,
+        tier: context.tierKey,
+        cycle: context.currentBillingCycle,
+        checkout_type: 'new',
+        ...(paymentIntentSource
+          ? { payment_intent_source: paymentIntentSource }
+          : {}),
+        ...context.checkoutAttribution
+      },
+      pendingAttempt
+    )
+  )
+}
+
+function completeSubscriptionCheckout(
+  checkoutUrl: string | undefined,
+  context: CheckoutCompletionContext
+) {
+  if (!checkoutUrl) return
+
+  const { openInNewTab, pendingAttempt } = context
+
+  trackBeginCheckout(context)
+
+  if (openInNewTab) {
+    const checkoutWindow = window.open(checkoutUrl, '_blank')
+    if (!checkoutWindow) {
+      return
     }
+    persistPendingSubscriptionCheckoutAttempt(pendingAttempt)
+  } else {
+    persistPendingSubscriptionCheckoutAttempt(pendingAttempt)
+    globalThis.location.href = checkoutUrl
   }
 }

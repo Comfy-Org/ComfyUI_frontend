@@ -6,6 +6,7 @@ import { assert, describe, expect, it } from 'vitest'
 import displayJson from '../content/workshop-display.json'
 import categories from '../content/workshop-workflow-categories.json'
 import { workshopDisplayEntriesSchema } from '../content/workshop-display.schema'
+import { modelTitle } from '../lib/workshop/model-title'
 import { workshopExecutionId } from './models-catalogue'
 import { initialWorkshopPageState } from './workshop-page-state'
 import { urlUploadField, validateForm } from './workshop-playground'
@@ -156,6 +157,21 @@ describe('curated workflow pages', () => {
     expect(validateForm(state.schema, state.values)).toEqual({})
   })
 
+  it('keeps every audited material example with the form-facing prompt copy', () => {
+    const detail = getWorkshopPageDetail('workflows/change-material')
+    assert.exists(detail)
+
+    expect(detail.examples.map(({ title }) => title)).toEqual([
+      'A softer finish for a leather sofa',
+      'A camper van woven from rattan',
+      'Enamel cherries in amber glass',
+      'A sports car in celadon porcelain'
+    ])
+    expect(detail.examples[0]?.values.prompt).toBe(
+      'Give the sofa the fur texture from the material reference instead of its leather.'
+    )
+  })
+
   it('uses the master INPUTS widgets and prepared defaults in the shared form', () => {
     const detail = getWorkshopPageDetail(page.slug)
     if (!detail) throw new Error('Missing workflow detail')
@@ -176,7 +192,7 @@ describe('curated workflow pages', () => {
     ])
     expect(state.values.seed).toBeUndefined()
     expect(state.values.prompt).toBe(
-      'Change the furniture leather difference in image 1 to the fur material in image 2.'
+      'Give the sofa the fur texture from the material reference instead of its leather.'
     )
     expect(state.values).toMatchObject({
       image1:
@@ -263,4 +279,11 @@ describe('curated workflow pages', () => {
       expect(detail).not.toHaveProperty('routerId')
     }
   )
+})
+
+describe('workshop pages', () => {
+  it('gives every model and workflow page its own title', () => {
+    const titles = workshopPages.map((model) => modelTitle(model))
+    expect(new Set(titles).size).toBe(titles.length)
+  })
 })

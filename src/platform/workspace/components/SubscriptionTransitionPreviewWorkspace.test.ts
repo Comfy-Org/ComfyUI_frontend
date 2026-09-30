@@ -27,7 +27,8 @@ beforeEach(() => {
     renewalDate: null,
     endDate: null,
     isCancelled: false,
-    hasFunds: true
+    hasFunds: true,
+    agentHasFunds: true
   }))
   billingContext.isInitialized = ref(true)
   vi.mocked(useBillingContext).mockReturnValue(billingContext)
