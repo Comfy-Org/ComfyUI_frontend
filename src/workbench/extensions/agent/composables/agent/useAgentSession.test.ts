@@ -539,6 +539,77 @@ describe('useAgentSession (v1 composition root)', () => {
     session.stop()
   })
 
+  it.for(['success', 'failure'] as const)(
+    "ignores owner A's delayed stop %s after owner B takes over",
+    async (outcome) => {
+      let settleCancellation:
+        | ((accepted: AgentCancelAccepted) => void)
+        | undefined
+      let rejectCancellation: ((error: Error) => void) | undefined
+      const cancelMessage = vi.fn<AgentRestClient['cancelMessage']>(
+        () =>
+          new Promise<AgentCancelAccepted>((resolve, reject) => {
+            settleCancellation = resolve
+            rejectCancellation = reject
+          })
+      )
+      const session = useAgentSession({
+        rest: fakeRest({ cancelMessage }),
+        events: fakeEvents().source
+      })
+      session.start()
+      await session.sendMessage('account A turn')
+      const pendingStop = session.stopTurn('button')
+      await vi.waitFor(() => expect(cancelMessage).toHaveBeenCalledOnce())
+
+      setStorageIdentity('user-b')
+      setStorageWorkspaceId('personal')
+
+      if (outcome === 'success') {
+        settleCancellation?.({ status: 'cancelling' })
+      } else {
+        rejectCancellation?.(new Error('account A delayed failure'))
+      }
+      await pendingStop
+
+      expect(telemetry.trackAgentStopClicked).not.toHaveBeenCalled()
+      expect(reportError).not.toHaveBeenCalled()
+      expect(session.notices.value).toEqual([])
+      expect(session.editableTurnId.value).toBeNull()
+      setStorageIdentity('user-test')
+      session.stop()
+    }
+  )
+
+  it('watches storage ownership only while started and resumes once', async () => {
+    const conversationStore = useAgentConversationStore()
+    const reset = vi.spyOn(conversationStore, 'reset')
+    const session = useAgentSession({
+      rest: fakeRest(),
+      events: fakeEvents().source
+    })
+    session.start()
+    await session.sendMessage('account A turn')
+    session.stop()
+    await Promise.resolve()
+
+    setStorageIdentity('user-b')
+    setStorageWorkspaceId('personal')
+    expect(reset).not.toHaveBeenCalled()
+
+    session.start({ restore: false })
+    expect(reset).toHaveBeenCalledOnce()
+    await session.sendMessage('account B turn')
+
+    setStorageIdentity('user-c')
+    setStorageWorkspaceId('personal')
+    expect(reset).toHaveBeenCalledTimes(2)
+    expect(session.entries.value).toEqual([])
+
+    setStorageIdentity('user-test')
+    session.stop()
+  })
+
   it("does not let owner A's delayed refusal delete owner B's same-id binding", async () => {
     const tabPath = 'workflows/shared.json'
     const bindings = useAgentWorkflowTabBindingStore()
