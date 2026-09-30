@@ -20,7 +20,7 @@ const mode = defineModel<'image' | 'video'>({ required: true })
     :class="
       cn(
         'flex gap-1 rounded-xl border border-transparency-white-t20 bg-primary-comfy-ink-light p-1',
-        compact && 'gap-0.5 rounded-full p-0.5'
+        compact && 'gap-0.5 rounded-full border-transparency-white-t8 p-0.5'
       )
     "
     role="group"

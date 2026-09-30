@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { ChevronDown, Clock, Maximize } from '@lucide/vue'
+import { ChevronDown, Clock, Info, Maximize } from '@lucide/vue'
+import { onClickOutside } from '@vueuse/core'
+import { ref, useTemplateRef } from 'vue'
 
 import type { AspectRatio } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { Locale } from '../../../i18n/translations'
@@ -19,6 +21,10 @@ const aspect = defineModel<AspectRatio>('aspect', { required: true })
 const duration = defineModel<number | undefined>('duration')
 const resolution = defineModel<string | undefined>('resolution')
 const audio = defineModel<boolean>('audio', { required: true })
+
+const aboutOpen = ref(false)
+const about = useTemplateRef<HTMLElement>('about')
+onClickOutside(about, () => (aboutOpen.value = false))
 
 const {
   aspectOptions,
@@ -102,31 +108,48 @@ const triggerClass =
         />
       </CinematicMenu>
     </div>
-    <label
-      v-if="video.audioField"
-      class="flex w-fit cursor-pointer items-center gap-2.5 text-xs text-primary-warm-white"
-    >
-      <input
-        v-model="audio"
-        type="checkbox"
-        role="switch"
-        class="peer sr-only"
-      />
-      <span
-        class="relative h-4 w-7 shrink-0 rounded-full bg-transparency-white-t20 transition-colors peer-checked:bg-primary-comfy-yellow peer-focus-visible:ring-3 peer-focus-visible:ring-primary-comfy-yellow/50 after:absolute after:top-0.5 after:left-0.5 after:size-3 after:rounded-full after:bg-primary-comfy-ink after:transition-transform peer-checked:after:translate-x-3"
-        aria-hidden="true"
-      />
-      {{ tc('cinematic.video.audio', locale) }}
-    </label>
-    <p class="text-xs/relaxed text-primary-warm-gray">
-      {{
-        tc(
-          durationOptions.length
-            ? 'cinematic.video.oneClip'
-            : 'cinematic.video.modelDecides',
-          locale
-        )
-      }}
-    </p>
+    <div class="flex items-center gap-2">
+      <label
+        v-if="video.audioField"
+        class="flex w-fit cursor-pointer items-center gap-2.5 text-xs text-primary-warm-white"
+      >
+        <input
+          v-model="audio"
+          type="checkbox"
+          role="switch"
+          class="peer sr-only"
+        />
+        <span
+          class="relative h-4 w-7 shrink-0 rounded-full bg-transparency-white-t20 transition-colors peer-checked:bg-primary-comfy-yellow peer-focus-visible:ring-3 peer-focus-visible:ring-primary-comfy-yellow/50 after:absolute after:top-0.5 after:left-0.5 after:size-3 after:rounded-full after:bg-primary-comfy-ink after:transition-transform peer-checked:after:translate-x-3"
+          aria-hidden="true"
+        />
+        {{ tc('cinematic.video.audio', locale) }}
+      </label>
+      <div ref="about" class="relative">
+        <button
+          type="button"
+          class="grid size-6 place-items-center rounded-full text-primary-warm-gray transition-colors hover:text-primary-warm-white focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
+          :aria-label="tc('cinematic.video.about', locale)"
+          :aria-expanded="aboutOpen"
+          @click="aboutOpen = !aboutOpen"
+        >
+          <Info class="size-3.5" aria-hidden="true" />
+        </button>
+        <p
+          v-if="aboutOpen"
+          role="note"
+          class="absolute bottom-full left-1/2 z-30 mb-1.5 w-64 -translate-x-1/2 rounded-xl border border-transparency-white-t8 bg-primary-comfy-ink-light px-3 py-2 text-xs/relaxed text-primary-comfy-canvas shadow-lg"
+        >
+          {{
+            tc(
+              durationOptions.length
+                ? 'cinematic.video.oneClip'
+                : 'cinematic.video.modelDecides',
+              locale
+            )
+          }}
+        </p>
+      </div>
+    </div>
   </div>
 </template>

@@ -109,7 +109,7 @@ function generate() {
     class="mx-auto max-w-10xl px-4 py-8 sm:px-8 lg:px-14"
     data-testid="cinematic"
   >
-    <AppsBackLink :locale class="mb-3" />
+    <AppsBackLink :locale class="mb-5" />
     <div class="mb-3 flex flex-wrap items-center gap-3">
       <h1 class="text-2xl font-semibold text-primary-warm-white lg:text-3xl">
         {{ tc('cinematic.title', locale) }}
@@ -204,7 +204,7 @@ function generate() {
         :locale
         :class="
           cn(
-            'fixed inset-x-0 bottom-0 z-50 max-h-[85svh] rounded-b-none lg:absolute lg:top-(--anchor-top) lg:right-0 lg:bottom-auto lg:left-[calc((100%-1.5rem)*0.4+1.5rem)] lg:z-20 lg:max-h-[calc(100svh-8rem)] lg:rounded-b-2xl lg:transition-[max-width] lg:duration-300 lg:ease-out',
+            'fixed inset-x-0 bottom-0 z-50 max-h-[80svh] rounded-b-none lg:absolute lg:top-(--anchor-top) lg:right-0 lg:bottom-auto lg:left-[calc((100%-1.5rem)*0.4+1.5rem)] lg:z-20 lg:max-h-[calc(100svh-8rem)] lg:rounded-b-2xl lg:transition-[max-width] lg:duration-300 lg:ease-out',
             picker === 'camera' || editingPalette
               ? 'lg:max-w-full'
               : 'lg:max-w-120'

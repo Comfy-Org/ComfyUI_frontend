@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { useMediaQuery } from '@vueuse/core'
 import { ref } from 'vue'
+
+import { cn } from '@comfyorg/tailwind-utils'
 
 import type {
   Direction,
@@ -49,6 +52,13 @@ function choose(part: DirectionPart, id: string) {
   if (!multiple) emit('close')
 }
 
+const sideBySide = useMediaQuery('(min-width: 1024px)')
+
+function finishEditing() {
+  editing.value = false
+  if (!sideBySide.value) emit('close')
+}
+
 function usePalette(sampled: readonly string[]) {
   colors.value = sampled
   mainColor.value = undefined
@@ -72,7 +82,12 @@ const selectedIn = (part: DirectionPart) =>
       <CinematicOptionList
         v-for="group in groups"
         :key="group.part"
-        :class="activePart !== group.part && 'max-sm:hidden'"
+        :class="
+          cn(
+            'max-sm:col-start-1 max-sm:row-start-1',
+            activePart !== group.part && 'max-sm:invisible'
+          )
+        "
         :group
         :selected="direction[group.part]"
         :locale
@@ -86,7 +101,9 @@ const selectedIn = (part: DirectionPart) =>
         :group
         :selected="selectedIn(group.part)"
         :locale
-        class="min-w-0 flex-1"
+        :class="
+          cn('min-w-0 flex-1', editing && colors.length && 'max-lg:hidden')
+        "
         @choose="choose(group.part, $event)"
       >
         <CinematicGradeImageTile
@@ -111,7 +128,7 @@ const selectedIn = (part: DirectionPart) =>
           <button
             type="button"
             class="h-10 w-full rounded-xl bg-primary-warm-white text-sm font-semibold text-primary-comfy-ink transition-colors hover:bg-primary-comfy-yellow"
-            @click="editing = false"
+            @click="finishEditing"
           >
             {{ tc('cinematic.grade.done', locale) }}
           </button>

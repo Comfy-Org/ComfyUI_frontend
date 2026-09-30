@@ -348,3 +348,25 @@ test('offers the starting frame beside the Cinematic Studio scene in video mode'
   ).toBeVisible()
   await expect(page.getByRole('heading', { name: 'References' })).toHaveCount(0)
 })
+
+test('@mobile keeps the Cinematic Studio camera badges to one line and the camera sheet steady across tabs', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/hub/apps/cinematic-studio/')
+
+  const specs = page.getByTestId('camera-specs')
+  await expect(specs.getByText('+2', { exact: true })).toBeVisible()
+  await expect(specs.getByText('50mm', { exact: true })).toBeHidden()
+  expect((await specs.boundingBox())?.height).toBeLessThan(32)
+
+  await page.getByRole('button', { name: /^Camera/ }).click()
+  const sheet = page.getByRole('dialog', { name: 'Camera' })
+  const heights = []
+  for (const tab of ['Body', 'Lens', 'Focal length', 'Aperture']) {
+    await sheet.getByRole('button', { name: tab, exact: true }).click()
+    heights.push((await sheet.boundingBox())?.height)
+  }
+  expect(new Set(heights).size).toBe(1)
+})
