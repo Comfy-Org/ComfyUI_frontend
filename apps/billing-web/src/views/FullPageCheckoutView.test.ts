@@ -2266,7 +2266,7 @@ describe('FullPageCheckoutView promo codes', () => {
     const card = await screen.findByRole('alert')
     expect(card).toHaveTextContent('Your promo code expired')
     expect(card).toHaveTextContent(
-      'The LAUNCH20 code expired, so the total was updated.'
+      'The LAUNCH20 code expired, so the total was updated. Review the new total before paying. You have not been charged.'
     )
     expect(card).not.toHaveTextContent('declined')
     expect(
@@ -2392,6 +2392,135 @@ describe('FullPageCheckoutView promo codes', () => {
     ).not.toBeInTheDocument()
     expect(screen.getAllByText('$28.00')).toHaveLength(2)
   })
+
+  it('ignores a URL code on a change that charges nothing today, so the first Pay pays', async () => {
+    const fake = await renderCheckout(
+      {
+        preview: {
+          status: 'ok',
+          value: previewOf({
+            transition_type: 'downgrade',
+            is_immediate: false
+          })
+        }
+      },
+      () => {},
+      `${CHECKOUT_PATH}&promo=LAUNCH20`
+    )
+    await screen.findByText(/Switch to Creator Plan/)
+    await waitFor(() => expect(payButton()).toBeEnabled())
+
+    await userEvent.click(payButton())
+
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalledOnce())
+    expect(fake.previewSubscribe).toHaveBeenCalledExactlyOnceWith(
+      expect.not.objectContaining({ promotionCode: expect.anything() }),
+      expect.anything()
+    )
+  })
+
+  it('a Pay over a code it could not check tries Apply again, then waits for a second Pay', async () => {
+    const fake = await renderCheckout({}, (scripted) =>
+      quotesByCode(scripted, { status: 'error', code: 'REQUEST_FAILED' })
+    )
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+    await enterCode('LAUNCH20')
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      "We couldn't check this code. Try again."
+    )
+    quotesByCode(fake)
+    await waitFor(() => expect(payButton()).toBeEnabled())
+
+    form.emit('confirm', 'ctoken_1')
+
+    expect(await screen.findByText('−$5.60')).toBeInTheDocument()
+    expect(fake.subscribe).not.toHaveBeenCalled()
+
+    await waitFor(() => expect(payButton()).toBeEnabled())
+    form.emit('confirm', 'ctoken_2')
+    await waitFor(() =>
+      expect(fake.subscribe).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          promotion_code: 'LAUNCH20',
+          quote_id: 'q_promo'
+        })
+      )
+    )
+  })
+
+  it.for<{
+    name: string
+    applied: boolean
+    change: () => Promise<void>
+  }>([
+    {
+      name: 'applying a code',
+      applied: false,
+      change: () => enterCode('LAUNCH20')
+    },
+    {
+      name: 'removing a code',
+      applied: true,
+      change: async () => {
+        await userEvent.click(
+          screen.getByRole('button', { name: 'Remove LAUNCH20' })
+        )
+        await screen.findByRole('button', { name: 'Add promo code' })
+      }
+    }
+  ])(
+    '553-9297: $name re-prices the plan, so the keep-subscription tick is asked again',
+    async ({ applied, change }) => {
+      const kept = { requires_reactivation_confirmation: true }
+      const fake = await renderCheckout(
+        {
+          status: {
+            is_active: true,
+            has_funds: true,
+            max_seats: 1,
+            occupied_seats: 1,
+            scheduled_change: null,
+            team_credit_stop: null,
+            cancel_at: '2026-07-28T00:00:00.000Z'
+          }
+        },
+        (scripted) => {
+          scripted.previewSubscribe.mockImplementation(
+            async ({ promotionCode }) => ({
+              status: 'ok',
+              value:
+                promotionCode === undefined
+                  ? previewOf({ ...kept, transition_type: 'upgrade' })
+                  : { ...LAUNCH20_QUOTE, ...kept, transition_type: 'upgrade' }
+            })
+          )
+        }
+      )
+      await screen.findByText('Upgrade to Creator Plan · Acme Team')
+      if (applied) {
+        await enterCode('LAUNCH20')
+        await screen.findByText('−$5.60')
+      }
+      await userEvent.click(
+        screen.getByRole('checkbox', {
+          name: 'Keep my subscription and renew it'
+        })
+      )
+
+      await change()
+
+      await waitFor(() =>
+        expect(
+          screen.getByRole('checkbox', {
+            name: 'Keep my subscription and renew it'
+          })
+        ).not.toBeChecked()
+      )
+      await userEvent.click(payButton())
+      expect(fake.subscribe).not.toHaveBeenCalled()
+    }
+  )
 
   it('offers no promo entry on a change that charges nothing today', async () => {
     await renderCheckout({
