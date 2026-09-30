@@ -37,6 +37,7 @@ test.describe(
       }) => {
         test.setTimeout(90_000)
         await agentConversation.runTurns()
+        await page.evaluate(() => window.app!.canvas.deselectAll())
 
         await expect(page.locator('#graph-canvas')).toHaveScreenshot(
           'two-turn-dependent-edit-wired.png',
@@ -71,6 +72,14 @@ test.describe(
           })
           await expect(images).toHaveCount(2)
 
+          // The optional CRDT diagnostics chip mounts asynchronously. Hide it
+          // when present so the oracle covers the reply in either environment.
+          await page.getByTestId('crdt-dev-panel-chip').evaluateAll((chips) => {
+            for (const chip of chips) {
+              ;(chip as HTMLElement).style.visibility = 'hidden'
+            }
+          })
+
           await expect(agentConversation.panel).toHaveScreenshot(
             'asset-grid-fragmentation.png'
           )
@@ -86,22 +95,35 @@ test.describe(
         page
       }) => {
         test.setTimeout(90_000)
-        await agentConversation.runTurns(() =>
-          page.evaluate((nodeId) => {
-            const node = window.app!.graph.getNodeById(nodeId)
-            const steps = node?.widgets?.find(
-              (widget) => widget.name === 'steps'
-            )
-            if (!steps) throw new Error('KSampler steps widget not found')
-            steps.callback = (_value, _canvas, owner) => {
-              const sampler = owner?.widgets?.find(
-                (widget) => widget.name === 'sampler_name'
+        await agentConversation.runTurns({
+          beforeFirstGraphOps: () =>
+            page.evaluate((nodeId) => {
+              const node = window.app!.graph.getNodeById(nodeId)
+              const steps = node?.widgets?.find(
+                (widget) => widget.name === 'steps'
               )
-              if (!sampler) throw new Error('KSampler sampler widget not found')
-              sampler.options.values = ['euler', 'heun']
-            }
-          }, toNodeId(3))
-        )
+              if (!steps) throw new Error('KSampler steps widget not found')
+              steps.callback = (_value, _canvas, owner) => {
+                const sampler = owner?.widgets?.find(
+                  (widget) => widget.name === 'sampler_name'
+                )
+                if (!sampler)
+                  throw new Error('KSampler sampler widget not found')
+                sampler.options.values = ['euler', 'heun']
+              }
+            }, toNodeId(3))
+        })
+
+        await expect(
+          agentConversation.vueNodes
+            .getWidgetByName('KSampler', 'steps')
+            .getByRole('spinbutton')
+        ).toHaveValue('30')
+        await expect(
+          agentConversation.vueNodes
+            .getWidgetByName('KSampler', 'cfg')
+            .getByRole('spinbutton')
+        ).toHaveValue('5.0')
 
         const sampler = agentConversation.vueNodes
           .getNodeLocator('3')
@@ -172,11 +194,6 @@ test.describe(
           await typing
           await resync
 
-          // PM-1191/PM-1697: the resync's whole-value set_widget is stale by
-          // however many keystrokes were in flight when the host built it.
-          // The local-dirty guard on the incremental setWidget path
-          // (graphMutations.ts) now skips it, so the typed text survives
-          // regardless of where the resync interleaves with the keystrokes.
           await expect(field).toHaveValue(`a photo of a pier${appended}`)
         })
       })

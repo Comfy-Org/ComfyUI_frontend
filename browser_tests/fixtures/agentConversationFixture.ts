@@ -1,6 +1,7 @@
 import type { Locator, Page, TestInfo } from '@playwright/test'
 import { expect } from '@playwright/test'
 import type { ApplyOutcome } from '@comfyorg/comfy-multi-player'
+import type { ListAssetsResponse } from '@comfyorg/ingest-types'
 import { z } from 'zod'
 
 import { createI18n } from 'vue-i18n'
@@ -24,9 +25,11 @@ import {
   bootAgentApp,
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
+import { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import type {
   ClientDocFrame,
   HumanOpsHost
@@ -50,6 +53,8 @@ import type { TabSwitchLens, WorkspaceStore } from '@e2e/types/globals'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { assertAgentReplayNodeContract } from '@e2e/fixtures/utils/agentReplayNodeContract'
 import { mockSavedWorkflowPersistence } from '@e2e/fixtures/utils/savedWorkflowPersistence'
+import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
+import { nextFrame } from '@e2e/fixtures/utils/timing'
 
 const THREAD_ID = 'e9a2f3d1-7c44-4b2e-9a01-5f6d8c7b3a10'
 // One synthetic message id per turn; the recorded ids never reach the page.
@@ -60,7 +65,6 @@ const VUE_NODES_TAG = '@vue-nodes'
 const PANEL_MOUNT_TIMEOUT = 30_000
 const CANCEL_TIMEOUT = 10_000
 
-const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 const SEND_LABEL = enMessages.agent.send
 const STOP_LABEL = enMessages.agent.stop
 // The composer names itself with the rendered message, escapes resolved; the
@@ -224,6 +228,7 @@ export class AgentConversationHarness {
 
   constructor(
     private readonly page: Page,
+    private readonly comfyPage: ComfyPage,
     readonly conversation: AgentConversation,
     readonly replayTiming: ReplayTiming,
     caseId: string,
@@ -289,7 +294,11 @@ export class AgentConversationHarness {
       .sort()
   }
 
-  async boot(agentFlag: boolean, vueNodes: boolean): Promise<void> {
+  async boot(
+    agentFlag: boolean,
+    vueNodes: boolean,
+    bootAssets: ListAssetsResponse
+  ): Promise<void> {
     await this.mockAgentApi()
     await this.hostSocket.install()
     const objectInfo = this.page.waitForResponse((response) =>
@@ -305,7 +314,8 @@ export class AgentConversationHarness {
       // Replayed nodes materialize from registered node types; the recordings use
       // core nodes only, so a case needing another node supplies its definition
       // here rather than routing /object_info a second time behind this one.
-      objectInfo: { ...agentReplayNodeDefs, ...this.extraNodeDefs }
+      objectInfo: { ...agentReplayNodeDefs, ...this.extraNodeDefs },
+      assets: bootAssets
     })
     const definitions = (await (await objectInfo).json()) as ObjectInfoResponse
     for (const [type, definition] of Object.entries(definitions))
@@ -318,23 +328,20 @@ export class AgentConversationHarness {
         `${this.page.url()} serves no node definitions for ${unregistered.join(', ')}; the replay needs a ComfyUI backend behind the dev server (browser_tests/README.md, "Replay coverage for agent bug fixes")`
       )
 
-    await this.page
-      .getByRole('button', { name: OPEN_AGENT_LABEL, exact: true })
-      .click()
+    await loadSeedIntoActiveTab(this.page, this.conversation.workflow.seed)
+    await new AgentPanel(this.page).open()
     await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
     await this.selectWorkflowTarget()
   }
 
-  private async selectWorkflowTarget(): Promise<void> {
+  private async selectWorkflowTarget(name = 'Unsaved Workflow'): Promise<void> {
     await mockWorkflowPersistence(this.page, this.conversation.workflow.id)
     const picker = this.panel.getByRole('button', {
       name: enMessages.agent.switchWorkflow
     })
     await picker.click()
-    await this.page
-      .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-      .click()
-    await expect(picker).toHaveText('Unsaved Workflow')
+    await this.page.getByRole('menuitemradio', { name, exact: true }).click()
+    await expect(picker).toHaveText(name)
   }
 
   /**
@@ -402,11 +409,11 @@ export class AgentConversationHarness {
   }
 
   // Every turn in order, each judged on the panel and the canvas as it lands.
-  async runTurns(beforeFirstGraphOps?: () => Promise<void>): Promise<void> {
+  async runTurns(options: ReplayResponseOptions = {}): Promise<void> {
     for (const turn of this.conversation.turns.keys()) {
       const before = await this.panelCounts()
       await this.sendPrompt(turn)
-      await this.replayResponse(turn, { beforeFirstGraphOps })
+      await this.replayResponse(turn, options)
       await this.waitForTurnComplete()
       await this.expectTurnRendered(turn, before)
       await this.expectCanvasReplayed(turn)
@@ -737,12 +744,55 @@ export class AgentConversationHarness {
     return Object.keys(this.host.graph().nodes)
   }
 
+  /** What the host document holds for one widget; undefined when it has none. */
+  hostWidgetValue(nodeId: string, widget: string): unknown {
+    const widgets = z
+      .record(z.string(), z.unknown())
+      .optional()
+      .parse(this.host.graph().nodes[nodeId]?.widgets)
+    return widgets?.[widget]
+  }
+
+  /** How many minted human ops a `hold` host has not judged yet. */
+  heldHumanOpCount(): number {
+    return this.hostSocket.heldClientOps().length
+  }
+
+  /**
+   * Releases the oldest batch a `hold` host is sitting on, which is what a
+   * page's own edit coming back to it IS: same op ids, and the broadcast
+   * carries the client's actor rather than the host's. Holding first and
+   * releasing later is therefore a real echo arriving late, not a host write
+   * standing in for one - the distinction decides which branch
+   * `useAgentCrdtFollower` takes for the frame.
+   *
+   * Returns the number of ops released, so a caller can tell an echo that
+   * landed from one the sender had not flushed yet.
+   */
+  releaseHeldHumanOps(): number {
+    return this.hostSocket.releaseHeldClientOps().length
+  }
+
   // A host-side edit outside the recording, pushed as one `doc_update`. The
   // follower applies frames in order, so a rendered effect of this edit
   // proves every earlier frame (a catch-up included) has been applied too.
   pushHostOps(operations: RecordedGraphOperation[]): void {
     this.hostSocket.send(this.host.apply(operations))
     for (const id of Object.keys(this.host.graph().nodes)) this.seenIds.add(id)
+  }
+
+  // A host-side delete applied to the document WITHOUT sending a frame: what
+  // the host does while this client is not subscribed. The deletion reaches
+  // the follower only in the catch-up that answers its next subscribe, which
+  // is the whole point of the close/reopen cases.
+  deleteNodeOnHost(nodeId: number, removedLinkIds: number[]): void {
+    this.host.apply([
+      {
+        op: 'delete_node',
+        node_id: nodeId,
+        removed_links: removedLinkIds
+      }
+    ])
   }
 
   // Rises once per follower subscribe; a tab return re-subscribes and the
@@ -932,8 +982,16 @@ export class AgentConversationHarness {
     ).toHaveValue(marker)
   }
 
+  // A recorded tab switch parks the viewport at the origin, hiding node headers above the top edge.
+  async fitCanvasToGraph(): Promise<void> {
+    await this.page.evaluate(() =>
+      window.app!.extensionManager.command.execute('Comfy.Canvas.FitView')
+    )
+    await nextFrame(this.page)
+  }
+
   async switchAwayAndBack(nodeId: string, widget: string): Promise<void> {
-    const tabs = this.page.locator('.workflow-tabs .p-togglebutton')
+    const tabs = this.topbar.tabs
     await expect(tabs).toHaveCount(1)
     await this.topbar.newWorkflowButton.click()
     await expect(tabs).toHaveCount(2)
@@ -967,14 +1025,52 @@ export class AgentConversationHarness {
     })
     await this.page.reload({ waitUntil: 'domcontentloaded' })
     await this.page.waitForFunction(() => window.app?.extensionManager)
-    // `main` waits on `data-testid="app-loading-overlay"`, which App.vue does
-    // not render on this branch — here the boot spinner is still PrimeVue's
-    // full-screen BlockUI, matched the way `ComfyPage` matches it.
-    await expect(this.page.locator('.p-blockui-mask')).toHaveCount(0, {
+    await this.page.getByTestId(TestIds.app.loadingOverlay).waitFor({
+      state: 'hidden',
       timeout: PANEL_MOUNT_TIMEOUT
     })
     await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
     await this.selectWorkflowTarget()
+  }
+
+  // A reload that carries the canvas over the way the app's own persistence
+  // does: serialize what is on screen now, reload, then load that graph back
+  // into a fresh blank workflow. `reloadWithoutLocalWorkflow` deliberately
+  // drops the local workflow; this one deliberately keeps it, so a node that
+  // only exists locally is still there for the first reconcile after reload.
+  async reloadWithCurrentGraph(): Promise<void> {
+    const graph = await this.comfyPage.nodeOps.getSerializedGraph()
+    await this.page.reload({ waitUntil: 'domcontentloaded' })
+    await this.comfyPage.waitForAppReady()
+    await this.comfyPage.workflow.newBlankWorkflow()
+    await this.comfyPage.workflow.loadGraphData(graph)
+    await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
+    const name = await this.topbar
+      .getActiveTab()
+      .locator('.workflow-label')
+      .innerText()
+    await this.selectWorkflowTarget(name)
+  }
+
+  // Sends one more doc_update that resyncs `widget` on `nodeId` to its
+  // current doc value — the same effect on a live widget as a stale echo,
+  // a reconnect resync, or an unrelated full-graph reconcile has whenever
+  // that frame's changed-widgets sweep happens to touch it. Lets a test
+  // race this deterministically against a live keystroke instead of
+  // waiting on the timing a real run happens to produce.
+  async resyncWidget(nodeId: string, widget: string): Promise<void> {
+    const value = this.hostWidgetValue(nodeId, widget)
+    if (value === undefined)
+      throw new Error(`Host widget ${nodeId}.${widget} does not exist`)
+    const operation = {
+      op: 'set_widget',
+      node_id: nodeId,
+      widget,
+      value,
+      old: value
+    } satisfies GraphOperation
+    const frame = this.host.apply([operation])
+    await this.sendHostFrame(frame, true)
   }
 
   async dropWorkflowScope(): Promise<() => Promise<void>> {
@@ -1137,25 +1233,6 @@ export class AgentConversationHarness {
       }, receipt)
     }
   }
-
-  async resyncWidget(nodeId: string, widget: string): Promise<void> {
-    const widgets = z
-      .record(z.string(), z.unknown())
-      .optional()
-      .parse(this.host.graph().nodes[nodeId]?.widgets)
-    const value = widgets?.[widget]
-    if (value === undefined)
-      throw new Error(`Host widget ${nodeId}.${widget} does not exist`)
-    const operation = {
-      op: 'set_widget',
-      node_id: nodeId,
-      widget,
-      value,
-      old: value
-    } satisfies GraphOperation
-    const frame = this.host.apply([operation])
-    await this.sendHostFrame(frame, true)
-  }
 }
 
 export type ReplayTiming = 'immediate' | 'recorded'
@@ -1176,6 +1253,10 @@ interface ConversationFixtures {
   // Node definitions this case needs beyond the recorded core subset.
   extraNodeDefs: Record<string, ComfyNodeDef>
   humanOpsHost: HumanOpsHost
+  // Assets the boot mock serves for every /api/assets query, so combo widgets
+  // loaded with the seed already see them.
+  bootAssets: ListAssetsResponse
+  comfyPage: ComfyPage
   agentConversation: AgentConversationHarness
 }
 
@@ -1187,6 +1268,10 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
   replayTiming: [defaultReplayTiming(), { option: true }],
   extraNodeDefs: [{}, { option: true }],
   humanOpsHost: ['hold', { option: true }],
+  bootAssets: [{ assets: [], total: 0, has_more: false }, { option: true }],
+  comfyPage: async ({ page, request }, use) => {
+    await use(new ComfyPage(page, request))
+  },
   viewport: VIEWPORT,
   video: {
     mode:
@@ -1198,11 +1283,13 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
   agentConversation: async (
     {
       page,
+      comfyPage,
       agentFlagEnabled,
       conversationCase,
       replayTiming,
       extraNodeDefs,
-      humanOpsHost
+      humanOpsHost,
+      bootAssets
     },
     use,
     testInfo
@@ -1216,13 +1303,14 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
       )
     const harness = new AgentConversationHarness(
       page,
+      comfyPage,
       loadAgentConversation(conversationCase),
       replayTiming,
       conversationCase,
       extraNodeDefs,
       humanOpsHost
     )
-    await harness.boot(agentFlagEnabled, vueNodes)
+    await harness.boot(agentFlagEnabled, vueNodes, bootAssets)
     await use(harness)
   }
 })

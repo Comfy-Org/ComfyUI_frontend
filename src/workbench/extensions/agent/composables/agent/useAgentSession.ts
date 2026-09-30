@@ -103,10 +103,7 @@ export interface AgentSessionDeps {
 const THREAD_STORAGE_KEY = 'Comfy.Agent.ThreadId'
 const PREPARE_TIMEOUT_MS = 3000
 
-export function isRetryableRequestFailure(
-  error: unknown,
-  accepted: boolean
-): boolean {
+function isRetryableRequestFailure(error: unknown, accepted: boolean): boolean {
   if (accepted) return false
   if (
     error instanceof ZodError ||
@@ -126,7 +123,7 @@ function isUnreadableAckFailure(error: unknown): boolean {
   )
 }
 
-export function trackAgentError(
+function trackAgentError(
   errorClass: AgentErrorClass,
   stage: AgentErrorMetadata['failure_stage'],
   uiTreatment: AgentErrorMetadata['ui_treatment'],
