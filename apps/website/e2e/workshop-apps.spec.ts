@@ -310,7 +310,7 @@ test('makes a Cinematic Studio grade palette from an uploaded image', async ({
   context
 }) => {
   await mockFlags(context, { apps: true, workflows: false })
-  await page.goto('/models/apps/cinematic-studio/')
+  await page.goto('/hub/apps/cinematic-studio/')
 
   await expect(
     page.getByRole('button', { name: /Add a palette reference/ })
