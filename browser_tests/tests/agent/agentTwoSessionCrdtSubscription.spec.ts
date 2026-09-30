@@ -53,10 +53,11 @@ test.describe(
      * clicking back to its tab does not resubscribe. Where PM-1319 showed a
      * stale widget value, the tab the user returns to has no nodes at all.
      *
-     * The first test asserts the current regression directly: Alpha is selected
-     * and its host holds the build, but its visible canvas is empty. The
-     * recovery case proves the same build is reachable after a later turn binds
-     * Alpha again.
+     * Both tests assert the behaviour the app owes the user — the build on the
+     * canvas — so neither has to be inverted when PM-1535 is fixed. The first
+     * is marked test.fail, so what it pins today is that the build is still
+     * missing; the recovery case passes already and proves the same build is
+     * reachable once a later turn binds Alpha again.
      *
      * Two things this arrangement does not model. Thread one's turn is over
      * before its build lands, where the report had both threads working at
@@ -98,7 +99,7 @@ test.describe(
       return alpha
     }
 
-    test('returning to the displaced build leaves its selected canvas empty', async ({
+    test('returning to the displaced build shows it on the canvas', async ({
       twoSessionCrdt
     }) => {
       test.setTimeout(120_000)
@@ -108,9 +109,17 @@ test.describe(
         WORKFLOW_A.name
       )
 
+      // KNOWN BUG (PM-1535): the follower's subscribe target is the session's
+      // boundWorkflowId, still Bravo after thread two bound it, so returning to
+      // Alpha unsubscribes rather than resubscribing and Alpha's build is never
+      // projected. Remove this test.fail once the follower subscribes the
+      // active tab's workflow on return. It sits below the arrange on purpose:
+      // above it, a setup failure would satisfy the expected failure and this
+      // would report green while exercising nothing.
+      test.fail()
       await expect
         .poll(() => canvasNodeIds(twoSessionCrdt.vueNodes), { timeout: 20_000 })
-        .toEqual([])
+        .toEqual(BUILT_NODE_IDS)
     })
 
     // The recovery the reporter found, and the proof that the build really is
