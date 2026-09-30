@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useMounted } from '@vueuse/core'
+import { useEventListener, useMounted } from '@vueuse/core'
 import { WORKSHOP_INCLUDED } from 'astro:env/client'
 import { computed, defineAsyncComponent, h, shallowRef, watch } from 'vue'
 import type { FunctionalComponent } from 'vue'
@@ -10,31 +10,64 @@ import { useWorkshopSession } from '../../config/workshop-session-state'
 import { t } from '../../i18n/translations'
 import {
   useWorkshopAppsEnabled,
+  useWorkshopEnabled,
+  useWorkshopEnabledSettled,
   useWorkshopWorkflowsEnabled
 } from '../../scripts/posthog'
 
 import type { CatalogueTab } from './CatalogueTabs.vue'
 import WorkshopGate from './WorkshopGate.vue'
 import WorkshopLoading from './WorkshopLoading.vue'
+import {
+  workshopEyebrowClass,
+  workshopHeadingClass
+} from './workshopHeadingClasses'
 
 const {
   slug,
   workflowId,
+  heading,
   section = 'models'
 } = defineProps<{
   slug?: string
   workflowId?: string
+  heading?: string
   section?: CatalogueTab
 }>()
 
 const loadingLabel = t('workshop.load.pending', 'en')
 const isWorkflow = computed(() => (slug ? isWorkflowSlug(slug) : false))
 const mounted = useMounted()
+const catalogueRevision = shallowRef(0)
+const catalogueSearch = shallowRef<string>()
+useEventListener<DocumentEventMap['astro:before-swap']>(
+  () => (mounted.value ? document : undefined),
+  'astro:before-swap',
+  (event) => {
+    if (slug) return
+    catalogueSearch.value = event.to.search
+    if (event.from.pathname !== event.to.pathname) return
+    document.addEventListener(
+      'astro:after-swap',
+      () => catalogueRevision.value++,
+      { once: true }
+    )
+  }
+)
+const enabled = useWorkshopEnabled()
+const settled = useWorkshopEnabledSettled()
 const workflowsEnabled = useWorkshopWorkflowsEnabled()
 const appsEnabled = useWorkshopAppsEnabled()
 const gateAllows = computed(() => {
   if (isWorkflow.value || section === 'workflows') return workflowsEnabled.value
   return section === 'apps' ? appsEnabled.value : undefined
+})
+const catalogueView = computed(() => {
+  if (!mounted.value || (section !== 'models' && !settled.value))
+    return 'loading'
+  return section === 'models' || (enabled.value && gateAllows.value)
+    ? 'granted'
+    : 'denied'
 })
 const recoveringWorkflow = shallowRef(false)
 const savedWorkflow = shallowRef(false)
@@ -138,6 +171,8 @@ function createContent() {
           },
           [
             h(ModelsCatalogue, {
+              key: `${section}:${catalogueRevision.value}`,
+              initialSearch: catalogueSearch.value,
               models: models.filter(
                 (model) =>
                   model.routerId !== undefined ||
@@ -163,17 +198,32 @@ const Content = shallowRef(createContent())
 </script>
 
 <template>
+  <template v-if="!slug">
+    <div
+      v-if="heading && catalogueView !== 'denied'"
+      class="mx-auto max-w-10xl px-6 pt-8 pb-4 max-sm:pt-5 lg:px-8 lg:pt-12 sm:short:pb-3"
+    >
+      <p :class="workshopEyebrowClass">
+        {{ t('workshop.catalogue.eyebrow', 'en') }}
+      </p>
+      <h1 :class="workshopHeadingClass">{{ heading }}</h1>
+    </div>
+    <component :is="Content" v-if="catalogueView === 'granted'" />
+    <WorkshopLoading
+      v-else-if="catalogueView === 'loading'"
+      :label="loadingLabel"
+    />
+    <slot v-else name="fallback" />
+  </template>
   <WorkshopGate
-    v-if="gateAllows !== undefined"
+    v-else-if="gateAllows !== undefined"
     :keep-mounted="isWorkflow"
     :allowed="gateAllows"
     :retain-granted="recoveringWorkflow"
     :allow-recovery="savedWorkflow"
   >
-    <slot name="heading" />
     <component :is="Content" />
     <template #loading>
-      <slot name="heading" />
       <WorkshopLoading :label="loadingLabel" />
     </template>
     <template #fallback>

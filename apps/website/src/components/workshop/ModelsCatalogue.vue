@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, ref } from 'vue'
 import { useMounted, whenever } from '@vueuse/core'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import type {
   AppWorkshopModel,
@@ -9,8 +10,8 @@ import type {
 } from '../../config/models-catalogue'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import SplitReveal from './SplitReveal.vue'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
+import SplitReveal from './SplitReveal.vue'
 import CatalogueTabs from './CatalogueTabs.vue'
 import type { CatalogueTab } from './CatalogueTabs.vue'
 import type { WorkshopPageType } from '../../scripts/workshop-analytics'
@@ -21,19 +22,23 @@ import {
 } from '../../scripts/posthog'
 import type { CatalogueApp } from '../../lib/workshop/catalogue-apps'
 import { ac } from '../../lib/workshop/catalogue-apps'
+import {
+  loadAppCatalogue,
+  loadWorkflowCatalogue
+} from '../../lib/workshop/catalogue-components'
 import { isWorkshopModelShown } from '../../scripts/workshop-model-flags'
 
-const WorkflowCatalogue = defineAsyncComponent(
-  () => import('./WorkflowCatalogue.vue')
-)
-const AppCatalogue = defineAsyncComponent(() => import('./AppCatalogue.vue'))
+const WorkflowCatalogue = defineAsyncComponent(loadWorkflowCatalogue)
+const AppCatalogue = defineAsyncComponent(loadAppCatalogue)
 
 const {
   models,
+  initialSearch,
   locale = 'en',
   section = 'models'
 } = defineProps<{
   models: readonly WorkshopModel[]
+  initialSearch?: string
   locale?: Locale
   section?: CatalogueTab
 }>()
@@ -112,18 +117,28 @@ whenever(
     class="relative isolate -mx-6 mb-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-4 overflow-hidden px-6 pb-2 max-sm:mb-4 max-sm:pb-0 lg:-mx-8 lg:px-8 sm:short:pb-0"
     data-testid="workshop-hero"
   >
-    <p class="text-lg text-primary-comfy-canvas/70">
-      <SplitReveal
-        :text="t(SUBTITLE_KEY[section], locale)"
-        :delay="260"
-        :stagger="50"
-      />
-    </p>
+    <div class="grid text-lg text-primary-comfy-canvas/70">
+      <p
+        v-for="(subtitle, tab) in SUBTITLE_KEY"
+        :key="tab"
+        :class="cn('col-start-1 row-start-1', tab !== section && 'invisible')"
+        :aria-hidden="tab !== section"
+      >
+        <SplitReveal
+          v-if="tab === section"
+          :text="t(subtitle, locale)"
+          :delay="260"
+          :stagger="50"
+        />
+        <template v-else>{{ t(subtitle, locale) }}</template>
+      </p>
+    </div>
   </div>
   <WorkshopModelsGrid
     v-if="section === 'models'"
     v-model:browse-all="browseAll"
     :models="routerModels"
+    :initial-search
     :locale
     @section="inSection = $event"
   >
@@ -141,6 +156,7 @@ whenever(
     v-else-if="section === 'workflows'"
     v-model:browse-all="browseAll"
     :models="workflows"
+    :initial-search
     :locale
     @section="inSection = $event"
   >

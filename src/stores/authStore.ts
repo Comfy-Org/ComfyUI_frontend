@@ -98,6 +98,7 @@ async function webSessionRunToken(
 
 export const useAuthStore = defineStore('auth', () => {
   const { flags } = useFeatureFlags()
+  const cloudWebSessionStore = useCloudWebSessionStore()
 
   // State
   const loading = ref(false)
@@ -137,7 +138,7 @@ export const useAuthStore = defineStore('auth', () => {
   const buildApiUrl = (path: string) => `${getComfyApiBaseUrl()}${path}`
 
   // Getters
-  const sessionUser = computed(() => useCloudWebSessionStore().signedInUser)
+  const sessionUser = computed(() => cloudWebSessionStore.signedInUser)
   const isAuthenticated = computed(
     () => !!currentUser.value || !!sessionUser.value
   )
@@ -343,6 +344,9 @@ export const useAuthStore = defineStore('auth', () => {
     currentUser.value?.uid ??
     useApiKeyAuthStore().getApiKey()
 
+  const currentUserCredentialIdentity = (): string | null =>
+    currentUser.value?.uid ?? useApiKeyAuthStore().getApiKey()
+
   /**
    * Response data from a user-scoped endpoint belongs to the identity that
    * asked for it. A 200 bypasses the recovery guards in
@@ -479,6 +483,10 @@ export const useAuthStore = defineStore('auth', () => {
   const fetchBalance = async (): Promise<GetCustomerBalanceResponse | null> => {
     isFetchingBalance.value = true
     const requestOwner = currentUserIdentity()
+    const requestCredential = currentUserCredentialIdentity()
+    const requestIsCurrent = () =>
+      currentUserIdentity() === requestOwner &&
+      currentUserCredentialIdentity() === requestCredential
     try {
       const authHeader = await getUserAuthHeader()
       if (!authHeader) {
@@ -501,7 +509,7 @@ export const useAuthStore = defineStore('auth', () => {
           return null
         }
         const { message } = await parseErrorResponse(response)
-        if (currentUserIdentity() !== requestOwner) {
+        if (!requestIsCurrent()) {
           return null
         }
         throw new AuthStoreError(
@@ -512,10 +520,9 @@ export const useAuthStore = defineStore('auth', () => {
       }
 
       const balanceData = await response.json()
-      // A direct A->B switch (Firebase account or stored API key) leaves this
-      // request owned by the previous identity; its late-resolving response
-      // must not repaint the new session's balance.
-      if (currentUserIdentity() !== requestOwner) {
+      // Session identity and request credentials can change independently;
+      // a late response must still match both.
+      if (!requestIsCurrent()) {
         return null
       }
       // Update the last balance update time
