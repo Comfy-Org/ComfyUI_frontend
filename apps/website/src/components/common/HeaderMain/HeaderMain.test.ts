@@ -47,13 +47,13 @@ describe('HeaderMain workshop gating', () => {
     { workshopInBuild: true, enabled: false, modelsAvailable: false },
     { workshopInBuild: true, enabled: true, modelsAvailable: true }
   ])(
-    'renders Models availability as $modelsAvailable when workshopInBuild is $workshopInBuild',
+    'renders Hub availability as $modelsAvailable when workshopInBuild is $workshopInBuild',
     async ({ workshopInBuild, enabled, modelsAvailable }) => {
       visibility.value = enabled
       renderHeader(workshopInBuild)
       await nextTick()
 
-      expect(screen.queryByRole('link', { name: /^Models\b/i }) !== null).toBe(
+      expect(screen.queryByRole('link', { name: /^Hub\b/i }) !== null).toBe(
         modelsAvailable
       )
     }
@@ -180,14 +180,14 @@ describe('HeaderMain workshop gating', () => {
   it('updates navigation and removes the account controls when access is revoked', async () => {
     flag.value = true
     renderHeader(true)
-    expect(screen.queryByRole('link', { name: /^Models\b/i })).toBeNull()
+    expect(screen.queryByRole('link', { name: /^Hub\b/i })).toBeNull()
     expect(screen.queryByTestId('header-account')).toBeNull()
 
     visibility.value = true
-    await screen.findByRole('link', { name: /^Models\b/i })
+    await screen.findByRole('link', { name: /^Hub\b/i })
     visibility.value = false
     await nextTick()
-    expect(screen.queryByRole('link', { name: /^Models\b/i })).toBeNull()
+    expect(screen.queryByRole('link', { name: /^Hub\b/i })).toBeNull()
     expect(screen.queryByTestId('header-account')).toBeNull()
   })
 })

@@ -32,11 +32,11 @@ const translations = {
   'workshop.catalogue.show': { en: 'Browse', 'zh-CN': '浏览' },
   'workshop.catalogue.workflowsSubtitle': {
     en: 'Turn your ideas into finished results with multi-step workflows powered by AI models.',
-    'zh-CN': '借助由 AI 模型驱动的多步骤工作流，把你的创意变成完整的成果。'
+    'zh-CN': '用由 AI 模型驱动的多步骤工作流，把你的想法变成完成的作品。'
   },
   'workshop.catalogue.appsSubtitle': {
     en: 'Take on bigger ideas with apps that bring multiple workflows together.',
-    'zh-CN': '用整合多个工作流的应用，挑战更大的创意。'
+    'zh-CN': '用把多个工作流组合在一起的应用，挑战更大的想法。'
   },
   'workshop.catalogue.noWorkflows': {
     en: 'No workflows match your search and filters.',
@@ -1767,19 +1767,6 @@ Enterprise`
     'zh-CN': '出错了，请重试。'
   },
 
-  // Download – CloudBannerSection
-  'download.cloud.prefix': {
-    en: 'Need more power?',
-    'zh-CN': '需要更强算力？'
-  },
-  'download.cloud.cta': {
-    en: 'TRY COMFY CLOUD',
-    'zh-CN': '试试 COMFY CLOUD'
-  },
-  'download.cloud.suffix': {
-    en: 'Powerful GPUs, same workflow, same results, from anywhere.',
-    'zh-CN': '强大 GPU，同样的工作流，同样的结果，随时随地。'
-  },
   // Cloud – HeroSection
   'cloud.hero.heading': {
     en: 'The full power of\nComfyUI — from\nanywhere.',
@@ -4204,119 +4191,6 @@ Enterprise`
   // Agent – nav
   'nav.comfyAgent': { en: 'Comfy Agent', 'zh-CN': 'Comfy Agent' },
   'breadcrumb.agent': { en: 'Comfy Agent', 'zh-CN': 'Comfy Agent' },
-
-  // Agent – landing page
-  'agent.meta.title': {
-    en: 'The first agent for craft',
-    'zh-CN': '首个为创作而生的智能体'
-  },
-  'agent.meta.description': {
-    en: 'The Comfy Agent lives inside ComfyUI, local and cloud. Describe what you want: it builds the workflow on your canvas, runs it, and hands back the result.',
-    'zh-CN':
-      'Comfy Agent 就住在 ComfyUI 里，本地与云端皆可运行。描述你想要的东西：它会在你的画布上搭好工作流、运行它，并把结果交给你。'
-  },
-  'agent.hero.badge': { en: 'AGENT', 'zh-CN': 'AGENT' },
-  'agent.hero.title': {
-    en: 'The first agent for craft',
-    'zh-CN': '首个为创作而生的智能体'
-  },
-  'agent.hero.subtitle': {
-    en: 'An agent that lives inside ComfyUI, local and cloud. Describe what you want: it builds the workflow on your canvas with you, reviews assets, runs generations, and iterates until the result is production ready.',
-    'zh-CN':
-      '一个住在 ComfyUI 里的智能体，本地与云端皆可运行。描述你想要的东西：它与你一起在画布上搭建工作流、审阅素材、执行生成，并不断迭代，直到结果足以直接交付。'
-  },
-  'agent.hero.footnote': {
-    en: "We'll prepare your account and email you when it's ready.",
-    'zh-CN': '我们会为你准备好账户，就绪后通过邮件通知你。'
-  },
-  'agent.cards.heading': {
-    en: 'It fits the way you already work',
-    'zh-CN': '它契合你原本的工作方式'
-  },
-  'agent.cards.knowledge.tag': {
-    en: 'Creative knowledge',
-    'zh-CN': '创意知识'
-  },
-  'agent.cards.knowledge.title': {
-    en: 'Best practice can be delivered end to end',
-    'zh-CN': '最佳实践可以端到端交付'
-  },
-  'agent.cards.knowledge.body': {
-    en: "Up-to-date knowledge of all the latest models, ComfyUI extensions, parameters, and best workflows, curated by ComfyUI experts. Describe the content and asset you want. It is Comfy Agent's job to learn the technology and model details. It can run a project in auto mode and deliver the best result end to end.",
-    'zh-CN':
-      '由 ComfyUI 专家精选整理，随时掌握最新模型、ComfyUI 扩展、参数与最佳工作流。你只要描述想要的内容和素材，钻研技术与模型细节是 Comfy Agent 的事。它可以在自动模式下推进整个项目，端到端交付最好的结果。'
-  },
-  'agent.cards.multiplayer.tag': {
-    en: 'Human-agent Multiplayer',
-    'zh-CN': '人机协同'
-  },
-  'agent.cards.multiplayer.title': {
-    en: 'Two of you edit at the same time',
-    'zh-CN': '你们两位同时编辑'
-  },
-  'agent.cards.multiplayer.body': {
-    en: "Build a big workflow with the agent in parallel. Watch the graph assemble. Mention a node or reference another workflow. Point at an error and it fixes it. Comfy Agent is fully aware of what's happening on the canvas.",
-    'zh-CN':
-      '和智能体并行搭建大型工作流，看着节点图一步步成形。提到某个节点，或引用另一个工作流；指出一处报错，它就会修好。画布上发生的一切，Comfy Agent 都清清楚楚。'
-  },
-  'agent.cards.control.tag': {
-    en: 'Control & Iterate',
-    'zh-CN': '掌控与迭代'
-  },
-  'agent.cards.control.title': {
-    en: 'The craft stays yours',
-    'zh-CN': '创作始终属于你'
-  },
-  'agent.cards.control.body': {
-    en: 'Every control ComfyUI gives you stays exactly where it is. You spend your time on composition, camera angles, masks, parameters, and polishing the details. Power users can always take over: open the nodes and check every single pixel.',
-    'zh-CN':
-      'ComfyUI 给你的每一项控制都原封不动地留在原处。你的时间花在构图、镜头角度、遮罩、参数和细节打磨上。资深用户随时可以接管：打开节点，逐个像素地检查。'
-  },
-  'agent.cards.anywhere.tag': {
-    en: 'Local and Cloud',
-    'zh-CN': '本地与云端'
-  },
-  'agent.cards.anywhere.title': {
-    en: 'It runs where you run',
-    'zh-CN': '你在哪里运行，它就在哪里运行'
-  },
-  'agent.cards.anywhere.body': {
-    en: 'Same agent, works with you on your local machine or in Comfy Cloud. It walks you through all setups, builds the workflows, and chooses models based on your hardware. It suggests environment and deployment solutions for your workflow and dependencies.',
-    'zh-CN':
-      '同一个智能体，既能在你的本地机器上和你协作，也能在 Comfy Cloud 中运行。它会带你走完所有配置、搭好工作流，并依据你的硬件挑选模型，还会为你的工作流和依赖推荐环境与部署方案。'
-  },
-
-  // Agent – beta waitlist form
-  'agent.form.emailLabel': { en: 'Email address', 'zh-CN': '邮箱地址' },
-  'agent.form.placeholder': {
-    en: 'Type your email',
-    'zh-CN': '输入你的邮箱'
-  },
-  'agent.form.submit': {
-    en: 'Join the waitlist',
-    'zh-CN': '加入候补名单'
-  },
-  'agent.form.submitPending': { en: 'Joining…', 'zh-CN': '提交中…' },
-  'agent.form.invalidEmail': {
-    en: 'Please enter a valid email address.',
-    'zh-CN': '请输入有效的邮箱地址。'
-  },
-  'agent.form.error': {
-    en: 'Something went wrong. Please try again.',
-    'zh-CN': '出错了，请重试。'
-  },
-  // Split around the link that reopens the application form: the sentence
-  // reads success + link + successTail with the anchor between them.
-  'agent.form.success': {
-    en: "You're on the waitlist! We'll email {email} when it's ready. A few questions just opened in a new tab —",
-    'zh-CN':
-      '你已加入候补名单！准备就绪后我们会发邮件到 {email}。我们刚在新标签页里打开了几个问题 —'
-  },
-  'agent.form.successLink': { en: 'open them here', 'zh-CN': '点这里打开' },
-  'agent.form.successTail': {
-    en: 'if your browser blocked it.',
-    'zh-CN': '（如果浏览器拦截了它）。'
-  },
 
   // CLI – nav + breadcrumb
   'nav.comfyCli': { en: 'Comfy CLI', 'zh-CN': 'Comfy CLI' },
@@ -6870,12 +6744,12 @@ Enterprise`
   // Launches page (/launches) — subscribe banner
   // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
   'launches.banner.text': {
-    en: 'One API for frontier media models.',
-    'zh-CN': '一个 API，调用前沿媒体模型。'
+    en: 'Comfy Agent can now build workflows inside ComfyUI.',
+    'zh-CN': 'Comfy Agent 现在可以在 ComfyUI 内部构建工作流。'
   },
   'launches.banner.cta': {
-    en: 'Try Comfy Router',
-    'zh-CN': '试用 Comfy Router'
+    en: 'Try It for Free',
+    'zh-CN': '免费试用'
   },
 
   // Launches page (/launches) — closing CTA
@@ -8872,6 +8746,7 @@ Enterprise`
     en: 'Developer Platform',
     'zh-CN': '开发者平台'
   },
+  'nav.comfyRouter': { en: 'Comfy Router', 'zh-CN': 'Comfy Router' },
   'platform.meta.title': {
     en: 'Developer Platform',
     'zh-CN': '开发者平台'
@@ -9578,7 +9453,7 @@ Enterprise`
   },
 
   // Workshop – header account + nav
-  'nav.workshop': { en: 'Models', 'zh-CN': '模型' },
+  'nav.workshop': { en: 'Hub', 'zh-CN': 'Hub' },
   'nav.comfyWorkshop': { en: 'Browse Models', 'zh-CN': '浏览模型' },
   'nav.cinematicStudio': { en: 'Cinematic Studio', 'zh-CN': '电影工作室' },
   'nav.signIn': { en: 'Sign in', 'zh-CN': '登录' },
@@ -9839,6 +9714,7 @@ Enterprise`
   },
   'workshop.card.partnerNode': { en: 'Partner node', 'zh-CN': '合作伙伴节点' },
   'workshop.card.comfyApp': { en: 'Comfy app', 'zh-CN': 'Comfy 应用' },
+  'workshop.card.comfyApi': { en: 'Comfy API', 'zh-CN': 'Comfy API' },
   'workshop.card.runs': { en: '{n} runs', 'zh-CN': '{n} 次运行' },
   'workshop.card.creditsPerRun': { en: 'credits / run', 'zh-CN': '积分 / 次' },
   'workshop.card.from': { en: 'from', 'zh-CN': '起' },
@@ -10078,6 +9954,14 @@ Enterprise`
     en: 'Replace {name}',
     'zh-CN': '替换 {name}'
   },
+  'workshop.field.removedFile': {
+    en: '{name} removed',
+    'zh-CN': '已移除 {name}'
+  },
+  'workshop.field.undoRemove': {
+    en: 'Put it back',
+    'zh-CN': '撤销移除'
+  },
   'workshop.field.removeNamedFile': {
     en: 'Remove {name}',
     'zh-CN': '移除 {name}'
@@ -10294,20 +10178,20 @@ Enterprise`
     'zh-CN': '切换并取消'
   },
   'workshop.examples.replaceTitle': {
-    en: 'Replace your inputs?',
-    'zh-CN': '要替换你的输入吗？'
+    en: 'Load this example?',
+    'zh-CN': '要载入这个示例吗？'
   },
   'workshop.examples.replaceBody': {
-    en: 'This example comes with its own inputs. What you wrote will be replaced.',
-    'zh-CN': '该示例自带输入内容，你填写的内容将被替换。'
+    en: 'It comes with its own inputs, so what you filled in will be replaced.',
+    'zh-CN': '它自带输入内容，你填写的内容会被替换。'
   },
   'workshop.examples.replaceKeep': {
-    en: 'Keep mine',
-    'zh-CN': '保留我的内容'
+    en: 'Cancel',
+    'zh-CN': '取消'
   },
   'workshop.examples.replaceConfirm': {
-    en: 'Use the example',
-    'zh-CN': '使用该示例'
+    en: 'Load example',
+    'zh-CN': '载入示例'
   },
   'workshop.run.policy': {
     en: 'Disabled by your workspace policy',
@@ -10349,10 +10233,6 @@ Enterprise`
     'zh-CN': '预览已缩短。请在下方下载完整响应。'
   },
   'workshop.output.example': { en: 'Example', 'zh-CN': '示例' },
-  'workshop.output.exampleHint': {
-    en: 'Run {model} to make your own.',
-    'zh-CN': '运行 {model} 以生成你自己的结果。'
-  },
   'workshop.run.preparingSession': {
     en: 'Checking your session…',
     'zh-CN': '正在检查登录状态…',
@@ -10559,6 +10439,10 @@ Enterprise`
   },
   'workshop.api.copied': { en: 'Copied', 'zh-CN': '已复制' },
   'workshop.api.getKey': { en: 'Get API key', 'zh-CN': '获取 API 密钥' },
+  'workshop.api.downloadGraph': {
+    en: 'Download the API graph',
+    'zh-CN': '下载 API 节点图'
+  },
   'workshop.api.docs': { en: 'Router docs', 'zh-CN': 'Router 文档' },
   'workshop.api.needs': { en: 'What you need', 'zh-CN': '你需要准备的' },
   'workshop.api.needsEndpoint': { en: 'Endpoint', 'zh-CN': '接口地址' },
@@ -10709,6 +10593,10 @@ Enterprise`
     en: 'API documentation',
     'zh-CN': 'API 文档'
   },
+  'workshop.workflow.apiSteps': {
+    en: 'The whole call, step by step',
+    'zh-CN': '完整调用步骤'
+  },
   'workshop.workflow.apiUploads': {
     en: 'Upload media first',
     'zh-CN': '先上传媒体'
@@ -10731,10 +10619,6 @@ Enterprise`
     en: 'POST /api/prompt returns prompt_id. Poll GET /api/jobs/{prompt_id}?short_link=ephemeral_tool_chain with your credential. Selected outputs contain temporary short_url links; read the job again to refresh them.',
     'zh-CN':
       'POST /api/prompt 返回 prompt_id。使用凭证轮询 GET /api/jobs/{prompt_id}?short_link=ephemeral_tool_chain。选定输出包含临时 short_url 链接；再次读取运行即可刷新链接。'
-  },
-  'workshop.workflow.exampleHint': {
-    en: 'An example from this template.',
-    'zh-CN': '此模板的示例。'
   },
   'workshop.output.refreshLink': {
     en: 'Refresh download link',
@@ -10969,13 +10853,6 @@ Enterprise`
     'zh-CN': '在 platform.comfy.org 上为 {workspace} 添加积分'
   },
   'workshop.hub.tryNow': { en: 'Try now', 'zh-CN': '立即试用' },
-  'workshop.cinematic.badge': { en: 'New · Beta', 'zh-CN': '新 · 测试版' },
-  'workshop.cinematic.summary': {
-    en: 'Direct a shot with a real camera, light and grade, then run it on any image model.',
-    'zh-CN':
-      '用真实的摄影机、光线与调色导演一个镜头，然后在任意图像模型上运行。'
-  },
-  'workshop.cinematic.cta': { en: 'Open studio', 'zh-CN': '打开工作室' },
   'workshop.cinematic.openInStudio': {
     en: 'Open in Cinematic Studio',
     'zh-CN': '在 Cinematic Studio 中打开'

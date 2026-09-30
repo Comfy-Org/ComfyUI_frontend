@@ -8,10 +8,19 @@ import { COMFY_CLIENT } from '@comfyorg/account-core/requestAuth'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
+import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
+import {
+  webSessionResourceHeader,
+  webSessionSend
+} from '@/platform/auth/session/webSessionFetch'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import {
+  getGlobalSetting,
+  setGlobalSetting
+} from '@/platform/settings/globalSettingsApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
@@ -20,6 +29,10 @@ import type { ComfyApp } from '@/scripts/app'
 import type { useExtensionService } from '@/services/extensionService'
 import { useAuthStore } from '@/stores/authStore'
 import type { ComfyExtension } from '@/types/comfy'
+import {
+  resultItemUrl,
+  resultItemVhsAdvancedPreviewUrl
+} from '@/utils/resultItemUrl'
 
 type IdentityObserver = (user: User | null) => void
 
@@ -349,25 +362,53 @@ function currentWorkspaceResponse(workspaceId: string | undefined): Response {
   })
 }
 
-function installIngest() {
+function mintBodyWorkspace(body: unknown): string {
+  const parsed: unknown = typeof body === 'string' ? JSON.parse(body) : {}
+  const workspaceId =
+    typeof parsed === 'object' && parsed !== null && 'workspace_id' in parsed
+      ? parsed.workspace_id
+      : undefined
+  return typeof workspaceId === 'string' ? workspaceId : 'personal'
+}
+
+function installIngest(features: Record<string, boolean> = {}) {
   const ingest = {
     userId: 'user-a',
     csrfToken: 'csrf-1',
     refusals: [] as string[],
+    mintRefusal: undefined as (() => Response) | undefined,
+    mints: 0,
+    mintedFor: [] as string[],
     requests: [] as ApiRequest[],
     currentWorkspaceDown: undefined as (() => Response) | undefined
   }
 
-  const respond = ({ path, headers }: ApiRequest): Response => {
+  const respond = ({ path, headers }: ApiRequest, body: unknown): Response => {
     if (path === '/api/auth/session') {
       return jsonResponse({
         ...sessionBody(ingest.userId),
         csrf_token: ingest.csrfToken
       })
     }
+    if (path === '/api/auth/token') {
+      if (ingest.mintRefusal) return ingest.mintRefusal()
+      ingest.mints += 1
+      ingest.mintedFor.push(mintBodyWorkspace(body))
+      return jsonResponse({
+        token: `session-jwt-${ingest.mints}`,
+        expires_at: new Date(Date.now() + 15 * 60_000).toISOString(),
+        workspace: { id: 'ws-personal', name: 'Personal', type: 'personal' },
+        role: 'owner',
+        permissions: []
+      })
+    }
     if (path === '/api/workspaces/current') {
       if (ingest.currentWorkspaceDown) return ingest.currentWorkspaceDown()
       return currentWorkspaceResponse(headers['x-comfy-workspace-id'])
+    }
+    if (path === '/api/workspaces') return jsonResponse(WORKSPACE_LIST)
+    if (path.startsWith('/api/global-settings')) {
+      return jsonResponse(STORED_CONSENT)
     }
     const code = ingest.refusals.shift()
     return code ? jsonResponse({ code, message: code }, 403) : jsonResponse({})
@@ -378,17 +419,17 @@ function installIngest() {
     vi.fn<typeof fetch>(async (input, init) => {
       const request = recordApiRequest(input, init)
       if (request.path === '/api/features') {
-        return jsonResponse({ unified_web_session: true })
+        return jsonResponse({ unified_web_session: true, ...features })
       }
       ingest.requests.push(request)
-      return respond(request)
+      return respond(request, init?.body)
     })
   )
   return ingest
 }
 
-async function bootOnSession() {
-  const ingest = installIngest()
+async function bootOnSession(features: Record<string, boolean> = {}) {
+  const ingest = installIngest(features)
   await refreshRemoteConfig({ useAuth: false })
   useAuthStore()
   identity.signIn(USER_A)
@@ -420,6 +461,19 @@ const LISTED = {
   created_at: '2026-01-01T00:00:00Z',
   joined_at: '2026-01-01T00:00:00Z'
 } as const
+
+const WORKSPACE_LIST = {
+  workspaces: [
+    { ...LISTED, id: 'ws-personal', name: 'Personal', type: 'personal' },
+    { ...LISTED, id: 'ws-team', name: 'Team', type: 'team' }
+  ]
+}
+
+const STORED_CONSENT = {
+  key: AGENT_CONSENT_SETTING_ID,
+  value: true,
+  updated_at: '2026-01-01T00:00:00Z'
+}
 
 const PROMPT_HEADERS = { 'comfy-user': '', 'content-type': 'application/json' }
 
@@ -581,3 +635,503 @@ describe('cloud API requests on the shared web session', () => {
     }
   )
 })
+
+describe('workspace API and global settings on the shared web session', () => {
+  beforeEach(() => {
+    identity.reset()
+    vi.spyOn(api, 'resetSocket').mockResolvedValue()
+  })
+
+  afterEach(() => {
+    remoteConfig.value = {}
+    localStorage.clear()
+  })
+
+  it.for<{ workspace: string; headers: Record<string, string> }>([
+    { workspace: 'ws-team', headers: { 'x-comfy-workspace-id': 'ws-team' } },
+    { workspace: 'ws-personal', headers: {} }
+  ])(
+    'reads billing status in $workspace on the session cookie',
+    async ({ workspace, headers }) => {
+      const ingest = await bootOnSession()
+      localStorage.setItem(WORKSPACE_STORAGE_KEYS.LAST_WORKSPACE_ID, workspace)
+      await useTeamWorkspaceStore().initialize()
+      ingest.requests.length = 0
+
+      await workspaceApi.getBillingStatus()
+
+      expect(ingest.requests).toEqual([
+        sessionRequest('GET', '/api/billing/status', {
+          accept: 'application/json, text/plain, */*',
+          'content-type': 'application/json',
+          ...headers
+        })
+      ])
+    }
+  )
+
+  it('never mints a workspace token or re-reads the workspace after initializing', async () => {
+    const ingest = await bootOnSession()
+    localStorage.setItem(WORKSPACE_STORAGE_KEYS.LAST_WORKSPACE_ID, 'ws-team')
+
+    await useTeamWorkspaceStore().initialize()
+    await workspaceApi.getBillingStatus()
+    await workspaceApi.getBillingStatus()
+
+    expect(ingest.requests.map(({ path }) => path)).toEqual([
+      '/api/workspaces',
+      '/api/workspaces/current',
+      '/api/billing/status',
+      '/api/billing/status'
+    ])
+  })
+
+  it('retries a write once on csrf_invalid with the fresh token', async () => {
+    const ingest = await bootOnSession()
+    ingest.refusals.push('csrf_invalid')
+    ingest.csrfToken = 'csrf-2'
+
+    await workspaceApi.createTopup(500)
+
+    expect(
+      ingest.requests.map(({ path, headers }) =>
+        path === '/api/auth/session' ? 'session' : headers['x-csrf-token']
+      )
+    ).toEqual(['csrf-1', 'session', 'csrf-2'])
+    expect(ingest.requests.map(({ path }) => path)).toEqual([
+      '/api/billing/topup',
+      '/api/auth/session',
+      '/api/billing/topup'
+    ])
+  })
+
+  it('maps an error status to the same WorkspaceApiError', async () => {
+    const ingest = await bootOnSession()
+    ingest.refusals.push('plan_required')
+
+    await expect(workspaceApi.getBillingStatus()).rejects.toMatchObject({
+      name: 'WorkspaceApiError',
+      status: 403,
+      code: 'plan_required',
+      message: 'plan_required'
+    })
+  })
+
+  it('returns no workspace auth header and sends nothing', async () => {
+    const ingest = await bootOnSession()
+    localStorage.setItem(WORKSPACE_STORAGE_KEYS.LAST_WORKSPACE_ID, 'ws-team')
+    await useTeamWorkspaceStore().initialize()
+    ingest.requests.length = 0
+
+    expect(await useAuthStore().getWorkspaceAuthHeader()).toBeNull()
+    expect(ingest.requests).toEqual([])
+  })
+
+  it('reads and writes a global setting on the session', async () => {
+    const ingest = await bootOnSession()
+    localStorage.setItem(WORKSPACE_STORAGE_KEYS.LAST_WORKSPACE_ID, 'ws-team')
+    await useTeamWorkspaceStore().initialize()
+    ingest.requests.length = 0
+    const send = await webSessionSend()
+    assert.exists(send)
+
+    await getGlobalSetting(AGENT_CONSENT_SETTING_ID, send)
+    await setGlobalSetting({ key: AGENT_CONSENT_SETTING_ID, value: true }, send)
+
+    const team = { 'x-comfy-workspace-id': 'ws-team' }
+    expect(ingest.requests).toEqual([
+      sessionRequest(
+        'GET',
+        `/api/global-settings/${AGENT_CONSENT_SETTING_ID}`,
+        team
+      ),
+      sessionRequest('POST', '/api/global-settings', {
+        ...team,
+        'content-type': 'application/json',
+        'x-csrf-token': 'csrf-1'
+      })
+    ])
+  })
+})
+
+class FakeSocket extends EventTarget {
+  static readonly CONNECTING = 0
+  static readonly OPEN = 1
+  static readonly CLOSING = 2
+  static readonly CLOSED = 3
+  static created: FakeSocket[] = []
+  readyState = FakeSocket.CONNECTING
+  binaryType = 'blob'
+  readonly path: string
+  constructor(url: string | URL) {
+    super()
+    const parsed = new URL(String(url))
+    this.path = parsed.pathname + parsed.search
+    FakeSocket.created.push(this)
+  }
+  send() {}
+  close() {
+    this.readyState = FakeSocket.CLOSED
+  }
+  closeFromServer() {
+    this.close()
+    this.dispatchEvent(new Event('close'))
+  }
+}
+
+const MEDIA_ITEM = {
+  filename: 'output.png',
+  subfolder: '',
+  type: 'output',
+  nodeId: '1',
+  mediaType: 'images'
+} as const
+
+describe('live updates and media on the shared web session', () => {
+  beforeEach(() => {
+    identity.reset()
+    firebaseSignOut.mockReset()
+    firebaseSignOut.mockImplementation(async () => identity.signOut())
+    FakeSocket.created = []
+    vi.stubGlobal('WebSocket', FakeSocket)
+    window.name = ''
+    api.socket = null
+  })
+
+  afterEach(() => {
+    remoteConfig.value = {}
+    localStorage.clear()
+  })
+
+  async function bootWithSocket() {
+    const ingest = await bootOnSession()
+    await api.init()
+    return ingest
+  }
+
+  it('opens the socket on the cookie and reconnects it into each workspace without minting a token', async () => {
+    const ingest = await bootWithSocket()
+    const workspaceAuth = useWorkspaceAuthStore()
+    expect(FakeSocket.created.map(({ path }) => path)).toEqual(['/ws'])
+
+    await workspaceAuth.switchWorkspace('ws-team')
+    await vi.waitFor(() =>
+      expect(api.socket).toEqual(
+        expect.objectContaining({ path: '/ws?workspace_id=ws-team' })
+      )
+    )
+    await workspaceAuth.switchWorkspace('ws-personal')
+    await vi.waitFor(() =>
+      expect(api.socket).toEqual(expect.objectContaining({ path: '/ws' }))
+    )
+
+    expect(api.socket).toBe(FakeSocket.created.at(-1))
+    const replaced = FakeSocket.created.slice(0, -1)
+    expect(replaced.map(({ readyState }) => readyState)).toEqual(
+      replaced.map(() => FakeSocket.CLOSED)
+    )
+    expect(
+      FakeSocket.created.filter(({ path }) => path.includes('token'))
+    ).toEqual([])
+    expect(ingest.requests.map(({ path }) => path)).not.toContain(
+      '/api/auth/token'
+    )
+  })
+
+  it.for([
+    { workspace: 'ws-team', suffix: '&workspace_id=ws-team' },
+    { workspace: 'ws-personal', suffix: '' }
+  ])(
+    'media URLs name the workspace only for a team ($workspace)',
+    async ({ workspace, suffix }) => {
+      await bootOnSession()
+      await useWorkspaceAuthStore().switchWorkspace(workspace)
+
+      expect([
+        resultItemUrl(MEDIA_ITEM),
+        resultItemVhsAdvancedPreviewUrl(MEDIA_ITEM),
+        api.apiURL('/vhs/viewvideo?filename=a.mp4'),
+        api.apiURL('/api/view?filename=a.png'),
+        api.apiURL('/assets/asset-1/content?disposition=inline'),
+        api.apiURL('/queue?view=1')
+      ]).toEqual([
+        `/api/view?filename=output.png&type=output&subfolder=${suffix}`,
+        `/api/viewvideo?filename=output.png&type=output&subfolder=${suffix}`,
+        `/api/vhs/viewvideo?filename=a.mp4${suffix}`,
+        `/api/view?filename=a.png${suffix}`,
+        `/api/assets/asset-1/content?disposition=inline${suffix}`,
+        '/api/queue?view=1'
+      ])
+    }
+  )
+
+  it('a media fetch names the team workspace in the header only', async () => {
+    const ingest = await bootOnSession()
+    await useWorkspaceAuthStore().switchWorkspace('ws-team')
+    ingest.requests.length = 0
+
+    await api.fetchApi('/view?filename=a.png')
+
+    const [url] = vi.mocked(fetch).mock.calls.at(-1) ?? []
+    expect(String(url)).toBe('/api/view?filename=a.png')
+    expect(ingest.requests).toEqual([
+      sessionRequest('GET', '/api/view', {
+        'x-comfy-workspace-id': 'ws-team',
+        'comfy-user': ''
+      })
+    ])
+  })
+
+  it('a server close while signed in reconnects on the session', async () => {
+    await bootWithSocket()
+    await useWorkspaceAuthStore().switchWorkspace('ws-team')
+    await vi.waitFor(() =>
+      expect(api.socket).toEqual(
+        expect.objectContaining({ path: '/ws?workspace_id=ws-team' })
+      )
+    )
+    const closed = api.socket
+    assert.instanceOf(closed, FakeSocket)
+
+    closed.closeFromServer()
+    await vi.advanceTimersByTimeAsync(300)
+
+    await vi.waitFor(() => expect(api.socket).not.toBe(closed))
+    expect(api.socket).toEqual(
+      expect.objectContaining({ path: '/ws?workspace_id=ws-team' })
+    )
+  })
+
+  it('sign-out closes the socket and opens no other', async () => {
+    await bootWithSocket()
+    const sessionSocket = api.socket
+    assert.instanceOf(sessionSocket, FakeSocket)
+
+    await useAuthStore().logout()
+    expect(sessionSocket.readyState).toBe(FakeSocket.CLOSED)
+
+    sessionSocket.closeFromServer()
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    expect(FakeSocket.created).toEqual([sessionSocket])
+    expect(api.socket).toBeNull()
+  })
+})
+
+describe('comfy-api calls on the shared web session', () => {
+  const mintRequests = (ingest: ReturnType<typeof installIngest>) =>
+    ingest.requests.filter(({ path }) => path === '/api/auth/token')
+
+  beforeEach(() => {
+    identity.reset()
+    vi.spyOn(api, 'resetSocket').mockResolvedValue()
+  })
+
+  afterEach(() => {
+    remoteConfig.value = {}
+    localStorage.clear()
+  })
+
+  it('a tab that arrived by session mints the personal token once and reuses it', async () => {
+    const ingest = installIngest()
+    await refreshRemoteConfig({ useAuth: false })
+    useAuthStore()
+    await useSessionCookie().ensureSessionCookie()
+
+    const first = await webSessionResourceHeader()
+    const second = await webSessionResourceHeader()
+
+    expect([first, second]).toEqual([
+      { Authorization: 'Bearer session-jwt-1' },
+      { Authorization: 'Bearer session-jwt-1' }
+    ])
+    expect(mintRequests(ingest)).toEqual([
+      {
+        method: 'POST',
+        path: '/api/auth/token',
+        headers: {
+          'content-type': 'application/json',
+          'x-comfy-client': COMFY_CLIENT,
+          'x-csrf-token': 'csrf-1'
+        },
+        credentials: 'include'
+      }
+    ])
+  })
+
+  it('mints the personal token even while a team workspace is selected', async () => {
+    const ingest = await bootOnSession()
+    await useWorkspaceAuthStore().switchWorkspace('ws-team')
+
+    await webSessionResourceHeader()
+
+    const [mint] = mintRequests(ingest)
+    expect(mint.headers).not.toHaveProperty('x-comfy-workspace-id')
+  })
+
+  it('mints nothing for pages that only call ingest', async () => {
+    const ingest = await bootOnSession()
+    await useWorkspaceAuthStore().switchWorkspace('ws-team')
+
+    await api.fetchApi('/queue')
+    await postPrompt()
+
+    expect(ingest.mints).toBe(0)
+  })
+
+  it('a revoked session rejects with SESSION_REVOKED', async () => {
+    const ingest = await bootOnSession()
+    ingest.mintRefusal = () =>
+      jsonResponse({ code: 'session_revoked', message: 'revoked' }, 401)
+
+    await expect(webSessionResourceHeader()).rejects.toMatchObject({
+      failure: { code: 'SESSION_REVOKED' }
+    })
+  })
+
+  it('mints again once the cached token is within a minute of expiry', async () => {
+    const ingest = await bootOnSession()
+
+    await webSessionResourceHeader()
+    await vi.advanceTimersByTimeAsync(13 * 60_000)
+    await webSessionResourceHeader()
+    await vi.advanceTimersByTimeAsync(60_000)
+    const reminted = await webSessionResourceHeader()
+
+    expect(reminted).toEqual({ Authorization: 'Bearer session-jwt-2' })
+    expect(mintRequests(ingest)).toHaveLength(2)
+  })
+})
+
+describe.for([{ unified: false }, { unified: true }])(
+  'the Run token on the shared web session (unified_cloud_auth $unified)',
+  ({ unified }) => {
+    const boot = async () => {
+      const ingest = await bootOnSession({ unified_cloud_auth: unified })
+      ingest.mints = 0
+      ingest.mintedFor.length = 0
+      return ingest
+    }
+
+    beforeEach(() => {
+      identity.reset()
+      firebaseSignOut.mockReset()
+      firebaseSignOut.mockImplementation(async () => identity.signOut())
+      vi.spyOn(api, 'resetSocket').mockResolvedValue()
+    })
+
+    afterEach(() => {
+      remoteConfig.value = {}
+      localStorage.clear()
+    })
+
+    it.for([
+      { workspace: 'personal', expected: ['personal'] },
+      { workspace: 'ws-team', expected: ['ws-team'] }
+    ])(
+      'mints the $workspace workspace token from the session',
+      async ({ workspace, expected }) => {
+        const ingest = await boot()
+        if (workspace !== 'personal') {
+          await useWorkspaceAuthStore().switchWorkspace(workspace)
+        }
+
+        const token = await useAuthStore().getWorkspaceAuthToken()
+
+        expect(token).toBe('session-jwt-1')
+        expect(ingest.mintedFor).toEqual(expected)
+        expect(
+          ingest.requests
+            .filter(({ path }) => path === '/api/auth/token')
+            .map(({ headers }) => headers.authorization)
+        ).toEqual(expected.map(() => undefined))
+      }
+    )
+
+    it('reuses one mint across Runs and re-mints once it nears expiry', async () => {
+      const ingest = await boot()
+      const authStore = useAuthStore()
+
+      const first = await authStore.getWorkspaceAuthToken()
+      const second = await authStore.getWorkspaceAuthToken()
+      await vi.advanceTimersByTimeAsync(14 * 60_000)
+      const third = await authStore.getWorkspaceAuthToken()
+
+      expect([first, second]).toEqual(['session-jwt-1', 'session-jwt-1'])
+      expect(third).not.toBe(first)
+      expect(
+        ingest.requests.filter(
+          ({ path, headers }) =>
+            path === '/api/auth/token' && !('authorization' in headers)
+        )
+      ).toHaveLength(2)
+    })
+
+    it('keeps each workspace token cached across a switch and back', async () => {
+      const ingest = await boot()
+      const authStore = useAuthStore()
+      const workspaceAuth = useWorkspaceAuthStore()
+
+      const personal = await authStore.getWorkspaceAuthToken()
+      await workspaceAuth.switchWorkspace('ws-team')
+      const team = await authStore.getWorkspaceAuthToken()
+      await workspaceAuth.switchWorkspace('ws-personal')
+      const personalAgain = await authStore.getWorkspaceAuthToken()
+
+      expect([personal, team, personalAgain]).toEqual([
+        'session-jwt-1',
+        'session-jwt-2',
+        'session-jwt-1'
+      ])
+      expect(ingest.mintedFor).toEqual(['personal', 'ws-team'])
+    })
+
+    it('resolves undefined for a revoked session and mints again once it recovers', async () => {
+      const ingest = await boot()
+      const authStore = useAuthStore()
+      ingest.mintRefusal = () =>
+        jsonResponse({ code: 'session_revoked', message: 'revoked' }, 401)
+
+      await expect(authStore.getWorkspaceAuthToken()).resolves.toBeUndefined()
+
+      ingest.mintRefusal = undefined
+      await expect(authStore.getWorkspaceAuthToken()).resolves.toBe(
+        'session-jwt-1'
+      )
+    })
+
+    it('resolves undefined while rate limited and sends no mint until Retry-After passes', async () => {
+      const ingest = await boot()
+      const authStore = useAuthStore()
+      ingest.mintRefusal = () =>
+        new Response(
+          JSON.stringify({ code: 'rate_limited', message: 'slow' }),
+          {
+            status: 429,
+            headers: { 'Content-Type': 'application/json', 'Retry-After': '60' }
+          }
+        )
+
+      await expect(authStore.getWorkspaceAuthToken()).resolves.toBeUndefined()
+
+      ingest.mintRefusal = undefined
+      await vi.advanceTimersByTimeAsync(30_000)
+      await expect(authStore.getWorkspaceAuthToken()).resolves.toBeUndefined()
+      expect(ingest.mints).toBe(0)
+
+      await vi.advanceTimersByTimeAsync(30_000)
+      await expect(authStore.getWorkspaceAuthToken()).resolves.toBe(
+        'session-jwt-1'
+      )
+    })
+
+    it('resolves undefined and mints nothing after sign-out', async () => {
+      const ingest = await boot()
+      const authStore = useAuthStore()
+      await authStore.logout()
+
+      await expect(authStore.getWorkspaceAuthToken()).resolves.toBeUndefined()
+      expect(ingest.mints).toBe(0)
+    })
+  }
+)

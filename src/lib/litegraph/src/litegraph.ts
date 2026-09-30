@@ -59,7 +59,7 @@ export interface LiteGraphCanvasEvent extends CustomEvent<CanvasEventDetail> {}
 export interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
   new (title: string, type?: string): T
 
-  title: string
+  title?: string
   desc?: string
   priority?: number
   type?: string // TODO: to be, or not to be--that is the question

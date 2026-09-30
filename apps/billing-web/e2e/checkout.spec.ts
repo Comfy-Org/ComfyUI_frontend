@@ -8,6 +8,7 @@ import type { BillingOpStatusResponse } from '@comfyorg/ingest-types'
 
 import type { MockCloud } from './fixtures/cloud'
 import { E2E_USER } from './fixtures/env'
+import { expectStraightToHost } from './fixtures/planless'
 import {
   challengeRequiredOperation,
   contactSupportOperation,
@@ -133,6 +134,41 @@ test('a scheduled plan change confirms against the saved payment method, no card
   // The fake only installs itself once the app requests js.stripe.com, so
   // its absence proves Stripe.js was never loaded for this path.
   expect(await page.evaluate('window.__e2eFakeStripe')).toBeUndefined()
+})
+
+test('a reactivating upgrade taller than the frame scrolls to its confirm', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  await page.setViewportSize({ width: 1280, height: 520 })
+  cloud.scenario.preview = {
+    ...cloud.scenario.preview,
+    transition_type: 'upgrade',
+    requires_reactivation_confirmation: true,
+    cost_today_cents: 90_000,
+    amount_due_cents: 90_000,
+    current_plan: {
+      ...cloud.scenario.preview.new_plan,
+      slug: 'standard_monthly',
+      tier: 'STANDARD',
+      price_cents: 2000,
+      period_end: new Date(Date.now() + 86_400_000).toISOString()
+    }
+  }
+  await signIn(CHECKOUT)
+
+  const heading = page.getByRole('heading', { name: 'Confirm your upgrade' })
+  await expect(heading).toBeVisible()
+  const confirm = page.getByRole('button', { name: /Confirm & reactivate/ })
+  await expect(confirm).not.toBeInViewport()
+
+  const box = await heading.boundingBox()
+  if (!box) throw new Error('the confirm heading has no box')
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height + 40)
+  await page.mouse.wheel(0, 2000)
+
+  await expect(confirm).toBeInViewport()
 })
 
 test('a saved default method is charged in place of the card form', async ({
@@ -381,13 +417,81 @@ test('a checkout link naming a team credit stop quotes it along with the plan', 
   })
 })
 
-test('a checkout link that names no plan goes back to the host to choose one', async ({
-  page
+test.describe('a checkout link that names no plan goes back to the host to choose one', () => {
+  test('for a signed-out visitor', async ({ page }) => {
+    await expectStraightToHost(page, 'ws_team_e2e')
+  })
+
+  test('for a signed-in customer, in the tab they signed in on', async ({
+    page,
+    signIn
+  }) => {
+    await signIn(CHECKOUT)
+    await expect(
+      page.getByRole('button', { name: 'Pay and subscribe' })
+    ).toBeVisible()
+
+    await expectStraightToHost(page, 'ws_e2e')
+  })
+
+  test('for a signed-in customer the host opens a new tab for, before that tab has a session', async ({
+    context,
+    signIn
+  }) => {
+    await signIn(CHECKOUT)
+
+    await expectStraightToHost(await context.newPage(), 'ws_e2e')
+  })
+
+  test('for a signed-in customer whose link names a workspace they cannot manage, never the refusal', async ({
+    context,
+    cloud,
+    signIn
+  }) => {
+    await signIn(CHECKOUT)
+    cloud.reply('POST', '/auth/token', () => ({
+      status: 403,
+      body: { error: 'refused' }
+    }))
+    const tab = await context.newPage()
+
+    await expectStraightToHost(tab, 'ws_not_a_member')
+    await expect(tab.getByRole('alert')).toHaveCount(0)
+  })
+})
+
+test('Close on a checkout tab the product opened closes that tab', async ({
+  page,
+  context,
+  signIn
 }) => {
-  await page.goto(entryPath('checkout', { workspace: 'ws_team_e2e' }))
+  await signIn(CHECKOUT)
+  const [checkoutTab] = await Promise.all([
+    context.waitForEvent('page'),
+    page.evaluate((url) => {
+      window.open(url, '_blank')
+    }, CHECKOUT)
+  ])
+  await expect(
+    checkoutTab.getByRole('heading', { name: 'Confirm your payment' })
+  ).toBeVisible()
+
+  const closed = checkoutTab.waitForEvent('close')
+  await checkoutTab.getByRole('button', { name: 'Close' }).click()
+  await closed
+
+  expect(checkoutTab.isClosed()).toBe(true)
+})
+
+test('Back on a checkout tab opened directly goes back to the product', async ({
+  page,
+  signIn
+}) => {
+  await signIn(CHECKOUT)
+
+  await page.getByRole('button', { name: 'Back' }).click()
 
   await expect(page).toHaveURL(
-    'https://testcloud.comfy.org/?workspace=ws_team_e2e'
+    `https://testcloud.comfy.org/?workspace=${E2E_USER.workspaceId}`
   )
-  await expect(page.getByRole('heading', { name: 'Host app' })).toBeVisible()
 })

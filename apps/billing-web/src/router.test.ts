@@ -116,23 +116,24 @@ describe('plan selection, which the host app owns', () => {
     expect(router.currentRoute.value.path).toBe('/v1/checkout')
   })
 
-  it.for([
-    '/v1/pricing?product=platform&return_to=platform_account',
-    '/v1/checkout?product=platform&return_to=platform_account&plan=creator_monthly'
-  ])('explains %s, which has nowhere to go back to', async (path) => {
-    const { router, onEntryWorkspace, leave } = hostBoundRouter('authenticated')
+  it.for(['/v1/pricing?product=platform&return_to=platform_account'])(
+    'explains %s, which has nowhere to go back to',
+    async (path) => {
+      const { router, onEntryWorkspace, leave } =
+        hostBoundRouter('authenticated')
 
-    await arriveAt(path, router)
+      await arriveAt(path, router)
 
-    expect(
-      await screen.findByText(
-        "That link doesn't name a place we can send you back to."
-      )
-    ).toBeInTheDocument()
-    expect(leave).not.toHaveBeenCalled()
-    expect(onEntryWorkspace).not.toHaveBeenCalled()
-    expect(useBillingEntry().entry.value).toBeUndefined()
-  })
+      expect(
+        await screen.findByText(
+          "That link doesn't name a place we can send you back to."
+        )
+      ).toBeInTheDocument()
+      expect(leave).not.toHaveBeenCalled()
+      expect(onEntryWorkspace).not.toHaveBeenCalled()
+      expect(useBillingEntry().entry.value).toBeUndefined()
+    }
+  )
 })
 
 describe('the billing route guard', () => {
@@ -182,6 +183,53 @@ describe('the billing route guard', () => {
 
     expect(router.currentRoute.value.path).toBe('/sign-in')
     expect(useBillingEntry().error.value).toBe('UNKNOWN_INTENT')
+  })
+})
+
+describe("a checkout's return_to, which is optional", () => {
+  it.for([
+    {
+      name: 'none at all',
+      path: '/v1/checkout?product=comfyui&plan=creator_monthly'
+    },
+    {
+      name: 'one outside the registry',
+      path: '/v1/checkout?product=comfyui&return_to=https://evil.test&plan=creator_monthly'
+    },
+    {
+      name: 'one this family has no destination for',
+      path: '/v1/checkout?product=platform&return_to=platform_account&plan=creator_monthly'
+    }
+  ])(
+    'checks out a link with $name and returns to Plan & Credits',
+    async ({ path }) => {
+      const leave = vi.fn()
+      const router = createBillingRouter(
+        createMemoryHistory(),
+        () => 'authenticated',
+        vi.fn(),
+        leave
+      )
+
+      await router.push(path)
+
+      expect(router.currentRoute.value.path).toBe('/v1/checkout')
+      expect(useBillingEntry().error.value).toBeUndefined()
+      expect(useBillingEntry().entry.value).toMatchObject({
+        intent: 'checkout',
+        plan: 'creator_monthly',
+        returnTo: 'comfyui_credits'
+      })
+      expect(leave).not.toHaveBeenCalled()
+    }
+  )
+
+  it('keeps a return_to this family can follow', async () => {
+    await routerAt('authenticated').push(
+      `/v1/checkout?${ENTRY_QUERY}&plan=creator_monthly`
+    )
+
+    expect(useBillingEntry().entry.value?.returnTo).toBe('comfyui_workspace')
   })
 })
 
