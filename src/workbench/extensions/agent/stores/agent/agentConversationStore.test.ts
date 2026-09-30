@@ -1506,15 +1506,65 @@ describe('useAgentConversationStore', () => {
     )
   })
 
-  it('does not restore an ask the live transport already resolved', () => {
+  /**
+   * Run settled too: a turn that reached `agent_message_done` while away loses
+   * its transport as a SINK, but what that transport saw resolve is still the
+   * only record of it -- and a settled turn is the likeliest to have had its
+   * ask answered already. A card restored over one can never be cleared, since
+   * the answer comes back 409.
+   */
+  it.for([false, true])(
+    'does not restore an ask the live transport already resolved, settled: %s',
+    (settled) => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.recordUser(T1, 'run it')
+      store.ingest(runApproval('t1', 'server-turn:call-1'))
+      store.stashActiveTurn()
+      store.setThreadId('th-other')
+      store.ingest(askResolved('t1', 'server-turn:call-1'))
+      if (settled) store.ingest(done('t1'))
+
+      const askingRow = historyRow(2, 'assistant', 'server-turn', '', 't1')
+      askingRow.status = 'streaming'
+      askingRow.pending_ask = {
+        message_id: 't1',
+        ask_id: 'server-turn:call-1',
+        kind: 'run_approval',
+        context: { workflow_id: 'workflow-1' },
+        prompt: 'Run workflow?',
+        options: [{ id: 'run', label: 'Run' }],
+        min_selections: 1,
+        max_selections: 1,
+        allow_other: false
+      }
+      store.setThreadId('th')
+      store.hydrate([historyRow(1, 'user', 'server-turn', 'run it'), askingRow])
+      store.resumeBackgroundTurn()
+
+      expect(
+        store.messages[0].parts.some((part) => part.type === 'runApproval')
+      ).toBe(false)
+    }
+  )
+
+  /**
+   * `hydrate()` binds the active slot to the mid-ask row it built a transport
+   * for, and the resume then adopts that row's parts onto the live message and
+   * drops the row itself. Leaving the slot aimed at the dropped message points
+   * a live transport at something nothing renders: a later `agent_ask` routes
+   * into it and disappears without ever reaching the undeliverable reporter.
+   */
+  it('closes the active slot when the resume drops the message it was bound to', () => {
     const store = useAgentConversationStore()
     store.setThreadId('th')
     store.startTurn(T1)
     store.recordUser(T1, 'run it')
-    store.ingest(runApproval('t1', 'server-turn:call-1'))
+    store.ingest(delta('t1', 'Partial'))
     store.stashActiveTurn()
     store.setThreadId('th-other')
-    store.ingest(askResolved('t1', 'server-turn:call-1'))
+    store.ingest(done('t1'))
 
     const askingRow = historyRow(2, 'assistant', 'server-turn', '', 't1')
     askingRow.status = 'streaming'
@@ -1533,9 +1583,9 @@ describe('useAgentConversationStore', () => {
     store.hydrate([historyRow(1, 'user', 'server-turn', 'run it'), askingRow])
     store.resumeBackgroundTurn()
 
-    expect(
-      store.messages[0].parts.some((part) => part.type === 'runApproval')
-    ).toBe(false)
+    expect(store.messages.every((message) => message.streaming)).toBe(false)
+    expect(store.activeTurnId).toBeNull()
+    expect(store.isStreaming).toBe(false)
   })
 
   /**

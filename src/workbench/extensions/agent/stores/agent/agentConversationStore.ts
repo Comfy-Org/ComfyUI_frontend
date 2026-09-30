@@ -472,6 +472,28 @@ export const useAgentConversationStore = defineStore(
       )
     }
 
+    /**
+     * `adoptHydratedTurn` can drop any message from `kept`, including the one
+     * `hydrate()` bound the active slot to, and can shift the index of one it
+     * keeps. `stashActiveTurn` clears the slot, so whatever sits there now is
+     * a mid-ask turn of hydrate's own and never this entry's.
+     *
+     * Re-find it by identity. Gone means its transport would write where
+     * nothing renders -- including an `agent_ask` that would vanish without
+     * ever reaching `undeliverableAskReporter` -- so that slot is closed
+     * rather than left aimed at a removed message.
+     */
+    function resyncActiveSlot(): void {
+      if (liveMessage === null) return
+      const index = messages.value.indexOf(liveMessage)
+      if (index >= 0) {
+        activeIndex.value = index
+        return
+      }
+      transport?.dispose()
+      clearActive()
+    }
+
     function activateResumedTurn(entry: BackgroundTurn, index: number): void {
       // A hydrate that landed on a mid-ask row left its own transport in the
       // active slot, and this resume supersedes it. Dispose rather than
@@ -508,16 +530,7 @@ export const useAgentConversationStore = defineStore(
       ) {
         rememberDepartedTurn(threadId.value, entry.messageId, 'settled-turn')
         messages.value = kept
-        // Only this entry's turn leaves the screen here. An active slot bound
-        // to some other mid-ask turn is still driving a message in `kept`, and
-        // dropping it would strand that turn's approval card.
-        if (
-          activeTurnId.value === null ||
-          activeTurnId.value === entry.messageId
-        ) {
-          transport?.dispose()
-          clearActive()
-        }
+        resyncActiveSlot()
         // The persisted, authoritative copy is already on screen (kept, via
         // the filter above) -- this entry's transport is now discarded for
         // good, so flush anything it is still holding rather than leaving it
@@ -542,6 +555,7 @@ export const useAgentConversationStore = defineStore(
       messages.value = kept
       if (entry.settled) {
         rememberDepartedTurn(threadId.value, entry.messageId, 'settled-turn')
+        resyncActiveSlot()
         // PM-1575: this settled turn is kept on screen but not reactivated --
         // its transport is discarded for good right after this, same as the
         // superseded branch above, so flush anything it is still holding
@@ -577,11 +591,17 @@ export const useAgentConversationStore = defineStore(
      * live message: it was persisted on the row, not broadcast over the
      * transport the stash holds. Dropping the copy without it leaves the ask
      * unanswerable, so it rides across, keyed on askId like the live path.
+     *
+     * Unless the stash already watched it resolve. `resolvedAsks` is that
+     * record and is always the stash's own transport, even when the caller is
+     * withdrawing it as a sink -- a settled turn ran to `agent_message_done`,
+     * which is exactly when an ask is most likely already answered, and a card
+     * restored on top of it can never be cleared.
      */
     function adoptPendingAsks(
       hydrated: AssistantMessage,
       live: AssistantMessage,
-      transport: AgentEventTransport | undefined
+      resolvedAsks: Pick<AgentEventTransport, 'hasResolvedAsk'>
     ): void {
       const presentAskIds = new Set(
         live.parts.flatMap((part) =>
@@ -592,7 +612,7 @@ export const useAgentConversationStore = defineStore(
         (part) =>
           part.type === 'runApproval' &&
           !presentAskIds.has(part.askId) &&
-          !transport?.hasResolvedAsk(part.askId)
+          !resolvedAsks.hasResolvedAsk(part.askId)
       )
       if (asks.length > 0) live.parts = [...live.parts, ...asks]
     }
@@ -677,15 +697,19 @@ export const useAgentConversationStore = defineStore(
      * caller is about to dispose it. A surviving one has to be told about
      * every call adopted off the row, or that call's next frame arrives as a
      * stranger and pushes a second copy beside the first.
+     *
+     * `resolvedAsks` is separate because only the SINK role goes away with
+     * disposal: what that transport already saw resolve stays true either way.
      */
     function adoptHydratedOnlyParts(
       live: AssistantMessage,
       hydrated: AssistantMessage,
-      transport: AgentEventTransport | undefined
+      transport: AgentEventTransport | undefined,
+      resolvedAsks: Pick<AgentEventTransport, 'hasResolvedAsk'>
     ): void {
       adoptHydratedTools(live, hydrated, transport)
       adoptFresherHydratedText(live, hydrated, transport)
-      adoptPendingAsks(hydrated, live, transport)
+      adoptPendingAsks(hydrated, live, resolvedAsks)
     }
 
     /**
@@ -881,7 +905,8 @@ export const useAgentConversationStore = defineStore(
       adoptHydratedOnlyParts(
         entry.message,
         hydrated,
-        entry.settled ? undefined : entry.transport
+        entry.settled ? undefined : entry.transport,
+        entry.transport
       )
       moveUserRecord(hydratedTurnId, entry.message.id)
       return { keeps: 'live', turnId: entry.message.id }
