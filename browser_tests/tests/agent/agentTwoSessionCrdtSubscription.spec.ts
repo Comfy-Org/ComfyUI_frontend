@@ -41,6 +41,28 @@ async function canvasNodeIds(vueNodes: VueNodeHelpers): Promise<string[]> {
   )
 }
 
+/**
+ * What the canvas settled on, once it has had `timeout` to fill. Returning the
+ * ids rather than asserting on them is what lets the caller tell "still empty"
+ * — the PM-1535 defect — apart from "filled, but with the wrong nodes", which
+ * would be a new bug and must not be absorbed by an expected-failure marker.
+ */
+async function settledCanvasNodeIds(
+  vueNodes: VueNodeHelpers,
+  timeout: number
+): Promise<string[]> {
+  try {
+    await expect
+      .poll(() => canvasNodeIds(vueNodes), { timeout })
+      .not.toEqual([])
+  } catch (neverFilled) {
+    // An empty canvas is the defect under test, not a broken test. The caller
+    // decides what it means; rethrowing here would pre-empt that.
+    void neverFilled
+  }
+  return canvasNodeIds(vueNodes)
+}
+
 test.describe(
   'Agent build displaced by a second thread',
   { tag: ['@cloud', '@agent', '@vue-nodes'] },
@@ -55,9 +77,11 @@ test.describe(
      *
      * Both tests assert the behaviour the app owes the user — the build on the
      * canvas — so neither has to be inverted when PM-1535 is fixed. The first
-     * is marked test.fail, so what it pins today is that the build is still
-     * missing; the recovery case passes already and proves the same build is
-     * reachable once a later turn binds Alpha again.
+     * marks itself expected-to-fail only while the canvas is empty, so what it
+     * pins today is that the build is still missing, while a canvas that fills
+     * with the wrong nodes stays a real failure. The recovery case passes
+     * already and proves the same build is reachable once a later turn binds
+     * Alpha again.
      *
      * Two things this arrangement does not model. Thread one's turn is over
      * before its build lands, where the report had both threads working at
@@ -109,17 +133,18 @@ test.describe(
         WORKFLOW_A.name
       )
 
+      const canvas = await settledCanvasNodeIds(twoSessionCrdt.vueNodes, 20_000)
       // KNOWN BUG (PM-1535): the follower's subscribe target is the session's
       // boundWorkflowId, still Bravo after thread two bound it, so returning to
       // Alpha unsubscribes rather than resubscribing and Alpha's build is never
-      // projected. Remove this test.fail once the follower subscribes the
-      // active tab's workflow on return. It sits below the arrange on purpose:
-      // above it, a setup failure would satisfy the expected failure and this
-      // would report green while exercising nothing.
-      test.fail()
-      await expect
-        .poll(() => canvasNodeIds(twoSessionCrdt.vueNodes), { timeout: 20_000 })
-        .toEqual(BUILT_NODE_IDS)
+      // projected. Only the empty canvas is expected: nodes that arrive but do
+      // not match fail this outright, and once the follower resubscribes the
+      // active tab's workflow the marker goes inert and can be deleted.
+      test.fail(
+        canvas.length === 0,
+        'PM-1535: returning to Alpha does not resubscribe its document'
+      )
+      expect(canvas).toEqual(BUILT_NODE_IDS)
     })
 
     // The recovery the reporter found, and the proof that the build really is
