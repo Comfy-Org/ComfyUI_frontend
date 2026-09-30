@@ -203,14 +203,6 @@ test.describe(
         await expect(
           node.getByLabel('seed', { exact: true }).getByRole('spinbutton')
         ).toHaveValue(String(AGENT_SUBGRAPH_EDITED_SEED))
-        await page.evaluate(
-          () =>
-            new Promise<void>((resolve) =>
-              requestAnimationFrame(() =>
-                requestAnimationFrame(() => resolve())
-              )
-            )
-        )
         await expect
           .poll(() =>
             page.evaluate(() =>
