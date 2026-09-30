@@ -54,6 +54,7 @@ const REACTIVATION_CONFIRMATION_REQUIRED_SERVER_CODE =
 const NOT_SCHEDULED_FOR_CANCELLATION_SERVER_CODE =
   'NOT_SCHEDULED_FOR_CANCELLATION'
 const ALREADY_CANCELED_SERVER_CODE = 'ALREADY_CANCELED'
+const SUBSCRIPTION_QUOTE_STALE_SERVER_CODE = 'SUBSCRIPTION_QUOTE_STALE'
 const SUBSCRIPTION_CHANGE_IN_PROGRESS_SERVER_CODE =
   'SUBSCRIPTION_CHANGE_IN_PROGRESS'
 
@@ -75,6 +76,8 @@ export type SubscriptionCommandCode =
   | 'NO_ACTIVE_SUBSCRIPTION'
   /** The server asked for a hosted payment step but offered no page for it. */
   | 'MISSING_PAYMENT_METHOD_URL'
+  /** The quote no longer matches what the server would charge; re-preview. */
+  | 'QUOTE_STALE'
 
 export type SubscriptionCommandFailure =
   | BillingFailure
@@ -362,11 +365,16 @@ export function createBillingCommands(
       key
     )
     if (response.status === 'error') {
-      return matchesServerCode(
-        response,
-        REACTIVATION_CONFIRMATION_REQUIRED_SERVER_CODE
-      )
-        ? coded('REACTIVATION_CONFIRMATION_REQUIRED')
+      if (
+        matchesServerCode(
+          response,
+          REACTIVATION_CONFIRMATION_REQUIRED_SERVER_CODE
+        )
+      ) {
+        return coded('REACTIVATION_CONFIRMATION_REQUIRED')
+      }
+      return refusedWith(response, SUBSCRIPTION_QUOTE_STALE_SERVER_CODE)
+        ? coded('QUOTE_STALE')
         : refusedWhilePending(response)
     }
     const { billing_op_id, status, payment_method_url } = response.value.data

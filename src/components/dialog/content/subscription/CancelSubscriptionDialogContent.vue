@@ -60,9 +60,14 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { parseIsoDateSafe } from '@/utils/dateTimeUtil'
 import { getErrorMessage } from '@/utils/errorUtil'
 
-const { cancelAt, flowAlreadyOpened = false } = defineProps<{
+const {
+  cancelAt,
+  flowAlreadyOpened = false,
+  isScopeCurrent = () => true
+} = defineProps<{
   cancelAt?: string
   flowAlreadyOpened?: boolean
+  isScopeCurrent?: () => boolean
 }>()
 
 const { t } = useI18n()
@@ -77,6 +82,7 @@ const telemetry = useTelemetry()
 
 const isLoading = ref(false)
 const didCancelSucceed = ref(false)
+const didScopeAbort = ref(false)
 
 function cancellationMetadata() {
   return getSubscriptionCancellationMetadata({
@@ -96,7 +102,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  if (didCancelSucceed.value || isLoading.value) return
+  if (didCancelSucceed.value || didScopeAbort.value || isLoading.value) return
   telemetry?.trackSubscriptionCancellation('abandoned', cancellationMetadata())
 })
 
@@ -120,6 +126,15 @@ function onClose() {
 }
 
 async function onConfirmCancel() {
+  if (!isScopeCurrent()) {
+    didScopeAbort.value = true
+    toast.add({
+      severity: 'warn',
+      summary: t('subscription.cancelDialog.workspaceChanged')
+    })
+    dialogStore.closeDialog({ key: 'cancel-subscription' })
+    return
+  }
   if (
     shouldUseWorkspaceBilling.value &&
     !(isCloud
@@ -132,7 +147,7 @@ async function onConfirmCancel() {
   telemetry?.trackSubscriptionCancellation('confirmed', cancellationMetadata())
   isLoading.value = true
   try {
-    await cancelSubscription()
+    await cancelSubscription(isScopeCurrent)
   } catch (error) {
     const errorMessage = getErrorMessage(error)
     if (!shouldUseWorkspaceBilling.value) {

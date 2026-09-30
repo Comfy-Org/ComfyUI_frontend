@@ -462,7 +462,9 @@
       "REACTIVATION_CONFIRMATION_REQUIRED": "Confirm the reactivation charge before continuing.",
       "CONFLICTING_PAYMENT_METHOD": "That request named two payment methods; choose one.",
       "MISSING_PAYMENT_METHOD_URL": "The billing service asked for a payment step but didn't say where.",
-      "OPERATION_ALREADY_PENDING": "A payment you started earlier is still going through. It has to finish before you can choose a different plan."
+      "OPERATION_ALREADY_PENDING": "A payment you started earlier is still going through. It has to finish before you can choose a different plan.",
+      "QUOTE_STALE": "Your quote changed. Review the updated amount and try again.",
+      "QUOTE_REFRESH_FAILED": "Your quote expired and couldn't be refreshed. Choose your plan again."
     },
     "tier": {
       "unknown": "Plan",

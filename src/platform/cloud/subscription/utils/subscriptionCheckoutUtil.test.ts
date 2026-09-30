@@ -6,43 +6,49 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import { performSubscriptionCheckout } from './subscriptionCheckoutUtil'
 
-const { mockIsCloud, mockGetCheckoutAttribution, mockLocalStorage } =
-  vi.hoisted(() => ({
-    mockIsCloud: { value: true },
-    mockGetCheckoutAttribution: vi.fn(() => ({
-      ga_client_id: 'ga-client-id',
-      ga_session_id: 'ga-session-id',
-      ga_session_number: 'ga-session-number',
-      im_ref: 'impact-click-123',
-      utm_source: 'impact',
-      utm_medium: 'affiliate',
-      utm_campaign: 'spring-launch',
-      gclid: 'gclid-123',
-      gbraid: 'gbraid-456',
-      wbraid: 'wbraid-789'
-    })),
-    mockLocalStorage: (() => {
-      const store = new Map<string, string>()
+const {
+  mockIsCloud,
+  mockGetCheckoutAttribution,
+  mockLoadCheckoutAttributionModule,
+  mockLocalStorage
+} = vi.hoisted(() => ({
+  mockIsCloud: { value: true },
+  mockGetCheckoutAttribution: vi.fn(() => ({
+    ga_client_id: 'ga-client-id',
+    ga_session_id: 'ga-session-id',
+    ga_session_number: 'ga-session-number',
+    im_ref: 'impact-click-123',
+    utm_source: 'impact',
+    utm_medium: 'affiliate',
+    utm_campaign: 'spring-launch',
+    gclid: 'gclid-123',
+    gbraid: 'gbraid-456',
+    wbraid: 'wbraid-789'
+  })),
+  mockLoadCheckoutAttributionModule: vi.fn(),
+  mockLocalStorage: (() => {
+    const store = new Map<string, string>()
 
-      return {
-        getItem: vi.fn((key: string) => store.get(key) ?? null),
-        setItem: vi.fn((key: string, value: string) => {
-          store.set(key, value)
-        }),
-        removeItem: vi.fn((key: string) => {
-          store.delete(key)
-        }),
-        clear: vi.fn(() => {
-          store.clear()
-        }),
-        __reset: () => {
-          store.clear()
-        }
+    return {
+      getItem: vi.fn((key: string) => store.get(key) ?? null),
+      setItem: vi.fn((key: string, value: string) => {
+        store.set(key, value)
+      }),
+      removeItem: vi.fn((key: string) => {
+        store.delete(key)
+      }),
+      clear: vi.fn(() => {
+        store.clear()
+      }),
+      __reset: () => {
+        store.clear()
       }
-    })()
-  }))
+    }
+  })()
+}))
 
 Object.defineProperty(window, 'localStorage', {
   value: mockLocalStorage,
@@ -55,6 +61,7 @@ Object.defineProperty(globalThis, 'localStorage', {
 })
 
 vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -62,12 +69,9 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock<unknown>(
-  import('@/platform/telemetry/utils/checkoutAttribution'),
-  () => ({
-    getCheckoutAttribution: mockGetCheckoutAttribution
-  })
-)
+vi.mock(import('./checkoutAttributionLoader'), () => ({
+  loadCheckoutAttributionModule: mockLoadCheckoutAttributionModule
+}))
 
 global.fetch = vi.fn()
 
@@ -104,6 +108,9 @@ beforeEach(() => {
 
 describe('performSubscriptionCheckout', () => {
   beforeEach(() => {
+    mockLoadCheckoutAttributionModule.mockResolvedValue({
+      getCheckoutAttribution: mockGetCheckoutAttribution
+    })
     setDistribution('cloud')
     mockIsCloud.value = true
     Object.assign(useAuthStore(), { userId: 'user-123' })
@@ -230,8 +237,6 @@ describe('performSubscriptionCheckout', () => {
   it('continues checkout when attribution collection fails', async () => {
     const checkoutUrl = 'https://checkout.stripe.com/test'
     const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-
     mockGetCheckoutAttribution.mockRejectedValueOnce(
       new Error('Attribution failed')
     )
@@ -242,10 +247,17 @@ describe('performSubscriptionCheckout', () => {
 
     await performSubscriptionCheckout('pro', 'monthly')
 
-    expect(warnSpy).toHaveBeenCalledWith(
-      '[SubscriptionCheckout] Failed to collect checkout attribution',
-      expect.any(Error)
-    )
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'cloud_checkout_attribution_fallback',
+      tags: {
+        failure_kind: 'degraded',
+        feature_area: 'billing',
+        operation: 'load',
+        outcome: 'degraded',
+        attribution_stage: 'collect'
+      },
+      level: 'warning'
+    })
     expect(global.fetch).toHaveBeenCalledWith(
       expect.stringContaining('/customers/cloud-subscription-checkout/pro'),
       expect.objectContaining({
@@ -261,6 +273,32 @@ describe('performSubscriptionCheckout', () => {
       checkout_attempt_id: expect.any(String)
     })
     expect(openSpy).toHaveBeenCalledWith(checkoutUrl, '_blank')
+  })
+
+  it('reports a failed attribution chunk load as the module_load stage', async () => {
+    vi.spyOn(window, 'open').mockImplementation(() => null)
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({ checkout_url: 'https://checkout.stripe.com/test' })
+    } as Response)
+
+    mockLoadCheckoutAttributionModule.mockRejectedValueOnce(
+      new Error('Failed to fetch dynamically imported module')
+    )
+    await performSubscriptionCheckout('pro', 'monthly')
+
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'cloud_checkout_attribution_fallback',
+        tags: expect.objectContaining({ attribution_stage: 'module_load' })
+      })
+    )
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/customers/cloud-subscription-checkout/pro'),
+      expect.objectContaining({ body: JSON.stringify({}) })
+    )
   })
 
   it('carries the payment intent source into begin_checkout and the pending attempt', async () => {
