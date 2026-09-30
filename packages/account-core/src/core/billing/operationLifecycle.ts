@@ -115,12 +115,28 @@ export interface BillingOperationLifecycleOptions {
   readonly statusReader: BillingStatusReader
   /** Tab-local storage for the operation pointer; absent means nothing survives a reload. */
   readonly pointerStorage?: BillingOperationPointerStorage
+  /**
+   * Keep the pointer of an operation that succeeded or needs reconciliation,
+   * for a host whose page is the checkout itself: a revisit reads it back
+   * through `recover({ includeSettled: true })`. A plain `recover` never
+   * sees it, so every other caller recovers exactly what it did before.
+   */
+  readonly retainSettledPointer?: boolean
   /** Whether the host can drive an in-page challenge right now. Absent routes everything hosted. */
   readonly embeddedCheckoutAvailable?: () => boolean
   /** Which origin serves a hosted page right now. Absent keeps every hosted operation on the provider page. */
   readonly hostedDestination?: () => HostedBillingDestination
   readonly onTelemetry?: (event: BillingOperationTelemetryEvent) => void
   readonly now?: () => number
+}
+
+export interface BillingRecoverOptions {
+  /**
+   * Also read back the operation a retained pointer says already settled, so
+   * the checkout that issued it can show it finished. Only a lifecycle with
+   * `retainSettledPointer` keeps one.
+   */
+  readonly includeSettled?: boolean
 }
 
 export interface BillingOperationLifecycle {
@@ -141,7 +157,9 @@ export interface BillingOperationLifecycle {
    * pending operation first, then the tab-local pointer. Resolves undefined
    * when there is nothing to recover.
    */
-  recover: () => Promise<BillingResult<BillingOperationState | undefined>>
+  recover: (
+    options?: BillingRecoverOptions
+  ) => Promise<BillingResult<BillingOperationState | undefined>>
   /** The host became visible or focused: poll every pending operation now. */
   wake: () => void
   /** Moves the operation between presentations under the same id. */
@@ -206,6 +224,7 @@ interface AdoptInput {
   readonly clientSecret?: string
   readonly attemptStartedAt: number
   readonly resumed: boolean
+  readonly awaitedHere: boolean
   /** A status already read for this operation; observed from it instead of polled again. */
   readonly initialStatus?: BillingOpStatus
 }
@@ -260,6 +279,7 @@ function initialPendingState(
     ...presentation,
     observedAt,
     attemptStartedAt: input.attemptStartedAt,
+    ...(input.awaitedHere ? { awaitedHere: true } : {}),
     phase: 'pending',
     ...(actionUrl === undefined ? {} : { actionUrl }),
     ...(challenge === undefined ? {} : { challenge }),
@@ -308,7 +328,9 @@ export function createBillingOperationLifecycle(
   const pointers: OperationPointerStore =
     options.pointerStorage === undefined
       ? NO_POINTER_STORE
-      : createOperationPointerStore(options.pointerStorage, now)
+      : createOperationPointerStore(options.pointerStorage, now, {
+          retainSettled: options.retainSettledPointer === true
+        })
 
   const operations = new Map<string, OperationRecord>()
   const inFlightCommands = new Map<BillingOperationKind, InFlightCommand>()
@@ -368,7 +390,7 @@ export function createBillingOperationLifecycle(
     record.state = next
     if (isTerminal(next)) {
       stopTimer(record)
-      pointers.clearIfTerminal(next)
+      pointers.settle(next)
       emitTerminalTelemetry(record)
       record.resolveSettled(next)
     }
@@ -413,7 +435,8 @@ export function createBillingOperationLifecycle(
       operationId: state.id,
       kind: state.kind,
       presentation: state.presentation,
-      attemptStartedAt: state.attemptStartedAt
+      attemptStartedAt: state.attemptStartedAt,
+      ...(state.awaitedHere ? { awaited: true } : {})
     })
   }
 
@@ -489,12 +512,18 @@ export function createBillingOperationLifecycle(
       : { presentation }
   }
 
+  /**
+   * An id is observed afresh once this tab has stopped learning anything new
+   * about it: its poll budget ran out, it left the scope, or the server
+   * parked it for a reconciliation that may since have settled it.
+   */
   function adopt(input: AdoptInput): OperationRecord {
     const existing = operations.get(input.id)
     if (
       existing !== undefined &&
       existing.state.phase !== 'timed_out' &&
-      existing.state.phase !== 'superseded'
+      existing.state.phase !== 'superseded' &&
+      existing.state.phase !== 'reconciliation_needed'
     ) {
       return existing
     }
@@ -596,7 +625,8 @@ export function createBillingOperationLifecycle(
       presentation: routeFor(rail, issued.value),
       ...continuationOf(issued.value),
       attemptStartedAt,
-      resumed: false
+      resumed: false,
+      awaitedHere: true
     })
     return { status: 'ok', value: record.state }
   }
@@ -615,7 +645,8 @@ export function createBillingOperationLifecycle(
         operationId: issued.value.operationId,
         kind,
         presentation: routeFor(rail, issued.value),
-        attemptStartedAt
+        attemptStartedAt,
+        awaited: true
       })
     }
     return SUPERSEDED
@@ -696,6 +727,21 @@ export function createBillingOperationLifecycle(
     return attempt
   }
 
+  function fromPointer(
+    pointer: BillingOperationPointer,
+    context: BillingScopeContext
+  ): AdoptInput {
+    return {
+      id: pointer.operationId,
+      kind: pointer.kind,
+      context,
+      presentation: pointer.presentation,
+      attemptStartedAt: pointer.attemptStartedAt,
+      resumed: true,
+      awaitedHere: pointer.awaited === true
+    }
+  }
+
   // Unreachable is not "nothing pending": the pointer is the only evidence
   // left, and observing it costs a poll while reissuing could cost a charge.
   function recoverFromPointer(
@@ -706,14 +752,7 @@ export function createBillingOperationLifecycle(
     if (failure.code !== 'REQUEST_FAILED' || pointer === undefined) {
       return failure
     }
-    const record = adopt({
-      id: pointer.operationId,
-      kind: pointer.kind,
-      context,
-      presentation: pointer.presentation,
-      attemptStartedAt: pointer.attemptStartedAt,
-      resumed: true
-    })
+    const record = adopt(fromPointer(pointer, context))
     return { status: 'ok', value: record.state }
   }
 
@@ -729,7 +768,8 @@ export function createBillingOperationLifecycle(
       context,
       presentation: known?.presentation ?? routeFor(rail, pending),
       attemptStartedAt: known?.attemptStartedAt ?? now(),
-      resumed: true
+      resumed: true,
+      awaitedHere: known?.awaited === true
     })
     return { status: 'ok', value: record.state }
   }
@@ -750,18 +790,26 @@ export function createBillingOperationLifecycle(
       return { status: 'ok', value: undefined }
     }
     const record = adopt({
-      id: pointer.operationId,
-      kind: pointer.kind,
-      context,
-      presentation: pointer.presentation,
-      attemptStartedAt: pointer.attemptStartedAt,
-      resumed: true,
+      ...fromPointer(pointer, context),
       initialStatus: probe.value.data
     })
     return { status: 'ok', value: record.state }
   }
 
-  async function recover(): Promise<
+  /** A settled pointer answers only a caller that asked for it. */
+  function readPointer(
+    scope: BillingScope,
+    includeSettled: boolean
+  ): BillingOperationPointer | undefined {
+    const pointer = pointers.read(scope)
+    return pointer?.settled === undefined || includeSettled
+      ? pointer
+      : undefined
+  }
+
+  async function recover({
+    includeSettled = false
+  }: BillingRecoverOptions = {}): Promise<
     BillingResult<BillingOperationState | undefined>
   > {
     if (lifetime.disposed) return SUPERSEDED
@@ -770,7 +818,7 @@ export function createBillingOperationLifecycle(
 
     const status = await statusReader.read()
     if (!isLive(context)) return SUPERSEDED
-    const pointer = pointers.read(context.scope)
+    const pointer = readPointer(context.scope, includeSettled)
     if (status.status === 'error') {
       return recoverFromPointer(status, pointer, context)
     }

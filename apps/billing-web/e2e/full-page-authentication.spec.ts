@@ -309,6 +309,44 @@ test('447-6886: a redirect method shows the pre-money line, never Phase B, and l
   })
 })
 
+test('coming back from Alipay after its own payment went through is Success, naming the plan the server now lists', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.paymentMethods = []
+  const moveOperation = scriptOperation(cloud)
+  await page.addInitScript((redirectTo) => {
+    Object.assign(window, {
+      __e2eStripeMethodType: 'alipay',
+      __e2eStripeRedirectTo: redirectTo
+    })
+  }, PORTAL_URL)
+  await signIn(CHECKOUT)
+  await payButton(page).click()
+  await expect(page).toHaveURL(PORTAL_URL)
+
+  moveOperation(succeededOperation(OPERATION))
+  cloud.scenario.status = {
+    ...cloud.scenario.status,
+    plan_slug: 'pro_monthly',
+    subscription_tier: 'PRO'
+  }
+  cloud.scenario.preview = { ...cloud.scenario.preview, allowed: false }
+  await page.goBack()
+
+  await expect(
+    page.getByRole('heading', { name: "You're all set" })
+  ).toBeVisible()
+  const plan = page.getByTestId('checkout-ending-plan')
+  await expect(plan).toContainText('Pro')
+  await expect(plan).toContainText('$50.00')
+  await expect(
+    page.getByRole('heading', { name: 'Already completed' })
+  ).toBeHidden()
+  expect(subscribeRequests(cloud)).toHaveLength(1)
+})
+
 test('446-10925: coming back from the provider is a fresh mount on Phase B, then the terminal', async ({
   page,
   cloud,
