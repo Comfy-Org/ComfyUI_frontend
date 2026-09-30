@@ -69,7 +69,12 @@ fi
 
 function runTagScript(
   scenario: string,
-  options: { containment?: string; event?: string; sha?: string } = {}
+  options: {
+    containment?: string
+    event?: string
+    sha?: string
+    token?: string
+  } = {}
 ) {
   const directory = mkdtempSync(join(tmpdir(), 'cloud-backport-tag-'))
   const binary = join(directory, 'gh')
@@ -89,6 +94,7 @@ function runTagScript(
       FAKE_CONTAINMENT: options.containment ?? 'behind',
       FAKE_GH_COUNT_FILE: count,
       FAKE_SCENARIO: scenario,
+      GH_TOKEN: options.token ?? 'stub-release-token',
       GITHUB_OUTPUT: output,
       GITHUB_REPOSITORY: 'Comfy-Org/ComfyUI_frontend',
       GITHUB_STEP_SUMMARY: summary,
@@ -150,6 +156,12 @@ describe('cloud backport tag workflow', () => {
     const result = runTagScript('api-error')
     expect(result.status).not.toBe(0)
     expect(result.stderr).toContain('HTTP 503')
+  })
+
+  it('refuses to reconcile tags without the release credential', () => {
+    const result = runTagScript('same', { token: '' })
+    expect(result.status).not.toBe(0)
+    expect(result.stderr).toContain('PR_GH_TOKEN is required')
   })
 
   it('rejects a commit outside the selected release branch', () => {
