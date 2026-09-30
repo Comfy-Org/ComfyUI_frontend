@@ -2,8 +2,11 @@ import type {
   AgentPostMessageRequest,
   UploadImageResponse
 } from '@comfyorg/ingest-types'
-import { zUploadImageResponse } from '@comfyorg/ingest-types/zod'
-import { z } from 'zod'
+import {
+  zAgentAttachmentRejected,
+  zUploadImageResponse
+} from '@comfyorg/ingest-types/zod'
+import type { z } from 'zod'
 
 import { api } from '@/scripts/api'
 
@@ -31,10 +34,19 @@ import type {
 
 const CLOUD_WORKFLOW_PAGE_SIZE = 100
 
-const zAttachmentRejectionMessage = z.object({
-  rejected: z.array(z.string()),
-  rejected_count: z.number().int(),
-  type: z.literal('ATTACHMENT_TYPE_NOT_ACCEPTED')
+/**
+ * Picked from the generated schema rather than restated, so the three fields the
+ * refusal copy reads cannot drift from the contract.
+ *
+ * Narrowed rather than used whole on purpose: the full envelope also requires
+ * `accepted` and `error`, so a later change to the policy shape would fail this
+ * parse and silently drop the user back to the server's English string. Picking
+ * keeps that immunity while still deriving the field types.
+ */
+const zAttachmentRejectionMessage = zAgentAttachmentRejected.pick({
+  rejected: true,
+  rejected_count: true,
+  type: true
 })
 
 export class AgentApiError extends Error {
