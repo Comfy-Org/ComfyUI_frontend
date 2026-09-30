@@ -1918,6 +1918,72 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(reopened.isStreaming.value).toBe(true)
   })
 
+  it('retires a restored turn when reconciliation times out', async () => {
+    vi.useFakeTimers()
+    try {
+      const streamingHistory: AgentMessages = [
+        historyRow(1, 'user', 'turn-1', 'go'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+          content: {},
+          status: 'streaming'
+        }
+      ]
+      let deliverReconcile: ((history: AgentMessages) => void) | undefined
+      const getMessages = vi
+        .fn<(threadId: string) => Promise<AgentMessages>>()
+        .mockResolvedValueOnce(streamingHistory)
+        .mockImplementationOnce(
+          () =>
+            new Promise<AgentMessages>((resolve) => {
+              deliverReconcile = resolve
+            })
+        )
+      const rest = fakeRest({
+        getMessages,
+        cancelMessage: vi
+          .fn()
+          .mockRejectedValue(
+            new AgentApiError('turn is no longer running', 404, undefined)
+          )
+      })
+      const conversation = useAgentConversationStore()
+
+      const minimized = useAgentSession({
+        rest,
+        events: fakeEvents().source
+      })
+      minimized.start()
+      await minimized.sendMessage('go')
+      minimized.stop()
+      await Promise.resolve()
+
+      const reopened = useAgentSession({
+        rest,
+        events: fakeEvents().source
+      })
+      reopened.start()
+      await vi.waitFor(() => expect(conversation.activeTurnId).toBe('msg-1'))
+
+      const stopping = reopened.stopTurn('button')
+      await vi.waitFor(() => assert(deliverReconcile !== undefined))
+      await vi.advanceTimersByTimeAsync(5_000)
+      await stopping
+
+      expect(conversation.activeTurnId).toBeNull()
+      expect(reopened.isStreaming.value).toBe(false)
+
+      assert(deliverReconcile !== undefined)
+      deliverReconcile(streamingHistory)
+      await Promise.resolve()
+
+      expect(conversation.activeTurnId).toBeNull()
+      expect(reopened.isStreaming.value).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('tracks a stop when completion arrives before cancellation responds', async () => {
     let currentTime = 2_000
     const now = vi.spyOn(Date, 'now').mockImplementation(() => currentTime)
