@@ -20,15 +20,18 @@ const visibility = useDocumentVisibility()
 // Three scripted exchanges, each a different asker paired with B (the one
 // deploying workflows): M asks about video upscaling, S about batch
 // background removal, R about product shots. Each exchange is ask -> reply
-// (with a deployed workflow link + snippet) -> thanks, and the three cycle
+// (with a deployed workflow link) -> thanks, and the three cycle
 // continuously, sliding one message at a time through a 4-message window.
+// Only the flagship M/B exchange also carries a code snippet; S/B and R/B
+// keep their reply to the link, which is enough to read as a distinct,
+// lighter-weight exchange without three near-identical snippet blocks.
 const exchanges = [
   {
     asker: 'M',
     message: 'platform.howItWorks.chat.message',
     reply: 'platform.howItWorks.chat.reply',
     endpoint: 'video-upscale-4k',
-    snippet: 'platform.howItWorks.chat.replySnippet',
+    snippet: 'platform.howItWorks.chat.replySnippet' as const,
     thanks: 'platform.howItWorks.chat.thanks'
   },
   {
@@ -36,7 +39,7 @@ const exchanges = [
     message: 'platform.howItWorks.chat.messageBgRemove',
     reply: 'platform.howItWorks.chat.replyBgRemove',
     endpoint: 'bg-remove-batch',
-    snippet: 'platform.howItWorks.chat.replySnippetBgRemove',
+    snippet: undefined,
     thanks: 'platform.howItWorks.chat.thanksBgRemove'
   },
   {
@@ -44,7 +47,7 @@ const exchanges = [
     message: 'platform.howItWorks.chat.messageProductShots',
     reply: 'platform.howItWorks.chat.replyProductShots',
     endpoint: 'product-shots',
-    snippet: 'platform.howItWorks.chat.replySnippetProductShots',
+    snippet: undefined,
     thanks: 'platform.howItWorks.chat.thanksProductShots'
   }
 ] as const

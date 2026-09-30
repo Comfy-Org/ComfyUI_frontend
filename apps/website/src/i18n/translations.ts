@@ -8836,34 +8836,24 @@ Enterprise`
     'zh-CN': '谢谢！'
   },
   'platform.howItWorks.chat.messageBgRemove': {
-    en: 'any chance we have a workflow for batch background removal?',
-    'zh-CN': '我们有批量去背景的工作流吗？'
+    en: 'got a workflow for batch bg removal?',
+    'zh-CN': '有批量去背景的工作流吗？'
   },
   'platform.howItWorks.chat.replyBgRemove': {
-    en: "yep, already deployed — here's the call:",
-    'zh-CN': '有的，已经部署好了，调用方式是：'
-  },
-  'platform.howItWorks.chat.replySnippetBgRemove': {
-    en: 'curl https://bg-remove-batch.run.comfy.app \\\n  -F "images=@batch.zip"',
-    'zh-CN':
-      'curl https://bg-remove-batch.run.comfy.app \\\n  -F "images=@batch.zip"'
+    en: "yep — here's the call:",
+    'zh-CN': '有的，调用方式是：'
   },
   'platform.howItWorks.chat.thanksBgRemove': {
     en: 'perfect, thanks!',
     'zh-CN': '太好了，谢谢！'
   },
   'platform.howItWorks.chat.messageProductShots': {
-    en: "what's the quickest way to batch-generate product shots?",
-    'zh-CN': '批量生成产品图最快的方法是什么？'
+    en: 'quickest way to batch product shots?',
+    'zh-CN': '批量产品图最快方法？'
   },
   'platform.howItWorks.chat.replyProductShots': {
-    en: "this one's live, one call does it:",
-    'zh-CN': '这个已经上线了，一次调用就行：'
-  },
-  'platform.howItWorks.chat.replySnippetProductShots': {
-    en: 'curl https://product-shots.run.comfy.app \\\n  -F "sku_sheet=@skus.csv"',
-    'zh-CN':
-      'curl https://product-shots.run.comfy.app \\\n  -F "sku_sheet=@skus.csv"'
+    en: "this one's live:",
+    'zh-CN': '已经上线了：'
   },
   'platform.howItWorks.chat.thanksProductShots': {
     en: 'amazing, thanks!',
