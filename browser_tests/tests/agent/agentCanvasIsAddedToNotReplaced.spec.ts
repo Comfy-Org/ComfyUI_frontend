@@ -3,23 +3,6 @@ import { expect } from '@playwright/test'
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 
-// Two stories of qa/user-story-test-matrix.md (in-app-agent-program). Both
-// are the canvas losing its identity to the agent's own work:
-//
-//   32 "The agent builds a second complete copy on top of my existing work"
-//      -- regr-14 (PM-1403, PM-1404, PR 18175), slack-68. No pin; the only
-//      pins regr-14 names were unit tests #18700 deletes.
-//   37 "Loading a template wipes the canvas I was working on"
-//      -- slack-23, slack-32. Pin 18702. Also reached without a template:
-//      a question or a small edit empties the graph.
-//
-// Both are frozen-area, so this is black-box: it drives the real follower and
-// judges the rendered canvas. agentInsertWorkflowCanvasResult.spec.ts already
-// covers what an `insert_workflow` op *produces*, but it inserts onto an empty
-// document, so what the insert does to content that was already there is
-// unpinned. agentTemplatePlacement.spec.ts asserts where the inserted nodes
-// land, not that the existing node is still on the canvas afterwards.
-
 const CASE = 'agent-rec-text-only-answer'
 
 // The seed's "Positive prompt" CLIPTextEncode; a host edit to its text is the
