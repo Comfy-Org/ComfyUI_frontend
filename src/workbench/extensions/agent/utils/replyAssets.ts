@@ -125,6 +125,7 @@ export function replyAssetResultItem(asset: ReplyAsset): AugmentedResultItem {
     type: 'output',
     nodeId: '',
     mediaType: asset.kind === 'image' ? 'images' : asset.kind,
+    mediaTypeIsResolved: true,
     url: asset.url
   }
 }
