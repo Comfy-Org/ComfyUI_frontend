@@ -26,15 +26,15 @@ describe('ServerlessHero', () => {
     expect(screen.queryByText(t('nav.badgeBeta', 'en'))).toBeNull()
   })
 
-  it('loads the JSON API GPU animation', () => {
+  it('loads the JSON API GPU animation after mounting', async () => {
     render(ServerlessHero, { props: { locale: 'en' } })
 
-    const animation = screen.getByTitle(
+    const animation = await screen.findByTitle(
       t('platform.serverlessHero.animationTitle', 'en')
     )
     expect(animation).toHaveAttribute(
       'src',
-      '/assets/platform/serverless/json-api-gpu-animation.html'
+      '/assets/platform/serverless/json-api-gpu-animation.html?v=astronaut-quality-2'
     )
   })
 })

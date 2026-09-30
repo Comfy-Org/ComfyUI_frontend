@@ -98,16 +98,26 @@ type Capture = {
 
 /**
  * Who a settled payment belongs to, which decides what its screen may claim.
- * `started`: this page's own Pay, so it names the plan it quoted. `followed`:
- * money this page did not send, watched settle from a screen that promised
- * to update. `settled`: found already through on arrival or on a re-read.
+ * `started`: this page's own Pay, so it names the plan it quoted. `returned`:
+ * this tab's own Pay, settled after a reload or a provider's page took the
+ * quote away, so it names the plan the server now lists. `followed`: money
+ * this page did not send, watched settle from a screen that promised to
+ * update. `settled`: found already through on arrival or on a re-read.
  */
-type Attribution = 'started' | 'followed' | 'settled'
+type Attribution = 'started' | 'returned' | 'followed' | 'settled'
+
+/** The plan a returned payment bought, as the server's status and catalog list it. */
+export type SettledPlan = Pick<
+  BillingPlansData['plans'][number],
+  'tier' | 'duration' | 'price_cents'
+>
 
 /**
  * The full-page checkout, one state at a time. `resolving` renders the
  * capture skeleton, and carries a verdict a recovered operation already
- * reached so the capture it resolves into opens on that card. `waiting` is
+ * reached so the capture it resolves into opens on that card, or a success
+ * this tab already saw, which ends the page only if the quote is refused
+ * (the same link revisited) and gives way to a form otherwise. `waiting` is
  * money in flight that this page did not start: no fresh form until it
  * settles, only the rail its quote asks for, locked. `unconfirmed` is money
  * whose outcome the page could not learn, so it neither offers a form nor
@@ -123,7 +133,11 @@ type Attribution = 'started' | 'followed' | 'settled'
 export type LoadFailure = 'capabilities' | 'quote' | 'recheck'
 
 export type CheckoutPage =
-  | { readonly kind: 'resolving'; readonly outcome?: InlineOutcome }
+  | {
+      readonly kind: 'resolving'
+      readonly outcome?: InlineOutcome
+      readonly settled?: TerminalBillingOperation
+    }
   | {
       readonly kind: 'refused'
       readonly reason: CapabilityDenialReason
@@ -154,6 +168,7 @@ export type CheckoutPage =
       readonly kind: 'terminal'
       readonly operation?: TerminalBillingOperation
       readonly attribution: Attribution
+      readonly plan?: SettledPlan
     }
 
 /** A verdict an operation reached on its own, for the card above Pay. */
@@ -174,6 +189,10 @@ export type CheckoutPageEvent =
   /** The lifecycle could not say what the workspace is waiting on. */
   | { readonly type: 'recheckFailed'; readonly code: string }
   | { readonly type: 'planUnavailable'; readonly reason: PlanUnavailableReason }
+  /** The quote answered `allowed: false`; its free-text reason is never read. */
+  | { readonly type: 'notAllowed' }
+  /** The server's status and catalog named the plan a returned payment bought. */
+  | { readonly type: 'settledPlanRead'; readonly plan: SettledPlan }
   /** Try again on a checkout that could not load. */
   | { readonly type: 'retried' }
   | ({
@@ -316,12 +335,37 @@ type StopEvent = Extract<
       | 'capabilitiesFailed'
       | 'recheckFailed'
       | 'planUnavailable'
+      | 'notAllowed'
   }
 >
 
-/** The page a read that ends resolving leaves behind. */
-function stoppedOn(event: StopEvent): CheckoutPage {
+const STOP_EVENT: Readonly<Record<StopEvent['type'], true>> = {
+  refused: true,
+  unavailable: true,
+  capabilitiesFailed: true,
+  recheckFailed: true,
+  planUnavailable: true,
+  notAllowed: true
+}
+
+function isStopEvent(event: CheckoutPageEvent): event is StopEvent {
+  return Object.hasOwn(STOP_EVENT, event.type)
+}
+
+/**
+ * The page a read that ends resolving leaves behind. A refused quote over a
+ * success this tab already saw is that success revisited; any other is a
+ * checkout the server will not sell, for a reason it gives no code for.
+ */
+function stoppedOn(
+  page: Extract<CheckoutPage, { kind: 'resolving' }>,
+  event: StopEvent
+): CheckoutPage {
   switch (event.type) {
+    case 'notAllowed':
+      return page.settled === undefined
+        ? { kind: 'refused', reason: 'unspecified' }
+        : { kind: 'terminal', operation: page.settled, attribution: 'settled' }
     case 'refused':
       return {
         kind: 'refused',
@@ -346,13 +390,13 @@ export function reduceCheckoutPage(
 ): CheckoutPage {
   if (isRailEvent(event)) return reduceRail(page, event)
   if (isAttemptEvent(event)) return reduceAttempt(page, event)
+  if (isStopEvent(event))
+    return page.kind === 'resolving' ? stoppedOn(page, event) : page
   switch (event.type) {
-    case 'refused':
-    case 'unavailable':
-    case 'capabilitiesFailed':
-    case 'recheckFailed':
-    case 'planUnavailable':
-      return page.kind === 'resolving' ? stoppedOn(event) : page
+    case 'settledPlanRead':
+      return page.kind === 'terminal' && page.attribution === 'returned'
+        ? { ...page, plan: event.plan }
+        : page
     case 'requoteFailed':
       return leavingCapture(page, {
         kind: 'unavailable',
@@ -682,10 +726,11 @@ function withSettled(
 }
 
 /**
- * No form yet: a success is Already completed, money in flight is waiting,
- * and anything else (parked on a card, a challenge the bank refused, or
- * settled short of success) resolves a capture, opening on the verdict when
- * there is one.
+ * No form yet: this tab's own payment that went through while it was away
+ * is its Success, any other success waits for the quote to say whether this
+ * link is still for sale, money in flight is waiting, and anything else
+ * (parked on a card, a challenge the bank refused, or settled short of
+ * success) resolves a capture, opening on the verdict when there is one.
  */
 function arrivedOn(
   page: Extract<CheckoutPage, { kind: 'resolving' }>,
@@ -693,7 +738,9 @@ function arrivedOn(
   outcome: OperationOutcome | undefined
 ): CheckoutPage {
   if (operation.phase === 'succeeded')
-    return { kind: 'terminal', operation, attribution: 'settled' }
+    return operation.awaitedHere
+      ? { kind: 'terminal', operation, attribution: 'returned' }
+      : { ...page, settled: operation }
   if (outcome !== undefined) return { kind: 'resolving', outcome }
   if (isInFlight(operation)) return { kind: 'waiting', operation }
   if (outcomeUnknown(operation)) return unconfirmed(operation)
@@ -713,7 +760,11 @@ function watched(
   outcome: OperationOutcome | undefined
 ): CheckoutPage {
   if (operation.phase === 'succeeded')
-    return { kind: 'terminal', operation, attribution: attributionOf(page) }
+    return {
+      kind: 'terminal',
+      operation,
+      attribution: operation.awaitedHere ? 'returned' : attributionOf(page)
+    }
   if (outcomeUnknown(operation)) return unconfirmed(operation, page)
   if (outcome !== undefined)
     return ownsVerdict(page, operation)
@@ -724,10 +775,13 @@ function watched(
     : watchedWaiting(page, operation)
 }
 
+/** A charge the server now says went through moves the page forward to Payment received. */
 function watchedUnconfirmed(
   page: Extract<CheckoutPage, { kind: 'unconfirmed' }>,
   operation: BillingOperationState
 ): CheckoutPage {
+  if (isInFlight(operation) && waitingOn(operation) === 'received')
+    return { kind: 'waiting', operation, ...siblingOf(page) }
   return isInFlight(operation) || operation.phase === 'timed_out'
     ? page
     : RESOLVING

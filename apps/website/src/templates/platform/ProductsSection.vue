@@ -7,7 +7,7 @@ import { t } from '../../i18n/translations'
 import BuilderVisual from './BuilderVisual.vue'
 import CodeTabs from './CodeTabs.vue'
 import { modelsApiCodeTabs } from './codeSamples'
-import ServerlessIsometricStudy from './ServerlessIsometricStudy.vue'
+import ServerlessJsonApiGpuAnimation from './ServerlessJsonApiGpuAnimation.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -53,9 +53,10 @@ const modelsTabs = modelsApiCodeTabs
           </span>
         </div>
       </div>
-      <ServerlessIsometricStudy
+      <ServerlessJsonApiGpuAnimation
         class="pointer-events-none relative z-10"
         :locale
+        compact
       />
     </article>
 
@@ -78,8 +79,8 @@ const modelsTabs = modelsApiCodeTabs
           aria-hidden="true"
         >
           <ProductHeroBadge
-            :text="t('platform.products.models.title', locale).toUpperCase()"
-            :show-logo="false"
+            :text="t('platform.products.models.badgeLabel', locale)"
+            :show-connector="false"
             compact
           />
         </div>

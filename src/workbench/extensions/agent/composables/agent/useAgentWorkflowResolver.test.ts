@@ -57,6 +57,29 @@ describe('Agent workflow resolution', () => {
     localStorage.clear()
   })
 
+  it.for(['cold', 'closed', 'forgotten'])(
+    'does not use cached open resolution for a %s target despite its binding',
+    async (state) => {
+      const target = workflow('workflows/portrait.json', 'Portrait')
+      const { resolver, bindings, workflows } = setup(
+        [target],
+        [{ id: 'cloud-portrait', name: 'Portrait' }]
+      )
+      bindings.bind('cloud-portrait', target.path)
+      if (state !== 'cold') {
+        await resolver.refreshCloudWorkflowIds()
+        expect(resolver.cachedOpenWorkflowFor('cloud-portrait')).toBe(
+          workflows.openWorkflows[0]
+        )
+      }
+      if (state === 'closed') workflows.openWorkflows = []
+      if (state === 'forgotten')
+        resolver.forgetCloudWorkflowId('cloud-portrait')
+
+      expect(resolver.cachedOpenWorkflowFor('cloud-portrait')).toBeNull()
+    }
+  )
+
   it('does not resolve a new temporary tab through a reused persisted path', () => {
     const { resolver, bindings, workflows } = setup([
       workflow('workflows/scratch.json', 'Scratch', { isTemporary: true })
@@ -121,6 +144,8 @@ describe('Agent workflow resolution', () => {
     ])
     expect(resolver.storedWorkflowFor('cloud-shared')).toBeNull()
     expect(resolver.boundOrOpenWorkflowFor('cloud-ambiguous-1')).toBeNull()
+    expect(resolver.cachedOpenWorkflowFor('cloud-shared')).toBeNull()
+    expect(resolver.cachedOpenWorkflowFor('cloud-ambiguous-1')).toBeNull()
   })
 
   it('distinguishes open references from stored and explicitly bound closed workflows', async () => {
@@ -345,7 +370,11 @@ describe('Agent workflow resolution', () => {
     ])
   })
 
-  it.for(['boundOrOpenWorkflowFor', 'storedWorkflowFor'] as const)(
+  it.for([
+    'boundOrOpenWorkflowFor',
+    'storedWorkflowFor',
+    'cachedOpenWorkflowFor'
+  ] as const)(
     'rejects a stale %s binding when the target name is duplicated in the cloud index',
     async (resolve) => {
       const portrait = workflow('workflows/portrait.json', 'Portrait')
@@ -366,7 +395,11 @@ describe('Agent workflow resolution', () => {
     }
   )
 
-  it.for(['boundOrOpenWorkflowFor', 'storedWorkflowFor'] as const)(
+  it.for([
+    'boundOrOpenWorkflowFor',
+    'storedWorkflowFor',
+    'cachedOpenWorkflowFor'
+  ] as const)(
     'rejects a stale %s binding when the bound name is duplicated in the cloud index',
     async (resolve) => {
       const portrait = workflow('workflows/portrait.json', 'Portrait')
