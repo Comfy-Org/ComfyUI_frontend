@@ -261,6 +261,7 @@ const tabPanelAttrs = computed(() =>
     : {
         id: `tabpanel-${activeTab.value}`,
         role: 'tabpanel',
+        tabindex: 0,
         'aria-labelledby': `tab-${activeTab.value}`
       }
 )

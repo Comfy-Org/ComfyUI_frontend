@@ -201,4 +201,13 @@ describe('AssetsSidebarTab tab panel', () => {
 
     expect(screen.getByRole('tabpanel', { name: 'Imported' })).toBeVisible()
   })
+
+  it('moves keyboard focus from the selected tab to its panel', async () => {
+    renderTab()
+
+    await userEvent.click(screen.getByRole('tab', { name: 'Generated' }))
+    await userEvent.tab()
+
+    expect(screen.getByRole('tabpanel', { name: 'Generated' })).toHaveFocus()
+  })
 })
