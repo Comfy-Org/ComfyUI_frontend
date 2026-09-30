@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import type { Ref } from 'vue'
-import { computed, ref } from 'vue'
+import { computed, ref, toRaw } from 'vue'
 
 import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
 import type {
@@ -42,6 +42,12 @@ interface BackgroundTurn {
   userText: string | undefined
   userAttachments: UserAttachment[] | undefined
   settled: boolean
+}
+
+/** A same-id copy filtered out of `kept`, with the slot it came from. */
+interface RemovedSameIdCopy {
+  message: AssistantMessage
+  index: number
 }
 
 const MAX_DEPARTED_TURNS = 32
@@ -447,7 +453,7 @@ export const useAgentConversationStore = defineStore(
       entry: BackgroundTurn,
       kept: AssistantMessage[],
       poppedHydratedCopy: boolean,
-      removedSameIdCopy: AssistantMessage | undefined
+      removedSameIdCopy: RemovedSameIdCopy | undefined
     ): boolean {
       if (poppedHydratedCopy) return false
       return (
@@ -485,7 +491,12 @@ export const useAgentConversationStore = defineStore(
      */
     function resyncActiveSlot(): void {
       if (liveMessage === null) return
-      const index = messages.value.indexOf(liveMessage)
+      // Through `toRaw`: `messages.value` hands back reactive proxies, and
+      // `liveMessage` is the raw object, so `indexOf` would never match and
+      // every resume would tear the slot down.
+      const index = messages.value.findIndex(
+        (message) => toRaw(message) === liveMessage
+      )
       if (index >= 0) {
         activeIndex.value = index
         return
@@ -515,9 +526,16 @@ export const useAgentConversationStore = defineStore(
       // turn by the server's turn_id; row.id bridges the two. Matching turns by
       // identity, not by shared user text, is what stops a repeated prompt from
       // colliding with an unrelated turn.
-      const removedSameIdCopy = messages.value.find(
+      const removedSameIdIndex = messages.value.findIndex(
         (message) => message.id === entry.message.id
       )
+      const removedSameIdCopy =
+        removedSameIdIndex < 0
+          ? undefined
+          : {
+              message: messages.value[removedSameIdIndex],
+              index: removedSameIdIndex
+            }
       const kept = messages.value.filter((m) => m.id !== entry.message.id)
       const poppedHydratedCopy = removeHydratedCopy(entry, kept)
       if (
@@ -749,7 +767,11 @@ export const useAgentConversationStore = defineStore(
           const copy = transport === undefined ? settledCopy(part) : { ...part }
           adopted.push(copy)
           transport?.adoptToolPart(copy)
-        } else if (part.state === 'done' && !holdsOwnOutcome(alreadyLive)) {
+        } else if (
+          part.state === 'done' &&
+          !holdsOwnOutcome(alreadyLive) &&
+          !transport?.wouldGateOnCanvasSync(alreadyLive)
+        ) {
           settleFromRow(alreadyLive, part)
         }
       }
@@ -829,9 +851,14 @@ export const useAgentConversationStore = defineStore(
      * the row is telling a different story (stop copy, an error message) and
      * the row is authoritative for that.
      *
-     * Copied parts are forced to `done`. The caller is the branch that keeps
-     * the row and disposes the live transport, so a part left `streaming`
-     * would spin with nothing able to settle it.
+     * Only the tail rides across, onto the row's own last text part. Moving
+     * the live text parts over wholesale would gather every text part of the
+     * row into one run, dropping a tool call the agent announced mid-answer
+     * below the finished answer.
+     *
+     * A part created here is `done`. The caller is the branch that keeps the
+     * row and disposes the live transport, so one left `streaming` would spin
+     * with nothing able to settle it.
      */
     function adoptFresherLiveText(
       hydrated: AssistantMessage,
@@ -846,31 +873,40 @@ export const useAgentConversationStore = defineStore(
         !liveText.startsWith(hydratedText)
       )
         return
-      const textParts = live.parts
-        .filter((part) => part.type === 'text')
-        .filter((part) => part !== draft)
-      const insertAt = hydrated.parts.findIndex((part) => part.type === 'text')
-      hydrated.parts = hydrated.parts.filter((part) => part.type !== 'text')
-      hydrated.parts.splice(
-        insertAt < 0 ? hydrated.parts.length : insertAt,
-        0,
-        ...textParts.map((part) => ({ ...part, state: 'done' as const }))
+      const missing = liveText.slice(hydratedText.length)
+      const text = hydrated.parts.findLast(
+        (part): part is TextPart => part.type === 'text'
       )
+      if (text) {
+        text.text += missing
+        return
+      }
+      hydrated.parts = spliceBeforeTrailingReply(hydrated.parts, [
+        { type: 'text', text: missing, state: 'done' }
+      ])
     }
 
     /**
      * `index` is -1 for a copy resolved off `removedSameIdCopy`: that one was
      * filtered out of `kept` before this ran, so there is no slot to splice.
+     * `restoreAt` is where it sat before that filter, so a caller putting it
+     * back lands it in its own place instead of after every later turn.
      */
     function locateHydratedCopy(
       hydratedTurnId: TurnId,
       kept: AssistantMessage[],
-      removedSameIdCopy: AssistantMessage | undefined
-    ): { hydrated: AssistantMessage; index: number } | undefined {
+      removedSameIdCopy: RemovedSameIdCopy | undefined
+    ):
+      | { hydrated: AssistantMessage; index: number; restoreAt: number }
+      | undefined {
       const index = kept.findIndex((message) => message.id === hydratedTurnId)
-      if (index >= 0) return { hydrated: kept[index], index }
-      if (removedSameIdCopy?.id === hydratedTurnId)
-        return { hydrated: removedSameIdCopy, index: -1 }
+      if (index >= 0) return { hydrated: kept[index], index, restoreAt: index }
+      if (removedSameIdCopy?.message.id === hydratedTurnId)
+        return {
+          hydrated: removedSameIdCopy.message,
+          index: -1,
+          restoreAt: removedSameIdCopy.index
+        }
       return undefined
     }
 
@@ -884,7 +920,7 @@ export const useAgentConversationStore = defineStore(
     function adoptHydratedTurn(
       entry: BackgroundTurn,
       kept: AssistantMessage[],
-      removedSameIdCopy: AssistantMessage | undefined
+      removedSameIdCopy: RemovedSameIdCopy | undefined
     ): { keeps: 'live' | 'hydrated'; turnId: TurnId } | undefined {
       const hydratedTurnId = hydratedTurnIdsByRowId.get(entry.messageId)
       if (hydratedTurnId === undefined) return undefined
@@ -893,8 +929,9 @@ export const useAgentConversationStore = defineStore(
         kept,
         removedSameIdCopy
       )
-      if (!located || located.hydrated === entry.message) return undefined
-      const { hydrated, index } = located
+      if (!located || toRaw(located.hydrated) === entry.message)
+        return undefined
+      const { hydrated, index, restoreAt } = located
       if (!hydratedStreamingTurnIds.has(hydratedTurnId)) {
         adoptLiveOnlyParts(hydrated, entry.message)
         adoptFresherLiveText(
@@ -902,7 +939,7 @@ export const useAgentConversationStore = defineStore(
           entry.message,
           entry.transport.openDraft()
         )
-        if (index < 0) kept.push(hydrated)
+        if (index < 0) kept.splice(restoreAt, 0, hydrated)
         return { keeps: 'hydrated', turnId: hydratedTurnId }
       }
       if (index >= 0) kept.splice(index, 1)
@@ -931,6 +968,7 @@ export const useAgentConversationStore = defineStore(
       )
         return false
       kept.pop()
+      userTexts.value.delete(last.id)
       return true
     }
 

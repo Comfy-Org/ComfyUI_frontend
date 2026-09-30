@@ -99,6 +99,14 @@ export interface AgentEventTransport {
   /** Whether this transport already observed the matching ask resolution. */
   hasResolvedAsk: (askId: string) => boolean
   /**
+   * PM-1575: whether this transport would hold this part's success back for
+   * canvas catch-up. A caller settling a part from another source has to ask,
+   * or it flips the part to `done` and the gated branch of
+   * `resolveToolCallState` -- which only ever sets `pendingCanvasSync`, never
+   * `state` -- has nothing left to hold, failing the gate open for good.
+   */
+  wouldGateOnCanvasSync: (part: ToolPart) => boolean
+  /**
    * PM-1575: called whenever the bound workflow's CRDT follower applies a
    * fresh doc update, so any tool-call parts this transport held back
    * pending canvas catch-up (see `shouldAwaitCanvasSync` below) can settle to
@@ -555,6 +563,8 @@ export function createAgentEventTransport(
     appendReplyText,
     openDraft: () => draft,
     hasResolvedAsk: (askId) => resolvedAskIds.has(askId),
+    wouldGateOnCanvasSync: (part) =>
+      CANVAS_MUTATING_TOOLS.has(part.name) && shouldAwaitCanvasSync(),
     notifyCanvasCaughtUp,
     hasPendingCanvasSync,
     dispose

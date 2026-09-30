@@ -1550,6 +1550,49 @@ describe('useAgentConversationStore', () => {
   )
 
   /**
+   * The other half of the slot check: a resume that leaves the bound message
+   * on screen must LEAVE the slot alone. Identity here is raw-against-reactive
+   * -- `messages.value` yields proxies while `liveMessage` is the raw object --
+   * so a plain `indexOf` silently reports "gone" for a message that is right
+   * there, and tears down a mid-ask turn's transport along with it.
+   */
+  it('keeps the active slot when the resume leaves its message on screen', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'upscale this')
+    store.ingest(delta('t1', 'Partial'))
+    store.stashActiveTurn()
+    store.setThreadId('th-other')
+    store.ingest(done('t1'))
+
+    const askingRow = historyRow(2, 'assistant', 'ask-turn', '', 'ask-row')
+    askingRow.status = 'streaming'
+    askingRow.pending_ask = {
+      message_id: 'ask-row',
+      ask_id: 'ask-turn:call-1',
+      kind: 'run_approval',
+      context: { workflow_id: 'workflow-1' },
+      prompt: 'Run workflow?',
+      options: [{ id: 'run', label: 'Run' }],
+      min_selections: 1,
+      max_selections: 1,
+      allow_other: false
+    }
+    store.setThreadId('th')
+    store.hydrate([historyRow(1, 'user', 'ask-turn', 'run it'), askingRow])
+    store.resumeBackgroundTurn()
+
+    expect(store.activeTurnId).toBe('ask-row')
+    expect(store.isStreaming).toBe(true)
+    expect(
+      store.messages
+        .find((message) => message.id === 'ask-turn')
+        ?.parts.some((part) => part.type === 'runApproval')
+    ).toBe(true)
+  })
+
+  /**
    * `hydrate()` binds the active slot to the mid-ask row it built a transport
    * for, and the resume then adopts that row's parts onto the live message and
    * drops the row itself. Leaving the slot aimed at the dropped message points
@@ -1856,6 +1899,44 @@ describe('useAgentConversationStore', () => {
         state: 'streaming',
         ok: true
       })
+    ])
+  })
+
+  /**
+   * PM-1575: the row can report success for a canvas-mutating call the live
+   * transport is still holding for canvas catch-up. Settling it from the row
+   * is the premature success glyph the gate exists to prevent, and it cannot
+   * be undone -- the gated branch of `resolveToolCallState` only ever sets
+   * `pendingCanvasSync`, never `state`, so the real terminal frame finds
+   * nothing left to hold and the gate stays open.
+   */
+  it('leaves a gated canvas call held even when the row reports it succeeded', () => {
+    const store = useAgentConversationStore()
+    store.setCanvasSyncGate(() => true)
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'add a node')
+    store.ingest(toolCall('t1', 'add_node', 'running'))
+    store.stashActiveTurn()
+
+    const streamingRow = historyRow(2, 'assistant', 'server-turn', '', 't1')
+    streamingRow.status = 'streaming'
+    streamingRow.content = {
+      tool_calls: [{ id: 'call-add_node', tool_name: 'add_node', status: 'ok' }]
+    }
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'add a node'),
+      streamingRow
+    ])
+    store.resumeBackgroundTurn()
+
+    expect(
+      store.messages[0].parts.filter((part) => part.type === 'tool')
+    ).toEqual([
+      expect.objectContaining({ callId: 'call-add_node', state: 'streaming' })
     ])
   })
 
@@ -2206,6 +2287,67 @@ describe('useAgentConversationStore', () => {
     store.resumeBackgroundTurn()
 
     expect(partTexts(store)).toEqual(['persisted reply'])
+  })
+
+  /**
+   * The recovered tail belongs on the row's own last text part. Gathering the
+   * row's text into one run instead drops a tool call the agent announced
+   * mid-answer below the finished answer.
+   */
+  it('keeps a mid-answer tool call in place while recovering the live tail', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'go')
+    store.ingest(delta('t1', 'Hello world!'))
+    store.stashActiveTurn()
+
+    const withTool = historyRow(3, 'assistant', 'server-turn', ' world', 't1')
+    withTool.content = {
+      text: ' world',
+      tool_calls: [{ id: 'call-add_node', tool_name: 'add_node', status: 'ok' }]
+    }
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'go'),
+      historyRow(2, 'assistant', 'server-turn', 'Hello', 'row-2'),
+      withTool
+    ])
+    store.resumeBackgroundTurn()
+
+    expect(store.messages[0].parts.map((part) => part.type)).toEqual([
+      'text',
+      'tool',
+      'text'
+    ])
+    expect(partTexts(store)).toEqual(['Hello', ' world!'])
+  })
+
+  /**
+   * The same-id copy is filtered out of `kept` before the merge, so putting it
+   * back has to land it in its own slot. Appending instead drops the turn --
+   * and the user bubble that travels with it -- below every later turn.
+   */
+  it('restores the merged same-id copy to its own place in the transcript', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'first')
+    store.ingest(activeTab('workflow-7', 't1'))
+    store.stashActiveTurn()
+
+    store.hydrate([
+      historyRow(1, 'user', 't1', 'first'),
+      historyRow(2, 'assistant', 't1', 'first reply', 't1'),
+      historyRow(3, 'user', 'turn-b', 'second'),
+      historyRow(4, 'assistant', 'turn-b', 'second reply', 'row-4')
+    ])
+    store.resumeBackgroundTurn()
+
+    expect(store.messages.map((message) => message.id)).toEqual([
+      't1',
+      'turn-b'
+    ])
+    expect(partTexts(store)).toEqual(['first reply', 'second reply'])
   })
 
   it('resolves existing paywalls without resurrecting them', () => {
