@@ -45,6 +45,7 @@ export interface CinematicModel {
   readonly firstFrameVideo?: CinematicVideoCapabilities
 }
 
+// GPT Image 2 / 2.5 are left out until the pinned contracts gain their `image` edit field.
 const CINEMATIC_MODEL_LOGOS: Readonly<Record<string, string>> = {
   'byteplus--seedream-5-pro--generate-images': '/icons/ai-models/bytedance.svg',
   'vertexai--gemini-3-pro-image--generate-images':
@@ -58,10 +59,6 @@ const CINEMATIC_MODEL_LOGOS: Readonly<Record<string, string>> = {
     '/icons/ai-models/gemini.svg',
   'qwen--qwen-image-3.0-text-to-image--generate-images':
     '/icons/ai-models/qwen.svg',
-  'openai--gpt-image-2--generate-images': '/icons/ai-models/openai.svg',
-  'openai--gpt-image-2.5-flare--generate-images': '/icons/ai-models/openai.svg',
-  'openai--gpt-image-2.5-sunburst--generate-images':
-    '/icons/ai-models/openai.svg',
   'xai--grok-imagine-image-2.0--generate-images': '/icons/ai-models/grok.svg',
   'recraft--v4.1-text-to-image--generate-images': '/icons/ai-models/recraft.svg'
 }
@@ -196,12 +193,8 @@ const CINEMATIC_VIDEO_MODELS: Readonly<Record<string, VideoEntry>> = {
     name: 'Grok Imagine 1.5',
     logo: '/icons/ai-models/grok.svg',
     firstFrame: 'xai--grok-imagine-video-1.5--animate-images'
-  },
-  'kling--v3--generate-videos': {
-    name: 'Kling 3.0',
-    logo: '/icons/ai-models/kling.svg',
-    firstFrame: 'kling--v3--animate-images'
   }
+  // Kling 3.0 is left out until its image-to-video route takes a first frame.
 }
 
 function firstFrameSupport(

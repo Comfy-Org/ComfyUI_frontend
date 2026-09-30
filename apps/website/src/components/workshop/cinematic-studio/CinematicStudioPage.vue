@@ -5,6 +5,7 @@ import { computed, onMounted, ref, shallowRef, watch } from 'vue'
 
 import { provideStudioSwitchGuard } from '../../../composables/useStudioSwitchGuard'
 import type { AppWorkshopModel } from '../../../config/models-catalogue'
+import type { WorkshopContract } from '../../../config/workshop-contract'
 import type { WorkshopAppId } from '../../../lib/workshop/apps'
 import { workshopAppHref } from '../../../lib/workshop/apps'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
@@ -27,11 +28,13 @@ import ReshootStudio from './reshoot/ReshootStudio.vue'
 const {
   apps,
   models,
+  enhanceContract,
   initialApp = 'studio',
   locale = 'en'
 } = defineProps<{
   apps: readonly AppWorkshopModel[]
   models: readonly CinematicModel[]
+  enhanceContract?: WorkshopContract
   initialApp?: WorkshopAppId
   locale?: Locale
 }>()
@@ -143,10 +146,17 @@ function pickApp(id: string) {
     <CinematicStudioPanel
       v-else-if="layout === 'd'"
       :models
+      :enhance-contract="enhanceContract"
       :show-credits="false"
       :locale
     />
-    <CinematicStudio v-else :models :show-credits="false" :locale />
+    <CinematicStudio
+      v-else
+      :models
+      :enhance-contract="enhanceContract"
+      :show-credits="false"
+      :locale
+    />
     <CinematicScenarioMenu
       v-if="reviewing"
       :app

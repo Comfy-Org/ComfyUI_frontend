@@ -81,8 +81,7 @@ describe('runnableCinematicVideoModels', () => {
       'Wan 3.0',
       'FLUX.3 Video',
       'Gemini Omni Flash 1.1',
-      'Grok Imagine 1.5',
-      'Kling 3.0'
+      'Grok Imagine 1.5'
     ])
     expect(models.every((model) => model.mode === 'video')).toBe(true)
   })

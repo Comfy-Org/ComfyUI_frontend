@@ -7,7 +7,7 @@ import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import CinematicEnhanceSwitch from './CinematicEnhanceSwitch.vue'
 
 describe('CinematicEnhanceSwitch', () => {
-  it('toggles the AI prompt and keeps its hint off the page until hover', async () => {
+  it('toggles Enhance prompt and keeps its hint off the page until hover', async () => {
     const enhance = ref(true)
     render({
       setup: () => () =>

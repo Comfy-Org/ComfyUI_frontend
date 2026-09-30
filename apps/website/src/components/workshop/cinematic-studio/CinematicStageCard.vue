@@ -16,6 +16,7 @@ import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import { framedStyle } from './aspect-style'
 import CinematicCreditSummary from './CinematicCreditSummary.vue'
 import CinematicSequence from './CinematicSequence.vue'
+import CinematicTakeActions from './CinematicTakeActions.vue'
 import CinematicTakeBar from './CinematicTakeBar.vue'
 import CinematicTakeFrame from './CinematicTakeFrame.vue'
 
@@ -24,18 +25,25 @@ const {
   aspect,
   models,
   memberWorkspace,
+  canAnimate = false,
+  canReference = true,
   locale = 'en'
 } = defineProps<{
   reel: Reel
   aspect: AspectRatio
   models: readonly CinematicModel[]
   memberWorkspace?: string
+  canAnimate?: boolean
+  canReference?: boolean
   locale?: Locale
 }>()
 
 const emit = defineEmits<{
   select: [id: string]
   retry: [...ids: string[]]
+  again: []
+  reference: [url: string, name: string]
+  animate: [url: string, name: string]
 }>()
 
 const current = computed(() => selectedTake(reel))
@@ -87,7 +95,30 @@ const siblings = computed(() =>
           :member-workspace="memberWorkspace"
           :locale
           @retry="emit('retry', current.id)"
-        />
+        >
+          <div
+            v-if="current.status === 'done'"
+            data-testid="cinematic-take-overlay"
+            :class="
+              cn(
+                'absolute inset-x-0 flex justify-end from-primary-comfy-ink/90 via-primary-comfy-ink/50 to-transparent p-4 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 pointer-coarse:opacity-100',
+                current.output.kind === 'video'
+                  ? 'top-0 items-start bg-linear-to-b pb-16'
+                  : 'bottom-0 items-end bg-linear-to-t pt-16'
+              )
+            "
+          >
+            <CinematicTakeActions
+              :take="current"
+              :can-animate="canAnimate"
+              :can-reference="canReference"
+              :locale
+              @again="emit('again')"
+              @reference="(url, name) => emit('reference', url, name)"
+              @animate="(url, name) => emit('animate', url, name)"
+            />
+          </div>
+        </CinematicTakeFrame>
         <CinematicCreditSummary
           :takes="siblings"
           :member-workspace="memberWorkspace"

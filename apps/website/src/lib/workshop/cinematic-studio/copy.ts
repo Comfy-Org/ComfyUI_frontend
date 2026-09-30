@@ -275,12 +275,12 @@ const copy = {
     'zh-CN': '描述这一刻：谁、在哪里、发生了什么。'
   },
   'cinematic.scene.enhance': {
-    en: 'AI prompt',
-    'zh-CN': 'AI 提示词'
+    en: 'Enhance prompt',
+    'zh-CN': '增强提示词'
   },
   'cinematic.scene.enhanceHint': {
-    en: 'Adds “cinematic film still” to the prompt',
-    'zh-CN': '在提示词中加入“电影静帧”描述'
+    en: 'Rewrites your scene as a cinematic film still',
+    'zh-CN': '将场景改写为电影静帧描述'
   },
   'cinematic.camera.body': {
     en: 'Body',
@@ -597,8 +597,8 @@ const copy = {
   'cinematic.video.audioOn': { en: 'On', 'zh-CN': '开启' },
   'cinematic.video.audioOff': { en: 'Off', 'zh-CN': '关闭' },
   'cinematic.video.enhanceHint': {
-    en: 'Adds cinematic motion and continuous action to the prompt',
-    'zh-CN': '在提示词中添加电影运镜和连续动作'
+    en: 'Rewrites your scene as one continuous cinematic shot',
+    'zh-CN': '将场景改写为一个连续的电影镜头'
   },
   'cinematic.video.mode': { en: 'Creation type', 'zh-CN': '创作类型' },
   'cinematic.video.image': { en: 'Image', 'zh-CN': '图像' },

@@ -1,5 +1,6 @@
 import { computed, onMounted, ref, shallowRef, watchEffect } from 'vue'
 
+import type { WorkshopContract } from '../config/workshop-contract'
 import type { CinematicCopyKey } from '../lib/workshop/cinematic-studio/copy'
 
 import type {
@@ -48,7 +49,10 @@ function closestLength(values: readonly number[], target: number) {
 }
 
 /** The shot being directed, shared by every Cinematic Studio layout. */
-export function useCinematicShot(models: readonly CinematicModel[]) {
+export function useCinematicShot(
+  models: readonly CinematicModel[],
+  enhanceContract?: WorkshopContract
+) {
   const imageModels = models.filter((model) => model.mode !== 'video')
   const videoModels = models.filter((model) => model.mode === 'video')
   const mode = ref<CinematicMode>('image')
@@ -77,7 +81,7 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
   const mainColor = ref<number>()
   const duration = ref<number>()
   const videoResolution = ref<string>()
-  const audio = ref(false)
+  const audio = ref(true)
   const firstFrame = shallowRef<StudioImage>()
   const lastFrame = shallowRef<StudioImage>()
   const sourceVideo = shallowRef<StudioImage>()
@@ -163,7 +167,11 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
 
   const studio = isCinematicDemo()
     ? useCinematicDemoRun()
-    : useCinematicStudioRun(models.length, () => estimate.value?.total.min)
+    : useCinematicStudioRun(
+        models.length,
+        () => estimate.value?.total.min,
+        enhanceContract
+      )
 
   const memberWorkspace = computed(() =>
     studio.session.value?.role === 'member'
@@ -263,6 +271,7 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
         modelSlug: modelSlug.value,
         firstFrameSlug: model.value?.firstFrameSlug,
         prompt: cinematicPrompt(brief.value),
+        brief: brief.value,
         aspect: aspect.value,
         resolutionPixels: 0,
         // One clip per shot: video has no estimate to warn about a batch.
@@ -284,6 +293,7 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
       modelSlug: modelSlug.value,
       referenceSlug: model.value?.referenceSlug,
       prompt: cinematicPrompt(brief.value),
+      brief: brief.value,
       aspect: aspect.value,
       resolutionPixels:
         RESOLUTIONS.find((option) => option.id === resolution.value)?.pixels ??

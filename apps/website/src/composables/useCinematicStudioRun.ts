@@ -14,6 +14,7 @@ import {
 } from '../config/workshop-router-errors'
 import type { WorkshopSession } from '../config/workshop-session-state'
 import { useWorkshopSession } from '../config/workshop-session-state'
+import { runWorkshopRouter } from '../config/workshop-router-queue'
 import { workshopIdempotencyKey } from '../config/workshop-snippets'
 import { createWorkshopUrlUploader } from '../config/workshop-url-upload'
 import type { AspectRatio } from '../lib/workshop/cinematic-studio/catalog'
@@ -21,7 +22,14 @@ import {
   frameParameters,
   watermarksOff
 } from '../lib/workshop/cinematic-studio/frames'
+import type { WorkshopContract } from '../config/workshop-contract'
+import {
+  enhancedScene,
+  enhanceRequest
+} from '../lib/workshop/cinematic-studio/enhance'
 import { studioGate } from '../lib/workshop/cinematic-studio/gate'
+import type { CinematicBrief } from '../lib/workshop/cinematic-studio/prompt'
+import { cinematicPrompt } from '../lib/workshop/cinematic-studio/prompt'
 import type { CinematicVideoShot } from '../lib/workshop/cinematic-studio/video'
 import {
   videoCapabilities,
@@ -54,6 +62,8 @@ interface ShotRequest {
   /** Present for a video shot. */
   readonly video?: Omit<CinematicVideoShot, 'aspect'>
   readonly prompt: string
+  /** With `enhance` on, its scene is rewritten before the takes run. */
+  readonly brief?: CinematicBrief
   readonly aspect: AspectRatio
   readonly resolutionPixels: number
   readonly takes: number
@@ -65,6 +75,17 @@ interface ShotRequest {
 interface UnsettledTake {
   readonly key: string
   readonly prepared?: PreparedRouterRender
+}
+
+function shotSlug(request: ShotRequest): string | undefined {
+  if (request.references.length) return request.referenceSlug
+  if (request.video?.firstFrame) return request.firstFrameSlug
+  return request.modelSlug
+}
+
+function sceneToRewrite(request: ShotRequest): string | undefined {
+  const brief = request.brief
+  return brief?.enhance && brief.scene.trim() ? brief.scene : undefined
 }
 
 const fileIds = new WeakMap<File, string>()
@@ -158,7 +179,8 @@ function mayStillSettle(error: unknown): boolean {
  */
 export function useCinematicStudioRun(
   modelCount: number,
-  shotCost: () => number | undefined = () => undefined
+  shotCost: () => number | undefined = () => undefined,
+  enhanceContract?: WorkshopContract
 ) {
   const { user, session, sessionFailure, settled, ensureFresh } =
     useWorkshopSession()
@@ -399,13 +421,94 @@ export function useCinematicStudioRun(
     }
   }
 
+  /** Falls back to the prompt as sent when the rewrite fails. */
+  async function rewriteScene(
+    scene: string,
+    video: boolean,
+    startedFor: WorkshopSession,
+    signal: AbortSignal
+  ): Promise<string | undefined> {
+    if (!enhanceContract) return undefined
+    const result = await runWorkshopRouter({
+      contract: enhanceContract,
+      body: enhanceRequest(scene, video),
+      token: await tokenFor(startedFor, signal),
+      freshToken: () => tokenFor(startedFor, signal),
+      idempotencyKey: workshopIdempotencyKey(),
+      signal
+    })
+    const reply = result.outputs.find((output) => output.kind === 'text')
+    releaseRouterOutputs(result.outputs)
+    return reply?.text && !reply.truncated
+      ? enhancedScene(reply.text)
+      : undefined
+  }
+
+  async function enhancedPrompt(
+    request: ShotRequest,
+    startedFor: WorkshopSession,
+    signal: AbortSignal
+  ): Promise<string> {
+    const scene = sceneToRewrite(request)
+    if (!scene || !request.brief) return request.prompt
+    const rewritten = await rewriteScene(
+      scene,
+      !!request.brief.video,
+      startedFor,
+      signal
+    ).catch(() => {
+      signal.throwIfAborted()
+      return undefined
+    })
+    return rewritten
+      ? cinematicPrompt({ ...request.brief, scene: rewritten, enhance: false })
+      : request.prompt
+  }
+
+  /** Undefined when cancelled: the plans keep their brief, so a retry asks again. */
+  async function rewritten(
+    takes: readonly TakePlan[],
+    startedFor: WorkshopSession
+  ): Promise<readonly TakePlan[] | undefined> {
+    const shots = [
+      ...new Set(takes.map(({ request }) => request).filter(sceneToRewrite))
+    ]
+    if (!shots.length) return takes
+    const enhancing = new AbortController()
+    controller = enhancing
+    try {
+      const ready = new Map<ShotRequest, ShotRequest>()
+      for (const request of shots) {
+        const prompt = await enhancedPrompt(
+          request,
+          startedFor,
+          enhancing.signal
+        )
+        enhancing.signal.throwIfAborted()
+        ready.set(request, { ...request, prompt, brief: undefined })
+      }
+      const plansReady = takes.map((take) => ({
+        ...take,
+        request: ready.get(take.request) ?? take.request
+      }))
+      plansReady.forEach((take) => plans.set(take.id, take))
+      // Sibling takes of the same shot reuse this rewrite, so retrying one
+      // later does not enhance again.
+      for (const [id, plan] of plans) {
+        const resolved = ready.get(plan.request)
+        if (resolved) plans.set(id, { ...plan, request: resolved })
+      }
+      return plansReady
+    } catch {
+      return undefined
+    } finally {
+      if (controller === enhancing) controller = undefined
+    }
+  }
+
   async function generate(request: ShotRequest) {
     const startedFor = session.value
-    const slug = request.references.length
-      ? request.referenceSlug
-      : request.video?.firstFrame
-        ? request.firstFrameSlug
-        : request.modelSlug
+    const slug = shotSlug(request)
     if (rendering.value || gate.value !== 'ready' || !startedFor || !slug)
       return
     const takes = Array.from({ length: request.takes }, (_, index) => ({
@@ -424,7 +527,8 @@ export function useCinematicStudioRun(
       startedAt: Date.now(),
       preview: request.preview
     })
-    await runTakes(takes, startedFor)
+    const ready = await rewritten(takes, startedFor)
+    if (ready) await runTakes(ready, startedFor)
   }
 
   /** Retries settled takes; the shot being directed does not price them. */
@@ -443,7 +547,8 @@ export function useCinematicStudioRun(
     retried.forEach(({ id }) =>
       dispatch({ type: 'takeRetried', id, startedAt })
     )
-    await runTakes(retried, startedFor)
+    const ready = await rewritten(retried, startedFor)
+    if (ready) await runTakes(ready, startedFor)
   }
 
   function cancel() {

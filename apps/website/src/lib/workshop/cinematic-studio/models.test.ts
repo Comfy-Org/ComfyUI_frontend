@@ -96,9 +96,6 @@ describe('reference operations', () => {
       models.filter((model) => !model.referenceSlug).map((model) => model.slug)
     ).toEqual([
       'krea--krea-2-large--generate-images',
-      'openai--gpt-image-2--generate-images',
-      'openai--gpt-image-2.5-flare--generate-images',
-      'openai--gpt-image-2.5-sunburst--generate-images',
       'xai--grok-imagine-image-2.0--generate-images',
       'recraft--v4.1-text-to-image--generate-images'
     ])

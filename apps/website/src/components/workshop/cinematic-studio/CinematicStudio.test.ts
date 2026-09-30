@@ -20,6 +20,8 @@ import {
 } from '../../../config/workshop-credits'
 import { getRouterWorkshopModelDetail } from '../../../config/workshop-router-content'
 import { WorkshopRouterError } from '../../../config/workshop-router-errors'
+import { runWorkshopRouter } from '../../../config/workshop-router-queue'
+import { workshopContract } from '../../../config/workshop-contract-catalog'
 import { useWorkshopSession } from '../../../config/workshop-session-state'
 import { appModels } from '../../../config/workshop-app-content'
 import { prepareModelPage } from '../../../routes/models/model-page'
@@ -32,6 +34,7 @@ import {
 import { CINEMATIC_STUDIO_APP_SLUG } from '../../../lib/workshop/cinematic-studio/analytics'
 import { t } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import { ENHANCE_MODEL } from '../../../lib/workshop/cinematic-studio/enhance'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import {
   runnableCinematicModels,
@@ -45,6 +48,9 @@ vi.mock(import('../../../config/workshop-session-state'))
 vi.mock(import('../../../config/workshop-credits'))
 vi.mock(import('../../../scripts/posthog'))
 vi.mock(import('../../../config/router-render'), { spy: true })
+// the Enhance prompt rewrite; unanswered by default, so shots fall back to
+// the fixed phrase unless a test gives it a reply
+vi.mock(import('../../../config/workshop-router-queue'), { spy: true })
 
 const deploy = vi.hoisted(() => ({ env: '' }))
 vi.mock(import('astro:env/client'), () => ({
@@ -155,6 +161,9 @@ describe('CinematicStudio', () => {
     vi.mocked(router_render)
       .mockReset()
       .mockRejectedValue(new WorkshopRouterError('client'))
+    vi.mocked(runWorkshopRouter)
+      .mockReset()
+      .mockRejectedValue(new WorkshopRouterError('client'))
     vi.stubGlobal('fetch', fetchData)
     fetchData.mockImplementation(servePageData)
     window.history.replaceState(null, '', '/models/apps/cinematic-studio/')
@@ -202,7 +211,7 @@ describe('CinematicStudio', () => {
     expect(screen.getByText(`${first.name} · 16:9`)).toBeInTheDocument()
   })
 
-  it('sends the aspect and AI prompt setting chosen in the composer', async () => {
+  it('sends the aspect and Enhance prompt setting chosen in the composer', async () => {
     vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
     const user = renderStudio()
 
@@ -210,7 +219,7 @@ describe('CinematicStudio', () => {
     // Seedream 5.0 Pro, the first model, has no 21:9 size, so it opens on 16:9.
     await user.click(screen.getByRole('button', { name: 'Aspect ratio: 16:9' }))
     await user.click(await screen.findByRole('menuitemradio', { name: /1:1/ }))
-    await user.click(screen.getByRole('switch', { name: 'AI prompt' }))
+    await user.click(screen.getByRole('switch', { name: 'Enhance prompt' }))
     await user.click(generateButton())
 
     await vi.waitFor(() => expect(router_render).toHaveBeenCalledTimes(1))
@@ -220,6 +229,230 @@ describe('CinematicStudio', () => {
     const shot = sent(vi.mocked(router_render).mock.calls[0])
     expect(shot.values).toMatchObject({ size: '2048x2048' })
     expect(shot.prompt).not.toContain('Cinematic film still')
+  })
+
+  describe('Enhance prompt', () => {
+    const enhance = workshopContract(ENHANCE_MODEL)
+    function renderEnhanced(studioModels: readonly CinematicModel[] = models) {
+      render(CinematicStudio, {
+        props: { models: studioModels, enhanceContract: enhance }
+      })
+      return userEvent.setup()
+    }
+    const lunaReply = (text: string, status = 'completed') => ({
+      requestId: 'luna-1',
+      deadlineCollections: 0,
+      outputs: [
+        {
+          kind: 'text' as const,
+          url: 'blob:luna',
+          fileName: 'luna.json',
+          text: JSON.stringify({
+            status,
+            output: [
+              { type: 'reasoning', summary: [] },
+              {
+                type: 'message',
+                content: [{ type: 'output_text', text }]
+              }
+            ]
+          })
+        }
+      ]
+    })
+    const lunaBody = (call = 0) =>
+      vi.mocked(runWorkshopRouter).mock.calls[call][0].body as {
+        instructions: string
+        input: string
+      }
+
+    it('rewrites the scene once with GPT 5.6 Luna and sends it to every take', async () => {
+      vi.mocked(runWorkshopRouter).mockResolvedValue(
+        lunaReply('A waitress wipes the counter as the first sun hits it.')
+      )
+      vi.mocked(router_render).mockImplementation(async (slug) =>
+        rendered(slug)
+      )
+      const user = renderEnhanced()
+      await chooseTakes(user, 2)
+      await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+      await user.click(generateButton())
+
+      await vi.waitFor(() => expect(router_render).toHaveBeenCalledTimes(2))
+      expect(runWorkshopRouter).toHaveBeenCalledOnce()
+      const call = vi.mocked(runWorkshopRouter).mock.calls[0][0]
+      expect(call.contract.id).toBe('openai/gpt-5.6-luna')
+      expect(lunaBody().input).toBe('A diner at dawn')
+      expect(lunaBody().instructions).toContain('film still')
+      for (const take of vi.mocked(router_render).mock.calls) {
+        const prompt = sent(take).prompt
+        expect(prompt).toContain('A waitress wipes the counter')
+        expect(prompt).not.toContain('A diner at dawn')
+        expect(prompt).not.toContain('Cinematic film still')
+      }
+    })
+
+    it('asks for motion over time for a clip', async () => {
+      vi.mocked(runWorkshopRouter).mockResolvedValue(
+        lunaReply('The keeper climbs the stairs, then pauses at the lamp.')
+      )
+      vi.mocked(router_render).mockImplementation(async (slug) =>
+        rendered(slug)
+      )
+      const user = renderEnhanced([...models, ...videoModels])
+      await user.click(screen.getByRole('button', { name: 'Video' }))
+      await user.type(
+        screen.getByLabelText('Scene'),
+        'A lighthouse keeper climbs'
+      )
+      await user.click(generateButton())
+
+      await vi.waitFor(() => expect(router_render).toHaveBeenCalledOnce())
+      expect(lunaBody().instructions).toContain('continuous cinematic shot')
+      expect(lunaBody().instructions).not.toContain('film still')
+      expect(sent(vi.mocked(router_render).mock.calls[0]).prompt).toContain(
+        'then pauses at the lamp'
+      )
+    })
+
+    it('falls back to the fixed phrase when the rewrite fails', async () => {
+      vi.mocked(router_render).mockImplementation(async (slug) =>
+        rendered(slug)
+      )
+      const user = renderEnhanced()
+      await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+      await user.click(generateButton())
+
+      await vi.waitFor(() => expect(router_render).toHaveBeenCalledOnce())
+      expect(runWorkshopRouter).toHaveBeenCalledOnce()
+      const prompt = sent(vi.mocked(router_render).mock.calls[0]).prompt
+      expect(prompt).toContain('A diner at dawn')
+      expect(prompt).toContain('Cinematic film still')
+    })
+
+    it('stops before any take when cancelled during the rewrite', async () => {
+      vi.mocked(runWorkshopRouter).mockImplementation(
+        ({ signal }) =>
+          new Promise((_resolve, reject) =>
+            signal.addEventListener('abort', () =>
+              reject(new DOMException('Stopped', 'AbortError'))
+            )
+          )
+      )
+      const user = renderEnhanced()
+      await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+      await user.click(generateButton())
+      await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledOnce())
+
+      await user.click(
+        screen.getByRole('button', { name: tc('cinematic.output.cancel') })
+      )
+
+      await vi.waitFor(() =>
+        expect(screen.getByRole('status')).toHaveTextContent(
+          t('workshop.output.cancelled')
+        )
+      )
+      expect(router_render).not.toHaveBeenCalled()
+    })
+
+    it('falls back when the reply was cut off before it completed', async () => {
+      vi.mocked(runWorkshopRouter).mockResolvedValue(
+        lunaReply('A waitress wipes the', 'incomplete')
+      )
+      vi.mocked(router_render).mockImplementation(async (slug) =>
+        rendered(slug)
+      )
+      const user = renderEnhanced()
+      await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+      await user.click(generateButton())
+
+      await vi.waitFor(() => expect(router_render).toHaveBeenCalledOnce())
+      const prompt = sent(vi.mocked(router_render).mock.calls[0]).prompt
+      expect(prompt).toContain('A diner at dawn')
+      expect(prompt).not.toContain('A waitress wipes the')
+    })
+
+    it('runs no take when the cancel lands as the rewrite comes back', async () => {
+      vi.mocked(runWorkshopRouter).mockImplementation(
+        ({ signal }) =>
+          new Promise((resolve) =>
+            signal.addEventListener('abort', () =>
+              resolve(lunaReply('A waitress wipes the counter.'))
+            )
+          )
+      )
+      const user = renderEnhanced()
+      await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+      await user.click(generateButton())
+      await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledOnce())
+
+      await user.click(
+        screen.getByRole('button', { name: tc('cinematic.output.cancel') })
+      )
+
+      await vi.waitFor(() =>
+        expect(screen.getByRole('status')).toHaveTextContent(
+          t('workshop.output.cancelled')
+        )
+      )
+      expect(router_render).not.toHaveBeenCalled()
+    })
+
+    it('asks again on a retry after a cancelled rewrite, then reuses it', async () => {
+      vi.mocked(runWorkshopRouter).mockImplementationOnce(
+        ({ signal }) =>
+          new Promise((_resolve, reject) =>
+            signal.addEventListener('abort', () =>
+              reject(new DOMException('Stopped', 'AbortError'))
+            )
+          )
+      )
+      vi.mocked(runWorkshopRouter).mockResolvedValue(
+        lunaReply('A waitress wipes the counter.')
+      )
+      vi.mocked(router_render).mockRejectedValue(
+        new WorkshopRouterError('client')
+      )
+      const user = renderEnhanced()
+      await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+      await user.click(generateButton())
+      await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledOnce())
+      await user.click(
+        screen.getByRole('button', { name: tc('cinematic.output.cancel') })
+      )
+      const retry = () =>
+        within(screen.getByRole('status')).getByRole('button', {
+          name: t('workshop.error.retry')
+        })
+
+      await user.click(await vi.waitFor(retry))
+      await vi.waitFor(() => expect(router_render).toHaveBeenCalledOnce())
+      expect(runWorkshopRouter).toHaveBeenCalledTimes(2)
+      expect(sent(vi.mocked(router_render).mock.calls[0]).prompt).toContain(
+        'A waitress wipes the counter.'
+      )
+
+      await user.click(await vi.waitFor(retry))
+      await vi.waitFor(() => expect(router_render).toHaveBeenCalledTimes(2))
+      expect(runWorkshopRouter).toHaveBeenCalledTimes(2)
+      expect(sent(vi.mocked(router_render).mock.calls[1]).prompt).toContain(
+        'A waitress wipes the counter.'
+      )
+    })
+
+    it('makes no text call when it is switched off', async () => {
+      vi.mocked(router_render).mockImplementation(async (slug) =>
+        rendered(slug)
+      )
+      const user = renderEnhanced()
+      await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+      await user.click(screen.getByRole('switch', { name: 'Enhance prompt' }))
+      await user.click(generateButton())
+
+      await vi.waitFor(() => expect(router_render).toHaveBeenCalledOnce())
+      expect(runWorkshopRouter).not.toHaveBeenCalled()
+    })
   })
 
   it('runs the shot on the model picked in the composer', async () => {
@@ -1089,7 +1322,8 @@ describe('CinematicStudio', () => {
     expect(sent(call).values).toMatchObject({
       duration: 5,
       resolution: '720p',
-      generate_audio: false
+      // sound is on unless it is switched off
+      generate_audio: true
     })
     expect(sent(call).prompt).toContain('continuous motion')
   })
@@ -1135,6 +1369,87 @@ describe('CinematicStudio', () => {
     const call = vi.mocked(router_render).mock.calls[1]
     expect(call[0]).toBe(videoModels[0].firstFrameSlug)
     expect(sent(call).references).toEqual([expect.any(File)])
+  })
+
+  describe('in the side panel', () => {
+    function renderPanel() {
+      render(CinematicStudioPanel, {
+        props: { models: [...models, ...videoModels] }
+      })
+      return userEvent.setup()
+    }
+
+    it('offers a finished still as a reference and reruns with it', async () => {
+      vi.mocked(router_render).mockImplementation(async (slug) =>
+        rendered(slug)
+      )
+      const user = renderPanel()
+      await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+      await user.click(generateButton())
+      await screen.findByAltText(/A diner at dawn/)
+
+      expect(screen.getByTestId('cinematic-take-overlay')).toBeInTheDocument()
+      await user.click(
+        screen.getByRole('button', {
+          name: tc('cinematic.stage.useAsReference')
+        })
+      )
+      await user.click(
+        screen.getByRole('button', { name: tc('cinematic.stage.again') })
+      )
+
+      await vi.waitFor(() => expect(router_render).toHaveBeenCalledTimes(2))
+      expect(sent(vi.mocked(router_render).mock.calls[1]).references).toEqual([
+        expect.any(File)
+      ])
+    })
+
+    it('says when a take cannot be reused, until the mode changes', async () => {
+      fetchData.mockImplementation(async (input) =>
+        String(input).startsWith('blob:')
+          ? Promise.reject(new TypeError('Revoked'))
+          : servePageData(input)
+      )
+      vi.mocked(router_render).mockImplementation(async (slug) =>
+        rendered(slug)
+      )
+      const user = renderPanel()
+      await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+      await user.click(generateButton())
+      await screen.findByAltText(/A diner at dawn/)
+
+      await user.click(
+        screen.getByRole('button', {
+          name: tc('cinematic.stage.useAsReference')
+        })
+      )
+      expect(
+        await screen.findByText(tc('cinematic.references.unreadable'))
+      ).toBeInTheDocument()
+
+      await user.click(screen.getByRole('button', { name: 'Video' }))
+      expect(
+        screen.queryByText(tc('cinematic.references.unreadable'))
+      ).toBeNull()
+    })
+
+    it('animates a finished still on the image-to-video operation', async () => {
+      vi.mocked(router_render).mockImplementation(async (slug) =>
+        rendered(slug)
+      )
+      const user = renderPanel()
+      await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+      await user.click(generateButton())
+      await user.click(
+        await screen.findByRole('button', { name: 'Animate image' })
+      )
+      await user.click(generateButton())
+
+      await vi.waitFor(() => expect(router_render).toHaveBeenCalledTimes(2))
+      const call = vi.mocked(router_render).mock.calls[1]
+      expect(call[0]).toBe(videoModels[0].firstFrameSlug)
+      expect(sent(call).references).toEqual([expect.any(File)])
+    })
   })
 
   describe('reusing a still the page cannot read', () => {
