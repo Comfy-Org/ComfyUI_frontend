@@ -26,6 +26,7 @@ import {
   createWebVisibilityPort
 } from '@comfyorg/account-core/web'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
@@ -50,29 +51,26 @@ const UNSETTLED_PHASES: ReadonlySet<WebSessionIdentityState['phase']> = new Set(
   ['idle', 'reading', 'restoring']
 )
 
-const TOKEN_FAILURE_COPY: Readonly<Record<WebSessionErrorCode, string>> = {
+type TokenFailureMessageKey =
+  `auth.webSession.token.${keyof (typeof enMessages)['auth']['webSession']['token']}`
+
+export const TOKEN_FAILURE_COPY: Readonly<
+  Record<WebSessionErrorCode, TokenFailureMessageKey>
+> = {
   NO_SESSION: 'auth.webSession.token.ended',
   SESSION_EXPIRED: 'auth.webSession.token.ended',
   SESSION_REVOKED: 'auth.webSession.token.ended',
-  IDENTITY_CHANGED: 'auth.webSession.token.ended',
+  IDENTITY_CHANGED: 'auth.webSession.token.identityChanged',
   SESSION_UNAVAILABLE: 'auth.webSession.token.unavailable',
   CSRF_STALE: 'auth.webSession.token.refused',
-  WORKSPACE_ACCESS_DENIED: 'auth.webSession.token.refused',
+  WORKSPACE_ACCESS_DENIED: 'auth.webSession.token.workspaceDenied',
   SESSION_REQUEST_REFUSED: 'auth.webSession.token.refused'
 }
 
-function localizeTokenFailure(error: unknown): unknown {
-  if (!(error instanceof SessionTokenError)) return error
-  const { failure } = error
-  if (failure.httpStatus !== 401) {
-    reportError(error, {
-      errorType: 'auth_session_token_mint_failure',
-      level: 'warning',
-      tags: { code: failure.code, http_status: failure.httpStatus }
-    })
-  }
-  return new WebSessionTokenError(failure, t(TOKEN_FAILURE_COPY[failure.code]))
-}
+const LIFECYCLE_RACES: ReadonlySet<WebSessionErrorCode> = new Set([
+  'NO_SESSION',
+  'IDENTITY_CHANGED'
+])
 
 async function whenSettled(identity: WebSessionIdentity): Promise<void> {
   let stop = () => {}
@@ -214,7 +212,22 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
           )
           return headers
         } catch (error) {
-          throw localizeTokenFailure(error)
+          if (!(error instanceof SessionTokenError)) throw error
+          const { failure } = error
+          if (
+            failure.httpStatus !== 401 &&
+            !LIFECYCLE_RACES.has(failure.code)
+          ) {
+            reportError(error, {
+              errorType: 'auth_session_token_mint_failure',
+              level: 'warning',
+              tags: { code: failure.code, http_status: failure.httpStatus }
+            })
+          }
+          throw new WebSessionTokenError(
+            error,
+            t(TOKEN_FAILURE_COPY[failure.code])
+          )
         }
       }
     })

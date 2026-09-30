@@ -1,3 +1,4 @@
+import { SessionTokenError } from '@comfyorg/account-core/sessionTokenMint'
 import axios from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -176,11 +177,15 @@ describe('useCustomerEventsService', () => {
       }
     )
 
-    it('reports a failed mint and stops loading', async () => {
+    it('keeps the mint error message and hides its code', async () => {
       vi.mocked(webSessionResourceHeader).mockRejectedValue(
         new WebSessionTokenError(
-          { status: 'error', code: 'SESSION_REVOKED', retryable: false },
-          'auth.webSession.token.ended'
+          new SessionTokenError({
+            status: 'error',
+            code: 'SESSION_REVOKED',
+            retryable: false
+          }),
+          'Your session ended. Sign in again to continue.'
         )
       )
       vi.mocked(axios.isAxiosError).mockReturnValue(false)
@@ -188,7 +193,9 @@ describe('useCustomerEventsService', () => {
       const result = await service.getMyEvents()
 
       expect(result).toBeNull()
-      expect(service.error.value).toContain('auth.webSession.token.ended')
+      expect(service.error.value).toContain(
+        'Your session ended. Sign in again to continue.'
+      )
       expect(service.error.value).not.toContain('SESSION_REVOKED')
       expect(service.isLoading.value).toBe(false)
       expect(mockAxiosInstance.get).not.toHaveBeenCalled()

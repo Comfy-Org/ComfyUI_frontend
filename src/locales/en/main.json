@@ -2651,7 +2651,9 @@
     "webSession": {
       "token": {
         "ended": "Your session ended. Sign in again to continue.",
+        "identityChanged": "You're now signed in as a different account. Reload to continue.",
         "unavailable": "We couldn't reach your account. Try again in a moment.",
+        "workspaceDenied": "You no longer have access to this workspace.",
         "refused": "Your request was refused. Reload the page and try again."
       }
     },

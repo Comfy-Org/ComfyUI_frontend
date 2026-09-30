@@ -1,19 +1,16 @@
 import { zErrorResponse } from '@comfyorg/ingest-types/zod'
 import type { RequestAuthorizer } from '@comfyorg/account-core/requestAuth'
-import type {
-  SessionTokenFailure,
-  SessionTokenResult
-} from '@comfyorg/account-core/sessionTokenMint'
+import type { SessionTokenResult } from '@comfyorg/account-core/sessionTokenMint'
+import { SessionTokenError } from '@comfyorg/account-core/sessionTokenMint'
 import type { WebSession } from '@comfyorg/account-core/webSession'
 
-/** A refused mint, with the message already localized for the person. */
-export class WebSessionTokenError extends Error {
-  constructor(
-    readonly failure: SessionTokenFailure,
-    message: string
-  ) {
-    super(message)
+/** A workspace-token mint failure whose message is localized user-facing copy. */
+export class WebSessionTokenError extends SessionTokenError {
+  constructor(original: SessionTokenError, message: string) {
+    super(original.failure)
+    this.message = message
     this.name = 'WebSessionTokenError'
+    this.cause = original
   }
 }
 
