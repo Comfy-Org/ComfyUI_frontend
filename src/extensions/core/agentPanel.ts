@@ -38,6 +38,70 @@ import {
 export const GATE_SETTLE_TIMEOUT_MS = 5_000
 
 const CONSENT_AUTO_SHOWN_PREFIX = 'Comfy.AgentConsent.AutoShown'
+const ACTIVATION_OPENED_PANEL_PREFIX = 'Comfy.AgentPanel.ActivationOpened'
+
+function activationOpenedPanelKey(
+  userId: string | undefined,
+  workspaceId: string | null
+): string | null {
+  return userId && workspaceId
+    ? `${ACTIVATION_OPENED_PANEL_PREFIX}.${userId}.${workspaceId}`
+    : null
+}
+
+function persistActivationOpenedPanel(
+  userId: string | undefined,
+  workspaceId: string | null
+): void {
+  const key = activationOpenedPanelKey(userId, workspaceId)
+  if (!key) return
+  try {
+    sessionStorage.setItem(key, 'true')
+  } catch {
+    // The in-memory marker still preserves ownership until the next remount.
+  }
+}
+
+function wasActivationOpenedPanel(
+  userId: string | undefined,
+  workspaceId: string | null
+): boolean {
+  const key = activationOpenedPanelKey(userId, workspaceId)
+  if (!key) return false
+  try {
+    return sessionStorage.getItem(key) === 'true'
+  } catch {
+    return false
+  }
+}
+
+function automaticConsentOfferScope(
+  {
+    activationOpenedPanel,
+    panelOpen,
+    userId,
+    workspaceId,
+    workspaceSwitching
+  }: {
+    activationOpenedPanel: boolean
+    panelOpen: boolean
+    userId: string | undefined
+    workspaceId: string | null
+    workspaceSwitching: boolean
+  },
+  onMissingScope: () => void,
+  onActivatedPanel: () => void
+): [userId: string, workspaceId: string] | null {
+  if (!userId || !workspaceId || workspaceSwitching) {
+    onMissingScope()
+    return null
+  }
+  if (activationOpenedPanel && panelOpen) {
+    onActivatedPanel()
+    return null
+  }
+  return [userId, workspaceId]
+}
 
 function writeAutoShown(key: string, shown: boolean): boolean {
   try {
@@ -235,6 +299,7 @@ export function registerAgentPanelExtension(): void {
         return userId && workspaceId ? `${userId}.${workspaceId}` : null
       }
       const consentCardSeenIn = new Set<string>()
+      let activationOpenedPanel = false
       whenever(
         () => dialogStore.isDialogOpen(CONSENT_DIALOG_KEY),
         () => {
@@ -262,9 +327,30 @@ export function registerAgentPanelExtension(): void {
           return
         }
 
-        const userId = resolvedUserInfo.value?.id
-        const workspaceId = workspaceStore.activeWorkspaceId
-        if (!userId || !workspaceId || workspaceStore.isSwitching) return
+        const candidateUserId = resolvedUserInfo.value?.id
+        const candidateWorkspaceId = workspaceStore.activeWorkspaceId
+        const offerScope = automaticConsentOfferScope(
+          {
+            activationOpenedPanel:
+              activationOpenedPanel ||
+              wasActivationOpenedPanel(candidateUserId, candidateWorkspaceId),
+            panelOpen: agentPanelStore.isOpen,
+            userId: candidateUserId,
+            workspaceId: candidateWorkspaceId,
+            workspaceSwitching: workspaceStore.isSwitching
+          },
+          () => undefined,
+          () => {
+            useTelemetry()?.trackAgentConsentOfferExited({
+              exit: 'activation_opened_panel',
+              stage: 'offer',
+              retry_armed: offerHeld.value
+            })
+            offerHeld.value = false
+          }
+        )
+        if (!offerScope) return
+        const [userId, workspaceId] = offerScope
         const key = `${CONSENT_AUTO_SHOWN_PREFIX}.${userId}.${workspaceId}`
         const autoShow = prepareAutoShow(key)
         if (autoShow === 'storage_unavailable') withholdOffer(autoShow)
@@ -320,7 +406,14 @@ export function registerAgentPanelExtension(): void {
           .then((decided) => {
             if (decided && agentPanelStore.enabled) {
               activationOffered = true
-              if (!agentPanelStore.isOpen) agentPanelStore.open('activation')
+              if (!agentPanelStore.isOpen) {
+                agentPanelStore.open('activation')
+                activationOpenedPanel = true
+                persistActivationOpenedPanel(
+                  resolvedUserInfo.value?.id,
+                  workspaceStore.activeWorkspaceId
+                )
+              }
             }
           })
           .catch((error: unknown) => {
