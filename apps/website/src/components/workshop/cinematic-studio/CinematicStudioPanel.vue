@@ -205,9 +205,7 @@ function generate() {
         :class="
           cn(
             'fixed inset-x-0 bottom-0 z-50 max-h-[80svh] rounded-b-none lg:absolute lg:top-(--anchor-top) lg:right-0 lg:bottom-auto lg:left-[calc((100%-1.5rem)*0.4+1.5rem)] lg:z-20 lg:max-h-[calc(100svh-8rem)] lg:rounded-b-2xl lg:transition-[max-width] lg:duration-300 lg:ease-out',
-            picker === 'camera' || editingPalette
-              ? 'lg:max-w-full'
-              : 'lg:max-w-120'
+            picker === 'camera' ? 'lg:max-w-full' : 'lg:max-w-120'
           )
         "
         :style="{ '--anchor-top': `${anchorTop}px` }"

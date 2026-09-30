@@ -101,9 +101,7 @@ const selectedIn = (part: DirectionPart) =>
         :group
         :selected="selectedIn(group.part)"
         :locale
-        :class="
-          cn('min-w-0 flex-1', editing && colors.length && 'max-lg:hidden')
-        "
+        class="min-w-0 flex-1"
         @choose="choose(group.part, $event)"
       >
         <CinematicGradeImageTile
@@ -113,27 +111,31 @@ const selectedIn = (part: DirectionPart) =>
           @picked="usePalette"
           @edit="editing = true"
         />
-      </CinematicOptionGrid>
-      <Transition
-        enter-active-class="transition duration-300 ease-out"
-        enter-from-class="translate-x-4 opacity-0"
-        leave-active-class="transition duration-200 ease-in"
-        leave-to-class="translate-x-4 opacity-0"
-      >
-        <div
-          v-if="editing && colors.length"
-          class="flex shrink-0 flex-col gap-3 lg:sticky lg:top-0 lg:w-80"
-        >
-          <CinematicColors v-model="colors" v-model:main="mainColor" :locale />
-          <button
-            type="button"
-            class="h-10 w-full rounded-xl bg-primary-warm-white text-sm font-semibold text-primary-comfy-ink transition-colors hover:bg-primary-comfy-yellow"
-            @click="finishEditing"
+        <template v-if="group.part === 'grade'" #row>
+          <Transition
+            enter-active-class="transition duration-300 ease-out"
+            enter-from-class="-translate-y-2 opacity-0"
+            leave-active-class="transition duration-150 ease-in"
+            leave-to-class="-translate-y-2 opacity-0"
           >
-            {{ tc('cinematic.grade.done', locale) }}
-          </button>
-        </div>
-      </Transition>
+            <CinematicColors
+              v-if="editing && colors.length"
+              v-model="colors"
+              v-model:main="mainColor"
+              :locale
+              class="col-span-2"
+            >
+              <button
+                type="button"
+                class="h-10 w-full rounded-xl bg-primary-warm-white text-sm font-semibold text-primary-comfy-ink transition-colors hover:bg-primary-comfy-yellow"
+                @click="finishEditing"
+              >
+                {{ tc('cinematic.grade.done', locale) }}
+              </button>
+            </CinematicColors>
+          </Transition>
+        </template>
+      </CinematicOptionGrid>
     </div>
   </CinematicPopover>
 </template>

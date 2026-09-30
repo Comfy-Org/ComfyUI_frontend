@@ -127,5 +127,6 @@ function clear() {
       :locale
       @update:model-value="setColor(active, $event)"
     />
+    <slot />
   </section>
 </template>

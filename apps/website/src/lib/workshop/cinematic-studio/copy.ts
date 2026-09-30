@@ -635,9 +635,9 @@ const copy = {
     en: 'Add a starting frame for this model.',
     'zh-CN': '请为此模型添加起始帧。'
   },
-  'cinematic.video.about': {
-    en: 'About video settings',
-    'zh-CN': '关于视频设置'
+  'cinematic.video.audioHint': {
+    en: 'Adds sound to the clip.',
+    'zh-CN': '为片段添加声音。'
   },
   'cinematic.video.oneClip': {
     en: 'One clip per request. Describe the action and camera movement in your scene.',
