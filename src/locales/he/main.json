@@ -17,13 +17,13 @@
     "addNodesFromGraph": "אזכור צמתים מהגרף",
     "addPromptToSend": "הוסף פרומפט לשליחה",
     "addToPrompt": "הוסף לפרומפט",
-    "alpha": "אלפא",
     "assetNotAttachable": "ניתן לצרף תמונות, וידאו, שמע, מודלי 3D וקובצי טקסט",
     "attach": "צרף קובץ",
     "attachFiles": "העלאת תמונות או קבצים",
     "attachmentTooLarge": "{name} גדול מ-{limit}",
     "attachmentUploadFailed": "לא ניתן היה להעלות את {name}",
     "backToPreviousChat": "חזרה לצ'אט הקודם",
+    "beta": "BETA",
     "caption": "סוכן ה-AI עלול לטעות",
     "captionExpanded": "סוכן ה-AI עלול לטעות. יש לבדוק שוב את התשובה.",
     "changeWorkflowForChat": "שנה את תהליך העבודה שהסוכן יכול לערוך",
@@ -38,8 +38,8 @@
     "coachHistoryTitle": "המשיכו מהמקום שבו הפסקתם",
     "coachProgress": "{current} מתוך {total}",
     "coachTitle": "הכירו את Comfy Agent שלכם",
-    "coachWorkflowBody": "הסוכן עורך רק את תהליך העבודה שתבחרו. ניתן גם להעלות קובצי עזר או לאזכר תהליכי עבודה אחרים.",
-    "coachWorkflowTitle": "בחרו תהליך עבודה לעריכה על ידי הסוכן",
+    "coachWorkflowBody": "הוא מתחלף בהתאם ללשוניות שלכם עד שתשלחו הודעה, תבחרו תהליך עבודה או תוסיפו הפניה לצומת.",
+    "coachWorkflowTitle": "הסוכן שלכם עורך את תהליך העבודה שבו אתם צופים",
     "consent": {
       "accept": "התחל להשתמש ב-Comfy Agent",
       "body1": "Comfy Agent מסייע לכם לתכנן, לבנות, להריץ ולשפר תהליכי עבודה. תארו מה ברצונכם ליצור, ו-Comfy Agent יעבוד כשותף רב-עוצמה שלכם.",
@@ -129,6 +129,7 @@
     "runApproval": {
       "cancel": "ביטול",
       "lead": "כלי זה מבקש להפעיל את תהליך העבודה:",
+      "leadBound": "כלי זה מבקש להפעיל את תהליך העבודה הזה.",
       "question": "האם לאשר?",
       "run": "הפעלה",
       "thisWorkflow": "תהליך עבודה זה"
@@ -161,18 +162,31 @@
     "showChatHistory": "הצג היסטוריית צ'אטים",
     "showLess": "הצג פחות",
     "showMore": "הצג עוד",
+    "showTarget": "הצגת היעד",
+    "showTargetWorkflow": "הצגת תהליך העבודה היעד: {workflowName}",
     "skip": "דלג",
     "stop": "עצור",
     "stopShortcut": "Esc",
-    "suggestedPrompts": [
-      "צור ברווז צהוב עם מסכת הוקי",
-      "הצג את תהליכי העבודה השמורים שלי",
-      "מצא את תהליך העבודה הטוב ביותר להגדלת רזולוציה של עור",
-      "הסבר את הצומת שנבחר",
-      "בנה תהליך עבודה להמרת תמונה לווידאו עם 3 מודלים"
-    ],
+    "suggestedPrompts": {
+      "cloud": [
+        "יצירת גיליון דמות של אסטרונאוט",
+        "הפיכת תמונת המוצר לפרסומת קצרה",
+        "הסבר על הצמתים שנבחרו",
+        "תהליך העבודה הטוב ביותר להגדלת תמונה ל־4K",
+        "תיקון השגיאות בתהליך העבודה הזה"
+      ],
+      "local": [
+        "יצירת דיוקן מציאותי של אסטרונאוט",
+        "תהליך עבודה מתמונה לווידאו המתאים ל־GPU שלי",
+        "הסבר על הצמתים שנבחרו",
+        "עזרו לי להתקין את הצמתים החסרים עבור תהליך העבודה הזה",
+        "תיקון השגיאות בתהליך העבודה הזה"
+      ]
+    },
     "switchWorkflow": "החלף תהליך עבודה",
     "switchWorkflowForNodes": "עבור אל {workflowName} כדי להוסיף צמתים.",
+    "takeTour": "התחלת הסיור",
+    "targetFollowsVisibleWorkflow": "תהליך העבודה היעד עוקב אחר הלשונית הגלויה עד שתבחרו יעד, צומתי הפניה או תשלחו הודעה.",
     "targetForThisChat": "יעד הסוכן לצ'אט זה",
     "targetNavigationUnavailable": "יעד זה של תהליך העבודה אינו זמין עוד.",
     "thinking": "חושב...",
@@ -191,6 +205,7 @@
     "updatingGraph": "הסוכן מעדכן את הגרף",
     "uploading": "מעלה",
     "viewAddedNodes": "הצג צומת | הצג צמתים",
+    "viewingDifferentWorkflow": "אתם צופים בתהליך עבודה שונה מהיעד.",
     "worked": "בוצע",
     "workedForMinutes": "פעל במשך {minutes}m ו-{seconds}s",
     "workedForSeconds": "פעל במשך {seconds} שניות",
@@ -3195,7 +3210,6 @@
     "Rodin": "Rodin",
     "Runway": "Runway",
     "Sonilo": "Sonilo",
-    "Sora": "Sora",
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",

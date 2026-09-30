@@ -17,13 +17,13 @@
     "addNodesFromGraph": "Nodes aus dem Graphen erwähnen",
     "addPromptToSend": "Prompt zum Senden hinzufügen",
     "addToPrompt": "Zum Prompt hinzufügen",
-    "alpha": "ALPHA",
     "assetNotAttachable": "Bilder, Videos, Audio, 3D-Modelle und Textdateien können angehängt werden",
     "attach": "Datei anhängen",
     "attachFiles": "Bilder oder Dateien hochladen",
     "attachmentTooLarge": "{name} ist größer als {limit}",
     "attachmentUploadFailed": "{name} konnte nicht hochgeladen werden",
     "backToPreviousChat": "Zum vorherigen Chat zurück",
+    "beta": "BETA",
     "caption": "Der KI-Agent kann Fehler machen",
     "captionExpanded": "Der KI-Agent kann Fehler machen. Überprüfen Sie die Antwort noch einmal.",
     "changeWorkflowForChat": "Ändern Sie den Workflow, den der Agent bearbeiten kann",
@@ -38,8 +38,8 @@
     "coachHistoryTitle": "Machen Sie dort weiter, wo Sie aufgehört haben",
     "coachProgress": "{current} von {total}",
     "coachTitle": "Lernen Sie Ihren Comfy Agent kennen",
-    "coachWorkflowBody": "Der Agent bearbeitet nur den von Ihnen gewählten Workflow. Sie können auch Referenzdateien hochladen oder andere Workflows erwähnen.",
-    "coachWorkflowTitle": "Wählen Sie einen Workflow aus, den Ihr Agent bearbeiten soll",
+    "coachWorkflowBody": "Er folgt Ihren Tabs, bis Sie eine Nachricht senden, einen Workflow auswählen oder eine Node-Referenz hinzufügen.",
+    "coachWorkflowTitle": "Ihr Agent bearbeitet den Workflow, den Sie ansehen",
     "consent": {
       "accept": "Comfy Agent verwenden",
       "body1": "Comfy Agent hilft Ihnen, Workflows zu planen, zu erstellen, auszuführen und weiterzuentwickeln. Beschreiben Sie, was Sie erstellen möchten, und Comfy Agent arbeitet als leistungsstarkes Teammitglied an Ihrer Seite.",
@@ -129,6 +129,7 @@
     "runApproval": {
       "cancel": "Abbrechen",
       "lead": "Dieses Tool möchte den Workflow ausführen:",
+      "leadBound": "Dieses Tool möchte diesen Workflow ausführen.",
       "question": "Stimmen Sie zu?",
       "run": "Ausführen",
       "thisWorkflow": "diesen Workflow"
@@ -161,18 +162,31 @@
     "showChatHistory": "Chatverlauf anzeigen",
     "showLess": "Weniger anzeigen",
     "showMore": "Mehr anzeigen",
+    "showTarget": "Ziel anzeigen",
+    "showTargetWorkflow": "Ziel-Workflow anzeigen: {workflowName}",
     "skip": "Überspringen",
     "stop": "Stopp",
     "stopShortcut": "Esc",
-    "suggestedPrompts": [
-      "Erstellen Sie eine gelbe Ente mit einer Hockeymaske",
-      "Meine gespeicherten Workflows auflisten",
-      "Den besten Workflow für Haut-Upscaling finden",
-      "Den ausgewählten Node erklären",
-      "Einen Workflow für Bild-zu-Video mit 3 Modellen erstellen"
-    ],
+    "suggestedPrompts": {
+      "cloud": [
+        "Erstellen Sie ein Charakterblatt eines Astronauten",
+        "Verwandeln Sie das Produktbild in einen kurzen Werbespot",
+        "Erklären Sie die ausgewählten Nodes",
+        "Bester Workflow zur Bildhochskalierung für 4K",
+        "Beheben Sie die Fehler in diesem Workflow"
+      ],
+      "local": [
+        "Erstellen Sie ein realistisches Porträt eines Astronauten",
+        "Ein Bild-zu-Video-Workflow, der zu meiner GPU passt",
+        "Erklären Sie die ausgewählten Nodes",
+        "Helfen Sie mir, die fehlenden Nodes für diesen Workflow zu installieren",
+        "Beheben Sie die Fehler in diesem Workflow"
+      ]
+    },
     "switchWorkflow": "Workflow wechseln",
     "switchWorkflowForNodes": "Wechseln Sie zu {workflowName} und fügen Sie Nodes hinzu.",
+    "takeTour": "Tour starten",
+    "targetFollowsVisibleWorkflow": "Der Ziel-Workflow folgt dem sichtbaren Tab, bis Sie ein Ziel auswählen, Nodes referenzieren oder eine Nachricht senden.",
     "targetForThisChat": "Agent-Ziel für diesen Chat",
     "targetNavigationUnavailable": "Dieses Workflow-Ziel ist nicht mehr verfügbar.",
     "thinking": "Denkt nach...",
@@ -191,6 +205,7 @@
     "updatingGraph": "Der Agent aktualisiert den Graphen",
     "uploading": "Wird hochgeladen",
     "viewAddedNodes": "Node anzeigen | Nodes anzeigen",
+    "viewingDifferentWorkflow": "Sie sehen einen anderen Workflow als den Ziel-Workflow.",
     "worked": "Abgeschlossen",
     "workedForMinutes": "Arbeitszeit: {minutes} Min. {seconds} Sek.",
     "workedForSeconds": "Arbeitszeit: {seconds} Sekunden",
@@ -3195,7 +3210,6 @@
     "Rodin": "Rodin",
     "Runway": "Runway",
     "Sonilo": "Sonilo",
-    "Sora": "Sora",
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",

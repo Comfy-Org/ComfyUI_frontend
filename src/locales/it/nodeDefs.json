@@ -1486,6 +1486,25 @@
       }
     }
   },
+  "ByteDance2DraftToFinalVideoNode": {
+    "description": "Esegue il rendering del video finale a 1080p di una bozza di Seedance 2.5. Il finale mantiene la scena e il movimento della bozza e riutilizza prompt, riferimenti, durata, rapporto d'aspetto e impostazione audio.",
+    "display_name": "ByteDance Seedance 2.5 Bozza in Video finale",
+    "inputs": {
+      "draft_task_id": {
+        "name": "draft_task_id",
+        "tooltip": "L'output draft_task_id di un nodo Seedance 2.5 eseguito con il modello Seedance 2.5 Draft, oppure un ID attività bozza incollato. Imposta il controllo del seed di quel nodo su fisso, altrimenti l'esecuzione successiva genera una nuova bozza anziché riutilizzare quella revisionata. Una bozza può essere renderizzata per 7 giorni dalla sua creazione."
+      },
+      "watermark": {
+        "name": "filigrana",
+        "tooltip": "Se aggiungere una filigrana al video."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "Genera un video utilizzando Seedance 2.0 da un'immagine del primo frame e, opzionalmente, dell'ultimo frame.",
     "display_name": "ByteDance Seedance 2.0 Da Primo-Ultimo Frame a Video",
@@ -1511,7 +1530,7 @@
       },
       "model": {
         "name": "modello",
-        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi e output mp4/mov; Seedance 2.0 per la massima qualità e 4k; Fast per l'ottimizzazione della velocità; Mini per la generazione più veloce ed economica."
+        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi e output mp4/mov; Seedance 2.5 Draft per un'anteprima rapida a 480p il cui draft_task_id esegue il rendering del finale a 1080p nel nodo Seedance 2.5 Draft to Final Video; Seedance 2.0 per la massima qualità e il 4k; Fast per l'ottimizzazione della velocità; Mini per la generazione più rapida ed economica."
       },
       "model_duration": {
         "name": "durata"
@@ -1540,6 +1559,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "ID attività di un'esecuzione di Seedance 2.5 Draft. Collegalo al nodo Seedance 2.5 Draft to Final Video per eseguire il rendering del finale a 1080p."
       }
     }
   },
@@ -1552,7 +1575,7 @@
       },
       "model": {
         "name": "modello",
-        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi e output mp4/mov; Seedance 2.0 per la massima qualità e 4k; Fast per l'ottimizzazione della velocità; Mini per la generazione più veloce ed economica."
+        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi e output mp4/mov; Seedance 2.5 Draft per un'anteprima rapida a 480p il cui draft_task_id esegue il rendering del finale a 1080p nel nodo Seedance 2.5 Draft to Final Video; Seedance 2.0 per la massima qualità e il 4k; Fast per l'ottimizzazione della velocità; Mini per la generazione più rapida ed economica."
       },
       "model_auto_downscale": {
         "name": "ridimensionamento automatico in basso"
@@ -1605,7 +1628,7 @@
       },
       "model": {
         "name": "modello",
-        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi e output mp4/mov; Seedance 2.0 per la massima qualità e 4k; Fast per l'ottimizzazione della velocità; Mini per la generazione più veloce ed economica."
+        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi e output mp4/mov; Seedance 2.5 Draft per un'anteprima rapida a 480p il cui draft_task_id esegue il rendering del finale a 1080p nel nodo Seedance 2.5 Draft to Final Video; Seedance 2.0 per la massima qualità e il 4k; Fast per l'ottimizzazione della velocità; Mini per la generazione più rapida ed economica."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -1646,6 +1669,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "ID attività di un'esecuzione di Seedance 2.5 Draft. Collegalo al nodo Seedance 2.5 Draft to Final Video per eseguire il rendering del finale a 1080p."
       }
     }
   },
@@ -1658,7 +1685,7 @@
       },
       "model": {
         "name": "modello",
-        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi e output mp4/mov; Seedance 2.0 per la massima qualità e il 4K; Fast per l'ottimizzazione della velocità; Mini per la generazione più rapida ed economica."
+        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi e output mp4/mov; Seedance 2.5 Draft per un'anteprima rapida a 480p il cui draft_task_id esegue il rendering del finale a 1080p nel nodo Seedance 2.5 Draft to Final Video; Seedance 2.0 per la massima qualità e il 4k; Fast per l'ottimizzazione della velocità; Mini per la generazione più rapida ed economica."
       },
       "model_duration": {
         "name": "durata"
@@ -1690,6 +1717,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "ID attività di un'esecuzione di Seedance 2.5 Draft. Collegalo al nodo Seedance 2.5 Draft to Final Video per eseguire il rendering del finale a 1080p."
       }
     }
   },
@@ -8345,6 +8376,42 @@
       }
     }
   },
+  "IdeogramEditApi": {
+    "description": "Modifica o combina fino a 5 immagini guidate da un prompt di testo usando Ideogram 4.5. Esegue nuovamente il rendering dell'intera immagine e può modificarne dimensioni o rapporto d'aspetto; usa Ideogram 4.5 Precise Edit per mantenere invariati i pixel non modificati.",
+    "display_name": "Modifica Ideogram 4.5",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "modello",
+        "tooltip": "Modello da utilizzare."
+      },
+      "model_height": {
+        "name": "altezza"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "qualità"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "dimensione"
+      },
+      "model_width": {
+        "name": "larghezza"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramPImage": {
     "description": "Genera immagini utilizzando P-Image, il modello text-to-image veloce di Ideogram. Tipografia avanzata e fotorealismo; supporta le didascalie strutturate JSON di Ideogram 4.0 per testo, colori e layout esatti.",
     "display_name": "Ideogram & Pruna P-Image",
@@ -8384,6 +8451,70 @@
       "1": {
         "name": "final_prompt",
         "tooltip": "Il prompt da cui è stata effettivamente generata l’immagine (la didascalia strutturata riscritta se prompt_upsampling era attivo, altrimenti il tuo prompt). Riutilizzalo con prompt_upsampling su OFF e lo stesso seed per riprodurre questa immagine."
+      }
+    }
+  },
+  "IdeogramPreciseEditApi": {
+    "description": "Modifica un'immagine guidata da un prompt di testo usando la modifica precisa di Ideogram 4.5: cambia solo ciò che richiede il prompt, i pixel non modificati restano identici e l'output mantiene le dimensioni dell'immagine 1 (le immagini oltre ~4 MP vengono prima ridimensionate). Accetta fino a 4 immagini di riferimento.",
+    "display_name": "Modifica precisa Ideogram 4.5",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "modello",
+        "tooltip": "Modello da utilizzare."
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "qualità"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramTextToImageApi": {
+    "description": "Genera immagini da un prompt di testo usando Ideogram 4.5.",
+    "display_name": "Testo in immagine Ideogram 4.5",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "modello",
+        "tooltip": "Modello da utilizzare."
+      },
+      "model_magic_prompt": {
+        "name": "magic_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "qualità"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "dimensione"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "La didascalia strutturata da cui è stata generata l'immagine. Reinseriscila con magic_prompt impostato su 'off' e lo stesso seed per riprodurre l'immagine."
       }
     }
   },
@@ -8547,12 +8678,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "Converte sRGB, Rec.709 lineare, HDR (Rec.2020 HLG) e HDR PQ (Rec.2020 PQ). Il valore lineare 1.0 usa lo stesso bianco di riferimento a 203 nit di sRGB; HLG usa un display di riferimento a 1000 nit. L'output lineare e le conversioni da lineare a HDR preservano i valori estesi senza mappatura dei toni. L'output SDR e la conversione da PQ a HLG mappano i toni della luminanza in eccesso sull'intero batch e comprimono i colori fuori gamut. Le conversioni sono calcolate in float32 e restituiscono il dispositivo e il dtype intermedi. L'alpha non premoltiplicato non viene trasformato nel colore.",
+    "description": "Converte sRGB, Rec.709 lineare, HDR (Rec.2020 HLG), HDR PQ (Rec.2020 PQ), HDR LogC3 e HDR ACEScct. LogC3 utilizza la curva EI 800 con primari Rec.709 e codici limitati a [0, 1]. ACEScct utilizza primari AP1 e bianco D60, con adattamento Bradford a D65. Converti LogC3 o ACEScct in lineare per il salvataggio EXR. Il lineare 1.0 utilizza lo stesso bianco di riferimento di 203 nit di sRGB; HLG utilizza un display di riferimento di 1000 nit. Le uscite lineari e ACEScct preservano i valori estesi. Le conversioni da lineare a HDR preservano le alte luci senza mappatura dei toni; le uscite HLG e PQ ritagliano i canali negativi. L'uscita SDR e la conversione da PQ a HLG applicano la mappatura dei toni alla luminanza in eccesso nell'intero batch e comprimono i colori fuori gamma. Le conversioni sono calcolate in float32 e restituiscono il dispositivo e il dtype intermedi. L'alfa non premoltiplicato non viene trasformato cromaticamente.",
     "display_name": "Converti spazio colore dell'immagine",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "Spazio colore dei pixel di output. Imposta il nodo di salvataggio sullo stesso spazio colore."
+        "tooltip": "Spazio colore dei pixel di output. Imposta il nodo di salvataggio sullo stesso spazio colore. Converti LogC3 o ACEScct in lineare prima di salvare EXR, oppure in sRGB/HDR/HDR PQ prima di salvare un video."
       },
       "image": {
         "name": "image"
@@ -17117,40 +17248,6 @@
       }
     }
   },
-  "OpenAIVideoSora2": {
-    "description": "Generazione di video e audio con OpenAI.\n\nAVVISO DI DEPRECAMENTO: OpenAI interromperà il servizio dell'API Sora v2 a settembre 2026. Questo nodo verrà rimosso da ComfyUI in quel momento.",
-    "display_name": "OpenAI Sora - Video (DEPRECATO)",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration": {
-        "name": "duration"
-      },
-      "image": {
-        "name": "image"
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Testo guida; può essere vuoto se è presente un'immagine di input."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Seed per determinare se il nodo deve essere rieseguito; i risultati effettivi sono comunque non deterministici."
-      },
-      "size": {
-        "name": "size"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "OpenRouterImageNode": {
     "description": "Genera o modifica immagini tramite OpenRouter con i modelli MAI-Image-2.6 di Microsoft: da testo a immagine oppure modifica guidata dall'immagine con fino a cinque immagini di riferimento, in sette rapporti d'aspetto a 1K o 1.5K.",
     "display_name": "Immagine OpenRouter",
@@ -18590,6 +18687,9 @@
   "QwenImageDiffsynthControlnet": {
     "display_name": "Applica Qwen Image DiffSynth ControlNet",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
       "image": {
         "name": "immagine"
       },
@@ -18601,6 +18701,9 @@
       },
       "model_patch": {
         "name": "model_patch"
+      },
+      "start_percent": {
+        "name": "start_percent"
       },
       "strength": {
         "name": "forza"
@@ -28813,6 +28916,10 @@
       "positive": {
         "name": "positivo"
       },
+      "ref_pad_image": {
+        "name": "ref_pad_image",
+        "tooltip": "Riempie i fotogrammi di padding del condizionamento dell'immagine con questa immagine anziché con il grigio, ancorando l'identità senza fissare i fotogrammi (padding anti-deriva in stile SVI, usato da modelli come ID-V2V)."
+      },
       "start_image": {
         "name": "immagine_iniziale"
       },
@@ -29793,8 +29900,12 @@
     }
   },
   "ZImageFunControlnet": {
-    "display_name": "Applica Z-Image Fun ControlNet",
+    "description": "Applica uno Z-Image o Qwen Image 2.1 Fun ControlNet caricato con Load Model Patch.",
+    "display_name": "Applica Fun ControlNet",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
       "image": {
         "name": "immagine"
       },
@@ -29809,6 +29920,9 @@
       },
       "model_patch": {
         "name": "patch_modello"
+      },
+      "start_percent": {
+        "name": "start_percent"
       },
       "strength": {
         "name": "intensità"

@@ -17,13 +17,13 @@
     "addNodesFromGraph": "引用画布中的节点",
     "addPromptToSend": "添加要发送的提示词",
     "addToPrompt": "添加到提示词",
-    "alpha": "ALPHA",
     "assetNotAttachable": "可附加图像、视频、音频、3D 模型和文本文件",
     "attach": "附加文件",
     "attachFiles": "上传图像或文件",
     "attachmentTooLarge": "{name} 大于 {limit}",
     "attachmentUploadFailed": "无法上传 {name}",
     "backToPreviousChat": "返回上一个聊天",
+    "beta": "测试版",
     "caption": "AI 智能体可能会出错",
     "captionExpanded": "AI 智能体可能会出错。请仔细检查回复。",
     "changeWorkflowForChat": "更改 Agent 可编辑的工作流",
@@ -38,8 +38,8 @@
     "coachHistoryTitle": "从上次中断处继续",
     "coachProgress": "{current} / {total}",
     "coachTitle": "认识您的 Comfy Agent",
-    "coachWorkflowBody": "Agent 仅编辑您选择的工作流。您也可以上传参考文件或引用其他工作流。",
-    "coachWorkflowTitle": "选择一个供 Agent 编辑的工作流",
+    "coachWorkflowBody": "在你发送消息、选择工作流或添加节点引用之前，它会随你的标签页切换。",
+    "coachWorkflowTitle": "你的智能代理会编辑你正在查看的工作流",
     "consent": {
       "accept": "开始使用 Comfy Agent",
       "body1": "Comfy Agent 可帮助您规划、构建、运行和迭代工作流。描述您想要创建的内容，Comfy Agent 将成为您强大的队友。",
@@ -129,6 +129,7 @@
     "runApproval": {
       "cancel": "取消",
       "lead": "此工具想要运行以下工作流：",
+      "leadBound": "此工具希望运行此工作流。",
       "question": "您批准吗？",
       "run": "运行",
       "thisWorkflow": "此工作流"
@@ -161,18 +162,31 @@
     "showChatHistory": "显示聊天记录",
     "showLess": "显示更少",
     "showMore": "显示更多",
+    "showTarget": "显示目标",
+    "showTargetWorkflow": "显示目标工作流：{workflowName}",
     "skip": "跳过",
     "stop": "停止",
     "stopShortcut": "Esc",
-    "suggestedPrompts": [
-      "生成一只戴着曲棍球面具的黄色鸭子",
-      "列出我保存的工作流",
-      "查找最适合皮肤超分辨率的工作流",
-      "解释选中的节点",
-      "使用 3 个模型构建图像转视频工作流"
-    ],
+    "suggestedPrompts": {
+      "cloud": [
+        "生成一张宇航员角色设定图",
+        "将产品图像制作成短广告",
+        "解释所选节点",
+        "适用于 4K 的最佳图像放大工作流",
+        "修复此工作流中的错误"
+      ],
+      "local": [
+        "生成一张逼真的宇航员肖像",
+        "适合我的 GPU 的图生视频工作流",
+        "解释所选节点",
+        "帮助我安装此工作流缺失的节点",
+        "修复此工作流中的错误"
+      ]
+    },
     "switchWorkflow": "切换工作流",
     "switchWorkflowForNodes": "切换到 {workflowName} 以添加节点。",
+    "takeTour": "开始导览",
+    "targetFollowsVisibleWorkflow": "在你选择目标、引用节点或发送消息之前，目标工作流会跟随当前可见的标签页。",
     "targetForThisChat": "此聊天的智能体目标",
     "targetNavigationUnavailable": "此工作流目标已不可用。",
     "thinking": "思考中...",
@@ -191,6 +205,7 @@
     "updatingGraph": "智能体正在更新工作流",
     "uploading": "正在上传",
     "viewAddedNodes": "查看节点 | 查看节点",
+    "viewingDifferentWorkflow": "你正在查看与目标不同的工作流。",
     "worked": "已完成",
     "workedForMinutes": "已工作 {minutes} 分 {seconds} 秒",
     "workedForSeconds": "已工作 {seconds} 秒",
@@ -3195,7 +3210,6 @@
     "Rodin": "Rodin",
     "Runway": "Runway",
     "Sonilo": "Sonilo",
-    "Sora": "Sora",
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",

@@ -17,13 +17,13 @@
     "addNodesFromGraph": "Menziona nodi dal grafo",
     "addPromptToSend": "Aggiungi un prompt da inviare",
     "addToPrompt": "Aggiungi al prompt",
-    "alpha": "ALPHA",
     "assetNotAttachable": "È possibile allegare immagini, video, audio, modelli 3D e file di testo",
     "attach": "Allega un file",
     "attachFiles": "Carica immagini o file",
     "attachmentTooLarge": "{name} è più grande di {limit}",
     "attachmentUploadFailed": "Non è stato possibile caricare {name}",
     "backToPreviousChat": "Torna alla chat precedente",
+    "beta": "BETA",
     "caption": "L'agente AI può commettere errori",
     "captionExpanded": "L'agente AI può commettere errori. Verifica attentamente la risposta.",
     "changeWorkflowForChat": "Cambia il flusso di lavoro che l'agente può modificare",
@@ -38,8 +38,8 @@
     "coachHistoryTitle": "Riprendi da dove avevi interrotto",
     "coachProgress": "{current} di {total}",
     "coachTitle": "Conosci il tuo Comfy Agent",
-    "coachWorkflowBody": "L'agente modifica solo il flusso di lavoro scelto. Puoi anche caricare file di riferimento o menzionare altri flussi di lavoro.",
-    "coachWorkflowTitle": "Seleziona un flusso di lavoro da modificare per il tuo agente",
+    "coachWorkflowBody": "Cambia insieme alle tue schede finché non invii un messaggio, scegli un flusso di lavoro o aggiungi un riferimento a un nodo.",
+    "coachWorkflowTitle": "Il tuo agente modifica il flusso di lavoro che stai visualizzando",
     "consent": {
       "accept": "Inizia a usare Comfy Agent",
       "body1": "Comfy Agent ti aiuta a pianificare, creare, eseguire e perfezionare i flussi di lavoro. Descrivi ciò che vuoi creare e Comfy Agent lavorerà come un potente collaboratore.",
@@ -129,6 +129,7 @@
     "runApproval": {
       "cancel": "Annulla",
       "lead": "Questo strumento vuole eseguire il workflow:",
+      "leadBound": "Questo strumento vuole eseguire questo flusso di lavoro.",
       "question": "Approvi?",
       "run": "Esegui",
       "thisWorkflow": "questo workflow"
@@ -161,18 +162,31 @@
     "showChatHistory": "Mostra la cronologia chat",
     "showLess": "Mostra meno",
     "showMore": "Mostra altro",
+    "showTarget": "Mostra destinazione",
+    "showTargetWorkflow": "Mostra flusso di lavoro di destinazione: {workflowName}",
     "skip": "Salta",
     "stop": "Interrompi",
     "stopShortcut": "Esc",
-    "suggestedPrompts": [
-      "Genera un'anatra gialla con una maschera da hockey",
-      "Elenca i miei flussi di lavoro salvati",
-      "Trova il miglior flusso di lavoro per l'upscaling della pelle",
-      "Spiega il nodo selezionato",
-      "Crea un flusso di lavoro da immagine a video con 3 modelli"
-    ],
+    "suggestedPrompts": {
+      "cloud": [
+        "Genera una scheda personaggio di un astronauta",
+        "Trasforma l'immagine del prodotto in un breve annuncio pubblicitario",
+        "Spiega i nodi selezionati",
+        "Il miglior flusso di lavoro per l'upscaling delle immagini in 4K",
+        "Correggi gli errori in questo flusso di lavoro"
+      ],
+      "local": [
+        "Genera un ritratto realistico di un astronauta",
+        "Un flusso di lavoro da immagine a video adatto alla mia GPU",
+        "Spiega i nodi selezionati",
+        "Aiutami a installare i nodi mancanti per questo flusso di lavoro",
+        "Correggi gli errori in questo flusso di lavoro"
+      ]
+    },
     "switchWorkflow": "Cambia flusso di lavoro",
     "switchWorkflowForNodes": "Passa a {workflowName} per aggiungere nodi.",
+    "takeTour": "Segui il tour guidato",
+    "targetFollowsVisibleWorkflow": "Il flusso di lavoro di destinazione segue la scheda visibile finché non selezioni una destinazione, aggiungi riferimenti ai nodi o invii un messaggio.",
     "targetForThisChat": "Destinazione dell'agente per questa chat",
     "targetNavigationUnavailable": "Questa destinazione del workflow non è più disponibile.",
     "thinking": "Elaborazione in corso...",
@@ -191,6 +205,7 @@
     "updatingGraph": "L'agente sta aggiornando il grafo",
     "uploading": "Caricamento in corso",
     "viewAddedNodes": "Visualizza nodo | Visualizza nodi",
+    "viewingDifferentWorkflow": "Stai visualizzando un flusso di lavoro diverso da quello di destinazione.",
     "worked": "Completato",
     "workedForMinutes": "Elaborazione completata in {minutes}m {seconds}s",
     "workedForSeconds": "Elaborazione completata in {seconds} secondi",
@@ -3195,7 +3210,6 @@
     "Rodin": "Rodin",
     "Runway": "Runway",
     "Sonilo": "Sonilo",
-    "Sora": "Sora",
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",

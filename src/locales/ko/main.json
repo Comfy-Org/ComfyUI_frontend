@@ -17,13 +17,13 @@
     "addNodesFromGraph": "그래프에서 노드 언급",
     "addPromptToSend": "보낼 프롬프트 추가",
     "addToPrompt": "프롬프트에 추가",
-    "alpha": "ALPHA",
     "assetNotAttachable": "이미지, 동영상, 오디오, 3D 모델 및 텍스트 파일을 첨부할 수 있습니다",
     "attach": "파일 첨부",
     "attachFiles": "이미지 또는 파일 업로드",
     "attachmentTooLarge": "{name}의 크기가 {limit}보다 큽니다",
     "attachmentUploadFailed": "{name}을(를) 업로드할 수 없습니다",
     "backToPreviousChat": "이전 채팅으로 돌아가기",
+    "beta": "베타",
     "caption": "AI 에이전트는 실수할 수 있습니다",
     "captionExpanded": "AI 에이전트는 실수할 수 있습니다. 응답을 다시 확인하세요.",
     "changeWorkflowForChat": "에이전트가 편집할 워크플로 변경",
@@ -38,8 +38,8 @@
     "coachHistoryTitle": "중단한 곳부터 계속하기",
     "coachProgress": "{total}개 중 {current}개",
     "coachTitle": "Comfy Agent 만나보기",
-    "coachWorkflowBody": "에이전트는 선택한 워크플로만 편집합니다. 참조 파일을 업로드하거나 다른 워크플로를 언급할 수도 있습니다.",
-    "coachWorkflowTitle": "에이전트가 편집할 워크플로 선택",
+    "coachWorkflowBody": "메시지를 보내거나, 워크플로를 선택하거나, 노드 참조를 추가할 때까지 탭에 따라 전환됩니다.",
+    "coachWorkflowTitle": "에이전트가 현재 보고 있는 워크플로를 편집합니다",
     "consent": {
       "accept": "Comfy Agent 사용 시작",
       "body1": "Comfy Agent는 워크플로의 계획, 구축, 실행 및 반복 작업을 도와줍니다. 만들고 싶은 것을 설명하면 Comfy Agent가 강력한 팀원으로 함께합니다.",
@@ -129,6 +129,7 @@
     "runApproval": {
       "cancel": "취소",
       "lead": "이 도구가 워크플로를 실행하려고 합니다:",
+      "leadBound": "이 도구가 이 워크플로를 실행하려고 합니다.",
       "question": "승인하시겠습니까?",
       "run": "실행",
       "thisWorkflow": "이 워크플로"
@@ -161,18 +162,31 @@
     "showChatHistory": "채팅 기록 표시",
     "showLess": "간단히 보기",
     "showMore": "더 보기",
+    "showTarget": "대상 표시",
+    "showTargetWorkflow": "대상 워크플로 표시: {workflowName}",
     "skip": "건너뛰기",
     "stop": "중지",
     "stopShortcut": "Esc",
-    "suggestedPrompts": [
-      "하키 mask를 쓴 노란 오리를 생성해 줘",
-      "저장된 워크플로 목록 보기",
-      "피부 업스케일링에 가장 적합한 워크플로 찾기",
-      "선택한 노드 설명하기",
-      "3개의 모델로 이미지를 동영상으로 변환하는 워크플로 만들기"
-    ],
+    "suggestedPrompts": {
+      "cloud": [
+        "우주비행사 캐릭터 시트 생성",
+        "제품 이미지를 짧은 광고로 만들기",
+        "선택한 노드 설명",
+        "4K에 가장 적합한 이미지 업스케일 워크플로",
+        "이 워크플로의 오류 수정"
+      ],
+      "local": [
+        "사실적인 우주비행사 초상화 생성",
+        "내 GPU에 맞는 이미지-동영상 워크플로",
+        "선택한 노드 설명",
+        "이 워크플로에 필요한 누락된 노드 설치 도움",
+        "이 워크플로의 오류 수정"
+      ]
+    },
     "switchWorkflow": "워크플로 전환",
     "switchWorkflowForNodes": "노드를 추가하려면 {workflowName}(으)로 전환하세요.",
+    "takeTour": "둘러보기",
+    "targetFollowsVisibleWorkflow": "대상 워크플로는 대상 선택, 노드 참조 또는 메시지 전송 전까지 현재 표시된 탭을 따릅니다.",
     "targetForThisChat": "이 채팅의 에이전트 대상",
     "targetNavigationUnavailable": "이 워크플로 대상은 더 이상 사용할 수 없습니다.",
     "thinking": "생각 중...",
@@ -191,6 +205,7 @@
     "updatingGraph": "에이전트가 그래프를 업데이트하고 있습니다",
     "uploading": "업로드 중",
     "viewAddedNodes": "노드 보기 | 노드 보기",
+    "viewingDifferentWorkflow": "대상과 다른 워크플로를 보고 있습니다.",
     "worked": "작업 완료",
     "workedForMinutes": "{minutes}분 {seconds}초 동안 작업함",
     "workedForSeconds": "{seconds}초 동안 작업함",
@@ -3195,7 +3210,6 @@
     "Rodin": "Rodin",
     "Runway": "Runway",
     "Sonilo": "Sonilo",
-    "Sora": "Sora",
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",

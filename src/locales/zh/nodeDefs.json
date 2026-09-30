@@ -1486,6 +1486,25 @@
       }
     }
   },
+  "ByteDance2DraftToFinalVideoNode": {
+    "description": "渲染 Seedance 2.5 草稿的 1080p 最终视频。最终视频保留草稿的场景和运动，并复用其提示词、参考图、时长、宽高比和音频设置。",
+    "display_name": "ByteDance Seedance 2.5 草稿转最终视频",
+    "inputs": {
+      "draft_task_id": {
+        "name": "draft_task_id",
+        "tooltip": "使用 Seedance 2.5 Draft 模型运行的 Seedance 2.5 节点输出的 draft_task_id，或粘贴的草稿任务 ID。将该节点的种子控制设为固定，否则下次运行会生成新草稿，而不会复用您审阅过的草稿。草稿创建后可在 7 天内渲染。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "是否为视频添加水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "使用 Seedance 2.0 从首帧图像和可选的末帧图像生成视频。",
     "display_name": "ByteDance Seedance 2.0 首帧-末帧生成视频",
@@ -1511,7 +1530,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5 用于最新模型、最长 30 秒的视频以及 mp4/mov 输出；Seedance 2.0 用于最高质量和 4k；Fast 用于速度优化；Mini 用于最快、成本最低的生成。"
+        "tooltip": "Seedance 2.5：最新模型，支持最长 30 秒的视频及 mp4/mov 输出；Seedance 2.5 Draft：快速生成 480p 预览，其 draft_task_id 可在 Seedance 2.5 草稿转最终视频节点中渲染 1080p 最终视频；Seedance 2.0：最高质量和 4k；Fast：速度优化；Mini：生成速度最快、成本最低。"
       },
       "model_duration": {
         "name": "时长"
@@ -1540,6 +1559,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Seedance 2.5 Draft 运行的任务 ID。将其连接到 Seedance 2.5 草稿转最终视频节点以渲染 1080p 最终视频。"
       }
     }
   },
@@ -1552,7 +1575,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5 用于最新模型、最长 30 秒的视频以及 mp4/mov 输出；Seedance 2.0 用于最高质量和 4k；Fast 用于速度优化；Mini 用于最快、成本最低的生成。"
+        "tooltip": "Seedance 2.5：最新模型，支持最长 30 秒的视频及 mp4/mov 输出；Seedance 2.5 Draft：快速生成 480p 预览，其 draft_task_id 可在 Seedance 2.5 草稿转最终视频节点中渲染 1080p 最终视频；Seedance 2.0：最高质量和 4k；Fast：速度优化；Mini：生成速度最快、成本最低。"
       },
       "model_auto_downscale": {
         "name": "自动降采样"
@@ -1605,7 +1628,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5 用于最新模型、最长 30 秒的视频以及 mp4/mov 输出；Seedance 2.0 用于最高质量和 4k；Fast 用于速度优化；Mini 用于最快、成本最低的生成。"
+        "tooltip": "Seedance 2.5：最新模型，支持最长 30 秒的视频及 mp4/mov 输出；Seedance 2.5 Draft：快速生成 480p 预览，其 draft_task_id 可在 Seedance 2.5 草稿转最终视频节点中渲染 1080p 最终视频；Seedance 2.0：最高质量和 4k；Fast：速度优化；Mini：生成速度最快、成本最低。"
       },
       "model_auto_downscale": {
         "name": "自动降采样"
@@ -1646,6 +1669,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Seedance 2.5 Draft 运行的任务 ID。将其连接到 Seedance 2.5 草稿转最终视频节点以渲染 1080p 最终视频。"
       }
     }
   },
@@ -1658,7 +1685,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5 为最新模型，支持最长 30 秒视频及 mp4/mov 输出；Seedance 2.0 提供最高质量和 4k；Fast 针对速度优化；Mini 提供最快、成本最低的生成。"
+        "tooltip": "Seedance 2.5：最新模型，支持最长 30 秒的视频及 mp4/mov 输出；Seedance 2.5 Draft：快速生成 480p 预览，其 draft_task_id 可在 Seedance 2.5 草稿转最终视频节点中渲染 1080p 最终视频；Seedance 2.0：最高质量和 4k；Fast：速度优化；Mini：生成速度最快、成本最低。"
       },
       "model_duration": {
         "name": "时长"
@@ -1690,6 +1717,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Seedance 2.5 Draft 运行的任务 ID。将其连接到 Seedance 2.5 草稿转最终视频节点以渲染 1080p 最终视频。"
       }
     }
   },
@@ -8345,6 +8376,42 @@
       }
     }
   },
+  "IdeogramEditApi": {
+    "description": "使用 Ideogram 4.5 根据文本提示词编辑或合并最多 5 张图像。会重新渲染整张图像，并可能改变其尺寸或宽高比；如需保持未修改的像素不变，请使用 Ideogram 4.5 精确编辑。",
+    "display_name": "Ideogram 4.5 编辑",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "要使用的模型。"
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "size"
+      },
+      "model_width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramPImage": {
     "description": "使用 P-Image（Ideogram 的快速文本生成图像模型）生成图像。具备强大的字体排版和照片级真实感；支持 Ideogram 4.0 结构化 JSON 标注，实现精确文本、颜色和布局。",
     "display_name": "Ideogram 与 Pruna P-Image",
@@ -8384,6 +8451,70 @@
       "1": {
         "name": "final_prompt",
         "tooltip": "实际用于生成图像的提示（如启用 prompt_upsampling，则为重写后的结构化标注，否则为原始提示）。如需复现该图像，请用 prompt_upsampling 设为 OFF 及相同种子回传。"
+      }
+    }
+  },
+  "IdeogramPreciseEditApi": {
+    "description": "使用 Ideogram 4.5 精确编辑根据文本提示词编辑图像：仅修改提示词要求的内容，未修改的像素保持完全一致，输出保留图像 1 的尺寸（超过约 4 MP 的图像会先缩小）。最多接受 4 张参考图像。",
+    "display_name": "Ideogram 4.5 精确编辑",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "要使用的模型。"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramTextToImageApi": {
+    "description": "使用 Ideogram 4.5 根据文本提示词生成图像。",
+    "display_name": "Ideogram 4.5 文生图",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "要使用的模型。"
+      },
+      "model_magic_prompt": {
+        "name": "magic_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "图像生成所依据的结构化描述。将其反馈使用，并将 magic_prompt 设为“off”且使用相同的 seed，即可复现该图像。"
       }
     }
   },
@@ -8547,12 +8678,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "转换 sRGB、线性 Rec.709、HDR（Rec.2020 HLG）和 HDR PQ（Rec.2020 PQ）。线性 1.0 使用与 sRGB 相同的 203 尼特参考白；HLG 使用 1000 尼特参考显示器。线性输出和线性到 HDR 的转换会保留扩展值，不进行色调映射。SDR 输出和 PQ 到 HLG 的转换会对整个批次中的超额亮度进行色调映射，并压缩色域外颜色。转换以 float32 计算，并返回中间 device 和 dtype。直通 alpha 不进行色彩转换。",
+    "description": "转换 sRGB、线性 Rec.709、HDR (Rec.2020 HLG)、HDR PQ (Rec.2020 PQ)、HDR LogC3 和 HDR ACEScct。LogC3 使用 EI 800 曲线、Rec.709 原色，并将编码值限制在 [0, 1]。ACEScct 使用 AP1 原色和 D60 白点，并通过 Bradford 适配至 D65。保存 EXR 时，请将 LogC3 或 ACEScct 转换为线性。线性 1.0 使用与 sRGB 相同的 203 尼特参考白；HLG 使用 1000 尼特参考显示器。线性和 ACEScct 输出会保留扩展值。线性转 HDR 时会在不进行色调映射的情况下保留高光；HLG 和 PQ 输出会裁剪负值通道。SDR 输出和 PQ 转 HLG 会对批次中的过量亮度进行色调映射，并压缩超出色域的颜色。转换以 float32 计算，并返回中间设备和数据类型。非预乘 alpha 不进行色彩转换。",
     "display_name": "转换图像色彩空间",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "输出像素的色彩空间。请将保存节点设为相同的色彩空间。"
+        "tooltip": "输出像素的色彩空间。将保存节点设置为相同的色彩空间。保存 EXR 前，请将 LogC3 或 ACEScct 转换为线性；保存视频前，请转换为 sRGB/HDR/HDR PQ。"
       },
       "image": {
         "name": "image"
@@ -17117,40 +17248,6 @@
       }
     }
   },
-  "OpenAIVideoSora2": {
-    "description": "OpenAI视频和音频生成。",
-    "display_name": "OpenAI Sora - Video",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成后控制"
-      },
-      "duration": {
-        "name": "时长"
-      },
-      "image": {
-        "name": "图像"
-      },
-      "model": {
-        "name": "模型"
-      },
-      "prompt": {
-        "name": "提示词",
-        "tooltip": "引导文本；如果存在输入图像，可为空。"
-      },
-      "seed": {
-        "name": "随机种",
-        "tooltip": "确定节点是否应重新运行的种子；无论种子如何，实际结果都是非确定性的。"
-      },
-      "size": {
-        "name": "尺寸"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "OpenRouterImageNode": {
     "description": "通过 OpenRouter 使用微软的 MAI-Image-2.6 模型生成或编辑图像：文生图，或使用最多五张参考图像进行图像引导编辑，支持七种宽高比及 1K 或 1.5K 分辨率。",
     "display_name": "OpenRouter 图像",
@@ -18590,6 +18687,9 @@
   "QwenImageDiffsynthControlnet": {
     "display_name": "QwenImageDiffsynthControlnet",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
       "image": {
         "name": "图像"
       },
@@ -18601,6 +18701,9 @@
       },
       "model_patch": {
         "name": "模型补丁"
+      },
+      "start_percent": {
+        "name": "start_percent"
       },
       "strength": {
         "name": "强度"
@@ -28813,6 +28916,10 @@
       "positive": {
         "name": "正面"
       },
+      "ref_pad_image": {
+        "name": "ref_pad_image",
+        "tooltip": "使用此图像而非灰色填充图像条件输入的填充帧，在不固定帧的情况下锚定身份（SVI 风格的防漂移填充，供 ID-V2V 等模型使用）。"
+      },
       "start_image": {
         "name": "开始图像"
       },
@@ -29793,8 +29900,12 @@
     }
   },
   "ZImageFunControlnet": {
-    "display_name": "ZImageFunControlnet",
+    "description": "应用通过 Load Model Patch 加载的 Z-Image 或 Qwen Image 2.1 Fun ControlNet。",
+    "display_name": "应用 Fun ControlNet",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
       "image": {
         "name": "图像"
       },
@@ -29809,6 +29920,9 @@
       },
       "model_patch": {
         "name": "模型补丁"
+      },
+      "start_percent": {
+        "name": "start_percent"
       },
       "strength": {
         "name": "强度"

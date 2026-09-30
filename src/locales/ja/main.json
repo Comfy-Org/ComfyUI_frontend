@@ -17,13 +17,13 @@
     "addNodesFromGraph": "グラフ内のノードに言及",
     "addPromptToSend": "送信するプロンプトを追加",
     "addToPrompt": "プロンプトに追加",
-    "alpha": "アルファ",
     "assetNotAttachable": "画像、動画、音声、3Dモデル、テキストファイルを添付できます",
     "attach": "ファイルを添付",
     "attachFiles": "画像またはファイルをアップロード",
     "attachmentTooLarge": "{name} は {limit} を超えています",
     "attachmentUploadFailed": "{name} をアップロードできませんでした",
     "backToPreviousChat": "前のチャットに戻る",
+    "beta": "ベータ",
     "caption": "AIエージェントは間違えることがあります",
     "captionExpanded": "AIエージェントは間違えることがあります。応答を再確認してください。",
     "changeWorkflowForChat": "エージェントが編集できるワークフローを変更",
@@ -38,8 +38,8 @@
     "coachHistoryTitle": "中断したところから再開",
     "coachProgress": "{total}件中{current}件",
     "coachTitle": "Comfy Agentの紹介",
-    "coachWorkflowBody": "エージェントが編集するのは選択したワークフローのみです。参照ファイルをアップロードしたり、他のワークフローに言及したりすることもできます。",
-    "coachWorkflowTitle": "エージェントが編集するワークフローを選択",
+    "coachWorkflowBody": "メッセージを送信する、ワークフローを選択する、またはノード参照を追加するまで、タブの切り替えに合わせて切り替わります。",
+    "coachWorkflowTitle": "エージェントは表示中のワークフローを編集します",
     "consent": {
       "accept": "Comfy Agent を使い始める",
       "body1": "Comfy Agentは、ワークフローの計画、構築、実行、反復を支援します。作成したいものを説明すると、Comfy Agentが強力なチームメイトとして作業します。",
@@ -129,6 +129,7 @@
     "runApproval": {
       "cancel": "キャンセル",
       "lead": "このツールはワークフローを実行しようとしています：",
+      "leadBound": "このツールはこのワークフローを実行しようとしています。",
       "question": "承認しますか？",
       "run": "実行",
       "thisWorkflow": "このワークフロー"
@@ -161,18 +162,31 @@
     "showChatHistory": "チャット履歴を表示",
     "showLess": "表示を減らす",
     "showMore": "さらに表示",
+    "showTarget": "ターゲットを表示",
+    "showTargetWorkflow": "ターゲットワークフローを表示: {workflowName}",
     "skip": "スキップ",
     "stop": "停止",
     "stopShortcut": "Esc",
-    "suggestedPrompts": [
-      "ホッケーマスクを着けた黄色いアヒルを生成",
-      "保存済みのワークフローを一覧表示",
-      "肌のアップスケーリングに最適なワークフローを探す",
-      "選択したノードを説明",
-      "3つのモデルを使用した画像から動画へのワークフローを作成"
-    ],
+    "suggestedPrompts": {
+      "cloud": [
+        "宇宙飛行士のキャラクターシートを生成",
+        "商品画像を短い広告にする",
+        "選択したノードを説明",
+        "4Kに最適な画像アップスケールワークフロー",
+        "このワークフローのエラーを修正"
+      ],
+      "local": [
+        "宇宙飛行士のリアルなポートレートを生成",
+        "GPUに適した画像から動画へのワークフロー",
+        "選択したノードを説明",
+        "このワークフローに不足しているノードのインストールを手伝って",
+        "このワークフローのエラーを修正"
+      ]
+    },
     "switchWorkflow": "ワークフローを切り替え",
     "switchWorkflowForNodes": "ノードを追加するには{workflowName}に切り替えてください。",
+    "takeTour": "ツアーを開始",
+    "targetFollowsVisibleWorkflow": "ターゲットワークフローは、ターゲットを選択するか、ノード参照を追加するか、メッセージを送信するまで、表示中のタブに追従します。",
     "targetForThisChat": "このチャットのエージェント対象",
     "targetNavigationUnavailable": "このワークフローのターゲットは利用できなくなりました。",
     "thinking": "考え中...",
@@ -191,6 +205,7 @@
     "updatingGraph": "エージェントがグラフを更新しています",
     "uploading": "アップロード中",
     "viewAddedNodes": "ノードを表示 | ノードを表示",
+    "viewingDifferentWorkflow": "ターゲットとは異なるワークフローを表示しています。",
     "worked": "完了",
     "workedForMinutes": "{minutes}分{seconds}秒間作業",
     "workedForSeconds": "{seconds}秒間作業",
@@ -3195,7 +3210,6 @@
     "Rodin": "Rodin",
     "Runway": "Runway",
     "Sonilo": "Sonilo",
-    "Sora": "Sora",
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",

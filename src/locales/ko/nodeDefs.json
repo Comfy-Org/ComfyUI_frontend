@@ -1486,6 +1486,25 @@
       }
     }
   },
+  "ByteDance2DraftToFinalVideoNode": {
+    "description": "Seedance 2.5 초안의 1080p 최종 비디오를 렌더링합니다. 최종본은 초안의 장면과 모션을 유지하고 프롬프트, 참조 이미지, 길이, 화면 비율 및 오디오 설정을 재사용합니다.",
+    "display_name": "ByteDance Seedance 2.5 초안에서 최종 비디오",
+    "inputs": {
+      "draft_task_id": {
+        "name": "draft_task_id",
+        "tooltip": "Seedance 2.5 Draft 모델로 실행한 Seedance 2.5 노드의 draft_task_id 출력 또는 붙여 넣은 초안 작업 ID입니다. 검토한 초안을 재사용하려면 해당 노드의 시드 제어를 고정으로 설정하세요. 그렇지 않으면 다음 실행 시 새 초안이 생성됩니다. 초안은 생성 후 7일 동안 렌더링할 수 있습니다."
+      },
+      "watermark": {
+        "name": "워터마크",
+        "tooltip": "비디오에 워터마크를 추가할지 여부입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "Seedance 2.0을 사용하여 첫 프레임 이미지와 선택적인 마지막 프레임 이미지로 비디오를 생성합니다.",
     "display_name": "ByteDance Seedance 2.0 첫-마지막 프레임에서 비디오 생성",
@@ -1511,7 +1530,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "최신 모델, 최대 30초 동영상 및 mp4/mov 출력에는 Seedance 2.5를 사용합니다. 최고 품질 및 4k에는 Seedance 2.0, 속도 최적화에는 Fast, 가장 빠르고 저렴한 생성에는 Mini를 사용합니다."
+        "tooltip": "최신 모델, 최대 30초 비디오 및 mp4/mov 출력을 위한 Seedance 2.5, 빠른 480p 미리보기용 Seedance 2.5 Draft(해당 draft_task_id는 Seedance 2.5 Draft to Final Video 노드에서 1080p 최종본을 렌더링함), 최고 품질 및 4k용 Seedance 2.0, 속도 최적화용 Fast, 가장 빠르고 비용이 가장 낮은 생성을 위한 Mini입니다."
       },
       "model_duration": {
         "name": "duration"
@@ -1540,6 +1559,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Seedance 2.5 Draft 실행의 작업 ID입니다. 1080p 최종본을 렌더링하려면 Seedance 2.5 Draft to Final Video 노드에 연결하세요."
       }
     }
   },
@@ -1552,7 +1575,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "최신 모델, 최대 30초 동영상 및 mp4/mov 출력에는 Seedance 2.5를 사용합니다. 최고 품질 및 4k에는 Seedance 2.0, 속도 최적화에는 Fast, 가장 빠르고 저렴한 생성에는 Mini를 사용합니다."
+        "tooltip": "최신 모델, 최대 30초 비디오 및 mp4/mov 출력을 위한 Seedance 2.5, 빠른 480p 미리보기용 Seedance 2.5 Draft(해당 draft_task_id는 Seedance 2.5 Draft to Final Video 노드에서 1080p 최종본을 렌더링함), 최고 품질 및 4k용 Seedance 2.0, 속도 최적화용 Fast, 가장 빠르고 비용이 가장 낮은 생성을 위한 Mini입니다."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -1605,7 +1628,7 @@
       },
       "model": {
         "name": "모델",
-        "tooltip": "최신 모델, 최대 30초 동영상 및 mp4/mov 출력에는 Seedance 2.5를 사용합니다. 최고 품질 및 4k에는 Seedance 2.0, 속도 최적화에는 Fast, 가장 빠르고 저렴한 생성에는 Mini를 사용합니다."
+        "tooltip": "최신 모델, 최대 30초 비디오 및 mp4/mov 출력을 위한 Seedance 2.5, 빠른 480p 미리보기용 Seedance 2.5 Draft(해당 draft_task_id는 Seedance 2.5 Draft to Final Video 노드에서 1080p 최종본을 렌더링함), 최고 품질 및 4k용 Seedance 2.0, 속도 최적화용 Fast, 가장 빠르고 비용이 가장 낮은 생성을 위한 Mini입니다."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -1646,6 +1669,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Seedance 2.5 Draft 실행의 작업 ID입니다. 1080p 최종본을 렌더링하려면 Seedance 2.5 Draft to Final Video 노드에 연결하세요."
       }
     }
   },
@@ -1658,7 +1685,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.5는 최신 모델, 최대 30초 동영상 및 mp4/mov 출력을 지원합니다. Seedance 2.0은 최고 품질 및 4K용입니다. Fast는 속도 최적화용이며, Mini는 가장 빠르고 비용이 가장 낮은 생성용입니다."
+        "tooltip": "최신 모델, 최대 30초 비디오 및 mp4/mov 출력을 위한 Seedance 2.5, 빠른 480p 미리보기용 Seedance 2.5 Draft(해당 draft_task_id는 Seedance 2.5 Draft to Final Video 노드에서 1080p 최종본을 렌더링함), 최고 품질 및 4k용 Seedance 2.0, 속도 최적화용 Fast, 가장 빠르고 비용이 가장 낮은 생성을 위한 Mini입니다."
       },
       "model_duration": {
         "name": "duration"
@@ -1690,6 +1717,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Seedance 2.5 Draft 실행의 작업 ID입니다. 1080p 최종본을 렌더링하려면 Seedance 2.5 Draft to Final Video 노드에 연결하세요."
       }
     }
   },
@@ -8345,6 +8376,42 @@
       }
     }
   },
+  "IdeogramEditApi": {
+    "description": "Ideogram 4.5를 사용하여 텍스트 프롬프트에 따라 최대 5개의 이미지를 편집하거나 결합합니다. 전체 이미지를 다시 렌더링하며 크기나 화면 비율이 변경될 수 있습니다. 수정하지 않은 픽셀을 그대로 유지하려면 Ideogram 4.5 Precise Edit를 사용하세요.",
+    "display_name": "Ideogram 4.5 편집",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "사용할 모델입니다."
+      },
+      "model_height": {
+        "name": "높이"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_quality": {
+        "name": "품질"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_size": {
+        "name": "크기"
+      },
+      "model_width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramPImage": {
     "description": "Ideogram의 빠른 텍스트-투-이미지 모델인 P-Image를 사용하여 이미지를 생성합니다. 강력한 타이포그래피와 포토리얼리즘을 제공하며, 정확한 텍스트, 색상 및 레이아웃을 위한 Ideogram 4.0 구조화 JSON 캡션을 지원합니다.",
     "display_name": "Ideogram & Pruna P-Image",
@@ -8384,6 +8451,70 @@
       "1": {
         "name": "final_prompt",
         "tooltip": "실제로 이미지가 생성된 프롬프트(프롬프트 업샘플링이 실행된 경우 재작성된 구조화 캡션, 아니면 입력한 프롬프트). prompt_upsampling을 OFF로 하고 동일한 시드로 다시 입력하면 이 이미지를 재현할 수 있습니다."
+      }
+    }
+  },
+  "IdeogramPreciseEditApi": {
+    "description": "Ideogram 4.5 정밀 편집을 사용하여 텍스트 프롬프트에 따라 이미지를 편집합니다. 프롬프트에서 요청한 부분만 변경되고 수정하지 않은 픽셀은 동일하게 유지되며, 출력은 이미지 1의 크기를 유지합니다(약 4MP를 초과하는 이미지는 먼저 축소됨). 최대 4개의 참조 이미지를 사용할 수 있습니다.",
+    "display_name": "Ideogram 4.5 정밀 편집",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "사용할 모델입니다."
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_quality": {
+        "name": "품질"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramTextToImageApi": {
+    "description": "Ideogram 4.5를 사용하여 텍스트 프롬프트로 이미지를 생성합니다.",
+    "display_name": "Ideogram 4.5 텍스트에서 이미지",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "사용할 모델입니다."
+      },
+      "model_magic_prompt": {
+        "name": "magic_prompt"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_quality": {
+        "name": "품질"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_size": {
+        "name": "크기"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "이미지가 생성된 구조화된 캡션입니다. 이미지를 재현하려면 magic_prompt를 'off'로 설정하고 동일한 시드를 사용하여 다시 입력하세요."
       }
     }
   },
@@ -8547,12 +8678,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "sRGB, 선형 Rec.709, HDR(Rec.2020 HLG), HDR PQ(Rec.2020 PQ) 간에 변환합니다. 선형 1.0은 sRGB와 동일한 203니트 기준 백색을 사용하며, HLG는 1000니트 기준 디스플레이를 사용합니다. 선형 출력 및 선형-HDR 변환은 톤 매핑 없이 확장 값을 유지합니다. SDR 출력 및 PQ-HLG 변환은 배치 전체에서 초과 휘도를 톤 매핑하고 색역 밖의 색상을 압축합니다. 변환은 float32로 계산되며 중간 device 및 dtype를 반환합니다. 스트레이트 알파에는 색상 변환이 적용되지 않습니다.",
+    "description": "sRGB, 선형 Rec.709, HDR(Rec.2020 HLG), HDR PQ(Rec.2020 PQ), HDR LogC3 및 HDR ACEScct를 변환합니다. LogC3는 Rec.709 원색과 [0, 1]로 제한된 코드값을 사용한 EI 800 커브를 사용합니다. ACEScct는 AP1 원색과 D60 화이트를 사용하며, D65에 대한 Bradford 적응을 적용합니다. EXR 저장 시 LogC3 또는 ACEScct를 선형으로 변환하세요. 선형 1.0은 sRGB와 동일한 203니트 기준 화이트를 사용하며, HLG는 1000니트 기준 디스플레이를 사용합니다. 선형 및 ACEScct 출력은 확장 범위 값을 보존합니다. 선형에서 HDR로의 변환은 톤 매핑 없이 하이라이트를 보존하며, HLG 및 PQ 출력은 음수 채널을 클리핑합니다. SDR 출력 및 PQ에서 HLG로의 변환은 배치 전체에서 과도한 휘도를 톤 매핑하고 색역 밖의 색상을 압축합니다. 변환은 float32로 계산되며 중간 device와 dtype을 반환합니다. 스트레이트 알파에는 색상 변환이 적용되지 않습니다.",
     "display_name": "이미지 색 공간 변환",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "출력 픽셀의 색 공간입니다. 저장 노드도 동일한 색 공간으로 설정하세요."
+        "tooltip": "출력 픽셀의 색 공간입니다. 저장 노드를 이와 동일한 색 공간으로 설정하세요. EXR을 저장하기 전에 LogC3 또는 ACEScct를 선형으로 변환하고, 비디오를 저장하기 전에 sRGB/HDR/HDR PQ로 변환하세요."
       },
       "image": {
         "name": "image"
@@ -17117,40 +17248,6 @@
       }
     }
   },
-  "OpenAIVideoSora2": {
-    "description": "OpenAI 비디오 및 오디오 생성.",
-    "display_name": "OpenAI Sora - 비디오",
-    "inputs": {
-      "control_after_generate": {
-        "name": "생성 후 제어"
-      },
-      "duration": {
-        "name": "지속 시간"
-      },
-      "image": {
-        "name": "이미지"
-      },
-      "model": {
-        "name": "모델"
-      },
-      "prompt": {
-        "name": "프롬프트",
-        "tooltip": "안내 텍스트; 입력 이미지가 있을 경우 비워둘 수 있습니다."
-      },
-      "seed": {
-        "name": "시드",
-        "tooltip": "노드 재실행 여부를 결정하는 시드; 실제 결과는 시드와 관계없이 비결정적입니다."
-      },
-      "size": {
-        "name": "크기"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "OpenRouterImageNode": {
     "description": "Microsoft의 MAI-Image-2.6 모델을 사용하여 OpenRouter를 통해 이미지를 생성하거나 편집합니다. 텍스트를 이미지로 생성하거나, 최대 5개의 참조 이미지를 사용한 이미지 가이드 편집을 1K 또는 1.5K의 7가지 화면 비율로 수행할 수 있습니다.",
     "display_name": "OpenRouter 이미지",
@@ -18590,6 +18687,9 @@
   "QwenImageDiffsynthControlnet": {
     "display_name": "QwenImageDiffsynthControlnet",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
       "image": {
         "name": "이미지"
       },
@@ -18601,6 +18701,9 @@
       },
       "model_patch": {
         "name": "모델 패치"
+      },
+      "start_percent": {
+        "name": "start_percent"
       },
       "strength": {
         "name": "강도"
@@ -28813,6 +28916,10 @@
       "positive": {
         "name": "긍정 조건"
       },
+      "ref_pad_image": {
+        "name": "ref_pad_image",
+        "tooltip": "회색 대신 이 이미지로 이미지 컨디셔닝의 패딩 프레임을 채워 프레임을 고정하지 않고 정체성을 유지합니다(SVI 스타일 드리프트 방지 패딩, ID-V2V 등의 모델에서 사용)."
+      },
       "start_image": {
         "name": "시작 이미지"
       },
@@ -29793,8 +29900,12 @@
     }
   },
   "ZImageFunControlnet": {
-    "display_name": "ZImageFunControlnet",
+    "description": "Load Model Patch로 로드된 Z-Image 또는 Qwen Image 2.1 Fun ControlNet을 적용합니다.",
+    "display_name": "Fun ControlNet 적용",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
       "image": {
         "name": "이미지"
       },
@@ -29809,6 +29920,9 @@
       },
       "model_patch": {
         "name": "모델 패치"
+      },
+      "start_percent": {
+        "name": "start_percent"
       },
       "strength": {
         "name": "강도"
