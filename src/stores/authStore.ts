@@ -16,6 +16,12 @@ import {
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
+import {
+  hostAccessToken,
+  hostUser,
+  isHostIdentityActive,
+  reportHostRefusal
+} from '@/platform/auth/host/hostIdentity'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
@@ -137,9 +143,15 @@ export const useAuthStore = defineStore('auth', () => {
   const buildApiUrl = (path: string) => `${getComfyApiBaseUrl()}${path}`
 
   // Getters
-  const isAuthenticated = computed(() => !!currentUser.value)
-  const userEmail = computed(() => currentUser.value?.email)
-  const userId = computed(() => currentUser.value?.uid)
+  const isAuthenticated = computed(() =>
+    isHostIdentityActive() ? hostUser() !== null : !!currentUser.value
+  )
+  const userEmail = computed(() =>
+    isHostIdentityActive() ? hostUser()?.email : currentUser.value?.email
+  )
+  const userId = computed(() =>
+    isHostIdentityActive() ? hostUser()?.id : currentUser.value?.uid
+  )
 
   function getShareAuthMetadata() {
     const shareId = getPreservedQueryParam(
@@ -223,6 +235,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const getIdToken = async (): Promise<string | undefined> => {
+    if (isHostIdentityActive()) return hostAccessToken()
     const user = currentUser.value
     if (!user) return
     try {
@@ -288,6 +301,7 @@ export const useAuthStore = defineStore('auth', () => {
    *   - null if no authentication method is available
    */
   const getAuthHeader = async (): Promise<AuthHeader | null> => {
+    if (isHostIdentityActive()) return headerFromToken(await hostAccessToken())
     if (flags.unifiedCloudAuthEnabled) return getUnifiedAuthHeader()
 
     if (webSessionRequests()) return getUserAuthHeader()
@@ -329,12 +343,16 @@ export const useAuthStore = defineStore('auth', () => {
    * stored API key for API-key sessions. Never a workspace-scoped token.
    */
   const getUserAuthHeader = async (): Promise<AuthHeader | null> =>
-    currentUser.value === null
-      ? useApiKeyAuthStore().getAuthHeader()
-      : await getFirebaseAuthHeader()
+    isHostIdentityActive()
+      ? headerFromToken(await hostAccessToken())
+      : currentUser.value === null
+        ? useApiKeyAuthStore().getAuthHeader()
+        : await getFirebaseAuthHeader()
 
   const currentUserIdentity = (): string | null =>
-    currentUser.value?.uid ?? useApiKeyAuthStore().getApiKey()
+    isHostIdentityActive()
+      ? (hostUser()?.id ?? null)
+      : (currentUser.value?.uid ?? useApiKeyAuthStore().getApiKey())
 
   /**
    * Response data from a user-scoped endpoint belongs to the identity that
@@ -357,6 +375,7 @@ export const useAuthStore = defineStore('auth', () => {
    * it is sent directly instead of minting a token.
    */
   const getWorkspaceAuthHeader = async (): Promise<AuthHeader | null> => {
+    if (isHostIdentityActive()) return headerFromToken(await hostAccessToken())
     if (flags.unifiedCloudAuthEnabled) {
       const token = useWorkspaceAuthStore().getUnifiedToken()
       return token ? { Authorization: `Bearer ${token}` } : null
@@ -388,6 +407,7 @@ export const useAuthStore = defineStore('auth', () => {
    * Use this for WebSocket connections and backend node auth.
    */
   const getAuthToken = async (): Promise<string | undefined> => {
+    if (isHostIdentityActive()) return hostAccessToken()
     if (flags.unifiedCloudAuthEnabled) return getUnifiedAuthToken()
 
     const workspaceAuth = useWorkspaceAuthStore()
@@ -409,6 +429,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const getWorkspaceAuthToken = async (): Promise<string | undefined> => {
+    if (isHostIdentityActive()) return hostAccessToken()
     const requests = webSessionRequests()
     if (requests) return webSessionRunToken(requests)
 
@@ -613,12 +634,15 @@ export const useAuthStore = defineStore('auth', () => {
   ): Promise<Response> => {
     const requestOwner = currentUserIdentity()
     return fetchHealingMissingCustomer(input, {
-      request: () =>
-        fetchWithUnifiedRemint(
+      request: async () => {
+        const response = await fetchWithUnifiedRemint(
           input,
           init ?? {},
           isCloud && flags.unifiedCloudAuthEnabled
-        ),
+        )
+        void reportHostRefusal(response)
+        return response
+      },
       recoverMissingCustomer,
       identityUnchanged: () => currentUserIdentity() === requestOwner,
       base: window.location.href

@@ -128,6 +128,7 @@ export type RemoteConfig = GetFeaturesResponses[200] & {
   hosted_billing_destination?: string
   unified_cloud_auth?: boolean
   unified_web_session?: boolean
+  desktop_host_auth?: boolean
   // Wire key carries the server's own spelling; see ServerFeatureFlag.
   embedded_checked_enabled?: boolean
   billing_sdk_topup_enabled?: boolean

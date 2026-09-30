@@ -29,10 +29,7 @@ export function syncHostUserIdWithFirebaseAuth(): WatchStopHandle | undefined {
   const authStore = useAuthStore()
 
   return watch(
-    () =>
-      authStore.isInitialized
-        ? (authStore.currentUser?.uid ?? null)
-        : undefined,
+    () => (authStore.isInitialized ? (authStore.userId ?? null) : undefined),
     (userId) => {
       if (userId === undefined) return
 

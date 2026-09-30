@@ -42,6 +42,7 @@ export enum ServerFeatureFlag {
   SHOW_SIGNIN_BUTTON = 'show_signin_button',
   UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
   UNIFIED_WEB_SESSION = 'unified_web_session',
+  DESKTOP_HOST_AUTH = 'desktop_host_auth',
   BILLING_CONTROL_ENABLED = 'billing_control_enabled',
   LEGACY_BILLING_MIGRATION_ENABLED = 'legacy_billing_migration_enabled',
   EMBEDDED_CHECKOUT_ENABLED = 'embedded_checked_enabled',
@@ -302,6 +303,16 @@ export function useFeatureFlags() {
         getDevOverride<unknown>(key) ??
         remoteConfig.value.unified_web_session
       return value === true
+    },
+    /** Use the Comfy Desktop host's account session instead of Firebase when the host offers one. */
+    get desktopHostAuthEnabled() {
+      return (
+        resolveFlag<unknown>(
+          ServerFeatureFlag.DESKTOP_HOST_AUTH,
+          remoteConfig.value.desktop_host_auth,
+          false
+        ) === true
+      )
     },
     get billingControlEnabled() {
       return resolveAuthGatedFlag(

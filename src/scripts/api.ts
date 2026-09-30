@@ -19,6 +19,7 @@ import { ref } from 'vue'
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
 import { scopeMediaRoute } from '@/platform/auth/session/sessionMediaUrl'
 import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
+import { reportHostRefusal } from '@/platform/auth/host/hostIdentity'
 import {
   fetchWithUnifiedRemint,
   shouldRemintCloudRequest
@@ -738,6 +739,7 @@ export class ComfyApi extends EventTarget {
           unifiedRetryOn401,
           retrySignalLifecycle
         )
+    if (isCloud) void response.then(reportHostRefusal, () => undefined)
     return response.finally(() => {
       if (timeoutId !== undefined) clearTimeout(timeoutId)
       if (retryTimeoutId !== undefined) clearTimeout(retryTimeoutId)

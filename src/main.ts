@@ -73,6 +73,16 @@ if (hasHostTelemetryBridge) {
   initHostTelemetry()
 }
 
+const hostAuthBridge = window.__comfyDesktop2?.Auth
+if (hostAuthBridge) {
+  const { useFeatureFlags } = await import('@/composables/useFeatureFlags')
+  if (useFeatureFlags().flags.desktopHostAuthEnabled) {
+    const { startHostIdentity } =
+      await import('@/platform/auth/host/hostIdentity')
+    await startHostIdentity(hostAuthBridge)
+  }
+}
+
 const ComfyUIPreset = definePreset(Aura, {
   semantic: {
     // @ts-expect-error fixme ts strict error

@@ -1,4 +1,8 @@
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
+import {
+  hostUser,
+  isHostIdentityActive
+} from '@/platform/auth/host/hostIdentity'
 import { isCloud } from '@/platform/distribution/types'
 
 const STORAGE_KEY = 'Comfy.FeatureFlagOverride'
@@ -19,7 +23,9 @@ type OverrideMap = Record<string, unknown>
  */
 function isComfyEmployee(): boolean {
   try {
-    const user = firebaseIdentity.currentUser()
+    const user = isHostIdentityActive()
+      ? hostUser()
+      : firebaseIdentity.currentUser()
     if (!user?.emailVerified) return false
 
     return user.email?.toLowerCase().endsWith(EMPLOYEE_EMAIL_DOMAIN) ?? false

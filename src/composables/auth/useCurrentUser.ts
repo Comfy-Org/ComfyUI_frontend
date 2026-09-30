@@ -1,6 +1,12 @@
 import { whenever } from '@vueuse/core'
 import { computed, watch } from 'vue'
 
+import {
+  hostUser,
+  isHostIdentityActive,
+  requestHostSignIn
+} from '@/platform/auth/host/hostIdentity'
+
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -11,19 +17,30 @@ export const useCurrentUser = () => {
   const commandStore = useCommandStore()
   const apiKeyStore = useApiKeyAuthStore()
 
-  const firebaseUser = computed(() => authStore.currentUser)
+  const isHostIdentity = computed(() => isHostIdentityActive())
+  const hostAccount = computed(() => hostUser())
+  const isHostLogin = computed(() => hostAccount.value !== null)
+  const firebaseUser = computed(() =>
+    isHostIdentity.value ? null : authStore.currentUser
+  )
   // A Firebase session takes precedence on every auth rail (see
   // authStore.getUserAuthHeader), so a stored key behind a Firebase login is
   // not an API-key session.
   const isApiKeyLogin = computed(
-    () => apiKeyStore.isAuthenticated && firebaseUser.value === null
+    () =>
+      !isHostIdentity.value &&
+      apiKeyStore.isAuthenticated &&
+      firebaseUser.value === null
   )
   const isLoggedIn = computed(
-    () => isApiKeyLogin.value || firebaseUser.value !== null
+    () =>
+      isHostLogin.value || isApiKeyLogin.value || firebaseUser.value !== null
   )
   const isAuthInitialized = computed(() => authStore.isInitialized)
 
   const resolvedUserInfo = computed<AuthUserInfo | null>(() => {
+    if (hostAccount.value) return { id: hostAccount.value.id }
+
     if (isApiKeyLogin.value && apiKeyStore.currentUser) {
       return { id: apiKeyStore.currentUser.id }
     }
@@ -55,6 +72,7 @@ export const useCurrentUser = () => {
   })
 
   const userEmail = computed(() => {
+    if (hostAccount.value) return hostAccount.value.email
     if (isApiKeyLogin.value) {
       return apiKeyStore.currentUser?.email
     }
@@ -62,6 +80,7 @@ export const useCurrentUser = () => {
   })
 
   const providerName = computed(() => {
+    if (isHostLogin.value) return 'Comfy Desktop'
     if (isApiKeyLogin.value) {
       return 'Comfy API Key'
     }
@@ -114,6 +133,7 @@ export const useCurrentUser = () => {
   }
 
   const handleSignIn = async () => {
+    if (isHostIdentity.value) return requestHostSignIn()
     await commandStore.execute('Comfy.User.OpenSignInDialog')
   }
 
@@ -122,6 +142,7 @@ export const useCurrentUser = () => {
     isAuthInitialized,
     isLoggedIn,
     isApiKeyLogin,
+    isHostLogin,
     isEmailProvider,
     userDisplayName,
     userEmail,

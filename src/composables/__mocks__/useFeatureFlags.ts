@@ -30,6 +30,7 @@ const defaultFlags: FeatureFlags = {
   showSignInButton: undefined,
   unifiedCloudAuthEnabled: false,
   unifiedWebSessionEnabled: false,
+  desktopHostAuthEnabled: false,
   billingControlEnabled: false,
   legacyBillingMigrationEnabled: false,
   embeddedCheckoutEnabled: false,

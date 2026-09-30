@@ -15,6 +15,7 @@ const defaults: ReturnType<typeof realUseCurrentUser> = {
   isAuthInitialized: computed(() => true),
   isLoggedIn: computed(() => false),
   isApiKeyLogin: computed(() => false),
+  isHostLogin: computed(() => false),
   isEmailProvider: computed(() => false),
   userDisplayName: computed(() => undefined),
   userEmail: computed(() => undefined),
