@@ -248,6 +248,19 @@ describe('createTranslator', () => {
     )
   })
 
+  it.for([
+    { locale: 'en', count: 1, text: '1 node in $&' },
+    { locale: 'en', count: 2, text: '2 nodes in $&' },
+    { locale: 'zh-CN', count: 2, text: '$&中的 2 个节点' }
+  ] as const)(
+    'uses the positional count with named values in a $locale plural',
+    ({ locale, count, text }) => {
+      expect(
+        catalog.tPlural('unitNodes', count, locale, { unit: '$&', count: 99 })
+      ).toBe(text)
+    }
+  )
+
   it('preserves an explicitly empty translation', () => {
     expect(catalog.t('hero', 'zh-CN')).toBe('')
     expect(catalog.t('hero', 'en')).toBe('Hello')
