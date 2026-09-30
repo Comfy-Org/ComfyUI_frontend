@@ -1,8 +1,9 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import ModelsPage from '../../components/workshop/ModelsPage.vue'
+import type { CatalogueTab } from '../../components/workshop/CatalogueTabs.vue'
 import ModelsShowcase from '../../components/models/ModelsShowcase.astro'
-import { HUB_APPS_PATH } from '../../config/hub-models'
+import { HUB_APPS_PATH, HUB_WORKFLOWS_PATH } from '../../config/hub-models'
 import { isIndexableModelPage } from '../../config/indexing'
 import { t } from '../../i18n/translations'
 import {
@@ -10,24 +11,18 @@ import {
   workshopHeadingClass
 } from '../../components/workshop/workshopHeadingClasses'
 
-const section = Astro.routePattern === HUB_APPS_PATH ? 'apps' : 'workflows'
-const copy = {
-  workflows: {
-    title: t('hub.workflows.meta.title'),
-    description: t('hub.workflows.meta.description'),
-    heading: t('hub.workflows.heading')
-  },
-  apps: {
-    title: t('hub.apps.meta.title'),
-    description: t('hub.apps.meta.description'),
-    heading: t('hub.apps.heading')
-  }
-}[section]
+const SECTIONS: Readonly<Record<string, Exclude<CatalogueTab, 'models'>>> = {
+  [HUB_WORKFLOWS_PATH]: 'workflows',
+  [HUB_APPS_PATH]: 'apps'
+}
+const section = SECTIONS[Astro.routePattern]
+if (!section)
+  throw new Error(`No hub section is built at ${Astro.routePattern}`)
 ---
 
 <BaseLayout
-  title={copy.title}
-  description={copy.description}
+  title={t(`hub.${section}.meta.title` as const)}
+  description={t(`hub.${section}.meta.description` as const)}
   noindex={!isIndexableModelPage(Astro.url.pathname)}
   preloadFonts={['Medium']}
 >
@@ -39,7 +34,9 @@ const copy = {
       <p class={workshopEyebrowClass}>
         {t('workshop.catalogue.eyebrow')}
       </p>
-      <h1 class={workshopHeadingClass}>{copy.heading}</h1>
+      <h1 class={workshopHeadingClass}>
+        {t(`hub.${section}.heading` as const)}
+      </h1>
     </div>
     <ModelsShowcase slot="fallback" />
   </ModelsPage>
