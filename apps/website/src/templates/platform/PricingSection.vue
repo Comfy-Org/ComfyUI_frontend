@@ -11,23 +11,25 @@ import {
   formatUsdPerGbMonth,
   formatUsdPerHour,
   getStorageRate,
+  groupStorageRatesForDisplay,
   rateCard
 } from '../../data/rateCard'
-import type { StorageLabelKey } from '../../data/rateCardChecks'
-import { STORAGE_TYPE_LABEL_KEYS } from '../../data/rateCardChecks'
 
 const {
   locale = 'en',
   heading,
   subtitle,
   note,
-  headingSize = 'compact'
+  headingSize = 'compact',
+  bare = false
 } = defineProps<{
   locale?: Locale
   heading?: string
   subtitle?: string
   note?: string
   headingSize?: 'compact' | 'subsection'
+  /** Render the tables alone, with no section wrapper or heading — for embedding inside another section. */
+  bare?: boolean
 }>()
 
 const gpuRates = rateCard.gpus.map((rate) => ({
@@ -37,23 +39,24 @@ const gpuRates = rateCard.gpus.map((rate) => ({
   credits: formatCreditsPerHour(rate.creditsPerHour)
 }))
 
-function storageLabelKey(storageType: string): StorageLabelKey {
-  const key = STORAGE_TYPE_LABEL_KEYS[storageType]
-  if (!key) {
-    throw new Error(`No pricing label mapped for storage type: ${storageType}`)
-  }
-  return key
-}
-
-const storageRates = rateCard.storage.map((rate) => ({
-  key: storageLabelKey(rate.storageType),
-  price: formatUsdPerGbMonth(rate.pricePerGbMonthUsd),
-  credits: formatCreditsPerGbMonth(rate.creditsPerGbMonth)
-}))
+const storageRates = groupStorageRatesForDisplay(rateCard.storage)
+  .filter((rate) => rate.key !== 'containerDisk')
+  .map((rate) => ({
+    key: rate.key,
+    price: formatUsdPerGbMonth(rate.pricePerGbMonthUsd),
+    credits: formatCreditsPerGbMonth(rate.creditsPerGbMonth),
+    title: t('platform.pricing.storage.title', locale)
+  }))
 
 const storageExampleAmount = formatStorageExampleAmount(
   getStorageRate('network_standard')
 )
+
+const rootTag = bare ? 'div' : 'section'
+const rootId = bare ? undefined : 'pricing'
+const rootClass = bare
+  ? 'mx-auto max-w-9xl'
+  : 'mx-auto max-w-9xl scroll-mt-24 px-6 py-10 lg:scroll-mt-36 lg:py-14'
 
 const mobileGpuRows = gpuRates.map((rate) => ({
   ...rate,
@@ -68,11 +71,8 @@ const mobileStorageRows = storageRates.map((rate) => ({
 </script>
 
 <template>
-  <section
-    id="pricing"
-    class="mx-auto max-w-9xl scroll-mt-24 px-6 py-10 lg:scroll-mt-36 lg:py-14"
-  >
-    <SectionHeader max-width="xl" :heading-size="headingSize">
+  <component :is="rootTag" :id="rootId" :class="rootClass">
+    <SectionHeader v-if="!bare" max-width="xl" :heading-size="headingSize">
       {{ heading ?? t('platform.pricing.heading', locale) }}
       <template #subtitle>
         <p class="mt-4 text-sm text-smoke-700">
@@ -135,16 +135,7 @@ const mobileStorageRows = storageRates.map((rate) => ({
             class="flex items-start justify-between gap-4"
           >
             <div>
-              <p class="text-sm text-primary-warm-white">
-                {{
-                  rate.key === 'containerDisk'
-                    ? t('platform.pricing.storage.containerDisk', locale)
-                    : t('platform.pricing.storage.networkTitle', locale)
-                }}
-              </p>
-              <p class="mt-0.5 text-xs text-primary-warm-gray">
-                {{ t(`platform.pricing.storage.sub.${rate.key}`, locale) }}
-              </p>
+              <p class="text-sm text-primary-warm-white">{{ rate.title }}</p>
             </div>
             <div class="shrink-0 text-right font-mono">
               <p class="text-sm text-primary-warm-white">{{ rate.price }}</p>
@@ -162,8 +153,6 @@ const mobileStorageRows = storageRates.map((rate) => ({
         </ul>
         <p class="mt-6 text-xs/relaxed text-primary-warm-gray">
           {{ t('platform.pricing.storageNote', locale) }}
-        </p>
-        <p class="mt-2 text-xs/relaxed text-primary-warm-gray">
           {{
             t('platform.pricing.storageExample', locale).replace(
               '{amount}',
@@ -254,16 +243,7 @@ const mobileStorageRows = storageRates.map((rate) => ({
                 <tr v-for="rate in storageRates" :key="rate.key">
                   <td class="max-w-56 px-2 py-3.5">
                     <p class="text-sm text-primary-warm-white">
-                      {{
-                        rate.key === 'containerDisk'
-                          ? t('platform.pricing.storage.containerDisk', locale)
-                          : t('platform.pricing.storage.networkTitle', locale)
-                      }}
-                    </p>
-                    <p class="mt-0.5 text-xs text-primary-warm-gray">
-                      {{
-                        t(`platform.pricing.storage.sub.${rate.key}`, locale)
-                      }}
+                      {{ rate.title }}
                     </p>
                   </td>
                   <td
@@ -288,8 +268,6 @@ const mobileStorageRows = storageRates.map((rate) => ({
           </div>
           <p class="mt-auto px-2 pt-6 text-xs/relaxed text-primary-warm-gray">
             {{ t('platform.pricing.storageNote', locale) }}
-          </p>
-          <p class="mt-2 px-2 text-xs/relaxed text-primary-warm-gray">
             {{
               t('platform.pricing.storageExample', locale).replace(
                 '{amount}',
@@ -300,5 +278,5 @@ const mobileStorageRows = storageRates.map((rate) => ({
         </article>
       </div>
     </div>
-  </section>
+  </component>
 </template>

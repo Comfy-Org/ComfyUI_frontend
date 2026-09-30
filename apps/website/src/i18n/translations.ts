@@ -2280,22 +2280,6 @@ Enterprise`
     en: '30 minute max workflow runtime',
     'zh-CN': '单个工作流最长运行 30 分钟'
   },
-  'pricing.feature.apiConcurrency1': {
-    en: 'Run up to 1 concurrent workflow via Cloud API',
-    'zh-CN': '通过 Cloud API 最多并发运行 1 个工作流'
-  },
-  'pricing.feature.apiConcurrency3': {
-    en: 'Run up to 3 concurrent workflows via Cloud API',
-    'zh-CN': '通过 Cloud API 最多并发运行 3 个工作流'
-  },
-  'pricing.feature.apiConcurrency5': {
-    en: 'Run up to 5 concurrent workflows via Cloud API',
-    'zh-CN': '通过 Cloud API 最多并发运行 5 个工作流'
-  },
-  'pricing.feature.apiConcurrency25': {
-    en: 'Run up to 25 concurrent workflows via Cloud API',
-    'zh-CN': '通过 Cloud API 最多并发运行 25 个工作流'
-  },
   'pricing.feature.addCredits': {
     en: 'Add more credits anytime',
     'zh-CN': '可随时增加积分'
@@ -9196,14 +9180,33 @@ Enterprise`
     en: 'Contact sales',
     'zh-CN': '联系销售'
   },
-  'pricing.resourceCosts.subtitle': {
-    en: 'Only pay for what you use. Rates below apply to the Comfy API, billed by the GPU second.',
-    'zh-CN': '按实际用量付费。以下费率适用于 Comfy API，按 GPU 秒计费。'
+  'pricing.comfyApi.heading': {
+    en: 'Comfy API pricing',
+    'zh-CN': 'Comfy API 定价'
   },
-  'pricing.resourceCosts.heading': {
-    en: 'Developer Platform pricing',
-    'zh-CN': '开发者平台定价'
+  'pricing.comfyApi.subtitle': {
+    en: 'Comfy API is a separate product from your Comfy Cloud plan, for teams building on Comfy Cloud programmatically. GPU time and storage are billed by the second; release, deployment, and concurrency limits apply to each plan below.',
+    'zh-CN':
+      'Comfy API 是独立于你的 Comfy Cloud 套餐之外的产品，面向以编程方式构建于 Comfy Cloud 平台之上的团队。GPU 时间与存储按秒计费；下方列出了各套餐的版本、部署与并发限制。'
   },
+  'pricing.comfyApi.metricColumn': { en: 'Limit', 'zh-CN': '限制项' },
+  'pricing.comfyApi.metric.releases': {
+    en: 'Total releases limit',
+    'zh-CN': '版本总数上限'
+  },
+  'pricing.comfyApi.metric.deployments': {
+    en: 'Total deployments limit',
+    'zh-CN': '部署总数上限'
+  },
+  'pricing.comfyApi.metric.concurrency': {
+    en: 'Max worker concurrency (per deployment)',
+    'zh-CN': '最大工作节点并发数（每个部署）'
+  },
+  'pricing.comfyApi.enterpriseNote': {
+    en: 'Enterprise limits are determined by your contract.',
+    'zh-CN': '企业版的限制由合同约定。'
+  },
+  'pricing.comfyApi.learnMore': { en: 'Learn More', 'zh-CN': '了解更多' },
   'pricing.minimaxLicense.heading': {
     en: 'MiniMax license pricing',
     'zh-CN': 'MiniMax 许可定价'
@@ -9249,55 +9252,21 @@ Enterprise`
     en: 'Storage',
     'zh-CN': '存储'
   },
-  'platform.pricing.storage.standardUnder1tb': {
-    en: 'Standard network storage, under 1 TB',
-    'zh-CN': '网络存储——标准，1 TB 以下'
-  },
-  'platform.pricing.storage.standardOver1tb': {
-    en: 'Standard network storage, 1 TB and above',
-    'zh-CN': '网络存储——标准，1 TB 及以上'
-  },
-  'platform.pricing.storage.highPerformance': {
-    en: 'High-performance network storage',
-    'zh-CN': '网络存储——高性能'
-  },
-  'platform.pricing.storage.containerDisk': {
-    en: 'Container disk',
-    'zh-CN': '容器磁盘'
-  },
-  'platform.pricing.storage.networkTitle': {
-    en: 'Network storage',
+  'platform.pricing.storage.title': {
+    en: 'Network Storage',
     'zh-CN': '网络存储'
   },
-  'platform.pricing.storage.sub.standardUnder1tb': {
-    en: 'Standard, under 1 TB',
-    'zh-CN': '标准，1 TB 以下'
-  },
-  'platform.pricing.storage.sub.standardOver1tb': {
-    en: 'Standard, 1 TB and above',
-    'zh-CN': '标准，1 TB 及以上'
-  },
-  'platform.pricing.storage.sub.highPerformance': {
-    en: 'High performance',
-    'zh-CN': '高性能'
-  },
-  'platform.pricing.storage.sub.containerDisk': {
-    en: 'Per-worker local filesystem',
-    'zh-CN': '每个工作节点的本地文件系统'
-  },
   'platform.pricing.storageNote': {
-    en: "Models live on persistent network storage shared across a deployment's workers. Container disk is each worker's local filesystem and is billed separately.",
-    'zh-CN':
-      '模型存放在网络存储上——持久化并在部署的所有工作节点间共享。容器磁盘是每个工作节点自己的本地文件系统，单独计费。'
+    en: "Models live on persistent network storage shared across a deployment's workers.",
+    'zh-CN': '模型存放在网络存储上——持久化并在部署的所有工作节点间共享。'
   },
   'platform.pricing.billedPerSecond': {
     en: 'Billed by the GPU second',
     'zh-CN': '按 GPU 秒计费'
   },
   'platform.pricing.storageExample': {
-    en: 'Worked example: 500 GB of models on standard network storage = {amount}/mo + GPU time.',
-    'zh-CN':
-      '示例：500 GB 模型存放在标准网络存储上 = 每月 {amount} + GPU 时间。'
+    en: 'For example: 20 GB of models = {amount}/mo + GPU time.',
+    'zh-CN': '示例：20 GB 模型 = 每月 {amount} + GPU 时间。'
   },
   'platform.pricing.modelsNote': {
     en: 'Comfy Router usage shows per-output prices on each model card and draws from the same credit pool.',
