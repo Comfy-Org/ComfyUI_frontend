@@ -71,7 +71,13 @@ export function useAttachment(options: UseAttachmentOptions) {
   function stage(name: string): string {
     const id = `upload-${++stagedCount}:${name}`
     pending.add(id)
-    options.stage({ id, name, ref: '', uploading: true })
+    options.stage({
+      id,
+      name,
+      ref: '',
+      uploading: true,
+      capability: agentAttachCapability(name) ?? 'unknown'
+    })
     return id
   }
 
@@ -131,7 +137,6 @@ export function useAttachment(options: UseAttachmentOptions) {
       if (cancelled.has(id)) return false
       options.update(id, {
         name: file.name,
-        capability: agentAttachCapability(file.name) ?? 'unknown',
         previewUrl: hasImageType(file) ? URL.createObjectURL(file) : undefined
       })
       const controller = new AbortController()
@@ -190,6 +195,10 @@ export function useAttachment(options: UseAttachmentOptions) {
         options.remove(id)
         return 'unsupported'
       }
+      options.update(id, {
+        name: file.name,
+        capability: agentAttachCapability(file.name) ?? 'unknown'
+      })
       if (isTooLarge(file)) {
         options.remove(id)
         return 'failed'

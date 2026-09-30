@@ -206,6 +206,11 @@ function isAttachmentTypeRejection(error: unknown): boolean {
   )
 }
 
+function reportSendFailure(error: unknown): void {
+  if (isAttachmentTypeRejection(error)) return
+  reportError(error, { errorType: 'agent_send_message_failed' })
+}
+
 function disownsWorkflow(error: unknown): boolean {
   return (
     error instanceof AgentApiError &&
@@ -663,8 +668,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     // The refusal message deliberately names the user's files so the inline
     // notice is actionable. It is an expected, user-fixable response, though,
     // and reporting the AgentApiError would copy those names into telemetry.
-    if (!isAttachmentTypeRejection(error))
-      reportError(error, { errorType: 'agent_send_message_failed' })
+    reportSendFailure(error)
     trackAgentError(
       'request_failed',
       turnAccepted ? 'post_acceptance' : 'pre_acceptance',

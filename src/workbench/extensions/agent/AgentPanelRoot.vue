@@ -1660,6 +1660,20 @@ function droppedAssetVerdict(asset: DroppedAsset): AgentAttachVerdict {
   return agentAttachVerdict(asset.name)
 }
 
+function warnDroppedAssetResult(
+  result: Awaited<ReturnType<typeof attachment.addDeferredFile>>,
+  fetched: File | undefined,
+  refused: string,
+  name: string
+): void {
+  if (result === 'fetch_failed') {
+    warnAttachment(t('agent.assetFetchFailed', { name }))
+    return
+  }
+  if (result !== 'unsupported') return
+  warnAttachment(fetched ? refused : t('agent.assetFetchFailed', { name }))
+}
+
 async function attachDroppedAsset(event: DragEvent): Promise<boolean> {
   const asset = event.dataTransfer && getDroppedAsset(event.dataTransfer)
   if (!asset) {
@@ -1696,12 +1710,7 @@ async function attachDroppedAsset(event: DragEvent): Promise<boolean> {
       return fetched && isAgentAttachable(fetched) ? fetched : undefined
     }
   )
-  if (result === 'fetch_failed')
-    warnAttachment(t('agent.assetFetchFailed', { name: asset.name }))
-  if (result === 'unsupported')
-    warnAttachment(
-      fetched ? refused : t('agent.assetFetchFailed', { name: asset.name })
-    )
+  warnDroppedAssetResult(result, fetched, refused, asset.name)
   return result === 'uploaded'
 }
 
