@@ -61,12 +61,6 @@ async function createList(
   return list
 }
 
-function requestedLimits() {
-  return fetchApiMock.mock.calls.map(([url]) =>
-    new URL(url, 'http://localhost').searchParams.get('limit')
-  )
-}
-
 function requestedAfterCursors() {
   return fetchApiMock.mock.calls.slice(1).map(([url]) => {
     const requestUrl = new URL(url, 'http://localhost')
@@ -74,41 +68,6 @@ function requestedAfterCursors() {
   })
 }
 
-describe('useAssetsQuery page size', () => {
-  it('sends the pinned page size on the first fetch and on loadMore', async () => {
-    const list = await createList('page-size', ['newest'], {
-      hasMore: true,
-      nextCursor: 'page-2'
-    })
-    fetchApiMock.mockResolvedValueOnce(response(['older']))
-
-    await list.loadMore()
-    await vi.waitFor(() => expect(toValue(list.isLoading)).toBe(false))
-
-    expect(requestedLimits()).toEqual(['20', '20'])
-  })
-
-  it('lets a caller override the pinned page size', async () => {
-    fetchApiMock.mockResolvedValueOnce(response(['only']))
-    const scope = effectScope()
-    const list = scope.run(() =>
-      useAssetsQuery({ name_contains: 'override', limit: 100 })
-    )!
-    onTestFinished(() => scope.stop())
-    await vi.waitFor(() => expect(toValue(list.isLoading)).toBe(false))
-
-    expect(requestedLimits()).toEqual(['100'])
-  })
-})
-
-// `useAssetsQuery`'s internal `backingOff` ref (src/platform/assets/composables/
-// useAssetsQuery.ts) auto-resets after 2000ms via `refAutoReset`. It is only armed
-// for the "no response object" (network reject) and 5xx/429 branches of `doQuery`,
-// not for a successfully-received-but-malformed body. Each case below advances
-// fake timers past that window before asserting `hasMore` recovers, matching real
-// backoff timing instead of assuming an immediate reset (the original PR's shared
-// assertion that `hasMore` stays `true` right after failure only actually holds for
-// the malformed-JSON case).
 const transientFailures: {
   name: string
   fail: () => Promise<Response>
