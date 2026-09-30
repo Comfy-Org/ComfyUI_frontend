@@ -92,7 +92,7 @@ const draftCalls: {
 
 const suggestedPrompt = 'Generate a yellow duck with a hockey mask'
 const suggestedPromptAttribution: AgentStarterPromptAttribution = {
-  promptId: 'generate_image',
+  promptId: 'slot_1',
   promptIndex: 0,
   promptCount: 5,
   promptTextHash: 'a62d17a3',
@@ -295,7 +295,7 @@ describe('AgentPanel', () => {
         }
       }
     })
-    const prompt = 'Generate a yellow duck with a hockey mask'
+    const prompt = i18n.global.t('agent.suggestedPrompts.local.0')
     const suggestion = screen.getByRole('button', { name: prompt })
     const textarea = screen.getByRole('textbox')
 
