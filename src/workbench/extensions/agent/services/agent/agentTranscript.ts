@@ -359,8 +359,6 @@ function applyUserRow(row: AgentMessages[number], text: string): UserRowUpdate {
     text: referenceUpdate?.text ?? text,
     attachments: parseUserAttachments(row.content),
     workflowReferences: referenceUpdate?.references,
-    // `||`, not `??`: normalizeAgentTranscript collapses this with `??`, so
-    // a blank id has to be undefined by here or it would win as a value.
     workflowId: row.workflow_id || undefined
   }
 }
