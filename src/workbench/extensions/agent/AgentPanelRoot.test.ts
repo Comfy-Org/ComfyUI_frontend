@@ -4,6 +4,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import type {
   AgentThreadListResponse,
   AgentThreadSummary,
+  BillingStatus,
   SubscriptionTier
 } from '@comfyorg/ingest-types'
 import { render, screen, waitFor, within } from '@testing-library/vue'
@@ -241,6 +242,9 @@ const telemetry = vi.hoisted(() => ({
   trackAgentCloseButtonClicked: vi.fn(),
   trackAgentPanelOpened: vi.fn(),
   trackAgentPanelClosed: vi.fn(),
+  trackAgentPaywallShown: vi.fn(),
+  trackAgentPaywallCtaClicked: vi.fn(),
+  trackAddApiCreditButtonClicked: vi.fn(),
   trackAgentConsentShown: vi.fn(),
   trackAgentConsentResolved: vi.fn(),
   trackAgentOnboardingShown: vi.fn(),
@@ -278,9 +282,13 @@ const paywallCapabilities = vi.hoisted(() => ({
   isReady: true
 }))
 const paywallBilling = vi.hoisted(() => ({
-  tier: 'STANDARD' as SubscriptionTier | null
+  tier: 'STANDARD' as SubscriptionTier | null,
+  type: 'legacy' as 'workspace' | 'legacy',
+  status: 'paid' as BillingStatus | null,
+  fetchStatus: vi.fn<() => Promise<void>>()
 }))
 const paywallHasFunds = ref<boolean | null>(false)
+const paywallAgentHasFunds = ref<boolean | undefined>()
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'), {
   spy: true
@@ -352,9 +360,15 @@ beforeEach(() => {
       subscription: computed(() =>
         paywallHasFunds.value === null
           ? null
-          : fromPartial({ hasFunds: paywallHasFunds.value })
+          : fromPartial({
+              hasFunds: paywallHasFunds.value,
+              agentHasFunds: paywallAgentHasFunds.value ?? paywallHasFunds.value
+            })
       ),
-      tier: computed(() => paywallBilling.tier)
+      tier: computed(() => paywallBilling.tier),
+      type: computed(() => paywallBilling.type),
+      billingStatus: computed(() => paywallBilling.status),
+      fetchStatus: paywallBilling.fetchStatus
     })
   )
   vi.mocked(useBillingCapabilities).mockReturnValue(
@@ -403,7 +417,11 @@ beforeEach(() => {
   paywallCapabilities.canSubscribeSelfServe = true
   paywallCapabilities.isReady = true
   paywallBilling.tier = 'STANDARD'
+  paywallBilling.type = 'legacy'
+  paywallBilling.status = 'paid'
+  paywallBilling.fetchStatus.mockReset().mockResolvedValue(undefined)
   paywallHasFunds.value = false
+  paywallAgentHasFunds.value = undefined
 })
 
 const zAgentWsEventForTest = (raw: unknown): AgentChatEvent =>
@@ -3129,9 +3147,8 @@ describe('AgentPanelRoot workflow binding', () => {
     telemetry.trackAgentStarterPromptClicked.mockClear()
     renderWithSelectedTarget()
 
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'List my saved workflows' })
-    )
+    const prompt = i18n.global.t('agent.suggestedPrompts.cloud.1')
+    await userEvent.click(await screen.findByRole('button', { name: prompt }))
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await screen.findByRole('button', { name: 'Stop' })
 
@@ -3140,7 +3157,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(telemetry.trackAgentStarterPromptClicked.mock.calls).toEqual([
       [
         {
-          prompt_id: 'list_workflows',
+          prompt_id: 'slot_2',
           prompt_index: 1,
           prompt_count: 5,
           prompt_text_hash: expect.stringMatching(/^[0-9a-f]{8}$/),
@@ -3159,7 +3176,7 @@ describe('AgentPanelRoot workflow binding', () => {
           workflow_id: 'wf-42',
           client_message_id: 'client-message-2',
           input_method: 'suggestion',
-          starter_prompt_id: 'list_workflows',
+          starter_prompt_id: 'slot_2',
           starter_prompt_click_id: 'client-message-1'
         }
       ]
