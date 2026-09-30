@@ -33,7 +33,11 @@ const checkout = useCheckout({
   openUrl: (url) => window.location.assign(url),
   navigationMode: 'redirect',
   // Deferred: reads the key at challenge time, not this setup's snapshot.
-  challengePort: createDeferredStripeChallengePort(awaitBillingWebStripeKey)
+  challengePort: createDeferredStripeChallengePort(awaitBillingWebStripeKey),
+  // The customer lands here after finishing the provider's step, which the
+  // server can still report as open until its webhook arrives. A step that is
+  // really still open waits for Continue verification.
+  autoContinue: () => false
 })
 
 const recovering = ref(true)
