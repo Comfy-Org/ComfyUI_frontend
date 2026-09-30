@@ -3370,9 +3370,7 @@
       }
     },
     "tabs": {
-      "dashboard": "Dashboard",
-      "planCredits": "Plan & Credits",
-      "membersCount": "Members ({count})"
+      "dashboard": "Dashboard"
     },
     "dashboard": {
       "placeholder": "Dashboard workspace settings"
@@ -3384,7 +3382,6 @@
         "justNow": "just now",
         "minutesAgo": "{n} min ago"
       },
-      "header": "Members",
       "membersCount": "{count} of {maxSeats} members",
       "pendingInvitesCount": "{count} pending invite | {count} pending invites",
       "tabs": {

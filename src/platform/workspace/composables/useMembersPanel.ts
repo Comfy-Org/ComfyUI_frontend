@@ -28,7 +28,6 @@ type SortDirection = 'asc' | 'desc'
 export function sortMembers(
   members: WorkspaceMember[],
   currentUserEmail: string | null,
-  sortDirection: SortDirection,
   originalOwnerId: string | null = null
 ): WorkspaceMember[] {
   return [...members].sort((a, b) => {
@@ -37,19 +36,14 @@ export function sortMembers(
     if (aIsOriginalOwner && !bIsOriginalOwner) return -1
     if (!aIsOriginalOwner && bIsOriginalOwner) return 1
 
-    if (a.role !== b.role) {
-      const ownerFirst = a.role === 'owner' ? -1 : 1
-      return sortDirection === 'desc' ? ownerFirst : -ownerFirst
-    }
+    if (a.role !== b.role) return a.role === 'owner' ? -1 : 1
 
     const aIsCurrent = a.email.toLowerCase() === currentUserEmail?.toLowerCase()
     const bIsCurrent = b.email.toLowerCase() === currentUserEmail?.toLowerCase()
     if (aIsCurrent && !bIsCurrent) return -1
     if (!aIsCurrent && bIsCurrent) return 1
 
-    const aValue = a.joinDate.getTime()
-    const bValue = b.joinDate.getTime()
-    return sortDirection === 'asc' ? aValue - bValue : bValue - aValue
+    return b.joinDate.getTime() - a.joinDate.getTime()
   })
 }
 
@@ -371,12 +365,7 @@ export function useMembersPanel() {
 
   const filteredMembers = computed(() => {
     const searched = filterBySearch(members.value, searchQuery.value)
-    return sortMembers(
-      searched,
-      userEmail.value ?? null,
-      'desc',
-      originalOwnerId.value
-    )
+    return sortMembers(searched, userEmail.value ?? null, originalOwnerId.value)
   })
 
   // Built once per member list rather than per row on every render, so an

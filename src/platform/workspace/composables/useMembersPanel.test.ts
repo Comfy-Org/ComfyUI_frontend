@@ -53,20 +53,12 @@ function createInvite(
 }
 
 describe('sortMembers', () => {
-  it('places owners before members when sorting descending', () => {
+  it('places owners before members', () => {
     const owner = createMember({ id: 'o', role: 'owner', name: 'Owner' })
     const member = createMember({ id: 'm', role: 'member', name: 'Member' })
-    const result = sortMembers([member, owner], null, 'desc')
+    const result = sortMembers([member, owner], null)
     expect(result[0].id).toBe('o')
     expect(result[1].id).toBe('m')
-  })
-
-  it('places members before owners when sorting ascending', () => {
-    const owner = createMember({ id: 'o', role: 'owner', name: 'Owner' })
-    const member = createMember({ id: 'm', role: 'member', name: 'Member' })
-    const result = sortMembers([member, owner], null, 'asc')
-    expect(result[0].id).toBe('m')
-    expect(result[1].id).toBe('o')
   })
 
   it('places current user after owners but before others', () => {
@@ -89,11 +81,11 @@ describe('sortMembers', () => {
       joinDate: new Date('2025-01-01')
     })
 
-    const result = sortMembers([other, current, owner], 'me@test.com', 'desc')
+    const result = sortMembers([other, current, owner], 'me@test.com')
     expect(result.map((m) => m.id)).toEqual(['o', 'me', 'other'])
   })
 
-  it('sorts remaining members by joinDate descending', () => {
+  it('sorts remaining members newest first', () => {
     const early = createMember({
       id: 'early',
       joinDate: new Date('2025-01-01')
@@ -102,23 +94,9 @@ describe('sortMembers', () => {
       id: 'late',
       joinDate: new Date('2025-06-01')
     })
-    const result = sortMembers([early, late], null, 'desc')
+    const result = sortMembers([early, late], null)
     expect(result[0].id).toBe('late')
     expect(result[1].id).toBe('early')
-  })
-
-  it('sorts remaining members by joinDate ascending', () => {
-    const early = createMember({
-      id: 'early',
-      joinDate: new Date('2025-01-01')
-    })
-    const late = createMember({
-      id: 'late',
-      joinDate: new Date('2025-06-01')
-    })
-    const result = sortMembers([early, late], null, 'asc')
-    expect(result[0].id).toBe('early')
-    expect(result[1].id).toBe('late')
   })
 
   it('does not mutate the input array', () => {
@@ -127,11 +105,11 @@ describe('sortMembers', () => {
       createMember({ id: 'a', joinDate: new Date('2025-01-01') })
     ]
     const original = [...members]
-    sortMembers(members, null, 'desc')
+    sortMembers(members, null)
     expect(members).toEqual(original)
   })
 
-  it('pins the original owner first regardless of sort direction', () => {
+  it('pins the original owner before other owners', () => {
     const creator = createMember({
       id: 'creator',
       role: 'owner',
@@ -151,21 +129,12 @@ describe('sortMembers', () => {
       joinDate: new Date('2025-03-01')
     })
 
-    const desc = sortMembers(
+    const result = sortMembers(
       [member, promoted, creator],
       'me@test.com',
-      'desc',
       'creator'
     )
-    expect(desc.map((m) => m.id)).toEqual(['creator', 'promoted', 'm'])
-
-    const asc = sortMembers(
-      [member, promoted, creator],
-      'me@test.com',
-      'asc',
-      'creator'
-    )
-    expect(asc[0].id).toBe('creator')
+    expect(result.map((m) => m.id)).toEqual(['creator', 'promoted', 'm'])
   })
 })
 
