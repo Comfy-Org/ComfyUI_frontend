@@ -1,0 +1,264 @@
+import { writeFile } from 'node:fs/promises'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+import type {
+  RouterWorkshopModel,
+  UseCase
+} from '../src/config/models-catalogue'
+import { USE_CASES } from '../src/config/models-catalogue'
+import { modelPageUrls } from '../src/config/model-urls'
+import {
+  routerModelSlugAliases,
+  workshopModels
+} from '../src/config/workshop-browse-content'
+import { isDirectExecution } from './script-entry-point'
+
+type MapModel = Pick<
+  RouterWorkshopModel,
+  'slug' | 'name' | 'provider' | 'routerId'
+>
+type ModelPageUrl = {
+  oldSlug: string
+  newSlug: string
+  name: string
+}
+interface ModelUrlMap {
+  pages: ModelPageUrl[]
+  aliases: { alias: string; newSlug: string }[]
+}
+
+export const MODEL_URL_SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/
+const OLD_URL_SLUG = /^(?!\.+$)[\w.-]+$/
+const VERSION = /(^|[-_])v?\d+(\.\d+)*($|[-_])/
+
+const TASK_WORDS_BY_USE_CASE: Readonly<Record<UseCase, readonly string[]>> = {
+  'generate-images': ['text-to-image', 'text-to-vector'],
+  'edit-images': ['image-edit'],
+  'generate-videos': ['text-to-video', 'reference-to-video'],
+  'animate-images': [
+    'image-to-video',
+    'reference-to-video',
+    'first-last-frame',
+    'video-continuation'
+  ],
+  'edit-videos': ['video-edit', 'video-to-video', 'audio-to-video'],
+  audio: ['text-to-speech', 'text-to-dialogue'],
+  '3d': [],
+  text: []
+}
+const TASK_WORDS = [...new Set(Object.values(TASK_WORDS_BY_USE_CASE).flat())]
+
+const compareText = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0)
+
+const hasWords = (slug: string, words: string) =>
+  `-${slug}-`.includes(`-${words}-`)
+
+export function modelUrlSlug(name: string): string {
+  return name
+    .normalize('NFKD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+/**
+ * `frozen` holds the rows already published: a page keeps its URL and the name
+ * it was frozen against when its display name changes, and only pages new to
+ * the map get a slug from theirs.
+ */
+export function compileModelUrlMap(
+  models: readonly Pick<MapModel, 'slug' | 'name'>[],
+  aliases: ReadonlyMap<string, string>,
+  frozen: readonly ModelPageUrl[] = []
+): ModelUrlMap {
+  const frozenByOld = new Map(frozen.map((page) => [page.oldSlug, page]))
+  const pageByOld = new Map(
+    models.map((model) => {
+      const page = frozenByOld.get(model.slug)
+      return [
+        model.slug,
+        {
+          oldSlug: model.slug,
+          newSlug: page?.newSlug ?? modelUrlSlug(model.name),
+          name: page?.name ?? model.name
+        }
+      ]
+    })
+  )
+  if (pageByOld.size !== models.length)
+    throw new Error('Two model pages share an old slug')
+  for (const slug of [...pageByOld.keys(), ...aliases.keys()])
+    if (!OLD_URL_SLUG.test(slug)) throw new Error(`Invalid old slug: ${slug}`)
+  const owners = new Map<string, string>()
+  for (const { oldSlug, newSlug } of pageByOld.values()) {
+    if (!MODEL_URL_SLUG.test(newSlug))
+      throw new Error(`Invalid model URL slug for ${oldSlug}: ${newSlug}`)
+    const owner = owners.get(newSlug)
+    if (owner) throw new Error(`${oldSlug} and ${owner} both map to ${newSlug}`)
+    owners.set(newSlug, oldSlug)
+  }
+  return {
+    pages: [...pageByOld.values()].sort((a, b) =>
+      compareText(a.oldSlug, b.oldSlug)
+    ),
+    aliases: [...aliases]
+      .map(([alias, target]) => {
+        const newSlug = pageByOld.get(target)?.newSlug
+        if (!newSlug)
+          throw new Error(`Alias ${alias} targets unknown ${target}`)
+        return { alias, newSlug }
+      })
+      .sort((a, b) => compareText(a.alias, b.alias))
+  }
+}
+
+function pageUseCase(slug: string): UseCase {
+  const tail = slug.split('--').at(-1)
+  const useCase = USE_CASES.find((item) => item === tail)
+  if (!useCase) throw new Error(`No use case in page slug ${slug}`)
+  return useCase
+}
+
+export function modelUrlFlags(
+  model: Pick<MapModel, 'slug' | 'routerId'>,
+  newSlug: string
+): string[] {
+  const useCase = pageUseCase(model.slug)
+  const named = TASK_WORDS.filter((words) => hasWords(newSlug, words))
+  const expected = TASK_WORDS_BY_USE_CASE[useCase]
+  return [
+    ...(named.length
+      ? []
+      : ['no task words in the name; the product name stands in for the task']),
+    ...named
+      .filter((words) => !expected.includes(words))
+      .map((words) => `name says "${words}", page use case is ${useCase}`),
+    ...(VERSION.test(model.routerId.split('/')[1] ?? '') && !/\d/.test(newSlug)
+      ? [`no version in the name, Router id is ${model.routerId}`]
+      : [])
+  ]
+}
+
+const countOf = (text: string, char: string) => text.split(char).length - 1
+
+function stringLiteral(text: string): string {
+  const quote = countOf(text, "'") > countOf(text, '"') ? '"' : "'"
+  const body = JSON.stringify(text).slice(1, -1).replace(/\\"/g, '"')
+  return `${quote}${body.replaceAll(quote, `\\${quote}`)}${quote}`
+}
+
+const entryLines = (fields: Record<string, string>) =>
+  [
+    '  {',
+    Object.entries(fields)
+      .map(([k, v]) => `    ${k}: ${stringLiteral(v)}`)
+      .join(',\n'),
+    '  }'
+  ].join('\n')
+
+export function renderModelUrlsModule(map: ModelUrlMap): string {
+  return `// Generated by scripts/generate-model-url-map.ts. Rows are frozen: to change a
+// published slug, edit its newSlug here on purpose; a live one also needs a redirect.
+// name is the display name each slug was frozen against; update it to clear a rename flag.
+// Router model pages only: /models/workflows/* move via their own list, /models/apps/* stay.
+export const modelPageUrls: readonly {
+  oldSlug: string
+  newSlug: string
+  name: string
+}[] = [
+${map.pages.map(entryLines).join(',\n')}
+]
+
+export const modelAliasUrls: readonly { alias: string; newSlug: string }[] = [
+${map.aliases.map(entryLines).join(',\n')}
+]
+`
+}
+
+const cell = (text: string) => text.replace(/\s+/g, ' ').replace(/\|/g, '\\|')
+
+export function renderModelUrlTable(
+  models: readonly MapModel[],
+  map: ModelUrlMap
+): string {
+  const pageByOld = new Map(map.pages.map((page) => [page.oldSlug, page]))
+  const rows = models
+    .map((model) => {
+      const page = pageByOld.get(model.slug)
+      if (!page) throw new Error(`No new slug for ${model.slug}`)
+      return { model, newSlug: page.newSlug, frozenName: page.name }
+    })
+    .sort(
+      (a, b) =>
+        compareText(a.model.provider ?? '', b.model.provider ?? '') ||
+        compareText(a.model.slug, b.model.slug)
+    )
+  const flagged = rows.flatMap(({ model, newSlug, frozenName }) => {
+    const suggested = modelUrlSlug(model.name)
+    const flags = [
+      ...(suggested === modelUrlSlug(frozenName)
+        ? []
+        : [
+            `frozen at \`${newSlug}\` for "${frozenName}", name now suggests \`${suggested}\``
+          ]),
+      ...modelUrlFlags(model, newSlug)
+    ]
+    return flags.length
+      ? [`| \`${newSlug}\` | ${cell(model.name)} | ${cell(flags.join('; '))} |`]
+      : []
+  })
+  return [
+    '# Model page URL map',
+    '',
+    'Generated by `scripts/generate-model-url-map.ts`. Old URL `/models/<old slug or alias>/`, final URL `/hub/models/<new slug>/`.',
+    '',
+    'Scope: the Router model pages and their aliases only. The `/models/workflows/<name>/` pages are not in this table: they move to `/hub/workflows/<name>/` from their own list in FE-2972 B3. The `/models/apps/<app>/` pages (`apps/cinematic-studio`, `apps/reshoot`) are not in it either: they stay at `/models/apps/<app>/`.',
+    '',
+    'A published slug is frozen: regenerating keeps every old slug on the new slug recorded in `src/config/model-urls.ts`, even after a display-name change. Each row also records the display name its slug was frozen against, and a row whose current name would give a different slug than that recorded name is listed under "Check these first". Once reviewed, set that row\'s `name` to the current display name to clear the flag. Only pages new to the map get a slug from their display name.',
+    '',
+    "To change a published slug, edit that row's `newSlug` in `src/config/model-urls.ts` by hand, on purpose, then regenerate. A deliberate edit is not flagged. If the slug you replace is already live under `/hub/models/`, also add a redirect from it to the new one.",
+    '',
+    'The freeze covers renames, not removals: a page dropped from `workshopModels` loses its row, and its redirect, on the next regeneration.',
+    '',
+    `## Check these first (${flagged.length})`,
+    '',
+    '| New slug | Display name | Why |',
+    '| --- | --- | --- |',
+    ...flagged,
+    '',
+    `## Model pages (${rows.length})`,
+    '',
+    '| Provider | Display name | Old slug | New slug |',
+    '| --- | --- | --- | --- |',
+    ...rows.map(
+      ({ model, newSlug }) =>
+        `| ${cell(model.provider ?? '')} | ${cell(model.name)} | \`${model.slug}\` | \`${newSlug}\` |`
+    ),
+    '',
+    `## Aliases (${map.aliases.length})`,
+    '',
+    '| Alias | New slug |',
+    '| --- | --- |',
+    ...map.aliases.map(
+      ({ alias, newSlug }) => `| \`${alias}\` | \`${newSlug}\` |`
+    ),
+    ''
+  ].join('\n')
+}
+
+const appDir = join(dirname(fileURLToPath(import.meta.url)), '..')
+export const MODEL_URLS_MODULE = join(appDir, 'src/config/model-urls.ts')
+export const MODEL_URL_TABLE = join(appDir, 'MODEL_URL_MAP.md')
+
+if (isDirectExecution(process.argv[1], import.meta.filename)) {
+  const map = compileModelUrlMap(
+    workshopModels,
+    routerModelSlugAliases,
+    modelPageUrls
+  )
+  await writeFile(MODEL_URLS_MODULE, renderModelUrlsModule(map))
+  await writeFile(MODEL_URL_TABLE, renderModelUrlTable(workshopModels, map))
+  console.warn(`${map.pages.length} pages, ${map.aliases.length} aliases`)
+}

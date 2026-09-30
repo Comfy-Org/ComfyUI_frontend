@@ -1,3 +1,4 @@
+import type { WorkshopModel } from '../../config/models-catalogue'
 import { catalogSearch, useCaseFor } from '../../config/models-catalogue'
 import { getWorkshopModel } from '../../config/workshop-browse-content'
 import {
@@ -8,6 +9,7 @@ import { relatedModels } from '../../config/workshop-related'
 import { estimateWorkshopNodePrice } from '../../config/workshop-node-pricing'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { describesCapability } from '../../lib/workshop/model-tags'
 import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
 
 const TAGS_SHOWN = 3
@@ -18,14 +20,24 @@ function splitShownTags<T>(tags: readonly T[]) {
   return { shownTags, restTags, restTagCount: restTags.length }
 }
 
+export function modelOgImage(
+  model: Pick<WorkshopModel, 'thumbnail'>
+): string | undefined {
+  return model.thumbnail?.kind === 'image' ? model.thumbnail.url : undefined
+}
+
 export async function prepareModelPage(
   slug: string | undefined,
   locale: Locale = 'en'
 ) {
   const model = slug ? getWorkshopPageDetail(slug) : undefined
   if (!model) throw new Error(`Unknown Models route: ${slug ?? '(missing)'}`)
-  if (slug !== model.slug)
-    return { kind: 'redirect', href: model.href } as const
+  const { href } = model
+  if (!href)
+    throw new Error(
+      `Models route ${slug} resolved to ${model.slug}, which has no page`
+    )
+  if (slug !== model.slug) return { kind: 'redirect', href } as const
   const related = relatedModels(
     model,
     workshopPages.filter(
@@ -38,20 +50,21 @@ export async function prepareModelPage(
     related.every((other) => other.provider === model.provider)
       ? model.provider
       : undefined
-  const tags = model.capabilities.map((capability) => ({
-    label: capability,
-    search: catalogSearch({ query: capability })
-  }))
+  const tags = model.capabilities
+    .filter((capability) => describesCapability(capability, model))
+    .map((capability) => ({
+      label: capability,
+      search: catalogSearch({ query: capability })
+    }))
   return {
     kind: 'page' as const,
-    model,
+    model: { ...model, href },
     related,
     relatedHeading: relatedProvider
       ? t('workshop.model.relatedProvider', locale, {
           provider: relatedProvider
         })
       : t('workshop.model.related', locale),
-    relatedHeadingShort: t('workshop.model.relatedShort', locale),
     successor: model.successorSlug
       ? getWorkshopModel(model.successorSlug)
       : undefined,

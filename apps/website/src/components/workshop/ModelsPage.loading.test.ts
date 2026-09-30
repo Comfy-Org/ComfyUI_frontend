@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, expect, it, vi } from 'vitest'
-import { readonly, ref, nextTick } from 'vue'
+import { readonly, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { workshopModels } from '../../config/workshop-browse-content'
@@ -34,29 +34,20 @@ it.for([
   { view: 'catalogue', slug: undefined, visible: 'workshop-search' },
   { view: 'detail', slug: modelSlug, visible: 'model-hero' }
 ] as const)(
-  'replaces public content with a neutral loading frame while the $view data loads',
+  'holds a neutral loading frame while the $view data loads, even before the flag answers',
   async ({ slug, visible }) => {
     const pending = Promise.withResolvers<Response>()
     vi.stubGlobal(
       'fetch',
       vi.fn<typeof fetch>().mockReturnValue(pending.promise)
     )
-    render(ModelsPage, {
-      props: { slug },
-      slots: { fallback: '<h1>Public Models</h1>' }
-    })
-    await nextTick()
-    expect(screen.getByRole('heading', { name: 'Public Models' })).toBeTruthy()
-
-    enabled.value = true
-    await nextTick()
+    settled.value = false
+    render(ModelsPage, { props: { slug } })
     expect(await screen.findByTestId('models-loading')).toBeTruthy()
-    expect(screen.queryByRole('heading', { name: 'Public Models' })).toBeNull()
     expect(screen.queryByTestId(visible)).toBeNull()
 
     pending.resolve(Response.json(slug ? modelPage : workshopModels))
     expect(await screen.findByTestId(visible)).toBeTruthy()
     expect(screen.queryByTestId('models-loading')).toBeNull()
-    expect(screen.queryByRole('heading', { name: 'Public Models' })).toBeNull()
   }
 )
