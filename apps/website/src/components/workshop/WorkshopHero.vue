@@ -7,10 +7,16 @@ import SplitReveal from './SplitReveal.vue'
 
 // The copy arrives resolved, so the hero belongs to whichever catalogue renders
 // it rather than to one section's translation table.
-const { eyebrow, heading, subtitle } = defineProps<{
+const {
+  eyebrow,
+  heading,
+  subtitle,
+  subtitleSpace = []
+} = defineProps<{
   eyebrow?: string
   heading: string
   subtitle?: string
+  subtitleSpace?: readonly string[]
 }>()
 
 const slots = useSlots()
@@ -42,8 +48,18 @@ const slots = useSlots()
     <div
       class="mt-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-4 sm:short:mt-3"
     >
-      <p v-if="subtitle" class="text-lg text-primary-comfy-canvas/70">
-        <SplitReveal :text="subtitle" :delay="260" :stagger="50" />
+      <p v-if="subtitle" class="grid text-lg text-primary-comfy-canvas/70">
+        <span
+          v-for="text in subtitleSpace"
+          :key="text"
+          class="invisible col-start-1 row-start-1"
+          aria-hidden="true"
+          data-testid="hero-subtitle-space"
+          >{{ text }}</span
+        >
+        <span class="col-start-1 row-start-1">
+          <SplitReveal :text="subtitle" :delay="260" :stagger="50" />
+        </span>
       </p>
       <slot name="aside" />
     </div>

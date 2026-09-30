@@ -103,6 +103,20 @@ export interface CheckoutSuccessCopy {
   readonly close: string
 }
 
+export interface CheckoutInviteCopy {
+  readonly title: string
+  readonly subtext: string
+  readonly placeholder: string
+  readonly sendInvites: string
+  readonly removeTag: string
+  readonly invalidEmailCount: (count: number) => string
+  readonly pendingInviteSingle: string
+  readonly pendingInviteCount: (count: number) => string
+  readonly seatLimitExceeded: (max: number, overage: number) => string
+  readonly invitedMessage: (emails: string, count: number) => string
+  readonly failedCount: (count: number) => string
+}
+
 export type CopySegment<Key extends string> =
   | { readonly kind: 'text'; readonly text: string }
   | { readonly kind: 'slot'; readonly key: Key }

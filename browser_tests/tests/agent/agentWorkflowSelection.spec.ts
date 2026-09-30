@@ -3,6 +3,7 @@ import { expect, mergeTests } from '@playwright/test'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { agentTest } from '@e2e/fixtures/agentPanelFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixture'
 
@@ -16,12 +17,7 @@ test.describe(
       page,
       workflowSelection
     }, testInfo) => {
-      await page
-        .getByRole('button', {
-          name: enMessages.agent.entryButton,
-          exact: true
-        })
-        .click()
+      await new AgentPanel(page).open()
       const panel = page.locator('#agent-panel-root')
       await panel
         .getByRole('button', { name: enMessages.agent.switchWorkflow })
@@ -59,12 +55,7 @@ test.describe(
       page,
       workflowSelection
     }) => {
-      await page
-        .getByRole('button', {
-          name: enMessages.agent.entryButton,
-          exact: true
-        })
-        .click()
+      await new AgentPanel(page).open()
       const panel = page.locator('#agent-panel-root')
       const targetPicker = panel.getByRole('button', {
         name: enMessages.agent.switchWorkflow
@@ -118,12 +109,7 @@ test.describe(
       page,
       workflowSelection
     }, testInfo) => {
-      await page
-        .getByRole('button', {
-          name: enMessages.agent.entryButton,
-          exact: true
-        })
-        .click()
+      await new AgentPanel(page).open()
       const panel = page.locator('#agent-panel-root')
       const targetPicker = panel.getByRole('button', {
         name: enMessages.agent.switchWorkflow
@@ -242,12 +228,7 @@ test.describe(
       page,
       workflowSelection
     }, testInfo) => {
-      await page
-        .getByRole('button', {
-          name: enMessages.agent.entryButton,
-          exact: true
-        })
-        .click()
+      await new AgentPanel(page).open()
       const panel = page.locator('#agent-panel-root')
       const composer = panel.getByRole('textbox', { includeHidden: true })
       await composer.fill('Start in this workflow')
@@ -351,12 +332,7 @@ test.describe(
       await expect(topbar.getTab(1).and(topbar.getActiveTab())).toBeVisible()
       await topbar.getTab(0).click()
       await expect(topbar.getTab(0).and(topbar.getActiveTab())).toBeVisible()
-      await page
-        .getByRole('button', {
-          name: enMessages.agent.entryButton,
-          exact: true
-        })
-        .click()
+      await new AgentPanel(page).open()
       await page
         .getByRole('button', { name: enMessages.agent.switchWorkflow })
         .click()
@@ -401,12 +377,7 @@ test.describe(
       page,
       workflowSelection
     }, testInfo) => {
-      await page
-        .getByRole('button', {
-          name: enMessages.agent.entryButton,
-          exact: true
-        })
-        .click()
+      await new AgentPanel(page).open()
       const panel = page.locator('#agent-panel-root')
       const composer = panel.getByRole('textbox', { includeHidden: true })
       await expect(
@@ -576,12 +547,7 @@ test.describe(
       page,
       workflowSelection
     }) => {
-      await page
-        .getByRole('button', {
-          name: enMessages.agent.entryButton,
-          exact: true
-        })
-        .click()
+      await new AgentPanel(page).open()
       const panel = page.locator('#agent-panel-root')
       const composer = panel.getByRole('textbox', { includeHidden: true })
       await composer.fill('Keep this draft')

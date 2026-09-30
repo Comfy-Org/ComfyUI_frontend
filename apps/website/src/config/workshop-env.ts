@@ -26,7 +26,7 @@ function runtimeCloudEnv(env: unknown): string | undefined {
   return undefined
 }
 
-const WORKSHOP_CLOUD_ENV: WorkshopCloudEnv = resolveWorkshopCloudEnv(
+export const WORKSHOP_CLOUD_ENV: WorkshopCloudEnv = resolveWorkshopCloudEnv(
   runtimeCloudEnv(import.meta.env) ??
     (typeof process === 'undefined'
       ? undefined
@@ -106,3 +106,16 @@ const TURNSTILE_SITE_KEYS: Record<WorkshopCloudEnv, string> = {
 
 export const WORKSHOP_TURNSTILE_SITE_KEY =
   TURNSTILE_SITE_KEYS[WORKSHOP_CLOUD_ENV]
+
+/**
+ * Re-shoot's app proxy id in each family's comfy-api catalog
+ * (`services/comfy-api/appproxy/apps/*.yaml` in the cloud repo). Public: the
+ * proxy still requires a signed-in caller and meters them.
+ */
+const RESHOOT_PROXY_IDS: Record<WorkshopCloudEnv, string | undefined> = {
+  prod: '82be5491-e1a0-494f-a913-4d7fe1ad4c12',
+  staging: '134a601f-c481-4af6-90d5-baeb18973abf',
+  test: 'f470a58e-bd04-4204-a8b2-2012b7266e74'
+}
+
+export const WORKSHOP_RESHOOT_PROXY_ID = RESHOOT_PROXY_IDS[WORKSHOP_CLOUD_ENV]

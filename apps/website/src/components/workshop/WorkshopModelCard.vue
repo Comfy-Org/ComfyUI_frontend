@@ -6,9 +6,11 @@ import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import HubTypeBadge from '../hub/HubTypeBadge.vue'
 import { getLogoPath } from '../../lib/hub/model-logos'
-import { taskLabelFor } from '../../lib/workshop/task-label'
+import { nameWithoutTask, taskLabelFor } from '../../lib/workshop/task-label'
+import { runsOnComfyApi } from '../../lib/workshop/comfy-api-workflows'
 import TagRow from '../hub/TagRow.vue'
 import ModelSupport from './ModelSupport.vue'
+import WorkshopCardApiMark from './WorkshopCardApiMark.vue'
 import WorkshopCardMark from './WorkshopCardMark.vue'
 import WorkshopCardMedia from './WorkshopCardMedia.vue'
 
@@ -44,7 +46,12 @@ const logo = computed(
     getLogoPath(model.name)
 )
 
+const onComfyApi = computed(
+  () => Boolean(workflow.value) && runsOnComfyApi(model.slug)
+)
+
 const taskLabel = computed(() => taskLabelFor(model, locale))
+const cardName = computed(() => nameWithoutTask(model.name, taskLabel.value))
 const thumbnailLabel = computed(() =>
   model.thumbnail ? model.thumbnailLabel : undefined
 )
@@ -70,6 +77,7 @@ const pillClass =
       <!-- Only the hub mixes graphs, apps and models in one grid, so only
         there does a card have to say which it is. -->
       <HubTypeBadge v-if="providerBadge" kind="model" :locale />
+      <WorkshopCardApiMark v-if="onComfyApi" :locale />
       <ModelSupport
         v-if="model.incompleteReason"
         :reason="model.incompleteReason"
@@ -97,7 +105,7 @@ const pillClass =
         :title="model.name"
         data-testid="model-card-name"
       >
-        {{ model.name }}
+        {{ cardName }}
       </h3>
       <div class="flex h-6 min-w-0 items-center gap-1.5 overflow-hidden">
         <span :class="pillClass" data-testid="model-card-task">

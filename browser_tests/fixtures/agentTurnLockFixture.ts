@@ -115,6 +115,17 @@ export const RUN_APPROVAL_EVENT: AgentWsEvent = {
   }
 }
 
+export const RUN_APPROVAL_RESOLVED_EVENT: AgentWsEvent = {
+  type: 'agent_ask_resolved',
+  data: {
+    message_id: TURN_ID,
+    thread_id: THREAD_ID,
+    ask_id: RUN_APPROVAL_ASK_ID,
+    status: 'answered',
+    selected: [RUN_APPROVAL_OPTION_IDS[0]]
+  }
+}
+
 /**
  * The server's half of a turn, modelled on the real single-active-turn guard:
  * an assistant row goes `streaming` when a turn starts and only leaves that
@@ -289,6 +300,7 @@ export class AgentTurnLockHarness {
   public readonly composer: Locator
   public readonly sendButton: Locator
   public readonly stopButton: Locator
+  public readonly runApprovalButton: Locator
   public readonly workSummary: Locator
   public readonly workingRow: Locator
   public readonly liveProgressRow: Locator
@@ -314,6 +326,10 @@ export class AgentTurnLockHarness {
     })
     this.stopButton = this.panel.getByRole('button', {
       name: enMessages.agent.stop,
+      exact: true
+    })
+    this.runApprovalButton = this.panel.getByRole('button', {
+      name: enMessages.agent.runApproval.run,
       exact: true
     })
     // WorkSummary.vue renders three labels off the elapsed total: `worked`
@@ -480,28 +496,6 @@ export class AgentTurnLockHarness {
    */
   answeredAsks(): string[] {
     return this.server.answers.flat()
-  }
-
-  /** Posts an answer through the browser so the real route validator sees it. */
-  async postAnswer(
-    threadId: string,
-    askId: string,
-    selected: string[]
-  ): Promise<number> {
-    return await this.page.evaluate(
-      async ({ threadId, askId, selected }) => {
-        const response = await fetch(
-          `/api/agent/threads/${encodeURIComponent(threadId)}/asks/${encodeURIComponent(askId)}/answer`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ selected })
-          }
-        )
-        return response.status
-      },
-      { threadId, askId, selected }
-    )
   }
 
   /** The socket the client is currently on, with no drop. */

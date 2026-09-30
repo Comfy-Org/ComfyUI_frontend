@@ -153,7 +153,32 @@ export async function prepareWorkflowRender(
     )
   }
   signal.throwIfAborted()
-  return workflowRequest(model, resolved)
+  return workflowRequest(model, withRandomizedInputs(model, resolved))
+}
+
+const MAX_RANDOM_VALUE = 4_294_967_295
+
+// Fills each empty `randomize` input (a seed) with a fresh integer, so running
+// the same inputs again gives a new result. The drawn value travels in the
+// request, so the recorded attempt can reproduce it.
+function withRandomizedInputs(
+  model: WorkflowWorkshopModelDetail,
+  values: FormValues
+): FormValues {
+  const resolved = { ...values }
+  for (const [name, input] of Object.entries(model.workflow.inputs)) {
+    if (!input.randomize) continue
+    if (resolved[name] !== undefined && resolved[name] !== '') continue
+    const schema = model.workflow.inputSchema.properties[name]
+    const minimum = typeof schema.minimum === 'number' ? schema.minimum : 0
+    const maximum = Math.min(
+      typeof schema.maximum === 'number' ? schema.maximum : MAX_RANDOM_VALUE,
+      MAX_RANDOM_VALUE
+    )
+    resolved[name] =
+      minimum + Math.floor(Math.random() * (maximum - minimum + 1))
+  }
+  return resolved
 }
 
 export function workflowRequest(

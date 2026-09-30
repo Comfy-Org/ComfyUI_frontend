@@ -76,6 +76,14 @@ export type {
 } from './plans.js'
 export { PLANS_ROUTE, createPlansReader } from './plans.js'
 export type {
+  WorkspaceInvite,
+  WorkspaceInviteCommands
+} from './workspaceInvites.js'
+export {
+  WORKSPACE_INVITES_ROUTE,
+  createWorkspaceInviteCommands
+} from './workspaceInvites.js'
+export type {
   PaymentMethodsReadOptions,
   PaymentMethodsReader,
   PaymentMethodsReaderOptions,
@@ -148,6 +156,7 @@ export type {
   BillingOperationLifecycle,
   BillingOperationLifecycleOptions,
   BillingOperationTelemetryEvent,
+  BillingRecoverOptions,
   IssuedBillingOperation,
   PresentationSwitchOutcome
 } from './operationLifecycle.js'

@@ -1394,6 +1394,36 @@ describe('billingOperationStore', () => {
         errorMessage: 'card_declined',
         summary: 'billingOperation.topupFailed',
         detail: 'billingOperation.paymentDeclinedDetail'
+      },
+      {
+        type: 'subscription' as const,
+        errorMessage: 'authentication_failed',
+        summary: 'billingOperation.subscriptionFailed',
+        detail: 'billingOperation.authenticationFailedDetail'
+      },
+      {
+        type: 'subscription' as const,
+        errorMessage: 'authentication_required',
+        summary: 'billingOperation.subscriptionFailed',
+        detail: 'billingOperation.authenticationFailedDetail'
+      },
+      {
+        type: 'subscription' as const,
+        errorMessage: 'payment_not_completed',
+        summary: 'billingOperation.subscriptionFailed',
+        detail: 'billingOperation.authenticationFailedDetail'
+      },
+      {
+        type: 'topup' as const,
+        errorMessage: 'payment_method_customer_decline',
+        summary: 'billingOperation.topupFailed',
+        detail: 'billingOperation.authenticationFailedDetail'
+      },
+      {
+        type: 'topup' as const,
+        errorMessage: 'payment_intent_payment_attempt_expired',
+        summary: 'billingOperation.topupFailed',
+        detail: 'billingOperation.authenticationFailedDetail'
       }
     ])(
       'shows an actionable $errorMessage message for $type failures',
