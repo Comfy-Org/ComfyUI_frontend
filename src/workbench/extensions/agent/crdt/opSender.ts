@@ -140,7 +140,11 @@ interface InFlight {
   opIds: Set<string>
   /** Successful `sendOps` calls: each may still draw one result. */
   sends: number
-  /** Cleared when a send cycle starts, so each cycle reports its first throw. */
+  /**
+   * One throw report per delivery of these ops: armed at mint and re-armed
+   * by the silence-resend, which is a second delivery. `resume()` continues
+   * the delivery that `suspend()` parked, so it deliberately does not re-arm.
+   */
   reportedThrow: boolean
   resent: boolean
   parked: boolean
