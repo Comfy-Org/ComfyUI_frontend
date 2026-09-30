@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
 
 interface WorkflowJob {
+  if?: string
   steps?: Array<{
     env?: Record<string, string>
     id?: string
@@ -115,6 +116,9 @@ describe('cloud backport tag workflow', () => {
     expect(workflow.concurrency?.group).toContain('github.run_id')
     expect(workflow.concurrency?.['cancel-in-progress']).toBe(false)
     expect(workflow.jobs?.['create-tag']?.['timeout-minutes']).toBe(10)
+    expect(workflow.jobs?.['create-tag']?.if).toBe(
+      "(github.event_name == 'workflow_dispatch' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)) || (github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'backport'))\n"
+    )
     const steps = workflow.jobs?.['create-tag']?.steps
     const checkout = steps?.find((step) =>
       step.uses?.startsWith('actions/checkout')
