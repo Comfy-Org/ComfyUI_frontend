@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, ref, watch } from 'vue'
-import { useMounted } from '@vueuse/core'
+import { computed, defineAsyncComponent, ref } from 'vue'
+import { useMounted, whenever } from '@vueuse/core'
 
 import type {
   AppWorkshopModel,
@@ -28,9 +28,14 @@ const WorkflowCatalogue = defineAsyncComponent(
 )
 const AppCatalogue = defineAsyncComponent(() => import('./AppCatalogue.vue'))
 
-const { models, locale = 'en' } = defineProps<{
+const {
+  models,
+  locale = 'en',
+  section = 'models'
+} = defineProps<{
   models: readonly WorkshopModel[]
   locale?: Locale
+  section?: CatalogueTab
 }>()
 
 const inSection = ref(false)
@@ -38,15 +43,6 @@ const browseAll = ref(false)
 const mounted = useMounted()
 const enabled = useWorkshopEnabled()
 const appsEnabled = useWorkshopAppsEnabled()
-const selectedTab = ref<CatalogueTab>('models')
-if (typeof location !== 'undefined') {
-  const requested = new URLSearchParams(location.search).get('type')
-  if (requested === 'workflows' || requested === 'workflow') {
-    selectedTab.value = 'workflows'
-    void import('./WorkflowCatalogue.vue').catch(() => undefined)
-  }
-  if (requested === 'apps') selectedTab.value = 'apps'
-}
 const shownModels = computed(() =>
   models.filter((model) => isWorkshopModelShown(model))
 )
@@ -75,12 +71,13 @@ const appCards = computed<readonly CatalogueApp[]>(() =>
 )
 const availableTabs = computed<readonly CatalogueTab[]>(() => [
   'models',
-  ...(workflows.value.length ? (['workflows'] as const) : []),
-  ...(appsEnabled.value && apps.value.length ? (['apps'] as const) : [])
+  ...(workflows.value.length || section === 'workflows'
+    ? (['workflows'] as const)
+    : []),
+  ...((appsEnabled.value && apps.value.length) || section === 'apps'
+    ? (['apps'] as const)
+    : [])
 ])
-const activeTab = computed(() =>
-  availableTabs.value.includes(selectedTab.value) ? selectedTab.value : 'models'
-)
 
 // Each tab says what its own listing is for, in Eric's words.
 const SUBTITLE_KEY = {
@@ -88,28 +85,10 @@ const SUBTITLE_KEY = {
   workflows: 'workshop.catalogue.workflowsSubtitle',
   apps: 'workshop.catalogue.appsSubtitle'
 } as const satisfies Record<CatalogueTab, TranslationKey>
-const subtitleKey = computed(() => SUBTITLE_KEY[activeTab.value])
 
-const focusTabs = ref(false)
-function changeTab(tab: CatalogueTab) {
-  focusTabs.value = Boolean(
-    document.activeElement?.closest('[data-testid="catalogue-tabs"]')
-  )
-  selectedTab.value = tab
-  inSection.value = false
-  browseAll.value = false
-  const url = new URL(location.href)
-  url.search = ''
-  if (tab !== 'models') url.searchParams.set('type', tab)
-  history.replaceState(history.state, '', url)
-}
-
-const viewedTabs = new Set<CatalogueTab>()
-watch(
-  () => (mounted.value && enabled.value ? activeTab.value : undefined),
-  (tab) => {
-    if (!tab || viewedTabs.has(tab)) return
-    viewedTabs.add(tab)
+whenever(
+  () => mounted.value && enabled.value,
+  () => {
     const catalogues = {
       models: { model_count: routerModels.value.length, page_type: 'model' },
       workflows: { model_count: workflows.value.length, page_type: 'workflow' },
@@ -120,9 +99,10 @@ watch(
     >
     captureWorkshopEvent({
       name: 'catalogue_viewed',
-      properties: catalogues[tab]
+      properties: catalogues[section]
     })
-  }
+  },
+  { once: true }
 )
 </script>
 
@@ -133,11 +113,15 @@ watch(
     data-testid="workshop-hero"
   >
     <p class="text-lg text-primary-comfy-canvas/70">
-      <SplitReveal :text="t(subtitleKey, locale)" :delay="260" :stagger="50" />
+      <SplitReveal
+        :text="t(SUBTITLE_KEY[section], locale)"
+        :delay="260"
+        :stagger="50"
+      />
     </p>
   </div>
   <WorkshopModelsGrid
-    v-if="activeTab === 'models'"
+    v-if="section === 'models'"
     v-model:browse-all="browseAll"
     :models="routerModels"
     :locale
@@ -147,16 +131,14 @@ watch(
       <CatalogueTabs
         v-if="availableTabs.length > 1"
         :tabs="availableTabs"
-        :model-value="activeTab"
+        :model-value="section"
         :locale
-        :focus-active="focusTabs"
-        @update:model-value="changeTab"
-        @focused="focusTabs = false"
+        links
       />
     </template>
   </WorkshopModelsGrid>
   <WorkflowCatalogue
-    v-else-if="activeTab === 'workflows'"
+    v-else-if="section === 'workflows'"
     v-model:browse-all="browseAll"
     :models="workflows"
     :locale
@@ -165,11 +147,9 @@ watch(
     <template #tabs>
       <CatalogueTabs
         :tabs="availableTabs"
-        :model-value="activeTab"
+        :model-value="section"
         :locale
-        :focus-active="focusTabs"
-        @update:model-value="changeTab"
-        @focused="focusTabs = false"
+        links
       />
     </template>
   </WorkflowCatalogue>
@@ -183,11 +163,9 @@ watch(
     <template #tabs>
       <CatalogueTabs
         :tabs="availableTabs"
-        :model-value="activeTab"
+        :model-value="section"
         :locale
-        :focus-active="focusTabs"
-        @update:model-value="changeTab"
-        @focused="focusTabs = false"
+        links
       />
     </template>
   </AppCatalogue>

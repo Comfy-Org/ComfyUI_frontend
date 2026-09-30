@@ -775,9 +775,15 @@ export class AgentConversationHarness {
   // A host-side edit outside the recording, pushed as one `doc_update`. The
   // follower applies frames in order, so a rendered effect of this edit
   // proves every earlier frame (a catch-up included) has been applied too.
-  pushHostOps(operations: RecordedGraphOperation[]): void {
-    this.hostSocket.send(this.host.apply(operations))
+  pushHostOps(operations: RecordedGraphOperation[]): HostFrame {
+    const frame = this.host.apply(operations)
+    this.hostSocket.send(frame)
     for (const id of Object.keys(this.host.graph().nodes)) this.seenIds.add(id)
+    return frame
+  }
+
+  redeliverHostFrame(frame: HostFrame): void {
+    this.hostSocket.send(frame)
   }
 
   // A host-side delete applied to the document WITHOUT sending a frame: what

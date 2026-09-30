@@ -7,7 +7,7 @@ import { z } from 'zod'
 
 import { modelsBuildRoutes } from '../integrations/workshop-release-gate'
 import { routeOf } from '../utils/hreflangRoutes'
-import { hubModelAliases, hubModelSlugs } from './hub-models'
+import { hubAppSlugs, hubModelAliases, hubModelSlugs } from './hub-models'
 import { modelPageUrls } from './model-urls'
 import { models } from './models'
 import { modelsUrlKind } from './models-url-registry'
@@ -265,14 +265,14 @@ describe('old Models addresses', () => {
   const vercelRedirects = toVercelRedirects(siteRedirects)
   const oldPaths = [
     '/models',
-    ...[...hubModelSlugs.keys(), ...hubModelAliases.keys()].map(
+    ...[...hubModelSlugs.keys(), ...hubModelAliases.keys(), ...hubAppSlugs].map(
       (slug) => `/models/${slug}`
     )
   ].flatMap((path) => [path, `${path}/`])
 
   it('each redirect once, temporarily, to a page the site builds', () => {
     const landsOnPage = (destination: string) =>
-      ['model', 'hub'].includes(modelsUrlKind(destination) ?? '')
+      ['model', 'hub', 'app'].includes(modelsUrlKind(destination) ?? '')
     expect(
       oldPaths.filter((path) => {
         const rows = vercelRedirects.filter(({ source }) => source === path)
