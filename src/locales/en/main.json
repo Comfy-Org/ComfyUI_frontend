@@ -3431,7 +3431,7 @@
       "noMembers": "No members",
       "noMembersMatch": "No members match \"{query}\"",
       "searchPlaceholder": "Search...",
-      "loadFailed": "Couldn't load members.",
+      "loadFailed": "Couldn't load everything on this page.",
       "totalMembersUnlimited": "{count} total member. | {count} total members.",
       "expiredOn": "Expired {date}"
     },
