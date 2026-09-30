@@ -366,6 +366,36 @@ describe('useSubscription', () => {
       expect(subscriptionTier.value).toBeNull()
     })
 
+    it('labels a TEAM subscription with the team-plan name, not the Standard fallback', async () => {
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: true,
+        has_funds: true,
+        subscription_tier: 'TEAM',
+        renewal_date: '2025-11-16T12:00:00Z'
+      })
+
+      useCurrentUser().isLoggedIn = computed(() => true)
+      const { subscriptionTierName, fetchStatus } = useSubscriptionWithScope()
+
+      await fetchStatus()
+      expect(subscriptionTierName.value).toBe('Team')
+    })
+
+    it('labels an ENTERPRISE subscription with the Enterprise catalog name', async () => {
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: true,
+        has_funds: true,
+        subscription_tier: 'ENTERPRISE',
+        renewal_date: '2025-11-16T12:00:00Z'
+      })
+
+      useCurrentUser().isLoggedIn = computed(() => true)
+      const { subscriptionTierName, fetchStatus } = useSubscriptionWithScope()
+
+      await fetchStatus()
+      expect(subscriptionTierName.value).toBe('Enterprise')
+    })
+
     it('derives cancellation state and end date from cancel_at', async () => {
       mockGetBillingStatus.mockResolvedValue({
         is_active: true,

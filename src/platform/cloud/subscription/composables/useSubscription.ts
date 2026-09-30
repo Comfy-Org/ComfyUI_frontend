@@ -160,8 +160,14 @@ function useSubscriptionInternal() {
   const subscriptionTierName = computed(() => {
     const tier = subscriptionTier.value
     if (!tier) return ''
-    const key = toTierKey(tier) ?? 'standard'
-    const baseName = t(`subscription.tiers.${key}.name`)
+    // TEAM and ENTERPRISE map to no catalog key (see toTierKey); reuse their
+    // existing copy instead of mislabeling them as Standard.
+    if (tier === 'TEAM') return t('subscription.teamPlanName')
+    if (tier === 'ENTERPRISE') return t('subscription.tiers.enterprise.name')
+    const key = toTierKey(tier)
+    const baseName = key
+      ? t(`subscription.tiers.${key}.name`)
+      : t('subscription.unknownTierName')
     return isYearlySubscription.value
       ? t('subscription.tierNameYearly', { name: baseName })
       : baseName
