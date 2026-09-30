@@ -361,7 +361,10 @@ export function registerAgentPanelExtension(): void {
             workspaceSwitching: workspaceStore.isSwitching
           },
           () => reportOfferExit(missingScopeExit(candidateUserId), 'offer'),
-          dropHold
+          () => {
+            reportOfferExit('activation_opened_panel', 'offer')
+            dropHold()
+          }
         )
         if (!offerScope) return
         const [userId, workspaceId] = offerScope
