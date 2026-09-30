@@ -27,17 +27,7 @@
             )
           "
         >
-          <div
-            :class="
-              cn(
-                'z-10 flex items-stretch',
-                row.showsControl
-                  ? 'w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100'
-                  : 'col-span-full',
-                row.widget.slotMetadata?.linked && 'opacity-100'
-              )
-            "
-          >
+          <div :class="row.slotClass">
             <InputSlot
               v-if="row.widget.slotMetadata"
               :key="`widget-slot-${row.widget.simplified.name}-${row.widget.slotMetadata.index}`"
@@ -140,6 +130,13 @@ const renderedRows = computed(() =>
       {
         widget,
         showsControl,
+        slotClass: cn(
+          'z-10 flex items-stretch',
+          showsControl
+            ? 'w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100'
+            : 'col-span-full',
+          widget.slotMetadata?.linked && 'opacity-100'
+        ),
         standalone: !showsControl && !!widget.suppressedByConnection,
         testId: showsControl ? 'node-widget' : undefined,
         rowSize:
