@@ -44,6 +44,15 @@ function resizeStartEvent(target: Element): SplitterResizeStartEvent {
   return { originalEvent: event, sizes: [] }
 }
 
+function gutterHandleBetween(before: HTMLElement, after: HTMLElement) {
+  const gutter = document.createElement('div')
+  gutter.className = 'p-splitter-gutter'
+  const handle = document.createElement('div')
+  gutter.append(handle)
+  document.body.append(before, gutter, after)
+  return handle
+}
+
 function resizeEndEvent(): SplitterResizeEndEvent {
   return { originalEvent: new Event('mouseup'), sizes: [] }
 }
@@ -58,12 +67,17 @@ describe('useStablePrimeVueSplitterSizer', () => {
     const panelRef = createPanel(400)
     const trigger = ref(0)
 
-    const { onResizeEnd } = useStablePrimeVueSplitterSizer(
+    const { onResizeStart, onResizeEnd } = useStablePrimeVueSplitterSizer(
       [{ ref: panelRef, storageKey: 'test-capture' }],
       [trigger]
     )
     await flushWatcher()
 
+    onResizeStart(
+      resizeStartEvent(
+        gutterHandleBetween(panelRef.value, document.createElement('div'))
+      )
+    )
     onResizeEnd(resizeEndEvent())
     panelRef.value.style.flexBasis = ''
     trigger.value++
@@ -91,7 +105,7 @@ describe('useStablePrimeVueSplitterSizer', () => {
     const rightRef = createPanel(250)
     const trigger = ref(0)
 
-    const { onResizeEnd } = useStablePrimeVueSplitterSizer(
+    const { onResizeStart, onResizeEnd } = useStablePrimeVueSplitterSizer(
       [
         { ref: leftRef, storageKey: 'test-multi-left' },
         { ref: rightRef, storageKey: 'test-multi-right' }
@@ -100,6 +114,9 @@ describe('useStablePrimeVueSplitterSizer', () => {
     )
     await flushWatcher()
 
+    onResizeStart(
+      resizeStartEvent(gutterHandleBetween(leftRef.value, rightRef.value))
+    )
     onResizeEnd(resizeEndEvent())
     trigger.value++
     await flushWatcher()
@@ -113,7 +130,7 @@ describe('useStablePrimeVueSplitterSizer', () => {
     const validRef = createPanel(200)
     const trigger = ref(0)
 
-    const { onResizeEnd } = useStablePrimeVueSplitterSizer(
+    const { onResizeStart, onResizeEnd } = useStablePrimeVueSplitterSizer(
       [
         { ref: nullRef, storageKey: 'test-null' },
         { ref: validRef, storageKey: 'test-valid' }
@@ -122,6 +139,11 @@ describe('useStablePrimeVueSplitterSizer', () => {
     )
     await flushWatcher()
 
+    onResizeStart(
+      resizeStartEvent(
+        gutterHandleBetween(validRef.value, document.createElement('div'))
+      )
+    )
     onResizeEnd(resizeEndEvent())
     trigger.value++
     await flushWatcher()
@@ -225,6 +247,21 @@ describe('useStablePrimeVueSplitterSizer', () => {
     expect(sidebarRef.value.style.flexBasis).toBe('800px')
     expect(stored.get('offside')).toBe(300)
     expect(offsideRef.value.style.flexBasis).toBe('300px')
+  })
+
+  it('saves nothing when a resize ends without a resize start', async () => {
+    const stored = useKeyedStorage({ panel: 350 })
+    const panelRef = createPanel(480)
+
+    const { onResizeEnd } = useStablePrimeVueSplitterSizer(
+      [{ ref: panelRef, storageKey: 'panel' }],
+      [ref(0)]
+    )
+    await flushWatcher()
+    onResizeEnd(resizeEndEvent())
+
+    expect(stored.get('panel')).toBe(350)
+    expect(panelRef.value.style.flexBasis).toBe('350px')
   })
 
   it('reads a width persisted by a previous session', async () => {

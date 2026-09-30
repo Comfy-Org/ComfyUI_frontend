@@ -28,8 +28,7 @@ function isUsableWidth(width: number | null | undefined): width is number {
  * resize end and re-applies them as rigid flex values (flex: 0 0 Xpx)
  * when watched sources change (e.g. tab switch, panel toggle).
  *
- * Wire `onResizeStart` too to save only the panels beside the dragged
- * gutter; without it, resize end saves every rendered panel.
+ * Resize end saves only the panels beside the gutter `onResizeStart` saw.
  *
  * @param panels - array of panel configs with template ref and storage key
  * @param watchSources - reactive sources that trigger re-application
@@ -45,7 +44,7 @@ export function useStablePrimeVueSplitterSizer(
       serializer: StorageSerializers.number
     })
   }))
-  let resizedPanels: Set<Element> | undefined
+  let resizedPanels = new Set<Element>()
 
   function resolveElement(
     ref: MaybeComputedElementRef
@@ -84,12 +83,11 @@ export function useStablePrimeVueSplitterSizer(
   function onResizeEnd(_event: SplitterResizeEndEvent) {
     for (const { ref, width } of storedWidths) {
       const el = resolveElement(ref)
-      if (!el || el.offsetWidth === 0) continue
-      if (resizedPanels && !resizedPanels.has(el)) continue
+      if (!el || el.offsetWidth === 0 || !resizedPanels.has(el)) continue
       width.value = el.offsetWidth
       pin(el, el.offsetWidth)
     }
-    resizedPanels = undefined
+    resizedPanels.clear()
   }
 
   watch(

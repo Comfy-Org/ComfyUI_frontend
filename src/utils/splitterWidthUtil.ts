@@ -1,21 +1,21 @@
-import { SIDE_PANEL_SIZE } from '@/constants/splitterConstants'
-
 /**
- * The sidebar's size (%) from a PrimeVue Splitter state saved before side
- * panels were pinned in pixels, or the default size when none is usable.
+ * The sidebar's size (%) from the first usable PrimeVue Splitter state among
+ * `stateKeys`, saved before side panels were pinned in pixels.
  */
 export function savedSidebarPercent(
-  splitterState: string | null,
+  readState: (stateKey: string) => string | null,
+  stateKeys: string[],
   sidebarLocation: 'left' | 'right'
-): number {
-  try {
-    const sizes: unknown = JSON.parse(splitterState ?? 'null')
-    if (!Array.isArray(sizes)) return SIDE_PANEL_SIZE
-    const size: unknown = sidebarLocation === 'left' ? sizes[0] : sizes.at(-1)
-    return typeof size === 'number' && size > 0 && size < 100
-      ? size
-      : SIDE_PANEL_SIZE
-  } catch {
-    return SIDE_PANEL_SIZE
+): number | null {
+  for (const stateKey of stateKeys) {
+    try {
+      const sizes: unknown = JSON.parse(readState(stateKey) ?? 'null')
+      if (!Array.isArray(sizes)) continue
+      const size: unknown = sidebarLocation === 'left' ? sizes[0] : sizes.at(-1)
+      if (typeof size === 'number' && size > 0 && size < 100) return size
+    } catch {
+      continue
+    }
   }
+  return null
 }

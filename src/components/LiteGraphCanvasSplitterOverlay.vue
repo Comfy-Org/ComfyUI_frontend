@@ -158,6 +158,7 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { useWindowSize } from '@vueuse/core'
 import type { MaybeElement } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import Splitter from 'primevue/splitter'
@@ -393,19 +394,25 @@ const sidebarWidthKey = computed(() => {
   return unifiedWidth.value ? base : `${base}.${sidebarTabKey.value}`
 })
 
+const { width: windowWidth } = useWindowSize()
+
 function workspaceWidthAt(percent: number) {
-  return Math.round((percent / 100) * (window.innerWidth - SIDE_TOOLBAR_WIDTH))
+  return Math.round((percent / 100) * (windowWidth.value - SIDE_TOOLBAR_WIDTH))
 }
 
 function defaultSidebarWidth() {
-  const legacyStateKey =
-    sidebarLocation.value === 'left'
-      ? sidebarTabKey.value
-      : `${sidebarTabKey.value}-right`
-  const percent = savedSidebarPercent(
-    localStorage.getItem(legacyStateKey),
-    sidebarLocation.value
-  )
+  const base = sidebarTabKey.value
+  const location = sidebarLocation.value
+  const percent =
+    savedSidebarPercent(
+      (stateKey) => localStorage.getItem(stateKey),
+      [
+        sidebarStateKey.value,
+        location === 'left' ? base : `${base}-right`,
+        `${base}-${location}-with-offside`
+      ],
+      location
+    ) ?? SIDE_PANEL_SIZE
   return Math.max(SIDEBAR_MIN_WIDTH, workspaceWidthAt(percent))
 }
 
@@ -425,6 +432,7 @@ const { onResizeStart: markResizedPanels, onResizeEnd: savePanelWidths } =
     ],
     [
       splitterRefreshKey,
+      windowWidth,
       sidebarWidthKey,
       sidebarPanelVisible,
       focusMode,
