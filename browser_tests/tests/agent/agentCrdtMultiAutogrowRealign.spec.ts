@@ -94,10 +94,9 @@ test.describe(
       await expect(realign.targetNode).toBeVisible()
 
       const submittedPrompt = await realign.submitAndReadPrompt()
-      expect(Object.keys(submittedPrompt).sort()).toEqual([
-        String(SOURCE_NODE_ID),
-        TARGET_ID
-      ])
+      expect(Object.keys(submittedPrompt).sort()).toEqual(
+        [String(SOURCE_NODE_ID), TARGET_ID].sort()
+      )
     })
   }
 )
