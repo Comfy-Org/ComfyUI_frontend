@@ -514,16 +514,17 @@ export function createBillingOperationLifecycle(
 
   /**
    * An id is observed afresh once this tab has stopped learning anything new
-   * about it: its poll budget ran out, it left the scope, or the server
-   * parked it for a reconciliation that may since have settled it.
+   * about it: its poll budget ran out or it left the scope. One the server
+   * parked for reconciliation is observed afresh only for a caller reading
+   * settled operations, since the reconciliation may since have settled it.
    */
-  function adopt(input: AdoptInput): OperationRecord {
+  function adopt(input: AdoptInput, includeSettled = false): OperationRecord {
     const existing = operations.get(input.id)
     if (
       existing !== undefined &&
       existing.state.phase !== 'timed_out' &&
       existing.state.phase !== 'superseded' &&
-      existing.state.phase !== 'reconciliation_needed'
+      !(includeSettled && existing.state.phase === 'reconciliation_needed')
     ) {
       return existing
     }
@@ -747,12 +748,13 @@ export function createBillingOperationLifecycle(
   function recoverFromPointer(
     failure: BillingFailure,
     pointer: BillingOperationPointer | undefined,
-    context: BillingScopeContext
+    context: BillingScopeContext,
+    includeSettled: boolean
   ): BillingResult<BillingOperationState | undefined> {
     if (failure.code !== 'REQUEST_FAILED' || pointer === undefined) {
       return failure
     }
-    const record = adopt(fromPointer(pointer, context))
+    const record = adopt(fromPointer(pointer, context), includeSettled)
     return { status: 'ok', value: record.state }
   }
 
@@ -760,17 +762,21 @@ export function createBillingOperationLifecycle(
     pending: ServerPendingOperation,
     rail: BillingStatusData['billing_rail'],
     pointer: BillingOperationPointer | undefined,
-    context: BillingScopeContext
+    context: BillingScopeContext,
+    includeSettled: boolean
   ): BillingResult<BillingOperationState> {
     const known = pointer?.operationId === pending.id ? pointer : undefined
-    const record = adopt({
-      ...pending,
-      context,
-      presentation: known?.presentation ?? routeFor(rail, pending),
-      attemptStartedAt: known?.attemptStartedAt ?? now(),
-      resumed: true,
-      awaitedHere: known?.awaited === true
-    })
+    const record = adopt(
+      {
+        ...pending,
+        context,
+        presentation: known?.presentation ?? routeFor(rail, pending),
+        attemptStartedAt: known?.attemptStartedAt ?? now(),
+        resumed: true,
+        awaitedHere: known?.awaited === true
+      },
+      includeSettled
+    )
     return { status: 'ok', value: record.state }
   }
 
@@ -780,7 +786,8 @@ export function createBillingOperationLifecycle(
   // re-observed on a schedule.
   async function probePointer(
     pointer: BillingOperationPointer,
-    context: BillingScopeContext
+    context: BillingScopeContext,
+    includeSettled: boolean
   ): Promise<BillingResult<BillingOperationState | undefined>> {
     const probe = await readOperation(pointer.operationId)
     if (!isLive(context)) return SUPERSEDED
@@ -789,10 +796,10 @@ export function createBillingOperationLifecycle(
       pointers.clear(context.scope, pointer.operationId)
       return { status: 'ok', value: undefined }
     }
-    const record = adopt({
-      ...fromPointer(pointer, context),
-      initialStatus: probe.value.data
-    })
+    const record = adopt(
+      { ...fromPointer(pointer, context), initialStatus: probe.value.data },
+      includeSettled
+    )
     return { status: 'ok', value: record.state }
   }
 
@@ -820,7 +827,7 @@ export function createBillingOperationLifecycle(
     if (!isLive(context)) return SUPERSEDED
     const pointer = readPointer(context.scope, includeSettled)
     if (status.status === 'error') {
-      return recoverFromPointer(status, pointer, context)
+      return recoverFromPointer(status, pointer, context, includeSettled)
     }
 
     const pending = pendingFromStatus(status.value.status)
@@ -829,11 +836,12 @@ export function createBillingOperationLifecycle(
         pending,
         status.value.status.billing_rail,
         pointer,
-        context
+        context,
+        includeSettled
       )
     }
     if (pointer === undefined) return { status: 'ok', value: undefined }
-    return probePointer(pointer, context)
+    return probePointer(pointer, context, includeSettled)
   }
 
   function wake() {

@@ -1093,6 +1093,30 @@ describe('createBillingOperationLifecycle', () => {
       })
       expect(lifecycle.get('op-1')).toMatchObject({ phase: 'succeeded' })
     })
+
+    it('keeps an operation parked for reconciliation settled when a plain recover finds it still pending', async () => {
+      const { lifecycle, calls, status, telemetry } = harness({
+        answers: [httpOk(opStatus({ status: 'reconciliation_needed' }))]
+      })
+      await lifecycle.begin('subscription', issued())
+      await flush()
+      const settledTelemetry = [...telemetry]
+      status.answer(
+        statusSnapshot({
+          pending_billing_op_id: 'op-1',
+          pending_billing_op_type: 'subscription'
+        })
+      )
+
+      await expect(lifecycle.recover()).resolves.toMatchObject({
+        status: 'ok',
+        value: { id: 'op-1', phase: 'reconciliation_needed' }
+      })
+      await flush()
+
+      expect(calls).toHaveLength(1)
+      expect(telemetry).toEqual(settledTelemetry)
+    })
   })
 
   describe('presentation', () => {
