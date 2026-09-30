@@ -5,8 +5,6 @@ import type {
   AgentTurnAccepted,
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
 import type { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
@@ -34,9 +32,7 @@ class AgentCreditsLifecycleFixture {
       throw new Error('Accepted turn fixture did not record the submitted turn')
     }
 
-    await expect(
-      this.agentPanel.root.getByRole('button', { name: enMessages.agent.stop })
-    ).toBeVisible()
+    await expect(this.agentPanel.stopButton).toBeVisible()
     this.setAgentFunds(fundingState === 'funded')
     const billingRefresh = this.page.waitForResponse(
       (response) =>

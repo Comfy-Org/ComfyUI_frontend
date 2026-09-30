@@ -19,6 +19,9 @@ export class AgentPanel {
   public readonly composer: Locator
   public readonly composerPromptArea: Locator
   public readonly sendButton: Locator
+  public readonly stopButton: Locator
+  public readonly closeButton: Locator
+  public readonly creditsExhaustedPaywall: Locator
   public readonly nodeSelectionBanner: Locator
 
   constructor(private readonly page: Page) {
@@ -49,6 +52,15 @@ export class AgentPanel {
     this.composerPromptArea = this.root.getByTestId('composer-inline-input')
     this.sendButton = this.root.getByRole('button', {
       name: enMessages.agent.send
+    })
+    this.stopButton = this.root.getByRole('button', {
+      name: enMessages.agent.stop
+    })
+    this.closeButton = this.root.getByRole('button', {
+      name: enMessages.agent.close
+    })
+    this.creditsExhaustedPaywall = this.root.getByRole('alert').filter({
+      hasText: enMessages.agent.paywall.title
     })
     this.nodeSelectionBanner = page.getByTestId('node-selection-mode-banner')
   }
@@ -108,9 +120,7 @@ export class AgentPanel {
   }
 
   async close(): Promise<void> {
-    await this.root
-      .getByRole('button', { name: enMessages.agent.close })
-      .click()
+    await this.closeButton.click()
     await expect(this.root).toHaveCount(0)
   }
 

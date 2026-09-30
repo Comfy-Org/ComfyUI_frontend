@@ -15,12 +15,8 @@ test.describe(
       agentPanel,
       creditsLifecycle
     }) => {
-      const paywall = agentPanel.root.getByRole('alert').filter({
-        hasText: enMessages.agent.paywall.title
-      })
-      const sendButton = agentPanel.root.getByRole('button', {
-        name: enMessages.agent.send
-      })
+      const paywall = agentPanel.creditsExhaustedPaywall
+      const sendButton = agentPanel.sendButton
 
       await agentPanel.open()
       await agentPanel.selectWorkflow()
