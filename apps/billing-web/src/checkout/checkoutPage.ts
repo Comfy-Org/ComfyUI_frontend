@@ -109,8 +109,9 @@ type Attribution = 'started' | 'followed' | 'settled'
  * capture skeleton, and carries a verdict a recovered operation already
  * reached so the capture it resolves into opens on that card. `waiting` is
  * money in flight that this page did not start: no fresh form until it
- * settles. `unconfirmed` is money whose outcome the page could not learn, so
- * it neither offers a form nor claims a charge. `sibling` on either marks
+ * settles, only the rail its quote asks for, locked. `unconfirmed` is money
+ * whose outcome the page could not learn, so it neither offers a form nor
+ * claims a charge. `sibling` on either marks
  * money another tab sent while this one had its form open, whose verdict and
  * challenge belong to that tab. `unavailable` is a read that failed before
  * any form showed: the capabilities, the quote, or the re-read of what the
@@ -142,6 +143,7 @@ export type CheckoutPage =
       readonly kind: 'waiting'
       readonly operation: PendingBillingOperation
       readonly sibling?: true
+      readonly rail?: PaymentRail
     }
   | {
       readonly kind: 'unconfirmed'
@@ -360,7 +362,7 @@ export function reduceCheckoutPage(
     case 'retried':
       return page.kind === 'unavailable' ? RESOLVING : page
     case 'quoted':
-      return page.kind === 'resolving' ? arrived(page, event) : page
+      return quotedOn(page, event)
     case 'reconciled':
       return event.operation === undefined
         ? nothingPending(page)
@@ -380,6 +382,24 @@ function arrivedOutcome(
     : { kind: 'promo_expired', code: event.expiredPromo }
 }
 
+function quotedRail(
+  event: Extract<CheckoutPageEvent, { type: 'quoted' }>
+): PaymentRail {
+  return event.method === 'collect'
+    ? arrivedRail(event.saved, event.element)
+    : { method: 'on_file' }
+}
+
+/** A quote opens capture, or lays the rail under money already in flight. */
+function quotedOn(
+  page: CheckoutPage,
+  event: Extract<CheckoutPageEvent, { type: 'quoted' }>
+): CheckoutPage {
+  if (page.kind === 'resolving') return arrived(page, event)
+  if (page.kind === 'waiting') return { ...page, rail: quotedRail(event) }
+  return page
+}
+
 function arrived(
   page: Extract<CheckoutPage, { kind: 'resolving' }>,
   event: Extract<CheckoutPageEvent, { type: 'quoted' }>
@@ -387,10 +407,7 @@ function arrived(
   const outcome = arrivedOutcome(page, event)
   return {
     kind: 'capture',
-    rail:
-      event.method === 'collect'
-        ? arrivedRail(event.saved, event.element)
-        : { method: 'on_file' },
+    rail: quotedRail(event),
     reactivation: reactivationOf(event.reactivation),
     attempt: IDLE,
     ...(outcome === undefined ? {} : { outcome })
@@ -494,7 +511,8 @@ function reduceAttempt(page: CheckoutPage, event: AttemptEvent): CheckoutPage {
   switch (event.type) {
     case 'reactivationConfirmed':
       return withCapture(page, (capture) =>
-        capture.reactivation === 'not_required'
+        capture.reactivation === 'not_required' ||
+        capture.attempt.kind === 'sent'
           ? undefined
           : {
               ...capture,
@@ -723,9 +741,7 @@ function watchedWaiting(
     return waitingOn(page.operation) === 'verifying'
       ? unconfirmed(operation, page)
       : page
-  return isInFlight(operation)
-    ? { kind: 'waiting', operation, ...siblingOf(page) }
-    : RESOLVING
+  return isInFlight(operation) ? { ...page, operation } : RESOLVING
 }
 
 /**
@@ -767,7 +783,7 @@ function followedInCapture(
   if (page.attempt.kind === 'sent')
     return followedOwn(page, page.attempt, operation, outcome)
   return isInFlight(operation) && outcome === undefined
-    ? { kind: 'waiting', operation, sibling: true }
+    ? { kind: 'waiting', operation, sibling: true, rail: page.rail }
     : nothingPending(page)
 }
 

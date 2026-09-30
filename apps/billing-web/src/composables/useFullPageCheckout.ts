@@ -370,6 +370,9 @@ export function useFullPageCheckout() {
     void readCapture()
   }
 
+  /** Set while Stripe says where a challenge this page means to re-open runs. */
+  const reopening = shallowRef(false)
+
   /**
    * Money this page is waiting on reopens the bank's challenge on its own,
    * once per challenge, as long as Stripe runs it inside this page: a reload
@@ -380,10 +383,14 @@ export function useFullPageCheckout() {
   watch(
     () => challengeToReopen(page.value),
     async (clientSecret) => {
+      reopening.value = clientSecret !== undefined
       if (clientSecret === undefined) return
-      if (await challengePort.leavesPage(clientSecret)) return
+      const leavesPage = await challengePort
+        .leavesPage(clientSecret)
+        .catch(() => true)
       if (challengeToReopen(page.value) !== clientSecret) return
-      checkout.continueVerification()
+      if (!leavesPage) checkout.continueVerification()
+      reopening.value = false
     }
   )
 
@@ -641,6 +648,7 @@ export function useFullPageCheckout() {
     promo,
     promoLive,
     pay,
+    reopening: shallowReadonly(reopening),
     continueVerification: checkout.continueVerification
   }
 }
