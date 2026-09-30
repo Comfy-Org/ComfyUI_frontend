@@ -56,3 +56,23 @@ export const OPTIONAL_ENTRY_FIELDS: readonly OptionalEntryField[] = [
 export type OptionalEntryValues = {
   readonly [K in OptionalEntryKey]?: string
 }
+
+/**
+ * The credit amount a top-up link asks for, in whole cents. It is the
+ * customer's chosen quantity, not a price: billing quotes the credits it
+ * buys from the server.
+ */
+export const ENTRY_PARAM_AMOUNT = 'amount_cents'
+
+/** At most $9,999,999.99; the server applies its own limits on top. */
+const MAX_AMOUNT_CENTS = 999_999_999
+
+const WHOLE_CENTS = /^[1-9][0-9]{0,8}$/
+
+export function isEntryAmountCents(value: number): boolean {
+  return Number.isInteger(value) && value > 0 && value <= MAX_AMOUNT_CENTS
+}
+
+export function readEntryAmountCents(raw: string): number | undefined {
+  return WHOLE_CENTS.test(raw) ? Number(raw) : undefined
+}
