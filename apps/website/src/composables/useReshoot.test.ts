@@ -505,31 +505,45 @@ describe('useReshoot: seeds and clips', () => {
     random.mockRestore()
   })
 
-  it('never reads a clip too long for the node, and says why', async () => {
-    vi.mocked(clipSecondsOf).mockResolvedValue(30)
+  const chosen = () =>
+    new File([new Blob(['clip'])], 'mine.mp4', { type: 'video/mp4' })
+
+  it('turns away a chosen clip too long for the node, and says why', async () => {
     const reshoot = start()
     await vi.advanceTimersByTimeAsync(0)
+    vi.mocked(clipSecondsOf).mockResolvedValue(30)
+
+    reshoot.pick(chosen())
+    await vi.advanceTimersByTimeAsync(2_500)
+
     expect(reshoot.clipError.value).toBe(
       'This clip is 30.0 s. Use one between 5 and 15 seconds.'
     )
-
-    await readScene(reshoot)
-
-    expect(transport.upload).not.toHaveBeenCalled()
-    expect(transport.submit).not.toHaveBeenCalled()
+    // A read that started before the length was known is retired.
     expect(reshoot.depth.value).toBe('none')
     expect(reshoot.canGenerate.value).toBe(false)
   })
 
-  it('reads a clip whose length the browser cannot tell', async () => {
+  it('reads a chosen clip whose length the browser cannot tell', async () => {
     // A blocked or unplayable clip reports NaN: the node decides, not the page.
-    vi.mocked(clipSecondsOf).mockResolvedValue(Number.NaN)
     const reshoot = start()
     await vi.advanceTimersByTimeAsync(0)
-    expect(reshoot.clipError.value).toBeUndefined()
+    vi.mocked(clipSecondsOf).mockResolvedValue(Number.NaN)
 
+    reshoot.pick(chosen())
+    await vi.advanceTimersByTimeAsync(2_500)
+
+    expect(reshoot.clipError.value).toBeUndefined()
+    expect(reshoot.depth.value).toBe('ready')
+  })
+
+  it('reads the bundled example whatever length the browser reports', async () => {
+    // e2e serves external media as a tiny stand-in: 0.1 s must not block it.
+    vi.mocked(clipSecondsOf).mockResolvedValue(0.1)
+    const reshoot = start()
     await readScene(reshoot)
-    expect(transport.upload).toHaveBeenCalled()
+
+    expect(reshoot.clipError.value).toBeUndefined()
     expect(reshoot.depth.value).toBe('ready')
   })
 

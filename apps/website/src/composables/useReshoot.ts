@@ -193,11 +193,12 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
     const available = Math.floor(Math.min(s, MAX_SECONDS) * FPS)
     return available - ((available - 5) % 17)
   })
-  // Only a length the browser could read turns a clip away, as on Change: an
-  // unreadable one (NaN) is left for the node to judge.
+  // Only a chosen clip can be turned away, and only for a length the browser
+  // could read, as on Change: an unreadable one (NaN) is left for the node to
+  // judge, and the bundled example is known to fit.
   const clipError = computed(() => {
     const s = clipSeconds.value
-    return s !== undefined && Number.isFinite(s) && !clipFits(s)
+    return upload.value && s !== undefined && Number.isFinite(s) && !clipFits(s)
       ? rc('reshoot.clipLength', locale, { seconds: s.toFixed(1) })
       : undefined
   })
