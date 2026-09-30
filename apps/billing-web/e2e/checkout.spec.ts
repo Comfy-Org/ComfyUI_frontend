@@ -8,6 +8,7 @@ import type { BillingOpStatusResponse } from '@comfyorg/ingest-types'
 
 import type { MockCloud } from './fixtures/cloud'
 import { E2E_USER } from './fixtures/env'
+import { expectStraightToHost } from './fixtures/planless'
 import {
   challengeRequiredOperation,
   contactSupportOperation,
@@ -37,12 +38,16 @@ const CHECKOUT = entryPath('checkout', { plan: 'pro_monthly' })
 // Above the 8 s poll backoff cap, well below the 30 s parked cadence.
 const FAST_BACKOFF_DEADLINE_MS = 15_000
 
-/** The only scenarios in this fixture set with a payment method configured. */
+/**
+ * The only scenarios in this fixture set that collect a card: a payment
+ * method configured, and no saved method standing in for the card form.
+ */
 function withEmbeddedPaymentMethod(cloud: MockCloud): void {
   cloud.scenario.preview = {
     ...cloud.scenario.preview,
     payment_method_configuration_id: 'pmc_e2e'
   }
+  cloud.scenario.paymentMethods = []
 }
 
 async function fakeStripeCalls(
@@ -70,14 +75,14 @@ test('submitting payment carries the idempotency key and plan, and settles as su
   await expect(
     page.getByRole('heading', { name: 'Confirm your payment' })
   ).toBeVisible()
-  await expect(page.getByText('Pro · Monthly')).toBeVisible()
+  await expect(page.getByText('Pro', { exact: true })).toBeVisible()
 
   await page.getByRole('button', { name: 'Pay and subscribe' }).click()
 
   await expect(
     page.getByRole('heading', { name: "You're all set" })
   ).toBeVisible()
-  await expect(page.getByText('Pro · Monthly')).toBeVisible()
+  await expect(page.getByText('Pro', { exact: true })).toBeVisible()
 
   const subscribe = cloud.requests.find(
     (request) => request.path === '/billing/subscribe'
@@ -110,11 +115,11 @@ test('a scheduled plan change confirms against the saved payment method, no card
   await signIn(CHECKOUT)
 
   await expect(
-    page.getByRole('button', { name: 'Pay and subscribe' })
+    page.getByRole('heading', { name: 'Review your scheduled change' })
   ).toBeVisible()
-  await expect(page.getByText('Pro · Monthly')).toBeVisible()
+  await expect(page.getByText('Pro', { exact: true })).toBeVisible()
 
-  await page.getByRole('button', { name: 'Pay and subscribe' }).click()
+  await page.getByRole('button', { name: 'Confirm change' }).click()
 
   await expect(
     page.getByRole('heading', { name: "You're all set" })
@@ -131,6 +136,65 @@ test('a scheduled plan change confirms against the saved payment method, no card
   expect(await page.evaluate('window.__e2eFakeStripe')).toBeUndefined()
 })
 
+test('a reactivating upgrade taller than the frame scrolls to its confirm', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  await page.setViewportSize({ width: 1280, height: 520 })
+  cloud.scenario.preview = {
+    ...cloud.scenario.preview,
+    transition_type: 'upgrade',
+    requires_reactivation_confirmation: true,
+    cost_today_cents: 90_000,
+    amount_due_cents: 90_000,
+    current_plan: {
+      ...cloud.scenario.preview.new_plan,
+      slug: 'standard_monthly',
+      tier: 'STANDARD',
+      price_cents: 2000,
+      period_end: new Date(Date.now() + 86_400_000).toISOString()
+    }
+  }
+  await signIn(CHECKOUT)
+
+  const heading = page.getByRole('heading', { name: 'Confirm your upgrade' })
+  await expect(heading).toBeVisible()
+  const confirm = page.getByRole('button', { name: /Confirm & reactivate/ })
+  await expect(confirm).not.toBeInViewport()
+
+  const box = await heading.boundingBox()
+  if (!box) throw new Error('the confirm heading has no box')
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height + 40)
+  await page.mouse.wheel(0, 2000)
+
+  await expect(confirm).toBeInViewport()
+})
+
+test('a saved default method is charged in place of the card form', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  await signIn(CHECKOUT)
+
+  await expect(page.getByText('visa •••• 4242')).toBeVisible()
+  await page.getByRole('button', { name: 'Pay and subscribe' }).click()
+
+  await expect(
+    page.getByRole('heading', { name: "You're all set" })
+  ).toBeVisible()
+  const subscribe = cloud.requests.find(
+    (request) => request.path === '/billing/subscribe'
+  )
+  expect(subscribe?.body).toMatchObject({
+    plan_slug: 'pro_monthly',
+    saved_payment_method_id: 'pm_e2e'
+  })
+  expect(subscribe?.body).not.toHaveProperty('confirmation_token')
+  expect(await page.evaluate('window.__e2eFakeStripe')).toBeUndefined()
+})
+
 test('a declined payment shows the reason and stays on checkout', async ({
   page,
   cloud,
@@ -142,18 +206,19 @@ test('a declined payment shows the reason and stays on checkout', async ({
 
   await page.getByRole('button', { name: 'Pay and subscribe' }).click()
 
+  await expect(page.getByRole('alert')).toContainText(
+    'Your bank declined this payment. Try another payment method or contact your bank.'
+  )
   await expect(
-    page.getByRole('heading', { name: 'Payment declined' })
-  ).toBeVisible()
-  await expect(page.getByText('Your bank declined the payment.')).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Try again' })).toBeVisible()
+    page.getByRole('button', { name: 'Pay and subscribe' })
+  ).toBeEnabled()
   await expect(page).toHaveURL(/\/v1\/checkout\?/)
 
   expect(await fakeStripeCalls(page, 'confirmationTokens')).toBe(1)
   expect(await fakeStripeCalls(page, 'nextActions')).toBe(0)
 })
 
-test('a failure the server routes to support offers support, not a retry', async ({
+test('a failure with no coded reason reads as a bank decline, as the app does', async ({
   page,
   cloud,
   signIn
@@ -165,14 +230,12 @@ test('a failure the server routes to support offers support, not a retry', async
 
   await page.getByRole('button', { name: 'Pay and subscribe' }).click()
 
+  await expect(page.getByRole('alert')).toContainText(
+    'Your bank declined this payment. Try another payment method or contact your bank.'
+  )
   await expect(
-    page.getByRole('heading', { name: 'Payment could not be processed' })
+    page.getByRole('heading', { name: 'Confirm your payment' })
   ).toBeVisible()
-  await expect(page.getByText(/Contact support@comfy\.org/)).toBeVisible()
-  await expect(
-    page.getByRole('link', { name: 'Contact support' })
-  ).toHaveAttribute('href', 'mailto:support@comfy.org')
-  await expect(page.getByRole('button', { name: 'Try again' })).toBeHidden()
 })
 
 test('a 3DS challenge is driven by the fake and settles as success', async ({
@@ -235,10 +298,10 @@ test('a completed 3DS challenge does not ask to verify again while the server se
   await expect.poll(() => polls).toBeGreaterThan(pollsAtChallengeEnd)
 
   await expect(
-    page.getByRole('heading', { name: 'Review payment' })
+    page.getByRole('heading', { name: 'Confirm your payment' })
   ).toBeVisible()
   await expect(
-    page.getByRole('button', { name: 'Continue verification' })
+    page.getByRole('button', { name: 'Complete verification' })
   ).toHaveCount(0)
 
   settled = true
@@ -354,13 +417,81 @@ test('a checkout link naming a team credit stop quotes it along with the plan', 
   })
 })
 
-test('a checkout link that names no plan goes back to the host to choose one', async ({
-  page
+test.describe('a checkout link that names no plan goes back to the host to choose one', () => {
+  test('for a signed-out visitor', async ({ page }) => {
+    await expectStraightToHost(page, 'ws_team_e2e')
+  })
+
+  test('for a signed-in customer, in the tab they signed in on', async ({
+    page,
+    signIn
+  }) => {
+    await signIn(CHECKOUT)
+    await expect(
+      page.getByRole('button', { name: 'Pay and subscribe' })
+    ).toBeVisible()
+
+    await expectStraightToHost(page, 'ws_e2e')
+  })
+
+  test('for a signed-in customer the host opens a new tab for, before that tab has a session', async ({
+    context,
+    signIn
+  }) => {
+    await signIn(CHECKOUT)
+
+    await expectStraightToHost(await context.newPage(), 'ws_e2e')
+  })
+
+  test('for a signed-in customer whose link names a workspace they cannot manage, never the refusal', async ({
+    context,
+    cloud,
+    signIn
+  }) => {
+    await signIn(CHECKOUT)
+    cloud.reply('POST', '/auth/token', () => ({
+      status: 403,
+      body: { error: 'refused' }
+    }))
+    const tab = await context.newPage()
+
+    await expectStraightToHost(tab, 'ws_not_a_member')
+    await expect(tab.getByRole('alert')).toHaveCount(0)
+  })
+})
+
+test('Close on a checkout tab the product opened closes that tab', async ({
+  page,
+  context,
+  signIn
 }) => {
-  await page.goto(entryPath('checkout', { workspace: 'ws_team_e2e' }))
+  await signIn(CHECKOUT)
+  const [checkoutTab] = await Promise.all([
+    context.waitForEvent('page'),
+    page.evaluate((url) => {
+      window.open(url, '_blank')
+    }, CHECKOUT)
+  ])
+  await expect(
+    checkoutTab.getByRole('heading', { name: 'Confirm your payment' })
+  ).toBeVisible()
+
+  const closed = checkoutTab.waitForEvent('close')
+  await checkoutTab.getByRole('button', { name: 'Close' }).click()
+  await closed
+
+  expect(checkoutTab.isClosed()).toBe(true)
+})
+
+test('Back on a checkout tab opened directly goes back to the product', async ({
+  page,
+  signIn
+}) => {
+  await signIn(CHECKOUT)
+
+  await page.getByRole('button', { name: 'Back' }).click()
 
   await expect(page).toHaveURL(
-    'https://testcloud.comfy.org/?workspace=ws_team_e2e'
+    `https://testcloud.comfy.org/?workspace=${E2E_USER.workspaceId}`
   )
-  await expect(page.getByRole('heading', { name: 'Host app' })).toBeVisible()
 })

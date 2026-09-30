@@ -65,6 +65,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
    * the panel gives way the moment it would meet the sidebar.
    */
   const reservedWorkspaceWidth = ref(SIDE_TOOLBAR_WIDTH + SIDEBAR_MIN_WIDTH)
+  const reportedExhaustionIdentity = ref<string | null>(null)
   const dismissedSelectionSignature = ref<string | null>(null)
   const workflowStore = useWorkflowStore()
   const targetTracking = ref<TargetTracking>({ mode: 'uninitialized' })
@@ -205,9 +206,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   // the same openedAt. A fresh epoch (open(), or the watcher below) resets it.
   let teardownReported = false
 
-  const isVisible = computed(
-    () => enabled.value && isOpen.value && consentAccepted.value
-  )
+  const isVisible = computed(() => enabled.value && isOpen.value)
 
   watch(isVisible, (visible) => {
     if (!visible) {
@@ -325,6 +324,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     view,
     interruptHistorySelection,
     flagsSettled,
+    reportedExhaustionIdentity,
     width,
     isMaximized,
     dismissedSelectionSignature,

@@ -48,7 +48,8 @@ const teamSubscription: SubscriptionInfo = {
   renewalDate: RENEWAL_DATE,
   endDate: null,
   isCancelled: false,
-  hasFunds: true
+  hasFunds: true,
+  agentHasFunds: true
 }
 
 const funded = teamSubscription

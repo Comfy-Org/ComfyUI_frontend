@@ -19,6 +19,7 @@ import { workshopIdempotencyKey } from '../config/workshop-snippets'
 import { captureWorkshopEvent } from '../scripts/posthog'
 import type { WorkshopRunAnalytics } from '../scripts/workshop-analytics'
 import {
+  workshopExecutionFailureAnalytics,
   workshopFieldErrorCodes,
   workshopModelAnalytics,
   workshopWorkflowFailureAnalytics
@@ -75,7 +76,8 @@ export function useWorkflowRun(
               ...workshopWorkflowFailureAnalytics(
                 new WorkshopWorkflowError('execution_failed'),
                 initial.schema
-              )
+              ),
+              ...workshopExecutionFailureAnalytics(next.observation.failure)
             }
     captureWorkshopEvent({
       name: 'run_finished',

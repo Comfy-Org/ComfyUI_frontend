@@ -216,11 +216,6 @@
   },
   "src/platform/cloud/subscription/launchCancellationFlow.ts": {
     "comfy/no-new-error-throw": {
-      "count": 2
-    }
-  },
-  "src/platform/cloud/subscription/utils/teamSubscriptionCheckoutUtil.ts": {
-    "comfy/no-new-error-throw": {
       "count": 1
     }
   },

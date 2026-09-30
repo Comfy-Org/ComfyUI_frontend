@@ -19,11 +19,14 @@ Keep the history list visible while a selected chat and its workflow open.
 Show loading on that row and reveal the conversation only after both succeed.
 Keep the row in its existing section until then. The Current marker follows
 successful session activation, not the transport thread ID set before hydration.
-Mounting an existing session preserves its current identity; the readiness wait
-applies to selecting a different conversation from history.
+Startup marks the stored session Current only after its transcript and workflow
+are ready; a remount whose target is already decided has nothing to restore, so
+it preserves its current identity. A failed startup restoration leaves the
+session unmarked until a successful retry.
 Failures remain in history with a retry affordance and existing error details;
 the selected row is their only feedback. A chat whose recorded workflow a
-successful Cloud listing no longer includes opens without a target, and the
+successful Cloud listing no longer includes opens without a target, even if a
+stale local binding still names a tab, and the
 composer tip says the target workflow is no longer available until a workflow is
 chosen, New Chat starts or another chat is selected. Deleting the saved file of
 the open chat's target shows the same notice; closing its tab, or discarding an

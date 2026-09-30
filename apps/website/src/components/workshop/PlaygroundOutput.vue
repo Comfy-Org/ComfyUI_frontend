@@ -28,24 +28,29 @@ import { t } from '../../i18n/translations'
 const {
   state,
   now,
-  modelName,
   modality,
   earlier = [],
   attachments = [],
   retryDisabled = false,
   refreshable = false,
   memberWorkspace,
+  cancelledMessage,
   locale = 'en'
 } = defineProps<{
   state: RunState
   now: number
-  modelName: string
   modality?: Modality
   earlier?: readonly RunRecord[]
   attachments?: readonly RunOutput[]
   retryDisabled?: boolean
   refreshable?: boolean
   memberWorkspace?: string
+  /**
+   * What a run stopped on purpose is called here. A model's run is abandoned
+   * by the page and may still be billed; a workflow's is cancelled by Cloud
+   * and is over. The same status, two different things to say.
+   */
+  cancelledMessage?: string
   locale?: Locale
 }>()
 
@@ -83,7 +88,7 @@ const statusMessage = computed(() => {
   if (state.status === 'running')
     return state.label ?? t('workshop.run.running', locale)
   if (state.status === 'cancelled')
-    return t('workshop.output.cancelled', locale)
+    return cancelledMessage ?? t('workshop.output.cancelled', locale)
   if (state.status === 'succeeded')
     return t(
       expired.value ? 'workshop.output.expired' : 'workshop.output.complete',
@@ -94,10 +99,9 @@ const statusMessage = computed(() => {
 
 function failureMessage(failure: Extract<RunState, { status: 'failed' }>) {
   if (failure.reason === 'noCredits' && memberWorkspace !== undefined)
-    return t('workshop.error.memberNoCredits', locale).replace(
-      '{workspace}',
-      memberWorkspace
-    )
+    return t('workshop.error.memberNoCredits', locale, {
+      workspace: memberWorkspace
+    })
   return t(failureTranslationKey(failure), locale)
 }
 
@@ -260,10 +264,7 @@ const runStops = computed<RunStop[]>(() =>
           record,
           output: record.output,
           nsfw: record.output.nsfw === true,
-          name: t('workshop.output.earlierRun', locale).replace(
-            '{number}',
-            String(index + 1)
-          ),
+          name: t('workshop.output.earlierRun', locale, { number: index + 1 }),
           testId: `earlier-run-${index}`
         })),
         {
@@ -287,7 +288,12 @@ const earlierClass = (active: boolean) =>
 
 <template>
   <section
-    class="flex min-h-96 flex-col overflow-hidden rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4"
+    :class="
+      cn(
+        'flex flex-col overflow-hidden rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4',
+        !shown && 'min-h-96'
+      )
+    "
     data-testid="playground-output"
     :data-state="state.status"
   >
@@ -342,12 +348,15 @@ const earlierClass = (active: boolean) =>
       class="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center"
     >
       <Loader2
+        v-if="!state.stalled"
         class="size-8 text-primary-comfy-yellow motion-safe:animate-spin"
         aria-hidden="true"
+        data-testid="run-spinner"
       />
       <p class="flex items-baseline gap-2 text-sm text-primary-warm-white">
         {{ state.label ?? t('workshop.run.running', locale) }}
         <span
+          v-if="!state.stalled"
           class="text-primary-warm-gray tabular-nums"
           data-testid="run-elapsed"
         >
@@ -390,7 +399,7 @@ const earlierClass = (active: boolean) =>
       class="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center"
     >
       <p class="text-sm text-primary-comfy-canvas">
-        {{ t('workshop.output.cancelled', locale) }}
+        {{ statusMessage }}
       </p>
       <Button
         variant="outline"
@@ -445,6 +454,7 @@ const earlierClass = (active: boolean) =>
     <template v-else-if="shown">
       <div
         class="relative aspect-video max-h-[70dvh] w-full flex-1 overflow-hidden bg-black/20"
+        data-testid="output-media"
       >
         <div
           :key="currentUrl"
@@ -556,12 +566,7 @@ const earlierClass = (active: boolean) =>
           v-for="(url, index) in outputs"
           :key="index"
           type="button"
-          :aria-label="
-            t('workshop.output.select', locale).replace(
-              '{n}',
-              String(index + 1)
-            )
-          "
+          :aria-label="t('workshop.output.select', locale, { n: index + 1 })"
           :aria-pressed="index === selected"
           :data-testid="`output-thumb-${index}`"
           :class="
@@ -637,20 +642,6 @@ const earlierClass = (active: boolean) =>
         class="px-5 py-2 text-xs text-primary-warm-gray"
       >
         {{ t('workshop.output.truncated', locale) }}
-      </p>
-      <p
-        v-if="state.status === 'example'"
-        class="border-t border-transparency-white-t8 px-5 py-2 text-xs text-primary-warm-gray"
-        data-testid="output-example-hint"
-      >
-        <slot name="example-hint">
-          {{
-            t('workshop.output.exampleHint', locale).replace(
-              '{model}',
-              modelName
-            )
-          }}
-        </slot>
       </p>
       <div
         v-if="state.status === 'succeeded'"

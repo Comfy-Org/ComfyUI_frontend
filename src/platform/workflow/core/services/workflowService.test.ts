@@ -477,6 +477,75 @@ describe('useWorkflowService', () => {
       expect(loading.isLoaded).toBe(false)
     })
 
+    it('leaves a saved workflow clean after a superseded load applied its draft', async () => {
+      const workflows = useWorkflowStore()
+      const current = createModeTestWorkflow({ path: 'workflows/current.json' })
+      const saved = createModeTestWorkflow({
+        path: 'workflows/saved.json',
+        loaded: false
+      })
+      workflows.activeWorkflow = current
+      let finishLoad = () => {}
+      const loaded = new Promise<void>((resolve) => {
+        finishLoad = resolve
+      })
+      const load = vi.spyOn(saved, 'load').mockImplementation(async () => {
+        await loaded
+        saved.originalContent = '{}'
+        saved.content = '{"draft":true}'
+        saved.changeTracker = createMockChangeTracker()
+        saved.isModified = true
+        return saved
+      })
+      let currentRequest = true
+      const opening = useWorkflowService().openWorkflow(saved, {
+        isCurrent: () => currentRequest
+      })
+      await vi.waitFor(() => expect(load).toHaveBeenCalled())
+
+      currentRequest = false
+      finishLoad()
+
+      expect(await opening).toBe(false)
+      expect(saved.isLoaded).toBe(false)
+      expect(saved.isModified).toBe(false)
+      expect(workflows.modifiedWorkflows).not.toContain(saved)
+    })
+
+    it('keeps a temporary workflow openable after a superseded load', async () => {
+      const workflows = useWorkflowStore()
+      const current = createModeTestWorkflow({ path: 'workflows/current.json' })
+      const draft = new ComfyWorkflowClass({
+        path: 'workflows/draft.json',
+        modified: Date.now(),
+        size: -1
+      })
+      draft.content = '{"minted":true}'
+      draft.originalContent = '{"minted":true}'
+      workflows.activeWorkflow = current
+      let finishLoad = () => {}
+      const loaded = new Promise<void>((resolve) => {
+        finishLoad = resolve
+      })
+      const load = vi.spyOn(draft, 'load').mockImplementation(async () => {
+        await loaded
+        draft.changeTracker = createMockChangeTracker()
+        return draft as LoadedComfyWorkflow
+      })
+      let currentRequest = true
+      const opening = useWorkflowService().openWorkflow(draft, {
+        isCurrent: () => currentRequest
+      })
+      await vi.waitFor(() => expect(load).toHaveBeenCalled())
+
+      currentRequest = false
+      finishLoad()
+
+      expect(await opening).toBe(false)
+      expect(draft.content).toBe('{"minted":true}')
+      expect(draft.originalContent).toBe('{"minted":true}')
+    })
+
     it('settles an already superseded opening without waiting for queued loads', async () => {
       const workflows = useWorkflowStore()
       const blocker = createModeTestWorkflow({ path: 'workflows/blocker.json' })
@@ -1664,7 +1733,8 @@ describe('useWorkflowService', () => {
       await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalledTimes(2))
       const staleOpen = service.openWorkflow(closing)
       resolveReplacement?.()
-      await Promise.all([secondClose, staleOpen])
+      await expect(staleOpen).resolves.toBe(false)
+      await secondClose
 
       expect(app.loadGraphData).toHaveBeenCalledTimes(2)
       expect(workflowStore.openWorkflows).not.toContain(closing)

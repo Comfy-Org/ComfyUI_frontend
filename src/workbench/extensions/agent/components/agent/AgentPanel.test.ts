@@ -18,6 +18,7 @@ import { i18n } from '@/i18n'
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
 import { toTurnId } from '../../schemas/agentApiSchema'
 import type { WorkflowReference } from '../../types/workflowReference'
+import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
 
 import AgentPanel from './AgentPanel.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
@@ -89,7 +90,7 @@ const chatHistoryStub = defineComponent({
 type AddAttachmentArgs = [attachment: ComposerAttachment]
 type UpdateAttachmentArgs = [id: string, patch: Partial<ComposerAttachment>]
 type RemoveAttachmentArgs = [id: string]
-type InsertArgs = [text: string]
+type InsertArgs = [text: string, prompt?: AgentStarterPromptAttribution]
 type ReplaceDraftArgs = [text: string]
 
 const attachmentCalls: {
@@ -111,6 +112,13 @@ const draftCalls: {
 }
 
 const suggestedPrompt = 'Generate a yellow duck with a hockey mask'
+const suggestedPromptAttribution: AgentStarterPromptAttribution = {
+  promptId: 'generate_image',
+  promptIndex: 0,
+  promptCount: 5,
+  promptTextHash: 'a62d17a3',
+  locale: 'en'
+}
 const editedPrompt = 'Generate a yellow duck at sunrise'
 
 const attachment: ComposerAttachment = {
@@ -197,9 +205,12 @@ const eventComposerStub = defineComponent({
 
 const eventEmptyStateStub = defineComponent({
   emits: ['insert'],
+  setup() {
+    return { suggestedPromptAttribution }
+  },
   template: `
     <div>
-      <button type="button" @click="$emit('insert', '${suggestedPrompt}')">Empty state suggestion</button>
+      <button type="button" @click="$emit('insert', '${suggestedPrompt}', suggestedPromptAttribution)">Empty state suggestion</button>
     </div>
   `
 })
@@ -913,7 +924,9 @@ describe('AgentPanel', () => {
       screen.getByRole('button', { name: 'Empty state suggestion' })
     )
 
-    expect(draftCalls.insert).toEqual([[suggestedPrompt]])
+    expect(draftCalls.insert).toEqual([
+      [suggestedPrompt, suggestedPromptAttribution]
+    ])
     expect(draftCalls.replaceDraft).toEqual([])
   })
 

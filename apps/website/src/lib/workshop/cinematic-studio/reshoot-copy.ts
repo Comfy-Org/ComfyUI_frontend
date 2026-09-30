@@ -1,3 +1,5 @@
+import type { NamedValues } from '../../../i18n/interpolate'
+import { interpolate } from '../../../i18n/interpolate'
 import type { Locale, LocalizedText } from '../../../i18n/translations'
 
 const copy = {
@@ -96,6 +98,8 @@ const copy = {
   'reshoot.nudge.down': { en: 'Camera lower', 'zh-CN': '机位降低' },
   'reshoot.nudge.left': { en: 'Camera left', 'zh-CN': '机位向左' },
   'reshoot.nudge.right': { en: 'Camera right', 'zh-CN': '机位向右' },
+  'reshoot.dolly.in': { en: 'Move the camera closer', 'zh-CN': '机位靠近' },
+  'reshoot.dolly.out': { en: 'Move the camera away', 'zh-CN': '机位远离' },
   'reshoot.advanced': { en: 'Advanced', 'zh-CN': '高级' },
   'reshoot.advanced.value': {
     en: 'Prompt, dialogue, seed',
@@ -118,8 +122,8 @@ const copy = {
     'zh-CN': '闲置一段时间后的首次运行还需要加载模型。'
   },
   'reshoot.take.exampleHelp': {
-    en: 'Example result: the clip re-shot from a new angle at 768p. Aim a camera of your own on the left.',
-    'zh-CN': '示例结果：该片段以 768p 从新角度重拍。在左侧设置你自己的机位。'
+    en: 'Example result: the clip re-shot from a new angle at 768p. Aim a camera of your own to try it.',
+    'zh-CN': '示例结果：该片段以 768p 从新角度重拍。设置你自己的机位试试。'
   },
   'reshoot.frames': {
     en: '{frames} frames at 24 fps ({seconds} s)',
@@ -129,12 +133,12 @@ const copy = {
   'reshoot.speed.768p': { en: 'Sharper', 'zh-CN': '更清晰' },
   'reshoot.clip.yours': { en: 'Your clip', 'zh-CN': '你的片段' },
   'reshoot.empty.title': {
-    en: 'Your re-shoot will appear here',
-    'zh-CN': '重拍结果将显示在这里'
+    en: 'Your new angle plays here',
+    'zh-CN': '新机位的画面将在这里播放'
   },
   'reshoot.empty.hint': {
-    en: 'Upload a clip on the left or try an example below.',
-    'zh-CN': '在左侧上传片段，或试试下方的示例。'
+    en: 'Start with a 5 to 15 second clip, or pick an example.',
+    'zh-CN': '先选一段 5 到 15 秒的片段，或挑一个示例。'
   },
   'reshoot.section.camera': { en: 'New camera', 'zh-CN': '新机位' },
   'reshoot.section.move': { en: 'Camera move', 'zh-CN': '运镜' },
@@ -150,8 +154,8 @@ const copy = {
     'zh-CN': '选择其他片段'
   },
   'reshoot.clip.help': {
-    en: 'A 5 to 15 second clip with a clear subject and no letterbox bars.',
-    'zh-CN': '5 到 15 秒、主体清晰、没有黑边的片段。'
+    en: '5–15 seconds, clear subject, no black bars',
+    'zh-CN': '5–15 秒，主体清晰，无黑边'
   },
   'reshoot.aspect': { en: 'Aspect ratio', 'zh-CN': '画面比例' },
   'reshoot.aspect.source': { en: 'Match source', 'zh-CN': '与原片一致' },
@@ -189,6 +193,7 @@ const copy = {
     en: 'Drag to orbit · Scroll to move closer',
     'zh-CN': '拖动以环绕 · 滚动以靠近'
   },
+  'reshoot.dragHint.touch': { en: 'Drag to orbit', 'zh-CN': '拖动以环绕' },
   'reshoot.needsDepth': {
     en: 'Analyze depth to aim a new camera.',
     'zh-CN': '分析深度后即可设置新机位。'
@@ -242,15 +247,78 @@ const copy = {
   },
   'reshoot.take.cancelled': { en: 'Cancelled', 'zh-CN': '已取消' },
   'reshoot.download': { en: 'Download', 'zh-CN': '下载' },
+  'reshoot.take.failed': {
+    en: 'This take did not finish',
+    'zh-CN': '这条镜头未能完成'
+  },
+  'reshoot.stage.starting': {
+    en: 'Starting a server…',
+    'zh-CN': '正在启动服务器…'
+  },
+  'reshoot.stage.queued': {
+    en: 'Waiting for a server…',
+    'zh-CN': '正在等待服务器…'
+  },
+  'reshoot.signIn': {
+    en: 'Sign in to read the scene.',
+    'zh-CN': '登录后即可读取场景。'
+  },
+  'reshoot.unavailable': {
+    en: 'Re-shoot is not available right now. Try again later.',
+    'zh-CN': '重拍功能暂不可用，请稍后再试。'
+  },
+  'reshoot.quote.free': {
+    en: 'Free · {left} of {runs} left {period}',
+    'zh-CN': '免费 · {period}剩余 {left}/{runs} 次'
+  },
+  'reshoot.quote.freeOnly': { en: 'Free', 'zh-CN': '免费' },
+  'reshoot.quote.paid': { en: '{price} credits', 'zh-CN': '{price} 积分' },
+  'reshoot.quote.perSecond': {
+    en: '{rate} credits per second',
+    'zh-CN': '每秒 {rate} 积分'
+  },
+  'reshoot.quote.failed': {
+    en: 'Couldn’t get the price yet. Trying again…',
+    'zh-CN': '暂时无法获取价格，正在重试…'
+  },
+  'reshoot.quote.priceUnknown': {
+    en: 'Price not available',
+    'zh-CN': '暂无价格'
+  },
+  'reshoot.quote.exhausted': {
+    en: 'No free runs left; next one {when}',
+    'zh-CN': '免费次数已用完，下一次{when}可用'
+  },
+  'reshoot.quote.later': { en: 'later', 'zh-CN': '稍后' },
+  'reshoot.period.day': { en: 'today', 'zh-CN': '今天' },
+  'reshoot.period.week': { en: 'this week', 'zh-CN': '本周' },
+  'reshoot.period.days': { en: 'per {n} days', 'zh-CN': '每 {n} 天' },
+  'reshoot.period.hours': { en: 'per {n} hours', 'zh-CN': '每 {n} 小时' },
+  'reshoot.error.busy': {
+    en: 'One take at a time: wait for this one to finish.',
+    'zh-CN': '一次只能生成一条镜头，请等待当前镜头完成。'
+  },
+  'reshoot.error.rateLimited': {
+    en: 'Too many tries for now. Try again {when}.',
+    'zh-CN': '尝试次数过多，请{when}再试。'
+  },
+  'reshoot.error.failed': {
+    en: 'Something went wrong. Try again.',
+    'zh-CN': '出了点问题，请重试。'
+  },
   'reshoot.demoNote': {
-    en: 'Design prototype: no jobs run. Takes show the example result.',
-    'zh-CN': '设计原型：不会运行任务，镜头显示示例结果。'
+    en: 'Preview: takes play the example result for now.',
+    'zh-CN': '预览版：目前镜头播放示例结果。'
   }
 } as const satisfies Record<string, LocalizedText>
 
 export type ReshootCopyKey = keyof typeof copy
 
-export function rc(key: ReshootCopyKey, locale: Locale = 'en'): string {
+export function rc(
+  key: ReshootCopyKey,
+  locale: Locale = 'en',
+  named: NamedValues = {}
+): string {
   const entry: LocalizedText = copy[key]
-  return entry[locale] ?? entry.en
+  return interpolate(entry[locale] ?? entry.en, named)
 }
