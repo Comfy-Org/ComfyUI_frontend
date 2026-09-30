@@ -6,6 +6,7 @@ import SectionHeader from '../../components/common/SectionHeader.vue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import LiveTerminal from './LiveTerminal.vue'
+import ServerlessAgentPromptBanner from './ServerlessAgentPromptBanner.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -67,5 +68,7 @@ const { copy, copied } = useClipboard({ source: deployCommands, legacy: true })
         :label="t('platform.serverlessDeploy.heading', locale)"
       />
     </div>
+
+    <ServerlessAgentPromptBanner :locale="locale" />
   </section>
 </template>

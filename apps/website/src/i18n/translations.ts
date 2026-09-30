@@ -8814,6 +8814,18 @@ Enterprise`
     'zh-CN':
       'Builder 将你的 ComfyUI 工作流和环境打包成可复现的构建。将该构建部署到 Comfy API，并按需扩展。'
   },
+  'platform.serverlessDeploy.agentPromptLine': {
+    en: 'Or skip the setup. Paste this into your coding agent.',
+    'zh-CN': '或者跳过手动设置，把这段提示词粘贴给你的编码智能体。'
+  },
+  'platform.serverlessDeploy.agentPromptButton': {
+    en: 'COPY AGENT PROMPT',
+    'zh-CN': '复制智能体提示词'
+  },
+  'platform.serverlessDeploy.agentPromptCopied': {
+    en: 'COPIED',
+    'zh-CN': '已复制'
+  },
   'platform.howItWorks.chat.channel': {
     en: 'creative-team',
     'zh-CN': '创意团队'
@@ -9245,6 +9257,11 @@ Enterprise`
     'zh-CN': '企业版的限制由合同约定。'
   },
   'pricing.comfyApi.learnMore': { en: 'Learn More', 'zh-CN': '了解更多' },
+  'pricing.comfyApi.landingHeading': { en: 'Pricing', 'zh-CN': '定价' },
+  'pricing.comfyApi.landingSubtitle': {
+    en: 'Only pay for what you use.',
+    'zh-CN': '只为你用到的部分付费。'
+  },
   'pricing.minimaxLicense.heading': {
     en: 'MiniMax license pricing',
     'zh-CN': 'MiniMax 许可定价'
