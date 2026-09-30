@@ -213,19 +213,16 @@ function installServer(
     }[]
   }
 
-  const answerSession = (method: string): Response => {
-    if (method === 'POST' && server.session === 'restore_token_revoked') {
+  const answerCreate = (): Response => {
+    if (server.dropPosts) throw new TypeError('reloaded')
+    if (server.session === 'restore_token_revoked') {
       return jsonResponse({ code: 'TOKEN_REVOKED', message: 'revoked' }, 401)
     }
-    if (method === 'POST' && server.dropPosts) throw new TypeError('reloaded')
-    if (method === 'POST') {
-      server.session = { userId: 'user-a' }
-      return jsonResponse({ success: true })
-    }
-    if (method === 'DELETE') {
-      server.session = 'revoked'
-      return jsonResponse({ success: true })
-    }
+    server.session = { userId: 'user-a' }
+    return jsonResponse({ success: true })
+  }
+
+  const answerRead = (): Response => {
     const { session } = server
     if (session === 'network') {
       return jsonResponse({ code: 'unavailable', message: 'down' }, 503)
@@ -234,6 +231,15 @@ function installServer(
       return jsonResponse(sessionBody(session.userId))
     const code = session === 'revoked' ? 'session_revoked' : 'no_session'
     return jsonResponse({ code, message: code }, 401)
+  }
+
+  const answerSession = (method: string): Response => {
+    if (method === 'POST') return answerCreate()
+    if (method === 'DELETE') {
+      server.session = 'revoked'
+      return jsonResponse({ success: true })
+    }
+    return answerRead()
   }
 
   const answerFeatures = (init: RequestInit | undefined): Response => {
