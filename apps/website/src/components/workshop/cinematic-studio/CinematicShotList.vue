@@ -21,11 +21,11 @@ import type { PickerKey } from './picker-key'
 const {
   direction,
   openPicker,
-  palettePreview,
+  colors,
   locale = 'en'
 } = defineProps<{
   direction: Direction
-  palettePreview?: string
+  colors?: readonly string[]
   openPicker?: PickerKey
   locale?: Locale
 }>()
@@ -46,7 +46,7 @@ const camera = computed(() => {
 
 const rows = computed(() =>
   [...lookGroups, gradeGroup].map((group) => {
-    const { label, option } = shownOption(group.part, direction, palettePreview)
+    const { label, option } = shownOption(group.part, direction, colors)
     return {
       key: group.part,
       title: tc(group.title, locale),

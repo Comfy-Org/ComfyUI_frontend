@@ -20,11 +20,11 @@ import CinematicTooltip from './CinematicTooltip.vue'
 const {
   direction,
   open,
-  palettePreview,
+  colors,
   locale = 'en'
 } = defineProps<{
   direction: Direction
-  palettePreview?: string
+  colors?: readonly string[]
   open?: string
   locale?: Locale
 }>()
@@ -33,7 +33,7 @@ const emit = defineEmits<{ open: [part: LookPart | 'grade'] }>()
 
 const segments = computed(() =>
   [...lookGroups, gradeGroup].map((group) => {
-    const { label, option } = shownOption(group.part, direction, palettePreview)
+    const { label, option } = shownOption(group.part, direction, colors)
     return {
       part: group.part,
       title: tc(group.title, locale),

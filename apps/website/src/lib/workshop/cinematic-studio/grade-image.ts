@@ -7,16 +7,16 @@ interface ShownOption {
   readonly option: Pick<DirectionOption, 'preview' | 'palette'>
 }
 
-/** A grade matched from an uploaded image stands in for the preset grade. */
+/** A palette of the visitor's own stands in for the preset grade. */
 export function shownOption(
   part: DirectionPart,
   direction: Direction,
-  palettePreview?: string
+  colors: readonly string[] = []
 ): ShownOption {
-  if (part === 'grade' && palettePreview)
+  if (part === 'grade' && colors.length)
     return {
-      label: 'cinematic.grade.yourImage',
-      option: { preview: palettePreview }
+      label: 'cinematic.grade.yourPalette',
+      option: { palette: colors }
     }
   const option = directionOption(part, direction)
   return { label: option.label, option }

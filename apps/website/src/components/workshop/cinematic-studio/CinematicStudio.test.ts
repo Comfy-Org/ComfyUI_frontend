@@ -1823,23 +1823,37 @@ describe('CinematicStudio', () => {
         new File(['ref'], 'colors.png', { type: 'image/png' })
       )
 
-      expect(gradeRow()).toHaveTextContent(tc('cinematic.grade.yourImage'))
-      expect(screen.getByLabelText('Color 1: #102030')).toBeInTheDocument()
-      expect(screen.queryByRole('button', { name: 'From an image' })).toBeNull()
-
-      await user.click(gradeRow())
+      expect(gradeRow()).toHaveTextContent(tc('cinematic.grade.yourPalette'))
+      expect(screen.queryByRole('region', { name: 'Colors' })).toBeNull()
       const picker = screen.getByRole('dialog', { name: 'Grade' })
       expect(
         within(picker).getByRole('radio', {
           name: tc('cinematic.grade.fromImageAction')
         })
       ).toHaveAttribute('aria-checked', 'true')
+
+      await user.click(
+        within(picker).getByRole('button', { name: tc('cinematic.grade.edit') })
+      )
+      await user.click(
+        within(picker).getByRole('button', { name: 'Remove color 1' })
+      )
+      expect(within(picker).getByLabelText('Color 1: #405060')).toBeVisible()
+      await user.click(
+        within(picker).getByRole('button', { name: tc('cinematic.grade.done') })
+      )
+
       await user.click(
         within(picker).getByRole('radio', { name: 'Teal and orange' })
       )
 
       expect(gradeRow()).toHaveTextContent('Teal and orange')
-      expect(screen.queryByLabelText('Color 1: #102030')).toBeNull()
+      await user.click(gradeRow())
+      expect(
+        screen.getByRole('radio', {
+          name: tc('cinematic.grade.fromImageAction')
+        })
+      ).toHaveAttribute('aria-checked', 'false')
     })
 
     it('keeps the grade as it was when a picture has no colors to read', async () => {
@@ -1854,7 +1868,9 @@ describe('CinematicStudio', () => {
       expect(
         await screen.findByText("Couldn't read colors from that image.")
       ).toBeInTheDocument()
-      expect(gradeRow()).not.toHaveTextContent(tc('cinematic.grade.yourImage'))
+      expect(gradeRow()).not.toHaveTextContent(
+        tc('cinematic.grade.yourPalette')
+      )
     })
 
     it('lists the camera settings beside the body as separate chips', async () => {

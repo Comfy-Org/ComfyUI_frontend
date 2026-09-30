@@ -590,9 +590,17 @@ const copy = {
     en: 'Match the colors of an image',
     'zh-CN': '匹配图片的色彩'
   },
-  'cinematic.grade.yourImage': {
-    en: 'Your image',
-    'zh-CN': '你的图片'
+  'cinematic.grade.yourPalette': {
+    en: 'Your palette',
+    'zh-CN': '你的色板'
+  },
+  'cinematic.grade.edit': {
+    en: 'Edit palette',
+    'zh-CN': '编辑色板'
+  },
+  'cinematic.grade.done': {
+    en: 'Done',
+    'zh-CN': '完成'
   },
   'cinematic.reference.remove': {
     en: 'Remove reference',

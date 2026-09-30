@@ -21,7 +21,6 @@ import { videoTags } from '../../../lib/workshop/cinematic-studio/video'
 import type { ShotBlock } from '../../../composables/useCinematicShot'
 import type { StudioImage } from '../../../lib/workshop/cinematic-studio/take-image'
 import CinematicCharacterButton from './CinematicCharacterButton.vue'
-import CinematicColors from './CinematicColors.vue'
 import CinematicGenerateAction from './CinematicGenerateAction.vue'
 import CinematicMenu from './CinematicMenu.vue'
 import CinematicOutputControls from './CinematicOutputControls.vue'
@@ -31,7 +30,6 @@ import CinematicShotList from './CinematicShotList.vue'
 import CinematicVideoControls from './CinematicVideoControls.vue'
 import type { PickerKey } from './picker-key'
 import { referenceSlots } from './reference-kind'
-import { useImagePreview } from './useImagePreview'
 
 const {
   models,
@@ -44,6 +42,7 @@ const {
   credits,
   showCredits = true,
   openPicker,
+  colors = [],
   locale = 'en'
 } = defineProps<{
   models: readonly CinematicModel[]
@@ -57,6 +56,8 @@ const {
   credits?: number
   showCredits?: boolean
   openPicker?: PickerKey
+  /** The visitor's own palette, shown on the Grade row. */
+  colors?: readonly string[]
   locale?: Locale
 }>()
 
@@ -74,10 +75,6 @@ const aspect = defineModel<AspectRatio>('aspect', { required: true })
 const resolution = defineModel<Resolution>('resolution', { required: true })
 const takes = defineModel<number>('takes', { required: true })
 const cast = defineModel<StudioImage | undefined>('cast')
-const palette = defineModel<StudioImage | undefined>('palette')
-const palettePreview = useImagePreview(() => palette.value)
-const colors = defineModel<readonly string[]>('colors', { required: true })
-const mainColor = defineModel<number | undefined>('mainColor')
 const duration = defineModel<number | undefined>('duration')
 const videoResolution = defineModel<string | undefined>('videoResolution')
 const audio = defineModel<boolean>('audio', { default: false })
@@ -160,7 +157,7 @@ const cardClass =
         </h2>
         <CinematicShotList
           :direction
-          :palette-preview="palettePreview"
+          :colors
           :open-picker="openPicker"
           :locale
           @open="emit('open', $event)"
@@ -197,7 +194,6 @@ const cardClass =
           />
         </div>
       </section>
-      <CinematicColors v-model="colors" v-model:main="mainColor" :locale />
       <section class="flex flex-col gap-2">
         <h2 :class="labelClass">
           {{ tc('cinematic.section.output', locale) }}

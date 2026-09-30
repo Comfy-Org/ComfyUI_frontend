@@ -14,10 +14,8 @@ import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import RunLeaveDialog from '../RunLeaveDialog.vue'
 import AppsBackLink from './AppsBackLink.vue'
 import CinematicComposer from './CinematicComposer.vue'
-import CinematicColors from './CinematicColors.vue'
 import CinematicModeSwitch from './CinematicModeSwitch.vue'
 import CinematicPicker from './CinematicPicker.vue'
-import CinematicPopover from './CinematicPopover.vue'
 import CinematicStage from './CinematicStage.vue'
 import type { PickerKey } from './picker-key'
 import { pickerGroups, popoverTitle } from './picker-key'
@@ -58,7 +56,6 @@ const {
   resolution,
   takes,
   cast,
-  palette,
   colors,
   mainColor,
   estimate,
@@ -85,13 +82,6 @@ const popoverClass = computed(() =>
 )
 
 const starter = ref<string>()
-
-// The Colors panel opens from the References menu, beside the pickers.
-const colorsOpen = ref(false)
-function openColors() {
-  closePopover()
-  colorsOpen.value = true
-}
 
 const { leavingTo, leave, stay } = useCinematicLeaveGuard(
   () => studio.rendering.value,
@@ -161,23 +151,13 @@ function generateOn(slug: string) {
     >
       <div class="relative mx-auto w-full max-w-7xl">
         <div
-          v-if="popover || colorsOpen"
+          v-if="popover"
           class="fixed inset-0 z-40 bg-black/60 lg:hidden"
           aria-hidden="true"
         />
-        <CinematicPopover
-          v-if="colorsOpen"
-          :title="tc('cinematic.colors.title', locale)"
-          :locale
-          :class="cn(popoverClass, 'lg:w-96')"
-          @close="colorsOpen = false"
-        >
-          <CinematicColors v-model="colors" v-model:main="mainColor" :locale />
-        </CinematicPopover>
         <CinematicPicker
           v-if="popover"
           :key="popover"
-          v-model:palette="palette"
           v-model:colors="colors"
           v-model:main-color="mainColor"
           :groups="pickerGroups(popover)"
@@ -210,7 +190,6 @@ function generateOn(slug: string) {
           v-model:resolution="resolution"
           v-model:enhance="enhance"
           v-model:cast="cast"
-          v-model:palette="palette"
           v-model:first-frame="firstFrame"
           v-model:last-frame="lastFrame"
           v-model:source-video="sourceVideo"
@@ -220,7 +199,7 @@ function generateOn(slug: string) {
           :models="modeModels"
           :aspects
           :slots="referenceSlots(model, !!firstFrame)"
-          :color-count="colors.length"
+          :colors
           :blocked
           :video
           :direction
@@ -232,8 +211,7 @@ function generateOn(slug: string) {
           :show-credits="showCredits"
           :open-popover="popover"
           :locale
-          @open="((colorsOpen = false), togglePopover($event))"
-          @colors="openColors"
+          @open="togglePopover"
           @generate="generate"
           @cancel="studio.cancel"
         />
