@@ -567,6 +567,27 @@ function startAgentCrdtFollower(
       lifecycle.stopProbing()
   }
 
+  const handleRejectedSubscription = (
+    detail: {
+      workflowId?: unknown
+      ok?: unknown
+      code?: unknown
+      message?: unknown
+      expectedSeq?: unknown
+    } | null
+  ) => {
+    const refusal = tryReseed(detail ?? {})
+      ? { shouldNotify: false }
+      : handleSubscribeRefusal(detail, lifecycle)
+    // FE #16637 residual: a refusal is the earliest signal the sender can
+    // get that its in-flight batch's doc is gone — don't make it wait out
+    // the 10 s result-silence window to notice on its own.
+    releaseHeldOps()
+    sender.abortIfUnbound()
+    if (refusal.shouldNotify)
+      events.onSyncError?.(refusal.message, refusal.code)
+  }
+
   const onSubscribed: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     if (!isTargetActive.value) return
@@ -584,16 +605,7 @@ function startAgentCrdtFollower(
       lifecycle.onSubscribeConfirmed()
       resumeHeldOpsIfSubscribed()
     } else {
-      const refusal = tryReseed(detail ?? {})
-        ? { shouldNotify: false }
-        : handleSubscribeRefusal(detail, lifecycle)
-      // FE #16637 residual: a refusal is the earliest signal the sender can
-      // get that its in-flight batch's doc is gone — don't make it wait out
-      // the 10 s result-silence window to notice on its own.
-      releaseHeldOps()
-      sender.abortIfUnbound()
-      if (refusal.shouldNotify)
-        events.onSyncError?.(refusal.message, refusal.code)
+      handleRejectedSubscription(detail)
     }
   }
   const onUpdate: EventListener = (event) => {
