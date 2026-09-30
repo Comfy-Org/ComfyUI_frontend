@@ -504,12 +504,55 @@ describe('useAgentConversationStore', () => {
     )
   })
 
-  // Resumed unsettled on purpose. The replaced row's index is read twice --
-  // once to seat the message, once as the active slot -- and a settled stash
-  // returns before the second, leaving half the index unproven. The trailing
-  // user row stands for a shape the current server does not emit; without a
-  // row after the live turn the replaced and appended indexes coincide.
+  // A hydrate can only ever demote its thread's last row: one streaming row
+  // per thread, every user row ships with its assistant sibling, and nothing
+  // trails the live turn. So no single hydrate separates replacing that row
+  // from appending -- a later send is what puts a row beneath it, and that
+  // send is not routine. It needs a resume that skipped its hydrate and a
+  // stash whose own `done` went unseen here, because the server answers 409
+  // while the stash's row is still streaming. Resumed unsettled because the
+  // index is read twice, to seat the message and again as the active slot,
+  // and a settled stash returns before the second.
   it('restores an unsettled stash where the snapshot it replaces stood', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'go')
+    store.ingest(delta('t1', 'older'))
+    store.stashActiveTurn()
+
+    store.hydrate([
+      historyRow(1, 'user', 'turn-a', 'go', 'u1'),
+      {
+        ...historyRow(2, 'assistant', 'turn-a', '', 't1'),
+        content: {},
+        status: 'streaming'
+      }
+    ])
+    store.startTurn(T2)
+    store.recordUser(T2, 'second')
+    store.ingest(delta('t2', 'newer'))
+    store.ingest(done('t2'))
+
+    store.resumeBackgroundTurn()
+
+    expect(store.activeMessageId).toBe('t1')
+    expect(store.isStreaming).toBe(true)
+    expect(store.entries.map((e) => `${e.role}:${e.id}`)).toEqual([
+      'user:t1',
+      'assistant:t1',
+      'user:t2',
+      'assistant:t2'
+    ])
+    expect(messageTexts(store, T1)).toEqual(['older'])
+    expect(messageTexts(store, T2)).toEqual(['newer'])
+  })
+
+  // Sorting the same-prompt projection below gave up the only hold on the
+  // other arm of that index: with nothing to replace, the stash appends. Read
+  // where the ordering is not in dispute -- a finished turn the resume returns
+  // to -- so restoring it does not re-freeze the stash-vs-stash order.
+  it('appends a resumed stash below the transcript it returns to', () => {
     const store = useAgentConversationStore()
     store.setThreadId('th')
     store.startTurn(T1)
@@ -518,37 +561,24 @@ describe('useAgentConversationStore', () => {
     store.stashActiveTurn()
     store.setThreadId('th-other')
     store.hydrate([])
+    store.ingest(done('t1'))
 
     store.setThreadId('th')
     store.hydrate([
-      historyRow(1, 'user', 'turn-a', 'go', 'u1'),
-      {
-        ...historyRow(2, 'assistant', 'turn-a', '', 't1'),
-        content: {},
-        status: 'streaming'
-      },
-      historyRow(3, 'user', 'turn-b', 'second', 'u2')
+      historyRow(1, 'user', 'turn-a', 'earlier', 'u1'),
+      historyRow(2, 'assistant', 'turn-a', 'reply', 'a1')
     ])
     store.resumeBackgroundTurn()
 
-    expect(store.messages.map((m) => m.id)).toEqual(['t1', 'turn-b'])
-    expect(store.activeMessageId).toBe('t1')
-    expect(store.isStreaming).toBe(true)
-    expect(store.entries.map((e) => `${e.role}:${e.id}`)).toEqual([
-      'user:t1',
-      'assistant:t1',
-      'user:turn-b',
-      'assistant:turn-b'
-    ])
-    expect(messageTexts(store, T1)).toEqual(['older'])
+    expect(store.messages.map((m) => m.id)).toEqual(['turn-a', 't1'])
   })
 
-  // The older stash lands below the newer one: a resume with no demoted
-  // snapshot to replace appends, which predates the replacement fix and
-  // reverses a distinct-prompt pair the same way. Pinned, not corrected --
-  // what this guards is that the newer exchange still exists at all, which
-  // dropping the immunity makes fail by popping it as a duplicate of the
-  // older turn's identical prompt.
+  // Sorted: a resume with no snapshot to replace appends, so these two come
+  // back reversed, which predates this fix and reverses a distinct-prompt pair
+  // the same way. Not this regression's contract, so it is not frozen here --
+  // what is, is that both exchanges survive intact, which dropping the
+  // immunity breaks by popping the newer as a duplicate of the older turn's
+  // identical prompt.
   it('keeps an already restored turn when the next same-prompt stash resumes', () => {
     const store = useAgentConversationStore()
     store.setThreadId('th')
@@ -570,11 +600,11 @@ describe('useAgentConversationStore', () => {
     store.resumeBackgroundTurn()
     store.resumeBackgroundTurn()
 
-    expect(store.entries.map((e) => `${e.role}:${e.id}`)).toEqual([
-      'user:t2',
+    expect(store.entries.map((e) => `${e.role}:${e.id}`).sort()).toEqual([
+      'assistant:t1',
       'assistant:t2',
       'user:t1',
-      'assistant:t1'
+      'user:t2'
     ])
     expect(messageTexts(store, T1)).toEqual(['first'])
     expect(messageTexts(store, T2)).toEqual(['second'])
