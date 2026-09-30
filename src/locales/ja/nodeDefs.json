@@ -1486,6 +1486,25 @@
       }
     }
   },
+  "ByteDance2DraftToFinalVideoNode": {
+    "description": "Seedance 2.5 ドラフトの1080p最終動画をレンダリングします。最終版ではドラフトのシーンと動きを維持し、プロンプト、参照、長さ、アスペクト比、オーディオ設定を再利用します。",
+    "display_name": "ByteDance Seedance 2.5 ドラフトから最終動画",
+    "inputs": {
+      "draft_task_id": {
+        "name": "draft_task_id",
+        "tooltip": "Seedance 2.5 Draftモデルで実行したSeedance 2.5ノードのdraft_task_id出力、または貼り付けたドラフトタスクID。レビューしたドラフトを再利用するには、そのノードのseed制御を固定に設定してください。設定しない場合、次回の実行では新しいドラフトが生成されます。ドラフトは作成後7日間レンダリングできます。"
+      },
+      "watermark": {
+        "name": "透かし",
+        "tooltip": "動画に透かしを追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "Seedance 2.0 を使用して、最初のフレーム画像とオプションの最後のフレーム画像から動画を生成します。",
     "display_name": "ByteDance Seedance 2.0 ファースト・ラストフレームから動画生成",
@@ -1511,7 +1530,7 @@
       },
       "model": {
         "name": "モデル",
-        "tooltip": "最新モデル、最大30秒の動画、mp4/mov出力にはSeedance 2.5を使用します。最高品質と4kにはSeedance 2.0、速度最適化にはFast、最速かつ低コストの生成にはMiniを使用します。"
+        "tooltip": "最新モデル、最長30秒の動画、mp4/mov出力にはSeedance 2.5、素早い480pプレビューと、そのdraft_task_idをSeedance 2.5 ドラフトから最終動画ノードで1080p最終版としてレンダリングするにはSeedance 2.5 Draft、最高品質と4kにはSeedance 2.0、速度最適化にはFast、最速かつ最低コストの生成にはMiniを使用します。"
       },
       "model_duration": {
         "name": "継続時間"
@@ -1540,6 +1559,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Seedance 2.5 Draft実行のタスクID。Seedance 2.5 ドラフトから最終動画ノードに接続して、1080pの最終版をレンダリングします。"
       }
     }
   },
@@ -1552,7 +1575,7 @@
       },
       "model": {
         "name": "モデル",
-        "tooltip": "最新モデル、最大30秒の動画、mp4/mov出力にはSeedance 2.5を使用します。最高品質と4kにはSeedance 2.0、速度最適化にはFast、最速かつ低コストの生成にはMiniを使用します。"
+        "tooltip": "最新モデル、最長30秒の動画、mp4/mov出力にはSeedance 2.5、素早い480pプレビューと、そのdraft_task_idをSeedance 2.5 ドラフトから最終動画ノードで1080p最終版としてレンダリングするにはSeedance 2.5 Draft、最高品質と4kにはSeedance 2.0、速度最適化にはFast、最速かつ最低コストの生成にはMiniを使用します。"
       },
       "model_auto_downscale": {
         "name": "自動ダウンスケール"
@@ -1605,7 +1628,7 @@
       },
       "model": {
         "name": "モデル",
-        "tooltip": "最新モデル、最大30秒の動画、mp4/mov出力にはSeedance 2.5を使用します。最高品質と4kにはSeedance 2.0、速度最適化にはFast、最速かつ低コストの生成にはMiniを使用します。"
+        "tooltip": "最新モデル、最長30秒の動画、mp4/mov出力にはSeedance 2.5、素早い480pプレビューと、そのdraft_task_idをSeedance 2.5 ドラフトから最終動画ノードで1080p最終版としてレンダリングするにはSeedance 2.5 Draft、最高品質と4kにはSeedance 2.0、速度最適化にはFast、最速かつ最低コストの生成にはMiniを使用します。"
       },
       "model_auto_downscale": {
         "name": "自動ダウンスケール"
@@ -1646,6 +1669,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Seedance 2.5 Draft実行のタスクID。Seedance 2.5 ドラフトから最終動画ノードに接続して、1080pの最終版をレンダリングします。"
       }
     }
   },
@@ -1658,7 +1685,7 @@
       },
       "model": {
         "name": "モデル",
-        "tooltip": "Seedance 2.5 は最新モデル、最大30秒の動画、mp4/mov出力に対応。Seedance 2.0 は最高品質と4K向け。Fast は速度最適化向け。Mini は最速・最小コストの生成向け。"
+        "tooltip": "最新モデル、最長30秒の動画、mp4/mov出力にはSeedance 2.5、素早い480pプレビューと、そのdraft_task_idをSeedance 2.5 ドラフトから最終動画ノードで1080p最終版としてレンダリングするにはSeedance 2.5 Draft、最高品質と4kにはSeedance 2.0、速度最適化にはFast、最速かつ最低コストの生成にはMiniを使用します。"
       },
       "model_duration": {
         "name": "継続時間"
@@ -1690,6 +1717,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Seedance 2.5 Draft実行のタスクID。Seedance 2.5 ドラフトから最終動画ノードに接続して、1080pの最終版をレンダリングします。"
       }
     }
   },
@@ -1932,7 +1963,7 @@
   },
   "ByteDanceSeedreamLayerSeparationNode": {
     "description": "画像を背景プレートと、最大16個までの再配置可能な透明レイヤーに分解します。各レイヤーには積み重ね順、バウンディングボックス、名前、説明が含まれます。",
-    "display_name": "ByteDance Seedream 5.0 Pro レイヤー分離",
+    "display_name": "ByteDance Seedream 5.0 Pro レイヤー分離（レガシー）",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -1990,6 +2021,62 @@
       "5": {
         "name": "layer_stack",
         "tooltip": "Create Layered Image用の編集可能なレイヤードキュメント：ベースプレートと、各要素が本来の位置と積み重ね順で名前付き・タイトに切り抜かれたレイヤーとして含まれます。直接接続するか、Add Layerで拡張可能です。"
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNodeV2": {
+    "description": "画像を背景プレートと、位置変更可能な最大16個の透明レイヤーに分解します。各レイヤーには重ね順、バウンディングボックス、名前、説明が含まれます。",
+    "display_name": "ByteDance Seedream 5.0 レイヤー分離",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_crop_layers": {
+        "name": "レイヤーを切り抜く"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_prompt_optimization": {
+        "name": "プロンプト最適化"
+      },
+      "model_seed": {
+        "name": "シード"
+      },
+      "model_size": {
+        "name": "サイズ"
+      },
+      "model_watermark": {
+        "name": "透かし"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "レイヤーが重ねられるベース画像（背景プレート）。"
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "ベース画像の透明度（1 = 透明、LoadImageの規則）。現在は常に完全不透明です。"
+      },
+      "2": {
+        "name": "レイヤー",
+        "tooltip": "下から上の順に並んだ透明レイヤー。フルキャンバスモード: バウンディングボックスの位置で、ベースと同サイズの黒いキャンバスに配置されます。最小サイズモード: バウンディングボックスに切り抜かれ、左上に固定され、最大のレイヤーに合わせてパディングされます。"
+      },
+      "3": {
+        "name": "マスク",
+        "tooltip": "レイヤーごとの透明度。layersバッチとインデックスが対応します（1 = 透明、LoadImageの規則）。ImageCompositeMasked形式の合成では、先にInvertMaskを追加してください。"
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "レイヤーごとに1つの配置ボックス。layersバッチとインデックスが対応します（レイヤーごとの配置を再構築するには、両方とmasksをLayers From Bounding Boxesに入力します）: {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}。content_rect = [left, top, width, height]は各フレーム内におけるレイヤーのコンテンツ領域です。ボックス位置にこのオフセットを加えた位置でキャンバスに配置されます。"
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "Create Layered Image用の編集可能なレイヤードキュメント。ベースプレートに加え、各要素が本来の位置と重ね順で、名前付きのタイトに切り抜かれた個別レイヤーとして含まれます。直接接続するか、Add Layerで拡張できます。"
       }
     }
   },
@@ -8491,12 +8578,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "sRGB、線形Rec.709、HDR（Rec.2020 HLG）、HDR PQ（Rec.2020 PQ）を変換します。線形1.0はsRGBと同じ203ニトの基準白色を使用します。HLGは1000ニトの基準ディスプレイを使用します。線形出力および線形からHDRへの変換では、トーンマッピングを行わずに拡張値を保持します。SDR出力およびPQからHLGへの変換では、バッチ全体で過剰な輝度をトーンマッピングし、色域外の色を圧縮します。変換はfloat32で計算され、中間デバイスとdtypeを返します。ストレートアルファには色変換を適用しません。",
+    "description": "sRGB、リニアRec.709、HDR（Rec.2020 HLG）、HDR PQ（Rec.2020 PQ）、HDR LogC3、HDR ACEScctを変換します。LogC3はRec.709原色と[0, 1]にクランプされたコード値を使用するEI 800カーブを使用します。ACEScctはAP1原色とD60白色点を使用し、D65へBradford適応を行います。EXR保存用には、LogC3またはACEScctをリニアに変換してください。リニア1.0はsRGBと同じ203ニトの基準白色を使用します。HLGは1000ニトの基準ディスプレイを使用します。リニアおよびACEScct出力では拡張値が保持されます。リニアからHDRへの変換ではトーンマッピングなしでハイライトを保持します。HLGおよびPQ出力では負のチャンネルがクリップされます。SDR出力およびPQからHLGへの変換では、バッチ全体で過剰な輝度をトーンマップし、色域外の色を圧縮します。変換はfloat32で計算され、中間デバイスとdtypeを返します。ストレートアルファには色変換を適用しません。",
     "display_name": "画像カラースペースを変換",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "出力ピクセルのカラースペース。保存ノードも同じカラースペースに設定してください。"
+        "tooltip": "出力ピクセルの色空間。この色空間と同じものを保存ノードに設定してください。EXR を保存する前に LogC3 または ACEScct をリニアに変換し、動画を保存する前に sRGB/HDR/HDR PQ に変換してください。"
       },
       "image": {
         "name": "image"
@@ -16893,7 +16980,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "回答前にモデルがどの程度推論するかを指定します。'default' はモデルに選択を委ねます。対応レベルはモデルごとに異なります: GPT-6 Astra は low-max、GPT-5.6 は none-max（minimal なし）、GPT-5.5 は none-xhigh、GPT-5.5 Pro は medium-xhigh、GPT-5 は minimal-high、o-series は low-high。GPT-4.1 には推論機能がありません。未対応のレベルはリクエスト送信前に拒否されます。"
+        "tooltip": "モデルが回答前にどの程度推論するかを指定します。'default' はモデルに選択を委ねます。対応レベルはモデルごとに異なります: GPT-6 Astra は low-max、GPT-6 Sol/Luna および GPT-5.6 は none-max（minimal なし）、GPT-5.5 は none-xhigh、GPT-5.5 Pro は medium-xhigh、GPT-5 は minimal-high、o-series は low-high、GPT-4.1 には推論機能がありません。非対応のレベルはリクエスト送信前に拒否されます。"
       },
       "truncation": {
         "name": "切り捨て",
@@ -17053,40 +17140,6 @@
       "file": {
         "name": "ファイル",
         "tooltip": "モデルのコンテキストとして含める入力ファイル。現在はテキスト（.txt）ファイルとPDF（.pdf）ファイルのみを受け付けます。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIVideoSora2": {
-    "description": "OpenAIのビデオおよびオーディオ生成。",
-    "display_name": "OpenAI Sora - ビデオ",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後の制御"
-      },
-      "duration": {
-        "name": "長さ"
-      },
-      "image": {
-        "name": "画像"
-      },
-      "model": {
-        "name": "モデル"
-      },
-      "prompt": {
-        "name": "プロンプト",
-        "tooltip": "ガイドとなるテキスト。入力画像が存在する場合は空でも可。"
-      },
-      "seed": {
-        "name": "シード",
-        "tooltip": "ノードを再実行するかどうかを決定するシード。実際の結果はシードに関係なく非決定的です。"
-      },
-      "size": {
-        "name": "サイズ"
       }
     },
     "outputs": {
@@ -18534,6 +18587,9 @@
   "QwenImageDiffsynthControlnet": {
     "display_name": "QwenImageDiffsynthControlnet",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
       "image": {
         "name": "画像"
       },
@@ -18545,6 +18601,9 @@
       },
       "model_patch": {
         "name": "モデルパッチ"
+      },
+      "start_percent": {
+        "name": "start_percent"
       },
       "strength": {
         "name": "強度"
@@ -23888,6 +23947,30 @@
       }
     }
   },
+  "TextEncodeMingImageEdit": {
+    "display_name": "Ming Image Edit テキストエンコード",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "画像",
+        "tooltip": "任意の参照画像です。テキストエンコーダーによって参照され、クリーンフレームとして潜在シーケンスに追加されます。2 枚目以降の画像は最初の画像に合わせてリサイズされ、サンプリングする潜在空間はそのサイズに一致させる必要があります。"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "VAE がない場合、画像はビジョンタワーを介してのみテキストエンコーダーを条件付けします。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeQwenImage21": {
     "display_name": "テキストエンコード Qwen Image 2.1",
     "inputs": {
@@ -28733,6 +28816,10 @@
       "positive": {
         "name": "ポジティブ"
       },
+      "ref_pad_image": {
+        "name": "ref_pad_image",
+        "tooltip": "グレーの代わりにこの画像で画像コンディショニングのパディングフレームを埋め、フレームを固定せずにアイデンティティを保持します（ID-V2V などのモデルで使用される、SVI スタイルのドリフト防止パディング）。"
+      },
       "start_image": {
         "name": "開始画像"
       },
@@ -29713,8 +29800,12 @@
     }
   },
   "ZImageFunControlnet": {
-    "display_name": "ZImageFunControlnet",
+    "description": "Load Model Patch で読み込まれた Z-Image または Qwen Image 2.1 Fun ControlNet を適用します。",
+    "display_name": "Fun ControlNet を適用",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
       "image": {
         "name": "画像"
       },
@@ -29729,6 +29820,9 @@
       },
       "model_patch": {
         "name": "モデルパッチ"
+      },
+      "start_percent": {
+        "name": "start_percent"
       },
       "strength": {
         "name": "強度"
