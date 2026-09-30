@@ -14,10 +14,12 @@ interface QueryOptions {
   onError?: (reason: string, error?: unknown) => void
 }
 
-const BASE_PARAMS: ListAssetsData['query'] = {
+const BASE_PARAMS = {
+  include_public: false,
+  limit: 100,
   sort: 'created_at',
   tags_none: ['missing']
-}
+} satisfies ListAssetsData['query']
 
 function assetsQueryInternal(
   params: ListAssetsData['query'] = {},
@@ -67,7 +69,10 @@ function assetsQueryInternal(
         if (seenHeadCursors.has(headCursor)) break
         seenHeadCursors.add(headCursor)
 
-        const assetResponse = await doQuery({ after: headCursor }, signal)
+        const query = headCursor
+          ? { after: headCursor }
+          : { after: headCursor, limit: 10 }
+        const assetResponse = await doQuery(query, signal)
         if (!assetResponse) return
 
         const { assets, has_more, next_cursor } = assetResponse
