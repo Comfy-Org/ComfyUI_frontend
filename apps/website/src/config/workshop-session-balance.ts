@@ -105,6 +105,16 @@ function follow(session: WebSession | undefined) {
 }
 
 let started = false
+let stopFollowing: (() => void) | undefined
+
+export function resetWorkshopSessionBalance() {
+  stopFollowing?.()
+  stopFollowing = undefined
+  started = false
+  generation = { account: undefined }
+  inFlight = undefined
+  balance.value = { status: 'unknown' }
+}
 
 /** Reads per signed-in account, again on refocus, never after a 401. */
 export function useWorkshopSessionBalance(
@@ -112,12 +122,18 @@ export function useWorkshopSessionBalance(
 ): Readonly<Ref<SessionBalanceState>> {
   if (!started && typeof window !== 'undefined') {
     started = true
-    effectScope(true).run(() => {
+    const scope = effectScope(true)
+    scope.run(() => {
       watch(session, follow, { immediate: true })
     })
-    window.addEventListener('focus', () => {
+    const onFocus = () => {
       if (session.value) void refresh(session.value)
-    })
+    }
+    window.addEventListener('focus', onFocus)
+    stopFollowing = () => {
+      scope.stop()
+      window.removeEventListener('focus', onFocus)
+    }
   }
   return readonly(balance)
 }

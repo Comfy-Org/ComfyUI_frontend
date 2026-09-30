@@ -284,10 +284,11 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
       return
     }
     if (state.kind === 'subscription') syncProgressToast(state, 'subscription')
+    // A reattached operation may be one billing-web is paying right now, so its
+    // challenge is that page's to drive, as on the legacy rail.
+    if (resumedOperations.has(state.id)) return
     void driveRequiredChallenge(state)
-    if (!drivesInPageChallenge(state) && !resumedOperations.has(state.id)) {
-      openHostedAction(state)
-    }
+    if (!drivesInPageChallenge(state)) openHostedAction(state)
   }
 
   // The server offers its hosted page beside the client secret, so an

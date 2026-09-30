@@ -53,7 +53,7 @@ function visibleOutcomes() {
     .map((card) => card.getAttribute('href'))
 }
 
-beforeEach(() => history.replaceState(null, '', '/models/?type=workflows'))
+beforeEach(() => history.replaceState(null, '', '/hub/workflows/'))
 
 describe('workflow catalogue ordering and shared links', () => {
   it('uses editorial category and outcome order, then sorts all results by name', async () => {
@@ -142,6 +142,27 @@ describe('workflow catalogue ordering and shared links', () => {
     ])
   })
 
+  it('lets go of every filter from the chips and keeps what was searched for', async () => {
+    history.replaceState(null, '', '/models/?type=workflows&q=image')
+    const user = userEvent.setup()
+    render(WorkflowCatalogue, { props: { models } })
+    await waitFor(() =>
+      expect(screen.getByRole('searchbox')).toHaveValue('image')
+    )
+
+    await user.click(screen.getByTestId('workshop-filter'))
+    await user.click(await screen.findByTestId('workshop-facet-model'))
+    await user.click(await screen.findByTestId('filter-model-SeedVR2'))
+    expect(visibleOutcomes()).toEqual(['/models/workflows/connect/'])
+
+    await user.click(screen.getByTestId('workshop-filter-chips-clear'))
+    expect(screen.getByRole('searchbox')).toHaveValue('image')
+    expect(visibleOutcomes()).toEqual([
+      '/models/workflows/animate/',
+      '/models/workflows/connect/'
+    ])
+  })
+
   it('names the model it was narrowed by, and lets go of it from that name', async () => {
     const user = userEvent.setup()
     render(WorkflowCatalogue, { props: { models } })
@@ -167,7 +188,7 @@ describe('workflow catalogue ordering and shared links', () => {
     history.replaceState(
       null,
       '',
-      '/models/?type=workflows&model=Wan+2.2&model=Nano+Banana'
+      '/hub/workflows/?model=Wan+2.2&model=Nano+Banana'
     )
     render(WorkflowCatalogue, { props: { models } })
     await waitFor(() =>
@@ -183,7 +204,7 @@ describe('workflow catalogue ordering and shared links', () => {
     history.replaceState(
       null,
       '',
-      '/models/?type=workflows&q=image&category=video&category=unknown'
+      '/hub/workflows/?q=image&category=video&category=unknown'
     )
     render(WorkflowCatalogue, { props: { models } })
     await waitFor(() =>

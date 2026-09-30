@@ -1,13 +1,81 @@
 import type { Op } from '@comfyorg/comfy-multi-player'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Mock } from 'vitest'
+
+import { reportError } from '@/platform/telemetry/reportError'
 
 import type { GraphOperation } from './graphOperations'
 import { createOpSender } from './opSender'
 import type { BatchOutcome, OpsResultView } from './opSender'
 
+vi.mock(import('@/platform/telemetry/reportError'))
+
 const WORKFLOW = 'wf-1'
 const TAB = 'tab-1'
 const ACTOR = 'human:test-user:tab-1'
+
+type SettlementListener = (outcome: BatchOutcome) => void
+type SettlementSummary = { state: BatchOutcome['state']; nodeIds: unknown[] }
+
+function summarizeSettlement(outcome: BatchOutcome): SettlementSummary {
+  return {
+    state: outcome.state,
+    nodeIds: outcome.ops.map((op) => ('node_id' in op ? op.node_id : undefined))
+  }
+}
+
+const detachListenerFailureCases = [
+  [
+    'in-flight',
+    (
+      listener: Mock<SettlementListener>,
+      _record: SettlementListener,
+      fail: SettlementListener
+    ) => listener.mockImplementationOnce(fail),
+    [
+      { state: 'undeliverable', nodeIds: [2] },
+      { state: 'undeliverable', nodeIds: [3] }
+    ]
+  ],
+  [
+    'queued',
+    (
+      listener: Mock<SettlementListener>,
+      record: SettlementListener,
+      fail: SettlementListener
+    ) => listener.mockImplementationOnce(record).mockImplementationOnce(fail),
+    [
+      { state: 'unconfirmed', nodeIds: [1] },
+      { state: 'undeliverable', nodeIds: [3] }
+    ]
+  ],
+  [
+    'open',
+    (
+      listener: Mock<SettlementListener>,
+      record: SettlementListener,
+      fail: SettlementListener
+    ) =>
+      listener
+        .mockImplementationOnce(record)
+        .mockImplementationOnce(record)
+        .mockImplementationOnce(fail),
+    [
+      { state: 'unconfirmed', nodeIds: [1] },
+      { state: 'undeliverable', nodeIds: [2] }
+    ]
+  ]
+] as const satisfies ReadonlyArray<
+  readonly [
+    string,
+    (
+      listener: Mock<SettlementListener>,
+      record: SettlementListener,
+      fail: SettlementListener
+    ) => unknown,
+    readonly SettlementSummary[]
+  ]
+>
 
 function addNode(id: number): GraphOperation {
   return {
@@ -40,8 +108,12 @@ describe('createOpSender', () => {
   let settled: BatchOutcome[]
   let resultListener: ((result: OpsResultView) => void) | null
   let transportUp: boolean
+  let transportThrows: boolean
   let boundWorkflow: string | null
   let sender: ReturnType<typeof createOpSender>
+  const unsubscribe = vi.fn(() => {
+    resultListener = null
+  })
 
   function ackInFlight(): void {
     const last = sent[sent.length - 1]
@@ -58,18 +130,18 @@ describe('createOpSender', () => {
     settled = []
     resultListener = null
     transportUp = true
+    transportThrows = false
     boundWorkflow = WORKFLOW
     sender = createOpSender({
       sendOps: (workflowId, tab, ops) => {
+        if (transportThrows) throw new Error('frame serialization failed')
         if (!transportUp) return false
         sent.push({ workflowId, tab, ops })
         return true
       },
       onOpsResult: (listener) => {
         resultListener = listener
-        return () => {
-          resultListener = null
-        }
+        return unsubscribe
       },
       workflowId: () => boundWorkflow,
       tab: TAB,
@@ -474,6 +546,150 @@ describe('createOpSender', () => {
     sender.enqueue([addNode(2)])
 
     expect(sent).toHaveLength(1)
+    expect(settled.at(-1)).toMatchObject({
+      state: 'undeliverable',
+      ops: [expect.objectContaining({ node_id: 2 })]
+    })
+  })
+
+  it('detach clears the armed result-timeout timer so no late resend or settlement follows', () => {
+    sender.enqueue([addNode(1)])
+    expect(sent).toHaveLength(1)
+    expect(vi.getTimerCount()).toBeGreaterThan(0)
+
+    sender.detach()
+
+    expect(vi.getTimerCount()).toBe(0)
+    const settledAfterDetach = settled.length
+    vi.advanceTimersByTime(10_000)
+
+    expect(sent).toHaveLength(1)
+    expect(settled).toHaveLength(settledAfterDetach)
+  })
+
+  it('detach clears an armed transport-retry timer so no late retry send follows', () => {
+    transportUp = false
+    const ops = [addNode(1)]
+    sender.enqueue(ops)
+    expect(sent).toHaveLength(0)
+    expect(vi.getTimerCount()).toBeGreaterThan(0)
+
+    sender.detach()
+
+    expect(vi.getTimerCount()).toBe(0)
+    expect(settled).toHaveLength(1)
+    expect(settled[0]).toMatchObject({ state: 'undeliverable', ops })
+    vi.advanceTimersByTime(500 * 6)
+
+    expect(sent).toHaveLength(0)
+    expect(settled).toHaveLength(1)
+  })
+
+  it('detach settles every outstanding batch instead of dropping it silently', () => {
+    sender.enqueue([addNode(1)])
+    sender.enqueue([addNode(2)])
+    sender.admit([addNode(3)])
+    expect(sent).toHaveLength(1)
+
+    sender.detach()
+
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'unconfirmed',
+      'undeliverable',
+      'undeliverable'
+    ])
+    expect(
+      settled.map((outcome) =>
+        outcome.ops.map((op) => ('node_id' in op ? op.node_id : undefined))
+      )
+    ).toEqual([[1], [2], [3]])
+  })
+
+  it('a second detach() call is a no-op: no double-settle and no timer left armed', () => {
+    sender.enqueue([addNode(1)])
+    expect(vi.getTimerCount()).toBeGreaterThan(0)
+
+    sender.detach()
+    const settledAfterFirstDetach = [...settled]
+    expect(vi.getTimerCount()).toBe(0)
+
+    sender.detach()
+
+    expect(settled).toEqual(settledAfterFirstDetach)
+    expect(vi.getTimerCount()).toBe(0)
+    expect(unsubscribe).toHaveBeenCalledTimes(1)
+  })
+
+  it.for(detachListenerFailureCases)(
+    'detach settles every other batch and still unsubscribes when the %s listener throws',
+    ([, configureListener, expectedSurvivors]) => {
+      const localSettled: BatchOutcome[] = []
+      let unsubscribed = false
+      const recordSettlement: SettlementListener = (outcome) => {
+        localSettled.push(outcome)
+      }
+      const onBatchSettled = vi.fn(recordSettlement)
+      configureListener(onBatchSettled, recordSettlement, () => {
+        throw new Error('listener boom')
+      })
+      const localSender = createOpSender({
+        sendOps: (workflowId, tab, ops) => {
+          sent.push({ workflowId, tab, ops })
+          return true
+        },
+        onOpsResult: (listener) => {
+          resultListener = listener
+          return () => {
+            unsubscribed = true
+          }
+        },
+        workflowId: () => boundWorkflow,
+        tab: TAB,
+        actor: () => ACTOR,
+        baseVersion: () => 41,
+        onBatchSettled
+      })
+
+      localSender.enqueue([addNode(1)])
+      localSender.enqueue([addNode(2)])
+      localSender.admit([addNode(3)])
+      expect(sent).toHaveLength(1)
+
+      localSender.detach()
+
+      expect(localSettled.map(summarizeSettlement)).toEqual(expectedSurvivors)
+      expect(reportError).toHaveBeenCalledTimes(1)
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'failure_settling_agent_op_sender_detach'
+        })
+      )
+      expect(unsubscribed).toBe(true)
+    }
+  )
+
+  it('reports a systematically failing detach listener only once', () => {
+    const localUnsubscribe = vi.fn()
+    const localSender = createOpSender({
+      sendOps: () => true,
+      onOpsResult: () => localUnsubscribe,
+      workflowId: () => boundWorkflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: () => {
+        throw new Error('listener boom')
+      }
+    })
+    localSender.enqueue([addNode(1)])
+    localSender.enqueue([addNode(2)])
+    localSender.admit([addNode(3)])
+
+    localSender.detach()
+
+    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(localUnsubscribe).toHaveBeenCalledOnce()
   })
 
   it('abortAll settles the transmitted batch and every queued batch in mint order', () => {
@@ -501,6 +717,39 @@ describe('createOpSender', () => {
     expect(sent).toHaveLength(2)
   })
 
+  it('abortAll settles every other batch when one settlement listener throws', () => {
+    const localSettled: BatchOutcome[] = []
+    const localSender = createOpSender({
+      sendOps: () => true,
+      onOpsResult: () => vi.fn(),
+      workflowId: () => boundWorkflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: (outcome) => {
+        if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 2))
+          throw new Error('listener boom')
+        localSettled.push(outcome)
+      }
+    })
+    localSender.enqueue([addNode(1)])
+    localSender.enqueue([addNode(2)])
+    localSender.enqueue([addNode(3)])
+
+    expect(() => localSender.abortAll()).not.toThrow()
+
+    expect(localSettled.map(summarizeSettlement)).toEqual([
+      { state: 'unconfirmed', nodeIds: [1] },
+      { state: 'undeliverable', nodeIds: [3] }
+    ])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'failure_settling_agent_op_sender_abort'
+      })
+    )
+  })
+
   it('abortAll settles each chunk from one oversized admission', () => {
     sender.enqueue(Array.from({ length: 300 }, (_, index) => addNode(index)))
 
@@ -518,6 +767,14 @@ describe('createOpSender', () => {
       Array.from({ length: 256 }, (_, index) => index),
       Array.from({ length: 44 }, (_, index) => index + 256)
     ])
+  })
+
+  it('detach settles an unflushed oversized admission in wire-sized chunks', () => {
+    sender.admit(Array.from({ length: 300 }, (_, index) => addNode(index)))
+
+    sender.detach()
+
+    expect(settled.map((outcome) => outcome.ops.length)).toEqual([256, 44])
   })
 
   it('does not attribute a late anonymous result from an aborted batch to the next batch', () => {
@@ -584,6 +841,191 @@ describe('createOpSender', () => {
     expect(sender.pending()).toBe(0)
   })
 
+  it('an aborted batch whose resend never left the client reserves one late-result credit, not two', () => {
+    sender.enqueue([addNode(1)])
+    boundWorkflow = null
+    vi.advanceTimersByTime(10_000)
+    expect(sent).toHaveLength(1)
+    expect(settled.map((outcome) => outcome.state)).toEqual(['unconfirmed'])
+
+    boundWorkflow = WORKFLOW
+    sender.enqueue([addNode(2)])
+    expect(sent).toHaveLength(2)
+
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'unconfirmed',
+      'acknowledged'
+    ])
+  })
+
+  it('an identified result for ops the sender never minted leaves the aborted batch its late-result credit', () => {
+    sender.enqueue([addNode(1)])
+    sender.abortAll()
+    sender.enqueue([addNode(2)])
+    expect(sent).toHaveLength(2)
+
+    resultListener?.({ ok: true, applied: ['ffff'.repeat(8)], skipped: [] })
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+
+    expect(settled.map((outcome) => outcome.state)).toEqual(['unconfirmed'])
+
+    ackInFlight()
+
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'unconfirmed',
+      'acknowledged'
+    ])
+  })
+
+  it('a transport that throws is reported once and retried like a refused send, never a stalled queue', () => {
+    transportThrows = true
+
+    expect(() => sender.enqueue([addNode(1)])).not.toThrow()
+
+    expect(sent).toHaveLength(0)
+    expect(vi.mocked(reportError)).toHaveBeenCalledExactlyOnceWith(
+      new Error('frame serialization failed'),
+      expect.objectContaining({ errorType: 'failure_sending_agent_human_ops' })
+    )
+
+    vi.advanceTimersByTime(1_500)
+
+    expect(vi.mocked(reportError)).toHaveBeenCalledTimes(1)
+
+    transportThrows = false
+    vi.advanceTimersByTime(500)
+    expect(sent).toHaveLength(1)
+
+    ackInFlight()
+
+    expect(settled.map((outcome) => outcome.state)).toEqual(['acknowledged'])
+  })
+
+  it('a batch acknowledged by its own op id after a resend still reserves a credit', () => {
+    sender.enqueue([addNode(1)])
+    vi.advanceTimersByTime(10_000)
+    expect(sent).toHaveLength(2)
+
+    ackInFlight()
+    expect(settled.map((outcome) => outcome.state)).toEqual(['acknowledged'])
+
+    sender.enqueue([addNode(2)])
+    expect(sent).toHaveLength(3)
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+
+    expect(settled.map((outcome) => outcome.state)).toEqual(['acknowledged'])
+    expect(sender.pending()).toBe(1)
+  })
+
+  it('a batch acknowledged after a resend still reserves a credit for the send left unanswered', () => {
+    sender.enqueue([addNode(1)])
+    vi.advanceTimersByTime(10_000)
+    expect(sent).toHaveLength(2)
+
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+    expect(settled.map((outcome) => outcome.state)).toEqual(['acknowledged'])
+
+    sender.enqueue([addNode(2)])
+    expect(sent).toHaveLength(3)
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+
+    expect(settled.map((outcome) => outcome.state)).toEqual(['acknowledged'])
+    expect(sender.pending()).toBe(1)
+
+    ackInFlight()
+
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'acknowledged',
+      'acknowledged'
+    ])
+    expect(sender.pending()).toBe(0)
+  })
+
+  it('reports a throw that only starts on a retry, after the transport first refused', () => {
+    transportUp = false
+
+    sender.enqueue([addNode(1)])
+
+    expect(vi.mocked(reportError)).not.toHaveBeenCalled()
+
+    transportThrows = true
+    vi.advanceTimersByTime(1_500)
+
+    expect(sent).toHaveLength(0)
+    expect(vi.mocked(reportError)).toHaveBeenCalledTimes(1)
+
+    transportThrows = false
+    transportUp = true
+    vi.advanceTimersByTime(500)
+    expect(sent).toHaveLength(1)
+
+    ackInFlight()
+
+    expect(settled.map((outcome) => outcome.state)).toEqual(['acknowledged'])
+  })
+
+  it('reports again when the silence resend throws, a second delivery', () => {
+    // The first delivery has to throw and report before it succeeds, or the
+    // resend reports from an unarmed flag and pins nothing.
+    transportThrows = true
+    sender.enqueue([addNode(1)])
+    expect(vi.mocked(reportError)).toHaveBeenCalledTimes(1)
+
+    transportThrows = false
+    vi.advanceTimersByTime(500)
+    expect(sent).toHaveLength(1)
+
+    transportThrows = true
+    vi.advanceTimersByTime(10_000)
+
+    expect(vi.mocked(reportError)).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not report again when resume continues the delivery suspend parked', () => {
+    transportThrows = true
+    sender.enqueue([addNode(1)])
+    expect(vi.mocked(reportError)).toHaveBeenCalledTimes(1)
+
+    sender.suspend()
+    vi.advanceTimersByTime(500)
+    sender.resume()
+
+    expect(sent).toHaveLength(0)
+    expect(vi.mocked(reportError)).toHaveBeenCalledTimes(1)
+  })
+
+  it('never settles a batch with a result whose ops it does not own', () => {
+    const anonymousFailure = () =>
+      resultListener?.({ ok: false, applied: [], skipped: [] })
+
+    // A leaves two sends on the wire and settles on the first answer, so the
+    // second is still owed to it.
+    sender.enqueue([addNode(1)])
+    vi.advanceTimersByTime(10_000)
+    anonymousFailure()
+
+    // A's second answer arrives while B holds the slot. It is A's, not B's.
+    sender.enqueue([addNode(2)])
+    anonymousFailure()
+
+    // B likewise settles on its resend's answer, still owed one.
+    vi.advanceTimersByTime(10_000)
+    anonymousFailure()
+
+    // B's second answer must not be read as C's.
+    sender.enqueue([addNode(3)])
+    anonymousFailure()
+
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'acknowledged',
+      'acknowledged'
+    ])
+    expect(sender.pending()).toBe(1)
+  })
+
   describe('suspension', () => {
     function parkSecondBatch(): string {
       sender.enqueue([addNode(1)])
@@ -642,7 +1084,7 @@ describe('createOpSender', () => {
       expect(sent[1].ops[0].op_id).toBe(sent[0].ops[0].op_id)
     })
 
-    it('detach drops a parked batch', () => {
+    it('detach settles a parked batch undeliverable instead of dropping it', () => {
       parkSecondBatch()
 
       sender.detach()
@@ -651,6 +1093,10 @@ describe('createOpSender', () => {
 
       expect(sent).toHaveLength(1)
       expect(sender.pending()).toBe(0)
+      expect(settled.map((outcome) => outcome.state)).toEqual([
+        'acknowledged',
+        'undeliverable'
+      ])
     })
 
     it('suspend and resume are idempotent and leave an unsuspended sender sending', () => {

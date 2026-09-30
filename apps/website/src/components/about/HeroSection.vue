@@ -64,7 +64,7 @@ useHeroAnimation({
         </p>
         <div ref="ctaRef" class="mt-8">
           <BrandButton
-            :href="locale === 'zh-CN' ? '/zh-CN/careers' : '/careers'"
+            :href="locale === 'zh-CN' ? '/zh-CN/careers/' : '/careers/'"
             variant="outline"
           >
             {{ t('about.hero.cta', locale) }}

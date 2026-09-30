@@ -6,9 +6,9 @@ import type { SourcePreviewProps } from '../../composables/useSourceUrl'
 import { useSourceUrl } from '../../composables/useSourceUrl'
 import { t } from '../../i18n/translations'
 import Dialog from '../ui/dialog/Dialog.vue'
-import DialogContent from '../ui/dialog/DialogContent.vue'
 import DialogTitle from '../ui/dialog/DialogTitle.vue'
 import DialogTrigger from '../ui/dialog/DialogTrigger.vue'
+import SourceLightbox from './SourceLightbox.vue'
 
 const { file, src, name, locale = 'en' } = defineProps<SourcePreviewProps>()
 
@@ -44,11 +44,10 @@ const expandLabel = computed(
       </button>
     </DialogTrigger>
 
-    <DialogContent
+    <SourceLightbox
       :close-label="t('workshop.output.collapse', locale)"
-      :aria-describedby="undefined"
-      class="sm:max-w-5xl"
       data-testid="image-source-dialog"
+      @dismiss="expanded = false"
     >
       <DialogTitle class="sr-only">{{ name }}</DialogTitle>
       <img
@@ -56,9 +55,9 @@ const expandLabel = computed(
         :src="source"
         :alt="name"
         referrerpolicy="no-referrer"
-        class="max-h-dvh w-full rounded-2xl bg-black object-contain"
+        class="max-h-full max-w-full rounded-2xl bg-black object-contain"
       />
-    </DialogContent>
+    </SourceLightbox>
   </Dialog>
   <span
     v-else-if="source"

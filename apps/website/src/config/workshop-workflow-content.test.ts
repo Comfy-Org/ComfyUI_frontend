@@ -6,6 +6,7 @@ import { assert, describe, expect, it } from 'vitest'
 import displayJson from '../content/workshop-display.json'
 import categories from '../content/workshop-workflow-categories.json'
 import { workshopDisplayEntriesSchema } from '../content/workshop-display.schema'
+import { modelTitle } from '../lib/workshop/model-title'
 import { workshopExecutionId } from './models-catalogue'
 import { initialWorkshopPageState } from './workshop-page-state'
 import { urlUploadField, validateForm } from './workshop-playground'
@@ -146,7 +147,7 @@ describe('curated workflow pages', () => {
     expect(detail.examples).toHaveLength(1)
     expect(detail.examples[0]).toMatchObject({
       thumbnailUrl:
-        'https://cloud.comfy.org/templates/utility_birefnet_remove_background-1.webp',
+        'https://media.comfy.org/website/workshop/workflows/remove-background/lily-veil-cutout.webp',
       sampleOnly: false
     })
     const state = initialWorkshopPageState(detail)
@@ -154,6 +155,21 @@ describe('curated workflow pages', () => {
       'https://cdn.jsdelivr.net/gh/Comfy-Org/workflow_templates@90c71fb78b3726392d010ff62a8e79e92d7296ad/input/the_lily_veil.png'
     )
     expect(validateForm(state.schema, state.values)).toEqual({})
+  })
+
+  it('keeps every audited material example with the form-facing prompt copy', () => {
+    const detail = getWorkshopPageDetail('workflows/change-material')
+    assert.exists(detail)
+
+    expect(detail.examples.map(({ title }) => title)).toEqual([
+      'A softer finish for a leather sofa',
+      'A camper van woven from rattan',
+      'Enamel cherries in amber glass',
+      'A sports car in celadon porcelain'
+    ])
+    expect(detail.examples[0]?.values.prompt).toBe(
+      'Give the sofa the fur texture from the material reference instead of its leather.'
+    )
   })
 
   it('uses the master INPUTS widgets and prepared defaults in the shared form', () => {
@@ -169,10 +185,14 @@ describe('curated workflow pages', () => {
     ).toEqual([
       { name: 'image1', label: 'Your original image', kind: 'file' },
       { name: 'image2', label: 'Material reference', kind: 'file' },
-      { name: 'prompt', label: 'What should change?', kind: 'text' }
+      { name: 'prompt', label: 'What should change?', kind: 'text' },
+      { name: 'negative_prompt', label: 'Avoid', kind: 'text' },
+      { name: 'fast_mode', label: 'Fast mode', kind: 'toggle' },
+      { name: 'seed', label: 'Seed', kind: 'number' }
     ])
+    expect(state.values.seed).toBeUndefined()
     expect(state.values.prompt).toBe(
-      'Change the furniture leather difference in image 1 to the fur material in image 2.'
+      'Give the sofa the fur texture from the material reference instead of its leather.'
     )
     expect(state.values).toMatchObject({
       image1:
@@ -259,4 +279,11 @@ describe('curated workflow pages', () => {
       expect(detail).not.toHaveProperty('routerId')
     }
   )
+})
+
+describe('workshop pages', () => {
+  it('gives every model and workflow page its own title', () => {
+    const titles = workshopPages.map((model) => modelTitle(model))
+    expect(new Set(titles).size).toBe(titles.length)
+  })
 })

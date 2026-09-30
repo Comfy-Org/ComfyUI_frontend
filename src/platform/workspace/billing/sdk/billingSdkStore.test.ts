@@ -634,6 +634,25 @@ describe('useBillingSdkStore subscription commands', () => {
     expect(store.subscriptionActionUrl).toBe('https://pay.example/op-1')
   })
 
+  it('drives no in-page challenge for a subscribe it reattached to', async () => {
+    const openPage = vi.spyOn(window, 'open').mockReturnValue(null)
+    const store = useBillingSdkStore()
+
+    reattachedSubscribe()
+    harness.publish(
+      pendingSubscription({
+        presentation: 'embedded',
+        actionUrl: 'https://pay.example/invoice',
+        challenge: { clientSecret: 'pi_secret', status: 'required' }
+      })
+    )
+    await nextTick()
+
+    expect(harness.sdk.driveChallenge).not.toHaveBeenCalled()
+    expect(openPage).not.toHaveBeenCalled()
+    expect(store.subscriptionActionUrl).toBe('https://pay.example/invoice')
+  })
+
   it('finishes a reattached subscribe the way the poller did', async () => {
     useBillingSdkStore()
 

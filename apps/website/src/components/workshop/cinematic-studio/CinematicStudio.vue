@@ -14,12 +14,12 @@ import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import RunLeaveDialog from '../RunLeaveDialog.vue'
 import AppsBackLink from './AppsBackLink.vue'
 import CinematicComposer from './CinematicComposer.vue'
-import CinematicColors from './CinematicColors.vue'
+import CinematicModeSwitch from './CinematicModeSwitch.vue'
 import CinematicPicker from './CinematicPicker.vue'
-import CinematicPopover from './CinematicPopover.vue'
 import CinematicStage from './CinematicStage.vue'
 import type { PickerKey } from './picker-key'
 import { pickerGroups, popoverTitle } from './picker-key'
+import { referenceSlots } from './reference-kind'
 
 const {
   models,
@@ -33,6 +33,20 @@ const {
 
 const {
   studio,
+  mode,
+  modeModels,
+  hasVideo,
+  model,
+  video,
+  duration,
+  videoResolution,
+  audio,
+  firstFrame,
+  lastFrame,
+  sourceVideo,
+  blocked,
+  animate,
+  useAsReference: useTake,
   modelSlug,
   scene,
   enhance,
@@ -42,7 +56,6 @@ const {
   resolution,
   takes,
   cast,
-  palette,
   colors,
   mainColor,
   estimate,
@@ -70,13 +83,6 @@ const popoverClass = computed(() =>
 
 const starter = ref<string>()
 
-// The Colors panel opens from the References menu, beside the pickers.
-const colorsOpen = ref(false)
-function openColors() {
-  closePopover()
-  colorsOpen.value = true
-}
-
 const { leavingTo, leave, stay } = useCinematicLeaveGuard(
   () => studio.rendering.value,
   () => studio.cancel()
@@ -92,12 +98,17 @@ function start(shot: StarterShot) {
   focusScene()
 }
 
+const takeError = ref(false)
+
 async function useAsReference(url: string, name: string) {
-  const blob = await fetch(url)
-    .then((response) => (response.ok ? response.blob() : undefined))
-    .catch(() => undefined)
-  if (blob)
-    cast.value = new File([blob], name, { type: blob.type || 'image/png' })
+  takeError.value = !(await useTake(url, name))
+}
+
+const canAnimate = models.some((option) => !!option.firstFrameSlug)
+async function animateTake(url: string, name: string) {
+  closePopover()
+  takeError.value = !(await animate(url, name))
+  if (!takeError.value) focusScene()
 }
 
 function generate() {
@@ -120,6 +131,8 @@ function generateOn(slug: string) {
     <CinematicStage
       :reel="studio.reel.value"
       :models
+      :can-animate="canAnimate"
+      :can-reference="mode === 'image'"
       :locale
       :starter
       :member-workspace="memberWorkspace"
@@ -128,6 +141,7 @@ function generateOn(slug: string) {
       @again="generate"
       @retry="studio.retry"
       @reference="useAsReference"
+      @animate="animateTake"
       @switch-model="generateOn"
       @edit-scene="focusScene"
     />
@@ -137,22 +151,15 @@ function generateOn(slug: string) {
     >
       <div class="relative mx-auto w-full max-w-7xl">
         <div
-          v-if="popover || colorsOpen"
+          v-if="popover"
           class="fixed inset-0 z-40 bg-black/60 lg:hidden"
           aria-hidden="true"
         />
-        <CinematicPopover
-          v-if="colorsOpen"
-          :title="tc('cinematic.colors.title', locale)"
-          :locale
-          :class="cn(popoverClass, 'lg:w-96')"
-          @close="colorsOpen = false"
-        >
-          <CinematicColors v-model="colors" v-model:main="mainColor" :locale />
-        </CinematicPopover>
         <CinematicPicker
           v-if="popover"
           :key="popover"
+          v-model:colors="colors"
+          v-model:main-color="mainColor"
           :groups="pickerGroups(popover)"
           :direction
           :title="popoverTitle(popover, locale)"
@@ -160,6 +167,20 @@ function generateOn(slug: string) {
           :class="popoverClass"
           @choose="choose"
           @close="closePopover"
+        />
+        <p
+          v-if="takeError"
+          role="status"
+          class="mb-2 text-xs text-primary-comfy-canvas"
+        >
+          {{ tc('cinematic.references.unreadable', locale) }}
+        </p>
+        <CinematicModeSwitch
+          v-if="hasVideo"
+          v-model="mode"
+          :disabled="studio.rendering.value"
+          :locale
+          class="mb-3 w-fit"
         />
         <CinematicComposer
           v-model:scene="scene"
@@ -169,10 +190,18 @@ function generateOn(slug: string) {
           v-model:resolution="resolution"
           v-model:enhance="enhance"
           v-model:cast="cast"
-          v-model:palette="palette"
-          :models
+          v-model:first-frame="firstFrame"
+          v-model:last-frame="lastFrame"
+          v-model:source-video="sourceVideo"
+          v-model:duration="duration"
+          v-model:video-resolution="videoResolution"
+          v-model:audio="audio"
+          :models="modeModels"
           :aspects
-          :color-count="colors.length"
+          :slots="referenceSlots(model, !!firstFrame)"
+          :colors
+          :blocked
+          :video
           :direction
           :gate="studio.gate.value"
           :workspace-name="studio.session.value?.workspace.name"
@@ -182,8 +211,7 @@ function generateOn(slug: string) {
           :show-credits="showCredits"
           :open-popover="popover"
           :locale
-          @open="((colorsOpen = false), togglePopover($event))"
-          @colors="openColors"
+          @open="togglePopover"
           @generate="generate"
           @cancel="studio.cancel"
         />
