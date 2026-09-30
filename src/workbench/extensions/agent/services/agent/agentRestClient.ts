@@ -49,8 +49,8 @@ export class AgentApiError extends Error {
 }
 
 export class AgentResponseUnreadableError extends Error {
-  constructor(route: string, cause: unknown) {
-    super(`Unreadable agent response body from ${route}`, { cause })
+  constructor(cause: unknown) {
+    super('Unreadable agent response body', { cause })
     this.name = 'AgentResponseUnreadableError'
   }
 }
@@ -329,6 +329,24 @@ function asDelaySeconds(seconds: number): number | undefined {
   return Number.isSafeInteger(seconds) && seconds >= 0 ? seconds : undefined
 }
 
+function buildPostMessageBody(req: PostMessageInput): AgentPostMessageRequest {
+  const body: AgentPostMessageRequest = { content: req.content }
+  if (req.workflowId !== undefined) body.workflow_id = req.workflowId
+  if (req.tabs !== undefined) {
+    body.open_tabs = req.tabs.open_tabs
+    if (req.tabs.current_tab !== undefined)
+      body.current_tab = req.tabs.current_tab
+  }
+  if (req.workflowReferences !== undefined)
+    body.workflow_references = req.workflowReferences
+  if (req.selection !== undefined) body.selection = req.selection
+  if (req.attachments !== undefined) body.attachments = req.attachments
+  if (req.draft !== undefined) body.draft = { content: req.draft.content }
+  if (req.currentTabUnbound !== undefined)
+    body.current_tab_unbound = req.currentTabUnbound
+  return body
+}
+
 export function createAgentRestClient() {
   async function toApiError(response: Response): Promise<AgentApiError> {
     const body = parseErrorBody(await response.text())
@@ -350,7 +368,8 @@ export function createAgentRestClient() {
     try {
       payload = await response.json()
     } catch (error) {
-      throw new AgentResponseUnreadableError(route, error)
+      if (error instanceof Error && error.name === 'AbortError') throw error
+      throw new AgentResponseUnreadableError(error)
     }
     return schema.parse(payload)
   }
@@ -367,27 +386,17 @@ export function createAgentRestClient() {
     threadId: string,
     req: PostMessageInput
   ): Promise<AgentTurnAccepted> {
-    const body: AgentPostMessageRequest = {
-      content: req.content
+    try {
+      return await request(
+        `/agent/threads/${encodeURIComponent(threadId)}/messages`,
+        jsonInit('POST', buildPostMessageBody(req)),
+        zAgentTurnAccepted
+      )
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError')
+        throw new AgentResponseUnreadableError(error)
+      throw error
     }
-    if (req.workflowId !== undefined) body.workflow_id = req.workflowId
-    if (req.tabs !== undefined) {
-      body.open_tabs = req.tabs.open_tabs
-      if (req.tabs.current_tab !== undefined)
-        body.current_tab = req.tabs.current_tab
-    }
-    if (req.workflowReferences !== undefined)
-      body.workflow_references = req.workflowReferences
-    if (req.selection !== undefined) body.selection = req.selection
-    if (req.attachments !== undefined) body.attachments = req.attachments
-    if (req.draft !== undefined) body.draft = { content: req.draft.content }
-    if (req.currentTabUnbound !== undefined)
-      body.current_tab_unbound = req.currentTabUnbound
-    return request(
-      `/agent/threads/${encodeURIComponent(threadId)}/messages`,
-      jsonInit('POST', body),
-      zAgentTurnAccepted
-    )
   }
 
   async function getMessages(threadId: string): Promise<AgentMessages> {

@@ -103,17 +103,20 @@ export interface AgentSessionDeps {
 const THREAD_STORAGE_KEY = 'Comfy.Agent.ThreadId'
 const PREPARE_TIMEOUT_MS = 3000
 
-const NON_RETRYABLE_REQUEST_STATUSES = new Set([
-  400, 401, 403, 404, 405, 409, 410, 422
-])
-
 export function isRetryableRequestFailure(
   error: unknown,
   accepted: boolean
 ): boolean {
   if (accepted) return false
-  if (error instanceof AgentApiError)
-    return !NON_RETRYABLE_REQUEST_STATUSES.has(error.status)
+  if (
+    error instanceof ZodError ||
+    error instanceof AgentResponseUnreadableError
+  )
+    return false
+  if (error instanceof AgentApiError) {
+    if ([408, 425, 429].includes(error.status)) return true
+    return error.status < 400 || error.status >= 500
+  }
   return true
 }
 
@@ -214,15 +217,26 @@ export function useAgentSession(deps: AgentSessionDeps) {
     eventType: string,
     turnId: TurnId | null,
     uiTreatment: AgentErrorMetadata['ui_treatment']
-  ): void {
+  ): boolean {
     const visible = uiTreatment !== 'none'
     const priorVisible = malformedStreamReports.get(turnId)
-    if (priorVisible === true || (priorVisible === false && !visible)) return
+    if (priorVisible === true || (priorVisible === false && !visible))
+      return false
+    if (
+      !malformedStreamReports.has(turnId) &&
+      malformedStreamReports.size >= 32
+    ) {
+      const oldest = malformedStreamReports.keys().next().value
+      if (oldest !== undefined) malformedStreamReports.delete(oldest)
+    }
     malformedStreamReports.set(turnId, visible)
     reportError(new Error('Malformed agent stream event'), {
       errorType: 'agent_malformed_stream_event',
       tags: { ui_treatment: uiTreatment, event_type: eventType },
-      context: { issues: cause.issues }
+      context: {
+        issue_count: cause.issues.length,
+        issue_codes: cause.issues.slice(0, 10).map(({ code }) => code)
+      }
     })
     trackAgentError(
       'malformed_stream_event',
@@ -230,6 +244,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       uiTreatment,
       { retryable: false }
     )
+    return true
   }
 
   function start(): void {
@@ -510,31 +525,34 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
-  function recordSendError(
-    error: unknown,
-    text: string,
-    accepted: boolean
-  ): void {
+  function recordAdmissionSendError(error: unknown, text: string): boolean {
     const admission = parseAdmissionError(error)
-    if (admission?.reason === 'no_funds') {
+    if (admission === undefined) return false
+    if (admission.reason === 'no_funds') {
       conversationStore.recordPaywall(
         nextLocalErrorId(),
         text,
         admission.message
       )
-      return
+      return true
     }
-    if (admission !== undefined) {
-      conversationStore.recordFailedSend(
-        nextLocalErrorId(),
-        text,
-        admission.message,
-        admission.reason === 'funds_unavailable'
-          ? admission.retryAfterSeconds
-          : undefined
-      )
-      return
-    }
+    conversationStore.recordFailedSend(
+      nextLocalErrorId(),
+      text,
+      admission.message,
+      admission.reason === 'funds_unavailable'
+        ? admission.retryAfterSeconds
+        : undefined
+    )
+    return true
+  }
+
+  function recordSendError(
+    error: unknown,
+    text: string,
+    accepted: boolean
+  ): boolean {
+    if (recordAdmissionSendError(error, text)) return false
     const message =
       error instanceof AgentApiError
         ? error.message
@@ -546,14 +564,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
       text,
       `${i18n.global.t('agent.sendFailed')}: ${message}`
     )
-    const turnAccepted = accepted || isUnreadableAckFailure(error)
-    reportError(error, { errorType: 'agent_send_message_failed' })
+    const turnAccepted = accepted
+    if (!disownsWorkflow(error))
+      reportError(error, { errorType: 'agent_send_message_failed' })
     trackAgentError(
       'request_failed',
       turnAccepted ? 'post_acceptance' : 'pre_acceptance',
       'inline_notice',
       { retryable: isRetryableRequestFailure(error, turnAccepted) }
     )
+    return turnAccepted
   }
 
   /**
@@ -578,6 +598,23 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (rememberedWorkflowId === sent.id) rememberedWorkflowId = null
   }
 
+  function handleSendFailure(
+    error: unknown,
+    text: string,
+    generation: number,
+    sentContext: WorkflowTurnContext | undefined,
+    accepted: boolean,
+    requestStarted: boolean
+  ): boolean {
+    releaseDisownedWorkflow(sentContext, error)
+    if (generation !== loadGeneration) return false
+    return recordSendError(
+      error,
+      text,
+      accepted || (requestStarted && isUnreadableAckFailure(error))
+    )
+  }
+
   async function performSend(
     text: string,
     attachments?: SentAttachment[],
@@ -592,6 +629,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       originContext === undefined ? null : { tabPath: originContext.tabPath }
     let sentContext: WorkflowTurnContext | undefined
     let accepted = false
+    let requestStarted = false
     try {
       await prepareWorkflow()
       if (generation !== loadGeneration) return false
@@ -601,6 +639,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         return false
       }
       sentContext = wfContext
+      requestStarted = true
       const ack = await postTurn(
         threadAtSend,
         text,
@@ -612,17 +651,24 @@ export function useAgentSession(deps: AgentSessionDeps) {
         selectionWorkflowId
       )
       accepted = true
-      if (generation !== loadGeneration) return false
+      // Navigation invalidates the originating submission before advancing the
+      // generation. The server still accepted this turn, so reporting success
+      // prevents a future caller from offering a duplicate non-idempotent send.
+      if (generation !== loadGeneration) return true
       acceptTurn(ack, text, wfContext, attachments, tags, workflowReferences)
       return true
     } catch (error) {
       // Before the generation guard: the binding store is page-global and
       // persisted, so a refusal that lands after newChat()/loadThread() has
       // moved on still has to release, or the dead id survives the reload.
-      releaseDisownedWorkflow(sentContext, error)
-      if (generation !== loadGeneration) return false
-      recordSendError(error, text, accepted)
-      return false
+      return handleSendFailure(
+        error,
+        text,
+        generation,
+        sentContext,
+        accepted,
+        requestStarted
+      )
     }
   }
 
@@ -771,32 +817,43 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (hydrated && isCurrent()) conversationStore.resumeBackgroundTurn()
   }
 
+  function malformedEventTurnId(raw: object): TurnId | undefined {
+    const messageId = (raw as { data?: { message_id?: unknown } }).data
+      ?.message_id
+    return typeof messageId === 'string' ? (messageId as TurnId) : undefined
+  }
+
+  function settleMalformedDoneEvent(
+    type: string,
+    turnId: TurnId | undefined
+  ): AgentErrorMetadata['ui_treatment'] {
+    if (type !== 'agent_message_done') return 'none'
+    if (turnId === undefined || turnId === conversationStore.activeTurnId) {
+      conversationStore.abortActiveTurn()
+      return 'error_overlay'
+    }
+    if (conversationStore.hasPendingTurn(turnId)) {
+      conversationStore.settleBackgroundTurn(turnId)
+    }
+    return 'none'
+  }
+
   function handleMalformedEvent(
     raw: object,
     type: string,
     error: ZodError
   ): void {
-    const messageId = (raw as { data?: { message_id?: unknown } }).data
-      ?.message_id
-    let reportedTurnId =
-      typeof messageId === 'string'
-        ? (messageId as TurnId)
+    const turnId = malformedEventTurnId(raw)
+    const reportedTurnId =
+      turnId !== undefined && conversationStore.hasPendingTurn(turnId)
+        ? turnId
         : conversationStore.activeTurnId
-    let uiTreatment: AgentErrorMetadata['ui_treatment'] = 'none'
-    if (type === 'agent_message_done') {
-      if (
-        typeof messageId !== 'string' ||
-        messageId === conversationStore.activeTurnId
-      ) {
-        conversationStore.abortActiveTurn()
-        pushError(i18n.global.t('agent.malformedEvent'))
-        uiTreatment = 'error_overlay'
-      } else {
-        reportedTurnId =
-          conversationStore.settleBackgroundTurn(messageId) ?? reportedTurnId
-      }
-    }
-    trackMalformedStreamEvent(error, type, reportedTurnId, uiTreatment)
+    const uiTreatment = settleMalformedDoneEvent(type, turnId)
+    if (
+      trackMalformedStreamEvent(error, type, reportedTurnId, uiTreatment) &&
+      uiTreatment === 'error_overlay'
+    )
+      pushError(i18n.global.t('agent.malformedEvent'))
     console.warn('[agent] dropping malformed agent event', error)
   }
 
