@@ -7,6 +7,10 @@ interface CanvasViewport {
   readonly generation: number
 }
 
+interface CanvasViewportConsumer {
+  setViewportSize(width: number, height: number): void
+}
+
 let currentGeneration = 0
 const appliedViewportByCanvas = new WeakMap<HTMLCanvasElement, CanvasViewport>()
 
@@ -74,7 +78,8 @@ function measureViewportFromElement(
 function applyViewport(
   viewport: CanvasViewport,
   fg: HTMLCanvasElement,
-  bg: HTMLCanvasElement
+  bg: HTMLCanvasElement,
+  consumer?: CanvasViewportConsumer
 ): CanvasViewport {
   fg.width = viewport.physicalWidth
   fg.height = viewport.physicalHeight
@@ -87,6 +92,7 @@ function applyViewport(
 
   appliedViewportByCanvas.set(fg, viewport)
   appliedViewportByCanvas.set(bg, viewport)
+  consumer?.setViewportSize(viewport.cssWidth, viewport.cssHeight)
 
   currentGeneration = viewport.generation
   return viewport

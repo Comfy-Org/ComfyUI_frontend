@@ -1112,7 +1112,7 @@ export class ComfyApp {
   /** @deprecated Use {@link measureViewportFromElement} + {@link applyViewport} directly. */
   private resizeCanvas(canvas: HTMLCanvasElement) {
     const viewport = measureViewportFromElement(canvas)
-    applyViewport(viewport, canvas, this.canvas.bgcanvas)
+    applyViewport(viewport, canvas, this.canvas.bgcanvas, this.canvas.ds)
     this.canvas.dpr = viewport.dpr
     useCanvasScheduler().flush()
     this.canvas.draw(true, true)
@@ -1566,7 +1566,12 @@ export class ComfyApp {
           isCurrent: isCurrentLoad,
           run: () => {
             const viewport = measureViewportFromElement(this.canvasEl)
-            applyViewport(viewport, this.canvasEl, this.canvas.bgcanvas)
+            applyViewport(
+              viewport,
+              this.canvasEl,
+              this.canvas.bgcanvas,
+              this.canvas.ds
+            )
             this.canvas.dpr = viewport.dpr
             fitView()
             this.canvas.draw(true, true)

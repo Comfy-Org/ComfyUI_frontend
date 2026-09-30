@@ -149,6 +149,15 @@ describe('applyViewport', () => {
     expect(bg.height).toBe(1200)
   })
 
+  it('hands CSS dimensions to the viewport consumer', () => {
+    const vp = measureViewport(800, 600, 2, 0)
+    const consumer = { setViewportSize: vi.fn() }
+
+    applyViewport(vp, mockCanvas(), mockCanvas(), consumer)
+
+    expect(consumer.setViewportSize).toHaveBeenCalledWith(800, 600)
+  })
+
   it('scales both canvas contexts by DPR', () => {
     const vp = measureViewport(800, 600, 2, 0)
     const fg = mockCanvas()

@@ -6699,7 +6699,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     )
       return
 
-    applyViewport(viewport, this.canvas, this.bgcanvas)
+    applyViewport(viewport, this.canvas, this.bgcanvas, this.ds)
     this.dpr = viewport.dpr
     this.setDirty(true, true)
   }

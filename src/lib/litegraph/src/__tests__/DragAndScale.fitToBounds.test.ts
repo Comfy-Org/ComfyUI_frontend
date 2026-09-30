@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { DragAndScale } from '@/lib/litegraph/src/litegraph'
 
@@ -81,6 +81,19 @@ describe('DragAndScale.fitToBounds', () => {
     expect(dragAndScale.scale).toBeCloseTo(1.2)
     expect(dragAndScale.visible_area.width).toBeCloseTo(800 / 1.2)
     expect(dragAndScale.visible_area.height).toBeCloseTo(500 / 1.2)
+  })
+
+  it('uses the applied viewport size without reading layout each frame', () => {
+    const canvas = createCanvas(1600, 1200)
+    const dragAndScale = new DragAndScale(canvas)
+    const rectSpy = vi.spyOn(canvas, 'getBoundingClientRect')
+    dragAndScale.setViewportSize(800, 600)
+
+    dragAndScale.computeVisibleArea(undefined)
+
+    expect(rectSpy).not.toHaveBeenCalled()
+    expect(dragAndScale.visible_area.width).toBe(800)
+    expect(dragAndScale.visible_area.height).toBe(600)
   })
 
   it('centers and scales bounds inside the supplied viewport', () => {

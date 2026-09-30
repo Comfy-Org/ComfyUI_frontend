@@ -44,6 +44,7 @@ export class DragAndScale {
   visible_area: Rectangle
   dragging?: boolean
   viewport?: Rect
+  private viewportSize?: [number, number]
 
   onredraw?(das: DragAndScale): void
   onChanged?(scale: number, offset: Point): void
@@ -118,7 +119,13 @@ export class DragAndScale {
     visible_area.resizeBottomRight(endx, endy)
   }
 
+  setViewportSize(width: number, height: number): void {
+    this.viewportSize = [width, height]
+  }
+
   private getViewportSize(): [number, number] {
+    if (this.viewportSize) return this.viewportSize
+
     const rect = this.element.getBoundingClientRect()
     if (rect.width > 0 && rect.height > 0) {
       return [rect.width, rect.height]
