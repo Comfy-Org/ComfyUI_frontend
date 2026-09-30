@@ -407,8 +407,6 @@ describe('useAgentConversationStore', () => {
     store.startTurn(T1)
     store.ingest(delta('t1', 'partial'))
     store.stashActiveTurn()
-    // Hydrate first: it is the only path that marks the slot snapshot-derived,
-    // so the send below has a provenance to clear rather than an absent one.
     store.hydrate([
       historyRow(1, 'user', 'turn-a', 'go', 'u1'),
       {
@@ -423,8 +421,6 @@ describe('useAgentConversationStore', () => {
     store.resumeBackgroundTurn()
 
     expect(store.activeTurnId).toBe('t2')
-    // Still routable, not merely still flagged: the frames that follow have to
-    // reach it, which an orphaned transport could not deliver.
     store.ingest(delta('t2', ' and more'))
     store.ingest(done('t2'))
     const newer = store.messages.find((message) => message.id === 't2')

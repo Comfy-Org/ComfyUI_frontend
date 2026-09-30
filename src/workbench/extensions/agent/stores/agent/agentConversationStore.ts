@@ -67,11 +67,6 @@ export const useAgentConversationStore = defineStore(
      * `resumeBackgroundTurn` to settle on its way past: a turn this client
      * started is genuinely live, and a send can take the slot between the
      * hydrate and the resume.
-     *
-     * Written in exactly two places -- set where `hydrate()` installs its
-     * transport, cleared by `clearActive()` -- so `transport === null` implies
-     * `false` and every other install path is preceded by a clear. That is
-     * what keeps it from drifting out of step with the slot it describes.
      */
     let activeFromSnapshot = false
     // PM-1575: whether a newly-created transport should hold a tool-call's
@@ -477,10 +472,6 @@ export const useAgentConversationStore = defineStore(
     }
 
     /**
-     * PM-1575: flush what the discarded transport still holds rather than
-     * leaving it reachable only by its own STALE_AFTER_MS fallback.
-     */
-    /**
      * Whether the hydrated transcript already shows this settled turn, so the
      * entry has nothing left to contribute but the transport it is about to
      * hand over.
@@ -496,6 +487,10 @@ export const useAgentConversationStore = defineStore(
       )
     }
 
+    /**
+     * PM-1575: flush what the discarded transport still holds rather than
+     * leaving it reachable only by its own STALE_AFTER_MS fallback.
+     */
     function retireBackgroundTurn(
       entry: BackgroundTurn,
       resumedThreadId: string
