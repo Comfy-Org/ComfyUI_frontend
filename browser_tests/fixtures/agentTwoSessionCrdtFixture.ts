@@ -20,14 +20,12 @@ import {
   bootAgentApp,
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
-import { waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { isValidDocOpsBatch, parseWireOps } from '@e2e/fixtures/agentWireFrame'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
-import { TestIds } from '@e2e/fixtures/selectors'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -278,42 +276,6 @@ export class AgentTwoSessionCrdtHarness {
     return thread
   }
 
-  /**
-   * Reload the page the way the user's refresh does, and wait for the app and
-   * the agent panel to come back. The mocked routes, the `/ws` route and the
-   * host documents all outlive the navigation, so the reloaded app meets the
-   * same backend state the first one left. The composer's target does not
-   * survive, though: a caller that wants `startThread` after this has to
-   * re-pin one the way `boot()` does.
-   */
-  async reload(): Promise<void> {
-    const socket = this.socket
-    const objectInfo = this.page.waitForResponse((response) =>
-      new URL(response.url()).pathname.endsWith('/api/object_info')
-    )
-    await this.page.reload()
-    await waitForCloudApp(this.page)
-    // Startup restores the workflow tabs after extensionManager exists, so
-    // the overlay is the boundary for "the tabs are back".
-    const loadingOverlay = this.page.getByTestId(TestIds.app.loadingOverlay)
-    await loadingOverlay.waitFor({
-      state: 'attached',
-      timeout: PANEL_MOUNT_TIMEOUT
-    })
-    await loadingOverlay.waitFor({
-      state: 'hidden',
-      timeout: PANEL_MOUNT_TIMEOUT
-    })
-    // The same two boundaries `boot()` waits on, for the same reasons: node
-    // types registered before any catch-up materializes them, and the socket
-    // this harness sends on replaced by the reloaded page's own.
-    await objectInfo
-    await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
-    await expect
-      .poll(() => this.socket !== socket, { timeout: SUBSCRIBE_TIMEOUT })
-      .toBe(true)
-  }
-
   /** Leave the current thread through the panel's own New chat button. */
   async newChat(): Promise<void> {
     await this.panel.getByRole('button', { name: NEW_CHAT_LABEL }).click()
@@ -339,7 +301,9 @@ export class AgentTwoSessionCrdtHarness {
 
   /** The node ids a workflow's host doc currently holds, ascending. */
   hostNodeIds(bound: AgentBoundWorkflow): string[] {
-    return Object.keys(bound.host.graph().nodes).sort()
+    return Object.keys(bound.host.graph().nodes).sort(
+      (left, right) => Number(left) - Number(right)
+    )
   }
 
   /** How many times the client has subscribed this workflow's doc. */

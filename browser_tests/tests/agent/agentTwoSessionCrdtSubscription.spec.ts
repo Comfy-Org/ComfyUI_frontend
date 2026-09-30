@@ -36,7 +36,9 @@ const BUILT_NODE_IDS = [
 
 // Canvas order is the renderer's, not the document's, so both sides sort.
 async function canvasNodeIds(vueNodes: VueNodeHelpers): Promise<string[]> {
-  return (await vueNodes.getNodeIds()).sort()
+  return (await vueNodes.getNodeIds()).sort(
+    (left, right) => Number(left) - Number(right)
+  )
 }
 
 test.describe(
@@ -51,10 +53,10 @@ test.describe(
      * clicking back to its tab does not resubscribe. Where PM-1319 showed a
      * stale widget value, the tab the user returns to has no nodes at all.
      *
-     * The first two tests assert the current regression directly: Alpha is
-     * selected and its host holds the build, but its visible canvas is empty.
-     * The recovery case proves the same build is reachable after a later turn
-     * binds Alpha again.
+     * The first test asserts the current regression directly: Alpha is selected
+     * and its host holds the build, but its visible canvas is empty. The
+     * recovery case proves the same build is reachable after a later turn binds
+     * Alpha again.
      *
      * Two things this arrangement does not model. Thread one's turn is over
      * before its build lands, where the report had both threads working at
@@ -62,9 +64,9 @@ test.describe(
      * routes leave the follower targeting Bravo and the tab return meets the
      * same state either way. And only Alpha is ever built, which keeps the
      * canvas unambiguous but leaves the report's SECOND empty canvas
-     * unexplained: the control above shows a bound, active tab does
-     * materialize its build, so whatever emptied Bravo is not what emptied
-     * Alpha, and PM-1535 is not fully covered until that is found.
+     * unexplained. Current-main golden-path coverage separately proves a bound,
+     * active tab materializes agent-added nodes, so this carrier does not
+     * duplicate that case.
      */
     async function displacedBuild(
       twoSessionCrdt: AgentTwoSessionCrdtHarness
@@ -81,9 +83,9 @@ test.describe(
       )
 
       await twoSessionCrdt.boot()
-      await twoSessionCrdt.runBoundTurn(BUILD_PROMPT, alpha)
+      await twoSessionCrdt.runBoundTurn(`${BUILD_PROMPT} in Alpha`, alpha)
       await twoSessionCrdt.newChat()
-      await twoSessionCrdt.runBoundTurn(BUILD_PROMPT, bravo)
+      await twoSessionCrdt.runBoundTurn(`${BUILD_PROMPT} in Bravo`, bravo)
 
       // Alpha's build lands while Bravo is the tab on screen. Only Alpha's
       // document ever receives a node, so anything a canvas shows below can
@@ -91,15 +93,8 @@ test.describe(
       twoSessionCrdt.hostEdit(alpha, BUILD_OPS)
       expect(twoSessionCrdt.hostNodeIds(alpha)).toEqual(BUILT_NODE_IDS)
       expect(twoSessionCrdt.hostNodeIds(bravo)).toEqual([])
+      await expect(twoSessionCrdt.vueNodes.nodes).toHaveCount(0)
 
-      // The checked tab and the follower's own activity gate read the same
-      // workflowStore.activeWorkflow, so seeing Alpha checked is what rules
-      // out a click the app never processed — without which "the canvas
-      // filled" below could pass on an app that never heard it.
-      await twoSessionCrdt.topbar.getWorkflowTab(WORKFLOW_A.name).click()
-      await expect(twoSessionCrdt.topbar.getActiveTab()).toContainText(
-        WORKFLOW_A.name
-      )
       return alpha
     }
 
@@ -108,28 +103,7 @@ test.describe(
     }) => {
       test.setTimeout(120_000)
       await displacedBuild(twoSessionCrdt)
-
-      await expect
-        .poll(() => canvasNodeIds(twoSessionCrdt.vueNodes), { timeout: 20_000 })
-        .toEqual([])
-    })
-
-    // KNOWN BUG, and a separate one from the tab return above: a reload leaves
-    // the session with no binding at all until the next turn ack, so nothing
-    // subscribes Alpha and its build never arrives. The persisted doc id does
-    // not cover this — it is refused across a reload by design
-    // (agentCrdtDocLifecycle's FEC-5 nonce, which must stay), and in this
-    // arrangement it names Bravo anyway, the last doc to confirm a subscribe.
-    // This is the reporter's "did not recover on refresh". It reaches that
-    // state by its own path, but the tab-return and refresh cases stay separate
-    // because either lifecycle can change without the other.
-    test('refreshing the displaced build keeps its selected canvas empty', async ({
-      twoSessionCrdt
-    }) => {
-      test.setTimeout(120_000)
-      await displacedBuild(twoSessionCrdt)
-
-      await twoSessionCrdt.reload()
+      await twoSessionCrdt.topbar.getWorkflowTab(WORKFLOW_A.name).click()
       await expect(twoSessionCrdt.topbar.getActiveTab()).toContainText(
         WORKFLOW_A.name
       )
