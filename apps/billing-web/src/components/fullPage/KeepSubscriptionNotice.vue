@@ -13,7 +13,11 @@ export interface KeepSubscriptionConsent {
   readonly copy: KeepSubscriptionCopy
 }
 
-const { consent } = defineProps<{ consent: KeepSubscriptionConsent }>()
+const { consent, locked = false } = defineProps<{
+  consent: KeepSubscriptionConsent
+  /** Money is on its way: the tick it was sent with stands. */
+  locked?: boolean
+}>()
 
 const emit = defineEmits<{ confirm: [confirmed: boolean] }>()
 
@@ -47,12 +51,20 @@ watch(
       {{ consent.copy.title }}
     </p>
     <p class="m-0 text-sm/5 text-muted-foreground">{{ consent.copy.body }}</p>
-    <label class="flex cursor-pointer items-start gap-2 py-0.5">
+    <label
+      :class="
+        cn(
+          'flex items-start gap-2 py-0.5',
+          locked ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+        )
+      "
+    >
       <input
         ref="box"
         type="checkbox"
         class="peer sr-only"
         :checked="consent.state === 'confirmed'"
+        :disabled="locked"
         :aria-invalid="consent.state === 'invalid'"
         :aria-describedby="consent.state === 'invalid' ? errorId : undefined"
         @change="emit('confirm', ($event.target as HTMLInputElement).checked)"
