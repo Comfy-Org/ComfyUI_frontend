@@ -1,6 +1,7 @@
+import { until } from '@vueuse/core'
 import type { User } from 'firebase/auth'
 import { defineStore } from 'pinia'
-import { onScopeDispose, shallowRef, watch } from 'vue'
+import { computed, onScopeDispose, shallowRef, watch } from 'vue'
 
 import type {
   WebSessionAccountChange,
@@ -120,7 +121,9 @@ function createCloudIdentity(): WebSessionIdentity {
         currentUserId: async () => firebaseIdentity.currentUser()?.uid ?? null,
         getProof: async () =>
           (await firebaseIdentity.currentUser()?.getIdToken()) ?? null,
-        signOutLocally: () => firebaseIdentity.signOut()
+        signOutLocally: async () => {
+          if (firebaseIdentity.currentUser()) await firebaseIdentity.signOut()
+        }
       }
     },
     origin: window.location.origin,
@@ -142,12 +145,15 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
   let pendingSignIn: InteractiveSignIn | null = null
   let reread: WebSession | null = null
   let releaseRequests = () => {}
-  const signedInUserId = shallowRef<string>()
+  const state = shallowRef<WebSessionIdentityState>({ phase: 'idle' })
+  const signedInUser = computed(() =>
+    state.value.phase === 'signed_in' ? state.value.session.user : undefined
+  )
 
   watch(
     () =>
-      signedInUserId.value &&
-      JSON.stringify([signedInUserId.value, teamWorkspaceId()]),
+      signedInUser.value?.id &&
+      JSON.stringify([signedInUser.value.id, teamWorkspaceId()]),
     (socketScope) => {
       if (socketScope) void api.reconnectSocket()
     }
@@ -187,10 +193,9 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     if (!useFeatureFlags().flags.unifiedWebSessionEnabled) return false
     const session = createCloudIdentity()
     identity = session
-    session.subscribe((state) => {
+    session.subscribe((next) => {
       reread = null
-      signedInUserId.value =
-        state.phase === 'signed_in' ? state.session.user.id : undefined
+      state.value = next
     })
     const mint = createSessionTokenMint({
       ...sessionOptions(),
@@ -298,10 +303,20 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     })
   }
 
+  async function whenDecided(): Promise<'signed_in' | 'signed_out'> {
+    await until(state).toMatch(
+      ({ phase }) => phase === 'signed_in' || phase === 'signed_out'
+    )
+    return state.value.phase === 'signed_in' ? 'signed_in' : 'signed_out'
+  }
+
   return {
     start,
+    state,
+    signedInUser,
     isActive: () => identity !== null,
     whenReady: () => ready,
+    whenDecided,
     signedInInteractively,
     signOut
   }

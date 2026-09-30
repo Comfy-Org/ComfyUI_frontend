@@ -8,6 +8,7 @@ import { COMFY_CLIENT } from '@comfyorg/account-core/requestAuth'
 import { SessionTokenError } from '@comfyorg/account-core/sessionTokenMint'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import {
@@ -122,6 +123,15 @@ const USER_A = fromPartial<User>({
   getIdToken: async () => 'firebase-id-token'
 })
 
+const USER_B = fromPartial<User>({
+  uid: 'user-b',
+  email: 'user-b@example.com',
+  displayName: 'Firebase B',
+  photoURL: 'https://example.com/b.png',
+  providerData: [{ providerId: 'password' }],
+  getIdToken: async () => 'firebase-id-token-b'
+})
+
 type ServerSession = 'none' | 'revoked' | { userId: string }
 
 interface SessionRequest {
@@ -142,7 +152,8 @@ function sessionBody(userId: string) {
     user: {
       id: userId,
       email: `${userId}@example.com`,
-      email_verified: true
+      email_verified: true,
+      sign_in_provider: 'google.com'
     },
     csrf_token: `csrf-${userId}`,
     expires_at: new Date(Date.now() + 86_400_000).toISOString(),
@@ -150,7 +161,10 @@ function sessionBody(userId: string) {
   }
 }
 
-function installServer(initial: ServerSession) {
+function installServer(
+  initial: ServerSession,
+  features: Record<string, boolean> = {}
+) {
   const server = { session: initial, requests: [] as SessionRequest[] }
 
   const answerSession = (method: string): Response => {
@@ -175,7 +189,7 @@ function installServer(initial: ServerSession) {
       const url = new URL(String(input), location.href)
       const method = (init?.method ?? 'GET').toUpperCase()
       if (url.pathname === '/api/features') {
-        return jsonResponse({ unified_web_session: true })
+        return jsonResponse({ unified_web_session: true, ...features })
       }
       if (url.pathname !== '/api/auth/session') {
         return jsonResponse({ id: 'customer-1' }, 201)
@@ -1313,6 +1327,95 @@ describe.for([{ unified: false }, { unified: true }])(
 
       await expect(authStore.getWorkspaceAuthToken()).resolves.toBeUndefined()
       expect(ingest.mints).toBe(0)
+    })
+  }
+)
+
+describe.for([{ unified: false }, { unified: true }])(
+  'a tab that arrived on the session with no Firebase login (unified_cloud_auth $unified)',
+  ({ unified }) => {
+    const bootSessionOnly = async (
+      session: ServerSession = { userId: 'user-a' }
+    ) => {
+      const server = installServer(session, { unified_cloud_auth: unified })
+      await refreshRemoteConfig({ useAuth: false })
+      const authStore = useAuthStore()
+      const webSession = useCloudWebSessionStore()
+      expect(webSession.start()).toBe(true)
+      await webSession.whenReady()
+      server.requests.length = 0
+      return { server, authStore }
+    }
+
+    beforeEach(() => {
+      identity.reset()
+      firebaseSignOut.mockReset()
+      firebaseSignOut.mockImplementation(async () => identity.signOut())
+      vi.spyOn(api, 'resetSocket').mockResolvedValue()
+    })
+
+    afterEach(() => {
+      remoteConfig.value = {}
+    })
+
+    it('takes its identity from the session', async () => {
+      const { authStore } = await bootSessionOnly()
+      const user = useCurrentUser()
+
+      expect(authStore.currentUser).toBeNull()
+      expect(authStore.isAuthenticated).toBe(true)
+      expect(authStore.userId).toBe('user-a')
+      expect(authStore.userEmail).toBe('user-a@example.com')
+      expect(authStore.currentUserIdentity()).toBe('user-a')
+      expect(user.isLoggedIn.value).toBe(true)
+      expect(user.isApiKeyLogin.value).toBe(false)
+      expect(user.resolvedUserInfo.value).toEqual({ id: 'user-a' })
+      expect(user.userEmail.value).toBe('user-a@example.com')
+      expect(user.providerName.value).toBe('Google')
+      expect(user.providerIcon.value).toBe('pi pi-google')
+    })
+
+    it('is signed out until the session says otherwise', async () => {
+      const { authStore } = await bootSessionOnly('none')
+
+      expect(authStore.isAuthenticated).toBe(false)
+      expect(useCurrentUser().isLoggedIn.value).toBe(false)
+      expect(useCurrentUser().resolvedUserInfo.value).toBeNull()
+    })
+
+    it('prefers the session over a different Firebase user', async () => {
+      firebaseSignOut.mockResolvedValue()
+      const server = installServer({ userId: 'user-a' })
+      await refreshRemoteConfig({ useAuth: false })
+      const authStore = useAuthStore()
+      identity.signIn(USER_B)
+      const webSession = useCloudWebSessionStore()
+      webSession.start()
+      await webSession.whenReady()
+      const user = useCurrentUser()
+
+      expect(server.requests.map(({ method }) => method)).toEqual(['GET'])
+      expect(authStore.userId).toBe('user-a')
+      expect(authStore.userEmail).toBe('user-a@example.com')
+      expect(authStore.currentUserIdentity()).toBe('user-a')
+      expect(user.resolvedUserInfo.value).toEqual({ id: 'user-a' })
+      expect(user.userEmail.value).toBe('user-a@example.com')
+      expect(user.userDisplayName.value).toBeUndefined()
+      expect(user.userPhotoUrl.value).toBeUndefined()
+      expect(user.isEmailProvider.value).toBe(false)
+    })
+
+    it('signs out on the session alone', async () => {
+      const { server, authStore } = await bootSessionOnly()
+
+      await authStore.logout()
+
+      expect(server.requests).toEqual([
+        { method: 'DELETE', authorization: null, credentials: 'include' }
+      ])
+      expect(firebaseSignOut).not.toHaveBeenCalled()
+      expect(useCurrentUser().isLoggedIn.value).toBe(false)
+      expect(authStore.isAuthenticated).toBe(false)
     })
   }
 )

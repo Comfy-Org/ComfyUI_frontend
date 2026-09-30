@@ -137,9 +137,14 @@ export const useAuthStore = defineStore('auth', () => {
   const buildApiUrl = (path: string) => `${getComfyApiBaseUrl()}${path}`
 
   // Getters
-  const isAuthenticated = computed(() => !!currentUser.value)
-  const userEmail = computed(() => currentUser.value?.email)
-  const userId = computed(() => currentUser.value?.uid)
+  const sessionUser = computed(() => useCloudWebSessionStore().signedInUser)
+  const isAuthenticated = computed(
+    () => !!currentUser.value || !!sessionUser.value
+  )
+  const userEmail = computed(
+    () => sessionUser.value?.email ?? currentUser.value?.email
+  )
+  const userId = computed(() => sessionUser.value?.id ?? currentUser.value?.uid)
 
   function getShareAuthMetadata() {
     const shareId = getPreservedQueryParam(
@@ -334,7 +339,9 @@ export const useAuthStore = defineStore('auth', () => {
       : await getFirebaseAuthHeader()
 
   const currentUserIdentity = (): string | null =>
-    currentUser.value?.uid ?? useApiKeyAuthStore().getApiKey()
+    sessionUser.value?.id ??
+    currentUser.value?.uid ??
+    useApiKeyAuthStore().getApiKey()
 
   /**
    * Response data from a user-scoped endpoint belongs to the identity that
@@ -772,7 +779,7 @@ export const useAuthStore = defineStore('auth', () => {
   const logout = async (): Promise<void> =>
     executeAuthAction(async () => {
       await useCloudWebSessionStore().signOut()
-      await firebaseIdentity.signOut()
+      if (currentUser.value) await firebaseIdentity.signOut()
     })
 
   const sendPasswordReset = async (email: string): Promise<void> =>
@@ -888,6 +895,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     // Getters
     isAuthenticated,
+    sessionUser,
     userEmail,
     userId,
 
