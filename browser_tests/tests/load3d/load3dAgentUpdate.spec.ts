@@ -116,6 +116,7 @@ test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
       expect(panelBox.x + panelBox.width).toBeLessThanOrEqual(401)
     }).toPass({ timeout: 5000 })
 
+    await page.setViewportSize({ width: 1280, height: 800 })
     await viewer.cancelButton.click()
     await viewer.waitForClosed()
 
