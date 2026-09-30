@@ -4,6 +4,7 @@ import {
   CAPABILITIES_ROUTE,
   CREDITS_ROUTE,
   PAYMENT_METHODS_ROUTE,
+  PREVIEW_SUBSCRIBE_ROUTE,
   RESUBSCRIBE_ROUTE,
   SUBSCRIBE_ROUTE,
   TOPUP_ROUTE,
@@ -20,6 +21,7 @@ import type { User } from 'firebase/auth'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, effectScope } from 'vue'
 
+import type { SubscriptionInfo } from '@/composables/billing/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { i18n } from '@/i18n'
@@ -30,8 +32,10 @@ import type {
   WorkspaceWithRole
 } from '@/platform/workspace/api/workspaceApi'
 import TopUpCreditsDialogContentWorkspace from '@/platform/workspace/components/TopUpCreditsDialogContentWorkspace.vue'
+import { useDowngradeToPersonal } from '@/platform/workspace/composables/useDowngradeToPersonal'
 import { useSubscriptionCheckout } from '@/platform/workspace/composables/useSubscriptionCheckout'
 import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspaceBilling'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -90,6 +94,41 @@ const STANDARD_YEARLY: Plan = {
     seat_count: 1,
     total_cost_cents: 1600,
     total_credits_cents: 4200
+  }
+}
+
+const ACTIVE_SUBSCRIPTION: SubscriptionInfo = {
+  isActive: true,
+  tier: 'PRO',
+  duration: 'MONTHLY',
+  planSlug: 'pro-monthly',
+  scheduledChange: null,
+  renewalDate: null,
+  endDate: null,
+  isCancelled: false,
+  hasFunds: true
+}
+
+const DOWNGRADE_PREVIEW = {
+  allowed: true,
+  transition_type: 'downgrade',
+  effective_at: '2026-10-01T00:00:00.000Z',
+  is_immediate: true,
+  cost_today_cents: 0,
+  cost_next_period_cents: 1600,
+  credits_today_cents: 0,
+  credits_next_period_cents: 4200,
+  new_plan: {
+    slug: 'standard-yearly',
+    tier: 'STANDARD',
+    duration: 'ANNUAL',
+    price_cents: 1600,
+    credits_cents: 4200,
+    seat_summary: {
+      seat_count: 1,
+      total_cost_cents: 1600,
+      total_credits_cents: 4200
+    }
   }
 }
 
@@ -166,6 +205,19 @@ function rejected(route: string): readonly ServerRoute[] {
         body: { code: 'OUTSTANDING_INVOICE', message: 'Settle the invoice' }
       }
     ]
+  ]
+}
+
+function alreadyHeld(route: string, code: string): readonly ServerRoute[] {
+  return [
+    ['POST', route, { status: 409, body: { code, message: 'Already there' } }]
+  ]
+}
+
+function previewed(routes: readonly ServerRoute[]): readonly ServerRoute[] {
+  return [
+    ...routes,
+    ['POST', PREVIEW_SUBSCRIBE_ROUTE, { status: 200, body: DOWNGRADE_PREVIEW }]
   ]
 }
 
@@ -265,6 +317,28 @@ async function driveCheckoutSubscribe() {
   await checkout.handleConfirmTransition()
 }
 
+async function driveLegacyStripeCheckoutSubscribe() {
+  useTeamWorkspaceStore().setWorkspaceBillingRail('ws-1', 'legacy_stripe')
+  await driveCheckoutSubscribe()
+}
+
+async function driveDowngrade() {
+  const billing = workspaceBilling()
+  Object.assign(useBillingContext(), {
+    subscribe: billing.subscribe,
+    previewSubscribe: billing.previewSubscribe,
+    subscription: computed(() => ACTIVE_SUBSCRIPTION)
+  })
+  const { permissions } = useWorkspaceUI()
+  useWorkspaceUI().permissions = computed(() => ({
+    ...permissions.value,
+    canDowngradeToPersonal: true
+  }))
+  await useDowngradeToPersonal()
+    .downgradeToPersonal('standard-yearly')
+    .catch(() => undefined)
+}
+
 async function driveTopupDialog() {
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
   render(TopUpCreditsDialogContentWorkspace, {
@@ -289,15 +363,34 @@ async function driveTopupDialog() {
   )
 }
 
-function operationStages() {
+function operationEvents() {
   const telemetry = useTelemetry()
   assert.exists(telemetry)
-  return vi
-    .mocked(telemetry.trackBillingEvent)
-    .mock.calls.flatMap(([event]) =>
-      event.operation === 'operation' ? [event.stage] : []
-    )
+  return vi.mocked(telemetry.trackBillingEvent).mock.calls.flatMap(([event]) =>
+    event.operation === 'operation'
+      ? [
+          {
+            stage: event.stage,
+            ...(event.billing_op_id === undefined
+              ? {}
+              : { billing_op_id: event.billing_op_id }),
+            ...('failure_category' in event
+              ? { failure_category: event.failure_category }
+              : {})
+          }
+        ]
+      : []
+  )
 }
+
+const STARTED = { stage: 'started' } as const
+const SUCCEEDED = { stage: 'succeeded', billing_op_id: 'op-1' } as const
+const DECLINED = {
+  stage: 'failed',
+  billing_op_id: 'op-1',
+  failure_category: 'provider_decline'
+} as const
+const REFUSED = { stage: 'failed', failure_category: 'api_rejected' } as const
 
 describe('billing operation telemetry ownership on the SDK rail', () => {
   it.for([
@@ -309,7 +402,7 @@ describe('billing operation telemetry ownership on the SDK rail', () => {
         { status: 'succeeded' }
       ),
       drive: driveWorkspaceBilling('cancelSubscription'),
-      terminal: 'succeeded'
+      expected: [STARTED, SUCCEEDED]
     },
     {
       name: 'cancel settles failed after issue',
@@ -319,13 +412,26 @@ describe('billing operation telemetry ownership on the SDK rail', () => {
         { status: 'failed', decline_reason: 'generic' }
       ),
       drive: driveWorkspaceBilling('cancelSubscription'),
-      terminal: 'failed'
+      expected: [
+        STARTED,
+        {
+          stage: 'failed',
+          billing_op_id: 'op-1',
+          failure_category: 'api_rejected'
+        }
+      ]
     },
     {
       name: 'cancel is rejected before any operation exists',
       routes: rejected(CANCEL_SUBSCRIPTION_ROUTE),
       drive: driveWorkspaceBilling('cancelSubscription'),
-      terminal: 'failed'
+      expected: [STARTED, REFUSED]
+    },
+    {
+      name: 'cancel finds the subscription already cancelled',
+      routes: alreadyHeld(CANCEL_SUBSCRIPTION_ROUTE, 'ALREADY_CANCELED'),
+      drive: driveWorkspaceBilling('cancelSubscription'),
+      expected: [STARTED, { stage: 'succeeded' }]
     },
     {
       name: 'subscribe succeeds',
@@ -335,7 +441,7 @@ describe('billing operation telemetry ownership on the SDK rail', () => {
         { status: 'succeeded' }
       ),
       drive: driveCheckoutSubscribe,
-      terminal: 'succeeded'
+      expected: [STARTED, SUCCEEDED]
     },
     {
       name: 'subscribe settles declined',
@@ -345,13 +451,47 @@ describe('billing operation telemetry ownership on the SDK rail', () => {
         { status: 'failed', decline_reason: 'card_declined', retryable: true }
       ),
       drive: driveCheckoutSubscribe,
-      terminal: 'failed'
+      expected: [STARTED, DECLINED]
     },
     {
       name: 'subscribe is rejected before any operation exists',
       routes: rejected(SUBSCRIBE_ROUTE),
       drive: driveCheckoutSubscribe,
-      terminal: 'failed'
+      expected: [STARTED, REFUSED]
+    },
+    {
+      name: 'a checkout that reports no started subscribes',
+      routes: issuedThenSettled(
+        SUBSCRIBE_ROUTE,
+        { status: 'pending_payment' },
+        { status: 'succeeded' }
+      ),
+      drive: driveLegacyStripeCheckoutSubscribe,
+      expected: [STARTED, SUCCEEDED]
+    },
+    {
+      name: 'downgrade to personal succeeds',
+      routes: previewed(
+        issuedThenSettled(
+          SUBSCRIBE_ROUTE,
+          { status: 'pending_payment' },
+          { status: 'succeeded' }
+        )
+      ),
+      drive: driveDowngrade,
+      expected: [STARTED, SUCCEEDED]
+    },
+    {
+      name: 'downgrade to personal settles declined',
+      routes: previewed(
+        issuedThenSettled(
+          SUBSCRIBE_ROUTE,
+          { status: 'pending_payment' },
+          { status: 'failed', decline_reason: 'card_declined', retryable: true }
+        )
+      ),
+      drive: driveDowngrade,
+      expected: [STARTED, DECLINED]
     },
     {
       name: 'resubscribe succeeds',
@@ -361,7 +501,7 @@ describe('billing operation telemetry ownership on the SDK rail', () => {
         { status: 'succeeded' }
       ),
       drive: driveWorkspaceBilling('resubscribe'),
-      terminal: 'succeeded'
+      expected: [STARTED, SUCCEEDED]
     },
     {
       name: 'top-up succeeds',
@@ -371,17 +511,17 @@ describe('billing operation telemetry ownership on the SDK rail', () => {
         { status: 'succeeded' }
       ),
       drive: driveTopupDialog,
-      terminal: 'succeeded'
+      expected: [STARTED, SUCCEEDED]
     }
   ] as const)(
     'reports one started and one terminal operation event when $name',
-    async ({ routes, drive, terminal }) => {
+    async ({ routes, drive, expected }) => {
       server.script(routes)
 
       await drive()
 
       expect(server.unanswered).toEqual([])
-      expect(operationStages()).toEqual(['started', terminal])
+      expect(operationEvents()).toEqual(expected)
     }
   )
 })

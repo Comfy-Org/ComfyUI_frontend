@@ -3011,7 +3011,8 @@ describe('useSubscriptionCheckout', () => {
         billingCycle: 'monthly',
         returnUrl: 'https://app.test/subscribe',
         cancelUrl: 'https://platform.comfy.org/payment/failed',
-        confirmReactivation: false
+        confirmReactivation: false,
+        attemptStartedAt: expect.any(Number)
       })
       expect(checkout.checkoutStep.value).toBe('success')
       expect(useTelemetry()?.trackBeginCheckout).toHaveBeenCalledWith(
@@ -4328,7 +4329,8 @@ describe('useSubscriptionCheckout', () => {
       expect(mockSubscribe).toHaveBeenCalledWith('standard-yearly', {
         returnUrl: 'https://app.test/subscribe',
         cancelUrl: 'https://platform.comfy.org/payment/failed',
-        confirmReactivation: false
+        confirmReactivation: false,
+        attemptStartedAt: expect.any(Number)
       })
       expect(checkout.checkoutStep.value).toBe('success')
       expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
