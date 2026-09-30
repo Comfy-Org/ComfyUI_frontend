@@ -120,39 +120,6 @@ function renderComponent(props: Record<string, unknown> = {}) {
 
 beforeEach(() => {
   mockApiPlans.value = []
-  const billingContext = useBillingContext()
-  billingContext.plans = computed(() => mockApiPlans.value)
-  billingContext.currentPlanSlug = computed(() => mockCurrentPlanSlug.value)
-  billingContext.isTeamPlan = computed(() => mockIsTeamPlan.value)
-  billingContext.subscription = computed(() =>
-    mockSubscription.value
-      ? {
-          isActive: true,
-          duration: null,
-          planSlug: null,
-          scheduledChange: null,
-          renewalDate: null,
-          endDate: null,
-          isCancelled: false,
-          hasFunds: true,
-          agentHasFunds: true,
-          ...mockSubscription.value
-        }
-      : null
-  )
-  billingContext.subscriptionStatus = computed(
-    () => mockSubscriptionStatus.value
-  )
-  billingContext.currentTeamCreditStop = computed(
-    () => mockCurrentTeamCreditStop.value
-  )
-  vi.mocked(useBillingContext).mockReturnValue(billingContext)
-  const workspaceUI = vi.mocked(useWorkspaceUI())
-  const defaultPermissions = workspaceUI.permissions.value
-  workspaceUI.permissions = computed(() => ({
-    ...defaultPermissions,
-    ...mockPermissions.value
-  }))
 })
 
 describe('UnifiedPricingTable plan CTA labels', () => {

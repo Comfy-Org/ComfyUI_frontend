@@ -4,6 +4,8 @@ import type {
   AgentConsentOfferExitedMetadata,
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
+  AgentPaywallCtaMetadata,
+  AgentPaywallShownMetadata,
   AgentEntryButtonClickedMetadata,
   AgentErrorMetadata,
   AgentMessageSentMetadata,
@@ -203,6 +205,16 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackCheckoutJourneyEvent(event: CheckoutJourneyTelemetryEvent): void {
     this.dispatch((provider) => provider.trackCheckoutJourneyEvent?.(event))
+  }
+
+  trackAgentPaywallShown(metadata: AgentPaywallShownMetadata): void {
+    this.dispatch((provider) => provider.trackAgentPaywallShown?.(metadata))
+  }
+
+  trackAgentPaywallCtaClicked(metadata: AgentPaywallCtaMetadata): void {
+    this.dispatch((provider) =>
+      provider.trackAgentPaywallCtaClicked?.(metadata)
+    )
   }
 
   trackRunButton(properties: RunButtonProperties): void {

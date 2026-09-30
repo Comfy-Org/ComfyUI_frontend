@@ -201,49 +201,6 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.shouldUseWorkspaceBilling = true
     state.hostedBillingDestination = 'stripe'
     state.billingWebUrl = new URL('http://localhost:5174')
-    const billingContext = useBillingContext()
-    billingContext.billingStatus = computed(() => state.billingStatus)
-    billingContext.canAccessSubscriptionFeatures = computed(
-      () => state.canAccessSubscriptionFeatures
-    )
-    billingContext.subscription = computed(
-      () =>
-        ({
-          isActive: true,
-          tier: null,
-          duration: null,
-          isCancelled: state.isCancelled,
-          planSlug: state.planSlug,
-          scheduledChange: null,
-          renewalDate: null,
-          endDate: null,
-          hasFunds: true,
-          agentHasFunds: true
-        }) satisfies SubscriptionInfo
-    )
-    billingContext.balance = computed(
-      () => ({ amountMicros: 100, currency: 'USD' }) satisfies BalanceInfo
-    )
-    billingContext.isLoading = ref(false)
-    vi.mocked(useBillingContext).mockReturnValue(billingContext)
-    const workspaceUI = vi.mocked(useWorkspaceUI())
-    workspaceUI.permissions = computed(() => ({
-      canViewOtherMembers: false,
-      canViewPendingInvites: false,
-      canLeaveWorkspace: false,
-      canAccessWorkspaceMenu: false,
-      canManageSubscription: state.canManageSubscription,
-      canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle,
-      canDowngradeToPersonal: false
-    }))
-    workspaceUI.canReactivatePlan = computed(() => state.canReactivatePlan)
-    workspaceUI.canOpenPricingSurface = computed(
-      () => state.canOpenPricingSurface
-    )
-    const billingRouting = vi.mocked(useBillingRouting())
-    billingRouting.shouldUseWorkspaceBilling = computed(
-      () => state.shouldUseWorkspaceBilling
-    )
   })
 
   it('toggles the workspace switcher panel from the selector row', async () => {

@@ -11,6 +11,8 @@ import type {
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
   AgentStarterPromptClickedMetadata,
+  AgentPaywallCtaMetadata,
+  AgentPaywallShownMetadata,
   AgentWorkflowAppliedMetadata,
   BillingTelemetryEvent,
   CheckoutJourneyTelemetryEvent,
@@ -446,6 +448,18 @@ describe('TelemetryRegistry', () => {
         expected: { reason: 'app_mode' },
         invoke: (registry) =>
           registry.trackAgentOnboardingNotShown({ reason: 'app_mode' })
+      },
+      {
+        method: 'trackAgentPaywallShown',
+        expected: { ...paywallShownMetadata },
+        invoke: (registry) =>
+          registry.trackAgentPaywallShown(paywallShownMetadata)
+      },
+      {
+        method: 'trackAgentPaywallCtaClicked',
+        expected: { ...paywallCtaMetadata },
+        invoke: (registry) =>
+          registry.trackAgentPaywallCtaClicked(paywallCtaMetadata)
       }
     ]
 

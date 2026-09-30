@@ -108,27 +108,6 @@ describe('useWorkspaceUI', () => {
     const { useBillingCapabilities } =
       await import('@/platform/workspace/composables/useBillingCapabilities')
 
-    const billingContext = useBillingContext()
-    billingContext.canAccessSubscriptionFeatures = computed(
-      () => mockIsActiveSubscription.value
-    )
-    billingContext.isTeamPlan = computed(() => mockIsTeamPlan.value)
-    billingContext.subscription = computed(() => ({
-      isActive: true,
-      tier: null,
-      duration: null,
-      planSlug: null,
-      scheduledChange: null,
-      renewalDate: null,
-      endDate: null,
-      hasFunds: true,
-      agentHasFunds: true,
-      isCancelled: mockIsCancelled.value
-    }))
-    vi.mocked(useBillingContext).mockReturnValue(billingContext)
-    useBillingRouting().shouldUseWorkspaceBilling = computed(
-      () => mockShouldUseWorkspaceBilling.value
-    )
     useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
   })
 

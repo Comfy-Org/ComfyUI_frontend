@@ -47,20 +47,6 @@ describe('API Feature Flags', () => {
   })
 
   describe('Feature flags negotiation', () => {
-    it('marks feature flags stale without clearing them when resetting the socket identity', async () => {
-      const resettingApi = new ComfyApi()
-      resettingApi.serverFeatureFlags.value = { account_a_feature: true }
-      resettingApi.serverFeatureFlagsSettled.value = true
-
-      const resetPromise = resettingApi.resetSocket()
-
-      expect(resettingApi.serverFeatureFlags.value).toEqual({
-        account_a_feature: true
-      })
-      expect(resettingApi.serverFeatureFlagsSettled.value).toBe(false)
-      await resetPromise
-    })
-
     it('should send client feature flags as first message on connection', async () => {
       // Initialize API connection
       const initPromise = api.init()

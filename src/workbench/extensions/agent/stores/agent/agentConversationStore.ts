@@ -91,6 +91,7 @@ export const useAgentConversationStore = defineStore(
       string,
       Extract<UndeliverableAskReason, 'no-live-turn' | 'settled-turn'>
     >()
+    const reportedPaywallImpressions = new Set<TurnId>()
     const activeIndex = ref(-1)
 
     function replaceActive(message: AssistantMessage): void {
@@ -163,6 +164,12 @@ export const useAgentConversationStore = defineStore(
         }
       }
       resolvedPaywallIds.value = resolved
+    }
+
+    function claimPaywallImpression(turnId: TurnId): boolean {
+      if (reportedPaywallImpressions.has(turnId)) return false
+      reportedPaywallImpressions.add(turnId)
+      return true
     }
 
     function startTurn(turnId: TurnId): void {
@@ -506,6 +513,7 @@ export const useAgentConversationStore = defineStore(
       hydratedAssistantTurnIds = new Set()
       undeliverableAskReporter.reset()
       departedTurns.clear()
+      reportedPaywallImpressions.clear()
       clearActive()
     }
 
@@ -593,6 +601,7 @@ export const useAgentConversationStore = defineStore(
       recordFailedSend,
       recordPaywall,
       resolvePaywalls,
+      claimPaywallImpression,
       startTurn,
       ingest,
       setCanvasSyncGate,

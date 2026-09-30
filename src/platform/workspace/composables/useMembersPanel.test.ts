@@ -442,56 +442,6 @@ describe('useMembersPanel', () => {
   let pinia: Pinia
 
   beforeEach(() => {
-    const workspaceUI = vi.mocked(useWorkspaceUI())
-    const defaultPermissions = workspaceUI.permissions.value
-    workspaceUI.permissions = computed(() => ({
-      ...defaultPermissions,
-      ...mockPermissions.value
-    }))
-    const defaultUiConfig = workspaceUI.uiConfig.value
-    workspaceUI.uiConfig = computed(() => ({
-      ...defaultUiConfig,
-      ...mockUiConfig.value,
-      workspaceMenuAction:
-        mockUiConfig.value.workspaceMenuAction === 'delete' ? 'delete' : null
-    }))
-    workspaceUI.workspaceRole = computed(() => mockWorkspaceRole.value)
-    const billingContext = useBillingContext()
-    billingContext.canAccessSubscriptionFeatures = computed(
-      () => mockCanAccessSubscriptionFeatures.value
-    )
-    billingContext.isInitialized = mockIsInitialized
-    billingContext.isTeamPlan = computed(() => mockIsTeamPlan.value)
-    billingContext.subscription = computed(() =>
-      mockSubscription.value
-        ? {
-            isActive: true,
-            duration: null,
-            planSlug: null,
-            scheduledChange: null,
-            renewalDate: null,
-            endDate: null,
-            hasFunds: true,
-            agentHasFunds: true,
-            ...mockSubscription.value
-          }
-        : null
-    )
-    billingContext.subscriptionStatus = computed(
-      () => mockSubscriptionStatus.value
-    )
-    billingContext.maxSeats = computed(() => mockMaxSeats.value)
-    billingContext.occupiedSeats = computed(() => mockOccupiedSeats.value)
-    vi.mocked(billingContext.getMaxSeats).mockImplementation((tierKey) => {
-      const seats: Record<string, number> = {
-        free: 1,
-        standard: 1,
-        creator: 5,
-        pro: 20
-      }
-      return seats[tierKey] ?? 1
-    })
-    vi.mocked(useBillingContext).mockReturnValue(billingContext)
     useCurrentUser().userPhotoUrl = computed(() => null)
     useCurrentUser().userEmail = computed(() => 'owner@example.com')
     useCurrentUser().userDisplayName = computed(() => 'Owner User')
