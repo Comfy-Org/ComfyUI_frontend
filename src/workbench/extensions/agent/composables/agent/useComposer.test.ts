@@ -13,7 +13,7 @@ assert.exists(telemetryProvider)
 const telemetry = vi.mocked(telemetryProvider)
 
 const CHIP: AgentStarterPromptAttribution = {
-  promptId: 'list_workflows',
+  promptId: 'slot_2',
   promptIndex: 1,
   promptCount: 5,
   promptTextHash: 'deadbeef',
@@ -147,7 +147,7 @@ describe('useComposer', () => {
     composer.insert('List my saved workflows', CHIP)
 
     expect(telemetry.trackAgentStarterPromptClicked).toHaveBeenCalledWith({
-      prompt_id: 'list_workflows',
+      prompt_id: 'slot_2',
       prompt_index: 1,
       prompt_count: 5,
       prompt_text_hash: 'deadbeef',
@@ -158,7 +158,7 @@ describe('useComposer', () => {
     const [[event]] = telemetry.trackAgentStarterPromptClicked.mock.calls
     expect(store.promptOrigin).toBe('suggestion')
     expect(store.starterPrompt).toEqual({
-      id: 'list_workflows',
+      id: 'slot_2',
       clickId: event.click_id
     })
   })
