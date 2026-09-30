@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
 import Button from '@/components/ui/button/Button.vue'
 import InfoTooltip from '@/components/ui/tooltip/InfoTooltip.vue'
 import type { DepthState } from '../../../../composables/useReshoot'
@@ -18,11 +16,9 @@ import { fileSecondsOf } from '../../../../lib/workshop/cinematic-studio/reshoot
 import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
 import type { Locale } from '../../../../i18n/translations'
 import CinematicGenerateAction from '../CinematicGenerateAction.vue'
-import ReshootAimPending from './ReshootAimPending.vue'
-import ReshootAimRig from './ReshootAimRig.vue'
+import ReshootAimArea from './ReshootAimArea.vue'
 import ReshootDisclosure from './ReshootDisclosure.vue'
 import ReshootFormat from './ReshootFormat.vue'
-import ReshootMoveControls from './ReshootMoveControls.vue'
 
 const {
   clip,
@@ -93,7 +89,6 @@ const prompt = defineModel<string>('prompt', { required: true })
 
 const ready = computed(() => depth === 'ready')
 const analyzing = computed(() => depth === 'analyzing')
-const pendingDepth = computed(() => (depth === 'ready' ? undefined : depth))
 const framesText = computed(() =>
   frames === undefined
     ? ''
@@ -102,6 +97,13 @@ const framesText = computed(() =>
         seconds: (frames / 24).toFixed(1)
       })
 )
+
+const clipStatus = computed(() => {
+  if (clipError) return clipError
+  if (ready.value)
+    return `${rc('reshoot.clip.ready', locale)} · ${framesText.value}`
+  return analyzing.value ? rc('reshoot.aim.reading', locale) : framesText.value
+})
 
 // A replacement is checked before it takes the current clip's place, as on
 // the first pick: one outside 5 to 15 seconds is turned away and the clip
@@ -149,14 +151,7 @@ async function choose(event: Event) {
             {{ isExample ? rc('reshoot.pick.exampleTitle', locale) : clipName }}
           </span>
           <span class="truncate text-[11px] text-primary-warm-gray">
-            {{
-              clipError ??
-              (ready
-                ? `${rc('reshoot.clip.ready', locale)} · ${framesText}`
-                : analyzing
-                  ? rc('reshoot.aim.reading', locale)
-                  : framesText)
-            }}
+            {{ clipStatus }}
           </span>
         </span>
         <label
@@ -179,42 +174,19 @@ async function choose(event: Event) {
       >
         {{ rejected }}
       </p>
-      <div class="grid">
-        <div
-          :class="
-            cn(
-              'col-start-1 row-start-1 flex flex-col gap-2 transition-[opacity,visibility] motion-safe:duration-300',
-              !ready && 'invisible opacity-0'
-            )
-          "
-          :inert="!ready"
-          data-testid="reshoot-aim-controls"
-        >
-          <ReshootAimRig
-            v-model:keep-aim="keepAim"
-            :clip
-            :camera
-            :locale
-            @aim="emit('aim', $event)"
-          />
-          <ReshootDisclosure :label="rc('reshoot.section.move', locale)">
-            <ReshootMoveControls
-              v-model:frame="frame"
-              :keys
-              :locale
-              @remove="emit('removeKey', $event)"
-            />
-          </ReshootDisclosure>
-        </div>
-        <ReshootAimPending
-          v-if="pendingDepth"
-          :depth="pendingDepth"
-          :reason="pendingDepth === 'failed' ? error : blocked"
-          :locale
-          class="col-start-1 row-start-1 self-start"
-          @retry="emit('analyze')"
-        />
-      </div>
+      <ReshootAimArea
+        v-model:keep-aim="keepAim"
+        v-model:frame="frame"
+        :clip
+        :camera
+        :keys
+        :depth
+        :reason="depth === 'failed' ? error : blocked"
+        :locale
+        @aim="emit('aim', $event)"
+        @remove-key="emit('removeKey', $event)"
+        @analyze="emit('analyze')"
+      />
       <div class="flex flex-col gap-2">
         <ReshootDisclosure :label="rc('reshoot.advanced', locale)">
           <div class="flex flex-col gap-3">
