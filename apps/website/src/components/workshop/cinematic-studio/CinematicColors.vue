@@ -1,19 +1,20 @@
 <script setup lang="ts">
 import { Plus, Star, X } from '@lucide/vue'
-import { nextTick, useTemplateRef } from 'vue'
+import { ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Locale } from '../../../i18n/translations'
 import { MAX_COLORS } from '../../../lib/workshop/cinematic-studio/colors'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import CinematicColorPicker from './CinematicColorPicker.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const colors = defineModel<readonly string[]>({ required: true })
 const main = defineModel<number | undefined>('main')
 
-const swatches = useTemplateRef<HTMLElement>('swatches')
+const active = ref(0)
 
 const t = (key: Parameters<typeof tc>[0]) => tc(key, locale)
 
@@ -23,17 +24,15 @@ function setColor(index: number, value: string) {
 
 function remove(index: number) {
   colors.value = colors.value.filter((_, at) => at !== index)
+  active.value = Math.min(active.value, colors.value.length - 1)
   if (main.value === index) main.value = undefined
   else if (main.value !== undefined && main.value > index) main.value -= 1
 }
 
-async function add() {
+function add() {
   if (colors.value.length >= MAX_COLORS) return
   colors.value = [...colors.value, colors.value.at(-1) ?? '#808080']
-  await nextTick()
-  swatches.value
-    ?.querySelectorAll<HTMLInputElement>('input[type="color"]')
-    [colors.value.length - 1]?.click()
+  active.value = colors.value.length - 1
 }
 
 function toggleMain(index: number) {
@@ -49,7 +48,7 @@ function clear() {
 <template>
   <section
     :aria-label="t('cinematic.colors.title')"
-    class="flex flex-col gap-2 rounded-xl border border-transparency-white-t8 p-2.5"
+    class="flex flex-col gap-3 rounded-xl bg-transparency-white-t4 p-3"
   >
     <div class="flex items-center justify-between gap-2">
       <span
@@ -69,25 +68,21 @@ function clear() {
         </button>
       </div>
     </div>
-    <div ref="swatches" class="flex flex-wrap items-center gap-2">
+    <div class="flex flex-wrap items-center gap-2">
       <div v-for="(color, index) in colors" :key="index" class="group relative">
-        <label
+        <button
+          type="button"
           :class="
             cn(
-              'block size-9 cursor-pointer rounded-lg ring-1 ring-transparency-white-t20 ring-inset focus-within:ring-2 focus-within:ring-primary-comfy-yellow',
-              main === index && 'ring-2 ring-primary-warm-white'
+              'block size-9 rounded-lg ring-1 ring-transparency-white-t20 transition-[box-shadow,transform] duration-150 outline-none ring-inset hover:scale-105 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow',
+              active === index && 'ring-2 ring-primary-warm-white'
             )
           "
           :style="{ backgroundColor: color }"
-        >
-          <input
-            type="color"
-            :value="color"
-            class="sr-only"
-            :aria-label="`${t('cinematic.colors.color')} ${index + 1}: ${color}`"
-            @input="setColor(index, ($event.target as HTMLInputElement).value)"
-          />
-        </label>
+          :aria-label="`${t('cinematic.colors.color')} ${index + 1}: ${color}`"
+          :aria-pressed="active === index"
+          @click="active = index"
+        />
         <button
           type="button"
           :class="
@@ -126,8 +121,12 @@ function clear() {
         <Plus class="size-4" aria-hidden="true" />
       </button>
     </div>
-    <p class="text-xs text-primary-warm-gray">
-      {{ t('cinematic.colors.hint') }}
-    </p>
+    <CinematicColorPicker
+      v-if="colors[active]"
+      :model-value="colors[active]"
+      :locale
+      @update:model-value="setColor(active, $event)"
+    />
+    <slot />
   </section>
 </template>

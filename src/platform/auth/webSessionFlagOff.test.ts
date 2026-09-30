@@ -8,6 +8,10 @@ import type { ExchangeTokenResponse } from '@comfyorg/ingest-types'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
+import {
+  bootCloudIdentity,
+  cloudSignIn
+} from '@/platform/auth/session/cloudIdentityBoot'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
@@ -37,6 +41,10 @@ const identity = vi.hoisted(() => {
       userObservers.clear()
       tokenObservers.clear()
       state.user = null
+    },
+    resolve(user: User | null) {
+      state.user = user
+      userObservers.forEach((observer) => observer(user))
     },
     signIn(user: User) {
       state.user = user
@@ -92,9 +100,7 @@ vi.mock(import('@/services/extensionService'), () => ({
 
 vi.mock(import('@/platform/telemetry'))
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 await import('@/extensions/core/cloudSessionCookie')
 
@@ -506,6 +512,46 @@ describe('cloud auth requests with unified_web_session off', () => {
   )
 })
 
+describe.for([
+  { name: 'unified_cloud_auth off', features: { unified_cloud_auth: false } },
+  { name: 'unified_cloud_auth on', features: { unified_cloud_auth: true } },
+  {
+    name: 'unified_cloud_auth off, unified_web_session false',
+    features: { unified_cloud_auth: false, unified_web_session: false }
+  },
+  {
+    name: 'unified_cloud_auth on, unified_web_session false',
+    features: { unified_cloud_auth: true, unified_web_session: false }
+  }
+])(
+  'cloud sign-in at boot with unified_web_session off ($name)',
+  ({ features }) => {
+    beforeEach(() => {
+      identity.reset()
+    })
+
+    afterEach(() => {
+      remoteConfig.value = {}
+    })
+
+    it.for([
+      { name: 'a Firebase login', user: FIREBASE_USER, expected: 'signed_in' },
+      { name: 'no login', user: null, expected: 'signed_out' }
+    ])('reads $name from tokens alone', async ({ user, expected }) => {
+      const recorder = installFetchRecorder(features)
+      await refreshRemoteConfig({ useAuth: false })
+      useAuthStore()
+      identity.resolve(user)
+
+      await bootCloudIdentity()
+      await expect(cloudSignIn()).resolves.toBe(expected)
+
+      expect(
+        recorder.all.filter(({ path }) => path === '/api/auth/session')
+      ).toEqual([])
+    })
+  }
+)
 describe('an interactive sign-in with unified_web_session off', () => {
   beforeEach(() => {
     identity.reset()

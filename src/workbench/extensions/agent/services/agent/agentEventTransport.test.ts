@@ -19,9 +19,7 @@ import type {
 } from './agentMessageParts'
 import { createAssistantMessage } from './agentMessageParts'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 const fixtureText = import.meta.glob(
   '../../schemas/__fixtures__/agent/*.jsonl',

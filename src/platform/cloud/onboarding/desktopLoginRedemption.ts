@@ -218,6 +218,11 @@ async function redeemCode(code: string): Promise<void> {
   handleTransientFailure(code, state, `status ${response.status}`)
 }
 
+export function hasPendingDesktopLoginCode(): boolean {
+  const code = getPreservedQueryParam(NAMESPACE, DESKTOP_LOGIN_CODE_KEY)
+  return code !== undefined && DESKTOP_LOGIN_CODE_PATTERN.test(code)
+}
+
 async function redeemPendingDesktopLoginCode(): Promise<void> {
   // Never rejects: the triggers fire-and-forget this.
   if (draining) {

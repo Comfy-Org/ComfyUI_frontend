@@ -48,4 +48,27 @@ describe('useCurrentUser', () => {
     expect(isLoggedIn.value).toBe(true)
     expect(resolvedUserInfo.value).toEqual({ id: 'firebase-user' })
   })
+
+  it('reads a Firebase-only login entirely from Firebase', () => {
+    mockAuthState.currentUser = fromPartial<
+      NonNullable<typeof mockAuthState.currentUser>
+    >({
+      uid: 'firebase-user',
+      email: 'f@example.com',
+      displayName: 'Firebase F',
+      photoURL: 'https://example.com/f.png',
+      providerData: [{ providerId: 'github.com' }]
+    })
+
+    const user = useCurrentUser()
+
+    expect(user.isLoggedIn.value).toBe(true)
+    expect(user.resolvedUserInfo.value).toEqual({ id: 'firebase-user' })
+    expect(user.userEmail.value).toBe('f@example.com')
+    expect(user.userDisplayName.value).toBe('Firebase F')
+    expect(user.userPhotoUrl.value).toBe('https://example.com/f.png')
+    expect(user.providerName.value).toBe('GitHub')
+    expect(user.providerIcon.value).toBe('pi pi-github')
+    expect(user.isEmailProvider.value).toBe(false)
+  })
 })
