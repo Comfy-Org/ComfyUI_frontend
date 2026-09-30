@@ -15,7 +15,6 @@ import KeepSubscriptionNotice from '@/components/fullPage/KeepSubscriptionNotice
 
 /** What the last Pay left, and the consent a plan set to end needs, around the button. */
 export interface PayContext {
-  readonly failure?: string
   readonly outcome?: Exclude<InlineOutcome, { kind: 'reconciling' }>
   readonly consent?: KeepSubscriptionConsent
 }
@@ -25,7 +24,6 @@ const {
   loading = false,
   phase,
   canCancel = false,
-  failure,
   outcome,
   consent
 } = defineProps<
@@ -50,7 +48,9 @@ const { t, te } = useI18n()
 
 /** Support is for a payment that failed; a notice over a fresh price is not one. */
 const supportLink = computed(() =>
-  outcome !== undefined && 'operationId' in outcome
+  outcome !== undefined &&
+  ('operationId' in outcome ||
+    (outcome.kind === 'processing_error' && 'code' in outcome))
     ? supportLinkFor(outcome)
     : undefined
 )
@@ -102,13 +102,6 @@ const SECONDARY_BUTTON =
       :key="`${outcome.kind}:${'operationId' in outcome ? outcome.operationId : ''}`"
       :outcome
     />
-    <p
-      v-if="failure"
-      role="alert"
-      class="m-0 text-sm text-destructive-background"
-    >
-      {{ failure }}
-    </p>
     <KeepSubscriptionNotice
       v-if="consent"
       :consent

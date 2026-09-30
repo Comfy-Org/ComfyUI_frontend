@@ -358,6 +358,33 @@ test('433-6840: a link to a plan the catalog lacks renders Plan not available wi
   )
 })
 
+test('433-6840: a retired team plan whose link carries its commit stop opens the pricing table on the Team tab', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.reply('POST', '/billing/preview-subscribe', () => ({
+    status: 400,
+    body: { code: 'INVALID_PLAN', message: 'Plan not found' }
+  }))
+  await signIn(
+    entryPath('checkout', {
+      plan: 'team_per_credit_monthly',
+      team_credit_stop_id: 'stop_1'
+    })
+  )
+
+  await expect(heading(page, "This plan isn't available")).toBeVisible()
+  await expect(code(page)).toHaveText('PLAN_NOT_FOUND')
+
+  await page.getByRole('button', { name: 'View plans' }).click()
+
+  await expect(heading(page, 'Host app')).toBeVisible()
+  await expect(page).toHaveURL(
+    'https://testcloud.comfy.org/?pricing=team&workspace=ws_e2e'
+  )
+})
+
 test('433-6840: a team link without its commit stop is an invalid link, and View plans opens the pricing table on the Team tab', async ({
   page,
   cloud,
@@ -468,6 +495,41 @@ test("a checkout that couldn't load retries in place on Try again, without leavi
   await expect(payButton(page)).toBeEnabled()
   await expect(page).toHaveURL(CHECKOUT)
   expect(quotes).toBe(2)
+})
+
+test('421-5804: a capabilities read that fails says so without claiming nothing was charged, and Try again opens the checkout', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  let reads = 0
+  cloud.reply('GET', '/billing/capabilities', () => {
+    reads += 1
+    return reads === 1
+      ? { status: 503, body: { code: 'UNAVAILABLE', message: 'down' } }
+      : {
+          body: cloud.scenario.capabilities,
+          headers: {
+            'x-capability-revision': String(
+              cloud.scenario.capabilities.revision
+            )
+          }
+        }
+  })
+  await signIn(CHECKOUT)
+
+  await expect(heading(page, "Couldn't load your checkout")).toBeVisible()
+  await expect(
+    page.getByText(
+      "We couldn't check whether this workspace can check out, so checkout can't open yet. Try again, or contact support if this keeps happening."
+    )
+  ).toBeVisible()
+  await expect(page.getByText(/Nothing has been charged/)).toBeHidden()
+  await expect(code(page)).toHaveText('REQUEST_FAILED')
+
+  await page.getByRole('button', { name: 'Try again' }).click()
+
+  await expect(payButton(page)).toBeEnabled()
 })
 
 test("a re-read of the workspace's payments that fails never claims nothing was charged, and Try again follows the payment once it answers", async ({

@@ -10,8 +10,13 @@ import {
   getStorageRate,
   rateCard
 } from '../../data/rateCard'
+import { STORAGE_TYPE_LABEL_KEYS } from '../../data/rateCardChecks'
 import { t } from '../../i18n/translations'
 import PricingSection from './PricingSection.vue'
+
+const renderedStorageRates = rateCard.storage.filter(
+  (storage) => STORAGE_TYPE_LABEL_KEYS[storage.storageType] !== 'containerDisk'
+)
 
 describe('PricingSection', () => {
   it('lists every GPU and storage rate', () => {
@@ -31,13 +36,13 @@ describe('PricingSection', () => {
     ]) {
       expect(screen.getAllByText(credits)).toHaveLength(1)
     }
-    expect(screen.getAllByText('42.20/GB/mo')).toHaveLength(3)
-    expect(screen.getAllByText('31.65/GB/mo')).toHaveLength(1)
+    expect(screen.getAllByText('42.20/GB/mo')).toHaveLength(1)
     expect(
-      screen.getAllByText(t('platform.pricing.storage.containerDisk', 'en'))
+      screen.getAllByText(t('platform.pricing.storage.title', 'en'))
     ).toHaveLength(2)
-    expect(screen.getAllByText('$0.20/GB/mo')).toHaveLength(6)
-    expect(screen.getAllByText('$0.15/GB/mo')).toHaveLength(2)
+    expect(screen.getAllByText('$0.20/GB/mo')).toHaveLength(2)
+    expect(screen.queryAllByText('Container disk')).toHaveLength(0)
+    expect(screen.queryAllByText('$0.15/GB/mo')).toHaveLength(0)
   })
 
   it('renders every rate-card value rather than a hardcoded copy', () => {
@@ -54,7 +59,7 @@ describe('PricingSection', () => {
       expect(screen.getAllByText(`${gpu.vramGb} GB`).length).toBeGreaterThan(0)
     }
 
-    for (const storage of rateCard.storage) {
+    for (const storage of renderedStorageRates) {
       expect(
         screen.getAllByText(formatUsdPerGbMonth(storage.pricePerGbMonthUsd))
           .length
@@ -76,7 +81,7 @@ describe('PricingSection', () => {
       '{amount}',
       amount
     )
-    expect(screen.getAllByText(expected)).toHaveLength(2)
+    expect(screen.getAllByText(expected, { exact: false })).toHaveLength(2)
   })
 
   it('uses the platform heading by default and accepts overrides', () => {

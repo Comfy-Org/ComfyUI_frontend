@@ -41,9 +41,11 @@ type PaymentRail =
 type CollectRail = Extract<PaymentRail, { method: 'collect' }>
 
 /**
- * What the last Pay left above the button. `reconciling` is a Pay the server
- * refused because an operation is already pending or settled: no card, Pay
- * stays locked until the page re-reads that operation.
+ * What the last Pay left above the button. A `processing_error` with a
+ * `code` is a Pay the server refused outright, before any operation existed.
+ * `reconciling` is a Pay the server refused because an operation is already
+ * pending or settled: no card, Pay stays locked until the page re-reads that
+ * operation.
  */
 export type InlineOutcome =
   | {
@@ -52,6 +54,11 @@ export type InlineOutcome =
       readonly operationId?: string
     }
   | { readonly kind: 'processing_error'; readonly operationId?: string }
+  | {
+      readonly kind: 'processing_error'
+      readonly code: string
+      readonly serverMessage?: string
+    }
   | { readonly kind: 'not_completed'; readonly operationId?: string }
   | { readonly kind: 'price_updated' }
   | { readonly kind: 'promo_expired'; readonly code: string }
@@ -116,12 +123,13 @@ export type SettledPlan = Pick<
  * it neither offers a form nor claims a charge. `sibling` on either marks
  * money another tab sent while this one had its form open, whose verdict and
  * challenge belong to that tab. `unavailable` is a read that failed before
- * any form showed: the quote, or the re-read of what the workspace is
- * waiting on, after which the page cannot say whether money is moving.
+ * any form showed: the capabilities, the quote, or the re-read of what the
+ * workspace is waiting on, after which the page cannot say whether money is
+ * moving.
  * `terminal` is a payment that went through.
  */
-/** Which read failed: the quote, or the re-read of the workspace's payments. */
-export type LoadFailure = 'quote' | 'recheck'
+/** Which read failed: the capabilities, the quote, or the re-read of the workspace's payments. */
+export type LoadFailure = 'capabilities' | 'quote' | 'recheck'
 
 export type CheckoutPage =
   | {
@@ -174,6 +182,8 @@ export type CheckoutPageEvent =
       readonly scheduled?: ScheduledChange
     }
   | { readonly type: 'unavailable'; readonly code: string }
+  /** The capabilities read failed, so the page cannot say whether this workspace may check out. */
+  | { readonly type: 'capabilitiesFailed'; readonly code: string }
   /** The lifecycle could not say what the workspace is waiting on. */
   | { readonly type: 'recheckFailed'; readonly code: string }
   | { readonly type: 'planUnavailable'; readonly reason: PlanUnavailableReason }
@@ -189,7 +199,12 @@ export type CheckoutPageEvent =
       /** The applied code a re-read found lapsed; the quote is priced without it. */
       readonly expiredPromo?: string
     } & (
-      | { readonly method: 'collect'; readonly saved: SavedArrival }
+      | {
+          readonly method: 'collect'
+          readonly saved: SavedArrival
+          /** No Stripe key resolved, so the card form arrives failed. */
+          readonly element?: 'failed'
+        }
       | { readonly method: 'on_file' }
     ))
   | { readonly type: 'elementReady' }
@@ -204,10 +219,9 @@ export type CheckoutPageEvent =
   | { readonly type: 'consentMissing' }
   /** `redirectMethod` is the chosen method's type when it pays on its own site. */
   | { readonly type: 'paySubmitted'; readonly redirectMethod?: string }
-  /** No `outcome` is a coded refusal, which the page words beside Pay instead of a card. */
   | {
       readonly type: 'payFailed'
-      readonly outcome?: Exclude<InlineOutcome, { kind: 'reconciling' }>
+      readonly outcome: Exclude<InlineOutcome, { kind: 'reconciling' }>
     }
   | { readonly type: 'payRejectedAsPending' }
   /** The server activated the plan on the spot, issuing no operation to follow. */
@@ -254,12 +268,15 @@ export const UNREADABLE_LINK: CheckoutPage = {
 }
 
 /** The first read picks the tab: Saved whenever the tab row shows at all. */
-function arrivedRail(saved: SavedArrival): CollectRail {
+function arrivedRail(
+  saved: SavedArrival,
+  element: ElementStatus = 'loading'
+): CollectRail {
   if (saved === 'failed')
-    return { method: 'collect', element: 'loading', saved, tab: 'saved' }
+    return { method: 'collect', element, saved, tab: 'saved' }
   return saved > 0
-    ? { method: 'collect', element: 'loading', saved: 'ready', tab: 'saved' }
-    : { method: 'collect', element: 'loading', saved: 'none', tab: 'new' }
+    ? { method: 'collect', element, saved: 'ready', tab: 'saved' }
+    : { method: 'collect', element, saved: 'none', tab: 'new' }
 }
 
 function withCollect(
@@ -313,6 +330,7 @@ type StopEvent = Extract<
     type:
       | 'refused'
       | 'unavailable'
+      | 'capabilitiesFailed'
       | 'recheckFailed'
       | 'planUnavailable'
       | 'notAllowed'
@@ -341,6 +359,8 @@ function stoppedOn(
       }
     case 'unavailable':
       return { kind: 'unavailable', cause: 'quote', code: event.code }
+    case 'capabilitiesFailed':
+      return { kind: 'unavailable', cause: 'capabilities', code: event.code }
     case 'recheckFailed':
       return { kind: 'unavailable', cause: 'recheck', code: event.code }
     case 'planUnavailable':
@@ -358,6 +378,7 @@ export function reduceCheckoutPage(
   switch (event.type) {
     case 'refused':
     case 'unavailable':
+    case 'capabilitiesFailed':
     case 'recheckFailed':
     case 'planUnavailable':
     case 'notAllowed':
@@ -404,7 +425,7 @@ function arrived(
     kind: 'capture',
     rail:
       event.method === 'collect'
-        ? arrivedRail(event.saved)
+        ? arrivedRail(event.saved, event.element)
         : { method: 'on_file' },
     reactivation: reactivationOf(event.reactivation),
     attempt: IDLE,
@@ -536,7 +557,7 @@ function reduceAttempt(page: CheckoutPage, event: AttemptEvent): CheckoutPage {
       return withCapture(page, (capture) => ({
         ...capture,
         attempt: IDLE,
-        ...(event.outcome === undefined ? {} : { outcome: event.outcome })
+        outcome: event.outcome
       }))
     case 'payRejectedAsPending':
       return withCapture(page, (capture) => ({
