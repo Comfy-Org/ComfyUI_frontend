@@ -610,7 +610,7 @@ test('the examples belong to the playground, not to Details or API', async ({
   await expect(examples).toBeVisible()
 })
 
-test('a workflow card spends its tag line on the whole name while hovered', async ({
+test('a hovered workflow card spends its tag line only on a name that is cut off', async ({
   page,
   context
 }) => {
@@ -622,14 +622,21 @@ test('a workflow card spends its tag line on the whole name while hovered', asyn
   )
   await expect(cards.first()).toBeVisible()
   // Only a name the single line already cuts off can show the hover doing
-  // anything, so the test picks one the catalogue is clipping.
-  const clipped = await cards.evaluateAll((all) =>
-    all.findIndex((card) => {
+  // anything, so the test picks one the catalogue is clipping — and one it is
+  // not, which must keep its tag.
+  const [clipped, whole] = await cards.evaluateAll((all) => {
+    const clips = (card: Element) => {
       const name = card.querySelector('[data-testid="model-card-name"]')
       return !!name && name.scrollHeight > name.clientHeight
-    })
-  )
+    }
+    return [all.findIndex(clips), all.findIndex((card) => !clips(card))]
+  })
   expect(clipped, 'no workflow name is long enough to clip').toBeGreaterThan(-1)
+  expect(whole, 'every workflow name clips').toBeGreaterThan(-1)
+
+  const fits = cards.nth(whole)
+  await fits.hover()
+  await expect(fits.getByTestId('model-card-task')).toBeVisible()
 
   const card = cards.nth(clipped)
   const name = card.getByTestId('model-card-name')
