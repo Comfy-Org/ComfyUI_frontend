@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import Button from '../../components/ui/button/Button.vue'
+import { getRoutes } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
@@ -27,7 +28,12 @@ const { locale = 'en', showCustomerProof = false } = defineProps<{
       <p class="mt-4 max-w-xl text-sm/relaxed text-smoke-700">
         {{ t('platform.serverlessApps.body', locale) }}
       </p>
-      <Button as="a" href="/hub/apps/" variant="default" class="mt-7 font-bold">
+      <Button
+        as="a"
+        :href="getRoutes(locale).hubApps"
+        variant="default"
+        class="mt-7 font-bold"
+      >
         {{ t('platform.serverlessApps.browseApps', locale) }}
       </Button>
     </div>
@@ -39,7 +45,6 @@ const { locale = 'en', showCustomerProof = false } = defineProps<{
         :aria-label="t('platform.serverlessApps.videoLabel', locale)"
         class="block size-full object-cover"
         controls
-        muted
         loop
         playsinline
         preload="metadata"
