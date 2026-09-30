@@ -262,23 +262,31 @@ describe('useStablePrimeVueSplitterSizer', () => {
       sidebarMin: '',
       offsideWidth: 300,
       reservedWidth: 160,
-      sidebarMax: 'calc(0px + (100% - 160px) * 0.5714)',
-      offsideMax: 'calc(0px + (100% - 160px) * 0.4286)'
+      sidebarMax: 'max(0px + (100% - 160px) * 0.5714, 100% - 460px)',
+      offsideMax: 'max(0px + (100% - 160px) * 0.4286, 100% - 560px)'
     },
     {
       case: 'the sidebar has a min-width',
       sidebarMin: '312px',
       offsideWidth: 300,
       reservedWidth: 160,
-      sidebarMax: 'calc(312px + (100% - 472px) * 0.2268)',
-      offsideMax: 'calc(0px + (100% - 472px) * 0.7732)'
+      sidebarMax: 'max(312px + (100% - 472px) * 0.2268, 100% - 460px)',
+      offsideMax: 'max(0px + (100% - 472px) * 0.7732, 100% - 560px)'
+    },
+    {
+      case: 'the sidebar sits at its min-width',
+      sidebarMin: '400px',
+      offsideWidth: 300,
+      reservedWidth: 160,
+      sidebarMax: 'max(400px + (100% - 560px) * 0.0000, 100% - 460px)',
+      offsideMax: 'max(0px + (100% - 560px) * 1.0000, 100% - 560px)'
     },
     {
       case: 'the other panel is hidden',
       sidebarMin: '',
       offsideWidth: 0,
       reservedWidth: 160,
-      sidebarMax: 'calc(0px + (100% - 160px) * 1.0000)',
+      sidebarMax: 'max(0px + (100% - 160px) * 1.0000, 100% - 160px)',
       offsideMax: ''
     },
     {
