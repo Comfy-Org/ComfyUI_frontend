@@ -437,6 +437,7 @@ describe('WorkspaceAuthGate', () => {
       expect(screen.getByRole('alert')).toHaveFocus()
       expect(splashLoader).not.toBeInTheDocument()
       expect(mockReportError).toHaveBeenCalledWith(error, {
+        surface: 'auth',
         errorType: 'workspace_auth_gate_initialization_failure'
       })
     })

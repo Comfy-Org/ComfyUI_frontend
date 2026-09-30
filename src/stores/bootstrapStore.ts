@@ -65,7 +65,10 @@ async function waitForCloudAuth(): Promise<void> {
     try {
       await waitForResolution()
     } catch (retryError) {
-      reportError(retryError, { errorType: 'bootstrap_auth_wait_timeout' })
+      reportError(retryError, {
+        surface: 'platform',
+        errorType: 'bootstrap_auth_wait_timeout'
+      })
     }
   }
 }

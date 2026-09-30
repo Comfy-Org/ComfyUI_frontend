@@ -45,6 +45,7 @@ describe('DockedAgentPanel chunk-load failure', () => {
     await screen.findByText('The agent panel failed to load.')
     screen.getByRole('complementary', { name: 'Comfy Agent' })
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
       errorType: 'agent_panel_load_failure'
     })
   })

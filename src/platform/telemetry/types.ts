@@ -17,6 +17,10 @@ import {
   SESSION_TELEMETRY_EVENT
 } from '@comfyorg/account-core/telemetry'
 import type {
+  BillingDeclineReason,
+  BillingPresentation
+} from '@comfyorg/account-core/billing'
+import type {
   AgentRunMode,
   CreateTopupResponse,
   SubscribeResponse
@@ -685,6 +689,8 @@ export type AgentConsentOfferExit =
   | 'offer_in_flight'
   /** The card has already been on screen for this scope this page load. */
   | 'card_already_seen'
+  /** Panel activation owns consent timing, so the automatic offer is dropped. */
+  | 'activation_opened_panel'
   /** The one-shot auto-show key for this scope is already burned. */
   | 'already_offered'
   /** The first-run startup probe rejected. */
@@ -1364,6 +1370,10 @@ type BillingOperationBillingEvent = {
   /** Absent when the initiating call itself failed, before the backend returned one to poll. */
   billing_op_id?: string
   operation_type: 'subscription' | 'topup' | 'cancel'
+  /** Set by the billing SDK rail, as is `resumed`; the poller never sets either. */
+  presentation?: BillingPresentation
+  /** True when this tab reattached to an operation it did not issue. */
+  resumed?: boolean
   tier?: SubscriptionCheckoutTier
   cycle?: BillingCycle
   checkout_type?: SubscriptionCheckoutType
@@ -1376,7 +1386,12 @@ type BillingOperationBillingEvent = {
    * true duration.
    */
   duration_ms?: number
-} & (BillingStarted | BillingSucceeded | BillingFailed | BillingTimedOut)
+} & (
+  | BillingStarted
+  | BillingSucceeded
+  | (BillingFailed & { decline_reason?: BillingDeclineReason })
+  | BillingTimedOut
+)
 
 type ResubscribeBillingEvent = {
   operation: 'resubscribe'
@@ -1467,10 +1482,13 @@ const BILLING_PAYLOAD_FIELD_HANDLING = {
   checkout_attempt_id: 'optional',
   checkout_type: 'optional',
   cycle: 'optional',
+  decline_reason: 'optional',
   duration_ms: 'optional',
   error_code: 'optional',
   payment_intent_source: 'optional',
+  presentation: 'optional',
   recovery_outcome: 'optional',
+  resumed: 'optional',
   target_tier: 'optional',
   tier: 'optional'
 } as const satisfies Record<BillingPayloadField, 'optional' | 'required'>

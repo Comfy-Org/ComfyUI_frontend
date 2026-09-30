@@ -11,7 +11,7 @@ import {
   pendingOperation,
   succeededOperation
 } from './fixtures/scenario'
-import { expectStraightToHost } from './fixtures/planless'
+import { expectStraightToPricingTable } from './fixtures/planless'
 import { installFakeStripe } from './fixtures/stripe'
 import { entryPath, expect, test as base } from './fixtures/test'
 
@@ -192,7 +192,7 @@ test('FE-2856: a capture the bank is still settling renders Payment in progress,
   await expect(heading(page, "You're all set")).toBeVisible()
   await expect(
     page.getByText(
-      'A payment on this workspace completed — check your plan in settings.'
+      'A payment for Personal went through. Check your plan in settings for the details.'
     )
   ).toBeVisible()
   await expect(code(page)).toHaveText('op_bank')
@@ -435,7 +435,7 @@ test('433-6840: a checkout link that names no plan, routed once the tab is signe
 test('a signed-out visitor on the flag still goes back to the host for a checkout link that names no plan', async ({
   page
 }) => {
-  await expectStraightToHost(page, 'ws_team_e2e')
+  await expectStraightToPricingTable(page, 'ws_team_e2e')
 })
 
 test('a checkout link that names no plan, opened by the host in a new tab, goes back to the host even for a signed-in customer on the flag', async ({
@@ -444,7 +444,7 @@ test('a checkout link that names no plan, opened by the host in a new tab, goes 
 }) => {
   await signIn(CHECKOUT)
 
-  await expectStraightToHost(await context.newPage(), 'ws_e2e')
+  await expectStraightToPricingTable(await context.newPage(), 'ws_e2e')
 })
 
 test("433-6840: a checkout link the contract cannot read is the checkout's 404 on the full page, and still the entry error on the embedded one", async ({

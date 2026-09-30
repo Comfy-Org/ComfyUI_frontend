@@ -293,6 +293,9 @@ describe('useBillingSdkStore', () => {
     expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'operation',
       operation_type: 'topup',
+      billing_op_id: 'op-1',
+      presentation: 'hosted',
+      resumed: true,
       stage: 'started',
       outcome: 'pending'
     })
@@ -300,6 +303,8 @@ describe('useBillingSdkStore', () => {
       operation: 'operation',
       operation_type: 'topup',
       billing_op_id: 'op-1',
+      presentation: 'hosted',
+      resumed: true,
       duration_ms: 1200,
       stage: 'succeeded',
       outcome: 'success'
@@ -447,6 +452,8 @@ describe('useBillingSdkStore', () => {
       operation: 'operation',
       operation_type: 'cancel',
       billing_op_id: 'op-cancel',
+      presentation: 'hosted',
+      resumed: false,
       duration_ms: 900,
       stage: 'succeeded',
       outcome: 'success'

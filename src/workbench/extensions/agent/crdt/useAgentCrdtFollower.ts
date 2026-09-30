@@ -225,6 +225,7 @@ function runFollowerTeardown(cleanups: readonly (() => void)[]): void {
       cleanup()
     } catch (error) {
       reportError(error, {
+        surface: 'agent',
         errorType: 'failure_tearing_down_agent_crdt_follower'
       })
     }
@@ -249,6 +250,7 @@ function reportRejectedHumanOps(
       `The doc host rejected ${rejected.length} local edit(s): ${failed?.message ?? 'no diagnostics'}`
     ),
     {
+      surface: 'agent',
       errorType: 'agent_crdt_human_ops_rejected',
       context: {
         workflowId,

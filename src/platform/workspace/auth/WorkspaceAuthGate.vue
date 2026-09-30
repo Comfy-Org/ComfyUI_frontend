@@ -181,6 +181,7 @@ async function initialize(): Promise<void> {
   } catch (error) {
     if (generation !== initializationGeneration) return
     reportError(error, {
+      surface: 'auth',
       errorType: 'workspace_auth_gate_initialization_failure'
     })
     initializationRetryable.value = isRetryableInitializationError(error)

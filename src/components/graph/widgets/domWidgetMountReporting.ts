@@ -26,6 +26,7 @@ export function reportDomWidgetMountFailure(
   reportedMessages.add(message)
 
   reportError(error, {
+    surface: 'graph',
     errorType: 'canvas_dom_widget_mount_failed',
     context,
     level: 'error'

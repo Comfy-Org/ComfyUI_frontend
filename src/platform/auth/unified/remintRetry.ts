@@ -50,6 +50,7 @@ async function tryRemintToken(expectedToken: string): Promise<string | null> {
     return await useWorkspaceAuthStore().remintUnifiedOnce(expectedToken)
   } catch (err) {
     reportError(err, {
+      surface: 'auth',
       errorType: 'auth_unified_remint_unexpected',
       tags: {
         failure_kind: 'caught_unexpected',

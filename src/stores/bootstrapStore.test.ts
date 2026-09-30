@@ -219,6 +219,7 @@ describe('bootstrapStore', () => {
 
         expect(mockReportError).toHaveBeenCalledOnce()
         expect(mockReportError).toHaveBeenCalledWith(expect.anything(), {
+          surface: 'platform',
           errorType: 'bootstrap_auth_wait_timeout'
         })
         expect(consoleError).not.toHaveBeenCalled()

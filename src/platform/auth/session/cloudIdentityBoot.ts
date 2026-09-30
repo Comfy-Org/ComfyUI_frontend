@@ -39,6 +39,7 @@ export async function cloudSignIn(): Promise<CloudSignIn> {
   const hasTokenLogin = async () => (await auth.getAuthHeader()) !== null
   await bootCloudIdentity()
   const webSession = useCloudWebSessionStore()
+  await webSession.whenSessionCreated()
   if (!webSession.isActive()) {
     return (await hasTokenLogin()) ? 'signed_in' : 'signed_out'
   }
