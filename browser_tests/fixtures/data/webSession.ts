@@ -9,7 +9,7 @@ import type {
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
 
-import { TEAM_WORKSPACE_NAME } from '@e2e/fixtures/data/workspaceSwitcher'
+import { TEAM_WORKSPACE } from '@e2e/fixtures/data/workspaceSwitcher'
 import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
 
 export const WEB_SESSION_FEATURES: RemoteConfig = { unified_web_session: true }
@@ -35,8 +35,12 @@ export const WEB_SESSION: WebSessionResponse = {
 export const WEB_SESSION_MINT: ExchangeTokenResponse = {
   token: 'session-jwt-e2e',
   expires_at: '2099-01-01T00:00:00Z',
-  workspace: { id: 'ws-team', name: TEAM_WORKSPACE_NAME, type: 'team' },
-  role: 'owner',
+  workspace: {
+    id: TEAM_WORKSPACE.id,
+    name: TEAM_WORKSPACE.name,
+    type: TEAM_WORKSPACE.type
+  },
+  role: TEAM_WORKSPACE.role,
   permissions: []
 }
 

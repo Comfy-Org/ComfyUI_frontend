@@ -1,7 +1,6 @@
+import { zPromptRequest } from '@comfyorg/ingest-types/zod'
 import { expect } from '@playwright/test'
 import type { Page, Request } from '@playwright/test'
-
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 import {
   PROMPT_ACCEPTED,
@@ -46,13 +45,6 @@ async function postPrompt(page: Page) {
   })
 }
 
-async function runDefaultWorkflow(comfyPage: ComfyPage) {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-  await comfyPage.workflow.loadWorkflow('default')
-  await comfyPage.toast.closeToasts()
-  await comfyPage.runButton.click()
-}
-
 async function mockPromptAccepted(page: Page) {
   await page.route('**/api/prompt', (route) =>
     route.fulfill(jsonRoute(PROMPT_ACCEPTED))
@@ -74,7 +66,9 @@ test.describe('Unified web session', { tag: '@cloud' }, () => {
       await mockPromptAccepted(page)
 
       const promptRequest = page.waitForRequest(isPromptPost)
-      await runDefaultWorkflow(comfyPage)
+      await comfyPage.workflow.loadWorkflow('default')
+      await comfyPage.toast.closeToasts()
+      await comfyPage.runButton.click()
       const request = await promptRequest
       const headers = await request.allHeaders()
 
@@ -95,20 +89,22 @@ test.describe('Unified web session', { tag: '@cloud' }, () => {
       await mockPromptAccepted(page)
 
       const promptRequest = page.waitForRequest(isPromptPost)
-      await runDefaultWorkflow(comfyPage)
+      await comfyPage.workflow.loadWorkflow('default')
+      await comfyPage.toast.closeToasts()
+      await comfyPage.runButton.click()
       const request = await promptRequest
 
-      await expect
-        .poll(() => tokenMints)
-        .toEqual([
-          {
-            body: { workspace_id: TEAM_WORKSPACE_ID },
-            authorization: undefined,
-            workspace: TEAM_WORKSPACE_ID
-          }
-        ])
-      expect(request.postDataJSON().extra_data.auth_token_comfy_org).toBe(
-        WEB_SESSION_MINT.token
+      expect(tokenMints).toEqual([
+        {
+          body: { workspace_id: TEAM_WORKSPACE_ID },
+          authorization: undefined,
+          workspace: TEAM_WORKSPACE_ID
+        }
+      ])
+      expect(zPromptRequest.parse(request.postDataJSON()).extra_data).toEqual(
+        expect.objectContaining({
+          auth_token_comfy_org: WEB_SESSION_MINT.token
+        })
       )
     })
 
@@ -175,36 +171,44 @@ test.describe('Unified web session', { tag: '@cloud' }, () => {
     })
   })
 
-  test('[E2E-03] switching workspace mints no token and sends the next prompt in the new one', async ({
+  test('[E2E-03] switching workspace mints nothing until the next Run, which uses the new workspace', async ({
     comfyPage,
     tokenMints
   }) => {
     const page = comfyPage.page
     await mockPromptAccepted(page)
 
-    await comfyPage.toast.closeToasts()
-    await page.keyboard.press('Escape')
-    await page.getByRole('button', { name: 'Current user' }).click()
-    await page.getByTestId('workspace-switcher-trigger').click()
-    const switcherPanel = page.getByTestId('workspace-switcher-panel')
-    await expect(switcherPanel).toBeVisible()
+    await test.step('switch to the team workspace', async () => {
+      await comfyPage.toast.closeToasts()
+      await page.keyboard.press('Escape')
+      await page.getByRole('button', { name: 'Current user' }).click()
+      await page.getByTestId('workspace-switcher-trigger').click()
+      const switcherPanel = page.getByTestId('workspace-switcher-panel')
+      await expect(switcherPanel).toBeVisible()
 
-    const teamRead = page.waitForRequest((request) =>
-      isCurrentWorkspaceRead(request, TEAM_WORKSPACE_ID)
-    )
-    await switcherPanel.getByText(TEAM_WORKSPACE_NAME).click()
-    await teamRead
-    await comfyPage.waitForAppReady()
+      const teamRead = page.waitForRequest((request) =>
+        isCurrentWorkspaceRead(request, TEAM_WORKSPACE_ID)
+      )
+      await switcherPanel.getByText(TEAM_WORKSPACE_NAME).click()
+      await teamRead
+      await comfyPage.waitForAppReady()
 
-    expect(tokenMints, 'switch mints no workspace token').toEqual([])
+      expect(tokenMints, 'workspace switch minted a token before Run').toEqual(
+        []
+      )
+    })
 
-    const promptRequest = page.waitForRequest(isPromptPost)
-    await runDefaultWorkflow(comfyPage)
-    const headers = await (await promptRequest).allHeaders()
+    await test.step('Run in the team workspace', async () => {
+      await comfyPage.workflow.loadWorkflow('default')
+      await comfyPage.toast.closeToasts()
+      const promptRequest = page.waitForRequest(isPromptPost)
+      await comfyPage.runButton.click()
+      const headers = await (await promptRequest).allHeaders()
 
-    expect(headers[WORKSPACE_HEADER]).toBe(TEAM_WORKSPACE_ID)
-    await expect
-      .poll(() => tokenMints.map(({ workspace }) => workspace))
-      .toEqual([TEAM_WORKSPACE_ID])
+      expect(headers[WORKSPACE_HEADER]).toBe(TEAM_WORKSPACE_ID)
+      expect(tokenMints.map(({ workspace }) => workspace)).toEqual([
+        TEAM_WORKSPACE_ID
+      ])
+    })
   })
 })
