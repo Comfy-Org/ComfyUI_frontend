@@ -11,6 +11,7 @@ import type {
 import { clampAxis } from '../../../../lib/workshop/cinematic-studio/reshoot'
 import {
   GLOBE_FLATTEN,
+  distanceScale,
   globePoint,
   zoneArcs
 } from '../../../../lib/workshop/cinematic-studio/reshoot-globe'
@@ -31,8 +32,10 @@ const {
 
 const emit = defineEmits<{ aim: [patch: Partial<ReshootCamera>] }>()
 
-const SIZE = 264
-const R = SIZE * 0.4
+// Room around the shell for a camera drawn out at 1.5 radii (the farthest
+// distance) with its badge, as the node's picker draws it.
+const SIZE = 300
+const R = 88
 const C = SIZE / 2
 const MERIDIANS = [0, 30, 60].map((deg) => R * Math.cos((deg * Math.PI) / 180))
 const PARALLELS = [-40, 40].map((deg) => {
@@ -47,7 +50,13 @@ const STROKE: Readonly<Record<ReshootZone, string>> = {
 }
 
 const SUBJECT = { w: 52, h: 32 }
-const marker = computed(() => globePoint(camera.azimuth, camera.elevation, R))
+const marker = computed(() =>
+  globePoint(
+    camera.azimuth,
+    camera.elevation,
+    R * distanceScale(camera.distance)
+  )
+)
 const mirrored = computed(() => marker.value.x > 0)
 const cone = computed(() => {
   const { x, y } = marker.value
@@ -56,7 +65,7 @@ const cone = computed(() => {
 })
 const label = computed(
   () =>
-    `${rc('reshoot.aim.globe', locale)}: ${camera.azimuth}°, ${camera.elevation}°`
+    `${rc('reshoot.aim.globe', locale)}: ${camera.azimuth}°, ${camera.elevation}°, ${camera.distance.toFixed(2)}`
 )
 
 const dragFrom = ref<{ x: number; y: number; tilts: boolean }>()
@@ -117,6 +126,28 @@ const NUDGES = [
   }
 ] as const
 
+/** Scroll or pinch moves the camera in and out, as on the preview. */
+function dolly(step: number) {
+  emit('aim', {
+    distance: Number(
+      clampAxis('distance', camera.distance + step * 0.05).toFixed(2)
+    )
+  })
+}
+
+function zoom(event: WheelEvent) {
+  if (disabled) return
+  event.preventDefault()
+  dolly(Math.sign(event.deltaY))
+}
+
+const DOLLY_KEYS: Readonly<Record<string, number>> = {
+  '+': -1,
+  '=': -1,
+  '-': 1,
+  _: 1
+}
+
 const KEYS: Readonly<Record<string, [number, number]>> = {
   ArrowLeft: [-5, 0],
   ArrowRight: [5, 0],
@@ -125,8 +156,15 @@ const KEYS: Readonly<Record<string, [number, number]>> = {
 }
 
 function key(event: KeyboardEvent) {
+  if (disabled) return
+  const inOut = DOLLY_KEYS[event.key]
+  if (inOut !== undefined) {
+    event.preventDefault()
+    dolly(inOut)
+    return
+  }
   const step = KEYS[event.key]
-  if (!step || disabled) return
+  if (!step) return
   event.preventDefault()
   nudge(...step)
 }
@@ -151,6 +189,7 @@ function key(event: KeyboardEvent) {
     @pointerup="dragFrom = undefined"
     @pointercancel="dragFrom = undefined"
     @keydown="key"
+    @wheel="zoom"
   >
     <svg
       :width="SIZE"
