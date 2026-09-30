@@ -16,9 +16,7 @@ export function reifyMediaElements(root: ParentNode) {
     }
     // Copying the muted attribute only sets defaultMuted on an existing
     // element, and unmuted autoplay is blocked without user engagement.
-    if ('muted' in media && 'muted' in fresh) {
-      fresh.muted = media.muted
-    }
+    if ('muted' in fresh) fresh.muted = (media as HTMLMediaElement).muted
     fresh.innerHTML = media.innerHTML
     media.replaceWith(fresh)
   }
