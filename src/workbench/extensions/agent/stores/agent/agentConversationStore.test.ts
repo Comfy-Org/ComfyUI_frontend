@@ -144,6 +144,15 @@ const partTexts = (store: ReturnType<typeof useAgentConversationStore>) =>
     m.parts.flatMap((p) => (p.type === 'text' ? [p.text] : []))
   )
 
+function messageTexts(
+  store: ReturnType<typeof useAgentConversationStore>,
+  id: TurnId
+): string[] | undefined {
+  return store.messages
+    .find((m) => m.id === id)
+    ?.parts.flatMap((p) => (p.type === 'text' ? [p.text] : []))
+}
+
 describe('useAgentConversationStore', () => {
   it('publishes a turn identity before its live status', () => {
     const store = useAgentConversationStore()
@@ -216,6 +225,31 @@ describe('useAgentConversationStore', () => {
     store.hydrate([])
     store.resumeBackgroundTurn()
     expect(tabLinkIds(store)).toEqual(['wf-9'])
+  })
+
+  it('places no tab link when two live stashes on the thread could have sent it', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.ingest(delta('t1', 'older'))
+    store.stashActiveTurn()
+    store.startTurn(T2)
+    store.ingest(delta('t2', 'newer'))
+    store.stashActiveTurn()
+    store.setThreadId('th-other')
+    store.hydrate([])
+
+    store.ingest(activeTab('wf-9', undefined, 'th'))
+
+    store.ingest(delta('t2', ' and more'))
+    store.setThreadId('th')
+    store.hydrate([])
+    store.resumeBackgroundTurn()
+    store.ingest(done('t2'))
+    store.resumeBackgroundTurn()
+    store.ingest(done('t1'))
+    expect(tabLinkIds(store)).toEqual([])
+    expect(messageTexts(store, T2)).toEqual(['newer and more'])
   })
 
   it('(M2) isStreaming is false after abortActiveTurn() with no done', () => {
@@ -393,7 +427,278 @@ describe('useAgentConversationStore', () => {
 
     store.abortActiveTurn()
 
-    expect(store.messages[0].parts[0]).toMatchObject({ state: 'done' })
+    expect(store.messages[0].parts[0]).toMatchObject({
+      state: 'done',
+      ok: true
+    })
+  })
+
+  // A multi-row turn names itself three ways: the acknowledgement row the
+  // stash holds, the newest persisted row `pending` points at, and the
+  // `turn_id` the transcript keys its message by. No pair of those is equal,
+  // so the snapshot installs a live row of its own that the stash is about to
+  // displace -- and a transport nothing can reach again leaves that row
+  // streaming for good.
+  it('settles a snapshot row the resumed stash displaces', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.ingest(delta('t1', 'partial'))
+    store.stashActiveTurn()
+
+    store.hydrate([
+      historyRow(1, 'user', 'turn-a', 'go', 'u1'),
+      historyRow(2, 'assistant', 'turn-a', 'partial', 't1'),
+      { ...historyRow(3, 'assistant', 'turn-a', '', 't2'), status: 'streaming' }
+    ])
+    store.resumeBackgroundTurn()
+
+    expect(store.activeTurnId).toBe('t1')
+    expect(store.messages.filter((message) => message.streaming)).toHaveLength(
+      1
+    )
+    expect(store.messages[0].id).toBe('turn-a')
+  })
+
+  // Retiring the displaced row must not reach a turn this client started. A
+  // send can take the active slot between the hydrate and the resume -- both
+  // of `resumeBackgroundTurn`'s callers reach it across an await -- and that
+  // turn is genuinely live, unlike the snapshot row the retirement is for.
+  it('leaves a newer local turn alone when a stash resumes', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.ingest(delta('t1', 'partial'))
+    store.stashActiveTurn()
+    store.hydrate([
+      historyRow(1, 'user', 'turn-a', 'go', 'u1'),
+      {
+        ...historyRow(2, 'assistant', 'turn-a', '', 't1'),
+        content: {},
+        status: 'streaming'
+      }
+    ])
+    store.startTurn(T2)
+    store.ingest(delta('t2', 'newer'))
+
+    store.resumeBackgroundTurn()
+
+    expect(store.activeTurnId).toBe('t2')
+    store.ingest(delta('t2', ' and more'))
+    store.ingest(done('t2'))
+    const newer = store.messages.find((message) => message.id === 't2')
+    expect(newer?.streaming).toBe(false)
+    expect(
+      newer?.parts.flatMap((part) => (part.type === 'text' ? [part.text] : []))
+    ).toEqual(['newer and more'])
+  })
+
+  it('keeps an older same-thread stash routable after stashing a newer turn', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.ingest(delta('t1', 'older'))
+    store.stashActiveTurn()
+
+    store.hydrate([
+      historyRow(1, 'user', 'turn-a', 'go', 'u1'),
+      {
+        ...historyRow(2, 'assistant', 'turn-a', '', 't1'),
+        content: {},
+        status: 'streaming'
+      }
+    ])
+    store.startTurn(T2)
+    store.ingest(delta('t2', 'newer'))
+    store.resumeBackgroundTurn()
+    store.stashActiveTurn()
+
+    store.ingest(delta('t1', ' and complete'))
+    store.ingest(done('t1'))
+    store.ingest(done('t2'))
+    store.resumeBackgroundTurn()
+    store.resumeBackgroundTurn()
+
+    expect(store.messages.find((m) => m.id === 'turn-a')?.streaming).toBe(false)
+    expect(messageTexts(store, 'turn-a' as TurnId)).toEqual([
+      'older and complete'
+    ])
+    expect(store.messages.find((m) => m.id === 't2')?.streaming).toBe(false)
+    expect(messageTexts(store, T2)).toEqual(['newer'])
+
+    store.ingest(runApproval('t1', 'late-old-ask'))
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        tags: expect.objectContaining({ reason: 'settled-turn' })
+      })
+    )
+  })
+
+  // A hydrate can only ever demote its thread's last row: one streaming row
+  // per thread, every user row ships with its assistant sibling, and nothing
+  // trails the live turn. So no single hydrate separates replacing that row
+  // from appending -- a later send is what puts a row beneath it, and that
+  // send is not routine. It needs a resume that skipped its hydrate and a
+  // stash whose own `done` went unseen here, because the server answers 409
+  // while the stash's row is still streaming. Resumed unsettled because the
+  // index is read twice, to seat the message and again as the active slot,
+  // and a settled stash returns before the second.
+  it('restores an unsettled stash where the snapshot it replaces stood', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'go')
+    store.ingest(delta('t1', 'older'))
+    store.stashActiveTurn()
+
+    store.hydrate([
+      historyRow(1, 'user', 'turn-a', 'go', 'u1'),
+      {
+        ...historyRow(2, 'assistant', 'turn-a', '', 't1'),
+        content: {},
+        status: 'streaming'
+      }
+    ])
+    store.startTurn(T2)
+    store.recordUser(T2, 'second')
+    store.ingest(delta('t2', 'newer'))
+    store.ingest(done('t2'))
+
+    store.resumeBackgroundTurn()
+
+    expect(store.activeTurnId).toBe('t1')
+    expect(store.activeMessageId).toBe('turn-a')
+    expect(store.isStreaming).toBe(true)
+    expect(store.entries.map((e) => `${e.role}:${e.id}`)).toEqual([
+      'user:turn-a',
+      'assistant:turn-a',
+      'user:t2',
+      'assistant:t2'
+    ])
+    expect(messageTexts(store, 'turn-a' as TurnId)).toEqual(['older'])
+    expect(messageTexts(store, T2)).toEqual(['newer'])
+  })
+
+  // With no hydrated copy to replace, a resumed stash appends after the
+  // existing transcript. Tested separately from two-stash ordering, which is
+  // disputed, so asserting this one does not freeze that one.
+  it('appends a resumed stash below the transcript it returns to', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'go')
+    store.ingest(delta('t1', 'older'))
+    store.stashActiveTurn()
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.ingest(done('t1'))
+
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'turn-a', 'earlier', 'u1'),
+      historyRow(2, 'assistant', 'turn-a', 'reply', 'a1')
+    ])
+    store.resumeBackgroundTurn()
+
+    expect(store.messages.map((m) => m.id)).toEqual(['turn-a', 't1'])
+  })
+
+  // Sorted: a resume with no snapshot to replace appends, so these two come
+  // back reversed, which predates this fix and reverses a distinct-prompt pair
+  // the same way. Not this regression's contract, so it is not frozen here --
+  // what is, is that both exchanges survive intact, which dropping the
+  // immunity breaks by popping the newer as a duplicate of the older turn's
+  // identical prompt.
+  it('keeps an already restored turn when the next same-prompt stash resumes', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'same prompt')
+    store.ingest(delta('t1', 'first'))
+    store.stashActiveTurn()
+    store.startTurn(T2)
+    store.recordUser(T2, 'same prompt')
+    store.ingest(delta('t2', 'second'))
+    store.stashActiveTurn()
+
+    store.ingest(done('t1'))
+    store.ingest(done('t2'))
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([])
+    store.resumeBackgroundTurn()
+    store.resumeBackgroundTurn()
+
+    expect(store.entries.map((e) => `${e.role}:${e.id}`).sort()).toEqual([
+      'assistant:t1',
+      'assistant:t2',
+      'user:t1',
+      'user:t2'
+    ])
+    expect(messageTexts(store, T1)).toEqual(['first'])
+    expect(messageTexts(store, T2)).toEqual(['second'])
+  })
+
+  it('stashes a turn under the thread it started on, not the selection', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th-a')
+    store.startTurn(T1)
+
+    store.setThreadId('th-b')
+    store.stashActiveTurn()
+
+    store.setThreadId('th-a')
+    store.hydrate([])
+    store.resumeBackgroundTurn()
+
+    expect(store.activeTurnId).toBe('t1')
+  })
+
+  it('keeps the text a stash received while its thread was off screen', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.ingest(delta('t1', 'older'))
+    store.stashActiveTurn()
+    store.setThreadId('th-other')
+    store.hydrate([])
+
+    store.ingest(delta('t1', ' and complete'))
+    store.ingest(done('t1'))
+
+    store.setThreadId('th')
+    store.hydrate([])
+    store.resumeBackgroundTurn()
+
+    expect(messageTexts(store, T1)).toEqual(['older and complete'])
+    expect(store.messages.find((m) => m.id === 't1')?.streaming).toBe(false)
+  })
+
+  // Provenance has to expire with the slot it describes. Here the snapshot row
+  // really is installed -- its id matches neither the stash's nor the turn's --
+  // and then settles, so the send that follows owns a slot no resume may
+  // retire. Left set, the stale flag makes the resume abort a live local turn.
+  it('forgets snapshot provenance once that turn settles', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.ingest(delta('t1', 'partial'))
+    store.stashActiveTurn()
+
+    store.hydrate([
+      historyRow(1, 'user', 'turn-a', 'go', 'u1'),
+      { ...historyRow(2, 'assistant', 'turn-a', '', 't3'), status: 'streaming' }
+    ])
+    expect(store.activeTurnId).toBe('t3')
+    store.ingest(done('t3'))
+
+    store.startTurn(T2)
+    store.ingest(delta('t2', 'newer'))
+    store.resumeBackgroundTurn()
+
+    expect(store.activeTurnId).toBe('t2')
   })
 
   // PM-1575 regression (finding #4, medium): resumeBackgroundTurn()'s SECOND
@@ -945,6 +1250,84 @@ describe('useAgentConversationStore', () => {
     expect(store.isStreaming).toBe(true)
   })
 
+  // PM-1776: hydrate restores a `streaming` row as the live turn, but the
+  // stash is the copy that kept this turn's parts and never stopped taking its
+  // frames. Letting the snapshot take the active slot would route the rest of
+  // the stream to the wrong copy, and the entry `resumeBackgroundTurn` restores
+  // would never have seen its own done.
+  it('leaves a still-streaming row to the background turn already stashed for it', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'go')
+    store.ingest(delta('t1', 'work'))
+    store.stashActiveTurn()
+
+    store.setThreadId('th-other')
+    store.hydrate([])
+
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'turn-a', 'go'),
+      {
+        ...historyRow(2, 'assistant', 'turn-a', '', 't1'),
+        status: 'streaming'
+      }
+    ])
+
+    expect(store.activeTurnId).toBeNull()
+    expect(store.messages[0].streaming).toBe(false)
+    expect(store.messages[0].parts).toEqual([])
+
+    // Ingested before the resume, which is the ordering the defect takes: the
+    // done has to reach the stash through `ingestBackgroundTurnEvent`, and it
+    // only can while the snapshot has not claimed the active slot. Resuming
+    // first instead settles the reactivated stash through the active path,
+    // which holds whether or not the snapshot was demoted.
+    store.ingest(done('t1'))
+    store.resumeBackgroundTurn()
+
+    expect(store.isStreaming).toBe(false)
+    // One row, not two: settled with its own row id already hydrated, the
+    // stash defers to the persisted copy instead of pushing a second.
+    expect(
+      store.entries.filter((entry) => entry.role === 'assistant')
+    ).toHaveLength(1)
+  })
+
+  it('demotes a hydrated live copy that shares the stashed message identity', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'go')
+    store.ingest(delta('t1', 'work'))
+    store.stashActiveTurn()
+
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 't1', 'go', 'user-row'),
+      historyRow(2, 'assistant', 't1', 'partial', 'older-row'),
+      {
+        ...historyRow(3, 'assistant', 't1', '', 'newest-row'),
+        status: 'streaming'
+      }
+    ])
+
+    // The acknowledgement row (`t1`) and newest persisted row differ, so
+    // only the shared message identity can associate this snapshot with the
+    // stash. The snapshot must not install its own competing transport.
+    expect(store.activeTurnId).toBeNull()
+    expect(store.messages.at(-1)?.streaming).toBe(false)
+
+    store.ingest(done('t1'))
+    store.resumeBackgroundTurn()
+
+    expect(store.isStreaming).toBe(false)
+    expect(store.activeTurnId).toBeNull()
+  })
+
   it('keeps a settled background reply when an earlier history turn shares its prompt text', () => {
     const store = useAgentConversationStore()
     store.setThreadId('th')
@@ -1140,6 +1523,28 @@ describe('useAgentConversationStore', () => {
     expect(store.messages.map((message) => message.id)).toEqual(['server-turn'])
     expect(partTexts(store)).toEqual(['persisted reply'])
     expect(store.isStreaming).toBe(false)
+  })
+
+  it('removes an unmatched live snapshot before restoring a background turn', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'go')
+    store.ingest(delta('t1', 'socket reply'))
+    store.stashActiveTurn()
+
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'go', 'user-row'),
+      {
+        ...historyRow(2, 'assistant', 'server-turn', '', 'snapshot-row'),
+        status: 'streaming'
+      }
+    ])
+    store.resumeBackgroundTurn()
+
+    expect(store.messages).toHaveLength(1)
+    expect(partTexts(store)).toEqual(['socket reply'])
+    expect(store.activeTurnId).toBe(T1)
   })
 
   it('keeps socket completion authoritative when it arrives before hydration', () => {
