@@ -1,6 +1,7 @@
 import {
   HUB_APPS_PATH,
   HUB_MODELS_PATH,
+  HUB_PATH,
   HUB_WORKFLOWS_PATH,
   hubAppHref,
   hubAppSlugs,
@@ -63,6 +64,7 @@ export function modelsUrlEntries({
     destination: atHub(hubSlug)
   })
   return [
+    { path: HUB_PATH, kind: 'section' },
     { path: HUB_MODELS_PATH, kind: 'hub' },
     { path: HUB_WORKFLOWS_PATH, kind: 'section' },
     { path: HUB_APPS_PATH, kind: 'section' },
@@ -154,7 +156,7 @@ const modelsUrlRegistry = buildModelsUrlRegistry(
     apps: hubAppSlugs,
     aliases: hubModelAliases
   }),
-  [MODELS_BASE_PATH, HUB_MODELS_PATH, HUB_WORKFLOWS_PATH, HUB_APPS_PATH]
+  [MODELS_BASE_PATH, HUB_PATH]
 )
 
 export const modelsUrlRoots = modelsUrlRegistry.roots

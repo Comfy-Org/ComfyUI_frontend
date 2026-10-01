@@ -11,20 +11,25 @@ import type {
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
-import CatalogueTabs from './CatalogueTabs.vue'
-import type { CatalogueTab } from './CatalogueTabs.vue'
+import type { HubSection } from './HubSpaceNav.vue'
 import type { WorkshopPageType } from '../../scripts/workshop-analytics'
-import { captureWorkshopEvent, useWorkshopEnabled } from '../../scripts/posthog'
+import {
+  captureWorkshopEvent,
+  useWorkshopAppsEnabled,
+  useWorkshopEnabled
+} from '../../scripts/posthog'
 import type { CatalogueApp } from '../../lib/workshop/catalogue-apps'
 import { ac } from '../../lib/workshop/catalogue-apps'
 import {
   loadAppCatalogue,
+  loadExploreCatalogue,
   loadWorkflowCatalogue
 } from '../../lib/workshop/catalogue-components'
 import { isWorkshopModelShown } from '../../scripts/workshop-model-flags'
 
 const WorkflowCatalogue = defineAsyncComponent(loadWorkflowCatalogue)
 const AppCatalogue = defineAsyncComponent(loadAppCatalogue)
+const ExploreCatalogue = defineAsyncComponent(loadExploreCatalogue)
 
 const {
   models,
@@ -35,13 +40,14 @@ const {
   models: readonly WorkshopModel[]
   initialSearch?: string
   locale?: Locale
-  section?: CatalogueTab
+  section?: HubSection
 }>()
 
 const inSection = ref(false)
 const browseAll = ref(false)
 const mounted = useMounted()
 const enabled = useWorkshopEnabled()
+const appsEnabled = useWorkshopAppsEnabled()
 const shownModels = computed(() =>
   models.filter((model) => isWorkshopModelShown(model))
 )
@@ -68,30 +74,29 @@ const appCards = computed<readonly CatalogueApp[]>(() =>
     image: app.thumbnail?.url ?? app.thumbnailUrl
   }))
 )
-const availableTabs = computed<readonly CatalogueTab[]>(() => [
-  'models',
-  ...(workflows.value.length || section === 'workflows'
-    ? (['workflows'] as const)
-    : [])
-])
 
 // Each tab says what its own listing is for, in Eric's words.
 const SUBTITLE_KEY = {
+  explore: 'workshop.explore.subtitle',
   models: 'workshop.hero.subtitle',
   workflows: 'workshop.catalogue.workflowsSubtitle',
   apps: 'workshop.catalogue.appsSubtitle'
-} as const satisfies Record<CatalogueTab, TranslationKey>
+} as const satisfies Record<HubSection, TranslationKey>
 
 whenever(
   () => mounted.value && enabled.value,
   () => {
     const catalogues = {
+      explore: {
+        model_count:
+          routerModels.value.length + workflows.value.length + apps.value.length
+      },
       models: { model_count: routerModels.value.length, page_type: 'model' },
       workflows: { model_count: workflows.value.length, page_type: 'workflow' },
       apps: { model_count: apps.value.length, page_type: 'app' }
     } as const satisfies Record<
-      CatalogueTab,
-      { model_count: number; page_type: WorkshopPageType }
+      HubSection,
+      { model_count: number; page_type?: WorkshopPageType }
     >
     captureWorkshopEvent({
       name: 'catalogue_viewed',
@@ -124,24 +129,21 @@ whenever(
       </p>
     </div>
   </div>
+  <ExploreCatalogue
+    v-if="section === 'explore'"
+    :apps="appsEnabled ? appCards : []"
+    :workflows
+    :models="routerModels"
+    :locale
+  />
   <WorkshopModelsGrid
-    v-if="section === 'models'"
+    v-else-if="section === 'models'"
     v-model:browse-all="browseAll"
     :models="routerModels"
     :initial-search
     :locale
     @section="inSection = $event"
-  >
-    <template #tabs>
-      <CatalogueTabs
-        v-if="availableTabs.length > 1"
-        :tabs="availableTabs"
-        :model-value="section"
-        :locale
-        links
-      />
-    </template>
-  </WorkshopModelsGrid>
+  />
   <WorkflowCatalogue
     v-else-if="section === 'workflows'"
     v-model:browse-all="browseAll"
@@ -149,16 +151,7 @@ whenever(
     :initial-search
     :locale
     @section="inSection = $event"
-  >
-    <template #tabs>
-      <CatalogueTabs
-        :tabs="availableTabs"
-        :model-value="section"
-        :locale
-        links
-      />
-    </template>
-  </WorkflowCatalogue>
+  />
   <AppCatalogue
     v-else
     v-model:browse-all="browseAll"

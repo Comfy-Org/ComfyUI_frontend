@@ -16,10 +16,12 @@ describe('getMainNavigation', () => {
               )
             : [item.href]
         )
-      const catalogue = getRoutes(locale).workshop
-      expect(catalogue).toBe('/hub/models/')
-      expect(links(false)).not.toContain(catalogue)
-      expect(links(true).filter((href) => href === catalogue)).toHaveLength(2)
+      const { hubExplore, workshop } = getRoutes(locale)
+      expect([hubExplore, workshop]).toEqual(['/hub/', '/hub/models/'])
+      for (const catalogue of [hubExplore, workshop]) {
+        expect(links(false)).not.toContain(catalogue)
+        expect(links(true)).toContain(catalogue)
+      }
     }
   )
   it('includes a Products entry linking to Enterprise Managed Builds', () => {

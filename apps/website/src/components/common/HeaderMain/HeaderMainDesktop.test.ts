@@ -18,18 +18,18 @@ describe('HeaderMainDesktop', () => {
   })
   it('renders the Hub leaf link with its NEW badge', async () => {
     const link = await modelsLink('/pricing')
-    expect(link.getAttribute('href')).toBe('/hub/models/')
+    expect(link.getAttribute('href')).toBe('/hub/')
     expect(link.textContent).toMatch(/new/i)
     expect(link.getAttribute('data-active')).toBeNull()
   })
 
   it('marks the leaf link active on its own page', async () => {
-    const link = await modelsLink('/hub/models/')
+    const link = await modelsLink('/hub/')
     expect(link.getAttribute('data-active')).not.toBeNull()
   })
 
   it('keeps Products inactive on the Hub page it also links to', async () => {
-    await modelsLink('/hub/models/')
+    await modelsLink('/hub/')
     const products = screen.getByRole('button', { name: /products/i })
     expect(products.getAttribute('data-active')).toBeNull()
   })

@@ -707,6 +707,8 @@ test.describe('Model playground', () => {
       .getByRole('navigation', { name: 'Main navigation', exact: true })
       .getByRole('link', { name: 'Hub', exact: true })
       .click()
+    await expect(page).toHaveURL('/hub/')
+    await page.getByTestId('hub-space-build').click()
     await page.getByTestId('workshop-search').fill('Seedream 4.5 Image Edit')
     await page
       .getByTestId('workshop-models-grid')

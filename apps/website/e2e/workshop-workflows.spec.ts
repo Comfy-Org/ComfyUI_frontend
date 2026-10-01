@@ -29,13 +29,13 @@ test('workflow launch groups lead to the existing shared form', async ({
 }) => {
   await mockWorkflowVisibility(context, true)
   await page.goto('/hub/models/')
-  await expect(page.getByTestId('catalogue-tab-workflows')).toBeInViewport()
-  await page.getByTestId('catalogue-tab-workflows').click()
+  await expect(page.getByTestId('hub-space-customize')).toBeInViewport()
+  await page.getByTestId('hub-space-customize').click()
   await expect(page).toHaveURL('/hub/workflows/')
   await expect(
     page.getByRole('heading', { level: 1, name: 'ComfyUI workflows' })
   ).toBeVisible()
-  await expect(page.getByTestId('catalogue-tab-workflows')).toHaveAttribute(
+  await expect(page.getByTestId('hub-space-customize')).toHaveAttribute(
     'aria-current',
     'page'
   )
@@ -146,7 +146,7 @@ test('workflow launch groups lead to the existing shared form', async ({
   }
   await shelf.click()
   await expect(page).toHaveURL('/hub/workflows/?category=product')
-  await expect(page.getByTestId('catalogue-tab-workflows')).toHaveAttribute(
+  await expect(page.getByTestId('hub-space-customize')).toHaveAttribute(
     'aria-current',
     'page'
   )
@@ -217,7 +217,7 @@ test('withholds workflow discovery and direct pages when the workflow flag is of
   await mockWorkflowVisibility(context, false)
   await page.goto('/hub/models/')
   await expect(page.getByTestId('workshop-search')).toBeVisible()
-  await expect(page.getByTestId('catalogue-tabs')).toHaveCount(0)
+  await expect(page.getByTestId('hub-space-customize')).toHaveCount(0)
   await page.getByTestId('workshop-search').fill('Change a material')
   await expect(
     page.getByRole('link', { name: /Change a material/ })
@@ -288,8 +288,9 @@ test('workflow search and category filters share the mobile controls @mobile', a
 }) => {
   await mockWorkflowVisibility(context, true)
   await page.goto('/hub/models/')
-  await expect(page.getByTestId('catalogue-tab-workflows')).toBeInViewport()
-  await page.getByTestId('catalogue-tab-workflows').click()
+  await expect(page.getByTestId('hub-space-customize')).toBeInViewport()
+  await page.getByTestId('hub-space-customize').click()
+  await expect(page).toHaveURL('/hub/workflows/')
   await page.getByTestId('workshop-filter').click()
   await page.getByRole('button', { name: 'Upscale & restore 6' }).click()
   await page.getByRole('button', { name: 'Show 6 workflows' }).click()
@@ -323,7 +324,7 @@ test('workflow search and category filters share the mobile controls @mobile', a
   await expect(
     page.getByText('No workflows match your search and filters.')
   ).toBeVisible()
-  await page.getByTestId('catalogue-tab-models').click()
+  await page.getByTestId('hub-space-build').click()
   await expect(page.getByTestId('workflow-catalogue')).toHaveCount(0)
   await expect(page.getByTestId('workshop-search-button')).toHaveText(
     'Search models…'
@@ -338,8 +339,8 @@ test('the workflows half narrows to the model it runs on, from the menu and from
 }) => {
   await mockWorkflowVisibility(context, true)
   await page.goto('/hub/models/')
-  await expect(page.getByTestId('catalogue-tab-workflows')).toBeInViewport()
-  await page.getByTestId('catalogue-tab-workflows').click()
+  await expect(page.getByTestId('hub-space-customize')).toBeInViewport()
+  await page.getByTestId('hub-space-customize').click()
   const outcomes = page
     .getByTestId('workflow-catalogue')
     .getByTestId('workshop-model-card')
@@ -463,9 +464,8 @@ for (const { width, half, path } of tabletToolbars) {
     await page.setViewportSize({ width, height: 900 })
     await page.goto(path)
     const toolbar = page.getByTestId('workshop-toolbar')
-    await expect(toolbar.getByTestId('catalogue-tabs')).toBeVisible()
+    await expect(toolbar.getByTestId('workshop-search')).toBeVisible()
     for (const control of [
-      toolbar.getByTestId('catalogue-tabs'),
       toolbar.getByTestId('workshop-search'),
       toolbar.getByTestId('workshop-filter'),
       toolbar.getByTestId('workshop-sort')
@@ -550,14 +550,14 @@ test('keeps the workflow form inside a phone screen @mobile', async ({
   expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(viewportWidth)
 })
 
-test('@mobile keeps the catalogue tabs in place from one hub page to the next', async ({
+test('@mobile keeps the hub spaces in place from one hub page to the next', async ({
   page,
   context
 }) => {
   await mockWorkflowVisibility(context, true)
   await page.goto('/hub/models/')
-  const models = page.getByTestId('catalogue-tab-models')
-  const workflows = page.getByTestId('catalogue-tab-workflows')
+  const models = page.getByTestId('hub-space-build')
+  const workflows = page.getByTestId('hub-space-customize')
   await expect(workflows).toBeVisible()
   const before = await workflows.boundingBox()
 
@@ -570,21 +570,21 @@ test('@mobile keeps the catalogue tabs in place from one hub page to the next', 
   expect((await models.boundingBox())?.y).toBeCloseTo(before?.y ?? 0, 0)
 })
 
-test('@mobile stretches the catalogue tabs across the toolbar on a phone', async ({
+test('@mobile fits every hub space on a phone without sideways scrolling', async ({
   page,
   context
 }) => {
   await mockWorkflowVisibility(context, true)
   await page.goto('/hub/models/')
-  const toolbar = page.getByTestId('workshop-toolbar')
-  const tabs = toolbar.getByTestId('catalogue-tabs')
-  await expect(tabs).toBeVisible()
+  const spaces = page.getByTestId('hub-space-nav')
 
-  const [bar, group] = await Promise.all([
-    toolbar.boundingBox(),
-    tabs.boundingBox()
+  await expect(spaces.getByRole('link')).toHaveText([
+    'Explore',
+    'Customize',
+    'Build'
   ])
-  expect(Math.abs((bar?.width ?? 0) - (group?.width ?? 0))).toBeLessThan(12)
+  for (const link of await spaces.getByRole('link').all())
+    await expect(link).toBeInViewport({ ratio: 1 })
 })
 
 test('the examples below the form read and mark themselves like a model page', async ({

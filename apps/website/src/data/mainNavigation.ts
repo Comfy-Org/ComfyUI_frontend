@@ -52,7 +52,7 @@ export function getMainNavigation(
     ? [
         {
           label: t('nav.workshop', locale),
-          href: routes.workshop,
+          href: routes.hubExplore,
           badge: 'new'
         }
       ]

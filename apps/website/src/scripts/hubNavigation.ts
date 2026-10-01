@@ -1,6 +1,7 @@
 import { getRoutes } from '../config/routes'
 import {
   loadAppCatalogue,
+  loadExploreCatalogue,
   loadWorkflowCatalogue
 } from '../lib/workshop/catalogue-components'
 
@@ -8,6 +9,7 @@ const routes = getRoutes('en')
 const catalogues: Readonly<
   Record<string, (() => Promise<unknown>) | undefined>
 > = {
+  [routes.hubExplore]: loadExploreCatalogue,
   [routes.workshop]: undefined,
   [routes.hubWorkflows]: loadWorkflowCatalogue,
   [routes.hubApps]: loadAppCatalogue

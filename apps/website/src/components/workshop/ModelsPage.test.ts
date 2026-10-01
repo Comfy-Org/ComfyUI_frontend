@@ -18,6 +18,7 @@ import {
   useWorkshopAuthFlag
 } from '../../scripts/posthog'
 import { FORWARD_GRACE_MS, forwardLegacySection } from './forwardLegacySection'
+import type { HubSection } from './HubSpaceNav.vue'
 import ModelsPage from './ModelsPage.vue'
 
 vi.mock(import('../../scripts/posthog'))
@@ -109,41 +110,68 @@ describe('Models page entry', () => {
     expect(html).toContain('workshop-loading')
   })
 
-  function renderSection(section: 'models' | 'workflows' | 'apps') {
+  function renderSection(section: HubSection) {
     vi.stubGlobal(
       'fetch',
       vi.fn<typeof fetch>().mockResolvedValue(Response.json(workshopPages))
     )
     enabled.value = true
-    workflowsEnabled.value = true
     render(ModelsPage, { props: { section, heading: 'Section heading' } })
     return screen.findByRole('heading', { name: 'Section heading' })
   }
 
-  it.for([
-    { section: 'apps', current: 'Create' },
-    { section: 'models', current: 'Build' },
-    { section: 'workflows', current: 'Build' }
-  ] as const)(
-    'splits the hub into Create and Build, marking $current on $section',
-    async ({ section, current }) => {
-      appsEnabled.value = true
-      await renderSection(section)
+  const hubSpaces = () =>
+    within(screen.getByRole('navigation', { name: 'Hub spaces' }))
 
-      const spaces = within(
-        screen.getByRole('navigation', { name: 'Hub spaces' })
-      )
+  it.for([
+    {
+      flags: 'on',
+      on: true,
+      spaces: [
+        ['Explore', '/hub/'],
+        ['Create', '/hub/apps/'],
+        ['Customize', '/hub/workflows/'],
+        ['Build', '/hub/models/']
+      ]
+    },
+    {
+      flags: 'off',
+      on: false,
+      spaces: [
+        ['Explore', '/hub/'],
+        ['Build', '/hub/models/']
+      ]
+    }
+  ])(
+    'links the hub spaces a visitor can open with apps and workflows $flags',
+    async ({ on, spaces }) => {
+      appsEnabled.value = on
+      workflowsEnabled.value = on
+      await renderSection('models')
+
       expect(
-        spaces
+        hubSpaces()
           .getAllByRole('link')
           .map((link) => [link.textContent.trim(), link.getAttribute('href')])
-      ).toEqual([
-        ['Create', '/hub/apps/'],
-        ['Build', '/hub/models/']
-      ])
-      expect(spaces.getByRole('link', { current: 'page' })).toHaveTextContent(
-        current
-      )
+      ).toEqual(spaces)
+    }
+  )
+
+  it.for([
+    { section: 'explore', current: 'Explore' },
+    { section: 'apps', current: 'Create' },
+    { section: 'workflows', current: 'Customize' },
+    { section: 'models', current: 'Build' }
+  ] as const)(
+    'marks $current as the space of $section',
+    async ({ section, current }) => {
+      appsEnabled.value = true
+      workflowsEnabled.value = true
+      await renderSection(section)
+
+      expect(
+        hubSpaces().getByRole('link', { current: 'page' })
+      ).toHaveTextContent(current)
     }
   )
 
@@ -171,10 +199,20 @@ describe('Models page entry', () => {
     )
   })
 
-  it('leaves the hub unsplit while apps are off', async () => {
-    await renderSection('models')
+  it('opens the explore page to visitors without the workshop flag', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>().mockResolvedValue(Response.json(workshopPages))
+    )
+    render(ModelsPage, {
+      props: { section: 'explore', heading: 'Explore heading' },
+      slots: { fallback: '<h1>Public Models</h1>' }
+    })
 
-    expect(screen.queryByRole('navigation', { name: 'Hub spaces' })).toBeNull()
+    expect(await screen.findByTestId('explore-build')).toBeVisible()
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      'Explore heading'
+    )
   })
 
   it.for([
@@ -505,12 +543,12 @@ describe('Models page entry', () => {
       'fetch',
       vi.fn<typeof fetch>().mockResolvedValue(Response.json(workshopPages))
     )
-    render(ModelsPage)
+    render(ModelsPage, { props: { heading: 'Models heading' } })
     expect(await screen.findByTestId('workshop-search')).toBeTruthy()
-    expect(screen.queryByTestId('catalogue-tabs')).toBeNull()
+    expect(screen.queryByTestId('hub-space-customize')).toBeNull()
 
     workflowsEnabled.value = true
-    expect(await screen.findByTestId('catalogue-tabs')).toBeTruthy()
+    expect(await screen.findByTestId('hub-space-customize')).toBeTruthy()
   })
 
   it.for([

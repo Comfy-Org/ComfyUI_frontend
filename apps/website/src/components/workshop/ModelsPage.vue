@@ -22,7 +22,7 @@ import {
   useWorkshopWorkflowsEnabled
 } from '../../scripts/posthog'
 
-import type { CatalogueTab } from './CatalogueTabs.vue'
+import type { HubSection } from './HubSpaceNav.vue'
 import HubSpaceNav from './HubSpaceNav.vue'
 import WorkshopGate from './WorkshopGate.vue'
 import WorkshopLoading from './WorkshopLoading.vue'
@@ -40,7 +40,7 @@ const {
   slug?: string
   workflowId?: string
   heading?: string
-  section?: CatalogueTab
+  section?: HubSection
 }>()
 
 const loadingLabel = t('workshop.load.pending', 'en')
@@ -71,11 +71,9 @@ const gateAllows = computed(() => {
   return section === 'apps' ? appsEnabled.value : undefined
 })
 const catalogueView = computed(() => {
-  if (!mounted.value || (section !== 'models' && !settled.value))
-    return 'loading'
-  return section === 'models' || (enabled.value && gateAllows.value)
-    ? 'granted'
-    : 'denied'
+  const isPublic = section === 'models' || section === 'explore'
+  if (!mounted.value || (!isPublic && !settled.value)) return 'loading'
+  return isPublic || (enabled.value && gateAllows.value) ? 'granted' : 'denied'
 })
 const recoveringWorkflow = shallowRef(false)
 const savedWorkflow = shallowRef(false)
