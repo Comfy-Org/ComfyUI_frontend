@@ -20,13 +20,11 @@ const copy = {
   'relight.tool.undo': { en: 'Undo', 'zh-CN': '撤销' },
   'relight.tool.redo': { en: 'Redo', 'zh-CN': '重做' },
   'relight.history': { en: 'History', 'zh-CN': '历史记录' },
-  'relight.view': { en: 'View', 'zh-CN': '视图' },
-  'relight.view.live': { en: 'Relit', 'zh-CN': '新光照' },
-  'relight.view.hold': {
-    en: 'Press and hold to see the original',
-    'zh-CN': '按住查看原图'
+  'relight.view.lightmap': { en: 'Show light map', 'zh-CN': '显示光照图' },
+  'relight.compare.live': {
+    en: 'Drag to compare the original and the live preview',
+    'zh-CN': '拖动以对比原图与实时预览'
   },
-  'relight.view.lightmap': { en: 'Light map', 'zh-CN': '光照图' },
   'relight.handles': { en: 'Light handles', 'zh-CN': '灯光控制点' },
   'relight.hint': {
     en: 'Drag a light to move it · Arrow keys to nudge',

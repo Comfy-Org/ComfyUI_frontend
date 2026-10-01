@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 
 import EditorFrame from './EditorFrame.vue'
+import EditorSplitLine from './EditorSplitLine.vue'
 
 const {
   before,
@@ -36,26 +37,11 @@ const split = ref(50)
         class="absolute inset-0 size-full object-cover"
         :style="{ clipPath: `inset(0 ${100 - split}% 0 0)` }"
       />
-      <span
-        class="pointer-events-none absolute inset-y-0 w-px bg-primary-warm-white"
-        :style="{ left: `${split}%` }"
-        aria-hidden="true"
-      />
-      <span
-        class="absolute top-2.5 left-2.5 rounded-full bg-primary-comfy-ink/75 px-2 py-0.5 text-[10px] text-primary-warm-white"
-        >{{ beforeLabel }}</span
-      >
-      <span
-        class="absolute top-2.5 right-2.5 rounded-full bg-primary-comfy-ink/75 px-2 py-0.5 text-[10px] text-primary-warm-white"
-        >{{ afterLabel }}</span
-      >
-      <input
-        v-model.number="split"
-        type="range"
-        min="0"
-        max="100"
-        :aria-label="sliderLabel"
-        class="absolute inset-0 size-full cursor-ew-resize opacity-0"
+      <EditorSplitLine
+        v-model="split"
+        :before-label="beforeLabel"
+        :after-label="afterLabel"
+        :slider-label="sliderLabel"
       />
     </div>
   </EditorFrame>

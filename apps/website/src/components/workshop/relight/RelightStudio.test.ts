@@ -270,38 +270,48 @@ describe('RelightStudio', () => {
     }
   )
 
-  it.for([
-    { view: 'Original', preview: false },
-    { view: 'Light map', preview: true },
-    { view: 'Relit', preview: true }
-  ])('shows the live preview on $view: $preview', async ({ view, preview }) => {
+  it('splits the photo into original and relit while Compare is on', async () => {
     const user = await openExample()
     const tools = screen.getByRole('toolbar', { name: 'Relight tools' })
+    const compare = within(tools).getByRole('button', { name: 'Compare' })
+    const stage = screen.getByTestId('relight-stage')
 
-    await user.click(within(tools).getByRole('button', { name: 'Compare' }))
-    await user.click(within(tools).getByRole('menuitemradio', { name: view }))
+    await user.click(compare)
 
-    const shown = within(screen.getByTestId('relight-stage')).getByTestId(
-      'relight-preview'
-    )
-    if (preview) expect(shown).toBeVisible()
-    else expect(shown).not.toBeVisible()
+    expect(compare).toHaveAttribute('aria-pressed', 'true')
+    const divider = within(stage).getByRole('slider', {
+      name: 'Drag to compare the original and the live preview'
+    })
+    expect(divider).toHaveValue('50')
+    expect(stage).toHaveTextContent('Original')
+    expect(stage).toHaveTextContent('Relit')
+    expect(screen.queryByRole('button', { name: /^Warm key\./ })).toBeNull()
+    expect(
+      screen.queryByText('Drag a light to move it · Arrow keys to nudge')
+    ).toBeNull()
+    await fireEvent.update(divider, '60')
+    expect(within(stage).getByTestId('relight-preview')).toHaveStyle({
+      clipPath: 'inset(0 0 0 60%)'
+    })
+
+    await user.click(compare)
+    expect(within(stage).queryByRole('slider')).toBeNull()
+    expect(screen.getByRole('button', { name: /^Warm key\./ })).toBeVisible()
   })
 
-  it('shows the original while Compare is pressed and held', async () => {
+  it('shows the light map from the Scene section', async () => {
     const user = await openExample()
-    const compare = screen.getByRole('button', { name: 'Compare' })
-    const preview = within(screen.getByTestId('relight-stage')).getByTestId(
-      'relight-preview'
-    )
+    await user.click(within(panel()).getByRole('button', { name: /^Scene/ }))
+    const toggle = within(section('Scene')).getByRole('switch', {
+      name: 'Show light map'
+    })
 
-    await user.pointer({ keys: '[MouseLeft>]', target: compare })
-    await vi.advanceTimersByTimeAsync(300)
-    expect(preview).not.toBeVisible()
+    await user.click(toggle)
 
-    await user.pointer({ keys: '[/MouseLeft]', target: compare })
-    expect(preview).toBeVisible()
-    expect(screen.queryByRole('menu')).toBeNull()
+    expect(toggle).toHaveAttribute('aria-checked', 'true')
+    expect(
+      within(screen.getByTestId('relight-stage')).getByTestId('relight-preview')
+    ).toBeVisible()
   })
 
   it('hides the light handles', async () => {
