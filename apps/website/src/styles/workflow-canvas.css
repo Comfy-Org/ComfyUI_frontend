@@ -204,7 +204,6 @@ video.wf-node-image {
   stroke-dashoffset: 1;
 }
 .wf-agent {
-  --agent-seam-x: 18%;
   transform-origin: 0 0;
   position: absolute;
   z-index: 2;
@@ -222,15 +221,6 @@ video.wf-node-image {
   display: block;
   width: 100%;
   height: 100%;
-}
-.wf-agent::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: var(--agent-seam-x);
-  width: 2px;
-  height: 100%;
-  background: var(--wf-accent);
 }
 .wf-user {
   position: absolute;
