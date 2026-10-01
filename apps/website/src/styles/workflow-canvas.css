@@ -267,8 +267,9 @@ video.wf-node-image {
   width: 0.843cqw;
   height: 1.831cqw;
 }
-/* user-right.svg is a dedicated right-cap asset, already oriented to sit at
-   the end of the pill: it needs no mirroring transform. */
+.wf-user-badge img:last-child {
+  transform: rotate(180deg);
+}
 @media (max-width: 1023px) {
   .wf-showcase {
     display: none;
