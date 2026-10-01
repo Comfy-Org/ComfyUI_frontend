@@ -747,13 +747,15 @@ describe('ComfyApp', () => {
 
     it('preserves a hidden pending camera restore across same-workflow undo', async () => {
       const canvasElement = document.createElement('canvas')
+      document.body.append(canvasElement)
       app.canvasElRef.value = canvasElement
       Reflect.set(app, 'rootGraphInternal', new LGraph())
       Reflect.set(mockCanvas, 'ds', {
         offset: [9, 11],
         scale: 1.3,
         min_scale: 0.1,
-        max_scale: 10
+        max_scale: 10,
+        setViewportSize: vi.fn()
       })
       Reflect.set(mockCanvas, 'bgcanvas', document.createElement('canvas'))
       const workflow = new ComfyWorkflow({
@@ -762,34 +764,49 @@ describe('ComfyApp', () => {
         size: 0
       })
       const scheduler = useCanvasScheduler()
-      scheduler.clear()
+      scheduler.cancel('graph-load-camera')
+      vi.mocked(mockCanvas.draw).mockClear()
 
       await app.loadGraphData(createWorkflowGraphData(), true, true, workflow)
-      expect(scheduler.pending()).toBe(1)
-
       await app.loadGraphData(createWorkflowGraphData(), false, false, workflow)
+      Object.defineProperties(canvasElement, {
+        offsetParent: { configurable: true, value: document.body },
+        offsetWidth: { configurable: true, value: 640 },
+        offsetHeight: { configurable: true, value: 480 }
+      })
+      scheduler.flush()
 
-      expect(scheduler.pending()).toBe(1)
+      expect(mockCanvas.draw).toHaveBeenCalledWith(true, true)
     })
 
     it('drops a hidden anonymous camera restore when another anonymous graph loads', async () => {
       const canvasElement = document.createElement('canvas')
+      document.body.append(canvasElement)
       app.canvasElRef.value = canvasElement
       Reflect.set(app, 'rootGraphInternal', new LGraph())
       Reflect.set(mockCanvas, 'ds', {
         offset: [9, 11],
         scale: 1.3,
         min_scale: 0.1,
-        max_scale: 10
+        max_scale: 10,
+        setViewportSize: vi.fn()
       })
       Reflect.set(mockCanvas, 'bgcanvas', document.createElement('canvas'))
       const scheduler = useCanvasScheduler()
-      scheduler.clear()
+      scheduler.cancel('graph-load-camera')
+      vi.mocked(mockCanvas.draw).mockClear()
 
       await app.loadGraphData(createWorkflowGraphData(), true, true)
       await app.loadGraphData(createWorkflowGraphData(), true, false)
 
-      expect(scheduler.pending()).toBe(0)
+      Object.defineProperties(canvasElement, {
+        offsetParent: { configurable: true, value: document.body },
+        offsetWidth: { configurable: true, value: 640 },
+        offsetHeight: { configurable: true, value: 480 }
+      })
+      scheduler.flush()
+
+      expect(mockCanvas.draw).not.toHaveBeenCalled()
     })
 
     it('brackets an API JSON import with graph-load hooks', async () => {

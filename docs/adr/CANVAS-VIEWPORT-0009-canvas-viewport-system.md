@@ -32,7 +32,6 @@ interface CanvasViewport {
   readonly dpr: number
   readonly physicalWidth: number // cssWidth * dpr
   readonly physicalHeight: number // cssHeight * dpr
-  readonly generation: number // monotonically increasing
 }
 ```
 
@@ -40,7 +39,7 @@ Viewport measurement normalizes every finite positive DPR to at least `1`, prese
 
 Two functions operate on this type:
 
-- **`measureViewport(cssWidth, cssHeight, rawDpr, prevGeneration?)`** — a pure function that produces a new `CanvasViewport` from numeric dimensions and DPR. The optional previous generation supports deterministic generation tracking. `measureViewportFromElement(element, rawDpr?, prevGeneration?)` is the DOM adapter used by canvas lifecycle code.
+- **`measureViewport(cssWidth, cssHeight, rawDpr)`** — a pure function that produces a new `CanvasViewport` from numeric dimensions and DPR. `measureViewportFromElement(element, rawDpr?)` is the DOM adapter used by canvas lifecycle code.
 - **`applyViewport(viewport, fgCanvas, bgCanvas, consumer?)`** — a side-effecting function that atomically sizes both foreground and background canvases to the viewport's physical dimensions, scales their 2D contexts, and passes the applied CSS dimensions to an optional viewport consumer such as `DragAndScale`. Both canvases are updated in a single call, eliminating the possibility of a partial resize or a later layout read to recover the CSS size.
 
 The existing `LGraphCanvas.resize()` method and `resizeCanvas()` in app.ts both delegate their sizing work to the viewport system. Both paths follow the same sequence: measure → apply → draw.
@@ -69,7 +68,6 @@ Following the principles established in [ADR-ECS-0008](ECS-0008-entity-component
 ### Positive
 
 - Applying one viewport snapshot to both canvases eliminates an entire class of sizing bugs where foreground and background canvases diverge.
-- The generation counter enables stale-state detection — any consumer can verify it is reading from a consistent resize cycle.
 - Phase separation (measure vs apply) makes the resize lifecycle explicit and testable.
 - Pure functions (`measureViewport`) are trivially testable without DOM fixtures.
 - Separates hidden-canvas scheduling from the dimensions and transforms applied when scheduled work runs.

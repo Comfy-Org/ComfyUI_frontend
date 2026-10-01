@@ -1,4 +1,5 @@
 import type { DragAndScaleState } from '@/lib/litegraph/src/DragAndScale'
+import { clamp } from 'es-toolkit'
 
 interface CameraScaleRange {
   readonly minScale: number
@@ -35,7 +36,7 @@ export function normalizeCameraState(
   ) {
     return {
       offset: [value.offset[0], value.offset[1]],
-      scale: Math.min(Math.max(value.scale, minScale), maxScale)
+      scale: clamp(value.scale, minScale, maxScale)
     }
   }
 

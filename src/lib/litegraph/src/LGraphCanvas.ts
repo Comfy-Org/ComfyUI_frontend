@@ -1041,6 +1041,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   linkRenderer: LitegraphLinkAdapter | null = null
 
   /** Device pixel ratio from the last applied viewport. Single source of truth for DPR. */
+  /** Device pixel ratio applied with the current viewport dimensions. */
   dpr: number = 1
 
   /** If true, enable drag zoom. Ctrl+Shift+Drag Up/Down: zoom canvas. */
@@ -6716,8 +6717,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     )
       return
 
-    applyViewport(viewport, this.canvas, this.bgcanvas, this.ds)
-    this.dpr = viewport.dpr
+    applyViewport(viewport, this.canvas, this.bgcanvas, this)
     this.setDirty(true, true)
   }
 

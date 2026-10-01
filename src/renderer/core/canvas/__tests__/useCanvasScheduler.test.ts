@@ -76,7 +76,6 @@ describe('useCanvasScheduler', () => {
     testState.offsetParent = null
     scheduler.schedule({ run: op })
 
-    expect(scheduler.pending()).toBe(1)
     expect(op).not.toHaveBeenCalled()
     expect(testState.pendingFrames.size).toBe(0)
   })
@@ -96,7 +95,6 @@ describe('useCanvasScheduler', () => {
     scheduler.schedule({ element: operationCanvas, run: op })
 
     expect(op).toHaveBeenCalledOnce()
-    expect(scheduler.pending()).toBe(0)
   })
 
   it('schedule queues when canvas has zero dimensions', async () => {
@@ -107,7 +105,6 @@ describe('useCanvasScheduler', () => {
     testState.offsetHeight = 0
     scheduler.schedule({ run: op })
 
-    expect(scheduler.pending()).toBe(1)
     expect(op).not.toHaveBeenCalled()
     expect(testState.pendingFrames.size).toBe(0)
   })
@@ -126,7 +123,6 @@ describe('useCanvasScheduler', () => {
 
     expect(first).toHaveBeenCalledOnce()
     expect(second).toHaveBeenCalledOnce()
-    expect(scheduler.pending()).toBe(0)
   })
 
   it('flush executes queued operations after a zero-sized canvas is measured', async () => {
@@ -140,7 +136,6 @@ describe('useCanvasScheduler', () => {
     scheduler.flush()
 
     expect(op).toHaveBeenCalledOnce()
-    expect(scheduler.pending()).toBe(0)
   })
 
   it('flush is a no-op when canvas is not ready', async () => {
@@ -151,28 +146,6 @@ describe('useCanvasScheduler', () => {
     scheduler.schedule({ run: op })
     scheduler.flush()
 
-    expect(op).not.toHaveBeenCalled()
-    expect(scheduler.pending()).toBe(1)
-  })
-
-  it('clear discards all pending operations and cancels RAF', async () => {
-    const scheduler = await createScheduler()
-    const op = vi.fn()
-
-    testState.offsetParent = null
-    scheduler.schedule({ run: op })
-    useCanvasStore().linearMode = true
-    await nextTick()
-    testState.offsetParent = document.body
-    useCanvasStore().linearMode = false
-    await nextTick()
-    expect(testState.pendingFrames.size).toBe(1)
-
-    scheduler.clear()
-
-    expect(scheduler.pending()).toBe(0)
-    expect(testState.cancelAnimationFrame).toHaveBeenCalledOnce()
-    runNextAnimationFrame()
     expect(op).not.toHaveBeenCalled()
   })
 
@@ -242,7 +215,6 @@ describe('useCanvasScheduler', () => {
     await nextTick()
 
     scheduler.schedule({ run: op })
-    expect(scheduler.pending()).toBe(1)
 
     const framesBefore = testState.pendingFrames.size
 
@@ -278,7 +250,6 @@ describe('useCanvasScheduler', () => {
     runNextAnimationFrame()
     expect(testState.pendingFrames.size).toBe(0)
     expect(op).not.toHaveBeenCalled()
-    expect(scheduler.pending()).toBe(0)
   })
 
   it('replaces a pending operation with the same key', async () => {

@@ -20,10 +20,6 @@ export interface CanvasScheduler {
   flush(): void
   /** Discard the pending operation with this key. */
   cancel(key: string): void
-  /** Discard all pending ops and cancel any scheduled RAF. */
-  clear(): void
-  /** Number of queued ops. */
-  pending(): number
   /** Whether the canvas element is visible and properly sized. */
   isCanvasReady(): boolean
 }
@@ -114,21 +110,9 @@ export function createCanvasScheduler(): CanvasScheduler {
     }
   }
 
-  function clear(): void {
-    queue.length = 0
-    if (rafId != null) {
-      cancelAnimationFrame(rafId)
-      rafId = null
-    }
-  }
-
   function cancel(key: string): void {
     const index = queue.findIndex((operation) => operation.key === key)
     if (index !== -1) queue.splice(index, 1)
-  }
-
-  function pending(): number {
-    return queue.length
   }
 
   watch(
@@ -141,7 +125,7 @@ export function createCanvasScheduler(): CanvasScheduler {
     }
   )
 
-  return { schedule, flush, cancel, clear, pending, isCanvasReady }
+  return { schedule, flush, cancel, isCanvasReady }
 }
 
 export const useCanvasScheduler = createSharedComposable(createCanvasScheduler)

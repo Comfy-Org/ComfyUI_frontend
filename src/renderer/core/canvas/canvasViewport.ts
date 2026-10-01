@@ -4,14 +4,13 @@ interface CanvasViewport {
   readonly dpr: number
   readonly physicalWidth: number
   readonly physicalHeight: number
-  readonly generation: number
 }
 
 interface CanvasViewportConsumer {
-  setViewportSize(width: number, height: number): void
+  dpr: number
+  ds: { setViewportSize(width: number, height: number): void }
 }
 
-let currentGeneration = 0
 const appliedViewportByCanvas = new WeakMap<HTMLCanvasElement, CanvasViewport>()
 
 function normalizeDpr(rawDpr: number): number {
@@ -21,8 +20,7 @@ function normalizeDpr(rawDpr: number): number {
 function measureViewport(
   cssWidth: number,
   cssHeight: number,
-  rawDpr: number,
-  prevGeneration?: number
+  rawDpr: number
 ): CanvasViewport {
   // Keep at least one backing pixel per CSS pixel. DPR values below one are
   // valid browser inputs, but using them directly makes the canvas blurry.
@@ -32,23 +30,20 @@ function measureViewport(
     cssHeight,
     dpr,
     physicalWidth: Math.round(cssWidth * dpr),
-    physicalHeight: Math.round(cssHeight * dpr),
-    generation: (prevGeneration ?? currentGeneration) + 1
+    physicalHeight: Math.round(cssHeight * dpr)
   })
 }
 
 function measureViewportFromElement(
   element: HTMLCanvasElement,
-  rawDpr?: number,
-  prevGeneration?: number
+  rawDpr?: number
 ): CanvasViewport {
   const initialRect = element.getBoundingClientRect()
   if (initialRect.width === 0 || initialRect.height === 0) {
     return measureViewport(
       initialRect.width,
       initialRect.height,
-      rawDpr ?? window.devicePixelRatio,
-      prevGeneration
+      rawDpr ?? window.devicePixelRatio
     )
   }
 
@@ -61,8 +56,7 @@ function measureViewportFromElement(
     return measureViewport(
       previousViewport.cssWidth,
       previousViewport.cssHeight,
-      rawDpr ?? window.devicePixelRatio,
-      prevGeneration
+      rawDpr ?? window.devicePixelRatio
     )
   }
 
@@ -80,12 +74,7 @@ function measureViewportFromElement(
   const width = cssRect.width || previousViewport?.cssWidth || initialRect.width
   const height =
     cssRect.height || previousViewport?.cssHeight || initialRect.height
-  return measureViewport(
-    width,
-    height,
-    rawDpr ?? window.devicePixelRatio,
-    prevGeneration
-  )
+  return measureViewport(width, height, rawDpr ?? window.devicePixelRatio)
 }
 
 function applyViewport(
@@ -125,9 +114,10 @@ function applyViewport(
 
   appliedViewportByCanvas.set(fg, viewport)
   appliedViewportByCanvas.set(bg, viewport)
-  consumer?.setViewportSize(viewport.cssWidth, viewport.cssHeight)
-
-  currentGeneration = viewport.generation
+  if (consumer) {
+    consumer.dpr = viewport.dpr
+    consumer.ds.setViewportSize(viewport.cssWidth, viewport.cssHeight)
+  }
   return viewport
 }
 

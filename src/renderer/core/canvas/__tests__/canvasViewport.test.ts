@@ -54,7 +54,7 @@ function observedCanvas(width: number, height: number) {
 
 describe('measureViewport', () => {
   it('computes physical dimensions from CSS dimensions and DPR', () => {
-    const vp = measureViewport(800, 600, 2, 0)
+    const vp = measureViewport(800, 600, 2)
     expect(vp.cssWidth).toBe(800)
     expect(vp.cssHeight).toBe(600)
     expect(vp.dpr).toBe(2)
@@ -63,38 +63,30 @@ describe('measureViewport', () => {
   })
 
   it('clamps sub-1 DPR to one backing pixel per CSS pixel', () => {
-    const vp = measureViewport(800, 600, 0.5, 0)
+    const vp = measureViewport(800, 600, 0.5)
     expect(vp.dpr).toBe(1)
     expect(vp.physicalWidth).toBe(800)
     expect(vp.physicalHeight).toBe(600)
   })
 
   it('falls back to 1 for invalid (non-positive) DPR', () => {
-    const vp = measureViewport(100, 100, -1, 0)
+    const vp = measureViewport(100, 100, -1)
     expect(vp.dpr).toBe(1)
   })
 
   it('falls back to 1 for non-finite DPR', () => {
-    expect(measureViewport(100, 100, Number.POSITIVE_INFINITY, 0).dpr).toBe(1)
-    expect(measureViewport(100, 100, Number.NaN, 0).dpr).toBe(1)
-  })
-
-  it('increments generation from previous value', () => {
-    const vp1 = measureViewport(800, 600, 1, 0)
-    expect(vp1.generation).toBe(1)
-
-    const vp2 = measureViewport(800, 600, 1, vp1.generation)
-    expect(vp2.generation).toBe(2)
+    expect(measureViewport(100, 100, Number.POSITIVE_INFINITY).dpr).toBe(1)
+    expect(measureViewport(100, 100, Number.NaN).dpr).toBe(1)
   })
 
   it('rounds physical dimensions', () => {
-    const vp = measureViewport(801, 601, 1.5, 0)
+    const vp = measureViewport(801, 601, 1.5)
     expect(vp.physicalWidth).toBe(1202)
     expect(vp.physicalHeight).toBe(902)
   })
 
   it('returns a frozen object', () => {
-    const vp = measureViewport(800, 600, 2, 0)
+    const vp = measureViewport(800, 600, 2)
     expect(Object.isFrozen(vp)).toBe(true)
   })
 })
@@ -108,7 +100,7 @@ describe('measureViewportFromElement', () => {
       fromPartial({ width: canvas.width, height: canvas.height })
     )
 
-    const viewport = measureViewportFromElement(canvas, 2, 0)
+    const viewport = measureViewportFromElement(canvas, 2)
 
     expect(viewport.cssWidth).toBe(800)
     expect(viewport.cssHeight).toBe(600)
@@ -122,9 +114,9 @@ describe('measureViewportFromElement', () => {
       fromPartial({ width: canvas.width, height: canvas.height })
     )
 
-    const first = measureViewportFromElement(canvas, 2, 0)
+    const first = measureViewportFromElement(canvas, 2)
     applyViewport(first, canvas, canvas)
-    const second = measureViewportFromElement(canvas, 2, first.generation)
+    const second = measureViewportFromElement(canvas, 2)
 
     expect(second.cssWidth).toBe(800)
     expect(second.cssHeight).toBe(600)
@@ -140,7 +132,7 @@ describe('measureViewportFromElement', () => {
       fromPartial({ width: 800, height: 600 })
     )
 
-    const viewport = measureViewportFromElement(canvas, 2, 0)
+    const viewport = measureViewportFromElement(canvas, 2)
 
     expect(viewport.cssWidth).toBe(800)
     expect(viewport.cssHeight).toBe(600)
@@ -154,7 +146,7 @@ describe('measureViewportFromElement', () => {
       fromPartial({ width: 0, height: 0 })
     )
 
-    const viewport = measureViewportFromElement(canvas, 2, 0)
+    const viewport = measureViewportFromElement(canvas, 2)
 
     expect(viewport.cssWidth).toBe(0)
     expect(viewport.cssHeight).toBe(0)
@@ -163,7 +155,7 @@ describe('measureViewportFromElement', () => {
 
 describe('applyViewport', () => {
   it('sets both canvases to physical dimensions', () => {
-    const vp = measureViewport(800, 600, 2, 0)
+    const vp = measureViewport(800, 600, 2)
     const { canvas: fg } = mockCanvas()
     const { canvas: bg } = mockCanvas()
 
@@ -176,16 +168,17 @@ describe('applyViewport', () => {
   })
 
   it('hands CSS dimensions to the viewport consumer', () => {
-    const vp = measureViewport(800, 600, 2, 0)
-    const consumer = { setViewportSize: vi.fn() }
+    const vp = measureViewport(800, 600, 2)
+    const consumer = { dpr: 1, ds: { setViewportSize: vi.fn() } }
 
     applyViewport(vp, mockCanvas().canvas, mockCanvas().canvas, consumer)
 
-    expect(consumer.setViewportSize).toHaveBeenCalledWith(800, 600)
+    expect(consumer.dpr).toBe(2)
+    expect(consumer.ds.setViewportSize).toHaveBeenCalledWith(800, 600)
   })
 
   it('scales both canvas contexts by DPR', () => {
-    const vp = measureViewport(800, 600, 2, 0)
+    const vp = measureViewport(800, 600, 2)
     const fg = mockCanvas()
     const bg = mockCanvas()
 
@@ -196,7 +189,7 @@ describe('applyViewport', () => {
   })
 
   it('scales a shared foreground/background context only once', () => {
-    const vp = measureViewport(800, 600, 2, 0)
+    const vp = measureViewport(800, 600, 2)
     const { canvas, scaleArgs } = mockCanvas()
 
     applyViewport(vp, canvas, canvas)
@@ -205,7 +198,7 @@ describe('applyViewport', () => {
   })
 
   it('produces identical dimensions on both canvases', () => {
-    const vp = measureViewport(1920, 1080, 2.5, 0)
+    const vp = measureViewport(1920, 1080, 2.5)
     const { canvas: fg } = mockCanvas(100, 100)
     const { canvas: bg } = mockCanvas(200, 300)
 
@@ -216,7 +209,7 @@ describe('applyViewport', () => {
   })
 
   it('handles DPR of 1 without scaling artifacts', () => {
-    const vp = measureViewport(800, 600, 1, 0)
+    const vp = measureViewport(800, 600, 1)
     const fg = mockCanvas()
     const bg = mockCanvas()
 
@@ -228,7 +221,7 @@ describe('applyViewport', () => {
   })
 
   it('does not reset matching canvas backing stores', () => {
-    const vp = measureViewport(800, 600, 2, 0)
+    const vp = measureViewport(800, 600, 2)
     const fg = observedCanvas(1600, 1200)
     const bg = observedCanvas(1600, 1200)
 
