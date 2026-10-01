@@ -396,6 +396,21 @@ describe('useSubscription', () => {
       expect(subscriptionTierName.value).toBe('Enterprise')
     })
 
+    it('labels a tier with no catalog entry as the current plan, not Standard', async () => {
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: true,
+        has_funds: true,
+        subscription_tier: 'LEGACY_UNMAPPED',
+        renewal_date: '2025-11-16T12:00:00Z'
+      })
+
+      useCurrentUser().isLoggedIn = computed(() => true)
+      const { subscriptionTierName, fetchStatus } = useSubscriptionWithScope()
+
+      await fetchStatus()
+      expect(subscriptionTierName.value).toBe('Current plan')
+    })
+
     it('derives cancellation state and end date from cancel_at', async () => {
       mockGetBillingStatus.mockResolvedValue({
         is_active: true,

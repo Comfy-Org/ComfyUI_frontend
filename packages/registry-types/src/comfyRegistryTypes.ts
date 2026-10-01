@@ -17777,7 +17777,7 @@ export interface components {
          * @description The subscription tier level
          * @enum {string}
          */
-        SubscriptionTier: "FREE" | "STANDARD" | "CREATOR" | "PRO" | "FOUNDERS_EDITION" | "TEAM" | "ENTERPRISE";
+        SubscriptionTier: "FREE" | "STANDARD" | "CREATOR" | "PRO" | "FOUNDERS_EDITION";
         /** @description Active speaker detection configuration */
         SyncLabsActiveSpeaker: {
             /** @description Whether to automatically detect and apply generation to the active speaker */
