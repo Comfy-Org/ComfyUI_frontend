@@ -11,7 +11,8 @@ import HeaderMain from './HeaderMain.vue'
 
 vi.mock(import('../../../scripts/posthog'))
 vi.mock(import('../../../config/workshop-account-source'), () => ({
-  resolveWorkshopAccountSource: () => Promise.resolve('firebase')
+  resolveWorkshopAccountSource: () => Promise.resolve('firebase'),
+  peekWorkshopAccountSource: () => 'firebase'
 }))
 
 let flag = ref(false)

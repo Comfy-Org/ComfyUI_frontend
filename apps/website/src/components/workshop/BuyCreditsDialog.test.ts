@@ -7,8 +7,10 @@ import type { HostedTopupCheckoutResult } from '@comfyorg/account-core/billing'
 
 import {
   WORKSHOP_CLOUD_BASE_URL,
-  WORKSHOP_CREDITS_URL
+  WORKSHOP_CREDITS_URL,
+  WORKSHOP_SUBSCRIPTION_URL
 } from '../../config/workshop-env'
+import type { WorkshopBuyCreditsTrigger } from '../../config/workshop-buy-credits'
 import {
   clearTopUpWatch,
   refreshWorkshopCredits,
@@ -111,13 +113,14 @@ function renderOpenDialog(locale: 'en' | 'zh-CN' = 'en') {
   )
 }
 
-function renderControlledDialog() {
+function renderControlledDialog(trigger: WorkshopBuyCreditsTrigger = 'action') {
   const isOpen = ref(true)
   const view = render(
     defineComponent({
       setup: () => () =>
         h(BuyCreditsDialog, {
           open: isOpen.value,
+          trigger,
           'onUpdate:open': (value: boolean) => {
             isOpen.value = value
           }
@@ -369,6 +372,84 @@ describe('BuyCreditsDialog', () => {
     ).toEqual({ status: 'waiting', ...topUpScope })
   })
 
+  it('closes an automatic request that has no owner session to buy for', async () => {
+    auth.session.value = undefined
+
+    const { isOpen } = renderControlledDialog('automatic')
+
+    await vi.waitFor(() => expect(isOpen.value).toBe(false))
+  })
+
+  it('keeps an explicit request open until the session can check out', async () => {
+    const user = userEvent.setup()
+    claimTab()
+    const fetchCheckout = stubCheckout()
+    auth.session.value = undefined
+    const { isOpen } = renderControlledDialog('action')
+
+    await user.click(await screen.findByTestId('buy-credits-continue'))
+
+    expect(await screen.findByTestId('checkout-error')).toBeTruthy()
+    expect(isOpen.value).toBe(true)
+    expect(fetchCheckout).not.toHaveBeenCalled()
+
+    auth.session.value = credential
+    await nextTick()
+    await user.click(screen.getByTestId('buy-credits-continue'))
+
+    await vi.waitFor(() => expect(fetchCheckout).toHaveBeenCalledOnce())
+  })
+
+  it('keeps checkout running through a brief session gap', async () => {
+    const user = userEvent.setup()
+    const tab = claimTab()
+    const fetchCheckout = stubCheckout()
+    let resolveCredential!: (
+      value: Awaited<ReturnType<WorkshopSessionState['ensureFresh']>>
+    ) => void
+    vi.mocked(useWorkshopSession().ensureFresh).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveCredential = resolve
+        })
+    )
+    const { isOpen } = renderControlledDialog()
+    await user.click(await screen.findByTestId('buy-credits-continue'))
+    await vi.waitFor(() =>
+      expect(useWorkshopSession().ensureFresh).toHaveBeenCalled()
+    )
+
+    auth.session.value = undefined
+    await nextTick()
+
+    expect(isOpen.value).toBe(true)
+    expect(tab.close).not.toHaveBeenCalled()
+
+    auth.session.value = credential
+    resolveCredential({ status: 'ok', session: credential })
+
+    await vi.waitFor(() => expect(tab.location.assign).toHaveBeenCalledOnce())
+    expect(fetchCheckout).toHaveBeenCalledOnce()
+  })
+
+  it('closes when the session ends in a failure', async () => {
+    const { isOpen } = renderControlledDialog()
+
+    auth.session.value = undefined
+    auth.sessionFailure.value = { status: 'error', code: 'ACCESS_DENIED' }
+
+    await vi.waitFor(() => expect(isOpen.value).toBe(false))
+  })
+
+  it('links to the Cloud subscription plans', async () => {
+    renderOpenDialog()
+
+    const link = await screen.findByTestId('buy-credits-subscription')
+
+    expect(link.getAttribute('href')).toBe(WORKSHOP_SUBSCRIPTION_URL)
+    expect(link.getAttribute('target')).toBe('_blank')
+  })
+
   it('locks and snapshots the selected amount while checkout is prepared', async () => {
     const user = userEvent.setup()
     claimTab()
@@ -558,6 +639,31 @@ describe('BuyCreditsDialog', () => {
 
     await user.click(screen.getByTestId('buy-credits-continue'))
     await vi.waitFor(() => expect(fetchCheckout).toHaveBeenCalledTimes(2))
+  })
+
+  it('still confirms a checkout that returns after the dialog moved to another workspace', async () => {
+    const user = userEvent.setup()
+    const tab = claimTab()
+    stubCheckout()
+    const { isOpen } = renderControlledDialog()
+
+    await user.click(await screen.findByTestId('buy-credits-continue'))
+    await vi.waitFor(() => expect(tab.location.assign).toHaveBeenCalledOnce())
+    await user.click(screen.getByTestId('buy-credits-checkout-close'))
+    await vi.waitFor(() => expect(isOpen.value).toBe(false))
+
+    auth.session.value = {
+      ...credential,
+      workspace: { ...credential.workspace, id: 'workspace-2', name: 'Team B' }
+    }
+    await nextTick()
+    isOpen.value = true
+    await nextTick()
+    expect(await screen.findByTestId('buy-credits-packs')).toBeTruthy()
+
+    returnFromCheckout()
+
+    expect(vi.mocked(watchForTopUp)).toHaveBeenCalledExactlyOnceWith(topUpScope)
   })
 
   it('opens the localized checkout handoff for Chinese', async () => {

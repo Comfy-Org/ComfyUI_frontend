@@ -28,7 +28,11 @@ import {
   useWorkshopCredits,
   watchForTopUp
 } from '../../config/workshop-credits'
-import { WORKSHOP_CREDITS_URL } from '../../config/workshop-env'
+import type { WorkshopBuyCreditsTrigger } from '../../config/workshop-buy-credits'
+import {
+  WORKSHOP_CREDITS_URL,
+  WORKSHOP_SUBSCRIPTION_URL
+} from '../../config/workshop-env'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -47,10 +51,13 @@ import DialogContent from '../ui/dialog/DialogContent.vue'
 import DialogDescription from '../ui/dialog/DialogDescription.vue'
 import DialogTitle from '../ui/dialog/DialogTitle.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale = 'en', trigger = 'action' } = defineProps<{
+  locale?: Locale
+  trigger?: WorkshopBuyCreditsTrigger
+}>()
 const open = defineModel<boolean>('open', { default: false })
 
-const { session, ensureFresh } = useWorkshopSession()
+const { session, sessionFailure, ensureFresh } = useWorkshopSession()
 const { balance } = useWorkshopCredits()
 const usd = ref(25)
 const credits = computed(() => usdToCredits(usd.value))
@@ -67,12 +74,12 @@ interface CheckoutScope {
 interface CheckoutAttempt extends CheckoutScope {
   readonly id: string
   readonly previousCredits: number
-  readonly returned: boolean
 }
 
 let checkoutController: AbortController | undefined
 let checkoutTab: Window | null = null
 let checkoutAttempt: CheckoutAttempt | undefined
+const returnableAttempts = new Map<string, CheckoutAttempt>()
 let dialogScope: CheckoutScope | undefined
 let unsubscribeFromTopUpReturns: (() => void) | undefined
 
@@ -121,12 +128,16 @@ watch(open, handleOpenChange, { immediate: true })
 watch(
   () => {
     const current = session.value
-    return current
-      ? `${current.uid}:${current.workspace.id}:${current.role}`
-      : undefined
+    if (current) return `${current.uid}:${current.workspace.id}:${current.role}`
+    return sessionFailure.value === undefined ? 'pending' : 'failed'
   },
   () => {
-    if (open.value && !dialogScopeIsCurrent()) open.value = false
+    if (!open.value) return
+    if (!dialogScope) {
+      dialogScope = captureCheckoutScope()
+      return
+    }
+    if (dialogScopeStatus() === 'changed') open.value = false
   }
 )
 
@@ -147,7 +158,11 @@ function resetClosedDialog(): void {
 
 function prepareOpenDialog(): void {
   dialogScope = captureCheckoutScope()
-  if (!dialogScope && topUp.value.status === 'idle') {
+  if (
+    !dialogScope &&
+    topUp.value.status === 'idle' &&
+    trigger === 'automatic'
+  ) {
     open.value = false
     return
   }
@@ -259,9 +274,9 @@ function claimCheckoutTab(): Window | null {
 }
 
 function onTopUpReturn(attemptId: string): void {
-  const attempt = checkoutAttempt
-  if (!attempt || attempt.id !== attemptId || attempt.returned) return
-  checkoutAttempt = { ...attempt, returned: true }
+  const attempt = returnableAttempts.get(attemptId)
+  if (!attempt) return
+  returnableAttempts.delete(attemptId)
   watchForTopUp({
     uid: attempt.uid,
     workspaceId: attempt.workspaceId,
@@ -305,8 +320,12 @@ function checkoutScopeIsCurrent(scope: CheckoutScope): boolean {
   )
 }
 
-function dialogScopeIsCurrent(): boolean {
-  return dialogScope !== undefined && checkoutScopeIsCurrent(dialogScope)
+function dialogScopeStatus(): 'current' | 'pending' | 'changed' {
+  if (!session.value)
+    return sessionFailure.value === undefined ? 'pending' : 'changed'
+  return dialogScope && checkoutScopeIsCurrent(dialogScope)
+    ? 'current'
+    : 'changed'
 }
 
 function requireCurrentCheckoutScope(
@@ -362,9 +381,9 @@ function recordCheckout(
     uid: scope.uid,
     workspaceId: scope.workspaceId,
     workspaceName: scope.workspaceName,
-    previousCredits,
-    returned: false
+    previousCredits
   }
+  returnableAttempts.set(attemptId, checkoutAttempt)
   state.value = 'checkout'
   navigateCheckoutTab(tab, checkout.url)
 }
@@ -431,7 +450,10 @@ async function continueToCheckout() {
   if (state.value === 'pending' || checkoutAttempt) return
   const amountCents = clampTopUp(usd.value) * 100
   const scope = captureCheckoutScope()
-  if (!scope) return
+  if (!scope) {
+    state.value = 'failed'
+    return
+  }
   const controller = new AbortController()
   const tab = claimCheckoutTab()
   checkoutController = controller
@@ -784,6 +806,19 @@ const stepperClass =
             </template>
           </Button>
         </div>
+
+        <p class="text-sm text-primary-warm-gray">
+          {{ t('workshop.credits.subscriptionPrompt', locale) }}
+          <a
+            :href="WORKSHOP_SUBSCRIPTION_URL"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-primary-comfy-yellow underline-offset-4 hover:underline"
+            data-testid="buy-credits-subscription"
+          >
+            {{ t('workshop.credits.subscriptionLink', locale) }}
+          </a>
+        </p>
       </template>
     </DialogContent>
   </Dialog>

@@ -13,9 +13,14 @@ import { useMounted } from '@vueuse/core'
 import type { Locale } from '../../../i18n/translations.ts'
 import { t } from '../../../i18n/translations.ts'
 import { externalLinks, getRoutes } from '../../../config/routes.ts'
+import type { WorkshopBuyCreditsTrigger } from '../../../config/workshop-buy-credits.ts'
 import { subscribeToWorkshopBuyCredits } from '../../../config/workshop-buy-credits.ts'
 import { WORKSHOP_CREDITS_URL } from '../../../config/workshop-env.ts'
-import { resolveWorkshopAccountSource } from '../../../config/workshop-account-source.ts'
+import type { WorkshopAccountSource } from '../../../config/workshop-account-source.ts'
+import {
+  peekWorkshopAccountSource,
+  resolveWorkshopAccountSource
+} from '../../../config/workshop-account-source.ts'
 import {
   useWorkshopAuthFlag,
   useWorkshopEnabled
@@ -45,20 +50,11 @@ const showWorkshop = computed(
 const showAccount = computed(
   () => showWorkshop.value && workshopAuthEnabled.value
 )
-let accountSource: ReturnType<typeof resolveWorkshopAccountSource> | undefined
-let resolvedAccountSource: Awaited<
-  ReturnType<typeof resolveWorkshopAccountSource>
->
-const workshopAccountSource = () =>
-  (accountSource ??= resolveWorkshopAccountSource().then((source) => {
-    resolvedAccountSource = source
-    return source
-  }))
 // Each loader waits for the account source, so a visitor the web session
 // knows never mounts an island that would start Firebase.
 const HeaderAccount = defineAsyncComponent(async () => {
   const [source, firebaseHeader] = await Promise.all([
-    workshopAccountSource(),
+    resolveWorkshopAccountSource(),
     import('../../workshop/HeaderAccount.vue')
   ])
   return source === 'session'
@@ -67,33 +63,88 @@ const HeaderAccount = defineAsyncComponent(async () => {
 })
 const BuyCreditsDialog = defineAsyncComponent<Component>(async () => {
   const [source, dialog] = await Promise.all([
-    workshopAccountSource(),
+    resolveWorkshopAccountSource(),
     import('../../workshop/BuyCreditsDialog.vue')
   ])
   return source === 'session' ? { render: () => null } : dialog
 })
 const buyingCredits = ref(false)
+const buyCreditsTrigger = ref<WorkshopBuyCreditsTrigger>('action')
 const buyCreditsDialogMounted = ref(false)
 let stopBuyCreditsRequests: (() => void) | undefined
 
+function claimCloudCreditsTab(): Window | null {
+  try {
+    return window.open(
+      locale === 'zh-CN' ? '/zh-CN/checkout-opening' : '/checkout-opening',
+      '_blank'
+    )
+  } catch {
+    return null
+  }
+}
+
+function releaseCloudCreditsTab(tab: Window | null): void {
+  try {
+    tab?.close()
+  } catch {
+    // A closed or browser-owned tab is already outside this page's control.
+  }
+}
+
+function openCloudCredits(tab: Window | null): void {
+  if (!tab) {
+    window.open(WORKSHOP_CREDITS_URL, '_blank', 'noopener,noreferrer')
+    return
+  }
+  try {
+    tab.opener = null
+    tab.location.assign(WORKSHOP_CREDITS_URL)
+  } catch {
+    releaseCloudCreditsTab(tab)
+  }
+}
+
+function routeBuyCredits(
+  source: WorkshopAccountSource,
+  trigger: WorkshopBuyCreditsTrigger,
+  tab: Window | null
+): void {
+  if (!showAccount.value) {
+    releaseCloudCreditsTab(tab)
+    return
+  }
+  if (source === 'firebase') {
+    releaseCloudCreditsTab(tab)
+    buyCreditsTrigger.value = trigger
+    buyingCredits.value = true
+    return
+  }
+  // Session accounts buy in Cloud. Only an explicit action can open a tab:
+  // an automatic refusal arrives outside a user gesture, so the visible Add
+  // credits action stays the recovery instead of a popup the browser drops.
+  if (trigger === 'action') openCloudCredits(tab)
+}
+
+function handleBuyCreditsRequest(trigger: WorkshopBuyCreditsTrigger): void {
+  if (!showAccount.value) return
+  const settled = peekWorkshopAccountSource()
+  if (settled) {
+    routeBuyCredits(settled, trigger, null)
+    return
+  }
+  // Claim the tab inside the click's gesture; it is released if the source
+  // settles on the in-page dialog.
+  const tab = trigger === 'action' ? claimCloudCreditsTab() : null
+  void resolveWorkshopAccountSource().then((source) =>
+    routeBuyCredits(source, trigger, tab)
+  )
+}
+
 onMounted(() => {
-  stopBuyCreditsRequests = subscribeToWorkshopBuyCredits((trigger) => {
-    if (!showAccount.value) return
-    const handle = (source: typeof resolvedAccountSource) => {
-      if (!showAccount.value) return
-      if (source === 'session') {
-        // An automatic request arrives after the network refusal, outside a
-        // browser user gesture. Keep the visible Add credits action as the
-        // reliable recovery instead of asking a popup blocker to guess.
-        if (trigger === 'action')
-          window.open(WORKSHOP_CREDITS_URL, '_blank', 'noopener,noreferrer')
-        return
-      }
-      buyingCredits.value = true
-    }
-    if (resolvedAccountSource) handle(resolvedAccountSource)
-    else void workshopAccountSource().then(handle)
-  })
+  stopBuyCreditsRequests = subscribeToWorkshopBuyCredits(
+    handleBuyCreditsRequest
+  )
 })
 onBeforeUnmount(() => stopBuyCreditsRequests?.())
 watch(
@@ -192,6 +243,7 @@ const ctaButtons = [
   <BuyCreditsDialog
     v-if="buyCreditsDialogMounted"
     v-model:open="buyingCredits"
+    :trigger="buyCreditsTrigger"
     :locale
   />
 </template>

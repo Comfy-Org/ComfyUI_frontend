@@ -14,7 +14,7 @@ export function requestWorkshopBuyCreditsAutomatically(): void {
 function dispatchWorkshopBuyCredits(trigger: WorkshopBuyCreditsTrigger): void {
   if (typeof window === 'undefined') return
   if (listeners.size === 0) {
-    pendingRequest = trigger
+    pendingRequest = pendingRequest === 'action' ? 'action' : trigger
     return
   }
   for (const listener of listeners) listener(trigger)
