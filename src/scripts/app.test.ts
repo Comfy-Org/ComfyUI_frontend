@@ -24,6 +24,8 @@ import { addAutogrow } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpe
 import type { CurveData } from '@/components/curve/types'
 import type { useExtensionService } from '@/services/extensionService'
 import { t } from '@/i18n'
+import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
+import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
 import {
   LGraph,
   LGraphCanvas,
@@ -591,6 +593,64 @@ describe('ComfyApp', () => {
       expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
         'afterConfigureGraph',
         expect.anything()
+      )
+    })
+
+    it('applies load-time widget fixups as load provenance, not local edits', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      class KSampler extends LGraphNode {
+        constructor(title = 'KSampler') {
+          super(title)
+          this.addWidget('combo', 'sampler_name', 'euler', () => {}, {
+            values: ['euler']
+          })
+          this.serialize_widgets = true
+        }
+      }
+      LiteGraph.registerNodeType('KSampler', KSampler)
+      const intents: GraphIntentEvent[] = []
+      const unsubscribe = onGraphIntent((event) => {
+        if (event.type === 'set_widget') intents.push(event)
+      })
+
+      try {
+        await app.loadGraphData(
+          {
+            ...createWorkflowGraphData(),
+            last_node_id: 1,
+            nodes: [
+              {
+                id: 1,
+                type: 'KSampler',
+                pos: [0, 0],
+                size: [200, 100],
+                flags: {},
+                order: 0,
+                mode: 0,
+                properties: {},
+                widgets_values: ['sample_euler']
+              }
+            ]
+          },
+          false
+        )
+      } finally {
+        unsubscribe()
+        LiteGraph.unregisterNodeType('KSampler')
+      }
+
+      expect(app.rootGraph.getNodeById(toNodeId(1))?.widgets?.[0]?.value).toBe(
+        'euler'
+      )
+      expect(intents.map(({ source }) => source)).not.toContain('local')
+      expect(intents).toContainEqual(
+        expect.objectContaining({
+          source: 'load',
+          name: 'sampler_name',
+          value: 'euler',
+          previous: 'sample_euler'
+        })
       )
     })
 
@@ -2237,6 +2297,64 @@ describe('ComfyApp', () => {
         expect(passthroughNode?.widgets?.[1].value).toEqual(passthrough)
       } finally {
         missingNodesStore.setMissingNodeTypes(previousMissingNodeTypes)
+        Reflect.set(app, 'rootGraphInternal', previousAppGraph)
+        Reflect.set(singletonApp, 'rootGraphInternal', previousSingletonGraph)
+      }
+    })
+
+    it('keeps importing when a widget callback rejects an API value', async () => {
+      const graph = new LGraph()
+      const previousAppGraph = app.rootGraph
+      const previousSingletonGraph = singletonApp.rootGraph
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      const videoCallback = (value: string) => value.lastIndexOf('.')
+      class VhsLoadVideoNode extends LGraphNode {
+        constructor() {
+          super('Load Video')
+          this.addWidget('text', 'video', 'default.mp4', videoCallback)
+        }
+      }
+      LiteGraph.registerNodeType('VHS_LoadVideo', VhsLoadVideoNode)
+
+      try {
+        await expect(
+          app.loadApiJson(
+            {
+              '1': {
+                class_type: 'VHS_LoadVideo',
+                inputs: { video: 1 },
+                _meta: { title: 'Load Video' }
+              },
+              '2': {
+                class_type: 'VHS_LoadVideo',
+                inputs: { video: 'input/later.mp4' },
+                _meta: { title: 'Later Video' }
+              }
+            },
+            'invalid-vhs-api-prompt.json'
+          )
+        ).resolves.toBeUndefined()
+
+        const videoWidget = graph.nodes[0]?.widgets?.find(
+          ({ name }) => name === 'video'
+        )
+        expect(videoWidget?.value).toBe(1)
+        expect(
+          graph.nodes[1]?.widgets?.find(({ name }) => name === 'video')?.value
+        ).toBe('input/later.mp4')
+        expect(mockWorkflowService.afterLoadNewGraph).toHaveBeenCalled()
+        expect(reportError).toHaveBeenCalledWith(expect.any(TypeError), {
+          surface: 'graph',
+          errorType: 'failure_invoking_api_workflow_widget_callback',
+          tags: {
+            node_type: 'VHS_LoadVideo',
+            widget_name: 'video'
+          },
+          context: { fileName: 'invalid-vhs-api-prompt.json' }
+        })
+      } finally {
+        LiteGraph.unregisterNodeType('VHS_LoadVideo')
         Reflect.set(app, 'rootGraphInternal', previousAppGraph)
         Reflect.set(singletonApp, 'rootGraphInternal', previousSingletonGraph)
       }

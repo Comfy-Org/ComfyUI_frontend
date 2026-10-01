@@ -38,6 +38,22 @@ describe('image source previews', () => {
     )
   })
 
+  it('closes when the reader taps the space around the picture', async () => {
+    const user = userEvent.setup()
+    render(ImageSourcePreview, {
+      props: { name: 'Source image', src: 'https://example.com/image.png' }
+    })
+    await user.click(
+      screen.getByRole('button', { name: 'Expand Source image' })
+    )
+
+    await user.click(await screen.findByTestId('image-source-dialog'))
+
+    await waitFor(() =>
+      expect(screen.queryByTestId('image-source-dialog')).toBeNull()
+    )
+  })
+
   it('does not emit a server-owned Blob URL into the page HTML', async () => {
     const create = vi.spyOn(URL, 'createObjectURL')
     const html = await renderToString(

@@ -162,7 +162,7 @@ in a Docker container with networking disabled:
 ```bash
 pnpm install --frozen-lockfile
 VITE_USE_LEGACY_DEFAULT_GRAPH=true pnpm build
-docker pull ghcr.io/comfy-org/comfyui-ci-container:0.0.22
+docker pull ghcr.io/comfy-org/comfyui-ci-container:0.0.27
 scripts/test-browser-offline.sh --project=chromium errorDialog.spec.ts
 ```
 

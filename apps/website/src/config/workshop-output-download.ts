@@ -1,4 +1,4 @@
-const OBJECT_URL_LIFETIME_MS = 60_000
+export const OBJECT_URL_LIFETIME_MS = 60_000
 const DOWNLOAD_HEADERS_TIMEOUT_MS = 4_000
 
 function attachmentName(fileName: string): string {

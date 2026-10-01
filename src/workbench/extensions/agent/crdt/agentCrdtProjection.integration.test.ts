@@ -1,6 +1,6 @@
-import { linksMap, mint, nodesMap } from '@comfyorg/comfy-multi-player'
+import { mint, nodesMap } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
 import * as Y from 'yjs'
 
 import { assert } from '@/base/assert'
@@ -8,14 +8,11 @@ import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { GraphScope } from '@/types/graphScopeId'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { FollowerDoc } from './followerDoc'
-import { createGraphMutations } from './graphMutations'
-import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 
 class TestSource extends LGraphNode {
   static override title = 'Test Source'
@@ -46,16 +43,6 @@ function widgetsOf(node: LGraphNode) {
 const WORKFLOW_ID = 'wf-a'
 const CATALOG: WidgetCatalog = {
   types: { TestSource: { widget_order: ['steps', 'seed'] } }
-}
-
-const layout = { createNode: vi.fn(), deleteNodes: vi.fn() }
-
-function remoteMutations(scope: GraphScope) {
-  return createGraphMutations({
-    getScope: () => scope,
-    layout,
-    placement: inertPlacementPort
-  })
 }
 
 function toWorkflowJson({ nodes, ...rest }: ISerialisedGraph): WorkflowJSON {
@@ -127,17 +114,14 @@ function snapshot(graph: LGraph) {
 
 /**
  * Binds a fresh follower session to the doc minted from the graph's own
- * save and delivers the whole doc as the catch-up frame, the way a return
- * to a previously bound workflow tab does.
+ * save and delivers the whole doc as the catch-up frame followed by the
+ * full sync, the way a return to a previously bound workflow tab does.
+ * Later host edits arrive as incremental frames only.
  */
 function bindAndCatchUp(graph: LGraph, saved: ISerialisedGraph) {
   const host = mint(toWorkflowJson(saved), CATALOG)
   const follower = new FollowerDoc()
-  const projection = new AgentCrdtProjection(
-    remoteMutations(graphScopeOf(graph)),
-    () => graph,
-    () => follower.doc
-  )
+  const projection = new AgentCrdtProjection(() => graph)
   projection.bind(WORKFLOW_ID, follower)
   let seq = 0
   const deliver = (update: Uint8Array) => {
@@ -150,8 +134,7 @@ function bindAndCatchUp(graph: LGraph, saved: ISerialisedGraph) {
         actor: 'agent:comfy:host',
         opIds: []
       })
-    ).toBe(true)
-    projection.reconcileLiveGraph(WORKFLOW_ID)
+    ).toMatchObject({ applied: true })
   }
   deliver(Y.encodeStateAsUpdate(host))
   const hostEdit = (edit: () => void) => {
@@ -164,12 +147,10 @@ function bindAndCatchUp(graph: LGraph, saved: ISerialisedGraph) {
     follower.destroy()
     host.destroy()
   }
-  return { host, hostEdit, destroy }
+  return { host, hostEdit, projection, destroy }
 }
 
 beforeEach(() => {
-  layout.createNode.mockReset()
-  layout.deleteNodes.mockReset()
   LiteGraph.registerNodeType('TestSource', TestSource)
   LiteGraph.registerNodeType('TestNote', TestNote)
 })
@@ -183,8 +164,6 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
 
     expect(graph.getNodeById(toNodeId(1))).toBe(source)
     expect(graph.getNodeById(toNodeId(2))).toBe(note)
-    expect(layout.createNode).not.toHaveBeenCalled()
-    expect(layout.deleteNodes).not.toHaveBeenCalled()
     expect(snapshot(graph)).toEqual({
       live: [
         {
@@ -247,7 +226,7 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
     destroy()
   })
 
-  it.fails('keeps a local node whose add never reached the doc during a later remote reconcile', () => {
+  it('keeps a local node whose add has not reached the doc through a later incremental frame', () => {
     const { graph } = buildLiveGraph()
     const { host, hostEdit, destroy } = bindAndCatchUp(
       graph,
@@ -273,176 +252,57 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
         )
         .map(({ id }) => String(id))
     ).toContain(String(local.id))
-    expect(graph.serialize().nodes.map(({ id }) => id)).toContain(local.id)
-    expect(layout.deleteNodes).not.toHaveBeenCalledWith(
-      graphScopeOf(graph),
-      [local.id],
-      expect.anything()
+    expect(graph.serialize().nodes.map(({ id }) => String(id))).toContain(
+      local.id
     )
   })
-})
 
-describe('AgentCrdtProjection self-driven reconcile retry', () => {
-  it('sweeps the stale live node once a retry recovers from a rejected delete-all, without a new frame arriving', () => {
-    vi.useFakeTimers()
-    try {
-      const { graph, source } = buildLiveGraph()
-      const scope = graphScopeOf(graph)
-      let scopeAvailable = true
-      const mutations = createGraphMutations({
-        getScope: () => (scopeAvailable ? scope : null),
-        layout,
-        placement: inertPlacementPort
+  it('replaces the graph with the new lineage only when its first frame arrives after a reset', () => {
+    const { graph, source, note } = buildLiveGraph()
+    const { projection, destroy } = bindAndCatchUp(
+      graph,
+      structuredClone(graph.serialize())
+    )
+    onTestFinished(destroy)
+    const local = createRegisteredNode('TestSource', TestSource)
+    graph.add(local)
+
+    projection.replaceOnNextFrame(WORKFLOW_ID)
+
+    expect(graph._nodes).toEqual([source, note, local])
+
+    const replacement = new FollowerDoc()
+    const lineage = mint(
+      toWorkflowJson({
+        ...structuredClone(graph.serialize()),
+        nodes: [{ ...structuredClone(source.serialize()), title: 'Reminted' }],
+        links: []
+      }),
+      CATALOG
+    )
+    onTestFinished(() => {
+      replacement.destroy()
+      lineage.destroy()
+    })
+    projection.bind(WORKFLOW_ID, replacement)
+    const update = Y.encodeStateAsUpdate(lineage)
+    replacement.applyRemoteUpdate(update)
+
+    expect(
+      projection.applyFrame({
+        workflowId: WORKFLOW_ID,
+        seq: 1,
+        update,
+        actor: 'agent:comfy:host',
+        opIds: []
       })
-      const host = mint(
-        toWorkflowJson(structuredClone(graph.serialize())),
-        CATALOG
-      )
-      const follower = new FollowerDoc()
-      const projection = new AgentCrdtProjection(
-        mutations,
-        () => graph,
-        () => follower.doc
-      )
-      projection.bind(WORKFLOW_ID, follower)
-      let seq = 0
-      const deliver = (update: Uint8Array) => {
-        follower.applyRemoteUpdate(update)
-        const applied = projection.applyFrame({
-          workflowId: WORKFLOW_ID,
-          seq: ++seq,
-          update,
-          actor: 'agent:comfy:host',
-          opIds: []
-        })
-        // Mirrors `useAgentCrdtFollower`'s `applyAndReconcile`: the live
-        // graph is only ever swept for a frame that actually applied.
-        if (applied) projection.reconcileLiveGraph(WORKFLOW_ID)
-        return applied
-      }
-
-      // Catch-up frame: the doc starts out matching the live graph, so the
-      // pre-existing `source` node is adopted as the live adapter for
-      // record id 1.
-      deliver(Y.encodeStateAsUpdate(host))
-      expect(graph.getNodeById(toNodeId(1))).toBe(source)
-
-      // The agent deletes every node from the doc (a delete-all), but scope
-      // briefly can't resolve the bound workflow tab, so the batch is
-      // rejected: nothing is swept, and the stale node stays live.
-      const before = Y.encodeStateVector(host)
-      host.transact(() => {
-        nodesMap(host).clear()
-        linksMap(host).clear()
-      })
-      scopeAvailable = false
-      const deleteAllUpdate = Y.encodeStateAsUpdate(host, before)
-      expect(deliver(deleteAllUpdate)).toBe(false)
-      expect(graph.getNodeById(toNodeId(1))).toBe(source)
-
-      // Scope recovers, but no further frame ever arrives (e.g. the user
-      // never sends another agent message). The self-driven retry must
-      // both commit the store-side reconcile AND sweep the live graph
-      // through the same pipeline a normal frame gets, or the stale node
-      // would still be there to serialize into the next save.
-      scopeAvailable = true
-      vi.advanceTimersByTime(5_000)
-
-      expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
-      expect(graph.getNodeById(toNodeId(1))).toBeNull()
-      expect(layout.deleteNodes).toHaveBeenCalledWith(
-        scope,
-        [toNodeId(1)],
-        expect.anything()
-      )
-
-      projection.destroy()
-      follower.destroy()
-      host.destroy()
-    } finally {
-      vi.useRealTimers()
-    }
-  })
-
-  it('removes the stale live node once a later timer retries a live-graph sweep that threw once', () => {
-    vi.useFakeTimers()
-    try {
-      const { graph, source } = buildLiveGraph()
-      const scope = graphScopeOf(graph)
-      let scopeAvailable = true
-      const mutations = createGraphMutations({
-        getScope: () => (scopeAvailable ? scope : null),
-        layout,
-        placement: inertPlacementPort
-      })
-      const host = mint(
-        toWorkflowJson(structuredClone(graph.serialize())),
-        CATALOG
-      )
-      const follower = new FollowerDoc()
-      const projection = new AgentCrdtProjection(
-        mutations,
-        () => graph,
-        () => follower.doc
-      )
-      let seq = 0
-      const deliver = (update: Uint8Array) => {
-        follower.applyRemoteUpdate(update)
-        const applied = projection.applyFrame({
-          workflowId: WORKFLOW_ID,
-          seq: ++seq,
-          update,
-          actor: 'agent:comfy:host',
-          opIds: []
-        })
-        if (applied) projection.reconcileLiveGraph(WORKFLOW_ID)
-        return applied
-      }
-
-      projection.bind(WORKFLOW_ID, follower)
-      deliver(Y.encodeStateAsUpdate(host))
-      expect(graph.getNodeById(toNodeId(1))).toBe(source)
-
-      // Only now does the sweep start throwing, so the catch-up frame above
-      // (a normal, non-retry commit) is unaffected.
-      const sweepFailure = new Error('live sweep failed')
-      const sweepSpy = vi.spyOn(projection, 'reconcileLiveGraph')
-      sweepSpy.mockImplementationOnce(() => {
-        throw sweepFailure
-      })
-
-      const before = Y.encodeStateVector(host)
-      host.transact(() => {
-        nodesMap(host).clear()
-        linksMap(host).clear()
-      })
-      scopeAvailable = false
-      const deleteAllUpdate = Y.encodeStateAsUpdate(host, before)
-      expect(deliver(deleteAllUpdate)).toBe(false)
-      expect(graph.getNodeById(toNodeId(1))).toBe(source)
-
-      // Scope recovers: the retry's batch commits, but its live-graph sweep
-      // throws once. The store has already converged, but the throw must
-      // not be silently treated as done - the stale node is still live.
-      scopeAvailable = true
-      vi.advanceTimersByTime(200)
-      expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
-      expect(graph.getNodeById(toNodeId(1))).toBe(source)
-      expect(sweepSpy).toHaveBeenCalledTimes(1)
-
-      // A later timer retries only the sweep - never the already-committed
-      // mutation - and this time it actually removes the live node. The
-      // live-sweep retry runs on the slow (2s) cadence, not the fast (200ms)
-      // batch-retry cadence.
-      vi.advanceTimersByTime(2_000)
-      expect(graph.getNodeById(toNodeId(1))).toBeNull()
-      expect(sweepSpy).toHaveBeenCalledTimes(2)
-
-      projection.destroy()
-      follower.destroy()
-      host.destroy()
-    } finally {
-      vi.useRealTimers()
-    }
+    ).toEqual({
+      applied: true,
+      nodes: { added: ['1'], removed: [] },
+      createdNodeIds: []
+    })
+    expect(graph._nodes).toEqual([source])
+    expect(source.title).toBe('Reminted')
+    expect(graph.links.size).toBe(0)
   })
 })

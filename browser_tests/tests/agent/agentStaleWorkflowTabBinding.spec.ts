@@ -17,11 +17,11 @@ import {
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
-const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 const BINDING_KEY = StorageKeys.agentWorkflowTabBindings('personal')
 const THREAD_KEY = StorageKeys.agentThread('personal')
 const DEFAULT_TAB_PATH = 'workflows/Unsaved Workflow.json'
@@ -227,12 +227,18 @@ test.describe(
         .allTextContents()
 
       // A brand-new page on the surviving thread: nobody has sent anything.
-      await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
-      const panel = page.locator('#agent-panel-root')
+      const agentPanel = new AgentPanel(page)
+      await agentPanel.open()
+      const panel = agentPanel.root
       await expect(panel).toBeVisible()
       await expect(panel.getByTestId('user-message-bubble')).toHaveText([
         EARLIER_REQUEST
       ])
+      // The Cloud no longer lists the abandoned workflow, so the chat says so.
+      const unavailable = panel.getByText(
+        enMessages.agent.targetWorkflowUnavailable
+      )
+      await expect(unavailable).toBeVisible()
       if (!socket) throw new Error('the app never opened /ws')
 
       // The user continues the thread in the fresh tab.
@@ -244,6 +250,7 @@ test.describe(
         .getByRole('menuitemradio', { name: DEFAULT_TAB_NAME, exact: true })
         .click()
       await expect(workflowPicker).toHaveText(DEFAULT_TAB_NAME)
+      await expect(unavailable).toBeHidden()
       await panel.getByRole('textbox').fill('continue here')
       await panel
         .getByRole('button', { name: enMessages.agent.send, exact: true })
@@ -252,9 +259,6 @@ test.describe(
       expect(posted[0]).toMatchObject({
         workflow_id: 'a81718a4-02ae-41e6-ae85-000000000001'
       })
-      await expect(
-        page.getByText(enMessages.agent.targetNavigationUnavailable)
-      ).toBeVisible()
 
       await testInfo.attach('stale-workflow-canvas', {
         body: await page.screenshot({

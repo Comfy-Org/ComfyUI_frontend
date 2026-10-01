@@ -184,7 +184,10 @@ function armHandoff(
 }
 
 function reportHandoffError(error: unknown): void {
-  reportError(error, { errorType: 'error_preparing_platform_build_handoff' })
+  reportError(error, {
+    errorType: 'error_preparing_platform_build_handoff',
+    surface: 'platform'
+  })
 }
 
 export function usePlatformBuildHandoff({

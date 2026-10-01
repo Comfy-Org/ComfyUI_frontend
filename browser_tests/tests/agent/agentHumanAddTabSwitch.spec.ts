@@ -77,7 +77,7 @@ test.describe(
 
     // Both halves of the mechanism: the host takes the page's add_node op
     // (the host-only contract itself is pinned at the unit level, against the
-    // real applier, in mintPortWiring.test.ts), then the tab return whose
+    // real applier, in docOpMinter.test.ts), then the tab return whose
     // first frame reconciles the stores against the doc. A node the doc holds
     // survives it.
     for (const { name, add } of [

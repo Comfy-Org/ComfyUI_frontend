@@ -15,6 +15,7 @@ async function expectNoIndex(page: Page) {
     'content',
     'noindex, nofollow'
   )
+  await expect(page.locator('link[rel="canonical"]')).toHaveCount(1)
 }
 
 test.describe('Payment checkout returns @smoke', () => {

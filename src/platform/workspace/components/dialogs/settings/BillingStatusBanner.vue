@@ -53,14 +53,23 @@
         >
           {{ $t('workspacePanel.billingStatus.ending.reactivate') }}
         </Button>
-        <Button
-          v-else-if="banner.action === 'updatePayment'"
-          variant="inverted"
-          size="lg"
-          @click="handleUpdatePayment"
-        >
-          {{ $t('workspacePanel.billingStatus.updatePayment') }}
-        </Button>
+        <template v-else-if="banner.action === 'updatePayment'">
+          <Button
+            v-if="banner.payInvoiceUrl"
+            variant="inverted"
+            size="lg"
+            @click="handlePayInvoice(banner.payInvoiceUrl)"
+          >
+            {{ $t('workspacePanel.billingStatus.payInvoice') }}
+          </Button>
+          <Button
+            :variant="banner.payInvoiceUrl ? 'secondary' : 'inverted'"
+            size="lg"
+            @click="handleUpdatePayment"
+          >
+            {{ $t('workspacePanel.billingStatus.updatePayment') }}
+          </Button>
+        </template>
       </div>
     </div>
   </div>
@@ -83,7 +92,8 @@ import { useDialogService } from '@/services/dialogService'
 type BannerAction = 'addCredits' | 'reactivate' | 'updatePayment'
 
 const { t, d } = useI18n()
-const { renewalDate, subscription, manageSubscription } = useBillingContext()
+const { renewalDate, renewalInvoice, subscription, manageSubscription } =
+  useBillingContext()
 const { permissions, canReactivatePlan } = useWorkspaceUI()
 const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
 const { kind, dismiss } = useBillingBanner()
@@ -118,24 +128,33 @@ interface BannerView {
   body: string
   action: BannerAction | null
   dismissible: boolean
+  payInvoiceUrl?: string
 }
 
 const bs = 'workspacePanel.billingStatus'
 
 const pausedView = (): BannerView => ({
-  muted: false,
+  muted: !canManage.value,
   title: t(`${bs}.paused.title`),
   body: canManage.value ? t(`${bs}.paused.body`) : t(`${bs}.paused.memberBody`),
   action: canManage.value ? 'updatePayment' : null,
   dismissible: false
 })
 
+// Only an https payment page is opened; anything else hides the action.
+function safeInvoiceUrl(value: string | undefined): string | undefined {
+  if (!value) return undefined
+  try {
+    return new URL(value).protocol === 'https:' ? value : undefined
+  } catch {
+    return undefined
+  }
+}
+
+// Runs are already blocked on payment_failed; reads as paused until BE-6970.
 const paymentFailedView = (): BannerView => ({
-  muted: false,
-  title: t(`${bs}.warning.title`),
-  body: t(`${bs}.warning.bodyNoDate`),
-  action: 'updatePayment',
-  dismissible: false
+  ...pausedView(),
+  payInvoiceUrl: safeInvoiceUrl(renewalInvoice.value?.hosted_invoice_url)
 })
 
 const outOfCreditsBody = (): string => {
@@ -210,6 +229,9 @@ const banner = computed<BannerView | null>(() => {
 
 function handleAddCredits() {
   void dialogService.showTopUpCreditsDialog()
+}
+function handlePayInvoice(url: string) {
+  window.open(url, '_blank', 'noopener,noreferrer')
 }
 function handleUpdatePayment() {
   void manageSubscription()

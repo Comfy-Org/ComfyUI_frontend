@@ -16,12 +16,14 @@ import {
 } from '@/composables/useFeatureFlags'
 import * as distributionTypes from '@/platform/distribution/types'
 import {
+  authenticatedRemoteConfigState,
   cachedBillingControlEnabled,
   cachedLegacyBillingMigrationEnabled,
   cachedV1PaymentRecovery,
   remoteConfig,
   remoteConfigState,
-  sessionAgentGrant
+  sessionAgentGrant,
+  sessionAgentGrantValidUntil
 } from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
@@ -523,11 +525,13 @@ describe('useFeatureFlags', () => {
   describe('legacyBillingMigrationEnabled', () => {
     beforeEach(() => {
       vi.mocked(distributionTypes).isCloud = true
+      authenticatedRemoteConfigState.value = 'authenticated'
       remoteConfigState.value = 'authenticated'
     })
 
     afterEach(() => {
       vi.mocked(distributionTypes).isCloud = false
+      authenticatedRemoteConfigState.value = 'unloaded'
       remoteConfigState.value = 'unloaded'
       remoteConfig.value = {}
       cachedLegacyBillingMigrationEnabled.value = undefined
@@ -617,13 +621,13 @@ describe('useFeatureFlags', () => {
     it('resolveFlag falls through to server when no override is set', () => {
       vi.mocked(api.getServerFeature).mockImplementation(
         (path, defaultValue) => {
-          if (path === ServerFeatureFlag.ASSET_RENAME_ENABLED) return true
+          if (path === ServerFeatureFlag.ASSET_DELETION_ENABLED) return true
           return defaultValue
         }
       )
 
       const { flags } = useFeatureFlags()
-      expect(flags.assetRenameEnabled).toBe(true)
+      expect(flags.assetDeletionEnabled).toBe(true)
     })
 
     it('direct server flags delegate override to api.getServerFeature', () => {
@@ -700,6 +704,7 @@ describe('useFeatureFlags', () => {
 
     it('prefers authenticated remoteConfig over the server feature fallback', () => {
       remoteConfigState.value = 'authenticated'
+      authenticatedRemoteConfigState.value = 'authenticated'
       remoteConfig.value = {
         billing_control_enabled: false,
         v1_payment_recovery: true
@@ -713,6 +718,7 @@ describe('useFeatureFlags', () => {
 
     it('falls back to api.getServerFeature when authenticated config omits the flag', () => {
       remoteConfigState.value = 'authenticated'
+      authenticatedRemoteConfigState.value = 'authenticated'
       remoteConfig.value = {}
       vi.mocked(api.getServerFeature).mockImplementation(
         (path, defaultValue) => {
@@ -840,6 +846,7 @@ describe('useFeatureFlags', () => {
     it('synchronizes resolved values when their sources change', async () => {
       vi.mocked(distributionTypes).isCloud = true
       remoteConfigState.value = 'authenticated'
+      authenticatedRemoteConfigState.value = 'authenticated'
       remoteConfig.value = {
         partner_node_governance_enabled: false,
         unified_cloud_auth: false,
@@ -937,6 +944,7 @@ describe('useFeatureFlags', () => {
   describe('unifiedWebSessionEnabled', () => {
     beforeEach(() => {
       vi.mocked(distributionTypes).isCloud = true
+      authenticatedRemoteConfigState.value = 'authenticated'
       vi.mocked(api.getServerFeature).mockImplementation(
         (_path, defaultValue) => defaultValue
       )
@@ -944,6 +952,7 @@ describe('useFeatureFlags', () => {
 
     afterEach(() => {
       vi.mocked(distributionTypes).isCloud = false
+      authenticatedRemoteConfigState.value = 'unloaded'
       remoteConfigState.value = 'unloaded'
       remoteConfig.value = {}
     })
@@ -969,6 +978,8 @@ describe('useFeatureFlags', () => {
       }
     ] as const)('$name', ({ state, config, expected }) => {
       remoteConfigState.value = state
+      authenticatedRemoteConfigState.value =
+        state === 'authenticated' ? 'authenticated' : state
       remoteConfig.value = config
 
       expect(useFeatureFlags().flags.unifiedWebSessionEnabled).toBe(expected)
@@ -976,6 +987,7 @@ describe('useFeatureFlags', () => {
 
     it('ignores the server-feature fallback when /api/features lacks the flag', () => {
       remoteConfigState.value = 'authenticated'
+      authenticatedRemoteConfigState.value = 'authenticated'
       vi.mocked(api.getServerFeature).mockImplementation(
         (path, defaultValue) =>
           path === ServerFeatureFlag.UNIFIED_WEB_SESSION ? true : defaultValue
@@ -1161,6 +1173,7 @@ describe('useFeatureFlags', () => {
       remoteConfigState.value = 'unloaded'
       remoteConfig.value = {}
       sessionAgentGrant.value = undefined
+      sessionAgentGrantValidUntil.value = undefined
     })
 
     afterEach(() => {
@@ -1168,11 +1181,13 @@ describe('useFeatureFlags', () => {
       remoteConfigState.value = 'unloaded'
       remoteConfig.value = {}
       sessionAgentGrant.value = undefined
+      sessionAgentGrantValidUntil.value = undefined
     })
 
     it('is false off-cloud even when the authenticated config grants it', () => {
       vi.mocked(distributionTypes).isCloud = false
       remoteConfigState.value = 'authenticated'
+      authenticatedRemoteConfigState.value = 'authenticated'
       remoteConfig.value = { 'agent-in-app-experience': true }
 
       const { flags } = useFeatureFlags()
@@ -1181,6 +1196,7 @@ describe('useFeatureFlags', () => {
 
     it('is false during the anonymous window even when the config already grants it', () => {
       remoteConfigState.value = 'anonymous'
+      authenticatedRemoteConfigState.value = 'unloaded'
       remoteConfig.value = { 'agent-in-app-experience': true }
 
       const { flags } = useFeatureFlags()
@@ -1189,6 +1205,7 @@ describe('useFeatureFlags', () => {
 
     it('is true once the authenticated config grants it', () => {
       remoteConfigState.value = 'authenticated'
+      authenticatedRemoteConfigState.value = 'authenticated'
       remoteConfig.value = { 'agent-in-app-experience': true }
 
       const { flags } = useFeatureFlags()
@@ -1197,6 +1214,7 @@ describe('useFeatureFlags', () => {
 
     it('is false when the authenticated config omits the key', () => {
       remoteConfigState.value = 'authenticated'
+      authenticatedRemoteConfigState.value = 'authenticated'
       remoteConfig.value = {}
 
       const { flags } = useFeatureFlags()
@@ -1205,14 +1223,26 @@ describe('useFeatureFlags', () => {
 
     it('keeps this session granted when a later refresh fails transiently', () => {
       remoteConfigState.value = 'authenticated'
+      authenticatedRemoteConfigState.value = 'authenticated'
       remoteConfig.value = { 'agent-in-app-experience': true }
       sessionAgentGrant.value = true
+      sessionAgentGrantValidUntil.value = Date.now() + 60_000
       const { flags } = useFeatureFlags()
       expect(flags.agentInAppExperienceEnabled).toBe(true)
 
       remoteConfigState.value = 'error'
+      authenticatedRemoteConfigState.value = 'error'
 
       expect(flags.agentInAppExperienceEnabled).toBe(true)
+    })
+
+    it('expires the transient session grant after its bounded fallback window', () => {
+      remoteConfigState.value = 'error'
+      sessionAgentGrant.value = true
+      sessionAgentGrantValidUntil.value = Date.now() - 1
+
+      const { flags } = useFeatureFlags()
+      expect(flags.agentInAppExperienceEnabled).toBe(false)
     })
 
     it('drops the grant when the session itself is gone', () => {

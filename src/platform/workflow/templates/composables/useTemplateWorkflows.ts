@@ -3,6 +3,7 @@ import { useI18n } from 'vue-i18n'
 
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -39,6 +40,7 @@ export function useTemplateWorkflows() {
   const { t } = useI18n()
   const workflowTemplatesStore = useWorkflowTemplatesStore()
   const dialogStore = useDialogStore()
+  const { trackFeatureUsed } = useSurveyFeatureTracking('example-workflows')
 
   // State
   const selectedTemplate = ref<WorkflowTemplates | null>(null)
@@ -142,7 +144,10 @@ export function useTemplateWorkflows() {
   }
 
   function reportTemplateError(error: unknown) {
-    reportError(error, { errorType: 'error_loading_template' })
+    reportError(error, {
+      surface: 'graph',
+      errorType: 'error_loading_template'
+    })
     showTemplateError(t('templateWorkflows.error.loading'))
   }
 
@@ -196,6 +201,7 @@ export function useTemplateWorkflows() {
       reportError(
         new AggregateError(errors, 'Template sample preparation failed'),
         {
+          surface: 'graph',
           errorType: 'error_loading_template_media'
         }
       )
@@ -211,7 +217,8 @@ export function useTemplateWorkflows() {
 
   async function loadTemplateGraph(
     { json, template }: Awaited<ReturnType<typeof loadTemplateData>>,
-    workflowName: string
+    workflowName: string,
+    sourceModule: string
   ): Promise<TemplateLoadResult> {
     try {
       const loadedWorkflow = await app.loadGraphData(
@@ -224,6 +231,7 @@ export function useTemplateWorkflows() {
       if (loadedWorkflow === false) return 'graph-failed'
 
       updateTemplateEducation(template?.isPartnerNode, loadedWorkflow)
+      if (sourceModule === 'default') trackFeatureUsed()
       return 'loaded'
     } catch (error) {
       reportTemplateError(error)
@@ -263,7 +271,7 @@ export function useTemplateWorkflows() {
       })
 
       dialogStore.closeDialog()
-      return await loadTemplateGraph(data, workflowName)
+      return await loadTemplateGraph(data, workflowName, source)
     } catch (error) {
       if (!controller.signal.aborted) reportTemplateError(error)
       return 'not-started'

@@ -25,6 +25,7 @@ import {
   workshopIdentityAuditSchema,
   workshopRouterAliasesSchema
 } from './workshop-router-identity'
+import { hubModelSlugs } from './hub-models'
 
 const audit = workshopIdentityAuditSchema.parse(rawAudit)
 const aliases = workshopRouterAliasesSchema.parse(packedAliases)
@@ -167,7 +168,7 @@ describe('legacy content identity repairs', () => {
         throw new Error('Missing published model detail')
       expect(detail.routerId).toBe(match.routerId)
       expect(detail.slug.startsWith(`${old.slug}--`)).toBe(true)
-      expect(detail.href).toBe(`/models/${detail.slug}/`)
+      expect(detail.href).toBe(`/hub/models/${hubModelSlugs.get(detail.slug)}/`)
       expect(routerWorkshopModelPaths).toContain(old.slug)
       expect(detail.incompleteReason).toBeUndefined()
       expect(detail.execution?.inputSchema).toEqual(contract.inputSchema)
