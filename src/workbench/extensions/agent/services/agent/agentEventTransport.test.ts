@@ -516,46 +516,41 @@ describe('agentEventTransport text and tool parts', () => {
     })
   })
 
-  const expectRunningSkillPreserved = (skill: null | '') => {
-    const running = zAgentWsEvent.parse({
-      type: 'agent_tool_call',
-      data: {
-        tool_call_id: 'call-1',
-        tool_name: 'load_skill',
-        status: 'running',
+  it.for([null, ''] as const)(
+    'preserves the running skill when completion carries %j',
+    (skill) => {
+      const running = zAgentWsEvent.parse({
+        type: 'agent_tool_call',
+        data: {
+          tool_call_id: 'call-1',
+          tool_name: 'load_skill',
+          status: 'running',
+          skill: 'comfy-director',
+          message_id: 'm',
+          thread_id: 't'
+        }
+      })
+      const completed = zAgentWsEvent.parse({
+        type: 'agent_tool_call',
+        data: {
+          tool_call_id: 'call-1',
+          tool_name: 'load_skill',
+          status: 'success',
+          skill,
+          message_id: 'm',
+          thread_id: 't'
+        }
+      })
+
+      const message = drive([running, completed])
+
+      expect(toolParts(message)[0]).toMatchObject({
         skill: 'comfy-director',
-        message_id: 'm',
-        thread_id: 't'
-      }
-    })
-    const completed = zAgentWsEvent.parse({
-      type: 'agent_tool_call',
-      data: {
-        tool_call_id: 'call-1',
-        tool_name: 'load_skill',
-        status: 'success',
-        skill,
-        message_id: 'm',
-        thread_id: 't'
-      }
-    })
-
-    const message = drive([running, completed])
-
-    expect(toolParts(message)[0]).toMatchObject({
-      skill: 'comfy-director',
-      state: 'done',
-      ok: true
-    })
-  }
-
-  it('preserves the running skill when completion carries null', () => {
-    expectRunningSkillPreserved(null)
-  })
-
-  it('preserves the running skill when completion carries an empty string', () => {
-    expectRunningSkillPreserved('')
-  })
+        state: 'done',
+        ok: true
+      })
+    }
+  )
 
   it('preserves a parsed running frame skill through an unnamed completion', () => {
     const running = zAgentWsEvent.parse({
