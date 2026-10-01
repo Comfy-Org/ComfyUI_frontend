@@ -43,13 +43,12 @@ describe('the agentPanel store id', () => {
     expect(typeof store.width).toBe('number')
     expect(Number.isFinite(store.width)).toBe(true)
     expect(typeof store.toggleMaximize).toBe('function')
-    // This assertion used to name `width`, which is a computed after this
-    // change and so is no longer pinia state. main retargeted it at
-    // `targetTracking`; this branch has no such field, and the change's own
-    // `reservedWorkspaceWidth` is internal rather than returned. The store
-    // returns exactly seven writable refs, of which this is one.
+    // `width` is computed and `targetTracking` is intentionally private, so
+    // neither appears in Pinia state. Use a writable ref that is unique to the
+    // full store to prove the dock mount did not register the old gate-only
+    // store first.
     expect(Object.keys(pinia.state.value.agentPanel)).toContain(
-      'workflowTargetSelection'
+      'reportedExhaustionIdentity'
     )
   })
 
