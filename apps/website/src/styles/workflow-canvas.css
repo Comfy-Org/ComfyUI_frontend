@@ -268,7 +268,9 @@ video.wf-node-image {
   height: 1.831cqw;
 }
 .wf-user-badge img:last-child {
-  transform: rotate(180deg);
+  /* Horizontal mirror only: rotate(180deg) also flips the cap vertically,
+     which surfaces a stray line from the artwork's bottom edge at the top. */
+  transform: scaleX(-1);
 }
 @media (max-width: 1023px) {
   .wf-showcase {
