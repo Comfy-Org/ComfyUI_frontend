@@ -82,6 +82,11 @@ their query and fragment, and error text and clicked element text lose emails,
 tokens and client secrets. RUM cannot rewrite an error's causes, so an error
 whose cause carries such text is dropped. No deployment setting is needed.
 
+The RUM user is the signed-in user's opaque id, the one the Cloud app sets and
+PostHog identifies here, and nothing else: no email, no name. It follows the
+same session as PostHog, so a refused or still-resolving session sets and
+clears nothing, and only the sign-out of a user set here clears it.
+
 PostHog joins the Cloud app's project with the token, host and
 `telemetry_disabled_events` that the Cloud origin's `/api/features` returns, on
 the same fetch that names the Firebase project. Its identity cookie is shared
