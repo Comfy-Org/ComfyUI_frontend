@@ -354,7 +354,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
           () =>
             generation === loadGeneration &&
             ownedGeneration === sessionGeneration
-          )
+        )
       }
     }
   }
