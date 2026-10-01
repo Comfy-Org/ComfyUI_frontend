@@ -71,61 +71,6 @@ describe('openHostedBillingTab', () => {
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-123' })
   })
 
-  it('resolves the route with the active workspace id', () => {
-    mockHostedBillingRoute.mockReturnValue({ kind: 'provider' })
-
-    const opened = openHostedBillingTab('pricing')
-
-    expect(opened).toBe(false)
-    expect(mockHostedBillingRoute).toHaveBeenCalledWith(
-      'billing_web',
-      'pricing',
-      {
-        plan: undefined,
-        teamCreditStopId: undefined,
-        workspaceId: 'ws-123',
-        correlationId: expect.any(String)
-      }
-    )
-  })
-
-  it('passes an optional plan through to the route', () => {
-    mockHostedBillingRoute.mockReturnValue({ kind: 'provider' })
-
-    openHostedBillingTab('checkout', { plan: 'pro-monthly' })
-
-    expect(mockHostedBillingRoute).toHaveBeenCalledWith(
-      'billing_web',
-      'checkout',
-      {
-        plan: 'pro-monthly',
-        teamCreditStopId: undefined,
-        workspaceId: 'ws-123',
-        correlationId: expect.any(String)
-      }
-    )
-  })
-
-  it('passes an optional team credit stop through to the route', () => {
-    mockHostedBillingRoute.mockReturnValue({ kind: 'provider' })
-
-    openHostedBillingTab('checkout', {
-      plan: 'team_per_credit_annual',
-      teamCreditStopId: 'stop_700'
-    })
-
-    expect(mockHostedBillingRoute).toHaveBeenCalledWith(
-      'billing_web',
-      'checkout',
-      {
-        plan: 'team_per_credit_annual',
-        teamCreditStopId: 'stop_700',
-        workspaceId: 'ws-123',
-        correlationId: expect.any(String)
-      }
-    )
-  })
-
   it('returns false and opens nothing when the route stays on the provider', () => {
     mockHostedBillingRoute.mockReturnValue({ kind: 'provider' })
     const openSpy = vi.spyOn(window, 'open')

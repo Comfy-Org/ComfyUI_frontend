@@ -117,6 +117,25 @@ describe('the billing-web handoff', () => {
     })
   })
 
+  it('carries the team credit stop into the billing-web link', () => {
+    const tab = stubOpenedTab()
+
+    openHostedBillingTabOutcome('checkout', {
+      plan: 'team_per_credit_annual',
+      teamCreditStopId: 'stop_700',
+      journeyId: 'journey-1'
+    })
+
+    expect(linkParams(tab)).toEqual({
+      product: 'comfyui',
+      return_to: 'comfyui_workspace',
+      plan: 'team_per_credit_annual',
+      team_credit_stop_id: 'stop_700',
+      workspace: 'ws-1',
+      correlation_id: 'journey-1'
+    })
+  })
+
   it('mints a journey for an entry that has none and reports the one it sent', () => {
     const tab = stubOpenedTab()
 
