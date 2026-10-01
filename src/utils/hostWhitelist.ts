@@ -36,6 +36,30 @@ export function normalizeHost(input: string): string {
   return h
 }
 
+/**
+ * Hosts that can only ever mean "the computer this URL was written on", so a
+ * URL naming one is unreachable from anywhere else.
+ *
+ * Wider than the loopback addresses alone: a server bound to an unspecified
+ * address (`0.0.0.0`, `::`) listens on every interface, and a URL that names
+ * one still resolves to the reader's own machine. Accepts the spellings a
+ * `URL` can hand back, including the IPv4-mapped IPv6 form it serialises as
+ * `[::ffff:7f00:1]`.
+ *
+ * Deliberately not {@link isHostWhitelisted}, which also allows `*.comfy.org`
+ * for SSO and would classify a cloud host as local.
+ */
+export function isLoopbackHost(rawHost: string): boolean {
+  const host = normalizeHost(rawHost)
+  return (
+    isLocalhostLabel(host) ||
+    isIPv4Loopback(host) ||
+    isIPv6Loopback(host) ||
+    isUnspecifiedAddress(host) ||
+    isIPv4MappedLoopback(host)
+  )
+}
+
 /** Public check used by the UI. */
 export function isHostWhitelisted(rawHost: string): boolean {
   const host = normalizeHost(rawHost)
@@ -89,6 +113,28 @@ function isIPv6Loopback(h: string): boolean {
 
   // Require that at least one group was actually compressed: i.e., leftCount + rightCount ≤ 6.
   return leftCount + rightCount <= 6
+}
+
+/**
+ * The unspecified addresses. A server bound to one listens on every
+ * interface, so a URL naming it was written on the machine serving it.
+ * `URL` serialises the IPv6 form as `[::]`, which normalizeHost unbrackets.
+ */
+function isUnspecifiedAddress(h: string): boolean {
+  return h === '0.0.0.0' || h === '::'
+}
+
+// IPv4-mapped IPv6 (`::ffff:127.0.0.1`), which `URL` serialises in the hex
+// form `[::ffff:7f00:1]`; the dotted form is accepted as written too.
+const V6_MAPPED_HEX_RE = /^::ffff:([0-9a-f]{1,4}):[0-9a-f]{1,4}$/i
+const V6_MAPPED_DOTTED_RE = /^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/i
+
+function isIPv4MappedLoopback(h: string): boolean {
+  const hex = V6_MAPPED_HEX_RE.exec(h)
+  // The high half of the embedded address carries the first octet.
+  if (hex) return parseInt(hex[1], 16) >> 8 === 127
+  const dotted = V6_MAPPED_DOTTED_RE.exec(h)
+  return dotted ? isIPv4Loopback(dotted[1]) : false
 }
 
 const COMFY_ORG_HOST = /\.comfy\.org$/

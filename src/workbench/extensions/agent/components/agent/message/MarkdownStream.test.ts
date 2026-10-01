@@ -125,7 +125,9 @@ describe('MarkdownStream', () => {
   describe('a panel opened away from the machine running the agent', () => {
     const loopback =
       'http://127.0.0.1:8188/view?filename=ComfyUI_00005_.png&subfolder=&type=output'
-    const sameOrigin = `${window.location.origin}/view?filename=ComfyUI_00005_.png&subfolder=&type=output`
+    // The page's own API route, not a bare origin: a reverse-proxied install
+    // is served under a subpath and a dev server only proxies `/api`.
+    const onPageApi = `${window.location.origin}/api/view?filename=ComfyUI_00005_.png&subfolder=&type=output`
 
     it('renders a loopback asset image against the page origin', () => {
       render(MarkdownStream, {
@@ -134,7 +136,7 @@ describe('MarkdownStream', () => {
       })
       expect(screen.getByRole('img', { name: 'a duck' })).toHaveAttribute(
         'src',
-        sameOrigin
+        onPageApi
       )
     })
 
@@ -145,7 +147,7 @@ describe('MarkdownStream', () => {
       })
       expect(screen.getByRole('img', { name: 'a duck' })).toHaveAttribute(
         'src',
-        sameOrigin
+        onPageApi
       )
     })
 
