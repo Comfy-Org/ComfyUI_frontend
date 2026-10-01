@@ -33,9 +33,8 @@ const skipReason = isCI()
   : 'checks the published API spec; runs in CI only (set CI=1 to run it here)'
 
 async function fetchDocs(url: string): Promise<string> {
-  const attempts = FETCH_ATTEMPTS
   let lastError: unknown
-  for (let attempt = 0; attempt < attempts; attempt++) {
+  for (let attempt = 0; attempt < FETCH_ATTEMPTS; attempt++) {
     try {
       const response = await fetch(url, {
         signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)
@@ -44,7 +43,7 @@ async function fetchDocs(url: string): Promise<string> {
       return await response.text()
     } catch (error) {
       lastError = error
-      if (attempt + 1 < attempts)
+      if (attempt + 1 < FETCH_ATTEMPTS)
         await new Promise((resolve) => setTimeout(resolve, 250 * 2 ** attempt))
     }
   }
