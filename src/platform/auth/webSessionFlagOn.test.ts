@@ -1247,6 +1247,13 @@ describe('comfy-api calls on the shared web session', () => {
       copy: "You don't have access to this workspace. Contact support if this keeps happening."
     },
     {
+      name: 'a missing workspace',
+      status: 404,
+      serverCode: 'NOT_FOUND',
+      failure: 'WORKSPACE_ACCESS_DENIED',
+      copy: "You don't have access to this workspace. Contact support if this keeps happening."
+    },
+    {
       name: 'a refused request',
       status: 403,
       failure: 'SESSION_REQUEST_REFUSED',
@@ -1651,6 +1658,61 @@ describe.for([{ unified: false }, { unified: true }])(
       await expect(authStore.getWorkspaceAuthToken()).resolves.toBe(
         'session-jwt-1'
       )
+    })
+
+    it.for([
+      {
+        name: 'a missing workspace',
+        refuse: () =>
+          jsonResponse({ code: 'NOT_FOUND', message: 'not found' }, 404),
+        workspace: undefined
+      },
+      {
+        name: 'a denied workspace',
+        refuse: () =>
+          jsonResponse({ code: 'workspace_access_denied', message: 'no' }, 403),
+        workspace: undefined
+      },
+      {
+        name: 'a server error',
+        refuse: () => jsonResponse({ code: 'internal', message: 'down' }, 503),
+        workspace: 'ws-team'
+      }
+    ])(
+      'a team token refused for $name leaves the workspace $workspace',
+      async ({ refuse, workspace }) => {
+        const ingest = await boot()
+        vi.spyOn(window.location, 'reload').mockImplementation(() => {})
+        const workspaceAuth = useWorkspaceAuthStore()
+        await workspaceAuth.switchWorkspace('ws-team')
+        ingest.mintRefusal = refuse
+
+        await expect(
+          useAuthStore().getWorkspaceAuthToken()
+        ).resolves.toBeUndefined()
+        expect(workspaceAuth.currentWorkspace?.id).toBe(workspace)
+      }
+    )
+
+    it('a team re-mint refused for a missing workspace drops it too', async () => {
+      const ingest = await boot()
+      vi.spyOn(window.location, 'reload').mockImplementation(() => {})
+      const workspaceAuth = useWorkspaceAuthStore()
+      await workspaceAuth.switchWorkspace('ws-team')
+      const requests = webSessionRequests()
+      assert.exists(requests)
+      const scope = await requests.scope()
+      assert.exists(scope)
+      ingest.mintRefusal = () =>
+        jsonResponse({ code: 'NOT_FOUND', message: 'not found' }, 404)
+
+      const result = await requests.remintWorkspaceToken({
+        ...scope,
+        workspaceId: 'ws-team'
+      })
+
+      expect(result).toMatchObject({ code: 'WORKSPACE_ACCESS_DENIED' })
+      expect(workspaceAuth.currentWorkspace?.id).toBeUndefined()
     })
 
     const switchSessionTo = async (
