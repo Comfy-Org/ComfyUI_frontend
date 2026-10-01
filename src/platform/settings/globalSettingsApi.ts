@@ -11,6 +11,7 @@ import {
   shouldRemintCloudRequest
 } from '@/platform/auth/unified/remintRetry'
 import { isCloud } from '@/platform/distribution/types'
+import type { ErrorFailureKind } from '@/platform/telemetry/types'
 import { api } from '@/scripts/api'
 import type { WebSessionSend } from '@/platform/auth/session/webSessionFetch'
 import type { AuthHeader } from '@/types/authTypes'
@@ -18,7 +19,13 @@ import type { AuthHeader } from '@/types/authTypes'
 export class GlobalSettingsApiError extends Error {
   constructor(
     message: string,
-    readonly status?: number
+    readonly status?: number,
+    /**
+     * Declared rather than inferred, so telemetry never has to read the
+     * message to tell "the body was unreadable" from "the server said no".
+     * Omitted where the status already says it.
+     */
+    readonly failureKind?: ErrorFailureKind
   ) {
     super(message)
     this.name = 'GlobalSettingsApiError'
@@ -36,7 +43,8 @@ async function responseBody(response: Response): Promise<unknown> {
   } catch {
     throw new GlobalSettingsApiError(
       'Global setting returned invalid JSON',
-      response.status
+      response.status,
+      'malformed_response'
     )
   }
 }
@@ -70,7 +78,8 @@ async function storedSetting(response: Response): Promise<GlobalSetting> {
   if (!payload.success) {
     throw new GlobalSettingsApiError(
       'Global setting returned an invalid response',
-      response.status
+      response.status,
+      'malformed_response'
     )
   }
   return payload.data

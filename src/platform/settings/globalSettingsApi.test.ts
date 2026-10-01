@@ -123,6 +123,48 @@ describe('Global Settings transport', () => {
     )
   })
 
+  // An unreadable body and a rejected request are both `GlobalSettingsApiError`
+  // with a status. Telemetry classifies them apart from the declared kind, so
+  // it never has to read the message — which for these two errors is the only
+  // thing that distinguishes them.
+  // `!response.ok` is checked before the body is read, so an unreadable body
+  // only reaches this branch on a 2xx or on the 404 the caller inspects — which
+  // is why the status is worth carrying alongside the kind.
+  it('declares an unreadable body as a malformed response, not a rejection', async () => {
+    fetchWithUnifiedRemint.mockResolvedValueOnce(
+      new Response('<html>hello</html>', { status: 200 })
+    )
+    await expect(getGlobalSetting(key, authHeader)).rejects.toMatchObject({
+      failureKind: 'malformed_response',
+      status: 200
+    })
+  })
+
+  it('declares an unreadable 404 body as a malformed response', async () => {
+    fetchWithUnifiedRemint.mockResolvedValueOnce(
+      new Response('not json', { status: 404 })
+    )
+    await expect(getGlobalSetting(key, authHeader)).rejects.toMatchObject({
+      failureKind: 'malformed_response',
+      status: 404
+    })
+  })
+
+  it('leaves a plainly rejected request for the status to classify', async () => {
+    respondWith({ code: 'UNAUTHENTICATED', message: 'no' }, 401)
+    await expect(getGlobalSetting(key, authHeader)).rejects.toMatchObject({
+      failureKind: undefined,
+      status: 401
+    })
+  })
+
+  it('declares a schema-invalid payload as a malformed response', async () => {
+    respondWith({ value: true })
+    await expect(getGlobalSetting(key, authHeader)).rejects.toMatchObject({
+      failureKind: 'malformed_response'
+    })
+  })
+
   it('surfaces rejected writes', async () => {
     respondWith(
       { code: 'INTERNAL_ERROR', message: 'Failed to store setting' },
