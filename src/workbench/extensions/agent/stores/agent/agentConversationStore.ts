@@ -1013,6 +1013,10 @@ export const useAgentConversationStore = defineStore(
 
     function reset(): void {
       disposeActiveAndSettledTransports()
+      for (const askId of askResolutionWatchdogs.keys())
+        clearAskResolutionWatchdog(askId)
+      submittedAskSelections.clear()
+      answeringAskIds.value = new Set()
       messages.value = []
       userTexts.value = new Map()
       userTags.value = new Map()
