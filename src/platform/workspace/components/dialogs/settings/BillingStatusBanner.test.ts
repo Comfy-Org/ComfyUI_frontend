@@ -105,13 +105,6 @@ const i18n = createI18n({
     en: {
       workspacePanel: {
         billingStatus: {
-          warning: {
-            title: 'Payment failed',
-            bodyNoDate:
-              'Your payment failed to process. Update payment to avoid a pause.',
-            bodyWithAmount:
-              'Your payment of {amount} failed to process. Pay the invoice or update payment to avoid a pause.'
-          },
           paused: {
             title: 'Subscription paused',
             body: "This workspace's subscription is paused. Update payment to resume.",
@@ -349,14 +342,11 @@ describe('BillingStatusBanner', () => {
       currency: 'usd'
     }
 
-    it('offers Pay invoice next to Update payment and shows the amount', () => {
+    it('offers Pay invoice next to Update payment', () => {
       paymentFailedState()
       state.renewalInvoice = invoice
       renderBanner()
 
-      expect(screen.getByRole('status')).toHaveTextContent(
-        'Your payment of $50.00 failed'
-      )
       expect(
         screen.getByRole('button', { name: 'Pay invoice' })
       ).toBeInTheDocument()
@@ -393,30 +383,6 @@ describe('BillingStatusBanner', () => {
       open.mockRestore()
     })
 
-    it('does not divide zero-decimal currencies by 100', () => {
-      paymentFailedState()
-      state.renewalInvoice = { ...invoice, amount_due: 5000, currency: 'jpy' }
-      renderBanner()
-
-      expect(screen.getByRole('status')).toHaveTextContent('¥5,000')
-    })
-
-    it.for([
-      ['isk', 50000, /ISK\s?500\b/],
-      ['ugx', 50000, /UGX\s?500\b/],
-      ['huf', 17500, /HUF\s?175\b/],
-      ['kwd', 5000, /KWD\s?5\.000/]
-    ] as const)(
-      'reads %s with the decimals Stripe charges in',
-      ([currency, amount_due, expected]) => {
-        paymentFailedState()
-        state.renewalInvoice = { ...invoice, amount_due, currency }
-        renderBanner()
-
-        expect(screen.getByRole('status')).toHaveTextContent(expected)
-      }
-    )
-
     it('hides Pay invoice for a non-https invoice URL', () => {
       paymentFailedState()
       state.renewalInvoice = {
@@ -432,34 +398,16 @@ describe('BillingStatusBanner', () => {
         screen.getByRole('button', { name: 'Update payment' })
       ).toBeInTheDocument()
     })
-
-    it.for(['not-a-code', 'zzz'])(
-      'falls back to the plain copy on unknown currency %s',
-      (currency) => {
-        paymentFailedState()
-        state.renewalInvoice = { ...invoice, currency }
-        renderBanner()
-
-        expect(screen.getByRole('status')).toHaveTextContent(
-          'Update payment to avoid a pause'
-        )
-        expect(
-          screen.getByRole('button', { name: 'Pay invoice' })
-        ).toBeInTheDocument()
-      }
-    )
   })
 
-  it('shows immediate payment-failed copy with Update payment for owners', () => {
+  it('shows the paused copy for a failed renewal, since runs are already blocked', () => {
     paymentFailedState()
-    state.renewalDate = '2026-08-01T00:00:00Z'
     renderBanner()
 
-    expect(screen.getByRole('status')).toHaveTextContent('Payment failed')
+    expect(screen.getByRole('status')).toHaveTextContent('Subscription paused')
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Update payment to avoid a pause'
+      'Update payment to resume'
     )
-    expect(screen.getByRole('status')).not.toHaveTextContent('will pause on')
     expect(
       screen.getByRole('button', { name: 'Update payment' })
     ).toBeInTheDocument()
@@ -473,7 +421,7 @@ describe('BillingStatusBanner', () => {
     state.subscription = { ...state.subscription!, tier: 'PRO' }
     renderBanner()
 
-    expect(screen.getByRole('status')).toHaveTextContent('Payment failed')
+    expect(screen.getByRole('status')).toHaveTextContent('Subscription paused')
     await userEvent.click(
       screen.getByRole('button', { name: 'Update payment' })
     )

@@ -201,13 +201,6 @@ function actionFor(example: PlaygroundExample, active = false) {
             preload="metadata"
             class="w-full"
           />
-          <figcaption
-            v-if="example.prompt"
-            class="line-clamp-3 text-xs/relaxed text-primary-warm-gray"
-            data-testid="example-prompt"
-          >
-            {{ example.prompt }}
-          </figcaption>
         </figure>
       </li>
     </ul>

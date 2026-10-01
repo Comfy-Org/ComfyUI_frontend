@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { useResizeObserver } from '@vueuse/core'
+import { computed, ref, useTemplateRef } from 'vue'
+
+import { cn } from '@comfyorg/tailwind-utils'
 
 import type { WorkshopModel } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
@@ -50,6 +53,19 @@ const thumbnailLabel = computed(() =>
   model.thumbnail ? model.thumbnailLabel : undefined
 )
 
+const name = useTemplateRef<HTMLElement>('name')
+const nameClips = ref(false)
+let measuredWidth = -1
+
+// Hovering re-clamps the name to two lines, so a measurement taken then would
+// read "it fits". Only a change of width can change the answer.
+useResizeObserver(name, ([entry]) => {
+  if (entry.contentRect.width === measuredWidth) return
+  measuredWidth = entry.contentRect.width
+  const element = name.value
+  if (element) nameClips.value = element.scrollHeight > element.clientHeight
+})
+
 const pillClass =
   'inline-flex h-6 w-fit shrink-0 items-center justify-center rounded-full bg-hub-surface px-4 py-1 text-xs font-normal whitespace-nowrap text-content'
 </script>
@@ -88,17 +104,37 @@ const pillClass =
       </span>
     </div>
 
-    <div class="flex flex-col gap-3 px-3">
+    <!-- A workflow carries one tag, so hovering can spend its line on a name
+        that does not fit. A model carries several and keeps them. -->
+    <div :class="cn('flex flex-col gap-3 px-3', workflow && 'h-13 lg:h-14')">
       <!-- The mark over the artwork already says who answers for this, so the
           line under it is the card's own name and nothing else. -->
       <h3
-        class="truncate text-xs font-medium text-content-bright lg:text-sm"
+        ref="name"
+        :class="
+          cn(
+            'text-xs font-medium text-content-bright lg:text-sm',
+            workflow ? 'line-clamp-1' : 'truncate',
+            workflow &&
+              nameClips &&
+              'group-hover:line-clamp-2 group-focus-visible:line-clamp-2'
+          )
+        "
         :title="model.name"
         data-testid="model-card-name"
       >
         {{ cardName }}
       </h3>
-      <div class="flex h-6 min-w-0 items-center gap-1.5 overflow-hidden">
+      <div
+        :class="
+          cn(
+            'flex h-6 min-w-0 items-center gap-1.5 overflow-hidden',
+            workflow &&
+              nameClips &&
+              'group-hover:hidden group-focus-visible:hidden'
+          )
+        "
+      >
         <span :class="pillClass" data-testid="model-card-task">
           {{ taskLabel }}
         </span>
