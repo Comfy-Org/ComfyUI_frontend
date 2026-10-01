@@ -1,8 +1,12 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@/platform/telemetry'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import {
+  clearCheckoutJourney,
+  resolveCheckoutJourney
+} from '@/platform/workspace/utils/checkoutJourney'
 
 import {
   disarmHostedBillingReturnRefresh,
@@ -42,7 +46,55 @@ describe('the billing-web handoff', () => {
     return () => {
       disarmHostedBillingReturnRefresh()
       remoteConfig.value = previousConfig
+      sessionStorage.clear()
+      clearCheckoutJourney()
     }
+  })
+
+  it('hands off a restored checkout journey under a fresh id when its stored id cannot ride the link', () => {
+    const tab = stubOpenedTab()
+    const unreadableId = 'journey/../1'
+    sessionStorage.setItem(
+      'comfy.checkout.journey',
+      JSON.stringify({
+        journey_id: unreadableId,
+        entered_at: new Date().toISOString(),
+        started_at_ms: Date.now(),
+        actor_uid: 'user-1',
+        workspace_id: 'ws-1',
+        entry_flow: 'initial_subscription',
+        entry_source: 'pricing',
+        intent: 'pricing:standard:yearly',
+        assignment_status: 'unavailable'
+      })
+    )
+    const journey = resolveCheckoutJourney({
+      actorUid: 'user-1',
+      workspaceId: 'ws-1',
+      entryFlow: 'initial_subscription',
+      entrySource: 'pricing',
+      intent: 'pricing:standard:yearly',
+      assignment: { status: 'unavailable' }
+    })
+    assert(journey.status === 'active')
+
+    const outcome = openHostedBillingTabOutcome('checkout', {
+      plan: 'standard-yearly',
+      journeyId: journey.record.journey_id
+    })
+
+    expect(outcome).toBe('opened')
+    const sent = linkParams(tab).correlation_id
+    expect(sent).toMatch(/^[\w-]{1,128}$/)
+    expect(sent).not.toBe(unreadableId)
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledExactlyOnceWith({
+      operation: 'web_handoff',
+      stage: 'opened',
+      outcome: 'pending',
+      intent: 'checkout',
+      result: 'opened',
+      correlation_id: sent
+    })
   })
 
   it('carries the click-time source and the journey into the billing-web link', () => {
