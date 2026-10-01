@@ -66,7 +66,6 @@ const DEPLOY_TRANSCRIPT = [
         :lines="DEPLOY_TRANSCRIPT"
         :label="t('platform.serverlessDeploy.heading', locale)"
         :typewriter="false"
-        highlight-lang="shell"
       />
     </div>
   </section>

@@ -104,22 +104,25 @@ describe('LiveTerminal', () => {
     expect(transcript()).toBe('$ comfy up✔ Done')
   })
 
-  it('renders colored tokens and skips the typewriter when highlightLang is set', async () => {
+  it('colors the prompt, leaves command text plain, and colors a success line green', async () => {
     render(LiveTerminal, {
-      props: { lines: ['$ echo hi'], label: 'Demo', highlightLang: 'shell' }
+      props: {
+        lines: ['$ comfy build init', '✓ Scanned this install'],
+        label: 'Demo',
+        typewriter: false
+      }
     })
     await nextTick()
 
-    const terminal = screen.getByRole('img', { name: 'Demo' })
-    expect(terminal.textContent).toBe('$ echo hi')
-
     const prompt = screen.getByText('$')
-    const command = screen.getByText('echo')
-    expect(getComputedStyle(prompt).color).not.toBe(
-      getComputedStyle(command).color
+    expect(prompt.getAttribute('style')).toContain(
+      '--color-primary-comfy-yellow'
     )
 
-    await advance(10000)
-    expect(terminal.textContent).toBe('$ echo hi')
+    const command = screen.getByText('comfy build init')
+    expect(command.getAttribute('style')).toBeNull()
+
+    const successLine = screen.getByText('✓ Scanned this install')
+    expect(successLine.getAttribute('style')).toContain('#A7C080')
   })
 })
