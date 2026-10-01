@@ -102,6 +102,8 @@ const applyingPromotionCode = ref(false)
 const submitFailure = ref<string | undefined>()
 const inviteFailure = ref<string | undefined>()
 
+let latestQuoteCall = 0
+
 async function quotePlan(
   slug: string | undefined,
   stopId: string | undefined,
@@ -110,13 +112,15 @@ async function quotePlan(
   quotedPlan.value = slug
   quotedTeamCreditStopId.value = stopId
   if (slug === undefined) return
+  const call = ++latestQuoteCall
   const result = await quote({
     planSlug: slug,
     ...(stopId === undefined ? {} : { teamCreditStopId: stopId }),
     ...(promotionCode ? { promotionCode } : {})
   })
   if (result.status === 'ok') quoteIsCurrent.value = true
-  if (promotionCode === undefined) journey.quoted(result)
+  if (promotionCode === undefined && call === latestQuoteCall)
+    journey.quoted(result)
   return result
 }
 
