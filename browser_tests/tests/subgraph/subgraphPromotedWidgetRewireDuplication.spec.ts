@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 
 // Reported (Jo Zhang / Christian Byrne): when the in-app AI agent (or a
@@ -185,6 +186,17 @@ test.describe(
           { x: 100, y: 800 }
         )
         await comfyPage.nextFrame()
+
+        // The change tracker captures on window mouseup, which runs before
+        // the click handlers that apply promotions, so its activeState can
+        // lag the built-up baseline by one action. Click empty canvas to
+        // capture the settled baseline, so the slot drop's own capture
+        // (#18117) pushes exactly this state for the undo below.
+        await comfyPage.canvas.click({
+          position: DefaultGraphPositions.emptyCanvasClick
+        })
+        await comfyPage.nextFrame()
+
         await source.connectWidget(0, subgraphNodeRef, textWidgetIndex)
         await comfyPage.nextFrame()
 
