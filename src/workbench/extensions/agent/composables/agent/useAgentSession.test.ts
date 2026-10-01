@@ -1600,7 +1600,8 @@ describe('useAgentSession (v1 composition root)', () => {
       })
     })
     const { source, emit, status } = fakeEvents()
-    const session = useAgentSession({ rest, events: source })
+    const onThreadActivated = vi.fn()
+    const session = useAgentSession({ rest, events: source, onThreadActivated })
     session.start()
     status(true)
     session.bindWorkflow('wf-1')
@@ -1614,6 +1615,7 @@ describe('useAgentSession (v1 composition root)', () => {
 
     await vi.waitFor(() => expect(session.isStreaming.value).toBe(false))
     expect(session.threadId.value).toBeNull()
+    expect(onThreadActivated).toHaveBeenLastCalledWith(null)
     expect(session.boundWorkflowId.value).toBeNull()
     expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBeNull()
 
