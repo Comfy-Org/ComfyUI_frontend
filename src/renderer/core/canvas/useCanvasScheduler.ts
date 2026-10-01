@@ -20,8 +20,6 @@ export interface CanvasScheduler {
   flush(): void
   /** Discard the pending operation with this key. */
   cancel(key: string): void
-  /** Whether the canvas element is visible and properly sized. */
-  isCanvasReady(): boolean
 }
 
 export function createCanvasScheduler(): CanvasScheduler {
@@ -133,7 +131,7 @@ export function createCanvasScheduler(): CanvasScheduler {
     }
   )
 
-  return { schedule, flush, cancel, isCanvasReady }
+  return { schedule, flush, cancel }
 }
 
 export const useCanvasScheduler = createSharedComposable(createCanvasScheduler)
