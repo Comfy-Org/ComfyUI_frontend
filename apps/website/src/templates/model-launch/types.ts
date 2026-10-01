@@ -131,8 +131,6 @@ export interface ModelLaunchShowcase {
   headingKey: TranslationKey
   descriptionKey?: TranslationKey
   cards: readonly ModelLaunchShowcaseCard[]
-  // Renders the strip above the hero instead of in the body section order.
-  aboveHero?: boolean
 }
 
 interface ModelLaunchPricingBanner {

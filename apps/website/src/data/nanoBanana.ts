@@ -58,7 +58,6 @@ export const nanoBananaPage: ModelLaunchPage = {
   showcase: {
     headingAccentKey: 'nanoBanana.showcase.headingAccent',
     headingKey: 'nanoBanana.showcase.heading',
-    aboveHero: true,
     cards: [
       { id: 'style-1', alt: showcaseAlt(1), src: media.vaporwave.src },
       { id: 'style-2', alt: showcaseAlt(2), src: media.aliens.src },
