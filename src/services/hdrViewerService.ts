@@ -1,5 +1,6 @@
 import { defineAsyncComponent } from 'vue'
 
+import { LOAD3D_VIEWER_CONTENT_CLASS } from '@/components/load3d/load3dViewerDialog'
 import { t } from '@/i18n'
 import { useDialogStore } from '@/stores/dialogStore'
 import {
@@ -21,7 +22,7 @@ export function openHdrViewer(url: string) {
     dialogComponentProps: {
       renderer: 'reka',
       size: 'full',
-      contentClass: 'left-1/2 w-[80vw] sm:max-w-[80vw] h-[80vh] max-h-[80vh]',
+      contentClass: LOAD3D_VIEWER_CONTENT_CLASS,
       maximizable: true
     }
   })

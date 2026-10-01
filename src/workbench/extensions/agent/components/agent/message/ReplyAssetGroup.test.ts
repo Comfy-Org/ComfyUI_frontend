@@ -2,6 +2,7 @@ import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { LOAD3D_VIEWER_CONTENT_CLASS } from '@/components/load3d/load3dViewerDialog'
 import { i18n } from '@/i18n'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -159,7 +160,12 @@ describe('ReplyAssetGroup', () => {
     expect(screen.getByTestId('audio-card').dataset.title).toBe('song.mp3')
     await userEvent.click(screen.getByRole('button', { name: 'model.glb' }))
     expect(vi.mocked(useDialogStore().showDialog)).toHaveBeenCalledWith(
-      expect.objectContaining({ title: 'model.glb' })
+      expect.objectContaining({
+        title: 'model.glb',
+        dialogComponentProps: expect.objectContaining({
+          contentClass: LOAD3D_VIEWER_CONTENT_CLASS
+        })
+      })
     )
   })
 
