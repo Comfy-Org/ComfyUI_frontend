@@ -10,6 +10,7 @@ import type { RequestTarget } from '@comfyorg/account-core/requestAuth'
 import { createRequestAuthorizer } from '@comfyorg/account-core/requestAuth'
 import { createSessionTokenMint } from '@comfyorg/account-core/sessionTokenMint'
 
+import { bootCloudIdentity } from '@/platform/auth/session/cloudIdentityBoot'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { installDesktopLoginRedemption } from '@/platform/cloud/onboarding/desktopLoginRedemption'
@@ -20,6 +21,8 @@ import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { api } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
+import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
+import { useAuthStore } from '@/stores/authStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import type { useDialogService } from '@/services/dialogService'
 import type { useExtensionService } from '@/services/extensionService'
@@ -97,9 +100,7 @@ vi.mock(import('@/services/dialogService'), () => ({
 
 vi.mock(import('@/platform/telemetry'))
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 await import('@/extensions/core/cloudSessionCookie')
 
@@ -355,6 +356,23 @@ describe('clients the web session leaves on tokens', () => {
 
       expect(recorder.all).toEqual(apiKeyGolden(row.uca))
       expectNoSessionTraffic(recorder.all)
+    }
+  )
+
+  it.for(API_KEY_SESSION_ROWS)(
+    'booting the cloud identity with a stored API key never touches a session ($name)',
+    async (row) => {
+      localStorage.setItem('comfy_api_key', API_KEY)
+      const recorder = installFetchRecorder(featuresFor(row))
+      await refreshRemoteConfig({ useAuth: false })
+      useAuthStore()
+      identity.resolveSignedOut()
+
+      await bootCloudIdentity()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expectNoSessionTraffic(recorder.all)
+      expect(useCloudWebSessionStore().isActive()).toBe(false)
     }
   )
 

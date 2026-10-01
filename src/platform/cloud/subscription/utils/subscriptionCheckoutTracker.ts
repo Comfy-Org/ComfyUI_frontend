@@ -84,6 +84,8 @@ export interface PendingSubscriptionCheckoutAttempt {
   /** User and workspace that opened checkout, used to reject another session's attempt. */
   owner_id?: string
   workspace_id?: string | null
+  /** Set when this attempt already emitted `billing.subscription_checkout.started`. */
+  start_reported?: true
 }
 
 interface PendingSubscriptionCheckoutAttemptInput {
@@ -98,6 +100,7 @@ interface PendingSubscriptionCheckoutAttemptInput {
   resubscribe_source?: ResubscribeClickMetadata['source']
   owner_id?: string
   workspace_id?: string | null
+  start_reported?: true
 }
 
 const dispatchPendingCheckoutChangeEvent = () => {
@@ -236,7 +239,8 @@ const optionalCheckoutAttemptFields = (
   ...(typeof candidate.workspace_id === 'string' ||
   candidate.workspace_id === null
     ? { workspace_id: candidate.workspace_id }
-    : {})
+    : {}),
+  ...(candidate.start_reported === true ? { start_reported: true } : {})
 })
 
 const normalizeAttempt = (
@@ -421,7 +425,8 @@ export const createPendingSubscriptionCheckoutAttempt = (
     ...(input.owner_id ? { owner_id: input.owner_id } : {}),
     ...(input.workspace_id !== undefined
       ? { workspace_id: input.workspace_id }
-      : {})
+      : {}),
+    ...(input.start_reported ? { start_reported: true } : {})
   }
 }
 
@@ -486,7 +491,10 @@ const didAttemptSucceed = (
 
 export const consumePendingSubscriptionCheckoutSuccess = (
   status: SubscriptionStatusSnapshot
-): SubscriptionSuccessMetadata | null => {
+):
+  | (SubscriptionSuccessMetadata &
+      Pick<PendingSubscriptionCheckoutAttempt, 'start_reported'>)
+  | null => {
   const attempt = getPendingSubscriptionCheckoutAttempt()
   if (!attempt || !didAttemptSucceed(attempt, status)) {
     return null
@@ -513,6 +521,7 @@ export const consumePendingSubscriptionCheckoutSuccess = (
     ...(wasReportedTerminal
       ? { recovery_outcome: 'late_success' as const }
       : {}),
+    ...(attempt.start_reported ? { start_reported: true as const } : {}),
     value,
     currency: 'USD',
     ecommerce: {

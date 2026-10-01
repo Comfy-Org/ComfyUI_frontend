@@ -490,6 +490,11 @@ async function refreshCredits() {
   }
   if (isPendingTopupCompleted(response.events)) {
     telemetry?.trackApiCreditTopupSucceeded()
+    telemetry?.trackBillingEvent({
+      operation: 'topup',
+      stage: 'succeeded',
+      outcome: 'success'
+    })
   }
 }
 

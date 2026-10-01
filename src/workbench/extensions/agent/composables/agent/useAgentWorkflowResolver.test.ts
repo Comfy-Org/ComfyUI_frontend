@@ -10,9 +10,7 @@ import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflo
 
 import { useAgentWorkflowResolver } from './useAgentWorkflowResolver'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 function workflow(
   path: string,
@@ -306,6 +304,7 @@ describe('Agent workflow resolution', () => {
       { id: 'known', name: 'Current' }
     ])
     expect(reportError).toHaveBeenCalledWith(error, {
+      surface: 'agent',
       errorType: 'agent_cloud_workflow_ids_refresh_failed'
     })
     listCloudWorkflows.mockResolvedValueOnce([

@@ -1,7 +1,7 @@
 import { getActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -434,6 +434,34 @@ describe('UsageLogsTable', () => {
         expect(useTelemetry()?.trackApiCreditTopupSucceeded).toHaveBeenCalled()
       })
     })
+
+    it.for([
+      {
+        name: 'a completed legacy top-up closes as succeeded',
+        completed: true,
+        expectedEvents: [
+          [{ operation: 'topup', stage: 'succeeded', outcome: 'success' }]
+        ]
+      },
+      {
+        name: 'no completed top-up reports nothing',
+        completed: false,
+        expectedEvents: []
+      }
+    ])(
+      'reports top-up completion to the billing funnel: $name',
+      async ({ completed, expectedEvents }) => {
+        mockPendingTopup.isPendingTopupCompleted.mockReturnValue(completed)
+
+        await renderLoaded()
+
+        const telemetry = useTelemetry()
+        assert.exists(telemetry)
+        expect(vi.mocked(telemetry.trackBillingEvent).mock.calls).toEqual(
+          expectedEvents
+        )
+      }
+    )
 
     it('skips top-up telemetry when no completion is pending', async () => {
       mockPendingTopup.isPendingTopupCompleted.mockReturnValue(false)

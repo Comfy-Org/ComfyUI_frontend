@@ -53,6 +53,7 @@ const SUBSCRIPTION_PROCESSING =
 const SUBSCRIPTION_ACTION_REQUIRED =
   'Verify your payment to finish setting up your workspace'
 const TOPUP_PROCESSING = 'Processing payment — adding credits...'
+const ACTIVE_STANDARD_PLAN_NAME = 'Standard'
 
 function annualPlan(
   slug: string,
@@ -139,6 +140,12 @@ const PROCESSING_OPERATION = {
 const VERIFICATION_OPERATION = {
   ...PROCESSING_OPERATION,
   action_url: HOSTED_PAYMENT_URL
+} satisfies BillingOpStatusResponse
+
+/** A checkout whose hosted tab was closed before a card was entered. */
+const PARKED_OPERATION = {
+  ...PROCESSING_OPERATION,
+  phase: 'awaiting_payment_method'
 } satisfies BillingOpStatusResponse
 
 const SETTLED_OPERATION = {
@@ -248,6 +255,14 @@ async function returnToTab(page: Page) {
   await page.evaluate(() => window.dispatchEvent(new Event('focus')))
 }
 
+/**
+ * Both rails arm the next read of an operation only after applying the last
+ * one, so the read after the first proves the first was handled.
+ */
+function operationRead(page: Page) {
+  return page.waitForRequest(`**/api/billing/ops/${OPERATION_ID}`)
+}
+
 async function confirmCreatorUpgrade(page: Page) {
   await page.goto(`${APP_URL}/?pricing=creator&cycle=yearly`)
   await cloudAppExpect(
@@ -296,6 +311,65 @@ test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
         await expect(page.getByText(SUBSCRIPTION_ACTION_REQUIRED)).toBeVisible()
         await expect(page.getByText(SUBSCRIPTION_PROCESSING)).toBeHidden()
       })
+
+      test('stays quiet after a reload finds the subscribe parked on a payment method', async ({
+        page
+      }) => {
+        await setupToastParity(page, {
+          rails,
+          operation: PARKED_OPERATION,
+          status: {
+            ...ACTIVE_STANDARD,
+            pending_billing_op_id: OPERATION_ID,
+            pending_billing_op_type: 'subscription'
+          }
+        })
+
+        const firstRead = operationRead(page)
+        await page.goto(APP_URL)
+        await waitForCloudApp(page)
+        await firstRead
+        await operationRead(page)
+
+        await expect(page.getByText(SUBSCRIPTION_PROCESSING)).toHaveCount(0)
+        await expect(page.getByText(SUBSCRIPTION_ACTION_REQUIRED)).toHaveCount(
+          0
+        )
+      })
+
+      for (const { parked, operation } of [
+        { parked: false, operation: PROCESSING_OPERATION },
+        { parked: true, operation: PARKED_OPERATION }
+      ]) {
+        test(`${parked ? 'hides' : 'shows'} the setting-up panel in Settings for a ${parked ? 'parked' : 'processing'} subscribe after a reload`, async ({
+          page
+        }) => {
+          await setupToastParity(page, {
+            rails,
+            operation,
+            status: {
+              ...ACTIVE_STANDARD,
+              pending_billing_op_id: OPERATION_ID,
+              pending_billing_op_type: 'subscription'
+            }
+          })
+
+          const adopted = page.waitForResponse(
+            `**/api/billing/ops/${OPERATION_ID}`
+          )
+          await page.goto(`${APP_URL}/?settings=plan-credits`)
+          await waitForCloudApp(page)
+          await adopted
+
+          const settings = page.getByRole('dialog')
+          await expect(
+            settings.getByText(ACTIVE_STANDARD_PLAN_NAME).first()
+          ).toBeVisible({ visible: parked })
+          await expect(settings.getByText(SUBSCRIPTION_PROCESSING)).toHaveCount(
+            parked ? 0 : 1
+          )
+        })
+      }
 
       test('asks again for verification after a reload finds the subscribe still waiting', async ({
         page

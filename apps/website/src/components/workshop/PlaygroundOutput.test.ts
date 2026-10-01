@@ -316,6 +316,20 @@ describe('PlaygroundOutput', () => {
     expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
   })
 
+  it('explains the page’s own rule when it names why content gets blocked', () => {
+    render(PlaygroundOutput, {
+      props: {
+        state: { status: 'failed', reason: 'policy', fieldErrors: {} },
+        now: 0,
+        policyMessage: 'Seedance refuses realistic faces.'
+      }
+    })
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Seedance refuses realistic faces.'
+    )
+  })
+
   it.for([
     { locale: 'en' as const, label: 'Add credits' },
     { locale: 'zh-CN' as const, label: '添加积分' }

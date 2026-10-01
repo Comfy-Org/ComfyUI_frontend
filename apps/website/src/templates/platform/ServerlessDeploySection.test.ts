@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
+import { deployPromptFor } from '../../config/deploy-prompt'
 import { t } from '../../i18n/translations'
 import ServerlessDeploySection from './ServerlessDeploySection.vue'
 
@@ -9,18 +10,16 @@ vi.mock(import('../../composables/useReducedMotion'), () => ({
 }))
 
 describe('ServerlessDeploySection', () => {
-  it('copies runnable commands without prompts or sample output', async () => {
+  it('copies the agent prompt verbatim', async () => {
     const user = userEvent.setup()
     render(ServerlessDeploySection, { props: { locale: 'en' } })
 
-    await user.click(screen.getByRole('button', { name: 'Copy commands' }))
+    await user.click(screen.getByRole('button', { name: 'Copy prompt' }))
 
-    expect(await navigator.clipboard.readText()).toBe(
-      'comfy build init\ncomfy build push --release --target linux/nvidia\ncomfy deploy up'
-    )
+    expect(await navigator.clipboard.readText()).toBe(deployPromptFor('en'))
     expect(screen.getByRole('button', { name: 'Copied' })).toBeTruthy()
   })
-  it('presents the deploy transcript as a live terminal', () => {
+  it('presents the agent prompt as a live terminal', () => {
     render(ServerlessDeploySection, { props: { locale: 'en' } })
 
     expect(
@@ -38,15 +37,20 @@ describe('ServerlessDeploySection', () => {
     })
     const transcript = terminal.textContent
     for (const line of [
-      '$ comfy build init',
-      '✔ Scanned this ComfyUI install — custom nodes, models, pinned deps',
-      '$ comfy build push --release --target linux/nvidia',
-      '✔ Build released',
-      '$ comfy deploy up',
-      '✔ Endpoint live → https://your-build.run.comfy.app'
+      'Install comfy-cli and read its build skill:',
+      '`pip install -U comfy-cli`, then `comfy skills show comfy-build`.',
+      '`comfy skills show comfy-deploy` covers running that release as a serverless endpoint.'
     ]) {
       expect(transcript).toContain(line)
     }
+  })
+  it('localizes the prompt for zh-CN', async () => {
+    const user = userEvent.setup()
+    render(ServerlessDeploySection, { props: { locale: 'zh-CN' } })
+
+    await user.click(screen.getByRole('button', { name: '复制提示词' }))
+
+    expect(await navigator.clipboard.readText()).toBe(deployPromptFor('zh-CN'))
   })
 })
 import userEvent from '@testing-library/user-event'

@@ -6,7 +6,7 @@ const ENTITIES: Record<string, string> = {
   '&#39;': "'"
 }
 
-export function textOf(html: string): string {
+function textOf(html: string): string {
   return html
     .replace(/<[^>]+>/g, ' ')
     .replace(/&(?:amp|lt|gt|quot|#39);/g, (entity) => ENTITIES[entity])
