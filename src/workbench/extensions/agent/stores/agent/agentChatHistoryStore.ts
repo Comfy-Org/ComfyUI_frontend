@@ -12,6 +12,7 @@ export interface ChatSession {
   id: string
   title: string
   updatedAt: number
+  isTitleFallback?: boolean
 }
 
 export interface HistoryGroups {
@@ -74,7 +75,9 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
   const titled = computed(() =>
     sessions.value.map((session) => {
       const custom = customTitles.value[session.id]
-      const derived = derivedTitles.value[session.id]
+      const derived = session.isTitleFallback
+        ? derivedTitles.value[session.id]
+        : undefined
       const title = custom ?? derived
       return title === undefined ? session : { ...session, title }
     })

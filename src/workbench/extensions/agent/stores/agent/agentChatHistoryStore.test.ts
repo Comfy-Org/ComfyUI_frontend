@@ -13,10 +13,15 @@ vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 const NOW = new Date(2026, 2, 15, 12, 0, 0).getTime()
 const DAY = 86_400_000
 
-const session = (id: string, updatedAt: number): ChatSession => ({
+const session = (
+  id: string,
+  updatedAt: number,
+  isTitleFallback = false
+): ChatSession => ({
   id,
   title: id,
-  updatedAt
+  updatedAt,
+  isTitleFallback
 })
 
 describe('groupSessionsByRecency', () => {
@@ -196,7 +201,7 @@ describe('useAgentChatHistoryStore', () => {
 
   it('reflects a patched title in the grouped list immediately', () => {
     const store = useAgentChatHistoryStore()
-    store.replaceAll([session('a', NOW - 1_000)])
+    store.replaceAll([session('a', NOW - 1_000, true)])
     store.setActive('a')
 
     store.patchTitle('a', 'Clear entire canvas')
@@ -219,7 +224,7 @@ describe('useAgentChatHistoryStore', () => {
   it('applies a derived title when the session arrives in a later refresh', () => {
     const store = useAgentChatHistoryStore()
     store.patchTitle('unknown-thread', 'Clear entire canvas')
-    store.replaceAll([session('unknown-thread', 1)])
+    store.replaceAll([session('unknown-thread', 1, true)])
 
     expect(store.grouped.earlier[0]).toMatchObject({
       id: 'unknown-thread',
@@ -229,12 +234,21 @@ describe('useAgentChatHistoryStore', () => {
 
   it('keeps a derived title across server-list refreshes', () => {
     const store = useAgentChatHistoryStore()
-    store.replaceAll([session('a', NOW - 1_000)])
+    store.replaceAll([session('a', NOW - 1_000, true)])
     store.patchTitle('a', 'Clear entire canvas')
 
-    store.replaceAll([session('a', NOW - 1_000)])
+    store.replaceAll([session('a', NOW - 1_000, true)])
 
     expect(store.grouped.today[0]?.title).toBe('Clear entire canvas')
+  })
+
+  it('keeps a server-authored title ahead of a derived title', () => {
+    const store = useAgentChatHistoryStore()
+    store.patchTitle('a', 'Raw first message')
+
+    store.replaceAll([session('a', NOW - 1_000)])
+
+    expect(store.grouped.today[0]?.title).toBe('a')
   })
 
   it('removes a session with no server request', () => {

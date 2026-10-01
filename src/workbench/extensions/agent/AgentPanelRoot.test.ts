@@ -3986,7 +3986,7 @@ describe('AgentPanelRoot history', () => {
       await screen.findByRole('button', { name: 'Clear entire canvas' })
     ).toBeInTheDocument()
     await vi.waitFor(() =>
-      expect(useAgentChatHistoryStore().sessions[0]).toMatchObject({
+      expect(useAgentChatHistoryStore().grouped.current[0]).toMatchObject({
         id: 'th-active',
         title: 'Clear entire canvas'
       })
