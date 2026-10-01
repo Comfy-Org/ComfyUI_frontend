@@ -325,6 +325,21 @@ describe('censusRepository accounting and suppressions', () => {
     ])
   })
 
+  test('detects blanket, multiline, and bulk architecture suppressions', () => {
+    const root = createRepository({
+      'src/suppressions.ts': [
+        '/* eslint-disable */',
+        '/* eslint-disable-next-line\n * import-x/no-restricted-paths, no-console\n */',
+        '// eslint-disable-line no-console, import-x/no-restricted-paths',
+        '// eslint-disable-next-line no-console'
+      ].join('\n')
+    })
+    const census = censusRepository(root, [])
+    expect(
+      census.violations.filter(({ kind }) => kind === 'anonymous-suppression')
+    ).toHaveLength(3)
+  })
+
   test('rejects overlapping capability-role ownership', () => {
     const root = createRepository({
       'src/domains/images/index.ts': 'export const value = 1'
