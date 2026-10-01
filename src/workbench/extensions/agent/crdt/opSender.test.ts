@@ -845,15 +845,12 @@ describe('createOpSender', () => {
     expect(sent).toHaveLength(1)
     expect(
       sent[0].ops.map((op) => ('node_id' in op ? op.node_id : null))
-    ).toEqual([1])
+    ).toEqual([1, 3])
     expect(settled.map(summarizeSettlement)).toEqual([
       { state: 'undeliverable', nodeIds: [2] }
     ])
     ackInFlight()
-    expect(sent).toHaveLength(2)
-    expect(
-      sent[1].ops.map((op) => ('node_id' in op ? op.node_id : null))
-    ).toEqual([3])
+    expect(sent).toHaveLength(1)
   })
 
   it('contains unsubscribe failures after completing teardown', () => {

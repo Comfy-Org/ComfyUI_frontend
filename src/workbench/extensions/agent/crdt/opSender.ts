@@ -177,7 +177,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     if (staleAnonymousBudget === 0) retiredOpIds.clear()
   }
 
-  function reportSettleFailure(cause: unknown, errorType: string): void {
+  function reportDegraded(cause: unknown, errorType: string): void {
     reportError(cause, {
       errorType,
       surface: 'agent',
@@ -195,7 +195,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       } catch (cause) {
         if (reportedFailure) return
         reportedFailure = true
-        reportSettleFailure(cause, errorType)
+        reportDegraded(cause, errorType)
       }
     }
   }
@@ -310,7 +310,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       notify({ state: 'undeliverable', ops: batch.ops })
     }
     if (unsealed) {
-      const { chunks } = safelyChunkWireOps(
+      const chunks = safelyChunkWireOps(
         unsealed.ops,
         'failure_chunking_agent_op_sender_teardown'
       )
@@ -373,38 +373,35 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     if (!open) return
     const { workflowId, ops } = open
     open = null
-    const { chunks, recovered } = safelyChunkWireOps(ops)
-    if (!recovered) {
-      queue.push(...chunks.map((ops) => ({ workflowId, ops })))
-      return
-    }
-    for (const chunk of chunks) {
-      try {
-        // Validate each fallback chunk independently. Poison ops settle alone
-        // instead of preventing well-formed siblings from reaching the host.
-        chunkWireOps(chunk)
-        queue.push({ workflowId, ops: chunk })
-      } catch {
-        guardedSettlementNotifier('failure_settling_agent_op_sender')({
-          state: 'undeliverable',
-          ops: chunk
-        })
+    try {
+      queue.push(...chunkWireOps(ops).map((ops) => ({ workflowId, ops })))
+    } catch (cause) {
+      reportDegraded(cause, 'failure_chunking_agent_op_sender')
+      const sendable: Op[] = []
+      for (const op of ops) {
+        try {
+          chunkWireOps([op])
+          sendable.push(op)
+        } catch {
+          guardedSettlementNotifier('failure_settling_agent_op_sender')({
+            state: 'undeliverable',
+            ops: [op]
+          })
+        }
       }
+      queue.push(...chunkWireOps(sendable).map((ops) => ({ workflowId, ops })))
     }
   }
 
   function safelyChunkWireOps(
     ops: Op[],
     errorType = 'failure_chunking_agent_op_sender'
-  ): {
-    chunks: Op[][]
-    recovered: boolean
-  } {
+  ): Op[][] {
     try {
-      return { chunks: chunkWireOps(ops), recovered: false }
+      return chunkWireOps(ops)
     } catch (cause) {
-      reportSettleFailure(cause, errorType)
-      return { chunks: ops.map((op) => [op]), recovered: true }
+      reportDegraded(cause, errorType)
+      return ops.map((op) => [op])
     }
   }
 
@@ -498,7 +495,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
         try {
           unsubscribe()
         } catch (cause) {
-          reportSettleFailure(cause, 'failure_unsubscribing_agent_op_sender')
+          reportDegraded(cause, 'failure_unsubscribing_agent_op_sender')
         }
       }
     }
