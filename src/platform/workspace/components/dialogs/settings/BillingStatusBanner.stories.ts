@@ -48,7 +48,8 @@ const teamSubscription: SubscriptionInfo = {
   renewalDate: RENEWAL_DATE,
   endDate: null,
   isCancelled: false,
-  hasFunds: true
+  hasFunds: true,
+  agentHasFunds: true
 }
 
 const funded = teamSubscription
@@ -193,4 +194,40 @@ export const EndingPromotedOwner: Story = story(
     subscriptionStatus: 'canceled'
   },
   { canManageSubscriptionLifecycle: true }
+)
+
+/** A plan change is scheduled for the next period. Informational. */
+export const PlanChangeOwner: Story = story(
+  {
+    subscription: {
+      ...teamSubscription,
+      scheduledChange: {
+        plan_slug: 'enterprise-monthly',
+        effective_at: PLAN_END_DATE,
+        team_credit_stop: null
+      }
+    },
+    canAccessSubscriptionFeatures: true,
+    billingStatus: 'paid',
+    subscriptionStatus: 'active'
+  },
+  owner
+)
+
+const TEN_DAYS_MS = 10 * 24 * 60 * 60 * 1000
+
+/** An Enterprise end date stays quiet until it is two weeks out. */
+export const EndingEnterpriseOwner: Story = story(
+  {
+    subscription: {
+      ...cancelled,
+      tier: 'ENTERPRISE',
+      endDate: new Date(Date.now() + TEN_DAYS_MS).toISOString()
+    },
+    isTeamPlan: false,
+    canAccessSubscriptionFeatures: true,
+    billingStatus: 'paid',
+    subscriptionStatus: 'canceled'
+  },
+  owner
 )

@@ -7,6 +7,7 @@ import {
   zAgentRunMode as zGeneratedAgentRunMode,
   zAgentThreadListResponse as zGeneratedAgentThreadListResponse,
   zAgentTurnAccepted as zGeneratedAgentTurnAccepted,
+  zToolCallSummary,
   zWorkflowListResponse
 } from '@comfyorg/ingest-types/zod'
 import type {
@@ -97,37 +98,32 @@ export type AgentRunModeValue = AgentRunModePreference['mode']
 /**
  * One entry of a persisted assistant row's `content.tool_calls` (see
  * `agentTranscript.ts`'s `parseToolCallEntry`), the reload-path counterpart
- * to the live WebSocket's `zAgentToolCallData` above. `status` is
- * deliberately `z.string()` rather than a closed enum: an unrecognized value
- * must still surface as a failed `ToolPart` (`toolCallOk` treats anything
- * other than `pending`/`running`/`ok`/`success` as failure), so schema
- * validation should reject a malformed *entry* (missing `id`/`tool_name`),
- * not an unfamiliar *status* string or a bad `duration_ms` — `duration_ms` is
- * `z.unknown().optional()` so a NaN/Infinity/negative value there doesn't
- * sink the whole entry; `parseToolCallEntry` narrows it separately and just
- * omits it. `status` is likewise `.optional()`: an entry that omits it
- * entirely must still survive validation (`toolCallPartState`/`toolCallOk`
- * already treat `undefined` as terminal-and-failed, matching the old
- * parser's behavior for a status-less call).
+ * to the live WebSocket's `zAgentToolCallData` above. Sourced directly from
+ * the generated `ToolCallSummary` schema (Comfy-Org/cloud#10360) — the
+ * backend only ever persists terminal rows (`status: 'success' | 'error'`);
+ * a row a dead turn left in `pending`/`running` has no wire-status mapping
+ * and is dropped server-side rather than reaching this parser.
  */
-export const zPersistedToolCallSummary = z
+export const zPersistedToolCallSummary = zToolCallSummary
+
+/**
+ * The generated `AgentMessage.content` schema narrows to just `tool_calls`
+ * (typed via `zToolCallSummary`), but the OpenAPI-generated TS type still
+ * carries a `[key: string]: unknown` index signature for it — the zod
+ * plugin's output didn't get a matching `.passthrough()`. Re-widened here so
+ * a persisted row's other `content` fields (`text`, `attachments`,
+ * `attachment_refs`, `workflow_references`, ...; see `agentTranscript.ts`)
+ * keep parsing.
+ */
+const zAgentMessageContent = z
   .object({
-    id: z.string(),
-    // The provider tool-use id a LIVE `agent_tool_call` frame carries as
-    // `tool_call_id` (see `zAgentToolCallData` above). `parseToolCallEntry`
-    // prefers this over `id` when building `callId` so a restored `ToolPart`
-    // is keyed the same way a live frame for the same call will be, and can
-    // be updated in place rather than rendered as an unmatched duplicate.
-    // Optional: rows recorded before `tool_call_id` existed have none.
-    tool_call_id: z.string().optional(),
-    tool_name: z.string(),
-    status: z.string().optional(),
-    duration_ms: z.unknown().optional()
+    tool_calls: z.array(zToolCallSummary).optional()
   })
   .passthrough()
 
 export const zAgentMessage = zGeneratedAgentMessage
   .extend({
+    content: zAgentMessageContent.optional(),
     pending_ask: zAgentPendingAsk.optional()
   })
   .passthrough()
@@ -172,6 +168,7 @@ const zAgentToolCallData = z
     tool_call_id: z.string(),
     tool_name: z.string(),
     status: z.enum(['running', 'success', 'error']),
+    skill: z.string().optional(),
     args: z.never().optional(),
     duration_ms: z.number().optional(),
     message_id: z.string(),

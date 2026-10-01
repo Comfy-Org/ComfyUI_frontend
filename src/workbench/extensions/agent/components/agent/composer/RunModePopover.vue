@@ -51,7 +51,10 @@ async function onSelectMode(value: string): Promise<void> {
       })
     if (openedAs === openCount) open.value = false
   } catch (error) {
-    reportError(error, { errorType: 'agent_run_mode_save_failure' })
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'agent_run_mode_save_failure'
+    })
     toast.add({ severity: 'error', detail: t('agent.runModeSaveFailed') })
   } finally {
     savingMode.value = null

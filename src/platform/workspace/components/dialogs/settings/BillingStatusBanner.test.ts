@@ -10,6 +10,7 @@ import { createI18n } from 'vue-i18n'
 import type { SubscriptionInfo } from '@/composables/billing/types'
 import type {
   BillingStatus,
+  RenewalInvoice,
   WorkspaceType
 } from '@/platform/workspace/api/workspaceApi'
 import BillingStatusBanner from '@/platform/workspace/components/dialogs/settings/BillingStatusBanner.vue'
@@ -18,7 +19,8 @@ interface Subscription {
   hasFunds: boolean
   isCancelled: boolean
   endDate: string | null
-  scheduledChange: SubscriptionInfo['scheduledChange']
+  tier?: SubscriptionInfo['tier']
+  scheduledChange?: SubscriptionInfo['scheduledChange']
 }
 
 const state = vi.hoisted(() => ({
@@ -32,6 +34,7 @@ const state = vi.hoisted(() => ({
     scheduledChange: null
   } as Subscription | null,
   renewalDate: null as string | null,
+  renewalInvoice: null as RenewalInvoice | null,
   workspaceType: 'team' as WorkspaceType,
   canManageSubscription: true,
   canManageSubscriptionLifecycle: true,
@@ -63,6 +66,7 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
       { slug: 'pro-annual', tier: 'PRO', duration: 'ANNUAL' }
     ]),
     renewalDate: computed(() => state.renewalDate),
+    renewalInvoice: computed(() => state.renewalInvoice),
     manageSubscription: state.manageSubscription,
     fetchStatus: vi.fn(),
     fetchBalance: vi.fn()
@@ -101,11 +105,6 @@ const i18n = createI18n({
     en: {
       workspacePanel: {
         billingStatus: {
-          warning: {
-            title: 'Payment failed',
-            bodyNoDate:
-              'Your payment failed to process. Update payment to avoid a pause.'
-          },
           paused: {
             title: 'Subscription paused',
             body: "This workspace's subscription is paused. Update payment to resume.",
@@ -127,13 +126,17 @@ const i18n = createI18n({
           ending: {
             title: 'Your team plan ends on {date}',
             body: 'Members keep full access until then. Resume your subscription to keep your shared credits and seats.',
+            enterpriseTitle: 'Your Enterprise plan ends on {date}',
+            enterpriseBody:
+              'Members keep full access until then. Reach out to our sales team to extend.',
             reactivate: 'Resume subscription'
           },
           planChange: {
             title: 'Your plan changes to {plan} on {date}',
             body: 'Your current plan stays active until then.'
           },
-          updatePayment: 'Update payment'
+          updatePayment: 'Update payment',
+          payInvoice: 'Pay invoice'
         }
       },
       subscription: {
@@ -205,6 +208,7 @@ describe('BillingStatusBanner', () => {
       scheduledChange: null
     }
     state.renewalDate = null
+    state.renewalInvoice = null
     state.workspaceType = 'team'
     state.canManageSubscription = true
     state.canManageSubscriptionLifecycle = true
@@ -331,16 +335,79 @@ describe('BillingStatusBanner', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
-  it('shows immediate payment-failed copy with Update payment for owners', () => {
+  describe('renewal invoice', () => {
+    const invoice: RenewalInvoice = {
+      hosted_invoice_url: 'https://invoice.stripe.com/i/acct_1/test_123',
+      amount_due: 5000,
+      currency: 'usd'
+    }
+
+    it('offers Pay invoice next to Update payment', () => {
+      paymentFailedState()
+      state.renewalInvoice = invoice
+      renderBanner()
+
+      expect(
+        screen.getByRole('button', { name: 'Pay invoice' })
+      ).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Update payment' })
+      ).toBeInTheDocument()
+    })
+
+    it('omits Pay invoice when there is no renewal invoice', () => {
+      paymentFailedState()
+      renderBanner()
+
+      expect(
+        screen.queryByRole('button', { name: 'Pay invoice' })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Update payment' })
+      ).toBeInTheDocument()
+    })
+
+    it('opens the hosted invoice URL in a new tab with noopener and noreferrer', async () => {
+      paymentFailedState()
+      state.renewalInvoice = invoice
+      const open = vi.spyOn(window, 'open').mockReturnValue(null)
+      renderBanner()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Pay invoice' }))
+
+      expect(open).toHaveBeenCalledWith(
+        invoice.hosted_invoice_url,
+        '_blank',
+        'noopener,noreferrer'
+      )
+      open.mockRestore()
+    })
+
+    it('hides Pay invoice for a non-https invoice URL', () => {
+      paymentFailedState()
+      state.renewalInvoice = {
+        ...invoice,
+        hosted_invoice_url: 'javascript:alert(1)'
+      }
+      renderBanner()
+
+      expect(
+        screen.queryByRole('button', { name: 'Pay invoice' })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Update payment' })
+      ).toBeInTheDocument()
+    })
+  })
+
+  it('shows the paused copy for a failed renewal, since runs are already blocked', () => {
     paymentFailedState()
-    state.renewalDate = '2026-08-01T00:00:00Z'
     renderBanner()
 
-    expect(screen.getByRole('status')).toHaveTextContent('Payment failed')
+    expect(screen.getByRole('status')).toHaveTextContent('Subscription paused')
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Update payment to avoid a pause'
+      'Update payment to resume'
     )
-    expect(screen.getByRole('status')).not.toHaveTextContent('will pause on')
     expect(
       screen.getByRole('button', { name: 'Update payment' })
     ).toBeInTheDocument()
@@ -350,9 +417,11 @@ describe('BillingStatusBanner', () => {
     paymentFailedState()
     state.isTeamPlan = false
     state.workspaceType = 'personal'
+    // A known personal tier: an unrecognized one is denied recovery outright.
+    state.subscription = { ...state.subscription!, tier: 'PRO' }
     renderBanner()
 
-    expect(screen.getByRole('status')).toHaveTextContent('Payment failed')
+    expect(screen.getByRole('status')).toHaveTextContent('Subscription paused')
     await userEvent.click(
       screen.getByRole('button', { name: 'Update payment' })
     )
@@ -482,5 +551,51 @@ describe('BillingStatusBanner', () => {
     renderBanner()
 
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  describe('enterprise ending notice', () => {
+    const NOW = new Date('2026-09-03T12:00:00Z')
+    const DAY = 24 * 60 * 60 * 1000
+
+    // The project vitest setup fakes timers for every test, so pinning the
+    // clock is just a setSystemTime away.
+    beforeEach(() => {
+      vi.setSystemTime(NOW)
+    })
+
+    function enterpriseEndingIn(days: number) {
+      state.isTeamPlan = false
+      state.subscription = {
+        hasFunds: true,
+        isCancelled: true,
+        endDate: new Date(NOW.getTime() + days * DAY).toISOString(),
+        tier: 'ENTERPRISE'
+      }
+    }
+
+    it('shows no banner while the end date is beyond the notice window', () => {
+      enterpriseEndingIn(30)
+      renderBanner()
+
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    })
+
+    it('shows enterprise copy without a Reactivate action inside the window', () => {
+      enterpriseEndingIn(10)
+      // Pin the gate itself: even a rail that resolves reactivation true for
+      // an Enterprise plan must not surface the action.
+      state.canReactivatePlan = true
+      renderBanner()
+
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Your Enterprise plan ends on'
+      )
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Reach out to our sales team to extend'
+      )
+      expect(
+        screen.queryByRole('button', { name: 'Resume subscription' })
+      ).not.toBeInTheDocument()
+    })
   })
 })

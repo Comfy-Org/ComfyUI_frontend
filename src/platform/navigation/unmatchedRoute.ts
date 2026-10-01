@@ -22,6 +22,7 @@ const MAX_REPORTED_PATH_LENGTH = 128
  */
 export function unmatchedRouteRedirect(to: RouteLocation): RouteLocationRaw {
   reportError(new Error('Unmatched route'), {
+    surface: 'platform',
     errorType: 'unmatched_route',
     level: 'warning',
     context: { path: to.path.slice(0, MAX_REPORTED_PATH_LENGTH) }

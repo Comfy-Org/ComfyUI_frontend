@@ -382,10 +382,17 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
   }
 
   function signInWith(provider: 'google' | 'github') {
+    const live = liveWhile(signIn.capture())
+    const options = {
+      onResumed: (credential: Promise<UserCredential>) =>
+        void completeSignIn(provider, () => credential),
+      // An attempt that has not reached Firebase yet still owns the page.
+      keepLateResult: () => live() && !busy.value
+    }
     return completeSignIn(provider, (firebase) =>
       provider === 'google'
-        ? firebase.signInWorkshopWithGoogle()
-        : firebase.signInWorkshopWithGitHub()
+        ? firebase.signInWorkshopWithGoogle(options)
+        : firebase.signInWorkshopWithGitHub(options)
     )
   }
 

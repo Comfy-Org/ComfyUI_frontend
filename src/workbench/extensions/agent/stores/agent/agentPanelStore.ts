@@ -1,14 +1,20 @@
-import { useEventListener, useLocalStorage } from '@vueuse/core'
+import { useEventListener, useLocalStorage, useWindowSize } from '@vueuse/core'
+import { clamp } from 'es-toolkit'
 import { defineStore } from 'pinia'
-import { computed, ref, watch } from 'vue'
+import { computed, ref, shallowRef, toRaw, watch } from 'vue'
 
+import {
+  SIDEBAR_MIN_WIDTH,
+  SIDE_TOOLBAR_WIDTH
+} from '@/constants/splitterConstants'
 import { useTelemetry } from '@/platform/telemetry'
 import type {
   AgentPanelCloseSource,
   AgentPanelOpenedMetadata
 } from '@/platform/telemetry/types'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { api } from '@/scripts/api'
 
 const PANEL_MIN_WIDTH = 420
 const PANEL_MAX_WIDTH = 960
@@ -19,7 +25,35 @@ type TargetTracking =
   | { mode: 'uninitialized' }
   | { mode: 'following' }
   | { mode: 'restoring' }
-  | { mode: 'retained'; workflow: ComfyWorkflow | null }
+  | { mode: 'retained'; workflow: ComfyWorkflow }
+  | {
+      mode: 'retained'
+      workflow: null
+      closedPath?: never
+      unavailable?: never
+    }
+  | {
+      mode: 'retained'
+      workflow: null
+      closedPath: string
+      unavailable?: never
+    }
+  | {
+      mode: 'retained'
+      workflow: null
+      closedPath?: never
+      unavailable: true
+    }
+
+export type AgentPanelView =
+  | { screen: 'chat' }
+  | {
+      screen: 'history'
+      previousThreadId: string | null
+      selection:
+        | { status: 'idle' }
+        | { status: 'loading' | 'failed'; id: string }
+    }
 
 export const useAgentPanelStore = defineStore('agentPanel', () => {
   const enabled = ref(false)
@@ -33,7 +67,17 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     writeDefaults: false
   })
   const gateSettled = ref(false)
-  const width = ref(PANEL_MIN_WIDTH)
+  const view = shallowRef<AgentPanelView>({ screen: 'chat' })
+  const flagsSettled = computed(() => api.serverFeatureFlagsSettled.value)
+  const maximized = ref(false)
+  const draggedWidth = ref(PANEL_MIN_WIDTH)
+  /**
+   * Width the workspace left of the panel needs: the side toolbar, plus the
+   * sidebar when one is open. The layout that owns those keeps it current, so
+   * the panel gives way the moment it would meet the sidebar.
+   */
+  const reservedWorkspaceWidth = ref(SIDE_TOOLBAR_WIDTH + SIDEBAR_MIN_WIDTH)
+  const reportedExhaustionIdentity = ref<string | null>(null)
   const dismissedSelectionSignature = ref<string | null>(null)
   const workflowStore = useWorkflowStore()
   const targetTracking = ref<TargetTracking>({ mode: 'uninitialized' })
@@ -45,12 +89,29 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     if (target.mode === 'following') return workflowStore.activeWorkflow
     return target.mode === 'retained' ? target.workflow : null
   })
+  const targetUnavailable = computed(
+    () =>
+      targetTracking.value.mode === 'retained' &&
+      targetTracking.value.workflow === null &&
+      targetTracking.value.unavailable === true
+  )
   const canRestoreWorkflow = computed(
     () => targetTracking.value.mode === 'restoring'
   )
 
   function beginWorkflowRestoration(): void {
     targetTracking.value = { mode: 'restoring' }
+  }
+
+  function interruptHistorySelection(): void {
+    if (
+      view.value.screen === 'history' &&
+      view.value.selection.status === 'loading'
+    )
+      view.value = {
+        ...view.value,
+        selection: { status: 'failed', id: view.value.selection.id }
+      }
   }
 
   function initializeTargetTracking(hasThread: boolean): void {
@@ -68,7 +129,24 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   }
 
   function setWorkflowTarget(workflow: ComfyWorkflow | null): void {
-    targetTracking.value = { mode: 'retained', workflow }
+    targetTracking.value =
+      workflow === null
+        ? { mode: 'retained', workflow: null }
+        : { mode: 'retained', workflow }
+  }
+
+  function markWorkflowTargetUnavailable(): void {
+    targetTracking.value = {
+      mode: 'retained',
+      workflow: null,
+      unavailable: true
+    }
+  }
+
+  function detachClosedTarget(workflow: ComfyWorkflow): void {
+    targetTracking.value = workflow.isTemporary
+      ? { mode: 'retained', workflow: null }
+      : { mode: 'retained', workflow: null, closedPath: workflow.path }
   }
 
   // Only a retained target can become detached. A following target belongs to
@@ -77,14 +155,54 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     () => [targetTracking.value, ...workflowStore.openWorkflows],
     () => {
       const target = targetTracking.value
-      if (
-        target.mode === 'retained' &&
-        target.workflow !== null &&
-        !workflowStore.openWorkflows.includes(target.workflow)
+      if (target.mode !== 'retained') return
+      if (target.workflow !== null) {
+        if (!workflowStore.openWorkflows.includes(target.workflow))
+          detachClosedTarget(target.workflow)
+      } else if (
+        workflowStore.openWorkflows.some(
+          ({ path }) => path === target.closedPath
+        )
       )
         setWorkflowTarget(null)
     }
   )
+
+  function isRetainedTarget(workflow: ComfyWorkflow): boolean {
+    const target = targetTracking.value
+    if (target.mode !== 'retained') return false
+    return target.workflow === null
+      ? target.closedPath === workflow.path
+      : toRaw(target.workflow) === toRaw(workflow)
+  }
+
+  function followClosedTargetRename(oldPath: string, newPath: string): void {
+    const target = targetTracking.value
+    if (
+      target.mode === 'retained' &&
+      target.workflow === null &&
+      target.closedPath === oldPath
+    )
+      targetTracking.value = {
+        mode: 'retained',
+        workflow: null,
+        closedPath: newPath
+      }
+  }
+
+  workflowStore.$onAction(({ name, args, after }) => {
+    if (name === 'deleteWorkflow') {
+      const [workflow] = args
+      if (!workflow.isTemporary)
+        after(() => {
+          if (isRetainedTarget(workflow)) markWorkflowTargetUnavailable()
+        })
+    } else if (name === 'renameWorkflow') {
+      const [workflow] = args
+      const oldPath = workflow.path
+      after(() => followClosedTargetRename(oldPath, workflow.path))
+    }
+  })
 
   let openedAt: number | null = null
   // Guards the pagehide teardown report below: true once this open epoch has
@@ -93,9 +211,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   // the same openedAt. A fresh epoch (open(), or the watcher below) resets it.
   let teardownReported = false
 
-  const isVisible = computed(
-    () => enabled.value && isOpen.value && consentAccepted.value
-  )
+  const isVisible = computed(() => enabled.value && isOpen.value)
 
   watch(isVisible, (visible) => {
     if (!visible) {
@@ -109,7 +225,35 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     useTelemetry()?.trackAgentPanelOpened({ source: 'restored' })
   })
 
-  const isMaximized = computed(() => width.value === PANEL_MAX_WIDTH)
+  const { width: windowWidth } = useWindowSize()
+
+  /**
+   * Falls below `PANEL_MIN_WIDTH` when the window leaves less room than that.
+   * A panel narrower than its minimum still beats one that leaves the window.
+   */
+  const maxWidth = computed(() =>
+    clamp(windowWidth.value - reservedWorkspaceWidth.value, 0, PANEL_MAX_WIDTH)
+  )
+
+  /**
+   * The rendered width. Narrowing the window clamps it; widening restores the
+   * width the user asked for, so a maximized panel never leaves the viewport.
+   */
+  const width = computed(() =>
+    Math.min(
+      maxWidth.value,
+      maximized.value ? PANEL_MAX_WIDTH : draggedWidth.value
+    )
+  )
+  const requestedWidth = computed(() =>
+    maximized.value ? PANEL_MAX_WIDTH : draggedWidth.value
+  )
+  const isOverlay = computed(
+    () =>
+      windowWidth.value <= requestedWidth.value + reservedWorkspaceWidth.value
+  )
+
+  const isMaximized = computed(() => maximized.value)
 
   function open(
     source: AgentPanelOpenedMetadata['source'] = 'topbar_button'
@@ -168,12 +312,18 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     else open()
   }
 
+  function setReservedWorkspaceWidth(px: number): void {
+    reservedWorkspaceWidth.value = Math.max(0, px)
+  }
+
   function setWidth(px: number): void {
-    width.value = Math.min(PANEL_MAX_WIDTH, Math.max(PANEL_MIN_WIDTH, px))
+    maximized.value = false
+    draggedWidth.value = clamp(px, PANEL_MIN_WIDTH, PANEL_MAX_WIDTH)
   }
 
   function toggleMaximize(): void {
-    setWidth(isMaximized.value ? PANEL_MIN_WIDTH : PANEL_MAX_WIDTH)
+    maximized.value = !maximized.value
+    if (!maximized.value) draggedWidth.value = PANEL_MIN_WIDTH
   }
 
   return {
@@ -183,7 +333,13 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     isVisible,
     hasEverOpened,
     gateSettled,
+    view,
+    interruptHistorySelection,
+    flagsSettled,
+    reportedExhaustionIdentity,
     width,
+    requestedWidth,
+    isOverlay,
     isMaximized,
     dismissedSelectionSignature,
     open,
@@ -193,6 +349,8 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     retainWorkflowTarget,
     startFollowingVisibleWorkflow,
     selectedWorkflow,
+    targetUnavailable,
+    markWorkflowTargetUnavailable,
     canRestoreWorkflow,
     beginWorkflowRestoration,
     setWorkflowTarget,
@@ -200,6 +358,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     close,
     suppressRestoredOpen,
     setWidth,
+    setReservedWorkspaceWidth,
     toggleMaximize
   }
 })

@@ -94,6 +94,22 @@ export function workflowCloudRequest(
   return { prompt }
 }
 
+export function withPartnerNodeCredential(
+  request: PromptRequest,
+  authentication: WorkflowApiOptions['authentication'],
+  token: string
+): PromptRequest {
+  return {
+    ...request,
+    extra_data: {
+      ...request.extra_data,
+      ...(authentication === 'api-key'
+        ? { api_key_comfy_org: token }
+        : { auth_token_comfy_org: token })
+    }
+  }
+}
+
 function responseError(status: number): WorkshopWorkflowError {
   const codes: Record<number, WorkflowErrorCode> = {
     400: 'invalid_input',
@@ -117,14 +133,38 @@ type WorkflowResponseSchema<T> = {
   safeParse(value: unknown): { success: true; data: T } | { success: false }
 }
 
+const cloudErrorSchema = z.object({
+  error: z.object({ type: z.string() })
+})
+
+async function cloudErrorType(response: Response): Promise<string | undefined> {
+  try {
+    const parsed = cloudErrorSchema.safeParse(
+      await workflowResponseJson(response)
+    )
+    return parsed.success ? parsed.data.error.type : undefined
+  } catch {
+    return undefined
+  }
+}
+
+async function failedResponseError(
+  response: Response
+): Promise<WorkshopWorkflowError> {
+  if ((await cloudErrorType(response)) === 'PAYMENT_REQUIRED')
+    return new WorkshopWorkflowError(
+      'insufficient_credits',
+      {},
+      response.status
+    )
+  return responseError(response.status)
+}
+
 async function parseResponse<T>(
   response: Response,
   schema: WorkflowResponseSchema<T>
 ): Promise<T> {
-  if (!response.ok) {
-    await response.body?.cancel()
-    throw responseError(response.status)
-  }
+  if (!response.ok) throw await failedResponseError(response)
   const parsed = schema.safeParse(await workflowResponseJson(response))
   if (!parsed.success) throw new WorkshopWorkflowError('response')
   return parsed.data
@@ -139,7 +179,11 @@ export function createWorkflowApi(
 
   async function send(
     url: URL,
-    init: RequestInit & { readonly signal: AbortSignal },
+    init: {
+      readonly method: string
+      readonly signal: AbortSignal
+      readonly encode: (token: string) => string | undefined
+    },
     refresh = false,
     beforeSend?: () => void | Promise<void>
   ) {
@@ -150,10 +194,13 @@ export function createWorkflowApi(
         : options.token
     init.signal.throwIfAborted()
     if (!token) throw new WorkshopWorkflowError('not_authenticated')
+    const body = init.encode(token)
     await beforeSend?.()
     init.signal.throwIfAborted()
     return transport(url, {
-      ...init,
+      method: init.method,
+      body,
+      signal: init.signal,
       credentials: 'omit',
       redirect: 'error',
       cache: 'no-store',
@@ -161,7 +208,7 @@ export function createWorkflowApi(
         ...(options.authentication === 'api-key'
           ? { 'X-API-Key': token }
           : { Authorization: 'Bearer ' + token }),
-        ...(init.body ? { 'Content-Type': 'application/json' } : {})
+        ...(body ? { 'Content-Type': 'application/json' } : {})
       }
     })
   }
@@ -171,22 +218,30 @@ export function createWorkflowApi(
     schema: WorkflowResponseSchema<T>,
     signal: AbortSignal,
     method = 'GET',
-    body?: unknown,
+    body?: unknown | ((token: string) => unknown),
     beforeSend?: () => void | Promise<void>
   ): Promise<T> {
     signal.throwIfAborted()
     const url = new URL(path, WORKSHOP_CLOUD_BASE_URL)
     if (!path.startsWith('/api/') || url.origin !== WORKSHOP_CLOUD_BASE_URL)
       throw new WorkshopWorkflowError('invalid_request')
-    const encoded = JSON.stringify(body)
-    if (new TextEncoder().encode(encoded).byteLength > WORKFLOW_CONTROL_BYTES)
-      throw new WorkshopWorkflowError('payload_too_large')
+    const encode = (token: string) => {
+      const encoded: string | undefined = JSON.stringify(
+        typeof body === 'function' ? body(token) : body
+      )
+      if (
+        encoded &&
+        new TextEncoder().encode(encoded).byteLength > WORKFLOW_CONTROL_BYTES
+      )
+        throw new WorkshopWorkflowError('payload_too_large')
+      return encoded
+    }
     const requestSignal = combineAbortSignals([
       signal,
       createTimeoutSignal(45_000)
     ])
     try {
-      const init = { method, body: encoded, signal: requestSignal }
+      const init = { method, encode, signal: requestSignal }
       let response = await send(url, init, false, beforeSend)
       if (response.status === 401 && typeof options.token === 'function') {
         await response.body?.cancel()
@@ -229,7 +284,12 @@ export function createWorkflowApi(
         zPromptResponse,
         signal,
         'POST',
-        workflowCloudRequest(options.definition, body),
+        (token: string) =>
+          withPartnerNodeCredential(
+            workflowCloudRequest(options.definition, body),
+            options.authentication,
+            token
+          ),
         beforeSend
       )
       if (!result.prompt_id) throw new WorkshopWorkflowError('response')

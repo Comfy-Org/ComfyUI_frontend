@@ -12,9 +12,7 @@ import MessageFeedback from './MessageFeedback.vue'
 
 const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 vi.mock(import('@/scripts/api'))
 

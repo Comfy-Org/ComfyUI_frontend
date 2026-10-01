@@ -1,9 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
-import type { BillingRecoveryAction } from './operationState.js'
+import type {
+  BillingDeclineReason,
+  BillingRecoveryAction
+} from './operationState.js'
+import type { DeclineDetailKey } from './paymentCopy.js'
 import {
   DEFAULT_PAYMENT_COPY,
   createPaymentCopy,
+  declineDetailKey,
   paymentCopyKeys
 } from './paymentCopy.js'
 import type { PaymentProjection } from './paymentProjection.js'
@@ -65,6 +70,20 @@ describe('paymentCopyKeys', () => {
     })
   })
 
+  it('gives a payment the customer did not complete its own reason copy', () => {
+    const keys = paymentCopyKeys({
+      step: 'declined',
+      reasonKey: 'payment_not_completed',
+      recoveryAction: 'retry',
+      noChargeConfirmed: false
+    })
+
+    expect(keys.reason).toBe('billing.reason.payment_not_completed')
+    expect(createPaymentCopy()['billing.reason.payment_not_completed']).toBe(
+      'The payment was not completed.'
+    )
+  })
+
   it.for([
     'retry',
     'replace_payment_method',
@@ -89,5 +108,21 @@ describe('paymentCopyKeys', () => {
 
     expect(keys.body).toBe('billing.step.declined.body')
     expect(createPaymentCopy()[keys.body]).toBeTruthy()
+  })
+})
+
+describe('declineDetailKey', () => {
+  it.for<[BillingDeclineReason, DeclineDetailKey]>([
+    ['card_declined', 'paymentDeclinedDetail'],
+    ['generic', 'paymentDeclinedDetail'],
+    ['insufficient_funds', 'insufficientFundsDetail'],
+    ['expired_card', 'expiredCardDetail'],
+    ['incorrect_cvc', 'incorrectCvcDetail'],
+    ['authentication_required', 'authenticationFailedDetail'],
+    ['authentication_failed', 'authenticationFailedDetail'],
+    ['payment_not_completed', 'authenticationFailedDetail'],
+    ['processing_error', 'processingErrorDetail']
+  ])('reads a %s decline as %s', ([reason, key]) => {
+    expect(declineDetailKey(reason)).toBe(key)
   })
 })
