@@ -67,6 +67,13 @@ const {
   openWeightsBadgeLabel?: string
 }>()
 
+const resultsClass = computed(() =>
+  cn(
+    'mx-auto max-w-10xl px-6 md:px-10 xl:px-30',
+    defaultModels ? 'pt-14 pb-8' : 'pt-8 pb-4'
+  )
+)
+
 const query = ref('')
 const category = ref<'all' | ModelCategory>('all')
 const access = ref<ModelAccessFilter>('all')
@@ -211,12 +218,7 @@ const displayEntries = computed(() =>
     v-if="defaultModels || isActive"
     id="model-catalog-results"
     :aria-labelledby="collectionHeadingId"
-    :class="
-      cn(
-        'mx-auto max-w-10xl px-6 md:px-10 xl:px-30',
-        defaultModels ? 'pt-14 pb-8' : 'pt-8 pb-4'
-      )
-    "
+    :class="resultsClass"
   >
     <div
       v-if="defaultModels"
