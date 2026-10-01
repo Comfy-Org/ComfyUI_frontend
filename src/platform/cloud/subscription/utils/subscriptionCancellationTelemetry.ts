@@ -1,3 +1,12 @@
+import type {
+  BillingCycle,
+  SubscriptionCheckoutTier
+} from '@comfyorg/account-core/billing'
+
+import {
+  toBillingCycle,
+  toCurrentTier
+} from '@/platform/cloud/subscription/utils/billingPlanTelemetry'
 import type { SubscriptionCancellationMetadata } from '@/platform/telemetry/types'
 import type {
   SubscriptionDuration,
@@ -26,4 +35,15 @@ export function getSubscriptionCancellationMetadata({
       : {}),
     ...(effectiveEndDate ? { end_date: effectiveEndDate } : {})
   }
+}
+
+/** The plan being cancelled, as the cancel billing events carry it. */
+export function getCancelBillingPlan({
+  duration,
+  tier
+}: Pick<SubscriptionCancellationMetadataOptions, 'duration' | 'tier'>): {
+  current_tier?: SubscriptionCheckoutTier
+  cycle?: BillingCycle
+} {
+  return { current_tier: toCurrentTier(tier), cycle: toBillingCycle(duration) }
 }

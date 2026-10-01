@@ -2,7 +2,10 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { t } from '@/i18n'
 import { prepareChurnkey } from '@/platform/cloud/churnkey/churnkeyClient'
 import type { ChurnkeySession } from '@/platform/cloud/churnkey/churnkeyClient'
-import { getSubscriptionCancellationMetadata } from '@/platform/cloud/subscription/utils/subscriptionCancellationTelemetry'
+import {
+  getCancelBillingPlan,
+  getSubscriptionCancellationMetadata
+} from '@/platform/cloud/subscription/utils/subscriptionCancellationTelemetry'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -185,7 +188,19 @@ export async function launchCancellationFlow({
     tier: billing.tier.value
   })
 
+  const plan = getCancelBillingPlan({
+    duration: billing.subscription.value?.duration,
+    tier: billing.tier.value
+  })
+  const cancelRequest = { sent: false }
+
   telemetry?.trackSubscriptionCancellation('flow_opened', metadata)
+  telemetry?.trackBillingEvent({
+    operation: 'cancel',
+    stage: 'intent',
+    outcome: 'pending',
+    ...plan
+  })
 
   try {
     const results = await session.show({
@@ -196,6 +211,7 @@ export async function launchCancellationFlow({
           )
         }
         telemetry?.trackSubscriptionCancellation('confirmed', metadata)
+        cancelRequest.sent = true
         try {
           await billing.cancelSubscription(isLaunchWorkspaceCurrent)
           return { message: t('subscription.cancelSuccess') }
@@ -225,6 +241,14 @@ export async function launchCancellationFlow({
         return
       case 'abandoned':
         telemetry?.trackSubscriptionCancellation('abandoned', metadata)
+        if (!cancelRequest.sent) {
+          telemetry?.trackBillingEvent({
+            operation: 'cancel',
+            stage: 'abandoned',
+            outcome: 'pending',
+            ...plan
+          })
+        }
         return
       case 'closed':
         return
@@ -239,11 +263,20 @@ export async function launchCancellationFlow({
       ...metadata,
       error_message: getErrorMessage(error) ?? t('g.unknownError')
     })
-    await showCancellationFallback(
+    const fallback = await showCancellationFallback(
       showFallback,
       isLaunchWorkspaceCurrent,
       { flowAlreadyOpened: true },
       { stage: 'session', error }
     )
+    if (fallback === 'failed' && !cancelRequest.sent) {
+      telemetry?.trackBillingEvent({
+        operation: 'cancel',
+        stage: 'failed',
+        outcome: 'failure',
+        failure_category: 'rendering',
+        ...plan
+      })
+    }
   }
 }
