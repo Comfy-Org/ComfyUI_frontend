@@ -39,9 +39,9 @@ interface CanvasViewport {
 Two functions operate on this type:
 
 - **`measureViewport(cssWidth, cssHeight, rawDpr, prevGeneration?)`** — a pure function that produces a new `CanvasViewport` from numeric dimensions and DPR. The optional previous generation supports deterministic generation tracking. `measureViewportFromElement(element, rawDpr?, prevGeneration?)` is the DOM adapter used by canvas lifecycle code.
-- **`applyViewport(viewport, fgCanvas, bgCanvas)`** — a side-effecting function that atomically sizes both foreground and background canvases to the viewport's physical dimensions and scales their 2D contexts. Both canvases are updated in a single call, eliminating the possibility of a partial resize.
+- **`applyViewport(viewport, fgCanvas, bgCanvas, consumer?)`** — a side-effecting function that atomically sizes both foreground and background canvases to the viewport's physical dimensions, scales their 2D contexts, and passes the applied CSS dimensions to an optional viewport consumer such as `DragAndScale`. Both canvases are updated in a single call, eliminating the possibility of a partial resize or a later layout read to recover the CSS size.
 
-The existing `LGraphCanvas.resize()` method and `resizeCanvas()` in app.ts are both replaced by calls through the viewport system. Both paths collapse into one: measure → apply → draw.
+The existing `LGraphCanvas.resize()` method and `resizeCanvas()` in app.ts both delegate their sizing work to the viewport system. Both paths follow the same sequence: measure → apply → draw.
 
 `LGraphCanvas` stores a `dpr` property that is set whenever a viewport is applied. All internal DPR consumers (`drawFrontCanvas`, `drawBackCanvas`, `centerOnNode`, `renderInfo`, `processMouseDown` hit testing, LOD threshold calculation) read `this.dpr` instead of `window.devicePixelRatio`. External consumers with access to the canvas instance (e.g. `litegraphService`, minimap composables) also read `canvas.dpr`. The only code that reads `window.devicePixelRatio` directly is (a) the viewport measurement functions themselves, (b) `DragAndScale` which doesn't have access to the canvas instance, and (c) `layoutStore` which operates at a layer without a direct canvas reference.
 
