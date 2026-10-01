@@ -151,11 +151,15 @@ test.describe('Download page @smoke', () => {
     }) => {
       await page.goto('/download')
 
+      const visibleTrigger = page.getByRole('button', {
+        name: 'All installers'
+      })
+      await visibleTrigger.press('ArrowDown')
+
       const trigger = page.getByRole('button', {
         name: 'All installers',
         includeHidden: true
       })
-      await trigger.press('ArrowDown')
       await expect(trigger).toHaveAttribute('aria-expanded', 'true')
 
       const installers = page.getByRole('menu').getByRole('menuitem')

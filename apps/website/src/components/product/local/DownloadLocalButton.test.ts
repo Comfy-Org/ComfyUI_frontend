@@ -31,7 +31,7 @@ async function openMenu() {
   return user
 }
 
-describe('InstallerMenu', () => {
+describe('DownloadLocalButton', () => {
   it.for([
     { label: 'a recognized desktop', userAgent: UA.linux },
     { label: 'an unrecognized desktop', userAgent: UA.freeBsd }
@@ -57,6 +57,20 @@ describe('InstallerMenu', () => {
       ['macOS (Apple Silicon)', 'https://download.comfy.org/mac/dmg/arm64'],
       ['Linux x64 (AppImage)', 'https://download.comfy.org/linux/appimage/x64']
     ])
+  })
+
+  it('attaches the installer menu to the Windows fallback button', async () => {
+    visitWith(UA.freeBsd)
+    render(DownloadLocalButton, { props: { showInstallerMenu: true } })
+    const user = userEvent.setup()
+    await screen.findByRole('link', { name: /Windows/ })
+
+    await user.tab()
+    expect(screen.getByRole('link', { name: /Windows/ })).toHaveFocus()
+    await user.tab()
+    expect(screen.getByRole('button', { name: 'All installers' })).toHaveFocus()
+    await user.tab()
+    expect(screen.getByRole('link', { name: /macOS/ })).toHaveFocus()
   })
 
   it('offers no installers on a phone', async () => {

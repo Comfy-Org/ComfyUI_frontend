@@ -9,18 +9,11 @@ import {
 } from 'reka-ui'
 
 import type { Locale } from '../../../i18n/translations'
-import type { Platform } from '../../../composables/useDownloadUrl'
-import { installers } from '../../../composables/useDownloadUrl'
+import { installers, platformIcons } from '../../../composables/useDownloadUrl'
 import { t } from '../../../i18n/translations'
 import { captureDownloadClick } from '../../../scripts/posthog'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
-
-const icons: Record<Platform, string> = {
-  windows: '/icons/os/windows.svg',
-  mac: '/icons/os/apple.svg',
-  linux: '/icons/os/linux.svg'
-}
 
 const itemClass =
   'flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-sm text-primary-comfy-canvas outline-none transition-colors select-none hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink focus:bg-primary-comfy-yellow focus:text-primary-comfy-ink'
@@ -55,7 +48,9 @@ const itemClass =
           >
             <i
               class="size-5 shrink-0 icon-mask"
-              :style="{ maskImage: `url('${icons[installer.platform]}')` }"
+              :style="{
+                maskImage: `url('${platformIcons[installer.platform]}')`
+              }"
               aria-hidden="true"
             />
             {{ t(installer.label, locale) }}

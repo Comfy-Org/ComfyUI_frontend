@@ -1,9 +1,14 @@
 import { computed, onMounted, ref } from 'vue'
 
-import { externalLinks } from '@/config/routes'
 import type { TranslationKey } from '@/i18n/translations'
 
 export type Platform = 'windows' | 'mac' | 'linux'
+
+export const platformIcons: Record<Platform, string> = {
+  windows: '/icons/os/windows.svg',
+  mac: '/icons/os/apple.svg',
+  linux: '/icons/os/linux.svg'
+}
 
 interface DesktopInstaller {
   platform: Platform
@@ -101,15 +106,13 @@ export function useDownloadUrl() {
   const isMobileUa = ref(false)
   const armInstaller = ref(false)
 
-  const downloadUrl = computed(() => {
+  const installer = computed<DesktopInstaller | null>(() => {
     if (platform.value === 'windows') {
-      return armInstaller.value
-        ? installers.windowsArm.url
-        : installers.windows.url
+      return armInstaller.value ? installers.windowsArm : installers.windows
     }
-    if (platform.value === 'mac') return installers.macArm.url
-    if (platform.value === 'linux') return installers.linux.url
-    return externalLinks.github
+    if (platform.value === 'mac') return installers.macArm
+    if (platform.value === 'linux') return installers.linux
+    return null
   })
 
   const showFallback = computed(
@@ -126,5 +129,5 @@ export function useDownloadUrl() {
     detected.value = true
   })
 
-  return { downloadUrl, platform, showFallback, isMobileUa }
+  return { installer, showFallback, isMobileUa }
 }

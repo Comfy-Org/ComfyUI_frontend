@@ -3,8 +3,11 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
-import type { Platform } from '../../../composables/useDownloadUrl'
-import { installers, useDownloadUrl } from '../../../composables/useDownloadUrl'
+import {
+  installers,
+  platformIcons,
+  useDownloadUrl
+} from '../../../composables/useDownloadUrl'
 import type { Locale } from '../../../i18n/translations'
 import { t } from '../../../i18n/translations'
 import { captureDownloadClick } from '../../../scripts/posthog'
@@ -21,39 +24,28 @@ const {
   showInstallerMenu?: boolean
 }>()
 
-const { downloadUrl, platform, showFallback } = useDownloadUrl()
+const { installer, showFallback } = useDownloadUrl()
 
 const label = computed(() => t('download.hero.downloadLocal', locale))
 
-const ICONS: Record<Platform, string> = {
-  windows: '/icons/os/windows.svg',
-  mac: '/icons/os/apple.svg',
-  linux: '/icons/os/linux.svg'
-}
-
 const buttons = computed(() => {
-  if (platform.value) {
-    return Object.values(installers).filter(
-      (installer) => installer.url === downloadUrl.value
-    )
-  }
+  if (installer.value) return [installer.value]
   if (showFallback.value) {
     return [installers.windows, installers.macArm]
   }
   return []
 })
+
+function hasInstallerMenu(index: number) {
+  return showInstallerMenu && index === 0
+}
 </script>
 
 <template>
   <div
-    v-for="btn in buttons"
+    v-for="(btn, index) in buttons"
     :key="btn.url"
-    :class="
-      cn(
-        'inline-flex',
-        showInstallerMenu && btn === buttons[0] && 'lg:min-w-60'
-      )
-    "
+    :class="cn('inline-flex', hasInstallerMenu(index) && 'lg:min-w-60')"
   >
     <BrandButton
       :href="btn.url"
@@ -63,7 +55,7 @@ const buttons = computed(() => {
         cn(
           customClass,
           'flex-1',
-          showInstallerMenu && btn === buttons[0] && 'rounded-r-none lg:min-w-0'
+          hasInstallerMenu(index) && 'rounded-r-none lg:min-w-0'
         )
       "
       :aria-label="
@@ -76,13 +68,13 @@ const buttons = computed(() => {
     >
       <span class="inline-flex items-center gap-2">
         <img
-          :src="ICONS[btn.platform]"
+          :src="platformIcons[btn.platform]"
           alt=""
           class="inline-block size-5 shrink-0"
         />
         <span class="inline-block">{{ label }}</span>
       </span>
     </BrandButton>
-    <InstallerMenu v-if="showInstallerMenu && btn === buttons[0]" :locale />
+    <InstallerMenu v-if="hasInstallerMenu(index)" :locale />
   </div>
 </template>
