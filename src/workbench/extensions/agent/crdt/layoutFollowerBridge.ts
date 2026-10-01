@@ -153,6 +153,8 @@ export class LayoutFollowerBridge extends EventTarget {
   private reseedEligibleWorkflowId: string | null = null
   /** Sequence bound to the current stale-schema refusal. */
   private reseedExpectedSeq: number | null = null
+  /** Workflow awaiting a confirmed subscribe after a successful reseed. */
+  private reseedBlockedWorkflowId: string | null = null
 
   constructor(private readonly client: DocFrameClient) {
     super()
@@ -209,6 +211,8 @@ export class LayoutFollowerBridge extends EventTarget {
    */
   subscribe(workflowId: string): void {
     const lineage = this.lineageWorkflowId
+    if (this.desiredWorkflowId !== workflowId)
+      this.reseedBlockedWorkflowId = null
     this.lineageWorkflowId = workflowId
     this.desiredWorkflowId = workflowId
     if (lineage !== null && lineage !== workflowId) {
@@ -259,6 +263,11 @@ export class LayoutFollowerBridge extends EventTarget {
     this.reconcile()
   }
 
+  reconnect(): void {
+    this.reseedBlockedWorkflowId = null
+    this.resubscribe()
+  }
+
   unsubscribe(): void {
     this.desiredWorkflowId = null
     this.reconcile()
@@ -293,6 +302,16 @@ export class LayoutFollowerBridge extends EventTarget {
       return false
     this.reseedWorkflowId = workflowId
     return true
+  }
+
+  canReseed(workflowId: string): boolean {
+    return (
+      workflowId === this.reseedEligibleWorkflowId &&
+      workflowId === this.desiredWorkflowId &&
+      workflowId !== this.reseedBlockedWorkflowId &&
+      this.reseedExpectedSeq !== null &&
+      this.reseedExpectedSeq > 0
+    )
   }
 
   sendHumanOps(tab: string, ops: DocOp[]): void {
@@ -472,9 +491,12 @@ export class LayoutFollowerBridge extends EventTarget {
     const subscribed = event.detail as DocSubscribed
     if (subscribed.workflowId !== this.sentWorkflowId) return
     const refusal = reseedRefusalState(subscribed)
-    this.reseedEligibleWorkflowId = refusal.workflowId
-    this.reseedExpectedSeq = refusal.expectedSeq
+    if (refusal.workflowId !== this.reseedBlockedWorkflowId) {
+      this.reseedEligibleWorkflowId = refusal.workflowId
+      this.reseedExpectedSeq = refusal.expectedSeq
+    }
     if (subscribed.ok) {
+      this.reseedBlockedWorkflowId = null
       this.ackSeq = subscribed.seq ?? null
       this.catchUpPending = this.ackSeq !== null
     } else this.sentWorkflowId = null
@@ -498,6 +520,9 @@ export class LayoutFollowerBridge extends EventTarget {
     if (result.workflowId !== this.desiredWorkflowId) return
     // Retryable failures are rescheduled by the lifecycle's bounded backoff.
     if (!result.ok && result.code !== RESEED_CONFLICT) return
+    this.reseedBlockedWorkflowId = result.workflowId
+    this.reseedEligibleWorkflowId = null
+    this.reseedExpectedSeq = null
     const reset: DocReset = {
       workflowId: result.workflowId,
       seq: result.seq ?? 0,

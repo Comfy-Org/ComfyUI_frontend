@@ -511,6 +511,7 @@ function startAgentCrdtFollower(
       return false
     if (detail.workflowId !== undefined && detail.workflowId !== target)
       return false
+    if (!bridge.canReseed(target)) return false
     const canvas = canvasFor(target)
     if (!hasNodes(canvas) || !bridge.reseed(target, canvas)) return false
     recordDevEvent('doc_reseed_sent', { workflowId: target })
@@ -704,7 +705,7 @@ function startAgentCrdtFollower(
     connected.value = false
     lifecycle.onReconnected()
     recordDevEvent('reconnected', null)
-    bridge.resubscribe()
+    bridge.reconnect()
   }
   /**
    * Re-drive subscription intent whenever the socket may have become usable.

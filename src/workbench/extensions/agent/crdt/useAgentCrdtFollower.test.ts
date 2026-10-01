@@ -31,10 +31,12 @@ const bridgeState = vi.hoisted(() => {
     subscribe = vi.fn()
     unsubscribe = vi.fn()
     resubscribe = vi.fn()
+    reconnect = vi.fn()
     reconcile = vi.fn()
     destroy = vi.fn()
     sendHumanOps = vi.fn()
     reseed = vi.fn(() => true)
+    canReseed = vi.fn(() => true)
     subscribedWorkflowId: string | null = 'wf-1'
     lastSequence = 41
     follower = {
@@ -335,7 +337,7 @@ describe('useAgentCrdtFollower', () => {
     workflowId.value = 'wf-2'
     await nextTick()
     expect(first.subscribe).toHaveBeenCalledTimes(1)
-    expect(first.resubscribe).not.toHaveBeenCalled()
+    expect(first.reconnect).not.toHaveBeenCalled()
     expect(projectionState.applyFrame).toHaveBeenCalledTimes(applies)
 
     store.enabled = true
@@ -671,7 +673,7 @@ describe('useAgentCrdtFollower', () => {
     apiState.target.dispatchEvent(new Event('reconnected'))
 
     expect(status().connected).toBe(false)
-    expect(bridge().resubscribe).toHaveBeenCalled()
+    expect(bridge().reconnect).toHaveBeenCalled()
     expect(projectionState.replaceOnNextFrame).not.toHaveBeenCalled()
     unmount()
   })
@@ -2070,11 +2072,11 @@ describe('useAgentCrdtFollower', () => {
     expect(bridge().resubscribe).toHaveBeenCalledTimes(2)
 
     apiState.target.dispatchEvent(new Event('reconnected'))
-    expect(bridge().resubscribe).toHaveBeenCalledTimes(3)
+    expect(bridge().reconnect).toHaveBeenCalledTimes(1)
     dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
     vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
 
-    expect(bridge().resubscribe).toHaveBeenCalledTimes(4)
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(3)
     unmount()
   })
 
@@ -2111,10 +2113,10 @@ describe('useAgentCrdtFollower', () => {
     expect(bridge().reconcile).not.toHaveBeenCalled()
 
     apiState.target.dispatchEvent(new Event('reconnected'))
-    expect(bridge().resubscribe).toHaveBeenCalledTimes(3)
+    expect(bridge().reconnect).toHaveBeenCalledTimes(1)
     dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
     vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
-    expect(bridge().resubscribe).toHaveBeenCalledTimes(4)
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(3)
     unmount()
   })
 
@@ -2213,7 +2215,7 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
-    it('answers each fresh refusal once', () => {
+    it('falls back to bounded retry when the refusal repeats before subscribe confirmation', () => {
       vi.useFakeTimers()
       const { unmount } = mountWithCanvas()
 
@@ -2224,9 +2226,12 @@ describe('useAgentCrdtFollower', () => {
         seq: 8,
         outcome: 'reseeded'
       })
+      bridge().canReseed.mockReturnValue(false)
       dispatchFrame('doc_subscribed', staleRefusal)
 
-      expect(bridge().reseed).toHaveBeenCalledTimes(2)
+      expect(bridge().reseed).toHaveBeenCalledOnce()
+      vi.advanceTimersByTime(500)
+      expect(bridge().resubscribe).toHaveBeenCalledOnce()
       unmount()
     })
 
