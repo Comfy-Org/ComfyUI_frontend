@@ -3,7 +3,6 @@ import { computed, provide, ref, toRef, toValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { SUPPORTED_EXTENSIONS_ACCEPT } from '@/extensions/core/load3d/constants'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import FormDropdown from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.vue'
 import { AssetKindKey } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type { LayoutMode } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
@@ -19,7 +18,6 @@ import {
   PANEL_EXCLUDED_PROPS,
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
-import { hasFilenameExtension } from '@/utils/mediaUploadUtil'
 
 interface Props {
   widget: SimplifiedWidget<string | undefined>
@@ -154,14 +152,6 @@ const layoutMode = ref<LayoutMode>(props.defaultLayoutMode ?? 'grid')
 
 const isUploading = ref(false)
 async function updateFiles(files: File[]) {
-  if (
-    props.assetKind === 'video' &&
-    files.some((file) => !hasFilenameExtension(file))
-  ) {
-    useToastStore().addAlert(t('g.videoFilenameExtensionRequired'))
-    return
-  }
-
   isUploading.value = true
   await handleFilesUpdate(files)
   isUploading.value = false

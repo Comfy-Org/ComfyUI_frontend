@@ -2,7 +2,6 @@ import { getActivePinia } from 'pinia'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 
-import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import { computed, nextTick, ref } from 'vue'
@@ -11,7 +10,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import WidgetSelectDropdown from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
@@ -175,26 +173,6 @@ describe('WidgetSelectDropdown', () => {
     expect(screen.getByLabelText('g.upload')).toHaveAttribute(
       'accept',
       'image/*,.exr'
-    )
-  })
-
-  it('rejects extensionless videos before upload', async () => {
-    const widget = createMockWidget<string | undefined>({
-      value: 'existing.mp4',
-      name: 'test_video',
-      type: 'combo',
-      options: { values: ['existing.mp4'] }
-    })
-    renderComponent(widget, 'existing.mp4', { assetKind: 'video' })
-
-    await userEvent.upload(
-      screen.getByLabelText('g.upload'),
-      new File(['video'], 'extensionless', { type: 'video/mp4' })
-    )
-
-    expect(mockHandleFilesUpdate).not.toHaveBeenCalled()
-    expect(useToastStore().addAlert).toHaveBeenCalledWith(
-      'g.videoFilenameExtensionRequired'
     )
   })
 
