@@ -7,6 +7,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import { getRoutes } from '../../../config/routes'
 import type { Locale } from '../../../i18n/translations'
+import { t } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import AppRepoLink from '../cinematic-studio/AppRepoLink.vue'
 import EditorDock from './EditorDock.vue'
@@ -39,7 +40,7 @@ const dockOverSheet = () => floating() && !wide.value && !panelDimmed
 
 <template>
   <section
-    class="flex h-[calc(100svh-5rem)] min-h-150 flex-col overflow-hidden border-y border-transparency-white-t8 bg-primary-comfy-ink lg:h-[calc(100svh-7rem)]"
+    class="flex h-svh min-h-150 flex-col overflow-hidden bg-primary-comfy-ink"
     :aria-label="title"
   >
     <div
@@ -59,7 +60,16 @@ const dockOverSheet = () => floating() && !wide.value && !panelDimmed
       <header
         class="pointer-events-none absolute inset-x-3 top-3 z-30 flex items-center gap-2"
       >
-        <div class="pointer-events-auto flex h-9 min-w-0 items-center gap-2">
+        <div class="pointer-events-auto flex h-9 min-w-0 items-center gap-1">
+          <a
+            :href="getRoutes(locale).home"
+            :aria-label="t('nav.home', locale)"
+            data-testid="apps-home"
+            class="flex size-9 shrink-0 items-center justify-center rounded-full transition hover:bg-transparency-white-t8 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
+          >
+            <img src="/icons/logomark.svg" alt="" class="h-4 w-auto" />
+          </a>
+          <span class="h-4 w-px bg-transparency-white-t20" aria-hidden="true" />
           <a
             :href="getRoutes(locale).hubApps"
             :aria-label="tc('cinematic.backToApps', locale)"
@@ -68,7 +78,7 @@ const dockOverSheet = () => floating() && !wide.value && !panelDimmed
           >
             <ChevronLeft class="size-4" aria-hidden="true" />
           </a>
-          <h1 class="truncate text-sm font-medium text-primary-warm-white">
+          <h1 class="truncate pr-1 text-sm font-medium text-primary-warm-white">
             {{ title }}
           </h1>
           <span
@@ -79,7 +89,6 @@ const dockOverSheet = () => floating() && !wide.value && !panelDimmed
         </div>
         <span class="flex-1" />
         <div class="pointer-events-auto flex items-center gap-2">
-          <slot name="end" />
           <AppRepoLink :repo :locale class="max-lg:hidden" />
         </div>
       </header>

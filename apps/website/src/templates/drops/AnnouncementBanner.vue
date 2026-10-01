@@ -38,7 +38,10 @@ const { isVisible, close, persistHidden } = useBannerDismissal(version)
 
 <template>
   <Transition name="banner-collapse" @after-leave="persistHidden">
-    <div v-if="isVisible" class="banner-collapse grid">
+    <div
+      v-if="isVisible"
+      class="banner-collapse grid in-data-workshop-editor:hidden"
+    >
       <div class="min-h-0 overflow-hidden">
         <div
           data-slot="announcement-banner"

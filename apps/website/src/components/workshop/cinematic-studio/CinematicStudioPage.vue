@@ -1,7 +1,14 @@
 <script setup lang="ts">
 import { WORKSHOP_DEPLOY_ENV } from 'astro:env/client'
 import { useMounted } from '@vueuse/core'
-import { computed, onMounted, ref, shallowRef, watch } from 'vue'
+import {
+  computed,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  shallowRef,
+  watch
+} from 'vue'
 
 import { provideStudioSwitchGuard } from '../../../composables/useStudioSwitchGuard'
 import type { AppWorkshopModel } from '../../../config/models-catalogue'
@@ -51,6 +58,7 @@ const LAYOUTS = [
 ] as const
 
 const APPS = ['studio', 'reshoot', 'move-anything', 'relight'] as const
+const EDITOR_APPS: readonly WorkshopAppId[] = ['move-anything', 'relight']
 const reviewing = WORKSHOP_DEPLOY_ENV !== 'production'
 
 const appsEnabled = useWorkshopAppsEnabled()
@@ -85,6 +93,20 @@ watch(
       }
     })
   }
+)
+const editorShown = computed(
+  () =>
+    mounted.value &&
+    workshopEnabled.value &&
+    studioEnabled.value &&
+    layout.value !== 'hub' &&
+    EDITOR_APPS.includes(app.value)
+)
+watch(editorShown, (shown) =>
+  document.documentElement.toggleAttribute('data-workshop-editor', shown)
+)
+onBeforeUnmount(() =>
+  document.documentElement.removeAttribute('data-workshop-editor')
 )
 const layoutOptions = computed(() =>
   LAYOUTS.map((option) => ({ id: option.id, label: tc(option.label, locale) }))
