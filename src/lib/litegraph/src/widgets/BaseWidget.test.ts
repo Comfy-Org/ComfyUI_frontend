@@ -481,6 +481,23 @@ describe('BaseWidget store integration', () => {
       expect(widget.serialize).toBe(false)
     })
 
+    it('keeps pre-registration serialize through re-registration', () => {
+      const widget = createTestWidget(node, { name: 'persistentPreview' })
+      const id = widgetId(graph.id, toNodeId(1), widget.name)
+
+      widget.serialize = false
+      expect(widget.serialize).toBe(false)
+      widget.setNodeId(toNodeId(1))
+      store.registerWidget(id, {
+        type: widget.type,
+        value: 99,
+        options: widget.options
+      })
+
+      expect(widget.serialize).toBe(false)
+      expect(store.getWidget(id)?.serialize).toBe(false)
+    })
+
     it('syncs live type changes to registered state', () => {
       const widget = createMutableTypeWidget(node)
       widget.setNodeId(toNodeId(1))
