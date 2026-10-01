@@ -231,3 +231,32 @@ const enterpriseEnding: Partial<BillingContextMockState> = {
 export const EndingEnterpriseOwner: Story = story(enterpriseEnding, owner)
 
 export const EndingEnterpriseMember: Story = story(enterpriseEnding, member)
+
+const endedTeam: Partial<BillingContextMockState> = {
+  subscription: {
+    ...cancelled,
+    tier: 'PRO',
+    hasFunds: false,
+    endDate: '2026-09-12T12:00:00Z'
+  },
+  canAccessSubscriptionFeatures: false,
+  billingStatus: 'inactive',
+  subscriptionStatus: 'ended'
+}
+
+/** The plan is over. Ships without the billing control flag. */
+export const PlanEndedOwner: Story = story(endedTeam, owner)
+
+export const PlanEndedMember: Story = story(endedTeam, member, {
+  canTopUp: false
+})
+
+const endedEnterprise: Partial<BillingContextMockState> = {
+  ...endedTeam,
+  subscription: { ...endedTeam.subscription!, tier: 'ENTERPRISE' },
+  isTeamPlan: false
+}
+
+export const PlanEndedEnterpriseOwner: Story = story(endedEnterprise, owner)
+
+export const PlanEndedEnterpriseMember: Story = story(endedEnterprise, member)
