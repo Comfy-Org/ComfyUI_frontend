@@ -1,4 +1,5 @@
 import { z } from 'astro/zod'
+import type { JobDetailResponse } from '@comfyorg/ingest-types'
 import { zJobDetailResponse } from '@comfyorg/ingest-types/zod'
 
 import { WORKSHOP_CLOUD_BASE_URL } from './workshop-env'
@@ -69,8 +70,14 @@ export interface WorkflowRunSummary {
   readonly startedAt?: string
   readonly completedAt?: string
 }
+export interface WorkflowExecutionFailure {
+  readonly nodeId?: string
+  readonly nodeType?: string
+  readonly exceptionType?: string
+}
 export interface WorkflowRun {
   readonly run: WorkflowRunSummary
+  readonly failure?: WorkflowExecutionFailure
   readonly outputs: readonly {
     readonly id: string
     readonly bindingId: string
@@ -102,6 +109,27 @@ function outputAccess(value: unknown): z.infer<typeof cloudOutput> | undefined {
   )
     return
   return { ...parsed.data, short_url: url.href }
+}
+
+const DIAGNOSTIC_IDENTIFIER = /^[\w.:+-]{1,120}$/
+
+function diagnosticIdentifier(value: string): string | undefined {
+  return DIAGNOSTIC_IDENTIFIER.test(value) ? value : undefined
+}
+
+function executionFailure(
+  error: JobDetailResponse['execution_error']
+): WorkflowExecutionFailure | undefined {
+  if (!error) return
+  const nodeId = diagnosticIdentifier(error.node_id)
+  const nodeType = diagnosticIdentifier(error.node_type)
+  const exceptionType = diagnosticIdentifier(error.exception_type)
+  if (!nodeId && !nodeType && !exceptionType) return
+  return {
+    ...(nodeId && { nodeId }),
+    ...(nodeType && { nodeType }),
+    ...(exceptionType && { exceptionType })
+  }
 }
 
 function timestamp(value: bigint): string {
@@ -160,6 +188,8 @@ export function cloudWorkflowResult(
         )
       : []
   if (outputs.length > 16) throw new Error('Too many Cloud outputs')
+  const failure =
+    job.status === 'failed' ? executionFailure(job.execution_error) : undefined
   const states = {
     pending: 'queued',
     in_progress: 'running',
@@ -184,7 +214,8 @@ export function cloudWorkflowResult(
         ? {}
         : { completedAt: timestamp(job.execution_end_time) })
     },
-    outputs
+    outputs,
+    ...(failure ? { failure } : {})
   }
 }
 

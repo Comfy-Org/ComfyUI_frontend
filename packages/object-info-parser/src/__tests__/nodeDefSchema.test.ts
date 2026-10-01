@@ -35,7 +35,8 @@ describe('validateNodeDef', () => {
       { ckpt_name: ['INT', { default: 0, display: 'color' }] },
       ['INT', { default: 0, display: 'color' }]
     ],
-    [{ ckpt_name: [[1, 2, 3], { bar: 1 }] }, [[1, 2, 3], { bar: 1 }]]
+    [{ ckpt_name: [[1, 2, 3], { bar: 1 }] }, [[1, 2, 3], { bar: 1 }]],
+    [{ ckpt_name: ['IMAGE'] }, ['IMAGE']]
   ])(
     'validateComfyNodeDef with various input spec formats',
     ([inputSpec, expected]) => {

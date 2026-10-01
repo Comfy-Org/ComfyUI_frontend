@@ -16,7 +16,7 @@ const ctas = platformCtas(locale)
     :locale="locale"
     compact
     :title="t('platform.builderHero.heading', locale)"
-    title-class="text-primary-comfy-yellow text-3xl/tight font-bold tracking-[-1.44px] md:text-4xl/tight lg:text-5xl/tight"
+    title-class="text-primary-comfy-yellow text-3xl/tight font-light tracking-[-1.44px] md:text-4xl/tight lg:text-5xl/tight"
     :subtitle="t('platform.builderHero.subtitle', locale)"
     :primary-cta="{
       label: ctas.getStarted.label,

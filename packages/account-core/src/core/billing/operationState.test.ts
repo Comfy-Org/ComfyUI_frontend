@@ -208,6 +208,15 @@ describe('reduceBillingOperation', () => {
     ).toBeUndefined()
   })
 
+  it.for(['authentication_failed', 'authentication_required'] as const)(
+    "keeps the server's %s reason on a settled failure",
+    (reason) => {
+      expect(
+        polled(pending(), { status: 'failed', decline_reason: reason })
+      ).toMatchObject({ phase: 'failed', declineReason: reason })
+    }
+  )
+
   it('reads a retryable failure served without a reason as a generic decline', () => {
     const failed = polled(pending(), {
       authentication_state: 'failed_retryable'

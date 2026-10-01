@@ -47,7 +47,8 @@ const showLabel = computed(() =>
     kind === 'models'
       ? 'workshop.search.show'
       : 'workshop.catalogue.showWorkflows',
-    locale
+    locale,
+    { n: matches.value }
   )
 )
 
@@ -214,7 +215,7 @@ const clearButtonClass =
               data-testid="workshop-search-sheet-apply"
               @click="sheetOpen = false"
             >
-              {{ showLabel.replace('{n}', `${matches}`) }}
+              {{ showLabel }}
             </button>
           </div>
         </DialogContent>

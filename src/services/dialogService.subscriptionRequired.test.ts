@@ -100,6 +100,7 @@ describe('showSubscriptionRequiredDialog', () => {
     expect(reportError).toHaveBeenCalledOnce()
     const [, options] = reportError.mock.calls[0]
     expect(options).toMatchObject({
+      surface: 'billing',
       errorType: 'error_opening_subscription_dialog_gate_closed'
     })
   })
