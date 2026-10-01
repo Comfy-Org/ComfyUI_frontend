@@ -107,4 +107,35 @@ test.describe('Bottom Panel', { tag: '@ui' }, () => {
     await bottomPanel.closeButton.click()
     await expect(bottomPanel.root).toBeHidden()
   })
+
+  test('associates shortcut tabs with their panels during keyboard navigation', async ({
+    comfyPage
+  }) => {
+    const { bottomPanel } = comfyPage
+    const { essentialsTab, viewControlsTab } = bottomPanel.shortcuts
+    await bottomPanel.keyboardShortcutsButton.click()
+
+    const essentials = bottomPanel.root.getByRole('tabpanel', {
+      name: /Essential/i
+    })
+    await expect(essentials).toBeVisible()
+    await expect(essentialsTab).toHaveAttribute(
+      'aria-controls',
+      (await essentials.getAttribute('id')) ?? ''
+    )
+
+    await essentialsTab.focus()
+    await essentialsTab.press('ArrowRight')
+
+    const viewControls = bottomPanel.root.getByRole('tabpanel', {
+      name: /View Controls/i
+    })
+    await expect(viewControlsTab).toBeFocused()
+    await expect(viewControls).toBeVisible()
+    await expect(viewControlsTab).toHaveAttribute(
+      'aria-controls',
+      (await viewControls.getAttribute('id')) ?? ''
+    )
+    await expect(essentials).toBeHidden()
+  })
 })

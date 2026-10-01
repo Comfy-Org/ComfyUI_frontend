@@ -20,7 +20,7 @@
       </div>
     </Message>
     <div class="mb-3 flex gap-2">
-      <ToggleGroup v-model="filterType" type="single">
+      <ToggleGroup v-model="filterType" type="single" :allow-empty="false">
         <ToggleGroupItem
           v-for="option in filterTypes"
           :key="option.value"
