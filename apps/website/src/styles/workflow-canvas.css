@@ -267,11 +267,8 @@ video.wf-node-image {
   width: 0.843cqw;
   height: 1.831cqw;
 }
-.wf-user-badge img:last-child {
-  /* Horizontal mirror only: rotate(180deg) also flips the cap vertically,
-     which surfaces a stray line from the artwork's bottom edge at the top. */
-  transform: scaleX(-1);
-}
+/* user-right.svg is a dedicated right-cap asset, already oriented to sit at
+   the end of the pill: it needs no mirroring transform. */
 @media (max-width: 1023px) {
   .wf-showcase {
     display: none;
