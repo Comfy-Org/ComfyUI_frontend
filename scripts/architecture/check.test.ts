@@ -518,6 +518,15 @@ describe('baseline admission and catalog stability', () => {
     expect(readFileSync(filename, 'utf8')).toBe(before)
   })
 
+  test('catalog checks tolerate formatter-only JSON layout changes', () => {
+    const root = createConfiguredRepository()
+    runArchitectureCheck(root, 'update')
+    const filename = join(root, 'docs/architecture/domains/catalog.json')
+    const catalog = JSON.parse(readFileSync(filename, 'utf8'))
+    writeFileSync(filename, JSON.stringify(catalog))
+    expect(() => runArchitectureCheck(root, 'check')).not.toThrow()
+  })
+
   test('check rejects stale debt and update removes it from the baseline', () => {
     const root = createConfiguredRepository()
     const baselinePath = join(root, 'docs/architecture/domains/baseline.json')
