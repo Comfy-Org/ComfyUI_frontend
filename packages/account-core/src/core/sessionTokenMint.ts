@@ -243,7 +243,9 @@ export function createSessionTokenMint({
     const generation = ownerGeneration
     const running = request(session, workspaceId).then((result) => {
       if (inFlight.get(workspaceId) === running) inFlight.delete(workspaceId)
-      if (getSession()?.user.id !== userId) return failure('IDENTITY_CHANGED')
+      const current = getSession()
+      if (current === undefined) return failure('NO_SESSION')
+      if (current.user.id !== userId) return failure('IDENTITY_CHANGED')
       commit(workspaceId, generation, result)
       return result
     })

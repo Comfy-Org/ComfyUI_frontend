@@ -16,6 +16,7 @@ import type {
 } from '@comfyorg/account-core/webSession'
 import type { RequestAuthorizer } from '@comfyorg/account-core/requestAuth'
 import { createRequestAuthorizer } from '@comfyorg/account-core/requestAuth'
+import type { SessionTokenFailure } from '@comfyorg/account-core/sessionTokenMint'
 import {
   createSessionTokenMint,
   SessionTokenError
@@ -254,7 +255,10 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
       scope: requestScope,
       workspaceId: () => (currentSession() ? teamWorkspaceId() : undefined),
       send: (url, init, scope) => send(url, init, scope, authorize),
-      workspaceToken: ({ workspaceId }) => mint.mint(workspaceId),
+      workspaceToken: async (scope) => {
+        const result = await mint.mint(scope.workspaceId)
+        return staleScopeFailure(scope) ?? result
+      },
       authorizeResource: async ({ session }) => {
         try {
           const { headers } = await authorize(
@@ -314,6 +318,17 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     const state = identity?.getState()
     if (state?.phase !== 'signed_in') return undefined
     return reread?.user.id === state.session.user.id ? reread : state.session
+  }
+
+  /** The epoch moves on every account change, so it pins the scope's user. */
+  function staleScopeFailure(
+    scope: WebSessionRequestScope
+  ): SessionTokenFailure | undefined {
+    if (!currentSession()) {
+      return { status: 'error', code: 'NO_SESSION', retryable: false }
+    }
+    if (identity?.getEpoch() === scope.epoch) return undefined
+    return { status: 'error', code: 'IDENTITY_CHANGED', retryable: false }
   }
 
   /** Undefined unless this tab is signed in on the session. */

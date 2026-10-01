@@ -35,9 +35,10 @@ export class AgentPanel {
       exact: true
     })
     this.closeButton = this.root
+      .locator('header')
       .getByRole('button', { name: enMessages.g.close, exact: true })
       .or(
-        this.root.getByRole('button', {
+        this.root.locator('header').getByRole('button', {
           name: frMessages.g.close,
           exact: true
         })

@@ -12,7 +12,14 @@ const { t } = useI18n()
 <template>
   <div class="mt-16 flex flex-col gap-2">
     <p class="m-0 text-sm text-muted-foreground">{{ ledger.eyebrow }}</p>
-    <p class="m-0 text-2xl font-semibold text-base-foreground tabular-nums">
+    <p
+      class="m-0 flex items-baseline gap-1.5 text-2xl font-semibold text-base-foreground tabular-nums"
+    >
+      <i
+        v-if="ledger.headline.icon"
+        class="icon-[lucide--coins] size-5 shrink-0 self-center text-muted-foreground"
+        aria-hidden="true"
+      />
       {{ ledger.headline.amount }}
       <span class="text-base font-normal">
         {{ ledger.headline.currency }}
