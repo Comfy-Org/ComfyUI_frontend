@@ -46,20 +46,20 @@ describe('the billing-web handoff', () => {
     return () => {
       disarmHostedBillingReturnRefresh()
       remoteConfig.value = previousConfig
-      sessionStorage.clear()
       clearCheckoutJourney()
     }
   })
 
   it('hands off a restored checkout journey under a fresh id when its stored id cannot ride the link', () => {
+    vi.setSystemTime('2026-09-30T00:00:30.000Z')
     const tab = stubOpenedTab()
     const unreadableId = 'journey/../1'
     sessionStorage.setItem(
       'comfy.checkout.journey',
       JSON.stringify({
         journey_id: unreadableId,
-        entered_at: new Date().toISOString(),
-        started_at_ms: Date.now(),
+        entered_at: '2026-09-30T00:00:00.000Z',
+        started_at_ms: Date.parse('2026-09-30T00:00:00.000Z'),
         actor_uid: 'user-1',
         workspace_id: 'ws-1',
         entry_flow: 'initial_subscription',
