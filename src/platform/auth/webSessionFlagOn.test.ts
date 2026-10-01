@@ -5,6 +5,8 @@ import { setActivePinia } from 'pinia'
 import { defineComponent, effectScope } from 'vue'
 
 import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
+import type { BillingCapabilitiesResponse } from '@comfyorg/ingest-types'
+import { MISSING_CUSTOMER_MESSAGE } from '@comfyorg/account-core/customerRecovery'
 import { COMFY_CLIENT } from '@comfyorg/account-core/requestAuth'
 import { SessionTokenError } from '@comfyorg/account-core/sessionTokenMint'
 
@@ -38,6 +40,7 @@ import {
   getGlobalSetting,
   setGlobalSetting
 } from '@/platform/settings/globalSettingsApi'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
@@ -460,6 +463,30 @@ function mintBodyWorkspace(body: unknown): string {
   return typeof workspaceId === 'string' ? workspaceId : 'personal'
 }
 
+function capabilitiesResponse(
+  workspaceId: string
+): BillingCapabilitiesResponse {
+  return {
+    resolved_for: { user_id: 'user-a', workspace_id: workspaceId },
+    capabilities: {
+      can_subscribe_self_serve: true,
+      can_top_up: true,
+      can_cancel: true,
+      can_reactivate: false,
+      can_change_seats: false,
+      can_invite_members: false,
+      can_downgrade_to_personal: false
+    },
+    rollout_defaults_applied: {
+      can_downgrade_to_personal: false,
+      can_subscribe_self_serve: false,
+      can_top_up: false
+    },
+    revision: 1,
+    expires_at: new Date(Date.now() + TEN_MINUTES_MS).toISOString()
+  }
+}
+
 function installIngest(features: Record<string, boolean> = {}) {
   const ingest = {
     userId: 'user-a',
@@ -478,7 +505,44 @@ function installIngest(features: Record<string, boolean> = {}) {
     mints: 0,
     mintedFor: [] as string[],
     requests: [] as ApiRequest[],
-    currentWorkspaceDown: undefined as (() => Response) | undefined
+    currentWorkspaceDown: undefined as (() => Response) | undefined,
+    customerMissing: false,
+    capabilitiesDown: false
+  }
+
+  const mint = (body: unknown): Response => {
+    if (ingest.mintRefusal) return ingest.mintRefusal()
+    ingest.mints += 1
+    ingest.mintedFor.push(mintBodyWorkspace(body))
+    return jsonResponse({
+      token: `session-jwt-${ingest.mints}`,
+      expires_at: new Date(Date.now() + 15 * 60_000).toISOString(),
+      workspace: { id: 'ws-personal', name: 'Personal', type: 'personal' },
+      role: 'owner',
+      permissions: []
+    })
+  }
+
+  const respondBilling = (
+    path: string,
+    headers: Record<string, string>
+  ): Response | undefined => {
+    if (path === '/api/billing/capabilities') {
+      if (ingest.capabilitiesDown) {
+        return jsonResponse({ code: 'unavailable', message: 'down' }, 503)
+      }
+      return jsonResponse(
+        capabilitiesResponse(headers['x-comfy-workspace-id'] ?? 'ws-personal')
+      )
+    }
+    if (path === '/customers') {
+      ingest.customerMissing = false
+      return jsonResponse({ id: 'customer-1' }, 201)
+    }
+    if (path.startsWith('/customers/') && ingest.customerMissing) {
+      return jsonResponse({ message: MISSING_CUSTOMER_MESSAGE }, 409)
+    }
+    return undefined
   }
 
   const respond = ({ path, headers }: ApiRequest, body: unknown): Response => {
@@ -488,23 +552,14 @@ function installIngest(features: Record<string, boolean> = {}) {
         csrf_token: ingest.csrfToken
       })
     }
-    if (path === '/api/auth/token') {
-      if (ingest.mintRefusal) return ingest.mintRefusal()
-      ingest.mints += 1
-      ingest.mintedFor.push(mintBodyWorkspace(body))
-      return jsonResponse({
-        token: `session-jwt-${ingest.mints}`,
-        expires_at: new Date(Date.now() + 15 * 60_000).toISOString(),
-        workspace: { id: 'ws-personal', name: 'Personal', type: 'personal' },
-        role: 'owner',
-        permissions: []
-      })
-    }
+    if (path === '/api/auth/token') return mint(body)
     if (path === '/api/workspaces/current') {
       if (ingest.currentWorkspaceDown) return ingest.currentWorkspaceDown()
       return currentWorkspaceResponse(headers['x-comfy-workspace-id'])
     }
     if (path === '/api/workspaces') return jsonResponse(WORKSPACE_LIST)
+    const billing = respondBilling(path, headers)
+    if (billing) return billing
     if (path.startsWith('/api/global-settings')) {
       return jsonResponse(STORED_CONSENT)
     }
@@ -1403,6 +1458,125 @@ describe.for([{ unified: false }, { unified: true }])(
   }
 )
 
+describe('billing on a tab that arrived by session', () => {
+  const bootSessionOnly = async () => {
+    const ingest = installIngest()
+    await refreshRemoteConfig({ useAuth: false })
+    const authStore = useAuthStore()
+    await useSessionCookie().ensureSessionCookie()
+    ingest.requests.length = 0
+    return { ingest, authStore }
+  }
+
+  const authorizationsOf = (ingest: ReturnType<typeof installIngest>) =>
+    ingest.requests.map(({ method, path, headers }) => ({
+      method,
+      path,
+      authorization: new Headers(headers).get('authorization')
+    }))
+
+  const SESSION_MINT = {
+    method: 'POST',
+    path: '/api/auth/token',
+    authorization: null
+  }
+  const onSessionToken = (method: string, path: string) => ({
+    method,
+    path,
+    authorization: 'Bearer session-jwt-1'
+  })
+
+  beforeEach(() => {
+    identity.reset()
+    vi.spyOn(api, 'resetSocket').mockResolvedValue()
+  })
+
+  afterEach(() => {
+    remoteConfig.value = {}
+    localStorage.clear()
+  })
+
+  it.for([
+    {
+      name: 'balance',
+      call: (authStore: ReturnType<typeof useAuthStore>) =>
+        authStore.fetchBalance(),
+      sent: [onSessionToken('GET', '/customers/balance')]
+    },
+    {
+      name: 'top-up',
+      call: (authStore: ReturnType<typeof useAuthStore>) =>
+        authStore.initiateCreditPurchase({
+          amount_micros: 5_000_000,
+          currency: 'usd'
+        }),
+      sent: [
+        onSessionToken('POST', '/customers'),
+        onSessionToken('POST', '/customers/credit')
+      ]
+    },
+    {
+      name: 'billing portal',
+      call: (authStore: ReturnType<typeof useAuthStore>) =>
+        authStore.accessBillingPortal(),
+      sent: [onSessionToken('POST', '/customers/billing')]
+    }
+  ])(
+    'the $name call is sent with the session-minted token',
+    async ({ call, sent }) => {
+      const { ingest, authStore } = await bootSessionOnly()
+
+      await call(authStore)
+
+      expect(authStore.currentUser).toBeNull()
+      expect(authorizationsOf(ingest)).toEqual([SESSION_MINT, ...sent])
+    }
+  )
+
+  it('provisions a missing customer on the session token and retries once', async () => {
+    const { ingest, authStore } = await bootSessionOnly()
+    ingest.customerMissing = true
+
+    await authStore.fetchBalance()
+
+    expect(authorizationsOf(ingest)).toEqual([
+      SESSION_MINT,
+      onSessionToken('GET', '/customers/balance'),
+      onSessionToken('POST', '/customers'),
+      onSessionToken('GET', '/customers/balance')
+    ])
+  })
+
+  it.for([
+    { name: 'resolves', capabilitiesDown: false, authoritative: true },
+    {
+      name: 'is unavailable, falling back to the owner',
+      capabilitiesDown: true,
+      authoritative: false
+    }
+  ])(
+    'billing capabilities for the session user: the read $name',
+    async ({ capabilitiesDown, authoritative }) => {
+      const { ingest } = await bootSessionOnly()
+      ingest.capabilitiesDown = capabilitiesDown
+      localStorage.setItem(WORKSPACE_STORAGE_KEYS.LAST_WORKSPACE_ID, 'ws-team')
+      await useTeamWorkspaceStore().initialize()
+      const scope = effectScope()
+      const capabilities = scope.run(() => useBillingCapabilities())
+      assert.exists(capabilities)
+
+      await capabilities.initialize()
+
+      expect({
+        isReady: capabilities.isReady.value,
+        canTopUp: capabilities.canTopUp.value,
+        authoritative: capabilities.snapshotAuthoritative.value
+      }).toEqual({ isReady: true, canTopUp: true, authoritative })
+      scope.stop()
+    }
+  )
+})
+
 describe.for([{ unified: false }, { unified: true }])(
   'a tab that arrived on the session with no Firebase login (unified_cloud_auth $unified)',
   ({ unified }) => {
@@ -1496,6 +1670,19 @@ describe.for([{ unified: false }, { unified: true }])(
         'fetch',
         vi.fn<typeof fetch>(async (input, init) => {
           const url = new URL(String(input), location.href)
+          if (url.pathname === '/api/auth/token') {
+            return jsonResponse({
+              token: 'session-jwt-1',
+              expires_at: new Date(Date.now() + TEN_MINUTES_MS).toISOString(),
+              workspace: {
+                id: 'ws-personal',
+                name: 'Personal',
+                type: 'personal'
+              },
+              role: 'owner',
+              permissions: []
+            })
+          }
           if (url.pathname === '/customers/balance') {
             signalBalanceRequested()
             return fromPartial<Response>({ ok: true, json: () => balance })
