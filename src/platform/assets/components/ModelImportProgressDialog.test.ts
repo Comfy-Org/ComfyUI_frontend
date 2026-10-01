@@ -63,8 +63,8 @@ describe('ModelImportProgressDialog cancellation', () => {
 
     await waitFor(() => {
       expect(reportError).toHaveBeenCalledWith(error, {
-        surface: 'assets',
         errorType: 'asset_download_cancellation_failure',
+        tags: { surface: 'assets' },
         logToConsole: false
       })
       expect(addToast).toHaveBeenCalledWith({

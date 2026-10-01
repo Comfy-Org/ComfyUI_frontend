@@ -102,8 +102,8 @@ async function cancelDownload(taskId: TaskId) {
   if (result.ok) return
 
   reportError(result.error, {
-    surface: 'assets',
     errorType: 'asset_download_cancellation_failure',
+    tags: { surface: 'assets' },
     logToConsole: false
   })
   toastErrorHandler(result.error)
