@@ -421,15 +421,20 @@ describe('BillingStatusBanner', () => {
     expect(state.manageSubscription).toHaveBeenCalledTimes(1)
   })
 
-  it('does not expose payment controls to members', () => {
+  it('points members to the owner on a failed renewal, without payment controls', () => {
     paymentFailedState()
     state.canManageSubscription = false
+    state.renewalInvoice = {
+      hosted_invoice_url: 'https://invoice.stripe.com/i/acct_1/test_123',
+      amount_due: 5000,
+      currency: 'usd'
+    }
     renderBanner()
 
-    expect(screen.queryByRole('status')).not.toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'Update payment' })
-    ).not.toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent(
+      "Ask your workspace owner to restore the workspace's subscription."
+    )
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
     expect(state.manageSubscription).not.toHaveBeenCalled()
   })
 

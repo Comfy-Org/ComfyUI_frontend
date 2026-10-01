@@ -78,9 +78,7 @@ function derivePaymentRecoveryBanner(
   if (!inputs.v1PaymentRecovery) return null
   if (!inputs.isTeamPlan && !inputs.isKnownPersonalTier) return null
   if (inputs.isTeamPlan && inputs.billingStatus === 'paused') return 'paused'
-  if (inputs.billingStatus === 'payment_failed' && inputs.canManage) {
-    return 'paymentFailed'
-  }
+  if (inputs.billingStatus === 'payment_failed') return 'paymentFailed'
   return null
 }
 

@@ -112,8 +112,8 @@ describe('deriveBillingBanner', () => {
     expect(derive({ ...paymentFailed, hasFunds: false })).toBe('paymentFailed')
   })
 
-  it('hides payment failed from members, who get the run-lock modal instead', () => {
-    expect(derive({ ...paymentFailed, canManage: false })).toBeNull()
+  it('shows payment failed to members too, since their runs are blocked', () => {
+    expect(derive({ ...paymentFailed, canManage: false })).toBe('paymentFailed')
   })
 
   it('prioritizes paused above everything, for owners and members', () => {
