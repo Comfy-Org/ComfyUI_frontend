@@ -23,7 +23,7 @@ The original bug: when switching from app mode (canvas hidden via `v-show`) to g
 
 ## Decision
 
-Introduce a `CanvasViewport` — a plain, frozen data object that serves as the single source of truth for canvas sizing:
+Introduce a `CanvasViewport` — a plain, frozen snapshot of the dimensions and DPR used for one canvas-sizing operation:
 
 ```ts
 interface CanvasViewport {
@@ -45,7 +45,7 @@ Two functions operate on this type:
 
 The existing `LGraphCanvas.resize()` method and `resizeCanvas()` in app.ts both delegate their sizing work to the viewport system. Both paths follow the same sequence: measure → apply → draw.
 
-`LGraphCanvas` stores a `dpr` property that is set whenever a viewport is applied. All internal DPR consumers (`drawFrontCanvas`, `drawBackCanvas`, `centerOnNode`, `renderInfo`, `processMouseDown` hit testing, LOD threshold calculation) read `this.dpr` instead of `window.devicePixelRatio`. External consumers with access to the canvas instance (e.g. `litegraphService`, minimap composables) also read `canvas.dpr`. The only code that reads `window.devicePixelRatio` directly is (a) the viewport measurement functions themselves, (b) `DragAndScale` which doesn't have access to the canvas instance, and (c) `layoutStore` which operates at a layer without a direct canvas reference.
+`LGraphCanvas` caches the active DPR in its `dpr` property. The three viewport callers update that cache after applying a viewport: `resizeCanvas()` and the scheduled graph-load path in app.ts, plus `LGraphCanvas.resize()`. Most internal consumers (`drawFrontCanvas`, `drawBackCanvas`, `centerOnNode`, `renderInfo`, `processMouseDown` hit testing, and LOD threshold calculation) read the cache. Direct browser-DPR readers remain in `LGraphCanvas.setCanvas()`, `LGraphCanvas.resize()` during measurement, and `useBoundingBoxes`; viewport measurement functions also read the browser value, while `layoutStore` retains a browser fallback for legacy callers. The viewport system therefore coordinates canvas sizing but does not yet own a single DPR read or write boundary.
 
 The new `CanvasScheduler` and viewport system have separate responsibilities: the scheduler handles **when** by deferring work until the canvas is visible, while the viewport handles **what** by applying correct DPR-scaled dimensions atomically to both canvases.
 
@@ -68,7 +68,7 @@ Following the principles established in [ADR-ECS-0008](ECS-0008-entity-component
 
 ### Positive
 
-- Single source of truth for canvas dimensions and DPR eliminates an entire class of sizing bugs where foreground and background canvases diverge.
+- Applying one viewport snapshot to both canvases eliminates an entire class of sizing bugs where foreground and background canvases diverge.
 - The generation counter enables stale-state detection — any consumer can verify it is reading from a consistent resize cycle.
 - Phase separation (measure vs apply) makes the resize lifecycle explicit and testable.
 - Pure functions (`measureViewport`) are trivially testable without DOM fixtures.
@@ -77,7 +77,7 @@ Following the principles established in [ADR-ECS-0008](ECS-0008-entity-component
 ### Negative
 
 - Adds a new abstraction layer that all canvas-sizing code must flow through.
-- `DragAndScale` still reads `window.devicePixelRatio` directly because it lacks a reference to the canvas instance. `layoutStore` accepts a caller-supplied `dpr` and falls back to the browser value for legacy callers. A future refactor could remove these exceptions, but the current behavior is documented and stable.
+- `LGraphCanvas.setCanvas()`, `LGraphCanvas.resize()`, and `useBoundingBoxes` still read `window.devicePixelRatio` directly. `layoutStore` accepts a caller-supplied `dpr` and falls back to the browser value for legacy callers. A future refactor could consolidate these reads and the three viewport-driven cache writes behind one boundary.
 
 ## Notes
 
