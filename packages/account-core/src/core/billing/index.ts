@@ -106,6 +106,8 @@ export type {
 export { BILLING_STATUS_ROUTE, createBillingStatusReader } from './status.js'
 export type {
   BillingAuthenticationState,
+  BillingChargeBreakdown,
+  BillingChargeReason,
   BillingDeclineReason,
   BillingOpStatus,
   BillingOperationEvent,

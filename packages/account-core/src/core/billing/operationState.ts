@@ -14,36 +14,36 @@
 import {
   zBillingOpChargeBreakdown,
   zBillingOpChargeReason,
-  zBillingOpStatusResponse,
-  zSubscriptionDiscount
+  zBillingOpStatusResponse
 } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
 import type { BillingScope } from './billingScope.js'
+import { SubscriptionDiscountSchema } from './subscriptionDiscount.js'
 import { wireCents } from './wireCents.js'
+
+const ChargeBreakdownSchema = zBillingOpChargeBreakdown.extend({
+  amount_charged_cents: wireCents,
+  reasons: z.array(
+    zBillingOpChargeReason.extend({
+      amount_cents: wireCents,
+      discount: SubscriptionDiscountSchema.optional()
+    })
+  )
+})
 
 export const BillingOpStatusSchema = zBillingOpStatusResponse.extend({
   amount_charged_cents: wireCents.optional(),
   credits_added: wireCents.optional(),
-  charge_breakdown: zBillingOpChargeBreakdown
-    .extend({
-      amount_charged_cents: wireCents,
-      reasons: z.array(
-        zBillingOpChargeReason.extend({
-          amount_cents: wireCents,
-          discount: zSubscriptionDiscount
-            .extend({
-              amount_off_cents: wireCents.optional(),
-              duration_in_months: wireCents.optional()
-            })
-            .optional()
-        })
-      )
-    })
-    .optional()
+  charge_breakdown: ChargeBreakdownSchema.optional()
 })
 
 export type BillingOpStatus = z.infer<typeof BillingOpStatusSchema>
+
+export type BillingChargeBreakdown = NonNullable<
+  BillingOpStatus['charge_breakdown']
+>
+export type BillingChargeReason = BillingChargeBreakdown['reasons'][number]
 
 export type BillingOperationKind = 'subscription' | 'topup' | 'cancel'
 
@@ -148,6 +148,7 @@ export type FailedBillingOperation = BillingOperationIdentity & {
  */
 export interface BillingOperationReceipt {
   readonly amountChargedCents?: number
+  readonly chargeBreakdown?: BillingChargeBreakdown
   readonly creditsAdded?: number
   readonly plan?: NonNullable<BillingOpStatus['plan']>
 }
@@ -308,6 +309,9 @@ function receiptOf(
     ...(status.amount_charged_cents === undefined
       ? {}
       : { amountChargedCents: status.amount_charged_cents }),
+    ...(status.charge_breakdown === undefined
+      ? {}
+      : { chargeBreakdown: status.charge_breakdown }),
     ...(status.credits_added === undefined
       ? {}
       : { creditsAdded: status.credits_added }),

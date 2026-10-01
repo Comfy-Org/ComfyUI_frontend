@@ -19,8 +19,7 @@ import {
   zPreviewSubscribeResponse,
   zResubscribeResponse,
   zSubscribeRequest,
-  zSubscribeResponse,
-  zSubscriptionDiscount
+  zSubscribeResponse
 } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
@@ -40,6 +39,7 @@ import type {
 import { validateActionUrl } from './operationState.js'
 import { readValidatedBillingResponse } from './sharedRead.js'
 import type { BillingStatusReader } from './status.js'
+import { SubscriptionDiscountSchema } from './subscriptionDiscount.js'
 import { wireCents } from './wireCents.js'
 
 export const SUBSCRIBE_ROUTE = '/billing/subscribe'
@@ -137,14 +137,7 @@ const PreviewSchema = zPreviewSubscribeResponse.extend({
   proration_unused_cents: wireCents.optional(),
   current_plan: PlanInfoSchema.optional(),
   new_plan: PlanInfoSchema,
-  discounts: z
-    .array(
-      zSubscriptionDiscount.extend({
-        amount_off_cents: wireCents.optional(),
-        duration_in_months: wireCents.optional()
-      })
-    )
-    .optional()
+  discounts: z.array(SubscriptionDiscountSchema).optional()
 })
 
 /**
