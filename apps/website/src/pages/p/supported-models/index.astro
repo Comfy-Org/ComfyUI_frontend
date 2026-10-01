@@ -80,14 +80,14 @@ const accessCards = [
     title: t('models.explore.access.open.title', locale),
     description: t('models.explore.access.open.description', locale),
     cta: t('models.explore.access.open.cta', locale),
-    href: `${routes.models}?catalog=all&access=open`,
+    href: `${routes.models}?catalog=all&access=open#model-catalog-results`,
     bg: 'bg-secondary-deep-plum'
   },
   {
     title: t('models.explore.access.partner.title', locale),
     description: t('models.explore.access.partner.description', locale),
     cta: t('models.explore.access.partner.cta', locale),
-    href: `${routes.models}?catalog=all&access=partner`,
+    href: `${routes.models}?catalog=all&access=partner#model-catalog-results`,
     bg: 'bg-secondary-cool-gray'
   }
 ]
@@ -156,7 +156,7 @@ const conversionCards = [
       'models.explore.collections.viewAllModels',
       locale
     )}
-    collectionActionHref={`${routes.models}?catalog=all`}
+    collectionActionHref={`${routes.models}?catalog=all#model-catalog-results`}
     openWeightsBadgeLabel={t('models.explore.openWeightsBadge', locale)}
     {catalog}
     {categoryOptions}
@@ -176,7 +176,7 @@ const conversionCards = [
     models={dayZeroModelFixtures}
     openWeightsBadgeLabel={t('models.explore.openWeightsBadge', locale)}
     actionLabel={t('models.explore.collections.viewAllModels', locale)}
-    actionHref={`${routes.models}?catalog=all`}
+    actionHref={`${routes.models}?catalog=all#model-catalog-results`}
   />
   <ModelTaskSection
     label={t('models.explore.tasks.label', locale)}
