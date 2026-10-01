@@ -7,6 +7,7 @@ import { toGroupId } from '@/types/groupId'
 import { toNodeId } from '@/types/nodeId'
 import type { GroupId } from '@/types/groupId'
 import { reportError } from '@/platform/telemetry/reportError'
+import { normalizeDpr } from '@/renderer/core/canvas/canvasViewport'
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 import { toRerouteId } from '@/types/rerouteId'
 import type { UUID } from '@/utils/uuid'
@@ -664,9 +665,10 @@ class LayoutStoreImpl {
 
       if (ctx) {
         const dpi =
-          (dpr ??
-            (typeof window === 'undefined' ? 1 : window.devicePixelRatio)) ||
-          1
+          dpr ??
+          (typeof window === 'undefined'
+            ? 1
+            : normalizeDpr(window.devicePixelRatio))
         const hit = ctx.isPointInStroke(
           segmentLayout.path,
           point.x * dpi,

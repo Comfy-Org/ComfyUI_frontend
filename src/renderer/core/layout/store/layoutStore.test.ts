@@ -1133,6 +1133,27 @@ describe('layoutStore queryLinkSegmentAtPoint DPR threading', () => {
     expect(isPointInStroke).toHaveBeenCalledWith(stubPath, 100, 100)
   })
 
+  it('clamps the window DPR fallback to one', () => {
+    seedSegment()
+    const { ctx, isPointInStroke } = makeCtx()
+
+    const originalDpr = window.devicePixelRatio
+    Object.defineProperty(window, 'devicePixelRatio', {
+      configurable: true,
+      value: 0.5
+    })
+    try {
+      layoutStore.queryLinkSegmentAtPoint({ x: 50, y: 50 }, ctx)
+    } finally {
+      Object.defineProperty(window, 'devicePixelRatio', {
+        configurable: true,
+        value: originalDpr
+      })
+    }
+
+    expect(isPointInStroke).toHaveBeenCalledWith(stubPath, 50, 50)
+  })
+
   it('falls back to DPR 1 when rendered without a window', () => {
     seedSegment()
     const { ctx, isPointInStroke } = makeCtx()

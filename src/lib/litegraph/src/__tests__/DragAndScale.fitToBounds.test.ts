@@ -83,6 +83,21 @@ describe('DragAndScale.fitToBounds', () => {
     expect(dragAndScale.visible_area.height).toBeCloseTo(500 / 1.2)
   })
 
+  it('clamps sub-1 DPR when CSS dimensions are unavailable', () => {
+    Object.defineProperty(window, 'devicePixelRatio', {
+      configurable: true,
+      value: 0.5
+    })
+    const canvas = createCanvas(800, 500)
+    setCssSize(canvas, 0, 0)
+    const dragAndScale = new DragAndScale(canvas)
+
+    dragAndScale.computeVisibleArea(undefined)
+
+    expect(dragAndScale.visible_area.width).toBe(800)
+    expect(dragAndScale.visible_area.height).toBe(500)
+  })
+
   it('uses the applied viewport size without reading layout each frame', () => {
     const canvas = createCanvas(1600, 1200)
     const dragAndScale = new DragAndScale(canvas)

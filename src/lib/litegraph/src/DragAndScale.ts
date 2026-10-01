@@ -1,3 +1,5 @@
+import { normalizeDpr } from '@/renderer/core/canvas/canvasViewport'
+
 import type { Point, ReadOnlyRect, Rect } from './interfaces'
 import { EaseFunction, Rectangle } from './litegraph'
 
@@ -131,7 +133,8 @@ export class DragAndScale {
       return [rect.width, rect.height]
     }
 
-    const dpr = typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1
+    const dpr =
+      typeof window === 'undefined' ? 1 : normalizeDpr(window.devicePixelRatio)
     return [this.element.width / dpr, this.element.height / dpr]
   }
 
