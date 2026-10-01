@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import Loader from '@/components/loader/Loader.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
+import type { TaskId } from '@/platform/tasks/services/taskService'
 import type { AssetDownload } from '@/stores/assetDownloadStore'
 import { isDownloadCancelled } from '@/stores/assetDownloadStore'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -13,7 +14,7 @@ const { job, isCancelling = false } = defineProps<{
   job: AssetDownload
   isCancelling?: boolean
 }>()
-const emit = defineEmits<{ cancel: [taskId: string] }>()
+const emit = defineEmits<{ cancel: [taskId: TaskId] }>()
 
 const { t } = useI18n()
 

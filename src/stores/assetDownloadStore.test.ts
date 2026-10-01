@@ -392,6 +392,44 @@ describe('useAssetDownloadStore', () => {
       expect(store.lastCompletedDownload?.modelType).toBe('checkpoints')
     })
 
+    it('reconciles an authoritative failure after local cancellation and keeps polling', async () => {
+      const store = useAssetDownloadStore()
+      store.trackDownload('task-123', 'checkpoints', 'model.safetensors')
+      vi.mocked(taskService.cancelTask).mockResolvedValue({
+        ok: true,
+        value: true
+      })
+      vi.mocked(taskService.getTask)
+        .mockResolvedValueOnce({
+          ok: true,
+          value: createTaskResponse({
+            status: 'failed',
+            error_message: 'Cancellation failed'
+          })
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          value: createTaskResponse()
+        })
+      dispatch(createDownloadMessage({ status: 'running' }))
+
+      await store.cancelDownload('task-123')
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      expect(store.finishedDownloads[0]).toMatchObject({
+        status: 'failed',
+        error: 'Cancellation failed'
+      })
+
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      expect(taskService.getTask).toHaveBeenCalledTimes(2)
+      expect(store.finishedDownloads[0]).toMatchObject({
+        status: 'completed',
+        assetId: 'asset-456'
+      })
+    })
+
     it('preserves a provisional cancellation when finished downloads are cleared', async () => {
       const store = useAssetDownloadStore()
       vi.mocked(taskService.cancelTask).mockResolvedValue({

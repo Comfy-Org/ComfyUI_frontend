@@ -94,7 +94,7 @@ function shouldIgnoreDownloadUpdate(
   if (currentStatus === 'completed') return true
   if (currentStatus === 'cancelled') return nextStatus !== 'completed'
   if (currentStatus === 'cancellation_pending') {
-    return nextStatus !== 'completed' && nextStatus !== 'cancelled'
+    return !reconcilableTaskStatuses.has(nextStatus)
   }
   return false
 }

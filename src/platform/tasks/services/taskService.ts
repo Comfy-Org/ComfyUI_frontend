@@ -1,8 +1,7 @@
 /**
- * CAVEAT: The `payload` and `result` schemas below are specific to
- * `task:download_file` tasks. Other task types may have different
- * payload/result structures. We are not generalizing this until
- * additional use cases arise.
+ * CAVEAT: The `result` schema below is specific to `task:download_file`
+ * tasks. Other task types may have different result structures. We are not
+ * generalizing this until additional use cases arise.
  */
 import { z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
