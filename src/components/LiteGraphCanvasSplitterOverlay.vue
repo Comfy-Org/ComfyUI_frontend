@@ -32,6 +32,7 @@
             <SplitterPanel
               v-if="firstPanelShown"
               id="first-side-panel"
+              :ref="panelRefs.first"
               :order="1"
               :class="
                 sidebarLocation === 'left'
@@ -146,6 +147,7 @@
             <SplitterPanel
               v-if="lastPanelShown"
               id="last-side-panel"
+              :ref="panelRefs.last"
               :order="3"
               :class="
                 sidebarLocation === 'right'
@@ -189,14 +191,12 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { useElementSize } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, ref, watchEffect } from 'vue'
+import { computed, ref, shallowRef, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import {
-  SplitterGroup,
-  SplitterPanel,
-  SplitterResizeHandle
-} from '@/components/ui/splitter'
+import SplitterGroup from '@/components/ui/splitter/SplitterGroup.vue'
+import SplitterPanel from '@/components/ui/splitter/SplitterPanel.vue'
+import SplitterResizeHandle from '@/components/ui/splitter/SplitterResizeHandle.vue'
 import {
   loadSplitterSizes,
   saveSplitterSizes
@@ -361,9 +361,13 @@ const mainSplitterStateKey = computed(() =>
 const mainPanelCount = computed(
   () => 1 + Number(firstPanelShown.value) + Number(lastPanelShown.value)
 )
-const savedMainPanelSizes = computed(() =>
-  loadSplitterSizes(mainSplitterStateKey.value, mainPanelCount.value)
-)
+const savedMainPanelSizes = shallowRef<number[]>()
+watchEffect(() => {
+  savedMainPanelSizes.value = loadSplitterSizes(
+    mainSplitterStateKey.value,
+    mainPanelCount.value
+  )
+})
 const sidebarWidthKey = computed(() => {
   const base =
     sidebarLocation.value === 'left'
@@ -394,6 +398,7 @@ function defaultPanelWidth(sidebar: boolean) {
 const {
   sizes: pixelSizes,
   layoutKey,
+  panelRefs,
   onResizeStart,
   onResizeEnd
 } = usePanelSizing(
@@ -448,16 +453,20 @@ const lastPanelDefaultSize = computed(() =>
 
 function saveMainSplitterLayout(sizes: number[]) {
   if (sizes.length === 1) return
-  saveSplitterSizes(mainSplitterStateKey.value, sizes)
+  if (saveSplitterSizes(mainSplitterStateKey.value, sizes)) {
+    savedMainPanelSizes.value = sizes
+  }
 }
 
 const bottomPanelStateKey = 'bottom-panel-splitter'
-const bottomPanelDefaultSizes = loadSplitterSizes(bottomPanelStateKey, 2) ?? [
-  50, 50
-]
+const bottomPanelDefaultSizes = shallowRef(
+  loadSplitterSizes(bottomPanelStateKey, 2) ?? [50, 50]
+)
 
 function saveBottomPanelLayout(sizes: number[]) {
-  saveSplitterSizes(bottomPanelStateKey, sizes)
+  if (saveSplitterSizes(bottomPanelStateKey, sizes)) {
+    bottomPanelDefaultSizes.value = sizes
+  }
 }
 
 const splitterRefreshKey = computed(() => {

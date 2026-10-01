@@ -1,6 +1,8 @@
 import { StorageSerializers, useStorage } from '@vueuse/core'
-import { computed, toValue, watch } from 'vue'
+import { computed, nextTick, shallowRef, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
+
+import type SplitterPanel from './SplitterPanel.vue'
 
 interface SidePanel {
   id: string
@@ -64,12 +66,30 @@ export function usePanelSizing(
   })
 
   const layoutKey = computed(() =>
-    [
-      toValue(containerWidth),
-      ...stored.map(
-        (panel) => `${toValue(panel.storageKey)}:${toValue(panel.visible)}`
+    stored
+      .map((panel) => `${toValue(panel.storageKey)}:${toValue(panel.visible)}`)
+      .join(':')
+  )
+  const panelRefs = {
+    first: shallowRef<InstanceType<typeof SplitterPanel>>(),
+    last: shallowRef<InstanceType<typeof SplitterPanel>>()
+  }
+  watch(
+    () => toValue(containerWidth),
+    async () => {
+      await nextTick()
+      const updates = [panelRefs.first.value, panelRefs.last.value].flatMap(
+        (panel, index) => {
+          if (!panel || !toValue(stored[index].visible)) return []
+          const size = sizes.value[index * 2]
+          return [{ panel, size, delta: size - panel.getSize() }]
+        }
       )
-    ].join(':')
+      for (const { panel, size } of updates.sort((a, b) => a.delta - b.delta)) {
+        panel.resize(size)
+      }
+    },
+    { flush: 'post' }
   )
   let gesture:
     | {
@@ -129,5 +149,5 @@ export function usePanelSizing(
     gesture = undefined
   }
 
-  return { sizes, layoutKey, onResizeStart, onResizeEnd }
+  return { sizes, layoutKey, panelRefs, onResizeStart, onResizeEnd }
 }

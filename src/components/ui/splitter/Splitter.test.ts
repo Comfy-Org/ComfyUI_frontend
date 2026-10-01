@@ -1,7 +1,9 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import { SplitterGroup, SplitterPanel, SplitterResizeHandle } from '.'
+import SplitterGroup from './SplitterGroup.vue'
+import SplitterPanel from './SplitterPanel.vue'
+import SplitterResizeHandle from './SplitterResizeHandle.vue'
 import {
   getSplitterStorageKey,
   loadSplitterSizes,
@@ -51,5 +53,17 @@ describe('Splitter', () => {
       saveSplitterSizes('linear-view-splitter', [25, 75])
     ).not.toThrow()
     expect(loadSplitterSizes('linear-view-splitter', 2)).toBeUndefined()
+  })
+
+  it.for([
+    { name: 'malformed JSON', stored: '[' },
+    { name: 'wrong panel count', stored: '[25,50,25]' },
+    { name: 'non-number entry', stored: '[25,"75"]' },
+    { name: 'negative entry', stored: '[-10,110]' },
+    { name: 'non-positive total', stored: '[0,0]' }
+  ])('rejects $name', ({ stored }) => {
+    localStorage.setItem('splitter', stored)
+
+    expect(loadSplitterSizes('splitter', 2)).toBeUndefined()
   })
 })

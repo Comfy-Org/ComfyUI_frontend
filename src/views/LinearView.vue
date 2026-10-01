@@ -14,11 +14,9 @@ import AppModeToolbar from '@/components/appMode/AppModeToolbar.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
-import {
-  SplitterGroup,
-  SplitterPanel,
-  SplitterResizeHandle
-} from '@/components/ui/splitter'
+import SplitterGroup from '@/components/ui/splitter/SplitterGroup.vue'
+import SplitterPanel from '@/components/ui/splitter/SplitterPanel.vue'
+import SplitterResizeHandle from '@/components/ui/splitter/SplitterResizeHandle.vue'
 import { usePanelSizing } from '@/components/ui/splitter/usePanelSizing'
 import { COACH_IDS } from '@/platform/onboarding/onboardingTours'
 import { vCoachmark } from '@/platform/onboarding/vCoachmark'
@@ -104,28 +102,35 @@ const panelWidth = computed(() =>
       Number(rightPanelVisible.value)
   )
 )
-const { sizes, layoutKey, onResizeStart, onResizeEnd } = usePanelSizing(
-  [
-    {
-      id: 'linear-left-panel',
-      storageKey: 'Comfy.LinearView.LeftPanelWidth',
-      visible: () => Boolean(leftPanelVisible.value),
-      minWidth: SIDEBAR_MIN_WIDTH,
-      defaultWidth: () =>
-        Math.max(SIDEBAR_MIN_WIDTH, (window.innerWidth * SIDE_PANEL_SIZE) / 100)
-    },
-    {
-      id: 'linear-right-panel',
-      storageKey: 'Comfy.LinearView.RightPanelWidth',
-      visible: () => Boolean(rightPanelVisible.value),
-      minWidth: SIDEBAR_MIN_WIDTH,
-      defaultWidth: () =>
-        Math.max(SIDEBAR_MIN_WIDTH, (window.innerWidth * SIDE_PANEL_SIZE) / 100)
-    }
-  ],
-  panelWidth,
-  () => window.innerWidth * 0.2
-)
+const { sizes, layoutKey, panelRefs, onResizeStart, onResizeEnd } =
+  usePanelSizing(
+    [
+      {
+        id: 'linear-left-panel',
+        storageKey: 'Comfy.LinearView.LeftPanelWidth',
+        visible: () => Boolean(leftPanelVisible.value),
+        minWidth: SIDEBAR_MIN_WIDTH,
+        defaultWidth: () =>
+          Math.max(
+            SIDEBAR_MIN_WIDTH,
+            (window.innerWidth * SIDE_PANEL_SIZE) / 100
+          )
+      },
+      {
+        id: 'linear-right-panel',
+        storageKey: 'Comfy.LinearView.RightPanelWidth',
+        visible: () => Boolean(rightPanelVisible.value),
+        minWidth: SIDEBAR_MIN_WIDTH,
+        defaultWidth: () =>
+          Math.max(
+            SIDEBAR_MIN_WIDTH,
+            (window.innerWidth * SIDE_PANEL_SIZE) / 100
+          )
+      }
+    ],
+    panelWidth,
+    () => window.innerWidth * 0.2
+  )
 const splitterKey = computed(
   () =>
     `${layoutMode.value}-${panelComposition.value.join('-')}-${layoutKey.value}`
@@ -175,6 +180,7 @@ function dragDrop(e: DragEvent) {
           <SplitterPanel
             v-if="leftPanelVisible"
             id="linear-left-panel"
+            :ref="panelRefs.first"
             data-testid="linear-left-panel"
             :order="1"
             :default-size="sizes[0]"
@@ -231,6 +237,7 @@ function dragDrop(e: DragEvent) {
           <SplitterPanel
             v-if="rightPanelVisible"
             id="linear-right-panel"
+            :ref="panelRefs.last"
             data-testid="linear-right-panel"
             :order="3"
             :default-size="sizes[2]"

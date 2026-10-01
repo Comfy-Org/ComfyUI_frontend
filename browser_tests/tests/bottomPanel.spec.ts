@@ -41,7 +41,9 @@ test.describe('Bottom Panel', { tag: '@ui' }, () => {
     await expect(bottomPanel.resizeGutter).toBeHidden()
   })
 
-  test('should resize panel by dragging the gutter', async ({ comfyPage }) => {
+  test('preserves a resized panel when the sidebar remounts the layout', async ({
+    comfyPage
+  }) => {
     const { bottomPanel } = comfyPage
 
     await bottomPanel.toggleButton.click()
@@ -66,6 +68,16 @@ test.describe('Bottom Panel', { tag: '@ui' }, () => {
         }
       )
       .toBeGreaterThan(initialHeight)
+
+    const resizedHeight = await bottomPanel.root.evaluate(
+      (el) => el.getBoundingClientRect().height
+    )
+    await comfyPage.settings.setSetting('Comfy.Sidebar.Location', 'right')
+    await expect
+      .poll(() =>
+        bottomPanel.root.evaluate((el) => el.getBoundingClientRect().height)
+      )
+      .toBeCloseTo(resizedHeight, 0)
   })
 
   test('should not block canvas interactions when panel is closed', async ({

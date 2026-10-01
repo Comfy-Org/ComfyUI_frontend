@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import { SplitterGroup, SplitterPanel, SplitterResizeHandle } from '.'
+import SplitterGroup from './SplitterGroup.vue'
+import SplitterPanel from './SplitterPanel.vue'
+import SplitterResizeHandle from './SplitterResizeHandle.vue'
 
 const meta = {
   title: 'Components/Splitter',
