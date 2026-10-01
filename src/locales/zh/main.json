@@ -372,9 +372,6 @@
     "processingModelDescription": "您可以关闭此对话框。下载将在后台继续。",
     "providerCivitai": "Civitai",
     "providerHuggingFace": "Hugging Face",
-    "rename": {
-      "failed": "无法重命名资产。"
-    },
     "searchModels": "搜索模型",
     "selectFrameworks": "选择框架",
     "selectModelType": "选择模型类型",

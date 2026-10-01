@@ -372,9 +372,6 @@
     "processingModelDescription": "Вы можете закрыть это окно. Загрузка продолжится в фоновом режиме.",
     "providerCivitai": "Civitai",
     "providerHuggingFace": "Hugging Face",
-    "rename": {
-      "failed": "Не удалось переименовать ассет."
-    },
     "searchModels": "Поиск моделей",
     "selectFrameworks": "Выберите фреймворки",
     "selectModelType": "Выберите тип модели",

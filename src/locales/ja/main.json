@@ -372,9 +372,6 @@
     "processingModelDescription": "このダイアログを閉じてもダウンロードはバックグラウンドで続行されます。",
     "providerCivitai": "Civitai",
     "providerHuggingFace": "Hugging Face",
-    "rename": {
-      "failed": "アセットの名前を変更できませんでした。"
-    },
     "searchModels": "モデルを検索",
     "selectFrameworks": "フレームワークを選択",
     "selectModelType": "モデルタイプを選択",

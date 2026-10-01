@@ -4486,6 +4486,12 @@
       "role": "Head of Technology at Silverside AI",
       "linkLabel": "Read the Silverside AI customer story"
     },
+    "serverlessSkipSetup": {
+      "heading": "Or skip the setup.",
+      "subtitle": "Paste this into your coding agent.",
+      "copyPrompt": "COPY AGENT PROMPT",
+      "copied": "COPIED"
+    },
     "serverlessScale": {
       "1": {
         "title": "Autoscaling",

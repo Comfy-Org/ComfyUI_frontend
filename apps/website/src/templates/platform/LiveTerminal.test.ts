@@ -82,4 +82,47 @@ describe('LiveTerminal', () => {
     await advance(10000)
     expect(transcript()).toBe('$ comfy up✔ Done')
   })
+
+  it('keeps a blank line as a spacer between lines', async () => {
+    vi.mocked(prefersReducedMotion).mockReturnValue(true)
+    render(LiveTerminal, {
+      props: { lines: ['$ comfy up', '', 'Ready in 2.1s'], label: 'Demo' }
+    })
+    await nextTick()
+
+    expect(transcript()).toBe('$ comfy up Ready in 2.1s')
+  })
+
+  it('shows the full transcript statically when typewriter is disabled', async () => {
+    render(LiveTerminal, {
+      props: { lines: LINES, label: 'Demo', typewriter: false }
+    })
+    await nextTick()
+
+    expect(transcript()).toBe('$ comfy up✔ Done')
+    await advance(10000)
+    expect(transcript()).toBe('$ comfy up✔ Done')
+  })
+
+  it('colors the prompt, leaves command text plain, and colors a success line green', async () => {
+    render(LiveTerminal, {
+      props: {
+        lines: ['$ comfy build init', '✓ Scanned this install'],
+        label: 'Demo',
+        typewriter: false
+      }
+    })
+    await nextTick()
+
+    const prompt = screen.getByText('$')
+    expect(prompt.getAttribute('style')).toContain(
+      '--color-primary-comfy-yellow'
+    )
+
+    const command = screen.getByText('comfy build init')
+    expect(command.getAttribute('style')).toBeNull()
+
+    const successLine = screen.getByText('✓ Scanned this install')
+    expect(successLine.getAttribute('style')).toContain('#A7C080')
+  })
 })

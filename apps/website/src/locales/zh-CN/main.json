@@ -3179,6 +3179,12 @@
       "role": "Silverside AI 技术负责人",
       "linkLabel": "阅读 Silverside AI 客户案例"
     },
+    "serverlessSkipSetup": {
+      "heading": "或者跳过手动设置。",
+      "subtitle": "把它粘贴到你的编码智能体里。",
+      "copyPrompt": "复制智能体提示词",
+      "copied": "已复制"
+    },
     "meta": {
       "description": "部署并扩展 ComfyUI 工作流。你的工作流。所有模型。一个 API。",
       "title": "开发者平台"
