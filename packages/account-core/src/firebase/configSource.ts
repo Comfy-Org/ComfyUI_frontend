@@ -30,6 +30,11 @@ export interface CloudFeatures {
   readonly stripePublishableKey?: string
   /** Present only for a literal `true` `web_session_probe`; see `../core/webSessionFlag.ts`. */
   readonly webSessionProbe?: true
+  /** The Cloud app's own PostHog project, so every Comfy surface reports into one. */
+  readonly posthogProjectToken?: string
+  readonly posthogApiHost?: string
+  /** Event names the backend has switched off for product analytics. */
+  readonly telemetryDisabledEvents?: readonly string[]
 }
 
 export interface FetchFirebaseConfigOptions {
