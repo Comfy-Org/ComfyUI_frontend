@@ -94,10 +94,12 @@ const FOREIGN_TURN_DONE_EVENT: AgentWsEvent = {
 const RUN_APPROVAL_ASK_ID = `${TURN_ID}:call-run-workflow`
 
 /**
- * The workflow this ask names. Exported so a spec can assert the card is the
- * one the ask described without restating the literal.
+ * The workflow this ask names. Not exported: it is the same workflow the
+ * panel's picker and tab already name, so a spec that matched it as text
+ * would resolve to three elements. `approvalWorkflowLink` below is the
+ * locator a spec should assert on instead.
  */
-export const APPROVAL_WORKFLOW_NAME = 'Unsaved Workflow'
+const APPROVAL_WORKFLOW_NAME = 'Unsaved Workflow'
 
 /**
  * The option ids this ask offers. Declared separately because `AgentWsEvent`
@@ -526,6 +528,7 @@ export class AgentTurnLockHarness {
   public readonly stopButton: Locator
   public readonly runApprovalButton: Locator
   public readonly approvalCard: Locator
+  public readonly approvalWorkflowLink: Locator
   public readonly workSummary: Locator
   public readonly workingRow: Locator
   public readonly liveProgressRow: Locator
@@ -566,6 +569,13 @@ export class AgentTurnLockHarness {
       enMessages.agent.runApproval.question,
       { exact: true }
     )
+    // The workflow the ask names, as the card offers it: a link the user can
+    // open. Anchored on role + accessible name rather than on the text, which
+    // also appears on the panel's workflow picker and inside this link.
+    this.approvalWorkflowLink = this.panel.getByRole('button', {
+      name: APPROVAL_WORKFLOW_NAME,
+      exact: true
+    })
     // WorkSummary.vue renders three labels off the elapsed total: `worked`
     // alone, `workedForSeconds`, or `workedForMinutes`. Anchoring on the
     // shared `worked` stem matches all three, so the negative assertions on

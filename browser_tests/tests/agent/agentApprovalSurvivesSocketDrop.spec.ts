@@ -2,7 +2,6 @@ import { expect } from '@playwright/test'
 
 import {
   APPROVAL_RUN_OPTION_ID,
-  APPROVAL_WORKFLOW_NAME,
   RUN_APPROVAL_EVENT,
   TURN_IN_PROGRESS_MESSAGE,
   agentTurnLockTest as test
@@ -54,9 +53,7 @@ test.describe(
 
       await test.step('the approval surfaces without a reload', async () => {
         await expect(turnLock.approvalCard).toBeVisible({ timeout: 30_000 })
-        await expect(
-          turnLock.panel.getByText(APPROVAL_WORKFLOW_NAME)
-        ).toBeVisible()
+        await expect(turnLock.approvalWorkflowLink).toBeVisible()
         await expect(turnLock.stopButton).toBeVisible()
       })
 
