@@ -772,6 +772,26 @@ describe('ComfyApp', () => {
       expect(scheduler.pending()).toBe(1)
     })
 
+    it('drops a hidden anonymous camera restore when another anonymous graph loads', async () => {
+      const canvasElement = document.createElement('canvas')
+      app.canvasElRef.value = canvasElement
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      Reflect.set(mockCanvas, 'ds', {
+        offset: [9, 11],
+        scale: 1.3,
+        min_scale: 0.1,
+        max_scale: 10
+      })
+      Reflect.set(mockCanvas, 'bgcanvas', document.createElement('canvas'))
+      const scheduler = useCanvasScheduler()
+      scheduler.clear()
+
+      await app.loadGraphData(createWorkflowGraphData(), true, true)
+      await app.loadGraphData(createWorkflowGraphData(), true, false)
+
+      expect(scheduler.pending()).toBe(0)
+    })
+
     it('brackets an API JSON import with graph-load hooks', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       const graph = new LGraph()

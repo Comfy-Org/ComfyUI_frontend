@@ -4,18 +4,22 @@ import { watch } from 'vue'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { reportError } from '@/platform/telemetry/reportError'
 
-export interface CanvasOperation {
-  key?: string
+interface CanvasOperationBase {
   element?: HTMLCanvasElement
-  isCurrent?: () => boolean
   run: () => void
 }
+
+export type CanvasOperation =
+  | (CanvasOperationBase & { key?: never; isCurrent?: never })
+  | (CanvasOperationBase & { key: string; isCurrent: () => boolean })
 
 export interface CanvasScheduler {
   /** Run an op now when its canvas is visible, otherwise queue it. */
   schedule(operation: CanvasOperation): void
   /** Execute all queued ops synchronously (if canvas is ready). */
   flush(): void
+  /** Discard the pending operation with this key. */
+  cancel(key: string): void
   /** Discard all pending ops and cancel any scheduled RAF. */
   clear(): void
   /** Number of queued ops. */
@@ -118,6 +122,11 @@ export function createCanvasScheduler(): CanvasScheduler {
     }
   }
 
+  function cancel(key: string): void {
+    const index = queue.findIndex((operation) => operation.key === key)
+    if (index !== -1) queue.splice(index, 1)
+  }
+
   function pending(): number {
     return queue.length
   }
@@ -132,7 +141,7 @@ export function createCanvasScheduler(): CanvasScheduler {
     }
   )
 
-  return { schedule, flush, clear, pending, isCanvasReady }
+  return { schedule, flush, cancel, clear, pending, isCanvasReady }
 }
 
 export const useCanvasScheduler = createSharedComposable(createCanvasScheduler)

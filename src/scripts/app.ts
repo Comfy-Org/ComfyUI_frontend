@@ -398,8 +398,9 @@ export class ComfyApp {
   private configuringGraphLevel: number = 0
   private graphLoadSequence = 0
   private committedGraphLoadSequence = 0
-  private cameraLoadSequence = 0
-  private pendingCameraWorkflow: string | null | ComfyWorkflow = null
+  private pendingCamera:
+    | { id: number; workflow: string | null | ComfyWorkflow }
+    | undefined
   get configuringGraph() {
     return this.configuringGraphLevel > 0
   }
@@ -1564,15 +1565,19 @@ export class ComfyApp {
           this.committedGraphLoadSequence
         )
         const preservesPendingCamera =
-          !restore_view && workflow === this.pendingCameraWorkflow
+          !restore_view &&
+          workflow !== null &&
+          workflow === this.pendingCamera?.workflow
         if (!preservesPendingCamera) {
-          const cameraLoadId = ++this.cameraLoadSequence
-          this.pendingCameraWorkflow = restore_view ? workflow : null
+          canvasScheduler.cancel('graph-load-camera')
+          this.pendingCamera = restore_view
+            ? { id: loadId, workflow }
+            : undefined
           if (restore_view) {
             canvasScheduler.schedule({
               key: 'graph-load-camera',
               element: this.canvasEl,
-              isCurrent: () => cameraLoadId === this.cameraLoadSequence,
+              isCurrent: () => this.pendingCamera?.id === loadId,
               run: () => {
                 const viewport = measureViewportFromElement(this.canvasEl)
                 applyViewport(
@@ -1584,8 +1589,8 @@ export class ComfyApp {
                 this.canvas.dpr = viewport.dpr
                 fitView()
                 this.canvas.draw(true, true)
-                if (cameraLoadId === this.cameraLoadSequence) {
-                  this.pendingCameraWorkflow = null
+                if (this.pendingCamera?.id === loadId) {
+                  this.pendingCamera = undefined
                 }
               }
             })

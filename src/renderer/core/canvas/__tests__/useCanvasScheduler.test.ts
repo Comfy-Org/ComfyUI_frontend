@@ -287,8 +287,8 @@ describe('useCanvasScheduler', () => {
     const current = vi.fn()
 
     testState.offsetParent = null
-    scheduler.schedule({ key: 'camera', run: stale })
-    scheduler.schedule({ key: 'camera', run: current })
+    scheduler.schedule({ key: 'camera', isCurrent: () => true, run: stale })
+    scheduler.schedule({ key: 'camera', isCurrent: () => true, run: current })
     testState.offsetParent = document.body
     scheduler.flush()
 
@@ -302,7 +302,7 @@ describe('useCanvasScheduler', () => {
     const stale = vi.fn()
 
     testState.offsetParent = null
-    scheduler.schedule({ key: 'camera', run: current })
+    scheduler.schedule({ key: 'camera', isCurrent: () => true, run: current })
     scheduler.schedule({
       key: 'camera',
       isCurrent: () => false,
@@ -322,6 +322,7 @@ describe('useCanvasScheduler', () => {
 
     testState.offsetParent = null
     scheduler.schedule({
+      key: 'camera',
       isCurrent: () => current,
       run
     })
