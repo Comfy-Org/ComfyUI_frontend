@@ -67,7 +67,7 @@ export interface DocReseedResult {
   workflowId: string
   ok: boolean
   seq?: number
-  /** `reseeded` or `already_current` on success. */
+  /** Host-provided diagnostic outcome. */
   outcome?: string
   code?: string
   message?: string
@@ -322,10 +322,12 @@ function parseDocSubscribed(
   }
 }
 
-type ServerFrameParser = (
-  workflowId: string,
-  data: WireData
-) => ServerDocFrame | null
+type ServerFrameParsers = {
+  [K in ServerDocFrame['type']]: (
+    workflowId: string,
+    data: WireData
+  ) => Extract<ServerDocFrame, { type: K }> | null
+}
 
 function parseResultMetadata(data: WireData) {
   const code = parseBoundedString(data.code, MAX_ERROR_CODE_LENGTH)
@@ -352,7 +354,7 @@ function parseAwarenessState(value: unknown): Record<string, unknown> | null {
     : null
 }
 
-const serverFrameParsers: Partial<Record<string, ServerFrameParser>> = {
+const serverFrameParsers: ServerFrameParsers = {
   doc_update: (workflowId, data) => {
     if (!isSequence(data.seq) || typeof data.update_b64 !== 'string')
       return null
@@ -447,8 +449,13 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
     return null
 
   if (typeof frame.type !== 'string') return null
-  const parser = serverFrameParsers[frame.type]
-  return parser?.(data.workflow_id, data) ?? null
+  if (!Object.hasOwn(serverFrameParsers, frame.type)) return null
+  const type = frame.type as ServerDocFrame['type']
+  const parser = serverFrameParsers[type] as (
+    workflowId: string,
+    data: WireData
+  ) => ServerDocFrame | null
+  return parser(data.workflow_id, data)
 }
 
 export class DocFrameClient extends EventTarget {

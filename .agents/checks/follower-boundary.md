@@ -99,8 +99,8 @@ Flag:
   `[base_version, actor, op_id]` stamp.
 - **Full-document replace as the mutation primitive** — re-sending or reloading the whole
   doc per edit instead of applying ops/updates incrementally.
-  One exception (FOLLOWER amendment 2026-09-26): a single `doc_reseed` answering the
-  host's own `stale_schema_reseed_required` refusal, sent only through
+  One exception (FOLLOWER amendment 2026-09-26): one `doc_reseed` per
+  `stale_schema_reseed_required` refusal, sent only through
   `LayoutFollowerBridge.reseed`, which asserts that refusal. Flag any other caller or
   frame that sends a whole graph upstream.
 - **A second applier implementation** — op-to-doc / conflict-resolution logic reimplemented

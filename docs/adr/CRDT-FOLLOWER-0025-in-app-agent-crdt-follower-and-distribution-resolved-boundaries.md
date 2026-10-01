@@ -290,16 +290,18 @@ path:
 One narrow exception applies to “the follower never sends the whole graph.” If
 the host cannot read a stored document because it uses an older schema, and the
 subscribe advertised `supports_reseed`, the host refuses with
-`stale_schema_reseed_required`. The follower may answer that exact refusal once
-with a `doc_reseed` frame containing the bound tab's serialized canvas (the same
+`stale_schema_reseed_required`. The follower may answer each refusal once with a
+`doc_reseed` frame containing the bound tab's serialized canvas (the same
 content a prompt posts as its draft).
 
 This is recovery rather than a whole-graph edit: the host rechecks the document,
 compare-and-swaps the exact refused sequence, remains the only Yjs writer, and
 announces a new lineage for ordinary catch-up. The on-screen canvas is required
 because the server projection can lag human edits. `LayoutFollowerBridge.reseed`
-enforces that the refusal matches the workflow and can be answered only once;
-all other whole-graph sends remain rejected.
+enforces that the refusal matches the current workflow and can be answered only
+once. A retryable reseed result permits another answer only to a fresh refusal
+produced by the bounded subscribe backoff. All other whole-graph sends remain
+rejected.
 
 ## Product gate and developer diagnostics (amended 2026-09-12)
 

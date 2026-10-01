@@ -283,10 +283,9 @@ export function useAgentCrdtFollower(
   events: AgentCrdtFollowerEvents = {},
   applierDeps: AgentCrdtApplierDeps = {},
   /**
-   * The serialized graph the tab bound to `workflowId` currently shows, or
-   * `null`. Sent once to re-mint a document the server refused as an older
-   * schema (`stale_schema_reseed_required`); it is the only safe content for
-   * that, since the server's own copy can lag this canvas.
+   * The serialized graph the tab bound to `workflowId` currently shows. The
+   * canvas is authoritative here because the server projection can lag human
+   * edits.
    */
   canvasFor: (workflowId: string) => Record<string, unknown> | null = () => null
 ) {
@@ -500,43 +499,15 @@ function startAgentCrdtFollower(
     }
   }
 
-  // Workflows this binding already answered a stale_schema_reseed_required
-  // refusal for. One doc_reseed per binding: a second refusal takes the
-  // ordinary bounded retry, so a server that keeps refusing cannot turn the
-  // reseed into a loop. Cleared on retarget.
-  const reseedAttempted = new Set<string>()
-  /** The workflow a refusal asks this binding to reseed, if it asks at all. */
-  const reseedTarget = (detail: {
+  function tryReseed(detail: {
     workflowId?: unknown
     code?: unknown
-    expectedSeq?: unknown
-  }): string | null => {
+  }): boolean {
     const target = subscribedWorkflowId.value
     if (detail.code !== STALE_SCHEMA_RESEED_REQUIRED || target === null)
-      return null
-    if (
-      typeof detail.expectedSeq !== 'number' ||
-      !Number.isSafeInteger(detail.expectedSeq) ||
-      detail.expectedSeq <= 0
-    )
-      return null
+      return false
     if (detail.workflowId !== undefined && detail.workflowId !== target)
-      return null
-    return reseedAttempted.has(target) ? null : target
-  }
-  /**
-   * Answer a `stale_schema_reseed_required` refusal with the canvas this tab
-   * shows. False when this binding already tried, there is no canvas with
-   * nodes to send, or the frame could not leave; the caller then treats the
-   * refusal like any other.
-   */
-  const tryReseed = (detail: {
-    workflowId?: unknown
-    code?: unknown
-  }): boolean => {
-    const target = reseedTarget(detail)
-    if (target === null) return false
-    reseedAttempted.add(target)
+      return false
     const canvas = canvasFor(target)
     if (!hasNodes(canvas) || !bridge.reseed(target, canvas)) return false
     recordDevEvent('doc_reseed_sent', { workflowId: target })
@@ -555,17 +526,16 @@ function startAgentCrdtFollower(
     recordDevEvent('doc_reseed_result', detail)
     const code = typeof detail.code === 'string' ? detail.code : undefined
     if (detail.ok !== true && isRetryableReseedCode(code)) {
-      reseedAttempted.delete(detail.workflowId)
       lifecycle.onSubscribeRefused(code)
       return
     }
-    // ok / conflict: the bridge has already reset the lineage and
-    // resubscribed. Anything else is final for this document.
+    // The bridge resets and resubscribes after this listener returns for an
+    // ok/conflict result. Anything else is final for this document.
     if (detail.ok !== true && detail.code !== 'conflict')
       lifecycle.stopProbing()
   }
 
-  const handleRejectedSubscription = (
+  function handleRejectedSubscription(
     detail: {
       workflowId?: unknown
       ok?: unknown
@@ -573,7 +543,7 @@ function startAgentCrdtFollower(
       message?: unknown
       expectedSeq?: unknown
     } | null
-  ) => {
+  ) {
     const refusal = tryReseed(detail ?? {})
       ? { shouldNotify: false }
       : handleSubscribeRefusal(detail, lifecycle)
@@ -879,7 +849,6 @@ function startAgentCrdtFollower(
       // collected changes to apply, the graph watcher covers readiness.
       const justActivated = active && previous?.[1] === false
       lifecycle.clearForRetarget()
-      reseedAttempted.clear()
       connected.value = false
       pendingLiveNodeIds.clear()
       if (!active) {
