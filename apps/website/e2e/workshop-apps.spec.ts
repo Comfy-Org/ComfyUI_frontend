@@ -167,7 +167,7 @@ test('closes Move anything while its flag is off', async ({
   await expect(page.getByTestId('move-anything')).toHaveCount(0)
 })
 
-test('moves a thing in the Move anything example and shows the result', async ({
+test('moves a thing from the Move anything side panel and shows the result', async ({
   page,
   context
 }) => {
@@ -179,6 +179,9 @@ test('moves a thing in the Move anything example and shows the result', async ({
   await expect(generate).toHaveCount(0)
 
   await app.getByRole('button', { name: 'Try the example' }).click()
+  await expect(
+    app.getByRole('complementary', { name: 'Move anything settings' })
+  ).toContainText('kitten.jpg')
   await expect(generate).toBeDisabled()
   const kitten = app.getByRole('button', { name: /^Orange kitten\./ })
   await kitten.focus()
@@ -196,6 +199,56 @@ test('moves a thing in the Move anything example and shows the result', async ({
 
   await app.getByRole('button', { name: 'Edit arrangement' }).click()
   await expect(generate).toHaveText(/Move 1 object/)
+})
+
+test('moves a thing from the Move anything bottom composer', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/hub/apps/move-anything/?ux=e')
+  const app = page.getByTestId('move-anything')
+  await app.getByRole('button', { name: 'Try the example' }).click()
+  await expect(app.getByRole('complementary')).toHaveCount(0)
+
+  await app.getByRole('button', { name: /Objects/ }).click()
+  const tray = app.getByRole('dialog', { name: 'Objects' })
+  await expect(tray).toContainText('3 of 4')
+  const kitten = app.getByRole('button', { name: /^Orange kitten\./ })
+  await kitten.focus()
+  await page.keyboard.press('Shift+ArrowRight')
+  const generate = app
+    .getByRole('toolbar', { name: 'Move anything tools' })
+    .getByTestId('move-generate')
+  await expect(generate).toHaveText(/Move 1 object/)
+  await generate.click()
+  await expect(app.getByRole('link', { name: 'Download' })).toBeVisible()
+})
+
+test('moves a thing from the Move anything bottom sheet on phones @mobile', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/hub/apps/move-anything/')
+  const app = page.getByTestId('move-anything')
+  await app.getByRole('button', { name: 'Try the example' }).click()
+  const sheet = app.getByRole('complementary', {
+    name: 'Move anything settings'
+  })
+  await expect(sheet.getByRole('radio', { name: 'Fast · 20 s' })).toBeChecked()
+  const kitten = app.getByRole('button', { name: /^Orange kitten\./ })
+  await kitten.focus()
+  await page.keyboard.press('Shift+ArrowRight')
+  const generate = sheet.getByTestId('move-generate')
+  await expect(generate).toHaveText(/Move 1 object/)
+
+  await generate.click()
+  await expect(app.getByRole('link', { name: 'Download' })).toBeVisible()
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - window.innerWidth
+  )
+  expect(overflow).toBe(0)
 })
 
 test('closes Relight while its flag is off', async ({ page, context }) => {
