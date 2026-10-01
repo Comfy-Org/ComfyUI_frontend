@@ -226,10 +226,21 @@ execution bindings remain presentation preferences, not an execution allowlist.
 
 ## Data and regeneration
 
-`src/data/workshop-router-openapi.snapshot.json` contains all 207 complete
-documents at backend commit `411500bd8c93a97328cf1a927b40ad5b24c60026`.
-This includes Matt's merged cloud #8722; it is not proof of deployment.
+`src/data/workshop-router-openapi.snapshot.json` contains all 245
+documents under cloud `services/comfy-api/docs/router-schemas/` at commit
+`dc44ade9534d2fba8a61b5e769418c3febd97085`; it is not proof of deployment.
 Every referenced component and output content type is retained.
+
+Refresh from a cloud checkout. This rewrites the snapshot, contracts, index and
+aliases, and prints the added and removed IDs. The contracts and aliases steps
+stop until `workshop-router-availability.json` and
+`workshop-router-identity-audit.json` are rechecked against the new commit.
+
+```sh
+pnpm refresh:workshop-router-snapshot <cloud-checkout> [<cloud-sha>]
+```
+
+The individual steps:
 
 ```sh
 pnpm generate:workshop-router-snapshot <documents.json> <backend-commit>

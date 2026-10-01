@@ -2439,9 +2439,6 @@
       "quality": {
         "options": ["low", "medium", "high"]
       },
-      "style": {
-        "hidden": true
-      },
       "size": {
         "label": "Resolution",
         "help": "",
@@ -2457,9 +2454,6 @@
       "quality": {
         "options": ["low", "medium", "high"]
       },
-      "style": {
-        "hidden": true
-      },
       "size": {
         "label": "Resolution",
         "help": "",
@@ -2474,9 +2468,6 @@
     "openai/gpt-image-2": {
       "quality": {
         "options": ["low", "medium", "high"]
-      },
-      "style": {
-        "hidden": true
       },
       "size": {
         "label": "Image size",
@@ -2500,9 +2491,6 @@
       }
     },
     "openai/gpt-image-2.5-flare": {
-      "style": {
-        "hidden": true
-      },
       "size": {
         "label": "Image size",
         "help": "",
@@ -2525,9 +2513,6 @@
       }
     },
     "openai/gpt-image-2.5-sunburst": {
-      "style": {
-        "hidden": true
-      },
       "size": {
         "label": "Image size",
         "help": "",
