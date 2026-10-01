@@ -1694,6 +1694,27 @@ describe.for([{ unified: false }, { unified: true }])(
       }
     )
 
+    it('a team re-mint refused for a missing workspace drops it too', async () => {
+      const ingest = await boot()
+      vi.spyOn(window.location, 'reload').mockImplementation(() => {})
+      const workspaceAuth = useWorkspaceAuthStore()
+      await workspaceAuth.switchWorkspace('ws-team')
+      const requests = webSessionRequests()
+      assert.exists(requests)
+      const scope = await requests.scope()
+      assert.exists(scope)
+      ingest.mintRefusal = () =>
+        jsonResponse({ code: 'NOT_FOUND', message: 'not found' }, 404)
+
+      const result = await requests.remintWorkspaceToken({
+        ...scope,
+        workspaceId: 'ws-team'
+      })
+
+      expect(result).toMatchObject({ code: 'WORKSPACE_ACCESS_DENIED' })
+      expect(workspaceAuth.currentWorkspace?.id).toBeUndefined()
+    })
+
     const switchSessionTo = async (
       ingest: ReturnType<typeof installIngest>,
       userId: string

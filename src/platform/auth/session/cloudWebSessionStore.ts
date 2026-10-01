@@ -258,15 +258,10 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
       scope: requestScope,
       workspaceId: () => (currentSession() ? teamWorkspaceId() : undefined),
       send: (url, init, scope) => send(url, init, scope, authorize),
-      workspaceToken: async (scope) => {
-        const result = await mint.mint(scope.workspaceId)
-        dropRefusedWorkspace(scope, result)
-        return staleScopeFailure(scope) ?? result
-      },
-      remintWorkspaceToken: async (scope) => {
-        const result = await mint.remint(scope.workspaceId)
-        return staleScopeFailure(scope) ?? result
-      },
+      workspaceToken: async (scope) =>
+        settleScopedToken(scope, await mint.mint(scope.workspaceId)),
+      remintWorkspaceToken: async (scope) =>
+        settleScopedToken(scope, await mint.remint(scope.workspaceId)),
       authorizeResource: async ({ session }) => {
         try {
           const { headers } = await authorize(
@@ -337,6 +332,16 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     }
     if (identity?.getEpoch() === scope.epoch) return undefined
     return { status: 'error', code: 'IDENTITY_CHANGED', retryable: false }
+  }
+
+  function settleScopedToken(
+    scope: WebSessionRequestScope,
+    result: SessionTokenResult
+  ): SessionTokenResult {
+    const stale = staleScopeFailure(scope)
+    if (stale) return stale
+    dropRefusedWorkspace(scope, result)
+    return result
   }
 
   function dropRefusedWorkspace(
