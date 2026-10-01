@@ -44,7 +44,7 @@ const isHovered = useElementHover(stripRef)
         :class="copy === 2 && 'motion-reduce:hidden'"
         :style="{
           '--marquee-gap': '1.5rem',
-          animationDuration: '40s',
+          animationDuration: '27s',
           animationPlayState: isHovered ? 'running' : 'paused'
         }"
         :aria-hidden="copy === 2 ? 'true' : undefined"
