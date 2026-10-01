@@ -19,7 +19,10 @@ const ROUTER_SCHEMAS =
   'https://raw.githubusercontent.com/Comfy-Org/docs/main/router-schemas'
 const FETCH_ATTEMPTS = 3
 const FETCH_TIMEOUT_MS = 4_000
-const isCI = () => ['1', 'true'].includes(process.env.CI?.toLowerCase() ?? '')
+
+function isCI(value: string | undefined = process.env.CI): boolean {
+  return ['1', 'true'].includes(value?.toLowerCase() ?? '')
+}
 
 // The API spec and the docs are the source of truth and live outside this
 // repository, so the drift checks reach the network. They run in CI and skip
@@ -108,6 +111,17 @@ function parseCoverageTable(markdown: string): {
 }
 
 describe('Router provider source availability', () => {
+  it.each([
+    ['1', true],
+    ['true', true],
+    ['TRUE', true],
+    ['0', false],
+    ['false', false],
+    ['', false]
+  ])('classifies CI=%s as %s', (value, expected) => {
+    expect(isCI(value)).toBe(expected)
+  })
+
   it('fails when a required source is unavailable in CI', async () => {
     vi.stubEnv('CI', '1')
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')))
