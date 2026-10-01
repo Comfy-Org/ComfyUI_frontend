@@ -3,6 +3,7 @@ import { Check, Copy } from '@lucide/vue'
 import { useClipboard } from '@vueuse/core'
 import { computed } from 'vue'
 
+import BrandButton from '../../components/common/BrandButton.vue'
 import SectionHeader from '../../components/common/SectionHeader.vue'
 import { deployPromptFor } from '../../config/deploy-prompt'
 import type { Locale } from '../../i18n/translations'
@@ -39,9 +40,10 @@ const { copy, copied } = useClipboard({ source: deployPrompt, legacy: true })
         :label="t('platform.serverlessDeploy.heading', locale)"
         :typewriter="false"
       />
-      <button
-        type="button"
-        class="mt-4 flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-primary-comfy-ink hover:bg-transparency-white-t4 focus-visible:outline-2 focus-visible:outline-primary-comfy-yellow"
+      <BrandButton
+        variant="outline-dark"
+        size="xs"
+        class="mt-4"
         @click="copy()"
       >
         <component
@@ -57,7 +59,7 @@ const { copy, copied } = useClipboard({ source: deployPrompt, legacy: true })
             locale
           )
         }}
-      </button>
+      </BrandButton>
     </div>
   </section>
 </template>
