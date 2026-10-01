@@ -29,7 +29,10 @@ export function getSelectedModelsMetadata(
   node: NodeModelMetadata
 ): ModelFile[] | undefined {
   const models = node.properties?.models
-  if (!models?.length || !node.widgets_values) return
+  // Workflow JSON is user supplied, so a truthy length is not an array: the
+  // move here dropped the try/catch the old location had, and a string value
+  // reaches .filter below and throws.
+  if (!Array.isArray(models) || !models.length || !node.widgets_values) return
 
   const widgetValues = Array.isArray(node.widgets_values)
     ? node.widgets_values

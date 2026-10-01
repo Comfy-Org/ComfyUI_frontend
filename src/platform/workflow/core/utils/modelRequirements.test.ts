@@ -105,6 +105,19 @@ describe('modelRequirements', () => {
       expect(result![0].name).toBe('model_a.safetensors')
     })
 
+    it('returns nothing when properties.models is not an array', () => {
+      // Workflow JSON is user supplied. A string has a truthy length, so it
+      // passes a length-only guard and reaches .filter, which throws.
+      const node = {
+        type: 'SomeNode',
+        widgets_values: ['model_a.safetensors'],
+        properties: { models: 'model_a.safetensors' as never }
+      }
+
+      expect(() => getSelectedModelsMetadata(node)).not.toThrow()
+      expect(getSelectedModelsMetadata(node)).toBeUndefined()
+    })
+
     it('should ignore empty strings', () => {
       const node = {
         type: 'SomeNode',
