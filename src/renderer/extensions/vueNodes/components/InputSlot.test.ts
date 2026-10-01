@@ -127,6 +127,24 @@ describe('InputSlot', () => {
     expect(screen.queryByLabelText('Localized Seed')).not.toBeInTheDocument()
   })
 
+  it.for([
+    { name: 'raw_seed', dotOnly: false, rowHeight: true },
+    { name: '', dotOnly: false, rowHeight: true },
+    { name: 'raw_seed', dotOnly: true, rowHeight: false }
+  ])(
+    'keeps the slot row height unless the dot sits beside a widget (name "$name", dotOnly $dotOnly)',
+    ({ name, dotOnly, rowHeight }) => {
+      const tooltipDirective = renderInputSlot(
+        { name, type: 'INT' } as INodeSlot,
+        nodeDef.name,
+        dotOnly
+      )
+      const slot = tooltipDirective.mounted.mock.calls[0][0]
+
+      expect(slot.classList.contains('h-5')).toBe(rowHeight)
+    }
+  )
+
   it('resolves metadata tooltips by raw input name', () => {
     const tooltipDirective = renderInputSlot({
       name: 'raw_seed',
