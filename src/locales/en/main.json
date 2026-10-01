@@ -3268,10 +3268,6 @@
       }
     },
     "billingStatus": {
-      "warning": {
-        "title": "Payment failed",
-        "bodyNoDate": "Your payment failed to process. Update payment to avoid a pause."
-      },
       "paused": {
         "title": "Subscription paused",
         "body": "This workspace's subscription is paused. Update payment to resume.",
