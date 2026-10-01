@@ -42,7 +42,48 @@ const stills = [
   media.horizon.src
 ]
 
-const designStyles = [
+interface LocalStill {
+  slug: string
+  en: string
+  'zh-CN': string
+}
+
+const localCards = (theme: string, stills: readonly LocalStill[]) =>
+  stills.map(({ slug, ...alt }) => ({
+    id: `${theme}-${slug}`,
+    alt,
+    src: `/images/nano-banana/${theme}-${slug}.webp`
+  }))
+
+const photographyCards = localCards('photography', [
+  {
+    slug: 'fruit-still-life',
+    en: 'Still life of grapes, pears, and lemons in a stoneware bowl',
+    'zh-CN': '陶碗中葡萄、梨与柠檬的静物'
+  },
+  {
+    slug: 'dark-kitchen',
+    en: 'Empty commercial kitchen at night',
+    'zh-CN': '夜晚空无一人的商用厨房'
+  },
+  {
+    slug: 'alpine-lake',
+    en: 'Alpine lake reflecting snow-capped peaks at dawn',
+    'zh-CN': '黎明时分倒映雪山的高山湖泊'
+  },
+  {
+    slug: 'glass-of-water',
+    en: 'Glass of water on a folded newspaper',
+    'zh-CN': '折叠报纸上的一杯水'
+  },
+  {
+    slug: 'street-market',
+    en: 'Shoppers at a busy street market',
+    'zh-CN': '热闹街市中的顾客'
+  }
+])
+
+const designCards = localCards('design', [
   {
     slug: 'ink-wash',
     en: 'Fox and lantern as an ink wash painting',
@@ -68,13 +109,7 @@ const designStyles = [
     en: 'Fox and lantern as a stained glass window',
     'zh-CN': '彩绘玻璃窗风格的狐狸与灯笼'
   }
-] as const
-
-const designCards = designStyles.map(({ slug, ...alt }) => ({
-  id: `design-${slug}`,
-  alt,
-  src: `/images/nano-banana/design-${slug}.webp`
-}))
+])
 
 export const nanoBananaPage: ModelLaunchPage = {
   metaTitleKey: 'nanoBanana.meta.title',
@@ -105,7 +140,7 @@ export const nanoBananaPage: ModelLaunchPage = {
     {
       headingKey: 'nanoBanana.showcase.photography.heading',
       descriptionKey: 'nanoBanana.showcase.photography.description',
-      cards: showcaseCards('photography', stills)
+      cards: photographyCards
     },
     {
       headingKey: 'nanoBanana.showcase.design.heading',
