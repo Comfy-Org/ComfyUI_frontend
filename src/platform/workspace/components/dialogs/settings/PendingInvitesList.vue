@@ -1,13 +1,12 @@
 <template>
   <div>
     <div
-      v-for="(invite, index) in invites"
+      v-for="invite in invites"
       :key="invite.id"
       :class="
         cn(
-          'grid w-full items-center rounded-lg p-2',
-          gridCols,
-          index % 2 === 1 && 'bg-secondary-background/50'
+          'grid w-full items-center border-b border-interface-stroke/30 p-2 last:border-0',
+          gridCols
         )
       "
     >
@@ -19,7 +18,7 @@
         <div
           class="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary-background"
         >
-          <span class="text-sm font-bold text-base-foreground">
+          <span class="text-sm text-muted-foreground">
             {{ getInviteInitial(invite.email) }}
           </span>
         </div>
@@ -54,7 +53,11 @@
         }}
       </span>
       <div class="flex items-center justify-end">
-        <MoreButton v-slot="{ close }" :aria-label="$t('g.moreOptions')">
+        <MoreButton
+          v-slot="{ close }"
+          variant="muted-textonly"
+          :aria-label="$t('g.moreOptions')"
+        >
           <Button
             v-if="invite.token"
             variant="textonly"
@@ -106,10 +109,16 @@
       </div>
     </div>
     <div
-      v-if="invites.length === 0"
+      v-if="loaded && invites.length === 0"
       class="flex w-full items-center justify-center py-8 text-sm text-muted-foreground"
     >
-      {{ $t('workspacePanel.members.noInvites') }}
+      {{
+        searchQuery.trim()
+          ? $t('workspacePanel.members.noInvitesMatch', {
+              query: searchQuery.trim()
+            })
+          : $t('workspacePanel.members.noInvites')
+      }}
     </div>
   </div>
 </template>
@@ -118,6 +127,7 @@
 import { useI18n } from 'vue-i18n'
 
 import MoreButton from '@/components/button/MoreButton.vue'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import Button from '@/components/ui/button/Button.vue'
 import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
@@ -128,9 +138,13 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 const menuItemClass = 'w-full justify-start rounded-sm px-3 py-2'
 
-defineProps<{
+const toastStore = useToastStore()
+
+const { searchQuery = '', loaded = false } = defineProps<{
   invites: WorkspacePendingInvite[]
   gridCols: string
+  searchQuery?: string
+  loaded?: boolean
 }>()
 
 defineEmits<{
@@ -138,7 +152,7 @@ defineEmits<{
   revoke: [invite: WorkspacePendingInvite]
 }>()
 
-const { d } = useI18n()
+const { d, t } = useI18n()
 
 function getInviteDisplayName(email: string): string {
   return email.split('@')[0]
@@ -160,6 +174,17 @@ function isExpired(invite: WorkspacePendingInvite): boolean {
 
 async function copyInviteLink(invite: WorkspacePendingInvite) {
   if (!invite.token) return
-  await copyTextSilently(buildInviteLink(invite.token))
+  if (await copyTextSilently(buildInviteLink(invite.token))) {
+    toastStore.add({
+      severity: 'success',
+      summary: t('workspacePanel.inviteLinks.copiedToast'),
+      life: 3000
+    })
+  } else {
+    toastStore.add({
+      severity: 'error',
+      summary: t('workspacePanel.inviteLinks.copyFailedToast')
+    })
+  }
 }
 </script>

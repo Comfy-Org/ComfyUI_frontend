@@ -53,6 +53,39 @@ describe('FormItem', () => {
     expect(screen.getByRole('radio', { name: 'Disabled' })).toBeInTheDocument()
   })
 
+  it.for(['combo', 'radio'] as const)(
+    'renders %s options derived from the current value',
+    async (type) => {
+      const { rerender } = render(FormItem, {
+        props: {
+          formValue: 'enabled',
+          id: 'mode',
+          item: {
+            name: 'Mode',
+            type,
+            options: (value: unknown) => [
+              { text: `${value} option`, value: String(value) }
+            ]
+          }
+        },
+        global: {
+          plugins: [
+            createI18n({
+              legacy: false,
+              locale: 'en',
+              messages: { en: enMessages }
+            })
+          ],
+          directives: { tooltip: {} }
+        }
+      })
+
+      expect(await screen.findByText('enabled option')).toBeInTheDocument()
+      await rerender({ formValue: 'disabled' })
+      expect(await screen.findByText('disabled option')).toBeInTheDocument()
+    }
+  )
+
   it.for([
     {
       type: 'slider',

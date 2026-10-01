@@ -22,13 +22,12 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { useDialogService } from '@/services/dialogService'
 
 type ActiveView = 'active' | 'pending'
-type SortField = 'inviteDate' | 'expiryDate' | 'role'
+type SortField = 'inviteDate' | 'expiryDate'
 type SortDirection = 'asc' | 'desc'
 
 export function sortMembers(
   members: WorkspaceMember[],
   currentUserEmail: string | null,
-  sortDirection: SortDirection,
   originalOwnerId: string | null = null
 ): WorkspaceMember[] {
   return [...members].sort((a, b) => {
@@ -37,19 +36,14 @@ export function sortMembers(
     if (aIsOriginalOwner && !bIsOriginalOwner) return -1
     if (!aIsOriginalOwner && bIsOriginalOwner) return 1
 
-    if (a.role !== b.role) {
-      const ownerFirst = a.role === 'owner' ? -1 : 1
-      return sortDirection === 'desc' ? ownerFirst : -ownerFirst
-    }
+    if (a.role !== b.role) return a.role === 'owner' ? -1 : 1
 
     const aIsCurrent = a.email.toLowerCase() === currentUserEmail?.toLowerCase()
     const bIsCurrent = b.email.toLowerCase() === currentUserEmail?.toLowerCase()
     if (aIsCurrent && !bIsCurrent) return -1
     if (!aIsCurrent && bIsCurrent) return 1
 
-    const aValue = a.joinDate.getTime()
-    const bValue = b.joinDate.getTime()
-    return sortDirection === 'asc' ? aValue - bValue : bValue - aValue
+    return b.joinDate.getTime() - a.joinDate.getTime()
   })
 }
 
@@ -66,23 +60,14 @@ export function filterBySearch<T extends { email: string; name?: string }>(
   )
 }
 
-type InviteSortField = 'inviteDate' | 'expiryDate'
-
-// Pending invites carry no role, so the members' 'role' sort has no equivalent
-// here and falls back to the invite date.
-function toInviteSortField(sortField: SortField): InviteSortField {
-  return sortField === 'expiryDate' ? 'expiryDate' : 'inviteDate'
-}
-
 export function sortPendingInvites(
   invites: WorkspacePendingInvite[],
   sortField: SortField,
   sortDirection: SortDirection
 ): WorkspacePendingInvite[] {
-  const field = toInviteSortField(sortField)
   return [...invites].sort((a, b) => {
-    const aDate = getInviteDate(a, field)
-    const bDate = getInviteDate(b, field)
+    const aDate = getInviteDate(a, sortField)
+    const bDate = getInviteDate(b, sortField)
     if (!aDate || !bDate) return 0
     const aValue = aDate.getTime()
     const bValue = bDate.getTime()
@@ -92,7 +77,7 @@ export function sortPendingInvites(
 
 function getInviteDate(
   invite: WorkspacePendingInvite,
-  field: InviteSortField
+  field: SortField
 ): Date | undefined {
   return invite[field]
 }
@@ -115,9 +100,14 @@ export function useMembersPanel() {
     activeWorkspace,
     isInPersonalWorkspace,
     members,
+    membersLoaded,
     pendingInvites,
+    pendingInvitesLoaded,
     originalOwnerId
   } = storeToRefs(workspaceStore)
+  const totalMembers = computed(
+    () => activeWorkspace.value?.totalMembers ?? members.value.length
+  )
   const { resendInvite } = workspaceStore
   const {
     permissions: workspacePermissions,
@@ -392,12 +382,7 @@ export function useMembersPanel() {
 
   const filteredMembers = computed(() => {
     const searched = filterBySearch(members.value, searchQuery.value)
-    return sortMembers(
-      searched,
-      userEmail.value ?? null,
-      sortDirection.value,
-      originalOwnerId.value
-    )
+    return sortMembers(searched, userEmail.value ?? null, originalOwnerId.value)
   })
 
   // Built once per member list rather than per row on every render, so an
@@ -492,7 +477,10 @@ export function useMembersPanel() {
     memberMenuItems,
     memberMenus,
     members,
+    membersLoaded,
+    totalMembers,
     pendingInvites,
+    pendingInvitesLoaded,
     permissions,
     uiConfig,
     userPhotoUrl,

@@ -108,31 +108,36 @@ export const zComboInputOptions = zBaseInputOptions.extend({
   multi_select: zMultiSelectOption.optional()
 })
 
-const zIntInputSpec = z.tuple([z.literal('INT'), zIntInputOptions.optional()])
-const zFloatInputSpec = z.tuple([
-  z.literal('FLOAT'),
-  zFloatInputOptions.optional()
-])
-const zBooleanInputSpec = z.tuple([
+/** The backend serialises `("IMAGE",)` as `["IMAGE"]`, so options may be absent. */
+function zInputSpecTuple<T extends z.ZodTypeAny, O extends z.ZodTypeAny>(
+  type: T,
+  options: O
+) {
+  return z.union([z.tuple([type]), z.tuple([type, options.optional()])])
+}
+
+const zIntInputSpec = zInputSpecTuple(z.literal('INT'), zIntInputOptions)
+const zFloatInputSpec = zInputSpecTuple(z.literal('FLOAT'), zFloatInputOptions)
+const zBooleanInputSpec = zInputSpecTuple(
   z.literal('BOOLEAN'),
-  zBooleanInputOptions.optional()
-])
-const zStringInputSpec = z.tuple([
+  zBooleanInputOptions
+)
+const zStringInputSpec = zInputSpecTuple(
   z.literal('STRING'),
-  zStringInputOptions.optional()
-])
+  zStringInputOptions
+)
 /**
  * Legacy combo syntax.
  * @deprecated Use `zComboInputSpecV2` instead.
  */
-const zComboInputSpec = z.tuple([
+const zComboInputSpec = zInputSpecTuple(
   z.array(zComboOption),
-  zComboInputOptions.optional()
-])
-const zComboInputSpecV2 = z.tuple([
+  zComboInputOptions
+)
+const zComboInputSpecV2 = zInputSpecTuple(
   z.literal('COMBO'),
-  zComboInputOptions.optional()
-])
+  zComboInputOptions
+)
 
 export function isComboInputSpecV1(
   inputSpec: InputSpec
@@ -203,10 +208,10 @@ export function getComboSpecComboOptions(
 }
 
 const excludedLiterals = new Set(['INT', 'FLOAT', 'BOOLEAN', 'STRING', 'COMBO'])
-const zCustomInputSpec = z.tuple([
+const zCustomInputSpec = zInputSpecTuple(
   z.string().refine((value) => !excludedLiterals.has(value)),
-  zBaseInputOptions.optional()
-])
+  zBaseInputOptions
+)
 
 const zInputSpec = z.union([
   zIntInputSpec,
