@@ -124,6 +124,7 @@ const cents = z.number().int().safe()
 
 const PlanInfoSchema = zPreviewPlanInfo.extend({
   credits_cents: cents,
+  list_price_cents: cents.optional(),
   price_cents: cents,
   seat_summary: zPreviewPlanInfo.shape.seat_summary.extend({
     total_cost_cents: cents,
@@ -133,15 +134,24 @@ const PlanInfoSchema = zPreviewPlanInfo.extend({
 
 const PreviewSchema = zPreviewSubscribeResponse.extend({
   amount_due_cents: cents.optional(),
+  balance_applied_cents: cents.optional(),
   cost_next_period_cents: cents,
   cost_today_cents: cents,
   credits_next_period_cents: cents,
   credits_today_cents: cents,
+  proration_remaining_cents: cents.optional(),
+  proration_unused_cents: cents.optional(),
   renewal_amount_cents: cents.optional(),
+  subtotal_cents: cents.optional(),
   current_plan: PlanInfoSchema.optional(),
   new_plan: PlanInfoSchema,
   discounts: z
-    .array(zSubscriptionDiscount.extend({ amount_off_cents: cents.optional() }))
+    .array(
+      zSubscriptionDiscount.extend({
+        amount_off_cents: cents.optional(),
+        duration_in_months: z.number().int().safe().optional()
+      })
+    )
     .optional()
 })
 

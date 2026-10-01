@@ -780,15 +780,20 @@ describe('createBillingCommands', () => {
 
     const QUOTE_CENT_FIELDS = [
       'amount_due_cents',
+      'balance_applied_cents',
       'cost_next_period_cents',
       'cost_today_cents',
       'credits_next_period_cents',
       'credits_today_cents',
-      'renewal_amount_cents'
+      'proration_remaining_cents',
+      'proration_unused_cents',
+      'renewal_amount_cents',
+      'subtotal_cents'
     ] as const satisfies readonly (keyof SubscriptionPreview)[]
 
     const PLAN_CENT_FIELDS = [
       'credits_cents',
+      'list_price_cents',
       'price_cents'
     ] as const satisfies readonly (keyof SubscriptionPreview['new_plan'])[]
 
