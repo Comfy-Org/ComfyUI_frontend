@@ -25,6 +25,7 @@ function useWorkspaceTierLabel(): ReturnType<typeof createWorkspaceTierLabel> {
         en: {
           subscription: {
             tierNameYearly: '{name} Yearly',
+            teamPlanName: 'Team',
             tiers: {
               free: { name: 'Free' },
               standard: { name: 'Standard' },
@@ -83,6 +84,15 @@ describe('useWorkspaceTierLabel', () => {
 
     it('falls back to standard for unknown tier', () => {
       expect(formatTierName('UNKNOWN_TIER', false)).toBe('')
+    })
+
+    it('maps ENTERPRISE to enterprise label', () => {
+      expect(formatTierName('ENTERPRISE', false)).toBe('Enterprise')
+    })
+
+    it('reuses the team-plan copy for TEAM, ignoring the yearly suffix', () => {
+      expect(formatTierName('TEAM', false)).toBe('Team')
+      expect(formatTierName('TEAM', true)).toBe('Team')
     })
   })
 

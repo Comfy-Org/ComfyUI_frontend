@@ -4,21 +4,14 @@ import {
 } from '@/lib/litegraph/src/constants'
 import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
 
-/**
- * Workflow where lastNodeId is near the MAX_NODE_ID ceiling (100_000_000)
- * and root node 100_000_000 reserves the only remaining candidate ID.
- *
- * Both subgraph definitions share node IDs [3, 8, 37]. When SubgraphB's
- * duplicates need remapping, candidate 100_000_000 is already reserved,
- * so the next candidate (100_000_001) exceeds MAX_NODE_ID and must throw.
- */
-export const nodeIdSpaceExhausted = {
-  id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+// Synthetic reproducer around two observed high-range ID values.
+export const nodeIdsFromReservedMintRange = {
+  id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
   version: 1,
   revision: 0,
   state: {
-    lastNodeId: 99_999_999,
-    lastLinkId: 10,
+    lastNodeId: 4_462_758_126_524_329,
+    lastLinkId: 0,
     lastGroupId: 0,
     lastRerouteId: 0
   },
@@ -44,12 +37,22 @@ export const nodeIdSpaceExhausted = {
       properties: { proxyWidgets: [['8', 'prompt']] }
     },
     {
-      id: 100_000_000,
+      id: 4_462_758_126_524_329,
       type: 'dummy',
       pos: [600, 0],
       size: [100, 50],
       flags: {},
       order: 2,
+      mode: 0
+    },
+    // Reserve the successor so remapping exercises collision recovery.
+    {
+      id: 4_462_758_126_524_330,
+      type: 'dummy',
+      pos: [900, 0],
+      size: [100, 50],
+      flags: {},
+      order: 3,
       mode: 0
     }
   ],
@@ -103,7 +106,7 @@ export const nodeIdSpaceExhausted = {
         ],
         links: [
           {
-            id: 1,
+            id: 7_729_209_487_955_825,
             origin_id: 3,
             origin_slot: 0,
             target_id: 8,
@@ -161,7 +164,7 @@ export const nodeIdSpaceExhausted = {
         ],
         links: [
           {
-            id: 2,
+            id: 7_729_209_487_955_825,
             origin_id: 3,
             origin_slot: 0,
             target_id: 37,

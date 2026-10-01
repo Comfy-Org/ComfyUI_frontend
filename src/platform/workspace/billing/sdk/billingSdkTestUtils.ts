@@ -140,6 +140,7 @@ export function fakeBillingSdk() {
     paymentMethods: fakeReader(),
     events: fakeReader(),
     topup: {
+      quoteTopup: vi.fn(),
       createTopupCheckout: vi.fn(),
       createHostedTopupCheckout: vi.fn()
     },

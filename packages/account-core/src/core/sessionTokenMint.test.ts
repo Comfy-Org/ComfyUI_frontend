@@ -257,6 +257,45 @@ describe('createSessionTokenMint', () => {
     expect([fresh, afterward]).toEqual(['jwt-3', 'jwt-3'])
   })
 
+  it.for<{
+    name: string
+    after: WebSession | undefined
+    expected: Partial<SessionTokenResult>
+  }>([
+    {
+      name: 'the session ended',
+      after: undefined,
+      expected: { status: 'error', code: 'NO_SESSION' }
+    },
+    {
+      name: 'another user took the session',
+      after: sessionFor('user-2'),
+      expected: { status: 'error', code: 'IDENTITY_CHANGED' }
+    },
+    {
+      name: 'the same user re-read the session',
+      after: sessionFor('user-1', 'csrf-2'),
+      expected: { status: 'ok' }
+    }
+  ])('answers a mint that lands after $name', async ({ after, expected }) => {
+    let release = () => {}
+    const held = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const { mint, state } = setup({
+      respond: async () => {
+        await held
+        return json(200, tokenBody('jwt-1', clock.now + 15 * MINUTE))
+      }
+    })
+
+    const pending = mint.mint()
+    state.session = after
+    release()
+
+    expect(await pending).toMatchObject(expected)
+  })
+
   it('answers NO_SESSION without a request when signed out', async () => {
     const { mint, sent, state } = setup()
     state.session = undefined

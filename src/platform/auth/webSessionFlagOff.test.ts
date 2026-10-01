@@ -656,3 +656,53 @@ describe('an interactive sign-in with unified_web_session off', () => {
     ).toEqual([])
   })
 })
+
+describe('Firebase-only account actions with unified_web_session off', () => {
+  beforeEach(() => {
+    identity.reset()
+  })
+
+  afterEach(() => {
+    remoteConfig.value = {}
+  })
+
+  const EMAIL_USER = fromPartial<User>({
+    uid: 'user-a',
+    providerData: [{ providerId: 'password' }]
+  })
+
+  it.for([
+    {
+      name: 'an email login, unified_cloud_auth off',
+      features: { unified_cloud_auth: false },
+      user: EMAIL_USER,
+      isEmailProvider: true
+    },
+    {
+      name: 'an email login, unified_cloud_auth on',
+      features: { unified_cloud_auth: true },
+      user: EMAIL_USER,
+      isEmailProvider: true
+    },
+    {
+      name: 'no login',
+      features: { unified_cloud_auth: false },
+      user: null,
+      isEmailProvider: false
+    }
+  ])(
+    'never asks $name to sign in again',
+    async ({ features, user, isEmailProvider }) => {
+      installFetchRecorder(features)
+      await refreshRemoteConfig({ useAuth: false })
+      useAuthStore()
+      identity.resolve(user)
+      await bootCloudIdentity()
+
+      const currentUser = useCurrentUser()
+
+      expect(currentUser.isEmailProvider.value).toBe(isEmailProvider)
+      expect(currentUser.needsFirebaseSignIn.value).toBe(false)
+    }
+  )
+})
