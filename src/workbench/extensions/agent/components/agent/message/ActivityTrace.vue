@@ -40,9 +40,9 @@ function labelOf(row: Extract<ActivityRow, { kind: 'tool' }>): string {
     const label =
       row.state === 'streaming'
         ? 'agent.toolLoadingSkill'
-        : row.ok === false
-          ? 'agent.toolFailedSkill'
-          : 'agent.toolLoadedSkill'
+        : row.ok
+          ? 'agent.toolLoadedSkill'
+          : 'agent.toolFailedSkill'
     return t(label, { skill: row.skill })
   }
   return toolLabel(row.name, row.state, t)
