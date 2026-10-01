@@ -1,5 +1,5 @@
 import { zGlobalSettingValue } from '@comfyorg/ingest-types/zod'
-import type { Page, Route } from '@playwright/test'
+import type { Page, Route, WebSocketRoute } from '@playwright/test'
 
 import type {
   AgentThreadListResponse,
@@ -37,6 +37,10 @@ const TURN_ACCEPTED: AgentTurnAccepted = {
 }
 
 const CANCEL_ACCEPTED: AgentCancelAccepted = { status: 'cancelling' }
+
+export function pushAgentEvent(ws: WebSocketRoute, event: AgentWsEvent): void {
+  ws.send(JSON.stringify(event))
+}
 
 const FUNDED_BILLING_STATUS = {
   billing_rail: 'stripe',

@@ -478,7 +478,7 @@ export class PrimitiveNode extends LGraphNode {
 }
 
 export function getWidgetConfig(
-  slot: INodeInputSlot | INodeOutputSlot
+  slot: Pick<INodeInputSlot | INodeOutputSlot, 'widget'>
 ): InputSpec {
   return slot.widget?.[CONFIG] ?? slot.widget?.[GET_CONFIG]?.() ?? ['*', {}]
 }
@@ -541,7 +541,7 @@ export function setWidgetConfig(slot: INodeInputSlot, config?: InputSpec) {
 }
 
 export function mergeIfValid(
-  output: INodeOutputSlot | INodeInputSlot,
+  output: Pick<INodeOutputSlot | INodeInputSlot, 'widget'>,
   config2: InputSpec,
   forceUpdate?: boolean,
   recreateWidget?: () => IBaseWidget | undefined | void,
@@ -555,8 +555,7 @@ export function mergeIfValid(
 
   if (customSpec || forceUpdate) {
     if (customSpec) {
-      // @ts-expect-error fixme ts strict error
-      output.widget[CONFIG] = customSpec
+      if (output.widget) output.widget[CONFIG] = customSpec
     }
 
     const widget = recreateWidget?.()
@@ -580,7 +579,6 @@ app.registerExtension({
     nodeType: typeof LGraphNode,
     _nodeData: ComfyNodeDef
   ) {
-    // @ts-expect-error adding extra property
     nodeType.prototype.convertWidgetToInput = function (this: LGraphNode) {
       console.warn(
         'Please remove call to convertWidgetToInput. Widget to socket conversion is no longer necessary, as they co-exist now.'
