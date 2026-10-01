@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { readExperimentVariant } from '@/platform/experiments/postHogExperimentClient'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -9,10 +9,6 @@ vi.mock(import('@/platform/experiments/postHogExperimentClient'))
 vi.mock(import('@/platform/telemetry/reportError'))
 
 describe('useFreeUsePlacement', () => {
-  beforeEach(() => {
-    vi.mocked(readExperimentVariant).mockResolvedValue('control')
-  })
-
   it('uses a known assignment after the read settles', async () => {
     const read = Promise.resolve('above-input')
     vi.mocked(readExperimentVariant).mockReturnValue(read)
