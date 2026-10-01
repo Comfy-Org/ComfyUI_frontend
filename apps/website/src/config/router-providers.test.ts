@@ -17,12 +17,14 @@ const MODELS_PAGE = `${ROUTER_DOCS}/models.md`
 // The per-model API spec, as the backend publishes it for the docs site.
 const ROUTER_SCHEMAS =
   'https://raw.githubusercontent.com/Comfy-Org/docs/main/router-schemas'
+const isCI = () =>
+  ['1', 'true'].includes(process.env.CI?.toLowerCase() ?? '')
 
 // The API spec and the docs are the source of truth and live outside this
 // repository, so the drift checks reach the network. They run in CI and skip
 // elsewhere. CI treats an unavailable source as a failure so missing coverage
 // cannot produce a green build.
-const skipReason = process.env.CI
+const skipReason = isCI()
   ? null
   : 'checks the published API spec; runs in CI only (set CI=1 to run it here)'
 
@@ -31,7 +33,7 @@ async function fetchDocs(url: string): Promise<string | null> {
   try {
     response = await fetch(url, { signal: AbortSignal.timeout(15_000) })
   } catch (error) {
-    if (process.env.CI)
+    if (isCI())
       throw new Error(`Could not fetch ${url}`, { cause: error })
     return null
   }
