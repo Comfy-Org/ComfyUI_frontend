@@ -7889,26 +7889,24 @@ Enterprise`
     'zh-CN': '如实拍摄。'
   },
   'nanoBanana.showcase.photography.description': {
-    en: 'Realistic photography, right down to the hands, glass, and reflections. Lock the seed when a frame works.',
-    'zh-CN': '逼真的摄影效果，细致到手部、玻璃与反光。画面满意时，锁定种子。'
+    en: "Realistic light and detail for the scenes you've only pictured.",
+    'zh-CN': '为你脑海中的场景，呈现真实的光影与细节。'
   },
   'nanoBanana.showcase.design.heading': {
     en: 'One idea, every style.',
     'zh-CN': '一个创意，所有风格。'
   },
   'nanoBanana.showcase.design.description': {
-    en: 'Design one subject as a photo, an icon, a pattern, and a screen. One workflow, the whole brand kit.',
-    'zh-CN':
-      '将同一主体设计为照片、图标、图案与界面。一个工作流，完整的品牌套件。'
+    en: 'Iterate your designs in any style, from line art to watercolor.',
+    'zh-CN': '以任意风格迭代你的设计，从线稿到水彩。'
   },
   'nanoBanana.showcase.advertising.heading': {
     en: 'One product, every set.',
     'zh-CN': '一件产品，所有场景。'
   },
   'nanoBanana.showcase.advertising.description': {
-    en: 'Advertising that keeps the SKU exactly as shot. Mask the product, repaint the scene, and queue every placement.',
-    'zh-CN':
-      '广告图中的 SKU 与拍摄时完全一致。蒙版保护产品，重绘场景，并批量排队所有版位。'
+    en: 'Advertising for any industry, with crisp detail and type that reads.',
+    'zh-CN': '适用于任何行业的广告，细节清晰，文字可读。'
   },
   'nanoBanana.pricing.banner.title': {
     en: "Start Comfy Cloud for free. Upgrade when you're ready.",
