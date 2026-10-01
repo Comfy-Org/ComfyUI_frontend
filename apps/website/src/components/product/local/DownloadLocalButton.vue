@@ -26,8 +26,6 @@ const {
 
 const { installer, showFallback } = useDownloadUrl()
 
-const label = computed(() => t('download.hero.downloadLocal', locale))
-
 const buttons = computed(() => {
   if (installer.value) return [installer.value]
   if (showFallback.value) {
@@ -58,11 +56,6 @@ function hasInstallerMenu(index: number) {
           hasInstallerMenu(index) && 'rounded-r-none lg:min-w-0'
         )
       "
-      :aria-label="
-        showFallback
-          ? `${label} — ${btn.platform === 'mac' ? 'macOS' : 'Windows'}`
-          : undefined
-      "
       :data-astro-prefetch="btn.platform === 'windows' ? 'false' : undefined"
       @click="captureDownloadClick(btn.platform)"
     >
@@ -72,7 +65,14 @@ function hasInstallerMenu(index: number) {
           alt=""
           class="inline-block size-5 shrink-0"
         />
-        <span class="inline-block">{{ label }}</span>
+        <span class="text-left">
+          {{ t('download.hero.downloadLocal', locale) }}
+          <span
+            class="block text-xs font-normal tracking-normal whitespace-normal"
+          >
+            {{ t(btn.label, locale) }}
+          </span>
+        </span>
       </span>
     </BrandButton>
     <InstallerMenu v-if="hasInstallerMenu(index)" :locale />

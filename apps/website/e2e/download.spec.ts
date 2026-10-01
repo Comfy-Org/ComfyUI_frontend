@@ -1,4 +1,4 @@
-import type { BrowserContext, Page } from '@playwright/test'
+import type { BrowserContext, Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
@@ -78,6 +78,23 @@ function heroLocator(page: Page) {
   })
 }
 
+async function expectAlignedButtons(buttons: Locator) {
+  await expect
+    .poll(() =>
+      buttons.evaluateAll((elements) => {
+        const boxes = elements.map((element) => element.getBoundingClientRect())
+        if (boxes.length < 2) return Number.POSITIVE_INFINITY
+        const heights = boxes.map(({ height }) => height)
+        const bottoms = boxes.map(({ bottom }) => bottom)
+        return Math.max(
+          Math.max(...heights) - Math.min(...heights),
+          Math.max(...bottoms) - Math.min(...bottoms)
+        )
+      })
+    )
+    .toBeLessThan(0.5)
+}
+
 test.describe('Download page @smoke', () => {
   test('has correct title', async ({ page }) => {
     await page.goto('/download')
@@ -128,6 +145,8 @@ test.describe('Download page @smoke', () => {
         'href',
         'https://github.com/Comfy-Org/ComfyUI#installing'
       )
+
+      await expectAlignedButtons(downloadBtn.or(githubBtn))
 
       await expect(hero.getByRole('textbox')).toHaveCount(0)
 
@@ -211,6 +230,27 @@ test.describe('Download page @smoke', () => {
   test.describe('unrecognized desktop', () => {
     test.use({ userAgent: FREEBSD_UA })
 
+    for (const width of [1024, 1280]) {
+      test(`HeroSection aligns fallback buttons at ${width}px`, async ({
+        page
+      }) => {
+        await page.setViewportSize({ width, height: 900 })
+        await page.goto('/download')
+
+        const hero = heroLocator(page)
+        const downloadButtons = hero.getByRole('link', {
+          name: /DOWNLOAD DESKTOP/i
+        })
+        const githubButton = hero.getByRole('link', {
+          name: /INSTALL FROM GITHUB/i
+        })
+        await waitForIsland(page, githubButton)
+        await expect(downloadButtons).toHaveCount(2)
+        await expect(githubButton).toBeVisible()
+        await expectAlignedButtons(downloadButtons.or(githubButton))
+      })
+    }
+
     test('HeroSection falls back to both Windows + Mac when UA is unrecognized', async ({
       page
     }) => {
@@ -219,7 +259,7 @@ test.describe('Download page @smoke', () => {
       const hero = heroLocator(page)
 
       const windowsBtn = hero.getByRole('link', {
-        name: /DOWNLOAD DESKTOP — Windows/i
+        name: 'DOWNLOAD DESKTOP Windows x64'
       })
       await expect(windowsBtn).toBeVisible()
       await expect(windowsBtn).toHaveAttribute(
@@ -228,7 +268,7 @@ test.describe('Download page @smoke', () => {
       )
 
       const macBtn = hero.getByRole('link', {
-        name: /DOWNLOAD DESKTOP — macOS/i
+        name: 'DOWNLOAD DESKTOP macOS (Apple Silicon)'
       })
       await expect(macBtn).toBeVisible()
       await expect(macBtn).toHaveAttribute(
