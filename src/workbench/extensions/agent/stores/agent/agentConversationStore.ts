@@ -42,8 +42,7 @@ interface BackgroundTurn {
 
 /**
  * PM-1658: how long an accepted answer waits for its `agent_ask_resolved`
- * frame before the card is retired anyway. Generous, because the frame is the
- * normal release and arrives in milliseconds; it exists only so a lost frame
+ * frame before the card is retired anyway. It exists only so a lost frame
  * cannot leave the card disabled for the rest of the session.
  */
 const ASK_RESOLUTION_GRACE_MS = 15_000
@@ -362,10 +361,11 @@ export const useAgentConversationStore = defineStore(
      */
     function retireAsk(askId: string, owner?: string): void {
       const key = threadKey(owner)
-      const withoutAsk = (parts: AssistantMessage['parts']) =>
-        parts.filter(
+      function withoutAsk(parts: AssistantMessage['parts']) {
+        return parts.filter(
           (part) => part.type !== 'runApproval' || part.askId !== askId
         )
+      }
       // Everything below the stash belongs to whichever thread is on screen,
       // so it is only the right target when this ask belongs to that thread
       // too. An answer that settles after the user moved on must reach back to
@@ -405,7 +405,9 @@ export const useAgentConversationStore = defineStore(
      */
     const resolvedAskIds = new Map<string, Set<string>>()
 
-    const threadKey = (owner?: string) => owner ?? threadId.value ?? ''
+    function threadKey(owner?: string): string {
+      return owner ?? threadId.value ?? ''
+    }
 
     function retiredAsksFor(owner?: string): Set<string> {
       const key = threadKey(owner)
@@ -861,12 +863,6 @@ export const useAgentConversationStore = defineStore(
       clearActive()
     }
 
-    /**
-     * PM-1658: strips cards this client has already retired from a freshly
-     * fetched transcript, and forgets ids the server no longer names so the
-     * record cannot grow without bound. Touches parts only — the turn that
-     * raised the card is left exactly as the transcript describes it.
-     */
     function dropResolvedAsks(
       transcript: ReturnType<typeof normalizeAgentTranscript>
     ): void {
@@ -984,8 +980,8 @@ export const useAgentConversationStore = defineStore(
     /**
      * PM-1658: whether the live turn still owns this ask, i.e. whether an
      * `agent_ask_resolved` frame for it has a transport to route through.
-     * False once a socket drop or a newer turn has detached the message the
-     * card sits on — which is when a caller has to resolve it itself.
+     * False once the turn completed or a newer turn took over the message
+     * the card sits on — which is when a caller has to resolve it itself.
      */
     function activeTurnOwnsAsk(askId: string): boolean {
       return (

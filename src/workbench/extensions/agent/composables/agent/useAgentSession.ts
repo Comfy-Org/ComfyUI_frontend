@@ -251,9 +251,10 @@ const TERMINAL_ANSWER_STATUSES = new Set([403, 404, 409])
 const ANSWER_RETRY_BACKOFF_MS = [300]
 
 /**
- * A rejected fetch never reached the server, and 5xx is the status the server
- * documents as retryable. Everything else either answered (a schema failure
- * means a 202 body we could not read — replaying it is a wasted request) or
+ * Transport failures and 5xx are re-driven with the same selection, which is
+ * safe only because the endpoint replays the first stored selection — a
+ * timeout may already have reached the server and committed. Everything else
+ * either answered (a schema failure means a 202 body we could not read) or
  * refuses permanently, as 501 does on deployments with no durable turn to
  * wake.
  */
@@ -1005,14 +1006,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): Promise<boolean> {
     const currentThreadId = conversationStore.threadId
     if (currentThreadId === null) {
-      // PM-1658: the card is on screen, so a click on it is never a no-op.
       reportError(
         new Error('run approval answered with no thread to send on'),
         { surface: 'agent', errorType: 'agent_ask_answer_unroutable' }
       )
       pushError(i18n.global.t('agent.runApproval.answerFailed'))
-      // Nothing can ever answer this card, so retire it rather than let every
-      // further click raise another toast and another telemetry event.
       conversationStore.retireAsk(askId)
       return false
     }
@@ -1124,9 +1122,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
           !isRetryableAnswerFailure(error)
         )
           throw error
-        await new Promise((resolve) =>
-          setTimeout(resolve, ANSWER_RETRY_BACKOFF_MS[attempt])
-        )
+        await delay(ANSWER_RETRY_BACKOFF_MS[attempt])
+        // A resolution frame can land inside the backoff and retire the card.
+        // Re-driving then would post an authorization for an ask the server
+        // has already told us is settled.
+        if (!answeringAskIds.value.has(askId)) return
       }
     }
   }
@@ -1434,7 +1434,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     sendMessage,
     stopTurn,
     answerAsk,
-    answeringAskIds: computed(() => answeringAskIds.value),
+    answeringAskIds,
     newChat,
     listThreads,
     loadThread,

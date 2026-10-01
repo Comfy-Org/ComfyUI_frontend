@@ -205,7 +205,11 @@ const runApproval = (id: string, askId = 'turn-1:call-1') =>
       allow_other: false
     }
   })
-const askResolved = (id: string, askId = 'turn-1:call-1') =>
+const askResolved = (
+  id: string,
+  askId = 'turn-1:call-1',
+  selected: string[] = ['run']
+) =>
   wire({
     type: 'agent_ask_resolved',
     data: {
@@ -213,7 +217,7 @@ const askResolved = (id: string, askId = 'turn-1:call-1') =>
       message_id: id,
       ask_id: askId,
       status: 'answered',
-      selected: ['run']
+      selected
     }
   })
 const deltaIn = (threadId: string, id: string, text: string) =>
@@ -715,12 +719,13 @@ describe('useAgentSession (v1 composition root)', () => {
     ).toBe(false)
   })
 
-  // PM-1658. A live->down socket transition aborts the active turn, which
-  // nulls activeTurnId and disposes the transport, while the turn's parts -- a
-  // pending consent card among them -- stay on screen. Most cases below put
-  // the card in that detached state. Together they hold the whole answer path
-  // to two rules: a click on a rendered card is never a no-op, and nothing
-  // that answers it may leave it on screen with no way to release it.
+  // PM-1658. An ask outlives the turn that raised it: completion
+  // (agent_message_done -> settleActiveTurn -> clearActive) and a newer turn
+  // taking over both null activeTurnId while the card stays on screen. Most
+  // cases below put the card in that detached state. Together they hold the
+  // whole answer path to two rules: a click on a rendered card is never a
+  // no-op, and nothing that answers it may leave it on screen with no way to
+  // release it.
   describe('answering a consent card', () => {
     // Comfortably past the composable's answer backoff and the store's
     // resolution grace, without restating either: a test that pinned the exact
@@ -747,27 +752,8 @@ describe('useAgentSession (v1 composition root)', () => {
         message.parts.some((part) => part.type === 'runApproval')
       )
 
-    it.for(['run', 'cancel'] as const)(
-      'sends %s rather than dropping the click',
-      async (selection) => {
-        const { session, answerAsk, emit } = await parkedOnApproval()
-        emit(done('msg-1'))
-        expect(useAgentConversationStore().activeTurnId).toBeNull()
-        expect(cardOnScreen()).toBe(true)
-
-        await session.answerAsk('turn-1:call-1', selection)
-
-        expect(answerAsk).toHaveBeenCalledWith('th-1', 'turn-1:call-1', [
-          selection
-        ])
-      }
-    )
-
-    // A socket drop is not the only way to reach the detached state: a turn
-    // COMPLETING gets there too, by agent_message_done -> settleActiveTurn ->
-    // clearActive(), which nulls activeTurnId just the same. One gate, two
-    // triggers — evidence for the second one came from #18834, which pins the
-    // identical symptom with no socket involved.
+    // The completion trigger, pinned independently by #18834 with no socket
+    // involved.
     it('sends the answer after the turn that raised the card completed', async () => {
       const { session, answerAsk, emit } = await parkedOnApproval()
       emit(done('msg-1'))
@@ -779,15 +765,6 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(answerAsk).toHaveBeenCalledWith('th-1', 'turn-1:call-1', ['run'])
       // No transport survives a settled turn, so no resolution frame can land
       // — the card has to retire on the response instead of waiting for one.
-      expect(cardOnScreen()).toBe(false)
-    })
-
-    it('dismisses itself once answered, since no resolution frame can reach it', async () => {
-      const { session, emit } = await parkedOnApproval()
-      emit(done('msg-1'))
-
-      await session.answerAsk('turn-1:call-1', 'run')
-
       expect(cardOnScreen()).toBe(false)
       expect(session.answeringAskIds.value.size).toBe(0)
       expect(session.notices.value).toEqual([])
@@ -816,6 +793,8 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(session.answeringAskIds.value.size).toBe(0)
       expect(session.notices.value).toEqual([])
       expect(reportError).not.toHaveBeenCalled()
+      // Terminal, so never re-driven.
+      expect(answerAsk).toHaveBeenCalledTimes(1)
     })
 
     it.for([403, 404] as const)(
@@ -850,9 +829,9 @@ describe('useAgentSession (v1 composition root)', () => {
       }
     )
 
-    // startTurn aborts whatever turn preceded it, so a card left over from the
-    // dropped turn is detached by the NEW turn too — and an ask_resolved frame
-    // routed to the new turn's transport lands on a message with no such card.
+    // startTurn aborts whatever turn preceded it, so the older turn's card is
+    // detached by the NEW turn — and an ask_resolved frame routed to the new
+    // turn's transport lands on a message with no such card.
     it('dismisses itself when a newer turn has taken over the transport', async () => {
       const postMessage = vi
         .fn<
@@ -872,7 +851,6 @@ describe('useAgentSession (v1 composition root)', () => {
       status(true)
       await session.sendMessage('build it and run it')
       emit(runApproval('msg-1'))
-      status(false)
       await session.sendMessage('actually, do this instead')
       expect(useAgentConversationStore().activeTurnId).toBe('msg-2')
       expect(cardOnScreen()).toBe(true)
@@ -887,39 +865,79 @@ describe('useAgentSession (v1 composition root)', () => {
     // STORED selection, so resending the same answer is both what the server
     // asks for and the only recovery that cannot become a second, contradictory
     // choice.
-    it('re-drives the same selection when the server asks the client to retry', async () => {
+    it.for([
+      ['a 5xx', new AgentApiError('failed to wake the turn', 500, undefined)],
+      ['a rejected fetch', new TypeError('Failed to fetch')],
+      ['a request timeout', new DOMException('Fetch timeout', 'TimeoutError')]
+    ] as const)(
+      're-drives the same selection after %s',
+      async ([, failure]) => {
+        const answerAsk = vi
+          .fn<AgentRestClient['answerAsk']>()
+          .mockRejectedValueOnce(failure)
+          .mockResolvedValueOnce({ status: 'answered' })
+        const events = fakeEvents()
+        const session = useAgentSession({
+          rest: fakeRest({ answerAsk }),
+          events: events.source
+        })
+        session.start()
+        events.status(true)
+        await session.sendMessage('build it and run it')
+        events.emit(runApproval('msg-1'))
+
+        vi.useFakeTimers()
+        try {
+          const answered = session.answerAsk('turn-1:call-1', 'run')
+          await vi.advanceTimersByTimeAsync(PAST_ANSWER_RETRY_BACKOFF_MS)
+          await answered
+        } finally {
+          vi.useRealTimers()
+        }
+
+        expect(answerAsk).toHaveBeenCalledTimes(2)
+        expect(answerAsk.mock.calls).toEqual([
+          ['th-1', 'turn-1:call-1', ['run']],
+          ['th-1', 'turn-1:call-1', ['run']]
+        ])
+        expect(session.notices.value).toEqual([])
+        expect(reportError).not.toHaveBeenCalled()
+      }
+    )
+
+    // Raised in review on #18801 and reproduced there: the resolution can land
+    // inside the retry backoff. Re-driving afterwards posts an authorization
+    // for an ask the server has already told us is settled.
+    it('abandons a queued re-drive when the ask resolves during the backoff', async () => {
       const answerAsk = vi
         .fn<AgentRestClient['answerAsk']>()
         .mockRejectedValueOnce(
           new AgentApiError('failed to wake the turn', 500, undefined)
         )
-        .mockResolvedValueOnce({ status: 'answered' })
-      const events = fakeEvents()
+        .mockResolvedValue({ status: 'answered' })
+      const { source, emit, status } = fakeEvents()
       const session = useAgentSession({
         rest: fakeRest({ answerAsk }),
-        events: events.source
+        events: source
       })
       session.start()
-      events.status(true)
+      status(true)
       await session.sendMessage('build it and run it')
-      events.emit(runApproval('msg-1'))
+      emit(runApproval('msg-1'))
 
       vi.useFakeTimers()
       try {
         const answered = session.answerAsk('turn-1:call-1', 'run')
+        // Let the first POST reject and the backoff start.
+        await vi.advanceTimersByTimeAsync(0)
+        emit(askResolved('msg-1'))
         await vi.advanceTimersByTimeAsync(PAST_ANSWER_RETRY_BACKOFF_MS)
         await answered
       } finally {
         vi.useRealTimers()
       }
 
-      expect(answerAsk).toHaveBeenCalledTimes(2)
-      expect(answerAsk.mock.calls).toEqual([
-        ['th-1', 'turn-1:call-1', ['run']],
-        ['th-1', 'turn-1:call-1', ['run']]
-      ])
-      expect(session.notices.value).toEqual([])
-      expect(reportError).not.toHaveBeenCalled()
+      expect(answerAsk).toHaveBeenCalledTimes(1)
     })
 
     // commitAsk arms a grace timer when the turn is still attached, because
@@ -995,36 +1013,17 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(session.notices.value).toEqual([])
     })
 
-    it('stays quiet when the resolution confirms the selection it sent', async () => {
+    it.for([
+      ['confirms the selection it sent', ['run']],
+      ['names no selection at all', []]
+    ] as const)('stays quiet when the resolution %s', async ([, selected]) => {
       const { session, emit } = await parkedOnApproval()
       await session.answerAsk('turn-1:call-1', 'run')
 
-      emit(askResolved('msg-1'))
+      emit(askResolved('msg-1', 'turn-1:call-1', [...selected]))
 
       expect(reportError).not.toHaveBeenCalled()
       expect(session.notices.value).toEqual([])
-      expect(cardOnScreen()).toBe(false)
-    })
-
-    it('does not re-drive an answer the server has already refused', async () => {
-      const answerAsk = vi
-        .fn<AgentRestClient['answerAsk']>()
-        .mockRejectedValue(
-          new AgentApiError('ask already resolved', 409, undefined)
-        )
-      const events = fakeEvents()
-      const session = useAgentSession({
-        rest: fakeRest({ answerAsk }),
-        events: events.source
-      })
-      session.start()
-      events.status(true)
-      await session.sendMessage('build it and run it')
-      events.emit(runApproval('msg-1'))
-
-      await session.answerAsk('turn-1:call-1', 'run')
-
-      expect(answerAsk).toHaveBeenCalledTimes(1)
       expect(cardOnScreen()).toBe(false)
     })
 
