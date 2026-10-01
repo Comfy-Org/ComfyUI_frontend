@@ -397,18 +397,39 @@ function zeroDueLine(r: QuoteReading): string[] {
 }
 
 /**
- * The rate a plan discount (the yearly or team-commitment price) brought
- * down from its list price, both as the server rated them.
+ * The plan's rate under its label: struck against the list price whenever
+ * the server sends one, else a plain cadence line. A yearly plan the server
+ * also rates per month reads in those monthly figures.
  */
-function comparedRateOf(r: QuoteReading): ComparedRate | undefined {
-  const listCents = r.next.list_price_cents
-  if (listCents === undefined || listCents <= r.next.price_cents)
-    return undefined
-  return {
-    keypath: r.byNew.comparedRate,
-    amount: r.headlineMoney(r.next.price_cents),
-    listAmount: r.headlineMoney(listCents)
+type RateLine =
+  | { readonly comparedRate: ComparedRate }
+  | { readonly subline: string }
+
+function rateLineOf(r: QuoteReading): RateLine {
+  const monthlyCents = r.next.monthly_price_cents
+  if (r.next.duration === 'ANNUAL' && monthlyCents !== undefined) {
+    const amount = r.headlineMoney(monthlyCents)
+    const listCents = r.next.monthly_list_price_cents
+    return listCents === undefined
+      ? { subline: r.t(`${S}.item.billedYearlyMonthly`, { amount }) }
+      : {
+          comparedRate: {
+            keypath: `${S}.item.comparedYearlyMonthly`,
+            amount,
+            listAmount: r.headlineMoney(listCents)
+          }
+        }
   }
+  const listCents = r.next.list_price_cents
+  return listCents === undefined
+    ? { subline: cadenceLineOf(r) }
+    : {
+        comparedRate: {
+          keypath: r.byNew.comparedRate,
+          amount: r.headlineMoney(r.next.price_cents),
+          listAmount: r.headlineMoney(listCents)
+        }
+      }
 }
 
 function cadenceLineOf(r: QuoteReading): string {
@@ -420,7 +441,7 @@ function cadenceLineOf(r: QuoteReading): string {
 }
 
 function chargeNowLedger(r: QuoteReading): FamilyLedger {
-  const comparedRate = comparedRateOf(r)
+  const rateLine = rateLineOf(r)
   const refills =
     r.cadenceChanges || !grantIsAllowance(r) ? [refillsToLine(r)] : []
   return {
@@ -431,9 +452,13 @@ function chargeNowLedger(r: QuoteReading): FamilyLedger {
     items: moneyItems(
       r,
       r.quote.cost_today_cents,
-      comparedRate === undefined
-        ? { label: r.plan, sublines: [cadenceLineOf(r), ...refills] }
-        : { label: r.plan, comparedRate, sublines: refills }
+      'comparedRate' in rateLine
+        ? {
+            label: r.plan,
+            comparedRate: rateLine.comparedRate,
+            sublines: refills
+          }
+        : { label: r.plan, sublines: [rateLine.subline, ...refills] }
     ),
     trailing: chargeNowTrailing(r)
   }
@@ -474,44 +499,63 @@ export function acceptsPromoCode(quote: SubscriptionPreview): boolean {
 
 type Discount = NonNullable<SubscriptionPreview['discounts']>[number]
 
-const deduction = (r: QuoteReading, cents: number) =>
-  r.t(`${S}.discount.amount`, { amount: r.money(cents) })
+/** What a deduction row needs to word itself, shared by the summary and the Success card. */
+export interface DeductionFormat {
+  readonly t: Translate
+  readonly money: (cents: number) => string
+  /** The plan's cadence, which bounds a `once` coupon; unknown leaves it unbounded. */
+  readonly duration: Duration | undefined
+}
+
+const deduction = (format: DeductionFormat, cents: number) =>
+  format.t(`${S}.discount.amount`, { amount: format.money(cents) })
 
 /**
  * How long a coupon keeps applying, stated as bounds only: `once` covers the
- * first period, except a change to a monthly plan where it covers only today's
- * charge, `repeating` its months, and `forever` needs no subline.
+ * first period, or only today's charge when `thisPaymentOnly`, `repeating`
+ * its months, and `forever` needs no subline.
  */
-function discountTerm(r: QuoteReading, discount: Discount): string | undefined {
-  if (discount.duration === 'once')
-    return r.quote.transition_type !== 'new_subscription' &&
-      r.next.duration === 'MONTHLY'
-      ? r.t(`${S}.discount.thisPaymentOnly`, {})
-      : r.t(r.byNew.onceTerm, {})
+function discountTerm(
+  format: DeductionFormat,
+  discount: Pick<Discount, 'duration' | 'duration_in_months'>,
+  thisPaymentOnly = false
+): string | undefined {
+  if (discount.duration === 'once') {
+    if (thisPaymentOnly) return format.t(`${S}.discount.thisPaymentOnly`, {})
+    return format.duration === undefined
+      ? undefined
+      : format.t(BY_DURATION[format.duration].onceTerm, {})
+  }
   const months = discount.duration_in_months
   if (discount.duration !== 'repeating' || months === undefined)
     return undefined
-  return r.t(`${S}.discount.forMonths`, { count: months }, months)
+  return format.t(`${S}.discount.forMonths`, { count: months }, months)
 }
 
-function discountRow(r: QuoteReading, discount: Discount): DiscountRow {
-  const subline = discountTerm(r, discount)
+export function discountRow(
+  format: DeductionFormat,
+  discount: Pick<Discount, 'name' | 'duration' | 'duration_in_months'>,
+  amountCents: number | undefined,
+  thisPaymentOnly = false
+): DiscountRow {
+  const subline = discountTerm(format, discount, thisPaymentOnly)
   return {
-    label: discount.name ?? r.t(`${S}.discount.fallbackLabel`, {}),
-    ...(discount.amount_off_cents === undefined
+    label: discount.name ?? format.t(`${S}.discount.fallbackLabel`, {}),
+    ...(amountCents === undefined
       ? {}
-      : { amount: deduction(r, discount.amount_off_cents) }),
+      : { amount: deduction(format, amountCents) }),
     ...(subline === undefined ? {} : { subline })
   }
 }
 
-function balanceRow(r: QuoteReading): DiscountRow | undefined {
-  const cents = r.quote.balance_applied_cents
-  if (cents === undefined) return undefined
+export function balanceRow(
+  format: DeductionFormat,
+  cents: number
+): DiscountRow {
   return {
-    label: r.t(`${S}.balance.label`, {}),
-    amount: deduction(r, cents),
-    subline: r.t(`${S}.balance.subline`, {})
+    label: format.t(`${S}.balance.label`, {}),
+    amount: deduction(format, cents),
+    subline: format.t(`${S}.balance.subline`, {})
   }
 }
 
@@ -543,9 +587,17 @@ function discountSlots(r: QuoteReading, moneyRows: number): DiscountSlots {
     (discount) => discount.code.toUpperCase() !== enteredCode
   )
   const subtotal = subtotalOf(r, moneyRows, r.promotions.length)
-  const balance = balanceRow(r)
+  const format = { t: r.t, money: r.money, duration: r.next.duration }
+  const thisPaymentOnly =
+    r.quote.transition_type !== 'new_subscription' &&
+    r.next.duration === 'MONTHLY'
+  const balanceCents = r.quote.balance_applied_cents
+  const balance =
+    balanceCents === undefined ? undefined : balanceRow(format, balanceCents)
   return {
-    discounts: r.promotions.map((discount) => discountRow(r, discount)),
+    discounts: r.promotions.map((discount) =>
+      discountRow(format, discount, discount.amount_off_cents, thisPaymentOnly)
+    ),
     ...(subtotal === undefined ? {} : { subtotal }),
     ...(balance === undefined ? {} : { balance }),
     chips: [

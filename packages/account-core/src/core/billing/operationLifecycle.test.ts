@@ -25,6 +25,7 @@ import {
   OPERATION_POLL_TIMING
 } from './operationPolicy.js'
 import type {
+  BillingChargeBreakdown,
   BillingOperationState,
   BillingOpStatus,
   HostedBillingDestination
@@ -1141,6 +1142,65 @@ describe('createBillingOperationLifecycle', () => {
           plan: RECEIPT_PLAN
         }
       })
+    })
+
+    const CHARGE_BREAKDOWN: BillingChargeBreakdown = {
+      amount_charged_cents: 2600,
+      currency: 'usd',
+      prorated: false,
+      reasons: [
+        {
+          kind: 'promo_code',
+          amount_cents: 400,
+          discount: {
+            kind: 'promotion',
+            code: 'SAVE20',
+            name: 'Save 20%',
+            duration: 'repeating',
+            duration_in_months: 3
+          }
+        },
+        { kind: 'account_balance', amount_cents: 250 }
+      ]
+    }
+
+    it('keeps the charge breakdown a succeeded operation reports', async () => {
+      const { lifecycle } = harness({
+        answers: [
+          httpOk(
+            opStatus({
+              status: 'succeeded',
+              amount_charged_cents: 2600,
+              charge_breakdown: CHARGE_BREAKDOWN
+            })
+          )
+        ]
+      })
+      await lifecycle.begin('subscription', issued())
+      await flush()
+
+      expect(lifecycle.get('op-1')).toMatchObject({
+        phase: 'succeeded',
+        receipt: { amountChargedCents: 2600, chargeBreakdown: CHARGE_BREAKDOWN }
+      })
+    })
+
+    it('does not settle on a status whose charge breakdown is malformed', async () => {
+      const { lifecycle } = harness({
+        answers: [
+          httpOk({
+            ...opStatus({ status: 'succeeded' }),
+            charge_breakdown: {
+              ...CHARGE_BREAKDOWN,
+              reasons: [{ kind: 'gift_card', amount_cents: 400 }]
+            }
+          })
+        ]
+      })
+      await lifecycle.begin('subscription', issued())
+      await flush()
+
+      expect(lifecycle.get('op-1')).toMatchObject({ phase: 'pending' })
     })
 
     it('leaves the receipt off a success that reported none', async () => {
