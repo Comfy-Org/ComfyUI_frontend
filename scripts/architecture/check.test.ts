@@ -1,7 +1,7 @@
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, describe, expect, test } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
 import type { ArchitectureException, DomainRecord, Violation } from './check'
 import {
@@ -14,6 +14,7 @@ import {
 } from './check'
 
 const temporaryDirectories: string[] = []
+let dateNowSpy: ReturnType<typeof vi.spyOn>
 const createRepository = (files: Record<string, string>): string => {
   const root = join(
     tmpdir(),
@@ -85,7 +86,14 @@ const createConfiguredRepository = (): string => {
   })
 }
 
+beforeEach(() => {
+  dateNowSpy = vi
+    .spyOn(Date, 'now')
+    .mockReturnValue(Date.parse('2026-10-01T00:00:00Z'))
+})
+
 afterEach(() => {
+  dateNowSpy.mockRestore()
   for (const directory of temporaryDirectories.splice(0))
     rmSync(directory, { recursive: true })
 })
