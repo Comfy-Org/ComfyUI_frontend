@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { translationsFor } from '../../../i18n/translations'
 import { LoaderCircle } from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
 
@@ -6,7 +7,6 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Take } from '../../../lib/workshop/cinematic-studio/reel'
 import type { Locale } from '../../../i18n/translations'
-import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 import { framedStyle } from './aspect-style'
 import CinematicTakeMedia from './CinematicTakeMedia.vue'
 import CinematicTakeNotice from './CinematicTakeNotice.vue'
@@ -25,6 +25,7 @@ const {
   height?: string
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const emit = defineEmits<{
   retry: []
@@ -97,7 +98,7 @@ function frameTone(take: Take): string | undefined {
       <LoaderCircle
         v-if="!loaded && !withheld"
         class="size-5 animate-spin text-primary-warm-gray"
-        :aria-label="tc('cinematic.stage.loadingTake', {}, { locale })"
+        :aria-label="t('cinematic.stage.loadingTake')"
       />
     </template>
     <CinematicTakeProgress

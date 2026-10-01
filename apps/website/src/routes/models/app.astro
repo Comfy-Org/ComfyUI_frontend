@@ -8,7 +8,6 @@ import {
   runnableCinematicVideoModels
 } from '../../lib/workshop/cinematic-studio/models'
 import { priceCinematicModels } from '../../lib/workshop/cinematic-studio/pricing'
-import { studioT as tc } from '../../lib/workshop/cinematic-studio/copy'
 import { appModels, appPagePaths } from '../../config/workshop-app-content'
 import type { AppWorkshopModel } from '../../config/models-catalogue'
 
@@ -35,7 +34,7 @@ if (!models.length) throw new Error('Cinematic Studio has no runnable models')
 
 <BaseLayout
   title={`${model.name} - Comfy`}
-  description={model.summary ?? tc('cinematic.meta.description')}
+  description={model.summary ?? Astro.locals.t('cinematic.meta.description')}
   ogImage={model.thumbnailUrl}
   noindex
 >
@@ -46,6 +45,8 @@ if (!models.length) throw new Error('Cinematic Studio has no runnable models')
     client:load
   />
   <noscript>
-    <p class="p-8 text-center">{tc('cinematic.unavailable.title')}</p>
+    <p class="p-8 text-center">
+      {Astro.locals.t('cinematic.unavailable.title')}
+    </p>
   </noscript>
 </BaseLayout>

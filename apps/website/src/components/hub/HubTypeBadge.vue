@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import IconApps from './IconApps.vue'
 import IconModel from './IconModel.vue'
 import IconWorkflow from './IconWorkflow.vue'
@@ -13,6 +13,7 @@ const { kind, locale = 'en' } = defineProps<{
   kind: Kind
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const icons: Record<Kind, typeof IconWorkflow> = {
   nodeGraph: IconWorkflow,
@@ -41,7 +42,7 @@ const labels: Record<Kind, TranslationKey> = {
     >
       <span class="overflow-hidden">
         <span class="pl-1.5 text-2xs/none whitespace-nowrap">
-          {{ t(labels[kind], {}, { locale }) }}
+          {{ t(labels[kind]) }}
         </span>
       </span>
     </span>

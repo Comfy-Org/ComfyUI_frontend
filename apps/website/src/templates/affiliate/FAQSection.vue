@@ -3,9 +3,10 @@ import type { Locale } from '../../i18n/translations'
 
 import FAQSplit01 from '../../components/blocks/FAQSplit01.vue'
 import { affiliateFaqs } from '../../data/affiliateFaq'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 const faqs = affiliateFaqs.map((faq) => ({
   id: faq.id,
@@ -15,8 +16,5 @@ const faqs = affiliateFaqs.map((faq) => ({
 </script>
 
 <template>
-  <FAQSplit01
-    :heading="t('affiliate.faq.heading', {}, { locale })"
-    :faqs="faqs"
-  />
+  <FAQSplit01 :heading="t('affiliate.faq.heading')" :faqs="faqs" />
 </template>

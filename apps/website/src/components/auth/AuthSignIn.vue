@@ -9,7 +9,7 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
 
 import { requestedReturnPath } from '../../config/workshop-return'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import type { AuthMode } from './AuthSignInPanel.vue'
 import AuthSignInPanel from './AuthSignInPanel.vue'
 
@@ -17,6 +17,7 @@ const { mode: initialMode = 'signIn', locale = 'en' } = defineProps<{
   mode?: AuthMode
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const PATHS: Record<AuthMode, string> = {
   signIn: '/login/',
@@ -31,7 +32,7 @@ const mode = ref<AuthMode>(initialMode)
 
 function show(next: AuthMode): void {
   mode.value = next
-  document.title = t(TITLES[next], {}, { locale })
+  document.title = t(TITLES[next])
 }
 
 function switchMode(next: AuthMode): void {

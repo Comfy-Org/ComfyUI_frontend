@@ -1,10 +1,11 @@
 <script setup lang="ts">
+import { translationsFor } from '../../../../i18n/translations'
 import { workshopAppRepo } from '../../../../lib/workshop/apps'
-import { studioT as rc } from '../../../../lib/workshop/cinematic-studio/copy'
 import type { Locale } from '../../../../i18n/translations'
 import AppRepoLink from '../AppRepoLink.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 </script>
 
 <template>
@@ -13,7 +14,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       <h1
         class="max-w-4xl text-3xl font-light text-primary-comfy-canvas lg:text-5xl"
       >
-        {{ rc('reshoot.title', {}, { locale }) }}
+        {{ t('reshoot.title') }}
       </h1>
       <AppRepoLink
         :repo="workshopAppRepo('reshoot')"
@@ -22,10 +23,10 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       />
     </div>
     <p class="text-lg text-primary-warm-gray">
-      {{ rc('reshoot.pick.lead', {}, { locale }) }}
+      {{ t('reshoot.pick.lead') }}
     </p>
     <p class="text-xs text-primary-warm-gray/80">
-      {{ rc('reshoot.credit', {}, { locale }) }}
+      {{ t('reshoot.credit') }}
     </p>
   </header>
 </template>

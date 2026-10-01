@@ -4,7 +4,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { HTMLAttributes } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import Badge from '../ui/badge/Badge.vue'
 import BrandButton from '../common/BrandButton.vue'
 import ProductHeroBadge from '../common/ProductHeroBadge.vue'
@@ -91,6 +91,7 @@ const {
   ctaWrapperClass?: HTMLAttributes['class']
   beta?: boolean
 }>()
+const { t } = translationsFor(locale)
 </script>
 
 <template>
@@ -113,7 +114,7 @@ const {
             :show-logo="badgeShowLogo"
           />
           <Badge v-if="beta" variant="accent" size="xs">
-            {{ t('nav.badgeBeta', {}, { locale }) }}
+            {{ t('nav.badgeBeta') }}
           </Badge>
         </slot>
       </div>

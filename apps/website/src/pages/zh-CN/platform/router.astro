@@ -13,7 +13,7 @@ import RouterProofStripSection from '../../../templates/platform/RouterProofStri
 import RouterProviderCoverageSection from '../../../templates/platform/RouterProviderCoverageSection.vue'
 import RouterRoadmapSection from '../../../templates/platform/RouterRoadmapSection.vue'
 import { externalLinks } from '../../../config/routes'
-import { routerFaq, routerT } from '../../../templates/platform/routerCopy'
+import { routerFaq } from '../../../templates/platform/routerCopy'
 ---
 
 <BaseLayout
@@ -31,22 +31,16 @@ import { routerFaq, routerT } from '../../../templates/platform/routerCopy'
   <RouterRoadmapSection locale="zh-CN" client:visible />
   <FAQSection
     locale="zh-CN"
-    heading={routerT('platform.router.faq.heading', {}, { locale: 'zh-CN' })}
+    heading={Astro.locals.t('platform.router.faq.heading')}
     items={routerFaq('zh-CN')}
     client:load
   />
   <ClosingCtaSection
     locale="zh-CN"
-    heading-after-badge={routerT(
-      'platform.router.closing.headingAfterBadge',
-      {},
-      { locale: 'zh-CN' }
+    heading-after-badge={Astro.locals.t(
+      'platform.router.closing.headingAfterBadge'
     )}
-    subtitle={routerT(
-      'platform.router.closing.subtitle',
-      {},
-      { locale: 'zh-CN' }
-    )}
+    subtitle={Astro.locals.t('platform.router.closing.subtitle')}
     primary-href={externalLinks.routerApiKeys}
     client:visible
   />

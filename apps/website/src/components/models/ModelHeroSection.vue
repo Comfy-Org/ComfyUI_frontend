@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import BrandButton from '../common/BrandButton.vue'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 
+const { t } = translationsFor('en')
 const {
   displayName,
   huggingFaceUrl,
@@ -66,13 +67,7 @@ const isPartnerNode = directory === 'partner_nodes'
       </h1>
 
       <p class="text-sm text-primary-comfy-canvas/60">
-        {{
-          t(
-            'models.hero.workflowCount',
-            { count: workflowCount },
-            { locale: 'en' }
-          )
-        }}
+        {{ t('models.hero.workflowCount', { count: workflowCount }) }}
       </p>
 
       <div class="flex flex-col gap-3 sm:flex-row">

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { translationsFor } from '../../../i18n/translations'
 import { Pencil, Pipette } from '@lucide/vue'
 import { ref, useTemplateRef } from 'vue'
 
@@ -6,7 +7,6 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Locale } from '../../../i18n/translations'
 import { sampleImageColors } from '../../../lib/workshop/cinematic-studio/colors'
-import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 import CinematicCheckBadge from './CinematicCheckBadge.vue'
 
 const PALETTE_SIZE = 5
@@ -15,6 +15,7 @@ const { colors, locale = 'en' } = defineProps<{
   colors: readonly string[]
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const emit = defineEmits<{ picked: [colors: readonly string[]]; edit: [] }>()
 const input = useTemplateRef<HTMLInputElement>('input')
@@ -42,7 +43,7 @@ async function choose(event: Event) {
       type="button"
       role="radio"
       :aria-checked="colors.length > 0"
-      :aria-label="tc('cinematic.grade.fromImageAction', {}, { locale })"
+      :aria-label="t('cinematic.grade.fromImageAction')"
       class="group flex flex-col gap-2 text-left"
       data-testid="cinematic-grade-image"
       @click="input?.click()"
@@ -89,12 +90,10 @@ async function choose(event: Event) {
         class="truncate px-1 text-sm text-primary-comfy-canvas group-hover:text-primary-warm-white"
       >
         {{
-          tc(
+          t(
             colors.length
               ? 'cinematic.grade.yourPalette'
-              : 'cinematic.grade.fromImage',
-            {},
-            { locale }
+              : 'cinematic.grade.fromImage'
           )
         }}
       </span>
@@ -106,14 +105,14 @@ async function choose(event: Event) {
       @click="emit('edit')"
     >
       <Pencil class="size-3.5" aria-hidden="true" />
-      {{ tc('cinematic.grade.edit', {}, { locale }) }}
+      {{ t('cinematic.grade.edit') }}
     </button>
     <span
       v-if="unreadable"
       role="status"
       class="px-1 text-xs text-primary-comfy-canvas"
     >
-      {{ tc('cinematic.colors.sampleError', {}, { locale }) }}
+      {{ t('cinematic.colors.sampleError') }}
     </span>
     <input
       ref="input"

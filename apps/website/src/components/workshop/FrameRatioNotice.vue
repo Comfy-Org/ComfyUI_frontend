@@ -2,12 +2,13 @@
 import { AlertTriangle } from '@lucide/vue'
 
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 
 const { id, locale = 'en' } = defineProps<{
   id: string
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 </script>
 
 <template>
@@ -25,10 +26,10 @@ const { id, locale = 'en' } = defineProps<{
     />
     <div class="flex min-w-0 flex-col gap-1">
       <p class="font-bold">
-        {{ t('workshop.field.frameRatioMismatchTitle', {}, { locale }) }}
+        {{ t('workshop.field.frameRatioMismatchTitle') }}
       </p>
       <p>
-        {{ t('workshop.field.frameRatioMismatch', {}, { locale }) }}
+        {{ t('workshop.field.frameRatioMismatch') }}
       </p>
     </div>
   </div>

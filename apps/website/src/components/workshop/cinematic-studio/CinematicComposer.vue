@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { translationsFor } from '../../../i18n/translations'
 import { ChevronDown } from '@lucide/vue'
 import { computed } from 'vue'
 
@@ -21,7 +22,6 @@ import { videoTags } from '../../../lib/workshop/cinematic-studio/video'
 import type { ShotBlock } from '../../../composables/useCinematicShot'
 import type { StudioImage } from '../../../lib/workshop/cinematic-studio/take-image'
 import type { Locale } from '../../../i18n/translations'
-import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 import CinematicDirectionSegments from './CinematicDirectionSegments.vue'
 import CinematicEnhanceSwitch from './CinematicEnhanceSwitch.vue'
 import CinematicFormatSegments from './CinematicFormatSegments.vue'
@@ -71,6 +71,7 @@ const {
   openPopover?: PickerKey
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const emit = defineEmits<{
   open: [key: PickerKey]
@@ -98,35 +99,31 @@ const modelOptions = computed(() =>
     label: model.name,
     logo: model.logo,
     meta: model.degraded
-      ? tc('cinematic.model.degraded', {}, { locale })
-      : videoTags(model.video, tc('cinematic.video.audioTag', {}, { locale }))
+      ? t('cinematic.model.degraded')
+      : videoTags(model.video, t('cinematic.video.audioTag'))
   }))
 )
 const model = computed(() =>
   models.find((candidate) => candidate.slug === modelSlug.value)
 )
 
-const bodyLabel = computed(() =>
-  tc(directionOption('body', direction).label, {}, { locale })
-)
+const bodyLabel = computed(() => t(directionOption('body', direction).label))
 const cameraSummary = computed(
   () =>
-    `${tc('cinematic.section.camera', {}, { locale })}: ${cameraGroups
-      .map((group) =>
-        tc(directionOption(group.part, direction).label, {}, { locale })
-      )
+    `${t('cinematic.section.camera')}: ${cameraGroups
+      .map((group) => t(directionOption(group.part, direction).label))
       .join(' · ')}`
 )
 const focalLabel = computed(() => {
   const focal = directionOption('focal', direction)
-  return focal.id === 'auto' ? undefined : tc(focal.label, {}, { locale })
+  return focal.id === 'auto' ? undefined : t(focal.label)
 })
 const cameraLabel = computed(
   () =>
-    `${tc('cinematic.section.camera', {}, { locale })}: ${focalLabel.value ?? bodyLabel.value}`
+    `${t('cinematic.section.camera')}: ${focalLabel.value ?? bodyLabel.value}`
 )
 const blockedNote = computed(() =>
-  blocked ? tc(blocked.key, { model: blocked.model }, { locale }) : undefined
+  blocked ? t(blocked.key, { model: blocked.model }) : undefined
 )
 const canGenerate = computed(
   () => gate === 'ready' && scene.value.trim().length > 0 && !blockedNote.value
@@ -148,7 +145,7 @@ const chipClass = (key: PickerKey) =>
   <div
     class="flex w-full flex-col overflow-hidden rounded-3xl border border-transparency-white-t8 bg-primary-comfy-ink-light shadow-[0_20px_60px_rgb(0_0_0/0.35)]"
     role="group"
-    :aria-label="tc('cinematic.composer.label', {}, { locale })"
+    :aria-label="t('cinematic.composer.label')"
   >
     <div class="flex flex-wrap items-start gap-x-2.5 gap-y-1 px-4 pt-3.5 pb-3">
       <CinematicReferenceMenu
@@ -160,13 +157,13 @@ const chipClass = (key: PickerKey) =>
         :locale
       />
       <label for="cinematic-scene" class="sr-only">
-        {{ tc('cinematic.section.scene', {}, { locale }) }}
+        {{ t('cinematic.section.scene') }}
       </label>
       <textarea
         id="cinematic-scene"
         v-model="scene"
         rows="1"
-        :placeholder="tc('cinematic.scene.placeholder', {}, { locale })"
+        :placeholder="t('cinematic.scene.placeholder')"
         class="field-sizing-content max-h-[calc(4lh+0.375rem)] min-h-9 flex-1 resize-none bg-transparent pt-1.5 text-base/relaxed text-primary-warm-white outline-none placeholder:text-primary-warm-gray"
         @keydown.enter.meta.prevent="generateFromKeyboard"
         @keydown.enter.ctrl.prevent="generateFromKeyboard"
@@ -188,7 +185,7 @@ const chipClass = (key: PickerKey) =>
         <CinematicMenu
           v-model="modelSlug"
           :options="modelOptions"
-          :heading="tc('cinematic.model.heading', {}, { locale })"
+          :heading="t('cinematic.model.heading')"
           tooltip
           trigger-class="h-9 shrink-0 gap-2 rounded-xl px-3 text-[13px] whitespace-nowrap text-primary-warm-white hover:bg-transparency-white-t8"
         >

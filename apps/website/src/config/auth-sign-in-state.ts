@@ -14,7 +14,7 @@ import type {
 } from '@comfyorg/account-core/firebaseAuthError'
 
 import type { Locale, TranslationKey } from '../i18n/translations'
-import { t } from '../i18n/translations'
+import { translationsFor } from '../i18n/translations'
 import en from '../locales/en/main.json' with { type: 'json' }
 
 export type AuthSignInProvider = 'google' | 'github' | 'email'
@@ -58,15 +58,13 @@ const authErrorCodes = Object.keys(en.auth.errors).filter(
 
 /** This host's own auth-error table, keyed the way the package resolver reads it. */
 function localizedAuthErrorCopy(locale: Locale): AuthErrorCopy {
+  const { t } = translationsFor(locale)
   return {
     ...Object.fromEntries(
-      authErrorCodes.map((code) => [
-        code,
-        t(`auth.errors.${code}`, {}, { locale })
-      ])
+      authErrorCodes.map((code) => [code, t(`auth.errors.${code}`)])
     ),
-    generic: t('auth.errors.generic', {}, { locale }),
-    signupBlocked: t('auth.errors.signupBlocked', {}, { locale })
+    generic: t('auth.errors.generic'),
+    signupBlocked: t('auth.errors.signupBlocked')
   }
 }
 
@@ -81,15 +79,12 @@ export function signInErrorMessage(
   locale: Locale,
   hostname: string
 ): string {
+  const { t } = translationsFor(locale)
   return classification.kind === 'unauthorized-domain'
-    ? t(
-        'toastMessages.unauthorizedDomain',
-        {
-          domain: hostname,
-          email: SUPPORT_EMAIL
-        },
-        { locale }
-      )
+    ? t('toastMessages.unauthorizedDomain', {
+        domain: hostname,
+        email: SUPPORT_EMAIL
+      })
     : authErrorMessage(classification, localizedAuthErrorCopy(locale))
 }
 

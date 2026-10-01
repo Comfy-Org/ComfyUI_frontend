@@ -2,7 +2,7 @@
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 
 const {
   locale = 'en',
@@ -17,6 +17,7 @@ const {
   label?: string
   statusLabel?: string
 }>()
+const { t } = translationsFor(locale)
 </script>
 
 <template>
@@ -46,7 +47,7 @@ const {
         :class="cn('flex items-center gap-2', centerText && 'translate-y-1')"
       >
         <slot name="label">
-          {{ label ?? t('platform.hero.badge', {}, { locale }) }}
+          {{ label ?? t('platform.hero.badge') }}
         </slot>
       </span>
     </span>

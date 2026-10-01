@@ -107,9 +107,11 @@ const triggerClass =
     <CinematicTooltip
       v-if="video.audioField"
       :heading="tc('cinematic.video.audio')"
-      :text="`${tc('cinematic.video.audioHint')} ${tc(durationOptions.length
+      :text="`${tc('cinematic.video.audioHint')} ${tc(
+        durationOptions.length
           ? 'cinematic.video.oneClip'
-          : 'cinematic.video.modelDecides')}`"
+          : 'cinematic.video.modelDecides'
+      )}`"
     >
       <button
         type="button"

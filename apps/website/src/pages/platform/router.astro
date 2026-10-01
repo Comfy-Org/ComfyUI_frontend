@@ -13,7 +13,7 @@ import RouterProofStripSection from '../../templates/platform/RouterProofStripSe
 import RouterProviderCoverageSection from '../../templates/platform/RouterProviderCoverageSection.vue'
 import RouterRoadmapSection from '../../templates/platform/RouterRoadmapSection.vue'
 import { externalLinks } from '../../config/routes'
-import { routerFaq, routerT } from '../../templates/platform/routerCopy'
+import { routerFaq } from '../../templates/platform/routerCopy'
 ---
 
 <BaseLayout
@@ -31,18 +31,16 @@ import { routerFaq, routerT } from '../../templates/platform/routerCopy'
   <RouterRoadmapSection locale="en" client:visible />
   <FAQSection
     locale="en"
-    heading={routerT('platform.router.faq.heading', {}, { locale: 'en' })}
+    heading={Astro.locals.t('platform.router.faq.heading')}
     items={routerFaq('en')}
     client:load
   />
   <ClosingCtaSection
     locale="en"
-    heading-after-badge={routerT(
-      'platform.router.closing.headingAfterBadge',
-      {},
-      { locale: 'en' }
+    heading-after-badge={Astro.locals.t(
+      'platform.router.closing.headingAfterBadge'
     )}
-    subtitle={routerT('platform.router.closing.subtitle', {}, { locale: 'en' })}
+    subtitle={Astro.locals.t('platform.router.closing.subtitle')}
     primary-href={externalLinks.routerApiKeys}
     client:visible
   />

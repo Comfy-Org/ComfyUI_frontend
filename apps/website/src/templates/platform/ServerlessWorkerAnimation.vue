@@ -5,9 +5,10 @@ import { computed, ref, useTemplateRef, watch } from 'vue'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 const WORKER_COUNT = 3
 const COLS_PER_WORKER = 4
@@ -187,7 +188,7 @@ watch(
   <div
     ref="stageRef"
     role="img"
-    :aria-label="t('platform.serverlessVisual.ariaLabel', {}, { locale })"
+    :aria-label="t('platform.serverlessVisual.ariaLabel')"
     class="relative aspect-16/7 min-h-72 w-full overflow-hidden rounded-3xl bg-primary-comfy-ink font-mono"
   >
     <div
@@ -249,7 +250,7 @@ watch(
           )
         "
       >
-        {{ t('platform.serverlessVisual.worker', {}, { locale }) }}
+        {{ t('platform.serverlessVisual.worker') }}
       </span>
     </div>
   </div>

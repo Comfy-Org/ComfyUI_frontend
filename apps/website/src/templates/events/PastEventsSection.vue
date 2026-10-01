@@ -8,7 +8,7 @@ import CardArticleGallery01 from '../../components/blocks/CardArticleGallery01.v
 import type { CardArticleGalleryItem } from '../../components/blocks/CardArticleGallery01.vue'
 import { localizeHref } from '../../config/routes'
 import { eventPath, eventVideoId, pastEvents } from '../../data/events'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import {
   PAST_EVENTS_PAGE_SIZE,
   pastCtaLabel
@@ -18,6 +18,7 @@ const { locale = 'en', events = pastEvents } = defineProps<{
   locale?: Locale
   events?: readonly ComfyEvent[]
 }>()
+const { t } = translationsFor(locale)
 
 const CATEGORY_ORDER = [
   'livestream',
@@ -52,7 +53,7 @@ const items = computed<CardArticleGalleryItem[]>(() =>
     return {
       id: event.id,
       filterKey: event.category,
-      category: t(`events.category.${event.category}`, {}, { locale }),
+      category: t(`events.category.${event.category}`),
       title: event.title[locale] || event.title.en,
       date: cardDate(event.startDateTime),
       media: media && {
@@ -83,9 +84,7 @@ const tabs = computed(() =>
     items.value.some((item) => item.filterKey === category)
   ).map((category) => ({
     key: category,
-    label: t(`events.category.${category}`, {}, { locale }).toLocaleUpperCase(
-      locale
-    )
+    label: t(`events.category.${category}`).toLocaleUpperCase(locale)
   }))
 )
 </script>
@@ -93,14 +92,14 @@ const tabs = computed(() =>
 <template>
   <CardArticleGallery01
     class="lg:px-20"
-    :title="t('events.past.title', {}, { locale })"
+    :title="t('events.past.title')"
     title-align="center"
     :items
     layout="two-column"
     title-clamp
     :tabs
-    :all-label="t('events.past.filterAll', {}, { locale })"
+    :all-label="t('events.past.filterAll')"
     :page-size="PAST_EVENTS_PAGE_SIZE"
-    :load-more-label="t('events.past.loadMore', {}, { locale })"
+    :load-more-label="t('events.past.loadMore')"
   />
 </template>

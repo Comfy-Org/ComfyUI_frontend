@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import type { Locale } from '../../i18n/translations'
 
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 const investors = [
   { name: 'CRAFT', icon: '/icons/investors/craft.svg' },
@@ -21,19 +22,19 @@ const investors = [
       <span
         class="text-xs font-semibold tracking-widest text-primary-comfy-yellow uppercase"
       >
-        {{ t('about.story.label', {}, { locale }) }}
+        {{ t('about.story.label') }}
       </span>
       <h2
         class="mt-6 text-3xl font-light text-primary-comfy-canvas lg:text-5xl"
       >
-        {{ t('about.story.headingBefore', {}, { locale })
+        {{ t('about.story.headingBefore')
         }}<span class="text-primary-comfy-yellow">{{
-          t('about.story.headingHighlight', {}, { locale })
+          t('about.story.headingHighlight')
         }}</span
-        >{{ t('about.story.headingAfter', {}, { locale }) }}
+        >{{ t('about.story.headingAfter') }}
       </h2>
       <p class="mt-8 text-base/relaxed text-primary-warm-white lg:text-lg">
-        {{ t('about.story.body', {}, { locale }) }}
+        {{ t('about.story.body') }}
       </p>
     </div>
 
@@ -70,7 +71,7 @@ const investors = [
       <p
         class="mt-6 max-w-3xl text-sm/relaxed text-primary-warm-white lg:text-base"
       >
-        {{ t('about.story.investorsBody', {}, { locale }) }}
+        {{ t('about.story.investorsBody') }}
       </p>
       <div class="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:gap-6">
         <div
@@ -92,12 +93,12 @@ const investors = [
       class="mx-auto mt-12 max-w-5xl rounded-4xl bg-primary-comfy-yellow p-10 lg:p-16"
     >
       <p class="text-xl/relaxed font-medium text-primary-comfy-ink lg:text-3xl">
-        {{ t('about.quote.text', {}, { locale }) }}
+        {{ t('about.quote.text') }}
       </p>
       <p
         class="mt-8 text-sm font-semibold text-primary-comfy-ink/70 lg:text-base"
       >
-        {{ t('about.quote.attribution', {}, { locale }) }}
+        {{ t('about.quote.attribution') }}
       </p>
     </div>
   </section>

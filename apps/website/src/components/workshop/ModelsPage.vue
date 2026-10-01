@@ -14,7 +14,7 @@ import type { FunctionalComponent } from 'vue'
 import { isWorkflowSlug } from '../../config/models-catalogue'
 import { fetchModelsCatalogue } from '../../config/models-catalogue-data'
 import { useWorkshopSession } from '../../config/workshop-session-state'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import {
   useWorkshopAppsEnabled,
   useWorkshopEnabled,
@@ -30,6 +30,7 @@ import {
   workshopHeadingClass
 } from './workshopHeadingClasses'
 
+const { t } = translationsFor('en')
 const {
   slug,
   workflowId,
@@ -42,7 +43,7 @@ const {
   section?: CatalogueTab
 }>()
 
-const loadingLabel = t('workshop.load.pending', {}, { locale: 'en' })
+const loadingLabel = t('workshop.load.pending')
 const isWorkflow = computed(() => (slug ? isWorkflowSlug(slug) : false))
 const mounted = useMounted()
 const catalogueRevision = shallowRef(0)
@@ -137,11 +138,7 @@ const LoadError: FunctionalComponent<{ error?: unknown }> = () =>
       'data-testid': 'models-load-error'
     },
     [
-      h(
-        'p',
-        { class: 'text-lg' },
-        t('workshop.load.failed', {}, { locale: 'en' })
-      ),
+      h('p', { class: 'text-lg' }, t('workshop.load.failed')),
       h(
         'button',
         {
@@ -153,7 +150,7 @@ const LoadError: FunctionalComponent<{ error?: unknown }> = () =>
             Content.value = createContent()
           }
         },
-        t('workshop.error.retry', {}, { locale: 'en' })
+        t('workshop.error.retry')
       )
     ]
   )
@@ -232,7 +229,7 @@ const Content = shallowRef(createContent())
       class="mx-auto max-w-10xl animate-soft-in px-6 pt-8 pb-4 max-sm:pt-5 lg:px-8 lg:pt-12 sm:short:pb-3"
     >
       <p :class="workshopEyebrowClass">
-        {{ t('workshop.catalogue.eyebrow', {}, { locale: 'en' }) }}
+        {{ t('workshop.catalogue.eyebrow') }}
       </p>
       <h1 :class="workshopHeadingClass">{{ heading }}</h1>
     </div>

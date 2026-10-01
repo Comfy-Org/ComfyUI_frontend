@@ -1050,9 +1050,11 @@ function useInCode() {
               @click="switchToPersonal"
             >
               {{
-                t(personalSwitchPending
+                t(
+                  personalSwitchPending
                     ? 'workshop.run.preparingSession'
-                    : 'workshop.run.switchPersonal')
+                    : 'workshop.run.switchPersonal'
+                )
               }}
             </Button>
             <p
@@ -1088,9 +1090,7 @@ function useInCode() {
             <template v-if="!isRunning" #prepend>
               <Play class="size-5 fill-current" aria-hidden="true" />
             </template>
-            {{
-              t(isRunning ? 'workshop.run.cancel' : 'workshop.run.run')
-            }}
+            {{ t(isRunning ? 'workshop.run.cancel' : 'workshop.run.run') }}
           </Button>
           <Button
             v-else

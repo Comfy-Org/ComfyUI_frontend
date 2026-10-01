@@ -3,9 +3,10 @@ import SectionHeader from '../../components/common/SectionHeader.vue'
 import CopyableField from '../../components/ui/copyable-field/CopyableField.vue'
 import { externalLinks } from '../../config/routes'
 import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 // Bundled skills installed by `comfy skills install`
 // (docs.comfy.org/agent-tools/cli).
@@ -64,21 +65,17 @@ const cards: {
   }
 ]
 
-const copyLabel = t('ui.copy', {}, { locale })
-const copiedLabel = t('ui.copied', {}, { locale })
+const copyLabel = t('ui.copy')
+const copiedLabel = t('ui.copied')
 </script>
 
 <template>
   <section class="mx-auto max-w-9xl px-6 py-16 lg:py-24">
-    <SectionHeader
-      max-width="xl"
-      :label="t('cli.skills.label', {}, { locale })"
-      align="start"
-    >
-      {{ t('cli.skills.heading', {}, { locale }) }}
+    <SectionHeader max-width="xl" :label="t('cli.skills.label')" align="start">
+      {{ t('cli.skills.heading') }}
       <template #subtitle>
         <p class="mt-4 max-w-xl text-sm text-smoke-700 lg:text-base">
-          {{ t('cli.skills.subtitle', {}, { locale }) }}
+          {{ t('cli.skills.subtitle') }}
         </p>
         <div class="mt-6 max-w-md">
           <CopyableField
@@ -94,7 +91,7 @@ const copiedLabel = t('ui.copied', {}, { locale })
       <p
         class="text-xs font-bold tracking-widest text-primary-comfy-canvas uppercase"
       >
-        {{ t('cli.skills.bundledLabel', {}, { locale }) }}
+        {{ t('cli.skills.bundledLabel') }}
       </p>
       <ul class="flex flex-wrap gap-2.5">
         <li
@@ -106,7 +103,7 @@ const copiedLabel = t('ui.copied', {}, { locale })
             {{ skill.name }}
           </span>
           <span class="text-xs text-smoke-700">
-            {{ t(skill.descriptionKey, {}, { locale }) }}
+            {{ t(skill.descriptionKey) }}
           </span>
         </li>
       </ul>
@@ -122,15 +119,15 @@ const copiedLabel = t('ui.copied', {}, { locale })
           <h3
             class="font-formula text-sm font-extrabold tracking-[0.7px] text-primary-comfy-yellow uppercase"
           >
-            {{ t(card.titleKey, {}, { locale }) }}
+            {{ t(card.titleKey) }}
           </h3>
           <span class="font-mono text-xs text-white/40">{{ card.skill }}</span>
         </div>
         <p class="flex-1 text-sm text-primary-comfy-canvas/80">
-          {{ t(card.promptKey, {}, { locale }) }}
+          {{ t(card.promptKey) }}
         </p>
         <CopyableField
-          :value="t(card.promptKey, {}, { locale })"
+          :value="t(card.promptKey)"
           :copy-label="copyLabel"
           :copied-label="copiedLabel"
         />
@@ -138,14 +135,14 @@ const copiedLabel = t('ui.copied', {}, { locale })
     </div>
 
     <p class="mt-8 text-sm text-smoke-700">
-      {{ t('cli.skills.moreSkillsPrefix', {}, { locale })
+      {{ t('cli.skills.moreSkillsPrefix')
       }}<a
         :href="externalLinks.mcpSkills"
         target="_blank"
         rel="noopener noreferrer"
         class="rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
-        >{{ t('cli.skills.moreSkillsLinkLabel', {}, { locale }) }}</a
-      >{{ t('cli.skills.moreSkillsSuffix', {}, { locale }) }}
+        >{{ t('cli.skills.moreSkillsLinkLabel') }}</a
+      >{{ t('cli.skills.moreSkillsSuffix') }}
     </p>
   </section>
 </template>

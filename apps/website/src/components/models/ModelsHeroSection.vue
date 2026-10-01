@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Locale } from '../../i18n/translations'
 
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import BrandButton from '../common/BrandButton.vue'
 
 const {
@@ -17,6 +17,7 @@ const {
   videoSrc: string
   videoAriaLabel?: string
 }>()
+const { t } = translationsFor(locale)
 </script>
 
 <template>
@@ -24,14 +25,14 @@ const {
     <h1
       class="max-w-4xl text-4xl font-light tracking-tight text-primary-comfy-canvas lg:text-6xl"
     >
-      {{ t('models.list.heroTitleBefore', { name: modelName }, { locale })
+      {{ t('models.list.heroTitleBefore', { name: modelName })
       }}<span class="text-primary-comfy-yellow">ComfyUI</span
-      >{{ t('models.list.heroTitleAfter', { name: modelName }, { locale }) }}
+      >{{ t('models.list.heroTitleAfter', { name: modelName }) }}
     </h1>
     <p
       class="mt-6 max-w-2xl text-sm text-pretty text-primary-comfy-canvas lg:text-base"
     >
-      {{ t('hero.subtitle', {}, { locale }) }}
+      {{ t('hero.subtitle') }}
     </p>
     <BrandButton
       :href="ctaHref"
@@ -39,7 +40,7 @@ const {
       size="lg"
       class="mt-10 px-8 py-4 uppercase"
     >
-      {{ t('models.list.heroCta', { name: modelName }, { locale }) }}
+      {{ t('models.list.heroCta', { name: modelName }) }}
     </BrandButton>
     <div class="mt-16 w-full max-w-5xl">
       <video

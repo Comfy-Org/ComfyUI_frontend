@@ -5,9 +5,10 @@ import { ref, useTemplateRef, watch } from 'vue'
 import { useAutoAdvance } from '../../composables/useAutoAdvance'
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 interface Slide {
   title: string
@@ -136,7 +137,7 @@ watch([active, onScreen], ([current, visible], [previous]) => {
       class="relative h-[clamp(300px,44vw,520px)] rounded-5xl border-[1.5px] border-white/15"
       role="region"
       aria-roledescription="carousel"
-      :aria-label="t('featuredWorkflows.label', {}, { locale })"
+      :aria-label="t('featuredWorkflows.label')"
       @pointerenter="hovering = true"
       @pointerleave="((hovering = false), resume())"
     >
@@ -186,7 +187,7 @@ watch([active, onScreen], ([current, visible], [previous]) => {
               class="absolute top-3 left-3 z-20 rounded-[12px] bg-black/10 px-3.5 py-1.5 backdrop-blur-xs"
             >
               <span class="text-xs font-extrabold tracking-wide text-white">
-                {{ t('featuredWorkflows.label', {}, { locale }) }}
+                {{ t('featuredWorkflows.label') }}
               </span>
             </div>
 
@@ -229,7 +230,7 @@ watch([active, onScreen], ([current, visible], [previous]) => {
         <button
           type="button"
           class="flex size-11 cursor-pointer items-center justify-center rounded-xl bg-white/10 text-white backdrop-blur-xs transition-colors hover:bg-white/20"
-          :aria-label="t('featuredWorkflows.prev', {}, { locale })"
+          :aria-label="t('featuredWorkflows.prev')"
           @click="pick(-1)"
         >
           <svg
@@ -250,7 +251,7 @@ watch([active, onScreen], ([current, visible], [previous]) => {
         <button
           type="button"
           class="flex size-11 cursor-pointer items-center justify-center rounded-xl bg-white/10 text-white backdrop-blur-xs transition-colors hover:bg-white/20"
-          :aria-label="t('featuredWorkflows.next', {}, { locale })"
+          :aria-label="t('featuredWorkflows.next')"
           @click="pick(1)"
         >
           <svg

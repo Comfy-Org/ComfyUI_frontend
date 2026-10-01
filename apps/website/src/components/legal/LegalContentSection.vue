@@ -6,7 +6,7 @@ import { computed, ref } from 'vue'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import en from '../../locales/en/main.json' with { type: 'json' }
 import { scrollTo } from '../../scripts/smoothScroll'
 import SafeRichText from '@/components/common/SafeRichTextContent'
@@ -20,6 +20,7 @@ const {
   locale?: Locale
   tocLabelKey: TranslationKey
 }>()
+const { t } = translationsFor(locale)
 
 interface Block {
   type: 'paragraph' | 'list'
@@ -54,9 +55,7 @@ function buildSections(): LegalSection[] {
             const key = `${prefix}.${id}.block.${index}` as TranslationKey
             return [
               {
-                type: t(key, {}, { locale }).includes('\n')
-                  ? 'list'
-                  : 'paragraph',
+                type: t(key).includes('\n') ? 'list' : 'paragraph',
                 key
               }
             ]
@@ -67,11 +66,7 @@ function buildSections(): LegalSection[] {
     return [
       {
         id,
-        title: t(
-          typeof section.title === 'string' ? titleKey : labelKey,
-          {},
-          { locale }
-        ),
+        title: t(typeof section.title === 'string' ? titleKey : labelKey),
         blocks
       }
     ]
@@ -128,7 +123,7 @@ function scrollToSection(id: string) {
 }
 
 function listItems(key: TranslationKey): string[] {
-  return t(key, {}, { locale }).split('\n')
+  return t(key).split('\n')
 }
 </script>
 
@@ -146,7 +141,7 @@ function listItems(key: TranslationKey): string[] {
           <summary
             class="flex cursor-pointer items-center justify-between px-4 py-3 text-sm font-semibold tracking-wide text-primary-comfy-canvas select-none"
           >
-            <span>{{ t(tocLabelKey, {}, { locale }) }}</span>
+            <span>{{ t(tocLabelKey) }}</span>
             <span
               :class="
                 mobileTocOpen
@@ -181,12 +176,12 @@ function listItems(key: TranslationKey): string[] {
 
         <nav
           class="hidden lg:sticky lg:top-32 lg:block"
-          :aria-label="t(tocLabelKey, {}, { locale })"
+          :aria-label="t(tocLabelKey)"
         >
           <p
             class="mb-4 text-xs font-semibold tracking-widest text-primary-warm-gray uppercase"
           >
-            {{ t(tocLabelKey, {}, { locale }) }}
+            {{ t(tocLabelKey) }}
           </p>
           <ul class="space-y-2">
             <li v-for="item in tocItems" :key="item.id">
@@ -227,7 +222,7 @@ function listItems(key: TranslationKey): string[] {
               v-if="block.type === 'paragraph'"
               as="p"
               class="mt-4 text-sm/relaxed text-primary-comfy-canvas lg:text-base/relaxed"
-              :html="t(block.key, {}, { locale })"
+              :html="t(block.key)"
             />
             <ul
               v-else

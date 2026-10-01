@@ -8,7 +8,7 @@ import DialogContent from '../ui/dialog/DialogContent.vue'
 import DialogDescription from '../ui/dialog/DialogDescription.vue'
 import DialogTitle from '../ui/dialog/DialogTitle.vue'
 import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 
 // The same run, and the same two choices, whichever way out of it the reader
 // took: off the page, or off the workspace that is paying for it. A run the
@@ -45,6 +45,7 @@ const {
   assetsHref?: string
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 const open = defineModel<boolean>('open', { default: false })
 const emit = defineEmits<{ leave: []; keep: [] }>()
 
@@ -57,16 +58,16 @@ const offersToKeep = computed(() => action === 'leaveSaved')
 <template>
   <Dialog v-model:open="open">
     <DialogContent
-      :close-label="t(COPY[action].stay, {}, { locale })"
+      :close-label="t(COPY[action].stay)"
       class="flex flex-col gap-6 sm:max-w-xl"
       data-testid="run-leave-dialog"
     >
       <div class="flex flex-col gap-2">
         <DialogTitle class="pr-16">
-          {{ t(COPY[action].title, {}, { locale }) }}
+          {{ t(COPY[action].title) }}
         </DialogTitle>
         <DialogDescription class="text-base text-primary-comfy-canvas/70">
-          {{ t(COPY[action].body, {}, { locale }) }}
+          {{ t(COPY[action].body) }}
         </DialogDescription>
         <a
           v-if="assetsHref"
@@ -76,7 +77,7 @@ const offersToKeep = computed(() => action === 'leaveSaved')
           class="mt-1 inline-flex w-fit items-center gap-1.5 rounded-lg text-sm font-medium text-primary-comfy-yellow underline-offset-4 transition-colors outline-none hover:underline focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
           data-testid="run-leave-assets"
         >
-          {{ t('workshop.run.savedAssets', {}, { locale }) }}
+          {{ t('workshop.run.savedAssets') }}
           <ExternalLink class="size-3.5" aria-hidden="true" />
         </a>
       </div>
@@ -92,9 +93,7 @@ const offersToKeep = computed(() => action === 'leaveSaved')
           @click="offersToKeep ? emit('keep') : (open = false)"
         >
           {{
-            offersToKeep
-              ? t('workshop.run.savedKeep', {}, { locale })
-              : t(COPY[action].stay, {}, { locale })
+            offersToKeep ? t('workshop.run.savedKeep') : t(COPY[action].stay)
           }}
         </Button>
         <Button
@@ -103,7 +102,7 @@ const offersToKeep = computed(() => action === 'leaveSaved')
           data-testid="run-leave-confirm"
           @click="emit('leave')"
         >
-          {{ t(COPY[action].confirm, {}, { locale }) }}
+          {{ t(COPY[action].confirm) }}
         </Button>
       </div>
     </DialogContent>

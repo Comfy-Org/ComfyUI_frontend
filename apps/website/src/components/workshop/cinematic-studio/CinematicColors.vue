@@ -17,7 +17,6 @@ const main = defineModel<number | undefined>('main')
 
 const active = ref(0)
 
-
 function setColor(index: number, value: string) {
   colors.value = colors.value.map((color, at) => (at === index ? value : color))
 }

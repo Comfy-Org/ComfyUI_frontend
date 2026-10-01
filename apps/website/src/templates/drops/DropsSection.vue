@@ -6,9 +6,10 @@ import type { Locale } from '../../i18n/translations'
 import CardArticleGallery01 from '../../components/blocks/CardArticleGallery01.vue'
 import type { CardArticleGalleryItem } from '../../components/blocks/CardArticleGallery01.vue'
 import { drops } from '../../data/drops'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 const items = computed<CardArticleGalleryItem[]>(() =>
   drops.map((drop) => ({
@@ -33,7 +34,7 @@ const items = computed<CardArticleGalleryItem[]>(() =>
 
 <template>
   <CardArticleGallery01
-    :title="t('launches.section.title', {}, { locale })"
+    :title="t('launches.section.title')"
     :items
     layout="mixed"
   />

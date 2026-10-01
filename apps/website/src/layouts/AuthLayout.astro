@@ -4,7 +4,6 @@ import '../styles/global.css'
 import AuthHeroCarousel from '../components/auth/AuthHeroCarousel.vue'
 import AuthToast from '../components/auth/AuthToast.vue'
 import GoogleTagManager from '../components/common/GoogleTagManager.astro'
-import { t } from '../i18n/translations'
 import type { Locale } from '../i18n/translations'
 
 /**
@@ -22,6 +21,7 @@ interface Props {
 }
 
 const { title, description, locale, showTermsNotice = false } = Astro.props
+const { t } = Astro.locals
 ---
 
 <!doctype html>
@@ -61,7 +61,7 @@ const { title, description, locale, showTermsNotice = false } = Astro.props
           >
             <img
               src="/icons/logo.svg"
-              alt={t('auth.shell.logoAlt', {}, { locale })}
+              alt={t('auth.shell.logoAlt')}
               class="h-9 w-auto shrink-0 self-start object-contain object-left lg:h-10 2xl:h-11"
             />
 
@@ -74,32 +74,32 @@ const { title, description, locale, showTermsNotice = false } = Astro.props
                 class="mt-10 shrink-0 text-center text-sm/relaxed text-primary-warm-gray"
               >
                 <p class="my-0">
-                  {t('auth.shell.termsText', {}, { locale })}
+                  {t('auth.shell.termsText')}
                   <br />
                   <a
                     href="https://comfy.org/terms-of-service/"
                     target="_blank"
                     rel="noopener noreferrer"
                     class="text-primary-comfy-canvas underline"
-                    >{t('auth.shell.termsLink', {}, { locale })}</a
+                    >{t('auth.shell.termsLink')}</a
                   >
-                  {' '}{t('auth.shell.andText', {}, { locale })}{' '}
+                  {' '}{t('auth.shell.andText')}{' '}
                   <a
                     href="https://comfy.org/privacy-policy/"
                     target="_blank"
                     rel="noopener noreferrer"
                     class="text-primary-comfy-canvas underline"
-                    >{t('auth.shell.privacyLink', {}, { locale })}</a
+                    >{t('auth.shell.privacyLink')}</a
                   >.
                 </p>
                 <p class="my-4 text-xs/relaxed">
-                  {t('auth.shell.questionsText', {}, { locale })}{' '}
+                  {t('auth.shell.questionsText')}{' '}
                   <a
                     href="https://support.comfy.org"
                     target="_blank"
                     rel="noopener noreferrer"
                     class="text-primary-comfy-canvas underline"
-                    >{t('auth.shell.contactLink', {}, { locale })}</a
+                    >{t('auth.shell.contactLink')}</a
                   >.
                 </p>
               </div>
@@ -112,21 +112,21 @@ const { title, description, locale, showTermsNotice = false } = Astro.props
                   target="_blank"
                   rel="noopener noreferrer"
                   class="cursor-pointer text-sm text-primary-comfy-canvas/60 no-underline"
-                  >{t('auth.shell.termsLink', {}, { locale })}</a
+                  >{t('auth.shell.termsLink')}</a
                 >
                 <a
                   href="https://comfy.org/privacy-policy/"
                   target="_blank"
                   rel="noopener noreferrer"
                   class="cursor-pointer text-sm text-primary-comfy-canvas/60 no-underline"
-                  >{t('auth.shell.privacyLink', {}, { locale })}</a
+                  >{t('auth.shell.privacyLink')}</a
                 >
                 <a
                   href="https://support.comfy.org"
                   target="_blank"
                   rel="noopener noreferrer"
                   class="cursor-pointer text-sm text-primary-comfy-canvas/60 no-underline"
-                  >{t('auth.shell.needHelp', {}, { locale })}</a
+                  >{t('auth.shell.needHelp')}</a
                 >
               </footer>
             )}

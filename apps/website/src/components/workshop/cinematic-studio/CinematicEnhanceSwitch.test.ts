@@ -3,8 +3,10 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { h, ref } from 'vue'
 
-import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
+import { translationsFor } from '../../../i18n/translations'
 import CinematicEnhanceSwitch from './CinematicEnhanceSwitch.vue'
+
+const { t: tc } = translationsFor('en')
 
 describe('CinematicEnhanceSwitch', () => {
   it('toggles the AI prompt and keeps its hint off the page until hover', async () => {

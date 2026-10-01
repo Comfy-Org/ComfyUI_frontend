@@ -6,7 +6,7 @@ import en from '../locales/en/main.json' with { type: 'json' }
 import ja from '../locales/ja/main.json' with { type: 'json' }
 import zhCN from '../locales/zh-CN/main.json' with { type: 'json' }
 
-export type MessageKey<T> = {
+type MessageKey<T> = {
   [K in keyof T & string]: T[K] extends string ? K : `${K}.${MessageKey<T[K]>}`
 }[keyof T & string]
 

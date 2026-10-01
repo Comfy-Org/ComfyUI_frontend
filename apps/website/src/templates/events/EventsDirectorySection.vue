@@ -13,7 +13,7 @@ import MapPins01 from '../../components/blocks/MapPins01.vue'
 import EventsAgendaView from './EventsAgendaView.vue'
 import EventsCardsView from './EventsCardsView.vue'
 import { directoryEvents, eventsDerivedAt } from '../../data/events'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import {
   DIRECTORY_FILTER_ALL,
   EVENT_CATEGORIES,
@@ -33,6 +33,7 @@ const {
   events?: readonly ComfyEvent[]
   derivedAt?: Date
 }>()
+const { t } = translationsFor(locale)
 
 // Search, type and organizer feed whichever view is active, so the whole
 // section is one reactive model: three filter fields plus the view. Everything
@@ -98,17 +99,17 @@ const selectedEventId = computed(() =>
 
 // Names a cluster badge for screen readers: the count plus what a click does.
 const clusterLabel = (labels: string[]) =>
-  t('events.directory.clusterLabel', { count: labels.length }, { locale })
+  t('events.directory.clusterLabel', { count: labels.length })
 
 // Heading of the popup a still-coincident cluster opens on the map.
 const clusterPopupTitle = (count: number) =>
-  t('events.directory.clusterPopupTitle', { count }, { locale })
+  t('events.directory.clusterPopupTitle', { count })
 
 const countLabel = computed(() => {
   const count = visibleEvents.value.length
   const key =
     count === 1 ? 'events.directory.countOne' : 'events.directory.count'
-  return t(key, { count }, { locale })
+  return t(key, { count })
 })
 
 // Switching tabs leaves `filters` untouched, so search and both filters carry
@@ -152,13 +153,13 @@ const caretClass =
       <h2
         class="mt-4 text-3xl font-light tracking-tight text-primary-warm-white lg:text-5xl"
       >
-        {{ t('events.directory.title', {}, { locale }) }}
+        {{ t('events.directory.title') }}
       </h2>
 
       <p
         class="mt-6 text-base font-light text-balance text-primary-comfy-canvas lg:text-lg"
       >
-        {{ t('events.directory.lead', {}, { locale }) }}
+        {{ t('events.directory.lead') }}
       </p>
     </div>
 
@@ -167,7 +168,7 @@ const caretClass =
       data-testid="events-directory-controls"
     >
       <label for="events-directory-search" class="sr-only">
-        {{ t('events.directory.searchLabel', {}, { locale }) }}
+        {{ t('events.directory.searchLabel') }}
       </label>
       <div class="relative flex-1">
         <Search
@@ -178,7 +179,7 @@ const caretClass =
           id="events-directory-search"
           v-model="filters.query"
           type="search"
-          :placeholder="t('events.directory.searchPlaceholder', {}, { locale })"
+          :placeholder="t('events.directory.searchPlaceholder')"
           :class="
             cn(
               controlClass,
@@ -189,7 +190,7 @@ const caretClass =
       </div>
 
       <label for="events-directory-type" class="sr-only">
-        {{ t('events.directory.typeLabel', {}, { locale }) }}
+        {{ t('events.directory.typeLabel') }}
       </label>
       <div class="relative">
         <select
@@ -198,21 +199,21 @@ const caretClass =
           :class="selectClass"
         >
           <option :value="DIRECTORY_FILTER_ALL">
-            {{ t('events.directory.allTypes', {}, { locale }) }}
+            {{ t('events.directory.allTypes') }}
           </option>
           <option
             v-for="category in EVENT_CATEGORIES"
             :key="category"
             :value="category"
           >
-            {{ t(`events.category.${category}`, {}, { locale }) }}
+            {{ t(`events.category.${category}`) }}
           </option>
         </select>
         <ChevronDown :class="caretClass" aria-hidden="true" />
       </div>
 
       <label for="events-directory-organizer" class="sr-only">
-        {{ t('events.directory.organizerLabel', {}, { locale }) }}
+        {{ t('events.directory.organizerLabel') }}
       </label>
       <div class="relative">
         <select
@@ -221,14 +222,14 @@ const caretClass =
           :class="selectClass"
         >
           <option :value="DIRECTORY_FILTER_ALL">
-            {{ t('events.directory.allOrganizers', {}, { locale }) }}
+            {{ t('events.directory.allOrganizers') }}
           </option>
           <option
             v-for="organizer in EVENT_ORGANIZERS"
             :key="organizer"
             :value="organizer"
           >
-            {{ t(`events.organizer.${organizer}`, {}, { locale }) }}
+            {{ t(`events.organizer.${organizer}`) }}
           </option>
         </select>
         <ChevronDown :class="caretClass" aria-hidden="true" />
@@ -236,7 +237,7 @@ const caretClass =
 
       <template v-if="view !== 'calendar'">
         <label for="events-directory-sort" class="sr-only">
-          {{ t('events.directory.sortLabel', {}, { locale }) }}
+          {{ t('events.directory.sortLabel') }}
         </label>
         <div class="relative">
           <select
@@ -245,10 +246,10 @@ const caretClass =
             :class="selectClass"
           >
             <option value="latest">
-              {{ t('events.directory.sortLatest', {}, { locale }) }}
+              {{ t('events.directory.sortLatest') }}
             </option>
             <option value="oldest">
-              {{ t('events.directory.sortOldest', {}, { locale }) }}
+              {{ t('events.directory.sortOldest') }}
             </option>
           </select>
           <ChevronDown :class="caretClass" aria-hidden="true" />
@@ -257,7 +258,7 @@ const caretClass =
 
       <div
         role="group"
-        :aria-label="t('events.directory.viewLabel', {}, { locale })"
+        :aria-label="t('events.directory.viewLabel')"
         class="flex gap-1 rounded-2xl border border-white/15 p-1.5"
       >
         <button
@@ -276,7 +277,7 @@ const caretClass =
           @click="view = entry.key"
         >
           <component :is="entry.icon" class="size-3.5" aria-hidden="true" />
-          {{ t(`events.directory.view.${entry.key}`, {}, { locale }) }}
+          {{ t(`events.directory.view.${entry.key}`) }}
         </button>
       </div>
     </div>
@@ -287,7 +288,7 @@ const caretClass =
     >
       <MapPins01
         :markers
-        :region-label="t('events.directory.mapLabel', {}, { locale })"
+        :region-label="t('events.directory.mapLabel')"
         :cluster-label="clusterLabel"
         :popup-title="clusterPopupTitle"
         class="h-80 sm:h-96 lg:h-140"

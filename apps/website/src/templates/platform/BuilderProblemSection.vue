@@ -2,21 +2,20 @@
 import SectionHeader from '../../components/common/SectionHeader.vue'
 import CheckIcon from '../../components/icons/CheckIcon.vue'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 const painNumbers = [1, 2, 3, 4] as const
 
-const pains = painNumbers.map((n) =>
-  t(`platform.builderProblem.${n}`, {}, { locale })
-)
+const pains = painNumbers.map((n) => t(`platform.builderProblem.${n}`))
 </script>
 
 <template>
   <section class="mx-auto max-w-9xl px-6 py-10 lg:py-14">
     <SectionHeader max-width="xl" heading-size="compact">
-      {{ t('platform.builderProblem.heading', {}, { locale }) }}
+      {{ t('platform.builderProblem.heading') }}
     </SectionHeader>
 
     <ul class="mx-auto mt-8 max-w-2xl space-y-3">

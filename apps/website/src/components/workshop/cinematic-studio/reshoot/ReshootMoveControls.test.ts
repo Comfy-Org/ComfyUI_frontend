@@ -6,8 +6,10 @@ import {
   DEFAULT_CAMERA,
   frameTime
 } from '../../../../lib/workshop/cinematic-studio/reshoot'
-import { studioT as rc } from '../../../../lib/workshop/cinematic-studio/copy'
+import { translationsFor } from '../../../../i18n/translations'
 import ReshootMoveControls from './ReshootMoveControls.vue'
+
+const { t: rc } = translationsFor('en')
 
 const keys = [
   { frame: 0, camera: DEFAULT_CAMERA },

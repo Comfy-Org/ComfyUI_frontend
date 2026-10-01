@@ -314,9 +314,11 @@ const facts = computed(() => [
             class="px-6 pt-4 text-sm text-primary-warm-gray"
           >
             {{
-              t(language === 'curl'
+              t(
+                language === 'curl'
                   ? 'workshop.api.filesOmitted'
-                  : 'workshop.api.localFiles')
+                  : 'workshop.api.localFiles'
+              )
             }}
           </p>
           <pre
@@ -334,9 +336,11 @@ const facts = computed(() => [
 
         <p v-if="!snippet" role="status" class="text-sm text-primary-warm-gray">
           {{
-            t(unavailable
+            t(
+              unavailable
                 ? 'workshop.api.mappingUnavailable'
-                : 'workshop.api.inputInvalid')
+                : 'workshop.api.inputInvalid'
+            )
           }}
         </p>
 

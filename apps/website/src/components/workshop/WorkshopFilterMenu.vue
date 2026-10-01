@@ -16,7 +16,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { useVisualViewport } from '../../composables/useVisualViewport'
 import type { UseCase } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import { filterLabel } from '../../lib/workshop/filter-label'
 import type { FacetSheetGroup } from './FacetSheet.vue'
 
@@ -45,6 +45,7 @@ const {
   kind?: 'models' | 'workflows'
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const useCases = defineModel<T[]>('useCases', { required: true })
 const models = defineModel<string[]>('models', { default: () => [] })
@@ -88,9 +89,7 @@ const groups = computed<FacetSheetGroup[]>(() => [
     label: t(
       kind === 'workflows'
         ? 'workshop.catalogue.categories'
-        : 'workshop.launch.label',
-      {},
-      { locale }
+        : 'workshop.launch.label'
     ),
     options: useCaseOptions,
     selected: useCases.value
@@ -99,7 +98,7 @@ const groups = computed<FacetSheetGroup[]>(() => [
     ? [
         {
           key: 'model',
-          label: t('workshop.hub.models', {}, { locale }),
+          label: t('workshop.hub.models'),
           options: modelOptions,
           selected: models.value
         }
@@ -112,7 +111,7 @@ const selectedCount = computed(() =>
 )
 
 const label = computed(() =>
-  filterLabel(groups.value, t('workshop.filter.label', {}, { locale }))
+  filterLabel(groups.value, t('workshop.filter.label'))
 )
 
 function toggle(facet: string, value: string) {
@@ -138,20 +137,19 @@ defineExpose({ focus: () => trigger.value?.focus() })
 
 const sheetLabels = computed(() => ({
   title: label.value,
-  search: t('workshop.filter.search', {}, { locale }),
-  noMatches: t('workshop.filter.noMatches', {}, { locale }),
-  applied: (n: number) => t('workshop.filter.applied', { n }, { locale }),
-  clearAll: t('workshop.filter.clearAll', {}, { locale }),
+  search: t('workshop.filter.search'),
+  noMatches: t('workshop.filter.noMatches'),
+  applied: (n: number) => t('workshop.filter.applied', { n }),
+  clearAll: t('workshop.filter.clearAll'),
   show: (n: number) =>
     t(
       kind === 'models'
         ? 'workshop.search.show'
         : 'workshop.catalogue.showWorkflows',
-      { n },
-      { locale }
+      { n }
     ),
-  close: t('workshop.search.close', {}, { locale }),
-  resize: t('workshop.filter.resize', {}, { locale })
+  close: t('workshop.search.close'),
+  resize: t('workshop.filter.resize')
 }))
 </script>
 

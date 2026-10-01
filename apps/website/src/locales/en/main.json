@@ -4753,6 +4753,137 @@
       "heading": "Maximize scale and control on Developer Platform",
       "headingLead": "Maximize scale and control on",
       "headingAfterBadge": "Deploy your ComfyUI workflow as a production API.\nThousands of models on one platform."
+    },
+    "router": {
+      "badge": {
+        "label": "ROUTER"
+      },
+      "cta": {
+        "getApiKey": "Get an API Key",
+        "browseModels": "Browse Models"
+      },
+      "migrate": {
+        "title": "Migrate to Comfy Router with your agent",
+        "subtitle": "Help me migrate this project's existing model integration to Comfy Router.",
+        "copyPrompt": "COPY PROMPT",
+        "copied": "COPIED"
+      },
+      "proof": {
+        "caption": "The same models 3M+ ComfyUI users already use, now behind one API."
+      },
+      "code": {
+        "heading": "Choose the provider in one line.",
+        "supporting": "Change the provider. Keep everything else.",
+        "providerLabel": "Provider"
+      },
+      "video": {
+        "alt": "Comfy Router explained: one API, your choice of provider for every job"
+      },
+      "section1": {
+        "heading": "Integrate once. Add models as you go.",
+        "body": "Every provider you add brings another SDK, another key, another job lifecycle, and another set of errors. Build that once through Comfy Router, and the next model is one line."
+      },
+      "section2": {
+        "heading": "Better availability. Better prices. No subscription.",
+        "body": "Run the same model on fal, Runware, or Wavespeed, and switch with one parameter when one is rate limited or another is cheaper. Comfy never switches the route for you, and every job reports the provider that ran it.",
+        "providersLabel": "Supported providers",
+        "providers": "fal · Runware · Wavespeed"
+      },
+      "coverage": {
+        "heading": "Same models. More places to run them.",
+        "body": "Every model runs on Comfy by default, you can set `model_provider` to run them on another provider. We're starting with the highest-traffic models, more models and providers are coming soon.",
+        "modelColumn": "MODEL",
+        "moreModels": "+{count} more models",
+        "moreModelsSuffix": "run on Comfy",
+        "browseAll": "Browse all {count} models",
+        "served": "Served",
+        "notServed": "Not served"
+      },
+      "section3": {
+        "heading": "Hit a concurrency limit? Queue the job.",
+        "body": "And let Comfy handle the wait. Use `submit` to get a request ID immediately. The job runs when a slot opens, and you can use the ID to check progress and retrieve the result. Or use `subscribe` to submit the job and wait until it completes."
+      },
+      "roadmap": {
+        "1": {
+          "title": "Comfy workflows",
+          "description": "Run a ComfyUI workflow from the same SDK. Just like models.",
+          "details": "Workflows run today through the Comfy API on the Developer Platform. Router support brings them behind the same key, the same job surface, and the same credits as every model call, so a pipeline you build in ComfyUI ships to your app as one request."
+        },
+        "2": {
+          "title": "Routing strategies",
+          "description": "Name the policy: reliable, fast_start, fast_finish, or lowest_cost.",
+          "details": "Name the outcome you want instead of a provider. Comfy picks a route that fits the policy, and every job still reports the provider that ran it. Ordered fallback arrives alongside: a backup list Comfy uses only when a retry is known to be safe."
+        },
+        "3": {
+          "title": "Route by use case",
+          "description": "Request an upscale, a background removal, or an animation, and Comfy picks a model or workflow that can do it.",
+          "details": "Describe the task instead of the model. Comfy matches it to a model or workflow that can do it, on a provider that is up, so new models slot in without a change on your side."
+        },
+        "4": {
+          "title": "BYOK",
+          "description": "Use your own provider key for supported models while keeping the same Comfy Router integration.",
+          "details": "Connect your own provider credentials and run supported models through the same Comfy Router API. Keep one SDK and job lifecycle while usage and billing for those calls stay with your provider."
+        },
+        "eyebrow": "Roadmap",
+        "heading": "Coming soon to the same API.",
+        "subtitle": "Provider choice is the foundation. Everything below arrives on the integration you ship today.",
+        "learnMore": "LEARN MORE"
+      },
+      "faq": {
+        "1": {
+          "q": "Why not call fal, Runware, or Wavespeed directly?",
+          "a": "You can, and plenty of teams do. Comfy Router earns its place when you need more than one: the same model on more than one provider, one key and one job surface, and a route you pick. Each provider routes to itself. Comfy Router gives you one surface across them."
+        },
+        "2": {
+          "q": "Is Comfy Router “OpenRouter for media”?",
+          "a": "OpenRouter is known for routing language models. Comfy Router is built for generative media: large assets, model-specific controls, and jobs that run for minutes."
+        },
+        "3": {
+          "q": "Does Comfy pick the provider for me?",
+          "a": "Not at launch. You name the provider and Comfy runs it there. Nothing is swapped behind your back."
+        },
+        "4": {
+          "q": "What happens if my provider is unavailable?",
+          "a": "The request fails on the provider you chose, with no silent substitution. Ordered fallback is on the roadmap: a backup list, used only when a retry is known to be safe."
+        },
+        "5": {
+          "q": "What happens when I hit my concurrency limit?",
+          "a": "Queue the job instead of retrying on a 429. Use submit to send the job and receive a request ID immediately; use that ID to check progress and retrieve the result on your own terms. If you want Comfy to wait for the result, use subscribe, which submits the job and polls until it completes. Queueing is available for all supported models.\n\n<a href=\"https://docs.comfy.org/tutorials/partner-nodes/concurrency-limits\">Learn more about concurrency limits.</a>"
+        },
+        "6": {
+          "q": "How long do you keep my inputs and outputs?",
+          "a": "Inputs are kept for 24 hours after upload and outputs for 24 hours after generation. Then they’re deleted."
+        },
+        "7": {
+          "q": "I already use ComfyUI. What does Comfy Router add?",
+          "a": "More ways to run the models you use. Reach supported models across providers, choose where they run, and switch when price, speed, or availability changes."
+        },
+        "8": {
+          "q": "Can I call Comfy workflows too?",
+          "a": "Not through Comfy Router yet. Workflows run today through the Comfy API on the Developer Platform, and Router support is on the roadmap."
+        },
+        "9": {
+          "q": "Where do my API keys, usage, and billing live?",
+          "a": "On the Developer Platform. Your API keys, run history, credits, and payments live there."
+        },
+        "10": {
+          "q": "Can I bring my own provider key?",
+          "a": "BYOK is available for select models on Enterprise. Access is enabled by request.\n\n<a href=\"/enterprise/\">Contact Enterprise Sales</a>"
+        },
+        "11": {
+          "q": "How is Comfy Router priced?",
+          "a": "Comfy Router uses the same Comfy credits that cover Partner Nodes, Comfy Cloud workflow runs, and other supported model calls. Per-model pricing is listed in the model catalog, so you can see the cost for each model before you run it."
+        },
+        "12": {
+          "q": "Do I need a Comfy subscription?",
+          "a": "No. Router runs on credits. Add credits and start calling models."
+        },
+        "heading": "FAQ"
+      },
+      "closing": {
+        "headingAfterBadge": "Start building with Comfy Router today.",
+        "subtitle": "Call frontier media models, choose your provider, get better pricing and availability. All behind one API."
+      }
     }
   },
   "cloudNodesLaunch": {
@@ -4878,5 +5009,490 @@
       "heading": "Run the model, not the hardware",
       "subtitle": "Update to v0.34.5 or later, search the node library for Comfy Cloud, and wire one in."
     }
+  },
+  "cinematic": {
+    "ux": {
+      "hub": "Hub · Apps tab",
+      "app": "App",
+      "heading": "Layout to review",
+      "composer": "E · Bottom composer",
+      "panel": "D · Side panel"
+    },
+    "hub": {
+      "eyebrow": "Hub",
+      "heading": "What will you make next?",
+      "subtitle": "Models, the workflows built on them, and apps made for one job.",
+      "tabs": "Show",
+      "models": "Models",
+      "workflows": "Workflows",
+      "apps": "Apps",
+      "appsIntro": "Tools built around one kind of work. Each one runs models and workflows for you.",
+      "elsewhere": "Models and workflows live in the new Hub prototype.",
+      "openHub": "Open the Hub",
+      "beta": "Beta",
+      "studioSummary": "Direct a shot with a real camera, light and grade, then run it on any image model.",
+      "studioMeta": "Image · 5 models",
+      "prototype": "Prototype",
+      "reshoot": "Re-shoot a video",
+      "reshootSummary": "Aim a new camera at your clip and generate the scene from that angle.",
+      "reshootMeta": "Video · MiniMax H3"
+    },
+    "stage": {
+      "longWait": "Still going. Some models take about a minute. Nothing is queued; yours already started.",
+      "generatingImage": "Generating image",
+      "generatingVideo": "Generating video",
+      "loadingTake": "Loading the take",
+      "again": "Generate again",
+      "useAsReference": "Use as reference",
+      "emptyTitle": "Your first shot appears here",
+      "emptyBody": "Write a scene, set the direction, then Generate.",
+      "label": "Shots",
+      "rendering": "Rendering…",
+      "shot": "Shot {number}",
+      "takes": "Takes",
+      "download": "Download",
+      "sequence": "Sequence",
+      "takeName": "Shot {shot}, take {take}",
+      "renderingTakeName": "Rendering Shot {shot}, take {take}"
+    },
+    "state": {
+      "failed": "This take failed",
+      "blocked": "Blocked by the model’s content policy",
+      "noCredits": "Not enough credits for this shot",
+      "cancelled": "You stopped this take",
+      "tryOn": "Try on {model}",
+      "editScene": "Edit scene"
+    },
+    "credits": {
+      "estimate": "~{credits} credits",
+      "perTake": "{takes} takes × ~{credits} credits",
+      "varies": "Cost varies",
+      "variesHint": "This model has no published price yet. Each take is charged what the model bills for it.",
+      "short": "{takes} takes need ~{credits} credits; you have {balance}.",
+      "shortOne": "1 take needs ~{credits} credits; you have {balance}.",
+      "reduce": "Use {takes} takes",
+      "reduceOne": "Use 1 take",
+      "skipped": "{failed} of {total} takes weren’t run: not enough credits",
+      "retrySkipped": "Run them now"
+    },
+    "output": {
+      "checking": "Checking…",
+      "takes": "Takes",
+      "fewerTakes": "Fewer takes",
+      "moreTakes": "More takes",
+      "aspect": "Aspect ratio",
+      "resolution": "Resolution",
+      "generate": "Generate",
+      "cancel": "Cancel",
+      "unavailable": "Running models is not available here yet."
+    },
+    "model": {
+      "degraded": "Slow now",
+      "heading": "Model"
+    },
+    "picker": {
+      "close": "Close"
+    },
+    "backToApps": "Back to apps",
+    "panel": {
+      "label": "Shot settings",
+      "newShot": "New shot"
+    },
+    "section": {
+      "output": "Format",
+      "shot": "Shot",
+      "direction": "Direction",
+      "scene": "Scene",
+      "camera": "Camera",
+      "references": "References"
+    },
+    "scene": {
+      "placeholder": "Describe the moment. Who, where, what is happening.",
+      "enhance": "AI prompt",
+      "enhanceHint": "Adds “cinematic film still” to the prompt"
+    },
+    "reference": {
+      "optional": "Optional",
+      "cast": "Character",
+      "castAction": "Add a character reference",
+      "remove": "Remove reference"
+    },
+    "title": "Cinematic Studio",
+    "beta": "Beta",
+    "repo": {
+      "view": "View on GitHub",
+      "soon": "GitHub · Coming soon"
+    },
+    "meta": {
+      "description": "Direct cinematic stills: pick the camera, shot, light, film and grade, then run any image model through the Comfy Router."
+    },
+    "unavailable": {
+      "title": "Cinematic Studio is not open yet",
+      "link": "Browse models"
+    },
+    "composer": {
+      "label": "Direct the shot",
+      "references": "Add a reference image",
+      "format": "Format"
+    },
+    "firstRun": {
+      "body": "Describe the moment. Pick the camera, the light and the look. Switch models any time.",
+      "desert": "Lone rider crossing dunes at dawn",
+      "portrait": "Old fisherman on an overcast pier",
+      "train": "Night train window at blue hour"
+    },
+    "lead": "Direct every shot. Pick the camera, lens, light and grade, and get film-grade frames from any model.",
+    "camera": {
+      "body": "Body",
+      "lens": "Lens",
+      "focal": "Focal length",
+      "aperture": "Aperture"
+    },
+    "part": {
+      "shot": "Framing",
+      "light": "Light",
+      "film": "Film",
+      "look": "Look",
+      "grade": "Grade"
+    },
+    "option": {
+      "auto": "Auto",
+      "digital": "Digital cinema",
+      "largeFormat": "Large format",
+      "super35": "Super 35",
+      "film35": "35mm film",
+      "film16": "16mm film",
+      "handheld": "Handheld",
+      "prime": "Spherical",
+      "anamorphic": "Anamorphic",
+      "vintage": "Vintage",
+      "macro": "Macro",
+      "tiltShift": "Tilt-shift",
+      "mm14": "14mm",
+      "mm24": "24mm",
+      "mm35": "35mm",
+      "mm50": "50mm",
+      "mm85": "85mm",
+      "mm135": "135mm",
+      "f14": "f/1.4",
+      "f2": "f/2",
+      "f28": "f/2.8",
+      "f4": "f/4",
+      "f8": "f/8",
+      "extremeWide": "Extreme wide",
+      "wide": "Wide",
+      "medium": "Medium",
+      "closeUp": "Close-up",
+      "extremeCloseUp": "Extreme close-up",
+      "overShoulder": "Over the shoulder",
+      "lowAngle": "Low angle",
+      "goldenHour": "Golden hour",
+      "overcast": "Overcast",
+      "blueHour": "Blue hour",
+      "practicalNight": "Practical night",
+      "neon": "Neon",
+      "lowKey": "Low key",
+      "silhouette": "Silhouette",
+      "digitalClean": "Digital clean",
+      "tungsten500": "Tungsten 500T",
+      "daylight250": "Daylight 250D",
+      "blackWhite400": "Black & white 400",
+      "reversal": "Reversal slide",
+      "expired": "Expired film",
+      "bleachBypass": "Bleach bypass",
+      "neoNoir": "Neo-noir",
+      "western": "Western",
+      "sciFi": "Science fiction",
+      "periodDrama": "Period drama",
+      "thriller": "Thriller",
+      "documentary": "Documentary",
+      "roadMovie": "Road movie",
+      "tealOrange": "Teal and orange",
+      "noir": "Noir",
+      "kodachrome": "Kodachrome",
+      "neonNight": "Neon night",
+      "desertDust": "Desert dust",
+      "nordicCold": "Nordic cold"
+    },
+    "aspect": {
+      "scope": "Scope",
+      "widescreen": "Widescreen",
+      "academy": "Academy",
+      "landscapePhoto": "Landscape photo",
+      "portraitPhoto": "Portrait photo",
+      "square": "Square",
+      "vertical": "Vertical"
+    },
+    "video": {
+      "audioOn": "On",
+      "audioOff": "Off",
+      "enhanceHint": "Adds cinematic motion and continuous action to the prompt",
+      "mode": "Creation type",
+      "image": "Image",
+      "video": "Video",
+      "animate": "Animate image",
+      "preview": "Generated video",
+      "duration": "Duration",
+      "audio": "Generate audio",
+      "firstFrame": "Starting frame",
+      "lastFrame": "Ending frame",
+      "addFirstFrame": "Add a starting frame",
+      "addLastFrame": "Add an ending frame",
+      "uploadFrame": "Upload an image",
+      "needFrame": "Add a starting frame for this model.",
+      "oneClip": "One clip per request. Describe the action and camera movement in your scene.",
+      "start": "Describe the movement. Choose a video model, or animate one of your stills.",
+      "frameError": "Could not load that starting frame. Download the image and upload it in the video settings.",
+      "frameLoading": "Preparing starting frame…",
+      "sourceVideo": "Video to edit",
+      "addSourceVideo": "Add the video to edit",
+      "noFirstFrame": "{model} can't start from an image. Remove the frame or pick another model.",
+      "needSourceVideo": "Add the video to edit first.",
+      "audioTag": "Audio",
+      "resolution": "Resolution",
+      "aspect": "Frame",
+      "modelDecides": "This model sets the length and resolution itself.",
+      "audioHint": "Adds sound to the clip."
+    },
+    "references": {
+      "needsPicture": "{model} needs the picture itself, and this image can't be read here. Download it and add it with +, or pick another model.",
+      "unreadable": "Couldn't use this image. Download it and add it with +.",
+      "unsupported": "{model} can't use references. Remove them or pick another model."
+    },
+    "colors": {
+      "title": "Colors",
+      "color": "Color",
+      "add": "Add a color",
+      "remove": "Remove color",
+      "makeMain": "Make main color",
+      "main": "Main color",
+      "sampleError": "Couldn't read colors from that image.",
+      "clear": "Clear colors",
+      "shade": "Saturation and brightness",
+      "hue": "Hue",
+      "hex": "Hex color"
+    },
+    "grade": {
+      "fromImage": "From an image",
+      "fromImageAction": "Match the colors of an image",
+      "yourPalette": "Your palette",
+      "edit": "Edit palette",
+      "done": "Done"
+    }
+  },
+  "reshoot": {
+    "title": "Re-shoot a video",
+    "prototype": "Prototype",
+    "panel": "Re-shoot settings",
+    "section": {
+      "video": "Video",
+      "camera": "New camera",
+      "move": "Camera move",
+      "prompt": "What the new view reveals",
+      "format": "Format"
+    },
+    "step": "Step {n}",
+    "step1": {
+      "label": "Prepare the clip",
+      "hint": "Choose the clip, its framing and what the new view should reveal. Depth is analyzed once; then you aim freely."
+    },
+    "step2": {
+      "label": "Aim and generate",
+      "hint": "Drag the preview or use the controls, key a move if you want one, then generate."
+    },
+    "continue": "Continue",
+    "back": "Back to the clip",
+    "edit": "Edit",
+    "credit": "Built on Cseti's CrossView-Warp LoRA and node",
+    "pick": {
+      "lead": "Re-shoot any video from any angle. Move the camera anywhere, no reshoot day needed.",
+      "drop": "Drop a video here",
+      "upload": "Upload a video",
+      "exampleMeta": "Try it without uploading anything",
+      "exampleTitle": "Sci-fi pilot"
+    },
+    "aim": {
+      "globe": "Drag the camera around your clip · scroll to move closer",
+      "more": "More: lens, height, keep aim",
+      "less": "Less",
+      "reading": "Reading the scene"
+    },
+    "axis": {
+      "rotation": "Rotation",
+      "tilt": "Tilt",
+      "lens": "Lens",
+      "height": "Height",
+      "azimuth": "Azimuth",
+      "elevation": "Elevation",
+      "distance": "Distance",
+      "fov": "Lens FOV",
+      "shift": "Vertical shift"
+    },
+    "view": {
+      "result": "Result",
+      "warp": "Warp guide",
+      "source": "Source"
+    },
+    "views": "Show",
+    "sound": {
+      "label": "Sound",
+      "generated": "Generated",
+      "original": "Original audio"
+    },
+    "warpNote": "The warp guide of a real run shows here: the clip pushed to the new camera, magenta where it has to be invented.",
+    "seed": {
+      "label": "Seed",
+      "random": "Random",
+      "help": "Leave empty for a new seed every take; enter a number to fix it."
+    },
+    "prompt": {
+      "dialogue": "The model also generates new audio: if your video has dialogue, prompt the lines here so the new generation retains it better.",
+      "placeholder": "e.g. a stone wall behind her, more wheat to the left"
+    },
+    "clip": {
+      "length": "This clip is {seconds} s long. Use one between 5 and 15 seconds.",
+      "change": "Change",
+      "ready": "Scene read",
+      "yours": "Your clip",
+      "example": "Example",
+      "replace": "Choose another clip",
+      "help": "5–15 seconds, clear subject, no black bars",
+      "rejected": "{name} is {seconds} s, so the current clip stays. Pick one between 5 and 15 seconds."
+    },
+    "reuse": "Use this angle again",
+    "generate": {
+      "note": "Keep aiming while it renders.",
+      "wait": "Reading the scene · 20 to 40 seconds",
+      "label": "Generate"
+    },
+    "expand": "Full screen",
+    "collapse": "Exit full screen",
+    "sample": {
+      "street": "Night street",
+      "diner": "Diner talk",
+      "train": "Train window",
+      "meta": "Sample"
+    },
+    "nudge": {
+      "up": "Camera higher",
+      "down": "Camera lower",
+      "left": "Camera left",
+      "right": "Camera right"
+    },
+    "dolly": {
+      "in": "Move the camera closer",
+      "out": "Move the camera away"
+    },
+    "advanced": {
+      "label": "Advanced",
+      "value": "Prompt, dialogue, seed"
+    },
+    "distanceHelp": "Distance is approximate; angles give the most control.",
+    "keepAimHelp": "Orbit the subject but keep looking where the original looked, as the training data does.",
+    "promptHelp": "Describe what should fill the areas the original camera never saw.",
+    "generatingHelp": "The first run after a quiet spell also loads the model.",
+    "take": {
+      "exampleHelp": "Example result: the clip re-shot from a new angle at 768p. Aim a camera of your own to try it.",
+      "aim": "Aim",
+      "example": "Example result",
+      "static": "Take {n} · az {az}° el {el}°",
+      "move": "Take {n} · move, {keys} keys",
+      "cancelled": "Cancelled",
+      "failed": "This take failed"
+    },
+    "frames": "{frames} frames at 24 fps ({seconds} s)",
+    "speed": {
+      "480p": "Faster",
+      "768p": "Sharper"
+    },
+    "empty": {
+      "title": "Your new angle plays here",
+      "hint": "Start with a 5 to 15 second clip, or pick an example."
+    },
+    "optional": "Optional",
+    "aspect": {
+      "label": "Aspect ratio",
+      "source": "Match source"
+    },
+    "size": {
+      "label": "Output size",
+      "480p": "0.4 MP · 864×480 · faster",
+      "768p": "1.0 MP · 1376×768 · sharper, slower"
+    },
+    "keepAim": "Keep the source camera's aim",
+    "zone": {
+      "green": "Inside the range the LoRA was checked on.",
+      "yellow": "Trained, but less reliable.",
+      "red": "Outside training. The hidden side will be invented."
+    },
+    "dragHint": {
+      "label": "Drag to orbit · Scroll to move closer",
+      "touch": "Drag to orbit"
+    },
+    "needsDepth": "Analyze depth to aim a new camera.",
+    "stale": "Aspect ratio or size changed, so the depth has to be analyzed again.",
+    "move": {
+      "static": "Static",
+      "keys": "{count} keys",
+      "help": "Scrub the timeline under the preview, aim, press Key. Two or more keys make a move; the camera holds before the first and after the last. Aiming on a key edits it.",
+      "frame": "Frame",
+      "key": "Key",
+      "remove": "Remove key at {time}",
+      "clear": "Clear keys",
+      "motion": "Motion",
+      "unkey": "Remove key",
+      "noKeys": "No keys: one camera for the whole clip. Key two frames to make a move.",
+      "oneKey": "One key holds the camera there. Key another frame to make a move.",
+      "goTo": "Go to the key at {time}"
+    },
+    "motion": {
+      "linear": "Linear",
+      "ease_in": "Ease in",
+      "ease_out": "Ease out",
+      "ease_in_out": "Ease in and out",
+      "smooth": "Smooth spline"
+    },
+    "analyzing": "Estimating depth…",
+    "cancel": "Cancel",
+    "generating": "Generating the new view",
+    "takes": "Takes",
+    "download": "Download",
+    "stage": {
+      "starting": "Starting a server",
+      "queued": "Waiting for a server",
+      "uploading": "Uploading the clip",
+      "queuedAt": "Queued · position {n}",
+      "fetching": "Fetching the result"
+    },
+    "signIn": "Sign in to read the scene.",
+    "unavailable": "Re-shoot is not available right now. Try again later.",
+    "quote": {
+      "free": "Free · {left} of {runs} left {period}",
+      "freeOnly": "Free",
+      "paid": "{price} credits",
+      "perSecond": "{rate} credits per second",
+      "failed": "Couldn’t get the price yet. Trying again…",
+      "priceUnknown": "Price not available",
+      "exhausted": "No free runs left; next one {when}",
+      "later": "later"
+    },
+    "period": {
+      "day": "today",
+      "week": "this week",
+      "days": "per {n} days",
+      "hours": "per {n} hours"
+    },
+    "error": {
+      "busy": "One take at a time: wait for this one to finish.",
+      "rateLimited": "Too many tries for now. Try again {when}.",
+      "failed": "Something went wrong. Try again."
+    },
+    "demoNote": "Preview: takes play the example result for now.",
+    "clipLength": "This clip is {seconds} s. Use one between 5 and 15 seconds.",
+    "failed": "Something went wrong",
+    "tryAgain": "Try again",
+    "noWebgl": "This preview needs WebGL2, which this browser does not offer.",
+    "play": "Play",
+    "pause": "Pause"
   }
 }

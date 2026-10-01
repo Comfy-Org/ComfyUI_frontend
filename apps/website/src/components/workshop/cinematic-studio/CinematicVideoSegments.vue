@@ -1,11 +1,11 @@
 <script setup lang="ts">
+import { translationsFor } from '../../../i18n/translations'
 import { Volume2, VolumeX } from '@lucide/vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { AspectRatio } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { Locale } from '../../../i18n/translations'
-import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 import type { CinematicVideoCapabilities } from '../../../lib/workshop/cinematic-studio/video'
 import { resolutionLabel } from '../../../lib/workshop/cinematic-studio/video'
 import { framedStyle } from './aspect-style'
@@ -17,6 +17,7 @@ const { video, locale = 'en' } = defineProps<{
   video: CinematicVideoCapabilities
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const aspect = defineModel<AspectRatio>('aspect', { required: true })
 const duration = defineModel<number | undefined>('duration')
@@ -45,14 +46,14 @@ const segmentClass =
 <template>
   <div
     role="group"
-    :aria-label="tc('cinematic.composer.format', {}, { locale })"
+    :aria-label="t('cinematic.composer.format')"
     class="flex h-9 shrink-0 items-center overflow-hidden rounded-xl text-[13px] whitespace-nowrap ring-1 ring-transparency-white-t8 ring-inset [&>*+*]:border-l [&>*+*]:border-transparency-white-t8"
   >
     <CinematicMenu
       v-if="aspectOptions.length"
       v-model="aspectValue"
       :options="aspectOptions"
-      :heading="tc('cinematic.video.aspect', {}, { locale })"
+      :heading="t('cinematic.video.aspect')"
       :trigger-class="segmentClass"
       tooltip
     >
@@ -68,7 +69,7 @@ const segmentClass =
       v-if="resolutionOptions.length"
       v-model="resolutionValue"
       :options="resolutionOptions"
-      :heading="tc('cinematic.video.resolution', {}, { locale })"
+      :heading="t('cinematic.video.resolution')"
       :trigger-class="segmentClass"
       tooltip
     >
@@ -78,7 +79,7 @@ const segmentClass =
       v-if="durationOptions.length"
       v-model="durationValue"
       :options="durationOptions"
-      :heading="tc('cinematic.video.duration', {}, { locale })"
+      :heading="t('cinematic.video.duration')"
       :trigger-class="segmentClass"
       tooltip
     >
@@ -86,12 +87,12 @@ const segmentClass =
     </CinematicMenu>
     <CinematicTooltip
       v-if="video.audioField"
-      :text="tc('cinematic.video.audio', {}, { locale })"
+      :text="t('cinematic.video.audio')"
     >
       <button
         type="button"
         :aria-pressed="audio"
-        :aria-label="tc('cinematic.video.audio', {}, { locale })"
+        :aria-label="t('cinematic.video.audio')"
         :class="
           cn(
             'flex h-full items-center gap-2 px-3 text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t4 hover:text-primary-warm-white',
@@ -102,14 +103,14 @@ const segmentClass =
       >
         <Volume2 v-if="audio" class="size-4" aria-hidden="true" />
         <VolumeX v-else class="size-4" aria-hidden="true" />
-        {{ tc('cinematic.video.audioTag', {}, { locale }) }}
+        {{ t('cinematic.video.audioTag') }}
       </button>
     </CinematicTooltip>
     <span
       v-if="!aspectOptions.length && !durationOptions.length"
       class="px-3 text-primary-warm-gray"
     >
-      {{ tc('cinematic.video.modelDecides', {}, { locale }) }}
+      {{ t('cinematic.video.modelDecides') }}
     </span>
   </div>
 </template>

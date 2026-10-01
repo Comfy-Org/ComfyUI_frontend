@@ -6,9 +6,10 @@ import { nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 const row = useTemplateRef<HTMLElement>('row')
 const atStart = ref(true)
@@ -106,7 +107,7 @@ const revealClass =
           <button
             ref="prevArrow"
             type="button"
-            :aria-label="t('workshop.sections.scrollBack', {}, { locale })"
+            :aria-label="t('workshop.sections.scrollBack')"
             :class="cn(arrowClass, 'left-0 -translate-x-1/2')"
             data-testid="card-row-prev"
             @click="page(-1)"
@@ -118,7 +119,7 @@ const revealClass =
           <button
             ref="nextArrow"
             type="button"
-            :aria-label="t('workshop.sections.scrollForward', {}, { locale })"
+            :aria-label="t('workshop.sections.scrollForward')"
             :class="cn(arrowClass, 'right-0 translate-x-1/2')"
             data-testid="card-row-next"
             @click="page(1)"

@@ -1,10 +1,10 @@
 <script setup lang="ts">
+import { translationsFor } from '../../../../i18n/translations'
 import { Clapperboard } from '@lucide/vue'
 
 import { useCinematicLeaveGuard } from '../../../../composables/useCinematicLeaveGuard'
 import { useReshoot } from '../../../../composables/useReshoot'
 import { reportStudioBusy } from '../../../../composables/useStudioSwitchGuard'
-import { studioT as rc } from '../../../../lib/workshop/cinematic-studio/copy'
 import type { Locale } from '../../../../i18n/translations'
 import RunLeaveDialog from '../../RunLeaveDialog.vue'
 import AppsBackLink from '../AppsBackLink.vue'
@@ -15,6 +15,7 @@ import ReshootStage from './ReshootStage.vue'
 import ReshootUpload from './ReshootUpload.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 // Reading the scene and every take run on the Comfy app proxy. The scene is
 // read as soon as a clip is picked; the camera is then aimed against a live
@@ -111,10 +112,10 @@ const { leavingTo, leave, stay } = useCinematicLeaveGuard(
           aria-hidden="true"
         />
         <p class="text-base text-primary-comfy-canvas">
-          {{ rc('reshoot.empty.title', {}, { locale }) }}
+          {{ t('reshoot.empty.title') }}
         </p>
         <p class="text-xs text-primary-warm-gray">
-          {{ rc('reshoot.empty.hint', {}, { locale }) }}
+          {{ t('reshoot.empty.hint') }}
         </p>
       </div>
       <ReshootStage

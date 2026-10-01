@@ -1,15 +1,16 @@
 <script setup lang="ts">
+import { translationsFor } from '../../../i18n/translations'
 import { ArrowUpRight } from '@lucide/vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Locale } from '../../../i18n/translations'
-import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 
 const { repo, locale = 'en' } = defineProps<{
   repo?: string
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 </script>
 
 <template>
@@ -31,9 +32,7 @@ const { repo, locale = 'en' } = defineProps<{
       class="size-4 icon-mask mask-[url('/icons/social/github.svg')]"
       aria-hidden="true"
     />
-    {{
-      tc(repo ? 'cinematic.repo.view' : 'cinematic.repo.soon', {}, { locale })
-    }}
+    {{ t(repo ? 'cinematic.repo.view' : 'cinematic.repo.soon') }}
     <ArrowUpRight v-if="repo" class="size-3.5" aria-hidden="true" />
   </component>
 </template>

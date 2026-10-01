@@ -6,10 +6,11 @@ import { computed } from 'vue'
 import SectionHeader from '../../components/common/SectionHeader.vue'
 import { deployPromptFor } from '../../config/deploy-prompt'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import LiveTerminal from './LiveTerminal.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 // The prompt to paste into a coding agent; the copy button puts it on the
 // clipboard verbatim. Kept out of translations.ts (which every page bundles)
@@ -31,12 +32,12 @@ const DEPLOY_TRANSCRIPT = [
 <template>
   <section class="mx-auto max-w-9xl px-6 pt-10 pb-4 lg:pt-14 lg:pb-6">
     <SectionHeader max-width="xl" heading-size="compact">
-      {{ t('platform.serverlessDeploy.shipHeading', {}, { locale }) }}
+      {{ t('platform.serverlessDeploy.shipHeading') }}
       <template #subtitle>
         <p
           class="mx-auto mt-4 max-w-2xl text-sm whitespace-pre-line text-smoke-700"
         >
-          {{ t('platform.serverlessDeploy.shipSubtitle', {}, { locale }) }}
+          {{ t('platform.serverlessDeploy.shipSubtitle') }}
         </p>
       </template>
     </SectionHeader>
@@ -49,9 +50,7 @@ const DEPLOY_TRANSCRIPT = [
           t(
             copied
               ? 'platform.serverlessDeploy.copied'
-              : 'platform.serverlessDeploy.copy',
-            {},
-            { locale }
+              : 'platform.serverlessDeploy.copy'
           )
         "
         @click="copy()"
@@ -64,7 +63,7 @@ const DEPLOY_TRANSCRIPT = [
       </button>
       <LiveTerminal
         :lines="DEPLOY_TRANSCRIPT"
-        :label="t('platform.serverlessDeploy.heading', {}, { locale })"
+        :label="t('platform.serverlessDeploy.heading')"
         :typewriter="false"
       />
     </div>

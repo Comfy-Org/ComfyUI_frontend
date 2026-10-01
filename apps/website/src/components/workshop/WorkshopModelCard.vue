@@ -6,7 +6,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { WorkshopModel } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import HubTypeBadge from '../hub/HubTypeBadge.vue'
 import { getLogoPath } from '../../lib/hub/model-logos'
 import { nameWithoutTask, taskLabelFor } from '../../lib/workshop/task-label'
@@ -24,6 +24,7 @@ const {
   locale?: Locale
   providerBadge?: boolean
 }>()
+const { t } = translationsFor(locale)
 
 const workflow = computed(() =>
   model.type === 'CLOUD' || model.type === 'SERVERLESS' ? model : undefined
@@ -35,10 +36,10 @@ const workflowModels = computed(() =>
 )
 const providerName = computed(() =>
   model.type === 'APP'
-    ? t('workshop.card.comfyApp', {}, { locale })
+    ? t('workshop.card.comfyApp')
     : (workflowModels.value?.join(', ') ??
       model.provider ??
-      t('workshop.card.partnerNode', {}, { locale }))
+      t('workshop.card.partnerNode'))
 )
 
 const logo = computed(

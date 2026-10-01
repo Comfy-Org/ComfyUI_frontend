@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { translationsFor } from '../../../i18n/translations'
 import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -6,7 +7,6 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { ShotEstimate } from '../../../lib/workshop/cinematic-studio/estimate'
 import { formatCreditRange } from '../../../lib/workshop/cinematic-studio/estimate'
 import type { Locale } from '../../../i18n/translations'
-import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 
 const {
   estimate,
@@ -17,34 +17,27 @@ const {
   wide?: boolean
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 function perTake(shot: ShotEstimate): string | undefined {
   if (shot.takes === 1) return undefined
-  return tc(
-    'cinematic.credits.perTake',
-    {
-      takes: shot.takes,
-      credits: formatCreditRange(shot.perTake, locale)
-    },
-    { locale }
-  )
+  return t('cinematic.credits.perTake', {
+    takes: shot.takes,
+    credits: formatCreditRange(shot.perTake, locale)
+  })
 }
 
 const cost = computed(() =>
   estimate
     ? {
-        label: tc(
-          'cinematic.credits.estimate',
-          {
-            credits: formatCreditRange(estimate.total, locale)
-          },
-          { locale }
-        ),
+        label: t('cinematic.credits.estimate', {
+          credits: formatCreditRange(estimate.total, locale)
+        }),
         detail: perTake(estimate)
       }
     : {
-        label: tc('cinematic.credits.varies', {}, { locale }),
-        hint: tc('cinematic.credits.variesHint', {}, { locale })
+        label: t('cinematic.credits.varies'),
+        hint: t('cinematic.credits.variesHint')
       }
 )
 </script>

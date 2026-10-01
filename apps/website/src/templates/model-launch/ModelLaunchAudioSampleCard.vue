@@ -4,12 +4,13 @@ import type { ModelLaunchAudioCard } from './types'
 
 import AudioPlayer from '../../components/common/AudioPlayer.vue'
 import CopyTextButton from '../../components/ui/copy-text-button/CopyTextButton.vue'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 
 const { locale = 'en', card } = defineProps<{
   card: ModelLaunchAudioCard
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 </script>
 
 <template>
@@ -37,8 +38,8 @@ const { locale = 'en', card } = defineProps<{
       <CopyTextButton
         class="-mr-2 -mb-2"
         :value="card.prompt[locale] || card.prompt.en"
-        :label="t('modelLaunch.copyPrompt', {}, { locale })"
-        :copied-label="t('ui.copied', {}, { locale })"
+        :label="t('modelLaunch.copyPrompt')"
+        :copied-label="t('ui.copied')"
       />
     </div>
   </article>

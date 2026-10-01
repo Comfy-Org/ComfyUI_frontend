@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { translationsFor } from '../../../../i18n/translations'
 import { computed, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -13,7 +14,6 @@ import type {
 } from '../../../../lib/workshop/cinematic-studio/reshoot'
 import { clipFits } from '../../../../lib/workshop/cinematic-studio/reshoot'
 import { fileSecondsOf } from '../../../../lib/workshop/cinematic-studio/reshoot-clip'
-import { studioT as rc } from '../../../../lib/workshop/cinematic-studio/copy'
 import type { Locale } from '../../../../i18n/translations'
 import CinematicGenerateAction from '../CinematicGenerateAction.vue'
 import ReshootAimRig from './ReshootAimRig.vue'
@@ -55,6 +55,7 @@ const {
   workspaceName?: string
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const emit = defineEmits<{
   aim: [patch: Partial<ReshootCamera>]
@@ -88,14 +89,10 @@ const failed = computed(() => !!error && !ready.value && !analyzing.value)
 const framesText = computed(() =>
   frames === undefined
     ? ''
-    : rc(
-        'reshoot.frames',
-        {
-          frames,
-          seconds: (frames / 24).toFixed(1)
-        },
-        { locale }
-      )
+    : t('reshoot.frames', {
+        frames,
+        seconds: (frames / 24).toFixed(1)
+      })
 )
 
 // A replacement is checked before it takes the current clip's place, as on
@@ -110,14 +107,10 @@ async function choose(event: Event) {
   if (!file) return
   const seconds = await fileSecondsOf(file)
   if (Number.isFinite(seconds) && !clipFits(seconds)) {
-    rejected.value = rc(
-      'reshoot.clip.rejected',
-      {
-        name: file.name,
-        seconds: seconds.toFixed(1)
-      },
-      { locale }
-    )
+    rejected.value = t('reshoot.clip.rejected', {
+      name: file.name,
+      seconds: seconds.toFixed(1)
+    })
     return
   }
   rejected.value = undefined
@@ -127,12 +120,12 @@ async function choose(event: Event) {
 
 <template>
   <aside
-    :aria-label="rc('reshoot.panel', {}, { locale })"
+    :aria-label="t('reshoot.panel')"
     class="flex min-w-0 flex-col rounded-2xl bg-primary-comfy-ink-light lg:sticky lg:top-24 lg:max-h-[calc(100svh-7rem)]"
   >
     <div class="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 py-4">
       <div
-        :aria-label="rc('reshoot.section.video', {}, { locale })"
+        :aria-label="t('reshoot.section.video')"
         role="group"
         class="flex items-center gap-3 rounded-2xl border border-transparency-white-t8 p-2.5"
       >
@@ -145,19 +138,15 @@ async function choose(event: Event) {
         />
         <span class="flex min-w-0 flex-1 flex-col">
           <span class="truncate text-sm font-semibold text-primary-warm-white">
-            {{
-              isExample
-                ? rc('reshoot.pick.exampleTitle', {}, { locale })
-                : clipName
-            }}
+            {{ isExample ? t('reshoot.pick.exampleTitle') : clipName }}
           </span>
           <span class="truncate text-[11px] text-primary-warm-gray">
             {{
               clipError ??
               (ready
-                ? `${rc('reshoot.clip.ready', {}, { locale })} · ${framesText}`
+                ? `${t('reshoot.clip.ready')} · ${framesText}`
                 : analyzing
-                  ? rc('reshoot.aim.reading', {}, { locale })
+                  ? t('reshoot.aim.reading')
                   : framesText)
             }}
           </span>
@@ -165,7 +154,7 @@ async function choose(event: Event) {
         <label
           class="flex h-7 shrink-0 cursor-pointer items-center rounded-full bg-transparency-white-t8 px-3 text-[11px] text-primary-comfy-canvas focus-within:ring-2 focus-within:ring-primary-comfy-yellow/50 hover:text-primary-warm-white"
         >
-          {{ rc('reshoot.clip.change', {}, { locale }) }}
+          {{ t('reshoot.clip.change') }}
           <input
             type="file"
             accept="video/*"
@@ -192,7 +181,7 @@ async function choose(event: Event) {
       />
       <div class="flex flex-col gap-2">
         <ReshootDisclosure
-          :label="rc('reshoot.section.move', {}, { locale })"
+          :label="t('reshoot.section.move')"
           :disabled="!ready"
         >
           <ReshootMoveControls
@@ -203,9 +192,7 @@ async function choose(event: Event) {
             @remove="emit('removeKey', $event)"
           />
         </ReshootDisclosure>
-        <ReshootDisclosure
-          :label="rc('reshoot.advanced.label', {}, { locale })"
-        >
+        <ReshootDisclosure :label="t('reshoot.advanced.label')">
           <div class="flex flex-col gap-3">
             <div class="flex flex-col gap-1.5">
               <div class="flex items-center gap-1.5">
@@ -213,21 +200,21 @@ async function choose(event: Event) {
                   for="reshoot-prompt"
                   class="text-xs font-semibold text-primary-comfy-canvas"
                 >
-                  {{ rc('reshoot.section.prompt', {}, { locale }) }}
+                  {{ t('reshoot.section.prompt') }}
                   <span class="font-normal text-primary-warm-gray">
-                    · {{ rc('reshoot.optional', {}, { locale }) }}
+                    · {{ t('reshoot.optional') }}
                   </span>
                 </label>
                 <InfoTooltip
-                  :text="rc('reshoot.promptHelp', {}, { locale })"
-                  :label="rc('reshoot.promptHelp', {}, { locale })"
+                  :text="t('reshoot.promptHelp')"
+                  :label="t('reshoot.promptHelp')"
                 />
               </div>
               <textarea
                 id="reshoot-prompt"
                 v-model="prompt"
                 rows="2"
-                :placeholder="rc('reshoot.prompt.placeholder', {}, { locale })"
+                :placeholder="t('reshoot.prompt.placeholder')"
                 aria-describedby="reshoot-prompt-dialogue"
                 class="field-sizing-content max-h-40 min-h-16 resize-none rounded-xl bg-transparency-white-t4 px-3.5 py-2.5 text-sm/relaxed text-primary-warm-white outline-none placeholder:text-primary-warm-gray focus-visible:ring-1 focus-visible:ring-primary-comfy-yellow/60"
               />
@@ -235,7 +222,7 @@ async function choose(event: Event) {
                 id="reshoot-prompt-dialogue"
                 class="text-[11px]/relaxed text-primary-warm-gray"
               >
-                {{ rc('reshoot.prompt.dialogue', {}, { locale }) }}
+                {{ t('reshoot.prompt.dialogue') }}
               </p>
             </div>
             <div class="flex items-center justify-between gap-3 text-xs">
@@ -244,11 +231,11 @@ async function choose(event: Event) {
                   for="reshoot-seed"
                   class="font-semibold text-primary-comfy-canvas"
                 >
-                  {{ rc('reshoot.seed.label', {}, { locale }) }}
+                  {{ t('reshoot.seed.label') }}
                 </label>
                 <InfoTooltip
-                  :text="rc('reshoot.seed.help', {}, { locale })"
-                  :label="rc('reshoot.seed.help', {}, { locale })"
+                  :text="t('reshoot.seed.help')"
+                  :label="t('reshoot.seed.help')"
                 />
               </div>
               <input
@@ -257,7 +244,7 @@ async function choose(event: Event) {
                 type="number"
                 min="0"
                 step="1"
-                :placeholder="rc('reshoot.seed.random', {}, { locale })"
+                :placeholder="t('reshoot.seed.random')"
                 class="h-9 w-28 rounded-xl bg-transparency-white-t4 px-3 font-mono text-sm text-primary-warm-white tabular-nums outline-none placeholder:font-sans placeholder:text-primary-warm-gray focus-visible:ring-1 focus-visible:ring-primary-comfy-yellow/60"
               />
             </div>
@@ -280,7 +267,7 @@ async function choose(event: Event) {
         <p
           class="min-w-0 flex-1 text-[11px] wrap-break-word text-primary-warm-white"
         >
-          {{ rc('reshoot.failed', {}, { locale }) }}: {{ error }}
+          {{ t('reshoot.failed') }}: {{ error }}
         </p>
         <Button
           size="sm"
@@ -289,20 +276,14 @@ async function choose(event: Event) {
           data-testid="reshoot-analyze"
           @click="emit('analyze')"
         >
-          {{ rc('reshoot.tryAgain', {}, { locale }) }}
+          {{ t('reshoot.tryAgain') }}
         </Button>
       </div>
       <p
         v-else-if="ready || analyzing"
         class="text-center text-[11px] text-primary-warm-gray"
       >
-        {{
-          rc(
-            ready ? 'reshoot.generate.note' : 'reshoot.generate.wait',
-            {},
-            { locale }
-          )
-        }}
+        {{ t(ready ? 'reshoot.generate.note' : 'reshoot.generate.wait') }}
       </p>
       <p
         v-if="priceNote"
@@ -319,7 +300,7 @@ async function choose(event: Event) {
         data-testid="reshoot-action"
         @click="emit('generate')"
       >
-        {{ rc('reshoot.generate.label', {}, { locale }) }}
+        {{ t('reshoot.generate.label') }}
       </Button>
       <CinematicGenerateAction
         v-else

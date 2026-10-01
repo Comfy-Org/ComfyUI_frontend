@@ -2,8 +2,10 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 
-import { studioT as rc } from '../../../../lib/workshop/cinematic-studio/copy'
+import { translationsFor } from '../../../../i18n/translations'
 import ReshootUpload from './ReshootUpload.vue'
+
+const { t: rc } = translationsFor('en')
 
 describe('ReshootUpload', () => {
   it('lets the same clip be chosen again after it is read', async () => {

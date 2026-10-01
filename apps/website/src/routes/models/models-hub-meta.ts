@@ -1,11 +1,12 @@
 import type { RouterWorkshopModel } from '../../config/models-catalogue'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 
 const HEADLINE_FAMILIES = ['FLUX', 'Seedance', 'Kling', 'Veo', 'Nano Banana']
 
 export function modelsHubMeta(
   models: readonly Pick<RouterWorkshopModel, 'name'>[]
 ) {
+  const { t } = translationsFor('en')
   const families = HEADLINE_FAMILIES.filter((family) =>
     models.some((model) => model.name.includes(family))
   )
@@ -21,7 +22,7 @@ export function modelsHubMeta(
           families
         )
       },
-      { locale: 'en', plural: models.length }
+      { plural: models.length }
     )
   }
 }

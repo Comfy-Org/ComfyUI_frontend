@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { Locale } from '../config/locales'
 import { LOCALE_CODES } from '../config/locales'
-import { t, translationsFor } from './translations'
+import { translationsFor } from './translations'
 
 type Catalog = { [key: string]: string | Catalog }
 
@@ -69,19 +69,15 @@ const catalogs = [...catalogFiles]
 
 describe('site translations', () => {
   it('binds translations to a locale', () => {
-    expect(translationsFor('ja').t('hero.title')).toBe(
-      'ビジュアルAIを自在にコントロール'
-    )
     expect(translationsFor('zh-CN').t('hero.title')).toBe(
       '视觉 AI 的\n最强可控性'
     )
   })
 
-  it('selects Japanese and falls back to English', () => {
-    expect(t('hero.title', {}, { locale: 'ja' })).toBe(
-      'ビジュアルAIを自在にコントロール'
-    )
-    expect(t('tags.partnerNodes', {}, { locale: 'ja' })).toBe('Partner Nodes')
+  it('falls back from Japanese to English', () => {
+    const { t } = translationsFor('ja')
+    expect(t('hero.title')).toBe('ビジュアルAIを自在にコントロール')
+    expect(t('tags.partnerNodes')).toBe('Partner Nodes')
   })
 
   it.for([
@@ -91,12 +87,9 @@ describe('site translations', () => {
   ] as const)(
     'renders $locale plural copy for $count',
     ({ locale, count, expected }) => {
+      const { t } = translationsFor(locale)
       expect(
-        t(
-          'cloudNodesLaunch.models.nodeCount',
-          { count },
-          { locale, plural: count }
-        )
+        t('cloudNodesLaunch.models.nodeCount', { count }, { plural: count })
       ).toBe(expected)
     }
   )

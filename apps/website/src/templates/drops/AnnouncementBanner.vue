@@ -6,7 +6,7 @@ import type { Locale } from '../../i18n/translations'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import Button from '@/components/ui/button/Button.vue'
 import IconButton from '@/components/ui/icon-button/IconButton.vue'
 import { useBannerDismissal } from '../../composables/useBannerDismissal'
@@ -32,6 +32,7 @@ const {
   /** Hides the close control for a banner that isn't meant to be dismissed. */
   dismissible?: boolean
 }>()
+const { t } = translationsFor(locale)
 
 const { isVisible, close, persistHidden } = useBannerDismissal(version)
 </script>
@@ -84,7 +85,7 @@ const { isVisible, close, persistHidden } = useBannerDismissal(version)
           <div v-if="dismissible" class="flex flex-1 justify-end">
             <IconButton
               type="button"
-              :aria-label="t('nav.close', {}, { locale })"
+              :aria-label="t('nav.close')"
               @click="close"
             >
               <X class="size-5" aria-hidden="true" />

@@ -22,7 +22,7 @@ import type {
   SavedAsset,
   SavedAssetTile as SavedAssetTileData
 } from '../../lib/workshop/saved-assets'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import type { Locale } from '../../i18n/translations'
 import SavedAssetPreview from './SavedAssetPreview.vue'
 import SavedAssetTile from './SavedAssetTile.vue'
@@ -38,6 +38,7 @@ const {
   token: () => Promise<string>
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const emit = defineEmits<{ saveFailed: [failed: boolean] }>()
 
@@ -118,7 +119,7 @@ const TILE_LABELS = {
 } as const
 
 function tileLabel(tile: SavedAssetTileData): string {
-  return t(TILE_LABELS[tile.state], {}, { locale })
+  return t(TILE_LABELS[tile.state])
 }
 
 function current(attempt: number): boolean {
@@ -309,7 +310,7 @@ const tileClass =
 <template>
   <section
     v-if="tiles.length || failed"
-    :aria-label="t('workshop.assets.title', {}, { locale })"
+    :aria-label="t('workshop.assets.title')"
     class="flex flex-col gap-3 rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4 p-4"
     data-testid="saved-assets"
   >
@@ -317,7 +318,7 @@ const tileClass =
       <h2
         class="text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
       >
-        {{ t('workshop.assets.title', {}, { locale }) }}
+        {{ t('workshop.assets.title') }}
       </h2>
       <a
         :href="WORKSHOP_ASSETS_URL"
@@ -326,13 +327,13 @@ const tileClass =
         class="inline-flex items-center gap-1 text-xs text-primary-warm-gray transition-colors hover:text-primary-comfy-yellow"
         data-testid="saved-assets-see-all"
       >
-        {{ t('workshop.assets.seeAll', {}, { locale }) }}
+        {{ t('workshop.assets.seeAll') }}
         <ExternalLink class="size-3.5" aria-hidden="true" />
       </a>
     </div>
 
     <p v-if="failed" role="alert" class="text-xs text-primary-warm-gray">
-      {{ t('workshop.assets.loadError', {}, { locale }) }}
+      {{ t('workshop.assets.loadError') }}
     </p>
 
     <div v-if="tiles.length" class="flex items-center gap-2 overflow-x-auto">

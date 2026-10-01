@@ -2,11 +2,12 @@
 import type { Locale } from '../../../i18n/translations'
 
 import { externalLinks } from '../../../config/routes'
-import { t } from '../../../i18n/translations'
+import { translationsFor } from '../../../i18n/translations'
 import CardArrow from '../../common/CardArrow.vue'
 import GlassCard from '../../common/GlassCard.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 const cards = [
   {
@@ -29,11 +30,11 @@ const cards = [
     <h2
       class="mx-auto max-w-3xl text-center text-3.5xl/tight font-light text-primary-comfy-canvas lg:text-5xl/tight"
     >
-      {{ t('cloud.audience.headingBefore', {}, { locale })
+      {{ t('cloud.audience.headingBefore')
       }}<span class="text-white">{{
-        t('cloud.audience.headingHighlight', {}, { locale })
+        t('cloud.audience.headingHighlight')
       }}</span
-      >{{ t('cloud.audience.headingAfter', {}, { locale }) }}
+      >{{ t('cloud.audience.headingAfter') }}
     </h2>
 
     <GlassCard class="mt-12 grid grid-cols-1 gap-6 lg:mt-20 lg:grid-cols-2">
@@ -45,7 +46,7 @@ const cards = [
       >
         <img
           :src="card.image"
-          :alt="t(card.titleKey, {}, { locale })"
+          :alt="t(card.titleKey)"
           class="aspect-4/3 w-full rounded-4xl object-cover"
           loading="lazy"
           decoding="async"
@@ -56,7 +57,7 @@ const cards = [
             <p
               class="text-sm font-bold tracking-widest text-primary-comfy-yellow uppercase"
             >
-              {{ t(card.labelKey, {}, { locale }) }}
+              {{ t(card.labelKey) }}
             </p>
 
             <CardArrow hover="group" class="shrink-0" />
@@ -65,11 +66,11 @@ const cards = [
           <h3
             class="mt-8 text-3xl/tight font-light whitespace-pre-line text-primary-comfy-canvas"
           >
-            {{ t(card.titleKey, {}, { locale }) }}
+            {{ t(card.titleKey) }}
           </h3>
 
           <p class="mt-8 text-base/normal text-primary-comfy-canvas">
-            {{ t(card.descriptionKey, {}, { locale }) }}
+            {{ t(card.descriptionKey) }}
           </p>
         </div>
       </a>

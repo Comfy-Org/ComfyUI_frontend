@@ -32,9 +32,8 @@ import {
 } from '../../../scripts/posthog'
 import { CINEMATIC_STUDIO_APP_SLUG } from '../../../lib/workshop/cinematic-studio/analytics'
 import { sampleImageColors } from '../../../lib/workshop/cinematic-studio/colors'
-import { t } from '../../../i18n/translations'
+import { t, translationsFor } from '../../../i18n/translations'
 import { MAX_TAKES } from '../../../lib/workshop/cinematic-studio/catalog'
-import { studioT as tc } from '../../../lib/workshop/cinematic-studio/copy'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import {
   runnableCinematicModels,
@@ -43,6 +42,8 @@ import {
 import CinematicStudio from './CinematicStudio.vue'
 import CinematicStudioPage from './CinematicStudioPage.vue'
 import CinematicStudioPanel from './CinematicStudioPanel.vue'
+
+const { t: tc } = translationsFor('en')
 
 vi.mock(import('../../../config/workshop-session-state'))
 vi.mock(import('../../../config/workshop-credits'))

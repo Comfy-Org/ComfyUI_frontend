@@ -1,6 +1,6 @@
 import { externalLinks } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 
 export interface PlatformCta {
   label: string
@@ -16,14 +16,15 @@ export function platformCtas(locale: Locale): {
   getStarted: PlatformCta
   docs: PlatformCta
 } {
+  const { t } = translationsFor(locale)
   return {
     getStarted: {
-      label: t('platform.hero.getStarted', {}, { locale }),
+      label: t('platform.hero.getStarted'),
       href: externalLinks.platform,
       target: '_blank'
     },
     docs: {
-      label: t('platform.hero.readDocs', {}, { locale }),
+      label: t('platform.hero.readDocs'),
       href: externalLinks.docsPlatform,
       target: '_blank'
     }
