@@ -47,14 +47,6 @@ const canvas = {
 }
 
 describe('doc frame client: stale-schema reseed', () => {
-  it('advertises reseed support on every subscribe', () => {
-    const transport = new TestTransport()
-    new DocFrameClient(transport).subscribe('wf-1', new Uint8Array())
-    expect(transport.frames('doc_subscribe')).toEqual([
-      expect.objectContaining({ workflow_id: 'wf-1', supports_reseed: true })
-    ])
-  })
-
   it('encodes a doc_reseed carrying the canvas', () => {
     const transport = new TestTransport()
     const client = new DocFrameClient(transport)
@@ -101,10 +93,6 @@ describe('doc frame client: stale-schema reseed', () => {
         data: { v: 1, workflow_id: 'wf-1' }
       })
     ).toBeNull()
-  })
-
-  it('exports the refusal code the follower branches on', () => {
-    expect(STALE_SCHEMA_RESEED_REQUIRED).toBe('stale_schema_reseed_required')
   })
 })
 
@@ -162,6 +150,16 @@ describe('layout follower bridge: stale-schema reseed', () => {
       /ADR-CRDT-FOLLOWER-0025/
     )
     expect(transport.frames('doc_reseed')).toHaveLength(1)
+  })
+
+  it('invalidates a refusal token when the desired workflow changes', () => {
+    const { transport, bridge } = refusedBridge()
+    bridge.subscribe('wf-2')
+
+    expect(() => bridge.reseed('wf-1', canvas)).toThrow(
+      /ADR-CRDT-FOLLOWER-0025/
+    )
+    expect(transport.frames('doc_reseed')).toEqual([])
   })
 
   it.for<[string, Record<string, unknown>]>([

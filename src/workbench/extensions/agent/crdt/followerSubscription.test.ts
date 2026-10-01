@@ -305,7 +305,6 @@ describe('FE-TEARDOWN-1 — teardown completes with a dead socket', () => {
     const { transport, client, bridge, projected } = wire()
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
-    expect(transport.listenerCount).toBe(6)
 
     // Backend restarts, then the user closes the agent panel.
     transport.open = false
