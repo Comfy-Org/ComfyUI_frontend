@@ -44,8 +44,10 @@ test('a button label occupies no more height than its text lines', async ({
       const label = button.querySelector(':scope > span')
       if (!label) continue
 
-      const lineHeight = measureTextHeight(label)
-      if (lineHeight === 0) continue
+      const lineHeight =
+        measureTextHeight(label) ||
+        parseFloat(getComputedStyle(label).lineHeight)
+      if (!Number.isFinite(lineHeight)) continue
 
       measured.push({
         text: button.textContent.trim().replace(/\s+/g, ' '),
@@ -65,9 +67,14 @@ test('a button label occupies no more height than its text lines', async ({
   )
 
   expect(
-    labels.map(({ text, height, lineHeight }) => ({
+    labels.map(({ text, height }) => ({
       text,
-      excess: Math.round(height - lineHeight)
+      height
     }))
-  ).toEqual(labels.map(({ text }) => ({ text, excess: 0 })))
+  ).toEqual(
+    labels.map(({ text, lineHeight }) => ({
+      text,
+      height: expect.closeTo(lineHeight, 0)
+    }))
+  )
 })

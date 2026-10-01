@@ -105,18 +105,6 @@ describe('DownloadLocalButton', () => {
     }
   )
 
-  it('keeps the plain download button outside the hero', async () => {
-    visitWith(UA.mac)
-    render(DownloadLocalButton)
-
-    expect(
-      await screen.findByRole('link', {
-        name: 'DOWNLOAD DESKTOP macOS (Apple Silicon)'
-      })
-    ).toHaveAttribute('href', 'https://download.comfy.org/mac/dmg/arm64')
-    expect(screen.queryByRole('button', { name: 'All installers' })).toBeNull()
-  })
-
   it('labels the dropdown and installers in Chinese', async () => {
     visitWith(UA.linux)
     render(DownloadLocalButton, {
@@ -187,12 +175,15 @@ describe('DownloadLocalButton', () => {
       render(DownloadLocalButton)
 
       const links = await screen.findAllByRole('link')
+      expect(links).toHaveLength(buttons.length)
       expect(
-        links.map((link) => [
-          link.textContent.replace(/\s+/g, ' ').trim(),
-          link.getAttribute('href')
-        ])
-      ).toEqual(buttons)
+        buttons.map(([name]) =>
+          screen.getByRole('link', { name }).getAttribute('href')
+        )
+      ).toEqual(buttons.map(([, href]) => href))
+      expect(
+        screen.queryByRole('button', { name: 'All installers' })
+      ).toBeNull()
     }
   )
 
@@ -200,8 +191,12 @@ describe('DownloadLocalButton', () => {
     visitWith(UA.linux)
     const user = userEvent.setup()
     render(DownloadLocalButton)
+    const installer = await screen.findByRole('link')
+    installer.addEventListener('click', (event) => event.preventDefault(), {
+      once: true
+    })
 
-    await user.click(await screen.findByRole('link'))
+    await user.click(installer)
 
     expect(captureDownloadClick).toHaveBeenCalledExactlyOnceWith('linux')
   })
