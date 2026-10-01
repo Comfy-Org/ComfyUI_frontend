@@ -105,7 +105,7 @@ export type AgentRunModeValue = AgentRunModePreference['mode']
  * and is dropped server-side rather than reaching this parser.
  */
 export const zPersistedToolCallSummary = zToolCallSummary.extend({
-  skill: z.string().max(256).nullish().catch(undefined)
+  skill: z.string().max(256).nullish()
 })
 
 /**
@@ -170,7 +170,7 @@ const zAgentToolCallData = z
     tool_call_id: z.string(),
     tool_name: z.string(),
     status: z.enum(['running', 'success', 'error']),
-    skill: z.string().max(256).nullish().catch(undefined),
+    skill: z.string().max(256).nullish(),
     args: z.never().optional(),
     duration_ms: z.number().optional(),
     message_id: z.string(),
