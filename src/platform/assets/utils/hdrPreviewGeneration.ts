@@ -23,19 +23,13 @@ export function generatePreviewsForNewAssets(list: PagedList<AssetItem>) {
   let newestPreexisting: number | undefined
 
   watch(
-    () => ({
-      isSettled:
-        !toValue(list.isLoading) &&
-        (toValue(list.items).length > 0 || !toValue(list.hasMore)),
-      items: [...toValue(list.items)]
-    }),
-    ({ isSettled, items }) => {
+    [() => [...toValue(list.items)], () => toValue(list.hasMore)],
+    ([items, hasMore]) => {
       if (newestPreexisting === undefined) {
-        if (!isSettled) return
-        newestPreexisting = items.reduce(
-          (newest, asset) => Math.max(newest, Date.parse(asset.created_at)),
-          -Infinity
-        )
+        if (items.length === 0 && hasMore) return
+        newestPreexisting = items[0]
+          ? Date.parse(items[0].created_at)
+          : Date.now() - 24 * 60 * 60 * 1000
         return
       }
 
