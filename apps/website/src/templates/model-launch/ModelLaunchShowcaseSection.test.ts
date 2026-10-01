@@ -73,4 +73,26 @@ describe('ModelLaunchShowcaseSection', () => {
     await nextTick()
     expect(playState()).toBe('paused')
   })
+
+  it('pins the strip still on click until it is clicked again', async () => {
+    const user = userEvent.setup()
+    render(ModelLaunchShowcaseSection, { props: { showcase } })
+    const strip = screen.getByTestId('model-launch-showcase-strip')
+    const playState = () =>
+      screen.getAllByRole('list')[0]?.style.animationPlayState
+
+    await user.hover(strip)
+    await user.click(strip)
+    await nextTick()
+    expect(playState()).toBe('paused')
+
+    await user.unhover(strip)
+    await user.hover(strip)
+    await nextTick()
+    expect(playState()).toBe('paused')
+
+    await user.click(strip)
+    await nextTick()
+    expect(playState()).toBe('running')
+  })
 })

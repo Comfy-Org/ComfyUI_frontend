@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useElementHover } from '@vueuse/core'
+import { useElementHover, useToggle } from '@vueuse/core'
 import { useTemplateRef } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
@@ -14,6 +14,7 @@ const { locale = 'en', showcase } = defineProps<{
 
 const stripRef = useTemplateRef<HTMLElement>('stripRef')
 const isHovered = useElementHover(stripRef)
+const [isPinnedStill, togglePinnedStill] = useToggle(false)
 </script>
 
 <template>
@@ -35,7 +36,8 @@ const isHovered = useElementHover(stripRef)
     <div
       ref="stripRef"
       data-testid="model-launch-showcase-strip"
-      class="mt-10 flex gap-6 overflow-hidden motion-reduce:overflow-x-auto lg:mt-12"
+      class="mt-10 flex cursor-pointer gap-6 overflow-hidden motion-reduce:overflow-x-auto lg:mt-12"
+      @click="togglePinnedStill()"
     >
       <ul
         v-for="copy in 2"
@@ -45,7 +47,7 @@ const isHovered = useElementHover(stripRef)
         :style="{
           '--marquee-gap': '1.5rem',
           animationDuration: '27s',
-          animationPlayState: isHovered ? 'running' : 'paused'
+          animationPlayState: isHovered && !isPinnedStill ? 'running' : 'paused'
         }"
         :aria-hidden="copy === 2 ? 'true' : undefined"
       >
