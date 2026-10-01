@@ -77,7 +77,15 @@ async function assertLandingPage(
   )
   await expect(featuredStoryLink).toHaveAttribute('target', '_blank')
   await expect(featuredStoryLink).toHaveAttribute('rel', 'noopener noreferrer')
-  await featuredStoryLink.focus()
+  for (let press = 0; press < 50; press++) {
+    await page.keyboard.press('Tab')
+    if (
+      await featuredStoryLink.evaluate(
+        (link) => link === document.activeElement
+      )
+    )
+      break
+  }
   await expect(featuredStoryLink).toBeFocused()
 
   await expect(
