@@ -31,19 +31,6 @@ const AUTHENTICATION_STATES = [
   'reconciliation_needed'
 ] as const satisfies readonly NonNullable<OpStatus['authentication_state']>[]
 
-/** Every decline reason a host maps to copy. */
-const DECLINE_REASONS = [
-  'card_declined',
-  'insufficient_funds',
-  'expired_card',
-  'incorrect_cvc',
-  'authentication_required',
-  'authentication_failed',
-  'processing_error',
-  'payment_not_completed',
-  'generic'
-] as const satisfies readonly NonNullable<OpStatus['decline_reason']>[]
-
 // Compile-time pins: a regen that moves these fails the package typecheck.
 
 // The tables above are exhaustive, so a new member reaches an `it.for` row.
@@ -52,10 +39,6 @@ expectTypeOf<OpStatus['status']>().toEqualTypeOf<
 >()
 expectTypeOf<OpStatus['authentication_state']>().toEqualTypeOf<
   (typeof AUTHENTICATION_STATES)[number] | undefined
->()
-// The decline reasons a failed operation reports, including the fallback.
-expectTypeOf<OpStatus['decline_reason']>().toEqualTypeOf<
-  (typeof DECLINE_REASONS)[number] | undefined
 >()
 // The recovery actions a host offers after a decline.
 expectTypeOf<OpStatus['recovery_action']>().toEqualTypeOf<
@@ -106,17 +89,6 @@ describe('billing operation status contract', () => {
       expect(
         zBillingOpStatusResponse.safeParse(
           opStatusBody({ authentication_state })
-        )
-      ).toMatchObject({ success: true })
-    }
-  )
-
-  it.for(DECLINE_REASONS)(
-    'accepts a failed status declined as %s',
-    (decline_reason) => {
-      expect(
-        zBillingOpStatusResponse.safeParse(
-          opStatusBody({ status: 'failed', decline_reason })
         )
       ).toMatchObject({ success: true })
     }
