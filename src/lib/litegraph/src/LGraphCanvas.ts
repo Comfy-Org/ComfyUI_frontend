@@ -1040,7 +1040,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   /** Link rendering adapter for litegraph-to-canvas integration */
   linkRenderer: LitegraphLinkAdapter | null = null
 
-  /** Device pixel ratio from the last applied viewport. Single source of truth for DPR. */
   /** Device pixel ratio applied with the current viewport dimensions. */
   dpr: number = 1
 
