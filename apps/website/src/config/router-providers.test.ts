@@ -122,13 +122,14 @@ describe('Router provider source availability', () => {
     expect(isCI(value)).toBe(expected)
   })
 
-  it('fails when a required source is unavailable in CI', async () => {
-    vi.stubEnv('CI', '1')
+  it('fails after retrying a source that stays unavailable', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')))
 
-    await expect(fetchDocs(PROVIDERS_PAGE)).rejects.toThrow(
+    const result = expect(fetchDocs(PROVIDERS_PAGE)).rejects.toThrow(
       `Could not fetch ${PROVIDERS_PAGE}`
     )
+    await vi.runAllTimersAsync()
+    await result
   })
 
   it('detects provider drift from a successful source response', () => {
