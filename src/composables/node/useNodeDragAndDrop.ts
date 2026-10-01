@@ -31,8 +31,9 @@ export const useNodeDragAndDrop = <T>(
   const filterFiles = (files: FileList | File[]) =>
     Array.from(files).filter(fileFilter)
 
-  const handleRejectedFiles = (files: File[]) =>
-    files.length > 0 && (options.onReject?.(files) ?? false)
+  function handleRejectedFiles(files: File[]) {
+    return files.length > 0 && (options.onReject?.(files) ?? false)
+  }
 
   const isDraggingFiles = (e: DragEvent | undefined) => {
     if (!e?.dataTransfer?.items) return false

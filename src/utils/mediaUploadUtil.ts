@@ -5,7 +5,7 @@ export const ACCEPTED_IMAGE_TYPES = 'image/png,image/jpeg,image/webp'
 export const ACCEPTED_VIDEO_TYPES = 'video/webm,video/mp4'
 
 export function hasFilenameExtension(file: File) {
-  return /^\.*[^.\s].*\.[^.\s/\\]+$/.test(file.name)
+  return /^\.*[^.].*\.[^.\s/\\]+$/.test(file.name)
 }
 
 export function isUploadableVideo(file: File) {

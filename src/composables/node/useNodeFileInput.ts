@@ -6,7 +6,7 @@ interface FileInputOptions {
   accept?: string
   allow_batch?: boolean
   fileFilter?: (file: File) => boolean
-  onReject?: (files: File[]) => boolean
+  onReject?: (files: File[]) => void
   onSelect: (files: File[]) => void
 }
 

@@ -8,7 +8,7 @@ interface NodePasteOptions<T> {
   onPaste: PasteHandler<T>
   fileFilter?: (file: File) => boolean
   allow_batch?: boolean
-  onReject?: (files: File[]) => boolean
+  onReject?: (files: File[]) => void
 }
 
 /**

@@ -7,7 +7,7 @@ import {
 import { WidgetSelectDropdownFixture } from '@e2e/fixtures/components/WidgetSelectDropdown'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { assetPath } from '@e2e/fixtures/utils/paths'
-import enMessages from '@/locales/en/main.json'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
   test.describe('media selection', { tag: '@widget' }, () => {

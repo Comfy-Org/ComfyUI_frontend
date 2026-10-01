@@ -54,8 +54,6 @@
     // stylelint customSyntax (.stylelintrc.json) respectively.
     "eslint-plugin-playwright",
     "postcss-html",
-    // Resolved dynamically by scripts/vue-tsc-native.ts.
-    "typescript-native-bridge",
     // Executed by models-snippets.test.ts inside the generated Node examples.
     "mime-types"
   ],

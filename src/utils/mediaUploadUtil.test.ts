@@ -14,7 +14,8 @@ describe('mediaUploadUtil', () => {
     { name: 'clip. ', expected: false },
     { name: 'clip.mp4 ', expected: false },
     { name: '.mp4', expected: false },
-    { name: 'clip..mp4', expected: true }
+    { name: 'clip..mp4', expected: true },
+    { name: ' clip.mp4', expected: true }
   ])('reports extension boundary for $name', ({ name, expected }) => {
     expect(hasFilenameExtension(new File([], name))).toBe(expected)
   })
@@ -33,7 +34,13 @@ describe('mediaUploadUtil', () => {
       isExtensionlessVideo(new File([], 'clip', { type: 'video/mp4' }))
     ).toBe(true)
     expect(
+      isExtensionlessVideo(new File([], 'clip.mp4', { type: 'video/mp4' }))
+    ).toBe(false)
+    expect(
       isExtensionlessVideo(new File([], 'clip.png', { type: 'image/png' }))
+    ).toBe(false)
+    expect(
+      isExtensionlessVideo(new File([], 'clip', { type: 'image/png' }))
     ).toBe(false)
   })
 })
