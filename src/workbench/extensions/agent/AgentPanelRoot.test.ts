@@ -215,12 +215,17 @@ const paywallCapabilities = reactive({
   hasResolvedCapabilities: true,
   snapshotAuthoritative: true
 })
-const paywallBilling = vi.hoisted(() => ({
-  tier: 'STANDARD' as SubscriptionTier | null,
-  type: 'workspace' as 'workspace' | 'legacy',
-  status: 'paid' as BillingStatus | null,
+const paywallBilling = reactive<{
+  tier: SubscriptionTier | null
+  type: 'workspace' | 'legacy'
+  status: BillingStatus | null
+  fetchStatus: ReturnType<typeof vi.fn<() => Promise<void>>>
+}>({
+  tier: 'STANDARD',
+  type: 'workspace',
+  status: 'paid',
   fetchStatus: vi.fn<() => Promise<void>>()
-}))
+})
 const paywallHasFunds = ref<boolean | null>(false)
 const paywallAgentHasFunds = ref<boolean | undefined>()
 
@@ -767,13 +772,11 @@ function findInlinePaywallButton(name: string): Promise<HTMLElement> {
 }
 
 function queryInlinePaywallButton(name: string): HTMLElement | null {
-  const view = screen.queryByTestId('agent-conversation')
-  return view ? within(view).queryByRole('button', { name }) : null
+  return inlinePaywall().queryByRole('button', { name })
 }
 
 function queryInlinePaywallText(text: string): HTMLElement | null {
-  const view = screen.queryByTestId('agent-conversation')
-  return view ? within(view).queryByText(text) : null
+  return inlinePaywall().queryByText(text)
 }
 
 describe('AgentPanelRoot paywall actions', () => {

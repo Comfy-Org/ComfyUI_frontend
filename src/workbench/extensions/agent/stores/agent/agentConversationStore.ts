@@ -45,6 +45,7 @@ export const useAgentConversationStore = defineStore(
   () => {
     const messages = ref<AssistantMessage[]>([])
     const activeTurnId = ref<TurnId | null>(null)
+    const completedTurnCount = ref(0)
     const threadId = ref<string | null>(null)
     const userTexts = ref(new Map<TurnId, string>())
     const userAttachments = ref(new Map<TurnId, UserAttachment[]>())
@@ -264,6 +265,7 @@ export const useAgentConversationStore = defineStore(
       if (activeTransport.hasPendingCanvasSync())
         settledActiveTransports.add(activeTransport)
       clearActive()
+      completedTurnCount.value++
     }
 
     function ingestActiveTabEvent(
@@ -598,6 +600,7 @@ export const useAgentConversationStore = defineStore(
       messages,
       entries,
       activeTurnId,
+      completedTurnCount,
       threadId,
       isStreaming,
       status,
