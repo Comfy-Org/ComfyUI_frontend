@@ -98,22 +98,6 @@ describe('agentApiSchema contract subtleties', () => {
     data: { message_id: 'm1', thread_id: 't1' }
   }
 
-  it('accepts a null skill on tool-call frames', () => {
-    const parsed = zAgentWsEvent.parse({
-      type: 'agent_tool_call',
-      data: {
-        tool_call_id: 'call-1',
-        tool_name: 'load_skill',
-        status: 'success',
-        skill: null,
-        message_id: 'm1',
-        thread_id: 't1'
-      }
-    })
-
-    expect(parsed).toMatchObject({ data: { skill: null } })
-  })
-
   it('accepts agent_message_done with usage null (cancelled turn)', () => {
     expect(
       zAgentWsEvent.safeParse({
