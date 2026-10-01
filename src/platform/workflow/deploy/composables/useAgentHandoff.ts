@@ -84,7 +84,8 @@ export function useAgentHandoff() {
       })
       if (!(await copyToClipboard(document, { toastOnSuccess: false }))) {
         reportError(new Error('The clipboard refused the brief'), {
-          errorType: 'error_copying_deploy_agent_brief'
+          errorType: 'error_copying_deploy_agent_brief',
+          surface: 'platform'
         })
         return false
       }
@@ -98,7 +99,10 @@ export function useAgentHandoff() {
       }
       return true
     } catch (error) {
-      reportError(error, { errorType: 'error_copying_deploy_agent_brief' })
+      reportError(error, {
+        errorType: 'error_copying_deploy_agent_brief',
+        surface: 'platform'
+      })
       toastStore.add({
         severity: 'error',
         summary: t('g.error'),

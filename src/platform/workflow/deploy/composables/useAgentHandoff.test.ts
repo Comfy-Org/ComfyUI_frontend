@@ -188,7 +188,8 @@ describe('useAgentHandoff', () => {
 
     expect(downloadBlob).not.toHaveBeenCalled()
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
-      errorType: 'error_copying_deploy_agent_brief'
+      errorType: 'error_copying_deploy_agent_brief',
+      surface: 'platform'
     })
   })
 
@@ -219,7 +220,8 @@ describe('useAgentHandoff', () => {
 
     expect(copyToClipboard).not.toHaveBeenCalled()
     expect(reportError).toHaveBeenCalledWith(expect.any(TypeError), {
-      errorType: 'error_copying_deploy_agent_brief'
+      errorType: 'error_copying_deploy_agent_brief',
+      surface: 'platform'
     })
     expect(toast).toHaveBeenCalledWith(
       expect.objectContaining({
