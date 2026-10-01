@@ -124,11 +124,13 @@ export function resolveComboValues(widget: IComboWidget): (string | number)[] {
   return Object.keys(values)
 }
 
-export function addToComboValues(widget: IComboWidget, value: string) {
-  // @ts-expect-error Combo widget values may be a dictionary or legacy function type
-  if (!widget.options.values.includes(value)) {
-    // @ts-expect-error Combo widget values may be a dictionary or legacy function type
-    widget.options.values.push(value)
+export function addToComboValues(
+  widget: Pick<IComboWidget, 'options'>,
+  value: string
+) {
+  const values = widget.options.values
+  if (Array.isArray(values) && !values.includes(value)) {
+    values.push(value)
   }
 }
 
