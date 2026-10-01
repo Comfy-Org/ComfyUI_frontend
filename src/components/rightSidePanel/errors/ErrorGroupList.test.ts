@@ -155,6 +155,7 @@ function createCanvasFixture(pinia: Pinia, graph = ROOT_GRAPH) {
     subgraph: undefined,
     canvas: canvasElement,
     dpr: 1,
+    ds: fromPartial({ getViewportSize: vi.fn(() => [900, 700]) }),
     animateToBounds: vi.fn()
   })
   canvas.setGraph = vi.fn((nextGraph) => {
