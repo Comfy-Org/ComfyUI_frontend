@@ -137,6 +137,7 @@ export const useSessionCookie = () => {
       // The session cookie is the only credential <img>/media loads carry, so
       // a swallowed creation failure means images break with no other signal.
       reportError(error, {
+        surface: 'auth',
         errorType: 'session_cookie_creation_failure',
         level: 'warning'
       })
@@ -185,6 +186,7 @@ export const useSessionCookie = () => {
       // other signal. The caught error carries the server's message, which can
       // name the user, so a fixed error is reported in its place.
       reportError(new Error('Session cookie deletion failed'), {
+        surface: 'auth',
         errorType: 'auth_session_cookie_delete_failed',
         tags: {
           failure_kind: 'caught_unexpected',

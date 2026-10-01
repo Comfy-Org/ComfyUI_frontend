@@ -181,10 +181,12 @@ import type {
   SerialisableReroute
 } from './types/serialisation'
 import { getAllNestedItems } from './utils/collections'
+import type { GraphCanonicalField } from './extensionPersistence'
 import {
   extensionConfigureView,
   GRAPH_CANONICAL_FIELDS,
   hydrateExtensionPayload,
+  isGraphCanonicalField,
   runExtensionSerializeHook
 } from './extensionPersistence'
 import {
@@ -204,6 +206,26 @@ const validTriggerActions = new Set<LGraphTriggerAction>(LGraphTriggerActions)
 
 function isLGraphTriggerAction(action: string): action is LGraphTriggerAction {
   return validTriggerActions.has(action as LGraphTriggerAction)
+}
+
+function nodeStatusArray<T>(): T[] & Partial<Record<NodeId, T>> {
+  return [] as unknown as T[] & Partial<Record<NodeId, T>>
+}
+
+function executionPriority(node: LGraphNode): number {
+  return node.constructor.priority || node.priority || 0
+}
+
+/** Copies serialised fields that {@link LGraph.configure} does not handle explicitly. */
+function copyUnhandledCanonicalFields(
+  target: Partial<Record<GraphCanonicalField, unknown>>,
+  source: Partial<Record<GraphCanonicalField, unknown>>
+): void {
+  for (const key in source) {
+    if (LGraph.ConfigureProperties.has(key) || !isGraphCanonicalField(key))
+      continue
+    target[key] = source[key]
+  }
 }
 
 export type RendererType = 'LG' | 'Vue' | 'Vue-corrected'
@@ -439,6 +461,7 @@ function serialiseStoredNodes(owner: LGraph, sortNodes: boolean) {
         ? `live node ${missingAdapter.id} has no stored state`
         : `${ordered.length} stored nodes do not match ${adapters.size} live nodes`
     reportError(new Error('Graph serialization state mismatch'), {
+      surface: 'graph',
       errorType: 'graph_serialization_state_mismatch',
       context: { graphId: owner.id, mismatch }
     })
@@ -636,7 +659,7 @@ export class LGraph
   last_update_time: number = 0
   starttime: number = 0
   catch_errors: boolean = true
-  execution_timer_id?: number | null
+  execution_timer_id?: ReturnType<typeof setInterval> | number | null
   errors_in_execution?: boolean
   /** @deprecated Unused */
   execution_time!: number
@@ -656,9 +679,9 @@ export class LGraph
     ).config = value
   }
   vars: Dictionary<unknown> = {}
-  nodes_executing: boolean[] = []
-  nodes_actioning: (string | boolean)[] = []
-  nodes_executedAction: string[] = []
+  nodes_executing = nodeStatusArray<boolean>()
+  nodes_actioning = nodeStatusArray<string | boolean>()
+  nodes_executedAction = nodeStatusArray<string>()
   get extra(): LGraphExtra {
     return useGraphMetadataStore().get(
       getRuntimeRootGraph(this)?.id ?? this.id,
@@ -733,9 +756,6 @@ export class LGraph
   on_change?(graph: LGraph): void
   onSerialize?(data: ISerialisedGraph | SerialisableGraph): void
   onConfigure?(data: ISerialisedGraph | SerialisableGraph): void
-
-  // @ts-expect-error - Private property type needs fixing
-  private _input_nodes?: LGraphNode[]
 
   /**
    * See {@link LGraph}
@@ -873,9 +893,9 @@ export class LGraph
 
     this.catch_errors = true
 
-    this.nodes_executing = []
-    this.nodes_actioning = []
-    this.nodes_executedAction = []
+    this.nodes_executing = nodeStatusArray<boolean>()
+    this.nodes_actioning = nodeStatusArray<string | boolean>()
+    this.nodes_executedAction = nodeStatusArray<string>()
 
     // notify canvas to redraw
     this.change()
@@ -957,7 +977,6 @@ export class LGraph
       on_frame()
     } else {
       // execute every 'interval' ms
-      // @ts-expect-error - Timer ID type mismatch needs fixing
       this.execution_timer_id = setInterval(() => {
         // execute
         this.runStep(1, !this.catch_errors)
@@ -1044,9 +1063,9 @@ export class LGraph
     this.iteration += 1
     this.elapsed_time = (now - this.last_update_time) * 0.001
     this.last_update_time = now
-    this.nodes_executing = []
-    this.nodes_actioning = []
-    this.nodes_executedAction = []
+    this.nodes_executing = nodeStatusArray<boolean>()
+    this.nodes_actioning = nodeStatusArray<string | boolean>()
+    this.nodes_executedAction = nodeStatusArray<string>()
   }
 
   /**
@@ -1161,10 +1180,8 @@ export class LGraph
 
     // sort now by priority
     L.sort(function (A, B) {
-      // @ts-expect-error ctor props
-      const Ap = A.constructor.priority || A.priority || 0
-      // @ts-expect-error ctor props
-      const Bp = B.constructor.priority || B.priority || 0
+      const Ap = executionPriority(A)
+      const Bp = executionPriority(B)
       // if same priority, sort by order
 
       return Ap == Bp
@@ -1284,18 +1301,14 @@ export class LGraph
     const nodes = this._nodes_in_order
 
     for (const node of nodes) {
-      // @ts-expect-error deprecated
-      if (!node[eventname] || node.mode != mode) continue
+      const handler = (node as unknown as Record<string, unknown>)[eventname]
+      if (typeof handler !== 'function' || node.mode != mode) continue
       if (params === undefined) {
-        // @ts-expect-error deprecated
-        node[eventname]()
+        handler.call(node)
       } else if (params.constructor === Array) {
-        // @ts-expect-error deprecated
-        // oxlint-disable-next-line prefer-spread
-        node[eventname].apply(node, params)
+        handler.apply(node, params)
       } else {
-        // @ts-expect-error deprecated
-        node[eventname](params)
+        handler.call(node, params)
       }
     }
   }
@@ -1818,19 +1831,13 @@ export class LGraph
   /** @todo Clean up - never implemented. */
   triggerInput(name: string, value: unknown): void {
     const nodes = this.findNodesByTitle(name)
-    for (const node of nodes) {
-      // @ts-expect-error - onTrigger method may not exist on all node types
-      node.onTrigger(value)
-    }
+    for (const node of nodes) node.onTrigger?.(value)
   }
 
   /** @todo Clean up - never implemented. */
   setCallback(name: string, func?: () => void): void {
     const nodes = this.findNodesByTitle(name)
-    for (const node of nodes) {
-      // @ts-expect-error - setTrigger method may not exist on all node types
-      node.setTrigger(func)
-    }
+    for (const node of nodes) node.setTrigger?.(func)
   }
 
   // used for undo, called before any change is made to the graph
@@ -2516,6 +2523,7 @@ export class LGraph
           `Cannot unpack: node type "${unavailableNodeType}" is not registered`
         ),
         {
+          surface: 'graph',
           errorType: 'error_unpacking_subgraph_node_type',
           context: {
             subgraphNodeId: subgraphNode.id,
@@ -2531,6 +2539,7 @@ export class LGraph
       reportError(
         new Error('Cannot unpack subgraph: unresolvable inner link'),
         {
+          surface: 'graph',
           errorType: 'error_unpacking_subgraph_link',
           context: {
             subgraphNodeId: subgraphNode.id,
@@ -2618,6 +2627,7 @@ export class LGraph
         : undefined
       if (link.origin_id === SUBGRAPH_INPUT_ID && !hostInput) {
         reportError(new Error('Missing host input when unpacking subgraph'), {
+          surface: 'graph',
           errorType: 'subgraph_unpack_missing_host_input',
           context: { linkId: link.id, subgraphNodeId: subgraphNode.id }
         })
@@ -3190,17 +3200,7 @@ export class LGraph
 
         const nodesData = data.nodes
 
-        // copy all stored fields
-        for (const i in data) {
-          if (
-            LGraph.ConfigureProperties.has(i) ||
-            !GRAPH_CANONICAL_FIELDS.has(i)
-          )
-            continue
-
-          // @ts-expect-error #574 Legacy property assignment
-          this[i] = data[i]
-        }
+        copyUnhandledCanonicalFields(this, data)
 
         // Normalize cloned subgraph definitions before configuring them.
         const subgraphs = data.definitions?.subgraphs

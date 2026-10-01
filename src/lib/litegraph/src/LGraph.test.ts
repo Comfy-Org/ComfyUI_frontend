@@ -431,12 +431,11 @@ describe('LGraph', () => {
     })
   })
 
-  test('can be instantiated', ({ expect }) => {
-    // @ts-expect-error Intentional - extra holds any / all consumer data that should be serialised
-    const graph = new LGraph({ extra: 'TestGraph' })
+  test('can be instantiated', ({ expect, minimalSerialisableGraph }) => {
+    const extra = { consumerData: 'TestGraph' }
+    const graph = new LGraph({ ...minimalSerialisableGraph, extra })
     expect(graph).toBeInstanceOf(LGraph)
-    expect(graph.extra).toBe('TestGraph')
-    expect(graph.extra).toBe('TestGraph')
+    expect(graph.extra).toEqual(extra)
   })
 
   test('is exactly the same type', ({ expect }) => {
@@ -934,6 +933,7 @@ describe('Store-driven serialization parity', () => {
         message: 'Graph serialization state mismatch'
       }),
       {
+        surface: 'graph',
         errorType: 'graph_serialization_state_mismatch',
         context: {
           graphId: graph.id,

@@ -278,6 +278,7 @@ function useSubscriptionInternal() {
       new Error('Pending subscription checkout recovery timed out'),
       {
         errorType: 'failure_completing_cloud_checkout',
+        surface: 'billing',
         context: {
           checkout_attempt_id: attempt.attempt_id,
           checkout_type: attempt.checkout_type,
@@ -374,10 +375,11 @@ function useSubscriptionInternal() {
     return 'matched'
   }
 
-  const trackLateSubscriptionSuccess = (
-    metadata: SubscriptionSuccessMetadata
+  const trackSubscriptionCheckoutSuccess = (
+    metadata: SubscriptionSuccessMetadata,
+    startReported: boolean
   ) => {
-    if (metadata.recovery_outcome !== 'late_success') return
+    if (!startReported && metadata.recovery_outcome !== 'late_success') return
     telemetry?.trackBillingEvent({
       operation: 'subscription_checkout',
       stage: 'succeeded',
@@ -386,7 +388,8 @@ function useSubscriptionInternal() {
       tier: metadata.tier,
       cycle: metadata.cycle,
       checkout_type: metadata.checkout_type,
-      recovery_outcome: 'late_success'
+      payment_intent_source: metadata.payment_intent_source,
+      recovery_outcome: metadata.recovery_outcome
     })
   }
 
@@ -412,9 +415,9 @@ function useSubscriptionInternal() {
       return
     }
     if (ownership === 'unresolved') return
-    const metadata = consumePendingSubscriptionCheckoutSuccess(statusData)
+    const consumed = consumePendingSubscriptionCheckoutSuccess(statusData)
 
-    if (!metadata) {
+    if (!consumed) {
       if (hasPendingSubscriptionCheckoutAttempt()) {
         schedulePendingCheckoutRecovery()
       } else {
@@ -423,12 +426,14 @@ function useSubscriptionInternal() {
       return
     }
 
+    const { start_reported: startReported, ...metadata } = consumed
+
     telemetry?.trackMonthlySubscriptionSucceeded({
       ...(authStore.userId ? { user_id: authStore.userId } : {}),
       ...metadata
     })
 
-    trackLateSubscriptionSuccess(metadata)
+    trackSubscriptionCheckoutSuccess(metadata, startReported === true)
 
     // The recovery flow is shared with plain (non-resubscribe) legacy subscribes,
     // which all funnel through the same subscribeDirect(). Only emit the canonical
@@ -638,6 +643,7 @@ function useSubscriptionInternal() {
       ),
       {
         errorType: 'failure_recovering_cloud_checkout',
+        surface: 'billing',
         context: {
           checkout_attempt_id: attempt.attempt_id,
           checkout_type: attempt.checkout_type,

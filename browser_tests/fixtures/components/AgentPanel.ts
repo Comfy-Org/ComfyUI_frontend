@@ -2,10 +2,13 @@ import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import frMessages from '@/locales/fr/main.json' with { type: 'json' }
 
 export class AgentPanel {
   public readonly root: Locator
+  public readonly dockedPanel: Locator
   public readonly openButton: Locator
+  public readonly closeButton: Locator
   public readonly debugHeading: Locator
   public readonly serverLogsSwitch: Locator
   public readonly settingsSwitch: Locator
@@ -20,16 +23,25 @@ export class AgentPanel {
   public readonly composerPromptArea: Locator
   public readonly sendButton: Locator
   public readonly stopButton: Locator
-  public readonly closeButton: Locator
   public readonly creditsExhaustedPaywall: Locator
   public readonly nodeSelectionBanner: Locator
+  public readonly activityRows: Locator
 
   constructor(private readonly page: Page) {
     this.root = page.locator('#agent-panel-root')
+    this.dockedPanel = page.getByTestId('docked-agent-panel')
     this.openButton = page.getByRole('button', {
       name: enMessages.agent.entryButton,
       exact: true
     })
+    this.closeButton = this.root
+      .getByRole('button', { name: enMessages.g.close, exact: true })
+      .or(
+        this.root.getByRole('button', {
+          name: frMessages.g.close,
+          exact: true
+        })
+      )
     this.debugHeading = this.root.getByText('CRDT debug', { exact: true })
     this.serverLogsSwitch = this.root.getByRole('switch', {
       name: 'Server logs'
@@ -56,13 +68,15 @@ export class AgentPanel {
     this.stopButton = this.root.getByRole('button', {
       name: enMessages.agent.stop
     })
-    this.closeButton = this.root.getByRole('button', {
-      name: enMessages.agent.close
-    })
     this.creditsExhaustedPaywall = this.root.getByRole('alert').filter({
       hasText: enMessages.agent.paywall.title
     })
     this.nodeSelectionBanner = page.getByTestId('node-selection-mode-banner')
+    this.activityRows = this.root.getByRole('listitem')
+  }
+
+  activityRow(label: string): Locator {
+    return this.activityRows.getByText(label, { exact: true })
   }
 
   /**
@@ -122,6 +136,15 @@ export class AgentPanel {
   async close(): Promise<void> {
     await this.closeButton.click()
     await expect(this.root).toHaveCount(0)
+  }
+
+  async expectPanelSize(expected: { x: number; width: number }): Promise<void> {
+    await expect
+      .poll(async () => {
+        const box = await this.dockedPanel.boundingBox()
+        return box && { x: box.x, width: box.width }
+      })
+      .toEqual(expected)
   }
 
   async selectWorkflow(name: string = 'Unsaved Workflow'): Promise<void> {

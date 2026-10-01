@@ -6,6 +6,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
+import { refusesRealFaces } from '../../../config/workshop-model-restrictions'
 import type { Take } from '../../../lib/workshop/cinematic-studio/reel'
 import { failureLabelKey } from '../../../lib/workshop/failure-label'
 import type { Locale } from '../../../i18n/translations'
@@ -76,6 +77,13 @@ const body = computed(() => {
     })
   if (kind.value === 'rejected')
     return t('workshop.error.inputRejected', locale)
+  if (
+    kind.value === 'blocked' &&
+    take.status === 'failed' &&
+    take.runSlug &&
+    refusesRealFaces(take.runSlug)
+  )
+    return t('workshop.error.policyRealFaces', locale)
   return t(failureLabelKey[take.reason], locale)
 })
 const requestId = computed(() =>

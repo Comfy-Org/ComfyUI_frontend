@@ -19,9 +19,7 @@ import type {
 } from './agentMessageParts'
 import { createAssistantMessage } from './agentMessageParts'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 const fixtureText = import.meta.glob(
   '../../schemas/__fixtures__/agent/*.jsonl',
@@ -72,7 +70,8 @@ function thinking(delta: string): AgentChatEvent {
 function toolCall(
   tool_name: string,
   status: 'running' | 'success' | 'error',
-  tool_call_id = `call-${tool_name}`
+  tool_call_id = `call-${tool_name}`,
+  skill?: string
 ): AgentChatEvent {
   return {
     type: 'agent_tool_call',
@@ -80,6 +79,7 @@ function toolCall(
       tool_call_id,
       tool_name,
       status,
+      skill,
       message_id: 'm',
       thread_id: 't'
     }
@@ -424,6 +424,7 @@ describe('agentEventTransport text and tool parts', () => {
         type: 'tool',
         callId: 'call-1',
         name: 'run',
+        skill: undefined,
         state: 'done',
         ok: true,
         durationMs: undefined
@@ -500,6 +501,52 @@ describe('agentEventTransport text and tool parts', () => {
         durationMs: undefined
       }
     ])
+  })
+
+  it('preserves the skill name across the load lifecycle', () => {
+    const message = drive([
+      toolCall('load_skill', 'running', 'call-1', 'comfy-director'),
+      toolCall('load_skill', 'success', 'call-1')
+    ])
+
+    expect(toolParts(message)[0]).toMatchObject({
+      name: 'load_skill',
+      skill: 'comfy-director',
+      state: 'done'
+    })
+  })
+
+  it('preserves a parsed running frame skill through an unnamed completion', () => {
+    const running = zAgentWsEvent.parse({
+      type: 'agent_tool_call',
+      data: {
+        tool_call_id: 'call-1',
+        tool_name: 'load_skill',
+        status: 'running',
+        skill: 'comfy-director',
+        message_id: 'm',
+        thread_id: 't'
+      }
+    })
+    const completed = zAgentWsEvent.parse({
+      type: 'agent_tool_call',
+      data: {
+        tool_call_id: 'call-1',
+        tool_name: 'load_skill',
+        status: 'success',
+        message_id: 'm',
+        thread_id: 't'
+      }
+    })
+
+    const message = drive([running, completed])
+
+    expect(toolParts(message)[0]).toMatchObject({
+      name: 'load_skill',
+      skill: 'comfy-director',
+      state: 'done',
+      ok: true
+    })
   })
 })
 

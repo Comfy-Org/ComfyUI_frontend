@@ -25,12 +25,9 @@ export const FEATURE_SURVEYS: Record<string, FeatureSurveyConfig> = {
   },
   'example-workflows': {
     featureId: 'example-workflows',
-    // Placeholder: the form is built but not yet published to Typeform. Flip
-    // `enabled` once the real ID lands, so a half-wired survey can never open.
-    typeformId: '',
+    typeformId: 'OnKJQYLE',
     triggerThreshold: 3,
-    delayMs: 5000,
-    enabled: false
+    delayMs: 5000
   }
 }
 

@@ -256,22 +256,21 @@ describe('model page launch', () => {
   })
 
   it.for([
-    { path: '/hub/workflows/', workflowsLaunched: false, indexable: false },
-    { path: '/hub/workflows/', workflowsLaunched: true, indexable: true },
-    { path: '/hub/apps/', workflowsLaunched: true, indexable: false }
+    { path: '/hub/workflows/', workflowsLaunched: false },
+    { path: '/hub/workflows/', workflowsLaunched: true },
+    { path: '/hub/apps/', workflowsLaunched: false },
+    { path: '/hub/apps/', workflowsLaunched: true }
   ])(
-    'indexes $path with workflows launched $workflowsLaunched: $indexable',
-    ({ path, workflowsLaunched, indexable }) => {
-      expect(isIndexableModelPage(path, 'all', workflowsLaunched)).toBe(
-        indexable
-      )
+    'keeps $path out of the index with workflows launched $workflowsLaunched',
+    ({ path, workflowsLaunched }) => {
+      expect(isIndexableModelPage(path, 'all', workflowsLaunched)).toBe(false)
       expect(
-        !isExcludedFromSitemap(
+        isExcludedFromSitemap(
           `https://comfy.org${path}`,
           'all',
           workflowsLaunched
         )
-      ).toBe(indexable)
+      ).toBe(true)
     }
   )
 

@@ -190,3 +190,25 @@ describe('WorkflowPlayground primary action', () => {
     }
   )
 })
+
+describe('WorkflowPlayground examples', () => {
+  it.for([{ tab: 'Details' }, { tab: 'API' }])(
+    'keeps the examples to the Playground tab, not $tab',
+    async ({ tab }) => {
+      const model = workflowDetailsBySlug.get('workflows/remove-background')
+      assert(model)
+      expect(model.examples.length).toBeGreaterThan(0)
+      vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
+      vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(
+        readonly(ref(true))
+      )
+      render(WorkflowPlayground, { props: { model, scope: 'anonymous' } })
+
+      const examples = screen.getByRole('heading', { name: 'Try an example' })
+      expect(examples).toBeVisible()
+
+      await userEvent.setup().click(screen.getByRole('tab', { name: tab }))
+      expect(examples).not.toBeVisible()
+    }
+  )
+})

@@ -2092,6 +2092,7 @@ describe('useAgentCrdtFollower', () => {
     expect(telemetryState.reportError).toHaveBeenCalledExactlyOnceWith(
       expect.any(Error),
       {
+        surface: 'agent',
         errorType: 'failure_confirming_agent_doc_subscribe',
         level: 'warning',
         tags: { feature_area: 'agent', operation: 'sync', outcome: 'gave_up' }
