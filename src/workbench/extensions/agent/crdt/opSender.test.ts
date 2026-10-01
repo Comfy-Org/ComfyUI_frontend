@@ -643,6 +643,34 @@ describe('createOpSender', () => {
     localSender.detach()
   })
 
+  it('reports settlement failures again for later batches', () => {
+    const localSender = createOpSender({
+      sendOps: (workflowId, tab, ops) => {
+        sent.push({ workflowId, tab, ops })
+        return true
+      },
+      onOpsResult: (listener) => {
+        resultListener = listener
+        return vi.fn()
+      },
+      workflowId: () => boundWorkflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: () => {
+        throw new Error('listener boom')
+      }
+    })
+    localSender.enqueue([addNode(1)])
+    localSender.enqueue([addNode(2)])
+
+    ackInFlight()
+    ackInFlight()
+
+    expect(reportError).toHaveBeenCalledTimes(2)
+    localSender.detach()
+  })
+
   it('contains settlement failures when admitting while unbound', () => {
     boundWorkflow = null
     const localSender = createOpSender({
@@ -798,6 +826,29 @@ describe('createOpSender', () => {
         errorType: 'failure_chunking_agent_op_sender_teardown'
       })
     )
+  })
+
+  it('isolates an unchunkable live op so serializable siblings still send', () => {
+    const circularNode = addNode(2)
+    if (!('node' in circularNode)) throw new Error('expected an add-node op')
+    const node = circularNode.node as Record<string, unknown>
+    node.circular = node
+
+    sender.admit([addNode(1), circularNode, addNode(3)])
+    expect(() => sender.flush()).not.toThrow()
+
+    expect(sent).toHaveLength(1)
+    expect(
+      sent[0].ops.map((op) => ('node_id' in op ? op.node_id : null))
+    ).toEqual([1])
+    expect(settled.map(summarizeSettlement)).toEqual([
+      { state: 'undeliverable', nodeIds: [2] }
+    ])
+    ackInFlight()
+    expect(sent).toHaveLength(2)
+    expect(
+      sent[1].ops.map((op) => ('node_id' in op ? op.node_id : null))
+    ).toEqual([3])
   })
 
   it('contains unsubscribe failures after completing teardown', () => {

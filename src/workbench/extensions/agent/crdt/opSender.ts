@@ -200,12 +200,6 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     }
   }
 
-  const notifySettlement = guardedSettlementNotifier(
-    'failure_settling_agent_op_sender'
-  )
-  const notifyAbortSettlement = guardedSettlementNotifier(
-    'failure_settling_agent_op_sender_abort'
-  )
   const notifyDetachSettlement = guardedSettlementNotifier(
     'failure_settling_agent_op_sender_detach'
   )
@@ -213,7 +207,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   function settle(outcome: BatchOutcome): void {
     if (inFlight?.timer) clearTimeout(inFlight.timer)
     inFlight = null
-    notifySettlement(outcome)
+    guardedSettlementNotifier('failure_settling_agent_op_sender')(outcome)
     pump()
   }
 
@@ -316,14 +310,11 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       notify({ state: 'undeliverable', ops: batch.ops })
     }
     if (unsealed) {
-      let batches: Op[][]
-      try {
-        batches = chunkWireOps(unsealed.ops)
-      } catch (cause) {
-        reportSettleFailure(cause, 'failure_chunking_agent_op_sender_teardown')
-        batches = [unsealed.ops]
-      }
-      for (const ops of batches) {
+      const { chunks } = safelyChunkWireOps(
+        unsealed.ops,
+        'failure_chunking_agent_op_sender_teardown'
+      )
+      for (const ops of chunks) {
         notify({ state: 'undeliverable', ops })
       }
     }
@@ -367,7 +358,10 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       return
     }
     if (workflowId === null) {
-      notifySettlement({ state: 'undeliverable', ops: minted })
+      guardedSettlementNotifier('failure_settling_agent_op_sender')({
+        state: 'undeliverable',
+        ops: minted
+      })
       return
     }
     if (open?.workflowId !== workflowId) seal()
@@ -379,7 +373,39 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     if (!open) return
     const { workflowId, ops } = open
     open = null
-    queue.push(...chunkWireOps(ops).map((ops) => ({ workflowId, ops })))
+    const { chunks, recovered } = safelyChunkWireOps(ops)
+    if (!recovered) {
+      queue.push(...chunks.map((ops) => ({ workflowId, ops })))
+      return
+    }
+    for (const chunk of chunks) {
+      try {
+        // Validate each fallback chunk independently. Poison ops settle alone
+        // instead of preventing well-formed siblings from reaching the host.
+        chunkWireOps(chunk)
+        queue.push({ workflowId, ops: chunk })
+      } catch {
+        guardedSettlementNotifier('failure_settling_agent_op_sender')({
+          state: 'undeliverable',
+          ops: chunk
+        })
+      }
+    }
+  }
+
+  function safelyChunkWireOps(
+    ops: Op[],
+    errorType = 'failure_chunking_agent_op_sender'
+  ): {
+    chunks: Op[][]
+    recovered: boolean
+  } {
+    try {
+      return { chunks: chunkWireOps(ops), recovered: false }
+    } catch (cause) {
+      reportSettleFailure(cause, errorType)
+      return { chunks: ops.map((op) => [op]), recovered: true }
+    }
   }
 
   function flush(): void {
@@ -388,6 +414,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   }
 
   const unsubscribe = deps.onOpsResult((result) => {
+    if (detached) return
     if (inFlight === null && staleAnonymousBudget === 0) return
     const identified = [...result.applied, ...result.skipped]
     if (result.failed?.op_id) identified.push(result.failed.op_id)
@@ -458,7 +485,9 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     abortAll() {
       lastMintedVersion = -1
       lastMintedWorkflowId = null
-      drainOutstanding(notifyAbortSettlement)
+      drainOutstanding(
+        guardedSettlementNotifier('failure_settling_agent_op_sender_abort')
+      )
     },
     detach() {
       if (detached) return
