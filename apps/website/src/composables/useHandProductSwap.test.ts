@@ -39,7 +39,6 @@ beforeEach(() => {
 
 afterEach(() => {
   scope.stop()
-  vi.restoreAllMocks()
 })
 
 describe('useHandProductSwap', () => {
