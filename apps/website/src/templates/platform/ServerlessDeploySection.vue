@@ -13,9 +13,10 @@ import LiveTerminal from './LiveTerminal.vue'
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 // The full prompt to paste into a coding agent, shown in the terminal and
-// put on the clipboard verbatim by the "Copy prompt" button below. It
-// renders in full right away — `typewriter="false"` below — since it's
-// meant to be read and copied, not watched land keystroke by keystroke.
+// put on the clipboard verbatim by the "Copy prompt" button pinned to its
+// bottom-right corner. It renders in full right away — `typewriter="false"`
+// below — since it's meant to be read and copied, not watched land
+// keystroke by keystroke.
 const deployPrompt = computed(() => deployPromptFor(locale))
 const deployTranscript = computed(() => deployPrompt.value.split('\n'))
 const { copy, copied } = useClipboard({ source: deployPrompt, legacy: true })
@@ -34,16 +35,17 @@ const { copy, copied } = useClipboard({ source: deployPrompt, legacy: true })
       </template>
     </SectionHeader>
 
-    <div class="mx-auto mt-8 max-w-3xl">
+    <div class="relative mx-auto mt-8 max-w-3xl">
       <LiveTerminal
+        class="[&_pre]:pb-16"
         :lines="deployTranscript"
         :label="t('platform.serverlessDeploy.heading', locale)"
         :typewriter="false"
       />
       <BrandButton
-        variant="outline-dark"
+        variant="outline"
         size="xs"
-        class="mt-4"
+        class="absolute right-3 bottom-3 z-10 uppercase"
         @click="copy()"
       >
         <component
