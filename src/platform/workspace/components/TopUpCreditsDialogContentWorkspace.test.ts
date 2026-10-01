@@ -290,6 +290,17 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     )
   })
 
+  it('keeps the surface on the journey so an operation recovered after reload can report it', async () => {
+    renderDialog({ source: 'deep_link' })
+
+    await waitFor(() =>
+      expect(getActiveCheckoutJourney()).toMatchObject({
+        entry_source: 'settings_billing',
+        payment_intent_source: 'deep_link'
+      })
+    )
+  })
+
   it('keeps the settings-billing attribution when no source is named', async () => {
     renderDialog()
 

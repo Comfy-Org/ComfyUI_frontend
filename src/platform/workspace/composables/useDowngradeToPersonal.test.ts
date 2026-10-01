@@ -764,6 +764,47 @@ describe('useDowngradeToPersonal', () => {
   })
 
   describe('downgradeToPersonal telemetry', () => {
+    const fromTeamMembersPanel = (operation: string, stage: string) => [
+      expect.objectContaining({
+        operation,
+        stage,
+        payment_intent_source: 'team_members_panel'
+      })
+    ]
+
+    it('reports the surface the downgrade started from on every event of a completed downgrade', async () => {
+      mockMembers.value = teamWithOwnerAnd('m1')
+      const { downgradeToPersonal } = useDowngradeToPersonal({
+        paymentIntentSource: 'team_members_panel'
+      })
+
+      await downgradeToPersonal('founder-monthly')
+
+      expect(vi.mocked(useTelemetry()!.trackBillingEvent).mock.calls).toEqual([
+        fromTeamMembersPanel('downgrade_to_personal', 'started'),
+        fromTeamMembersPanel('subscription_checkout', 'started'),
+        fromTeamMembersPanel('operation', 'started'),
+        fromTeamMembersPanel('downgrade_to_personal', 'succeeded'),
+        fromTeamMembersPanel('subscription_checkout', 'succeeded'),
+        fromTeamMembersPanel('operation', 'succeeded')
+      ])
+    })
+
+    it('reports the surface on the events of a downgrade that fails', async () => {
+      mockMembers.value = teamWithOwnerAnd('m1')
+      mockPreviewSubscribe.mockRejectedValue('boom')
+      const { downgradeToPersonal } = useDowngradeToPersonal({
+        paymentIntentSource: 'team_members_panel'
+      })
+
+      await expect(downgradeToPersonal('founder-monthly')).rejects.toBe('boom')
+
+      expect(vi.mocked(useTelemetry()!.trackBillingEvent).mock.calls).toEqual([
+        fromTeamMembersPanel('downgrade_to_personal', 'started'),
+        fromTeamMembersPanel('downgrade_to_personal', 'failed')
+      ])
+    })
+
     it('hands the surface to the poller that reports a payment settled later', async () => {
       mockMembers.value = teamWithOwnerAnd('m1')
       vi.mocked(useBillingContext().subscribe).mockResolvedValue({

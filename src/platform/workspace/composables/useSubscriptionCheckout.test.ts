@@ -647,6 +647,20 @@ describe('useSubscriptionCheckout', () => {
       }
     )
 
+    it('keeps the source on the journey so an operation recovered after reload can report it', async () => {
+      const checkout = await setup('upgrade_to_add_credits')
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      expect(getActiveCheckoutJourney()).toMatchObject({
+        entry_source: 'pricing',
+        payment_intent_source: 'upgrade_to_add_credits'
+      })
+    })
+
     // Resume matches on actor, workspace, flow and intent — not source. An
     // abandoned pricing preview for the same plan would otherwise be resumed
     // by an agent-paywall entry and keep reporting `pricing`, so the agent's
