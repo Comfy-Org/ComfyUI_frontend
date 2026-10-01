@@ -888,7 +888,11 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
       expect.objectContaining({
         surface: 'agent',
         errorType: 'agent_graph_host_widgets_mismatch',
-        context: expect.objectContaining({ expected: 1, actual: 0 })
+        context: expect.objectContaining({
+          expected: 1,
+          actual: 0,
+          phase: 'incremental'
+        })
       })
     )
   })
@@ -936,7 +940,11 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
       expect.objectContaining({
         surface: 'agent',
         errorType: 'agent_graph_host_widgets_mismatch',
-        context: expect.objectContaining({ expected: 0, actual: 1 })
+        context: expect.objectContaining({
+          expected: 0,
+          actual: 1,
+          phase: 'load'
+        })
       })
     )
   })
@@ -957,7 +965,43 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
       expect.objectContaining({
         surface: 'agent',
         errorType: 'agent_graph_host_widgets_mismatch',
-        context: expect.objectContaining({ expected: 1, actual: 2 })
+        context: expect.objectContaining({
+          expected: 1,
+          actual: 2,
+          phase: 'load'
+        })
+      })
+    )
+  })
+
+  it('S1w reports load and incremental drift once each', () => {
+    const state = startFollower({ hostWidgetValues: [99, 77] })
+
+    forwardRaw(
+      state,
+      (nodes) => nodes.get('1')!.set(OPAQUE_WIDGETS_KEY, [99, 77]),
+      1
+    )
+    forwardRaw(
+      state,
+      (nodes) => nodes.get('1')!.set(OPAQUE_WIDGETS_KEY, [99, 77]),
+      2
+    )
+
+    expect(state.instance.widgets[0]?.value).toBe(INTERIOR_DEFAULT_VALUE)
+    expect(reportError).toHaveBeenCalledTimes(2)
+    expect(reportError).toHaveBeenNthCalledWith(
+      1,
+      expect.any(Error),
+      expect.objectContaining({
+        context: expect.objectContaining({ phase: 'load' })
+      })
+    )
+    expect(reportError).toHaveBeenNthCalledWith(
+      2,
+      expect.any(Error),
+      expect.objectContaining({
+        context: expect.objectContaining({ phase: 'incremental' })
       })
     )
   })
