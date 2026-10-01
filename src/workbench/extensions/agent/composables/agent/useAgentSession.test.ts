@@ -257,6 +257,92 @@ function admissionError(
   )
 }
 
+type SettleCapMailbox = (history: AgentMessages) => void
+
+const capThread = (index: number) => `cap-thread-${index}`
+const capMessage = (index: number) => `cap-message-${index}`
+
+/**
+ * Arms `count` hydrates that never resolve, lets each hand off to a mailbox
+ * holding its own terminal frame, and stops every owner. Returns the resolvers
+ * so the caller can settle them all at once -- which is the moment the cap can
+ * finally evict, since nothing pending is a candidate.
+ */
+async function armStoppedCapMailboxes(
+  conversation: ReturnType<typeof useAgentConversationStore>,
+  count: number
+): Promise<SettleCapMailbox[]> {
+  const settles: SettleCapMailbox[] = []
+  for (let index = 0; index < count; index++) {
+    const thread = capThread(index)
+    let resolveHistory: SettleCapMailbox | undefined
+    const rest = fakeRest({
+      getMessages: vi.fn(
+        () =>
+          new Promise<AgentMessages>((resolve) => {
+            resolveHistory = resolve
+          })
+      )
+    })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    conversation.setThreadId(thread)
+    session.start()
+    await vi.waitFor(() => expect(rest.getMessages).toHaveBeenCalledOnce())
+    await vi.advanceTimersByTimeAsync(30_001)
+    emit(doneIn(thread, capMessage(index)))
+    session.stop()
+    assert(resolveHistory !== undefined)
+    settles.push(resolveHistory)
+  }
+  return settles
+}
+
+async function settleCapMailboxes(settles: SettleCapMailbox[]): Promise<void> {
+  for (const settle of settles) settle([])
+  for (let flush = 0; flush < 5; flush++) await Promise.resolve()
+}
+
+/** Whether the mailbox for `index` still had its terminal frame to hand over. */
+async function restoreCapMailbox(
+  conversation: ReturnType<typeof useAgentConversationStore>,
+  index: number
+): Promise<boolean> {
+  const thread = capThread(index)
+  conversation.setThreadId(thread)
+  const successor = useAgentSession({
+    rest: fakeRest({
+      getMessages: vi.fn(
+        async (): Promise<AgentMessages> => [
+          {
+            ...historyRow(1, 'user', `cap-turn-${index}`, 'go'),
+            thread_id: thread
+          },
+          {
+            ...historyRow(
+              2,
+              'assistant',
+              `cap-turn-${index}`,
+              '',
+              capMessage(index)
+            ),
+            thread_id: thread,
+            content: {},
+            status: 'streaming'
+          }
+        ]
+      )
+    }),
+    events: fakeEvents().source
+  })
+  successor.start()
+  await vi.advanceTimersByTimeAsync(0)
+  const streaming = successor.isStreaming.value
+  successor.stop()
+  conversation.abortActiveTurn()
+  return streaming
+}
+
 describe('useAgentSession (v1 composition root)', () => {
   beforeEach(() => {
     localStorage.clear()
@@ -939,76 +1025,11 @@ describe('useAgentSession (v1 composition root)', () => {
     vi.useFakeTimers()
     try {
       const conversation = useAgentConversationStore()
-      const pending: Array<{
-        resolve: (history: AgentMessages) => void
-        session: ReturnType<typeof useAgentSession>
-      }> = []
+      const stopped = await armStoppedCapMailboxes(conversation, 33)
+      await settleCapMailboxes(stopped)
 
-      for (let index = 0; index < 33; index++) {
-        const thread = `cap-thread-${index}`
-        let resolveHistory: ((history: AgentMessages) => void) | undefined
-        const rest = fakeRest({
-          getMessages: vi.fn(
-            () =>
-              new Promise<AgentMessages>((resolve) => {
-                resolveHistory = resolve
-              })
-          )
-        })
-        const { source, emit } = fakeEvents()
-        const session = useAgentSession({ rest, events: source })
-        conversation.setThreadId(thread)
-        session.start()
-        await vi.waitFor(() => expect(rest.getMessages).toHaveBeenCalledOnce())
-        await vi.advanceTimersByTimeAsync(30_001)
-        emit(doneIn(thread, `cap-message-${index}`))
-        session.stop()
-        assert(resolveHistory !== undefined)
-        pending.push({ resolve: resolveHistory, session })
-      }
-
-      for (const { resolve } of pending) resolve([])
-      for (let index = 0; index < 5; index++) await Promise.resolve()
-
-      async function restore(index: number): Promise<boolean> {
-        const thread = `cap-thread-${index}`
-        const message = `cap-message-${index}`
-        conversation.setThreadId(thread)
-        const successor = useAgentSession({
-          rest: fakeRest({
-            getMessages: vi.fn(
-              async (): Promise<AgentMessages> => [
-                {
-                  ...historyRow(1, 'user', `cap-turn-${index}`, 'go'),
-                  thread_id: thread
-                },
-                {
-                  ...historyRow(
-                    2,
-                    'assistant',
-                    `cap-turn-${index}`,
-                    '',
-                    message
-                  ),
-                  thread_id: thread,
-                  content: {},
-                  status: 'streaming'
-                }
-              ]
-            )
-          }),
-          events: fakeEvents().source
-        })
-        successor.start()
-        await vi.advanceTimersByTimeAsync(0)
-        const streaming = successor.isStreaming.value
-        successor.stop()
-        conversation.abortActiveTurn()
-        return streaming
-      }
-
-      expect(await restore(0)).toBe(true)
-      expect(await restore(32)).toBe(false)
+      expect(await restoreCapMailbox(conversation, 0)).toBe(true)
+      expect(await restoreCapMailbox(conversation, 32)).toBe(false)
     } finally {
       vi.useRealTimers()
     }

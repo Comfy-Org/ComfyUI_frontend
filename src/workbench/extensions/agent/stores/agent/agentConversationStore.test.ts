@@ -609,6 +609,21 @@ describe('useAgentConversationStore', () => {
     expect(messageTexts(store, T2)).toEqual(['second'])
   })
 
+  it('stashes a turn under the thread it started on, not the selection', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th-a')
+    store.startTurn(T1)
+
+    store.setThreadId('th-b')
+    store.stashActiveTurn()
+
+    store.setThreadId('th-a')
+    store.hydrate([])
+    store.resumeBackgroundTurn()
+
+    expect(store.activeTurnId).toBe('t1')
+  })
+
   it('keeps the text a stash received while its thread was off screen', () => {
     const store = useAgentConversationStore()
     store.setThreadId('th')

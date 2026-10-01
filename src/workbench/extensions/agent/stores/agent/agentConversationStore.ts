@@ -411,12 +411,16 @@ export const useAgentConversationStore = defineStore(
     function stashActiveTurn(): void {
       const slot = activeSlot.value
       if (!slot) return
-      if (threadId.value === null) {
+      // The slot's own thread, not the selection: a thread switch between
+      // this turn starting and it being stashed would otherwise file the
+      // transport under the thread now on screen, where its frames no longer
+      // route and returning to the real owner cannot resume it.
+      if (slot.threadId === null) {
         abortActiveTurn()
         return
       }
       backgroundTurns.set(slot.turnId, {
-        threadId: threadId.value,
+        threadId: slot.threadId,
         messageId: slot.turnId,
         message: slot.message,
         transport: slot.transport,
