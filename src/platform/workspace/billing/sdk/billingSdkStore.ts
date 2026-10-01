@@ -112,6 +112,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   const workspaceStore = useTeamWorkspaceStore()
   const toastStore = useToastStore()
   const { flags } = useFeatureFlags()
+  const billingCapabilities = useBillingCapabilities()
 
   const operations = shallowRef<readonly BillingOperationState[]>([])
   const dismissed = shallowRef<ReadonlySet<string>>(new Set())
@@ -375,7 +376,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
       await Promise.allSettled([
         billingContext.fetchStatus(),
         billingContext.fetchBalance(),
-        useBillingCapabilities().refresh()
+        billingCapabilities.refresh()
       ])
       useDialogStore().closeDialog({ key: 'top-up-credits' })
       useSettingsDialog().show(isCloud ? 'workspace' : 'credits')
@@ -430,7 +431,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     amountCents: number
   ): Promise<CreateTopupResponse | undefined> {
     const result = await sdk.topup.createTopupCheckout({ amountCents })
-    if (result.status === 'ok') void useBillingCapabilities().refresh()
+    if (result.status === 'ok') void billingCapabilities.refresh()
     return projectTopupResult(result, amountCents)
   }
 
@@ -464,7 +465,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     await Promise.allSettled([
       billingContext.fetchStatus(),
       billingContext.fetchBalance(),
-      useBillingCapabilities().refresh()
+      billingCapabilities.refresh()
     ])
   }
 
@@ -472,7 +473,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     const billingContext = useBillingContext()
     await Promise.allSettled([
       billingContext.reconcileSubscriptionSuccess(),
-      useBillingCapabilities().refresh()
+      billingCapabilities.refresh()
     ])
   }
 

@@ -3,6 +3,7 @@ import type { User, UserCredential } from 'firebase/auth'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
+import { MISSING_CUSTOMER_MESSAGE } from '@comfyorg/account-core/customerRecovery'
 import type { ExchangeTokenResponse } from '@comfyorg/ingest-types'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -165,6 +166,7 @@ function installFetchRecorder(features: Record<string, unknown>) {
   let socketCloses = 0
   let mintCount = 0
   let billingUnauthorized = 0
+  let customerMissing = false
 
   const mintResponse = (): ExchangeTokenResponse => {
     mintCount += 1
@@ -177,10 +179,28 @@ function installFetchRecorder(features: Record<string, unknown>) {
     }
   }
 
-  const respond = (request: RecordedRequest): Response => {
-    if (request.path === `${getComfyApiBaseUrl()}/customers`) {
+  const customerResponse = (path: string): Response | undefined => {
+    if (path === `${getComfyApiBaseUrl()}/customers`) {
+      customerMissing = false
       return jsonResponse({ id: 'customer-1' }, 201)
     }
+    if (path.startsWith(`${getComfyApiBaseUrl()}/customers/`)) {
+      return customerMissing
+        ? jsonResponse({ message: MISSING_CUSTOMER_MESSAGE }, 409)
+        : jsonResponse({})
+    }
+    return undefined
+  }
+
+  const billingStatusResponse = (): Response => {
+    if (billingUnauthorized === 0) return jsonResponse(BILLING_STATUS)
+    billingUnauthorized -= 1
+    return jsonResponse({ message: 'invalid auth token' }, 401)
+  }
+
+  const respond = (request: RecordedRequest): Response => {
+    const customer = customerResponse(request.path)
+    if (customer) return customer
     switch (`${request.method} ${request.path}`) {
       case 'GET /api/features':
         return jsonResponse(features)
@@ -193,11 +213,7 @@ function installFetchRecorder(features: Record<string, unknown>) {
       case 'POST /api/prompt':
         return jsonResponse({ prompt_id: 'prompt-1', number: 1 })
       case 'GET /api/billing/status':
-        if (billingUnauthorized > 0) {
-          billingUnauthorized -= 1
-          return jsonResponse({ message: 'invalid auth token' }, 401)
-        }
-        return jsonResponse(BILLING_STATUS)
+        return billingStatusResponse()
       default:
         return jsonResponse({ message: 'unexpected request' }, 404)
     }
@@ -250,6 +266,9 @@ function installFetchRecorder(features: Record<string, unknown>) {
     },
     rejectNextBillingRead() {
       billingUnauthorized = 1
+    },
+    loseCustomer() {
+      customerMissing = true
     },
     take() {
       const taken = pending
@@ -633,6 +652,58 @@ describe.for([
     })
   }
 )
+describe.for([
+  { name: 'unified_cloud_auth off', features: { unified_cloud_auth: false } },
+  { name: 'unified_cloud_auth on', features: { unified_cloud_auth: true } }
+])('billing with unified_web_session off ($name)', ({ features }) => {
+  const onFirebaseToken = (method: string, path: string): RecordedRequest => ({
+    method,
+    path: `${getComfyApiBaseUrl()}${path}`,
+    headers: {
+      authorization: 'Bearer firebase-id-token',
+      'content-type': 'application/json'
+    },
+    credentials: null
+  })
+
+  beforeEach(() => {
+    identity.reset()
+  })
+
+  afterEach(() => {
+    remoteConfig.value = {}
+  })
+
+  it('sends balance, top-up, portal and the 409 recovery on the Firebase token and mints nothing', async () => {
+    const recorder = installFetchRecorder(features)
+    await refreshRemoteConfig({ useAuth: false })
+    const authStore = useAuthStore()
+    await authStore.login('user-a@example.com', 'password')
+    await vi.waitFor(() =>
+      expect(recorder.pending).toContainEqual(CUSTOMER_PROVISIONING)
+    )
+    recorder.take()
+
+    await authStore.fetchBalance()
+    await authStore.initiateCreditPurchase({
+      amount_micros: 5_000_000,
+      currency: 'usd'
+    })
+    await authStore.accessBillingPortal()
+    recorder.loseCustomer()
+    await authStore.fetchBalance()
+
+    expect(recorder.take()).toEqual([
+      onFirebaseToken('GET', '/customers/balance'),
+      onFirebaseToken('POST', '/customers/credit'),
+      onFirebaseToken('POST', '/customers/billing'),
+      onFirebaseToken('GET', '/customers/balance'),
+      onFirebaseToken('POST', '/customers'),
+      onFirebaseToken('GET', '/customers/balance')
+    ])
+  })
+})
+
 describe('an interactive sign-in with unified_web_session off', () => {
   beforeEach(() => {
     identity.reset()
