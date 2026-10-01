@@ -159,9 +159,24 @@ function prepareOpenDialog(): void {
     latchedReturn.value = undefined
   } else if (topUp.value.status === 'idle') {
     latchedReturn.value = undefined
-    if (checkoutAttempt && lastCheckout.value) state.value = 'checkout'
+    restoreCheckoutForScope(dialogScope)
   }
   if (step.value === 'landed') scheduleAutoClose()
+}
+
+function restoreCheckoutForScope(scope: CheckoutScope | undefined): void {
+  const belongsToScope =
+    checkoutAttempt &&
+    lastCheckout.value &&
+    scope &&
+    checkoutAttempt.uid === scope.uid &&
+    checkoutAttempt.workspaceId === scope.workspaceId
+  if (belongsToScope) {
+    state.value = 'checkout'
+    return
+  }
+  checkoutAttempt = undefined
+  lastCheckout.value = undefined
 }
 
 function clearReturnReceipt(): void {

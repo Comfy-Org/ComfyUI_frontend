@@ -524,6 +524,42 @@ describe('BuyCreditsDialog', () => {
     expect(vi.mocked(watchForTopUp)).toHaveBeenCalledWith(topUpScope)
   })
 
+  it('discards an outstanding checkout when the dialog reopens in another workspace', async () => {
+    const user = userEvent.setup()
+    const tab = claimTab()
+    const fetchCheckout = stubCheckout()
+    const { isOpen } = renderControlledDialog()
+
+    await user.click(await screen.findByTestId('buy-credits-continue'))
+    await vi.waitFor(() => expect(tab.location.assign).toHaveBeenCalledOnce())
+    await user.click(screen.getByTestId('buy-credits-checkout-close'))
+    await vi.waitFor(() => expect(isOpen.value).toBe(false))
+
+    const nextCredential = {
+      ...credential,
+      token: 'next-workspace-jwt',
+      workspace: {
+        ...credential.workspace,
+        id: 'workspace-2',
+        name: 'Team B'
+      }
+    }
+    auth.session.value = nextCredential
+    vi.mocked(useWorkshopSession().ensureFresh).mockResolvedValue({
+      status: 'ok',
+      session: nextCredential
+    })
+    await nextTick()
+    isOpen.value = true
+    await nextTick()
+
+    expect(await screen.findByTestId('buy-credits-packs')).toBeTruthy()
+    expect(screen.queryByTestId('buy-credits-open-checkout')).toBeNull()
+
+    await user.click(screen.getByTestId('buy-credits-continue'))
+    await vi.waitFor(() => expect(fetchCheckout).toHaveBeenCalledTimes(2))
+  })
+
   it('opens the localized checkout handoff for Chinese', async () => {
     const user = userEvent.setup()
     claimTab()
