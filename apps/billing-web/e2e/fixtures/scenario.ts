@@ -5,7 +5,8 @@ import type {
   BillingPlansResponse,
   BillingStatusResponse,
   PreviewSubscribeResponse,
-  SavedPaymentMethod
+  SavedPaymentMethod,
+  TopupQuoteResponse
 } from '@comfyorg/ingest-types'
 
 import { E2E_USER } from './env'
@@ -18,6 +19,7 @@ export interface CloudScenario {
   plans: BillingPlansResponse
   paymentMethods: SavedPaymentMethod[]
   preview: PreviewSubscribeResponse
+  topupQuote: TopupQuoteResponse
   operations: Record<string, BillingOpStatusResponse>
   /** `billing_web_checkout_ui`, answered only to an authenticated `/features` read, as the real Cloud does. */
   checkoutUi?: string
@@ -200,6 +202,11 @@ export function defaultScenario(): CloudScenario {
           total_credits_cents: 10_000
         }
       }
+    },
+    topupQuote: {
+      amount_cents: 2500,
+      credits: 5275,
+      expires_at: '2027-09-30T12:00:00.000Z'
     },
     operations: {}
   }
