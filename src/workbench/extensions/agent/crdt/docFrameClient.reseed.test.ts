@@ -152,6 +152,50 @@ describe('layout follower bridge: stale-schema reseed', () => {
     expect(transport.frames('doc_reseed')).toHaveLength(1)
   })
 
+  it('does not re-arm reseed after a lineage reset until subscribe confirms', () => {
+    const { transport, bridge } = refusedBridge()
+    expect(bridge.reseed('wf-1', canvas)).toBe(true)
+    transport.receive('doc_reseed_result', {
+      v: 1,
+      workflow_id: 'wf-1',
+      ok: true,
+      seq: 8,
+      outcome: 'already_current'
+    })
+    transport.receive('doc_subscribed', {
+      v: 1,
+      workflow_id: 'wf-1',
+      ok: false,
+      code: STALE_SCHEMA_RESEED_REQUIRED,
+      expected_seq: 8
+    })
+
+    expect(bridge.canReseed('wf-1')).toBe(false)
+    expect(() => bridge.reseed('wf-1', canvas)).toThrow(
+      /ADR-CRDT-FOLLOWER-0025/
+    )
+    expect(transport.frames('doc_reseed')).toHaveLength(1)
+  })
+
+  it.for([undefined, 0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY])(
+    'does not arm reseed for an invalid expected sequence: %s',
+    (expectedSeq) => {
+      const transport = new TestTransport()
+      const bridge = new LayoutFollowerBridge(new DocFrameClient(transport))
+      bridge.subscribe('wf-1')
+      transport.receive('doc_subscribed', {
+        v: 1,
+        workflow_id: 'wf-1',
+        ok: false,
+        code: STALE_SCHEMA_RESEED_REQUIRED,
+        ...(expectedSeq !== undefined && { expected_seq: expectedSeq })
+      })
+
+      expect(bridge.canReseed('wf-1')).toBe(false)
+      expect(transport.frames('doc_reseed')).toEqual([])
+    }
+  )
+
   it('invalidates a refusal token when the desired workflow changes', () => {
     const { transport, bridge } = refusedBridge()
     bridge.subscribe('wf-2')

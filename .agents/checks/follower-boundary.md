@@ -101,8 +101,10 @@ Flag:
   doc per edit instead of applying ops/updates incrementally.
   One exception (FOLLOWER amendment 2026-09-26): one `doc_reseed` per
   `stale_schema_reseed_required` refusal, sent only through
-  `LayoutFollowerBridge.reseed`, which asserts that refusal. Flag any other caller or
-  frame that sends a whole graph upstream.
+  `LayoutFollowerBridge.reseed`, which asserts that refusal. A successful or
+  conflicting reseed must block another answer until subscribe confirmation,
+  reconnect, or retarget. Flag any other caller or frame that sends a whole graph
+  upstream.
 - **A second applier implementation** — op-to-doc / conflict-resolution logic reimplemented
   in the frontend instead of importing the single shared `@comfyorg/comfy-multi-player`
   package (pinned by SHA). `LiveGraphApplier` is a doc-to-graph adapter, not an applier;

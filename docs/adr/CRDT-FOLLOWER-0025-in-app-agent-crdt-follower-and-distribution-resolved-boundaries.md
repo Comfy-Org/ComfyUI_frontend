@@ -300,8 +300,10 @@ announces a new lineage for ordinary catch-up. The on-screen canvas is required
 because the server projection can lag human edits. `LayoutFollowerBridge.reseed`
 enforces that the refusal matches the current workflow and can be answered only
 once. A retryable reseed result permits another answer only to a fresh refusal
-produced by the bounded subscribe backoff. All other whole-graph sends remain
-rejected.
+produced by the bounded subscribe backoff. After a successful or conflicting
+reseed resets the lineage, another refusal cannot be answered until the
+replacement subscription is confirmed, the transport reconnects, or the user
+retargets. All other whole-graph sends remain rejected.
 
 ## Product gate and developer diagnostics (amended 2026-09-12)
 

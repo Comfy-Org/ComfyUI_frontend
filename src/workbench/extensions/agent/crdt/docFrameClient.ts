@@ -449,13 +449,17 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
     return null
 
   if (typeof frame.type !== 'string') return null
-  if (!Object.hasOwn(serverFrameParsers, frame.type)) return null
-  const type = frame.type as ServerDocFrame['type']
+  if (!isServerFrameType(frame.type)) return null
+  const type = frame.type
   const parser = serverFrameParsers[type] as (
     workflowId: string,
     data: WireData
   ) => ServerDocFrame | null
   return parser(data.workflow_id, data)
+}
+
+function isServerFrameType(type: string): type is ServerDocFrame['type'] {
+  return Object.hasOwn(serverFrameParsers, type)
 }
 
 export class DocFrameClient extends EventTarget {

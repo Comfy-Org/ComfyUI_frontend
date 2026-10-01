@@ -31,10 +31,12 @@ const bridgeState = vi.hoisted(() => {
     subscribe = vi.fn()
     unsubscribe = vi.fn()
     resubscribe = vi.fn()
+    reconnect = vi.fn(() => this.resubscribe())
     reconcile = vi.fn()
     destroy = vi.fn()
     sendHumanOps = vi.fn()
     reseed = vi.fn(() => true)
+    canReseed = vi.fn(() => true)
     subscribedWorkflowId: string | null = 'wf-1'
     lastSequence = 41
     follower = {
@@ -2189,7 +2191,7 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
-    it('answers each fresh refusal once', () => {
+    it('backs off instead of reseeding again before replacement subscribe confirms', () => {
       vi.useFakeTimers()
       const { unmount } = mountWithCanvas()
 
@@ -2200,9 +2202,12 @@ describe('useAgentCrdtFollower', () => {
         seq: 8,
         outcome: 'reseeded'
       })
+      bridge().canReseed.mockReturnValue(false)
       dispatchFrame('doc_subscribed', staleRefusal)
 
-      expect(bridge().reseed).toHaveBeenCalledTimes(2)
+      expect(bridge().reseed).toHaveBeenCalledTimes(1)
+      vi.advanceTimersByTime(500)
+      expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
       unmount()
     })
 
