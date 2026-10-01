@@ -3,12 +3,12 @@ import { describe, expect, it } from 'vitest'
 
 import type { ModelLaunchShowcase } from './types'
 
+import { t } from '../../i18n/translations'
 import ModelLaunchShowcaseSection from './ModelLaunchShowcaseSection.vue'
 
 const showcase: ModelLaunchShowcase = {
   headingAccentKey: 'nanoBanana.showcase.headingAccent',
   headingKey: 'nanoBanana.showcase.heading',
-  descriptionKey: 'nanoBanana.showcase.description',
   cards: [
     {
       id: 'one',
@@ -34,6 +34,22 @@ describe('ModelLaunchShowcaseSection', () => {
       })
     ).toBeTruthy()
   })
+
+  it.for([
+    { descriptionKey: undefined, shown: false },
+    { descriptionKey: 'chatgptImage25.hero.description', shown: true }
+  ] as const)(
+    'renders a description only when the page supplies one ($shown)',
+    ({ descriptionKey, shown }) => {
+      render(ModelLaunchShowcaseSection, {
+        props: { showcase: { ...showcase, descriptionKey } }
+      })
+
+      expect(
+        screen.queryByText(t('chatgptImage25.hero.description', 'en')) !== null
+      ).toBe(shown)
+    }
+  )
 
   it('exposes each still once and hides the looping copy from assistive tech', () => {
     render(ModelLaunchShowcaseSection, { props: { showcase, locale: 'zh-CN' } })

@@ -71,12 +71,16 @@ const sectionOrder = page.sectionOrder ?? DEFAULT_SECTION_ORDER
     updated={t(page.breadcrumbUpdatedKey, locale)}
     label={t('ui.breadcrumb', locale)}
   />
+  {page.showcase?.aboveHero && (
+    <ModelLaunchShowcaseSection showcase={page.showcase} locale={locale} />
+  )}
   <ModelLaunchHeroSection client:load hero={page.hero} locale={locale} />
   {sectionOrder.map((section) => {
     switch (section) {
       case 'showcase':
         return (
-          page.showcase && (
+          page.showcase &&
+          !page.showcase.aboveHero && (
             <ModelLaunchShowcaseSection
               showcase={page.showcase}
               locale={locale}

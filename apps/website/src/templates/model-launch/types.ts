@@ -129,8 +129,10 @@ export interface ModelLaunchShowcase {
   // Rendered in brand yellow directly before `headingKey`.
   headingAccentKey?: TranslationKey
   headingKey: TranslationKey
-  descriptionKey: TranslationKey
+  descriptionKey?: TranslationKey
   cards: readonly ModelLaunchShowcaseCard[]
+  // Renders the strip above the hero instead of in the body section order.
+  aboveHero?: boolean
 }
 
 interface ModelLaunchPricingBanner {

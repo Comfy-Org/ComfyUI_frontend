@@ -24,6 +24,7 @@ const { locale = 'en', showcase } = defineProps<{
         {{ t(showcase.headingKey, locale) }}
       </h2>
       <p
+        v-if="showcase.descriptionKey"
         class="mt-6 text-base/relaxed font-light text-primary-comfy-canvas lg:text-lg/relaxed"
       >
         {{ t(showcase.descriptionKey, locale) }}

@@ -12,11 +12,6 @@ const nanoBananaLinks = {
 const placeholderMediaBase = 'https://media.comfy.org/website/chatgpt-image-2.5'
 
 const media = {
-  hero: {
-    kind: 'video',
-    src: `${placeholderMediaBase}/hero.mp4`,
-    posterSrc: `${placeholderMediaBase}/hero-poster.webp`
-  },
   vaporwave: { kind: 'image', src: `${placeholderMediaBase}/vaporwave.webp` },
   aliens: {
     kind: 'image',
@@ -42,11 +37,6 @@ export const nanoBananaPage: ModelLaunchPage = {
   breadcrumbUpdatedKey: 'nanoBanana.breadcrumb.updated',
   hero: {
     layout: 'media-first',
-    videoSrc: media.hero.src,
-    posterSrc: media.hero.posterSrc,
-    mobileFallbackImageSrc: media.hero.posterSrc,
-    mobileVideoSrc: `${placeholderMediaBase}/hero-mobile.mp4`,
-    logoSrc: '/icons/ai-models/gemini.svg',
     titleKey: 'nanoBanana.hero.title',
     descriptionKey: 'nanoBanana.hero.description',
     badgeKeys: [
@@ -68,7 +58,7 @@ export const nanoBananaPage: ModelLaunchPage = {
   showcase: {
     headingAccentKey: 'nanoBanana.showcase.headingAccent',
     headingKey: 'nanoBanana.showcase.heading',
-    descriptionKey: 'nanoBanana.showcase.description',
+    aboveHero: true,
     cards: [
       { id: 'style-1', alt: showcaseAlt(1), src: media.vaporwave.src },
       { id: 'style-2', alt: showcaseAlt(2), src: media.aliens.src },
