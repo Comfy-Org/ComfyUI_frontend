@@ -79,16 +79,33 @@ describe('useTemplateModelAvailability', () => {
     expect(modelStore.loadModels).not.toHaveBeenCalled()
   })
 
-  it('keeps absence unknown when the model-folder registry is empty', async () => {
+  it('loads an empty registry before classifying a genuinely absent model', async () => {
+    const absent = model('absent.safetensors')
+    // The real action populates the registry; awaiting it is what lets the
+    // referenced folder resolve as Loaded.
+    vi.mocked(modelStore.loadModelFolders).mockImplementation(async () => {
+      // Resolve on a later tick so skipping the await is observable.
+      await Promise.resolve()
+      modelStore.modelFolders = [folder('checkpoints', ResourceState.Loaded)]
+      return true
+    })
+
+    await expect(
+      useTemplateModelAvailability().resolveAvailability([absent])
+    ).resolves.toEqual([{ model: absent, status: 'missing' }])
+    expect(modelStore.loadModelFolders).toHaveBeenCalledOnce()
+    expect(modelStore.getLoadedModelFolder).toHaveBeenCalledExactlyOnceWith(
+      'checkpoints'
+    )
+  })
+
+  it('keeps absence unknown when the registry stays empty', async () => {
     const unresolved = model('unresolved.safetensors')
 
     await expect(
       useTemplateModelAvailability().resolveAvailability([unresolved])
     ).resolves.toEqual([{ model: unresolved, status: 'unknown' }])
     expect(modelStore.loadModelFolders).toHaveBeenCalledOnce()
-    expect(modelStore.getLoadedModelFolder).toHaveBeenCalledExactlyOnceWith(
-      'checkpoints'
-    )
   })
 
   it('uses an incomplete known snapshot when inventory loading fails', async () => {

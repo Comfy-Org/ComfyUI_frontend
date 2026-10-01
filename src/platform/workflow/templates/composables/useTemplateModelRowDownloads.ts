@@ -171,6 +171,7 @@ export function useTemplateModelRowDownloads({
   subscribeDesktopProgress = subscribeToDesktopProgress,
   subscribeLegacyProgress = subscribeToLegacyProgress
 }: TemplateModelRowDownloadDependencies) {
+  let disposed = false
   const states = shallowReactive(new Map<string, TemplateModelDownloadState>())
   const models = new Map<string, ModelWithUrl>()
   const nativeActivityAttempts = new Map<string, number>()
@@ -280,6 +281,7 @@ export function useTemplateModelRowDownloads({
     model: ModelWithUrl,
     attempt: number
   ): boolean {
+    if (disposed) return false
     const identity = identityFor(model)
     const currentModel = models.get(identity)
     const currentState = states.get(identity)
@@ -339,6 +341,7 @@ export function useTemplateModelRowDownloads({
     paths: FolderPaths,
     canLoadFolderPaths: boolean
   ): void {
+    if (disposed) return
     try {
       handleOutcome(
         model,
@@ -352,6 +355,7 @@ export function useTemplateModelRowDownloads({
   }
 
   function request(model: ModelWithUrl): void {
+    if (disposed) return
     const identity = identityFor(model)
     const current = initializeState(model)
     const queued = reduceTemplateModelDownloadState(current, {
@@ -363,9 +367,7 @@ export function useTemplateModelRowDownloads({
     dispatch(model, queued.attempt, {}, true)
   }
 
-  let disposed = false
   function dispose(): void {
-    if (disposed) return
     disposed = true
     stopDesktopProgress()
     stopLegacyProgress()
