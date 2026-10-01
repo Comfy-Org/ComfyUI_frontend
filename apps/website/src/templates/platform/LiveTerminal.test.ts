@@ -83,6 +83,20 @@ describe('LiveTerminal', () => {
     expect(transcript()).toBe('$ comfy up✔ Done')
   })
 
+  it('shows the full transcript statically when typewriter is disabled', async () => {
+    render(LiveTerminal, {
+      props: { lines: LINES, label: 'Demo', typewriter: false }
+    })
+    await nextTick()
+
+    expect(transcript()).toBe('$ comfy up✔ Done')
+    expect(screen.getByRole('img', { name: 'Demo' }).textContent).not.toMatch(
+      '▋'
+    )
+    await advance(10000)
+    expect(transcript()).toBe('$ comfy up✔ Done')
+  })
+
   it('keeps a blank line as a spacer between lines', async () => {
     vi.mocked(prefersReducedMotion).mockReturnValue(true)
     render(LiveTerminal, {

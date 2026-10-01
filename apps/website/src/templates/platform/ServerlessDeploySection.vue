@@ -11,19 +11,12 @@ import LiveTerminal from './LiveTerminal.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-// A short, illustrative transcript for the terminal — the full prompt a
-// coding agent needs lives in deploy-prompt.ts and only ever goes on the
-// clipboard, via the "Copy prompt" button below, never typed out here.
-const deployTranscript = [
-  '$ comfy build init',
-  '✔ Scanned this ComfyUI install — custom nodes, models, pinned deps',
-  '$ comfy build push --release --target linux/nvidia',
-  '✔ Build released',
-  '$ comfy deploy up',
-  '✔ Endpoint live → https://your-build.run.comfy.app'
-]
-
+// The full prompt to paste into a coding agent, shown in the terminal and
+// put on the clipboard verbatim by the "Copy prompt" button below. It
+// renders in full right away — `typewriter="false"` below — since it's
+// meant to be read and copied, not watched land keystroke by keystroke.
 const deployPrompt = computed(() => deployPromptFor(locale))
+const deployTranscript = computed(() => deployPrompt.value.split('\n'))
 const { copy, copied } = useClipboard({ source: deployPrompt, legacy: true })
 </script>
 
@@ -44,6 +37,7 @@ const { copy, copied } = useClipboard({ source: deployPrompt, legacy: true })
       <LiveTerminal
         :lines="deployTranscript"
         :label="t('platform.serverlessDeploy.heading', locale)"
+        :typewriter="false"
       />
       <button
         type="button"

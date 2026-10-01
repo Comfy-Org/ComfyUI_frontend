@@ -7,11 +7,11 @@ import { t } from '../../i18n/translations'
 import ServerlessDeploySection from './ServerlessDeploySection.vue'
 
 vi.mock(import('../../composables/useReducedMotion'), () => ({
-  prefersReducedMotion: () => true
+  prefersReducedMotion: () => false
 }))
 
 describe('ServerlessDeploySection', () => {
-  it('presents a short illustrative transcript, not the full agent prompt', () => {
+  it('shows the full agent prompt in the terminal immediately, with no typewriter reveal', () => {
     render(ServerlessDeploySection, { props: { locale: 'en' } })
 
     expect(
@@ -28,14 +28,9 @@ describe('ServerlessDeploySection', () => {
       name: t('platform.serverlessDeploy.heading', 'en')
     })
     const transcript = terminal.textContent
-    for (const line of [
-      'comfy build init',
-      'comfy build push --release --target linux/nvidia',
-      'comfy deploy up'
-    ]) {
-      expect(transcript).toContain(line)
+    for (const line of deployPromptFor('en').split('\n')) {
+      if (line) expect(transcript).toContain(line)
     }
-    expect(transcript).not.toContain(deployPromptFor('en'))
   })
 
   it('copies the full agent prompt from the button below the terminal', async () => {

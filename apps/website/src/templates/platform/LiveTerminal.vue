@@ -10,9 +10,16 @@ const COMMAND_PAUSE_MS = 500
 const OUTPUT_PAUSE_MS = 700
 const REPLAY_HOLD_MS = 5000
 
-const { lines, label } = defineProps<{
+const {
+  lines,
+  label,
+  typewriter = true
+} = defineProps<{
   lines: string[]
   label: string
+  /** Set to false for a transcript meant to be read and copied in full right
+   * away (e.g. a prompt), rather than watched land keystroke by keystroke. */
+  typewriter?: boolean
 }>()
 
 /** Reveal targets over the joined transcript: commands appear one keystroke
@@ -71,6 +78,7 @@ function schedule() {
 
 watchEffect(() => {
   if (
+    typewriter &&
     onScreen.value &&
     documentVisibility.value === 'visible' &&
     !prefersReducedMotion()
@@ -83,9 +91,10 @@ watchEffect(() => {
 onScopeDispose(() => clearTimeout(timer))
 
 const visibleLines = computed(() => {
-  const text = prefersReducedMotion()
-    ? transcript.value
-    : transcript.value.slice(0, revealedCount.value)
+  const text =
+    !typewriter || prefersReducedMotion()
+      ? transcript.value
+      : transcript.value.slice(0, revealedCount.value)
   return text.split('\n')
 })
 
@@ -113,7 +122,7 @@ const isSigilLine = (line: string) =>
         }}</template><template v-else>{{
           line || (visibleLines.length > 1 ? ' ' : '')
         }}</template></span></template><span
-        v-if="!prefersReducedMotion()"
+        v-if="typewriter && !prefersReducedMotion()"
         class="animate-pulse text-primary-comfy-yellow"
       >▋</span></code></pre>
   </div>
