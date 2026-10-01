@@ -13,7 +13,7 @@ import {
 } from '@comfyorg/shared-frontend-utils/telemetry'
 
 import type { BillingWebSessionPhase } from '@/router'
-import { addRumAction } from '@/telemetry/rum'
+import { addRumAction, clearRumUser, setRumUser } from '@/telemetry/rum'
 
 type BillingEventName = `billing.${string}.${string}`
 type BillingEventPayload = Readonly<Record<string, unknown>>
@@ -36,6 +36,11 @@ type PostHogClient = Pick<
 interface BillingEvent {
   readonly name: BillingEventName
   readonly properties: Readonly<Record<string, unknown>>
+}
+
+interface IdentitySink {
+  readonly signIn: (userId: string) => void
+  readonly signOut: () => void
 }
 
 type PostHogSink =
@@ -88,27 +93,29 @@ function identifyUser(client: PostHogClient, userId: string): void {
   client.identify(userId)
 }
 
-/** Only a sign-out of the user identified here resets, so a visitor never signed in here keeps the Cloud identity. */
+/** Only a sign-out of the user set here signs out, so a visitor never signed in here keeps the identity another page set. */
 function syncIdentity(
-  client: PostHogClient,
+  sink: IdentitySink,
   identity: WatchSource<SessionIdentity>
 ): void {
-  let identifiedHere = false
+  let setHere = false
   watch(
     identity,
     (next) =>
       attempt(() => {
         if (next.kind === 'signed_in') {
-          identifyUser(client, next.userId)
-          identifiedHere = true
-        } else if (next.kind === 'signed_out' && identifiedHere) {
-          client.reset(true)
-          identifiedHere = false
+          sink.signIn(next.userId)
+          setHere = true
+        } else if (next.kind === 'signed_out' && setHere) {
+          sink.signOut()
+          setHere = false
         }
       }),
     { immediate: true }
   )
 }
+
+const RUM_USER: IdentitySink = { signIn: setRumUser, signOut: clearRumUser }
 
 async function loadPostHog(
   config: CloudTelemetryConfig
@@ -163,7 +170,14 @@ export function createBillingWebTelemetry() {
             disabledEvents: new Set(resolved.telemetryDisabledEvents)
           }
         : { status: 'off' }
-      if (client) syncIdentity(client, identity)
+      if (client)
+        syncIdentity(
+          {
+            signIn: (userId) => identifyUser(client, userId),
+            signOut: () => client.reset(true)
+          },
+          identity
+        )
     } catch {
       posthog = { status: 'off' }
     }
@@ -186,7 +200,12 @@ export function createBillingWebTelemetry() {
     attempt(() => capture(event))
   }
 
-  return { startPostHog, trackBillingEvent }
+  /** The RUM user is the opaque id of the signed-in user, nothing else. */
+  function startRumUser(identity: WatchSource<SessionIdentity>): void {
+    syncIdentity(RUM_USER, identity)
+  }
+
+  return { startPostHog, startRumUser, trackBillingEvent }
 }
 
 export const billingWebTelemetry = createBillingWebTelemetry()

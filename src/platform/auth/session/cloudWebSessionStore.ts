@@ -263,6 +263,10 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
         dropRefusedWorkspace(scope, result)
         return staleScopeFailure(scope) ?? result
       },
+      remintWorkspaceToken: async (scope) => {
+        const result = await mint.remint(scope.workspaceId)
+        return staleScopeFailure(scope) ?? result
+      },
       authorizeResource: async ({ session }) => {
         try {
           const { headers } = await authorize(

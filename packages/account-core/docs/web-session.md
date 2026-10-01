@@ -60,8 +60,9 @@ target.
 one token per (user, workspace) and mints again 60 s before expiry, and the
 expiry never exceeds the session's. The backend allows 240 mints per user per
 hour. A 429 honours `Retry-After`, capped at 10 minutes, and no request is sent
-until it passes. `mint()` never throws. `getWorkspaceToken()` throws
-`SessionTokenError`.
+until it passes. `mint()` never throws. `remint()` is `mint()` without the
+cached token, for the one retry after a service answers 401.
+`getWorkspaceToken()` throws `SessionTokenError`.
 
 ### Timeouts
 
