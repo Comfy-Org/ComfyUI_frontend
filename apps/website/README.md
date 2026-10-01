@@ -451,6 +451,9 @@ the hosted script once, and renders the documented embed container.
 
 ### Supported model collections
 
+Task card workflow totals match their linked use-case pages, verified on
+2026-10-01. Refresh these totals when the destination collections change.
+
 “Latest” uses publisher announcement dates in
 `src/components/models/explore/modelVersionReleases.ts`. Template dates are
 not model release dates. Quantizations share one version record; releases

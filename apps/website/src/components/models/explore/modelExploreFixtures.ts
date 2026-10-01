@@ -26,7 +26,7 @@ export interface ExploreModelCardFixture {
 export interface ExploreTaskFixture {
   title: string
   description: string
-  meta: string
+  workflowCount: number
   href: string
   mediaSrc: string
 }
@@ -95,7 +95,7 @@ export const taskFixtures: ExploreTaskFixture[] = [
     title: 'AI interior design',
     description:
       'Redesign rooms from a photo while preserving their real layout.',
-    meta: 'Browse workflows',
+    workflowCount: 3,
     href: 'https://comfy.org/workflows/use-cases/ai-interior-design/',
     mediaSrc:
       'https://comfy-hub-assets.comfy.org/templates/a4700cc0-72ea-409e-9693-34a6d26a8c96.webp'
@@ -104,7 +104,7 @@ export const taskFixtures: ExploreTaskFixture[] = [
     title: 'AI image & video upscaler',
     description:
       'Increase resolution while preserving natural detail and texture.',
-    meta: 'Browse workflows',
+    workflowCount: 32,
     href: 'https://comfy.org/workflows/use-cases/ai-image-upscaler/',
     mediaSrc:
       'https://comfy-hub-assets.comfy.org/uploads/24a6cdaf-2f22-47a0-b61c-bbeda152fbf8.png'
@@ -113,7 +113,7 @@ export const taskFixtures: ExploreTaskFixture[] = [
     title: 'AI image to video',
     description:
       'Animate still images with controllable motion using leading video models.',
-    meta: 'Browse workflows',
+    workflowCount: 95,
     href: 'https://comfy.org/workflows/use-cases/ai-image-to-video/',
     mediaSrc:
       'https://comfy-hub-assets.comfy.org/templates/4c49ebf0-53fb-488e-a224-a26a32affb15.webp'
@@ -122,7 +122,7 @@ export const taskFixtures: ExploreTaskFixture[] = [
     title: 'Restore old photos',
     description:
       'Repair damage, recover faces, colorize prints, and upscale scans.',
-    meta: 'Browse workflows',
+    workflowCount: 7,
     href: 'https://comfy.org/workflows/use-cases/restore-old-photos/',
     mediaSrc:
       'https://comfy-hub-assets.comfy.org/uploads/afaf876d-ffe1-4f6d-94a9-3bd4c581a921.png'
@@ -131,7 +131,7 @@ export const taskFixtures: ExploreTaskFixture[] = [
     title: 'AI anime generator',
     description:
       'Create anime characters and scenes from text with open models.',
-    meta: 'Browse workflows',
+    workflowCount: 8,
     href: 'https://comfy.org/workflows/use-cases/ai-anime-generator/',
     mediaSrc:
       'https://comfy-hub-assets.comfy.org/uploads/19f8bb4b-9547-4d33-aeab-70b4f72a1c39.png'
@@ -140,7 +140,7 @@ export const taskFixtures: ExploreTaskFixture[] = [
     title: 'AI song generator',
     description:
       'Generate complete songs with vocals from prompts or your own lyrics.',
-    meta: 'Browse workflows',
+    workflowCount: 3,
     href: 'https://comfy.org/workflows/use-cases/ai-song-generator/',
     mediaSrc:
       'https://comfy-hub-assets.comfy.org/uploads/470ff978-7fed-4d05-bf06-0de76d7396c6.png'
@@ -149,7 +149,7 @@ export const taskFixtures: ExploreTaskFixture[] = [
     title: 'AI music generator',
     description:
       'Generate instrumental music, loops, and sound effects from text.',
-    meta: 'Browse workflows',
+    workflowCount: 8,
     href: 'https://comfy.org/workflows/use-cases/ai-music-generator/',
     mediaSrc:
       'https://comfy-hub-assets.comfy.org/uploads/597d9b7b-cf55-417d-b1ea-cb3710b0a840.png'
@@ -158,7 +158,7 @@ export const taskFixtures: ExploreTaskFixture[] = [
     title: 'AI hairstyle changer',
     description:
       'Preview new hairstyles from a portrait while preserving identity.',
-    meta: 'Browse workflows',
+    workflowCount: 1,
     href: 'https://comfy.org/workflows/use-cases/ai-hairstyle-changer/',
     mediaSrc:
       'https://comfy-hub-assets.comfy.org/uploads/9c8e4eb5-e3d1-438a-bcdf-c32d9e66642f.png'

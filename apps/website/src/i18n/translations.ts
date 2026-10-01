@@ -207,6 +207,14 @@ const translations = {
     'zh-CN':
       '依据发布方公告核实发布日期的独立模型版本。展示目录中已核实的发布版本；量化变体合并展示。'
   },
+  'models.explore.tasks.workflowCountOne': {
+    en: '{count} workflow',
+    'zh-CN': '{count} 个工作流'
+  },
+  'models.explore.tasks.workflowCountMany': {
+    en: '{count} workflows',
+    'zh-CN': '{count} 个工作流'
+  },
   'models.explore.tasks.label': {
     en: 'START FROM THE TASK',
     'zh-CN': '从任务开始'

@@ -1,4 +1,6 @@
 ---
+import { t } from '../../../i18n/translations'
+
 import SectionLabel from '../../common/SectionLabel.vue'
 import BrandButton from '../../common/BrandButton.vue'
 import TaskTile from './ModelTaskTile.vue'
@@ -37,7 +39,13 @@ const { label, description, tasks, actionLabel, actionHref } = Astro.props
         href={task.href}
         title={task.title}
         description={task.description}
-        meta={task.meta}
+        meta={t(
+          task.workflowCount === 1
+            ? 'models.explore.tasks.workflowCountOne'
+            : 'models.explore.tasks.workflowCountMany',
+          'en',
+          { count: task.workflowCount }
+        )}
         mediaSrc={task.mediaSrc}
       />
     ))}
