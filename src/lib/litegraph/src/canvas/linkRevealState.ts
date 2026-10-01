@@ -6,7 +6,10 @@ interface ActiveReveal {
   linkIds: ReadonlySet<LinkId>
 }
 
-const revealsByRoot = new Map<RootGraphId, ActiveReveal>()
+const revealsBySource = {
+  hover: new Map<RootGraphId, ActiveReveal>(),
+  drag: new Map<RootGraphId, ActiveReveal>()
+}
 
 function setsEqual(first: ReadonlySet<LinkId>, second: ReadonlySet<LinkId>) {
   return (
@@ -18,11 +21,13 @@ function setsEqual(first: ReadonlySet<LinkId>, second: ReadonlySet<LinkId>) {
 export function setRevealedLinks(
   rootGraphId: RootGraphId,
   linkIds: Iterable<LinkId>,
-  owner: object
+  owner: object,
+  source: 'hover' | 'drag' = 'hover'
 ): boolean {
   const next = new Set(linkIds)
   if (next.size === 0) return clearRevealedLinks(owner)
 
+  const revealsByRoot = revealsBySource[source]
   const previous = revealsByRoot.get(rootGraphId)
   revealsByRoot.set(rootGraphId, { owner, linkIds: next })
   return !previous || !setsEqual(previous.linkIds, next)
@@ -30,21 +35,28 @@ export function setRevealedLinks(
 
 export function clearRevealedLinks(owner: object): boolean {
   let changed = false
-  for (const [rootGraphId, reveal] of revealsByRoot) {
-    if (reveal.owner !== owner) continue
-    revealsByRoot.delete(rootGraphId)
-    changed = true
+  for (const revealsByRoot of Object.values(revealsBySource)) {
+    for (const [rootGraphId, reveal] of revealsByRoot) {
+      if (reveal.owner !== owner) continue
+      revealsByRoot.delete(rootGraphId)
+      changed = true
+    }
   }
   return changed
 }
 
 export function clearRootLinkReveals(rootGraphId: RootGraphId): boolean {
-  return revealsByRoot.delete(rootGraphId)
+  const hoverCleared = revealsBySource.hover.delete(rootGraphId)
+  const dragCleared = revealsBySource.drag.delete(rootGraphId)
+  return hoverCleared || dragCleared
 }
 
 export function isLinkRevealed(
   rootGraphId: RootGraphId,
   linkId: LinkId
 ): boolean {
-  return revealsByRoot.get(rootGraphId)?.linkIds.has(linkId) ?? false
+  return (
+    revealsBySource.hover.get(rootGraphId)?.linkIds.has(linkId) === true ||
+    revealsBySource.drag.get(rootGraphId)?.linkIds.has(linkId) === true
+  )
 }

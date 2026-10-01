@@ -1,8 +1,27 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { tryOnScopeDispose, useEventListener } from '@vueuse/core'
+import { effectScope } from 'vue'
+import type { EffectScope } from 'vue'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
+import { useEventListener } from '@vueuse/core'
 
 import { toNodeId } from '@/types/nodeId'
+import { toLinkId } from '@/types/linkId'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import {
+  clearRootLinkReveals,
+  isLinkRevealed
+} from '@/lib/litegraph/src/canvas/linkRevealState'
+import { useLinkStore } from '@/stores/linkStore'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { useSlotLinkReveal } from './useSlotLinkReveal'
 
 const {
   capturedOnPan,
@@ -64,6 +83,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
     canvas: {
       ds: mockDs,
       graph: {
+        id: 'autopan-graph',
         rootGraph: { id: 'autopan-graph' },
         nodes: [],
         getNodeById: (id: string) => ({
@@ -203,7 +223,6 @@ vi.mocked(useEventListener).mockImplementation((event, handler) => {
   }
   return vi.fn()
 })
-vi.mocked(tryOnScopeDispose).mockImplementation(() => true)
 
 vi.mock<unknown>(import('@/lib/litegraph/src/LLink'), () => ({
   LLink: { getReroutes: () => [] },
@@ -241,12 +260,17 @@ function pointerEvent(
 }
 
 function startDrag() {
-  const { onPointerDown } = useSlotLinkInteraction({
-    nodeId: toNodeId('node1'),
-    index: 0,
-    type: 'output'
+  const scope = effectScope()
+  onTestFinished(() => scope.stop())
+  scope.run(() => {
+    const { onPointerDown } = useSlotLinkInteraction({
+      nodeId: toNodeId('node1'),
+      index: 0,
+      type: 'output'
+    })
+    onPointerDown(pointerEvent(400, 300))
   })
-  onPointerDown(pointerEvent(400, 300))
+  return scope
 }
 
 describe('useSlotLinkInteraction auto-pan', () => {
@@ -257,7 +281,6 @@ describe('useSlotLinkInteraction auto-pan', () => {
       }
       return vi.fn()
     })
-    vi.mocked(tryOnScopeDispose).mockImplementation(() => true)
     capturedOnPan.current = null
     capturedAutoPan.current = null
     for (const k of Object.keys(capturedHandlers)) {
@@ -306,4 +329,92 @@ describe('useSlotLinkInteraction auto-pan', () => {
 
     expect(capturedAutoPan.current!.stop).toHaveBeenCalled()
   })
+
+  it.for([
+    {
+      name: 'pointerup after leaving the slot',
+      moveHover: (hover: ReturnType<typeof useSlotLinkReveal>) =>
+        hover.unrevealLinks(),
+      finish: () => capturedHandlers.pointerup(pointerEvent(400, 300)),
+      remainsRevealed: false
+    },
+    {
+      name: 'pointercancel after leaving the slot',
+      moveHover: (hover: ReturnType<typeof useSlotLinkReveal>) =>
+        hover.unrevealLinks(),
+      finish: () => capturedHandlers.pointercancel(pointerEvent(400, 300)),
+      remainsRevealed: false
+    },
+    {
+      name: 'scope disposal after leaving the slot',
+      moveHover: (hover: ReturnType<typeof useSlotLinkReveal>) =>
+        hover.unrevealLinks(),
+      finish: (scope: EffectScope) => scope.stop(),
+      remainsRevealed: false
+    },
+    {
+      name: 'pointerup while still hovering the slot',
+      moveHover: () => {},
+      finish: () => capturedHandlers.pointerup(pointerEvent(400, 300)),
+      remainsRevealed: true
+    },
+    {
+      name: 'pointerup after re-entering and leaving the slot',
+      moveHover: (hover: ReturnType<typeof useSlotLinkReveal>) => {
+        hover.unrevealLinks()
+        hover.revealLinks()
+        hover.unrevealLinks()
+      },
+      finish: () => capturedHandlers.pointerup(pointerEvent(400, 300)),
+      remainsRevealed: false
+    }
+  ])(
+    'preserves drag and hover reveals through $name',
+    ({ moveHover, finish, remainsRevealed }) => {
+      const graphScope = {
+        rootGraphId: toRootGraphId('autopan-graph'),
+        owningGraphId: toOwningGraphId('autopan-graph')
+      }
+      onTestFinished(() => {
+        clearRootLinkReveals(graphScope.rootGraphId)
+      })
+      const linkId = toLinkId(1)
+      useLinkStore().registerLink(graphScope, {
+        id: linkId,
+        graphId: graphScope.owningGraphId,
+        originNodeId: toNodeId('node1'),
+        originSlot: 0,
+        targetNodeId: toNodeId('node2'),
+        targetSlot: 0,
+        type: 'MODEL'
+      })
+      useLinkPresentationStore().patch(graphScope, linkId, { hidden: true })
+      const hoverScope = effectScope()
+      onTestFinished(() => hoverScope.stop())
+      const hover = hoverScope.run(() =>
+        useSlotLinkReveal({
+          nodeId: toNodeId('node1'),
+          index: 0,
+          type: 'output'
+        })
+      )
+      assert.exists(hover)
+      hover.revealLinks()
+      expect(isLinkRevealed(graphScope.rootGraphId, linkId)).toBe(true)
+
+      const dragScope = startDrag()
+      moveHover(hover)
+
+      expect(isLinkRevealed(graphScope.rootGraphId, linkId)).toBe(true)
+
+      finish(dragScope)
+
+      expect(isLinkRevealed(graphScope.rootGraphId, linkId)).toBe(
+        remainsRevealed
+      )
+
+      hover.unrevealLinks()
+      expect(isLinkRevealed(graphScope.rootGraphId, linkId)).toBe(false)
+    }
+  )
 })
