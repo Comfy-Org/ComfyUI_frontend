@@ -580,12 +580,49 @@ describe('baseline admission and catalog stability', () => {
         ]
       })
     )
+    const ledgerPath = join(root, 'docs/architecture/domains/exceptions.json')
+    const ledger = JSON.parse(readFileSync(ledgerPath, 'utf8'))
+    ledger.exceptions[0].exactFingerprints.push(
+      'anonymous-suppression:src/resolved.ts:import-x/no-restricted-paths#1'
+    )
+    writeFileSync(ledgerPath, JSON.stringify(ledger))
     expect(() => runArchitectureCheck(root, 'check')).toThrow(
       'run pnpm architecture:update'
     )
     runArchitectureCheck(root, 'update')
     expect(JSON.parse(readFileSync(baselinePath, 'utf8')).violations).toEqual(
       []
+    )
+  })
+
+  test('check rejects a manually baselined fingerprint without exact ownership', () => {
+    const root = createConfiguredRepository()
+    const recordPath = join(
+      root,
+      'docs/architecture/domains/records/images.domain.json'
+    )
+    const record = JSON.parse(readFileSync(recordPath, 'utf8'))
+    record.publicEntryPoints = []
+    record.enforcement.deepImports = 'baseline'
+    writeFileSync(recordPath, JSON.stringify(record))
+    const fingerprint =
+      'deep-import:images:src/consumer.ts->src/domains/images/index.ts#1'
+    const baselinePath = join(root, 'docs/architecture/domains/baseline.json')
+    const ledgerPath = join(root, 'docs/architecture/domains/exceptions.json')
+    const ledger = JSON.parse(readFileSync(ledgerPath, 'utf8'))
+    ledger.exceptions[0].fingerprintPrefixes = ['deep-import:images:']
+    writeFileSync(ledgerPath, JSON.stringify(ledger))
+    runArchitectureCheck(root, 'update')
+    writeFileSync(
+      join(root, 'src/consumer.ts'),
+      "import { value } from '@/domains/images/index'"
+    )
+    writeFileSync(
+      baselinePath,
+      JSON.stringify({ schemaVersion: 1, violations: [fingerprint] })
+    )
+    expect(() => runArchitectureCheck(root, 'check')).toThrow(
+      'requires exact owned exception coverage'
     )
   })
 })
