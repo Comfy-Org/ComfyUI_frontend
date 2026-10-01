@@ -168,6 +168,32 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
     await expect(comfyPage.canvas).toHaveScreenshot('default-color-palette.png')
   })
 
+  test.describe('Canvas backdrop', () => {
+    test.use({
+      initialSettings: {
+        'Comfy.UseNewMenu': 'Disabled',
+        'Comfy.CustomColorPalettes': customColorPalettes
+      }
+    })
+
+    test('follows each palette clear colour', async ({ comfyPage }) => {
+      const backdrop = () =>
+        comfyPage.page.evaluate(
+          () => getComputedStyle(document.body).backgroundColor
+        )
+
+      // Same menu colour, different clear colours.
+      await comfyPage.settings.setSetting('Comfy.ColorPalette', 'obsidian')
+      await expect.poll(backdrop).toBe('rgb(34, 34, 34)')
+
+      await comfyPage.settings.setSetting('Comfy.ColorPalette', 'obsidian_dark')
+      await expect.poll(backdrop).toBe('rgb(0, 0, 0)')
+
+      await comfyPage.settings.setSetting('Comfy.ColorPalette', 'dark')
+      await expect.poll(backdrop).toBe('rgb(9, 9, 10)')
+    })
+  })
+
   test('Can add custom color palette', async ({ comfyPage }) => {
     await comfyPage.page.evaluate(async (p) => {
       await (
