@@ -1,3 +1,4 @@
+import { mockJob } from '../mock-job'
 import type { MoveObject } from './arrange'
 
 export type MoveQuality = 'fast' | 'best'
@@ -28,20 +29,8 @@ export function runMove(
   request: MoveRequest,
   signal: AbortSignal
 ): Promise<MoveResult> {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(
-      () =>
-        resolve({
-          url: request.imageUrl === EXAMPLE ? EXAMPLE_MOVED : request.imageUrl,
-          seed: 42
-        }),
-      MOCK_DELAY_MS
-    )
-    signal.addEventListener('abort', () => {
-      clearTimeout(timer)
-      reject(signal.reason)
-    })
-  })
+  const url = request.imageUrl === EXAMPLE ? EXAMPLE_MOVED : request.imageUrl
+  return mockJob({ url, seed: 42 }, signal, MOCK_DELAY_MS)
 }
 
 export const MOVE_EXAMPLE = {

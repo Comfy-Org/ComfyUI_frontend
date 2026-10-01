@@ -8,14 +8,16 @@ import type { Locale } from '../../../i18n/translations'
 import { workshopAppRepo } from '../../../lib/workshop/apps'
 import { mc } from '../../../lib/workshop/move-anything/copy'
 import AppEditorShell from '../app-editor/AppEditorShell.vue'
+import EditorAlert from '../app-editor/EditorAlert.vue'
 import EditorBusy from '../app-editor/EditorBusy.vue'
+import EditorEmpty from '../app-editor/EditorEmpty.vue'
+import EditorHint from '../app-editor/EditorHint.vue'
+import EditorResult from '../app-editor/EditorResult.vue'
+import EditorResultDock from '../app-editor/EditorResultDock.vue'
+import { MOVE_EXAMPLE } from '../../../lib/workshop/move-anything/mock-run'
 import MoveAnythingDock from './MoveAnythingDock.vue'
-import MoveAnythingEmpty from './MoveAnythingEmpty.vue'
-import MoveAnythingHint from './MoveAnythingHint.vue'
 import MoveAnythingObjects from './MoveAnythingObjects.vue'
 import MoveAnythingQuality from './MoveAnythingQuality.vue'
-import MoveAnythingResult from './MoveAnythingResult.vue'
-import MoveAnythingResultDock from './MoveAnythingResultDock.vue'
 import MoveAnythingStage from './MoveAnythingStage.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -24,6 +26,22 @@ const move = useMoveAnything(locale)
 const { image, objects, phase, tool, tray, quality, selected } = move
 const view = ref<MoveView>('compare')
 reportStudioBusy(() => phase.value.kind === 'moving')
+
+const resultLabels = {
+  resultAlt: mc('move.alt.result', locale),
+  originalAlt: mc('move.alt.example', locale),
+  original: mc('move.view.original', locale),
+  result: mc('move.view.result', locale),
+  slider: mc('move.compare', locale)
+}
+const dockLabels = {
+  compare: mc('move.view.compare', locale),
+  result: mc('move.view.result', locale),
+  original: mc('move.view.original', locale),
+  edit: mc('move.edit', locale),
+  again: mc('move.again', locale),
+  download: mc('move.download', locale)
+}
 
 function busyDetail() {
   return mc('move.busy.detail', locale, {
@@ -47,18 +65,25 @@ function busyDetail() {
     data-testid="move-anything"
     :show-dock="Boolean(image)"
   >
-    <MoveAnythingEmpty
+    <EditorEmpty
       v-if="!image"
-      :locale
+      :title="mc('move.empty.title', locale)"
+      :meta="mc('move.empty.meta', locale)"
+      :upload-label="mc('move.empty.upload', locale)"
+      :example-label="mc('move.empty.example', locale)"
+      :example-image="MOVE_EXAMPLE.url"
+      data-testid="move-empty"
       @file="move.useFile"
       @example="move.useExample"
     />
-    <MoveAnythingResult
+    <EditorResult
       v-else-if="phase.kind === 'done'"
-      :image
-      :result-url="phase.result.url"
+      :before="image.url"
+      :after="phase.result.url"
       :view
-      :locale
+      :width="image.width"
+      :height="image.height"
+      :labels="resultLabels"
     />
     <div v-else class="relative size-full">
       <MoveAnythingStage
@@ -79,20 +104,15 @@ function busyDetail() {
       />
     </div>
     <template #overlay>
-      <MoveAnythingHint
+      <EditorHint
         v-if="image && phase.kind === 'arranging'"
-        :tool
-        :locale
+        :text="mc(tool === 'add' ? 'move.hint.add' : 'move.hint.move', locale)"
       />
     </template>
     <template #tray>
-      <p
-        v-if="phase.kind === 'failed'"
-        role="alert"
-        class="pointer-events-auto rounded-full border border-primary-comfy-red/40 bg-primary-comfy-ink-light px-3 py-1.5 text-xs text-primary-warm-white"
-      >
+      <EditorAlert v-if="phase.kind === 'failed'">
         {{ mc('move.failed', locale) }}
-      </p>
+      </EditorAlert>
       <MoveAnythingObjects
         v-if="tray === 'objects'"
         :objects
@@ -111,12 +131,12 @@ function busyDetail() {
       />
     </template>
     <template #dock>
-      <MoveAnythingResultDock
+      <EditorResultDock
         v-if="image && phase.kind === 'done'"
         v-model:view="view"
-        :result-url="phase.result.url"
-        :file-name="image.name"
-        :locale
+        :href="phase.result.url"
+        :file-name="`moved-${image.name}`"
+        :labels="dockLabels"
         @edit="move.edit"
         @again="move.generate"
       />

@@ -12,6 +12,8 @@ import { mc } from '../../../lib/workshop/move-anything/copy'
 import type { MoveQuality } from '../../../lib/workshop/move-anything/mock-run'
 import { MOVE_CREDITS } from '../../../lib/workshop/move-anything/mock-run'
 import EditorChip from '../app-editor/EditorChip.vue'
+import EditorDivider from '../app-editor/EditorDivider.vue'
+import EditorRun from '../app-editor/EditorRun.vue'
 import EditorTool from '../app-editor/EditorTool.vue'
 
 const {
@@ -77,10 +79,7 @@ function onChange(event: Event) {
     :disabled="locked()"
     @click="emit('tool', 'add')"
   />
-  <span
-    class="mx-1 h-4.5 w-px shrink-0 bg-transparency-white-t20"
-    aria-hidden="true"
-  />
+  <EditorDivider />
   <EditorTool
     :icon="Undo2"
     :label="mc('move.tool.undo', locale)"
@@ -95,10 +94,7 @@ function onChange(event: Event) {
     :disabled="locked() || !canRedo"
     @click="emit('redo')"
   />
-  <span
-    class="mx-1 h-4.5 w-px shrink-0 bg-transparency-white-t20"
-    aria-hidden="true"
-  />
+  <EditorDivider />
   <EditorChip
     :value="image?.name ?? mc('move.image', locale)"
     :disabled="moving"
@@ -129,40 +125,21 @@ function onChange(event: Event) {
     :disabled="locked()"
     @click="emit('tray', 'quality')"
   />
-  <span
-    class="mx-1 h-4.5 w-px shrink-0 bg-transparency-white-t20"
-    aria-hidden="true"
-  />
-  <button
-    v-if="moving"
-    type="button"
-    class="flex h-8 shrink-0 items-center gap-2 rounded-full bg-transparency-white-t8 px-3.5 text-xs font-medium text-primary-warm-white focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
-    @click="emit('cancel')"
-  >
-    <span
-      class="size-3 rounded-full border-2 border-transparency-white-t20 border-t-primary-comfy-yellow motion-safe:animate-spin"
-      aria-hidden="true"
-    />
-    {{ mc('move.cancel', locale) }}
-  </button>
-  <button
-    v-else
-    type="button"
-    :disabled="!canGenerate"
-    data-testid="move-generate"
-    class="flex h-8 shrink-0 items-center gap-2 rounded-full bg-primary-comfy-yellow pr-1.5 pl-3.5 text-xs font-semibold text-primary-comfy-ink focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none disabled:opacity-40"
-    @click="emit('generate')"
-  >
-    {{
+  <EditorDivider />
+  <EditorRun
+    :label="
       canGenerate
         ? mc('move.generate', locale, { n: movedCount })
         : mc('move.generate.idle', locale)
-    }}
-    <span
-      class="rounded-full bg-primary-comfy-ink/10 px-2 py-0.5 text-[11px] font-medium"
-      >{{ mc('move.credits', locale, { n: MOVE_CREDITS }) }}</span
-    >
-  </button>
+    "
+    :credits="mc('move.credits', locale, { n: MOVE_CREDITS })"
+    :cancel-label="mc('move.cancel', locale)"
+    :running="moving"
+    :disabled="!canGenerate"
+    data-testid="move-generate"
+    @run="emit('generate')"
+    @cancel="emit('cancel')"
+  />
   <input
     ref="input"
     type="file"

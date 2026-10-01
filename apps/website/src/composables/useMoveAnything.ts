@@ -2,6 +2,7 @@ import { tryOnScopeDispose } from '@vueuse/core'
 import { computed, ref, shallowRef } from 'vue'
 
 import type { Locale } from '../i18n/translations'
+import { imageSize } from '../lib/workshop/image-size'
 import type { MoveObject, Rect } from '../lib/workshop/move-anything/arrange'
 import { MAX_OBJECTS, isMoved } from '../lib/workshop/move-anything/arrange'
 import { mc } from '../lib/workshop/move-anything/copy'
@@ -40,16 +41,6 @@ function exampleObjects(locale: Locale): MoveObject[] {
     },
     { id: 'o3', label: succulent, from: { x: 0.41, y: 0.56, w: 0.13, h: 0.18 } }
   ].map((object) => ({ ...object, to: object.from }))
-}
-
-function imageSize(url: string): Promise<{ width: number; height: number }> {
-  return new Promise((resolve) => {
-    const img = new Image()
-    img.onload = () =>
-      resolve({ width: img.naturalWidth, height: img.naturalHeight })
-    img.onerror = () => resolve({ width: 0, height: 0 })
-    img.src = url
-  })
 }
 
 /** Move anything's page state. The run itself is `runMove`, mocked for now. */

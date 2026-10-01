@@ -2,6 +2,7 @@
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Corner, Rect } from '../../../lib/workshop/move-anything/arrange'
+import { nudgeFor } from '../../../lib/workshop/nudge'
 
 const { rect, n, label, description, selected } = defineProps<{
   rect: Rect
@@ -23,19 +24,11 @@ const CORNERS: readonly { corner: Corner; place: string }[] = [
   { corner: 'se', place: '-right-1 -bottom-1 cursor-nwse-resize' }
 ]
 
-const KEYS: Record<string, [number, number]> = {
-  ArrowLeft: [-1, 0],
-  ArrowRight: [1, 0],
-  ArrowUp: [0, -1],
-  ArrowDown: [0, 1]
-}
-
 function onKey(event: KeyboardEvent) {
-  const step = KEYS[event.key]
+  const step = nudgeFor(event)
   if (!step) return
   event.preventDefault()
-  const size = event.shiftKey ? 0.05 : 0.01
-  emit('nudge', step[0] * size, step[1] * size)
+  emit('nudge', step[0], step[1])
 }
 </script>
 

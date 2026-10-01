@@ -1,14 +1,7 @@
 <script setup lang="ts">
 import { MousePointer2 } from '@lucide/vue'
 
-import type { MoveTool } from '../../../composables/useMoveAnything'
-import type { Locale } from '../../../i18n/translations'
-import { mc } from '../../../lib/workshop/move-anything/copy'
-
-const { tool, locale = 'en' } = defineProps<{
-  tool: MoveTool
-  locale?: Locale
-}>()
+const { text } = defineProps<{ text: string }>()
 </script>
 
 <template>
@@ -16,6 +9,6 @@ const { tool, locale = 'en' } = defineProps<{
     class="pointer-events-none absolute top-3.5 left-1/2 flex h-6.5 -translate-x-1/2 items-center gap-1.5 rounded-full border border-transparency-white-t8 bg-primary-comfy-ink-light/90 px-2.5 text-[11px] whitespace-nowrap text-primary-warm-gray max-sm:hidden"
   >
     <MousePointer2 class="size-3" aria-hidden="true" />
-    {{ mc(tool === 'add' ? 'move.hint.add' : 'move.hint.move', locale) }}
+    {{ text }}
   </p>
 </template>
