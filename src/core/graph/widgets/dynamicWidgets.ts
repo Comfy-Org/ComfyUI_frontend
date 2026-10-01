@@ -31,7 +31,7 @@ import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
-import { getWidgetPersistenceName, widgetId } from '@/types/widgetId'
+import { widgetId } from '@/types/widgetId'
 
 type MatchTypeNode = LGraphNode &
   Pick<Required<LGraphNode>, 'onConnectionsChange'> & {
@@ -148,14 +148,7 @@ function dynamicComboWidget(
               graphId,
               node.id,
               name,
-              positionalIndex,
-              widgets
-                .slice(0, widgets.indexOf(addedWidget))
-                .filter(
-                  (widget) =>
-                    widget.serialize !== false &&
-                    getWidgetPersistenceName(widget) === name
-                ).length
+              positionalIndex
             )
           : undefined
       if (!restored && removed?.type === addedWidget.type) {

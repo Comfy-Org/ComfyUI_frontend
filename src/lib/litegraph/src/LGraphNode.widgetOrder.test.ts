@@ -1,16 +1,13 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { mint, project } from '@comfyorg/comfy-multi-player'
-import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { addDynamicCombo } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type {
   IBaseWidget,
   TWidgetValue
 } from '@/lib/litegraph/src/types/widgets'
-import { toNodeId } from '@/types/nodeId'
 import { sortWidgetValuesByInputOrder } from '@/workbench/utils/nodeDefOrderingUtil'
 
 describe('LGraphNode widget ordering', () => {
@@ -287,103 +284,6 @@ describe('LGraphNode widget ordering', () => {
         trim: { start_time: 1.5, duration: 4 },
         crop: { x: 10, y: 20, width: 100, height: 50 }
       })
-    })
-
-    it('round trips duplicate widget names losslessly through multiplayer', () => {
-      const first = {
-        trim: { start_time: 1, duration: 2 },
-        extension_only: { untouched: true }
-      }
-      const second = {
-        crop: { x: 1, y: 2, width: 3, height: 4 },
-        unknown_key: ['kept', 2]
-      }
-      node.id = toNodeId(1)
-      node.type = 'DuplicateWidgets'
-      node.addWidget('videoedit', 'same', first, null, {})
-      node.addWidget('videoedit', 'same', second, null, {})
-      node.serialize_widgets = true
-
-      const serialized = node.serialize()
-      expect(serialized.widgets_values_ordered).toStrictEqual([
-        { name: 'same', occurrence: 0, value: first },
-        { name: 'same', occurrence: 1, value: second }
-      ])
-
-      const catalog: WidgetCatalog = {
-        types: { DuplicateWidgets: { widget_order: ['same', 'same'] } }
-      }
-      const workflow: WorkflowJSON = {
-        nodes: [serialized as unknown as WorkflowJSON['nodes'][number]],
-        links: []
-      }
-      const [roundTripped] = project(mint(workflow, catalog), catalog).nodes
-      const restored = new LGraphNode('Restored')
-      restored.addWidget('videoedit', 'same', {}, null, {})
-      restored.addWidget('videoedit', 'same', {}, null, {})
-      restored.configure(roundTripped as unknown as ISerialisedNode)
-
-      expect(restored.widgets!.map((widget) => widget.value)).toStrictEqual([
-        first,
-        second
-      ])
-      expect(roundTripped.widgets_values_ordered).toStrictEqual(
-        serialized.widgets_values_ordered
-      )
-    })
-
-    it('keeps declared duplicate names after live graph identity normalization', () => {
-      const first = { trim: { start_time: 1, duration: 2 } }
-      const second = { crop: { x: 3, y: 4, width: 5, height: 6 } }
-      node.addWidget('videoedit', 'same', first, null, {})
-      node.addWidget('videoedit', 'same', second, null, {})
-      node.serialize_widgets = true
-
-      const graph = new LGraph()
-      graph.add(node)
-
-      const serialized = node.serialize()
-      const restored = new LGraphNode('Restored')
-      restored.addWidget('videoedit', 'same', {}, null, {})
-      restored.addWidget('videoedit', 'same', {}, null, {})
-      graph.add(restored)
-      restored.configure(serialized)
-
-      expect(node.widgets!.map((widget) => widget.name)).toStrictEqual([
-        'same',
-        'same#1'
-      ])
-      expect(serialized.widgets_values_ordered).toStrictEqual([
-        { name: 'same', occurrence: 0, value: first },
-        { name: 'same', occurrence: 1, value: second }
-      ])
-      expect(restored.widgets!.map((widget) => widget.value)).toStrictEqual([
-        first,
-        second
-      ])
-    })
-
-    it('keeps ordered values aligned with positional onSerialize changes', () => {
-      node.addWidget('number', 'same', 1, null, {})
-      node.addWidget('number', 'same', 2, null, {})
-      node.serialize_widgets = true
-      node.onSerialize = (serialized) => {
-        serialized.widgets_values = [10, 20]
-      }
-
-      const serialized = node.serialize()
-      const restored = new LGraphNode('Restored')
-      restored.addWidget('number', 'same', 0, null, {})
-      restored.addWidget('number', 'same', 0, null, {})
-      restored.configure(serialized)
-
-      expect(serialized.widgets_values_ordered).toStrictEqual([
-        { name: 'same', occurrence: 0, value: 10 },
-        { name: 'same', occurrence: 1, value: 20 }
-      ])
-      expect(restored.widgets!.map((widget) => widget.value)).toStrictEqual([
-        10, 20
-      ])
     })
 
     it('should support specifying order for legacy workflows', () => {

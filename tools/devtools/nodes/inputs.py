@@ -370,7 +370,7 @@ class NodeWithDuplicateNamedWidgets:
     RETURN_TYPES = ()
     FUNCTION = "node_with_duplicate_named_widgets"
     CATEGORY = "DevTools"
-    DESCRIPTION = "A node whose web extension adds duplicate named dict widgets"
+    DESCRIPTION = "An empty host node for tests that add widgets at runtime"
 
     def node_with_duplicate_named_widgets(self):
         return ()

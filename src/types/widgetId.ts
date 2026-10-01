@@ -11,11 +11,6 @@ export type WidgetId = string & { readonly __brand: 'WidgetId' }
 
 const SEPARATOR = ':'
 const WIDGET_ID_PATTERN = /^(?<graphId>[^:]+):(?<nodeId>[^:]+):(?<name>[^:]+)$/u
-const persistenceNames = new WeakMap<object, string>()
-
-export function getWidgetPersistenceName(widget: { name: string }): string {
-  return persistenceNames.get(widget) ?? widget.name
-}
 
 export function widgetId(
   graphId: UUID,
@@ -58,7 +53,6 @@ export function ensureUniqueWidgetNames(
       }
       const name = `${widget.name}#${index}`
       used.add(name)
-      persistenceNames.set(widget, widget.name)
       renames.push({ widget, name })
     }
 

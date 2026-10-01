@@ -32,11 +32,6 @@ export interface WidgetRenderState {
 interface WidgetRestorationState {
   positional: readonly WidgetValue[]
   named?: Readonly<Record<string, WidgetValue>>
-  ordered?: ReadonlyArray<{
-    name: string
-    occurrence: number
-    value: WidgetValue
-  }>
   restoreNamed: boolean
 }
 
@@ -146,15 +141,10 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     graphId: UUID,
     nodeId: NodeId,
     name: string,
-    positionalIndex: number,
-    occurrence = 0
+    positionalIndex: number
   ): { value: WidgetValue } | undefined {
     const restoration = graphWidgetRestorations.get(graphId)?.get(nodeId)
     if (!restoration) return
-    const ordered = restoration.ordered?.find(
-      (entry) => entry.name === name && entry.occurrence === occurrence
-    )
-    if (ordered) return { value: ordered.value }
     if (restoration.restoreNamed && restoration.named) {
       return Object.hasOwn(restoration.named, name)
         ? { value: restoration.named[name] }

@@ -3,7 +3,6 @@ import { describe, expect, it, vi } from 'vitest'
 import type { WidgetId } from './widgetId'
 import {
   ensureUniqueWidgetNames,
-  getWidgetPersistenceName,
   isWidgetId,
   parseWidgetId,
   widgetId
@@ -25,12 +24,6 @@ describe('ensureUniqueWidgetNames', () => {
       'seed#2',
       'seed#1',
       'seed#3'
-    ])
-    expect(widgets.map(getWidgetPersistenceName)).toEqual([
-      'seed',
-      'seed',
-      'seed#1',
-      'seed'
     ])
   })
 

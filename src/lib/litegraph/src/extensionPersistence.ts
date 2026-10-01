@@ -60,8 +60,7 @@ const nodeCanonicalFields = {
   bgcolor: true,
   showAdvanced: true,
   widgets_values: true,
-  widgets_values_named: true,
-  widgets_values_ordered: true
+  widgets_values_named: true
 } satisfies Record<Exclude<keyof ISerialisedNode, 'extensions'>, true>
 
 export const NODE_CANONICAL_FIELDS: ReadonlySet<string> = new Set(

@@ -31,7 +31,6 @@ import { mintLinkId } from './idAllocation'
 import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeProperty, NodeState } from '@/types/nodeState'
-import { getWidgetPersistenceName } from '@/types/widgetId'
 import {
   deriveWidgetVisibility,
   isWidgetVisibleOnSurface,
@@ -189,36 +188,21 @@ function legacyValue<T>(value: T): T | undefined {
 function serialiseWidgetValues(widgets: IBaseWidget[]) {
   const positional: TWidgetValue[] = []
   const named: Record<string, TWidgetValue> = {}
-  const ordered: NonNullable<ISerialisedNode['widgets_values_ordered']> = []
-  const occurrences = new Map<string, number>()
   for (const widget of widgets) {
     if (widget.serialize === false) continue
-    const name = getWidgetPersistenceName(widget)
     const value = widget.value
     const serialisedValue =
       value != null && typeof value === 'object'
         ? JSON.parse(JSON.stringify(value))
         : (value ?? null)
     positional.push(serialisedValue)
-    named[name] = serialisedValue
-    const occurrence = occurrences.get(name) ?? 0
-    ordered.push({ name, occurrence, value: serialisedValue })
-    occurrences.set(name, occurrence + 1)
+    named[widget.name] = serialisedValue
   }
-  return {
-    widgets_values: positional,
-    widgets_values_named: named,
-    ...(ordered.some(({ occurrence }) => occurrence > 0)
-      ? { widgets_values_ordered: ordered }
-      : {})
-  }
+  return { widgets_values: positional, widgets_values_named: named }
 }
 
 export function createWidgetRestorationState(
-  info: Pick<
-    ISerialisedNode,
-    'widgets_values' | 'widgets_values_named' | 'widgets_values_ordered'
-  >,
+  info: Pick<ISerialisedNode, 'widgets_values' | 'widgets_values_named'>,
   fallbackNames?: readonly string[]
 ) {
   const positional = Array.from(info.widgets_values ?? [])
@@ -235,10 +219,6 @@ export function createWidgetRestorationState(
   return {
     positional,
     named: named ? { ...named } : undefined,
-    ordered: info.widgets_values_ordered?.map((entry) => ({
-      ...entry,
-      value: structuredClone(entry.value)
-    })),
     restoreNamed: Boolean(
       named && (LiteGraph.namedValuesRestore || fallbackNames)
     )
@@ -1247,18 +1227,13 @@ export class LGraphNode
         }
 
         let positionalIndex = 0
-        const occurrences = new Map<string, number>()
         for (const widget of this.widgets) {
           if (widget.serialize === false) continue
-          const name = getWidgetPersistenceName(widget)
-          const occurrence = occurrences.get(name) ?? 0
-          occurrences.set(name, occurrence + 1)
           const restored = useWidgetValueStore().getRestoredWidgetValue(
             graphId,
             this.id,
-            name,
-            positionalIndex++,
-            occurrence
+            widget.name,
+            positionalIndex++
           )
           if (restored) widget.value = restored.value
         }
@@ -1334,7 +1309,6 @@ export class LGraphNode
     const { widgets } = this
     if (widgets?.length && this.serialize_widgets)
       Object.assign(o, serialiseWidgetValues(widgets))
-    const generatedOrderedWidgetValues = o.widgets_values_ordered
 
     if (!o.type && this.constructor.type) o.type = this.constructor.type
 
@@ -1354,22 +1328,6 @@ export class LGraphNode
           }
         : undefined
     )
-    if (
-      generatedOrderedWidgetValues &&
-      serialised.widgets_values_ordered === generatedOrderedWidgetValues
-    ) {
-      const positional = serialised.widgets_values
-      if (positional?.length === generatedOrderedWidgetValues.length) {
-        serialised.widgets_values_ordered = generatedOrderedWidgetValues.map(
-          (entry, index) => ({
-            ...entry,
-            value: structuredClone(positional[index])
-          })
-        )
-      } else {
-        delete serialised.widgets_values_ordered
-      }
-    }
     if (hookResult)
       console.warn(
         "node onSerialize shouldn't return anything, data should be stored in the object pass in the first parameter"
@@ -2356,20 +2314,11 @@ export class LGraphNode
     const positionalIndex =
       this.widgets.filter((candidate) => candidate.serialize !== false).length -
       1
-    const occurrence = this.widgets
-      .slice(0, -1)
-      .filter(
-        (candidate) =>
-          candidate.serialize !== false &&
-          getWidgetPersistenceName(candidate) ===
-            getWidgetPersistenceName(widget)
-      ).length
     const restored = useWidgetValueStore().getRestoredWidgetValue(
       this.graph?.rootGraph.id ?? zeroUuid,
       this.id,
-      getWidgetPersistenceName(widget),
-      positionalIndex,
-      occurrence
+      widget.name,
+      positionalIndex
     )
     if (restored) widget.value = restored.value
 
