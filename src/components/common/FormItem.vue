@@ -1,7 +1,7 @@
 <!-- A generalized form item for rendering in a form. -->
 <template>
   <div class="flex min-h-8 flex-row items-center gap-2">
-    <div class="form-label flex grow items-center">
+    <div class="flex grow items-center">
       <span
         :id="`${props.id}-label`"
         class="text-sm text-muted"
@@ -17,7 +17,7 @@
         <slot name="name-suffix" />
       </span>
     </div>
-    <div class="form-input flex justify-end">
+    <div class="flex justify-end">
       <component
         :is="markRaw(getFormComponent(props.item))"
         :id="props.id"
@@ -30,9 +30,6 @@
 </template>
 
 <script setup lang="ts">
-import InputNumber from 'primevue/inputnumber'
-import InputText from 'primevue/inputtext'
-import Select from 'primevue/select'
 import { markRaw } from 'vue'
 import type { Component } from 'vue'
 
@@ -40,10 +37,13 @@ import BackgroundImageUpload from '@/components/common/BackgroundImageUpload.vue
 import CustomFormValue from '@/components/common/CustomFormValue.vue'
 import FormColorPicker from '@/components/common/FormColorPicker.vue'
 import FormImageUpload from '@/components/common/FormImageUpload.vue'
+import FormNumberField from '@/components/common/FormNumberField.vue'
 import FormRadioGroup from '@/components/common/FormRadioGroup.vue'
 import InputKnob from '@/components/common/InputKnob.vue'
 import InputSlider from '@/components/common/InputSlider.vue'
 import UrlInput from '@/components/common/UrlInput.vue'
+import Input from '@/components/ui/input/Input.vue'
+import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
 import Switch from '@/components/ui/switch/Switch.vue'
 import type { FormItem } from '@/platform/settings/types'
 
@@ -73,14 +73,20 @@ function getFormAttrs(item: FormItem) {
         typeof item.options === 'function'
           ? item.options(formValue.value)
           : item.options
-      attrs['options'] = options
-
-      if (typeof options?.[0] !== 'string') {
-        attrs['optionLabel'] = 'text'
-        attrs['optionValue'] = 'value'
-      }
+      attrs['options'] =
+        item.type === 'combo'
+          ? options?.map((option) =>
+              typeof option === 'string'
+                ? { name: option, value: option }
+                : { name: option.text, value: option.value ?? option.text }
+            )
+          : options
+      attrs['class'] = 'w-44'
       break
     }
+    case 'text':
+      attrs['class'] = 'w-44'
+      break
   }
   return attrs
 }
@@ -93,13 +99,13 @@ function getFormComponent(item: FormItem): Component {
     case 'boolean':
       return Switch
     case 'number':
-      return InputNumber
+      return FormNumberField
     case 'slider':
       return InputSlider
     case 'knob':
       return InputKnob
     case 'combo':
-      return Select
+      return SingleSelect
     case 'radio':
       return FormRadioGroup
     case 'image':
@@ -111,24 +117,7 @@ function getFormComponent(item: FormItem): Component {
     case 'backgroundImage':
       return BackgroundImageUpload
     default:
-      return InputText
+      return Input
   }
 }
 </script>
-
-<style scoped>
-.form-input :deep(.input-slider) .p-inputnumber input,
-.form-input :deep(.input-slider) .slider-part {
-  width: 5rem;
-}
-
-.form-input :deep(.input-knob) .p-inputnumber input,
-.form-input :deep(.input-knob) .knob-part {
-  width: 8rem;
-}
-
-.form-input :deep(.p-inputtext),
-.form-input :deep(.p-select) {
-  width: 11rem;
-}
-</style>
