@@ -49,6 +49,12 @@ async function downloadInput(
     redirect: 'error',
     cache: 'no-store',
     referrerPolicy: 'no-referrer'
+  }).catch((error: unknown) => {
+    if (signal.aborted) throw error
+    throw new WorkshopWorkflowError('media_download_failed', {}, undefined, {
+      cause: error,
+      stage: 'download'
+    })
   })
   const type = (response.headers.get('Content-Type') ?? '')
     .split(';')[0]
@@ -61,7 +67,12 @@ async function downloadInput(
     !response.body
   ) {
     await response.body?.cancel()
-    throw new WorkshopWorkflowError('media_unavailable')
+    throw new WorkshopWorkflowError(
+      'media_download_failed',
+      {},
+      response.status,
+      { stage: 'download' }
+    )
   }
   return inputFile(response.body, type, signal)
 }
@@ -93,6 +104,35 @@ async function inputFile(
   return new File(chunks, 'workflow-input.' + outputExtension(type), { type })
 }
 
+function mintFailure(error: unknown): unknown {
+  if (!(error instanceof WorkshopWorkflowError)) return error
+  return new WorkshopWorkflowError(
+    error.code,
+    error.fieldErrors,
+    error.status,
+    {
+      cause: error.cause,
+      stage: 'mint'
+    }
+  )
+}
+
+function uploadFailure(
+  error: unknown,
+  requestSignal: AbortSignal
+): WorkshopWorkflowError {
+  if (error instanceof WorkshopWorkflowError) return error
+  return requestSignal.aborted
+    ? new WorkshopWorkflowError('media_upload_timeout', {}, undefined, {
+        cause: error,
+        stage: 'timeout'
+      })
+    : new WorkshopWorkflowError('media_upload_network', {}, undefined, {
+        cause: error,
+        stage: 'network'
+      })
+}
+
 export function createWorkflowUploader(
   api: WorkflowApi,
   transport = globalThis.fetch
@@ -114,13 +154,17 @@ export function createWorkflowUploader(
         !/^(image|video|audio)\//.test(file.type)
       )
         throw new WorkshopWorkflowError('invalid_input')
-      const grant = await api.request(
-        '/api/inputs/upload-url',
-        uploadGrantSchema,
-        requestSignal,
-        'POST',
-        { content_type: file.type }
-      )
+      const grant = await api
+        .request(
+          '/api/inputs/upload-url',
+          uploadGrantSchema,
+          requestSignal,
+          'POST',
+          { content_type: file.type }
+        )
+        .catch((error: unknown) => {
+          throw mintFailure(error)
+        })
       const response = await transport(
         new URL(grant.upload_path, WORKSHOP_CLOUD_BASE_URL),
         {
@@ -135,9 +179,10 @@ export function createWorkflowUploader(
       if (!response.ok) {
         await response.body?.cancel()
         throw new WorkshopWorkflowError(
-          'media_unavailable',
+          'media_upload_rejected',
           {},
-          response.status
+          response.status,
+          { stage: 'upload' }
         )
       }
       const result = uploadResultSchema.safeParse(
@@ -148,8 +193,7 @@ export function createWorkflowUploader(
       return result.data.name
     } catch (error) {
       signal.throwIfAborted()
-      if (error instanceof WorkshopWorkflowError) throw error
-      throw new WorkshopWorkflowError('media_unavailable')
+      throw uploadFailure(error, requestSignal)
     }
   }
 }
