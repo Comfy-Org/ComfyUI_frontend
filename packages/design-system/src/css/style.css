@@ -125,7 +125,7 @@
   --comfy-menu-bg: #353535;
   --comfy-menu-secondary-bg: #292929;
   --comfy-topbar-height: 2.5rem;
-  --workflow-tabs-height: 2.125rem;
+  --workflow-tabs-height: 2.375rem;
   --comfy-input-bg: #222;
   --comfy-textarea-font-size: 10px;
   --input-text: #ddd;
@@ -170,7 +170,6 @@
   --interface-menu-stroke: var(--color-smoke-600);
   --interface-panel-surface: var(--color-white);
   --interface-stroke: var(--color-smoke-300);
-  --region-stroke: color-mix(in srgb, var(--border-color) 25%, transparent);
   --sidebar-surface: oklch(from var(--comfy-menu-bg) calc(l - 0.0274) c h);
   --base-background-sunken: var(
     --canvas-clear-background,
@@ -308,7 +307,6 @@
 
 :root[data-color-palette='light'] {
   --sidebar-surface: var(--color-smoke-100);
-  --region-stroke: color-mix(in srgb, var(--color-smoke-300) 50%, transparent);
 }
 
 .dark-theme {
