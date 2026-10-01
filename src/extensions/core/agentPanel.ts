@@ -14,7 +14,10 @@ import { reportError } from '@/platform/telemetry/reportError'
 import type { AgentConsentNotOfferedReason } from '@/platform/telemetry/types'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
-import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
+import {
+  CONSENT_DIALOG_KEY,
+  useAgentConsent
+} from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -202,6 +205,20 @@ export function registerAgentPanelExtension(): void {
         useTelemetry()?.trackAgentConsentNotOffered({ reason })
       }
 
+      const consentScope = (): string | null => {
+        const userId = resolvedUserInfo.value?.id
+        const workspaceId = workspaceStore.activeWorkspaceId
+        return userId && workspaceId ? `${userId}.${workspaceId}` : null
+      }
+      const consentCardSeenIn = new Set<string>()
+      whenever(
+        () => dialogStore.isDialogOpen(CONSENT_DIALOG_KEY),
+        () => {
+          const scope = consentScope()
+          if (scope) consentCardSeenIn.add(scope)
+        }
+      )
+
       const offerEligible = (): boolean =>
         agentPanelStore.enabled &&
         isLoggedIn.value &&
@@ -212,6 +229,8 @@ export function registerAgentPanelExtension(): void {
       const offerConsentUnprompted = (): void => {
         if (autoShowInFlight) return
         if (!offerEligible()) return
+        const scope = consentScope()
+        if (scope && consentCardSeenIn.has(scope)) return
         // Must precede prepareAutoShow, which burns the one-shot key.
         const held = screenHolder()
         if (held) {

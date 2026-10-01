@@ -19,7 +19,10 @@ import type { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import type { EntryPath } from '@/platform/onboarding/onboardingTours'
 import type { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
-import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
+import {
+  CONSENT_DIALOG_KEY,
+  useAgentConsent
+} from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import type { ConsentOfferHooks } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import { useTelemetry } from '@/platform/telemetry'
 import type { useExtensionService } from '@/services/extensionService'
@@ -108,7 +111,8 @@ vi.mock(
         }
       )
     })
-    return { useAgentConsent: () => consent }
+    const CONSENT_DIALOG_KEY = 'agent-consent' as const
+    return { CONSENT_DIALOG_KEY, useAgentConsent: () => consent }
   }
 )
 
@@ -819,6 +823,44 @@ describe('AgentPanel extension flag gate', () => {
     await vi.waitFor(() =>
       expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
     )
+  })
+
+  it('does not re-offer after the user declines a manually opened card', async () => {
+    agentFlagEnabled.value = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    let decide = (_: boolean) => {}
+    startupDecision = new Promise<boolean>((resolve) => {
+      decide = resolve
+    })
+
+    await loadEntryAndSetup()
+    openDialog(CONSENT_DIALOG_KEY)
+    await flush()
+    decide(true)
+    await flush()
+    closeDialog(CONSENT_DIALOG_KEY)
+    await flush()
+
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBeNull()
+  })
+
+  it('skips the automatic offer for the session once the user has seen the card', async () => {
+    agentFlagEnabled.value = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    let decide = (_: boolean) => {}
+    startupDecision = new Promise<boolean>((resolve) => {
+      decide = resolve
+    })
+
+    await loadEntryAndSetup()
+    openDialog(CONSENT_DIALOG_KEY)
+    await flush()
+    closeDialog(CONSENT_DIALOG_KEY)
+    decide(true)
+    await flush()
+
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
   })
 
   it('stays silent when the account already accepted', async () => {
