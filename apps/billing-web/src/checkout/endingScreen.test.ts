@@ -121,6 +121,11 @@ describe('endingOf', () => {
       screen: { kind: 'plan_unavailable', code: 'CHECKOUT_LINK_INVALID' }
     },
     {
+      name: 'a top-up link with no readable amount',
+      page: { kind: 'plan_unavailable', reason: 'amount_invalid' },
+      screen: { kind: 'link_invalid', code: 'CHECKOUT_LINK_INVALID' }
+    },
+    {
       name: 'a link the contract cannot read',
       page: { kind: 'plan_unavailable', reason: 'unreadable' },
       screen: { kind: 'plan_unavailable', code: 'CHECKOUT_LINK_INVALID' }
@@ -156,6 +161,22 @@ describe('endingOf with the receipt the server reported', () => {
       screen: {
         kind: 'success',
         receipt: { amountChargedCents: 3250, creditsAdded: 6858, plan: PLAN }
+      }
+    },
+    {
+      name: "this page's own top-up, which bought credits and no plan",
+      page: {
+        kind: 'terminal',
+        operation: {
+          ...settledWith({ amountChargedCents: 1500, creditsAdded: 3165 }),
+          kind: 'topup'
+        },
+        attribution: 'started'
+      },
+      screen: {
+        kind: 'success',
+        purchase: 'credits',
+        receipt: { amountChargedCents: 1500, creditsAdded: 3165 }
       }
     },
     {
