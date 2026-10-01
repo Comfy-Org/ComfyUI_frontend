@@ -12,10 +12,10 @@ import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import { usePreviewVideo } from '../../composables/usePreviewVideo'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import Badge from '../ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
+import FeaturedBannerPagination from './FeaturedBannerPagination.vue'
 
 /**
  * One thing worth opening, whatever kind of thing the catalogue holds. The
@@ -41,15 +41,11 @@ const AUTOPLAY_MS = 7000
 const {
   slides,
   locale = 'en',
-  autoplay = true,
-  compact = false
+  autoplay = true
 } = defineProps<{
   slides: readonly FeaturedSlide[]
   locale?: Locale
   autoplay?: boolean
-  /** Where outcome rows follow immediately, the banner gives up height so the
-   * first of them is on screen with it. */
-  compact?: boolean
 }>()
 
 const activeIndex = ref(0)
@@ -122,18 +118,13 @@ const fill = computed(() =>
     v-if="active"
     ref="banner"
     :aria-label="t('workshop.sections.featured', locale)"
-    class="relative isolate overflow-hidden rounded-4.5xl border border-transparency-white-t8"
+    class="relative isolate overflow-hidden rounded-3xl border border-transparency-white-t8"
     data-testid="section-featured"
   >
+    <!-- The floor is the tallest slide, a name that needs two lines, so the
+      frame is the same on every tab while a name that fits keeps to one. -->
     <div
-      :class="
-        cn(
-          'group relative flex',
-          compact
-            ? 'min-h-68 short:min-h-48 sm:short:min-h-50'
-            : 'min-h-84 short:min-h-57 sm:short:min-h-60'
-        )
-      "
+      class="group relative flex min-h-72 short:min-h-60 sm:short:min-h-65"
       data-testid="featured-slide"
     >
       <a
@@ -170,13 +161,7 @@ const fill = computed(() =>
       />
 
       <div
-        :class="
-          cn(
-            'pointer-events-none relative flex w-full min-w-0 flex-col justify-end gap-4 p-8 pt-6 pb-16 max-sm:gap-3 max-sm:p-6 max-sm:pb-14 sm:max-w-2xl sm:justify-center lg:p-12 lg:pt-8 lg:pb-18 short:gap-3 short:pt-5 short:pb-14',
-            compact &&
-              'gap-3 p-7 pt-7 pb-12 max-sm:p-5 max-sm:pb-11 lg:p-9 lg:pt-8 lg:pb-12'
-          )
-        "
+        class="pointer-events-none relative flex w-full min-w-0 flex-col justify-end gap-3 px-7 pt-7 pb-16 max-sm:px-5 max-sm:pt-5 sm:max-w-2xl sm:justify-center lg:px-9 lg:pt-8"
       >
         <div class="flex flex-wrap items-center gap-2">
           <Badge
@@ -198,14 +183,14 @@ const fill = computed(() =>
         </div>
 
         <h2
-          class="text-2xl font-bold text-balance text-primary-warm-white lg:text-3xl"
+          class="line-clamp-2 text-2xl font-bold text-balance text-primary-warm-white lg:text-3xl"
         >
           {{ active.title }}
         </h2>
 
         <p
           v-if="active.summary"
-          class="line-clamp-2 max-w-prose shrink-0 text-content-secondary max-sm:line-clamp-1 short:hidden"
+          class="line-clamp-1 max-w-prose shrink-0 text-content-secondary short:hidden"
         >
           {{ active.summary }}
         </p>
@@ -230,31 +215,12 @@ const fill = computed(() =>
       </div>
     </div>
 
-    <div
+    <FeaturedBannerPagination
       v-if="slides.length > 1"
-      class="pointer-events-none absolute inset-x-8 bottom-5 flex gap-2 lg:inset-x-12"
-      data-testid="featured-pagination"
-    >
-      <button
-        v-for="(slide, index) in slides"
-        :key="slide.key"
-        type="button"
-        :aria-label="slide.title"
-        :aria-current="index === activeIndex ? 'true' : undefined"
-        class="group pointer-events-auto max-w-12 min-w-0 flex-1 cursor-pointer rounded-full py-3 outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
-        @click="goTo(index)"
-      >
-        <span
-          class="block h-1 overflow-hidden rounded-full bg-transparency-white-t20 group-hover:bg-primary-warm-gray"
-        >
-          <span
-            class="block h-full rounded-full bg-primary-warm-white"
-            :style="{
-              width: index === activeIndex ? `${fill * 100}%` : '0%'
-            }"
-          />
-        </span>
-      </button>
-    </div>
+      :slides
+      :active-index="activeIndex"
+      :fill
+      @go="goTo"
+    />
   </section>
 </template>

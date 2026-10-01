@@ -3,19 +3,19 @@ import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import CinematicEnhanceSwitch from './CinematicEnhanceSwitch.vue'
 
-const { locale = 'en' } = defineProps<{
+const { video = false, locale = 'en' } = defineProps<{
+  /** A video shot's enhance line describes motion, not a still. */
+  video?: boolean
   locale?: Locale
 }>()
 
 const scene = defineModel<string>('scene', { required: true })
 const enhance = defineModel<boolean>('enhance', { required: true })
-
-const labelClass = 'text-xs font-medium text-primary-warm-gray'
 </script>
 
 <template>
-  <section class="flex flex-col gap-2">
-    <label for="cinematic-scene" :class="labelClass">
+  <section class="flex flex-col">
+    <label for="cinematic-scene" class="sr-only">
       {{ tc('cinematic.section.scene', locale) }}
     </label>
     <div
@@ -28,8 +28,9 @@ const labelClass = 'text-xs font-medium text-primary-warm-gray'
         :placeholder="tc('cinematic.scene.placeholder', locale)"
         class="h-28 resize-none bg-transparent px-3.5 py-3 text-sm leading-relaxed text-primary-warm-white outline-none placeholder:text-primary-warm-gray"
       />
-      <div class="border-t border-transparency-white-t8 px-3.5 py-2.5">
-        <CinematicEnhanceSwitch v-model="enhance" :locale />
+      <div class="flex items-center justify-between gap-3 pr-4 pb-2.5 pl-2.5">
+        <slot />
+        <CinematicEnhanceSwitch v-model="enhance" :video :locale />
       </div>
     </div>
   </section>

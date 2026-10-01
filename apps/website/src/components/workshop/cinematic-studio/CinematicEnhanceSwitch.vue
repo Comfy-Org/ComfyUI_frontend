@@ -1,20 +1,35 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import CinematicTooltip from './CinematicTooltip.vue'
 
-const { locale = 'en', class: className } = defineProps<{
+const {
+  video = false,
+  locale = 'en',
+  class: className
+} = defineProps<{
+  /** A video shot's enhance line describes motion, not a still. */
+  video?: boolean
   locale?: Locale
   class?: string
 }>()
+
+const hint = computed(() =>
+  tc(
+    video ? 'cinematic.video.enhanceHint' : 'cinematic.scene.enhanceHint',
+    locale
+  )
+)
 
 const enhance = defineModel<boolean>({ required: true })
 </script>
 
 <template>
-  <CinematicTooltip :text="tc('cinematic.scene.enhanceHint', locale)">
+  <CinematicTooltip :text="hint">
     <label
       :class="
         cn(
@@ -27,7 +42,7 @@ const enhance = defineModel<boolean>({ required: true })
         v-model="enhance"
         type="checkbox"
         role="switch"
-        :aria-description="tc('cinematic.scene.enhanceHint', locale)"
+        :aria-description="hint"
         class="peer sr-only"
       />
       <span

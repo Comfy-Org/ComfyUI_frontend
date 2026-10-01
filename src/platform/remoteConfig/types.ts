@@ -102,7 +102,6 @@ export type RemoteConfig = GetFeaturesResponses[200] & {
   telemetry_disabled_events?: TelemetryEventName[]
   enable_telemetry?: boolean
   model_upload_button_enabled?: boolean
-  asset_rename_enabled?: boolean
   private_models_enabled?: boolean
   onboarding_survey_enabled?: boolean
   onboarding_survey?: OnboardingSurvey
@@ -133,6 +132,7 @@ export type RemoteConfig = GetFeaturesResponses[200] & {
   billing_sdk_topup_enabled?: boolean
   billing_sdk_subscription_enabled?: boolean
   billing_control_enabled?: boolean
+  member_credit_limits_enabled?: boolean
   legacy_billing_migration_enabled?: boolean
   v1_payment_recovery?: boolean
   churnkey_app_id?: string

@@ -145,6 +145,23 @@ describe('createSessionTokenMint', () => {
     expect(sent).toHaveLength(2)
   })
 
+  it('re-mints once the session would have expired, even if the token outlives it', async () => {
+    const { mint, sent, state } = setup()
+    state.session = {
+      ...sessionFor('user-1'),
+      expiresAt: T0 + 10 * MINUTE
+    }
+
+    const first = await mint.getWorkspaceToken()
+    clock.now = T0 + 8 * MINUTE
+    const reused = await mint.getWorkspaceToken()
+    clock.now = T0 + 9 * MINUTE
+    const reminted = await mint.getWorkspaceToken()
+
+    expect([first, reused, reminted]).toEqual(['jwt-1', 'jwt-1', 'jwt-2'])
+    expect(sent).toHaveLength(2)
+  })
+
   it('shares one request among concurrent callers for the same workspace', async () => {
     const { mint, sent } = setup()
 
@@ -238,6 +255,45 @@ describe('createSessionTokenMint', () => {
     const afterward = await mint.getWorkspaceToken()
 
     expect([fresh, afterward]).toEqual(['jwt-3', 'jwt-3'])
+  })
+
+  it.for<{
+    name: string
+    after: WebSession | undefined
+    expected: Partial<SessionTokenResult>
+  }>([
+    {
+      name: 'the session ended',
+      after: undefined,
+      expected: { status: 'error', code: 'NO_SESSION' }
+    },
+    {
+      name: 'another user took the session',
+      after: sessionFor('user-2'),
+      expected: { status: 'error', code: 'IDENTITY_CHANGED' }
+    },
+    {
+      name: 'the same user re-read the session',
+      after: sessionFor('user-1', 'csrf-2'),
+      expected: { status: 'ok' }
+    }
+  ])('answers a mint that lands after $name', async ({ after, expected }) => {
+    let release = () => {}
+    const held = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const { mint, state } = setup({
+      respond: async () => {
+        await held
+        return json(200, tokenBody('jwt-1', clock.now + 15 * MINUTE))
+      }
+    })
+
+    const pending = mint.mint()
+    state.session = after
+    release()
+
+    expect(await pending).toMatchObject(expected)
   })
 
   it('answers NO_SESSION without a request when signed out', async () => {

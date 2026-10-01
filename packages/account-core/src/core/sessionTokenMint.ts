@@ -197,7 +197,7 @@ export function createSessionTokenMint({
       status: 'ok',
       credential: {
         token: parsed.data.token,
-        expiresAt,
+        expiresAt: Math.min(expiresAt, session.expiresAt),
         uid: session.user.id,
         workspace: parsed.data.workspace,
         role: parsed.data.role,
@@ -243,7 +243,9 @@ export function createSessionTokenMint({
     const generation = ownerGeneration
     const running = request(session, workspaceId).then((result) => {
       if (inFlight.get(workspaceId) === running) inFlight.delete(workspaceId)
-      if (getSession()?.user.id !== userId) return failure('IDENTITY_CHANGED')
+      const current = getSession()
+      if (current === undefined) return failure('NO_SESSION')
+      if (current.user.id !== userId) return failure('IDENTITY_CHANGED')
       commit(workspaceId, generation, result)
       return result
     })

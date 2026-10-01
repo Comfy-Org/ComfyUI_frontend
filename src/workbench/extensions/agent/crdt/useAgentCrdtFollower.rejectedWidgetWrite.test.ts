@@ -11,13 +11,10 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 
 import { parseWireOps } from '@e2e/fixtures/agentWireFrame'
 
-import type { GraphMutations } from './graphMutations'
 import type { GraphOperation } from './graphOperations'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 const WORKFLOW_ID = 'wf-rejected-widget-write'
 
@@ -109,10 +106,7 @@ function mountFollower() {
   const { unmount } = render(
     defineComponent({
       setup() {
-        follower = useAgentCrdtFollower(
-          ref<string | null>(WORKFLOW_ID),
-          fromPartial<GraphMutations>({})
-        )
+        follower = useAgentCrdtFollower(ref<string | null>(WORKFLOW_ID))
         return () => null
       }
     })

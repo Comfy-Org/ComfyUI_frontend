@@ -25,6 +25,7 @@ import {
   OPERATION_POLL_TIMING
 } from './operationPolicy.js'
 import type {
+  BillingOperationState,
   BillingOpStatus,
   HostedBillingDestination
 } from './operationState.js'
@@ -195,6 +196,7 @@ function harness(options: {
   destination?: HostedBillingDestination
   session?: ReturnType<typeof fakeSession>
   storage?: BillingOperationPointerStorage
+  retainSettled?: boolean
 }) {
   const destination = { current: options.destination ?? 'stripe' }
   const session = options.session ?? fakeSession()
@@ -209,6 +211,9 @@ function harness(options: {
     scopeSource: session.scopeSource,
     statusReader: status.reader,
     pointerStorage: storage,
+    ...(options.retainSettled === undefined
+      ? {}
+      : { retainSettledPointer: options.retainSettled }),
     embeddedCheckoutAvailable: () => options.embedded === true,
     ...(options.destination === undefined
       ? {}
@@ -854,6 +859,57 @@ describe('createBillingOperationLifecycle', () => {
       })
     })
 
+    it("announces the backend's pending operation with the phase it read, never as an unread pending", async () => {
+      const { lifecycle, calls } = harness({
+        status: statusSnapshot({
+          pending_billing_op_id: 'op-1',
+          pending_billing_op_type: 'subscription'
+        }),
+        answers: [httpOk(opStatus({ phase: 'awaiting_payment_method' }))]
+      })
+      const announced: BillingOperationState[] = []
+      lifecycle.subscribe((state) => announced.push(state))
+
+      const recovered = await lifecycle.recover()
+      await flush()
+
+      expect(calls.map((call) => call.route)).toEqual([operationRoute('op-1')])
+      expect(
+        announced.map((state) =>
+          state.phase === 'pending' ? state.serverPhase : state.phase
+        )
+      ).toEqual(['awaiting_payment_method'])
+      expect(recovered).toMatchObject({
+        status: 'ok',
+        value: { id: 'op-1', phase: 'pending' }
+      })
+    })
+
+    it("announces the backend's pending operation with its served link even when the operation read fails", async () => {
+      const { lifecycle, calls } = harness({
+        status: statusSnapshot({
+          pending_billing_op_id: 'op-1',
+          pending_billing_op_type: 'subscription',
+          action_url: 'https://billing.example/continue'
+        }),
+        answers: [httpStatus(503)]
+      })
+      const announced: BillingOperationState[] = []
+      lifecycle.subscribe((state) => announced.push(state))
+
+      await lifecycle.recover()
+      await flush()
+
+      expect(calls.map((call) => call.route)).toEqual([operationRoute('op-1')])
+      expect(announced).toEqual([
+        expect.objectContaining({
+          id: 'op-1',
+          phase: 'pending',
+          actionUrl: 'https://billing.example/continue'
+        })
+      ])
+    })
+
     it('resumes from the pointer when the status read is unreachable', async () => {
       const { lifecycle } = harness({
         storage: storageWith(POINTER),
@@ -932,6 +988,275 @@ describe('createBillingOperationLifecycle', () => {
       await vi.advanceTimersByTimeAsync(1_500)
       expect(calls).toHaveLength(2)
       expect(lifecycle.get('op-1')).toMatchObject({ phase: 'succeeded' })
+    })
+  })
+
+  describe('settled pointers', () => {
+    const SETTLED_ANSWERS = [
+      httpOk(opStatus()),
+      httpOk(opStatus({ status: 'succeeded' }))
+    ]
+
+    async function settleOwnOperation(answers: TransportAnswer[]) {
+      const storage = memoryStorage()
+      const first = harness({ storage, retainSettled: true, answers })
+      await first.lifecycle.begin('subscription', issued())
+      await vi.advanceTimersByTimeAsync(OPERATION_POLL_TIMING.initialMs * 1.5)
+      first.lifecycle.dispose()
+      return storage
+    }
+
+    it.for([
+      { phase: 'succeeded', answer: opStatus({ status: 'succeeded' }) },
+      { phase: 'failed', answer: opStatus({ status: 'failed' }) },
+      {
+        phase: 'reconciliation_needed',
+        answer: opStatus({ status: 'reconciliation_needed' })
+      }
+    ])(
+      'clears the pointer at $phase for a host that does not retain it, so no recover finds it',
+      async ({ phase, answer }) => {
+        const storage = memoryStorage()
+        const first = harness({ storage, answers: [httpOk(answer)] })
+        await first.lifecycle.begin('subscription', issued())
+        await flush()
+        expect(first.lifecycle.get('op-1')).toMatchObject({ phase })
+        expect(storedPointer(storage)).toBeUndefined()
+
+        const reloaded = harness({ storage, answers: [httpOk(answer)] })
+        await expect(
+          reloaded.lifecycle.recover({ includeSettled: true })
+        ).resolves.toEqual({ status: 'ok', value: undefined })
+        expect(reloaded.calls).toHaveLength(0)
+      }
+    )
+
+    it('keeps a succeeded pointer that a plain recover still reads as nothing', async () => {
+      const storage = await settleOwnOperation(SETTLED_ANSWERS)
+      expect(storedPointer(storage)).toEqual({
+        operationId: 'op-1',
+        kind: 'subscription',
+        presentation: 'hosted',
+        attemptStartedAt: NOW,
+        settled: 'succeeded'
+      })
+
+      const reloaded = harness({ storage, retainSettled: true })
+      await expect(reloaded.lifecycle.recover()).resolves.toEqual({
+        status: 'ok',
+        value: undefined
+      })
+      expect(reloaded.calls).toHaveLength(0)
+    })
+
+    it('reads a succeeded pointer back as a revisit when asked, not as news', async () => {
+      const storage = await settleOwnOperation(SETTLED_ANSWERS)
+      const reloaded = harness({
+        storage,
+        retainSettled: true,
+        answers: [httpOk(opStatus({ status: 'succeeded' }))]
+      })
+
+      const recovered = await reloaded.lifecycle.recover({
+        includeSettled: true
+      })
+
+      expect(recovered).toMatchObject({
+        status: 'ok',
+        value: { id: 'op-1', phase: 'succeeded' }
+      })
+      expect(recovered.status === 'ok' && recovered.value).not.toHaveProperty(
+        'awaitedHere'
+      )
+      expect(storedPointer(storage)).toMatchObject({ settled: 'succeeded' })
+    })
+
+    it('marks an operation this tab issued and left pending as awaited here when it comes back settled', async () => {
+      const storage = memoryStorage()
+      const left = harness({ storage, retainSettled: true })
+      await left.lifecycle.begin('subscription', issued())
+      left.lifecycle.dispose()
+
+      const returned = harness({
+        storage,
+        retainSettled: true,
+        answers: [httpOk(opStatus({ status: 'succeeded' }))]
+      })
+
+      await expect(returned.lifecycle.recover()).resolves.toMatchObject({
+        status: 'ok',
+        value: { id: 'op-1', phase: 'succeeded', awaitedHere: true }
+      })
+    })
+
+    it('never marks an operation this tab only resumed as awaited here', async () => {
+      const storage = memoryStorage()
+      const watched = harness({
+        storage,
+        retainSettled: true,
+        status: statusSnapshot({
+          pending_billing_op_id: 'op-1',
+          pending_billing_op_type: 'subscription'
+        })
+      })
+      await watched.lifecycle.recover()
+      watched.lifecycle.dispose()
+
+      const returned = harness({
+        storage,
+        retainSettled: true,
+        answers: [httpOk(opStatus({ status: 'succeeded' }))]
+      })
+      const recovered = await returned.lifecycle.recover()
+
+      expect(recovered).toMatchObject({ value: { phase: 'succeeded' } })
+      expect(recovered.status === 'ok' && recovered.value).not.toHaveProperty(
+        'awaitedHere'
+      )
+    })
+
+    const RECEIPT_PLAN = { slug: 'pro_monthly', duration: 'MONTHLY' } as const
+
+    it('keeps the receipt a succeeded operation reports', async () => {
+      const { lifecycle } = harness({
+        answers: [
+          httpOk(
+            opStatus({
+              status: 'succeeded',
+              amount_charged_cents: 3250,
+              credits_added: 6858,
+              plan: RECEIPT_PLAN
+            })
+          )
+        ]
+      })
+      await lifecycle.begin('subscription', issued())
+      await flush()
+
+      expect(lifecycle.get('op-1')).toMatchObject({
+        phase: 'succeeded',
+        receipt: {
+          amountChargedCents: 3250,
+          creditsAdded: 6858,
+          plan: RECEIPT_PLAN
+        }
+      })
+    })
+
+    it('leaves the receipt off a success that reported none', async () => {
+      const { lifecycle } = harness({
+        answers: [httpOk(opStatus({ status: 'succeeded' }))]
+      })
+      await lifecycle.begin('subscription', issued())
+      await flush()
+
+      expect(lifecycle.get('op-1')).not.toHaveProperty('receipt')
+    })
+
+    it('re-reads a success whose credits are still landing, when asked for settled operations', async () => {
+      const charged = {
+        status: 'succeeded' as const,
+        amount_charged_cents: 3250
+      }
+      const { lifecycle } = harness({
+        retainSettled: true,
+        answers: [
+          httpOk(opStatus(charged)),
+          httpOk(opStatus({ ...charged, credits_added: 6858 }))
+        ]
+      })
+      await lifecycle.begin('subscription', issued())
+      await flush()
+      expect(lifecycle.get('op-1')).toMatchObject({
+        receipt: { amountChargedCents: 3250 }
+      })
+
+      await expect(
+        lifecycle.recover({ includeSettled: true })
+      ).resolves.toMatchObject({
+        status: 'ok',
+        value: {
+          phase: 'succeeded',
+          receipt: { amountChargedCents: 3250, creditsAdded: 6858 }
+        }
+      })
+    })
+
+    it('keeps a success whose credits already landed as it was', async () => {
+      const landed = {
+        status: 'succeeded' as const,
+        amount_charged_cents: 3250,
+        credits_added: 6858
+      }
+      const { lifecycle } = harness({
+        retainSettled: true,
+        answers: [
+          httpOk(opStatus(landed)),
+          httpOk(opStatus({ ...landed, credits_added: 1 }))
+        ]
+      })
+      await lifecycle.begin('subscription', issued())
+      await flush()
+      const settled = lifecycle.get('op-1')
+
+      await lifecycle.recover({ includeSettled: true })
+
+      expect(lifecycle.get('op-1')).toBe(settled)
+    })
+
+    it('re-reads an operation that needed reconciliation, following it forward to success', async () => {
+      const storage = memoryStorage()
+      const { lifecycle, calls } = harness({
+        storage,
+        retainSettled: true,
+        answers: [
+          httpOk(opStatus({ status: 'reconciliation_needed' })),
+          httpOk(opStatus({ status: 'succeeded' }))
+        ]
+      })
+      await lifecycle.begin('subscription', issued())
+      await flush()
+      expect(lifecycle.get('op-1')).toMatchObject({
+        phase: 'reconciliation_needed'
+      })
+      expect(storedPointer(storage)).toMatchObject({
+        awaited: true,
+        settled: 'reconciliation_needed'
+      })
+      await vi.advanceTimersByTimeAsync(60_000)
+      expect(calls).toHaveLength(1)
+
+      await expect(
+        lifecycle.recover({ includeSettled: true })
+      ).resolves.toMatchObject({
+        status: 'ok',
+        value: { id: 'op-1', phase: 'succeeded', awaitedHere: true }
+      })
+      expect(lifecycle.get('op-1')).toMatchObject({ phase: 'succeeded' })
+    })
+
+    it('keeps an operation parked for reconciliation settled when a plain recover finds it still pending', async () => {
+      const { lifecycle, calls, status, telemetry } = harness({
+        answers: [httpOk(opStatus({ status: 'reconciliation_needed' }))]
+      })
+      await lifecycle.begin('subscription', issued())
+      await flush()
+      const settledTelemetry = [...telemetry]
+      status.answer(
+        statusSnapshot({
+          pending_billing_op_id: 'op-1',
+          pending_billing_op_type: 'subscription'
+        })
+      )
+
+      await expect(lifecycle.recover()).resolves.toMatchObject({
+        status: 'ok',
+        value: { id: 'op-1', phase: 'reconciliation_needed' }
+      })
+      await flush()
+
+      expect(calls).toHaveLength(1)
+      expect(telemetry).toEqual(settledTelemetry)
     })
   })
 

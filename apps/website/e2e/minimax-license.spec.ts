@@ -11,7 +11,7 @@ import { waitForIsland } from './fixtures/islands'
 
 const PATH = '/minimax/license'
 const ZH_PATH = '/zh-CN/minimax/license'
-const CONTACT_HREF = 'https://comfy.org/contact'
+const CONTACT_HREF = 'https://comfy.org/contact/'
 const META_TITLE = t('minimaxLicense.meta.title')
 const HERO_TITLE = t('minimaxLicense.hero.title')
 const HERO_CTA = t('minimaxLicense.hero.primaryCta')

@@ -48,7 +48,8 @@ const teamSubscription: SubscriptionInfo = {
   renewalDate: RENEWAL_DATE,
   endDate: null,
   isCancelled: false,
-  hasFunds: true
+  hasFunds: true,
+  agentHasFunds: true
 }
 
 const funded = teamSubscription
@@ -161,19 +162,6 @@ export const OutOfCreditsMember: Story = story(
   { canTopUp: false }
 )
 
-/** No top-up entitlement but self-serve upgrade is open: upgrade copy, not contact-admin. */
-export const OutOfCreditsSelfServe: Story = story(
-  {
-    subscription: exhausted,
-    canAccessSubscriptionFeatures: true,
-    billingStatus: 'paid',
-    subscriptionStatus: 'active',
-    renewalDate: RENEWAL_DATE
-  },
-  owner,
-  { canTopUp: false, canSubscribeSelfServe: true }
-)
-
 /** Cancelled but still active until the period end. Informational. */
 export const EndingOwner: Story = story(
   {
@@ -185,6 +173,18 @@ export const EndingOwner: Story = story(
   owner
 )
 
+/** Members see the end date without an action. */
+export const EndingMember: Story = story(
+  {
+    subscription: cancelled,
+    canAccessSubscriptionFeatures: true,
+    billingStatus: 'paid',
+    subscriptionStatus: 'canceled'
+  },
+  member,
+  { canTopUp: false }
+)
+
 export const EndingPromotedOwner: Story = story(
   {
     subscription: cancelled,
@@ -194,3 +194,40 @@ export const EndingPromotedOwner: Story = story(
   },
   { canManageSubscriptionLifecycle: true }
 )
+
+/** A plan change is scheduled for the next period. Informational. */
+export const PlanChangeOwner: Story = story(
+  {
+    subscription: {
+      ...teamSubscription,
+      scheduledChange: {
+        plan_slug: 'enterprise-monthly',
+        effective_at: PLAN_END_DATE,
+        team_credit_stop: null
+      }
+    },
+    canAccessSubscriptionFeatures: true,
+    billingStatus: 'paid',
+    subscriptionStatus: 'active'
+  },
+  owner
+)
+
+const TEN_DAYS_MS = 10 * 24 * 60 * 60 * 1000
+
+/** An Enterprise end date stays quiet until it is two weeks out. */
+const enterpriseEnding: Partial<BillingContextMockState> = {
+  subscription: {
+    ...cancelled,
+    tier: 'ENTERPRISE',
+    endDate: new Date(Date.now() + TEN_DAYS_MS).toISOString()
+  },
+  isTeamPlan: false,
+  canAccessSubscriptionFeatures: true,
+  billingStatus: 'paid',
+  subscriptionStatus: 'canceled'
+}
+
+export const EndingEnterpriseOwner: Story = story(enterpriseEnding, owner)
+
+export const EndingEnterpriseMember: Story = story(enterpriseEnding, member)

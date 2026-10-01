@@ -47,6 +47,7 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
   {
     title: t('footer.models', locale),
     links: [
+      { label: t('footer.modelCatalogue', locale), href: routes.workshop },
       { label: t('nav.supportedModels', locale), href: routes.models },
       { label: t('footer.minimaxH3', locale), href: routes.minimax },
       {

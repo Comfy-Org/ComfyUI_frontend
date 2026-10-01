@@ -43,10 +43,7 @@ describe('ModelsApiGallery', () => {
       screen.getByRole('link', {
         name: new RegExp(t('cloud.aiModels.card.seedance25', 'en'))
       })
-    ).toHaveAttribute(
-      'href',
-      '/models/byteplus--seedance-2-5-text-to-video--generate-videos/'
-    )
+    ).toHaveAttribute('href', '/hub/models/seedance-2-5-text-to-video/')
   })
 
   it('links a model id shared by several use cases to the specific page the card names', () => {
@@ -56,7 +53,10 @@ describe('ModelsApiGallery', () => {
       screen.getByRole('link', {
         name: new RegExp(t('cloud.aiModels.card.geminiOmniFlash', 'en'))
       })
-    ).toHaveAttribute('href', '/models/gemini--omni-1.1-flash--animate-images/')
+    ).toHaveAttribute(
+      'href',
+      '/hub/models/gemini-omni-1-1-flash-image-to-video/'
+    )
   })
 
   it('bakes in the href the Router catalogue resolves for each card, so the two never drift', () => {

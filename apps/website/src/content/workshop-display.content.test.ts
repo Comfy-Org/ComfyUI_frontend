@@ -21,6 +21,7 @@ import {
   appCatalog,
   workflowCatalog
 } from '../config/workshop-workflow-catalog'
+import { hubModelSlugs } from '../config/hub-models'
 
 const here = import.meta.dirname
 const display = workshopDisplayEntriesSchema.parse(
@@ -73,7 +74,9 @@ describe('the display overlay against the catalog', () => {
       const routerId = routerAliasById.get(id)?.routerId ?? id
       expect(detail?.routerId).toBe(routerId)
       expect(detail?.slug.startsWith(`${catalogEntry.slug}--`)).toBe(true)
-      expect(detail?.href).toBe(`/models/${detail?.slug}/`)
+      expect(detail?.href).toBe(
+        `/hub/models/${hubModelSlugs.get(detail?.slug ?? '')}/`
+      )
       if (detail?.execution) expect(detail.execution.id).toBe(routerId)
     }
   )

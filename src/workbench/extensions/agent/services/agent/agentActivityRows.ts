@@ -1,8 +1,9 @@
-import type { ActivityPart, PartState } from './agentMessageParts'
+import type { ActivityPart, PartState, ToolPart } from './agentMessageParts'
 
 interface ToolRow {
   kind: 'tool'
   name: string
+  skill?: string
   state: PartState
   ok?: boolean
   count: number
@@ -15,6 +16,17 @@ interface ThinkingRow {
 }
 
 export type ActivityRow = ToolRow | ThinkingRow
+
+function isSameToolStep(
+  previous: ActivityRow | undefined,
+  part: ToolPart
+): previous is ToolRow {
+  return (
+    previous?.kind === 'tool' &&
+    previous.name === part.name &&
+    previous.skill === part.skill
+  )
+}
 
 /**
  * Consecutive calls to the same tool read as one step carrying a count: the
@@ -33,7 +45,7 @@ export function foldActivity(parts: readonly ActivityPart[]): ActivityRow[] {
       continue
     }
     const previous = rows.at(-1)
-    if (previous?.kind === 'tool' && previous.name === part.name) {
+    if (isSameToolStep(previous, part)) {
       previous.count += 1
       if (part.state === 'streaming') previous.state = 'streaming'
       if (part.ok === false) previous.ok = false
@@ -41,6 +53,7 @@ export function foldActivity(parts: readonly ActivityPart[]): ActivityRow[] {
       rows.push({
         kind: 'tool',
         name: part.name,
+        skill: part.skill,
         state: part.state,
         ok: part.ok,
         count: 1

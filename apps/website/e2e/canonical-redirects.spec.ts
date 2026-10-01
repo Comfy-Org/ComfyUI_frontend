@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
@@ -39,6 +39,19 @@ test.describe('canonical redirects', () => {
     expect(redirectPage).toContain(
       'rel="canonical" href="https://comfy.org/p/supported-models/t5xxl-fp16/"'
     )
+  })
+
+  test('builds each model page at /hub/models and no page at its old address', () => {
+    expect(
+      readFileSync(
+        'dist/hub/models/flux-2-max-text-to-image/index.html',
+        'utf8'
+      )
+    ).toContain(
+      'rel="canonical" href="https://comfy.org/hub/models/flux-2-max-text-to-image/"'
+    )
+    for (const path of ['models', 'models/bfl--flux-2-max--generate-images'])
+      expect(existsSync(`dist/${path}/index.html`)).toBe(false)
   })
 
   test('builds the former Enterprise routes with the canonical destination', () => {

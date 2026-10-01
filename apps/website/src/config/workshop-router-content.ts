@@ -20,6 +20,35 @@ import {
   workshopModels
 } from './workshop-browse-content'
 
+const PROMPT_TEXT_KEYS = ['prompt', 'text', 'high_level_description']
+
+export function promptText(prompt: unknown): string | undefined {
+  if (typeof prompt !== 'string' || !prompt.trim()) return
+  if (!prompt.trim().startsWith('{')) return prompt
+  let structured: unknown
+  try {
+    structured = JSON.parse(prompt)
+  } catch {
+    return
+  }
+  if (typeof structured !== 'object' || structured === null) return
+  const fields = new Map<string, unknown>(Object.entries(structured))
+  const text = PROMPT_TEXT_KEYS.map((key) => fields.get(key)).find(
+    (value) => typeof value === 'string' && value.trim()
+  )
+  return typeof text === 'string' ? text : undefined
+}
+
+function promptOf(
+  sample: { readonly prompt?: string },
+  example: { readonly values: Readonly<Record<string, unknown>> } | undefined
+): { prompt?: string } {
+  const prompt = promptText(
+    sample.prompt?.trim() ? sample.prompt : example?.values.prompt
+  )
+  return prompt ? { prompt } : {}
+}
+
 function examplesFor(
   model: RouterWorkshopModelDetail,
   display: WorkshopDisplayEntry
@@ -49,7 +78,8 @@ function examplesFor(
       thumbnailUrl: sample.url,
       mediaKind: sample.kind,
       sampleOnly: Object.keys(values).length === 0,
-      values
+      values,
+      ...promptOf(sample, example)
     }
   })
 }
@@ -146,7 +176,7 @@ export function getRouterWorkshopModelDetail(
 /**
  * Resolves a Router API `{provider}/{model}` id (or the legacy catalog id
  * some content is filed under, when the two differ) plus its use case to
- * that model's canonical `/models/[slug]` href, one hop, without going
+ * that model's canonical `/hub/models/[slug]` href, one hop, without going
  * through the redirect a bare `{provider}/{model}` id needs when the same
  * id maps to more than one use case's page.
  */

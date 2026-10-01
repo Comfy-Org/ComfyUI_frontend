@@ -30,12 +30,25 @@ interface DynamicControl {
 
 const none = () => []
 
+const MAX_SPEC_DRIFT_REPORTS = 10
+const reportedSpecDrift = new Set<string>()
+
 function warnSpecDrift(
   spec: InputSpecV2,
   error: ZodError,
   optionIndex?: number
 ): void {
+  const location = JSON.stringify([spec.name, spec.type, optionIndex])
+  if (
+    reportedSpecDrift.has(location) ||
+    reportedSpecDrift.size >= MAX_SPEC_DRIFT_REPORTS
+  )
+    return
+
+  reportedSpecDrift.add(location)
+
   reportError(new Error('Unable to parse dynamic node input specification'), {
+    surface: 'graph',
     errorType: 'error_parsing_node_input_spec',
     tags: {
       failure_kind: 'degraded',
