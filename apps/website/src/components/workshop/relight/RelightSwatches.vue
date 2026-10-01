@@ -26,7 +26,7 @@ function onPick(event: Event) {
 </script>
 
 <template>
-  <div class="flex h-7 items-center justify-between gap-3 px-1">
+  <div class="flex h-8 items-center justify-between gap-3 px-1">
     <span class="text-xs text-primary-warm-gray">{{ label }}</span>
     <div role="radiogroup" :aria-label="label" class="flex items-center gap-2">
       <button

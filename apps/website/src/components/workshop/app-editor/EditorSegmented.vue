@@ -34,7 +34,7 @@ const value = defineModel<T>({ required: true })
         :aria-checked="value === option.id"
         :class="
           cn(
-            fill ? 'h-8 flex-1 text-xs' : 'h-6 px-3 text-[11px]',
+            fill ? 'h-7 flex-1 text-xs' : 'h-6 px-3 text-[11px]',
             'rounded-full text-primary-warm-gray transition focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none disabled:opacity-40',
             value === option.id &&
               'bg-transparency-white-t20 text-primary-warm-white'

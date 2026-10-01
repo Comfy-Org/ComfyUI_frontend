@@ -31,18 +31,46 @@ const LABELS = {
   right: 'relight.orbit.right'
 } as const
 
+const CENTER = { x: 120, y: 76 }
+const RING = { rx: 88, ry: 22 }
+const ARC = { rx: 22, ry: 56 }
+const RING_PRESETS = new Set(['front', 'back', 'left', 'right'])
+
 const svg = useTemplateRef<SVGSVGElement>('svg')
 const orbit = computed(() => toOrbit(light.direction, light.elevation))
 const rad = (value: number) => (value * Math.PI) / 180
+const onRing = (around: number) => ({
+  x: CENTER.x + RING.rx * Math.sin(rad(around)),
+  y: CENTER.y + RING.ry * Math.cos(rad(around))
+})
+const onArc = (height: number) => ({
+  x: CENTER.x + ARC.rx * Math.cos(rad(height)),
+  y: CENTER.y - ARC.ry * Math.sin(rad(height))
+})
 const ring = computed(() => ({
-  x: 50 + 38 * Math.sin(rad(orbit.value.around)),
-  y: 50 + 12 * Math.cos(rad(orbit.value.around)),
+  ...onRing(orbit.value.around),
   front: Math.cos(rad(orbit.value.around)) >= 0
 }))
-const arc = computed(() => ({
-  x: 50 + 12 * Math.cos(rad(orbit.value.height)),
-  y: 50 - 38 * Math.sin(rad(orbit.value.height))
-}))
+const arc = computed(() => onArc(orbit.value.height))
+const presets = computed(() =>
+  ORBIT_PRESETS.map((preset) => {
+    const at = RING_PRESETS.has(preset.id)
+      ? onRing(preset.around)
+      : onArc(preset.height)
+    const side = at.x < CENTER.x - 4 ? -1 : at.x > CENTER.x + 4 ? 1 : 0
+    return {
+      ...preset,
+      ...at,
+      label: lc(LABELS[preset.id], locale),
+      pressed: isPreset(preset.around, preset.height),
+      text: {
+        x: at.x + side * 8,
+        y: side ? at.y + 3 : at.y + (at.y > CENTER.y ? 13 : -7),
+        anchor: side < 0 ? 'end' : side > 0 ? 'start' : 'middle'
+      }
+    }
+  })
+)
 const glow = computed(() => {
   const [x, y] = towardLight(light.direction, light.elevation)
   return { cx: `${50 + x * 35}%`, cy: `${50 + y * 35}%` }
@@ -55,12 +83,12 @@ function place(around: number, height: number, key?: string) {
 }
 
 function at(event: PointerEvent) {
-  const box = svg.value?.getBoundingClientRect()
-  if (!box?.width) return { x: 0, y: 0 }
-  return {
-    x: ((event.clientX - box.left) / box.width) * 100 - 50,
-    y: ((event.clientY - box.top) / box.height) * 100 - 50
-  }
+  const matrix = svg.value?.getScreenCTM()?.inverse()
+  if (!matrix) return { x: 0, y: 0 }
+  const { x, y } = new DOMPoint(event.clientX, event.clientY).matrixTransform(
+    matrix
+  )
+  return { x: x - CENTER.x, y: y - CENTER.y }
 }
 
 let drag: ((event: PointerEvent) => void) | undefined
@@ -73,14 +101,14 @@ function grab(handle: 'around' | 'height', event: PointerEvent) {
     const { x, y } = at(moved)
     if (handle === 'around')
       place(
-        Math.round((Math.atan2(x / 38, y / 12) * 180) / Math.PI),
+        Math.round((Math.atan2(x / RING.rx, y / RING.ry) * 180) / Math.PI),
         orbit.value.height,
         key
       )
     else
       place(
         orbit.value.around,
-        Math.round((Math.asin(clamp(-y / 38)) * 180) / Math.PI),
+        Math.round((Math.asin(clamp(-y / ARC.ry)) * 180) / Math.PI),
         key
       )
   }
@@ -110,11 +138,11 @@ function isPreset(around: number, height: number) {
 </script>
 
 <template>
-  <div class="flex items-center gap-3 px-1 py-1">
+  <div class="relative rounded-xl bg-transparency-white-t4">
     <svg
       ref="svg"
-      viewBox="0 0 100 100"
-      class="size-26 shrink-0 touch-none rounded-lg bg-black/30"
+      viewBox="0 0 240 150"
+      class="block h-38 w-full touch-none"
       role="group"
       :aria-label="lc('relight.orbit', locale)"
       @pointermove="drag?.($event)"
@@ -142,39 +170,83 @@ function isPreset(around: number, height: number) {
         </radialGradient>
       </defs>
       <ellipse
-        cx="50"
-        cy="50"
-        rx="12"
-        ry="38"
+        :cx="CENTER.x"
+        :cy="CENTER.y"
+        :rx="ARC.rx"
+        :ry="ARC.ry"
         fill="none"
         class="text-transparency-white-t20"
         stroke="currentColor"
         stroke-dasharray="2 3"
       />
-      <circle cx="50" cy="50" r="16" :fill="`url(#orbit-${light.id})`" />
+      <circle
+        :cx="CENTER.x"
+        :cy="CENTER.y"
+        r="20"
+        :fill="`url(#orbit-${light.id})`"
+      />
       <ellipse
-        cx="50"
-        cy="50"
-        rx="38"
-        ry="12"
+        :cx="CENTER.x"
+        :cy="CENTER.y"
+        :rx="RING.rx"
+        :ry="RING.ry"
         fill="none"
         class="text-transparency-white-t20"
         stroke="currentColor"
       />
+      <g
+        v-for="preset in presets"
+        :key="preset.id"
+        role="button"
+        tabindex="0"
+        :aria-label="preset.label"
+        :aria-pressed="preset.pressed"
+        class="group cursor-pointer focus-visible:outline-none"
+        @click="place(preset.around, preset.height)"
+        @keydown.enter.prevent="place(preset.around, preset.height)"
+        @keydown.space.prevent="place(preset.around, preset.height)"
+      >
+        <circle :cx="preset.x" :cy="preset.y" r="9" fill="transparent" />
+        <circle
+          :cx="preset.x"
+          :cy="preset.y"
+          r="2.5"
+          :class="
+            cn(
+              'fill-primary-warm-gray transition group-hover:fill-primary-warm-white group-focus-visible:stroke-primary-comfy-yellow',
+              preset.pressed && 'fill-primary-warm-white'
+            )
+          "
+          stroke-width="1.5"
+        />
+        <text
+          :x="preset.text.x"
+          :y="preset.text.y"
+          :text-anchor="preset.text.anchor"
+          :class="
+            cn(
+              'fill-primary-warm-gray text-[8px] transition select-none group-hover:fill-primary-warm-white group-focus-visible:fill-primary-comfy-yellow',
+              preset.pressed && 'fill-primary-warm-white'
+            )
+          "
+        >
+          {{ preset.label }}
+        </text>
+      </g>
       <circle
         role="slider"
         tabindex="0"
         :cx="ring.x"
         :cy="ring.y"
-        r="5"
+        r="6"
         :fill="light.color"
         :class="
           cn(
-            'cursor-grab stroke-primary-warm-white focus-visible:outline-none',
-            !ring.front && 'opacity-50'
+            'cursor-grab stroke-primary-warm-white focus-visible:stroke-primary-comfy-yellow focus-visible:outline-none',
+            !ring.front && 'opacity-60'
           )
         "
-        stroke-width="1.5"
+        stroke-width="2"
         :aria-label="lc('relight.orbit.around', locale)"
         :aria-valuenow="orbit.around"
         aria-valuemin="-180"
@@ -187,8 +259,9 @@ function isPreset(around: number, height: number) {
         tabindex="0"
         :cx="arc.x"
         :cy="arc.y"
-        r="4"
-        class="cursor-grab fill-primary-warm-white focus-visible:outline-none"
+        r="4.5"
+        class="cursor-grab fill-primary-warm-white focus-visible:stroke-primary-comfy-yellow focus-visible:outline-none"
+        stroke-width="2"
         :aria-label="lc('relight.orbit.height', locale)"
         :aria-valuenow="orbit.height"
         aria-valuemin="-90"
@@ -197,23 +270,10 @@ function isPreset(around: number, height: number) {
         @keydown="nudge('height', $event)"
       />
     </svg>
-    <div class="grid flex-1 grid-cols-3 gap-1">
-      <button
-        v-for="preset in ORBIT_PRESETS"
-        :key="preset.id"
-        type="button"
-        :aria-pressed="isPreset(preset.around, preset.height)"
-        :class="
-          cn(
-            'h-7 rounded-md bg-transparency-white-t4 text-[11px] text-primary-warm-gray transition hover:text-primary-warm-white focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none disabled:opacity-40',
-            isPreset(preset.around, preset.height) &&
-              'bg-transparency-white-t20 text-primary-warm-white'
-          )
-        "
-        @click="place(preset.around, preset.height)"
-      >
-        {{ lc(LABELS[preset.id], locale) }}
-      </button>
-    </div>
+    <span
+      class="pointer-events-none absolute top-2 right-2.5 text-[11px] text-primary-warm-white tabular-nums"
+      data-testid="relight-orbit-readout"
+      >{{ light.direction }}° · {{ light.elevation }}°</span
+    >
   </div>
 </template>

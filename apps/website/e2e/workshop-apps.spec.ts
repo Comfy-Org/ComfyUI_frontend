@@ -253,6 +253,25 @@ test('moves a thing from the Move anything bottom sheet on phones @mobile', asyn
   expect(overflow).toBe(0)
 })
 
+test('hides the site header in the editor apps only', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  const header = page.getByRole('navigation', { name: 'Main navigation' })
+  for (const path of ['/hub/apps/relight/', '/hub/apps/move-anything/']) {
+    await page.goto(path)
+    await expect(page.getByTestId('apps-home')).toBeVisible()
+    await expect(header).toBeHidden()
+  }
+
+  await page.goto('/hub/apps/cinematic-studio/')
+  await expect(page.getByTestId('cinematic')).toBeVisible()
+  await expect(header).toBeVisible()
+  await page.goto('/hub/apps/')
+  await expect(header).toBeVisible()
+})
+
 test('closes Relight while its flag is off', async ({ page, context }) => {
   await mockFlags(context, { apps: true, workflows: false, relight: false })
   await page.goto('/hub/apps/relight/')
@@ -268,9 +287,17 @@ async function relightFromPanel(page: Page) {
   const lights = panel.getByRole('region', { name: 'Lights' })
 
   await app.getByRole('button', { name: /^Cool fill\./ }).click()
-  await expect(
-    lights.getByRole('button', { name: /^Cool fill/ })
-  ).toHaveAttribute('aria-pressed', 'true')
+  await expect(lights.getByRole('tab', { name: /^Cool fill/ })).toHaveAttribute(
+    'aria-selected',
+    'true'
+  )
+  const tools = app.getByRole('toolbar', { name: 'Relight tools' })
+  await tools.getByRole('button', { name: 'Compare' }).click()
+  await tools.getByRole('menuitemradio', { name: 'Original' }).click()
+  await expect(app.getByTestId('relight-preview')).toBeHidden()
+  await tools.getByRole('button', { name: 'Compare' }).click()
+  await tools.getByRole('menuitemradio', { name: 'Relit' }).click()
+  await expect(app.getByTestId('relight-preview')).toBeVisible()
   const intensity = lights.getByRole('slider', { name: 'Intensity' })
   await intensity.fill('70')
   await expect(intensity).toHaveValue('70')
@@ -318,7 +345,7 @@ test('relights the Relight example from the bottom composer', async ({
   const key = app.getByRole('button', { name: /^Warm key\./ })
   await key.focus()
   await page.keyboard.press('Shift+ArrowRight')
-  await expect(key).toHaveAttribute('style', /left: 25%/)
+  await expect(key).toHaveAttribute('style', /left: 17%/)
 
   await app.getByRole('button', { name: /Lights/ }).click()
   const intensity = app
@@ -330,7 +357,7 @@ test('relights the Relight example from the bottom composer', async ({
   await app.getByTestId('relight-run').click()
   await expect(app.getByRole('link', { name: 'Download' })).toBeVisible()
   await app.getByRole('button', { name: 'Edit lights' }).click()
-  await expect(key).toHaveAttribute('style', /left: 25%/)
+  await expect(key).toHaveAttribute('style', /left: 17%/)
 })
 
 test('relights from the Relight bottom sheet on phones @mobile', async ({

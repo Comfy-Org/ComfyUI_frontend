@@ -8,6 +8,7 @@ import type { EditorView } from '../app-editor/view'
 import RelightDock from './RelightDock.vue'
 import RelightHistory from './RelightHistory.vue'
 import RelightTools from './RelightTools.vue'
+import RelightViewMenu from './RelightViewMenu.vue'
 
 const {
   relight,
@@ -46,9 +47,13 @@ const labels = {
     <RelightTools :relight :locale />
     <EditorDivider />
     <RelightHistory :relight :locale />
+    <EditorDivider />
+    <RelightViewMenu :relight :locale />
   </template>
   <template v-else>
     <RelightHistory :relight :locale />
+    <EditorDivider />
+    <RelightViewMenu :relight :locale />
     <EditorDivider />
     <RelightDock :relight :locale />
   </template>

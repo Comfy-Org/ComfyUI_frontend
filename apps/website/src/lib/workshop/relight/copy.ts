@@ -21,7 +21,11 @@ const copy = {
   'relight.tool.redo': { en: 'Redo', 'zh-CN': '重做' },
   'relight.history': { en: 'History', 'zh-CN': '历史记录' },
   'relight.view': { en: 'View', 'zh-CN': '视图' },
-  'relight.view.live': { en: 'Live lighting', 'zh-CN': '实时光照' },
+  'relight.view.live': { en: 'Relit', 'zh-CN': '新光照' },
+  'relight.view.hold': {
+    en: 'Press and hold to see the original',
+    'zh-CN': '按住查看原图'
+  },
   'relight.view.lightmap': { en: 'Light map', 'zh-CN': '光照图' },
   'relight.handles': { en: 'Light handles', 'zh-CN': '灯光控制点' },
   'relight.hint': {
@@ -59,6 +63,8 @@ const copy = {
     'zh-CN': '复制{name}'
   },
   'relight.light.remove': { en: 'Delete {name}', 'zh-CN': '删除{name}' },
+  'relight.light.more': { en: 'More for {name}', 'zh-CN': '{name}的更多操作' },
+  'relight.fineTune': { en: 'Fine-tune', 'zh-CN': '微调' },
   'relight.kind': { en: 'Kind', 'zh-CN': '类型' },
   'relight.kind.point': { en: 'Point', 'zh-CN': '点光' },
   'relight.kind.directional': { en: 'Directional', 'zh-CN': '平行光' },

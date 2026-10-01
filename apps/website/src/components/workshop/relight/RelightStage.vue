@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useTemplateRef } from 'vue'
+import { ref, useTemplateRef } from 'vue'
 
 import type { RelightImage, RelightView } from '../../../composables/useRelight'
 import type { Locale } from '../../../i18n/translations'
@@ -45,6 +45,7 @@ const emit = defineEmits<{
 
 const frame = useTemplateRef<HTMLElement>('frame')
 let drag: ((at: { x: number; y: number }) => void) | undefined
+const dragging = ref<string>()
 
 function point(event: PointerEvent) {
   const box = frame.value?.getBoundingClientRect()
@@ -60,6 +61,7 @@ function grab(light: Light, event: PointerEvent) {
   emit('select', light.id)
   emit('begin')
   frame.value?.setPointerCapture?.(event.pointerId)
+  dragging.value = light.id
   const start = point(event)
   drag = (at) => {
     const moved = moveLight(light, at.x - start.x, at.y - start.y)
@@ -69,6 +71,7 @@ function grab(light: Light, event: PointerEvent) {
 
 function release() {
   drag = undefined
+  dragging.value = undefined
 }
 
 function nudge(light: Light, dx: number, dy: number) {
@@ -121,6 +124,7 @@ function nudge(light: Light, dx: number, dy: number) {
           :light
           :label="lc('relight.light.dot', locale, { name: light.name })"
           :selected="light.id === selected"
+          :dragging="light.id === dragging"
           @grab="(event) => grab(light, event)"
           @nudge="(dx, dy) => nudge(light, dx, dy)"
           @focus="emit('select', light.id)"

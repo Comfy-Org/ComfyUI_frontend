@@ -39,9 +39,33 @@ const panel = () =>
 const section = (name: string) => within(panel()).getByRole('region', { name })
 const undo = () => screen.getByRole('button', { name: 'Undo' })
 const lightNames = () =>
-  within(within(section('Lights')).getByRole('list', { name: 'Lights' }))
-    .getAllByRole('listitem')
-    .map((item) => within(item).getAllByRole('button')[0].textContent.trim())
+  within(section('Lights'))
+    .getAllByRole('tab')
+    .map((tab) => tab.textContent.trim())
+const lightTab = (name: RegExp) =>
+  within(section('Lights')).getByRole('tab', { name })
+
+async function fineTune(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(
+    within(section('Lights')).getByRole('button', { name: 'Fine-tune' })
+  )
+}
+
+async function lightAction(
+  user: ReturnType<typeof userEvent.setup>,
+  light: string,
+  action: string
+) {
+  await user.click(lightTab(new RegExp(`^${light}\\s*(Point|Directional)$`)))
+  await user.click(
+    within(section('Lights')).getByRole('button', { name: `More for ${light}` })
+  )
+  await user.click(
+    within(section('Lights')).getByRole('menuitem', {
+      name: `${action} ${light}`
+    })
+  )
+}
 
 describe('RelightStudio', () => {
   it('relights from the floating panel: pick a light, change it, then get the result', async () => {
@@ -49,7 +73,7 @@ describe('RelightStudio', () => {
     expect(undo()).toBeDisabled()
     const lights = section('Lights')
 
-    await user.click(within(lights).getByRole('button', { name: /^Cool fill/ }))
+    await user.click(lightTab(/^Cool fill/))
     const intensity = within(lights).getByRole('slider', { name: 'Intensity' })
     expect(intensity).toHaveValue('30')
     await fireEvent.update(intensity, '65')
@@ -70,7 +94,7 @@ describe('RelightStudio', () => {
     expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull()
   })
 
-  it('selects a light from its handle and opens its controls under its row', async () => {
+  it('selects a light from its handle and shows its controls under the tabs', async () => {
     const user = await openExample()
     const dot = screen.getByRole('button', { name: /^Cool fill\./ })
     expect(dot).toHaveAttribute('aria-pressed', 'false')
@@ -78,26 +102,34 @@ describe('RelightStudio', () => {
     await user.click(dot)
 
     expect(dot).toHaveAttribute('aria-pressed', 'true')
-    const row = within(section('Lights')).getByRole('button', {
-      name: /^Cool fill/
-    })
-    expect(row).toHaveAttribute('aria-pressed', 'true')
-    const item = within(section('Lights'))
-      .getAllByRole('listitem')
-      .find((entry) =>
-        within(entry).queryByRole('button', { name: /^Cool fill/ })
-      )
-    expect(item).toContainElement(screen.getByTestId('relight-light-editor'))
+    expect(lightTab(/^Cool fill/)).toHaveAttribute('aria-selected', 'true')
+    expect(
+      within(section('Lights')).getByRole('tabpanel', { name: /^Cool fill/ })
+    ).toBe(screen.getByTestId('relight-light-editor'))
+    dot.focus()
     await user.keyboard('{Shift>}{ArrowLeft}{/Shift}')
     expect(parseFloat(dot.style.left)).toBeCloseTo(85)
   })
 
-  it('shows directional controls only for a directional light', async () => {
+  it('moves between light tabs with the arrow keys', async () => {
+    const user = await openExample()
+    lightTab(/^Warm key/).focus()
+
+    await user.keyboard('{ArrowRight}')
+
+    expect(lightTab(/^Cool fill/)).toHaveAttribute('aria-selected', 'true')
+    expect(lightTab(/^Cool fill/)).toHaveFocus()
+  })
+
+  it('shows the orbit only for a directional light, and Softness for a point light', async () => {
     const user = await openExample()
     const lights = section('Lights')
     expect(
-      within(lights).getByRole('slider', { name: 'Direction' })
+      within(lights).getByRole('group', { name: 'Light position' })
     ).toBeVisible()
+    expect(
+      within(lights).queryByRole('slider', { name: 'Direction' })
+    ).toBeNull()
     expect(
       within(lights).queryByRole('slider', { name: 'Softness' })
     ).toBeNull()
@@ -105,7 +137,10 @@ describe('RelightStudio', () => {
     await user.click(within(lights).getByRole('radio', { name: 'Point' }))
 
     expect(
-      within(lights).queryByRole('slider', { name: 'Direction' })
+      within(lights).queryByRole('group', { name: 'Light position' })
+    ).toBeNull()
+    expect(
+      within(lights).queryByRole('button', { name: 'Fine-tune' })
     ).toBeNull()
     expect(
       within(lights).getByRole('slider', { name: 'Softness' })
@@ -115,10 +150,14 @@ describe('RelightStudio', () => {
   it('places a directional light from the orbit presets and handles', async () => {
     const user = await openExample()
     const lights = section('Lights')
+    await fineTune(user)
     const elevation = within(lights).getByRole('slider', { name: 'Elevation' })
 
     await user.click(within(lights).getByRole('button', { name: 'Top' }))
 
+    expect(screen.getByTestId('relight-orbit-readout')).toHaveTextContent(
+      '90° · 20°'
+    )
     expect(
       within(lights).getByRole('slider', { name: 'Direction' })
     ).toHaveValue('90')
@@ -152,34 +191,30 @@ describe('RelightStudio', () => {
       expect.stringContaining('Cool fill'),
       expect.stringContaining('Light 3')
     ])
+    expect(lightTab(/^Light 3/)).toHaveAttribute('aria-selected', 'true')
     expect(
-      within(lights).getByRole('button', { name: /^Light 3/ })
-    ).toHaveAttribute('aria-pressed', 'true')
-    expect(
-      within(lights).getByRole('slider', { name: 'Elevation' })
+      within(lights).getByRole('group', { name: 'Light position' })
     ).toBeVisible()
     expect(within(tools).queryByRole('menu')).toBeNull()
   })
 
-  it('duplicates, hides and deletes lights from the list, and undoes', async () => {
+  it('duplicates, hides and deletes lights from their menus, and undoes', async () => {
     const user = await openExample()
-    const lights = section('Lights')
 
-    await user.click(
-      within(lights).getByRole('button', { name: 'Duplicate Warm key' })
-    )
-    await user.click(
-      within(lights).getByRole('button', { name: 'Delete Cool fill' })
-    )
+    await lightAction(user, 'Warm key', 'Duplicate')
+    await lightAction(user, 'Cool fill', 'Delete')
     expect(lightNames()).toEqual([
       expect.stringContaining('Warm key'),
       expect.stringContaining('Warm key copy')
     ])
+    await lightAction(user, 'Warm key', 'Hide')
     await user.click(
-      within(lights).getByRole('button', { name: 'Hide Warm key' })
+      within(section('Lights')).getByRole('button', {
+        name: 'More for Warm key'
+      })
     )
     expect(
-      within(lights).getByRole('button', { name: 'Show Warm key' })
+      within(section('Lights')).getByRole('menuitem', { name: 'Show Warm key' })
     ).toBeVisible()
 
     await user.click(undo())
@@ -225,6 +260,7 @@ describe('RelightStudio', () => {
 
       expect(within(shadows).getByRole('radio', { name: look })).toBeChecked()
       const lights = section('Lights')
+      await fineTune(user)
       expect(
         within(lights).getByRole('switch', { name: 'Cast shadows' })
       ).toHaveAttribute('aria-checked', castShadows)
@@ -237,20 +273,35 @@ describe('RelightStudio', () => {
   it.for([
     { view: 'Original', preview: false },
     { view: 'Light map', preview: true },
-    { view: 'Live lighting', preview: true }
+    { view: 'Relit', preview: true }
   ])('shows the live preview on $view: $preview', async ({ view, preview }) => {
     const user = await openExample()
+    const tools = screen.getByRole('toolbar', { name: 'Relight tools' })
 
-    await user.selectOptions(
-      screen.getByRole('combobox', { name: 'View' }),
-      view
-    )
+    await user.click(within(tools).getByRole('button', { name: 'Compare' }))
+    await user.click(within(tools).getByRole('menuitemradio', { name: view }))
 
     const shown = within(screen.getByTestId('relight-stage')).getByTestId(
       'relight-preview'
     )
     if (preview) expect(shown).toBeVisible()
     else expect(shown).not.toBeVisible()
+  })
+
+  it('shows the original while Compare is pressed and held', async () => {
+    const user = await openExample()
+    const compare = screen.getByRole('button', { name: 'Compare' })
+    const preview = within(screen.getByTestId('relight-stage')).getByTestId(
+      'relight-preview'
+    )
+
+    await user.pointer({ keys: '[MouseLeft>]', target: compare })
+    await vi.advanceTimersByTimeAsync(300)
+    expect(preview).not.toBeVisible()
+
+    await user.pointer({ keys: '[/MouseLeft]', target: compare })
+    expect(preview).toBeVisible()
+    expect(screen.queryByRole('menu')).toBeNull()
   })
 
   it('hides the light handles', async () => {

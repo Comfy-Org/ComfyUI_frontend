@@ -15,7 +15,6 @@ import RelightPanel from './RelightPanel.vue'
 import RelightRun from './RelightRun.vue'
 import RelightSummary from './RelightSummary.vue'
 import RelightTrays from './RelightTrays.vue'
-import RelightViewMenu from './RelightViewMenu.vue'
 
 const { locale = 'en', layout = 'd' } = defineProps<{
   locale?: Locale
@@ -24,12 +23,9 @@ const { locale = 'en', layout = 'd' } = defineProps<{
 }>()
 
 const relight = useRelight(locale)
-const { image, phase, view, handles } = relight
+const { image, phase } = relight
 const result = ref<EditorView>('compare')
 const panel = computed(() => layout !== 'e')
-const editing = computed(
-  () => Boolean(image.value) && phase.value.kind !== 'done'
-)
 reportStudioBusy(() => phase.value.kind === 'running')
 
 const panelLabels = {
@@ -51,9 +47,6 @@ const panelLabels = {
     :show-dock="Boolean(image)"
   >
     <RelightMain :relight :view="result" :locale />
-    <template v-if="editing" #end>
-      <RelightViewMenu v-model:view="view" v-model:handles="handles" :locale />
-    </template>
     <template #tray>
       <EditorAlert v-if="phase.kind === 'failed'">
         {{ lc('relight.failed', locale) }}

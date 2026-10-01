@@ -53,7 +53,7 @@ function toggle() {
   >
     <div
       v-if="$slots.above && !expanded"
-      class="absolute bottom-full left-1/2 mb-3 flex -translate-x-1/2 justify-center"
+      class="pointer-events-none absolute inset-x-0 bottom-full mb-3 flex justify-center px-3"
     >
       <slot name="above" />
     </div>
