@@ -792,10 +792,13 @@ describe('CreditsTile', () => {
     expect(useCustomerEventsService().getMyEvents).not.toHaveBeenCalled()
   })
 
-  it('closes a confirmed legacy top-up with one succeeded event', async () => {
+  it('closes a confirmed legacy top-up with one succeeded event measured from its start', async () => {
     activeProSubscription()
     state.type = 'legacy'
-    localStorage.setItem('pending_topup_timestamp', Date.now().toString())
+    localStorage.setItem(
+      'pending_topup_timestamp',
+      (Date.now() - 90_000).toString()
+    )
     vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValueOnce({
       events: [
         {
@@ -813,8 +816,18 @@ describe('CreditsTile', () => {
     const telemetry = useTelemetry()
     assert.exists(telemetry)
     expect(vi.mocked(telemetry.trackBillingEvent).mock.calls).toEqual([
-      [{ operation: 'topup', stage: 'succeeded', outcome: 'success' }]
+      [
+        {
+          operation: 'topup',
+          stage: 'succeeded',
+          outcome: 'success',
+          duration_ms: expect.any(Number)
+        }
+      ]
     ])
+    const [[succeeded]] = vi.mocked(telemetry.trackBillingEvent).mock.calls
+    assert(succeeded.operation === 'topup')
+    expect(succeeded.duration_ms).toBeGreaterThanOrEqual(90_000)
   })
 
   it('refreshes and reconciles a pending legacy top-up when telemetry is unavailable', async () => {

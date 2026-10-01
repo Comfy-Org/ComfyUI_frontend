@@ -440,7 +440,14 @@ describe('UsageLogsTable', () => {
         name: 'a completed legacy top-up closes as succeeded',
         completed: true,
         expectedEvents: [
-          [{ operation: 'topup', stage: 'succeeded', outcome: 'success' }]
+          [
+            {
+              operation: 'topup',
+              stage: 'succeeded',
+              outcome: 'success',
+              duration_ms: expect.any(Number)
+            }
+          ]
         ]
       },
       {

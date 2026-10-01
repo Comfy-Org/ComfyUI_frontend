@@ -817,6 +817,82 @@ describe('useSubscription', () => {
 
       windowOpenSpy.mockRestore()
     })
+
+    it.for([
+      {
+        name: 'the checkout request is rejected',
+        checkoutResponse: () =>
+          ({
+            ok: false,
+            status: 400,
+            statusText: 'Bad Request',
+            json: async () => ({ message: 'declined' }),
+            text: async () => ''
+          }) as Response,
+        openedWindow: window,
+        rejection: 'Failed to initiate subscription',
+        failure: { failure_category: 'api_rejected' }
+      },
+      {
+        name: 'no checkout URL comes back',
+        checkoutResponse: () => new Response(JSON.stringify({})),
+        openedWindow: window,
+        rejection: 'No checkout URL returned',
+        failure: { failure_category: 'unknown' }
+      },
+      {
+        name: 'the browser blocks the checkout tab',
+        checkoutResponse: () =>
+          new Response(
+            JSON.stringify({ checkout_url: 'https://checkout.stripe.com/x' })
+          ),
+        openedWindow: null,
+        rejection: "Couldn't open the payment page",
+        failure: {
+          failure_category: 'redirect',
+          error_code: 'payment_popup_blocked'
+        }
+      }
+    ])(
+      'closes a resubscribe checkout that never opened with one failure: $name',
+      async ({ checkoutResponse, openedWindow, rejection, failure }) => {
+        vi.spyOn(crypto, 'randomUUID').mockReturnValue(
+          '00000000-0000-4000-8000-000000000005'
+        )
+        vi.mocked(global.fetch).mockResolvedValue(checkoutResponse())
+        vi.spyOn(window, 'open').mockImplementation(() => openedWindow)
+
+        await expect(
+          useSubscriptionWithScope().subscribeDirect({
+            operation: 'resubscribe',
+            source: 'settings_billing_panel'
+          })
+        ).rejects.toThrow(rejection)
+
+        const attemptEvent = {
+          operation: 'subscription_checkout',
+          checkout_attempt_id: '00000000-0000-4000-8000-000000000005',
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        }
+        expect(mockTelemetry.trackBillingEvent.mock.calls).toEqual([
+          [{ ...attemptEvent, stage: 'started', outcome: 'pending' }],
+          [
+            {
+              ...attemptEvent,
+              stage: 'failed',
+              outcome: 'failure',
+              ...failure,
+              duration_ms: expect.any(Number)
+            }
+          ]
+        ])
+        expect(
+          localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
+        ).toBeNull()
+      }
+    )
   })
 
   describe('pending checkout recovery', () => {
@@ -1993,20 +2069,45 @@ describe('useSubscription', () => {
               tier: 'creator',
               cycle: 'yearly',
               checkout_type: 'new',
-              payment_intent_source: 'out_of_credits'
+              payment_intent_source: 'out_of_credits',
+              duration_ms: expect.any(Number)
             }
           ]
         ]
       },
       {
-        name: 'a plain subscribeDirect never reported a start, so it reports nothing',
+        name: 'subscribeDirect reported the start, so it closes with one success',
         open: (subscription: ReturnType<typeof useSubscription>) =>
           subscription.subscribeDirect(),
         activeStatus: {
           subscription_tier: 'STANDARD',
           subscription_duration: 'MONTHLY'
         } satisfies Partial<BillingStatusResponse>,
-        expectedEvents: []
+        expectedEvents: [
+          [
+            {
+              operation: 'subscription_checkout',
+              stage: 'started',
+              outcome: 'pending',
+              checkout_attempt_id: '00000000-0000-4000-8000-000000000003',
+              tier: 'standard',
+              cycle: 'monthly',
+              checkout_type: 'new'
+            }
+          ],
+          [
+            {
+              operation: 'subscription_checkout',
+              stage: 'succeeded',
+              outcome: 'success',
+              checkout_attempt_id: '00000000-0000-4000-8000-000000000003',
+              tier: 'standard',
+              cycle: 'monthly',
+              checkout_type: 'new',
+              duration_ms: expect.any(Number)
+            }
+          ]
+        ]
       }
     ])(
       'closes a confirmed checkout only in the funnel it opened: $name',
@@ -2061,7 +2162,7 @@ describe('useSubscription', () => {
 
     it.for([
       {
-        name: 'a portal plan change never opened a checkout, so it reports none',
+        name: 'an attempt that never reported a start reports none',
         attempt: {
           attempt_id: 'attempt-change',
           tier: 'pro',
@@ -2166,10 +2267,59 @@ describe('useSubscription', () => {
             tier: 'pro',
             cycle: 'monthly',
             checkout_type: 'change',
-            recovery_outcome: 'late_success'
+            recovery_outcome: 'late_success',
+            duration_ms: expect.any(Number)
           }
         ]
       ])
+    })
+
+    it('measures a reported success from the attempt start', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-measured',
+          started_at_ms: Date.now() - 90_000,
+          tier: 'pro',
+          cycle: 'monthly',
+          checkout_type: 'change',
+          previous_tier: 'creator',
+          start_reported: true
+        })
+      )
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: true,
+        has_funds: true,
+        renewal_date: '2025-11-16',
+        subscription_tier: 'PRO',
+        subscription_duration: 'MONTHLY'
+      })
+
+      useCurrentUser().isLoggedIn = computed(() => true)
+      useSubscriptionWithScope()
+
+      await vi.waitFor(() => {
+        expect(
+          localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
+        ).toBeNull()
+      })
+      expect(mockTelemetry.trackBillingEvent.mock.calls).toEqual([
+        [
+          {
+            operation: 'subscription_checkout',
+            stage: 'succeeded',
+            outcome: 'success',
+            checkout_attempt_id: 'attempt-measured',
+            tier: 'pro',
+            cycle: 'monthly',
+            checkout_type: 'change',
+            duration_ms: expect.any(Number)
+          }
+        ]
+      ])
+      const [[succeeded]] = mockTelemetry.trackBillingEvent.mock.calls
+      expect(succeeded.duration_ms).toBeGreaterThanOrEqual(90_000)
+      expect(succeeded.duration_ms).toBeLessThan(120_000)
     })
 
     it('rechecks pending checkout attempts when the document becomes visible', async () => {
