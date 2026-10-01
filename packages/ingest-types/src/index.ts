@@ -123,6 +123,8 @@ export type {
   BillingEvent,
   BillingEventsResponse,
   BillingOpCancelResponse,
+  BillingOpChargeBreakdown,
+  BillingOpChargeReason,
   BillingOpReceiptPlan,
   BillingOpStatusResponse,
   BillingPlansResponse,

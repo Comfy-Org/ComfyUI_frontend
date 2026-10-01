@@ -4255,6 +4255,7 @@ export type BillingOpStatusResponse = {
     | 'failed_retryable'
     | 'succeeded'
     | 'reconciliation_needed'
+  charge_breakdown?: BillingOpChargeBreakdown
   /**
    * When the operation completed (success or failure)
    */
@@ -4358,10 +4359,65 @@ export type BillingOpReceiptPlan = {
   slug: string
 }
 
+/**
+ * One deduction from today's charge. discount is the promotion in the
+ * quote's discount shape (kind promotion, without amount_off_cents; the
+ * amount is amount_cents), present exactly for promo_code and
+ * subscription_discount. Its duration_in_months is set only for
+ * promo_code: a carried promotion's remaining term is not the coupon's.
+ *
+ */
+export type BillingOpChargeReason = {
+  /**
+   * What this reason removed from today's charge, as a positive amount.
+   */
+  amount_cents: number
+  discount?: SubscriptionDiscount
+  /**
+   * promo_code is the promotion code entered for this operation;
+   * subscription_discount is a promotion the subscription already
+   * carried; account_balance is existing customer credit applied.
+   *
+   */
+  kind: 'promo_code' | 'subscription_discount' | 'account_balance'
+}
+
+/**
+ * Display only. Why a succeeded subscription operation charged other
+ * than its plan rate, read from the operation's paid Stripe invoice.
+ * Present only when that invoice collected more than zero and a
+ * promotion, the account balance or proration moved the charge off the
+ * plan rate; absent means no rows. Plan coupons (the annual or team
+ * commitment rate) are part of the rate and are never a reason. Never
+ * present for top-ups. Returned only to workspace billing managers,
+ * like amount_charged_cents.
+ *
+ */
+export type BillingOpChargeBreakdown = {
+  /**
+   * What the invoice collected, tax included.
+   */
+  amount_charged_cents: number
+  currency: string
+  /**
+   * The invoice billed the new plan for the rest of the current
+   * period. A prorated charge is named, never itemized, so reasons is
+   * empty exactly when this is true.
+   *
+   */
+  prorated: boolean
+  /**
+   * One row per deduction from today's charge, in display order:
+   * promotions in the invoice's order, then the account balance.
+   *
+   */
+  reasons: Array<BillingOpChargeReason>
+}
+
 export type BillingOpCancelResponse = {
   billing_op_id: string
   /**
-   * canceled: the change was dropped and nothing was charged. cancel_requested: the cancel was delivered but has not settled yet.
+   * canceled: the operation was dropped and nothing was charged. cancel_requested: the cancel was delivered but has not settled yet.
    */
   status: 'canceled' | 'cancel_requested'
 }
