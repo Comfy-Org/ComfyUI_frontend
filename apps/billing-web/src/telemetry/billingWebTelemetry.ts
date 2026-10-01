@@ -186,7 +186,11 @@ export function createBillingWebTelemetry() {
     attempt(() => capture(event))
   }
 
-  return { startPostHog, trackBillingEvent }
+  function startRumUser(identity: WatchSource<SessionIdentity>): void {
+    void identity
+  }
+
+  return { startPostHog, startRumUser, trackBillingEvent }
 }
 
 export const billingWebTelemetry = createBillingWebTelemetry()
