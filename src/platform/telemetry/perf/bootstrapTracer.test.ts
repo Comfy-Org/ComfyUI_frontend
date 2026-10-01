@@ -39,6 +39,27 @@ describe('bootstrapTracer', () => {
     expect(addTiming).toHaveBeenCalledExactlyOnceWith('bootstrap.object-info')
   })
 
+  it('records extension loading subphases inside the aggregate load phase', async () => {
+    const tracer = new BootstrapTracer()
+
+    await tracer.settle('bootstrap/extensions-load', async () => {
+      await tracer.settle('bootstrap/extensions-load-core', () =>
+        Promise.resolve()
+      )
+      await tracer.settle('bootstrap/extensions-load-custom', () =>
+        Promise.resolve()
+      )
+    })
+
+    expect(tracer.summary().map((r) => r.name)).toEqual([
+      'bootstrap/extensions-load-core',
+      'bootstrap/extensions-load-custom',
+      'bootstrap/extensions-load'
+    ])
+    expect(addTiming).toHaveBeenCalledWith('bootstrap.extensions-load-core')
+    expect(addTiming).toHaveBeenCalledWith('bootstrap.extensions-load-custom')
+  })
+
   it('publishes milestones under RUM-safe timing names', () => {
     new BootstrapTracer().milestone('stores-ready')
 

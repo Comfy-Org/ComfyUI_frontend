@@ -1,4 +1,5 @@
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { api } from '@/scripts/api'
 import { useExtensionStore } from '@/stores/extensionStore'
 
@@ -28,19 +29,24 @@ export async function loadExtensions() {
 
   const extensions = await api.getExtensions()
 
-  await import('@/extensions/core/index')
+  await bootstrapTracer.settle(
+    'bootstrap/extensions-load-core',
+    () => import('@/extensions/core/index')
+  )
   extensionStore.captureCoreExtensions()
-  await Promise.all(
-    extensions
-      .filter((extension) =>
-        shouldLoadExtension(extension, __DISTRIBUTION__ === 'cloud')
-      )
-      .map(async (ext) => {
-        try {
-          await import(/* @vite-ignore */ api.fileURL(ext))
-        } catch (error) {
-          console.error('Error loading extension', ext, error)
-        }
-      })
+  await bootstrapTracer.settle('bootstrap/extensions-load-custom', () =>
+    Promise.all(
+      extensions
+        .filter((extension) =>
+          shouldLoadExtension(extension, __DISTRIBUTION__ === 'cloud')
+        )
+        .map(async (ext) => {
+          try {
+            await import(/* @vite-ignore */ api.fileURL(ext))
+          } catch (error) {
+            console.error('Error loading extension', ext, error)
+          }
+        })
+    )
   )
 }
