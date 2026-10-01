@@ -455,6 +455,61 @@ describe('useAssetDownloadStore', () => {
       })
     })
 
+    it('makes an unconfirmed cancellation dismissable after five minutes', async () => {
+      const store = useAssetDownloadStore()
+      vi.mocked(taskService.cancelTask).mockResolvedValue({
+        ok: true,
+        value: true
+      })
+      vi.mocked(taskService.getTask).mockResolvedValue({
+        ok: false,
+        error: new Error('Not found')
+      })
+      dispatch(createDownloadMessage({ status: 'running' }))
+
+      await store.cancelDownload('task-123')
+      await vi.advanceTimersByTimeAsync(299_999)
+
+      expect(store.downloadList[0].status).toBe('cancellation_pending')
+
+      await vi.advanceTimersByTimeAsync(1)
+
+      expect(store.downloadList[0].status).toBe('cancelled')
+      store.clearFinishedDownloads()
+      expect(store.hasDownloads).toBe(false)
+    })
+
+    it.for([
+      { authoritativeStatus: 'completed' as const },
+      { authoritativeStatus: 'failed' as const }
+    ])(
+      'reconciles late $authoritativeStatus after cancellation retention expires',
+      async ({ authoritativeStatus }) => {
+        const store = useAssetDownloadStore()
+        vi.mocked(taskService.cancelTask).mockResolvedValue({
+          ok: true,
+          value: true
+        })
+        vi.mocked(taskService.getTask).mockResolvedValue({
+          ok: false,
+          error: new Error('Not found')
+        })
+        dispatch(createDownloadMessage({ status: 'running' }))
+
+        await store.cancelDownload('task-123')
+        await vi.advanceTimersByTimeAsync(300_000)
+        expect(store.downloadList[0].status).toBe('cancelled')
+
+        vi.mocked(taskService.getTask).mockResolvedValue({
+          ok: true,
+          value: createTaskResponse({ status: authoritativeStatus })
+        })
+        await vi.advanceTimersByTimeAsync(10_000)
+
+        expect(store.downloadList[0].status).toBe(authoritativeStatus)
+      }
+    )
+
     it('stops reconciling after the backend confirms cancellation', async () => {
       const store = useAssetDownloadStore()
       vi.mocked(taskService.cancelTask).mockResolvedValue({

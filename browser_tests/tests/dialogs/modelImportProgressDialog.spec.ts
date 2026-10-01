@@ -198,6 +198,45 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
     })
   })
 
+  test('makes an unconfirmed cancellation dismissable after the reconciliation window', async ({
+    comfyPage
+  }) => {
+    const { page } = comfyPage
+    const taskId = '1396cc07-bab2-4f12-9b54-741f83f9224d'
+    const assetName = 'unconfirmed-cancellation.safetensors'
+    await page.clock.install()
+    await page.route(`**/tasks/${taskId}`, async (route) => {
+      if (route.request().method() === 'DELETE') {
+        await route.fulfill({ status: 204 })
+        return
+      }
+
+      await route.fulfill({ status: 404 })
+    })
+    await comfyPage.assets.dispatchDownload({
+      task_id: taskId,
+      asset_name: assetName,
+      bytes_total: 1000,
+      bytes_downloaded: 200,
+      progress: 20,
+      status: 'running'
+    })
+
+    const toast = page.getByRole('status').filter({ hasText: assetName })
+    await toast.getByRole('button', { name: 'Expand' }).click()
+    await toast.getByRole('button', { name: 'Cancel Download' }).click()
+
+    const closeButton = toast.getByRole('button', { name: 'Close' })
+    await page.clock.runFor(299_999)
+    await expect(closeButton).toBeHidden()
+
+    await page.clock.runFor(1)
+    await expect(closeButton).toBeVisible()
+
+    await closeButton.click()
+    await expect(toast).toBeHidden()
+  })
+
   test('closing a failed download while polling does not reopen its toast', async ({
     comfyPage
   }) => {
