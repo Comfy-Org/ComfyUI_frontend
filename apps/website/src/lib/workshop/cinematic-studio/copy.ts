@@ -72,6 +72,19 @@ const copy = {
     en: 'Image · Beeble SwitchX',
     'zh-CN': '图像 · Beeble SwitchX'
   },
+  'cinematic.hub.spriteSheet': {
+    en: 'Sprite Sheet Generator',
+    'zh-CN': '精灵图生成器'
+  },
+  'cinematic.hub.spriteSheetSummary': {
+    en: 'Turn one character into a game-ready sprite sheet: pick a style and a motion, and the model draws every frame.',
+    'zh-CN':
+      '把一个角色变成可直接用于游戏的精灵图：选择风格和动作，模型会绘制每一帧。'
+  },
+  'cinematic.hub.spriteSheetMeta': {
+    en: 'Image · Sprite sheet',
+    'zh-CN': '图像 · 精灵图'
+  },
   'cinematic.stage.longWait': {
     en: 'Still going. Some models take about a minute. Nothing is queued; yours already started.',
     'zh-CN': '仍在进行。部分模型需要约一分钟。没有排队，你的任务已经开始。'
