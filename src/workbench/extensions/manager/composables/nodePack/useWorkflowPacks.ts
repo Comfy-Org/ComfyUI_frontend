@@ -115,11 +115,14 @@ const _useWorkflowPacks = () => {
    * as unresolved so downstream consumers can surface them to the user.
    */
   const getWorkflowPacks = async () => {
+    const rootGraph = app.rootGraphOrUndefined
+    if (!rootGraph) return
+
     const resolvedPacks: WorkflowPack[] = []
     const unresolved: string[] = []
 
     await Promise.all(
-      mapAllNodes(app.rootGraph, async (node) => {
+      mapAllNodes(rootGraph, async (node) => {
         const pack = await workflowNodeToPack(node)
         if (pack) {
           resolvedPacks.push(pack)

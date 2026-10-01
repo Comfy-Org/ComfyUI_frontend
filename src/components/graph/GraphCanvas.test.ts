@@ -462,6 +462,24 @@ describe('GraphCanvas execution progress updates', () => {
   })
 })
 
+describe('GraphCanvas widget control mode watcher', () => {
+  it('skips the control-widget sync instead of throwing when the root graph is not ready', async () => {
+    await mountGraphCanvas()
+
+    useCanvasStore().canvas = app.canvas
+
+    const settingStore = useSettingStore()
+    await expect(
+      (async () => {
+        settingStore.settingValues['Comfy.WidgetControlMode'] = 'before'
+        await nextTick()
+        settingStore.settingValues['Comfy.WidgetControlMode'] = 'after'
+        await nextTick()
+      })()
+    ).resolves.not.toThrow()
+  })
+})
+
 describe('GraphCanvas agent dock', () => {
   // The dock is slot content of the splitter overlay, so the overlay stub has
   // to render that slot for the guard to be observable.
