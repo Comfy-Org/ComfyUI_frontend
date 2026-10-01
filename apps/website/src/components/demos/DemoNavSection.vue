@@ -16,7 +16,7 @@ const {
   locale?: Locale
 }>()
 
-const nextHref = localizeHref(`/demos/${nextSlug}`, locale)
+const nextHref = localizeHref(`/demos/${nextSlug}/`, locale)
 </script>
 
 <template>
@@ -50,7 +50,7 @@ const nextHref = localizeHref(`/demos/${nextSlug}`, locale)
             <span class="text-lg font-bold">›</span>
           </span>
           <span
-            class="ppformula-text-center inline-block text-sm font-semibold tracking-wider text-primary-comfy-canvas uppercase"
+            class="inline-block text-sm font-semibold tracking-wider text-primary-comfy-canvas uppercase"
           >
             {{ t('demos.nav.viewDemo' as TranslationKey, locale) }}
           </span>

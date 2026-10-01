@@ -30,6 +30,7 @@ export interface RunOutput {
   readonly truncated?: boolean
   readonly urls?: readonly string[]
   readonly fileName: string
+  readonly alt?: string
   // Kept on the output itself so earlier runs stay gated once the run state moves on.
   readonly nsfw?: boolean
 }
@@ -47,6 +48,12 @@ export type RunState =
       readonly status: 'running'
       readonly startedAt: number
       readonly label?: string
+      /**
+       * The page has lost touch with the run, not the run stopped: it may still
+       * be going on Cloud. The panel holds still rather than animate a progress
+       * nobody is watching.
+       */
+      readonly stalled?: boolean
     }
   | { readonly status: 'cancelled' }
   | {

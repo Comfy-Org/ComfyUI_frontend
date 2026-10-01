@@ -66,7 +66,7 @@ function parseRequirementsVersion(requirementsPath: string): string | null {
 /**
  * Validate semantic version string
  */
-function isValidSemver(version: string): boolean {
+function isValidSemver(version: unknown): boolean {
   if (!version || typeof version !== 'string') {
     return false
   }

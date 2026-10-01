@@ -528,21 +528,15 @@ const stepperClass =
         </span>
         <div class="flex flex-col gap-2">
           <DialogTitle class="px-8 text-center" data-testid="buy-credits-done">
-            {{
-              t('workshop.credits.done', locale).replace(
-                '{n}',
-                format(landedDelta)
-              )
-            }}
+            {{ t('workshop.credits.done', locale, { n: format(landedDelta) }) }}
           </DialogTitle>
           <DialogDescription
             class="px-8 text-center text-base text-primary-comfy-canvas/70"
           >
             {{
-              t('workshop.credits.addedTo', locale).replace(
-                '{workspace}',
-                topUpWorkspaceName
-              )
+              t('workshop.credits.addedTo', locale, {
+                workspace: topUpWorkspaceName
+              })
             }}
           </DialogDescription>
         </div>

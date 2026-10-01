@@ -18,7 +18,7 @@ test.describe('Customer-story internal links @smoke', () => {
       nav.getByRole('link', {
         name: t('nav.featuredCompanyCtaAria', 'en')
       })
-    ).toHaveAttribute('href', '/customers/videos/black-math')
+    ).toHaveAttribute('href', '/customers/videos/black-math/')
   })
 
   test('homepage case-study section keeps SEE ALL and adds a link to the Black Math watch page', async ({
@@ -31,10 +31,10 @@ test.describe('Customer-story internal links @smoke', () => {
 
     await expect(
       section.getByRole('link', { name: t('caseStudy.watchStory', 'en') })
-    ).toHaveAttribute('href', '/customers/videos/black-math')
+    ).toHaveAttribute('href', '/customers/videos/black-math/')
     await expect(
       section.getByRole('link', { name: t('caseStudy.seeAll', 'en') })
-    ).toHaveAttribute('href', '/customers')
+    ).toHaveAttribute('href', '/customers/')
   })
 
   test('footer resources column lists Customer Stories', async ({ page }) => {
@@ -43,7 +43,7 @@ test.describe('Customer-story internal links @smoke', () => {
       page
         .getByRole('contentinfo')
         .getByRole('link', { name: t('nav.customerStories', 'en') })
-    ).toHaveAttribute('href', '/customers')
+    ).toHaveAttribute('href', '/customers/')
   })
 
   test('pricing page enterprise CTA links to the Enterprise page', async ({
@@ -51,11 +51,9 @@ test.describe('Customer-story internal links @smoke', () => {
   }) => {
     await page.goto('/pricing')
 
-    await expect(
-      page.getByRole('link', {
-        name: t('pricing.enterprise.learnMore', 'en'),
-        exact: true
-      })
-    ).toHaveAttribute('href', '/enterprise')
+    await expect(page.getByTestId('enterprise-cta')).toHaveAttribute(
+      'href',
+      '/enterprise/'
+    )
   })
 })

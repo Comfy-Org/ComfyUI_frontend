@@ -8,8 +8,9 @@ import type {
   TWidgetType
 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { WidgetValue } from '@/types/simplifiedWidget'
 import {
-  BaseWidget,
+  LegacyWidget,
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
@@ -48,7 +49,7 @@ vi.mock(import('@/services/litegraphService'))
 function createNodeWithWidget(
   title: string,
   widgetType: TWidgetType = 'number',
-  widgetValue: unknown = 42,
+  widgetValue: WidgetValue = 42,
   slotType: ISlotType = 'number',
   tooltip?: string
 ) {
@@ -56,8 +57,7 @@ function createNodeWithWidget(
   const input = node.addInput('value', slotType)
   node.addOutput('out', slotType)
 
-  // @ts-expect-error Abstract class instantiation
-  const widget = new BaseWidget({
+  const widget: LegacyWidget = new LegacyWidget({
     name: 'widget',
     type: widgetType,
     value: widgetValue,
@@ -330,8 +330,7 @@ describe('SubgraphWidgetPromotion', () => {
       const numInput = multiWidgetNode.addInput('num', 'number')
       const strInput = multiWidgetNode.addInput('str', 'string')
 
-      // @ts-expect-error Abstract class instantiation
-      const widget1 = new BaseWidget({
+      const widget1 = new LegacyWidget({
         name: 'widget1',
         type: 'number',
         value: 10,
@@ -340,8 +339,7 @@ describe('SubgraphWidgetPromotion', () => {
         node: multiWidgetNode
       })
 
-      // @ts-expect-error Abstract class instantiation
-      const widget2 = new BaseWidget({
+      const widget2 = new LegacyWidget({
         name: 'widget2',
         type: 'string',
         value: 'hello',
@@ -752,8 +750,7 @@ describe('SubgraphWidgetPromotion', () => {
       const numInput = multiWidgetNode.addInput('num', 'number')
       const strInput = multiWidgetNode.addInput('str', 'string')
 
-      // @ts-expect-error Abstract class instantiation
-      const widget1 = new BaseWidget({
+      const widget1 = new LegacyWidget({
         name: 'widget1',
         type: 'number',
         value: 10,
@@ -763,8 +760,7 @@ describe('SubgraphWidgetPromotion', () => {
         tooltip: 'Number widget tooltip'
       })
 
-      // @ts-expect-error Abstract class instantiation
-      const widget2 = new BaseWidget({
+      const widget2 = new LegacyWidget({
         name: 'widget2',
         type: 'string',
         value: 'hello',
@@ -858,7 +854,7 @@ describe('SubgraphWidgetPromotion', () => {
         title: string
         widgetType: TWidgetType
         slotType: ISlotType
-        initialValue: unknown
+        initialValue: WidgetValue
         withComfyClass?: boolean
         hugeMaxSeed?: boolean
       }

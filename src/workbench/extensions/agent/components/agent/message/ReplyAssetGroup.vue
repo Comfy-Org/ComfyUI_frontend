@@ -121,7 +121,7 @@ function inspect(asset: ReplyAsset): void {
   if (asset.kind === '3D') {
     useDialogStore().showDialog({
       key: 'asset-3d-viewer',
-      title: assetNames.value[asset.url] || asset.filename,
+      title: assetNames.value[asset.url] || asset.label || asset.filename,
       component: Load3dViewerContent,
       props: { modelUrl: asset.url },
       dialogComponentProps: {
@@ -149,7 +149,7 @@ function stopPreview(event: Event): void {
 </script>
 
 <template>
-  <div class="my-4 flex flex-col gap-2">
+  <div data-testid="reply-asset-group" class="my-4 flex flex-col gap-2">
     <div v-if="visibleVisual.length" :class="cn('grid gap-1', gridColsClass)">
       <button
         v-for="asset in visibleVisual"
@@ -241,7 +241,7 @@ function stopPreview(event: Event): void {
         v-for="asset in visibleAudio"
         :key="asset.url"
         :asset
-        :title="assetNames[asset.url] || asset.filename"
+        :title="assetNames[asset.url] || asset.label || asset.filename"
       />
       <Button
         v-if="audioCollapsible"

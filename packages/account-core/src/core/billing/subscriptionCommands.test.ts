@@ -316,6 +316,48 @@ describe('createBillingCommands', () => {
       expect(h.lifecycle.getSnapshot()).toEqual([])
     })
 
+    it.for(
+      [
+        {
+          name: 'cancel',
+          route: POST_CANCEL,
+          run: (h: ReturnType<typeof harness>) =>
+            h.commands.cancelSubscription()
+        },
+        {
+          name: 'resubscribe',
+          route: POST_RESUBSCRIBE,
+          run: (h: ReturnType<typeof harness>) => h.commands.resubscribe()
+        },
+        {
+          name: 'subscribe',
+          route: POST_SUBSCRIBE,
+          run: (h: ReturnType<typeof harness>) => h.commands.subscribe(PLAN)
+        }
+      ].flatMap((command) => [
+        { ...command, httpStatus: 400, expected: 'OPERATION_ALREADY_PENDING' },
+        { ...command, httpStatus: 503, expected: 'REQUEST_FAILED' }
+      ])
+    )(
+      'PRO active: $name answered $httpStatus SUBSCRIPTION_CHANGE_IN_PROGRESS is $expected',
+      async ({ route, run, httpStatus, expected }) => {
+        const h = harness({
+          status: PRO_ACTIVE,
+          script: {
+            [route]: [
+              serverError(httpStatus, 'SUBSCRIPTION_CHANGE_IN_PROGRESS')
+            ]
+          }
+        })
+
+        await expect(run(h)).resolves.toMatchObject({
+          status: 'error',
+          code: expected
+        })
+        expect(h.invalidate).not.toHaveBeenCalled()
+      }
+    )
+
     it('PRO active: subscribe issues the plan change the server has to price', async () => {
       const h = harness({
         status: PRO_ACTIVE,
@@ -1128,6 +1170,28 @@ describe('createBillingCommands', () => {
       expect(h.readCredits).not.toHaveBeenCalled()
     })
 
+    it.for([
+      { httpStatus: 400, expected: 'QUOTE_STALE' },
+      { httpStatus: 503, expected: 'REQUEST_FAILED' }
+    ])(
+      'a subscribe answered $httpStatus SUBSCRIPTION_QUOTE_STALE is $expected',
+      async ({ httpStatus, expected }) => {
+        const h = harness({
+          status: FREE,
+          script: {
+            [POST_SUBSCRIBE]: [
+              serverError(httpStatus, 'SUBSCRIPTION_QUOTE_STALE')
+            ]
+          }
+        })
+
+        await expect(h.commands.subscribe(PLAN)).resolves.toMatchObject({
+          status: 'error',
+          code: expected
+        })
+      }
+    )
+
     it('surfaces REACTIVATION_CONFIRMATION_REQUIRED for the host to re-preview', async () => {
       const h = harness({
         status: FREE,
@@ -1301,6 +1365,104 @@ describe('createBillingCommands', () => {
         expect(h.invalidate).not.toHaveBeenCalled()
       }
     )
+
+    describe('over a checkout this tab recovered parked on the server', () => {
+      const PARKED = {
+        ...FREE,
+        pending_billing_op_id: 'op-1',
+        pending_billing_op_type: 'subscription'
+      } as const
+
+      async function recoveredAt(
+        phase: BillingOpStatus['phase'],
+        subscribeAnswer: BillingResult<BillingHttpResponse>
+      ) {
+        const h = harness({
+          status: PARKED,
+          script: {
+            [GET_OP]: [http(200, opStatus({ phase }))],
+            [`GET ${operationRoute('op-2')}`]: [
+              http(200, opStatus({ id: 'op-2' }))
+            ],
+            [POST_SUBSCRIBE]: [subscribeAnswer]
+          }
+        })
+        await h.lifecycle.recover()
+        await flush()
+        return h
+      }
+
+      it('sends the subscribe the server resumes a card-less checkout with', async () => {
+        const h = await recoveredAt(
+          'awaiting_payment_method',
+          http(200, {
+            billing_op_id: 'op-1',
+            status: 'needs_payment_method',
+            payment_method_url: 'https://checkout.example/resumed'
+          })
+        )
+
+        void h.commands.subscribe(PLAN)
+        await flush()
+
+        expect(h.posts()).toHaveLength(1)
+        expect(h.lifecycle.get('op-1')).toMatchObject({
+          phase: 'pending',
+          actionUrl: 'https://checkout.example/resumed'
+        })
+      })
+
+      it('resolves the recovered checkout before deciding, so a click before its first read still resumes it', async () => {
+        const h = harness({
+          status: PARKED,
+          script: {
+            [GET_OP]: [
+              new Promise<never>(() => {}),
+              http(200, opStatus({ phase: 'awaiting_payment_method' }))
+            ],
+            [POST_SUBSCRIBE]: [
+              http(200, {
+                billing_op_id: 'op-1',
+                status: 'needs_payment_method',
+                payment_method_url: 'https://checkout.example/resumed'
+              })
+            ]
+          }
+        })
+        await h.lifecycle.recover()
+
+        void h.commands.subscribe(PLAN)
+        await flush()
+
+        expect(h.posts()).toHaveLength(1)
+      })
+
+      it('stops watching the checkout the server replaced with a new one', async () => {
+        const h = await recoveredAt(
+          'awaiting_payment_method',
+          http(200, { billing_op_id: 'op-2', status: 'pending_payment' })
+        )
+
+        void h.commands.subscribe(PLAN)
+        await flush()
+
+        expect(h.lifecycle.get('op-1')?.phase).toBe('superseded')
+        expect(h.lifecycle.get('op-2')?.phase).toBe('pending')
+      })
+
+      it('still refuses over an invoice waiting on the customer', async () => {
+        const h = await recoveredAt(
+          'awaiting_invoice_payment',
+          http(200, { billing_op_id: 'op-2', status: 'pending_payment' })
+        )
+
+        await expect(h.commands.subscribe(PLAN)).resolves.toEqual({
+          status: 'error',
+          code: 'OPERATION_ALREADY_PENDING'
+        })
+        expect(h.posts()).toEqual([])
+      })
+    })
 
     it('settles as timed_out when the poll budget runs out', async () => {
       const h = harness({
