@@ -8,7 +8,11 @@ import type {
   TaskResult,
   TaskStatus
 } from '@/platform/tasks/services/taskService'
-import { taskService } from '@/platform/tasks/services/taskService'
+import {
+  TaskNotFoundError,
+  parseDownloadFileResult,
+  taskService
+} from '@/platform/tasks/services/taskService'
 import type { AssetDownloadWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
 
@@ -60,6 +64,11 @@ export interface AssetDownload {
   error?: string
   modelType?: string
   acknowledged?: boolean
+  /**
+   * Reconciliation attempts made since this download entered
+   * `cancellation_pending` that did not produce a terminal task status.
+   */
+  cancellationReconcileAttempts?: number
 }
 
 interface CompletedDownload {
@@ -69,6 +78,13 @@ interface CompletedDownload {
 }
 const STALE_THRESHOLD_MS = 10_000
 const POLL_INTERVAL_MS = 10_000
+/**
+ * `cancellation_pending` is not a finished status, so the dialog withholds its
+ * Close control while a download is in it. Bounding how long we wait for the
+ * backend to confirm keeps a backend that accepts the DELETE and then never
+ * reports a terminal status from pinning the toast open until a page reload.
+ */
+const MAX_CANCELLATION_RECONCILE_ATTEMPTS = 6
 
 function generateDownloadTrackingPlaceholder(
   taskId: TaskId,
@@ -99,11 +115,37 @@ function shouldIgnoreDownloadUpdate(
   return false
 }
 
+/**
+ * Settle a cancellation the backend will never confirm. `cancelled` is not
+ * immutable in `shouldIgnoreDownloadUpdate`, so a later authoritative
+ * `completed` still replaces it; the stale error from any premature `failed`
+ * message is dropped because it no longer describes this entry.
+ */
+function finalizeCancellation(download: AssetDownload) {
+  download.status = 'cancelled'
+  download.error = undefined
+  download.lastUpdate = Date.now()
+}
+
+/**
+ * Record a reconciliation attempt that left a pending cancellation unresolved,
+ * settling it locally once the attempts are exhausted.
+ */
+function noteUnresolvedCancellation(download: AssetDownload) {
+  if (download.status !== 'cancellation_pending') return
+
+  const attempts = (download.cancellationReconcileAttempts ?? 0) + 1
+  download.cancellationReconcileAttempts = attempts
+  if (attempts >= MAX_CANCELLATION_RECONCILE_ATTEMPTS) {
+    finalizeCancellation(download)
+  }
+}
+
 function createReconciledDownloadMessage(
   download: AssetDownload,
   task: TaskResponse
 ): AssetDownloadWsMessage {
-  const result = task.result
+  const result = parseDownloadFileResult(task.result)
   return {
     task_id: download.taskId,
     asset_id: result?.asset_id ?? download.assetId,
@@ -203,6 +245,37 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     }
   }
 
+  async function reconcileDownload(download: AssetDownload) {
+    const result = await taskService.getTask(download.taskId)
+    if (downloads.value.get(download.taskId) !== download) return
+
+    if (!result.ok) {
+      // A 404 is authoritative: the task row is gone, so a pending
+      // cancellation has nothing left to wait for. Any other failure is
+      // transient and only counts against the attempt bound.
+      if (result.error instanceof TaskNotFoundError) {
+        if (download.status === 'cancellation_pending') {
+          finalizeCancellation(download)
+        }
+        return
+      }
+      noteUnresolvedCancellation(download)
+      return
+    }
+
+    const task = result.value
+    if (!reconcilableTaskStatuses.has(task.status)) {
+      noteUnresolvedCancellation(download)
+      return
+    }
+
+    handleAssetDownload(
+      new CustomEvent('asset_download', {
+        detail: createReconciledDownloadMessage(download, task)
+      })
+    )
+  }
+
   async function pollStaleDownloads() {
     const now = Date.now()
     const staleDownloads = recheckableDownloads.value.filter(
@@ -211,26 +284,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
 
     if (staleDownloads.length === 0) return
 
-    async function pollSingleDownload(download: AssetDownload) {
-      const result = await taskService.getTask(download.taskId)
-      if (!result.ok) return
-      if (downloads.value.get(download.taskId) !== download) return
-
-      const task = result.value
-      if (!reconcilableTaskStatuses.has(task.status)) return
-      if (task.status === 'cancelled') {
-        download.status = 'cancelled'
-        download.lastUpdate = Date.now()
-        return
-      }
-      handleAssetDownload(
-        new CustomEvent('asset_download', {
-          detail: createReconciledDownloadMessage(download, task)
-        })
-      )
-    }
-
-    await Promise.all(staleDownloads.map(pollSingleDownload))
+    await Promise.all(staleDownloads.map(reconcileDownload))
   }
 
   const { pause, resume } = useIntervalFn(
@@ -271,12 +325,27 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
       if (!result.ok) return result
 
       const current = downloads.value.get(taskId)
-      if (!result.value || !current || finishedStatuses.has(current.status)) {
-        return result
+      if (!current || finishedStatuses.has(current.status)) {
+        return { ok: true, value: result.value === 'cancelling' }
       }
+
+      // The task row is gone, so the cancellation is as settled as it will get.
+      if (result.value === 'missing') {
+        finalizeCancellation(current)
+        return { ok: true, value: true }
+      }
+
+      // The backend refused. Re-read the task so the row moves to whatever
+      // status it is really in, instead of silently re-enabling Cancel.
+      if (result.value === 'not-cancellable') {
+        await reconcileDownload(current)
+        return { ok: true, value: false }
+      }
+
       current.status = 'cancellation_pending'
+      current.cancellationReconcileAttempts = 0
       current.lastUpdate = Date.now()
-      return result
+      return { ok: true, value: true }
     } finally {
       cancellingTaskIds.value.delete(taskId)
     }
