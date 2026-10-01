@@ -9,6 +9,14 @@
  */
 export const STALE_SCHEMA_RESEED_REQUIRED = 'stale_schema_reseed_required'
 export const RESEED_CONFLICT = 'conflict'
+/**
+ * The permanent `doc_subscribed` refusal a host sent for an unreadable stored
+ * document BEFORE `supports_reseed` existed, and still sends to a subscribe
+ * that does not advertise it. A refusal this tab cannot answer with a reseed
+ * is that same state, so it is reported as this code — see
+ * `useAgentCrdtFollower`'s `unanswerableRefusal`.
+ */
+export const SCHEMA_VERSION_MISMATCH = 'schema_version_mismatch'
 
 const RETRYABLE_RESEED_CODES = new Set([
   'retry',

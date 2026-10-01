@@ -37,6 +37,7 @@ const bridgeState = vi.hoisted(() => {
     sendHumanOps = vi.fn()
     reseed = vi.fn(() => true)
     canReseed = vi.fn(() => true)
+    reseedInFlight = false
     subscribedWorkflowId: string | null = 'wf-1'
     lastSequence = 41
     follower = {
@@ -2193,9 +2194,10 @@ describe('useAgentCrdtFollower', () => {
 
     function mountWithCanvas(
       canvasFor: (workflowId: string) => Record<string, unknown> | null = () =>
-        canvas
+        canvas,
+      events: Parameters<typeof useAgentCrdtFollower>[4] = {}
     ) {
-      return mountFollower('wf-1', true, () => null, {}, {}, canvasFor)
+      return mountFollower('wf-1', true, () => null, events, {}, canvasFor)
     }
 
     it('answers the refusal once with the canvas the tab shows, instead of the retry', () => {
@@ -2304,16 +2306,23 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
-    it('stops probing a document whose reseed was refused, quietly', () => {
+    // Stops probing, but not silently: a tab whose doc sync is permanently
+    // off keeps accepting prompts whose edits never reach the canvas, so the
+    // person has to be told the same way every other permanent refusal tells
+    // them. (`reportError` stays out of it — this is a server verdict, not a
+    // client fault.)
+    it('stops probing a document whose reseed was refused, and says so', () => {
       vi.useFakeTimers()
       telemetryState.reportError.mockClear()
-      const { unmount } = mountWithCanvas()
+      const onSyncError = vi.fn()
+      const { unmount } = mountWithCanvas(() => canvas, { onSyncError })
 
       dispatchFrame('doc_subscribed', staleRefusal)
       dispatchFrame('doc_reseed_result', {
         workflowId: 'wf-1',
         ok: false,
-        code: 'stale_schema_reseed_refused'
+        code: 'stale_schema_reseed_refused',
+        message: 'this document cannot be re-minted'
       })
       apiState.target.dispatchEvent(new Event('status'))
       vi.advanceTimersByTime(10 * 60_000)
@@ -2321,6 +2330,64 @@ describe('useAgentCrdtFollower', () => {
       expect(bridge().resubscribe).not.toHaveBeenCalled()
       expect(bridge().reconcile).not.toHaveBeenCalled()
       expect(telemetryState.reportError).not.toHaveBeenCalled()
+      expect(onSyncError).toHaveBeenCalledExactlyOnceWith(
+        'this document cannot be re-minted',
+        'stale_schema_reseed_refused'
+      )
+      unmount()
+    })
+
+    // A result whose `code` is absent — or that `parseDocReseedResult` dropped
+    // for exceeding MAX_ERROR_CODE_LENGTH — is a transient server failure
+    // wearing no label, not a verdict. Latching `stopProbing()` on it killed
+    // doc sync for the rest of the tab's life, silently.
+    it.for<[string, Record<string, unknown>]>([
+      ['no code at all', {}],
+      ['a code the parser dropped', { code: undefined }]
+    ])('keeps retrying a failed reseed carrying %s', ([, codeless]) => {
+      vi.useFakeTimers()
+      const onSyncError = vi.fn()
+      const { unmount } = mountWithCanvas(() => canvas, { onSyncError })
+
+      dispatchFrame('doc_subscribed', staleRefusal)
+      dispatchFrame('doc_reseed_result', {
+        workflowId: 'wf-1',
+        ok: false,
+        ...codeless
+      })
+      vi.advanceTimersByTime(500)
+
+      expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
+      expect(onSyncError).not.toHaveBeenCalled()
+      unmount()
+    })
+
+    // `scheduleSubscribeRetry` stops scheduling at the budget without latching
+    // `gaveUp`, so a refusal this tab can never answer used to settle into
+    // re-driving a subscribe on every `status` frame for the life of the
+    // binding — and the person never heard about it, because the stale-schema
+    // code reads retryable where `schema_version_mismatch` used to read
+    // permanent.
+    it('tells the person once the unanswerable refusal has spent its budget', () => {
+      vi.useFakeTimers()
+      const onSyncError = vi.fn()
+      const { unmount } = mountWithCanvas(() => null, { onSyncError })
+
+      for (let attempt = 0; attempt < 6; attempt++) {
+        dispatchFrame('doc_subscribed', staleRefusal)
+        expect(onSyncError).not.toHaveBeenCalled()
+        vi.advanceTimersByTime(120_000)
+      }
+      dispatchFrame('doc_subscribed', {
+        ...staleRefusal,
+        message: 'this document was written by a newer build'
+      })
+
+      expect(bridge().reseed).not.toHaveBeenCalled()
+      expect(onSyncError).toHaveBeenCalledExactlyOnceWith(
+        'this document was written by a newer build',
+        'schema_version_mismatch'
+      )
       unmount()
     })
 

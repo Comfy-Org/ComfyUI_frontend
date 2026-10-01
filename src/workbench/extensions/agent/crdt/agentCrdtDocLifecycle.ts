@@ -276,6 +276,20 @@ export class AgentCrdtDocLifecycle {
   }
 
   /**
+   * Whether the bounded subscribe-retry ladder still has an attempt left.
+   *
+   * {@link scheduleSubscribeRetry} stops scheduling once the budget is spent
+   * but does NOT latch `gaveUp`, so nothing gates `shouldDeferSubscribe` and a
+   * refusal the client can never answer keeps re-driving a subscribe on every
+   * `status` frame — silently, for the life of the binding. A caller that
+   * knows its refusal is unanswerable reads this to convert the spent ladder
+   * into the permanent refusal it has become.
+   */
+  hasSubscribeRetriesLeft(): boolean {
+    return this.subscribeRetryAttempt < SUBSCRIBE_RETRY_MAX_ATTEMPTS
+  }
+
+  /**
    * The server returned a final, non-retryable refusal to re-mint the document
    * this tab cannot read. Stop probing without reporting. Released by the same
    * lifecycle edges as a give-up (confirm, reconnect, retarget).

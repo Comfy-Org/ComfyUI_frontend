@@ -33,6 +33,7 @@ import { readCrdtSnapshot } from './crdtSnapshot'
 import { DocFrameClient } from './docFrameClient'
 import {
   RESEED_CONFLICT,
+  SCHEMA_VERSION_MISMATCH,
   STALE_SCHEMA_RESEED_REQUIRED,
   isRetryableReseedCode
 } from './docFrameCodes'
@@ -146,6 +147,58 @@ function handleSubscribeRefusal(
     message: typeof detail?.message === 'string' ? detail.message : undefined,
     code
   }
+}
+
+/**
+ * Report an exhausted `stale_schema_reseed_required` as the permanent refusal
+ * it has become.
+ *
+ * Every subscribe now advertises `supports_reseed`, so a host that used to
+ * refuse an unreadable stored document with the permanent
+ * `schema_version_mismatch` sends the retryable-looking stale-schema code
+ * instead. The reseed this tab answers it with can fail to go out — no bound
+ * canvas, a payload over the frame bound, a send that did not leave the
+ * transport — and most of those causes are transient, so the bounded retry
+ * ladder is the right first response and the early refusals stay retryable.
+ *
+ * What is not right is where the ladder ENDS: `scheduleSubscribeRetry` stops
+ * scheduling at the budget without latching `gaveUp`, so the binding settles
+ * into re-driving a subscribe on every `status` frame forever, and the person
+ * never gets the `onSyncError` they used to get for an unreadable document.
+ * `stillRecoverable` is false exactly there, which is where this re-maps.
+ *
+ * A refusal that merely arrived while this tab's own reseed is still
+ * outstanding is never unanswerable: its answer is owed and on its way.
+ */
+function unanswerableRefusal(
+  detail: { code?: unknown; message?: unknown } | null,
+  stillRecoverable: boolean
+): { code?: unknown; message?: unknown } | null {
+  if (detail?.code !== STALE_SCHEMA_RESEED_REQUIRED || stillRecoverable)
+    return detail
+  return { ...detail, code: SCHEMA_VERSION_MISMATCH }
+}
+
+/**
+ * What a `doc_reseed_result` means for the retry ladder.
+ *
+ * `settled` — the bridge resets and resubscribes after the listener returns.
+ * `retry` — a transient failure, including one that arrives with NO usable
+ * code: `code` is absent, or `parseDocReseedResult` dropped it for exceeding
+ * `MAX_ERROR_CODE_LENGTH`. Treating that as a verdict latched `stopProbing()`
+ * and disabled the ack timer, the retry ladder, the stale probe and every
+ * deferred reconcile — killing doc sync for the rest of the tab's life on a
+ * server hiccup.
+ * `permanent` — a code the host meant, and the only one of the three the
+ * person needs to hear about.
+ */
+function reseedResultVerdict(
+  ok: boolean,
+  code: string | undefined
+): 'settled' | 'retry' | 'permanent' {
+  if (ok || code === RESEED_CONFLICT) return 'settled'
+  if (code === undefined || isRetryableReseedCode(code)) return 'retry'
+  return 'permanent'
 }
 
 function notifyAgentMaterialization(
@@ -524,19 +577,26 @@ function startAgentCrdtFollower(
       workflowId?: unknown
       ok?: unknown
       code?: unknown
+      message?: unknown
     } | null
     if (!isCurrentWorkflow(detail?.workflowId)) return
     lastFrameType.value = event.type
     recordDevEvent('doc_reseed_result', detail)
     const code = typeof detail.code === 'string' ? detail.code : undefined
-    if (detail.ok !== true && isRetryableReseedCode(code)) {
+    const verdict = reseedResultVerdict(detail.ok === true, code)
+    if (verdict === 'settled') return
+    if (verdict === 'retry') {
       lifecycle.onSubscribeRefused(code)
       return
     }
-    // The bridge resets and resubscribes after this listener returns for an
-    // ok/conflict result. Anything else is final for this document.
-    if (detail.ok !== true && detail.code !== RESEED_CONFLICT)
-      lifecycle.stopProbing()
+    // Final for this document — and final-and-silent is the shape that leaves
+    // the panel accepting prompts whose edits never reach the canvas, so it is
+    // reported like any other permanent refusal.
+    lifecycle.stopProbing()
+    events.onSyncError?.(
+      typeof detail.message === 'string' ? detail.message : undefined,
+      code
+    )
   }
 
   function handleRejectedSubscription(
@@ -550,7 +610,13 @@ function startAgentCrdtFollower(
   ) {
     const refusal = tryReseed(detail ?? {})
       ? { shouldNotify: false }
-      : handleSubscribeRefusal(detail, lifecycle)
+      : handleSubscribeRefusal(
+          unanswerableRefusal(
+            detail,
+            bridge.reseedInFlight || lifecycle.hasSubscribeRetriesLeft()
+          ),
+          lifecycle
+        )
     // FE #16637 residual: a refusal is the earliest signal the sender can
     // get that its in-flight batch's doc is gone — don't make it wait out
     // the 10 s result-silence window to notice on its own.

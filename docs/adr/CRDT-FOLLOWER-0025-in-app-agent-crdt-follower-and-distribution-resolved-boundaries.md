@@ -303,6 +303,34 @@ once. A retryable reseed result permits another answer only to a fresh refusal
 produced by the bounded subscribe backoff. All other whole-graph sends remain
 rejected.
 
+Three consequences are load-bearing, because each of them is a way "only once"
+quietly stops being true:
+
+1. **At most one `doc_reseed` is outstanding at a time.** A refusal clears the
+   bridge's send reality, so any socket activity re-drives the subscribe and the
+   host — still holding the same unreadable document — refuses it again while
+   the first answer is in flight. That repeat is the same refusal redelivered,
+   not a fresh authorization; treating it as one puts two whole canvases on the
+   wire compare-and-swapping different sequences. The outstanding answer is
+   abandoned by `resubscribe()`, which is what keeps a lost result costing one
+   ack timeout rather than the tab's whole recovery path. `doc_reseed_result`
+   carries no client-minted correlator, so an answer is attributable only while
+   its own subscription is still the live one.
+2. **The lineage break on an `ok`/`conflict` result is unconditional.** The host
+   has re-minted the document whether or not this tab still wants it followed,
+   and a tab switch nulls that intent. Skipping the break leaves the follower
+   holding a lineage the host already replaced, so the next subscribe carries
+   the dead document's state vector into the new one — the cross-lineage merge
+   this follower exists to prevent. The break is therefore gated on which
+   lineage the follower's doc actually holds, never on subscription intent.
+3. **A refusal that cannot be answered is reported, once its budget is spent.**
+   Because every subscribe advertises `supports_reseed`, an unreadable stored
+   document now arrives as the retryable-looking stale-schema code rather than
+   the permanent `schema_version_mismatch`. When the reseed can never be sent,
+   the bounded ladder must end in the same permanent refusal — latched, and
+   surfaced to the person — rather than re-driving a subscribe on every status
+   frame for the life of the binding.
+
 ## Product gate and developer diagnostics (amended 2026-09-12)
 
 The runtime product flag, not a build flag, controls follower transport. The

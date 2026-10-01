@@ -216,6 +216,11 @@ export class LayoutFollowerBridge extends EventTarget {
     this.lineageWorkflowId = workflowId
     this.desiredWorkflowId = workflowId
     if (lineage !== null && lineage !== workflowId) {
+      // The lineage an unanswered reseed belongs to is being replaced, so its
+      // answer can no longer break anything ({@link onDocReseedResult} gates
+      // the break on {@link lineageWorkflowId}). Releasing the slot here is
+      // what lets the NEW workflow answer a refusal of its own.
+      this.reseedWorkflowId = null
       this.dropDocForNewLineage()
       this.dispatchEvent(
         new CustomEvent('follower_replaced', { detail: { workflowId } })
@@ -258,7 +263,23 @@ export class LayoutFollowerBridge extends EventTarget {
     }
   }
 
+  /**
+   * Re-drive the subscription from scratch, abandoning any outstanding
+   * `doc_reseed` with it.
+   *
+   * Nothing in `doc_reseed_result` says WHICH reseed it answers — the frame
+   * carries no correlator the client minted — so an answer is only ever
+   * attributable to a reseed whose subscription is still the live one. A
+   * straggler arriving after the client gave up waiting and fully re-synced
+   * would otherwise be accepted and force a synthetic lineage reset onto a
+   * healthy document.
+   *
+   * It is also what keeps the in-flight bound in {@link canReseed} from
+   * latching forever when a result is lost: the subscribe ack timeout
+   * resubscribes, which re-opens eligibility for a bounded retry.
+   */
   resubscribe(): void {
+    this.reseedWorkflowId = null
     this.sentWorkflowId = null
     this.reconcile()
   }
@@ -282,12 +303,9 @@ export class LayoutFollowerBridge extends EventTarget {
    */
   reseed(workflowId: string, workflow: Record<string, unknown>): boolean {
     const expectedSeq = this.reseedExpectedSeq
-    if (
-      workflowId === this.reseedEligibleWorkflowId &&
-      workflowId === this.desiredWorkflowId &&
-      expectedSeq !== null &&
-      expectedSeq > 0
-    ) {
+    // One predicate, not two. The ADR names this method as the enforcement
+    // point, so the check it enforces must be the same one callers ask about.
+    if (this.canReseed(workflowId) && expectedSeq !== null) {
       this.reseedEligibleWorkflowId = null
       this.reseedExpectedSeq = null
     } else {
@@ -304,14 +322,32 @@ export class LayoutFollowerBridge extends EventTarget {
     return true
   }
 
+  /**
+   * Whether a whole canvas may go out for `workflowId` right now.
+   *
+   * `reseedWorkflowId === null` is the in-flight bound, and it is load-bearing
+   * rather than belt-and-braces: a refusal nulls send REALITY, so the very
+   * next `reconcile()` — any `status` frame — re-sends the subscribe and the
+   * host refuses again while the first `doc_reseed` is still unanswered.
+   * Without this bound that second refusal re-armed eligibility and a second
+   * whole canvas went out, CAS-ing against a different `expected_seq` than the
+   * first. {@link resubscribe} is what releases it, so a lost answer costs one
+   * ack timeout rather than the tab's whole reseed capability.
+   */
   canReseed(workflowId: string): boolean {
     return (
       workflowId === this.reseedEligibleWorkflowId &&
       workflowId === this.desiredWorkflowId &&
       workflowId !== this.reseedBlockedWorkflowId &&
+      this.reseedWorkflowId === null &&
       this.reseedExpectedSeq !== null &&
       this.reseedExpectedSeq > 0
     )
+  }
+
+  /** True while a `doc_reseed` is outstanding and its answer still owed. */
+  get reseedInFlight(): boolean {
+    return this.reseedWorkflowId !== null
   }
 
   sendHumanOps(tab: string, ops: DocOp[]): void {
@@ -491,11 +527,25 @@ export class LayoutFollowerBridge extends EventTarget {
     const subscribed = event.detail as DocSubscribed
     if (subscribed.workflowId !== this.sentWorkflowId) return
     const refusal = reseedRefusalState(subscribed)
-    if (refusal.workflowId !== this.reseedBlockedWorkflowId) {
+    // While an answer is still owed, a repeat refusal is the same refusal
+    // re-delivered to the retry the unanswered reseed left pending — not a
+    // fresh authorization to send another whole canvas.
+    if (
+      !this.reseedInFlight &&
+      refusal.workflowId !== this.reseedBlockedWorkflowId
+    ) {
       this.reseedEligibleWorkflowId = refusal.workflowId
       this.reseedExpectedSeq = refusal.expectedSeq
     }
     if (subscribed.ok) {
+      // Unconditional, deliberately: `reseedRefusalState` reports
+      // `workflowId: null` for every non-stale answer, so the guard above
+      // compares `null !== null` and skips the clear whenever nothing is
+      // blocked. An eligibility token armed by a refusal this tab never
+      // answered (empty canvas, failed send) otherwise survived a healthy
+      // subscribe carrying a long-superseded `expected_seq`.
+      this.reseedEligibleWorkflowId = null
+      this.reseedExpectedSeq = null
       this.reseedBlockedWorkflowId = null
       this.ackSeq = subscribed.seq ?? null
       this.catchUpPending = this.ackSeq !== null
@@ -510,6 +560,16 @@ export class LayoutFollowerBridge extends EventTarget {
    * out on: take the same path that frame takes — drop the doc and resubscribe
    * with an empty state vector — so the catch-up is the whole new document.
    * Any other answer is final for this refusal and only forwarded.
+   *
+   * The break is gated on {@link lineageWorkflowId} — the workflow whose
+   * lineage this bridge's doc actually holds — and NOT on
+   * {@link desiredWorkflowId}. Intent is the wrong question: `unsubscribe()`
+   * nulls it on a tab switch, and skipping the break on that basis left the
+   * doc holding a lineage the server had already replaced, with
+   * `lineageWorkflowId` still matching. Re-activating the workflow then took
+   * {@link subscribe}'s same-lineage path and sent the dead doc's state vector
+   * into the new lineage — the cross-lineage merge this class exists to
+   * prevent, which resurrects deleted nodes (FORECLOSE #1).
    */
   private readonly onDocReseedResult: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
@@ -517,9 +577,9 @@ export class LayoutFollowerBridge extends EventTarget {
     if (result.workflowId !== this.reseedWorkflowId) return
     this.reseedWorkflowId = null
     this.dispatchEvent(new CustomEvent(event.type, { detail: result }))
-    if (result.workflowId !== this.desiredWorkflowId) return
     // Retryable failures are rescheduled by the lifecycle's bounded backoff.
     if (!result.ok && result.code !== RESEED_CONFLICT) return
+    if (result.workflowId !== this.lineageWorkflowId) return
     this.reseedBlockedWorkflowId = result.workflowId
     this.reseedEligibleWorkflowId = null
     this.reseedExpectedSeq = null

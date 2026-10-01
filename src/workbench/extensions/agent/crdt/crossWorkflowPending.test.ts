@@ -22,8 +22,18 @@ const bridgeState = vi.hoisted(() => {
     })
 
     resubscribe = vi.fn()
+    // Delegates, because the real `LayoutFollowerBridge.reconnect()` does:
+    // it releases the reseed block and then resubscribes. The pins below
+    // assert that a `reconnected` event re-drives subscription, and that
+    // claim is about the production call graph, not about which method name
+    // the composable happens to reach for — so the double models the
+    // delegation rather than moving the assertion onto the new entry point.
+    reconnect = vi.fn(() => {
+      this.resubscribe()
+    })
     reconcile = vi.fn()
     destroy = vi.fn()
+    reseedInFlight = false
     subscribedWorkflowId: string | null = null
     lastSequence = 0
     follower = {

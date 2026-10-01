@@ -1211,6 +1211,71 @@ describe('FEB-5 — switching workflows is a lineage break, never a fold', () =>
   })
 })
 
+describe('FEB-5 — a reseed answered after the tab detached still breaks lineage', () => {
+  // The server re-mints the document whether or not this tab still wants it
+  // followed, so gating the break on INTENT (`desiredWorkflowId`, nulled by
+  // the `unsubscribe()` a tab switch does) left the doc holding a lineage the
+  // server had already replaced — with `lineageWorkflowId` still matching.
+  // Re-activating then took the SAME-lineage path and sent the dead doc's
+  // state vector into the new lineage, which is the cross-lineage merge
+  // FORECLOSE #1 names: the host computes a delta against history the new
+  // document never had, and deleted nodes come back.
+  it('replaces the doc, so re-activating subscribes from an EMPTY state vector', () => {
+    const { transport, bridge } = wire()
+    const resets: unknown[] = []
+    const replaced: unknown[] = []
+    bridge.addEventListener('doc_reset', (event) => {
+      if (event instanceof CustomEvent) resets.push(event.detail)
+    })
+    bridge.addEventListener('follower_replaced', (event) => {
+      if (event instanceof CustomEvent) replaced.push(event.detail)
+    })
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    // A doc with history in it: without one, an empty state vector proves
+    // nothing because the dead doc's vector would be empty too.
+    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate()))
+    const deadDoc = bridge.follower
+    expect(deadDoc.updatesApplied).toBe(1)
+    const deadVector = encodeBase64(deadDoc.stateVector())
+
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: false,
+      code: 'stale_schema_reseed_required',
+      expected_seq: 7
+    })
+    expect(bridge.reseed(WORKFLOW_ID, { nodes: [], links: [] })).toBe(true)
+
+    bridge.unsubscribe()
+    transport.deliver('doc_reseed_result', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 8,
+      outcome: 'reseeded'
+    })
+
+    expect(resets).toHaveLength(1)
+    expect(replaced).toHaveLength(1)
+    expect(bridge.follower).not.toBe(deadDoc)
+    expect(bridge.follower.updatesApplied).toBe(0)
+
+    bridge.subscribe(WORKFLOW_ID)
+    const subscribes = transport.framesOfType('doc_subscribe') as {
+      data: { workflow_id: string; state_vector_b64: string }
+    }[]
+    expect(subscribes.at(-1)?.data).toEqual({
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      state_vector_b64: encodeBase64(Y.encodeStateVector(new Y.Doc())),
+      supports_reseed: true
+    })
+    expect(subscribes.at(-1)?.data.state_vector_b64).not.toBe(deadVector)
+  })
+})
+
 describe('doc_subscribe_sent — the ack-timeout arming signal', () => {
   function observeSent(bridge: LayoutFollowerBridge): unknown[] {
     const sent: unknown[] = []

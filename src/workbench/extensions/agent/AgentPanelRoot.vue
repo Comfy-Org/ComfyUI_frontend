@@ -639,9 +639,23 @@ function targetWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
   return { content }
 }
 
+/**
+ * The canvas a `doc_reseed` may re-mint the stored document from.
+ *
+ * Stricter than {@link targetWorkflowDraft} on purpose. A draft is advisory
+ * prompt content, but this payload REPLACES the authoritative document, so
+ * every way of being approximately right here is silent data loss:
+ * `boundOrOpenWorkflowFor` falls back to matching an open tab by cloud name
+ * rather than by binding, and `serializedCanvas` only runs `prepareForSave()`
+ * for the active workflow — so a non-active target yields a stale
+ * `activeState`. Requiring the resolved target to BE the active workflow
+ * makes both failure modes unreachable, and the detached gate applies for the
+ * same reason it applies to the draft.
+ */
 function canvasForWorkflow(workflowId: string): Record<string, unknown> | null {
+  if (workflowDetached.value) return null
   const target = boundOrOpenWorkflowFor(workflowId)
-  if (!target) return null
+  if (!target || target.path !== workflowStore.activeWorkflow?.path) return null
   return serializedCanvas(target) ?? null
 }
 

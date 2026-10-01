@@ -513,6 +513,15 @@ export class DocFrameClient extends EventTarget {
    * Ask the server to re-mint a document it refused as an older schema from
    * `workflow`, the serialized graph this tab currently shows.
    *
+   * This is the one frame this client sends whose size a user controls: a
+   * whole canvas with base64-embedded widget values passes
+   * {@link MAX_DOC_UPDATE_B64_LENGTH} easily, and that bound mirrors the
+   * relay's own. Sending it anyway gets the socket closed, and the reconnect
+   * releases the reseed block — so the identical oversized payload would be
+   * re-uploaded on a loop. Declining reads to the caller as any other
+   * unsendable frame: the refusal falls through to the ordinary
+   * permanent-refusal path and the person is told, once.
+   *
    * @returns whether the reseed frame actually left the transport.
    */
   reseed(
@@ -520,12 +529,17 @@ export class DocFrameClient extends EventTarget {
     expectedSeq: number,
     workflow: Record<string, unknown>
   ): boolean {
-    return this.send('doc_reseed', {
-      v: DOC_PROTOCOL_VERSION,
-      workflow_id: workflowId,
-      expected_seq: expectedSeq,
-      workflow
+    const frame = JSON.stringify({
+      type: 'doc_reseed',
+      data: {
+        v: DOC_PROTOCOL_VERSION,
+        workflow_id: workflowId,
+        expected_seq: expectedSeq,
+        workflow
+      }
     })
+    if (!hasBoundedUtf8Length(frame, MAX_DOC_UPDATE_B64_LENGTH)) return false
+    return this.transport.send(frame)
   }
 
   /** @returns whether the unsubscribe frame actually left the transport. */

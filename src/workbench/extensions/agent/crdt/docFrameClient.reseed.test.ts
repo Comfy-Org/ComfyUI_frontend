@@ -56,6 +56,19 @@ describe('doc frame client: stale-schema reseed', () => {
     ])
   })
 
+  // Inbound frames are bounded by the relay's own 8 MiB field cap, and the
+  // whole canvas is the one outbound frame a user can grow past it (base64
+  // widget values). Sending it anyway gets the socket closed, and the
+  // reconnect releases the reseed block — so the identical payload would be
+  // re-uploaded on a loop rather than failing once.
+  it('declines a reseed whose frame exceeds the relay bound', () => {
+    const transport = new TestTransport()
+    const client = new DocFrameClient(transport)
+    const oversized = { ...canvas, blob: 'x'.repeat(8 << 20) }
+    expect(client.reseed('wf-1', 7, oversized)).toBe(false)
+    expect(transport.frames('doc_reseed')).toEqual([])
+  })
+
   it('parses doc_reseed_result answers', () => {
     expect(
       parseServerDocFrame({
@@ -197,6 +210,99 @@ describe('layout follower bridge: stale-schema reseed', () => {
       expected_seq: 8
     })
     expect(bridge.canReseed('wf-1')).toBe(true)
+  })
+
+  // The live path, and it needs no 15 s timer: the refusal nulls send
+  // REALITY, so the very next `reconcile()` — any `status` frame — re-sends
+  // the subscribe and the host refuses it again while the first `doc_reseed`
+  // is still unanswered. Re-arming on that second refusal put a second whole
+  // canvas on the wire, CAS-ing against a different `expected_seq`.
+  it('refuses a second whole canvas while the first reseed is unanswered', () => {
+    const { transport, bridge } = refusedBridge()
+    expect(bridge.reseed('wf-1', canvas)).toBe(true)
+    expect(bridge.reseedInFlight).toBe(true)
+
+    bridge.reconcile()
+    transport.receive('doc_subscribed', {
+      v: 1,
+      workflow_id: 'wf-1',
+      ok: false,
+      code: STALE_SCHEMA_RESEED_REQUIRED,
+      expected_seq: 9
+    })
+
+    expect(bridge.canReseed('wf-1')).toBe(false)
+    expect(() => bridge.reseed('wf-1', canvas)).toThrow(
+      /ADR-CRDT-FOLLOWER-0025/
+    )
+    expect(transport.frames('doc_reseed')).toHaveLength(1)
+  })
+
+  // The bound above must cost one ack timeout when an answer is lost, not the
+  // tab's whole reseed capability.
+  it('releases the in-flight bound when the ack timeout resubscribes', () => {
+    const { transport, bridge } = refusedBridge()
+    bridge.reseed('wf-1', canvas)
+
+    bridge.resubscribe()
+    expect(bridge.reseedInFlight).toBe(false)
+    transport.receive('doc_subscribed', {
+      v: 1,
+      workflow_id: 'wf-1',
+      ok: false,
+      code: STALE_SCHEMA_RESEED_REQUIRED,
+      expected_seq: 9
+    })
+
+    expect(bridge.canReseed('wf-1')).toBe(true)
+  })
+
+  // Nothing in `doc_reseed_result` says which reseed it answers, so an answer
+  // is only attributable while its own subscription is still the live one.
+  it('ignores an answer that arrives after the client re-synced without it', () => {
+    const { transport, bridge } = refusedBridge()
+    const resets: unknown[] = []
+    bridge.addEventListener('doc_reset', (event) =>
+      resets.push((event as CustomEvent).detail)
+    )
+    bridge.reseed('wf-1', canvas)
+    bridge.resubscribe()
+    transport.receive('doc_subscribed', {
+      v: 1,
+      workflow_id: 'wf-1',
+      ok: true,
+      seq: 12
+    })
+    const healthyDoc = bridge.follower
+
+    transport.receive('doc_reseed_result', {
+      v: 1,
+      workflow_id: 'wf-1',
+      ok: true,
+      seq: 8,
+      outcome: 'reseeded'
+    })
+
+    expect(resets).toEqual([])
+    expect(bridge.follower).toBe(healthyDoc)
+  })
+
+  // `reseedRefusalState` reports `workflowId: null` for every non-stale
+  // answer, so the re-arming guard compares `null !== null` and skipped the
+  // clear whenever nothing was blocked.
+  it('a confirmed subscribe clears an eligibility token nothing answered', () => {
+    const { transport, bridge } = refusedBridge()
+    expect(bridge.canReseed('wf-1')).toBe(true)
+
+    bridge.resubscribe()
+    transport.receive('doc_subscribed', {
+      v: 1,
+      workflow_id: 'wf-1',
+      ok: true,
+      seq: 12
+    })
+
+    expect(bridge.canReseed('wf-1')).toBe(false)
   })
 
   it('invalidates a refusal token when the desired workflow changes', () => {
