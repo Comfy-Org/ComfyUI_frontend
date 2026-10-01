@@ -21,6 +21,8 @@ import {
 } from '@/types/widgetVisibility'
 import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
 import { emitGraphIntent } from '@/lib/litegraph/src/graphIntents'
+import { widgetIdentityKey } from '@/lib/litegraph/src/utils/widgetIdentity'
+import type { OrderedWidgetValues } from '@/lib/litegraph/src/utils/widgetIdentity'
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 
 export interface WidgetRenderState {
@@ -32,6 +34,8 @@ export interface WidgetRenderState {
 interface WidgetRestorationState {
   positional: readonly WidgetValue[]
   named?: Readonly<Record<string, WidgetValue>>
+  /** Indexed `widgets_values_ordered`; absent unless a name repeats. */
+  ordered?: OrderedWidgetValues
   restoreNamed: boolean
 }
 
@@ -137,18 +141,53 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     setNodeScoped(graphWidgetRestorations, graphId, nodeId, restoration)
   }
 
+  /**
+   * The occurrence-addressed value for every repeat of `name` except the last.
+   *
+   * `named[name]` is the LAST widget of a repeated name, both in this app's
+   * serializer and in the comfy-multi-player projection, so the final
+   * occurrence deliberately keeps reading `named`: a name-only writer that
+   * predates occurrence addressing still lands on the slot its write meant.
+   * Earlier occurrences exist nowhere but the ordered form, and collapsing
+   * them onto `named[name]` is the loss that form exists to stop.
+   */
+  function getOrderedWidgetValue(
+    restoration: WidgetRestorationState,
+    name: string,
+    occurrence: number
+  ): { value: WidgetValue } | undefined {
+    const ordered = restoration.ordered
+    if (!ordered) return
+    const lastOccurrence = ordered.lastOccurrence.get(name)
+    if (lastOccurrence === undefined || occurrence >= lastOccurrence) return
+
+    const identity = widgetIdentityKey(name, occurrence)
+    return ordered.byIdentity.has(identity)
+      ? { value: ordered.byIdentity.get(identity) }
+      : undefined
+  }
+
+  /**
+   * @param occurrence Zero-based index among the node's live serializable
+   * widgets sharing `name`. Only the name-restore path reads it; positional
+   * restore already distinguishes repeated names by index.
+   */
   function getRestoredWidgetValue(
     graphId: UUID,
     nodeId: NodeId,
     name: string,
-    positionalIndex: number
+    positionalIndex: number,
+    occurrence = 0
   ): { value: WidgetValue } | undefined {
     const restoration = graphWidgetRestorations.get(graphId)?.get(nodeId)
     if (!restoration) return
     if (restoration.restoreNamed && restoration.named) {
-      return Object.hasOwn(restoration.named, name)
-        ? { value: restoration.named[name] }
-        : undefined
+      return (
+        getOrderedWidgetValue(restoration, name, occurrence) ??
+        (Object.hasOwn(restoration.named, name)
+          ? { value: restoration.named[name] }
+          : undefined)
+      )
     }
     return positionalIndex < restoration.positional.length
       ? { value: restoration.positional[positionalIndex] }

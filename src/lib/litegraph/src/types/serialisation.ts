@@ -112,7 +112,35 @@ export interface ISerialisedNode {
    */
   widgets_values?: TWidgetValue[]
   widgets_values_named?: Record<string, TWidgetValue>
+  /**
+   * Duplicate-only lossless companion to {@link widgets_values_named}: present
+   * only when the node carries two or more serializable widgets with the same
+   * name, and then it lists every serializable widget in serialization order.
+   * Absent on every other node, so ordinary workflow JSON is unchanged.
+   *
+   * `widgets_values_named` cannot represent a repeated name — the later widget
+   * overwrites the earlier one — and `widgets_values` can only be read back by
+   * position, which no name-addressed consumer has.
+   *
+   * Mirrors `@comfyorg/comfy-multi-player` schema v5 (Amendment A22), whose
+   * `set_widget` carries `widget_occurrence` and updates the matching entry's
+   * `value` while preserving every other entry key.
+   */
+  widgets_values_ordered?: ISerialisedWidgetValueEntry[]
   extensions?: ExtensionPayload
+}
+
+/**
+ * One serializable widget's value, addressed losslessly by `(name, occurrence)`.
+ *
+ * Producers may add their own keys to an entry; a consumer that rewrites a
+ * `value` must leave the keys it does not understand alone.
+ */
+export interface ISerialisedWidgetValueEntry {
+  name: string
+  /** Zero-based index among the serializable widgets sharing {@link name}. */
+  occurrence: number
+  value: TWidgetValue
 }
 
 /** Properties of nodes that are used by subgraph instances. */

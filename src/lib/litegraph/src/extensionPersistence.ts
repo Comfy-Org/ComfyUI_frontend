@@ -60,7 +60,8 @@ const nodeCanonicalFields = {
   bgcolor: true,
   showAdvanced: true,
   widgets_values: true,
-  widgets_values_named: true
+  widgets_values_named: true,
+  widgets_values_ordered: true
 } satisfies Record<Exclude<keyof ISerialisedNode, 'extensions'>, true>
 
 export type NodeCanonicalField = keyof typeof nodeCanonicalFields

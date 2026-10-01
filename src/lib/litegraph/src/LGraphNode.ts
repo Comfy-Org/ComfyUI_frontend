@@ -155,6 +155,10 @@ import {
 } from './utils/namedValuesShadowDiff'
 import { reportNamedValuesShadowDiff } from './utils/namedValuesShadowDiffTelemetry'
 import { distributeSpace } from './utils/spaceDistribution'
+import {
+  buildOrderedWidgetValues,
+  readOrderedWidgetValues
+} from './utils/widgetIdentity'
 import { truncateText } from './utils/textUtils'
 import { BaseWidget } from './widgets/BaseWidget'
 import { toConcreteWidget } from './widgets/widgetMap'
@@ -194,6 +198,8 @@ function legacyValue<T>(value: T): T | undefined {
 function serialiseWidgetValues(widgets: IBaseWidget[]) {
   const positional: TWidgetValue[] = []
   const named: Record<string, TWidgetValue> = {}
+  const serialised: { name: string; value: TWidgetValue }[] = []
+
   for (const widget of widgets) {
     if (widget.serialize === false) continue
     const value = widget.value
@@ -202,9 +208,20 @@ function serialiseWidgetValues(widgets: IBaseWidget[]) {
         ? JSON.parse(JSON.stringify(value))
         : (value ?? null)
     positional.push(serialisedValue)
+    // Only the LAST widget of a repeated name survives here; the ordered form
+    // below is what keeps the earlier ones addressable.
     named[widget.name] = serialisedValue
+    serialised.push({ name: widget.name, value: serialisedValue })
   }
-  return { widgets_values: positional, widgets_values_named: named }
+
+  const ordered = buildOrderedWidgetValues(serialised)
+  return ordered
+    ? {
+        widgets_values: positional,
+        widgets_values_named: named,
+        widgets_values_ordered: ordered
+      }
+    : { widgets_values: positional, widgets_values_named: named }
 }
 
 function configureCanonicalField(
@@ -234,7 +251,10 @@ function configureCanonicalField(
 }
 
 export function createWidgetRestorationState(
-  info: Pick<ISerialisedNode, 'widgets_values' | 'widgets_values_named'>,
+  info: Pick<
+    ISerialisedNode,
+    'widgets_values' | 'widgets_values_named' | 'widgets_values_ordered'
+  >,
   fallbackNames?: readonly string[]
 ) {
   const positional = Array.from(info.widgets_values ?? [])
@@ -251,6 +271,7 @@ export function createWidgetRestorationState(
   return {
     positional,
     named: named ? { ...named } : undefined,
+    ordered: readOrderedWidgetValues(info.widgets_values_ordered),
     restoreNamed: Boolean(
       named && (LiteGraph.namedValuesRestore || fallbackNames)
     )
@@ -1245,13 +1266,17 @@ export class LGraphNode
         }
 
         let positionalIndex = 0
+        const occurrences = new Map<string, number>()
         for (const widget of this.widgets) {
           if (widget.serialize === false) continue
+          const occurrence = occurrences.get(widget.name) ?? 0
+          occurrences.set(widget.name, occurrence + 1)
           const restored = useWidgetValueStore().getRestoredWidgetValue(
             graphId,
             this.id,
             widget.name,
-            positionalIndex++
+            positionalIndex++,
+            occurrence
           )
           if (restored) widget.value = restored.value
         }
