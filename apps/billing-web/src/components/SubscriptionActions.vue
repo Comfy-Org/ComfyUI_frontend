@@ -107,8 +107,7 @@ async function cancelSubscription() {
 
 async function resubscribe() {
   await settle(
-    () =>
-      resubscribeAttempts.run(entry.value, () => checkout.resubscribe()),
+    () => resubscribeAttempts.run(entry.value, () => checkout.resubscribe()),
     t('hosted.subscription.resubscribed')
   )
 }
