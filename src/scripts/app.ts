@@ -21,7 +21,7 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import { snapPoint } from '@/lib/litegraph/src/measure'
-import type { Vector2 } from '@/lib/litegraph/src/litegraph'
+import type { ISerialisedGraph, Vector2 } from '@/lib/litegraph/src/litegraph'
 import type {
   IBaseWidget,
   TWidgetValue
@@ -1518,8 +1518,7 @@ export class ComfyApp {
     let resourceScanLoadCompleted = false
     try {
       try {
-        // @ts-expect-error Discrepancies between zod and litegraph - in progress
-        this.rootGraph.configure(graphData)
+        this.rootGraph.configure(graphData as ISerialisedGraph)
 
         // Save original renderer version before scaling (it gets modified during scaling)
         const originalMainGraphRenderer =
@@ -2564,7 +2563,19 @@ export class ComfyApp {
                 value
               ) as TWidgetValue
               widget.value = widgetValue
-              widget.callback?.(widgetValue)
+              try {
+                widget.callback?.(widgetValue)
+              } catch (error) {
+                reportError(error, {
+                  surface: 'graph',
+                  errorType: 'failure_invoking_api_workflow_widget_callback',
+                  tags: {
+                    node_type: targetNode.type,
+                    widget_name: input
+                  },
+                  context: { fileName }
+                })
+              }
               return true
             }
             if (!applyWidgetValue()) unresolvedInputs.push(applyWidgetValue)

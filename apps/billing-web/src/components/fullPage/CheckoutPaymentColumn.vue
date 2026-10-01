@@ -36,7 +36,8 @@ const {
   reopening,
   canCancel = false,
   keepSubscription,
-  savedMethods = []
+  savedMethods = [],
+  purchase = 'plan'
 } = defineProps<{
   page: Extract<CheckoutPage, { kind: 'resolving' | 'capture' | 'waiting' }>
   charge?: CheckoutCharge
@@ -48,6 +49,7 @@ const {
   /** The notice a plan set to end shows above Pay, worded for this quote. */
   keepSubscription?: KeepSubscriptionCopy
   savedMethods?: readonly SavedPaymentMethod[]
+  purchase?: 'plan' | 'credits'
 }>()
 
 const emit = defineEmits<{
@@ -154,6 +156,7 @@ const copy = computed<StripePaymentCopy>(() => ({
           />
         </div>
         <CheckoutPayAction
+          :purchase
           disabled
           :loading="locked"
           :locked
@@ -174,6 +177,7 @@ const copy = computed<StripePaymentCopy>(() => ({
         @submit.prevent="emit('pay', undefined)"
       >
         <CheckoutPayAction
+          :purchase
           v-bind="payContext"
           :disabled="!canPay"
           :loading="locked"
@@ -206,6 +210,7 @@ const copy = computed<StripePaymentCopy>(() => ({
         >
           <template #pay>
             <CheckoutPayAction
+              :purchase
               v-bind="payContext"
               :disabled="!canPay"
               :loading="locked"
@@ -240,6 +245,7 @@ const copy = computed<StripePaymentCopy>(() => ({
         >
           <template #submit="{ disabled, loading }">
             <CheckoutPayAction
+              :purchase
               v-bind="payContext"
               :disabled
               :loading

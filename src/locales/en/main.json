@@ -19,6 +19,7 @@
     "deleteImage": "Delete image",
     "deleteAudioFile": "Delete audio file",
     "increment": "Increment",
+    "validate": "Validate",
     "removeImage": "Remove image",
     "removeVideo": "Remove video",
     "removeTag": "Remove tag",
@@ -414,7 +415,8 @@
     "blueprints": "Blueprints",
     "partnerNodes": "Partner Nodes",
     "collapseAll": "Collapse all",
-    "expandAll": "Expand all"
+    "expandAll": "Expand all",
+    "retry": "Retry"
   },
   "hdrViewer": {
     "title": "HDR Viewer",
@@ -1267,6 +1269,7 @@
   "zoomControls": {
     "label": "Zoom Controls",
     "zoomToFit": "Zoom To Fit",
+    "zoomPercentage": "Zoom percentage",
     "showMinimap": "Show Minimap",
     "hideMinimap": "Hide Minimap"
   },
@@ -2608,6 +2611,8 @@
     }
   },
   "auth": {
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
     "apiKey": {
       "title": "API Key",
       "label": "API Key",
@@ -3331,11 +3336,6 @@
       }
     },
     "billingStatus": {
-      "warning": {
-        "title": "Payment failed",
-        "bodyNoDate": "Your payment failed to process. Update payment to avoid a pause.",
-        "bodyWithAmount": "Your payment of {amount} failed to process. Pay the invoice or update payment to avoid a pause."
-      },
       "paused": {
         "title": "Subscription paused",
         "body": "This workspace's subscription is paused. Update payment to resume.",
@@ -3343,22 +3343,34 @@
       },
       "outOfCredits": {
         "title": "Out of credits",
-        "body": "Your team has used all its credits. Add more credits to continue generating or wait until credits refill on {date}.",
-        "bodyNoDate": "Your team has used all its credits. Add more credits to continue generating.",
-        "memberBody": "Your team has used all its credits. Your workspace admins need to add more credits to continue generating.",
+        "body": "Your team has used all its credits. Add more credits or wait until credits refill on {date}.",
+        "bodyNoDate": "Your team has used all its credits. Add more credits.",
+        "memberBody": "Your team has used all its credits. Ask your workspace owner to add more credits or wait until credits refill on {date}.",
+        "memberBodyNoDate": "Your team has used all its credits. Ask your workspace owner to add more credits.",
         "addCredits": "Add credits",
-        "dismiss": "Dismiss",
-        "upgradeBody": "Upgrade your plan to add credits and continue generating."
+        "dismiss": "Dismiss"
       },
       "ending": {
         "title": "Your team plan ends on {date}",
-        "body": "Members keep full access until then. Resume your subscription to keep your shared credits and seats.",
+        "body": "Members keep full access until then. Resume your plan to keep your team's shared credits.",
+        "memberBody": "You can run workflows until then.",
         "enterpriseTitle": "Your Enterprise plan ends on {date}",
         "enterpriseBody": "Members keep full access until then. Reach out to our sales team to extend.",
-        "reactivate": "Resume subscription"
+        "reactivate": "Resume plan",
+        "contactSales": "Contact sales"
+      },
+      "planEnded": {
+        "teamTitle": "Your team plan ended on {date}",
+        "teamBody": "Resubscribe to run workflows and get shared credits again.",
+        "teamMemberBody": "Ask your workspace owner to resubscribe.",
+        "enterpriseTitle": "Your Enterprise plan ended on {date}",
+        "enterpriseBody": "Contact sales to start a new Enterprise plan.",
+        "planTitle": "Your plan ended on {date}",
+        "salesBody": "Contact sales to start a new plan.",
+        "salesMemberBody": "Ask your workspace owner to contact sales."
       },
       "planChange": {
-        "title": "Your plan changes to {plan} on {date}",
+        "title": "Your plan changes to {plan} on {date}.",
         "body": "Your current plan stays active until then."
       },
       "updatePayment": "Update payment",
@@ -3374,9 +3386,7 @@
       }
     },
     "tabs": {
-      "dashboard": "Dashboard",
-      "planCredits": "Plan & Credits",
-      "membersCount": "Members ({count})"
+      "dashboard": "Dashboard"
     },
     "dashboard": {
       "placeholder": "Dashboard workspace settings"
@@ -3388,7 +3398,6 @@
         "justNow": "just now",
         "minutesAgo": "{n} min ago"
       },
-      "header": "Members",
       "membersCount": "{count} of {maxSeats} members",
       "pendingInvitesCount": "{count} pending invite | {count} pending invites",
       "tabs": {
@@ -3396,10 +3405,11 @@
         "pendingCount": "Pending ({count})"
       },
       "columns": {
+        "email": "Email",
         "inviteDate": "Invite date",
         "expiryDate": "Expiry date",
         "role": "Role",
-        "creditsUsed": "Monthly credits"
+        "creditsUsed": "Credits used this month"
       },
       "actions": {
         "copyInviteLink": "Copy invite link",
@@ -3429,11 +3439,17 @@
       "contactSales": "Contact sales",
       "upgradeToTeam": "Upgrade to Team",
       "reactivateTeam": "Reactivate Team",
+      "totalMembersCount": "{count} of {maxSeats} total members.",
       "needMoreMembers": "Need more members?",
+      "planEndedFooter": "Your plan has ended, so you can't add new members.",
       "contactUs": "Contact us",
       "noInvites": "No pending invites",
+      "noInvitesMatch": "No invites match \"{query}\"",
       "noMembers": "No members",
+      "noMembersMatch": "No members match \"{query}\"",
       "searchPlaceholder": "Search...",
+      "loadFailed": "Couldn't load everything on this page.",
+      "totalMembersUnlimited": "{count} total member. | {count} total members.",
       "expiredOn": "Expired {date}"
     },
     "partnerNodes": {
@@ -3551,6 +3567,8 @@
       "copyLink": "Copy invite link",
       "copied": "Copied!",
       "copyAll": "Copy invite link | Copy all links ({count})",
+      "copiedToast": "Invite link copied",
+      "copyFailedToast": "Couldn't copy the invite link",
       "invalidTitle": "This invite link is no longer valid",
       "invalidBody": "It may have expired or been replaced. Ask the person who invited you for a new link.",
       "invalidDismiss": "Got it",
@@ -4067,9 +4085,6 @@
       "complete": "Download complete",
       "failed": "Download failed",
       "inProgress": "Downloading {assetName}..."
-    },
-    "rename": {
-      "failed": "Could not rename asset."
     }
   },
   "mediaAsset": {
@@ -5343,7 +5358,10 @@
       "question": "Do you approve?",
       "thisWorkflow": "this workflow",
       "cancel": "Cancel",
-      "run": "Run"
+      "run": "Run",
+      "answerFailed": "Could not send your answer. Reload the page and try again.",
+      "answerUncertain": "Could not confirm your answer reached the agent. It may still have been applied — reload the page to see where things stand.",
+      "answerSuperseded": "This request was already answered somewhere else, so that answer was used instead of yours."
     },
     "dismiss": "Dismiss",
     "latest": "Latest",
@@ -5477,6 +5495,9 @@
     "downloadAssets": "Download assets",
     "toolOpenedNewTab": "Opened a new tab",
     "toolOpeningNewTab": "Opening a new tab",
+    "toolLoadedSkill": "Loaded {skill}",
+    "toolFailedSkill": "Failed to load {skill}",
+    "toolLoadingSkill": "Loading {skill}",
     "toolSwitchedTabs": "Switched tabs",
     "toolSwitchingTabs": "Switching tabs",
     "toolSavedPreference": "Saved a preference",

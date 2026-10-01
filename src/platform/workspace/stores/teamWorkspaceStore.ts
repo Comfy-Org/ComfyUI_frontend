@@ -54,7 +54,10 @@ interface WorkspaceState extends WorkspaceWithRole {
   subscriptionPlan: SubscriptionPlan
   subscriptionTier: SubscriptionTier | null
   members: WorkspaceMember[]
+  membersLoaded: boolean
+  totalMembers?: number
   pendingInvites: WorkspacePendingInvite[]
+  pendingInvitesLoaded: boolean
 }
 
 type InitState = 'uninitialized' | 'loading' | 'ready' | 'error'
@@ -93,7 +96,9 @@ function createWorkspaceState(workspace: WorkspaceWithRole): WorkspaceState {
     subscriptionPlan: null,
     subscriptionTier: workspace.subscription_tier ?? null,
     members: [],
-    pendingInvites: []
+    membersLoaded: false,
+    pendingInvites: [],
+    pendingInvitesLoaded: false
   }
 }
 
@@ -220,6 +225,10 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     () => activeWorkspace.value?.members ?? []
   )
 
+  const membersLoaded = computed(
+    () => activeWorkspace.value?.membersLoaded ?? false
+  )
+
   // The active workspace's original owner (creator). Prefers the
   // `is_original_owner` flag; without it, falls back to the earliest-joined
   // owner — never a plain member, who must stay role-changeable.
@@ -246,6 +255,10 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
   const pendingInvites = computed<WorkspacePendingInvite[]>(
     () => activeWorkspace.value?.pendingInvites ?? []
+  )
+
+  const pendingInvitesLoaded = computed(
+    () => activeWorkspace.value?.pendingInvitesLoaded ?? false
   )
 
   const workspaceId = computed(() => activeWorkspace.value?.id ?? null)
@@ -739,7 +752,11 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     })
     const members = response.members.map(mapApiMemberToWorkspaceMember)
     if (!isStaleWorkspace(generation, workspaceId)) {
-      updateWorkspace(workspaceId, { members })
+      updateWorkspace(workspaceId, {
+        members,
+        membersLoaded: true,
+        totalMembers: response.pagination.total
+      })
     }
     return members
   }
@@ -802,7 +819,11 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     const current = workspaces.value.find((w) => w.id === workspaceId)
     if (current) {
       updateWorkspace(workspaceId, {
-        members: current.members.filter((m) => m.id !== userId)
+        members: current.members.filter((m) => m.id !== userId),
+        totalMembers:
+          current.totalMembers === undefined
+            ? undefined
+            : Math.max(0, current.totalMembers - 1)
       })
     }
   }
@@ -865,7 +886,10 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     const response = await workspaceApi.listInvites()
     const invites = response.invites.map(mapApiInviteToPendingInvite)
     if (!isStaleWorkspace(generation, workspaceId)) {
-      updateWorkspace(workspaceId, { pendingInvites: invites })
+      updateWorkspace(workspaceId, {
+        pendingInvites: invites,
+        pendingInvitesLoaded: true
+      })
     }
     return invites
   }
@@ -1034,8 +1058,10 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     ownedWorkspacesCount,
     canCreateWorkspace,
     members,
+    membersLoaded,
     isCurrentUserOriginalOwner,
     pendingInvites,
+    pendingInvitesLoaded,
     originalOwnerId,
     workspaceId,
     workspaceName,

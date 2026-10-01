@@ -88,7 +88,7 @@ export interface PendingSubscriptionCheckoutAttempt {
   start_reported?: true
 }
 
-interface PendingSubscriptionCheckoutAttemptInput {
+export interface PendingSubscriptionCheckoutAttemptInput {
   tier: TierKey
   cycle: BillingCycle
   checkout_type: SubscriptionCheckoutType
@@ -493,7 +493,10 @@ export const consumePendingSubscriptionCheckoutSuccess = (
   status: SubscriptionStatusSnapshot
 ):
   | (SubscriptionSuccessMetadata &
-      Pick<PendingSubscriptionCheckoutAttempt, 'start_reported'>)
+      Pick<
+        PendingSubscriptionCheckoutAttempt,
+        'start_reported' | 'started_at_ms'
+      >)
   | null => {
   const attempt = getPendingSubscriptionCheckoutAttempt()
   if (!attempt || !didAttemptSucceed(attempt, status)) {
@@ -522,6 +525,7 @@ export const consumePendingSubscriptionCheckoutSuccess = (
       ? { recovery_outcome: 'late_success' as const }
       : {}),
     ...(attempt.start_reported ? { start_reported: true as const } : {}),
+    started_at_ms: attempt.started_at_ms,
     value,
     currency: 'USD',
     ecommerce: {

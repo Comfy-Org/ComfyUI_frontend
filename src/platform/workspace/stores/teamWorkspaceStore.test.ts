@@ -1283,12 +1283,14 @@ describe('useTeamWorkspaceStore', () => {
       await store.fetchMembers()
 
       expect(store.members).toHaveLength(2)
+      expect(store.activeWorkspace?.totalMembers).toBe(2)
 
       await store.removeMember('user-1')
 
       expect(mockWorkspaceApi.removeMember).toHaveBeenCalledWith('user-1')
       expect(store.members).toHaveLength(1)
       expect(store.members[0].id).toBe('user-2')
+      expect(store.activeWorkspace?.totalMembers).toBe(1)
     })
 
     it('changeMemberRole flips the role locally without trusting the response body', async () => {

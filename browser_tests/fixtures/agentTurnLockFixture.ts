@@ -30,6 +30,9 @@ const zAnswerRequest = z.object({ selected: z.array(z.string()) })
 const THREAD_ID = 'b9d0a2a1-0f2c-4f1a-9a5e-6b0f4f2c1d77'
 const TURN_ID = '2dd4f367-3399-4cb4-8127-547f531c289a'
 const WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-000000000001'
+const BACKGROUND_THREAD_TITLE = 'Audio workflow'
+const OTHER_THREAD_ID = '4ccb6603-4bbc-49e2-8b7d-b985230285e3'
+const OTHER_THREAD_TITLE = 'Earlier workflow'
 
 /**
  * Verbatim from `services/agent/server/agent_handler.go`, which answers a post
@@ -43,6 +46,8 @@ const TURN_IN_PROGRESS: AgentError = { error: TURN_IN_PROGRESS_MESSAGE }
 
 const TURN_THINKING_TEXT = 'Wiring the audio output node.'
 export const POST_RECONNECT_TEXT = 'Reconnected, and the graph is ready.'
+export const PERSISTED_BEFORE_TOOL_TEXT = 'Prepared the graph. '
+export const PERSISTED_AFTER_TOOL_TEXT = 'Audio output connected.'
 
 const TURN_THINKING_EVENT: AgentWsEvent = {
   type: 'agent_thinking',
@@ -132,10 +137,29 @@ export const RUN_APPROVAL_RESOLVED_EVENT: AgentWsEvent = {
  * state when the turn completes, fails, or is cancelled. Dropping the client's
  * socket does not touch it — that asymmetry is what these specs exercise.
  *
- * Transcript hydration backs the refresh-recovery case. The cancel route is
- * not reached by the current specs, but keeps the fake faithful for a case
- * that clicks Stop.
+ * `transcript()` is the REST hydration input the minimize/restore specs read,
+ * and this fake keeps its assistant row `streaming` for exactly as long as the
+ * turn it simulates. The real server is weaker: a row can outlive the process
+ * running it and stay `streaming` with nothing behind it. That orphan is out of
+ * scope here, so these specs read a status that always matches the turn.
+ *
+ * One deliberate infidelity beyond that: the assistant row's `id` is `TURN_ID`,
+ * so row id and turn id coincide where the real server mints them separately.
+ * That keeps these specs on the turn-lock behaviour they exist for.
  */
+interface Deferred {
+  promise: Promise<void>
+  resolve: () => void
+}
+
+function deferred(): Deferred {
+  let resolve!: () => void
+  const promise = new Promise<void>((settle) => {
+    resolve = settle
+  })
+  return { promise, resolve }
+}
+
 class TurnLockServer {
   private streaming = false
   private prompt = ''
@@ -143,6 +167,15 @@ class TurnLockServer {
   private posts = 0
   private readonly answered: string[][] = []
   private pendingAsk: AgentPendingAsk | undefined
+  private heldTranscript:
+    | {
+        threadId?: string
+        requested: Promise<void>
+        markRequested: () => void
+        released: Promise<void>
+        release: () => void
+      }
+    | undefined
 
   get turnIsStreaming(): boolean {
     return this.streaming
@@ -184,8 +217,60 @@ class TurnLockServer {
     this.streaming = false
   }
 
-  transcript(): AgentMessage[] {
-    return [
+  holdNextTranscript(): void {
+    const requested = deferred()
+    const released = deferred()
+    this.heldTranscript = {
+      requested: requested.promise,
+      markRequested: requested.resolve,
+      released: released.promise,
+      release: released.resolve
+    }
+  }
+
+  async waitForHeldTranscript(): Promise<void> {
+    await this.heldTranscript?.requested
+  }
+
+  releaseHeldTranscript(): void {
+    this.heldTranscript?.release()
+    this.heldTranscript = undefined
+  }
+
+  async waitForTranscriptRelease(threadId: string): Promise<void> {
+    const held = this.heldTranscript
+    if (held === undefined) return
+    if (held.threadId !== undefined && held.threadId !== threadId) return
+    held.threadId = threadId
+    held.markRequested()
+    await held.released
+  }
+
+  transcript(threadId = THREAD_ID): AgentMessage[] {
+    if (threadId === OTHER_THREAD_ID)
+      return [
+        {
+          id: 'other-user',
+          thread_id: OTHER_THREAD_ID,
+          turn_id: 'other-turn',
+          seq: 1,
+          role: 'user',
+          status: 'complete',
+          workflow_id: WORKFLOW_ID,
+          content: { text: 'show my earlier workflow' }
+        },
+        {
+          id: 'other-assistant',
+          thread_id: OTHER_THREAD_ID,
+          turn_id: 'other-turn',
+          seq: 2,
+          role: 'assistant',
+          status: 'complete',
+          workflow_id: WORKFLOW_ID,
+          content: { text: 'Here it is.' }
+        }
+      ]
+    const rows: AgentMessage[] = [
       {
         id: 'user-1',
         thread_id: THREAD_ID,
@@ -195,18 +280,63 @@ class TurnLockServer {
         status: 'complete',
         workflow_id: WORKFLOW_ID,
         content: { text: this.prompt }
-      },
-      {
-        id: TURN_ID,
-        thread_id: THREAD_ID,
-        turn_id: TURN_ID,
-        seq: 2,
-        role: 'assistant',
-        status: this.streaming ? 'streaming' : 'complete',
-        workflow_id: WORKFLOW_ID,
-        pending_ask: this.pendingAsk
       }
     ]
+    if (!this.streaming) {
+      rows.push(
+        {
+          id: TURN_ID,
+          thread_id: THREAD_ID,
+          turn_id: TURN_ID,
+          seq: 2,
+          role: 'assistant',
+          status: 'complete',
+          workflow_id: WORKFLOW_ID,
+          content: { text: PERSISTED_BEFORE_TOOL_TEXT }
+        },
+        {
+          id: 'tool-row',
+          thread_id: THREAD_ID,
+          turn_id: TURN_ID,
+          seq: 3,
+          role: 'assistant',
+          status: 'complete',
+          workflow_id: WORKFLOW_ID,
+          content: {
+            tool_calls: [
+              {
+                id: 'call-add-node',
+                tool_call_id: 'call-add-node',
+                tool_name: 'add_node',
+                status: 'success'
+              }
+            ]
+          }
+        },
+        {
+          id: 'final-row',
+          thread_id: THREAD_ID,
+          turn_id: TURN_ID,
+          seq: 4,
+          role: 'assistant',
+          status: 'complete',
+          workflow_id: WORKFLOW_ID,
+          content: { text: PERSISTED_AFTER_TOOL_TEXT }
+        }
+      )
+      return rows
+    }
+    rows.push({
+      id: TURN_ID,
+      thread_id: THREAD_ID,
+      turn_id: TURN_ID,
+      seq: 2,
+      role: 'assistant',
+      status: 'streaming',
+      workflow_id: WORKFLOW_ID,
+      pending_ask: this.pendingAsk
+    })
+    return rows
   }
 
   startTurn(prompt: string): AgentTurnAccepted {
@@ -225,9 +355,44 @@ async function routeTurnLock(
   page: Page,
   server: TurnLockServer
 ): Promise<void> {
-  await page.route('**/api/agent/threads/*/messages', (route) => {
-    if (route.request().method() === 'GET')
-      return route.fulfill(jsonRoute(server.transcript()))
+  await page.route('**/api/agent/threads', (route) =>
+    route.fulfill(
+      jsonRoute({
+        threads: [
+          {
+            id: THREAD_ID,
+            title: BACKGROUND_THREAD_TITLE,
+            preview: 'add an audio output node',
+            workflow_id: WORKFLOW_ID,
+            status: 'active',
+            message_count: 2,
+            created_at: '2026-09-30T00:00:00Z',
+            updated_at: '2026-09-30T00:02:00Z',
+            last_message_at: '2026-09-30T00:02:00Z'
+          },
+          {
+            id: OTHER_THREAD_ID,
+            title: OTHER_THREAD_TITLE,
+            preview: 'show my earlier workflow',
+            workflow_id: WORKFLOW_ID,
+            status: 'active',
+            message_count: 2,
+            created_at: '2026-09-29T00:00:00Z',
+            updated_at: '2026-09-29T00:02:00Z',
+            last_message_at: '2026-09-29T00:02:00Z'
+          }
+        ],
+        pagination: { offset: 0, limit: 100, total: 2, has_more: false }
+      })
+    )
+  )
+  await page.route('**/api/agent/threads/*/messages', async (route) => {
+    if (route.request().method() === 'GET') {
+      const path = new URL(route.request().url()).pathname.split('/')
+      const threadId = decodeURIComponent(path.at(-2) ?? '')
+      await server.waitForTranscriptRelease(threadId)
+      return route.fulfill(jsonRoute(server.transcript(threadId)))
+    }
     server.countPost()
     if (server.turnIsStreaming)
       return route.fulfill({ ...jsonRoute(server.rejectPost()), status: 409 })
@@ -297,7 +462,10 @@ export class AgentTurnLockHarness {
   public readonly runApprovalButton: Locator
   public readonly workSummary: Locator
   public readonly workingRow: Locator
+  public readonly liveProgressRow: Locator
   public readonly userBubbles: Locator
+  private readonly entryButton: Locator
+  private readonly dock: Locator
   private readonly agentPanel: AgentPanel
 
   constructor(
@@ -336,7 +504,20 @@ export class AgentTurnLockHarness {
     this.workingRow = this.panel.getByText(enMessages.agent.working, {
       exact: true
     })
+    // The two status rows a live turn can show in this fixture's scenarios.
+    // `working` needs every part settled (AgentMessage.vue's `composing`), so
+    // it covers a turn resumed with its tool call intact; `thinking` covers one
+    // rebuilt from REST, which has no parts at all because the server stores a
+    // live row contentless. Asserting the pair keeps this about whether a live
+    // turn is on screen rather than which recovery shape produced it. Visible
+    // only, so a collapsed WorkSummary's retained trace cannot match.
+    this.liveProgressRow = this.workingRow
+      .or(this.panel.getByText(enMessages.agent.thinking, { exact: true }))
+      .filter({ visible: true })
+      .first()
     this.userBubbles = this.panel.getByTestId('user-message-bubble')
+    this.entryButton = this.agentPanel.openButton
+    this.dock = page.getByTestId('docked-agent-panel')
   }
 
   rejectedPosts(): number {
@@ -394,6 +575,15 @@ export class AgentTurnLockHarness {
     ws.send(JSON.stringify(event))
   }
 
+  finishTurn(ws: WebSocketRoute): void {
+    this.server.completeTurn()
+    this.push(ws, TURN_DONE_EVENT)
+  }
+
+  finishTurnOnServer(): void {
+    this.server.completeTurn()
+  }
+
   /** Makes an ask available through transcript hydration, independently of WS delivery. */
   primePendingAsk(event: AgentWsEvent): void {
     this.server.recordAsk(event)
@@ -438,6 +628,58 @@ export class AgentTurnLockHarness {
       await context.decodeAudioData(bytes)
       await context.close()
     })
+  }
+
+  /**
+   * Minimizes the panel from the topbar Agent button, the control the report
+   * used. `DockedAgentPanel.vue` gates the dock on `v-if`, so this unmounts
+   * `AgentPanelRoot` and runs its `onBeforeUnmount` — not a visual hide. The
+   * page is never reloaded and the shared websocket stays open.
+   */
+  async minimizePanel(): Promise<void> {
+    await this.entryButton.click()
+    await expect(this.dock).toHaveCount(0)
+  }
+
+  holdNextTranscript(): void {
+    this.server.holdNextTranscript()
+  }
+
+  async waitForHeldTranscript(): Promise<void> {
+    await this.server.waitForHeldTranscript()
+  }
+
+  releaseHeldTranscript(): void {
+    this.server.releaseHeldTranscript()
+  }
+
+  async beginRestorePanel(): Promise<void> {
+    await this.entryButton.click()
+    await expect(this.panel).toBeVisible()
+  }
+
+  /**
+   * Restores the panel, then waits out the remount's REST hydration for the
+   * one case that can race: a restore over a turn the unmount abandoned. That
+   * turn keeps its parts and renders `Worked...`, and hydration replaces it
+   * with a contentless row that renders none, so the summary going away is a
+   * real settle — it is what lets a caller assert on the restored turn rather
+   * than on the abandoned one still on screen. It is a no-op, not a
+   * guarantee, when there was no turn to abandon; that case leaves no summary
+   * to wait on.
+   */
+  async restorePanel(): Promise<void> {
+    await this.entryButton.click()
+    await expect(this.panel).toBeVisible()
+    await expect(this.workSummary).toHaveCount(0)
+  }
+
+  async selectHistoryThread(title: string): Promise<void> {
+    await this.panel
+      .getByRole('button', { name: enMessages.agent.showChatHistory })
+      .click()
+    await this.panel.getByRole('button', { name: title, exact: true }).click()
+    await expect(this.panel.getByTestId('user-message-bubble')).toBeVisible()
   }
 
   /**

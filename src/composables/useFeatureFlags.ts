@@ -26,7 +26,6 @@ export enum ServerFeatureFlag {
   MANAGER_SUPPORTS_V4 = 'extension.manager.supports_v4',
   MODEL_UPLOAD_BUTTON_ENABLED = 'model_upload_button_enabled',
   ASSET_DELETION_ENABLED = 'asset_deletion_enabled',
-  ASSET_RENAME_ENABLED = 'asset_rename_enabled',
   PRIVATE_MODELS_ENABLED = 'private_models_enabled',
   ONBOARDING_SURVEY_ENABLED = 'onboarding_survey_enabled',
   LINEAR_TOGGLE_ENABLED = 'linear_toggle_enabled',
@@ -185,13 +184,6 @@ export function useFeatureFlags() {
       return resolveFlag(
         ServerFeatureFlag.ASSET_DELETION_ENABLED,
         undefined,
-        false
-      )
-    },
-    get assetRenameEnabled() {
-      return resolveFlag(
-        ServerFeatureFlag.ASSET_RENAME_ENABLED,
-        remoteConfig.value.asset_rename_enabled,
         false
       )
     },
@@ -419,7 +411,6 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.MODEL_UPLOAD_BUTTON_ENABLED]:
         flags.modelUploadButtonEnabled,
       [ServerFeatureFlag.ASSET_DELETION_ENABLED]: flags.assetDeletionEnabled,
-      [ServerFeatureFlag.ASSET_RENAME_ENABLED]: flags.assetRenameEnabled,
       [ServerFeatureFlag.PRIVATE_MODELS_ENABLED]: flags.privateModelsEnabled,
       [ServerFeatureFlag.ONBOARDING_SURVEY_ENABLED]:
         flags.onboardingSurveyEnabled,

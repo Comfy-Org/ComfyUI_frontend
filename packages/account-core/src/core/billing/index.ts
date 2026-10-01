@@ -110,6 +110,7 @@ export type {
   BillingOpStatus,
   BillingOperationEvent,
   BillingOperationIdentity,
+  BillingOperationReceipt,
   BillingOperationKind,
   BillingOperationPhase,
   BillingOperationServerPhase,
@@ -120,10 +121,12 @@ export type {
   EmbeddedChallenge,
   FailedBillingOperation,
   HostedBillingDestination,
-  PendingBillingOperation
+  PendingBillingOperation,
+  SucceededBillingOperation
 } from './operationState.js'
 export {
   isBlockedOnCustomerPhase,
+  isGrantLanding,
   isTerminal,
   reduceBillingOperation,
   validateActionUrl
@@ -221,6 +224,7 @@ export type {
   HostedTopupCheckout,
   HostedTopupCheckoutFailure,
   HostedTopupCheckoutResult,
+  QuoteTopupInput,
   TopupCommand,
   TopupCommandOptions,
   TopupDeclined,
@@ -230,12 +234,15 @@ export type {
   TopupInvalidReturnUrl,
   TopupNoPaymentMethod,
   TopupNotAvailable,
+  TopupQuote,
+  TopupQuoteResult,
   TopupResult,
   TopupSucceeded,
   TopupUnsettled
 } from './topup.js'
 export {
   TOPUP_CHECKOUT_ROUTE,
+  TOPUP_QUOTE_ROUTE,
   TOPUP_ROUTE,
   createTopupCommand
 } from './topup.js'

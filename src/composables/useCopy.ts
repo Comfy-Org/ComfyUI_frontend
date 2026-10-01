@@ -10,7 +10,7 @@ const CANVAS_CLIPBOARD_KEY = 'litegrapheditor_clipboard'
 const CANVAS_CLIPBOARD_ID_KEY = 'litegrapheditor_clipboard_id'
 
 const clipboardHTMLWrapper = [
-  '<meta charset="utf-8"><div><span data-metadata="',
+  '<meta charset="utf-8"><div><span data-comfy-metadata="',
   '"></span></div><span style="white-space:pre-wrap;">Text</span>'
 ]
 const clipboardByteChunkSize = 0x8000

@@ -178,4 +178,28 @@ describe('CheckoutPayAction', () => {
       expect(pay).toHaveProperty('disabled', disabled)
     }
   )
+
+  it('180-6679: buys credits with a bare Pay, authorizing one charge and linking the terms', () => {
+    render(CheckoutPayAction, {
+      props: { disabled: false, purchase: 'credits' },
+      global: { plugins: [createBillingI18n()] }
+    })
+
+    expect(screen.getByRole('button', { name: 'Pay' })).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        (_, element) =>
+          element?.tagName === 'P' &&
+          element.textContent.trim() ===
+            "By continuing, you agree to Comfy Org's Terms and Privacy Policy, and authorize Comfy Org to charge your payment method once for this purchase."
+      )
+    ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Terms' })).toHaveAttribute(
+      'href',
+      'https://comfy.org/terms-of-service/'
+    )
+    expect(
+      screen.getByRole('link', { name: 'Privacy Policy' })
+    ).toHaveAttribute('href', 'https://comfy.org/privacy-policy/')
+  })
 })

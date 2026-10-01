@@ -1228,7 +1228,6 @@ async function onAnswerAsk(
 
 void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
-  ++activeTabGeneration
   releaseCoachCompletionWaiters()
   if (
     (coachDeferredBy.value === null || !agentPanelStore.isVisible) &&
@@ -1239,6 +1238,7 @@ onBeforeUnmount(() => {
   restoreOpMinter.detach()
   exitNodeSelectionMode()
   stop()
+  ++activeTabGeneration
   tabActivity.setEditing(null)
   tabActivity.setCreating(false)
   agentMinimapLayer.dispose()

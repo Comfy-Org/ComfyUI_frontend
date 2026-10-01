@@ -1,4 +1,5 @@
 import type {
+  BillingOperationReceipt,
   BillingOperationState,
   PendingBillingOperation
 } from '@comfyorg/account-core/billing'
@@ -17,6 +18,7 @@ import type {
 } from '@/checkout/checkoutPage'
 import {
   RESOLVING,
+  awaitingServer,
   challengeToReopen,
   isChallengeReopenable,
   isLocked,
@@ -24,6 +26,7 @@ import {
   railAcceptsPay,
   railView,
   reduceCheckoutPage,
+  settledPlanSource,
   submitPhaseOf,
   waitingOn
 } from '@/checkout/checkoutPage'
@@ -1156,6 +1159,11 @@ describe("reduceCheckoutPage over this tab's own operation", () => {
     operation: awaited(succeededOperation()),
     attribution: 'returned'
   }
+  const RECEIPT_PLAN = { slug: 'pro_monthly', duration: 'MONTHLY' } as const
+  const withReceipt = (receipt: BillingOperationReceipt) => ({
+    ...succeededOperation(),
+    receipt
+  })
 
   it.for<{
     name: string
@@ -1214,9 +1222,128 @@ describe("reduceCheckoutPage over this tab's own operation", () => {
         operation: succeededOperation(),
         attribution: 'started'
       }
+    },
+    {
+      name: 'Already completed takes the plan the catalog lists for its receipt',
+      events: [
+        reconciled(withReceipt({ plan: RECEIPT_PLAN })),
+        notAllowed,
+        { type: 'settledPlanRead', plan: PRO }
+      ],
+      expected: {
+        kind: 'terminal',
+        operation: withReceipt({ plan: RECEIPT_PLAN }),
+        attribution: 'settled',
+        plan: PRO
+      }
+    },
+    {
+      name: 'a success whose credits were landing takes the read that reports them',
+      events: [
+        reconciled(awaited(withReceipt({ amountChargedCents: 3250 }))),
+        reconciled(
+          awaited(withReceipt({ amountChargedCents: 3250, creditsAdded: 6858 }))
+        )
+      ],
+      expected: {
+        ...RETURNED,
+        operation: awaited(
+          withReceipt({ amountChargedCents: 3250, creditsAdded: 6858 })
+        )
+      }
+    },
+    {
+      name: 'a success keeps its operation over a read of a different one',
+      events: [
+        reconciled(awaited(succeededOperation())),
+        reconciled(succeededOperation('op_other'))
+      ],
+      expected: RETURNED
     }
   ])('$name', ({ events, expected }) => {
     expect(replay(events)).toEqual(expected)
+  })
+})
+
+describe('settled payments the page reads on its own', () => {
+  const PLAN = { slug: 'pro_monthly', duration: 'MONTHLY' } as const
+  const settled = (receipt?: BillingOperationReceipt) => ({
+    ...succeededOperation('op_1'),
+    ...(receipt === undefined ? {} : { receipt })
+  })
+
+  it.for<{ name: string; page: CheckoutPage; awaiting: boolean }>([
+    {
+      name: 'an outcome parked for a human',
+      page: { kind: 'unconfirmed', operationId: 'op_1' },
+      awaiting: true
+    },
+    {
+      name: 'a success whose credits are still landing',
+      page: {
+        kind: 'terminal',
+        operation: settled({ amountChargedCents: 5000 }),
+        attribution: 'settled'
+      },
+      awaiting: true
+    },
+    {
+      name: 'a success whose credits landed',
+      page: {
+        kind: 'terminal',
+        operation: settled({ amountChargedCents: 5000, creditsAdded: 10 }),
+        attribution: 'settled'
+      },
+      awaiting: false
+    },
+    {
+      name: 'a success with no receipt',
+      page: { kind: 'terminal', attribution: 'started' },
+      awaiting: false
+    }
+  ])('re-reads $name: $awaiting', ({ page, awaiting }) => {
+    expect(awaitingServer(page)).toBe(awaiting)
+  })
+
+  it.for<{
+    name: string
+    page: CheckoutPage
+    source: ReturnType<typeof settledPlanSource>
+  }>([
+    {
+      name: 'the plan a settled receipt names',
+      page: {
+        kind: 'terminal',
+        operation: settled({ plan: PLAN }),
+        attribution: 'settled'
+      },
+      source: { key: 'receipt:pro_monthly', receiptSlug: 'pro_monthly' }
+    },
+    {
+      name: "the status's plan for a returned payment with no receipt plan",
+      page: {
+        kind: 'terminal',
+        operation: settled(),
+        attribution: 'returned'
+      },
+      source: { key: 'status' }
+    },
+    {
+      name: 'nothing for a settled payment with no receipt plan',
+      page: { kind: 'terminal', operation: settled(), attribution: 'settled' },
+      source: undefined
+    },
+    {
+      name: "nothing for this page's own Pay, which its quote names",
+      page: {
+        kind: 'terminal',
+        operation: settled({ plan: PLAN }),
+        attribution: 'started'
+      },
+      source: undefined
+    }
+  ])('reads $name', ({ page, source }) => {
+    expect(settledPlanSource(page)).toEqual(source)
   })
 })
 
