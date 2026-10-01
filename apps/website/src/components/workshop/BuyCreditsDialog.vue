@@ -80,6 +80,7 @@ let checkoutController: AbortController | undefined
 let checkoutTab: Window | null = null
 let checkoutAttempt: CheckoutAttempt | undefined
 const returnableAttempts = new Map<string, CheckoutAttempt>()
+const deferredReturns = new Map<string, CheckoutAttempt>()
 let dialogScope: CheckoutScope | undefined
 let unsubscribeFromTopUpReturns: (() => void) | undefined
 
@@ -138,6 +139,22 @@ watch(
       return
     }
     if (dialogScopeStatus() === 'changed') open.value = false
+  }
+)
+
+watch(
+  () => {
+    const current = session.value
+    return current
+      ? `${current.uid}:${current.workspace.id}:${current.role}`
+      : ''
+  },
+  () => {
+    for (const [id, attempt] of deferredReturns) {
+      if (!checkoutScopeIsCurrent(attempt)) continue
+      deferredReturns.delete(id)
+      startTopUpWatch(attempt)
+    }
   }
 )
 
@@ -277,6 +294,11 @@ function onTopUpReturn(attemptId: string): void {
   const attempt = returnableAttempts.get(attemptId)
   if (!attempt) return
   returnableAttempts.delete(attemptId)
+  if (checkoutScopeIsCurrent(attempt)) startTopUpWatch(attempt)
+  else deferredReturns.set(attemptId, attempt)
+}
+
+function startTopUpWatch(attempt: CheckoutAttempt): void {
   watchForTopUp({
     uid: attempt.uid,
     workspaceId: attempt.workspaceId,
@@ -451,6 +473,10 @@ async function continueToCheckout() {
   const amountCents = clampTopUp(usd.value) * 100
   const scope = captureCheckoutScope()
   if (!scope) {
+    captureWorkshopEvent({
+      name: 'checkout_failed',
+      properties: { stage: 'no_owner_scope' }
+    })
     state.value = 'failed'
     return
   }

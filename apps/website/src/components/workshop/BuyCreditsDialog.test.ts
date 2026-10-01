@@ -392,6 +392,10 @@ describe('BuyCreditsDialog', () => {
     expect(await screen.findByTestId('checkout-error')).toBeTruthy()
     expect(isOpen.value).toBe(true)
     expect(fetchCheckout).not.toHaveBeenCalled()
+    expect(captureWorkshopEvent).toHaveBeenCalledExactlyOnceWith({
+      name: 'checkout_failed',
+      properties: { stage: 'no_owner_scope' }
+    })
 
     auth.session.value = credential
     await nextTick()
@@ -641,7 +645,7 @@ describe('BuyCreditsDialog', () => {
     await vi.waitFor(() => expect(fetchCheckout).toHaveBeenCalledTimes(2))
   })
 
-  it('still confirms a checkout that returns after the dialog moved to another workspace', async () => {
+  it('confirms a checkout that returns from another workspace once its workspace is current again', async () => {
     const user = userEvent.setup()
     const tab = claimTab()
     stubCheckout()
@@ -662,6 +666,10 @@ describe('BuyCreditsDialog', () => {
     expect(await screen.findByTestId('buy-credits-packs')).toBeTruthy()
 
     returnFromCheckout()
+    expect(vi.mocked(watchForTopUp)).not.toHaveBeenCalled()
+
+    auth.session.value = credential
+    await nextTick()
 
     expect(vi.mocked(watchForTopUp)).toHaveBeenCalledExactlyOnceWith(topUpScope)
   })

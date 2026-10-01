@@ -92,30 +92,49 @@ function releaseCloudCreditsTab(tab: Window | null): void {
   }
 }
 
-function openCloudCredits(tab: Window | null): void {
-  if (!tab) {
-    window.open(WORKSHOP_CREDITS_URL, '_blank', 'noopener,noreferrer')
-    return
-  }
-  try {
-    tab.opener = null
-    tab.location.assign(WORKSHOP_CREDITS_URL)
-  } catch {
-    releaseCloudCreditsTab(tab)
+interface CloudCreditsOpener {
+  readonly open: () => void
+  readonly release: () => void
+}
+
+const openInGesture: CloudCreditsOpener = {
+  open: () =>
+    window.open(WORKSHOP_CREDITS_URL, '_blank', 'noopener,noreferrer'),
+  release: () => {}
+}
+
+// Outside the gesture a new tab would be blocked, so a refused placeholder
+// falls back to navigating this tab.
+const openInThisTab: CloudCreditsOpener = {
+  open: () => window.location.assign(WORKSHOP_CREDITS_URL),
+  release: () => {}
+}
+
+function openInClaimedTab(tab: Window): CloudCreditsOpener {
+  return {
+    open: () => {
+      try {
+        tab.opener = null
+        tab.location.assign(WORKSHOP_CREDITS_URL)
+      } catch {
+        releaseCloudCreditsTab(tab)
+      }
+    },
+    release: () => releaseCloudCreditsTab(tab)
   }
 }
 
 function routeBuyCredits(
   source: WorkshopAccountSource,
   trigger: WorkshopBuyCreditsTrigger,
-  tab: Window | null
+  opener: CloudCreditsOpener
 ): void {
   if (!showAccount.value) {
-    releaseCloudCreditsTab(tab)
+    opener.release()
     return
   }
   if (source === 'firebase') {
-    releaseCloudCreditsTab(tab)
+    opener.release()
     buyCreditsTrigger.value = trigger
     buyingCredits.value = true
     return
@@ -123,21 +142,22 @@ function routeBuyCredits(
   // Session accounts buy in Cloud. Only an explicit action can open a tab:
   // an automatic refusal arrives outside a user gesture, so the visible Add
   // credits action stays the recovery instead of a popup the browser drops.
-  if (trigger === 'action') openCloudCredits(tab)
+  if (trigger === 'action') opener.open()
 }
 
 function handleBuyCreditsRequest(trigger: WorkshopBuyCreditsTrigger): void {
   if (!showAccount.value) return
   const settled = peekWorkshopAccountSource()
   if (settled) {
-    routeBuyCredits(settled, trigger, null)
+    routeBuyCredits(settled, trigger, openInGesture)
     return
   }
   // Claim the tab inside the click's gesture; it is released if the source
   // settles on the in-page dialog.
   const tab = trigger === 'action' ? claimCloudCreditsTab() : null
+  const opener = tab ? openInClaimedTab(tab) : openInThisTab
   void resolveWorkshopAccountSource().then((source) =>
-    routeBuyCredits(source, trigger, tab)
+    routeBuyCredits(source, trigger, opener)
   )
 }
 

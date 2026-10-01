@@ -286,7 +286,24 @@ describe('HeaderMain account source', () => {
     expect(open).not.toHaveBeenCalled()
   })
 
-  async function clickBeforeSourceSettles(answers: CloudAnswers) {
+  const SESSION_ACCOUNT: CloudAnswers = {
+    anonymous: { web_session_probe: true },
+    perUser: { unified_web_session: true },
+    session: LIVE_SESSION,
+    balance: {
+      status: 200,
+      body: {
+        amount_micros: 0,
+        currency: 'usd',
+        effective_balance_micros: 0
+      }
+    }
+  }
+
+  async function clickBeforeSourceSettles(
+    answers: CloudAnswers,
+    { placeholderBlocked = false } = {}
+  ) {
     let answer!: () => void
     const answered = new Promise<void>((resolve) => {
       answer = resolve
@@ -299,7 +316,7 @@ describe('HeaderMain account source', () => {
     }
     const open = vi
       .spyOn(window, 'open')
-      .mockReturnValue(tab as unknown as Window)
+      .mockReturnValue(placeholderBlocked ? null : (tab as unknown as Window))
     await renderHeader()
     await nextTick()
     const { requestWorkshopBuyCredits } =
@@ -309,23 +326,11 @@ describe('HeaderMain account source', () => {
 
     expect(open).toHaveBeenCalledExactlyOnceWith('/checkout-opening', '_blank')
     answer()
-    return tab
+    return { tab, open }
   }
 
   it('sends a tab claimed before the session source settles to Cloud credits', async () => {
-    const tab = await clickBeforeSourceSettles({
-      anonymous: { web_session_probe: true },
-      perUser: { unified_web_session: true },
-      session: LIVE_SESSION,
-      balance: {
-        status: 200,
-        body: {
-          amount_micros: 0,
-          currency: 'usd',
-          effective_balance_micros: 0
-        }
-      }
-    })
+    const { tab } = await clickBeforeSourceSettles(SESSION_ACCOUNT)
 
     await vi.waitFor(() =>
       expect(tab.location.assign).toHaveBeenCalledExactlyOnceWith(
@@ -336,8 +341,23 @@ describe('HeaderMain account source', () => {
     expect(tab.close).not.toHaveBeenCalled()
   })
 
+  it('navigates this tab to Cloud credits when the placeholder tab is blocked', async () => {
+    const assign = vi
+      .spyOn(window.location, 'assign')
+      .mockImplementation(() => {})
+
+    const { open } = await clickBeforeSourceSettles(SESSION_ACCOUNT, {
+      placeholderBlocked: true
+    })
+
+    await vi.waitFor(() =>
+      expect(assign).toHaveBeenCalledExactlyOnceWith(WORKSHOP_CREDITS_URL)
+    )
+    expect(open).toHaveBeenCalledOnce()
+  })
+
   it('releases a tab claimed before the source settles on Firebase', async () => {
-    const tab = await clickBeforeSourceSettles({
+    const { tab } = await clickBeforeSourceSettles({
       anonymous: { web_session_probe: false }
     })
 
