@@ -58,6 +58,17 @@ describe('foldActivity', () => {
     ])
   })
 
+  it('ignores skill metadata for tools that do not display it', () => {
+    const rows = foldActivity([
+      { ...tool('search_nodes'), skill: 'building' },
+      { ...tool('search_nodes'), skill: 'comfy-director' }
+    ])
+
+    expect(rows).toEqual([
+      expect.objectContaining({ name: 'search_nodes', count: 2 })
+    ])
+  })
+
   it('latches a failure and an in-flight call across the fold', () => {
     const rows = foldActivity([
       tool('add_node', true, 100),

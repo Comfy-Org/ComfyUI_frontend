@@ -114,7 +114,8 @@ export const zPersistedToolCallSummary = zToolCallSummary.extend({
   id: z.string(),
   tool_call_id: z.string().optional(),
   status: z.string(),
-  duration_ms: z.number().optional()
+  duration_ms: z.number().optional(),
+  skill: z.string().nullish()
 })
 
 /**
@@ -186,7 +187,7 @@ const zAgentToolCallData = z
     tool_call_id: z.string(),
     tool_name: z.string(),
     status: z.enum(['running', 'success', 'error']),
-    skill: z.string().optional(),
+    skill: z.string().nullish(),
     args: z.never().optional(),
     duration_ms: z.number().optional(),
     message_id: z.string(),
