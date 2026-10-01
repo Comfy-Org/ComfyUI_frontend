@@ -123,7 +123,7 @@ export class DragAndScale {
     this.viewportSize = [width, height]
   }
 
-  private getViewportSize(): [number, number] {
+  getViewportSize(): [number, number] {
     if (this.viewportSize) return this.viewportSize
 
     const rect = this.element.getBoundingClientRect()

@@ -1,31 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { DragAndScale } from '@/lib/litegraph/src/litegraph'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { visibleCanvasViewport } from './visibleCanvasViewport'
 
 vi.mock(import('@/platform/telemetry'))
 
-function rect(left: number, right: number, height = 450, top = 0): DOMRect {
-  return {
-    left,
-    right,
-    top,
-    bottom: top + height,
-    width: right - left,
-    height,
-    x: left,
-    y: top,
-    toJSON: () => ({})
-  }
-}
-
-function createCanvas(canvasRect: DOMRect): LGraphCanvas {
+function createCanvas(width = 800, height = 450) {
   const element = document.createElement('canvas')
-  element.width = 1600
-  element.height = 900
-  vi.spyOn(element, 'getBoundingClientRect').mockReturnValue(canvasRect)
-  return { canvas: element, dpr: 2 } as LGraphCanvas
+  vi.spyOn(element, 'getBoundingClientRect').mockImplementation(() => {
+    throw new Error('visibleCanvasViewport must not measure the DOM')
+  })
+  const ds = new DragAndScale(element)
+  ds.setViewportSize(width, height)
+  return { ds }
 }
 
 describe('visibleCanvasViewport', () => {
@@ -34,14 +22,12 @@ describe('visibleCanvasViewport', () => {
   })
 
   it('uses the full CSS-pixel canvas when the panel is absent', () => {
-    expect(visibleCanvasViewport(createCanvas(rect(0, 800)))).toEqual([
-      0, 0, 800, 450
-    ])
+    expect(visibleCanvasViewport(createCanvas())).toEqual([0, 0, 800, 450])
   })
 
-  it('uses the canvas DPR when layout dimensions are unavailable', () => {
-    expect(visibleCanvasViewport(createCanvas(rect(0, 0, 0)))).toEqual([
-      0, 0, 800, 450
+  it('uses the applied DragAndScale viewport dimensions', () => {
+    expect(visibleCanvasViewport(createCanvas(640, 360))).toEqual([
+      0, 0, 640, 360
     ])
   })
 
@@ -52,8 +38,6 @@ describe('visibleCanvasViewport', () => {
     panel.isOpen = true
     panel.setWidth(500)
 
-    expect(visibleCanvasViewport(createCanvas(rect(0, 800)))).toEqual([
-      0, 0, 300, 450
-    ])
+    expect(visibleCanvasViewport(createCanvas())).toEqual([0, 0, 300, 450])
   })
 })
