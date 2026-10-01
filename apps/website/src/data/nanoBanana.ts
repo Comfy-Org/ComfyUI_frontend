@@ -97,14 +97,14 @@ const advertisingCards = localCards('advertising', [
     'zh-CN': '暗色影棚中的灰色旅行车'
   },
   {
-    slug: 'teapot',
-    en: 'Terracotta teapot and cup on burlap in window light',
-    'zh-CN': '窗边光线下麻布上的陶土茶壶与茶杯'
-  },
-  {
     slug: 'newspaper',
     en: 'Vintage newspaper front page on a wooden table',
     'zh-CN': '木桌上的复古报纸头版'
+  },
+  {
+    slug: 'teapot',
+    en: 'Terracotta teapot and cup on burlap in window light',
+    'zh-CN': '窗边光线下麻布上的陶土茶壶与茶杯'
   },
   {
     slug: 'botanical-bottles',
