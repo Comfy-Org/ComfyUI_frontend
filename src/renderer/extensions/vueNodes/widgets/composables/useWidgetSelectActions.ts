@@ -11,7 +11,7 @@ import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { isUploadableVideo } from '@/utils/mediaUploadUtil'
+import { isExtensionlessVideo } from '@/utils/mediaUploadUtil'
 
 const BYTES_PER_MB = 1024 * 1024
 
@@ -102,11 +102,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
   const handleFilesUpdate = wrapWithErrorHandlingAsync(
     async (files: File[]) => {
       if (files.length === 0) return
-      if (
-        files.some(
-          (file) => file.type.startsWith('video/') && !isUploadableVideo(file)
-        )
-      ) {
+      if (files.some(isExtensionlessVideo)) {
         toastStore.addAlert(t('g.videoFilenameExtensionRequired'))
         return
       }

@@ -67,7 +67,7 @@ const uploadFile = async (
   return data.subfolder ? `${data.subfolder}/${data.name}` : data.name
 }
 
-interface ImageUploadOptions {
+export interface ImageUploadOptions {
   fileFilter?: (file: File) => boolean
   onUploadComplete: (paths: (string | ResultItem)[]) => void
   allow_batch?: boolean
@@ -83,7 +83,7 @@ interface ImageUploadOptions {
   folder?: ResultItemType
   onUploadStart?: (files: File[]) => void
   onUploadError?: () => void
-  onReject?: (files: File[]) => void
+  onReject?: (files: File[]) => boolean
 }
 
 /**

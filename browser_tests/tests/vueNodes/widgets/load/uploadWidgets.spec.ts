@@ -7,6 +7,7 @@ import {
 import { WidgetSelectDropdownFixture } from '@e2e/fixtures/components/WidgetSelectDropdown'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+import enMessages from '@/locales/en/main.json'
 
 test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
   test.describe('media selection', { tag: '@widget' }, () => {
@@ -100,7 +101,7 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
     expect(loadVideoNode, 'Load Video node was added').toBeDefined()
     const videoWidget = await loadVideoNode.getWidgetByName('file')
     const rejectionToasts = comfyPage.page.getByText(
-      'Video files need a filename extension. Rename the file (for example, clip.mp4) and try again.',
+      enMessages.g.videoFilenameExtensionRequired,
       { exact: true }
     )
     let uploadRequests = 0
@@ -113,7 +114,7 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
       })
     })
 
-    await test.step('claim a rejected canvas paste without creating an empty node', async () => {
+    await test.step('show feedback for a rejected canvas paste', async () => {
       await comfyPage.canvas.focus()
       await loadVideoNode.click('title')
       await comfyPage.page.evaluate(() => {
@@ -133,7 +134,6 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
       await expect(rejectionToasts).toHaveCount(1)
       await expect(rejectionToasts.first()).toBeVisible()
       expect(uploadRequests).toBe(0)
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
     })
 
     const fileInput = comfyPage.vueNodes

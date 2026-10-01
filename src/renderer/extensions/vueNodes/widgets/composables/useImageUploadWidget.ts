@@ -17,6 +17,7 @@ import { addToComboValues } from '@/utils/litegraphUtil'
 import {
   ACCEPTED_IMAGE_TYPES,
   ACCEPTED_VIDEO_TYPES,
+  isExtensionlessVideo,
   isUploadableVideo
 } from '@/utils/mediaUploadUtil'
 
@@ -58,6 +59,11 @@ export const useImageUploadWidget = () => {
     const { showPreview } = isVideo ? useNodeVideo(node) : useNodeImage(node)
 
     const fileFilter = isVideo ? isUploadableVideo : isImageFile
+    function alertExtensionlessVideo(files: File[]) {
+      if (!files.some(isExtensionlessVideo)) return false
+      useToastStore().addAlert(t('g.videoFilenameExtensionRequired'))
+      return true
+    }
     const fileComboWidget = findFileComboWidget(node, imageInputName)
     if (!fileComboWidget) {
       throw new Error(`Widget "${imageInputName}" not found on node`)
@@ -75,11 +81,7 @@ export const useImageUploadWidget = () => {
       fileFilter,
       accept,
       folder,
-      onReject: isVideo
-        ? () => {
-            useToastStore().addAlert(t('g.videoFilenameExtensionRequired'))
-          }
-        : undefined,
+      onReject: isVideo ? alertExtensionlessVideo : undefined,
       onUploadStart: (files) => {
         if (files.length > 0) {
           const prev = fileComboWidget.value

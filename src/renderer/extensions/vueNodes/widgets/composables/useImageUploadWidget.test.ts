@@ -8,18 +8,10 @@ import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
+import type { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
 
-type CapturedImageUploadOptions = {
-  onUploadComplete: (paths: (string | ResultItem)[]) => void
-  allow_batch?: boolean
-  folder?: ResultItemType
-  onUploadStart?: (files: File[]) => void
-  onUploadError?: () => void
-  onReject?: (files: File[]) => void
-  fileFilter?: (file: File) => boolean
-}
+type CapturedImageUploadOptions = Parameters<typeof useNodeImageUpload>[1]
 
 const mocks = vi.hoisted(() => ({
   capturedUploadOptions: undefined as CapturedImageUploadOptions | undefined,
@@ -162,17 +154,28 @@ describe('useImageUploadWidget', () => {
     ).toBe(true)
   })
 
-  it('alerts when a video upload widget rejects a file', () => {
+  it('claims and alerts only when a video lacks an extension', () => {
     const { node } = createUploadNode()
     constructVideo(node)
 
-    mocks.capturedUploadOptions?.onReject?.([
-      new File([], 'extensionless', { type: 'video/mp4' })
-    ])
+    expect(
+      mocks.capturedUploadOptions?.onReject?.([
+        new File([], 'extensionless', { type: 'video/mp4' })
+      ])
+    ).toBe(true)
 
     expect(useToastStore().addAlert).toHaveBeenCalledWith(
       'g.videoFilenameExtensionRequired'
     )
+
+    vi.mocked(useToastStore().addAlert).mockClear()
+
+    expect(
+      mocks.capturedUploadOptions?.onReject?.([
+        new File([], 'image.png', { type: 'image/png' })
+      ])
+    ).toBe(false)
+    expect(useToastStore().addAlert).not.toHaveBeenCalled()
   })
 
   it('previews the combo value once the initial frame runs', () => {

@@ -8,6 +8,7 @@ import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/c
 import { api } from '@/scripts/api'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import enMessages from '@/locales/en/main.json'
 
 const mockCaptureCanvasState = vi.hoisted(() => vi.fn())
 
@@ -98,7 +99,7 @@ describe('useWidgetSelectActions', () => {
       expect(api.fetchApi).not.toHaveBeenCalled()
       expect(modelValue.value).toBe('existing.mp4')
       expect(useToastStore().addAlert).toHaveBeenCalledWith(
-        'Video files need a filename extension. Rename the file (for example, clip.mp4) and try again.'
+        enMessages.g.videoFilenameExtensionRequired
       )
     })
 

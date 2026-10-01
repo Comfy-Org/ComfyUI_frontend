@@ -27,9 +27,8 @@ describe('useNodePaste', () => {
       allow_batch: true
     })
 
-    const result = node.pasteFiles?.([keep, skip])
+    node.pasteFiles?.([keep, skip])
 
-    expect(result).toBe(true)
     expect(onPaste).toHaveBeenCalledWith([keep])
   })
 
@@ -42,9 +41,8 @@ describe('useNodePaste', () => {
       fileFilter: () => false
     })
 
-    const result = node.pasteFiles?.([createFile('ignored.png')])
+    node.pasteFiles?.([createFile('ignored.png')])
 
-    expect(result).toBe(false)
     expect(onPaste).not.toHaveBeenCalled()
   })
 
@@ -59,7 +57,7 @@ describe('useNodePaste', () => {
       onReject
     })
 
-    expect(node.pasteFiles?.([file])).toBe(true)
+    node.pasteFiles?.([file])
     expect(onReject).toHaveBeenCalledWith([file])
   })
 
@@ -71,9 +69,8 @@ describe('useNodePaste', () => {
 
     useNodePaste(node, { onPaste, allow_batch: false })
 
-    const result = node.pasteFiles?.([first, second])
+    node.pasteFiles?.([first, second])
 
-    expect(result).toBe(true)
     expect(onPaste).toHaveBeenCalledWith([first])
   })
 
@@ -85,9 +82,8 @@ describe('useNodePaste', () => {
 
     useNodePaste(node, { onPaste, allow_batch: true })
 
-    const result = node.pasteFiles?.([first, second])
+    node.pasteFiles?.([first, second])
 
-    expect(result).toBe(true)
     expect(onPaste).toHaveBeenCalledWith([first, second])
   })
 

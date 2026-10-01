@@ -1,4 +1,5 @@
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import { partition } from 'es-toolkit'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { parseAssetInfo } from '@/platform/assets/schemas/mediaAssetSchema'
 import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
@@ -11,7 +12,7 @@ interface DragAndDropOptions<T> {
   onDrop: DropHandler<T>
   onResultItemDrop?: (item: ResultItem) => void
   fileFilter?: (file: File) => boolean
-  onReject?: (files: File[]) => void
+  onReject?: (files: File[]) => boolean
 }
 
 /**
@@ -47,15 +48,16 @@ export const useNodeDragAndDrop = <T>(
     if (!dataTransfer) return false
 
     const droppedFiles = Array.from(dataTransfer.files)
-    const files = filterFiles(droppedFiles)
-    const rejectedFiles = droppedFiles.filter((file) => !fileFilter(file))
-    if (rejectedFiles.length) options.onReject?.(rejectedFiles)
+    const [files, rejectedFiles] = partition(droppedFiles, fileFilter)
+    const rejectedFilesClaimed = rejectedFiles.length
+      ? (options.onReject?.(rejectedFiles) ?? false)
+      : false
     if (files.length) {
       await onDrop(files)
       return true
     }
     if (dataTransfer.files.length) {
-      return options.onReject !== undefined
+      return rejectedFilesClaimed
     }
     const asset = parseAssetInfo(dataTransfer)
     if (asset?.filename && options.onResultItemDrop) {
@@ -64,6 +66,7 @@ export const useNodeDragAndDrop = <T>(
     }
 
     const baseUri = dataTransfer.getData('text/uri-list')
+    if (!baseUri) return false
     const uri = URL.parse(baseUri, location.href)
     if (!uri || uri.origin !== location.origin) return false
 
@@ -79,8 +82,7 @@ export const useNodeDragAndDrop = <T>(
       const file = new File([blob], fileName, { type: blob.type })
       const uriFiles = filterFiles([file])
       if (!uriFiles.length) {
-        options.onReject?.([file])
-        return options.onReject !== undefined
+        return options.onReject?.([file]) ?? false
       }
 
       await onDrop(uriFiles)
