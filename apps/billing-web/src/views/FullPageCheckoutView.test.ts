@@ -3186,6 +3186,7 @@ describe('FullPageCheckoutView attempt telemetry', () => {
     })
 
     form.emit('confirm', 'ctoken_1')
+    await screen.findByRole('alert')
     await waitFor(() => expect(payButton()).toBeEnabled())
     form.emit('confirm', 'ctoken_2')
 

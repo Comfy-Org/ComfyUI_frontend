@@ -13,11 +13,15 @@ export type BillingTelemetryFailureCategory =
   | 'unknown'
 
 export type BillingTelemetryErrorCode =
+  | 'conflicting_payment_method'
   | 'downgrade_not_allowed'
+  | 'invalid_request'
   | 'member_removal_failed'
   | 'missing_checkout_response'
   | 'missing_payment_method_url'
+  | 'operation_already_pending'
   | 'payment_popup_blocked'
+  | 'quote_stale'
   | 'reactivation_not_confirmed'
   | 'reactivation_amount_changed'
 
