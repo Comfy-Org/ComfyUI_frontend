@@ -335,6 +335,29 @@ export const zUpdateHubProfileRequest = z.object({
 })
 
 /**
+ * What a credit top-up of the requested amount would grant.
+ */
+export const zTopupQuoteResponse = z.object({
+  amount_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  credits: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  expires_at: z.string().datetime()
+})
+
+/**
  * One persisted tool call attached to an assistant message's content.tool_calls (services/agent/internal/persist.ToolCallSummary), so a chat reload can render the tool-call history a turn produced. Display data only — raw arguments/results are never projected here. Only terminal rows (status ok/error) are ever surfaced; a row a dead turn left in pending/running has no wire-status mapping and is dropped rather than shown as a perpetual-progress chip.
  */
 export const zToolCallSummary = z.object({
@@ -527,6 +550,16 @@ export const zSubscriptionDiscount = z.object({
     })
     .optional(),
   code: z.string(),
+  duration: z.enum(['once', 'repeating', 'forever']).optional(),
+  duration_in_months: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
   kind: z.enum(['plan', 'promotion']),
   name: z.string().optional()
 })
@@ -975,6 +1008,33 @@ export const zPreviewPlanInfo = z.object({
       message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     }),
   duration: zSubscriptionDuration,
+  list_price_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  monthly_list_price_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  monthly_price_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
   period_end: z.string().datetime().optional(),
   period_start: z.string().datetime().optional(),
   price_cents: z.coerce
@@ -996,6 +1056,15 @@ export const zPreviewPlanInfo = z.object({
 export const zPreviewSubscribeResponse = z.object({
   allowed: z.boolean(),
   amount_due_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  balance_applied_cents: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
       message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
@@ -1045,6 +1114,24 @@ export const zPreviewSubscribeResponse = z.object({
   payment_method_configuration_id: z.string().optional(),
   promotion_code: z.string().optional(),
   proration_at: z.string().datetime().optional(),
+  proration_remaining_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  proration_unused_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
   quote_id: z.string().optional(),
   quote_version: z.number().int().optional(),
   reason: z.string().optional(),
@@ -1059,6 +1146,15 @@ export const zPreviewSubscribeResponse = z.object({
     .optional(),
   renewal_at: z.string().datetime().optional(),
   requires_reactivation_confirmation: z.boolean().optional(),
+  subtotal_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
   transition_type: z.enum([
     'new_subscription',
     'upgrade',
@@ -2303,6 +2399,20 @@ export const zCreateTopupRequest = z.object({
 })
 
 /**
+ * Request body for previewing a credit top-up.
+ */
+export const zCreateTopupQuoteRequest = z.object({
+  amount_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+})
+
+/**
  * A hosted Stripe Checkout session for a credit top-up.
  */
 export const zCreateTopupCheckoutResponse = z.object({
@@ -2463,10 +2573,31 @@ export const zBillingPlansResponse = z.object({
 })
 
 /**
+ * Display only. The plan the operation targets; for a scheduled change,
+ * the plan it switches to at period end. Present only for succeeded
+ * plan changes, initial subscriptions and resubscribes. Visible to any
+ * workspace member who can read the operation.
+ *
+ */
+export const zBillingOpReceiptPlan = z.object({
+  duration: zSubscriptionDuration,
+  slug: z.string()
+})
+
+/**
  * Status of an asynchronous billing operation.
  */
 export const zBillingOpStatusResponse = z.object({
   action_url: z.string().optional(),
+  amount_charged_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
   authentication_state: z
     .enum([
       'requires_action',
@@ -2477,6 +2608,15 @@ export const zBillingOpStatusResponse = z.object({
     ])
     .optional(),
   completed_at: z.string().datetime().optional(),
+  credits_added: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
   decline_reason: z
     .enum([
       'card_declined',
@@ -2486,6 +2626,7 @@ export const zBillingOpStatusResponse = z.object({
       'authentication_required',
       'authentication_failed',
       'processing_error',
+      'payment_not_completed',
       'generic'
     ])
     .optional(),
@@ -2499,6 +2640,7 @@ export const zBillingOpStatusResponse = z.object({
       'in_progress'
     ])
     .optional(),
+  plan: zBillingOpReceiptPlan.optional(),
   recovery_action: z
     .enum([
       'retry',
@@ -2510,6 +2652,11 @@ export const zBillingOpStatusResponse = z.object({
   retryable: z.boolean().optional(),
   started_at: z.string().datetime(),
   status: z.enum(['pending', 'succeeded', 'failed', 'reconciliation_needed'])
+})
+
+export const zBillingOpCancelResponse = z.object({
+  billing_op_id: z.string(),
+  status: z.enum(['canceled', 'cancel_requested'])
 })
 
 /**
@@ -3503,6 +3650,15 @@ export const zGetBillingOpStatusPath = z.object({
  */
 export const zGetBillingOpStatusResponse = zBillingOpStatusResponse
 
+export const zCancelBillingOpPath = z.object({
+  id: z.string()
+})
+
+/**
+ * Canceled; nothing was charged. Also returned for an operation already discarded or expired without authentication, so a repeat is safe.
+ */
+export const zCancelBillingOpResponse = zBillingOpCancelResponse
+
 /**
  * Saved payment methods
  */
@@ -3567,6 +3723,13 @@ export const zCreateTopupCheckoutBody = zCreateTopupCheckoutRequest
  */
 export const zCreateTopupCheckoutResponse2 = zCreateTopupCheckoutResponse
 
+export const zCreateTopupQuoteBody = zCreateTopupQuoteRequest
+
+/**
+ * Top-up quote
+ */
+export const zCreateTopupQuoteResponse = zTopupQuoteResponse
+
 export const zGetBillingUsageTimeSeriesQuery = z.object({
   group_by: z
     .enum(['model', 'endpoint', 'product'])
@@ -3621,6 +3784,15 @@ export const zGetExtensionsResponse = z.array(z.string())
  * Success
  */
 export const zGetFeaturesResponse = z.object({
+  'agent-free-use-message-placement': z
+    .enum([
+      'control',
+      'top-banner',
+      'near-composer',
+      'above-input',
+      'inside-input'
+    ])
+    .default('control'),
   billing_web_url: z.string().optional(),
   free_tier_balance: z
     .object({
