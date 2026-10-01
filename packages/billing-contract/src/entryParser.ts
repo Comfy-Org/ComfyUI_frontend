@@ -21,10 +21,12 @@ import type {
   OptionalEntryValues
 } from './entryFields.js'
 import {
+  ENTRY_PARAM_AMOUNT,
   ENTRY_PARAM_PRODUCT,
   ENTRY_PARAM_RETURN_TO,
   ENTRY_PARAM_SOURCE,
-  OPTIONAL_ENTRY_FIELDS
+  OPTIONAL_ENTRY_FIELDS,
+  readEntryAmountCents
 } from './entryFields.js'
 import { isContractIdentifier } from './identifiers.js'
 import type { ReturnTarget } from './returnTargets.js'
@@ -43,6 +45,8 @@ export interface BillingEntry extends OptionalEntryValues {
    * URL and never voids the rest of the request.
    */
   readonly unreadablePromotionCode?: string
+  /** The credit amount a top-up asks for, in whole cents. */
+  readonly amountCents?: number
 }
 
 export type BillingEntryErrorCode =
@@ -50,6 +54,7 @@ export type BillingEntryErrorCode =
   | 'UNKNOWN_INTENT'
   | 'UNKNOWN_PRODUCT'
   | 'UNKNOWN_RETURN_TARGET'
+  | 'INVALID_AMOUNT'
   | InvalidIdentifierCode
 
 export type BillingEntryResult =
@@ -125,6 +130,12 @@ export function parseBillingEntry(url: string | URL): BillingEntryResult {
   const optional = parseOptionalFields(parsed.searchParams)
   if (optional.status === 'error') return optional
 
+  const rawAmount = parsed.searchParams.get(ENTRY_PARAM_AMOUNT)
+  const amountCents =
+    rawAmount === null ? undefined : readEntryAmountCents(rawAmount)
+  if (rawAmount !== null && amountCents === undefined)
+    return { status: 'error', code: 'INVALID_AMOUNT' }
+
   const source = parsed.searchParams.get(ENTRY_PARAM_SOURCE)
 
   return {
@@ -135,7 +146,8 @@ export function parseBillingEntry(url: string | URL): BillingEntryResult {
       product,
       returnTo,
       ...optional.values,
-      ...(isBillingSource(source) ? { source } : {})
+      ...(isBillingSource(source) ? { source } : {}),
+      ...(amountCents === undefined ? {} : { amountCents })
     }
   }
 }

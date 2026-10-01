@@ -728,8 +728,23 @@ describe('buildSummaryLedger server-reported fields', () => {
     name: string
     discount: Partial<Discount>
     duration: Plan['duration']
+    transition?: SubscriptionPreview['transition_type']
     subline?: string
   }>([
+    {
+      name: 'a once coupon on a monthly plan change',
+      discount: { duration: 'once' },
+      duration: 'MONTHLY',
+      transition: 'upgrade',
+      subline: 'This payment only'
+    },
+    {
+      name: 'a once coupon on a yearly plan change',
+      discount: { duration: 'once' },
+      duration: 'ANNUAL',
+      transition: 'duration_change',
+      subline: 'First year'
+    },
     {
       name: 'a once coupon on a yearly plan',
       discount: { duration: 'once' },
@@ -771,9 +786,9 @@ describe('buildSummaryLedger server-reported fields', () => {
     }
   ])(
     'bounds a discount row by its term: $name',
-    ({ discount, duration, subline }) => {
+    ({ discount, duration, transition = 'new_subscription', subline }) => {
       const { discounts } = ledgerOf({
-        transition_type: 'new_subscription',
+        transition_type: transition,
         amount_due_cents: 604_800,
         cost_today_cents: 756_000,
         new_plan: planOf('TEAM', duration, 756_000),

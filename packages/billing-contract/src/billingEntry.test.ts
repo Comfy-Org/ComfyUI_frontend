@@ -67,6 +67,23 @@ describe('buildBillingEntryUrl', () => {
     expect(errorCode({ ...BASE_INPUT, billingOrigin })).toBe(expected)
   })
 
+  it('writes a top-up amount in whole cents', () => {
+    expect(
+      entryUrl({ ...BASE_INPUT, intent: 'top-up', amountCents: 1500 }).href
+    ).toBe(
+      'https://billing.comfy.org/v1/top-up?product=platform&return_to=platform_account&amount_cents=1500'
+    )
+  })
+
+  it.for([0, -500, 12.5, Number.NaN, 1_000_000_000])(
+    'refuses the top-up amount %s',
+    (amountCents) => {
+      expect(errorCode({ ...BASE_INPUT, intent: 'top-up', amountCents })).toBe(
+        'INVALID_AMOUNT'
+      )
+    }
+  )
+
   it.for([
     [{ returnTo: 'attacker_site' }, 'UNKNOWN_RETURN_TARGET'],
     [{ plan: 'pro plan' }, 'INVALID_PLAN'],
@@ -120,6 +137,38 @@ describe('parseBillingEntry', () => {
       }
     })
   })
+
+  it('reads a top-up amount back as whole cents', () => {
+    const url = entryUrl({
+      ...BASE_INPUT,
+      intent: 'top-up',
+      amountCents: 2500,
+      workspaceId: 'ws_1'
+    })
+
+    expect(parseBillingEntry(url)).toEqual({
+      status: 'ok',
+      entry: {
+        version: 'v1',
+        intent: 'top-up',
+        product: 'platform',
+        returnTo: 'platform_account',
+        workspaceId: 'ws_1',
+        amountCents: 2500
+      }
+    })
+  })
+
+  it.for(['0', '-500', '12.5', '1e3', '0100', 'abc', '', '1000000000'])(
+    'refuses the top-up amount %j',
+    (amount) => {
+      expect(
+        parseBillingEntry(
+          `/v1/top-up?product=platform&return_to=platform_account&amount_cents=${encodeURIComponent(amount)}`
+        )
+      ).toEqual({ status: 'error', code: 'INVALID_AMOUNT' })
+    }
+  )
 
   it('ignores a query parameter the contract does not name', () => {
     expect(

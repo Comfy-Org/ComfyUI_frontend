@@ -11,10 +11,12 @@ import type {
   OptionalEntryValues
 } from './entryFields.js'
 import {
+  ENTRY_PARAM_AMOUNT,
   ENTRY_PARAM_PRODUCT,
   ENTRY_PARAM_RETURN_TO,
   ENTRY_PARAM_SOURCE,
-  OPTIONAL_ENTRY_FIELDS
+  OPTIONAL_ENTRY_FIELDS,
+  isEntryAmountCents
 } from './entryFields.js'
 import { isContractIdentifier } from './identifiers.js'
 import { isReturnTarget } from './returnTargets.js'
@@ -33,11 +35,14 @@ export interface BillingEntryInput extends OptionalEntryValues {
   readonly returnTo: string
   /** A `BillingSource`; anything else is left off the link. */
   readonly source?: string
+  /** The credit amount a top-up asks for, in whole cents. */
+  readonly amountCents?: number
 }
 
 export type BillingEntryUrlErrorCode =
   | 'INVALID_ORIGIN'
   | 'UNKNOWN_RETURN_TARGET'
+  | 'INVALID_AMOUNT'
   | InvalidIdentifierCode
 
 export type BillingEntryUrlResult =
@@ -77,6 +82,10 @@ export function buildBillingEntryUrl(
   const invalid = invalidIdentifierCode(input)
   if (invalid !== undefined) return { status: 'error', code: invalid }
 
+  const { amountCents } = input
+  if (amountCents !== undefined && !isEntryAmountCents(amountCents))
+    return { status: 'error', code: 'INVALID_AMOUNT' }
+
   const url = new URL(billingIntentPath(input.intent), origin)
   url.searchParams.set(ENTRY_PARAM_PRODUCT, input.product)
   url.searchParams.set(ENTRY_PARAM_RETURN_TO, input.returnTo)
@@ -86,6 +95,8 @@ export function buildBillingEntryUrl(
   }
   if (isBillingSource(input.source))
     url.searchParams.set(ENTRY_PARAM_SOURCE, input.source)
+  if (amountCents !== undefined)
+    url.searchParams.set(ENTRY_PARAM_AMOUNT, String(amountCents))
 
   return { status: 'ok', url }
 }
