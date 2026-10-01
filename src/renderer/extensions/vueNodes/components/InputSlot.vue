@@ -34,6 +34,7 @@
       @click="onClick"
       @dblclick="onDoubleClick"
       @pointerdown="onPointerDown"
+      @contextmenu.stop.prevent="onSlotContextMenu"
     />
 
     <!-- Slot Name -->
@@ -46,6 +47,7 @@
             hasError && 'font-medium text-error'
           )
         "
+        @contextmenu.stop.prevent="onLabelContextMenu"
       >
         {{
           slotData.label ||
@@ -66,6 +68,11 @@ import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
+import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
+import {
+  showSlotMenu,
+  showSlotLabelMenu
+} from '@/renderer/extensions/vueNodes/composables/useSlotContextMenu'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
 import { useSlotLinkReveal } from '@/renderer/extensions/vueNodes/composables/useSlotLinkReveal'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -147,4 +154,22 @@ const { onClick, onDoubleClick, onPointerDown } = useSlotLinkInteraction({
   index: props.index,
   type: 'input'
 })
+
+function onSlotContextMenu(event: MouseEvent) {
+  if (!props.nodeId) return
+  showSlotMenu(event, {
+    nodeId: props.nodeId,
+    slotIndex: props.index,
+    isInput: true
+  })
+}
+
+function onLabelContextMenu(event: MouseEvent) {
+  if (!props.nodeId) return
+  showSlotLabelMenu(event, {
+    nodeId: props.nodeId,
+    slotIndex: props.index,
+    isInput: true
+  })
+}
 </script>
