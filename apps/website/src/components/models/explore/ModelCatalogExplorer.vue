@@ -4,8 +4,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import ModelExploreCard from './ModelExploreCard.vue'
 import type { CardWorkflowItem } from './ModelExploreCard.vue'
-import BrandButton from '../../common/BrandButton.vue'
-import SectionLabel from '../../common/SectionLabel.vue'
+import ModelCollectionHeader from './ModelCollectionHeader.vue'
 import SearchField from './ModelSearchField.vue'
 import type { ModelCategory } from '../../../config/modelCategories'
 
@@ -223,27 +222,14 @@ const displayEntries = computed(() =>
     :aria-labelledby="collectionHeadingId"
     :class="resultsClass"
   >
-    <div
+    <ModelCollectionHeader
       v-if="defaultModels"
-      class="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between"
-    >
-      <div class="flex flex-col gap-2">
-        <h2 :id="collectionHeadingId">
-          <SectionLabel>{{ collectionLabel }}</SectionLabel>
-        </h2>
-        <p class="text-base font-light text-primary-warm-gray">
-          {{ collectionDescription }}
-        </p>
-      </div>
-      <div
-        v-if="collectionActionHref && collectionActionLabel"
-        class="shrink-0"
-      >
-        <BrandButton :href="collectionActionHref" variant="outline" size="xs">
-          {{ collectionActionLabel }}
-        </BrandButton>
-      </div>
-    </div>
+      :heading-id="collectionHeadingId"
+      :label="collectionLabel"
+      :description="collectionDescription"
+      :action-label="collectionActionLabel"
+      :action-href="collectionActionHref"
+    />
     <p
       v-if="isEmpty"
       class="py-10 text-center text-base font-light text-content-secondary"
