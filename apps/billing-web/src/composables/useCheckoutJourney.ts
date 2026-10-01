@@ -1,12 +1,12 @@
 import type {
   CheckoutEntryFlow,
   CheckoutJourneyPhaseEvent,
-  CheckoutUiMode,
   PreviewSubscribeResult,
   SubscriptionPreview
 } from '@comfyorg/account-core/billing'
 
 import type { CheckoutPageEvent } from '@/checkout/checkoutPage'
+import type { PaymentRail, PromoResult } from '@/checkout/checkoutJourney'
 import {
   entryFlowOf,
   entrySourceOf,
@@ -28,9 +28,7 @@ import { billingWebTelemetry } from '@/telemetry/billingWebTelemetry'
  * that carries none. The entry flow is the quote's, so it reads `unknown`
  * until the first quote lands.
  */
-export function useCheckoutJourney(
-  uiMode: Extract<CheckoutUiMode, 'embedded' | 'full_page'>
-) {
+export function useCheckoutJourney(uiMode: 'embedded' | 'full_page') {
   const { entry } = useBillingEntry()
   const arrival = entry.value
   const journeyId = arrival?.correlationId ?? crypto.randomUUID()
@@ -89,18 +87,12 @@ export function useCheckoutJourney(
     track({ phase: 'operation_linked', billing_op_id: operationId })
   }
 
-  function methodSelected(
-    rail: Parameters<typeof methodSelectedPhase>[0],
-    methodType: string | undefined
-  ) {
+  function methodSelected(rail: PaymentRail, methodType: string | undefined) {
     track(methodSelectedPhase(rail, methodType))
   }
 
   /** Reports that a code settled, and whether the link carried it; the code itself goes no further. */
-  function promoSettled(
-    result: 'applied' | 'rejected' | 'removed' | 'expired',
-    code: string
-  ) {
+  function promoSettled(result: PromoResult, code: string) {
     track({
       phase: 'promo',
       result,

@@ -136,6 +136,9 @@ type MethodSelectedPhase = Extract<
 >
 type PromoPhase = Extract<CheckoutJourneyPhaseEvent, { phase: 'promo' }>
 
+export type PaymentRail = MethodSelectedPhase['rail']
+export type PromoResult = PromoPhase['result']
+
 function methodKindOf(
   methodType: string | undefined
 ): MethodSelectedPhase['method_kind'] {
@@ -144,7 +147,7 @@ function methodKindOf(
 }
 
 export function methodSelectedPhase(
-  rail: MethodSelectedPhase['rail'],
+  rail: PaymentRail,
   methodType: string | undefined
 ): MethodSelectedPhase {
   const kind = methodKindOf(methodType)
@@ -159,9 +162,7 @@ export function methodSelectedPhase(
 export function promoSettlementOf(
   before: PromoEntry,
   after: PromoEntry
-):
-  | { readonly result: PromoPhase['result']; readonly code: string }
-  | undefined {
+): { readonly result: PromoResult; readonly code: string } | undefined {
   if (before.kind === 'applying' && after.kind === 'applied')
     return { result: 'applied', code: before.draft }
   if (

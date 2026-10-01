@@ -488,16 +488,17 @@ function resultUrl(): string | undefined {
   return built.status === 'ok' ? built.url.href : undefined
 }
 
+function selectedRailOf(choice: PaymentChoice) {
+  if (choice.confirmationToken !== undefined) return 'new'
+  return choice.savedPaymentMethodId !== undefined ? 'saved' : 'on_file'
+}
+
 async function pay(choice: PaymentChoice) {
   const quoted = preview.value
   if (planSlug.value === undefined || !quoted || loading.value) return
   submitFailure.value = undefined
   journey.methodSelected(
-    choice.confirmationToken !== undefined
-      ? 'new'
-      : choice.savedPaymentMethodId !== undefined
-        ? 'saved'
-        : 'on_file',
+    selectedRailOf(choice),
     choice.methodType ??
       methods.value?.find(({ id }) => id === choice.savedPaymentMethodId)?.type
   )
