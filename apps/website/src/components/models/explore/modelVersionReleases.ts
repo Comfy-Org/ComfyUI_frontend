@@ -1,6 +1,9 @@
+import type { TranslationKey } from '../../../i18n/translations'
+
 export interface ModelVersionRelease {
   readonly versionId: string
   readonly name: string
+  readonly descriptionKey: TranslationKey
   readonly releasedAt: string
   readonly sourceUrl: string
   readonly identitySourceUrl: string
@@ -16,6 +19,7 @@ export interface ModelVersionRelease {
 export const modelVersionReleases: readonly ModelVersionRelease[] = [
   {
     versionId: 'Qwen/Qwen-Image-2.1',
+    descriptionKey: 'models.explore.version.qwen21',
     name: 'Qwen Image 2.1',
     releasedAt: '2026-09-20',
     sourceUrl: 'https://qwen.ai/blog?id=qwen-image-2.1',
@@ -31,6 +35,7 @@ export const modelVersionReleases: readonly ModelVersionRelease[] = [
   },
   {
     versionId: 'byteplus/dreamina-seedance-2-5-260628',
+    descriptionKey: 'models.explore.version.seedance25',
     name: 'Seedance 2.5',
     releasedAt: '2026-07-31',
     sourceUrl:
@@ -46,6 +51,7 @@ export const modelVersionReleases: readonly ModelVersionRelease[] = [
   },
   {
     versionId: 'byteplus/seedream-5-0-pro-260628',
+    descriptionKey: 'models.explore.version.seedreamPro',
     name: 'Seedream 5.0 Pro',
     releasedAt: '2026-07-08',
     sourceUrl:
@@ -62,6 +68,7 @@ export const modelVersionReleases: readonly ModelVersionRelease[] = [
   },
   {
     versionId: 'gemini-3.1-flash-image',
+    descriptionKey: 'models.explore.version.nanoBanana2',
     name: 'Nano Banana 2 (Gemini 3.1 Flash Image)',
     releasedAt: '2026-02-26',
     sourceUrl:

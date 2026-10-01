@@ -451,15 +451,17 @@ the hosted script once, and renders the documented embed container.
 
 ### Supported model collections
 
-“Latest verified releases” uses publisher announcement dates in
+“Latest” uses publisher announcement dates in
 `src/components/models/explore/modelVersionReleases.ts`. Template dates are
 not model release dates. Quantizations share one version record; releases
-without a verifiable date are excluded.
+without a verifiable date are excluded. Cards display model descriptions,
+while the release dates stay in the ordering metadata.
 
 “Trending” compares distinct users making successful Comfy Cloud partner
 generations over two complete seven-day UTC windows. It orders tracked
 versions by the increase in weekly users, requires at least 50 users, and
 does not infer local open-weight usage from Desktop model-class telemetry.
+The collection shows eight individual versions with capability descriptions.
 The dated snapshot is hidden after seven days if it cannot be refreshed.
 
 Builds refresh this small aggregate through the

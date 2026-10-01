@@ -126,14 +126,57 @@ const translations = {
     en: 'VIEW ALL MODELS',
     'zh-CN': '查看所有模型'
   },
+  'models.explore.version.meshy71': {
+    en: 'Turn text or images into detailed 3D models.',
+    'zh-CN': '将文本或图像转换为精细的 3D 模型。'
+  },
+  'models.explore.version.kling3': {
+    en: 'Create videos from text prompts or reference images.',
+    'zh-CN': '根据文本提示或参考图像生成视频。'
+  },
+  'models.explore.version.soundEffectsV2': {
+    en: 'Create sound effects and ambient audio from text.',
+    'zh-CN': '根据文本生成音效和环境声音。'
+  },
+  'models.explore.version.elevenV3': {
+    en: 'Expressive speech and dialogue with emotional voice control.',
+    'zh-CN': '生成富有表现力的语音和对话，并控制情绪表达。'
+  },
+  'models.explore.version.seedreamFlash': {
+    en: 'Generate and edit images from text or reference images.',
+    'zh-CN': '根据文本或参考图像生成和编辑图像。'
+  },
+  'models.explore.version.seedreamPro': {
+    en: 'Create detailed images with text and multiple visual references.',
+    'zh-CN': '根据文本和多张参考图像创作精细图像。'
+  },
+  'models.explore.version.seedance25': {
+    en: 'Create and edit videos from text and visual references.',
+    'zh-CN': '根据文本和视觉参考生成与编辑视频。'
+  },
+  'models.explore.version.geminiPro': {
+    en: 'Generate and edit images with precise creative control.',
+    'zh-CN': '精准控制图像生成和编辑的创意细节。'
+  },
+  'models.explore.version.hy35': {
+    en: 'Generate and edit images from text or visual references.',
+    'zh-CN': '根据文本或视觉参考生成和编辑图像。'
+  },
+  'models.explore.version.qwen21': {
+    en: 'Generate and edit images with typography and transparent backgrounds.',
+    'zh-CN': '生成和编辑图像，支持文字排版和透明背景。'
+  },
+  'models.explore.version.nanoBanana2': {
+    en: 'Generate and edit images with fast, precise visual control.',
+    'zh-CN': '快速生成和编辑图像，精准控制视觉效果。'
+  },
   'models.explore.trending.label': {
     en: 'TRENDING',
     'zh-CN': '热门'
   },
   'models.explore.trending.description': {
-    en: 'Tracked model versions gaining the most weekly users in Comfy Cloud. Successful partner generations, last 7 days versus the previous 7. Updated {date}; local open-weight usage is not included.',
-    'zh-CN':
-      'Comfy Cloud 中每周用户增长最多的已追踪模型版本。按最近七天与此前七天的合作伙伴模型成功生成记录计算。更新于 {date}；不包含本地开放权重模型的使用数据。'
+    en: 'What is running this week.',
+    'zh-CN': '本周正在运行的模型。'
   },
   'models.explore.trending.growth': {
     en: '+{users} weekly users · +{percent}%',
@@ -156,8 +199,8 @@ const translations = {
     'zh-CN': '发布公告'
   },
   'models.explore.dayZero.label': {
-    en: 'LATEST VERIFIED RELEASES',
-    'zh-CN': '最新核实发布'
+    en: 'LATEST',
+    'zh-CN': '最新'
   },
   'models.explore.dayZero.description': {
     en: 'Individual versions with release dates verified against their publishers. Includes verified catalog releases; quantization variants are grouped.',

@@ -60,19 +60,12 @@ const illustratedModels = canonicalModels.filter(
 )
 
 const validatedTrendSnapshot = modelTrendSnapshotSchema.parse(trendSnapshot)
-export const modelTrendsAsOf = validatedTrendSnapshot.asOf
 
 export const trendingModelFixtures: ExploreModelCardFixture[] = rankModelTrends(
   validatedTrendSnapshot
 ).map((model) => ({
   name: model.name,
-  description:
-    model.growthPercent === null
-      ? t('models.explore.trending.new', 'en', { users: model.gain })
-      : t('models.explore.trending.growth', 'en', {
-          percent: model.growthPercent,
-          users: model.gain
-        }),
+  description: t(model.descriptionKey, 'en'),
   href: model.href,
   target: model.href.startsWith('https:') ? '_blank' : '_self',
   modality: model.modality,
@@ -85,9 +78,7 @@ export const trendingModelFixtures: ExploreModelCardFixture[] = rankModelTrends(
 export const dayZeroModelFixtures: ExploreModelCardFixture[] =
   latestVerifiedModelVersions().map((model) => ({
     name: model.name,
-    description: t('models.explore.release.date', 'en', {
-      date: model.releasedAt
-    }),
+    description: t(model.descriptionKey, 'en'),
     href: model.href,
     target: '_self',
     modality: model.modality,

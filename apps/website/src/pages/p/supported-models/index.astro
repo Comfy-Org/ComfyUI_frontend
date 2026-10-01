@@ -13,7 +13,6 @@ import {
   dayZeroModelFixtures,
   latestModelReleaseFixture,
   modelFamilyFixtures,
-  modelTrendsAsOf,
   taskFixtures,
   trendingModelFixtures
 } from '../../../components/models/explore/modelExploreFixtures'
@@ -154,9 +153,7 @@ const conversionCards = [
     collectionLabel={t('models.explore.trending.label', locale)}
     collectionDescription={
       trendingModelFixtures.length
-        ? t('models.explore.trending.description', locale, {
-            date: modelTrendsAsOf.slice(0, 10)
-          })
+        ? t('models.explore.trending.description', locale)
         : t('models.explore.trending.unavailable', locale)
     }
     collectionActionLabel={t(

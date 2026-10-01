@@ -227,7 +227,7 @@ const defaultEntries = computed(() =>
       :action-label="collectionActionLabel"
       :action-href="collectionActionHref"
     />
-    <ModelExploreGrid :entries="defaultEntries" class="mt-7" />
+    <ModelExploreGrid :entries="defaultEntries" variant="hub" class="mt-7" />
   </section>
   <section
     v-if="isActive"

@@ -9,8 +9,10 @@ test.describe('Supported model explorer @smoke', () => {
     await page.goto('/p/supported-models/')
     const trending = page.getByRole('region', { name: 'TRENDING', exact: true })
     await expect(trending.getByRole('heading', { level: 3 })).toHaveCount(8)
-    await expect(trending).toContainText('Successful partner generations')
-    await expect(trending).toContainText('weekly users')
+    await expect(trending).toContainText('What is running this week.')
+    await expect(trending).toContainText(
+      'Generate and edit images from text or reference images.'
+    )
     await expect(
       trending.getByRole('link', { name: 'Seedance (ByteDance)', exact: true })
     ).toHaveCount(0)
@@ -53,13 +55,18 @@ test.describe('Supported model explorer @smoke', () => {
   }) => {
     await page.goto('/p/supported-models/')
     const latest = page.getByRole('region', {
-      name: 'LATEST VERIFIED RELEASES',
+      name: 'LATEST',
       exact: true
     })
     await expect(
       latest.getByRole('link', { name: 'Qwen Image 2.1', exact: true }).first()
     ).toBeVisible()
-    await expect(latest).toContainText('Released 2026-09-20')
+    await expect(latest).toContainText(
+      'Generate and edit images with typography and transparent backgrounds.'
+    )
+    await expect(
+      latest.getByText('OPEN WEIGHTS', { exact: true })
+    ).toBeVisible()
     await expect(latest).toContainText('Release announcements')
     await latest
       .getByRole('link', { name: 'Qwen Image 2.1', exact: true })

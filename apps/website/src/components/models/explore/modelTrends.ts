@@ -16,6 +16,7 @@ export const modelTrendSnapshotSchema = z.object({
 export const trendModelVersions = [
   {
     id: 'meshy-7.1',
+    descriptionKey: 'models.explore.version.meshy71',
     name: 'Meshy 7.1',
     modality: '3d',
     href: 'https://docs.meshy.ai/en/api/changelog',
@@ -24,6 +25,7 @@ export const trendModelVersions = [
   },
   {
     id: 'kling-v3',
+    descriptionKey: 'models.explore.version.kling3',
     name: 'Kling Video 3.0',
     modality: 'video',
     href: '/hub/models/kling-3-0-text-to-video/',
@@ -32,6 +34,7 @@ export const trendModelVersions = [
   },
   {
     id: 'eleven_sfx_v2',
+    descriptionKey: 'models.explore.version.soundEffectsV2',
     name: 'ElevenLabs Sound Effects V2',
     modality: 'audio',
     href: 'https://elevenlabs.io/docs/api-reference/text-to-sound-effects/convert',
@@ -40,6 +43,7 @@ export const trendModelVersions = [
   },
   {
     id: 'eleven_v3',
+    descriptionKey: 'models.explore.version.elevenV3',
     name: 'Eleven v3',
     modality: 'audio',
     href: 'https://elevenlabs.io/v3',
@@ -48,6 +52,7 @@ export const trendModelVersions = [
   },
   {
     id: 'seedream-5-0-flash-260915',
+    descriptionKey: 'models.explore.version.seedreamFlash',
     name: 'Seedream 5.0 Flash',
     modality: 'image',
     href: 'https://docs.byteplus.com/en/docs/ModelArk/model-release-announcement',
@@ -55,6 +60,7 @@ export const trendModelVersions = [
   },
   {
     id: 'seedream-5-0-pro-260628',
+    descriptionKey: 'models.explore.version.seedreamPro',
     name: 'Seedream 5.0 Pro',
     modality: 'image',
     href: '/hub/models/seedream-5-0-pro-text-to-image/',
@@ -63,6 +69,7 @@ export const trendModelVersions = [
   },
   {
     id: 'dreamina-seedance-2-5-260628',
+    descriptionKey: 'models.explore.version.seedance25',
     name: 'Seedance 2.5',
     modality: 'video',
     href: '/hub/models/seedance-2-5-text-to-video/',
@@ -71,6 +78,7 @@ export const trendModelVersions = [
   },
   {
     id: 'gemini-3-pro-image',
+    descriptionKey: 'models.explore.version.geminiPro',
     name: 'Gemini 3 Pro Image',
     modality: 'image',
     href: '/hub/models/nano-banana-pro-text-to-image/',
@@ -79,6 +87,7 @@ export const trendModelVersions = [
   },
   {
     id: 'hy-image-v3.5-preview',
+    descriptionKey: 'models.explore.version.hy35',
     name: 'HY Image 3.5 Preview',
     modality: 'image',
     href: '/p/supported-models/hy-image-3-5-preview/',
