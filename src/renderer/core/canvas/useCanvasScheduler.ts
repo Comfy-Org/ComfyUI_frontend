@@ -68,33 +68,41 @@ export function createCanvasScheduler(): CanvasScheduler {
     flushQueued()
   }
 
+  function shouldDiscard(operation: CanvasOperation): boolean {
+    if (operation.isCurrent?.() === false) return true
+    const { element } = operation
+    return Boolean(
+      element && element !== canvasStore.canvas?.canvas && !element.isConnected
+    )
+  }
+
+  function reportOperationFailure(
+    err: unknown,
+    remainingInBatch: number
+  ): void {
+    reportError(err, {
+      errorType: 'canvas_scheduled_operation_failed',
+      surface: 'graph',
+      context: {
+        remainingInBatch,
+        pendingQueue: queue.length,
+        canvasReady: isCanvasReady()
+      }
+    })
+  }
+
   function executeOperation(
     operation: CanvasOperation,
     remainingInBatch: number
   ): 'complete' | 'pending' {
-    if (operation.isCurrent?.() === false) return 'complete'
-    if (
-      operation.element &&
-      operation.element !== canvasStore.canvas?.canvas &&
-      !operation.element.isConnected
-    ) {
-      return 'complete'
-    }
+    if (shouldDiscard(operation)) return 'complete'
     if (!isElementReady(operation.element ?? canvasStore.canvas?.canvas)) {
       return 'pending'
     }
     try {
       operation.run()
     } catch (err) {
-      reportError(err, {
-        errorType: 'canvas_scheduled_operation_failed',
-        surface: 'graph',
-        context: {
-          remainingInBatch,
-          pendingQueue: queue.length,
-          canvasReady: isCanvasReady()
-        }
-      })
+      reportOperationFailure(err, remainingInBatch)
     }
     return 'complete'
   }
