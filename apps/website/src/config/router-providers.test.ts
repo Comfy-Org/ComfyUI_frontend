@@ -111,25 +111,25 @@ function parseCoverageTable(markdown: string): {
 }
 
 describe('Router provider source availability', () => {
-  it.each([
+  for (const [value, expected] of [
     ['1', true],
     ['true', true],
     ['TRUE', true],
     ['0', false],
     ['false', false],
     ['', false]
-  ])('classifies CI=%s as %s', (value, expected) => {
-    expect(isCI(value)).toBe(expected)
-  })
+  ] as const) {
+    it(`classifies CI=${value} as ${expected}`, () => {
+      expect(isCI(value)).toBe(expected)
+    })
+  }
 
   it('fails after retrying a source that stays unavailable', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')))
 
-    const result = expect(fetchDocs(PROVIDERS_PAGE)).rejects.toThrow(
-      `Could not fetch ${PROVIDERS_PAGE}`
-    )
+    const result = fetchDocs(PROVIDERS_PAGE)
     await vi.runAllTimersAsync()
-    await result
+    await expect(result).rejects.toThrow(`Could not fetch ${PROVIDERS_PAGE}`)
   })
 
   it('detects provider drift when the spec lists different alternate providers', () => {
@@ -151,54 +151,66 @@ describe('Router provider coverage', () => {
     expect(ROUTER_PROVIDER_COVERAGE_VERIFIED_AT).toMatch(/^\d{4}-\d{2}-\d{2}$/)
   })
 
-  it("matches each model's alternate providers in the API spec", async (ctx) => {
-    if (skipReason) return ctx.skip(skipReason)
-    const specs = await Promise.all(
-      ROUTER_PROVIDER_COVERAGE.map((row) =>
-        fetchDocs(`${ROUTER_SCHEMAS}/${row.modelId}.json`)
+  it(
+    "matches each model's alternate providers in the API spec",
+    async (ctx) => {
+      if (skipReason) return ctx.skip(skipReason)
+      const specs = await Promise.all(
+        ROUTER_PROVIDER_COVERAGE.map((row) =>
+          fetchDocs(`${ROUTER_SCHEMAS}/${row.modelId}.json`)
+        )
       )
-    )
 
-    expectAlternateProviders(
-      specs,
-      ROUTER_PROVIDER_COVERAGE.map((row) => row.providers)
-    )
-  }, SOURCE_TEST_TIMEOUT_MS)
+      expectAlternateProviders(
+        specs,
+        ROUTER_PROVIDER_COVERAGE.map((row) => row.providers)
+      )
+    },
+    SOURCE_TEST_TIMEOUT_MS
+  )
 
-  it('lists every model the docs show with an alternate provider', async (ctx) => {
-    if (skipReason) return ctx.skip(skipReason)
-    const markdown = await fetchDocs(PROVIDERS_PAGE)
+  it(
+    'lists every model the docs show with an alternate provider',
+    async (ctx) => {
+      if (skipReason) return ctx.skip(skipReason)
+      const markdown = await fetchDocs(PROVIDERS_PAGE)
 
-    const docs = parseCoverageTable(markdown)
-    expect(docs.providers).toEqual(
-      ROUTER_SERVING_PROVIDERS.map((provider) => provider.name)
-    )
-    expect(docs.rows.every((row) => row.comfy === '✓')).toBe(true)
-    const byDocsUrl = (a: { docsUrl: string }, b: { docsUrl: string }) =>
-      a.docsUrl.localeCompare(b.docsUrl)
-    expect(
-      docs.rows
-        .map((row) => ({ docsUrl: row.docsUrl, name: row.name }))
-        .sort(byDocsUrl)
-    ).toEqual(
-      ROUTER_PROVIDER_COVERAGE.map((row) => ({
-        docsUrl: row.docsUrl,
-        name: row.docsName ?? row.name
-      })).sort(byDocsUrl)
-    )
-  }, SOURCE_TEST_TIMEOUT_MS)
+      const docs = parseCoverageTable(markdown)
+      expect(docs.providers).toEqual(
+        ROUTER_SERVING_PROVIDERS.map((provider) => provider.name)
+      )
+      expect(docs.rows.every((row) => row.comfy === '✓')).toBe(true)
+      const byDocsUrl = (a: { docsUrl: string }, b: { docsUrl: string }) =>
+        a.docsUrl.localeCompare(b.docsUrl)
+      expect(
+        docs.rows
+          .map((row) => ({ docsUrl: row.docsUrl, name: row.name }))
+          .sort(byDocsUrl)
+      ).toEqual(
+        ROUTER_PROVIDER_COVERAGE.map((row) => ({
+          docsUrl: row.docsUrl,
+          name: row.docsName ?? row.name
+        })).sort(byDocsUrl)
+      )
+    },
+    SOURCE_TEST_TIMEOUT_MS
+  )
 
-  it('previews catalog models that only Comfy serves', async (ctx) => {
-    if (skipReason) return ctx.skip(skipReason)
-    const [catalog, coverage] = await Promise.all([
-      fetchDocs(MODELS_PAGE),
-      fetchDocs(PROVIDERS_PAGE)
-    ])
+  it(
+    'previews catalog models that only Comfy serves',
+    async (ctx) => {
+      if (skipReason) return ctx.skip(skipReason)
+      const [catalog, coverage] = await Promise.all([
+        fetchDocs(MODELS_PAGE),
+        fetchDocs(PROVIDERS_PAGE)
+      ])
 
-    for (const { name, docsUrl } of ROUTER_COMFY_ONLY_PREVIEW) {
-      const path = docsUrl.slice(DOCS_ORIGIN.length)
-      expect(catalog).toContain(`[${name}](${path})`)
-      expect(coverage).not.toContain(path)
-    }
-  }, SOURCE_TEST_TIMEOUT_MS)
+      for (const { name, docsUrl } of ROUTER_COMFY_ONLY_PREVIEW) {
+        const path = docsUrl.slice(DOCS_ORIGIN.length)
+        expect(catalog).toContain(`[${name}](${path})`)
+        expect(coverage).not.toContain(path)
+      }
+    },
+    SOURCE_TEST_TIMEOUT_MS
+  )
 })
