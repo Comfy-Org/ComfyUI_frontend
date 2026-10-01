@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { getBillingTelemetryEventPayload } from './types'
+import {
+  getBillingTelemetryEventPayload,
+  getCloudAppBillingTelemetryEventPayload
+} from './types'
 
 describe('the web handoff event payload', () => {
   it.for([
@@ -40,4 +43,25 @@ describe('the web handoff event payload', () => {
       })
     }
   )
+
+  it('is reported from the cloud app, claiming no billing client', () => {
+    expect(
+      getCloudAppBillingTelemetryEventPayload({
+        operation: 'web_handoff',
+        stage: 'opened',
+        outcome: 'pending',
+        intent: 'checkout',
+        result: 'opened',
+        correlation_id: 'journey-1'
+      })
+    ).toStrictEqual({
+      operation: 'web_handoff',
+      stage: 'opened',
+      outcome: 'pending',
+      intent: 'checkout',
+      result: 'opened',
+      correlation_id: 'journey-1',
+      billing_surface: 'cloud_app'
+    })
+  })
 })
