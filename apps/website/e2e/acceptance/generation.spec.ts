@@ -9,6 +9,7 @@ import {
   useOwnInputs
 } from '../../acceptance/fixtures'
 import { expectedCharge } from '../../acceptance/settings'
+import { hubModelHref } from '../../src/config/hub-models'
 
 for (const model of modelCases) {
   test(`${model.slug}: defaults, own inputs, advanced settings${model.smoke ? ' @smoke' : ''}`, async ({
@@ -18,7 +19,7 @@ for (const model of modelCases) {
     expectedCharge(model.slug, 'defaults')
     expectedCharge(model.slug, 'own')
     expectedCharge(model.slug, 'advanced')
-    await signIn(page, `/models/${model.slug}/`)
+    await signIn(page, hubModelHref(model.slug))
     const defaults = await runAndVerify(
       page,
       billing,

@@ -23,14 +23,14 @@ const { siteUrl, locale, url } = pageContext(
 )
 const fallbackDescription = t('cloudNodes.card.unavailableDescription', locale)
 const description = pack.description || fallbackDescription
-const title = t('cloudNodes.detail.metaTitle', locale).replace(
-  '{pack}',
-  pack.displayName
-)
-const metaDescription = t('cloudNodes.detail.metaDescription', locale)
-  .replace('{pack}', pack.displayName)
-  .replace('{nodeCount}', String(pack.nodes.length))
-  .replace('{description}', description)
+const title = t('cloudNodes.detail.metaTitle', locale, {
+  pack: pack.displayName
+})
+const metaDescription = t('cloudNodes.detail.metaDescription', locale, {
+  pack: pack.displayName,
+  nodeCount: pack.nodes.length,
+  description
+})
 
 const softwareId = jsonLdId(url, 'software')
 const software = softwareApplicationNode({
@@ -46,7 +46,9 @@ const software = softwareApplicationNode({
   softwareVersion: pack.latestVersion,
   license: pack.license,
   codeRepository: pack.repoUrl,
-  authorName: pack.publisher?.name,
+  author: pack.publisher?.name
+    ? { type: 'Person', name: pack.publisher.name }
+    : undefined,
   isFree: true
 })
 ---
@@ -63,13 +65,13 @@ const software = softwareApplicationNode({
     },
     {
       name: 'Comfy Cloud',
-      url: absoluteUrl(Astro.site, localizeHref('/cloud', locale))
+      url: absoluteUrl(Astro.site, localizeHref('/cloud/', locale))
     },
     {
       name: t('breadcrumb.supportedNodes', locale),
       url: absoluteUrl(
         Astro.site,
-        localizeHref('/cloud/supported-nodes', locale)
+        localizeHref('/cloud/supported-nodes/', locale)
       )
     },
     { name: pack.displayName }

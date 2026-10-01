@@ -1,17 +1,21 @@
 import { computed } from 'vue'
-import { describe, expect, it } from 'vitest'
+import { describe } from 'vitest'
 
 import { createLGraphState, mintNodeId } from '@/lib/litegraph/src/idAllocation'
+import { test } from '@/testing/pinia'
 import type { UUID } from '@/utils/uuid'
 
 import { useEntityIdStore } from './entityIdStore'
 
-describe(useEntityIdStore, () => {
+describe(useEntityIdStore, { tags: ['concurrent-safe'] }, () => {
   const first = '00000000-0000-4000-8000-000000000001' as UUID
   const second = '00000000-0000-4000-8000-000000000002' as UUID
 
-  it('keeps allocation state when a root graph is rekeyed', () => {
-    const store = useEntityIdStore()
+  test('keeps allocation state when a root graph is rekeyed', ({
+    pinia,
+    expect
+  }) => {
+    const store = useEntityIdStore(pinia)
     const state = store.get(first)
     mintNodeId(state)
 
@@ -21,8 +25,11 @@ describe(useEntityIdStore, () => {
     expect(Number(mintNodeId(store.get(second)))).toBe(2)
   })
 
-  it('replaces compatibility state without sharing the caller object', () => {
-    const store = useEntityIdStore()
+  test('replaces compatibility state without sharing the caller object', ({
+    pinia,
+    expect
+  }) => {
+    const store = useEntityIdStore(pinia)
     const state = createLGraphState()
     state.lastNodeId = 2
 
@@ -32,8 +39,8 @@ describe(useEntityIdStore, () => {
     expect(store.get(first).lastNodeId).toBe(2)
   })
 
-  it('reacts to in-place map mutations', () => {
-    const store = useEntityIdStore()
+  test('reacts to in-place map mutations', ({ pinia, expect }) => {
+    const store = useEntityIdStore(pinia)
     const hasFirst = computed(() => store.has(first))
 
     expect(hasFirst.value).toBe(false)

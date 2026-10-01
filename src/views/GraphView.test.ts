@@ -54,15 +54,7 @@ const distribution = vi.hoisted(
 vi.mock<unknown>(import('@/scripts/api'), () => ({ api: apiMock }))
 vi.mock(import('firebase/auth'))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    rootGraph: { getNodeById: vi.fn(), nodes: [] },
-    ui: {
-      menuContainer: { style: { setProperty: vi.fn() } },
-      restoreMenuPosition: vi.fn()
-    }
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@/composables/useReconnectQueueRefresh'), () => {
   const refreshOnReconnect = vi.fn(async () => {})
@@ -87,12 +79,7 @@ vi.mock(import('@/composables/useCoreCommands'), () => ({
 vi.mock(import('@/platform/remote/comfyui/useQueuePolling'), () => ({
   useQueuePolling: vi.fn()
 }))
-vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
-  useErrorHandling: () => ({
-    wrapWithErrorHandling: (f: unknown) => f,
-    wrapWithErrorHandlingAsync: (f: unknown) => f
-  })
-}))
+vi.mock(import('@/composables/useErrorHandling'))
 vi.mock(import('@/composables/useProgressFavicon'), () => ({
   useProgressFavicon: vi.fn()
 }))
@@ -200,10 +187,8 @@ describe('GraphView - reconnect wiring', () => {
     // `handleReconnected` calls both before its first `await`, so dispatching
     // the event is enough — there is nothing to wait for, and waiting for it
     // only hid how long the import above was taking.
-    const { onReconnected } = useReconnectingNotification()
-    const refreshOnReconnect = useReconnectQueueRefresh()
-    expect(onReconnected).toHaveBeenCalledTimes(1)
-    expect(refreshOnReconnect).toHaveBeenCalledTimes(1)
+    expect(useReconnectingNotification().onReconnected).toHaveBeenCalledTimes(1)
+    expect(useReconnectQueueRefresh()).toHaveBeenCalledTimes(1)
   })
 })
 
