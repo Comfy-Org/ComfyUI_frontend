@@ -750,7 +750,6 @@ const hoveredTemplate = ref<string | null>(null)
 const cardRefs = ref<HTMLElement[]>([])
 type ActiveTemplateModelSetup = {
   result: TemplateModelSetupResult
-  pending: boolean
 }
 
 const modalLayout = ref<InstanceType<typeof BaseModalLayout> | null>(null)
@@ -762,6 +761,7 @@ const activeDetail = ref<{
 } | null>(null)
 const openPending = ref(false)
 let detailGeneration = 0
+let preparedInFlight: PreparedWorkflowTemplate | null = null
 let modelMetadataController: AbortController | undefined
 let detailOrigin: HTMLElement | null = null
 let listScrollTop = 0
@@ -952,10 +952,22 @@ watch(
 )
 
 // Methods
+/**
+ * Disposes whichever prepared template this view still owns, whether it is
+ * still in flight or already shown in Detail. Every invalidation goes through
+ * here so no path can strand a preparation in the store's busy state.
+ */
+function releasePreparedDetail() {
+  const owned = preparedInFlight ?? activeDetail.value?.prepared ?? null
+  preparedInFlight = null
+  discardPreparedWorkflowTemplate(owned)
+}
+
 function invalidateDetailWork() {
   modelMetadataController?.abort()
   modelMetadataController = undefined
   detailGeneration++
+  releasePreparedDetail()
 }
 
 function getModelTypeLabel(row: TemplateModelSetupRow): string {
@@ -1021,7 +1033,6 @@ function applyTemplateModelMetadata(
     metadata,
     { isDownloadable: isModelDownloadable }
   )
-  setup.pending = false
 }
 
 function handleTemplateModelMetadataError(
@@ -1030,8 +1041,6 @@ function handleTemplateModelMetadataError(
   controller: AbortController
 ) {
   if (controller.signal.aborted || generation !== detailGeneration) return
-  const setup = activeDetail.value?.modelSetup
-  if (setup) setup.pending = false
   reportError(error, {
     errorType: 'workflow_template_model_metadata_failed',
     level: 'warning'
@@ -1104,8 +1113,7 @@ async function showModelSetupIfNeeded(
         availability,
         { status: 'aborted' },
         { isDownloadable: isModelDownloadable }
-      ),
-      pending: true
+      )
     }
   }
   const controller = new AbortController()
@@ -1136,8 +1144,9 @@ const onLoadWorkflow = async (template: TemplateInfo, event: MouseEvent) => {
     getEffectiveSourceModule(template)
   )
   if (!prepared) return
+  preparedInFlight = prepared
   if (generation !== detailGeneration) {
-    discardPreparedWorkflowTemplate(prepared)
+    releasePreparedDetail()
     return
   }
 
@@ -1153,7 +1162,6 @@ async function onBackToTemplates() {
   if (openPending.value) return
 
   invalidateDetailWork()
-  discardPreparedWorkflowTemplate(activeDetail.value?.prepared ?? null)
   activeDetail.value = null
   await nextTick()
   modalLayout.value?.setContentScrollTop(listScrollTop)
@@ -1164,7 +1172,6 @@ function onSelectNavItem(value: string | null) {
   if (openPending.value) return
 
   invalidateDetailWork()
-  discardPreparedWorkflowTemplate(activeDetail.value?.prepared ?? null)
   activeDetail.value = null
   selectedNavItem.value = value
 }

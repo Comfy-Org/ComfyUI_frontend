@@ -69,7 +69,6 @@ const mocks = vi.hoisted(() => ({
   getTemplateThumbnailUrl: vi.fn(() => '/thumbnail.webp'),
   getTemplateTitle: vi.fn((template: { title: string }) => template.title),
   loadTemplates: vi.fn(async () => true),
-  loadWorkflowTemplate: vi.fn(async () => true),
   onClose: vi.fn(),
   discardPreparedWorkflowTemplate: vi.fn(),
   openPreparedWorkflowTemplate: vi.fn(async () => 'loaded' as const),
@@ -82,8 +81,7 @@ const mocks = vi.hoisted(() => ({
     entries: [
       {
         model: fixtures.activeModel,
-        fileSize: 1024,
-        resolution: 'resolved' as const
+        fileSize: 1024
       }
     ]
   })),
@@ -107,7 +105,6 @@ vi.mock<unknown>(
       getTemplateThumbnailUrl: mocks.getTemplateThumbnailUrl,
       getTemplateTitle: mocks.getTemplateTitle,
       loadTemplates: mocks.loadTemplates,
-      loadWorkflowTemplate: mocks.loadWorkflowTemplate,
       loadingTemplateId: computed(() => null),
       openPreparedWorkflowTemplate: mocks.openPreparedWorkflowTemplate,
       prepareWorkflowTemplate: mocks.prepareWorkflowTemplate,
@@ -217,8 +214,7 @@ function renderDialog() {
         TemplateFilterControls: true,
         AsyncSearchInput: true,
         AccessibleTooltip: { template: '<div><slot /></div>' },
-        Tag: { props: ['label'], template: '<span>{{ label }}</span>' },
-        ProgressSpinner: true
+        Tag: { props: ['label'], template: '<span>{{ label }}</span>' }
       }
     }
   })
@@ -316,6 +312,55 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
     await waitFor(() => {
       expect(mocks.resolveAvailability).toHaveBeenCalledOnce()
       expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledOnce()
+    })
+    expect(screen.queryByRole('article')).not.toBeInTheDocument()
+  })
+
+  it('discards the prepared workflow when navigation changes while inventory resolves', async () => {
+    let resolveAvailability:
+      | ((value: ResolvedTemplateModelAvailability[]) => void)
+      | undefined
+    mocks.resolveAvailability.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveAvailability = resolve
+        })
+    )
+    const user = userEvent.setup()
+    renderDialog()
+    await clickTemplateCard()
+    await waitFor(() => {
+      expect(mocks.resolveAvailability).toHaveBeenCalledOnce()
+    })
+
+    // Detail does not exist yet, so only the in-flight slot holds the handle.
+    await user.click(screen.getByRole('button', { name: 'Popular' }))
+    resolveAvailability?.([{ model: fixtures.activeModel, status: 'missing' }])
+    await waitFor(() => {
+      expect(mocks.discardPreparedWorkflowTemplate).toHaveBeenCalledWith(
+        fixtures.prepared
+      )
+    })
+    expect(mocks.openPreparedWorkflowTemplate).not.toHaveBeenCalled()
+    expect(screen.queryByRole('article')).not.toBeInTheDocument()
+  })
+
+  it('discards the prepared workflow when a filter change clears a visible Detail', async () => {
+    mocks.resolveAvailability.mockResolvedValueOnce([
+      { model: fixtures.activeModel, status: 'missing' }
+    ])
+    const user = userEvent.setup()
+    renderDialog()
+    await clickTemplateCard()
+    await screen.findByRole('article', { name: fixtures.template.title })
+    mocks.discardPreparedWorkflowTemplate.mockClear()
+
+    await user.click(screen.getByRole('button', { name: 'Popular' }))
+
+    await waitFor(() => {
+      expect(mocks.discardPreparedWorkflowTemplate).toHaveBeenCalledWith(
+        fixtures.prepared
+      )
     })
     expect(screen.queryByRole('article')).not.toBeInTheDocument()
   })

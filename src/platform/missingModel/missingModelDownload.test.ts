@@ -309,12 +309,7 @@ describe('fetchModelMetadataWithStatus', () => {
     const url =
       'https://huggingface.co/org/model/resolve/main/cancelled.safetensors'
     fetchMock.mockResolvedValueOnce(new Response())
-    const fetchWithSignal = fetchModelMetadataWithStatus as (
-      url: string,
-      options: { signal: AbortSignal }
-    ) => ReturnType<typeof fetchModelMetadataWithStatus>
-
-    await fetchWithSignal(url, { signal: controller.signal })
+    await fetchModelMetadataWithStatus(url, { signal: controller.signal })
 
     expect(fetchMock).toHaveBeenCalledWith(url, {
       method: 'HEAD',

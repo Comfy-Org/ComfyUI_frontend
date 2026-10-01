@@ -196,7 +196,10 @@ describe('extractTemplateModelRequirementDetails', () => {
             ...model('invalid-top-level.safetensors', 'checkpoints'),
             url: 'not-a-url'
           }
-        ]
+        ],
+        // A selecting node makes the malformed URL the reason for exclusion,
+        // rather than the declaration simply going unused.
+        nodes: [node(1, [], ['invalid-top-level.safetensors'])]
       }
     },
     {
