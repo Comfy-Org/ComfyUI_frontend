@@ -73,6 +73,7 @@ function modelCard(model: Model): ExploreModelCardFixture {
 }
 
 export const trendingModelFixtures = [...illustratedModels]
+  .filter((model) => model.directory !== 'partner_nodes')
   .sort((a, b) => b.workflowCount - a.workflowCount)
   .slice(0, 4)
   .map(modelCard)

@@ -123,8 +123,8 @@ const translations = {
     'zh-CN': '热门'
   },
   'models.explore.trending.description': {
-    en: 'Models with the most supported workflows.',
-    'zh-CN': '拥有最多受支持工作流的模型。'
+    en: 'Individual open-weight models with the most supported workflows.',
+    'zh-CN': '拥有最多受支持工作流的独立开放权重模型。'
   },
   'models.explore.dayZero.label': {
     en: 'LATEST IN THE CATALOG',

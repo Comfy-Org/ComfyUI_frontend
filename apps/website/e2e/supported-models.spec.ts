@@ -3,6 +3,22 @@ import { expect } from '@playwright/test'
 import { test } from './fixtures/blockExternalMedia'
 
 test.describe('Supported model explorer @smoke', () => {
+  test('opens a specific model from the trending collection', async ({
+    page
+  }) => {
+    await page.goto('/p/supported-models/')
+    const trending = page.getByRole('region', { name: 'TRENDING', exact: true })
+    await expect(
+      trending.getByRole('link', { name: 'Seedance (ByteDance)', exact: true })
+    ).toHaveCount(0)
+    await trending
+      .getByRole('link', { name: 'Z Image Turbo BF16', exact: true })
+      .click()
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+      'Z Image Turbo BF16 in ComfyUI'
+    )
+  })
+
   test('finds a refreshed partner model and opens its detail page', async ({
     page
   }) => {
