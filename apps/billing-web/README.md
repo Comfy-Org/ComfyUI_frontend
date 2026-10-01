@@ -94,8 +94,9 @@ exception capture and external scripts are off, and the promo code and Stripe
 return parameters are masked wherever PostHog stores a URL, its cookie
 included. Its `before_send` strips the same PII keys as the Cloud app and drops
 every URL's query and fragment. Billing events go through
-`billingWebTelemetry.trackBillingEvent`, which stamps
-`billing_surface: 'billing_web'` and sends to both sinks.
+`billingWebTelemetry.trackBillingEvent`, which takes a `BillingTelemetryEvent`
+from `@comfyorg/account-core/billing`, keeps only its allowlisted fields,
+stamps `billing_surface: 'billing_web'` and sends to both sinks.
 
 ## Commands
 
