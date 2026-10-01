@@ -151,7 +151,8 @@ async function cloudErrorType(response: Response): Promise<string | undefined> {
 async function failedResponseError(
   response: Response
 ): Promise<WorkshopWorkflowError> {
-  if ((await cloudErrorType(response)) === 'PAYMENT_REQUIRED')
+  const errorType = await cloudErrorType(response)
+  if (errorType === 'PAYMENT_REQUIRED' || errorType === 'FREE_TIER_EXHAUSTED')
     return new WorkshopWorkflowError(
       'insufficient_credits',
       {},

@@ -28,8 +28,9 @@ const creditRefusal = {
   status: 429,
   json: {
     error: {
-      type: 'PAYMENT_REQUIRED',
-      message: 'Insufficient credits to queue workflows'
+      type: 'FREE_TIER_EXHAUSTED',
+      message:
+        "You've used all your free generations. Upgrade to keep creating."
     }
   }
 }
