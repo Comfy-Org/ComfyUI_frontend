@@ -7897,8 +7897,8 @@ Enterprise`
     'zh-CN': '一个创意，所有风格。'
   },
   'nanoBanana.showcase.design.description': {
-    en: 'Iterate your designs in any style, from line art to watercolor.',
-    'zh-CN': '以任意风格迭代你的设计，从线稿到水彩。'
+    en: 'Iterate your designs in any style you want.',
+    'zh-CN': '以你想要的任意风格迭代设计。'
   },
   'nanoBanana.showcase.advertising.heading': {
     en: 'One product, every set.',
