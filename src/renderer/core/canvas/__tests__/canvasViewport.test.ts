@@ -89,8 +89,8 @@ describe('measureViewport', () => {
 
   it('rounds physical dimensions', () => {
     const vp = measureViewport(801, 601, 1.5, 0)
-    expect(vp.physicalWidth).toBe(Math.round(801 * 1.5))
-    expect(vp.physicalHeight).toBe(Math.round(601 * 1.5))
+    expect(vp.physicalWidth).toBe(1202)
+    expect(vp.physicalHeight).toBe(902)
   })
 
   it('returns a frozen object', () => {
