@@ -209,11 +209,6 @@
       "count": 1
     }
   },
-  "src/platform/cloud/subscription/composables/useSubscription.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
   "src/platform/cloud/subscription/launchCancellationFlow.ts": {
     "comfy/no-new-error-throw": {
       "count": 1

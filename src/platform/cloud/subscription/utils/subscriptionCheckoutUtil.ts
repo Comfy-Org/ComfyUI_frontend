@@ -20,6 +20,7 @@ import type {
 } from '@/platform/telemetry/types'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import {
+  BillingFailureError,
   PaymentPopupBlockedError,
   describeBillingFailure
 } from '@/platform/telemetry/utils/billingFailureCategory'
@@ -136,6 +137,14 @@ export async function performSubscriptionCheckout(
       initiateSubscriptionCheckout(pendingAttempt, options.paymentIntentSource)
   )
 }
+
+export const missingCheckoutUrlError = () =>
+  new BillingFailureError(
+    t('toastMessages.failedToInitiateSubscription', {
+      error: 'No checkout URL returned'
+    }),
+    { failure_category: 'unknown', error_code: 'missing_checkout_response' }
+  )
 
 export type ReportedCheckoutAttemptInput = Omit<
   PendingSubscriptionCheckoutAttemptInput,
@@ -269,7 +278,7 @@ function completeSubscriptionCheckout(
   checkoutUrl: string | undefined,
   context: CheckoutCompletionContext
 ) {
-  if (!checkoutUrl) return
+  if (!checkoutUrl) throw missingCheckoutUrlError()
 
   trackBeginCheckout(context)
 

@@ -485,6 +485,7 @@ describe('performSubscriptionCheckout', () => {
           cycle: 'monthly',
           checkout_type: 'new',
           failure_category: 'unknown',
+          error_code: 'missing_checkout_response',
           duration_ms: expect.any(Number)
         }
       ]

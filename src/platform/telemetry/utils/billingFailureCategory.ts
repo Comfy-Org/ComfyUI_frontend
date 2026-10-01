@@ -3,16 +3,29 @@ import { AuthStoreError } from '@/stores/authStore'
 
 import type { BillingFailure } from '../types'
 
-export class PaymentPopupBlockedError extends Error {
-  constructor(message: string) {
+export class BillingFailureError extends Error {
+  constructor(
+    message: string,
+    public readonly failure: BillingFailure
+  ) {
     super(message)
+    this.name = 'BillingFailureError'
+  }
+}
+
+export class PaymentPopupBlockedError extends BillingFailureError {
+  constructor(message: string) {
+    super(message, {
+      failure_category: 'redirect',
+      error_code: 'payment_popup_blocked'
+    })
     this.name = 'PaymentPopupBlockedError'
   }
 }
 
 export function describeBillingFailure(err: unknown): BillingFailure {
-  return err instanceof PaymentPopupBlockedError
-    ? { failure_category: 'redirect', error_code: 'payment_popup_blocked' }
+  return err instanceof BillingFailureError
+    ? err.failure
     : { failure_category: categorizeBillingApiError(err) }
 }
 
@@ -25,7 +38,7 @@ export function describeBillingFailure(err: unknown): BillingFailure {
 export function categorizeBillingApiError(
   err: unknown
 ): BillingFailure['failure_category'] {
-  if (err instanceof PaymentPopupBlockedError) return 'redirect'
+  if (err instanceof BillingFailureError) return err.failure.failure_category
   if (err instanceof WorkspaceApiError) {
     if (err.failureCategory) return err.failureCategory
     return err.status === undefined ? 'network' : 'api_rejected'

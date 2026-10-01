@@ -838,7 +838,10 @@ describe('useSubscription', () => {
         checkoutResponse: () => new Response(JSON.stringify({})),
         openedWindow: window,
         rejection: 'No checkout URL returned',
-        failure: { failure_category: 'unknown' }
+        failure: {
+          failure_category: 'unknown',
+          error_code: 'missing_checkout_response'
+        }
       },
       {
         name: 'the browser blocks the checkout tab',

@@ -173,6 +173,10 @@ export const useAuthActions = () => {
     reportAuthFlowError('password_reset')
   )
 
+  /** Whether `purchaseCreditsDirect` goes on to open a checkout. */
+  const canPurchaseCredits = (): boolean =>
+    useBillingContext().canAccessSubscriptionFeatures.value
+
   /**
    * Raw (unwrapped) credit purchase. Exposed separately from `purchaseCredits`
    * so callers that need to observe a rejection directly (e.g. to fire failure
@@ -180,8 +184,7 @@ export const useAuthActions = () => {
    * resolves instead of re-throwing on failure.
    */
   const purchaseCreditsDirect = async (amount: number): Promise<void> => {
-    const { canAccessSubscriptionFeatures } = useBillingContext()
-    if (!canAccessSubscriptionFeatures.value) return
+    if (!canPurchaseCredits()) return
 
     const response = await authStore.initiateCreditPurchase({
       amount_micros: usdToMicros(amount),
@@ -331,6 +334,7 @@ export const useAuthActions = () => {
     sendPasswordReset,
     purchaseCredits,
     purchaseCreditsDirect,
+    canPurchaseCredits,
     accessBillingPortal,
     accessBillingPortalDirect,
     fetchBalance,

@@ -4,6 +4,7 @@ import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { AuthStoreError } from '@/stores/authStore'
 
 import {
+  BillingFailureError,
   PaymentPopupBlockedError,
   categorizeBillingApiError,
   describeBillingFailure
@@ -17,6 +18,17 @@ describe('describeBillingFailure', () => {
       failure: {
         failure_category: 'redirect',
         error_code: 'payment_popup_blocked'
+      }
+    },
+    {
+      name: 'a billing failure error reports the failure it carries',
+      error: new BillingFailureError('no checkout URL', {
+        failure_category: 'unknown',
+        error_code: 'missing_checkout_response'
+      }),
+      failure: {
+        failure_category: 'unknown',
+        error_code: 'missing_checkout_response'
       }
     },
     {

@@ -52,7 +52,10 @@ import {
   persistPendingSubscriptionCheckoutAttempt
 } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 import type { ReportedCheckoutAttemptInput } from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
-import { runReportedCheckoutAttempt } from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
+import {
+  missingCheckoutUrlError,
+  runReportedCheckoutAttempt
+} from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
 import { useSubscriptionCancellationWatcher } from './useSubscriptionCancellationWatcher'
 
 type CloudSubscriptionCheckoutResponse = NonNullable<
@@ -535,13 +538,7 @@ function useSubscriptionInternal() {
       async (attempt) => {
         const response = await initiateSubscriptionCheckout()
 
-        if (!response.checkout_url) {
-          throw new Error(
-            t('toastMessages.failedToInitiateSubscription', {
-              error: 'No checkout URL returned'
-            })
-          )
-        }
+        if (!response.checkout_url) throw missingCheckoutUrlError()
 
         if (!window.open(response.checkout_url, '_blank')) {
           throw new PaymentPopupBlockedError(

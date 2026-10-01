@@ -252,11 +252,13 @@ async function handleBuy() {
   loading.value = true
   try {
     telemetry?.trackApiCreditTopupButtonPurchaseClicked(payAmount.value)
-    telemetry?.trackBillingEvent({
-      operation: 'topup',
-      stage: 'started',
-      outcome: 'pending'
-    })
+    if (authActions.canPurchaseCredits()) {
+      telemetry?.trackBillingEvent({
+        operation: 'topup',
+        stage: 'started',
+        outcome: 'pending'
+      })
+    }
     await authActions.purchaseCreditsDirect(payAmount.value)
 
     // Close top-up dialog (keep tracking) and open Plan & Credits to show the
