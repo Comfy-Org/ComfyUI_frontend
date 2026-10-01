@@ -1,0 +1,233 @@
+# Description: Opens a PR that moves E2E CI to the latest comfyui-ci-container release.
+# When the release changes Playwright, the PR also updates the Playwright images and
+# @playwright/test to match. Runs hourly; dispatch with a version to pick a release.
+name: 'CI: Update ComfyUI CI Container'
+
+on:
+  schedule:
+    - cron: '23 * * * *'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Container version (for example, 0.0.28). Leave blank for the latest release.'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-update-comfyui-container
+  cancel-in-progress: false
+
+jobs:
+  update:
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: read
+      pull-requests: read
+    env:
+      CONTAINER_REPO: Comfy-Org/comfyui-ci-container
+      IMAGE: ghcr.io/comfy-org/comfyui-ci-container
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Resolve versions
+        id: versions
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          semver='^[0-9]+\.[0-9]+\.[0-9]+$'
+          skip() {
+            echo "::notice::$1"
+            echo 'update=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          }
+
+          current=$(grep -oP 'comfyui-ci-container:\K[0-9]+\.[0-9]+\.[0-9]+' scripts/start-comfyui-e2e.sh)
+          current_playwright=$(sed -n -E "s/^  '@playwright\/test': \^([0-9]+\.[0-9]+\.[0-9]+)$/\1/p" pnpm-workspace.yaml)
+
+          version="${REQUESTED_VERSION#v}"
+          if [[ -z "$version" ]]; then
+            version=$(
+              gh api --paginate "repos/$CONTAINER_REPO/tags?per_page=100" --jq '.[].name' |
+                sed -n -E 's/^v([0-9]+\.[0-9]+\.[0-9]+)$/\1/p' |
+                sort -V |
+                tail -n 1
+            )
+          fi
+          if [[ ! "$version" =~ $semver ]]; then
+            echo "Invalid container version: ${REQUESTED_VERSION:-$version}" >&2
+            exit 1
+          fi
+
+          if [[ "$version" == "$current" ]]; then
+            skip "The container is already at $current"
+          fi
+          if [[ -z "$REQUESTED_VERSION" &&
+            "$(printf '%s\n' "$current" "$version" | sort -V | tail -n 1)" == "$current" ]]; then
+            skip "The latest container release $version is older than $current"
+          fi
+
+          branch="automation/ci-container-$version"
+          existing=$(gh pr list --head "$branch" --state all --json url --jq '.[0].url // empty')
+          if [[ -n "$existing" ]]; then
+            skip "A pull request already exists for $version: $existing"
+          fi
+
+          echo "$GH_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+          if ! docker buildx imagetools inspect "$IMAGE:$version" >/dev/null; then
+            if [[ -n "$REQUESTED_VERSION" ]]; then
+              echo "$IMAGE:$version is not published" >&2
+              exit 1
+            fi
+            skip "$IMAGE:$version is not published yet"
+          fi
+
+          playwright=$(
+            gh api "repos/$CONTAINER_REPO/contents/Dockerfile?ref=v$version" --jq .content |
+              base64 -d |
+              sed -n -E 's/^FROM mcr\.microsoft\.com\/playwright:v([0-9]+\.[0-9]+\.[0-9]+)-noble.*$/\1/p'
+          )
+          if [[ ! "$playwright" =~ $semver || ! "$current_playwright" =~ $semver ]]; then
+            echo "Could not read the Playwright versions (container: '$playwright', catalog: '$current_playwright')" >&2
+            exit 1
+          fi
+
+          {
+            echo 'update=true'
+            echo "branch=$branch"
+            echo "current=$current"
+            echo "version=$version"
+            echo "current_playwright=$current_playwright"
+            echo "playwright=$playwright"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Update container references
+        if: steps.versions.outputs.update == 'true'
+        env:
+          VERSION: ${{ steps.versions.outputs.version }}
+        run: |
+          set -euo pipefail
+          mapfile -t files < <(git grep -lE 'ghcr\.io/comfy-org/comfyui-ci-container:[0-9]+\.[0-9]+\.[0-9]+')
+          sed -E -i \
+            "s/(ghcr\.io\/comfy-org\/comfyui-ci-container:)[0-9]+\.[0-9]+\.[0-9]+/\1${VERSION}/g" \
+            "${files[@]}"
+          ./scripts/cicd/check-comfyui-container-version.sh
+
+      - name: Update Playwright references
+        if: >
+          steps.versions.outputs.update == 'true' &&
+          steps.versions.outputs.playwright != steps.versions.outputs.current_playwright
+        env:
+          PLAYWRIGHT: ${{ steps.versions.outputs.playwright }}
+        run: |
+          set -euo pipefail
+          mapfile -t files < <(
+            git grep -lE 'mcr\.microsoft\.com/playwright:v[0-9]+\.[0-9]+\.[0-9]+-noble' -- .github/workflows
+          )
+          if [[ ${#files[@]} -gt 0 ]]; then
+            sed -E -i \
+              "s/(mcr\.microsoft\.com\/playwright:v)[0-9]+\.[0-9]+\.[0-9]+(-noble)/\1${PLAYWRIGHT}\2/g" \
+              "${files[@]}"
+          fi
+          # Pin the exact version first so the lockfile cannot resolve a newer release.
+          sed -E -i \
+            "s/^  '@playwright\/test': \^[0-9]+\.[0-9]+\.[0-9]+$/  '@playwright\/test': ${PLAYWRIGHT}/" \
+            pnpm-workspace.yaml
+          grep -Fx "  '@playwright/test': ${PLAYWRIGHT}" pnpm-workspace.yaml
+
+      - name: Install pnpm
+        if: >
+          steps.versions.outputs.update == 'true' &&
+          steps.versions.outputs.playwright != steps.versions.outputs.current_playwright
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+
+      - name: Setup Node.js
+        if: >
+          steps.versions.outputs.update == 'true' &&
+          steps.versions.outputs.playwright != steps.versions.outputs.current_playwright
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Update lockfile
+        if: >
+          steps.versions.outputs.update == 'true' &&
+          steps.versions.outputs.playwright != steps.versions.outputs.current_playwright
+        env:
+          PLAYWRIGHT: ${{ steps.versions.outputs.playwright }}
+        run: |
+          set -euo pipefail
+          pnpm install --lockfile-only --ignore-scripts --no-frozen-lockfile
+          # Restore the caret range; the locked version still satisfies it.
+          sed -i "s/^  '@playwright\/test': ${PLAYWRIGHT}$/  '@playwright\/test': ^${PLAYWRIGHT}/" pnpm-workspace.yaml
+          grep -Fx "  '@playwright/test': ^${PLAYWRIGHT}" pnpm-workspace.yaml
+          pnpm install --lockfile-only --ignore-scripts --no-frozen-lockfile
+          pnpm dedupe --lockfile-only --ignore-scripts
+          resolved=$(grep -A2 "^    '@playwright/test':" pnpm-lock.yaml | sed -n -E 's/^      version: //p' | head -n 1)
+          if [[ "$resolved" != "$PLAYWRIGHT" ]]; then
+            echo "@playwright/test resolved to $resolved, but the container uses $PLAYWRIGHT" >&2
+            exit 1
+          fi
+
+      - name: Prepare pull request
+        id: pr
+        if: steps.versions.outputs.update == 'true'
+        env:
+          CURRENT: ${{ steps.versions.outputs.current }}
+          VERSION: ${{ steps.versions.outputs.version }}
+          CURRENT_PLAYWRIGHT: ${{ steps.versions.outputs.current_playwright }}
+          PLAYWRIGHT: ${{ steps.versions.outputs.playwright }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          title="chore: update comfyui-ci-container to $VERSION"
+          if [[ "$PLAYWRIGHT" != "$CURRENT_PLAYWRIGHT" ]]; then
+            title+=" and Playwright to $PLAYWRIGHT"
+          fi
+          echo "title=$title" >> "$GITHUB_OUTPUT"
+
+          body="$RUNNER_TEMP/pr-body.md"
+          {
+            echo '## Summary'
+            echo
+            echo "Move E2E CI to [comfyui-ci-container v$VERSION](https://github.com/$CONTAINER_REPO/tree/v$VERSION), which is built on \`mcr.microsoft.com/playwright:v$PLAYWRIGHT-noble\`."
+            echo
+            echo '## Changes'
+            echo
+            echo '- **What**:'
+            echo "  - \`comfyui-ci-container:$CURRENT\` → \`$VERSION\` in every workflow, script, and README that references it"
+            if [[ "$PLAYWRIGHT" != "$CURRENT_PLAYWRIGHT" ]]; then
+              echo "  - \`mcr.microsoft.com/playwright:v$CURRENT_PLAYWRIGHT-noble\` → \`v$PLAYWRIGHT-noble\` in the workflows that share the catalog Playwright version"
+              echo "- **Dependencies**: \`@playwright/test\` ^$CURRENT_PLAYWRIGHT → ^$PLAYWRIGHT"
+            fi
+            echo
+            echo '## Review Focus'
+            echo
+            if [[ "$PLAYWRIGHT" != "$CURRENT_PLAYWRIGHT" ]]; then
+              echo 'Playwright changed, so check CI for type errors from the new Playwright types and for screenshot diffs from the new browser builds. Push fixes to this branch; this workflow does not overwrite an existing PR.'
+            else
+              echo 'Playwright is unchanged. Check that E2E CI passes on the new container.'
+            fi
+            echo
+            echo "Opened by [CI: Update ComfyUI CI Container]($RUN_URL)."
+          } > "$body"
+          echo "body_path=$body" >> "$GITHUB_OUTPUT"
+
+      - name: Create pull request
+        if: steps.versions.outputs.update == 'true'
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          token: ${{ secrets.PR_GH_TOKEN }}
+          base: main
+          branch: ${{ steps.versions.outputs.branch }}
+          title: ${{ steps.pr.outputs.title }}
+          commit-message: ${{ steps.pr.outputs.title }}
+          body-path: ${{ steps.pr.outputs.body_path }}
