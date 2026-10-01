@@ -4,9 +4,11 @@ import { fileURLToPath } from 'node:url'
 
 import { markdownTable } from 'markdown-table'
 import {
+  LanguageVariant,
   ScriptKind,
   ScriptTarget,
   SyntaxKind,
+  createScanner,
   createSourceFile,
   forEachChild,
   isCallExpression,
@@ -293,14 +295,10 @@ const resolveInternalImport = (
 }
 
 const suppressionViolations = (filename: string, source: string): Violation[] =>
-  source
-    .split('\n')
-    .filter(
-      (line) =>
-        line.includes('eslint-disable') && line.includes(ARCHITECTURE_RULE)
-    )
-    .map((line, index) => {
-      const exceptionId = line.match(
+  eslintComments(filename, source)
+    .filter(disablesArchitectureRule)
+    .map((comment, index) => {
+      const exceptionId = comment.match(
         /architecture-exception:\s*(DDD-EX-\d{3})/
       )?.[1]
       return {
@@ -318,6 +316,37 @@ const suppressionViolations = (filename: string, source: string): Violation[] =>
         source: filename
       }
     })
+
+const eslintComments = (filename: string, source: string): string[] =>
+  scriptBodies(filename, source).flatMap(({ body, kind }) => {
+    const variant = [ScriptKind.JSX, ScriptKind.TSX].includes(kind)
+      ? LanguageVariant.JSX
+      : LanguageVariant.Standard
+    const scanner = createScanner(ScriptTarget.Latest, false, variant, body)
+    const comments: string[] = []
+    for (
+      let token = scanner.scan();
+      token !== SyntaxKind.EndOfFileToken;
+      token = scanner.scan()
+    )
+      if (
+        token === SyntaxKind.SingleLineCommentTrivia ||
+        token === SyntaxKind.MultiLineCommentTrivia
+      )
+        comments.push(scanner.getTokenText())
+    return comments
+  })
+
+const disablesArchitectureRule = (comment: string): boolean => {
+  const directive = comment.match(/eslint-disable(?:-next-line|-line)?\b/)
+  if (!directive?.index && directive?.index !== 0) return false
+  const rules = comment
+    .slice(directive.index + directive[0].length)
+    .split(/--|architecture-exception:/, 1)[0]
+    .replace(/\*\//g, '')
+    .trim()
+  return !rules || rules.split(/[\s,]+/).includes(ARCHITECTURE_RULE)
+}
 
 const classifyEdge = (
   edge: ImportEdge & { target: string },
