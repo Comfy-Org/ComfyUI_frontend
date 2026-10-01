@@ -139,6 +139,101 @@ describe('billingOperationStore', () => {
     }
   )
 
+  it.for([
+    {
+      name: 'a resumed subscription succeeds',
+      type: 'subscription',
+      metadata: undefined,
+      polled: 'succeeded',
+      waitMs: 2_000,
+      expected: [
+        { operation: 'operation', stage: 'started', billing_client: 'legacy' },
+        { operation: 'operation', stage: 'succeeded', billing_client: 'legacy' }
+      ]
+    },
+    {
+      name: 'a top-up fails',
+      type: 'topup',
+      metadata: { attemptStartedAt: 0 },
+      polled: 'failed',
+      waitMs: 2_000,
+      expected: [
+        { operation: 'operation', stage: 'failed', billing_client: 'legacy' },
+        { operation: 'topup', stage: 'failed', billing_client: 'legacy' }
+      ]
+    },
+    {
+      name: 'a downgrade to personal needs reconciliation',
+      type: 'subscription',
+      metadata: {
+        attemptStartedAt: 0,
+        downgradeToPersonal: {
+          memberRemovalCount: 1,
+          memberRemovalFailures: 0,
+          targetTier: 'creator',
+          startedAt: 0
+        }
+      },
+      polled: 'reconciliation_needed',
+      waitMs: 2_000,
+      expected: [
+        { operation: 'operation', stage: 'failed', billing_client: 'legacy' },
+        {
+          operation: 'subscription_checkout',
+          stage: 'failed',
+          billing_client: 'legacy'
+        },
+        {
+          operation: 'downgrade_to_personal',
+          stage: 'failed',
+          billing_client: 'legacy'
+        }
+      ]
+    },
+    {
+      name: 'a subscription checkout times out',
+      type: 'subscription',
+      metadata: { attemptStartedAt: 0 },
+      polled: 'pending',
+      waitMs: 121_000,
+      expected: [
+        { operation: 'operation', stage: 'timeout', billing_client: 'legacy' },
+        {
+          operation: 'subscription_checkout',
+          stage: 'failed',
+          billing_client: 'legacy'
+        }
+      ]
+    }
+  ] as const)(
+    'names the legacy client on every event it reports when $name',
+    async ({ type, metadata, polled, waitMs, expected }) => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-legacy',
+        status: polled,
+        started_at: new Date().toISOString()
+      })
+
+      void useBillingOperationStore().startOperation(
+        'op-legacy',
+        type,
+        metadata
+      )
+      await vi.advanceTimersByTimeAsync(waitMs)
+      await vi.runAllTimersAsync()
+
+      expect(
+        vi
+          .mocked(useTelemetry()?.trackBillingEvent)
+          ?.mock.calls.map(([{ operation, stage, billing_client }]) => ({
+            operation,
+            stage,
+            billing_client
+          }))
+      ).toEqual(expected)
+    }
+  )
+
   describe('startOperation', () => {
     it('creates a pending operation', () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
@@ -525,6 +620,7 @@ describe('billingOperationStore', () => {
         [
           {
             operation: 'operation',
+            billing_client: 'legacy',
             stage: 'started',
             outcome: 'pending',
             operation_type: 'subscription'
@@ -533,6 +629,7 @@ describe('billingOperationStore', () => {
         [
           {
             operation: 'operation',
+            billing_client: 'legacy',
             stage: 'succeeded',
             outcome: 'success',
             billing_op_id: 'op-recovered',
@@ -568,6 +665,7 @@ describe('billingOperationStore', () => {
         [
           {
             operation: 'operation',
+            billing_client: 'legacy',
             stage: 'succeeded',
             outcome: 'success',
             billing_op_id: 'op-initiated',
@@ -582,6 +680,7 @@ describe('billingOperationStore', () => {
         [
           {
             operation: 'subscription_checkout',
+            billing_client: 'legacy',
             stage: 'succeeded',
             outcome: 'success',
             tier: 'creator',
@@ -694,6 +793,7 @@ describe('billingOperationStore', () => {
 
       expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'subscription_checkout',
+        billing_client: 'legacy',
         stage: 'succeeded',
         outcome: 'success',
         tier: undefined,
@@ -810,6 +910,7 @@ describe('billingOperationStore', () => {
 
       expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'downgrade_to_personal',
+        billing_client: 'legacy',
         stage: 'succeeded',
         outcome: 'success',
         member_removal_count: 2,
@@ -835,6 +936,7 @@ describe('billingOperationStore', () => {
 
       expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'topup',
+        billing_client: 'legacy',
         stage: 'succeeded',
         outcome: 'success',
         billing_op_id: 'op-1',
@@ -859,6 +961,7 @@ describe('billingOperationStore', () => {
 
       expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'topup',
+        billing_client: 'legacy',
         stage: 'succeeded',
         outcome: 'success',
         billing_op_id: 'op-1',
@@ -891,6 +994,7 @@ describe('billingOperationStore', () => {
 
         expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
           operation: 'operation',
+          billing_client: 'legacy',
           stage: 'succeeded',
           outcome: 'success',
           billing_op_id: 'op-1',
@@ -1101,6 +1205,7 @@ describe('billingOperationStore', () => {
       })
       expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'operation',
+        billing_client: 'legacy',
         stage: 'failed',
         outcome: 'failure',
         billing_op_id: 'op-1',
@@ -1144,6 +1249,7 @@ describe('billingOperationStore', () => {
 
         expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
           operation: 'topup',
+          billing_client: 'legacy',
           stage: 'failed',
           outcome: 'failure',
           billing_op_id: 'op-1',
@@ -1487,6 +1593,7 @@ describe('billingOperationStore', () => {
       expect(downgradeEvents).toEqual([
         {
           operation: 'downgrade_to_personal',
+          billing_client: 'legacy',
           stage: 'failed',
           outcome: 'failure',
           member_removal_count: 3,
@@ -2476,6 +2583,7 @@ describe('billingOperationStore', () => {
       expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledOnce()
       expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'operation',
+        billing_client: 'legacy',
         stage: 'failed',
         outcome: 'failure',
         billing_op_id: 'op-reconcile',
@@ -2489,6 +2597,7 @@ describe('billingOperationStore', () => {
       })
       expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'subscription_checkout',
+        billing_client: 'legacy',
         stage: 'failed',
         outcome: 'failure',
         tier: 'creator',
@@ -3225,6 +3334,7 @@ describe('billingOperationStore', () => {
       })
       expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'operation',
+        billing_client: 'legacy',
         stage: 'succeeded',
         outcome: 'success',
         billing_op_id: 'op-1',

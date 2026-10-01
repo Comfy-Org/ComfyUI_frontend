@@ -3,6 +3,11 @@ import type { AuditLog } from '@/services/customerEventsService'
 const STORAGE_KEY = 'pending_topup_timestamp'
 const MAX_AGE_MS = 24 * 60 * 60 * 1000 // 24 hours
 
+interface CompletedTopup {
+  /** Set when the checkout tab opened, one purchase request after `started`. */
+  startedAtMs: number
+}
+
 function getPendingTopupTimestamp(): number | null {
   const timestampStr = localStorage.getItem(STORAGE_KEY)
   if (timestampStr === null) return null
@@ -28,13 +33,13 @@ export function usePendingTopup() {
     localStorage.setItem(STORAGE_KEY, Date.now().toString())
   }
 
-  // True if a credit top-up completed after tracking started; clears on hit.
-  function isPendingTopupCompleted(
+  // The top-up a later credit_added completed, if any; clears the marker on hit.
+  function consumeCompletedTopup(
     events: AuditLog[] | undefined | null
-  ): boolean {
+  ): CompletedTopup | null {
     const timestamp = getPendingTopupTimestamp()
-    if (timestamp === null) return false
-    if (!events || events.length === 0) return false
+    if (timestamp === null) return null
+    if (!events || events.length === 0) return null
 
     const completedTopup = events.find(
       (e) =>
@@ -43,11 +48,9 @@ export function usePendingTopup() {
         new Date(e.createdAt).getTime() > timestamp
     )
 
-    if (completedTopup) {
-      localStorage.removeItem(STORAGE_KEY)
-      return true
-    }
-    return false
+    if (!completedTopup) return null
+    localStorage.removeItem(STORAGE_KEY)
+    return { startedAtMs: timestamp }
   }
 
   // Non-consuming: true if a pending top-up is awaiting a balance refresh.
@@ -62,7 +65,7 @@ export function usePendingTopup() {
 
   return {
     startPendingTopup,
-    isPendingTopupCompleted,
+    consumeCompletedTopup,
     pendingTopupNeedsRefresh,
     clearPendingTopup
   }

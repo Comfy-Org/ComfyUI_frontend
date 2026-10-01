@@ -792,15 +792,20 @@ describe('CreditsTile', () => {
     expect(useCustomerEventsService().getMyEvents).not.toHaveBeenCalled()
   })
 
-  it('closes a confirmed legacy top-up with one succeeded event', async () => {
+  it('closes a confirmed legacy top-up with one succeeded event measured from its start', async () => {
+    const confirmedAtMs = Date.parse('2024-06-15T12:30:00Z')
+    vi.spyOn(Date, 'now').mockReturnValue(confirmedAtMs)
     activeProSubscription()
     state.type = 'legacy'
-    localStorage.setItem('pending_topup_timestamp', Date.now().toString())
+    localStorage.setItem(
+      'pending_topup_timestamp',
+      String(confirmedAtMs - 90_000)
+    )
     vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValueOnce({
       events: [
         {
           event_type: 'credit_added',
-          createdAt: new Date(Date.now() + 1000).toISOString()
+          createdAt: new Date(confirmedAtMs - 1000).toISOString()
         }
       ]
     })
@@ -813,7 +818,14 @@ describe('CreditsTile', () => {
     const telemetry = useTelemetry()
     assert.exists(telemetry)
     expect(vi.mocked(telemetry.trackBillingEvent).mock.calls).toEqual([
-      [{ operation: 'topup', stage: 'succeeded', outcome: 'success' }]
+      [
+        {
+          operation: 'topup',
+          stage: 'succeeded',
+          outcome: 'success',
+          duration_ms: 90_000
+        }
+      ]
     ])
   })
 

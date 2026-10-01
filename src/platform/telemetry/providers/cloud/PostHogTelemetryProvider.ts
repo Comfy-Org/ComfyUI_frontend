@@ -97,9 +97,9 @@ import {
   CANCELLATION_STAGE_EVENTS,
   CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE,
   getBillingTelemetryEventName,
-  getBillingTelemetryEventPayload,
   getCheckoutJourneyTelemetryEventName,
   getCheckoutJourneyTelemetryEventPayload,
+  getCloudAppBillingTelemetryEventPayload,
   OnboardingTourEvents,
   TelemetryEvents
 } from '../../types'
@@ -510,7 +510,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   trackBillingEvent(event: BillingTelemetryEvent): void {
     this.trackEvent(
       getBillingTelemetryEventName(event),
-      getBillingTelemetryEventPayload(event)
+      getCloudAppBillingTelemetryEventPayload(event)
     )
   }
 

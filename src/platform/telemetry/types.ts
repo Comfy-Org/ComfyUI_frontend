@@ -1441,13 +1441,21 @@ type CapabilityReadBillingEvent = {
   operation: 'capability_read'
 } & (BillingSucceeded | Pick<BillingFailed, 'stage' | 'outcome'>)
 
-export type BillingTelemetryEvent =
+type BillingSurface = 'cloud_app' | 'billing_web'
+
+type BillingClient = 'sdk' | 'legacy'
+
+export type BillingTelemetryEvent = {
+  /** The rail of the code that emitted the event; absent when the emitter does not know it. */
+  billing_client?: BillingClient
+} & (
   | CapabilityReadBillingEvent
   | SubscriptionCheckoutBillingEvent
   | BillingOperationBillingEvent
   | ResubscribeBillingEvent
   | TopupBillingEvent
   | DowngradeToPersonalBillingEvent
+)
 
 type BillingTelemetryEventNameFor<T extends BillingTelemetryEvent> =
   T extends BillingTelemetryEvent
@@ -1479,6 +1487,7 @@ const BILLING_PAYLOAD_FIELD_HANDLING = {
   member_removal_failures: 'required',
   operation_type: 'required',
   source: 'required',
+  billing_client: 'optional',
   billing_op_id: 'optional',
   checkout_attempt_id: 'optional',
   checkout_type: 'optional',
@@ -1525,6 +1534,16 @@ export function getBillingTelemetryEventPayload(event: BillingTelemetryEvent) {
   }
 
   return payload
+}
+
+/** Only the cloud build registers the sinks that call this; the desktop host sink claims no surface. */
+export function getCloudAppBillingTelemetryEventPayload(
+  event: BillingTelemetryEvent
+): BillingTelemetryPayload & { billing_surface: BillingSurface } {
+  return {
+    ...getBillingTelemetryEventPayload(event),
+    billing_surface: 'cloud_app'
+  }
 }
 
 /**

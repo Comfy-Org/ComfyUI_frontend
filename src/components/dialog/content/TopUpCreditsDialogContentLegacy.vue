@@ -173,7 +173,7 @@ import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
-import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
+import { describeBillingFailure } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -262,11 +262,13 @@ async function handleBuy() {
   loading.value = true
   try {
     telemetry?.trackApiCreditTopupButtonPurchaseClicked(payAmount.value)
-    telemetry?.trackBillingEvent({
-      operation: 'topup',
-      stage: 'started',
-      outcome: 'pending'
-    })
+    if (authActions.canPurchaseCredits()) {
+      telemetry?.trackBillingEvent({
+        operation: 'topup',
+        stage: 'started',
+        outcome: 'pending'
+      })
+    }
     await authActions.purchaseCreditsDirect(payAmount.value)
 
     // Close top-up dialog (keep tracking) and open Plan & Credits to show the
@@ -286,7 +288,7 @@ async function handleBuy() {
       operation: 'topup',
       stage: 'failed',
       outcome: 'failure',
-      failure_category: categorizeBillingApiError(error)
+      ...describeBillingFailure(error)
     })
     toast.add({
       severity: 'error',

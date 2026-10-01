@@ -1075,7 +1075,10 @@ describe('PostHogTelemetryProvider', () => {
 
       provider.trackBillingEvent(event)
 
-      expect(hoisted.mockCapture).toHaveBeenCalledWith(eventName, event)
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(eventName, {
+        ...event,
+        billing_surface: 'cloud_app'
+      })
     })
 
     it('drops fields outside the billing telemetry contract', async () => {
@@ -1103,7 +1106,8 @@ describe('PostHogTelemetryProvider', () => {
           stage: 'failed',
           outcome: 'failure',
           billing_op_id: 'opaque-op-id',
-          failure_category: 'unknown'
+          failure_category: 'unknown',
+          billing_surface: 'cloud_app'
         }
       )
     })

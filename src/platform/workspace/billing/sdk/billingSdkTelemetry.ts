@@ -13,6 +13,7 @@ export function toBillingTelemetryEvent(
 ): BillingTelemetryEvent {
   const shared = {
     operation: 'operation',
+    billing_client: 'sdk',
     operation_type: event.operation_type,
     billing_op_id: event.billing_op_id,
     presentation: event.presentation,

@@ -322,6 +322,7 @@ describe('useBillingSdkStore', () => {
     )
     expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'operation',
+      billing_client: 'sdk',
       operation_type: 'topup',
       billing_op_id: 'op-1',
       presentation: 'hosted',
@@ -331,6 +332,7 @@ describe('useBillingSdkStore', () => {
     })
     expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'operation',
+      billing_client: 'sdk',
       operation_type: 'topup',
       billing_op_id: 'op-1',
       presentation: 'hosted',
@@ -480,6 +482,7 @@ describe('useBillingSdkStore', () => {
 
     expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'operation',
+      billing_client: 'sdk',
       operation_type: 'cancel',
       billing_op_id: 'op-cancel',
       presentation: 'hosted',

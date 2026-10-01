@@ -238,6 +238,11 @@ export function isRetryableRequestFailure(
   accepted: boolean
 ): boolean {
   if (accepted) return false
+  if (
+    error instanceof ZodError ||
+    error instanceof AgentResponseUnreadableError
+  )
+    return false
   if (error instanceof AgentApiError)
     return !NON_RETRYABLE_REQUEST_STATUSES.has(error.status)
   return true

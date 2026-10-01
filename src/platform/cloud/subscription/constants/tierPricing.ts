@@ -10,7 +10,12 @@ export type RegistrySubscriptionTier = components['schemas']['SubscriptionTier']
 
 export type TierKey = 'free' | 'standard' | 'creator' | 'pro' | 'founder'
 
-const TIER_TO_KEY: Record<RegistrySubscriptionTier, TierKey> = {
+// Self-serve personal-plan tiers only. TEAM and ENTERPRISE are workspace-level
+// and sales-managed respectively, and intentionally have no catalog key (see
+// toTierKey/isSalesManagedTier below).
+type CatalogTier = Exclude<RegistrySubscriptionTier, 'TEAM' | 'ENTERPRISE'>
+
+const TIER_TO_KEY: Record<CatalogTier, TierKey> = {
   FREE: 'free',
   STANDARD: 'standard',
   CREATOR: 'creator',
@@ -76,9 +81,7 @@ export const DEFAULT_TIER_KEY: TierKey = 'standard'
 //     ['FREE'] would be accepted as FREE and a null toString would throw.
 //   - own-property rather than `in`, which walks the prototype chain and would
 //     return an inherited function for 'constructor' or 'toString'.
-function isRegistrySubscriptionTier(
-  tier: unknown
-): tier is RegistrySubscriptionTier {
+function isRegistrySubscriptionTier(tier: unknown): tier is CatalogTier {
   return (
     typeof tier === 'string' &&
     Object.prototype.hasOwnProperty.call(TIER_TO_KEY, tier)

@@ -18,6 +18,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { AuthFlowAction } from '@/platform/telemetry/types'
+import { PaymentPopupBlockedError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import {
   clearAllWorkspaceStorage,
@@ -172,6 +173,10 @@ export const useAuthActions = () => {
     reportAuthFlowError('password_reset')
   )
 
+  /** Whether `purchaseCreditsDirect` goes on to open a checkout. */
+  const canPurchaseCredits = (): boolean =>
+    useBillingContext().canAccessSubscriptionFeatures.value
+
   /**
    * Raw (unwrapped) credit purchase. Exposed separately from `purchaseCredits`
    * so callers that need to observe a rejection directly (e.g. to fire failure
@@ -179,8 +184,7 @@ export const useAuthActions = () => {
    * resolves instead of re-throwing on failure.
    */
   const purchaseCreditsDirect = async (amount: number): Promise<void> => {
-    const { canAccessSubscriptionFeatures } = useBillingContext()
-    if (!canAccessSubscriptionFeatures.value) return
+    if (!canPurchaseCredits()) return
 
     const response = await authStore.initiateCreditPurchase({
       amount_micros: usdToMicros(amount),
@@ -197,8 +201,14 @@ export const useAuthActions = () => {
 
     // Mark the pending top-up directly, not via telemetry, so the balance
     // refresh on return still fires when telemetry consent is off.
-    usePendingTopup().startPendingTopup()
-    window.open(response.checkout_url, '_blank')
+    const pendingTopup = usePendingTopup()
+    pendingTopup.startPendingTopup()
+    if (!window.open(response.checkout_url, '_blank')) {
+      pendingTopup.clearPendingTopup()
+      throw new PaymentPopupBlockedError(
+        t('subscription.preview.paymentPopupBlocked')
+      )
+    }
     watchForTopupBalanceUpdate()
   }
 
@@ -207,10 +217,10 @@ export const useAuthActions = () => {
     reportError
   )
 
-  const accessBillingPortal = wrapWithErrorHandlingAsync<
-    [targetTier?: BillingPortalTargetTier, openInNewTab?: boolean],
-    boolean
-  >(async (targetTier, openInNewTab = true) => {
+  /** Unwrapped `accessBillingPortal`: rejects on failure, false when the tab is blocked. */
+  const accessBillingPortalDirect = async (
+    targetTier?: BillingPortalTargetTier
+  ): Promise<boolean> => {
     const response = await authStore.accessBillingPortal(targetTier)
     if (!response.billing_portal_url) {
       throw new Error(
@@ -219,13 +229,13 @@ export const useAuthActions = () => {
         })
       )
     }
-    if (openInNewTab) {
-      return window.open(response.billing_portal_url, '_blank') !== null
-    }
+    return window.open(response.billing_portal_url, '_blank') !== null
+  }
 
-    globalThis.location.href = response.billing_portal_url
-    return true
-  }, reportError)
+  const accessBillingPortal = wrapWithErrorHandlingAsync(
+    accessBillingPortalDirect,
+    reportError
+  )
 
   const fetchBalance = wrapWithErrorHandlingAsync(async () => {
     const result = await authStore.fetchBalance()
@@ -324,7 +334,9 @@ export const useAuthActions = () => {
     sendPasswordReset,
     purchaseCredits,
     purchaseCreditsDirect,
+    canPurchaseCredits,
     accessBillingPortal,
+    accessBillingPortalDirect,
     fetchBalance,
     signInWithGoogle,
     signInWithGithub,
