@@ -152,7 +152,7 @@ const {
   loading?: boolean
   /** Disable the select */
   disabled?: boolean
-  /** Show an input that filters options by name */
+  /** Show an input that filters options by name or value */
   searchable?: boolean
   searchPlaceholder?: string
   /** Maximum height of the dropdown panel (default: 28rem) */
