@@ -16,6 +16,7 @@ type CapturedImageUploadOptions = {
   folder?: ResultItemType
   onUploadStart?: (files: File[]) => void
   onUploadError?: () => void
+  fileFilter?: (file: File) => boolean
 }
 
 const mocks = vi.hoisted(() => ({
@@ -66,6 +67,18 @@ function construct(node: LGraphNode) {
     [
       'IMAGEUPLOAD',
       { imageInputName: 'image', image_upload: true }
+    ] as InputSpec,
+    fromPartial({})
+  )
+}
+
+function constructVideo(node: LGraphNode) {
+  useImageUploadWidget()(
+    node,
+    'upload',
+    [
+      'IMAGEUPLOAD',
+      { imageInputName: 'image', video_upload: true }
     ] as InputSpec,
     fromPartial({})
   )
@@ -130,6 +143,31 @@ describe('useImageUploadWidget', () => {
       fileComboWidget
     )
   })
+
+  it.for(['LoadVideo', 'VHS_LoadVideo', 'VHS_LoadVideoFFmpeg'])(
+    'rejects extensionless video files for %s',
+    (nodeType) => {
+      const { node } = createUploadNode()
+      node.comfyClass = nodeType
+      constructVideo(node)
+
+      expect(
+        mocks.capturedUploadOptions?.fileFilter?.(
+          new File([], 'extensionless', { type: 'video/mp4' })
+        )
+      ).toBe(false)
+      expect(
+        mocks.capturedUploadOptions?.fileFilter?.(
+          new File([], 'clip.mp4', { type: 'video/mp4' })
+        )
+      ).toBe(true)
+      expect(
+        mocks.capturedUploadOptions?.fileFilter?.(
+          new File([], 'clip.mov', { type: 'video/quicktime' })
+        )
+      ).toBe(true)
+    }
+  )
 
   it('previews the combo value once the initial frame runs', () => {
     const { node } = createUploadNode('beach.jpg')

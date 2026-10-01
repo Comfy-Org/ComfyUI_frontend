@@ -88,6 +88,42 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
     await expect(node.getByTestId(TestIds.errors.imageLoadError)).toBeHidden()
   })
 
+  test('rejects an extensionless video before changing the widget', async ({
+    comfyPage
+  }) => {
+    await comfyPage.menu.topbar.newWorkflowButton.click()
+    await comfyPage.nextFrame()
+    await comfyPage.searchBoxV2.addNode('Load Video')
+
+    const [loadVideoNode] =
+      await comfyPage.nodeOps.getNodeRefsByType('LoadVideo')
+    expect(loadVideoNode, 'Load Video node was added').toBeDefined()
+    const videoWidget = await loadVideoNode.getWidgetByName('file')
+    const initialValue = await videoWidget.getValue()
+    let uploadRequests = 0
+    await comfyPage.page.route('**/upload/image', async (route) => {
+      uploadRequests += 1
+      await route.abort()
+    })
+
+    await comfyPage.vueNodes
+      .getNodeByTitle('Load Video')
+      .locator('input[type="file"]')
+      .setInputFiles({
+        name: 'extensionless',
+        mimeType: 'video/mp4',
+        buffer: Buffer.from('video')
+      })
+
+    await expect(
+      comfyPage.page.getByText('Video files must have a filename extension.', {
+        exact: true
+      })
+    ).toBeVisible()
+    await expect.poll(() => videoWidget.getValue()).toBe(initialValue)
+    expect(uploadRequests).toBe(0)
+  })
+
   test('shows a spinner during upload', async ({ comfyPage }) => {
     let releaseUpload: () => void = () => {}
     const uploadResponse: UploadImageResponse = { name: 'spinner-test.png' }
