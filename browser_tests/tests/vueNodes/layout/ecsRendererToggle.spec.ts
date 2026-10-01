@@ -251,6 +251,7 @@ test.describe(
 
         const cfgWidget =
           await test.step('Verify visible and unclipped Vue text', async () => {
+            await comfyPage.menu.topbar.dismissWorkflowPopover()
             const vueNode = comfyPage.vueNodes.getNodeByTitle(longTitle)
             const title = vueNode.getByTestId('node-title')
             await expect(title).toBeVisible()
