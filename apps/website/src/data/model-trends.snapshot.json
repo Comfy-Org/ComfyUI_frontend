@@ -1,0 +1,36 @@
+{
+  "asOf": "2026-10-01T00:00:00Z",
+  "source": "comfy-cloud-partner-successes",
+  "rows": [
+    {
+      "model": "gemini-3-pro-image",
+      "usersCurrent": 1291,
+      "usersPrevious": 1215,
+      "runsCurrent": 39754
+    },
+    {
+      "model": "dreamina-seedance-2-5-260628",
+      "usersCurrent": 1189,
+      "usersPrevious": 1115,
+      "runsCurrent": 13918
+    },
+    {
+      "model": "seedream-5-0-pro-260628",
+      "usersCurrent": 673,
+      "usersPrevious": 582,
+      "runsCurrent": 36281
+    },
+    {
+      "model": "hy-image-v3.5-preview",
+      "usersCurrent": 148,
+      "usersPrevious": 136,
+      "runsCurrent": 2385
+    },
+    {
+      "model": "seedream-5-0-flash-260915",
+      "usersCurrent": 145,
+      "usersPrevious": 0,
+      "runsCurrent": 2317
+    }
+  ]
+}

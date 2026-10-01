@@ -58,10 +58,14 @@ const translations = {
     en: 'Model categories',
     'zh-CN': '模型类别'
   },
-  'models.explore.categories': {
-    en: 'ALL|Image|Video|Audio|3D|Edit|Upscale|LLM|Train',
-    'zh-CN': '全部|图像|视频|音频|3D|编辑|放大|LLM|训练'
-  },
+  'models.explore.categories.all': { en: 'ALL', 'zh-CN': '全部' },
+  'models.explore.categories.image': { en: 'Image', 'zh-CN': '图像' },
+  'models.explore.categories.video': { en: 'Video', 'zh-CN': '视频' },
+  'models.explore.categories.audio': { en: 'Audio', 'zh-CN': '音频' },
+  'models.explore.categories.3d': { en: '3D', 'zh-CN': '3D' },
+  'models.explore.categories.edit': { en: 'Edit', 'zh-CN': '编辑' },
+  'models.explore.categories.upscale': { en: 'Upscale', 'zh-CN': '放大' },
+  'models.explore.categories.llm': { en: 'LLM', 'zh-CN': 'LLM' },
   'models.explore.filters.openSource': {
     en: 'Open Weights',
     'zh-CN': '开放权重'
@@ -123,16 +127,38 @@ const translations = {
     'zh-CN': '热门'
   },
   'models.explore.trending.description': {
-    en: 'Individual open-weight models with the most supported workflows.',
-    'zh-CN': '拥有最多受支持工作流的独立开放权重模型。'
+    en: 'Tracked model versions gaining the most weekly users in Comfy Cloud. Successful partner generations, last 7 days versus the previous 7. Updated {date}; local open-weight usage is not included.',
+    'zh-CN':
+      'Comfy Cloud 中每周用户增长最多的已追踪模型版本。按最近七天与此前七天的合作伙伴模型成功生成记录计算。更新于 {date}；不包含本地开放权重模型的使用数据。'
+  },
+  'models.explore.trending.growth': {
+    en: '+{users} weekly users · +{percent}%',
+    'zh-CN': '每周用户增加 {users} 人 · +{percent}%'
+  },
+  'models.explore.trending.new': {
+    en: '+{users} weekly users · new activity',
+    'zh-CN': '每周用户增加 {users} 人 · 新增使用记录'
+  },
+  'models.explore.trending.unavailable': {
+    en: 'A fresh usage ranking is currently unavailable.',
+    'zh-CN': '暂无最新使用排名。'
+  },
+  'models.explore.release.date': {
+    en: 'Released {date}',
+    'zh-CN': '发布于 {date}'
+  },
+  'models.explore.release.sources': {
+    en: 'Release announcements',
+    'zh-CN': '发布公告'
   },
   'models.explore.dayZero.label': {
-    en: 'LATEST IN THE CATALOG',
-    'zh-CN': '目录中的最新模型'
+    en: 'LATEST VERIFIED RELEASES',
+    'zh-CN': '最新核实发布'
   },
   'models.explore.dayZero.description': {
-    en: 'Explore the latest additions from supported workflows.',
-    'zh-CN': '探索受支持工作流中的最新模型。'
+    en: 'Individual versions with release dates verified against their publishers. Includes verified catalog releases; quantization variants are grouped.',
+    'zh-CN':
+      '依据发布方公告核实发布日期的独立模型版本。展示目录中已核实的发布版本；量化变体合并展示。'
   },
   'models.explore.tasks.label': {
     en: 'START FROM THE TASK',
@@ -6731,6 +6757,10 @@ Enterprise`
   'models.dirDescription.audio_encoders': {
     en: 'an audio encoder that converts audio into embeddings for audio-conditioned generation',
     'zh-CN': '一个将音频转换为嵌入向量、用于音频条件生成的音频编码器'
+  },
+  'models.dirDescription.embeddings': {
+    en: 'a learned embedding that adds a concept or style to prompt conditioning',
+    'zh-CN': '一种为提示词条件引入概念或风格的学习嵌入'
   },
   'models.dirDescription.geometry_estimation': {
     en: 'a geometry estimation model that predicts depth, surface normals, or 3D structure from images',

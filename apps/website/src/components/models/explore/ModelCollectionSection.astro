@@ -18,6 +18,7 @@ interface Props {
   openWeightsBadgeLabel: string
   actionLabel: string
   actionHref: string
+  sourcesLabel?: string
 }
 
 const {
@@ -27,7 +28,8 @@ const {
   models,
   openWeightsBadgeLabel,
   actionLabel,
-  actionHref
+  actionHref,
+  sourcesLabel
 } = Astro.props
 
 const statusLabels: Record<ExploreModelStatus, string> = {
@@ -82,4 +84,18 @@ function toWorkflowItem(model: ExploreModelCardFixture): CardWorkflowItem {
       )}
     </ModelExploreCard>)}
   </div>
+  {sourcesLabel && <p
+    class="mt-5 flex flex-wrap gap-x-4 gap-y-2 text-sm text-primary-warm-gray"
+  >
+    <span>{sourcesLabel}:</span>
+    {models
+      .filter((model) => model.sourceUrl)
+      .map((model) => <a
+        href={model.sourceUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="underline hover:text-primary-comfy-yellow"
+        >{model.name}</a
+      >)}
+  </p>}
 </section>

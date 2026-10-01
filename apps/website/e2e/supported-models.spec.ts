@@ -8,14 +8,41 @@ test.describe('Supported model explorer @smoke', () => {
   }) => {
     await page.goto('/p/supported-models/')
     const trending = page.getByRole('region', { name: 'TRENDING', exact: true })
+    await expect(trending).toContainText('Successful partner generations')
+    await expect(trending).toContainText('weekly users')
     await expect(
       trending.getByRole('link', { name: 'Seedance (ByteDance)', exact: true })
     ).toHaveCount(0)
     await trending
-      .getByRole('link', { name: 'Z Image Turbo BF16', exact: true })
+      .getByRole('link', { name: 'Seedream 5.0 Pro', exact: true })
       .click()
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      'Z Image Turbo BF16 in ComfyUI'
+    await expect(page).toHaveURL(
+      /\/hub\/models\/seedream-5-0-pro-text-to-image\/?$/
+    )
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(
+      'Seedream 5.0 Pro'
+    )
+  })
+
+  test('shows verified releases with quantization variants grouped', async ({
+    page
+  }) => {
+    await page.goto('/p/supported-models/')
+    const latest = page.getByRole('region', {
+      name: 'LATEST VERIFIED RELEASES',
+      exact: true
+    })
+    await expect(
+      latest.getByRole('link', { name: 'Qwen Image 2.1', exact: true }).first()
+    ).toBeVisible()
+    await expect(latest).toContainText('Released 2026-09-20')
+    await expect(latest).toContainText('Release announcements')
+    await latest
+      .getByRole('link', { name: 'Qwen Image 2.1', exact: true })
+      .first()
+      .click()
+    await expect(page).toHaveURL(
+      /\/p\/supported-models\/qwen-image-2-1-int8-convrot\/?$/
     )
   })
 

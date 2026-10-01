@@ -534,14 +534,20 @@ function run(): void {
     return result
   })
 
+  const apiFilesBySlug = new Map<string, string[]>()
+  for (const file of files) {
+    if (!file.startsWith('api_')) continue
+    const model = extractApiModels([file]).at(0)
+    if (!model) continue
+    const templates = apiFilesBySlug.get(model.slug) ?? []
+    templates.push(file)
+    apiFilesBySlug.set(model.slug, templates)
+  }
+
   const apiOutput: OutputModel[] = apiModels
     .sort((a, b) => b.templateCount - a.templateCount)
     .map((m) => {
-      const templates = files.filter(
-        (file) =>
-          file.startsWith('api_') &&
-          extractApiModels([file])[0]?.slug === m.slug
-      )
+      const templates = apiFilesBySlug.get(m.slug) ?? []
       const firstTemplate = templates.find((file) =>
         templateThumbnailUrl(file, TEMPLATES_DIR)
       )

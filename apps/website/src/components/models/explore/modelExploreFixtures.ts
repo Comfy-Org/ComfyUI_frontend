@@ -1,6 +1,9 @@
 import { models } from '../../../config/models'
-import type { Model } from '../../../config/models'
 import type { TranslationKey } from '../../../i18n/translations'
+import { t } from '../../../i18n/translations'
+import trendSnapshot from '../../../data/model-trends.snapshot.json'
+import { modelTrendSnapshotSchema, rankModelTrends } from './modelTrends'
+import { latestVerifiedModelVersions } from './modelVersionReleases'
 
 export type ModelMediaTone = 'forest' | 'plum' | 'ember' | 'canvas'
 export type ExploreModelStatus = 'open-weights'
@@ -17,6 +20,7 @@ export interface ExploreModelCardFixture {
   tag: string
   statuses?: readonly ExploreModelStatus[]
   media: ExploreModelMedia
+  sourceUrl?: string
 }
 
 export interface ExploreTaskFixture {
@@ -55,33 +59,45 @@ const illustratedModels = canonicalModels.filter(
     )
 )
 
-function modelCard(model: Model): ExploreModelCardFixture {
-  return {
-    name: model.displayName,
-    description: `${model.workflowCount} supported workflows`,
-    href: `/p/supported-models/${model.slug}/`,
+const validatedTrendSnapshot = modelTrendSnapshotSchema.parse(trendSnapshot)
+export const modelTrendsAsOf = validatedTrendSnapshot.asOf
+
+export const trendingModelFixtures: ExploreModelCardFixture[] = rankModelTrends(
+  validatedTrendSnapshot
+).map((model) => ({
+  name: model.name,
+  description:
+    model.growthPercent === null
+      ? t('models.explore.trending.new', 'en', { users: model.gain })
+      : t('models.explore.trending.growth', 'en', {
+          percent: model.growthPercent,
+          users: model.gain
+        }),
+  href: model.href,
+  target: model.href.startsWith('https:') ? '_blank' : '_self',
+  modality: model.modality,
+  tag: 'Partner API',
+  media: model.mediaSrc
+    ? { type: 'image', src: model.mediaSrc }
+    : { type: 'placeholder', tone: 'canvas' }
+}))
+
+export const dayZeroModelFixtures: ExploreModelCardFixture[] =
+  latestVerifiedModelVersions().map((model) => ({
+    name: model.name,
+    description: t('models.explore.release.date', 'en', {
+      date: model.releasedAt
+    }),
+    href: model.href,
     target: '_self',
-    modality: model.categories?.[0] ?? model.directory,
-    tag: model.directory === 'partner_nodes' ? 'Partner API' : 'Open weights',
-    ...(model.directory !== 'partner_nodes'
+    modality: model.modality,
+    tag: model.access === 'partner-api' ? 'Partner API' : 'Open weights',
+    ...(model.access === 'open-weights'
       ? { statuses: ['open-weights'] as const }
       : {}),
-    media: model.thumbnailUrl
-      ? { type: 'image', src: model.thumbnailUrl }
-      : { type: 'placeholder', tone: 'plum' }
-  }
-}
-
-export const trendingModelFixtures = [...illustratedModels]
-  .filter((model) => model.directory !== 'partner_nodes')
-  .sort((a, b) => b.workflowCount - a.workflowCount)
-  .slice(0, 4)
-  .map(modelCard)
-
-export const dayZeroModelFixtures = [...illustratedModels]
-  .sort((a, b) => (b.releaseDate ?? '').localeCompare(a.releaseDate ?? ''))
-  .slice(0, 4)
-  .map(modelCard)
+    sourceUrl: model.sourceUrl,
+    media: { type: 'image', src: model.mediaSrc }
+  }))
 
 export const taskFixtures: ExploreTaskFixture[] = [
   {
@@ -158,21 +174,20 @@ export const taskFixtures: ExploreTaskFixture[] = [
   }
 ]
 
-const featured = [...illustratedModels]
-  .filter((model) => model.directory === 'diffusion_models')
-  .sort((a, b) => (b.releaseDate ?? '').localeCompare(a.releaseDate ?? ''))
-  .at(0)
-if (!featured?.thumbnailUrl)
+const featured = latestVerifiedModelVersions().at(0)
+if (!featured)
   throw new Error('The supported model catalog needs a featured preview')
 
 export const latestModelReleaseFixture: ExploreFeaturedRelease = {
-  name: featured.displayName,
-  description: `${featured.workflowCount} supported workflows`,
-  href: `/p/supported-models/${featured.slug}/`,
-  mediaSrc: featured.thumbnailUrl,
-  publisher: 'ComfyUI',
+  name: featured.name,
+  description: t('models.explore.release.date', 'en', {
+    date: featured.releasedAt
+  }),
+  href: featured.href,
+  mediaSrc: featured.mediaSrc,
+  publisher: t('models.explore.dayZero.label'),
   brandIconSrc: '/icons/comfyicon.svg',
-  tags: [...(featured.categories ?? [])]
+  tags: [featured.modality]
 }
 
 const families = [

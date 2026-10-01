@@ -36,7 +36,6 @@ const {
   resultCountLabel,
   emptyLabel,
   showCatalogByDefault = false,
-  resultLimit,
   defaultModels,
   collectionHeadingId,
   collectionLabel,
@@ -56,7 +55,6 @@ const {
   resultCountLabel: string
   emptyLabel: string
   showCatalogByDefault?: boolean
-  resultLimit?: number
   defaultModels?: ExploreModelCardFixture[]
   collectionHeadingId?: string
   collectionLabel?: string
@@ -103,11 +101,7 @@ const filteredCatalog = computed(() =>
 const isEmpty = computed(
   () => isActive.value && filteredCatalog.value.length === 0
 )
-const displayedCatalog = computed(() =>
-  resultLimit === undefined
-    ? filteredCatalog.value
-    : filteredCatalog.value.slice(0, resultLimit)
-)
+const displayedCatalog = filteredCatalog
 const resultStatus = computed(() =>
   isActive.value
     ? resultCountLabel.replace('{count}', String(filteredCatalog.value.length))

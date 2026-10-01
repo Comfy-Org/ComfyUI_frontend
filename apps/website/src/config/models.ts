@@ -12,6 +12,7 @@ type ModelDirectory =
   | 'vae'
   | 'text_encoders'
   | 'audio_encoders'
+  | 'embeddings'
   | 'latent_upscale_models'
   | 'upscale_models'
   | 'style_models'

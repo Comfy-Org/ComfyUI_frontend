@@ -13,6 +13,7 @@ import {
   dayZeroModelFixtures,
   latestModelReleaseFixture,
   modelFamilyFixtures,
+  modelTrendsAsOf,
   taskFixtures,
   trendingModelFixtures
 } from '../../../components/models/explore/modelExploreFixtures'
@@ -57,12 +58,11 @@ const modelList = itemListNode(
       url: absoluteUrl(Astro.site, `/p/supported-models/${model.slug}`)
     }))
 )
-const categories = t('models.explore.categories', locale).split('|')
 const categoryOptions: ModelCategoryOption[] = [
-  { value: 'all', label: categories[0] ?? 'ALL' },
-  ...MODEL_FILTER_CATEGORIES.map((value, index) => ({
+  { value: 'all', label: t('models.explore.categories.all', locale) },
+  ...MODEL_FILTER_CATEGORIES.map((value) => ({
     value,
-    label: categories[index + 1] ?? value
+    label: t(`models.explore.categories.${value}`, locale)
   })),
   {
     value: 'open',
@@ -151,7 +151,13 @@ const conversionCards = [
     defaultModels={trendingModelFixtures}
     collectionHeadingId="trending-models-heading"
     collectionLabel={t('models.explore.trending.label', locale)}
-    collectionDescription={t('models.explore.trending.description', locale)}
+    collectionDescription={
+      trendingModelFixtures.length
+        ? t('models.explore.trending.description', locale, {
+            date: modelTrendsAsOf.slice(0, 10)
+          })
+        : t('models.explore.trending.unavailable', locale)
+    }
     collectionActionLabel={t(
       'models.explore.collections.viewAllModels',
       locale
@@ -177,6 +183,7 @@ const conversionCards = [
     openWeightsBadgeLabel={t('models.explore.openWeightsBadge', locale)}
     actionLabel={t('models.explore.collections.viewAllModels', locale)}
     actionHref={`${routes.models}?catalog=all#model-catalog-results`}
+    sourcesLabel={t('models.explore.release.sources', locale)}
   />
   <ModelTaskSection
     label={t('models.explore.tasks.label', locale)}
