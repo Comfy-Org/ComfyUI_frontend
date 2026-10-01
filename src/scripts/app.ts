@@ -2562,6 +2562,13 @@ export class ComfyApp {
               const widgetValue = unwrapExportedWidgetValue(
                 value
               ) as TWidgetValue
+              if (
+                targetNode.type === 'VHS_LoadVideo' &&
+                input === 'video' &&
+                typeof widgetValue !== 'string'
+              ) {
+                return true
+              }
               widget.value = widgetValue
               widget.callback?.(widgetValue)
               return true

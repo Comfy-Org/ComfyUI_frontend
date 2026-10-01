@@ -2302,6 +2302,60 @@ describe('ComfyApp', () => {
       }
     })
 
+    it('ignores non-string VHS LoadVideo filenames during API import', async () => {
+      const graph = new LGraph()
+      const previousAppGraph = app.rootGraph
+      const previousSingletonGraph = singletonApp.rootGraph
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      const videoCallback = vi.fn((value: string) => value.lastIndexOf('.'))
+      class VhsLoadVideoNode extends LGraphNode {
+        constructor() {
+          super('Load Video')
+          this.addWidget('text', 'video', 'default.mp4', videoCallback)
+        }
+      }
+      LiteGraph.registerNodeType('VHS_LoadVideo', VhsLoadVideoNode)
+
+      try {
+        await expect(
+          app.loadApiJson(
+            {
+              '1': {
+                class_type: 'VHS_LoadVideo',
+                inputs: { video: 1 },
+                _meta: { title: 'Load Video' }
+              }
+            },
+            'invalid-vhs-api-prompt.json'
+          )
+        ).resolves.toBeUndefined()
+
+        const videoWidget = graph.nodes[0]?.widgets?.find(
+          ({ name }) => name === 'video'
+        )
+        expect(videoWidget?.value).toBe('default.mp4')
+        expect(videoCallback).not.toHaveBeenCalled()
+
+        await app.loadApiJson(
+          {
+            '1': {
+              class_type: 'VHS_LoadVideo',
+              inputs: { video: 'input/clip.mp4' },
+              _meta: { title: 'Load Video' }
+            }
+          },
+          'valid-vhs-api-prompt.json'
+        )
+
+        expect(videoCallback).toHaveBeenCalledWith('input/clip.mp4')
+      } finally {
+        LiteGraph.unregisterNodeType('VHS_LoadVideo')
+        Reflect.set(app, 'rootGraphInternal', previousAppGraph)
+        Reflect.set(singletonApp, 'rootGraphInternal', previousSingletonGraph)
+      }
+    })
+
     it('creates a removable placeholder for an API JSON missing node', async () => {
       const graph = new LGraph()
       Reflect.set(app, 'rootGraphInternal', graph)
