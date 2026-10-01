@@ -24,20 +24,20 @@
             <FieldLabel for="comfy-org-sign-in-password">
               {{ t('auth.login.passwordLabel') }}
             </FieldLabel>
-            <button
+            <Button
               type="button"
+              variant="link"
+              size="unset"
               :class="
                 cn(
-                  'text-sm font-medium text-muted-foreground select-none',
-                  canResetPassword
-                    ? 'cursor-pointer'
-                    : 'cursor-not-allowed opacity-50'
+                  'p-0 select-none',
+                  !canResetPassword && 'cursor-not-allowed opacity-50'
                 )
               "
               @click="handleForgotPassword"
             >
               {{ t('auth.login.forgotPassword') }}
-            </button>
+            </Button>
           </div>
           <PasswordInput
             v-bind="componentField"
