@@ -117,20 +117,14 @@ describe('Router provider source availability', () => {
     )
   })
 
-  it('detects provider drift from a successful source response', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue(
-        new Response(
-          JSON.stringify({
-            'x-comfy-router-alt-providers': [{ provider: 'anthropic' }]
-          })
-        )
-      )
-    )
+  it('detects provider drift from a successful source response', () => {
+    const spec = JSON.stringify({
+      'x-comfy-router-alt-providers': [{ provider: 'anthropic' }]
+    })
 
-    const spec = await fetchDocs(PROVIDERS_PAGE)
-    expect(() => expectAlternateProviders([spec], [['openai']])).toThrow()
+    expect(() => expectAlternateProviders([spec], [['openai']])).toThrow(
+      "expected [ [ 'anthropic' ] ] to deeply equal [ [ 'openai' ] ]"
+    )
   })
 })
 
