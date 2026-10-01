@@ -406,11 +406,12 @@ describe('the full-page checkout journey', () => {
         'billing.checkout.preview_ready',
         'billing.checkout.payment_element_ready',
         'billing.checkout.payment_submit_attempted',
+        'billing.checkout.method_selected',
         'billing.checkout.submitted',
         'billing.checkout.operation_linked'
       ])
     )
-    const [, , , , submitted, linked] = journey()
+    const [, , , , , submitted, linked] = journey()
     expect(submitted).not.toHaveProperty('billing_op_id')
     expect(linked).toMatchObject({ billing_op_id: 'op_9' })
   })
@@ -429,6 +430,7 @@ describe('the full-page checkout journey', () => {
       'billing.checkout.entered',
       'billing.checkout.preview_ready',
       'billing.checkout.payment_element_ready',
+      'billing.checkout.method_selected',
       'billing.checkout.submitted'
     ])
   })
@@ -634,6 +636,18 @@ describe('the full-page checkout promo journey', () => {
       promo: { result: 'applied', prefilled: true }
     },
     {
+      name: 'a code the link carried, taken off after the server priced it in other letters',
+      path: `${CHECKOUT_PATH}&promo=launch20`,
+      act: async () => {
+        form.emit('confirm', 'ctoken_1', 'card')
+        await userEvent.click(
+          await screen.findByRole('button', { name: 'Remove LAUNCH20' })
+        )
+      },
+      reported: ['pay_blocked', 'promo', 'promo'],
+      promo: { result: 'removed', prefilled: true }
+    },
+    {
       name: 'a code the customer took off',
       path: CHECKOUT_PATH,
       act: async () => {
@@ -671,7 +685,7 @@ describe('the full-page checkout promo journey', () => {
       await act(fake)
 
       await waitFor(() =>
-        expect(journeyNames().slice(2)).toEqual(
+        expect(journeyNames().slice(3)).toEqual(
           reported.map((name) => `billing.checkout.${name}`)
         )
       )

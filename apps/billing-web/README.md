@@ -111,8 +111,13 @@ quote names a bounded `denial_reason` or `error_code`. The payment form's
 `payment_element_*` and `payment_submit_*` phases pass through as the form
 reports them, `submitted` fires on each Pay that goes ahead, and
 `operation_linked` carries the operation that Pay issued, never one the
-checkout recovered. `entry_flow` is the quote's, so it reads `unknown` on
-`entered`. No event carries a promo code,
+checkout recovered. `method_selected` names the rail (`saved`, `new`,
+`on_file`) and the method kind (`card`, `alipay`, `other`) just before
+`submitted`. `promo` reports `applied`, `rejected`, `removed` or `expired` with
+`prefilled` when the entry link carried the code, and `pay_blocked` reports a
+full-page Pay held back by an unticked consent or an unapplied code. The embedded
+checkout disables Pay under those guards, so it reports no blocked press.
+`entry_flow` is the quote's, so it reads `unknown` on `entered`. No event carries a promo code,
 an email, a URL, a client secret or a provider id.
 
 ## Commands

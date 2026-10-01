@@ -342,11 +342,12 @@ describe('the embedded checkout journey', () => {
         'billing.checkout.preview_ready',
         'billing.checkout.payment_element_ready',
         'billing.checkout.payment_submit_attempted',
+        'billing.checkout.method_selected',
         'billing.checkout.submitted',
         'billing.checkout.operation_linked'
       ])
     )
-    const [, , , , submitted, linked] = journey()
+    const [, , , , , submitted, linked] = journey()
     expect(submitted).not.toHaveProperty('billing_op_id')
     expect(linked).toMatchObject({ billing_op_id: 'op_9' })
   })
@@ -362,6 +363,7 @@ describe('the embedded checkout journey', () => {
     expect(journeyNames()).toEqual([
       'billing.checkout.entered',
       'billing.checkout.preview_ready',
+      'billing.checkout.method_selected',
       'billing.checkout.submitted'
     ])
   })

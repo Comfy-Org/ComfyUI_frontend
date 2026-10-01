@@ -10,10 +10,14 @@ import type { CheckoutPageEvent } from '@/checkout/checkoutPage'
 import {
   entryFlowOf,
   entrySourceOf,
+  methodSelectedPhase,
   previewFailureOfPageEvent,
   previewFailureOfResult,
-  previewReadyPhase
+  previewReadyPhase,
+  promoResultOfQuote,
+  promoSettlementOf
 } from '@/checkout/checkoutJourney'
+import type { PromoEntry } from '@/checkout/promoEntry'
 import { useBillingEntry } from '@/entry/billingEntry'
 import { billingWebTelemetry } from '@/telemetry/billingWebTelemetry'
 
@@ -85,6 +89,37 @@ export function useCheckoutJourney(
     track({ phase: 'operation_linked', billing_op_id: operationId })
   }
 
+  function methodSelected(
+    rail: Parameters<typeof methodSelectedPhase>[0],
+    methodType: string | undefined
+  ) {
+    track(methodSelectedPhase(rail, methodType))
+  }
+
+  /** Reports that a code settled, and whether the link carried it; the code itself goes no further. */
+  function promoSettled(
+    result: 'applied' | 'rejected' | 'removed' | 'expired',
+    code: string
+  ) {
+    track({
+      phase: 'promo',
+      result,
+      prefilled: code.toLowerCase() === arrival?.promotionCode?.toLowerCase()
+    })
+  }
+
+  /** The full-page checkout's promo entry moved. */
+  function promoEntryChanged(before: PromoEntry, after: PromoEntry) {
+    const settled = promoSettlementOf(before, after)
+    if (settled) promoSettled(settled.result, settled.code)
+  }
+
+  /** The embedded checkout's quote priced with a code. */
+  function promoQuoted(result: PreviewSubscribeResult, code: string) {
+    const settled = promoResultOfQuote(result)
+    if (settled) promoSettled(settled, code)
+  }
+
   /** A quote answer, from the embedded checkout. */
   function quoted(result: PreviewSubscribeResult) {
     if (result.status === 'ok' && result.value.allowed) {
@@ -102,9 +137,21 @@ export function useCheckoutJourney(
   ) {
     if (event.type === 'quoted' && shown) return previewReady(shown)
     if (event.type === 'paySubmitted') return submitted()
+    if (event.type === 'consentMissing')
+      return track({ phase: 'pay_blocked', reason: 'reactivation_unconfirmed' })
     const failed = previewFailureOfPageEvent(event)
     if (failed) track(failed)
   }
 
-  return { enter, track, submitted, operationIssued, quoted, observe }
+  return {
+    enter,
+    track,
+    submitted,
+    operationIssued,
+    methodSelected,
+    promoEntryChanged,
+    promoQuoted,
+    quoted,
+    observe
+  }
 }

@@ -189,6 +189,7 @@ async function applyPromotionCode(code: string) {
     code.trim()
   )
   applyingPromotionCode.value = false
+  if (result !== undefined) journey.promoQuoted(result, code.trim())
   if (result?.status === 'error') submitFailure.value = refusal(result)
 }
 
@@ -491,6 +492,15 @@ async function pay(choice: PaymentChoice) {
   const quoted = preview.value
   if (planSlug.value === undefined || !quoted || loading.value) return
   submitFailure.value = undefined
+  journey.methodSelected(
+    choice.confirmationToken !== undefined
+      ? 'new'
+      : choice.savedPaymentMethodId !== undefined
+        ? 'saved'
+        : 'on_file',
+    choice.methodType ??
+      methods.value?.find(({ id }) => id === choice.savedPaymentMethodId)?.type
+  )
   journey.submitted()
   const result = await checkout.subscribe(
     buildSubscribeRequest(
@@ -607,7 +617,10 @@ function leaveForHost() {
             @update:selected-saved-method-id="selectSavedMethod"
             @change-payment-method="selectSavedMethod(null)"
             @add-credit-card="payWithoutCard"
-            @confirm-payment="pay({ confirmationToken: $event })"
+            @confirm-payment="
+              (token, methodType) =>
+                pay({ confirmationToken: token, methodType })
+            "
             @apply-promotion-code="applyPromotionCode"
             @invalidate-quote="quoteIsCurrent = false"
             @payment-phase="journey.track"

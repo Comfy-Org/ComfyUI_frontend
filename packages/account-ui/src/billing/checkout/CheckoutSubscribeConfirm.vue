@@ -59,7 +59,9 @@
         :authentication-state
         :authentication-error
         @add-credit-card="emit('addCreditCard')"
-        @confirm-payment="emit('confirmPayment', $event)"
+        @confirm-payment="
+          (token, methodType) => emit('confirmPayment', token, methodType)
+        "
         @submitting-change="stripeSubmissionPending = $event"
         @payment-phase="emit('paymentPhase', $event)"
       />
@@ -142,7 +144,7 @@ const {
 
 const emit = defineEmits<{
   addCreditCard: []
-  confirmPayment: [confirmationToken: string]
+  confirmPayment: [confirmationToken: string, paymentMethodType: string]
   back: []
   changePaymentMethod: []
   applyPromotionCode: [code: string]

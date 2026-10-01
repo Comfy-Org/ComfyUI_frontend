@@ -213,7 +213,13 @@ export function getCheckoutJourneyTelemetryEventPayload(
       }),
     ...('element' in event && { element: event.element }),
     ...('element_phase' in event && { element_phase: event.element_phase }),
-    ...('submit_phase' in event && { submit_phase: event.submit_phase })
+    ...('submit_phase' in event && { submit_phase: event.submit_phase }),
+    ...('rail' in event && { rail: event.rail }),
+    ...('method_kind' in event &&
+      event.method_kind !== undefined && { method_kind: event.method_kind }),
+    ...('result' in event && { result: event.result }),
+    ...('prefilled' in event && { prefilled: event.prefilled }),
+    ...('reason' in event && { reason: event.reason })
   }
 }
 
