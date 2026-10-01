@@ -37,6 +37,7 @@ describe('ColorPickerButton', () => {
     locale: 'en',
     messages: {
       en: {
+        g: { color: 'Color' },
         color: {
           noColor: 'No Color',
           red: 'Red',
@@ -83,6 +84,24 @@ describe('ColorPickerButton', () => {
 
     await user.click(button)
     expect(screen.queryByTestId('noColor')).not.toBeInTheDocument()
+  })
+
+  it('clears the color when the active swatch is selected again', async () => {
+    const group = new LGraphGroup()
+    setCanvasSelection([group])
+    const { user } = renderComponent()
+    const pickerButton = screen.getByRole('button', { name: 'Color' })
+
+    await user.click(pickerButton)
+    await user.click(screen.getByRole('button', { name: 'Red' }))
+    expect(group.color).toBe(LGraphCanvas.node_colors.red.groupcolor)
+
+    await user.click(pickerButton)
+    const redSwatch = screen.getByRole('button', { name: 'Red' })
+    expect(redSwatch).toHaveAttribute('aria-pressed', 'true')
+    await user.click(redSwatch)
+
+    expect(group.color).toBeUndefined()
   })
 
   it.for([

@@ -95,10 +95,8 @@ function runTool() {
 
   submitting.value = true
   status.value = via
-    ? t('mcp.hero.demoStatusBridging', locale)
-        .replace('{app}', via)
-        .replace('{tool}', tool)
-    : t('mcp.hero.demoStatusRunning', locale).replace('{tool}', tool)
+    ? t('mcp.hero.demoStatusBridging', locale, { app: via, tool })
+    : t('mcp.hero.demoStatusRunning', locale, { tool })
 
   schedule(commitCard, runToolMs.value)
 }
@@ -254,7 +252,7 @@ onUnmounted(() => clearTimeout(timer))
             v-if="card.via"
             class="relative isolate hidden h-8 shrink-0 items-center justify-center overflow-visible bg-transparent px-3 font-formula text-xs font-extrabold tracking-[0.7px] text-white/60 uppercase before:absolute before:inset-0 before:-z-10 before:-skew-x-12 before:rounded-sm before:bg-white/20 lg:inline-flex lg:px-5 lg:text-sm"
           >
-            <span class="ppformula-text-center inline-block">
+            <span class="inline-block">
               {{ card.via }}
             </span>
           </span>

@@ -91,7 +91,10 @@ export function createDeployToComfyApiGate({
       })
       .catch((error: unknown) => {
         loading = false
-        reportError(error, { errorType: 'error_loading_deploy_gate_flag' })
+        reportError(error, {
+          errorType: 'error_loading_deploy_gate_flag',
+          surface: 'platform'
+        })
       })
   }
 

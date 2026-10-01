@@ -69,6 +69,19 @@ describe('workspace targeting', () => {
     )
   })
 
+  it('sends team invites to the entry-bound workspace', async () => {
+    h.boundWorkspaceId = 'ws-team'
+    const { session } = signedInSession()
+    const client = createBillingWebClient(session)
+
+    await client.invites.listPendingInvites()
+
+    expect(session.ensureFresh).toHaveBeenCalledWith(
+      undefined,
+      expect.objectContaining({ workspaceId: 'ws-team' })
+    )
+  })
+
   it('mints for the entry-bound workspace over the session one', async () => {
     h.boundWorkspaceId = 'ws-team'
     const { session } = signedInSession()

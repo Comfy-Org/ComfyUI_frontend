@@ -3,7 +3,10 @@
  * a host may override — except the safety line, which only the projection's
  * `noChargeConfirmed` may ever unlock.
  */
-import type { BillingRecoveryAction } from './operationState.js'
+import type {
+  BillingDeclineReason,
+  BillingRecoveryAction
+} from './operationState.js'
 import type {
   PaymentProjection,
   PaymentReasonKey,
@@ -52,6 +55,7 @@ export const DEFAULT_PAYMENT_COPY: Readonly<Record<PaymentCopyKey, string>> = {
     'Your bank requires authentication.',
   'billing.reason.authentication_failed':
     'Authentication with your bank did not complete.',
+  'billing.reason.payment_not_completed': 'The payment was not completed.',
   'billing.reason.processing_error':
     'The payment could not be processed right now.',
   'billing.recovery.retry': 'Please try again.',
@@ -66,6 +70,37 @@ export const DEFAULT_PAYMENT_COPY: Readonly<Record<PaymentCopyKey, string>> = {
   'billing.action.contact_support': 'Contact support',
   'billing.action.continue_verification': 'Continue verification',
   [SAFETY_KEY]: 'Nothing was charged.'
+}
+
+/** The host's toast detail for a payment the server declined. */
+export type DeclineDetailKey =
+  | 'insufficientFundsDetail'
+  | 'expiredCardDetail'
+  | 'incorrectCvcDetail'
+  | 'authenticationFailedDetail'
+  | 'processingErrorDetail'
+  | 'paymentDeclinedDetail'
+
+export function declineDetailKey(
+  reason: BillingDeclineReason
+): DeclineDetailKey {
+  switch (reason) {
+    case 'insufficient_funds':
+      return 'insufficientFundsDetail'
+    case 'expired_card':
+      return 'expiredCardDetail'
+    case 'incorrect_cvc':
+      return 'incorrectCvcDetail'
+    case 'authentication_required':
+    case 'authentication_failed':
+    case 'payment_not_completed':
+      return 'authenticationFailedDetail'
+    case 'processing_error':
+      return 'processingErrorDetail'
+    case 'card_declined':
+    case 'generic':
+      return 'paymentDeclinedDetail'
+  }
 }
 
 export function createPaymentCopy(

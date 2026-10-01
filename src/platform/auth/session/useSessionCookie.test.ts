@@ -123,6 +123,7 @@ describe('useSessionCookie', () => {
     await useSessionCookie().createSession()
 
     expect(mockReportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+      surface: 'auth',
       errorType: 'session_cookie_creation_failure',
       level: 'warning'
     })
@@ -259,6 +260,7 @@ describe('useSessionCookie', () => {
     await expect(useSessionCookie().deleteSession()).resolves.toBeUndefined()
 
     expect(mockReportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+      surface: 'auth',
       errorType: 'auth_session_cookie_delete_failed',
       tags: {
         failure_kind: 'caught_unexpected',
@@ -310,6 +312,7 @@ describe('useSessionCookie', () => {
     expect(mockReportError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({
+        surface: 'auth',
         errorType: 'auth_session_cookie_delete_failed',
         context: { had_pending_session_mutation: true }
       })

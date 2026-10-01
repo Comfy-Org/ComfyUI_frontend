@@ -19,10 +19,13 @@
     "@comfyorg/account-ui": "workspace:*",
     "@comfyorg/billing-contract": "workspace:*",
     "@comfyorg/design-system": "workspace:*",
+    "@comfyorg/shared-frontend-utils": "workspace:*",
     "@comfyorg/tailwind-utils": "workspace:*",
     "@stripe/stripe-js": "catalog:",
     "@vueuse/core": "catalog:",
     "firebase": "catalog:",
+    "primeicons": "catalog:",
+    "reka-ui": "catalog:",
     "vue": "catalog:",
     "vue-i18n": "catalog:",
     "vue-router": "catalog:"

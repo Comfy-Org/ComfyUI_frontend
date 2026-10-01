@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import type { ActivityPart } from './agentMessageParts'
+import type { ToolPart } from './agentMessageParts'
 import { foldActivity } from './agentActivityRows'
 
-function tool(name: string, ok?: boolean, durationMs?: number): ActivityPart {
+function tool(name: string, ok?: boolean, durationMs?: number): ToolPart {
   return {
     type: 'tool',
     callId: `${name}-${durationMs}`,
@@ -43,6 +43,18 @@ describe('foldActivity', () => {
       'add_node',
       'set_widget',
       'add_node'
+    ])
+  })
+
+  it('keeps different loaded skills as distinct steps', () => {
+    const rows = foldActivity([
+      { ...tool('load_skill'), skill: 'building' },
+      { ...tool('load_skill'), skill: 'comfy-director' }
+    ])
+
+    expect(rows).toEqual([
+      expect.objectContaining({ skill: 'building', count: 1 }),
+      expect.objectContaining({ skill: 'comfy-director', count: 1 })
     ])
   })
 
