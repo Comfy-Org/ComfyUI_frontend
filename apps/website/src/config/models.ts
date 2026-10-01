@@ -1,5 +1,6 @@
 import generatedModels from './generated-models.json'
 import { modelMetadata } from './model-metadata'
+import type { ModelCategory } from './modelCategories'
 
 type ModelDirectory =
   | 'diffusion_models'
@@ -33,6 +34,8 @@ export interface Model {
   readonly blogUrl?: string
   readonly hubSlug?: string
   readonly featured: boolean
+  readonly categories?: readonly ModelCategory[]
+  readonly releaseDate?: string
   readonly workflowCount: number
   readonly whatIsBacklinkUrl?: string
 }
@@ -47,6 +50,8 @@ export const models: readonly Model[] = (
     huggingFaceUrl: string
     docsUrl?: string
     thumbnailUrl?: string
+    categories?: ModelCategory[]
+    releaseDate?: string
     workflowCount: number
   }>
 ).map((m) => ({
@@ -60,6 +65,8 @@ export const models: readonly Model[] = (
   ...(m.thumbnailUrl ? { thumbnailUrl: m.thumbnailUrl } : {}),
   featured: false,
   workflowCount: m.workflowCount,
+  categories: m.categories ?? [],
+  ...(m.releaseDate ? { releaseDate: m.releaseDate } : {}),
   ...modelMetadata[m.slug]
 }))
 
