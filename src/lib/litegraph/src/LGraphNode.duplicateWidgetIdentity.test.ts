@@ -134,6 +134,26 @@ describe('duplicate widget-name identity', () => {
       ])
     })
 
+    it('restores each occurrence added during onConfigure', () => {
+      node.onConfigure = () => addDuplicatePair()
+
+      node.configure(
+        serialisedNode({
+          widgets_values: [firstValue, secondValue],
+          widgets_values_named: { same: secondValue },
+          widgets_values_ordered: [
+            { name: 'same', occurrence: 0, value: firstValue },
+            { name: 'same', occurrence: 1, value: secondValue }
+          ]
+        })
+      )
+
+      expect(node.widgets!.map((widget) => widget.value)).toEqual([
+        firstValue,
+        secondValue
+      ])
+    })
+
     it('collapses onto the last value without the ordered field', () => {
       addDuplicatePair()
 

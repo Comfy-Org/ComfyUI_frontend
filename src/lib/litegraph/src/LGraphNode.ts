@@ -2343,14 +2343,19 @@ export class LGraphNode
 
     if (widget.serialize === false) return widget
 
-    const positionalIndex =
-      this.widgets.filter((candidate) => candidate.serialize !== false).length -
-      1
+    const serializableWidgets = this.widgets.filter(
+      (candidate) => candidate.serialize !== false
+    )
+    const positionalIndex = serializableWidgets.length - 1
+    const occurrence =
+      serializableWidgets.filter((candidate) => candidate.name === widget.name)
+        .length - 1
     const restored = useWidgetValueStore().getRestoredWidgetValue(
       this.graph?.rootGraph.id ?? zeroUuid,
       this.id,
       widget.name,
-      positionalIndex
+      positionalIndex,
+      occurrence
     )
     if (restored) widget.value = restored.value
 
