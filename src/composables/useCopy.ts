@@ -1,6 +1,7 @@
 import { useEventListener } from '@vueuse/core'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { createUuidv4 } from '@/utils/uuid'
 import {
   hasTextSelection,
   shouldIgnoreCopyPaste
@@ -68,7 +69,7 @@ export const useCopy = () => {
       // Before the clipboard write, so the two can only diverge safely.
       let copyId: string | null = null
       try {
-        const id = crypto.randomUUID()
+        const id = createUuidv4()
         localStorage.setItem(LAST_COPY_ID_KEY, id)
         copyId = id
       } catch (error) {
