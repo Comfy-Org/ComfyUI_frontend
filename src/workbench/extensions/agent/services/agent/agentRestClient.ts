@@ -59,8 +59,8 @@ export class AgentApiError extends Error {
 }
 
 export class AgentResponseUnreadableError extends Error {
-  constructor(route: string, cause: unknown) {
-    super(`Unreadable agent response body from ${route}`, { cause })
+  constructor(cause: unknown) {
+    super('Unreadable agent response body', { cause })
     this.name = 'AgentResponseUnreadableError'
   }
 }
@@ -360,7 +360,8 @@ export function createAgentRestClient() {
     try {
       payload = await response.json()
     } catch (error) {
-      throw new AgentResponseUnreadableError(route, error)
+      if (!(error instanceof SyntaxError)) throw error
+      throw new AgentResponseUnreadableError(error)
     }
     return schema.parse(payload)
   }
