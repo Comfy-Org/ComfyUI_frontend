@@ -57,7 +57,7 @@ function onDismiss(): void {
         :href="FREE_USE_DOCS_URL"
         target="_blank"
         rel="noopener noreferrer"
-        class="inline p-0 text-sm/5 font-normal text-primary-background hover:underline hover:underline-offset-4"
+        class="inline p-0 text-sm/5 font-normal text-primary-background-hover hover:underline hover:underline-offset-4"
         @click="emit('notice', { action: 'learn_more_clicked', placement })"
       >
         {{ $t('g.learnMore') }}
