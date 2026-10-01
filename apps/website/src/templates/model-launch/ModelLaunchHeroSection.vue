@@ -291,8 +291,19 @@ const isContentFirst = hero.layout === 'content-first'
       </component>
 
       <p
+        v-if="hero.mobileDescriptionKey"
+        class="mt-6 text-base/relaxed font-light text-primary-comfy-canvas md:hidden"
+      >
+        {{ t(hero.mobileDescriptionKey, locale) }}
+      </p>
+      <p
         v-if="hero.descriptionKey"
-        class="mt-6 text-base/relaxed font-light text-primary-comfy-canvas lg:text-lg/relaxed"
+        :class="
+          cn(
+            'mt-6 text-base/relaxed font-light text-primary-comfy-canvas lg:text-lg/relaxed',
+            hero.mobileDescriptionKey && 'hidden md:block'
+          )
+        "
       >
         {{ t(hero.descriptionKey, locale) }}
       </p>
@@ -306,13 +317,14 @@ const isContentFirst = hero.layout === 'content-first'
 
       <div
         v-if="hero.badgeKeys?.length"
-        class="mt-6 flex flex-wrap items-center justify-center gap-3"
+        class="mt-6 flex flex-wrap items-center justify-center gap-2 md:gap-3"
       >
         <Badge
           v-for="badgeKey in hero.badgeKeys"
           :key="badgeKey"
           data-testid="model-launch-hero-badge"
           variant="subtle"
+          class="px-2 text-[11px] md:px-4 md:text-xs"
         >
           {{ t(badgeKey, locale) }}
         </Badge>

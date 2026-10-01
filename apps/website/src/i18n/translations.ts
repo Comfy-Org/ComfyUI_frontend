@@ -7864,6 +7864,11 @@ Enterprise`
     'zh-CN':
       '占位文案。用自然语言简报生成完整图像，或在无需从头制作的情况下修改现有视觉内容。Nano Banana 通过合作伙伴节点，将图像生成、参考图引导创作与精确编辑带入 ComfyUI 工作流。'
   },
+  'nanoBanana.hero.descriptionMobile': {
+    en: 'Placeholder copy. Turn a plain language brief into a finished image, or revise an existing visual without starting over. Nano Banana runs in ComfyUI through Partner Nodes.',
+    'zh-CN':
+      '占位文案。用自然语言简报生成完整图像，或无需从头修改现有视觉内容。Nano Banana 通过合作伙伴节点在 ComfyUI 中运行。'
+  },
   'nanoBanana.hero.tagTextToImage': {
     en: 'Text to Image',
     'zh-CN': '文生图'
@@ -7872,9 +7877,9 @@ Enterprise`
     en: 'Image Editing',
     'zh-CN': '图像编辑'
   },
-  'nanoBanana.hero.tagReferenceImages': {
-    en: 'Reference Images',
-    'zh-CN': '参考图像'
+  'nanoBanana.hero.tagPartnerNode': {
+    en: 'Partner Node',
+    'zh-CN': '合作伙伴节点'
   },
   'nanoBanana.hero.primaryCta': {
     en: 'RUN NANO BANANA',

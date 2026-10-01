@@ -66,6 +66,7 @@ describe.for(pages)('$name launch page config', ({ page }) => {
       page.hero.titleKey,
       page.hero.titleRestKey,
       page.hero.descriptionKey,
+      page.hero.mobileDescriptionKey,
       page.hero.primaryCta?.labelKey,
       page.hero.secondaryCta?.labelKey,
       page.hero.promptBar?.sampleKey,

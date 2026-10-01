@@ -142,10 +142,11 @@ export const nanoBananaPage: ModelLaunchPage = {
     layout: 'media-first',
     titleKey: 'nanoBanana.hero.title',
     descriptionKey: 'nanoBanana.hero.description',
+    mobileDescriptionKey: 'nanoBanana.hero.descriptionMobile',
     badgeKeys: [
       'nanoBanana.hero.tagTextToImage',
       'nanoBanana.hero.tagImageEditing',
-      'nanoBanana.hero.tagReferenceImages'
+      'nanoBanana.hero.tagPartnerNode'
     ],
     primaryCta: {
       labelKey: 'nanoBanana.hero.primaryCta',

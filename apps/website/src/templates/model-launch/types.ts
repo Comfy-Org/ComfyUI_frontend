@@ -61,6 +61,9 @@ export interface ModelLaunchHero {
   // Rendered muted directly after `titleKey`, for the two-tone Figma heading.
   titleRestKey?: TranslationKey
   descriptionKey?: TranslationKey
+  // Shorter copy shown in place of `descriptionKey` below the md breakpoint,
+  // for the media-first and content-first layouts.
+  mobileDescriptionKey?: TranslationKey
   // Optional so a hero can render as title + description + badges only.
   primaryCta?: ModelLaunchCta
   secondaryCta?: ModelLaunchCta
