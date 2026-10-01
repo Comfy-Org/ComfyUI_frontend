@@ -2563,7 +2563,19 @@ export class ComfyApp {
                 value
               ) as TWidgetValue
               widget.value = widgetValue
-              widget.callback?.(widgetValue)
+              try {
+                widget.callback?.(widgetValue)
+              } catch (error) {
+                reportError(error, {
+                  surface: 'graph',
+                  errorType: 'failure_invoking_api_workflow_widget_callback',
+                  tags: {
+                    node_type: targetNode.type,
+                    widget_name: input
+                  },
+                  context: { fileName }
+                })
+              }
               return true
             }
             if (!applyWidgetValue()) unresolvedInputs.push(applyWidgetValue)
