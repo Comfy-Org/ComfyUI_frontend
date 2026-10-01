@@ -8,7 +8,7 @@ import {
   vi
 } from 'vitest'
 import { effectScope } from 'vue'
-import { useCopy } from './useCopy'
+import { LAST_COPY_ID_KEY, useCopy } from './useCopy'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { fromPartial } from '@total-typescript/shoehorn'
@@ -64,7 +64,7 @@ function selectDocumentText(selectedCharacters: number): void {
 function readSerializedClipboardMetadata(dataTransfer: DataTransfer): string {
   const match = dataTransfer
     .getData('text/html')
-    .match(/data-metadata="([A-Za-z0-9+/=]+)"/)?.[1]
+    .match(/data-comfy-metadata="([A-Za-z0-9+/=]+)"/)?.[1]
   expect(match).toBeDefined()
   if (!match) throw new Error('Expected clipboard metadata to be written')
 
@@ -99,6 +99,23 @@ describe('useCopy', () => {
     const dataTransfer = copySerializedData(serializedData)
 
     expect(readSerializedClipboardMetadata(dataTransfer)).toBe(serializedData)
+  })
+
+  it('tags the copy with the stored copy id outside a secure context', () => {
+    vi.stubGlobal('crypto', {
+      getRandomValues: crypto.getRandomValues.bind(crypto)
+    })
+    onTestFinished(() => {
+      vi.unstubAllGlobals()
+    })
+
+    const dataTransfer = copySerializedData('{"nodes":[]}')
+
+    const copyId = dataTransfer
+      .getData('text/html')
+      .match(/data-copy-id="([^"]+)"/)?.[1]
+    expect(copyId).toBeDefined()
+    expect(copyId).toBe(localStorage.getItem(LAST_COPY_ID_KEY))
   })
 
   describe('copy on a target the canvas ignores', () => {

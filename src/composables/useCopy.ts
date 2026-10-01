@@ -1,6 +1,7 @@
 import { useEventListener } from '@vueuse/core'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { createUuidv4 } from '@/utils/uuid'
 import {
   hasTextSelection,
   shouldIgnoreCopyPaste
@@ -13,7 +14,7 @@ const CANVAS_CLIPBOARD_ID_KEY = 'litegrapheditor_clipboard_id'
 export const LAST_COPY_ID_KEY = 'Comfy.Clipboard.LastCopyId'
 
 const clipboardHTMLWrapper = (id: string | null) => [
-  `<meta charset="utf-8"><div>${id ? `<span data-copy-id="${id}" ` : '<span '}data-metadata="`,
+  `<meta charset="utf-8"><div><span ${id ? `data-copy-id="${id}" ` : ''}data-comfy-metadata="`,
   '"></span></div><span style="white-space:pre-wrap;">Text</span>'
 ]
 const clipboardByteChunkSize = 0x8000
@@ -68,7 +69,7 @@ export const useCopy = () => {
       // Before the clipboard write, so the two can only diverge safely.
       let copyId: string | null = null
       try {
-        const id = crypto.randomUUID()
+        const id = createUuidv4()
         localStorage.setItem(LAST_COPY_ID_KEY, id)
         copyId = id
       } catch (error) {
