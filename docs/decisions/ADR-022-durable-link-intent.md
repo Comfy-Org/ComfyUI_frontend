@@ -1,8 +1,9 @@
 # ADR-022: Preserve durable link intent across node-presence races
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-09-03
 - **Depends on:** [Amendment A7](../multiplayer-schema.md#amendment-a7--2026-08-21--stamp-gated-node-presence-canonical-autogrow-naming-scoped-clear-issue-11) (node presence), [Amendment A18](../multiplayer-schema.md#amendment-a18--2026-08-30--normalized-stamped-link-identity) (normalized link identity)
+- **Implemented by:** [#206](https://github.com/Comfy-Org/comfy-multi-player/pull/206), [#196](https://github.com/Comfy-Org/comfy-multi-player/pull/196), and [#243](https://github.com/Comfy-Org/comfy-multi-player/pull/243)
 
 ## Context
 
@@ -125,19 +126,19 @@ complete state.
 
 ## Required implementation gates
 
-The implementation is not complete until permanent tests cover:
+The accepted implementation has permanent coverage for:
 
-- the imported-baseline link delete/add race in both arrival orders, including
+- [x] the imported-baseline link delete/add race in both arrival orders, including
   a winning delete followed by a higher re-add at either endpoint;
-- named removal of a live link and of a nonexistent link;
-- concrete, promoted, and autogrow eligibility, including a disconnect while
+- [x] named removal of a live link and of a nonexistent link;
+- [x] concrete, promoted, and autogrow eligibility, including a disconnect while
   each kind's intent is absent from `links`;
-- competing A18 link-identity and concrete/promoted input-register winners;
-- duplicate delivery and both batch boundaries;
-- `mint()` and v2 → v3 migration for unstamped concrete, promoted, and
+- [x] competing A18 link-identity and concrete/promoted input-register winners;
+- [x] duplicate delivery and both batch boundaries;
+- [x] `mint()` and v2 → v3 migration for unstamped concrete, promoted, and
   autogrow links, plus malformed-tuple refusal, current-version no-op, and
   unreadable-schema refusal;
-- `clear`, snapshot encoding, and compaction retention.
+- [x] `clear`, snapshot encoding, and compaction retention.
 
 The convergence tests must fork replicas from one snapshot
 ([KA-10](../INVARIANTS.md#ka-10--bootstrapreconnect-forks-from-one-seeded-snapshot)),
@@ -145,6 +146,13 @@ compare canonical projections after legal causal permutations
 ([KA-4](../INVARIANTS.md#ka-4--the-applier-is-deterministic-and-idempotent)),
 and verify byte-identical retry behavior. The v3 wire-layout test must make
 omission or renaming of `__link_state` fail.
+
+The implementation and migration tests landed in #206, the decision record was
+restored in #196, and #243 completed compaction retention. The package has since
+advanced to schema v4 through Amendment A20; that version bump does not replace
+the accepted v3 `__link_state` boundary. A future change that puts concrete input
+names on the wire is a separate Amendment A22 or later (A19–A21 are assigned),
+not an unfinished gate of this decision.
 
 ## Rejected alternatives
 
