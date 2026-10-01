@@ -40,6 +40,7 @@ import {
   previewOf,
   succeededOperation
 } from '@/test/fakeBillingClient'
+import { trackedBillingEvents } from '@/test/trackedBillingEvents'
 import FullPageCheckoutView from '@/views/FullPageCheckoutView.vue'
 
 /** Money the bank is capturing: the phase that can no longer be called back. */
@@ -557,6 +558,7 @@ describe('FullPageCheckoutView', () => {
     const assign = vi
       .spyOn(window.location, 'assign')
       .mockImplementation(() => {})
+    const sent = trackedBillingEvents()
     await renderCheckout(
       {},
       () => {},
@@ -567,6 +569,14 @@ describe('FullPageCheckoutView', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Back' }))
 
     expect(assign).toHaveBeenCalledWith(href)
+    expect(sent()).toStrictEqual([
+      {
+        operation: 'web_return',
+        stage: 'clicked',
+        outcome: 'pending',
+        control: 'back'
+      }
+    ])
   })
 
   it.for<{ name: string; serverCode: string; heading: string }>([
@@ -1111,6 +1121,7 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
         .spyOn(window.location, 'assign')
         .mockImplementation(() => {})
       const close = vi.spyOn(window, 'close').mockImplementation(() => {})
+      const sent = trackedBillingEvents()
       await payReady(SETTLED)
       form.emit('confirm', 'ctoken_1')
 
@@ -1124,6 +1135,14 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
         result: 'success',
         reference: 'op_mine'
       })
+      expect(sent()).toStrictEqual([
+        {
+          operation: 'web_return',
+          stage: 'clicked',
+          outcome: 'pending',
+          control: 'success_close'
+        }
+      ])
     })
 
     it("goes to the workspace's Plan & Credits settings when this family has no destination for return_to", async () => {

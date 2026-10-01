@@ -10,7 +10,10 @@ import { useTimeoutFn } from '@vueuse/core'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { BillingDeclineReason } from '@comfyorg/account-core/billing'
+import type {
+  BillingDeclineReason,
+  WebReturnControl
+} from '@comfyorg/account-core/billing'
 import {
   awaitsHostedAction,
   declineDetailKey,
@@ -57,6 +60,7 @@ import { useBillingEntry } from '@/entry/billingEntry'
 import { returnToHost } from '@/entry/returnToHost'
 import { createDeferredStripeChallengePort } from '@/session/stripeChallengePort'
 import { useWorkspaceInvites } from '@/session/workspaceInvites'
+import { reportReturnClicked } from '@/telemetry/webReturnTelemetry'
 
 const { locale, t } = useI18n()
 const { coded, refusal } = useHostedCopy()
@@ -549,9 +553,11 @@ function payWithoutCard() {
   )
 }
 
-function leaveForHost() {
+function leaveForHost(control: WebReturnControl) {
   const href = returnLink.value
-  if (href !== undefined) returnToHost(href)
+  if (href === undefined) return
+  reportReturnClicked(control)
+  returnToHost(href)
 }
 </script>
 
@@ -576,7 +582,7 @@ function leaveForHost() {
           v-if="returnLink"
           type="button"
           class="mt-4 cursor-pointer text-sm text-base-foreground underline underline-offset-4"
-          @click="leaveForHost"
+          @click="leaveForHost('back')"
         >
           {{ t('checkout.back') }}
         </button>
@@ -585,7 +591,7 @@ function leaveForHost() {
         <CheckoutFrame
           :step="frameStep"
           :close-label="t('checkout.close')"
-          @close="leaveForHost"
+          @close="leaveForHost('close')"
         >
           <CheckoutTeamSuccess
             v-if="succeeded"
@@ -601,7 +607,7 @@ function leaveForHost() {
             :invites
             @invited="readSeats"
             @invites-failed="inviteFailure = $event"
-            @close="leaveForHost"
+            @close="leaveForHost('success_close')"
           />
           <CheckoutSubscribeConfirm
             v-else-if="isNewSubscription"
@@ -633,7 +639,7 @@ function leaveForHost() {
             @apply-promotion-code="applyPromotionCode"
             @invalidate-quote="quoteIsCurrent = false"
             @payment-phase="journey.track"
-            @back="leaveForHost"
+            @back="leaveForHost('back')"
           />
           <CheckoutTransitionConfirm
             v-else
@@ -656,7 +662,7 @@ function leaveForHost() {
             @confirm="pay({ confirmReactivation: $event })"
             @apply-promotion-code="applyPromotionCode"
             @invalidate-quote="quoteIsCurrent = false"
-            @back="leaveForHost"
+            @back="leaveForHost('back')"
           />
         </CheckoutFrame>
       </template>

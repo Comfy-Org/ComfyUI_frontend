@@ -21,6 +21,7 @@ import type { EndingPlan } from '@/components/fullPage/EndingPlanCard.vue'
 import EndingPlanCard from '@/components/fullPage/EndingPlanCard.vue'
 import SuccessCloseFooter from '@/components/fullPage/SuccessCloseFooter.vue'
 import { useHostedCopy } from '@/composables/useHostedCopy'
+import { reportReturnClicked } from '@/telemetry/webReturnTelemetry'
 
 type Tone = 'done' | 'waiting' | 'refused'
 
@@ -162,8 +163,10 @@ const supportLink = computed(() => supportLinkWithCode(code.value))
 const primary = computed(() => ending.value.primary)
 
 function act() {
-  if (primary.value === 'close') emit('close')
-  else if (primary.value === 'retry') emit('retry')
+  if (primary.value === 'close') {
+    reportReturnClicked('success_close')
+    emit('close')
+  } else if (primary.value === 'retry') emit('retry')
   else if (primary.value === 'view_plans') emit('viewPlans')
   else if (primary.value === 'add_credits') emit('addCredits')
 }
