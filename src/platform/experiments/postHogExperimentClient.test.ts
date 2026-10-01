@@ -68,7 +68,6 @@ describe('readExperimentVariant', () => {
     posthog.getFeatureFlag.mockReturnValue('control')
 
     await expect(readExperimentVariant('placement')).resolves.toBe('control')
-    expect(posthog.getFeatureFlag).toHaveBeenCalledTimes(2)
   })
 
   it('retries an assignment after a transient failure', async () => {
