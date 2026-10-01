@@ -206,6 +206,11 @@ const { messages: conversationMessages, entries: conversationEntries } =
   storeToRefs(conversationStore)
 watch(
   () =>
+    // Gated on the read having *settled*, which includes settling as
+    // unavailable. `snapshotAuthoritative` is narrower — it excludes that
+    // outage state — and gating on it stranded those sessions: the paywall
+    // still renders, an owner still gets the fallback Add credits CTA, and its
+    // click is still reported, so the funnel saw CTAs with no impression.
     capabilityReadSettled.value
       ? conversationMessages.value
           .filter((message) =>
@@ -219,6 +224,9 @@ watch(
     for (const id of paywallMessageIds) {
       if (!conversationStore.claimPaywallImpression(id)) continue
       telemetry.trackAgentPaywallShown({
+        // An unavailable read leaves `canTopUp` guessing true for an owner, so
+        // the presentation would name a confident reason drawn from a fallback
+        // rather than from capabilities. Report the impression as `unknown`.
         reason: snapshotAuthoritative.value
           ? toAgentPaywallReason(paywallPresentation.value)
           : 'unknown',
@@ -229,9 +237,30 @@ watch(
   { immediate: true }
 )
 
+/**
+ * The standing credit-exhaustion surface.
+ *
+ * The inline card above is reachable from exactly one moment: a turn POST that
+ * came back 402/`no_funds` (`recordSendError` -> `recordPaywall`). Every other
+ * way a user meets the ceiling — including a refusal inside a server-side LLM
+ * hop that the browser cannot observe — needs a durable upgrade path.
+ *
+ * So this reads the funds signal the client already holds rather than waiting
+ * for a refusal to carry it. It is deliberately the symmetric half of the
+ * `hasFunds` watch above, which already clears paywalls when funds return.
+ *
+ * Consolidated cloud billing only: legacy balance loading currently collapses
+ * unknown into false, so it cannot safely drive this surface.
+ *
+ * Non-blocking by construction — it renders beside the composer and disables
+ * nothing.
+ */
 const agentHasFunds = computed(() => subscription.value?.agentHasFunds)
 const creditsExhausted = computed(() => {
   if (billingType.value !== 'workspace') return false
+  // Same gate as the impression report above: an unsettled read cannot say
+  // which presentation is right, and a card naming the wrong remediation is
+  // worse than no card.
   if (!capabilityReadSettled.value) return false
   if (agentHasFunds.value !== false) return false
   if (
@@ -239,11 +268,18 @@ const creditsExhausted = computed(() => {
     billingStatus.value === 'payment_failed'
   )
     return false
+  // A standing card must offer a next step. Refusal-anchored inline cards can
+  // still explain member, sales-managed, or unavailable states without a CTA.
   return ['subscribed', 'subscriptionRequired', 'local'].includes(
     paywallPresentation.value.kind
   )
 })
 
+/**
+ * Suppressed while the latest transcript entry is an unresolved inline card:
+ * the two render the same copy. An older card may be scrolled away and must not
+ * hide the standing recovery path after a later server-side refusal.
+ */
 const showStandingPaywall = computed(() => {
   if (!creditsExhausted.value) return false
   const latestEntry = conversationEntries.value.at(-1)
@@ -259,6 +295,13 @@ const billingIdentity = computed(
     `${resolvedUserInfo.value?.id ?? 'anonymous'}:${teamWorkspaceStore.workspaceId ?? 'none'}`
 )
 
+/**
+ * One impression per exhaustion episode, not per render: the surface is
+ * standing, so it is visible for as long as the workspace is out of credits and
+ * a per-render report would make impressions a function of session length.
+ * Reset when funds return, so a later exhaustion reports again — mirroring how
+ * `useBillingBanner` scopes its dismissal to one episode.
+ */
 watch(billingIdentity, () => {
   agentPanelStore.reportedExhaustionIdentity = null
 })
@@ -813,6 +856,9 @@ watch(
     } else graphActivity.startTurn(turnId)
     wasTurnActive = value !== 'idle'
     if (value === 'idle') {
+      // A server-side LLM-hop refusal does not reach the browser as a 402.
+      // Refresh the authoritative effective-funds verdict after every observed
+      // turn completion so both exhaustion and external top-ups converge.
       if (completedTurn && billingType.value === 'workspace') {
         void refreshBillingStatus().catch((error: unknown) => {
           reportError(error, {
