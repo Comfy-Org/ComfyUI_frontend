@@ -39,7 +39,7 @@ function onDismiss(): void {
   <div
     v-if="!dismissed"
     role="note"
-    :aria-label="$t('agent.freeUseNotice')"
+    :aria-label="$t('agent.freeUseNoticeLabel')"
     :data-placement="placement"
     :class="
       cn(

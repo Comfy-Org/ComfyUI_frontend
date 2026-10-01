@@ -5333,6 +5333,7 @@
     "loadFailed": "The agent panel failed to load.",
     "entryButton": "Agent",
     "feedbackCaption": "Share feedback",
+    "freeUseNoticeLabel": "Free use notice",
     "freeUseNotice": "Prompts and workflow runs are FREE during BETA.",
     "runNotice": "The agent can modify the graph. Check Run permissions before allowing it to execute the workflow.",
     "runNoticeExpanded": "The agent can modify your workflow. Check Run permissions before allowing it to execute.",

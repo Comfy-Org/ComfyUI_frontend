@@ -41,7 +41,7 @@ function mount(freeUsePlacement: FreeUseVariant) {
 
 function notice() {
   return screen.getByRole('note', {
-    name: 'Prompts and workflow runs are FREE during BETA.'
+    name: 'Free use notice'
   })
 }
 
@@ -55,7 +55,7 @@ describe('AgentPanel free-use placement', () => {
 
     expect(
       screen.queryByRole('note', {
-        name: 'Prompts and workflow runs are FREE during BETA.'
+        name: 'Free use notice'
       })
     ).toBeNull()
   })
@@ -64,7 +64,7 @@ describe('AgentPanel free-use placement', () => {
     mount(variant)
 
     const notices = screen.getAllByRole('note', {
-      name: 'Prompts and workflow runs are FREE during BETA.'
+      name: 'Free use notice'
     })
     expect(notices).toHaveLength(1)
     expect(notices[0]).toHaveAttribute('data-placement', variant)
@@ -89,7 +89,7 @@ describe('AgentPanel free-use placement', () => {
 
     expect(
       screen.queryByRole('note', {
-        name: 'Prompts and workflow runs are FREE during BETA.'
+        name: 'Free use notice'
       })
     ).toBeNull()
   })

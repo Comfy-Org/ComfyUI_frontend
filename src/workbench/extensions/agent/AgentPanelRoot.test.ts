@@ -609,7 +609,7 @@ describe('AgentPanelRoot first-use experience', () => {
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     const notice = await screen.findByRole('note', {
-      name: 'Prompts and workflow runs are FREE during BETA.'
+      name: 'Free use notice'
     })
     await userEvent.click(
       within(notice).getByRole('button', { name: 'Dismiss' })
