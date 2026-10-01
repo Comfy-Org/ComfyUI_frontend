@@ -1446,7 +1446,7 @@ type BillingSurface = 'cloud_app' | 'billing_web'
 type BillingClient = 'sdk' | 'legacy'
 
 export type BillingTelemetryEvent = {
-  /** Only the SDK lifecycle mapper names itself; every other emitter is legacy. */
+  /** The rail of the code that emitted the event; absent when the emitter does not know it. */
   billing_client?: BillingClient
 } & (
   | CapabilityReadBillingEvent
@@ -1471,18 +1471,13 @@ export function getBillingTelemetryEventName(
   return `billing.${event.operation}.${event.stage}` as BillingTelemetryEventName
 }
 
-type BillingTelemetryPayload = Record<string, unknown> & {
-  billing_surface: BillingSurface
-  billing_client: BillingClient
-}
-
-const BILLING_SURFACE: BillingSurface = 'cloud_app'
+type BillingTelemetryPayload = Record<string, unknown>
 
 type KeysOfUnion<T> = T extends unknown ? keyof T : never
 
 type BillingPayloadField = Exclude<
   KeysOfUnion<BillingTelemetryEvent>,
-  'operation' | 'stage' | 'outcome' | 'billing_client'
+  'operation' | 'stage' | 'outcome'
 >
 
 const BILLING_PAYLOAD_FIELD_HANDLING = {
@@ -1492,6 +1487,7 @@ const BILLING_PAYLOAD_FIELD_HANDLING = {
   member_removal_failures: 'required',
   operation_type: 'required',
   source: 'required',
+  billing_client: 'optional',
   billing_op_id: 'optional',
   checkout_attempt_id: 'optional',
   checkout_type: 'optional',
@@ -1526,9 +1522,7 @@ export function getBillingTelemetryEventPayload(event: BillingTelemetryEvent) {
   const payload: BillingTelemetryPayload = {
     operation: event.operation,
     stage: event.stage,
-    outcome: event.outcome,
-    billing_surface: BILLING_SURFACE,
-    billing_client: event.billing_client ?? 'legacy'
+    outcome: event.outcome
   }
 
   for (const [field, value] of Object.entries(event)) {
@@ -1540,6 +1534,16 @@ export function getBillingTelemetryEventPayload(event: BillingTelemetryEvent) {
   }
 
   return payload
+}
+
+/** Only the cloud build registers the sinks that call this; the desktop host sink claims no surface. */
+export function getCloudAppBillingTelemetryEventPayload(
+  event: BillingTelemetryEvent
+): BillingTelemetryPayload & { billing_surface: BillingSurface } {
+  return {
+    ...getBillingTelemetryEventPayload(event),
+    billing_surface: 'cloud_app'
+  }
 }
 
 /**

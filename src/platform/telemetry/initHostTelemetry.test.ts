@@ -74,9 +74,7 @@ describe('initHostTelemetry', () => {
         stage: 'succeeded',
         outcome: 'success',
         billing_op_id: 'op-1',
-        tier: 'pro',
-        billing_surface: 'cloud_app',
-        billing_client: 'legacy'
+        tier: 'pro'
       }
     )
   })

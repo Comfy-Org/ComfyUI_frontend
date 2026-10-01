@@ -1077,8 +1077,7 @@ describe('PostHogTelemetryProvider', () => {
 
       expect(hoisted.mockCapture).toHaveBeenCalledWith(eventName, {
         ...event,
-        billing_surface: 'cloud_app',
-        billing_client: 'legacy'
+        billing_surface: 'cloud_app'
       })
     })
 
@@ -1108,8 +1107,7 @@ describe('PostHogTelemetryProvider', () => {
           outcome: 'failure',
           billing_op_id: 'opaque-op-id',
           failure_category: 'unknown',
-          billing_surface: 'cloud_app',
-          billing_client: 'legacy'
+          billing_surface: 'cloud_app'
         }
       )
     })

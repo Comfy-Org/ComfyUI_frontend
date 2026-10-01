@@ -181,7 +181,7 @@ describe('HostTelemetrySink', () => {
     )
   })
 
-  it('forwards canonical billing events using the derived name and payload', () => {
+  it('forwards canonical billing events with their derived name and payload, claiming no surface', () => {
     new HostTelemetrySink().trackBillingEvent({
       operation: 'operation',
       stage: 'succeeded',
@@ -203,9 +203,7 @@ describe('HostTelemetrySink', () => {
         operation_type: 'subscription',
         tier: 'pro',
         cycle: 'monthly',
-        checkout_type: 'new',
-        billing_surface: 'cloud_app',
-        billing_client: 'legacy'
+        checkout_type: 'new'
       }
     )
   })
@@ -226,9 +224,7 @@ describe('HostTelemetrySink', () => {
         stage: 'failed',
         outcome: 'failure',
         billing_op_id: 'op-2',
-        failure_category: 'provider_decline',
-        billing_surface: 'cloud_app',
-        billing_client: 'legacy'
+        failure_category: 'provider_decline'
       }
     )
   })
