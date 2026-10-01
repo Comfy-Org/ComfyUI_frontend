@@ -1,12 +1,16 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { api } from '@/scripts/api'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import { DragAndScale, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import { toNodeId } from '@/types/nodeId'
 
 /**
  * Real nodes carry `pos`/`size`; `boundingRect` is litegraph-renderer cache that
@@ -17,11 +21,15 @@ function graphNode(
   pos?: [number, number],
   size?: [number, number]
 ) {
-  return { id, pos, size, boundingRect: new Float64Array(4) }
+  const node = new LGraphNode('')
+  node.id = toNodeId(String(id))
+  if (pos) node.pos = pos
+  if (size) node.size = size
+  return node
 }
 
 /** The minimum canvas surface entering and leaving the mode touches. */
-function stubCanvas(nodes: unknown[], selected: unknown[] = []) {
+function stubCanvas(nodes: LGraphNode[], selected: unknown[] = []) {
   const animateToBounds = vi.fn()
   const selectedItems = new Set(selected)
   const deselectAll = vi.fn(() => selectedItems.clear())
@@ -31,14 +39,17 @@ function stubCanvas(nodes: unknown[], selected: unknown[] = []) {
   const element = document.createElement('canvas')
   element.width = 1600
   element.height = 900
-  useCanvasStore().canvas = {
-    graph: { nodes },
+  const ds = new DragAndScale(element)
+  ds.setViewportSize(1600, 900)
+  useCanvasStore().canvas = fromPartial<LGraphCanvas>({
+    graph: fromPartial<LGraph>({ nodes }),
     selectedItems,
     deselectAll,
     animateToBounds,
     canvas: element,
-    dpr: 1
-  } as never
+    dpr: 1,
+    ds
+  })
   return { animateToBounds, deselectAll, selectedItems }
 }
 
