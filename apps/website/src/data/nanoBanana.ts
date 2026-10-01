@@ -67,11 +67,6 @@ const photographyCards = localCards('photography', [
     'zh-CN': '夜晚空无一人的商用厨房'
   },
   {
-    slug: 'alpine-lake',
-    en: 'Alpine lake reflecting snow-capped peaks at dawn',
-    'zh-CN': '黎明时分倒映雪山的高山湖泊'
-  },
-  {
     slug: 'glass-of-water',
     en: 'Glass of water on a folded newspaper',
     'zh-CN': '折叠报纸上的一杯水'
