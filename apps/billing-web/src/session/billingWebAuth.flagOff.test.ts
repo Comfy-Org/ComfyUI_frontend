@@ -361,7 +361,7 @@ describe('billing-web with unified_web_session off, as a funnel', () => {
             operation: 'web_session',
             stage: 'failed',
             outcome: 'pending',
-            code: 'ACCESS_DENIED'
+            error_code: 'ACCESS_DENIED'
           }
         ])
       }
