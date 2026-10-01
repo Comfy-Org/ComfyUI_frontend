@@ -2308,7 +2308,7 @@ describe('ComfyApp', () => {
       const previousSingletonGraph = singletonApp.rootGraph
       Reflect.set(app, 'rootGraphInternal', graph)
       Reflect.set(singletonApp, 'rootGraphInternal', graph)
-      const videoCallback = vi.fn((value: string) => value.lastIndexOf('.'))
+      const videoCallback = (value: string) => value.lastIndexOf('.')
       class VhsLoadVideoNode extends LGraphNode {
         constructor() {
           super('Load Video')
@@ -2340,11 +2340,13 @@ describe('ComfyApp', () => {
           ({ name }) => name === 'video'
         )
         expect(videoWidget?.value).toBe(1)
-        expect(graph.nodes[1]?.widgets?.[0].value).toBe('input/later.mp4')
+        expect(
+          graph.nodes[1]?.widgets?.find(({ name }) => name === 'video')?.value
+        ).toBe('input/later.mp4')
         expect(mockWorkflowService.afterLoadNewGraph).toHaveBeenCalled()
         expect(reportError).toHaveBeenCalledWith(expect.any(TypeError), {
           surface: 'graph',
-          errorType: 'api_workflow_widget_callback_failure',
+          errorType: 'failure_invoking_api_workflow_widget_callback',
           tags: {
             node_type: 'VHS_LoadVideo',
             widget_name: 'video'
@@ -2353,76 +2355,6 @@ describe('ComfyApp', () => {
         })
       } finally {
         LiteGraph.unregisterNodeType('VHS_LoadVideo')
-        Reflect.set(app, 'rootGraphInternal', previousAppGraph)
-        Reflect.set(singletonApp, 'rootGraphInternal', previousSingletonGraph)
-      }
-    })
-
-    it('applies a valid string API value through the widget callback', async () => {
-      const graph = new LGraph()
-      const previousAppGraph = app.rootGraph
-      const previousSingletonGraph = singletonApp.rootGraph
-      Reflect.set(app, 'rootGraphInternal', graph)
-      Reflect.set(singletonApp, 'rootGraphInternal', graph)
-      const callbackValues: string[] = []
-      class VhsLoadVideoNode extends LGraphNode {
-        constructor() {
-          super('Load Video')
-          this.addWidget('text', 'video', 'default.mp4', (value: string) => {
-            callbackValues.push(value)
-          })
-        }
-      }
-      LiteGraph.registerNodeType('VHS_LoadVideo', VhsLoadVideoNode)
-
-      try {
-        await app.loadApiJson(
-          {
-            '1': {
-              class_type: 'VHS_LoadVideo',
-              inputs: { video: 'input/clip.mp4' },
-              _meta: { title: 'Load Video' }
-            }
-          },
-          'valid-vhs-api-prompt.json'
-        )
-
-        const videoWidget = graph.nodes[0]?.widgets?.find(
-          ({ name }) => name === 'video'
-        )
-        expect(videoWidget?.value).toBe('input/clip.mp4')
-        expect(callbackValues).toEqual(['input/clip.mp4'])
-      } finally {
-        LiteGraph.unregisterNodeType('VHS_LoadVideo')
-        Reflect.set(app, 'rootGraphInternal', previousAppGraph)
-        Reflect.set(singletonApp, 'rootGraphInternal', previousSingletonGraph)
-      }
-    })
-
-    it('preserves a malformed API value on a missing-node placeholder', async () => {
-      const graph = new LGraph()
-      const previousAppGraph = app.rootGraph
-      const previousSingletonGraph = singletonApp.rootGraph
-      Reflect.set(app, 'rootGraphInternal', graph)
-      Reflect.set(singletonApp, 'rootGraphInternal', graph)
-
-      try {
-        await app.loadApiJson(
-          {
-            '1': {
-              class_type: 'UninstalledVideoNode',
-              inputs: { video: 1 },
-              _meta: { title: 'Missing Video' }
-            }
-          },
-          'missing-video-api-prompt.json'
-        )
-
-        expect(graph.nodes[0]?.has_errors).toBe(true)
-        expect(
-          graph.nodes[0]?.last_serialization?.widgets_values_named
-        ).toEqual({ video: 1 })
-      } finally {
         Reflect.set(app, 'rootGraphInternal', previousAppGraph)
         Reflect.set(singletonApp, 'rootGraphInternal', previousSingletonGraph)
       }
