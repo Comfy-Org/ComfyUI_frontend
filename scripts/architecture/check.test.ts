@@ -426,6 +426,23 @@ describe('configuration filesystem validation', () => {
       'expected 2 files but matched 1'
     )
   })
+
+  test('rejects overlapping module roles inside one domain', () => {
+    const root = createConfiguredRepository()
+    const recordPath = join(
+      root,
+      'docs/architecture/domains/records/images.domain.json'
+    )
+    const record = JSON.parse(readFileSync(recordPath, 'utf8'))
+    record.modules.push({
+      path: 'src/domains/images/index.ts',
+      role: 'presentation'
+    })
+    writeFileSync(recordPath, JSON.stringify(record))
+    expect(() => loadArchitectureConfiguration(root)).toThrow(
+      'overlapping module paths'
+    )
+  })
 })
 
 describe('baseline and exception controls', () => {
