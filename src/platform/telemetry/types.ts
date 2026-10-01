@@ -21,6 +21,10 @@ import type {
   BillingPresentation
 } from '@comfyorg/account-core/billing'
 import type {
+  BillingIntent as HostedBillingIntent,
+  BillingSource
+} from '@comfyorg/billing-contract'
+import type {
   AgentRunMode,
   CreateTopupResponse,
   SubscribeResponse
@@ -38,22 +42,7 @@ import type { AppMode } from '@/utils/appMode'
 
 export type { AuthMethod }
 
-export type PaymentIntentSource =
-  | 'subscription_required'
-  | 'out_of_credits'
-  | 'top_up_blocked'
-  | 'deep_link'
-  | 'subscribe_to_run'
-  | 'subscribe_now_button'
-  | 'upgrade_to_add_credits'
-  | 'settings_billing_panel'
-  | 'avatar_menu_plans'
-  | 'team_members_panel'
-  | 'invite_member_upsell'
-  | 'upload_model_upgrade'
-  | 'team_upgrade_resume'
-  | 'free_tier_quota'
-  | 'agent_paywall'
+export type PaymentIntentSource = BillingSource
 
 export type SubscriptionCheckoutType = 'new' | 'change'
 export type SubscriptionCheckoutTier = TierKey | 'team'
@@ -1441,6 +1430,17 @@ type CapabilityReadBillingEvent = {
   operation: 'capability_read'
 } & (BillingSucceeded | Pick<BillingFailed, 'stage' | 'outcome'>)
 
+type WebHandoffBillingEvent = {
+  operation: 'web_handoff'
+  stage: 'opened'
+  outcome: 'pending'
+  intent: HostedBillingIntent
+  result: 'opened' | 'blocked'
+  payment_intent_source?: PaymentIntentSource
+  /** The cloud journey id the entry link carries as `correlation_id`. */
+  correlation_id: string
+}
+
 type BillingSurface = 'cloud_app' | 'billing_web'
 
 type BillingClient = 'sdk' | 'legacy'
@@ -1455,6 +1455,7 @@ export type BillingTelemetryEvent = {
   | ResubscribeBillingEvent
   | TopupBillingEvent
   | DowngradeToPersonalBillingEvent
+  | WebHandoffBillingEvent
 )
 
 type BillingTelemetryEventNameFor<T extends BillingTelemetryEvent> =
@@ -1482,10 +1483,13 @@ type BillingPayloadField = Exclude<
 
 const BILLING_PAYLOAD_FIELD_HANDLING = {
   checkout_status: 'required',
+  correlation_id: 'required',
   failure_category: 'required',
+  intent: 'required',
   member_removal_count: 'required',
   member_removal_failures: 'required',
   operation_type: 'required',
+  result: 'required',
   source: 'required',
   billing_client: 'optional',
   billing_op_id: 'optional',
@@ -1981,6 +1985,7 @@ export const TelemetryEvents = {
   BILLING_DOWNGRADE_TO_PERSONAL_SUCCEEDED:
     'billing.downgrade_to_personal.succeeded',
   BILLING_DOWNGRADE_TO_PERSONAL_FAILED: 'billing.downgrade_to_personal.failed',
+  BILLING_WEB_HANDOFF_OPENED: 'billing.web_handoff.opened',
 
   // Onboarding Survey
   USER_SURVEY_OPENED: 'app:user_survey_opened',

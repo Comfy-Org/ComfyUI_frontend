@@ -17,6 +17,7 @@
  * an origin nobody hosts, or with no way back, is stranded.
  */
 import type {
+  BillingEntryInput,
   BillingEnvironment,
   BillingIntent,
   ReturnTarget
@@ -37,11 +38,10 @@ export type HostedBillingRoute =
   | { readonly kind: 'provider' }
 
 /** The caller-supplied part of the entry, as opposed to the environment the host resolves for itself. */
-export interface HostedBillingRouteFields {
-  readonly plan?: string
-  readonly workspaceId?: string
-  readonly teamCreditStopId?: string
-}
+export type HostedBillingRouteFields = Pick<
+  BillingEntryInput,
+  'plan' | 'workspaceId' | 'teamCreditStopId' | 'correlationId' | 'source'
+>
 
 const PROVIDER: HostedBillingRoute = { kind: 'provider' }
 
@@ -107,17 +107,11 @@ export function hostedBillingRoute(
   }
 
   const entry = buildBillingEntryUrl({
+    ...fields,
     billingOrigin: billingWebBase,
     intent,
     product: PRODUCT,
-    returnTo: RETURN_TO,
-    ...(fields.plan === undefined ? {} : { plan: fields.plan }),
-    ...(fields.workspaceId === undefined
-      ? {}
-      : { workspaceId: fields.workspaceId }),
-    ...(fields.teamCreditStopId === undefined
-      ? {}
-      : { teamCreditStopId: fields.teamCreditStopId })
+    returnTo: RETURN_TO
   })
   return entry.status === 'ok'
     ? { kind: 'billing_web', url: underBase(billingWebBase, entry.url) }
