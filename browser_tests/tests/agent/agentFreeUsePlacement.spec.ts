@@ -33,15 +33,17 @@ test.describe(
       await expect(notice).toHaveAttribute('data-placement', PLACEMENT)
 
       const composer = agentPanel.root.getByTestId('agent-composer')
-      const [noticeBox, composerBox] = await Promise.all([
-        notice.boundingBox(),
-        composer.boundingBox()
-      ])
-      expect(noticeBox).not.toBeNull()
-      expect(composerBox).not.toBeNull()
-      expect(noticeBox!.y + noticeBox!.height).toBeLessThanOrEqual(
-        composerBox!.y
-      )
+      await expect
+        .poll(async () => {
+          const [noticeBox, composerBox] = await Promise.all([
+            notice.boundingBox(),
+            composer.boundingBox()
+          ])
+          return noticeBox && composerBox
+            ? noticeBox.y + noticeBox.height <= composerBox.y
+            : null
+        })
+        .toBe(true)
 
       await expect
         .poll(() =>
