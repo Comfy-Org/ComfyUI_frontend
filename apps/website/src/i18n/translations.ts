@@ -8814,6 +8814,18 @@ Enterprise`
     'zh-CN':
       'Builder 将你的 ComfyUI 工作流和环境打包成可复现的构建。将该构建部署到 Comfy API，并按需扩展。'
   },
+  'platform.serverlessDeploy.agentPromptLine': {
+    en: 'Or skip the setup. Paste this into your coding agent.',
+    'zh-CN': '或者跳过配置，直接把它粘贴给你的编码智能体。'
+  },
+  'platform.serverlessDeploy.copyAgentPrompt': {
+    en: 'COPY AGENT PROMPT',
+    'zh-CN': '复制智能体提示词'
+  },
+  'platform.serverlessDeploy.agentPromptCopied': {
+    en: 'COPIED',
+    'zh-CN': '已复制'
+  },
   'platform.howItWorks.chat.channel': {
     en: 'creative-team',
     'zh-CN': '创意团队'
