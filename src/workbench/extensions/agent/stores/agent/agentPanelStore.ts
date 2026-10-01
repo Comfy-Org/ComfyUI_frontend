@@ -1,7 +1,7 @@
 import { useEventListener, useLocalStorage, useWindowSize } from '@vueuse/core'
 import { clamp } from 'es-toolkit'
 import { defineStore } from 'pinia'
-import { computed, ref, watch } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 
 import {
   SIDEBAR_MIN_WIDTH,
@@ -24,7 +24,17 @@ type TargetTracking =
   | { mode: 'uninitialized' }
   | { mode: 'following' }
   | { mode: 'restoring' }
-  | { mode: 'retained'; workflow: ComfyWorkflow | null }
+  | { mode: 'retained'; workflow: ComfyWorkflow | null; unavailable?: true }
+
+export type AgentPanelView =
+  | { screen: 'chat' }
+  | {
+      screen: 'history'
+      previousThreadId: string | null
+      selection:
+        | { status: 'idle' }
+        | { status: 'loading' | 'failed'; id: string }
+    }
 
 export const useAgentPanelStore = defineStore('agentPanel', () => {
   const enabled = ref(false)
@@ -38,6 +48,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     writeDefaults: false
   })
   const gateSettled = ref(false)
+  const view = shallowRef<AgentPanelView>({ screen: 'chat' })
   const maximized = ref(false)
   const draggedWidth = ref(PANEL_MIN_WIDTH)
   /**
@@ -58,12 +69,28 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     if (target.mode === 'following') return workflowStore.activeWorkflow
     return target.mode === 'retained' ? target.workflow : null
   })
+  const targetUnavailable = computed(
+    () =>
+      targetTracking.value.mode === 'retained' &&
+      targetTracking.value.unavailable === true
+  )
   const canRestoreWorkflow = computed(
     () => targetTracking.value.mode === 'restoring'
   )
 
   function beginWorkflowRestoration(): void {
     targetTracking.value = { mode: 'restoring' }
+  }
+
+  function interruptHistorySelection(): void {
+    if (
+      view.value.screen === 'history' &&
+      view.value.selection.status === 'loading'
+    )
+      view.value = {
+        ...view.value,
+        selection: { status: 'failed', id: view.value.selection.id }
+      }
   }
 
   function initializeTargetTracking(hasThread: boolean): void {
@@ -82,6 +109,14 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
 
   function setWorkflowTarget(workflow: ComfyWorkflow | null): void {
     targetTracking.value = { mode: 'retained', workflow }
+  }
+
+  function markWorkflowTargetUnavailable(): void {
+    targetTracking.value = {
+      mode: 'retained',
+      workflow: null,
+      unavailable: true
+    }
   }
 
   // Only a retained target can become detached. A following target belongs to
@@ -228,6 +263,8 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     isVisible,
     hasEverOpened,
     gateSettled,
+    view,
+    interruptHistorySelection,
     reportedExhaustionIdentity,
     width,
     requestedWidth,
@@ -241,6 +278,8 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     retainWorkflowTarget,
     startFollowingVisibleWorkflow,
     selectedWorkflow,
+    targetUnavailable,
+    markWorkflowTargetUnavailable,
     canRestoreWorkflow,
     beginWorkflowRestoration,
     setWorkflowTarget,
