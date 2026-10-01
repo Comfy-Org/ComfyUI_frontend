@@ -62,5 +62,6 @@ describe('useFreeUsePlacement', () => {
     const { variant } = useFreeUsePlacement()
 
     expect(variant.value).toBe('inside-input')
+    expect(useTelemetry()?.trackAgentFreeUseExposure).not.toHaveBeenCalled()
   })
 })

@@ -31,11 +31,13 @@ export function useFreeUsePlacement() {
   const variant = computed(() => assigned.value ?? 'control')
 
   const assign = () => {
-    const value =
+    const override =
       getSessionOverride<string>(FREE_USE_PLACEMENT_FLAG) ??
-      getDevOverride<string>(FREE_USE_PLACEMENT_FLAG) ??
-      remoteConfig.value[FREE_USE_PLACEMENT_FLAG]
+      getDevOverride<string>(FREE_USE_PLACEMENT_FLAG)
+    const value = override ?? remoteConfig.value[FREE_USE_PLACEMENT_FLAG]
     assigned.value = isFreeUseVariant(value) ? value : 'control'
+    if (override !== undefined) return
+
     useTelemetry()?.trackAgentFreeUseExposure({
       placement: assigned.value,
       [`$feature/${FREE_USE_PLACEMENT_FLAG}`]: assigned.value
