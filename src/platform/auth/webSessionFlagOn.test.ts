@@ -5,7 +5,14 @@ import { setActivePinia } from 'pinia'
 import { defineComponent, effectScope } from 'vue'
 
 import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
-import type { BillingCapabilitiesResponse } from '@comfyorg/ingest-types'
+import type {
+  BillingBalanceResponse,
+  BillingCapabilitiesResponse,
+  BillingOpStatusResponse,
+  BillingStatusResponse,
+  CreateTopupResponse
+} from '@comfyorg/ingest-types'
+import { OPERATION_POLL_TIMING } from '@comfyorg/account-core/billing'
 import { MISSING_CUSTOMER_MESSAGE } from '@comfyorg/account-core/customerRecovery'
 import { COMFY_CLIENT } from '@comfyorg/account-core/requestAuth'
 import { SessionTokenError } from '@comfyorg/account-core/sessionTokenMint'
@@ -40,7 +47,9 @@ import {
   getGlobalSetting,
   setGlobalSetting
 } from '@/platform/settings/globalSettingsApi'
+import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
@@ -463,11 +472,17 @@ function mintBodyWorkspace(body: unknown): string {
   return typeof workspaceId === 'string' ? workspaceId : 'personal'
 }
 
-function capabilitiesResponse(
+interface BillingScope {
+  userId: string
   workspaceId: string
-): BillingCapabilitiesResponse {
+}
+
+function capabilitiesResponse({
+  userId,
+  workspaceId
+}: BillingScope): BillingCapabilitiesResponse {
   return {
-    resolved_for: { user_id: 'user-a', workspace_id: workspaceId },
+    resolved_for: { user_id: userId, workspace_id: workspaceId },
     capabilities: {
       can_subscribe_self_serve: true,
       can_top_up: true,
@@ -484,6 +499,43 @@ function capabilitiesResponse(
     },
     revision: 1,
     expires_at: new Date(Date.now() + TEN_MINUTES_MS).toISOString()
+  }
+}
+
+function billingAnswer(path: string, scope: BillingScope): unknown {
+  switch (path) {
+    case '/api/billing/status':
+      return {
+        billing_rail: 'stripe',
+        has_funds: true,
+        is_active: true,
+        max_seats: 1,
+        occupied_seats: 1,
+        scheduled_change: null,
+        team_credit_stop: null
+      } satisfies BillingStatusResponse
+    case '/api/billing/balance':
+      return {
+        amount_micros: 12_500_000,
+        currency: 'USD'
+      } satisfies BillingBalanceResponse
+    case '/api/billing/capabilities':
+      return capabilitiesResponse(scope)
+    case '/api/billing/topup':
+      return {
+        amount_cents: 1000,
+        billing_op_id: 'op-1',
+        status: 'completed',
+        topup_id: 'topup-1'
+      } satisfies CreateTopupResponse
+    case '/api/billing/ops/op-1':
+      return {
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date(Date.now()).toISOString()
+      } satisfies BillingOpStatusResponse
+    default:
+      return {}
   }
 }
 
@@ -506,6 +558,7 @@ function installIngest(features: Record<string, boolean> = {}) {
     mintedFor: [] as string[],
     requests: [] as ApiRequest[],
     currentWorkspaceDown: undefined as (() => Response) | undefined,
+    billingUnauthorized: 0,
     customerMissing: false,
     capabilitiesDown: false
   }
@@ -523,18 +576,17 @@ function installIngest(features: Record<string, boolean> = {}) {
     })
   }
 
-  const respondBilling = (
-    path: string,
-    headers: Record<string, string>
-  ): Response | undefined => {
-    if (path === '/api/billing/capabilities') {
-      if (ingest.capabilitiesDown) {
-        return jsonResponse({ code: 'unavailable', message: 'down' }, 503)
-      }
-      return jsonResponse(
-        capabilitiesResponse(headers['x-comfy-workspace-id'] ?? 'ws-personal')
-      )
-    }
+  const billingWorkspace = (headers: Record<string, string>): string => {
+    const minted = /^Bearer session-jwt-(\d+)$/.exec(headers.authorization)
+    if (!minted) return headers['x-comfy-workspace-id'] ?? 'ws-personal'
+    const workspace = ingest.mintedFor.at(Number(minted[1]) - 1) ?? 'personal'
+    return workspace === 'personal' ? 'ws-personal' : workspace
+  }
+
+  const respondBilling = ({
+    path,
+    headers
+  }: ApiRequest): Response | undefined => {
     if (path === '/customers') {
       ingest.customerMissing = false
       return jsonResponse({ id: 'customer-1' }, 201)
@@ -542,10 +594,24 @@ function installIngest(features: Record<string, boolean> = {}) {
     if (path.startsWith('/customers/') && ingest.customerMissing) {
       return jsonResponse({ message: MISSING_CUSTOMER_MESSAGE }, 409)
     }
-    return undefined
+    if (!path.startsWith('/api/billing/')) return undefined
+    if (ingest.billingUnauthorized > 0) {
+      ingest.billingUnauthorized -= 1
+      return jsonResponse({ code: 'unauthorized', message: 'expired' }, 401)
+    }
+    if (path === '/api/billing/capabilities' && ingest.capabilitiesDown) {
+      return jsonResponse({ code: 'unavailable', message: 'down' }, 503)
+    }
+    return jsonResponse(
+      billingAnswer(path, {
+        userId: ingest.userId,
+        workspaceId: billingWorkspace(headers)
+      })
+    )
   }
 
-  const respond = ({ path, headers }: ApiRequest, body: unknown): Response => {
+  const respond = (request: ApiRequest, body: unknown): Response => {
+    const { path, headers } = request
     if (path === '/api/auth/session') {
       return jsonResponse({
         ...sessionBody(ingest.userId),
@@ -558,13 +624,12 @@ function installIngest(features: Record<string, boolean> = {}) {
       return currentWorkspaceResponse(headers['x-comfy-workspace-id'])
     }
     if (path === '/api/workspaces') return jsonResponse(WORKSPACE_LIST)
-    const billing = respondBilling(path, headers)
-    if (billing) return billing
     if (path.startsWith('/api/global-settings')) {
       return jsonResponse(STORED_CONSENT)
     }
     const code = ingest.refusals.shift()
-    return code ? jsonResponse({ code, message: code }, 403) : jsonResponse({})
+    if (code) return jsonResponse({ code, message: code }, 403)
+    return respondBilling(request) ?? jsonResponse({})
   }
 
   vi.stubGlobal(
@@ -1324,6 +1389,145 @@ describe('comfy-api calls on the shared web session', () => {
 
     expect(reminted).toEqual({ Authorization: 'Bearer session-jwt-2' })
     expect(mintRequests(ingest)).toHaveLength(2)
+  })
+})
+
+describe('billing SDK rails on a tab that arrived by session', () => {
+  const BILLING_SDK_RAILS = {
+    unified_cloud_auth: true,
+    billing_sdk_topup_enabled: true,
+    billing_sdk_subscription_enabled: true
+  }
+
+  const bootSessionOnly = async (workspace = 'ws-personal') => {
+    const ingest = installIngest(BILLING_SDK_RAILS)
+    await refreshRemoteConfig({ useAuth: false })
+    useAuthStore()
+    await useSessionCookie().ensureSessionCookie()
+    localStorage.setItem(WORKSPACE_STORAGE_KEYS.LAST_WORKSPACE_ID, workspace)
+    await useTeamWorkspaceStore().initialize()
+    ingest.requests.length = 0
+    return ingest
+  }
+
+  const sent = (ingest: ReturnType<typeof installIngest>) =>
+    ingest.requests.map(({ method, path, headers }) => ({
+      method,
+      path,
+      authorization: headers.authorization
+    }))
+
+  const readRail = () => {
+    const rail = useBillingReadRail()
+    assert.exists(rail)
+    return rail
+  }
+
+  beforeEach(() => {
+    identity.reset()
+    vi.spyOn(api, 'resetSocket').mockResolvedValue()
+  })
+
+  afterEach(() => {
+    remoteConfig.value = {}
+    localStorage.clear()
+  })
+
+  it.for([
+    { workspace: 'ws-personal', mintedFor: 'personal' },
+    { workspace: 'ws-team', mintedFor: 'ws-team' }
+  ])(
+    'reads billing in $workspace with a token minted from the session cookie alone',
+    async ({ workspace, mintedFor }) => {
+      const ingest = await bootSessionOnly(workspace)
+
+      const capabilities = await readRail().readCapabilities({})
+
+      assert(capabilities.status === 'ok')
+      expect(capabilities.value.resolved_for).toEqual({
+        user_id: 'user-a',
+        workspace_id: workspace
+      })
+      expect(useAuthStore().currentUser).toBeNull()
+      expect(ingest.mintedFor).toEqual([mintedFor])
+      expect(sent(ingest)).toEqual([
+        { method: 'POST', path: '/api/auth/token', authorization: undefined },
+        {
+          method: 'GET',
+          path: '/api/billing/capabilities',
+          authorization: 'Bearer session-jwt-1'
+        }
+      ])
+    }
+  )
+
+  it('starts a top-up with the session-minted token and no Firebase login', async () => {
+    const ingest = await bootSessionOnly()
+
+    const purchase = useBillingSdkStore().createTopup(1000)
+    await vi.advanceTimersByTimeAsync(OPERATION_POLL_TIMING.initialMs)
+
+    await expect(purchase).resolves.toMatchObject({
+      billing_op_id: 'op-1',
+      status: 'completed'
+    })
+    expect(useAuthStore().currentUser).toBeNull()
+    expect(ingest.mintedFor).toEqual(['personal'])
+    expect(
+      sent(ingest).filter(({ path }) => path === '/api/billing/topup')
+    ).toEqual([
+      {
+        method: 'POST',
+        path: '/api/billing/topup',
+        authorization: 'Bearer session-jwt-1'
+      }
+    ])
+    expect(
+      sent(ingest).filter(
+        ({ path, authorization }) =>
+          path.startsWith('/api/billing/') &&
+          authorization !== 'Bearer session-jwt-1'
+      )
+    ).toEqual([])
+  })
+
+  it('re-mints once through the session on a 401 and retries once', async () => {
+    const ingest = await bootSessionOnly()
+    ingest.billingUnauthorized = 1
+
+    const status = await readRail().readStatus()
+
+    expect(status.status).toBe('ok')
+    expect(sent(ingest)).toEqual([
+      { method: 'POST', path: '/api/auth/token', authorization: undefined },
+      {
+        method: 'GET',
+        path: '/api/billing/status',
+        authorization: 'Bearer session-jwt-1'
+      },
+      { method: 'POST', path: '/api/auth/token', authorization: undefined },
+      {
+        method: 'GET',
+        path: '/api/billing/status',
+        authorization: 'Bearer session-jwt-2'
+      }
+    ])
+  })
+
+  it('follows a workspace switch with a token for the new workspace', async () => {
+    const ingest = await bootSessionOnly()
+    const rail = readRail()
+
+    await rail.readStatus()
+    await useWorkspaceAuthStore().switchWorkspace('ws-team')
+    await rail.readStatus()
+
+    expect(ingest.mintedFor).toEqual(['personal', 'ws-team'])
+    expect(
+      sent(ingest)
+        .filter(({ path }) => path === '/api/billing/status')
+        .map(({ authorization }) => authorization)
+    ).toEqual(['Bearer session-jwt-1', 'Bearer session-jwt-2'])
   })
 })
 
