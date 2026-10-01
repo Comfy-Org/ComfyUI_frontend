@@ -7940,18 +7940,18 @@ Enterprise`
     en: '4+ million Comfy creators say',
     'zh-CN': '超过 400 万 Comfy 创作者这样说'
   },
-  'nanoBanana.reviews.highlightTitle': {
-    en: 'Comfy MCP: now turn your agent into a creative technologist.',
-    'zh-CN': 'Comfy MCP：让你的智能体成为创意技术专家。'
+  'nanoBanana.highlight.title': {
+    en: 'COMFY AGENT',
+    'zh-CN': 'COMFY AGENT'
   },
-  'nanoBanana.reviews.highlightDescription': {
-    en: 'Your AI assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.',
+  'nanoBanana.highlight.description': {
+    en: 'Now live in Comfy Desktop. Describe what you want, and it plans, builds, and runs the workflow side by side with you. Every step stays on the canvas for you to adjust.',
     'zh-CN':
-      '你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。'
+      '现已登陆 Comfy Desktop。描述你想要的结果，它会与你并肩规划、搭建并运行工作流。每一步都留在画布上，随时可调。'
   },
-  'nanoBanana.reviews.highlightCta': {
-    en: 'GET STARTED',
-    'zh-CN': '开始使用'
+  'nanoBanana.highlight.cta': {
+    en: 'TRY IN COMFY DESKTOP',
+    'zh-CN': '在 Comfy Desktop 中试用'
   },
   // Qwen-Image 2.1 model page (/qwen-image-2.1)
   'qwenImage21.meta.title': {
