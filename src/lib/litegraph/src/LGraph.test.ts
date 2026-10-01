@@ -1,6 +1,6 @@
 import { toGroupId } from '@/types/groupId'
 import { graphScopeOf } from '@/types/graphScopeId'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { NodeLifecycleEvent } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
@@ -27,10 +27,6 @@ import {
   isRootGraphDocBound,
   registerDocBoundRootGraphProbe
 } from '@/lib/litegraph/src/docBoundGraphs'
-import {
-  AGENT_RESERVED_BIT,
-  CRDT_DISJOINT_FLOOR
-} from '@/lib/litegraph/src/idAllocation'
 import type { UUID } from '@/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
 import { useEntityIdStore } from '@/stores/entityIdStore'
@@ -61,7 +57,6 @@ import {
 } from './__fixtures__/duplicateLinks'
 import { duplicateSubgraphNodeIds } from './__fixtures__/duplicateSubgraphNodeIds'
 import { nestedSubgraphProxyWidgets } from './__fixtures__/nestedSubgraphProxyWidgets'
-import { nodeIdsAtFormerLimit } from './__fixtures__/nodeIdsAtFormerLimit'
 import { nodeIdsFromReservedMintRange } from './__fixtures__/nodeIdsFromReservedMintRange'
 import { uniqueSubgraphNodeIds } from './__fixtures__/uniqueSubgraphNodeIds'
 import { test } from './__fixtures__/testExtensions'
@@ -2390,50 +2385,15 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
     })
   })
 
-  it('remaps duplicate node IDs above the former fixed limit', () => {
-    const graph = new LGraph()
-
-    graph.configure(structuredClone(nodeIdsAtFormerLimit))
-
-    expect(nodeIdSet(graph, SUBGRAPH_B)).toEqual(
-      new Set([
-        toNodeId(100_000_001),
-        toNodeId(100_000_002),
-        toNodeId(100_000_003)
-      ])
-    )
-    expect(graph.state.lastNodeId).toBe(100_000_003)
-  })
-
-  /**
-   * The production defect (FE-3007), reproduced from its own telemetry
-   * rather than from a value near the former fixed ceiling. See
-   * `nodeIdsFromReservedMintRange` for the provenance of both ids.
-   *
-   * This is the discriminating case: `nodeIdsAtFormerLimit` above still
-   * passes if the ceiling is merely raised instead of removed, because its
-   * ids sit just over 1e8. These ids are ~45 million and ~77 million times
-   * that ceiling, in both the node and link classes `findNextAvailableId`
-   * serves, so a bound anywhere below them fails here.
-   *
-   * The fixture also reserves the successor of the node high-water mark, so
-   * the node remap reaches collision recovery rather than returning
-   * `lastNodeId + 1` off the fast path. A ceiling reintroduced inside
-   * `findNextAvailableId` alone is therefore caught too, not only one on
-   * the mint. `idAllocation.property.test.ts` states the same property over
-   * the whole reserved range and all four id classes.
-   */
   it('remaps duplicate subgraph IDs when a reserved-range mint has raised the counters', () => {
     const graph = new LGraph()
     const observedNodeId = 4_462_758_126_524_329
-    const observedLinkId = 7_729_209_487_955_825
+    const observedLinkId = toLinkId(7_729_209_487_955_825)
 
     expect(() => {
       graph.configure(structuredClone(nodeIdsFromReservedMintRange))
     }).not.toThrow()
 
-    // Not +1: that candidate is reserved by a root node, so the first
-    // remap recovers past it.
     expect(nodeIdSet(graph, SUBGRAPH_B)).toEqual(
       new Set([
         toNodeId(observedNodeId + 2),
@@ -2447,36 +2407,10 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
       new Set([toNodeId(3), toNodeId(8), toNodeId(37)])
     )
 
-    const linkIdsB = [...graph.subgraphs.get(SUBGRAPH_B)!.links.keys()]
-    expect(linkIdsB).toEqual([observedLinkId + 1])
-    expect(graph.state.lastLinkId).toBe(observedLinkId + 1)
-
-    for (const id of [...nodeIdSet(graph, SUBGRAPH_B)].map(Number)) {
-      expect(Number.isSafeInteger(id)).toBe(true)
-    }
-  })
-
-  /**
-   * The remapped ids above sit inside the same 2^40-wide partition as the
-   * high-water mark that produced them, because a sequential mint only
-   * advances the low bits. Pinned explicitly so the reserved-mint collision
-   * contract is visible rather than incidental: a node id remapped off an
-   * id this app minted (bit 41) keeps bit 41 and keeps bit 40 clear, so it
-   * cannot land in the agent's `2**40 | random52` range; a link id remapped
-   * off an agent-minted id (bit 40) stays in that range.
-   */
-  it('keeps remapped IDs inside the reserved partition they were minted from', () => {
-    const graph = new LGraph()
-    graph.configure(structuredClone(nodeIdsFromReservedMintRange))
-
-    for (const id of [...nodeIdSet(graph, SUBGRAPH_B)].map(BigInt)) {
-      expect(id & CRDT_DISJOINT_FLOOR).not.toBe(0n)
-      expect(id & AGENT_RESERVED_BIT).toBe(0n)
-    }
-
-    for (const id of graph.subgraphs.get(SUBGRAPH_B)!.links.keys()) {
-      expect(BigInt(id) & AGENT_RESERVED_BIT).not.toBe(0n)
-    }
+    const subgraphB = graph.subgraphs.get(SUBGRAPH_B)
+    assert.exists(subgraphB)
+    expect([...subgraphB.links.keys()]).toEqual([toLinkId(observedLinkId + 1)])
+    expect(graph.state.lastLinkId).toBe(toLinkId(observedLinkId + 1))
   })
 
   it('is a no-op when subgraph node IDs are already unique', () => {

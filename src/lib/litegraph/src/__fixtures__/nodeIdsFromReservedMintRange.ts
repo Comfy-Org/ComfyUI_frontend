@@ -4,36 +4,7 @@ import {
 } from '@/lib/litegraph/src/constants'
 import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
 
-/**
- * The shape that actually reached production, rather than a synthetic value
- * near the former fixed ceiling.
- *
- * Both ids below are real, taken from `cloud-frontend-prod` telemetry:
- *
- * - `4462758126524329` is a node id this app minted itself, through
- *   `mintCrdtDisjointNodeId` — bit 41 set, bit 40 clear.
- * - `7729209487955825` is a link id the server-side agent minted, through
- *   comfy-cli's `mint_id()` (`2**40 | random52`) — bit 40 set.
- *
- * The two id classes are poisoned by the two different routes production
- * took, deliberately:
- *
- * - `lastNodeId` arrives already raised, as it is on the live graph that
- *   copy, paste and clone run against: `observeNodeId` raised it when this
- *   app's own node materialized, long before any deduplication pass.
- * - `lastLinkId` starts at zero and is raised *inside* the pass, because
- *   `deduplicateSubgraphLinkIds` observes every reserved link id — including
- *   the agent-minted one interior to SubgraphA — before it remaps anything.
- *
- * Observation has never had a ceiling; minting used to. So in both classes
- * the first duplicate subgraph-scoped id that needed remapping minted from a
- * counter in the quadrillions and threw `Node ID space exhausted` on its
- * first candidate, aborting copy, paste, clone and workflow load.
- *
- * Both subgraph definitions therefore share node ids `[3, 8, 37]` AND link
- * id `7729209487955825`, so configuring this graph has to remap in both id
- * classes from a reserved-range high-water mark.
- */
+// Synthetic reproducer around two observed high-range ID values.
 export const nodeIdsFromReservedMintRange = {
   id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
   version: 1,
@@ -74,16 +45,7 @@ export const nodeIdsFromReservedMintRange = {
       order: 2,
       mode: 0
     },
-    /**
-     * The successor of the node high-water mark, reserved so the first
-     * remap candidate is already taken and minting has to fall through to
-     * collision recovery — the branch the former ceiling guarded. Node
-     * deduplication reserves root ids without observing them, so this does
-     * not itself raise `lastNodeId`; link, group and reroute deduplication
-     * observe every reserved id, so the same gap cannot be built there from
-     * a fixture, and `idAllocation.property.test.ts` covers those three
-     * recovery paths directly instead.
-     */
+    // Reserve the successor so remapping exercises collision recovery.
     {
       id: 4_462_758_126_524_330,
       type: 'dummy',

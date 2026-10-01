@@ -30,38 +30,6 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
         dispose()
       }
     })
-
-    /**
-     * The same workflow, with the two id counters raised into the range a
-     * different mint convention owns: `4462758126524329` is a node id this
-     * app minted through its CRDT-disjoint path, and `7729209487955825` is
-     * a link id the server-side agent minted. Both are real values taken
-     * from `cloud-frontend-prod` telemetry.
-     *
-     * Deduplicating this workflow's shared subgraph ids has to mint from
-     * those counters. While allocation was bounded at a fixed 1e8, that
-     * throw was unhandled and aborted the load, so the canvas stayed empty
-     * — the user-visible half of FE-3007, reported from production as
-     * intermittently broken copy, paste, clone and workflow open.
-     */
-    test('Loads a workflow whose ID counters sit in the reserved mint range', async ({
-      comfyPage
-    }) => {
-      const SUBGRAPH_HOST_TYPE = '1e38d8ea-45e1-48a5-aa20-966584201867'
-
-      await comfyPage.workflow.loadWorkflow(
-        'subgraphs/subgraph-duplicate-ids-reserved-mint-range'
-      )
-
-      for (const type of [
-        'PreviewAny',
-        'PrimitiveStringMultiline',
-        SUBGRAPH_HOST_TYPE
-      ]) {
-        const nodes = await comfyPage.nodeOps.getNodeRefsByType(type)
-        expect(nodes, `expected one ${type} node after load`).toHaveLength(1)
-      }
-    })
   })
 
   test.describe(

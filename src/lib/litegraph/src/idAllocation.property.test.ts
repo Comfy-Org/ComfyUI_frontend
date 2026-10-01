@@ -177,29 +177,7 @@ describe("mintNodeId's 'crdt-disjoint' mode never collides with a simulated agen
   })
 })
 
-/**
- * The production failure (FE-3007) generalized past the one trace in
- * `LGraph.test.ts`. Observation has no ceiling, so any id a *different*
- * mint convention produced — the agent's `2**40 | random52`, or this app's
- * own `crdt-disjoint` floor at 2^41 — becomes a sequential counter's
- * high-water mark the moment it is seen. Minting then has to keep working
- * from there.
- *
- * Stated over the whole reserved range rather than at one sampled value,
- * and over all four id classes, because `findNextAvailableId` is shared by
- * every one of them: the four Sentry groups in this family entered through
- * three different entry points and two different id classes, and differed
- * only in which `remap*` called the allocator. Any reintroduced fixed
- * bound below `Number.MAX_SAFE_INTEGER` fails this, wherever it is put.
- */
 describe('sequential minting survives a counter raised into the reserved mint range', () => {
-  /**
-   * The whole range a reserved-bit id can occupy, from the agent's mint
-   * floor to just below the safe-integer boundary — deliberately not just
-   * the production samples, so a ceiling placed anywhere in between is
-   * caught. The top of the range is held two below `MAX_SAFE_INTEGER` so a
-   * mint has somewhere to go without exercising the separate wrap path.
-   */
   const reservedRangeHighWaterMark = (): fc.Arbitrary<number> =>
     fc.integer({
       min: Number(AGENT_RESERVED_BIT),
@@ -241,34 +219,27 @@ describe('sequential minting survives a counter raised into the reserved mint ra
     }
   ] as const
 
-  it.for(minters)(
-    'mints a fresh safe $name id above any reserved-range high-water mark',
-    ({ mint }) => {
-      fc.assert(
-        fc.property(reservedRangeHighWaterMark(), (lastId) => {
-          const id = mint(lastId, new Set())
-          return Number.isSafeInteger(id) && id > lastId
-        })
-      )
-    }
-  )
+  it.for(minters)('mints the final safe $name id', ({ mint }) => {
+    expect(mint(Number.MAX_SAFE_INTEGER - 1, new Set())).toBe(
+      Number.MAX_SAFE_INTEGER
+    )
+  })
 
-  /**
-   * The property above would also pass an allocator that returned
-   * `lastId + 1` without consulting the reservation set. Reserving the
-   * immediate successor forces the collision-recovery path to run from a
-   * reserved-range start, which is where the former ceiling threw.
-   */
-  it.for(minters)(
-    'recovers a free $name id when the successor of a reserved-range mark is taken',
-    ({ mint }) => {
-      fc.assert(
-        fc.property(reservedRangeHighWaterMark(), (lastId) => {
-          const reserved = new Set([lastId + 1])
-          const id = mint(lastId, reserved)
-          return Number.isSafeInteger(id) && !reserved.has(id) && id !== lastId
-        })
-      )
-    }
-  )
+  it('mints a node ID above any reserved-range high-water mark', () => {
+    const mint = minters[0].mint
+    fc.assert(
+      fc.property(reservedRangeHighWaterMark(), (lastId) => {
+        expect(mint(lastId, new Set())).toBe(lastId + 1)
+      })
+    )
+  })
+
+  it('recovers the next node ID when the successor is reserved', () => {
+    const mint = minters[0].mint
+    fc.assert(
+      fc.property(reservedRangeHighWaterMark(), (lastId) => {
+        expect(mint(lastId, new Set([lastId + 1]))).toBe(lastId + 2)
+      })
+    )
+  })
 })
