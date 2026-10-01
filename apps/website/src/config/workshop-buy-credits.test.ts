@@ -1,31 +1,42 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type * as BuyCredits from './workshop-buy-credits'
+
+type Request = (module: typeof BuyCredits) => void
+
+const action: Request = (module) => module.requestWorkshopBuyCredits()
+const automatic: Request = (module) =>
+  module.requestWorkshopBuyCreditsAutomatically()
+
 beforeEach(() => {
   vi.resetModules()
 })
 
 describe('workshop buy-credits requests', () => {
   it.for([
-    { order: ['action', 'automatic'], delivered: 'action' },
-    { order: ['automatic', 'action'], delivered: 'action' },
-    { order: ['automatic'], delivered: 'automatic' }
-  ] as const)(
-    'buffers $order before a subscriber as $delivered',
-    async ({ order, delivered }) => {
-      const {
-        requestWorkshopBuyCredits,
-        requestWorkshopBuyCreditsAutomatically,
-        subscribeToWorkshopBuyCredits
-      } = await import('./workshop-buy-credits')
-      for (const trigger of order) {
-        if (trigger === 'action') requestWorkshopBuyCredits()
-        else requestWorkshopBuyCreditsAutomatically()
-      }
+    { name: 'action then automatic', first: action, second: automatic },
+    { name: 'automatic then action', first: automatic, second: action }
+  ])(
+    'buffers $name before a subscriber as the action',
+    async ({ first, second }) => {
+      const module = await import('./workshop-buy-credits')
+      first(module)
+      second(module)
       const listener = vi.fn()
 
-      subscribeToWorkshopBuyCredits(listener)
+      module.subscribeToWorkshopBuyCredits(listener)
 
-      expect(listener).toHaveBeenCalledExactlyOnceWith(delivered)
+      expect(listener).toHaveBeenCalledExactlyOnceWith('action')
     }
   )
+
+  it('buffers a lone automatic request as automatic', async () => {
+    const module = await import('./workshop-buy-credits')
+    automatic(module)
+    const listener = vi.fn()
+
+    module.subscribeToWorkshopBuyCredits(listener)
+
+    expect(listener).toHaveBeenCalledExactlyOnceWith('automatic')
+  })
 })

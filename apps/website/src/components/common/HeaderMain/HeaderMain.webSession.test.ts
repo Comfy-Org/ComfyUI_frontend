@@ -286,71 +286,64 @@ describe('HeaderMain account source', () => {
     expect(open).not.toHaveBeenCalled()
   })
 
-  it.for([
-    {
-      source: 'session',
-      answers: {
-        anonymous: { web_session_probe: true },
-        perUser: { unified_web_session: true },
-        session: LIVE_SESSION,
-        balance: {
-          status: 200,
-          body: {
-            amount_micros: 0,
-            currency: 'usd',
-            effective_balance_micros: 0
-          }
+  async function clickBeforeSourceSettles(answers: CloudAnswers) {
+    let answer!: () => void
+    const answered = new Promise<void>((resolve) => {
+      answer = resolve
+    })
+    stubCloud({ ...answers, answered })
+    const tab = {
+      opener: window as Window | null,
+      location: { assign: vi.fn() },
+      close: vi.fn()
+    }
+    const open = vi
+      .spyOn(window, 'open')
+      .mockReturnValue(tab as unknown as Window)
+    await renderHeader()
+    await nextTick()
+    const { requestWorkshopBuyCredits } =
+      await import('../../../config/workshop-buy-credits')
+
+    requestWorkshopBuyCredits()
+
+    expect(open).toHaveBeenCalledExactlyOnceWith('/checkout-opening', '_blank')
+    answer()
+    return tab
+  }
+
+  it('sends a tab claimed before the session source settles to Cloud credits', async () => {
+    const tab = await clickBeforeSourceSettles({
+      anonymous: { web_session_probe: true },
+      perUser: { unified_web_session: true },
+      session: LIVE_SESSION,
+      balance: {
+        status: 200,
+        body: {
+          amount_micros: 0,
+          currency: 'usd',
+          effective_balance_micros: 0
         }
-      },
-      sendsToCloud: true
-    },
-    {
-      source: 'firebase',
-      answers: { anonymous: { web_session_probe: false } },
-      sendsToCloud: false
-    }
-  ])(
-    'claims a tab inside an explicit click while the $source source is undecided',
-    async ({ answers, sendsToCloud }) => {
-      let answer!: () => void
-      const answered = new Promise<void>((resolve) => {
-        answer = resolve
-      })
-      stubCloud({ ...answers, answered })
-      const tab = {
-        opener: window as Window | null,
-        location: { assign: vi.fn() },
-        close: vi.fn()
       }
-      const open = vi
-        .spyOn(window, 'open')
-        .mockReturnValue(tab as unknown as Window)
-      await renderHeader()
-      await nextTick()
-      const { requestWorkshopBuyCredits } =
-        await import('../../../config/workshop-buy-credits')
+    })
 
-      requestWorkshopBuyCredits()
-
-      expect(open).toHaveBeenCalledExactlyOnceWith(
-        '/checkout-opening',
-        '_blank'
+    await vi.waitFor(() =>
+      expect(tab.location.assign).toHaveBeenCalledExactlyOnceWith(
+        WORKSHOP_CREDITS_URL
       )
-      answer()
-      if (sendsToCloud) {
-        await vi.waitFor(() =>
-          expect(tab.location.assign).toHaveBeenCalledExactlyOnceWith(
-            WORKSHOP_CREDITS_URL
-          )
-        )
-        expect(tab.opener).toBeNull()
-        expect(tab.close).not.toHaveBeenCalled()
-      } else {
-        await vi.waitFor(() => expect(tab.close).toHaveBeenCalledOnce())
-        expect(tab.location.assign).not.toHaveBeenCalled()
-      }
-    }
-  )
+    )
+    expect(tab.opener).toBeNull()
+    expect(tab.close).not.toHaveBeenCalled()
+  })
+
+  it('releases a tab claimed before the source settles on Firebase', async () => {
+    const tab = await clickBeforeSourceSettles({
+      anonymous: { web_session_probe: false }
+    })
+
+    await vi.waitFor(() => expect(tab.close).toHaveBeenCalledOnce())
+    expect(tab.location.assign).not.toHaveBeenCalled()
+  })
 
   it('flag on with a revoked session: signs the remembered login out and falls back to Firebase', async () => {
     stubCloud({
