@@ -99,6 +99,7 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { extractFilesFromDragEvent } from '@/utils/eventUtils'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { reportError } from '@/platform/telemetry/reportError'
+import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
 import { zeroUuid } from '@/utils/uuid'
 import type { importA1111 } from './pnginfo'
 
@@ -698,7 +699,7 @@ describe('ComfyApp', () => {
       const olderLoad = app.loadGraphData(createWorkflowGraphData(), false)
       await app.loadGraphData(createWorkflowGraphData(), false)
       releaseFirstLoad()
-      await olderLoad
+      await expect(olderLoad).resolves.toBeUndefined()
 
       const hooks = mockExtensionService.invokeExtensionsAsync.mock.calls.map(
         ([hook]) => hook
@@ -708,6 +709,67 @@ describe('ComfyApp', () => {
         (hook) => hook === 'afterConfigureGraph' || hook === 'onGraphLoadError'
       )
       expect(closed).toHaveLength(opened.length)
+    })
+
+    it('lets an older valid load commit when its newer replacement fails', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      let releaseOlderLoad!: () => void
+      const olderLoadBlocked = new Promise<void>((resolve) => {
+        releaseOlderLoad = resolve
+      })
+      let beforeLoadCount = 0
+      let newerLoadFailed = false
+      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+        async (hook: string) => {
+          if (hook === 'beforeLoadGraph' && ++beforeLoadCount === 1) {
+            await olderLoadBlocked
+          }
+          if (
+            hook === 'beforeConfigureGraph' &&
+            beforeLoadCount === 2 &&
+            !newerLoadFailed
+          ) {
+            newerLoadFailed = true
+            throw new Error('newer load failed')
+          }
+        }
+      )
+
+      const olderLoad = app.loadGraphData(createWorkflowGraphData(), false)
+      await expect(
+        app.loadGraphData(createWorkflowGraphData(), false)
+      ).resolves.toBe(false)
+      releaseOlderLoad()
+
+      await expect(olderLoad).resolves.toBe(true)
+    })
+
+    it('preserves a hidden pending camera restore across same-workflow undo', async () => {
+      const canvasElement = document.createElement('canvas')
+      app.canvasElRef.value = canvasElement
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      Reflect.set(mockCanvas, 'ds', {
+        offset: [9, 11],
+        scale: 1.3,
+        min_scale: 0.1,
+        max_scale: 10
+      })
+      Reflect.set(mockCanvas, 'bgcanvas', document.createElement('canvas'))
+      const workflow = new ComfyWorkflow({
+        path: 'workflows/camera.json',
+        modified: 0,
+        size: 0
+      })
+      const scheduler = useCanvasScheduler()
+      scheduler.clear()
+
+      await app.loadGraphData(createWorkflowGraphData(), true, true, workflow)
+      expect(scheduler.pending()).toBe(1)
+
+      await app.loadGraphData(createWorkflowGraphData(), false, false, workflow)
+
+      expect(scheduler.pending()).toBe(1)
     })
 
     it('brackets an API JSON import with graph-load hooks', async () => {

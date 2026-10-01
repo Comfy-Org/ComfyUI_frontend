@@ -52,6 +52,20 @@ function measureViewportFromElement(
     )
   }
 
+  const previousViewport = appliedViewportByCanvas.get(element)
+  if (
+    previousViewport &&
+    initialRect.width === previousViewport.cssWidth &&
+    initialRect.height === previousViewport.cssHeight
+  ) {
+    return measureViewport(
+      previousViewport.cssWidth,
+      previousViewport.cssHeight,
+      rawDpr ?? window.devicePixelRatio,
+      prevGeneration
+    )
+  }
+
   const savedWidth = element.width
   const savedHeight = element.height
   let cssRect: DOMRect
@@ -63,7 +77,6 @@ function measureViewportFromElement(
     element.width = savedWidth
     element.height = savedHeight
   }
-  const previousViewport = appliedViewportByCanvas.get(element)
   const width = cssRect.width || previousViewport?.cssWidth || initialRect.width
   const height =
     cssRect.height || previousViewport?.cssHeight || initialRect.height
@@ -81,13 +94,33 @@ function applyViewport(
   bg: HTMLCanvasElement,
   consumer?: CanvasViewportConsumer
 ): CanvasViewport {
-  fg.width = viewport.physicalWidth
-  fg.height = viewport.physicalHeight
-  fg.getContext('2d')?.scale(viewport.dpr, viewport.dpr)
+  const previousForegroundViewport = appliedViewportByCanvas.get(fg)
+  const foregroundChanged =
+    fg.width !== viewport.physicalWidth ||
+    fg.height !== viewport.physicalHeight ||
+    previousForegroundViewport?.dpr !== viewport.dpr
+  if (
+    fg.width !== viewport.physicalWidth ||
+    previousForegroundViewport?.dpr !== viewport.dpr
+  )
+    fg.width = viewport.physicalWidth
+  if (fg.height !== viewport.physicalHeight) fg.height = viewport.physicalHeight
+  if (foregroundChanged) fg.getContext('2d')?.scale(viewport.dpr, viewport.dpr)
   if (bg !== fg) {
-    bg.width = viewport.physicalWidth
-    bg.height = viewport.physicalHeight
-    bg.getContext('2d')?.scale(viewport.dpr, viewport.dpr)
+    const previousBackgroundViewport = appliedViewportByCanvas.get(bg)
+    const backgroundChanged =
+      bg.width !== viewport.physicalWidth ||
+      bg.height !== viewport.physicalHeight ||
+      previousBackgroundViewport?.dpr !== viewport.dpr
+    if (
+      bg.width !== viewport.physicalWidth ||
+      previousBackgroundViewport?.dpr !== viewport.dpr
+    )
+      bg.width = viewport.physicalWidth
+    if (bg.height !== viewport.physicalHeight)
+      bg.height = viewport.physicalHeight
+    if (backgroundChanged)
+      bg.getContext('2d')?.scale(viewport.dpr, viewport.dpr)
   }
 
   appliedViewportByCanvas.set(fg, viewport)

@@ -21,6 +21,12 @@ describe('normalizeCameraState', () => {
     })
   })
 
+  it('accepts legacy object-shaped offsets', () => {
+    expect(
+      normalizeCameraState({ offset: { 0: -120, 1: 42 }, scale: 0.5 })
+    ).toEqual({ offset: [-120, 42], scale: 0.5 })
+  })
+
   it.for([
     { savedScale: 5e-324, expectedScale: 0.01 },
     { savedScale: 5, expectedScale: 4 }

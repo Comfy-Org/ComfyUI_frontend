@@ -6674,6 +6674,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * This method remains for legacy callers that rely on parent-element fallback sizing.
    */
   resize(width?: number, height?: number): void {
+    const usesParentSize = !width && !height
     if (!width && !height) {
       const parent = this.canvas.parentElement
       if (!parent)
@@ -6682,6 +6683,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         )
       width = parent.offsetWidth
       height = parent.offsetHeight
+    }
+
+    if (usesParentSize) {
+      if (!this.canvas.style.width) this.canvas.style.width = `${width}px`
+      if (!this.canvas.style.height) this.canvas.style.height = `${height}px`
     }
 
     const viewport = measureViewport(

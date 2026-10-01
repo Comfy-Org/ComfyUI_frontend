@@ -16,13 +16,15 @@ export function normalizeCameraState(
     typeof value !== 'object' ||
     !('offset' in value) ||
     !('scale' in value) ||
-    !Array.isArray(value.offset) ||
-    value.offset.length !== 2
+    typeof value.offset !== 'object' ||
+    value.offset === null
   ) {
     return null
   }
 
   if (
+    '0' in value.offset &&
+    '1' in value.offset &&
     typeof value.offset[0] === 'number' &&
     Number.isFinite(value.offset[0]) &&
     typeof value.offset[1] === 'number' &&

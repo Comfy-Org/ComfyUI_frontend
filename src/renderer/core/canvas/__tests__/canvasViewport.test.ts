@@ -21,6 +21,30 @@ function mockCanvas(
   } as unknown as HTMLCanvasElement & { scaleArgs: number[][] }
 }
 
+function observedCanvas(width: number, height: number) {
+  const writes = { width: 0, height: 0 }
+  let currentWidth = width
+  let currentHeight = height
+  const canvas = {
+    get width() {
+      return currentWidth
+    },
+    set width(value: number) {
+      writes.width++
+      currentWidth = value
+    },
+    get height() {
+      return currentHeight
+    },
+    set height(value: number) {
+      writes.height++
+      currentHeight = value
+    },
+    getContext: () => ({ scale: vi.fn() })
+  } as unknown as HTMLCanvasElement
+  return { canvas, writes }
+}
+
 describe('measureViewport', () => {
   it('computes physical dimensions from CSS dimensions and DPR', () => {
     const vp = measureViewport(800, 600, 2, 0)
@@ -199,5 +223,21 @@ describe('applyViewport', () => {
     expect(fg.width).toBe(800)
     expect(fg.height).toBe(600)
     expect(fg.scaleArgs).toEqual([[1, 1]])
+  })
+
+  it('does not reset matching canvas backing stores', () => {
+    const vp = measureViewport(800, 600, 2, 0)
+    const fg = observedCanvas(1600, 1200)
+    const bg = observedCanvas(1600, 1200)
+
+    applyViewport(vp, fg.canvas, bg.canvas)
+    fg.writes.width = 0
+    fg.writes.height = 0
+    bg.writes.width = 0
+    bg.writes.height = 0
+    applyViewport(vp, fg.canvas, bg.canvas)
+
+    expect(fg.writes).toEqual({ width: 0, height: 0 })
+    expect(bg.writes).toEqual({ width: 0, height: 0 })
   })
 })

@@ -398,6 +398,8 @@ export class ComfyApp {
   private configuringGraphLevel: number = 0
   private graphLoadSequence = 0
   private committedGraphLoadSequence = 0
+  private cameraLoadSequence = 0
+  private pendingCameraWorkflow: string | null | ComfyWorkflow = null
   get configuringGraph() {
     return this.configuringGraphLevel > 0
   }
@@ -1312,10 +1314,9 @@ export class ComfyApp {
       silentAssetErrors?: boolean
       workflowNavigationId?: number
     } = {}
-  ): Promise<LoadedComfyWorkflow | boolean> {
+  ): Promise<LoadedComfyWorkflow | boolean | undefined> {
     const canvasScheduler = useCanvasScheduler()
     const loadId = ++this.graphLoadSequence
-    const isCurrentLoad = () => loadId === this.committedGraphLoadSequence
 
     const {
       checkForRerouteMigration = false,
@@ -1529,7 +1530,7 @@ export class ComfyApp {
     let resourceScanLoadCompleted = false
     try {
       try {
-        if (loadId !== this.graphLoadSequence) {
+        if (loadId < this.committedGraphLoadSequence) {
           await useExtensionService().invokeExtensionsAsync(
             'onGraphLoadError',
             new DOMException(
@@ -1537,7 +1538,7 @@ export class ComfyApp {
               'AbortError'
             )
           )
-          return false
+          return undefined
         }
 
         this.rootGraph.configure(graphData as ISerialisedGraph)
@@ -1558,24 +1559,38 @@ export class ComfyApp {
           )
         }
 
-        this.committedGraphLoadSequence = loadId
-        canvasScheduler.schedule({
-          key: 'graph-load-camera',
-          element: this.canvasEl,
-          isCurrent: isCurrentLoad,
-          run: () => {
-            const viewport = measureViewportFromElement(this.canvasEl)
-            applyViewport(
-              viewport,
-              this.canvasEl,
-              this.canvas.bgcanvas,
-              this.canvas.ds
-            )
-            this.canvas.dpr = viewport.dpr
-            fitView()
-            this.canvas.draw(true, true)
+        this.committedGraphLoadSequence = Math.max(
+          loadId,
+          this.committedGraphLoadSequence
+        )
+        const preservesPendingCamera =
+          !restore_view && workflow === this.pendingCameraWorkflow
+        if (!preservesPendingCamera) {
+          const cameraLoadId = ++this.cameraLoadSequence
+          this.pendingCameraWorkflow = restore_view ? workflow : null
+          if (restore_view) {
+            canvasScheduler.schedule({
+              key: 'graph-load-camera',
+              element: this.canvasEl,
+              isCurrent: () => cameraLoadId === this.cameraLoadSequence,
+              run: () => {
+                const viewport = measureViewportFromElement(this.canvasEl)
+                applyViewport(
+                  viewport,
+                  this.canvasEl,
+                  this.canvas.bgcanvas,
+                  this.canvas.ds
+                )
+                this.canvas.dpr = viewport.dpr
+                fitView()
+                this.canvas.draw(true, true)
+                if (cameraLoadId === this.cameraLoadSequence) {
+                  this.pendingCameraWorkflow = null
+                }
+              }
+            })
           }
-        })
+        }
       } catch (error) {
         await this.reportGraphLoadFailure(error)
         // Resolves rather than throws: the close/replacement guards read this outcome.
