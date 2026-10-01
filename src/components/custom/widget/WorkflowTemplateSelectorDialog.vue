@@ -1042,6 +1042,7 @@ function handleTemplateModelMetadataError(
 ) {
   if (controller.signal.aborted || generation !== detailGeneration) return
   reportError(error, {
+    surface: 'graph',
     errorType: 'workflow_template_model_metadata_failed',
     level: 'warning'
   })

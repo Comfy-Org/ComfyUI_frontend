@@ -71,7 +71,9 @@ const mocks = vi.hoisted(() => ({
   loadTemplates: vi.fn(async () => true),
   onClose: vi.fn(),
   discardPreparedWorkflowTemplate: vi.fn(),
-  openPreparedWorkflowTemplate: vi.fn(async () => 'loaded' as const),
+  openPreparedWorkflowTemplate: vi.fn<
+    () => Promise<'loaded' | 'graph-failed' | 'not-started'>
+  >(async () => 'loaded'),
   prepareWorkflowTemplate: vi.fn(async () => fixtures.prepared),
   resolveAvailability: vi.fn<
     () => Promise<ResolvedTemplateModelAvailability[]>
@@ -349,6 +351,29 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
       expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledOnce()
     })
     expect(screen.queryByRole('article')).not.toBeInTheDocument()
+  })
+
+  it('lets a later open proceed after one does not start', async () => {
+    mocks.resolveAvailability.mockResolvedValue([
+      { model: fixtures.activeModel, status: 'installed' }
+    ])
+    // The first open leaves the picker mounted, so the pending flag has to
+    // clear or nothing can be opened again.
+    mocks.openPreparedWorkflowTemplate.mockResolvedValueOnce('not-started')
+    renderDialog()
+    await clickTemplateCard()
+
+    await waitFor(() => {
+      expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledOnce()
+    })
+    expect(mocks.onClose).not.toHaveBeenCalled()
+
+    await clickTemplateCard()
+
+    await waitFor(() => {
+      expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledTimes(2)
+    })
+    expect(mocks.onClose).toHaveBeenCalledOnce()
   })
 
   it('discards the prepared workflow when navigation changes while inventory resolves', async () => {

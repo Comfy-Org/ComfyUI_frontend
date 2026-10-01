@@ -26,6 +26,7 @@ export function useTemplateModelAvailability() {
       )
       if (failure) {
         reportError(failure.reason, {
+          surface: 'graph',
           errorType: 'workflow_template_model_inventory_failed',
           level: 'warning'
         })
@@ -37,6 +38,7 @@ export function useTemplateModelAvailability() {
       )
     } catch (error) {
       reportError(error, {
+        surface: 'graph',
         errorType: 'workflow_template_model_inventory_failed',
         level: 'warning'
       })
