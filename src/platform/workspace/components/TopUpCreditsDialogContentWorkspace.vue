@@ -134,20 +134,24 @@
         <div class="text-sm text-muted-foreground">
           {{ $t('credits.topUp.youPay') }}
         </div>
-        <FormattedNumberStepper
+        <NumberField
           :model-value="payAmount"
           :min="0"
           :max="MAX_AMOUNT"
-          :step="getStepAmount"
+          :step="getStepAmount(payAmount)"
+          :format-options="{ maximumFractionDigits: 0 }"
           @update:model-value="handlePayAmountChange"
-          @max-reached="showCeilingWarning = true"
         >
-          <template #prefix>
-            <span class="shrink-0 text-base font-semibold text-base-foreground"
-              >$</span
-            >
-          </template>
-        </FormattedNumberStepper>
+          <NumberFieldDecrement />
+          <span class="shrink-0 text-base font-semibold text-base-foreground"
+            >$</span
+          >
+          <NumberFieldInput
+            :aria-label="$t('credits.topUp.youPay')"
+            class="text-lg font-medium"
+          />
+          <NumberFieldIncrement />
+        </NumberField>
       </div>
 
       <!-- You Get -->
@@ -155,17 +159,21 @@
         <div class="text-sm text-muted-foreground">
           {{ $t('credits.topUp.youGet') }}
         </div>
-        <FormattedNumberStepper
+        <NumberField
           v-model="creditsModel"
           :min="0"
           :max="usdToCredits(MAX_AMOUNT)"
-          :step="getCreditsStepAmount"
-          @max-reached="showCeilingWarning = true"
+          :step="getCreditsStepAmount(creditsModel)"
+          :format-options="{ maximumFractionDigits: 0 }"
         >
-          <template #prefix>
-            <i class="icon-[lucide--coins] size-4 shrink-0 text-gold-500" />
-          </template>
-        </FormattedNumberStepper>
+          <NumberFieldDecrement />
+          <i class="icon-[lucide--coins] size-4 shrink-0 text-gold-500" />
+          <NumberFieldInput
+            :aria-label="$t('credits.topUp.youGet')"
+            class="text-lg font-medium"
+          />
+          <NumberFieldIncrement />
+        </NumberField>
       </div>
     </div>
 
@@ -296,21 +304,27 @@ import { useI18n } from 'vue-i18n'
 
 import { creditsToUsd, usdToCredits } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
-import FormattedNumberStepper from '@/components/ui/stepper/FormattedNumberStepper.vue'
+import NumberField from '@/components/ui/number-field/NumberField.vue'
+import NumberFieldDecrement from '@/components/ui/number-field/NumberFieldDecrement.vue'
+import NumberFieldIncrement from '@/components/ui/number-field/NumberFieldIncrement.vue'
+import NumberFieldInput from '@/components/ui/number-field/NumberFieldInput.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
 import { isCloud } from '@/platform/distribution/types'
 import type {
+  BillingOperationTerminal,
   CheckoutJourneyPhaseEvent,
   PaymentIntentSource
 } from '@/platform/telemetry/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { reportError } from '@/platform/telemetry/reportError'
+import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { isBlockedOnCustomerPhase } from '@/platform/workspace/billing/customerAttention'
+import { UncreditedTopupResponse } from '@/platform/workspace/billing/sdk/topupOperationView'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useHasSavedPaymentMethod } from '@/platform/workspace/composables/useHasSavedPaymentMethod'
 import { useTopupOperation } from '@/platform/workspace/composables/useTopupOperation'
@@ -439,7 +453,6 @@ const MAX_AMOUNT = 10000
 // State
 const selectedPreset = ref<number | null>(50)
 const payAmount = ref(50)
-const showCeilingWarning = ref(false)
 const loading = ref(false)
 const paymentSubmitted = ref(false)
 const step = ref<'amount' | 'confirm' | 'verifying'>(
@@ -472,6 +485,7 @@ const isValidAmount = computed(
 )
 
 const isBelowMin = computed(() => payAmount.value < MIN_AMOUNT)
+const showCeilingWarning = computed(() => payAmount.value >= MAX_AMOUNT)
 
 const displayTotal = computed(() =>
   n(payAmount.value, {
@@ -525,17 +539,21 @@ function getCreditsStepAmount(currentCredits: number): number {
 function handlePayAmountChange(value: number) {
   payAmount.value = value
   selectedPreset.value = null
-  showCeilingWarning.value = false
 }
 
 function handlePresetClick(amount: number) {
-  showCeilingWarning.value = false
   payAmount.value = amount
   selectedPreset.value = amount
 }
 
 function handlePrimaryAction() {
   if (step.value === 'amount') {
+    telemetry?.trackBillingEvent({
+      operation: 'topup',
+      stage: 'intent',
+      outcome: 'pending',
+      payment_intent_source: source
+    })
     step.value = 'confirm'
     return
   }
@@ -544,7 +562,10 @@ function handlePrimaryAction() {
 
 function openManageBilling() {
   void manageSubscription().catch((error) => {
-    reportError(error, { errorType: 'billing_portal_open_failure' })
+    reportError(error, {
+      surface: 'billing',
+      errorType: 'billing_portal_open_failure'
+    })
     toast.add({
       severity: 'error',
       summary: t('credits.topUp.manageBillingError'),
@@ -595,7 +616,8 @@ async function handleBuy() {
     telemetry?.trackBillingEvent({
       operation: 'topup',
       stage: 'started',
-      outcome: 'pending'
+      outcome: 'pending',
+      payment_intent_source: source
     })
     telemetry?.trackBillingEvent({
       operation: 'operation',
@@ -613,20 +635,10 @@ async function handleBuy() {
     const response = await topup(amountCents)
     if (!response) {
       if (isCurrentAttempt()) paymentSubmitted.value = false
-      telemetry?.trackBillingEvent({
-        operation: 'topup',
+      reportTerminal(attemptStartedAt, {
         stage: 'failed',
         outcome: 'failure',
-        failure_category: 'unknown',
-        duration_ms: Date.now() - attemptStartedAt
-      })
-      telemetry?.trackBillingEvent({
-        operation: 'operation',
-        stage: 'failed',
-        outcome: 'failure',
-        operation_type: 'topup',
-        failure_category: 'unknown',
-        duration_ms: Date.now() - attemptStartedAt
+        failure_category: 'unknown'
       })
       return
     }
@@ -649,27 +661,14 @@ async function handleBuy() {
       }
     }
 
+    reportResponseTerminal(response, attemptStartedAt)
+
     if (response.status === 'completed') {
       if (
         getActiveCheckoutJourney()?.billing_op_id === response.billing_op_id
       ) {
         clearCheckoutJourney()
       }
-      telemetry?.trackBillingEvent({
-        operation: 'topup',
-        stage: 'succeeded',
-        outcome: 'success',
-        billing_op_id: response.billing_op_id,
-        duration_ms: Date.now() - attemptStartedAt
-      })
-      telemetry?.trackBillingEvent({
-        operation: 'operation',
-        stage: 'succeeded',
-        outcome: 'success',
-        operation_type: 'topup',
-        billing_op_id: response.billing_op_id,
-        duration_ms: Date.now() - attemptStartedAt
-      })
       toast.add({
         severity: 'success',
         summary: t('credits.topUp.purchaseSuccess'),
@@ -680,7 +679,10 @@ async function handleBuy() {
       handleClose(false)
       settingsDialog.show(isCloud ? 'workspace' : 'credits')
     } else if (response.status === 'pending') {
-      void adoptPendingOperation(response.billing_op_id, { attemptStartedAt })
+      void adoptPendingOperation(response.billing_op_id, {
+        attemptStartedAt,
+        paymentIntentSource: source
+      })
         .then(() => {
           if (isCurrentAttempt()) paymentSubmitted.value = false
         })
@@ -693,25 +695,7 @@ async function handleBuy() {
           )
         })
     } else {
-      // Synchronous 'failed' here means the charge was declined, not rejected pre-attempt.
       if (isCurrentAttempt()) paymentSubmitted.value = false
-      telemetry?.trackBillingEvent({
-        operation: 'topup',
-        stage: 'failed',
-        outcome: 'failure',
-        billing_op_id: response.billing_op_id,
-        failure_category: 'provider_decline',
-        duration_ms: Date.now() - attemptStartedAt
-      })
-      telemetry?.trackBillingEvent({
-        operation: 'operation',
-        stage: 'failed',
-        outcome: 'failure',
-        operation_type: 'topup',
-        billing_op_id: response.billing_op_id,
-        failure_category: 'provider_decline',
-        duration_ms: Date.now() - attemptStartedAt
-      })
       toast.add({
         severity: 'error',
         summary: t('credits.topUp.purchaseError'),
@@ -734,29 +718,87 @@ function reportPurchaseError(
   if (currentAttempt) paymentSubmitted.value = false
   console.error('Purchase failed', ...(error === undefined ? [] : [error]))
 
-  telemetry?.trackBillingEvent({
-    operation: 'topup',
-    stage: 'failed',
-    outcome: 'failure',
-    ...(billingOpId ? { billing_op_id: billingOpId } : {}),
-    failure_category:
-      error === undefined ? 'unknown' : categorizeBillingApiError(error),
-    duration_ms: Date.now() - attemptStartedAt
-  })
-  telemetry?.trackBillingEvent({
-    operation: 'operation',
-    stage: 'failed',
-    outcome: 'failure',
-    operation_type: 'topup',
-    ...(billingOpId ? { billing_op_id: billingOpId } : {}),
-    failure_category:
-      error === undefined ? 'unknown' : categorizeBillingApiError(error),
-    duration_ms: Date.now() - attemptStartedAt
-  })
+  reportTerminal(
+    attemptStartedAt,
+    {
+      stage: 'failed',
+      outcome: 'failure',
+      failure_category:
+        error === undefined ? 'unknown' : categorizeBillingApiError(error)
+    },
+    billingOpId
+  )
   toast.add({
     severity: 'error',
     summary: t('credits.topUp.purchaseError'),
     detail: purchaseErrorDetail(error)
+  })
+}
+
+/**
+ * The terminal a response's status implies. A synchronous `failed` is a
+ * declined charge, not a pre-attempt rejection; a `pending` one is the
+ * poller's to report once it settles.
+ */
+const RESPONSE_TERMINALS: Record<
+  CreateTopupResponse['status'],
+  BillingOperationTerminal | undefined
+> = {
+  completed: { stage: 'succeeded', outcome: 'success' },
+  failed: {
+    stage: 'failed',
+    outcome: 'failure',
+    failure_category: 'provider_decline'
+  },
+  pending: undefined
+}
+
+function reportResponseTerminal(
+  response: CreateTopupResponse,
+  attemptStartedAt: number
+) {
+  const terminal =
+    response instanceof UncreditedTopupResponse
+      ? response.terminal
+      : RESPONSE_TERMINALS[response.status]
+  if (terminal) {
+    reportTerminal(attemptStartedAt, terminal, response.billing_op_id)
+  }
+}
+
+function reportTerminal(
+  attemptStartedAt: number,
+  terminal: BillingOperationTerminal,
+  billingOpId?: string
+) {
+  const attempt = {
+    ...(billingOpId ? { billing_op_id: billingOpId } : {}),
+    duration_ms: Date.now() - attemptStartedAt
+  }
+  // No timeout stage on the top-up funnel; the poller reports it as failed too.
+  telemetry?.trackBillingEvent(
+    terminal.stage === 'succeeded'
+      ? {
+          operation: 'topup',
+          stage: 'succeeded',
+          outcome: 'success',
+          payment_intent_source: source,
+          ...attempt
+        }
+      : {
+          operation: 'topup',
+          stage: 'failed',
+          outcome: 'failure',
+          payment_intent_source: source,
+          failure_category: terminal.failure_category,
+          ...attempt
+        }
+  )
+  telemetry?.trackBillingEvent({
+    operation: 'operation',
+    operation_type: 'topup',
+    ...terminal,
+    ...attempt
   })
 }
 

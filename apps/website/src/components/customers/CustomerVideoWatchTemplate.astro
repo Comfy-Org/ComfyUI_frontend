@@ -57,7 +57,7 @@ const video = videoObjectNode({
 // Only two watch pages exist today, so "next" is always the other one.
 const [nextStory] = otherCustomerVideoStories(story.slug)
 const relatedStoryHref = story.relatedStorySlug
-  ? `/customers/${story.relatedStorySlug}`
+  ? `/customers/${story.relatedStorySlug}/`
   : undefined
 
 // Caption fetch happens at build time, from wherever the site is built —
@@ -86,7 +86,7 @@ const collectionLabel = t('nav.customerStories', locale)
   <BreadcrumbBar
     crumbs={[
       { label: homeLabel, href: '/' },
-      { label: collectionLabel, href: '/customers' },
+      { label: collectionLabel, href: routes.customers },
       { label: story.title }
     ]}
     label={t('ui.breadcrumb', locale)}

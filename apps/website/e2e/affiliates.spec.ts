@@ -7,7 +7,7 @@ import { waitForIsland } from './fixtures/islands'
 
 const PATH = '/affiliates'
 const APPLY_URL = 'https://forms.gle/RS8L2ttcuGap4Q1v6'
-const TERMS_PATH = '/affiliates/terms'
+const TERMS_PATH = '/affiliates/terms/'
 const FAQ_COUNT = affiliateFaqs.length
 const FIRST_FAQ = affiliateFaqs[0]
 const HERO_HEADING_TEXT = `${t('affiliate.hero.headingHighlight', 'en')} ${t('affiliate.hero.headingMuted', 'en')}`
