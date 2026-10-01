@@ -62,4 +62,16 @@ describe('MoveAnythingStudio', () => {
     await user.click(within(history).getByRole('button', { name: 'Redo' }))
     expect(generate).toHaveTextContent('Move 1 object')
   })
+  it('shows the how-to hint on the photo until a thing is touched', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    render(MoveAnythingStudio)
+    await user.click(screen.getByRole('button', { name: 'Try the example' }))
+    const hint = /^Drag to move/
+
+    expect(screen.getByText(hint)).toBeInTheDocument()
+    screen.getByRole('button', { name: /^Orange kitten\./ }).focus()
+    await user.keyboard('{ArrowRight}')
+
+    expect(screen.queryByText(hint)).toBeNull()
+  })
 })

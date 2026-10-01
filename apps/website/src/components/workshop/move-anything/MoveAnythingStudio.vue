@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
 import type { MoveView } from '../../../composables/useMoveAnything'
 import { useMoveAnything } from '../../../composables/useMoveAnything'
@@ -24,6 +24,18 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const move = useMoveAnything(locale)
 const { image, objects, phase, tool, tray, quality, selected } = move
 const view = ref<MoveView>('compare')
+const touched = ref(false)
+watch([tool, image], () => (touched.value = false))
+
+function select(id: string) {
+  selected.value = id
+  touched.value = true
+}
+
+function begin() {
+  move.checkpoint()
+  touched.value = true
+}
 reportStudioBusy(() => phase.value.kind === 'moving')
 
 function busyDetail() {
@@ -68,24 +80,23 @@ function busyDetail() {
         :tool
         :selected
         :locale
-        @select="(id) => (selected = id)"
-        @begin="move.checkpoint"
+        @select="select"
+        @begin="begin"
         @place="move.place"
         @add="move.add"
-      />
+      >
+        <MoveAnythingHint
+          v-if="!touched && phase.kind === 'arranging'"
+          :tool
+          :locale
+        />
+      </MoveAnythingStage>
       <EditorBusy
         v-if="phase.kind === 'moving'"
         :title="mc('move.busy.title', locale)"
         :detail="busyDetail()"
       />
     </div>
-    <template #overlay>
-      <MoveAnythingHint
-        v-if="image && phase.kind === 'arranging'"
-        :tool
-        :locale
-      />
-    </template>
     <template #tray>
       <p
         v-if="phase.kind === 'failed'"
@@ -111,7 +122,7 @@ function busyDetail() {
         @close="tray = undefined"
       />
     </template>
-    <template v-if="image && phase.kind !== 'done'" #start>
+    <template v-if="image && phase.kind !== 'done'" #center>
       <EditorHistory
         :can-undo="move.canUndo.value"
         :can-redo="move.canRedo.value"
