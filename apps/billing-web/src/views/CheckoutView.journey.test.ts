@@ -3,13 +3,19 @@ import { render, waitFor } from '@testing-library/vue'
 import { defineComponent, h, ref } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
-import type { SubscriptionPreview } from '@comfyorg/account-core/billing'
+import type {
+  PreviewSubscribeResult,
+  SubscriptionPreview
+} from '@comfyorg/account-core/billing'
 import { BILLING_CLIENT_KEY } from '@comfyorg/account-ui/billing'
 import { parseBillingEntry } from '@comfyorg/billing-contract'
 
 import { recordBillingEntry } from '@/entry/billingEntry'
 import { createBillingI18n } from '@/i18n'
-import type { FakeBillingClientOptions } from '@/test/fakeBillingClient'
+import type {
+  FakeBillingClient,
+  FakeBillingClientOptions
+} from '@/test/fakeBillingClient'
 import { createFakeBillingClient, previewOf } from '@/test/fakeBillingClient'
 import { WORKSPACE_INVITES_KEY } from '@/session/workspaceInvites'
 import CheckoutView from '@/views/CheckoutView.vue'
@@ -83,7 +89,8 @@ function cardQuote(overrides: Partial<SubscriptionPreview> = {}) {
 
 async function renderCheckout(
   path = CHECKOUT_PATH,
-  options: FakeBillingClientOptions = {}
+  options: FakeBillingClientOptions = {},
+  arrange: (fake: FakeBillingClient) => void = () => {}
 ) {
   recordBillingEntry(parseBillingEntry(path))
   const router = createRouter({
@@ -94,6 +101,7 @@ async function renderCheckout(
     preview: { status: 'ok', value: cardQuote() },
     ...options
   })
+  arrange(fake)
   await router.push(path)
   await router.isReady()
   render(CheckoutView, {
@@ -106,7 +114,7 @@ async function renderCheckout(
       stubs: { CheckoutPaymentForm: PaymentFormStub }
     }
   })
-  return fake
+  return { ...fake, router }
 }
 
 interface ReportedAction {
@@ -126,6 +134,8 @@ function journey(): ReportedAction[] {
 }
 
 const journeyNames = () => journey().map(({ name }) => name)
+
+const nextMacrotask = () => new Promise((resolve) => setTimeout(resolve))
 
 describe('the embedded checkout journey', () => {
   beforeEach(() => {
@@ -225,5 +235,27 @@ describe('the embedded checkout journey', () => {
     await waitFor(() => expect(journey()).toHaveLength(2))
     expect(journeyNames()[0]).toBe('billing.checkout.entered')
     expect(journey()[1]).toMatchObject(last)
+  })
+
+  it('reports nothing for a quote a newer one overtook', async () => {
+    let answerOvertaken: (result: PreviewSubscribeResult) => void = () => {}
+    const fake = await renderCheckout(CHECKOUT_PATH, {}, (client) =>
+      client.previewSubscribe.mockImplementationOnce(
+        () => new Promise((resolve) => (answerOvertaken = resolve))
+      )
+    )
+    await waitFor(() => expect(fake.previewSubscribe).toHaveBeenCalledOnce())
+    const next = `/v1/checkout?${ENTRY_QUERY}&plan=creator_annual`
+    recordBillingEntry(parseBillingEntry(next))
+    await fake.router.push(next)
+    await waitFor(() => expect(journey()).toHaveLength(2))
+
+    answerOvertaken({ status: 'error', code: 'REQUEST_FAILED' })
+    await nextMacrotask()
+
+    expect(journeyNames()).toEqual([
+      'billing.checkout.entered',
+      'billing.checkout.preview_ready'
+    ])
   })
 })
