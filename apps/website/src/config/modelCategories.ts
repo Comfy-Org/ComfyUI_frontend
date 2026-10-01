@@ -26,40 +26,27 @@ const sectionCategories: Readonly<Partial<Record<string, ModelCategory>>> = {
   LLM: 'llm'
 }
 
+const categoryPatterns: Readonly<Record<ModelCategory, readonly string[]>> = {
+  image: ['image'],
+  video: ['video'],
+  audio: ['to audio', 'music', 'speech', 'voice'],
+  '3d': ['3d'],
+  edit: ['edit', 'inpainting', 'outpainting', 'remove background'],
+  upscale: ['upscale'],
+  llm: ['text generation'],
+  train: ['train']
+}
+
 export function deriveModelCategories(
   section: string,
   tags: readonly string[]
 ): ModelCategory[] {
-  const categories = new Set<ModelCategory>()
-  const sectionCategory = sectionCategories[section]
-  if (sectionCategory) categories.add(sectionCategory)
-
-  for (const tag of tags) {
-    const normalizedTag = tag.toLowerCase()
-
-    if (normalizedTag.includes('image')) categories.add('image')
-    if (normalizedTag.includes('video')) categories.add('video')
-    if (
-      normalizedTag.includes('to audio') ||
-      normalizedTag.includes('music') ||
-      normalizedTag.includes('speech') ||
-      normalizedTag.includes('voice')
-    ) {
-      categories.add('audio')
-    }
-    if (normalizedTag.includes('3d')) categories.add('3d')
-    if (
-      normalizedTag.includes('edit') ||
-      normalizedTag.includes('inpainting') ||
-      normalizedTag.includes('outpainting') ||
-      normalizedTag.includes('remove background')
-    ) {
-      categories.add('edit')
-    }
-    if (normalizedTag.includes('upscale')) categories.add('upscale')
-    if (normalizedTag.includes('text generation')) categories.add('llm')
-    if (normalizedTag.includes('train')) categories.add('train')
-  }
-
-  return MODEL_CATEGORIES.filter((category) => categories.has(category))
+  const normalizedTags = tags.map((tag) => tag.toLowerCase())
+  return MODEL_CATEGORIES.filter(
+    (category) =>
+      sectionCategories[section] === category ||
+      normalizedTags.some((tag) =>
+        categoryPatterns[category].some((pattern) => tag.includes(pattern))
+      )
+  )
 }

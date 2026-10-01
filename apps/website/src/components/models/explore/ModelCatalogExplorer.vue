@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import ModelExploreCard from './ModelExploreCard.vue'
 import type { CardWorkflowItem } from './ModelExploreCard.vue'
@@ -174,6 +175,20 @@ function toDefaultWorkflowItem(
         : { type: 'placeholder', alt: '' }
   }
 }
+const displayEntries = computed(() =>
+  isActive.value
+    ? displayedCatalog.value.map((model) => ({
+        item: toWorkflowItem(model),
+        tone: model.mediaTone
+      }))
+    : (defaultModels ?? []).map((model) => ({
+        item: toDefaultWorkflowItem(model),
+        tone:
+          model.media.type === 'placeholder'
+            ? model.media.tone
+            : ('plum' as const)
+      }))
+)
 </script>
 
 <template>
@@ -193,12 +208,18 @@ function toDefaultWorkflowItem(
     />
   </div>
   <section
-    v-if="defaultModels"
+    v-if="defaultModels || isActive"
     id="model-catalog-results"
     :aria-labelledby="collectionHeadingId"
-    class="mx-auto max-w-10xl px-6 pt-14 pb-8 md:px-10 xl:px-30"
+    :class="
+      cn(
+        'mx-auto max-w-10xl px-6 md:px-10 xl:px-30',
+        defaultModels ? 'pt-14 pb-8' : 'pt-8 pb-4'
+      )
+    "
   >
     <div
+      v-if="defaultModels"
       class="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between"
     >
       <div class="flex flex-col gap-2">
@@ -224,53 +245,20 @@ function toDefaultWorkflowItem(
     >
       {{ emptyLabel }}
     </p>
-    <div v-else class="mt-7 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
-      <template v-if="isActive">
-        <ModelExploreCard
-          v-for="model in displayedCatalog"
-          :key="model.slug"
-          :item="toWorkflowItem(model)"
-          variant="compact"
-        >
-          <template v-if="!model.thumbnailUrl" #media>
-            <ModelMediaPlaceholder :tone="model.mediaTone" />
-          </template>
-        </ModelExploreCard>
-      </template>
-      <template v-else>
-        <ModelExploreCard
-          v-for="model in defaultModels"
-          :key="model.name"
-          :item="toDefaultWorkflowItem(model)"
-          variant="compact"
-        >
-          <template v-if="model.media.type === 'placeholder'" #media>
-            <ModelMediaPlaceholder :tone="model.media.tone" />
-          </template>
-        </ModelExploreCard>
-      </template>
-    </div>
-  </section>
-  <section
-    v-else-if="isActive"
-    id="model-catalog-results"
-    class="mx-auto max-w-10xl px-6 pt-8 pb-4 md:px-10 xl:px-30"
-  >
-    <p
-      v-if="filteredCatalog.length === 0"
-      class="py-10 text-center text-base font-light text-content-secondary"
+    <div
+      v-else
+      :class="
+        cn('grid gap-6 sm:grid-cols-2 xl:grid-cols-4', defaultModels && 'mt-7')
+      "
     >
-      {{ emptyLabel }}
-    </p>
-    <div v-else class="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
       <ModelExploreCard
-        v-for="model in displayedCatalog"
-        :key="model.slug"
-        :item="toWorkflowItem(model)"
+        v-for="entry in displayEntries"
+        :key="entry.item.id"
+        :item="entry.item"
         variant="compact"
       >
-        <template v-if="!model.thumbnailUrl" #media>
-          <ModelMediaPlaceholder :tone="model.mediaTone" />
+        <template v-if="entry.item.media.type === 'placeholder'" #media>
+          <ModelMediaPlaceholder :tone="entry.tone" />
         </template>
       </ModelExploreCard>
     </div>
