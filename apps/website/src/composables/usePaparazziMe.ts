@@ -48,7 +48,7 @@ export function usePaparazziMe() {
   const touched = ref(false)
   let lastEdit: string | undefined
   let ownUrl: string | undefined
-  let pendingUrl: string | undefined
+  let picks = 0
   let run: AbortController | undefined
 
   const canRun = computed(
@@ -78,27 +78,25 @@ export function usePaparazziMe() {
   }
 
   function useExample() {
-    pendingUrl = undefined
+    picks += 1
     showFace(PAPARAZZI_EXAMPLE)
     releaseOwnUrl()
   }
 
   async function useFile(file: File) {
+    picks += 1
+    const pick = picks
     const url = URL.createObjectURL(file)
-    pendingUrl = url
     const size = await imageSize(url)
-    if (pendingUrl !== url || !size) {
-      URL.revokeObjectURL(url)
-      return
-    }
-    pendingUrl = undefined
-    showFace({ url, name: file.name, ...size })
-    releaseOwnUrl()
-    ownUrl = url
+    if (pick === picks && size) {
+      showFace({ url, name: file.name, ...size })
+      releaseOwnUrl()
+      ownUrl = url
+    } else URL.revokeObjectURL(url)
   }
 
   function removeFace() {
-    pendingUrl = undefined
+    picks += 1
     showFace(undefined)
     releaseOwnUrl()
   }
@@ -184,7 +182,7 @@ export function usePaparazziMe() {
 
   tryOnScopeDispose(() => {
     run?.abort()
-    pendingUrl = undefined
+    picks += 1
     leaveResult({ kind: 'editing' })
     releaseOwnUrl()
   })

@@ -36,7 +36,7 @@ export interface PaparazziSetup {
   readonly seed: number
 }
 
-export const MIN_CELEBRITY_LENGTH = 2
+const MIN_CELEBRITY_LENGTH = 2
 export const MAX_SEED = 2_147_483_647
 
 export const DEFAULT_SETUP: PaparazziSetup = {

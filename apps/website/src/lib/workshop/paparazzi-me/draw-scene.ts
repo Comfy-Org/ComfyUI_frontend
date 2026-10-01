@@ -84,23 +84,40 @@ const redCarpet: Draw = (ctx, w, h) => {
   ctx.stroke()
 }
 
+function litWindows(
+  ctx: CanvasRenderingContext2D,
+  random: () => number,
+  block: { x: number; top: number; width: number },
+  w: number,
+  h: number
+) {
+  for (let wy = block.top + h * 0.04; wy < h * 0.6; wy += h * 0.07)
+    for (
+      let wx = block.x + w * 0.015;
+      wx < block.x + block.width - w * 0.02;
+      wx += w * 0.03
+    ) {
+      if (random() >= 0.4) continue
+      ctx.fillStyle = random() < 0.7 ? '#e9b765' : '#9fc2ff'
+      ctx.globalAlpha = 0.35 + random() * 0.4
+      ctx.fillRect(wx, wy, w * 0.014, h * 0.03)
+    }
+  ctx.globalAlpha = 1
+}
+
 const streetNight: Draw = (ctx, w, h) => {
   ctx.fillStyle = gradient(ctx, h, ['#070b1c', '#14203f', '#0b1022'])
   ctx.fillRect(0, 0, w, h)
   const random = seededRandom(31)
   for (let index = 0; index < 7; index++) {
-    const x = (index / 7) * w
-    const top = h * (0.05 + random() * 0.2)
+    const block = {
+      x: (index / 7) * w,
+      top: h * (0.05 + random() * 0.2),
+      width: w / 7
+    }
     ctx.fillStyle = index % 2 ? '#10172d' : '#0d1326'
-    ctx.fillRect(x, top, w / 7 + 2, h * 0.66 - top)
-    for (let wy = top + h * 0.04; wy < h * 0.6; wy += h * 0.07)
-      for (let wx = x + w * 0.015; wx < x + w / 7 - w * 0.02; wx += w * 0.03)
-        if (random() < 0.4) {
-          ctx.fillStyle = random() < 0.7 ? '#e9b765' : '#9fc2ff'
-          ctx.globalAlpha = 0.35 + random() * 0.4
-          ctx.fillRect(wx, wy, w * 0.014, h * 0.03)
-          ctx.globalAlpha = 1
-        }
+    ctx.fillRect(block.x, block.top, block.width + 2, h * 0.66 - block.top)
+    litWindows(ctx, random, block, w, h)
   }
   ctx.fillStyle = gradient(ctx, h, ['#11182c', '#1d2742', '#0c111f'])
   ctx.fillRect(0, h * 0.66, w, h * 0.34)

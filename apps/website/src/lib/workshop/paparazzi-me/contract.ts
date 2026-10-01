@@ -31,7 +31,7 @@ const SCENE_DESCRIPTIONS = {
     'walking through an airport terminal with luggage, big windows behind'
 } as const satisfies Record<SceneId, string>
 
-export function sceneDescription(setup: PaparazziSetup): string {
+function sceneDescription(setup: PaparazziSetup): string {
   return isCustomScene(setup)
     ? setup.sceneOverride.trim()
     : SCENE_DESCRIPTIONS[setup.scene]
