@@ -23,7 +23,7 @@ const { copy, copied } = useClipboard({ source: deployPrompt, legacy: true })
 // code samples elsewhere on this page — it isn't translated per-locale.
 const DEPLOY_TRANSCRIPT = [
   '$ comfy build init',
-  '✓ Scanned this ComfyUI install, custom nodes, models, pinned deps',
+  '✓ Scanned this ComfyUI install - custom nodes, models, pinned deps',
   '$ comfy build push --release'
 ]
 </script>

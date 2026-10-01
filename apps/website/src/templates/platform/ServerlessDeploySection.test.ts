@@ -49,7 +49,7 @@ describe('ServerlessDeploySection', () => {
     })
     expect(terminal.textContent).toBe(
       '$ comfy build init' +
-        '✓ Scanned this ComfyUI install, custom nodes, models, pinned deps' +
+        '✓ Scanned this ComfyUI install - custom nodes, models, pinned deps' +
         '$ comfy build push --release'
     )
     expect(terminal.textContent).not.toContain('▋')
