@@ -24,11 +24,9 @@ test.describe('Web template routing', { tag: '@workflow' }, () => {
     )
     await templateApi.mock()
     await trackElementFlash(page, TestIds.templates.detail)
-    await page.route('**/templates/web-direct.json', (route) =>
-      route.fulfill({
-        contentType: 'application/json',
-        path: 'browser_tests/assets/nodes/single_ksampler.json'
-      })
+    await templateApi.mockWorkflow(
+      'web-direct',
+      'browser_tests/assets/nodes/single_ksampler.json'
     )
   })
 
