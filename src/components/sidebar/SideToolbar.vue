@@ -338,13 +338,13 @@ onMounted(() => {
 <style scoped>
 .connected-sidebar {
   padding: var(--sidebar-padding) 0;
-  background-color: var(--comfy-menu-bg);
+  background-color: var(--sidebar-surface);
 }
 
 .overflowing-sidebar :deep(.comfy-menu-button-wrapper) {
   position: sticky;
   top: 0;
   z-index: 1;
-  background-color: var(--comfy-menu-bg);
+  background-color: var(--sidebar-surface);
 }
 </style>
