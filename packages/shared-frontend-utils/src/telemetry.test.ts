@@ -63,9 +63,48 @@ describe('redactSensitiveText', () => {
     {
       text: 'at /node_modules/@datadog/browser-rum/index.js:3:4',
       expected: 'at /node_modules/@datadog/browser-rum/index.js:3:4'
+    },
+    {
+      text: 'POST https://cloud.comfy.org/api/billing/subscribe?promo=SPRING failed',
+      expected: 'POST https://cloud.comfy.org/api/billing/subscribe failed'
+    },
+    {
+      text: 'redirected to https://billing.comfy.org/v1/checkout#summary again',
+      expected: 'redirected to https://billing.comfy.org/v1/checkout again'
+    },
+    {
+      text: 'GET https://cloud.comfy.org/api/billing/status failed',
+      expected: 'GET https://cloud.comfy.org/api/billing/status failed'
+    },
+    {
+      text: 'https://a.example/x?q=1 then https://b.example/y#f and http://c.example/z',
+      expected:
+        'https://a.example/x then https://b.example/y and http://c.example/z'
+    },
+    {
+      text: 'https://a.example/r?next=https://b.example/p?x=1 end',
+      expected: 'https://a.example/r end'
+    },
+    {
+      text: 'https://a.example/x?q=1 what? see #3',
+      expected: 'https://a.example/x what? see #3'
+    },
+    {
+      text: 'failed "https://a.example/x?client_secret=abc" twice',
+      expected: 'failed "https://a.example/x" twice'
+    },
+    {
+      text: 'retry (https://a.example/x?promo=1) now',
+      expected: 'retry (https://a.example/x) now'
     }
   ])('rewrites "$text"', ({ text, expected }) => {
     expect(redactSensitiveText(text)).toBe(expected)
+  })
+
+  it('leaves a long run of query-free URLs untouched without rescanning it from every scheme', () => {
+    const text = 'https://'.repeat(60_000)
+
+    expect(redactSensitiveText(text)).toBe(text)
   })
 
   it('scans a long run of characters an email could start with in linear time', () => {

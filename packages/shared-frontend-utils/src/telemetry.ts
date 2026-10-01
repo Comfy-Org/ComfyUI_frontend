@@ -71,8 +71,9 @@ export function stripUrlQuery(url: string): string {
   return url.replace(/[?#].*$/s, '')
 }
 
+const URL_PATTERN = /\bhttps?:\/\/[^\s"'<>()]*/g
+
 const SENSITIVE_TEXT_PATTERNS: readonly (readonly [RegExp, string])[] = [
-  [/(\bhttps?:\/\/[^\s?#"'<>()]*)[?#][^\s"'<>()]*/g, '$1'],
   [/\beyJ[\w-]+\.[\w-]+\.[\w-]+/g, '[token]'],
   [/\b(Bearer\s+)[\w.~+/-]+=*/gi, '$1[token]'],
   [/\b\w+_secret_\w+/g, '[token]'],
@@ -89,6 +90,6 @@ export function redactSensitiveText(text: string): string {
   return SENSITIVE_TEXT_PATTERNS.reduce(
     (redacted, [pattern, replacement]) =>
       redacted.replace(pattern, replacement),
-    text
+    text.replace(URL_PATTERN, stripUrlQuery)
   )
 }
