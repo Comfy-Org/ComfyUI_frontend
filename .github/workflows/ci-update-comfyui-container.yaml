@@ -1,11 +1,9 @@
 # Description: Opens a PR that moves E2E CI to the latest comfyui-ci-container release.
 # When the release changes Playwright, the PR also updates the Playwright images and
-# @playwright/test to match. Runs hourly; dispatch with a version to pick a release.
+# @playwright/test to match. Run it on demand after a container release.
 name: 'CI: Update ComfyUI CI Container'
 
 on:
-  schedule:
-    - cron: '23 * * * *'
   workflow_dispatch:
     inputs:
       version:
@@ -70,8 +68,11 @@ jobs:
           if [[ "$version" == "$current" ]]; then
             skip "The container is already at $current"
           fi
-          if [[ -z "$REQUESTED_VERSION" &&
-            "$(printf '%s\n' "$current" "$version" | sort -V | tail -n 1)" == "$current" ]]; then
+          if [[ "$(printf '%s\n' "$current" "$version" | sort -V | tail -n 1)" == "$current" ]]; then
+            if [[ -n "$REQUESTED_VERSION" ]]; then
+              echo "Requested version $version is older than $current" >&2
+              exit 1
+            fi
             skip "The latest container release $version is older than $current"
           fi
 
@@ -83,11 +84,8 @@ jobs:
 
           echo "$GH_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
           if ! docker buildx imagetools inspect "$IMAGE:$version" >/dev/null; then
-            if [[ -n "$REQUESTED_VERSION" ]]; then
-              echo "$IMAGE:$version is not published" >&2
-              exit 1
-            fi
-            skip "$IMAGE:$version is not published yet"
+            echo "$IMAGE:$version is not published yet" >&2
+            exit 1
           fi
 
           playwright=$(
