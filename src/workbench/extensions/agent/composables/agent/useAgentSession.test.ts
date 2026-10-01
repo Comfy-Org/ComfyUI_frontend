@@ -651,6 +651,34 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(conversation.liveTurns()).toEqual([])
   })
 
+  // (b4u)'s same-thread sibling. The store deliberately leaves an older stash
+  // routable when a newer turn takes the slot on the thread being displayed, so
+  // the frame has a transport here too -- capturing it defers delivery onto a
+  // drain that a mailbox expiry can cancel outright.
+  it('(b4v) routes a terminal frame to a same-thread stash before hydration capture', async () => {
+    const conversation = useAgentConversationStore()
+    const rest = fakeRest({ getMessages: vi.fn(hangingGetMessages) })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+
+    conversation.setThreadId('th-1')
+    conversation.startTurn('msg-1' as TurnId)
+    conversation.stashActiveTurn()
+    void session.loadThread('th-1')
+    conversation.startTurn('msg-2' as TurnId)
+
+    emit(done('msg-1'))
+
+    expect(conversation.liveTurns()).toEqual([
+      { threadId: 'th-1', messageId: 'msg-2' }
+    ])
+  })
+
+  // Reopening over a turn this client never started is the state that buffers a
+  // frame: nothing is live locally, so `ingest` has nowhere to route it. A
+  // local turn would not do -- a stash keeps its transport, and a frame it can
+  // still receive is delivered rather than held ((b4v)).
   it('(b4n) isolates a failed replay frame and still delivers the terminal frame after it', async () => {
     const conversation = useAgentConversationStore()
     let deliverHistory: ((history: AgentMessages) => void) | undefined
@@ -674,9 +702,9 @@ describe('useAgentSession (v1 composition root)', () => {
         }
       }
     })
+    conversation.setThreadId('th-1')
     session.start()
-    await session.sendMessage('go')
-    void session.loadThread('th-1')
+    await vi.waitFor(() => expect(rest.getMessages).toHaveBeenCalledOnce())
 
     emit(
       wire({

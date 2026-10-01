@@ -1389,15 +1389,21 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   /**
-   * Holds a frame a hydrate has nowhere to put yet. A frame for the turn
-   * already on the store is not one of them -- it has a transport waiting.
+   * Whether the store can place this frame right now. `liveTurns()` is the
+   * whole answer and is asked without qualification: it carries the active
+   * slot and every unsettled background turn, each keyed by its own thread, so
+   * an off-screen stash, a stash on the thread being displayed, and the active
+   * turn are all one lookup. Re-deriving any part of that here is what made
+   * the check right for the case under test and wrong for its sibling three
+   * times over -- active-slot-only missed background turns, and keying on the
+   * selected thread then missed same-thread stashes (PM-1776).
    */
   function hasRoutableLiveTurn(
-    eventThreadId: string,
-    eventMessageId: string
+    eventThreadId: string | undefined,
+    eventMessageId: string | undefined
   ): boolean {
-    if (eventThreadId === conversationStore.threadId)
-      return eventMessageId === conversationStore.activeTurnId
+    if (eventThreadId === undefined || eventMessageId === undefined)
+      return false
     return conversationStore
       .liveTurns()
       .some(
@@ -1406,29 +1412,37 @@ export function useAgentSession(deps: AgentSessionDeps) {
       )
   }
 
+  /**
+   * Holds a frame a hydrate has nowhere to put yet, and reports whether
+   * delivery was taken over. A routable frame is never withheld -- its
+   * transport is waiting, and deferring it onto a drain the mailbox bounds can
+   * cancel is how a turn gets stranded.
+   *
+   * A terminal frame is nevertheless *retained* as well as delivered, because
+   * this session's delivery dies with it: `stop()` before the hydrate installs
+   * the transcript leaves a successor facing the server's still-`streaming`
+   * row, and the buffer is the only thing that carries the frame across. Only
+   * the terminal one -- a delta replayed onto the transport that already took
+   * it would render twice, while settling an already-settled turn is inert.
+   */
   function heldForHydration(event: AgentWsEvent): boolean {
-    const eventThreadId = event.data.thread_id
-    const eventMessageId = event.data.message_id
-    if (
-      eventThreadId !== undefined &&
-      eventMessageId !== undefined &&
-      hasRoutableLiveTurn(eventThreadId, eventMessageId)
-    )
-      return false
-    const buffer = bufferFor(
-      event.data.thread_id,
-      event.type === 'agent_message_done'
-    )
+    const terminal = event.type === 'agent_message_done'
+    const buffer = bufferFor(event.data.thread_id, terminal)
     if (buffer === undefined) return false
+    const routable = hasRoutableLiveTurn(
+      event.data.thread_id,
+      event.data.message_id
+    )
+    if (routable && !terminal) return false
     if (buffer.events.length >= MAX_HYDRATION_EVENTS) {
       const replace = buffer.events.findIndex(
         (held) => held.type !== 'agent_message_done'
       )
-      if (replace === -1 && event.type !== 'agent_message_done') return true
+      if (replace === -1 && !terminal) return true
       buffer.events.splice(Math.max(0, replace), 1)
     }
     buffer.events.push(event)
-    return true
+    return !routable
   }
 
   function handleActiveTab(
