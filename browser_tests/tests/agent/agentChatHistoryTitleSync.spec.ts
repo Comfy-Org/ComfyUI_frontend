@@ -81,20 +81,12 @@ test.describe(
     }) => {
       test.setTimeout(60_000)
 
-      // The first `/agent/threads` call seeds the stale entry; every call
-      // after that is held open rather than re-served, so nothing in this
-      // test can reach the correct title through a second successful
-      // refetch - only through `patchTitle`'s in-place update.
       let threadsRequestCount = 0
-      let releaseHeldThreadsRefetch: (() => void) | undefined
+      let resolveThreadsRefetch: (() => void) | undefined
       await page.route('**/api/agent/threads', async (route) => {
         threadsRequestCount += 1
-        if (threadsRequestCount > 1) {
-          await new Promise<void>((resolve) => {
-            releaseHeldThreadsRefetch = resolve
-          })
-        }
         await route.fulfill(jsonRoute(staleThreadList))
+        resolveThreadsRefetch?.()
       })
 
       // The transcript fetch is held until the test has already observed the
@@ -161,14 +153,16 @@ test.describe(
         ).toBeVisible()
       })
 
-      await test.step('the history list is already consistent, with no refetch resolved', async () => {
+      await test.step('the history list stays consistent after a stale refetch resolves', async () => {
+        const refetchCompleted = new Promise<void>((resolve) => {
+          resolveThreadsRefetch = resolve
+        })
         await showHistoryButton.click()
+        await refetchCompleted
         await expect(realTitleRow).toBeVisible()
         await expect(staleRow).toHaveCount(0)
         expect(threadsRequestCount).toBeGreaterThanOrEqual(2)
       })
-
-      releaseHeldThreadsRefetch?.()
     })
   }
 )
