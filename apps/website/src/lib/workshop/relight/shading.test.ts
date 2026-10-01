@@ -56,19 +56,35 @@ describe('towardLight', () => {
 })
 
 describe('heightMap', () => {
+  const channel = (data: Uint8Array, offset: number) =>
+    [...data].filter((_, i) => i % 2 === offset)
+
   it('reads brighter pixels as higher and smooths the edge between them', () => {
     const width = 8
     const pixels = Array.from({ length: width }, (_, x) =>
       x < 4 ? [0, 0, 0, 255] : [255, 255, 255, 255]
     ).flat()
 
-    const { data } = heightMap(pixels, width, 1, 1)
+    const heights = channel(heightMap(pixels, width, 1, 1).data, 0)
 
-    expect(data[0]).toBe(0)
-    expect(data[7]).toBe(255)
-    expect(data[3]).toBeGreaterThan(0)
-    expect(data[4]).toBeLessThan(255)
-    expect([...data]).toEqual([...data].sort((a, b) => a - b))
+    expect(heights[0]).toBe(0)
+    expect(heights[7]).toBe(255)
+    expect(heights[3]).toBeGreaterThan(0)
+    expect(heights[4]).toBeLessThan(255)
+    expect(heights).toEqual([...heights].sort((a, b) => a - b))
+  })
+
+  it('reads a detailed half as more in focus than a flat half', () => {
+    const width = 64
+    const pixels = Array.from({ length: width }, (_, x) => {
+      const value = x < width / 2 ? 128 : (x % 2) * 255
+      return [value, value, value, 255]
+    }).flat()
+
+    const focus = channel(heightMap(pixels, width, 1).data, 1)
+
+    expect(focus[width - 4]).toBeGreaterThan(focus[3])
+    expect(heightMap(pixels, width, 1).center[0]).toBeGreaterThan(0.5)
   })
 })
 

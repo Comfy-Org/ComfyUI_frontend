@@ -26,8 +26,10 @@ export function towardLight(
 export interface HeightMap {
   readonly width: number
   readonly height: number
-  /** One byte a pixel, row by row from the top. */
+  /** Two bytes a pixel, row by row from the top: height, then focus. */
   readonly data: Uint8Array
+  /** The in-focus subject's centre, as fractions of the image. */
+  readonly center: readonly [number, number]
 }
 
 function boxBlur(
@@ -59,9 +61,46 @@ function boxBlur(
 }
 
 /**
+ * How sharp each part of the photo is, 0 to 1: fine detail kept after a
+ * blur, spread out. An in-focus subject reads high and a blurred
+ * background low, so the preview can relight the subject more.
+ */
+function focusMap(
+  luminance: Float32Array,
+  width: number,
+  height: number
+): Float32Array {
+  const soft = boxBlur(luminance, width, height, 2)
+  const detail = luminance.map((value, i) => Math.abs(value - soft[i]))
+  const spread = boxBlur(boxBlur(detail, width, height, 6), width, height, 6)
+  const sorted = Float32Array.from(spread).sort()
+  const top = sorted[Math.floor(sorted.length * 0.98)] || 1
+  return spread.map((value) => Math.min(1, value / top))
+}
+
+function focusCenter(
+  focus: Float32Array,
+  width: number,
+  height: number
+): [number, number] {
+  let total = 0
+  let sumX = 0
+  let sumY = 0
+  focus.forEach((value, i) => {
+    const weight = value ** 3
+    total += weight
+    sumX += (i % width) * weight
+    sumY += Math.floor(i / width) * weight
+  })
+  if (!total) return [0.5, 0.5]
+  return [sumX / total / width, sumY / total / height]
+}
+
+/**
  * A pseudo height map from a photo's pixels: brighter reads as nearer, then
  * blurred twice so its slopes describe forms rather than texture. The
- * preview derives surface normals from its gradients.
+ * preview derives surface normals from its gradients, and reads a focus
+ * map packed beside it.
  */
 export function heightMap(
   rgba: ArrayLike<number>,
@@ -82,11 +121,13 @@ export function heightMap(
     height,
     radius
   )
-  return {
-    width,
-    height,
-    data: Uint8Array.from(blurred, (value) => Math.round(value * 255))
-  }
+  const focus = focusMap(luminance, width, height)
+  const data = new Uint8Array(width * height * 2)
+  blurred.forEach((value, i) => {
+    data[i * 2] = Math.round(value * 255)
+    data[i * 2 + 1] = Math.round(focus[i] * 255)
+  })
+  return { width, height, data, center: focusCenter(focus, width, height) }
 }
 
 /** The numbers the shader reads, four slots per light, unused slots zero. */

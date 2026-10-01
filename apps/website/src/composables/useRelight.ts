@@ -17,6 +17,7 @@ import {
   DEFAULT_SCENE,
   MAX_LIGHTS,
   moodLights,
+  moodScene,
   newLight,
   newMask
 } from '../lib/workshop/relight/lights'
@@ -59,7 +60,12 @@ export function useRelight(locale: Locale = 'en') {
   const name = (key: Parameters<typeof lc>[0]) => lc(key, locale)
   const setupFor = (mood: MoodId, example: boolean): RelightSetup => {
     const masks = example
-      ? [newMask('mask-1', lc('relight.mask.subject', locale), 0)]
+      ? [
+          {
+            ...newMask('mask-1', lc('relight.mask.subject', locale), 0),
+            ...RELIGHT_EXAMPLE.subject
+          }
+        ]
       : []
     const lights = moodLights(mood, name)
     return {
@@ -69,7 +75,7 @@ export function useRelight(locale: Locale = 'en') {
           )
         : lights,
       mood,
-      scene: DEFAULT_SCENE,
+      scene: moodScene(mood, DEFAULT_SCENE),
       masks,
       generation: DEFAULT_GENERATION
     }
@@ -216,7 +222,11 @@ export function useRelight(locale: Locale = 'en') {
   }
 
   function pickMood(mood: MoodId) {
-    change({ lights: moodLights(mood, name), mood })
+    change({
+      lights: moodLights(mood, name),
+      mood,
+      scene: moodScene(mood, setup.value.scene)
+    })
     selected.value = lights.value[0]?.id
   }
 

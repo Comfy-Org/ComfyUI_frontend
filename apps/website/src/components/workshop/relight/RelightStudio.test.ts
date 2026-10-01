@@ -89,7 +89,7 @@ describe('RelightStudio', () => {
       )
     expect(item).toContainElement(screen.getByTestId('relight-light-editor'))
     await user.keyboard('{Shift>}{ArrowLeft}{/Shift}')
-    expect(parseFloat(dot.style.left)).toBeCloseTo(80)
+    expect(parseFloat(dot.style.left)).toBeCloseTo(85)
   })
 
   it('shows directional controls only for a directional light', async () => {
@@ -206,9 +206,9 @@ describe('RelightStudio', () => {
   })
 
   it.for([
-    { look: 'None', castShadows: 'false', elevation: '35' },
+    { look: 'None', castShadows: 'false', elevation: '15' },
     { look: 'Hard', castShadows: 'true', elevation: '35' },
-    { look: 'Long', castShadows: 'true', elevation: '12' }
+    { look: 'Soft', castShadows: 'true', elevation: '35' }
   ])(
     'sets every light to $look shadows from the tiles',
     async ({ look, castShadows, elevation }) => {
@@ -219,7 +219,7 @@ describe('RelightStudio', () => {
       const shadows = within(section('Shadows')).getByRole('radiogroup', {
         name: 'Shadows'
       })
-      expect(within(shadows).getByRole('radio', { name: 'Soft' })).toBeChecked()
+      expect(within(shadows).getByRole('radio', { name: 'Long' })).toBeChecked()
 
       await user.click(within(shadows).getByRole('radio', { name: look }))
 
@@ -322,7 +322,7 @@ describe('RelightStudio', () => {
     screenIsWide(false)
     const user = await openExample()
     expect(
-      within(panel()).getByRole('button', { name: 'Sunset · 2 lights · Soft' })
+      within(panel()).getByRole('button', { name: 'Sunset · 2 lights · Long' })
     ).toHaveAttribute('aria-expanded', 'false')
     expect(within(panel()).getByTestId('relight-run')).toBeEnabled()
     expect(within(panel()).queryByRole('region', { name: 'Lights' })).toBeNull()

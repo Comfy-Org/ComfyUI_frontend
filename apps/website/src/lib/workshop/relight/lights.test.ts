@@ -2,10 +2,12 @@ import { describe, expect, it } from 'vitest'
 
 import type { Light } from './lights'
 import {
+  DEFAULT_SCENE,
   MAX_LIGHTS,
   MOOD_IDS,
   directionToCenter,
   moodLights,
+  moodScene,
   moveLight,
   newLight,
   newMask
@@ -83,5 +85,15 @@ describe('newMask', () => {
       expect(visible).toBe(false)
       expect([cx - rx, cy - ry].every((edge) => edge >= -0.2)).toBe(true)
     }
+  })
+})
+
+describe('moodScene', () => {
+  it('lets less ambient light into a night mood than a studio one, keeping the rest', () => {
+    const night = moodScene('moonlight', DEFAULT_SCENE)
+    expect(night.ambient).toBeLessThan(
+      moodScene('studio', DEFAULT_SCENE).ambient
+    )
+    expect(night.removeOriginal).toBe(DEFAULT_SCENE.removeOriginal)
   })
 })

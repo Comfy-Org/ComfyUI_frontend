@@ -36,7 +36,9 @@ export const RELIGHT_EXAMPLE = {
   url: EXAMPLE,
   name: 'motel-portrait.jpg',
   width: 1280,
-  height: 720
+  height: 720,
+  /** The mocked mask around the woman's face and head. */
+  subject: { cx: 0.6, cy: 0.4, rx: 0.21, ry: 0.42 }
 } as const
 
 /** The request for a photo, its lights, masks, scene and generation. */

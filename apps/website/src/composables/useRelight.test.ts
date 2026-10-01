@@ -104,9 +104,9 @@ describe('useRelight', () => {
   })
 
   it.for([
-    { field: 'intensity', key: 'intensity:sunset-1', start: 80 },
-    { field: 'direction', key: 'direction:sunset-1', start: 34 },
-    { field: 'elevation', key: 'elevation:sunset-1', start: 35 }
+    { field: 'intensity', key: 'intensity:sunset-1', start: 85 },
+    { field: 'direction', key: 'direction:sunset-1', start: 14 },
+    { field: 'elevation', key: 'elevation:sunset-1', start: 15 }
   ] as const)(
     'undoes one $field drag as a single step',
     ({ field, key, start: before }) => {
@@ -151,14 +151,14 @@ describe('useRelight', () => {
 
   it('applies a shadow look to every light as one undo step', () => {
     const relight = start()
-    expect(relight.shadows.value).toBe('soft')
+    expect(relight.shadows.value).toBe('long')
 
     relight.applyShadowStyle('none')
 
     expect(relight.shadows.value).toBe('none')
     expect(relight.lights.value.every(({ shadows }) => !shadows)).toBe(true)
     relight.undo()
-    expect(relight.shadows.value).toBe('soft')
+    expect(relight.shadows.value).toBe('long')
   })
 
   it('cannot run with every light hidden', () => {

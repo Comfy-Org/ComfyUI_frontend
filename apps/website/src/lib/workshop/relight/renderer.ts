@@ -17,6 +17,7 @@ uniform sampler2D uImage;
 uniform sampler2D uHeight;
 uniform vec2 uTexel;
 uniform float uAspect;
+uniform vec2 uCenter;
 uniform float uLightMap;
 uniform float uRemove;
 uniform vec3 uAmbient;
@@ -34,12 +35,20 @@ const float RELIEF = 0.12;
 
 float heightAt(vec2 uv) { return texture2D(uHeight, uv).r; }
 
+float formAt(vec2 uv) { return texture2D(uHeight, uv).a; }
+
+// Fine slopes come from brightness; the broad form from the focus map, so
+// an in-focus subject reads as a rounded volume that side light can model.
 vec3 normalAt(vec2 uv) {
   vec2 dx = vec2(uTexel.x, 0.0);
   vec2 dy = vec2(0.0, uTexel.y);
   float slopeX = heightAt(uv - dx) - heightAt(uv + dx);
   float slopeY = heightAt(uv - dy) - heightAt(uv + dy);
-  return normalize(vec3(slopeX * 11.0, slopeY * 11.0, 1.0));
+  vec2 wide = uTexel * 16.0;
+  float formX = formAt(uv - vec2(wide.x, 0.0)) - formAt(uv + vec2(wide.x, 0.0));
+  float formY = formAt(uv - vec2(0.0, wide.y)) - formAt(uv + vec2(0.0, wide.y));
+  vec2 slope = clamp(vec2(slopeX, slopeY) * 3.0, -0.25, 0.25) + vec2(formX, formY) * 1.4;
+  return normalize(vec3(slope, 1.0));
 }
 
 float shadowAt(vec2 uv, vec3 toward, float h) {
@@ -55,7 +64,7 @@ float shadowAt(vec2 uv, vec3 toward, float h) {
     float ground = heightAt(uv + stepUv * t) * RELIEF;
     blocked = max(blocked, smoothstep(0.0, 0.012, ground - ray) * (1.0 - t / 12.0));
   }
-  return 1.0 - blocked * 0.8;
+  return 1.0 - blocked * 0.45;
 }
 
 float maskAt(vec4 area, vec2 uv) {
@@ -73,6 +82,8 @@ void main() {
   vec3 albedo = base * base;
   float h = heightAt(vUv);
   vec3 n = normalAt(vUv);
+  float focus = smoothstep(0.05, 0.6, texture2D(uHeight, vUv).a);
+  float remove = uRemove * mix(0.85, 1.0, focus);
   vec3 light = uAmbient;
   vec3 shine = vec3(0.0);
   for (int i = 0; i < 4; i++) {
@@ -91,16 +102,22 @@ void main() {
       l = normalize(offset);
     } else {
       rim = pow(1.0 - n.z, 1.2) * max(-l.z, 0.0) * 3.0;
+      float level = length(l.xy);
+      vec2 side = l.xy / max(level, 0.001);
+      float slope = mix(3.5, 1.6, soft);
+      float rake = clamp(0.5 + dot(side, (vUv - uCenter) * vec2(uAspect, 1.0)) * slope, 0.0, 1.0);
+      falloff = mix(1.0, 0.05 + 1.8 * rake, level);
     }
     float wrap = soft * 0.4;
     float lambert = max((dot(n, l) + wrap) / (1.0 + wrap), 0.0);
+    if (pos.z > 0.5) lambert = max(lambert, 0.2 * length(l.xy) + max(l.z, 0.0) * 0.5);
     float shade = toward.w > 0.5 ? shadowAt(vUv, l, h) : 1.0;
-    float energy = pos.w * falloff * shade * maskAt(uMask[i], vUv);
+    float energy = pos.w * falloff * shade * maskAt(uMask[i], vUv) * mix(0.3, 1.0, focus);
     light += color.rgb * energy * (lambert + rim);
     vec3 halfway = normalize(l + vec3(0.0, 0.0, 1.0));
     shine += color.rgb * energy * pow(max(dot(n, halfway), 0.0), 40.0) * uReflect;
   }
-  vec3 lit = albedo * (1.0 - uRemove) + albedo * light * 1.7 + shine * 0.5;
+  vec3 lit = albedo * (1.0 - remove) + albedo * light * 2.0 + shine * 0.5;
   vec3 shown = uLightMap > 0.5 ? light * 0.45 + shine * 0.5 : lit;
   vec3 color = sqrt(shown / (1.0 + shown * 0.2));
   color = (color - 0.5) * uContrast + 0.5;
@@ -202,16 +219,17 @@ export function createRelightRenderer(
       gl.texImage2D(
         gl.TEXTURE_2D,
         0,
-        gl.LUMINANCE,
+        gl.LUMINANCE_ALPHA,
         height.width,
         height.height,
         0,
-        gl.LUMINANCE,
+        gl.LUMINANCE_ALPHA,
         gl.UNSIGNED_BYTE,
         height.data
       )
       aspect = height.width / height.height
       gl.uniform2f(at('uTexel'), 1 / height.width, 1 / height.height)
+      gl.uniform2f(at('uCenter'), height.center[0], height.center[1])
     },
     draw(uniforms, { lightMap = false, finish, seed = 0 } = {}) {
       gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight)

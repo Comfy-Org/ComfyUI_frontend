@@ -344,7 +344,7 @@ test('relights from the Relight bottom sheet on phones @mobile', async ({
   const sheet = app.getByRole('complementary', { name: 'Relight settings' })
   await expect(sheet.getByRole('region', { name: 'Lights' })).toHaveCount(0)
 
-  await sheet.getByRole('button', { name: 'Sunset · 2 lights · Soft' }).click()
+  await sheet.getByRole('button', { name: 'Sunset · 2 lights · Long' }).click()
   await expect(sheet.getByRole('region', { name: 'Lights' })).toBeVisible()
   await sheet.getByRole('radio', { name: 'Neon' }).click()
   await expect(sheet.getByRole('radio', { name: 'Neon' })).toBeChecked()

@@ -82,9 +82,9 @@ export const LIGHT_COLORS = [
 const [WARM, CREAM, WHITE, COOL, MAGENTA] = LIGHT_COLORS.map(({ hex }) => hex)
 
 export const DEFAULT_SCENE: RelightScene = {
-  ambient: 20,
+  ambient: 15,
   ambientColor: WHITE,
-  removeOriginal: 65,
+  removeOriginal: 80,
   reflections: 20
 }
 
@@ -106,40 +106,62 @@ export function directionToCenter(x: number, y: number): number {
 
 type LightSeed = Pick<
   Light,
-  'kind' | 'color' | 'x' | 'y' | 'intensity' | 'softness'
+  'kind' | 'color' | 'x' | 'y' | 'intensity' | 'softness' | 'elevation'
 > & { readonly name: RelightCopyKey }
 
 const seed = (
   name: RelightCopyKey,
   kind: LightKind,
   color: string,
-  x: number,
-  y: number,
+  [x, y]: readonly [number, number],
   intensity: number,
-  softness: number
-): LightSeed => ({ name, kind, color, x, y, intensity, softness })
+  softness: number,
+  elevation = 35
+): LightSeed => ({ name, kind, color, x, y, intensity, softness, elevation })
+
+/** Where a mood aims its directional lights: a subject right of centre. */
+const SUBJECT = { x: 0.6, y: 0.42 }
+
+const aim = (x: number, y: number) =>
+  Math.round((Math.atan2(SUBJECT.y - y, SUBJECT.x - x) * 180) / Math.PI)
 
 const MOODS = {
   studio: [
-    seed('relight.light.key', 'point', CREAM, 0.25, 0.28, 75, 55),
-    seed('relight.light.fill', 'point', WHITE, 0.8, 0.45, 35, 80)
+    seed('relight.light.key', 'point', CREAM, [0.48, 0.12], 100, 70),
+    seed('relight.light.fill', 'point', WHITE, [0.88, 0.55], 40, 85)
   ],
   sunset: [
-    seed('relight.light.warmKey', 'directional', WARM, 0.2, 0.3, 80, 45),
-    seed('relight.light.coolFill', 'point', COOL, 0.85, 0.55, 30, 70)
+    seed('relight.light.warmKey', 'directional', WARM, [0.12, 0.3], 85, 45, 15),
+    seed('relight.light.coolFill', 'point', COOL, [0.9, 0.6], 30, 70)
   ],
-  split: [seed('relight.light.key', 'point', WHITE, 0.04, 0.45, 85, 25)],
+  split: [
+    seed('relight.light.key', 'directional', WHITE, [0.3, 0.42], 100, 10, 5)
+  ],
   window: [
-    seed('relight.light.window', 'directional', WHITE, 0.08, 0.35, 70, 85)
+    seed('relight.light.window', 'directional', WHITE, [0.1, 0.3], 70, 85, 30)
   ],
   neon: [
-    seed('relight.light.pink', 'point', MAGENTA, 0.15, 0.4, 70, 40),
-    seed('relight.light.blue', 'point', COOL, 0.85, 0.4, 70, 40)
+    seed('relight.light.pink', 'point', MAGENTA, [0.42, 0.3], 75, 45),
+    seed('relight.light.blue', 'point', COOL, [0.8, 0.38], 90, 45)
   ],
   moonlight: [
-    seed('relight.light.moon', 'directional', COOL, 0.7, 0.12, 45, 60)
+    seed('relight.light.moon', 'directional', COOL, [0.85, 0.1], 65, 50, 25)
   ]
 } as const satisfies Record<MoodId, readonly LightSeed[]>
+
+const MOOD_AMBIENT = {
+  studio: 25,
+  sunset: 15,
+  split: 4,
+  window: 20,
+  neon: 8,
+  moonlight: 6
+} as const satisfies Record<MoodId, number>
+
+/** The scene with a mood's ambient light: darker moods let less spill in. */
+export function moodScene(mood: MoodId, scene: RelightScene): RelightScene {
+  return { ...scene, ambient: MOOD_AMBIENT[mood] }
+}
 
 /** A mood's lights, named in the visitor's language. */
 export function moodLights(
@@ -150,8 +172,7 @@ export function moodLights(
     ...light,
     id: `${mood}-${index + 1}`,
     name: name(light.name),
-    direction: directionToCenter(light.x, light.y),
-    elevation: 35,
+    direction: aim(light.x, light.y),
     shadows: true,
     visible: true
   }))
