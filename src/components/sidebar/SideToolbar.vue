@@ -16,7 +16,8 @@
           'mr-(--comfy-canvas-gutter)':
             !isConnected && !isHidden && sidebarLocation === 'right',
           'overflowing-sidebar': isOverflowing,
-          'overflow-hidden border-r border-(--region-stroke)': isConnected,
+          'overflow-hidden border-r border-interface-stroke/50 shadow-interface':
+            isConnected,
           'pointer-events-none overflow-hidden opacity-0': isHidden,
           '-translate-x-8': isHidden && sidebarLocation === 'left',
           'translate-x-8': isHidden && sidebarLocation === 'right'
