@@ -24,6 +24,7 @@ import {
   succeededOperation,
   serverPhasePendingOperation
 } from '@/test/fakeBillingClient'
+import { trackedBillingEvents } from '@/test/trackedBillingEvents'
 import { WORKSPACE_INVITES_KEY } from '@/session/workspaceInvites'
 import CheckoutView from '@/views/CheckoutView.vue'
 
@@ -589,6 +590,7 @@ describe('CheckoutView', () => {
 
   it('shows the success step and closes back to the product with the outcome', async () => {
     const assign = stubNavigation()
+    const sent = trackedBillingEvents()
     await renderCheckout(CHECKOUT_PATH, {
       subscribe: {
         status: 'ok',
@@ -607,6 +609,14 @@ describe('CheckoutView', () => {
     expect(assign).toHaveBeenCalledExactlyOnceWith(
       'https://testcloud.comfy.org/?billing_result=success&billing_ref=op_9'
     )
+    expect(sent()).toStrictEqual([
+      {
+        operation: 'web_return',
+        stage: 'clicked',
+        outcome: 'pending',
+        control: 'success_close'
+      }
+    ])
   })
 
   it('offers the team invite on a multi-seat success and sends it to the workspace', async () => {
@@ -1066,10 +1076,14 @@ describe('CheckoutView', () => {
     expect(assign).not.toHaveBeenCalled()
   })
 
-  it.for(['Back', 'Close'])(
-    'returns to the product, where plans are chosen, on %s',
-    async (action) => {
+  it.for([
+    { action: 'Back', control: 'back' },
+    { action: 'Close', control: 'close' }
+  ])(
+    'returns to the product, where plans are chosen, on $action, and reports it',
+    async ({ action, control }) => {
       const assign = stubNavigation()
+      const sent = trackedBillingEvents()
       await renderCheckout()
       await screen.findByRole('button', { name: 'Pay and subscribe' })
 
@@ -1078,6 +1092,14 @@ describe('CheckoutView', () => {
       expect(assign).toHaveBeenCalledExactlyOnceWith(
         'https://testcloud.comfy.org/'
       )
+      expect(sent()).toStrictEqual([
+        {
+          operation: 'web_return',
+          stage: 'clicked',
+          outcome: 'pending',
+          control
+        }
+      ])
     }
   )
 
@@ -1121,6 +1143,7 @@ describe('CheckoutView', () => {
     })
 
     const assign = stubNavigation()
+    const sent = trackedBillingEvents()
     expect(
       await screen.findByText('There is no active subscription to change.')
     ).toBeInTheDocument()
@@ -1130,6 +1153,14 @@ describe('CheckoutView', () => {
     expect(assign).toHaveBeenCalledExactlyOnceWith(
       'https://testcloud.comfy.org/'
     )
+    expect(sent()).toStrictEqual([
+      {
+        operation: 'web_return',
+        stage: 'clicked',
+        outcome: 'pending',
+        control: 'back'
+      }
+    ])
   })
 
   it('shows the reason the server gave for a refused quote, as the app does', async () => {
