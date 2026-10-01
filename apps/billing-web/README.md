@@ -98,6 +98,19 @@ every URL's query and fragment. Billing events go through
 from `@comfyorg/account-core/billing`, keeps only its allowlisted fields,
 stamps `billing_surface: 'billing_web'` and sends to both sinks.
 
+### Checkout journey events
+
+Both checkouts report the cloud app's `billing.checkout.<phase>` journey
+through `billingWebTelemetry.trackCheckoutJourneyEvent`, stamped with
+`billing_surface: 'billing_web'` and a `ui_mode` of `embedded` or `full_page`,
+so the funnel compares per surface. The journey id is the entry link's
+`correlation_id`, or a fresh one for a link that carries none, and
+`payment_intent_source` on `entered` is the link's `source`. `preview_ready`
+and `preview_failed` report each quote once; a refused capability, plan or
+quote names a bounded `denial_reason` or `error_code`. `entry_flow` is the
+quote's, so it reads `unknown` on `entered`. No event carries a promo code,
+an email, a URL, a client secret or a provider id.
+
 ## Commands
 
 Run these commands from the repository root:
