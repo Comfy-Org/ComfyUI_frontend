@@ -1390,7 +1390,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       trackCommittedStop(stopMetadata)
     } catch (error) {
       if (!isCurrentStop()) return
-      handleStopFailure(error)
+      await handleStopFailure(error, turnId)
     }
   }
 
