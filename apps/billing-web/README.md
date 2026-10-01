@@ -124,6 +124,12 @@ refuses storage still reports once per page load.
   a `SessionErrorCode`, reported once per code. Creating the shared session
   reports `INVALID_FIREBASE_TOKEN` for a refused credential and
   `TOKEN_EXCHANGE_FAILED` for any other failure.
+- `billing.web_return.clicked`: the customer clicked a way back to the host. It
+  is sent on each click, not once per tab. `control` is `back` (a checkout's
+  back arrow or Back button), `close` (the embedded checkout frame's close),
+  `success_close` (the Close of a finished checkout) or `host_link` (a surface's
+  "Return to" link). The countdown that closes a finished checkout's tab is
+  not a click and reports nothing.
 
 ## Commands
 
