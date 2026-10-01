@@ -156,6 +156,16 @@ export const useColorPaletteService = () => {
       app.canvas.background_image = palette.BACKGROUND_IMAGE
       app.canvas.clear_background_color = palette.CLEAR_BACKGROUND_COLOR
     }
+    // Past 1.5x zoom LiteGraph stops filling its clear background.
+    const rootStyle = document.documentElement.style
+    if (CSS.supports('color', palette.CLEAR_BACKGROUND_COLOR)) {
+      rootStyle.setProperty(
+        '--canvas-clear-background',
+        palette.CLEAR_BACKGROUND_COLOR
+      )
+    } else {
+      rootStyle.removeProperty('--canvas-clear-background')
+    }
     app.canvas._pattern = undefined
 
     if (typeof palette.NODE_DEFAULT_SHAPE === 'string')
@@ -262,6 +272,8 @@ export const useColorPaletteService = () => {
       completedPalette.colors.comfy_base,
       completedPalette.light_theme === true
     )
+    document.documentElement.dataset.colorPalette = colorPaletteId
+
     app.canvas.setDirty(true, true)
 
     colorPaletteStore.activePaletteId = colorPaletteId
