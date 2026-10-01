@@ -40,6 +40,7 @@ import type {
 import { validateActionUrl } from './operationState.js'
 import { readValidatedBillingResponse } from './sharedRead.js'
 import type { BillingStatusReader } from './status.js'
+import { wireCents } from './wireCents.js'
 
 export const SUBSCRIBE_ROUTE = '/billing/subscribe'
 export const RESUBSCRIBE_ROUTE = '/billing/subscription/resubscribe'
@@ -111,37 +112,34 @@ export type PaymentPortalResult =
   | { readonly status: 'ok'; readonly value: { readonly url: string } }
   | BillingFailure
 
-/**
- * The generated schema coerces every int64 to a `bigint`, which no caller can
- * add to a price or hand to a currency formatter — and the generated *type*
- * for the same field is a `number`. Money on this route is bounded to cents
- * well inside the JavaScript-safe range, so the cents are read as numbers, the
- * way `capabilities` reads `revision` — as whole units of currency that
- * survive arithmetic, since these amounts are displayed as prices and
- * confirmed as charges.
- */
-const cents = z.number().int().safe()
-
 const PlanInfoSchema = zPreviewPlanInfo.extend({
-  credits_cents: cents,
-  price_cents: cents,
+  credits_cents: wireCents,
+  price_cents: wireCents,
+  list_price_cents: wireCents.optional(),
   seat_summary: zPreviewPlanInfo.shape.seat_summary.extend({
-    total_cost_cents: cents,
-    total_credits_cents: cents
+    total_cost_cents: wireCents,
+    total_credits_cents: wireCents
   })
 })
 
 const PreviewSchema = zPreviewSubscribeResponse.extend({
-  amount_due_cents: cents.optional(),
-  cost_next_period_cents: cents,
-  cost_today_cents: cents,
-  credits_next_period_cents: cents,
-  credits_today_cents: cents,
-  renewal_amount_cents: cents.optional(),
+  amount_due_cents: wireCents.optional(),
+  cost_next_period_cents: wireCents,
+  cost_today_cents: wireCents,
+  credits_next_period_cents: wireCents,
+  credits_today_cents: wireCents,
+  renewal_amount_cents: wireCents.optional(),
+  subtotal_cents: wireCents.optional(),
+  balance_applied_cents: wireCents.optional(),
   current_plan: PlanInfoSchema.optional(),
   new_plan: PlanInfoSchema,
   discounts: z
-    .array(zSubscriptionDiscount.extend({ amount_off_cents: cents.optional() }))
+    .array(
+      zSubscriptionDiscount.extend({
+        amount_off_cents: wireCents.optional(),
+        duration_in_months: wireCents.optional()
+      })
+    )
     .optional()
 })
 

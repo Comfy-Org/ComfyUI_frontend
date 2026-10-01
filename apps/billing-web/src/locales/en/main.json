@@ -271,6 +271,18 @@
         "closeTab": "You can close this tab now.",
         "closingIn": "Closing in {seconds}…",
         "closeLine": "You can close this page. We'll email your invoice once this goes through and this page will automatically update.",
+        "receipt": {
+          "payment": "Payment",
+          "adding": "Credits added",
+          "plan": "Plan",
+          "added": "Added",
+          "amount_paid": "Amount paid",
+          "addingValue": "Adding…",
+          "creditCount": "+{count}",
+          "creditsAddedLine": "{count} credits added",
+          "paidToday": "Paid today",
+          "prorated": "Prorated for the rest of this billing period"
+        },
         "actions": {
           "close": "Close",
           "retry": "Try again",
@@ -336,6 +348,11 @@
       },
       "summary": {
         "label": "Order summary",
+        "subtotal": "Subtotal",
+        "balance": {
+          "label": "Account balance",
+          "subline": "Credit already on your account"
+        },
         "verb": {
           "subscribe": "Subscribe to {plan}",
           "upgrade": "Upgrade to {plan}",
@@ -371,11 +388,16 @@
           "refillsMonthly": "Credits refill to {credits} each month",
           "refillsYearly": "Credits refill to {credits} each year",
           "startsMonthly": "Starts {date}, billed monthly",
-          "startsYearly": "Starts {date}, billed yearly"
+          "startsYearly": "Starts {date}, billed yearly",
+          "comparedMonthly": "{amount} {listAmount} /mo, billed monthly",
+          "comparedYearly": "{amount} {listAmount} /yr, billed yearly"
         },
         "discount": {
           "fallbackLabel": "Promo code",
-          "amount": "−{amount}"
+          "amount": "−{amount}",
+          "firstMonth": "First month",
+          "firstYear": "First year",
+          "forMonths": "For {count} month | For {count} months"
         },
         "promo": {
           "add": "Add promo code",

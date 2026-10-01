@@ -19,6 +19,7 @@
     "deleteImage": "Delete image",
     "deleteAudioFile": "Delete audio file",
     "increment": "Increment",
+    "validate": "Validate",
     "removeImage": "Remove image",
     "removeVideo": "Remove video",
     "removeTag": "Remove tag",
@@ -1268,6 +1269,7 @@
   "zoomControls": {
     "label": "Zoom Controls",
     "zoomToFit": "Zoom To Fit",
+    "zoomPercentage": "Zoom percentage",
     "showMinimap": "Show Minimap",
     "hideMinimap": "Hide Minimap"
   },
@@ -2609,6 +2611,8 @@
     }
   },
   "auth": {
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
     "apiKey": {
       "title": "API Key",
       "label": "API Key",
@@ -4068,9 +4072,6 @@
       "complete": "Download complete",
       "failed": "Download failed",
       "inProgress": "Downloading {assetName}..."
-    },
-    "rename": {
-      "failed": "Could not rename asset."
     }
   },
   "mediaAsset": {
@@ -5344,7 +5345,10 @@
       "question": "Do you approve?",
       "thisWorkflow": "this workflow",
       "cancel": "Cancel",
-      "run": "Run"
+      "run": "Run",
+      "answerFailed": "Could not send your answer. Reload the page and try again.",
+      "answerUncertain": "Could not confirm your answer reached the agent. It may still have been applied — reload the page to see where things stand.",
+      "answerSuperseded": "This request was already answered somewhere else, so that answer was used instead of yours."
     },
     "dismiss": "Dismiss",
     "latest": "Latest",
@@ -5478,6 +5482,9 @@
     "downloadAssets": "Download assets",
     "toolOpenedNewTab": "Opened a new tab",
     "toolOpeningNewTab": "Opening a new tab",
+    "toolLoadedSkill": "Loaded {skill}",
+    "toolFailedSkill": "Failed to load {skill}",
+    "toolLoadingSkill": "Loading {skill}",
     "toolSwitchedTabs": "Switched tabs",
     "toolSwitchingTabs": "Switching tabs",
     "toolSavedPreference": "Saved a preference",

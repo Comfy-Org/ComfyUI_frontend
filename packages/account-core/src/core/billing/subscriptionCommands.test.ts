@@ -697,6 +697,50 @@ describe('createBillingCommands', () => {
       })
     })
 
+    it('hands back the server-reported subtotal, list price, discount term and applied balance as numbers', async () => {
+      const itemized = http(200, {
+        ...QUOTE_BODY,
+        subtotal_cents: 2000,
+        balance_applied_cents: 300,
+        new_plan: { ...PREVIEW_PLAN, list_price_cents: 2500 },
+        discounts: [
+          {
+            amount_off_cents: 500,
+            code: 'LAUNCH',
+            kind: 'promotion',
+            duration: 'repeating',
+            duration_in_months: 3
+          }
+        ]
+      })
+      const h = harness({
+        status: FREE,
+        script: { [POST_PREVIEW]: [itemized] }
+      })
+
+      const result = await h.commands.previewSubscribe({
+        planSlug: 'pro-monthly'
+      })
+
+      expect(result).toEqual({
+        status: 'ok',
+        value: expect.objectContaining({
+          subtotal_cents: 2000,
+          balance_applied_cents: 300,
+          new_plan: expect.objectContaining({ list_price_cents: 2500 }),
+          discounts: [
+            {
+              amount_off_cents: 500,
+              code: 'LAUNCH',
+              kind: 'promotion',
+              duration: 'repeating',
+              duration_in_months: 3
+            }
+          ]
+        })
+      })
+    })
+
     it('omits the optional fields the caller left out, issuing no operation', async () => {
       const h = harness({ status: FREE, script: { [POST_PREVIEW]: [quote] } })
 
@@ -784,12 +828,15 @@ describe('createBillingCommands', () => {
       'cost_today_cents',
       'credits_next_period_cents',
       'credits_today_cents',
-      'renewal_amount_cents'
+      'renewal_amount_cents',
+      'subtotal_cents',
+      'balance_applied_cents'
     ] as const satisfies readonly (keyof SubscriptionPreview)[]
 
     const PLAN_CENT_FIELDS = [
       'credits_cents',
-      'price_cents'
+      'price_cents',
+      'list_price_cents'
     ] as const satisfies readonly (keyof SubscriptionPreview['new_plan'])[]
 
     const SEAT_CENT_FIELDS = [
@@ -800,7 +847,8 @@ describe('createBillingCommands', () => {
     type PreviewDiscount = NonNullable<SubscriptionPreview['discounts']>[number]
 
     const DISCOUNT_CENT_FIELDS = [
-      'amount_off_cents'
+      'amount_off_cents',
+      'duration_in_months'
     ] as const satisfies readonly (keyof PreviewDiscount)[]
 
     // Compile-time pins: an amount a regen adds fails the package typecheck
@@ -818,7 +866,7 @@ describe('createBillingCommands', () => {
       >
     >()
     expectTypeOf<(typeof DISCOUNT_CENT_FIELDS)[number]>().toEqualTypeOf<
-      Extract<keyof PreviewDiscount, `${string}_cents`>
+      Extract<keyof PreviewDiscount, `${string}_cents` | `${string}_in_months`>
     >()
 
     const rejectsQuote = async (patch: object) => {
