@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -46,5 +46,20 @@ describe('MoveAnythingStudio', () => {
     expect(
       screen.queryByRole('button', { name: /^Orange kitten\./ })
     ).toBeNull()
+  })
+  it('undoes and redoes a move from the history controls above the photo', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    render(MoveAnythingStudio)
+    await user.click(screen.getByRole('button', { name: 'Try the example' }))
+    const history = screen.getByRole('toolbar', { name: 'History' })
+    const generate = screen.getByTestId('move-generate')
+
+    screen.getByRole('button', { name: /^Orange kitten\./ }).focus()
+    await user.keyboard('{Shift>}{ArrowRight}{/Shift}')
+    await user.click(within(history).getByRole('button', { name: 'Undo' }))
+    expect(generate).toBeDisabled()
+
+    await user.click(within(history).getByRole('button', { name: 'Redo' }))
+    expect(generate).toHaveTextContent('Move 1 object')
   })
 })

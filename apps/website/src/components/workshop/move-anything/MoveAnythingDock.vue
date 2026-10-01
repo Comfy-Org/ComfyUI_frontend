@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Move, Redo2, SquareDashed, Undo2 } from '@lucide/vue'
+import { Move, SquareDashed } from '@lucide/vue'
 import { useTemplateRef } from 'vue'
 
 import type {
@@ -21,8 +21,6 @@ const {
   quality,
   objectCount,
   movedCount,
-  canUndo,
-  canRedo,
   canGenerate,
   moving,
   locale = 'en'
@@ -33,8 +31,6 @@ const {
   quality: MoveQuality
   objectCount: number
   movedCount: number
-  canUndo: boolean
-  canRedo: boolean
   canGenerate: boolean
   moving: boolean
   locale?: Locale
@@ -42,8 +38,6 @@ const {
 
 const emit = defineEmits<{
   tool: [tool: MoveTool]
-  undo: []
-  redo: []
   file: [file: File]
   tray: [tray: MoveTray]
   generate: []
@@ -76,24 +70,6 @@ function onChange(event: Event) {
     :pressed="tool === 'add'"
     :disabled="locked()"
     @click="emit('tool', 'add')"
-  />
-  <span
-    class="mx-1 h-4.5 w-px shrink-0 bg-transparency-white-t20"
-    aria-hidden="true"
-  />
-  <EditorTool
-    :icon="Undo2"
-    :label="mc('move.tool.undo', locale)"
-    icon-only
-    :disabled="locked() || !canUndo"
-    @click="emit('undo')"
-  />
-  <EditorTool
-    :icon="Redo2"
-    :label="mc('move.tool.redo', locale)"
-    icon-only
-    :disabled="locked() || !canRedo"
-    @click="emit('redo')"
   />
   <span
     class="mx-1 h-4.5 w-px shrink-0 bg-transparency-white-t20"

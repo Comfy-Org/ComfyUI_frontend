@@ -9,6 +9,7 @@ import { workshopAppRepo } from '../../../lib/workshop/apps'
 import { mc } from '../../../lib/workshop/move-anything/copy'
 import AppEditorShell from '../app-editor/AppEditorShell.vue'
 import EditorBusy from '../app-editor/EditorBusy.vue'
+import EditorHistory from '../app-editor/EditorHistory.vue'
 import MoveAnythingDock from './MoveAnythingDock.vue'
 import MoveAnythingEmpty from './MoveAnythingEmpty.vue'
 import MoveAnythingHint from './MoveAnythingHint.vue'
@@ -110,6 +111,20 @@ function busyDetail() {
         @close="tray = undefined"
       />
     </template>
+    <template v-if="image && phase.kind !== 'done'" #start>
+      <EditorHistory
+        :can-undo="move.canUndo.value"
+        :can-redo="move.canRedo.value"
+        :disabled="phase.kind === 'moving'"
+        :labels="{
+          group: mc('move.history', locale),
+          undo: mc('move.tool.undo', locale),
+          redo: mc('move.tool.redo', locale)
+        }"
+        @undo="move.undo"
+        @redo="move.redo"
+      />
+    </template>
     <template #dock>
       <MoveAnythingResultDock
         v-if="image && phase.kind === 'done'"
@@ -128,14 +143,10 @@ function busyDetail() {
         :quality
         :object-count="objects.length"
         :moved-count="move.moved.value.length"
-        :can-undo="move.canUndo.value"
-        :can-redo="move.canRedo.value"
         :can-generate="move.canGenerate.value"
         :moving="phase.kind === 'moving'"
         :locale
         @tool="(next) => (tool = next)"
-        @undo="move.undo"
-        @redo="move.redo"
         @file="move.useFile"
         @tray="move.toggleTray"
         @generate="move.generate"
