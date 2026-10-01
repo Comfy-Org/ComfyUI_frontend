@@ -73,7 +73,9 @@ export class AgentPanel {
       hasText: enMessages.agent.paywall.title
     })
     this.nodeSelectionBanner = page.getByTestId('node-selection-mode-banner')
-    this.activityRows = this.root.getByRole('listitem')
+    this.activityRows = this.root
+      .getByTestId('agent-activity-trace')
+      .getByRole('listitem')
   }
 
   activityRow(label: string): Locator {
