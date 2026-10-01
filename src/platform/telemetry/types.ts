@@ -43,33 +43,6 @@ export type { AuthMethod }
 
 export type PaymentIntentSource = BillingSource
 
-export type {
-  BillingOperationTerminal,
-  BillingTelemetryEvent,
-  BillingTelemetryEventName,
-  BillingTelemetryFailure as BillingFailure,
-  CheckoutAssignmentStatus,
-  CheckoutEntryFlow,
-  CheckoutEntrySource,
-  CheckoutJourneyArm,
-  CheckoutJourneyContext,
-  CheckoutJourneyPhaseEvent,
-  CheckoutJourneyTelemetryEvent,
-  CheckoutJourneyTelemetryEventName,
-  CheckoutUiMode,
-  SubscriptionCheckoutTier,
-  SubscriptionCheckoutType
-} from '@comfyorg/account-core/billing'
-export {
-  CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE,
-  CHECKOUT_JOURNEY_SCHEMA_VERSION,
-  getBillingTelemetryEventName,
-  getBillingTelemetryEventPayload,
-  getCheckoutJourneyTelemetryEventName,
-  getCheckoutJourneyTelemetryEventPayload,
-  getCloudAppBillingTelemetryEventPayload
-} from '@comfyorg/account-core/billing'
-
 /**
  * Authentication metadata for sign-up tracking
  */

@@ -1,3 +1,14 @@
+import {
+  CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE,
+  getBillingTelemetryEventName,
+  getCheckoutJourneyTelemetryEventName,
+  getCheckoutJourneyTelemetryEventPayload,
+  getCloudAppBillingTelemetryEventPayload
+} from '@comfyorg/account-core/billing'
+import type {
+  BillingTelemetryEvent,
+  CheckoutJourneyTelemetryEvent
+} from '@comfyorg/account-core/billing'
 import type { PostHog } from 'posthog-js'
 import { watch } from 'vue'
 import type { WatchStopHandle } from 'vue'
@@ -48,9 +59,7 @@ import type {
   UnifiedAuthRefreshMetadata,
   UnifiedAuthRetryMetadata,
   BeginCheckoutMetadata,
-  BillingTelemetryEvent,
   BootstrapCompleteMetadata,
-  CheckoutJourneyTelemetryEvent,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ExecutionErrorMetadata,
@@ -99,11 +108,6 @@ import type {
 } from '../../types'
 import {
   CANCELLATION_STAGE_EVENTS,
-  CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE,
-  getBillingTelemetryEventName,
-  getCheckoutJourneyTelemetryEventName,
-  getCheckoutJourneyTelemetryEventPayload,
-  getCloudAppBillingTelemetryEventPayload,
   OnboardingTourEvents,
   TelemetryEvents
 } from '../../types'

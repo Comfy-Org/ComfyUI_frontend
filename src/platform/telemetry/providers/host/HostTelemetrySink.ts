@@ -1,3 +1,8 @@
+import {
+  getBillingTelemetryEventName,
+  getBillingTelemetryEventPayload
+} from '@comfyorg/account-core/billing'
+import type { BillingTelemetryEvent } from '@comfyorg/account-core/billing'
 import type {
   ComfyDesktop2TelemetryBridge,
   ComfyDesktop2TelemetryValue
@@ -29,7 +34,6 @@ import type {
   AgentWorkflowAppliedMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
-  BillingTelemetryEvent,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ExecutionErrorMetadata,
@@ -68,12 +72,7 @@ import type {
   WorkflowImportMetadata,
   WorkflowSavedMetadata
 } from '../../types'
-import {
-  CANCELLATION_STAGE_EVENTS,
-  TelemetryEvents,
-  getBillingTelemetryEventName,
-  getBillingTelemetryEventPayload
-} from '../../types'
+import { CANCELLATION_STAGE_EVENTS, TelemetryEvents } from '../../types'
 import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
 
 type HostTelemetryProperties = Parameters<

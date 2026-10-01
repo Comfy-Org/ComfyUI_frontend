@@ -1,7 +1,8 @@
-import type { BillingOperationTelemetryEvent } from '@comfyorg/account-core/billing'
+import type {
+  BillingOperationTelemetryEvent,
+  BillingTelemetryEvent
+} from '@comfyorg/account-core/billing'
 import { BILLING_OPERATION_TELEMETRY_EVENT } from '@comfyorg/account-core/billing'
-
-import type { BillingTelemetryEvent } from '@/platform/telemetry/types'
 
 /**
  * The lifecycle's event onto the poller's `billing.operation.*` stages, so

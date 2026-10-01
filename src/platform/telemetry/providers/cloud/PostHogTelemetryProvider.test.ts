@@ -1,3 +1,4 @@
+import type { BillingTelemetryEvent } from '@comfyorg/account-core/billing'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Ref } from 'vue'
 import { computed, nextTick, ref } from 'vue'
@@ -9,7 +10,6 @@ import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 import type {
-  BillingTelemetryEvent,
   BootstrapCompleteMetadata,
   OnboardingTourStage,
   RunButtonProperties
