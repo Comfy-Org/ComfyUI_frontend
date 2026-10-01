@@ -100,11 +100,11 @@ export class NodeLibrarySidebarTabV2 extends SidebarTab {
     this.essentialsTab = this.getTab('Essentials')
     this.sortButton = this.sidebarContent.getByRole('button', { name: 'Sort' })
     this.nodePreview = page.getByTestId(TestIds.sidebar.nodePreviewCard)
-    this.nodePreviewInputs = this.nodePreview
-      .getByRole('heading', { name: 'Inputs', exact: true })
-      .locator('..')
-    this.nodePreviewBody = this.nodePreview.locator(
-      '[data-testid^="node-body-"]'
+    this.nodePreviewInputs = this.nodePreview.getByTestId(
+      TestIds.sidebar.nodePreviewInputs
+    )
+    this.nodePreviewBody = this.nodePreview.getByTestId(
+      TestIds.sidebar.nodePreviewBody
     )
   }
 
