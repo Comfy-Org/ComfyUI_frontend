@@ -1392,10 +1392,27 @@ export function useAgentSession(deps: AgentSessionDeps) {
    * Holds a frame a hydrate has nowhere to put yet. A frame for the turn
    * already on the store is not one of them -- it has a transport waiting.
    */
+  function hasRoutableLiveTurn(
+    eventThreadId: string,
+    eventMessageId: string
+  ): boolean {
+    if (eventThreadId === conversationStore.threadId)
+      return eventMessageId === conversationStore.activeTurnId
+    return conversationStore
+      .liveTurns()
+      .some(
+        (turn) =>
+          turn.threadId === eventThreadId && turn.messageId === eventMessageId
+      )
+  }
+
   function heldForHydration(event: AgentWsEvent): boolean {
+    const eventThreadId = event.data.thread_id
+    const eventMessageId = event.data.message_id
     if (
-      event.data.thread_id === conversationStore.threadId &&
-      event.data.message_id === conversationStore.activeTurnId
+      eventThreadId !== undefined &&
+      eventMessageId !== undefined &&
+      hasRoutableLiveTurn(eventThreadId, eventMessageId)
     )
       return false
     const buffer = bufferFor(

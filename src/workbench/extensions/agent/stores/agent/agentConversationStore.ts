@@ -596,13 +596,16 @@ export const useAgentConversationStore = defineStore(
       // carries the first. Settling what we replace is what makes the outcome
       // independent of which of them coincide -- left alone, that row's
       // transport is unreachable and it streams for good.
-      if (activeSlot.value?.origin === 'snapshot') abortActiveTurn()
+      const unmatchedSnapshotId = abortUnmatchedSnapshot()
       // The stash keys a turn by its message_id while hydrate() re-keys the same
       // turn by the server's turn_id; row.id bridges the two. Matching turns by
       // identity, not by shared user text, is what stops a repeated prompt from
       // colliding with an unrelated turn.
       const persistedMessageId = hydratedTurnIds.get(entry.messageId)
-      const kept = messages.value.filter((m) => m.id !== entry.message.id)
+      const kept = messages.value.filter(
+        (message) =>
+          message.id !== entry.message.id && message.id !== unmatchedSnapshotId
+      )
       // Called before the branch, not inside it: it pops the duplicate row and
       // its user text whether or not this entry turns out to be settled.
       const replacedIndex = removeHydratedCopy(entry, kept)
@@ -620,6 +623,15 @@ export const useAgentConversationStore = defineStore(
         return
       }
       claimSlotForBackgroundTurn(entry, index, resumedThreadId)
+    }
+
+    function abortUnmatchedSnapshot(): string | undefined {
+      const slot = activeSlot.value
+      if (slot?.origin !== 'snapshot') return undefined
+      const snapshotId = slot.message.id
+      abortActiveTurn()
+      userTexts.value.delete(snapshotId)
+      return snapshotId
     }
 
     function claimSlotForBackgroundTurn(

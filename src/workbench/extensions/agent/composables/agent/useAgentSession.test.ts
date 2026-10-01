@@ -633,6 +633,24 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(conversation.activeTurnId).toBeNull()
   })
 
+  it('(b4u) routes a terminal frame to a background turn before hydration capture', async () => {
+    const conversation = useAgentConversationStore()
+    const rest = fakeRest({ getMessages: vi.fn(hangingGetMessages) })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+
+    conversation.setThreadId('th-1')
+    conversation.startTurn('msg-1' as TurnId)
+    conversation.stashActiveTurn()
+    void session.loadThread('th-1')
+    conversation.setThreadId('th-2')
+
+    emit(done('msg-1'))
+
+    expect(conversation.liveTurns()).toEqual([])
+  })
+
   it('(b4n) isolates a failed replay frame and still delivers the terminal frame after it', async () => {
     const conversation = useAgentConversationStore()
     let deliverHistory: ((history: AgentMessages) => void) | undefined

@@ -30,6 +30,9 @@ const zAnswerRequest = z.object({ selected: z.array(z.string()) })
 const THREAD_ID = 'b9d0a2a1-0f2c-4f1a-9a5e-6b0f4f2c1d77'
 const TURN_ID = '2dd4f367-3399-4cb4-8127-547f531c289a'
 const WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-000000000001'
+const BACKGROUND_THREAD_TITLE = 'Audio workflow'
+const OTHER_THREAD_ID = '4ccb6603-4bbc-49e2-8b7d-b985230285e3'
+const OTHER_THREAD_TITLE = 'Earlier workflow'
 
 /**
  * Verbatim from `services/agent/server/agent_handler.go`, which answers a post
@@ -166,6 +169,7 @@ class TurnLockServer {
   private pendingAsk: AgentPendingAsk | undefined
   private heldTranscript:
     | {
+        threadId?: string
         requested: Promise<void>
         markRequested: () => void
         released: Promise<void>
@@ -233,14 +237,39 @@ class TurnLockServer {
     this.heldTranscript = undefined
   }
 
-  async waitForTranscriptRelease(): Promise<void> {
+  async waitForTranscriptRelease(threadId: string): Promise<void> {
     const held = this.heldTranscript
     if (held === undefined) return
+    if (held.threadId !== undefined && held.threadId !== threadId) return
+    held.threadId = threadId
     held.markRequested()
     await held.released
   }
 
-  transcript(): AgentMessage[] {
+  transcript(threadId = THREAD_ID): AgentMessage[] {
+    if (threadId === OTHER_THREAD_ID)
+      return [
+        {
+          id: 'other-user',
+          thread_id: OTHER_THREAD_ID,
+          turn_id: 'other-turn',
+          seq: 1,
+          role: 'user',
+          status: 'complete',
+          workflow_id: WORKFLOW_ID,
+          content: { text: 'show my earlier workflow' }
+        },
+        {
+          id: 'other-assistant',
+          thread_id: OTHER_THREAD_ID,
+          turn_id: 'other-turn',
+          seq: 2,
+          role: 'assistant',
+          status: 'complete',
+          workflow_id: WORKFLOW_ID,
+          content: { text: 'Here it is.' }
+        }
+      ]
     const rows: AgentMessage[] = [
       {
         id: 'user-1',
@@ -326,10 +355,43 @@ async function routeTurnLock(
   page: Page,
   server: TurnLockServer
 ): Promise<void> {
+  await page.route('**/api/agent/threads', (route) =>
+    route.fulfill(
+      jsonRoute({
+        threads: [
+          {
+            id: THREAD_ID,
+            title: BACKGROUND_THREAD_TITLE,
+            preview: 'add an audio output node',
+            workflow_id: WORKFLOW_ID,
+            status: 'active',
+            message_count: 2,
+            created_at: '2026-09-30T00:00:00Z',
+            updated_at: '2026-09-30T00:02:00Z',
+            last_message_at: '2026-09-30T00:02:00Z'
+          },
+          {
+            id: OTHER_THREAD_ID,
+            title: OTHER_THREAD_TITLE,
+            preview: 'show my earlier workflow',
+            workflow_id: WORKFLOW_ID,
+            status: 'active',
+            message_count: 2,
+            created_at: '2026-09-29T00:00:00Z',
+            updated_at: '2026-09-29T00:02:00Z',
+            last_message_at: '2026-09-29T00:02:00Z'
+          }
+        ],
+        pagination: { offset: 0, limit: 100, total: 2, has_more: false }
+      })
+    )
+  )
   await page.route('**/api/agent/threads/*/messages', async (route) => {
     if (route.request().method() === 'GET') {
-      await server.waitForTranscriptRelease()
-      return route.fulfill(jsonRoute(server.transcript()))
+      const path = new URL(route.request().url()).pathname.split('/')
+      const threadId = decodeURIComponent(path.at(-2) ?? '')
+      await server.waitForTranscriptRelease(threadId)
+      return route.fulfill(jsonRoute(server.transcript(threadId)))
     }
     server.countPost()
     if (server.turnIsStreaming)
@@ -610,6 +672,14 @@ export class AgentTurnLockHarness {
     await this.entryButton.click()
     await expect(this.panel).toBeVisible()
     await expect(this.workSummary).toHaveCount(0)
+  }
+
+  async selectHistoryThread(title: string): Promise<void> {
+    await this.panel
+      .getByRole('button', { name: enMessages.agent.showChatHistory })
+      .click()
+    await this.panel.getByRole('button', { name: title, exact: true }).click()
+    await expect(this.panel.getByTestId('user-message-bubble')).toBeVisible()
   }
 
   /**

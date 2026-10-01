@@ -117,6 +117,33 @@ test.describe(
         })
       })
 
+      test('delivers completion to a background turn before its hydration mailbox expires', async ({
+        page,
+        turnLock,
+        getWebSocket
+      }) => {
+        await page.clock.install()
+
+        await test.step('leave a hydration mailbox beside a background turn', async () => {
+          await turnLock.minimizePanel()
+          await turnLock.restorePanel()
+          await page.clock.fastForward(30_001)
+          await turnLock.selectHistoryThread('Earlier workflow')
+        })
+
+        await test.step('complete the background turn and expire its mailbox', async () => {
+          turnLock.push(await getWebSocket(), TURN_DONE_EVENT)
+          await page.clock.fastForward(300_001)
+        })
+
+        await test.step('returning to the turn shows it completed', async () => {
+          await turnLock.selectHistoryThread('Audio workflow')
+
+          await expect(turnLock.sendButton).toBeVisible()
+          await expect(turnLock.stopButton).toHaveCount(0)
+        })
+      })
+
       test('does not reject the next message after the panel is reopened', async ({
         turnLock
       }) => {

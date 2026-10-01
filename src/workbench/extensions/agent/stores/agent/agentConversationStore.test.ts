@@ -1381,6 +1381,28 @@ describe('useAgentConversationStore', () => {
     expect(store.isStreaming).toBe(false)
   })
 
+  it('removes an unmatched live snapshot before restoring a background turn', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'go')
+    store.ingest(delta('t1', 'socket reply'))
+    store.stashActiveTurn()
+
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'go', 'user-row'),
+      {
+        ...historyRow(2, 'assistant', 'server-turn', '', 'snapshot-row'),
+        status: 'streaming'
+      }
+    ])
+    store.resumeBackgroundTurn()
+
+    expect(store.messages).toHaveLength(1)
+    expect(partTexts(store)).toEqual(['socket reply'])
+    expect(store.activeTurnId).toBe(T1)
+  })
+
   it('keeps socket completion authoritative when it arrives before hydration', () => {
     const store = useAgentConversationStore()
     store.setThreadId('th')
