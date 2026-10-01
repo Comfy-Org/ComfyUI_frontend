@@ -1,7 +1,20 @@
 // @vitest-environment node
 import { readFileSync } from 'node:fs'
 
-import { describe, expect, it } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { describe, expect, it, vi } from 'vitest'
+
+import type { ComfyApi } from '@/scripts/api'
+
+// This file runs in the `node` environment — `listRecordedConversations`
+// resolves its directory from `import.meta.url`, which Vite would serve as an
+// http: URL — so it has no `location`, and `@/scripts/api` reads one at import
+// to derive the install's base path. The matrix only asks whether a URL names
+// a media asset; re-homing that URL onto the page's API has no meaning without
+// a page, so the base is stubbed rather than derived.
+vi.mock(import('@/scripts/api'), () => ({
+  api: fromPartial<ComfyApi>({ apiURL: (route: string) => `/api${route}` })
+}))
 
 import { zSeedFixture } from '@e2e/../scripts/agentConversationAssemble'
 import type { AgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
