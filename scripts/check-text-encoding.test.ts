@@ -188,6 +188,18 @@ describe.skipIf(process.platform === 'win32')('the CLI', () => {
     expect(stderr).toContain('src/a.ts')
   })
 
+  it('reads a staged path beginning with the index-stage syntax', () => {
+    write('0:a.ts', `const sep = '${NUL}'\n`)
+    write('a.ts', "const sep = '\\u0000'\n")
+    git('add', '0:a.ts', 'a.ts')
+
+    const { status, stderr } = run()
+
+    expect(status).toBe(1)
+    expect(stderr).toContain('byte 0x00')
+    expect(stderr).toContain('0:a.ts:1')
+  })
+
   it('does not fail a commit for an unstaged NUL', () => {
     write('src/a.ts', "const sep = '\\u0000'\n")
     git('add', 'src/a.ts')
@@ -204,8 +216,15 @@ describe.skipIf(process.platform === 'win32')('the CLI', () => {
     write('src/review-é.ts', `const sep = '${NUL}'\n`)
     git('add', '.')
 
-    expect(run().status).toBe(1)
-    expect(run(['--all']).status).toBe(1)
+    const staged = run()
+    expect(staged.status).toBe(1)
+    expect(staged.stderr).toContain('byte 0x00')
+    expect(staged.stderr).toContain('src/review-é.ts:1')
+
+    const all = run(['--all'])
+    expect(all.status).toBe(1)
+    expect(all.stderr).toContain('byte 0x00')
+    expect(all.stderr).toContain('src/review-é.ts:1')
   })
 
   it('checks a path containing a newline', () => {
@@ -214,8 +233,15 @@ describe.skipIf(process.platform === 'win32')('the CLI', () => {
     write('src/split\nname.ts', `const sep = '${NUL}'\n`)
     git('add', '.')
 
-    expect(run().status).toBe(1)
-    expect(run(['--all']).status).toBe(1)
+    const staged = run()
+    expect(staged.status).toBe(1)
+    expect(staged.stderr).toContain('byte 0x00')
+    expect(staged.stderr).toContain('src/split\nname.ts:1')
+
+    const all = run(['--all'])
+    expect(all.status).toBe(1)
+    expect(all.stderr).toContain('byte 0x00')
+    expect(all.stderr).toContain('src/split\nname.ts:1')
   })
 
   it('fails rather than reporting nothing when git cannot run', () => {

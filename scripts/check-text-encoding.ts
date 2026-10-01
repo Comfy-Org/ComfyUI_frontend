@@ -100,7 +100,7 @@ function gitTextPaths(args: readonly string[]): string[] {
 
 /** The bytes a commit would record for a staged path. */
 function readStagedBytes(path: string): Uint8Array {
-  return execFileSync('git', ['show', `:${path}`], {
+  return execFileSync('git', ['show', `:0:${path}`], {
     maxBuffer: Number.MAX_SAFE_INTEGER
   })
 }
