@@ -29,6 +29,16 @@ import type {
 
 const CLOUD_WORKFLOW_PAGE_SIZE = 100
 
+/**
+ * PM-1658: tightens `fetchApi`'s shared 60s header deadline for the one
+ * request a consent card's buttons wait on, since the card is held disabled
+ * from the click until this settles. A quarter of it, rather than merely lower, so that
+ * the caller's single re-drive still fits inside the 60s the card used to be
+ * able to wait. Goes through `timeoutMs` rather than a raw signal so a timeout
+ * still raises fetchApi's own telemetry.
+ */
+const ANSWER_ASK_TIMEOUT_MS = 15_000
+
 export class AgentApiError extends Error {
   readonly status: number
   readonly body: unknown
@@ -40,11 +50,22 @@ export class AgentApiError extends Error {
     body: unknown,
     retryAfterSeconds?: number
   ) {
-    super(message)
+    super(
+      message.trim().length > 0
+        ? message
+        : `Agent request failed (HTTP ${status})`
+    )
     this.name = 'AgentApiError'
     this.status = status
     this.body = body
     this.retryAfterSeconds = retryAfterSeconds
+  }
+}
+
+export class AgentResponseUnreadableError extends Error {
+  constructor(cause: unknown) {
+    super('Unreadable agent response body', { cause })
+    this.name = 'AgentResponseUnreadableError'
   }
 }
 
@@ -53,16 +74,18 @@ export type OpenTabsSnapshot = Pick<
   'open_tabs' | 'current_tab'
 >
 
-// TEMPORARY: current_tab_unbound isn't in the generated ingest-types yet (cloud#10068 unmerged); delete this augmentation and use AgentPostMessageRequest directly once push-ingest-types-to-frontend lands it.
-type AgentPostMessageRequestWithUnboundFlag = AgentPostMessageRequest & {
-  current_tab_unbound?: boolean
-}
-
-/** An omitted `version` makes this content authoritative for the backend CAS. */
-export interface DraftSnapshot {
-  content: Record<string, unknown>
-  version?: number
-}
+/**
+ * The client's live canvas, sent so the agent works on what the user sees.
+ *
+ * Content-only, and deliberately asymmetric with the `GET /api/agent/draft`
+ * snapshot, which still returns a version: `workflow_draft.version` is a
+ * projection-cache snapshot counter, not a concurrency token, so there is
+ * nothing on the request side for a version to reconcile against. The turn
+ * endpoint's schema has no such field.
+ */
+export type DraftSnapshot = Required<
+  NonNullable<AgentPostMessageRequest['draft']>
+>
 
 export interface PostMessageInput {
   content: string
@@ -337,7 +360,14 @@ export function createAgentRestClient() {
   ): Promise<T> {
     const response = await api.fetchApi(route, init)
     if (!response.ok) throw await toApiError(response)
-    return schema.parse(await response.json())
+    let payload: unknown
+    try {
+      payload = await response.json()
+    } catch (error) {
+      if (!(error instanceof SyntaxError)) throw error
+      throw new AgentResponseUnreadableError(error)
+    }
+    return schema.parse(payload)
   }
 
   function jsonInit(method: string, body: unknown): RequestInit {
@@ -352,7 +382,7 @@ export function createAgentRestClient() {
     threadId: string,
     req: PostMessageInput
   ): Promise<AgentTurnAccepted> {
-    const body: AgentPostMessageRequestWithUnboundFlag = {
+    const body: AgentPostMessageRequest = {
       content: req.content
     }
     if (req.workflowId !== undefined) body.workflow_id = req.workflowId
@@ -365,7 +395,7 @@ export function createAgentRestClient() {
       body.workflow_references = req.workflowReferences
     if (req.selection !== undefined) body.selection = req.selection
     if (req.attachments !== undefined) body.attachments = req.attachments
-    if (req.draft !== undefined) body.draft = req.draft
+    if (req.draft !== undefined) body.draft = { content: req.draft.content }
     if (req.currentTabUnbound !== undefined)
       body.current_tab_unbound = req.currentTabUnbound
     return request(
@@ -375,10 +405,13 @@ export function createAgentRestClient() {
     )
   }
 
-  async function getMessages(threadId: string): Promise<AgentMessages> {
+  async function getMessages(
+    threadId: string,
+    options: { signal?: AbortSignal } = {}
+  ): Promise<AgentMessages> {
     return request(
       `/agent/threads/${encodeURIComponent(threadId)}/messages`,
-      { method: 'GET' },
+      { method: 'GET', signal: options.signal },
       zAgentMessages
     )
   }
@@ -452,7 +485,7 @@ export function createAgentRestClient() {
   ): Promise<AgentAnswerAccepted> {
     return request(
       `/agent/threads/${encodeURIComponent(threadId)}/asks/${encodeURIComponent(askId)}/answer`,
-      jsonInit('POST', { selected }),
+      { ...jsonInit('POST', { selected }), timeoutMs: ANSWER_ASK_TIMEOUT_MS },
       zAgentAnswerAccepted
     )
   }

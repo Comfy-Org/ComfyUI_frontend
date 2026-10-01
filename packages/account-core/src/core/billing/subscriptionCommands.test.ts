@@ -85,7 +85,7 @@ function fakeSession() {
     scopeSource: sessionBillingScopeSource(fake),
     moveTo(next: SessionSnapshot) {
       snapshot = next
-      for (const listener of [...listeners]) listener(snapshot)
+      for (const listener of Array.from(listeners)) listener(snapshot)
     }
   }
 }
@@ -315,6 +315,48 @@ describe('createBillingCommands', () => {
       })
       expect(h.lifecycle.getSnapshot()).toEqual([])
     })
+
+    it.for(
+      [
+        {
+          name: 'cancel',
+          route: POST_CANCEL,
+          run: (h: ReturnType<typeof harness>) =>
+            h.commands.cancelSubscription()
+        },
+        {
+          name: 'resubscribe',
+          route: POST_RESUBSCRIBE,
+          run: (h: ReturnType<typeof harness>) => h.commands.resubscribe()
+        },
+        {
+          name: 'subscribe',
+          route: POST_SUBSCRIBE,
+          run: (h: ReturnType<typeof harness>) => h.commands.subscribe(PLAN)
+        }
+      ].flatMap((command) => [
+        { ...command, httpStatus: 400, expected: 'OPERATION_ALREADY_PENDING' },
+        { ...command, httpStatus: 503, expected: 'REQUEST_FAILED' }
+      ])
+    )(
+      'PRO active: $name answered $httpStatus SUBSCRIPTION_CHANGE_IN_PROGRESS is $expected',
+      async ({ route, run, httpStatus, expected }) => {
+        const h = harness({
+          status: PRO_ACTIVE,
+          script: {
+            [route]: [
+              serverError(httpStatus, 'SUBSCRIPTION_CHANGE_IN_PROGRESS')
+            ]
+          }
+        })
+
+        await expect(run(h)).resolves.toMatchObject({
+          status: 'error',
+          code: expected
+        })
+        expect(h.invalidate).not.toHaveBeenCalled()
+      }
+    )
 
     it('PRO active: subscribe issues the plan change the server has to price', async () => {
       const h = harness({
@@ -655,6 +697,50 @@ describe('createBillingCommands', () => {
       })
     })
 
+    it('hands back the server-reported subtotal, list price, discount term and applied balance as numbers', async () => {
+      const itemized = http(200, {
+        ...QUOTE_BODY,
+        subtotal_cents: 2000,
+        balance_applied_cents: 300,
+        new_plan: { ...PREVIEW_PLAN, list_price_cents: 2500 },
+        discounts: [
+          {
+            amount_off_cents: 500,
+            code: 'LAUNCH',
+            kind: 'promotion',
+            duration: 'repeating',
+            duration_in_months: 3
+          }
+        ]
+      })
+      const h = harness({
+        status: FREE,
+        script: { [POST_PREVIEW]: [itemized] }
+      })
+
+      const result = await h.commands.previewSubscribe({
+        planSlug: 'pro-monthly'
+      })
+
+      expect(result).toEqual({
+        status: 'ok',
+        value: expect.objectContaining({
+          subtotal_cents: 2000,
+          balance_applied_cents: 300,
+          new_plan: expect.objectContaining({ list_price_cents: 2500 }),
+          discounts: [
+            {
+              amount_off_cents: 500,
+              code: 'LAUNCH',
+              kind: 'promotion',
+              duration: 'repeating',
+              duration_in_months: 3
+            }
+          ]
+        })
+      })
+    })
+
     it('omits the optional fields the caller left out, issuing no operation', async () => {
       const h = harness({ status: FREE, script: { [POST_PREVIEW]: [quote] } })
 
@@ -742,12 +828,15 @@ describe('createBillingCommands', () => {
       'cost_today_cents',
       'credits_next_period_cents',
       'credits_today_cents',
-      'renewal_amount_cents'
+      'renewal_amount_cents',
+      'subtotal_cents',
+      'balance_applied_cents'
     ] as const satisfies readonly (keyof SubscriptionPreview)[]
 
     const PLAN_CENT_FIELDS = [
       'credits_cents',
-      'price_cents'
+      'price_cents',
+      'list_price_cents'
     ] as const satisfies readonly (keyof SubscriptionPreview['new_plan'])[]
 
     const SEAT_CENT_FIELDS = [
@@ -758,7 +847,8 @@ describe('createBillingCommands', () => {
     type PreviewDiscount = NonNullable<SubscriptionPreview['discounts']>[number]
 
     const DISCOUNT_CENT_FIELDS = [
-      'amount_off_cents'
+      'amount_off_cents',
+      'duration_in_months'
     ] as const satisfies readonly (keyof PreviewDiscount)[]
 
     // Compile-time pins: an amount a regen adds fails the package typecheck
@@ -776,7 +866,7 @@ describe('createBillingCommands', () => {
       >
     >()
     expectTypeOf<(typeof DISCOUNT_CENT_FIELDS)[number]>().toEqualTypeOf<
-      Extract<keyof PreviewDiscount, `${string}_cents`>
+      Extract<keyof PreviewDiscount, `${string}_cents` | `${string}_in_months`>
     >()
 
     const rejectsQuote = async (patch: object) => {
@@ -1128,6 +1218,28 @@ describe('createBillingCommands', () => {
       expect(h.readCredits).not.toHaveBeenCalled()
     })
 
+    it.for([
+      { httpStatus: 400, expected: 'QUOTE_STALE' },
+      { httpStatus: 503, expected: 'REQUEST_FAILED' }
+    ])(
+      'a subscribe answered $httpStatus SUBSCRIPTION_QUOTE_STALE is $expected',
+      async ({ httpStatus, expected }) => {
+        const h = harness({
+          status: FREE,
+          script: {
+            [POST_SUBSCRIBE]: [
+              serverError(httpStatus, 'SUBSCRIPTION_QUOTE_STALE')
+            ]
+          }
+        })
+
+        await expect(h.commands.subscribe(PLAN)).resolves.toMatchObject({
+          status: 'error',
+          code: expected
+        })
+      }
+    )
+
     it('surfaces REACTIVATION_CONFIRMATION_REQUIRED for the host to re-preview', async () => {
       const h = harness({
         status: FREE,
@@ -1187,7 +1299,8 @@ describe('createBillingCommands', () => {
         status: 'error',
         code: 'REQUEST_FAILED',
         httpStatus: 502,
-        serverCode: 'ALREADY_CANCELED'
+        serverCode: 'ALREADY_CANCELED',
+        serverMessage: SERVER_TEXT
       })
       expect(h.invalidate).not.toHaveBeenCalled()
     })
@@ -1222,7 +1335,7 @@ describe('createBillingCommands', () => {
       })
     })
 
-    it('reports a 5xx as REQUEST_FAILED with the server code and never its message', async () => {
+    it('reports a 5xx as REQUEST_FAILED with the server code and message', async () => {
       const h = harness({
         status: PRO_CANCELED,
         script: { [POST_RESUBSCRIBE]: [serverError(500, 'INTERNAL')] }
@@ -1234,9 +1347,9 @@ describe('createBillingCommands', () => {
         status: 'error',
         code: 'REQUEST_FAILED',
         httpStatus: 500,
-        serverCode: 'INTERNAL'
+        serverCode: 'INTERNAL',
+        serverMessage: SERVER_TEXT
       })
-      expect(JSON.stringify(result)).not.toContain('Stripe')
     })
 
     it('does not issue when the eligibility read fails', async () => {
@@ -1272,28 +1385,131 @@ describe('createBillingCommands', () => {
   })
 
   describe('through the lifecycle', () => {
-    it("resumes the backend's pending subscription instead of issuing a second checkout", async () => {
-      const h = harness({
-        status: {
-          ...FREE,
-          pending_billing_op_id: 'op-1',
-          pending_billing_op_type: 'subscription',
-          action_url: 'https://checkout.example/pay'
-        },
-        script: { [GET_OP]: settledOk }
+    // The pending operation carries no plan, so joining it would settle a plan
+    // the caller never asked for and report it as this subscribe's success.
+    it.for([
+      ['offering a hosted action', 'https://checkout.example/pay'],
+      ['offering none yet', undefined]
+    ] as const)(
+      'refuses a subscribe over a pending operation it did not issue, %s',
+      async ([, actionUrl]) => {
+        const h = harness({
+          status: {
+            ...FREE,
+            pending_billing_op_id: 'op-1',
+            pending_billing_op_type: 'subscription',
+            ...(actionUrl === undefined ? {} : { action_url: actionUrl })
+          },
+          script: { [GET_OP]: settledOk }
+        })
+
+        const result = await h.commands.subscribe(PLAN)
+
+        expect(result).toEqual({
+          status: 'error',
+          code: 'OPERATION_ALREADY_PENDING'
+        })
+        expect(h.posts()).toEqual([])
+        expect(h.invalidate).not.toHaveBeenCalled()
+      }
+    )
+
+    describe('over a checkout this tab recovered parked on the server', () => {
+      const PARKED = {
+        ...FREE,
+        pending_billing_op_id: 'op-1',
+        pending_billing_op_type: 'subscription'
+      } as const
+
+      async function recoveredAt(
+        phase: BillingOpStatus['phase'],
+        subscribeAnswer: BillingResult<BillingHttpResponse>
+      ) {
+        const h = harness({
+          status: PARKED,
+          script: {
+            [GET_OP]: [http(200, opStatus({ phase }))],
+            [`GET ${operationRoute('op-2')}`]: [
+              http(200, opStatus({ id: 'op-2' }))
+            ],
+            [POST_SUBSCRIBE]: [subscribeAnswer]
+          }
+        })
+        await h.lifecycle.recover()
+        await flush()
+        return h
+      }
+
+      it('sends the subscribe the server resumes a card-less checkout with', async () => {
+        const h = await recoveredAt(
+          'awaiting_payment_method',
+          http(200, {
+            billing_op_id: 'op-1',
+            status: 'needs_payment_method',
+            payment_method_url: 'https://checkout.example/resumed'
+          })
+        )
+
+        void h.commands.subscribe(PLAN)
+        await flush()
+
+        expect(h.posts()).toHaveLength(1)
+        expect(h.lifecycle.get('op-1')).toMatchObject({
+          phase: 'pending',
+          actionUrl: 'https://checkout.example/resumed'
+        })
       })
 
-      const result = await h.commands.subscribe(PLAN)
+      it('resolves the recovered checkout before deciding, so a click before its first read still resumes it', async () => {
+        const h = harness({
+          status: PARKED,
+          script: {
+            [GET_OP]: [
+              new Promise<never>(() => {}),
+              http(200, opStatus({ phase: 'awaiting_payment_method' }))
+            ],
+            [POST_SUBSCRIBE]: [
+              http(200, {
+                billing_op_id: 'op-1',
+                status: 'needs_payment_method',
+                payment_method_url: 'https://checkout.example/resumed'
+              })
+            ]
+          }
+        })
+        await h.lifecycle.recover()
 
-      assert(result.status === 'ok')
-      expect(result.value).toMatchObject({
-        phase: 'succeeded',
-        operation: { id: 'op-1' }
+        void h.commands.subscribe(PLAN)
+        await flush()
+
+        expect(h.posts()).toHaveLength(1)
       })
-      // No subscribe response was read, so there is no status to carry out.
-      expect(result.value.issuedStatus).toBeUndefined()
-      expect(h.posts()).toEqual([])
-      expect(h.invalidate).toHaveBeenCalledOnce()
+
+      it('stops watching the checkout the server replaced with a new one', async () => {
+        const h = await recoveredAt(
+          'awaiting_payment_method',
+          http(200, { billing_op_id: 'op-2', status: 'pending_payment' })
+        )
+
+        void h.commands.subscribe(PLAN)
+        await flush()
+
+        expect(h.lifecycle.get('op-1')?.phase).toBe('superseded')
+        expect(h.lifecycle.get('op-2')?.phase).toBe('pending')
+      })
+
+      it('still refuses over an invoice waiting on the customer', async () => {
+        const h = await recoveredAt(
+          'awaiting_invoice_payment',
+          http(200, { billing_op_id: 'op-2', status: 'pending_payment' })
+        )
+
+        await expect(h.commands.subscribe(PLAN)).resolves.toEqual({
+          status: 'error',
+          code: 'OPERATION_ALREADY_PENDING'
+        })
+        expect(h.posts()).toEqual([])
+      })
     })
 
     it('settles as timed_out when the poll budget runs out', async () => {

@@ -14,7 +14,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { resolveSelectable } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import { promoteRecommendedWidgets } from '@/core/graph/subgraph/promotionUtils'
-import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
+import { useSelectionStore } from '@/core/selection/selectionStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { graphScopeOf } from '@/types/graphScopeId'

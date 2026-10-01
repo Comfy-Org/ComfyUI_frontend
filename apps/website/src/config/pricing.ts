@@ -1,68 +1,69 @@
 import { t } from '../i18n/translations'
 import { subscribeUrl } from '../data/pricingPlans'
+import type { BillingCycle } from '../data/pricingPlans'
 import type { Locale, TranslationKey } from '../i18n/translations'
 
 interface PricingTier {
   slug: string
   labelKey: TranslationKey
-  priceKey: TranslationKey
-  eduPriceKey: TranslationKey
+  price: Record<BillingCycle, TranslationKey>
+  eduPrice: Record<BillingCycle, TranslationKey>
 }
 
-const tiers: PricingTier[] = [
-  {
-    slug: 'standard',
-    labelKey: 'pricing.plan.standard.label',
-    priceKey: 'pricing.plan.standard.price',
-    eduPriceKey: 'pricing.plan.standard.eduPrice'
-  },
-  {
-    slug: 'creator',
-    labelKey: 'pricing.plan.creator.label',
-    priceKey: 'pricing.plan.creator.price',
-    eduPriceKey: 'pricing.plan.creator.eduPrice'
-  },
-  {
-    slug: 'pro',
-    labelKey: 'pricing.plan.pro.label',
-    priceKey: 'pricing.plan.pro.price',
-    eduPriceKey: 'pricing.plan.pro.eduPrice'
-  }
-]
+const tiers: PricingTier[] = (['standard', 'creator', 'pro'] as const).map(
+  (slug) => ({
+    slug,
+    labelKey: `pricing.plan.${slug}.label`,
+    price: {
+      monthly: `pricing.plan.${slug}.price`,
+      yearly: `pricing.plan.${slug}.yearlyTotal`
+    },
+    eduPrice: {
+      monthly: `pricing.plan.${slug}.eduPrice`,
+      yearly: `pricing.plan.${slug}.eduYearlyTotal`
+    }
+  })
+)
+
+const cycles: BillingCycle[] = ['monthly', 'yearly']
 
 export interface PricingOffer {
   name: string
   price: string
+  cycle: BillingCycle
   url: string
 }
 
 function offersFrom(
   locale: Locale,
-  priceKeyOf: (tier: PricingTier) => TranslationKey
+  priceKeysOf: (tier: PricingTier) => Record<BillingCycle, TranslationKey>
 ): PricingOffer[] {
-  return tiers.flatMap((tier) => {
-    const display = t(priceKeyOf(tier), locale).trim()
-    const match = /^\$(\d+(?:\.\d+)?)$/.exec(display)
-    if (!match) {
-      console.warn(
-        `pricingOffers: skipping tier "${tier.slug}" (${locale}) — price "${display}" is not a plain USD amount`
-      )
-      return []
-    }
-    return [
-      {
-        name: t(tier.labelKey, locale),
-        price: match[1],
-        url: subscribeUrl(tier.slug, 'monthly')
+  return tiers.flatMap((tier) =>
+    cycles.flatMap((cycle) => {
+      const display = t(priceKeysOf(tier)[cycle], locale).trim()
+      const match = /^\$(\d+(?:\.\d+)?)$/.exec(display)
+      if (!match) {
+        console.warn(
+          `pricingOffers: skipping tier "${tier.slug}" ${cycle} (${locale}) — price "${display}" is not a plain USD amount`
+        )
+        return []
       }
-    ]
-  })
+      return [
+        {
+          name: `${t(tier.labelKey, locale)} (${t(`pricing.cycle.${cycle}`, locale)})`,
+          price: match[1],
+          cycle,
+          url: subscribeUrl(tier.slug, cycle)
+        }
+      ]
+    })
+  )
 }
 
 export function pricingOffers(locale: Locale): PricingOffer[] {
-  return offersFrom(locale, (tier) => tier.priceKey)
+  return offersFrom(locale, (tier) => tier.price)
 }
 
 export function educationOffers(locale: Locale): PricingOffer[] {
-  return offersFrom(locale, (tier) => tier.eduPriceKey)
+  return offersFrom(locale, (tier) => tier.eduPrice)
 }

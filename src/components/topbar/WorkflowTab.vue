@@ -4,75 +4,87 @@
       <div
         ref="workflowTabRef"
         data-testid="workflow-tab"
-        class="workflow-tab group flex h-8 items-center justify-center gap-2 py-2 pr-2 pl-3"
+        class="workflow-tab group/tab relative h-full shrink-0"
         v-bind="$attrs"
         @mouseenter="handleMouseEnter"
         @mouseleave="handleMouseLeave"
-        @mouseup="handleMouseUp"
         @click="handleClick"
       >
-        <i v-if="isBuilderState" class="bg-text-subtle icon-[lucide--hammer]" />
-        <i
-          v-else-if="workflowOption.workflow.initialMode === 'app'"
-          class="icon-[lucide--panels-top-left] bg-primary-background"
-        />
-        <WorkflowAgentTargetIndicator
-          :workflow-path="workflowOption.workflow.path"
-        />
-        <span
-          class="workflow-label inline-block max-w-[150px] truncate font-inter text-sm leading-none font-normal text-inherit"
+        <TabsTrigger
+          :value="workflowOption.workflow.path"
+          class="h-full max-w-full min-w-22.5 py-2 pr-2 pl-3"
         >
-          {{ workflowOption.workflow.filename }}
-        </span>
-        <div class="relative size-4 shrink-0">
           <i
-            v-if="isAgentEditing"
-            role="img"
-            :aria-label="t('g.agentWorking')"
-            class="absolute top-1/2 left-1/2 z-10 icon-[lucide--loader-circle] size-4 -translate-1/2 text-smoke-800 group-hover:hidden motion-safe:animate-spin"
-          />
-          <span
-            v-else-if="showUnseenAgentDot"
-            role="img"
-            :aria-label="t('g.agentModified')"
-            data-testid="agent-modified-indicator"
-            class="absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full bg-primary-background group-hover:hidden"
+            v-if="isBuilderState"
+            class="icon-[lucide--hammer] bg-muted-foreground"
           />
           <i
-            v-else-if="workflowStatus"
-            role="img"
-            :aria-label="workflowStatusLabel"
-            :class="
-              cn(
-                'absolute top-1/2 left-1/2 z-10 size-4 -translate-1/2 group-hover:hidden',
-                workflowStatusIconClasses[workflowStatus]
-              )
-            "
+            v-else-if="workflowOption.workflow.initialMode === 'app'"
+            class="icon-[lucide--panels-top-left] bg-primary-background"
+          />
+          <WorkflowAgentTargetIndicator
+            :workflow-path="workflowOption.workflow.path"
           />
           <span
-            v-else-if="shouldShowUnsavedIndicator"
-            data-testid="workflow-dirty-indicator"
-            :class="
-              cn(
-                'absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full group-hover:hidden',
-                isActiveTab ? 'bg-base-foreground' : 'bg-smoke-800'
-              )
-            "
-          />
-          <Button
-            class="close-button invisible size-4 rounded-none p-0 text-smoke-800 group-hover:visible"
-            variant="muted-textonly"
-            size="unset"
-            :aria-label="t('g.close')"
-            data-testid="close-workflow-button"
-            @click.stop="onCloseWorkflow(workflowOption)"
+            class="workflow-label inline-block max-w-[150px] truncate font-inter text-sm leading-none font-normal text-inherit"
           >
+            {{ workflowOption.workflow.filename }}
+          </span>
+          <span class="relative size-4 shrink-0">
             <i
-              data-testid="close-workflow-icon"
-              class="icon-[lucide--x] size-4"
+              v-if="isAgentEditing"
+              role="img"
+              :aria-label="t('g.agentWorking')"
+              class="absolute top-1/2 left-1/2 z-10 icon-[lucide--loader-circle] size-4 -translate-1/2 text-smoke-800 group-focus-within/tab:hidden group-hover/tab:hidden motion-safe:animate-spin"
             />
-          </Button>
-        </div>
+            <span
+              v-else-if="showUnseenAgentDot"
+              role="img"
+              :aria-label="t('g.agentModified')"
+              data-testid="agent-modified-indicator"
+              class="absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full bg-primary-background group-focus-within/tab:hidden group-hover/tab:hidden"
+            />
+            <i
+              v-else-if="workflowStatus"
+              role="img"
+              :aria-label="workflowStatusLabel"
+              :class="
+                cn(
+                  'absolute top-1/2 left-1/2 z-10 size-4 -translate-1/2 group-focus-within/tab:hidden group-hover/tab:hidden',
+                  workflowStatusIconClasses[workflowStatus]
+                )
+              "
+            />
+            <span
+              v-else-if="shouldShowUnsavedIndicator"
+              data-testid="workflow-dirty-indicator"
+              :class="
+                cn(
+                  'absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full group-focus-within/tab:hidden group-hover/tab:hidden',
+                  isActiveTab ? 'bg-base-foreground' : 'bg-smoke-800'
+                )
+              "
+            />
+          </span>
+        </TabsTrigger>
+        <Button
+          :class="
+            cn(
+              'close-button absolute top-1/2 right-2 size-4 -translate-y-1/2 rounded-none p-0 text-smoke-800 group-focus-within/tab:visible group-hover/tab:visible',
+              isActiveTab && !hasStatusIndicator ? 'visible' : 'invisible'
+            )
+          "
+          variant="muted-textonly"
+          size="unset"
+          :aria-label="t('g.close')"
+          data-testid="close-workflow-button"
+          @click.stop="onCloseWorkflow(workflowOption)"
+        >
+          <i
+            data-testid="close-workflow-icon"
+            class="icon-[lucide--x] size-4"
+          />
+        </Button>
       </div>
     </ContextMenuTrigger>
     <ContextMenuPortal>
@@ -110,6 +122,7 @@ import { useI18n } from 'vue-i18n'
 
 import WorkflowActionsList from '@/components/common/WorkflowActionsList.vue'
 import Button from '@/components/ui/button/Button.vue'
+import TabsTrigger from '@/components/ui/tabs/TabsTrigger.vue'
 import {
   usePragmaticDraggable,
   usePragmaticDroppable
@@ -151,7 +164,6 @@ const emit = defineEmits<{
   closeToLeft: []
   closeToRight: []
   closeOthers: []
-  mouseup: [event: MouseEvent]
 }>()
 
 const { t } = useI18n()
@@ -241,6 +253,14 @@ const workflowStatusLabel = computed(() =>
     : undefined
 )
 
+const hasStatusIndicator = computed(
+  () =>
+    isAgentEditing.value ||
+    showUnseenAgentDot.value ||
+    workflowStatus.value !== undefined ||
+    shouldShowUnsavedIndicator.value
+)
+
 const thumbnailUrl = computed(() => {
   return workflowThumbnail.getThumbnail(props.workflowOption.workflow.key)
 })
@@ -256,10 +276,6 @@ const handleMouseLeave = () => {
 
 const handleClick = (event: Event) => {
   popoverRef.value?.togglePopover(event)
-}
-
-const handleMouseUp = (event: MouseEvent) => {
-  emit('mouseup', event)
 }
 
 const closeWorkflows = async (options: WorkflowOption[]) => {
@@ -371,9 +387,3 @@ onUnmounted(() => {
   popoverRef.value?.hidePopover()
 })
 </script>
-
-<style>
-.p-tooltip.workflow-tab-tooltip {
-  z-index: 1200 !important;
-}
-</style>

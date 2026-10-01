@@ -6,23 +6,16 @@ import { computed, defineComponent, h, nextTick, watch } from 'vue'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { api } from '@/scripts/api'
 
 import { useVideoSourceUrl } from './useVideoSourceUrl'
 
 let outputStore: ReturnType<typeof useNodeOutputStore>
 let widgetStore: ReturnType<typeof useWidgetValueStore>
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: { apiURL: (path: string) => `/api${path}` }
-}))
+vi.mock(import('@/scripts/api'))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    getPreviewFormatParam: () => '',
-    nodeOutputs: {},
-    nodePreviewImages: {}
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@/platform/distribution/cloudPreviewUtil'), () => ({
   appendCloudResParam: vi.fn()
@@ -55,6 +48,7 @@ function mountSource(node: LGraphNode) {
 
 describe('useVideoSourceUrl', () => {
   beforeEach(() => {
+    vi.mocked(api.apiURL).mockImplementation((path) => `/api${path}`)
     outputStore = useNodeOutputStore()
     widgetStore = useWidgetValueStore()
     for (const key of Object.keys(outputStore.nodeOutputs)) {

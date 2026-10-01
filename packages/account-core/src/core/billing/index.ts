@@ -20,7 +20,10 @@ export type {
 export { matchesServerCode, unwrapServerCode } from './billingContracts.js'
 export type { SessionBillingTransportOptions } from './transport.js'
 export { createSessionBillingTransport } from './transport.js'
-export type { CredentialedBillingTransportOptions } from './credentialedTransport.js'
+export type {
+  CredentialedBillingTransportOptions,
+  CredentialedWebSession
+} from './credentialedTransport.js'
 export { createCredentialedBillingTransport } from './credentialedTransport.js'
 export type { BillingScope, BillingScopeSource } from './billingScope.js'
 export { sessionBillingScopeSource } from './billingScope.js'
@@ -73,6 +76,14 @@ export type {
 } from './plans.js'
 export { PLANS_ROUTE, createPlansReader } from './plans.js'
 export type {
+  WorkspaceInvite,
+  WorkspaceInviteCommands
+} from './workspaceInvites.js'
+export {
+  WORKSPACE_INVITES_ROUTE,
+  createWorkspaceInviteCommands
+} from './workspaceInvites.js'
+export type {
   PaymentMethodsReadOptions,
   PaymentMethodsReader,
   PaymentMethodsReaderOptions,
@@ -99,6 +110,7 @@ export type {
   BillingOpStatus,
   BillingOperationEvent,
   BillingOperationIdentity,
+  BillingOperationReceipt,
   BillingOperationKind,
   BillingOperationPhase,
   BillingOperationServerPhase,
@@ -109,10 +121,12 @@ export type {
   EmbeddedChallenge,
   FailedBillingOperation,
   HostedBillingDestination,
-  PendingBillingOperation
+  PendingBillingOperation,
+  SucceededBillingOperation
 } from './operationState.js'
 export {
   isBlockedOnCustomerPhase,
+  isGrantLanding,
   isTerminal,
   reduceBillingOperation,
   validateActionUrl
@@ -120,11 +134,14 @@ export {
 export {
   OPERATION_POLL_BUDGET,
   OPERATION_POLL_TIMING,
+  customerCanActHere,
   hasExhaustedPollBudget,
   isParkedOnCustomer,
   nextPollDelayMs,
+  pendingOperationActionHold,
   pollBudgetMs
 } from './operationPolicy.js'
+export type { CustomerActionHold } from './operationPolicy.js'
 export type {
   BillingOperationPointer,
   BillingOperationPointerStorage,
@@ -142,6 +159,7 @@ export type {
   BillingOperationLifecycle,
   BillingOperationLifecycleOptions,
   BillingOperationTelemetryEvent,
+  BillingRecoverOptions,
   IssuedBillingOperation,
   PresentationSwitchOutcome
 } from './operationLifecycle.js'
@@ -155,7 +173,10 @@ export type {
   EmbeddedChallengePort
 } from './challengeDriver.js'
 export { driveEmbeddedChallenge } from './challengeDriver.js'
-export { readBillingErrorCode } from './billingErrorBody.js'
+export {
+  readBillingErrorCode,
+  readBillingErrorMessage
+} from './billingErrorBody.js'
 export type {
   BillingCommands,
   BillingCommandsOptions,
@@ -185,11 +206,16 @@ export type {
   PaymentReasonKey,
   PaymentStep
 } from './paymentProjection.js'
-export { projectPaymentStep } from './paymentProjection.js'
-export type { PaymentCopyKey, PaymentCopyKeys } from './paymentCopy.js'
+export { awaitsHostedAction, projectPaymentStep } from './paymentProjection.js'
+export type {
+  DeclineDetailKey,
+  PaymentCopyKey,
+  PaymentCopyKeys
+} from './paymentCopy.js'
 export {
   DEFAULT_PAYMENT_COPY,
   createPaymentCopy,
+  declineDetailKey,
   paymentCopyKeys
 } from './paymentCopy.js'
 export type {
@@ -198,6 +224,7 @@ export type {
   HostedTopupCheckout,
   HostedTopupCheckoutFailure,
   HostedTopupCheckoutResult,
+  QuoteTopupInput,
   TopupCommand,
   TopupCommandOptions,
   TopupDeclined,
@@ -207,12 +234,15 @@ export type {
   TopupInvalidReturnUrl,
   TopupNoPaymentMethod,
   TopupNotAvailable,
+  TopupQuote,
+  TopupQuoteResult,
   TopupResult,
   TopupSucceeded,
   TopupUnsettled
 } from './topup.js'
 export {
   TOPUP_CHECKOUT_ROUTE,
+  TOPUP_QUOTE_ROUTE,
   TOPUP_ROUTE,
   createTopupCommand
 } from './topup.js'

@@ -1,6 +1,5 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
-import CloudBannerSection from '../../components/product/shared/CloudBannerSection.vue'
 import AIModelsSection from '../../components/product/shared/AIModelsSection.vue'
 import HeroSection from '../../components/product/local/HeroSection.vue'
 import ReasonSection from '../../components/product/local/ReasonSection.vue'
@@ -50,7 +49,6 @@ const { siteUrl, locale } = pageContext(
     'ComfyUI Linux'
   ]}
 >
-  <CloudBannerSection locale="zh-CN" />
   <HeroSection locale="zh-CN" client:load />
   <ReasonSection locale="zh-CN" />
   <EcoSystemSection locale="zh-CN" client:visible />

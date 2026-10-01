@@ -1,60 +1,186 @@
 <script setup lang="ts">
-import { ChevronRight } from '@lucide/vue'
-import { ref, watch } from 'vue'
-import { useMounted } from '@vueuse/core'
+import { computed, defineAsyncComponent, ref } from 'vue'
+import { useMounted, whenever } from '@vueuse/core'
+import { cn } from '@comfyorg/tailwind-utils'
 
-import type { WorkshopModel } from '../../config/models-catalogue'
-import type { Locale } from '../../i18n/translations'
+import type {
+  AppWorkshopModel,
+  WorkflowWorkshopModel,
+  WorkshopModel
+} from '../../config/models-catalogue'
+import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import WorkshopHero from './WorkshopHero.vue'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
-import { captureWorkshopEvent, useWorkshopEnabled } from '../../scripts/posthog'
+import CatalogueTabs from './CatalogueTabs.vue'
+import type { CatalogueTab } from './CatalogueTabs.vue'
+import type { WorkshopPageType } from '../../scripts/workshop-analytics'
+import {
+  captureWorkshopEvent,
+  useWorkshopAppsEnabled,
+  useWorkshopEnabled
+} from '../../scripts/posthog'
+import type { CatalogueApp } from '../../lib/workshop/catalogue-apps'
+import { ac } from '../../lib/workshop/catalogue-apps'
+import {
+  loadAppCatalogue,
+  loadWorkflowCatalogue
+} from '../../lib/workshop/catalogue-components'
+import { isWorkshopModelShown } from '../../scripts/workshop-model-flags'
 
-const { models, locale = 'en' } = defineProps<{
+const WorkflowCatalogue = defineAsyncComponent(loadWorkflowCatalogue)
+const AppCatalogue = defineAsyncComponent(loadAppCatalogue)
+
+const {
+  models,
+  initialSearch,
+  locale = 'en',
+  section = 'models'
+} = defineProps<{
   models: readonly WorkshopModel[]
+  initialSearch?: string
   locale?: Locale
+  section?: CatalogueTab
 }>()
 
 const inSection = ref(false)
 const browseAll = ref(false)
 const mounted = useMounted()
 const enabled = useWorkshopEnabled()
+const appsEnabled = useWorkshopAppsEnabled()
+const shownModels = computed(() =>
+  models.filter((model) => isWorkshopModelShown(model))
+)
+const routerModels = computed(() =>
+  shownModels.value.filter((model) => model.routerId !== undefined)
+)
+const workflows = computed(() =>
+  shownModels.value.filter(
+    (model): model is WorkflowWorkshopModel =>
+      model.type === 'CLOUD' || model.type === 'SERVERLESS'
+  )
+)
+const apps = computed(() =>
+  shownModels.value.filter(
+    (model): model is AppWorkshopModel => model.type === 'APP'
+  )
+)
+const appCards = computed<readonly CatalogueApp[]>(() =>
+  apps.value.map((app) => ({
+    key: app.slug,
+    name: app.name,
+    task: ac(app.appId === 'studio' ? 'studioTask' : 'reshootTask', locale),
+    href: app.href,
+    image: app.thumbnail?.url ?? app.thumbnailUrl
+  }))
+)
+const availableTabs = computed<readonly CatalogueTab[]>(() => [
+  'models',
+  ...(workflows.value.length || section === 'workflows'
+    ? (['workflows'] as const)
+    : []),
+  ...((appsEnabled.value && apps.value.length) || section === 'apps'
+    ? (['apps'] as const)
+    : [])
+])
 
-watch(
+// Each tab says what its own listing is for, in Eric's words.
+const SUBTITLE_KEY = {
+  models: 'workshop.hero.subtitle',
+  workflows: 'workshop.catalogue.workflowsSubtitle',
+  apps: 'workshop.catalogue.appsSubtitle'
+} as const satisfies Record<CatalogueTab, TranslationKey>
+
+whenever(
   () => mounted.value && enabled.value,
-  (visible) => {
-    if (visible) {
-      captureWorkshopEvent({
-        name: 'catalogue_viewed',
-        properties: { model_count: models.length }
-      })
-    }
+  () => {
+    const catalogues = {
+      models: { model_count: routerModels.value.length, page_type: 'model' },
+      workflows: { model_count: workflows.value.length, page_type: 'workflow' },
+      apps: { model_count: apps.value.length, page_type: 'app' }
+    } as const satisfies Record<
+      CatalogueTab,
+      { model_count: number; page_type: WorkshopPageType }
+    >
+    captureWorkshopEvent({
+      name: 'catalogue_viewed',
+      properties: catalogues[section]
+    })
   },
   { once: true }
 )
 </script>
 
 <template>
-  <WorkshopHero v-if="!inSection" subtitle-key="workshop.hero.subtitle" :locale>
-    <template #aside>
-      <button
-        type="button"
-        class="group -mx-1 inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-1 text-xl font-medium text-primary-warm-white transition-colors outline-none hover:text-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
-        data-testid="browse-all"
-        @click="browseAll = true"
+  <div
+    v-if="!inSection"
+    class="relative isolate -mx-6 mb-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-4 overflow-hidden px-6 pb-2 max-sm:mb-4 max-sm:pb-0 lg:-mx-8 lg:px-8 sm:short:pb-0"
+    data-testid="workshop-hero"
+  >
+    <div class="grid text-lg text-primary-comfy-canvas/70">
+      <p
+        v-for="(subtitle, tab) in SUBTITLE_KEY"
+        :key="tab"
+        :class="
+          cn(
+            'col-start-1 row-start-1',
+            tab === section ? 'animate-soft-in' : 'invisible'
+          )
+        "
+        :aria-hidden="tab !== section"
       >
-        {{ t('workshop.sections.browseAll', locale) }}
-        <ChevronRight
-          class="size-5 transition-transform group-hover:translate-x-0.5"
-          aria-hidden="true"
-        />
-      </button>
-    </template>
-  </WorkshopHero>
+        {{ t(subtitle, locale) }}
+      </p>
+    </div>
+  </div>
   <WorkshopModelsGrid
+    v-if="section === 'models'"
     v-model:browse-all="browseAll"
-    :models
+    :models="routerModels"
+    :initial-search
     :locale
     @section="inSection = $event"
-  />
+  >
+    <template #tabs>
+      <CatalogueTabs
+        v-if="availableTabs.length > 1"
+        :tabs="availableTabs"
+        :model-value="section"
+        :locale
+        links
+      />
+    </template>
+  </WorkshopModelsGrid>
+  <WorkflowCatalogue
+    v-else-if="section === 'workflows'"
+    v-model:browse-all="browseAll"
+    :models="workflows"
+    :initial-search
+    :locale
+    @section="inSection = $event"
+  >
+    <template #tabs>
+      <CatalogueTabs
+        :tabs="availableTabs"
+        :model-value="section"
+        :locale
+        links
+      />
+    </template>
+  </WorkflowCatalogue>
+  <AppCatalogue
+    v-else
+    v-model:browse-all="browseAll"
+    :apps="appCards"
+    :locale
+    @section="inSection = $event"
+  >
+    <template #tabs>
+      <CatalogueTabs
+        :tabs="availableTabs"
+        :model-value="section"
+        :locale
+        links
+      />
+    </template>
+  </AppCatalogue>
 </template>

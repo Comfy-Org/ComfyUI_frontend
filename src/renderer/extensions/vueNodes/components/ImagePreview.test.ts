@@ -70,8 +70,7 @@ describe('ImagePreview', () => {
           'i-lucide:venetian-mask': true,
           'i-lucide:download': true,
           'i-lucide:x': true,
-          'i-lucide:image-off': true,
-          Skeleton: true
+          'i-lucide:image-off': true
         }
       }
     })
@@ -167,11 +166,19 @@ describe('ImagePreview', () => {
     expect(
       screen.queryByRole('button', { name: 'Download image' })
     ).not.toBeInTheDocument()
-    expect(
-      useTelemetry()?.trackImageLoadFailed
-    ).toHaveBeenCalledExactlyOnceWith({
-      source: 'node_image_preview'
-    })
+    // The report is emitted behind a diagnostic probe, so the error UI above
+    // asserts synchronously while the telemetry needs the probe to settle.
+    await vi.waitFor(() =>
+      expect(
+        useTelemetry()?.trackImageLoadFailed
+      ).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          source: 'node_image_preview',
+          probe_outcome: expect.any(String),
+          page_age_ms: expect.any(Number)
+        })
+      )
+    )
   })
 
   it('handles download button click', async () => {

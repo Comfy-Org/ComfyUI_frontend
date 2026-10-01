@@ -11,10 +11,7 @@
 import { z } from 'zod'
 
 import type { BillingScope } from './billingScope.js'
-import type {
-  BillingOperationPhase,
-  BillingOperationState
-} from './operationState.js'
+import type { BillingOperationState } from './operationState.js'
 
 export interface BillingOperationPointerStorage {
   getItem: (key: string) => string | null
@@ -30,27 +27,16 @@ const PointerSchema = z.object({
   operationId: z.string().min(1),
   kind: z.enum(['subscription', 'topup', 'cancel']),
   presentation: z.enum(['embedded', 'hosted']),
-  attemptStartedAt: z.number().finite()
+  attemptStartedAt: z.number().finite(),
+  /** This tab issued the operation and has not yet seen it succeed. */
+  awaited: z.literal(true).optional(),
+  /** The end this tab saw it reach, kept only by a store that retains settled pointers. */
+  settled: z.enum(['succeeded', 'reconciliation_needed']).optional()
 })
 
 export type BillingOperationPointer = z.infer<typeof PointerSchema>
 
-/**
- * A client-side timeout is this tab giving up, not the server finishing:
- * an operation awaiting bank authentication stays pending for hours, so the
- * pointer outlives it. A superseded operation belongs to a scope this tab
- * left, and its pointer waits under that scope's key for a return.
- * `reconciliation_needed` is terminal for polling, so retaining its pointer
- * would re-poll a settled operation on every reload.
- */
-const CLEARS_POINTER: Record<BillingOperationPhase, boolean> = {
-  pending: false,
-  timed_out: false,
-  superseded: false,
-  succeeded: true,
-  failed: true,
-  reconciliation_needed: true
-}
+type SettledPhase = NonNullable<BillingOperationPointer['settled']>
 
 export function operationPointerKey(scope: BillingScope): string {
   return `${POINTER_KEY_PREFIX}:${scope.userId}:${scope.workspaceId}`
@@ -61,7 +47,25 @@ export interface OperationPointerStore {
   write: (scope: BillingScope, pointer: BillingOperationPointer) => void
   /** Clears only when the stored pointer names `operationId`, or unconditionally without one. */
   clear: (scope: BillingScope, operationId?: string) => void
-  clearIfTerminal: (state: BillingOperationState) => void
+  /**
+   * What the operation's phase does to the pointer naming it. A client-side
+   * timeout is this tab giving up, not the server finishing: an operation
+   * awaiting bank authentication stays pending for hours, so the pointer
+   * outlives it. A superseded operation belongs to a scope this tab left, and
+   * its pointer waits under that scope's key for a return. A failure clears
+   * it, so a reload offers a fresh attempt. A success, or an operation the
+   * server parked for reconciliation, clears it too, unless the store retains
+   * settled pointers.
+   */
+  settle: (state: BillingOperationState) => void
+}
+
+export interface OperationPointerStoreOptions {
+  /**
+   * Keep a settled pointer, marked with how it ended, so a page that is the
+   * checkout itself can read it back after a reload.
+   */
+  readonly retainSettled?: boolean
 }
 
 /** Storage that throws (private mode, quota) reads as empty and writes as a no-op. */
@@ -86,9 +90,20 @@ function decodePointer(
     : undefined
 }
 
+/** A success is no longer awaited; an operation still being reconciled is. */
+function settledPointer(
+  pointer: BillingOperationPointer,
+  phase: SettledPhase
+): BillingOperationPointer {
+  if (phase === 'reconciliation_needed') return { ...pointer, settled: phase }
+  const { awaited: _seen, ...rest } = pointer
+  return { ...rest, settled: phase }
+}
+
 export function createOperationPointerStore(
   storage: BillingOperationPointerStorage,
-  now: () => number = Date.now
+  now: () => number = Date.now,
+  { retainSettled = false }: OperationPointerStoreOptions = {}
 ): OperationPointerStore {
   const read = (scope: BillingScope) => {
     const key = operationPointerKey(scope)
@@ -100,6 +115,13 @@ export function createOperationPointerStore(
     return pointer
   }
 
+  const write = (scope: BillingScope, pointer: BillingOperationPointer) =>
+    attempt(
+      () =>
+        storage.setItem(operationPointerKey(scope), JSON.stringify(pointer)),
+      undefined
+    )
+
   const clear = (scope: BillingScope, operationId?: string) => {
     if (operationId !== undefined && read(scope)?.operationId !== operationId) {
       return
@@ -107,19 +129,29 @@ export function createOperationPointerStore(
     attempt(() => storage.removeItem(operationPointerKey(scope)), undefined)
   }
 
-  return {
-    read,
-    write: (scope, pointer) =>
-      attempt(
-        () =>
-          storage.setItem(operationPointerKey(scope), JSON.stringify(pointer)),
-        undefined
-      ),
-    clear,
-    clearIfTerminal: (state) => {
-      if (CLEARS_POINTER[state.phase]) clear(state.scope, state.id)
+  const retain = (state: BillingOperationState, phase: SettledPhase) => {
+    const pointer = read(state.scope)
+    if (pointer?.operationId !== state.id) return
+    write(state.scope, settledPointer(pointer, phase))
+  }
+
+  const settle = (state: BillingOperationState) => {
+    switch (state.phase) {
+      case 'pending':
+      case 'timed_out':
+      case 'superseded':
+        return
+      case 'failed':
+        clear(state.scope, state.id)
+        return
+      case 'succeeded':
+      case 'reconciliation_needed':
+        if (retainSettled) retain(state, state.phase)
+        else clear(state.scope, state.id)
     }
   }
+
+  return { read, write, clear, settle }
 }
 
 /** A store for hosts without tab-local storage: nothing is ever recovered. */
@@ -127,5 +159,5 @@ export const NO_POINTER_STORE: OperationPointerStore = {
   read: () => undefined,
   write: () => {},
   clear: () => {},
-  clearIfTerminal: () => {}
+  settle: () => {}
 }

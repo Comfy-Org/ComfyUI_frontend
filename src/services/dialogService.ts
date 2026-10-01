@@ -11,6 +11,7 @@ import TopUpCreditsDialogContentLegacy from '@/components/dialog/content/TopUpCr
 import InsufficientCreditsMemberDialog from '@/platform/workspace/components/InsufficientCreditsMemberDialog.vue'
 import TopUpCreditsDialogContentWorkspace from '@/platform/workspace/components/TopUpCreditsDialogContentWorkspace.vue'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import { isCloud } from '@/platform/distribution/types'
@@ -28,6 +29,7 @@ import type {
 
 import type { ComponentAttrs } from 'vue-component-type-helpers'
 import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 import type { DowngradeToPersonalResult } from '@/platform/workspace/composables/useDowngradeToPersonal'
 
@@ -58,6 +60,20 @@ const HUG_CONTENT_CLASS =
  * shrink-wrap it around the content.
  */
 const SELF_STYLED_PANEL_CONTENT_CLASS = `${HUG_CONTENT_CLASS} border-none bg-transparent shadow-none`
+
+// A type alias, not an interface: `showDialog`'s props are index-signature
+// typed, and only object literal types get an implicit index signature.
+type TopUpCreditsDialogOptions = {
+  isInsufficientCredits?: boolean
+  source?: PaymentIntentSource
+}
+
+function topUpFallbackReason(
+  options?: TopUpCreditsDialogOptions
+): PaymentIntentSource {
+  if (options?.isInsufficientCredits) return 'out_of_credits'
+  return options?.source ?? 'top_up_blocked'
+}
 
 export type ConfirmationDialogType =
   | 'default'
@@ -468,9 +484,7 @@ export const useDialogService = () => {
     return enqueuePrompt<boolean | null>(key, show)
   }
 
-  async function showTopUpCreditsDialog(options?: {
-    isInsufficientCredits?: boolean
-  }) {
+  async function showTopUpCreditsDialog(options?: TopUpCreditsDialogOptions) {
     const { type } = useBillingContext()
     const { canTopUp, canSubscribeSelfServe, isReady, initialize } =
       useBillingCapabilities()
@@ -480,9 +494,8 @@ export const useDialogService = () => {
     if (!isReady.value) return
     if (!canTopUp.value && canSubscribeSelfServe.value) {
       await showSubscriptionRequiredDialog({
-        reason: options?.isInsufficientCredits
-          ? 'out_of_credits'
-          : 'top_up_blocked'
+        reason: topUpFallbackReason(options),
+        paymentIntentSource: options?.source
       })
       return
     }
@@ -505,15 +518,20 @@ export const useDialogService = () => {
     }
     if (!canTopUp.value) return
 
-    const component =
-      type.value === 'workspace'
-        ? TopUpCreditsDialogContentWorkspace
-        : TopUpCreditsDialogContentLegacy
+    // Only the workspace rail's content declares `source`; the legacy one
+    // takes `isInsufficientCredits` alone, so forwarding the whole options
+    // object there lands `source` in attrs as a stray DOM attribute on its
+    // root rather than as attribution.
+    const isWorkspaceRail = type.value === 'workspace'
 
     return dialogStore.showDialog({
       key: 'top-up-credits',
-      component,
-      props: options,
+      component: isWorkspaceRail
+        ? TopUpCreditsDialogContentWorkspace
+        : TopUpCreditsDialogContentLegacy,
+      props: isWorkspaceRail
+        ? options
+        : { isInsufficientCredits: options?.isInsufficientCredits },
       dialogComponentProps: {
         renderer: 'reka',
         headless: true,
@@ -638,7 +656,10 @@ export const useDialogService = () => {
         new Error(
           'showSubscriptionRequiredDialog: subscription_required gate closed'
         ),
-        { errorType: 'error_opening_subscription_dialog_gate_closed' }
+        {
+          surface: 'billing',
+          errorType: 'error_opening_subscription_dialog_gate_closed'
+        }
       )
       return
     }
@@ -792,6 +813,34 @@ export const useDialogService = () => {
     })
   }
 
+  async function showInviteLinkInvalidDialog() {
+    const { default: component } =
+      await import('@/platform/workspace/components/dialogs/InviteLinkInvalidDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'invite-link-invalid',
+      component,
+      dialogComponentProps: {
+        ...workspaceDialogProps
+      }
+    })
+  }
+
+  async function showInviteWrongAccountDialog(props: { inviteToken: string }) {
+    const { default: component } =
+      await import('@/platform/workspace/components/dialogs/InviteWrongAccountDialogContent.vue')
+    // showDialog keeps an existing entry's props; close first so a repeat 403
+    // carries the fresh token instead of replaying the previous one.
+    dialogStore.closeDialog({ key: 'invite-wrong-account' })
+    return dialogStore.showDialog({
+      key: 'invite-wrong-account',
+      component,
+      props,
+      dialogComponentProps: {
+        ...workspaceDialogProps
+      }
+    })
+  }
+
   async function showRevokeInviteDialog(inviteId: string) {
     const { default: component } =
       await import('@/platform/workspace/components/dialogs/RevokeInviteDialogContent.vue')
@@ -823,14 +872,25 @@ export const useDialogService = () => {
 
   async function showCancelSubscriptionDialog(
     cancelAt?: string,
-    flowAlreadyOpened = false
+    flowAlreadyOpened?: boolean,
+    isScopeCurrent?: () => boolean
   ) {
     const { default: component } =
       await import('@/components/dialog/content/subscription/CancelSubscriptionDialogContent.vue')
+    if (isScopeCurrent && !isScopeCurrent()) return false
+    const guardedProps = {
+      ...(flowAlreadyOpened !== undefined ? { flowAlreadyOpened } : {}),
+      ...(cancelAt !== undefined ? { cancelAt } : {}),
+      ...(isScopeCurrent ? { isScopeCurrent } : {})
+    }
+    dialogStore.updateDialog({
+      key: 'cancel-subscription',
+      contentProps: guardedProps
+    })
     return dialogStore.showDialog({
       key: 'cancel-subscription',
       component,
-      props: { cancelAt, flowAlreadyOpened },
+      props: guardedProps,
       dialogComponentProps: {
         ...workspaceDialogProps
       }
@@ -838,12 +898,21 @@ export const useDialogService = () => {
   }
 
   async function showCancelSubscriptionFlow(cancelAt?: string) {
+    const launchWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
     const cancellationFlow =
       await import('@/platform/cloud/subscription/launchCancellationFlow')
     return cancellationFlow.launchCancellationFlow({
       cancelAt,
-      showFallback: ({ flowAlreadyOpened = false } = {}) =>
-        showCancelSubscriptionDialog(cancelAt, flowAlreadyOpened)
+      launchWorkspaceId,
+      showFallback: ({
+        flowAlreadyOpened = false,
+        isScopeCurrent = () => true
+      } = {}) =>
+        showCancelSubscriptionDialog(
+          cancelAt,
+          flowAlreadyOpened,
+          isScopeCurrent
+        )
     })
   }
 
@@ -1016,6 +1085,8 @@ export const useDialogService = () => {
     showRevokeInviteDialog,
     showInviteMemberDialog,
     showInviteMemberUpsellDialog,
+    showInviteLinkInvalidDialog,
+    showInviteWrongAccountDialog,
     showBillingComingSoonDialog,
     showCancelSubscriptionDialog,
     showCancelSubscriptionFlow,

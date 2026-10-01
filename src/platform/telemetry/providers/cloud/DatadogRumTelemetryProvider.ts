@@ -16,9 +16,9 @@ import type {
 } from '../../types'
 import {
   getBillingTelemetryEventName,
-  getBillingTelemetryEventPayload,
   getCheckoutJourneyTelemetryEventName,
   getCheckoutJourneyTelemetryEventPayload,
+  getCloudAppBillingTelemetryEventPayload,
   TelemetryEvents
 } from '../../types'
 
@@ -80,7 +80,7 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
   trackBillingEvent(event: BillingTelemetryEvent): void {
     datadogRum.addAction(
       getBillingTelemetryEventName(event),
-      getBillingTelemetryEventPayload(event)
+      getCloudAppBillingTelemetryEventPayload(event)
     )
   }
 
@@ -149,7 +149,7 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
         ...(executionStageStartedAt !== undefined && {
           execution_duration_ms: workflowEndedAt - executionStageStartedAt
         }),
-        ...(workflowContext ?? {}),
+        ...workflowContext,
         ...(originViewId && { origin_view_id: originViewId })
       }
     })

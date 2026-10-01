@@ -38,7 +38,7 @@ file wins. These root rules do not apply here:
 - The dev server is `pnpm --filter @comfyorg/website dev` on
   `http://localhost:4321`, not `pnpm dev` on 5173. The root
   `/verify-visually` command points at the wrong server for this site.
-- The checks are `pnpm lint:website`, `pnpm typecheck:website`,
+- The checks are `pnpm exec eslint apps/website`, `pnpm typecheck:website`,
   `pnpm format:astro:check`, `pnpm knip`, and, from this folder,
   `pnpm test:unit` and `pnpm test:e2e` (which needs `pnpm build` first). Root
   `pnpm typecheck` does not cover this folder.

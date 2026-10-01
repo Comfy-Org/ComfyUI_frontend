@@ -1,4 +1,6 @@
 import type {
+  PromptErrorResponse,
+  PromptInfo,
   PromptResponse as IngestPromptResponse,
   SystemStatsResponse,
   UserDataResponseFull
@@ -23,11 +25,10 @@ export type PromptResponse = IngestPromptResponse & {
   exec_info?: { queue_remaining?: number }
 }
 
-export type PromptFailureResponse = {
-  node_errors?: Record<string, NodeError>
-  exec_info?: { queue_remaining?: number }
-  error: string | NodeError['errors'][number]
-}
+export type PromptFailureResponse = PromptErrorResponse &
+  PromptInfo & {
+    node_errors?: Record<string, NodeError>
+  }
 
 export type DeviceStats = Required<SystemStatsResponse['devices'][number]> & {
   index: number

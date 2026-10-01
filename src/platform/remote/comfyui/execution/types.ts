@@ -1,5 +1,7 @@
+import type { PromptInfo } from '@comfyorg/ingest-types'
 import { z } from 'zod'
 import { zNodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { TaskStatus } from '@/platform/tasks/services/taskService'
 import { resultItemType } from '@/schemas/resultItemTypeSchema'
 
 export type JobId = string
@@ -30,9 +32,7 @@ export type NodeOutputWith<T extends Record<string, unknown>> =
 
 type NodeId = z.infer<typeof zNodeId>
 
-export interface StatusWsMessageStatus {
-  exec_info: { queue_remaining: number }
-}
+export type StatusWsMessageStatus = PromptInfo
 export interface StatusWsMessage {
   status?: StatusWsMessageStatus | null
   sid?: string | null
@@ -118,14 +118,13 @@ export interface LogsRawResponse {
   entries: LogEntry[]
 }
 export type FeatureFlagsWsMessage = Record<string, unknown>
-type AssetTaskStatus = 'created' | 'running' | 'completed' | 'failed'
 export interface AssetDownloadWsMessage {
   task_id: string
   asset_name: string
   bytes_total: number
   bytes_downloaded: number
   progress: number
-  status: AssetTaskStatus
+  status: TaskStatus
   asset_id?: string
   error?: string
 }
@@ -138,7 +137,7 @@ export interface AssetExportWsMessage {
   bytes_total: number
   bytes_processed: number
   progress: number
-  status: AssetTaskStatus
+  status: Exclude<TaskStatus, 'cancelled'>
   error?: string
 }
 

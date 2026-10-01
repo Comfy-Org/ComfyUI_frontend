@@ -124,22 +124,24 @@ export function resolveComboValues(widget: IComboWidget): (string | number)[] {
   return Object.keys(values)
 }
 
-export function addToComboValues(widget: IComboWidget, value: string) {
-  // @ts-expect-error Combo widget values may be a dictionary or legacy function type
-  if (!widget.options.values.includes(value)) {
-    // @ts-expect-error Combo widget values may be a dictionary or legacy function type
-    widget.options.values.push(value)
+export function addToComboValues(
+  widget: Pick<IComboWidget, 'options'>,
+  value: string
+) {
+  const values = widget.options.values
+  if (Array.isArray(values) && !values.includes(value)) {
+    values.push(value)
   }
 }
 
 /**
- * True while the canvas is a picking surface rather than an editable one - the
- * agent's node selection mode sets `selectOnly`.
+ * True while the canvas is a picking surface rather than an editable one: its
+ * own `selectOnly` flag is set, or the interaction mode the application
+ * injected reads select-only (ADR-CANVAS-INTERACTION-0035).
  *
- * Guard every editing operation with this. It is checked at each call site
- * rather than inside litegraph itself, to keep that vendored library untouched.
- * A new way to edit the canvas therefore has to opt in: add the guard, or the
- * operation will run during picking.
+ * The canvas pointer and key dispatch and the command store read the mode
+ * themselves. The document-level paste, drop and history listeners guard with
+ * this helper, so a new document-level edit path has to opt in.
  */
 export const isSelectOnly = (canvas: LGraphCanvas | undefined): boolean =>
   canvas?.selectOnly === true

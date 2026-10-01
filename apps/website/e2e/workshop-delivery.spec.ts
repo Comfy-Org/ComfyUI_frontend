@@ -1,11 +1,10 @@
-import { gunzipSync } from 'node:zlib'
-
 import { expect } from '@playwright/test'
-import { z } from 'zod'
 
 import availability from '../src/data/workshop-model-availability.json' with { type: 'json' }
 import { workshopModelAvailabilitySchema } from '../src/config/workshop-model-availability-schema'
 import { test } from './fixtures/modelsAccount'
+import { capturePosthogEvents } from './fixtures/posthogEvents'
+import { hubModelHref } from '../src/config/hub-models'
 
 test.use({
   launchOptions: { args: ['--disable-blink-features=AutomationControlled'] }
@@ -14,10 +13,6 @@ test.use({
 const slug = 'byteplus--seed-audio-1.0--audio'
 const disabled =
   workshopModelAvailabilitySchema.parse(availability)[slug]?.disabled
-const eventSchema = z.object({
-  event: z.string(),
-  properties: z.record(z.string(), z.unknown())
-})
 
 test(
   disabled
@@ -28,28 +23,7 @@ test(
       expect((await page.goto(`/models/${slug}/`))?.status()).toBe(404)
       return
     }
-    const captured: z.infer<typeof eventSchema>[] = []
-    await context.route(
-      (url) => url.hostname === 't.comfy.org' && /\/e\/$/.test(url.pathname),
-      async (route) => {
-        const body = route.request().postDataBuffer()
-        if (!body) throw new Error('Missing analytics request body')
-        const base64 = new URLSearchParams(body.toString()).get('data')
-        const decoded =
-          body[0] === 0x1f && body[1] === 0x8b
-            ? gunzipSync(body).toString()
-            : base64
-              ? Buffer.from(base64, 'base64').toString()
-              : body.toString()
-        const events: unknown = JSON.parse(decoded)
-        captured.push(
-          ...z
-            .array(eventSchema)
-            .parse(Array.isArray(events) ? events : [events])
-        )
-        await route.fulfill({ json: { status: 1 } })
-      }
-    )
+    const captured = await capturePosthogEvents(context)
     const requestId = 'f0b55482-d90f-4c9f-8fda-351ece95aaee'
     const audioUrl = 'https://output.example/generated.wav'
     await context.route(
@@ -87,7 +61,7 @@ test(
         .fill(modelsAccount.password)
       await page.getByRole('button', { name: 'Sign in', exact: true }).click()
       await expect(page).toHaveURL('/')
-      await page.goto(`/models/${slug}/`)
+      await page.goto(hubModelHref(slug))
       await expect(page.getByTestId('run-button')).toBeEnabled()
       await page.getByTestId('run-button').click()
       await expect(page.getByTestId('playground-output')).toHaveAttribute(
