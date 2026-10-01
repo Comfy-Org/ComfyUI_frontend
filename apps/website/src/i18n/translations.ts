@@ -7901,8 +7901,8 @@ Enterprise`
     'zh-CN': '以你想要的任意风格迭代设计。'
   },
   'nanoBanana.showcase.advertising.heading': {
-    en: 'One product, every set.',
-    'zh-CN': '一件产品，所有场景。'
+    en: 'Ready to run.',
+    'zh-CN': '随时可运行。'
   },
   'nanoBanana.showcase.advertising.description': {
     en: 'Advertising for any industry, with crisp detail and type that reads.',
