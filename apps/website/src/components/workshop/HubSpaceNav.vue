@@ -3,7 +3,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 
 import { getRoutes } from '../../config/routes'
-import type { Locale } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import {
   useWorkshopAppsEnabled,
@@ -27,28 +27,24 @@ const SPACES = [
     section: 'explore',
     id: 'explore',
     label: 'workshop.space.explore',
-    hint: 'workshop.space.exploreHint',
     href: routes.hubExplore
   },
   {
     section: 'apps',
     id: 'create',
     label: 'workshop.space.create',
-    hint: 'workshop.space.createHint',
     href: routes.hubApps
   },
   {
     section: 'workflows',
     id: 'customize',
     label: 'workshop.space.customize',
-    hint: 'workshop.space.customizeHint',
     href: routes.hubWorkflows
   },
   {
     section: 'models',
     id: 'build',
     label: 'workshop.space.build',
-    hint: 'workshop.space.buildHint',
     href: routes.workshop
   }
 ] as const
@@ -62,14 +58,16 @@ const spaces = computed(() =>
       (space.section === 'apps' ? appsEnabled.value : workflowsEnabled.value)
   )
 )
-const current = computed(() =>
-  SPACES.find((space) => space.section === section)
-)
+const HINT = {
+  explore: 'workshop.space.exploreHint',
+  apps: 'workshop.space.createHint',
+  workflows: 'workshop.space.customizeHint',
+  models: 'workshop.space.buildHint'
+} as const satisfies Record<HubSection, TranslationKey>
 </script>
 
 <template>
   <nav
-    v-if="spaces.length > 1"
     class="mb-8 flex items-center gap-7 border-b border-transparency-white-t8 max-sm:mb-5"
     :aria-label="t('workshop.space.label', locale)"
     data-testid="hub-space-nav"
@@ -96,11 +94,8 @@ const current = computed(() =>
         data-testid="hub-space-marker"
       />
     </a>
-    <span
-      v-if="current"
-      class="ml-auto text-sm text-content-secondary max-sm:hidden"
-    >
-      {{ t(current.hint, locale) }}
+    <span class="ml-auto text-sm text-content-secondary max-sm:hidden">
+      {{ t(HINT[section], locale) }}
     </span>
   </nav>
 </template>
