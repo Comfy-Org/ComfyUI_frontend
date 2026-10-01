@@ -161,7 +161,8 @@ describe('inline node and asset references', () => {
   it('copies mixed references as readable text and pastes text after a target change', async () => {
     const user = userEvent.setup()
     const { store, selected, editor } = renderComposer()
-    await user.type(editor, '参考 🐈 ')
+    await user.click(editor)
+    await user.paste('参考 🐈 ')
     selected.value = [{ id: '12', title: 'KSampler' }]
     await screen.findByTestId('node-reference-chip')
     store.addAttachment({ id: 'image', name: 'source.png', ref: 'source.png' })

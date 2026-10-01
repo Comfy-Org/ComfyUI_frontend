@@ -61,6 +61,7 @@ import { useAuthStore } from '@/stores/authStore'
 import type { UserId } from '@/types/authTypes'
 
 import { createWebSessionAdapter } from './webSessionAdapter'
+import { WorkspaceApiError } from './workspaceApiError'
 import { workspaceApiUrl } from './workspaceApiUrl'
 
 export type WorkspaceType = 'personal' | 'team'
@@ -105,6 +106,8 @@ export interface SubscribeOptions {
   billingCycle?: SubscribeBillingCycle
   confirmReactivation?: boolean
   prorationAt?: string
+  /** Set when the caller reported this attempt's `billing.operation.started`; never sent to the server. */
+  attemptStartedAt?: number
 }
 
 export interface PreviewSubscribeOptions {
@@ -149,16 +152,7 @@ interface GetBillingEventsParams {
   limit?: number
 }
 
-export class WorkspaceApiError extends Error {
-  constructor(
-    message: string,
-    public readonly status?: number,
-    public readonly code?: string
-  ) {
-    super(message)
-    this.name = 'WorkspaceApiError'
-  }
-}
+export { WorkspaceApiError }
 
 const workspaceApiClient = axios.create({
   headers: {

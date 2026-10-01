@@ -164,6 +164,7 @@ const copy = {
     en: 'D · Side panel',
     'zh-CN': 'D · 侧边面板'
   },
+  'cinematic.panel.newShot': { en: 'New shot', 'zh-CN': '新镜头' },
   'cinematic.panel.label': {
     en: 'Shot settings',
     'zh-CN': '镜头设置'
@@ -299,7 +300,7 @@ const copy = {
     'zh-CN': '光圈'
   },
   'cinematic.part.shot': {
-    en: 'Shot',
+    en: 'Framing',
     'zh-CN': '景别'
   },
   'cinematic.part.light': {
@@ -582,13 +583,25 @@ const copy = {
     en: 'Add a character reference',
     'zh-CN': '添加角色参考'
   },
-  'cinematic.reference.palette': {
-    en: 'Palette',
-    'zh-CN': '色板'
+  'cinematic.grade.fromImage': {
+    en: 'From an image',
+    'zh-CN': '来自图片'
   },
-  'cinematic.reference.paletteAction': {
-    en: 'Add a palette reference',
-    'zh-CN': '添加色板参考'
+  'cinematic.grade.fromImageAction': {
+    en: 'Match the colors of an image',
+    'zh-CN': '匹配图片的色彩'
+  },
+  'cinematic.grade.yourPalette': {
+    en: 'Your palette',
+    'zh-CN': '你的色板'
+  },
+  'cinematic.grade.edit': {
+    en: 'Edit palette',
+    'zh-CN': '编辑色板'
+  },
+  'cinematic.grade.done': {
+    en: 'Done',
+    'zh-CN': '完成'
   },
   'cinematic.reference.remove': {
     en: 'Remove reference',
@@ -621,6 +634,10 @@ const copy = {
   'cinematic.video.needFrame': {
     en: 'Add a starting frame for this model.',
     'zh-CN': '请为此模型添加起始帧。'
+  },
+  'cinematic.video.audioHint': {
+    en: 'Adds sound to the clip.',
+    'zh-CN': '为片段添加声音。'
   },
   'cinematic.video.oneClip': {
     en: 'One clip per request. Describe the action and camera movement in your scene.',
@@ -674,10 +691,12 @@ const copy = {
     en: 'Colors',
     'zh-CN': '颜色'
   },
-  'cinematic.colors.hint': {
-    en: 'Sent as words, so every model can follow them',
-    'zh-CN': '以文字发送，所有模型都能使用'
+  'cinematic.colors.shade': {
+    en: 'Saturation and brightness',
+    'zh-CN': '饱和度与亮度'
   },
+  'cinematic.colors.hue': { en: 'Hue', 'zh-CN': '色相' },
+  'cinematic.colors.hex': { en: 'Hex color', 'zh-CN': '十六进制颜色' },
   'cinematic.colors.color': {
     en: 'Color',
     'zh-CN': '颜色'
@@ -697,10 +716,6 @@ const copy = {
   'cinematic.colors.main': {
     en: 'Main color',
     'zh-CN': '主色'
-  },
-  'cinematic.colors.sample': {
-    en: 'From an image',
-    'zh-CN': '从图片取色'
   },
   'cinematic.colors.sampleError': {
     en: "Couldn't read colors from that image.",

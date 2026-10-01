@@ -505,6 +505,58 @@ export type UpdateHubProfileRequest = {
 }
 
 /**
+ * What a credit top-up of the requested amount would grant.
+ */
+export type TopupQuoteResponse = {
+  /**
+   * The quoted amount, in cents.
+   */
+  amount_cents: number
+  /**
+   * Display credits at 211 per dollar, rounded half up. The top-up
+   * itself grants `amount_cents` of balance.
+   *
+   */
+  credits: number
+  /**
+   * Approximately 12 months from now (the default top-up window); the
+   * actual grant may start an hour or two earlier, and a price-level
+   * validity setting can change it.
+   *
+   */
+  expires_at: string
+}
+
+/**
+ * One persisted tool call attached to an assistant message's content.tool_calls (services/agent/internal/persist.ToolCallSummary), so a chat reload can render the tool-call history a turn produced. Display data only — raw arguments/results are never projected here. Only terminal rows (status ok/error) are ever surfaced; a row a dead turn left in pending/running has no wire-status mapping and is dropped rather than shown as a perpetual-progress chip.
+ */
+export type ToolCallSummary = {
+  /**
+   * Omitted when zero.
+   */
+  duration_ms?: number
+  /**
+   * Present only when status is error.
+   */
+  error_code?: string
+  finished_at?: string
+  /**
+   * This tool-call row's own primary key.
+   */
+  id: string
+  started_at?: string
+  /**
+   * The WIRE status vocabulary (api/agent_events.schema.json's agent_tool_call), translated from the audit-row vocabulary (pending/running/ok/error) via ToolCallWireStatus — the same function the live agent_tool_call broadcast uses, so reloaded history and a live frame for the same call never disagree on the vocabulary. "running" never appears here: only terminal rows are queried, so a call still in flight when its turn died is omitted rather than shown as a perpetually in-progress chip.
+   */
+  status: 'success' | 'error'
+  /**
+   * The provider tool-use id, the same id a live agent_tool_call WebSocket frame carries as tool_call_id — the frontend keys its tool chip on this value so a reload and a resumed live frame for the same call render as one chip, not two. Rows recorded before this id existed have none; id (this row's own primary key) is emitted instead, so the field is never empty, though it then cannot match any live frame.
+   */
+  tool_call_id: string
+  tool_name: string
+}
+
+/**
  * Credit-stop ladder for the pricing slider (BE-1254). Returned by GET /api/billing/plans for every workspace regardless of the caller's token or workspace type (the personal/team distinction was removed); omitted only when the catalog defines no stops.
  */
 export type TeamCreditStops = {
@@ -792,6 +844,19 @@ export type SubscriptionDiscount = {
    */
   amount_off_cents?: number
   code: string
+  /**
+   * How long the underlying coupon keeps applying. May be absent when
+   * the coupon's term is not known, e.g. a plan coupon Stripe does not
+   * echo back.
+   *
+   */
+  duration?: 'once' | 'repeating' | 'forever'
+  /**
+   * The coupon's total term in months when duration is repeating.
+   * Omitted for discounts carried over from the current subscription.
+   *
+   */
+  duration_in_months?: number
   kind: 'plan' | 'promotion'
   /**
    * Customer-facing display name of the underlying coupon. `code` can
@@ -1204,7 +1269,7 @@ export type ResubscribeRequest = {
 }
 
 /**
- * The newest open renewal invoice of the workspace's Stripe subscription (active, or canceled but not yet ended). Returned only to workspace owners on the stripe billing rail while billing_status is payment_failed, and not while a payment for it is processing. hosted_invoice_url is a bearer payment link.
+ * The newest open renewal invoice of the workspace's Stripe subscription (active, or canceled but not yet ended). Returned only to workspace owners on the stripe billing rail while billing_status is payment_failed or paused, and not while a payment for it is processing. hosted_invoice_url is a bearer payment link.
  */
 export type RenewalInvoice = {
   /**
@@ -1508,6 +1573,16 @@ export type PreviewSubscribeResponse = {
   allowed: boolean
   amount_due_cents?: number
   /**
+   * Credit from the customer's existing account balance applied to
+   * today's charge (the invoice's starting balance, capped at the
+   * total). Present only on Stripe-rated quotes that invoice today in
+   * embedded checkout, when a credit balance is applied; otherwise
+   * absent. Display only: amount_due_cents already reflects it
+   * (an absent amount_due_cents means 0).
+   *
+   */
+  balance_applied_cents?: number
+  /**
    * Amount that will be charged at next billing period in cents
    */
   cost_next_period_cents: number
@@ -1587,6 +1662,17 @@ export type PreviewSubscribeResponse = {
    */
   requires_reactivation_confirmation?: boolean
   /**
+   * Stripe's subtotal for today's invoice: before invoice-level
+   * discounts and any customer credit balance, and before tax only for
+   * tax-exclusive prices. On an immediate plan change it is net of the
+   * unused-time credit, so it can be zero or negative. Present only on
+   * Stripe-rated quotes that invoice today and itemize every applied
+   * discount in discounts. The charge is always
+   * cost_today_cents / amount_due_cents.
+   *
+   */
+  subtotal_cents?: number
+  /**
    * Type of subscription transition
    */
   transition_type:
@@ -1623,6 +1709,14 @@ export type PreviewPlanInfo = {
    */
   credits_cents: number
   duration: SubscriptionDuration
+  /**
+   * The plan's price for one billing period before invoice-level
+   * discounts, as rated by Stripe. Present only on new_plan of
+   * Stripe-rated quotes that itemize every applied discount in
+   * discounts.
+   *
+   */
+  list_price_cents?: number
   /**
    * Current billing period end (only for current_plan)
    */
@@ -3726,6 +3820,16 @@ export type CreateTopupRequest = {
 }
 
 /**
+ * Request body for previewing a credit top-up.
+ */
+export type CreateTopupQuoteRequest = {
+  /**
+   * Amount to quote, in cents.
+   */
+  amount_cents: number
+}
+
+/**
  * A hosted Stripe Checkout session for a credit top-up.
  */
 export type CreateTopupCheckoutResponse = {
@@ -4085,6 +4189,16 @@ export type BillingOpStatusResponse = {
    */
   action_url?: string
   /**
+   * Display only. What the operation's Stripe invoice collected, in
+   * cents, tax included. Present only for a succeeded operation billed
+   * through a Stripe invoice, and absent whenever that amount could not
+   * be read. Top-ups paid on a hosted checkout page or through
+   * Metronome get neither this nor credits_added. Returned only to
+   * workspace billing managers, like the other payment details.
+   *
+   */
+  amount_charged_cents?: number
+  /**
    * State derived from the PaymentIntent attached to this operation's
    * exact stored Stripe invoice. Absent when the operation has no
    * correlated PaymentIntent.
@@ -4101,6 +4215,15 @@ export type BillingOpStatusResponse = {
    */
   completed_at?: string
   /**
+   * Display only. Credits (not cents) actually granted for the
+   * operation's Stripe invoice — for a plan change, the prorated
+   * difference. Present only for a succeeded operation whose grant has
+   * been recorded. Visible to any workspace member who can read the
+   * operation.
+   *
+   */
+  credits_added?: number
+  /**
    * Coarse classification of why the correlated PaymentIntent's last
    * payment attempt failed, derived at read time from the provider's
    * machine-readable error and decline codes — never from provider
@@ -4108,7 +4231,9 @@ export type BillingOpStatusResponse = {
    * intent has recorded a failed attempt and the operation is either
    * still pending with authentication_state failed_retryable or has
    * terminally failed. generic means the attempt failed for a reason
-   * outside this vocabulary.
+   * outside this vocabulary. payment_not_completed means Stripe explicitly
+   * reported customer non-approval or an expired attempt. Generic failed
+   * attempts and ambiguous provider declines retain their failure meaning.
    *
    */
   decline_reason?:
@@ -4119,6 +4244,7 @@ export type BillingOpStatusResponse = {
     | 'authentication_required'
     | 'authentication_failed'
     | 'processing_error'
+    | 'payment_not_completed'
     | 'generic'
   /**
    * PII-safe failure code or generic failure message
@@ -4150,6 +4276,7 @@ export type BillingOpStatusResponse = {
    *
    */
   phase?: 'awaiting_payment_method' | 'awaiting_invoice_payment' | 'in_progress'
+  plan?: BillingOpReceiptPlan
   /**
    * Typed next action for a failed operation. Absent for pending and succeeded operations.
    */
@@ -4172,6 +4299,18 @@ export type BillingOpStatusResponse = {
    *
    */
   status: 'pending' | 'succeeded' | 'failed' | 'reconciliation_needed'
+}
+
+/**
+ * Display only. The plan the operation targets; for a scheduled change,
+ * the plan it switches to at period end. Present only for succeeded
+ * plan changes, initial subscriptions and resubscribes. Visible to any
+ * workspace member who can read the operation.
+ *
+ */
+export type BillingOpReceiptPlan = {
+  duration: SubscriptionDuration
+  slug: string
 }
 
 /**
@@ -4740,9 +4879,10 @@ export type AgentPendingAsk = {
  */
 export type AgentMessage = {
   /**
-   * Message payload. User turns carry {text, attachments?, attachment_refs?, workflow_references?}. Attachments are the input-image filenames from the request. attachment_refs is the server's own resolution of those same filenames to library assets, as {name, id?, kind?} objects, and exists so a later turn in the thread can reach an earlier turn's file — clients should keep reading attachments. workflow_references is an optional array of explicit non-target references, each with workflow_id and name (an empty string when no name was supplied). An optional unavailable: true records that the reference could not be authorized at turn start, without distinguishing unknown IDs, inaccessible workflows, or lookup failures. These entries preserve the user's reference intent without exposing workflow content; the frontend restores reference chips from this metadata. The field is omitted when there are no references. Assistant turns carry {text} — the final answer text (or error copy on a failed turn). Omitted when empty (e.g. an assistant message still streaming). Per-turn token accounting is NOT included here; it is surfaced on the agent_message_done WebSocket broadcast.
+   * Message payload. User turns carry {text, attachments?, attachment_refs?, workflow_references?}. Attachments are the input-image filenames from the request. attachment_refs is the server's own resolution of those same filenames to library assets, as {name, id?, kind?} objects, and exists so a later turn in the thread can reach an earlier turn's file — clients should keep reading attachments. workflow_references is an optional array of explicit non-target references, each with workflow_id and name (an empty string when no name was supplied). An optional unavailable: true records that the reference could not be authorized at turn start, without distinguishing unknown IDs, inaccessible workflows, or lookup failures. These entries preserve the user's reference intent without exposing workflow content; the frontend restores reference chips from this metadata. The field is omitted when there are no references. Assistant turns carry {text} — the final answer text (or error copy on a failed turn). Omitted when empty (e.g. an assistant message still streaming). Per-turn token accounting is NOT included here; it is surfaced on the agent_message_done WebSocket broadcast. tool_calls is an optional array of ToolCallSummary, attached to an assistant message that has persisted terminal (ok/error) tool-call rows — it lets a chat reload render the tool history a turn produced instead of showing nothing until the next live turn. Omitted when the message has no such rows.
    */
   content?: {
+    tool_calls?: Array<ToolCallSummary>
     [key: string]: unknown
   }
   id: string
@@ -8182,6 +8322,49 @@ export type CreateTopupCheckoutResponses = {
 
 export type CreateTopupCheckoutResponse2 =
   CreateTopupCheckoutResponses[keyof CreateTopupCheckoutResponses]
+
+export type CreateTopupQuoteData = {
+  body: CreateTopupQuoteRequest
+  path?: never
+  query?: never
+  url: '/api/billing/topup/quote'
+}
+
+export type CreateTopupQuoteErrors = {
+  /**
+   * Refused: `INVALID_REQUEST`, `INVALID_AMOUNT`,
+   * `LEGACY_STRIPE_CHECKOUT_REQUIRED` (use Stripe Checkout),
+   * `BILLING_PLAN_ENDED` (sales-managed plan has ended), or
+   * `BILLING_DISABLED`.
+   *
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type CreateTopupQuoteError =
+  CreateTopupQuoteErrors[keyof CreateTopupQuoteErrors]
+
+export type CreateTopupQuoteResponses = {
+  /**
+   * Top-up quote
+   */
+  200: TopupQuoteResponse
+}
+
+export type CreateTopupQuoteResponse =
+  CreateTopupQuoteResponses[keyof CreateTopupQuoteResponses]
 
 export type GetBillingUsageTimeSeriesData = {
   body?: never

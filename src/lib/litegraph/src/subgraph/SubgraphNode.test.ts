@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import {
-  BaseWidget,
+  LegacyWidget,
   LGraph,
   LGraphNode,
   LiteGraph,
@@ -432,8 +432,7 @@ describe('SubgraphNode Synchronization', () => {
     expect(widget.widgetId).toBeDefined()
 
     expect(() => {
-      // @ts-expect-error Abstract class instantiation
-      new BaseWidget({ ...widget, node: subgraphNode })
+      new LegacyWidget({ ...widget, node: subgraphNode })
     }).not.toThrow()
   })
 

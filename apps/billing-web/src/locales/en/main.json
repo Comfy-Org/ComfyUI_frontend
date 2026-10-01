@@ -171,9 +171,11 @@
     "unavailable": "The payment form isn't available right now. Please try again later.",
     "fullPage": {
       "logo": "Comfy",
+      "payForCredits": "Pay",
       "planName": "{tier} Plan",
       "terms": {
         "agreement": "By continuing, you agree to Comfy Org's {terms} and {privacy}, and authorize Comfy Org to charge your payment method each billing period until you cancel.",
+        "agreementOnce": "By continuing, you agree to Comfy Org's {terms} and {privacy}, and authorize Comfy Org to charge your payment method once for this purchase.",
         "terms": "Terms",
         "privacyPolicy": "Privacy Policy"
       },
@@ -271,18 +273,36 @@
         "closeTab": "You can close this tab now.",
         "closingIn": "Closing in {seconds}…",
         "closeLine": "You can close this page. We'll email your invoice once this goes through and this page will automatically update.",
+        "receipt": {
+          "payment": "Payment",
+          "adding": "Credits added",
+          "plan": "Plan",
+          "added": "Added",
+          "amount_paid": "Amount paid",
+          "addingValue": "Adding…",
+          "creditCount": "+{count}",
+          "creditsAddedLine": "{count} credits added",
+          "paidToday": "Paid today",
+          "prorated": "Prorated for the rest of this billing period"
+        },
         "actions": {
           "close": "Close",
           "retry": "Try again",
-          "view_plans": "View plans"
+          "view_plans": "View plans",
+          "add_credits": "Add credits"
         },
         "success": {
           "title": "You're all set",
           "body": "Your plan for {workspace} has been successfully updated."
         },
+        "success_credits": {
+          "title": "You're all set",
+          "titleCounted": "{count} credits added",
+          "body": "Credits for {workspace} have been successfully added."
+        },
         "completed": {
           "title": "You're all set",
-          "body": "A payment on this workspace completed — check your plan in settings.",
+          "body": "A payment for {workspace} went through. Check your plan in settings for the details.",
           "codeLabel": "Your reference for this payment:"
         },
         "already_completed": {
@@ -324,6 +344,11 @@
           "body": "The plan in your link isn't available. Nothing has been charged. See our current plans instead.",
           "codeLabel": "If you think this is a mistake, contact support with this code:"
         },
+        "link_invalid": {
+          "title": "This link isn't valid",
+          "body": "The amount in your link isn't valid. Nothing has been charged. Choose an amount in your billing settings.",
+          "codeLabel": "If you think this is a mistake, contact support with this code:"
+        },
         "load_failed": {
           "title": "Couldn't load your checkout",
           "body": {
@@ -336,11 +361,17 @@
       },
       "summary": {
         "label": "Order summary",
+        "subtotal": "Subtotal",
+        "balance": {
+          "label": "Account balance",
+          "subline": "Credit already on your account"
+        },
         "verb": {
           "subscribe": "Subscribe to {plan}",
           "upgrade": "Upgrade to {plan}",
           "switch": "Switch to {plan}",
-          "change": "Change to {plan}"
+          "change": "Change to {plan}",
+          "topUp": "Add credits"
         },
         "scoped": "{action} · {workspace}",
         "planWithCadence": "{tier} {cadence}",
@@ -371,12 +402,19 @@
           "refillsMonthly": "Credits refill to {credits} each month",
           "refillsYearly": "Credits refill to {credits} each year",
           "startsMonthly": "Starts {date}, billed monthly",
-          "startsYearly": "Starts {date}, billed yearly"
+          "startsYearly": "Starts {date}, billed yearly",
+          "comparedMonthly": "{amount} {listAmount} /mo, billed monthly",
+          "comparedYearly": "{amount} {listAmount} /yr, billed yearly",
+          "credits": "Credits",
+          "creditsExpire": "Expire {date}"
         },
-        "subtotal": "Subtotal",
         "discount": {
           "fallbackLabel": "Promo code",
-          "amount": "−{amount}"
+          "amount": "−{amount}",
+          "firstMonth": "First month",
+          "firstYear": "First year",
+          "thisPaymentOnly": "This payment only",
+          "forMonths": "For {count} month | For {count} months"
         },
         "promo": {
           "add": "Add promo code",

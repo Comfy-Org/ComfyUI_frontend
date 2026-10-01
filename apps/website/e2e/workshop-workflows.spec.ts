@@ -28,9 +28,17 @@ test('workflow launch groups lead to the existing shared form', async ({
   context
 }) => {
   await mockWorkflowVisibility(context, true)
-  await page.goto('/models/')
+  await page.goto('/hub/models/')
   await expect(page.getByTestId('catalogue-tab-workflows')).toBeInViewport()
   await page.getByTestId('catalogue-tab-workflows').click()
+  await expect(page).toHaveURL('/hub/workflows/')
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'ComfyUI workflows' })
+  ).toBeVisible()
+  await expect(page.getByTestId('catalogue-tab-workflows')).toHaveAttribute(
+    'aria-current',
+    'page'
+  )
   const catalogue = page.getByTestId('workflow-catalogue')
   await expect(catalogue.getByRole('heading', { level: 2 })).toHaveText([
     'Turn an image into a video',
@@ -64,12 +72,12 @@ test('workflow launch groups lead to the existing shared form', async ({
   await highlights.getByRole('button', { name: 'Change a material' }).click()
   await expect(catalogue.getByTestId('featured-slide-link')).toHaveAttribute(
     'href',
-    '/models/workflows/change-material/'
+    '/hub/workflows/change-material/'
   )
   await page.getByTestId('browse-all-end').click()
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-    'All workflows 30'
-  )
+  await expect(
+    page.getByRole('heading', { level: 2, name: 'All workflows 30' })
+  ).toBeVisible()
   await expect(
     page
       .getByTestId('workflow-search-results')
@@ -80,7 +88,7 @@ test('workflow launch groups lead to the existing shared form', async ({
   await page.getByTestId('sort-name').click()
   await expect(
     page.getByTestId('workflow-search-results').getByRole('link').first()
-  ).toHaveAttribute('href', '/models/workflows/connect-images-with-motion/')
+  ).toHaveAttribute('href', '/hub/workflows/connect-images-with-motion/')
   await page.getByTestId('section-back').click()
   await expect(page.getByTestId('workshop-hero')).toBeVisible()
   await page.getByTestId('workshop-search').fill('Change a material')
@@ -93,7 +101,7 @@ test('workflow launch groups lead to the existing shared form', async ({
   await expect(shelf).toHaveText('Edit images')
   await expect(shelf).toHaveAttribute(
     'href',
-    '/models?type=workflows&category=product'
+    '/hub/workflows/?category=product'
   )
   await expect(
     page.getByRole('group', { name: 'Your original image' })
@@ -137,10 +145,10 @@ test('workflow launch groups lead to the existing shared form', async ({
     expect(response.headers()['content-type']).toContain(type)
   }
   await shelf.click()
-  await expect(page).toHaveURL(/\/models\/?\?type=workflows&category=product$/)
+  await expect(page).toHaveURL('/hub/workflows/?category=product')
   await expect(page.getByTestId('catalogue-tab-workflows')).toHaveAttribute(
-    'aria-pressed',
-    'true'
+    'aria-current',
+    'page'
   )
   await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
   const filtered = page.getByTestId('workflow-search-results')
@@ -162,7 +170,7 @@ test('the Details graph waits for its tab, names its subgraphs, and zooms from i
     if (request.url().endsWith('/workflow-graphs/image-to-video.json'))
       graphRequests.push(request.url())
   })
-  await page.goto('/models/workflows/image-to-video/')
+  await page.goto('/hub/workflows/image-to-video/')
   const details = page.getByRole('tab', { name: 'Details', exact: true })
   await expect(details).toBeVisible()
   await page.waitForLoadState('networkidle')
@@ -207,14 +215,22 @@ test('withholds workflow discovery and direct pages when the workflow flag is of
   context
 }) => {
   await mockWorkflowVisibility(context, false)
-  await page.goto('/models/?type=workflows')
+  await page.goto('/hub/models/')
   await expect(page.getByTestId('workshop-search')).toBeVisible()
   await expect(page.getByTestId('catalogue-tabs')).toHaveCount(0)
   await page.getByTestId('workshop-search').fill('Change a material')
   await expect(
     page.getByRole('link', { name: /Change a material/ })
   ).toHaveCount(0)
-  await page.goto('/models/workflows/change-material/')
+  await page.goto('/hub/workflows/')
+  await expect(
+    page.getByRole('heading', { level: 1, name: /Grok Imagine/ })
+  ).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: 'ComfyUI workflows' })
+  ).toHaveCount(0)
+  await expect(page.getByTestId('workflow-catalogue')).toHaveCount(0)
+  await page.goto('/hub/workflows/change-material/')
   await expect(
     page.getByRole('heading', { level: 1, name: /Grok Imagine/ })
   ).toBeVisible()
@@ -234,7 +250,7 @@ test('cold workflow filters focus their controls and respect dismissal while loa
     await released.promise
     await route.continue()
   })
-  await page.goto('/models/?type=workflows')
+  await page.goto('/hub/workflows/')
   const trigger = page.getByTestId('workshop-filter')
   await trigger.click()
   await requested.promise
@@ -271,7 +287,7 @@ test('workflow search and category filters share the mobile controls @mobile', a
   context
 }) => {
   await mockWorkflowVisibility(context, true)
-  await page.goto('/models/')
+  await page.goto('/hub/models/')
   await expect(page.getByTestId('catalogue-tab-workflows')).toBeInViewport()
   await page.getByTestId('catalogue-tab-workflows').click()
   await page.getByTestId('workshop-filter').click()
@@ -321,7 +337,7 @@ test('the workflows half narrows to the model it runs on, from the menu and from
   context
 }) => {
   await mockWorkflowVisibility(context, true)
-  await page.goto('/models/')
+  await page.goto('/hub/models/')
   await expect(page.getByTestId('catalogue-tab-workflows')).toBeInViewport()
   await page.getByTestId('catalogue-tab-workflows').click()
   const outcomes = page
@@ -345,9 +361,24 @@ test('the workflows half narrows to the model it runs on, from the menu and from
   await expect(page.getByTestId('workshop-filter-count')).toHaveCount(0)
   await expect(outcomes).toHaveCount(30)
 
-  await page.goto('/models/?type=workflows&model=LTX-2.3')
+  await page.goto('/hub/models/?type=workflows&model=LTX-2.3')
+  await expect(page).toHaveURL('/hub/workflows/?model=LTX-2.3')
   await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
   await expect(outcomes).toHaveCount(7)
+})
+
+test('keeps an old catalogue link for the Workflows tab on the models catalogue while workflows are off', async ({
+  page,
+  context
+}) => {
+  await mockWorkflowVisibility(context, false)
+  await page.goto('/hub/models/?type=workflows')
+  await expect(
+    page.getByRole('searchbox', {
+      name: 'Search models, providers, and categories'
+    })
+  ).toBeVisible()
+  await expect(page).toHaveURL('/hub/models/?type=workflows')
 })
 
 test('the background example pairs its input and output and restores edited inputs', async ({
@@ -355,7 +386,7 @@ test('the background example pairs its input and output and restores edited inpu
   context
 }) => {
   await mockWorkflowVisibility(context, true)
-  await page.goto('/models/workflows/remove-background/')
+  await page.goto('/hub/workflows/remove-background/')
   const input = page.getByRole('group', { name: 'Your image', exact: true })
   const original = input.getByRole('img', { name: 'the_lily_veil.png' })
   const example = page.getByRole('button', { name: /The lily veil/ })
@@ -384,12 +415,12 @@ test('the background example pairs its input and output and restores edited inpu
 
 for (const { path, group, file } of [
   {
-    path: '/models/workflows/remove-object/',
+    path: '/hub/workflows/remove-object/',
     group: 'Edit mask',
     file: 'remove-object-apple-mask.png'
   },
   {
-    path: '/models/workflows/virtual-try-on/',
+    path: '/hub/workflows/virtual-try-on/',
     group: 'Your character',
     file: 'subject-2048.jpg'
   }
@@ -415,11 +446,11 @@ for (const { path, group, file } of [
   })
 
 const tabletToolbars = [640, 700, 768].flatMap((width) => [
-  { width, half: 'Models', path: '/models/' },
+  { width, half: 'Models', path: '/hub/models/' },
   {
     width,
     half: 'Workflows with a category selected',
-    path: '/models/?type=workflows&category=upscale'
+    path: '/hub/workflows/?category=upscale'
   }
 ])
 
@@ -449,7 +480,7 @@ test('keeps Run on screen beside a workflow form taller than the window', async 
 }) => {
   await mockWorkflowVisibility(context, true)
   await page.setViewportSize({ width: 1280, height: 500 })
-  await page.goto('/models/workflows/extend-image-borders/')
+  await page.goto('/hub/workflows/extend-image-borders/')
 
   const run = page.getByTestId('workflow-run-footer')
   await expect(run.getByRole('link', { name: 'Sign in to run' })).toBeVisible()
@@ -474,7 +505,7 @@ for (const viewport of stickyFooterViewports) {
   }) => {
     await mockWorkflowVisibility(context, true)
     await page.setViewportSize(viewport)
-    await page.goto('/models/workflows/extend-image-borders/')
+    await page.goto('/hub/workflows/extend-image-borders/')
     const footer = page.getByTestId('workflow-run-footer')
     await expect(footer).toBeVisible()
     await page
@@ -507,7 +538,7 @@ test('keeps the workflow form inside a phone screen @mobile', async ({
   context
 }) => {
   await mockWorkflowVisibility(context, true)
-  await page.goto('/models/workflows/extend-image-borders/')
+  await page.goto('/hub/workflows/extend-image-borders/')
   const footer = page.getByTestId('workflow-run-footer')
   await expect(footer).toBeVisible()
 
@@ -519,23 +550,23 @@ test('keeps the workflow form inside a phone screen @mobile', async ({
   expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(viewportWidth)
 })
 
-test('@mobile keeps the catalogue tabs in place when a tab changes the hero subtitle', async ({
+test('@mobile keeps the catalogue tabs in place from one hub page to the next', async ({
   page,
   context
 }) => {
   await mockWorkflowVisibility(context, true)
-  await page.goto('/models/')
+  await page.goto('/hub/models/')
   const models = page.getByTestId('catalogue-tab-models')
   const workflows = page.getByTestId('catalogue-tab-workflows')
   await expect(workflows).toBeVisible()
   const before = await workflows.boundingBox()
 
   await workflows.click()
-  await expect(workflows).toHaveAttribute('aria-pressed', 'true')
+  await expect(workflows).toHaveAttribute('aria-current', 'page')
   expect((await workflows.boundingBox())?.y).toBeCloseTo(before?.y ?? 0, 0)
 
   await models.click()
-  await expect(models).toHaveAttribute('aria-pressed', 'true')
+  await expect(models).toHaveAttribute('aria-current', 'page')
   expect((await models.boundingBox())?.y).toBeCloseTo(before?.y ?? 0, 0)
 })
 
@@ -544,7 +575,7 @@ test('@mobile stretches the catalogue tabs across the toolbar on a phone', async
   context
 }) => {
   await mockWorkflowVisibility(context, true)
-  await page.goto('/models/')
+  await page.goto('/hub/models/')
   const toolbar = page.getByTestId('workshop-toolbar')
   const tabs = toolbar.getByTestId('catalogue-tabs')
   await expect(tabs).toBeVisible()
@@ -561,7 +592,7 @@ test('the examples below the form read and mark themselves like a model page', a
   context
 }) => {
   await mockWorkflowVisibility(context, true)
-  await page.goto('/models/workflows/change-material/')
+  await page.goto('/hub/workflows/change-material/')
 
   await expect(
     page.getByRole('heading', { name: 'Try an example' })
@@ -572,4 +603,75 @@ test('the examples below the form read and mark themselves like a model page', a
   })
   await expect(example).toHaveAttribute('aria-current', 'true')
   await expect(page.getByTestId('workflow-example-chosen')).toHaveCount(1)
+})
+
+test('the examples belong to the playground, not to Details or API', async ({
+  page,
+  context
+}) => {
+  await mockWorkflowVisibility(context, true)
+  await page.goto('/hub/workflows/change-material/')
+
+  const examples = page.getByRole('heading', { name: 'Try an example' })
+  await expect(examples).toBeVisible()
+
+  for (const tab of ['Details', 'API']) {
+    await page.getByRole('tab', { name: tab, exact: true }).click()
+    await expect(examples).toBeHidden()
+  }
+
+  await page.getByRole('tab', { name: 'Playground', exact: true }).click()
+  await expect(examples).toBeVisible()
+})
+
+test('a hovered workflow card spends its tag line only on a name that is cut off', async ({
+  page,
+  context
+}) => {
+  await mockWorkflowVisibility(context, true)
+  await page.goto('/hub/workflows/')
+
+  const cards = page.locator(
+    '[data-testid="workshop-model-card"][data-kind="workflow"]'
+  )
+  await expect(cards.first()).toBeVisible()
+  // Only a name the single line already cuts off can show the hover doing
+  // anything, so the test picks one the catalogue is clipping — and one it is
+  // not, which must keep its tag.
+  const [clipped, whole] = await cards.evaluateAll((all) => {
+    const clips = (card: Element) => {
+      const name = card.querySelector('[data-testid="model-card-name"]')
+      return !!name && name.scrollHeight > name.clientHeight
+    }
+    return [all.findIndex(clips), all.findIndex((card) => !clips(card))]
+  })
+  expect(clipped, 'no workflow name is long enough to clip').toBeGreaterThan(-1)
+  expect(whole, 'every workflow name clips').toBeGreaterThan(-1)
+
+  const fits = cards.nth(whole)
+  await fits.hover()
+  await expect(fits.getByTestId('model-card-task')).toBeVisible()
+
+  const card = cards.nth(clipped)
+  const name = card.getByTestId('model-card-name')
+  const linesOfName = () =>
+    name.evaluate((element) =>
+      Math.round(
+        element.clientHeight /
+          Number.parseFloat(getComputedStyle(element).lineHeight)
+      )
+    )
+
+  await expect(card.getByTestId('model-card-task')).toBeVisible()
+  expect(await linesOfName()).toBe(1)
+  const resting = await card.boundingBox()
+
+  await card.hover()
+
+  await expect(card.getByTestId('model-card-task')).toBeHidden()
+  await expect(async () => expect(await linesOfName()).toBe(2)).toPass()
+  expect((await card.boundingBox())?.height).toBeCloseTo(
+    resting?.height ?? 0,
+    0
+  )
 })

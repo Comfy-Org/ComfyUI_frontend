@@ -6,6 +6,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
+import { refusesRealFaces } from '../../../config/workshop-model-restrictions'
 import type { Take } from '../../../lib/workshop/cinematic-studio/reel'
 import { failureLabelKey } from '../../../lib/workshop/failure-label'
 import type { Locale } from '../../../i18n/translations'
@@ -43,11 +44,23 @@ const kind = computed(() => {
 })
 
 const NOTICE = {
-  cancelled: { icon: CircleStop, tone: 'text-primary-comfy-canvas' },
-  noCredits: { icon: Coins, tone: 'text-primary-comfy-yellow' },
-  blocked: { icon: ShieldAlert, tone: 'text-primary-comfy-orange' },
-  rejected: { icon: ShieldAlert, tone: 'text-primary-comfy-orange' },
-  failed: { icon: CircleAlert, tone: 'text-primary-comfy-red' }
+  cancelled: {
+    icon: CircleStop,
+    tone: 'text-primary-comfy-canvas',
+    error: false
+  },
+  noCredits: { icon: Coins, tone: 'text-primary-comfy-yellow', error: false },
+  blocked: {
+    icon: ShieldAlert,
+    tone: 'text-primary-comfy-orange',
+    error: true
+  },
+  rejected: {
+    icon: ShieldAlert,
+    tone: 'text-primary-comfy-orange',
+    error: true
+  },
+  failed: { icon: CircleAlert, tone: 'text-primary-comfy-red', error: true }
 } as const
 
 const title = computed(() => {
@@ -62,6 +75,15 @@ const body = computed(() => {
     return t('workshop.error.memberNoCredits', locale, {
       workspace: memberWorkspace
     })
+  if (kind.value === 'rejected')
+    return t('workshop.error.inputRejected', locale)
+  if (
+    kind.value === 'blocked' &&
+    take.status === 'failed' &&
+    take.runSlug &&
+    refusesRealFaces(take.runSlug)
+  )
+    return t('workshop.error.policyRealFaces', locale)
   return t(failureLabelKey[take.reason], locale)
 })
 const requestId = computed(() =>
@@ -82,7 +104,14 @@ const requestId = computed(() =>
     <span class="text-lg font-semibold text-primary-warm-white">
       {{ title }}
     </span>
-    <span class="max-w-md text-sm/relaxed text-primary-comfy-canvas">
+    <span
+      :class="
+        cn(
+          'max-w-md text-sm/relaxed text-primary-comfy-canvas',
+          NOTICE[kind].error && 'text-base/relaxed text-primary-comfy-red'
+        )
+      "
+    >
       {{ body }}
     </span>
     <div class="mt-1 flex flex-wrap items-center justify-center gap-2.5">

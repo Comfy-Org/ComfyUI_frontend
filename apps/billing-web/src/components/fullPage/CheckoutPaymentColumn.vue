@@ -9,7 +9,11 @@ import type {
 } from '@comfyorg/account-ui/billing/stripe'
 import { StripePaymentForm } from '@comfyorg/account-ui/billing/stripe'
 
-import type { CheckoutPage, PaymentTab } from '@/checkout/checkoutPage'
+import type {
+  CheckoutPage,
+  PaymentTab,
+  RailView
+} from '@/checkout/checkoutPage'
 import type { KeepSubscriptionCopy } from '@/checkout/keepSubscription'
 import { isLocked, railView, submitPhaseOf } from '@/checkout/checkoutPage'
 import type { PayContext } from '@/components/fullPage/CheckoutPayAction.vue'
@@ -29,20 +33,23 @@ const {
   charge,
   publishableKey,
   canPay,
-  submitting,
+  reopening,
   canCancel = false,
   keepSubscription,
-  savedMethods = []
+  savedMethods = [],
+  purchase = 'plan'
 } = defineProps<{
   page: Extract<CheckoutPage, { kind: 'resolving' | 'capture' | 'waiting' }>
   charge?: CheckoutCharge
   publishableKey: string
   canPay: boolean
-  submitting: boolean
+  /** The page is re-opening the challenge on its own, so Complete verification waits. */
+  reopening: boolean
   canCancel?: boolean
   /** The notice a plan set to end shows above Pay, worded for this quote. */
   keepSubscription?: KeepSubscriptionCopy
   savedMethods?: readonly SavedPaymentMethod[]
+  purchase?: 'plan' | 'credits'
 }>()
 
 const emit = defineEmits<{
@@ -68,10 +75,24 @@ const locked = computed(() => isLocked(page))
 const methodTypeOf = (id: string) =>
   savedMethods.find((method) => method.id === id)?.type ?? ''
 
-/** A Pay that collided with another operation keeps the form, with Pay locked, until it is re-read. */
-const view = computed(() =>
-  page.kind === 'capture' ? railView(page.rail) : undefined
-)
+const failureHidesPay = (current: RailView) =>
+  current.kind === 'column_error' ||
+  (current.kind === 'tabs' &&
+    current.tab === 'new' &&
+    current.element === 'failed')
+
+/**
+ * A Pay that collided with another operation keeps the form, with Pay
+ * locked, until it is re-read. Money in flight shows the rail its quote
+ * asks for, locked, once the quote is in, unless a rail failure would
+ * take the payment's status and verification action with it.
+ */
+const view = computed(() => {
+  if (page.kind === 'capture') return railView(page.rail)
+  if (page.kind !== 'waiting' || !page.rail) return undefined
+  const current = railView(page.rail)
+  return failureHidesPay(current) ? undefined : current
+})
 
 const payContext = computed<PayContext>(() => {
   if (page.kind !== 'capture') return {}
@@ -112,25 +133,34 @@ const copy = computed<StripePaymentCopy>(() => ({
 </script>
 
 <template>
-  <section class="flex lg:w-1/2">
+  <section
+    class="flex lg:w-1/2"
+    :data-testid="page.kind === 'waiting' ? 'checkout-waiting' : undefined"
+  >
     <div class="flex w-full flex-col px-6 py-12 lg:max-w-lg lg:px-16">
-      <div
-        v-if="!view"
-        class="flex flex-col gap-6"
-        :aria-busy="locked"
-        :data-testid="locked ? 'checkout-waiting' : undefined"
-      >
+      <div v-if="!view" class="flex flex-col gap-6">
         <div class="flex flex-col gap-3">
           <h3 :class="SECTION_LABEL">{{ t('checkout.paymentMethod') }}</h3>
-          <div class="h-84 rounded-lg bg-secondary-background-hover" />
+          <div
+            class="h-84 rounded-lg bg-secondary-background-hover"
+            aria-busy="true"
+            data-testid="checkout-skeleton"
+          />
         </div>
         <div class="flex flex-col gap-3">
           <h4 :class="SECTION_LABEL">{{ t('checkout.billingAddress') }}</h4>
-          <div class="h-84 rounded-lg bg-secondary-background-hover" />
+          <div
+            class="h-84 rounded-lg bg-secondary-background-hover"
+            aria-busy="true"
+            data-testid="checkout-skeleton"
+          />
         </div>
         <CheckoutPayAction
+          :purchase
           disabled
           :loading="locked"
+          :locked
+          :reopening
           :phase
           :can-cancel="canCancel"
           @cancel="emit('cancel')"
@@ -147,9 +177,12 @@ const copy = computed<StripePaymentCopy>(() => ({
         @submit.prevent="emit('pay', undefined)"
       >
         <CheckoutPayAction
+          :purchase
           v-bind="payContext"
           :disabled="!canPay"
-          :loading="submitting"
+          :loading="locked"
+          :locked
+          :reopening
           :phase
           :can-cancel="canCancel"
           @confirm-reactivation="emit('confirmReactivation', $event)"
@@ -177,9 +210,12 @@ const copy = computed<StripePaymentCopy>(() => ({
         >
           <template #pay>
             <CheckoutPayAction
+              :purchase
               v-bind="payContext"
               :disabled="!canPay"
-              :loading="submitting"
+              :loading="locked"
+              :locked
+              :reopening
               :phase
               :can-cancel="canCancel"
               @confirm-reactivation="emit('confirmReactivation', $event)"
@@ -197,7 +233,7 @@ const copy = computed<StripePaymentCopy>(() => ({
           :currency="charge.currency"
           :copy
           :payment-method-configuration-id="charge.paymentMethodConfigurationId"
-          :is-loading="submitting"
+          :is-loading="locked"
           :can-submit="canPay"
           :locked
           page-layout
@@ -209,9 +245,12 @@ const copy = computed<StripePaymentCopy>(() => ({
         >
           <template #submit="{ disabled, loading }">
             <CheckoutPayAction
+              :purchase
               v-bind="payContext"
               :disabled
               :loading
+              :locked
+              :reopening
               :phase="formShown ? phase : undefined"
               :can-cancel="canCancel"
               @confirm-reactivation="emit('confirmReactivation', $event)"

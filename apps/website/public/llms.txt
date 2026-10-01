@@ -95,7 +95,7 @@ Languages: comfy.org is published in English and Simplified Chinese, with a Japa
 ## Models
 
 - [Supported Models](https://comfy.org/p/supported-models/): Directory of 380+ models that run in ComfyUI: image, video, audio, 3D, and utility models, each with its own page. Machine-readable catalog at https://comfy.org/p/supported-models/llms.txt.
-- [Models Overview](https://comfy.org/models/): Flagship models available on Comfy, with links to each launch page.
+- [Models Overview](https://comfy.org/hub/models/): Hosted AI models you can try in the browser and call through the Comfy API, with a page per model. For the full list of models that run in ComfyUI, see Supported Models above.
 - [ChatGPT Images 2.5 (OpenAI, image model)](https://comfy.org/chatgpt-image-2.5/): Generate new images, edit existing visuals, and direct results with reference images in repeatable ComfyUI workflows through Partner Nodes.
 - [Qwen-Image 2.1 (Alibaba Qwen, image model)](https://comfy.org/qwen-image-2.1/): Open-weights 7B image model that generates and edits in one checkpoint, with native 2K output, RGBA transparency, and accurate English and Chinese text rendering.
 - [Flux 3 (Black Forest Labs, video model)](https://comfy.org/flux-3/): Multimodal model: video with native audio, up to 20 seconds per generation, from text, image, video, or keyframes.
@@ -280,7 +280,7 @@ Languages: comfy.org is published in English and Simplified Chinese, with a Japa
 - [About Comfy](https://comfy.org/about/): Company background, mission, and the team behind ComfyUI.
 - [Careers](https://comfy.org/careers/): Open roles across engineering, design, marketing, and more.
 - [Contact](https://comfy.org/contact/): Sales, partnership, and general contact form, with answers on Enterprise, Forward Deployed Creatives, MiniMax licenses, and SOC 2.
-- [Brand Portal](https://comfy.org/brand): Logos, color, typography, and voice guidelines for Comfy.
+- [Brand Portal](https://comfy.org/brand/): Logos, color, typography, and voice guidelines for Comfy.
 - [Affiliate Program](https://comfy.org/affiliates/): 30% recurring commission for 3 months on referred Comfy Cloud subscriptions.
 - [Affiliate Terms](https://comfy.org/affiliates/terms/): Terms and conditions of the Comfy affiliate program.
 - [Trust Center](https://app.vanta.com/comfy.org/trust/o6nu46b16iu3e7fhc41hnz): Security documentation and real-time control status; a SOC 2 Type II audit is in progress.

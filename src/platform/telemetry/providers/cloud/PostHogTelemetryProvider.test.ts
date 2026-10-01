@@ -469,7 +469,7 @@ describe('PostHogTelemetryProvider', () => {
         workflow_id: 'workflow-1',
         client_message_id: 'client-message-1',
         input_method: 'suggestion',
-        starter_prompt_id: 'list_workflows',
+        starter_prompt_id: 'slot_2',
         starter_prompt_click_id: 'click-1'
       })
 
@@ -482,7 +482,7 @@ describe('PostHogTelemetryProvider', () => {
           workflow_id: 'workflow-1',
           client_message_id: 'client-message-1',
           input_method: 'suggestion',
-          starter_prompt_id: 'list_workflows',
+          starter_prompt_id: 'slot_2',
           starter_prompt_click_id: 'click-1'
         }
       )
@@ -493,7 +493,7 @@ describe('PostHogTelemetryProvider', () => {
       await vi.dynamicImportSettled()
 
       provider.trackAgentStarterPromptClicked({
-        prompt_id: 'find_workflow',
+        prompt_id: 'slot_3',
         prompt_index: 2,
         prompt_count: 5,
         prompt_text_hash: 'deadbeef',
@@ -505,7 +505,7 @@ describe('PostHogTelemetryProvider', () => {
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
         TelemetryEvents.AGENT_STARTER_PROMPT_CLICKED,
         {
-          prompt_id: 'find_workflow',
+          prompt_id: 'slot_3',
           prompt_index: 2,
           prompt_count: 5,
           prompt_text_hash: 'deadbeef',
@@ -959,6 +959,7 @@ describe('PostHogTelemetryProvider', () => {
           operation: 'subscription_checkout',
           stage: 'failed',
           outcome: 'failure',
+          checkout_attempt_id: 'attempt-abandoned',
           tier: 'pro',
           cycle: 'monthly',
           checkout_type: 'new',
@@ -1074,7 +1075,10 @@ describe('PostHogTelemetryProvider', () => {
 
       provider.trackBillingEvent(event)
 
-      expect(hoisted.mockCapture).toHaveBeenCalledWith(eventName, event)
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(eventName, {
+        ...event,
+        billing_surface: 'cloud_app'
+      })
     })
 
     it('drops fields outside the billing telemetry contract', async () => {
@@ -1102,7 +1106,8 @@ describe('PostHogTelemetryProvider', () => {
           stage: 'failed',
           outcome: 'failure',
           billing_op_id: 'opaque-op-id',
-          failure_category: 'unknown'
+          failure_category: 'unknown',
+          billing_surface: 'cloud_app'
         }
       )
     })

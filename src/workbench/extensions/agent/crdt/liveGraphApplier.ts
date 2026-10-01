@@ -466,6 +466,7 @@ export class LiveGraphApplier {
       fn()
     } catch (error) {
       reportError(error, {
+        surface: 'agent',
         errorType: 'agent_graph_apply_failed',
         tags: { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
         context: { actor: context.actor, opIds: [...context.opIds] }
@@ -482,6 +483,7 @@ export class LiveGraphApplier {
     if (this.reported.has(key)) return
     this.reported.add(key)
     reportError(new Error(message), {
+      surface: 'agent',
       errorType,
       tags: { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
       context
@@ -504,6 +506,7 @@ export class LiveGraphApplier {
       if (this.reported.has(`definition:${definition.id}`)) continue
       this.reported.add(`definition:${definition.id}`)
       reportError(failure, {
+        surface: 'agent',
         errorType: 'agent_subgraph_definitions_failed',
         tags: { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
         context: { graphId: graph.id, definitionId: definition.id }

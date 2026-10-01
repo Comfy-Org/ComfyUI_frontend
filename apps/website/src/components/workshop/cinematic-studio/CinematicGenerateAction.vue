@@ -144,7 +144,7 @@ const showCost = computed(
 const layout = computed(() =>
   wide
     ? {
-        root: 'flex flex-col gap-2.5',
+        root: 'flex flex-col gap-2.5 text-center',
         row: 'flex flex-col items-stretch gap-2',
         button: 'w-full rounded-full px-5'
       }

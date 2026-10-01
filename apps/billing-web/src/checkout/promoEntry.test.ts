@@ -39,6 +39,21 @@ describe('reducePromoEntry', () => {
       expected: editing('LAUNCH20')
     },
     {
+      name: 'a code this page applied before a reload comes back applied',
+      start: initialPromoEntry(undefined, 'LAUNCH20'),
+      events: [],
+      expected: applied('LAUNCH20')
+    },
+    {
+      name: 'a code this page applied outranks the link code, typed or unreadable',
+      start: initialPromoEntry(
+        { promotionCode: 'OTHER', unreadablePromotionCode: 'SAVE 20' },
+        'LAUNCH20'
+      ),
+      events: [],
+      expected: applied('LAUNCH20')
+    },
+    {
       name: 'no URL code starts collapsed',
       start: initialPromoEntry(undefined),
       events: [],

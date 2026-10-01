@@ -257,6 +257,45 @@ describe('createSessionTokenMint', () => {
     expect([fresh, afterward]).toEqual(['jwt-3', 'jwt-3'])
   })
 
+  it.for<{
+    name: string
+    after: WebSession | undefined
+    expected: Partial<SessionTokenResult>
+  }>([
+    {
+      name: 'the session ended',
+      after: undefined,
+      expected: { status: 'error', code: 'NO_SESSION' }
+    },
+    {
+      name: 'another user took the session',
+      after: sessionFor('user-2'),
+      expected: { status: 'error', code: 'IDENTITY_CHANGED' }
+    },
+    {
+      name: 'the same user re-read the session',
+      after: sessionFor('user-1', 'csrf-2'),
+      expected: { status: 'ok' }
+    }
+  ])('answers a mint that lands after $name', async ({ after, expected }) => {
+    let release = () => {}
+    const held = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const { mint, state } = setup({
+      respond: async () => {
+        await held
+        return json(200, tokenBody('jwt-1', clock.now + 15 * MINUTE))
+      }
+    })
+
+    const pending = mint.mint()
+    state.session = after
+    release()
+
+    expect(await pending).toMatchObject(expected)
+  })
+
   it('answers NO_SESSION without a request when signed out', async () => {
     const { mint, sent, state } = setup()
     state.session = undefined
@@ -395,6 +434,35 @@ describe('createSessionTokenMint', () => {
 
     expect(personal).toBe('jwt-3')
     expect(sent).toHaveLength(3)
+  })
+
+  it('remint replaces a fresh cached token and keeps the other workspaces', async () => {
+    const { mint, sent } = setup()
+
+    await mint.mint()
+    await mint.mint('ws-1')
+    const reminted = await mint.remint()
+    const afterwards = await Promise.all([
+      mint.getWorkspaceToken(),
+      mint.getWorkspaceToken('ws-1')
+    ])
+
+    expect(reminted).toMatchObject({ credential: { token: 'jwt-3' } })
+    expect(afterwards).toEqual(['jwt-3', 'jwt-2'])
+    expect(sent).toHaveLength(3)
+  })
+
+  it('shares one request among concurrent remints', async () => {
+    const { mint, sent } = setup()
+    await mint.mint()
+
+    const reminted = await Promise.all([mint.remint(), mint.remint()])
+
+    expect(reminted).toMatchObject([
+      { credential: { token: 'jwt-2' } },
+      { credential: { token: 'jwt-2' } }
+    ])
+    expect(sent).toHaveLength(2)
   })
 
   it('honours Retry-After on 429 before asking again', async () => {

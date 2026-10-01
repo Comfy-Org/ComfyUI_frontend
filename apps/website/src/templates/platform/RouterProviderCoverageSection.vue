@@ -149,7 +149,7 @@ const browseAll = routerT('platform.router.coverage.browseAll', locale, {
         </p>
         <Button
           as="a"
-          :href="getRoutes(locale).modelsShowcase"
+          :href="getRoutes(locale).workshop"
           variant="outline"
           class="pointer-events-auto h-12 rounded-full text-sm"
         >

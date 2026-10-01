@@ -44,6 +44,8 @@ const {
   modelSlug?: string
 }>()
 
+const emit = defineEmits<{ copy: [language: SnippetLanguage]; getKey: [] }>()
+
 const apiKeyHref = computed(() =>
   workspaceLinkedHref(
     apiKeysLink({ onboarding: 'models', model: modelSlug }),
@@ -210,7 +212,8 @@ const facts = computed(() => [
         {
           label: t('workshop.api.needsEndpoint', locale),
           value: `POST /v2/models/${contract.id}`,
-          mono: true
+          mono: true,
+          copyLabel: t('workshop.api.copyEndpoint', locale)
         }
       ]
     : []),
@@ -233,6 +236,7 @@ const facts = computed(() => [
 <template>
   <section class="flex flex-col gap-6" data-testid="api-tab">
     <SectionHeading
+      class="lg:max-w-[calc(100%-25.75rem)]"
       :title="t('workshop.api.heading', locale)"
       :subtitle="t('workshop.api.body', locale)"
     />
@@ -248,6 +252,7 @@ const facts = computed(() => [
           rel="noopener noreferrer"
           class="w-full justify-center"
           data-testid="api-get-key"
+          @click="emit('getKey')"
         >
           {{ t('workshop.api.getKey', locale) }}
         </Button>
@@ -299,6 +304,7 @@ const facts = computed(() => [
               :value="snippet"
               :label="t('workshop.api.copy', locale)"
               :copied-label="t('workshop.api.copied', locale)"
+              @click="emit('copy', language)"
             />
           </div>
           <p

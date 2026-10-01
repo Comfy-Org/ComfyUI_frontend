@@ -6,6 +6,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import frMessages from '@/locales/fr/main.json' with { type: 'json' }
 
 import { agentConsentTest as test } from '@e2e/fixtures/agentConsentFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 
 async function requestConsentFromOpenPanel(page: Page): Promise<void> {
   const openButton = page.getByRole('button', {
@@ -16,8 +17,7 @@ async function requestConsentFromOpenPanel(page: Page): Promise<void> {
 
   await expect(panel).toBeVisible()
   await expect(openButton).toHaveAttribute('aria-pressed', 'true')
-  await openButton.click()
-  await expect(panel).toHaveCount(0)
+  await new AgentPanel(page).close()
   await openButton.click()
 }
 
@@ -444,7 +444,10 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
 })
 
 test.describe('Automatic agent consent', { tag: ['@cloud', '@ui'] }, () => {
-  test.use({ agentConsentAccepted: false })
+  test.use({
+    agentConsentAccepted: false,
+    agentPanelInitiallyOpen: true
+  })
 
   test('offers once on first load and remains available manually after Skip', async ({
     comfyPage,
@@ -541,19 +544,22 @@ test.describe(
         ).toBeNull()
       })
 
-      await test.step('Taking the blank canvas presents the deferred offer', async () => {
+      await test.step('Taking the blank canvas leaves the activated panel available for a message', async () => {
         await page.getByTestId('getting-started-blank').click()
         await expect(gettingStarted).toHaveCount(0)
-        await expect(consent).toBeVisible()
+        await expect(consent).toHaveCount(0)
         await expect(agentPanel.root).toBeVisible()
         expect(agentConsentWrites).toHaveLength(0)
+        expect(
+          await page.evaluate((key) => localStorage.getItem(key), autoShownKey)
+        ).toBeNull()
       })
     })
   }
 )
 
 test.describe(
-  'Automatic agent consent behind a desktop sign-in approval',
+  'Agent activation behind a desktop sign-in approval',
   { tag: ['@cloud', '@ui'] },
   () => {
     test.use({
@@ -573,7 +579,7 @@ test.describe(
       )
     })
 
-    test('waits for the approval before offering Agent', async ({
+    test('waits for the approval before leaving Agent available', async ({
       comfyPage,
       agentPanel,
       agentConsentReads
@@ -609,10 +615,11 @@ test.describe(
         ).toBeNull()
       })
 
-      await test.step('Approving clears the screen and the offer follows', async () => {
+      await test.step('Approving clears the screen without covering the activated panel', async () => {
         await approve.click()
         await expect(approval).toHaveCount(0)
-        await expect(consent).toBeVisible()
+        await expect(consent).toHaveCount(0)
+        await expect(agentPanel.root).toBeVisible()
       })
     })
   }

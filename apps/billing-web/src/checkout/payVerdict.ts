@@ -1,15 +1,21 @@
 import type {
   BillingOperationState,
+  BillingResult,
   PaymentProjection,
   PaymentReasonKey,
-  SubscriptionCommandResult
+  SubscriptionCommandResult,
+  TopupResult
 } from '@comfyorg/account-core/billing'
 import {
   matchesServerCode,
   projectPaymentStep
 } from '@comfyorg/account-core/billing'
 
-import type { InlineOutcome, OperationOutcome } from '@/checkout/checkoutPage'
+import type {
+  CheckoutPageEvent,
+  InlineOutcome,
+  OperationOutcome
+} from '@/checkout/checkoutPage'
 
 /** The server refused the quote the customer consented to; re-price before asking again. */
 const STALE_QUOTE_SERVER_CODES = ['PRORATION_QUOTE_EXPIRED'] as const
@@ -39,20 +45,8 @@ export function payVerdictOf(result: SubscriptionCommandResult): PayVerdict {
         return { kind: 'requote', because: 'quote_expired' }
       case 'REACTIVATION_CONFIRMATION_REQUIRED':
         return { kind: 'requote', because: 'reactivation_required' }
-      case 'OPERATION_ALREADY_PENDING':
-      case 'CONFLICT':
-        return { kind: 'outcome', outcome: { kind: 'reconciling' } }
       default:
-        return {
-          kind: 'outcome',
-          outcome: {
-            kind: 'processing_error',
-            code: result.code,
-            ...('serverMessage' in result && result.serverMessage !== undefined
-              ? { serverMessage: result.serverMessage }
-              : {})
-          }
-        }
+        return refusalVerdict(result)
     }
   }
   const { operation } = result.value
@@ -66,6 +60,52 @@ export function payVerdictOf(result: SubscriptionCommandResult): PayVerdict {
   return outcome === undefined
     ? { kind: 'settled' }
     : { kind: 'outcome', outcome }
+}
+
+/**
+ * A Pay the server refused before any operation settled: one already under
+ * way is re-read, never a decline (rule 18); any other is the coded card.
+ */
+function refusalVerdict(result: {
+  readonly code: string
+  readonly serverMessage?: string
+}): PayVerdict {
+  if (result.code === 'OPERATION_ALREADY_PENDING' || result.code === 'CONFLICT')
+    return { kind: 'outcome', outcome: { kind: 'reconciling' } }
+  return {
+    kind: 'outcome',
+    outcome: {
+      kind: 'processing_error',
+      code: result.code,
+      ...(result.serverMessage === undefined
+        ? {}
+        : { serverMessage: result.serverMessage })
+    }
+  }
+}
+
+/**
+ * A top-up's Pay: a success needs nothing from capture, a decline is the
+ * operation's own card, and an operation the lifecycle stopped watching is
+ * re-read rather than guessed at.
+ */
+export function topupVerdictOf(result: TopupResult): PayVerdict {
+  switch (result.status) {
+    case 'ok':
+      return { kind: 'settled' }
+    case 'declined':
+      return {
+        kind: 'outcome',
+        outcome: operationOutcomeOf(result.operation) ?? {
+          kind: 'processing_error',
+          operationId: result.operation.id
+        }
+      }
+    case 'unsettled':
+      return { kind: 'outcome', outcome: { kind: 'reconciling' } }
+    case 'error':
+      return refusalVerdict(result)
+  }
 }
 
 /**
@@ -98,10 +138,35 @@ export function operationOutcomeOf(
   }
 }
 
-/** Declines that mean the customer never finished authenticating, not a refused card. */
-const UNAUTHENTICATED_REASONS: ReadonlySet<PaymentReasonKey> = new Set([
+export function outcomeFor(operation: BillingOperationState) {
+  const outcome = operationOutcomeOf(operation)
+  return outcome === undefined ? {} : { outcome }
+}
+
+/**
+ * A recovery the lifecycle refused is an unknown, not "nothing pending": in
+ * resolving it ends on a screen that claims nothing about money, and
+ * anywhere else the page keeps what it has rather than opening a form over
+ * money it cannot see.
+ */
+export function reconciledEvent(
+  recovered: BillingResult<BillingOperationState | undefined>
+): CheckoutPageEvent {
+  if (recovered.status === 'error')
+    return { type: 'recheckFailed', code: recovered.code }
+  const operation = recovered.value
+  return {
+    type: 'reconciled',
+    operation,
+    ...(operation === undefined ? {} : outcomeFor(operation))
+  }
+}
+
+/** Declines that mean the customer never finished paying, not a refused card. */
+const NOT_COMPLETED_REASONS: ReadonlySet<PaymentReasonKey> = new Set([
   'authentication_failed',
-  'authentication_required'
+  'authentication_required',
+  'payment_not_completed'
 ])
 
 /**
@@ -111,7 +176,7 @@ const UNAUTHENTICATED_REASONS: ReadonlySet<PaymentReasonKey> = new Set([
  */
 function isNotCompleted(projection: PaymentProjection): boolean {
   const { reasonKey } = projection
-  if (reasonKey !== undefined && UNAUTHENTICATED_REASONS.has(reasonKey))
+  if (reasonKey !== undefined && NOT_COMPLETED_REASONS.has(reasonKey))
     return true
   return reasonKey === 'generic' && projection.recoveryAction === 'retry'
 }

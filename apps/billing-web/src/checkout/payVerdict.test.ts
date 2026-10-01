@@ -3,7 +3,8 @@ import type {
   BillingOperationState,
   FailedBillingOperation,
   SubscriptionCommandResult,
-  TerminalBillingOperation
+  TerminalBillingOperation,
+  TopupResult
 } from '@comfyorg/account-core/billing'
 import { readBillingErrorCode } from '@comfyorg/account-core/billing'
 
@@ -13,7 +14,8 @@ import {
   operationOutcomeOf,
   payVerdictOf,
   supportLinkFor,
-  supportLinkWithCode
+  supportLinkWithCode,
+  topupVerdictOf
 } from '@/checkout/payVerdict'
 import {
   failedOperation,
@@ -204,6 +206,22 @@ describe('operationOutcomeOf', () => {
       outcome: { kind: 'not_completed', operationId: 'op_x' }
     },
     {
+      name: 'a payment the customer did not approve or let expire',
+      operation: failedWith('payment_not_completed', {
+        recoveryAction: 'retry'
+      }),
+      outcome: { kind: 'not_completed', operationId: 'op_x' }
+    },
+    {
+      name: 'a pending payment the customer did not approve',
+      operation: {
+        ...pendingOperation('op_x'),
+        authenticationState: 'failed_retryable',
+        declineReason: 'payment_not_completed'
+      },
+      outcome: { kind: 'not_completed', operationId: 'op_x' }
+    },
+    {
       name: 'an Alipay payment the customer backed out of, still pending',
       operation: {
         ...pendingOperation('op_x'),
@@ -339,5 +357,79 @@ describe('supportLinkWithCode', () => {
 
     expect(link.pathname).toBe('support@comfy.org')
     expect(link.searchParams.get('body')).toBe(body)
+  })
+})
+
+describe('topupVerdictOf', () => {
+  const succeeded = {
+    ...succeededOperation('op_topup'),
+    phase: 'succeeded'
+  } as const
+
+  it.for<{ name: string; result: TopupResult; verdict: PayVerdict }>([
+    {
+      name: 'a top-up that went through',
+      result: { status: 'ok', operation: succeeded, creditsReconciled: true },
+      verdict: { kind: 'settled' }
+    },
+    {
+      name: 'a decline, with the reason the operation carries',
+      result: {
+        status: 'declined',
+        operation: {
+          ...failedOperation('insufficient_funds', 'op_topup'),
+          phase: 'failed',
+          declineReason: 'insufficient_funds',
+          retryable: true
+        }
+      },
+      verdict: {
+        kind: 'outcome',
+        outcome: {
+          kind: 'declined',
+          operationId: 'op_topup',
+          reason: 'insufficient_funds'
+        }
+      }
+    },
+    {
+      name: 'an operation the lifecycle stopped watching',
+      result: {
+        status: 'unsettled',
+        operation: { ...succeeded, phase: 'timed_out' }
+      },
+      verdict: { kind: 'outcome', outcome: { kind: 'reconciling' } }
+    },
+    {
+      name: 'no saved payment method to charge',
+      result: {
+        status: 'error',
+        code: 'NO_PAYMENT_METHOD',
+        recoveryAction: 'replace_payment_method'
+      },
+      verdict: {
+        kind: 'outcome',
+        outcome: { kind: 'processing_error', code: 'NO_PAYMENT_METHOD' }
+      }
+    },
+    {
+      name: 'a refusal the server explained',
+      result: {
+        status: 'error',
+        code: 'REQUEST_FAILED',
+        httpStatus: 400,
+        serverMessage: 'Top-ups are paused'
+      },
+      verdict: {
+        kind: 'outcome',
+        outcome: {
+          kind: 'processing_error',
+          code: 'REQUEST_FAILED',
+          serverMessage: 'Top-ups are paused'
+        }
+      }
+    }
+  ])('$name', ({ result, verdict }) => {
+    expect(topupVerdictOf(result)).toEqual(verdict)
   })
 })

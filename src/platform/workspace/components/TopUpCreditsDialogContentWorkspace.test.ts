@@ -1,3 +1,13 @@
+import type { TopupResult } from '@comfyorg/account-core/billing'
+
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import type { BillingTelemetryEvent } from '@/platform/telemetry/types'
+import {
+  failedTopup,
+  fakeBillingSdk,
+  settledTopup
+} from '@/platform/workspace/billing/sdk/billingSdkTestUtils'
+import type { BillingSdk } from '@/platform/workspace/billing/sdk/createBillingSdk'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
@@ -65,6 +75,13 @@ vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 
 vi.mock(import('@/platform/telemetry'))
 
+vi.mock(import('@/composables/useFeatureFlags'))
+
+const mockCreateBillingSdk = vi.hoisted(() => vi.fn<() => BillingSdk>())
+vi.mock(import('@/platform/workspace/billing/sdk/createBillingSdk'), () => ({
+  createBillingSdk: mockCreateBillingSdk
+}))
+
 vi.mock(import('firebase/auth'), { spy: true })
 const mockClearPendingTopup = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
@@ -109,14 +126,7 @@ function renderDialog(
   return render(TopUpCreditsDialogContentWorkspace, {
     props,
     global: {
-      plugins: [i18n],
-      stubs: {
-        FormattedNumberStepper: {
-          name: 'FormattedNumberStepper',
-          props: ['modelValue'],
-          template: '<div />'
-        }
-      }
+      plugins: [i18n]
     }
   })
 }
@@ -140,6 +150,27 @@ function setHasSavedPaymentMethod(value: boolean | null) {
     throw new Error('Payment method mock not initialized')
   }
   mockHasSavedPaymentMethod.ref.value = value
+}
+
+const SPARSE_BILLING_FIELDS: ReadonlySet<string> = new Set([
+  'stage',
+  'operation_type',
+  'billing_op_id',
+  'failure_category',
+  'decline_reason'
+])
+
+function billingEvents(operation: BillingTelemetryEvent['operation']) {
+  return vi
+    .mocked(useTelemetry()!.trackBillingEvent)
+    .mock.calls.filter(([event]) => event.operation === operation)
+    .map(([event]) =>
+      Object.fromEntries(
+        Object.entries(event).filter(([field]) =>
+          SPARSE_BILLING_FIELDS.has(field)
+        )
+      )
+    )
 }
 
 async function clickAddCredits() {
@@ -483,6 +514,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
     await waitFor(() =>
       expect(mockReportError).toHaveBeenCalledWith(failure, {
+        surface: 'billing',
         errorType: 'billing_portal_open_failure'
       })
     )
@@ -1126,5 +1158,137 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     ).not.toHaveBeenCalled()
     expect(mockToastAdd).not.toHaveBeenCalled()
     expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
+  })
+
+  describe('on the billing SDK rail', () => {
+    it.for<{
+      outcome: string
+      result: TopupResult
+      operationTerminal: Record<string, string>
+      topupTerminal: Record<string, string>
+    }>([
+      {
+        outcome: 'a settled purchase',
+        result: {
+          status: 'ok',
+          operation: settledTopup('succeeded'),
+          creditsReconciled: true
+        },
+        operationTerminal: { stage: 'succeeded', billing_op_id: 'op-1' },
+        topupTerminal: { stage: 'succeeded', billing_op_id: 'op-1' }
+      },
+      {
+        outcome: 'a purchase this tab stopped watching',
+        result: { status: 'unsettled', operation: settledTopup('timed_out') },
+        operationTerminal: {
+          stage: 'timeout',
+          billing_op_id: 'op-1',
+          failure_category: 'poll_timeout'
+        },
+        topupTerminal: {
+          stage: 'failed',
+          billing_op_id: 'op-1',
+          failure_category: 'poll_timeout'
+        }
+      },
+      {
+        outcome: 'a decline',
+        result: {
+          status: 'declined',
+          operation: failedTopup('insufficient_funds')
+        },
+        operationTerminal: {
+          stage: 'failed',
+          billing_op_id: 'op-1',
+          failure_category: 'provider_decline',
+          decline_reason: 'insufficient_funds'
+        },
+        topupTerminal: {
+          stage: 'failed',
+          billing_op_id: 'op-1',
+          failure_category: 'provider_decline'
+        }
+      },
+      {
+        outcome: 'a purchase support must reconcile',
+        result: {
+          status: 'unsettled',
+          operation: settledTopup('reconciliation_needed')
+        },
+        operationTerminal: {
+          stage: 'failed',
+          billing_op_id: 'op-1',
+          failure_category: 'reconciliation_needed'
+        },
+        topupTerminal: {
+          stage: 'failed',
+          billing_op_id: 'op-1',
+          failure_category: 'reconciliation_needed'
+        }
+      },
+      {
+        outcome: 'a refusal that carries no HTTP status',
+        result: {
+          status: 'error',
+          code: 'NO_PAYMENT_METHOD',
+          recoveryAction: 'replace_payment_method'
+        },
+        operationTerminal: {
+          stage: 'failed',
+          failure_category: 'api_rejected'
+        },
+        topupTerminal: { stage: 'failed', failure_category: 'api_rejected' }
+      },
+      {
+        outcome: 'a purchase the scope moved out from under',
+        result: { status: 'error', code: 'SUPERSEDED' },
+        operationTerminal: {
+          stage: 'failed',
+          failure_category: 'stale_operation'
+        },
+        topupTerminal: { stage: 'failed', failure_category: 'stale_operation' }
+      },
+      {
+        outcome: 'an amount the request contract refused',
+        result: { status: 'error', code: 'INVALID_AMOUNT' },
+        operationTerminal: { stage: 'failed', failure_category: 'validation' },
+        topupTerminal: { stage: 'failed', failure_category: 'validation' }
+      },
+      {
+        outcome: 'a request that never reached the server',
+        result: { status: 'error', code: 'REQUEST_FAILED' },
+        operationTerminal: { stage: 'failed', failure_category: 'network' },
+        topupTerminal: { stage: 'failed', failure_category: 'network' }
+      }
+    ])(
+      'reports $outcome as one terminal carrying what the SDK settled',
+      async ({ result, operationTerminal, topupTerminal }) => {
+        const harness = fakeBillingSdk()
+        mockCreateBillingSdk.mockReturnValue(harness.sdk)
+        vi.mocked(harness.sdk.topup.createTopupCheckout).mockResolvedValue(
+          result
+        )
+        vi.mocked(useFeatureFlags().flags).billingSdkTopupRailEnabled = true
+        vi.spyOn(console, 'error').mockImplementation(() => {})
+
+        renderDialog()
+        await clickAddCredits()
+        await userEvent.click(
+          screen.getByRole('button', { name: 'Pay $50.00' })
+        )
+
+        await waitFor(() =>
+          expect(billingEvents('operation')).toEqual([
+            { stage: 'started', operation_type: 'topup' },
+            { operation_type: 'topup', ...operationTerminal }
+          ])
+        )
+        expect(billingEvents('topup')).toEqual([
+          { stage: 'intent' },
+          { stage: 'started' },
+          topupTerminal
+        ])
+      }
+    )
   })
 })

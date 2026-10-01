@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test'
 
+import { switchToYearly } from './fixtures/scenario'
 import { installFakeStripe } from './fixtures/stripe'
 import { entryPath, expect, test as base } from './fixtures/test'
 
@@ -178,4 +179,89 @@ test('a held discount and an entered code read as rows, with no Subtotal the quo
   const summary = page.getByRole('region', { name: 'Order summary' })
   await expect(summary).not.toContainText('−$9.99')
   await expect(summary).not.toContainText('Subtotal')
+})
+
+const YEARLY_CHECKOUT = entryPath('checkout', { plan: 'creator_yearly' })
+
+test('a monthly to yearly switch reads its renewal date and struck-through list price from the quote', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  switchToYearly(cloud.scenario)
+  await signIn(YEARLY_CHECKOUT)
+
+  await expectSummary(page, [
+    'Switch to Creator Yearly · Personal',
+    '$268.80 USD',
+    'Creator Yearly$268.80',
+    '$268.80 $336 /yr, billed yearly',
+    'Renews at $268.80 on September 30, 2027',
+    "This month's credits stay valid until October 30, 2026"
+  ])
+  const summary = page.getByRole('region', { name: 'Order summary' })
+  await expect(summary.locator('s')).toHaveText('$336')
+  await expect(summary).not.toContainText('Subtotal')
+})
+
+test('a promo code on a yearly switch is bounded to the first year', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  switchToYearly(cloud.scenario)
+  cloud.scenario.preview = {
+    ...cloud.scenario.preview,
+    amount_due_cents: 21_504,
+    promotion_code: 'COMFY20',
+    discounts: [
+      {
+        kind: 'promotion',
+        code: 'COMFY20',
+        amount_off_cents: 5376,
+        duration: 'once'
+      }
+    ]
+  }
+  await signIn(YEARLY_CHECKOUT)
+
+  await expectSummary(page, [
+    'Promo code−$53.76',
+    'First year',
+    'Total due today$215.04'
+  ])
+})
+
+test('744-15697: an account balance the server applied is the last deduction, and keeps the prorated row it explains', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  const preview = cloud.scenario.preview
+  cloud.scenario.preview = {
+    ...preview,
+    transition_type: 'upgrade',
+    proration_at: '2026-07-10T09:30:00.000Z',
+    amount_due_cents: 2750,
+    cost_today_cents: 3250,
+    balance_applied_cents: 500,
+    credits_today_cents: 3250,
+    credits_next_period_cents: 10_000,
+    renewal_amount_cents: 10_000,
+    renewal_at: RENEWAL_AT,
+    current_plan: {
+      ...preview.new_plan,
+      slug: 'creator_monthly',
+      tier: 'CREATOR',
+      price_cents: 3500
+    }
+  }
+  await signIn(CHECKOUT)
+
+  await expectSummary(page, [
+    'Pro Plan - Prorated$32.50',
+    'Account balance−$5.00',
+    'Credit already on your account',
+    'Total due today$27.50'
+  ])
 })
