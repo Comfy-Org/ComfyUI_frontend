@@ -178,9 +178,48 @@ describe('billingWebRumBeforeSend', () => {
 
     expect(billingWebRumBeforeSend(event)).toBe(false)
   })
+
+  it.for([
+    { cause: 'Declined for ada@example.com', sent: false },
+    {
+      cause: 'Request failed at https://cloud.comfy.org/api/x?promo=SPRING',
+      sent: false
+    },
+    { cause: 'Card declined', sent: true }
+  ])(
+    'sends an error whose cause reads "$cause": $sent, since RUM keeps causes as they are',
+    ({ cause, sent }) => {
+      const event: ScrubbableRumEvent = {
+        type: 'error',
+        view: { url: 'https://billing.comfy.org/v1/checkout' },
+        error: {
+          source: 'source',
+          message: 'Checkout failed',
+          causes: [{ message: cause }]
+        }
+      }
+
+      expect(billingWebRumBeforeSend(event)).toBe(sent)
+    }
+  )
 })
 
 describe('reportBillingWebError', () => {
+  it('reports the failure without the cause chain RUM cannot scrub', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    reportBillingWebError(
+      new Error('Card declined', {
+        cause: new Error('Declined for ada@example.com')
+      }),
+      { errorType: 'failure_confirming_checkout' }
+    )
+
+    const reported = vi.mocked(datadogRum.addError).mock.lastCall?.[0]
+    expect(reported).toBeInstanceOf(Error)
+    expect(reported).not.toHaveProperty('cause')
+  })
+
   it('reports the failure to RUM under its type, tagged with the billing web surface', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     const failure = new Error('Card declined')

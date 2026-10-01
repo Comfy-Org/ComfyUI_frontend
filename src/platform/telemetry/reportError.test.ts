@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { REPORTED_ERROR_PREFIX } from '@comfyorg/shared-frontend-utils/telemetry'
+
 const captureException = vi.fn()
 const isEnabled = vi.fn()
 const addError = vi.fn()
@@ -527,7 +529,7 @@ describe('reportError', () => {
 
   it('writes the failure to the console so callers need no second sink', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const { reportError, REPORTED_ERROR_PREFIX } = await loadReportError()
+    const { reportError } = await loadReportError()
     const error = new Error('listener failed')
 
     reportError(error, {
@@ -544,7 +546,7 @@ describe('reportError', () => {
   it('logs a warning-level report through console.warn', async () => {
     const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const { reportError, REPORTED_ERROR_PREFIX } = await loadReportError()
+    const { reportError } = await loadReportError()
 
     reportError(new Error('cookie denied'), {
       surface: 'platform',
@@ -661,7 +663,7 @@ describe('reportError', () => {
   it('logs a suppressed warning-level re-entrant report through console.warn', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const { reportError, REPORTED_ERROR_PREFIX } = await loadReportError()
+    const { reportError } = await loadReportError()
     const nested = new Error('nested')
     captureException.mockImplementationOnce(() => {
       reportError(nested, {
