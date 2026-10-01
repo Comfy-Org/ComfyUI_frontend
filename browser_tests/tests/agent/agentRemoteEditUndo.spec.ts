@@ -34,10 +34,6 @@ test.describe(
 
       await agentConversation.resyncWidget(KSAMPLER_NODE_ID, 'steps')
 
-      test.fail(
-        true,
-        'Undo does not survive the remote document state; this pins the live defect.'
-      )
       await expect(steps).toHaveValue('20')
     })
   }
