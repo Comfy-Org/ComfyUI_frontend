@@ -216,12 +216,14 @@ describe('ModelsCatalogue', () => {
       expect(
         within(explore).getAllByRole('link', { name: /^See all/ })
       ).toHaveLength(spaces.length)
-      for (const [space, href] of spaces)
-        expect(
-          within(screen.getByTestId(space)).getByRole('link', {
-            name: /^See all/
-          })
-        ).toHaveAttribute('href', href)
+      expect(
+        spaces.map(([space]) => [
+          space,
+          within(screen.getByTestId(space))
+            .getByRole('link', { name: /^See all/ })
+            .getAttribute('href')
+        ])
+      ).toEqual(spaces)
     }
   )
 
