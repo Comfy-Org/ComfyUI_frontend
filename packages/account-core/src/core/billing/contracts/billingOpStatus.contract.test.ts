@@ -2,6 +2,8 @@ import { zBillingOpStatusResponse } from '@comfyorg/ingest-types/zod'
 import { describe, expect, expectTypeOf, it } from 'vitest'
 import type { z } from 'zod'
 
+import { BillingOpStatusSchema } from '../operationState.js'
+
 type OpStatusBody = z.input<typeof zBillingOpStatusResponse>
 type OpStatus = z.infer<typeof zBillingOpStatusResponse>
 
@@ -63,6 +65,17 @@ expectTypeOf<OpStatus['payment_intent_client_secret']>().toEqualTypeOf<
 expectTypeOf<OpStatus['retryable']>().toEqualTypeOf<boolean | undefined>()
 
 describe('billing operation status contract', () => {
+  it.for(['amount_charged_cents', 'credits_added'] as const)(
+    'normalizes %s to a number',
+    (field) => {
+      expect(
+        BillingOpStatusSchema.safeParse(
+          opStatusBody({ status: 'succeeded', [field]: 1999 })
+        )
+      ).toMatchObject({ success: true, data: { [field]: 1999 } })
+    }
+  )
+
   it('accepts a status carrying only the required fields', () => {
     expect(zBillingOpStatusResponse.safeParse(opStatusBody())).toMatchObject({
       success: true
