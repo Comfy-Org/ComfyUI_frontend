@@ -205,7 +205,7 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
     const taskId = '1396cc07-bab2-4f12-9b54-741f83f9224d'
     const assetName = 'unconfirmed-cancellation.safetensors'
     await page.clock.install()
-    await page.clock.pauseAt(new Date(Date.now() + 1_000))
+    await page.clock.pauseAt(new Date(Date.now() + 100))
     await page.route(`**/tasks/${taskId}`, async (route) => {
       if (route.request().method() === 'DELETE') {
         await route.fulfill({ status: 204 })
@@ -225,17 +225,18 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
 
     const toast = page.getByRole('status').filter({ hasText: assetName })
     await toast.getByRole('button', { name: 'Expand' }).click()
-    await toast.getByRole('button', { name: 'Cancel Download' }).click()
+    await page.clock.fastForward(200)
+    await toast.getByRole('button', { name: 'Cancel Download' }).press('Enter')
     await expect(
       toast.getByText('Cancelled', { exact: true }).first()
     ).toBeVisible()
 
     const closeButton = toast.getByRole('button', { name: 'Close' })
     await page.clock.fastForward(290_000)
-    await page.clock.runFor(9_999)
+    await page.clock.fastForward(9_999)
     await expect(closeButton).toBeHidden()
 
-    await page.clock.runFor(1)
+    await page.clock.fastForward(1)
     await expect(closeButton).toBeVisible()
 
     await closeButton.click()
