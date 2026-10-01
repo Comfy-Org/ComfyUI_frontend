@@ -1556,12 +1556,13 @@ describe('billing on a tab that arrived by session', () => {
     }
   ])(
     'billing capabilities for the session user: the read $name',
-    async ({ capabilitiesDown, authoritative }) => {
+    async ({ capabilitiesDown, authoritative }, { onTestFinished }) => {
       const { ingest } = await bootSessionOnly()
       ingest.capabilitiesDown = capabilitiesDown
       localStorage.setItem(WORKSPACE_STORAGE_KEYS.LAST_WORKSPACE_ID, 'ws-team')
       await useTeamWorkspaceStore().initialize()
       const scope = effectScope()
+      onTestFinished(() => scope.stop())
       const capabilities = scope.run(() => useBillingCapabilities())
       assert.exists(capabilities)
 
@@ -1572,7 +1573,6 @@ describe('billing on a tab that arrived by session', () => {
         canTopUp: capabilities.canTopUp.value,
         authoritative: capabilities.snapshotAuthoritative.value
       }).toEqual({ isReady: true, canTopUp: true, authoritative })
-      scope.stop()
     }
   )
 })
