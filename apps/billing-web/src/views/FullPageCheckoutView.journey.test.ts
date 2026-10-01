@@ -1,11 +1,12 @@
 import { datadogRum } from '@datadog/browser-rum'
-import { render, waitFor } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { ref } from 'vue'
 import type { VNode } from 'vue'
 
 import { readBillingErrorCode } from '@comfyorg/account-core/billing'
 import type { AccountCredential } from '@comfyorg/account-core/session'
 import { BILLING_CLIENT_KEY } from '@comfyorg/account-ui/billing'
+import type { StripePaymentPhase } from '@comfyorg/account-ui/billing/stripe'
 import { parseBillingEntry } from '@comfyorg/billing-contract'
 
 import { recordBillingEntry } from '@/entry/billingEntry'
@@ -14,7 +15,12 @@ import type {
   FakeBillingClient,
   FakeBillingClientOptions
 } from '@/test/fakeBillingClient'
-import { createFakeBillingClient, previewOf } from '@/test/fakeBillingClient'
+import {
+  createFakeBillingClient,
+  pendingOperation,
+  previewOf,
+  succeededOperation
+} from '@/test/fakeBillingClient'
 import FullPageCheckoutView from '@/views/FullPageCheckoutView.vue'
 
 vi.mock(import('@datadog/browser-rum'))
@@ -73,7 +79,11 @@ vi.mock(import('@/session/billingWebSession'), async () => {
   }
 })
 
-/** The provider form is covered in its package; here it only takes its place. */
+/** The provider form is covered in its package; here it reports phases and hands back a token. */
+const form = vi.hoisted(() => ({
+  emit: (() => {}) as (event: string, ...payload: unknown[]) => void
+}))
+
 vi.mock<unknown>(import('@comfyorg/account-ui/billing/stripe'), async () => {
   const { h } = await import('vue')
   return {
@@ -83,17 +93,24 @@ vi.mock<unknown>(import('@comfyorg/account-ui/billing/stripe'), async () => {
       setup(
         _props: object,
         {
+          emit,
           slots
         }: {
+          emit: (event: string, ...payload: unknown[]) => void
           slots: { submit?: (slotProps: Record<string, unknown>) => VNode[] }
         }
       ) {
+        form.emit = emit
         return () =>
           h('div', slots.submit?.({ disabled: false, loading: false }))
       }
     }
   }
 })
+
+function reportPhase(phase: StripePaymentPhase) {
+  form.emit('phase', phase)
+}
 
 async function renderCheckout(
   options: FakeBillingClientOptions = {},
@@ -276,5 +293,133 @@ describe('the full-page checkout journey', () => {
     await waitFor(() => expect(journey()).toHaveLength(2))
     expect(journeyNames()[0]).toBe('billing.checkout.entered')
     expect(journey()[1]).toMatchObject(last)
+  })
+
+  it.for<{
+    name: string
+    phase: StripePaymentPhase
+    reported: Record<string, unknown>
+  }>([
+    {
+      name: 'the payment element mounting',
+      phase: { phase: 'payment_element_ready', element: 'payment' },
+      reported: { phase: 'payment_element_ready', element: 'payment' }
+    },
+    {
+      name: 'the address element mounting',
+      phase: { phase: 'payment_element_ready', element: 'address' },
+      reported: { phase: 'payment_element_ready', element: 'address' }
+    },
+    {
+      name: 'the payment element failing to load',
+      phase: {
+        phase: 'payment_element_failed',
+        element: 'payment',
+        element_phase: 'mount',
+        error_code: 'invalid_request_error'
+      },
+      reported: {
+        phase: 'payment_element_failed',
+        element: 'payment',
+        element_phase: 'mount',
+        error_code: 'invalid_request_error'
+      }
+    },
+    {
+      name: 'the form attempting to submit',
+      phase: { phase: 'payment_submit_attempted' },
+      reported: { phase: 'payment_submit_attempted' }
+    },
+    {
+      name: 'the form failing to validate',
+      phase: {
+        phase: 'payment_submit_failed',
+        submit_phase: 'validation',
+        error_code: 'incomplete_number'
+      },
+      reported: {
+        phase: 'payment_submit_failed',
+        submit_phase: 'validation',
+        error_code: 'incomplete_number'
+      }
+    },
+    {
+      name: 'the form failing to mint a token',
+      phase: { phase: 'payment_submit_failed', submit_phase: 'token_creation' },
+      reported: {
+        phase: 'payment_submit_failed',
+        submit_phase: 'token_creation'
+      }
+    }
+  ])('reports $name as the cloud app does', async ({ phase, reported }) => {
+    await renderCheckout()
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+
+    reportPhase(phase)
+
+    await waitFor(() => expect(journey()).toHaveLength(3))
+    expect(journey()[2]).toMatchObject({
+      name: `billing.checkout.${phase.phase}`,
+      ...reported,
+      ui_mode: 'full_page',
+      billing_surface: 'billing_web'
+    })
+  })
+
+  it('reports the journey of a payment from the first look to the operation it issued', async () => {
+    const fake = await renderCheckout({
+      subscribe: {
+        status: 'ok',
+        value: { phase: 'succeeded', operation: succeededOperation('op_9') }
+      }
+    })
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+
+    reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+    reportPhase({ phase: 'payment_submit_attempted' })
+    form.emit('confirm', 'ctoken_1', 'card')
+
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalled())
+    await waitFor(() =>
+      expect(journeyNames()).toEqual([
+        'billing.checkout.entered',
+        'billing.checkout.preview_ready',
+        'billing.checkout.payment_element_ready',
+        'billing.checkout.payment_submit_attempted',
+        'billing.checkout.submitted',
+        'billing.checkout.operation_linked'
+      ])
+    )
+    const [, , , , submitted, linked] = journey()
+    expect(submitted).not.toHaveProperty('billing_op_id')
+    expect(linked).toMatchObject({ billing_op_id: 'op_9' })
+  })
+
+  it('reports no operation for a payment the server refused before issuing one', async () => {
+    const fake = await renderCheckout()
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    fake.subscribe.mockResolvedValueOnce({ status: 'error', code: 'CONFLICT' })
+
+    reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+    form.emit('confirm', 'ctoken_1', 'card')
+
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalled())
+    await fake.subscribe.mock.results[0]?.value
+    expect(journeyNames()).toEqual([
+      'billing.checkout.entered',
+      'billing.checkout.preview_ready',
+      'billing.checkout.payment_element_ready',
+      'billing.checkout.submitted'
+    ])
+  })
+
+  it('reports no operation for one the checkout recovered rather than paid', async () => {
+    await renderCheckout({
+      recover: { status: 'ok', value: pendingOperation('op_old') }
+    })
+
+    expect(await screen.findByTestId('checkout-waiting')).toBeInTheDocument()
+    expect(journeyNames()).not.toContain('billing.checkout.operation_linked')
+    expect(journeyNames()).not.toContain('billing.checkout.submitted')
   })
 })

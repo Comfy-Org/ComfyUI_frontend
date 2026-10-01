@@ -33,6 +33,8 @@ export function useCheckoutJourney(
   const enteredAt = new Date().toISOString()
   let entryFlow: CheckoutEntryFlow = 'unknown'
   let lastPreviewRevision: string | undefined
+  let awaitingOperation = false
+  let billingOpId: string | undefined
 
   function track(phase: CheckoutJourneyPhaseEvent) {
     billingWebTelemetry.trackCheckoutJourneyEvent({
@@ -42,6 +44,7 @@ export function useCheckoutJourney(
       ui_mode: uiMode,
       entry_flow: entryFlow,
       entry_source: entrySourceOf(arrival?.source),
+      ...(billingOpId !== undefined && { billing_op_id: billingOpId }),
       ...phase
     })
   }
@@ -68,6 +71,20 @@ export function useCheckoutJourney(
     track(phase)
   }
 
+  function submitted() {
+    awaitingOperation = true
+    billingOpId = undefined
+    track({ phase: 'submitted' })
+  }
+
+  /** Only the operation a press of Pay issued is linked, never one the checkout recovered. */
+  function operationIssued(operationId: string) {
+    if (!awaitingOperation) return
+    awaitingOperation = false
+    billingOpId = operationId
+    track({ phase: 'operation_linked', billing_op_id: operationId })
+  }
+
   /** A quote answer, from the embedded checkout. */
   function quoted(result: PreviewSubscribeResult) {
     if (result.status === 'ok' && result.value.allowed) {
@@ -84,9 +101,10 @@ export function useCheckoutJourney(
     shown: SubscriptionPreview | undefined
   ) {
     if (event.type === 'quoted' && shown) return previewReady(shown)
+    if (event.type === 'paySubmitted') return submitted()
     const failed = previewFailureOfPageEvent(event)
     if (failed) track(failed)
   }
 
-  return { enter, track, quoted, observe }
+  return { enter, track, submitted, operationIssued, quoted, observe }
 }

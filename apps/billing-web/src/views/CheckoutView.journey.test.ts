@@ -1,5 +1,5 @@
 import { datadogRum } from '@datadog/browser-rum'
-import { render, waitFor } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { defineComponent, h, ref } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
@@ -8,6 +8,7 @@ import type {
   SubscriptionPreview
 } from '@comfyorg/account-core/billing'
 import { BILLING_CLIENT_KEY } from '@comfyorg/account-ui/billing'
+import type { StripePaymentPhase } from '@comfyorg/account-ui/billing/stripe'
 import { parseBillingEntry } from '@comfyorg/billing-contract'
 
 import { recordBillingEntry } from '@/entry/billingEntry'
@@ -16,7 +17,12 @@ import type {
   FakeBillingClient,
   FakeBillingClientOptions
 } from '@/test/fakeBillingClient'
-import { createFakeBillingClient, previewOf } from '@/test/fakeBillingClient'
+import {
+  createFakeBillingClient,
+  pendingOperation,
+  previewOf,
+  succeededOperation
+} from '@/test/fakeBillingClient'
 import { WORKSPACE_INVITES_KEY } from '@/session/workspaceInvites'
 import CheckoutView from '@/views/CheckoutView.vue'
 
@@ -59,19 +65,29 @@ vi.mock(import('@/session/stripeChallengePort'), () => ({
   })
 }))
 
+let reportPhase: (phase: StripePaymentPhase) => void = () => {}
+let reportConfirm: (confirmationToken: string) => void = () => {}
+
 /** The card form is covered in its package; here it takes the place of the provider's form. */
 const PaymentFormStub = defineComponent({
   name: 'CheckoutPaymentForm',
   props: {
     submitLabel: { type: String, default: '' },
+    isLoading: { type: Boolean, default: false },
     canSubmit: { type: Boolean, default: true }
   },
   emits: ['confirm', 'phase'],
-  setup(props) {
+  setup(props, { emit }) {
+    reportPhase = (phase) => emit('phase', phase)
+    reportConfirm = (token) => emit('confirm', token)
     return () =>
       h(
         'button',
-        { type: 'submit', disabled: !props.canSubmit },
+        {
+          type: 'submit',
+          disabled: !props.canSubmit,
+          'aria-busy': props.isLoading || undefined
+        },
         props.submitLabel
       )
   }
@@ -235,6 +251,137 @@ describe('the embedded checkout journey', () => {
     await waitFor(() => expect(journey()).toHaveLength(2))
     expect(journeyNames()[0]).toBe('billing.checkout.entered')
     expect(journey()[1]).toMatchObject(last)
+  })
+
+  it.for<{
+    name: string
+    phase: StripePaymentPhase
+    reported: Record<string, unknown>
+  }>([
+    {
+      name: 'the payment element mounting',
+      phase: { phase: 'payment_element_ready', element: 'payment' },
+      reported: { phase: 'payment_element_ready', element: 'payment' }
+    },
+    {
+      name: 'the address element mounting',
+      phase: { phase: 'payment_element_ready', element: 'address' },
+      reported: { phase: 'payment_element_ready', element: 'address' }
+    },
+    {
+      name: 'the payment element failing to load',
+      phase: {
+        phase: 'payment_element_failed',
+        element: 'payment',
+        element_phase: 'mount',
+        error_code: 'invalid_request_error'
+      },
+      reported: {
+        phase: 'payment_element_failed',
+        element: 'payment',
+        element_phase: 'mount',
+        error_code: 'invalid_request_error'
+      }
+    },
+    {
+      name: 'the form attempting to submit',
+      phase: { phase: 'payment_submit_attempted' },
+      reported: { phase: 'payment_submit_attempted' }
+    },
+    {
+      name: 'the form failing to validate',
+      phase: {
+        phase: 'payment_submit_failed',
+        submit_phase: 'validation',
+        error_code: 'incomplete_number'
+      },
+      reported: {
+        phase: 'payment_submit_failed',
+        submit_phase: 'validation',
+        error_code: 'incomplete_number'
+      }
+    },
+    {
+      name: 'the form failing to mint a token',
+      phase: { phase: 'payment_submit_failed', submit_phase: 'token_creation' },
+      reported: {
+        phase: 'payment_submit_failed',
+        submit_phase: 'token_creation'
+      }
+    }
+  ])('reports $name as the cloud app does', async ({ phase, reported }) => {
+    await renderCheckout()
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+    reportPhase(phase)
+
+    await waitFor(() => expect(journey()).toHaveLength(3))
+    expect(journey()[2]).toMatchObject({
+      name: `billing.checkout.${phase.phase}`,
+      ...reported,
+      ui_mode: 'embedded',
+      billing_surface: 'billing_web'
+    })
+  })
+
+  it('reports the journey of a payment from the first look to the operation it issued', async () => {
+    const fake = await renderCheckout(CHECKOUT_PATH, {
+      subscribe: {
+        status: 'ok',
+        value: { phase: 'succeeded', operation: succeededOperation('op_9') }
+      }
+    })
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+    reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+    reportPhase({ phase: 'payment_submit_attempted' })
+    reportConfirm('ctoken_1')
+
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalled())
+    await waitFor(() =>
+      expect(journeyNames()).toEqual([
+        'billing.checkout.entered',
+        'billing.checkout.preview_ready',
+        'billing.checkout.payment_element_ready',
+        'billing.checkout.payment_submit_attempted',
+        'billing.checkout.submitted',
+        'billing.checkout.operation_linked'
+      ])
+    )
+    const [, , , , submitted, linked] = journey()
+    expect(submitted).not.toHaveProperty('billing_op_id')
+    expect(linked).toMatchObject({ billing_op_id: 'op_9' })
+  })
+
+  it('reports no operation for a payment the server refused before issuing one', async () => {
+    const fake = await renderCheckout()
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+    fake.subscribe.mockResolvedValueOnce({ status: 'error', code: 'CONFLICT' })
+
+    reportConfirm('ctoken_1')
+
+    expect(await screen.findByRole('alert')).toBeInTheDocument()
+    expect(journeyNames()).toEqual([
+      'billing.checkout.entered',
+      'billing.checkout.preview_ready',
+      'billing.checkout.submitted'
+    ])
+  })
+
+  it('reports no operation for one the checkout recovered rather than paid', async () => {
+    await renderCheckout(CHECKOUT_PATH, {
+      recover: { status: 'ok', value: pendingOperation('op_old') }
+    })
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Pay and subscribe' })
+      ).toHaveAttribute('aria-busy', 'true')
+    )
+    expect(journeyNames()).toEqual([
+      'billing.checkout.entered',
+      'billing.checkout.preview_ready'
+    ])
   })
 
   it('reports nothing for a quote a newer one overtook', async () => {
