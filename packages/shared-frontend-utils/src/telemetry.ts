@@ -8,6 +8,18 @@ export const COMFY_RUM_APPLICATION = {
   site: 'us5.datadoghq.com'
 } as const
 
+export const DEFAULT_POSTHOG_API_HOST = 'https://t.comfy.org'
+
+/** PostHog settings every Comfy web surface shares; each adds its own token, host and before_send. */
+export const COMFY_POSTHOG_OPTIONS = {
+  ui_host: 'https://us.posthog.com',
+  autocapture: false,
+  capture_pageview: 'history_change',
+  capture_pageleave: false,
+  persistence: 'localStorage+cookie',
+  person_profiles: 'identified_only'
+} as const
+
 /**
  * Marks the console line a reporter writes for every report. RUM collects
  * `console.error` on its own, so `isRumErrorNoise` matches on this to drop the

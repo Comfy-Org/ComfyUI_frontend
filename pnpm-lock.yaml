@@ -999,6 +999,9 @@ importers:
       firebase:
         specifier: 'catalog:'
         version: 11.10.0
+      posthog-js:
+        specifier: 'catalog:'
+        version: 1.402.3
       primeicons:
         specifier: 'catalog:'
         version: 7.0.0
