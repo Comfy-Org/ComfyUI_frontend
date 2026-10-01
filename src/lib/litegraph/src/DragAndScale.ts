@@ -214,9 +214,7 @@ export class DragAndScale {
       this.element.width === 300 && this.element.height === 150
         ? [1920, 1080]
         : this.getViewportSize()
-    const fullCw = width
-    const fullCh = height
-    const [vx, vy, vw, vh] = viewport ?? [0, 0, fullCw, fullCh]
+    const [vx, vy, vw, vh] = viewport ?? [0, 0, width, height]
     if (!(vw > 0) || !(vh > 0)) return
     let targetScale = this.scale
 
@@ -265,7 +263,7 @@ export class DragAndScale {
     const startTimestamp = performance.now()
     const [cw, ch] = this.getViewportSize()
     const [vx, vy, vw, vh] = viewport ?? [0, 0, cw, ch]
-    if (vw <= 0 || vh <= 0) return
+    if (!(vw > 0) || !(vh > 0)) return
     const startX = this.offset[0]
     const startY = this.offset[1]
     const startX2 = startX - cw / this.scale
