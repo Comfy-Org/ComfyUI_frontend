@@ -58,7 +58,7 @@ const elapsed = computed(() =>
       :scene="setup.scene"
       :selected
       :view
-      :handles
+      :handles="handles && phase.kind !== 'running'"
       :locale
       @select="select"
       @begin="relight.checkpoint()"
