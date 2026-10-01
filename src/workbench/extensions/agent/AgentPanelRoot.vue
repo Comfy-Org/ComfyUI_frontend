@@ -18,6 +18,8 @@ import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
+import type { AgentPaywallSurface } from '@/platform/telemetry/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { formatWorkflowSyncErrorDetail } from '@/workbench/extensions/agent/crdt/workflowSyncErrorDetail'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -102,7 +104,9 @@ import type { DraftSnapshot } from './services/agent/agentRestClient'
 import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
 import {
   DEFAULT_AGENT_PAYWALL_PRESENTATION,
-  resolveAgentPaywallPresentation
+  resolveAgentPaywallPresentation,
+  toAgentPaywallCta,
+  toAgentPaywallReason
 } from './services/agent/agentPaywallPresentation'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { createStandaloneAgentEventSource } from './services/agent/standaloneAgentEventSource'
@@ -128,17 +132,28 @@ const { t } = useI18n()
 const toast = useToastStore()
 const { open: openAccountPrecondition } = useAccountPreconditionDialog()
 const { workspaceRole } = useWorkspaceUI()
-const { subscription, tier: subscriptionTier } = useBillingContext()
+const {
+  subscription,
+  tier: subscriptionTier,
+  type: billingType,
+  billingStatus,
+  fetchStatus: refreshBillingStatus
+} = useBillingContext()
 const conversationStore = useAgentConversationStore()
 watch(
   subscription,
   (currentSubscription) => {
-    if (currentSubscription?.hasFunds) conversationStore.resolvePaywalls()
+    if (currentSubscription?.agentHasFunds) conversationStore.resolvePaywalls()
   },
   { immediate: true }
 )
-const { canTopUp, canSubscribeSelfServe, hasResolvedCapabilities } =
-  useBillingCapabilities()
+const {
+  canTopUp,
+  canSubscribeSelfServe,
+  hasResolvedCapabilities,
+  isReady: capabilityReadSettled,
+  snapshotAuthoritative
+} = useBillingCapabilities()
 const paywallPresentation = computed(() => {
   if (isCloud && !hasResolvedCapabilities.value && !canTopUp.value) {
     return DEFAULT_AGENT_PAYWALL_PRESENTATION
@@ -155,6 +170,7 @@ const sidebarTabStore = useSidebarTabStore()
 const { isBuilderMode } = useAppMode()
 
 const { resolvedUserInfo, userDisplayName } = useCurrentUser()
+const teamWorkspaceStore = useTeamWorkspaceStore()
 const userName = computed(
   () => userDisplayName.value?.trim().split(/\s+/)[0] || undefined
 )
@@ -166,14 +182,150 @@ const events =
     ? createStandaloneAgentEventSource()
     : createAgentEventSource(api)
 
-function onPaywallAction(action: AgentPaywallAction): void {
-  openAccountPrecondition(action === 'addCredits' ? 'credits' : 'subscription')
+function onPaywallAction(
+  action: AgentPaywallAction,
+  surface: AgentPaywallSurface
+): void {
+  useTelemetry()?.trackAgentPaywallCtaClicked({
+    cta: toAgentPaywallCta(action),
+    surface
+  })
+  if (action === 'addCredits') {
+    if (canTopUp.value) {
+      useTelemetry()?.trackAddApiCreditButtonClicked({
+        source: 'agent_paywall'
+      })
+    }
+    openAccountPrecondition('credits', { source: 'agent_paywall' })
+    return
+  }
+  openAccountPrecondition('subscription', { source: 'agent_paywall' })
+}
+
+const { messages: conversationMessages, entries: conversationEntries } =
+  storeToRefs(conversationStore)
+watch(
+  () =>
+    // Gated on the read having *settled*, which includes settling as
+    // unavailable. `snapshotAuthoritative` is narrower — it excludes that
+    // outage state — and gating on it stranded those sessions: the paywall
+    // still renders, an owner still gets the fallback Add credits CTA, and its
+    // click is still reported, so the funnel saw CTAs with no impression.
+    capabilityReadSettled.value
+      ? conversationMessages.value
+          .filter((message) =>
+            message.parts.some((part) => part.type === 'paywall')
+          )
+          .map((message) => message.id)
+      : [],
+  (paywallMessageIds) => {
+    const telemetry = useTelemetry()
+    if (!telemetry) return
+    for (const id of paywallMessageIds) {
+      if (!conversationStore.claimPaywallImpression(id)) continue
+      telemetry.trackAgentPaywallShown({
+        // An unavailable read leaves `canTopUp` guessing true for an owner, so
+        // the presentation would name a confident reason drawn from a fallback
+        // rather than from capabilities. Report the impression as `unknown`.
+        reason: snapshotAuthoritative.value
+          ? toAgentPaywallReason(paywallPresentation.value)
+          : 'unknown',
+        surface: 'refused_send'
+      })
+    }
+  },
+  { immediate: true }
+)
+
+/**
+ * The standing credit-exhaustion surface.
+ *
+ * The inline card above is reachable from exactly one moment: a turn POST that
+ * came back 402/`no_funds` (`recordSendError` -> `recordPaywall`). Every other
+ * way a user meets the ceiling — including a refusal inside a server-side LLM
+ * hop that the browser cannot observe — needs a durable upgrade path.
+ *
+ * So this reads the funds signal the client already holds rather than waiting
+ * for a refusal to carry it. It is deliberately the symmetric half of the
+ * `hasFunds` watch above, which already clears paywalls when funds return.
+ *
+ * Consolidated cloud billing only: legacy balance loading currently collapses
+ * unknown into false, so it cannot safely drive this surface.
+ *
+ * Non-blocking by construction — it renders beside the composer and disables
+ * nothing.
+ */
+const agentHasFunds = computed(() => subscription.value?.agentHasFunds)
+const creditsExhausted = computed(() => {
+  if (billingType.value !== 'workspace') return false
+  // Same gate as the impression report above: an unsettled read cannot say
+  // which presentation is right, and a card naming the wrong remediation is
+  // worse than no card.
+  if (!capabilityReadSettled.value) return false
+  if (agentHasFunds.value !== false) return false
+  if (
+    billingStatus.value === 'paused' ||
+    billingStatus.value === 'payment_failed'
+  )
+    return false
+  // A standing card must offer a next step. Refusal-anchored inline cards can
+  // still explain member, sales-managed, or unavailable states without a CTA.
+  return ['subscribed', 'subscriptionRequired', 'local'].includes(
+    paywallPresentation.value.kind
+  )
+})
+
+/**
+ * Suppressed while the latest transcript entry is an unresolved inline card:
+ * the two render the same copy. An older card may be scrolled away and must not
+ * hide the standing recovery path after a later server-side refusal.
+ */
+const showStandingPaywall = computed(() => {
+  if (!creditsExhausted.value) return false
+  const latestEntry = conversationEntries.value.at(-1)
+  return !(
+    latestEntry?.role === 'assistant' &&
+    latestEntry.parts.some((part) => part.type === 'paywall')
+  )
+})
+
+const agentPanelStore = useAgentPanelStore()
+const billingIdentity = computed(
+  () =>
+    `${resolvedUserInfo.value?.id ?? 'anonymous'}:${teamWorkspaceStore.workspaceId ?? 'none'}`
+)
+
+/**
+ * One impression per exhaustion episode, not per render: the surface is
+ * standing, so it is visible for as long as the workspace is out of credits and
+ * a per-render report would make impressions a function of session length.
+ * Reset when funds return, so a later exhaustion reports again — mirroring how
+ * `useBillingBanner` scopes its dismissal to one episode.
+ */
+watch(billingIdentity, () => {
+  agentPanelStore.reportedExhaustionIdentity = null
+})
+
+function onStandingPaywallShown(): void {
+  if (
+    !showStandingPaywall.value ||
+    agentPanelStore.reportedExhaustionIdentity === billingIdentity.value
+  )
+    return
+  const telemetry = useTelemetry()
+  if (!telemetry) return
+  agentPanelStore.reportedExhaustionIdentity = billingIdentity.value
+  telemetry.trackAgentPaywallShown({
+    reason: snapshotAuthoritative.value
+      ? toAgentPaywallReason(paywallPresentation.value)
+      : 'unknown',
+    surface: 'credits_exhausted'
+  })
 }
 
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const bindingStore = useAgentWorkflowTabBindingStore()
-const agentPanelStore = useAgentPanelStore()
 const composerStore = useAgentComposerStore()
 const { selectedWorkflow: selectedTarget } = storeToRefs(agentPanelStore)
 const { dismissedSelectionSignature, enabled: agentEnabled } =
@@ -707,17 +859,28 @@ function resumedTurnTabPath(): string | null {
 // Adoption (onWorkflowAdopted) and tab activation (onAgentActiveTab) are the
 // primary spinner setters; the non-idle branch only re-arms it after the
 // stash/resume flip of a panel remount, where those setters never run.
-let observedActivityStatus = false
+let wasTurnActive = false
 watch(
   [status, conversationTurnId],
   ([value, turnId]) => {
+    const completedTurn = wasTurnActive && value === 'idle'
     if (value === 'idle') {
       // The immediate idle value on remount is a hydration snapshot, not a
       // completed turn. A real idle transition is observed after this pass.
-      if (observedActivityStatus) graphActivity.finishTurn()
+      if (completedTurn) graphActivity.finishTurn()
     } else graphActivity.startTurn(turnId)
-    observedActivityStatus = true
+    wasTurnActive = value !== 'idle'
     if (value === 'idle') {
+      // A server-side LLM-hop refusal does not reach the browser as a 402.
+      // Refresh the authoritative effective-funds verdict after every observed
+      // turn completion so both exhaustion and external top-ups converge.
+      if (completedTurn && billingType.value === 'workspace') {
+        void refreshBillingStatus().catch((error: unknown) => {
+          reportError(error, {
+            errorType: 'error_refreshing_agent_billing_status'
+          })
+        })
+      }
       const completedPath = tabActivity.editingTabPath
       tabActivity.setEditing(null)
       if (completedPath !== null) tabActivity.markModified(completedPath)
@@ -1399,6 +1562,7 @@ function onPanelDrop(event: DragEvent): void {
       :workflow-detached="workflowDetached"
       :get-mention-nodes="mentionableNodes"
       :paywall-presentation="paywallPresentation"
+      :credits-exhausted="showStandingPaywall"
       @send="onSend"
       @stop="onStop"
       @attach="onAttach"
@@ -1413,6 +1577,7 @@ function onPanelDrop(event: DragEvent): void {
       @open-workflow="onOpenApprovalWorkflow"
       @open-reference-workflow="onNavigateToReferenceWorkflow"
       @paywall-action="onPaywallAction"
+      @standing-paywall-shown="onStandingPaywallShown"
       @new-chat="onNewChat"
       @toggle-size="agentPanelStore.toggleMaximize()"
       @close="onClosePanel"
