@@ -759,6 +759,13 @@ describe('AgentPanelRoot onboarding', () => {
   })
 })
 
+/**
+ * The transcript, for assertions that mean the INLINE paywall card - the one
+ * rendered against the turn a 402 refused. The panel now also has a standing
+ * credits-exhausted card beside the composer, and both render the same
+ * component with the same copy, so an unscoped
+ * `getByRole('button', { name: 'Subscribe' })` no longer says which it found.
+ */
 function inlinePaywall() {
   return within(screen.getByTestId('agent-conversation'))
 }
@@ -770,6 +777,10 @@ function findInlinePaywallButton(name: string): Promise<HTMLElement> {
 function queryInlinePaywallButton(name: string): HTMLElement | null {
   const view = screen.queryByTestId('agent-conversation')
   return view ? within(view).queryByRole('button', { name }) : null
+}
+
+function findInlinePaywallText(text: string): Promise<HTMLElement> {
+  return vi.waitFor(() => inlinePaywall().getByText(text))
 }
 
 function queryInlinePaywallText(text: string): HTMLElement | null {
@@ -1011,13 +1022,11 @@ describe('AgentPanelRoot paywall actions', () => {
     })
 
     expect(
-      await screen.findByText(
+      await findInlinePaywallText(
         'This workspace is billed through your Comfy account team. Contact them to add credits.'
       )
     ).toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'Add credits' })
-    ).not.toBeInTheDocument()
+    expect(queryInlinePaywallButton('Add credits')).not.toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: /upgrade|subscribe/i })
     ).not.toBeInTheDocument()
@@ -1025,9 +1034,9 @@ describe('AgentPanelRoot paywall actions', () => {
 
   // Each unresolved input is its own wiring test: the panel reads
   // `hasResolvedCapabilities` and `workspaceRole`, so a table varying both at
-  // once would need a conditional body. Pending-versus-denied capability
-  // policy belongs to useBillingCapabilities.test.ts, which owns that split;
-  // the panel cannot tell the two apart because it never reads `isReady`.
+  // once would need a conditional body. Which states count as settled belongs
+  // to useBillingCapabilities.test.ts, which owns that split; these cases only
+  // pin what the panel renders from the inputs it is handed.
   async function expectWithheldPurchaseActions() {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentConversationStore().messages.push({
