@@ -132,6 +132,7 @@ describe('useTemplateModelAvailability', () => {
       { model: unresolved, status: 'unknown' }
     ])
     expect(mocks.reportError).toHaveBeenCalledExactlyOnceWith(inventoryError, {
+      surface: 'graph',
       errorType: 'workflow_template_model_inventory_failed',
       level: 'warning'
     })

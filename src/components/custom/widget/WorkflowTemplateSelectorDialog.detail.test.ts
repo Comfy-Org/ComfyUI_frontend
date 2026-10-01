@@ -71,7 +71,9 @@ const mocks = vi.hoisted(() => ({
   loadTemplates: vi.fn(async () => true),
   onClose: vi.fn(),
   discardPreparedWorkflowTemplate: vi.fn(),
-  openPreparedWorkflowTemplate: vi.fn(async () => 'loaded' as const),
+  openPreparedWorkflowTemplate: vi.fn<
+    () => Promise<'loaded' | 'graph-failed' | 'not-started'>
+  >(async () => 'loaded'),
   prepareWorkflowTemplate: vi.fn(async () => fixtures.prepared),
   resolveAvailability: vi.fn<
     () => Promise<ResolvedTemplateModelAvailability[]>
