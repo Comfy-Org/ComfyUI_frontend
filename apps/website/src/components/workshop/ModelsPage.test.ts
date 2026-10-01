@@ -109,6 +109,50 @@ describe('Models page entry', () => {
     expect(html).toContain('workshop-loading')
   })
 
+  function renderSection(section: 'models' | 'workflows' | 'apps') {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>().mockResolvedValue(Response.json(workshopPages))
+    )
+    enabled.value = true
+    workflowsEnabled.value = true
+    render(ModelsPage, { props: { section, heading: 'Section heading' } })
+    return screen.findByRole('heading', { name: 'Section heading' })
+  }
+
+  it.for([
+    { section: 'apps', current: 'Create' },
+    { section: 'models', current: 'Build' },
+    { section: 'workflows', current: 'Build' }
+  ] as const)(
+    'splits the hub into Create and Build, marking $current on $section',
+    async ({ section, current }) => {
+      appsEnabled.value = true
+      await renderSection(section)
+
+      const spaces = within(
+        screen.getByRole('navigation', { name: 'Hub spaces' })
+      )
+      expect(
+        spaces
+          .getAllByRole('link')
+          .map((link) => [link.textContent.trim(), link.getAttribute('href')])
+      ).toEqual([
+        ['Create', '/hub/apps/'],
+        ['Build', '/hub/models/']
+      ])
+      expect(spaces.getByRole('link', { current: 'page' })).toHaveTextContent(
+        current
+      )
+    }
+  )
+
+  it('leaves the hub unsplit while apps are off', async () => {
+    await renderSection('models')
+
+    expect(screen.queryByRole('navigation', { name: 'Hub spaces' })).toBeNull()
+  })
+
   it.for([
     {
       section: 'workflows',

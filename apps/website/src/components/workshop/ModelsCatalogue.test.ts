@@ -6,7 +6,6 @@ import type { Ref } from 'vue'
 
 import {
   captureWorkshopEvent,
-  useWorkshopAppsEnabled,
   useWorkshopEnabled,
   useWorkshopFlag
 } from '../../scripts/posthog'
@@ -16,16 +15,13 @@ import type { WorkshopModel } from '../../config/models-catalogue'
 vi.mock(import('../../scripts/posthog'))
 
 let enabled: Ref<boolean>
-let appsEnabled: Ref<boolean>
 let reshootFlag: Ref<boolean>
 
 beforeEach(() => {
   history.replaceState(null, '', '/models/')
   enabled = ref(false)
-  appsEnabled = ref(true)
   reshootFlag = ref(true)
   vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(enabled))
-  vi.mocked(useWorkshopAppsEnabled).mockReturnValue(readonly(appsEnabled))
   vi.mocked(useWorkshopFlag).mockImplementation((name) =>
     readonly(name === 'workshop-reshoot-app-enabled' ? reshootFlag : ref(false))
   )
@@ -188,13 +184,7 @@ describe('ModelsCatalogue', () => {
 
   // The tabs belong with the controls that act on the list, not with the
   // heading: they switch halves inside the catalogue rather than announce it.
-  // Apps has no list of its own, so it carries them anyway or there is no way
-  // back out of it.
-  it.for([
-    { section: 'models' },
-    { section: 'workflows' },
-    { section: 'apps' }
-  ] as const)(
+  it.for([{ section: 'models' }, { section: 'workflows' }] as const)(
     'keeps the tabs beside the controls in the $section section',
     async ({ section }) => {
       render(ModelsCatalogue, { props: { models: launchModels, section } })
@@ -211,8 +201,7 @@ describe('ModelsCatalogue', () => {
 
   it.for([
     { section: 'models', current: 'Models' },
-    { section: 'workflows', current: 'Workflows' },
-    { section: 'apps', current: 'Apps' }
+    { section: 'workflows', current: 'Workflows' }
   ] as const)(
     'links each tab to its hub page and marks $current as current',
     async ({ section, current }) => {
@@ -225,8 +214,7 @@ describe('ModelsCatalogue', () => {
           .map((link) => [link.textContent.trim(), link.getAttribute('href')])
       ).toEqual([
         ['Models', '/hub/models/'],
-        ['Workflows', '/hub/workflows/'],
-        ['Apps', '/hub/apps/']
+        ['Workflows', '/hub/workflows/']
       ])
       expect(tabs.getByRole('link', { current: 'page' })).toHaveTextContent(
         current
@@ -245,11 +233,7 @@ describe('ModelsCatalogue', () => {
         .getAllByRole('link')
         .map((link) => link.getAttribute('href'))
     ).toEqual(['/hub/apps/cinematic-studio/', '/hub/apps/reshoot/'])
-    expect(
-      within(screen.getByTestId('workshop-toolbar')).getByTestId(
-        'catalogue-tabs'
-      )
-    ).toBeVisible()
+    expect(screen.queryByTestId('catalogue-tabs')).toBeNull()
     expect(screen.queryByRole('button', { name: /Browse all apps/ })).toBeNull()
   })
 
@@ -277,36 +261,21 @@ describe('ModelsCatalogue', () => {
   })
 
   it.for([
-    {
-      name: 'apps off',
-      apps: false,
-      workflows: true,
-      tabs: ['Models', 'Workflows']
-    },
-    {
-      name: 'workflows off',
-      apps: true,
-      workflows: false,
-      tabs: ['Models', 'Apps']
-    },
-    { name: 'both off', apps: false, workflows: false, tabs: [] }
-  ])(
-    'shows only the tabs a visitor can open: $name',
-    ({ apps, workflows, tabs }) => {
-      appsEnabled.value = apps
-      const models = launchModels.filter(
-        (model) =>
-          workflows || model.routerId !== undefined || model.type === 'APP'
-      )
-      render(ModelsCatalogue, { props: { models } })
+    { name: 'workflows on', workflows: true, tabs: ['Models', 'Workflows'] },
+    { name: 'workflows off', workflows: false, tabs: [] }
+  ])('shows only the tabs a visitor can open: $name', ({ workflows, tabs }) => {
+    const models = launchModels.filter(
+      (model) =>
+        workflows || model.routerId !== undefined || model.type === 'APP'
+    )
+    render(ModelsCatalogue, { props: { models } })
 
-      expect(
-        screen
-          .queryAllByRole('link', { name: /^(Models|Workflows|Apps)$/ })
-          .map((link) => link.textContent.trim())
-      ).toEqual(tabs)
-    }
-  )
+    expect(
+      screen
+        .queryAllByRole('link', { name: /^(Models|Workflows|Apps)$/ })
+        .map((link) => link.textContent.trim())
+    ).toEqual(tabs)
+  })
 
   it('keeps the tab of the section on screen when it has nothing to list', async () => {
     render(ModelsCatalogue, {
@@ -320,7 +289,7 @@ describe('ModelsCatalogue', () => {
       within(await screen.findByTestId('catalogue-tabs'))
         .getAllByRole('link')
         .map((link) => link.textContent.trim())
-    ).toEqual(['Models', 'Workflows', 'Apps'])
+    ).toEqual(['Models', 'Workflows'])
   })
 
   it('opens all workflows with a count and returns to the use-case groups', async () => {

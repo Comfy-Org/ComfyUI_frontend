@@ -14,11 +14,7 @@ import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
 import CatalogueTabs from './CatalogueTabs.vue'
 import type { CatalogueTab } from './CatalogueTabs.vue'
 import type { WorkshopPageType } from '../../scripts/workshop-analytics'
-import {
-  captureWorkshopEvent,
-  useWorkshopAppsEnabled,
-  useWorkshopEnabled
-} from '../../scripts/posthog'
+import { captureWorkshopEvent, useWorkshopEnabled } from '../../scripts/posthog'
 import type { CatalogueApp } from '../../lib/workshop/catalogue-apps'
 import { ac } from '../../lib/workshop/catalogue-apps'
 import {
@@ -46,7 +42,6 @@ const inSection = ref(false)
 const browseAll = ref(false)
 const mounted = useMounted()
 const enabled = useWorkshopEnabled()
-const appsEnabled = useWorkshopAppsEnabled()
 const shownModels = computed(() =>
   models.filter((model) => isWorkshopModelShown(model))
 )
@@ -77,9 +72,6 @@ const availableTabs = computed<readonly CatalogueTab[]>(() => [
   'models',
   ...(workflows.value.length || section === 'workflows'
     ? (['workflows'] as const)
-    : []),
-  ...((appsEnabled.value && apps.value.length) || section === 'apps'
-    ? (['apps'] as const)
     : [])
 ])
 
@@ -173,14 +165,5 @@ whenever(
     :apps="appCards"
     :locale
     @section="inSection = $event"
-  >
-    <template #tabs>
-      <CatalogueTabs
-        :tabs="availableTabs"
-        :model-value="section"
-        :locale
-        links
-      />
-    </template>
-  </AppCatalogue>
+  />
 </template>

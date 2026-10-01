@@ -38,6 +38,9 @@ const translations = {
   'workshop.catalogue.eyebrow': { en: 'Hub', 'zh-CN': 'Hub' },
   'workshop.catalogue.categories': { en: 'Categories', 'zh-CN': '分类' },
   'workshop.catalogue.show': { en: 'Browse', 'zh-CN': '浏览' },
+  'workshop.space.label': { en: 'Hub spaces', 'zh-CN': 'Hub 空间' },
+  'workshop.space.create': { en: 'Create', 'zh-CN': '创作' },
+  'workshop.space.build': { en: 'Build', 'zh-CN': '构建' },
   'workshop.catalogue.workflowsSubtitle': {
     en: 'Turn your ideas into finished results with multi-step workflows powered by AI models.',
     'zh-CN': '用由 AI 模型驱动的多步骤工作流，把你的想法变成完成的作品。'

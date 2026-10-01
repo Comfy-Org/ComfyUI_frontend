@@ -101,7 +101,7 @@ test('lists both apps on the hub apps page, on /hub/apps/ pages', async ({
   await expect(
     page.getByRole('heading', { level: 1, name: 'ComfyUI apps' })
   ).toBeVisible()
-  await expect(page.getByTestId('catalogue-tab-apps')).toHaveAttribute(
+  await expect(page.getByTestId('hub-space-create')).toHaveAttribute(
     'aria-current',
     'page'
   )

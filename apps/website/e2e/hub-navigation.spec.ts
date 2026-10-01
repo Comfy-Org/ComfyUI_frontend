@@ -14,6 +14,17 @@ test.beforeEach(async ({ context }) => {
   })
 })
 
+type HubSection = 'models' | 'workflows' | 'apps'
+
+function currentLink(section: HubSection) {
+  return section === 'apps' ? 'hub-space-create' : `catalogue-tab-${section}`
+}
+
+function linkBetween(from: HubSection, to: HubSection) {
+  if (to === 'apps') return 'hub-space-create'
+  return from === 'apps' ? 'hub-space-build' : `catalogue-tab-${to}`
+}
+
 for (const { from, to, copy, reducedMotion } of [
   {
     from: 'models',
@@ -45,7 +56,7 @@ for (const { from, to, copy, reducedMotion } of [
   }) => {
     await page.emulateMedia({ reducedMotion })
     await page.goto(`/hub/${from}/`)
-    await expect(page.getByTestId(`catalogue-tab-${from}`)).toHaveAttribute(
+    await expect(page.getByTestId(currentLink(from))).toHaveAttribute(
       'aria-current',
       'page'
     )
@@ -110,7 +121,7 @@ for (const { from, to, copy, reducedMotion } of [
       }
     }, `/hub/${to}/`)
     try {
-      await page.getByTestId(`catalogue-tab-${to}`).click()
+      await page.getByTestId(linkBetween(from, to)).click()
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(
         `ComfyUI ${to}`
       )
@@ -139,14 +150,14 @@ for (const width of [1440, 390]) {
       { from: 'models', to: 'workflows' },
       { from: 'workflows', to: 'apps' },
       { from: 'apps', to: 'models' }
-    ]) {
+    ] as const) {
       test(`${from} to ${to} keeps the page steady, including Back and Forward`, async ({
         page
       }) => {
         const errors: string[] = []
         page.on('pageerror', (error) => errors.push(error.message))
         await page.goto(`/hub/${from}/`)
-        await expect(page.getByTestId(`catalogue-tab-${from}`)).toHaveAttribute(
+        await expect(page.getByTestId(currentLink(from))).toHaveAttribute(
           'aria-current',
           'page'
         )
@@ -156,12 +167,12 @@ for (const width of [1440, 390]) {
         ).toBeHidden()
         const observation = await observeHubNavigation(page)
 
-        await page.getByTestId(`catalogue-tab-${to}`).click()
+        await page.getByTestId(linkBetween(from, to)).click()
         await expect(page).toHaveURL(`/hub/${to}/`)
         await expect(page.getByRole('heading', { level: 1 })).toHaveText(
           `ComfyUI ${to}`
         )
-        await expect(page.getByTestId(`catalogue-tab-${to}`)).toHaveAttribute(
+        await expect(page.getByTestId(currentLink(to))).toHaveAttribute(
           'aria-current',
           'page'
         )
@@ -175,7 +186,7 @@ for (const width of [1440, 390]) {
         await expect(page.getByRole('heading', { level: 1 })).toHaveText(
           `ComfyUI ${from}`
         )
-        await expect(page.getByTestId(`catalogue-tab-${from}`)).toHaveAttribute(
+        await expect(page.getByTestId(currentLink(from))).toHaveAttribute(
           'aria-current',
           'page'
         )
@@ -184,7 +195,7 @@ for (const width of [1440, 390]) {
         await expect(page.getByRole('heading', { level: 1 })).toHaveText(
           `ComfyUI ${to}`
         )
-        await expect(page.getByTestId(`catalogue-tab-${to}`)).toHaveAttribute(
+        await expect(page.getByTestId(currentLink(to))).toHaveAttribute(
           'aria-current',
           'page'
         )
@@ -193,17 +204,17 @@ for (const width of [1440, 390]) {
         expect(frames).toBeGreaterThan(0)
         expect(changes).toEqual({
           bannerReappeared: false,
-          tabsDisappeared: false,
+          spacesDisappeared: false,
           loaderAppeared: false,
           headerMoved: false,
-          tabsMoved: false
+          spacesMoved: false
         })
         expect(errors).toEqual([])
         await page.reload()
         await expect(page.getByRole('heading', { level: 1 })).toHaveText(
           `ComfyUI ${to}`
         )
-        await expect(page.getByTestId(`catalogue-tab-${to}`)).toHaveAttribute(
+        await expect(page.getByTestId(currentLink(to))).toHaveAttribute(
           'aria-current',
           'page'
         )

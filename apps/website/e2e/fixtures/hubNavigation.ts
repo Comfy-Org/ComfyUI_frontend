@@ -5,15 +5,15 @@ export async function observeHubNavigation(page: Page) {
     const observed = {
       frames: 0,
       bannerReappeared: false,
-      tabsDisappeared: false,
+      spacesDisappeared: false,
       loaderAppeared: false,
       headerMoved: false,
-      tabsMoved: false
+      spacesMoved: false
     }
     const header = document.querySelector('[aria-label="Main navigation"]')
     const headerY = header?.getBoundingClientRect().y
-    const tabsY = document
-      .querySelector('[data-testid="catalogue-tabs"]')
+    const spacesY = document
+      .querySelector('[data-testid="hub-space-nav"]')
       ?.getBoundingClientRect().y
     let frame: number
     function record() {
@@ -23,8 +23,8 @@ export async function observeHubNavigation(page: Page) {
           .querySelector('[data-slot="announcement-banner"]')
           ?.checkVisibility()
       )
-      observed.tabsDisappeared ||= !document
-        .querySelector('[data-testid="catalogue-tabs"]')
+      observed.spacesDisappeared ||= !document
+        .querySelector('[data-testid="hub-space-nav"]')
         ?.checkVisibility()
       observed.loaderAppeared ||= Boolean(
         document
@@ -37,10 +37,10 @@ export async function observeHubNavigation(page: Page) {
         document
           .querySelector('[aria-label="Main navigation"]')
           ?.getBoundingClientRect().y !== headerY
-      observed.tabsMoved ||=
+      observed.spacesMoved ||=
         document
-          .querySelector('[data-testid="catalogue-tabs"]')
-          ?.getBoundingClientRect().y !== tabsY
+          .querySelector('[data-testid="hub-space-nav"]')
+          ?.getBoundingClientRect().y !== spacesY
       frame = requestAnimationFrame(record)
     }
     record()

@@ -23,6 +23,7 @@ import {
 } from '../../scripts/posthog'
 
 import type { CatalogueTab } from './CatalogueTabs.vue'
+import HubSpaceNav from './HubSpaceNav.vue'
 import WorkshopGate from './WorkshopGate.vue'
 import WorkshopLoading from './WorkshopLoading.vue'
 import {
@@ -227,6 +228,7 @@ const Content = shallowRef(createContent())
       v-if="heading && catalogueView !== 'denied'"
       class="mx-auto max-w-10xl animate-soft-in px-6 pt-8 pb-4 max-sm:pt-5 lg:px-8 lg:pt-12 sm:short:pb-3"
     >
+      <HubSpaceNav :section />
       <p :class="workshopEyebrowClass">
         {{ t('workshop.catalogue.eyebrow', 'en') }}
       </p>
