@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
+import EditorChecker from './EditorChecker.vue'
 import EditorFrame from './EditorFrame.vue'
 
 const {
@@ -11,7 +12,8 @@ const {
   afterLabel,
   sliderLabel,
   width,
-  height
+  height,
+  checker = false
 } = defineProps<{
   before: string
   after: string
@@ -21,6 +23,8 @@ const {
   sliderLabel: string
   width: number
   height: number
+  /** Shows a checkerboard through the result's transparent pixels. */
+  checker?: boolean
 }>()
 
 const split = ref(50)
@@ -29,6 +33,7 @@ const split = ref(50)
 <template>
   <EditorFrame :width :height>
     <div class="relative size-full overflow-hidden rounded-sm">
+      <EditorChecker v-if="checker" />
       <img :src="after" :alt class="absolute inset-0 size-full object-cover" />
       <img
         :src="before"

@@ -13,8 +13,9 @@ const emit = defineEmits<{ cancel: [] }>()
     class="absolute inset-0 flex items-center justify-center rounded-sm bg-primary-comfy-ink/60"
     role="status"
   >
+    <slot />
     <div
-      class="flex items-center gap-3 rounded-2xl border border-transparency-white-t20 bg-primary-comfy-ink-light px-4 py-3"
+      class="relative flex items-center gap-3 rounded-2xl border border-transparency-white-t20 bg-primary-comfy-ink-light px-4 py-3"
     >
       <span
         class="size-5 rounded-full border-2 border-transparency-white-t20 border-t-primary-comfy-yellow motion-safe:animate-spin"

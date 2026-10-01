@@ -20,6 +20,7 @@ describe('hub model addresses', () => {
       `${HUB_APPS_PATH}/`
     ])
     expect([
+      routes.backgroundRemoval,
       routes.cinematicStudio,
       routes.moveAnything,
       routes.relight,

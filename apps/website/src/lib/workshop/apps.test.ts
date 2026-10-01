@@ -8,7 +8,8 @@ describe('workshopAppHref', () => {
     { app: 'studio', href: '/hub/apps/cinematic-studio/' },
     { app: 'reshoot', href: '/hub/apps/reshoot/' },
     { app: 'move-anything', href: '/hub/apps/move-anything/' },
-    { app: 'relight', href: '/hub/apps/relight/' }
+    { app: 'relight', href: '/hub/apps/relight/' },
+    { app: 'background-removal', href: '/hub/apps/background-removal/' }
   ] as const)('puts $app at $href', ({ app, href }) => {
     expect(workshopAppHref(app, 'en')).toBe(href)
   })

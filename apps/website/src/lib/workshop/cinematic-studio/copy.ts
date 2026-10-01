@@ -72,6 +72,18 @@ const copy = {
     en: 'Image · Beeble SwitchX',
     'zh-CN': '图像 · Beeble SwitchX'
   },
+  'cinematic.hub.backgroundRemoval': {
+    en: 'Background Removal',
+    'zh-CN': '背景移除'
+  },
+  'cinematic.hub.backgroundRemovalSummary': {
+    en: 'Cut the subject out of a photo and put it on a clean background, or none at all.',
+    'zh-CN': '将主体从照片中抠出，放在干净的背景上，或保留透明背景。'
+  },
+  'cinematic.hub.backgroundRemovalMeta': {
+    en: 'Image · Background removal',
+    'zh-CN': '图像 · 背景移除'
+  },
   'cinematic.stage.longWait': {
     en: 'Still going. Some models take about a minute. Nothing is queued; yours already started.',
     'zh-CN': '仍在进行。部分模型需要约一分钟。没有排队，你的任务已经开始。'
