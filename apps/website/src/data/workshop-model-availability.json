@@ -1,4 +1,8 @@
 {
+  "apps/hand-product-swap": {
+    "flag": "workshop-hand-product-swap-app-enabled",
+    "reason": "Hand product swap is a front-end mock while its backend is built; shown only where PostHog turns it on."
+  },
   "apps/move-anything": {
     "flag": "workshop-move-anything-app-enabled",
     "reason": "Move anything is a front-end mock while its backend is built; shown only where PostHog turns it on."
