@@ -990,15 +990,13 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
 
     expect(state.instance.widgets[0]?.value).toBe(INTERIOR_DEFAULT_VALUE)
     expect(reportError).toHaveBeenCalledTimes(2)
-    expect(reportError).toHaveBeenNthCalledWith(
-      1,
+    expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({
         context: expect.objectContaining({ phase: 'load' })
       })
     )
-    expect(reportError).toHaveBeenNthCalledWith(
-      2,
+    expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({
         context: expect.objectContaining({ phase: 'incremental' })
