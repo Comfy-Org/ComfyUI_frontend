@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import ModelExploreCard from './ModelExploreCard.vue'
+import ModelExploreGrid from './ModelExploreGrid.vue'
 import type { CardWorkflowItem } from './ModelExploreCard.vue'
 import ModelCollectionHeader from './ModelCollectionHeader.vue'
 import SearchField from './ModelSearchField.vue'
@@ -13,7 +13,6 @@ import type {
   ModelCatalogFilterValue,
   ModelCategoryOption
 } from './ModelCategoryFilter.vue'
-import ModelMediaPlaceholder from './ModelMediaPlaceholder.vue'
 import type {
   ExploreModelCardFixture,
   ExploreModelStatus
@@ -36,6 +35,7 @@ const {
   resultCountLabel,
   emptyLabel,
   showCatalogByDefault = false,
+  catalogLabel,
   defaultModels,
   collectionHeadingId,
   collectionLabel,
@@ -55,6 +55,7 @@ const {
   resultCountLabel: string
   emptyLabel: string
   showCatalogByDefault?: boolean
+  catalogLabel?: string
   defaultModels?: ExploreModelCardFixture[]
   collectionHeadingId?: string
   collectionLabel?: string
@@ -114,13 +115,17 @@ const categoryLabels = computed(
     )
 )
 
-onMounted(() => {
+onMounted(async () => {
   const searchParams = new URLSearchParams(window.location.search)
   const accessParam = searchParams.get('access')
 
   access.value =
     accessParam === 'open' || accessParam === 'partner' ? accessParam : 'all'
   showAll.value = showCatalogByDefault || searchParams.get('catalog') === 'all'
+  if (window.location.hash === '#model-catalog-results' && isActive.value) {
+    await nextTick()
+    document.getElementById('model-catalog-results')?.scrollIntoView()
+  }
 })
 
 function workflowDescription(workflowCount: number): string {
@@ -179,18 +184,17 @@ function toDefaultWorkflowItem(
   }
 }
 const displayEntries = computed(() =>
-  isActive.value
-    ? displayedCatalog.value.map((model) => ({
-        item: toWorkflowItem(model),
-        tone: model.mediaTone
-      }))
-    : (defaultModels ?? []).map((model) => ({
-        item: toDefaultWorkflowItem(model),
-        tone:
-          model.media.type === 'placeholder'
-            ? model.media.tone
-            : ('plum' as const)
-      }))
+  displayedCatalog.value.map((model) => ({
+    item: toWorkflowItem(model),
+    tone: model.mediaTone
+  }))
+)
+const defaultEntries = computed(() =>
+  (defaultModels ?? []).map((model) => ({
+    item: toDefaultWorkflowItem(model),
+    tone:
+      model.media.type === 'placeholder' ? model.media.tone : ('plum' as const)
+  }))
 )
 </script>
 
@@ -211,18 +215,30 @@ const displayEntries = computed(() =>
     />
   </div>
   <section
-    v-if="defaultModels || isActive"
-    id="model-catalog-results"
+    v-if="defaultModels"
+    id="trending-models"
     :aria-labelledby="collectionHeadingId"
     :class="resultsClass"
   >
     <ModelCollectionHeader
-      v-if="defaultModels"
       :heading-id="collectionHeadingId"
       :label="collectionLabel"
       :description="collectionDescription"
       :action-label="collectionActionLabel"
       :action-href="collectionActionHref"
+    />
+    <ModelExploreGrid :entries="defaultEntries" class="mt-7" />
+  </section>
+  <section
+    v-if="isActive"
+    id="model-catalog-results"
+    :aria-labelledby="catalogLabel ? 'model-catalog-heading' : undefined"
+    :class="resultsClass"
+  >
+    <ModelCollectionHeader
+      v-if="catalogLabel"
+      heading-id="model-catalog-heading"
+      :label="catalogLabel"
     />
     <p
       v-if="isEmpty"
@@ -230,22 +246,10 @@ const displayEntries = computed(() =>
     >
       {{ emptyLabel }}
     </p>
-    <div
+    <ModelExploreGrid
       v-else
-      :class="
-        cn('grid gap-6 sm:grid-cols-2 xl:grid-cols-4', defaultModels && 'mt-7')
-      "
-    >
-      <ModelExploreCard
-        v-for="entry in displayEntries"
-        :key="entry.item.id"
-        :item="entry.item"
-        variant="compact"
-      >
-        <template v-if="entry.item.media.type === 'placeholder'" #media>
-          <ModelMediaPlaceholder :tone="entry.tone" />
-        </template>
-      </ModelExploreCard>
-    </div>
+      :entries="displayEntries"
+      :class="cn(catalogLabel && 'mt-7')"
+    />
   </section>
 </template>

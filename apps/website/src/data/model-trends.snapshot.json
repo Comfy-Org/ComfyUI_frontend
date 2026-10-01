@@ -31,6 +31,30 @@
       "usersCurrent": 145,
       "usersPrevious": 0,
       "runsCurrent": 2317
+    },
+    {
+      "model": "meshy-7.1",
+      "usersCurrent": 76,
+      "usersPrevious": 22,
+      "runsCurrent": 288
+    },
+    {
+      "model": "kling-v3",
+      "usersCurrent": 246,
+      "usersPrevious": 208,
+      "runsCurrent": 1736
+    },
+    {
+      "model": "eleven_sfx_v2",
+      "usersCurrent": 84,
+      "usersPrevious": 47,
+      "runsCurrent": 1438
+    },
+    {
+      "model": "eleven_v3",
+      "usersCurrent": 86,
+      "usersPrevious": 51,
+      "runsCurrent": 1084
     }
   ]
 }

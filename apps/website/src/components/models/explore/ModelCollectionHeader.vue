@@ -17,7 +17,7 @@ defineProps<{
       <h2 :id="headingId">
         <SectionLabel>{{ label }}</SectionLabel>
       </h2>
-      <p class="text-base font-light text-primary-warm-gray">
+      <p v-if="description" class="text-base font-light text-primary-warm-gray">
         {{ description }}
       </p>
     </div>

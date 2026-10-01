@@ -15,6 +15,38 @@ export const modelTrendSnapshotSchema = z.object({
 
 export const trendModelVersions = [
   {
+    id: 'meshy-7.1',
+    name: 'Meshy 7.1',
+    modality: '3d',
+    href: 'https://docs.meshy.ai/en/api/changelog',
+    mediaSrc:
+      'https://comfy-hub-assets.comfy.org/templates/4c4a756a-cd5f-4375-b600-7ecef483c2c9.webp'
+  },
+  {
+    id: 'kling-v3',
+    name: 'Kling Video 3.0',
+    modality: 'video',
+    href: '/hub/models/kling-3-0-text-to-video/',
+    mediaSrc:
+      'https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_kling_v3_video-1.webp'
+  },
+  {
+    id: 'eleven_sfx_v2',
+    name: 'ElevenLabs Sound Effects V2',
+    modality: 'audio',
+    href: 'https://elevenlabs.io/docs/api-reference/text-to-sound-effects/convert',
+    mediaSrc:
+      'https://comfy-hub-assets.comfy.org/templates/64815598-007c-46a5-bea5-4afefe9032a5.png'
+  },
+  {
+    id: 'eleven_v3',
+    name: 'Eleven v3',
+    modality: 'audio',
+    href: 'https://elevenlabs.io/v3',
+    mediaSrc:
+      'https://comfy-hub-assets.comfy.org/templates/89e72414-ca2d-4c51-bc43-f453e9a52e12.png'
+  },
+  {
     id: 'seedream-5-0-flash-260915',
     name: 'Seedream 5.0 Flash',
     modality: 'image',
@@ -103,5 +135,5 @@ export function rankModelTrends(
         b.usersCurrent - a.usersCurrent ||
         a.id.localeCompare(b.id)
     )
-    .slice(0, 4)
+    .slice(0, 8)
 }

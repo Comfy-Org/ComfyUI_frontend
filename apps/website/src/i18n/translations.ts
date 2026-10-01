@@ -78,6 +78,10 @@ const translations = {
     en: 'Used by {count} supported workflow.',
     'zh-CN': '由 {count} 个受支持的工作流使用。'
   },
+  'models.explore.catalog.label': {
+    en: 'MODEL CATALOG',
+    'zh-CN': '模型目录'
+  },
   'models.explore.catalog.workflowCountMany': {
     en: 'Used by {count} supported workflows.',
     'zh-CN': '由 {count} 个受支持的工作流使用。'

@@ -8,6 +8,7 @@ test.describe('Supported model explorer @smoke', () => {
   }) => {
     await page.goto('/p/supported-models/')
     const trending = page.getByRole('region', { name: 'TRENDING', exact: true })
+    await expect(trending.getByRole('heading', { level: 3 })).toHaveCount(8)
     await expect(trending).toContainText('Successful partner generations')
     await expect(trending).toContainText('weekly users')
     await expect(
@@ -22,6 +23,29 @@ test.describe('Supported model explorer @smoke', () => {
     await expect(page.getByRole('heading', { level: 1 })).toContainText(
       'Seedream 5.0 Pro'
     )
+  })
+
+  test('keeps eight individual trending versions when the full catalog is filtered', async ({
+    page
+  }) => {
+    await page.goto(
+      '/p/supported-models/?catalog=all&access=open#model-catalog-results'
+    )
+    const trending = page.getByRole('region', { name: 'TRENDING', exact: true })
+    await expect(trending.getByRole('heading', { level: 3 })).toHaveCount(8)
+    await expect(
+      trending.getByRole('link', { name: 'Seedance (ByteDance)', exact: true })
+    ).toHaveCount(0)
+    await expect(
+      page.getByRole('region', { name: 'MODEL CATALOG', exact: true })
+    ).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: 'MODEL CATALOG', exact: true })
+    ).toBeInViewport()
+    await page
+      .getByRole('radio', { name: 'Partner Nodes', exact: true })
+      .click()
+    await expect(trending.getByRole('heading', { level: 3 })).toHaveCount(8)
   })
 
   test('shows verified releases with quantization variants grouped', async ({

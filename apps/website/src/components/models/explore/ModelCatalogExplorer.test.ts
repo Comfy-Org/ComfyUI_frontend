@@ -1,9 +1,10 @@
 // @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
-import { render, screen, waitFor } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import ModelCatalogExplorer from './ModelCatalogExplorer.vue'
+import type { ExploreModelCardFixture } from './modelExploreFixtures'
 
 const props = {
   catalog: [
@@ -127,6 +128,41 @@ describe('ModelCatalogExplorer', () => {
       expect(screen.getByRole('link', { name: 'Wan Video' })).toBeTruthy()
       expect(screen.getByRole('link', { name: 'Partner Image' })).toBeTruthy()
     })
+  })
+
+  it('keeps eight version cards separate when catalog filters change', async () => {
+    const defaultModels: ExploreModelCardFixture[] = Array.from(
+      { length: 8 },
+      (_, index) => ({
+        name: `Model version ${index + 1}`,
+        href: `/model-version-${index + 1}/`,
+        target: '_self',
+        description: 'Weekly user growth',
+        modality: 'image',
+        tag: 'Partner API',
+        media: { type: 'placeholder', tone: 'plum' }
+      })
+    )
+    render(ModelCatalogExplorer, {
+      props: {
+        ...props,
+        defaultModels,
+        collectionHeadingId: 'trending-heading',
+        collectionLabel: 'TRENDING',
+        catalogLabel: 'MODEL CATALOG',
+        showCatalogByDefault: true
+      }
+    })
+    const trending = within(screen.getByRole('region', { name: 'TRENDING' }))
+    expect(trending.getAllByRole('heading', { level: 3 })).toHaveLength(8)
+    await userEvent.click(screen.getByRole('radio', { name: 'Partner Nodes' }))
+    const catalog = within(
+      screen.getByRole('region', { name: 'MODEL CATALOG' })
+    )
+    expect(catalog.getByRole('link', { name: 'Partner Image' })).toBeTruthy()
+    expect(catalog.queryByRole('link', { name: 'Wan Video' })).toBeNull()
+    expect(trending.getAllByRole('heading', { level: 3 })).toHaveLength(8)
+    expect(trending.queryByRole('link', { name: 'Partner Image' })).toBeNull()
   })
 
   it('shows the complete catalog by default on the dedicated page', () => {
