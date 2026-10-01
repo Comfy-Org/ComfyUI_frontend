@@ -181,11 +181,12 @@ describe('billing-web with unified_web_session on, as a funnel', () => {
   it('reports a Cloud session as established, with no sign-in screen', async () => {
     stubCloud({ kind: 'live', user: fakeWebSessionUser() })
 
-    const { router, events } = await arriveAt(CHECKOUT)
+    const { router, signInPage, events } = await arriveAt(CHECKOUT)
 
     await vi.waitFor(() =>
       expect(router.currentRoute.value.fullPath).toBe(CHECKOUT)
     )
+    expect(signInPage.leaving.value).toBe(true)
     expect(events()).toEqual([
       RECEIVED,
       {

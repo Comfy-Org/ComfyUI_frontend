@@ -14,13 +14,16 @@ export type BillingPayloadFieldHandling<Event = BillingTelemetryEvent> = Record<
 
 export const BILLING_PAYLOAD_FIELD_HANDLING = {
   checkout_status: 'required',
+  code: 'required',
   correlation_id: 'required',
   failure_category: 'required',
   has_plan: 'required',
   intent: 'required',
   member_removal_count: 'required',
   member_removal_failures: 'required',
+  mode: 'required',
   operation_type: 'required',
+  origin: 'required',
   product: 'required',
   reason: 'required',
   result: 'required',

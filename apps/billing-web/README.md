@@ -114,6 +114,16 @@ refuses storage still reports once per page load.
 - `billing.web_entry.bounced`: billing web sent the customer back to the host
   (`pricing_link`, `planless_checkout`) or replaced a checkout's `return_to`
   (`return_target_rewritten`); `to` is the return target or `pricing_table`.
+- `billing.web_session.signin_required`: the sign-in page opened on a session
+  that is signed out (`no_session`) or refused (`refused`). Counting these
+  against `received` is the second sign-in the shared web session removes.
+- `billing.web_session.established`: a session became usable. `origin` is
+  `interactive` once the customer signed in on this page, otherwise `restored`;
+  `mode` is `session-client` or `web-session`.
+- `billing.web_session.failed`: a session could not be established; `code` is
+  a `SessionErrorCode`, reported once per code. Creating the shared session
+  reports `INVALID_FIREBASE_TOKEN` for a refused credential and
+  `TOKEN_EXCHANGE_FAILED` for any other failure.
 
 ## Commands
 
