@@ -25,11 +25,11 @@ import {
   buildBillingEntryUrl,
   resolveReturnTarget
 } from '@comfyorg/billing-contract'
+import type { DeployEnv } from '@comfyorg/shared-frontend-utils/telemetry'
 
 import type { HostedBillingDestination } from '@/config/billingWeb'
 import { getBillingWebUrl } from '@/config/billingWeb'
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
-import type { DeployEnv } from '@/platform/telemetry/initDatadogRum'
 import { resolveDeployEnv } from '@/platform/telemetry/initDatadogRum'
 
 export type HostedBillingRoute =
