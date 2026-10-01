@@ -459,7 +459,7 @@ describe('error mapping', () => {
     expect(error).not.toBeInstanceOf(AgentApiError)
   })
 
-  it('distinguishes a truncated 2xx body from a rejected request', async () => {
+  it('keeps a genuinely unreadable POST response distinct without exposing its route', async () => {
     respond(
       new Response('{"message_id":"m1","thread_', {
         status: 202,
@@ -473,7 +473,22 @@ describe('error mapping', () => {
 
     expect(error).toBeInstanceOf(AgentResponseUnreadableError)
     expect(error).not.toBeInstanceOf(AgentApiError)
+    expect((error as Error).message).toBe('Unreadable agent response body')
   })
+
+  it.for([
+    new TypeError('Failed to fetch'),
+    new DOMException('The operation was aborted', 'AbortError')
+  ])(
+    'preserves transport failure identity after response headers',
+    async (cause) => {
+      const response = jsonResponse(200, [])
+      vi.spyOn(response, 'json').mockRejectedValueOnce(cause)
+      respond(response)
+
+      await expect(makeClient().listThreads()).rejects.toBe(cause)
+    }
+  )
 })
 
 describe('Retry-After contract', () => {
