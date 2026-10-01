@@ -241,7 +241,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       await expect.poll(() => postedMessages.length).toBe(1)
       pushEvent(ws, THINKING_EVENT)
       await expect(
-        agentPanel.root.getByRole('button', { name: 'Stop' })
+        agentPanel.root.getByRole('button', { name: enMessages.agent.stop })
       ).toBeVisible()
       await expect(paywall).toHaveCount(0)
       pushEvent(ws, MESSAGE_DONE_EVENT)
@@ -251,15 +251,15 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await test.step('finish the funded recovery while the panel is closed', async () => {
       agentBilling.setAgentFunds(true)
       const recovery = agentBilling.holdNextFundedRefresh()
-      await paywall.getByRole('button', { name: 'Add Credits' }).click()
+      await paywall
+        .getByRole('button', { name: enMessages.agent.paywall.addCredits })
+        .click()
       const topUpDialog = new TopUpCreditsDialog(page)
       await topUpDialog.waitForVisible()
       await recovery.entered
+      agentBilling.failSubsequentRefreshes()
       await topUpDialog.close()
-      await agentPanel.root
-        .getByRole('button', { name: enMessages.g.close })
-        .click()
-      await expect(agentPanel.root).toHaveCount(0)
+      await agentPanel.close()
       recovery.release()
       await recovery.completed
     })
@@ -267,6 +267,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await test.step('reopen without the stale paywall', async () => {
       await agentPanel.open()
       await expect(paywall).toHaveCount(0)
+      agentBilling.resumeRefreshes()
     })
 
     await test.step('show the standing paywall after a second exhaustion', async () => {
@@ -286,7 +287,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         })
       )
       await expect(
-        agentPanel.root.getByRole('button', { name: 'Stop' })
+        agentPanel.root.getByRole('button', { name: enMessages.agent.stop })
       ).toBeVisible()
       pushEvent(
         ws,
@@ -303,7 +304,9 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
 
     await test.step('remove the standing paywall after the final funded refresh', async () => {
       agentBilling.setAgentFunds(true)
-      await paywall.getByRole('button', { name: 'Add Credits' }).click()
+      await paywall
+        .getByRole('button', { name: enMessages.agent.paywall.addCredits })
+        .click()
       await expect(paywall).toHaveCount(0)
     })
   })

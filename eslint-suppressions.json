@@ -234,11 +234,6 @@
       "count": 1
     }
   },
-  "src/platform/tasks/services/taskService.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 3
-    }
-  },
   "src/platform/workflow/management/stores/comfyWorkflow.ts": {
     "comfy/no-new-error-throw": {
       "count": 2

@@ -19,6 +19,7 @@
     "deleteImage": "Delete image",
     "deleteAudioFile": "Delete audio file",
     "increment": "Increment",
+    "validate": "Validate",
     "removeImage": "Remove image",
     "removeVideo": "Remove video",
     "removeTag": "Remove tag",
@@ -414,7 +415,8 @@
     "blueprints": "Blueprints",
     "partnerNodes": "Partner Nodes",
     "collapseAll": "Collapse all",
-    "expandAll": "Expand all"
+    "expandAll": "Expand all",
+    "retry": "Retry"
   },
   "hdrViewer": {
     "title": "HDR Viewer",
@@ -1267,6 +1269,7 @@
   "zoomControls": {
     "label": "Zoom Controls",
     "zoomToFit": "Zoom To Fit",
+    "zoomPercentage": "Zoom percentage",
     "showMinimap": "Show Minimap",
     "hideMinimap": "Hide Minimap"
   },
@@ -1591,6 +1594,7 @@
     "Unload Models": "Unload Models",
     "Unload Models and Execution Cache": "Unload Models and Execution Cache",
     "New": "New",
+    "Replay Onboarding": "Replay Onboarding",
     "Clipspace": "Clipspace",
     "Manager": "Manager",
     "Open": "Open",
@@ -1930,17 +1934,18 @@
     "seedvr": "seedvr",
     "qwen image": "qwen image",
     "qwen": "qwen",
+    "ming image": "ming image",
     "mage": "mage",
     "joyimage": "joyimage",
     "boogu": "boogu",
     "chroma radiance": "chroma radiance",
-    "z-image": "z-image",
     "supir": "supir",
     "anima": "anima",
     "logic": "logic",
     "": "",
     "kandinsky": "kandinsky",
     "autoregressive": "autoregressive",
+    "z-image": "z-image",
     "shader": "shader",
     "trellis": "trellis",
     "mesh": "mesh",
@@ -1990,7 +1995,6 @@
     "Rodin": "Rodin",
     "Runway": "Runway",
     "Sonilo": "Sonilo",
-    "Sora": "Sora",
     "sync_so": "sync.so",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
@@ -2607,6 +2611,8 @@
     }
   },
   "auth": {
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
     "apiKey": {
       "title": "API Key",
       "label": "API Key",
@@ -2698,6 +2704,11 @@
         "unavailable": "We couldn't reach your account. Try again in a moment.",
         "workspaceDenied": "You don't have access to this workspace. Contact support if this keeps happening.",
         "refused": "Your request was refused. Reload the page and try again."
+      },
+      "reconnecting": {
+        "title": "Reconnecting to your account",
+        "detail": "We can't reach Comfy right now. We'll keep retrying, and you stay signed in.",
+        "retry": "Retry now"
       }
     },
     "signOut": {
@@ -3325,11 +3336,6 @@
       }
     },
     "billingStatus": {
-      "warning": {
-        "title": "Payment failed",
-        "bodyNoDate": "Your payment failed to process. Update payment to avoid a pause.",
-        "bodyWithAmount": "Your payment of {amount} failed to process. Pay the invoice or update payment to avoid a pause."
-      },
       "paused": {
         "title": "Subscription paused",
         "body": "This workspace's subscription is paused. Update payment to resume.",
@@ -3368,9 +3374,7 @@
       }
     },
     "tabs": {
-      "dashboard": "Dashboard",
-      "planCredits": "Plan & Credits",
-      "membersCount": "Members ({count})"
+      "dashboard": "Dashboard"
     },
     "dashboard": {
       "placeholder": "Dashboard workspace settings"
@@ -3382,7 +3386,6 @@
         "justNow": "just now",
         "minutesAgo": "{n} min ago"
       },
-      "header": "Members",
       "membersCount": "{count} of {maxSeats} members",
       "pendingInvitesCount": "{count} pending invite | {count} pending invites",
       "tabs": {
@@ -3390,10 +3393,11 @@
         "pendingCount": "Pending ({count})"
       },
       "columns": {
+        "email": "Email",
         "inviteDate": "Invite date",
         "expiryDate": "Expiry date",
         "role": "Role",
-        "creditsUsed": "Monthly credits"
+        "creditsUsed": "Credits used this month"
       },
       "actions": {
         "copyInviteLink": "Copy invite link",
@@ -3415,19 +3419,24 @@
       "upsellBanner": "To add teammates, upgrade your plan.",
       "upsellBannerReactivate": "To add more teammates, reactivate your plan.",
       "resubscribe": "Resubscribe",
-        "upsellBannerEnterpriseEnded": "Contact sales to reactivate your Enterprise plan.",
-        "endedTeamTitle": "Your team plan has ended",
-        "endedEnterpriseTitle": "Your Enterprise plan has ended",
-        "endedPlanTitle": "Your plan has ended",
-        "upsellBannerPlanEnded": "Contact sales to reactivate your plan.",
-        "contactSales": "Contact sales",
+      "upsellBannerEnterpriseEnded": "Contact sales to reactivate your Enterprise plan.",
+      "endedTeamTitle": "Your team plan has ended",
+      "endedEnterpriseTitle": "Your Enterprise plan has ended",
+      "endedPlanTitle": "Your plan has ended",
+      "upsellBannerPlanEnded": "Contact sales to reactivate your plan.",
+      "contactSales": "Contact sales",
       "upgradeToTeam": "Upgrade to Team",
       "reactivateTeam": "Reactivate Team",
+      "totalMembersCount": "{count} of {maxSeats} total members.",
       "needMoreMembers": "Need more members?",
       "contactUs": "Contact us",
       "noInvites": "No pending invites",
+      "noInvitesMatch": "No invites match \"{query}\"",
       "noMembers": "No members",
+      "noMembersMatch": "No members match \"{query}\"",
       "searchPlaceholder": "Search...",
+      "loadFailed": "Couldn't load everything on this page.",
+      "totalMembersUnlimited": "{count} total member. | {count} total members.",
       "expiredOn": "Expired {date}"
     },
     "partnerNodes": {
@@ -3544,7 +3553,16 @@
       "sentLead": "Each invite has a personal link you can share directly:",
       "copyLink": "Copy invite link",
       "copied": "Copied!",
-      "copyAll": "Copy invite link | Copy all links ({count})"
+      "copyAll": "Copy invite link | Copy all links ({count})",
+      "copiedToast": "Invite link copied",
+      "copyFailedToast": "Couldn't copy the invite link",
+      "invalidTitle": "This invite link is no longer valid",
+      "invalidBody": "It may have expired or been replaced. Ask the person who invited you for a new link.",
+      "invalidDismiss": "Got it",
+      "wrongAccountTitle": "This invite was sent to a different email",
+      "wrongAccountBody": "You're signed in as {email}. Sign in with the email that received this invite to accept it.",
+      "switchAccount": "Switch account",
+      "wrongAccountBodyGeneric": "This invite was sent to a different email address than the one you're signed in with. Sign in with the email that received it."
     },
     "createWorkspaceDialog": {
       "title": "Create a new workspace",
@@ -4054,9 +4072,6 @@
       "complete": "Download complete",
       "failed": "Download failed",
       "inProgress": "Downloading {assetName}..."
-    },
-    "rename": {
-      "failed": "Could not rename asset."
     }
   },
   "mediaAsset": {
@@ -5330,7 +5345,10 @@
       "question": "Do you approve?",
       "thisWorkflow": "this workflow",
       "cancel": "Cancel",
-      "run": "Run"
+      "run": "Run",
+      "answerFailed": "Could not send your answer. Reload the page and try again.",
+      "answerUncertain": "Could not confirm your answer reached the agent. It may still have been applied — reload the page to see where things stand.",
+      "answerSuperseded": "This request was already answered somewhere else, so that answer was used instead of yours."
     },
     "dismiss": "Dismiss",
     "latest": "Latest",
@@ -5464,6 +5482,9 @@
     "downloadAssets": "Download assets",
     "toolOpenedNewTab": "Opened a new tab",
     "toolOpeningNewTab": "Opening a new tab",
+    "toolLoadedSkill": "Loaded {skill}",
+    "toolFailedSkill": "Failed to load {skill}",
+    "toolLoadingSkill": "Loading {skill}",
     "toolSwitchedTabs": "Switched tabs",
     "toolSwitchingTabs": "Switching tabs",
     "toolSavedPreference": "Saved a preference",

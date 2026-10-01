@@ -209,8 +209,8 @@ describe('GroupNodeConfig.processInputSlots', () => {
 
     config.processInputSlots(
       {
-        model: ['MODEL'],
-        latent_image: ['LATENT']
+        model: ['MODEL', {}],
+        latent_image: ['LATENT', {}]
       },
       { index: 0, type: 'KSampler' },
       ['model', 'latent_image'],
@@ -281,7 +281,7 @@ describe('GroupNodeConfig.processConvertedWidgets', () => {
     const inputMap: Record<string, number> = {}
 
     config.processConvertedWidgets(
-      { seed: ['INT'], steps: ['INT'], cfg: ['FLOAT'] },
+      { seed: ['INT', {}], steps: ['INT', {}], cfg: ['FLOAT', {}] },
       { index: 0, type: 'KSampler' },
       new Map([
         [10, 'cfg'],
@@ -306,7 +306,7 @@ describe('GroupNodeConfig.processConvertedWidgets', () => {
     const link: GroupNodeLink = [null, 0, 0, 0, 0, 'INT']
 
     config.processConvertedWidgets(
-      { b: ['INT'] },
+      { b: ['INT', {}] },
       { index: 0, type: 'KSampler' },
       // The converted widget's real slot index is 5 (the map key), which
       // doesn't equal `slots.length + i` for any plausible `slots` this

@@ -1,31 +1,31 @@
 <script setup lang="ts">
 import { Check, Copy } from '@lucide/vue'
 import { useClipboard } from '@vueuse/core'
+import { computed } from 'vue'
 
 import SectionHeader from '../../components/common/SectionHeader.vue'
+import { deployPromptFor } from '../../config/deploy-prompt'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import LiveTerminal from './LiveTerminal.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-// Command surface from comfy-cli's build + deploy stack (PRs #801-805):
-// `comfy build init`, `build push --release`, whose `--target` decides
-// whether `deploy up` finds a deployable artifact, and `deploy up`. All
-// three default to the current directory.
-const deployTranscript = [
+// The prompt to paste into a coding agent; the copy button puts it on the
+// clipboard verbatim. Kept out of translations.ts (which every page bundles)
+// since it's only ever used here — see deploy-prompt.ts for why.
+const deployPrompt = computed(() => deployPromptFor(locale))
+const { copy, copied } = useClipboard({ source: deployPrompt, legacy: true })
+
+// What the terminal actually shows: the three commands a run of the deploy
+// prompt produces, not the prompt's own prose (that's what the copy button
+// puts on the clipboard). Real commands rather than prose, so — like the
+// code samples elsewhere on this page — it isn't translated per-locale.
+const DEPLOY_TRANSCRIPT = [
   '$ comfy build init',
-  '✔ Scanned this ComfyUI install — custom nodes, models, pinned deps',
-  '$ comfy build push --release --target linux/nvidia',
-  '✔ Build released',
-  '$ comfy deploy up',
-  '✔ Endpoint live → https://your-build.run.comfy.app'
+  '✓ Scanned this ComfyUI install - custom nodes, models, pinned deps',
+  '$ comfy build push --release'
 ]
-const deployCommands = deployTranscript
-  .filter((line) => line.startsWith('$ '))
-  .map((line) => line.slice(2))
-  .join('\n')
-const { copy, copied } = useClipboard({ source: deployCommands, legacy: true })
 </script>
 
 <template>
@@ -62,9 +62,9 @@ const { copy, copied } = useClipboard({ source: deployCommands, legacy: true })
         />
       </button>
       <LiveTerminal
-        class="[&_pre]:pt-14"
-        :lines="deployTranscript"
+        :lines="DEPLOY_TRANSCRIPT"
         :label="t('platform.serverlessDeploy.heading', locale)"
+        :typewriter="false"
       />
     </div>
   </section>

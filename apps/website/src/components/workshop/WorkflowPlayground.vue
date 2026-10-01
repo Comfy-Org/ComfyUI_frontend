@@ -370,6 +370,7 @@ function start() {
   </div>
   <section
     v-if="model.examples.length"
+    v-show="section === 'playground'"
     class="mt-14"
     aria-labelledby="workflow-examples-heading"
   >

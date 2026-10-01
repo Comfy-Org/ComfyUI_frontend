@@ -12,6 +12,7 @@ import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import {
   WEB_SESSION,
   WEB_SESSION_COOKIE,
+  WEB_SESSION_ANONYMOUS_FEATURES,
   WEB_SESSION_FEATURES,
   WEB_SESSION_MINT,
   currentWorkspace
@@ -35,6 +36,8 @@ interface TokenMint {
 interface WebSessionFixtures {
   tokenMints: TokenMint[]
   workspaceReads: Request[]
+  firebaseRequests: string[]
+  credentialedFeatureReads: Request[]
 }
 
 export const webSessionTest = comfyPageFixture.extend<WebSessionFixtures>({
@@ -52,6 +55,31 @@ export const webSessionTest = comfyPageFixture.extend<WebSessionFixtures>({
     })
     await use(mints)
   },
+  credentialedFeatureReads: async ({ context }, use) => {
+    const reads: Request[] = []
+    context.on('request', (request) => {
+      if (
+        new URL(request.url()).pathname === '/api/features' &&
+        'x-comfy-client' in request.headers()
+      ) {
+        reads.push(request)
+      }
+    })
+    await use(reads)
+  },
+  firebaseRequests: async ({ context }, use) => {
+    const urls: string[] = []
+    context.on('request', (request) => {
+      const { hostname } = new URL(request.url())
+      if (
+        hostname === 'securetoken.googleapis.com' ||
+        hostname === 'identitytoolkit.googleapis.com'
+      ) {
+        urls.push(request.url())
+      }
+    })
+    await use(urls)
+  },
   workspaceReads: async ({ context }, use) => {
     const reads: Request[] = []
     context.on('request', (request) => {
@@ -65,15 +93,36 @@ export const webSessionTest = comfyPageFixture.extend<WebSessionFixtures>({
     })
     await use(reads)
   },
-  page: async ({ page, context, tokenMints, workspaceReads }, use) => {
+  page: async (
+    {
+      page,
+      context,
+      tokenMints,
+      workspaceReads,
+      firebaseRequests,
+      credentialedFeatureReads
+    },
+    use
+  ) => {
     void tokenMints
+    void firebaseRequests
+    void credentialedFeatureReads
     void workspaceReads
 
     await page.route('**/api/features', async (route) => {
       const response = await route.fetch()
       const backendFeatures: RemoteConfig = await response.json()
+      const headers = await route.request().allHeaders()
+      const credentialed =
+        'x-comfy-client' in headers &&
+        'cookie' in headers &&
+        headers['cookie'].includes(WEB_SESSION_COOKIE.name)
       await route.fulfill(
-        jsonRoute({ ...backendFeatures, ...WEB_SESSION_FEATURES })
+        jsonRoute(
+          credentialed
+            ? { ...backendFeatures, ...WEB_SESSION_FEATURES }
+            : { ...backendFeatures, ...WEB_SESSION_ANONYMOUS_FEATURES }
+        )
       )
     })
 

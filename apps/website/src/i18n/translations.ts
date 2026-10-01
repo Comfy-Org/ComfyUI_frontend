@@ -1759,6 +1759,26 @@ Enterprise`
     en: 'INSTALL FROM GITHUB',
     'zh-CN': '从 GITHUB 安装'
   },
+  'download.hero.installers.label': {
+    en: 'All installers',
+    'zh-CN': '全部安装包'
+  },
+  'download.hero.installers.windowsX64': {
+    en: 'Windows x64',
+    'zh-CN': 'Windows x64'
+  },
+  'download.hero.installers.windowsArm64': {
+    en: 'Windows ARM64 (NVIDIA only)',
+    'zh-CN': 'Windows ARM64（仅限 NVIDIA）'
+  },
+  'download.hero.installers.macArm64': {
+    en: 'macOS (Apple Silicon)',
+    'zh-CN': 'macOS（Apple 芯片）'
+  },
+  'download.hero.installers.linuxX64': {
+    en: 'Linux x64 (AppImage)',
+    'zh-CN': 'Linux x64（AppImage）'
+  },
 
   // Download – MobileDownloadEmailForm
   'download.emailForm.heading': {
@@ -8819,28 +8839,45 @@ Enterprise`
     'zh-CN': '创意团队'
   },
   'platform.howItWorks.chat.message': {
-    en: "here's the link",
-    'zh-CN': '链接在这里'
+    en: "what's the best way to do video upscaling right now?",
+    'zh-CN': '现在做视频高清放大，最好的方式是什么？'
   },
   'platform.howItWorks.chat.reply': {
-    en: 'got it!',
-    'zh-CN': '收到！'
+    en: 'deployed this workflow, give it a spin:',
+    'zh-CN': '我部署了这个工作流，试试看：'
   },
-  'platform.howItWorks.chat.messageReady': {
-    en: 'The workflow is ready to try',
-    'zh-CN': '工作流可以试用了'
+  'platform.howItWorks.chat.replySnippet': {
+    en: 'curl https://video-upscale-4k.run.comfy.app \\\n  -F "video=@clip.mp4"',
+    'zh-CN':
+      'curl https://video-upscale-4k.run.comfy.app \\\n  -F "video=@clip.mp4"'
   },
-  'platform.howItWorks.chat.replyTesting': {
-    en: 'Testing it now!',
-    'zh-CN': '现在就来试！'
+  'platform.howItWorks.chat.thanks': {
+    en: 'thanks!',
+    'zh-CN': '谢谢！'
   },
-  'platform.howItWorks.chat.messagePreview': {
-    en: 'Preview is live',
-    'zh-CN': '预览已上线'
+  'platform.howItWorks.chat.messageBgRemove': {
+    en: 'got a workflow for batch bg removal?',
+    'zh-CN': '有批量去背景的工作流吗？'
   },
-  'platform.howItWorks.chat.replySharing': {
-    en: "I'll share it with the team",
-    'zh-CN': '我会分享给团队'
+  'platform.howItWorks.chat.replyBgRemove': {
+    en: "yep — here's the call:",
+    'zh-CN': '有的，调用方式是：'
+  },
+  'platform.howItWorks.chat.thanksBgRemove': {
+    en: 'perfect, thanks!',
+    'zh-CN': '太好了，谢谢！'
+  },
+  'platform.howItWorks.chat.messageProductShots': {
+    en: 'quickest way to batch product shots?',
+    'zh-CN': '批量产品图最快方法？'
+  },
+  'platform.howItWorks.chat.replyProductShots': {
+    en: "this one's live:",
+    'zh-CN': '已经上线了：'
+  },
+  'platform.howItWorks.chat.thanksProductShots': {
+    en: 'amazing, thanks!',
+    'zh-CN': '太棒了，谢谢！'
   },
   'platform.howItWorks.chat.placeholder': {
     en: 'Message your team',
@@ -8916,6 +8953,22 @@ Enterprise`
   'platform.serverlessCaseStudy.linkLabel': {
     en: 'Read the Silverside AI customer story',
     'zh-CN': '阅读 Silverside AI 客户案例'
+  },
+  'platform.serverlessSkipSetup.heading': {
+    en: 'Or skip the setup.',
+    'zh-CN': '或者跳过手动设置。'
+  },
+  'platform.serverlessSkipSetup.subtitle': {
+    en: 'Paste this into your coding agent.',
+    'zh-CN': '把它粘贴到你的编码智能体里。'
+  },
+  'platform.serverlessSkipSetup.copyPrompt': {
+    en: 'COPY AGENT PROMPT',
+    'zh-CN': '复制智能体提示词'
+  },
+  'platform.serverlessSkipSetup.copied': {
+    en: 'COPIED',
+    'zh-CN': '已复制'
   },
   'platform.serverlessScale.heading': {
     en: 'Built for teams',
@@ -8998,8 +9051,8 @@ Enterprise`
     'zh-CN': 'ROUTER'
   },
   'platform.serverlessDeploy.copy': {
-    en: 'Copy commands',
-    'zh-CN': '复制命令'
+    en: 'Copy prompt',
+    'zh-CN': '复制提示词'
   },
   'platform.serverlessDeploy.copied': {
     en: 'Copied',
@@ -10565,6 +10618,7 @@ Enterprise`
     'zh-CN': '此模型的原生 Router 请求映射尚未验证。调用前请查看 Router 文档。'
   },
   'workshop.api.copied': { en: 'Copied', 'zh-CN': '已复制' },
+  'workshop.api.copyEndpoint': { en: 'Copy endpoint', 'zh-CN': '复制接口地址' },
   'workshop.api.getKey': { en: 'Get API key', 'zh-CN': '获取 API 密钥' },
   'workshop.api.downloadGraph': {
     en: 'Download the API graph',
@@ -10575,13 +10629,14 @@ Enterprise`
   'workshop.api.needsEndpoint': { en: 'Endpoint', 'zh-CN': '接口地址' },
   'workshop.api.needsKey': { en: 'Key', 'zh-CN': '密钥' },
   'workshop.api.needsFiles': { en: 'Your files', 'zh-CN': '你的文件' },
+  'workshop.api.runsOn': { en: 'Runs on', 'zh-CN': '运行于' },
   'workshop.api.runsOnRouter': {
-    en: 'Comfy Router runs it',
-    'zh-CN': '由 Comfy Router 运行'
+    en: 'Comfy Router',
+    'zh-CN': 'Comfy Router'
   },
   'workshop.api.runsOnCloud': {
-    en: 'Comfy Cloud runs it',
-    'zh-CN': '由 Comfy Cloud 运行'
+    en: 'Comfy Cloud',
+    'zh-CN': 'Comfy Cloud'
   },
   'workshop.api.filesRead': {
     en: 'Read from the paths in the code when it runs',
@@ -10590,6 +10645,10 @@ Enterprise`
   'workshop.api.filesUploaded': {
     en: 'Uploaded before the call, then read from their urls',
     'zh-CN': '调用前先上传，再通过链接读取'
+  },
+  'workshop.api.filesSdk': {
+    en: 'Uploaded by the code from their urls',
+    'zh-CN': '由代码根据链接上传'
   },
 
   // Workshop – examples
@@ -10717,8 +10776,8 @@ Enterprise`
       '以下请求使用与体验区相同的预设图和设置。每次提交都可能开始一次付费运行；如果提交结果未知，请勿自动重试。'
   },
   'workshop.workflow.apiNote': {
-    en: 'Needs a paid Cloud plan and available credits.',
-    'zh-CN': '需要付费的 Cloud 方案和可用额度。'
+    en: 'Needs a paid Cloud plan and credits.',
+    'zh-CN': '需要付费的 Cloud 方案和额度。'
   },
   'workshop.workflow.apiDocs': {
     en: 'API documentation',
@@ -10984,10 +11043,6 @@ Enterprise`
     'zh-CN': '在 platform.comfy.org 上为 {workspace} 添加积分'
   },
   'workshop.hub.tryNow': { en: 'Try now', 'zh-CN': '立即试用' },
-  'workshop.cinematic.openInStudio': {
-    en: 'Open in Cinematic Studio',
-    'zh-CN': '在 Cinematic Studio 中打开'
-  },
   'workshop.hub.tag.partnerNodes': {
     en: 'Partner Nodes',
     'zh-CN': '合作伙伴节点'

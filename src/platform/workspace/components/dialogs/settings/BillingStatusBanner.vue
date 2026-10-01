@@ -91,7 +91,7 @@ import { useDialogService } from '@/services/dialogService'
 
 type BannerAction = 'addCredits' | 'reactivate' | 'updatePayment'
 
-const { t, d, locale } = useI18n()
+const { t, d } = useI18n()
 const { renewalDate, renewalInvoice, subscription, manageSubscription } =
   useBillingContext()
 const { permissions, canReactivatePlan } = useWorkspaceUI()
@@ -134,55 +134,12 @@ interface BannerView {
 const bs = 'workspacePanel.billingStatus'
 
 const pausedView = (): BannerView => ({
-  muted: false,
+  muted: !canManage.value,
   title: t(`${bs}.paused.title`),
   body: canManage.value ? t(`${bs}.paused.body`) : t(`${bs}.paused.memberBody`),
   action: canManage.value ? 'updatePayment' : null,
   dismissible: false
 })
-
-// Stripe's own decimal lists (docs.stripe.com/currencies), not Intl's display
-// precision: Stripe charges ISK, UGX and HUF with two decimals.
-const STRIPE_ZERO_DECIMAL = new Set([
-  'BIF',
-  'CLP',
-  'DJF',
-  'GNF',
-  'JPY',
-  'KMF',
-  'KRW',
-  'MGA',
-  'PYG',
-  'RWF',
-  'VND',
-  'VUV',
-  'XAF',
-  'XOF',
-  'XPF'
-])
-const STRIPE_THREE_DECIMAL = new Set(['BHD', 'JOD', 'KWD', 'OMR', 'TND'])
-
-function stripeDecimals(code: string): number {
-  if (STRIPE_ZERO_DECIMAL.has(code)) return 0
-  return STRIPE_THREE_DECIMAL.has(code) ? 3 : 2
-}
-
-// Intl formats any well-formed code (e.g. ZZZ); only real ISO codes are shown.
-const KNOWN_CURRENCIES = new Set(Intl.supportedValuesOf('currency'))
-
-function formatAmountDue(amountDue: number, currency: string): string | null {
-  const code = currency.toUpperCase()
-  if (!KNOWN_CURRENCIES.has(code)) return null
-  try {
-    const format = new Intl.NumberFormat(locale.value, {
-      style: 'currency',
-      currency: code
-    })
-    return format.format(amountDue / 10 ** stripeDecimals(code))
-  } catch {
-    return null
-  }
-}
 
 // Only an https payment page is opened; anything else hides the action.
 function safeInvoiceUrl(value: string | undefined): string | undefined {
@@ -194,22 +151,11 @@ function safeInvoiceUrl(value: string | undefined): string | undefined {
   }
 }
 
-const paymentFailedView = (): BannerView => {
-  const invoice = renewalInvoice.value
-  const amount = invoice
-    ? formatAmountDue(invoice.amount_due, invoice.currency)
-    : null
-  return {
-    muted: false,
-    title: t(`${bs}.warning.title`),
-    body: amount
-      ? t(`${bs}.warning.bodyWithAmount`, { amount })
-      : t(`${bs}.warning.bodyNoDate`),
-    action: 'updatePayment',
-    dismissible: false,
-    payInvoiceUrl: safeInvoiceUrl(invoice?.hosted_invoice_url)
-  }
-}
+// Runs are already blocked on payment_failed; reads as paused until BE-6970.
+const paymentFailedView = (): BannerView => ({
+  ...pausedView(),
+  payInvoiceUrl: safeInvoiceUrl(renewalInvoice.value?.hosted_invoice_url)
+})
 
 const outOfCreditsBody = (): string => {
   if (canTopUp.value) {
