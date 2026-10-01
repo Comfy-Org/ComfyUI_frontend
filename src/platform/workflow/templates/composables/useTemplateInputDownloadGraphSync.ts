@@ -13,6 +13,13 @@ function createTemplateInputDownloadGraphSync({
 }: TemplateInputDownloadGraphSyncDependencies) {
   const completedInputNames = new Set<string>()
   let disposed = false
+  /**
+   * Read through a call rather than the binding. The early return in
+   * `syncCurrentGraph` narrows `disposed` to `false` for the rest of that
+   * function, but the loop below resumes after an await, by which point
+   * `dispose` may have flipped it.
+   */
+  const isDisposed = () => disposed
   let scheduled = false
   let rerunRequested = false
   let inFlight: Promise<void> | null = null
@@ -62,7 +69,7 @@ function createTemplateInputDownloadGraphSync({
     // caller could report a template as open against stale bindings.
     const trackedRun = (async () => {
       await flushCurrentGraph()
-      while (rerunRequested && !disposed) {
+      while (rerunRequested && !isDisposed()) {
         rerunRequested = false
         await flushCurrentGraph()
       }
