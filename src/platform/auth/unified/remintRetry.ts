@@ -93,6 +93,11 @@ function fetchRequestHeaders(
   return input instanceof Request ? new Headers(input.headers) : new Headers()
 }
 
+interface RetrySignalLifecycle {
+  clearInitialTimeout: () => void
+  createSignal: () => AbortSignal | undefined
+}
+
 /**
  * Issues a `fetch` and, on a `401`, re-mints the unified Cloud JWT once and
  * retries the request exactly once with the fresh token. A persistent `401`
@@ -104,11 +109,15 @@ function fetchRequestHeaders(
  * `shouldRetryOn401` is the caller's gate (see {@link shouldRemintCloudRequest}):
  * flag-OFF traffic returns after a single `fetch` and never enters the re-mint
  * path, so the legacy cascade stays untouched for instant rollback.
+ *
+ * `retrySignalLifecycle`, when supplied, ends the initial fetch's timeout
+ * before re-minting and creates a fresh signal immediately before the retry.
  */
 export async function fetchWithUnifiedRemint(
   input: RequestInfo | URL,
   init: RequestInit,
-  shouldRetryOn401: boolean
+  shouldRetryOn401: boolean,
+  retrySignalLifecycle?: RetrySignalLifecycle
 ): Promise<Response> {
   const retryInput =
     shouldRetryOn401 && input instanceof Request && input.body !== null
@@ -134,6 +143,7 @@ export async function fetchWithUnifiedRemint(
     return response
   }
 
+  retrySignalLifecycle?.clearInitialTimeout()
   const token = await tryRemintToken(expectedToken)
   if (!token) {
     trackRetry('fetch', 'failed', response.status, 'remint_failed')
@@ -142,8 +152,11 @@ export async function fetchWithUnifiedRemint(
 
   const headers = requestHeaders
   headers.set('Authorization', `Bearer ${token}`)
+  const retryInit = retrySignalLifecycle
+    ? { ...init, headers, signal: retrySignalLifecycle.createSignal() }
+    : { ...init, headers }
   try {
-    const retryResponse = await fetch(retryInput, { ...init, headers })
+    const retryResponse = await fetch(retryInput, retryInit)
     trackRetryResponse('fetch', retryResponse.status)
     return retryResponse
   } catch (error) {

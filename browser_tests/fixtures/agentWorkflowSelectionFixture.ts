@@ -11,6 +11,7 @@ type WorkflowSelection = {
   savedPaths: string[]
   postedMessages: string[]
   finishSave: (success: boolean) => void
+  failNextWorkflowMessage: () => void
   pauseWorkflowLookups: () => void
   resumeWorkflowLookups: () => void
   workflowLookups: () => number
@@ -38,6 +39,7 @@ export const workflowSelectionTest = base.extend<{
     let pendingLookup: Promise<void> | undefined
     let resumeWorkflowLookups = () => {}
     let lookupCount = 0
+    let failNextWorkflowMessage = false
     await page.route('**/api/workflows?*', async (route) => {
       lookupCount++
       await pendingLookup
@@ -54,8 +56,16 @@ export const workflowSelectionTest = base.extend<{
       )
     })
     await page.route('**/api/agent/threads**', (route) => {
-      if (route.request().method() === 'POST')
+      if (route.request().method() === 'POST') {
         postedMessages.push(route.request().postData() ?? '')
+        if (failNextWorkflowMessage) {
+          failNextWorkflowMessage = false
+          return route.fulfill({
+            ...jsonRoute({ error: 'send unavailable' }),
+            status: 500
+          })
+        }
+      }
       return route.fulfill(
         jsonRoute({
           threads: [],
@@ -110,6 +120,9 @@ export const workflowSelectionTest = base.extend<{
       savedPaths,
       postedMessages,
       finishSave: (success) => finishSave(success),
+      failNextWorkflowMessage: () => {
+        failNextWorkflowMessage = true
+      },
       pauseWorkflowLookups: () => {
         pendingLookup = new Promise<void>((resolve) => {
           resumeWorkflowLookups = resolve
