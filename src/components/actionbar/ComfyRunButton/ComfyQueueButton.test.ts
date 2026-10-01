@@ -255,7 +255,7 @@ describe('ComfyQueueButton', () => {
     const queueButton = screen.getByTestId('queue-button')
 
     expect(queueButton).toHaveTextContent('Run (Instant)')
-    expect(queueButton).toHaveAttribute('data-variant', 'primary')
+    expect(queueButton).toHaveAttribute('data-variant', 'inverted')
   })
 
   it('switches to stop presentation when instant mode is armed', async () => {
@@ -287,7 +287,7 @@ describe('ComfyQueueButton', () => {
     expect(queueSettingsStore.mode).toBe('instant-idle')
     const queueButton = screen.getByTestId('queue-button')
     expect(queueButton).toHaveTextContent('Run (Instant)')
-    expect(queueButton).toHaveAttribute('data-variant', 'primary')
+    expect(queueButton).toHaveAttribute('data-variant', 'inverted')
 
     expect(commandStore.execute).not.toHaveBeenCalled()
   })
