@@ -11,12 +11,18 @@
  * so no server or payment-provider text can reach a consumer through this
  * state.
  */
-import type { zBillingOpStatusResponse } from '@comfyorg/ingest-types/zod'
+import { zBillingOpStatusResponse } from '@comfyorg/ingest-types/zod'
 import type { z } from 'zod'
 
 import type { BillingScope } from './billingScope.js'
+import { wireCents } from './wireCents.js'
 
-export type BillingOpStatus = z.infer<typeof zBillingOpStatusResponse>
+export const BillingOpStatusSchema = zBillingOpStatusResponse.extend({
+  amount_charged_cents: wireCents.optional(),
+  credits_added: wireCents.optional()
+})
+
+export type BillingOpStatus = z.infer<typeof BillingOpStatusSchema>
 
 export type BillingOperationKind = 'subscription' | 'topup' | 'cancel'
 
@@ -72,6 +78,13 @@ export type BillingOperationIdentity = BillingPresentationState & {
   readonly observedAt: number
   /** When the attempt began, before the command was issued; telemetry durations count from here. */
   readonly attemptStartedAt: number
+  /**
+   * This tab issued the operation and was still waiting on its outcome when
+   * it adopted it: from its own command, or after a reload or a return from
+   * a provider page. Absent for an operation another tab issued, and for one
+   * this tab already saw succeed.
+   */
+  readonly awaitedHere?: true
 }
 
 /**
@@ -106,15 +119,35 @@ export type FailedBillingOperation = BillingOperationIdentity & {
   readonly retryable: boolean
 }
 
+/**
+ * What the server reports a succeeded operation did, for display only. Each
+ * fact is absent while the server cannot say it: a charge billed outside a
+ * Stripe invoice, a grant not recorded yet, or an operation that is not a
+ * plan change.
+ */
+export interface BillingOperationReceipt {
+  readonly amountChargedCents?: number
+  readonly creditsAdded?: number
+  readonly plan?: NonNullable<BillingOpStatus['plan']>
+}
+
+export type SucceededBillingOperation = BillingOperationIdentity & {
+  readonly phase: 'succeeded'
+  readonly receipt?: BillingOperationReceipt
+}
+
 export type BillingOperationState =
   | PendingBillingOperation
-  | (BillingOperationIdentity & { readonly phase: 'succeeded' })
+  | SucceededBillingOperation
   | FailedBillingOperation
   /** This tab's poll budget ran out; the server may still settle the operation. */
   | (BillingOperationIdentity & { readonly phase: 'timed_out' })
   /** The server cannot settle it without a human; surface the id to support. */
   | (BillingOperationIdentity & { readonly phase: 'reconciliation_needed' })
-  /** The session or workspace changed underneath it; nothing here may be attributed to the new scope. */
+  /**
+   * The session or workspace changed underneath it, or the server replaced it
+   * with a newer operation; nothing here may be attributed to this tab now.
+   */
   | (BillingOperationIdentity & { readonly phase: 'superseded' })
 
 export type BillingOperationPhase = BillingOperationState['phase']
@@ -135,6 +168,8 @@ export type BillingOperationEvent =
       readonly presentation: 'embedded'
     }
   | { readonly type: 'challenge_started' }
+  /** The server answered a resubmit with a fresh hosted step for this same operation. */
+  | { readonly type: 'action_reissued'; readonly actionUrl: string }
   | {
       readonly type: 'challenge_settled'
       readonly outcome: 'completed' | 'failed'
@@ -173,6 +208,7 @@ function identityOf(state: BillingOperationState): BillingOperationIdentity {
     scope: state.scope,
     observedAt: state.observedAt,
     attemptStartedAt: state.attemptStartedAt,
+    ...(state.awaitedHere ? { awaitedHere: true } : {}),
     ...presentationOf(state)
   }
 }
@@ -223,7 +259,7 @@ function terminalFromStatus(
   state: PendingBillingOperation,
   status: BillingOpStatus
 ): BillingOperationState | undefined {
-  if (status.status === 'succeeded') return withPhase(state, 'succeeded')
+  if (status.status === 'succeeded') return succeeded(state, status)
   if (status.status === 'failed') {
     return {
       ...identityOf(state),
@@ -244,20 +280,81 @@ function terminalFromStatus(
   return undefined
 }
 
+function receiptOf(
+  status: BillingOpStatus
+): BillingOperationReceipt | undefined {
+  const receipt: BillingOperationReceipt = {
+    ...(status.amount_charged_cents === undefined
+      ? {}
+      : { amountChargedCents: status.amount_charged_cents }),
+    ...(status.credits_added === undefined
+      ? {}
+      : { creditsAdded: status.credits_added }),
+    ...(status.plan === undefined ? {} : { plan: status.plan })
+  }
+  return Object.keys(receipt).length === 0 ? undefined : receipt
+}
+
+function succeeded(
+  state: BillingOperationState,
+  status: BillingOpStatus
+): SucceededBillingOperation {
+  const receipt = receiptOf(status)
+  return {
+    ...withPhase(state, 'succeeded'),
+    ...(receipt === undefined ? {} : { receipt })
+  }
+}
+
+/**
+ * The charge went through and the server has not recorded its credits yet;
+ * reading the operation again fills them in.
+ */
+export function isGrantLanding(state: BillingOperationState): boolean {
+  return (
+    state.phase === 'succeeded' &&
+    state.receipt?.amountChargedCents !== undefined &&
+    state.receipt.creditsAdded === undefined
+  )
+}
+
 /**
  * A link echoed while this tab's completed challenge is still processing
  * points at that same challenge; surfacing it would ask the customer to
- * redo a step they just finished.
+ * redo a step they just finished. A checkout waiting on a card keeps the
+ * link a resubmit reissued, because the server stores none for that phase.
  */
 function nextActionUrl(
   state: PendingBillingOperation,
   status: BillingOpStatus,
   authenticationState: BillingAuthenticationState | undefined
 ): string | undefined {
-  return state.challenge?.status === 'completed' &&
+  if (
+    state.challenge?.status === 'completed' &&
     authenticationState !== 'requires_action'
+  ) {
+    return state.actionUrl
+  }
+  const served = validateActionUrl(status.action_url)
+  return served === undefined && status.phase === 'awaiting_payment_method'
     ? state.actionUrl
-    : validateActionUrl(status.action_url)
+    : served
+}
+
+/**
+ * A retryable failure served without a reason reads as `generic`, as a
+ * terminal failure does, so the customer is offered the retry the state
+ * promises. A challenge this tab saw fail supplies its own reason.
+ */
+function nextDeclineReason(
+  state: PendingBillingOperation,
+  status: BillingOpStatus,
+  authenticationState: BillingAuthenticationState | undefined
+): BillingDeclineReason | undefined {
+  if (authenticationState !== 'failed_retryable') return undefined
+  const known = status.decline_reason ?? state.declineReason
+  if (known !== undefined || state.challenge?.status === 'failed') return known
+  return 'generic'
 }
 
 function reducePending(
@@ -272,10 +369,7 @@ function reducePending(
     ? state.authenticationState
     : status.authentication_state
   const actionUrl = nextActionUrl(state, status, authenticationState)
-  const declineReason =
-    authenticationState === 'failed_retryable'
-      ? (status.decline_reason ?? state.declineReason)
-      : undefined
+  const declineReason = nextDeclineReason(state, status, authenticationState)
 
   return {
     ...state,
@@ -356,5 +450,11 @@ export function reduceBillingOperation(
         : state
     case 'challenge_settled':
       return settleChallenge(state, event.outcome)
+    case 'action_reissued': {
+      const actionUrl = validateActionUrl(event.actionUrl)
+      return actionUrl === undefined
+        ? state
+        : { ...state, actionUrl, customerActionSeen: true }
+    }
   }
 }

@@ -398,8 +398,8 @@ export function fdctFaqs(locale: Locale) {
 
 export const fdctPage: FdctPageData = {
   ctas: {
-    contact: '/contact',
-    enterpriseBand: '/contact',
-    minimaxBand: '/minimax/license'
+    contact: '/contact/',
+    enterpriseBand: '/contact/',
+    minimaxBand: '/minimax/license/'
   }
 }

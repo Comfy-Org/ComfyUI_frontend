@@ -38,6 +38,16 @@ export const workflowSelectionTest = base.extend<{
     let pendingLookup: Promise<void> | undefined
     let resumeWorkflowLookups = () => {}
     let lookupCount = 0
+    function forgetSavedWorkflow(path: string): void {
+      const name = path.slice('workflows/'.length, -'.json'.length)
+      savedContent.delete(path)
+      const fileIndex = savedFiles.findIndex((file) => file.path === path)
+      if (fileIndex !== -1) savedFiles.splice(fileIndex, 1)
+      const workflowIndex = workflows.findIndex(
+        (workflow) => workflow.name === name
+      )
+      if (workflowIndex !== -1) workflows.splice(workflowIndex, 1)
+    }
     await page.route('**/api/workflows?*', async (route) => {
       lookupCount++
       await pendingLookup
@@ -105,6 +115,18 @@ export const workflowSelectionTest = base.extend<{
       savedFiles.push(file)
       savedContent.set(path, route.request().postData() ?? '{}')
       return route.fulfill(jsonRoute(file))
+    })
+    await page.route('**/api/userdata/*', (route) => {
+      const path = decodeURIComponent(
+        new URL(route.request().url()).pathname.split('/userdata/')[1]
+      )
+      if (
+        route.request().method() !== 'DELETE' ||
+        !path.startsWith('workflows/')
+      )
+        return route.fallback()
+      forgetSavedWorkflow(path)
+      return route.fulfill({ status: 204 })
     })
     await use({
       savedPaths,

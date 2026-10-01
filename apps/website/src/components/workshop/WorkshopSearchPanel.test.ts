@@ -43,6 +43,22 @@ describe('WorkshopSearchPanel', () => {
     expect(screen.queryByText(/popular|\d+.*runs/i)).toBeNull()
   })
 
+  it('names a Workshop app as a Comfy app, not a provider', () => {
+    const app: WorkshopModel = {
+      type: 'APP',
+      appId: 'reshoot',
+      slug: 'apps/reshoot',
+      name: 'Re-shoot a video',
+      href: '/hub/apps/reshoot/',
+      workflowCount: 0,
+      capabilities: []
+    }
+    render(WorkshopSearchPanel, { props: { models: [app], query: 're-shoot' } })
+    expect(
+      screen.getByRole('button', { name: 'Re-shoot a video Comfy app' })
+    ).toBeTruthy()
+  })
+
   it('shows an empty state for a query without matches', () => {
     render(WorkshopSearchPanel, {
       props: { models, query: 'missing' }
