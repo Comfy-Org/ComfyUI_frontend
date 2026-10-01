@@ -794,6 +794,8 @@ describe('createBillingCommands', () => {
     const PLAN_CENT_FIELDS = [
       'credits_cents',
       'list_price_cents',
+      'monthly_list_price_cents',
+      'monthly_price_cents',
       'price_cents'
     ] as const satisfies readonly (keyof SubscriptionPreview['new_plan'])[]
 

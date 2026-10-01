@@ -125,6 +125,8 @@ const cents = z.number().int().safe()
 const PlanInfoSchema = zPreviewPlanInfo.extend({
   credits_cents: cents,
   list_price_cents: cents.optional(),
+  monthly_list_price_cents: cents.optional(),
+  monthly_price_cents: cents.optional(),
   price_cents: cents,
   seat_summary: zPreviewPlanInfo.shape.seat_summary.extend({
     total_cost_cents: cents,
