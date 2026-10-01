@@ -148,6 +148,21 @@ async function prepareCancellationSession(
   return null
 }
 
+async function fallBackAfterSessionFailure(
+  error: unknown,
+  showFallback: LaunchCancellationFlowOptions['showFallback'],
+  isScopeCurrent: () => boolean,
+  cancelReport: ReturnType<typeof createCancelFlowReporter>
+): Promise<void> {
+  const fallback = await showCancellationFallback(
+    showFallback,
+    isScopeCurrent,
+    { flowAlreadyOpened: true },
+    { stage: 'session', error }
+  )
+  if (fallback === 'failed') cancelReport.failed('rendering')
+}
+
 export async function launchCancellationFlow({
   cancelAt,
   launchWorkspaceId: capturedWorkspaceId,
@@ -251,12 +266,11 @@ export async function launchCancellationFlow({
       ...metadata,
       error_message: getErrorMessage(error) ?? t('g.unknownError')
     })
-    const fallback = await showCancellationFallback(
+    await fallBackAfterSessionFailure(
+      error,
       showFallback,
       isLaunchWorkspaceCurrent,
-      { flowAlreadyOpened: true },
-      { stage: 'session', error }
+      cancelReport
     )
-    if (fallback === 'failed') cancelReport.failed('rendering')
   }
 }
