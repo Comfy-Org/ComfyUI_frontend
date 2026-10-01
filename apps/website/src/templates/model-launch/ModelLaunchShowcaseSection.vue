@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useElementHover, useElementSize, useToggle } from '@vueuse/core'
 import { computed, useTemplateRef } from 'vue'
 
@@ -52,14 +53,18 @@ const loopDuration = computed(
     <div
       ref="stripRef"
       data-testid="model-launch-showcase-strip"
-      class="mt-10 flex cursor-pointer gap-6 overflow-hidden motion-reduce:overflow-x-auto lg:mt-12"
+      class="mt-10 flex snap-x snap-mandatory scroll-px-4 gap-6 overflow-x-auto px-4 lg:mt-12 lg:cursor-pointer lg:px-0 lg:motion-safe:overflow-hidden"
       @click="togglePinnedStill()"
     >
       <ul
         v-for="copy in 2"
         :key="copy"
-        class="flex shrink-0 animate-marquee gap-6"
-        :class="copy === 2 && 'motion-reduce:hidden'"
+        :class="
+          cn(
+            'flex shrink-0 gap-6 lg:animate-marquee',
+            copy === 2 && 'hidden lg:motion-safe:flex'
+          )
+        "
         :style="{
           '--marquee-gap': '1.5rem',
           animationDuration: loopDuration,
@@ -70,7 +75,7 @@ const loopDuration = computed(
         <li
           v-for="card in showcase.cards"
           :key="card.id"
-          class="aspect-3/2 h-60 shrink-0 overflow-hidden rounded-4.5xl bg-black/40 md:h-80 lg:h-120"
+          class="aspect-3/2 h-52 shrink-0 snap-start overflow-hidden rounded-4.5xl bg-black/40 md:h-80 lg:h-120"
         >
           <img
             :src="card.src"
