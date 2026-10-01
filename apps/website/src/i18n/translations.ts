@@ -7856,8 +7856,8 @@ Enterprise`
     'zh-CN': '更新于 2026 年 10 月'
   },
   'nanoBanana.hero.title': {
-    en: 'Nano Banana\nis here',
-    'zh-CN': 'Nano Banana 已上线'
+    en: 'Nano Banana\nis now ripe',
+    'zh-CN': 'Nano Banana 熟了'
   },
   'nanoBanana.hero.description': {
     en: 'Placeholder copy. Turn a plain language brief into a finished image, or revise an existing visual without rebuilding it from scratch. Nano Banana brings generation, reference guided creation, and precise editing into ComfyUI workflows through Partner Nodes.',
