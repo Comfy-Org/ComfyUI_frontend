@@ -1,6 +1,6 @@
 {
   "name": "@comfyorg/ingest-types",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Comfy Cloud Ingest API TypeScript types and Zod schemas",
   "homepage": "https://comfy.org",
   "license": "MIT",
