@@ -763,12 +763,16 @@ describe('attachDocOpMinter', () => {
   it('mints a set_widget that names a subgraph owner with the subgraph-node path', async () => {
     const subgraph = createTestSubgraph({ rootGraph: graph })
     const host = createTestSubgraphNode(subgraph)
-    withGraphIntentSource('load', () => graph.add(host))
+    const source = new TestSource()
+    withGraphIntentSource('load', () => {
+      graph.add(host)
+      subgraph.add(source)
+    })
 
     emitGraphIntent({
       type: 'set_widget',
       graphId: subgraph.id,
-      nodeId: toNodeId(2),
+      nodeId: source.id,
       name: 'steps',
       value: 3,
       previous: 20
@@ -778,14 +782,45 @@ describe('attachDocOpMinter', () => {
     expect(minted).toEqual([
       {
         op: 'set_widget',
-        node_id: toNodeId(2),
+        node_id: source.id,
         widget: 'steps',
         value: 3,
         old: 20,
-        path: [String(host.id), '2'],
+        path: [String(host.id), String(source.id)],
         inner_widget: 'steps'
       }
     ])
+  })
+
+  it('does not mint non-value widget writes from a reachable subgraph', async () => {
+    const subgraph = createTestSubgraph({ rootGraph: graph })
+    const host = createTestSubgraphNode(subgraph)
+    const source = new TestSource()
+    withGraphIntentSource('load', () => {
+      graph.add(host)
+      subgraph.add(source)
+    })
+    source.widgets![0].serialize = false
+
+    emitGraphIntent({
+      type: 'set_widget',
+      graphId: subgraph.id,
+      nodeId: source.id,
+      name: 'steps',
+      value: 21,
+      previous: 20
+    })
+    emitGraphIntent({
+      type: 'set_widget',
+      graphId: subgraph.id,
+      nodeId: source.id,
+      name: 'upload',
+      value: 'clicked',
+      previous: 'button-slot'
+    })
+    await afterFlush()
+
+    expect(minted).toEqual([])
   })
 
   it('surfaces subgraph-interior node and link commands instead of minting them', async () => {

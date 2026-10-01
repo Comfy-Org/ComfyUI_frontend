@@ -33,7 +33,9 @@ import type { NodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import {
   findNodeInHierarchy,
-  findSubgraphNodePathById
+  findSubgraphByUuid,
+  findSubgraphNodePathById,
+  traverseSubgraphPath
 } from '@/utils/graphTraversalUtil'
 
 import type { GraphOperation } from './graphOperations'
@@ -133,6 +135,29 @@ function nodeKey(graphId: string, nodeId: NodeId): string {
   return `${graphId}:${String(nodeId)}`
 }
 
+function reachableIntentGraph(graph: LGraph, graphId: string) {
+  if (graphId === graph.id) return graph
+  const registered = findSubgraphByUuid(graph, graphId)
+  if (registered) return registered
+  const path = findSubgraphNodePathById(graph, graphId)
+  return path ? traverseSubgraphPath(graph, path) : null
+}
+
+function isPersistedWidgetIntent(
+  node: LGraphNode,
+  event: IntentOf<'set_widget'>
+): boolean {
+  const widget = node.widgets?.find(
+    (candidate) => candidate.name === event.name
+  )
+  if (!widget) return false
+  const stored = useWidgetValueStore().getWidget(
+    widgetId(event.graphId, event.nodeId, event.name)
+  )
+  if ((widget.serialize ?? stored?.serialize) === false) return false
+  return node.isVirtualNode || widget.type !== 'button'
+}
+
 /**
  * Returns the matching live node for an active-graph widget intent, `null`
  * when that intent cannot name a persisted widget, and `undefined` for a
@@ -142,20 +167,14 @@ function validatedWidgetNode(
   graph: LGraph,
   event: IntentOf<'set_widget'>
 ): LGraphNode | null | undefined {
-  if (event.graphId !== graph.id) return undefined
-  const node = findNodeInHierarchy(graph, event.nodeId)
+  const eventGraph = reachableIntentGraph(graph, event.graphId)
+  if (!eventGraph) return undefined
+  const exactNode = eventGraph.getNodeById(event.nodeId)
+  const node =
+    exactNode ??
+    (eventGraph === graph ? findNodeInHierarchy(graph, event.nodeId) : null)
   if (!node) return null
-  const widget = node.widgets?.find(
-    (candidate) => candidate.name === event.name
-  )
-  if (!widget) return null
-  const stored = useWidgetValueStore().getWidget(
-    widgetId(graph.id, event.nodeId, event.name)
-  )
-  const serialize = widget.serialize ?? stored?.serialize
-  if (serialize === false) return null
-  if (!node.isVirtualNode && widget.type === 'button') return null
-  return node
+  return isPersistedWidgetIntent(node, event) ? node : null
 }
 
 function routedWidgetOperation(
