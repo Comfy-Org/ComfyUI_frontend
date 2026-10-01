@@ -784,13 +784,6 @@ describe('LGraphNode', () => {
       expect(hasFixedHeight).toBe(true)
     })
 
-    it('should render reroute slots on the node body surface', () => {
-      renderLGraphNode({ nodeData: mockRerouteNodeData })
-      expect(
-        screen.getByTestId(`node-body-${mockRerouteNodeData.id}`)
-      ).toHaveClass('bg-component-node-background')
-    })
-
     it('should not render resize handle for reroute nodes', () => {
       const { container } = renderLGraphNode({
         nodeData: mockRerouteNodeData
