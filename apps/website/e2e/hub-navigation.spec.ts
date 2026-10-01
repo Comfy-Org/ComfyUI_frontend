@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
 import { observeHubNavigation } from './fixtures/hubNavigation'
@@ -25,128 +26,131 @@ function linkBetween(from: HubSection, to: HubSection) {
   return from === 'apps' ? 'hub-space-build' : `catalogue-tab-${to}`
 }
 
-// The catalogue marker lives in Build's tabs, so it only travels between
-// Models and Workflows; crossing to Create swaps the whole page instead.
-for (const { from, to, copy, reducedMotion, marker } of [
-  {
-    from: 'models',
-    to: 'workflows',
-    copy: 'Turn your ideas into finished results',
-    reducedMotion: 'no-preference',
-    marker: true
-  },
-  {
-    from: 'workflows',
-    to: 'apps',
-    copy: 'Take on bigger ideas with apps',
-    reducedMotion: 'no-preference',
-    marker: false
-  },
-  {
-    from: 'apps',
-    to: 'models',
-    copy: 'Try the latest AI models',
-    reducedMotion: 'no-preference',
-    marker: false
-  },
-  {
-    from: 'models',
-    to: 'workflows',
-    copy: 'Turn your ideas into finished results',
-    reducedMotion: 'reduce',
-    marker: true
+async function centreOf(page: Page, testId: string) {
+  const box = await page.getByTestId(testId).boundingBox()
+  if (!box) throw new Error(`${testId} has no box to measure`)
+  return box.x + box.width / 2
+}
+
+function expectMarkerOver(page: Page, tab: HubSection) {
+  return expect(async () =>
+    expect(
+      Math.abs(
+        (await centreOf(page, 'catalogue-marker')) -
+          (await centreOf(page, `catalogue-tab-${tab}`))
+      )
+    ).toBeLessThan(1)
+  ).toPass()
+}
+
+async function navigateObservingMotion(
+  page: Page,
+  from: HubSection,
+  to: HubSection
+) {
+  const motion = await page.evaluateHandle((destination) => {
+    const observed = { crossfade: false, marker: false }
+    const finished = new Promise<void>((resolve) => {
+      document.addEventListener(
+        'astro:before-swap',
+        (event) => {
+          void event.viewTransition.finished.then(resolve)
+        },
+        { once: true }
+      )
+    })
+    let frame: number
+    function record() {
+      observed.crossfade ||= [
+        '::view-transition-old(root)',
+        '::view-transition-new(root)'
+      ].every((pseudo) => isFading(document.documentElement, pseudo))
+      observed.marker ||=
+        location.pathname === destination &&
+        document
+          .getAnimations()
+          .some(
+            (animation) =>
+              animation.effect instanceof KeyframeEffect &&
+              animation.effect.pseudoElement ===
+                '::view-transition-group(catalogue-marker)'
+          )
+      frame = requestAnimationFrame(record)
+    }
+    function isFading(element: Element, pseudo?: string) {
+      const opacity = Number(getComputedStyle(element, pseudo).opacity)
+      return opacity > 0 && opacity < 1
+    }
+    record()
+    return {
+      observed,
+      finished,
+      stop() {
+        cancelAnimationFrame(frame)
+      }
+    }
+  }, `/hub/${to}/`)
+  try {
+    await page.getByTestId(linkBetween(from, to)).click()
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+      `ComfyUI ${to}`
+    )
+    await motion.evaluate((probe) => probe.finished)
+    return await motion.evaluate((probe) => probe.observed)
+  } finally {
+    await motion.evaluate((probe) => probe.stop())
+    await motion.dispose()
   }
-] as const) {
-  test(`${from} to ${to} respects ${reducedMotion} motion preferences`, async ({
+}
+
+for (const reducedMotion of ['no-preference', 'reduce'] as const) {
+  test(`the Build tab marker travels from models to workflows under ${reducedMotion} motion`, async ({
     page
   }) => {
     await page.emulateMedia({ reducedMotion })
+    await page.goto('/hub/models/')
+    await expect(page.getByTestId('catalogue-tab-models')).toHaveAttribute(
+      'aria-current',
+      'page'
+    )
+    // A named transition can animate a marker that never moves, so the
+    // positions either side of the navigation are what prove it travelled.
+    await expectMarkerOver(page, 'models')
+    const departed = await centreOf(page, 'catalogue-marker')
+
+    const observed = await navigateObservingMotion(page, 'models', 'workflows')
+
+    await expect(page.getByTestId('workshop-hero')).toContainText(
+      'Turn your ideas into finished results'
+    )
+    await expectMarkerOver(page, 'workflows')
+    expect(
+      Math.abs((await centreOf(page, 'catalogue-marker')) - departed)
+    ).toBeGreaterThan(1)
+    expect(observed).toEqual({
+      crossfade: reducedMotion === 'no-preference',
+      marker: reducedMotion === 'no-preference'
+    })
+  })
+}
+
+for (const { from, to, copy } of [
+  { from: 'workflows', to: 'apps', copy: 'Take on bigger ideas with apps' },
+  { from: 'apps', to: 'models', copy: 'Try the latest AI models' }
+] as const) {
+  test(`crossing from ${from} to ${to} cross-fades the page without a tab marker`, async ({
+    page
+  }) => {
     await page.goto(`/hub/${from}/`)
     await expect(page.getByTestId(currentLink(from))).toHaveAttribute(
       'aria-current',
       'page'
     )
-    const centreOf = async (testId: string) => {
-      const box = await page.getByTestId(testId).boundingBox()
-      if (!box) throw new Error(`${testId} has no box to measure`)
-      return box.x + box.width / 2
-    }
-    const expectMarkerOver = async (tab: string) =>
-      expect(async () =>
-        expect(
-          Math.abs(
-            (await centreOf('catalogue-marker')) -
-              (await centreOf(`catalogue-tab-${tab}`))
-          )
-        ).toBeLessThan(1)
-      ).toPass()
-    // A named transition can animate a marker that never moves, so the
-    // positions either side of the navigation are what prove it travelled.
-    if (marker) await expectMarkerOver(from)
-    const departed = marker ? await centreOf('catalogue-marker') : 0
-    const motion = await page.evaluateHandle((destination) => {
-      const observed = { crossfade: false, marker: false }
-      const finished = new Promise<void>((resolve) => {
-        document.addEventListener(
-          'astro:before-swap',
-          (event) => {
-            void event.viewTransition.finished.then(resolve)
-          },
-          { once: true }
-        )
-      })
-      let frame: number
-      function record() {
-        observed.crossfade ||= [
-          '::view-transition-old(root)',
-          '::view-transition-new(root)'
-        ].every((pseudo) => isFading(document.documentElement, pseudo))
-        observed.marker ||=
-          location.pathname === destination &&
-          document
-            .getAnimations()
-            .some(
-              (animation) =>
-                animation.effect instanceof KeyframeEffect &&
-                animation.effect.pseudoElement ===
-                  '::view-transition-group(catalogue-marker)'
-            )
-        frame = requestAnimationFrame(record)
-      }
-      function isFading(element: Element, pseudo?: string) {
-        const opacity = Number(getComputedStyle(element, pseudo).opacity)
-        return opacity > 0 && opacity < 1
-      }
-      record()
-      return {
-        observed,
-        finished,
-        stop() {
-          cancelAnimationFrame(frame)
-        }
-      }
-    }, `/hub/${to}/`)
-    try {
-      await page.getByTestId(linkBetween(from, to)).click()
-      await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-        `ComfyUI ${to}`
-      )
-      await motion.evaluate((probe) => probe.finished)
-      await expect(page.getByTestId('workshop-hero')).toContainText(copy)
-      if (marker) {
-        await expectMarkerOver(to)
-        expect(
-          Math.abs((await centreOf('catalogue-marker')) - departed)
-        ).toBeGreaterThan(1)
-      }
-      expect(await motion.evaluate((probe) => probe.observed)).toEqual({
-        crossfade: reducedMotion === 'no-preference',
-        marker: marker && reducedMotion === 'no-preference'
-      })
-    } finally {
-      await motion.evaluate((probe) => probe.stop())
-      await motion.dispose()
-    }
+
+    const observed = await navigateObservingMotion(page, from, to)
+
+    await expect(page.getByTestId('workshop-hero')).toContainText(copy)
+    expect(observed).toEqual({ crossfade: true, marker: false })
   })
 }
 
