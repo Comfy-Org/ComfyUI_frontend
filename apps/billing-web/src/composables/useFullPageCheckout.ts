@@ -670,6 +670,10 @@ export function useFullPageCheckout() {
     dispatch({ type: 'consentMissing' })
   }
 
+  function reportMethodSelected(choice: PayChoice) {
+    journey.methodSelected(selectedRailOf(choice), choice?.methodType)
+  }
+
   let payGeneration = 0
 
   /**
@@ -693,7 +697,7 @@ export function useFullPageCheckout() {
     const planned = { ...arrival, plan: arrival.plan }
     const mine = ++payGeneration
     const redirectMethod = redirectMethodOf(choice)
-    journey.methodSelected(selectedRailOf(choice), choice?.methodType)
+    reportMethodSelected(choice)
     dispatch({
       type: 'paySubmitted',
       ...(redirectMethod === undefined ? {} : { redirectMethod })

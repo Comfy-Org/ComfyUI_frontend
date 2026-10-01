@@ -59,9 +59,7 @@
         :authentication-state
         :authentication-error
         @add-credit-card="emit('addCreditCard')"
-        @confirm-payment="
-          (token, methodType) => emit('confirmPayment', token, methodType)
-        "
+        @confirm-payment="(token, type) => emit('confirmPayment', token, type)"
         @submitting-change="stripeSubmissionPending = $event"
         @payment-phase="emit('paymentPhase', $event)"
       />

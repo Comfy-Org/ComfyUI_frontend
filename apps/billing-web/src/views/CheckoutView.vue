@@ -493,15 +493,18 @@ function selectedRailOf(choice: PaymentChoice) {
   return choice.savedPaymentMethodId !== undefined ? 'saved' : 'on_file'
 }
 
+function reportMethodSelected(choice: PaymentChoice) {
+  const savedType = methods.value?.find(
+    ({ id }) => id === choice.savedPaymentMethodId
+  )?.type
+  journey.methodSelected(selectedRailOf(choice), choice.methodType ?? savedType)
+}
+
 async function pay(choice: PaymentChoice) {
   const quoted = preview.value
   if (planSlug.value === undefined || !quoted || loading.value) return
   submitFailure.value = undefined
-  journey.methodSelected(
-    selectedRailOf(choice),
-    choice.methodType ??
-      methods.value?.find(({ id }) => id === choice.savedPaymentMethodId)?.type
-  )
+  reportMethodSelected(choice)
   journey.submitted()
   const result = await checkout.subscribe(
     buildSubscribeRequest(

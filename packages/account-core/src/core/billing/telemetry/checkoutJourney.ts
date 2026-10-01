@@ -176,9 +176,7 @@ export function getCheckoutJourneyTelemetryEventName(
   return CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE[event.phase]
 }
 
-export function getCheckoutJourneyTelemetryEventPayload(
-  event: CheckoutJourneyTelemetryEvent
-) {
+function getContextPayload(event: CheckoutJourneyTelemetryEvent) {
   return {
     schema_version: CHECKOUT_JOURNEY_SCHEMA_VERSION,
     phase: event.phase,
@@ -193,14 +191,15 @@ export function getCheckoutJourneyTelemetryEventPayload(
     ...(event.ui_mode !== undefined && { ui_mode: event.ui_mode }),
     ...(event.billing_op_id !== undefined && {
       billing_op_id: event.billing_op_id
-    }),
+    })
+  }
+}
+
+function getPreviewPayload(event: CheckoutJourneyPhaseEvent) {
+  return {
     ...('preview_revision' in event &&
       event.preview_revision !== undefined && {
         preview_revision: event.preview_revision
-      }),
-    ...('payment_intent_source' in event &&
-      event.payment_intent_source !== undefined && {
-        payment_intent_source: event.payment_intent_source
       }),
     ...('failure_category' in event && {
       failure_category: event.failure_category
@@ -210,16 +209,41 @@ export function getCheckoutJourneyTelemetryEventPayload(
     ...('denial_reason' in event &&
       event.denial_reason !== undefined && {
         denial_reason: event.denial_reason
-      }),
+      })
+  }
+}
+
+function getPaymentFormPayload(event: CheckoutJourneyPhaseEvent) {
+  return {
     ...('element' in event && { element: event.element }),
     ...('element_phase' in event && { element_phase: event.element_phase }),
-    ...('submit_phase' in event && { submit_phase: event.submit_phase }),
+    ...('submit_phase' in event && { submit_phase: event.submit_phase })
+  }
+}
+
+function getChoicePayload(event: CheckoutJourneyPhaseEvent) {
+  return {
+    ...('payment_intent_source' in event &&
+      event.payment_intent_source !== undefined && {
+        payment_intent_source: event.payment_intent_source
+      }),
     ...('rail' in event && { rail: event.rail }),
     ...('method_kind' in event &&
       event.method_kind !== undefined && { method_kind: event.method_kind }),
     ...('result' in event && { result: event.result }),
     ...('prefilled' in event && { prefilled: event.prefilled }),
     ...('reason' in event && { reason: event.reason })
+  }
+}
+
+export function getCheckoutJourneyTelemetryEventPayload(
+  event: CheckoutJourneyTelemetryEvent
+) {
+  return {
+    ...getContextPayload(event),
+    ...getPreviewPayload(event),
+    ...getPaymentFormPayload(event),
+    ...getChoicePayload(event)
   }
 }
 
