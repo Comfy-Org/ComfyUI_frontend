@@ -40,6 +40,7 @@ export class AgentPanel {
           exact: true
         })
       )
+      .filter({ visible: true })
     this.debugHeading = this.root.getByText('CRDT debug', { exact: true })
     this.serverLogsSwitch = this.root.getByRole('switch', {
       name: 'Server logs'
