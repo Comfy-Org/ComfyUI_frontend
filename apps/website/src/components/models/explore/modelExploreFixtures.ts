@@ -171,9 +171,7 @@ if (!featured)
 
 export const latestModelReleaseFixture: ExploreFeaturedRelease = {
   name: featured.name,
-  description: t('models.explore.release.date', 'en', {
-    date: featured.releasedAt
-  }),
+  description: t(featured.descriptionKey, 'en'),
   href: featured.href,
   mediaSrc: featured.mediaSrc,
   publisher: t('models.explore.dayZero.label'),
