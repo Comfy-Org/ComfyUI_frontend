@@ -21,6 +21,7 @@ const {
 const emit = defineEmits<{
   select: [id: string]
   remove: [id: string]
+  rename: [id: string, label: string]
   add: []
   close: []
 }>()
@@ -47,6 +48,7 @@ const emit = defineEmits<{
       :locale
       @select="(id) => emit('select', id)"
       @remove="(id) => emit('remove', id)"
+      @rename="(id, label) => emit('rename', id, label)"
     />
     <button
       type="button"

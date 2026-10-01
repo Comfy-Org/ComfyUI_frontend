@@ -14,7 +14,11 @@ const {
   locale?: Locale
 }>()
 
-const emit = defineEmits<{ select: [id: string]; remove: [id: string] }>()
+const emit = defineEmits<{
+  select: [id: string]
+  remove: [id: string]
+  rename: [id: string, label: string]
+}>()
 </script>
 
 <template>
@@ -35,6 +39,7 @@ const emit = defineEmits<{ select: [id: string]; remove: [id: string] }>()
       :locale
       @select="emit('select', object.id)"
       @remove="emit('remove', object.id)"
+      @rename="(label) => emit('rename', object.id, label)"
     />
   </ul>
 </template>

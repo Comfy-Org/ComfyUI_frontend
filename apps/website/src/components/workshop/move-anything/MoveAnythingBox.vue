@@ -4,12 +4,21 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { Corner, Rect } from '../../../lib/workshop/move-anything/arrange'
 import { nudgeFor } from '../../../lib/workshop/nudge'
 
-const { rect, n, label, description, selected } = defineProps<{
+const {
+  rect,
+  n,
+  label,
+  description,
+  selected,
+  outlined = false
+} = defineProps<{
   rect: Rect
   n: number
   label: string
   description: string
   selected: boolean
+  /** Drawn by its outline; the box only holds the tag and handles. */
+  outlined?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -40,9 +49,14 @@ function onKey(event: KeyboardEvent) {
     :class="
       cn(
         'absolute cursor-move touch-none rounded-sm border-[1.5px] focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none',
-        selected
-          ? 'border-primary-comfy-yellow'
-          : 'border-primary-warm-white/90'
+        outlined
+          ? cn(
+              'border-dashed',
+              selected ? 'border-primary-comfy-yellow/40' : 'border-transparent'
+            )
+          : selected
+            ? 'border-primary-comfy-yellow'
+            : 'border-primary-warm-white/90'
       )
     "
     :style="{

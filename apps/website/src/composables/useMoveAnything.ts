@@ -6,6 +6,16 @@ import { imageSize } from '../lib/workshop/image-size'
 import type { MoveObject, Rect } from '../lib/workshop/move-anything/arrange'
 import { MAX_OBJECTS, isMoved } from '../lib/workshop/move-anything/arrange'
 import { mc } from '../lib/workshop/move-anything/copy'
+import type { KnownShape } from '../lib/workshop/move-anything/shapes'
+import {
+  EXAMPLE_SHAPES,
+  blobAround,
+  boundsOf,
+  outlinePath,
+  roundedBoxPath,
+  shapeAt,
+  shapeForBox
+} from '../lib/workshop/move-anything/shapes'
 import type {
   MoveQuality,
   MoveResult
@@ -25,23 +35,11 @@ type MovePhase =
   | { readonly kind: 'done'; readonly result: MoveResult }
   | { readonly kind: 'failed' }
 
-export type MoveTool = 'move' | 'add'
+export type MoveTool = 'move' | 'smart' | 'box'
 export type MoveTray = 'objects' | 'quality'
 export type MoveView = 'compare' | 'result' | 'original'
 
-function exampleObjects(locale: Locale): MoveObject[] {
-  const kitten = mc('move.example.kitten', locale)
-  const succulent = mc('move.example.succulent', locale)
-  return [
-    { id: 'o1', label: kitten, from: { x: 0.02, y: 0.2, w: 0.31, h: 0.68 } },
-    {
-      id: 'o2',
-      label: succulent,
-      from: { x: 0.28, y: 0.54, w: 0.14, h: 0.23 }
-    },
-    { id: 'o3', label: succulent, from: { x: 0.41, y: 0.56, w: 0.13, h: 0.18 } }
-  ].map((object) => ({ ...object, to: object.from }))
-}
+const DETECT_MS = 500
 
 /** Move anything's page state. The run itself is `runMove`, mocked for now. */
 export function useMoveAnything(locale: Locale = 'en') {
@@ -56,6 +54,8 @@ export function useMoveAnything(locale: Locale = 'en') {
   const seed = ref(42)
   const prompt = ref('')
   const selected = ref<string>()
+  const detecting = ref<{ x: number; y: number }>()
+  let detect: ReturnType<typeof setTimeout> | undefined
   let ownUrl: string | undefined
   let pendingUrl: string | undefined
   let run: AbortController | undefined
@@ -66,14 +66,16 @@ export function useMoveAnything(locale: Locale = 'en') {
   )
   const full = computed(() => objects.value.length >= MAX_OBJECTS)
 
-  function reset(next: MoveImage, start: MoveObject[]) {
+  function reset(next: MoveImage) {
     run?.abort()
+    clearTimeout(detect)
+    detecting.value = undefined
     image.value = next
-    objects.value = start
+    objects.value = []
     past.value = []
     future.value = []
-    selected.value = start[0]?.id
-    tool.value = start.length ? 'move' : 'add'
+    selected.value = undefined
+    tool.value = 'smart'
     phase.value = { kind: 'arranging' }
   }
 
@@ -85,7 +87,7 @@ export function useMoveAnything(locale: Locale = 'en') {
   function useExample() {
     pendingUrl = undefined
     releaseOwnUrl()
-    reset(MOVE_EXAMPLE, exampleObjects(locale))
+    reset(MOVE_EXAMPLE)
   }
 
   async function useFile(file: File) {
@@ -99,7 +101,7 @@ export function useMoveAnything(locale: Locale = 'en') {
     pendingUrl = undefined
     releaseOwnUrl()
     ownUrl = url
-    reset({ url, name: file.name, ...size }, [])
+    reset({ url, name: file.name, ...size })
   }
 
   /** Call before a change the visitor can undo. */
@@ -114,17 +116,75 @@ export function useMoveAnything(locale: Locale = 'en') {
     )
   }
 
-  function add(from: Rect) {
+  const knownShapes = () =>
+    image.value?.url === MOVE_EXAMPLE.url ? EXAMPLE_SHAPES : []
+  const aspect = () =>
+    image.value ? image.value.width / image.value.height : 1
+
+  function addOutline(from: Rect, path: string, label?: string) {
+    const existing = objects.value.find((object) => object.mask?.path === path)
+    if (existing) {
+      selected.value = existing.id
+      tool.value = 'move'
+      return
+    }
     if (full.value) return
     checkpoint()
-    const n = objects.value.length + 1
     const id = `o${Date.now()}`
+    const n = objects.value.length + 1
     objects.value = [
       ...objects.value,
-      { id, label: mc('move.object.label', locale, { n }), from, to: from }
+      {
+        id,
+        label: label ?? mc('move.object.label', locale, { n }),
+        from,
+        to: from,
+        mask: { path }
+      }
     ]
     selected.value = id
     tool.value = 'move'
+  }
+
+  function addShape(shape: KnownShape) {
+    addOutline(
+      boundsOf(shape.points),
+      outlinePath(shape.points),
+      mc(shape.label, locale)
+    )
+  }
+
+  /** Mocks detecting the thing under a click, then outlines and adds it. */
+  function smartSelect(point: { x: number; y: number }) {
+    if (full.value || detecting.value) return
+    detecting.value = point
+    detect = setTimeout(() => {
+      detecting.value = undefined
+      const at = [point.x, point.y] as const
+      const shape = shapeAt(knownShapes(), at)
+      if (shape) addShape(shape)
+      else {
+        const blob = blobAround(at, aspect())
+        addOutline(boundsOf(blob), outlinePath(blob))
+      }
+    }, DETECT_MS)
+  }
+
+  /** Adds the thing inside a drawn box, snapped to a known outline if one fits. */
+  function boxSelect(box: Rect) {
+    const shape = shapeForBox(knownShapes(), box)
+    if (shape) addShape(shape)
+    else addOutline(box, roundedBoxPath(box, aspect()))
+  }
+
+  function rename(id: string, label: string) {
+    const name = label.trim()
+    const current = objects.value.find((object) => object.id === id)
+    if (!current || !name || name === current.label) return
+    checkpoint()
+    objects.value = objects.value.map((object) =>
+      object.id === id ? { ...object, label: name } : object
+    )
   }
 
   function remove(id: string) {
@@ -188,6 +248,7 @@ export function useMoveAnything(locale: Locale = 'en') {
   }
 
   tryOnScopeDispose(() => {
+    clearTimeout(detect)
     run?.abort()
     pendingUrl = undefined
     releaseOwnUrl()
@@ -203,6 +264,7 @@ export function useMoveAnything(locale: Locale = 'en') {
     seed,
     prompt,
     selected,
+    detecting,
     moved,
     full,
     canGenerate,
@@ -212,7 +274,9 @@ export function useMoveAnything(locale: Locale = 'en') {
     useFile,
     checkpoint,
     place,
-    add,
+    smartSelect,
+    boxSelect,
+    rename,
     remove,
     undo,
     redo,

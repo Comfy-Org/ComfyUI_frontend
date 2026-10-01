@@ -49,8 +49,9 @@ const { objects, selected, quality, seed, prompt, phase } = move
         :locale
         @select="(id) => (selected = id)"
         @remove="move.remove"
+        @rename="move.rename"
       />
-      <p class="px-1 text-xs text-primary-warm-gray">
+      <p v-if="objects.length" class="px-1 text-xs text-primary-warm-gray">
         {{
           objects.length >= MAX_OBJECTS
             ? mc('move.objects.full', locale, { max: MAX_OBJECTS })

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { Move, SquareDashed } from '@lucide/vue'
 import { useTemplateRef } from 'vue'
 
 import type {
@@ -16,6 +15,7 @@ import EditorDivider from '../app-editor/EditorDivider.vue'
 import EditorTool from '../app-editor/EditorTool.vue'
 import MoveAnythingHistory from './MoveAnythingHistory.vue'
 import MoveAnythingRun from './MoveAnythingRun.vue'
+import { MOVE_TOOLS } from './tools'
 
 const {
   move,
@@ -56,18 +56,13 @@ function onChange(event: Event) {
 
 <template>
   <EditorTool
-    :icon="Move"
-    :label="mc('move.tool.move', locale)"
-    :pressed="tool === 'move'"
+    v-for="option in MOVE_TOOLS"
+    :key="option.id"
+    :icon="option.icon"
+    :label="mc(option.label, locale)"
+    :pressed="tool === option.id"
     :disabled="locked()"
-    @click="emit('tool', 'move')"
-  />
-  <EditorTool
-    :icon="SquareDashed"
-    :label="mc('move.tool.add', locale)"
-    :pressed="tool === 'add'"
-    :disabled="locked()"
-    @click="emit('tool', 'add')"
+    @click="emit('tool', option.id)"
   />
   <EditorDivider />
   <MoveAnythingHistory :move :locale />
