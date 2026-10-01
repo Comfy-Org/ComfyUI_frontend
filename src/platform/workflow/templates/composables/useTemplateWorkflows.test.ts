@@ -536,9 +536,10 @@ describe('useTemplateWorkflows', () => {
     )
 
     expect(app.loadGraphData).not.toHaveBeenCalled()
-    expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
-      errorType: 'error_loading_template'
-    })
+    expect(reportError).toHaveBeenCalledWith(
+      expect.stringContaining('Failed to fetch workflow template'),
+      { errorType: 'workflow_template_fetch_failed' }
+    )
     expect(useToastStore().messagesToAdd).toContainEqual({
       severity: 'error',
       summary: i18n.global.t('g.error'),
@@ -568,6 +569,26 @@ describe('useTemplateWorkflows', () => {
     )
   })
 
+  it('rejects a legacy workflow whose nodes cannot be instantiated', async () => {
+    const { loader } = mountTemplateWorkflows()
+    mockWorkflowTemplatesStore.isLoaded = true
+    // The old pass-through forwarded this to loadGraphData; the legacy
+    // contract now requires the id and type that LGraph.configure reads.
+    vi.mocked(fetch).mockResolvedValueOnce(
+      Response.json({ version: 0.4, nodes: [{}] })
+    )
+
+    expect(await loader.loadWorkflowTemplate('template1', 'default')).toBe(
+      'not-started'
+    )
+
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledWith(
+      expect.stringContaining('not a loadable workflow'),
+      { errorType: 'workflow_template_invalid' }
+    )
+  })
+
   it('does not open a payload that is not a workflow', async () => {
     const { loader } = mountTemplateWorkflows()
     mockWorkflowTemplatesStore.isLoaded = true
@@ -580,9 +601,10 @@ describe('useTemplateWorkflows', () => {
     )
 
     expect(app.loadGraphData).not.toHaveBeenCalled()
-    expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
-      errorType: 'error_loading_template'
-    })
+    expect(reportError).toHaveBeenCalledWith(
+      expect.stringContaining('not a loadable workflow'),
+      { errorType: 'workflow_template_invalid' }
+    )
   })
 
   function addVideoTemplate(
