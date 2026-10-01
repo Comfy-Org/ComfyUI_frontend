@@ -1,4 +1,5 @@
-import { externalLinks, getRoutes } from '../config/routes'
+import { externalLinks, getRoutes, localizeHref } from '../config/routes'
+import { categoryPath } from './learningPaths'
 import type { Locale } from '../i18n/translations'
 import { t } from '../i18n/translations'
 
@@ -91,7 +92,12 @@ export function getMainNavigation(
             {
               label: t('nav.developerPlatform', locale),
               href: routes.platform,
-              badge: 'beta'
+              badge: 'new'
+            },
+            {
+              label: t('nav.comfyRouter', locale),
+              href: routes.platformRouter,
+              badge: 'new'
             },
             {
               label: t('nav.comfyEnterprise', locale),
@@ -99,8 +105,7 @@ export function getMainNavigation(
             },
             {
               label: t('nav.managedBuilds', locale),
-              href: routes.managedBuilds,
-              badge: 'beta'
+              href: routes.managedBuilds
             }
           ]
         },
@@ -143,7 +148,10 @@ export function getMainNavigation(
         cta: {
           label: t('cta.watchDemo', locale),
           ariaLabel: t('nav.featuredCommunityCtaAria', locale),
-          href: `${routes.learning}/ads/product-photography`
+          href: localizeHref(
+            `${categoryPath('ads')}product-photography/`,
+            locale
+          )
         }
       },
       columns: [

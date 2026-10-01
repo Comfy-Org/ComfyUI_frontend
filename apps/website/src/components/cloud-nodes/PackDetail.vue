@@ -19,7 +19,9 @@ const { pack, locale = 'en' } = defineProps<{
 }>()
 
 const backHref =
-  locale === 'zh-CN' ? '/zh-CN/cloud/supported-nodes' : '/cloud/supported-nodes'
+  locale === 'zh-CN'
+    ? '/zh-CN/cloud/supported-nodes/'
+    : '/cloud/supported-nodes/'
 
 const { groupedNodes } = useNodesByCategory(() => pack.nodes)
 </script>

@@ -24,6 +24,7 @@ function captureApiError(
   extraContext?: Record<string, unknown>
 ) {
   reportError(error, {
+    surface: 'platform',
     errorType,
     tags: {
       api_endpoint: endpoint,
@@ -123,6 +124,7 @@ async function readStoredSurvey(signal?: AbortSignal): Promise<StoredSurvey> {
     return classifyStoredSurvey(data)
   } catch (error) {
     reportError(error, {
+      surface: 'platform',
       errorType: 'network_error',
       tags: { api_endpoint: '/settings/{key}' },
       context: {

@@ -1,3 +1,4 @@
+import type { GetFeaturesResponses } from '@comfyorg/ingest-types'
 import type { PostHogConfig } from 'posthog-js'
 
 import type { TelemetryEventName } from '@/platform/telemetry/types'
@@ -78,7 +79,7 @@ export type OnboardingSurvey = {
  * Remote configuration type
  * Configuration fetched from the server at runtime
  */
-export type RemoteConfig = {
+export type RemoteConfig = GetFeaturesResponses[200] & {
   gtm_container_id?: string
   ga_measurement_id?: string
   mixpanel_token?: string
@@ -93,7 +94,6 @@ export type RemoteConfig = {
   }
   subscription_required?: boolean
   server_health_alert?: ServerHealthAlert
-  max_upload_size?: number
   comfy_api_base_url?: string
   comfy_cloud_base_url?: string
   comfy_platform_base_url?: string
@@ -102,7 +102,6 @@ export type RemoteConfig = {
   telemetry_disabled_events?: TelemetryEventName[]
   enable_telemetry?: boolean
   model_upload_button_enabled?: boolean
-  asset_rename_enabled?: boolean
   private_models_enabled?: boolean
   onboarding_survey_enabled?: boolean
   onboarding_survey?: OnboardingSurvey
@@ -110,6 +109,7 @@ export type RemoteConfig = {
   /** Full hosted (external) survey URL embedded in the Nodes Manager modal on Cloud. */
   manager_survey_url?: string
   linear_toggle_enabled?: boolean
+  'agent-in-app-experience'?: boolean
   partner_node_governance_enabled?: boolean
   /** Kill switch for the local partner-nodes run gate; defaults on client-side. */
   partner_run_gate_enabled?: boolean
@@ -117,11 +117,6 @@ export type RemoteConfig = {
   node_library_essentials_enabled?: boolean
   supports_model_type_tags?: boolean
   free_tier_credits?: number
-  free_tier_balance?: {
-    allowance: number
-    used: number
-    remaining: number
-  }
   free_tier_job_allowance_enabled?: boolean
   new_free_tier_subscriptions?: boolean
   workflow_sharing_enabled?: boolean
@@ -137,6 +132,7 @@ export type RemoteConfig = {
   billing_sdk_topup_enabled?: boolean
   billing_sdk_subscription_enabled?: boolean
   billing_control_enabled?: boolean
+  member_credit_limits_enabled?: boolean
   legacy_billing_migration_enabled?: boolean
   v1_payment_recovery?: boolean
   churnkey_app_id?: string
