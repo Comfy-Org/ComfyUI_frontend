@@ -27,19 +27,11 @@ test.describe(
 
         await test.step('Choose a color from the submenu', async () => {
           await openContextMenu(comfyPage, 'KSampler')
-          const menu = comfyPage.contextMenu.applicationMenu
-          await menu
-            .getByRole('menuitem', { name: 'Color', exact: true })
-            .click()
-
-          const colorPopover = comfyPage.page
-            .getByRole('menu')
-            .filter({ hasText: 'Red' })
-          const redSwatch = colorPopover.getByRole('menuitem', {
+          const colorSubmenu = await comfyPage.contextMenu.openColorSubmenu()
+          const redSwatch = colorSubmenu.getByRole('menuitem', {
             name: 'Red',
             exact: true
           })
-          await expect(redSwatch).toBeVisible()
           await redSwatch.click()
         })
 
@@ -57,19 +49,11 @@ test.describe(
 
         await test.step('Choose a shape from the submenu', async () => {
           await openContextMenu(comfyPage, 'KSampler')
-          const menu = comfyPage.contextMenu.applicationMenu
-          await menu
-            .getByRole('menuitem', { name: 'Shape', exact: true })
-            .click()
-
-          const shapePopover = comfyPage.page
-            .getByRole('menu')
-            .filter({ hasText: 'Default' })
-          const boxItem = shapePopover.getByRole('menuitemcheckbox', {
+          const shapeSubmenu = await comfyPage.contextMenu.openShapeSubmenu()
+          const boxItem = shapeSubmenu.getByRole('menuitemcheckbox', {
             name: 'Box',
             exact: true
           })
-          await expect(boxItem).toBeVisible()
           await boxItem.click()
         })
 

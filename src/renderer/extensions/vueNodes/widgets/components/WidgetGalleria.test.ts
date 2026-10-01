@@ -3,10 +3,14 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import type {
+  GalleriaImage,
+  GalleriaValue,
+  GalleriaWidgetOptions
+} from '@/lib/litegraph/src/types/widgets'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetGalleria from './WidgetGalleria.vue'
-import type { GalleryImage, GalleryValue } from './WidgetGalleria.vue'
 import { createMockWidget } from './widgetTestUtils'
 
 const i18n = createI18n({
@@ -17,8 +21,12 @@ const i18n = createI18n({
       g: {
         galleryImage: 'Gallery image',
         galleryThumbnail: 'Gallery thumbnail',
+        galleryImagePosition: 'Gallery image {index} of {total}',
+        galleryThumbnailPosition: 'Gallery thumbnail {index} of {total}',
         previousImage: 'Previous image',
-        nextImage: 'Next image'
+        nextImage: 'Next image',
+        playGallery: 'Play gallery',
+        pauseGallery: 'Pause gallery'
       }
     }
   }
@@ -31,10 +39,10 @@ const images = [
 ]
 
 function createWidget(
-  value: GalleryValue,
-  options: Record<string, unknown> = {}
+  value: GalleriaValue,
+  options: GalleriaWidgetOptions = {}
 ) {
-  return createMockWidget<GalleryValue>({
+  return createMockWidget<GalleriaValue>({
     value,
     name: 'gallery',
     type: 'array',
@@ -43,16 +51,16 @@ function createWidget(
 }
 
 function renderGallery(
-  value: GalleryValue = images,
-  options: Record<string, unknown> = {}
+  value: GalleriaValue = images,
+  options: GalleriaWidgetOptions = {}
 ) {
   const widget = createWidget(value, options)
   return renderComponent(widget, value)
 }
 
 function renderComponent(
-  widget: SimplifiedWidget<GalleryValue>,
-  modelValue: GalleryValue
+  widget: SimplifiedWidget<GalleriaValue, GalleriaWidgetOptions>,
+  modelValue: GalleriaValue
 ) {
   return render(WidgetGalleria, {
     global: { plugins: [i18n] },
@@ -76,7 +84,7 @@ describe('WidgetGalleria', () => {
   })
 
   it('uses item and thumbnail source priorities', () => {
-    const value: GalleryImage[] = [
+    const value: GalleriaImage[] = [
       {
         itemImageSrc: 'https://example.com/item.jpg',
         thumbnailImageSrc: 'https://example.com/thumbnail.jpg',
@@ -170,5 +178,56 @@ describe('WidgetGalleria', () => {
     expect(
       screen.getByRole('img', { name: 'Gallery image 2 of 3' })
     ).toHaveAttribute('src', images[1])
+  })
+
+  it('allows autoplay to be paused and resumed', async () => {
+    vi.useFakeTimers()
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    renderGallery(images, {
+      autoPlay: true,
+      circular: true,
+      transitionInterval: 1000
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Pause gallery' }))
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(
+      screen.getByRole('img', { name: 'Gallery image 1 of 3' })
+    ).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Play gallery' }))
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(
+      screen.getByRole('img', { name: 'Gallery image 2 of 3' })
+    ).toBeInTheDocument()
+  })
+
+  it('localizes the complete image and thumbnail positions', () => {
+    const translated = createI18n({
+      legacy: false,
+      locale: 'en',
+      messages: {
+        en: {
+          g: {
+            galleryImage: 'Image',
+            galleryImagePosition: '{total} images, number {index}',
+            galleryThumbnailPosition: '{total} previews, number {index}',
+            previousImage: 'Previous',
+            nextImage: 'Next'
+          }
+        }
+      }
+    })
+    render(WidgetGalleria, {
+      global: { plugins: [translated] },
+      props: { widget: createWidget(images), modelValue: images }
+    })
+
+    expect(
+      screen.getByRole('img', { name: '3 images, number 1' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: '3 previews, number 1' })
+    ).toBeInTheDocument()
   })
 })

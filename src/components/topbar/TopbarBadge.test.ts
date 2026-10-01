@@ -84,18 +84,11 @@ describe('TopbarBadge', () => {
       expect(screen.queryByText('Hidden Text')).not.toBeInTheDocument()
     })
 
-    it('reveals full text when activated', async () => {
-      renderTopbarBadge(
-        {
-          text: 'Full Text',
-          label: 'ALERT'
-        },
-        'compact'
-      )
-      const trigger = screen.getByRole('button', { name: 'ALERT' })
-      expect(screen.queryByText('Full Text')).not.toBeInTheDocument()
-      trigger.click()
-      expect(await screen.findByText('Full Text')).toBeInTheDocument()
+    it('names a label-less trigger from its full text', () => {
+      renderTopbarBadge({ text: 'Comfy Cloud', label: undefined }, 'compact')
+
+      const trigger = screen.getByRole('button', { name: 'Comfy Cloud' })
+      expect(trigger).toHaveAccessibleName('Comfy Cloud')
     })
   })
 
@@ -112,6 +105,13 @@ describe('TopbarBadge', () => {
       expect(screen.getByTestId('badge-icon')).toHaveClass('pi-cloud')
       expect(screen.queryByText('BETA')).not.toBeInTheDocument()
       expect(screen.queryByText('Hidden Text')).not.toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Hidden Text' })
+      ).toBeInTheDocument()
+      expect(screen.getByTestId('badge-icon')).toHaveAttribute(
+        'aria-hidden',
+        'true'
+      )
     })
 
     it('renders label when no icon provided', () => {

@@ -33,6 +33,27 @@ export class ContextMenu {
     return this.anyMenu.getByRole('menuitem', { name, exact: true })
   }
 
+  async openColorSubmenu(): Promise<Locator> {
+    await this.menuItem('Color').click()
+    const submenu = this.page.getByRole('menu').filter({
+      has: this.page.getByRole('menuitem', { name: 'Red', exact: true })
+    })
+    await expect(submenu).toBeVisible()
+    return submenu
+  }
+
+  async openShapeSubmenu(): Promise<Locator> {
+    await this.menuItem('Shape').click()
+    const submenu = this.page.getByRole('menu').filter({
+      has: this.page.getByRole('menuitemcheckbox', {
+        name: 'Box',
+        exact: true
+      })
+    })
+    await expect(submenu).toBeVisible()
+    return submenu
+  }
+
   /**
    * Click a litegraph menu entry. Selects the most recently opened matching
    * entry so nested submenu items can be reached without being shadowed by

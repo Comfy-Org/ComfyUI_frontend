@@ -1,8 +1,8 @@
 import { ZIndex } from '@primeuix/utils/zindex'
 import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it } from 'vitest'
-import { defineComponent, ref } from 'vue'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, nextTick, ref } from 'vue'
 
 import PopoverOverlay from './PopoverOverlay.vue'
 
@@ -15,7 +15,7 @@ function renderPopover(withOutside = false) {
     template: `
         <button @click="$refs.popover.toggle($event)">Open</button>
         <button v-if="withOutside">Outside</button>
-        <PopoverOverlay ref="popover"><div>Content</div></PopoverOverlay>
+        <PopoverOverlay ref="popover"><button>Content</button></PopoverOverlay>
       `
   })
 }
@@ -65,15 +65,55 @@ describe('PopoverOverlay', () => {
   })
 
   it('stays open when the content has nothing tabbable', async () => {
-    renderPopover()
+    const focus = HTMLElement.prototype.focus
+    vi.spyOn(HTMLElement.prototype, 'focus').mockImplementation(
+      function (this: HTMLElement) {
+        if (
+          this.matches(
+            'a[href], button, input, select, textarea, [tabindex], [contenteditable]'
+          )
+        ) {
+          focus.call(this)
+        }
+      }
+    )
+    render({
+      components: { PopoverOverlay },
+      template: `
+        <button @click="$refs.popover.toggle($event)">Open</button>
+        <PopoverOverlay ref="popover"><div>Content</div></PopoverOverlay>
+      `
+    })
     const user = userEvent.setup({ pointerEventsCheck: 0 })
 
     await user.click(screen.getByRole('button', { name: 'Open' }))
     await screen.findByRole('dialog')
-    await new Promise((resolve) => setTimeout(resolve, 20))
+    await nextTick()
 
     expect(screen.getByRole('dialog')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Open' })).toHaveFocus()
+  })
+
+  it('does not open when hidden before the queued show completes', async () => {
+    const popover = ref<InstanceType<typeof PopoverOverlay>>()
+    render(
+      defineComponent({
+        components: { PopoverOverlay },
+        setup: () => ({ popover }),
+        template: `
+          <button>Open</button>
+          <PopoverOverlay ref="popover">Popover content</PopoverOverlay>
+        `
+      })
+    )
+    const trigger = screen.getByRole('button', { name: 'Open' })
+
+    popover.value?.show(new Event('show'), trigger)
+    popover.value?.hide()
+    await nextTick()
+
+    expect(popover.value?.open).toBe(false)
+    expect(screen.queryByText('Popover content')).not.toBeInTheDocument()
   })
 
   it('closes when an anchor ancestor scrolls', async () => {
@@ -101,6 +141,23 @@ describe('PopoverOverlay', () => {
 
     await waitFor(() =>
       expect(screen.queryByText('Popover content')).not.toBeInTheDocument()
+    )
+  })
+
+  it.for([
+    { name: 'document', target: document },
+    { name: 'window', target: window }
+  ])('closes on $name scroll', async ({ target }) => {
+    renderPopover()
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+
+    await user.click(screen.getByRole('button', { name: 'Open' }))
+    expect(await screen.findByRole('dialog')).toBeVisible()
+
+    target.dispatchEvent(new Event('scroll'))
+
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     )
   })
 })

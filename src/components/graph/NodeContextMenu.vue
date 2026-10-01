@@ -12,7 +12,7 @@
           class="size-5 rounded-full border border-border-default"
           :style="{ backgroundColor: item.color }"
         />
-        <i v-else-if="item.icon" :class="[item.icon, 'size-4']" />
+        <i v-else-if="item.icon" :class="cn(item.icon, 'size-4')" />
         <i
           v-else-if="item.checked"
           class="icon-[lucide--check] size-4 shrink-0"
@@ -35,6 +35,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useElementBounding, useRafFn } from '@vueuse/core'
 import { computed, onMounted, onUnmounted, ref, watchEffect } from 'vue'
 
@@ -164,8 +165,6 @@ function show(event: MouseEvent) {
     y: screenY / scale - offset[1]
   }
 
-  // Initialize last* values to current transform to prevent updateMenuPosition
-  // from overwriting PrimeVue's flip-adjusted position on the first RAF tick
   lastScale = scale
   lastOffsetX = offset[0]
   lastOffsetY = offset[1]

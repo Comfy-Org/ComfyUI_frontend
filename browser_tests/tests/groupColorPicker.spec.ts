@@ -81,12 +81,11 @@ test.describe(
       })
       await expect(comfyPage.contextMenu.applicationMenu).toBeVisible()
 
-      await comfyPage.contextMenu.menuItem('Color').click()
-      const redSwatch = comfyPage.page.getByRole('menuitem', {
+      const colorSubmenu = await comfyPage.contextMenu.openColorSubmenu()
+      const redSwatch = colorSubmenu.getByRole('menuitem', {
         name: 'Red',
         exact: true
       })
-      await expect(redSwatch).toBeVisible()
       await redSwatch.click()
       await comfyPage.nextFrame()
 
@@ -111,8 +110,7 @@ test.describe(
         button: 'right'
       })
       await expect(comfyPage.contextMenu.applicationMenu).toBeVisible()
-      await comfyPage.contextMenu.menuItem('Color').click()
-      await expect(redSwatch).toBeVisible()
+      await comfyPage.contextMenu.openColorSubmenu()
 
       await expect(comfyPage.canvas).toHaveScreenshot(
         'group-color-right-click-matches-toolbar-swatch.png',
@@ -139,12 +137,11 @@ test.describe(
           button: 'right'
         })
         await expect(comfyPage.contextMenu.applicationMenu).toBeVisible()
-        await comfyPage.page.getByText('Color', { exact: true }).click()
-        const redSwatch = comfyPage.page
-          .getByRole('menu')
-          .filter({ hasText: 'Red' })
-          .getByRole('menuitem', { name: 'Red', exact: true })
-        await expect(redSwatch).toBeVisible()
+        const colorSubmenu = await comfyPage.contextMenu.openColorSubmenu()
+        const redSwatch = colorSubmenu.getByRole('menuitem', {
+          name: 'Red',
+          exact: true
+        })
         await redSwatch.click()
       })
 
