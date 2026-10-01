@@ -9,10 +9,12 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { whenStoresReady } from '@/platform/telemetry/storeReadiness'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import { getAgentPanelOpen } from '@/platform/telemetry/utils/getAgentPanelOpen'
 import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
 
 import type {
   AddCreditsClickMetadata,
+  AgentAttachButtonClickedMetadata,
   AgentConsentNotOfferedMetadata,
   AgentConsentOfferExitedMetadata,
   AgentConsentResolvedMetadata,
@@ -28,6 +30,12 @@ import type {
   AgentPanelOpenedMetadata,
   AgentPaywallCtaMetadata,
   AgentPaywallShownMetadata,
+  AgentRunApprovalResolvedMetadata,
+  AgentRunApprovalShownMetadata,
+  AgentRunModeChangedMetadata,
+  AgentStopClickedMetadata,
+  AgentThreadStartedMetadata,
+  AgentWorkflowBoundMetadata,
   AgentWorkflowAppliedMetadata,
   AuthErrorMetadata,
   AuthMetadata,
@@ -676,6 +684,12 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.captureRaw(TelemetryEvents.EXECUTION_START, {
       ...getExecutionContext(),
       trigger_source: this.lastTriggerSource ?? 'unknown',
+      // Sampled here rather than carried from the click: no successful run
+      // path puts an asynchronous boundary between the two calls, so a carried
+      // value could only differ from this read on a click that never executed
+      // — and there it would linger and attach a stale panel state to an
+      // unrelated later run.
+      agent_panel_open: getAgentPanelOpen(),
       event_source: EXECUTION_EVENT_SOURCE
     })
     this.lastTriggerSource = undefined
@@ -776,8 +790,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.AGENT_NODE_TAGGED, metadata)
   }
 
-  trackAgentAttachButtonClicked(): void {
-    this.trackEvent(TelemetryEvents.AGENT_ATTACH_BUTTON_CLICKED, {})
+  trackAgentAttachButtonClicked(
+    metadata: AgentAttachButtonClickedMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.AGENT_ATTACH_BUTTON_CLICKED, metadata)
   }
 
   trackAgentWorkflowApplied(metadata: AgentWorkflowAppliedMetadata): void {
@@ -787,6 +803,32 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   // fallow-ignore-next-line unused-class-member
   trackAgentError(metadata: AgentErrorMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_ERROR, metadata)
+  }
+
+  trackAgentStopClicked(metadata: AgentStopClickedMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_STOP_CLICKED, metadata)
+  }
+
+  trackAgentWorkflowBound(metadata: AgentWorkflowBoundMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_WORKFLOW_BOUND, metadata)
+  }
+
+  trackAgentRunApprovalShown(metadata: AgentRunApprovalShownMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_RUN_APPROVAL_SHOWN, metadata)
+  }
+
+  trackAgentRunApprovalResolved(
+    metadata: AgentRunApprovalResolvedMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.AGENT_RUN_APPROVAL_RESOLVED, metadata)
+  }
+
+  trackAgentRunModeChanged(metadata: AgentRunModeChangedMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_RUN_MODE_CHANGED, metadata)
+  }
+
+  trackAgentThreadStarted(metadata: AgentThreadStartedMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_THREAD_STARTED, metadata)
   }
 
   trackAgentConsentNotOffered(metadata: AgentConsentNotOfferedMetadata): void {

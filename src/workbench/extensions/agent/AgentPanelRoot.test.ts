@@ -410,6 +410,7 @@ beforeEach(() => {
   paywallCapabilities.canSubscribeSelfServe = true
   paywallCapabilities.isReady = true
   paywallCapabilities.hasResolvedCapabilities = true
+  paywallCapabilities.snapshotAuthoritative = true
   paywallBilling.tier = 'STANDARD'
   paywallBilling.type = 'workspace'
   paywallBilling.status = 'paid'
@@ -805,15 +806,16 @@ describe('AgentPanelRoot paywall actions', () => {
 
     await userEvent.click(await findInlinePaywallButton('Upgrade plan'))
     expect(openAccountPrecondition).toHaveBeenCalledExactlyOnceWith(
-      'subscription'
+      'subscription',
+      { source: 'agent_paywall' }
     )
 
     await userEvent.click(
       inlinePaywall().getByRole('button', { name: 'Add credits' })
     )
     expect(openAccountPrecondition.mock.calls).toEqual([
-      ['subscription'],
-      ['credits']
+      ['subscription', { source: 'agent_paywall' }],
+      ['credits', { source: 'agent_paywall' }]
     ])
   })
 
@@ -831,7 +833,8 @@ describe('AgentPanelRoot paywall actions', () => {
     await userEvent.click(await findInlinePaywallButton('Subscribe'))
 
     expect(openAccountPrecondition).toHaveBeenCalledExactlyOnceWith(
-      'subscription'
+      'subscription',
+      { source: 'agent_paywall' }
     )
   })
 
@@ -1031,9 +1034,9 @@ describe('AgentPanelRoot paywall actions', () => {
 
   // Each unresolved input is its own wiring test: the panel reads
   // `hasResolvedCapabilities` and `workspaceRole`, so a table varying both at
-  // once would need a conditional body. Pending-versus-denied capability
-  // policy belongs to useBillingCapabilities.test.ts, which owns that split;
-  // the panel cannot tell the two apart because it never reads `isReady`.
+  // once would need a conditional body. Which states count as settled belongs
+  // to useBillingCapabilities.test.ts, which owns that split; these cases only
+  // pin what the panel renders from the inputs it is handed.
   async function expectWithheldPurchaseActions() {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentConversationStore().messages.push({
@@ -1086,6 +1089,7 @@ describe('AgentPanelRoot paywall telemetry', () => {
     vi.mocked(useTelemetry())!.trackAgentPaywallShown.mockClear()
     vi.mocked(useTelemetry())!.trackAgentPaywallCtaClicked.mockClear()
     vi.mocked(useTelemetry())!.trackAddApiCreditButtonClicked.mockClear()
+    vi.mocked(useTelemetry())!.trackSubscription.mockClear()
 
     canTopUp = ref(true)
     canSubscribeSelfServe = ref(true)
@@ -1404,6 +1408,36 @@ describe('AgentPanelRoot paywall telemetry', () => {
       useTelemetry()!.trackAddApiCreditButtonClicked
     ).not.toHaveBeenCalled()
   })
+
+  it.for([
+    { button: 'Subscribe', canSubscriberTopUp: false },
+    { button: 'Upgrade plan', canSubscriberTopUp: true }
+  ])(
+    'carries agent_paywall to the subscribe event from the $button CTA',
+    async ({ button, canSubscriberTopUp }) => {
+      canTopUp.value = canSubscriberTopUp
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      showPaywall()
+
+      await userEvent.click(await screen.findByRole('button', { name: button }))
+
+      expect(useTelemetry()!.trackSubscription).toHaveBeenCalledExactlyOnceWith(
+        'subscribe_clicked',
+        { current_tier: 'standard', reason: 'agent_paywall' }
+      )
+    }
+  )
+
+  it('does not report a subscribe click for the add-credits CTA', async () => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    showPaywall()
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Add credits' })
+    )
+
+    expect(useTelemetry()!.trackSubscription).not.toHaveBeenCalled()
+  })
 })
 
 /**
@@ -1528,7 +1562,9 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
       cta: 'add_credits',
       surface: 'credits_exhausted'
     })
-    expect(openAccountPrecondition).toHaveBeenCalledExactlyOnceWith('credits')
+    expect(openAccountPrecondition).toHaveBeenCalledExactlyOnceWith('credits', {
+      source: 'agent_paywall'
+    })
   })
 
   it('stays hidden while the workspace has funds', async () => {
@@ -2203,7 +2239,9 @@ describe('AgentPanelRoot attach flow', () => {
         name: i18n.global.t('agent.attachFiles')
       })
     )
-    expect(telemetry.trackAgentAttachButtonClicked).toHaveBeenCalled()
+    expect(
+      telemetry.trackAgentAttachButtonClicked
+    ).toHaveBeenCalledExactlyOnceWith({ method: 'menu' })
 
     const file = new File(['x'], 'cat.png', { type: 'image/png' })
     const input = screen.getByTestId<HTMLInputElement>('agent-file-input')
@@ -2359,6 +2397,7 @@ describe('AgentPanelRoot attach flow', () => {
     getServerFeature.mockReturnValue(24 * 1024 * 1024)
     executionErrors.showErrorOverlay.mockClear()
     stubUploadFetch()
+    telemetry.trackAgentAttachButtonClicked.mockClear()
     renderWithSelectedTarget()
     await nextTick()
 
@@ -2374,6 +2413,7 @@ describe('AgentPanelRoot attach flow', () => {
       })
     )
     expect(screen.queryByText('movie.mp4')).not.toBeInTheDocument()
+    expect(telemetry.trackAgentAttachButtonClicked).not.toHaveBeenCalled()
   })
 
   it('uses a larger server limit for non-video attachments', async () => {
@@ -2425,6 +2465,7 @@ describe('AgentPanelRoot attach flow', () => {
     ['notes.md', ''],
     ['prompt.txt', 'text/plain']
   ])('attaches a dropped %s and uploads it', async ([name, type]) => {
+    telemetry.trackAgentAttachButtonClicked.mockClear()
     const uploaded = stubUploadFetch()
     renderWithSelectedTarget()
     await nextTick()
@@ -2441,6 +2482,11 @@ describe('AgentPanelRoot attach flow', () => {
       )
     ).toBeInTheDocument()
     await vi.waitFor(() => expect(uploaded).toEqual([name]))
+    await vi.waitFor(() =>
+      expect(
+        telemetry.trackAgentAttachButtonClicked
+      ).toHaveBeenCalledExactlyOnceWith({ method: 'drag_drop' })
+    )
   })
 
   it('names every approved format in the picker accept list', async () => {
@@ -2783,6 +2829,7 @@ describe('AgentPanelRoot attach flow', () => {
       vi.stubGlobal('fetch', fetchSpy)
       renderWithSelectedTarget()
       await nextTick()
+      telemetry.trackAgentAttachButtonClicked.mockClear()
       const target = screen.getByRole('textbox')
       const ref = `stored_${filename}`
       const dragData = {
@@ -2815,6 +2862,12 @@ describe('AgentPanelRoot attach flow', () => {
       expect(
         screen.queryByLabelText(i18n.global.t('agent.uploading'))
       ).not.toBeInTheDocument()
+      // The duplicate drop left one chip, so it must also leave one event.
+      await vi.waitFor(() =>
+        expect(
+          telemetry.trackAgentAttachButtonClicked
+        ).toHaveBeenCalledExactlyOnceWith({ method: 'drag_drop' })
+      )
 
       await userEvent.click(screen.getByRole('button', { name: 'Send' }))
 
@@ -2970,6 +3023,129 @@ describe('AgentPanelRoot attach flow', () => {
     ).toBeInTheDocument()
     await vi.waitFor(() => expect(uploaded).toEqual(['cat.png']))
   })
+
+  // Falsifiers for the committed-drop gates: an implementation that emits
+  // before the deferred fetch or upload settles, or ignores their results,
+  // fails these.
+  it.for(['failed', 'cancelled'] as const)(
+    'emits no drop telemetry for a %s deferred asset',
+    async (outcome) => {
+      let resolveAsset: (response: Response) => void = () => {}
+      let rejectAsset: (error: Error) => void = () => {}
+      vi.stubGlobal(
+        'fetch',
+        vi.fn((input: RequestInfo | URL) => {
+          const url = String(input)
+          if (url.includes('/api/view'))
+            return new Promise<Response>((resolve, reject) => {
+              resolveAsset = resolve
+              rejectAsset = reject
+            })
+          if (url.endsWith('/api/upload/image'))
+            return Promise.resolve(
+              json(200, {
+                name: 'uploaded_gen.png',
+                subfolder: '',
+                type: 'input'
+              })
+            )
+          return Promise.resolve(json(200, agentThreadList()))
+        })
+      )
+      renderWithSelectedTarget()
+      await nextTick()
+      telemetry.trackAgentAttachButtonClicked.mockClear()
+
+      const dragData = {
+        types: ['application/x-comfy-asset-info', 'text/uri-list'],
+        getData: (type: string) =>
+          type === 'application/x-comfy-asset-info'
+            ? JSON.stringify({ filename: 'gen.png', type: 'input' })
+            : 'http://localhost/api/view?filename=gen.png'
+      }
+      expect(dispatchDrag(screen.getByRole('textbox'), 'drop', dragData)).toBe(
+        true
+      )
+      expect(
+        await screen.findByLabelText(i18n.global.t('agent.uploading'))
+      ).toBeInTheDocument()
+
+      if (outcome === 'cancelled') {
+        await userEvent.click(
+          screen.getByRole('button', { name: i18n.global.t('agent.remove') })
+        )
+        resolveAsset(new Response(new Blob(['asset'], { type: 'image/png' })))
+      } else {
+        rejectAsset(new Error('asset fetch failed'))
+      }
+      await vi.waitFor(() =>
+        expect(
+          screen.queryByLabelText(i18n.global.t('agent.uploading'))
+        ).not.toBeInTheDocument()
+      )
+      await nextTick()
+
+      expect(telemetry.trackAgentAttachButtonClicked).not.toHaveBeenCalled()
+    }
+  )
+
+  it.for([
+    { files: ['bad.png'], expectedEvents: 0 },
+    { files: ['bad.png', 'good.png'], expectedEvents: 1 }
+  ])(
+    'emits $expectedEvents drop event(s) when uploads of $files are rejected except any good one',
+    async ({ files, expectedEvents }) => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+          const url = String(input)
+          if (!url.includes('/upload/')) return json(200, agentThreadList())
+          const body = init?.body
+          const file = body instanceof FormData ? body.get('image') : null
+          const name = file instanceof File ? file.name : ''
+          if (name.startsWith('bad')) return json(500, {})
+          return json(200, {
+            name: `uploaded_${name}`,
+            subfolder: '',
+            type: 'input'
+          })
+        })
+      )
+      renderWithSelectedTarget()
+      await nextTick()
+      telemetry.trackAgentAttachButtonClicked.mockClear()
+
+      dispatchDrag(screen.getByRole('textbox'), 'drop', {
+        files: files.map((name) => new File(['x'], name, { type: 'image/png' }))
+      })
+
+      // The rejected upload's chip leaves; only a committed one stays settled.
+      await vi.waitFor(() =>
+        expect(screen.queryByText('bad.png')).not.toBeInTheDocument()
+      )
+      await vi.waitFor(() =>
+        expect(
+          screen.queryByLabelText(i18n.global.t('agent.uploading'))
+        ).not.toBeInTheDocument()
+      )
+      await nextTick()
+
+      if (expectedEvents === 0) {
+        expect(telemetry.trackAgentAttachButtonClicked).not.toHaveBeenCalled()
+      } else {
+        expect(
+          within(screen.getByTestId('composer-asset-section')).getByText(
+            'good.png'
+          )
+        ).toBeInTheDocument()
+        await vi.waitFor(() =>
+          expect(
+            telemetry.trackAgentAttachButtonClicked
+          ).toHaveBeenCalledExactlyOnceWith({ method: 'drag_drop' })
+        )
+      }
+    }
+  )
 
   it('shows an uploading chip and blocks send until the upload settles', async () => {
     let settleUpload: () => void = () => {}
@@ -3746,8 +3922,22 @@ describe('AgentPanelRoot feedback capture', () => {
     )
 
     expect(telemetry.trackAgentMessageFeedback.mock.calls).toEqual([
-      [{ message_id: 'turn-9', vote: 'up', workflow_id: 'wf-rated' }],
-      [{ message_id: 'turn-9', vote: null, workflow_id: 'wf-rated' }]
+      [
+        {
+          message_id: 'turn-9',
+          turn_id: 'turn-9',
+          vote: 'up',
+          workflow_id: 'wf-rated'
+        }
+      ],
+      [
+        {
+          message_id: 'turn-9',
+          turn_id: 'turn-9',
+          vote: null,
+          workflow_id: 'wf-rated'
+        }
+      ]
     ])
   })
 
@@ -3789,7 +3979,14 @@ describe('AgentPanelRoot feedback capture', () => {
     )
 
     expect(telemetry.trackAgentMessageFeedback.mock.calls).toEqual([
-      [{ message_id: 'turn-10', vote: 'up', workflow_id: 'wf-last' }]
+      [
+        {
+          message_id: 'turn-10',
+          turn_id: 'turn-10',
+          vote: 'up',
+          workflow_id: 'wf-last'
+        }
+      ]
     ])
   })
 
@@ -3819,8 +4016,136 @@ describe('AgentPanelRoot feedback capture', () => {
     )
 
     expect(telemetry.trackAgentMessageFeedback.mock.calls).toEqual([
-      [{ message_id: 'turn-11', vote: 'up', workflow_id: null }]
+      [
+        {
+          message_id: 'turn-11',
+          turn_id: 'turn-11',
+          vote: 'up',
+          workflow_id: null
+        }
+      ]
     ])
+  })
+})
+
+describe('AgentPanelRoot run approval telemetry', () => {
+  it('keeps the timer for a terminal decision after workflow inspection', async () => {
+    let resolveAnswer!: (response: Response) => void
+    const answerResponse = new Promise<Response>((resolve) => {
+      resolveAnswer = resolve
+    })
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url.includes('/asks/') && init?.method === 'POST')
+        return answerResponse
+      if (url.includes('/agent/threads')) return json(200, agentThreadList())
+      if (url.includes('/workflows'))
+        return json(200, {
+          data: [],
+          pagination: {
+            offset: 0,
+            limit: 100,
+            total: 0,
+            has_more: false
+          }
+        })
+      return json(200, {})
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    telemetry.trackAgentRunApprovalShown.mockClear()
+    telemetry.trackAgentRunApprovalResolved.mockClear()
+    let currentTime = 1_000
+    const now = vi.spyOn(Date, 'now').mockImplementation(() => currentTime)
+    const workflow = addTab('workflows/Portrait workflow.json')
+    workflowStore.activeWorkflow = workflow
+    useAgentWorkflowTabBindingStore().bind('workflow-1', workflow.path)
+
+    const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const store = useAgentConversationStore()
+    store.setThreadId('th-1')
+    const turnId = 'turn-approval' as TurnId
+    store.recordUser(turnId, 'run it')
+    store.startTurn(turnId)
+    store.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_ask',
+        data: {
+          thread_id: 'th-1',
+          message_id: turnId,
+          ask_id: 'turn-approval:call-1',
+          kind: 'run_approval',
+          context: {
+            workflow_id: 'workflow-1',
+            workflow_name: 'Portrait workflow'
+          },
+          prompt: 'Run it?',
+          options: [
+            { id: 'run', label: 'Run' },
+            { id: 'cancel', label: 'Cancel' }
+          ],
+          min_selections: 1,
+          max_selections: 1,
+          allow_other: false
+        }
+      })
+    )
+
+    expect(await screen.findByRole('button', { name: 'Run' })).toBeVisible()
+    await nextTick()
+    expect(
+      telemetry.trackAgentRunApprovalShown
+    ).toHaveBeenCalledExactlyOnceWith({
+      turn_id: 'turn-approval',
+      workflow_id: 'workflow-1'
+    })
+
+    currentTime = 1_100
+    panel.unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(await screen.findByRole('button', { name: 'Run' })).toBeVisible()
+    await nextTick()
+    expect(telemetry.trackAgentRunApprovalShown).toHaveBeenCalledOnce()
+
+    currentTime = 1_150
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Portrait workflow' })
+    )
+    await vi.waitFor(() =>
+      expect(telemetry.trackAgentRunApprovalResolved).toHaveBeenCalledWith({
+        decision: 'open_workflow',
+        time_to_decide_ms: 150
+      })
+    )
+
+    currentTime = 1_275
+    await userEvent.click(screen.getByRole('button', { name: 'Run' }))
+    await vi.waitFor(() =>
+      expect(
+        fetchMock.mock.calls.filter(
+          ([url, init]) => url.includes('/asks/') && init?.method === 'POST'
+        )
+      ).toHaveLength(1)
+    )
+    ws.emit('agent_ask_resolved', {
+      thread_id: 'th-1',
+      message_id: turnId,
+      ask_id: 'turn-approval:call-1',
+      status: 'answered',
+      selected: ['run']
+    })
+    currentTime = 1_900
+    resolveAnswer(json(200, { status: 'answered' }))
+    await vi.waitFor(() =>
+      expect(telemetry.trackAgentRunApprovalResolved.mock.calls).toEqual([
+        [{ decision: 'open_workflow', time_to_decide_ms: 150 }],
+        [{ decision: 'run', time_to_decide_ms: 275 }]
+      ])
+    )
+    expect(
+      fetchMock.mock.calls.filter(
+        ([url, init]) => url.includes('/asks/') && init?.method === 'POST'
+      )
+    ).toHaveLength(1)
+    now.mockRestore()
   })
 })
 
@@ -4031,19 +4356,21 @@ describe('AgentPanelRoot workflow binding', () => {
   }
 
   function mockMessagesEndpoint(
-    ackWorkflowId: string,
+    ackWorkflowId: string | (() => string),
     cloudWorkflows:
       | { id: string; name: string }[]
       | (() => { id: string; name: string }[]) = [],
     threads: AgentThreadSummary[] = []
   ): unknown[] {
     const bodies: unknown[] = []
+    const resolveAckWorkflowId =
+      typeof ackWorkflowId === 'function' ? ackWorkflowId : () => ackWorkflowId
     vi.stubGlobal(
       'fetch',
       vi.fn(async (url: string, init?: RequestInit) => {
         if (url.includes('/messages') && init?.method === 'POST') {
           bodies.push(JSON.parse(String(init.body)))
-          return json(202, ack(ackWorkflowId, `m-${bodies.length}`))
+          return json(202, ack(resolveAckWorkflowId(), `m-${bodies.length}`))
         }
         if (url.includes('/messages')) return json(200, [])
         if (url.includes('/agent/threads')) {
@@ -5592,12 +5919,130 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(subscribedStaleDoc).toBe(false)
   })
 
+  it('reports a selected binding once when the next turn acknowledges it', async () => {
+    setupWorkflowContext({
+      targetId: 'wf-42',
+      references: [{ path: 'workflows/other.json', workflowId: 'wf-other' }]
+    })
+    let acknowledgedWorkflowId = 'wf-42'
+    mockMessagesEndpoint(() => acknowledgedWorkflowId)
+    await renderAndSend('work here')
+    await vi.waitFor(() =>
+      expect(useAgentConversationStore().activeTurnId).toBe('m-1')
+    )
+    ws.emit('agent_message_done', {
+      message_id: 'm-1',
+      thread_id: 'th-1',
+      usage: null
+    })
+    await screen.findByRole('button', { name: 'Send' })
+    telemetry.trackAgentWorkflowBound.mockClear()
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitemradio', { name: 'other' })
+    )
+    await vi.waitFor(() =>
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(
+        'workflows/other.json'
+      )
+    )
+    acknowledgedWorkflowId = 'wf-other'
+    await sendFromComposer('continue there')
+    await vi.waitFor(() =>
+      expect(useAgentConversationStore().activeTurnId).toBe('m-2')
+    )
+
+    expect(telemetry.trackAgentWorkflowBound).toHaveBeenCalledExactlyOnceWith({
+      thread_id: 'th-1',
+      workflow_id: 'wf-other',
+      prev_workflow_id: 'wf-42',
+      bind_source: 'selector_chip'
+    })
+  })
+
+  it('attributes a pre-thread binding when the first turn acknowledges it', async () => {
+    setupWorkflowContext({
+      targetId: 'wf-42',
+      references: [{ path: 'workflows/other.json', workflowId: 'wf-other' }]
+    })
+    mockMessagesEndpoint('wf-other')
+    renderWithSelectedTarget()
+    telemetry.trackAgentWorkflowBound.mockClear()
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitemradio', { name: 'other' })
+    )
+    expect(telemetry.trackAgentWorkflowBound).not.toHaveBeenCalled()
+
+    await sendFromComposer('work there')
+    await vi.waitFor(() =>
+      expect(useAgentConversationStore().activeTurnId).toBe('m-1')
+    )
+
+    expect(telemetry.trackAgentWorkflowBound).toHaveBeenCalledExactlyOnceWith({
+      thread_id: 'th-1',
+      workflow_id: 'wf-other',
+      prev_workflow_id: 'wf-42',
+      bind_source: 'selector_chip'
+    })
+  })
+
+  it('attributes the thread started after deleting the open chat', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint(
+      'wf-42',
+      [],
+      [
+        agentThread({
+          id: 'th-1',
+          title: 'build a duck',
+          last_message_at: '2026-07-07T10:00:00Z'
+        })
+      ]
+    )
+    await renderAndSend('work here')
+    ws.emit('agent_message_done', {
+      message_id: 'm-1',
+      thread_id: 'th-1',
+      usage: null
+    })
+    await screen.findByRole('button', { name: 'Send' })
+    telemetry.trackAgentThreadStarted.mockClear()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.chatOptions') })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: i18n.global.t('g.delete') })
+    )
+    expect(telemetry.trackAgentThreadStarted).not.toHaveBeenCalled()
+
+    await sendFromComposer('start again')
+
+    await vi.waitFor(() =>
+      expect(telemetry.trackAgentThreadStarted).toHaveBeenCalledExactlyOnceWith(
+        { source: 'history_delete' }
+      )
+    )
+  })
+
   it('agent_active_tab opens an unknown workflow as a blank named tab', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
 
     await renderAndSend('work here')
     const mint = vi.spyOn(workflowStore, 'createNewTemporary')
+    telemetry.trackAgentWorkflowBound.mockClear()
 
     ws.emit('agent_active_tab', {
       workflow_id: 'wf-77',
@@ -5626,6 +6071,12 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(telemetry.trackAgentWorkflowApplied).toHaveBeenCalledWith({
       workflow_id: 'wf-77',
       target: 'active_tab_open'
+    })
+    expect(telemetry.trackAgentWorkflowBound).toHaveBeenCalledExactlyOnceWith({
+      thread_id: 'th-1',
+      workflow_id: 'wf-77',
+      prev_workflow_id: 'wf-42',
+      bind_source: 'active_tab'
     })
   })
   it.for(['saved', 'new'] as const)(
