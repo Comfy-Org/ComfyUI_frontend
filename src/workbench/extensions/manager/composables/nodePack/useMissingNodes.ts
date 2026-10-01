@@ -64,7 +64,13 @@ export const useMissingNodes = createSharedComposable(() => {
   }
 
   const missingCoreNodes = computed<Record<string, LGraphNode[]>>(() => {
-    const missingNodes = collectAllNodes(app.rootGraph, isMissingCoreNode)
+    // Same unready-graph traversal as CLOUD-FRONTEND-PROD-1YN: `hasMissingNodes`
+    // can be read before `ComfyApp.setup()` installs the graph, and `rootGraph`
+    // force-casts `undefined` straight into the traversal.
+    const rootGraph = app.rootGraphOrUndefined
+    if (!rootGraph) return {}
+
+    const missingNodes = collectAllNodes(rootGraph, isMissingCoreNode)
     return groupBy(missingNodes, (node) => String(node.properties.ver || ''))
   })
 

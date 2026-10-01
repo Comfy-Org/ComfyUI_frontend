@@ -3,13 +3,6 @@ import { computed, onUnmounted, ref } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-// `app.isGraphReady` is a plain getter on a non-reactive class instance, so
-// it cannot drive a watcher by itself. `canvasStore.canvas` is the reactive
-// signal that `GraphCanvas.vue` sets right after `comfyApp.setup()` resolves,
-// by which point the root graph already exists (see AgentPanelRoot.vue for
-// the same pattern).
-// eslint-disable-next-line import-x/no-restricted-paths
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -35,14 +28,12 @@ const _useWorkflowPacks = () => {
   const nodeDefStore = useNodeDefStore()
   const systemStatsStore = useSystemStatsStore()
   const { inferPackFromNodeName } = useComfyRegistryStore()
-  const canvasStore = useCanvasStore()
 
   const workflowPacks = ref<WorkflowPack[]>([])
   const unresolvedNodeNames = ref<string[]>([])
-  // Set when a fetch was requested before the root graph existed, so it can
-  // be retried once the graph becomes ready instead of leaving the registry
-  // fetch permanently "ready" with no packs resolved.
-  const retryWhenGraphReady = ref(false)
+
+  /** A fetch asked for before the graph existed, owed a retry once it does. */
+  const fetchDeferredUntilGraphReady = ref(false)
 
   const getWorkflowNodePackId = (node: LGraphNode): string | undefined => {
     if (typeof node.properties.cnr_id === 'string') {
@@ -125,8 +116,12 @@ const _useWorkflowPacks = () => {
    * Get the node packs for all nodes in the workflow (including subgraphs).
    * Nodes that have no local definition and no registry match are tracked
    * as unresolved so downstream consumers can surface them to the user.
+   *
+   * @returns `false` when the root graph does not exist yet and nothing was
+   * parsed, so the caller can leave its state unready instead of publishing an
+   * empty result as the workflow's answer.
    */
-  const getWorkflowPacks = async (): Promise<boolean> => {
+  const getWorkflowPacks = async () => {
     const rootGraph = app.rootGraphOrUndefined
     if (!rootGraph) return false
 
@@ -166,19 +161,32 @@ const _useWorkflowPacks = () => {
   const filterWorkflowPack = (packs: components['schemas']['Node'][]) =>
     packs.filter((pack) => !!pack.id && isIdInWorkflow(pack.id))
 
+  /**
+   * Parse the workflow's packs, then fetch their registry info.
+   *
+   * Nothing runs while the root graph is still loading. Letting the fetch
+   * through on an unready graph would resolve an empty pack-ID list and flip
+   * `isReady` to true, which is terminal for both callers: the manager tab
+   * trigger only fires while `!isReady`, and the missing-node trigger only
+   * fires when the active workflow changes. CLOUD-FRONTEND-PROD-1YN proves the
+   * active workflow can arrive before the graph, so an unready pass would
+   * leave the Workflow and Missing tabs permanently empty for that workflow.
+   */
   const startFetchWorkflowPacks = async () => {
-    const parsed = await getWorkflowPacks() // Parse the packs from the workflow nodes
-    if (!parsed) {
-      retryWhenGraphReady.value = true
+    if (!(await getWorkflowPacks())) {
+      fetchDeferredUntilGraphReady.value = true
       return
     }
-    await startFetch() // Fetch the packs infos from the registry
+    fetchDeferredUntilGraphReady.value = false
+    await startFetch()
   }
 
+  // Serve whatever was deferred as soon as the graph exists, so a fetch lost to
+  // the startup race is not waiting on another workflow switch to come back.
   whenever(
-    () => retryWhenGraphReady.value && !!canvasStore.canvas && app.isGraphReady,
+    () => app.isGraphReady,
     () => {
-      retryWhenGraphReady.value = false
+      if (!fetchDeferredUntilGraphReady.value) return
       void startFetchWorkflowPacks()
     }
   )

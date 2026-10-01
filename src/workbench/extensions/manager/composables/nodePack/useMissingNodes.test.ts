@@ -25,10 +25,24 @@ vi.mock(
   })
 )
 
+// Mirrors ComfyApp's accessors: tests assign `rootGraph`, and the honest
+// `rootGraphOrUndefined` the composable guards on reads the same value. A mock
+// that only answers one of the two cannot tell a loaded graph apart from the
+// pre-`setup()` state that produced CLOUD-FRONTEND-PROD-1YN.
 const mockApp: { rootGraph?: Partial<LGraph> } = vi.hoisted(() => ({}))
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: mockApp
+  app: {
+    get rootGraph() {
+      return mockApp.rootGraph
+    },
+    get rootGraphOrUndefined() {
+      return mockApp.rootGraph
+    },
+    get isGraphReady() {
+      return mockApp.rootGraph !== undefined
+    }
+  }
 }))
 
 vi.mock(import('@/utils/graphTraversalUtil'), () => ({
@@ -380,6 +394,25 @@ describe('useMissingNodes', () => {
       expect(missingCoreNodes.value['1.2.0']).toHaveLength(2)
       expect(missingCoreNodes.value['1.2.0'][0].type).toBe('CoreNode1')
       expect(missingCoreNodes.value['1.2.0'][1].type).toBe('CoreNode2')
+    })
+
+    // CLOUD-FRONTEND-PROD-1YN: `rootGraph` force-casts an absent graph, so
+    // traversing it before `ComfyApp.setup()` throws
+    // `TypeError: Cannot read properties of undefined (reading 'nodes')`.
+    // `hasMissingNodes` is read from the workflow chrome, which can mount first.
+    it('reports no missing core nodes instead of traversing an unready graph', () => {
+      mockApp.rootGraph = undefined
+      mockCollectAllNodes.mockImplementation((graph) => {
+        // Stands in for the real traversal's unconditional `graph.nodes` read.
+        return [...(graph as unknown as Partial<LGraph>).nodes!]
+      })
+      useNodeDefStore().nodeDefsByName = {}
+
+      const { missingCoreNodes, hasMissingNodes } = useMissingNodes()
+
+      expect(Object.keys(missingCoreNodes.value)).toHaveLength(0)
+      expect(hasMissingNodes.value).toBe(false)
+      expect(mockCollectAllNodes).not.toHaveBeenCalled()
     })
 
     it('groups missing core nodes by version', () => {
