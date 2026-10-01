@@ -450,6 +450,51 @@ describe('performSubscriptionCheckout', () => {
     ])
   })
 
+  it('closes an attempt with no checkout URL with one failure and surfaces the error', async () => {
+    vi.spyOn(crypto, 'randomUUID').mockReturnValue(
+      '00000000-0000-4000-8000-000000000007'
+    )
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => window)
+    vi.mocked(global.fetch).mockResolvedValue(new Response(JSON.stringify({})))
+
+    await expect(performSubscriptionCheckout('pro', 'monthly')).rejects.toThrow(
+      'Failed to initiate subscription: No checkout URL returned'
+    )
+
+    const telemetry = useTelemetry()
+    assert.exists(telemetry)
+    expect(vi.mocked(telemetry.trackBillingEvent).mock.calls).toEqual([
+      [
+        {
+          operation: 'subscription_checkout',
+          stage: 'started',
+          outcome: 'pending',
+          checkout_attempt_id: '00000000-0000-4000-8000-000000000007',
+          tier: 'pro',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        }
+      ],
+      [
+        {
+          operation: 'subscription_checkout',
+          stage: 'failed',
+          outcome: 'failure',
+          checkout_attempt_id: '00000000-0000-4000-8000-000000000007',
+          tier: 'pro',
+          cycle: 'monthly',
+          checkout_type: 'new',
+          failure_category: 'unknown',
+          duration_ms: expect.any(Number)
+        }
+      ]
+    ])
+    expect(openSpy).not.toHaveBeenCalled()
+    expect(
+      window.localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
+    ).toBeNull()
+  })
+
   it('opens the attempt with one started event that the pending attempt shares', async () => {
     vi.spyOn(crypto, 'randomUUID').mockReturnValue(
       '00000000-0000-4000-8000-000000000001'

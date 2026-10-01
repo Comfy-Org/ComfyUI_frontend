@@ -286,6 +286,20 @@ describe('TopUpCreditsDialogContentLegacy', () => {
     }
   )
 
+  it('sends no started event when the customer cannot buy credits', async () => {
+    useBillingContext().canAccessSubscriptionFeatures = computed(() => false)
+
+    renderDialog()
+    await clickBuyCredits()
+
+    const telemetry = useTelemetry()
+    assert.exists(telemetry)
+    expect(vi.mocked(telemetry.trackBillingEvent).mock.calls).toEqual([])
+    expect(useAuthStore().initiateCreditPurchase).not.toHaveBeenCalled()
+    expect(localStorage.getItem(PENDING_TOPUP_KEY)).toBeNull()
+    expect(useSettingsDialog().show).toHaveBeenCalledWith('workspace')
+  })
+
   it('uses the same bounded category when the rejection is not an Error', async () => {
     vi.mocked(useAuthStore().initiateCreditPurchase).mockRejectedValue('boom')
 
