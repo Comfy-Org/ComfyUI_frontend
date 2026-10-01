@@ -7,35 +7,31 @@ import { getRoutes } from '../../../config/routes'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import AppRepoLink from '../cinematic-studio/AppRepoLink.vue'
+import EditorFloatingPanel from './EditorFloatingPanel.vue'
 
 const {
   title,
   toolsLabel,
   repo,
   showDock = true,
-  panelLabel,
+  panelLabels,
+  panelDimmed = false,
   locale = 'en'
 } = defineProps<{
   title: string
   toolsLabel: string
   repo?: string
   showDock?: boolean
-  /** Names the side panel, shown when the `panel` slot is filled. */
-  panelLabel?: string
+  /** Names the floating panel shown when the `panel` slot is filled. */
+  panelLabels?: { label: string; expand: string; collapse: string }
+  panelDimmed?: boolean
   locale?: Locale
 }>()
 </script>
 
 <template>
   <section
-    :class="
-      cn(
-        'flex flex-col border-y border-transparency-white-t8 bg-primary-comfy-ink lg:h-[calc(100svh-7rem)] lg:overflow-hidden',
-        $slots.panel
-          ? 'max-lg:overflow-clip'
-          : 'h-[calc(100svh-5rem)] min-h-150 overflow-hidden'
-      )
-    "
+    class="flex h-[calc(100svh-5rem)] min-h-150 flex-col overflow-hidden border-y border-transparency-white-t8 bg-primary-comfy-ink lg:h-[calc(100svh-7rem)]"
     :aria-label="title"
   >
     <header
@@ -61,69 +57,69 @@ const {
       <span class="flex-1" />
       <AppRepoLink :repo :locale class="max-sm:hidden" />
     </header>
-    <div class="flex min-h-0 flex-1 flex-col lg:flex-row">
+    <div class="relative flex min-h-0 flex-1 flex-col bg-black/25">
       <div
         :class="
           cn(
-            'relative flex min-h-0 flex-1 flex-col bg-black/25',
-            $slots.panel &&
-              'max-lg:h-[min(60svh,calc(62vw+5.5rem))] max-lg:min-h-80 max-lg:flex-none'
+            'flex min-h-0 flex-1 items-start justify-center px-4 pt-14 pb-36 sm:px-8',
+            $slots.panel && 'lg:pr-6 lg:pl-86',
+            $slots.panel && !showDock && 'pb-44 lg:pb-6'
           )
         "
       >
-        <div
-          :class="
-            cn(
-              'flex min-h-0 flex-1 items-start justify-center px-4 pt-14 pb-36 sm:px-8',
-              $slots.panel && !showDock && 'pb-4 sm:pb-6'
-            )
-          "
-        >
-          <slot />
+        <slot />
+      </div>
+      <slot name="overlay" />
+      <div
+        :class="
+          cn(
+            'pointer-events-none absolute inset-x-3 top-3 grid grid-cols-[1fr_auto_1fr] items-start gap-2',
+            $slots.panel && 'lg:left-86'
+          )
+        "
+      >
+        <div class="pointer-events-auto justify-self-start">
+          <slot name="start" />
         </div>
-        <slot name="overlay" />
-        <div
-          class="pointer-events-none absolute inset-x-3 top-3 grid grid-cols-[1fr_auto_1fr] items-start gap-2"
-        >
-          <div class="pointer-events-auto justify-self-start">
-            <slot name="start" />
-          </div>
-          <div class="pointer-events-auto">
-            <slot name="center" />
-          </div>
-          <div class="pointer-events-auto justify-self-end">
-            <slot name="end" />
-          </div>
+        <div class="pointer-events-auto">
+          <slot name="center" />
         </div>
-        <div
-          class="pointer-events-none absolute inset-x-0 bottom-4 flex flex-col items-center gap-2 px-3"
-        >
-          <slot name="tray" />
-          <div
-            v-if="showDock"
-            role="toolbar"
-            :aria-label="toolsLabel"
-            class="pointer-events-auto flex max-w-full flex-wrap items-center justify-center gap-0.5 rounded-3xl border border-transparency-white-t20 bg-primary-comfy-ink-light p-1 shadow-xl shadow-black/40 sm:flex-nowrap sm:rounded-full"
-          >
-            <slot name="dock" />
-          </div>
+        <div class="pointer-events-auto justify-self-end">
+          <slot name="end" />
         </div>
       </div>
-      <aside
-        v-if="$slots.panel"
-        :aria-label="panelLabel"
-        class="flex min-h-0 flex-col border-transparency-white-t8 bg-primary-comfy-ink max-lg:border-t lg:w-85 lg:shrink-0 lg:border-l"
+      <div
+        :class="
+          cn(
+            'pointer-events-none absolute inset-x-0 bottom-4 flex flex-col items-center gap-2 px-3',
+            $slots.panel && 'lg:left-83'
+          )
+        "
       >
-        <div class="min-h-0 flex-1 lg:overflow-y-auto">
-          <slot name="panel" />
-        </div>
+        <slot name="tray" />
         <div
-          v-if="$slots['panel-footer']"
-          class="sticky bottom-0 border-t border-transparency-white-t8 bg-primary-comfy-ink p-3"
+          v-if="showDock"
+          role="toolbar"
+          :aria-label="toolsLabel"
+          class="pointer-events-auto flex max-w-full flex-wrap items-center justify-center gap-0.5 rounded-3xl border border-transparency-white-t20 bg-primary-comfy-ink-light p-1 shadow-xl shadow-black/40 sm:flex-nowrap sm:rounded-full"
         >
-          <slot name="panel-footer" />
+          <slot name="dock" />
         </div>
-      </aside>
+      </div>
+      <EditorFloatingPanel
+        v-if="$slots.panel && panelLabels"
+        :label="panelLabels.label"
+        :labels="panelLabels"
+        :dimmed="panelDimmed"
+      >
+        <slot name="panel" />
+        <template v-if="$slots['panel-peek']" #peek>
+          <slot name="panel-peek" />
+        </template>
+        <template v-if="$slots['panel-footer']" #footer>
+          <slot name="panel-footer" />
+        </template>
+      </EditorFloatingPanel>
     </div>
   </section>
 </template>

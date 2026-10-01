@@ -47,9 +47,7 @@ function onChange(event: Event) {
         :class="
           cn(
             'h-8 w-full min-w-0 cursor-pointer appearance-none truncate rounded-lg bg-primary-comfy-ink-light pr-7 pl-2.5 text-xs text-primary-warm-white focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none disabled:opacity-40',
-            bare
-              ? 'rounded-full pl-1'
-              : 'border border-transparency-white-t8 bg-transparency-white-t4'
+            bare ? 'rounded-full pl-1' : 'bg-transparency-white-t4'
           )
         "
         @change="onChange"
