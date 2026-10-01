@@ -3,8 +3,9 @@
   "$id": "https://comfy.org/schemas/frontend-architecture-exceptions-v1.json",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "exceptions"],
+  "required": ["$schema", "schemaVersion", "exceptions"],
   "properties": {
+    "$schema": { "type": "string" },
     "schemaVersion": { "const": 1 },
     "exceptions": {
       "type": "array",
