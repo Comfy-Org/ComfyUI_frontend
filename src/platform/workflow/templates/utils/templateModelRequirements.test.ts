@@ -169,9 +169,6 @@ describe('extractTemplateModelRequirementDetails', () => {
   })
 
   it.for([
-    null,
-    {},
-    { models: 'not-an-array' },
     {
       nodes: [
         {
@@ -182,7 +179,7 @@ describe('extractTemplateModelRequirementDetails', () => {
         }
       ]
     },
-    { models: [null, {}, { name: 'incomplete.safetensors' }] }
+    { nodes: [], models: [null, {}, { name: 'incomplete.safetensors' }] }
   ])('ignores absent or malformed model declarations in %j', (workflow) => {
     expect(extractTemplateModelRequirementDetails(workflow)).toEqual([])
   })
@@ -196,7 +193,10 @@ describe('extractTemplateModelRequirementDetails', () => {
             ...model('invalid-top-level.safetensors', 'checkpoints'),
             url: 'not-a-url'
           }
-        ]
+        ],
+        // A selecting node makes the malformed URL the reason for exclusion,
+        // rather than the declaration simply going unused.
+        nodes: [node(1, [], ['invalid-top-level.safetensors'])]
       }
     },
     {

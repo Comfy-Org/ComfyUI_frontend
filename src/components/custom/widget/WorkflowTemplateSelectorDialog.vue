@@ -778,6 +778,7 @@ const activeDetail = ref<{
 } | null>(null)
 const openPending = ref(false)
 let detailGeneration = 0
+let preparedInFlight: PreparedWorkflowTemplate | null = null
 let modelMetadataController: AbortController | undefined
 let detailOrigin: HTMLElement | null = null
 let listScrollTop = 0
@@ -969,10 +970,22 @@ watch(
 )
 
 // Methods
+/**
+ * Disposes whichever prepared template this view still owns, whether it is
+ * still in flight or already shown in Detail. Every invalidation goes through
+ * here so no path can strand a preparation in the store's busy state.
+ */
+function releasePreparedDetail() {
+  const owned = preparedInFlight ?? activeDetail.value?.prepared ?? null
+  preparedInFlight = null
+  discardPreparedWorkflowTemplate(owned)
+}
+
 function invalidateDetailWork() {
   modelMetadataController?.abort()
   modelMetadataController = undefined
   detailGeneration++
+  releasePreparedDetail()
 }
 
 function getModelTypeLabel(row: TemplateModelSetupRow): string {
@@ -1271,8 +1284,9 @@ const onLoadWorkflow = async (template: TemplateInfo, event: MouseEvent) => {
     getEffectiveSourceModule(template)
   )
   if (!prepared) return
+  preparedInFlight = prepared
   if (generation !== detailGeneration) {
-    discardPreparedWorkflowTemplate(prepared)
+    releasePreparedDetail()
     return
   }
 
@@ -1289,7 +1303,6 @@ async function onBackToTemplates() {
 
   activeDetail.value?.modelSetup.rowDownloads.dispose()
   invalidateDetailWork()
-  discardPreparedWorkflowTemplate(activeDetail.value?.prepared ?? null)
   activeDetail.value = null
   await nextTick()
   modalLayout.value?.setContentScrollTop(listScrollTop)
@@ -1327,7 +1340,6 @@ function onSelectNavItem(value: string | null) {
 
   activeDetail.value?.modelSetup.rowDownloads.dispose()
   invalidateDetailWork()
-  discardPreparedWorkflowTemplate(activeDetail.value?.prepared ?? null)
   activeDetail.value = null
   selectedNavItem.value = value
 }

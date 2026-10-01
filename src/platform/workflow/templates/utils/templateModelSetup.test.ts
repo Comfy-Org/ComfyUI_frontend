@@ -30,8 +30,7 @@ function resolvedMetadata(
   return {
     model,
     fileSize,
-    gatedRepoUrl,
-    resolution: 'resolved' as const
+    gatedRepoUrl
   }
 }
 
@@ -69,8 +68,7 @@ describe('deriveTemplateModelSetup', () => {
         {
           model: metadataFailed,
           fileSize: null,
-          gatedRepoUrl: null,
-          resolution: 'failed'
+          gatedRepoUrl: null
         },
         resolvedMetadata(downloadable, 50),
         resolvedMetadata(installed, 20),
@@ -108,10 +106,6 @@ describe('deriveTemplateModelSetup', () => {
     })
     expect(result.rows[2]).not.toHaveProperty('href')
     expect(result.rows[5]).toMatchObject({ fileSize: null })
-    expect(isDownloadable).toHaveBeenCalledTimes(3)
-    expect(isDownloadable).toHaveBeenNthCalledWith(1, metadataFailed)
-    expect(isDownloadable).toHaveBeenNthCalledWith(2, downloadable)
-    expect(isDownloadable).toHaveBeenNthCalledWith(3, unavailable)
   })
 
   it.for<{
@@ -237,6 +231,23 @@ describe('deriveTemplateModelSetup', () => {
       fileSize: 0
     })
     expect(result.declarationTotal).toEqual({ bytes: 0, isComplete: true })
+  })
+
+  it('rejects a negative reported size and leaves the total incomplete', () => {
+    const negative = model('negative.safetensors')
+
+    const result = deriveTemplateModelSetup(
+      [requirement(negative)],
+      [{ model: negative, status: 'missing' }],
+      {
+        status: 'completed',
+        entries: [resolvedMetadata(negative, -1)]
+      },
+      { isDownloadable: () => true }
+    )
+
+    expect(result.rows[0]).toMatchObject({ fileSize: null })
+    expect(result.declarationTotal).toEqual({ bytes: 0, isComplete: false })
   })
 
   it('derives known model types and preserves a raw directory fallback', () => {

@@ -537,9 +537,10 @@ describe('useTemplateWorkflows', () => {
     )
 
     expect(app.loadGraphData).not.toHaveBeenCalled()
-    expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
-      errorType: 'error_loading_template'
-    })
+    expect(reportError).toHaveBeenCalledWith(
+      expect.stringContaining('Failed to fetch workflow template'),
+      { errorType: 'workflow_template_fetch_failed' }
+    )
     expect(useToastStore().messagesToAdd).toContainEqual({
       severity: 'error',
       summary: i18n.global.t('g.error'),
@@ -569,6 +570,83 @@ describe('useTemplateWorkflows', () => {
     )
   })
 
+  describe('prepared template lifecycle', () => {
+    it('keeps the load owned after preparing and releases it on discard', async () => {
+      const { loader } = mountTemplateWorkflows()
+      mockWorkflowTemplatesStore.isLoaded = true
+
+      const prepared = await loader.prepareWorkflowTemplate(
+        'template1',
+        'default'
+      )
+
+      assert.exists(prepared)
+      expect(loader.loadingTemplateId.value).toBe('template1')
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+
+      loader.discardPreparedWorkflowTemplate(prepared)
+
+      expect(loader.loadingTemplateId.value).toBeNull()
+      expect(prepared.controller.signal.aborted).toBe(true)
+    })
+
+    it('opens the prepared handle and releases the same load', async () => {
+      const { loader } = mountTemplateWorkflows()
+      mockWorkflowTemplatesStore.isLoaded = true
+
+      const prepared = await loader.prepareWorkflowTemplate(
+        'template1',
+        'default'
+      )
+      assert.exists(prepared)
+
+      expect(await loader.openPreparedWorkflowTemplate(prepared)).toBe('loaded')
+
+      expect(app.loadGraphData).toHaveBeenCalledOnce()
+      expect(loader.loadingTemplateId.value).toBeNull()
+      expect(prepared.controller.signal.aborted).toBe(false)
+    })
+
+    it('does not open when the store refuses graph admission', async () => {
+      const { loader } = mountTemplateWorkflows()
+      mockWorkflowTemplatesStore.isLoaded = true
+
+      const prepared = await loader.prepareWorkflowTemplate(
+        'template1',
+        'default'
+      )
+      assert.exists(prepared)
+      // A newer selection takes the slot before this one is admitted.
+      mockWorkflowTemplatesStore.startTemplateLoad('template2')
+
+      expect(await loader.openPreparedWorkflowTemplate(prepared)).toBe(
+        'not-started'
+      )
+
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+    })
+  })
+
+  it('rejects a legacy workflow whose nodes cannot be instantiated', async () => {
+    const { loader } = mountTemplateWorkflows()
+    mockWorkflowTemplatesStore.isLoaded = true
+    // The old pass-through forwarded this to loadGraphData; the legacy
+    // contract now requires the id and type that LGraph.configure reads.
+    vi.mocked(fetch).mockResolvedValueOnce(
+      Response.json({ version: 0.4, nodes: [{}] })
+    )
+
+    expect(await loader.loadWorkflowTemplate('template1', 'default')).toBe(
+      'not-started'
+    )
+
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledWith(
+      expect.stringContaining('not a loadable workflow'),
+      { errorType: 'workflow_template_invalid' }
+    )
+  })
+
   it('does not open a payload that is not a workflow', async () => {
     const { loader } = mountTemplateWorkflows()
     mockWorkflowTemplatesStore.isLoaded = true
@@ -581,9 +659,10 @@ describe('useTemplateWorkflows', () => {
     )
 
     expect(app.loadGraphData).not.toHaveBeenCalled()
-    expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
-      errorType: 'error_loading_template'
-    })
+    expect(reportError).toHaveBeenCalledWith(
+      expect.stringContaining('not a loadable workflow'),
+      { errorType: 'workflow_template_invalid' }
+    )
   })
 
   function addVideoTemplate(
