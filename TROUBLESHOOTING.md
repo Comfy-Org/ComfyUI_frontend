@@ -203,6 +203,25 @@ Check whether the rule is enforced by oxlint (in `.oxlintrc.json`) or ESLint (in
 
 ---
 
+#### Q: oxlint reports "There are suppressions that do not occur anymore"
+
+**Symptoms:**
+
+- Lint fails after you removed a `throw new Error(...)` or fixed another baselined violation
+- The help text points at `--prune-suppressions`
+
+**Solution:**
+
+`oxlint-suppressions.json` baselines pre-existing violations (mostly `comfy/no-new-error-throw`). Fixing one makes its entry stale; prune the file and commit it with your change:
+
+```bash
+pnpm oxlint:main --prune-suppressions
+```
+
+Never run `--suppress-all` to silence new violations in your own code.
+
+---
+
 #### Q: oxlint fails with TypeScript errors
 
 **Symptoms:**
