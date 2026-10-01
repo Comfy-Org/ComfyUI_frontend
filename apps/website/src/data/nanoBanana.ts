@@ -26,11 +26,6 @@ const photographyCards = localCards('photography', [
     'zh-CN': '陶碗中葡萄、梨与柠檬的静物'
   },
   {
-    slug: 'dark-kitchen',
-    en: 'Empty commercial kitchen at night',
-    'zh-CN': '夜晚空无一人的商用厨房'
-  },
-  {
     slug: 'glass-of-water',
     en: 'Glass of water on a folded newspaper',
     'zh-CN': '折叠报纸上的一杯水'
