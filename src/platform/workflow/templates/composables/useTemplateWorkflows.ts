@@ -178,7 +178,13 @@ export function useTemplateWorkflows() {
     let preparedJson = json
     const errors: unknown[] = []
     try {
-      const workflow = await validateComfyWorkflow(json)
+      const workflow = await validateComfyWorkflow(json, (detail) => {
+        reportError(new Error(detail), {
+          surface: 'graph',
+          errorType: 'workflow_template_schema_mismatch',
+          level: 'warning'
+        })
+      })
       if (!workflow) return json
       const result = await prepareTemplateInputs(
         workflow,
