@@ -442,6 +442,8 @@
     from var(--comfy-menu-bg) calc(var(--palette-l) + 0.2054) c h / 1
   );
 
+  --muted-foreground: oklch(from var(--comfy-menu-bg) 0.8 calc(c * 0.4) h / 1);
+
   --base-background: var(--palette-base);
   --nav-background: var(--palette-base);
   --interface-menu-surface: var(--palette-base);
@@ -467,6 +469,7 @@
   --tertiary-background-hover: var(--palette-surface-300);
   --border-subtle: var(--palette-surface-300);
   --modal-card-button-surface: var(--palette-surface-300);
+  --modal-card-tag-background: var(--palette-surface-300);
 
   --interface-menu-keybind-surface-default: var(--palette-surface-200);
   --node-component-border-selected: var(--palette-surface-200);
