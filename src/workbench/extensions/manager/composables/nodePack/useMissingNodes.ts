@@ -1,6 +1,6 @@
 import { groupBy } from 'es-toolkit/compat'
-import { createSharedComposable } from '@vueuse/core'
-import { computed, watch } from 'vue'
+import { createSharedComposable, useEventListener } from '@vueuse/core'
+import { computed, ref, watch } from 'vue'
 
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -63,7 +63,31 @@ export const useMissingNodes = createSharedComposable(() => {
     return !isRegisteredNodeDef
   }
 
+  /**
+   * Bumped whenever the root graph's nodes are (re)configured. `LGraph.nodes`
+   * isn't reactive on its own, and `rootGraphOrUndefined`'s underlying
+   * `shallowRef` only changes identity once per page load (when
+   * `ComfyApp.setup()` installs the graph), so without a dependency that
+   * changes once the workflow's nodes actually arrive, the early return
+   * below would make this computed's result freeze at `{}` after the single
+   * recompute `setup()` triggers — the empty-graph snapshot — and never
+   * report real missing core nodes for the session.
+   */
+  const graphConfiguredCount = ref(0)
+  useEventListener(
+    () => (app.isGraphReady ? app.rootGraph.events : undefined),
+    'configured',
+    () => {
+      graphConfiguredCount.value++
+    }
+  )
+
   const missingCoreNodes = computed<Record<string, LGraphNode[]>>(() => {
+    // Tracked unconditionally (before the early return) so this computed
+    // recomputes once the workflow's nodes actually land, not just once an
+    // (possibly empty) LGraph object exists.
+    void graphConfiguredCount.value
+
     // Same unready-graph traversal as CLOUD-FRONTEND-PROD-1YN: `hasMissingNodes`
     // can be read before `ComfyApp.setup()` installs the graph, and `rootGraph`
     // force-casts `undefined` straight into the traversal.

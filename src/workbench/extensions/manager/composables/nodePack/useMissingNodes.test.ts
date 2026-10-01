@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
 
+import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { LGraphNode, LGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -446,6 +448,38 @@ describe('useMissingNodes', () => {
       expect(Object.keys(missingCoreNodes.value)).toHaveLength(1)
       expect(missingCoreNodes.value['1.2.0']).toHaveLength(1)
       expect(missingCoreNodes.value['1.2.0'][0].type).toBe('CoreNode')
+    })
+
+    // Finding #1 on PR #19736's Cursor review: `rootGraphOrUndefined`'s
+    // underlying `shallowRef` only changes identity once (`ComfyApp.setup()`
+    // installing the graph), so `missingCoreNodes` needs a dependency that
+    // changes when the workflow's nodes actually arrive — the graph's
+    // `configured` event — or it freezes at the first (pre-node) snapshot.
+    it('recomputes once the graph is configured, not just once at graph-ready', () => {
+      const mockGraph = {
+        nodes: [],
+        subgraphs: new Map(),
+        events: new CustomEventTarget<LGraphEventMap>()
+      } as unknown as LGraph
+      mockApp.rootGraph = mockGraph
+      useNodeDefStore().nodeDefsByName = {}
+
+      // The first recompute sees the empty graph `ComfyApp.setup()` installs,
+      // before the workflow's nodes are deserialized into it.
+      mockCollectAllNodes.mockReturnValueOnce([])
+
+      const { missingCoreNodes } = useMissingNodes()
+      expect(Object.keys(missingCoreNodes.value)).toHaveLength(0)
+
+      // The workflow's node has now landed and `LGraph.configure()`
+      // dispatched `configured`. Without a tracked dependency on this,
+      // `missingCoreNodes` would stay frozen at the empty snapshot above.
+      const coreNode = createMockNode('CoreNode', 'comfy-core', '1.2.0')
+      mockCollectAllNodes.mockReturnValueOnce([coreNode])
+      mockGraph.events.dispatch('configured')
+
+      expect(Object.keys(missingCoreNodes.value)).toHaveLength(1)
+      expect(missingCoreNodes.value['1.2.0']).toHaveLength(1)
     })
 
     it('returns empty object when no core nodes are missing', () => {
