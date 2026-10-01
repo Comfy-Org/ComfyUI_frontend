@@ -13,7 +13,6 @@ import { createUuidv4 } from '@/utils/uuid'
 import type {
   AgentActiveTabData,
   AgentMessages,
-  AgentWsEvent,
   TurnId
 } from '../../schemas/agentApiSchema'
 import {
@@ -724,28 +723,25 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const event = parsed.data
     if (event.type === 'agent_ask_resolved')
       setAskAnswering(event.data.ask_id, false)
-    conversationStore.ingest(event)
-    if (event.type === 'agent_active_tab') {
-      applyActiveTabEvent(event)
-      return
+    switch (event.type) {
+      case 'agent_active_tab':
+        // Every thread records the link in its own transcript; only the thread
+        // on screen is allowed to move the user's tabs.
+        conversationStore.ingest(event)
+        if (
+          event.data.thread_id === undefined ||
+          event.data.thread_id === conversationStore.threadId
+        )
+          workflow?.activeTab?.(event.data)
+        return
+      default:
+        conversationStore.ingest(event)
+        if (event.type === 'agent_message_done')
+          markStoppedTurnReady({
+            threadId: event.data.thread_id,
+            messageId: toTurnId(event.data.message_id)
+          })
     }
-    if (event.type === 'agent_message_done')
-      markStoppedTurnReady({
-        threadId: event.data.thread_id,
-        messageId: toTurnId(event.data.message_id)
-      })
-  }
-
-  function applyActiveTabEvent(
-    event: Extract<AgentWsEvent, { type: 'agent_active_tab' }>
-  ): void {
-    // Every thread records the link in its own transcript; only the thread on
-    // screen is allowed to move the user's tabs.
-    if (
-      event.data.thread_id === undefined ||
-      event.data.thread_id === conversationStore.threadId
-    )
-      workflow?.activeTab?.(event.data)
   }
 
   function onStatus(live: boolean): void {
