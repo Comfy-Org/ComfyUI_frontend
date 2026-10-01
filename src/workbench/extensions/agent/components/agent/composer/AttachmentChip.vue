@@ -1,21 +1,30 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 import Tag from '@/components/chip/Tag.vue'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { agentAttachCapability } from '../../../utils/attachableFiles'
+import type { AgentAttachCapability } from '../../../utils/attachableFiles'
 
 const {
   name,
+  refName,
   previewUrl,
-  uploading = false
+  uploading = false,
+  capability
 } = defineProps<{
   name: string
+  refName?: string
   previewUrl?: string
   uploading?: boolean
+  capability?: AgentAttachCapability | 'unknown'
 }>()
 const emit = defineEmits<{ remove: [] }>()
+
+const { t } = useI18n()
 
 const kind = computed(() => getMediaTypeFromFilename(name))
 
@@ -23,6 +32,42 @@ const kind = computed(() => getMediaTypeFromFilename(name))
    rather than a file on this surface. */
 const kindIconClass = computed(() =>
   kind.value === 'other' ? 'icon-[lucide--file]' : iconForMediaType(kind.value)
+)
+
+/* What the agent can do with this file differs sharply by type and is otherwise
+   invisible: it reads an image's pixels, a clip's duration only, and nothing at
+   all inside a mesh or a text file. Without this the chip looks identical either
+   way and the user assumes it was read. */
+/* Keyed by a Record rather than a switch so adding a tier to the server contract
+   fails TYPECHECK here until its copy exists, instead of falling through to the
+   unknown string and quietly under-describing the file. */
+const CAPABILITY_MESSAGE: Record<AgentAttachCapability | 'unknown', string> = {
+  view: 'agent.attachmentCapabilityView',
+  probe: 'agent.attachmentCapabilityProbe',
+  read: 'agent.attachmentCapabilityRead',
+  reference: 'agent.attachmentCapabilityReference',
+  retain: 'agent.attachmentCapabilityRetain',
+  unknown: 'agent.attachmentCapabilityUnknown'
+}
+
+const capabilityLabel = computed(() =>
+  // Admission's recorded capability first: it judged the real local filename.
+  // The stored ref beats the display label after that, since a card's label
+  // need not carry a judgeable extension at all.
+  t(
+    CAPABILITY_MESSAGE[
+      // `'unknown'` has to fall THROUGH, not short-circuit. It is a real
+      // string, so `??` accepts it — and every production caller passes
+      // exactly that, because admission coerces an unjudgeable ref with
+      // `agentAttachCapability(ref) ?? 'unknown'`. The two fallback legs were
+      // therefore unreachable outside tests, and a hash-backed card always
+      // read "will verify when sent" even when its name said otherwise.
+      (capability === 'unknown' ? undefined : capability) ??
+        agentAttachCapability(refName ?? '') ??
+        agentAttachCapability(name) ??
+        'unknown'
+    ]
+  )
 )
 </script>
 
@@ -34,6 +79,8 @@ const kindIconClass = computed(() =>
     data-testid="agent-attachment-chip"
     :data-attachment-name="name"
     :label="name"
+    :title="capabilityLabel"
+    :aria-description="capabilityLabel"
     removable
     :remove-label="$t('agent.remove')"
     class="max-w-48"

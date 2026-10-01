@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
+  fetchDroppedAsset,
   hasAudioType,
   hasImageType,
   hasVideoType,
@@ -52,5 +53,61 @@ describe('isMediaFile', () => {
   it('should return false for non-media types', () => {
     expect(isMediaFile({ type: 'text/plain' } as File)).toBe(false)
     expect(isMediaFile({ type: 'application/json' } as File)).toBe(false)
+  })
+})
+
+describe('fetchDroppedAsset', () => {
+  function stubFetch(resolvedUrl: string) {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        url: resolvedUrl,
+        blob: async () => new Blob(['x'], { type: 'image/png' })
+      })
+    )
+  }
+
+  /* The File's name is what uploadImage posts, so it becomes the uploaded ref
+     and the name the seed shows the model — not just the chip's label. */
+  it.for([
+    [
+      'a dotted content hash must not outrank the ref',
+      'https://storage/bucket/0123456789abcdef0123456789abcdef.png',
+      'cat.png'
+    ],
+    [
+      'nor must an extensionless storage key',
+      'https://storage/bucket/0123456789abcdef0123456789abcdef',
+      'cat.png'
+    ]
+  ] as const)('%s', async ([, resolvedUrl, want]) => {
+    stubFetch(resolvedUrl)
+    const file = await fetchDroppedAsset({
+      name: 'display label',
+      uri: 'https://api/assets/abc/content',
+      ref: 'cat.png'
+    })
+    expect(file?.name).toBe(want)
+  })
+
+  it('still prefers an explicit filename parameter over everything', async () => {
+    stubFetch('https://storage/bucket/deadbeef.png?filename=real%20name.png')
+    const file = await fetchDroppedAsset({
+      name: 'display label',
+      uri: 'https://api/assets/abc/content',
+      ref: 'cat.png'
+    })
+    expect(file?.name).toBe('real name.png')
+  })
+
+  it('falls back to the display label when nothing else carries an extension', async () => {
+    stubFetch('https://storage/bucket/deadbeef')
+    const file = await fetchDroppedAsset({
+      name: 'fallback.png',
+      uri: 'https://api/assets/abc/content',
+      ref: 'bare-ref'
+    })
+    expect(file?.name).toBe('fallback.png')
   })
 })

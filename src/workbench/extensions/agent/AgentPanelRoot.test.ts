@@ -43,6 +43,10 @@ import { app } from '@/scripts/app'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import {
+  MAX_TURN_ATTACHMENTS,
+  MAX_ATTACHMENT_BYTES
+} from './composables/agent/useAttachment'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { getFilenameDetails } from '@/utils/formatUtil'
@@ -243,7 +247,6 @@ vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'), {
 
 import type { AgentMessages, TurnId } from './schemas/agentApiSchema'
 import { toTurnId, zAgentWsEvent } from './schemas/agentApiSchema'
-import { MAX_ATTACHMENT_BYTES } from './composables/agent/useAttachment'
 import type { AgentChatEvent } from './services/agent/agentEventTransport'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
@@ -3142,6 +3145,40 @@ describe('AgentPanelRoot attach flow', () => {
     )
   })
 
+  it('uses the fetched asset filename when its display label has no type', async () => {
+    const uploads: File[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+        if (url.includes('/api/view'))
+          return new Response(new Blob(['asset'], { type: 'image/png' }))
+        if (url.endsWith('/api/upload/image')) {
+          if (!(init?.body instanceof FormData))
+            throw new Error('Expected upload form data')
+          const image = init.body.get('image')
+          if (!(image instanceof File)) throw new Error('Expected upload file')
+          uploads.push(image)
+          return json(200, { name: 'uploaded_gen.png' })
+        }
+        return json(200, agentThreadList())
+      })
+    )
+    renderWithSelectedTarget()
+    await nextTick()
+
+    dispatchDrag(screen.getByRole('textbox'), 'drop', {
+      types: ['application/x-comfy-asset-info', 'text/uri-list'],
+      getData: (type: string) =>
+        type === 'application/x-comfy-asset-info'
+          ? JSON.stringify({ display_name: 'My renamed asset', type: 'input' })
+          : 'http://localhost/api/view?filename=gen.png'
+    })
+
+    await vi.waitFor(() => expect(uploads).toHaveLength(1))
+    expect(uploads[0].name).toBe('gen.png')
+  })
+
   it('does not warn after closing the panel during a deferred asset fetch', async () => {
     vi.stubGlobal(
       'fetch',
@@ -3185,9 +3222,250 @@ describe('AgentPanelRoot attach flow', () => {
     }
   })
 
-  it('attaches dropped assets and leaves other files to the graph loader', async () => {
-    // The graph loader only opens a dropped workflow while the drop is
-    // unclaimed, so the panel must not claim files it cannot attach.
+  it('aborts a timed-out asset fetch and reports the retrieval failure', async () => {
+    let assetSignal: AbortSignal | undefined
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>((input, init) => {
+        const url = String(input)
+        if (url.includes('/api/view')) {
+          assetSignal = init?.signal ?? undefined
+          return new Promise(() => {})
+        }
+        if (url.includes('/assets'))
+          return Promise.resolve(
+            json(200, { assets: [], total: 0, has_more: false })
+          )
+        if (url.includes('/workflows'))
+          return Promise.resolve(
+            json(200, { data: [], total: 0, has_more: false })
+          )
+        return Promise.resolve(json(200, agentThreadList()))
+      })
+    )
+    renderWithSelectedTarget()
+    await nextTick()
+    vi.useFakeTimers()
+    try {
+      dispatchDrag(screen.getByRole('textbox'), 'drop', {
+        types: ['application/x-comfy-asset-info', 'text/uri-list'],
+        getData: (type: string) =>
+          type === 'application/x-comfy-asset-info'
+            ? JSON.stringify({ filename: 'gen.png', type: 'input' })
+            : 'http://localhost/api/view?filename=gen.png'
+      })
+      await nextTick()
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      expect(assetSignal?.aborted).toBe(true)
+      expect(
+        useToastStore().messagesToAdd.some(({ detail }) =>
+          String(detail).includes('gen.png could not be retrieved')
+        )
+      ).toBe(true)
+      expect(
+        useToastStore().messagesToAdd.some(({ detail }) =>
+          String(detail).includes('could not be uploaded')
+        )
+      ).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('refuses an asset card whose type is outside the accepted list', async () => {
+    // The asset-card path can stage without uploading, so it used to skip the
+    // policy entirely: it gated on the shared media taxonomy, which files
+    // .usdz as 3D while the accepted list rejects it. The card staged silently
+    // and the turn then failed at submit.
+    stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+
+    const dragData = {
+      types: ['application/x-comfy-asset-info'],
+      getData: () =>
+        JSON.stringify({
+          filename: 'scene.usdz',
+          type: 'input',
+          attachment_ref: 'stored_scene.usdz',
+          media_kind: '3D'
+        })
+    }
+    dispatchDrag(screen.getByRole('textbox'), 'drop', dragData)
+
+    await vi.waitFor(() =>
+      expect(
+        useToastStore().messagesToAdd.some(({ detail }) =>
+          String(detail).includes('scene.usdz')
+        )
+      ).toBe(true)
+    )
+    expect(
+      screen.queryByTestId('composer-asset-section')
+    ).not.toBeInTheDocument()
+  })
+
+  it('preserves an opaque asset ref instead of uploading it', async () => {
+    // An opaque ref (a bare digest or blake3: value) cannot be judged on the
+    // client, and that is not a reason to drop it: the cloud contract
+    // deliberately admits an extensionless reference and rechecks the stored
+    // filename after resolution. An asset card need not carry a fetch URI at
+    // all, so routing it through the deferred fetch would lose a valid
+    // attachment before the server ever saw it. It must stage as-is, unuploaded.
+    const uploads: File[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+        if (url.includes('/api/view'))
+          return new Response(new Blob(['x'], { type: 'image/png' }))
+        if (url.endsWith('/api/upload/image')) {
+          if (init?.body instanceof FormData) {
+            const image = init.body.get('image')
+            if (image instanceof File) uploads.push(image)
+          }
+          return json(200, { name: 'uploaded.png' })
+        }
+        return json(200, agentThreadList())
+      })
+    )
+    renderWithSelectedTarget()
+    await nextTick()
+
+    dispatchDrag(screen.getByRole('textbox'), 'drop', {
+      types: ['application/x-comfy-asset-info', 'text/uri-list'],
+      getData: (type: string) =>
+        type === 'application/x-comfy-asset-info'
+          ? JSON.stringify({
+              filename: 'photo.png',
+              type: 'input',
+              attachment_ref: 'blake3:abcdef0123456789',
+              media_kind: 'image'
+            })
+          : 'http://localhost/api/view?filename=real.png'
+    })
+
+    await vi.waitFor(() =>
+      expect(screen.getByTestId('agent-attachment-chip')).toBeInTheDocument()
+    )
+    expect(uploads).toHaveLength(0)
+    expect(
+      useToastStore().messagesToAdd.some(({ detail }) =>
+        String(detail).includes('not a file type')
+      )
+    ).toBe(false)
+  })
+
+  it('refuses an asset card whose stored name is an unaccepted type', async () => {
+    // .usdz is the one extension the shared media taxonomy calls non-'other'
+    // while the accept list rejects it, so it is the only card that can reach
+    // the fast path and still be refused by the server. The ref is the stored
+    // hash and carries no extension, so judging the ref alone returned
+    // 'unknown' and the NAME was never consulted — the card took a chip, the
+    // server dropped the reference, and the turn answered 200 saying nothing.
+    stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+
+    dispatchDrag(screen.getByRole('textbox'), 'drop', {
+      types: ['application/x-comfy-asset-info'],
+      getData: () =>
+        JSON.stringify({
+          filename: 'scene.usdz',
+          type: 'input',
+          attachment_ref: 'blake3:abcdef0123456789',
+          media_kind: '3D'
+        })
+    })
+
+    await vi.waitFor(() =>
+      expect(
+        useToastStore().messagesToAdd.some(({ detail }) =>
+          String(detail).includes('scene.usdz')
+        )
+      ).toBe(true)
+    )
+    expect(
+      screen.queryByTestId('agent-attachment-chip')
+    ).not.toBeInTheDocument()
+  })
+
+  it('refuses an asset card once the turn is already full', async () => {
+    // The asset-card fast path stages without going through useAttachment, so
+    // it is the one route that has to apply the cap itself. Without this a 26th
+    // card got a chip while the server dropped the reference.
+    stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+
+    const card = (index: number) => ({
+      types: ['application/x-comfy-asset-info'],
+      getData: () =>
+        JSON.stringify({
+          filename: `photo${index}.png`,
+          type: 'input',
+          attachment_ref: `stored_photo${index}.png`,
+          media_kind: 'image'
+        })
+    })
+    const target = screen.getByRole('textbox')
+    for (let index = 0; index < MAX_TURN_ATTACHMENTS; index++) {
+      dispatchDrag(target, 'drop', card(index))
+    }
+    await vi.waitFor(() =>
+      expect(
+        within(screen.getByTestId('composer-asset-section')).getAllByTestId(
+          'agent-attachment-chip'
+        )
+      ).toHaveLength(MAX_TURN_ATTACHMENTS)
+    )
+
+    dispatchDrag(target, 'drop', card(MAX_TURN_ATTACHMENTS))
+
+    await vi.waitFor(() =>
+      expect(
+        useToastStore().messagesToAdd.some(({ detail }) =>
+          String(detail).includes(String(MAX_TURN_ATTACHMENTS))
+        )
+      ).toBe(true)
+    )
+    expect(
+      within(screen.getByTestId('composer-asset-section')).getAllByTestId(
+        'agent-attachment-chip'
+      )
+    ).toHaveLength(MAX_TURN_ATTACHMENTS)
+  })
+
+  it('judges an asset by its stored filename rather than its display label', async () => {
+    stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+
+    dispatchDrag(screen.getByRole('textbox'), 'drop', {
+      types: ['application/x-comfy-asset-info'],
+      getData: () =>
+        JSON.stringify({
+          filename: 'renamed.usdz',
+          type: 'input',
+          attachment_ref: 'stored.png',
+          media_kind: 'image'
+        })
+    })
+
+    expect(
+      within(await screen.findByTestId('composer-asset-section')).getByText(
+        'renamed.usdz'
+      )
+    ).toBeInTheDocument()
+    expect(useToastStore().messagesToAdd).toEqual([])
+  })
+
+  it('attaches a dropped workflow json to the chat instead of the graph loader', async () => {
+    // Dropping ONTO THE COMPOSER means "attach this", so the panel claims a
+    // .json rather than leaving it for the loader (PM-1855). The canvas keeps
+    // the open-as-workflow behaviour through its own handler, which a drop on
+    // this target never reaches.
     stubUploadFetch()
     renderWithSelectedTarget()
     await nextTick()
@@ -3196,29 +3474,24 @@ describe('AgentPanelRoot attach flow', () => {
     const workflow = new File(['{}'], 'flow.json', {
       type: 'application/json'
     })
-    expect(dispatchDrag(target, 'drop', { files: [workflow] })).toBe(false)
-    expect(screen.queryByText('flow.json')).not.toBeInTheDocument()
-
-    const asset = new File(['x'], 'cat.png', { type: 'image/png' })
-    expect(dispatchDrag(target, 'drop', { files: [asset] })).toBe(true)
+    expect(dispatchDrag(target, 'drop', { files: [workflow] })).toBe(true)
     expect(
       within(await screen.findByTestId('composer-asset-section')).getByText(
-        'cat.png'
+        'flow.json'
       )
     ).toBeInTheDocument()
   })
 
-  it('attaches only the assets out of a mixed drop', async () => {
+  it('attaches the accepted files out of a mixed drop and reports the rest', async () => {
     const uploaded = stubUploadFetch()
     renderWithSelectedTarget()
     await nextTick()
 
-    // The non-attachable file comes first: addFiles uploads sequentially, so a
-    // regression that forwards the whole drop would upload flow.json before
-    // cat.png and the settled assertion below could never latch a lucky
-    // intermediate state.
+    // The rejected file comes first so a regression that forwards the whole
+    // drop would upload doc.pdf before cat.png, rather than the assertion
+    // latching a lucky intermediate state.
     const files = [
-      new File(['{}'], 'flow.json', { type: 'application/json' }),
+      new File(['x'], 'doc.pdf', { type: 'application/pdf' }),
       new File(['x'], 'cat.png', { type: 'image/png' })
     ]
     dispatchDrag(screen.getByRole('textbox'), 'drop', { files })
@@ -3229,6 +3502,13 @@ describe('AgentPanelRoot attach flow', () => {
       )
     ).toBeInTheDocument()
     await vi.waitFor(() => expect(uploaded).toEqual(['cat.png']))
+    expect(screen.queryByText('doc.pdf')).not.toBeInTheDocument()
+    // PM-1856: the refusal is surfaced, not swallowed.
+    expect(
+      useToastStore().messagesToAdd.some(({ detail }) =>
+        String(detail).includes('doc.pdf')
+      )
+    ).toBe(true)
   })
 
   // Falsifiers for the committed-drop gates: an implementation that emits

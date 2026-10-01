@@ -384,6 +384,49 @@ describe('success response parsing', () => {
 })
 
 describe('error mapping', () => {
+  it('formats an attachment rejection without parsing the evolving accepted policy', async () => {
+    respond(
+      jsonResponse(422, {
+        accepted: {
+          image: ['.png', '.future-image-format'],
+          text: [],
+          video: []
+        },
+        error: 'server fallback',
+        rejected: ['draft.future-image-format'],
+        rejected_count: 1,
+        type: 'ATTACHMENT_TYPE_NOT_ACCEPTED'
+      })
+    )
+
+    const error = await makeClient()
+      .postMessage('t1', { content: 'try it' })
+      .catch((caught: unknown) => caught)
+
+    expect(error).toBeInstanceOf(AgentApiError)
+    expect((error as AgentApiError).message).toContain(
+      'draft.future-image-format is not a file type the agent accepts'
+    )
+  })
+
+  it('does not treat another error type as an attachment rejection', async () => {
+    respond(
+      jsonResponse(422, {
+        error: 'another route failed',
+        rejected: ['private.pdf'],
+        rejected_count: 1,
+        type: 'OTHER_ERROR'
+      })
+    )
+
+    const error = await makeClient()
+      .getMessages('t1')
+      .catch((caught: unknown) => caught)
+
+    expect(error).toBeInstanceOf(AgentApiError)
+    expect((error as AgentApiError).message).toBe('another route failed')
+  })
+
   it('maps a plain-string error body to its message with the status and parsed body', async () => {
     respond(jsonResponse(409, { error: 'turn is not running' }))
 

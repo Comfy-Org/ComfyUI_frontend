@@ -7,8 +7,10 @@ import AttachmentChip from './AttachmentChip.vue'
 
 function renderChip(props: {
   name: string
+  refName?: string
   previewUrl?: string
   uploading?: boolean
+  capability?: 'view' | 'probe' | 'read' | 'reference' | 'retain' | 'unknown'
 }) {
   return render(AttachmentChip, {
     props,
@@ -58,5 +60,77 @@ describe('AttachmentChip', () => {
       screen.getByRole('status', { name: 'Uploading' })
     ).toBeInTheDocument()
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
+  })
+
+  // What the agent can do with a file is otherwise invisible: an image it reads,
+  // a clip it only measures, and a mesh or a text file it cannot open at all.
+  // Without this the chips look identical and the user assumes it was read.
+  describe('capability affordance', () => {
+    it.for([
+      ['cat.png', 'can see this image'],
+      ['clip.mp4', 'format and length, but not what it contains'],
+      // Not "can load this in the graph": cloud cannot populate Load3D's
+      // model_file from an upload, and the seed tells the model not to try.
+      ['mesh.glb', "can't read it or load it in the graph yet"],
+      ['notes.md', "read this file's contents"],
+      ['photo.avif', 'reference only']
+    ])('tells the user what the agent can do with %s', ([name, phrase]) => {
+      renderChip({ name })
+      const chip = screen.getByTestId('agent-attachment-chip')
+      expect(chip).toHaveAttribute('title', expect.stringContaining(phrase))
+      expect(chip).toHaveAttribute(
+        'aria-description',
+        expect.stringContaining(phrase)
+      )
+    })
+
+    it('prefers the admitted local capability over a misleading server ref', () => {
+      renderChip({
+        name: 'cat.png',
+        refName: 'notes.txt',
+        capability: 'view'
+      })
+      expect(screen.getByTestId('agent-attachment-chip')).toHaveAttribute(
+        'title',
+        expect.stringContaining('can see this image')
+      )
+    })
+
+    // With no admitted capability the STORED ref decides, not the display
+    // label: a card's label is free text a user can rename to anything, while
+    // the ref is the identity the server judges. The two disagreed here, and
+    // the label was winning.
+    // capability: 'unknown' is the shape EVERY production caller emits —
+    // admission coerces an unjudgeable ref with `agentAttachCapability(ref) ??
+    // 'unknown'`. Omitting it made this test pass against a shape nothing
+    // sends, while the real path short-circuited on the truthy string.
+    it('falls back to the stored ref before the display label', () => {
+      renderChip({
+        name: 'cat.png',
+        refName: 'notes.md',
+        capability: 'unknown'
+      })
+      expect(screen.getByTestId('agent-attachment-chip')).toHaveAttribute(
+        'title',
+        expect.stringContaining("read this file's contents")
+      )
+    })
+
+    it('describes an opaque ref instead of dropping the affordance', () => {
+      renderChip({
+        name: 'My renamed asset',
+        refName: 'blake3:abcdef',
+        capability: 'unknown'
+      })
+      const chip = screen.getByTestId('agent-attachment-chip')
+      expect(chip).toHaveAttribute(
+        'title',
+        expect.stringContaining('verify this file type')
+      )
+      expect(chip).toHaveAttribute(
+        'aria-description',
+        expect.stringContaining('verify this file type')
+      )
+    })
   })
 })

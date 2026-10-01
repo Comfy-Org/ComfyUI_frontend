@@ -2,9 +2,28 @@ import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
 import { hasImageType } from '@/utils/eventUtils'
 import { formatSize } from '@/utils/formatUtil'
+import {
+  agentAttachCapability,
+  partitionAttachableFiles
+} from '../../utils/attachableFiles'
+import { refusedAttachmentsMessage } from '../../utils/attachmentMessages'
 import type { ComposerAttachment } from './useComposer'
 
 export const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024
+
+/**
+ * The contract's `maxItems` on AgentPostMessageRequest.attachments.
+ *
+ * Capped here rather than left to the server because the server does not refuse
+ * the overflow — resolveAttachmentAssets drops every reference past this many
+ * with a warn log, so the file would appear attached and then silently not
+ * exist for the turn. That is the failure PM-1856 is about.
+ *
+ * Restated as a number because Zod exposes `maxItems` only through internals;
+ * useAttachment.test.ts pins it against zAgentPostMessageRequest itself, so a
+ * change to the spec fails there rather than drifting unnoticed.
+ */
+export const MAX_TURN_ATTACHMENTS = 25
 const UPLOAD_HANDSHAKE_TIMEOUT_MS = 30 * 1000
 const UPLOAD_FLOOR_BYTES_PER_SECOND = 64 * 1024
 const DEFERRED_FETCH_TIMEOUT_MS = 60 * 1000
@@ -21,6 +40,12 @@ export interface UseAttachmentOptions {
   maxBytes?: (file: File) => number
   onError?: (message: string) => void
   onUploaded?: () => void
+  /**
+   * How many attachments are already staged on the turn. Required rather than
+   * optional: defaulting it to 0 would disable the count cap silently, and the
+   * composer — not this composable — owns the staged list.
+   */
+  stagedCount: () => number
   stage: (attachment: ComposerAttachment) => void
   update: (id: string, patch: Partial<ComposerAttachment>) => void
   remove: (id: string) => void
@@ -54,6 +79,13 @@ async function withDeadline<T>(
   }
 }
 
+type DeferredOutcome =
+  | 'uploaded'
+  | 'unsupported'
+  | 'cancelled'
+  | 'failed'
+  | 'fetch_failed'
+
 let stagedCount = 0
 
 export function useAttachment(options: UseAttachmentOptions) {
@@ -66,8 +98,22 @@ export function useAttachment(options: UseAttachmentOptions) {
   function stage(name: string): string {
     const id = `upload-${++stagedCount}:${name}`
     pending.add(id)
-    options.stage({ id, name, ref: '', uploading: true })
+    options.stage({
+      id,
+      name,
+      ref: '',
+      uploading: true,
+      capability: agentAttachCapability(name) ?? 'unknown'
+    })
     return id
+  }
+
+  function reportTurnLimit(): void {
+    options.onError?.(
+      i18n.global.t('agent.attachmentCountExceeded', {
+        count: MAX_TURN_ATTACHMENTS
+      })
+    )
   }
 
   function settle(id: string): void {
@@ -89,7 +135,12 @@ export function useAttachment(options: UseAttachmentOptions) {
     return true
   }
 
-  function failAttachment(id: string, name: string, errorType: string) {
+  function failAttachment(
+    id: string,
+    name: string,
+    errorType: string,
+    notify = true
+  ) {
     return (): undefined => {
       reportError(new Error('Agent attachment upload failed'), {
         surface: 'agent',
@@ -105,7 +156,10 @@ export function useAttachment(options: UseAttachmentOptions) {
           project_context: 'agent_composer'
         }
       })
-      options.onError?.(i18n.global.t('agent.attachmentUploadFailed', { name }))
+      if (notify)
+        options.onError?.(
+          i18n.global.t('agent.attachmentUploadFailed', { name })
+        )
       options.remove(id)
       return undefined
     }
@@ -159,16 +213,37 @@ export function useAttachment(options: UseAttachmentOptions) {
 
   async function addDeferredFile(
     name: string,
-    resolve: () => Promise<File | undefined>
-  ): Promise<'uploaded' | 'unsupported' | 'cancelled' | 'failed'> {
+    resolve: (signal: AbortSignal) => Promise<File | undefined>
+  ): Promise<DeferredOutcome | 'too_many'> {
+    if (options.stagedCount() >= MAX_TURN_ATTACHMENTS) {
+      reportTurnLimit()
+      return 'too_many'
+    }
+    return stageDeferredFile(name, resolve)
+  }
+
+  async function stageDeferredFile(
+    name: string,
+    resolve: (signal: AbortSignal) => Promise<File | undefined>
+  ): Promise<DeferredOutcome> {
     const id = stage(name)
+    const controller = new AbortController()
+    inFlight.set(id, controller)
     try {
-      const file = await withDeadline(resolve(), DEFERRED_FETCH_TIMEOUT_MS)
+      const file = await withDeadline(
+        resolve(controller.signal),
+        DEFERRED_FETCH_TIMEOUT_MS,
+        () => controller.abort()
+      )
       if (cancelled.has(id)) return 'cancelled'
       if (!file) {
         options.remove(id)
         return 'unsupported'
       }
+      options.update(id, {
+        name: file.name,
+        capability: agentAttachCapability(file.name) ?? 'unknown'
+      })
       if (isTooLarge(file)) {
         options.remove(id)
         return 'failed'
@@ -178,16 +253,38 @@ export function useAttachment(options: UseAttachmentOptions) {
       return 'uploaded'
     } catch {
       if (cancelled.has(id)) return 'cancelled'
-      failAttachment(id, name, 'agent_attachment_fetch_failed')()
-      return 'failed'
+      failAttachment(id, name, 'agent_attachment_fetch_failed', false)()
+      return 'fetch_failed'
     } finally {
       settle(id)
     }
   }
 
+  // The one gate every upload path passes through. The paperclip, a panel drop
+  // and a paste all land here, so putting the type check anywhere else is what
+  // let them disagree in the first place (PM-1854): `accept` on the file input
+  // is only a picker hint, and "All Files" defeats it.
   async function addFiles(files: Iterable<File>): Promise<boolean> {
-    const staged = [...files]
-      .filter((file) => !isTooLarge(file))
+    const { attachable, rejected } = partitionAttachableFiles(files)
+    // One message for the whole batch: dropping a folder of unsupported files
+    // would otherwise stack that many simultaneous 5-second toasts.
+    if (rejected.length > 0) {
+      options.onError?.(
+        refusedAttachmentsMessage(rejected.map(({ name }) => name))
+      )
+    }
+
+    // Sized BEFORE the cap is applied. Slicing first let an oversized file
+    // inside the window consume one of the 25 slots and push a perfectly
+    // valid file out of the turn, and made the limit message count a batch
+    // that would in fact have fit. isTooLarge raises its own per-file toast,
+    // so filtering early costs no notification.
+    const sized = attachable.filter((file) => !isTooLarge(file))
+    const room = Math.max(0, MAX_TURN_ATTACHMENTS - options.stagedCount())
+    if (sized.length > room) reportTurnLimit()
+
+    const staged = sized
+      .slice(0, room)
       .map((file) => ({ file, id: stage(file.name) }))
     let uploaded = 0
     await Promise.all(

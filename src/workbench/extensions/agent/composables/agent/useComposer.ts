@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { useTelemetry } from '@/platform/telemetry'
 
 import { composerPromptForSend } from '../../utils/composerPrompt'
+import type { AgentAttachCapability } from '../../utils/attachableFiles'
 import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 
@@ -14,6 +15,7 @@ export interface ComposerAttachment {
   ref: string
   previewUrl?: string
   uploading?: boolean
+  capability?: AgentAttachCapability | 'unknown'
 }
 
 export interface UseComposerOptions {

@@ -2,10 +2,15 @@ import type {
   AgentPostMessageRequest,
   UploadImageResponse
 } from '@comfyorg/ingest-types'
-import { zUploadImageResponse } from '@comfyorg/ingest-types/zod'
+import {
+  zAgentAttachmentRejected,
+  zUploadImageResponse
+} from '@comfyorg/ingest-types/zod'
 import type { z } from 'zod'
 
 import { api } from '@/scripts/api'
+
+import { refusedAttachmentsMessage } from '../../utils/attachmentMessages'
 
 import {
   zAgentAnswerAccepted,
@@ -28,6 +33,21 @@ import type {
 } from '../../schemas/agentApiSchema'
 
 const CLOUD_WORKFLOW_PAGE_SIZE = 100
+
+/**
+ * Picked from the generated schema rather than restated, so the three fields the
+ * refusal copy reads cannot drift from the contract.
+ *
+ * Narrowed rather than used whole on purpose: the full envelope also requires
+ * `accepted` and `error`, so a later change to the policy shape would fail this
+ * parse and silently drop the user back to the server's English string. Picking
+ * keeps that immunity while still deriving the field types.
+ */
+const zAttachmentRejectionMessage = zAgentAttachmentRejected.pick({
+  rejected: true,
+  rejected_count: true,
+  type: true
+})
 
 export class AgentApiError extends Error {
   readonly status: number
@@ -115,6 +135,20 @@ function parseErrorBody(text: string): unknown {
 }
 
 function getErrorMessage(body: unknown, fallback: string): string {
+  // A refused attachment type is the user's to fix, so it is answered in their
+  // language from the names the server refused — not with the server's English
+  // `error` string, which is what a plain AgentError parse would surface.
+  //
+  // rejected_count, not rejected.length: the array is capped server-side, so
+  // counting it would tell the user fewer files were refused than actually were.
+  const refused = zAttachmentRejectionMessage.safeParse(body)
+  if (refused.success) {
+    return refusedAttachmentsMessage(
+      refused.data.rejected,
+      refused.data.rejected_count
+    )
+  }
+
   const plain = zAgentError.safeParse(body)
   if (plain.success) {
     return typeof plain.data.error === 'string'

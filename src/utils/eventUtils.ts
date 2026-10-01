@@ -32,16 +32,30 @@ export function getDroppedAsset(
     : undefined
 }
 
-export async function fetchDroppedAsset({
-  name,
-  uri
-}: DroppedAsset): Promise<File | undefined> {
+export async function fetchDroppedAsset(
+  { name, uri, ref }: DroppedAsset,
+  signal?: AbortSignal
+): Promise<File | undefined> {
   if (!uri) return undefined
   try {
-    const response = await fetch(uri)
+    const response = await fetch(uri, { signal })
     if (!response.ok) return undefined
     const blob = await response.blob()
-    return new File([blob], name, { type: blob.type })
+    // Each candidate is taken only if it carries an extension. `ref` outranks
+    // the storage basename because /api/assets/<id>/content 302s to a signed
+    // URL keyed by hash: that basename is either extensionless (yielding a File
+    // the accept list then refuses) or a dotted digest like `<hex>.png`, which
+    // passes the extension test and relabels the chip — and, since this File's
+    // name is what uploadImage posts, becomes the uploaded ref and the name the
+    // seed shows the model.
+    const resolvedUrl = new URL(response.url || uri, 'http://localhost')
+    const named = [
+      resolvedUrl.searchParams.get('filename'),
+      ref,
+      decodeURIComponent(resolvedUrl.pathname.split('/').pop() || ''),
+      name
+    ].find((candidate) => candidate && /\.[a-z0-9]{1,8}$/i.test(candidate))
+    return new File([blob], named || name, { type: blob.type })
   } catch {
     return undefined
   }
