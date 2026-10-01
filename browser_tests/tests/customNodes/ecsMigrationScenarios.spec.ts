@@ -182,11 +182,21 @@ second@second prompt`)
       await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(1)
       await expect
         .poll(() =>
-          comfyPage.page.evaluate(
-            () => window.app!.graph.nodes[0]?.type ?? null
-          )
+          comfyPage.page.evaluate(() => {
+            const node = window.app!.graph.nodes[0]
+            return {
+              type: node.type,
+              videoValue: node.widgets?.find(({ name }) => name === 'video')
+                ?.value,
+              hasErrors: node.has_errors ?? false
+            }
+          })
         )
-        .toBe('VHS_LoadVideo')
+        .toEqual({
+          type: 'VHS_LoadVideo',
+          videoValue: 1,
+          hasErrors: false
+        })
     })
   }
 )
