@@ -52,7 +52,7 @@ const isHovered = useElementHover(stripRef)
         <li
           v-for="card in showcase.cards"
           :key="card.id"
-          class="aspect-video h-60 shrink-0 overflow-hidden rounded-4.5xl bg-black/40 md:h-80 lg:h-120"
+          class="aspect-3/2 h-60 shrink-0 overflow-hidden rounded-4.5xl bg-black/40 md:h-80 lg:h-120"
         >
           <img
             :src="card.src"
