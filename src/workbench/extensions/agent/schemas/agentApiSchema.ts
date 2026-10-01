@@ -95,6 +95,28 @@ export const zAgentRunMode = zGeneratedAgentRunMode.superRefine(
 )
 export type AgentRunModeValue = AgentRunModePreference['mode']
 
+const SKILL_NAME_MAX = 256
+
+/**
+ * A `load_skill` call's skill name, on both the live and the reload path. It
+ * is a display label and nothing resolves against it, so an over-long value
+ * is clamped rather than rejected: rejecting would cost the caller the whole
+ * frame it rides on. On the live path a refused `agent_tool_call` is dropped
+ * by `useAgentSession`'s `onRaw`, so the row never settles and keeps
+ * shimmering "Loading <skill>"; on the reload path `zAgentMessages` is run
+ * through `agentRestClient`'s `request`, which uses `parse`, so one row would
+ * throw away the entire thread transcript. Same keep-the-frame choice
+ * `zAgentMessageDoneData.usage` makes with `.catch`, and the opposite of
+ * `zAgentActiveTabData.node_locator_id`, which is an identity that later code
+ * resolves and so must refuse a value it cannot honour.
+ */
+const zSkillName = z
+  .string()
+  .nullish()
+  .transform((skill) =>
+    typeof skill === 'string' ? skill.slice(0, SKILL_NAME_MAX) : skill
+  )
+
 /**
  * One entry of a persisted assistant row's `content.tool_calls` (see
  * `agentTranscript.ts`'s `parseToolCallEntry`), the reload-path counterpart
@@ -115,7 +137,7 @@ export const zPersistedToolCallSummary = zToolCallSummary.extend({
   tool_call_id: z.string().optional(),
   status: z.string(),
   duration_ms: z.number().optional(),
-  skill: z.string().max(256).nullish()
+  skill: zSkillName
 })
 
 /**
@@ -187,7 +209,7 @@ const zAgentToolCallData = z
     tool_call_id: z.string(),
     tool_name: z.string(),
     status: z.enum(['running', 'success', 'error']),
-    skill: z.string().max(256).nullish(),
+    skill: zSkillName,
     args: z.never().optional(),
     duration_ms: z.number().optional(),
     message_id: z.string(),
