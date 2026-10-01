@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
@@ -19,10 +18,10 @@ describe('PlatformHeroBadge', () => {
     expect(screen.getByText(t('nav.badgeComingSoon', 'en'))).toBeTruthy()
   })
 
-  it('uses the localized default label and Beta status', () => {
+  it('uses the localized default label and shows no status', () => {
     render(PlatformHeroBadge, { props: { locale: 'zh-CN' } })
 
     expect(screen.getByText(t('platform.hero.badge', 'zh-CN'))).toBeTruthy()
-    expect(screen.getByText(t('nav.badgeBeta', 'zh-CN'))).toBeTruthy()
+    expect(screen.queryByText(t('nav.badgeBeta', 'zh-CN'))).toBeNull()
   })
 })

@@ -89,22 +89,32 @@ const visibleLines = computed(() => {
   return text.split('\n')
 })
 
+// A floor, not a fixed height: short command transcripts (the original use
+// case) still get a terminal-sized panel, but a longer or wrapped line (e.g.
+// prose) grows the panel instead of being clipped.
 const panelHeight = computed(() => `${lines.length * 1.5 + 3}rem`)
+/** Only $/✔-led lines get their leading character typed and highlighted;
+ * anything else (prose, blank lines) reveals whole and stays plain, and a
+ * blank line gets a non-breaking space so its row doesn't collapse. */
+const isSigilLine = (line: string) =>
+  line.startsWith('$') || line.startsWith('✔')
 </script>
 
 <template>
   <div ref="root" role="img" :aria-label="label">
     <pre
       aria-hidden="true"
-      class="h-[calc(var(--panel-h)*0.9)] scrollbar-none overflow-auto rounded-3xl bg-[#2a2230] p-4 font-mono text-2xs/relaxed whitespace-pre-wrap text-primary-comfy-canvas select-none sm:p-5 sm:text-xs/relaxed sm:whitespace-pre lg:h-(--panel-h) lg:p-6 lg:text-sm/relaxed"
+      class="scrollbar-none min-h-[calc(var(--panel-h)*0.9)] overflow-auto rounded-3xl bg-[#2a2230] p-4 font-mono text-2xs/relaxed whitespace-pre-wrap text-primary-comfy-canvas select-none sm:p-5 sm:text-xs/relaxed lg:min-h-(--panel-h) lg:p-6 lg:text-sm/relaxed"
       :style="{ '--panel-h': panelHeight }"
     ><code><template v-for="(line, index) in visibleLines" :key="index"><span
           :class="cn(index > 0 && 'block')"
-        ><span class="text-primary-comfy-yellow">{{ line.slice(0, 1) }}</span>{{
+        ><template v-if="isSigilLine(line)"><span class="text-primary-comfy-yellow">{{ line.slice(0, 1) }}</span>{{
           line.slice(1)
-        }}</span></template><span
+        }}</template><template v-else>{{
+          line || (visibleLines.length > 1 ? ' ' : '')
+        }}</template></span></template><span
         v-if="!prefersReducedMotion()"
-        class="text-primary-comfy-yellow animate-pulse"
+        class="animate-pulse text-primary-comfy-yellow"
       >▋</span></code></pre>
   </div>
 </template>

@@ -1,16 +1,7 @@
-// @vitest-environment jsdom
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-// jsdom lacks ResizeObserver, which the asset-preview import chain references.
-vi.hoisted(() => {
-  globalThis.ResizeObserver = class {
-    observe(): void {}
-    unobserve(): void {}
-    disconnect(): void {}
-  }
-})
-
+import { ref } from 'vue'
 import { i18n } from '@/i18n'
 import type { TurnId } from '../../../schemas/agentApiSchema'
 import { createAgentEventTransport } from '../../../services/agent/agentEventTransport'
@@ -21,6 +12,7 @@ import type {
 import { createAssistantMessage } from '../../../services/agent/agentMessageParts'
 
 import AgentMessage from './AgentMessage.vue'
+import { agentBoundWorkflowIdKey } from '../agentBoundWorkflowId'
 
 function thinkingMessage(thinkingText?: string): AssistantMessage {
   return {
@@ -33,11 +25,11 @@ function thinkingMessage(thinkingText?: string): AssistantMessage {
   }
 }
 
-function paywallMessage(): AssistantMessage {
+function paywallMessage(message?: string): AssistantMessage {
   return {
     id: 'msg-paywall' as TurnId,
     role: 'assistant',
-    parts: [{ type: 'paywall' }],
+    parts: [{ type: 'paywall', message }],
     streaming: false,
     thinking: false
   }
@@ -46,7 +38,10 @@ function paywallMessage(): AssistantMessage {
 describe('AgentMessage paywall reply', () => {
   it('renders the usage-limit card as an inline assistant reply', () => {
     render(AgentMessage, {
-      props: { message: paywallMessage() },
+      props: {
+        message: paywallMessage(),
+        paywallPresentation: { kind: 'subscribed', showUpgrade: true }
+      },
       global: { plugins: [i18n] }
     })
 
@@ -64,11 +59,34 @@ describe('AgentMessage paywall reply', () => {
     ).toBeInTheDocument()
   })
 
+  it('renders the server denial reason from the part through to the card', () => {
+    const serverMessage =
+      'Your workspace spent its September credits on 2026-09-18; billing owner must top up.'
+    render(AgentMessage, {
+      props: {
+        message: paywallMessage(serverMessage),
+        paywallPresentation: { kind: 'subscribed', showUpgrade: true }
+      },
+      global: { plugins: [i18n] }
+    })
+
+    const card = screen.getByRole('alert')
+    expect(within(card).getByText(serverMessage)).toBeInTheDocument()
+    expect(
+      screen.queryByText(
+        'This workspace has spent its monthly credits and its top-up balance. Add credits to keep the agent running.'
+      )
+    ).not.toBeInTheDocument()
+  })
+
   it('exposes distinct actions for adding credits and upgrading', async () => {
     const user = userEvent.setup()
     const onPaywallAction = vi.fn()
     render(AgentMessage, {
-      props: { message: paywallMessage() },
+      props: {
+        message: paywallMessage(),
+        paywallPresentation: { kind: 'subscribed', showUpgrade: true }
+      },
       attrs: { onPaywallAction },
       global: { plugins: [i18n] }
     })
@@ -243,7 +261,7 @@ describe('AgentMessage thinking narration', () => {
       screen
         .getAllByRole('listitem')
         .map((row) => row.textContent.replace(/\s+/g, ' ').trim())
-    ).toEqual(['Inspecting the graph1.4s', 'Set widget0.9s'])
+    ).toEqual(['Inspecting the graph', 'Set widget'])
     expect(
       screen.queryByRole('button', { name: /worked/i })
     ).not.toBeInTheDocument()
@@ -254,7 +272,7 @@ describe('AgentMessage thinking narration', () => {
     })
     await rerender({ message })
 
-    const summary = screen.getByRole('button', { name: /^worked for/i })
+    const summary = screen.getByRole('button', { name: /^worked$/i })
     expect(summary).toHaveAttribute('aria-expanded', 'false')
     expect(screen.queryByText('Set widget')).not.toBeInTheDocument()
 
@@ -377,7 +395,7 @@ describe('AgentMessage thinking narration', () => {
     ).toEqual(['Set widget', 'Add node'])
   })
 
-  it('sums the whole turn into one accordion labelled with its duration', async () => {
+  it('folds the whole turn into one timing-free accordion', async () => {
     const message = thinkingMessage()
     message.thinking = false
     message.streaming = false
@@ -416,7 +434,7 @@ describe('AgentMessage thinking narration', () => {
     })
 
     const summary = screen.getByRole('button', { name: /^worked/i })
-    expect(summary.textContent).toContain('Worked for 3.3 seconds')
+    expect(summary).toHaveTextContent('Worked')
     expect(summary).toHaveAttribute('aria-expanded', 'false')
     expect(screen.getByText('The workflow is ready.')).toBeInTheDocument()
 
@@ -426,10 +444,10 @@ describe('AgentMessage thinking narration', () => {
         .getAllByRole('listitem')
         .map((row) => row.textContent.replace(/\s+/g, ' ').trim())
     ).toEqual([
-      'Inspecting the graph1.3s',
-      'List slots0.5s',
-      'Set widget0.8s',
-      'Checking the result0.7s'
+      'Inspecting the graph',
+      'List slots',
+      'Set widget',
+      'Checking the result'
     ])
   })
 })
@@ -467,6 +485,55 @@ describe('AgentMessage fallback content', () => {
     ).toHaveLength(2)
     expect(screen.getByRole('status')).toHaveTextContent('Saved locally')
     expect(screen.getByRole('alert')).toHaveTextContent('Could not publish')
+  })
+
+  it('renders a retry-after hint on an error notice that carries retryAfterSeconds', () => {
+    const message: AssistantMessage = {
+      ...thinkingMessage(),
+      streaming: false,
+      thinking: false,
+      parts: [
+        {
+          type: 'notice',
+          level: 'error',
+          text: 'Billing status is temporarily unavailable; please retry.',
+          retryAfterSeconds: 30
+        }
+      ]
+    }
+
+    render(AgentMessage, {
+      props: { message },
+      global: { plugins: [i18n] }
+    })
+
+    const alert = screen.getByRole('alert')
+    expect(alert).toHaveTextContent(
+      'Billing status is temporarily unavailable; please retry.'
+    )
+    expect(alert).toHaveTextContent('You can try again in 30s.')
+  })
+
+  it('omits the retry-after hint when the notice has no retryAfterSeconds', () => {
+    const message: AssistantMessage = {
+      ...thinkingMessage(),
+      streaming: false,
+      thinking: false,
+      parts: [
+        {
+          type: 'notice',
+          level: 'error',
+          text: 'This workspace is blocked. Contact support to restore access.'
+        }
+      ]
+    }
+
+    render(AgentMessage, {
+      props: { message },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.queryByText(/try again in/i)).not.toBeInTheDocument()
   })
 
   it('hides completed thinking when the response did not use tools', () => {
@@ -560,7 +627,10 @@ describe('AgentMessage run approval', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Run' }))
 
     expect(emitted().openWorkflow).toEqual([
-      ['workflow-1', 'Portrait workflow']
+      ['turn-1:call-1', 'workflow-1', 'Portrait workflow']
+    ])
+    expect(emitted().approvalShown).toEqual([
+      ['turn-1:call-1', 'msg-approval', 'workflow-1']
     ])
     expect(emitted().answerAsk).toEqual([
       ['turn-1:call-1', 'cancel'],
@@ -582,6 +652,24 @@ describe('AgentMessage run approval', () => {
       expect(button).toBeDisabled()
       expect(button).toHaveAttribute('aria-busy', 'true')
     }
+  })
+
+  it('omits the redundant workflow name for a 1:1 bound chat', () => {
+    render(AgentMessage, {
+      props: {
+        message: approvalMessage()
+      },
+      global: {
+        plugins: [i18n],
+        provide: { [agentBoundWorkflowIdKey as symbol]: ref('workflow-1') }
+      }
+    })
+
+    expect(
+      screen.getByText('This tool wants to run this workflow.')
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Portrait workflow')).not.toBeInTheDocument()
+    expect(screen.getByText('Do you approve?')).toBeInTheDocument()
   })
 
   it.for([

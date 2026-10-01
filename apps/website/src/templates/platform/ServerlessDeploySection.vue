@@ -1,27 +1,26 @@
 <script setup lang="ts">
+import { Check, Copy } from '@lucide/vue'
+import { useClipboard } from '@vueuse/core'
+import { computed } from 'vue'
+
 import SectionHeader from '../../components/common/SectionHeader.vue'
+import { deployPromptFor } from '../../config/deploy-prompt'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import LiveTerminal from './LiveTerminal.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-// Command surface from comfy-cli's build + deploy stack (PRs #801-805):
-// `comfy build init`, `build push --release`, whose `--target` decides
-// whether `deploy up` finds a deployable artifact, and `deploy up`. All
-// three default to the current directory.
-const deployTranscript = [
-  '$ comfy build init',
-  '✔ Scanned this ComfyUI install — custom nodes, models, pinned deps',
-  '$ comfy build push --release --target linux/nvidia',
-  '✔ Build released',
-  '$ comfy deploy up',
-  '✔ Endpoint live → https://your-build.run.comfy.app'
-]
+// The prompt to paste into a coding agent; the copy button puts it on the
+// clipboard verbatim. Kept out of translations.ts (which every page bundles)
+// since it's only ever used here — see deploy-prompt.ts for why.
+const deployPrompt = computed(() => deployPromptFor(locale))
+const deployTranscript = computed(() => deployPrompt.value.split('\n'))
+const { copy, copied } = useClipboard({ source: deployPrompt, legacy: true })
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 pt-10 pb-4 lg:pt-14 lg:pb-6">
+  <section class="mx-auto max-w-9xl px-6 pt-10 pb-4 lg:pt-14 lg:pb-6">
     <SectionHeader max-width="xl" heading-size="compact">
       {{ t('platform.serverlessDeploy.shipHeading', locale) }}
       <template #subtitle>
@@ -33,8 +32,28 @@ const deployTranscript = [
       </template>
     </SectionHeader>
 
-    <div class="mx-auto mt-8 max-w-3xl">
+    <div class="relative mx-auto mt-8 max-w-3xl">
+      <button
+        type="button"
+        class="absolute top-3 right-3 z-10 flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-primary-comfy-canvas hover:bg-transparency-white-t4 focus-visible:outline-2 focus-visible:outline-primary-comfy-yellow"
+        :aria-label="
+          t(
+            copied
+              ? 'platform.serverlessDeploy.copied'
+              : 'platform.serverlessDeploy.copy',
+            locale
+          )
+        "
+        @click="copy()"
+      >
+        <component
+          :is="copied ? Check : Copy"
+          class="size-4"
+          aria-hidden="true"
+        />
+      </button>
       <LiveTerminal
+        class="[&_pre]:pt-14"
         :lines="deployTranscript"
         :label="t('platform.serverlessDeploy.heading', locale)"
       />

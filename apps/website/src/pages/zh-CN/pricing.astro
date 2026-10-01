@@ -3,37 +3,40 @@ import BaseLayout from '../../layouts/BaseLayout.astro'
 import CloudPricingSection from '../../components/pricing/CloudPricingSection.vue'
 import WhatsIncludedSection from '../../components/pricing/WhatsIncludedSection.vue'
 import PricingFaq from '../../components/pricing/PricingFaq.astro'
-import ResourceCostsSection from '../../templates/platform/PricingSection.vue'
+import ComfyApiPricingSection from '../../components/pricing/ComfyApiPricingSection.vue'
 import MinimaxLicensePricingSection from '../../components/pricing/MinimaxLicensePricingSection.vue'
 import MinimaxLicenseHeroSection from '../../components/common/MinimaxLicenseHeroSection.vue'
 import { pricingOffers } from '../../config/pricing'
 import { t } from '../../i18n/translations'
 import {
+  DEFAULT_OG_IMAGE,
   absoluteUrl,
   jsonLdId,
   pageContext,
-  productNode,
+  productNode
 } from '../../utils/jsonLd'
 
 const { siteUrl, locale, url } = pageContext(
   Astro.site,
   Astro.url.pathname,
-  Astro.currentLocale,
+  Astro.currentLocale
 )
 const productId = jsonLdId(url, 'product')
+const description =
+  'Comfy Cloud 套餐与积分：免费开始（5 次 GPU 运行），再选择 Standard、Creator、Pro 或 Team，获得每月积分、托管模型与更长的工作流运行时长。'
 ---
 
 <BaseLayout
   title="定价 - Comfy Cloud"
-  description="Comfy Cloud 套餐与积分：免费开始（5 次 GPU 运行），再选择 Standard、Creator、Pro 或 Team，获得每月积分、托管模型与更长的工作流运行时长。"
+  description={description}
   mainEntityId={productId}
   breadcrumbs={[
     {
       name: t('breadcrumb.home', locale),
-      url: absoluteUrl(Astro.site, '/zh-CN'),
+      url: absoluteUrl(Astro.site, '/zh-CN')
     },
     { name: 'Comfy Cloud', url: absoluteUrl(Astro.site, '/zh-CN/cloud') },
-    { name: t('breadcrumb.pricing', locale) },
+    { name: t('breadcrumb.pricing', locale) }
   ]}
   extraJsonLd={[
     productNode({
@@ -41,17 +44,15 @@ const productId = jsonLdId(url, 'product')
       id: productId,
       name: 'Comfy Cloud',
       url,
-      offers: pricingOffers(locale),
-    }),
+      image: DEFAULT_OG_IMAGE,
+      description,
+      offers: pricingOffers(locale)
+    })
   ]}
 >
   <CloudPricingSection locale="zh-CN" client:load />
   <WhatsIncludedSection locale="zh-CN" />
-  <ResourceCostsSection
-    locale="zh-CN"
-    heading={t('pricing.resourceCosts.heading', 'zh-CN')}
-    note={t('pricing.resourceCosts.note', 'zh-CN')}
-  />
+  <ComfyApiPricingSection locale="zh-CN" show-learn-more-cta />
   <MinimaxLicenseHeroSection locale="zh-CN" client:visible />
   <MinimaxLicensePricingSection locale="zh-CN" />
   <PricingFaq locale="zh-CN" />

@@ -39,9 +39,9 @@ const {
   <div
     :class="
       cn(
-        'bg-transparency-white-t4 relative flex flex-col',
+        'relative flex flex-col bg-transparency-white-t4',
         variant === 'compact'
-          ? 'rounded-5xl gap-4 p-2'
+          ? 'gap-4 rounded-5xl p-2'
           : 'rounded-4.5xl px-2 pt-2 pb-8',
         item.href &&
           'transition-colors duration-200 hover:bg-transparency-white-t8',
@@ -55,12 +55,12 @@ const {
       target="_blank"
       :rel="resolveRel({ target: '_blank' })"
       :aria-label="item.title"
-      class="focus-visible:ring-primary-comfy-yellow absolute inset-0 z-10 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+      class="absolute inset-0 z-10 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow focus-visible:ring-offset-2 focus-visible:outline-none"
       :class="variant === 'compact' ? 'rounded-5xl' : 'rounded-4.5xl'"
     />
 
     <div
-      class="bg-transparency-white-t4 relative aspect-4/3 overflow-hidden rounded-[2.25rem]"
+      class="relative aspect-4/3 overflow-hidden rounded-[2.25rem] bg-transparency-white-t4"
     >
       <img
         v-if="item.media.type === 'image'"
@@ -97,14 +97,14 @@ const {
         :class="
           variant === 'compact'
             ? 'w-full truncate text-sm leading-[1.2] font-semibold text-primary-comfy-canvas/95'
-            : 'text-2xl leading-[1.4] font-medium text-primary-comfy-canvas'
+            : 'text-2xl/[1.4] font-medium text-primary-comfy-canvas'
         "
       >
         {{ item.title }}
       </h3>
       <p
         v-if="item.description"
-        class="text-sm leading-[1.6] font-light text-primary-comfy-canvas"
+        class="text-sm/[1.6] font-light text-primary-comfy-canvas"
         :class="variant === 'compact' ? undefined : 'mt-4'"
       >
         {{ item.description }}

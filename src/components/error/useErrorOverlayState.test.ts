@@ -7,7 +7,8 @@ import { createI18n } from 'vue-i18n'
 import { useErrorOverlayState } from './useErrorOverlayState'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-import type { NodeError } from '@/schemas/apiSchema'
+import type { NodeError } from '@/platform/remote/comfyui/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type {
   MissingPackGroup,
   SwapNodeGroup
@@ -37,15 +38,7 @@ vi.mock(import('@/composables/graph/useNodeErrorFlagSync'), () => ({
   useNodeErrorFlagSync: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    isGraphReady: false,
-    rootGraph: {
-      serialize: vi.fn(() => ({})),
-      getNodeById: vi.fn()
-    }
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
   executionIdToNodeLocatorId: vi.fn((id: string) => id),
@@ -61,8 +54,9 @@ function createTestI18n() {
     messages: {
       en: {
         errorOverlay: {
-          multipleErrorCount: '{count} error found | {count} errors found',
-          multipleErrorsMessage: 'Resolve them before running the workflow.'
+          multipleIssueCount: '{count} issue found | {count} issues found',
+          multipleIssuesMessage:
+            'Resolve these issues before running the workflow.'
         }
       }
     }
@@ -91,6 +85,7 @@ function mountOverlayState() {
     template: `
       <section>
         <span data-testid="visible">{{ isVisible }}</span>
+        <span data-testid="has-error">{{ hasError }}</span>
         <span data-testid="title">{{ overlayTitle }}</span>
         <span data-testid="message">{{ overlayMessage }}</span>
       </section>
@@ -113,6 +108,59 @@ describe('useErrorOverlayState', () => {
     mockErrorGroups.swapNodeGroups.value = []
   })
 
+  it.for([
+    'missing_node',
+    'swap_nodes',
+    'missing_model',
+    'missing_media'
+  ] as const)(
+    'treats %s as a warning even if it blocked the last run',
+    (type) => {
+      mockAllErrorGroups.value = [
+        {
+          type,
+          severity: 'missing',
+          groupKey: type,
+          displayTitle: 'Setup required',
+          count: 1,
+          priority: 0,
+          blockedLastRun: true
+        }
+      ]
+      mountOverlayState()
+
+      expect(screen.getByTestId('has-error')).toHaveTextContent('false')
+    }
+  )
+
+  it('keeps error severity when missing resources and an execution error coexist', () => {
+    mockAllErrorGroups.value = [
+      {
+        type: 'missing_model',
+        severity: 'missing',
+        groupKey: 'missing_model',
+        displayTitle: 'Missing Models',
+        count: 2,
+        priority: 2,
+        blockedLastRun: false
+      },
+      {
+        type: 'execution',
+        severity: 'error',
+        groupKey: 'execution:KSampler',
+        displayTitle: 'Execution failed',
+        count: 1,
+        priority: 0,
+        blockedLastRun: false,
+        cards: [{ id: '1', title: 'KSampler', errors: [{ message: 'Failed' }] }]
+      }
+    ]
+    mountOverlayState()
+
+    expect(screen.getByTestId('has-error')).toHaveTextContent('true')
+    expect(screen.getByTestId('title')).toHaveTextContent('3 issues found')
+  })
+
   it('uses the raw message for a single uncataloged execution error', async () => {
     mockAllErrorGroups.value = [
       {
@@ -122,6 +170,7 @@ describe('useErrorOverlayState', () => {
         displayTitle: 'Execution failed',
         count: 1,
         priority: 0,
+        blockedLastRun: false,
         cards: [
           {
             id: '1',
@@ -143,6 +192,7 @@ describe('useErrorOverlayState', () => {
     expect(screen.getByTestId('visible')).toHaveTextContent('true')
     expect(screen.getByTestId('title')).toHaveTextContent('Execution failed')
     expect(screen.getByTestId('message')).toHaveTextContent('Only error')
+    expect(screen.getByTestId('has-error')).toHaveTextContent('true')
   })
 
   it('uses toast copy for a single validation error', async () => {
@@ -154,6 +204,7 @@ describe('useErrorOverlayState', () => {
         displayTitle: 'Required input is missing',
         count: 1,
         priority: 0,
+        blockedLastRun: false,
         cards: [
           {
             id: '1',
@@ -195,6 +246,7 @@ describe('useErrorOverlayState', () => {
         displayTitle: 'Friendly validation title',
         count: 1,
         priority: 0,
+        blockedLastRun: false,
         cards: [
           {
             id: '1',
@@ -235,6 +287,7 @@ describe('useErrorOverlayState', () => {
         displayTitle: 'Generation failed',
         count: 1,
         priority: 0,
+        blockedLastRun: false,
         cards: [
           {
             id: '1',
@@ -310,7 +363,8 @@ describe('useErrorOverlayState', () => {
         toastTitle: 'Media input missing',
         toastMessage: 'Load Image is missing a required media file.',
         count: 1,
-        priority: 3
+        priority: 3,
+        blockedLastRun: false
       }
     ]
     mountOverlayState()
@@ -371,7 +425,8 @@ describe('useErrorOverlayState', () => {
         toastTitle: 'Model missing',
         toastMessage: 'CheckpointLoaderSimple is missing missing.safetensors.',
         count: 1,
-        priority: 2
+        priority: 2,
+        blockedLastRun: false
       }
     ]
     mountOverlayState()
@@ -396,6 +451,7 @@ describe('useErrorOverlayState', () => {
         displayMessage: 'Required input slots have no connection feeding them.',
         count: 2,
         priority: 1,
+        blockedLastRun: false,
         cards: [
           {
             id: '1',
@@ -465,7 +521,8 @@ describe('useErrorOverlayState', () => {
         toastTitle: 'Missing models',
         toastMessage: '2 model files are missing.',
         count: 2,
-        priority: 2
+        priority: 2,
+        blockedLastRun: false
       }
     ]
     mountOverlayState()
@@ -474,10 +531,57 @@ describe('useErrorOverlayState', () => {
     executionErrorStore.showErrorOverlay()
     await nextTick()
 
-    expect(screen.getByTestId('title')).toHaveTextContent('2 errors found')
+    expect(screen.getByTestId('title')).toHaveTextContent('2 issues found')
     expect(screen.getByTestId('message')).toHaveTextContent(
-      'Resolve them before running the workflow.'
+      'Resolve these issues before running the workflow.'
     )
+  })
+
+  it('hides an open overlay while the issues tab setting is off', async () => {
+    mockAllErrorGroups.value = [
+      {
+        type: 'execution',
+        severity: 'error',
+        groupKey: 'execution:KSampler',
+        displayTitle: 'Required input is missing',
+        count: 1,
+        priority: 0,
+        blockedLastRun: false,
+        cards: [
+          {
+            id: '1',
+            title: 'KSampler',
+            errors: [
+              {
+                message: 'Required input is missing',
+                toastTitle: 'Required input missing',
+                toastMessage: 'KSampler is missing a required input: model'
+              }
+            ]
+          }
+        ]
+      }
+    ]
+    mountOverlayState()
+
+    const executionErrorStore = useExecutionErrorStore()
+    executionErrorStore.recordNodeErrors({
+      '1': makeNodeError(['Required input is missing'])
+    })
+    executionErrorStore.showErrorOverlay()
+    await nextTick()
+    expect(screen.getByTestId('visible')).toHaveTextContent('true')
+
+    useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] =
+      false
+    await nextTick()
+
+    expect(screen.getByTestId('visible')).toHaveTextContent('false')
+
+    useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
+    await nextTick()
+
+    expect(screen.getByTestId('visible')).toHaveTextContent('true')
   })
 
   it('does not show when a raw error has no resolved overlay message', async () => {
@@ -504,6 +608,7 @@ describe('useErrorOverlayState', () => {
         displayMessage: 'First group message',
         count: 2,
         priority: 0,
+        blockedLastRun: false,
         cards: [
           {
             id: '1',
@@ -520,6 +625,7 @@ describe('useErrorOverlayState', () => {
         displayMessage: 'Second group message',
         count: 3,
         priority: 1,
+        blockedLastRun: false,
         cards: [
           {
             id: '2',
@@ -536,9 +642,9 @@ describe('useErrorOverlayState', () => {
     await nextTick()
 
     expect(screen.getByTestId('visible')).toHaveTextContent('true')
-    expect(screen.getByTestId('title')).toHaveTextContent('5 errors found')
+    expect(screen.getByTestId('title')).toHaveTextContent('5 issues found')
     expect(screen.getByTestId('message')).toHaveTextContent(
-      'Resolve them before running the workflow.'
+      'Resolve these issues before running the workflow.'
     )
   })
 })

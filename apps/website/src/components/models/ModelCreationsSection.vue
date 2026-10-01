@@ -12,7 +12,7 @@ import GalleryDetailModal from '../gallery/GalleryDetailModal.vue'
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const modelName = 'Grok'
-const ctaHref = 'https://comfy.org/workflows/model/grok'
+const ctaHref = 'https://comfy.org/workflows/model/grok/'
 
 const items: GalleryItem[] = [
   {
@@ -75,10 +75,7 @@ function openDetail(index: number) {
   modalOpen.value = true
 }
 
-const title = t('models.list.creations.title', locale).replace(
-  '{name}',
-  modelName
-)
+const title = t('models.list.creations.title', locale, { name: modelName })
 const ctaLabel = t('models.list.creations.cta', locale)
 </script>
 
@@ -127,7 +124,7 @@ const ctaLabel = t('models.list.creations.cta', locale)
     </div>
 
     <div
-      class="rounded-5xl bg-transparency-white-t4 mt-12 flex w-full flex-col gap-6 p-2 max-lg:pb-6 lg:hidden"
+      class="mt-12 flex w-full flex-col gap-6 rounded-5xl bg-transparency-white-t4 p-2 max-lg:pb-6 lg:hidden"
     >
       <GalleryCard
         v-for="(item, i) in items"

@@ -1,21 +1,27 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-import { getRouterWorkshopModelDetail } from '../config/workshop-router-content'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../config/workshop-router-content'
 import { workshopContract } from '../config/workshop-contract-catalog'
 import { schemaForModel } from '../config/workshop-playground'
 import {
-  workshopModels,
+  authoredWorkshopModels,
   routerAliasById,
   routerContentById
 } from '../config/workshop-browse-content'
 import { fieldsForDefinition } from '../config/workshop-form-definition'
 import {
   WORKSHOP_USE_CASES,
-  workshopDisplayEntriesSchema
+  workshopDisplayEntriesSchema,
+  workshopDisplaySchema
 } from './workshop-display.schema'
 import { workshopModelSchema } from './workshop-models.schema'
+import {
+  appCatalog,
+  workflowCatalog
+} from '../config/workshop-workflow-catalog'
+import { hubModelSlugs } from '../config/hub-models'
 
 const here = import.meta.dirname
 const display = workshopDisplayEntriesSchema.parse(
@@ -32,24 +38,33 @@ function contentFor(modelId: string) {
   return display.find((entry) => entry.modelId === modelId)
 }
 const catalogById = new Map(catalog.map((entry) => [entry.id, entry]))
-/** Outputs that are a single still frame. */
-const STILL = new Set(['image', 'svg', '3d'])
+/**
+ * Outputs represented by a single still frame in Workshop media. 3D outputs
+ * use turntable videos because the display schema has no 3D media kind.
+ */
+const STILL = new Set(['image', 'svg'])
 
 describe('the display overlay against the catalog', () => {
   it.for([
-    { id: 'minimax/hailuo-03', name: 'MiniMax H3' },
+    { id: 'minimax/hailuo-03', name: 'MiniMax H3 Text-to-Video' },
     {
       id: 'minimax/hailuo-03-regeneration',
       name: 'MiniMax H3 Video Regeneration'
     },
-    { id: 'vertexai/gemini-3-pro-image', name: 'Nano Banana Pro' }
+    {
+      id: 'vertexai/gemini-3-pro-image',
+      name: 'Nano Banana Pro Text-to-Image',
+      // The first content record for this model is its edit page; the
+      // generate page is the one the Router slug resolves to.
+      contentName: 'Nano Banana Pro Image Edit'
+    }
   ])(
     'preserves Rob’s display name for $id independently of Router eligibility',
-    ({ id, name }) => {
+    ({ id, name, contentName }) => {
       const catalogEntry = catalogById.get(id)
       if (!catalogEntry) throw new Error('Missing renamed model')
       const detail = getRouterWorkshopModelDetail(catalogEntry.slug)
-      expect(contentFor(id)?.displayName).toBe(name)
+      expect(contentFor(id)?.displayName).toBe(contentName ?? name)
       const alias = routerAliasById.get(id)
       if (!alias || !workshopContract(alias.routerId)) {
         expect(detail).toBeUndefined()
@@ -59,7 +74,9 @@ describe('the display overlay against the catalog', () => {
       const routerId = routerAliasById.get(id)?.routerId ?? id
       expect(detail?.routerId).toBe(routerId)
       expect(detail?.slug.startsWith(`${catalogEntry.slug}--`)).toBe(true)
-      expect(detail?.href).toBe(`/models/${detail?.slug}/`)
+      expect(detail?.href).toBe(
+        `/hub/models/${hubModelSlugs.get(detail?.slug ?? '')}/`
+      )
       if (detail?.execution) expect(detail.execution.id).toBe(routerId)
     }
   )
@@ -79,11 +96,35 @@ describe('the display overlay against the catalog', () => {
     )
   })
 
-  it('covers models the catalog actually has', () => {
+  it.for([
+    {
+      id: 'elevenlabs/speech-to-speech',
+      name: 'ElevenLabs Speech-to-Speech'
+    },
+    { id: 'ideogram/v3-edit', name: 'Ideogram V3 Edit' },
+    { id: 'ltx/audio-to-video-v2', name: 'LTX-2.5 Audio-to-Video' },
+    { id: 'quiver/arrow-image-to-svg', name: 'Quiver Arrow Image-to-SVG' },
+    { id: 'quiver/arrow-text-to-svg', name: 'Quiver Arrow Text-to-SVG' },
+    {
+      id: 'xai/grok-imagine-image-2.0-edit',
+      name: 'Grok Imagine Image 2.0 Edit'
+    }
+  ])('does not append a contradictory generic task to $id', ({ id, name }) => {
+    expect(contentFor(id)?.displayName).toBe(name)
+  })
+
+  it('covers models, workflows and apps in the matching execution catalog', () => {
     expect(display.length).toBeGreaterThan(0)
-    const orphans = display
-      .map((entry) => entry.modelId)
-      .filter((id) => !modality.has(id))
+    const orphans = display.filter((entry) =>
+      entry.type === 'CLOUD' || entry.type === 'SERVERLESS'
+        ? !workflowCatalog.some(
+            (workflow) =>
+              workflow.id === entry.modelId && workflow.type === entry.type
+          )
+        : entry.type === 'APP'
+          ? !appCatalog.some((app) => app.id === entry.modelId)
+          : !modality.has(entry.modelId)
+    )
 
     expect(orphans).toEqual([])
   })
@@ -95,7 +136,7 @@ describe('the display overlay against the catalog', () => {
   })
 
   it('keeps every effective Advanced field attached to a real generated input', () => {
-    const stale = workshopModels.flatMap((model) => {
+    const stale = authoredWorkshopModels.flatMap((model) => {
       const detail = getRouterWorkshopModelDetail(model.slug)
       if (!detail) throw new Error('Missing model detail')
       const names = new Set(schemaForModel(detail).map((field) => field.name))
@@ -139,14 +180,11 @@ describe('the display overlay against the catalog', () => {
       'generate-images'
     ])
     expect(new Set(entries.map((entry) => entry.slug)).size).toBe(2)
-    expect(
-      entries.find((entry) => entry.useCase === 'edit-images')?.withheldContent
-        ?.media.thumbnail
-    ).toBeDefined()
-    expect(
-      entries.find((entry) => entry.useCase === 'generate-images')?.media
-        .thumbnail
-    ).toBeUndefined()
+    const edit = entries.find((entry) => entry.useCase === 'edit-images')
+    const create = entries.find((entry) => entry.useCase === 'generate-images')
+    expect(edit?.media.thumbnail).toBeDefined()
+    expect(create?.media.thumbnail).toBeDefined()
+    expect(edit?.media.thumbnail).not.toEqual(create?.media.thumbnail)
   })
 
   it('classifies required media by what the model does with it', () => {
@@ -208,14 +246,40 @@ describe('the display overlay against the catalog', () => {
     expect(unplayable).toEqual([])
   })
 
-  it('points every asset at https', () => {
+  it('points every asset at https or at a file this site serves', () => {
     const insecure = display.flatMap((entry) =>
       [entry.media.thumbnail, ...(entry.media.samples ?? [])]
         .filter((asset) => asset !== undefined)
-        .filter((asset) => !asset.url.startsWith('https://'))
+        .filter((asset) => !/^(?:https:\/\/|\/(?!\/))/.test(asset.url))
         .map((asset) => asset.url)
     )
 
     expect(insecure).toEqual([])
+  })
+
+  it('keeps site-relative media to app entries', () => {
+    const model = display.find((entry) => entry.type !== 'APP')
+    if (!model) throw new Error('No model entry')
+    const withLocal = {
+      ...model,
+      media: {
+        ...model.media,
+        thumbnail: { url: '/images/x.jpg', kind: 'image' }
+      }
+    }
+    expect(workshopDisplaySchema.safeParse(withLocal).success).toBe(false)
+    expect(workshopDisplaySchema.safeParse(model).success).toBe(true)
+  })
+
+  it('finds every site-relative asset in public/', () => {
+    const publicDir = join(here, '..', '..', 'public')
+    const missing = display.flatMap((entry) =>
+      [entry.media.thumbnail, ...(entry.media.samples ?? [])]
+        .filter((asset) => asset?.url.startsWith('/'))
+        .map((asset) => asset?.url ?? '')
+        .filter((url) => !existsSync(join(publicDir, url)))
+    )
+
+    expect(missing).toEqual([])
   })
 })

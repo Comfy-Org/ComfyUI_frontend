@@ -7,6 +7,7 @@ import {
   zAgentRunMode as zGeneratedAgentRunMode,
   zAgentThreadListResponse as zGeneratedAgentThreadListResponse,
   zAgentTurnAccepted as zGeneratedAgentTurnAccepted,
+  zToolCallSummary,
   zWorkflowListResponse
 } from '@comfyorg/ingest-types/zod'
 import type {
@@ -94,8 +95,35 @@ export const zAgentRunMode = zGeneratedAgentRunMode.superRefine(
 )
 export type AgentRunModeValue = AgentRunModePreference['mode']
 
+/**
+ * One entry of a persisted assistant row's `content.tool_calls` (see
+ * `agentTranscript.ts`'s `parseToolCallEntry`), the reload-path counterpart
+ * to the live WebSocket's `zAgentToolCallData` above. Sourced directly from
+ * the generated `ToolCallSummary` schema (Comfy-Org/cloud#10360) — the
+ * backend only ever persists terminal rows (`status: 'success' | 'error'`);
+ * a row a dead turn left in `pending`/`running` has no wire-status mapping
+ * and is dropped server-side rather than reaching this parser.
+ */
+export const zPersistedToolCallSummary = zToolCallSummary
+
+/**
+ * The generated `AgentMessage.content` schema narrows to just `tool_calls`
+ * (typed via `zToolCallSummary`), but the OpenAPI-generated TS type still
+ * carries a `[key: string]: unknown` index signature for it — the zod
+ * plugin's output didn't get a matching `.passthrough()`. Re-widened here so
+ * a persisted row's other `content` fields (`text`, `attachments`,
+ * `attachment_refs`, `workflow_references`, ...; see `agentTranscript.ts`)
+ * keep parsing.
+ */
+const zAgentMessageContent = z
+  .object({
+    tool_calls: z.array(zToolCallSummary).optional()
+  })
+  .passthrough()
+
 export const zAgentMessage = zGeneratedAgentMessage
   .extend({
+    content: zAgentMessageContent.optional(),
     pending_ask: zAgentPendingAsk.optional()
   })
   .passthrough()
@@ -118,13 +146,15 @@ export type CloudWorkflowEntry = z.infer<
 
 export const zAgentError = z.union([zGeneratedAgentError, zAgentAdmissionError])
 
-export const zUploadImageResult = z.object({
-  name: z.string(),
-  subfolder: z.string(),
-  type: z.string()
+/**
+ * The 403 body the agent service returns when it will not serve the turn's
+ * `workflow_id` to the caller's workspace, whether the row is gone or belongs
+ * elsewhere. The message is the only discriminator on the wire: a 403 refusing
+ * the thread or the message carries the same shape with a different subject.
+ */
+export const zDisownedWorkflowError = z.object({
+  error: z.literal('workflow not found or access denied')
 })
-export type UploadImageResult = z.infer<typeof zUploadImageResult>
-
 const zAgentThinkingData = z
   .object({
     delta: z.string(),
@@ -138,6 +168,7 @@ const zAgentToolCallData = z
     tool_call_id: z.string(),
     tool_name: z.string(),
     status: z.enum(['running', 'success', 'error']),
+    skill: z.string().optional(),
     args: z.never().optional(),
     duration_ms: z.number().optional(),
     message_id: z.string(),
@@ -148,6 +179,16 @@ const zAgentToolCallData = z
 const zAgentMessageDeltaData = z
   .object({
     delta: z.string(),
+    message_id: z.string(),
+    thread_id: z.string()
+  })
+  .passthrough()
+
+// The whole answer so far while the model is still writing it: each draft
+// replaces the last, and an empty text withdraws it.
+const zAgentMessageDraftData = z
+  .object({
+    text: z.string(),
     message_id: z.string(),
     thread_id: z.string()
   })
@@ -201,6 +242,11 @@ const zAgentMessageDeltaEvent = z.object({
   data: zAgentMessageDeltaData
 })
 
+const zAgentMessageDraftEvent = z.object({
+  type: z.literal('agent_message_draft'),
+  data: zAgentMessageDraftData
+})
+
 const zAgentMessageDoneEvent = z.object({
   type: z.literal('agent_message_done'),
   data: zAgentMessageDoneData
@@ -233,6 +279,7 @@ export const zAgentWsEvent = z.discriminatedUnion('type', [
   zAgentThinkingEvent,
   zAgentToolCallEvent,
   zAgentMessageDeltaEvent,
+  zAgentMessageDraftEvent,
   zAgentMessageDoneEvent,
   zAgentActiveTabEvent,
   zAgentAskEvent,

@@ -2,43 +2,82 @@ import { useAssetsStore } from '@/stores/assetsStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
+import { unflattenOutputAssets } from '@/platform/assets/composables/media/assetMappers'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
+import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 
-const { downloadAssets } = vi.hoisted(() => ({
-  downloadAssets: vi.fn()
-}))
+vi.mock(import('../composables/useMediaAssetActions'))
 
-vi.mock<unknown>(import('../composables/useMediaAssetActions'), () => ({
-  useMediaAssetActions: () => ({ downloadAssets })
-}))
-
-vi.mock<unknown>(
-  import('@/platform/assets/schemas/assetMetadataSchema'),
-  () => ({
-    getOutputAssetMetadata: () => ({
-      allOutputs: [
-        {
-          filename: 'a.png',
-          subfolder: '',
-          type: 'output',
-          display_name: 'Display A'
-        }
-      ]
-    })
-  })
-)
+vi.mock(import('@/composables/useFeatureFlags'))
 
 const asset: AssetItem = fromPartial({
   id: 'a',
   name: 'a.png',
   tags: [],
-  preview_url: '/preview.png'
+  preview_url: '/preview.png',
+  user_metadata: {
+    jobId: 'job-a',
+    subfolder: '',
+    allOutputs: [
+      {
+        filename: 'a.png',
+        subfolder: '',
+        type: 'output',
+        display_name: 'Display A'
+      }
+    ]
+  }
+})
+
+function groupByJob(flatAsset: AssetItem): AssetItem {
+  const [grouped] = unflattenOutputAssets([flatAsset])
+  assert.exists(grouped)
+  return grouped
+}
+
+const videoAssetId = '11111111-1111-4111-a111-111111111111'
+const imageAssetId = '33333333-3333-4333-a333-333333333333'
+
+const jobGroupedVideo = groupByJob(
+  fromPartial({
+    id: videoAssetId,
+    job_id: '22222222-2222-4222-a222-222222222222',
+    name: 'agent_generated_video.mp4',
+    tags: ['output'],
+    created_at: '2026-09-18T00:00:00.000Z'
+  })
+)
+
+const jobGroupedImage = groupByJob(
+  fromPartial({
+    id: imageAssetId,
+    job_id: '44444444-4444-4444-a444-444444444444',
+    name: 'c6cadcee57dd.png',
+    tags: ['output'],
+    created_at: '2026-09-18T00:00:00.000Z',
+    preview_url: '/api/view?filename=c6cadcee57dd.png'
+  })
+)
+
+const modelWithThumbnail: AssetItem = fromPartial({
+  id: 'model',
+  name: 'model.glb',
+  tags: ['output'],
+  preview_id: 'model-thumbnail'
+})
+
+const historyImage: AssetItem = fromPartial({
+  id: 'history-job',
+  name: 'a.png',
+  tags: ['output'],
+  preview_url: '/api/view?filename=a.png&type=output&subfolder='
 })
 
 function renderCard(
@@ -56,7 +95,6 @@ function renderCard(
     global: {
       plugins: [i18n],
       stubs: {
-        LoadingOverlay: true,
         MediaTitle: true
       },
       directives: { tooltip: {} }
@@ -66,7 +104,7 @@ function renderCard(
 
 function dispatchDragStart(
   container: Element,
-  init: { ctrlKey?: boolean; metaKey?: boolean } = {}
+  init: { ctrlKey?: boolean; metaKey?: boolean; assetId?: string } = {}
 ) {
   const dataTransfer = new DataTransfer()
   const add = vi.spyOn(dataTransfer.items, 'add').mockImplementation(() => null)
@@ -77,8 +115,9 @@ function dispatchDragStart(
     ctrlKey: { value: init.ctrlKey ?? false, configurable: true },
     metaKey: { value: init.metaKey ?? false, configurable: true }
   })
+  const cardSelector = `[data-asset-id="${init.assetId ?? 'a'}"]`
   // eslint-disable-next-line testing-library/no-node-access -- the draggable card intentionally has no interactive role
-  container.querySelector('[data-asset-id="a"]')!.dispatchEvent(event)
+  container.querySelector(cardSelector)!.dispatchEvent(event)
   return { event, add }
 }
 
@@ -127,17 +166,43 @@ describe('MediaAssetCard', () => {
       )
     })
 
-    it('offers the preview URL as a uri-list flavour for external drop targets', () => {
-      const { container } = renderCard()
+    it.for([
+      {
+        kind: 'a job-grouped image with a self-preview',
+        assetsEnabled: true,
+        item: jobGroupedImage,
+        fileUrl: `http://localhost:3000/api/assets/${imageAssetId}/content`
+      },
+      {
+        kind: 'a job-grouped video with no preview',
+        assetsEnabled: true,
+        item: jobGroupedVideo,
+        fileUrl: `http://localhost:3000/api/assets/${videoAssetId}/content`
+      },
+      {
+        kind: 'a 3D model with a persisted thumbnail',
+        assetsEnabled: true,
+        item: modelWithThumbnail,
+        fileUrl: 'http://localhost:3000/api/assets/model/content'
+      },
+      {
+        kind: 'a history-backed image with the assets API off',
+        assetsEnabled: false,
+        item: historyImage,
+        fileUrl:
+          'http://localhost:3000/api/view?filename=a.png&type=output&subfolder='
+      }
+    ])(
+      'offers the file URL, not the preview, as the uri-list flavour for $kind',
+      ({ assetsEnabled, item, fileUrl }) => {
+        vi.mocked(useFeatureFlags().flags).assetsEnabled = assetsEnabled
+        const { container } = renderCard({ asset: item })
 
-      const { add } = dispatchDragStart(container)
+        const { add } = dispatchDragStart(container, { assetId: item.id })
 
-      expect(add).toHaveBeenNthCalledWith(
-        2,
-        'http://localhost:3000/api/preview.png',
-        'text/uri-list'
-      )
-    })
+        expect(add).toHaveBeenCalledWith(fileUrl, 'text/uri-list')
+      }
+    )
   })
 
   it('keeps download and more actions independent from selection', async () => {
@@ -150,7 +215,7 @@ describe('MediaAssetCard', () => {
       screen.getByRole('button', { name: 'mediaAsset.actions.download' })
     )
 
-    expect(downloadAssets).toHaveBeenCalledWith([asset])
+    expect(useMediaAssetActions().downloadAssets).toHaveBeenCalledWith([asset])
     expect(emitted().select).toBeUndefined()
     expect(emitted()['toggle-selection']).toBeUndefined()
 
@@ -402,4 +467,40 @@ describe('MediaAssetCard', () => {
 
     expect(screen.getByText(/^MP4 .*MB$/)).toBeInTheDocument()
   })
+
+  it.for([
+    {
+      kind: 'video',
+      name: 'agent_generated_video.mp4',
+      testId: 'media-asset-video'
+    },
+    {
+      kind: 'audio',
+      name: 'agent_generated_audio.mp3',
+      testId: 'wave-audio-media'
+    }
+  ])(
+    'plays a $kind asset with no server preview from its inline content url',
+    async ({ name, testId }) => {
+      vi.mocked(useFeatureFlags().flags).assetsEnabled = true
+
+      renderCard({
+        loading: false,
+        asset: {
+          ...asset,
+          id: 'agent-media',
+          name,
+          preview_url: undefined,
+          thumbnail_url: undefined
+        }
+      })
+
+      const media = await screen.findByTestId(testId)
+
+      expect(media).toHaveAttribute(
+        'src',
+        '/api/assets/agent-media/content?disposition=inline'
+      )
+    }
+  )
 })

@@ -64,7 +64,7 @@ useHeroAnimation({
         </p>
         <div ref="ctaRef" class="mt-8">
           <BrandButton
-            :href="locale === 'zh-CN' ? '/zh-CN/careers' : '/careers'"
+            :href="locale === 'zh-CN' ? '/zh-CN/careers/' : '/careers/'"
             variant="outline"
           >
             {{ t('about.hero.cta', locale) }}
@@ -74,7 +74,7 @@ useHeroAnimation({
     </div>
 
     <!-- Video -->
-    <div ref="videoRef" class="max-w-9xl mx-auto px-4 pb-20 lg:px-20 lg:pb-40">
+    <div ref="videoRef" class="mx-auto max-w-9xl px-4 pb-20 lg:px-20 lg:pb-40">
       <VideoPlayer
         src="https://media.comfy.org/website/about/co-founders.webm"
         poster="https://media.comfy.org/website/about/co-founders-poster.webp"

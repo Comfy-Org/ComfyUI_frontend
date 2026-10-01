@@ -20,10 +20,7 @@ const {
 
 const billingNote = computed(() => {
   if (billingPeriod === 'yearly' && yearlyTotal) {
-    return t('pricing.period.billedYearly', locale).replace(
-      '{total}',
-      yearlyTotal
-    )
+    return t('pricing.period.billedYearly', locale, { total: yearlyTotal })
   }
   if (billingPeriod === 'monthly') {
     return t('pricing.period.billedMonthly', locale)
@@ -53,7 +50,7 @@ const billingNote = computed(() => {
 
         <span
           v-if="discount"
-          class="text-primary-comfy-yellow text-sm max-sm:text-xs sm:ml-2"
+          class="text-sm text-primary-comfy-yellow max-sm:text-xs sm:ml-2"
         >
           {{ discount }}
         </span>

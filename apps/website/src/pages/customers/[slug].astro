@@ -62,7 +62,7 @@ const relatedVideo = customerVideoForStory(storySlug(entry.id))
   <BreadcrumbBar
     crumbs={[
       { label: homeLabel, href: '/' },
-      { label: collectionLabel, href: '/customers' },
+      { label: collectionLabel, href: '/customers/' },
       { label: entry.data.title }
     ]}
     label={t('ui.breadcrumb', locale)}
@@ -74,21 +74,17 @@ const relatedVideo = customerVideoForStory(storySlug(entry.id))
     image={entry.data.cover}
   />
   <CustomerArticle entry={entry} />
-  {
-    relatedVideo && (
-      <div class="max-w-9xl mx-auto px-6 pb-10 lg:px-16">
-        <a
-          href={`/customers/videos/${relatedVideo.slug}`}
-          class="text-sm font-semibold tracking-wide text-primary-comfy-yellow uppercase hover:underline"
-        >
-          {t('customers.article.watchVideo', locale)}
-        </a>
-      </div>
-    )
-  }
+  {relatedVideo && <div class="mx-auto max-w-9xl px-6 pb-10 lg:px-16">
+    <a
+      href={`/customers/videos/${relatedVideo.slug}/`}
+      class="text-sm font-semibold tracking-wide text-primary-comfy-yellow uppercase hover:underline"
+    >
+      {t('customers.article.watchVideo', locale)}
+    </a>
+  </div>}
   <WhatsNextSection
     title={next.data.title}
     image={next.data.cover}
-    href={`/customers/${storySlug(next.id)}`}
+    href={`/customers/${storySlug(next.id)}/`}
   />
 </BaseLayout>

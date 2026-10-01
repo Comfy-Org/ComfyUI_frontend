@@ -1,10 +1,75 @@
-// @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import VideoPlayer from './VideoPlayer.vue'
 
 describe('VideoPlayer', () => {
+  it.for([true, false])(
+    'keeps the playback controls visible only when requested (persistentControls: %s)',
+    async (persistentControls) => {
+      vi.spyOn(HTMLMediaElement.prototype, 'paused', 'get').mockReturnValue(
+        false
+      )
+      vi.spyOn(HTMLMediaElement.prototype, 'muted', 'get').mockReturnValue(true)
+
+      render(VideoPlayer, {
+        props: { src: 'https://example.com/clip.mp4', persistentControls }
+      })
+
+      const pause = await screen.findByRole('button', { name: 'Pause' })
+      await vi.advanceTimersByTimeAsync(1000)
+      expect(pause.parentElement?.classList.contains('opacity-0')).toBe(
+        !persistentControls
+      )
+      expect(screen.getByRole('button', { name: 'Unmute' })).toBeTruthy()
+      expect(screen.getByRole('button', { name: 'Fullscreen' })).toBeTruthy()
+    }
+  )
+
+  it('shows Unmute once a lazily-autoplaying video is forced muted to start playback', async () => {
+    vi.spyOn(HTMLMediaElement.prototype, 'paused', 'get').mockReturnValue(false)
+    vi.spyOn(HTMLMediaElement.prototype, 'muted', 'get').mockReturnValue(false)
+    vi.spyOn(HTMLMediaElement.prototype, 'muted', 'set').mockImplementation(
+      () => {}
+    )
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined)
+
+    render(VideoPlayer, {
+      props: {
+        src: 'https://example.com/clip.mp4',
+        autoplay: true,
+        lazyAutoplay: true,
+        muteOnly: true
+      }
+    })
+
+    expect(await screen.findByRole('button', { name: 'Unmute' })).toBeTruthy()
+  })
+
+  it('shows Mute once autoplay-unmuted playback succeeds', async () => {
+    vi.spyOn(HTMLMediaElement.prototype, 'paused', 'get').mockReturnValue(false)
+    vi.spyOn(HTMLMediaElement.prototype, 'muted', 'get').mockReturnValue(true)
+    vi.spyOn(HTMLMediaElement.prototype, 'muted', 'set').mockImplementation(
+      () => {}
+    )
+    const play = vi
+      .spyOn(HTMLMediaElement.prototype, 'play')
+      .mockResolvedValue(undefined)
+
+    render(VideoPlayer, {
+      props: {
+        src: 'https://example.com/clip.mp4',
+        autoplay: true,
+        autoplayUnmuted: true,
+        muteOnly: true
+      }
+    })
+
+    await vi.waitFor(() => expect(play).toHaveBeenCalled())
+    expect(screen.getByRole('button', { name: 'Mute' })).toBeTruthy()
+  })
+
   // A server-rendered autoplay video can already be playing (and muted) when
   // hydration binds the element, after its play/volumechange events fired.
   // The element-bind watcher must sync the controls to that reality.
@@ -51,6 +116,47 @@ describe('VideoPlayer', () => {
       if (!(video instanceof HTMLVideoElement))
         throw new Error('Expected the labelled video element')
       expect(video.crossOrigin).toBe(crossOrigin)
+    }
+  )
+
+  // A pointer that hovers keeps the bar up for as long as it rests on the
+  // player. A finger cannot: the window after playback starts is the whole of
+  // the bar's visit, and 800ms was long enough to see the controls and too
+  // short to hit one.
+  it.for([
+    { hover: true, after: 1000, reachable: false },
+    { hover: false, after: 1000, reachable: true },
+    { hover: false, after: 5000, reachable: false }
+  ])(
+    'leaves the bar reachable $reachable $after ms into playback (hover: $hover)',
+    async ({ hover, after, reachable }) => {
+      vi.stubGlobal('matchMedia', (query: string) => ({
+        matches: query === '(hover: hover)' ? hover : false,
+        media: query,
+        addEventListener: () => {},
+        removeEventListener: () => {}
+      }))
+      vi.useFakeTimers()
+      onTestFinished(() => {
+        vi.useRealTimers()
+      })
+      vi.spyOn(HTMLMediaElement.prototype, 'paused', 'get').mockReturnValue(
+        false
+      )
+      render(VideoPlayer, {
+        props: { src: 'https://example.com/clip.mp4', controlsOnHover: true }
+      })
+
+      // Playback starting is what summons the bar, and the only thing that does
+      // on a device with no pointer to rest here.
+      await vi.waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Pause' })).toBeTruthy()
+      )
+      vi.advanceTimersByTime(after)
+      await nextTick()
+
+      const bar = screen.getByTestId('player-control-bar')
+      expect(bar.className.includes('pointer-events-none')).toBe(!reachable)
     }
   )
 

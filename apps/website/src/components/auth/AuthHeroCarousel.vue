@@ -63,10 +63,11 @@ const announcement = ref('')
 const announceCurrentSlide = () => {
   const slide = slides[activeIndex.value]
   if (!slide) return
-  announcement.value = t('auth.hero.slideStatus', locale)
-    .replace('{title}', slide.title)
-    .replace('{current}', String(activeIndex.value + 1))
-    .replace('{total}', String(slides.length))
+  announcement.value = t('auth.hero.slideStatus', locale, {
+    title: slide.title,
+    current: activeIndex.value + 1,
+    total: slides.length
+  })
 }
 
 const goToNext = () => {
@@ -139,7 +140,7 @@ const providerMask = (provider: keyof typeof PROVIDER_ICON) => ({
         {{ announcement }}
       </p>
       <div
-        class="relative min-h-0 w-full flex-1 overflow-clip rounded-[2.5rem] bg-primary-comfy-canvas/4"
+        class="relative min-h-0 w-full flex-1 overflow-clip rounded-5xl bg-primary-comfy-canvas/4"
       >
         <div
           ref="trackEl"

@@ -37,6 +37,7 @@ import { assetPath } from '@e2e/fixtures/utils/paths'
 import { nextFrame, sleep } from '@e2e/fixtures/utils/timing'
 import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { resolveSetupApiUrl } from '@e2e/utils/e2eConfig'
 import { BottomPanel } from '@e2e/fixtures/components/BottomPanel'
 import { ComfyNodeSearchBox } from '@e2e/fixtures/components/ComfyNodeSearchBox'
 import { ComfyNodeSearchBoxV2 } from '@e2e/fixtures/components/ComfyNodeSearchBoxV2'
@@ -238,7 +239,7 @@ export class ComfyPage {
     public readonly request: APIRequestContext
   ) {
     this.url = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
-    this.apiUrl = process.env.PLAYWRIGHT_SETUP_API_URL || this.url
+    this.apiUrl = resolveSetupApiUrl()
     this.canvas = page.locator('#graph-canvas')
     this.selectionToolbox = page.getByTestId(TestIds.selectionToolbox.root)
     this.widgetTextBox = page.getByPlaceholder('text').nth(1)
@@ -597,6 +598,8 @@ export const comfyPageFixture = base.extend<{
   initialLocalStorage: Record<string, string>
   initialSettings: Record<string, unknown>
   initialUrl: string | undefined
+  mockReleases: boolean
+  firebaseLogin: boolean
   comfyPage: ComfyPage
   comfyMouse: ComfyMouse
   comfyFiles: ComfyFiles
@@ -611,6 +614,9 @@ export const comfyPageFixture = base.extend<{
   // the fixture's defaults so per-test values win.
   initialSettings: [{}, { option: true }],
   initialUrl: [undefined, { option: true }],
+  mockReleases: [true, { option: true }],
+  // Set `false` to open a cloud tab that holds no Firebase login.
+  firebaseLogin: [true, { option: true }],
 
   page: async ({ page, browserName }, use) => {
     if (browserName !== 'chromium' || !COLLECT_COVERAGE) {
@@ -637,7 +643,9 @@ export const comfyPageFixture = base.extend<{
       initialFeatureFlags,
       initialLocalStorage,
       initialSettings,
-      initialUrl
+      initialUrl,
+      mockReleases,
+      firebaseLogin
     },
     use,
     testInfo
@@ -701,7 +709,8 @@ export const comfyPageFixture = base.extend<{
         await mockWorkspace(context, workspace('personal', 'owner'), [])
       }
       if (testInfo.tags.includes('@cloud') || testInfo.tags.includes('@auth')) {
-        await comfyPage.cloudAuth.mockAuth()
+        if (firebaseLogin) await comfyPage.cloudAuth.mockAuth()
+        else await comfyPage.cloudAuth.mockFirebaseEndpoints()
       }
 
       if (isCustomNodes) await installCustomNodeBlankStartup(page)
@@ -711,7 +720,11 @@ export const comfyPageFixture = base.extend<{
         await comfyPage.featureFlags.seedFlags(initialFeatureFlags)
       }
 
-      await comfyPage.setup({ initialLocalStorage, url: initialUrl })
+      await comfyPage.setup({
+        initialLocalStorage,
+        url: initialUrl,
+        mockReleases
+      })
 
       if (startupErrorCollector) {
         startupErrorCollector.stop()

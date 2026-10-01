@@ -1,5 +1,6 @@
 /* eslint-disable testing-library/no-container, testing-library/no-node-access */
 import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -36,6 +37,7 @@ const i18n = createI18n({
         sourceGamut: 'Source gamut',
         dither: 'Dither',
         clipWarnings: 'Clip warnings',
+        checkerboard: 'Show transparency',
         fitView: 'Fit',
         histogram: 'Histogram',
         resolution: 'Resolution',
@@ -55,6 +57,7 @@ function makeViewer(overrides: Record<string, unknown> = {}) {
     exposureStops: ref(0),
     dither: ref(true),
     clipWarnings: ref(false),
+    checkerboard: ref(true),
     gamut: ref('sRGB'),
     channel: ref('r'),
     loading: ref(false),
@@ -81,7 +84,7 @@ function makeViewer(overrides: Record<string, unknown> = {}) {
 function renderViewer() {
   return render(HdrViewerContent, {
     props: { imageUrl: '/api/view?filename=out.exr' },
-    global: { plugins: [i18n], stubs: { Button: true } }
+    global: { plugins: [i18n] }
   })
 }
 
@@ -122,5 +125,17 @@ describe('HdrViewerContent', () => {
     expect(
       screen.getByRole('option', { name: 'Luminance' })
     ).toBeInTheDocument()
+  })
+
+  it('toggles the transparency checkerboard from its checkbox', async () => {
+    const viewer = makeViewer()
+    holder.viewer = viewer
+    renderViewer()
+    const toggle = screen.getByRole('checkbox', { name: 'Show transparency' })
+    expect(toggle).toBeChecked()
+
+    await userEvent.click(toggle)
+
+    expect(viewer.checkerboard.value).toBe(false)
   })
 })

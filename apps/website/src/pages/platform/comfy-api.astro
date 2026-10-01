@@ -1,10 +1,13 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import ProductCardsSection from '../../components/common/ProductCardsSection.vue'
+import ComfyApiPricingSection from '../../components/pricing/ComfyApiPricingSection.vue'
 import ClosingCtaSection from '../../templates/platform/ClosingCtaSection.vue'
+import ServerlessCustomerProofSection from '../../templates/platform/ServerlessCustomerProofSection.vue'
 import ServerlessDeploySection from '../../templates/platform/ServerlessDeploySection.vue'
 import ServerlessHero from '../../templates/platform/ServerlessHero.vue'
 import ServerlessHowItWorksSection from '../../templates/platform/ServerlessHowItWorksSection.vue'
+import ServerlessProductVideoSection from '../../templates/platform/ServerlessProductVideoSection.vue'
 import ServerlessScaleSection from '../../templates/platform/ServerlessScaleSection.vue'
 import { t } from '../../i18n/translations'
 ---
@@ -17,13 +20,13 @@ import { t } from '../../i18n/translations'
   <ServerlessHowItWorksSection locale="en" client:visible />
   <ServerlessDeploySection locale="en" client:visible />
   <ServerlessScaleSection locale="en" client:visible />
+  <ServerlessCustomerProofSection locale="en" showCustomerProof />
+  <ComfyApiPricingSection locale="en" />
+  <ServerlessProductVideoSection locale="en" client:visible />
   <ClosingCtaSection
     locale="en"
     heading-after-badge={t('platform.closing.headingAfterBadge', 'en')}
     client:visible
   />
-  <ProductCardsSection
-    locale="en"
-    label-key="products.labelProducts"
-  />
+  <ProductCardsSection locale="en" label-key="products.labelProducts" />
 </BaseLayout>

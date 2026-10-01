@@ -44,6 +44,7 @@ test.describe(
         'KSampler fixture should expose its seed widget input metadata'
       ).toBeDefined()
 
+      await ksamplerNode.centerOnNode()
       await primitiveNode.connectWidget(0, ksamplerNode, 0)
 
       await expect

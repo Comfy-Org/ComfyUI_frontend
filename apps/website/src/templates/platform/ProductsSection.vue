@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import ProductHeroBadge from '../../components/common/ProductHeroBadge.vue'
 import { brandButtonVariants } from '../../components/common/brandButton.variants'
-import Badge from '../../components/ui/badge/Badge.vue'
 import { getRoutes } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import BuilderVisual from './BuilderVisual.vue'
 import CodeTabs from './CodeTabs.vue'
 import { modelsApiCodeTabs } from './codeSamples'
-import ServerlessIsometricStudy from './ServerlessIsometricStudy.vue'
+import ServerlessJsonApiGpuAnimation from './ServerlessJsonApiGpuAnimation.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -18,11 +17,11 @@ const modelsTabs = modelsApiCodeTabs
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 py-10 lg:py-14">
+  <section class="mx-auto max-w-9xl px-6 py-10 lg:py-14">
     <!-- Comfy API: the headline product, full width -->
     <article
       id="serverless"
-      class="group bg-transparency-white-t4 relative grid scroll-mt-24 grid-cols-1 items-center gap-8 rounded-4xl border border-transparent p-6 transition-colors hover:border-white/25 lg:scroll-mt-36 lg:grid-cols-2 lg:gap-12 lg:p-10"
+      class="group relative grid scroll-mt-24 grid-cols-1 items-center gap-8 rounded-4xl border border-transparent bg-transparency-white-t4 p-6 transition-colors hover:border-white/25 lg:scroll-mt-36 lg:grid-cols-2 lg:gap-12 lg:p-10"
     >
       <a
         :href="routes.platformComfyApi"
@@ -42,24 +41,22 @@ const modelsTabs = modelsApiCodeTabs
             :show-connector="false"
             aria-hidden="true"
           />
-          <Badge variant="accent" size="xs">
-            {{ t('nav.badgeBeta', locale) }}
-          </Badge>
         </h3>
         <p class="mt-3 text-sm/relaxed font-light text-primary-comfy-canvas">
           {{ t('platform.products.serverless.description', locale) }}
         </p>
         <div class="mt-8">
           <span :class="brandButtonVariants({ variant: 'solid', size: 'sm' })">
-            <span class="ppformula-text-center uppercase">
+            <span class="inline-block uppercase">
               {{ t('platform.hero.getStarted', locale) }}
             </span>
           </span>
         </div>
       </div>
-      <ServerlessIsometricStudy
+      <ServerlessJsonApiGpuAnimation
         class="pointer-events-none relative z-10"
         :locale
+        compact
       />
     </article>
 
@@ -67,7 +64,7 @@ const modelsTabs = modelsApiCodeTabs
     <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
       <article
         id="models"
-        class="group bg-transparency-white-t4 relative flex scroll-mt-24 flex-col rounded-4xl border border-transparent p-6 transition-colors hover:border-white/25 lg:scroll-mt-36 lg:p-10"
+        class="group relative flex scroll-mt-24 flex-col rounded-4xl border border-transparent bg-transparency-white-t4 p-6 transition-colors hover:border-white/25 lg:scroll-mt-36 lg:p-10"
       >
         <a
           :href="routes.platformRouter"
@@ -82,8 +79,8 @@ const modelsTabs = modelsApiCodeTabs
           aria-hidden="true"
         >
           <ProductHeroBadge
-            :text="t('platform.products.models.title', locale).toUpperCase()"
-            :show-logo="false"
+            :text="t('platform.products.models.badgeLabel', locale)"
+            :show-connector="false"
             compact
           />
         </div>
@@ -100,7 +97,7 @@ const modelsTabs = modelsApiCodeTabs
         </div>
         <div class="pointer-events-none relative z-10 mt-auto self-start pt-6">
           <span :class="brandButtonVariants({ variant: 'solid', size: 'sm' })">
-            <span class="ppformula-text-center uppercase">
+            <span class="inline-block uppercase">
               {{ t('platform.products.models.learnMore', locale) }}
             </span>
           </span>
@@ -109,7 +106,7 @@ const modelsTabs = modelsApiCodeTabs
 
       <article
         id="builder"
-        class="group/builder bg-transparency-white-t4 relative flex scroll-mt-24 flex-col rounded-4xl border border-transparent p-6 transition-colors hover:border-white/25 lg:scroll-mt-36 lg:p-10"
+        class="group/builder relative flex scroll-mt-24 flex-col rounded-4xl border border-transparent bg-transparency-white-t4 p-6 transition-colors hover:border-white/25 lg:scroll-mt-36 lg:p-10"
       >
         <a
           :href="routes.platformBuilder"
@@ -133,7 +130,7 @@ const modelsTabs = modelsApiCodeTabs
         </div>
         <div class="pointer-events-none relative z-10 mt-auto self-start pt-6">
           <span :class="brandButtonVariants({ variant: 'solid', size: 'sm' })">
-            <span class="ppformula-text-center uppercase">
+            <span class="inline-block uppercase">
               {{ t('platform.hero.getStarted', locale) }}
             </span>
           </span>

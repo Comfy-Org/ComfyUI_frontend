@@ -4,7 +4,8 @@ export default defineConfig({
   input: './openapi.yaml',
   output: {
     path: './src',
-    clean: true
+    clean: true,
+    importFileExtension: '.js'
   },
   parser: {
     filters: {

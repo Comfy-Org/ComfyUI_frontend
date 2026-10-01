@@ -73,9 +73,10 @@ const generatedExample = z.object({
   sampleOnly: z.boolean().optional(),
   node: node.optional(),
   fields: z.array(generatedField).optional(),
-  values: formValues
+  values: formValues,
+  prompt: z.string().optional()
 })
-const generatedModel = z.object({
+export const generatedModelSchema = z.object({
   thumbnailUrl: z.string().optional(),
   provider: z.string().optional(),
   modality: z.enum(MODALITIES).optional(),
@@ -93,7 +94,7 @@ export function decodeGeneratedModels(
   if (!parsed.success) return {}
   return Object.fromEntries(
     Object.entries(parsed.data).flatMap(([key, raw]) => {
-      const entry = generatedModel.safeParse(raw)
+      const entry = generatedModelSchema.safeParse(raw)
       return entry.success ? [[key, entry.data]] : []
     })
   )

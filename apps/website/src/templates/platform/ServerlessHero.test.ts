@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
@@ -16,9 +15,26 @@ describe('ServerlessHero', () => {
     ).toBeTruthy()
     expect(screen.getByText(/into an autoscaling endpoint/)).toBeTruthy()
     expect(
-      screen.getAllByRole('link', { name: t('platform.hero.getStarted', 'en') })
-        .length
-    ).toBeGreaterThan(0)
+      screen.getByRole('link', { name: t('platform.hero.getStarted', 'en') })
+    ).toHaveAttribute('href', 'https://platform.comfy.org/?onboarding=comfyapi')
+    expect(
+      screen.getByRole('link', { name: t('platform.hero.readDocs', 'en') })
+    ).toHaveAttribute(
+      'href',
+      'https://docs.comfy.org/development/serverless/quickstart'
+    )
     expect(screen.queryByText(t('nav.badgeBeta', 'en'))).toBeNull()
+  })
+
+  it('loads the JSON API GPU animation after mounting', async () => {
+    render(ServerlessHero, { props: { locale: 'en' } })
+
+    const animation = await screen.findByTitle(
+      t('platform.serverlessHero.animationTitle', 'en')
+    )
+    expect(animation).toHaveAttribute(
+      'src',
+      '/assets/platform/serverless/json-api-gpu-animation.html?v=astronaut-quality-2'
+    )
   })
 })

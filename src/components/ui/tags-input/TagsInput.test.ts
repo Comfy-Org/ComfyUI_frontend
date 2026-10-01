@@ -80,6 +80,19 @@ describe('TagsInput with child components', () => {
     expect(deleteButtons).toHaveLength(tags.length)
   })
 
+  it('updates model value when deleting a tag', async () => {
+    const onUpdate = vi.fn()
+    const { user } = renderFullTagsInput(['first', 'second'], {
+      'onUpdate:modelValue': onUpdate
+    })
+
+    await user.click(screen.getByText('first'))
+    await nextTick()
+    await user.click(screen.getByRole('button', { name: 'first' }))
+
+    expect(onUpdate).toHaveBeenCalledWith(['second'])
+  })
+
   it('updates model value when adding a tag', async () => {
     const onUpdate = vi.fn()
 

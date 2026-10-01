@@ -1,3 +1,4 @@
+import { omit } from 'es-toolkit'
 import { afterEach, beforeEach, describe, expect, vi } from 'vitest'
 
 import type {
@@ -50,12 +51,10 @@ function getMockISerialisedNode(
 
 describe('LGraphNode', () => {
   let node: LGraphNode
-  let origLiteGraph: typeof LiteGraph
+  let origLiteGraph: Omit<typeof LiteGraph, 'Classes'>
 
   beforeEach(() => {
-    origLiteGraph = Object.assign({}, LiteGraph)
-    // @ts-expect-error Intended: Force remove an otherwise readonly non-optional property
-    delete origLiteGraph.Classes
+    origLiteGraph = omit(LiteGraph, ['Classes'])
 
     Object.assign(LiteGraph, {
       NODE_TITLE_HEIGHT: 20,
@@ -183,6 +182,20 @@ describe('LGraphNode', () => {
     graph.add(node)
     node.configure(getMockISerialisedNode({ id: -1 }))
     expect(node.id).not.toBe(-1)
+  })
+
+  test('draws the ❌ type fallback title for an unknown-type replacement node', () => {
+    const node = new LGraphNode('', 'UNKNOWN NODE')
+    node.configure(getMockISerialisedNode({ type: 'UNKNOWN NODE' }))
+    const ctx = createMockCanvasRenderingContext2D()
+
+    node.drawTitleText(ctx, { scale: 1, default_title_color: '#fff' })
+
+    expect(ctx.fillText).toHaveBeenCalledWith(
+      '❌ UNKNOWN NODE',
+      expect.any(Number),
+      expect.any(Number)
+    )
   })
 
   describe('Disconnect I/O Slots', () => {

@@ -1,9 +1,14 @@
 <script setup lang="ts">
 import { Check, Music2 } from '@lucide/vue'
-import { computed } from 'vue'
+import { useElementVisibility, useMounted, whenever } from '@vueuse/core'
+import { computed, ref, useTemplateRef } from 'vue'
 
 import type { PlaygroundExample } from '../../config/workshop-playground'
-import { isVideoUrl } from '../../config/workshop-playground'
+import {
+  exampleAlt,
+  isVideoUrl,
+  videoPosterUrl
+} from '../../config/workshop-playground'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
@@ -11,10 +16,12 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   examples,
+  galleryLabel,
   activeId,
   locale = 'en'
 } = defineProps<{
   examples: readonly PlaygroundExample[]
+  galleryLabel: string
   activeId?: string
   locale?: Locale
 }>()
@@ -22,8 +29,30 @@ const {
 const emit = defineEmits<{ open: [example: PlaygroundExample] }>()
 
 const specsOf = (example: PlaygroundExample) => example.specs.join(' · ')
+const altOf = (example: PlaygroundExample) =>
+  exampleAlt(galleryLabel, example.title, locale)
+// No posters yet: first frames load near the screen, not ahead of the LCP.
+const gallery = useTemplateRef<HTMLUListElement>('gallery')
+const galleryNear = useElementVisibility(gallery, {
+  rootMargin: '20% 0px'
+})
+const galleryReached = ref(false)
+whenever(galleryNear, () => (galleryReached.value = true), { once: true })
+const mounted = useMounted()
+const videoPreload = computed(() =>
+  galleryReached.value || (mounted.value && !('IntersectionObserver' in window))
+    ? 'metadata'
+    : 'none'
+)
 const samplesOnly = computed(
   () => examples.length > 0 && examples.every((example) => example.sampleOnly)
+)
+// A sample exists to be judged, and on a phone it was 144px wide: an 81px
+// preview of a generated image decides nothing. A lone sample takes the row,
+// and several take four fifths of it, so the next one peeks in at every width
+// the phone layout covers, up to the 18rem past which a card gains nothing.
+const phoneWidth = computed(() =>
+  examples.length === 1 ? 'w-full' : 'w-4/5 max-sm:max-w-72'
 )
 const desktopGridColumns = computed(() =>
   examples.length === 3
@@ -56,18 +85,6 @@ function actionFor(example: PlaygroundExample, active = false) {
           )
         }}
       </h2>
-      <p class="text-sm text-primary-warm-gray">
-        {{
-          t(
-            samplesOnly
-              ? 'workshop.examples.samplesSubtitle'
-              : examples.length === 1
-                ? 'workshop.examples.subtitleOne'
-                : 'workshop.examples.subtitle',
-            locale
-          )
-        }}
-      </p>
     </div>
 
     <p v-if="!examples.length" class="text-sm text-primary-warm-gray">
@@ -78,9 +95,10 @@ function actionFor(example: PlaygroundExample, active = false) {
       they fit in a row of their own. -->
     <ul
       v-else
+      ref="gallery"
       :class="
         cn(
-          'flex scrollbar-hide snap-x gap-3 overflow-x-auto max-sm:-mx-6 max-sm:-my-1 max-sm:scroll-px-6 max-sm:px-6 max-sm:py-1 sm:grid sm:max-w-5xl sm:justify-start sm:overflow-visible',
+          'scrollbar-hide flex snap-x gap-3 overflow-x-auto max-sm:-mx-6 max-sm:-my-1 max-sm:scroll-px-6 max-sm:px-6 max-sm:py-1 sm:grid sm:max-w-5xl sm:justify-start sm:overflow-visible',
           desktopGridColumns
         )
       "
@@ -88,104 +106,102 @@ function actionFor(example: PlaygroundExample, active = false) {
       <li
         v-for="example in examples"
         :key="example.id"
-        class="w-36 shrink-0 snap-start sm:w-auto"
+        :class="cn('shrink-0 snap-start sm:w-auto', phoneWidth)"
+        data-testid="example-item"
       >
-        <button
-          type="button"
-          :aria-label="`${example.title}: ${
-            example.sampleOnly
-              ? actionFor(example)
-              : t('workshop.examples.open', locale)
-          }`"
-          :aria-current="example.id === activeId ? 'true' : undefined"
-          class="group flex w-full cursor-pointer flex-col gap-2 text-left outline-none"
-          data-testid="example-card"
-          :title="`${example.title} · ${actionFor(
-            example,
-            example.id === activeId
-          )}`"
-          @click="emit('open', example)"
-        >
-          <span
-            :class="
-              cn(
-                'bg-primary-comfy-ink-light relative block aspect-video overflow-hidden rounded-lg ring-1 transition-all',
-                example.id === activeId
-                  ? 'ring-primary-comfy-yellow ring-2'
-                  : 'group-focus-visible:ring-primary-comfy-yellow ring-transparency-white-t8 group-hover:-translate-y-0.5 group-hover:ring-transparency-white-t20 group-hover:brightness-110'
-              )
-            "
+        <figure class="flex flex-col gap-2">
+          <button
+            type="button"
+            :aria-label="`${example.title}: ${
+              example.sampleOnly
+                ? actionFor(example)
+                : t('workshop.examples.open', locale)
+            }`"
+            :aria-current="example.id === activeId ? 'true' : undefined"
+            class="group flex w-full cursor-pointer flex-col gap-2 text-left outline-none"
+            data-testid="example-card"
+            :title="`${example.title} · ${actionFor(
+              example,
+              example.id === activeId
+            )}`"
+            @click="emit('open', example)"
           >
-            <video
-              v-if="
-                example.mediaKind === 'video' || isVideoUrl(example.outputUrl)
-              "
-              :src="example.outputUrl"
-              class="size-full object-cover"
-              muted
-              playsinline
-              preload="metadata"
-            />
-            <Music2
-              v-else-if="example.mediaKind === 'audio'"
-              class="size-full px-3"
-              aria-hidden="true"
-            />
-            <img
-              v-else-if="example.outputUrl"
-              :src="example.outputUrl"
-              :alt="example.title"
-              class="size-full object-cover"
-              loading="lazy"
-              decoding="async"
-            />
-
-            <span
-              v-if="example.id === activeId"
-              class="bg-primary-comfy-yellow absolute top-1.5 right-1.5 grid size-5 place-items-center rounded-full text-primary-comfy-ink"
-              data-testid="example-chosen"
-            >
-              <Check class="size-3" :stroke-width="3" aria-hidden="true" />
-            </span>
-            <span
-              v-else
-              class="absolute inset-x-0 bottom-0 truncate bg-black/70 px-2 py-1 text-center text-[11px] font-medium text-primary-warm-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
-              aria-hidden="true"
-            >
-              {{ actionFor(example) }}
-            </span>
-          </span>
-
-          <span class="flex flex-col gap-0.5">
             <span
               :class="
                 cn(
-                  'line-clamp-1 text-xs transition-colors',
+                  'relative block aspect-video overflow-hidden rounded-lg bg-primary-comfy-ink-light ring-1 transition-all',
                   example.id === activeId
-                    ? 'text-primary-warm-white'
-                    : 'text-primary-comfy-canvas group-hover:text-primary-warm-white'
+                    ? 'ring-2 ring-primary-comfy-yellow'
+                    : 'ring-transparency-white-t8 group-hover:-translate-y-0.5 group-hover:ring-transparency-white-t20 group-hover:brightness-110 group-focus-visible:ring-primary-comfy-yellow'
                 )
               "
             >
-              {{ example.title }}
+              <video
+                v-if="
+                  example.mediaKind === 'video' || isVideoUrl(example.outputUrl)
+                "
+                :src="videoPosterUrl(example.outputUrl)"
+                :aria-label="altOf(example)"
+                class="size-full object-cover"
+                muted
+                playsinline
+                :preload="videoPreload"
+                data-testid="example-video"
+              />
+              <Music2
+                v-else-if="example.mediaKind === 'audio'"
+                class="size-full px-3"
+                aria-hidden="true"
+              />
+              <img
+                v-else-if="example.outputUrl"
+                :src="example.outputUrl"
+                :alt="altOf(example)"
+                class="size-full object-cover"
+                loading="lazy"
+                decoding="async"
+              />
+
+              <span
+                v-if="example.id === activeId"
+                class="absolute top-1.5 right-1.5 grid size-5 place-items-center rounded-full bg-primary-comfy-yellow text-primary-comfy-ink"
+                data-testid="example-chosen"
+              >
+                <Check class="size-3" :stroke-width="3" aria-hidden="true" />
+              </span>
+              <span
+                v-else
+                class="absolute top-1.5 left-1.5 rounded-full bg-black/70 px-2 py-0.5 text-[11px] font-medium text-primary-warm-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+                aria-hidden="true"
+              >
+                {{ actionFor(example) }}
+              </span>
+
+              <span
+                class="absolute inset-x-0 bottom-0 flex flex-col gap-0.5 bg-linear-to-t from-black/85 to-transparent px-2 pt-6 pb-1.5"
+              >
+                <span class="line-clamp-1 text-xs text-primary-warm-white">
+                  {{ example.title }}
+                </span>
+                <span
+                  v-if="specsOf(example)"
+                  class="line-clamp-1 text-[11px] text-primary-comfy-canvas/70"
+                  data-testid="example-specs"
+                >
+                  {{ specsOf(example) }}
+                </span>
+              </span>
             </span>
-            <span
-              v-if="specsOf(example)"
-              class="text-[11px] text-primary-warm-gray"
-              data-testid="example-specs"
-            >
-              {{ specsOf(example) }}
-            </span>
-          </span>
-        </button>
-        <audio
-          v-if="example.mediaKind === 'audio'"
-          :src="example.outputUrl"
-          :aria-label="example.title"
-          controls
-          preload="metadata"
-          class="mt-2 w-full"
-        />
+          </button>
+          <audio
+            v-if="example.mediaKind === 'audio'"
+            :src="example.outputUrl"
+            :aria-label="altOf(example)"
+            controls
+            preload="metadata"
+            class="w-full"
+          />
+        </figure>
       </li>
     </ul>
   </section>

@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
@@ -93,7 +92,7 @@ describe('PastEventsSection', () => {
     const link = screen.getByRole('link', {
       name: 'Recorded Livestream — WATCH NOW'
     })
-    expect(link.getAttribute('href')).toBe('/events/recorded-livestream')
+    expect(link.getAttribute('href')).toBe('/events/recorded-livestream/')
     expect(link.getAttribute('target')).toBeNull()
   })
 
