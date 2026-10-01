@@ -7763,6 +7763,67 @@
       }
     }
   },
+  "HeyGenImageToVideoNode": {
+    "description": "使用 HeyGen Video 1.0 將影像製作成具有同步對話與音訊的影片。該影像會作為第一個影格。",
+    "display_name": "HeyGen Video 1.0 影像轉影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenReferenceToVideoNode": {
+    "description": "使用 HeyGen Video 1.0 根據文字提示詞產生具有同步對話與音訊的影片。可選擇連接最多 12 個參考影像、影片與音訊片段，並在提示詞中以 {'@'}Image1、{'@'}Video1、{'@'}Audio1 提及它們。",
+    "display_name": "HeyGen Video 1.0 參考資料轉影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_aspect_ratio": {
+        "name": "長寬比"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenTalkingPhotoNode": {
     "description": "將任何人物圖像動畫化為對嘴同步的說話影片（HeyGen Avatar IV）。可用文字腳本或自有音訊驅動。",
     "display_name": "HeyGen 說話照片",
@@ -8376,6 +8437,42 @@
       }
     }
   },
+  "IdeogramEditApi": {
+    "description": "使用 Ideogram 4.5 依據文字提示詞編輯或合併最多 5 張影像。會重新算繪整張影像，並可變更其大小或長寬比；如需讓未修改的像素維持不變，請使用 Ideogram 4.5 精確編輯。",
+    "display_name": "Ideogram 4.5 編輯",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "要使用的模型。"
+      },
+      "model_height": {
+        "name": "高度"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_size": {
+        "name": "大小"
+      },
+      "model_width": {
+        "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramPImage": {
     "description": "使用 P-Image（Ideogram 的快速文字轉圖像模型）生成圖像。具備強大的字體排版與寫實效果；支援 Ideogram 4.0 結構化 JSON 標註，可精確控制文字、顏色與版面配置。",
     "display_name": "Ideogram & Pruna P-Image",
@@ -8415,6 +8512,70 @@
       "1": {
         "name": "final_prompt",
         "tooltip": "實際用於生成圖像的提示（若啟用 prompt_upsampling 則為重寫後的結構化標註，否則為原始提示）。如需重現此圖像，請將其與 prompt_upsampling OFF 及相同種子再次輸入。"
+      }
+    }
+  },
+  "IdeogramPreciseEditApi": {
+    "description": "使用 Ideogram 4.5 精確編輯依據文字提示詞編輯影像：僅會變更提示詞要求的內容，未修改的像素會維持完全相同，且輸出會保留影像 1 的大小（超過約 4 MP 的影像會先縮小）。最多可接受 4 張參考影像。",
+    "display_name": "Ideogram 4.5 精確編輯",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "要使用的模型。"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramTextToImageApi": {
+    "description": "使用 Ideogram 4.5 根據文字提示詞產生影像。",
+    "display_name": "Ideogram 4.5 文字轉影像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "要使用的模型。"
+      },
+      "model_magic_prompt": {
+        "name": "魔法提示詞"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_size": {
+        "name": "尺寸"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "最終提示詞",
+        "tooltip": "影像生成所依據的結構化說明文字。將其搭配設為「off」的 magic_prompt 與相同的 seed 回傳，即可重現影像。"
       }
     }
   },
