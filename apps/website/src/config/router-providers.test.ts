@@ -17,6 +17,8 @@ const MODELS_PAGE = `${ROUTER_DOCS}/models.md`
 // The per-model API spec, as the backend publishes it for the docs site.
 const ROUTER_SCHEMAS =
   'https://raw.githubusercontent.com/Comfy-Org/docs/main/router-schemas'
+const FETCH_ATTEMPTS = 3
+const FETCH_TIMEOUT_MS = 4_000
 const isCI = () =>
   ['1', 'true'].includes(process.env.CI?.toLowerCase() ?? '')
 
@@ -29,15 +31,23 @@ const skipReason = isCI()
   : 'checks the published API spec; runs in CI only (set CI=1 to run it here)'
 
 async function fetchDocs(url: string): Promise<string | null> {
-  try {
-    const response = await fetch(url, { signal: AbortSignal.timeout(15_000) })
-    if (!response.ok) throw new Error(`${url} responded ${response.status}`)
-    return await response.text()
-  } catch (error) {
-    if (isCI())
-      throw new Error(`Could not fetch ${url}`, { cause: error })
-    return null
+  const attempts = isCI() ? FETCH_ATTEMPTS : 1
+  let lastError: unknown
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    try {
+      const response = await fetch(url, {
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)
+      })
+      if (!response.ok) throw new Error(`${url} responded ${response.status}`)
+      return await response.text()
+    } catch (error) {
+      lastError = error
+      if (attempt + 1 < attempts)
+        await new Promise((resolve) => setTimeout(resolve, 250 * 2 ** attempt))
+    }
   }
+  if (isCI()) throw new Error(`Could not fetch ${url}`, { cause: lastError })
+  return null
 }
 
 interface DocsCoverageRow {
