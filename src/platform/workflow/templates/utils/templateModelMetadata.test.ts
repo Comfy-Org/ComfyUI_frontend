@@ -27,10 +27,9 @@ function metadataOutcome(
 function metadataEntry(
   model: ModelFile,
   fileSize: number | null,
-  gatedRepoUrl: string | null = null,
-  resolution: ModelMetadataFetchOutcome['resolution'] = 'resolved'
+  gatedRepoUrl: string | null = null
 ) {
-  return { model, fileSize, gatedRepoUrl, resolution }
+  return { model, fileSize, gatedRepoUrl }
 }
 
 function deferred<T>() {
@@ -137,7 +136,7 @@ describe('resolveTemplateModelMetadata', () => {
       status: 'completed',
       entries: [
         metadataEntry(first, 100),
-        metadataEntry(failed, null, null, 'failed'),
+        metadataEntry(failed, null, null),
         metadataEntry(last, 300)
       ]
     })
@@ -213,7 +212,7 @@ describe('resolveTemplateModelMetadata', () => {
       expect(requestSignal?.aborted).toBe(true)
       await expect(result).resolves.toEqual({
         status: 'completed',
-        entries: [metadataEntry(timedOut, null, null, 'failed')]
+        entries: [metadataEntry(timedOut, null, null)]
       })
     } finally {
       vi.useRealTimers()

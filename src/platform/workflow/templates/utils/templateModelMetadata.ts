@@ -14,7 +14,6 @@ const failedMetadata: ModelMetadataFetchOutcome = {
 
 export type TemplateModelMetadataEntry = ModelMetadata & {
   model: ModelFile
-  resolution: 'resolved' | 'failed'
 }
 
 export type TemplateModelMetadataBatchResult =
@@ -94,7 +93,7 @@ export async function resolveTemplateModelMetadata(
 
   const entries = models.map((model): TemplateModelMetadataEntry => {
     const outcome = metadataByUrl.get(model.url) ?? failedMetadata
-    return { model, ...outcome.metadata, resolution: outcome.resolution }
+    return { model, ...outcome.metadata }
   })
 
   return { status: 'completed', entries }
