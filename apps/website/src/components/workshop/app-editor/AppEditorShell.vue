@@ -43,7 +43,7 @@ const dockOverSheet = () => floating() && !wide.value && !panelDimmed
     :aria-label="title"
   >
     <div
-      class="relative flex min-h-0 flex-1 flex-col bg-black/30 bg-[radial-gradient(var(--color-transparency-white-t8)_1px,transparent_1px)] bg-size-[18px_18px]"
+      class="relative flex min-h-0 flex-1 flex-col bg-black/30 bg-[radial-gradient(var(--color-transparency-white-t4)_1px,transparent_1px)] bg-size-[24px_24px]"
     >
       <div
         :class="

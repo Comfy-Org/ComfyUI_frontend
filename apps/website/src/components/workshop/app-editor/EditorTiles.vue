@@ -37,17 +37,17 @@ const value = defineModel<T>()
           cn(
             'relative block aspect-video w-full overflow-hidden rounded-lg ring-1 ring-transparency-white-t8 transition group-hover:ring-transparency-white-t20 group-focus-visible:ring-2 group-focus-visible:ring-primary-comfy-yellow/60',
             value === option.id &&
-              'ring-2 ring-primary-comfy-yellow group-hover:ring-primary-comfy-yellow'
+              'ring-2 ring-primary-warm-white group-hover:ring-primary-warm-white'
           )
         "
       >
         <slot name="tile" :option />
         <span
           v-if="value === option.id"
-          class="absolute top-1 right-1 flex size-4 items-center justify-center rounded-full bg-primary-comfy-yellow text-primary-comfy-ink shadow-md shadow-black/40"
+          class="absolute top-2 right-2 grid size-5 place-items-center rounded-full bg-primary-comfy-yellow text-primary-comfy-ink shadow-md"
           aria-hidden="true"
         >
-          <Check class="size-2.5" :stroke-width="3" />
+          <Check class="size-3.5" :stroke-width="3" />
         </span>
       </span>
       <span

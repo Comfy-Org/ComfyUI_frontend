@@ -25,7 +25,7 @@ function onChange(event: Event) {
 
 <template>
   <div
-    class="flex size-full max-w-180 flex-col items-center justify-center gap-5 rounded-2xl border border-dashed border-transparency-white-t20 p-6 text-center"
+    class="flex w-full max-w-120 flex-col items-center gap-5 self-center rounded-2xl border border-dashed border-transparency-white-t20 bg-primary-comfy-ink/70 px-6 py-8 text-center backdrop-blur-sm sm:px-10"
     @dragover.prevent
     @drop.prevent="pick($event.dataTransfer?.files)"
   >
