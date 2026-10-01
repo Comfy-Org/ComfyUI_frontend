@@ -98,6 +98,23 @@ every URL's query and fragment. Billing events go through
 from `@comfyorg/account-core/billing`, keeps only its allowlisted fields,
 stamps `billing_surface: 'billing_web'` and sends to both sinks.
 
+### Entry, session and return events
+
+These are client journey events: they carry `outcome: 'pending'` and never
+claim an operation result. Each is reported once per tab, not per navigation:
+`trackOncePerTab` remembers what the tab has reported in `sessionStorage`, so a
+route change, the sign-in redirect and a reload send nothing more. A tab that
+refuses storage still reports once per page load.
+
+- `billing.web_entry.received`: an entry link was admitted. Carries `intent`,
+  `product`, `has_plan`, and the link's `payment_intent_source` and
+  `correlation_id` (the Cloud journey id) when it has them.
+- `billing.web_entry.rejected`: the link could not be used; `error_code` is the
+  entry parser's code.
+- `billing.web_entry.bounced`: billing web sent the customer back to the host
+  (`pricing_link`, `planless_checkout`) or replaced a checkout's `return_to`
+  (`return_target_rewritten`); `to` is the return target or `pricing_table`.
+
 ### Checkout journey events
 
 Both checkouts report the cloud app's `billing.checkout.<phase>` journey
