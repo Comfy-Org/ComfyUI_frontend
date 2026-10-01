@@ -104,13 +104,17 @@ serialization time and is not stored on the widget, so nothing acquires a second
 durable id and no migration exists to write.
 
 **Why not unify them.** Making `WidgetId` occurrence-aware is the larger change
-this deliberately does not make. It would have to clear the four bars the
-"Future work" section above sets — and the one that bites is the second,
-a migration story for persisted workflows, since every stored `WidgetId`
-elsewhere in the app is name-keyed. It is also unnecessary for the defect:
-nothing _addresses_ a duplicate widget at runtime, because an ambiguous name
-cannot be typed into a store lookup. Only persistence has to tell the two apart,
-because only persistence has to put both values back.
+this deliberately does not make, and the argument against it is the one
+[Widget identity keys on `name`](#widget-identity-keys-on-name) already records:
+a widget has no independent lifetime to hang an id on, so an occurrence-aware
+key would have to be re-derived on every definition refresh against the only
+stable thing there is to match on — the name — and `name` is already the durable
+identity in the serialization format. A migration story would also be owed,
+since every stored `WidgetId` elsewhere in the app is name-keyed. It is
+unnecessary for this defect in any case: nothing _addresses_ a duplicate widget
+at runtime, because an ambiguous name cannot be typed into a store lookup. Only
+persistence has to tell the two apart, because only persistence has to put both
+values back.
 
 **What is owed if this is accepted.** `widgets_values_ordered` becomes a storage
 format this app must keep reading, which is the part that cannot be undone by a

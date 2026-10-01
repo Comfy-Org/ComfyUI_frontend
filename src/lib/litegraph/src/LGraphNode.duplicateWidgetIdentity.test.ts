@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
-import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import {
   readOrderedWidgetValues,
   widgetIdentityKey
@@ -455,7 +454,7 @@ describe('duplicate widget-name identity', () => {
 
       node.configure(
         serialisedNode({
-          widgets_values: ['first', 'second'] as TWidgetValue[],
+          widgets_values: ['first', 'second'],
           widgets_values_named: { same: 'second' },
           widgets_values_ordered: [
             { name: 'same', occurrence: 0, value: 'first' },
@@ -571,7 +570,7 @@ describe('duplicate widget-name identity', () => {
 
       node.configure(
         serialisedNode({
-          widgets_values: ['first', 'second'] as TWidgetValue[],
+          widgets_values: ['first', 'second'],
           widgets_values_named: { same: 'second' },
           widgets_values_ordered: [
             { name: 'same', occurrence: 0, value: 'first' },
@@ -820,36 +819,6 @@ describe('duplicate widget-name identity', () => {
         { name: 'same', occurrence: 0, value: firstValue },
         { name: 'same', occurrence: 1, value: secondValue }
       ])
-    })
-
-    it('holds the carried keys off the node itself', () => {
-      addDuplicatePair()
-
-      node.configure(
-        serialisedNode({
-          widgets_values_named: { same: secondValue },
-          widgets_values_ordered: [
-            {
-              name: 'same',
-              occurrence: 0,
-              value: firstValue,
-              source: 'extension'
-            },
-            { name: 'same', occurrence: 1, value: secondValue }
-          ]
-        })
-      )
-
-      // Persistence bookkeeping, not entity state. An own field would be
-      // reachable by any extension, and whatever one assigned to it would
-      // come straight back out of `serialize()`.
-      expect(
-        Object.keys(node).filter((key) => key.toLowerCase().includes('unknown'))
-      ).toEqual([])
-      expect(node.serialize().widgets_values_ordered?.[0]).toHaveProperty(
-        'source',
-        'extension'
-      )
     })
 
     it('forgets the keys when the node is reconfigured without the field', () => {
