@@ -316,8 +316,7 @@ async function settleCapMailboxes(settles: SettleCapMailbox[]): Promise<void> {
   for (let flush = 0; flush < 5; flush++) await Promise.resolve()
 }
 
-/** Whether the mailbox for `index` still had its terminal frame to hand over. */
-async function restoreCapMailbox(
+async function restoredTurnStaysStreaming(
   conversation: ReturnType<typeof useAgentConversationStore>,
   index: number
 ): Promise<boolean> {
@@ -1041,8 +1040,8 @@ describe('useAgentSession (v1 composition root)', () => {
       const stopped = await armStoppedCapMailboxes(conversation, 33)
       await settleCapMailboxes(stopped)
 
-      expect(await restoreCapMailbox(conversation, 0)).toBe(true)
-      expect(await restoreCapMailbox(conversation, 32)).toBe(false)
+      expect(await restoredTurnStaysStreaming(conversation, 0)).toBe(true)
+      expect(await restoredTurnStaysStreaming(conversation, 32)).toBe(false)
     } finally {
       vi.useRealTimers()
     }
