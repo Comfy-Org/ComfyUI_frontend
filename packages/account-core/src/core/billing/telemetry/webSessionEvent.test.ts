@@ -30,7 +30,7 @@ describe('a web session event', () => {
         operation: 'web_session',
         stage: 'failed',
         outcome: 'pending',
-        code: 'TOKEN_EXCHANGE_FAILED'
+        error_code: 'TOKEN_EXCHANGE_FAILED'
       },
       name: 'billing.web_session.failed'
     }

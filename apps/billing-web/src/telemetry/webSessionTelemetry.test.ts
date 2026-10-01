@@ -76,13 +76,13 @@ describe('a failed session', () => {
         operation: 'web_session',
         stage: 'failed',
         outcome: 'pending',
-        code: 'ACCESS_DENIED'
+        error_code: 'ACCESS_DENIED'
       },
       {
         operation: 'web_session',
         stage: 'failed',
         outcome: 'pending',
-        code: 'TOKEN_EXCHANGE_FAILED'
+        error_code: 'TOKEN_EXCHANGE_FAILED'
       }
     ])
   })
