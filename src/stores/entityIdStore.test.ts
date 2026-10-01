@@ -17,12 +17,14 @@ describe(useEntityIdStore, { tags: ['concurrent-safe'] }, () => {
   }) => {
     const store = useEntityIdStore(pinia)
     const state = store.get(first)
-    mintNodeId(state)
+    mintNodeId(state, 'sequential', new Set())
 
     store.rekey(first, second)
 
     expect(store.get(second)).toBe(state)
-    expect(Number(mintNodeId(store.get(second)))).toBe(2)
+    expect(Number(mintNodeId(store.get(second), 'sequential', new Set()))).toBe(
+      2
+    )
   })
 
   test('replaces compatibility state without sharing the caller object', ({

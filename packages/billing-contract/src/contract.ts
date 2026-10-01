@@ -24,6 +24,7 @@ export const BILLING_CONTRACT_VERSION = 'v1'
 export const BILLING_INTENTS = [
   'pricing',
   'checkout',
+  'top-up',
   'subscription',
   'payment-methods',
   'invoices',

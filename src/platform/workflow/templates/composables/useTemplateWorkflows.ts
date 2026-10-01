@@ -58,6 +58,39 @@ function updateTemplateEducation(
   }
 }
 
+/**
+ * Widens a legacy envelope to the type `loadGraphData` declares.
+ *
+ * Nothing is lost here but the type. `fetchTemplateJson` has already rejected
+ * anything that cannot load, and `loadGraphData` tolerates the rest at
+ * runtime: every field the strict schema adds is read through optional
+ * chaining (`definitions?.subgraphs ?? []`, `extra?.ds`), and
+ * `LGraph.configure` needs only the `id` and `type` that
+ * `zLegacyLoadableWorkflow` guarantees.
+ *
+ * The underlying mismatch predates this slice. Before it, the payload reached
+ * `loadGraphData` as `any` straight from `response.json()`, so the parameter's
+ * strict type was never checked against what callers actually passed. Giving
+ * the payload a real type is what made the gap visible.
+ *
+ * Declaring the parameter as the union instead was measured, not assumed: it
+ * raises eight narrowing sites inside `app.ts`, all at reads that are already
+ * tolerant, and it widens `usePaste`'s `isWorkflow`, which derives its asserted
+ * type from `Parameters<typeof app.loadGraphData>[0]` while keeping the same
+ * runtime checks. That belongs in its own change against the loader.
+ *
+ * Containing the assertion in one documented place follows NODE-OUTPUTS-0007
+ * (Accepted), which accepts a single documented cast at a `.passthrough()`
+ * boundary. It is deliberately not the translating loading adapter that
+ * ECS-0008 and ECS-LINK-PRESENTATION-0028 describe; both are Proposed, and
+ * that shape is a change to the loader rather than to this slice.
+ */
+function asLoadableGraphData(
+  json: ComfyWorkflowJSON | LegacyLoadableWorkflow
+): ComfyWorkflowJSON {
+  return json as ComfyWorkflowJSON
+}
+
 export function useTemplateWorkflows() {
   const { t } = useI18n()
   const workflowTemplatesStore = useWorkflowTemplatesStore()
@@ -273,7 +306,7 @@ export function useTemplateWorkflows() {
   ): Promise<TemplateLoadResult> {
     try {
       const loadedWorkflow = await app.loadGraphData(
-        json as ComfyWorkflowJSON,
+        asLoadableGraphData(json),
         true,
         true,
         workflowName,
