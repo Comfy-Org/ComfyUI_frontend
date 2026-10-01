@@ -88,7 +88,7 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
     await expect(node.getByTestId(TestIds.errors.imageLoadError)).toBeHidden()
   })
 
-  test('rejects an extensionless video before changing the widget', async ({
+  test('rejects an extensionless video and still uploads a valid one', async ({
     comfyPage
   }) => {
     await comfyPage.menu.topbar.newWorkflowButton.click()
@@ -99,29 +99,71 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
       await comfyPage.nodeOps.getNodeRefsByType('LoadVideo')
     expect(loadVideoNode, 'Load Video node was added').toBeDefined()
     const videoWidget = await loadVideoNode.getWidgetByName('file')
-    const initialValue = await videoWidget.getValue()
     let uploadRequests = 0
     await comfyPage.page.route('**/upload/image', async (route) => {
       uploadRequests += 1
-      await route.abort()
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ name: 'clip.mp4' })
+      })
     })
 
-    await comfyPage.vueNodes
+    await test.step('claim a rejected canvas paste without creating an empty node', async () => {
+      await comfyPage.canvas.focus()
+      await loadVideoNode.click('title')
+      await comfyPage.page.evaluate(() => {
+        const dataTransfer = new DataTransfer()
+        dataTransfer.items.add(
+          new File(['video'], 'extensionless', { type: 'video/mp4' })
+        )
+        document.activeElement?.dispatchEvent(
+          new ClipboardEvent('paste', {
+            clipboardData: dataTransfer,
+            bubbles: true,
+            cancelable: true
+          })
+        )
+      })
+
+      await expect(
+        comfyPage.page.getByText(
+          'Video files need a filename extension. Rename the file (for example, clip.mp4) and try again.',
+          { exact: true }
+        )
+      ).toBeVisible()
+      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+    })
+
+    const fileInput = comfyPage.vueNodes
       .getNodeByTitle('Load Video')
       .locator('input[type="file"]')
-      .setInputFiles({
+
+    await test.step('reject the extensionless video with actionable feedback', async () => {
+      await fileInput.setInputFiles({
         name: 'extensionless',
         mimeType: 'video/mp4',
         buffer: Buffer.from('video')
       })
 
-    await expect(
-      comfyPage.page.getByText('Video files must have a filename extension.', {
-        exact: true
+      await expect(
+        comfyPage.page.getByText(
+          'Video files need a filename extension. Rename the file (for example, clip.mp4) and try again.',
+          { exact: true }
+        )
+      ).toBeVisible()
+    })
+
+    await test.step('upload a valid video through the same control', async () => {
+      await fileInput.setInputFiles({
+        name: 'clip.mp4',
+        mimeType: 'video/mp4',
+        buffer: Buffer.from('video')
       })
-    ).toBeVisible()
-    await expect.poll(() => videoWidget.getValue()).toBe(initialValue)
-    expect(uploadRequests).toBe(0)
+
+      await expect.poll(() => videoWidget.getValue()).toBe('clip.mp4')
+      expect(uploadRequests).toBe(1)
+    })
   })
 
   test('shows a spinner during upload', async ({ comfyPage }) => {
