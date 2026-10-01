@@ -313,6 +313,26 @@ describe('useVueNodeResizeTracking', () => {
     expect(testState.syncSlotOffsets).toHaveBeenCalledWith(nodeId)
   })
 
+  it('reports the full measured height for headerless nodes', () => {
+    const nodeId = toNodeId('headerless-node')
+    const element = document.createElement('div')
+    element.dataset.noTitle = ''
+    const { entry } = createResizeEntry({
+      element,
+      nodeId,
+      width: 75,
+      height: 26
+    })
+
+    resizeObserverState.callback?.([entry], createObserverMock())
+
+    expect(testState.reportContentSize).toHaveBeenCalledWith(
+      ROOT_GRAPH_ID,
+      nodeId,
+      { width: 75, height: 26 }
+    )
+  })
+
   it('re-observes hidden elements without re-reporting an unchanged size', async () => {
     const nodeId = toNodeId('hidden-node')
     const { entry } = createResizeEntry({ nodeId })
