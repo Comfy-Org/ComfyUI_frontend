@@ -9,7 +9,7 @@ interface CanvasOperationBase {
   run: () => void
 }
 
-export type CanvasOperation =
+type CanvasOperation =
   | (CanvasOperationBase & { key?: never; isCurrent?: never })
   | (CanvasOperationBase & { key: string; isCurrent: () => boolean })
 
