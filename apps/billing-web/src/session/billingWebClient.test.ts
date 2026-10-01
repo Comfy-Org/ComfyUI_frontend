@@ -18,6 +18,10 @@ vi.mock(import('@/entry/workspaceBinding'), () => ({
   boundWorkspaceId: () => h.boundWorkspaceId
 }))
 
+vi.mock(import('@/config/stripeKey'), () => ({
+  billingWebStripeKey: () => undefined
+}))
+
 vi.mock(import('@datadog/browser-rum'))
 
 const CREDENTIAL: AccountCredential = {
@@ -178,46 +182,66 @@ describe('SDK operation telemetry', () => {
     })
   })
 
-  it('reports an issued operation from its start to its success, as the SDK on billing web', async () => {
-    stubBillingRoutes({ status: 'succeeded' })
-    const client = createBillingWebClient(authenticatedSession())
-
-    await client.lifecycle.begin('subscription', issueOperation)
-    await client.lifecycle.settled('op_1')
-
-    const sent = vi
-      .mocked(datadogRum.addAction)
-      .mock.calls.map(([name, context]) => ({ name, context }))
-    expect(sent).toEqual([
-      {
-        name: 'billing.operation.started',
-        context: {
-          operation: 'operation',
-          stage: 'started',
-          outcome: 'pending',
-          operation_type: 'subscription',
-          billing_op_id: 'op_1',
-          presentation: 'embedded',
-          resumed: false,
-          billing_client: 'sdk',
-          billing_surface: 'billing_web'
-        }
-      },
-      {
-        name: 'billing.operation.succeeded',
-        context: {
-          operation: 'operation',
-          stage: 'succeeded',
-          outcome: 'success',
-          operation_type: 'subscription',
-          billing_op_id: 'op_1',
-          presentation: 'embedded',
-          resumed: false,
-          duration_ms: expect.any(Number),
-          billing_client: 'sdk',
-          billing_surface: 'billing_web'
-        }
+  it.for<{
+    name: string
+    serverStatus: Record<string, unknown>
+    terminal: Record<string, unknown>
+  }>([
+    {
+      name: 'a success',
+      serverStatus: { status: 'succeeded' },
+      terminal: { stage: 'succeeded', outcome: 'success' }
+    },
+    {
+      name: 'a decline, with the bank reason',
+      serverStatus: { status: 'failed', decline_reason: 'card_declined' },
+      terminal: {
+        stage: 'failed',
+        outcome: 'failure',
+        failure_category: 'provider_decline',
+        decline_reason: 'card_declined'
       }
-    ])
-  })
+    },
+    {
+      name: 'an operation the server parks for reconciliation',
+      serverStatus: { status: 'reconciliation_needed' },
+      terminal: {
+        stage: 'failed',
+        outcome: 'failure',
+        failure_category: 'reconciliation_needed'
+      }
+    }
+  ])(
+    'reports an issued operation from its start to $name, as the SDK on billing web',
+    async ({ serverStatus, terminal }) => {
+      stubBillingRoutes(serverStatus)
+      const client = createBillingWebClient(authenticatedSession())
+
+      await client.lifecycle.begin('subscription', issueOperation)
+      await client.lifecycle.settled('op_1')
+
+      const common = {
+        operation: 'operation',
+        operation_type: 'subscription',
+        billing_op_id: 'op_1',
+        presentation: 'hosted',
+        resumed: false,
+        billing_client: 'sdk',
+        billing_surface: 'billing_web'
+      }
+      const sent = vi
+        .mocked(datadogRum.addAction)
+        .mock.calls.map(([name, context]) => ({ name, context }))
+      expect(sent).toEqual([
+        {
+          name: 'billing.operation.started',
+          context: { ...common, stage: 'started', outcome: 'pending' }
+        },
+        {
+          name: `billing.operation.${terminal.stage}`,
+          context: { ...common, ...terminal, duration_ms: expect.any(Number) }
+        }
+      ])
+    }
+  )
 })

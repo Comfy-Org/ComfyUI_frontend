@@ -17,6 +17,7 @@ export {
   getCloudAppBillingTelemetryEventPayload
 } from './payload.js'
 export { BILLING_TELEMETRY_EVENTS } from './eventNames.js'
+export { toBillingTelemetryEvent } from './operationLifecycleEvent.js'
 export type {
   CheckoutAssignmentStatus,
   CheckoutEntryFlow,
