@@ -19,8 +19,7 @@ const ROUTER_SCHEMAS =
   'https://raw.githubusercontent.com/Comfy-Org/docs/main/router-schemas'
 const FETCH_ATTEMPTS = 3
 const FETCH_TIMEOUT_MS = 4_000
-const isCI = () =>
-  ['1', 'true'].includes(process.env.CI?.toLowerCase() ?? '')
+const isCI = () => ['1', 'true'].includes(process.env.CI?.toLowerCase() ?? '')
 
 // The API spec and the docs are the source of truth and live outside this
 // repository, so the drift checks reach the network. They run in CI and skip
@@ -138,7 +137,7 @@ describe('Router provider coverage', () => {
           .sort()
       )
     ).toEqual(ROUTER_PROVIDER_COVERAGE.map((row) => [...row.providers].sort()))
-  })
+  }, 15_000)
 
   it('lists every model the docs show with an alternate provider', async (ctx) => {
     if (skipReason) return ctx.skip(skipReason)
@@ -162,7 +161,7 @@ describe('Router provider coverage', () => {
         name: row.docsName ?? row.name
       })).sort(byDocsUrl)
     )
-  })
+  }, 15_000)
 
   it('previews catalog models that only Comfy serves', async (ctx) => {
     if (skipReason) return ctx.skip(skipReason)
@@ -178,5 +177,5 @@ describe('Router provider coverage', () => {
       expect(catalog).toContain(`[${name}](${path})`)
       expect(coverage).not.toContain(path)
     }
-  })
+  }, 15_000)
 })
