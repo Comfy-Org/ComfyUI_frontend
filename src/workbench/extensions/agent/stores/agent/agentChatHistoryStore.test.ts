@@ -182,14 +182,14 @@ describe('useAgentChatHistoryStore', () => {
     expect(store.sessions.map(({ id }) => id)).toEqual(['a'])
   })
 
-  it('patches a cached session title in place without touching others', () => {
+  it('overlays a derived session title without changing the server snapshot', () => {
     const store = useAgentChatHistoryStore()
     store.replaceAll([session('a', 1), session('b', 2)])
 
     store.patchTitle('a', 'Clear entire canvas')
 
     expect(store.sessions.map((s) => ({ id: s.id, title: s.title }))).toEqual([
-      { id: 'a', title: 'Clear entire canvas' },
+      { id: 'a', title: 'a' },
       { id: 'b', title: 'b' }
     ])
   })
@@ -216,13 +216,25 @@ describe('useAgentChatHistoryStore', () => {
     expect(store.sessions[0]?.title).toBe('a')
   })
 
-  it('is a no-op when the session is not yet cached', () => {
+  it('applies a derived title when the session arrives in a later refresh', () => {
     const store = useAgentChatHistoryStore()
-    store.replaceAll([session('a', 1)])
-
     store.patchTitle('unknown-thread', 'Clear entire canvas')
+    store.replaceAll([session('unknown-thread', 1)])
 
-    expect(store.sessions.map((s) => s.id)).toEqual(['a'])
+    expect(store.grouped.earlier[0]).toMatchObject({
+      id: 'unknown-thread',
+      title: 'Clear entire canvas'
+    })
+  })
+
+  it('keeps a derived title across server-list refreshes', () => {
+    const store = useAgentChatHistoryStore()
+    store.replaceAll([session('a', NOW - 1_000)])
+    store.patchTitle('a', 'Clear entire canvas')
+
+    store.replaceAll([session('a', NOW - 1_000)])
+
+    expect(store.grouped.today[0]?.title).toBe('Clear entire canvas')
   })
 
   it('removes a session with no server request', () => {

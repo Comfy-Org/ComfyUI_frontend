@@ -65,6 +65,7 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
     StorageKeys.agentChatTitles(workspaceId),
     {}
   )
+  const derivedTitles = ref<Partial<Record<string, string>>>({})
   const deletedIds = useLocalStorage<string[]>(
     StorageKeys.agentDeletedThreads(workspaceId),
     []
@@ -73,7 +74,9 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
   const titled = computed(() =>
     sessions.value.map((session) => {
       const custom = customTitles.value[session.id]
-      return custom === undefined ? session : { ...session, title: custom }
+      const derived = derivedTitles.value[session.id]
+      const title = custom ?? derived
+      return title === undefined ? session : { ...session, title }
     })
   )
 
@@ -106,18 +109,13 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
     )
   }
 
-  // Optimistic cache patch for a title the caller already knows (e.g. the
-  // active chat's displayed title), so the history list doesn't flash a
-  // stale title until the next full `replaceAll` refetch catches up. A
-  // no-op when the thread isn't cached yet; the next refetch adds it.
+  // Ephemeral overlay for a title derived from the active transcript. Keeping
+  // it outside the server snapshot lets it survive refreshes and threads that
+  // have not appeared in the list yet.
   function patchTitle(id: string, title: string): void {
     const trimmed = title.trim()
     if (trimmed === '') return
-    sessions.value = sessions.value.map((session) =>
-      session.id === id && session.title !== trimmed
-        ? { ...session, title: trimmed }
-        : session
-    )
+    derivedTitles.value = { ...derivedTitles.value, [id]: trimmed }
   }
 
   function setActive(id: string | null): void {
