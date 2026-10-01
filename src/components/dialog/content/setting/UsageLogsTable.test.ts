@@ -25,8 +25,10 @@ vi.mock(import('@/services/customerEventsService'))
 
 vi.mock(import('@/platform/telemetry'))
 
+const CONFIRMED_AT_MS = Date.parse('2024-06-15T12:30:00Z')
+
 const mockPendingTopup = vi.hoisted(() => ({
-  isPendingTopupCompleted: vi.fn().mockReturnValue(true)
+  consumeCompletedTopup: vi.fn().mockReturnValue({ startedAtMs: Date.now() })
 }))
 vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
   usePendingTopup: () => mockPendingTopup
@@ -392,7 +394,9 @@ describe('UsageLogsTable', () => {
       useBillingRouting().shouldUseWorkspaceBilling = computed(
         () => workspaceBilling.value
       )
-      mockPendingTopup.isPendingTopupCompleted.mockReturnValue(true)
+      mockPendingTopup.consumeCompletedTopup.mockReturnValue({
+        startedAtMs: Date.now()
+      })
       let resolveLegacy!: (value: ReturnType<typeof makeEventsResponse>) => void
       vi.mocked(useCustomerEventsService().getMyEvents).mockReturnValue(
         new Promise((resolve) => {
@@ -428,7 +432,7 @@ describe('UsageLogsTable', () => {
       resolveLegacy(legacyResponse)
 
       await waitFor(() => {
-        expect(mockPendingTopup.isPendingTopupCompleted).toHaveBeenCalledWith(
+        expect(mockPendingTopup.consumeCompletedTopup).toHaveBeenCalledWith(
           legacyResponse.events
         )
         expect(useTelemetry()?.trackApiCreditTopupSucceeded).toHaveBeenCalled()
@@ -437,21 +441,29 @@ describe('UsageLogsTable', () => {
 
     it.for([
       {
-        name: 'a completed legacy top-up closes as succeeded',
-        completed: true,
+        name: 'a completed legacy top-up closes as succeeded, measured from its start',
+        completedTopup: { startedAtMs: CONFIRMED_AT_MS - 90_000 },
         expectedEvents: [
-          [{ operation: 'topup', stage: 'succeeded', outcome: 'success' }]
+          [
+            {
+              operation: 'topup',
+              stage: 'succeeded',
+              outcome: 'success',
+              duration_ms: 90_000
+            }
+          ]
         ]
       },
       {
         name: 'no completed top-up reports nothing',
-        completed: false,
+        completedTopup: null,
         expectedEvents: []
       }
     ])(
       'reports top-up completion to the billing funnel: $name',
-      async ({ completed, expectedEvents }) => {
-        mockPendingTopup.isPendingTopupCompleted.mockReturnValue(completed)
+      async ({ completedTopup, expectedEvents }) => {
+        vi.spyOn(Date, 'now').mockReturnValue(CONFIRMED_AT_MS)
+        mockPendingTopup.consumeCompletedTopup.mockReturnValue(completedTopup)
 
         await renderLoaded()
 
@@ -464,11 +476,11 @@ describe('UsageLogsTable', () => {
     )
 
     it('skips top-up telemetry when no completion is pending', async () => {
-      mockPendingTopup.isPendingTopupCompleted.mockReturnValue(false)
+      mockPendingTopup.consumeCompletedTopup.mockReturnValue(null)
 
       await renderLoaded()
 
-      expect(mockPendingTopup.isPendingTopupCompleted).toHaveBeenCalledWith(
+      expect(mockPendingTopup.consumeCompletedTopup).toHaveBeenCalledWith(
         mockEventsResponse.events
       )
       expect(
@@ -628,11 +640,13 @@ describe('UsageLogsTable', () => {
 
     it('runs top-up completion telemetry off the reader page', async () => {
       onTheRail()
-      mockPendingTopup.isPendingTopupCompleted.mockReturnValue(true)
+      mockPendingTopup.consumeCompletedTopup.mockReturnValue({
+        startedAtMs: Date.now()
+      })
 
       await renderLoaded()
 
-      expect(mockPendingTopup.isPendingTopupCompleted).toHaveBeenCalledWith(
+      expect(mockPendingTopup.consumeCompletedTopup).toHaveBeenCalledWith(
         railResponse.events
       )
       expect(useTelemetry()?.trackApiCreditTopupSucceeded).toHaveBeenCalled()

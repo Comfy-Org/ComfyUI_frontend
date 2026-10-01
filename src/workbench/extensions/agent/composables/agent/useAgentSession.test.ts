@@ -226,6 +226,11 @@ const doneIn = (threadId: string, id: string) =>
     type: 'agent_message_done',
     data: { message_id: id, thread_id: threadId, usage: null }
   })
+
+function emitDeltaBurst(emit: (raw: unknown) => void, count: number): void {
+  for (let index = 0; index < count; index++)
+    emit(delta('msg-1', `chunk-${index} `))
+}
 const historyRow = (
   seq: number,
   role: 'user' | 'assistant',
@@ -263,6 +268,91 @@ function admissionError(
     body,
     retryAfterSeconds
   )
+}
+
+type SettleCapMailbox = (history: AgentMessages) => void
+
+const capThread = (index: number) => `cap-thread-${index}`
+const capMessage = (index: number) => `cap-message-${index}`
+
+/**
+ * Arms `count` hydrates that never resolve, lets each hand off to a mailbox
+ * holding its own terminal frame, and stops every owner. Returns the resolvers
+ * so the caller can settle them all at once -- which is the moment the cap can
+ * finally evict, since nothing pending is a candidate.
+ */
+async function armStoppedCapMailboxes(
+  conversation: ReturnType<typeof useAgentConversationStore>,
+  count: number
+): Promise<SettleCapMailbox[]> {
+  const settles: SettleCapMailbox[] = []
+  for (let index = 0; index < count; index++) {
+    const thread = capThread(index)
+    let resolveHistory: SettleCapMailbox | undefined
+    const rest = fakeRest({
+      getMessages: vi.fn(
+        () =>
+          new Promise<AgentMessages>((resolve) => {
+            resolveHistory = resolve
+          })
+      )
+    })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    conversation.setThreadId(thread)
+    session.start()
+    await vi.waitFor(() => expect(rest.getMessages).toHaveBeenCalledOnce())
+    await vi.advanceTimersByTimeAsync(30_001)
+    emit(doneIn(thread, capMessage(index)))
+    session.stop()
+    assert(resolveHistory !== undefined)
+    settles.push(resolveHistory)
+  }
+  return settles
+}
+
+async function settleCapMailboxes(settles: SettleCapMailbox[]): Promise<void> {
+  for (const settle of settles) settle([])
+  for (let flush = 0; flush < 5; flush++) await Promise.resolve()
+}
+
+async function restoredTurnStaysStreaming(
+  conversation: ReturnType<typeof useAgentConversationStore>,
+  index: number
+): Promise<boolean> {
+  const thread = capThread(index)
+  conversation.setThreadId(thread)
+  const successor = useAgentSession({
+    rest: fakeRest({
+      getMessages: vi.fn(
+        async (): Promise<AgentMessages> => [
+          {
+            ...historyRow(1, 'user', `cap-turn-${index}`, 'go'),
+            thread_id: thread
+          },
+          {
+            ...historyRow(
+              2,
+              'assistant',
+              `cap-turn-${index}`,
+              '',
+              capMessage(index)
+            ),
+            thread_id: thread,
+            content: {},
+            status: 'streaming'
+          }
+        ]
+      )
+    }),
+    events: fakeEvents().source
+  })
+  successor.start()
+  await vi.advanceTimersByTimeAsync(0)
+  const streaming = successor.isStreaming.value
+  successor.stop()
+  conversation.abortActiveTurn()
+  return streaming
 }
 
 describe('useAgentSession (v1 composition root)', () => {
@@ -463,6 +553,939 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(conversation.activeTurnId).toBe('turn-live')
 
     await Promise.resolve()
+    expect(conversation.activeTurnId).toBeNull()
+  })
+
+  // PM-1776 / PM-1682. (b4) above is the minimize, which abandons the turn
+  // locally while the server keeps running it; this is the reopen.
+  it('(b4a) a reopen over a turn the server still runs restores it as live', async () => {
+    const conversation = useAgentConversationStore()
+    const rest = fakeRest({
+      getMessages: vi.fn(
+        async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+          {
+            ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+            content: {},
+            status: 'streaming'
+          }
+        ]
+      )
+    })
+
+    const minimized = useAgentSession({ rest, events: fakeEvents().source })
+    minimized.start()
+    await minimized.sendMessage('add an audio output node')
+    minimized.stop()
+    await Promise.resolve()
+    expect(conversation.activeTurnId).toBeNull()
+
+    const reopened = useAgentSession({ rest, events: fakeEvents().source })
+    reopened.start()
+
+    await vi.waitFor(() => expect(reopened.isStreaming.value).toBe(true))
+    expect(conversation.activeTurnId).toBe('msg-1')
+  })
+
+  // The other half of (b4a): `subscribe()` runs before the GET resolves, and
+  // the reopen dropped its background turns, so a done arriving in that window
+  // has nowhere to land. Lost, it would leave the restored turn running for
+  // good -- Stop answered 409 and swallowed, Send never offered.
+  it('(b4b) a done that lands while the reopen is hydrating still settles the turn', async () => {
+    const conversation = useAgentConversationStore()
+    let deliverHistory: ((history: AgentMessages) => void) | undefined
+    const rest = fakeRest({
+      getMessages: vi.fn(
+        () =>
+          new Promise<AgentMessages>((resolve) => {
+            deliverHistory = resolve
+          })
+      )
+    })
+
+    const minimized = useAgentSession({ rest, events: fakeEvents().source })
+    minimized.start()
+    await minimized.sendMessage('add an audio output node')
+    minimized.stop()
+    await Promise.resolve()
+
+    const { source, emit } = fakeEvents()
+    const reopened = useAgentSession({ rest, events: source })
+    reopened.start()
+
+    emit(done('msg-1'))
+    assert(deliverHistory !== undefined)
+    deliverHistory([
+      historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+      {
+        ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+        content: {},
+        status: 'streaming'
+      }
+    ])
+
+    await vi.waitFor(() =>
+      expect(conversation.messages.map((message) => message.id)).toEqual([
+        'turn-1'
+      ])
+    )
+    expect(reopened.isStreaming.value).toBe(false)
+    expect(conversation.activeTurnId).toBeNull()
+  })
+
+  it('(b4u) routes a terminal frame to a background turn before hydration capture', async () => {
+    const conversation = useAgentConversationStore()
+    const rest = fakeRest({ getMessages: vi.fn(hangingGetMessages) })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+
+    conversation.setThreadId('th-1')
+    conversation.startTurn('msg-1' as TurnId)
+    conversation.stashActiveTurn()
+    void session.loadThread('th-1')
+    conversation.setThreadId('th-2')
+
+    emit(done('msg-1'))
+
+    expect(conversation.liveTurns()).toEqual([])
+  })
+
+  // (b4u)'s same-thread sibling. The store deliberately leaves an older stash
+  // routable when a newer turn takes the slot on the thread being displayed, so
+  // the frame has a transport here too -- capturing it defers delivery onto a
+  // drain that a mailbox expiry can cancel outright.
+  it('(b4v) routes a terminal frame to a same-thread stash before hydration capture', async () => {
+    const conversation = useAgentConversationStore()
+    const rest = fakeRest({ getMessages: vi.fn(hangingGetMessages) })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+
+    conversation.setThreadId('th-1')
+    conversation.startTurn('msg-1' as TurnId)
+    conversation.stashActiveTurn()
+    void session.loadThread('th-1')
+    conversation.startTurn('msg-2' as TurnId)
+
+    emit(done('msg-1'))
+
+    expect(conversation.liveTurns()).toEqual([
+      { threadId: 'th-1', messageId: 'msg-2' }
+    ])
+  })
+
+  // Reopening over a turn this client never started is the state that buffers a
+  // frame: nothing is live locally, so `ingest` has nowhere to route it. A
+  // local turn would not do -- a stash keeps its transport, and a frame it can
+  // still receive is delivered rather than held ((b4v)).
+  it('(b4n) isolates a failed replay frame and still delivers the terminal frame after it', async () => {
+    const conversation = useAgentConversationStore()
+    let deliverHistory: ((history: AgentMessages) => void) | undefined
+    const rest = fakeRest({
+      getMessages: vi.fn(
+        () =>
+          new Promise<AgentMessages>((resolve) => {
+            deliverHistory = resolve
+          })
+      )
+    })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest,
+      events: source,
+      workflow: {
+        current: () => undefined,
+        adopted: () => undefined,
+        activeTab: () => {
+          throw new Error('panel was torn down')
+        }
+      }
+    })
+    conversation.setThreadId('th-1')
+    session.start()
+    await vi.waitFor(() => expect(rest.getMessages).toHaveBeenCalledOnce())
+
+    emit(
+      wire({
+        type: 'agent_active_tab',
+        data: {
+          thread_id: 'th-1',
+          message_id: 'msg-1',
+          workflow_id: 'wf-1'
+        }
+      })
+    )
+    emit(done('msg-1'))
+    assert(deliverHistory !== undefined)
+    deliverHistory([
+      historyRow(1, 'user', 'turn-1', 'go'),
+      {
+        ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+        content: {},
+        status: 'streaming'
+      }
+    ])
+
+    await vi.waitFor(() => expect(conversation.activeTurnId).toBeNull())
+    expect(session.isStreaming.value).toBe(false)
+    expect(
+      vi
+        .mocked(reportError)
+        .mock.calls.filter(
+          ([, metadata]) =>
+            metadata.errorType === 'agent_hydration_replay_failed'
+        )
+    ).toHaveLength(1)
+    expect(reportError).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ errorType: 'agent_history_load_failed' })
+    )
+  })
+
+  // A buffered frame defers, it does not disappear: the hydrate that armed the
+  // buffer may never reach its own replay, and the background turn waiting on
+  // that done is the one `resumeBackgroundTurn` would otherwise restore as
+  // permanently running.
+  it('(b4c) a superseded hydrate still delivers the done its stashed turn waits on', async () => {
+    const conversation = useAgentConversationStore()
+    let deliverHistory: ((history: AgentMessages) => void) | undefined
+    const rest = fakeRest({
+      getMessages: vi.fn(
+        () =>
+          new Promise<AgentMessages>((resolve) => {
+            deliverHistory = resolve
+          })
+      )
+    })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    await session.sendMessage('add an audio output node')
+    emit(thinking('msg-1', 'planning'))
+    expect(session.isStreaming.value).toBe(true)
+
+    // Re-selecting the open thread stashes the live turn and starts a hydrate;
+    // New chat abandons that hydrate while its GET is still in flight.
+    const reselect = session.loadThread('th-1')
+    session.newChat('new_chat_button')
+
+    emit(done('msg-1'))
+    assert(deliverHistory !== undefined)
+    deliverHistory([])
+    await reselect
+
+    conversation.setThreadId('th-1')
+    conversation.resumeBackgroundTurn()
+
+    expect(conversation.isStreaming).toBe(false)
+  })
+
+  // A panel can close after the terminal frame was buffered but before its
+  // history request installs a transport. The successor must own that frame:
+  // replaying it during stop has no active turn to settle.
+  it('(b4d) hands a buffered done to the successor when the panel closes mid-fetch', async () => {
+    const conversation = useAgentConversationStore()
+    const rest = fakeRest({
+      getMessages: vi.fn(() => new Promise<AgentMessages>(() => {}))
+    })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    await session.sendMessage('go')
+    emit(thinking('msg-1', 'planning'))
+
+    void session.loadThread('th-1')
+    emit(done('msg-1'))
+    session.stop()
+    await Promise.resolve()
+    expect(conversation.activeTurnId).toBeNull()
+
+    const reopened = useAgentSession({
+      rest: fakeRest({
+        getMessages: vi.fn(
+          async (): Promise<AgentMessages> => [
+            historyRow(1, 'user', 'turn-1', 'go'),
+            {
+              ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+              content: {},
+              status: 'streaming'
+            }
+          ]
+        )
+      }),
+      events: fakeEvents().source
+    })
+    reopened.start()
+
+    await vi.waitFor(() => {
+      expect(conversation.messages.map((message) => message.id)).toEqual([
+        'turn-1'
+      ])
+      expect(reopened.isStreaming.value).toBe(false)
+      expect(conversation.activeTurnId).toBeNull()
+    })
+  })
+
+  it('(b4j) captures a terminal frame after handoff expiry while hydration is pending', async () => {
+    vi.useFakeTimers()
+    try {
+      const conversation = useAgentConversationStore()
+      let deliverHistory: ((history: AgentMessages) => void) | undefined
+      const rest = fakeRest({
+        getMessages: vi.fn(
+          () =>
+            new Promise<AgentMessages>((resolve) => {
+              deliverHistory = resolve
+            })
+        )
+      })
+      const { source, emit } = fakeEvents()
+      conversation.setThreadId('th-1')
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      await vi.waitFor(() => expect(rest.getMessages).toHaveBeenCalledOnce())
+
+      await vi.advanceTimersByTimeAsync(30_001)
+      emit(done('msg-1'))
+      assert(deliverHistory !== undefined)
+      deliverHistory([
+        historyRow(1, 'user', 'turn-1', 'go'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+          content: {},
+          status: 'streaming'
+        }
+      ])
+
+      await vi.waitFor(() => expect(conversation.activeTurnId).toBeNull())
+      expect(session.isStreaming.value).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(b4p) captures a terminal frame past the mailbox TTL while hydration is pending', async () => {
+    vi.useFakeTimers()
+    try {
+      const conversation = useAgentConversationStore()
+      let deliverHistory: ((history: AgentMessages) => void) | undefined
+      const rest = fakeRest({
+        getMessages: vi.fn(
+          () =>
+            new Promise<AgentMessages>((resolve) => {
+              deliverHistory = resolve
+            })
+        )
+      })
+      const { source, emit } = fakeEvents()
+      conversation.setThreadId('th-1')
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      await vi.waitFor(() => expect(rest.getMessages).toHaveBeenCalledOnce())
+
+      // Past the handoff into the mailbox, then past the mailbox's own TTL --
+      // the GET has still not come back, so there is nothing else left to
+      // settle the turn the transcript is about to report as streaming.
+      await vi.advanceTimersByTimeAsync(30_001)
+      await vi.advanceTimersByTimeAsync(5 * 60_000 + 1)
+      emit(done('msg-1'))
+      assert(deliverHistory !== undefined)
+      deliverHistory([
+        historyRow(1, 'user', 'turn-1', 'go'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+          content: {},
+          status: 'streaming'
+        }
+      ])
+
+      await vi.waitFor(() => expect(conversation.activeTurnId).toBeNull())
+      expect(session.isStreaming.value).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(b4o) keeps a pending mailbox when later threads overflow the cap', async () => {
+    vi.useFakeTimers()
+    try {
+      const conversation = useAgentConversationStore()
+      const deliver = new Map<string, (history: AgentMessages) => void>()
+      const rest = fakeRest({
+        getMessages: vi.fn(
+          (threadId: string) =>
+            new Promise<AgentMessages>((resolve) => {
+              deliver.set(threadId, resolve)
+            })
+        )
+      })
+      const { source, emit } = fakeEvents()
+      conversation.setThreadId('th-1')
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      await vi.waitFor(() => expect(rest.getMessages).toHaveBeenCalledOnce())
+
+      // A second session for the filler loads: `loadGeneration` is per
+      // session, so driving them through this one would supersede th-1's own
+      // hydrate and it would never install the transcript at all. Never
+      // started, so `sessionGeneration` stays with the session under test.
+      const filler = useAgentSession({ rest, events: fakeEvents().source })
+      const loads = Array.from({ length: 33 }, (_, i) =>
+        filler.loadThread(`filler-${i}`)
+      )
+      await vi.advanceTimersByTimeAsync(0)
+      await vi.advanceTimersByTimeAsync(30_001)
+      for (const [threadId, resolve] of deliver)
+        if (threadId !== 'th-1') resolve([])
+      await Promise.all(loads)
+
+      conversation.setThreadId('th-1')
+      emit(done('msg-1'))
+      const deliverHistory = deliver.get('th-1')
+      assert(deliverHistory !== undefined)
+      deliverHistory([
+        historyRow(1, 'user', 'turn-1', 'go'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+          content: {},
+          status: 'streaming'
+        }
+      ])
+
+      await vi.waitFor(() => expect(conversation.activeTurnId).toBeNull())
+      expect(session.isStreaming.value).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(b4q) hands a stopped expired mailbox to the successor once it settles', async () => {
+    vi.useFakeTimers()
+    try {
+      const conversation = useAgentConversationStore()
+      let deliverFirst: ((history: AgentMessages) => void) | undefined
+      const first = fakeRest({
+        getMessages: vi.fn(
+          () =>
+            new Promise<AgentMessages>((resolve) => {
+              deliverFirst = resolve
+            })
+        )
+      })
+      const { source, emit } = fakeEvents()
+      conversation.setThreadId('th-1')
+      const stopping = useAgentSession({ rest: first, events: source })
+      stopping.start()
+      await vi.waitFor(() => expect(first.getMessages).toHaveBeenCalledOnce())
+
+      // Into the mailbox, holding a terminal frame, then past the TTL that
+      // its own pending GET makes it skip -- so settling is the only thing
+      // left that can unregister it.
+      await vi.advanceTimersByTimeAsync(30_001)
+      emit(done('msg-1'))
+      await vi.advanceTimersByTimeAsync(5 * 60_000 + 1)
+      stopping.stop()
+      assert(deliverFirst !== undefined)
+      deliverFirst([])
+      await vi.advanceTimersByTimeAsync(0)
+
+      // The successor restores that same turn as streaming, so the captured
+      // `done` is owed to it -- dropping it is the stranded turn this whole
+      // change is against, and (b4d) states the same invariant.
+      const second = fakeRest({
+        getMessages: vi.fn(
+          async (): Promise<AgentMessages> => [
+            historyRow(1, 'user', 'turn-1', 'go'),
+            {
+              ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+              content: {},
+              status: 'streaming'
+            }
+          ]
+        )
+      })
+      conversation.setThreadId('th-1')
+      const successor = useAgentSession({
+        rest: second,
+        events: fakeEvents().source
+      })
+      successor.start()
+      await vi.waitFor(() => expect(second.getMessages).toHaveBeenCalledOnce())
+      await vi.advanceTimersByTimeAsync(0)
+
+      await vi.waitFor(() => expect(conversation.activeTurnId).toBeNull())
+      expect(successor.isStreaming.value).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  // The other side of (b4q): parking those frames restores the bounds that
+  // were suspended while the GET was outstanding, so the mailbox they wait in
+  // is a bounded one rather than a permanent registration.
+  it('(b4r) expires a stopped mailbox on the TTL its settlement re-arms', async () => {
+    vi.useFakeTimers()
+    try {
+      const conversation = useAgentConversationStore()
+      let deliverFirst: ((history: AgentMessages) => void) | undefined
+      const first = fakeRest({
+        getMessages: vi.fn(
+          () =>
+            new Promise<AgentMessages>((resolve) => {
+              deliverFirst = resolve
+            })
+        )
+      })
+      const { source, emit } = fakeEvents()
+      conversation.setThreadId('th-1')
+      const stopping = useAgentSession({ rest: first, events: source })
+      stopping.start()
+      await vi.waitFor(() => expect(first.getMessages).toHaveBeenCalledOnce())
+
+      await vi.advanceTimersByTimeAsync(30_001)
+      emit(done('msg-1'))
+      await vi.advanceTimersByTimeAsync(5 * 60_000 + 1)
+      stopping.stop()
+      assert(deliverFirst !== undefined)
+      deliverFirst([])
+      await vi.advanceTimersByTimeAsync(5 * 60_000 + 1)
+
+      const second = fakeRest({
+        getMessages: vi.fn(
+          async (): Promise<AgentMessages> => [
+            historyRow(1, 'user', 'turn-1', 'go'),
+            {
+              ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+              content: {},
+              status: 'streaming'
+            }
+          ]
+        )
+      })
+      conversation.setThreadId('th-1')
+      const successor = useAgentSession({
+        rest: second,
+        events: fakeEvents().source
+      })
+      successor.start()
+      await vi.waitFor(() => expect(second.getMessages).toHaveBeenCalledOnce())
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(conversation.activeTurnId).toBe('msg-1')
+      expect(successor.isStreaming.value).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(b4t) evicts the oldest stopped mailbox when pending hydrates settle over the cap', async () => {
+    vi.useFakeTimers()
+    try {
+      const conversation = useAgentConversationStore()
+      const stopped = await armStoppedCapMailboxes(conversation, 33)
+      await settleCapMailboxes(stopped)
+
+      expect(await restoredTurnStaysStreaming(conversation, 0)).toBe(true)
+      expect(await restoredTurnStaysStreaming(conversation, 32)).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(b4k) retires stopped thread A while its successor hydrates thread B', async () => {
+    vi.useFakeTimers()
+    try {
+      const conversation = useAgentConversationStore()
+      conversation.setThreadId('thread-a')
+      const historyFor = (threadId: string): AgentMessages => {
+        const suffix = threadId === 'thread-a' ? 'a' : 'b'
+        return [
+          {
+            ...historyRow(1, 'user', `turn-${suffix}`, 'go'),
+            thread_id: threadId
+          },
+          {
+            ...historyRow(
+              2,
+              'assistant',
+              `turn-${suffix}`,
+              '',
+              `msg-${suffix}`
+            ),
+            thread_id: threadId,
+            content: {},
+            status: 'streaming'
+          }
+        ]
+      }
+      let historyCalls = 0
+      const rest = fakeRest({
+        getMessages: vi.fn((threadId: string) =>
+          threadId === 'thread-a' && ++historyCalls === 1
+            ? new Promise<AgentMessages>(() => {})
+            : Promise.resolve(historyFor(threadId))
+        )
+      })
+      const first = useAgentSession({ rest, events: fakeEvents().source })
+      first.start()
+      first.stop()
+      await Promise.resolve()
+
+      conversation.setThreadId('thread-b')
+      const { source, emit } = fakeEvents()
+      const reopened = useAgentSession({ rest, events: source })
+      reopened.start()
+      await vi.waitFor(() => expect(conversation.activeTurnId).toBe('msg-b'))
+
+      emit(doneIn('thread-a', 'msg-a'))
+      await vi.advanceTimersByTimeAsync(30_001)
+      await reopened.loadThread('thread-a')
+
+      expect(conversation.activeTurnId).toBeNull()
+      expect(reopened.isStreaming.value).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(b4l) preserves a same-thread handoff through 29,999 ms', async () => {
+    vi.useFakeTimers()
+    try {
+      const conversation = useAgentConversationStore()
+      const rest = fakeRest({
+        getMessages: vi
+          .fn<(threadId: string) => Promise<AgentMessages>>()
+          .mockImplementationOnce(() => new Promise(() => {}))
+          .mockResolvedValueOnce([
+            historyRow(1, 'user', 'turn-1', 'go'),
+            {
+              ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+              content: {},
+              status: 'streaming'
+            }
+          ])
+      })
+      const { source, emit } = fakeEvents()
+      const first = useAgentSession({ rest, events: source })
+      first.start()
+      await first.sendMessage('go')
+      void first.loadThread('th-1')
+      emit(done('msg-1'))
+      first.stop()
+
+      await vi.advanceTimersByTimeAsync(29_999)
+      const reopened = useAgentSession({ rest, events: fakeEvents().source })
+      reopened.start()
+
+      await vi.waitFor(() => {
+        expect(conversation.messages).toHaveLength(1)
+        expect(conversation.activeTurnId).toBeNull()
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(b4m) bounds a hung hydrate queue without dropping its terminal frame', async () => {
+    const conversation = useAgentConversationStore()
+    let deliverHistory: ((history: AgentMessages) => void) | undefined
+    const rest = fakeRest({
+      getMessages: vi.fn(
+        () =>
+          new Promise<AgentMessages>((resolve) => {
+            deliverHistory = resolve
+          })
+      )
+    })
+    const { source, emit } = fakeEvents()
+    conversation.setThreadId('th-1')
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    await vi.waitFor(() => expect(rest.getMessages).toHaveBeenCalledOnce())
+    emit(done('msg-1'))
+    emitDeltaBurst(emit, 300)
+
+    assert(deliverHistory !== undefined)
+    deliverHistory([
+      historyRow(1, 'user', 'turn-1', 'go'),
+      {
+        ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+        content: {},
+        status: 'streaming'
+      }
+    ])
+
+    await vi.waitFor(() => expect(conversation.activeTurnId).toBeNull())
+    expect(session.isStreaming.value).toBe(false)
+  })
+
+  it('(b4s) retains the newest delta window when a hung hydrate queue overflows', async () => {
+    const conversation = useAgentConversationStore()
+    let deliverHistory: ((history: AgentMessages) => void) | undefined
+    const rest = fakeRest({
+      getMessages: vi.fn(
+        () =>
+          new Promise<AgentMessages>((resolve) => {
+            deliverHistory = resolve
+          })
+      )
+    })
+    const { source, emit } = fakeEvents()
+    conversation.setThreadId('th-1')
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    await vi.waitFor(() => expect(rest.getMessages).toHaveBeenCalledOnce())
+    emitDeltaBurst(emit, 300)
+
+    assert(deliverHistory !== undefined)
+    deliverHistory([
+      historyRow(1, 'user', 'turn-1', 'go'),
+      {
+        ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+        content: {},
+        status: 'streaming'
+      }
+    ])
+
+    await vi.waitFor(() => expect(session.isStreaming.value).toBe(true))
+    expect(conversation.messages[0]).toMatchObject({
+      parts: [
+        {
+          type: 'text',
+          text: Array.from(
+            { length: 256 },
+            (_, index) => `chunk-${index + 44} `
+          ).join('')
+        }
+      ]
+    })
+  })
+
+  it('(b4i) replays a buffered done after history hydration rejects', async () => {
+    const conversation = useAgentConversationStore()
+    let rejectHistory: ((error: Error) => void) | undefined
+    const rest = fakeRest({
+      getMessages: vi.fn(
+        () =>
+          new Promise<AgentMessages>((_, reject) => {
+            rejectHistory = reject
+          })
+      )
+    })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    await session.sendMessage('go')
+    emit(thinking('msg-1', 'planning'))
+
+    void session.loadThread('th-1')
+    emit(done('msg-1'))
+    assert(rejectHistory !== undefined)
+    rejectHistory(new Error('history unavailable'))
+
+    await vi.waitFor(() => expect(reportError).toHaveBeenCalled())
+    conversation.setThreadId('th-1')
+    conversation.resumeBackgroundTurn()
+    expect(conversation.isStreaming).toBe(false)
+    expect(conversation.activeTurnId).toBeNull()
+  })
+
+  // Both halves of the hazard at once, which (b4c)/(b4d) and (b4e) only cover
+  // apart: a stash owns the turn, so the replay is a candidate for buffering
+  // again, and hydrates of that thread are stacked with only the newest
+  // resolving. Nothing bounds the older ones -- `loadThread` discards a stale
+  // response but never aborts its request.
+  it('(b4f) delivers a done through stacked hydrates of a stashed turn', async () => {
+    const conversation = useAgentConversationStore()
+    const deliver: ((history: AgentMessages) => void)[] = []
+    const rest = fakeRest({
+      getMessages: vi.fn(
+        () =>
+          new Promise<AgentMessages>((resolve) => {
+            deliver.push(resolve)
+          })
+      )
+    })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    await session.sendMessage('go')
+    emit(thinking('msg-1', 'planning'))
+
+    // Each re-select stashes the live turn and stacks another hydrate of the
+    // same thread on the one still fetching.
+    const reselects = [
+      session.loadThread('th-1'),
+      session.loadThread('th-1'),
+      session.loadThread('th-1')
+    ]
+    emit(done('msg-1'))
+
+    deliver[2]([
+      historyRow(1, 'user', 'turn-1', 'go'),
+      {
+        ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+        content: {},
+        status: 'streaming'
+      }
+    ])
+    await reselects[2]
+
+    expect(conversation.isStreaming).toBe(false)
+    expect(conversation.activeTurnId).toBeNull()
+  })
+
+  // Two overlapping hydrates of one thread, which `onSelectHistory` reaches on
+  // a double-click. Both resolution orders assert the same outcome, and that
+  // symmetry is the point: arming moves the superseded buffer's frames, so
+  // neither GET resolving first may change what is replayed. (b4g) below is
+  // what fails if that move degrades to a copy; these two only fail together.
+  it.for([
+    ['superseded hydrate first', [0, 1]],
+    ['newer hydrate first', [1, 0]]
+  ] as const)(
+    '(b4e) replays both hydrates in arrival order, %s',
+    async ([, [first, second]]) => {
+      const deliver: ((history: AgentMessages) => void)[] = []
+      const history: AgentMessages = [
+        historyRow(1, 'user', 'turn-1', 'go'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+          content: {},
+          status: 'streaming'
+        }
+      ]
+      const rest = fakeRest({
+        getMessages: vi.fn(
+          () =>
+            new Promise<AgentMessages>((resolve) => {
+              deliver.push(resolve)
+            })
+        )
+      })
+
+      const minimized = useAgentSession({ rest, events: fakeEvents().source })
+      minimized.start()
+      await minimized.sendMessage('go')
+      minimized.stop()
+      await Promise.resolve()
+
+      const { source, emit } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      emit(delta('msg-1', 'first half'))
+
+      const reselect = session.loadThread('th-1')
+      emit(done('msg-1'))
+
+      deliver[first](history)
+      deliver[second](history)
+      await reselect
+
+      const assistant = session.entries.value.at(-1)
+      assert(assistant !== undefined && 'parts' in assistant)
+      expect(
+        assistant.parts
+          .flatMap((part) => (part.type === 'text' ? [part.text] : []))
+          .join('')
+      ).toBe('first half')
+      expect(session.isStreaming.value).toBe(false)
+    }
+  )
+
+  // (b4e) cannot see a frame left behind on the superseded buffer: whichever
+  // order it resolves in, the stray replay is either re-buffered and then
+  // dropped past the done, or arrives with nothing to land on. Here the stash
+  // is resumed between the two drains, so the turn is live and accepts it.
+  it('(b4g) does not replay a frame the superseding hydrate already took', async () => {
+    const deliver: ((history: AgentMessages) => void)[] = []
+    const history: AgentMessages = [
+      historyRow(1, 'user', 'turn-1', 'go'),
+      {
+        ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+        content: {},
+        status: 'streaming'
+      }
+    ]
+    const rest = fakeRest({
+      getMessages: vi.fn(
+        () =>
+          new Promise<AgentMessages>((resolve) => {
+            deliver.push(resolve)
+          })
+      )
+    })
+
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    await session.sendMessage('go')
+
+    const superseded = session.loadThread('th-1')
+    emit(delta('msg-1', 'half '))
+    const reselect = session.loadThread('th-1')
+
+    deliver[1](history)
+    await reselect
+    deliver[0](history)
+    await superseded
+
+    const assistant = session.entries.value.at(-1)
+    assert(assistant !== undefined && 'parts' in assistant)
+    expect(
+      assistant.parts
+        .flatMap((part) => (part.type === 'text' ? [part.text] : []))
+        .join('')
+    ).toBe('half ')
+  })
+
+  // The mirror of (b4g): there the superseding hydrate drains first, here the
+  // superseded one does, while its replacement is still fetching. Retiring a
+  // thread's registration on that drain takes the live buffer with it, and the
+  // `done` arriving in the window left behind reaches a turn that is stashed
+  // rather than active, so `ingest` drops it -- restoring the turn for good.
+  it('(b4h) keeps buffering for a hydrate whose superseded twin drained first', async () => {
+    const conversation = useAgentConversationStore()
+    const deliver: ((history: AgentMessages) => void)[] = []
+    const history: AgentMessages = [
+      historyRow(1, 'user', 'turn-1', 'go'),
+      {
+        ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+        content: {},
+        status: 'streaming'
+      }
+    ]
+    const rest = fakeRest({
+      getMessages: vi.fn(
+        () =>
+          new Promise<AgentMessages>((resolve) => {
+            deliver.push(resolve)
+          })
+      )
+    })
+
+    const minimized = useAgentSession({ rest, events: fakeEvents().source })
+    minimized.start()
+    await minimized.sendMessage('go')
+    minimized.stop()
+    await Promise.resolve()
+
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    const superseded = session.loadThread('th-1')
+    const reselect = session.loadThread('th-1')
+
+    deliver[1](history)
+    await superseded
+
+    emit(done('msg-1'))
+
+    deliver[2](history)
+    await reselect
+
+    expect(conversation.isStreaming).toBe(false)
     expect(conversation.activeTurnId).toBeNull()
   })
 
@@ -678,7 +1701,12 @@ describe('useAgentSession (v1 composition root)', () => {
     ).toBe(false)
   })
 
-  it('retains and re-enables an approval after a non-409 answer failure', async () => {
+  // A 500 here is ambiguous, not a clean miss: `asks.go` CASes the answer onto
+  // the row and only then tries to wake the turn, reporting 500 for the wake
+  // alone. Re-offering the card would invite the opposite click, which the
+  // server answers by replaying the FIRST selection while the card disappears
+  // as though the new one had landed. So the card is retired, not retried.
+  it('retires an approval after an answer failure that may still have landed', async () => {
     const answerAsk = vi
       .fn<AgentRestClient['answerAsk']>()
       .mockRejectedValue(new AgentApiError('backend blip', 500, undefined))
@@ -697,15 +1725,365 @@ describe('useAgentSession (v1 composition root)', () => {
       surface: 'agent',
       errorType: 'agent_ask_answer_failed'
     })
+    // Not the raw server string: the user is told the outcome is unknown,
+    // because it is.
     expect(session.notices.value).toEqual([
-      { level: 'error', text: 'backend blip' }
+      { level: 'error', text: expect.not.stringContaining('backend blip') }
     ])
     expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(false)
     expect(
       useAgentConversationStore().messages[0].parts.some(
         (part) => part.type === 'runApproval'
       )
-    ).toBe(true)
+    ).toBe(false)
+  })
+
+  // PM-1658. A live->down socket transition aborts the active turn, which
+  // nulls activeTurnId and disposes the transport, while the turn's parts -- a
+  // pending consent card among them -- stay on screen. Most cases below put
+  // the card in that detached state. Together they hold the whole answer path
+  // to two rules: a click on a rendered card is never a no-op, and nothing
+  // that answers it may leave it on screen with no way to release it.
+  describe('answering a consent card', () => {
+    // Comfortably past the composable's answer backoff and the store's
+    // resolution grace, without restating either: a test that pinned the exact
+    // values would fail on a tuning change that broke nothing.
+    const PAST_ANSWER_RETRY_BACKOFF_MS = 5_000
+    const PAST_ASK_RESOLUTION_GRACE_MS = 60_000
+
+    const parkedOnApproval = async () => {
+      const answerAsk = vi.fn(
+        async (): Promise<AgentAnswerAccepted> => ({ status: 'answered' })
+      )
+      const rest = fakeRest({ answerAsk })
+      const events = fakeEvents()
+      const session = useAgentSession({ rest, events: events.source })
+      session.start()
+      events.status(true)
+      await session.sendMessage('build it and run it')
+      events.emit(runApproval('msg-1'))
+      return { session, answerAsk, ...events }
+    }
+
+    const cardOnScreen = () =>
+      useAgentConversationStore().messages.some((message) =>
+        message.parts.some((part) => part.type === 'runApproval')
+      )
+
+    it.for(['run', 'cancel'] as const)(
+      'sends %s rather than dropping the click',
+      async (selection) => {
+        const { session, answerAsk, emit } = await parkedOnApproval()
+        emit(done('msg-1'))
+        expect(useAgentConversationStore().activeTurnId).toBeNull()
+        expect(cardOnScreen()).toBe(true)
+
+        await session.answerAsk('turn-1:call-1', selection)
+
+        expect(answerAsk).toHaveBeenCalledWith('th-1', 'turn-1:call-1', [
+          selection
+        ])
+      }
+    )
+
+    // A socket drop is not the only way to reach the detached state: a turn
+    // COMPLETING gets there too, by agent_message_done -> settleActiveTurn ->
+    // clearActive(), which nulls activeTurnId just the same. One gate, two
+    // triggers — evidence for the second one came from #18834, which pins the
+    // identical symptom with no socket involved.
+    it('sends the answer after the turn that raised the card completed', async () => {
+      const { session, answerAsk, emit } = await parkedOnApproval()
+      emit(done('msg-1'))
+      expect(useAgentConversationStore().activeTurnId).toBeNull()
+      expect(cardOnScreen()).toBe(true)
+
+      await session.answerAsk('turn-1:call-1', 'run')
+
+      expect(answerAsk).toHaveBeenCalledWith('th-1', 'turn-1:call-1', ['run'])
+      // No transport survives a settled turn, so no resolution frame can land
+      // — the card has to retire on the response instead of waiting for one.
+      expect(cardOnScreen()).toBe(false)
+    })
+
+    it('dismisses itself once answered, since no resolution frame can reach it', async () => {
+      const { session, emit } = await parkedOnApproval()
+      emit(done('msg-1'))
+
+      await session.answerAsk('turn-1:call-1', 'run')
+
+      expect(cardOnScreen()).toBe(false)
+      expect(session.answeringAskIds.value.size).toBe(0)
+      expect(session.notices.value).toEqual([])
+    })
+
+    it('dismisses itself when the server reports the ask already resolved', async () => {
+      const answerAsk = vi
+        .fn<AgentRestClient['answerAsk']>()
+        .mockRejectedValue(
+          new AgentApiError('ask already resolved', 409, undefined)
+        )
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({ answerAsk }),
+        events: source
+      })
+      session.start()
+      status(true)
+      await session.sendMessage('build it and run it')
+      emit(runApproval('msg-1'))
+      emit(done('msg-1'))
+
+      await session.answerAsk('turn-1:call-1', 'run')
+
+      expect(cardOnScreen()).toBe(false)
+      expect(session.answeringAskIds.value.size).toBe(0)
+      expect(session.notices.value).toEqual([])
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it.for([403, 404] as const)(
+      'dismisses and reports a card the server refuses with %i',
+      async (status) => {
+        const answerAsk = vi
+          .fn<AgentRestClient['answerAsk']>()
+          .mockRejectedValue(
+            new AgentApiError('no longer yours', status, undefined)
+          )
+        const events = fakeEvents()
+        const session = useAgentSession({
+          rest: fakeRest({ answerAsk }),
+          events: events.source
+        })
+        session.start()
+        events.status(true)
+        await session.sendMessage('build it and run it')
+        events.emit(runApproval('msg-1'))
+
+        await session.answerAsk('turn-1:call-1', 'run')
+
+        // Retrying reproduces it, so the card goes -- but it must not go
+        // silently, or its disappearance is indistinguishable from the answer
+        // having landed.
+        expect(cardOnScreen()).toBe(false)
+        expect(session.notices.value).toHaveLength(1)
+        expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
+          surface: 'agent',
+          errorType: 'agent_ask_answer_refused'
+        })
+      }
+    )
+
+    // startTurn aborts whatever turn preceded it, so a card left over from the
+    // dropped turn is detached by the NEW turn too — and an ask_resolved frame
+    // routed to the new turn's transport lands on a message with no such card.
+    it('dismisses itself when a newer turn has taken over the transport', async () => {
+      const postMessage = vi
+        .fn<
+          (
+            threadId: string,
+            req: PostMessageInput
+          ) => Promise<AgentTurnAccepted>
+        >()
+        .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+        .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-2' })
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({ postMessage }),
+        events: source
+      })
+      session.start()
+      status(true)
+      await session.sendMessage('build it and run it')
+      emit(runApproval('msg-1'))
+      status(false)
+      await session.sendMessage('actually, do this instead')
+      expect(useAgentConversationStore().activeTurnId).toBe('msg-2')
+      expect(cardOnScreen()).toBe(true)
+
+      await session.answerAsk('turn-1:call-1', 'run')
+
+      expect(cardOnScreen()).toBe(false)
+      expect(session.answeringAskIds.value.size).toBe(0)
+    })
+
+    // `asks.go` documents 5xx here as the retryable status and re-drives the
+    // STORED selection, so resending the same answer is both what the server
+    // asks for and the only recovery that cannot become a second, contradictory
+    // choice.
+    it('re-drives the same selection when the server asks the client to retry', async () => {
+      const answerAsk = vi
+        .fn<AgentRestClient['answerAsk']>()
+        .mockRejectedValueOnce(
+          new AgentApiError('failed to wake the turn', 500, undefined)
+        )
+        .mockResolvedValueOnce({ status: 'answered' })
+      const events = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({ answerAsk }),
+        events: events.source
+      })
+      session.start()
+      events.status(true)
+      await session.sendMessage('build it and run it')
+      events.emit(runApproval('msg-1'))
+
+      vi.useFakeTimers()
+      try {
+        const answered = session.answerAsk('turn-1:call-1', 'run')
+        await vi.advanceTimersByTimeAsync(PAST_ANSWER_RETRY_BACKOFF_MS)
+        await answered
+      } finally {
+        vi.useRealTimers()
+      }
+
+      expect(answerAsk).toHaveBeenCalledTimes(2)
+      expect(answerAsk.mock.calls).toEqual([
+        ['th-1', 'turn-1:call-1', ['run']],
+        ['th-1', 'turn-1:call-1', ['run']]
+      ])
+      expect(session.notices.value).toEqual([])
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    // commitAsk arms a grace timer when the turn is still attached, because
+    // the resolution frame is the normal release and can be lost. Nothing else
+    // would ever re-enable the card.
+    it('retires a committed answer whose resolution frame never arrives', async () => {
+      vi.useFakeTimers()
+      try {
+        const { session } = await parkedOnApproval()
+        await session.answerAsk('turn-1:call-1', 'run')
+        expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(true)
+        expect(cardOnScreen()).toBe(true)
+
+        await vi.advanceTimersByTimeAsync(PAST_ASK_RESOLUTION_GRACE_MS)
+
+        expect(cardOnScreen()).toBe(false)
+        expect(session.answeringAskIds.value.size).toBe(0)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    // The server commits the FIRST answer and takes later ones with 202 while
+    // replaying the stored selection, so another tab can decide this card. The
+    // frame names the winner; a dismissal on someone else's choice must not
+    // read as confirmation of ours.
+    it('warns when the resolution names a selection other than the one it sent', async () => {
+      const { session, emit } = await parkedOnApproval()
+      await session.answerAsk('turn-1:call-1', 'cancel')
+
+      emit(askResolved('msg-1'))
+
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'agent',
+        errorType: 'agent_ask_answer_superseded'
+      })
+      expect(session.notices.value).toHaveLength(1)
+      expect(cardOnScreen()).toBe(false)
+    })
+
+    // The resolution frame retires the card on its way through, so by the time
+    // a slow request rejects there is nothing left to warn about — and telling
+    // the user their answer might not have arrived, after the server has said
+    // it resolved, is worse than saying nothing.
+    it('stays quiet when a request rejects after the ask was already resolved', async () => {
+      let reject: ((reason: unknown) => void) | undefined
+      const answerAsk = vi.fn(
+        () =>
+          new Promise<AgentAnswerAccepted>((_resolve, rejectAnswer) => {
+            reject = rejectAnswer
+          })
+      )
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({ answerAsk }),
+        events: source
+      })
+      session.start()
+      status(true)
+      await session.sendMessage('build it and run it')
+      emit(runApproval('msg-1'))
+      const answered = session.answerAsk('turn-1:call-1', 'run')
+
+      emit(askResolved('msg-1'))
+      expect(cardOnScreen()).toBe(false)
+
+      // 400: neither terminal nor retryable, so it reaches the generic catch
+      // immediately rather than being re-driven.
+      reject?.(new AgentApiError('bad request', 400, undefined))
+
+      expect(await answered).toBe(false)
+      expect(reportError).not.toHaveBeenCalled()
+      expect(session.notices.value).toEqual([])
+    })
+
+    it('stays quiet when the resolution confirms the selection it sent', async () => {
+      const { session, emit } = await parkedOnApproval()
+      await session.answerAsk('turn-1:call-1', 'run')
+
+      emit(askResolved('msg-1'))
+
+      expect(reportError).not.toHaveBeenCalled()
+      expect(session.notices.value).toEqual([])
+      expect(cardOnScreen()).toBe(false)
+    })
+
+    it('does not re-drive an answer the server has already refused', async () => {
+      const answerAsk = vi
+        .fn<AgentRestClient['answerAsk']>()
+        .mockRejectedValue(
+          new AgentApiError('ask already resolved', 409, undefined)
+        )
+      const events = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({ answerAsk }),
+        events: events.source
+      })
+      session.start()
+      events.status(true)
+      await session.sendMessage('build it and run it')
+      events.emit(runApproval('msg-1'))
+
+      await session.answerAsk('turn-1:call-1', 'run')
+
+      expect(answerAsk).toHaveBeenCalledTimes(1)
+      expect(cardOnScreen()).toBe(false)
+    })
+
+    // The card lives in the conversation store, which outlives the panel, so
+    // the record of having answered it has to as well. A remount that forgot
+    // would render the surviving card enabled and take a second answer the
+    // server would discard.
+    it('keeps a committed answer locked across a panel remount', async () => {
+      const { session } = await parkedOnApproval()
+      await session.answerAsk('turn-1:call-1', 'run')
+      expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(true)
+      expect(cardOnScreen()).toBe(true)
+
+      const remounted = useAgentSession({
+        rest: fakeRest(),
+        events: fakeEvents().source
+      })
+
+      expect(remounted.answeringAskIds.value.has('turn-1:call-1')).toBe(true)
+    })
+
+    it('reports a click it has no thread to send on instead of swallowing it', async () => {
+      const rest = fakeRest()
+      const { source } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+
+      await session.answerAsk('turn-1:call-1', 'run')
+
+      expect(rest.answerAsk).not.toHaveBeenCalled()
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'agent',
+        errorType: 'agent_ask_answer_unroutable'
+      })
+      expect(session.notices.value).toHaveLength(1)
+    })
   })
 
   it('renders no_funds as the paywall reply while keeping the rejected prompt', async () => {
@@ -1011,6 +2389,408 @@ describe('useAgentSession (v1 composition root)', () => {
       turn_elapsed_ms: 450
     })
     now.mockRestore()
+  })
+
+  // PM-1776's other end. Reading `streaming` as live restores a row whose
+  // worker died too, and the server only reclaims those on a boot at least
+  // `staleStreamingCutoff` later -- so the row outlives its process by a long
+  // way. 404 is how the server says the row is an orphan rather than that the
+  // stop landed; ignoring it leaves the indicator up and Stop offered for a
+  // turn no frame will ever settle, which no reopen or refresh escapes.
+  it('settles a restored turn the server reports as no longer running', async () => {
+    const cancelMessage = vi
+      .fn()
+      .mockRejectedValue(
+        new AgentApiError('turn is no longer running', 404, undefined)
+      )
+    const rest = fakeRest({
+      cancelMessage,
+      getMessages: vi.fn(
+        async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'turn-1', 'go'),
+          {
+            ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+            content: {},
+            status: 'streaming'
+          }
+        ]
+      )
+    })
+    const conversation = useAgentConversationStore()
+
+    const minimized = useAgentSession({ rest, events: fakeEvents().source })
+    minimized.start()
+    await minimized.sendMessage('go')
+    minimized.stop()
+    await Promise.resolve()
+
+    const reopened = useAgentSession({ rest, events: fakeEvents().source })
+    reopened.start()
+    await vi.waitFor(() => expect(reopened.isStreaming.value).toBe(true))
+
+    await reopened.stopTurn('button')
+
+    expect(cancelMessage).toHaveBeenCalledWith('th-1', 'msg-1')
+    expect(reopened.isStreaming.value).toBe(false)
+    expect(conversation.activeTurnId).toBeNull()
+  })
+
+  // The launch window: `Launch` commits the `streaming` row and then starts
+  // the run from a goroutine, so a Stop that beats it there names a workflow
+  // that does not exist yet and is answered exactly like one that finished.
+  // A turn this client started has its own stream and must survive that --
+  // abandoning it hands the user a thread the server goes on to run and then
+  // answers with 409, which is the state this change exists to remove.
+  it('keeps a turn it started when a stop reports the run missing', async () => {
+    const cancelMessage = vi
+      .fn()
+      .mockRejectedValue(
+        new AgentApiError('turn is no longer running', 404, undefined)
+      )
+    const conversation = useAgentConversationStore()
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ cancelMessage }),
+      events: source
+    })
+    session.start()
+    await session.sendMessage('go')
+    emit(delta('msg-1', 'working'))
+
+    await session.stopTurn('button')
+
+    expect(cancelMessage).toHaveBeenCalledWith('th-1', 'msg-1')
+    expect(session.isStreaming.value).toBe(true)
+    expect(conversation.activeTurnId).toBe('msg-1')
+  })
+
+  // The done-before-open ordering, which (b4b) cannot reach because it emits
+  // through a listener already installed. Here the turn ends while this
+  // session's socket is still attaching, so the frame reaches nobody and is
+  // never replayed -- yet the GET, taken at an earlier instant, still reports
+  // `streaming`. Nothing will settle the turn it restores, so the 409 that
+  // Stop earns against the now-terminal row has to be the thing that does.
+  it('settles a snapshot-restored turn whose completion was never delivered', async () => {
+    const cancelMessage = vi
+      .fn()
+      .mockRejectedValue(
+        new AgentApiError('turn is not running', 409, undefined)
+      )
+    const rest = fakeRest({
+      cancelMessage,
+      getMessages: vi.fn(
+        async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'turn-1', 'go'),
+          {
+            ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+            content: {},
+            status: 'streaming'
+          }
+        ]
+      )
+    })
+    const conversation = useAgentConversationStore()
+
+    const minimized = useAgentSession({ rest, events: fakeEvents().source })
+    minimized.start()
+    await minimized.sendMessage('go')
+    minimized.stop()
+    await Promise.resolve()
+
+    const reopened = useAgentSession({ rest, events: fakeEvents().source })
+    reopened.start()
+    await vi.waitFor(() => expect(reopened.isStreaming.value).toBe(true))
+
+    await reopened.stopTurn('button')
+
+    expect(reopened.isStreaming.value).toBe(false)
+    expect(conversation.activeTurnId).toBeNull()
+    expect(reopened.notices.value).toHaveLength(0)
+  })
+
+  // A snapshot only says how the turn was restored, not that it stayed
+  // stream-less. One frame delivered to it proves this session has a stream
+  // after all, and from then on a stop failure has to leave it alone -- the
+  // stop is awaited while frames keep arriving, so the frame really can land
+  // first. Both statuses, because both retire a snapshot turn.
+  it.for([404, 409] as const)(
+    'keeps a restored turn a live frame reached when a stop fails with %i',
+    async (status) => {
+      const cancelMessage = vi
+        .fn()
+        .mockRejectedValue(new AgentApiError('no turn', status, undefined))
+      const rest = fakeRest({
+        cancelMessage,
+        getMessages: vi.fn(
+          async (): Promise<AgentMessages> => [
+            historyRow(1, 'user', 'turn-1', 'go'),
+            {
+              ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+              content: {},
+              status: 'streaming'
+            }
+          ]
+        )
+      })
+      const conversation = useAgentConversationStore()
+
+      const minimized = useAgentSession({ rest, events: fakeEvents().source })
+      minimized.start()
+      await minimized.sendMessage('go')
+      minimized.stop()
+      await Promise.resolve()
+
+      const { source, emit } = fakeEvents()
+      const reopened = useAgentSession({ rest, events: source })
+      reopened.start()
+      await vi.waitFor(() => expect(reopened.isStreaming.value).toBe(true))
+
+      const stopping = reopened.stopTurn('button')
+      emit(delta('msg-1', 'still here'))
+      await stopping
+
+      expect(conversation.activeTurnId).toBe('msg-1')
+      expect(reopened.isStreaming.value).toBe(true)
+    }
+  )
+
+  it.for([404, 409] as const)(
+    'keeps a snapshot-restored background turn after live delivery when Stop fails with %i',
+    async (status) => {
+      const streamingHistory: AgentMessages = [
+        historyRow(1, 'user', 'turn-1', 'go'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+          content: {},
+          status: 'streaming'
+        }
+      ]
+      const getMessages = vi.fn(
+        async (threadId: string): Promise<AgentMessages> =>
+          threadId === 'th-1' ? streamingHistory : []
+      )
+      const cancelMessage = vi
+        .fn()
+        .mockRejectedValue(new AgentApiError('no turn', status, undefined))
+      const rest = fakeRest({ getMessages, cancelMessage })
+      const conversation = useAgentConversationStore()
+
+      const minimized = useAgentSession({ rest, events: fakeEvents().source })
+      minimized.start()
+      await minimized.sendMessage('go')
+      minimized.stop()
+      await Promise.resolve()
+
+      const { source, emit } = fakeEvents()
+      const reopened = useAgentSession({ rest, events: source })
+      reopened.start()
+      await vi.waitFor(() => expect(conversation.activeTurnId).toBe('msg-1'))
+
+      await reopened.loadThread('th-2')
+      emit(delta('msg-1', 'still live'))
+      await reopened.loadThread('th-1')
+      expect(conversation.activeTurnId).toBe('msg-1')
+
+      await reopened.stopTurn('button')
+
+      expect(conversation.activeTurnId).toBe('msg-1')
+      expect(reopened.isStreaming.value).toBe(true)
+    }
+  )
+
+  // The rejection can outlive the turn it was issued for: the stop is awaited
+  // while frames keep arriving, so by the time a 404 lands the user may have
+  // sent again. Settling whatever is active then would abandon a turn that is
+  // genuinely running -- the very state this change exists to prevent.
+  it.for([
+    [
+      'not running',
+      new AgentApiError('turn is no longer running', 404, undefined)
+    ],
+    [
+      'already finished',
+      new AgentApiError('turn is not running', 409, undefined)
+    ],
+    ['server error', new AgentApiError('boom', 500, undefined)],
+    ['network failure', new Error('network down')]
+  ] as const)(
+    'leaves a newer turn alone when a stale stop reports %s',
+    async ([, rejection]) => {
+      let rejectCancel: ((error: unknown) => void) | undefined
+      const cancelMessage = vi.fn(
+        () =>
+          new Promise<AgentCancelAccepted>((_resolve, reject) => {
+            rejectCancel = reject
+          })
+      )
+      const postMessage = vi
+        .fn<
+          (
+            threadId: string,
+            req: PostMessageInput
+          ) => Promise<AgentTurnAccepted>
+        >()
+        .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+        .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-2' })
+      const conversation = useAgentConversationStore()
+      const { source, emit } = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({ cancelMessage, postMessage }),
+        events: source
+      })
+      session.start()
+
+      await session.sendMessage('go')
+      const stopping = session.stopTurn('button')
+      emit(done('msg-1'))
+
+      await session.sendMessage('go again')
+      emit(delta('msg-2', 'working'))
+      expect(conversation.activeTurnId).toBe('msg-2')
+
+      assert(rejectCancel !== undefined)
+      rejectCancel(rejection)
+      await stopping
+
+      expect(conversation.activeTurnId).toBe('msg-2')
+      expect(session.isStreaming.value).toBe(true)
+      expect(session.notices.value).toEqual([])
+      expect(vi.mocked(reportError)).not.toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ errorType: 'agent_cancel_turn_failed' })
+      )
+    }
+  )
+
+  // The reconciliation GET outlives the turn that asked for it: the restored
+  // turn settles and the user sends again while it is in flight, so the
+  // snapshot it returns describes a turn nobody is showing. Applied anyway it
+  // overwrites the newer transport, and the abort that follows takes the live
+  // turn down with it.
+  it('discards a reconciliation snapshot a newer turn has outrun', async () => {
+    const streamingHistory: AgentMessages = [
+      historyRow(1, 'user', 'turn-1', 'go'),
+      {
+        ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+        content: {},
+        status: 'streaming'
+      }
+    ]
+    let deliverReconcile: ((history: AgentMessages) => void) | undefined
+    const getMessages = vi
+      .fn<(threadId: string) => Promise<AgentMessages>>()
+      .mockResolvedValueOnce(streamingHistory)
+      .mockImplementationOnce(
+        () =>
+          new Promise<AgentMessages>((resolve) => {
+            deliverReconcile = resolve
+          })
+      )
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+      .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-2' })
+    const cancelMessage = vi
+      .fn()
+      .mockRejectedValue(
+        new AgentApiError('turn is no longer running', 404, undefined)
+      )
+    const rest = fakeRest({ getMessages, postMessage, cancelMessage })
+    const conversation = useAgentConversationStore()
+
+    const minimized = useAgentSession({ rest, events: fakeEvents().source })
+    minimized.start()
+    await minimized.sendMessage('go')
+    minimized.stop()
+    await Promise.resolve()
+
+    const { source, emit } = fakeEvents()
+    const reopened = useAgentSession({ rest, events: source })
+    reopened.start()
+    await vi.waitFor(() => expect(conversation.activeTurnId).toBe('msg-1'))
+
+    const stopping = reopened.stopTurn('button')
+    await vi.waitFor(() => assert(deliverReconcile !== undefined))
+
+    emit(done('msg-1'))
+    await reopened.sendMessage('go again')
+    emit(delta('msg-2', 'working'))
+    expect(conversation.activeTurnId).toBe('msg-2')
+
+    assert(deliverReconcile !== undefined)
+    deliverReconcile(streamingHistory)
+    await stopping
+
+    expect(conversation.activeTurnId).toBe('msg-2')
+    expect(reopened.isStreaming.value).toBe(true)
+  })
+
+  it('retires a restored turn when reconciliation times out', async () => {
+    vi.useFakeTimers()
+    try {
+      const streamingHistory: AgentMessages = [
+        historyRow(1, 'user', 'turn-1', 'go'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+          content: {},
+          status: 'streaming'
+        }
+      ]
+      let deliverReconcile: ((history: AgentMessages) => void) | undefined
+      const getMessages = vi
+        .fn<(threadId: string) => Promise<AgentMessages>>()
+        .mockResolvedValueOnce(streamingHistory)
+        .mockImplementationOnce(
+          () =>
+            new Promise<AgentMessages>((resolve) => {
+              deliverReconcile = resolve
+            })
+        )
+      const rest = fakeRest({
+        getMessages,
+        cancelMessage: vi
+          .fn()
+          .mockRejectedValue(
+            new AgentApiError('turn is no longer running', 404, undefined)
+          )
+      })
+      const conversation = useAgentConversationStore()
+
+      const minimized = useAgentSession({
+        rest,
+        events: fakeEvents().source
+      })
+      minimized.start()
+      await minimized.sendMessage('go')
+      minimized.stop()
+      await Promise.resolve()
+
+      const reopened = useAgentSession({
+        rest,
+        events: fakeEvents().source
+      })
+      reopened.start()
+      await vi.waitFor(() => expect(conversation.activeTurnId).toBe('msg-1'))
+
+      const stopping = reopened.stopTurn('button')
+      await vi.waitFor(() => assert(deliverReconcile !== undefined))
+      await vi.advanceTimersByTimeAsync(5_000)
+      await stopping
+
+      expect(conversation.activeTurnId).toBeNull()
+      expect(reopened.isStreaming.value).toBe(false)
+
+      assert(deliverReconcile !== undefined)
+      deliverReconcile(streamingHistory)
+      await Promise.resolve()
+
+      expect(conversation.activeTurnId).toBeNull()
+      expect(reopened.isStreaming.value).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('tracks a stop when completion arrives before cancellation responds', async () => {
@@ -3984,7 +5764,6 @@ describe('app:agent_error telemetry (TEL-8)', () => {
     const rest = fakeRest({
       postMessage: vi.fn(async () => {
         throw new AgentResponseUnreadableError(
-          '/agent/threads/new/messages',
           new SyntaxError('Unexpected end of JSON input')
         )
       })

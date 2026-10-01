@@ -1115,6 +1115,95 @@ describe('createBillingOperationLifecycle', () => {
       )
     })
 
+    const RECEIPT_PLAN = { slug: 'pro_monthly', duration: 'MONTHLY' } as const
+
+    it('keeps the receipt a succeeded operation reports', async () => {
+      const { lifecycle } = harness({
+        answers: [
+          httpOk(
+            opStatus({
+              status: 'succeeded',
+              amount_charged_cents: 3250,
+              credits_added: 6858,
+              plan: RECEIPT_PLAN
+            })
+          )
+        ]
+      })
+      await lifecycle.begin('subscription', issued())
+      await flush()
+
+      expect(lifecycle.get('op-1')).toMatchObject({
+        phase: 'succeeded',
+        receipt: {
+          amountChargedCents: 3250,
+          creditsAdded: 6858,
+          plan: RECEIPT_PLAN
+        }
+      })
+    })
+
+    it('leaves the receipt off a success that reported none', async () => {
+      const { lifecycle } = harness({
+        answers: [httpOk(opStatus({ status: 'succeeded' }))]
+      })
+      await lifecycle.begin('subscription', issued())
+      await flush()
+
+      expect(lifecycle.get('op-1')).not.toHaveProperty('receipt')
+    })
+
+    it('re-reads a success whose credits are still landing, when asked for settled operations', async () => {
+      const charged = {
+        status: 'succeeded' as const,
+        amount_charged_cents: 3250
+      }
+      const { lifecycle } = harness({
+        retainSettled: true,
+        answers: [
+          httpOk(opStatus(charged)),
+          httpOk(opStatus({ ...charged, credits_added: 6858 }))
+        ]
+      })
+      await lifecycle.begin('subscription', issued())
+      await flush()
+      expect(lifecycle.get('op-1')).toMatchObject({
+        receipt: { amountChargedCents: 3250 }
+      })
+
+      await expect(
+        lifecycle.recover({ includeSettled: true })
+      ).resolves.toMatchObject({
+        status: 'ok',
+        value: {
+          phase: 'succeeded',
+          receipt: { amountChargedCents: 3250, creditsAdded: 6858 }
+        }
+      })
+    })
+
+    it('keeps a success whose credits already landed as it was', async () => {
+      const landed = {
+        status: 'succeeded' as const,
+        amount_charged_cents: 3250,
+        credits_added: 6858
+      }
+      const { lifecycle } = harness({
+        retainSettled: true,
+        answers: [
+          httpOk(opStatus(landed)),
+          httpOk(opStatus({ ...landed, credits_added: 1 }))
+        ]
+      })
+      await lifecycle.begin('subscription', issued())
+      await flush()
+      const settled = lifecycle.get('op-1')
+
+      await lifecycle.recover({ includeSettled: true })
+
+      expect(lifecycle.get('op-1')).toBe(settled)
+    })
+
     it('re-reads an operation that needed reconciliation, following it forward to success', async () => {
       const storage = memoryStorage()
       const { lifecycle, calls } = harness({

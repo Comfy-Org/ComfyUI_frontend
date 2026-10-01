@@ -194,3 +194,115 @@ describe('CheckoutSummaryColumn discount rows', () => {
     expect(warn).not.toHaveBeenCalled()
   })
 })
+
+describe('CheckoutSummaryColumn server-reported rows', () => {
+  function inPageOrder(nodes: Element[]): string[] {
+    return nodes
+      .sort((a, b) =>
+        a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1
+      )
+      .map((node) => (node.tagName === 'HR' ? '---' : node.textContent.trim()))
+  }
+
+  it('strikes through only the list price of a discounted rate', () => {
+    renderColumn({
+      ...UPGRADE,
+      items: [
+        {
+          label: 'Team Plan',
+          amount: '$7,560.00',
+          comparedRate: {
+            keypath: 'checkout.fullPage.summary.item.comparedYearly',
+            amount: '$7,560',
+            listAmount: '$8,400'
+          },
+          sublines: []
+        }
+      ]
+    })
+
+    expect(screen.getByText('$8,400').tagName).toBe('S')
+    expect(
+      screen.getByText(
+        (_, element) =>
+          element?.tagName === 'SPAN' &&
+          element.textContent.trim() === '$7,560 $8,400 /yr, billed yearly'
+      )
+    ).toBeInTheDocument()
+    expect(screen.getByText('$7,560.00').tagName).not.toBe('S')
+  })
+
+  it('bounds a discount by its term under its label', () => {
+    renderColumn({
+      ...UPGRADE,
+      items: [UPGRADE.items[0]],
+      discounts: [
+        { label: 'Promo code', amount: '−$1,512.00', subline: 'First year' }
+      ]
+    })
+
+    expect(
+      inPageOrder([
+        screen.getByText('First year'),
+        screen.getByText('Promo code'),
+        screen.getByText('Total due today')
+      ])
+    ).toEqual(['Promo code', 'First year', 'Total due today'])
+  })
+
+  it('divides a Subtotal off the money rows, then lists the discount and last the account balance', () => {
+    renderColumn({
+      ...UPGRADE,
+      subtotal: '$32.50',
+      discounts: [{ label: 'Promo code', amount: '−$10.00' }],
+      balance: {
+        label: 'Account balance',
+        amount: '−$5.00',
+        subline: 'Credit already on your account'
+      },
+      total: '$17.50'
+    })
+
+    const labels = [
+      'Unused time from Creator plan',
+      'Subtotal',
+      'Promo code',
+      '−$10.00',
+      'Account balance',
+      '−$5.00',
+      'Credit already on your account',
+      'Total due today'
+    ]
+    const outline = inPageOrder([
+      ...screen.getAllByRole('separator'),
+      ...labels.map((text) => screen.getByText(text))
+    ])
+    expect(outline).toEqual([
+      '---',
+      'Unused time from Creator plan',
+      '---',
+      'Subtotal',
+      'Promo code',
+      '−$10.00',
+      'Account balance',
+      '−$5.00',
+      'Credit already on your account',
+      '---',
+      'Total due today'
+    ])
+    expect(
+      screen.getByText(
+        (_, element) =>
+          element?.tagName === 'DIV' &&
+          element.textContent.replace(/\s/g, '') === 'Subtotal$32.50'
+      )
+    ).toBeInTheDocument()
+  })
+
+  it('lists no Subtotal and no balance row when the ledger has neither', () => {
+    renderColumn(UPGRADE)
+
+    expect(screen.queryByText('Subtotal')).not.toBeInTheDocument()
+    expect(screen.queryByText('Account balance')).not.toBeInTheDocument()
+  })
+})

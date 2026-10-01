@@ -181,7 +181,7 @@ describe('HostTelemetrySink', () => {
     )
   })
 
-  it('forwards canonical billing events using the derived name and payload', () => {
+  it('forwards canonical billing events with their derived name and payload, claiming no surface', () => {
     new HostTelemetrySink().trackBillingEvent({
       operation: 'operation',
       stage: 'succeeded',

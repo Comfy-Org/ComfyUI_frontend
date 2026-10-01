@@ -209,11 +209,6 @@
       "count": 1
     }
   },
-  "src/platform/cloud/subscription/composables/useSubscription.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
   "src/platform/cloud/subscription/launchCancellationFlow.ts": {
     "comfy/no-new-error-throw": {
       "count": 1
@@ -237,11 +232,6 @@
   "src/platform/settings/settingStore.ts": {
     "comfy/no-new-error-throw": {
       "count": 1
-    }
-  },
-  "src/platform/tasks/services/taskService.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 3
     }
   },
   "src/platform/workflow/management/stores/comfyWorkflow.ts": {
