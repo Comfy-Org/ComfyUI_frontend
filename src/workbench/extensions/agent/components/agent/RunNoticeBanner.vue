@@ -24,6 +24,7 @@ const dismissed = useStorage('Comfy.AgentPanel.runNoticeDismissed', false)
     :aria-live="context ? 'polite' : undefined"
     class="relative flex items-start gap-2 overflow-hidden rounded-lg bg-base-background p-4 ring-1 ring-border-subtle before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-muted-background"
   >
+    <!-- fallow-ignore-next-line css-token-drift -- Iconify selectors name the exact product icon; they are not spacing or color scale values. -->
     <span
       class="icon-[heroicons--information-circle-20-solid] size-5 shrink-0 text-muted-foreground"
     />
@@ -41,6 +42,7 @@ const dismissed = useStorage('Comfy.AgentPanel.runNoticeDismissed', false)
           @click="emit('showTarget')"
         >
           {{ $t('agent.showTarget') }}
+          <!-- fallow-ignore-next-line css-token-drift -- Iconify selectors name the exact product icon; they are not spacing or color scale values. -->
           <span class="icon-[lucide--arrow-up-right] size-4" />
         </Button>
       </template>

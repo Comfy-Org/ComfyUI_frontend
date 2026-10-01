@@ -293,6 +293,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           class="size-6 shrink-0"
           @click="onOpenHistory"
         >
+          <!-- fallow-ignore-next-line css-token-drift -- Iconify selectors name the exact product icon; they are not spacing or color scale values. -->
           <span class="icon-[lucide--history] size-4 shrink-0" />
         </Button>
         <template v-if="renaming">

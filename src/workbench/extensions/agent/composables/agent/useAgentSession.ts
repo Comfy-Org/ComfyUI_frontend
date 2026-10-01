@@ -313,6 +313,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     return true
   }
 
+  // fallow-ignore-next-line complexity -- session restoration intentionally coordinates generation ownership, persisted threads, subscriptions, and hydration in one atomic lifecycle entry point.
   function start(): void {
     ownedGeneration = ++sessionGeneration
     connection = 'initial'
