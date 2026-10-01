@@ -8,6 +8,7 @@ import type {
 import { zExchangeTokenRequest } from '@comfyorg/ingest-types/zod'
 
 import { AccountMenu } from './fixtures/accountMenu'
+import { waitForIsland } from './fixtures/islands'
 import { MODEL_PATH, MODELS_WORKSPACE_ID, test } from './fixtures/modelsAccount'
 
 const API_KEYS_URL =
@@ -83,7 +84,9 @@ test('the API key link stays a models onboarding arrival when signed out', async
   page
 }) => {
   await page.goto(MODEL_PATH)
-  await page.getByTestId('tab-api').click()
+  const apiTab = page.getByTestId('tab-api')
+  await waitForIsland(page, apiTab)
+  await apiTab.click()
   await expect(page.getByTestId('api-get-key')).toHaveAttribute(
     'href',
     API_KEYS_URL
@@ -98,7 +101,9 @@ test('the API key link carries the active workspace, and follows a switch', asyn
   await signIn(page, modelsAccount)
 
   await page.goto(MODEL_PATH)
-  await page.getByTestId('tab-api').click()
+  const apiTab = page.getByTestId('tab-api')
+  await waitForIsland(page, apiTab)
+  await apiTab.click()
   const link = page.getByTestId('api-get-key')
   await expect(link).toHaveAttribute(
     'href',

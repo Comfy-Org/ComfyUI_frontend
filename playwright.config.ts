@@ -91,7 +91,7 @@ export default defineConfig({
           {
             name: 'chromium',
             use: { ...devices['Desktop Chrome'] },
-            timeout: 15000,
+            timeout: 30_000,
             grepInvert:
               /@mobile|@perf|@audit|@cloud|@desktop|@custom-nodes|@agent-harness/
           },

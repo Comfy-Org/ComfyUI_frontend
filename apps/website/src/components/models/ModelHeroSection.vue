@@ -22,7 +22,7 @@ const {
 }>()
 
 const workflowsUrl = hubSlug
-  ? `https://www.comfy.org/workflows/model/${hubSlug}`
+  ? `https://comfy.org/workflows/model/${hubSlug}/`
   : null
 
 const dirDisplayMap: Record<string, string> = {
@@ -66,12 +66,7 @@ const isPartnerNode = directory === 'partner_nodes'
       </h1>
 
       <p class="text-sm text-primary-comfy-canvas/60">
-        {{
-          t('models.hero.workflowCount').replace(
-            '{count}',
-            String(workflowCount)
-          )
-        }}
+        {{ t('models.hero.workflowCount', 'en', { count: workflowCount }) }}
       </p>
 
       <div class="flex flex-col gap-3 sm:flex-row">
@@ -99,7 +94,7 @@ const isPartnerNode = directory === 'partner_nodes'
 
         <BrandButton
           v-if="!workflowsUrl"
-          href="https://www.comfy.org/cloud"
+          href="https://comfy.org/cloud/"
           target="_blank"
           rel="noopener noreferrer"
           :variant="huggingFaceUrl && !isPartnerNode ? 'outline' : 'solid'"

@@ -29,6 +29,16 @@ import type {
 
 const CLOUD_WORKFLOW_PAGE_SIZE = 100
 
+/**
+ * PM-1658: tightens `fetchApi`'s shared 60s header deadline for the one
+ * request a consent card's buttons wait on, since the card is held disabled
+ * from the click until this settles. A quarter of it, rather than merely lower, so that
+ * the caller's single re-drive still fits inside the 60s the card used to be
+ * able to wait. Goes through `timeoutMs` rather than a raw signal so a timeout
+ * still raises fetchApi's own telemetry.
+ */
+const ANSWER_ASK_TIMEOUT_MS = 15_000
+
 export class AgentApiError extends Error {
   readonly status: number
   readonly body: unknown
@@ -45,6 +55,13 @@ export class AgentApiError extends Error {
     this.status = status
     this.body = body
     this.retryAfterSeconds = retryAfterSeconds
+  }
+}
+
+export class AgentResponseUnreadableError extends Error {
+  constructor(route: string, cause: unknown) {
+    super(`Unreadable agent response body from ${route}`, { cause })
+    this.name = 'AgentResponseUnreadableError'
   }
 }
 
@@ -339,7 +356,13 @@ export function createAgentRestClient() {
   ): Promise<T> {
     const response = await api.fetchApi(route, init)
     if (!response.ok) throw await toApiError(response)
-    return schema.parse(await response.json())
+    let payload: unknown
+    try {
+      payload = await response.json()
+    } catch (error) {
+      throw new AgentResponseUnreadableError(route, error)
+    }
+    return schema.parse(payload)
   }
 
   function jsonInit(method: string, body: unknown): RequestInit {
@@ -377,10 +400,13 @@ export function createAgentRestClient() {
     )
   }
 
-  async function getMessages(threadId: string): Promise<AgentMessages> {
+  async function getMessages(
+    threadId: string,
+    options: { signal?: AbortSignal } = {}
+  ): Promise<AgentMessages> {
     return request(
       `/agent/threads/${encodeURIComponent(threadId)}/messages`,
-      { method: 'GET' },
+      { method: 'GET', signal: options.signal },
       zAgentMessages
     )
   }
@@ -454,7 +480,7 @@ export function createAgentRestClient() {
   ): Promise<AgentAnswerAccepted> {
     return request(
       `/agent/threads/${encodeURIComponent(threadId)}/asks/${encodeURIComponent(askId)}/answer`,
-      jsonInit('POST', { selected }),
+      { ...jsonInit('POST', { selected }), timeoutMs: ANSWER_ASK_TIMEOUT_MS },
       zAgentAnswerAccepted
     )
   }

@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { ChevronLeft, ChevronRight } from '@lucide/vue'
-import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  useTemplateRef,
+  watch
+} from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { groupModels } from '../../config/model-family'
@@ -21,42 +29,67 @@ import {
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { rememberShelfOnClick } from '../../lib/workshop/shelf-memory'
+import { openedUseCases, shelfOf } from '../../lib/workshop/shelf-use-cases'
+import { sectionTitleKeyFor } from '../../lib/workshop/section-title'
 import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
 import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 import FeaturedBanner from './FeaturedBanner.vue'
-import { modelSlides, studioSlide } from '../../lib/workshop/featured-slides'
-import { useWorkshopAppsEnabled } from '../../scripts/posthog'
+import { CARD_GRID } from '../../lib/workshop/card-layout'
+import { modelSlides } from '../../lib/workshop/featured-slides'
 import WorkshopSearchField from './WorkshopSearchField.vue'
 import WorkshopSections from './WorkshopSections.vue'
 import WorkshopSortMenu from './WorkshopSortMenu.vue'
 
-const { models, locale = 'en' } = defineProps<{
+const {
+  models,
+  initialSearch,
+  locale = 'en'
+} = defineProps<{
   models: readonly WorkshopModel[]
+  initialSearch?: string
   locale?: Locale
 }>()
 
 const query = ref('')
-const useCase = ref<UseCase | 'all' | 'other'>('all')
 const selectedUseCases = ref<UseCase[]>([])
 const legacyModalities = ref<string[]>([])
 const legacyProviders = ref<string[]>([])
 const legacyCapabilities = ref<string[]>([])
 const sort = ref<SortOrder>('popular')
+const openedShelf = computed(() => shelfOf(selectedUseCases.value))
+// Willie's browseable listing: rows per use case until the visitor narrows
+// down, then the flat grid takes over.
+const browseAll = defineModel<boolean>('browseAll', { default: false })
 let scrollReady = false
 
-onMounted(() => {
-  const initial = parseCatalogSearch(location.search)
+function readAddress(search: string) {
+  const initial = parseCatalogSearch(search)
   query.value = initial.query ?? ''
-  useCase.value = initial.useCase ?? 'all'
+  selectedUseCases.value = openedUseCases(initial.useCase ?? 'all')
   legacyModalities.value = [...initial.modalities]
   legacyProviders.value = [...initial.providers]
   legacyCapabilities.value = [...initial.capabilities]
+}
+
+// A browser can restore this page from its cache with a shelf still open, so
+// coming back from a model would land on that shelf rather than on the
+// catalogue the address names. The address is the truth on every show.
+function onPageShow(event: PageTransitionEvent) {
+  if (!event.persisted) return
+  browseAll.value = false
+  readAddress(location.search)
+}
+
+onMounted(() => {
+  readAddress(initialSearch ?? location.search)
+  window.addEventListener('pageshow', onPageShow)
   void nextTick(() => {
     scrollReady = true
   })
 })
+onBeforeUnmount(() => window.removeEventListener('pageshow', onPageShow))
 
 const toolbar = useTemplateRef<HTMLElement>('toolbar')
 const heading = useTemplateRef<HTMLElement>('heading')
@@ -76,7 +109,6 @@ const visible = computed(() =>
     sortWorkshopModels(
       filterWorkshopModels(models, {
         query: query.value,
-        useCase: useCase.value,
         useCases: selectedUseCases.value,
         modalities: legacyModalities.value,
         providers: legacyProviders.value,
@@ -89,18 +121,14 @@ const visible = computed(() =>
 const isFiltered = computed(
   () =>
     query.value !== '' ||
-    useCase.value !== 'all' ||
     selectedUseCases.value.length > 0 ||
     legacyModalities.value.length > 0 ||
     legacyProviders.value.length > 0 ||
     legacyCapabilities.value.length > 0
 )
 
-// Willie's browseable listing: rows per use case until the visitor narrows
-// down, then the flat grid takes over.
-const browseAll = defineModel<boolean>('browseAll', { default: false })
 watch(
-  [useCase, browseAll, () => query.value.trim() !== ''],
+  [openedShelf, browseAll, () => query.value.trim() !== ''],
   ([nextShelf, nextBrowse], [previousShelf, previousBrowse]) => {
     if (!scrollReady) return
     const sectionChanged =
@@ -112,13 +140,12 @@ watch(
   }
 )
 const browsing = computed(() => !isFiltered.value && !browseAll.value)
-const inSection = computed(() => useCase.value !== 'all' || browseAll.value)
+const inSection = computed(
+  () => selectedUseCases.value.length > 0 || browseAll.value
+)
+
 const sectionTitleKey = computed<TranslationKey>(() =>
-  useCase.value === 'all'
-    ? 'workshop.sections.allModels'
-    : useCase.value === 'other'
-      ? 'workshop.sections.otherFormats'
-      : useCaseLabelKey[useCase.value]
+  sectionTitleKeyFor(selectedUseCases.value)
 )
 
 // A category names the screen it opens, so the page heading above it would say
@@ -147,14 +174,10 @@ const featured = computed(() => {
     'popular'
   )
 })
-const studioEnabled = useWorkshopAppsEnabled()
-const featuredSlides = computed(() => [
-  ...(studioEnabled.value ? [studioSlide(locale)] : []),
-  ...modelSlides(featured.value, locale)
-])
+const featuredSlides = computed(() => modelSlides(featured.value, locale))
 
 function openSection(value: UseCase | 'other') {
-  useCase.value = value
+  selectedUseCases.value = openedUseCases(value)
 }
 
 function leaveSection() {
@@ -163,7 +186,6 @@ function leaveSection() {
 
 function resetFilters() {
   query.value = ''
-  useCase.value = 'all'
   selectedUseCases.value = []
   legacyModalities.value = []
   legacyProviders.value = []
@@ -172,7 +194,6 @@ function resetFilters() {
 
 function applyUseCases(values: UseCase[]) {
   selectedUseCases.value = values
-  if (values.length) useCase.value = 'all'
 }
 
 function clearFilters() {
@@ -183,9 +204,9 @@ function clearFilters() {
 function rememberModel(
   model: WorkshopModel,
   event: MouseEvent,
-  shelf = useCase.value
+  shelf = openedShelf.value
 ) {
-  rememberShelfOnClick(shelf, model.href, event)
+  if (model.href) rememberShelfOnClick(shelf, model.href, event)
 }
 
 watch(browseAll, (on) => on && resetFilters())
@@ -206,7 +227,7 @@ watch(browseAll, (on) => on && resetFilters())
       </button>
 
       <!-- scroll-mt tracks the nav height; the toolbar's is lower because its py-4 absorbs the difference -->
-      <h1
+      <h2
         v-if="inSection"
         ref="heading"
         class="mt-3 mb-4 scroll-mt-24 text-3xl font-bold text-primary-warm-white sm:text-4xl lg:scroll-mt-32"
@@ -215,7 +236,7 @@ watch(browseAll, (on) => on && resetFilters())
         <span class="text-base font-normal text-primary-warm-gray tabular-nums">
           {{ visible.length }}
         </span>
-      </h1>
+      </h2>
 
       <div
         ref="toolbar"
@@ -224,14 +245,14 @@ watch(browseAll, (on) => on && resetFilters())
       >
         <slot name="tabs" />
         <div
-          class="flex min-w-0 flex-1 items-center gap-3 max-sm:basis-full sm:min-w-fit"
+          class="flex min-w-0 flex-1 items-center gap-3 max-sm:basis-full sm:min-w-fit sm:justify-end"
         >
           <WorkshopSearchField
             v-model="query"
             :models
             :locale
             compact
-            class="min-w-0 flex-1 sm:mr-auto sm:max-w-xl sm:min-w-32"
+            class="min-w-0 flex-1 sm:max-w-120"
           />
 
           <div class="flex items-center gap-2" data-testid="workshop-filters">
@@ -284,7 +305,7 @@ watch(browseAll, (on) => on && resetFilters())
             {{ t('workshop.models.heading', locale) }}
           </h2>
           <ul
-            class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5"
+            :class="CARD_GRID"
             aria-labelledby="workshop-models-heading"
             data-testid="workshop-models-grid"
           >

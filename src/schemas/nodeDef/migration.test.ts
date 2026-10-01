@@ -241,6 +241,16 @@ describe('NodeDef Migration', () => {
     expect(result.options).toEqual([])
   })
 
+  it('should transform an input spec without options', () => {
+    const result = transformInputSpecV1ToV2(['PREVIEW_3D'], { name: 'image' })
+
+    expect(result).toEqual({
+      type: 'PREVIEW_3D',
+      name: 'image',
+      isOptional: false
+    })
+  })
+
   it('should preserve chartType across a V2 to V1 round trip', () => {
     const inputSpec = transformInputSpecV1ToV2(['CHART', { type: 'bar' }], {
       name: 'chartInput'
@@ -255,12 +265,12 @@ describe('NodeDef Migration', () => {
   })
 
   it('should not transform hidden fields', () => {
-    const plainObject = {
+    const plainObject: NonNullable<ComfyNodeDefV1['input']> = {
       hidden: {
         someHiddenValue: 42,
         anotherHiddenValue: { nested: 'object' }
       }
-    } as ComfyNodeDefV1['input']
+    }
 
     const nodeDef: ComfyNodeDefV1 = {
       name: 'TestNode',
@@ -277,7 +287,6 @@ describe('NodeDef Migration', () => {
 
     const result = transformNodeDefV1ToV2(nodeDef)
 
-    // @ts-expect-error fixme ts strict error
     expect(result.hidden).toEqual(plainObject.hidden)
     expect(result.hidden?.someHiddenValue).toBe(42)
     expect(result.hidden?.anotherHiddenValue).toEqual({ nested: 'object' })
