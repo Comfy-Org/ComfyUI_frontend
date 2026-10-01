@@ -1044,6 +1044,7 @@ export type {
   TeamCreditStopPrice,
   TeamCreditStops,
   TeamCreditStopSummary,
+  ToolCallSummary,
   UpdateAssetData,
   UpdateAssetError,
   UpdateAssetErrors,
