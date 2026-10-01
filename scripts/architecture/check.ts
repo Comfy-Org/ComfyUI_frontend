@@ -1061,11 +1061,21 @@ const acceptBaseline = (
 const enforceBaseline = (
   baselinePath: string,
   census: Census,
-  mode: ArchitectureMode
+  mode: ArchitectureMode,
+  exceptions: ArchitectureException[]
 ): void => {
   const recorded: { violations: string[] } = JSON.parse(
     readFileSync(baselinePath, 'utf8')
   )
+  for (const fingerprint of recorded.violations) {
+    const owners = exceptions.filter(({ exactFingerprints }) =>
+      exactFingerprints.includes(fingerprint)
+    )
+    if (owners.length !== 1)
+      throw new Error(
+        `${fingerprint} in baseline.json requires exact owned exception coverage`
+      )
+  }
   const failures = findRatchetFailures(census.violations, recorded.violations)
   if (failures.length)
     throw new Error(
@@ -1118,7 +1128,7 @@ export const runArchitectureCheck = (
     acceptBaseline(baselinePath, census, exceptions)
     return
   }
-  enforceBaseline(baselinePath, census, mode)
+  enforceBaseline(baselinePath, census, mode, exceptions)
 }
 
 if (
