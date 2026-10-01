@@ -16,7 +16,10 @@ import type {
 } from '@comfyorg/account-core/webSession'
 import type { RequestAuthorizer } from '@comfyorg/account-core/requestAuth'
 import { createRequestAuthorizer } from '@comfyorg/account-core/requestAuth'
-import type { SessionTokenFailure } from '@comfyorg/account-core/sessionTokenMint'
+import type {
+  SessionTokenFailure,
+  SessionTokenResult
+} from '@comfyorg/account-core/sessionTokenMint'
 import {
   createSessionTokenMint,
   SessionTokenError
@@ -257,6 +260,7 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
       send: (url, init, scope) => send(url, init, scope, authorize),
       workspaceToken: async (scope) => {
         const result = await mint.mint(scope.workspaceId)
+        dropRefusedWorkspace(scope, result)
         return staleScopeFailure(scope) ?? result
       },
       authorizeResource: async ({ session }) => {
@@ -329,6 +333,19 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     }
     if (identity?.getEpoch() === scope.epoch) return undefined
     return { status: 'error', code: 'IDENTITY_CHANGED', retryable: false }
+  }
+
+  function dropRefusedWorkspace(
+    { workspaceId }: WebSessionRequestScope,
+    result: SessionTokenResult
+  ): void {
+    if (
+      workspaceId !== undefined &&
+      result.status === 'error' &&
+      result.code === 'WORKSPACE_ACCESS_DENIED'
+    ) {
+      useWorkspaceAuthStore().dropDeniedWorkspace(workspaceId)
+    }
   }
 
   /** Undefined unless this tab is signed in on the session. */

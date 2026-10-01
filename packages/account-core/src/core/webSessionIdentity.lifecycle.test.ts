@@ -584,6 +584,106 @@ describe('account change under an open tab', () => {
   })
 })
 
+describe('refresh', () => {
+  const RENAMED = fakeWebSessionUser({ id: 'user-1', name: 'Old Name' })
+
+  it('reads the session now and adopts the same user without an account change', async () => {
+    const endpoint = liveEndpoint({ kind: 'live', user: RENAMED })
+    const tab = openTab({ endpoint })
+    await settle()
+    endpoint.state = { kind: 'live', user: USER_1 }
+
+    const refreshed = await tab.identity.refresh()
+
+    expect(refreshed).toMatchObject({
+      phase: 'signed_in',
+      session: { user: { id: 'user-1', name: 'Test User' } }
+    })
+    expect(tab.identity.getState()).toBe(refreshed)
+    expect(methods(endpoint)).toEqual(['GET', 'GET'])
+    expect(tab.changes).toEqual([])
+  })
+
+  it('takes the account-change path when another user holds the session', async () => {
+    const endpoint = liveEndpoint()
+    const tab = openTab({ endpoint })
+    await settle()
+    endpoint.state = { kind: 'live', user: USER_2 }
+
+    const refreshed = await tab.identity.refresh('user-1')
+
+    expect(summarize(refreshed)).toBe('signed_in:user-2')
+    expect(tab.changes).toEqual([
+      expect.objectContaining({ reason: 'user_changed', epoch: 1 })
+    ])
+  })
+
+  it('shares what it read with sibling tabs', async () => {
+    const endpoint = liveEndpoint({ kind: 'live', user: RENAMED })
+    const site = createFakeSiteBus()
+    const sibling = openTab({ endpoint, site })
+    const tab = openTab({ endpoint, site })
+    await settle()
+    endpoint.state = { kind: 'live', user: USER_1 }
+
+    await tab.identity.refresh()
+    await settle()
+
+    expect(sibling.identity.getState()).toMatchObject({
+      session: { user: { name: 'Test User' } }
+    })
+  })
+
+  it.for<{ name: string; state: FakeWebSessionState; settled: string }>([
+    {
+      name: 'a revoked session',
+      state: { kind: 'dead', code: 'session_revoked' },
+      settled: 'signed_out:revoked'
+    },
+    {
+      name: 'a dead session whose restore fails',
+      state: { kind: 'dead', code: 'no_session' },
+      settled: 'signed_out:restore_failed'
+    },
+    {
+      name: 'an outage',
+      state: { kind: 'unavailable', status: 503 },
+      settled: 'signed_in:user-1'
+    }
+  ])('resolves once $name has settled', async ({ state, settled }) => {
+    const endpoint = liveEndpoint()
+    const tab = openTab({ endpoint })
+    await settle()
+    endpoint.state = state
+
+    const refreshed = await tab.identity.refresh()
+
+    expect(summarize(refreshed)).toBe(settled)
+  })
+
+  it.for<{ name: string; initial: FakeWebSessionState; expected?: string }>([
+    {
+      name: 'the tab is signed out',
+      initial: { kind: 'dead', code: 'session_revoked' }
+    },
+    {
+      name: 'the tab holds another user than expected',
+      initial: { kind: 'live', user: USER_1 },
+      expected: 'user-2'
+    }
+  ])('reads nothing when $name', async ({ initial, expected }) => {
+    const endpoint = liveEndpoint(initial)
+    const tab = openTab({ endpoint })
+    await settle()
+    const before = tab.identity.getState()
+
+    const refreshed = await tab.identity.refresh(expected)
+
+    expect(refreshed).toBe(before)
+    expect(methods(endpoint)).toEqual(['GET'])
+  })
+})
+
 function session(userId: string, csrfToken = 'csrf-1'): WebSession {
   return {
     user: fakeWebSessionUser({ id: userId }),
