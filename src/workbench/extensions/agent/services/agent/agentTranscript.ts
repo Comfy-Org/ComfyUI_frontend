@@ -154,7 +154,7 @@ function parseUserWorkflowReferences(
  * parts, so a `pending`/`running` status there is clamped straight to
  * `done` (never rendered as a perpetual-progress chip) rather than left
  * spinning forever; only `isLive` (the row is the one actively backed by a
- * live transport — the run_approval mid-ask case) keeps it `streaming`.
+ * live transport) keeps it `streaming`.
  */
 function toolCallPartState(
   status: unknown,
