@@ -35,6 +35,8 @@ export {
   getCheckoutJourneyTelemetryEventName,
   getCheckoutJourneyTelemetryEventPayload
 } from './checkoutJourney.js'
+export type { TopupAmountPreset } from './topupEvent.js'
+export { getTopupAmountPreset, TOPUP_AMOUNT_PRESETS_USD } from './topupEvent.js'
 export type {
   BillingCycle,
   BillingTierKey,
