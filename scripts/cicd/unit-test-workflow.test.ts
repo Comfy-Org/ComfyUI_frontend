@@ -12,6 +12,14 @@ const command = z
   .string()
   .parse(workflow.getIn(['jobs', 'test', 'steps', 0, 'run']))
 
+// Sharing a group across main pushes is what let one merge cancel the run
+// measuring the merge before it, which is the bug this key exists to fix.
+it('gives every main push its own concurrency group', () => {
+  expect(workflow.getIn(['concurrency', 'group'])).toBe(
+    "${{ github.workflow }}-${{ github.ref }}-${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && github.sha || '' }}"
+  )
+})
+
 it('runs the required check even when a dependency fails or is skipped', () => {
   expect(workflow.toJS()).toMatchObject({
     jobs: {

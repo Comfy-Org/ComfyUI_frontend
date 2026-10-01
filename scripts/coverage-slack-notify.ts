@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { parseArgs } from 'node:util'
 
 import {
   COVERAGE_METADATA_FILE,
@@ -10,6 +11,8 @@ const TARGET = 80
 const MILESTONE_STEP = 5
 const MIN_DELTA = 0.05
 const BAR_WIDTH = 20
+const UNIT_COVERAGE_DIR = 'coverage'
+const UNIT_BASELINE_DIR = 'temp/coverage-baseline'
 const E2E_COVERAGE_DIR = 'temp/e2e-coverage'
 const E2E_BASELINE_DIR = 'temp/e2e-coverage-baseline'
 
@@ -35,6 +38,19 @@ interface ReportContext {
   prUrl: string
   prNumber: string
   author: string
+}
+
+interface CliOptions extends ReportContext {
+  /** Empty unless the unit baseline is further back than the direct parent. */
+  unitSpanFrom: string
+  unitSpanTo: string
+}
+
+type MetricLabel = 'Unit' | 'E2E'
+
+const BASELINE_DESCRIPTION: Record<MetricLabel, string> = {
+  Unit: 'last measured merge',
+  E2E: 'last whole merge'
 }
 
 interface SlackBlock {
@@ -140,6 +156,15 @@ function readE2eSnapshot(): CoverageSnapshot {
   }
 }
 
+function readUnitSnapshot(spanFrom: string, spanTo: string): CoverageSnapshot {
+  return {
+    current: parseLcov(join(UNIT_COVERAGE_DIR, 'lcov.info')),
+    baseline: parseLcov(join(UNIT_BASELINE_DIR, 'lcov.info')),
+    currentSha: spanTo || undefined,
+    baselineSha: spanFrom || undefined
+  }
+}
+
 function shortSha(sha: string): string {
   return sha.slice(0, 7)
 }
@@ -200,19 +225,25 @@ function buildMilestoneBlock(label: string, milestone: number): SlackBlock {
   }
 }
 
-function parseArgs(argv: string[]): ReportContext {
-  let prUrl = ''
-  let prNumber = ''
-  let author = ''
+function parseOptions(argv: string[]): CliOptions {
+  const { values } = parseArgs({
+    args: argv,
+    options: {
+      'pr-url': { type: 'string', default: '' },
+      'pr-number': { type: 'string', default: '' },
+      author: { type: 'string', default: '' },
+      'unit-span-from': { type: 'string', default: '' },
+      'unit-span-to': { type: 'string', default: '' }
+    }
+  })
 
-  for (const arg of argv) {
-    if (arg.startsWith('--pr-url=')) prUrl = arg.slice('--pr-url='.length)
-    else if (arg.startsWith('--pr-number='))
-      prNumber = arg.slice('--pr-number='.length)
-    else if (arg.startsWith('--author=')) author = arg.slice('--author='.length)
+  return {
+    prUrl: values['pr-url'],
+    prNumber: values['pr-number'],
+    author: values.author,
+    unitSpanFrom: values['unit-span-from'],
+    unitSpanTo: values['unit-span-to']
   }
-
-  return { prUrl, prNumber, author }
 }
 
 function formatCoverageRow(
@@ -225,20 +256,22 @@ function formatCoverageRow(
 }
 
 interface ReportedMetric {
-  label: string
+  label: MetricLabel
   current: CoverageData
   baseline: CoverageData
   delta: number
+  currentSha?: string
+  baselineSha?: string
 }
 
 function reportable(
-  label: string,
-  { current, baseline }: CoverageSnapshot
+  label: MetricLabel,
+  { current, baseline, currentSha, baselineSha }: CoverageSnapshot
 ): ReportedMetric | null {
   if (current === null || baseline === null) return null
   const delta = current.percentage - baseline.percentage
   if (Math.abs(delta) < MIN_DELTA) return null
-  return { label, current, baseline, delta }
+  return { label, current, baseline, delta, currentSha, baselineSha }
 }
 
 function direction(deltas: number[]): Direction {
@@ -248,19 +281,17 @@ function direction(deltas: number[]): Direction {
 }
 
 /**
- * Names the commits an E2E delta actually spans. Silent unless the baseline
+ * Names the commits a delta actually spans. Silent unless the baseline
  * identifies itself, so nothing is claimed that cannot be shown.
  */
-function spanNote(
-  reported: ReportedMetric[],
-  e2e: CoverageSnapshot
-): string | null {
-  if (!reported.some((metric) => metric.label === 'E2E')) return null
-  if (e2e.baselineSha === undefined) return null
+function spanNote(metric: ReportedMetric): string | null {
+  if (metric.baselineSha === undefined) return null
 
-  const head =
-    e2e.currentSha === undefined ? '' : ` to \`${shortSha(e2e.currentSha)}\``
-  return `_E2E measured from the last whole merge (\`${shortSha(e2e.baselineSha)}\`)${head}; this span may cover several merges._`
+  const through =
+    metric.currentSha === undefined
+      ? ''
+      : ` through \`${shortSha(metric.currentSha)}\``
+  return `_${metric.label} coverage compared against \`${shortSha(metric.baselineSha)}\` (${BASELINE_DESCRIPTION[metric.label]})${through}; this span may cover several merges._`
 }
 
 function progressLine(label: string, data: CoverageData): string {
@@ -282,7 +313,7 @@ export function buildPayload(
   context: ReportContext
 ): SlackPayload | null {
   const reported = [reportable('Unit', unit), reportable('E2E', e2e)].filter(
-    (metric): metric is ReportedMetric => metric !== null
+    (metric) => metric !== null
   )
 
   if (reported.length === 0) return null
@@ -305,8 +336,8 @@ export function buildPayload(
   if (unit.current) summaryLines.push(progressLine('unit', unit.current))
   if (e2e.current) summaryLines.push(progressLine('e2e', e2e.current))
 
-  const e2eSpan = spanNote(reported, e2e)
-  if (e2eSpan) summaryLines.push('', e2eSpan)
+  const spans = reported.map(spanNote).filter((note) => note !== null)
+  if (spans.length > 0) summaryLines.push('', ...spans)
 
   const blocks: SlackBlock[] = [
     {
@@ -328,14 +359,13 @@ export function buildPayload(
 }
 
 function main() {
-  const context = parseArgs(process.argv.slice(2))
+  const options = parseOptions(process.argv.slice(2))
 
-  const unit: CoverageSnapshot = {
-    current: parseLcov('coverage/lcov.info'),
-    baseline: parseLcov('temp/coverage-baseline/lcov.info')
-  }
-
-  const payload = buildPayload(unit, readE2eSnapshot(), context)
+  const payload = buildPayload(
+    readUnitSnapshot(options.unitSpanFrom, options.unitSpanTo),
+    readE2eSnapshot(),
+    options
+  )
   if (payload === null) process.exit(0)
 
   process.stdout.write(JSON.stringify(payload))

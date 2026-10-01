@@ -315,9 +315,126 @@ describe('completeness gate wiring', () => {
     expect(steps.map((step) => field(step, 'id')).filter(Boolean)).toContain(
       'e2e-meta'
     )
-    expect(field(save, 'if')).toContain(
-      "steps.e2e-meta.outputs.complete == 'true'"
+    expect(field(save, 'if')).toBe(
+      "success() && steps.e2e-meta.outputs.complete == 'true' && steps.e2e-order.outputs.usable == 'true' && hashFiles('temp/e2e-coverage/coverage.lcov') != ''\n"
     )
-    expect(field(save, 'if')).toContain('success()')
+  })
+})
+// The measurement policies themselves are covered by
+// coverage-unit-baseline.test.ts, coverage-e2e-order.test.ts, and
+// post-slack-coverage-report.test.ts. What is left here is the wiring that
+// decides whether those policies run at all.
+describe('per-merge measurement wiring', () => {
+  const NOTIFY = '.github/workflows/coverage-slack-notify.yaml'
+
+  function notifyStep(predicate: (step: unknown) => boolean): unknown {
+    return jobSteps(readWorkflow(NOTIFY)).find(predicate)
+  }
+
+  // Deleting any one of these leaves the module it calls as dead code that
+  // its own suite still happily covers.
+  it('runs the extracted scripts rather than inline copies of them', () => {
+    const commands = jobSteps(readWorkflow(NOTIFY)).map((step) =>
+      String(field(step, 'run') ?? '')
+    )
+
+    expect(commands).toContain(
+      'pnpm exec tsx scripts/cicd/coverage-unit-baseline.ts'
+    )
+    expect(commands).toContain(
+      'pnpm exec tsx scripts/cicd/coverage-e2e-order.ts'
+    )
+    expect(commands).toContain('scripts/cicd/post-slack-coverage-report.sh')
+  })
+
+  // Calling the scripts is not enough: the walk must be skipped when no PR
+  // owns the commit, and the span must be passed only when there is one, or
+  // every direct-parent report claims to cover several merges.
+  it('runs the baseline walk only for a commit a PR owns', () => {
+    const resolve = notifyStep((step) => field(step, 'id') === 'unit-baseline')
+
+    expect(field(resolve, 'if')).toBe("steps.pr-meta.outputs.skip != 'true'")
+  })
+
+  it('passes the span only when the baseline is not the direct parent', () => {
+    const generate = notifyStep((step) => field(step, 'id') === 'slack-payload')
+
+    expect(field(generate, 'env', 'UNIT_SPAN_FROM')).toBe(
+      "${{ steps.unit-baseline.outputs.spanned == 'true' && steps.unit-baseline.outputs.ancestor || '' }}"
+    )
+  })
+
+  // Resolving by commit here would re-pick the newest run for that sha —
+  // including a cancelled one, whose tracefile may be truncated — and discard
+  // the verdict check that chose this run.
+  it('downloads the ancestor baseline by resolved run id, not by commit', () => {
+    const download = notifyStep(
+      (step) => field(step, 'with', 'path') === 'temp/coverage-baseline'
+    )
+
+    expect(field(download, 'with', 'run_id')).toBe(
+      '${{ steps.unit-baseline.outputs.run-id }}'
+    )
+    expect(field(download, 'with', 'commit')).toBeUndefined()
+    expect(field(download, 'with', 'workflow_conclusion')).toBeUndefined()
+  })
+
+  // Coverage floors live in the same step that merges the shard reports, so a
+  // regression past a floor fails the run. Reporting only successes skipped
+  // exactly the regressions and let the next delta subtract them out.
+  it('reports merges whose unit run failed, not just successes', () => {
+    const condition = String(
+      field(readWorkflow(NOTIFY), 'jobs', 'notify', 'if')
+    )
+
+    expect(condition).toContain(
+      'contains(fromJSON(\'["success", "failure"]\'), github.event.workflow_run.conclusion)'
+    )
+    // Absent coverage has to leave unit out rather than redden the notifier,
+    // but an API or extraction failure still should. Matched on path: the
+    // ancestor download also carries a run_id.
+    const current = notifyStep(
+      (step) => field(step, 'with', 'path') === 'coverage'
+    )
+    expect(field(current, 'with', 'if_no_artifact_found')).toBe('warn')
+    expect(field(current, 'continue-on-error')).toBeUndefined()
+  })
+
+  it('stores no unit baseline artifact', () => {
+    const saves = jobSteps(readWorkflow(NOTIFY)).filter((step) =>
+      String(field(step, 'uses')).startsWith('actions/upload-artifact@')
+    )
+
+    expect(saves.map((step) => field(step, 'with', 'name'))).toEqual([
+      'e2e-coverage-baseline'
+    ])
+  })
+
+  // E2E has no per-commit artifact to pin, so it can be measured on a commit
+  // this one does not contain and would be credited to the wrong PR.
+  it('gates the E2E row and its baseline on the ordering check', () => {
+    // The download step carries the same artifact name, so match the upload.
+    const save = notifyStep(
+      (step) =>
+        field(step, 'with', 'name') === 'e2e-coverage-baseline' &&
+        String(field(step, 'uses')).startsWith('actions/upload-artifact@')
+    )
+
+    expect(
+      jobSteps(readWorkflow(NOTIFY)).map((step) => field(step, 'id'))
+    ).toContain('e2e-order')
+    // Whole value, not its pieces: `success() || ...` contains both and would
+    // save a baseline after a rejected post.
+    expect(field(save, 'if')).toBe(
+      "success() && steps.e2e-meta.outputs.complete == 'true' && steps.e2e-order.outputs.usable == 'true' && hashFiles('temp/e2e-coverage/coverage.lcov') != ''\n"
+    )
+  })
+
+  // continue-on-error would keep the run green and let success() advance the
+  // baseline past a report that was never delivered.
+  it('lets a failed Slack post fail the run', () => {
+    const post = notifyStep((step) => field(step, 'id') === 'slack-post')
+
+    expect(field(post, 'continue-on-error')).toBeUndefined()
   })
 })
