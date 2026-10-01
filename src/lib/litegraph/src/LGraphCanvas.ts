@@ -32,6 +32,7 @@ import {
 import { useSelectionStore } from '@/core/selection/selectionStore'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import {
+  applyParentSizedCanvasStyle,
   applyViewport,
   measureViewport,
   normalizeDpr
@@ -508,7 +509,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   static _measureText?: (text: string, fontStyle?: string) => number
 
   private _draggingItems = false
-  private autoSizedCanvasStyle: { width?: string; height?: string } = {}
 
   /** The state of this canvas, e.g. whether it is being dragged or read-only. */
   state: LGraphCanvasState = {
@@ -6687,18 +6687,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     if (usesParentSize) {
-      const { style } = this.canvas
-      const previousStyle = this.autoSizedCanvasStyle
-      const nextStyle: { width?: string; height?: string } = {}
-      if (!style.width || style.width === previousStyle.width) {
-        style.width = `${width}px`
-        nextStyle.width = style.width
-      }
-      if (!style.height || style.height === previousStyle.height) {
-        style.height = `${height}px`
-        nextStyle.height = style.height
-      }
-      this.autoSizedCanvasStyle = nextStyle
+      applyParentSizedCanvasStyle(this.canvas, width ?? 0, height ?? 0)
     }
 
     const viewport = measureViewport(

@@ -12,6 +12,29 @@ interface CanvasViewportConsumer {
 }
 
 const appliedViewportByCanvas = new WeakMap<HTMLCanvasElement, CanvasViewport>()
+const autoSizedStyleByCanvas = new WeakMap<
+  HTMLCanvasElement,
+  { width?: string; height?: string }
+>()
+
+function applyParentSizedCanvasStyle(
+  canvas: HTMLCanvasElement,
+  width: number,
+  height: number
+): void {
+  const { style } = canvas
+  const previousStyle = autoSizedStyleByCanvas.get(canvas) ?? {}
+  const nextStyle: { width?: string; height?: string } = {}
+  if (!style.width || style.width === previousStyle.width) {
+    style.width = `${width}px`
+    nextStyle.width = style.width
+  }
+  if (!style.height || style.height === previousStyle.height) {
+    style.height = `${height}px`
+    nextStyle.height = style.height
+  }
+  autoSizedStyleByCanvas.set(canvas, nextStyle)
+}
 
 function normalizeDpr(rawDpr: number): number {
   return rawDpr > 0 && Number.isFinite(rawDpr) ? Math.max(rawDpr, 1) : 1
@@ -125,5 +148,6 @@ export {
   normalizeDpr,
   measureViewport,
   measureViewportFromElement,
+  applyParentSizedCanvasStyle,
   applyViewport
 }
