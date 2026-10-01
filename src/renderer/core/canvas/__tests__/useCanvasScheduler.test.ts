@@ -223,6 +223,7 @@ describe('useCanvasScheduler', () => {
     expect(third).toHaveBeenCalledOnce()
     expect(mockReportError).toHaveBeenCalledWith(error, {
       errorType: 'canvas_scheduled_operation_failed',
+      surface: 'graph',
       context: {
         remainingInBatch: 1,
         pendingQueue: 0,

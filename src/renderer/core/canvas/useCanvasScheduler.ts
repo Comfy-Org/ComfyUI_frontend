@@ -81,6 +81,7 @@ export function createCanvasScheduler(): CanvasScheduler {
     } catch (err) {
       reportError(err, {
         errorType: 'canvas_scheduled_operation_failed',
+        surface: 'graph',
         context: {
           remainingInBatch,
           pendingQueue: queue.length,
