@@ -29,6 +29,7 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
+import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { readSubgraphDefinitions } from './agentSubgraphDefinitions'
@@ -94,6 +95,27 @@ interface FixtureOptions {
   secondDefinition?: boolean
   /** Serialize the root `source` node with the interior node's id (7). */
   rootIdCollidesWithInterior?: boolean
+  /**
+   * Strip the definition's interior nodes and links, so it still declares
+   * `value` while nothing promotes it. Models the document behind PM-1902: a
+   * subgraph-interior create is unrepresentable as a wire op
+   * (`agent_crdt_unrepresentable_subgraph_node_create`), so the definition the
+   * doc carries never gets the interior that makes `value` promoted.
+   */
+  unpromotedDefinition?: boolean
+  /** Serialize the host with this positional widget array. */
+  hostWidgetValues?: WidgetValue[]
+}
+
+/**
+ * Options that deliberately break the host/document agreement `startFollower`
+ * otherwise asserts on load.
+ */
+function expectsDriftingHost(options: FixtureOptions): boolean {
+  return (
+    options.unpromotedDefinition === true ||
+    options.hostWidgetValues !== undefined
+  )
 }
 
 function promotedWorkflow(options: FixtureOptions = {}): WorkflowJSON {
@@ -150,13 +172,34 @@ function promotedWorkflow(options: FixtureOptions = {}): WorkflowJSON {
   return reshapeSerialized(graph.serialize(), options)
 }
 
+type SerializedGraph = ReturnType<LGraph['serialize']>
+
+function reshapeHost(
+  hostNode: SerializedGraph['nodes'][number],
+  options: FixtureOptions
+): void {
+  if (options.stripHostInputs) hostNode.inputs = []
+  if (options.emptyHostWidgets) hostNode.widgets_values = []
+  if (options.hostWidgetValues) {
+    hostNode.widgets_values = options.hostWidgetValues
+  }
+}
+
+/** Leaves each definition declaring `value` with no interior to promote it. */
+function stripDefinitionInteriors(serialized: SerializedGraph): void {
+  for (const definition of serialized.definitions?.subgraphs ?? []) {
+    definition.nodes = []
+    definition.links = []
+  }
+}
+
 function reshapeSerialized(
-  serialized: ReturnType<LGraph['serialize']>,
+  serialized: SerializedGraph,
   options: FixtureOptions
 ): WorkflowJSON {
   const hostNode = serialized.nodes.find((n) => n.id === 1)
-  if (options.stripHostInputs && hostNode) hostNode.inputs = []
-  if (options.emptyHostWidgets && hostNode) hostNode.widgets_values = []
+  if (hostNode) reshapeHost(hostNode, options)
+  if (options.unpromotedDefinition) stripDefinitionInteriors(serialized)
   // litegraph remaps a root id that collides with an interior, so the
   // collision only exists in the serialized shape a document can carry.
   const sourceNode = serialized.nodes.find((n) => n.id === 2)
@@ -180,9 +223,11 @@ function startFollower(options: FixtureOptions = {}) {
   ).not.toBeNull()
   const instance = graph.getNodeById(toNodeId(1)) as SubgraphNode
   expect(instance).toBeInstanceOf(SubgraphNode)
-  expect(instance.widgets[0]?.value).toBe(
-    options.emptyHostWidgets ? INTERIOR_DEFAULT_VALUE : HOST_INITIAL_VALUE
-  )
+  if (!expectsDriftingHost(options)) {
+    expect(instance.widgets[0]?.value).toBe(
+      options.emptyHostWidgets ? INTERIOR_DEFAULT_VALUE : HOST_INITIAL_VALUE
+    )
+  }
   expect(instance.inputs.map((i) => i.name)).toEqual(
     options.extraInput ? ['extra', 'value'] : ['value']
   )
@@ -872,6 +917,49 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     forwardRaw(state, retypeNode3AsHost, 1)
 
     expectNode3RebuiltAsHost(state)
+  })
+
+  it('S1u reports drift on load when the definition promotes nothing', () => {
+    // PM-1902: the definition in the document carries no interior, so nothing
+    // on the host is promoted while its opaque array still carries a value.
+    // The load path configured that array positionally over a host with no
+    // widgets, dropping the value with no telemetry at all.
+    const state = startFollower({ unpromotedDefinition: true })
+
+    expect(state.instance.inputs.map((i) => i.widgetId)).toEqual([undefined])
+    expect(state.instance.widgets).toEqual([])
+    expect(storedHostWidgets(state)).toEqual([])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining('carries 1 opaque widget values')
+      }),
+      expect.objectContaining({
+        surface: 'agent',
+        errorType: 'agent_graph_host_widgets_mismatch',
+        context: expect.objectContaining({ expected: 0, actual: 1 })
+      })
+    )
+  })
+
+  it('S1v keeps host defaults on load when the opaque array is longer', () => {
+    // The load path handed the array straight to `configure`, which binds
+    // positionally over the host's widgets, so a two-value array landed its
+    // first value on the single promoted widget. `applyHostWidgets` refuses
+    // that same mapping on the incremental path (S1c); both paths must.
+    const state = startFollower({ hostWidgetValues: [99, 77] })
+
+    expect(state.instance.widgets.map((w) => w.name)).toEqual(['value'])
+    expect(state.instance.widgets[0]?.value).toBe(INTERIOR_DEFAULT_VALUE)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining('carries 2 opaque widget values')
+      }),
+      expect.objectContaining({
+        surface: 'agent',
+        errorType: 'agent_graph_host_widgets_mismatch',
+        context: expect.objectContaining({ expected: 1, actual: 2 })
+      })
+    )
   })
 
   it('S1s rebuilds a retyped node through the reconcile path after a rebind', () => {
