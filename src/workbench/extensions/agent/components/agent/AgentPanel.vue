@@ -59,6 +59,7 @@ const {
   activeTab = null,
   workflowTabs = [],
   visibleTabPath = null,
+  followsVisibleWorkflow = false,
   selectingTabPath = null,
   selectTab = async () => false,
   workflowDetached = false,
@@ -89,6 +90,7 @@ const {
   activeTab?: ActiveTab | null
   workflowTabs?: ActiveTab[]
   visibleTabPath?: string | null
+  followsVisibleWorkflow?: boolean
   selectingTabPath?: string | null
   selectTab?: (path: string) => Promise<boolean>
   workflowDetached?: boolean
@@ -135,7 +137,15 @@ const emit = defineEmits<{
   answerAsk: [askId: string, selection: 'run' | 'cancel']
   openWorkflow: [workflowId: string, workflowName?: string]
   openReferenceWorkflow: [workflowId: string, workflowName: string]
+  showTarget: []
 }>()
+
+const targetNotice = computed(() => {
+  if (workflowDetached || activeTab === null) return undefined
+  if (visibleTabPath !== null && visibleTabPath !== activeTab.path)
+    return 'mismatch'
+  return followsVisibleWorkflow ? 'following' : undefined
+})
 
 const showHistory = ref(false)
 
@@ -283,6 +293,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           class="size-6 shrink-0"
           @click="onOpenHistory"
         >
+          <!-- fallow-ignore-next-line css-token-drift -- Iconify selectors name the exact product icon; they are not spacing or color scale values. -->
           <span class="icon-[lucide--history] size-4 shrink-0" />
         </Button>
         <template v-if="renaming">
@@ -405,6 +416,8 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           <RunNoticeBanner
             :expanded="isMaximized"
             :workflow-name="workflowDetached ? undefined : activeTab?.name"
+            :context="targetNotice"
+            @show-target="emit('showTarget')"
           />
           <Composer
             ref="composerRef"
