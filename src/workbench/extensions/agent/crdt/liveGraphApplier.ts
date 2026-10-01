@@ -569,7 +569,7 @@ export class LiveGraphApplier {
     } else {
       node.configure({
         ...info,
-        widgets_values: positionalWidgetValues(node, docNode.widgets)
+        widgets_values: this.configuredWidgetValues(node, docNode.widgets)
       })
     }
     floorSizeToContent(node)
@@ -664,18 +664,48 @@ export class LiveGraphApplier {
     }
   }
 
+  /**
+   * Widget values for `configure` on a newly created node. A subgraph host's
+   * opaque array is positional over its promoted inputs, so a length
+   * disagreement means the writer and this reader see different host
+   * surfaces: applying it would land values on the wrong promoted widget, or
+   * on none at all when the host promotes nothing. The host keeps its own
+   * values and the drift is surfaced, as on the incremental path.
+   */
+  private configuredWidgetValues(
+    node: LGraphNode,
+    widgets: DocNode['widgets']
+  ): WidgetValue[] | undefined {
+    if (node.isSubgraphNode() && Array.isArray(widgets)) {
+      const promoted = promotedInputs(node)
+      if (widgets.length !== promoted.length) {
+        this.reportHostWidgetDrift(node, widgets.length, promoted.length)
+        return undefined
+      }
+    }
+    return positionalWidgetValues(node, widgets)
+  }
+
+  private reportHostWidgetDrift(
+    node: LGraphNode,
+    actual: number,
+    expected: number
+  ): void {
+    this.reportOnce(
+      `host-widgets:${String(node.id)}:${actual}`,
+      `Subgraph host ${String(node.id)} (${node.type}) carries ${actual} opaque widget values for ${expected} promoted widgets`,
+      'agent_graph_host_widgets_mismatch',
+      { nodeId: node.id, type: node.type, expected, actual }
+    )
+  }
+
   private applyHostWidgets(
     node: LGraphNode,
     widgets: DocNode['widgets']
   ): void {
-    const promoted = node.inputs.filter((input) => input.widgetId)
+    const promoted = promotedInputs(node)
     if (Array.isArray(widgets) && widgets.length !== promoted.length) {
-      this.reportOnce(
-        `host-widgets:${String(node.id)}:${widgets.length}`,
-        `Subgraph host ${String(node.id)} carries ${widgets.length} opaque widget values for ${promoted.length} promoted widgets`,
-        'agent_graph_host_widgets_mismatch',
-        { nodeId: node.id, expected: promoted.length, actual: widgets.length }
-      )
+      this.reportHostWidgetDrift(node, widgets.length, promoted.length)
       return
     }
     const store = useWidgetValueStore()
@@ -827,6 +857,11 @@ function isLinkPresent(
     current.origin_id === origin.id &&
     current.origin_slot === originSlot
   )
+}
+
+/** The host inputs that surface a promoted widget, in host slot order. */
+function promotedInputs(node: LGraphNode): INodeInputSlot[] {
+  return node.inputs.filter((input) => input.widgetId)
 }
 
 /** Host widget values by promoted-input name; a positional list is read in promoted-input order. */
