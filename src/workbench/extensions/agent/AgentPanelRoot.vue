@@ -21,7 +21,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type {
   AgentErrorMetadata,
-  AgentFreeUseNoticeAction,
+  AgentFreeUseNoticeMetadata,
   AgentMessageSentMetadata,
   AgentPaywallSurface,
   AgentRunApprovalDecision,
@@ -76,10 +76,7 @@ import {
   trackCoachDeferral
 } from './composables/agent/useOnboarding'
 
-import {
-  isFreeUsePlacement,
-  useFreeUsePlacement
-} from './experiments/freeUsePlacement'
+import { useFreeUsePlacement } from './experiments/freeUsePlacement'
 import AgentPanel from './components/agent/AgentPanel.vue'
 import { agentBoundWorkflowIdKey } from './components/agent/agentBoundWorkflowId'
 import AgentGraphActivityBar from './components/AgentGraphActivityBar.vue'
@@ -1269,12 +1266,8 @@ const { variant: freeUsePlacement } = useFreeUsePlacement(
   () => agentPanelStore.isVisible
 )
 
-function onFreeUseNotice(action: AgentFreeUseNoticeAction): void {
-  if (!isFreeUsePlacement(freeUsePlacement.value)) return
-  useTelemetry()?.trackAgentFreeUseNotice({
-    action,
-    placement: freeUsePlacement.value
-  })
+function onFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {
+  useTelemetry()?.trackAgentFreeUseNotice(metadata)
 }
 
 function onFeedback(turnId: string, vote: 'up' | 'down' | null): void {

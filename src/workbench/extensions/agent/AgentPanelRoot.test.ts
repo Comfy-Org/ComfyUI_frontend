@@ -20,6 +20,7 @@ import { i18n } from '@/i18n'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { setupInlinePromptEditorDom } from './components/agent/composer/inlinePromptEditorTestSetup'
+import { useFreeUsePlacement } from './experiments/freeUsePlacement'
 
 setupInlinePromptEditorDom()
 
@@ -87,6 +88,7 @@ vi.mock<unknown>(import('@/composables/canvas/useFocusNode'), () => ({
 }))
 
 vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('./experiments/freeUsePlacement'), { spy: true })
 
 const ws = vi.hoisted(() => {
   type Listener = (event: { detail?: unknown }) => void
@@ -598,6 +600,23 @@ describe('AgentPanelRoot first-use experience', () => {
 
     expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('forwards free-use notice telemetry with its rendered placement', async () => {
+    vi.mocked(useFreeUsePlacement).mockReturnValueOnce(
+      fromPartial({ variant: ref('top-banner') })
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const [notice] = await screen.findAllByRole('note')
+    await userEvent.click(
+      within(notice).getByRole('button', { name: 'Dismiss' })
+    )
+
+    expect(useTelemetry()!.trackAgentFreeUseNotice).toHaveBeenCalledWith({
+      action: 'dismissed',
+      placement: 'top-banner'
+    })
   })
 })
 

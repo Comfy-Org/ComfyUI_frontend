@@ -41,13 +41,10 @@ describe('FreeUseNotice', () => {
 
     const link = screen.getByRole('link', { name: 'Learn more' })
     expect(link).toHaveAttribute('target', '_blank')
-    expect(link).toHaveAttribute('href', expect.stringContaining('http'))
-  })
-
-  it('reports the impression once it reaches the screen', () => {
-    const { emitted } = mount('near-composer')
-
-    expect(emitted('notice')).toEqual([['shown']])
+    expect(link).toHaveAttribute(
+      'href',
+      'https://docs.comfy.org/get_started/cloud'
+    )
   })
 
   it('reports a learn-more click', async () => {
@@ -55,7 +52,10 @@ describe('FreeUseNotice', () => {
 
     await userEvent.click(screen.getByRole('link', { name: 'Learn more' }))
 
-    expect(emitted('notice')).toEqual([['shown'], ['learn_more_clicked']])
+    expect(emitted('notice')).toEqual([
+      [{ action: 'shown', placement: 'top-banner' }],
+      [{ action: 'learn_more_clicked', placement: 'top-banner' }]
+    ])
   })
 
   it('hides itself and persists the dismissal', async () => {
@@ -64,7 +64,10 @@ describe('FreeUseNotice', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
 
     expect(screen.queryByRole('note')).toBeNull()
-    expect(emitted('notice')).toEqual([['shown'], ['dismissed']])
+    expect(emitted('notice')).toEqual([
+      [{ action: 'shown', placement: 'top-banner' }],
+      [{ action: 'dismissed', placement: 'top-banner' }]
+    ])
     expect(localStorage.getItem(FREE_USE_NOTICE_DISMISSED_KEY)).toBe('true')
   })
 

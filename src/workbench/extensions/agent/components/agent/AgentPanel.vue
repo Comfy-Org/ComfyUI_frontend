@@ -15,7 +15,7 @@ import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import type {
-  AgentFreeUseNoticeAction,
+  AgentFreeUseNoticeMetadata,
   AgentPaywallSurface,
   AgentStopMethod
 } from '@/platform/telemetry/types'
@@ -123,10 +123,6 @@ const {
   selectHistory?: (id: string, isCurrent: () => boolean) => Promise<boolean>
   editableTurnId?: TurnId | null
   answeringAskIds?: ReadonlySet<string>
-  /**
-   * DES-1221 arm. `control` renders no notice at all; every other arm renders
-   * the same notice in exactly one of the four places.
-   */
   freeUsePlacement?: FreeUseVariant
 }>()
 const emit = defineEmits<{
@@ -161,7 +157,7 @@ const emit = defineEmits<{
   approvalShown: [askId: string, turnId: string, workflowId: string | null]
   openReferenceWorkflow: [workflowId: string, workflowName: string]
   showTarget: []
-  freeUseNotice: [action: AgentFreeUseNoticeAction]
+  freeUseNotice: [metadata: AgentFreeUseNoticeMetadata]
 }>()
 
 const targetNotice = computed(() => {
@@ -346,7 +342,6 @@ function onComposerSend(
 defineExpose({ addAttachment, updateAttachment, removeAttachment })
 </script>
 
-<!-- fallow-ignore-next-line complexity -- FE-3142 adds four single-node placement branches to an already-large template; splitting the panel is out of scope for an experiment lane. -->
 <template>
   <section
     class="@container flex h-full flex-col overflow-hidden bg-base-background text-base-foreground"

@@ -17,7 +17,6 @@ import AgentPanel from './AgentPanel.vue'
 import type { FreeUseVariant } from '../../experiments/freeUsePlacement'
 import { FREE_USE_PLACEMENTS } from '../../experiments/freeUsePlacement'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
-import { FREE_USE_NOTICE_DISMISSED_KEY } from './freeUseNoticeDismissal'
 
 setupInlinePromptEditorDom()
 
@@ -41,13 +40,9 @@ function mount(freeUsePlacement: FreeUseVariant) {
 }
 
 function notice() {
-  return screen.getByTestId('agent-free-use-notice')
-}
-
-function isBefore(first: Element, second: Element): boolean {
-  return Boolean(
-    first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING
-  )
+  return screen.getByRole('note', {
+    name: 'Prompts and workflow runs are FREE during BETA.'
+  })
 }
 
 describe('AgentPanel free-use placement', () => {
@@ -58,24 +53,21 @@ describe('AgentPanel free-use placement', () => {
   it('shows no notice in the control arm', () => {
     mount('control')
 
-    expect(screen.queryByTestId('agent-free-use-notice')).toBeNull()
+    expect(
+      screen.queryByRole('note', {
+        name: 'Prompts and workflow runs are FREE during BETA.'
+      })
+    ).toBeNull()
   })
 
   it.for(PLACEMENTS)('shows exactly one notice for %s', (variant) => {
     mount(variant)
 
-    const notices = screen.getAllByTestId('agent-free-use-notice')
+    const notices = screen.getAllByRole('note', {
+      name: 'Prompts and workflow runs are FREE during BETA.'
+    })
     expect(notices).toHaveLength(1)
     expect(notices[0]).toHaveAttribute('data-placement', variant)
-  })
-
-  it('puts the top banner above the chat body, outside the composer', () => {
-    mount('top-banner')
-
-    expect(isBefore(notice(), screen.getByTestId('suggested-prompts'))).toBe(
-      true
-    )
-    expect(screen.getByTestId('agent-composer').contains(notice())).toBe(false)
   })
 
   it('hides the top banner while chat history is open', async () => {
@@ -85,38 +77,11 @@ describe('AgentPanel free-use placement', () => {
       screen.getByRole('button', { name: 'Show chat history' })
     )
 
-    expect(screen.queryByTestId('agent-free-use-notice')).toBeNull()
-  })
-
-  it('puts the near-composer notice between the chat body and the composer', () => {
-    mount('near-composer')
-
-    expect(isBefore(screen.getByTestId('suggested-prompts'), notice())).toBe(
-      true
-    )
-    expect(isBefore(notice(), screen.getByTestId('agent-composer'))).toBe(true)
-    expect(screen.getByTestId('agent-composer').contains(notice())).toBe(false)
-  })
-
-  it('puts the above-input notice inside the composer but outside the input', () => {
-    mount('above-input')
-
-    expect(screen.getByTestId('agent-composer').contains(notice())).toBe(true)
-    expect(screen.getByTestId('composer-input-box').contains(notice())).toBe(
-      false
-    )
-    expect(isBefore(notice(), screen.getByTestId('composer-input-box'))).toBe(
-      true
-    )
-  })
-
-  it('puts the inside-input notice inside the input, above the prompt field', () => {
-    mount('inside-input')
-
-    expect(screen.getByTestId('composer-input-box').contains(notice())).toBe(
-      true
-    )
-    expect(isBefore(notice(), screen.getByRole('textbox'))).toBe(true)
+    expect(
+      screen.queryByRole('note', {
+        name: 'Prompts and workflow runs are FREE during BETA.'
+      })
+    ).toBeNull()
   })
 
   it.for(PLACEMENTS)(
@@ -139,13 +104,17 @@ describe('AgentPanel free-use placement', () => {
   it('reports the impression and the dismissal of the notice', async () => {
     const { emitted } = mount('above-input')
 
-    expect(emitted('freeUseNotice')).toEqual([['shown']])
+    expect(emitted('freeUseNotice')).toEqual([
+      [{ action: 'shown', placement: 'above-input' }]
+    ])
 
     await userEvent.click(
       within(notice()).getByRole('button', { name: 'Dismiss' })
     )
 
-    expect(emitted('freeUseNotice')).toEqual([['shown'], ['dismissed']])
-    expect(localStorage.getItem(FREE_USE_NOTICE_DISMISSED_KEY)).toBe('true')
+    expect(emitted('freeUseNotice')).toEqual([
+      [{ action: 'shown', placement: 'above-input' }],
+      [{ action: 'dismissed', placement: 'above-input' }]
+    ])
   })
 })

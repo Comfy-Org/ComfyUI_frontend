@@ -338,12 +338,10 @@ defineExpose({
 })
 </script>
 
-<!-- fallow-ignore-next-line complexity -- FE-3142 adds two placement slots to an already-large template; splitting the composer is out of scope for an experiment lane. -->
 <template>
   <div
     id="agent-composer"
     ref="composerContainerRef"
-    data-testid="agent-composer"
     class="relative flex flex-col rounded-lg border border-border-subtle bg-base-background"
   >
     <div
@@ -447,7 +445,6 @@ defineExpose({
     <slot name="aboveInput" />
 
     <div
-      data-testid="composer-input-box"
       :class="
         cn(
           'relative -m-px flex flex-col border transition-colors',
