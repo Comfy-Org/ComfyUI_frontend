@@ -1,11 +1,12 @@
 /**
  * Cloud configuration read at runtime from the Cloud app's own
  * `/api/features`, instead of values every host used to bake in at build
- * time: the Firebase options, and the Stripe publishable key. Framework-free
- * and dependency-free — it returns plain data and never imports the Firebase
- * or Stripe SDKs, so a caller decides if and when to use either.
+ * time: the Firebase options, the Stripe publishable key, and the PostHog
+ * project and disabled events. Framework-free and dependency-free — it
+ * returns plain data and never imports the Firebase, Stripe or PostHog SDKs,
+ * so a caller decides if and when to use any of them.
  *
- * `fetchCloudFeatures` fetches the document once and reads both fields from
+ * `fetchCloudFeatures` fetches the document once and reads every field from
  * it; `fetchFirebaseConfig` and `fetchStripePublishableKey` are single-field
  * conveniences built on top of it for a caller that only wants one. A host
  * that wants both still calls `fetchCloudFeatures` directly — calling both
@@ -80,6 +81,12 @@ function parseStripePublishableKey(value: unknown): string | undefined {
   return typeof value === 'string' && value !== '' ? value : undefined
 }
 
+function parseStringList(value: unknown): readonly string[] | undefined {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === 'string')
+    : undefined
+}
+
 /**
  * Fetches `/api/features` from the given Cloud origin, an unauthenticated,
  * cross-origin-readable endpoint. Resolves `undefined` on any problem — a
@@ -112,11 +119,12 @@ async function fetchFeaturesDocument(
 }
 
 /**
- * Fetches the Cloud app's `/api/features` once and reads both the Firebase
- * options (`firebase_config`) and the Stripe publishable key
- * (`stripe_publishable_key`) from it. Either field is absent when the
- * response omits it, is malformed, or the fetch itself fails — this never
- * throws.
+ * Fetches the Cloud app's `/api/features` once and reads the Firebase
+ * options (`firebase_config`), the Stripe publishable key
+ * (`stripe_publishable_key`) and the PostHog settings (`posthog_project_token`,
+ * `posthog_api_host`, `telemetry_disabled_events`) from it. A field is absent
+ * when the response omits it, is malformed, or the fetch itself fails — this
+ * never throws.
  */
 export async function fetchCloudFeatures(
   cloudBaseUrl: string,
@@ -129,6 +137,9 @@ export async function fetchCloudFeatures(
     stripePublishableKey: parseStripePublishableKey(
       body.stripe_publishable_key
     ),
+    posthogProjectToken: readString(body, 'posthog_project_token'),
+    posthogApiHost: readString(body, 'posthog_api_host'),
+    telemetryDisabledEvents: parseStringList(body.telemetry_disabled_events),
     ...(body.web_session_probe === true ? { webSessionProbe: true } : {})
   }
 }

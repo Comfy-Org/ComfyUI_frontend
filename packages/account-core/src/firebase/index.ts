@@ -468,10 +468,17 @@ export type CloudTelemetryConfig = Pick<
   'posthogProjectToken' | 'posthogApiHost' | 'telemetryDisabledEvents'
 >
 
+/** The Cloud app's PostHog settings from the same shared `/api/features` document. */
 export function resolveCloudTelemetryConfig(
-  _options: Pick<ResolveFirebaseIdentityOptions, 'cloudBaseUrl' | 'timeoutMs'>
+  options: Pick<ResolveFirebaseIdentityOptions, 'cloudBaseUrl' | 'timeoutMs'>
 ): Promise<CloudTelemetryConfig> {
-  return Promise.resolve({})
+  return resolveCloudFeatures(options.cloudBaseUrl, options.timeoutMs).then(
+    ({ posthogProjectToken, posthogApiHost, telemetryDisabledEvents }) => ({
+      posthogProjectToken,
+      posthogApiHost,
+      telemetryDisabledEvents
+    })
+  )
 }
 
 /**
