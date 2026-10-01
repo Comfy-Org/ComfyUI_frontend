@@ -301,7 +301,7 @@ export function clearCheckoutJourney(): void {
 
 let fallbackJourneyIdCounter = 0
 
-function createJourneyId(): string {
+export function createJourneyId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
     return crypto.randomUUID()
   }

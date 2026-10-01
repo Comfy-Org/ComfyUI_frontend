@@ -3,6 +3,7 @@ import { createMemoryHistory } from 'vue-router'
 import type { Router } from 'vue-router'
 
 import { BILLING_CLIENT_KEY } from '@comfyorg/account-ui/billing'
+import type { BillingSource } from '@comfyorg/billing-contract'
 
 import App from '@/App.vue'
 import { safeReturnTo } from '@/auth/returnTo'
@@ -289,7 +290,8 @@ describe('hosted billing entry routing', () => {
       `/v1/subscription?${ENTRY_QUERY}&source=agent_paywall&correlation_id=journey-1`
     )
 
-    expect(useBillingEntry().entry.value).toEqual({
+    const { entry } = useBillingEntry()
+    expect(entry.value).toEqual({
       version: 'v1',
       intent: 'subscription',
       product: 'comfyui',
@@ -297,6 +299,8 @@ describe('hosted billing entry routing', () => {
       source: 'agent_paywall',
       correlationId: 'journey-1'
     })
+    expectTypeOf(entry.value?.source).toEqualTypeOf<BillingSource | undefined>()
+    expectTypeOf(entry.value?.correlationId).toEqualTypeOf<string | undefined>()
   })
 
   it('publishes a link whose source is outside the shared list without one', async () => {
