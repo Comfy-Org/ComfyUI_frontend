@@ -268,13 +268,7 @@ export const nanoBananaPage: ModelLaunchPage = {
     subtitleKey: 'nanoBanana.runOptions.subtitle',
     ctaKey: 'nanoBanana.runOptions.cta'
   },
-  sectionOrder: ['showcases', 'faq', 'pricing', 'highlight'],
-  highlight: {
-    titleKey: 'nanoBanana.highlight.title',
-    descriptionKey: 'nanoBanana.highlight.description',
-    ctaKey: 'nanoBanana.highlight.cta',
-    route: 'agent'
-  },
+  sectionOrder: ['showcases', 'faq', 'pricing'],
   reviews: {
     headingKey: 'nanoBanana.reviews.heading'
   }

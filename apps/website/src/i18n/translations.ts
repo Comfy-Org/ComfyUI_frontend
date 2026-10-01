@@ -7940,19 +7940,6 @@ Enterprise`
     en: '4+ million Comfy creators say',
     'zh-CN': '超过 400 万 Comfy 创作者这样说'
   },
-  'nanoBanana.highlight.title': {
-    en: 'COMFY AGENT',
-    'zh-CN': 'COMFY AGENT'
-  },
-  'nanoBanana.highlight.description': {
-    en: 'Now live in Comfy Desktop. Describe what you want, and it plans, builds, and runs the workflow side by side with you. Every step stays on the canvas for you to adjust.',
-    'zh-CN':
-      '现已登陆 Comfy Desktop。描述你想要的结果，它会与你并肩规划、搭建并运行工作流。每一步都留在画布上，随时可调。'
-  },
-  'nanoBanana.highlight.cta': {
-    en: 'TRY IN COMFY DESKTOP',
-    'zh-CN': '在 Comfy Desktop 中试用'
-  },
   // Qwen-Image 2.1 model page (/qwen-image-2.1)
   'qwenImage21.meta.title': {
     en: 'Qwen-Image 2.1 on Comfy: Open-Weight Image Generation and Editing',
