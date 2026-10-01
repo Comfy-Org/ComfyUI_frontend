@@ -64,6 +64,7 @@ test('a Pay that goes through names the plan and the workspace, and Close goes b
     page.getByText('Your plan for Personal has been successfully updated.')
   ).toBeVisible()
   await expect(page.getByTestId('checkout-ending-plan')).toContainText('Pro')
+  await expect(page.getByTestId('checkout-ending-paid-today')).toBeHidden()
   await expect(code(page)).toBeHidden()
   await expect(page.getByText('You can close this tab now.')).toBeVisible()
   await expect(page.getByText(/Closing in/)).toBeHidden()
@@ -128,6 +129,69 @@ test('77-4068: a Pay that goes through counts the credits the server says it add
   await expect(heading(page, "You're all set")).toBeVisible()
   await expect(page.getByTestId('checkout-ending-plan')).toContainText(
     '10,000 credits added'
+  )
+})
+
+const paidToday = (page: Page) => page.getByTestId('checkout-ending-paid-today')
+
+test('758-15763: a Pay under a promo code keeps the plan rate on Success and lists the code, then what was paid today', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.preview = {
+    ...cloud.scenario.preview,
+    amount_due_cents: 4000,
+    promotion_code: 'LAUNCH20',
+    discounts: [
+      {
+        kind: 'promotion',
+        code: 'LAUNCH20',
+        name: 'Launch 20%',
+        amount_off_cents: 1000,
+        duration: 'once'
+      }
+    ]
+  }
+  await signIn(CHECKOUT)
+  await payButton(page).click()
+
+  await expect(heading(page, "You're all set")).toBeVisible()
+  const card = page.getByTestId('checkout-ending-plan')
+  await expect(card).toContainText('$50.00')
+  await expect(paidToday(page)).toHaveText(
+    /Launch 20%\s*−\$10\.00\s*First month\s*Paid today\s*\$40\.00/
+  )
+})
+
+test('765-15713: a prorated upgrade reads Paid today and why, without itemizing the proration', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  const preview = cloud.scenario.preview
+  cloud.scenario.preview = {
+    ...preview,
+    transition_type: 'upgrade',
+    proration_at: '2026-07-10T09:30:00.000Z',
+    amount_due_cents: 3250,
+    cost_today_cents: 3250,
+    credits_today_cents: 3250,
+    credits_next_period_cents: 10_000,
+    renewal_amount_cents: 10_000,
+    current_plan: {
+      ...preview.new_plan,
+      slug: 'creator_monthly',
+      tier: 'CREATOR',
+      price_cents: 3500
+    }
+  }
+  await signIn(CHECKOUT)
+  await payButton(page).click()
+
+  await expect(heading(page, "You're all set")).toBeVisible()
+  await expect(paidToday(page)).toHaveText(
+    /^\s*Paid today\s*\$32\.50\s*Prorated for the rest of this billing period\s*$/
   )
 })
 

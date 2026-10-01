@@ -5,7 +5,7 @@ import type { CapabilityDenialReason } from '@comfyorg/account-core/billing'
 
 import type { EndingScreen } from '@/checkout/endingScreen'
 import { endingOf } from '@/checkout/endingScreen'
-import type { EndingPlan } from '@/components/fullPage/CheckoutEnding.vue'
+import type { EndingPlan } from '@/components/fullPage/EndingPlanCard.vue'
 import CheckoutEnding from '@/components/fullPage/CheckoutEnding.vue'
 import { createBillingI18n } from '@/i18n'
 
@@ -244,6 +244,36 @@ describe('CheckoutEnding', () => {
     expect(screen.getByTestId('checkout-ending-plan')).toHaveTextContent(
       'Pro$50.00 USD / mo6,858 credits added'
     )
+  })
+
+  it('758-15763: Success keeps the rate and lists each reason, then Paid today', () => {
+    render(CheckoutEnding, {
+      props: {
+        screen: { kind: 'success' },
+        workspace: 'Acme Team',
+        plan: PLAN,
+        breakdown: {
+          deductions: [
+            { label: 'Launch', amount: '−$10.00', subline: 'First month' },
+            { label: 'Account balance', amount: '−$5.00' }
+          ],
+          paidToday: { label: 'Paid today', amount: '$35.00', sublines: [] }
+        }
+      },
+      global: { plugins: [createBillingI18n()] }
+    })
+
+    expect(screen.getByTestId('checkout-ending-plan')).toHaveTextContent(
+      'Pro$50.00 USD / moLaunch−$10.00First monthAccount balance−$5.00Paid today$35.00'
+    )
+  })
+
+  it('shows no Paid today when the charge matched the plan rate', () => {
+    renderEnding({ kind: 'success' })
+
+    expect(
+      screen.queryByTestId('checkout-ending-paid-today')
+    ).not.toBeInTheDocument()
   })
 
   describe('the receipt the server reported', () => {

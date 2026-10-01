@@ -14,16 +14,13 @@ import type {
 import { endingReceipt } from '@/checkout/endingScreen'
 import { longDate } from '@/checkout/longDate'
 import { supportLinkWithCode } from '@/checkout/payVerdict'
+import type { SuccessBreakdown } from '@/checkout/successBreakdown'
 import { namedPlan } from '@/checkout/summaryLedger'
 import EndingCodeCard from '@/components/fullPage/EndingCodeCard.vue'
+import type { EndingPlan } from '@/components/fullPage/EndingPlanCard.vue'
+import EndingPlanCard from '@/components/fullPage/EndingPlanCard.vue'
 import SuccessCloseFooter from '@/components/fullPage/SuccessCloseFooter.vue'
 import { useHostedCopy } from '@/composables/useHostedCopy'
-
-export interface EndingPlan {
-  readonly name: string
-  readonly price: string
-  readonly period: string
-}
 
 type Tone = 'done' | 'waiting' | 'refused'
 
@@ -63,11 +60,13 @@ const {
   screen,
   workspace,
   plan,
+  breakdown,
   closesItself = false
 } = defineProps<{
   screen: EndingScreen
   workspace: string
   plan?: EndingPlan
+  breakdown?: SuccessBreakdown
   closesItself?: boolean
 }>()
 
@@ -181,28 +180,12 @@ function act() {
         </i18n-t>
       </div>
 
-      <div
+      <EndingPlanCard
         v-if="planCard"
-        class="flex w-full flex-col gap-2 rounded-lg bg-secondary-background p-6 text-left"
-        data-testid="checkout-ending-plan"
-      >
-        <p class="m-0 text-base font-bold text-base-foreground">
-          {{ planCard.name }}
-        </p>
-        <p class="m-0 text-base-foreground tabular-nums">
-          <span class="text-[2rem] font-semibold">{{ planCard.price }}</span>
-          {{ planCard.period }}
-        </p>
-        <p
-          v-if="creditsAdded !== undefined"
-          class="m-0 flex items-center gap-1.5 text-sm text-muted-foreground"
-        >
-          <i class="icon-[lucide--coins] size-4 shrink-0" aria-hidden="true" />
-          <span class="tabular-nums">
-            {{ t(`${R}.creditsAddedLine`, { count: credits(creditsAdded) }) }}
-          </span>
-        </p>
-      </div>
+        :plan="planCard"
+        :credits-added
+        :breakdown
+      />
 
       <dl
         v-if="receiptRows.length > 0"

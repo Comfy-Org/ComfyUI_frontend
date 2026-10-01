@@ -279,7 +279,9 @@
           "amount_paid": "Amount paid",
           "addingValue": "Adding…",
           "creditCount": "+{count}",
-          "creditsAddedLine": "{count} credits added"
+          "creditsAddedLine": "{count} credits added",
+          "paidToday": "Paid today",
+          "prorated": "Prorated for the rest of this billing period"
         },
         "actions": {
           "close": "Close",

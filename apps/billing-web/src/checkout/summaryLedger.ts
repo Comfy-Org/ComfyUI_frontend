@@ -33,7 +33,7 @@ interface LedgerRow {
  * A deduction from today's charge: what it is on the left, what it removed on
  * the right. A discount's code lives on a chip; its subline bounds its term.
  */
-interface DiscountRow {
+export interface DiscountRow {
   readonly label: string
   readonly amount?: string
   readonly subline?: string

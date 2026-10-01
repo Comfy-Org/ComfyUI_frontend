@@ -14,10 +14,12 @@ import {
   submitPhaseOf
 } from '@/checkout/checkoutPage'
 import { endingOf } from '@/checkout/endingScreen'
-import type { EndingPlan } from '@/components/fullPage/CheckoutEnding.vue'
+import type { EndingPlan } from '@/components/fullPage/EndingPlanCard.vue'
 import CheckoutEnding from '@/components/fullPage/CheckoutEnding.vue'
 import type { CheckoutCharge } from '@/components/fullPage/CheckoutPaymentColumn.vue'
 import CheckoutPaymentColumn from '@/components/fullPage/CheckoutPaymentColumn.vue'
+import { successBreakdown } from '@/checkout/successBreakdown'
+import type { LedgerContext } from '@/checkout/summaryLedger'
 import { buildSummaryLedger } from '@/checkout/summaryLedger'
 import CheckoutSummaryColumn from '@/components/fullPage/CheckoutSummaryColumn.vue'
 import { keepSubscriptionCopy } from '@/checkout/keepSubscription'
@@ -80,15 +82,17 @@ const quote = computed(() =>
     : undefined
 )
 
+const ledgerContext = computed<LedgerContext>(() => ({
+  workspace: session.value?.workspace.name,
+  tierName: (tier) => coded('tier', tier),
+  t,
+  locale: locale.value
+}))
+
 const ledger = computed(() => {
   const quoted = quote.value
   if (!quoted) return undefined
-  return buildSummaryLedger(quoted, {
-    workspace: session.value?.workspace.name,
-    tierName: (tier) => coded('tier', tier),
-    t,
-    locale: locale.value
-  })
+  return buildSummaryLedger(quoted, ledgerContext.value)
 })
 
 const charge = computed<CheckoutCharge | undefined>(() => {
@@ -112,6 +116,10 @@ const keepSubscription = computed(() => {
 })
 
 const ending = computed(() => endingOf(page.value))
+
+const breakdown = computed(() =>
+  successBreakdown(page.value, preview.value, ledgerContext.value)
+)
 
 const locked = computed(() => isLocked(page.value))
 
@@ -166,6 +174,7 @@ function viewPlans() {
       session?.workspace.name ?? t('checkout.fullPage.ending.thisWorkspace')
     "
     :plan="endingPlan"
+    :breakdown
     :closes-itself="openedByScript"
     @close="close"
     @retry="retryLoad"
