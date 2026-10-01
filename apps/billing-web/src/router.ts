@@ -33,6 +33,7 @@ import PaymentMethodsView from '@/views/PaymentMethodsView.vue'
 import ResultView from '@/views/ResultView.vue'
 import SignInView from '@/views/SignInView.vue'
 import SubscriptionView from '@/views/SubscriptionView.vue'
+import TopupRouteView from '@/views/TopupRouteView.vue'
 
 /** The app's own front door, outside the entry contract: it names no product. */
 const APP_ENTRY_PATH = '/'
@@ -43,6 +44,7 @@ const INTENT_VIEWS: Record<BillingIntent, Component> = {
   pricing: EntryErrorView,
   subscription: SubscriptionView,
   checkout: CheckoutRouteView,
+  'top-up': TopupRouteView,
   'payment-methods': PaymentMethodsView,
   invoices: InvoicesView,
   result: ResultView
