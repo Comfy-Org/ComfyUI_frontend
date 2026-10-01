@@ -200,10 +200,20 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     }
   }
 
+  const notifySettlement = guardedSettlementNotifier(
+    'failure_settling_agent_op_sender'
+  )
+  const notifyAbortSettlement = guardedSettlementNotifier(
+    'failure_settling_agent_op_sender_abort'
+  )
+  const notifyDetachSettlement = guardedSettlementNotifier(
+    'failure_settling_agent_op_sender_detach'
+  )
+
   function settle(outcome: BatchOutcome): void {
     if (inFlight?.timer) clearTimeout(inFlight.timer)
     inFlight = null
-    deps.onBatchSettled(outcome)
+    notifySettlement(outcome)
     pump()
   }
 
@@ -286,13 +296,17 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   }
 
   function drainOutstanding(notify: (outcome: BatchOutcome) => void): void {
-    seal()
+    // Tear down live state before any fallible serialization or callback. A
+    // malformed custom-node value must not leave timers or queued work behind.
+    const unsealed = open
+    open = null
     const queued = queue.splice(0)
-    if (inFlight) {
-      const batch = inFlight
+    const active = inFlight
+    inFlight = null
+    if (active) {
+      const batch = active
       if (batch.timer) clearTimeout(batch.timer)
       retire(batch, 0)
-      inFlight = null
       notify({
         state: batch.sends > 0 ? 'unconfirmed' : 'undeliverable',
         ops: batch.ops
@@ -300,6 +314,18 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     }
     for (const batch of queued) {
       notify({ state: 'undeliverable', ops: batch.ops })
+    }
+    if (unsealed) {
+      let batches: Op[][]
+      try {
+        batches = chunkWireOps(unsealed.ops)
+      } catch (cause) {
+        reportSettleFailure(cause, 'failure_chunking_agent_op_sender_teardown')
+        batches = [unsealed.ops]
+      }
+      for (const ops of batches) {
+        notify({ state: 'undeliverable', ops })
+      }
     }
   }
 
@@ -334,14 +360,14 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     )
     lastMintedVersion = baseVersion + minted.length - 1
     if (detached) {
-      guardedSettlementNotifier('failure_settling_agent_op_sender_detach')({
+      notifyDetachSettlement({
         state: 'undeliverable',
         ops: minted
       })
       return
     }
     if (workflowId === null) {
-      deps.onBatchSettled({ state: 'undeliverable', ops: minted })
+      notifySettlement({ state: 'undeliverable', ops: minted })
       return
     }
     if (open?.workflowId !== workflowId) seal()
@@ -390,6 +416,9 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       drainStaleCredit()
       return
     }
+    // A parked batch or one waiting for a transport retry has not put a send
+    // on the wire, so an anonymous result cannot belong to it.
+    if (batch.sends === 0) return
     retire(batch, 1)
     settle({ state: 'acknowledged', ops: batch.ops, result })
   })
@@ -429,19 +458,19 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     abortAll() {
       lastMintedVersion = -1
       lastMintedWorkflowId = null
-      drainOutstanding(
-        guardedSettlementNotifier('failure_settling_agent_op_sender_abort')
-      )
+      drainOutstanding(notifyAbortSettlement)
     },
     detach() {
       if (detached) return
       detached = true
       try {
-        drainOutstanding(
-          guardedSettlementNotifier('failure_settling_agent_op_sender_detach')
-        )
+        drainOutstanding(notifyDetachSettlement)
       } finally {
-        unsubscribe()
+        try {
+          unsubscribe()
+        } catch (cause) {
+          reportSettleFailure(cause, 'failure_unsubscribing_agent_op_sender')
+        }
       }
     }
   }
