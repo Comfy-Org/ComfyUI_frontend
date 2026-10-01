@@ -90,6 +90,16 @@ const photographyCards = localCards('photography', [
 
 const designCards = localCards('design', [
   {
+    slug: 'lake-photo',
+    en: 'Mountain lake at dawn as a photograph',
+    'zh-CN': '黎明山间湖泊的照片'
+  },
+  {
+    slug: 'lake-woodblock',
+    en: 'Mountain lake at dawn as a woodblock print',
+    'zh-CN': '黎明山间湖泊的木版画'
+  },
+  {
     slug: 'ink-wash',
     en: 'Fox and lantern as an ink wash painting',
     'zh-CN': '水墨画风格的狐狸与灯笼'
