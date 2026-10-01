@@ -442,7 +442,9 @@
     from var(--comfy-menu-bg) calc(var(--palette-l) + 0.2054) c h / 1
   );
 
-  --muted-foreground: oklch(from var(--comfy-menu-bg) 0.8 calc(c * 0.4) h / 1);
+  --muted-foreground: oklch(
+    from var(--comfy-menu-bg) calc(var(--palette-l) + 0.46) calc(c * 0.4) h / 1
+  );
 
   --base-background: var(--palette-base);
   --nav-background: var(--palette-base);
