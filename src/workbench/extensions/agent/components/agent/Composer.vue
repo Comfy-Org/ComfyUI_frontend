@@ -342,6 +342,7 @@ defineExpose({
   <div
     id="agent-composer"
     ref="composerContainerRef"
+    data-testid="agent-composer"
     class="relative flex flex-col rounded-lg border border-border-subtle bg-base-background"
   >
     <div

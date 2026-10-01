@@ -71,14 +71,30 @@ describe('AgentPanel free-use placement', () => {
   })
 
   it.for([
-    ['above-input', false],
-    ['inside-input', true]
-  ] as const)('renders %s relative to the input box', ([variant, isInside]) => {
-    mount(variant)
+    ['top-banner', true, false, false],
+    ['near-composer', false, false, false],
+    ['above-input', false, true, false],
+    ['inside-input', false, true, true]
+  ] as const)(
+    'renders %s in its region',
+    ([variant, beforePrompts, inComposer, inInputBox]) => {
+      mount(variant)
 
-    const inputBox = screen.getByTestId('composer-input-box')
-    expect(inputBox.contains(notice())).toBe(isInside)
-  })
+      const prompts = screen.getByTestId('suggested-prompts')
+      expect(
+        Boolean(
+          notice().compareDocumentPosition(prompts) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+        )
+      ).toBe(beforePrompts)
+      expect(screen.getByTestId('agent-composer').contains(notice())).toBe(
+        inComposer
+      )
+      expect(screen.getByTestId('composer-input-box').contains(notice())).toBe(
+        inInputBox
+      )
+    }
+  )
 
   it('hides the top banner while chat history is open', async () => {
     mount('top-banner')
