@@ -381,6 +381,7 @@ function enterTopupJourney(): void {
     workspaceId,
     entryFlow: 'topup',
     entrySource,
+    paymentIntentSource: source,
     intent: entrySource,
     assignment: resolveCheckoutAssignment(api.getServerFeatures())
   })

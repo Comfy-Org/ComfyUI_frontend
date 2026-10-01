@@ -166,7 +166,8 @@ export function useDowngradeToPersonal({
       stage: 'started',
       outcome: 'pending',
       member_removal_count: membersToRemove.length,
-      member_removal_failures: 0
+      member_removal_failures: 0,
+      payment_intent_source: paymentIntentSource
     })
 
     function trackSucceeded(operationObserved: boolean) {
@@ -178,6 +179,7 @@ export function useDowngradeToPersonal({
         member_removal_count: membersToRemove.length,
         member_removal_failures: memberRemovalFailures,
         target_tier: targetTier,
+        payment_intent_source: paymentIntentSource,
         duration_ms: now - downgradeStartedAt
       })
       if (checkoutStartedAt === undefined) return
@@ -188,6 +190,7 @@ export function useDowngradeToPersonal({
         tier: targetTier,
         cycle: targetCycle,
         checkout_type: 'change',
+        payment_intent_source: paymentIntentSource,
         duration_ms: now - checkoutStartedAt
       })
       if (operationObserved) return
@@ -199,6 +202,7 @@ export function useDowngradeToPersonal({
         tier: targetTier,
         cycle: targetCycle,
         checkout_type: 'change',
+        payment_intent_source: paymentIntentSource,
         duration_ms: now - checkoutStartedAt
       })
     }
@@ -277,7 +281,8 @@ export function useDowngradeToPersonal({
         outcome: 'pending',
         tier: targetTier,
         cycle: targetCycle,
-        checkout_type: 'change'
+        checkout_type: 'change',
+        payment_intent_source: paymentIntentSource
       })
       telemetry?.trackBillingEvent({
         operation: 'operation',
@@ -286,7 +291,8 @@ export function useDowngradeToPersonal({
         operation_type: 'subscription',
         tier: targetTier,
         cycle: targetCycle,
-        checkout_type: 'change'
+        checkout_type: 'change',
+        payment_intent_source: paymentIntentSource
       })
       let response: SettledSubscribeResponse | void
       try {
@@ -393,6 +399,7 @@ export function useDowngradeToPersonal({
         member_removal_count: membersToRemove.length,
         member_removal_failures: memberRemovalFailures,
         target_tier: targetTier,
+        payment_intent_source: paymentIntentSource,
         ...failure,
         duration_ms: now - downgradeStartedAt
       })
@@ -404,6 +411,7 @@ export function useDowngradeToPersonal({
           tier: targetTier,
           cycle: targetCycle,
           checkout_type: 'change',
+          payment_intent_source: paymentIntentSource,
           ...failure,
           duration_ms: now - checkoutStartedAt
         })
@@ -416,6 +424,7 @@ export function useDowngradeToPersonal({
             tier: targetTier,
             cycle: targetCycle,
             checkout_type: 'change',
+            payment_intent_source: paymentIntentSource,
             ...failure,
             duration_ms: now - checkoutStartedAt
           })

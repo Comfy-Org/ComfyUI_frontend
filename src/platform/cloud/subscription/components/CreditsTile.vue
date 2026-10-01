@@ -235,6 +235,7 @@ import {
 import { computeMonthlyUsage } from '@/platform/cloud/subscription/utils/creditsProgress'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useCustomerEventsService } from '@/services/customerEventsService'
@@ -532,7 +533,9 @@ const handleRefresh = wrapWithErrorHandlingAsync(refreshLatestCredits)
 
 function handleAddCredits() {
   telemetry?.trackAddApiCreditButtonClicked({ source: 'credits_panel' })
-  void dialogService.showTopUpCreditsDialog()
+  void dialogService.showTopUpCreditsDialog({
+    source: paymentIntentSourceForAddCreditsClick('credits_panel')
+  })
 }
 
 function handleUpgradeToAddCredits() {

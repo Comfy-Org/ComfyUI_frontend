@@ -54,6 +54,7 @@ import { resolveStripePublishableKey } from '@/platform/workspace/billing/stripe
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
+import { getCheckoutJourneyPaymentIntentSource } from '@/platform/workspace/utils/checkoutJourney'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import { projectBillingCapabilities } from './billingCapabilitiesView'
@@ -227,7 +228,12 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     if (started && !event.resumed && callerStarted.has(event.operation_type)) {
       return
     }
-    useTelemetry()?.trackBillingEvent(toBillingTelemetryEvent(event))
+    useTelemetry()?.trackBillingEvent(
+      toBillingTelemetryEvent(
+        event,
+        getCheckoutJourneyPaymentIntentSource(event.billing_op_id)
+      )
+    )
   }
 
   // Sound because the lifecycle runs one command per kind at a time and
