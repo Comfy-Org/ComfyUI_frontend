@@ -104,9 +104,15 @@ describe('LoopingVideo', () => {
     expect(video.paused).toBe(true)
   })
 
+  it('offers no playback control unless it is pausable', () => {
+    renderVideo({ webmSrc: WEBM })
+
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
+
   it('pauses and resumes from its control', async () => {
     const user = userEvent.setup()
-    renderVideo({ webmSrc: WEBM })
+    renderVideo({ webmSrc: WEBM, pausable: true })
     const video = screen.getByTestId<HTMLVideoElement>('clip')
 
     await user.click(screen.getByRole('button', { name: 'Play' }))
