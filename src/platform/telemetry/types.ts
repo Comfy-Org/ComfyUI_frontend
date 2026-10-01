@@ -901,12 +901,8 @@ export type AgentFreeUsePlacement =
  * whether the notice was actually on screen in its assigned arm, and what the
  * viewer did with it.
  */
-export type AgentFreeUseNoticeAction =
-  | 'shown'
-  | 'dismissed'
-  | 'learn_more_clicked'
 export interface AgentFreeUseNoticeMetadata extends Record<string, unknown> {
-  action: AgentFreeUseNoticeAction
+  action: 'shown' | 'dismissed' | 'learn_more_clicked'
   placement: AgentFreeUsePlacement
 }
 export interface AgentStarterPromptClickedMetadata extends Record<
