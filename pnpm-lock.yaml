@@ -987,6 +987,9 @@ importers:
       '@comfyorg/tailwind-utils':
         specifier: workspace:*
         version: link:../../packages/tailwind-utils
+      '@datadog/browser-rum':
+        specifier: 'catalog:'
+        version: 6.33.0(@datadog/browser-logs@6.33.0)
       '@stripe/stripe-js':
         specifier: 'catalog:'
         version: 9.12.1

@@ -21,6 +21,7 @@
     "@comfyorg/design-system": "workspace:*",
     "@comfyorg/shared-frontend-utils": "workspace:*",
     "@comfyorg/tailwind-utils": "workspace:*",
+    "@datadog/browser-rum": "catalog:",
     "@stripe/stripe-js": "catalog:",
     "@vueuse/core": "catalog:",
     "firebase": "catalog:",
