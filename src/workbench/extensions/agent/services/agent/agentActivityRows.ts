@@ -48,7 +48,7 @@ export function foldActivity(parts: readonly ActivityPart[]): ActivityRow[] {
     if (isSameToolStep(previous, part) && previous?.kind === 'tool') {
       previous.count += 1
       if (part.state === 'streaming') previous.state = 'streaming'
-      if (part.ok === false) previous.ok = false
+      if (part.ok !== undefined) previous.ok = part.ok
     } else {
       rows.push({
         kind: 'tool',
