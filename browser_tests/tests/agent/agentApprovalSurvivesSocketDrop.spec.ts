@@ -82,6 +82,11 @@ test.describe(
         await turnLock.composer.fill(nextPrompt)
         await turnLock.sendButton.click()
 
+        // The post has to have actually reached the server before the absence
+        // of a turn-in-progress notice means anything.
+        await expect
+          .poll(() => turnLock.postAttempts())
+          .toBeGreaterThanOrEqual(2)
         await expect(turnLock.userBubbles).toHaveCount(2)
         await expect(turnLock.userBubbles.last()).toHaveText(nextPrompt)
         await expect(
@@ -93,8 +98,9 @@ test.describe(
       })
     })
 
-    // The recovery path re-delivers from the persisted row on every poll, so
-    // without a guard an ask the socket did deliver would be drawn twice.
+    // Recovery re-reads the persisted row on every poll, so an ask the socket
+    // did deliver has to be recognised as already on screen rather than
+    // restored again.
     test('does not redraw an approval the socket already delivered', async ({
       turnLock,
       getWebSocket
@@ -102,14 +108,18 @@ test.describe(
       turnLock.parkOnApproval()
       turnLock.push(await getWebSocket(), RUN_APPROVAL_EVENT)
       await expect(turnLock.approvalCard).toBeVisible()
+      const pollsBefore = turnLock.transcriptFetches()
 
       await turnLock.dropSocket()
 
-      await expect(turnLock.approvalCard).toBeVisible()
+      // toHaveCount returns as soon as it passes, so the count alone would
+      // assert nothing before recovery has even polled. Wait for two polls to
+      // have actually served the parked row, then hold the panel to one card.
+      await expect
+        .poll(() => turnLock.transcriptFetches(), { timeout: 30_000 })
+        .toBeGreaterThanOrEqual(pollsBefore + 2)
+      await expect(turnLock.approvalCard).toHaveCount(1)
       await expect(turnLock.runApprovalButton).toHaveCount(1)
-      // Outlasts the first two recovery polls (0s, then 1s), so a duplicate
-      // card drawn by a later poll cannot slip past a one-shot assertion.
-      await expect(turnLock.approvalCard).toHaveCount(1, { timeout: 5_000 })
     })
   }
 )
