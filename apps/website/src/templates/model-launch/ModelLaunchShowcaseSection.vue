@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useElementHover, useToggle } from '@vueuse/core'
-import { useTemplateRef } from 'vue'
+import { useElementHover, useElementSize, useToggle } from '@vueuse/core'
+import { computed, useTemplateRef } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 import type { ModelLaunchShowcase } from './types'
@@ -12,9 +12,25 @@ const { locale = 'en', showcase } = defineProps<{
   locale?: Locale
 }>()
 
+const MARQUEE_GAP_PX = 24
+const TRACK_SPEED_PX_PER_SECOND = 190
+
 const stripRef = useTemplateRef<HTMLElement>('stripRef')
 const isHovered = useElementHover(stripRef)
 const [isPinnedStill, togglePinnedStill] = useToggle(false)
+
+// Every strip travels at the same speed, so a strip with more cards takes
+// proportionally longer to complete one loop.
+const track = computed(() => {
+  const first = stripRef.value?.firstElementChild
+  return typeof HTMLElement !== 'undefined' && first instanceof HTMLElement
+    ? first
+    : undefined
+})
+const { width: trackWidth } = useElementSize(track)
+const loopDuration = computed(
+  () => `${(trackWidth.value + MARQUEE_GAP_PX) / TRACK_SPEED_PX_PER_SECOND}s`
+)
 </script>
 
 <template>
@@ -46,7 +62,7 @@ const [isPinnedStill, togglePinnedStill] = useToggle(false)
         :class="copy === 2 && 'motion-reduce:hidden'"
         :style="{
           '--marquee-gap': '1.5rem',
-          animationDuration: '27s',
+          animationDuration: loopDuration,
           animationPlayState: isHovered && !isPinnedStill ? 'running' : 'paused'
         }"
         :aria-hidden="copy === 2 ? 'true' : undefined"
