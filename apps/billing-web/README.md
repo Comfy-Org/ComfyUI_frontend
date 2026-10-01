@@ -113,6 +113,16 @@ The SDK's operation lifecycle reports through `toBillingTelemetryEvent` from
 `resumed: true`. A refusal before the server issues an operation has no
 operation to report, so it is not on this stream.
 
+A subscribe or plan change reports its own lifecycle on both checkouts:
+`billing.subscription_checkout.intent` and `.started` at the pay press,
+immediately before the request, then one `.succeeded` or `.failed`. The
+terminal carries `billing_op_id` once the server issued one. A refusal before
+that (validation, a 4xx or 5xx, no connection, an operation already pending, a
+stale quote) fails with a bounded `failure_category` and `error_code`, never
+the server's words. The server asking for the reactivation consent keeps the
+same attempt open, and a retry after a terminal starts a new one.
+`checkout_ui` names the checkout, `embedded` or `full_page`.
+
 ### Entry, session and return events
 
 These are client journey events: they carry `outcome: 'pending'` and never
