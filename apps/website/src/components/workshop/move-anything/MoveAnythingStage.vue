@@ -159,6 +159,7 @@ const boxStyle = (rect: Rect) => ({
         :style="boxStyle(drawing)"
         aria-hidden="true"
       />
+      <slot />
     </div>
   </EditorFrame>
 </template>

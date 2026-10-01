@@ -9,9 +9,7 @@ import { workshopAppRepo } from '../../../lib/workshop/apps'
 import { mc } from '../../../lib/workshop/move-anything/copy'
 import AppEditorShell from '../app-editor/AppEditorShell.vue'
 import EditorAlert from '../app-editor/EditorAlert.vue'
-import EditorBusy from '../app-editor/EditorBusy.vue'
 import EditorEmpty from '../app-editor/EditorEmpty.vue'
-import EditorHint from '../app-editor/EditorHint.vue'
 import EditorHistory from '../app-editor/EditorHistory.vue'
 import EditorResult from '../app-editor/EditorResult.vue'
 import EditorResultDock from '../app-editor/EditorResultDock.vue'
@@ -19,7 +17,7 @@ import { MOVE_EXAMPLE } from '../../../lib/workshop/move-anything/mock-run'
 import MoveAnythingDock from './MoveAnythingDock.vue'
 import MoveAnythingObjects from './MoveAnythingObjects.vue'
 import MoveAnythingQuality from './MoveAnythingQuality.vue'
-import MoveAnythingStage from './MoveAnythingStage.vue'
+import MoveAnythingWorkspace from './MoveAnythingWorkspace.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -45,18 +43,6 @@ const dockLabels = {
   edit: mc('move.edit', locale),
   again: mc('move.again', locale),
   download: mc('move.download', locale)
-}
-
-function busyDetail() {
-  return mc('move.busy.detail', locale, {
-    n: move.moved.value.length,
-    wait: mc(
-      quality.value === 'fast'
-        ? 'move.quality.fastHint'
-        : 'move.quality.bestHint',
-      locale
-    )
-  })
 }
 </script>
 
@@ -89,30 +75,7 @@ function busyDetail() {
       :height="image.height"
       :labels="resultLabels"
     />
-    <div v-else class="relative size-full">
-      <MoveAnythingStage
-        :image
-        :objects
-        :tool
-        :selected
-        :locale
-        @select="(id) => (selected = id)"
-        @begin="move.checkpoint"
-        @place="move.place"
-        @add="move.add"
-      />
-      <EditorBusy
-        v-if="phase.kind === 'moving'"
-        :title="mc('move.busy.title', locale)"
-        :detail="busyDetail()"
-      />
-    </div>
-    <template #overlay>
-      <EditorHint
-        v-if="image && phase.kind === 'arranging'"
-        :text="mc(tool === 'add' ? 'move.hint.add' : 'move.hint.move', locale)"
-      />
-    </template>
+    <MoveAnythingWorkspace v-else :image :move :locale />
     <template #tray>
       <EditorAlert v-if="phase.kind === 'failed'">
         {{ mc('move.failed', locale) }}
@@ -134,7 +97,7 @@ function busyDetail() {
         @close="tray = undefined"
       />
     </template>
-    <template v-if="image && phase.kind !== 'done'" #start>
+    <template v-if="image && phase.kind !== 'done'" #center>
       <EditorHistory
         :can-undo="move.canUndo.value"
         :can-redo="move.canRedo.value"
