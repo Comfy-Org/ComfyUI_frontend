@@ -11,7 +11,6 @@ type Placement = 'top-banner' | 'near-composer' | 'above-input' | 'inside-input'
 
 const test = mergeTests(agentTest, hostTelemetryFixture)
 
-// Source: https://github.com/Comfy-Org/ComfyUI_frontend/pull/19712
 test.describe(
   'Agent free-use placement experiment',
   {
