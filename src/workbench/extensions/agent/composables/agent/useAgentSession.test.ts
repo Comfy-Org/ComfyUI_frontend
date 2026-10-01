@@ -691,8 +691,13 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(conversation.activeTurnId).toBe('msg-1')
 
     holdReconciliations = true
+    const currentReconciliationIndex = reconcileDeliveries.length
     const currentStop = ownerSession.stopTurn('button')
-    await vi.waitFor(() => expect(reconcileDeliveries).toHaveLength(2))
+    await vi.waitFor(() =>
+      expect(reconcileDeliveries.length).toBeGreaterThan(
+        currentReconciliationIndex
+      )
+    )
 
     reconcileDeliveries[0]?.(terminalHistory)
     await staleStop
@@ -702,7 +707,8 @@ describe('useAgentSession (v1 composition root)', () => {
     await ownerSession.stopTurn('button')
     expect(cancelMessage).toHaveBeenCalledTimes(2)
 
-    reconcileDeliveries[1]?.(terminalHistory)
+    for (const deliver of reconcileDeliveries.slice(currentReconciliationIndex))
+      deliver(terminalHistory)
     await currentStop
     expect(conversation.activeTurnId).toBeNull()
     expect(ownerSession.isStreaming.value).toBe(false)
@@ -757,6 +763,80 @@ describe('useAgentSession (v1 composition root)', () => {
       { type: 'text', text: 'new partial', state: 'streaming' }
     ])
 
+    session.stop()
+  })
+
+  it('starts a fresh recovery after A-to-B-to-A reuses the same turn ids', async () => {
+    const recoveryDeliveries: Array<(history: AgentMessages) => void> = []
+    const getMessages = vi.fn(
+      () =>
+        new Promise<AgentMessages>((resolve) => {
+          recoveryDeliveries.push(resolve)
+        })
+    )
+    const events = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: events.source
+    })
+    session.start()
+    events.status(true)
+    await session.sendMessage('owner A old turn')
+    events.emit(delta('msg-1', 'old partial'))
+
+    events.status(false)
+    events.status(true)
+    await vi.waitFor(() => expect(recoveryDeliveries).toHaveLength(1))
+
+    setStorageIdentity('user-b')
+    setStorageWorkspaceId('personal')
+    setStorageIdentity('user-test')
+    await session.sendMessage('owner A new turn')
+    events.emit(delta('msg-1', 'new partial'))
+
+    events.status(false)
+    events.status(true)
+    await vi.waitFor(() => expect(recoveryDeliveries).toHaveLength(2))
+
+    recoveryDeliveries[1]?.([
+      historyRow(1, 'user', 'msg-1', 'owner A new turn'),
+      historyRow(2, 'assistant', 'msg-1', 'new done', 'msg-1')
+    ])
+    await vi.waitFor(() => expect(session.isStreaming.value).toBe(false))
+
+    session.stop()
+  })
+
+  it('keeps same-owner background recovery current after newChat', async () => {
+    let deliverRecovery: ((history: AgentMessages) => void) | undefined
+    const getMessages = vi.fn(
+      () =>
+        new Promise<AgentMessages>((resolve) => {
+          deliverRecovery = resolve
+        })
+    )
+    const events = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: events.source
+    })
+    const conversation = useAgentConversationStore()
+    session.start()
+    events.status(true)
+    await session.sendMessage('background turn')
+    events.emit(delta('msg-1', 'partial'))
+
+    events.status(false)
+    events.status(true)
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledOnce())
+
+    session.newChat()
+    deliverRecovery?.([
+      historyRow(1, 'user', 'msg-1', 'background turn'),
+      historyRow(2, 'assistant', 'msg-1', 'done', 'msg-1')
+    ])
+
+    await vi.waitFor(() => expect(conversation.liveTurns()).toEqual([]))
     session.stop()
   })
 

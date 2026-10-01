@@ -474,7 +474,18 @@ export function useAgentSession(deps: AgentSessionDeps) {
   let unsubscribeStatus: (() => void) | null = null
   let ownedGeneration = 0
   let connection: SocketConnection = 'initial'
-  const recoveringTurns = new Map<string, AbortController>()
+  interface TurnRecovery {
+    controller: AbortController
+    ownerGeneration: number
+  }
+
+  interface TurnRecoveryContext {
+    sessionGeneration: number
+    ownerGeneration: number
+  }
+
+  const recoveringTurns = new Map<string, TurnRecovery>()
+  let storageOwnerGeneration = 0
   let observedStorageOwner = getStorageIdentity()
 
   function pushError(text: string): void {
@@ -486,6 +497,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function transitionStorageOwner(currentOwner = getStorageIdentity()): void {
     if (currentOwner === observedStorageOwner) return
     observedStorageOwner = currentOwner
+    storageOwnerGeneration++
+    for (const recovery of recoveringTurns.values()) recovery.controller.abort()
+    recoveringTurns.clear()
     loadGeneration++
     readyThreadId.value = null
     promptEditState.value = { phase: 'idle' }
@@ -843,7 +857,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     unsubscribeStatus?.()
     unsubscribe = null
     unsubscribeStatus = null
-    for (const recovery of recoveringTurns.values()) recovery.abort()
+    for (const recovery of recoveringTurns.values()) recovery.controller.abort()
     recoveringTurns.clear()
     stopStorageOwnerWatcher?.()
     stopStorageOwnerWatcher = null
@@ -1782,26 +1796,30 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   async function reconcileTurn(turn: LiveTurn): Promise<void> {
     const key = recoveryKey(turn)
-    const recovery = new AbortController()
-    const recoveryLoadGeneration = loadGeneration
+    const recovery: TurnRecovery = {
+      controller: new AbortController(),
+      ownerGeneration: storageOwnerGeneration
+    }
     recoveringTurns.set(key, recovery)
     const deadline = setTimeout(
-      () => recovery.abort(),
+      () => recovery.controller.abort(),
       TURN_RECOVERY_DEADLINE_MS
     )
     try {
       await recoverTurn(
         turn,
-        ownedGeneration,
-        recoveryLoadGeneration,
-        recovery.signal
+        {
+          sessionGeneration: ownedGeneration,
+          ownerGeneration: recovery.ownerGeneration
+        },
+        recovery.controller.signal
       )
     } catch (error) {
       // `onStatus` floats this job (`void reconcileTurn(turn)`), so a rethrow
       // would land as an `unhandledrejection` the session never sees. Abort is
       // the expected end of a cancelled job; anything else is an unexpected
       // settlement or storage failure and goes through the module's reporter.
-      if (!recovery.signal.aborted)
+      if (!recovery.controller.signal.aborted)
         reportError(error, {
           surface: 'agent',
           errorType: 'failure_recovering_agent_turn'
@@ -1814,16 +1832,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   async function recoverTurn(
     turn: LiveTurn,
-    generation: number,
-    recoveryLoadGeneration: number,
+    context: TurnRecoveryContext,
     signal: AbortSignal
   ): Promise<void> {
     let consecutiveThreadMissing = 0
     for (const ms of TURN_RECOVERY_DELAYS_MS) {
       await delay(ms, { signal })
-      if (!isTurnLive(turn, generation, recoveryLoadGeneration)) return
+      if (!isTurnLive(turn, context)) return
       const outcome = await fetchTurnOutcome(turn, signal)
-      if (!isTurnLive(turn, generation, recoveryLoadGeneration)) return
+      if (!isTurnLive(turn, context)) return
       consecutiveThreadMissing =
         outcome.kind === 'thread-missing' ? consecutiveThreadMissing + 1 : 0
       if (outcome.kind === 'thread-missing' && consecutiveThreadMissing < 2)
@@ -1832,14 +1849,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
-  function isTurnLive(
-    turn: LiveTurn,
-    generation: number,
-    recoveryLoadGeneration: number
-  ): boolean {
+  function isTurnLive(turn: LiveTurn, context: TurnRecoveryContext): boolean {
     return (
-      generation === sessionGeneration &&
-      recoveryLoadGeneration === loadGeneration &&
+      context.sessionGeneration === sessionGeneration &&
+      context.ownerGeneration === storageOwnerGeneration &&
       conversationStore
         .liveTurns()
         .some(
