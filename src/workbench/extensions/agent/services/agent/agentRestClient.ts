@@ -29,14 +29,8 @@ import type {
 
 const CLOUD_WORKFLOW_PAGE_SIZE = 100
 
-/**
- * PM-1658: tightens `fetchApi`'s shared 60s header deadline for the one
- * request a consent card's buttons wait on, since the card is held disabled
- * from the click until this settles. A quarter of it, rather than merely lower, so that
- * the caller's single re-drive still fits inside the 60s the card used to be
- * able to wait. Goes through `timeoutMs` rather than a raw signal so a timeout
- * still raises fetchApi's own telemetry.
- */
+/** The consent card stays disabled until this settles, so it gets a shorter
+ * deadline than fetchApi's default. */
 const ANSWER_ASK_TIMEOUT_MS = 15_000
 
 export class AgentApiError extends Error {

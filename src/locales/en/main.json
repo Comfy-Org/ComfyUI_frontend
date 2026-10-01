@@ -5349,7 +5349,7 @@
       "thisWorkflow": "this workflow",
       "cancel": "Cancel",
       "run": "Run",
-      "answerFailed": "Could not send your answer. Reload the page and try again.",
+      "answerFailed": "Could not send your answer. Reload the page to see the current state of this request.",
       "answerUncertain": "Could not confirm your answer reached the agent. It may still have been applied — reload the page to see where things stand.",
       "answerSuperseded": "This request was already answered somewhere else, so that answer was used instead of yours."
     },

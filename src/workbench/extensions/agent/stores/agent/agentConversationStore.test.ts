@@ -579,39 +579,54 @@ describe('useAgentConversationStore', () => {
   // current would then edit the wrong thread and leave the answering one's
   // stashed card untouched — and resumeBackgroundTurn would hand it back,
   // enabled, for a second answer the server discards.
-  it.for([
-    ['before the response lands', 'response'],
-    ['before the resolution grace expires', 'watchdog']
-  ] as const)(
-    'retires a card on its own thread when the user switches away %s',
-    ([, timing]) => {
-      vi.useFakeTimers()
-      try {
-        const store = useAgentConversationStore()
-        store.setThreadId('th-A')
-        store.hydrate(parkedApprovalTranscript('th-A'))
-        expect(store.activeTurnId).toBe('assistant-message-1')
+  function switchAwayFromThreadA() {
+    const store = useAgentConversationStore()
+    store.setThreadId('th-A')
+    store.hydrate(parkedApprovalTranscript('th-A'))
+    expect(store.activeTurnId).toBe('assistant-message-1')
+    return store
+  }
 
-        if (timing === 'watchdog') store.commitAsk('turn-1:call-1', 'th-A')
+  function leaveForThreadB(
+    store: ReturnType<typeof useAgentConversationStore>
+  ) {
+    store.stashActiveTurn()
+    store.setThreadId('th-B')
+    store.hydrate([])
+  }
 
-        // The user leaves A for B while the answer is still settling.
-        store.stashActiveTurn()
-        store.setThreadId('th-B')
-        store.hydrate([])
+  function returnToThreadA(
+    store: ReturnType<typeof useAgentConversationStore>
+  ) {
+    store.setThreadId('th-A')
+    store.resumeBackgroundTurn()
+  }
 
-        if (timing === 'watchdog') vi.advanceTimersByTime(60_000)
-        else store.commitAsk('turn-1:call-1', 'th-A')
+  it('retires a card on its own thread when the response lands after a switch', () => {
+    const store = switchAwayFromThreadA()
 
-        // Back to A: the stashed turn is handed back to the screen.
-        store.setThreadId('th-A')
-        store.resumeBackgroundTurn()
+    leaveForThreadB(store)
+    store.commitAsk('turn-1:call-1', 'th-A')
+    returnToThreadA(store)
 
-        expect(hasRunApproval(store)).toBe(false)
-      } finally {
-        vi.useRealTimers()
-      }
+    expect(hasRunApproval(store)).toBe(false)
+  })
+
+  it('retires a card on its own thread when the grace expires after a switch', () => {
+    vi.useFakeTimers()
+    try {
+      const store = switchAwayFromThreadA()
+      store.commitAsk('turn-1:call-1', 'th-A')
+
+      leaveForThreadB(store)
+      vi.advanceTimersByTime(60_000)
+      returnToThreadA(store)
+
+      expect(hasRunApproval(store)).toBe(false)
+    } finally {
+      vi.useRealTimers()
     }
-  )
+  })
 
   // The retired-ask record is keyed by thread, and a single global set would
   // satisfy every other case in this file. What it would break: hydrating B
