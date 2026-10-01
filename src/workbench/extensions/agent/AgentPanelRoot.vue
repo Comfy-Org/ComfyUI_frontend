@@ -1262,9 +1262,7 @@ const { copy } = useClipboard({ legacy: true })
  * reading the flag here keeps the exposure — and the experiment's
  * denominator — to the panel openers the hypothesis is about.
  */
-const { variant: freeUsePlacement } = useFreeUsePlacement(
-  () => agentPanelStore.isVisible
-)
+const { variant: freeUsePlacement } = useFreeUsePlacement()
 
 function onFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {
   useTelemetry()?.trackAgentFreeUseNotice(metadata)

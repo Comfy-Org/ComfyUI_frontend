@@ -1,9 +1,9 @@
-import type { MaybeRefOrGetter } from 'vue'
+import { computed, ref } from 'vue'
 
-import { useExperimentVariant } from '@/platform/experiments/useExperimentVariant'
+import { readExperimentVariant } from '@/platform/experiments/postHogExperimentClient'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { AgentFreeUsePlacement } from '@/platform/telemetry/types'
 
-/** PostHog multivariate flag backing DES-1221 / FE-3142. */
 const FREE_USE_PLACEMENT_FLAG = 'agent-free-use-message-placement'
 
 export const FREE_USE_PLACEMENTS = [
@@ -16,30 +16,26 @@ export const FREE_USE_PLACEMENTS = [
 
 export type FreeUseVariant = (typeof FREE_USE_PLACEMENTS)[number]
 
-export function isFreeUsePlacement(
-  variant: FreeUseVariant
-): variant is AgentFreeUsePlacement {
-  return variant !== 'control'
+function isFreeUseVariant(value: string | undefined): value is FreeUseVariant {
+  return FREE_USE_PLACEMENTS.some((variant) => variant === value)
 }
 
-/**
- * The viewer's free-use-notice placement for the DES-1221 experiment.
- *
- * Every arm shows the same panel with the same starter prompts and the same
- * composer placeholder; only where the notice sits changes, so placement is
- * the isolated variable.
- *
- * `eligible` must be the agent panel actually being on screen for this viewer.
- * Reading the flag is what records the exposure, so a viewer who can never see
- * the panel must never reach it — otherwise the experiment's denominator is
- * the whole population rather than panel openers, which is the group the
- * hypothesis is about.
- */
-export function useFreeUsePlacement(eligible: MaybeRefOrGetter<boolean>) {
-  return useExperimentVariant<FreeUseVariant>({
-    flagKey: FREE_USE_PLACEMENT_FLAG,
-    variants: FREE_USE_PLACEMENTS,
-    control: 'control',
-    eligible
-  })
+export function useFreeUsePlacement() {
+  const assigned = ref<FreeUseVariant>()
+  const variant = computed(() => assigned.value ?? 'control')
+
+  void readExperimentVariant(FREE_USE_PLACEMENT_FLAG)
+    .then((value) => {
+      if (isFreeUseVariant(value)) assigned.value = value
+    })
+    .catch((error: unknown) => {
+      reportError(error, {
+        surface: 'platform',
+        errorType: 'experiment_assignment_failed',
+        tags: { flag_key: FREE_USE_PLACEMENT_FLAG },
+        level: 'warning'
+      })
+    })
+
+  return { variant }
 }
