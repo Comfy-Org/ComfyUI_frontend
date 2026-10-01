@@ -29,6 +29,7 @@ import { computed, shallowRef } from 'vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
+import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useTelemetry } from '@/platform/telemetry'
@@ -61,6 +62,7 @@ import { projectBillingCapabilities } from './billingCapabilitiesView'
 import { projectBillingPlans } from './billingPlansView'
 import { toBillingTelemetryEvent } from './billingSdkTelemetry'
 import { projectBillingStatus } from './billingStatusView'
+import type { BillingSdkOptions } from './createBillingSdk'
 import { createBillingSdk } from './createBillingSdk'
 import type { BillingOperationRecordView } from './operationRecordView'
 import { projectOperationRecord } from './operationRecordView'
@@ -80,6 +82,7 @@ import {
   projectTopupOperation,
   projectTopupResult
 } from './topupOperationView'
+import { createWebSessionBillingSession } from './webSessionBillingSession'
 
 const PROGRESS_SUMMARY = {
   topup: {
@@ -110,6 +113,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   const workspaceStore = useTeamWorkspaceStore()
   const toastStore = useToastStore()
   const { flags } = useFeatureFlags()
+  const billingCapabilities = useBillingCapabilities()
 
   const operations = shallowRef<readonly BillingOperationState[]>([])
   const dismissed = shallowRef<ReadonlySet<string>>(new Set())
@@ -122,10 +126,28 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     { kind: ProgressToastKind; message: ToastMessage }
   >()
 
+  function sessionPorts(): Pick<
+    BillingSdkOptions,
+    'session' | 'scopeSource' | 'workspaceId'
+  > {
+    const requests = webSessionRequests()
+    if (requests) {
+      const session = createWebSessionBillingSession(requests)
+      return {
+        session,
+        scopeSource: session,
+        workspaceId: requests.workspaceId
+      }
+    }
+    return {
+      session: workspaceAuthStore.getUnifiedSessionClient(),
+      workspaceId: () => workspaceAuthStore.getUnifiedMintWorkspaceId()
+    }
+  }
+
   const sdk = createBillingSdk({
-    session: workspaceAuthStore.getUnifiedSessionClient(),
+    ...sessionPorts(),
     resolveUrl: workspaceApiUrl,
-    workspaceId: () => workspaceAuthStore.getUnifiedMintWorkspaceId(),
     pointerStorage: sessionStorage,
     embeddedCheckoutAvailable: () =>
       flags.embeddedCheckoutEnabled && Boolean(resolveStripePublishableKey()),
@@ -360,7 +382,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
       await Promise.allSettled([
         billingContext.fetchStatus(),
         billingContext.fetchBalance(),
-        useBillingCapabilities().refresh()
+        billingCapabilities.refresh()
       ])
       useDialogStore().closeDialog({ key: 'top-up-credits' })
       useSettingsDialog().show(isCloud ? 'workspace' : 'credits')
@@ -415,7 +437,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     amountCents: number
   ): Promise<CreateTopupResponse | undefined> {
     const result = await sdk.topup.createTopupCheckout({ amountCents })
-    if (result.status === 'ok') void useBillingCapabilities().refresh()
+    if (result.status === 'ok') void billingCapabilities.refresh()
     return projectTopupResult(result, amountCents)
   }
 
@@ -449,7 +471,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     await Promise.allSettled([
       billingContext.fetchStatus(),
       billingContext.fetchBalance(),
-      useBillingCapabilities().refresh()
+      billingCapabilities.refresh()
     ])
   }
 
@@ -457,7 +479,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     const billingContext = useBillingContext()
     await Promise.allSettled([
       billingContext.reconcileSubscriptionSuccess(),
-      useBillingCapabilities().refresh()
+      billingCapabilities.refresh()
     ])
   }
 

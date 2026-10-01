@@ -50,6 +50,14 @@
           {{ $t('workspacePanel.billingStatus.ending.reactivate') }}
         </Button>
         <Button
+          v-else-if="banner.action === 'resubscribe'"
+          variant="secondary"
+          size="lg"
+          @click="handleResubscribePlan"
+        >
+          {{ $t('workspacePanel.members.resubscribe') }}
+        </Button>
+        <Button
           v-else-if="banner.action === 'contactSales'"
           variant="secondary"
           size="lg"
@@ -87,8 +95,10 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { ENTERPRISE_URL } from '@/platform/cloud/subscription/constants/tierPricing'
+import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useBillingBanner } from '@/platform/workspace/composables/useBillingBanner'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { usePlanEnded } from '@/platform/workspace/composables/usePlanEnded'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
 import { useScheduledPlanChange } from '@/platform/workspace/composables/useScheduledPlanChange'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
@@ -97,6 +107,7 @@ import { useDialogService } from '@/services/dialogService'
 type BannerAction =
   | 'addCredits'
   | 'reactivate'
+  | 'resubscribe'
   | 'contactSales'
   | 'updatePayment'
 
@@ -113,6 +124,9 @@ const {
   isDisplayable: canShowScheduledChange
 } = useScheduledPlanChange()
 const dialogService = useDialogService()
+const subscriptionDialog = useSubscriptionDialog()
+const { isSalesManagedPlan, isEnterprisePlan: isEndedEnterprisePlan } =
+  usePlanEnded()
 
 const canManage = computed(() => permissions.value.canManageSubscription)
 // Strictly ENTERPRISE: an unrecognized tier must not borrow Enterprise copy
@@ -162,6 +176,49 @@ const paymentFailedView = (): BannerView => ({
   ...pausedView(),
   payInvoiceUrl: safeInvoiceUrl(renewalInvoice.value?.hosted_invoice_url)
 })
+
+// Sales-managed plans (Enterprise, and unrecognized tiers, which fail closed
+// to sales) return through sales; only a strict ENTERPRISE tier is named.
+function planEndedCopy(): {
+  title: string
+  ownerBody: string
+  memberBody: string
+} {
+  const date = planEndDate.value
+  if (!isSalesManagedPlan.value) {
+    return {
+      title: date
+        ? t(`${bs}.planEnded.teamTitle`, { date })
+        : t('workspacePanel.members.endedTeamTitle'),
+      ownerBody: t(`${bs}.planEnded.teamBody`),
+      memberBody: t(`${bs}.planEnded.teamMemberBody`)
+    }
+  }
+  const named = isEndedEnterprisePlan.value
+  return {
+    title: date
+      ? t(`${bs}.planEnded.${named ? 'enterpriseTitle' : 'planTitle'}`, {
+          date
+        })
+      : t(
+          `workspacePanel.members.${named ? 'endedEnterpriseTitle' : 'endedPlanTitle'}`
+        ),
+    ownerBody: t(`${bs}.planEnded.${named ? 'enterpriseBody' : 'salesBody'}`),
+    memberBody: t(`${bs}.planEnded.salesMemberBody`)
+  }
+}
+
+const planEndedView = (): BannerView => {
+  const copy = planEndedCopy()
+  const ownerAction = isSalesManagedPlan.value ? 'contactSales' : 'resubscribe'
+  return {
+    muted: true,
+    title: copy.title,
+    body: canManage.value ? copy.ownerBody : copy.memberBody,
+    action: canManage.value ? ownerAction : null,
+    dismissible: true
+  }
+}
 
 const outOfCreditsBody = (key: 'body' | 'memberBody'): string =>
   cycleResetDate.value
@@ -234,6 +291,8 @@ const banner = computed<BannerView | null>(() => {
       return pausedView()
     case 'paymentFailed':
       return paymentFailedView()
+    case 'planEnded':
+      return planEndedView()
     case 'outOfCredits':
       return outOfCreditsView()
     case 'ending':
@@ -247,6 +306,12 @@ const banner = computed<BannerView | null>(() => {
 
 function handleAddCredits() {
   void dialogService.showTopUpCreditsDialog()
+}
+function handleResubscribePlan() {
+  subscriptionDialog.show({
+    planMode: 'team',
+    reason: 'settings_billing_panel'
+  })
 }
 function handleContactSales() {
   window.open(ENTERPRISE_URL, '_blank', 'noopener,noreferrer')
