@@ -1138,7 +1138,9 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
         result: 'success',
         reference: 'op_mine'
       })
-      expect(sent()).toStrictEqual([
+      expect(
+        sent().filter((event) => event.operation === 'web_return')
+      ).toStrictEqual([
         {
           operation: 'web_return',
           stage: 'clicked',

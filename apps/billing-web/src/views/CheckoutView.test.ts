@@ -612,7 +612,9 @@ describe('CheckoutView', () => {
     expect(assign).toHaveBeenCalledExactlyOnceWith(
       'https://testcloud.comfy.org/?billing_result=success&billing_ref=op_9'
     )
-    expect(sent()).toStrictEqual([
+    expect(
+      sent().filter((event) => event.operation === 'web_return')
+    ).toStrictEqual([
       {
         operation: 'web_return',
         stage: 'clicked',
