@@ -145,8 +145,11 @@ export function reportBillingWebError(
   { errorType, context }: ReportBillingWebErrorOptions
 ): void {
   try {
-    console.error(`${REPORTED_ERROR_PREFIX}${errorType}`, cause)
     const error = cause instanceof Error ? cause : new Error(String(cause))
+    console.error(
+      `${REPORTED_ERROR_PREFIX}${errorType}`,
+      redactSensitiveText(error.message)
+    )
     datadogRum.addError(
       Object.assign(new Error(error.message), {
         name: errorType,

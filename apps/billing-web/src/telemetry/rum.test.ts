@@ -232,7 +232,8 @@ describe('reportBillingWebError', () => {
     expect(datadogRum.addError).toHaveBeenCalledWith(
       expect.objectContaining({
         name: 'failure_confirming_checkout',
-        message: 'Card declined'
+        message: 'Card declined',
+        stack: failure.stack
       }),
       {
         billing_op_id: 'op_1',
@@ -245,18 +246,36 @@ describe('reportBillingWebError', () => {
 
   it('logs the failure once, and RUM drops that console copy', () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const failure = new Error('Card declined')
 
-    reportBillingWebError(failure, { errorType: 'failure_confirming_checkout' })
+    reportBillingWebError(new Error('Card declined'), {
+      errorType: 'failure_confirming_checkout'
+    })
 
     expect(consoleError).toHaveBeenCalledOnce()
-    const [line] = consoleError.mock.lastCall ?? []
+    const logged = consoleError.mock.lastCall ?? []
     const consoleEcho: ScrubbableRumEvent = {
       type: 'error',
       view: { url: 'https://billing.comfy.org/v1/checkout' },
-      error: { source: 'console', message: `${String(line)} ${failure}` }
+      error: { source: 'console', message: logged.map(String).join(' ') }
     }
     expect(billingWebRumBeforeSend(consoleEcho)).toBe(false)
+  })
+
+  it('logs only the redacted message, not the cause chain RUM would collect from the console', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    reportBillingWebError(
+      new Error(
+        'Confirm failed for ada@example.com at https://billing.comfy.org/v1/checkout?payment_intent_client_secret=pi_1_secret_2',
+        { cause: new Error('Declined for ada@example.com') }
+      ),
+      { errorType: 'failure_confirming_checkout' }
+    )
+
+    expect(consoleError.mock.lastCall).toEqual([
+      '[Reported error]: failure_confirming_checkout',
+      'Confirm failed for [email] at https://billing.comfy.org/v1/checkout'
+    ])
   })
 
   it('never throws into the billing flow when RUM itself fails', () => {
