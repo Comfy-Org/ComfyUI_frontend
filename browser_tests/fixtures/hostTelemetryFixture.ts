@@ -8,7 +8,7 @@ export interface CapturedTelemetryEvent {
 export const hostTelemetryFixture = base.extend<{
   hostTelemetry: CapturedTelemetryEvent[]
 }>({
-  hostTelemetry: async (_fixtures, use) => {
+  hostTelemetry: async ({ browserName: _browserName }, use) => {
     await use([])
   },
   page: async ({ page, hostTelemetry }, use) => {
