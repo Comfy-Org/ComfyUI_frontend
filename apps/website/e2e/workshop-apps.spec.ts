@@ -17,6 +17,7 @@ async function mockFlags(
     reshoot?: boolean
     moveAnything?: boolean
     relight?: boolean
+    virtualTryOn?: boolean
   }
 ) {
   await context.route('**/t.comfy.org/**', (route) =>
@@ -31,6 +32,7 @@ async function mockFlags(
               'workshop-reshoot-app-enabled': flags.reshoot ?? true,
               'workshop-move-anything-app-enabled': flags.moveAnything ?? true,
               'workshop-relight-app-enabled': flags.relight ?? true,
+              'workshop-virtual-try-on-app-enabled': flags.virtualTryOn ?? true,
               ...(flags.auth ? { 'workshop-auth': true } : {})
             },
             featureFlagPayloads: {}
@@ -111,7 +113,7 @@ test('lists every app on the hub apps page, on /hub/apps/ pages', async ({
   )
   const shelf = page.getByTestId('app-shelf')
   const cards = shelf.getByRole('link')
-  await expect(cards).toHaveCount(4)
+  await expect(cards).toHaveCount(5)
   await expect(cards.nth(0)).toHaveAttribute(
     'href',
     '/hub/apps/cinematic-studio/'
@@ -119,6 +121,10 @@ test('lists every app on the hub apps page, on /hub/apps/ pages', async ({
   await expect(cards.nth(1)).toHaveAttribute('href', '/hub/apps/reshoot/')
   await expect(cards.nth(2)).toHaveAttribute('href', '/hub/apps/move-anything/')
   await expect(cards.nth(3)).toHaveAttribute('href', '/hub/apps/relight/')
+  await expect(cards.nth(4)).toHaveAttribute(
+    'href',
+    '/hub/apps/virtual-try-on/'
+  )
   await expect(
     page.getByRole('button', { name: /Browse all apps/ })
   ).toHaveCount(0)
@@ -131,13 +137,17 @@ test('hides Re-shoot from the hub apps page and closes its page while its flag i
   await mockFlags(context, { apps: true, workflows: false, reshoot: false })
   await page.goto('/hub/apps/')
   const cards = page.getByTestId('app-shelf').getByRole('link')
-  await expect(cards).toHaveCount(3)
+  await expect(cards).toHaveCount(4)
   await expect(cards.nth(0)).toHaveAttribute(
     'href',
     '/hub/apps/cinematic-studio/'
   )
   await expect(cards.nth(1)).toHaveAttribute('href', '/hub/apps/move-anything/')
   await expect(cards.nth(2)).toHaveAttribute('href', '/hub/apps/relight/')
+  await expect(cards.nth(3)).toHaveAttribute(
+    'href',
+    '/hub/apps/virtual-try-on/'
+  )
 
   await page.goto('/hub/apps/reshoot/')
   await expect(page.getByText('Cinematic Studio is not open yet')).toBeVisible()
@@ -259,7 +269,11 @@ test('hides the site header in the editor apps only', async ({
 }) => {
   await mockFlags(context, { apps: true, workflows: false })
   const header = page.getByRole('navigation', { name: 'Main navigation' })
-  for (const path of ['/hub/apps/relight/', '/hub/apps/move-anything/']) {
+  for (const path of [
+    '/hub/apps/relight/',
+    '/hub/apps/move-anything/',
+    '/hub/apps/virtual-try-on/'
+  ]) {
     await page.goto(path)
     await expect(page.getByTestId('apps-home')).toBeVisible()
     await expect(header).toBeHidden()
@@ -381,6 +395,88 @@ test('relights from the Relight bottom sheet on phones @mobile', async ({
   ).toBeVisible()
 
   await sheet.getByTestId('relight-run').click()
+  await expect(app.getByRole('link', { name: 'Download' })).toBeVisible()
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - window.innerWidth
+  )
+  expect(overflow).toBe(0)
+})
+
+test('closes Virtual try-on while its flag is off', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, {
+    apps: true,
+    workflows: false,
+    virtualTryOn: false
+  })
+  await page.goto('/hub/apps/virtual-try-on/')
+  await expect(page.getByText('Cinematic Studio is not open yet')).toBeVisible()
+  await expect(page.getByTestId('virtual-try-on')).toHaveCount(0)
+})
+
+test('tries a garment on the Virtual try-on example from the floating panel', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/hub/apps/virtual-try-on/')
+  const app = page.getByTestId('virtual-try-on')
+  const panel = app.getByRole('complementary', {
+    name: 'Virtual try-on settings'
+  })
+  await expect(
+    app.getByRole('img', { name: 'Garment: Breton tee' })
+  ).toBeVisible()
+
+  await panel.getByRole('radio', { name: 'Flannel shirt' }).click()
+  await panel.getByRole('radio', { name: 'Relaxed' }).click()
+  await expect(app.getByTestId('try-on-outline')).toHaveAttribute(
+    'data-fit',
+    'relaxed'
+  )
+  await expect(app.getByRole('button', { name: 'Undo' })).toBeEnabled()
+
+  await panel.getByTestId('try-on-run').click()
+  await expect(app.getByRole('status')).toContainText('Dressing the photo')
+  await expect(app.getByRole('link', { name: 'Download' })).toHaveAttribute(
+    'href',
+    /^blob:/
+  )
+  const slider = app.getByRole('slider', {
+    name: 'Drag to compare the original and the try-on'
+  })
+  await slider.focus()
+  await page.keyboard.press('ArrowLeft')
+  await expect(slider).toHaveValue('49')
+
+  const tools = app.getByRole('toolbar', { name: 'Virtual try-on tools' })
+  await tools.getByRole('button', { name: 'Compare' }).click()
+  await expect(slider).toBeHidden()
+  await tools.getByRole('button', { name: 'Edit' }).click()
+  await expect(panel.getByRole('radio', { name: 'Relaxed' })).toBeChecked()
+})
+
+test('tries a garment on from the Virtual try-on bottom sheet on phones @mobile', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/hub/apps/virtual-try-on/')
+  const app = page.getByTestId('virtual-try-on')
+  const sheet = app.getByRole('complementary', {
+    name: 'Virtual try-on settings'
+  })
+
+  await sheet.getByRole('button', { name: 'Breton tee · Regular fit' }).click()
+  await sheet.getByRole('radio', { name: 'Slim' }).click()
+  await sheet.getByRole('button', { name: 'Hide settings' }).click()
+  await expect(
+    sheet.getByRole('button', { name: 'Breton tee · Slim fit' })
+  ).toBeVisible()
+
+  await sheet.getByTestId('try-on-run').click()
   await expect(app.getByRole('link', { name: 'Download' })).toBeVisible()
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth - window.innerWidth

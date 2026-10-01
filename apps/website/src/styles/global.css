@@ -281,6 +281,22 @@
   }
 }
 
+@keyframes editor-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+
+  to {
+    background-position: 0 0;
+  }
+}
+
+@utility animate-editor-shimmer {
+  @media (prefers-reduced-motion: no-preference) {
+    animation: editor-shimmer 1.8s ease-in-out infinite;
+  }
+}
+
 @keyframes platform-builder-float {
   0%,
   100% {

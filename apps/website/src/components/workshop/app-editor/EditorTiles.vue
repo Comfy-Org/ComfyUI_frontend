@@ -1,16 +1,17 @@
 <script setup lang="ts" generic="T extends string">
-import { Check } from '@lucide/vue'
-
 import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   label,
   options,
-  columns = 3
+  columns = 3,
+  square = false
 } = defineProps<{
   label: string
   options: readonly { id: T; label: string }[]
   columns?: 3 | 4
+  /** Square tiles, for pictures of things rather than scenes. */
+  square?: boolean
 }>()
 
 const GRID = { 3: 'grid-cols-3', 4: 'grid-cols-4' } as const
@@ -35,20 +36,14 @@ const value = defineModel<T>()
       <span
         :class="
           cn(
-            'relative block aspect-video w-full overflow-hidden rounded-lg ring-1 ring-transparency-white-t8 transition group-hover:ring-transparency-white-t20 group-focus-visible:ring-2 group-focus-visible:ring-primary-comfy-yellow/60',
+            'relative block w-full overflow-hidden rounded-lg ring-1 ring-transparency-white-t8 transition group-hover:ring-transparency-white-t20 group-focus-visible:ring-2 group-focus-visible:ring-primary-comfy-yellow/60',
+            square ? 'aspect-square' : 'aspect-video',
             value === option.id &&
               'ring-2 ring-primary-warm-white group-hover:ring-primary-warm-white'
           )
         "
       >
         <slot name="tile" :option />
-        <span
-          v-if="value === option.id"
-          class="absolute top-2 right-2 grid size-5 place-items-center rounded-full bg-primary-comfy-yellow text-primary-comfy-ink shadow-md"
-          aria-hidden="true"
-        >
-          <Check class="size-3.5" :stroke-width="3" />
-        </span>
       </span>
       <span
         :class="

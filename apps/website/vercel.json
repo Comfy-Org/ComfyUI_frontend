@@ -4356,6 +4356,16 @@
       "source": "/models/apps/reshoot/",
       "destination": "/hub/apps/reshoot/",
       "permanent": false
+    },
+    {
+      "source": "/models/apps/virtual-try-on",
+      "destination": "/hub/apps/virtual-try-on/",
+      "permanent": false
+    },
+    {
+      "source": "/models/apps/virtual-try-on/",
+      "destination": "/hub/apps/virtual-try-on/",
+      "permanent": false
     }
   ]
 }
