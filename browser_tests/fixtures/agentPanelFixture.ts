@@ -44,6 +44,7 @@ interface BootAgentAppOptions {
    * boot and relying on route-precedence order.
    */
   assets?: ListAssetsResponse
+  beforeNavigate?: (page: Page) => Promise<void>
 }
 
 async function mockAgentBoot(
@@ -171,6 +172,7 @@ export async function bootAgentApp(
     }
   }, onboardingCompleted)
   await mockAgentBoot(page, { agentFlag, ...options })
+  await options.beforeNavigate?.(page)
   await bootCloud(page)
   await page.goto(APP_URL)
   await waitForCloudApp(page)
