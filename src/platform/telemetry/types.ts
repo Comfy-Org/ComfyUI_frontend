@@ -884,8 +884,7 @@ export type AgentStarterPromptId =
 /**
  * Where the free-use notice was placed, for the DES-1221 placement experiment.
  *
- * Deliberately the PostHog variant keys verbatim, not snake_case like the rest
- * of this file: the analysis joins this property to
+ * Deliberately the PostHog variant keys verbatim: the analysis joins this property to
  * `$feature/agent-free-use-message-placement`, and a translation layer between
  * the two is one more place for the arms to drift apart.
  */

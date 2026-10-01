@@ -343,6 +343,15 @@ describe('HostTelemetrySink', () => {
       }
     },
     {
+      name: TelemetryEvents.AGENT_FREE_USE_NOTICE,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentFreeUseNotice({
+          action: 'dismissed',
+          placement: 'top-banner'
+        }),
+      properties: { action: 'dismissed', placement: 'top-banner' }
+    },
+    {
       name: TelemetryEvents.AGENT_CONSENT_SHOWN,
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentConsentShown({ trigger: 'first_load' }),
