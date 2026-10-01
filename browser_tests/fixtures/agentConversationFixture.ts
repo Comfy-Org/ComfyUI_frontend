@@ -890,13 +890,6 @@ export class AgentConversationHarness {
     return this.host.nestedDefinitionIds(outerId)
   }
 
-  /** Definition ids registered on the root graph right now. */
-  registeredSubgraphIds(): Promise<string[]> {
-    return this.page.evaluate(() => [
-      ...window.app!.graph.rootGraph.subgraphs.keys()
-    ])
-  }
-
   // A frontend-only node added the way a person actually adds one: the node
   // search box, double-clicked open, typed into, Enter — not a direct
   // LiteGraph.createNode call. The non-Agent baseline

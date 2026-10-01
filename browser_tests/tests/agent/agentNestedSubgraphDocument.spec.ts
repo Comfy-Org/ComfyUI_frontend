@@ -34,12 +34,13 @@ const CASE = 'agent-rec-text-only-answer'
  */
 test.describe(
   'Nested subgraph definitions arriving from the document',
-  { tag: ['@cloud', '@agent'] },
+  { tag: ['@cloud', '@agent', '@canvas', '@node', '@subgraph', '@vue-nodes'] },
   () => {
     test.use({ conversationCase: CASE, humanOpsHost: 'apply' })
 
     test('registers a subgraph nested inside a subgraph that the host put in the document', async ({
-      agentConversation
+      agentConversation,
+      page
     }) => {
       test.setTimeout(90_000)
 
@@ -53,14 +54,31 @@ test.describe(
         ).toEqual([NESTED_INNER_ID])
       })
 
-      await test.step('the follower registers both definitions off the document', async () => {
-        // The outer is what a reader that chokes on nesting drops; the inner
-        // is what the outer needs in order to configure at all.
+      await test.step('the nested definition renders as a usable canvas node', async () => {
+        let nodeId: string | undefined
         await expect
-          .poll(() => agentConversation.registeredSubgraphIds(), {
-            timeout: 15_000
-          })
-          .toEqual(expect.arrayContaining([NESTED_OUTER_ID, NESTED_INNER_ID]))
+          .poll(
+            async () => {
+              if (nodeId) return nodeId
+              try {
+                nodeId = await agentConversation.addNodeOfType(
+                  NESTED_OUTER_ID,
+                  [300, 300]
+                )
+                return nodeId
+              } catch {
+                return undefined
+              }
+            },
+            { timeout: 15_000 }
+          )
+          .toBeTruthy()
+
+        const renderedNode = page.locator(`[data-node-id="${nodeId}"]`)
+        await expect(renderedNode).toBeVisible()
+        await expect(renderedNode.getByTestId('node-title')).toHaveText(
+          'nested blueprint'
+        )
       })
     })
   }
