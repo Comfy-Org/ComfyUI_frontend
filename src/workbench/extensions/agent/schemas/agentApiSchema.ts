@@ -119,7 +119,7 @@ export const zPersistedToolCallSummary = zToolCallSummary.extend({
  */
 const zAgentMessageContent = z
   .object({
-    tool_calls: z.array(zToolCallSummary).optional()
+    tool_calls: z.array(zPersistedToolCallSummary).optional()
   })
   .passthrough()
 
