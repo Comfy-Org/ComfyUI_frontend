@@ -841,12 +841,20 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
 
   it.for<{
     name: string
-    declineReason: 'authentication_failed' | 'processing_error'
+    declineReason:
+      | 'authentication_failed'
+      | 'payment_not_completed'
+      | 'processing_error'
     title: string
   }>([
     {
       name: 'a challenge the customer did not complete',
       declineReason: 'authentication_failed',
+      title: 'Payment not completed'
+    },
+    {
+      name: 'a payment the customer did not approve',
+      declineReason: 'payment_not_completed',
       title: 'Payment not completed'
     },
     {

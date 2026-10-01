@@ -1167,6 +1167,9 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       case 'authentication_failed':
       case 'authentication_required':
       case 'payment_intent_authentication_failure':
+      case 'payment_not_completed':
+      case 'payment_method_customer_decline':
+      case 'payment_intent_payment_attempt_expired':
         return t('billingOperation.authenticationFailedDetail')
       case 'processing_error':
       case 'issuer_not_available':

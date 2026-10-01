@@ -90,10 +90,11 @@ export function operationOutcomeOf(
   }
 }
 
-/** Declines that mean the customer never finished authenticating, not a refused card. */
-const UNAUTHENTICATED_REASONS: ReadonlySet<PaymentReasonKey> = new Set([
+/** Declines that mean the customer never finished paying, not a refused card. */
+const NOT_COMPLETED_REASONS: ReadonlySet<PaymentReasonKey> = new Set([
   'authentication_failed',
-  'authentication_required'
+  'authentication_required',
+  'payment_not_completed'
 ])
 
 /**
@@ -103,7 +104,7 @@ const UNAUTHENTICATED_REASONS: ReadonlySet<PaymentReasonKey> = new Set([
  */
 function isNotCompleted(projection: PaymentProjection): boolean {
   const { reasonKey } = projection
-  if (reasonKey !== undefined && UNAUTHENTICATED_REASONS.has(reasonKey))
+  if (reasonKey !== undefined && NOT_COMPLETED_REASONS.has(reasonKey))
     return true
   return reasonKey === 'generic' && projection.recoveryAction === 'retry'
 }

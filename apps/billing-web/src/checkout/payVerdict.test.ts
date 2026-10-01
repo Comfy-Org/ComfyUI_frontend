@@ -179,6 +179,22 @@ describe('operationOutcomeOf', () => {
       outcome: { kind: 'not_completed', operationId: 'op_x' }
     },
     {
+      name: 'a payment the customer did not approve or let expire',
+      operation: failedWith('payment_not_completed', {
+        recoveryAction: 'retry'
+      }),
+      outcome: { kind: 'not_completed', operationId: 'op_x' }
+    },
+    {
+      name: 'a pending payment the customer did not approve',
+      operation: {
+        ...pendingOperation('op_x'),
+        authenticationState: 'failed_retryable',
+        declineReason: 'payment_not_completed'
+      },
+      outcome: { kind: 'not_completed', operationId: 'op_x' }
+    },
+    {
       name: 'an Alipay payment the customer backed out of, still pending',
       operation: {
         ...pendingOperation('op_x'),
