@@ -275,6 +275,71 @@ describe('the source a product names', () => {
     })
   })
 
+  it.for(BILLING_INTENTS)(
+    'round-trips a source beside the journey on the %s intent',
+    (intent) => {
+      const url = entryUrl({
+        ...BASE_INPUT,
+        intent,
+        source: 'out_of_credits',
+        correlationId: 'journey-1'
+      })
+
+      expect(parseBillingEntry(url)).toEqual({
+        status: 'ok',
+        entry: {
+          version: 'v1',
+          intent,
+          product: 'platform',
+          returnTo: 'platform_account',
+          correlationId: 'journey-1',
+          source: 'out_of_credits'
+        }
+      })
+    }
+  )
+
+  it('round-trips a source and the journey beside a top-up amount', () => {
+    const url = entryUrl({
+      ...BASE_INPUT,
+      intent: 'top-up',
+      amountCents: 2500,
+      source: 'out_of_credits',
+      correlationId: 'journey-1'
+    })
+
+    expect(url.searchParams.get('source')).toBe('out_of_credits')
+    expect(url.searchParams.get('amount_cents')).toBe('2500')
+    expect(parseBillingEntry(url)).toEqual({
+      status: 'ok',
+      entry: {
+        version: 'v1',
+        intent: 'top-up',
+        product: 'platform',
+        returnTo: 'platform_account',
+        correlationId: 'journey-1',
+        amountCents: 2500,
+        source: 'out_of_credits'
+      }
+    })
+  })
+
+  it('keeps a top-up link and its amount when the source is outside the shared list', () => {
+    const url =
+      '/v1/top-up?product=platform&return_to=platform_account&amount_cents=2500&source=newsletter'
+
+    expect(parseBillingEntry(url)).toEqual({
+      status: 'ok',
+      entry: {
+        version: 'v1',
+        intent: 'top-up',
+        product: 'platform',
+        returnTo: 'platform_account',
+        amountCents: 2500
+      }
+    })
+  })
+
   const UNREADABLE_SOURCES = [
     ['a value outside the shared list', 'newsletter'],
     ['a URL', 'https://attacker.example/steal?card=4242'],
