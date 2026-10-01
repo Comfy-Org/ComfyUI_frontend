@@ -1,46 +1,10 @@
-import type {
-  ModelLaunchMedia,
-  ModelLaunchPage
-} from '../templates/model-launch/types'
+import type { ModelLaunchPage } from '../templates/model-launch/types'
 
 const nanoBananaLinks = {
   cloud:
     'https://cloud.comfy.org/?utm_source=comfy.org&utm_medium=referral&utm_campaign=nano-banana',
   workflows: 'https://docs.comfy.org/tutorials/partner-nodes/google/nano-banana'
 } as const
-
-const placeholderMediaBase = 'https://media.comfy.org/website/chatgpt-image-2.5'
-
-const media = {
-  vaporwave: { kind: 'image', src: `${placeholderMediaBase}/vaporwave.webp` },
-  aliens: {
-    kind: 'image',
-    src: `${placeholderMediaBase}/alien-convenience-store.webp`
-  },
-  goldfish: { kind: 'image', src: `${placeholderMediaBase}/goldfish.webp` },
-  engine: { kind: 'image', src: `${placeholderMediaBase}/flame-engine.webp` },
-  canyon: { kind: 'image', src: `${placeholderMediaBase}/canyon-chase.webp` },
-  horizon: { kind: 'image', src: `${placeholderMediaBase}/anime-horizon.webp` }
-} as const satisfies Record<string, ModelLaunchMedia>
-
-const showcaseCards = (theme: string, sources: readonly string[]) =>
-  sources.map((src, index) => ({
-    id: `${theme}-${index + 1}`,
-    alt: {
-      en: `Placeholder ${theme} example ${index + 1} for Nano Banana`,
-      'zh-CN': `Nano Banana ${theme} 占位示例 ${index + 1}`
-    },
-    src
-  }))
-
-const stills = [
-  media.vaporwave.src,
-  media.aliens.src,
-  media.goldfish.src,
-  media.engine.src,
-  media.canyon.src,
-  media.horizon.src
-]
 
 interface LocalStill {
   slug: string
@@ -121,6 +85,54 @@ const designCards = localCards('design', [
   }
 ])
 
+const advertisingCards = localCards('advertising', [
+  {
+    slug: 'spicy-mayo',
+    en: 'Spicy mayo squeeze bottle on a kitchen table with burgers and fries',
+    'zh-CN': '厨房餐桌上的辣味蛋黄酱挤压瓶，旁边是汉堡和薯条'
+  },
+  {
+    slug: 'estate-car',
+    en: 'Grey estate car in a dark studio',
+    'zh-CN': '暗色影棚中的灰色旅行车'
+  },
+  {
+    slug: 'teapot',
+    en: 'Terracotta teapot and cup on burlap in window light',
+    'zh-CN': '窗边光线下麻布上的陶土茶壶与茶杯'
+  },
+  {
+    slug: 'newspaper',
+    en: 'Vintage newspaper front page on a wooden table',
+    'zh-CN': '木桌上的复古报纸头版'
+  },
+  {
+    slug: 'botanical-bottles',
+    en: 'Three amber botanical extract bottles with coloured caps',
+    'zh-CN': '三瓶带彩色瓶盖的琥珀色植物萃取液'
+  },
+  {
+    slug: 'ramen',
+    en: 'Steaming bowl of ramen with chopsticks on a wooden table',
+    'zh-CN': '木桌上冒着热气的拉面与筷子'
+  },
+  {
+    slug: 'gallery-building',
+    en: 'Black timber gallery building under an overcast sky',
+    'zh-CN': '阴天下的黑色木质画廊建筑'
+  },
+  {
+    slug: 'mayo-box',
+    en: 'Mayo carton with hand-drawn packaging on a wooden counter',
+    'zh-CN': '木质台面上手绘包装的蛋黄酱纸盒'
+  },
+  {
+    slug: 'leather-zipper',
+    en: 'Close-up of a brass zipper on tan leather',
+    'zh-CN': '棕色皮革上黄铜拉链的特写'
+  }
+])
+
 export const nanoBananaPage: ModelLaunchPage = {
   metaTitleKey: 'nanoBanana.meta.title',
   metaDescriptionKey: 'nanoBanana.meta.description',
@@ -160,10 +172,7 @@ export const nanoBananaPage: ModelLaunchPage = {
     {
       headingKey: 'nanoBanana.showcase.advertising.heading',
       descriptionKey: 'nanoBanana.showcase.advertising.description',
-      cards: showcaseCards('advertising', [
-        ...stills.slice(4),
-        ...stills.slice(0, 4)
-      ])
+      cards: advertisingCards
     }
   ],
   pricing: {
