@@ -16,7 +16,10 @@ import type {
 } from '@comfyorg/account-core/webSession'
 import type { RequestAuthorizer } from '@comfyorg/account-core/requestAuth'
 import { createRequestAuthorizer } from '@comfyorg/account-core/requestAuth'
-import type { SessionTokenFailure } from '@comfyorg/account-core/sessionTokenMint'
+import type {
+  SessionTokenFailure,
+  SessionTokenResult
+} from '@comfyorg/account-core/sessionTokenMint'
 import {
   createSessionTokenMint,
   SessionTokenError
@@ -255,10 +258,10 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
       scope: requestScope,
       workspaceId: () => (currentSession() ? teamWorkspaceId() : undefined),
       send: (url, init, scope) => send(url, init, scope, authorize),
-      workspaceToken: async (scope) => {
-        const result = await mint.mint(scope.workspaceId)
-        return staleScopeFailure(scope) ?? result
-      },
+      workspaceToken: async (scope) =>
+        settleScopedToken(scope, await mint.mint(scope.workspaceId)),
+      remintWorkspaceToken: async (scope) =>
+        settleScopedToken(scope, await mint.remint(scope.workspaceId)),
       authorizeResource: async ({ session }) => {
         try {
           const { headers } = await authorize(
@@ -329,6 +332,29 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     }
     if (identity?.getEpoch() === scope.epoch) return undefined
     return { status: 'error', code: 'IDENTITY_CHANGED', retryable: false }
+  }
+
+  function settleScopedToken(
+    scope: WebSessionRequestScope,
+    result: SessionTokenResult
+  ): SessionTokenResult {
+    const stale = staleScopeFailure(scope)
+    if (stale) return stale
+    dropRefusedWorkspace(scope, result)
+    return result
+  }
+
+  function dropRefusedWorkspace(
+    { workspaceId }: WebSessionRequestScope,
+    result: SessionTokenResult
+  ): void {
+    if (
+      workspaceId !== undefined &&
+      result.status === 'error' &&
+      result.code === 'WORKSPACE_ACCESS_DENIED'
+    ) {
+      useWorkspaceAuthStore().dropDeniedWorkspace(workspaceId)
+    }
   }
 
   /** Undefined unless this tab is signed in on the session. */
