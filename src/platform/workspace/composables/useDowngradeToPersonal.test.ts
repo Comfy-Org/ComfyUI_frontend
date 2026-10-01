@@ -764,6 +764,25 @@ describe('useDowngradeToPersonal', () => {
   })
 
   describe('downgradeToPersonal telemetry', () => {
+    it('hands the surface to the poller that reports a payment settled later', async () => {
+      mockMembers.value = teamWithOwnerAnd('m1')
+      vi.mocked(useBillingContext().subscribe).mockResolvedValue({
+        billing_op_id: 'op-5',
+        status: 'pending_payment'
+      })
+      const { downgradeToPersonal } = useDowngradeToPersonal({
+        paymentIntentSource: 'team_members_panel'
+      })
+
+      await downgradeToPersonal('founder-monthly')
+
+      expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
+        'op-5',
+        'subscription',
+        expect.objectContaining({ paymentIntentSource: 'team_members_panel' })
+      )
+    })
+
     it('tracks the start of the downgrade with the pending removal count', async () => {
       mockMembers.value = teamWithOwnerAnd('m1', 'm2')
       const { downgradeToPersonal } = useDowngradeToPersonal()

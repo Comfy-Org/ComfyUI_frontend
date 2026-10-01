@@ -173,13 +173,15 @@ import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { describeBillingFailure } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { isInsufficientCredits = false } = defineProps<{
+const { isInsufficientCredits = false, source } = defineProps<{
   isInsufficientCredits?: boolean
+  source?: PaymentIntentSource
 }>()
 
 const { t } = useI18n()
@@ -266,7 +268,8 @@ async function handleBuy() {
       telemetry?.trackBillingEvent({
         operation: 'topup',
         stage: 'started',
-        outcome: 'pending'
+        outcome: 'pending',
+        payment_intent_source: source
       })
     }
     await authActions.purchaseCreditsDirect(payAmount.value)
@@ -288,6 +291,7 @@ async function handleBuy() {
       operation: 'topup',
       stage: 'failed',
       outcome: 'failure',
+      payment_intent_source: source,
       ...describeBillingFailure(error)
     })
     toast.add({

@@ -2041,6 +2041,22 @@ describe('useSubscriptionCheckout', () => {
       expect(checkout.checkoutStep.value).toBe('pricing')
     })
 
+    it('names the surface the checkout was opened from when it opens the downgrade', async () => {
+      mockIsTeamPlan.value = true
+      const checkout = await setup('team_members_panel')
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      expect(mockShowDowngradeToPersonalDialog).toHaveBeenCalledWith({
+        planName: 'Standard',
+        planSlug: 'standard-yearly',
+        paymentIntentSource: 'team_members_panel'
+      })
+    })
+
     it('shows success without conversion telemetry for a scheduled Team downgrade', async () => {
       const preview = {
         allowed: true,

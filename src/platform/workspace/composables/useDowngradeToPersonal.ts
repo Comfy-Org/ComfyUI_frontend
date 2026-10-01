@@ -7,6 +7,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { toTierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
@@ -58,7 +59,9 @@ export class ReactivationAmountChangedError extends Error {
  * The removal-email and an atomic downgrade endpoint are backend-owned future
  * work; until then the frontend orchestrates the two steps non-atomically.
  */
-export function useDowngradeToPersonal() {
+export function useDowngradeToPersonal({
+  paymentIntentSource
+}: { paymentIntentSource?: PaymentIntentSource } = {}) {
   const workspaceStore = useTeamWorkspaceStore()
   const { members } = storeToRefs(workspaceStore)
   const { subscribe, previewSubscribe, subscription, fetchStatus } =
@@ -342,6 +345,7 @@ export function useDowngradeToPersonal() {
             tier: targetTier,
             cycle: targetCycle,
             checkoutType: 'change',
+            paymentIntentSource,
             downgradeToPersonal: {
               memberRemovalCount: membersToRemove.length,
               memberRemovalFailures,
@@ -362,6 +366,7 @@ export function useDowngradeToPersonal() {
             tier: targetTier,
             cycle: targetCycle,
             checkoutType: 'change',
+            paymentIntentSource,
             downgradeToPersonal: {
               memberRemovalCount: membersToRemove.length,
               memberRemovalFailures,

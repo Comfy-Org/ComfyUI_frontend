@@ -786,7 +786,8 @@ export function useSubscriptionCheckout(
     const { useDialogService } = await import('@/services/dialogService')
     const result = await useDialogService().showDowngradeToPersonalDialog({
       planName: t(`subscription.tiers.${tierKey}.name`),
-      planSlug
+      planSlug,
+      paymentIntentSource
     })
     if (!result) return
 

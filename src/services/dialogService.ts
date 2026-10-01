@@ -526,20 +526,13 @@ export const useDialogService = () => {
     }
     if (!canTopUp.value) return
 
-    // Only the workspace rail's content declares `source`; the legacy one
-    // takes `isInsufficientCredits` alone, so forwarding the whole options
-    // object there lands `source` in attrs as a stray DOM attribute on its
-    // root rather than as attribution.
-    const isWorkspaceRail = type.value === 'workspace'
-
     return dialogStore.showDialog({
       key: 'top-up-credits',
-      component: isWorkspaceRail
-        ? TopUpCreditsDialogContentWorkspace
-        : TopUpCreditsDialogContentLegacy,
-      props: isWorkspaceRail
-        ? options
-        : { isInsufficientCredits: options?.isInsufficientCredits },
+      component:
+        type.value === 'workspace'
+          ? TopUpCreditsDialogContentWorkspace
+          : TopUpCreditsDialogContentLegacy,
+      props: options,
       dialogComponentProps: {
         renderer: 'reka',
         headless: true,
@@ -933,6 +926,7 @@ export const useDialogService = () => {
   async function showDowngradeToPersonalDialog(options: {
     planName: string
     planSlug: string
+    paymentIntentSource?: PaymentIntentSource
   }): Promise<DowngradeToPersonalResult | null> {
     const {
       useDowngradeToPersonal,
@@ -944,7 +938,9 @@ export const useDialogService = () => {
       refreshMembers,
       previewDowngrade,
       downgradeToPersonal
-    } = useDowngradeToPersonal()
+    } = useDowngradeToPersonal({
+      paymentIntentSource: options.paymentIntentSource
+    })
 
     let requiresReactivation = false
     let chargeCents = 0
