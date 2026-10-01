@@ -481,6 +481,17 @@ describe('BaseWidget store integration', () => {
       expect(widget.serialize).toBe(false)
     })
 
+    it('syncs live type changes to registered state', () => {
+      const widget = createMutableTypeWidget(node)
+      widget.setNodeId(toNodeId(1))
+
+      widget.type = 'button'
+
+      expect(
+        store.getWidget(widgetId(graph.id, toNodeId(1), widget.name))?.type
+      ).toBe('button')
+    })
+
     it('maps legacy visibility APIs to the visibility component', () => {
       const widget = createMutableTypeWidget(node, 'visibleWidget')
       widget.setNodeId(toNodeId(1))
