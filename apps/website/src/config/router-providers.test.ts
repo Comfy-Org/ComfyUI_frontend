@@ -19,6 +19,7 @@ const ROUTER_SCHEMAS =
   'https://raw.githubusercontent.com/Comfy-Org/docs/main/router-schemas'
 const FETCH_ATTEMPTS = 3
 const FETCH_TIMEOUT_MS = 4_000
+const SOURCE_TEST_TIMEOUT_MS = FETCH_ATTEMPTS * FETCH_TIMEOUT_MS + 3_000
 
 function isCI(value: string | undefined = process.env.CI): boolean {
   return ['1', 'true'].includes(value?.toLowerCase() ?? '')
@@ -162,7 +163,7 @@ describe('Router provider coverage', () => {
       specs,
       ROUTER_PROVIDER_COVERAGE.map((row) => row.providers)
     )
-  }, 15_000)
+  }, SOURCE_TEST_TIMEOUT_MS)
 
   it('lists every model the docs show with an alternate provider', async (ctx) => {
     if (skipReason) return ctx.skip(skipReason)
@@ -185,7 +186,7 @@ describe('Router provider coverage', () => {
         name: row.docsName ?? row.name
       })).sort(byDocsUrl)
     )
-  }, 15_000)
+  }, SOURCE_TEST_TIMEOUT_MS)
 
   it('previews catalog models that only Comfy serves', async (ctx) => {
     if (skipReason) return ctx.skip(skipReason)
@@ -199,5 +200,5 @@ describe('Router provider coverage', () => {
       expect(catalog).toContain(`[${name}](${path})`)
       expect(coverage).not.toContain(path)
     }
-  }, 15_000)
+  }, SOURCE_TEST_TIMEOUT_MS)
 })
