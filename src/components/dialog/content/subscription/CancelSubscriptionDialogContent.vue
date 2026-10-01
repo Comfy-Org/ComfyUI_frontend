@@ -52,7 +52,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import {
-  getCancelBillingPlan,
+  createCancelFlowReporter,
   getSubscriptionCancellationMetadata
 } from '@/platform/cloud/subscription/utils/subscriptionCancellationTelemetry'
 import { isCloud } from '@/platform/distribution/types'
@@ -87,14 +87,10 @@ const telemetry = useTelemetry()
 const isLoading = ref(false)
 const didCancelSucceed = ref(false)
 const didScopeAbort = ref(false)
-let didRequestCancel = false
-
-function cancelBillingPlan() {
-  return getCancelBillingPlan({
-    duration: subscription.value?.duration,
-    tier: tier.value
-  })
-}
+const cancelReport = createCancelFlowReporter(telemetry, () => ({
+  duration: subscription.value?.duration,
+  tier: tier.value
+}))
 
 function cancellationMetadata() {
   return getSubscriptionCancellationMetadata({
@@ -111,24 +107,13 @@ onMounted(() => {
     'flow_opened',
     cancellationMetadata()
   )
-  telemetry?.trackBillingEvent({
-    operation: 'cancel',
-    stage: 'intent',
-    outcome: 'pending',
-    ...cancelBillingPlan()
-  })
+  cancelReport.intent()
 })
 
 onUnmounted(() => {
   if (didCancelSucceed.value || didScopeAbort.value || isLoading.value) return
   telemetry?.trackSubscriptionCancellation('abandoned', cancellationMetadata())
-  if (didRequestCancel) return
-  telemetry?.trackBillingEvent({
-    operation: 'cancel',
-    stage: 'abandoned',
-    outcome: 'pending',
-    ...cancelBillingPlan()
-  })
+  cancelReport.abandoned()
 })
 
 const formattedEndDate = computed(() => {
@@ -170,7 +155,9 @@ async function onConfirmCancel() {
   }
 
   telemetry?.trackSubscriptionCancellation('confirmed', cancellationMetadata())
-  didRequestCancel = true
+  cancelReport.confirmed({
+    operationFollows: shouldUseWorkspaceBilling.value
+  })
   isLoading.value = true
   try {
     await cancelSubscription(isScopeCurrent)
@@ -178,13 +165,7 @@ async function onConfirmCancel() {
     const errorMessage = getErrorMessage(error)
     if (!shouldUseWorkspaceBilling.value) {
       telemetry?.trackSubscriptionCancellation('failed', cancellationMetadata())
-      telemetry?.trackBillingEvent({
-        operation: 'cancel',
-        stage: 'failed',
-        outcome: 'failure',
-        failure_category: categorizeBillingApiError(error),
-        ...cancelBillingPlan()
-      })
+      cancelReport.failed(categorizeBillingApiError(error))
     }
     toast.add({
       severity: 'error',

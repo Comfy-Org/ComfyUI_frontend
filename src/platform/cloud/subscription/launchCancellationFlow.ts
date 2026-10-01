@@ -3,7 +3,7 @@ import { t } from '@/i18n'
 import { prepareChurnkey } from '@/platform/cloud/churnkey/churnkeyClient'
 import type { ChurnkeySession } from '@/platform/cloud/churnkey/churnkeyClient'
 import {
-  getCancelBillingPlan,
+  createCancelFlowReporter,
   getSubscriptionCancellationMetadata
 } from '@/platform/cloud/subscription/utils/subscriptionCancellationTelemetry'
 import { useTelemetry } from '@/platform/telemetry'
@@ -188,19 +188,14 @@ export async function launchCancellationFlow({
     tier: billing.tier.value
   })
 
-  const plan = getCancelBillingPlan({
+  const plan = {
     duration: billing.subscription.value?.duration,
     tier: billing.tier.value
-  })
-  const cancelRequest = { sent: false }
+  }
+  const cancelReport = createCancelFlowReporter(telemetry, () => plan)
 
   telemetry?.trackSubscriptionCancellation('flow_opened', metadata)
-  telemetry?.trackBillingEvent({
-    operation: 'cancel',
-    stage: 'intent',
-    outcome: 'pending',
-    ...plan
-  })
+  cancelReport.intent()
 
   try {
     const results = await session.show({
@@ -211,7 +206,7 @@ export async function launchCancellationFlow({
           )
         }
         telemetry?.trackSubscriptionCancellation('confirmed', metadata)
-        cancelRequest.sent = true
+        cancelReport.confirmed({ operationFollows: true })
         try {
           await billing.cancelSubscription(isLaunchWorkspaceCurrent)
           return { message: t('subscription.cancelSuccess') }
@@ -241,14 +236,7 @@ export async function launchCancellationFlow({
         return
       case 'abandoned':
         telemetry?.trackSubscriptionCancellation('abandoned', metadata)
-        if (!cancelRequest.sent) {
-          telemetry?.trackBillingEvent({
-            operation: 'cancel',
-            stage: 'abandoned',
-            outcome: 'pending',
-            ...plan
-          })
-        }
+        cancelReport.abandoned()
         return
       case 'closed':
         return
@@ -269,14 +257,6 @@ export async function launchCancellationFlow({
       { flowAlreadyOpened: true },
       { stage: 'session', error }
     )
-    if (fallback === 'failed' && !cancelRequest.sent) {
-      telemetry?.trackBillingEvent({
-        operation: 'cancel',
-        stage: 'failed',
-        outcome: 'failure',
-        failure_category: 'rendering',
-        ...plan
-      })
-    }
+    if (fallback === 'failed') cancelReport.failed('rendering')
   }
 }
