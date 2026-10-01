@@ -690,25 +690,29 @@ describe('useAgentSession (v1 composition root)', () => {
     await ownerSession.loadThread('th-1')
     expect(conversation.activeTurnId).toBe('msg-1')
 
+    // Three held history reads exist from here on, and no more: owner A's
+    // stale reconciliation, the current stop's reconciliation, and the
+    // turn-recovery fetch the reload's own hydration opened for the restored
+    // streaming turn. Only the first two belong to a stop, so only those two
+    // are settled; a fourth read would mean a duplicate reconciliation.
     holdReconciliations = true
-    const currentReconciliationIndex = reconcileDeliveries.length
     const currentStop = ownerSession.stopTurn('button')
-    await vi.waitFor(() =>
-      expect(reconcileDeliveries.length).toBeGreaterThan(
-        currentReconciliationIndex
-      )
-    )
+    await vi.waitFor(() => expect(reconcileDeliveries).toHaveLength(3))
 
-    reconcileDeliveries[0]?.(terminalHistory)
+    const staleReconciliation = reconcileDeliveries[0]
+    assert.exists(staleReconciliation)
+    staleReconciliation(terminalHistory)
     await staleStop
 
     expect(conversation.activeTurnId).toBe('msg-1')
     expect(ownerSession.isStreaming.value).toBe(true)
     await ownerSession.stopTurn('button')
     expect(cancelMessage).toHaveBeenCalledTimes(2)
+    expect(reconcileDeliveries).toHaveLength(3)
 
-    for (const deliver of reconcileDeliveries.slice(currentReconciliationIndex))
-      deliver(terminalHistory)
+    const currentReconciliation = reconcileDeliveries[1]
+    assert.exists(currentReconciliation)
+    currentReconciliation(terminalHistory)
     await currentStop
     expect(conversation.activeTurnId).toBeNull()
     expect(ownerSession.isStreaming.value).toBe(false)
@@ -799,6 +803,70 @@ describe('useAgentSession (v1 composition root)', () => {
     await vi.waitFor(() => expect(recoveryDeliveries).toHaveLength(2))
 
     recoveryDeliveries[1]?.([
+      historyRow(1, 'user', 'msg-1', 'owner A new turn'),
+      historyRow(2, 'assistant', 'msg-1', 'new done', 'msg-1')
+    ])
+    await vi.waitFor(() => expect(session.isStreaming.value).toBe(false))
+
+    session.stop()
+  })
+
+  it('does not poll a turn twice after an aborted owner-A recovery settles', async () => {
+    const recoveryDeliveries: Array<(history: AgentMessages) => void> = []
+    const getMessages = vi.fn(
+      () =>
+        new Promise<AgentMessages>((resolve) => {
+          recoveryDeliveries.push(resolve)
+        })
+    )
+    const events = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: events.source
+    })
+    session.start()
+    events.status(true)
+    await session.sendMessage('owner A old turn')
+    events.emit(delta('msg-1', 'old partial'))
+
+    events.status(false)
+    events.status(true)
+    await vi.waitFor(() => expect(recoveryDeliveries).toHaveLength(1))
+
+    setStorageIdentity('user-b')
+    setStorageWorkspaceId('personal')
+    setStorageIdentity('user-test')
+    await session.sendMessage('owner A new turn')
+    events.emit(delta('msg-1', 'new partial'))
+
+    events.status(false)
+    events.status(true)
+    await vi.waitFor(() => expect(recoveryDeliveries).toHaveLength(2))
+
+    // Owner A's abort cannot cancel a history read the server has already
+    // accepted, so the stale job stays parked in it and settles only now --
+    // after owner A's replacement recovery has registered under the same
+    // thread/turn key. Its cleanup must retire its own entry alone: retiring
+    // the live job's entry would let the next reconnect start a second
+    // concurrent poll of the same turn and leave the surviving job
+    // unabortable on teardown.
+    const staleRecovery = recoveryDeliveries[0]
+    assert.exists(staleRecovery)
+    staleRecovery([
+      historyRow(1, 'user', 'msg-1', 'owner A old turn'),
+      historyRow(2, 'assistant', 'msg-1', 'old done', 'msg-1')
+    ])
+    await vi.advanceTimersByTimeAsync(0)
+
+    events.status(false)
+    events.status(true)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(recoveryDeliveries).toHaveLength(2)
+    expect(getMessages).toHaveBeenCalledTimes(2)
+
+    const currentRecovery = recoveryDeliveries[1]
+    assert.exists(currentRecovery)
+    currentRecovery([
       historyRow(1, 'user', 'msg-1', 'owner A new turn'),
       historyRow(2, 'assistant', 'msg-1', 'new done', 'msg-1')
     ])
