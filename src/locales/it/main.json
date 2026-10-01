@@ -84,6 +84,7 @@
     "historyCurrent": "Attuale",
     "historyEarlier": "Precedenti",
     "historyEmpty": "Nessuna conversazione ancora",
+    "historyOpenFailed": "Impossibile aprire. Seleziona questa chat per riprovare.",
     "historyToday": "Oggi",
     "historyYesterday": "Ieri",
     "latest": "Più recente",
@@ -169,19 +170,30 @@
     "skip": "Salta",
     "stop": "Interrompi",
     "stopShortcut": "Esc",
-    "suggestedPrompts": [
-      "Genera un'anatra gialla con una maschera da hockey",
-      "Elenca i miei flussi di lavoro salvati",
-      "Trova il miglior flusso di lavoro per l'upscaling della pelle",
-      "Spiega il nodo selezionato",
-      "Crea un flusso di lavoro da immagine a video con 3 modelli"
-    ],
+    "suggestedPrompts": {
+      "cloud": [
+        "Genera una scheda personaggio di un astronauta",
+        "Trasforma l'immagine del prodotto in un breve annuncio pubblicitario",
+        "Spiega i nodi selezionati",
+        "Il miglior workflow di upscaling dell'immagine per il 4K",
+        "Correggi gli errori in questo workflow"
+      ],
+      "local": [
+        "Genera un ritratto realistico di un astronauta",
+        "Un workflow da immagine a video adatto alla mia GPU",
+        "Spiega i nodi selezionati",
+        "Aiutami a installare i nodi mancanti per questo workflow",
+        "Correggi gli errori in questo workflow"
+      ]
+    },
     "switchWorkflow": "Cambia flusso di lavoro",
     "switchWorkflowForNodes": "Passa a {workflowName} per aggiungere nodi.",
     "takeTour": "Fai il tour",
     "targetFollowsVisibleWorkflow": "Il workflow di destinazione segue la scheda visibile finché non scegli una destinazione, aggiungi riferimenti a nodi o invii un messaggio.",
     "targetForThisChat": "Destinazione dell'agente per questa chat",
     "targetNavigationUnavailable": "Questa destinazione del workflow non è più disponibile.",
+    "targetWorkflowOpenFailed": "Non è stato possibile aprire il workflow di destinazione.",
+    "targetWorkflowUnavailable": "Il workflow di destinazione non è più disponibile.",
     "thinking": "Elaborazione in corso...",
     "title": "Comfy Agent",
     "toolForgettingPreference": "Rimozione di una preferenza",
@@ -540,6 +552,20 @@
       "expired": "Verifica scaduta. Completa nuovamente la verifica.",
       "failed": "Verifica non riuscita. Per favore riprova.",
       "submitBlockedHint": "Completa la verifica sopra per abilitare la registrazione."
+    },
+    "webSession": {
+      "reconnecting": {
+        "detail": "Al momento non riusciamo a raggiungere Comfy. Continueremo a riprovare e tu resterai connesso.",
+        "retry": "Riprova ora",
+        "title": "Riconnessione al tuo account"
+      },
+      "token": {
+        "ended": "La sessione è terminata. Accedi di nuovo per continuare.",
+        "identityChanged": "La sessione è cambiata. Ricarica per continuare.",
+        "refused": "La tua richiesta è stata rifiutata. Ricarica la pagina e riprova.",
+        "unavailable": "Non siamo riusciti a raggiungere il tuo account. Riprova tra poco.",
+        "workspaceDenied": "Non hai accesso a questo spazio di lavoro. Contatta il supporto se il problema persiste."
+      }
     }
   },
   "batch": {
@@ -645,6 +671,46 @@
     "saveAs": "Salva come",
     "switchToOutputs": "Passa alle Uscite",
     "viewApp": "Visualizza app"
+  },
+  "cameraAngle": {
+    "cameraView": "Fotocamera",
+    "cameraViewTooltip": "Sposta la fotocamera attorno al soggetto",
+    "faces": {
+      "back": "RETRO",
+      "bottom": "BASSO",
+      "left": "SINISTRA",
+      "right": "DESTRA",
+      "top": "ALTO"
+    },
+    "hidePreview": "Nascondi l'anteprima dell'inquadratura",
+    "horizontal": {
+      "back": "Retro",
+      "backLeft": "Dietro a sinistra",
+      "backRight": "Dietro a destra",
+      "front": "Fronte",
+      "frontLeft": "Davanti a sinistra",
+      "frontRight": "Davanti a destra",
+      "left": "Lato sinistro",
+      "right": "Lato destro"
+    },
+    "horizontalLabel": "Angolo orizzontale",
+    "objectView": "Oggetto",
+    "objectViewTooltip": "Guarda attraverso la fotocamera e ruota il soggetto",
+    "preview": "Anteprima",
+    "showPreview": "Mostra l'anteprima dell'inquadratura",
+    "vertical": {
+      "elevated": "Elevato",
+      "eyeLevel": "All'altezza degli occhi",
+      "highAngle": "Dall'alto",
+      "lowAngle": "Dal basso"
+    },
+    "verticalLabel": "Angolo verticale",
+    "zoom": {
+      "closeUp": "Primo piano",
+      "medium": "Campo medio",
+      "wide": "Campo lungo"
+    },
+    "zoomLabel": "Dimensione dell'inquadratura"
   },
   "clipboard": {
     "errorMessage": "Copia negli appunti non riuscita",
@@ -1898,6 +1964,7 @@
     "itemsSelected": "Nessun elemento selezionato | {count} elemento selezionato | {count} elementi selezionati",
     "job": "Job",
     "jobIdCopied": "ID job copiato negli appunti",
+    "jobs": "Processi",
     "keybinding": "Scorciatoia",
     "keybindingAlreadyExists": "Scorciatoia già esistente su",
     "keybindingListAriaLabel": "Scorciatoie: {combos}",
@@ -2051,6 +2118,7 @@
     "restore": "Ripristina",
     "restoreDialog": "Ripristina finestra",
     "resultsCount": "Trovati {count} risultati",
+    "retry": "Riprova",
     "running": "In esecuzione",
     "save": "Salva",
     "saveAnyway": "Salva comunque",
@@ -2187,6 +2255,7 @@
       "r": "R",
       "rgb": "RGB"
     },
+    "checkerboard": "Mostra trasparenza",
     "clipWarnings": "Avvisi di clipping",
     "dither": "Dithering",
     "exposure": "Esposizione",
@@ -4919,6 +4988,7 @@
     "failedToFetchBalance": "Impossibile recuperare il saldo: {error}",
     "failedToFetchLogs": "Impossibile recuperare i log del server",
     "failedToFetchSubscription": "Impossibile recuperare lo stato dell'abbonamento: {error}",
+    "failedToInitializeCameraAngleViewer": "Impossibile inizializzare il visualizzatore dell'angolo della fotocamera. Prova a ricaricare la pagina.",
     "failedToInitializeCameraInfoViewer": "Impossibile inizializzare il visualizzatore delle informazioni della fotocamera. Prova a ricaricare la pagina.",
     "failedToInitializeLoad3dViewer": "Impossibile inizializzare il visualizzatore 3D",
     "failedToInitiateCreditPurchase": "Impossibile avviare l'acquisto di crediti: {error}",
@@ -5196,6 +5266,7 @@
         "memberBody": "Chiedi al proprietario del workspace di ripristinare l'abbonamento.",
         "title": "Abbonamento in pausa"
       },
+      "payInvoice": "Paga fattura",
       "planChange": {
         "body": "Il tuo piano attuale rimane attivo fino ad allora.",
         "title": "Il tuo piano passa a {plan} il {date}"
@@ -5203,6 +5274,7 @@
       "updatePayment": "Aggiorna pagamento",
       "warning": {
         "bodyNoDate": "Il tuo pagamento non è stato elaborato. Aggiorna il pagamento per evitare una sospensione.",
+        "bodyWithAmount": "Non è stato possibile elaborare il pagamento di {amount}. Paga la fattura o aggiorna il metodo di pagamento per evitare una sospensione.",
         "title": "Pagamento non riuscito"
       }
     },
@@ -5243,10 +5315,19 @@
     "inviteLimitReached": "Hai raggiunto il massimo di {count} membri",
     "inviteLinks": {
       "copied": "Copiato!",
+      "copiedToast": "Link di invito copiato",
       "copyAll": "Copia link di invito | Copia tutti i link ({count})",
+      "copyFailedToast": "Non è stato possibile copiare il link di invito",
       "copyLink": "Copia link di invito",
+      "invalidBody": "Potrebbe essere scaduto o essere stato sostituito. Chiedi alla persona che ti ha invitato un nuovo link.",
+      "invalidDismiss": "Capito",
+      "invalidTitle": "Questo link di invito non è più valido",
       "sentLead": "Ogni invito ha un link personale che puoi condividere direttamente:",
-      "sentTitle": "{count} invito inviato | {count} inviti inviati"
+      "sentTitle": "{count} invito inviato | {count} inviti inviati",
+      "switchAccount": "Cambia account",
+      "wrongAccountBody": "Hai effettuato l'accesso come {email}. Accedi con l'email che ha ricevuto questo invito per accettarlo.",
+      "wrongAccountBodyGeneric": "Questo invito è stato inviato a un indirizzo email diverso da quello con cui hai effettuato l'accesso. Accedi con l'email che lo ha ricevuto.",
+      "wrongAccountTitle": "Questo invito è stato inviato a un'altra email"
     },
     "inviteMember": "Invita membro",
     "inviteMemberDialog": {
@@ -5287,7 +5368,8 @@
         "minutesAgo": "{n} min fa"
       },
       "columns": {
-        "creditsUsed": "Crediti mensili",
+        "creditsUsed": "Crediti usati questo mese",
+        "email": "Email",
         "expiryDate": "Data di scadenza",
         "inviteDate": "Data invito",
         "role": "Ruolo"
@@ -5307,11 +5389,13 @@
       "endedPlanTitle": "Il tuo piano è terminato",
       "endedTeamTitle": "Il tuo piano Team è terminato",
       "expiredOn": "Scaduto il {date}",
-      "header": "Membri",
+      "loadFailed": "Non è stato possibile caricare tutto il contenuto di questa pagina.",
       "membersCount": "{count} di {maxSeats} membri",
       "needMoreMembers": "Hai bisogno di più membri?",
       "noInvites": "Nessun invito in sospeso",
+      "noInvitesMatch": "Nessun invito corrisponde a \"{query}\"",
       "noMembers": "Nessun membro",
+      "noMembersMatch": "Nessun membro corrisponde a \"{query}\"",
       "pendingInvitesCount": "{count} invito in sospeso | {count} inviti in sospeso",
       "reactivateTeam": "Riattiva Team",
       "resubscribe": "Riattiva l'abbonamento",
@@ -5320,6 +5404,8 @@
         "active": "Attivi",
         "pendingCount": "In sospeso ({count})"
       },
+      "totalMembersCount": "{count} di {maxSeats} membri totali.",
+      "totalMembersUnlimited": "{count} membro in totale. | {count} membri in totale.",
       "upgradeToTeam": "Aggiorna a Team",
       "upsellBanner": "Per aggiungere membri, aggiorna il tuo piano.",
       "upsellBannerEnterpriseEnded": "Contatta il reparto vendite per riattivare il tuo piano Enterprise.",
@@ -5397,9 +5483,7 @@
       "title": "Annullare l'invito a questa persona?"
     },
     "tabs": {
-      "dashboard": "Dashboard",
-      "membersCount": "Membri ({count})",
-      "planCredits": "Piano e Crediti"
+      "dashboard": "Dashboard"
     },
     "toast": {
       "failedToCreateWorkspace": "Impossibile creare il workspace",

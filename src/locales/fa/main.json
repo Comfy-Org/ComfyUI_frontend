@@ -84,6 +84,7 @@
     "historyCurrent": "فعلی",
     "historyEarlier": "قدیمی‌تر",
     "historyEmpty": "هنوز گفتگویی وجود ندارد",
+    "historyOpenFailed": "باز کردن ممکن نشد. برای تلاش مجدد، این گفت‌وگو را انتخاب کنید.",
     "historyToday": "امروز",
     "historyYesterday": "دیروز",
     "latest": "جدیدترین",
@@ -169,19 +170,30 @@
     "skip": "رد کردن",
     "stop": "توقف",
     "stopShortcut": "Esc",
-    "suggestedPrompts": [
-      "یک اردک زرد با ماسک هاکی تولید کن",
-      "workflowهای ذخیره‌شدهٔ من را فهرست کن",
-      "بهترین workflow برای ارتقای کیفیت پوست را پیدا کن",
-      "گره انتخاب‌شده را توضیح بده",
-      "یک workflow برای تبدیل تصویر به ویدیو با ۳ مدل بساز"
-    ],
+    "suggestedPrompts": {
+      "cloud": [
+        "یک شیت شخصیت از یک فضانورد تولید کنید",
+        "تصویر محصول را به یک تبلیغ کوتاه تبدیل کنید",
+        "nodeهای انتخاب‌شده را توضیح دهید",
+        "بهترین workflow برای افزایش وضوح تصویر به 4K",
+        "خطاهای این workflow را برطرف کنید"
+      ],
+      "local": [
+        "یک پرترهٔ واقع‌گرایانه از یک فضانورد تولید کنید",
+        "یک workflow تبدیل تصویر به ویدیو که با GPU من سازگار باشد",
+        "nodeهای انتخاب‌شده را توضیح دهید",
+        "برای نصب nodeهای مفقود این workflow به من کمک کنید",
+        "خطاهای این workflow را برطرف کنید"
+      ]
+    },
     "switchWorkflow": "تغییر workflow",
     "switchWorkflowForNodes": "برای افزودن نودها، به {workflowName} بروید.",
     "takeTour": "شروع راهنما",
     "targetFollowsVisibleWorkflow": "workflow هدف تا زمانی که یک هدف انتخاب نکنید، به nodeها ارجاع ندهید یا پیامی ارسال نکنید، از تبِ قابل‌مشاهده پیروی می‌کند.",
     "targetForThisChat": "هدف ایجنت برای این گفت‌وگو",
     "targetNavigationUnavailable": "این مقصد workflow دیگر در دسترس نیست.",
+    "targetWorkflowOpenFailed": "باز کردن workflow مقصد ممکن نشد.",
+    "targetWorkflowUnavailable": "workflow مقصد دیگر در دسترس نیست.",
     "thinking": "در حال فکر کردن...",
     "title": "Comfy Agent",
     "toolForgettingPreference": "در حال فراموش کردن یک ترجیح",
@@ -540,6 +552,20 @@
       "expired": "اعتبار تأییدیه به پایان رسیده است. لطفاً دوباره چالش را تکمیل کنید.",
       "failed": "تأییدیه ناموفق بود. لطفاً دوباره تلاش کنید.",
       "submitBlockedHint": "برای فعال‌سازی ثبت‌نام، ابتدا چالش تأییدیه بالا را تکمیل کنید."
+    },
+    "webSession": {
+      "reconnecting": {
+        "detail": "در حال حاضر نمی‌توانیم به Comfy دسترسی پیدا کنیم. به تلاش مجدد ادامه می‌دهیم و شما همچنان وارد حساب خود می‌مانید.",
+        "retry": "تلاش مجدد اکنون",
+        "title": "در حال اتصال مجدد به حساب شما"
+      },
+      "token": {
+        "ended": "نشست شما پایان یافت. برای ادامه دوباره وارد شوید.",
+        "identityChanged": "نشست شما تغییر کرد. برای ادامه صفحه را دوباره بارگذاری کنید.",
+        "refused": "درخواست شما رد شد. صفحه را دوباره بارگذاری کنید و دوباره تلاش کنید.",
+        "unavailable": "نتوانستیم به حساب شما دسترسی پیدا کنیم. چند لحظه دیگر دوباره تلاش کنید.",
+        "workspaceDenied": "به این فضای کاری دسترسی ندارید. اگر این مشکل ادامه داشت، با پشتیبانی تماس بگیرید."
+      }
     }
   },
   "batch": {
@@ -645,6 +671,46 @@
     "saveAs": "ذخیره به عنوان",
     "switchToOutputs": "رفتن به خروجی‌ها",
     "viewApp": "مشاهده اپلیکیشن"
+  },
+  "cameraAngle": {
+    "cameraView": "دوربین",
+    "cameraViewTooltip": "دوربین را پیرامون سوژه جابه‌جا کنید",
+    "faces": {
+      "back": "پشت",
+      "bottom": "پایین",
+      "left": "چپ",
+      "right": "راست",
+      "top": "بالا"
+    },
+    "hidePreview": "پنهان‌کردن پیش‌نمایش نما",
+    "horizontal": {
+      "back": "پشت",
+      "backLeft": "پشت-چپ",
+      "backRight": "پشت-راست",
+      "front": "روبرو",
+      "frontLeft": "روبرو-چپ",
+      "frontRight": "روبرو-راست",
+      "left": "سمت چپ",
+      "right": "سمت راست"
+    },
+    "horizontalLabel": "زاویهٔ افقی",
+    "objectView": "شیء",
+    "objectViewTooltip": "از طریق دوربین نگاه کنید و سوژه را بچرخانید",
+    "preview": "پیش‌نمایش",
+    "showPreview": "نمایش پیش‌نمایش نما",
+    "vertical": {
+      "elevated": "مرتفع",
+      "eyeLevel": "هم‌سطح چشم",
+      "highAngle": "زاویهٔ بالا",
+      "lowAngle": "زاویهٔ پایین"
+    },
+    "verticalLabel": "زاویهٔ عمودی",
+    "zoom": {
+      "closeUp": "نمای نزدیک",
+      "medium": "نمای متوسط",
+      "wide": "نمای باز"
+    },
+    "zoomLabel": "اندازهٔ نما"
   },
   "clipboard": {
     "errorMessage": "کپی به کلیپ‌بورد ناموفق بود",
@@ -1898,6 +1964,7 @@
     "itemsSelected": "هیچ موردی انتخاب نشده است | {count} مورد انتخاب شده است | {count} مورد انتخاب شده‌اند",
     "job": "وظیفه",
     "jobIdCopied": "شناسه وظیفه در کلیپ‌بورد کپی شد",
+    "jobs": "وظایف",
     "keybinding": "کلید میانبر",
     "keybindingAlreadyExists": "کلید میانبر قبلاً وجود دارد در",
     "keybindingListAriaLabel": "کلیدهای میانبر: {combos}",
@@ -2051,6 +2118,7 @@
     "restore": "بازیابی",
     "restoreDialog": "بازگرداندن پنجره گفتگو",
     "resultsCount": "{count} نتیجه یافت شد",
+    "retry": "تلاش مجدد",
     "running": "در حال اجرا",
     "save": "ذخیره",
     "saveAnyway": "ذخیره کن",
@@ -2187,6 +2255,7 @@
       "r": "R",
       "rgb": "RGB"
     },
+    "checkerboard": "نمایش شفافیت",
     "clipWarnings": "هشدار برش",
     "dither": "دیتر",
     "exposure": "نوردهی",
@@ -4919,6 +4988,7 @@
     "failedToFetchBalance": "دریافت موجودی انجام نشد: {error}",
     "failedToFetchLogs": "دریافت گزارش‌های سرور انجام نشد",
     "failedToFetchSubscription": "دریافت وضعیت اشتراک انجام نشد: {error}",
+    "failedToInitializeCameraAngleViewer": "راه‌اندازی نمایشگر زاویهٔ دوربین ناموفق بود. صفحه را دوباره بارگذاری کنید.",
     "failedToInitializeCameraInfoViewer": "راه‌اندازی نمایشگر اطلاعات دوربین ناموفق بود. صفحه را دوباره بارگذاری کنید.",
     "failedToInitializeLoad3dViewer": "راه‌اندازی نمایشگر سه‌بعدی انجام نشد",
     "failedToInitiateCreditPurchase": "آغاز خرید اعتبار انجام نشد: {error}",
@@ -5196,6 +5266,7 @@
         "memberBody": "اشتراک این ورک‌اسپیس متوقف شده است. مدیران ورک‌اسپیس باید روش پرداخت را به‌روزرسانی کنند.",
         "title": "اشتراک متوقف شده است"
       },
+      "payInvoice": "پرداخت فاکتور",
       "planChange": {
         "body": "طرح فعلی شما تا آن زمان فعال می‌ماند.",
         "title": "طرح شما در {date} به {plan} تغییر می‌کند"
@@ -5203,6 +5274,7 @@
       "updatePayment": "به‌روزرسانی پرداخت",
       "warning": {
         "bodyNoDate": "آخرین پرداخت شما انجام نشد. برای جلوگیری از توقف، پرداخت را به‌روزرسانی کنید.",
+        "bodyWithAmount": "پرداخت شما به مبلغ {amount} پردازش نشد. برای جلوگیری از توقف، فاکتور را پرداخت کنید یا روش پرداخت را به‌روزرسانی کنید.",
         "title": "پرداخت ناموفق بود"
       }
     },
@@ -5243,10 +5315,19 @@
     "inviteLimitReached": "به حداکثر تعداد {count} عضو رسیده‌اید",
     "inviteLinks": {
       "copied": "کپی شد!",
+      "copiedToast": "پیوند دعوت کپی شد",
       "copyAll": "کپی پیوند دعوت | کپی همه پیوندها ({count})",
+      "copyFailedToast": "کپی کردن پیوند دعوت ممکن نشد",
       "copyLink": "کپی پیوند دعوت",
+      "invalidBody": "ممکن است منقضی شده یا جایگزین شده باشد. از شخصی که شما را دعوت کرده است، یک پیوند جدید بخواهید.",
+      "invalidDismiss": "متوجه شدم",
+      "invalidTitle": "این پیوند دعوت دیگر معتبر نیست",
       "sentLead": "هر دعوت یک پیوند شخصی دارد که می‌توانید مستقیماً به اشتراک بگذارید:",
-      "sentTitle": "{count} دعوت ارسال شد | {count} دعوت ارسال شد"
+      "sentTitle": "{count} دعوت ارسال شد | {count} دعوت ارسال شد",
+      "switchAccount": "تغییر حساب",
+      "wrongAccountBody": "شما با {email} وارد شده‌اید. برای پذیرش این دعوت، با ایمیلی وارد شوید که این دعوت را دریافت کرده است.",
+      "wrongAccountBodyGeneric": "این دعوت به آدرس ایمیلی متفاوت از ایمیلی که با آن وارد شده‌اید ارسال شده است. با ایمیلی وارد شوید که آن را دریافت کرده است.",
+      "wrongAccountTitle": "این دعوت به ایمیل دیگری ارسال شده است"
     },
     "inviteMember": "دعوت عضو",
     "inviteMemberDialog": {
@@ -5287,7 +5368,8 @@
         "minutesAgo": "{n} دقیقه پیش"
       },
       "columns": {
-        "creditsUsed": "اعتبار ماهانه",
+        "creditsUsed": "اعتبار استفاده‌شده در این ماه",
+        "email": "ایمیل",
         "expiryDate": "تاریخ انقضا",
         "inviteDate": "تاریخ دعوت",
         "role": "نقش"
@@ -5307,11 +5389,13 @@
       "endedPlanTitle": "طرح شما پایان یافته است",
       "endedTeamTitle": "طرح تیمی شما پایان یافته است",
       "expiredOn": "منقضی‌شده در {date}",
-      "header": "اعضا",
+      "loadFailed": "بارگیری همه موارد این صفحه ممکن نشد.",
       "membersCount": "{count} از {maxSeats} عضو",
       "needMoreMembers": "به اعضای بیشتری نیاز دارید؟",
       "noInvites": "هیچ دعوت‌نامه‌ای در انتظار نیست",
+      "noInvitesMatch": "هیچ دعوت‌نامه‌ای با «{query}» مطابقت ندارد",
       "noMembers": "هیچ عضوی وجود ندارد",
+      "noMembersMatch": "هیچ عضوی با «{query}» مطابقت ندارد",
       "pendingInvitesCount": "{count} دعوت‌نامه در انتظار | {count} دعوت‌نامه در انتظار",
       "reactivateTeam": "فعال‌سازی مجدد تیم",
       "resubscribe": "اشتراک مجدد",
@@ -5320,6 +5404,8 @@
         "active": "فعال",
         "pendingCount": "در انتظار ({count})"
       },
+      "totalMembersCount": "{count} از {maxSeats} عضو در مجموع.",
+      "totalMembersUnlimited": "{count} عضو در مجموع. | {count} عضو در مجموع.",
       "upgradeToTeam": "ارتقاء به تیم",
       "upsellBanner": "برای افزودن همکاران، پلن خود را ارتقاء دهید.",
       "upsellBannerEnterpriseEnded": "برای فعال‌سازی دوباره طرح Enterprise خود با بخش فروش تماس بگیرید.",
@@ -5397,9 +5483,7 @@
       "title": "دعوت این شخص لغو شود؟"
     },
     "tabs": {
-      "dashboard": "داشبورد",
-      "membersCount": "اعضا ({count})",
-      "planCredits": "پلن و اعتبارها"
+      "dashboard": "داشبورد"
     },
     "toast": {
       "failedToCreateWorkspace": "ایجاد محیط کاری ناموفق بود",

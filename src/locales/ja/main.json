@@ -84,6 +84,7 @@
     "historyCurrent": "現在",
     "historyEarlier": "以前",
     "historyEmpty": "まだ会話はありません",
+    "historyOpenFailed": "開けませんでした。再試行するには、このチャットを選択してください。",
     "historyToday": "今日",
     "historyYesterday": "昨日",
     "latest": "最新",
@@ -169,19 +170,30 @@
     "skip": "スキップ",
     "stop": "停止",
     "stopShortcut": "Esc",
-    "suggestedPrompts": [
-      "ホッケーマスクを着けた黄色いアヒルを生成",
-      "保存済みのワークフローを一覧表示",
-      "肌のアップスケーリングに最適なワークフローを探す",
-      "選択したノードを説明",
-      "3つのモデルを使用した画像から動画へのワークフローを作成"
-    ],
+    "suggestedPrompts": {
+      "cloud": [
+        "宇宙飛行士のキャラクターシートを生成",
+        "商品画像を短い広告にする",
+        "選択したノードを説明",
+        "4K向けの最適な画像アップスケールワークフロー",
+        "このワークフローのエラーを修正"
+      ],
+      "local": [
+        "宇宙飛行士のリアルなポートレートを生成",
+        "自分のGPUに適した画像から動画へのワークフロー",
+        "選択したノードを説明",
+        "このワークフローに不足しているノードのインストールを手伝って",
+        "このワークフローのエラーを修正"
+      ]
+    },
     "switchWorkflow": "ワークフローを切り替え",
     "switchWorkflowForNodes": "ノードを追加するには{workflowName}に切り替えてください。",
     "takeTour": "ツアーを見る",
     "targetFollowsVisibleWorkflow": "対象のワークフローは、対象を選択するか、ノード参照を追加するか、メッセージを送信するまで、表示中のタブに従います。",
     "targetForThisChat": "このチャットのエージェント対象",
     "targetNavigationUnavailable": "このワークフローのターゲットは利用できなくなりました。",
+    "targetWorkflowOpenFailed": "対象のワークフローを開けませんでした。",
+    "targetWorkflowUnavailable": "対象のワークフローは利用できなくなりました。",
     "thinking": "考え中...",
     "title": "Comfy Agent",
     "toolForgettingPreference": "設定を削除しています",
@@ -540,6 +552,20 @@
       "expired": "認証の有効期限が切れました。再度チャレンジを完了してください。",
       "failed": "認証に失敗しました。もう一度お試しください。",
       "submitBlockedHint": "上記の認証チャレンジを完了すると、サインアップが有効になります。"
+    },
+    "webSession": {
+      "reconnecting": {
+        "detail": "現在、Comfyに接続できません。再試行を続けます。サインイン状態は維持されます。",
+        "retry": "今すぐ再試行",
+        "title": "アカウントに再接続しています"
+      },
+      "token": {
+        "ended": "セッションが終了しました。続行するには再度サインインしてください。",
+        "identityChanged": "セッションが変更されました。続行するには再読み込みしてください。",
+        "refused": "リクエストは拒否されました。ページを再読み込みして、もう一度お試しください。",
+        "unavailable": "アカウントに接続できませんでした。しばらくしてからもう一度お試しください。",
+        "workspaceDenied": "このワークスペースにアクセスする権限がありません。この問題が続く場合はサポートにお問い合わせください。"
+      }
     }
   },
   "batch": {
@@ -645,6 +671,46 @@
     "saveAs": "名前を付けて保存",
     "switchToOutputs": "出力に切り替え",
     "viewApp": "アプリを表示"
+  },
+  "cameraAngle": {
+    "cameraView": "カメラ",
+    "cameraViewTooltip": "被写体の周囲でカメラを移動します",
+    "faces": {
+      "back": "背面",
+      "bottom": "底面",
+      "left": "左",
+      "right": "右",
+      "top": "上面"
+    },
+    "hidePreview": "ショットプレビューを非表示",
+    "horizontal": {
+      "back": "背面",
+      "backLeft": "左後方",
+      "backRight": "右後方",
+      "front": "前面",
+      "frontLeft": "左前方",
+      "frontRight": "右前方",
+      "left": "左側",
+      "right": "右側"
+    },
+    "horizontalLabel": "水平角度",
+    "objectView": "オブジェクト",
+    "objectViewTooltip": "カメラ越しに見ながら被写体を回転させます",
+    "preview": "プレビュー",
+    "showPreview": "ショットプレビューを表示",
+    "vertical": {
+      "elevated": "やや高い位置",
+      "eyeLevel": "目線の高さ",
+      "highAngle": "ハイアングル",
+      "lowAngle": "ローアングル"
+    },
+    "verticalLabel": "垂直角度",
+    "zoom": {
+      "closeUp": "クローズアップ",
+      "medium": "ミディアムショット",
+      "wide": "ワイドショット"
+    },
+    "zoomLabel": "ショットサイズ"
   },
   "clipboard": {
     "errorMessage": "クリップボードへのコピーに失敗しました",
@@ -1898,6 +1964,7 @@
     "itemsSelected": "選択された項目はありません | {count} 件の項目を選択 | {count} 件の項目を選択",
     "job": "ジョブ",
     "jobIdCopied": "ジョブIDがクリップボードにコピーされました",
+    "jobs": "ジョブ",
     "keybinding": "キーバインディング",
     "keybindingAlreadyExists": "このキー割り当てはすでに存在します",
     "keybindingListAriaLabel": "キーバインド: {combos}",
@@ -2051,6 +2118,7 @@
     "restore": "復元",
     "restoreDialog": "ダイアログを元に戻す",
     "resultsCount": "{count}件の結果が見つかりました",
+    "retry": "再試行",
     "running": "実行中",
     "save": "保存",
     "saveAnyway": "強制的に保存",
@@ -2187,6 +2255,7 @@
       "r": "R",
       "rgb": "RGB"
     },
+    "checkerboard": "透明部分を表示",
     "clipWarnings": "クリップ警告",
     "dither": "ディザ",
     "exposure": "露出",
@@ -4919,6 +4988,7 @@
     "failedToFetchBalance": "残高の取得に失敗しました: {error}",
     "failedToFetchLogs": "サーバーログの取得に失敗しました",
     "failedToFetchSubscription": "サブスクリプションステータスの取得に失敗しました: {error}",
+    "failedToInitializeCameraAngleViewer": "カメラアングルビューアの初期化に失敗しました。ページを再読み込みしてください。",
     "failedToInitializeCameraInfoViewer": "カメラ情報ビューアーの初期化に失敗しました。ページを再読み込みしてください。",
     "failedToInitializeLoad3dViewer": "3Dビューアの初期化に失敗しました",
     "failedToInitiateCreditPurchase": "クレジット購入の開始に失敗しました: {error}",
@@ -5196,6 +5266,7 @@
         "memberBody": "このワークスペースのサブスクリプションは一時停止されています。ワークスペース管理者がお支払い方法を更新する必要があります。",
         "title": "サブスクリプションが一時停止中"
       },
+      "payInvoice": "請求書を支払う",
       "planChange": {
         "body": "それまでは現在のプランが有効です。",
         "title": "{date} にプランが {plan} に変更されます"
@@ -5203,6 +5274,7 @@
       "updatePayment": "お支払い方法を更新",
       "warning": {
         "bodyNoDate": "前回のお支払いが完了しませんでした。サブスクリプションの一時停止を避けるためにお支払い方法を更新してください。",
+        "bodyWithAmount": "{amount}のお支払いを処理できませんでした。一時停止を避けるため、請求書を支払うか支払い方法を更新してください。",
         "title": "支払いが拒否されました"
       }
     },
@@ -5243,10 +5315,19 @@
     "inviteLimitReached": "メンバー数が上限の{count}人に達しました",
     "inviteLinks": {
       "copied": "コピーしました！",
+      "copiedToast": "招待リンクをコピーしました",
       "copyAll": "招待リンクをコピー | すべてのリンクをコピー（{count}件）",
+      "copyFailedToast": "招待リンクをコピーできませんでした",
       "copyLink": "招待リンクをコピー",
+      "invalidBody": "有効期限が切れたか、置き換えられた可能性があります。招待した人に新しいリンクを依頼してください。",
+      "invalidDismiss": "了解",
+      "invalidTitle": "この招待リンクは無効になりました",
       "sentLead": "各招待には、直接共有できる個別リンクがあります：",
-      "sentTitle": "招待を{count}件送信済み | 招待を{count}件送信済み"
+      "sentTitle": "招待を{count}件送信済み | 招待を{count}件送信済み",
+      "switchAccount": "アカウントを切り替える",
+      "wrongAccountBody": "{email} としてサインインしています。この招待を受け取ったメールアドレスでサインインして承諾してください。",
+      "wrongAccountBodyGeneric": "この招待は、現在サインインしているメールアドレスとは別のメールアドレスに送信されています。招待を受け取ったメールアドレスでサインインしてください。",
+      "wrongAccountTitle": "この招待は別のメールアドレスに送信されています"
     },
     "inviteMember": "メンバーを招待",
     "inviteMemberDialog": {
@@ -5287,7 +5368,8 @@
         "minutesAgo": "{n}分前"
       },
       "columns": {
-        "creditsUsed": "月間クレジット",
+        "creditsUsed": "今月使用したクレジット",
+        "email": "メールアドレス",
         "expiryDate": "有効期限",
         "inviteDate": "招待日",
         "role": "役割"
@@ -5307,11 +5389,13 @@
       "endedPlanTitle": "プランが終了しました",
       "endedTeamTitle": "チームプランが終了しました",
       "expiredOn": "有効期限：{date}",
-      "header": "メンバー",
+      "loadFailed": "このページのすべての情報を読み込めませんでした。",
       "membersCount": "{maxSeats}人中{count}人のメンバー",
       "needMoreMembers": "さらにメンバーが必要ですか？",
       "noInvites": "保留中の招待はありません",
+      "noInvitesMatch": "\"{query}\" に一致する招待はありません",
       "noMembers": "メンバーがいません",
+      "noMembersMatch": "\"{query}\" に一致するメンバーはいません",
       "pendingInvitesCount": "{count}件の招待保留中",
       "reactivateTeam": "チームを再有効化",
       "resubscribe": "再購読",
@@ -5320,6 +5404,8 @@
         "active": "アクティブ",
         "pendingCount": "保留中（{count}）"
       },
+      "totalMembersCount": "全メンバー数 {maxSeats} 人中 {count} 人。",
+      "totalMembersUnlimited": "合計 {count} 人のメンバー。 | 合計 {count} 人のメンバー。",
       "upgradeToTeam": "チームにアップグレード",
       "upsellBanner": "チームメンバーを追加するには、プランをアップグレードしてください。",
       "upsellBannerEnterpriseEnded": "Enterpriseプランを再有効化するには営業担当者にお問い合わせください。",
@@ -5397,9 +5483,7 @@
       "title": "この人の招待を取り消しますか？"
     },
     "tabs": {
-      "dashboard": "ダッシュボード",
-      "membersCount": "メンバー（{count}）",
-      "planCredits": "プランとクレジット"
+      "dashboard": "ダッシュボード"
     },
     "toast": {
       "failedToCreateWorkspace": "ワークスペースの作成に失敗しました",

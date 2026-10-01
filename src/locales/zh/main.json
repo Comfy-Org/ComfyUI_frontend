@@ -84,6 +84,7 @@
     "historyCurrent": "当前",
     "historyEarlier": "更早",
     "historyEmpty": "暂无对话",
+    "historyOpenFailed": "无法打开。请选择此聊天以重试。",
     "historyToday": "今天",
     "historyYesterday": "昨天",
     "latest": "最新",
@@ -169,19 +170,30 @@
     "skip": "跳过",
     "stop": "停止",
     "stopShortcut": "Esc",
-    "suggestedPrompts": [
-      "生成一只戴着曲棍球面具的黄色鸭子",
-      "列出我保存的工作流",
-      "查找最适合皮肤超分辨率的工作流",
-      "解释选中的节点",
-      "使用 3 个模型构建图像转视频工作流"
-    ],
+    "suggestedPrompts": {
+      "cloud": [
+        "生成一张宇航员的角色设定图",
+        "将产品图像制作成短广告",
+        "解释所选节点",
+        "适用于 4K 的最佳图像放大工作流",
+        "修复此工作流中的错误"
+      ],
+      "local": [
+        "生成一张逼真的宇航员肖像",
+        "适合我的 GPU 的图生视频工作流",
+        "解释所选节点",
+        "帮我安装此工作流缺失的节点",
+        "修复此工作流中的错误"
+      ]
+    },
     "switchWorkflow": "切换工作流",
     "switchWorkflowForNodes": "切换到 {workflowName} 以添加节点。",
     "takeTour": "开始导览",
     "targetFollowsVisibleWorkflow": "在你选择目标、引用节点或发送消息之前，目标工作流会跟随当前可见的标签页。",
     "targetForThisChat": "本次聊天的智能体目标",
     "targetNavigationUnavailable": "此工作流目标已不可用。",
+    "targetWorkflowOpenFailed": "无法打开目标工作流。",
+    "targetWorkflowUnavailable": "目标工作流已不可用。",
     "thinking": "思考中...",
     "title": "Comfy Agent",
     "toolForgettingPreference": "正在删除偏好设置",
@@ -540,6 +552,20 @@
       "expired": "验证已过期。请重新完成验证。",
       "failed": "验证失败。请重试。",
       "submitBlockedHint": "请先完成上方的验证挑战以启用注册。"
+    },
+    "webSession": {
+      "reconnecting": {
+        "detail": "目前无法连接到 Comfy。我们会持续重试，你将保持登录状态。",
+        "retry": "立即重试",
+        "title": "正在重新连接到你的账户"
+      },
+      "token": {
+        "ended": "你的会话已结束。请重新登录以继续。",
+        "identityChanged": "你的会话已更改。请重新加载以继续。",
+        "refused": "你的请求被拒绝。请重新加载页面后重试。",
+        "unavailable": "无法连接到你的账户。请稍后重试。",
+        "workspaceDenied": "你无权访问此工作区。如果此问题持续发生，请联系支持人员。"
+      }
     }
   },
   "batch": {
@@ -645,6 +671,46 @@
     "saveAs": "另存为",
     "switchToOutputs": "切换到输出",
     "viewApp": "查看应用"
+  },
+  "cameraAngle": {
+    "cameraView": "相机",
+    "cameraViewTooltip": "围绕主体移动相机",
+    "faces": {
+      "back": "背面",
+      "bottom": "底部",
+      "left": "左侧",
+      "right": "右侧",
+      "top": "顶部"
+    },
+    "hidePreview": "隐藏镜头预览",
+    "horizontal": {
+      "back": "背面",
+      "backLeft": "左后方",
+      "backRight": "右后方",
+      "front": "正面",
+      "frontLeft": "左前方",
+      "frontRight": "右前方",
+      "left": "左侧",
+      "right": "右侧"
+    },
+    "horizontalLabel": "水平角度",
+    "objectView": "对象",
+    "objectViewTooltip": "通过相机视角旋转主体",
+    "preview": "预览",
+    "showPreview": "显示镜头预览",
+    "vertical": {
+      "elevated": "抬高",
+      "eyeLevel": "平视",
+      "highAngle": "高角度",
+      "lowAngle": "低角度"
+    },
+    "verticalLabel": "垂直角度",
+    "zoom": {
+      "closeUp": "特写",
+      "medium": "中景",
+      "wide": "全景"
+    },
+    "zoomLabel": "景别"
   },
   "clipboard": {
     "errorMessage": "复制到剪贴板失败",
@@ -1898,6 +1964,7 @@
     "itemsSelected": "未选择项目 | 已选择 {count} 个项目 | 已选择 {count} 个项目",
     "job": "任务",
     "jobIdCopied": "队列 ID 已复制到剪贴板",
+    "jobs": "任务",
     "keybinding": "按键绑定",
     "keybindingAlreadyExists": "快捷键已存在",
     "keybindingListAriaLabel": "快捷键：{combos}",
@@ -2051,6 +2118,7 @@
     "restore": "恢复",
     "restoreDialog": "还原对话框",
     "resultsCount": "找到 {count} 个结果",
+    "retry": "重试",
     "running": "正在运行",
     "save": "保存",
     "saveAnyway": "仍然保存",
@@ -2187,6 +2255,7 @@
       "r": "R",
       "rgb": "RGB"
     },
+    "checkerboard": "显示透明区域",
     "clipWarnings": "裁剪警告",
     "dither": "抖动",
     "exposure": "曝光",
@@ -4919,6 +4988,7 @@
     "failedToFetchBalance": "获取余额失败：{error}",
     "failedToFetchLogs": "无法获取服务器日志",
     "failedToFetchSubscription": "获取订阅状态失败：{error}",
+    "failedToInitializeCameraAngleViewer": "无法初始化相机角度查看器。请尝试重新加载页面。",
     "failedToInitializeCameraInfoViewer": "初始化相机信息查看器失败。请尝试重新加载页面。",
     "failedToInitializeLoad3dViewer": "初始化3D查看器失败",
     "failedToInitiateCreditPurchase": "发起积分购买失败：{error}",
@@ -5196,6 +5266,7 @@
         "memberBody": "此工作区的订阅已暂停。工作区管理员需要更新付款方式。",
         "title": "订阅已暂停"
       },
+      "payInvoice": "支付账单",
       "planChange": {
         "body": "您当前的套餐将在此之前保持有效。",
         "title": "您的套餐将于 {date} 变更为 {plan}"
@@ -5203,6 +5274,7 @@
       "updatePayment": "更新付款方式",
       "warning": {
         "bodyNoDate": "您的上一次付款未成功。请更新付款方式以避免暂停。",
+        "bodyWithAmount": "你的 {amount} 付款处理失败。请支付账单或更新付款方式，以避免服务暂停。",
         "title": "付款被拒绝"
       }
     },
@@ -5243,10 +5315,19 @@
     "inviteLimitReached": "您已达到 {count} 名成员的上限",
     "inviteLinks": {
       "copied": "已复制！",
+      "copiedToast": "邀请链接已复制",
       "copyAll": "复制邀请链接 | 复制全部链接（{count}）",
+      "copyFailedToast": "无法复制邀请链接",
       "copyLink": "复制邀请链接",
+      "invalidBody": "它可能已过期或被替换。请向邀请你的人索取新链接。",
+      "invalidDismiss": "知道了",
+      "invalidTitle": "此邀请链接已失效",
       "sentLead": "每个邀请都有可直接分享的专属链接：",
-      "sentTitle": "已发送 {count} 个邀请 | 已发送 {count} 个邀请"
+      "sentTitle": "已发送 {count} 个邀请 | 已发送 {count} 个邀请",
+      "switchAccount": "切换账户",
+      "wrongAccountBody": "你当前以 {email} 登录。请使用收到此邀请的电子邮箱登录以接受邀请。",
+      "wrongAccountBodyGeneric": "此邀请发送到的电子邮箱地址与您当前登录使用的地址不同。请使用收到邀请的电子邮箱登录。",
+      "wrongAccountTitle": "此邀请发送到了其他电子邮箱"
     },
     "inviteMember": "邀请成员",
     "inviteMemberDialog": {
@@ -5287,7 +5368,8 @@
         "minutesAgo": "{n} 分钟前"
       },
       "columns": {
-        "creditsUsed": "每月积分",
+        "creditsUsed": "本月已使用的积分",
+        "email": "电子邮箱",
         "expiryDate": "过期日期",
         "inviteDate": "邀请日期",
         "role": "角色"
@@ -5307,11 +5389,13 @@
       "endedPlanTitle": "你的套餐已结束",
       "endedTeamTitle": "你的团队套餐已结束",
       "expiredOn": "已于 {date} 到期",
-      "header": "成员",
+      "loadFailed": "无法加载此页面上的全部内容。",
       "membersCount": "{count} / {maxSeats} 名成员",
       "needMoreMembers": "需要更多成员？",
       "noInvites": "暂无待处理邀请",
+      "noInvitesMatch": "没有与“{query}”匹配的邀请",
       "noMembers": "暂无成员",
+      "noMembersMatch": "没有与“{query}”匹配的成员",
       "pendingInvitesCount": "{count} 个待处理邀请",
       "reactivateTeam": "重新激活团队版",
       "resubscribe": "重新订阅",
@@ -5320,6 +5404,8 @@
         "active": "已激活",
         "pendingCount": "待处理（{count}）"
       },
+      "totalMembersCount": "{count} / {maxSeats} 名成员。",
+      "totalMembersUnlimited": "{count} 名成员。 | {count} 名成员。",
       "upgradeToTeam": "升级到团队版",
       "upsellBanner": "如需添加队友，请升级您的套餐。",
       "upsellBannerEnterpriseEnded": "请联系销售团队以重新激活你的企业套餐。",
@@ -5397,9 +5483,7 @@
       "title": "取消邀请此人？"
     },
     "tabs": {
-      "dashboard": "仪表盘",
-      "membersCount": "成员（{count}）",
-      "planCredits": "套餐与积分"
+      "dashboard": "仪表盘"
     },
     "toast": {
       "failedToCreateWorkspace": "创建工作区失败",
