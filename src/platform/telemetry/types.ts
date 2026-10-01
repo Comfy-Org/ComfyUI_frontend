@@ -1441,13 +1441,21 @@ type CapabilityReadBillingEvent = {
   operation: 'capability_read'
 } & (BillingSucceeded | Pick<BillingFailed, 'stage' | 'outcome'>)
 
-export type BillingTelemetryEvent =
+type BillingSurface = 'cloud_app' | 'billing_web'
+
+type BillingClient = 'sdk' | 'legacy'
+
+export type BillingTelemetryEvent = {
+  /** Only the SDK lifecycle mapper names itself; every other emitter is legacy. */
+  billing_client?: BillingClient
+} & (
   | CapabilityReadBillingEvent
   | SubscriptionCheckoutBillingEvent
   | BillingOperationBillingEvent
   | ResubscribeBillingEvent
   | TopupBillingEvent
   | DowngradeToPersonalBillingEvent
+)
 
 type BillingTelemetryEventNameFor<T extends BillingTelemetryEvent> =
   T extends BillingTelemetryEvent
@@ -1463,13 +1471,18 @@ export function getBillingTelemetryEventName(
   return `billing.${event.operation}.${event.stage}` as BillingTelemetryEventName
 }
 
-type BillingTelemetryPayload = Record<string, unknown>
+type BillingTelemetryPayload = Record<string, unknown> & {
+  billing_surface: BillingSurface
+  billing_client: BillingClient
+}
+
+const BILLING_SURFACE: BillingSurface = 'cloud_app'
 
 type KeysOfUnion<T> = T extends unknown ? keyof T : never
 
 type BillingPayloadField = Exclude<
   KeysOfUnion<BillingTelemetryEvent>,
-  'operation' | 'stage' | 'outcome'
+  'operation' | 'stage' | 'outcome' | 'billing_client'
 >
 
 const BILLING_PAYLOAD_FIELD_HANDLING = {
@@ -1513,7 +1526,9 @@ export function getBillingTelemetryEventPayload(event: BillingTelemetryEvent) {
   const payload: BillingTelemetryPayload = {
     operation: event.operation,
     stage: event.stage,
-    outcome: event.outcome
+    outcome: event.outcome,
+    billing_surface: BILLING_SURFACE,
+    billing_client: event.billing_client ?? 'legacy'
   }
 
   for (const [field, value] of Object.entries(event)) {
