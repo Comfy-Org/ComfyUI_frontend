@@ -1,6 +1,9 @@
 import { computed, ref } from 'vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { useTelemetry } from '@/platform/telemetry'
+import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
+import { DatadogRumTelemetryProvider } from '@/platform/telemetry/providers/cloud/DatadogRumTelemetryProvider'
 import { useDialogStore } from '@/stores/dialogStore'
 /**
  * showTopUpCreditsDialog routes the paired server capabilities to purchase,
@@ -13,6 +16,13 @@ import { useBillingCapabilities } from '@/platform/workspace/composables/useBill
 vi.mock(import('@/i18n'))
 
 vi.mock(import('@/platform/telemetry'))
+
+const mockRumAddAction = vi.hoisted(() => vi.fn())
+vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
+  datadogRum: { addAction: mockRumAddAction }
+}))
+
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -187,6 +197,83 @@ describe('showTopUpCreditsDialog', () => {
 
     const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
     expect(args.props).toEqual({ isInsufficientCredits: true })
+  })
+
+  describe('add-credits entries reported to Datadog', () => {
+    beforeEach(() => {
+      const registry = new TelemetryRegistry()
+      registry.registerProvider(new DatadogRumTelemetryProvider())
+      vi.mocked(useTelemetry).mockReturnValue(registry)
+    })
+
+    it.for([
+      {
+        name: 'a deep link',
+        options: { source: 'deep_link' },
+        reported: { payment_intent_source: 'deep_link' }
+      },
+      {
+        name: 'the agent paywall',
+        options: { isInsufficientCredits: true, source: 'agent_paywall' },
+        reported: { payment_intent_source: 'agent_paywall' }
+      },
+      {
+        name: 'a credits precondition that names no surface',
+        options: { isInsufficientCredits: true },
+        reported: { payment_intent_source: 'out_of_credits' }
+      },
+      {
+        name: 'an entry that names no surface',
+        options: undefined,
+        reported: {}
+      }
+    ] as const)('reports $name once', async ({ options, reported }) => {
+      await useDialogService().showTopUpCreditsDialog(options)
+
+      expect(mockRumAddAction).toHaveBeenCalledExactlyOnceWith(
+        'billing.entry.add_credits_clicked',
+        {
+          operation: 'entry',
+          stage: 'add_credits_clicked',
+          outcome: 'pending',
+          billing_surface: 'cloud_app',
+          ...reported
+        }
+      )
+    })
+
+    it('reports the click before the capability read settles', () => {
+      useBillingCapabilities().isReady = computed(() => false)
+
+      void useDialogService().showTopUpCreditsDialog({ source: 'deep_link' })
+
+      expect(mockRumAddAction).toHaveBeenCalledOnce()
+    })
+
+    it.for([
+      {
+        name: 'a self-serve subscriber who is sent to the pricing table',
+        canTopUp: false,
+        canSubscribeSelfServe: true
+      },
+      {
+        name: 'a team member who cannot buy credits',
+        canTopUp: false,
+        canSubscribeSelfServe: false
+      }
+    ])(
+      'still reports the click of $name',
+      async ({ canTopUp, canSubscribeSelfServe }) => {
+        useBillingCapabilities().canTopUp = computed(() => canTopUp)
+        useBillingCapabilities().canSubscribeSelfServe = computed(
+          () => canSubscribeSelfServe
+        )
+
+        await useDialogService().showTopUpCreditsDialog({ source: 'deep_link' })
+
+        expect(mockRumAddAction).toHaveBeenCalledOnce()
+      }
+    )
   })
 
   describe('non-cloud distribution', () => {
