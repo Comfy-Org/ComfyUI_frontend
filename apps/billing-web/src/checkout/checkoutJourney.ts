@@ -9,6 +9,7 @@ import type {
 import type { BillingSource } from '@comfyorg/billing-contract'
 
 import type { CheckoutPageEvent } from '@/checkout/checkoutPage'
+import type { PromoEntry } from '@/checkout/promoEntry'
 
 type PreviewReadyPhase = Extract<
   CheckoutJourneyPhaseEvent,
@@ -126,4 +127,32 @@ export function previewFailureOfResult(
     phase: 'preview_failed',
     failure_category: failureCategoryOf(result)
   }
+}
+
+type MethodSelectedPhase = Extract<
+  CheckoutJourneyPhaseEvent,
+  { phase: 'method_selected' }
+>
+type PromoPhase = Extract<CheckoutJourneyPhaseEvent, { phase: 'promo' }>
+
+export function methodSelectedPhase(
+  _rail: MethodSelectedPhase['rail'],
+  _methodType: string | undefined
+): MethodSelectedPhase {
+  throw new Error('not implemented')
+}
+
+export function promoSettlementOf(
+  _before: PromoEntry,
+  _after: PromoEntry
+):
+  | { readonly result: PromoPhase['result']; readonly code: string }
+  | undefined {
+  throw new Error('not implemented')
+}
+
+export function promoResultOfQuote(
+  _result: PreviewSubscribeResult
+): 'applied' | 'rejected' | undefined {
+  throw new Error('not implemented')
 }

@@ -1,8 +1,13 @@
 import { datadogRum } from '@datadog/browser-rum'
+import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { ref } from 'vue'
 import type { VNode } from 'vue'
 
+import type {
+  PreviewSubscribeResult,
+  SavedPaymentMethod
+} from '@comfyorg/account-core/billing'
 import { readBillingErrorCode } from '@comfyorg/account-core/billing'
 import type { AccountCredential } from '@comfyorg/account-core/session'
 import { BILLING_CLIENT_KEY } from '@comfyorg/account-ui/billing'
@@ -154,12 +159,27 @@ function journey(): ReportedAction[] {
 
 const journeyNames = () => journey().map(({ name }) => name)
 
+const payButton = () =>
+  screen.getByRole('button', { name: 'Pay and subscribe' })
+
+const VISA: SavedPaymentMethod = {
+  id: 'pm_visa',
+  type: 'card',
+  brand: 'visa',
+  last4: '4242',
+  is_default: false
+}
+
 const REFUSED_BY_THE_SERVER = {
   status: 'error',
   code: 'REQUEST_FAILED',
   httpStatus: 400,
   serverCode: readBillingErrorCode({ code: 'INVALID_PLAN', message: 'no' })
 } as const
+
+afterEach(() => {
+  sessionStorage.clear()
+})
 
 describe('the full-page checkout journey', () => {
   beforeEach(() => {
@@ -421,5 +441,254 @@ describe('the full-page checkout journey', () => {
     expect(await screen.findByTestId('checkout-waiting')).toBeInTheDocument()
     expect(journeyNames()).not.toContain('billing.checkout.operation_linked')
     expect(journeyNames()).not.toContain('billing.checkout.submitted')
+  })
+
+  it.for<{
+    name: string
+    options: FakeBillingClientOptions
+    choose: () => Promise<void> | void
+    selected: Record<string, unknown>
+  }>([
+    {
+      name: 'a new card',
+      options: {},
+      choose: () => form.emit('confirm', 'ctoken_1', 'card'),
+      selected: { rail: 'new', method_kind: 'card' }
+    },
+    {
+      name: 'a new Alipay account',
+      options: {},
+      choose: () => form.emit('confirm', 'ctoken_1', 'alipay'),
+      selected: { rail: 'new', method_kind: 'alipay' }
+    },
+    {
+      name: 'a new method of any other type',
+      options: {},
+      choose: () => form.emit('confirm', 'ctoken_1', 'sepa_debit'),
+      selected: { rail: 'new', method_kind: 'other' }
+    },
+    {
+      name: 'a saved card',
+      options: { paymentMethods: { status: 'ok', value: [VISA] } },
+      choose: () => userEvent.click(payButton()),
+      selected: { rail: 'saved', method_kind: 'card' }
+    },
+    {
+      name: 'the method on file for a plan change',
+      options: {
+        preview: {
+          status: 'ok',
+          value: previewOf({ transition_type: 'upgrade' })
+        }
+      },
+      choose: () => userEvent.click(payButton()),
+      selected: { rail: 'on_file' }
+    }
+  ])(
+    'reports $name as the method chosen, just before the submit',
+    async ({ options, choose, selected }) => {
+      await renderCheckout(options)
+      await screen.findByText(
+        /Subscribe to Creator Plan|Upgrade to Creator Plan/
+      )
+      reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+
+      await choose()
+
+      await waitFor(() =>
+        expect(journeyNames().slice(-2)).toEqual([
+          'billing.checkout.method_selected',
+          'billing.checkout.submitted'
+        ])
+      )
+      expect(journey().at(-2)).toMatchObject({
+        phase: 'method_selected',
+        ...selected
+      })
+    }
+  )
+
+  it('reports a Pay the keep-subscription consent holds back, then the Pay that goes ahead', async () => {
+    const fake = await renderCheckout({
+      preview: {
+        status: 'ok',
+        value: previewOf({
+          transition_type: 'upgrade',
+          requires_reactivation_confirmation: true,
+          cost_next_period_cents: 10_000,
+          renewal_at: '2026-07-28T00:00:00.000Z'
+        })
+      },
+      status: {
+        is_active: true,
+        has_funds: true,
+        max_seats: 1,
+        occupied_seats: 1,
+        scheduled_change: null,
+        team_credit_stop: null,
+        cancel_at: '2026-07-28T00:00:00.000Z'
+      }
+    })
+    const box = await screen.findByRole('checkbox', {
+      name: 'Keep my subscription and renew it'
+    })
+
+    await userEvent.click(payButton())
+
+    expect(journeyNames().slice(2)).toEqual(['billing.checkout.pay_blocked'])
+    expect(journey()[2]).toMatchObject({
+      phase: 'pay_blocked',
+      reason: 'reactivation_unconfirmed'
+    })
+
+    await userEvent.click(box)
+    await userEvent.click(payButton())
+
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalled())
+    expect(journeyNames().slice(2)).toEqual([
+      'billing.checkout.pay_blocked',
+      'billing.checkout.method_selected',
+      'billing.checkout.submitted'
+    ])
+  })
+})
+
+const LAUNCH20_QUOTE = previewOf({
+  quote_id: 'q_promo',
+  amount_due_cents: 2240,
+  promotion_code: 'LAUNCH20',
+  discounts: [{ kind: 'promotion', code: 'LAUNCH20', amount_off_cents: 560 }]
+})
+
+function refusedWith(serverCode: string): PreviewSubscribeResult {
+  return {
+    status: 'error',
+    code: 'REQUEST_FAILED',
+    httpStatus: 400,
+    serverCode: readBillingErrorCode({ code: serverCode, message: 'refused' })
+  }
+}
+
+/** Answers a quote by the code it was asked for: none, LAUNCH20, or anything else. */
+function quotesByCode(
+  fake: FakeBillingClient,
+  launch20: PreviewSubscribeResult = { status: 'ok', value: LAUNCH20_QUOTE }
+) {
+  fake.previewSubscribe.mockImplementation(async ({ promotionCode }) => {
+    if (promotionCode === undefined)
+      return { status: 'ok', value: previewOf({ quote_id: 'q_1' }) }
+    return promotionCode.toUpperCase() === 'LAUNCH20'
+      ? launch20
+      : refusedWith('PROMOTION_CODE_INVALID')
+  })
+}
+
+async function enterCode(code: string) {
+  await userEvent.click(screen.getByRole('button', { name: 'Add promo code' }))
+  await userEvent.type(
+    screen.getByRole('textbox', { name: 'Promo code' }),
+    code
+  )
+  await userEvent.click(screen.getByRole('button', { name: 'Apply' }))
+}
+
+const promoEvents = () =>
+  journey().filter(({ name }) => name === 'billing.checkout.promo')
+
+describe('the full-page checkout promo journey', () => {
+  beforeEach(() => {
+    vi.mocked(datadogRum.getInitConfiguration).mockReturnValue({
+      clientToken: 'pub',
+      applicationId: 'app'
+    })
+  })
+
+  it.for<{
+    name: string
+    path: string
+    act: (fake: FakeBillingClient) => Promise<void>
+    reported: string[]
+    promo: Record<string, unknown>
+  }>([
+    {
+      name: 'a code the customer typed and the server priced',
+      path: CHECKOUT_PATH,
+      act: () => enterCode('launch20'),
+      reported: ['promo'],
+      promo: { result: 'applied', prefilled: false }
+    },
+    {
+      name: 'a code the customer typed and the server refused',
+      path: CHECKOUT_PATH,
+      act: () => enterCode('NOPE'),
+      reported: ['promo'],
+      promo: { result: 'rejected', prefilled: false }
+    },
+    {
+      name: 'a code the link carried, applied by the Pay over it',
+      path: `${CHECKOUT_PATH}&promo=LAUNCH20`,
+      act: async () => {
+        form.emit('confirm', 'ctoken_1', 'card')
+      },
+      reported: ['pay_blocked', 'promo'],
+      promo: { result: 'applied', prefilled: true }
+    },
+    {
+      name: 'a code the customer took off',
+      path: CHECKOUT_PATH,
+      act: async () => {
+        await enterCode('LAUNCH20')
+        await userEvent.click(
+          await screen.findByRole('button', { name: 'Remove LAUNCH20' })
+        )
+      },
+      reported: ['promo', 'promo'],
+      promo: { result: 'removed', prefilled: false }
+    },
+    {
+      name: 'an applied code Pay found lapsed',
+      path: CHECKOUT_PATH,
+      act: async (fake) => {
+        fake.subscribe.mockResolvedValueOnce({
+          status: 'error',
+          code: 'QUOTE_STALE'
+        })
+        await enterCode('LAUNCH20')
+        await screen.findByText('−$5.60')
+        quotesByCode(fake, refusedWith('PROMOTION_CODE_INVALID'))
+        form.emit('confirm', 'ctoken_1', 'card')
+      },
+      reported: ['promo', 'method_selected', 'submitted', 'promo'],
+      promo: { result: 'expired', prefilled: false }
+    }
+  ])(
+    'reports $name, never the code itself',
+    async ({ path, act, reported, promo }) => {
+      const fake = await renderCheckout({}, quotesByCode, path)
+      await screen.findByText('Subscribe to Creator Plan · Acme Team')
+      reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+
+      await act(fake)
+
+      await waitFor(() =>
+        expect(journeyNames().slice(2)).toEqual(
+          reported.map((name) => `billing.checkout.${name}`)
+        )
+      )
+      expect(journey().at(-1)).toMatchObject({ phase: 'promo', ...promo })
+      expect(JSON.stringify(journey())).not.toMatch(/launch20|nope/i)
+    }
+  )
+
+  it('reports nothing for a code that no quote could judge', async () => {
+    await renderCheckout({}, (fake) =>
+      quotesByCode(fake, { status: 'error', code: 'REQUEST_FAILED' })
+    )
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+
+    await enterCode('LAUNCH20')
+
+    expect(await screen.findByRole('alert')).toBeInTheDocument()
+    expect(promoEvents()).toHaveLength(0)
   })
 })

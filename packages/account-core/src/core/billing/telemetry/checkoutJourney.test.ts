@@ -78,6 +78,59 @@ const CASES: readonly PayloadCase[] = [
     }
   },
   {
+    name: 'a method choice names its rail and kind',
+    event: {
+      ...CONTEXT,
+      phase: 'method_selected',
+      rail: 'new',
+      method_kind: 'alipay'
+    },
+    payload: {
+      ...PAYLOAD_OF_CONTEXT,
+      phase: 'method_selected',
+      rail: 'new',
+      method_kind: 'alipay'
+    }
+  },
+  {
+    name: 'a method on file carries no kind',
+    event: { ...CONTEXT, phase: 'method_selected', rail: 'on_file' },
+    payload: {
+      ...PAYLOAD_OF_CONTEXT,
+      phase: 'method_selected',
+      rail: 'on_file'
+    }
+  },
+  {
+    name: 'a promo result names whether the link carried the code',
+    event: { ...CONTEXT, phase: 'promo', result: 'applied', prefilled: true },
+    payload: {
+      ...PAYLOAD_OF_CONTEXT,
+      phase: 'promo',
+      result: 'applied',
+      prefilled: true
+    }
+  },
+  {
+    name: 'a promo the customer typed reports prefilled as false, not absent',
+    event: { ...CONTEXT, phase: 'promo', result: 'rejected', prefilled: false },
+    payload: {
+      ...PAYLOAD_OF_CONTEXT,
+      phase: 'promo',
+      result: 'rejected',
+      prefilled: false
+    }
+  },
+  {
+    name: 'a blocked pay names its reason',
+    event: { ...CONTEXT, phase: 'pay_blocked', reason: 'promo_unapplied' },
+    payload: {
+      ...PAYLOAD_OF_CONTEXT,
+      phase: 'pay_blocked',
+      reason: 'promo_unapplied'
+    }
+  },
+  {
     name: 'a failed preview without a refusal carries only its category',
     event: {
       ...CONTEXT,

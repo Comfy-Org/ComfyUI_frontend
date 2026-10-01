@@ -99,6 +99,26 @@ type CheckoutJourneyPaymentSubmitFailed = {
   submit_phase: CheckoutSubmitPhase
   error_code?: string
 }
+type CheckoutPaymentRail = 'saved' | 'new' | 'on_file'
+type CheckoutMethodKind = 'card' | 'alipay' | 'other'
+type CheckoutPromoResult = 'applied' | 'rejected' | 'removed' | 'expired'
+type CheckoutPayBlockedReason = 'reactivation_unconfirmed' | 'promo_unapplied'
+
+type CheckoutJourneyMethodSelected = {
+  phase: 'method_selected'
+  rail: CheckoutPaymentRail
+  method_kind?: CheckoutMethodKind
+}
+type CheckoutJourneyPromo = {
+  phase: 'promo'
+  result: CheckoutPromoResult
+  /** Whether the entry link carried the code; the code itself is never reported. */
+  prefilled: boolean
+}
+type CheckoutJourneyPayBlocked = {
+  phase: 'pay_blocked'
+  reason: CheckoutPayBlockedReason
+}
 type CheckoutJourneySubmitted = { phase: 'submitted' }
 type CheckoutJourneyOperationLinked = {
   phase: 'operation_linked'
@@ -113,6 +133,9 @@ export type CheckoutJourneyPhaseEvent =
   | CheckoutJourneyPaymentElementFailed
   | CheckoutJourneyPaymentSubmitAttempted
   | CheckoutJourneyPaymentSubmitFailed
+  | CheckoutJourneyMethodSelected
+  | CheckoutJourneyPromo
+  | CheckoutJourneyPayBlocked
   | CheckoutJourneySubmitted
   | CheckoutJourneyOperationLinked
 
@@ -140,6 +163,9 @@ export const CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE: Record<
   payment_element_failed: 'billing.checkout.payment_element_failed',
   payment_submit_attempted: 'billing.checkout.payment_submit_attempted',
   payment_submit_failed: 'billing.checkout.payment_submit_failed',
+  method_selected: 'billing.checkout.method_selected',
+  promo: 'billing.checkout.promo',
+  pay_blocked: 'billing.checkout.pay_blocked',
   submitted: 'billing.checkout.submitted',
   operation_linked: 'billing.checkout.operation_linked'
 }

@@ -1,9 +1,14 @@
 import { datadogRum } from '@datadog/browser-rum'
+import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { defineComponent, h, ref } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
-import type { SubscriptionPreview } from '@comfyorg/account-core/billing'
+import type {
+  PreviewSubscribeResult,
+  SubscriptionPreview
+} from '@comfyorg/account-core/billing'
+import { readBillingErrorCode } from '@comfyorg/account-core/billing'
 import { BILLING_CLIENT_KEY } from '@comfyorg/account-ui/billing'
 import type { StripePaymentPhase } from '@comfyorg/account-ui/billing/stripe'
 import { parseBillingEntry } from '@comfyorg/billing-contract'
@@ -60,7 +65,10 @@ vi.mock(import('@/session/stripeChallengePort'), () => ({
 }))
 
 let reportPhase: (phase: StripePaymentPhase) => void = () => {}
-let reportConfirm: (confirmationToken: string) => void = () => {}
+let reportConfirm: (
+  confirmationToken: string,
+  methodType?: string
+) => void = () => {}
 
 /** The card form is covered in its package; here it takes the place of the provider's form. */
 const PaymentFormStub = defineComponent({
@@ -73,7 +81,7 @@ const PaymentFormStub = defineComponent({
   emits: ['confirm', 'phase'],
   setup(props, { emit }) {
     reportPhase = (phase) => emit('phase', phase)
-    reportConfirm = (token) => emit('confirm', token)
+    reportConfirm = (token, methodType) => emit('confirm', token, methodType)
     return () =>
       h(
         'button',
@@ -368,6 +376,172 @@ describe('the embedded checkout journey', () => {
         screen.getByRole('button', { name: 'Pay and subscribe' })
       ).toHaveAttribute('aria-busy', 'true')
     )
+    expect(journeyNames()).toEqual([
+      'billing.checkout.entered',
+      'billing.checkout.preview_ready'
+    ])
+  })
+
+  it.for<{
+    name: string
+    options: FakeBillingClientOptions
+    choose: () => Promise<void> | void
+    selected: Record<string, unknown>
+  }>([
+    {
+      name: 'a new card',
+      options: {},
+      choose: () => reportConfirm('ctoken_1', 'card'),
+      selected: { rail: 'new', method_kind: 'card' }
+    },
+    {
+      name: 'a new Alipay account',
+      options: {},
+      choose: () => reportConfirm('ctoken_1', 'alipay'),
+      selected: { rail: 'new', method_kind: 'alipay' }
+    },
+    {
+      name: 'a new method of any other type',
+      options: {},
+      choose: () => reportConfirm('ctoken_1', 'sepa_debit'),
+      selected: { rail: 'new', method_kind: 'other' }
+    },
+    {
+      name: 'the saved card the confirm preselects',
+      options: {
+        paymentMethods: {
+          status: 'ok',
+          value: [
+            {
+              id: 'pm_visa',
+              type: 'card',
+              brand: 'visa',
+              last4: '4242',
+              is_default: true
+            }
+          ]
+        }
+      },
+      choose: async () => {
+        await screen.findByText('visa •••• 4242')
+        await userEvent.click(
+          screen.getByRole('button', { name: 'Pay and subscribe' })
+        )
+      },
+      selected: { rail: 'saved', method_kind: 'card' }
+    },
+    {
+      name: 'the method on file for a plan change',
+      options: {
+        preview: {
+          status: 'ok',
+          value: cardQuote({ transition_type: 'upgrade' })
+        }
+      },
+      choose: async () =>
+        userEvent.click(
+          await screen.findByRole('button', { name: 'Confirm upgrade' })
+        ),
+      selected: { rail: 'on_file' }
+    }
+  ])(
+    'reports $name as the method chosen, just before the submit',
+    async ({ options, choose, selected }) => {
+      await renderCheckout(CHECKOUT_PATH, options)
+      await waitFor(() => expect(journey()).toHaveLength(2))
+
+      await choose()
+
+      await waitFor(() =>
+        expect(journeyNames().slice(-2)).toEqual([
+          'billing.checkout.method_selected',
+          'billing.checkout.submitted'
+        ])
+      )
+      expect(journey().at(-2)).toMatchObject({
+        phase: 'method_selected',
+        ...selected
+      })
+    }
+  )
+
+  it('leaves a method the form could not name without a kind', async () => {
+    await renderCheckout()
+    await waitFor(() => expect(journey()).toHaveLength(2))
+
+    reportConfirm('ctoken_1')
+
+    await waitFor(() => expect(journey()).toHaveLength(4))
+    expect(journey()[2]).toMatchObject({ rail: 'new' })
+    expect(journey()[2]).not.toHaveProperty('method_kind')
+  })
+
+  it.for<{
+    name: string
+    answer: PreviewSubscribeResult
+    result: string
+  }>([
+    {
+      name: 'a code the server priced',
+      answer: {
+        status: 'ok',
+        value: cardQuote({ promotion_code: 'SPRING', quote_version: 4 })
+      },
+      result: 'applied'
+    },
+    {
+      name: 'a code the server refused',
+      answer: {
+        status: 'error',
+        code: 'REQUEST_FAILED',
+        httpStatus: 400,
+        serverCode: readBillingErrorCode({
+          code: 'PROMOTION_CODE_INVALID',
+          message: 'refused'
+        })
+      },
+      result: 'rejected'
+    }
+  ])(
+    'reports $name as $result, never the code itself',
+    async ({ answer, result }) => {
+      const fake = await renderCheckout()
+      await screen.findByRole('button', { name: 'Pay and subscribe' })
+      await userEvent.type(
+        screen.getByRole('textbox', { name: 'Promo code' }),
+        'SPRING'
+      )
+      fake.previewSubscribe.mockResolvedValue(answer)
+
+      await userEvent.click(screen.getByRole('button', { name: 'Apply' }))
+
+      await waitFor(() =>
+        expect(journeyNames().at(-1)).toBe('billing.checkout.promo')
+      )
+      expect(journey().at(-1)).toMatchObject({
+        phase: 'promo',
+        result,
+        prefilled: false
+      })
+      expect(JSON.stringify(journey())).not.toContain('SPRING')
+    }
+  )
+
+  it('reports nothing for a code that no quote could judge', async () => {
+    const fake = await renderCheckout()
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+    await userEvent.type(
+      screen.getByRole('textbox', { name: 'Promo code' }),
+      'SPRING'
+    )
+    fake.previewSubscribe.mockResolvedValue({
+      status: 'error',
+      code: 'REQUEST_FAILED'
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }))
+
+    expect(await screen.findByRole('alert')).toBeInTheDocument()
     expect(journeyNames()).toEqual([
       'billing.checkout.entered',
       'billing.checkout.preview_ready'
