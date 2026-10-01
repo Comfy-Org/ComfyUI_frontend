@@ -11,11 +11,19 @@ import LiveTerminal from './LiveTerminal.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-// The prompt to paste into a coding agent; the copy button puts it on the
-// clipboard verbatim. Kept out of translations.ts (which every page bundles)
-// since it's only ever used here — see deploy-prompt.ts for why.
+// A short, illustrative transcript for the terminal — the full prompt a
+// coding agent needs lives in deploy-prompt.ts and only ever goes on the
+// clipboard, via the "Copy prompt" button below, never typed out here.
+const deployTranscript = [
+  '$ comfy build init',
+  '✔ Scanned this ComfyUI install — custom nodes, models, pinned deps',
+  '$ comfy build push --release --target linux/nvidia',
+  '✔ Build released',
+  '$ comfy deploy up',
+  '✔ Endpoint live → https://your-build.run.comfy.app'
+]
+
 const deployPrompt = computed(() => deployPromptFor(locale))
-const deployTranscript = computed(() => deployPrompt.value.split('\n'))
 const { copy, copied } = useClipboard({ source: deployPrompt, legacy: true })
 </script>
 
@@ -32,18 +40,14 @@ const { copy, copied } = useClipboard({ source: deployPrompt, legacy: true })
       </template>
     </SectionHeader>
 
-    <div class="relative mx-auto mt-8 max-w-3xl">
+    <div class="mx-auto mt-8 max-w-3xl">
+      <LiveTerminal
+        :lines="deployTranscript"
+        :label="t('platform.serverlessDeploy.heading', locale)"
+      />
       <button
         type="button"
-        class="absolute top-3 right-3 z-10 flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-primary-comfy-canvas hover:bg-transparency-white-t4 focus-visible:outline-2 focus-visible:outline-primary-comfy-yellow"
-        :aria-label="
-          t(
-            copied
-              ? 'platform.serverlessDeploy.copied'
-              : 'platform.serverlessDeploy.copy',
-            locale
-          )
-        "
+        class="mt-4 flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-primary-comfy-ink hover:bg-transparency-white-t4 focus-visible:outline-2 focus-visible:outline-primary-comfy-yellow"
         @click="copy()"
       >
         <component
@@ -51,12 +55,15 @@ const { copy, copied } = useClipboard({ source: deployPrompt, legacy: true })
           class="size-4"
           aria-hidden="true"
         />
+        {{
+          t(
+            copied
+              ? 'platform.serverlessDeploy.copied'
+              : 'platform.serverlessDeploy.copy',
+            locale
+          )
+        }}
       </button>
-      <LiveTerminal
-        class="[&_pre]:pt-14"
-        :lines="deployTranscript"
-        :label="t('platform.serverlessDeploy.heading', locale)"
-      />
     </div>
   </section>
 </template>

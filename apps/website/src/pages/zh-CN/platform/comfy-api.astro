@@ -3,7 +3,6 @@ import BaseLayout from '../../../layouts/BaseLayout.astro'
 import ProductCardsSection from '../../../components/common/ProductCardsSection.vue'
 import ComfyApiPricingSection from '../../../components/pricing/ComfyApiPricingSection.vue'
 import ClosingCtaSection from '../../../templates/platform/ClosingCtaSection.vue'
-import ServerlessAgentPromptBanner from '../../../templates/platform/ServerlessAgentPromptBanner.vue'
 import ServerlessCustomerProofSection from '../../../templates/platform/ServerlessCustomerProofSection.vue'
 import ServerlessDeploySection from '../../../templates/platform/ServerlessDeploySection.vue'
 import ServerlessHero from '../../../templates/platform/ServerlessHero.vue'
@@ -20,7 +19,6 @@ import { t } from '../../../i18n/translations'
   <ServerlessHero locale="zh-CN" client:load />
   <ServerlessHowItWorksSection locale="zh-CN" client:visible />
   <ServerlessDeploySection locale="zh-CN" client:visible />
-  <ServerlessAgentPromptBanner locale="zh-CN" client:visible />
   <ServerlessScaleSection locale="zh-CN" client:visible />
   <ServerlessCustomerProofSection locale="zh-CN" showCustomerProof />
   <ComfyApiPricingSection locale="zh-CN" />

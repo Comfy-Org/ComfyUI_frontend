@@ -8806,25 +8806,13 @@ Enterprise`
     'zh-CN': '几分钟内上线'
   },
   'platform.serverlessDeploy.shipSubtitle': {
-    en: 'Using our CLI and Skills, have your coding agent deploy everything in minutes.',
-    'zh-CN': '使用我们的 CLI 和 Skills，让你的编码智能体在几分钟内完成部署。'
+    en: 'Or skip the setup. Paste this into your coding agent.',
+    'zh-CN': '或者跳过配置，直接把它粘贴给你的编码智能体。'
   },
   'platform.serverlessDeploy.subtitle': {
     en: 'Builder packages your ComfyUI workflow and environment into a reproducible build. Deploy that build to Comfy API and scale it on demand.',
     'zh-CN':
       'Builder 将你的 ComfyUI 工作流和环境打包成可复现的构建。将该构建部署到 Comfy API，并按需扩展。'
-  },
-  'platform.serverlessDeploy.agentPromptLine': {
-    en: 'Or skip the setup. Paste this into your coding agent.',
-    'zh-CN': '或者跳过配置，直接把它粘贴给你的编码智能体。'
-  },
-  'platform.serverlessDeploy.copyAgentPrompt': {
-    en: 'COPY AGENT PROMPT',
-    'zh-CN': '复制智能体提示词'
-  },
-  'platform.serverlessDeploy.agentPromptCopied': {
-    en: 'COPIED',
-    'zh-CN': '已复制'
   },
   'platform.howItWorks.chat.channel': {
     en: 'creative-team',
