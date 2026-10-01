@@ -50,9 +50,7 @@ export class AgentPanel {
     this.sendButton = this.root.getByRole('button', {
       name: enMessages.agent.send
     })
-    this.activityRows = this.root
-      .getByTestId('agent-activity-trace')
-      .getByRole('listitem')
+    this.activityRows = this.root.getByRole('listitem')
   }
 
   activityRow(label: string): Locator {
