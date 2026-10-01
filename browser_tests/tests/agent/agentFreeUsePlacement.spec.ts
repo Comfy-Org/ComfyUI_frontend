@@ -1,50 +1,15 @@
-import { expect } from '@playwright/test'
+import { expect, mergeTests } from '@playwright/test'
 
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
+import { hostTelemetryFixture } from '@e2e/fixtures/hostTelemetryFixture'
 
 const FLAG = 'agent-free-use-message-placement'
 const NOTICE_COPY = 'Prompts and workflow runs are FREE during BETA.'
 
 type Placement = 'top-banner' | 'near-composer' | 'above-input' | 'inside-input'
 
-interface CapturedTelemetryEvent {
-  event: string
-  properties: Record<string, unknown>
-}
-
-const test = agentTest.extend<{
-  capturedTelemetry: CapturedTelemetryEvent[]
-}>({
-  capturedTelemetry: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
-    await use([])
-  },
-  page: async ({ page, capturedTelemetry }, use) => {
-    await page.exposeFunction(
-      '__captureFreeUseTelemetry',
-      (captured: CapturedTelemetryEvent) => capturedTelemetry.push(captured)
-    )
-    await page.addInitScript(() => {
-      Object.assign(window, {
-        __comfyDesktop2: {
-          isRemote: () => false,
-          Telemetry: {
-            capture: (event: string, properties: Record<string, unknown>) => {
-              void (
-                window as unknown as {
-                  __captureFreeUseTelemetry: (
-                    captured: CapturedTelemetryEvent
-                  ) => Promise<void>
-                }
-              ).__captureFreeUseTelemetry({ event, properties })
-            }
-          }
-        }
-      })
-    })
-    await use(page)
-  }
-})
+const test = mergeTests(agentTest, hostTelemetryFixture)
 
 // Source: https://github.com/Comfy-Org/ComfyUI_frontend/pull/19712
 test.describe(
@@ -61,7 +26,7 @@ test.describe(
     ] satisfies Placement[]) {
       test.describe(placement, () => {
         test(`shows the notice in the ${placement} region and records panel exposure`, async ({
-          capturedTelemetry,
+          hostTelemetry,
           page
         }) => {
           await bootAgentApp(page, true, {
@@ -132,7 +97,7 @@ test.describe(
 
           await expect
             .poll(() =>
-              capturedTelemetry.find(
+              hostTelemetry.find(
                 ({ event }) => event === 'app:agent_free_use_exposure'
               )
             )
