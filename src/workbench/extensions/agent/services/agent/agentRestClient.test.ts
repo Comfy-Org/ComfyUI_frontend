@@ -6,7 +6,11 @@ import type { CloudWorkflowEntry } from '../../schemas/agentApiSchema'
 
 vi.mock(import('@/scripts/api'))
 
-import { AgentApiError, createAgentRestClient } from './agentRestClient'
+import {
+  AgentApiError,
+  AgentResponseUnreadableError,
+  createAgentRestClient
+} from './agentRestClient'
 import type { AgentRestClient } from './agentRestClient'
 
 function jsonResponse(
@@ -109,6 +113,14 @@ describe('agentRestClient route + method', () => {
     const { route, init } = lastCall()
     expect(route).toBe('/agent/threads/t7%2Fx/messages')
     expect(init.method).toBe('GET')
+  })
+
+  it('getMessages forwards the caller abort signal to the request', async () => {
+    respond(jsonResponse(200, []))
+    const { signal } = new AbortController()
+    await makeClient().getMessages('t7', { signal })
+
+    expect(lastCall().init.signal).toBe(signal)
   })
 
   it('gets and puts the run-mode preference using the API contract', async () => {
@@ -445,6 +457,22 @@ describe('error mapping', () => {
       .catch((e: unknown) => e)
 
     expect(error).toBeInstanceOf(Error)
+    expect(error).not.toBeInstanceOf(AgentApiError)
+  })
+
+  it('distinguishes a truncated 2xx body from a rejected request', async () => {
+    respond(
+      new Response('{"message_id":"m1","thread_', {
+        status: 202,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    )
+
+    const error = await makeClient()
+      .postMessage('t1', { content: 'hi' })
+      .catch((e: unknown) => e)
+
+    expect(error).toBeInstanceOf(AgentResponseUnreadableError)
     expect(error).not.toBeInstanceOf(AgentApiError)
   })
 })

@@ -9,6 +9,11 @@ import type {
   ToolPart
 } from './agentMessageParts'
 import { snapshotMessage } from './agentMessageParts'
+import type {
+  UndeliverableAskContext,
+  UndeliverableAskReason
+} from './undeliverableAskReporter'
+import { createUndeliverableAskReporter } from './undeliverableAskReporter'
 
 export type AgentChatEvent = Extract<
   AgentWsEvent,
@@ -89,6 +94,10 @@ export interface AgentEventTransport {
   dispose: () => void
 }
 
+function updateSkill(part: ToolPart, skill: string | undefined): void {
+  if (skill !== undefined) part.skill = skill
+}
+
 export function createAgentEventTransport(
   message: AssistantMessage,
   emit: (m: AssistantMessage) => void,
@@ -118,7 +127,12 @@ export function createAgentEventTransport(
    * `shouldAwaitCanvasSync` at its default) never spuriously looks "caught
    * up".
    */
-  getCanvasSyncOutcomeCount: () => number = () => 0
+  getCanvasSyncOutcomeCount: () => number = () => 0,
+  reportUndeliverableAsk: (
+    data: AgentAskEvent['data'],
+    reason: UndeliverableAskReason,
+    context?: UndeliverableAskContext
+  ) => void = createUndeliverableAskReporter().report
 ): AgentEventTransport {
   let openText: TextPart | null = null
   // The answer the model is still writing. Provisional: the round's first tool
@@ -274,6 +288,7 @@ export function createAgentEventTransport(
       canvasSyncBaseline.set(part, canvasSyncOutcomeWatermark)
     }
     part.name = data.tool_name
+    updateSkill(part, data.skill)
     if (data.status !== 'running') {
       resolveToolCallState(part, data.status, data.duration_ms)
     }
@@ -307,9 +322,20 @@ export function createAgentEventTransport(
    * Applies one `agent_ask` frame. Only the `run_approval` kind renders a
    * part; returns `false` for any other kind, mirroring `ingest`'s early
    * `return` for that case.
+   *
+   * That `false` reaches a live turn and still shows the user nothing, while
+   * the server parks waiting for an answer — the same dead-panel outcome as an
+   * ask dropped in routing, so it is reported the same way. Generated-contract
+   * kinds without a client renderer are tagged separately from unknown input.
    */
   function handleAskEvent(data: AgentAskEvent['data']): boolean {
-    if (data.kind !== 'run_approval') return false
+    if (data.kind !== 'run_approval') {
+      reportUndeliverableAsk(
+        data,
+        data.kind === 'ask_user' ? 'unrendered-kind' : 'unknown-kind'
+      )
+      return false
+    }
     dropDraft()
     closeOpenText()
     closeOpenThinking()
@@ -454,7 +480,11 @@ export function createAgentEventTransport(
   }
 
   function ingest(event: AgentChatEvent): void {
-    if (settled) return
+    if (settled) {
+      if (event.type === 'agent_ask')
+        reportUndeliverableAsk(event.data, 'settled-turn')
+      return
+    }
     if (applyChatEvent(event)) emit(snapshotMessage(message))
   }
 

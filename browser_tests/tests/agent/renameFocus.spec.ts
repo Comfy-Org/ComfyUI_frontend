@@ -7,6 +7,7 @@ import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const OPEN_AGENT_LABEL = enMessages.agent.entryButton
@@ -66,7 +67,7 @@ test.describe('Agent chat history rename', { tag: '@cloud' }, () => {
       exact: true
     })
     await expect(openButton).toBeVisible()
-    await openButton.click()
+    await new AgentPanel(page).open()
 
     // Staged: the docked shell renders immediately, the async root arrives
     // after its chunk. Asserting the shell first keeps a later failure
