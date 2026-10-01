@@ -34,6 +34,7 @@
           :webm-src="videoSrc"
           :mp4-src="videoSrcMp4"
           :poster-src="posterSrc"
+          pausable
           data-testid="deploy-to-comfy-api-video"
           class="aspect-video w-full rounded-lg object-cover"
         >
