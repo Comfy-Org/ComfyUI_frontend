@@ -1073,7 +1073,7 @@ describe('layoutStore queryLinkSegmentAtPoint DPR threading', () => {
 
   // Minimal Path2D stub — happy-dom does not implement Path2D, but the store
   // only stores it and passes it back to ctx.isPointInStroke (which we mock).
-  const stubPath = {} as unknown as Path2D
+  const stubPath = fromPartial<Path2D>({})
 
   const seedSegment = (
     linkId = toLinkId(1),
@@ -1090,10 +1090,10 @@ describe('layoutStore queryLinkSegmentAtPoint DPR threading', () => {
   const makeCtx = (hit = true) => {
     const isPointInStroke = vi.fn().mockReturnValue(hit)
     return {
-      ctx: {
+      ctx: fromPartial<CanvasRenderingContext2D>({
         lineWidth: 17,
         isPointInStroke
-      } as unknown as CanvasRenderingContext2D,
+      }),
       isPointInStroke
     }
   }

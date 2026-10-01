@@ -33,7 +33,7 @@ describe('useLitegraphService().getCanvasCenter', () => {
   })
 
   it('returns the CSS-pixel visible-area centre at DPR 2', () => {
-    Reflect.set(app.canvas, 'dpr', 2)
+    app.canvas.dpr = 2
     app.canvas.ds.visible_area.set([0, 0, 800, 600])
 
     const center = useLitegraphService().getCanvasCenter()
