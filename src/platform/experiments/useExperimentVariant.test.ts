@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
 
 import { readExperimentVariant } from './postHogExperimentClient'
@@ -13,6 +13,7 @@ type Variant = (typeof VARIANTS)[number]
 
 function run<T>(body: () => T): T {
   const scope = effectScope()
+  onTestFinished(() => scope.stop())
   const result = scope.run(body)
   if (result === undefined) throw new Error('scope disposed before running')
   return result
@@ -52,30 +53,24 @@ describe('useExperimentVariant', () => {
     expect(readExperimentVariant).toHaveBeenCalledWith('some-experiment')
   })
 
-  it('reports control until the assignment lands', async () => {
-    const { variant, isAssigned } = startExperiment()
-
-    expect(variant.value).toBe('control')
-    expect(isAssigned.value).toBe(false)
-    await vi.waitFor(() => expect(isAssigned.value).toBe(true))
-  })
-
   it.for([
     { name: 'a variant outside the experiment', value: 'bottom-sheet' },
     { name: 'no assignment at all', value: undefined }
   ])('falls back to control given $name', async ({ value }) => {
-    vi.mocked(readExperimentVariant).mockResolvedValue(value)
+    const read = Promise.resolve(value)
+    vi.mocked(readExperimentVariant).mockReturnValue(read)
     const { variant } = startExperiment()
 
-    await vi.waitFor(() => expect(readExperimentVariant).toHaveBeenCalled())
+    await read
     expect(variant.value).toBe('control')
   })
 
   it('falls back to control when the read rejects', async () => {
-    vi.mocked(readExperimentVariant).mockRejectedValue(new Error('offline'))
+    const read = Promise.reject(new Error('offline'))
+    vi.mocked(readExperimentVariant).mockReturnValue(read)
     const { variant } = startExperiment()
 
-    await vi.waitFor(() => expect(readExperimentVariant).toHaveBeenCalled())
+    await read.catch(() => undefined)
     expect(variant.value).toBe('control')
   })
 

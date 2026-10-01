@@ -1,5 +1,7 @@
 import { isCloud } from '@/platform/distribution/types'
 
+const assignments = new Map<string, Promise<string | undefined>>()
+
 /**
  * Resolves a PostHog multivariate flag once PostHog has loaded its flags for
  * the current person.
@@ -21,10 +23,23 @@ export async function readExperimentVariant(
   flagKey: string
 ): Promise<string | undefined> {
   if (!isCloud) return undefined
+  const existing = assignments.get(flagKey)
+  if (existing) return existing
+
+  const assignment = loadExperimentVariant(flagKey)
+  assignments.set(flagKey, assignment)
+  return assignment
+}
+
+async function loadExperimentVariant(
+  flagKey: string
+): Promise<string | undefined> {
   const { default: posthog } = await import('posthog-js')
+  let unsubscribe = (): void => {}
   await new Promise<void>((resolve) => {
-    posthog.onFeatureFlags(() => resolve())
+    unsubscribe = posthog.onFeatureFlags(() => resolve())
   })
+  unsubscribe()
   const value = posthog.getFeatureFlag(flagKey)
   return typeof value === 'string' ? value : undefined
 }

@@ -1,5 +1,5 @@
 import type { MaybeRefOrGetter, Ref } from 'vue'
-import { computed, readonly, ref, toValue, watch } from 'vue'
+import { computed, ref, toValue, watch } from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
@@ -22,8 +22,6 @@ interface ExperimentOptions<V extends string> {
 
 interface Experiment<V extends string> {
   variant: Readonly<Ref<V>>
-  /** Whether PostHog has answered. `false` while `variant` is the default. */
-  isAssigned: Readonly<Ref<boolean>>
 }
 
 /**
@@ -47,8 +45,11 @@ export function useExperimentVariant<V extends string>({
   eligible
 }: ExperimentOptions<V>): Experiment<V> {
   const assigned = ref<V>()
-  const isAssigned = computed(() => assigned.value !== undefined)
   const variant = computed(() => assigned.value ?? control)
+
+  function isVariant(value: string | undefined): value is V {
+    return variants.some((variant) => variant === value)
+  }
 
   let read = false
   watch(
@@ -58,7 +59,7 @@ export function useExperimentVariant<V extends string>({
       read = true
       void readExperimentVariant(flagKey)
         .then((value) => {
-          if (variants.includes(value as V)) assigned.value = value as V
+          if (isVariant(value)) assigned.value = value
         })
         .catch((error: unknown) => {
           reportError(error, {
@@ -72,5 +73,5 @@ export function useExperimentVariant<V extends string>({
     { immediate: true }
   )
 
-  return { variant: readonly(variant) as Readonly<Ref<V>>, isAssigned }
+  return { variant }
 }
