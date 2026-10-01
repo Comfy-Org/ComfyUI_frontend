@@ -36,6 +36,8 @@ interface CanvasViewport {
 }
 ```
 
+Viewport measurement normalizes every finite positive DPR to at least `1`, preserving at least one backing pixel per CSS pixel so browser zoom values below `1` do not blur the canvas. Physical dimensions use this normalized DPR rather than the raw browser value.
+
 Two functions operate on this type:
 
 - **`measureViewport(cssWidth, cssHeight, rawDpr, prevGeneration?)`** — a pure function that produces a new `CanvasViewport` from numeric dimensions and DPR. The optional previous generation supports deterministic generation tracking. `measureViewportFromElement(element, rawDpr?, prevGeneration?)` is the DOM adapter used by canvas lifecycle code.
