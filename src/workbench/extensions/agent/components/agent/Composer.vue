@@ -28,6 +28,7 @@ import Tag from '@/components/chip/Tag.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { registerEscapeOverride } from '@/platform/keybindings/escapeOverride'
+import type { AgentStopMethod } from '@/platform/telemetry/types'
 
 import InlinePromptEditor from './composer/InlinePromptEditor.vue'
 import { composerPromptForSend } from '../../utils/composerPrompt'
@@ -84,7 +85,7 @@ const emit = defineEmits<{
     attachments: ComposerAttachment[],
     workflowReferences?: WorkflowReference[]
   ]
-  stop: []
+  stop: [method: AgentStopMethod]
   attach: []
   openAssets: []
   selectNodes: []
@@ -138,7 +139,7 @@ const composer = useComposer({
     } else emit('send', text, attachments)
   },
   isRunning: () => running.value,
-  onStop: () => emit('stop')
+  onStop: () => emit('stop', 'button')
 })
 
 const editorRef =
@@ -219,7 +220,7 @@ function onComposerKeydown(event: KeyboardEvent): void {
   ) {
     event.preventDefault()
     event.stopPropagation()
-    emit('stop')
+    emit('stop', 'escape')
   }
 }
 
@@ -251,7 +252,7 @@ const primaryActionShortcut = computed(() =>
 )
 
 function onPrimaryAction(): void {
-  if (running.value) emit('stop')
+  if (running.value) emit('stop', 'button')
   else composer.submit()
 }
 
@@ -302,7 +303,7 @@ function handleEscapeOverride(event: KeyboardEvent): boolean {
   if (focusedElsewhere) return false
 
   event.preventDefault()
-  if (!event.repeat) emit('stop')
+  if (!event.repeat) emit('stop', 'escape')
   return true
 }
 

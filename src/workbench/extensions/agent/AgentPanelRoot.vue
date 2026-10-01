@@ -21,7 +21,6 @@ import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type {
   AgentErrorMetadata,
-  AgentMessageSentMetadata,
   AgentPaywallSurface,
   AgentRunApprovalDecision,
   AgentStopMethod
@@ -45,7 +44,6 @@ import { registerMinimapDecorationLayer } from '@/platform/canvas/minimapDecorat
 // stays independent of renderer and LiteGraph runtime values.
 // eslint-disable-next-line import-x/no-restricted-paths
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -70,7 +68,6 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import {
   adoptSharedOnboardingFlag,
   hasSeenCoach,
-  resetCoach,
   scopedOnboardingKey,
   trackCoachDeferral
 } from './composables/agent/useOnboarding'
@@ -461,22 +458,28 @@ const coachDeferredBy = computed(() =>
       ? 'tour_active'
       : null
 )
+const coachCompletionWaiters = new Set<() => void>()
+function releaseCoachCompletionWaiters(): void {
+  for (const resolve of coachCompletionWaiters) resolve()
+  coachCompletionWaiters.clear()
+}
 watch(
   [consentAccepted, onboardingKey, coachDeferredBy],
   ([accepted, key, reason]) => {
     if (accepted && key && !hasSeenCoach(key)) trackCoachDeferral(key, reason)
+    if (reason !== null) releaseCoachCompletionWaiters()
   },
   { immediate: true }
 )
 const coachRef = ref<InstanceType<typeof OnboardingCoach>>()
-function restartCoach(): void {
-  // Take-the-tour stays clickable while the coach is deferred by App Mode, and
-  // there is no instance to hand the transition to. Clearing the persisted flag
-  // makes the replay wait for the mount instead of being dropped.
-  if (coachRef.value) coachRef.value.restart()
-  else if (onboardingKey.value) resetCoach(onboardingKey.value)
-}
 
+async function waitForCoachCompletion(): Promise<void> {
+  const key = onboardingKey.value
+  if (!key || hasSeenCoach(key)) return
+  await nextTick()
+  if (coachDeferredBy.value !== null || !coachRef.value) return
+  await new Promise<void>((resolve) => coachCompletionWaiters.add(resolve))
+}
 function toSelectedNode(node: LGraphNode): SelectedNode {
   return {
     id: String(node.id),
@@ -687,45 +690,6 @@ function warnRestoreFailed(): void {
   })
 }
 
-function trackWorkflowOpenFailure(
-  uiTreatment: AgentErrorMetadata['ui_treatment']
-): void {
-  trackAgentError('workflow_open_failed', 'post_acceptance', uiTreatment, {
-    retryable: false
-  })
-}
-
-/**
- * The sent message, held from the moment the user sends until the cloud ids
- * are refreshed, alongside the turn's origin. Scoped to one `sendMessage`
- * call, so a send never hands these fields to the next one.
- */
-let pendingSend: {
-  metadata: AgentMessageSentMetadata
-  origin: TurnOrigin
-} | null = null
-
-/**
- * A freshly opened tab has no cloud id until `refreshCloudWorkflowIds()` lands,
- * and the turn is posted with the id resolved by that refresh (QAF-19).
- * Reporting before it would file the first send of a session — the one the
- * activation funnel is measuring — against no workflow at all.
- *
- * Resolved through the turn's own origin rather than the live selection,
- * because `performSend` posts the origin tab's id: switching target or
- * starting a new chat while the refresh is in flight must not retarget the
- * report at a workflow the turn was never sent against.
- */
-function reportPendingSend(): void {
-  const sent = pendingSend
-  if (!sent) return
-  pendingSend = null
-  useTelemetry()?.trackAgentMessageSent({
-    ...sent.metadata,
-    workflow_id: targetWorkflowTurnContext(sent.origin)?.id ?? null
-  })
-}
-
 const {
   sendMessage,
   stopTurn,
@@ -760,13 +724,7 @@ const {
     adopted: onWorkflowAdopted,
     restored: onWorkflowRestored,
     prepare: async () => {
-      try {
-        await refreshCloudWorkflowIds()
-      } finally {
-        // In `finally` so a refresh that fails still reports the send, with
-        // whichever id the client already had, rather than losing the event.
-        reportPendingSend()
-      }
+      await refreshCloudWorkflowIds()
     },
     disowned: forgetCloudWorkflowId,
     tabs: openTabsSnapshot,
@@ -986,6 +944,14 @@ function surfaceAgentError(type: 'agent_api_failed', details: string): void {
   executionErrorStore.showErrorOverlay()
 }
 
+function trackWorkflowOpenFailure(
+  uiTreatment: AgentErrorMetadata['ui_treatment']
+): void {
+  trackAgentError('workflow_open_failed', 'post_acceptance', uiTreatment, {
+    retryable: false
+  })
+}
+
 let noticesSeen = 0
 watch(
   () => notices.value.length,
@@ -1072,38 +1038,13 @@ function agentTabFilename(name: string | undefined): string | undefined {
   return cleaned.length === 0 ? undefined : `${cleaned}.json`
 }
 
-async function onAgentActiveTab(
-  data: AgentActiveTabData,
-  generation: number
-): Promise<boolean> {
-  const previousWorkflowId = boundWorkflowId.value
-  const stale = () => generation !== activeTabGeneration
-  if (stale()) return false
-  try {
-    const bound = boundOrOpenWorkflowFor(data.workflow_id)
-    return bound
-      ? await activateExistingAgentTab(data, bound, previousWorkflowId, stale)
-      : await createAndActivateAgentTab(data, previousWorkflowId, stale)
-  } catch (error) {
-    if (stale()) return false
-    bindWorkflow(data.workflow_id)
-    reportError(error, { errorType: 'agent_workflow_open_failed' })
-    surfaceAgentError(
-      'agent_api_failed',
-      error instanceof Error ? error.message : String(error)
-    )
-    trackWorkflowOpenFailure('error_overlay')
-    return false
-  } finally {
-    tabActivity.setCreating(false)
-  }
-}
+type AgentTabTarget = NonNullable<ReturnType<typeof boundOrOpenWorkflowFor>>
 
-async function activateExistingAgentTab(
+async function openBoundAgentTab(
   data: AgentActiveTabData,
-  bound: ComfyWorkflow,
-  previousWorkflowId: string | null,
-  stale: () => boolean
+  bound: AgentTabTarget,
+  stale: () => boolean,
+  previousWorkflowId: string | null
 ): Promise<boolean> {
   const opened = await workflowService.openWorkflow(bound)
   if (stale()) return false
@@ -1112,6 +1053,7 @@ async function activateExistingAgentTab(
     trackWorkflowOpenFailure('toast')
     return false
   }
+  // Name resolution does not create the binding consumed downstream.
   bindingStore.bind(data.workflow_id, bound.path)
   if (status.value !== 'idle') tabActivity.setEditing(bound.path)
   bindWorkflow(data.workflow_id)
@@ -1123,10 +1065,10 @@ async function activateExistingAgentTab(
   return true
 }
 
-async function createAndActivateAgentTab(
+async function openNewAgentTab(
   data: AgentActiveTabData,
-  previousWorkflowId: string | null,
-  stale: () => boolean
+  stale: () => boolean,
+  previousWorkflowId: string | null
 ): Promise<boolean> {
   const creatingStartedAt = Date.now()
   tabActivity.setCreating(true)
@@ -1135,6 +1077,7 @@ async function createAndActivateAgentTab(
   if (remainingCreatingTime > 0)
     await new Promise((resolve) => setTimeout(resolve, remainingCreatingTime))
   if (stale()) return false
+
   const tab = workflowStore.createNewTemporary(
     agentTabFilename(data.name),
     agentTabGraph
@@ -1164,6 +1107,33 @@ async function createAndActivateAgentTab(
     target: 'active_tab_open'
   })
   return true
+}
+
+async function onAgentActiveTab(
+  data: AgentActiveTabData,
+  generation: number
+): Promise<boolean> {
+  const previousWorkflowId = boundWorkflowId.value
+  const stale = () => generation !== activeTabGeneration
+  if (stale()) return false
+  try {
+    const bound = boundOrOpenWorkflowFor(data.workflow_id)
+    return bound
+      ? await openBoundAgentTab(data, bound, stale, previousWorkflowId)
+      : await openNewAgentTab(data, stale, previousWorkflowId)
+  } catch (error) {
+    if (stale()) return false
+    bindWorkflow(data.workflow_id)
+    reportError(error, { errorType: 'agent_workflow_open_failed' })
+    surfaceAgentError(
+      'agent_api_failed',
+      error instanceof Error ? error.message : String(error)
+    )
+    trackWorkflowOpenFailure('error_overlay')
+    return false
+  } finally {
+    tabActivity.setCreating(false)
+  }
 }
 
 function onApprovalShown(
@@ -1210,7 +1180,11 @@ async function onAnswerAsk(
 void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
   ++activeTabGeneration
-  if (composerStore.submission?.id === consentHeldSubmissionId)
+  releaseCoachCompletionWaiters()
+  if (
+    (coachDeferredBy.value === null || !agentPanelStore.isVisible) &&
+    composerStore.submission?.id === consentHeldSubmissionId
+  )
     composerStore.invalidateSubmission()
   docOpMinter.detach()
   restoreOpMinter.detach()
@@ -1274,7 +1248,9 @@ async function refreshHistory(): Promise<void> {
       'thread_list_load_failed',
       'pre_acceptance',
       'error_overlay',
-      { retryable: isRetryableRequestFailure(error, false) }
+      {
+        retryable: isRetryableRequestFailure(error, false)
+      }
     )
   }
 }
@@ -1348,7 +1324,6 @@ const coachSteps = computed<CoachStep[]>(() => [
   {
     target: '#agent-chat-history',
     placement: 'left-start',
-    tooltip: t('agent.showChatHistory'),
     title: t('agent.coachHistoryTitle'),
     body: t('agent.coachHistoryBody')
   }
@@ -1361,14 +1336,21 @@ async function consentAllowsSubmission(
   let hasConsent = false
   consentHeldSubmissionId = submissionId
   try {
-    await withConsent('first_message', () => {
+    await withConsent(() => {
       hasConsent = true
     })
+    if (hasConsent) await waitForCoachCompletion()
   } finally {
     if (consentHeldSubmissionId === submissionId)
       consentHeldSubmissionId = undefined
   }
   return composerStore.submission?.id === submissionId && hasConsent
+}
+
+async function consentAllowsDraftSubmission(
+  submissionId: number | undefined
+): Promise<boolean> {
+  return consentAccepted.value || (await consentAllowsSubmission(submissionId))
 }
 
 const { submit: onSend } = useAgentDraftSubmission({
@@ -1383,44 +1365,25 @@ const { submit: onSend } = useAgentDraftSubmission({
     replace: replaceSelectionTags,
     exit: exitNodeSelectionMode
   },
-  // fallow-ignore-next-line complexity -- Existing PR logic; this lane changes only the composing panel test.
   send: async (text, attachments, nodes, references, meta) => {
     const submissionId = composerStore.submission?.id
-    if (
-      !consentAccepted.value &&
-      !(await consentAllowsSubmission(submissionId))
-    )
-      return false
+    if (!(await consentAllowsDraftSubmission(submissionId))) return false
 
-    // The same origin `performSend` pins the turn to, taken in the same tick,
-    // so the report follows the tab the turn is posted against. Everything but
-    // the workflow id is captured now, like the thread; the id here is only
-    // the fallback for a send that never reaches the refresh.
     const originContext = targetWorkflowTurnContext()
-    pendingSend = {
-      metadata: {
-        attachment_count: attachments.length,
-        node_tag_count: nodes.length,
-        thread_id: threadId.value,
-        workflow_id: originContext?.id ?? null,
-        client_message_id: meta.clientMessageId,
-        input_method: meta.inputMethod,
-        starter_prompt_id: meta.starterPrompt?.id ?? null,
-        starter_prompt_click_id: meta.starterPrompt?.clickId ?? null
-      },
-      origin:
-        originContext === undefined ? null : { tabPath: originContext.tabPath }
-    }
+    useTelemetry()?.trackAgentMessageSent({
+      attachment_count: attachments.length,
+      node_tag_count: nodes.length,
+      thread_id: threadId.value,
+      workflow_id: originContext?.id ?? null,
+      client_message_id: meta.clientMessageId,
+      input_method: meta.inputMethod,
+      starter_prompt_id: meta.starterPrompt?.id ?? null,
+      starter_prompt_click_id: meta.starterPrompt?.clickId ?? null
+    })
     const selectionWorkflow = selectedTarget.value
-    try {
-      return await sendMessage(text, attachments, nodes, references, () =>
-        selectionWorkflow ? cloudIdFor(selectionWorkflow) : undefined
-      )
-    } finally {
-      // Normally already consumed by the refresh. A send rejected before it
-      // gets that far still reports here, so the funnel counts the attempt.
-      reportPendingSend()
-    }
+    return sendMessage(text, attachments, nodes, references, () =>
+      selectionWorkflow ? cloudIdFor(selectionWorkflow) : undefined
+    )
   }
 })
 
@@ -1603,11 +1566,6 @@ function onAttach(): void {
   exitNodeSelectionMode()
   useTelemetry()?.trackAgentAttachButtonClicked({ method: 'menu' })
   fileInput.value?.click()
-}
-
-async function onAttachFiles(files: File[]): Promise<void> {
-  if (await attachment.addFiles(files))
-    useTelemetry()?.trackAgentAttachButtonClicked({ method: 'paste' })
 }
 
 function onOpenAssets(): void {
@@ -1793,7 +1751,6 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       @send="onSend"
       @stop="onStop"
       @attach="onAttach"
-      @attach-files="onAttachFiles"
       @open-assets="onOpenAssets"
       @select-nodes="onSelectNodes"
       @remove-tag="onRemoveSelectionTag"
@@ -1809,7 +1766,6 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       @paywall-action="onPaywallAction"
       @standing-paywall-shown="onStandingPaywallShown"
       @new-chat="onNewChat('new_chat_button')"
-      @start-tour="restartCoach"
       @toggle-size="agentPanelStore.toggleMaximize()"
       @close="onClosePanel"
       @open-history="refreshHistory()"
@@ -1824,10 +1780,10 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
     </AgentPanel>
     <OnboardingCoach
       v-if="consentAccepted && onboardingKey && coachDeferredBy === null"
-      :key="onboardingKey"
       ref="coachRef"
       :steps="coachSteps"
       :storage-key="onboardingKey"
+      @finished="releaseCoachCompletionWaiters"
     />
   </div>
 </template>

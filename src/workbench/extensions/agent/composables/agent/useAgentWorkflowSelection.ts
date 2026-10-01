@@ -86,9 +86,11 @@ export function useAgentWorkflowSelection({
   function commitWorkflowTarget(
     workflow: ComfyWorkflow,
     workflowId: string,
-    source: Extract<AgentWorkflowBindSource, 'selector_chip' | 'restored'>,
-    previousWorkflowId: string | null = editableWorkflowId.value ?? null
+    source: Extract<AgentWorkflowBindSource, 'selector_chip' | 'restored'>
   ): void {
+    const previousWorkflowId = selectedTarget.value
+      ? (cloudIdFor(selectedTarget.value) ?? null)
+      : null
     bindingStore.bind(workflowId, workflow.path)
     panelStore.setWorkflowTarget(workflow)
     composerStore.removeWorkflowReference(workflowId)
@@ -147,14 +149,13 @@ export function useAgentWorkflowSelection({
     try {
       const workflowId = await prepareWorkflowSelection(tab, isCurrent)
       if (workflowId === undefined || !isCurrent()) return false
-      const previousWorkflowId = editableWorkflowId.value ?? null
       if (!(await workflowService.openWorkflow(tab))) {
         if (isCurrent())
           warnWorkflowSelectionFailed(t('agent.targetNavigationUnavailable'))
         return false
       }
       if (!isCurrent()) return false
-      commitWorkflowTarget(tab, workflowId, 'selector_chip', previousWorkflowId)
+      commitWorkflowTarget(tab, workflowId, 'selector_chip')
       return true
     } catch (error) {
       if (isCurrent())

@@ -12,9 +12,8 @@ import type {
   AgentPanelCloseSource,
   AgentPanelOpenedMetadata
 } from '@/platform/telemetry/types'
-import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { api } from '@/scripts/api'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
 const PANEL_MIN_WIDTH = 420
 const PANEL_MAX_WIDTH = 960
@@ -68,7 +67,6 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   })
   const gateSettled = ref(false)
   const view = shallowRef<AgentPanelView>({ screen: 'chat' })
-  const flagsSettled = computed(() => api.serverFeatureFlagsSettled.value)
   const maximized = ref(false)
   const draggedWidth = ref(PANEL_MIN_WIDTH)
   /**
@@ -245,6 +243,13 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
       maximized.value ? PANEL_MAX_WIDTH : draggedWidth.value
     )
   )
+  const requestedWidth = computed(() =>
+    maximized.value ? PANEL_MAX_WIDTH : draggedWidth.value
+  )
+  const isOverlay = computed(
+    () =>
+      windowWidth.value <= requestedWidth.value + reservedWorkspaceWidth.value
+  )
 
   const isMaximized = computed(() => maximized.value)
 
@@ -281,7 +286,13 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   // storage, so the localStorage-backed restore-on-reload behaviour
   // (FE-1284/PM-648) is untouched.
   useEventListener(window, 'pagehide', () => {
-    if (!isVisible.value || openedAt === null || teardownReported) return
+    if (
+      !isVisible.value ||
+      !consentAccepted.value ||
+      openedAt === null ||
+      teardownReported
+    )
+      return
     teardownReported = true
     useTelemetry()?.trackAgentPanelClosed({
       source: 'pagehide',
@@ -328,9 +339,10 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     gateSettled,
     view,
     interruptHistorySelection,
-    flagsSettled,
     reportedExhaustionIdentity,
     width,
+    requestedWidth,
+    isOverlay,
     isMaximized,
     dismissedSelectionSignature,
     open,

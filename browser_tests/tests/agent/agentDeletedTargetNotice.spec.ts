@@ -20,9 +20,9 @@ test.describe(
       workflowSelection
     }) => {
       const agentPanel = new AgentPanel(page)
-      const panel = await agentPanel.open()
+      await agentPanel.open()
       const targetPicker = agentPanel.workflowPicker
-      const unavailable = panel.getByText(
+      const unavailable = agentPanel.root.getByText(
         enMessages.agent.targetWorkflowUnavailable
       )
 

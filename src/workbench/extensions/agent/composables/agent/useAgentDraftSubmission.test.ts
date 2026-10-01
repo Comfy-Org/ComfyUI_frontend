@@ -64,6 +64,7 @@ function setup() {
     const send = vi.fn(() => pending.promise)
     const options = {
       canSubmit: () => canSubmit.value,
+      onSubmit: vi.fn(),
       target: () => target.value,
       editableWorkflowId: () => editableWorkflowId.value,
       selection: {
@@ -71,8 +72,7 @@ function setup() {
         workflow: () => nodeWorkflow.value,
         exit: () => {}
       },
-      send,
-      stop: vi.fn(async () => {})
+      send
     }
     let submission = useAgentDraftSubmission(options)
     let mountedScope = scope

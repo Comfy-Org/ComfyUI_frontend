@@ -1,3 +1,4 @@
+import { delay } from 'es-toolkit'
 import { computed, ref } from 'vue'
 import { ZodError } from 'zod'
 
@@ -12,14 +13,10 @@ import type {
   AgentThreadStartSource,
   AgentWorkflowBindSource
 } from '@/platform/telemetry/types'
-import { clearLegacyAgentStorage } from '@/platform/workflow/persistence/base/storageIO'
-import {
-  getWorkspaceId,
-  StorageKeys
-} from '@/platform/workflow/persistence/base/storageKeys'
 import { createUuidv4 } from '@/utils/uuid'
 import type {
   AgentActiveTabData,
+  AgentMessages,
   AgentTurnAccepted,
   AgentWsEvent,
   TurnId
@@ -41,6 +38,9 @@ import type {
   OpenTabsSnapshot,
   PostMessageInput
 } from '../../services/agent/agentRestClient'
+import type { AssistantMessage } from '../../services/agent/agentMessageParts'
+import { normalizeAgentTranscript } from '../../services/agent/agentTranscript'
+import type { LiveTurn } from '../../stores/agent/agentConversationStore'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
 import type { WorkflowReference } from '../../types/workflowReference'
@@ -51,7 +51,7 @@ export interface AgentEventSource {
   onStatus?(listener: (live: boolean) => void): () => void
 }
 
-export interface SessionNotice {
+interface SessionNotice {
   level: 'error'
   text: string
 }
@@ -127,19 +127,85 @@ export interface AgentSessionDeps {
   }
 }
 
+const THREAD_STORAGE_KEY = 'Comfy.Agent.ThreadId'
 const PREPARE_TIMEOUT_MS = 3000
+/**
+ * After a reconnect the server may still be finishing the turn, and its
+ * terminal event may or may not reach the new socket. Poll the persisted row
+ * with backoff; once the schedule is exhausted the socket alone is trusted.
+ */
+const TURN_RECOVERY_DELAYS_MS = [0, 1000, 2000, 4000, 8000, 16000]
+/** Upper bound on one recovery job, including any history fetch still in flight. */
+const TURN_RECOVERY_DEADLINE_MS = 60_000
 
-const NON_RETRYABLE_REQUEST_STATUSES = new Set([
-  400, 401, 403, 404, 405, 409, 410, 422
-])
+type TurnOutcome =
+  | { kind: 'terminal'; parts: AssistantMessage['parts'] }
+  | { kind: 'thread-missing' }
+  | { kind: 'streaming' }
+  | { kind: 'error'; message: string }
+
+function isTerminalTurnStatus(
+  status: AgentMessages[number]['status']
+): boolean {
+  switch (status) {
+    case 'complete':
+    case 'error':
+    case 'interrupted':
+      return true
+    case 'streaming':
+      return false
+  }
+}
+
+function mergeAdjacentTextParts(
+  parts: AssistantMessage['parts']
+): AssistantMessage['parts'] {
+  const merged: AssistantMessage['parts'] = []
+  for (const part of parts) {
+    const previous = merged.at(-1)
+    if (part.type === 'text' && previous?.type === 'text') {
+      previous.text += part.text
+      continue
+    }
+    merged.push(part)
+  }
+  return merged
+}
+
+/**
+ * The status source reports its current state synchronously on subscribe
+ * (see agentEventSource.onStatus), so the first callback is a snapshot, not a
+ * transition. An initial `false` (still connecting) is therefore not a drop.
+ */
+type SocketConnection = 'initial' | 'live' | 'dropped'
+
+function recoveryKey(turn: LiveTurn): string {
+  return JSON.stringify([turn.threadId, turn.messageId])
+}
+
+function turnOutcomeFromError(error: unknown): TurnOutcome {
+  if (error instanceof AgentApiError && error.status === 404)
+    return { kind: 'thread-missing' }
+  return {
+    kind: 'error',
+    message: error instanceof Error ? error.message : String(error)
+  }
+}
 
 export function isRetryableRequestFailure(
   error: unknown,
   accepted: boolean
 ): boolean {
   if (accepted) return false
-  if (error instanceof AgentApiError)
-    return !NON_RETRYABLE_REQUEST_STATUSES.has(error.status)
+  if (
+    error instanceof ZodError ||
+    error instanceof AgentResponseUnreadableError
+  )
+    return false
+  if (error instanceof AgentApiError) {
+    if ([408, 425, 429].includes(error.status)) return true
+    return error.status < 400 || error.status >= 500
+  }
   return true
 }
 
@@ -216,8 +282,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     onAskResolved,
     workflow
   } = deps
-  const threadStorageKey = StorageKeys.agentThread(getWorkspaceId())
-  clearLegacyAgentStorage()
 
   const conversationStore = useAgentConversationStore()
   const bindingStore = useAgentWorkflowTabBindingStore()
@@ -242,6 +306,37 @@ export function useAgentSession(deps: AgentSessionDeps) {
     source: 'selector_chip' | 'restored'
   } | null = null
 
+  /**
+   * A transition committed before its thread exists is only worth replaying
+   * when the user chose the target; an ack-driven adoption has nothing to park.
+   */
+  function parkWorkflowBind(
+    workflowId: string,
+    previousWorkflowId: string | null,
+    source: AgentWorkflowBindSource
+  ): void {
+    if (source !== 'selector_chip' && source !== 'restored') return
+    pendingWorkflowBind = { workflowId, previousWorkflowId, source }
+  }
+
+  function takePendingWorkflowBind(workflowId: string) {
+    const pending =
+      pendingWorkflowBind?.workflowId === workflowId
+        ? pendingWorkflowBind
+        : null
+    pendingWorkflowBind = null
+    return pending
+  }
+
+  function lastReportedWorkflowFor(
+    threadId: string,
+    fallback: string | null
+  ): string | null {
+    if (reportedWorkflowBind?.threadId === threadId)
+      return reportedWorkflowBind.workflowId
+    return fallback
+  }
+
   function reportWorkflowBound(
     workflowId: string,
     previousWorkflowId: string | null,
@@ -249,19 +344,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): void {
     const currentThreadId = conversationStore.threadId
     if (currentThreadId === null) {
-      if (source === 'selector_chip' || source === 'restored')
-        pendingWorkflowBind = { workflowId, previousWorkflowId, source }
+      parkWorkflowBind(workflowId, previousWorkflowId, source)
       return
     }
-    const pending =
-      pendingWorkflowBind?.workflowId === workflowId
-        ? pendingWorkflowBind
-        : null
-    pendingWorkflowBind = null
-    const lastReported =
-      reportedWorkflowBind?.threadId === currentThreadId
-        ? reportedWorkflowBind.workflowId
-        : (pending?.previousWorkflowId ?? previousWorkflowId)
+    const pending = takePendingWorkflowBind(workflowId)
+    const lastReported = lastReportedWorkflowFor(
+      currentThreadId,
+      pending?.previousWorkflowId ?? previousWorkflowId
+    )
     if (workflowId === lastReported) return
     reportedWorkflowBind = { threadId: currentThreadId, workflowId }
     useTelemetry()?.trackAgentWorkflowBound({
@@ -295,12 +385,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
   let unsubscribe: (() => void) | null = null
   let unsubscribeStatus: (() => void) | null = null
   let ownedGeneration = 0
-  // The status source reports its current state synchronously on subscribe
-  // (see agentEventSource.onStatus), so the first callback is a snapshot,
-  // not a transition. Track whether we've ever observed a live connection so
-  // an initial `false` (still connecting, not yet dropped) doesn't abort a
-  // turn that survived a remount.
-  let everLive = false
+  let connection: SocketConnection = 'initial'
+  const recoveringTurns = new Map<string, AbortController>()
 
   function pushError(text: string): void {
     notices.value.push({ level: 'error', text })
@@ -313,15 +399,27 @@ export function useAgentSession(deps: AgentSessionDeps) {
     eventType: string,
     turnId: TurnId | null,
     uiTreatment: AgentErrorMetadata['ui_treatment']
-  ): void {
+  ): boolean {
     const visible = uiTreatment !== 'none'
     const priorVisible = malformedStreamReports.get(turnId)
-    if (priorVisible === true || (priorVisible === false && !visible)) return
+    if (priorVisible === true || (priorVisible === false && !visible))
+      return false
+    if (
+      !malformedStreamReports.has(turnId) &&
+      malformedStreamReports.size >= 32
+    )
+      return false
     malformedStreamReports.set(turnId, visible)
     reportError(new Error('Malformed agent stream event'), {
       errorType: 'agent_malformed_stream_event',
       tags: { ui_treatment: uiTreatment, event_type: eventType },
-      context: { issues: cause.issues }
+      context: {
+        issues: cause.issues.slice(0, 10).map(({ code, path, message }) => ({
+          code,
+          path,
+          message
+        }))
+      }
     })
     trackAgentError(
       'malformed_stream_event',
@@ -329,6 +427,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       uiTreatment,
       { retryable: false }
     )
+    return true
   }
 
   function initializeWorkflowContext(hasThread: boolean): void {
@@ -337,7 +436,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     // with no surviving thread has no resumed turn the binding could serve.
     if (
       conversationStore.threadId === null &&
-      localStorage.getItem(threadStorageKey) === null
+      localStorage.getItem(THREAD_STORAGE_KEY) === null
     ) {
       rememberedWorkflowId = null
       boundWorkflowId.value = null
@@ -347,11 +446,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function start({ restore = true }: { restore?: boolean } = {}): void {
     readyThreadId.value = null
     ownedGeneration = ++sessionGeneration
-    everLive = false
+    connection = 'initial'
     const surviving = conversationStore.threadId
     const stored =
       conversationStore.messages.length === 0
-        ? localStorage.getItem(threadStorageKey)
+        ? localStorage.getItem(THREAD_STORAGE_KEY)
         : null
     const initialThreadId = surviving ?? stored
     initializeWorkflowContext(initialThreadId !== null)
@@ -415,6 +514,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       const history = await rest.getMessages(threadId)
       if (conversationStore.threadId !== threadId || !isCurrent()) return false
       conversationStore.hydrate(history)
+      reconcileLiveTurns()
       readyThreadId.value = threadId
       const workflowReady = await workflow?.restored?.(
         conversationStore.latestWorkflowId,
@@ -438,8 +538,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (error instanceof AgentApiError && error.status === 404) {
       if (conversationStore.threadId === threadId)
         conversationStore.setThreadId(null)
-      if (localStorage.getItem(threadStorageKey) === threadId)
-        localStorage.removeItem(threadStorageKey)
+      if (localStorage.getItem(THREAD_STORAGE_KEY) === threadId)
+        localStorage.removeItem(THREAD_STORAGE_KEY)
       return false
     }
     reportError(error, { errorType: 'agent_history_load_failed' })
@@ -457,10 +557,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
     unsubscribeStatus?.()
     unsubscribe = null
     unsubscribeStatus = null
+    for (const recovery of recoveringTurns.values()) recovery.abort()
+    recoveringTurns.clear()
     const stoppedGeneration = ownedGeneration
     queueMicrotask(() => {
       if (stoppedGeneration !== sessionGeneration) return
-      loadGeneration++
       turnStartedAt.clear()
       conversationStore.abortActiveTurn()
       conversationStore.dropBackgroundTurns()
@@ -636,7 +737,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const startsThread = conversationStore.threadId === null
     conversationStore.setThreadId(ack.thread_id)
     onThreadActivated?.(ack.thread_id)
-    localStorage.setItem(threadStorageKey, ack.thread_id)
+    localStorage.setItem(THREAD_STORAGE_KEY, ack.thread_id)
     if (ack.workflow_id !== undefined) {
       const boundAtAck = boundWorkflowId.value
       bindWorkflow(ack.workflow_id)
@@ -665,31 +766,34 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (pendingStop !== null) void stopTurn(pendingStop.method)
   }
 
-  function recordSendError(
-    error: unknown,
-    text: string,
-    accepted: boolean
-  ): void {
+  function recordAdmissionSendError(error: unknown, text: string): boolean {
     const admission = parseAdmissionError(error)
-    if (admission?.reason === 'no_funds') {
+    if (admission === undefined) return false
+    if (admission.reason === 'no_funds') {
       conversationStore.recordPaywall(
         nextLocalErrorId(),
         text,
         admission.message
       )
-      return
+      return true
     }
-    if (admission !== undefined) {
-      conversationStore.recordFailedSend(
-        nextLocalErrorId(),
-        text,
-        admission.message,
-        admission.reason === 'funds_unavailable'
-          ? admission.retryAfterSeconds
-          : undefined
-      )
-      return
-    }
+    conversationStore.recordFailedSend(
+      nextLocalErrorId(),
+      text,
+      admission.message,
+      admission.reason === 'funds_unavailable'
+        ? admission.retryAfterSeconds
+        : undefined
+    )
+    return true
+  }
+
+  function recordSendError(
+    error: unknown,
+    text: string,
+    accepted: boolean
+  ): boolean {
+    if (recordAdmissionSendError(error, text)) return false
     const message =
       error instanceof AgentApiError
         ? error.message
@@ -702,13 +806,19 @@ export function useAgentSession(deps: AgentSessionDeps) {
       `${i18n.global.t('agent.sendFailed')}: ${message}`
     )
     const turnAccepted = accepted || isUnreadableAckFailure(error)
-    reportError(error, { errorType: 'agent_send_message_failed' })
+    const disowned =
+      error instanceof AgentApiError &&
+      error.status === 403 &&
+      zDisownedWorkflowError.safeParse(error.body).success
+    if (!disowned)
+      reportError(error, { errorType: 'agent_send_message_failed' })
     trackAgentError(
       'request_failed',
       turnAccepted ? 'post_acceptance' : 'pre_acceptance',
       'inline_notice',
       { retryable: isRetryableRequestFailure(error, turnAccepted) }
     )
+    return turnAccepted
   }
 
   /**
@@ -733,6 +843,23 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (rememberedWorkflowId === sent.id) rememberedWorkflowId = null
   }
 
+  function handleSendFailure(
+    error: unknown,
+    text: string,
+    generation: number,
+    sentContext: WorkflowTurnContext | undefined,
+    accepted: boolean,
+    requestStarted: boolean
+  ): boolean {
+    releaseDisownedWorkflow(sentContext, error)
+    if (generation !== loadGeneration) return false
+    return recordSendError(
+      error,
+      text,
+      accepted || (requestStarted && isUnreadableAckFailure(error))
+    )
+  }
+
   async function performSend(
     text: string,
     attachments?: SentAttachment[],
@@ -747,6 +874,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       originContext === undefined ? null : { tabPath: originContext.tabPath }
     let sentContext: WorkflowTurnContext | undefined
     let accepted = false
+    let requestStarted = false
     try {
       await prepareWorkflow()
       if (generation !== loadGeneration) return false
@@ -756,6 +884,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         return false
       }
       sentContext = wfContext
+      requestStarted = true
       const ack = await postTurn(
         threadAtSend,
         text,
@@ -767,17 +896,21 @@ export function useAgentSession(deps: AgentSessionDeps) {
         selectionWorkflowId
       )
       accepted = true
-      if (generation !== loadGeneration) return false
+      if (generation !== loadGeneration) return true
       acceptTurn(ack, text, wfContext, attachments, tags, workflowReferences)
       return true
     } catch (error) {
       // Before the generation guard: the binding store is page-global and
       // persisted, so a refusal that lands after newChat()/loadThread() has
       // moved on still has to release, or the dead id survives the reload.
-      releaseDisownedWorkflow(sentContext, error)
-      if (generation !== loadGeneration) return false
-      recordSendError(error, text, accepted)
-      return false
+      return handleSendFailure(
+        error,
+        text,
+        generation,
+        sentContext,
+        accepted,
+        requestStarted
+      )
     }
   }
 
@@ -949,9 +1082,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     onThreadActivated?.(null)
     boundWorkflowId.value = null
     rememberedWorkflowId = null
-    pendingWorkflowBind = null
     malformedStreamReports.clear()
-    localStorage.removeItem(threadStorageKey)
+    pendingWorkflowBind = null
+    localStorage.removeItem(THREAD_STORAGE_KEY)
     pendingThreadSource.value = source ?? null
   }
 
@@ -974,12 +1107,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.stashActiveTurn()
     boundWorkflowId.value = null
     rememberedWorkflowId = null
-    pendingWorkflowBind = null
     malformedStreamReports.clear()
+    pendingWorkflowBind = null
     conversationStore.setThreadId(threadId)
     const hydrated = await hydrateFromServer(threadId, isCurrent, stashedTurn)
     if (hydrated && isCurrent()) {
-      localStorage.setItem(threadStorageKey, threadId)
+      localStorage.setItem(THREAD_STORAGE_KEY, threadId)
       onThreadActivated?.(threadId)
       conversationStore.resumeBackgroundTurn()
     }
@@ -1000,37 +1133,37 @@ export function useAgentSession(deps: AgentSessionDeps) {
     error: ZodError
   ): void {
     const turnId = malformedEventTurnId(raw)
-    let reportedTurnId = turnId ?? conversationStore.activeTurnId
+    const reportedTurnId =
+      turnId !== undefined && conversationStore.hasPendingTurn(turnId)
+        ? turnId
+        : conversationStore.activeTurnId
     let uiTreatment: AgentErrorMetadata['ui_treatment'] = 'none'
     if (type === 'agent_message_done') {
       if (turnId !== undefined) turnStartedAt.delete(turnId)
       if (turnId === undefined || turnId === conversationStore.activeTurnId) {
         forgetActiveTurnStartedAt()
         conversationStore.abortActiveTurn()
-        pushError(i18n.global.t('agent.malformedEvent'))
         uiTreatment = 'error_overlay'
       } else {
-        reportedTurnId =
-          conversationStore.settleBackgroundTurn(turnId) ?? reportedTurnId
+        conversationStore.settleBackgroundTurn(turnId)
       }
     }
-    trackMalformedStreamEvent(error, type, reportedTurnId, uiTreatment)
+    if (
+      trackMalformedStreamEvent(error, type, reportedTurnId, uiTreatment) &&
+      uiTreatment === 'error_overlay'
+    )
+      pushError(i18n.global.t('agent.malformedEvent'))
     console.warn('[agent] dropping malformed agent event', error)
   }
 
-  function handleMessageDone(
-    event: Extract<AgentWsEvent, { type: 'agent_message_done' }>
-  ): void {
-    turnStartedAt.delete(toTurnId(event.data.message_id))
+  function handleActiveTab(event: AgentActiveTabData): void {
+    // Every thread records the link in its own transcript; only the thread on
+    // screen is allowed to move the user's tabs.
     if (
-      promptEditState.value.phase === 'stopping' &&
-      event.data.message_id === promptEditState.value.turnId &&
-      event.data.thread_id === conversationStore.threadId
+      event.thread_id === undefined ||
+      event.thread_id === conversationStore.threadId
     )
-      promptEditState.value = {
-        phase: 'ready',
-        turnId: promptEditState.value.turnId
-      }
+      workflow?.activeTab?.(event)
   }
 
   function handleAgentEvent(event: AgentWsEvent): void {
@@ -1039,15 +1172,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
       onAskResolved?.(event.data.ask_id)
     }
     conversationStore.ingest(event)
-    if (event.type === 'agent_active_tab') {
-      if (
-        event.data.thread_id === undefined ||
-        event.data.thread_id === conversationStore.threadId
-      )
-        workflow?.activeTab?.(event.data)
-      return
+    if (event.type === 'agent_active_tab') handleActiveTab(event.data)
+    if (event.type === 'agent_message_done') {
+      turnStartedAt.delete(toTurnId(event.data.message_id))
+      markStoppedTurnReady({
+        threadId: event.data.thread_id,
+        messageId: toTurnId(event.data.message_id)
+      })
     }
-    if (event.type === 'agent_message_done') handleMessageDone(event)
   }
 
   function onRaw(raw: unknown): void {
@@ -1063,17 +1195,151 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function onStatus(live: boolean): void {
-    if (live) {
-      everLive = true
+    if (!live) {
+      connection = 'dropped'
       return
     }
-    // Only a real live->down transition means a turn's stream was actually
-    // interrupted. An initial `false` (socket not open yet) is not a
-    // reconnect and must not abort a turn that survived a remount.
-    if (!everLive) return
-    turnStartedAt.clear()
-    conversationStore.abortActiveTurn()
-    conversationStore.dropBackgroundTurns()
+    const reconnected = connection === 'dropped'
+    connection = 'live'
+    if (!reconnected) return
+    reconcileLiveTurns()
+  }
+
+  function reconcileLiveTurns(): void {
+    const turns = conversationStore
+      .liveTurns()
+      .filter((turn) => !recoveringTurns.has(recoveryKey(turn)))
+    for (const turn of turns) void reconcileTurn(turn)
+  }
+
+  async function reconcileTurn(turn: LiveTurn): Promise<void> {
+    const key = recoveryKey(turn)
+    const recovery = new AbortController()
+    recoveringTurns.set(key, recovery)
+    const deadline = setTimeout(
+      () => recovery.abort(),
+      TURN_RECOVERY_DEADLINE_MS
+    )
+    try {
+      await recoverTurn(turn, ownedGeneration, recovery.signal)
+    } catch (error) {
+      // `onStatus` floats this job (`void reconcileTurn(turn)`), so a rethrow
+      // would land as an `unhandledrejection` the session never sees. Abort is
+      // the expected end of a cancelled job; anything else is an unexpected
+      // settlement or storage failure and goes through the module's reporter.
+      if (!recovery.signal.aborted)
+        reportError(error, { errorType: 'failure_recovering_agent_turn' })
+    } finally {
+      clearTimeout(deadline)
+      recoveringTurns.delete(key)
+    }
+  }
+
+  async function recoverTurn(
+    turn: LiveTurn,
+    generation: number,
+    signal: AbortSignal
+  ): Promise<void> {
+    let consecutiveThreadMissing = 0
+    for (const ms of TURN_RECOVERY_DELAYS_MS) {
+      await delay(ms, { signal })
+      if (!isTurnLive(turn, generation)) return
+      const outcome = await fetchTurnOutcome(turn, signal)
+      if (!isTurnLive(turn, generation)) return
+      consecutiveThreadMissing =
+        outcome.kind === 'thread-missing' ? consecutiveThreadMissing + 1 : 0
+      if (outcome.kind === 'thread-missing' && consecutiveThreadMissing < 2)
+        continue
+      if (settleFinishedTurn(turn, outcome)) return
+    }
+  }
+
+  function isTurnLive(turn: LiveTurn, generation: number): boolean {
+    return (
+      generation === sessionGeneration &&
+      conversationStore
+        .liveTurns()
+        .some(
+          (live) =>
+            live.threadId === turn.threadId && live.messageId === turn.messageId
+        )
+    )
+  }
+
+  function settleFinishedTurn(turn: LiveTurn, outcome: TurnOutcome): boolean {
+    switch (outcome.kind) {
+      case 'terminal':
+        conversationStore.settleTurn(turn, outcome.parts)
+        markStoppedTurnReady(turn)
+        return true
+      case 'thread-missing':
+        forgetDeletedThread(turn)
+        return true
+      case 'streaming':
+      case 'error':
+        return false
+      default: {
+        const unhandled: never = outcome
+        return unhandled
+      }
+    }
+  }
+
+  /**
+   * Only a terminal outcome may hand the prompt back. A delta after Stop leaves
+   * the turn live on the server, so exposing Edit there would let the resend
+   * race the single-active-turn lock.
+   */
+  function markStoppedTurnReady(turn: LiveTurn): void {
+    if (
+      promptEditState.value.phase !== 'stopping' ||
+      turn.messageId !== promptEditState.value.turnId ||
+      turn.threadId !== conversationStore.threadId
+    )
+      return
+    promptEditState.value = {
+      phase: 'ready',
+      turnId: promptEditState.value.turnId
+    }
+  }
+
+  async function fetchTurnOutcome(
+    turn: LiveTurn,
+    signal: AbortSignal
+  ): Promise<TurnOutcome> {
+    try {
+      const history = await rest.getMessages(turn.threadId, { signal })
+      const anchor = history.find(
+        (entry) => entry.role === 'assistant' && entry.id === turn.messageId
+      )
+      if (!anchor) return { kind: 'streaming' }
+      const rows = history
+        .filter(
+          (entry) =>
+            entry.role === 'assistant' && entry.turn_id === anchor.turn_id
+        )
+        .sort((a, b) => a.seq - b.seq)
+      if (rows.some((row) => !isTerminalTurnStatus(row.status)))
+        return { kind: 'streaming' }
+      const parts = mergeAdjacentTextParts(
+        normalizeAgentTranscript(rows).messages[0]?.parts ?? []
+      )
+      return { kind: 'terminal', parts }
+    } catch (error) {
+      if (signal.aborted) throw error
+      return turnOutcomeFromError(error)
+    }
+  }
+
+  function forgetDeletedThread(turn: LiveTurn): void {
+    if (conversationStore.threadId !== turn.threadId) {
+      conversationStore.settleTurn(turn, undefined)
+      return
+    }
+    conversationStore.reset()
+    boundWorkflowId.value = null
+    rememberedWorkflowId = null
+    localStorage.removeItem(THREAD_STORAGE_KEY)
   }
 
   const isSending = computed(() => sending.value)

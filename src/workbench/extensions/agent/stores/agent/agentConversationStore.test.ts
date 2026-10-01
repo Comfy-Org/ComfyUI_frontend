@@ -401,7 +401,7 @@ describe('useAgentConversationStore', () => {
 
     store.hydrate([
       historyRow(1, 'user', 't1', 'go'),
-      historyRow(2, 'assistant', 't1', 'authoritative reply')
+      historyRow(2, 'assistant', 't1', 'authoritative reply', 't1')
     ])
 
     vi.advanceTimersByTime(30_000)
@@ -560,6 +560,30 @@ describe('useAgentConversationStore', () => {
     expect(store.threadId).toBe('th-7')
     store.reset()
     expect(store.threadId).toBeNull()
+  })
+
+  it('scopes approval dedupe and timing to the conversation that owns them', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    expect(store.recordApprovalShown('ask-1', 1_000)).toBe(true)
+    expect(store.recordApprovalShown('ask-1', 2_000)).toBe(false)
+    expect(store.approvalShownAt('ask-1')).toBe(1_000)
+
+    // Remount hydration of the same thread keeps the shown state: a replayed
+    // approval card must not re-emit or restart the decision timer.
+    store.setThreadId('th')
+    store.hydrate([])
+    expect(store.approvalShownAt('ask-1')).toBe(1_000)
+    expect(store.recordApprovalShown('ask-1', 3_000)).toBe(false)
+
+    // Leaving the thread drops its abandoned asks with it.
+    store.setThreadId('th-other')
+    expect(store.approvalShownAt('ask-1')).toBeUndefined()
+    expect(store.recordApprovalShown('ask-1', 4_000)).toBe(true)
+
+    store.reset()
+    expect(store.approvalShownAt('ask-1')).toBeUndefined()
+    expect(store.recordApprovalShown('ask-1', 5_000)).toBe(true)
   })
 
   it('snapshots local workflow references on the submitted turn', () => {
@@ -845,6 +869,208 @@ describe('useAgentConversationStore', () => {
     expect(store.isStreaming).toBe(false)
   })
 
+  it('keeps socket completion authoritative when it arrives before hydration', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'go')
+    store.ingest(delta('t1', 'socket reply'))
+    store.stashActiveTurn()
+
+    store.ingest(done('t1'))
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'go'),
+      {
+        ...historyRow(2, 'assistant', 'server-turn', '', 't1'),
+        status: 'streaming'
+      }
+    ])
+    store.resumeBackgroundTurn()
+
+    expect(store.isStreaming).toBe(false)
+    expect(store.activeTurnId).toBeNull()
+    expect(store.liveTurns()).toEqual([])
+    expect(partTexts(store)).toEqual(['socket reply'])
+    expect(store.messages.map((message) => message.id)).toEqual(['server-turn'])
+  })
+
+  it('keeps socket completion authoritative when it arrives after hydration', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'go')
+    store.ingest(delta('t1', 'socket reply'))
+    store.stashActiveTurn()
+
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'go'),
+      {
+        ...historyRow(2, 'assistant', 'server-turn', '', 't1'),
+        status: 'streaming'
+      }
+    ])
+    store.ingest(done('t1'))
+    store.resumeBackgroundTurn()
+
+    expect(store.isStreaming).toBe(false)
+    expect(store.activeTurnId).toBeNull()
+    expect(store.liveTurns()).toEqual([])
+    expect(partTexts(store)).toEqual(['socket reply'])
+    expect(store.messages.map((message) => message.id)).toEqual(['server-turn'])
+  })
+
+  it('resumes one live transport with the persisted turn identity and attachments', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'go')
+    store.ingest(delta('t1', 'before'))
+    store.stashActiveTurn()
+    const user = historyRow(1, 'user', 'server-turn', 'go')
+    user.content = { text: 'go', attachments: ['input.png'] }
+
+    store.hydrate([
+      user,
+      {
+        ...historyRow(2, 'assistant', 'server-turn', '', 't1'),
+        status: 'streaming'
+      }
+    ])
+    store.ingest(delta('t1', ' during'))
+    store.resumeBackgroundTurn()
+    store.ingest(delta('t1', ' after'))
+
+    expect(store.liveTurns()).toEqual([{ threadId: 'th', messageId: T1 }])
+    expect(store.messages.map((message) => message.id)).toEqual(['server-turn'])
+    expect(partTexts(store)).toEqual(['before during after'])
+    expect(store.entries[0]).toMatchObject({
+      role: 'user',
+      attachments: [{ name: 'input.png', ref: 'input.png' }]
+    })
+    store.ingest(done('t1'))
+    expect(store.isStreaming).toBe(false)
+    expect(store.liveTurns()).toEqual([])
+  })
+
+  it.for([
+    {
+      name: 'the displayed turn',
+      settled: { threadId: 'th-front', messageId: T1 },
+      stillLive: [{ threadId: 'th-back', messageId: T2 }]
+    },
+    {
+      name: 'a stashed background turn',
+      settled: { threadId: 'th-back', messageId: T2 },
+      stillLive: [{ threadId: 'th-front', messageId: T1 }]
+    }
+  ])(
+    'settling $name twice leaves one terminal message and the other turn live',
+    ({ settled, stillLive }) => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th-back')
+      store.startTurn(T2)
+      store.recordUser(T2, 'background prompt')
+      store.ingest(delta('t2', 'background partial'))
+      store.stashActiveTurn()
+      store.setThreadId('th-front')
+      store.hydrate([])
+      store.startTurn(T1)
+      store.recordUser(T1, 'front prompt')
+      store.ingest(delta('t1', 'front partial'))
+
+      const persistedParts = [
+        {
+          type: 'text' as const,
+          text: 'persisted final',
+          state: 'done' as const
+        }
+      ]
+      store.settleTurn(settled, persistedParts)
+      store.settleTurn(settled, persistedParts)
+
+      expect(store.liveTurns()).toEqual(stillLive)
+      store.setThreadId(settled.threadId)
+      store.resumeBackgroundTurn()
+      const message = store.messages.find((m) => m.id === settled.messageId)
+      expect(message?.streaming).toBe(false)
+      expect(message?.parts).toEqual([
+        { type: 'text', text: 'persisted final', state: 'done' }
+      ])
+      expect(
+        store.messages.filter((m) => m.id === settled.messageId)
+      ).toHaveLength(1)
+    }
+  )
+
+  it('keeps a local tab link between persisted text and tool parts', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.ingest(delta('t1', 'before'))
+    store.ingest(activeTab('wf-1', 't1'))
+    store.ingest(toolCall('t1', 'add_node', 'running'))
+    store.ingest(delta('t1', 'after'))
+
+    store.settleTurn({ threadId: 'th', messageId: T1 }, [
+      { type: 'text', text: 'before', state: 'done' },
+      {
+        type: 'tool',
+        callId: 'call-add_node',
+        name: 'add_node',
+        state: 'done',
+        ok: true
+      },
+      { type: 'text', text: 'after', state: 'done' }
+    ])
+
+    expect(store.messages[0].parts.map((part) => part.type)).toEqual([
+      'text',
+      'tabLink',
+      'tool',
+      'text'
+    ])
+  })
+
+  it('splits persisted text around a local tab link when there is no tool', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.ingest(delta('t1', 'before'))
+    store.ingest(activeTab('wf-1', 't1'))
+    store.ingest(delta('t1', 'after'))
+
+    store.settleTurn({ threadId: 'th', messageId: T1 }, [
+      { type: 'text', text: 'beforeafter', state: 'done' }
+    ])
+
+    expect(store.messages[0].parts).toMatchObject([
+      { type: 'text', text: 'before' },
+      { type: 'tabLink', workflowId: 'wf-1' },
+      { type: 'text', text: 'after' }
+    ])
+  })
+
+  it('keeps consecutive local tab links in order at one text boundary', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.ingest(delta('t1', 'before'))
+    store.ingest(activeTab('wf-1', 't1'))
+    store.ingest(activeTab('wf-2', 't1'))
+    store.ingest(delta('t1', 'after'))
+
+    store.settleTurn({ threadId: 'th', messageId: T1 }, [
+      { type: 'text', text: 'beforeafter', state: 'done' }
+    ])
+
+    expect(store.messages[0].parts).toMatchObject([
+      { type: 'text', text: 'before' },
+      { type: 'tabLink', workflowId: 'wf-1' },
+      { type: 'tabLink', workflowId: 'wf-2' },
+      { type: 'text', text: 'after' }
+    ])
+  })
+
   it('resolves existing paywalls without resurrecting them', () => {
     const store = useAgentConversationStore()
     store.recordPaywall(T1, 'subscribe')
@@ -1093,6 +1319,22 @@ describe('useAgentConversationStore', () => {
       store.setThreadId('th')
       store.startTurn(T1)
       store.ingest(done('t1'))
+
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({ reason: 'settled-turn' })
+        })
+      )
+    })
+
+    it('reports a late ask after REST settlement as a settled turn', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.settleTurn({ threadId: 'th', messageId: T1 }, [])
 
       store.ingest(runApproval('t1', 'turn-1:call-1'))
 
