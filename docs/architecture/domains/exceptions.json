@@ -1,0 +1,51 @@
+{
+  "$schema": "./exceptions.schema.json",
+  "schemaVersion": 1,
+  "exceptions": [
+    {
+      "id": "DDD-EX-001",
+      "owner": "@Comfy-Org/comfy_frontend_devs",
+      "rationale": "Wave 1 enrolls two pilots while the remaining source tree is classified incrementally.",
+      "sunset": "2027-03-31",
+      "removalCriteria": "Every src module is enrolled in one non-overlapping capability and architectural role.",
+      "fingerprintPrefixes": ["unclassified-module:"]
+    },
+    {
+      "id": "DDD-EX-002",
+      "owner": "@christian-byrne",
+      "rationale": "Workflow-template callers predate a declared public entry point.",
+      "sunset": "2027-01-31",
+      "removalCriteria": "Publish focused workflow-template entry points and migrate every recorded external caller.",
+      "fingerprintPrefixes": ["deep-import:workflow-templates:"]
+    },
+    {
+      "id": "DDD-EX-003",
+      "owner": "@Comfy-Org/comfy_frontend_devs",
+      "rationale": "Mask-editor callers predate a declared public entry point.",
+      "sunset": "2027-01-31",
+      "removalCriteria": "Publish focused mask-editor entry points and migrate every recorded external caller.",
+      "fingerprintPrefixes": ["deep-import:mask-editor:"]
+    },
+    {
+      "id": "DDD-EX-004",
+      "owner": "@Comfy-Org/comfy_frontend_devs",
+      "rationale": "Existing layer-rule suppressions have not yet been assigned individual exception identifiers.",
+      "sunset": "2026-12-31",
+      "removalCriteria": "Remove each suppression or replace it with a ledger-backed architecture-exception identifier.",
+      "fingerprintPrefixes": ["anonymous-suppression:"]
+    },
+    {
+      "id": "DDD-EX-005",
+      "owner": "@Comfy-Org/comfy_frontend_devs",
+      "rationale": "The mask-editor application composable currently renders two presentation components while its orchestration boundary is extracted.",
+      "sunset": "2027-01-31",
+      "removalCriteria": "Move presentation composition out of useMaskEditor and remove the four characterized dependency occurrences.",
+      "fingerprintPrefixes": [
+        "forbidden-edge:mask-editor->mask-editor:src/composables/maskeditor/useMaskEditor.test.ts->src/components/maskeditor/dialog/TopBarHeader.vue#1",
+        "forbidden-edge:mask-editor->mask-editor:src/composables/maskeditor/useMaskEditor.test.ts->src/components/maskeditor/MaskEditorContent.vue#1",
+        "forbidden-edge:mask-editor->mask-editor:src/composables/maskeditor/useMaskEditor.ts->src/components/maskeditor/dialog/TopBarHeader.vue#1",
+        "forbidden-edge:mask-editor->mask-editor:src/composables/maskeditor/useMaskEditor.ts->src/components/maskeditor/MaskEditorContent.vue#1"
+      ]
+    }
+  ]
+}
