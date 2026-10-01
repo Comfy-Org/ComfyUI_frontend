@@ -10,7 +10,7 @@ import type {
   JobDetail,
   RawJobListItem
 } from '@/platform/remote/comfyui/jobs/jobTypes'
-import type { AssetDownloadWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { AssetDownloadWsMessage } from '@/schemas/apiSchema'
 
 const jobsListRoutePattern = '**/api/jobs?*'
 const assetsListRoutePattern = /\/api\/assets(?:\?.*)?$/
