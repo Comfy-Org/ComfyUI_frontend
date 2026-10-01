@@ -13,6 +13,7 @@ export type {
 export { getBillingTelemetryEventName } from './billingTelemetryEvent.js'
 export {
   getBillingTelemetryEventPayload,
+  getBillingWebTelemetryEventPayload,
   getCloudAppBillingTelemetryEventPayload
 } from './payload.js'
 export { BILLING_TELEMETRY_EVENTS } from './eventNames.js'

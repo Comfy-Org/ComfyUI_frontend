@@ -7,12 +7,12 @@ type BillingTelemetryPayload = Record<string, unknown>
 
 type KeysOfUnion<T> = T extends unknown ? keyof T : never
 
-type BillingPayloadField = Exclude<
-  KeysOfUnion<BillingTelemetryEvent>,
-  'operation' | 'stage' | 'outcome'
+export type BillingPayloadFieldHandling<Event = BillingTelemetryEvent> = Record<
+  Exclude<KeysOfUnion<Event>, 'operation' | 'stage' | 'outcome'>,
+  'optional' | 'required'
 >
 
-const BILLING_PAYLOAD_FIELD_HANDLING = {
+export const BILLING_PAYLOAD_FIELD_HANDLING = {
   checkout_status: 'required',
   correlation_id: 'required',
   failure_category: 'required',
@@ -36,7 +36,7 @@ const BILLING_PAYLOAD_FIELD_HANDLING = {
   resumed: 'optional',
   target_tier: 'optional',
   tier: 'optional'
-} as const satisfies Record<BillingPayloadField, 'optional' | 'required'>
+} as const satisfies BillingPayloadFieldHandling
 
 const OPTIONAL_BILLING_PAYLOAD_FIELDS = Object.entries(
   BILLING_PAYLOAD_FIELD_HANDLING
@@ -78,5 +78,15 @@ export function getCloudAppBillingTelemetryEventPayload(
   return {
     ...getBillingTelemetryEventPayload(event),
     billing_surface: 'cloud_app'
+  }
+}
+
+/** The payload billing web reports: the same allowlist, claiming the billing web surface. */
+export function getBillingWebTelemetryEventPayload(
+  event: BillingTelemetryEvent
+): BillingTelemetryPayload & { billing_surface: BillingSurface } {
+  return {
+    ...getBillingTelemetryEventPayload(event),
+    billing_surface: 'billing_web'
   }
 }
