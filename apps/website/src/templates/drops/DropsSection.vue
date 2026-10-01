@@ -1,19 +1,31 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
+import type { Locale, LocalizedText } from '../../i18n/translations'
 
 import CardArticleGallery01 from '../../components/blocks/CardArticleGallery01.vue'
 import type { CardArticleGalleryItem } from '../../components/blocks/CardArticleGallery01.vue'
-import { drops } from '../../data/drops'
+import type { Drop } from '../../data/drops'
+import { NEW_BADGE, drops, isRecentLaunch } from '../../data/drops'
 import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
+function localize(text: LocalizedText): string {
+  return text[locale] || text.en
+}
+
+// A manual `badge` always wins; otherwise a drop reads as NEW on its own for
+// a short window after `launchDate`, so nobody has to remember to remove it.
+function badgeFor(drop: Drop): string | undefined {
+  if (drop.badge) return localize(drop.badge)
+  return isRecentLaunch(drop.launchDate) ? localize(NEW_BADGE) : undefined
+}
+
 const items = computed<CardArticleGalleryItem[]>(() =>
   drops.map((drop) => ({
     id: drop.id,
-    badge: drop.badge?.[locale] || drop.badge?.en,
+    badge: badgeFor(drop),
     category: drop.category[locale] || drop.category.en,
     title: drop.title[locale] || drop.title.en,
     description: drop.description[locale] || drop.description.en,

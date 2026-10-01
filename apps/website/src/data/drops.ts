@@ -10,12 +10,26 @@ type DropMedia =
 
 export type Drop = {
   id: string
+  /** Manual override; most entries should rely on `launchDate` instead. */
   badge?: LocalizedText
+  /** ISO date ('YYYY-MM-DD') the entry's product or page actually shipped. */
+  launchDate: string
   category: LocalizedText
   media: DropMedia
   title: LocalizedText
   description: LocalizedText
   cta: { label: LocalizedText; href: LocalizedText }
+}
+
+export const NEW_BADGE: LocalizedText = { en: 'NEW', 'zh-CN': '新' }
+const NEW_BADGE_WINDOW_DAYS = 14
+
+export function isRecentLaunch(launchDate: string, now = new Date()): boolean {
+  const daysSince =
+    (Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) -
+      Date.parse(launchDate)) /
+    (24 * 60 * 60 * 1000)
+  return daysSince >= 0 && daysSince <= NEW_BADGE_WINDOW_DAYS
 }
 
 const EXPLORE: LocalizedText = { en: 'EXPLORE', 'zh-CN': '探索' }
@@ -27,7 +41,6 @@ const MODELS_AND_NODES: LocalizedText = {
   en: 'Models & Nodes',
   'zh-CN': '模型与节点'
 }
-const NEW_BADGE: LocalizedText = { en: 'NEW', 'zh-CN': '新' }
 
 function imageFor(fileName: string, alt: LocalizedText): DropMedia {
   return {
@@ -55,7 +68,7 @@ function videoFor(
 export const drops: readonly Drop[] = [
   {
     id: 'comfy-router',
-    badge: NEW_BADGE,
+    launchDate: '2026-09-10',
     category: DEVELOPER,
     media: imageFor('Drops_2x2card_Router.jpg', {
       en: 'Comfy Router',
@@ -74,7 +87,7 @@ export const drops: readonly Drop[] = [
   },
   {
     id: 'events',
-    badge: NEW_BADGE,
+    launchDate: '2026-09-12',
     category: COMMUNITY,
     media: imageFor('Drops_2x2card_Events.jpg', {
       en: 'Comfy Events',
@@ -93,7 +106,7 @@ export const drops: readonly Drop[] = [
   },
   {
     id: 'comfy-cli',
-    badge: NEW_BADGE,
+    launchDate: '2026-08-28',
     category: DEVELOPER,
     media: imageFor('Drops_2x2card_CLI.jpg', {
       en: 'Comfy CLI',
@@ -112,7 +125,7 @@ export const drops: readonly Drop[] = [
   },
   {
     id: 'comfy-cloud-nodes',
-    badge: NEW_BADGE,
+    launchDate: '2026-09-06',
     category: MODELS_AND_NODES,
     media: imageFor('Drops_2x2card_CloudNodes.jpg', {
       en: 'Comfy Cloud Nodes',
@@ -131,6 +144,7 @@ export const drops: readonly Drop[] = [
   },
   {
     id: 'desktop-client',
+    launchDate: '2026-06-26',
     category: PLATFORM,
     media: imageFor('Drops_2x2card_Desktop.jpg', {
       en: 'New Desktop Client',
@@ -148,6 +162,7 @@ export const drops: readonly Drop[] = [
   },
   {
     id: 'comfy-mcp',
+    launchDate: '2026-06-26',
     category: CLOUD,
     media: imageFor('Drops_2x2card_MCP.jpg', {
       en: 'Comfy MCP',
@@ -165,6 +180,7 @@ export const drops: readonly Drop[] = [
   },
   {
     id: 'app-mode',
+    launchDate: '2026-06-26',
     category: PLATFORM,
     media: videoFor('Drops_2x2card_APP.mp4', {
       en: 'App Mode',
@@ -186,6 +202,7 @@ export const drops: readonly Drop[] = [
   },
   {
     id: 'comfy-api',
+    launchDate: '2026-09-30',
     category: DEVELOPER,
     media: imageFor('Drops_2x2card_API.jpg', {
       en: 'Comfy API',
@@ -207,6 +224,7 @@ export const drops: readonly Drop[] = [
   },
   {
     id: 'community-workflows',
+    launchDate: '2026-06-26',
     category: COMMUNITY,
     media: imageFor('Drops_3x3card_Comm Workflows.jpg', {
       en: 'Community Workflows',
@@ -227,6 +245,7 @@ export const drops: readonly Drop[] = [
   },
   {
     id: 'supported-models',
+    launchDate: '2026-06-26',
     category: MODELS_AND_NODES,
     media: imageFor('Drops_Supported models.jpg', {
       en: 'Supported Models',
@@ -245,6 +264,7 @@ export const drops: readonly Drop[] = [
   },
   {
     id: 'supported-nodes',
+    launchDate: '2026-06-26',
     category: MODELS_AND_NODES,
     media: videoFor('Drops_3x3card_supported nodes.mp4', {
       en: 'Supported Nodes',
@@ -266,6 +286,7 @@ export const drops: readonly Drop[] = [
   },
   {
     id: 'comfy-enterprise',
+    launchDate: '2026-06-26',
     category: CLOUD,
     media: imageFor('Drops_3x3card_enterprise.png', {
       en: 'Comfy Enterprise',
@@ -283,6 +304,7 @@ export const drops: readonly Drop[] = [
   },
   {
     id: 'learning-hub',
+    launchDate: '2026-06-26',
     category: COMMUNITY,
     media: imageFor('Drops_3x3_Learninghub.jpg', {
       en: 'Learning Hub',
@@ -300,6 +322,7 @@ export const drops: readonly Drop[] = [
   },
   {
     id: 'share-comfy',
+    launchDate: '2026-06-26',
     category: COMMUNITY,
     media: videoFor('Drops_3x3card_Affilliate.mp4', {
       en: 'Comfy Affiliate',
