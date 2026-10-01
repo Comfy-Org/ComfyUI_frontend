@@ -843,10 +843,10 @@ describe('useAgentSession (v1 composition root)', () => {
     events.status(true)
     await vi.waitFor(() => expect(recoveryDeliveries).toHaveLength(2))
 
-    // Owner A's abort cannot cancel a history read the server has already
-    // accepted, so the stale job stays parked in it and settles only now --
-    // after owner A's replacement recovery has registered under the same
-    // thread/turn key. Its cleanup must retire its own entry alone: retiring
+    // Model a history read that settles after its recovery was aborted. The
+    // stale job stays parked because this test double ignores the abort signal,
+    // and settles only after owner A's replacement recovery has registered
+    // under the same thread/turn key. Its cleanup must retire its own entry alone: retiring
     // the live job's entry would let the next reconnect start a second
     // concurrent poll of the same turn and leave the surviving job
     // unabortable on teardown.
