@@ -12,7 +12,8 @@ describe('Workshop apps', () => {
     expect(appModels.map(({ appId, href }) => ({ appId, href }))).toEqual([
       { appId: 'studio', href: '/hub/apps/cinematic-studio/' },
       { appId: 'reshoot', href: '/hub/apps/reshoot/' },
-      { appId: 'move-anything', href: '/hub/apps/move-anything/' }
+      { appId: 'move-anything', href: '/hub/apps/move-anything/' },
+      { appId: 'relight', href: '/hub/apps/relight/' }
     ])
   })
 
@@ -22,7 +23,8 @@ describe('Workshop apps', () => {
     ).toEqual([
       ['cinematic-studio', 'studio'],
       ['reshoot', 'reshoot'],
-      ['move-anything', 'move-anything']
+      ['move-anything', 'move-anything'],
+      ['relight', 'relight']
     ])
   })
 

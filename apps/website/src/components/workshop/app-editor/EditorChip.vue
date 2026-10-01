@@ -7,12 +7,15 @@ const {
   label,
   value,
   expanded,
-  disabled = false
+  disabled = false,
+  compact = false
 } = defineProps<{
   label?: string
   value: string
   expanded?: boolean
   disabled?: boolean
+  /** Keeps the label for screen readers only on phones. */
+  compact?: boolean
 }>()
 </script>
 
@@ -29,7 +32,11 @@ const {
     "
   >
     <slot />
-    <span v-if="label" class="text-primary-warm-gray">{{ label }}</span>
+    <span
+      v-if="label"
+      :class="cn('text-primary-warm-gray', compact && 'max-sm:sr-only')"
+      >{{ label }}</span
+    >
     <span class="max-w-28 truncate">{{ value }}</span>
     <ChevronDown
       :class="

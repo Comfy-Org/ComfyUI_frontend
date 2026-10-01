@@ -63,6 +63,15 @@ const copy = {
     en: 'Image · Qwen Image 2.1',
     'zh-CN': '图像 · Qwen Image 2.1'
   },
+  'cinematic.hub.relight': { en: 'Relight', 'zh-CN': '重新布光' },
+  'cinematic.hub.relightSummary': {
+    en: 'Place new lights on a photo, and the model redraws its shadows and highlights while keeping the subject.',
+    'zh-CN': '在照片上放置新的光源，模型会重绘阴影与高光，同时保留主体。'
+  },
+  'cinematic.hub.relightMeta': {
+    en: 'Image · Beeble SwitchX',
+    'zh-CN': '图像 · Beeble SwitchX'
+  },
   'cinematic.stage.longWait': {
     en: 'Still going. Some models take about a minute. Nothing is queued; yours already started.',
     'zh-CN': '仍在进行。部分模型需要约一分钟。没有排队，你的任务已经开始。'

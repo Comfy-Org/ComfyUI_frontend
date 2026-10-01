@@ -8,7 +8,8 @@ export type WorkshopAppId = AppWorkshopModel['appId']
 const appRoutes = {
   studio: 'cinematicStudio',
   reshoot: 'reshoot',
-  'move-anything': 'moveAnything'
+  'move-anything': 'moveAnything',
+  relight: 'relight'
 } as const satisfies Record<WorkshopAppId, keyof ReturnType<typeof getRoutes>>
 
 export function workshopAppHref(app: WorkshopAppId, locale: Locale): string {
@@ -48,6 +49,12 @@ const appCopy = {
     summary: 'cinematic.hub.moveAnythingSummary',
     badge: 'cinematic.hub.prototype',
     meta: 'cinematic.hub.moveAnythingMeta'
+  },
+  relight: {
+    name: 'cinematic.hub.relight',
+    summary: 'cinematic.hub.relightSummary',
+    badge: 'cinematic.hub.prototype',
+    meta: 'cinematic.hub.relightMeta'
   }
 } as const satisfies Record<
   WorkshopAppId,

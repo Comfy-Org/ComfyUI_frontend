@@ -16,6 +16,7 @@ async function mockFlags(
     auth?: boolean
     reshoot?: boolean
     moveAnything?: boolean
+    relight?: boolean
   }
 ) {
   await context.route('**/t.comfy.org/**', (route) =>
@@ -29,6 +30,7 @@ async function mockFlags(
               'workshop-workflows-enabled': flags.workflows,
               'workshop-reshoot-app-enabled': flags.reshoot ?? true,
               'workshop-move-anything-app-enabled': flags.moveAnything ?? true,
+              'workshop-relight-app-enabled': flags.relight ?? true,
               ...(flags.auth ? { 'workshop-auth': true } : {})
             },
             featureFlagPayloads: {}
@@ -109,13 +111,14 @@ test('lists every app on the hub apps page, on /hub/apps/ pages', async ({
   )
   const shelf = page.getByTestId('app-shelf')
   const cards = shelf.getByRole('link')
-  await expect(cards).toHaveCount(3)
+  await expect(cards).toHaveCount(4)
   await expect(cards.nth(0)).toHaveAttribute(
     'href',
     '/hub/apps/cinematic-studio/'
   )
   await expect(cards.nth(1)).toHaveAttribute('href', '/hub/apps/reshoot/')
   await expect(cards.nth(2)).toHaveAttribute('href', '/hub/apps/move-anything/')
+  await expect(cards.nth(3)).toHaveAttribute('href', '/hub/apps/relight/')
   await expect(
     page.getByRole('button', { name: /Browse all apps/ })
   ).toHaveCount(0)
@@ -128,12 +131,13 @@ test('hides Re-shoot from the hub apps page and closes its page while its flag i
   await mockFlags(context, { apps: true, workflows: false, reshoot: false })
   await page.goto('/hub/apps/')
   const cards = page.getByTestId('app-shelf').getByRole('link')
-  await expect(cards).toHaveCount(2)
+  await expect(cards).toHaveCount(3)
   await expect(cards.nth(0)).toHaveAttribute(
     'href',
     '/hub/apps/cinematic-studio/'
   )
   await expect(cards.nth(1)).toHaveAttribute('href', '/hub/apps/move-anything/')
+  await expect(cards.nth(2)).toHaveAttribute('href', '/hub/apps/relight/')
 
   await page.goto('/hub/apps/reshoot/')
   await expect(page.getByText('Cinematic Studio is not open yet')).toBeVisible()
@@ -192,6 +196,54 @@ test('moves a thing in the Move anything example and shows the result', async ({
 
   await app.getByRole('button', { name: 'Edit arrangement' }).click()
   await expect(generate).toHaveText(/Move 1 object/)
+})
+
+test('closes Relight while its flag is off', async ({ page, context }) => {
+  await mockFlags(context, { apps: true, workflows: false, relight: false })
+  await page.goto('/hub/apps/relight/')
+  await expect(page.getByText('Cinematic Studio is not open yet')).toBeVisible()
+  await expect(page.getByTestId('relight')).toHaveCount(0)
+})
+
+test('relights the Relight example and shows the result', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/hub/apps/relight/')
+  const app = page.getByTestId('relight')
+  await expect(app.getByTestId('relight-empty')).toBeVisible()
+  const run = app.getByTestId('relight-run')
+  await expect(run).toHaveCount(0)
+
+  await app.getByRole('button', { name: 'Try the example' }).click()
+  await expect(run).toBeEnabled()
+  const key = app.getByRole('button', { name: /^Warm key\./ })
+  await key.focus()
+  await page.keyboard.press('Shift+ArrowRight')
+  await expect(key).toHaveAttribute('style', /left: 25%/)
+
+  await app.getByRole('button', { name: /Lights/ }).click()
+  const brightness = app
+    .getByRole('dialog', { name: 'Lights' })
+    .getByRole('slider', { name: 'Brightness' })
+  await brightness.fill('40')
+  await expect(brightness).toHaveValue('40')
+
+  await run.click()
+  await expect(app.getByRole('status')).toContainText('Relighting')
+  await expect(app.getByRole('link', { name: 'Download' })).toHaveAttribute(
+    'href',
+    '/images/apps/relight/example-relit.jpg'
+  )
+  await expect(
+    app.getByRole('slider', {
+      name: 'Drag to compare the original and the relit photo'
+    })
+  ).toBeVisible()
+
+  await app.getByRole('button', { name: 'Edit lights' }).click()
+  await expect(key).toHaveAttribute('style', /left: 25%/)
 })
 
 test('sends an old catalogue link for the Apps tab to the hub apps page', async ({
