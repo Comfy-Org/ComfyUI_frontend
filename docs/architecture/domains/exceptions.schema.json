@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://comfy.org/schemas/frontend-architecture-exceptions-v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "exceptions"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "exceptions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "owner",
+          "rationale",
+          "sunset",
+          "removalCriteria",
+          "fingerprintPrefixes"
+        ],
+        "properties": {
+          "id": { "type": "string", "pattern": "^DDD-EX-[0-9]{3}$" },
+          "owner": { "type": "string", "pattern": "^@" },
+          "rationale": { "type": "string", "minLength": 1 },
+          "sunset": { "type": "string", "format": "date" },
+          "removalCriteria": { "type": "string", "minLength": 1 },
+          "fingerprintPrefixes": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    }
+  }
+}

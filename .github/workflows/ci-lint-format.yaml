@@ -55,6 +55,9 @@ jobs:
       - name: Run oxfmt with auto-format
         run: pnpm format
 
+      - name: Verify architecture contracts
+        run: pnpm architecture:check
+
       - name: Check for changes
         id: verify-changed-files
         run: |

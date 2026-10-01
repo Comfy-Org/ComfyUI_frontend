@@ -1,0 +1,60 @@
+{
+  "$schema": "../domain.schema.json",
+  "schemaVersion": 1,
+  "id": "workflow-templates",
+  "capability": "Workflow templates",
+  "description": "Template discovery, ranking, metadata, education, and thumbnail presentation.",
+  "expectedFileCount": 26,
+  "modules": [
+    { "path": "src/platform/workflow/templates/types/**", "role": "domain" },
+    { "path": "src/platform/workflow/templates/schemas/**", "role": "domain" },
+    { "path": "src/platform/workflow/templates/utils/**", "role": "domain" },
+    {
+      "path": "src/platform/workflow/templates/composables/**",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflow/templates/services/**",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflow/templates/stores/**",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflow/templates/repositories/**",
+      "role": "infrastructure"
+    },
+    { "path": "src/components/templates/**", "role": "presentation" }
+  ],
+  "publicEntryPoints": [],
+  "owners": [
+    "@christian-byrne",
+    "@comfyui-wiki",
+    "@Comfy-Org/comfy_frontend_devs"
+  ],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Template ranking and display metadata remain deterministic",
+      "checks": [
+        "src/platform/workflow/templates/utils/templateRanking.test.ts",
+        "src/platform/workflow/templates/utils/templateDisplay.test.ts"
+      ]
+    },
+    {
+      "name": "Template loading validates and prepares workflow inputs",
+      "checks": [
+        "src/platform/workflow/templates/composables/useTemplateWorkflows.test.ts",
+        "src/platform/workflow/templates/services/templateInputService.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Template data is validated before it reaches presentation code.",
+    "Distribution eligibility and ranking remain host-independent domain policy."
+  ],
+  "enforcement": { "deepImports": "baseline", "dependencies": "error" }
+}
