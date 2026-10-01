@@ -120,8 +120,8 @@ refuses storage still reports once per page load.
 - `billing.web_session.established`: a session became usable. `origin` is
   `interactive` once the customer signed in on this page, otherwise `restored`;
   `mode` is `session-client` or `web-session`.
-- `billing.web_session.failed`: a session could not be established; `code` is
-  a `SessionErrorCode`, reported once per code. Creating the shared session
+- `billing.web_session.failed`: a session could not be established; `error_code`
+  is a `SessionErrorCode`, reported once per code. Creating the shared session
   reports `INVALID_FIREBASE_TOKEN` for a refused credential and
   `TOKEN_EXCHANGE_FAILED` for any other failure.
 

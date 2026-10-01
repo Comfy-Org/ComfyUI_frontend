@@ -44,7 +44,7 @@ export function reportSessionFailed(code: SessionErrorCode): void {
       operation: 'web_session',
       stage: 'failed',
       outcome: 'pending',
-      code
+      error_code: code
     },
     code
   )

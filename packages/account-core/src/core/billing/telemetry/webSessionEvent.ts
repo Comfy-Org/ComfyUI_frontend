@@ -16,5 +16,5 @@ export type WebSessionBillingEvent = {
       origin: 'restored' | 'interactive'
       mode: WebSessionMode
     }
-  | { stage: 'failed'; code: SessionErrorCode }
+  | { stage: 'failed'; error_code: SessionErrorCode }
 )
