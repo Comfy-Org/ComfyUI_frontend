@@ -2200,6 +2200,13 @@ describe('useAgentCrdtFollower', () => {
       return mountFollower('wf-1', true, () => null, events, {}, canvasFor)
     }
 
+    function exhaustSubscribeRetryBudget() {
+      for (let attempt = 0; attempt < 6; attempt++) {
+        dispatchFrame('doc_subscribed', staleRefusal)
+        vi.advanceTimersByTime(120_000)
+      }
+    }
+
     it('answers the refusal once with the canvas the tab shows, instead of the retry', () => {
       vi.useFakeTimers()
       const canvasFor = vi.fn(() => canvas)
@@ -2373,11 +2380,8 @@ describe('useAgentCrdtFollower', () => {
       const onSyncError = vi.fn()
       const { unmount } = mountWithCanvas(() => null, { onSyncError })
 
-      for (let attempt = 0; attempt < 6; attempt++) {
-        dispatchFrame('doc_subscribed', staleRefusal)
-        expect(onSyncError).not.toHaveBeenCalled()
-        vi.advanceTimersByTime(120_000)
-      }
+      exhaustSubscribeRetryBudget()
+      expect(onSyncError).not.toHaveBeenCalled()
       dispatchFrame('doc_subscribed', {
         ...staleRefusal,
         message: 'this document was written by a newer build'
