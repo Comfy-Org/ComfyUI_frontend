@@ -67,7 +67,8 @@ export function useLightInfo(nodeRef: MaybeRef<LGraphNode | null>) {
       wiring.wireNode(raw, { viewport: () => viewport?.viewport })
     } catch (error) {
       reportError(error, {
-        errorType: 'failure_initializing_light_info_viewport'
+        errorType: 'failure_initializing_light_info_viewport',
+        surface: 'graph'
       })
       cleanup()
       useToastStore().addAlert(
