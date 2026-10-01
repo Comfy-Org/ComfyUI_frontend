@@ -17,6 +17,7 @@ import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtil
 import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import {
   createTestRootGraph,
+  createTestSubgraphData,
   enableSubgraphNodeCreation
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import {
@@ -29,6 +30,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { remapClipboardSubgraphNodeIds } from '@/lib/litegraph/src/LGraphCanvas'
 import { toNodeId } from '@/types/nodeId'
+import { toLinkId } from '@/types/linkId'
 import type {
   ClipboardItems,
   ExportedSubgraph,
@@ -302,6 +304,43 @@ function registerClipboardNodeType(type: string): void {
   }
   LiteGraph.registerNodeType(type, ClipboardNode)
 }
+
+it('preserves original and pasted subgraph connections above 100 million', () => {
+  const rootGraph = new LGraph()
+  onTestFinished(enableSubgraphNodeCreation(rootGraph))
+  const subgraph = rootGraph.createSubgraph(createTestSubgraphData())
+  const source = createTestNode(subgraph, [], ['number'])
+  const target = createTestNode(subgraph, ['number'])
+  rootGraph.state.lastLinkId = toLinkId(100_000_000)
+  const originalLink = source.connect(0, target, 0)
+  if (!originalLink) throw new Error('Expected original subgraph link')
+  expect(originalLink.id).toBeGreaterThan(100_000_000)
+  const original = LiteGraph.createNode(subgraph.id)
+  if (!(original instanceof SubgraphNode))
+    throw new Error('Expected original subgraph host')
+  rootGraph.add(original)
+  const canvas = createCanvas(rootGraph)
+  canvas.copyToClipboard([original])
+  onTestFinished(() => localStorage.removeItem('litegrapheditor_clipboard'))
+
+  const result = canvas._pasteFromClipboard({ position: [300, 300] })
+
+  const pasted = result?.created.find((item) => item instanceof SubgraphNode)
+  if (!pasted) throw new Error('Expected pasted subgraph host')
+  expect(rootGraph.subgraphs.size).toBe(2)
+  expect(pasted.subgraph).not.toBe(subgraph)
+  expect(pasted.subgraph.nodes).toHaveLength(2)
+  expect(pasted.subgraph.links.size).toBe(1)
+  const pastedLink = [...pasted.subgraph.links.values()][0]
+  expect(pastedLink.id).toBeGreaterThan(originalLink.id)
+  const pastedSource = pasted.subgraph.getNodeById(pastedLink.origin_id)
+  const pastedTarget = pasted.subgraph.getNodeById(pastedLink.target_id)
+  expect(pastedSource?.outputs[0].links).toEqual([pastedLink.id])
+  expect(pastedTarget?.inputs[0].link).toBe(pastedLink.id)
+  expect(subgraph.links.get(originalLink.id)).toBe(originalLink)
+  expect(source.outputs[0].links).toEqual([originalLink.id])
+  expect(target.inputs[0].link).toBe(originalLink.id)
+})
 
 describe('_deserializeItems paste-time migration & auto-expose', () => {
   let originalFlush: typeof LGraph.proxyWidgetMigrationFlush

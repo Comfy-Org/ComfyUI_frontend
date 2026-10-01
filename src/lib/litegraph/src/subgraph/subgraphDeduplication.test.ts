@@ -274,35 +274,56 @@ describe('deduplicateSubgraphNodeIds', () => {
 })
 
 describe('deduplicateSubgraphLinkIds', () => {
-  it('patches every reference to a remapped regular link', () => {
-    const subgraph = makeSubgraph('sg', ['dummy'])
-    const node = subgraph.nodes?.[0]
-    expect(node).toBeDefined()
-    if (!node) return
-    node.inputs = [{ name: 'in', type: 'INT', link: 1 }]
-    node.outputs = [{ name: 'out', type: 'INT', links: [1] }]
-    subgraph.links = [chainedLink(1)]
-    subgraph.inputs = [{ id: 'input', name: 'in', type: 'INT', linkIds: [1] }]
-    subgraph.outputs = [
-      { id: 'output', name: 'out', type: 'INT', linkIds: [1] }
-    ]
-    subgraph.reroutes = [reroute(1, undefined, [1])]
-    subgraph.extra = {
-      linkExtensions: [{ id: toLinkId(1), parentId: toRerouteId(1) }]
+  it.for([0, 100_000_000, Number.MAX_SAFE_INTEGER - 1])(
+    'patches every reference to a remapped link above counter %i',
+    (lastLinkId) => {
+      const subgraph = makeSubgraph('sg', ['dummy'])
+      const node = subgraph.nodes?.[0]
+      expect(node).toBeDefined()
+      if (!node) return
+      node.inputs = [{ name: 'in', type: 'INT', link: 1 }]
+      node.outputs = [{ name: 'out', type: 'INT', links: [1] }]
+      subgraph.links = [chainedLink(1)]
+      subgraph.inputs = [{ id: 'input', name: 'in', type: 'INT', linkIds: [1] }]
+      subgraph.outputs = [
+        { id: 'output', name: 'out', type: 'INT', linkIds: [1] }
+      ]
+      subgraph.reroutes = [reroute(1, undefined, [1])]
+      subgraph.extra = {
+        linkExtensions: [{ id: toLinkId(1), parentId: toRerouteId(1) }]
+      }
+      const state = freshState()
+      state.lastLinkId = toLinkId(lastLinkId)
+
+      deduplicateSubgraphLinkIds([subgraph], new Set([1]), state)
+
+      const remappedLinkId = subgraph.links[0].id
+      expect(remappedLinkId).not.toBe(1)
+      expect(remappedLinkId).toBeGreaterThan(lastLinkId)
+      expect(node.inputs[0].link).toBe(remappedLinkId)
+      expect(node.outputs[0].links).toEqual([remappedLinkId])
+      expect(subgraph.inputs[0].linkIds).toEqual([remappedLinkId])
+      expect(subgraph.outputs[0].linkIds).toEqual([remappedLinkId])
+      expect(subgraph.reroutes[0].linkIds).toEqual([remappedLinkId])
+      expect(subgraph.extra.linkExtensions?.[0].id).toBe(remappedLinkId)
     }
-    const state = freshState()
+  )
 
-    deduplicateSubgraphLinkIds([subgraph], new Set([1]), state)
+  it.for([Number.MAX_SAFE_INTEGER, Number.POSITIVE_INFINITY, Number.NaN, 1.5])(
+    'rejects an invalid next link ID from counter %s',
+    (lastLinkId) => {
+      const subgraphs = ['first', 'second'].map((id) => ({
+        ...makeSubgraph(id),
+        links: [chainedLink(1)]
+      }))
+      const state = freshState()
+      state.lastLinkId = toLinkId(lastLinkId)
 
-    const remappedLinkId = subgraph.links[0].id
-    expect(remappedLinkId).not.toBe(1)
-    expect(node.inputs[0].link).toBe(remappedLinkId)
-    expect(node.outputs[0].links).toEqual([remappedLinkId])
-    expect(subgraph.inputs[0].linkIds).toEqual([remappedLinkId])
-    expect(subgraph.outputs[0].linkIds).toEqual([remappedLinkId])
-    expect(subgraph.reroutes[0].linkIds).toEqual([remappedLinkId])
-    expect(subgraph.extra.linkExtensions?.[0].id).toBe(remappedLinkId)
-  })
+      expect(() =>
+        deduplicateSubgraphLinkIds(subgraphs, new Set(), state)
+      ).toThrow('Cannot allocate a safe link ID')
+    }
+  )
 
   it('keeps already unique regular and floating links unchanged', () => {
     const subgraph = makeSubgraph('sg')
