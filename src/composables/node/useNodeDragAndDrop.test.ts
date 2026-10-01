@@ -122,6 +122,24 @@ describe('useNodeDragAndDrop', () => {
     expect(onDrop).not.toHaveBeenCalled()
   })
 
+  it('onDragDrop claims rejected files when a rejection handler is present', async () => {
+    const onReject = vi.fn()
+    const file = createFile('extensionless', 'video/mp4')
+    const node = createNode()
+    useNodeDragAndDrop(node, {
+      onDrop: vi.fn().mockResolvedValue([]),
+      fileFilter: () => false,
+      onReject
+    })
+
+    const result = await node.onDragDrop?.(
+      createDragEvent({ files: [file], items: [{ kind: 'file' }] })
+    )
+
+    expect(result).toBe(true)
+    expect(onReject).toHaveBeenCalledWith([file])
+  })
+
   it('onDragDrop handles same-origin uri drops', async () => {
     const onDrop = vi.fn().mockResolvedValue([])
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(

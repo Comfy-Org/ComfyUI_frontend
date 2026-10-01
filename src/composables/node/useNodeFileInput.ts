@@ -5,6 +5,7 @@ interface FileInputOptions {
   accept?: string
   allow_batch?: boolean
   fileFilter?: (file: File) => boolean
+  onReject?: (files: File[]) => void
   onSelect: (files: File[]) => void
 }
 
@@ -25,11 +26,14 @@ export function useNodeFileInput(node: LGraphNode, options: FileInputOptions) {
   fileInput.multiple = allow_batch
 
   fileInput.onchange = () => {
-    const files = fileInput?.files?.length
-      ? Array.from(fileInput.files).filter(fileFilter)
+    const selectedFiles = fileInput?.files?.length
+      ? Array.from(fileInput.files)
       : []
+    const files = selectedFiles.filter(fileFilter)
+    const rejectedFiles = selectedFiles.filter((file) => !fileFilter(file))
     // Reset value so re-selecting the same file triggers onchange
     if (fileInput) fileInput.value = ''
+    if (rejectedFiles.length) options.onReject?.(rejectedFiles)
     if (files.length) onSelect(files)
   }
 

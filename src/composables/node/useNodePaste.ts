@@ -7,6 +7,7 @@ interface NodePasteOptions<T> {
   onPaste: PasteHandler<T>
   fileFilter?: (file: File) => boolean
   allow_batch?: boolean
+  onReject?: (files: File[]) => void
 }
 
 /**
@@ -20,7 +21,11 @@ export const useNodePaste = <T>(
 
   const installedPasteFiles = function (files: File[]) {
     const filteredFiles = Array.from(files).filter(fileFilter)
-    if (!filteredFiles.length) return false
+    const rejectedFiles = Array.from(files).filter((file) => !fileFilter(file))
+    if (rejectedFiles.length) options.onReject?.(rejectedFiles)
+    if (!filteredFiles.length) {
+      return options.onReject !== undefined
+    }
 
     const paste = allow_batch ? filteredFiles : filteredFiles.slice(0, 1)
 

@@ -48,6 +48,21 @@ describe('useNodePaste', () => {
     expect(onPaste).not.toHaveBeenCalled()
   })
 
+  it('pasteFiles claims rejected files when a rejection handler is present', () => {
+    const onReject = vi.fn()
+    const file = createFile('extensionless', 'video/mp4')
+    const node = createNode()
+
+    useNodePaste(node, {
+      onPaste: vi.fn().mockResolvedValue('ok'),
+      fileFilter: () => false,
+      onReject
+    })
+
+    expect(node.pasteFiles?.([file])).toBe(true)
+    expect(onReject).toHaveBeenCalledWith([file])
+  })
+
   it('pasteFiles limits to first file when allow_batch is false', () => {
     const onPaste = vi.fn().mockResolvedValue('ok')
     const node = createNode()

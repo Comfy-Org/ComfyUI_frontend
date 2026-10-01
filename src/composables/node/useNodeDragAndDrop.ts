@@ -11,6 +11,7 @@ interface DragAndDropOptions<T> {
   onDrop: DropHandler<T>
   onResultItemDrop?: (item: ResultItem) => void
   fileFilter?: (file: File) => boolean
+  onReject?: (files: File[]) => void
 }
 
 /**
@@ -29,8 +30,6 @@ export const useNodeDragAndDrop = <T>(
   const filterFiles = (files: FileList | File[]) =>
     Array.from(files).filter(fileFilter)
 
-  const hasValidFiles = (files: FileList) => filterFiles(files).length > 0
-
   const isDraggingFiles = (e: DragEvent | undefined) => {
     if (!e?.dataTransfer?.items) return false
     return (
@@ -40,25 +39,23 @@ export const useNodeDragAndDrop = <T>(
     )
   }
 
-  const isDraggingValidFiles = (e: DragEvent | undefined) => {
-    if (e?.dataTransfer?.files.length)
-      return hasValidFiles(e.dataTransfer.files)
-
-    return !!e?.dataTransfer?.getData('text/uri-list')
-  }
-
   const installedDragOver = isDraggingFiles
   node.onDragOver = installedDragOver
 
   const installedDragDrop = async function (e: DragEvent) {
-    if (!isDraggingValidFiles(e)) return false
     const { dataTransfer } = e
     if (!dataTransfer) return false
 
-    const files = filterFiles(dataTransfer.files)
+    const droppedFiles = Array.from(dataTransfer.files)
+    const files = filterFiles(droppedFiles)
+    const rejectedFiles = droppedFiles.filter((file) => !fileFilter(file))
+    if (rejectedFiles.length) options.onReject?.(rejectedFiles)
     if (files.length) {
       await onDrop(files)
       return true
+    }
+    if (dataTransfer.files.length) {
+      return options.onReject !== undefined
     }
     const asset = parseAssetInfo(dataTransfer)
     if (asset?.filename && options.onResultItemDrop) {
@@ -81,7 +78,10 @@ export const useNodeDragAndDrop = <T>(
       const blob = await resp.blob()
       const file = new File([blob], fileName, { type: blob.type })
       const uriFiles = filterFiles([file])
-      if (!uriFiles.length) return false
+      if (!uriFiles.length) {
+        options.onReject?.([file])
+        return options.onReject !== undefined
+      }
 
       await onDrop(uriFiles)
     } catch {

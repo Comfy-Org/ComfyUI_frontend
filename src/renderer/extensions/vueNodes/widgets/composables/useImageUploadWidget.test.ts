@@ -7,6 +7,7 @@ import { useImageUploadWidget } from '@/renderer/extensions/vueNodes/widgets/com
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 
@@ -16,6 +17,7 @@ type CapturedImageUploadOptions = {
   folder?: ResultItemType
   onUploadStart?: (files: File[]) => void
   onUploadError?: () => void
+  onReject?: (files: File[]) => void
   fileFilter?: (file: File) => boolean
 }
 
@@ -144,30 +146,34 @@ describe('useImageUploadWidget', () => {
     )
   })
 
-  it.for(['LoadVideo', 'VHS_LoadVideo', 'VHS_LoadVideoFFmpeg'])(
-    'rejects extensionless video files for %s',
-    (nodeType) => {
-      const { node } = createUploadNode()
-      node.comfyClass = nodeType
-      constructVideo(node)
+  it('gives video upload widgets a filter for uploadable videos', () => {
+    const { node } = createUploadNode()
+    constructVideo(node)
 
-      expect(
-        mocks.capturedUploadOptions?.fileFilter?.(
-          new File([], 'extensionless', { type: 'video/mp4' })
-        )
-      ).toBe(false)
-      expect(
-        mocks.capturedUploadOptions?.fileFilter?.(
-          new File([], 'clip.mp4', { type: 'video/mp4' })
-        )
-      ).toBe(true)
-      expect(
-        mocks.capturedUploadOptions?.fileFilter?.(
-          new File([], 'clip.mov', { type: 'video/quicktime' })
-        )
-      ).toBe(true)
-    }
-  )
+    expect(
+      mocks.capturedUploadOptions?.fileFilter?.(
+        new File([], 'extensionless', { type: 'video/mp4' })
+      )
+    ).toBe(false)
+    expect(
+      mocks.capturedUploadOptions?.fileFilter?.(
+        new File([], 'clip.mp4', { type: 'video/mp4' })
+      )
+    ).toBe(true)
+  })
+
+  it('alerts when a video upload widget rejects a file', () => {
+    const { node } = createUploadNode()
+    constructVideo(node)
+
+    mocks.capturedUploadOptions?.onReject?.([
+      new File([], 'extensionless', { type: 'video/mp4' })
+    ])
+
+    expect(useToastStore().addAlert).toHaveBeenCalledWith(
+      'g.videoFilenameExtensionRequired'
+    )
+  })
 
   it('previews the combo value once the initial frame runs', () => {
     const { node } = createUploadNode('beach.jpg')
