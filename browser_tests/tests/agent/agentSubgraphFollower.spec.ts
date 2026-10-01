@@ -261,9 +261,9 @@ test.describe(
         .poll(() => outboundFrames, { timeout: 15_000 })
         .toContainEqual(expect.stringContaining('doc_subscribe'))
 
-      for (const frame of agentSubgraphWidgetDriftFrames()) {
-        socket.send(JSON.stringify(frame))
-      }
+      const [subscriptionFrame, catchUpFrame] = agentSubgraphWidgetDriftFrames()
+      socket.send(JSON.stringify(subscriptionFrame))
+      socket.send(JSON.stringify(catchUpFrame))
 
       await page
         .getByRole('button', { name: 'Fit View (.)', exact: true })
