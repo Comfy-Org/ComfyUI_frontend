@@ -186,16 +186,15 @@ describe('resolveAgentAssetUrl', () => {
     )
   })
 
-  it('leaves a loopback URL that is not a media route alone', () => {
-    for (const href of [
-      'http://127.0.0.1:8188/prompt',
-      'http://127.0.0.1:8086/docs',
-      'http://127.0.0.1:8188/view/extra?filename=a.png',
-      // Not a route ComfyUI serves; the only place it appeared was a second,
-      // hand-maintained copy of the media-route list.
-      'http://127.0.0.1:8188/viewaudio?filename=a.mp3'
-    ])
-      expect(resolveAgentAssetUrl(href, PANEL)).toBe(href)
+  it.for([
+    'http://127.0.0.1:8188/prompt',
+    'http://127.0.0.1:8086/docs',
+    'http://127.0.0.1:8188/view/extra?filename=a.png',
+    // Not a route ComfyUI serves; the only place it appeared was a second,
+    // hand-maintained copy of the media-route list.
+    'http://127.0.0.1:8188/viewaudio?filename=a.mp3'
+  ])('leaves the non-media loopback URL %s alone', (href) => {
+    expect(resolveAgentAssetUrl(href, PANEL)).toBe(href)
   })
 
   // Every media route the repo recognises, not a narrower second list: an
