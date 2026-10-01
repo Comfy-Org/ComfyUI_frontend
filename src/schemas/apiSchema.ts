@@ -149,7 +149,7 @@ const zAssetDownloadWsMessage = z.object({
   bytes_total: z.number(),
   bytes_downloaded: z.number(),
   progress: z.number(),
-  status: z.enum(['created', 'running', 'completed', 'failed']),
+  status: z.enum(['created', 'running', 'completed', 'failed', 'cancelled']),
   asset_id: z.string().optional(),
   error: z.string().optional()
 })
@@ -163,7 +163,7 @@ const zAssetExportWsMessage = z.object({
   bytes_total: z.number(),
   bytes_processed: z.number(),
   progress: z.number(),
-  status: z.enum(['created', 'running', 'completed', 'failed']),
+  status: z.enum(['created', 'running', 'completed', 'failed', 'cancelled']),
   error: z.string().optional()
 })
 
