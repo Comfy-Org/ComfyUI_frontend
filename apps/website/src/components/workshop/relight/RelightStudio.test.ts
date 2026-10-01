@@ -5,11 +5,26 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import RelightStudio from './RelightStudio.vue'
 
 vi.mock(import('../../../lib/workshop/relight/render-image'), () => ({
-  renderRelitImage: vi.fn(() => Promise.resolve(undefined))
+  renderRelitImage: vi.fn(() => Promise.resolve(undefined)),
+  renderMoodThumbnails: vi.fn(() => Promise.resolve(undefined))
 }))
+
+function screenIsWide(wide: boolean) {
+  vi.stubGlobal('matchMedia', (media: string) => ({
+    matches: wide,
+    media,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false
+  }))
+}
 
 beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true })
+  screenIsWide(true)
 })
 
 async function openExample(layout?: string) {
@@ -23,9 +38,14 @@ const panel = () =>
   screen.getByRole('complementary', { name: 'Relight settings' })
 const section = (name: string) => within(panel()).getByRole('region', { name })
 const undo = () => screen.getByRole('button', { name: 'Undo' })
+const lightNames = () =>
+  within(within(section('Lights')).getByRole('list', { name: 'Lights' }))
+    .getAllByRole('button')
+    .filter((button) => button.hasAttribute('aria-pressed'))
+    .map((button) => button.textContent.trim())
 
 describe('RelightStudio', () => {
-  it('relights from the side panel: pick a light, change it, then get the result', async () => {
+  it('relights from the floating panel: pick a light, change it, then get the result', async () => {
     const user = await openExample()
     expect(undo()).toBeDisabled()
     const lights = section('Lights')
@@ -51,7 +71,7 @@ describe('RelightStudio', () => {
     expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull()
   })
 
-  it('selects a light from its handle and highlights it in the list', async () => {
+  it('selects a light from its handle and opens its controls under its row', async () => {
     const user = await openExample()
     const dot = screen.getByRole('button', { name: /^Cool fill\./ })
     expect(dot).toHaveAttribute('aria-pressed', 'false')
@@ -59,9 +79,16 @@ describe('RelightStudio', () => {
     await user.click(dot)
 
     expect(dot).toHaveAttribute('aria-pressed', 'true')
-    expect(
-      within(section('Lights')).getByRole('button', { name: /^Cool fill/ })
-    ).toHaveAttribute('aria-pressed', 'true')
+    const row = within(section('Lights')).getByRole('button', {
+      name: /^Cool fill/
+    })
+    expect(row).toHaveAttribute('aria-pressed', 'true')
+    const item = within(section('Lights'))
+      .getAllByRole('listitem')
+      .find((entry) =>
+        within(entry).queryByRole('button', { name: /^Cool fill/ })
+      )
+    expect(item).toContainElement(screen.getByTestId('relight-light-editor'))
     await user.keyboard('{Shift>}{ArrowLeft}{/Shift}')
     expect(parseFloat(dot.style.left)).toBeCloseTo(80)
   })
@@ -86,13 +113,32 @@ describe('RelightStudio', () => {
     ).toBeVisible()
   })
 
+  it('adds a directional light from the add menu and selects it', async () => {
+    const user = await openExample()
+    const lights = section('Lights')
+
+    await user.click(within(lights).getByRole('button', { name: 'Add light' }))
+    await user.click(
+      within(lights).getByRole('menuitem', { name: 'Directional' })
+    )
+
+    expect(lightNames()).toEqual([
+      expect.stringContaining('Warm key'),
+      expect.stringContaining('Cool fill'),
+      expect.stringContaining('Light 3')
+    ])
+    expect(
+      within(lights).getByRole('button', { name: /^Light 3/ })
+    ).toHaveAttribute('aria-pressed', 'true')
+    expect(
+      within(lights).getByRole('slider', { name: 'Elevation' })
+    ).toBeVisible()
+    expect(within(lights).queryByRole('menu')).toBeNull()
+  })
+
   it('duplicates, hides and deletes lights from the list, and undoes', async () => {
     const user = await openExample()
     const lights = section('Lights')
-    const rows = () =>
-      within(within(lights).getByRole('list', { name: 'Lights' }))
-        .getAllByRole('listitem')
-        .map((row) => row.textContent.trim())
 
     await user.click(
       within(lights).getByRole('button', { name: 'Duplicate Warm key' })
@@ -100,7 +146,7 @@ describe('RelightStudio', () => {
     await user.click(
       within(lights).getByRole('button', { name: 'Delete Cool fill' })
     )
-    expect(rows()).toEqual([
+    expect(lightNames()).toEqual([
       expect.stringContaining('Warm key'),
       expect.stringContaining('Warm key copy')
     ])
@@ -113,8 +159,52 @@ describe('RelightStudio', () => {
 
     await user.click(undo())
     await user.click(undo())
-    expect(rows()).toHaveLength(3)
+    expect(lightNames()).toHaveLength(3)
   })
+
+  it('picks a mood from its tile, replacing the lights, and undoes it', async () => {
+    const user = await openExample()
+    const moods = within(section('Mood')).getByRole('radiogroup', {
+      name: 'Mood'
+    })
+    expect(within(moods).getByRole('radio', { name: 'Sunset' })).toBeChecked()
+
+    await user.click(within(moods).getByRole('radio', { name: 'Neon' }))
+
+    expect(within(moods).getByRole('radio', { name: 'Neon' })).toBeChecked()
+    expect(lightNames()).toEqual([
+      expect.stringContaining('Pink neon'),
+      expect.stringContaining('Blue neon')
+    ])
+    await user.click(undo())
+    expect(within(moods).getByRole('radio', { name: 'Sunset' })).toBeChecked()
+  })
+
+  it.for([
+    { look: 'None', castShadows: 'false', elevation: '35' },
+    { look: 'Hard', castShadows: 'true', elevation: '35' },
+    { look: 'Long', castShadows: 'true', elevation: '12' }
+  ])(
+    'sets every light to $look shadows from the tiles',
+    async ({ look, castShadows, elevation }) => {
+      const user = await openExample()
+      const shadows = within(section('Shadows')).getByRole('radiogroup', {
+        name: 'Shadows'
+      })
+      expect(within(shadows).getByRole('radio', { name: 'Soft' })).toBeChecked()
+
+      await user.click(within(shadows).getByRole('radio', { name: look }))
+
+      expect(within(shadows).getByRole('radio', { name: look })).toBeChecked()
+      const lights = section('Lights')
+      expect(
+        within(lights).getByRole('switch', { name: 'Cast shadows' })
+      ).toHaveAttribute('aria-checked', castShadows)
+      expect(
+        within(lights).getByRole('slider', { name: 'Elevation' })
+      ).toHaveValue(elevation)
+    }
+  )
 
   it.for([
     { view: 'Original', preview: false },
@@ -128,7 +218,9 @@ describe('RelightStudio', () => {
       view
     )
 
-    const shown = screen.getByTestId('relight-preview')
+    const shown = within(screen.getByTestId('relight-stage')).getByTestId(
+      'relight-preview'
+    )
     if (preview) expect(shown).toBeVisible()
     else expect(shown).not.toBeVisible()
   })
@@ -142,8 +234,12 @@ describe('RelightStudio', () => {
     expect(screen.queryByRole('button', { name: /^Warm key\./ })).toBeNull()
   })
 
-  it('creates a mask for the chosen light and draws it on the photo', async () => {
+  it('opens the collapsed Masks section, creates a mask and draws it', async () => {
     const user = await openExample()
+    expect(
+      within(panel()).queryByRole('combobox', { name: 'Apply to' })
+    ).toBeNull()
+    await user.click(within(panel()).getByRole('button', { name: 'Masks' }))
     const masks = section('Masks')
     await user.selectOptions(
       within(masks).getByRole('combobox', { name: 'Apply to' }),
@@ -192,6 +288,25 @@ describe('RelightStudio', () => {
     await user.click(screen.getByRole('button', { name: /^Cool fill\./ }))
 
     expect(screen.queryByText(hint)).toBeNull()
+  })
+
+  it('opens on phones as a sheet with the moods and the run button, and expands', async () => {
+    screenIsWide(false)
+    const user = await openExample()
+    expect(
+      within(panel()).getByRole('radiogroup', { name: 'Mood' })
+    ).toBeVisible()
+    expect(within(panel()).getByTestId('relight-run')).toBeEnabled()
+    expect(within(panel()).queryByRole('region', { name: 'Lights' })).toBeNull()
+
+    await user.click(
+      within(panel()).getByRole('button', { name: 'Show all settings' })
+    )
+
+    expect(section('Lights')).toBeVisible()
+    expect(
+      within(panel()).getByRole('button', { name: 'Hide settings' })
+    ).toHaveAttribute('aria-expanded', 'true')
   })
 
   it('keeps the bottom dock and its trays in the bottom composer layout', async () => {

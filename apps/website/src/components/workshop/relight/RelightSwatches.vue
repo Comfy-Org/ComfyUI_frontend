@@ -18,7 +18,7 @@ const custom = computed(
   () => !LIGHT_COLORS.some((swatch) => swatch.hex === color.value)
 )
 const ring =
-  'ring-2 ring-primary-comfy-yellow ring-offset-2 ring-offset-primary-comfy-ink-light'
+  'ring-2 ring-primary-warm-white ring-offset-2 ring-offset-primary-comfy-ink-light'
 
 function onPick(event: Event) {
   if (event.target instanceof HTMLInputElement) color.value = event.target.value
@@ -26,7 +26,7 @@ function onPick(event: Event) {
 </script>
 
 <template>
-  <div class="flex items-center justify-between gap-3 px-1">
+  <div class="flex h-7 items-center justify-between gap-3 px-1">
     <span class="text-xs text-primary-warm-gray">{{ label }}</span>
     <div role="radiogroup" :aria-label="label" class="flex items-center gap-2">
       <button
@@ -39,7 +39,7 @@ function onPick(event: Event) {
         :title="lc(swatch.name, locale)"
         :class="
           cn(
-            'size-5 rounded-full border border-transparency-white-t20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-comfy-yellow/70 disabled:opacity-40',
+            'size-4 rounded-full border border-transparency-white-t20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-comfy-yellow/70 disabled:opacity-40',
             color === swatch.hex && ring
           )
         "
@@ -50,13 +50,13 @@ function onPick(event: Event) {
         :title="lc('relight.color.custom', locale)"
         :class="
           cn(
-            'relative flex size-5 cursor-pointer items-center justify-center rounded-full border border-transparency-white-t20 text-primary-warm-gray focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-primary-comfy-yellow/70',
+            'relative flex size-4 cursor-pointer items-center justify-center rounded-full border border-transparency-white-t20 text-primary-warm-gray focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-primary-comfy-yellow/70',
             custom && ring
           )
         "
         :style="custom ? { backgroundColor: color } : undefined"
       >
-        <Pipette v-if="!custom" class="size-3" aria-hidden="true" />
+        <Pipette v-if="!custom" class="size-2.5" aria-hidden="true" />
         <input
           type="color"
           :value="color"

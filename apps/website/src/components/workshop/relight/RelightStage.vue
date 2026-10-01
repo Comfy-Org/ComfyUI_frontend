@@ -81,7 +81,7 @@ function nudge(light: Light, dx: number, dy: number) {
   <EditorFrame :width="image.width" :height="image.height">
     <div
       ref="frame"
-      class="relative size-full touch-none select-none"
+      class="relative isolate size-full touch-none select-none"
       data-testid="relight-stage"
       @pointermove="drag?.(point($event))"
       @pointerup="release"

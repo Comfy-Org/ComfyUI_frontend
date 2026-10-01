@@ -1,3 +1,5 @@
+import type { Light, MoodId, RelightScene } from './lights'
+import { MOOD_IDS } from './lights'
 import type { RelightRequest } from './mock-run'
 import { createRelightRenderer } from './renderer'
 import type { HeightMap } from './shading'
@@ -70,4 +72,38 @@ export async function renderRelitImage(
   const blob = await toBlob(canvas)
   renderer.dispose()
   return blob ? URL.createObjectURL(blob) : undefined
+}
+
+const THUMB_EDGE = 200
+
+/**
+ * The photo relit by each set of lights, small, as JPEG data URLs keyed
+ * like `looks`. Undefined where the photo or WebGL is not available.
+ */
+export async function renderMoodThumbnails(
+  url: string,
+  looks: Readonly<Partial<Record<MoodId, readonly Light[]>>>,
+  scene: RelightScene
+): Promise<Partial<Record<MoodId, string>> | undefined> {
+  const image = await loadImage(url)
+  const height = image && imageHeightMap(image)
+  if (!image || !height) return undefined
+  const source = fitImage(image, THUMB_EDGE)
+  const canvas = document.createElement('canvas')
+  canvas.width = source.canvas.width
+  canvas.height = source.canvas.height
+  const renderer = createRelightRenderer(canvas, {
+    preserveDrawingBuffer: true
+  })
+  if (!renderer) return undefined
+  renderer.setImage(source.canvas, height)
+  const thumbnails: Partial<Record<MoodId, string>> = {}
+  for (const mood of MOOD_IDS) {
+    const lights = looks[mood]
+    if (!lights) continue
+    renderer.draw(shadingUniforms(lights, [], scene))
+    thumbnails[mood] = canvas.toDataURL('image/jpeg', 0.8)
+  }
+  renderer.dispose()
+  return thumbnails
 }

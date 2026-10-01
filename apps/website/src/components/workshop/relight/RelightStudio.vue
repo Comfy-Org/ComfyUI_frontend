@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import type { ComponentPublicInstance } from 'vue'
-import { computed, ref, useTemplateRef, watch } from 'vue'
+import { computed, ref } from 'vue'
 
 import { useRelight } from '../../../composables/useRelight'
 import { reportStudioBusy } from '../../../composables/useStudioSwitchGuard'
@@ -13,6 +12,7 @@ import EditorHistory from '../app-editor/EditorHistory.vue'
 import type { EditorView } from '../app-editor/view'
 import RelightDocks from './RelightDocks.vue'
 import RelightMain from './RelightMain.vue'
+import RelightMood from './RelightMood.vue'
 import RelightPanel from './RelightPanel.vue'
 import RelightRun from './RelightRun.vue'
 import RelightTrays from './RelightTrays.vue'
@@ -36,22 +36,11 @@ const showDock = computed(
 )
 reportStudioBusy(() => phase.value.kind === 'running')
 
-const shell = useTemplateRef<ComponentPublicInstance>('shell')
-watch(
-  () => phase.value.kind,
-  (kind) => {
-    const element: unknown = shell.value?.$el
-    const stacked = window.matchMedia('(max-width: 1023px)').matches
-    if (
-      kind === 'running' &&
-      panel.value &&
-      stacked &&
-      element instanceof HTMLElement
-    )
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
-)
-
+const panelLabels = {
+  label: lc('relight.panel', locale),
+  expand: lc('relight.panel.expand', locale),
+  collapse: lc('relight.panel.collapse', locale)
+}
 const historyLabels = {
   group: lc('relight.history', locale),
   undo: lc('relight.tool.undo', locale),
@@ -61,10 +50,10 @@ const historyLabels = {
 
 <template>
   <AppEditorShell
-    ref="shell"
     :title="lc('relight.title', locale)"
     :tools-label="lc('relight.tools', locale)"
-    :panel-label="lc('relight.panel', locale)"
+    :panel-labels="panelLabels"
+    :panel-dimmed="phase.kind === 'done'"
     :repo="workshopAppRepo('relight')"
     :locale
     data-testid="relight"
@@ -95,6 +84,11 @@ const historyLabels = {
     </template>
     <template v-if="panel && image" #panel>
       <RelightPanel :relight :locale />
+    </template>
+    <template v-if="panel && image" #panel-peek>
+      <fieldset :disabled="phase.kind === 'running'" class="min-w-0">
+        <RelightMood :relight :locale strip />
+      </fieldset>
     </template>
     <template v-if="panel && image" #panel-footer>
       <RelightRun :relight :locale block />

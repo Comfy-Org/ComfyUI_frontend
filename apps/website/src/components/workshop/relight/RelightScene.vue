@@ -3,7 +3,6 @@ import type { Relight } from '../../../composables/useRelight'
 import type { Locale } from '../../../i18n/translations'
 import { lc } from '../../../lib/workshop/relight/copy'
 import EditorSlider from '../app-editor/EditorSlider.vue'
-import RelightMood from './RelightMood.vue'
 import RelightSwatches from './RelightSwatches.vue'
 
 const { relight, locale = 'en' } = defineProps<{
@@ -15,7 +14,6 @@ const { setup } = relight
 </script>
 
 <template>
-  <RelightMood :mood="setup.mood" :locale @pick="relight.pickMood" />
   <EditorSlider
     :model-value="setup.scene.ambient"
     :label="lc('relight.scene.ambient', locale)"

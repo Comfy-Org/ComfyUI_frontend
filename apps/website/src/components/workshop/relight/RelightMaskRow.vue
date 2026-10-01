@@ -20,10 +20,8 @@ const emit = defineEmits<{ pick: []; toggle: []; remove: [] }>()
   <div
     :class="
       cn(
-        'flex h-10 items-center gap-0.5 rounded-lg border pr-1 pl-2.5 transition',
-        checked
-          ? 'border-primary-comfy-yellow/40 bg-transparency-white-t8'
-          : 'border-transparency-white-t8'
+        'group flex h-9 items-center gap-0.5 rounded-lg pr-0.5 pl-2 transition',
+        checked ? 'bg-transparency-white-t8' : 'hover:bg-transparency-white-t4'
       )
     "
   >
@@ -31,26 +29,39 @@ const emit = defineEmits<{ pick: []; toggle: []; remove: [] }>()
       type="button"
       role="radio"
       :aria-checked="checked"
-      class="flex h-full min-w-0 flex-1 items-center gap-2 text-left text-xs text-primary-warm-white focus-visible:outline-none disabled:opacity-40"
+      :class="
+        cn(
+          'flex h-full min-w-0 flex-1 items-center gap-2.5 text-left text-xs text-primary-warm-gray focus-visible:outline-none disabled:opacity-40',
+          checked && 'text-primary-warm-white'
+        )
+      "
       @click="emit('pick')"
     >
       <span
         :class="
           cn(
             'flex size-3.5 shrink-0 items-center justify-center rounded-full border border-transparency-white-t20',
-            checked && 'border-primary-comfy-yellow'
+            checked && 'border-primary-warm-white'
           )
         "
         aria-hidden="true"
       >
         <span
           v-if="checked"
-          class="size-1.5 rounded-full bg-primary-comfy-yellow"
+          class="size-1.5 rounded-full bg-primary-warm-white"
         />
       </span>
       <span class="truncate">{{ label }}</span>
     </button>
-    <template v-if="labels">
+    <span
+      v-if="labels"
+      :class="
+        cn(
+          'flex items-center opacity-0 transition group-focus-within:opacity-100 group-hover:opacity-100',
+          (checked || shown) && 'opacity-100'
+        )
+      "
+    >
       <EditorIconButton
         :icon="shown ? Eye : EyeOff"
         :label="shown ? labels.hide : labels.show"
@@ -61,6 +72,6 @@ const emit = defineEmits<{ pick: []; toggle: []; remove: [] }>()
         :label="labels.remove"
         @click="emit('remove')"
       />
-    </template>
+    </span>
   </div>
 </template>

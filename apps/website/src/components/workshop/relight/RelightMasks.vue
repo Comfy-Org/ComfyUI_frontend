@@ -47,7 +47,7 @@ function applyMask(mask?: string) {
     v-if="target"
     role="radiogroup"
     :aria-label="lc('relight.masks.area', locale, { name: target.name })"
-    class="flex flex-col gap-1"
+    class="flex flex-col gap-0.5"
   >
     <RelightMaskRow
       :label="lc('relight.masks.whole', locale)"
@@ -80,12 +80,12 @@ function applyMask(mask?: string) {
         v-model="subject"
         type="text"
         :placeholder="lc('relight.masks.subjectPlaceholder', locale)"
-        class="h-8 min-w-0 flex-1 rounded-lg border border-transparency-white-t8 bg-transparency-white-t4 px-2.5 text-xs text-primary-warm-white placeholder:text-primary-warm-gray/60 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none disabled:opacity-40"
+        class="h-8 min-w-0 flex-1 rounded-lg bg-transparency-white-t4 px-2.5 text-xs text-primary-warm-white placeholder:text-primary-warm-gray/60 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none disabled:opacity-40"
       />
       <button
         type="submit"
         :disabled="!subject.trim()"
-        class="h-8 shrink-0 rounded-full border border-primary-comfy-yellow/50 px-3 text-[11px] font-medium text-primary-comfy-yellow transition hover:bg-primary-comfy-yellow/10 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none disabled:opacity-40"
+        class="h-8 shrink-0 rounded-lg bg-transparency-white-t8 px-3 text-xs text-primary-warm-white transition hover:bg-transparency-white-t20 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none disabled:opacity-40"
       >
         {{ lc('relight.masks.create', locale) }}
       </button>

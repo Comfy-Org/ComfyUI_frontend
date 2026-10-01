@@ -1,49 +1,65 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
+import { computed } from 'vue'
 
+import { useMoodThumbnails } from '../../../composables/useMoodThumbnails'
+import type { Relight } from '../../../composables/useRelight'
 import type { Locale } from '../../../i18n/translations'
 import { lc } from '../../../lib/workshop/relight/copy'
 import type { MoodId } from '../../../lib/workshop/relight/lights'
-import { MOOD_IDS, MOOD_LABELS } from '../../../lib/workshop/relight/lights'
+import {
+  MOOD_IDS,
+  MOOD_LABELS,
+  moodLights
+} from '../../../lib/workshop/relight/lights'
+import EditorTiles from '../app-editor/EditorTiles.vue'
+import RelightPreview from './RelightPreview.vue'
 
-const { mood, locale = 'en' } = defineProps<{
-  mood: MoodId
+const {
+  relight,
+  strip = false,
+  locale = 'en'
+} = defineProps<{
+  relight: Relight
+  strip?: boolean
   locale?: Locale
 }>()
 
-const emit = defineEmits<{ pick: [mood: MoodId] }>()
+const { image, setup } = relight
+const thumbnails = useMoodThumbnails(
+  () => image.value?.url,
+  () => setup.value.scene
+)
+const options = MOOD_IDS.map((id) => ({
+  id,
+  label: lc(MOOD_LABELS[id], locale)
+}))
+const mood = computed({
+  get: () => setup.value.mood,
+  set: (next?: MoodId) => next && relight.pickMood(next)
+})
 </script>
 
 <template>
-  <div class="flex flex-col gap-2 px-1">
-    <span class="text-xs text-primary-warm-gray">{{
-      lc('relight.mood', locale)
-    }}</span>
-    <div
-      role="radiogroup"
-      :aria-label="lc('relight.mood', locale)"
-      class="flex flex-wrap gap-1.5"
-    >
-      <button
-        v-for="id in MOOD_IDS"
-        :key="id"
-        type="button"
-        role="radio"
-        :aria-checked="mood === id"
-        :class="
-          cn(
-            'h-7 rounded-full border border-transparency-white-t20 px-3 text-[11px] text-primary-warm-white transition hover:bg-transparency-white-t8 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none disabled:opacity-40',
-            mood === id &&
-              'border-primary-comfy-yellow bg-primary-comfy-yellow font-medium text-primary-comfy-ink hover:bg-primary-comfy-yellow'
-          )
-        "
-        @click="emit('pick', id)"
-      >
-        {{ lc(MOOD_LABELS[id], locale) }}
-      </button>
-    </div>
-    <p class="text-[11px] text-primary-warm-gray">
-      {{ lc('relight.mood.note', locale) }}
-    </p>
-  </div>
+  <EditorTiles
+    v-model="mood"
+    :label="lc('relight.mood', locale)"
+    :options
+    :strip
+  >
+    <template #tile="{ option }">
+      <img
+        v-if="thumbnails[option.id]"
+        :src="thumbnails[option.id]"
+        alt=""
+        class="size-full object-cover"
+      />
+      <template v-else-if="image">
+        <img :src="image.url" alt="" class="size-full object-cover" />
+        <RelightPreview
+          :lights="moodLights(option.id, String)"
+          :scene="setup.scene"
+        />
+      </template>
+    </template>
+  </EditorTiles>
 </template>

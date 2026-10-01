@@ -27,7 +27,7 @@ const areas = computed(() => [
   }
 ])
 const field =
-  'rounded-lg border border-transparency-white-t8 bg-transparency-white-t4 px-2.5 text-xs text-primary-warm-white placeholder:text-primary-warm-gray/60 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none disabled:opacity-40'
+  'rounded-lg bg-transparency-white-t4 px-2.5 text-xs text-primary-warm-white placeholder:text-primary-warm-gray/60 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none disabled:opacity-40'
 
 function onPrompt(event: Event) {
   if (event.target instanceof HTMLTextAreaElement)
@@ -66,9 +66,9 @@ function onSeed(event: Event) {
       (strength) => relight.updateGeneration({ strength }, 'strength')
     "
   />
-  <details class="group rounded-xl border border-transparency-white-t8">
+  <details class="group">
     <summary
-      class="flex h-9 cursor-pointer list-none items-center justify-between px-3 text-[11px] font-medium tracking-wider text-primary-warm-gray uppercase focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none [&::-webkit-details-marker]:hidden"
+      class="flex h-8 cursor-pointer list-none items-center justify-between rounded-md px-1 text-xs text-primary-warm-gray transition hover:text-primary-warm-white focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none [&::-webkit-details-marker]:hidden"
     >
       {{ lc('relight.generation.options', locale) }}
       <ChevronDown
@@ -76,7 +76,7 @@ function onSeed(event: Event) {
         aria-hidden="true"
       />
     </summary>
-    <div class="flex flex-col gap-3 px-2 pb-3">
+    <div class="flex flex-col gap-2 pt-1">
       <EditorSelect
         :model-value="setup.generation.area"
         :label="lc('relight.generation.area', locale)"

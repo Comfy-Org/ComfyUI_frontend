@@ -21,6 +21,8 @@ import {
   newMask
 } from '../lib/workshop/relight/lights'
 import type { RelightResult } from '../lib/workshop/relight/mock-run'
+import type { ShadowStyle } from '../lib/workshop/relight/shadows'
+import { shadowStyle, withShadowStyle } from '../lib/workshop/relight/shadows'
 import {
   RELIGHT_EXAMPLE,
   relightRequest,
@@ -49,7 +51,7 @@ type RelightPhase =
   | { readonly kind: 'done'; readonly result: RelightResult }
   | { readonly kind: 'failed' }
 
-export type RelightTray = 'lights' | 'scene' | 'masks' | 'generation'
+export type RelightTray = 'mood' | 'lights' | 'shadows' | 'masks' | 'generation'
 export type RelightView = 'live' | 'original' | 'lightmap'
 
 /** Relight's page state. The run itself is `runRelight`, mocked for now. */
@@ -218,6 +220,10 @@ export function useRelight(locale: Locale = 'en') {
     selected.value = lights.value[0]?.id
   }
 
+  function applyShadowStyle(style: ShadowStyle) {
+    change({ lights: withShadowStyle(lights.value, style) })
+  }
+
   function updateScene(patch: Partial<RelightScene>, key?: string) {
     change({ scene: { ...setup.value.scene, ...patch } }, key)
   }
@@ -334,6 +340,7 @@ export function useRelight(locale: Locale = 'en') {
     selected,
     full,
     canRun,
+    shadows: computed(() => shadowStyle(lights.value)),
     canUndo: computed(() => past.value.length > 0),
     canRedo: computed(() => future.value.length > 0),
     useExample,
@@ -345,6 +352,7 @@ export function useRelight(locale: Locale = 'en') {
     duplicateLight,
     removeLight,
     pickMood,
+    applyShadowStyle,
     updateScene,
     updateGeneration,
     addMask,

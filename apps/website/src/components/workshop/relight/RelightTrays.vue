@@ -3,7 +3,7 @@ import type { Relight } from '../../../composables/useRelight'
 import type { Locale } from '../../../i18n/translations'
 import { lc } from '../../../lib/workshop/relight/copy'
 import EditorTray from '../app-editor/EditorTray.vue'
-import { RELIGHT_SECTIONS } from './sections'
+import { RELIGHT_SECTIONS, RELIGHT_TRAYS } from './sections'
 
 const { relight, locale = 'en' } = defineProps<{
   relight: Relight
@@ -14,15 +14,22 @@ const { tray } = relight
 </script>
 
 <template>
-  <template v-for="section in RELIGHT_SECTIONS" :key="section.id">
+  <template v-for="open in RELIGHT_TRAYS" :key="open.id">
     <EditorTray
-      v-if="tray === section.id"
-      :title="lc(section.title, locale)"
+      v-if="tray === open.id"
+      :title="lc(open.title, locale)"
       :close-label="lc('relight.close', locale)"
       class="max-w-100"
       @close="tray = undefined"
     >
-      <component :is="section.content" :relight :locale />
+      <template v-for="section in RELIGHT_SECTIONS" :key="section.id">
+        <component
+          :is="section.content"
+          v-if="section.tray === open.id"
+          :relight
+          :locale
+        />
+      </template>
     </EditorTray>
   </template>
 </template>

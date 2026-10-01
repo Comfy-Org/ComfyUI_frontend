@@ -28,31 +28,16 @@ const copy = {
     en: 'Drag a light to move it · Arrow keys to nudge',
     'zh-CN': '拖动灯光以移动 · 方向键微调'
   },
-  'relight.mood': { en: 'Presets', 'zh-CN': '预设' },
+  'relight.mood': { en: 'Mood', 'zh-CN': '氛围' },
   'relight.mood.studio': { en: 'Studio', 'zh-CN': '影棚' },
   'relight.mood.sunset': { en: 'Sunset', 'zh-CN': '日落' },
   'relight.mood.window': { en: 'Window', 'zh-CN': '窗光' },
   'relight.mood.split': { en: 'Split', 'zh-CN': '侧光' },
   'relight.mood.neon': { en: 'Neon', 'zh-CN': '霓虹' },
   'relight.mood.moonlight': { en: 'Moonlight', 'zh-CN': '月光' },
-  'relight.mood.note': {
-    en: 'A preset replaces your lights. Undo brings them back.',
-    'zh-CN': '选择预设会替换当前灯光，可撤销恢复。'
-  },
   'relight.lights': { en: 'Lights', 'zh-CN': '灯光' },
   'relight.lights.count': { en: '{n} of {max}', 'zh-CN': '{n} / {max}' },
-  'relight.lights.add.point': {
-    en: 'Add a point light',
-    'zh-CN': '添加点光'
-  },
-  'relight.lights.add.directional': {
-    en: 'Add a directional light',
-    'zh-CN': '添加平行光'
-  },
-  'relight.lights.empty': {
-    en: 'No lights yet. Add a point or directional light.',
-    'zh-CN': '还没有灯光。添加一盏点光或平行光。'
-  },
+  'relight.lights.empty': { en: 'No lights yet.', 'zh-CN': '还没有灯光。' },
   'relight.light.key': { en: 'Key', 'zh-CN': '主光' },
   'relight.light.fill': { en: 'Fill', 'zh-CN': '补光' },
   'relight.light.warmKey': { en: 'Warm key', 'zh-CN': '暖色主光' },
@@ -90,6 +75,13 @@ const copy = {
   'relight.color.magenta': { en: 'Magenta', 'zh-CN': '洋红' },
   'relight.color.custom': { en: 'Custom color', 'zh-CN': '自定义颜色' },
   'relight.scene': { en: 'Scene', 'zh-CN': '场景' },
+  'relight.shadows': { en: 'Shadows', 'zh-CN': '阴影' },
+  'relight.shadows.none': { en: 'None', 'zh-CN': '无' },
+  'relight.shadows.soft': { en: 'Soft', 'zh-CN': '柔和' },
+  'relight.shadows.hard': { en: 'Hard', 'zh-CN': '硬朗' },
+  'relight.shadows.long': { en: 'Long', 'zh-CN': '长影' },
+  'relight.panel.expand': { en: 'Show all settings', 'zh-CN': '显示全部设置' },
+  'relight.panel.collapse': { en: 'Hide settings', 'zh-CN': '收起设置' },
   'relight.scene.ambient': { en: 'Ambient light', 'zh-CN': '环境光' },
   'relight.scene.ambientColor': { en: 'Ambient color', 'zh-CN': '环境光颜色' },
   'relight.scene.removeOriginal': {

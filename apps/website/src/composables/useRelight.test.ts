@@ -149,6 +149,18 @@ describe('useRelight', () => {
     expect(relight.lights.value[0].mask).toBeUndefined()
   })
 
+  it('applies a shadow look to every light as one undo step', () => {
+    const relight = start()
+    expect(relight.shadows.value).toBe('soft')
+
+    relight.applyShadowStyle('none')
+
+    expect(relight.shadows.value).toBe('none')
+    expect(relight.lights.value.every(({ shadows }) => !shadows)).toBe(true)
+    relight.undo()
+    expect(relight.shadows.value).toBe('soft')
+  })
+
   it('cannot run with every light hidden', () => {
     const relight = start()
     relight.updateLight('sunset-1', { visible: false })
