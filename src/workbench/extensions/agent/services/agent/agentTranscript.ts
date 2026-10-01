@@ -1,5 +1,8 @@
 import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
-import { zPersistedToolCallSummary } from '../../schemas/agentApiSchema'
+import {
+  toTurnId,
+  zPersistedToolCallSummary
+} from '../../schemas/agentApiSchema'
 import type { WorkflowReference } from '../../types/workflowReference'
 import { parseWorkflowReferences } from '../../utils/workflowReferenceText'
 import type { AssistantMessage, ToolPart } from './agentMessageParts'
@@ -169,9 +172,8 @@ function parseUserWorkflowReferences(
 /**
  * `zPersistedToolCallSummary` only ever validates a terminal
  * (`success`/`error`) row — the backend drops a row a dead turn left in
- * `pending`/`running` before persisting it. `isLive` (the row is the one
- * actively backed by a live transport — the run_approval mid-ask case) is
- * kept only for a call that arrives through the live WebSocket path with a
+ * `pending`/`running` before persisting it. `isLive` (the row is backed by a
+ * live transport) is kept only for a call that arrives through the live WebSocket path with a
  * status this schema doesn't cover; a restored (non-live) row is always
  * `done`.
  */
@@ -330,13 +332,14 @@ function applyAssistantRow(
   text: string
 ): NormalizedAgentTranscript['pending'] {
   const isLive = row.status === 'streaming'
+  message.streaming = isLive
   appendAssistantContent(message, row, text, isLive)
 
   if (!isLive) return undefined
 
   const runApproval = pendingRunApproval(row)
   if (runApproval) message.parts.push({ type: 'runApproval', ...runApproval })
-  return { messageId: row.id as TurnId, message }
+  return { messageId: toTurnId(row.id), message }
 }
 
 /**
@@ -396,10 +399,6 @@ function recordUserRow(
   return update.workflowId
 }
 
-/**
- * Applies an assistant row onto its turn's running message and records it
- * onto `assistants`. Returns the row's `pending` entry, if it is mid-ask.
- */
 function recordAssistantRow(
   row: AgentMessages[number],
   turnId: TurnId,

@@ -164,6 +164,7 @@ const copy = {
     en: 'D · Side panel',
     'zh-CN': 'D · 侧边面板'
   },
+  'cinematic.panel.newShot': { en: 'New shot', 'zh-CN': '新镜头' },
   'cinematic.panel.label': {
     en: 'Shot settings',
     'zh-CN': '镜头设置'
@@ -634,6 +635,10 @@ const copy = {
     en: 'Add a starting frame for this model.',
     'zh-CN': '请为此模型添加起始帧。'
   },
+  'cinematic.video.audioHint': {
+    en: 'Adds sound to the clip.',
+    'zh-CN': '为片段添加声音。'
+  },
   'cinematic.video.oneClip': {
     en: 'One clip per request. Describe the action and camera movement in your scene.',
     'zh-CN': '每次请求生成一个片段。请在场景中描述动作和镜头运动。'
@@ -686,10 +691,12 @@ const copy = {
     en: 'Colors',
     'zh-CN': '颜色'
   },
-  'cinematic.colors.hint': {
-    en: 'Sent as words, so every model can follow them',
-    'zh-CN': '以文字发送，所有模型都能使用'
+  'cinematic.colors.shade': {
+    en: 'Saturation and brightness',
+    'zh-CN': '饱和度与亮度'
   },
+  'cinematic.colors.hue': { en: 'Hue', 'zh-CN': '色相' },
+  'cinematic.colors.hex': { en: 'Hex color', 'zh-CN': '十六进制颜色' },
   'cinematic.colors.color': {
     en: 'Color',
     'zh-CN': '颜色'

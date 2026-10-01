@@ -9015,8 +9015,8 @@ Enterprise`
     'zh-CN': 'ROUTER'
   },
   'platform.serverlessDeploy.copy': {
-    en: 'Copy commands',
-    'zh-CN': '复制命令'
+    en: 'Copy prompt',
+    'zh-CN': '复制提示词'
   },
   'platform.serverlessDeploy.copied': {
     en: 'Copied',
@@ -10582,6 +10582,7 @@ Enterprise`
     'zh-CN': '此模型的原生 Router 请求映射尚未验证。调用前请查看 Router 文档。'
   },
   'workshop.api.copied': { en: 'Copied', 'zh-CN': '已复制' },
+  'workshop.api.copyEndpoint': { en: 'Copy endpoint', 'zh-CN': '复制接口地址' },
   'workshop.api.getKey': { en: 'Get API key', 'zh-CN': '获取 API 密钥' },
   'workshop.api.downloadGraph': {
     en: 'Download the API graph',
@@ -10592,13 +10593,14 @@ Enterprise`
   'workshop.api.needsEndpoint': { en: 'Endpoint', 'zh-CN': '接口地址' },
   'workshop.api.needsKey': { en: 'Key', 'zh-CN': '密钥' },
   'workshop.api.needsFiles': { en: 'Your files', 'zh-CN': '你的文件' },
+  'workshop.api.runsOn': { en: 'Runs on', 'zh-CN': '运行于' },
   'workshop.api.runsOnRouter': {
-    en: 'Comfy Router runs it',
-    'zh-CN': '由 Comfy Router 运行'
+    en: 'Comfy Router',
+    'zh-CN': 'Comfy Router'
   },
   'workshop.api.runsOnCloud': {
-    en: 'Comfy Cloud runs it',
-    'zh-CN': '由 Comfy Cloud 运行'
+    en: 'Comfy Cloud',
+    'zh-CN': 'Comfy Cloud'
   },
   'workshop.api.filesRead': {
     en: 'Read from the paths in the code when it runs',
@@ -10607,6 +10609,10 @@ Enterprise`
   'workshop.api.filesUploaded': {
     en: 'Uploaded before the call, then read from their urls',
     'zh-CN': '调用前先上传，再通过链接读取'
+  },
+  'workshop.api.filesSdk': {
+    en: 'Uploaded by the code from their urls',
+    'zh-CN': '由代码根据链接上传'
   },
 
   // Workshop – examples
@@ -10734,8 +10740,8 @@ Enterprise`
       '以下请求使用与体验区相同的预设图和设置。每次提交都可能开始一次付费运行；如果提交结果未知，请勿自动重试。'
   },
   'workshop.workflow.apiNote': {
-    en: 'Needs a paid Cloud plan and available credits.',
-    'zh-CN': '需要付费的 Cloud 方案和可用额度。'
+    en: 'Needs a paid Cloud plan and credits.',
+    'zh-CN': '需要付费的 Cloud 方案和额度。'
   },
   'workshop.workflow.apiDocs': {
     en: 'API documentation',
@@ -11001,10 +11007,6 @@ Enterprise`
     'zh-CN': '在 platform.comfy.org 上为 {workspace} 添加积分'
   },
   'workshop.hub.tryNow': { en: 'Try now', 'zh-CN': '立即试用' },
-  'workshop.cinematic.openInStudio': {
-    en: 'Open in Cinematic Studio',
-    'zh-CN': '在 Cinematic Studio 中打开'
-  },
   'workshop.hub.tag.partnerNodes': {
     en: 'Partner Nodes',
     'zh-CN': '合作伙伴节点'

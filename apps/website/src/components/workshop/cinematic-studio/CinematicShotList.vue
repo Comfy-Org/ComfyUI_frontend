@@ -95,15 +95,27 @@ const rowClass = (key: PickerKey) =>
         </span>
         <span
           v-if="camera.specs.length"
-          class="flex max-w-full flex-wrap items-center gap-1 sm:shrink-0"
+          class="flex max-w-full items-center gap-1 sm:shrink-0"
           data-testid="camera-specs"
         >
           <span
-            v-for="spec in camera.specs"
+            v-for="(spec, index) in camera.specs"
             :key="spec"
-            class="rounded-md bg-transparency-white-t8 px-1.5 py-0.5 text-xs text-primary-comfy-canvas tabular-nums"
+            :class="
+              cn(
+                'truncate rounded-md bg-transparency-white-t8 px-1.5 py-0.5 text-xs text-primary-comfy-canvas tabular-nums',
+                index > 0 && 'max-sm:hidden'
+              )
+            "
           >
             {{ spec }}
+          </span>
+          <span
+            v-if="camera.specs.length > 1"
+            class="shrink-0 rounded-md bg-transparency-white-t8 px-1.5 py-0.5 text-xs text-primary-comfy-canvas tabular-nums sm:hidden"
+            aria-hidden="true"
+          >
+            +{{ camera.specs.length - 1 }}
           </span>
         </span>
       </span>

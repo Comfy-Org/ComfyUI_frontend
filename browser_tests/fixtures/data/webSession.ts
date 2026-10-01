@@ -14,6 +14,12 @@ import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
 
 export const WEB_SESSION_FEATURES: RemoteConfig = { unified_web_session: true }
 
+/** What ingest answers a caller with no client header or cookie. */
+export const WEB_SESSION_ANONYMOUS_FEATURES = {
+  unified_web_session: false,
+  web_session_probe: true
+} satisfies RemoteConfig & { web_session_probe: boolean }
+
 export const WEB_SESSION_COOKIE = {
   name: 'e2e_web_session',
   value: 'cookie-e2e'

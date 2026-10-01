@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
 import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
+import { toTurnId } from '../../schemas/agentApiSchema'
 import type {
   AgentChatEvent,
   AgentEventTransport
@@ -53,6 +54,135 @@ interface ActiveTurnSlot {
   transport: AgentEventTransport
 }
 
+export interface LiveTurn {
+  threadId: string
+  messageId: TurnId
+}
+
+interface AnchoredLocalPart {
+  part: AssistantMessage['parts'][number]
+  toolCount: number
+  textOffset: number
+}
+
+function anchorLocalParts(
+  parts: AssistantMessage['parts']
+): AnchoredLocalPart[] {
+  const localParts: AnchoredLocalPart[] = []
+  let toolCount = 0
+  let textOffset = 0
+  for (const part of parts) {
+    if (part.type === 'text') {
+      textOffset += part.text.length
+      continue
+    }
+    if (part.type === 'tool') {
+      toolCount += 1
+      textOffset = 0
+      continue
+    }
+    if (part.type === 'runApproval') continue
+    localParts.push({ part, toolCount, textOffset })
+  }
+  return localParts
+}
+
+function textSplitAt(
+  part: Extract<AssistantMessage['parts'][number], { type: 'text' }>,
+  toolCount: number,
+  textOffset: number,
+  anchor: AnchoredLocalPart
+): number | undefined {
+  if (toolCount !== anchor.toolCount) return undefined
+  const splitAt = anchor.textOffset - textOffset
+  return splitAt >= 0 && splitAt <= part.text.length ? splitAt : undefined
+}
+
+function replaceTextWithLocalPart(
+  parts: AssistantMessage['parts'],
+  index: number,
+  part: Extract<AssistantMessage['parts'][number], { type: 'text' }>,
+  localPart: AssistantMessage['parts'][number],
+  splitAt: number
+): void {
+  const before = { ...part, text: part.text.slice(0, splitAt) }
+  const after = { ...part, text: part.text.slice(splitAt) }
+  parts.splice(
+    index,
+    1,
+    ...(before.text ? [before] : []),
+    localPart,
+    ...(after.text ? [after] : [])
+  )
+}
+
+function insertAnchoredLocalPart(
+  parts: AssistantMessage['parts'],
+  anchor: AnchoredLocalPart
+): void {
+  let toolCount = 0
+  let textOffset = 0
+  for (let index = 0; index < parts.length; index += 1) {
+    const part = parts[index]
+    if (part.type === 'tool') {
+      const atAnchor =
+        toolCount === anchor.toolCount && textOffset === anchor.textOffset
+      if (atAnchor) {
+        parts.splice(index, 0, anchor.part)
+        return
+      }
+      toolCount += 1
+      textOffset = 0
+      continue
+    }
+    if (part.type !== 'text') continue
+    const splitAt = textSplitAt(part, toolCount, textOffset, anchor)
+    if (splitAt === undefined) {
+      textOffset += part.text.length
+      continue
+    }
+    replaceTextWithLocalPart(parts, index, part, anchor.part, splitAt)
+    return
+  }
+  parts.push(anchor.part)
+}
+
+function interleaveLocalParts(
+  persistedParts: AssistantMessage['parts'],
+  localParts: AnchoredLocalPart[]
+): AssistantMessage['parts'] {
+  const mergedParts = [...persistedParts]
+  let groupStart = 0
+  while (groupStart < localParts.length) {
+    const first = localParts[groupStart]
+    let groupEnd = groupStart + 1
+    while (
+      groupEnd < localParts.length &&
+      localParts[groupEnd].toolCount === first.toolCount &&
+      localParts[groupEnd].textOffset === first.textOffset
+    )
+      groupEnd += 1
+    for (let index = groupEnd - 1; index >= groupStart; index -= 1)
+      insertAnchoredLocalPart(mergedParts, localParts[index])
+    groupStart = groupEnd
+  }
+  return mergedParts
+}
+
+function finishWithPersistedParts(
+  message: AssistantMessage,
+  persistedParts: AssistantMessage['parts'] | undefined
+): void {
+  if (persistedParts === undefined) {
+    message.parts = message.parts.filter((part) => part.type !== 'runApproval')
+    return
+  }
+  message.parts = interleaveLocalParts(
+    persistedParts,
+    anchorLocalParts(message.parts)
+  )
+}
+
 const MAX_DEPARTED_TURNS = 32
 
 export const useAgentConversationStore = defineStore(
@@ -98,6 +228,7 @@ export const useAgentConversationStore = defineStore(
     const settledActiveTransports = new Set<AgentEventTransport>()
     const backgroundTurns = new Map<string, BackgroundTurn>()
     let hydratedMessageIds = new Set<string>()
+    let hydratedTurnIds = new Map<string, TurnId>()
     let hydratedAssistantTurnIds = new Set<TurnId>()
     const demotedSnapshotByStash = new Map<TurnId, TurnId>()
     const restoredBackgroundMessageIds = new Set<TurnId>()
@@ -445,13 +576,15 @@ export const useAgentConversationStore = defineStore(
       if (resumedThreadId === null) return undefined
       const entry = latestBackgroundTurn(resumedThreadId)
       if (!entry) return undefined
-      // A turn started while this resume was in flight holds the slot, and the
-      // stash is the older of the two. Taking the slot anyway would orphan the
-      // newer turn's transport -- the same leak in the other direction. Leave
-      // the stash where it is: it still receives its own frames as a
-      // background turn, and a later resume can restore it.
-      if (activeSlot.value !== null && activeSlot.value.origin !== 'snapshot')
-        return undefined
+      // A live turn from the thread we are leaving must become a background
+      // turn before the selected thread resumes. A newer turn on the selected
+      // thread, however, already owns the slot; replacing it would orphan its
+      // transport, so leave the older stash routable in the background.
+      const slot = activeSlot.value
+      if (slot !== null && slot.origin !== 'snapshot') {
+        if (slot.threadId === resumedThreadId) return undefined
+        stashActiveTurn()
+      }
       return { entry, resumedThreadId }
     }
 
@@ -472,12 +605,15 @@ export const useAgentConversationStore = defineStore(
       // turn by the server's turn_id; row.id bridges the two. Matching turns by
       // identity, not by shared user text, is what stops a repeated prompt from
       // colliding with an unrelated turn.
+      const persistedMessageId = hydratedTurnIds.get(entry.messageId)
       const kept = messages.value.filter((m) => m.id !== entry.message.id)
       // Called before the branch, not inside it: it pops the duplicate row and
       // its user text whether or not this entry turns out to be settled.
       const replacedIndex = removeHydratedCopy(entry, kept)
       if (retirePersistedBackgroundTurn(entry, replacedIndex !== undefined))
         return
+      if (persistedMessageId !== undefined)
+        entry.message.id = persistedMessageId
       restoreBackgroundUserText(entry)
       const index = replacedIndex ?? kept.length
       kept.splice(index, 0, entry.message)
@@ -641,6 +777,45 @@ export const useAgentConversationStore = defineStore(
       backgroundTurns.clear()
     }
 
+    function liveTurns(): LiveTurn[] {
+      const background = Array.from(backgroundTurns.values())
+        .filter((entry) => !entry.settled)
+        .map((entry) => ({
+          threadId: entry.threadId,
+          messageId: entry.messageId
+        }))
+      const slot = activeSlot.value
+      if (slot === null || slot.threadId === null) return background
+      return [
+        { threadId: slot.threadId, messageId: slot.turnId },
+        ...background
+      ]
+    }
+
+    function settleTurn(
+      turn: LiveTurn,
+      persistedParts: AssistantMessage['parts'] | undefined
+    ): void {
+      const slot = activeSlot.value
+      const isActive =
+        slot !== null &&
+        turn.threadId === slot.threadId &&
+        turn.messageId === slot.turnId
+      if (isActive) {
+        finishWithPersistedParts(slot.message, persistedParts)
+        rememberDepartedActiveTurn('settled-turn')
+        slot.transport.settle()
+        slot.transport.dispose()
+        clearActive()
+        return
+      }
+      const entry = backgroundTurns.get(turn.messageId)
+      if (!entry || entry.messageId !== turn.messageId || entry.settled) return
+      finishWithPersistedParts(entry.message, persistedParts)
+      entry.transport.settle()
+      entry.settled = true
+    }
+
     function departedTurnKey(threadId: string, messageId: string): string {
       return `${threadId}\u0000${messageId}`
     }
@@ -705,6 +880,7 @@ export const useAgentConversationStore = defineStore(
       threadId.value = null
       forgetAllApprovals()
       hydratedMessageIds = new Set()
+      hydratedTurnIds = new Map()
       hydratedAssistantTurnIds = new Set()
       demotedSnapshotByStash.clear()
       restoredBackgroundMessageIds.clear()
@@ -726,6 +902,11 @@ export const useAgentConversationStore = defineStore(
       userWorkflowReferences.value = transcript.userWorkflowReferences
       latestWorkflowId.value = transcript.latestWorkflowId
       hydratedMessageIds = transcript.rowIds
+      hydratedTurnIds = new Map(
+        history
+          .filter((row) => row.role === 'assistant')
+          .map((row) => [row.id, toTurnId(row.turn_id)])
+      )
       hydratedAssistantTurnIds = transcript.assistantTurnIds
       demotedSnapshotByStash.clear()
       restoredBackgroundMessageIds.clear()
@@ -871,6 +1052,8 @@ export const useAgentConversationStore = defineStore(
       resumeBackgroundTurn,
       settleBackgroundTurn,
       dropBackgroundTurns,
+      liveTurns,
+      settleTurn,
       reset,
       hydrate
     }

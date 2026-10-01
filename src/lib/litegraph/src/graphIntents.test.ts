@@ -15,9 +15,7 @@ import {
 } from './graphIntents'
 import type { GraphIntent, GraphIntentEvent } from './graphIntents'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 const CLEAR: GraphIntent = { type: 'clear', graphId: 'g', nodeIds: [] }
 
