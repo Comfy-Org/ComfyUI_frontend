@@ -162,7 +162,7 @@ function pickApp(id: string) {
   <WorkshopGate :allowed="studioEnabled">
     <CinematicAppsHub v-if="layout === 'hub'" :models="shownApps" :locale />
     <ReshootStudio v-else-if="app === 'reshoot'" :locale />
-    <MoveAnythingStudio v-else-if="app === 'move-anything'" :locale />
+    <MoveAnythingStudio v-else-if="app === 'move-anything'" :layout :locale />
     <RelightStudio v-else-if="app === 'relight'" :layout :locale />
     <CinematicStudioPanel
       v-else-if="layout === 'd'"

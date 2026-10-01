@@ -53,6 +53,7 @@ export function useMoveAnything(locale: Locale = 'en') {
   const tool = ref<MoveTool>('move')
   const tray = ref<MoveTray>()
   const quality = ref<MoveQuality>('fast')
+  const seed = ref(42)
   const selected = ref<string>()
   let ownUrl: string | undefined
   let pendingUrl: string | undefined
@@ -156,7 +157,12 @@ export function useMoveAnything(locale: Locale = 'en') {
     phase.value = { kind: 'moving' }
     try {
       const result = await runMove(
-        { imageUrl: current.url, objects: moved.value, quality: quality.value },
+        {
+          imageUrl: current.url,
+          objects: moved.value,
+          quality: quality.value,
+          seed: seed.value
+        },
         controller.signal
       )
       if (run === controller) phase.value = { kind: 'done', result }
@@ -192,6 +198,7 @@ export function useMoveAnything(locale: Locale = 'en') {
     tool,
     tray,
     quality,
+    seed,
     selected,
     moved,
     full,

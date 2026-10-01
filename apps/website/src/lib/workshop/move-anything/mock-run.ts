@@ -7,6 +7,7 @@ export interface MoveRequest {
   readonly imageUrl: string
   readonly objects: readonly MoveObject[]
   readonly quality: MoveQuality
+  readonly seed: number
 }
 
 export interface MoveResult {
@@ -30,7 +31,7 @@ export function runMove(
   signal: AbortSignal
 ): Promise<MoveResult> {
   const url = request.imageUrl === EXAMPLE ? EXAMPLE_MOVED : request.imageUrl
-  return mockJob({ url, seed: 42 }, signal, MOCK_DELAY_MS)
+  return mockJob({ url, seed: request.seed }, signal, MOCK_DELAY_MS)
 }
 
 export const MOVE_EXAMPLE = {

@@ -63,6 +63,18 @@ const copy = {
     en: 'About a minute, keeps finer detail',
     'zh-CN': '约 1 分钟，保留更多细节'
   },
+  'move.quality.fastShort': { en: 'Fast · 20 s', 'zh-CN': '快速 · 20 秒' },
+  'move.quality.bestShort': { en: 'Best · 1 min', 'zh-CN': '最佳 · 1 分钟' },
+  'move.image.size': {
+    en: '{width} × {height}',
+    'zh-CN': '{width} × {height}'
+  },
+  'move.image.change': { en: 'Change', 'zh-CN': '更换' },
+  'move.advanced': { en: 'Advanced', 'zh-CN': '高级' },
+  'move.seed': { en: 'Seed', 'zh-CN': '种子' },
+  'move.panel': { en: 'Move anything settings', 'zh-CN': '随意移动设置' },
+  'move.panel.expand': { en: 'Show all settings', 'zh-CN': '显示全部设置' },
+  'move.panel.collapse': { en: 'Hide settings', 'zh-CN': '收起设置' },
   'move.close': { en: 'Close', 'zh-CN': '关闭' },
   'move.generate': {
     en: 'Move {n} object | Move {n} objects',

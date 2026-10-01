@@ -9,40 +9,35 @@ import { workshopAppRepo } from '../../../lib/workshop/apps'
 import { mc } from '../../../lib/workshop/move-anything/copy'
 import AppEditorShell from '../app-editor/AppEditorShell.vue'
 import EditorAlert from '../app-editor/EditorAlert.vue'
-import EditorEmpty from '../app-editor/EditorEmpty.vue'
 import EditorHistory from '../app-editor/EditorHistory.vue'
-import EditorResult from '../app-editor/EditorResult.vue'
-import EditorResultDock from '../app-editor/EditorResultDock.vue'
-import { MOVE_EXAMPLE } from '../../../lib/workshop/move-anything/mock-run'
-import MoveAnythingDock from './MoveAnythingDock.vue'
-import MoveAnythingObjects from './MoveAnythingObjects.vue'
-import MoveAnythingQuality from './MoveAnythingQuality.vue'
-import MoveAnythingWorkspace from './MoveAnythingWorkspace.vue'
+import MoveAnythingDocks from './MoveAnythingDocks.vue'
+import MoveAnythingMain from './MoveAnythingMain.vue'
+import MoveAnythingPanel from './MoveAnythingPanel.vue'
+import MoveAnythingQualityPicker from './MoveAnythingQualityPicker.vue'
+import MoveAnythingRun from './MoveAnythingRun.vue'
+import MoveAnythingTrays from './MoveAnythingTrays.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale = 'en', layout = 'd' } = defineProps<{
+  locale?: Locale
+  /** The review menu's layout: `e` keeps the bottom dock, else a side panel. */
+  layout?: string
+}>()
 
 const move = useMoveAnything(locale)
-const { image, objects, phase, tool, tray, quality, selected } = move
+const { image, phase, quality } = move
 const view = ref<MoveView>('compare')
+const panel = computed(() => layout !== 'e')
 reportStudioBusy(() => phase.value.kind === 'moving')
 
-const resultLabels = computed(() => ({
-  resultAlt: mc('move.alt.result', locale),
-  originalAlt:
-    image.value?.url === MOVE_EXAMPLE.url
-      ? mc('move.alt.example', locale)
-      : (image.value?.name ?? ''),
-  original: mc('move.view.original', locale),
-  result: mc('move.view.result', locale),
-  slider: mc('move.compare', locale)
-}))
-const dockLabels = {
-  compare: mc('move.view.compare', locale),
-  result: mc('move.view.result', locale),
-  original: mc('move.view.original', locale),
-  edit: mc('move.edit', locale),
-  again: mc('move.again', locale),
-  download: mc('move.download', locale)
+const historyLabels = {
+  group: mc('move.history', locale),
+  undo: mc('move.tool.undo', locale),
+  redo: mc('move.tool.redo', locale)
+}
+const panelLabels = {
+  label: mc('move.panel', locale),
+  expand: mc('move.panel.expand', locale),
+  collapse: mc('move.panel.collapse', locale)
 }
 </script>
 
@@ -50,94 +45,43 @@ const dockLabels = {
   <AppEditorShell
     :title="mc('move.title', locale)"
     :tools-label="mc('move.tools', locale)"
+    :panel-labels="panelLabels"
+    :panel-dimmed="phase.kind === 'done'"
     :repo="workshopAppRepo('move-anything')"
     :locale
     data-testid="move-anything"
     :show-dock="Boolean(image)"
   >
-    <EditorEmpty
-      v-if="!image"
-      :title="mc('move.empty.title', locale)"
-      :meta="mc('move.empty.meta', locale)"
-      :upload-label="mc('move.empty.upload', locale)"
-      :example-label="mc('move.empty.example', locale)"
-      :example-image="MOVE_EXAMPLE.url"
-      data-testid="move-empty"
-      @file="move.useFile"
-      @example="move.useExample"
-    />
-    <EditorResult
-      v-else-if="phase.kind === 'done'"
-      :before="image.url"
-      :after="phase.result.url"
-      :view
-      :width="image.width"
-      :height="image.height"
-      :labels="resultLabels"
-    />
-    <MoveAnythingWorkspace v-else :image :move :locale />
+    <MoveAnythingMain :move :view :locale />
     <template #tray>
       <EditorAlert v-if="phase.kind === 'failed'">
         {{ mc('move.failed', locale) }}
       </EditorAlert>
-      <MoveAnythingObjects
-        v-if="tray === 'objects'"
-        :objects
-        :selected
-        :locale
-        @select="(id) => (selected = id)"
-        @remove="move.remove"
-        @add="tool = 'add'"
-        @close="tray = undefined"
-      />
-      <MoveAnythingQuality
-        v-if="tray === 'quality'"
-        v-model="quality"
-        :locale
-        @close="tray = undefined"
-      />
+      <MoveAnythingTrays v-if="!panel" :move :locale />
     </template>
     <template v-if="image && phase.kind !== 'done'" #center>
       <EditorHistory
         :can-undo="move.canUndo.value"
         :can-redo="move.canRedo.value"
         :disabled="phase.kind === 'moving'"
-        :labels="{
-          group: mc('move.history', locale),
-          undo: mc('move.tool.undo', locale),
-          redo: mc('move.tool.redo', locale)
-        }"
+        :labels="historyLabels"
         @undo="move.undo"
         @redo="move.redo"
       />
     </template>
     <template #dock>
-      <EditorResultDock
-        v-if="image && phase.kind === 'done'"
-        v-model:view="view"
-        :href="phase.result.url"
-        :file-name="`moved-${image.name}`"
-        :labels="dockLabels"
-        @edit="move.edit"
-        @again="move.generate"
-      />
-      <MoveAnythingDock
-        v-else
-        :image
-        :tool
-        :tray
-        :quality
-        :object-count="objects.length"
-        :moved-count="move.moved.value.length"
-        :can-generate="move.canGenerate.value"
-        :moving="phase.kind === 'moving'"
-        :locale
-        @tool="(next) => (tool = next)"
-        @file="move.useFile"
-        @tray="move.toggleTray"
-        @generate="move.generate"
-        @cancel="move.cancel"
-      />
+      <MoveAnythingDocks v-model:view="view" :move :panel :locale />
+    </template>
+    <template v-if="panel && image" #panel>
+      <MoveAnythingPanel :image :move :locale />
+    </template>
+    <template v-if="panel && image" #panel-peek>
+      <fieldset :disabled="phase.kind === 'moving'" class="min-w-0 py-1">
+        <MoveAnythingQualityPicker v-model="quality" :locale />
+      </fieldset>
+    </template>
+    <template v-if="panel && image" #panel-footer>
+      <MoveAnythingRun :move :locale block />
     </template>
   </AppEditorShell>
 </template>

@@ -5,36 +5,32 @@ import { useTemplateRef } from 'vue'
 import type {
   MoveImage,
   MoveTool,
-  MoveTray
+  MoveTray,
+  useMoveAnything
 } from '../../../composables/useMoveAnything'
 import type { Locale } from '../../../i18n/translations'
 import { mc } from '../../../lib/workshop/move-anything/copy'
 import type { MoveQuality } from '../../../lib/workshop/move-anything/mock-run'
-import { MOVE_CREDITS } from '../../../lib/workshop/move-anything/mock-run'
 import EditorChip from '../app-editor/EditorChip.vue'
 import EditorDivider from '../app-editor/EditorDivider.vue'
-import EditorRun from '../app-editor/EditorRun.vue'
 import EditorTool from '../app-editor/EditorTool.vue'
+import MoveAnythingRun from './MoveAnythingRun.vue'
 
 const {
+  move,
   image,
   tool,
   tray,
   quality,
   objectCount,
-  movedCount,
-  canGenerate,
-  moving,
   locale = 'en'
 } = defineProps<{
+  move: ReturnType<typeof useMoveAnything>
   image?: MoveImage
   tool: MoveTool
   tray?: MoveTray
   quality: MoveQuality
   objectCount: number
-  movedCount: number
-  canGenerate: boolean
-  moving: boolean
   locale?: Locale
 }>()
 
@@ -42,12 +38,11 @@ const emit = defineEmits<{
   tool: [tool: MoveTool]
   file: [file: File]
   tray: [tray: MoveTray]
-  generate: []
-  cancel: []
 }>()
 
 const input = useTemplateRef<HTMLInputElement>('input')
-const locked = () => !image || moving
+const moving = () => move.phase.value.kind === 'moving'
+const locked = () => !image || moving()
 
 function onChange(event: Event) {
   const file =
@@ -76,7 +71,7 @@ function onChange(event: Event) {
   <EditorDivider />
   <EditorChip
     :value="image?.name ?? mc('move.image', locale)"
-    :disabled="moving"
+    :disabled="moving()"
     :aria-label="mc('move.change', locale)"
     class="max-sm:hidden"
     @click="input?.click()"
@@ -105,20 +100,7 @@ function onChange(event: Event) {
     @click="emit('tray', 'quality')"
   />
   <EditorDivider />
-  <EditorRun
-    :label="
-      canGenerate
-        ? mc('move.generate', locale, { n: movedCount })
-        : mc('move.generate.idle', locale)
-    "
-    :credits="mc('move.credits', locale, { n: MOVE_CREDITS })"
-    :cancel-label="mc('move.cancel', locale)"
-    :running="moving"
-    :disabled="!canGenerate"
-    data-testid="move-generate"
-    @run="emit('generate')"
-    @cancel="emit('cancel')"
-  />
+  <MoveAnythingRun :move :locale />
   <input
     ref="input"
     type="file"
