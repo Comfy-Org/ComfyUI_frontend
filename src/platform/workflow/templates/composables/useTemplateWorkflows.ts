@@ -153,20 +153,18 @@ export function useTemplateWorkflows() {
     showTemplateError(t('templateWorkflows.error.loading'))
   }
 
-  async function loadTemplateData(
-    id: string,
-    sourceModule: string,
+  /** Downloads the template's sample inputs and rebinds the graph to them. */
+  async function withPreparedSampleInputs(
+    json: ComfyWorkflowJSON | LegacyLoadableWorkflow,
+    inputs: NonNullable<
+      NonNullable<
+        ReturnType<
+          typeof useWorkflowTemplatesStore
+        >['enhancedTemplates'][number]['io']
+      >['inputs']
+    >,
     signal: AbortSignal
   ) {
-    const json = await fetchTemplateJson(id, sourceModule, signal)
-    signal.throwIfAborted()
-    const template = workflowTemplatesStore.enhancedTemplates.find(
-      (template) =>
-        template.name === id && template.sourceModule === sourceModule
-    )
-    if (isCloud || sourceModule !== 'default' || !template?.io?.inputs?.length)
-      return { json, template }
-
     const toast = useToastStore()
     const progress = {
       severity: 'info' as const,
@@ -176,10 +174,10 @@ export function useTemplateWorkflows() {
     const errors: unknown[] = []
     try {
       const workflow = await validateComfyWorkflow(json)
-      if (!workflow) return { json, template }
+      if (!workflow) return json
       const result = await prepareTemplateInputs(
         workflow,
-        template.io.inputs,
+        inputs,
         signal,
         useSettingStore().get('Comfy.Workflow.NamedValuesRestore'),
         () => {
@@ -202,9 +200,7 @@ export function useTemplateWorkflows() {
     if (errors.length) {
       reportError(
         new AggregateError(errors, 'Template sample preparation failed'),
-        {
-          errorType: 'error_loading_template_media'
-        }
+        { errorType: 'error_loading_template_media' }
       )
       toast.add({
         severity: 'warn',
@@ -213,11 +209,37 @@ export function useTemplateWorkflows() {
         life: 8000
       })
     }
-    return { json: preparedJson, template }
+    return preparedJson
+  }
+
+  async function loadTemplateData(
+    id: string,
+    sourceModule: string,
+    signal: AbortSignal
+  ) {
+    const json = await fetchTemplateJson(id, sourceModule, signal)
+    signal.throwIfAborted()
+    if (!json) return null
+
+    const template = workflowTemplatesStore.enhancedTemplates.find(
+      (template) =>
+        template.name === id && template.sourceModule === sourceModule
+    )
+    const inputs = template?.io?.inputs
+    if (isCloud || sourceModule !== 'default' || !inputs?.length)
+      return { json, template }
+
+    return {
+      json: await withPreparedSampleInputs(json, inputs, signal),
+      template
+    }
   }
 
   async function loadTemplateGraph(
-    { json, template }: Awaited<ReturnType<typeof loadTemplateData>>,
+    {
+      json,
+      template
+    }: NonNullable<Awaited<ReturnType<typeof loadTemplateData>>>,
     workflowName: string
   ): Promise<TemplateLoadResult> {
     try {
@@ -238,6 +260,28 @@ export function useTemplateWorkflows() {
     }
   }
 
+  /** Resolves the source and payload for a template, reporting why it cannot. */
+  async function resolveTemplatePayload(
+    id: string,
+    sourceModule: string,
+    signal: AbortSignal
+  ) {
+    const source = resolveTemplateSource(id, sourceModule)
+    if (!source) {
+      showTemplateError(
+        t('templateWorkflows.error.templateNotFound', { templateName: id })
+      )
+      return null
+    }
+    const data = await loadTemplateData(id, source, signal)
+    signal.throwIfAborted()
+    if (!data) {
+      showTemplateError(t('templateWorkflows.error.loading'))
+      return null
+    }
+    return { source, data }
+  }
+
   async function loadWorkflowTemplate(
     id: string,
     sourceModule: string
@@ -250,18 +294,16 @@ export function useTemplateWorkflows() {
     if (!controller) return 'not-started'
     ownedLoadController = controller
     try {
-      const source = resolveTemplateSource(id, sourceModule)
-      if (!source) {
-        showTemplateError(
-          t('templateWorkflows.error.templateNotFound', { templateName: id })
-        )
-        return 'not-started'
-      }
-      const data = await loadTemplateData(id, source, controller.signal)
-      controller.signal.throwIfAborted()
+      const payload = await resolveTemplatePayload(
+        id,
+        sourceModule,
+        controller.signal
+      )
+      if (!payload) return 'not-started'
       if (!workflowTemplatesStore.startTemplateGraphLoad(controller))
         return 'not-started'
 
+      const { source, data } = payload
       const workflowName =
         source === 'default' ? t(`templateWorkflows.template.${id}`, id) : id
       useTelemetry()?.trackTemplate({
@@ -287,7 +329,7 @@ export function useTemplateWorkflows() {
     id: string,
     sourceModule: string,
     signal: AbortSignal
-  ): Promise<ComfyWorkflowJSON | LegacyLoadableWorkflow> {
+  ): Promise<ComfyWorkflowJSON | LegacyLoadableWorkflow | null> {
     // Default templates provided by frontend are served on this separate endpoint
     const url =
       sourceModule === 'default'
@@ -296,9 +338,10 @@ export function useTemplateWorkflows() {
 
     const response = await fetch(url, { signal })
     if (!response.ok) {
-      throw new Error(
-        `Failed to fetch workflow template ${id} (${response.status})`
-      )
+      reportError(`Failed to fetch workflow template ${id}`, {
+        errorType: 'workflow_template_fetch_failed'
+      })
+      return null
     }
 
     const json: unknown = await response.json()
@@ -310,7 +353,10 @@ export function useTemplateWorkflows() {
 
     const legacy = zLegacyLoadableWorkflow.safeParse(json)
     if (!legacy.success) {
-      throw new Error(`Workflow template ${id} is not a loadable workflow`)
+      reportError(`Workflow template ${id} is not a loadable workflow`, {
+        errorType: 'workflow_template_invalid'
+      })
+      return null
     }
     if (schemaMismatch) {
       reportError(new Error(schemaMismatch), {

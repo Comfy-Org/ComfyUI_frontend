@@ -520,10 +520,21 @@ export type ComfyWorkflowJSON = z.infer<
   typeof zComfyWorkflow | typeof zComfyWorkflow1
 >
 
+/**
+ * The minimum a node must carry for `LGraph.configure` to instantiate it:
+ * it calls `LiteGraph.createNode(type)` and assigns `id`.
+ */
+const zLegacyLoadableNode = z
+  .object({
+    id: zNodeId,
+    type: z.string()
+  })
+  .passthrough()
+
 export const zLegacyLoadableWorkflow = z
   .object({
     version: z.number(),
-    nodes: z.array(z.record(z.unknown())),
+    nodes: z.array(zLegacyLoadableNode),
     links: z.array(z.unknown()).optional(),
     last_node_id: zNodeId.optional(),
     last_link_id: z.number().optional()
