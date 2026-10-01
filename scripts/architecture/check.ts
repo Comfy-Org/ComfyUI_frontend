@@ -158,6 +158,11 @@ const EXCEPTION_KEYS = [
 ]
 
 const toPosix = (value: string): string => value.replaceAll('\\', '/')
+const lexicalCompare = (left: string, right: string): number => {
+  if (left < right) return -1
+  if (left > right) return 1
+  return 0
+}
 
 const walk = (directory: string): string[] =>
   readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -528,7 +533,7 @@ export const censusRepository = (
     resolvedInternalSources: new Set(resolved.map(({ source }) => source)).size,
     edges: resolved,
     violations: violations.sort((left, right) =>
-      left.fingerprint.localeCompare(right.fingerprint)
+      lexicalCompare(left.fingerprint, right.fingerprint)
     )
   }
 }
@@ -686,6 +691,13 @@ const validateDomainFiles = (
   for (const module of record.modules)
     validateDomainModuleFiles(record, module, sourceFiles, codeowners)
   const ownedFiles = sourceFiles.filter((file) => owningDomain(file, [record]))
+  for (const file of ownedFiles) {
+    const matchingModules = record.modules.filter(({ path }) =>
+      matchesPath(file, path)
+    )
+    if (matchingModules.length > 1)
+      throw new Error(`${record.id} has overlapping module paths for ${file}`)
+  }
   if (ownedFiles.length !== record.expectedFileCount)
     throw new Error(
       `${record.id} expected ${record.expectedFileCount} files but matched ${ownedFiles.length}`
