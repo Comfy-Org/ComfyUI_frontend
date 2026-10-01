@@ -1,10 +1,10 @@
 # ADR-CANVAS-VIEWPORT-0009: Canvas Viewport System
 
-Date: 2026-04-20
+Date: 2026-09-28
 
 ## Status
 
-Accepted
+Proposed
 
 ## Context
 
