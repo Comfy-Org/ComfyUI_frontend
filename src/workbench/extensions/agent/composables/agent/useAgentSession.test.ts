@@ -3884,33 +3884,43 @@ describe('useAgentSession (v1 composition root)', () => {
   // the user takes to answer, so the drop that swallowed its `agent_ask` frame
   // leaves the server waiting on a card the panel never drew. Recovery already
   // polls the row, and the row carries the unanswered ask.
+  const PARKED_ASK = {
+    message_id: 'msg-1',
+    ask_id: 'turn-1:call-1',
+    kind: 'run_approval',
+    context: {
+      workflow_id: 'workflow-1',
+      workflow_name: 'Portrait workflow'
+    },
+    prompt: 'Run it?',
+    options: [
+      { id: 'run', label: 'Run' },
+      { id: 'cancel', label: 'Cancel' }
+    ],
+    min_selections: 1,
+    max_selections: 1,
+    allow_other: false
+  }
+
+  const parkedRow = (): AgentMessages[number] => ({
+    ...historyRow(2, 'assistant', 'msg-1', '', 'msg-1'),
+    content: {},
+    status: 'streaming',
+    pending_ask: PARKED_ASK
+  })
+
+  const unparkedRow = (): AgentMessages[number] => ({
+    ...historyRow(2, 'assistant', 'msg-1', '', 'msg-1'),
+    content: {},
+    status: 'streaming'
+  })
+
   const parkedOnApprovalRest = () =>
     fakeRest({
       getMessages: vi.fn(
         async (): Promise<AgentMessages> => [
           historyRow(1, 'user', 'msg-1', 'go'),
-          {
-            ...historyRow(2, 'assistant', 'msg-1', '', 'msg-1'),
-            content: {},
-            status: 'streaming',
-            pending_ask: {
-              message_id: 'msg-1',
-              ask_id: 'turn-1:call-1',
-              kind: 'run_approval',
-              context: {
-                workflow_id: 'workflow-1',
-                workflow_name: 'Portrait workflow'
-              },
-              prompt: 'Run it?',
-              options: [
-                { id: 'run', label: 'Run' },
-                { id: 'cancel', label: 'Cancel' }
-              ],
-              min_selections: 1,
-              max_selections: 1,
-              allow_other: false
-            }
-          }
+          parkedRow()
         ]
       )
     })
@@ -3952,8 +3962,14 @@ describe('useAgentSession (v1 composition root)', () => {
 
       expect(approvalParts(session)).toHaveLength(1)
       expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+        surface: 'agent',
         errorType: 'failure_delivering_agent_approval_ask',
-        tags: { feature_area: 'agent', operation: 'recovery' },
+        level: 'error',
+        tags: {
+          feature_area: 'agent',
+          operation: 'recovery',
+          recovery_cause: 'reconnect'
+        },
         context: {
           threadId: 'th-1',
           messageId: 'msg-1',
@@ -3984,6 +4000,245 @@ describe('useAgentSession (v1 composition root)', () => {
 
       expect(approvalParts(session)).toHaveLength(1)
       expect(reportError).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g29) a poll whose snapshot predates the answer does not resurrect the card', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = parkedOnApprovalRest()
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+
+      await session.sendMessage('go')
+      emit(runApproval('msg-1'))
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(approvalParts(session)).toHaveLength(1)
+
+      emit(askResolved('msg-1'))
+      expect(approvalParts(session)).toHaveLength(0)
+
+      await vi.advanceTimersByTimeAsync(31_000)
+
+      expect(approvalParts(session)).toHaveLength(0)
+      expect(reportError).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g30) a broadcast that merely lagged the poll renders one card and is not reported', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = parkedOnApprovalRest()
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+
+      await session.sendMessage('go')
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(approvalParts(session)).toHaveLength(1)
+
+      emit(runApproval('msg-1'))
+      await vi.advanceTimersByTimeAsync(31_000)
+
+      expect(approvalParts(session)).toHaveLength(1)
+      expect(reportError).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g32) an ask answered elsewhere is not resurrected by a stale poll', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = parkedOnApprovalRest()
+      vi.mocked(rest.answerAsk).mockRejectedValue(
+        new AgentApiError('already answered', 409, undefined)
+      )
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+
+      await session.sendMessage('go')
+      emit(runApproval('msg-1'))
+      await session.answerAsk('turn-1:call-1', 'run')
+      expect(approvalParts(session)).toHaveLength(0)
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(31_000)
+
+      expect(approvalParts(session)).toHaveLength(0)
+      expect(reportError).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  // The 409 branch resolves the ask straight on the store, so the ledger only
+  // learns of a hydrated card's ask from `answerAsk` itself. Without that the
+  // next poll, whose row still carries the ask the server has not cleared yet,
+  // would draw the card back over a reply the user had already released.
+  it('(g33) answering a hydrated ask keeps a stale poll from drawing it again', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = fakeRest({
+        getMessages: vi.fn(
+          async (): Promise<AgentMessages> => [
+            historyRow(1, 'user', 'msg-1', 'go'),
+            parkedRow()
+          ]
+        )
+      })
+      vi.mocked(rest.answerAsk).mockRejectedValue(
+        new AgentApiError('already answered', 409, undefined)
+      )
+      const { source, status } = fakeEvents()
+      localStorage.setItem(StorageKeys.agentThread('personal'), 'th-1')
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(approvalParts(session)).toHaveLength(1)
+
+      await session.answerAsk('turn-1:call-1', 'run')
+      expect(approvalParts(session)).toHaveLength(0)
+
+      await vi.advanceTimersByTimeAsync(31_000)
+
+      expect(approvalParts(session)).toHaveLength(0)
+      expect(reportError).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  // A frame published while the first history fetch is still in flight has no
+  // turn in memory to reach: `ingest` drops it. Recovery is the only thing
+  // left that can draw the card, so the drop must not be recorded as a
+  // delivery.
+  it('(g34) a frame the store could not route yet is still restored by recovery', async () => {
+    vi.useFakeTimers()
+    try {
+      let releaseHistory = (): void => {}
+      const history = new Promise<void>((resolve) => {
+        releaseHistory = resolve
+      })
+      let served = 0
+      const rest = fakeRest({
+        getMessages: vi.fn(async (): Promise<AgentMessages> => {
+          // The first response is the one that predates the ask row, so
+          // hydration has nothing to draw the card from.
+          if (served++ === 0) {
+            await history
+            return [historyRow(1, 'user', 'msg-1', 'go'), unparkedRow()]
+          }
+          return [historyRow(1, 'user', 'msg-1', 'go'), parkedRow()]
+        })
+      })
+      const { source, emit, status } = fakeEvents()
+      localStorage.setItem(StorageKeys.agentThread('personal'), 'th-1')
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+
+      emit(runApproval('msg-1'))
+      expect(session.entries.value).toHaveLength(0)
+
+      releaseHistory()
+      await vi.advanceTimersByTimeAsync(31_000)
+
+      expect(approvalParts(session)).toHaveLength(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g35) a drop while a hydrate job is polling files the ask as a lost frame', async () => {
+    vi.useFakeTimers()
+    try {
+      // The row parks only once the socket is down, so the hydrate job's own
+      // polls see nothing and the restore can only come from the reconnect
+      // job that takes it over. Keyed on the drop rather than on a call count
+      // because hydrate and its first poll share the 0ms head of the schedule.
+      let parked = false
+      const rest = fakeRest({
+        getMessages: vi.fn(
+          async (): Promise<AgentMessages> => [
+            historyRow(1, 'user', 'msg-1', 'go'),
+            parked ? parkedRow() : unparkedRow()
+          ]
+        )
+      })
+      const { source, status } = fakeEvents()
+      localStorage.setItem(StorageKeys.agentThread('personal'), 'th-1')
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(approvalParts(session)).toHaveLength(0)
+
+      parked = true
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(31_000)
+
+      expect(approvalParts(session)).toHaveLength(1)
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(
+        expect.any(Error),
+        expect.objectContaining({
+          level: 'error',
+          tags: expect.objectContaining({ recovery_cause: 'reconnect' })
+        })
+      )
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g31) an ask the server parks during a hydrate fetch is restored as a warning', async () => {
+    vi.useFakeTimers()
+    try {
+      const getMessages = vi
+        .fn<() => Promise<AgentMessages>>()
+        .mockResolvedValueOnce([
+          historyRow(1, 'user', 'msg-1', 'go'),
+          unparkedRow()
+        ])
+        .mockResolvedValue([historyRow(1, 'user', 'msg-1', 'go'), parkedRow()])
+      const rest = fakeRest({ getMessages })
+      const { source, status } = fakeEvents()
+      localStorage.setItem(StorageKeys.agentThread('personal'), 'th-1')
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+
+      // Hydrate and its first recovery poll share the 0ms head of the
+      // schedule, so the restore lands in the same tick as the hydrate that
+      // missed the ask -- and it is filed as the benign publish race, not as
+      // a lost frame, because no socket ever dropped here.
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(approvalParts(session)).toHaveLength(1)
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'failure_delivering_agent_approval_ask',
+          level: 'warning',
+          tags: expect.objectContaining({ recovery_cause: 'hydrate' })
+        })
+      )
     } finally {
       vi.useRealTimers()
     }

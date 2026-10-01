@@ -177,6 +177,7 @@ class TurnLockServer {
   private prompt = ''
   private rejected = 0
   private posts = 0
+  private transcripts = 0
   private readonly answered: string[][] = []
   private pendingAsk: AgentPendingAsk | undefined
   private heldTranscript:
@@ -200,6 +201,11 @@ class TurnLockServer {
   /** Every post the server answered, accepted or rejected. */
   get postAttempts(): number {
     return this.posts
+  }
+
+  /** Every transcript GET served, so a spec can wait out a recovery poll. */
+  get transcriptFetches(): number {
+    return this.transcripts
   }
 
   countPost(): void {
@@ -259,6 +265,7 @@ class TurnLockServer {
   }
 
   transcript(threadId = THREAD_ID): AgentMessage[] {
+    this.transcripts++
     if (threadId === OTHER_THREAD_ID)
       return [
         {
@@ -547,6 +554,11 @@ export class AgentTurnLockHarness {
 
   postAttempts(): number {
     return this.server.postAttempts
+  }
+
+  /** Every transcript GET served, so a spec can wait out a recovery poll. */
+  transcriptFetches(): number {
+    return this.server.transcriptFetches
   }
 
   /** Opens the panel on a blank workflow and points the composer at that tab. */

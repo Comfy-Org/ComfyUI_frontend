@@ -334,6 +334,12 @@ export function createAgentEventTransport(
    * the server parks waiting for an answer — the same dead-panel outcome as an
    * ask dropped in routing, so it is reported the same way. Generated-contract
    * kinds without a client renderer are tagged separately from unknown input.
+   *
+   * An ask already on the message also returns `false`, and is NOT reported:
+   * turn recovery restores an unanswered ask off the persisted row, and the
+   * server writes that row before it publishes the frame, so the two can
+   * arrive in either order for the same `ask_id`. The second arrival is a
+   * duplicate the user already saw, not an undeliverable ask.
    */
   function handleAskEvent(data: AgentAskEvent['data']): boolean {
     if (data.kind !== 'run_approval') {
@@ -343,6 +349,12 @@ export function createAgentEventTransport(
       )
       return false
     }
+    if (
+      message.parts.some(
+        (part) => part.type === 'runApproval' && part.askId === data.ask_id
+      )
+    )
+      return false
     dropDraft()
     closeOpenText()
     closeOpenThinking()
