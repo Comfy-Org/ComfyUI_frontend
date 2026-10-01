@@ -118,22 +118,16 @@ interface BannerView {
 const banner = computed<BannerView | null>(() => {
   const bs = 'workspacePanel.billingStatus'
   switch (kind.value) {
+    // Runs are already blocked on payment_failed; reads as paused until BE-6970.
     case 'paused':
+    case 'paymentFailed':
       return {
-        muted: false,
+        muted: !canManage.value,
         title: t(`${bs}.paused.title`),
         body: canManage.value
           ? t(`${bs}.paused.body`)
           : t(`${bs}.paused.memberBody`),
         action: canManage.value ? 'updatePayment' : null,
-        dismissible: false
-      }
-    case 'paymentFailed':
-      return {
-        muted: false,
-        title: t(`${bs}.warning.title`),
-        body: t(`${bs}.warning.bodyNoDate`),
-        action: 'updatePayment',
         dismissible: false
       }
     case 'outOfCredits':
