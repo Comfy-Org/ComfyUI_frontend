@@ -19,6 +19,8 @@ export type { UserAttachment }
 
 type ConversationStatus = 'idle' | 'thinking' | 'streaming'
 
+type AskSelection = 'run' | 'cancel'
+
 interface UserEntry {
   id: TurnId
   role: 'user'
@@ -37,6 +39,14 @@ interface BackgroundTurn {
   userText: string | undefined
   settled: boolean
 }
+
+/**
+ * PM-1658: how long an accepted answer waits for its `agent_ask_resolved`
+ * frame before the card is retired anyway. Generous, because the frame is the
+ * normal release and arrives in milliseconds; it exists only so a lost frame
+ * cannot leave the card disabled for the rest of the session.
+ */
+const ASK_RESOLUTION_GRACE_MS = 15_000
 
 export interface LiveTurn {
   threadId: string
@@ -340,6 +350,127 @@ export const useAgentConversationStore = defineStore(
       if (reportedPaywallImpressions.has(turnId)) return false
       reportedPaywallImpressions.add(turnId)
       return true
+    }
+
+    /**
+     * PM-1658: retires a run-approval card that must never be offered again,
+     * the way an `agent_ask_resolved` frame would. `ingest` cannot serve this:
+     * it routes only to the active turn, and the cases this exists for are
+     * exactly the ones where that turn is gone. Every holder of the message
+     * has to be told, or whichever one is asked to republish next puts the
+     * card back.
+     */
+    function retireAsk(askId: string, owner?: string): void {
+      const key = threadKey(owner)
+      const withoutAsk = (parts: AssistantMessage['parts']) =>
+        parts.filter(
+          (part) => part.type !== 'runApproval' || part.askId !== askId
+        )
+      // Everything below the stash belongs to whichever thread is on screen,
+      // so it is only the right target when this ask belongs to that thread
+      // too. An answer that settles after the user moved on must reach back to
+      // the thread it was given on, not edit the one now in front of them.
+      if (key === threadKey()) {
+        messages.value = messages.value.map((message) => {
+          const parts = withoutAsk(message.parts)
+          return parts.length === message.parts.length
+            ? message
+            : { ...message, parts }
+        })
+        transport?.dropAskPart(askId)
+        for (const settledTransport of settledActiveTransports)
+          settledTransport.dropAskPart(askId)
+      }
+      // The stashed turn IS that reach-back: a thread the user has left keeps
+      // its message here, and resumeBackgroundTurn would put the card back on
+      // screen if this did not strip it.
+      backgroundTurns.get(key)?.transport.dropAskPart(askId)
+      retiredAsksFor(key).add(askId)
+      clearAskResolutionWatchdog(askId)
+      submittedAskSelections.delete(askId)
+      setAskAnswering(askId, false)
+    }
+
+    /**
+     * PM-1658: asks this client has retired, per owning thread. `hydrate()`
+     * rebuilds a card from the server's `pending_ask`, which still reads
+     * pending while an answer is in flight and after a resolution broadcast is
+     * lost, so a refetch would otherwise put an answered card back on screen
+     * ENABLED — and the server answers the second, contradictory click by
+     * replaying the FIRST selection. Survives a remount because the store
+     * does; pruned once the thread's own transcript stops naming the ask.
+     *
+     * Keyed by thread so that loading another one cannot prune these, and so
+     * nothing here rests on an ask id being unique across threads.
+     */
+    const resolvedAskIds = new Map<string, Set<string>>()
+
+    const threadKey = (owner?: string) => owner ?? threadId.value ?? ''
+
+    function retiredAsksFor(owner?: string): Set<string> {
+      const key = threadKey(owner)
+      const retired = resolvedAskIds.get(key) ?? new Set<string>()
+      resolvedAskIds.set(key, retired)
+      return retired
+    }
+    /**
+     * PM-1658: which way this client answered each ask. The server takes a
+     * second answer from anywhere with 202 while committing only the FIRST, so
+     * without a record of what we sent, a resolution naming someone else's
+     * choice is indistinguishable from confirmation of our own.
+     */
+    const submittedAskSelections = new Map<string, AskSelection>()
+
+    function recordAskSelection(askId: string, selection: AskSelection): void {
+      submittedAskSelections.set(askId, selection)
+    }
+
+    function submittedAskSelection(askId: string): AskSelection | undefined {
+      return submittedAskSelections.get(askId)
+    }
+
+    const askResolutionWatchdogs = new Map<
+      string,
+      ReturnType<typeof setTimeout>
+    >()
+
+    function clearAskResolutionWatchdog(askId: string): void {
+      const timer = askResolutionWatchdogs.get(askId)
+      if (timer === undefined) return
+      clearTimeout(timer)
+      askResolutionWatchdogs.delete(askId)
+    }
+
+    const answeringAskIds = ref<ReadonlySet<string>>(new Set())
+
+    function setAskAnswering(askId: string, answering: boolean): void {
+      const next = new Set(answeringAskIds.value)
+      if (answering) next.add(askId)
+      else next.delete(askId)
+      answeringAskIds.value = next
+    }
+
+    /**
+     * Records that the server accepted this answer. A card whose turn is still
+     * attached keeps waiting for the canonical frame; a detached one has none
+     * coming, so it is retired now.
+     *
+     * The wait is bounded either way. A frame can be lost outright, and a turn
+     * re-adopted by `hydrate` between the click and the response looks
+     * attached while owning no socket that will ever deliver one — both leave
+     * the card disabled with nothing to release it.
+     */
+    function commitAsk(askId: string, owner?: string): void {
+      const key = threadKey(owner)
+      if (!activeTurnOwnsAsk(askId) || key !== threadKey()) {
+        retireAsk(askId, key)
+        return
+      }
+      clearAskResolutionWatchdog(askId)
+      askResolutionWatchdogs.set(
+        askId,
+        setTimeout(() => retireAsk(askId, key), ASK_RESOLUTION_GRACE_MS)
+      )
     }
 
     function startTurn(turnId: TurnId): void {
@@ -730,11 +861,41 @@ export const useAgentConversationStore = defineStore(
       clearActive()
     }
 
+    /**
+     * PM-1658: strips cards this client has already retired from a freshly
+     * fetched transcript, and forgets ids the server no longer names so the
+     * record cannot grow without bound. Touches parts only — the turn that
+     * raised the card is left exactly as the transcript describes it.
+     */
+    function dropResolvedAsks(
+      transcript: ReturnType<typeof normalizeAgentTranscript>
+    ): void {
+      const retired = retiredAsksFor()
+      if (retired.size === 0) return
+      const named = new Set(
+        transcript.messages.flatMap((message) =>
+          message.parts.flatMap((part) =>
+            part.type === 'runApproval' ? [part.askId] : []
+          )
+        )
+      )
+      for (const askId of retired) if (!named.has(askId)) retired.delete(askId)
+      for (const message of transcript.messages)
+        message.parts = message.parts.filter(
+          (part) => part.type !== 'runApproval' || !retired.has(part.askId)
+        )
+    }
+
     function hydrate(history: AgentMessages): void {
       if (transport) rememberDepartedActiveTurn('no-live-turn')
       disposeActiveAndSettledTransports()
       clearActive()
       const transcript = normalizeAgentTranscript(history)
+      // Only the card is retired, never the turn: answering it is what lets
+      // the turn RESUME, so it is still live and still needs a transport, or
+      // every frame of the rest of it is dropped and the row stays "Working…"
+      // with nothing able to settle it.
+      dropResolvedAsks(transcript)
       messages.value = transcript.messages
       resolvedPaywallIds.value = new Set()
       userTexts.value = transcript.userTexts
@@ -820,6 +981,20 @@ export const useAgentConversationStore = defineStore(
     const activeMessage = computed(() =>
       activeIndex.value >= 0 ? messages.value[activeIndex.value] : null
     )
+    /**
+     * PM-1658: whether the live turn still owns this ask, i.e. whether an
+     * `agent_ask_resolved` frame for it has a transport to route through.
+     * False once a socket drop or a newer turn has detached the message the
+     * card sits on — which is when a caller has to resolve it itself.
+     */
+    function activeTurnOwnsAsk(askId: string): boolean {
+      return (
+        activeMessage.value?.parts.some(
+          (part) => part.type === 'runApproval' && part.askId === askId
+        ) ?? false
+      )
+    }
+
     const activeMessageId = computed(() => activeMessage.value?.id ?? null)
     const isStreaming = computed(() => activeMessage.value?.streaming ?? false)
     const status = computed<ConversationStatus>(() => {
@@ -847,6 +1022,12 @@ export const useAgentConversationStore = defineStore(
       recordPaywall,
       resolvePaywalls,
       claimPaywallImpression,
+      answeringAskIds,
+      setAskAnswering,
+      recordAskSelection,
+      submittedAskSelection,
+      commitAsk,
+      retireAsk,
       startTurn,
       ingest,
       setCanvasSyncGate,
