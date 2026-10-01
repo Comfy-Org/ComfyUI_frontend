@@ -19,6 +19,13 @@ export {
 export { BILLING_TELEMETRY_EVENTS } from './eventNames.js'
 export { toBillingTelemetryEvent } from './operationLifecycleEvent.js'
 export type {
+  WebEntryBillingEvent,
+  WebEntryBounceReason,
+  WebEntryBounceTarget,
+  WebEntryErrorCode,
+  WebEntryProduct
+} from './webEntryEvent.js'
+export type {
   CheckoutAssignmentStatus,
   CheckoutEntryFlow,
   CheckoutEntrySource,

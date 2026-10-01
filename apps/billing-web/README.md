@@ -82,6 +82,11 @@ their query and fragment, and error text and clicked element text lose emails,
 tokens and client secrets. RUM cannot rewrite an error's causes, so an error
 whose cause carries such text is dropped. No deployment setting is needed.
 
+The RUM user is the signed-in user's opaque id, the one the Cloud app sets and
+PostHog identifies here, and nothing else: no email, no name. It follows the
+same session as PostHog, so a refused or still-resolving session sets and
+clears nothing, and only the sign-out of a user set here clears it.
+
 PostHog joins the Cloud app's project with the token, host and
 `telemetry_disabled_events` that the Cloud origin's `/api/features` returns, on
 the same fetch that names the Firebase project. Its identity cookie is shared
@@ -107,6 +112,23 @@ The SDK's operation lifecycle reports through `toBillingTelemetryEvent` from
 (subscribe, resubscribe, cancel and top-up). A recovered operation reports
 `resumed: true`. A refusal before the server issues an operation has no
 operation to report, so it is not on this stream.
+
+### Entry, session and return events
+
+These are client journey events: they carry `outcome: 'pending'` and never
+claim an operation result. Each is reported once per tab, not per navigation:
+`trackOncePerTab` remembers what the tab has reported in `sessionStorage`, so a
+route change, the sign-in redirect and a reload send nothing more. A tab that
+refuses storage still reports once per page load.
+
+- `billing.web_entry.received`: an entry link was admitted. Carries `intent`,
+  `product`, `has_plan`, and the link's `payment_intent_source` and
+  `correlation_id` (the Cloud journey id) when it has them.
+- `billing.web_entry.rejected`: the link could not be used; `error_code` is the
+  entry parser's code.
+- `billing.web_entry.bounced`: billing web sent the customer back to the host
+  (`pricing_link`, `planless_checkout`) or replaced a checkout's `return_to`
+  (`return_target_rewritten`); `to` is the return target or `pricing_table`.
 
 ## Commands
 
