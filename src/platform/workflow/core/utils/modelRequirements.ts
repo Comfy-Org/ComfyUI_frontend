@@ -15,6 +15,16 @@ export function getModelFileKey(
   return JSON.stringify([model.name, model.directory])
 }
 
+/**
+ * The declared models a node actually has selected in its widgets.
+ *
+ * Returns `undefined` when there is nothing to match against - the node
+ * declares no models, or carries no widget values to select them with - and
+ * an empty array when it declares models but none of them are selected.
+ * Callers that only care whether a node contributes requirements can treat
+ * both as "nothing"; callers that distinguish "no metadata" from "metadata
+ * that matched nothing" have to check for `undefined`.
+ */
 export function getSelectedModelsMetadata(
   node: NodeModelMetadata
 ): ModelFile[] | undefined {
