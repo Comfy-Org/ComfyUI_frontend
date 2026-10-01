@@ -806,6 +806,11 @@ watch(
   [status, conversationTurnId],
   ([value, turnId]) => {
     const completedTurn = wasTurnActive && value === 'idle'
+    if (value === 'idle') {
+      // The immediate idle value on remount is a hydration snapshot, not a
+      // completed turn. A real idle transition is observed after this pass.
+      if (completedTurn) graphActivity.finishTurn()
+    } else graphActivity.startTurn(turnId)
     wasTurnActive = value !== 'idle'
     if (value === 'idle') {
       if (completedTurn && billingType.value === 'workspace') {
@@ -820,11 +825,6 @@ watch(
       if (completedPath !== null) tabActivity.markModified(completedPath)
     } else if (tabActivity.editingTabPath === null)
       tabActivity.setEditing(resumedTurnTabPath())
-    if (value === 'idle') {
-      // The immediate idle value on remount is a hydration snapshot, not a
-      // completed turn. A real idle transition is observed after this pass.
-      if (completedTurn) graphActivity.finishTurn()
-    } else graphActivity.startTurn(turnId)
   },
   { immediate: true, flush: 'sync' }
 )
