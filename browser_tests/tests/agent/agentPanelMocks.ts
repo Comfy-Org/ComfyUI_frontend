@@ -278,10 +278,7 @@ async function mockAgentBoot(
     objectInfo,
     postedMessages,
     vueNodes
-  }: Omit<
-    AgentFixtures,
-    'agentMessageHttpErrorMock' | 'agentMessageHttpErrorStatus' | 'agentPanel'
-  > & {
+  }: Omit<AgentFixtures, 'agentMessageHttpErrorMock' | 'agentPanel'> & {
     initialFeatureFlags: Record<string, unknown>
     initialSettings: Record<string, unknown>
     vueNodes: boolean
@@ -534,7 +531,6 @@ type AgentFixtures = {
   agentConsentWrites: boolean[]
   agentFlagEnabled: boolean
   agentMessageHttpErrorMock: void
-  agentMessageHttpErrorStatus: number | undefined
   agentPanel: AgentPanel
   agentPanelInitiallyOpen: boolean
   agentOnboardingCompleted: boolean
@@ -564,45 +560,34 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
     await use([])
   },
   agentFlagEnabled: [true, { option: true }],
-  agentMessageHttpErrorMock: [
-    async ({ comfyPage, agentMessageHttpErrorStatus }, use) => {
-      if (agentMessageHttpErrorStatus === undefined) {
-        await use()
-        return
+  agentMessageHttpErrorMock: async ({ comfyPage }, use) => {
+    await comfyPage.page.evaluate((status) => {
+      const originalFetch = globalThis.fetch
+      globalThis.fetch = async (input, init) => {
+        const url =
+          typeof input === 'string'
+            ? input
+            : input instanceof URL
+              ? input.href
+              : input.url
+        const method =
+          init?.method ?? (input instanceof Request ? input.method : 'GET')
+        if (method === 'POST' && /\/agent\/threads\/[^/]+\/messages$/.test(url))
+          return new Response('', { status })
+        return originalFetch(input, init)
       }
-      await comfyPage.page.evaluate((status) => {
-        const originalFetch = globalThis.fetch
-        globalThis.fetch = async (input, init) => {
-          const url =
-            typeof input === 'string'
-              ? input
-              : input instanceof URL
-                ? input.href
-                : input.url
-          const method =
-            init?.method ?? (input instanceof Request ? input.method : 'GET')
-          if (
-            method === 'POST' &&
-            /\/agent\/threads\/[^/]+\/messages$/.test(url)
-          )
-            return new Response('', { status })
-          return originalFetch(input, init)
-        }
-        Reflect.set(globalThis, '__agentTestOriginalFetch', originalFetch)
-      }, agentMessageHttpErrorStatus)
-      await use()
-      await comfyPage.page.evaluate(() => {
-        const originalFetch = Reflect.get(
-          globalThis,
-          '__agentTestOriginalFetch'
-        ) as typeof globalThis.fetch | undefined
-        if (originalFetch) globalThis.fetch = originalFetch
-        Reflect.deleteProperty(globalThis, '__agentTestOriginalFetch')
-      })
-    },
-    { auto: true }
-  ],
-  agentMessageHttpErrorStatus: [undefined, { option: true }],
+      Reflect.set(globalThis, '__agentTestOriginalFetch', originalFetch)
+    }, 503)
+    await use()
+    await comfyPage.page.evaluate(() => {
+      const originalFetch = Reflect.get(
+        globalThis,
+        '__agentTestOriginalFetch'
+      ) as typeof globalThis.fetch | undefined
+      if (originalFetch) globalThis.fetch = originalFetch
+      Reflect.deleteProperty(globalThis, '__agentTestOriginalFetch')
+    })
+  },
   agentPanel: async ({ comfyPage }, use) => {
     await use(new AgentPanel(comfyPage.page))
   },
