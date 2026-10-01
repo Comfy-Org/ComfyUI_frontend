@@ -35,8 +35,8 @@ user-scoped state.
 next beat. It handles the answer as a heartbeat would: the same user keeps the
 account with the fresh session, another user goes through `onAccountChanged`,
 and sibling tabs hear it. It resolves with the state once the answer, and any
-restore it started, has settled. It reads nothing unless the tab is signed in,
-as `expectedUserId` when given.
+restore it started, has settled. It reads nothing unless the tab is signed in
+and, when `expectedUserId` is given, signed in as that user.
 
 The server freezes `email_verified` when it creates the session, so neither a
 heartbeat nor `refresh()` sees a later verification. Create the session again

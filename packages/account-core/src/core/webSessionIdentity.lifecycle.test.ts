@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { FakeWebSessionEndpoint, FakeWebSessionState } from '../testing.js'
 import { createFakeWebSessionEndpoint, fakeWebSessionUser } from '../testing.js'
+import { deferred } from './__fixtures__/sessionFakes.js'
 import type {
   CrossTabRefreshPort,
   WebSession,
@@ -11,6 +12,7 @@ import type {
   RememberedLogin,
   ScheduleRetry,
   VisibilityPort,
+  WebSessionIdentity,
   WebSessionIdentityOptions,
   WebSessionIdentityState,
   WebSessionIdentityTransition,
@@ -155,6 +157,25 @@ function liveEndpoint(
 }
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0))
+
+async function reach(
+  identity: WebSessionIdentity,
+  reached: (state: WebSessionIdentityState) => boolean
+): Promise<WebSessionIdentityState> {
+  const { promise, resolve } = deferred<WebSessionIdentityState>()
+  const unsubscribe = identity.subscribe((state) => {
+    if (reached(state)) resolve(state)
+  })
+  const state = await promise
+  unsubscribe()
+  return state
+}
+
+const booted = (identity: WebSessionIdentity) =>
+  reach(
+    identity,
+    ({ phase }) => phase === 'signed_in' || phase === 'signed_out'
+  )
 
 function summarize(state: WebSessionIdentityState): string {
   if (state.phase === 'signed_in') return `signed_in:${state.session.user.id}`
@@ -590,7 +611,7 @@ describe('refresh', () => {
   it('reads the session now and adopts the same user without an account change', async () => {
     const endpoint = liveEndpoint({ kind: 'live', user: RENAMED })
     const tab = openTab({ endpoint })
-    await settle()
+    await booted(tab.identity)
     endpoint.state = { kind: 'live', user: USER_1 }
 
     const refreshed = await tab.identity.refresh()
@@ -607,7 +628,7 @@ describe('refresh', () => {
   it('takes the account-change path when another user holds the session', async () => {
     const endpoint = liveEndpoint()
     const tab = openTab({ endpoint })
-    await settle()
+    await booted(tab.identity)
     endpoint.state = { kind: 'live', user: USER_2 }
 
     const refreshed = await tab.identity.refresh('user-1')
@@ -623,15 +644,17 @@ describe('refresh', () => {
     const site = createFakeSiteBus()
     const sibling = openTab({ endpoint, site })
     const tab = openTab({ endpoint, site })
-    await settle()
+    await Promise.all([booted(sibling.identity), booted(tab.identity)])
     endpoint.state = { kind: 'live', user: USER_1 }
 
     await tab.identity.refresh()
-    await settle()
 
-    expect(sibling.identity.getState()).toMatchObject({
-      session: { user: { name: 'Test User' } }
-    })
+    const adopted = await reach(
+      sibling.identity,
+      (state) =>
+        state.phase === 'signed_in' && state.session.user.name === 'Test User'
+    )
+    expect(summarize(adopted)).toBe('signed_in:user-1')
   })
 
   it.for<{ name: string; state: FakeWebSessionState; settled: string }>([
@@ -653,12 +676,31 @@ describe('refresh', () => {
   ])('resolves once $name has settled', async ({ state, settled }) => {
     const endpoint = liveEndpoint()
     const tab = openTab({ endpoint })
-    await settle()
+    await booted(tab.identity)
     endpoint.state = state
 
     const refreshed = await tab.identity.refresh()
 
     expect(summarize(refreshed)).toBe(settled)
+  })
+
+  it('does not wait on a restore left over from the previous account', async () => {
+    const endpoint = liveEndpoint()
+    const tab = openTab({ endpoint })
+    await booted(tab.identity)
+    const proofRequested = deferred<void>()
+    tab.login.getProof.mockImplementationOnce(() => {
+      proofRequested.resolve()
+      return new Promise<string>(() => {})
+    })
+    endpoint.state = { kind: 'dead', code: 'no_session' }
+    tab.scheduler.fire(HEARTBEAT_MS)
+    await proofRequested.promise
+    await tab.identity.signedIn(async () => 'interactive-proof')
+
+    const refreshed = await tab.identity.refresh('user-2')
+
+    expect(summarize(refreshed)).toBe('signed_in:user-2')
   })
 
   it.for<{ name: string; initial: FakeWebSessionState; expected?: string }>([
@@ -674,7 +716,7 @@ describe('refresh', () => {
   ])('reads nothing when $name', async ({ initial, expected }) => {
     const endpoint = liveEndpoint(initial)
     const tab = openTab({ endpoint })
-    await settle()
+    await booted(tab.identity)
     const before = tab.identity.getState()
 
     const refreshed = await tab.identity.refresh(expected)

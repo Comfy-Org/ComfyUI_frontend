@@ -531,7 +531,7 @@ function createAccountIdentity(
   let cancelBeat: (() => void) | undefined
   let releaseLeadership: (() => void) | undefined
   let stopWatching: (() => void)[] = []
-  let restoring: Promise<void> = Promise.resolve()
+  let restoring = { epoch, settled: Promise.resolve() }
 
   function dispatch(event: WebSessionIdentityEvent): void {
     const next = transitionWebSessionIdentity(state, event)
@@ -675,7 +675,7 @@ function createAccountIdentity(
         )
         return
       case 'restore':
-        restoring = restore(epoch, effect.expectedUserId)
+        restoring = { epoch, settled: restore(epoch, effect.expectedUserId) }
         return
       case 'schedule_retry':
         cancelRetry = schedule(
@@ -760,7 +760,7 @@ function createAccountIdentity(
         return state
       }
       await beat()
-      await restoring
+      if (restoring.epoch === epoch) await restoring.settled
       return state
     },
     getEpoch: () => epoch,
