@@ -132,7 +132,7 @@ describe('Router provider source availability', () => {
     await result
   })
 
-  it('detects provider drift from a successful source response', () => {
+  it('detects provider drift when the spec lists different alternate providers', () => {
     const spec = JSON.stringify({
       'x-comfy-router-alt-providers': [{ provider: 'anthropic' }]
     })
