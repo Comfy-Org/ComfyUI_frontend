@@ -204,10 +204,6 @@ video.wf-node-image {
   stroke-dashoffset: 1;
 }
 .wf-agent {
-  /* Tunable: how far across the AGENT pill's own yellow shape (not the
-     cursor-arrow icon or the "C" badge) the seam in agent-cursor.svg sits.
-     Adjust this one value to re-align the cover-up stripe below. */
-  --agent-seam-x: 82%;
   transform-origin: 0 0;
   position: absolute;
   z-index: 2;
@@ -225,17 +221,6 @@ video.wf-node-image {
   display: block;
   width: 100%;
   height: 100%;
-}
-.wf-agent::after {
-  /* Masks a seam baked into agent-cursor.svg itself (not fixable in CSS)
-     with a sliver of the pill's own fill colour. */
-  content: '';
-  position: absolute;
-  top: 0;
-  left: var(--agent-seam-x);
-  width: 2px;
-  height: 100%;
-  background: var(--wf-accent);
 }
 .wf-user {
   position: absolute;
