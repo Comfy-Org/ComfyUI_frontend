@@ -42,12 +42,14 @@ function exampleObjects(locale: Locale): MoveObject[] {
   ].map((object) => ({ ...object, to: object.from }))
 }
 
-function imageSize(url: string): Promise<{ width: number; height: number }> {
+function imageSize(
+  url: string
+): Promise<{ width: number; height: number } | undefined> {
   return new Promise((resolve) => {
     const img = new Image()
     img.onload = () =>
       resolve({ width: img.naturalWidth, height: img.naturalHeight })
-    img.onerror = () => resolve({ width: 0, height: 0 })
+    img.onerror = () => resolve(undefined)
     img.src = url
   })
 }
@@ -64,6 +66,7 @@ export function useMoveAnything(locale: Locale = 'en') {
   const quality = ref<MoveQuality>('fast')
   const selected = ref<string>()
   let ownUrl: string | undefined
+  let pendingUrl: string | undefined
   let run: AbortController | undefined
 
   const moved = computed(() => objects.value.filter(isMoved))
@@ -89,16 +92,22 @@ export function useMoveAnything(locale: Locale = 'en') {
   }
 
   function useExample() {
+    pendingUrl = undefined
     releaseOwnUrl()
     reset(MOVE_EXAMPLE, exampleObjects(locale))
   }
 
   async function useFile(file: File) {
-    releaseOwnUrl()
     const url = URL.createObjectURL(file)
-    ownUrl = url
+    pendingUrl = url
     const size = await imageSize(url)
-    if (ownUrl !== url) return
+    if (pendingUrl !== url || !size) {
+      URL.revokeObjectURL(url)
+      return
+    }
+    pendingUrl = undefined
+    releaseOwnUrl()
+    ownUrl = url
     reset({ url, name: file.name, ...size }, [])
   }
 
@@ -183,6 +192,7 @@ export function useMoveAnything(locale: Locale = 'en') {
 
   tryOnScopeDispose(() => {
     run?.abort()
+    pendingUrl = undefined
     releaseOwnUrl()
   })
 

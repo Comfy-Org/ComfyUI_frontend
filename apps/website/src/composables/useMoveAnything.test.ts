@@ -90,4 +90,30 @@ describe('useMoveAnything', () => {
     move.add({ x: 0.8, y: 0.1, w: 0.1, h: 0.1 })
     expect(move.objects.value).toHaveLength(4)
   })
+  it.for([
+    { decodes: true, expected: 'photo.png' },
+    { decodes: false, expected: 'kitten.jpg' }
+  ])(
+    'swaps in an uploaded photo only when it decodes (decodes: $decodes)',
+    async ({ decodes, expected }) => {
+      vi.stubGlobal(
+        'Image',
+        class {
+          naturalWidth = 800
+          naturalHeight = 600
+          onload?: () => void
+          onerror?: () => void
+          set src(_url: string) {
+            queueMicrotask(() => (decodes ? this.onload?.() : this.onerror?.()))
+          }
+        }
+      )
+      const move = start()
+
+      await move.useFile(new File(['x'], 'photo.png', { type: 'image/png' }))
+
+      expect(move.image.value?.name).toBe(expected)
+      vi.unstubAllGlobals()
+    }
+  )
 })

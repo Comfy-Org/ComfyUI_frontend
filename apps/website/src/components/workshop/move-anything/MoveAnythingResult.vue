@@ -2,6 +2,7 @@
 import type { MoveImage, MoveView } from '../../../composables/useMoveAnything'
 import type { Locale } from '../../../i18n/translations'
 import { mc } from '../../../lib/workshop/move-anything/copy'
+import { MOVE_EXAMPLE } from '../../../lib/workshop/move-anything/mock-run'
 import EditorCompare from '../app-editor/EditorCompare.vue'
 import EditorFrame from '../app-editor/EditorFrame.vue'
 
@@ -35,7 +36,11 @@ const {
       <img
         :src="view === 'result' ? resultUrl : image.url"
         :alt="
-          mc(view === 'result' ? 'move.alt.result' : 'move.alt.example', locale)
+          view === 'result'
+            ? mc('move.alt.result', locale)
+            : image.url === MOVE_EXAMPLE.url
+              ? mc('move.alt.example', locale)
+              : image.name
         "
         class="size-full rounded-sm object-cover"
       />
