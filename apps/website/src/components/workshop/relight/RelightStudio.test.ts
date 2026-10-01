@@ -139,6 +139,9 @@ describe('RelightStudio', () => {
     const lights = section('Lights')
 
     const tools = screen.getByRole('toolbar', { name: 'Relight tools' })
+    expect(
+      within(tools).getByRole('group', { name: 'History' })
+    ).toContainElement(undo())
     await user.click(within(tools).getByRole('button', { name: 'Add light' }))
     await user.click(
       within(tools).getByRole('menuitem', { name: 'Directional' })
@@ -210,6 +213,9 @@ describe('RelightStudio', () => {
     'sets every light to $look shadows from the tiles',
     async ({ look, castShadows, elevation }) => {
       const user = await openExample()
+      await user.click(
+        within(panel()).getByRole('button', { name: /^Shadows/ })
+      )
       const shadows = within(section('Shadows')).getByRole('radiogroup', {
         name: 'Shadows'
       })
@@ -261,7 +267,7 @@ describe('RelightStudio', () => {
     expect(
       within(panel()).queryByRole('combobox', { name: 'Apply to' })
     ).toBeNull()
-    await user.click(within(panel()).getByRole('button', { name: 'Masks' }))
+    await user.click(within(panel()).getByRole('button', { name: /^Masks/ }))
     const masks = section('Masks')
     await user.selectOptions(
       within(masks).getByRole('combobox', { name: 'Apply to' }),
@@ -312,12 +318,12 @@ describe('RelightStudio', () => {
     expect(screen.queryByText(hint)).toBeNull()
   })
 
-  it('opens on phones as a sheet with the moods and the run button, and expands', async () => {
+  it('opens on phones as a sheet with a one-line summary and the run button, and expands', async () => {
     screenIsWide(false)
     const user = await openExample()
     expect(
-      within(panel()).getByRole('radiogroup', { name: 'Mood' })
-    ).toBeVisible()
+      within(panel()).getByRole('button', { name: 'Sunset · 2 lights · Soft' })
+    ).toHaveAttribute('aria-expanded', 'false')
     expect(within(panel()).getByTestId('relight-run')).toBeEnabled()
     expect(within(panel()).queryByRole('region', { name: 'Lights' })).toBeNull()
 

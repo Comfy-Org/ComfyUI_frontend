@@ -9,12 +9,11 @@ import { workshopAppRepo } from '../../../lib/workshop/apps'
 import { mc } from '../../../lib/workshop/move-anything/copy'
 import AppEditorShell from '../app-editor/AppEditorShell.vue'
 import EditorAlert from '../app-editor/EditorAlert.vue'
-import EditorHistory from '../app-editor/EditorHistory.vue'
 import MoveAnythingDocks from './MoveAnythingDocks.vue'
 import MoveAnythingMain from './MoveAnythingMain.vue'
 import MoveAnythingPanel from './MoveAnythingPanel.vue'
-import MoveAnythingQualityPicker from './MoveAnythingQualityPicker.vue'
 import MoveAnythingRun from './MoveAnythingRun.vue'
+import MoveAnythingSummary from './MoveAnythingSummary.vue'
 import MoveAnythingTrays from './MoveAnythingTrays.vue'
 
 const { locale = 'en', layout = 'd' } = defineProps<{
@@ -24,16 +23,11 @@ const { locale = 'en', layout = 'd' } = defineProps<{
 }>()
 
 const move = useMoveAnything(locale)
-const { image, phase, quality } = move
+const { image, phase } = move
 const view = ref<MoveView>('compare')
 const panel = computed(() => layout !== 'e')
 reportStudioBusy(() => phase.value.kind === 'moving')
 
-const historyLabels = {
-  group: mc('move.history', locale),
-  undo: mc('move.tool.undo', locale),
-  redo: mc('move.tool.redo', locale)
-}
 const panelLabels = {
   label: mc('move.panel', locale),
   expand: mc('move.panel.expand', locale),
@@ -59,16 +53,6 @@ const panelLabels = {
       </EditorAlert>
       <MoveAnythingTrays v-if="!panel" :move :locale />
     </template>
-    <template v-if="image && phase.kind !== 'done'" #center>
-      <EditorHistory
-        :can-undo="move.canUndo.value"
-        :can-redo="move.canRedo.value"
-        :disabled="phase.kind === 'moving'"
-        :labels="historyLabels"
-        @undo="move.undo"
-        @redo="move.redo"
-      />
-    </template>
     <template #dock>
       <MoveAnythingDocks v-model:view="view" :move :panel :locale />
     </template>
@@ -76,9 +60,7 @@ const panelLabels = {
       <MoveAnythingPanel :image :move :locale />
     </template>
     <template v-if="panel && image" #panel-peek>
-      <fieldset :disabled="phase.kind === 'moving'" class="min-w-0 py-1">
-        <MoveAnythingQualityPicker v-model="quality" :locale />
-      </fieldset>
+      <MoveAnythingSummary :move :locale />
     </template>
     <template v-if="panel && image" #panel-footer>
       <MoveAnythingRun :move :locale block />

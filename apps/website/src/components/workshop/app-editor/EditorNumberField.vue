@@ -16,7 +16,7 @@ function onChange(event: Event) {
 
 <template>
   <div class="flex h-8 items-center gap-2 px-1">
-    <label :for="id" class="w-40 shrink-0 text-xs text-primary-warm-gray">{{
+    <label :for="id" class="w-24 shrink-0 text-xs text-primary-warm-gray">{{
       label
     }}</label>
     <input

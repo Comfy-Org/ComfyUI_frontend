@@ -88,6 +88,11 @@ const copy = {
   'relight.color.custom': { en: 'Custom color', 'zh-CN': '自定义颜色' },
   'relight.scene': { en: 'Scene', 'zh-CN': '场景' },
   'relight.shadows': { en: 'Shadows', 'zh-CN': '阴影' },
+  'relight.scene.summary': { en: 'Ambient {n}', 'zh-CN': '环境光 {n}' },
+  'relight.summary': {
+    en: '{mood} · {n} light · {shadows} | {mood} · {n} lights · {shadows}',
+    'zh-CN': '{mood} · {n} 盏灯 · {shadows}'
+  },
   'relight.shadows.none': { en: 'None', 'zh-CN': '无' },
   'relight.shadows.soft': { en: 'Soft', 'zh-CN': '柔和' },
   'relight.shadows.hard': { en: 'Hard', 'zh-CN': '硬朗' },
@@ -97,8 +102,8 @@ const copy = {
   'relight.scene.ambient': { en: 'Ambient light', 'zh-CN': '环境光' },
   'relight.scene.ambientColor': { en: 'Ambient color', 'zh-CN': '环境光颜色' },
   'relight.scene.removeOriginal': {
-    en: 'Remove original lighting',
-    'zh-CN': '去除原有光照'
+    en: 'Remove original light',
+    'zh-CN': '去除原有光线'
   },
   'relight.scene.reflections': {
     en: 'Surface reflections',
@@ -177,8 +182,8 @@ const copy = {
     'zh-CN': '拖动以对比原图与重新布光后的照片'
   },
   'relight.alt.example': {
-    en: 'An old man with a white beard by the sea, in flat daylight',
-    'zh-CN': '海边一位白胡子老人，处于平淡的日光下'
+    en: 'A woman with short dark hair smiling on a motel walkway, a man behind her',
+    'zh-CN': '一位短发女子在汽车旅馆走廊上微笑，身后有一位男子'
   },
   'relight.alt.result': {
     en: 'The photo with its new lighting',

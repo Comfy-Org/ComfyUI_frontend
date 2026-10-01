@@ -8,6 +8,8 @@ export interface MoveRequest {
   readonly objects: readonly MoveObject[]
   readonly quality: MoveQuality
   readonly seed: number
+  /** Optional text that guides how the gaps are filled. */
+  readonly prompt: string
 }
 
 export interface MoveResult {

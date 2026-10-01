@@ -9,19 +9,14 @@ import EditorChip from '../app-editor/EditorChip.vue'
 import EditorDivider from '../app-editor/EditorDivider.vue'
 import EditorTool from '../app-editor/EditorTool.vue'
 import RelightRun from './RelightRun.vue'
+import { sectionMeta } from './sections'
 
 const { relight, locale = 'en' } = defineProps<{
   relight: Relight
   locale?: Locale
 }>()
 
-const { setup, tray, phase, full, shadows } = relight
-const SHADOW_LABELS = {
-  none: 'relight.shadows.none',
-  soft: 'relight.shadows.soft',
-  hard: 'relight.shadows.hard',
-  long: 'relight.shadows.long'
-} as const
+const { setup, tray, phase, full } = relight
 
 function chips(): { id: RelightTray; label: string; value: string }[] {
   return [
@@ -38,7 +33,7 @@ function chips(): { id: RelightTray; label: string; value: string }[] {
     {
       id: 'shadows',
       label: lc('relight.shadows', locale),
-      value: lc(SHADOW_LABELS[shadows.value], locale)
+      value: sectionMeta('shadows', relight, locale) ?? ''
     },
     {
       id: 'masks',

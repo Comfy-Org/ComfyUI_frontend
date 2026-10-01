@@ -72,6 +72,19 @@ const copy = {
   'move.image.change': { en: 'Change', 'zh-CN': '更换' },
   'move.advanced': { en: 'Advanced', 'zh-CN': '高级' },
   'move.seed': { en: 'Seed', 'zh-CN': '种子' },
+  'move.advanced.summary': { en: 'Seed {n}', 'zh-CN': '种子 {n}' },
+  'move.prompt': {
+    en: 'Describe the scene (optional)',
+    'zh-CN': '描述场景（可选）'
+  },
+  'move.prompt.placeholder': {
+    en: 'A sunlit windowsill, soft shadows…',
+    'zh-CN': '阳光照射的窗台，柔和的阴影…'
+  },
+  'move.summary': {
+    en: '{n} object · {moved} moved · {quality} | {n} objects · {moved} moved · {quality}',
+    'zh-CN': '{n} 个物体 · 已移动 {moved} · {quality}'
+  },
   'move.panel': { en: 'Move anything settings', 'zh-CN': '随意移动设置' },
   'move.panel.expand': { en: 'Show all settings', 'zh-CN': '显示全部设置' },
   'move.panel.collapse': { en: 'Hide settings', 'zh-CN': '收起设置' },

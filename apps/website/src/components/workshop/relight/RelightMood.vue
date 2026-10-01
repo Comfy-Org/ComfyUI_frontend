@@ -14,13 +14,8 @@ import {
 import EditorTiles from '../app-editor/EditorTiles.vue'
 import RelightPreview from './RelightPreview.vue'
 
-const {
-  relight,
-  strip = false,
-  locale = 'en'
-} = defineProps<{
+const { relight, locale = 'en' } = defineProps<{
   relight: Relight
-  strip?: boolean
   locale?: Locale
 }>()
 
@@ -40,12 +35,7 @@ const mood = computed({
 </script>
 
 <template>
-  <EditorTiles
-    v-model="mood"
-    :label="lc('relight.mood', locale)"
-    :options
-    :strip
-  >
+  <EditorTiles v-model="mood" :label="lc('relight.mood', locale)" :options>
     <template #tile="{ option }">
       <img
         v-if="thumbnails[option.id]"

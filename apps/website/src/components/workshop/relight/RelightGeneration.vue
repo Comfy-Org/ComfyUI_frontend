@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { ChevronDown } from '@lucide/vue'
-import { computed, useId } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
+import { computed } from 'vue'
 
 import type { Relight } from '../../../composables/useRelight'
 import type { Locale } from '../../../i18n/translations'
@@ -10,6 +8,7 @@ import { lc } from '../../../lib/workshop/relight/copy'
 import EditorNumberField from '../app-editor/EditorNumberField.vue'
 import EditorSelect from '../app-editor/EditorSelect.vue'
 import EditorSlider from '../app-editor/EditorSlider.vue'
+import EditorTextArea from '../app-editor/EditorTextArea.vue'
 
 const { relight, locale = 'en' } = defineProps<{
   relight: Relight
@@ -17,7 +16,6 @@ const { relight, locale = 'en' } = defineProps<{
 }>()
 
 const { setup } = relight
-const promptId = useId()
 const areas = computed(() => [
   { id: 'whole' as const, label: lc('relight.generation.whole', locale) },
   {
@@ -26,30 +24,19 @@ const areas = computed(() => [
     disabled: !setup.value.masks.length
   }
 ])
-const field =
-  'rounded-lg bg-transparency-white-t4 px-2.5 text-xs text-primary-warm-white placeholder:text-primary-warm-gray/60 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none disabled:opacity-40'
-
-function onPrompt(event: Event) {
-  if (event.target instanceof HTMLTextAreaElement)
-    relight.updateGeneration({ prompt: event.target.value }, 'prompt')
-}
 </script>
 
 <template>
-  <div class="flex flex-col gap-1.5 px-1">
-    <label :for="promptId" class="text-xs text-primary-warm-gray">{{
-      lc('relight.generation.prompt', locale)
-    }}</label>
-    <textarea
-      :id="promptId"
-      :value="setup.generation.prompt"
-      rows="3"
-      :placeholder="lc('relight.generation.promptPlaceholder', locale)"
-      :class="cn('resize-none py-2', field)"
-      @input="onPrompt"
-    />
-  </div>
+  <EditorTextArea
+    :model-value="setup.generation.prompt"
+    :label="lc('relight.generation.prompt', locale)"
+    :placeholder="lc('relight.generation.promptPlaceholder', locale)"
+    @update:model-value="
+      (prompt) => relight.updateGeneration({ prompt }, 'prompt')
+    "
+  />
   <EditorSlider
+    wide
     :model-value="setup.generation.strength"
     :label="lc('relight.generation.strength', locale)"
     unit="%"

@@ -14,6 +14,7 @@ import type { MoveQuality } from '../../../lib/workshop/move-anything/mock-run'
 import EditorChip from '../app-editor/EditorChip.vue'
 import EditorDivider from '../app-editor/EditorDivider.vue'
 import EditorTool from '../app-editor/EditorTool.vue'
+import MoveAnythingHistory from './MoveAnythingHistory.vue'
 import MoveAnythingRun from './MoveAnythingRun.vue'
 
 const {
@@ -68,6 +69,8 @@ function onChange(event: Event) {
     :disabled="locked()"
     @click="emit('tool', 'add')"
   />
+  <EditorDivider />
+  <MoveAnythingHistory :move :locale />
   <EditorDivider />
   <EditorChip
     :value="image?.name ?? mc('move.image', locale)"

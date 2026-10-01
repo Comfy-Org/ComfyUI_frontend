@@ -6,14 +6,11 @@ import { cn } from '@comfyorg/tailwind-utils'
 const {
   label,
   options,
-  columns = 3,
-  strip = false
+  columns = 3
 } = defineProps<{
   label: string
   options: readonly { id: T; label: string }[]
   columns?: 3 | 4
-  /** One scrolling row instead of a grid. */
-  strip?: boolean
 }>()
 
 const GRID = { 3: 'grid-cols-3', 4: 'grid-cols-4' } as const
@@ -24,14 +21,7 @@ const value = defineModel<T>()
   <div
     role="radiogroup"
     :aria-label="label"
-    :class="
-      cn(
-        'px-1',
-        strip
-          ? 'flex [scrollbar-width:none] gap-2 overflow-x-auto pb-1'
-          : cn('grid gap-x-2 gap-y-3', GRID[columns])
-      )
-    "
+    :class="cn('grid gap-x-2.5 gap-y-3.5 px-1', GRID[columns])"
   >
     <button
       v-for="option in options"
@@ -39,12 +29,7 @@ const value = defineModel<T>()
       type="button"
       role="radio"
       :aria-checked="value === option.id"
-      :class="
-        cn(
-          'group flex min-w-0 flex-col gap-1.5 text-left focus-visible:outline-none disabled:opacity-40',
-          strip && 'w-21 shrink-0'
-        )
-      "
+      class="group flex min-w-0 flex-col gap-1 text-left focus-visible:outline-none disabled:opacity-40"
       @click="value = option.id"
     >
       <span
@@ -68,7 +53,7 @@ const value = defineModel<T>()
       <span
         :class="
           cn(
-            'truncate px-0.5 text-[11px] text-primary-warm-gray',
+            'truncate text-xs text-primary-warm-gray group-hover:text-primary-comfy-canvas',
             value === option.id && 'text-primary-warm-white'
           )
         "

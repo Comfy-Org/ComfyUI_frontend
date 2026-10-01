@@ -20,9 +20,9 @@ const emit = defineEmits<{ undo: []; redo: [] }>()
 
 <template>
   <div
-    role="toolbar"
+    role="group"
     :aria-label="labels.group"
-    class="flex items-center gap-0.5 rounded-full border border-transparency-white-t20 bg-primary-comfy-ink-light p-1 shadow-lg shadow-black/30"
+    class="flex items-center gap-0.5"
   >
     <EditorTool
       :icon="Undo2"

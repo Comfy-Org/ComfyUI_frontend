@@ -74,7 +74,7 @@ describe('MoveAnythingStudio', () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     render(MoveAnythingStudio, { props: { layout: 'e' } })
     await user.click(screen.getByRole('button', { name: 'Try the example' }))
-    const history = screen.getByRole('toolbar', { name: 'History' })
+    const history = screen.getByRole('group', { name: 'History' })
     const generate = screen.getByTestId('move-generate')
 
     screen.getByRole('button', { name: /^Orange kitten\./ }).focus()
@@ -104,6 +104,9 @@ describe('MoveAnythingStudio', () => {
     expect(panel()).toHaveTextContent('kitten.jpg')
     expect(panel()).toHaveTextContent('1043 × 693')
     const tools = screen.getByRole('toolbar', { name: 'Move anything tools' })
+    expect(
+      within(tools).getByRole('group', { name: 'History' })
+    ).toContainElement(screen.getByRole('button', { name: 'Undo' }))
     expect(within(tools).getByRole('button', { name: 'Move' })).toHaveAttribute(
       'aria-pressed',
       'true'
@@ -148,36 +151,42 @@ describe('MoveAnythingStudio', () => {
     expect(screen.getByText(/^Draw a box around/)).toBeInTheDocument()
   })
 
-  it('keeps the seed under Advanced', async () => {
+  it('keeps the scene description and seed under Advanced', async () => {
     screenIsWide(true)
     const user = await openPanelExample()
     expect(
       within(panel()).queryByRole('spinbutton', { name: 'Seed' })
     ).toBeNull()
 
-    await user.click(within(panel()).getByRole('button', { name: 'Advanced' }))
+    await user.click(within(panel()).getByRole('button', { name: /^Advanced/ }))
 
     expect(
       within(panel()).getByRole('spinbutton', { name: 'Seed' })
     ).toHaveValue(42)
+    expect(
+      within(panel()).getByRole('textbox', {
+        name: 'Describe the scene (optional)'
+      })
+    ).toHaveValue('')
   })
 
-  it('opens on phones as a sheet with the quality and the run button', async () => {
+  it('opens on phones as a sheet with a one-line summary and the run button', async () => {
     screenIsWide(false)
     const user = await openPanelExample()
-    expect(
-      within(panel()).getByRole('radio', { name: 'Fast · 20 s' })
-    ).toBeChecked()
+    const summary = within(panel()).getByRole('button', {
+      name: '3 objects · 0 moved · Fast'
+    })
     expect(within(panel()).getByTestId('move-generate')).toBeDisabled()
     expect(within(panel()).queryByRole('list', { name: 'Objects' })).toBeNull()
     expect(
       within(panel()).getByRole('toolbar', { name: 'Move anything tools' })
     ).toBeVisible()
 
-    await user.click(
-      within(panel()).getByRole('button', { name: 'Show all settings' })
-    )
+    await user.click(summary)
 
     expect(within(panel()).getByRole('list', { name: 'Objects' })).toBeVisible()
+    expect(
+      within(panel()).getByRole('button', { name: 'Hide settings' })
+    ).toHaveAttribute('aria-expanded', 'true')
   })
 })

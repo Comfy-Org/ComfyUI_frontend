@@ -2,7 +2,6 @@
 import type { Relight } from '../../../composables/useRelight'
 import type { Locale } from '../../../i18n/translations'
 import { lc } from '../../../lib/workshop/relight/copy'
-import { MAX_LIGHTS } from '../../../lib/workshop/relight/lights'
 import RelightLightEditor from './RelightLightEditor.vue'
 import RelightLightRow from './RelightLightRow.vue'
 
@@ -42,10 +41,5 @@ const { lights, selected, full } = relight
   </ul>
   <p v-else class="px-1 text-xs text-primary-warm-gray">
     {{ lc('relight.lights.empty', locale) }}
-  </p>
-  <p class="px-1 text-right text-[11px] text-primary-warm-gray tabular-nums">
-    {{
-      lc('relight.lights.count', locale, { n: lights.length, max: MAX_LIGHTS })
-    }}
   </p>
 </template>

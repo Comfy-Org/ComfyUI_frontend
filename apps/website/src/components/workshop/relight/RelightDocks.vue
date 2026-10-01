@@ -2,9 +2,11 @@
 import type { Relight } from '../../../composables/useRelight'
 import type { Locale } from '../../../i18n/translations'
 import { lc } from '../../../lib/workshop/relight/copy'
+import EditorDivider from '../app-editor/EditorDivider.vue'
 import EditorResultDock from '../app-editor/EditorResultDock.vue'
 import type { EditorView } from '../app-editor/view'
 import RelightDock from './RelightDock.vue'
+import RelightHistory from './RelightHistory.vue'
 import RelightTools from './RelightTools.vue'
 
 const {
@@ -40,6 +42,14 @@ const labels = {
     @edit="relight.edit"
     @again="relight.relight"
   />
-  <RelightTools v-else-if="panel" :relight :locale />
-  <RelightDock v-else :relight :locale />
+  <template v-else-if="panel">
+    <RelightTools :relight :locale />
+    <EditorDivider />
+    <RelightHistory :relight :locale />
+  </template>
+  <template v-else>
+    <RelightHistory :relight :locale />
+    <EditorDivider />
+    <RelightDock :relight :locale />
+  </template>
 </template>

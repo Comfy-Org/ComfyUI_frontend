@@ -15,7 +15,7 @@ const value = defineModel<T>({ required: true })
 </script>
 
 <template>
-  <div class="flex items-center justify-between gap-3 px-1">
+  <div class="flex min-h-8 items-center justify-between gap-3 px-1">
     <span :class="cn('text-xs text-primary-warm-gray', fill && 'sr-only')">{{
       label
     }}</span>

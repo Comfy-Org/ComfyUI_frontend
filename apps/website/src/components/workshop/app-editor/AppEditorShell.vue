@@ -42,62 +42,47 @@ const dockOverSheet = () => floating() && !wide.value && !panelDimmed
     class="flex h-[calc(100svh-5rem)] min-h-150 flex-col overflow-hidden border-y border-transparency-white-t8 bg-primary-comfy-ink lg:h-[calc(100svh-7rem)]"
     :aria-label="title"
   >
-    <header
-      class="flex h-13 shrink-0 items-center gap-2.5 border-b border-transparency-white-t8 pr-3 pl-2 sm:pr-4"
-    >
-      <a
-        :href="getRoutes(locale).hubApps"
-        :aria-label="tc('cinematic.backToApps', locale)"
-        data-testid="apps-back"
-        class="flex size-9 items-center justify-center rounded-lg text-primary-warm-gray transition hover:text-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
-      >
-        <ChevronLeft class="size-4" aria-hidden="true" />
-      </a>
-      <span class="h-4.5 w-px bg-transparency-white-t20" aria-hidden="true" />
-      <h1 class="truncate text-sm font-medium text-primary-warm-white">
-        {{ title }}
-      </h1>
-      <span
-        class="rounded-full border border-transparency-white-t20 px-1.5 font-mono text-[9px] tracking-wider text-primary-comfy-canvas uppercase"
-      >
-        {{ tc('cinematic.beta', locale) }}
-      </span>
-      <span class="flex-1" />
-      <AppRepoLink :repo :locale class="max-sm:hidden" />
-    </header>
     <div
       class="relative flex min-h-0 flex-1 flex-col bg-black/30 bg-[radial-gradient(var(--color-transparency-white-t8)_1px,transparent_1px)] bg-size-[18px_18px]"
     >
       <div
         :class="
           cn(
-            'flex min-h-0 flex-1 items-start justify-center px-4 pt-14 pb-36 sm:px-8',
-            floating() && 'pt-16 pb-60 lg:pr-6 lg:pb-20 lg:pl-86',
+            'flex min-h-0 flex-1 items-start justify-center px-4 pt-16 pb-36 sm:px-8',
+            floating() && 'pb-52 lg:pr-6 lg:pb-20 lg:pl-86',
             floating() && panelDimmed && 'pb-24'
           )
         "
       >
         <slot />
       </div>
-      <slot name="overlay" />
-      <div
-        :class="
-          cn(
-            'pointer-events-none absolute inset-x-3 top-3 grid grid-cols-[1fr_auto_1fr] items-start gap-2',
-            floating() && 'lg:left-86'
-          )
-        "
+      <header
+        class="pointer-events-none absolute inset-x-3 top-3 z-30 flex items-center gap-2"
       >
-        <div class="pointer-events-auto justify-self-start">
-          <slot name="start" />
+        <div class="pointer-events-auto flex h-9 min-w-0 items-center gap-2">
+          <a
+            :href="getRoutes(locale).hubApps"
+            :aria-label="tc('cinematic.backToApps', locale)"
+            data-testid="apps-back"
+            class="flex size-9 shrink-0 items-center justify-center rounded-full text-primary-warm-gray transition hover:bg-transparency-white-t8 hover:text-primary-warm-white focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
+          >
+            <ChevronLeft class="size-4" aria-hidden="true" />
+          </a>
+          <h1 class="truncate text-sm font-medium text-primary-warm-white">
+            {{ title }}
+          </h1>
+          <span
+            class="shrink-0 rounded-full border border-transparency-white-t20 px-1.5 font-mono text-[9px] tracking-wider text-primary-comfy-canvas uppercase"
+          >
+            {{ tc('cinematic.beta', locale) }}
+          </span>
         </div>
-        <div class="pointer-events-auto">
-          <slot name="center" />
-        </div>
-        <div class="pointer-events-auto justify-self-end">
+        <span class="flex-1" />
+        <div class="pointer-events-auto flex items-center gap-2">
           <slot name="end" />
+          <AppRepoLink :repo :locale class="max-lg:hidden" />
         </div>
-      </div>
+      </header>
       <div
         :class="
           cn(

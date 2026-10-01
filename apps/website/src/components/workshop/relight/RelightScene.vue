@@ -15,6 +15,7 @@ const { setup } = relight
 
 <template>
   <EditorSlider
+    wide
     :model-value="setup.scene.ambient"
     :label="lc('relight.scene.ambient', locale)"
     @update:model-value="
@@ -30,6 +31,7 @@ const { setup } = relight
     "
   />
   <EditorSlider
+    wide
     :model-value="setup.scene.removeOriginal"
     :label="lc('relight.scene.removeOriginal', locale)"
     @update:model-value="
@@ -38,6 +40,7 @@ const { setup } = relight
     "
   />
   <EditorSlider
+    wide
     :model-value="setup.scene.reflections"
     :label="lc('relight.scene.reflections', locale)"
     @update:model-value="

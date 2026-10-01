@@ -5,8 +5,10 @@ import type {
 } from '../../../composables/useMoveAnything'
 import type { Locale } from '../../../i18n/translations'
 import { mc } from '../../../lib/workshop/move-anything/copy'
+import EditorDivider from '../app-editor/EditorDivider.vue'
 import EditorResultDock from '../app-editor/EditorResultDock.vue'
 import MoveAnythingDock from './MoveAnythingDock.vue'
+import MoveAnythingHistory from './MoveAnythingHistory.vue'
 import MoveAnythingTools from './MoveAnythingTools.vue'
 
 const {
@@ -42,7 +44,11 @@ const labels = {
     @edit="move.edit"
     @again="move.generate"
   />
-  <MoveAnythingTools v-else-if="panel" :move :locale />
+  <template v-else-if="panel">
+    <MoveAnythingTools :move :locale />
+    <EditorDivider />
+    <MoveAnythingHistory :move :locale />
+  </template>
   <MoveAnythingDock
     v-else
     :move

@@ -23,7 +23,8 @@ const kinds = [
 
 <template>
   <div
-    class="flex flex-col gap-1.5 pt-1.5 pb-2.5"
+    class="mt-1 mb-2 ml-3 flex flex-col gap-1 border-l pl-3"
+    :style="{ borderLeftColor: light.color }"
     data-testid="relight-light-editor"
   >
     <EditorSegmented

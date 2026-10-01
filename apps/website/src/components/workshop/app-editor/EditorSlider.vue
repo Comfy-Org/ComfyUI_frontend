@@ -1,16 +1,21 @@
 <script setup lang="ts">
 import { computed, useId } from 'vue'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 const {
   label,
   min = 0,
   max = 100,
-  unit = ''
+  unit = '',
+  wide = false
 } = defineProps<{
   label: string
   min?: number
   max?: number
   unit?: string
+  /** A wider label column, for long labels. */
+  wide?: boolean
 }>()
 const value = defineModel<number>({ required: true })
 const id = useId()
@@ -20,11 +25,16 @@ const fill = computed(
 </script>
 
 <template>
-  <div class="flex h-7 items-center gap-2 px-1">
+  <div class="flex h-8 items-center gap-3 px-1">
     <label
       :for="id"
       :title="label"
-      class="w-40 shrink-0 truncate text-xs text-primary-warm-gray"
+      :class="
+        cn(
+          'shrink-0 truncate text-xs text-primary-warm-gray',
+          wide ? 'w-40' : 'w-24'
+        )
+      "
       >{{ label }}</label
     >
     <input

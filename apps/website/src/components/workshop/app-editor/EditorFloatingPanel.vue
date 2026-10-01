@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ChevronUp } from '@lucide/vue'
 import { useMediaQuery } from '@vueuse/core'
 import { ref } from 'vue'
 
@@ -45,7 +46,7 @@ function toggle() {
     :aria-label="label"
     :class="
       cn(
-        'pointer-events-auto absolute inset-x-0 bottom-0 z-20 flex max-h-[80%] flex-col rounded-t-2xl border border-transparency-white-t8 bg-primary-comfy-ink-light/90 shadow-2xl shadow-black/50 backdrop-blur-xl transition-opacity lg:inset-x-auto lg:top-3 lg:bottom-3 lg:left-3 lg:max-h-none lg:w-80 lg:rounded-2xl',
+        'pointer-events-auto absolute inset-x-0 bottom-0 z-20 flex max-h-[80%] flex-col rounded-t-2xl border border-transparency-white-t8 bg-primary-comfy-ink-light/90 shadow-2xl shadow-black/50 backdrop-blur-xl transition-opacity lg:inset-x-auto lg:top-15 lg:bottom-auto lg:left-3 lg:max-h-[calc(100%-4.5rem)] lg:w-80 lg:rounded-2xl',
         dimmed && 'pointer-events-none opacity-40 max-lg:hidden'
       )
     "
@@ -70,14 +71,27 @@ function toggle() {
     </button>
     <div
       v-if="wide || expanded"
-      class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 lg:pt-2"
+      class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 lg:pt-1"
     >
       <slot />
     </div>
-    <div v-else class="px-3">
+    <button
+      v-else
+      type="button"
+      aria-expanded="false"
+      class="flex w-full min-w-0 items-center gap-3 px-4 pb-1 text-left focus-visible:outline-none"
+      @click="expanded = true"
+    >
       <slot name="peek" />
-    </div>
-    <div v-if="$slots.footer" class="shrink-0 p-3">
+      <ChevronUp
+        class="size-4 shrink-0 text-primary-warm-gray"
+        aria-hidden="true"
+      />
+    </button>
+    <div
+      v-if="$slots.footer"
+      class="shrink-0 border-t border-transparency-white-t8 p-3"
+    >
       <slot name="footer" />
     </div>
   </aside>

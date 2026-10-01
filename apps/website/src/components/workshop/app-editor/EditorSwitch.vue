@@ -6,7 +6,7 @@ const on = defineModel<boolean>({ required: true })
 </script>
 
 <template>
-  <div class="flex items-center justify-between gap-3 px-1">
+  <div class="flex h-8 items-center justify-between gap-3 px-1">
     <span class="text-xs text-primary-warm-gray">{{ label }}</span>
     <button
       type="button"

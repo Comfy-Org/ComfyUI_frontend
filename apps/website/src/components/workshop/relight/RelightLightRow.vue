@@ -33,7 +33,7 @@ const emit = defineEmits<{
     <div
       :class="
         cn(
-          'group flex h-9 items-center gap-0.5 rounded-lg pr-0.5 pl-2 transition',
+          'group flex h-10 items-center gap-1 rounded-lg pr-1.5 pl-2.5 transition',
           selected
             ? 'bg-transparency-white-t8'
             : 'hover:bg-transparency-white-t4'
@@ -45,7 +45,7 @@ const emit = defineEmits<{
         :aria-pressed="selected"
         :class="
           cn(
-            'flex h-full min-w-0 flex-1 items-center gap-2.5 text-left text-xs text-primary-warm-gray focus-visible:outline-none',
+            'flex h-full min-w-0 flex-1 items-center gap-3 text-left text-[13px] text-primary-comfy-canvas focus-visible:outline-none',
             selected && 'text-primary-warm-white',
             !light.visible && 'opacity-50'
           )
@@ -53,22 +53,11 @@ const emit = defineEmits<{
         @click="emit('select')"
       >
         <span
-          :class="
-            cn(
-              'size-2.5 shrink-0 rounded-full',
-              selected &&
-                'ring-2 ring-primary-warm-white/40 ring-offset-1 ring-offset-primary-comfy-ink-light'
-            )
-          "
+          class="size-2.5 shrink-0 rounded-full"
           :style="{ backgroundColor: light.color }"
           aria-hidden="true"
         />
         <span class="flex-1 truncate">{{ light.name }}</span>
-        <component
-          :is="light.kind === 'point' ? Lightbulb : Sun"
-          class="size-3 shrink-0 text-primary-warm-gray"
-          aria-hidden="true"
-        />
         <span class="sr-only">{{
           lc(
             light.kind === 'point'
@@ -81,8 +70,8 @@ const emit = defineEmits<{
       <span
         :class="
           cn(
-            'flex items-center opacity-0 transition group-focus-within:opacity-100 group-hover:opacity-100',
-            selected && 'opacity-100'
+            'hidden items-center group-focus-within:flex group-hover:flex',
+            selected && 'flex'
           )
         "
       >
@@ -92,9 +81,7 @@ const emit = defineEmits<{
             lc(
               light.visible ? 'relight.light.hide' : 'relight.light.show',
               locale,
-              {
-                name: light.name
-              }
+              { name: light.name }
             )
           "
           @click="emit('toggle')"
@@ -111,6 +98,11 @@ const emit = defineEmits<{
           @click="emit('remove')"
         />
       </span>
+      <component
+        :is="light.kind === 'point' ? Lightbulb : Sun"
+        class="mx-1 size-3.5 shrink-0 text-primary-warm-gray"
+        aria-hidden="true"
+      />
     </div>
     <slot />
   </li>

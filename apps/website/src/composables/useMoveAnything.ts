@@ -54,6 +54,7 @@ export function useMoveAnything(locale: Locale = 'en') {
   const tray = ref<MoveTray>()
   const quality = ref<MoveQuality>('fast')
   const seed = ref(42)
+  const prompt = ref('')
   const selected = ref<string>()
   let ownUrl: string | undefined
   let pendingUrl: string | undefined
@@ -161,7 +162,8 @@ export function useMoveAnything(locale: Locale = 'en') {
           imageUrl: current.url,
           objects: moved.value,
           quality: quality.value,
-          seed: seed.value
+          seed: seed.value,
+          prompt: prompt.value
         },
         controller.signal
       )
@@ -199,6 +201,7 @@ export function useMoveAnything(locale: Locale = 'en') {
     tray,
     quality,
     seed,
+    prompt,
     selected,
     moved,
     full,

@@ -14,16 +14,9 @@ const { relight, locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
 
-const LABELS = {
-  none: 'relight.shadows.none',
-  soft: 'relight.shadows.soft',
-  hard: 'relight.shadows.hard',
-  long: 'relight.shadows.long'
-} as const
-
 const options = SHADOW_STYLES.map((id) => ({
   id,
-  label: lc(LABELS[id], locale)
+  label: lc(`relight.shadows.${id}`, locale)
 }))
 const style = computed({
   get: () => relight.shadows.value,

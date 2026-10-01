@@ -8,13 +8,12 @@ import { workshopAppRepo } from '../../../lib/workshop/apps'
 import { lc } from '../../../lib/workshop/relight/copy'
 import AppEditorShell from '../app-editor/AppEditorShell.vue'
 import EditorAlert from '../app-editor/EditorAlert.vue'
-import EditorHistory from '../app-editor/EditorHistory.vue'
 import type { EditorView } from '../app-editor/view'
 import RelightDocks from './RelightDocks.vue'
 import RelightMain from './RelightMain.vue'
-import RelightMood from './RelightMood.vue'
 import RelightPanel from './RelightPanel.vue'
 import RelightRun from './RelightRun.vue'
+import RelightSummary from './RelightSummary.vue'
 import RelightTrays from './RelightTrays.vue'
 import RelightViewMenu from './RelightViewMenu.vue'
 
@@ -38,11 +37,6 @@ const panelLabels = {
   expand: lc('relight.panel.expand', locale),
   collapse: lc('relight.panel.collapse', locale)
 }
-const historyLabels = {
-  group: lc('relight.history', locale),
-  undo: lc('relight.tool.undo', locale),
-  redo: lc('relight.tool.redo', locale)
-}
 </script>
 
 <template>
@@ -57,16 +51,6 @@ const historyLabels = {
     :show-dock="Boolean(image)"
   >
     <RelightMain :relight :view="result" :locale />
-    <template v-if="editing" #center>
-      <EditorHistory
-        :can-undo="relight.canUndo.value"
-        :can-redo="relight.canRedo.value"
-        :disabled="phase.kind === 'running'"
-        :labels="historyLabels"
-        @undo="relight.undo"
-        @redo="relight.redo"
-      />
-    </template>
     <template v-if="editing" #end>
       <RelightViewMenu v-model:view="view" v-model:handles="handles" :locale />
     </template>
@@ -83,9 +67,7 @@ const historyLabels = {
       <RelightPanel :relight :locale />
     </template>
     <template v-if="panel && image" #panel-peek>
-      <fieldset :disabled="phase.kind === 'running'" class="min-w-0">
-        <RelightMood :relight :locale strip />
-      </fieldset>
+      <RelightSummary :relight :locale />
     </template>
     <template v-if="panel && image" #panel-footer>
       <RelightRun :relight :locale block />
