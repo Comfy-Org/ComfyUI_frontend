@@ -55,6 +55,7 @@ import {
 import { acceptsPromoCode } from '@/checkout/summaryLedger'
 import { useBilledWorkspace } from '@/composables/useBilledWorkspace'
 import { useCheckoutExit } from '@/composables/useCheckoutExit'
+import { useCheckoutJourney } from '@/composables/useCheckoutJourney'
 import { useCheckoutPromo } from '@/composables/useCheckoutPromo'
 import { awaitBillingWebStripeKey } from '@/config/stripeKey'
 import { useBillingEntry } from '@/entry/billingEntry'
@@ -85,12 +86,23 @@ type PlannedEntry = BillingEntry & { plan: string }
 /** What the quote answers for a plan slug the catalog does not have. */
 const UNKNOWN_PLAN_SERVER_CODE = 'INVALID_PLAN'
 
+/** The status the server answered a failed read with, when it answered. */
+function withHttpStatus(failure: object) {
+  return 'httpStatus' in failure && typeof failure.httpStatus === 'number'
+    ? { httpStatus: failure.httpStatus }
+    : {}
+}
+
 /** A capability read that ends the page before any quote: unreadable, or refused. */
 function capabilityStop(
   allowed: BillingResult<CapabilitiesSnapshot>
 ): CheckoutPageEvent | undefined {
   if (allowed.status === 'error')
-    return { type: 'capabilitiesFailed', code: allowed.code }
+    return {
+      type: 'capabilitiesFailed',
+      code: allowed.code,
+      ...withHttpStatus(allowed)
+    }
   if (allowed.value.capabilities.can_subscribe_self_serve) return undefined
   return {
     type: 'refused',
@@ -159,6 +171,8 @@ export function useFullPageCheckout() {
   >(undefined)
   const { preview, quote } = usePreviewSubscribe()
   const saved = usePaymentMethods({ immediate: false })
+  const journey = useCheckoutJourney('full_page')
+  journey.enter()
 
   /** A link that names no plan has nothing to quote, so it is as unreadable as a malformed one. */
   const page = shallowRef<CheckoutPage>(
@@ -189,6 +203,7 @@ export function useFullPageCheckout() {
 
   /** A page sent back to resolving by the lifecycle reads its capture again. */
   function dispatch(event: CheckoutPageEvent) {
+    journey.observe(event, preview.value)
     const before = page.value
     page.value = reduceCheckoutPage(before, event)
     if (before.kind !== 'resolving' && page.value.kind === 'resolving')
@@ -330,7 +345,7 @@ export function useFullPageCheckout() {
       return 'serverCode' in quoted &&
         matchesServerCode(quoted, UNKNOWN_PLAN_SERVER_CODE)
         ? { type: 'planUnavailable', reason: 'retired' }
-        : { type: 'unavailable', code: quoted.code }
+        : { type: 'unavailable', code: quoted.code, ...withHttpStatus(quoted) }
     const unquotable = quotedStop(quoted.value, arrival)
     if (unquotable !== undefined) return unquotable
     const facts = {

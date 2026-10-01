@@ -172,11 +172,19 @@ export function getCheckoutJourneyTelemetryEventPayload(
       event.preview_revision !== undefined && {
         preview_revision: event.preview_revision
       }),
+    ...('payment_intent_source' in event &&
+      event.payment_intent_source !== undefined && {
+        payment_intent_source: event.payment_intent_source
+      }),
     ...('failure_category' in event && {
       failure_category: event.failure_category
     }),
     ...('error_code' in event &&
       event.error_code !== undefined && { error_code: event.error_code }),
+    ...('denial_reason' in event &&
+      event.denial_reason !== undefined && {
+        denial_reason: event.denial_reason
+      }),
     ...('element' in event && { element: event.element }),
     ...('element_phase' in event && { element_phase: event.element_phase }),
     ...('submit_phase' in event && { submit_phase: event.submit_phase })

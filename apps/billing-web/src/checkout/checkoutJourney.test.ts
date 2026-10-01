@@ -15,7 +15,7 @@ import {
   entrySourceOf,
   failureCategoryOf,
   previewFailureOfPageEvent,
-  previewPhaseOfResult,
+  previewFailureOfResult,
   previewReadyPhase
 } from '@/checkout/checkoutJourney'
 import { previewOf } from '@/test/fakeBillingClient'
@@ -207,24 +207,21 @@ describe('previewFailureOfPageEvent', () => {
   })
 })
 
-describe('previewPhaseOfResult', () => {
+describe('previewFailureOfResult', () => {
   it.for<{
     name: string
     result: PreviewSubscribeResult
-    phase: object | undefined
+    failed: object | undefined
   }>([
     {
-      name: 'an allowed quote is ready',
-      result: {
-        status: 'ok',
-        value: previewOf({ quote_id: 'q_1', quote_version: 3 })
-      },
-      phase: { phase: 'preview_ready', preview_revision: 'q_1:3' }
+      name: 'an allowed quote is not a failure',
+      result: { status: 'ok', value: previewOf() },
+      failed: undefined
     },
     {
       name: 'a quote the server refuses fails with the checkout code',
       result: { status: 'ok', value: previewOf({ allowed: false }) },
-      phase: {
+      failed: {
         phase: 'preview_failed',
         failure_category: 'api_rejected',
         error_code: 'quote_not_allowed'
@@ -233,19 +230,19 @@ describe('previewPhaseOfResult', () => {
     {
       name: 'a failed read is categorised by its failure',
       result: { status: 'error', code: 'REQUEST_FAILED', httpStatus: 500 },
-      phase: { phase: 'preview_failed', failure_category: 'api_rejected' }
+      failed: { phase: 'preview_failed', failure_category: 'api_rejected' }
     },
     {
       name: 'a read that never got an answer is a network failure',
       result: { status: 'error', code: 'REQUEST_FAILED' },
-      phase: { phase: 'preview_failed', failure_category: 'network' }
+      failed: { phase: 'preview_failed', failure_category: 'network' }
     },
     {
       name: 'a read a newer quote overtook reports nothing',
       result: { status: 'error', code: 'SUPERSEDED' },
-      phase: undefined
+      failed: undefined
     }
-  ])('$name', ({ result, phase }) => {
-    expect(previewPhaseOfResult(result)).toStrictEqual(phase)
+  ])('$name', ({ result, failed }) => {
+    expect(previewFailureOfResult(result)).toStrictEqual(failed)
   })
 })

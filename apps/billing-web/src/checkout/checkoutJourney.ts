@@ -19,39 +19,111 @@ type PreviewFailedPhase = Extract<
   { phase: 'preview_failed' }
 >
 
+const ENTRY_SOURCE_OF: Partial<Record<BillingSource, CheckoutEntrySource>> = {
+  agent_paywall: 'agent_paywall',
+  deep_link: 'deep_link',
+  settings_billing_panel: 'settings_billing'
+}
+
+/** The journey's coarse entry, for the sources it has a name for; the link's own value rides on `entered`. */
 export function entrySourceOf(
-  _source: BillingSource | undefined
+  source: BillingSource | undefined
 ): CheckoutEntrySource {
-  throw new Error('not implemented')
+  if (source === undefined) return 'unknown'
+  return ENTRY_SOURCE_OF[source] ?? 'other'
 }
 
 export function entryFlowOf(
-  _quoted: Pick<SubscriptionPreview, 'transition_type'>
+  quoted: Pick<SubscriptionPreview, 'transition_type'>
 ): CheckoutEntryFlow {
-  throw new Error('not implemented')
+  return quoted.transition_type === 'new_subscription'
+    ? 'initial_subscription'
+    : 'paid_upgrade'
 }
 
-export function failureCategoryOf(_failure: {
+export function failureCategoryOf({
+  code,
+  httpStatus
+}: {
   readonly code: string
   readonly httpStatus?: number
 }): BillingTelemetryFailureCategory {
-  throw new Error('not implemented')
+  switch (code) {
+    case 'REQUEST_FAILED':
+      return httpStatus === undefined ? 'network' : 'api_rejected'
+    case 'NOT_AUTHENTICATED':
+    case 'ACCESS_DENIED':
+    case 'NOT_FOUND':
+    case 'CONFLICT':
+    case 'OPERATION_ALREADY_PENDING':
+    case 'NO_ACTIVE_SUBSCRIPTION':
+      return 'api_rejected'
+    case 'INVALID_REQUEST':
+      return 'validation'
+    default:
+      return 'unknown'
+  }
 }
 
 export function previewReadyPhase(
-  _quoted: SubscriptionPreview
+  quoted: SubscriptionPreview
 ): PreviewReadyPhase {
-  throw new Error('not implemented')
+  const hasIdentity =
+    Boolean(quoted.quote_id) && quoted.quote_version !== undefined
+  return {
+    phase: 'preview_ready',
+    ...(hasIdentity && {
+      preview_revision: `${quoted.quote_id}:${quoted.quote_version}`
+    })
+  }
 }
 
+const QUOTE_REFUSED: PreviewFailedPhase = {
+  phase: 'preview_failed',
+  failure_category: 'api_rejected',
+  error_code: 'quote_not_allowed'
+}
+
+/** What the full-page checkout's own refusals and failed reads say about a preview. */
 export function previewFailureOfPageEvent(
-  _event: CheckoutPageEvent
+  event: CheckoutPageEvent
 ): PreviewFailedPhase | undefined {
-  throw new Error('not implemented')
+  switch (event.type) {
+    case 'refused':
+      return {
+        phase: 'preview_failed',
+        failure_category: 'api_rejected',
+        denial_reason: event.reason
+      }
+    case 'capabilitiesFailed':
+    case 'unavailable':
+      return {
+        phase: 'preview_failed',
+        failure_category: failureCategoryOf(event)
+      }
+    case 'notAllowed':
+      return QUOTE_REFUSED
+    case 'planUnavailable':
+      return {
+        phase: 'preview_failed',
+        failure_category:
+          event.reason === 'retired' ? 'api_rejected' : 'validation',
+        error_code: 'plan_unavailable'
+      }
+    default:
+      return undefined
+  }
 }
 
-export function previewPhaseOfResult(
-  _result: PreviewSubscribeResult
-): PreviewReadyPhase | PreviewFailedPhase | undefined {
-  throw new Error('not implemented')
+/** What a quote answer says about a failed preview; a read a newer quote overtook says nothing. */
+export function previewFailureOfResult(
+  result: PreviewSubscribeResult
+): PreviewFailedPhase | undefined {
+  if (result.status === 'ok')
+    return result.value.allowed ? undefined : QUOTE_REFUSED
+  if (result.code === 'SUPERSEDED') return undefined
+  return {
+    phase: 'preview_failed',
+    failure_category: failureCategoryOf(result)
+  }
 }

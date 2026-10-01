@@ -46,6 +46,7 @@ import type { CheckoutToastItem } from '@/components/CheckoutToasts.vue'
 import CheckoutToasts from '@/components/CheckoutToasts.vue'
 import { useBilledWorkspace } from '@/composables/useBilledWorkspace'
 import { useCheckoutCopy } from '@/composables/useCheckoutCopy'
+import { useCheckoutJourney } from '@/composables/useCheckoutJourney'
 import { useHostedCopy } from '@/composables/useHostedCopy'
 import { BILLING_WEB_ENV } from '@/config/env'
 import {
@@ -63,6 +64,8 @@ const { copy, successCopy, inviteCopy, tierName } = useCheckoutCopy()
 const invites = useWorkspaceInvites()
 const { entry } = useBillingEntry()
 const billedWorkspace = useBilledWorkspace()
+const journey = useCheckoutJourney('embedded')
+journey.enter()
 
 const planSlug = computed(() => entry.value?.plan)
 const teamCreditStopId = computed(() => entry.value?.teamCreditStopId)
@@ -113,6 +116,7 @@ async function quotePlan(
     ...(promotionCode ? { promotionCode } : {})
   })
   if (result.status === 'ok') quoteIsCurrent.value = true
+  if (promotionCode === undefined) journey.quoted(result)
   return result
 }
 
