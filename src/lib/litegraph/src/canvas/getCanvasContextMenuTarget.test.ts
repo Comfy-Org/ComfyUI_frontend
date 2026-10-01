@@ -30,7 +30,7 @@ const { mockQueryLinkSegmentAtPoint, mockQueryRerouteAtPoint } = vi.hoisted(
 )
 
 vi.mock<unknown>(
-  import('@/renderer/core/layout/store/layoutStore'), // eslint-disable-line import-x/no-restricted-paths
+  import('@/renderer/core/layout/store/layoutStore'), // oxlint-disable-line comfy/no-restricted-paths
 
   () => ({
     layoutStore: {
