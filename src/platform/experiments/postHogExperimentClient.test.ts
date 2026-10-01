@@ -10,6 +10,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 describe('readExperimentVariant', () => {
   beforeEach(() => {
+    vi.resetModules()
     posthog.getFeatureFlag.mockReturnValue('treatment')
   })
 
