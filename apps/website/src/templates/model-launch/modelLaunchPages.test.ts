@@ -92,9 +92,12 @@ describe.for(pages)('$name launch page config', ({ page }) => {
       page.runOptions.subtitleKey,
       page.runOptions.ctaKey,
       page.reviews.headingKey,
-      page.reviews.highlight.titleKey,
-      page.reviews.highlight.descriptionKey,
-      page.reviews.highlight.ctaKey
+      page.reviews.highlight?.titleKey,
+      page.reviews.highlight?.descriptionKey,
+      page.reviews.highlight?.ctaKey,
+      page.highlight?.titleKey,
+      page.highlight?.descriptionKey,
+      page.highlight?.ctaKey
     ].filter((key): key is TranslationKey => key !== undefined)
 
     for (const key of keys) {

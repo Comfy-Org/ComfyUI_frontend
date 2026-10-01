@@ -203,16 +203,19 @@ export interface ModelLaunchRunOptions {
   ctaKey: TranslationKey
 }
 
+// The yellow promo card. It points at /mcp unless a page names another route
+// to cross-sell. It renders above the testimonials by default; a page that
+// sets `highlight` at the top level instead places it in the body order.
+export interface ModelLaunchHighlight {
+  titleKey: TranslationKey
+  descriptionKey: TranslationKey
+  ctaKey: TranslationKey
+  route?: keyof ReturnType<typeof getRoutes>
+}
+
 export interface ModelLaunchReviews {
   headingKey: TranslationKey
-  // The promo card above the testimonials. It points at /mcp unless a page
-  // names another route to cross-sell.
-  highlight: {
-    titleKey: TranslationKey
-    descriptionKey: TranslationKey
-    ctaKey: TranslationKey
-    route?: keyof ReturnType<typeof getRoutes>
-  }
+  highlight?: ModelLaunchHighlight
 }
 
 // The optional body sections, in the order they render between the hero and the
@@ -225,6 +228,7 @@ export type ModelLaunchSection =
   | 'comparison'
   | 'pricing'
   | 'faq'
+  | 'highlight'
   | 'closingCta'
 
 // The order the video launch pages shipped with; audioGallery slots in beside
@@ -237,6 +241,7 @@ export const DEFAULT_SECTION_ORDER: readonly ModelLaunchSection[] = [
   'audioGallery',
   'pricing',
   'faq',
+  'highlight',
   'steps',
   'comparison',
   'closingCta'
@@ -255,6 +260,7 @@ export interface ModelLaunchPage {
   audioGallery?: ModelLaunchAudioGallery
   pricing?: ModelLaunchPricing
   faq?: ModelLaunchFaqSection
+  highlight?: ModelLaunchHighlight
   steps?: ModelLaunchSteps
   comparison?: ModelLaunchComparison
   // Pages that end on a steps CTA row do not need a separate closing CTA.

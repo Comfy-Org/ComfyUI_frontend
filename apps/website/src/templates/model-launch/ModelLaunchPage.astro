@@ -7,6 +7,7 @@ import ModelLaunchCtaSection from './ModelLaunchCtaSection.vue'
 import ModelLaunchFaqSection from './ModelLaunchFaqSection.vue'
 import ModelLaunchGallerySection from './ModelLaunchGallerySection.vue'
 import ModelLaunchHeroSection from './ModelLaunchHeroSection.vue'
+import ModelLaunchHighlightSection from './ModelLaunchHighlightSection.vue'
 import ModelLaunchPricingSection from './ModelLaunchPricingSection.vue'
 import ModelLaunchReviewsSection from './ModelLaunchReviewsSection.vue'
 import ModelLaunchShowcaseSection from './ModelLaunchShowcaseSection.vue'
@@ -133,6 +134,15 @@ const sectionOrder = page.sectionOrder ?? DEFAULT_SECTION_ORDER
             <ModelLaunchFaqSection
               client:visible
               faq={page.faq}
+              locale={locale}
+            />
+          )
+        )
+      case 'highlight':
+        return (
+          page.highlight && (
+            <ModelLaunchHighlightSection
+              highlight={page.highlight}
               locale={locale}
             />
           )

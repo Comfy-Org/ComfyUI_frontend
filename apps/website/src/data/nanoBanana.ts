@@ -268,12 +268,12 @@ export const nanoBananaPage: ModelLaunchPage = {
     subtitleKey: 'nanoBanana.runOptions.subtitle',
     ctaKey: 'nanoBanana.runOptions.cta'
   },
+  highlight: {
+    titleKey: 'nanoBanana.reviews.highlightTitle',
+    descriptionKey: 'nanoBanana.reviews.highlightDescription',
+    ctaKey: 'nanoBanana.reviews.highlightCta'
+  },
   reviews: {
-    headingKey: 'nanoBanana.reviews.heading',
-    highlight: {
-      titleKey: 'nanoBanana.reviews.highlightTitle',
-      descriptionKey: 'nanoBanana.reviews.highlightDescription',
-      ctaKey: 'nanoBanana.reviews.highlightCta'
-    }
+    headingKey: 'nanoBanana.reviews.heading'
   }
 }
