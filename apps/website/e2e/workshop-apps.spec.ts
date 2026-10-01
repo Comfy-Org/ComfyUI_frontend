@@ -236,7 +236,9 @@ test('moves a thing from the Move anything bottom sheet on phones @mobile', asyn
   const sheet = app.getByRole('complementary', {
     name: 'Move anything settings'
   })
-  await expect(sheet.getByRole('radio', { name: 'Fast · 20 s' })).toBeChecked()
+  await expect(
+    sheet.getByRole('button', { name: '3 objects · 0 moved · Fast' })
+  ).toBeVisible()
   const kitten = app.getByRole('button', { name: /^Orange kitten\./ })
   await kitten.focus()
   await page.keyboard.press('Shift+ArrowRight')
@@ -342,11 +344,14 @@ test('relights from the Relight bottom sheet on phones @mobile', async ({
   const sheet = app.getByRole('complementary', { name: 'Relight settings' })
   await expect(sheet.getByRole('region', { name: 'Lights' })).toHaveCount(0)
 
+  await sheet.getByRole('button', { name: 'Sunset · 2 lights · Soft' }).click()
+  await expect(sheet.getByRole('region', { name: 'Lights' })).toBeVisible()
   await sheet.getByRole('radio', { name: 'Neon' }).click()
   await expect(sheet.getByRole('radio', { name: 'Neon' })).toBeChecked()
-  await sheet.getByRole('button', { name: 'Show all settings' }).click()
-  await expect(sheet.getByRole('region', { name: 'Lights' })).toBeVisible()
   await sheet.getByRole('button', { name: 'Hide settings' }).click()
+  await expect(
+    sheet.getByRole('button', { name: 'Neon · 2 lights · Hard' })
+  ).toBeVisible()
 
   await sheet.getByTestId('relight-run').click()
   await expect(app.getByRole('link', { name: 'Download' })).toBeVisible()
