@@ -456,6 +456,7 @@ export function useFullPageCheckout() {
 
   watch(checkout.operation, (operation) => {
     if (operation === undefined) return
+    journey.operationIssued(operation.id)
     const own =
       page.value.kind === 'capture' && page.value.attempt.kind === 'sent'
     dispatch({
@@ -537,6 +538,7 @@ export function useFullPageCheckout() {
   )
 
   function onPaymentPhase(phase: StripePaymentPhase) {
+    journey.track(phase)
     if (phase.phase === 'payment_element_ready' && phase.element === 'payment')
       dispatch({ type: 'elementReady' })
     else if (phase.phase === 'payment_element_failed')

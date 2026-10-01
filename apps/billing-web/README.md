@@ -107,8 +107,12 @@ so the funnel compares per surface. The journey id is the entry link's
 `correlation_id`, or a fresh one for a link that carries none, and
 `payment_intent_source` on `entered` is the link's `source`. `preview_ready`
 and `preview_failed` report each quote once; a refused capability, plan or
-quote names a bounded `denial_reason` or `error_code`. `entry_flow` is the
-quote's, so it reads `unknown` on `entered`. No event carries a promo code,
+quote names a bounded `denial_reason` or `error_code`. The payment form's
+`payment_element_*` and `payment_submit_*` phases pass through as the form
+reports them, `submitted` fires on each Pay that goes ahead, and
+`operation_linked` carries the operation that Pay issued, never one the
+checkout recovered. `entry_flow` is the quote's, so it reads `unknown` on
+`entered`. No event carries a promo code,
 an email, a URL, a client secret or a provider id.
 
 ## Commands

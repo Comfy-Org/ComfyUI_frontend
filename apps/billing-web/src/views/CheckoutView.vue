@@ -338,6 +338,7 @@ watch(
   () => checkout.operation.value,
   (operation) => {
     if (operation === undefined) return
+    journey.operationIssued(operation.id)
     if (operation.phase === 'failed') {
       submitFailure.value = declineDetail(operation.declineReason)
       checkout.reset()
@@ -490,6 +491,7 @@ async function pay(choice: PaymentChoice) {
   const quoted = preview.value
   if (planSlug.value === undefined || !quoted || loading.value) return
   submitFailure.value = undefined
+  journey.submitted()
   const result = await checkout.subscribe(
     buildSubscribeRequest(
       {
@@ -608,6 +610,7 @@ function leaveForHost() {
             @confirm-payment="pay({ confirmationToken: $event })"
             @apply-promotion-code="applyPromotionCode"
             @invalidate-quote="quoteIsCurrent = false"
+            @payment-phase="journey.track"
             @back="leaveForHost"
           />
           <CheckoutTransitionConfirm
