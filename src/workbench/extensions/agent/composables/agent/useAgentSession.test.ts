@@ -211,7 +211,7 @@ const runApproval = (id: string, askId = 'turn-1:call-1') =>
       allow_other: false
     }
   })
-const askResolved = (id: string, askId = 'turn-1:call-1') =>
+const askResolved = (id: string, askId = 'turn-1:call-1', selected = ['run']) =>
   wire({
     type: 'agent_ask_resolved',
     data: {
@@ -219,7 +219,7 @@ const askResolved = (id: string, askId = 'turn-1:call-1') =>
       message_id: id,
       ask_id: askId,
       status: 'answered',
-      selected: ['run']
+      selected
     }
   })
 const deltaIn = (threadId: string, id: string, text: string) =>
@@ -506,20 +506,19 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   it('resets public and delayed session state when the storage owner changes', async () => {
-    let rejectAnswer: ((error: Error) => void) | undefined
-    const answerAsk = vi.fn<AgentRestClient['answerAsk']>(
-      () =>
-        new Promise((_, reject) => {
-          rejectAnswer = reject
-        })
-    )
+    const answerAsk = vi.fn<AgentRestClient['answerAsk']>(async () => ({
+      status: 'answered'
+    }))
+    const events = fakeEvents()
     const session = useAgentSession({
       rest: fakeRest({ answerAsk }),
-      events: fakeEvents().source
+      events: events.source
     })
     session.start()
+    events.status(true)
     await session.sendMessage('account A turn')
-    const pendingAnswer = session.answerAsk('ask-shared', 'run')
+    events.emit(runApproval('msg-1', 'ask-shared'))
+    await expect(session.answerAsk('ask-shared', 'run')).resolves.toBe(true)
     expect(session.answeringAskIds.value).toEqual(new Set(['ask-shared']))
 
     setStorageIdentity('user-b')
@@ -532,9 +531,24 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.boundWorkflowId.value).toBeNull()
     expect(session.isSending.value).toBe(false)
 
-    rejectAnswer?.(new Error('account A delayed failure'))
-    await expect(pendingAnswer).resolves.toBe(false)
+    await session.sendMessage('account B turn')
+    events.emit(runApproval('msg-1', 'ask-shared'))
+    vi.useFakeTimers()
+    await vi.advanceTimersByTimeAsync(60_000)
+    vi.useRealTimers()
+    expect(
+      useAgentConversationStore().messages.some((message) =>
+        message.parts.some((part) => part.type === 'runApproval')
+      )
+    ).toBe(true)
+    events.emit(askResolved('msg-1', 'ask-shared', ['cancel']))
     expect(session.notices.value).toEqual([])
+    expect(reportError).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        errorType: 'agent_ask_answer_superseded'
+      })
+    )
     setStorageIdentity('user-test')
     session.stop()
   })
@@ -583,7 +597,7 @@ describe('useAgentSession (v1 composition root)', () => {
 
   it('watches storage ownership only while started and resumes once', async () => {
     const conversationStore = useAgentConversationStore()
-    const reset = vi.spyOn(conversationStore, 'reset')
+    const reset = vi.spyOn(conversationStore, 'resetForStorageOwnerTransition')
     const session = useAgentSession({
       rest: fakeRest(),
       events: fakeEvents().source
@@ -2196,6 +2210,47 @@ describe('useAgentSession (v1 composition root)', () => {
       ])
       expect(session.notices.value).toEqual([])
       expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('does not retry an answer after the storage owner changes', async () => {
+      let rejectFirstAttempt: ((error: Error) => void) | undefined
+      const answerAsk = vi.fn<AgentRestClient['answerAsk']>(() => {
+        if (rejectFirstAttempt !== undefined)
+          return Promise.resolve({ status: 'answered' })
+        return new Promise((_, reject) => {
+          rejectFirstAttempt = reject
+        })
+      })
+      const events = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({ answerAsk }),
+        events: events.source
+      })
+      session.start()
+      events.status(true)
+      await session.sendMessage('build it and run it')
+      events.emit(runApproval('msg-1'))
+
+      vi.useFakeTimers()
+      try {
+        const answered = session.answerAsk('turn-1:call-1', 'run')
+        await vi.waitFor(() => expect(answerAsk).toHaveBeenCalledOnce())
+        rejectFirstAttempt?.(
+          new AgentApiError('failed to wake the turn', 500, undefined)
+        )
+        await Promise.resolve()
+
+        setStorageIdentity('user-b')
+        setStorageWorkspaceId('personal')
+        await vi.advanceTimersByTimeAsync(PAST_ANSWER_RETRY_BACKOFF_MS)
+
+        await expect(answered).resolves.toBe(false)
+        expect(answerAsk).toHaveBeenCalledOnce()
+      } finally {
+        vi.useRealTimers()
+        setStorageIdentity('user-test')
+        session.stop()
+      }
     })
 
     // commitAsk arms a grace timer when the turn is still attached, because

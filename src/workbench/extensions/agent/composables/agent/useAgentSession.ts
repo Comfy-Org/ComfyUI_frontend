@@ -489,7 +489,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     loadGeneration++
     readyThreadId.value = null
     promptEditState.value = { phase: 'idle' }
-    conversationStore.reset()
+    conversationStore.resetForStorageOwnerTransition()
     boundWorkflowId.value = null
     rememberedWorkflowId = null
     notices.value = []
@@ -1484,7 +1484,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.recordAskSelection(askId, selection)
     conversationStore.setAskAnswering(askId, true)
     try {
-      await sendAnswer(currentThreadId, askId, selection)
+      const sent = await sendAnswer(
+        currentThreadId,
+        askId,
+        selection,
+        isCurrentAnswer
+      )
+      if (!sent) return false
       if (!isCurrentAnswer()) return false
       conversationStore.commitAsk(askId, currentThreadId)
       return true
@@ -1527,12 +1533,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
   async function sendAnswer(
     threadId: string,
     askId: string,
-    selection: 'run' | 'cancel'
-  ): Promise<void> {
+    selection: 'run' | 'cancel',
+    isCurrentAnswer: () => boolean
+  ): Promise<boolean> {
     for (let attempt = 0; ; attempt++) {
+      if (!isCurrentAnswer()) return false
       try {
         await rest.answerAsk(threadId, askId, [selection])
-        return
+        return true
       } catch (error) {
         if (
           attempt >= ANSWER_RETRY_BACKOFF_MS.length ||

@@ -1038,6 +1038,11 @@ export const useAgentConversationStore = defineStore(
       clearActive()
     }
 
+    function resetForStorageOwnerTransition(): void {
+      resolvedAskIds.clear()
+      reset()
+    }
+
     /**
      * PM-1658: strips cards this client has already retired from a freshly
      * fetched transcript, and forgets ids the server no longer names so the
@@ -1253,6 +1258,7 @@ export const useAgentConversationStore = defineStore(
       liveTurns,
       settleTurn,
       reset,
+      resetForStorageOwnerTransition,
       hydrate
     }
   }
