@@ -203,6 +203,67 @@ describe('parseBillingEntry', () => {
   })
 })
 
+describe('the source a product names', () => {
+  it.for([
+    'subscribe_to_run',
+    'settings_billing_panel',
+    'agent_paywall'
+  ] as const)('round-trips %s beside the journey it continues', (source) => {
+    const input = { ...BASE_INPUT, source, correlationId: 'journey-1' }
+    const url = entryUrl(input)
+
+    expect(url.searchParams.get('source')).toBe(source)
+    expect(parseBillingEntry(url)).toEqual({
+      status: 'ok',
+      entry: {
+        version: 'v1',
+        intent: 'checkout',
+        product: 'platform',
+        returnTo: 'platform_account',
+        correlationId: 'journey-1',
+        source
+      }
+    })
+  })
+
+  const UNREADABLE_SOURCES = [
+    ['a value outside the shared list', 'newsletter'],
+    ['a URL', 'https://attacker.example/steal?card=4242'],
+    ['free text', 'jane@example.com paid with 4242'],
+    ['an empty value', ''],
+    ['an inherited property name', 'constructor'],
+    ['a listed value in the wrong case', 'Agent_Paywall']
+  ] as const
+
+  it.for(UNREADABLE_SOURCES)(
+    'leaves %s off the link it builds',
+    ([, source]) => {
+      const input = { ...BASE_INPUT, source }
+
+      expect(entryUrl(input).search).toBe(
+        '?product=platform&return_to=platform_account'
+      )
+    }
+  )
+
+  it.for(UNREADABLE_SOURCES)(
+    'keeps a link that arrives with %s and reads no source from it',
+    ([, source]) => {
+      const url = `/v1/checkout?product=platform&return_to=platform_account&source=${encodeURIComponent(source)}`
+
+      expect(parseBillingEntry(url)).toEqual({
+        status: 'ok',
+        entry: {
+          version: 'v1',
+          intent: 'checkout',
+          product: 'platform',
+          returnTo: 'platform_account'
+        }
+      })
+    }
+  )
+})
+
 describe('the workspace query parameter', () => {
   it('is the same name the auth SDK reads and writes', () => {
     const workspaceField = OPTIONAL_ENTRY_FIELDS.find(

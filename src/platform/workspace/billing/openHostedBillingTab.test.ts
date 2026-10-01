@@ -80,7 +80,12 @@ describe('openHostedBillingTab', () => {
     expect(mockHostedBillingRoute).toHaveBeenCalledWith(
       'billing_web',
       'pricing',
-      { plan: undefined, teamCreditStopId: undefined, workspaceId: 'ws-123' }
+      {
+        plan: undefined,
+        teamCreditStopId: undefined,
+        workspaceId: 'ws-123',
+        correlationId: expect.any(String)
+      }
     )
   })
 
@@ -95,7 +100,8 @@ describe('openHostedBillingTab', () => {
       {
         plan: 'pro-monthly',
         teamCreditStopId: undefined,
-        workspaceId: 'ws-123'
+        workspaceId: 'ws-123',
+        correlationId: expect.any(String)
       }
     )
   })
@@ -114,7 +120,8 @@ describe('openHostedBillingTab', () => {
       {
         plan: 'team_per_credit_annual',
         teamCreditStopId: 'stop_700',
-        workspaceId: 'ws-123'
+        workspaceId: 'ws-123',
+        correlationId: expect.any(String)
       }
     )
   })

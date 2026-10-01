@@ -284,6 +284,36 @@ describe('hosted billing entry routing', () => {
     })
   })
 
+  it('publishes the source and journey the product handed over', async () => {
+    await arriveAt(
+      `/v1/subscription?${ENTRY_QUERY}&source=agent_paywall&correlation_id=journey-1`
+    )
+
+    expect(useBillingEntry().entry.value).toEqual({
+      version: 'v1',
+      intent: 'subscription',
+      product: 'comfyui',
+      returnTo: 'comfyui_workspace',
+      source: 'agent_paywall',
+      correlationId: 'journey-1'
+    })
+  })
+
+  it('publishes a link whose source is outside the shared list without one', async () => {
+    await arriveAt(
+      `/v1/subscription?${ENTRY_QUERY}&source=https%3A%2F%2Fevil.test&correlation_id=journey-1`
+    )
+
+    expect(useBillingEntry().error.value).toBeUndefined()
+    expect(useBillingEntry().entry.value).toEqual({
+      version: 'v1',
+      intent: 'subscription',
+      product: 'comfyui',
+      returnTo: 'comfyui_workspace',
+      correlationId: 'journey-1'
+    })
+  })
+
   it.for([
     {
       code: 'UNSUPPORTED_VERSION',
