@@ -1,7 +1,7 @@
 import { execFileSync, spawnSync } from 'node:child_process'
 import path from 'node:path'
 
-import { lintTargets } from './lintTargets'
+import { isEslintFile } from './eslintScope'
 
 const oxlintEntry = path.resolve('node_modules/oxlint/bin/oxlint')
 const eslintEntry = path.resolve('node_modules/eslint/bin/eslint.js')
@@ -11,7 +11,10 @@ const changedFiles = execFileSync(
   ['diff', '--name-only', '-z', '--diff-filter=ACMR', 'HEAD'],
   { encoding: 'utf8' }
 ).split('\0')
-const { oxlint: oxlintFiles, eslint: eslintFiles } = lintTargets(changedFiles)
+const oxlintFiles = changedFiles.filter((file) =>
+  /\.(?:js|ts|tsx|vue|mts)$/.test(file)
+)
+const eslintFiles = changedFiles.filter(isEslintFile)
 
 if (oxlintFiles.length > 0 || eslintFiles.length > 0) {
   const fix = process.argv.includes('--fix') ? ['--fix'] : []
