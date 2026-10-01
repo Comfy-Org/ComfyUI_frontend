@@ -1,7 +1,11 @@
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
-import { readExperimentVariant } from '@/platform/experiments/postHogExperimentClient'
-import { reportError } from '@/platform/telemetry/reportError'
+import {
+  isAuthenticatedConfigLoaded,
+  remoteConfig,
+  remoteConfigRevision
+} from '@/platform/remoteConfig/remoteConfig'
+import { useTelemetry } from '@/platform/telemetry'
 import type { AgentFreeUsePlacement } from '@/platform/telemetry/types'
 
 const FREE_USE_PLACEMENT_FLAG = 'agent-free-use-message-placement'
@@ -24,18 +28,27 @@ export function useFreeUsePlacement() {
   const assigned = ref<FreeUseVariant>()
   const variant = computed(() => assigned.value ?? 'control')
 
-  void readExperimentVariant(FREE_USE_PLACEMENT_FLAG)
-    .then((value) => {
-      if (isFreeUseVariant(value)) assigned.value = value
-    })
-    .catch((error: unknown) => {
-      reportError(error, {
-        surface: 'platform',
-        errorType: 'experiment_assignment_failed',
-        tags: { flag_key: FREE_USE_PLACEMENT_FLAG },
-        level: 'warning'
-      })
-    })
+  const assign = () => {
+    const value = remoteConfig.value[FREE_USE_PLACEMENT_FLAG]
+    assigned.value = isFreeUseVariant(value) ? value : 'control'
+    useTelemetry()?.trackFeatureFlagEvaluation(
+      FREE_USE_PLACEMENT_FLAG,
+      assigned.value
+    )
+  }
+
+  if (isAuthenticatedConfigLoaded.value) {
+    assign()
+  } else {
+    const stop = watch(
+      [isAuthenticatedConfigLoaded, remoteConfigRevision],
+      ([authenticated]) => {
+        if (!authenticated) return
+        assign()
+        stop()
+      }
+    )
+  }
 
   return { variant }
 }
