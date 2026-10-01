@@ -23,6 +23,21 @@ type WorkflowSelection = {
 
 type NextWorkflowMessageResponse = 'accept' | 'fail' | 'refuse'
 
+const CLOUD_ID_PREFIX = 'a81718a4-02ae-41e6-ae85-'
+
+/**
+ * The listing name a saved workflow path maps to, or `undefined` for a path
+ * the listing does not track. Both callers used to slice five characters off
+ * the end on the strength of the `workflows/` prefix alone, which turned any
+ * other path under that directory into a prefix of some unrelated entry's
+ * name.
+ */
+function workflowNameFromPath(path: string): string | undefined {
+  return path.startsWith('workflows/') && path.endsWith('.json')
+    ? path.slice('workflows/'.length, -'.json'.length)
+    : undefined
+}
+
 export const workflowSelectionTest = base.extend<{
   nodeDefinitions: Record<string, ComfyNodeDef> | undefined
   workflowSelection: WorkflowSelection
@@ -42,6 +57,21 @@ export const workflowSelectionTest = base.extend<{
     let resumeWorkflowLookups = () => {}
     let lookupCount = 0
     let nextWorkflowMessageResponse: NextWorkflowMessageResponse = 'accept'
+    // Entries leave `workflows` on delete and on a refused turn, so its length
+    // is not an id source: it would hand a workflow saved after a delete the id
+    // of one still listed, and two listings sharing an id hide a binding bug.
+    let issuedCloudWorkflows = 0
+    function forgetSavedWorkflow(path: string): void {
+      const name = workflowNameFromPath(path)
+      savedContent.delete(path)
+      const fileIndex = savedFiles.findIndex((file) => file.path === path)
+      if (fileIndex !== -1) savedFiles.splice(fileIndex, 1)
+      if (name === undefined) return
+      const workflowIndex = workflows.findIndex(
+        (workflow) => workflow.name === name
+      )
+      if (workflowIndex !== -1) workflows.splice(workflowIndex, 1)
+    }
     await page.route('**/api/workflows?*', async (route) => {
       lookupCount++
       await pendingLookup
@@ -124,10 +154,12 @@ export const workflowSelectionTest = base.extend<{
       })
       if (!success)
         return route.fulfill({ status: 500, body: 'Save unavailable' })
-      workflows.push({
-        id: `a81718a4-02ae-41e6-ae85-${String(workflows.length + 1).padStart(12, '0')}`,
-        name: path.slice('workflows/'.length, -'.json'.length)
-      })
+      const name = workflowNameFromPath(path)
+      if (name !== undefined)
+        workflows.push({
+          id: `${CLOUD_ID_PREFIX}${String(++issuedCloudWorkflows).padStart(12, '0')}`,
+          name
+        })
       const file: UserDataFullInfo = {
         path,
         modified: Date.now(),
@@ -136,6 +168,18 @@ export const workflowSelectionTest = base.extend<{
       savedFiles.push(file)
       savedContent.set(path, route.request().postData() ?? '{}')
       return route.fulfill(jsonRoute(file))
+    })
+    await page.route('**/api/userdata/*', (route) => {
+      const path = decodeURIComponent(
+        new URL(route.request().url()).pathname.split('/userdata/')[1]
+      )
+      if (
+        route.request().method() !== 'DELETE' ||
+        !path.startsWith('workflows/')
+      )
+        return route.fallback()
+      forgetSavedWorkflow(path)
+      return route.fulfill({ status: 204 })
     })
     await use({
       savedPaths,

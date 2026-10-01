@@ -303,6 +303,41 @@ describe('historical workflow restoration', () => {
     expect(warnRestoreFailed).not.toHaveBeenCalled()
   })
 
+  /**
+   * The panel store's delete hook can only mark a target it already holds, so a
+   * delete that settles while the chat is still restoring is invisible to it —
+   * `canRestoreWorkflow` is true and there is no retained target to match. The
+   * notice is the restoration's to report, from the Cloud listing, and the
+   * restoration cannot commit the deleted workflow behind it: `isCurrent()`
+   * requires the mode to still be `restoring`, which marking it unavailable
+   * ends.
+   */
+  it('reports the target unavailable when its delete settles mid-restoration', async () => {
+    const { selection, workflows, panel, current, listCloudWorkflows } = setup()
+    const saved = createMockLoadedWorkflow({
+      path: 'workflows/saved.json',
+      filename: 'saved',
+      isTemporary: false
+    })
+    saved.load = vi.fn(async () => saved)
+    saved.delete = vi.fn(async () => {})
+    workflows.attachWorkflow(saved)
+    workflows.openWorkflowsInBackground({ right: [saved.path] })
+
+    await workflows.deleteWorkflow(saved)
+    expect(panel.canRestoreWorkflow).toBe(true)
+    expect(panel.targetUnavailable).toBe(false)
+    listCloudWorkflows.mockImplementationOnce(async () => [
+      { id: 'wf-current', name: 'current' }
+    ])
+
+    expect(await selection.restoreTarget('wf-saved', () => true)).toBe(true)
+
+    expect(panel.targetUnavailable).toBe(true)
+    expect(panel.selectedWorkflow).toBeNull()
+    expect(workflows.activeWorkflow?.path).toBe(current.path)
+  })
+
   it('keeps the current view and reports a failed restore when a listed workflow has no saved file', async () => {
     const { selection, workflows, panel, current, warnRestoreFailed } = setup()
 

@@ -41,6 +41,10 @@ vi.mock('@/platform/workflow/core/services/workflowService', () => ({
 
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   useWorkflowStore: () => ({
+    // `agentPanelStore` subscribes to the store's delete and rename actions.
+    // This stub stands in for the store rather than wrapping a real one, so it
+    // has to offer the subscription; the panel ignores the unsubscribe handle.
+    $onAction: () => () => {},
     get openWorkflows() {
       return mocks.openWorkflows
     },
