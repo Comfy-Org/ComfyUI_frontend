@@ -298,6 +298,37 @@ export function useAgentSession(deps: AgentSessionDeps) {
     source: 'selector_chip' | 'restored'
   } | null = null
 
+  /**
+   * A transition committed before its thread exists is only worth replaying
+   * when the user chose the target; an ack-driven adoption has nothing to park.
+   */
+  function parkWorkflowBind(
+    workflowId: string,
+    previousWorkflowId: string | null,
+    source: AgentWorkflowBindSource
+  ): void {
+    if (source !== 'selector_chip' && source !== 'restored') return
+    pendingWorkflowBind = { workflowId, previousWorkflowId, source }
+  }
+
+  function takePendingWorkflowBind(workflowId: string) {
+    const pending =
+      pendingWorkflowBind?.workflowId === workflowId
+        ? pendingWorkflowBind
+        : null
+    pendingWorkflowBind = null
+    return pending
+  }
+
+  function lastReportedWorkflowFor(
+    threadId: string,
+    fallback: string | null
+  ): string | null {
+    if (reportedWorkflowBind?.threadId === threadId)
+      return reportedWorkflowBind.workflowId
+    return fallback
+  }
+
   function reportWorkflowBound(
     workflowId: string,
     previousWorkflowId: string | null,
@@ -305,19 +336,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): void {
     const currentThreadId = conversationStore.threadId
     if (currentThreadId === null) {
-      if (source === 'selector_chip' || source === 'restored')
-        pendingWorkflowBind = { workflowId, previousWorkflowId, source }
+      parkWorkflowBind(workflowId, previousWorkflowId, source)
       return
     }
-    const pending =
-      pendingWorkflowBind?.workflowId === workflowId
-        ? pendingWorkflowBind
-        : null
-    pendingWorkflowBind = null
-    const lastReported =
-      reportedWorkflowBind?.threadId === currentThreadId
-        ? reportedWorkflowBind.workflowId
-        : (pending?.previousWorkflowId ?? previousWorkflowId)
+    const pending = takePendingWorkflowBind(workflowId)
+    const lastReported = lastReportedWorkflowFor(
+      currentThreadId,
+      pending?.previousWorkflowId ?? previousWorkflowId
+    )
     if (workflowId === lastReported) return
     reportedWorkflowBind = { threadId: currentThreadId, workflowId }
     useTelemetry()?.trackAgentWorkflowBound({
