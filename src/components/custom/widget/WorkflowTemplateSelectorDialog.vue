@@ -1138,6 +1138,7 @@ function handleTemplateModelMetadataError(
   const setup = activeDetail.value?.modelSetup
   if (setup) setup.pending = false
   reportError(error, {
+    surface: 'graph',
     errorType: 'workflow_template_model_metadata_failed',
     level: 'warning'
   })
