@@ -825,6 +825,33 @@ describe('AgentPanel extension flag gate', () => {
     )
   })
 
+  it('withholds a card whose dialog opened while the offer was in flight, then re-offers', async () => {
+    agentFlagEnabled.value = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
+      async (_onAccept, hooks) => {
+        openDialog()
+        await flush()
+        if (hooks?.canShow?.() === false) return
+        hooks?.onShown?.()
+      }
+    )
+
+    await loadEntryAndSetup()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+    await flush()
+    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('false')
+    expect(agentStore.open).not.toHaveBeenCalled()
+
+    closeDialog()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledTimes(2)
+    )
+    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('true')
+  })
+
   it('does not re-offer after the user declines a manually opened card', async () => {
     agentFlagEnabled.value = true
     Object.assign(consentStore, { accepted: false, isChecking: false })
@@ -861,6 +888,74 @@ describe('AgentPanel extension flag gate', () => {
     await flush()
 
     expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+  })
+
+  it('withholds a card whose Getting Started screen took over while the offer was in flight', async () => {
+    agentFlagEnabled.value = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
+      async (_onAccept, hooks) => {
+        firstRunTookScreen.value = true
+        if (hooks?.canShow?.() === false) return
+        hooks?.onShown?.()
+      }
+    )
+
+    await loadEntryAndSetup()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+    await flush()
+
+    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('false')
+    expect(agentStore.open).not.toHaveBeenCalled()
+  })
+
+  it('remembers a seen card per workspace across a switch away and back', async () => {
+    agentFlagEnabled.value = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    let decide = (_: boolean) => {}
+    startupDecision = new Promise<boolean>((resolve) => {
+      decide = resolve
+    })
+
+    await loadEntryAndSetup()
+    openDialog(CONSENT_DIALOG_KEY)
+    await flush()
+    closeDialog(CONSENT_DIALOG_KEY)
+    decide(true)
+    await flush()
+
+    Object.assign(workspaceStore, { activeWorkspaceId: 'workspace-b' })
+    Object.assign(consentStore, { identity: 'account-a/workspace-b/1' })
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+
+    Object.assign(workspaceStore, { activeWorkspaceId: 'workspace-a' })
+    Object.assign(consentStore, { identity: 'account-a/workspace-a/2' })
+    await flush()
+    await flush()
+
+    expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+  })
+
+  it('does not re-read consent on every dialog close while the read keeps failing', async () => {
+    agentFlagEnabled.value = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    vi.mocked(consentStore.load).mockRejectedValue(new Error('offline'))
+
+    await loadEntryAndSetup()
+    await flush()
+    const loadsAfterBoot = vi.mocked(consentStore.load).mock.calls.length
+    for (let cycle = 0; cycle < 3; cycle++) {
+      openDialog()
+      await flush()
+      closeDialog()
+      await flush()
+    }
+
+    expect(consentStore.load).toHaveBeenCalledTimes(loadsAfterBoot)
   })
 
   it('stays silent when the account already accepted', async () => {
