@@ -517,4 +517,26 @@ describe('baseline admission and catalog stability', () => {
     runArchitectureCheck(root, 'update')
     expect(readFileSync(filename, 'utf8')).toBe(before)
   })
+
+  test('check rejects stale debt and update removes it from the baseline', () => {
+    const root = createConfiguredRepository()
+    const baselinePath = join(root, 'docs/architecture/domains/baseline.json')
+    writeFileSync(
+      baselinePath,
+      JSON.stringify({
+        schemaVersion: 1,
+        violations: [
+          'unclassified-module:src/check.test.ts',
+          'unclassified-module:src/resolved.ts'
+        ]
+      })
+    )
+    expect(() => runArchitectureCheck(root, 'check')).toThrow(
+      'run pnpm architecture:update'
+    )
+    runArchitectureCheck(root, 'update')
+    expect(JSON.parse(readFileSync(baselinePath, 'utf8')).violations).toEqual([
+      'unclassified-module:src/check.test.ts'
+    ])
+  })
 })

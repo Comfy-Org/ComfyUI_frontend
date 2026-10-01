@@ -1000,16 +1000,40 @@ const acceptBaseline = (
   )
 }
 
-const enforceBaseline = (baselinePath: string, census: Census): void => {
+const enforceBaseline = (
+  baselinePath: string,
+  census: Census,
+  mode: ArchitectureMode
+): void => {
   const recorded: { violations: string[] } = JSON.parse(
     readFileSync(baselinePath, 'utf8')
   )
   const failures = findRatchetFailures(census.violations, recorded.violations)
-  if (!failures.length) return
+  if (failures.length)
+    throw new Error(
+      `Architecture ratchet found ${failures.length} new violation(s). ` +
+        'Use pnpm architecture:accept-baseline only for an explicitly reviewed exception change.\n' +
+        failures.map(({ detail }) => `- ${detail}`).join('\n')
+    )
+  const current = new Set(
+    census.violations
+      .filter(({ maturity }) => maturity === 'baseline')
+      .map(({ fingerprint }) => fingerprint)
+  )
+  const retained = recorded.violations.filter((fingerprint) =>
+    current.has(fingerprint)
+  )
+  const resolved = recorded.violations.length - retained.length
+  if (!resolved) return
+  if (mode === 'update') {
+    writeFileSync(
+      baselinePath,
+      stableJson({ schemaVersion: 1, violations: retained })
+    )
+    return
+  }
   throw new Error(
-    `Architecture ratchet found ${failures.length} new violation(s). ` +
-      'Use pnpm architecture:accept-baseline only for an explicitly reviewed exception change.\n' +
-      failures.map(({ detail }) => `- ${detail}`).join('\n')
+    `baseline.json has ${resolved} resolved fingerprint(s); run pnpm architecture:update`
   )
 }
 
@@ -1036,7 +1060,7 @@ export const runArchitectureCheck = (
     acceptBaseline(baselinePath, census, exceptions)
     return
   }
-  enforceBaseline(baselinePath, census)
+  enforceBaseline(baselinePath, census, mode)
 }
 
 if (
