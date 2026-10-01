@@ -1,7 +1,7 @@
 import { datadogRum } from '@datadog/browser-rum'
 import posthog from 'posthog-js'
 import type { CaptureResult } from 'posthog-js'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import type {
@@ -15,6 +15,8 @@ import {
   createBillingWebTelemetry,
   toSessionIdentity
 } from '@/telemetry/billingWebTelemetry'
+import type { ScrubbableRumEvent } from '@/telemetry/rum'
+import { billingWebRumBeforeSend, initBillingWebRum } from '@/telemetry/rum'
 
 vi.mock(import('@datadog/browser-rum'))
 vi.mock(import('posthog-js'))
@@ -578,6 +580,218 @@ describe('PostHog identity', () => {
 
     expect(posthog.identify).not.toHaveBeenCalled()
     expect(posthog.reset).not.toHaveBeenCalled()
+  })
+})
+
+describe('RUM user', () => {
+  const RUM_RUNNING = { clientToken: 'pub', applicationId: 'app' }
+
+  beforeEach(() => {
+    vi.mocked(datadogRum.getInitConfiguration).mockReturnValue(RUM_RUNNING)
+  })
+
+  it('sets the signed-in user as an opaque id and nothing else', () => {
+    createBillingWebTelemetry().startRumUser(
+      ref<SessionIdentity>({ kind: 'signed_in', userId: 'user_1' })
+    )
+
+    const users = vi.mocked(datadogRum.setUser).mock.calls.map(([user]) => user)
+    expect(users).toEqual([{ id: 'user_1' }])
+    expect(Object.keys(users[0])).toEqual(['id'])
+  })
+
+  it('waits for the session to resolve before setting a user', async () => {
+    const identity = ref<SessionIdentity>({ kind: 'unknown' })
+    createBillingWebTelemetry().startRumUser(identity)
+    expect(datadogRum.setUser).not.toHaveBeenCalled()
+
+    identity.value = { kind: 'signed_in', userId: 'user_1' }
+    await nextTick()
+
+    expect(datadogRum.setUser).toHaveBeenCalledExactlyOnceWith({ id: 'user_1' })
+  })
+
+  it('replaces the user when a different one signs in', async () => {
+    const identity = ref<SessionIdentity>({
+      kind: 'signed_in',
+      userId: 'user_1'
+    })
+    createBillingWebTelemetry().startRumUser(identity)
+
+    identity.value = { kind: 'signed_in', userId: 'user_2' }
+    await nextTick()
+
+    expect(vi.mocked(datadogRum.setUser).mock.calls).toEqual([
+      [{ id: 'user_1' }],
+      [{ id: 'user_2' }]
+    ])
+    expect(datadogRum.clearUser).not.toHaveBeenCalled()
+  })
+
+  it('clears the user it set when that user signs out, once', async () => {
+    const identity = ref<SessionIdentity>({
+      kind: 'signed_in',
+      userId: 'user_1'
+    })
+    createBillingWebTelemetry().startRumUser(identity)
+
+    identity.value = { kind: 'signed_out' }
+    await nextTick()
+    identity.value = { kind: 'unknown' }
+    await nextTick()
+    identity.value = { kind: 'signed_out' }
+    await nextTick()
+
+    expect(datadogRum.clearUser).toHaveBeenCalledOnce()
+  })
+
+  it('leaves a user it did not set alone when it only sees a sign-out', async () => {
+    const identity = ref<SessionIdentity>({ kind: 'unknown' })
+    createBillingWebTelemetry().startRumUser(identity)
+
+    identity.value = { kind: 'signed_out' }
+    await nextTick()
+
+    expect(datadogRum.clearUser).not.toHaveBeenCalled()
+    expect(datadogRum.setUser).not.toHaveBeenCalled()
+  })
+
+  it('keeps the user while the session is refused or resolving again', async () => {
+    const identity = ref<SessionIdentity>({
+      kind: 'signed_in',
+      userId: 'user_1'
+    })
+    createBillingWebTelemetry().startRumUser(identity)
+
+    identity.value = { kind: 'unknown' }
+    await nextTick()
+
+    expect(datadogRum.clearUser).not.toHaveBeenCalled()
+  })
+
+  it.for<{
+    phase: Parameters<typeof toSessionIdentity>[0]
+    reading: string
+  }>([
+    { phase: undefined, reading: 'a session not yet decided' },
+    { phase: 'pending', reading: 'a session still resolving' },
+    { phase: 'minting', reading: 'a session minting its credential' },
+    { phase: 'error', reading: 'a refused session' }
+  ])('sets no user for $reading', ({ phase }) => {
+    createBillingWebTelemetry().startRumUser(() =>
+      toSessionIdentity(phase, undefined)
+    )
+
+    expect(datadogRum.setUser).not.toHaveBeenCalled()
+    expect(datadogRum.clearUser).not.toHaveBeenCalled()
+  })
+
+  it('does nothing, and never throws, when RUM is not running on this host', async () => {
+    vi.mocked(datadogRum.getInitConfiguration).mockReturnValue(undefined)
+    const identity = ref<SessionIdentity>({
+      kind: 'signed_in',
+      userId: 'user_1'
+    })
+
+    expect(() =>
+      createBillingWebTelemetry().startRumUser(identity)
+    ).not.toThrow()
+    identity.value = { kind: 'signed_out' }
+    await nextTick()
+
+    expect(datadogRum.setUser).not.toHaveBeenCalled()
+    expect(datadogRum.clearUser).not.toHaveBeenCalled()
+  })
+
+  it.for(['setUser', 'clearUser'] as const)(
+    'never throws into the billing flow when RUM %s fails',
+    async (failing) => {
+      vi.mocked(datadogRum[failing]).mockImplementation(() => {
+        throw new Error('RUM unavailable')
+      })
+      const identity = ref<SessionIdentity>({
+        kind: 'signed_in',
+        userId: 'user_1'
+      })
+
+      expect(() =>
+        createBillingWebTelemetry().startRumUser(identity)
+      ).not.toThrow()
+      identity.value = { kind: 'signed_out' }
+      await nextTick()
+
+      expect(datadogRum[failing]).toHaveBeenCalledOnce()
+    }
+  )
+
+  it('follows the same identity, with the same id, as PostHog', async () => {
+    fakeIdentityCookie()
+    const identity = ref<SessionIdentity>({
+      kind: 'signed_in',
+      userId: 'user_1'
+    })
+    const telemetry = createBillingWebTelemetry()
+    telemetry.startRumUser(identity)
+    await telemetry.startPostHog({
+      config: Promise.resolve(CONFIGURED),
+      identity
+    })
+
+    expect(posthog.identify).toHaveBeenCalledExactlyOnceWith('user_1')
+    expect(datadogRum.setUser).toHaveBeenCalledWith({ id: 'user_1' })
+
+    identity.value = { kind: 'signed_out' }
+    await nextTick()
+
+    expect(posthog.reset).toHaveBeenCalledOnce()
+    expect(datadogRum.clearUser).toHaveBeenCalledOnce()
+  })
+
+  it('sends the id nowhere else in RUM', async () => {
+    const identity = ref<SessionIdentity>({ kind: 'unknown' })
+    const telemetry = createBillingWebTelemetry()
+    telemetry.startRumUser(identity)
+
+    identity.value = { kind: 'signed_in', userId: 'user_1' }
+    await nextTick()
+    telemetry.trackBillingEvent(STARTED)
+
+    expect(datadogRum.setUserProperty).not.toHaveBeenCalled()
+    expect(datadogRum.setGlobalContext).not.toHaveBeenCalled()
+    expect(datadogRum.setGlobalContextProperty).not.toHaveBeenCalled()
+    expect(datadogRum.setAccount).not.toHaveBeenCalled()
+    expect(datadogRum.addAction).toHaveBeenCalledExactlyOnceWith(
+      'billing.operation.started',
+      { ...STARTED, billing_surface: 'billing_web' }
+    )
+  })
+
+  it('keeps scrubbing what RUM sends once a user is set', () => {
+    vi.mocked(datadogRum.getInitConfiguration)
+      .mockReturnValueOnce(undefined)
+      .mockReturnValue(RUM_RUNNING)
+    initBillingWebRum({ hostname: 'billing.comfy.org', version: 'commit-sha' })
+    createBillingWebTelemetry().startRumUser(
+      ref<SessionIdentity>({ kind: 'signed_in', userId: 'user_1' })
+    )
+    const click: ScrubbableRumEvent = {
+      type: 'action',
+      view: {
+        url: 'https://billing.comfy.org/v1/checkout?payment_intent_client_secret=pi_1_secret_2'
+      },
+      action: { target: { name: 'Signed in as ada@example.com' } }
+    }
+
+    expect(datadogRum.setUser).toHaveBeenCalledWith({ id: 'user_1' })
+    expect(vi.mocked(datadogRum.init).mock.lastCall?.[0].beforeSend).toBe(
+      billingWebRumBeforeSend
+    )
+    expect(billingWebRumBeforeSend(click)).toBe(true)
+    expect(click).toEqual({
+      type: 'action',
+      view: { url: 'https://billing.comfy.org/v1/checkout' },
+      action: { target: { name: 'Signed in as [email]' } }
+    })
   })
 })
 
