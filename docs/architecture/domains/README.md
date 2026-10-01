@@ -47,6 +47,9 @@ command succeeds only when every baseline violation is owned by exactly one
 exception-ledger entry. Every newly admitted fingerprint must also appear
 verbatim in the owning entry; a broad historical prefix cannot authorize new
 debt. Baseline acceptance must never accompany unrelated product work.
+When recorded debt is removed, `architecture:check` requires an update and
+`architecture:update` deletes only the resolved fingerprints. This prevents a
+later reintroduction from inheriting stale baseline permission.
 
 Roles are enforced as dependency direction, not merely catalog metadata.
 `domain` targets only `domain`; `application` and `infrastructure` may target
