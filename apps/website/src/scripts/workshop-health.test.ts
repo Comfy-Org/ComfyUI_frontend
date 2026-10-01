@@ -117,7 +117,9 @@ describe('Workshop health', () => {
       reason: 'concurrency' as const,
       expected: 'excluded',
       type: 'concurrency'
-    }
+    },
+    { reason: 'network' as const, expected: 'failure', type: 'network' },
+    { reason: 'rateLimit' as const, expected: 'excluded', type: 'rateLimit' }
   ])(
     'classifies $reason separately for service paging',
     ({ reason, expected, type }) => {
@@ -167,6 +169,16 @@ describe('Workshop health', () => {
       expected: 'failure'
     },
     {
+      name: 'Router rate limit',
+      failure: {
+        reason: 'rateLimit',
+        request_id: 'router-request',
+        http_status: 429,
+        router_error_type: 'rate_limit_exceeded'
+      },
+      expected: 'excluded'
+    },
+    {
       name: 'storage upload forbidden',
       failure: {
         reason: 'upload',
@@ -187,6 +199,29 @@ describe('Workshop health', () => {
         }
       })?.service_health
     ).toBe(expected)
+  })
+
+  it('excludes a workflow queue refusal while keeping its attribution', () => {
+    expect(
+      workshopHealthLog({
+        name: 'run_finished',
+        properties: {
+          ...run,
+          page_type: 'workflow',
+          status: 'failed',
+          duration_ms: 10,
+          reason: 'rateLimit',
+          workflow_error_code: 'rate_limited',
+          http_status: 429
+        }
+      })
+    ).toMatchObject({
+      service_health: 'excluded',
+      reason: 'rateLimit',
+      failure_type: 'rateLimit',
+      workflow_error_code: 'rate_limited',
+      http_status: 429
+    })
   })
 
   it('does not call an HTTP 200 a delivered image', () => {
