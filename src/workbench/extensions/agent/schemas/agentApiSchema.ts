@@ -104,7 +104,9 @@ export type AgentRunModeValue = AgentRunModePreference['mode']
  * a row a dead turn left in `pending`/`running` has no wire-status mapping
  * and is dropped server-side rather than reaching this parser.
  */
-export const zPersistedToolCallSummary = zToolCallSummary
+export const zPersistedToolCallSummary = zToolCallSummary.extend({
+  skill: z.string().nullish()
+})
 
 /**
  * The generated `AgentMessage.content` schema narrows to just `tool_calls`
@@ -168,7 +170,7 @@ const zAgentToolCallData = z
     tool_call_id: z.string(),
     tool_name: z.string(),
     status: z.enum(['running', 'success', 'error']),
-    skill: z.string().optional(),
+    skill: z.string().nullish(),
     args: z.never().optional(),
     duration_ms: z.number().optional(),
     message_id: z.string(),
