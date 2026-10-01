@@ -7,8 +7,8 @@ import { t } from '../../i18n/translations'
 import ModelLaunchShowcaseSection from './ModelLaunchShowcaseSection.vue'
 
 const showcase: ModelLaunchShowcase = {
-  headingAccentKey: 'nanoBanana.showcase.headingAccent',
-  headingKey: 'nanoBanana.showcase.heading',
+  eyebrowKey: 'nanoBanana.showcase.photography.eyebrow',
+  headingKey: 'nanoBanana.showcase.photography.heading',
   cards: [
     {
       id: 'one',
@@ -24,14 +24,12 @@ const showcase: ModelLaunchShowcase = {
 }
 
 describe('ModelLaunchShowcaseSection', () => {
-  it('renders the accent and the rest of the heading as one heading', () => {
+  it('labels the strip with its eyebrow and heading', () => {
     render(ModelLaunchShowcaseSection, { props: { showcase } })
 
+    expect(screen.getByText('Photography')).toBeTruthy()
     expect(
-      screen.getByRole('heading', {
-        level: 2,
-        name: 'Style applied in seconds.'
-      })
+      screen.getByRole('heading', { level: 2, name: 'Shot like it happened.' })
     ).toBeTruthy()
   })
 

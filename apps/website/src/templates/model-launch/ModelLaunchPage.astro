@@ -74,15 +74,10 @@ const sectionOrder = page.sectionOrder ?? DEFAULT_SECTION_ORDER
   <ModelLaunchHeroSection client:load hero={page.hero} locale={locale} />
   {sectionOrder.map((section) => {
     switch (section) {
-      case 'showcase':
-        return (
-          page.showcase && (
-            <ModelLaunchShowcaseSection
-              showcase={page.showcase}
-              locale={locale}
-            />
-          )
-        )
+      case 'showcases':
+        return page.showcases?.map((showcase) => (
+          <ModelLaunchShowcaseSection showcase={showcase} locale={locale} />
+        ))
       case 'gallery':
         return (
           page.gallery && (

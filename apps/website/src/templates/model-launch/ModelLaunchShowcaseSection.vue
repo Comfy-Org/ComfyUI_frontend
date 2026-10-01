@@ -11,16 +11,17 @@ const { locale = 'en', showcase } = defineProps<{
 </script>
 
 <template>
-  <section class="overflow-hidden py-16 lg:py-24">
+  <section class="overflow-hidden py-10 lg:py-14">
     <div class="mx-auto flex max-w-3xl flex-col items-center px-6 text-center">
+      <p
+        v-if="showcase.eyebrowKey"
+        class="mb-4 text-sm/tight font-extrabold tracking-wider text-primary-comfy-yellow uppercase"
+      >
+        {{ t(showcase.eyebrowKey, locale) }}
+      </p>
       <h2
         class="text-3xl font-light tracking-tight text-primary-comfy-canvas lg:text-5xl/tight"
       >
-        <span
-          v-if="showcase.headingAccentKey"
-          class="text-primary-comfy-yellow"
-          >{{ t(showcase.headingAccentKey, locale) }}</span
-        >
         {{ t(showcase.headingKey, locale) }}
       </h2>
       <p
@@ -32,7 +33,7 @@ const { locale = 'en', showcase } = defineProps<{
     </div>
 
     <div
-      class="group mt-12 flex gap-6 overflow-hidden motion-reduce:overflow-x-auto lg:mt-16"
+      class="group mt-10 flex gap-6 overflow-hidden motion-reduce:overflow-x-auto lg:mt-12"
     >
       <ul
         v-for="copy in 2"

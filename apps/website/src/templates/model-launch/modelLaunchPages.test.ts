@@ -48,6 +48,7 @@ const HERO_STILL_URL =
 describe.for(pages)('$name launch page config', ({ page }) => {
   it('gives every gallery card a unique id', () => {
     const ids = [
+      ...(page.showcases ?? []).flatMap((s) => s.cards.map((card) => card.id)),
       ...(page.gallery?.cards.map((card) => card.id) ?? []),
       ...(page.audioGallery?.cards.map((card) => card.id) ?? [])
     ]
@@ -70,9 +71,11 @@ describe.for(pages)('$name launch page config', ({ page }) => {
       page.hero.promptBar?.sampleKey,
       page.hero.promptBar?.cta.labelKey,
       ...(page.hero.badgeKeys ?? []),
-      page.showcase?.headingAccentKey,
-      page.showcase?.headingKey,
-      page.showcase?.descriptionKey,
+      ...(page.showcases ?? []).flatMap((showcase) => [
+        showcase.eyebrowKey,
+        showcase.headingKey,
+        showcase.descriptionKey
+      ]),
       page.gallery?.headingKey,
       page.pricing?.banner?.titleKey,
       page.pricing?.banner?.subtitleKey,
@@ -102,7 +105,7 @@ describe.for(pages)('$name launch page config', ({ page }) => {
   })
 
   it('localizes every gallery card and FAQ entry in both locales', () => {
-    for (const card of page.showcase?.cards ?? []) {
+    for (const card of (page.showcases ?? []).flatMap((s) => s.cards)) {
       for (const locale of ['en', 'zh-CN'] as const) {
         expect(card.alt[locale] || card.alt.en, `${card.id} alt`).not.toBe('')
       }
@@ -211,9 +214,9 @@ describe.for(pages)('$name launch page config', ({ page }) => {
 
     expect(offenders.map((card) => card.id)).toEqual([])
 
-    const showcaseOffenders = (page.showcase?.cards ?? []).filter(
-      (card) => !IMAGE_URL.test(card.src)
-    )
+    const showcaseOffenders = (page.showcases ?? [])
+      .flatMap((showcase) => showcase.cards)
+      .filter((card) => !IMAGE_URL.test(card.src))
 
     expect(showcaseOffenders.map((card) => card.id)).toEqual([])
 

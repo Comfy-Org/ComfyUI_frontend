@@ -122,12 +122,12 @@ interface ModelLaunchShowcaseCard {
   src: string
 }
 
-// A centred heading and description over a full-bleed, auto-scrolling strip of
-// stills. The strip loops, pauses on hover, and stands still for visitors who
-// prefer reduced motion.
+// A centred eyebrow, heading and subhead over a full-bleed, auto-scrolling
+// strip of stills. The strip loops, pauses on hover, and stands still for
+// visitors who prefer reduced motion. A page stacks one per use case.
 export interface ModelLaunchShowcase {
-  // Rendered in brand yellow directly before `headingKey`.
-  headingAccentKey?: TranslationKey
+  // Small uppercase label above the heading, e.g. PHOTOGRAPHY.
+  eyebrowKey?: TranslationKey
   headingKey: TranslationKey
   descriptionKey?: TranslationKey
   cards: readonly ModelLaunchShowcaseCard[]
@@ -219,7 +219,7 @@ export interface ModelLaunchReviews {
 // The optional body sections, in the order they render between the hero and the
 // run-options footer. hero/runOptions/reviews are fixed and are not listed here.
 export type ModelLaunchSection =
-  | 'showcase'
+  | 'showcases'
   | 'gallery'
   | 'audioGallery'
   | 'steps'
@@ -233,7 +233,7 @@ export type ModelLaunchSection =
 // reorders its sections with `sectionOrder` rather than editing the template,
 // so one page's layout never moves another's.
 export const DEFAULT_SECTION_ORDER: readonly ModelLaunchSection[] = [
-  'showcase',
+  'showcases',
   'gallery',
   'audioGallery',
   'pricing',
@@ -249,7 +249,7 @@ export interface ModelLaunchPage {
   breadcrumbLabelKey: TranslationKey
   breadcrumbUpdatedKey: TranslationKey
   hero: ModelLaunchHero
-  showcase?: ModelLaunchShowcase
+  showcases?: readonly ModelLaunchShowcase[]
   // Absent on announcement pages, which render hero, run options and reviews
   // only until the model ships.
   gallery?: ModelLaunchGallery

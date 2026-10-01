@@ -7884,13 +7884,43 @@ Enterprise`
     en: 'READ THE GUIDE',
     'zh-CN': '查看教程'
   },
-  'nanoBanana.showcase.headingAccent': {
-    en: 'Style',
-    'zh-CN': '风格'
+  'nanoBanana.showcase.photography.eyebrow': {
+    en: 'Photography',
+    'zh-CN': '摄影'
   },
-  'nanoBanana.showcase.heading': {
-    en: 'applied in seconds.',
-    'zh-CN': '，数秒即成。'
+  'nanoBanana.showcase.photography.heading': {
+    en: 'Shot like it happened.',
+    'zh-CN': '如实拍摄。'
+  },
+  'nanoBanana.showcase.photography.description': {
+    en: 'Street scenes, still life, and the details models used to miss: hands, glass, and reflections. You choose the model, the lens, and the light.',
+    'zh-CN':
+      '街景、静物，以及模型过去常常忽略的细节：手部、玻璃与反光。模型、镜头与光线，由你决定。'
+  },
+  'nanoBanana.showcase.design.eyebrow': {
+    en: 'Design',
+    'zh-CN': '设计'
+  },
+  'nanoBanana.showcase.design.heading': {
+    en: 'One idea, every style.',
+    'zh-CN': '一个创意，所有风格。'
+  },
+  'nanoBanana.showcase.design.description': {
+    en: 'Take one subject from photograph to line art, icon, pattern, and app screen.',
+    'zh-CN': '将同一主体从照片变为线稿、图标、图案与应用界面。'
+  },
+  'nanoBanana.showcase.advertising.eyebrow': {
+    en: 'Advertising',
+    'zh-CN': '广告'
+  },
+  'nanoBanana.showcase.advertising.heading': {
+    en: 'One product, every set.',
+    'zh-CN': '一件产品，所有场景。'
+  },
+  'nanoBanana.showcase.advertising.description': {
+    en: 'Keep the SKU exactly as shot and change everything around it. Queue every placement, from square to vertical, in one batch.',
+    'zh-CN':
+      '保持 SKU 与拍摄时完全一致，只改变周围的一切。从方形到竖版，所有版位一次批量排队。'
   },
   'nanoBanana.gallery.heading': {
     en: 'Made with Nano Banana',
