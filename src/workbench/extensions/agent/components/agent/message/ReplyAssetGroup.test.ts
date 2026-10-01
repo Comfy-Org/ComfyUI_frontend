@@ -2,7 +2,6 @@ import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LOAD3D_VIEWER_CONTENT_CLASS } from '@/components/load3d/load3dViewerDialog'
 import { i18n } from '@/i18n'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -163,7 +162,9 @@ describe('ReplyAssetGroup', () => {
       expect.objectContaining({
         title: 'model.glb',
         dialogComponentProps: expect.objectContaining({
-          contentClass: LOAD3D_VIEWER_CONTENT_CLASS
+          contentClass: expect.stringContaining(
+            'sm:max-w-[min(80vw,calc(100vw-var(--workspace-inset-right,0px)-1rem))]'
+          )
         })
       })
     )
