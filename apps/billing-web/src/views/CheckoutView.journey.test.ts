@@ -18,6 +18,7 @@ import { createBillingI18n } from '@/i18n'
 import type { FakeBillingClientOptions } from '@/test/fakeBillingClient'
 import {
   createFakeBillingClient,
+  failedOperation,
   pendingOperation,
   previewOf,
   succeededOperation
@@ -548,5 +549,75 @@ describe('the embedded checkout journey', () => {
       'billing.checkout.entered',
       'billing.checkout.preview_ready'
     ])
+  })
+
+  it.for<{ name: string; requoted: SubscriptionPreview; ready: number }>([
+    {
+      name: 'the quote the server prices again unchanged',
+      requoted: cardQuote(),
+      ready: 1
+    },
+    {
+      name: 'a quote of a new revision',
+      requoted: cardQuote({ quote_version: 4 }),
+      ready: 2
+    }
+  ])(
+    'reports $ready preview_ready for $name after a stale quote',
+    async ({ requoted, ready }) => {
+      const fake = await renderCheckout()
+      await waitFor(() => expect(journey()).toHaveLength(2))
+      fake.subscribe.mockResolvedValueOnce({
+        status: 'error',
+        code: 'QUOTE_STALE'
+      })
+      fake.previewSubscribe.mockResolvedValue({ status: 'ok', value: requoted })
+
+      reportConfirm('ctoken_1', 'card')
+
+      expect(await screen.findByRole('alert')).toBeInTheDocument()
+      expect(
+        journeyNames().filter(
+          (name) => name === 'billing.checkout.preview_ready'
+        )
+      ).toHaveLength(ready)
+    }
+  )
+
+  it('links each attempt to its own operation, never the one a declined attempt left', async () => {
+    const fake = await renderCheckout()
+    await waitFor(() => expect(journey()).toHaveLength(2))
+    fake.subscribe
+      .mockImplementationOnce(async () => {
+        const operation = failedOperation('card_declined', 'op_1')
+        fake.publishOperation(operation)
+        return { status: 'ok', value: { phase: 'failed', operation } }
+      })
+      .mockImplementationOnce(async () => {
+        const operation = succeededOperation('op_2')
+        fake.publishOperation(operation)
+        return { status: 'ok', value: { phase: 'succeeded', operation } }
+      })
+
+    reportConfirm('ctoken_1', 'card')
+    expect(await screen.findByRole('alert')).toBeInTheDocument()
+    reportConfirm('ctoken_2', 'card')
+
+    await waitFor(() =>
+      expect(
+        journeyNames().filter(
+          (name) => name === 'billing.checkout.operation_linked'
+        )
+      ).toHaveLength(2)
+    )
+    const submissions = journey().filter(
+      ({ name }) => name === 'billing.checkout.submitted'
+    )
+    expect(submissions[1]).not.toHaveProperty('billing_op_id')
+    expect(
+      journey().filter(
+        ({ name }) => name === 'billing.checkout.operation_linked'
+      )
+    ).toMatchObject([{ billing_op_id: 'op_1' }, { billing_op_id: 'op_2' }])
   })
 })
