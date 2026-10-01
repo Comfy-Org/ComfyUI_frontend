@@ -180,6 +180,21 @@ Check whether the rule is enforced by oxlint (in `.oxlintrc.json`) or ESLint (in
 
 ---
 
+#### Q: ESLint does not report anything for a `.ts` file
+
+**Symptoms:**
+
+- `pnpm exec eslint path/to/file.ts` prints nothing, or "File ignored because no matching configuration was supplied"
+- An `eslint-disable` comment in a `.ts` file has no effect
+
+**Solution:**
+
+This is expected. oxlint lints every `.ts`/`.js` file in the workspace; ESLint only lints what oxlint cannot parse (`.vue`, `.astro`) plus `better-tailwindcss` class-string checks in non-test `.ts` files under `src/`, `apps/` and `packages/`. Use `oxlint-disable` in `.ts` files.
+
+Both tools share the ignore list in `.oxlintrc.json` `ignorePatterns` (`eslint-plugin-oxlint` mirrors it into ESLint). A few directories stay ignored until their findings are fixed: `packages/ingest-types/src`, `packages/object-info-parser`, `packages/shared-frontend-utils`, `tools/devtools/web` and `tools/test-recorder`. To bring one back, delete its pattern and run `pnpm oxlint:main` to see what needs fixing.
+
+---
+
 #### Q: New lint errors after pulling/upgrading oxlint
 
 **Symptoms:**
