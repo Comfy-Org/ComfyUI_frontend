@@ -10,6 +10,7 @@ import type {
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
   AgentEntryButtonClickedMetadata,
+  AgentFreeUseNoticeMetadata,
   AgentMessageFeedbackMetadata,
   AgentMessageSentMetadata,
   AgentNodeTaggedMetadata,
@@ -370,6 +371,11 @@ export class HostTelemetrySink implements TelemetryProvider {
     metadata: AgentStarterPromptClickedMetadata
   ): void {
     this.capture(TelemetryEvents.AGENT_STARTER_PROMPT_CLICKED, metadata)
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  trackAgentFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {
+    this.capture(TelemetryEvents.AGENT_FREE_USE_NOTICE, metadata)
   }
 
   trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {

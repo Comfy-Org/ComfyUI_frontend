@@ -881,6 +881,35 @@ export type AgentStarterPromptId =
   | 'slot_4'
   | 'slot_5'
   | 'unregistered'
+/**
+ * Where the free-use notice was placed, for the DES-1221 placement experiment.
+ *
+ * Deliberately the PostHog variant keys verbatim, not snake_case like the rest
+ * of this file: the analysis joins this property to
+ * `$feature/agent-free-use-message-placement`, and a translation layer between
+ * the two is one more place for the arms to drift apart.
+ */
+export type AgentFreeUsePlacement =
+  | 'top-banner'
+  | 'near-composer'
+  | 'above-input'
+  | 'inside-input'
+/**
+ * Interactions with the notice itself. The experiment's primary outcome and
+ * guardrails are all read off events that already exist — `agent_panel_opened`,
+ * `agent_message_sent`, `agent_panel_closed`, node edits and run events — split
+ * by the PostHog variant property. This event adds only what those cannot say:
+ * whether the notice was actually on screen in its assigned arm, and what the
+ * viewer did with it.
+ */
+export type AgentFreeUseNoticeAction =
+  | 'shown'
+  | 'dismissed'
+  | 'learn_more_clicked'
+export interface AgentFreeUseNoticeMetadata extends Record<string, unknown> {
+  action: AgentFreeUseNoticeAction
+  placement: AgentFreeUsePlacement
+}
 export interface AgentStarterPromptClickedMetadata extends Record<
   string,
   unknown
@@ -1841,6 +1870,7 @@ export interface TelemetryProvider {
   trackAgentStarterPromptClicked?(
     metadata: AgentStarterPromptClickedMetadata
   ): void
+  trackAgentFreeUseNotice?(metadata: AgentFreeUseNoticeMetadata): void
   trackAgentNodeTagged?(metadata: AgentNodeTaggedMetadata): void
   trackAgentAttachButtonClicked?(
     metadata: AgentAttachButtonClickedMetadata
@@ -2045,6 +2075,7 @@ export const TelemetryEvents = {
   AGENT_ONBOARDING_STEP: 'app:agent_onboarding_step',
   AGENT_MESSAGE_SENT: 'app:agent_message_sent',
   AGENT_STARTER_PROMPT_CLICKED: 'app:agent_starter_prompt_clicked',
+  AGENT_FREE_USE_NOTICE: 'app:agent_free_use_notice',
   AGENT_NODE_TAGGED: 'app:agent_node_tagged',
   AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',
   AGENT_WORKFLOW_APPLIED: 'app:agent_workflow_applied',
