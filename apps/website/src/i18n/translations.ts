@@ -8934,6 +8934,22 @@ Enterprise`
     en: 'Read the Silverside AI customer story',
     'zh-CN': '阅读 Silverside AI 客户案例'
   },
+  'platform.serverlessSkipSetup.heading': {
+    en: 'Or skip the setup.',
+    'zh-CN': '或者跳过手动设置。'
+  },
+  'platform.serverlessSkipSetup.subtitle': {
+    en: 'Paste this into your coding agent.',
+    'zh-CN': '把它粘贴到你的编码智能体里。'
+  },
+  'platform.serverlessSkipSetup.copyPrompt': {
+    en: 'COPY AGENT PROMPT',
+    'zh-CN': '复制智能体提示词'
+  },
+  'platform.serverlessSkipSetup.copied': {
+    en: 'COPIED',
+    'zh-CN': '已复制'
+  },
   'platform.serverlessScale.heading': {
     en: 'Built for teams',
     'zh-CN': '为团队打造'
