@@ -122,13 +122,11 @@ interface ModelLaunchShowcaseCard {
   src: string
 }
 
-// A centred eyebrow, heading and subhead over a full-bleed strip of stills that
-// slides sideways as the page scrolls past it. Visitors who prefer reduced
-// motion get a still strip they can scroll by hand. A page stacks one per use
-// case.
+// A centred heading and subhead over a full-bleed strip of stills. The strip
+// stands still until the pointer is over it, then loops as a marquee. Visitors
+// who prefer reduced motion get a still strip they can scroll by hand. A page
+// stacks one per use case.
 export interface ModelLaunchShowcase {
-  // Small uppercase label above the heading, e.g. PHOTOGRAPHY.
-  eyebrowKey?: TranslationKey
   headingKey: TranslationKey
   descriptionKey?: TranslationKey
   cards: readonly ModelLaunchShowcaseCard[]

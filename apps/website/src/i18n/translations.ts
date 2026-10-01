@@ -7884,10 +7884,6 @@ Enterprise`
     en: 'READ THE GUIDE',
     'zh-CN': '查看教程'
   },
-  'nanoBanana.showcase.photography.eyebrow': {
-    en: 'Photography',
-    'zh-CN': '摄影'
-  },
   'nanoBanana.showcase.photography.heading': {
     en: 'Shot like it happened.',
     'zh-CN': '如实拍摄。'
@@ -7895,10 +7891,6 @@ Enterprise`
   'nanoBanana.showcase.photography.description': {
     en: 'Realistic photography, right down to the hands, glass, and reflections. Lock the seed when a frame works.',
     'zh-CN': '逼真的摄影效果，细致到手部、玻璃与反光。画面满意时，锁定种子。'
-  },
-  'nanoBanana.showcase.design.eyebrow': {
-    en: 'Design',
-    'zh-CN': '设计'
   },
   'nanoBanana.showcase.design.heading': {
     en: 'One idea, every style.',
@@ -7909,10 +7901,6 @@ Enterprise`
     'zh-CN':
       '将同一主体设计为照片、图标、图案与界面。一个工作流，完整的品牌套件。'
   },
-  'nanoBanana.showcase.advertising.eyebrow': {
-    en: 'Advertising',
-    'zh-CN': '广告'
-  },
   'nanoBanana.showcase.advertising.heading': {
     en: 'One product, every set.',
     'zh-CN': '一件产品，所有场景。'
@@ -7921,10 +7909,6 @@ Enterprise`
     en: 'Advertising that keeps the SKU exactly as shot. Mask the product, repaint the scene, and queue every placement.',
     'zh-CN':
       '广告图中的 SKU 与拍摄时完全一致。蒙版保护产品，重绘场景，并批量排队所有版位。'
-  },
-  'nanoBanana.gallery.heading': {
-    en: 'Made with Nano Banana',
-    'zh-CN': '由 Nano Banana 创作'
   },
   'nanoBanana.pricing.banner.title': {
     en: "Start Comfy Cloud for free. Upgrade when you're ready.",

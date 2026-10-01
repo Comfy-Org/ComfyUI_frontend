@@ -23,8 +23,6 @@ const media = {
   horizon: { kind: 'image', src: `${placeholderMediaBase}/anime-horizon.webp` }
 } as const satisfies Record<string, ModelLaunchMedia>
 
-const premiumNote = { en: 'Pay-as-you-go', 'zh-CN': '按量付费' }
-
 const showcaseCards = (theme: string, sources: readonly string[]) =>
   sources.map((src, index) => ({
     id: `${theme}-${index + 1}`,
@@ -71,13 +69,11 @@ export const nanoBananaPage: ModelLaunchPage = {
   },
   showcases: [
     {
-      eyebrowKey: 'nanoBanana.showcase.photography.eyebrow',
       headingKey: 'nanoBanana.showcase.photography.heading',
       descriptionKey: 'nanoBanana.showcase.photography.description',
       cards: showcaseCards('photography', stills)
     },
     {
-      eyebrowKey: 'nanoBanana.showcase.design.eyebrow',
       headingKey: 'nanoBanana.showcase.design.heading',
       descriptionKey: 'nanoBanana.showcase.design.description',
       cards: showcaseCards('design', [
@@ -86,7 +82,6 @@ export const nanoBananaPage: ModelLaunchPage = {
       ])
     },
     {
-      eyebrowKey: 'nanoBanana.showcase.advertising.eyebrow',
       headingKey: 'nanoBanana.showcase.advertising.heading',
       descriptionKey: 'nanoBanana.showcase.advertising.description',
       cards: showcaseCards('advertising', [
@@ -95,102 +90,6 @@ export const nanoBananaPage: ModelLaunchPage = {
       ])
     }
   ],
-  gallery: {
-    headingKey: 'nanoBanana.gallery.heading',
-    ctaVariant: 'accent',
-    cards: [
-      {
-        id: 'placeholder-vaporwave',
-        name: {
-          en: 'Placeholder gallery image 1 for Nano Banana',
-          'zh-CN': 'Nano Banana 占位图库图片 1'
-        },
-        tier: 'premium',
-        note: premiumNote,
-        description: {
-          en: 'Placeholder. Swap for a Nano Banana render and its caption.',
-          'zh-CN': '占位内容。请替换为 Nano Banana 生成结果及其说明。'
-        },
-        media: media.vaporwave,
-        href: nanoBananaLinks.cloud
-      },
-      {
-        id: 'placeholder-aliens',
-        name: {
-          en: 'Placeholder gallery image 2 for Nano Banana',
-          'zh-CN': 'Nano Banana 占位图库图片 2'
-        },
-        tier: 'premium',
-        note: premiumNote,
-        description: {
-          en: 'Placeholder. Swap for a Nano Banana render and its caption.',
-          'zh-CN': '占位内容。请替换为 Nano Banana 生成结果及其说明。'
-        },
-        media: media.aliens,
-        href: nanoBananaLinks.cloud
-      },
-      {
-        id: 'placeholder-goldfish',
-        name: {
-          en: 'Placeholder gallery image 3 for Nano Banana',
-          'zh-CN': 'Nano Banana 占位图库图片 3'
-        },
-        tier: 'premium',
-        note: premiumNote,
-        description: {
-          en: 'Placeholder. Swap for a Nano Banana render and its caption.',
-          'zh-CN': '占位内容。请替换为 Nano Banana 生成结果及其说明。'
-        },
-        media: media.goldfish,
-        href: nanoBananaLinks.cloud
-      },
-      {
-        id: 'placeholder-engine',
-        name: {
-          en: 'Placeholder gallery image 4 for Nano Banana',
-          'zh-CN': 'Nano Banana 占位图库图片 4'
-        },
-        tier: 'premium',
-        note: premiumNote,
-        description: {
-          en: 'Placeholder. Swap for a Nano Banana render and its caption.',
-          'zh-CN': '占位内容。请替换为 Nano Banana 生成结果及其说明。'
-        },
-        media: media.engine,
-        href: nanoBananaLinks.cloud
-      },
-      {
-        id: 'placeholder-canyon',
-        name: {
-          en: 'Placeholder gallery image 5 for Nano Banana',
-          'zh-CN': 'Nano Banana 占位图库图片 5'
-        },
-        tier: 'premium',
-        note: premiumNote,
-        description: {
-          en: 'Placeholder. Swap for a Nano Banana render and its caption.',
-          'zh-CN': '占位内容。请替换为 Nano Banana 生成结果及其说明。'
-        },
-        media: media.canyon,
-        href: nanoBananaLinks.cloud
-      },
-      {
-        id: 'placeholder-horizon',
-        name: {
-          en: 'Placeholder gallery image 6 for Nano Banana',
-          'zh-CN': 'Nano Banana 占位图库图片 6'
-        },
-        tier: 'premium',
-        note: premiumNote,
-        description: {
-          en: 'Placeholder. Swap for a Nano Banana render and its caption.',
-          'zh-CN': '占位内容。请替换为 Nano Banana 生成结果及其说明。'
-        },
-        media: media.horizon,
-        href: nanoBananaLinks.cloud
-      }
-    ]
-  },
   pricing: {
     defaultBillingCycle: 'monthly',
     banner: {

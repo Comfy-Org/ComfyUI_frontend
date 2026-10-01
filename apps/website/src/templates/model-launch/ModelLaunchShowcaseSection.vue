@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { useElementBounding, useElementSize, useWindowSize } from '@vueuse/core'
-import { computed, useTemplateRef } from 'vue'
+import { useElementHover } from '@vueuse/core'
+import { useTemplateRef } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 import type { ModelLaunchShowcase } from './types'
 
-import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import { t } from '../../i18n/translations'
 
 const { locale = 'en', showcase } = defineProps<{
@@ -13,30 +12,13 @@ const { locale = 'en', showcase } = defineProps<{
   locale?: Locale
 }>()
 
-// The strip slides one pixel sideways for every pixel the page scrolls while
-// the section is on screen, and stops once its last card is in view.
-const sectionRef = useTemplateRef<HTMLElement>('sectionRef')
-const trackRef = useTemplateRef<HTMLElement>('trackRef')
-const { top } = useElementBounding(sectionRef)
-const { width: trackWidth } = useElementSize(trackRef)
-const { width: viewportWidth, height: viewportHeight } = useWindowSize()
-
-const trackOffset = computed(() => {
-  const scrolledIntoView = Math.max(0, viewportHeight.value - top.value)
-  const overflow = Math.max(0, trackWidth.value - viewportWidth.value)
-  return -Math.min(scrolledIntoView, overflow)
-})
+const stripRef = useTemplateRef<HTMLElement>('stripRef')
+const isHovered = useElementHover(stripRef)
 </script>
 
 <template>
-  <section ref="sectionRef" class="overflow-hidden py-10 lg:py-14">
+  <section class="overflow-hidden py-10 lg:py-14">
     <div class="mx-auto flex max-w-3xl flex-col items-center px-6 text-center">
-      <p
-        v-if="showcase.eyebrowKey"
-        class="mb-4 text-sm/tight font-extrabold tracking-wider text-primary-comfy-yellow uppercase"
-      >
-        {{ t(showcase.eyebrowKey, locale) }}
-      </p>
       <h2
         class="text-3xl font-light tracking-tight text-primary-comfy-canvas lg:text-5xl/tight"
       >
@@ -50,15 +32,22 @@ const trackOffset = computed(() => {
       </p>
     </div>
 
-    <div class="mt-10 overflow-hidden motion-reduce:overflow-x-auto lg:mt-12">
+    <div
+      ref="stripRef"
+      data-testid="model-launch-showcase-strip"
+      class="mt-10 flex gap-6 overflow-hidden motion-reduce:overflow-x-auto lg:mt-12"
+    >
       <ul
-        ref="trackRef"
-        class="flex w-max gap-6 will-change-transform"
-        :style="
-          prefersReducedMotion()
-            ? undefined
-            : { transform: `translateX(${trackOffset}px)` }
-        "
+        v-for="copy in 2"
+        :key="copy"
+        class="flex shrink-0 animate-marquee gap-6"
+        :class="copy === 2 && 'motion-reduce:hidden'"
+        :style="{
+          '--marquee-gap': '1.5rem',
+          animationDuration: '60s',
+          animationPlayState: isHovered ? 'running' : 'paused'
+        }"
+        :aria-hidden="copy === 2 ? 'true' : undefined"
       >
         <li
           v-for="card in showcase.cards"
@@ -67,7 +56,7 @@ const trackOffset = computed(() => {
         >
           <img
             :src="card.src"
-            :alt="card.alt[locale] || card.alt.en"
+            :alt="copy === 2 ? '' : card.alt[locale] || card.alt.en"
             class="size-full object-cover"
             loading="lazy"
             decoding="async"

@@ -72,7 +72,6 @@ describe.for(pages)('$name launch page config', ({ page }) => {
       page.hero.promptBar?.cta.labelKey,
       ...(page.hero.badgeKeys ?? []),
       ...(page.showcases ?? []).flatMap((showcase) => [
-        showcase.eyebrowKey,
         showcase.headingKey,
         showcase.descriptionKey
       ]),
