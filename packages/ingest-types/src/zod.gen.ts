@@ -2585,6 +2585,52 @@ export const zBillingOpReceiptPlan = z.object({
 })
 
 /**
+ * One deduction from today's charge. discount is the promotion in the
+ * quote's discount shape (kind promotion, without amount_off_cents; the
+ * amount is amount_cents), present exactly for promo_code and
+ * subscription_discount. Its duration_in_months is set only for
+ * promo_code: a carried promotion's remaining term is not the coupon's.
+ *
+ */
+export const zBillingOpChargeReason = z.object({
+  amount_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  discount: zSubscriptionDiscount.optional(),
+  kind: z.enum(['promo_code', 'subscription_discount', 'account_balance'])
+})
+
+/**
+ * Display only. Why a succeeded subscription operation charged other
+ * than its plan rate, read from the operation's paid Stripe invoice.
+ * Present only when that invoice collected more than zero and a
+ * promotion, the account balance or proration moved the charge off the
+ * plan rate; absent means no rows. Plan coupons (the annual or team
+ * commitment rate) are part of the rate and are never a reason. Never
+ * present for top-ups. Returned only to workspace billing managers,
+ * like amount_charged_cents.
+ *
+ */
+export const zBillingOpChargeBreakdown = z.object({
+  amount_charged_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  currency: z.string(),
+  prorated: z.boolean(),
+  reasons: z.array(zBillingOpChargeReason)
+})
+
+/**
  * Status of an asynchronous billing operation.
  */
 export const zBillingOpStatusResponse = z.object({
@@ -2607,6 +2653,7 @@ export const zBillingOpStatusResponse = z.object({
       'reconciliation_needed'
     ])
     .optional(),
+  charge_breakdown: zBillingOpChargeBreakdown.optional(),
   completed_at: z.string().datetime().optional(),
   credits_added: z.coerce
     .bigint()
