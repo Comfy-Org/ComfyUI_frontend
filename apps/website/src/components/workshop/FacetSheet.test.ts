@@ -77,7 +77,7 @@ describe('FacetSheet', () => {
     const grip = screen.getByTestId('workshop-filter-grip')
     // The sheet itself is intentionally presentational, so its visible height
     // is reached through the labelled grip rather than by inventing a role.
-    // eslint-disable-next-line testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-node-access
     const sheet = grip.parentElement
     if (!sheet) throw new Error('Filter grip has no sheet parent')
     const restingHeight = sheet.style.height

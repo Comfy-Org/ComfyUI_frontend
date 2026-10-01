@@ -41,11 +41,11 @@ describe('ProgressToastItem — completed state', () => {
     })
 
     const badge = screen.getByText('Finished')
-    // eslint-disable-next-line testing-library/no-node-access -- verifying structural placement of opacity-50 boundary, which is the subject of this fix
+    // oxlint-disable-next-line testing-library/no-node-access -- verifying structural placement of opacity-50 boundary, which is the subject of this fix
     expect(badge.closest('.opacity-50')).toBeNull()
 
     const assetName = screen.getByText('controlnet-canny.safetensors')
-    // eslint-disable-next-line testing-library/no-node-access -- verifying structural placement of opacity-50 boundary, which is the subject of this fix
+    // oxlint-disable-next-line testing-library/no-node-access -- verifying structural placement of opacity-50 boundary, which is the subject of this fix
     expect(assetName.closest('.opacity-50')).not.toBeNull()
   })
 })
