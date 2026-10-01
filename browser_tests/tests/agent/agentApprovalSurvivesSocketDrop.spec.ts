@@ -46,17 +46,11 @@ test.describe(
     }) => {
       const reconnected = await turnLock.dropSocket()
 
-      // Preconditions stay above the marker so a wiped thread or a lost prompt
-      // reads as a real failure rather than the expected one.
       await expect(turnLock.userBubbles).toHaveText([PROMPT])
 
-      // The server is parked on this ask and will not proceed without an
-      // answer. `ws.send()` throws on a dead route, so pushing stays above
-      // test.fail() too.
       turnLock.push(reconnected, RUN_APPROVAL_EVENT)
       expect(turnLock.pendingAskIsPrimed()).toBe(false)
 
-      test.fail()
       await expect(
         turnLock.panel.getByText(enMessages.agent.runApproval.question)
       ).toBeVisible()
@@ -76,7 +70,6 @@ test.describe(
       turnLock.push(reconnected, RUN_APPROVAL_EVENT)
       expect(turnLock.pendingAskIsPrimed()).toBe(false)
 
-      test.fail()
       // Recovery must restore both the card and its active turn identity;
       // `answerAsk` deliberately refuses to POST without `activeTurnId`.
       await turnLock.panel
@@ -88,10 +81,8 @@ test.describe(
       await expect.poll(() => turnLock.answeredAsks()).toEqual(['run'])
     })
 
-    // Keeps the locators above honest. If the approval card never renders under
-    // this fixture at all — a changed testid, a gate, reworded copy — this case
-    // reddens and the two expected failures above stop being evidence of the
-    // defect they name.
+    // Keeps the reconnect cases' locators honest if the approval card stops
+    // rendering under this fixture.
     test('the same ask renders when the socket never drops', async ({
       turnLock
     }) => {
