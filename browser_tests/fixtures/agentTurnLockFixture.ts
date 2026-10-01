@@ -6,12 +6,14 @@ import type {
   AgentCancelAccepted,
   AgentError,
   AgentMessage,
+  AgentPendingAsk,
   AgentTurnAccepted
 } from '@comfyorg/ingest-types'
 import {
-  zAgentAnswerRequest,
+  zAgentPendingAsk,
   zAgentPostMessageRequest
 } from '@comfyorg/ingest-types/zod'
+import { z } from 'zod'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -22,6 +24,8 @@ import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+
+const zAnswerRequest = z.object({ selected: z.array(z.string()) })
 
 const THREAD_ID = 'b9d0a2a1-0f2c-4f1a-9a5e-6b0f4f2c1d77'
 const TURN_ID = '2dd4f367-3399-4cb4-8127-547f531c289a'
@@ -39,6 +43,8 @@ const TURN_IN_PROGRESS: AgentError = { error: TURN_IN_PROGRESS_MESSAGE }
 
 const TURN_THINKING_TEXT = 'Wiring the audio output node.'
 export const POST_RECONNECT_TEXT = 'Reconnected, and the graph is ready.'
+export const PERSISTED_BEFORE_TOOL_TEXT = 'Prepared the graph. '
+export const PERSISTED_AFTER_TOOL_TEXT = 'Audio output connected.'
 
 const TURN_THINKING_EVENT: AgentWsEvent = {
   type: 'agent_thinking',
@@ -71,24 +77,54 @@ export const TURN_DONE_EVENT: AgentWsEvent = {
   data: { message_id: TURN_ID, thread_id: THREAD_ID }
 }
 
-const ASK_ID = `${TURN_ID}:call-run`
+const RUN_APPROVAL_ASK_ID = `${TURN_ID}:call-run-workflow`
 
-const RUN_APPROVAL_EVENT: AgentWsEvent = {
+/**
+ * The option ids this ask offers. Declared separately because `AgentWsEvent`
+ * types `data` loosely, so reading them back off the event would be an
+ * `unknown` the route would have to cast.
+ */
+const RUN_APPROVAL_OPTION_IDS = ['run', 'cancel'] as const
+
+/**
+ * The frame the server sends when a turn parks waiting for the user to approve
+ * a run. Shaped after `pendingRunApproval`'s reader and cloud's `asks` writer:
+ * the turn does not proceed until an answer posts back, so a client that drops
+ * this frame strands the user with no way to answer and no error.
+ */
+export const RUN_APPROVAL_EVENT: AgentWsEvent = {
   type: 'agent_ask',
   data: {
-    thread_id: THREAD_ID,
     message_id: TURN_ID,
-    ask_id: ASK_ID,
+    thread_id: THREAD_ID,
+    ask_id: RUN_APPROVAL_ASK_ID,
     kind: 'run_approval',
-    context: { workflow_id: WORKFLOW_ID, workflow_name: 'Unsaved Workflow' },
     prompt: 'Run workflow “Unsaved Workflow”?',
+    context: { workflow_id: WORKFLOW_ID, workflow_name: 'Unsaved Workflow' },
     options: [
-      { id: 'run', label: 'Run' },
-      { id: 'cancel', label: 'Cancel' }
+      {
+        id: RUN_APPROVAL_OPTION_IDS[0],
+        label: enMessages.agent.runApproval.run
+      },
+      {
+        id: RUN_APPROVAL_OPTION_IDS[1],
+        label: enMessages.agent.runApproval.cancel
+      }
     ],
     min_selections: 1,
     max_selections: 1,
     allow_other: false
+  }
+}
+
+export const RUN_APPROVAL_RESOLVED_EVENT: AgentWsEvent = {
+  type: 'agent_ask_resolved',
+  data: {
+    message_id: TURN_ID,
+    thread_id: THREAD_ID,
+    ask_id: RUN_APPROVAL_ASK_ID,
+    status: 'answered',
+    selected: [RUN_APPROVAL_OPTION_IDS[0]]
   }
 }
 
@@ -98,41 +134,17 @@ const RUN_APPROVAL_EVENT: AgentWsEvent = {
  * state when the turn completes, fails, or is cancelled. Dropping the client's
  * socket does not touch it — that asymmetry is what these specs exercise.
  *
- * `transcript()` and the cancel route are not reached by the current specs.
- * They are here so the fake stays a faithful server: a repair that re-hydrates
- * on reconnect, or a spec that clicks Stop, needs both, and a half-modelled
- * server would make such a fix look broken.
+ * Transcript hydration backs the refresh-recovery case. The cancel route is
+ * not reached by the current specs, but keeps the fake faithful for a case
+ * that clicks Stop.
  */
 class TurnLockServer {
   private streaming = false
   private prompt = ''
   private rejected = 0
   private posts = 0
-  private readonly answerRequests: string[][] = []
-  private committed: string[] | null = null
-
-  /** Every selection the client sent, in order, accepted or not. */
-  get answerAttempts(): string[][] {
-    return this.answerRequests
-  }
-
-  /** The selection the server actually stored — first writer wins. */
-  get committedAnswer(): string[] | null {
-    return this.committed
-  }
-
-  /**
-   * Mirrors the accepted half of `server/asks.go`: the first answer CASes onto
-   * the row, and every later one is answered by REPLAYING the stored selection
-   * rather than committing the new one. A fake that accepted the second answer
-   * would let a client that re-offers an already-answered card look correct
-   * here. The refusal statuses (403/404/409) and the retryable 5xx are NOT
-   * modelled — those branches are covered by unit tests.
-   */
-  answerAsk(selected: string[]): void {
-    this.answerRequests.push(selected)
-    this.committed ??= selected
-  }
+  private readonly answered: string[][] = []
+  private pendingAsk: AgentPendingAsk | undefined
 
   get turnIsStreaming(): boolean {
     return this.streaming
@@ -151,12 +163,31 @@ class TurnLockServer {
     this.posts++
   }
 
+  /** Every ask answer the server accepted, in order, as the selected ids. */
+  get answers(): string[][] {
+    return this.answered
+  }
+
+  get askIsPending(): boolean {
+    return this.pendingAsk !== undefined
+  }
+
+  recordAnswer(selected: string[]): void {
+    this.answered.push(selected)
+    this.pendingAsk = undefined
+  }
+
+  recordAsk(event: AgentWsEvent): void {
+    if (event.type === 'agent_ask')
+      this.pendingAsk = zAgentPendingAsk.parse(event.data)
+  }
+
   completeTurn(): void {
     this.streaming = false
   }
 
   transcript(): AgentMessage[] {
-    return [
+    const rows: AgentMessage[] = [
       {
         id: 'user-1',
         thread_id: THREAD_ID,
@@ -166,17 +197,63 @@ class TurnLockServer {
         status: 'complete',
         workflow_id: WORKFLOW_ID,
         content: { text: this.prompt }
-      },
-      {
-        id: TURN_ID,
-        thread_id: THREAD_ID,
-        turn_id: TURN_ID,
-        seq: 2,
-        role: 'assistant',
-        status: this.streaming ? 'streaming' : 'complete',
-        workflow_id: WORKFLOW_ID
       }
     ]
+    if (!this.streaming) {
+      rows.push(
+        {
+          id: TURN_ID,
+          thread_id: THREAD_ID,
+          turn_id: TURN_ID,
+          seq: 2,
+          role: 'assistant',
+          status: 'complete',
+          workflow_id: WORKFLOW_ID,
+          content: { text: PERSISTED_BEFORE_TOOL_TEXT }
+        },
+        {
+          id: 'tool-row',
+          thread_id: THREAD_ID,
+          turn_id: TURN_ID,
+          seq: 3,
+          role: 'assistant',
+          status: 'complete',
+          workflow_id: WORKFLOW_ID,
+          content: {
+            tool_calls: [
+              {
+                id: 'call-add-node',
+                tool_call_id: 'call-add-node',
+                tool_name: 'add_node',
+                status: 'success'
+              }
+            ]
+          }
+        },
+        {
+          id: 'final-row',
+          thread_id: THREAD_ID,
+          turn_id: TURN_ID,
+          seq: 4,
+          role: 'assistant',
+          status: 'complete',
+          workflow_id: WORKFLOW_ID,
+          content: { text: PERSISTED_AFTER_TOOL_TEXT }
+        }
+      )
+      return rows
+    }
+    rows.push({
+      id: TURN_ID,
+      thread_id: THREAD_ID,
+      turn_id: TURN_ID,
+      seq: 2,
+      role: 'assistant',
+      status: 'streaming',
+      workflow_id: WORKFLOW_ID,
+      pending_ask: this.pendingAsk
+    })
+    return rows
   }
 
   startTurn(prompt: string): AgentTurnAccepted {
@@ -210,13 +287,46 @@ async function routeTurnLock(
     })
   })
 
+  /**
+   * The glob accepts any thread and any ask id, so without these checks an
+   * answer posted against the wrong ask -- or an option this ask never offered
+   * -- would still be recorded and `answeredAsks()` would report success. The
+   * assertion this fixture exists to support is "the answer left the client for
+   * *this* ask", so the route has to be the thing that enforces it.
+   */
   await page.route('**/api/agent/threads/*/asks/*/answer', (route) => {
-    const { selected } = zAgentAnswerRequest.parse(
-      route.request().postDataJSON()
-    )
-    server.answerAsk(selected)
+    const url = new URL(route.request().url())
+    const segments = url.pathname.split('/').map(decodeURIComponent)
+    const threadId = segments[segments.indexOf('threads') + 1]
+    const askId = segments[segments.indexOf('asks') + 1]
+    if (threadId !== THREAD_ID || askId !== RUN_APPROVAL_ASK_ID)
+      return route.fulfill({
+        status: 404,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: 'unknown thread or ask' })
+      })
+
+    let body: unknown
+    try {
+      body = route.request().postDataJSON()
+    } catch {
+      return route.fulfill({ status: 400, body: 'invalid JSON' })
+    }
+    const parsed = zAnswerRequest.safeParse(body)
+    if (!parsed.success)
+      return route.fulfill({ status: 400, body: 'invalid answer' })
+    const selected = parsed.data.selected
+    const offered: readonly string[] = RUN_APPROVAL_OPTION_IDS
+    if (selected.length !== 1 || !offered.includes(selected[0]))
+      return route.fulfill({
+        status: 422,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: 'selection not offered by this ask' })
+      })
+
+    server.recordAnswer(selected)
     const accepted: AgentAnswerAccepted = { status: 'answered' }
-    return route.fulfill({ ...jsonRoute(accepted), status: 202 })
+    return route.fulfill(jsonRoute(accepted))
   })
 
   await page.route('**/api/agent/threads/*/messages/*/cancel', (route) => {
@@ -231,12 +341,10 @@ export class AgentTurnLockHarness {
   public readonly composer: Locator
   public readonly sendButton: Locator
   public readonly stopButton: Locator
+  public readonly runApprovalButton: Locator
   public readonly workSummary: Locator
   public readonly workingRow: Locator
   public readonly userBubbles: Locator
-  public readonly approvalCard: Locator
-  public readonly approveButton: Locator
-  public readonly cancelApprovalButton: Locator
   private readonly agentPanel: AgentPanel
 
   constructor(
@@ -258,6 +366,10 @@ export class AgentTurnLockHarness {
       name: enMessages.agent.stop,
       exact: true
     })
+    this.runApprovalButton = this.panel.getByRole('button', {
+      name: enMessages.agent.runApproval.run,
+      exact: true
+    })
     // WorkSummary.vue renders three labels off the elapsed total: `worked`
     // alone, `workedForSeconds`, or `workedForMinutes`. Anchoring on the
     // shared `worked` stem matches all three, so the negative assertions on
@@ -272,37 +384,10 @@ export class AgentTurnLockHarness {
       exact: true
     })
     this.userBubbles = this.panel.getByTestId('user-message-bubble')
-    this.approvalCard = this.panel.getByText(
-      enMessages.agent.runApproval.lead,
-      { exact: true }
-    )
-    // Panel-scoped: the topbar's own Run button carries the same label.
-    this.approveButton = this.panel.getByRole('button', {
-      name: enMessages.agent.runApproval.run,
-      exact: true
-    })
-    this.cancelApprovalButton = this.panel.getByRole('button', {
-      name: enMessages.agent.runApproval.cancel,
-      exact: true
-    })
   }
 
   rejectedPosts(): number {
     return this.server.rejectedPosts
-  }
-
-  answerAttempts(): string[][] {
-    return this.server.answerAttempts
-  }
-
-  committedAnswer(): string[] | null {
-    return this.server.committedAnswer
-  }
-
-  /** Streams the turn to the point where it is parked on a consent card. */
-  async parkOnRunApproval(ws: WebSocketRoute): Promise<void> {
-    this.push(ws, RUN_APPROVAL_EVENT)
-    await expect(this.approvalCard).toBeVisible()
   }
 
   postAttempts(): number {
@@ -356,6 +441,25 @@ export class AgentTurnLockHarness {
     ws.send(JSON.stringify(event))
   }
 
+  finishTurn(ws: WebSocketRoute): void {
+    this.server.completeTurn()
+    this.push(ws, TURN_DONE_EVENT)
+  }
+
+  finishTurnOnServer(): void {
+    this.server.completeTurn()
+  }
+
+  /** Makes an ask available through transcript hydration, independently of WS delivery. */
+  primePendingAsk(event: AgentWsEvent): void {
+    this.server.recordAsk(event)
+  }
+
+  /** True only when a test explicitly primed transcript-based recovery. */
+  pendingAskIsPrimed(): boolean {
+    return this.server.askIsPending
+  }
+
   /**
    * Replays the Web Audio work an audio preview does while a turn is live:
    * open an AudioContext, `decodeAudioData` real WAV bytes, close it. This is
@@ -390,6 +494,20 @@ export class AgentTurnLockHarness {
       await context.decodeAudioData(bytes)
       await context.close()
     })
+  }
+
+  /**
+   * Every ask the user answered through the panel, flattened to the selected
+   * option ids. Reads the fake server rather than the DOM, so it proves the
+   * answer actually left the client.
+   */
+  answeredAsks(): string[] {
+    return this.server.answers.flat()
+  }
+
+  /** The socket the client is currently on, with no drop. */
+  async liveSocket(): Promise<WebSocketRoute> {
+    return this.getWebSocket()
   }
 
   /** Drops the live socket and resolves with the one the client reconnects on. */

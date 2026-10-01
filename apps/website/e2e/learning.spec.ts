@@ -79,12 +79,12 @@ test.describe('Learning page @smoke', () => {
     await expect(heading).toHaveText(t('learning.title', 'en'))
 
     const nav = categoryNav(page)
-    await expect(nav.locator('a[href="/learning"]')).toHaveAttribute(
+    await expect(nav.locator('a[href="/learning/"]')).toHaveAttribute(
       'aria-current',
       'page'
     )
     for (const category of populatedCategories) {
-      const link = nav.locator(`a[href="/learning/${category}"]`)
+      const link = nav.locator(`a[href="/learning/${category}/"]`)
       await expect(link).toBeVisible()
       await expect(link).toContainText(
         String(filterByCategory(category).length)
@@ -98,7 +98,7 @@ test.describe('Learning page @smoke', () => {
       (category) => !populatedCategories.includes(category)
     )
     for (const category of emptyCategories) {
-      await expect(nav.locator(`a[href="/learning/${category}"]`)).toHaveCount(
+      await expect(nav.locator(`a[href="/learning/${category}/"]`)).toHaveCount(
         0
       )
     }
@@ -180,11 +180,11 @@ test.describe('Learning page @smoke', () => {
 test.describe('Learning category pages @smoke', () => {
   test('sidebar links navigate to the category page', async ({ page }) => {
     await page.goto('/learning')
-    await categoryNav(page).locator('a[href="/learning/vfx"]').click()
+    await categoryNav(page).locator('a[href="/learning/vfx/"]').click()
 
-    await expect(page).toHaveURL('/learning/vfx')
+    await expect(page).toHaveURL('/learning/vfx/')
     await expect(
-      categoryNav(page).locator('a[href="/learning/vfx"]')
+      categoryNav(page).locator('a[href="/learning/vfx/"]')
     ).toHaveAttribute('aria-current', 'page')
   })
 
@@ -192,9 +192,9 @@ test.describe('Learning category pages @smoke', () => {
     page
   }) => {
     await page.goto('/learning')
-    await categoryNav(page).locator('a[href="/learning/vfx"]').click()
+    await categoryNav(page).locator('a[href="/learning/vfx/"]').click()
 
-    await expect(page).toHaveURL('/learning/vfx')
+    await expect(page).toHaveURL('/learning/vfx/')
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
       EXPECTED_META.vfx.heading
     )
@@ -210,18 +210,18 @@ test.describe('Learning category pages @smoke', () => {
     page
   }) => {
     await page.goto('/learning')
-    await categoryNav(page).locator('a[href="/learning/vfx"]').click()
-    await expect(page).toHaveURL('/learning/vfx')
+    await categoryNav(page).locator('a[href="/learning/vfx/"]').click()
+    await expect(page).toHaveURL('/learning/vfx/')
 
     await page.goBack()
     await expect(page).toHaveURL('/learning')
     await expect(page).toHaveTitle(ROOT_TITLE)
     await expect(
-      categoryNav(page).locator('a[href="/learning"]')
+      categoryNav(page).locator('a[href="/learning/"]')
     ).toHaveAttribute('aria-current', 'page')
 
     await page.goForward()
-    await expect(page).toHaveURL('/learning/vfx')
+    await expect(page).toHaveURL('/learning/vfx/')
     await expect(page).toHaveTitle(EXPECTED_META.vfx.title)
   })
 
@@ -314,12 +314,12 @@ test.describe('Learning tutorial page @smoke', () => {
     })
     await expect(
       breadcrumb.getByRole('link', { name: t('learning.title', 'en') })
-    ).toHaveAttribute('href', '/learning')
+    ).toHaveAttribute('href', '/learning/')
     await expect(
       breadcrumb.getByRole('link', {
         name: t(`learning.categories.${firstTutorial.category}.label`, 'en')
       })
-    ).toHaveAttribute('href', `/learning/${firstTutorial.category}`)
+    ).toHaveAttribute('href', `/learning/${firstTutorial.category}/`)
     await expect(breadcrumb.getByText(firstTutorial.title.en)).toBeVisible()
   })
 
@@ -438,7 +438,7 @@ test.describe('Learning page (zh-CN) @smoke', () => {
     const nav = categoryNav(page, 'zh-CN')
     for (const category of populatedCategories) {
       await expect(
-        nav.locator(`a[href="/zh-CN/learning/${category}"]`)
+        nav.locator(`a[href="/zh-CN/learning/${category}/"]`)
       ).toBeVisible()
     }
 

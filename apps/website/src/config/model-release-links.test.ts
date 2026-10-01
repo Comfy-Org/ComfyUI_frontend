@@ -16,7 +16,7 @@ describe('homepage Models destinations', () => {
       expect(workshopModels.some((model) => model.href === href)).toBe(true)
     }
     expect(links['seedance-2-5']).toBe(
-      '/models/byteplus--seedance-2-5-text-to-video--generate-videos/'
+      '/hub/models/seedance-2-5-text-to-video/'
     )
     expect(links['wan-animate-2']).toBeUndefined()
   })

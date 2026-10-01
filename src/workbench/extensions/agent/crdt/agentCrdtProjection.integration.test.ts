@@ -1,6 +1,6 @@
 import { mint, nodesMap } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
 import * as Y from 'yjs'
 
 import { assert } from '@/base/assert'
@@ -8,14 +8,11 @@ import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { GraphScope } from '@/types/graphScopeId'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { FollowerDoc } from './followerDoc'
-import { createGraphMutations } from './graphMutations'
-import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 
 class TestSource extends LGraphNode {
   static override title = 'Test Source'
@@ -46,16 +43,6 @@ function widgetsOf(node: LGraphNode) {
 const WORKFLOW_ID = 'wf-a'
 const CATALOG: WidgetCatalog = {
   types: { TestSource: { widget_order: ['steps', 'seed'] } }
-}
-
-const layout = { createNode: vi.fn(), deleteNodes: vi.fn() }
-
-function remoteMutations(scope: GraphScope) {
-  return createGraphMutations({
-    getScope: () => scope,
-    layout,
-    placement: inertPlacementPort
-  })
 }
 
 function toWorkflowJson({ nodes, ...rest }: ISerialisedGraph): WorkflowJSON {
@@ -127,17 +114,14 @@ function snapshot(graph: LGraph) {
 
 /**
  * Binds a fresh follower session to the doc minted from the graph's own
- * save and delivers the whole doc as the catch-up frame, the way a return
- * to a previously bound workflow tab does.
+ * save and delivers the whole doc as the catch-up frame followed by the
+ * full sync, the way a return to a previously bound workflow tab does.
+ * Later host edits arrive as incremental frames only.
  */
 function bindAndCatchUp(graph: LGraph, saved: ISerialisedGraph) {
   const host = mint(toWorkflowJson(saved), CATALOG)
   const follower = new FollowerDoc()
-  const projection = new AgentCrdtProjection(
-    remoteMutations(graphScopeOf(graph)),
-    () => graph,
-    () => follower.doc
-  )
+  const projection = new AgentCrdtProjection(() => graph)
   projection.bind(WORKFLOW_ID, follower)
   let seq = 0
   const deliver = (update: Uint8Array) => {
@@ -150,8 +134,7 @@ function bindAndCatchUp(graph: LGraph, saved: ISerialisedGraph) {
         actor: 'agent:comfy:host',
         opIds: []
       })
-    ).toBe(true)
-    projection.reconcileLiveGraph(WORKFLOW_ID)
+    ).toMatchObject({ applied: true })
   }
   deliver(Y.encodeStateAsUpdate(host))
   const hostEdit = (edit: () => void) => {
@@ -164,12 +147,10 @@ function bindAndCatchUp(graph: LGraph, saved: ISerialisedGraph) {
     follower.destroy()
     host.destroy()
   }
-  return { host, hostEdit, destroy }
+  return { host, hostEdit, projection, destroy }
 }
 
 beforeEach(() => {
-  layout.createNode.mockReset()
-  layout.deleteNodes.mockReset()
   LiteGraph.registerNodeType('TestSource', TestSource)
   LiteGraph.registerNodeType('TestNote', TestNote)
 })
@@ -183,8 +164,6 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
 
     expect(graph.getNodeById(toNodeId(1))).toBe(source)
     expect(graph.getNodeById(toNodeId(2))).toBe(note)
-    expect(layout.createNode).not.toHaveBeenCalled()
-    expect(layout.deleteNodes).not.toHaveBeenCalled()
     expect(snapshot(graph)).toEqual({
       live: [
         {
@@ -247,7 +226,7 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
     destroy()
   })
 
-  it.fails('keeps a local node whose add never reached the doc during a later remote reconcile', () => {
+  it('keeps a local node whose add has not reached the doc through a later incremental frame', () => {
     const { graph } = buildLiveGraph()
     const { host, hostEdit, destroy } = bindAndCatchUp(
       graph,
@@ -273,11 +252,57 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
         )
         .map(({ id }) => String(id))
     ).toContain(String(local.id))
-    expect(graph.serialize().nodes.map(({ id }) => id)).toContain(local.id)
-    expect(layout.deleteNodes).not.toHaveBeenCalledWith(
-      graphScopeOf(graph),
-      [local.id],
-      expect.anything()
+    expect(graph.serialize().nodes.map(({ id }) => String(id))).toContain(
+      local.id
     )
+  })
+
+  it('replaces the graph with the new lineage only when its first frame arrives after a reset', () => {
+    const { graph, source, note } = buildLiveGraph()
+    const { projection, destroy } = bindAndCatchUp(
+      graph,
+      structuredClone(graph.serialize())
+    )
+    onTestFinished(destroy)
+    const local = createRegisteredNode('TestSource', TestSource)
+    graph.add(local)
+
+    projection.replaceOnNextFrame(WORKFLOW_ID)
+
+    expect(graph._nodes).toEqual([source, note, local])
+
+    const replacement = new FollowerDoc()
+    const lineage = mint(
+      toWorkflowJson({
+        ...structuredClone(graph.serialize()),
+        nodes: [{ ...structuredClone(source.serialize()), title: 'Reminted' }],
+        links: []
+      }),
+      CATALOG
+    )
+    onTestFinished(() => {
+      replacement.destroy()
+      lineage.destroy()
+    })
+    projection.bind(WORKFLOW_ID, replacement)
+    const update = Y.encodeStateAsUpdate(lineage)
+    replacement.applyRemoteUpdate(update)
+
+    expect(
+      projection.applyFrame({
+        workflowId: WORKFLOW_ID,
+        seq: 1,
+        update,
+        actor: 'agent:comfy:host',
+        opIds: []
+      })
+    ).toEqual({
+      applied: true,
+      nodes: { added: ['1'], removed: [] },
+      createdNodeIds: []
+    })
+    expect(graph._nodes).toEqual([source])
+    expect(source.title).toBe('Reminted')
+    expect(graph.links.size).toBe(0)
   })
 })

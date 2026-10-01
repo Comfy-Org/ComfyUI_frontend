@@ -2,8 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
+import { api } from '@/scripts/api'
 
 vi.mock(import('@/platform/telemetry'))
+
+import { getAgentPanelOpen } from '@/platform/telemetry/utils/getAgentPanelOpen'
 
 import { useAgentPanelStore } from './agentPanelStore'
 
@@ -18,7 +21,16 @@ function useConsentedAgentPanelStore() {
 describe('agentPanelStore engagement telemetry', () => {
   beforeEach(() => {
     localStorage.clear()
-    vi.useFakeTimers()
+    api.serverFeatureFlagsSettled.value = false
+  })
+
+  it('derives flag settlement directly from the API state', async () => {
+    const store = useAgentPanelStore()
+
+    expect(store.flagsSettled).toBe(false)
+    api.serverFeatureFlagsSettled.value = true
+    await nextTick()
+    expect(store.flagsSettled).toBe(true)
   })
 
   it('emits a restored open only once the rehydrated panel actually docks', async () => {
@@ -57,7 +69,7 @@ describe('agentPanelStore engagement telemetry', () => {
     })
   })
 
-  it('starts a new visible interval after consent hides and restores the panel', async () => {
+  it('keeps the panel visible while consent changes', async () => {
     const store = useConsentedAgentPanelStore()
     store.enabled = true
     store.open()
@@ -67,6 +79,7 @@ describe('agentPanelStore engagement telemetry', () => {
     store.consentAccepted = false
     await nextTick()
     expect(store.isOpen).toBe(true)
+    expect(store.isVisible).toBe(true)
     vi.advanceTimersByTime(10000)
     store.consentAccepted = true
     await nextTick()
@@ -75,12 +88,9 @@ describe('agentPanelStore engagement telemetry', () => {
 
     expect(useTelemetry()!.trackAgentPanelClosed).toHaveBeenCalledWith({
       source: 'close_button',
-      open_duration_ms: 3000
+      open_duration_ms: 15000
     })
-    expect(useTelemetry()!.trackAgentPanelOpened).toHaveBeenCalledTimes(2)
-    expect(useTelemetry()!.trackAgentPanelOpened).toHaveBeenLastCalledWith({
-      source: 'restored'
-    })
+    expect(useTelemetry()!.trackAgentPanelOpened).toHaveBeenCalledOnce()
   })
 
   it('attributes automatic consent to its own source without duplicate opens', async () => {
@@ -107,18 +117,20 @@ describe('agentPanelStore engagement telemetry', () => {
     expect(useTelemetry()!.trackAgentPanelOpened).not.toHaveBeenCalled()
   })
 
-  it('suppresses a restored open intent that has no consent', async () => {
+  it('shows a restored open intent before consent', async () => {
     localStorage.setItem(OPEN_STORAGE_KEY, 'true')
     const store = useAgentPanelStore()
     store.enabled = true
     await nextTick()
 
     expect(store.isOpen).toBe(true)
-    expect(store.isVisible).toBe(false)
-    expect(useTelemetry()!.trackAgentPanelOpened).not.toHaveBeenCalled()
+    expect(store.isVisible).toBe(true)
+    expect(useTelemetry()!.trackAgentPanelOpened).toHaveBeenCalledWith({
+      source: 'restored'
+    })
 
     store.suppressRestoredOpen()
-    expect(store.isOpen).toBe(false)
+    expect(store.isOpen).toBe(true)
   })
 
   it('emits opened on toggle-open and closed with the open duration', () => {
@@ -283,14 +295,17 @@ describe('agentPanelStore pagehide teardown', () => {
     expect(useTelemetry()!.trackAgentPanelClosed).not.toHaveBeenCalled()
   })
 
-  it('does not report a pagehide close for an open panel gated behind consent', () => {
+  it('reports a pagehide close for an open pre-consent panel', () => {
     const store = useAgentPanelStore()
     store.enabled = true
     store.open()
 
     window.dispatchEvent(new Event('pagehide'))
 
-    expect(useTelemetry()!.trackAgentPanelClosed).not.toHaveBeenCalled()
+    expect(useTelemetry()!.trackAgentPanelClosed).toHaveBeenCalledWith({
+      source: 'pagehide',
+      open_duration_ms: 0
+    })
   })
 
   it('can report again for a fresh open session after a prior pagehide report', () => {
@@ -405,16 +420,73 @@ describe('agentPanelStore open-state persistence', () => {
     expect(store.gateSettled).toBe(false)
     expect(localStorage.getItem(OPEN_STORAGE_KEY)).toBeNull()
   })
+})
 
-  it('clamps setWidth to the panel min and max bounds', () => {
-    const store = useAgentPanelStore()
+describe('agentPanelStore width', () => {
+  /** Side toolbar rail + sidebar minimum. */
+  const SIDEBAR_OPEN = 368
+  /** Side toolbar rail alone, with no sidebar tab showing. */
+  const SIDEBAR_CLOSED = 56
 
-    store.setWidth(100)
-    expect(store.width).toBe(420)
+  function resizeWindowTo(px: number): void {
+    window.innerWidth = px
+    window.dispatchEvent(new Event('resize'))
+  }
 
-    store.setWidth(2000)
-    expect(store.width).toBe(960)
+  beforeEach(() => {
+    resizeWindowTo(1920)
   })
+
+  it.for([
+    {
+      requested: 100,
+      windowWidth: 1920,
+      reserved: SIDEBAR_OPEN,
+      expected: 420
+    },
+    {
+      requested: 2000,
+      windowWidth: 1920,
+      reserved: SIDEBAR_OPEN,
+      expected: 960
+    },
+    {
+      requested: 700,
+      windowWidth: 1920,
+      reserved: SIDEBAR_OPEN,
+      expected: 700
+    },
+    {
+      requested: 2000,
+      windowWidth: 1200,
+      reserved: SIDEBAR_OPEN,
+      expected: 832
+    },
+    {
+      requested: 2000,
+      windowWidth: 1200,
+      reserved: SIDEBAR_CLOSED,
+      expected: 960
+    },
+    {
+      requested: 2000,
+      windowWidth: 900,
+      reserved: SIDEBAR_CLOSED,
+      expected: 844
+    },
+    { requested: 2000, windowWidth: 700, reserved: SIDEBAR_OPEN, expected: 332 }
+  ] as const)(
+    'clamps a requested $requested to $expected in a $windowWidth window reserving $reserved',
+    ({ requested, windowWidth, reserved, expected }) => {
+      resizeWindowTo(windowWidth)
+      const store = useAgentPanelStore()
+      store.setReservedWorkspaceWidth(reserved)
+
+      store.setWidth(requested)
+
+      expect(store.width).toBe(expected)
+    }
+  )
 
   it('toggleMaximize flips width between the min and max bounds', () => {
     const store = useAgentPanelStore()
@@ -427,5 +499,86 @@ describe('agentPanelStore open-state persistence', () => {
     store.toggleMaximize()
     expect(store.width).toBe(420)
     expect(store.isMaximized).toBe(false)
+  })
+
+  it('shrinks a maximized panel to fit a narrowed window and restores it', () => {
+    const store = useAgentPanelStore()
+    store.toggleMaximize()
+
+    resizeWindowTo(1200)
+    expect(store.width).toBe(832)
+    expect(store.isMaximized).toBe(true)
+
+    resizeWindowTo(1920)
+    expect(store.width).toBe(960)
+  })
+
+  it('gives a maximized panel the room back when the sidebar closes', () => {
+    const store = useAgentPanelStore()
+    store.toggleMaximize()
+    resizeWindowTo(1200)
+    expect(store.width).toBe(832)
+
+    store.setReservedWorkspaceWidth(SIDEBAR_CLOSED)
+
+    expect(store.width).toBe(960)
+  })
+
+  it('shrinks a panel that the opening sidebar would otherwise meet', () => {
+    const store = useAgentPanelStore()
+    store.setReservedWorkspaceWidth(SIDEBAR_CLOSED)
+    resizeWindowTo(1200)
+    store.setWidth(900)
+    expect(store.width).toBe(900)
+
+    store.setReservedWorkspaceWidth(SIDEBAR_OPEN)
+
+    expect(store.width).toBe(832)
+  })
+
+  it('follows a window too narrow for the panel minimum instead of leaving it', () => {
+    const store = useAgentPanelStore()
+    store.toggleMaximize()
+
+    resizeWindowTo(600)
+
+    expect(store.width).toBe(232)
+  })
+
+  it('restores the dragged width once the window has room for it again', () => {
+    const store = useAgentPanelStore()
+    resizeWindowTo(1000)
+
+    store.setWidth(900)
+    expect(store.width).toBe(632)
+
+    resizeWindowTo(1400)
+    expect(store.width).toBe(900)
+  })
+
+  it('drops the maximized state when the user drags the panel', () => {
+    const store = useAgentPanelStore()
+    store.toggleMaximize()
+
+    store.setWidth(600)
+
+    expect(store.isMaximized).toBe(false)
+    expect(store.width).toBe(600)
+  })
+
+  // `getAgentPanelOpen` powers the agent_panel_open run-attribution flag. It
+  // cannot import this store (platform/ may not import workbench/), so it reads
+  // OPEN_STORAGE_KEY directly. Renaming the key here without updating that util
+  // would silently pin the flag to false, so pin the pairing from this side.
+  it('persists isOpen where the run-attribution flag reads it', async () => {
+    const store = useAgentPanelStore()
+
+    store.open()
+    await nextTick()
+    expect(getAgentPanelOpen()).toBe(true)
+
+    store.close('topbar_button')
+    await nextTick()
+    expect(getAgentPanelOpen()).toBe(false)
   })
 })

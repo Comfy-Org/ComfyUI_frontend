@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -51,7 +51,7 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
-      g: { close: 'Close' },
+      g: { close: 'Close', increment: 'Increment', decrement: 'Decrement' },
       credits: {
         topUp: {
           addMoreCredits: 'Add more credits',
@@ -79,14 +79,7 @@ function renderDialog() {
   return render(TopUpCreditsDialogContentLegacy, {
     global: {
       config: { errorHandler: () => {} },
-      plugins: [i18n],
-      stubs: {
-        FormattedNumberStepper: {
-          name: 'FormattedNumberStepper',
-          props: ['modelValue'],
-          template: '<div />'
-        }
-      }
+      plugins: [i18n]
     }
   })
 }
@@ -117,6 +110,50 @@ describe('TopUpCreditsDialogContentLegacy', () => {
     expect(useDialogStore().closeDialog).toHaveBeenCalled()
     expect(useSettingsDialog().show).toHaveBeenCalledWith('workspace')
     expect(mockClearPendingTopup).not.toHaveBeenCalled()
+  })
+
+  it('clamps a typed amount to the ceiling and warns until another amount is chosen', async () => {
+    renderDialog()
+    const user = userEvent.setup()
+    const payInput = screen.getByRole('spinbutton', { name: 'You pay' })
+
+    await user.tripleClick(payInput)
+    await user.keyboard('20000{Enter}')
+
+    expect(payInput).toHaveValue('10,000')
+    expect(screen.getByRole('spinbutton', { name: 'You get' })).toHaveValue(
+      '10,000'
+    )
+    expect(screen.getByText('Maximum allowed')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '$25' }))
+
+    expect(payInput).toHaveValue('25')
+    expect(screen.queryByText('Maximum allowed')).not.toBeInTheDocument()
+  })
+
+  it('steps the credits field by the amount tier without deselecting the preset on blur', async () => {
+    renderDialog()
+    const user = userEvent.setup()
+    const payInput = screen.getByRole('spinbutton', { name: 'You pay' })
+
+    await user.click(payInput)
+    await user.tab()
+    expect(screen.getByRole('button', { name: '$50' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
+
+    const creditsIncrement = screen.getAllByRole('button', {
+      name: 'Increment'
+    })[1]
+    await user.click(creditsIncrement)
+
+    expect(payInput).toHaveValue('55')
+    expect(screen.getByRole('button', { name: '$50' })).toHaveAttribute(
+      'aria-pressed',
+      'false'
+    )
   })
 
   it('clears the pending top-up marker when the user closes the dialog', async () => {
@@ -211,6 +248,47 @@ describe('TopUpCreditsDialogContentLegacy', () => {
       failure_category: 'network'
     })
   })
+
+  it.for([
+    {
+      name: 'a checkout that opens stays pending',
+      purchase: () => Promise.resolve(),
+      expectedEvents: [
+        [{ operation: 'topup', stage: 'started', outcome: 'pending' }]
+      ]
+    },
+    {
+      name: 'a rejected purchase closes as failed',
+      purchase: () => Promise.reject(new Error('declined')),
+      expectedEvents: [
+        [{ operation: 'topup', stage: 'started', outcome: 'pending' }],
+        [
+          {
+            operation: 'topup',
+            stage: 'failed',
+            outcome: 'failure',
+            failure_category: 'unknown'
+          }
+        ]
+      ]
+    }
+  ])(
+    'opens every purchase attempt with one started event: $name',
+    async ({ purchase, expectedEvents }) => {
+      vi.mocked(useAuthActions().purchaseCreditsDirect).mockImplementation(
+        purchase
+      )
+
+      renderDialog()
+      await clickBuyCredits()
+
+      const telemetry = useTelemetry()
+      assert.exists(telemetry)
+      expect(vi.mocked(telemetry.trackBillingEvent).mock.calls).toEqual(
+        expectedEvents
+      )
+    }
+  )
 
   it('uses the same bounded category when the rejection is not an Error', async () => {
     vi.mocked(useAuthActions().purchaseCreditsDirect).mockRejectedValue('boom')

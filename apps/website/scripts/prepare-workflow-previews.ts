@@ -150,7 +150,7 @@ export function workflowPreviewSvg(raw: unknown): string {
 
 function main() {
   const site = join(import.meta.dirname, '..')
-  const target = join(site, 'public/workflows/prepared')
+  const target = join(site, 'public/workflow-graphs')
   const entries = parseWorkflowCatalog(
     readFileSync(join(site, 'src/content/workshop-workflows.jsonl'), 'utf8')
   )

@@ -21,6 +21,7 @@ const state: Credits = defaults()
 const credits: typeof realCredits = {
   balanceToCredits: centsToCredits,
   refreshWorkshopCredits: vi.fn(async () => {}),
+  markWorkshopCreditsDirty: vi.fn(),
   clearTopUpWatch: vi.fn(),
   watchForTopUp: vi.fn(),
   useTopUpWatch: vi.fn(() =>
@@ -39,6 +40,7 @@ const credits: typeof realCredits = {
 export const {
   balanceToCredits,
   refreshWorkshopCredits,
+  markWorkshopCreditsDirty,
   clearTopUpWatch,
   watchForTopUp,
   useTopUpWatch,
