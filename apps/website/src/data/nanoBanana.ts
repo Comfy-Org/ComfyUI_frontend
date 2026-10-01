@@ -42,6 +42,40 @@ const stills = [
   media.horizon.src
 ]
 
+const designStyles = [
+  {
+    slug: 'ink-wash',
+    en: 'Fox and lantern as an ink wash painting',
+    'zh-CN': '水墨画风格的狐狸与灯笼'
+  },
+  {
+    slug: 'claymation',
+    en: 'Fox and lantern as a claymation forest scene',
+    'zh-CN': '黏土动画风格的狐狸与灯笼森林场景'
+  },
+  {
+    slug: 'art-nouveau',
+    en: 'Fox and lantern as an art nouveau poster',
+    'zh-CN': '新艺术风格海报中的狐狸与灯笼'
+  },
+  {
+    slug: 'blueprint',
+    en: 'Fox and lantern as an annotated blueprint',
+    'zh-CN': '带标注的蓝图风格狐狸与灯笼'
+  },
+  {
+    slug: 'stained-glass',
+    en: 'Fox and lantern as a stained glass window',
+    'zh-CN': '彩绘玻璃窗风格的狐狸与灯笼'
+  }
+] as const
+
+const designCards = designStyles.map(({ slug, ...alt }) => ({
+  id: `design-${slug}`,
+  alt,
+  src: `/images/nano-banana/design-${slug}.webp`
+}))
+
 export const nanoBananaPage: ModelLaunchPage = {
   metaTitleKey: 'nanoBanana.meta.title',
   metaDescriptionKey: 'nanoBanana.meta.description',
@@ -76,10 +110,7 @@ export const nanoBananaPage: ModelLaunchPage = {
     {
       headingKey: 'nanoBanana.showcase.design.heading',
       descriptionKey: 'nanoBanana.showcase.design.description',
-      cards: showcaseCards('design', [
-        ...stills.slice(2),
-        ...stills.slice(0, 2)
-      ])
+      cards: designCards
     },
     {
       headingKey: 'nanoBanana.showcase.advertising.heading',
