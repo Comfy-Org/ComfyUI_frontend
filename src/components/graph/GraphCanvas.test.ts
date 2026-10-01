@@ -93,7 +93,8 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
       vueAppReady: false,
       canvas,
       graph: null,
-      rootGraph: null,
+      rootGraph: undefined,
+      rootGraphOrUndefined: undefined,
       ui: { settings: { dispatchChange: vi.fn() } },
       setup: vi.fn()
     }

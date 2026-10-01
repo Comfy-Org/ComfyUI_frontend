@@ -1,8 +1,15 @@
-import { createSharedComposable } from '@vueuse/core'
+import { createSharedComposable, whenever } from '@vueuse/core'
 import { computed, onUnmounted, ref } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+// `app.isGraphReady` is a plain getter on a non-reactive class instance, so
+// it cannot drive a watcher by itself. `canvasStore.canvas` is the reactive
+// signal that `GraphCanvas.vue` sets right after `comfyApp.setup()` resolves,
+// by which point the root graph already exists (see AgentPanelRoot.vue for
+// the same pattern).
+// eslint-disable-next-line import-x/no-restricted-paths
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -28,9 +35,14 @@ const _useWorkflowPacks = () => {
   const nodeDefStore = useNodeDefStore()
   const systemStatsStore = useSystemStatsStore()
   const { inferPackFromNodeName } = useComfyRegistryStore()
+  const canvasStore = useCanvasStore()
 
   const workflowPacks = ref<WorkflowPack[]>([])
   const unresolvedNodeNames = ref<string[]>([])
+  // Set when a fetch was requested before the root graph existed, so it can
+  // be retried once the graph becomes ready instead of leaving the registry
+  // fetch permanently "ready" with no packs resolved.
+  const retryWhenGraphReady = ref(false)
 
   const getWorkflowNodePackId = (node: LGraphNode): string | undefined => {
     if (typeof node.properties.cnr_id === 'string') {
@@ -114,9 +126,9 @@ const _useWorkflowPacks = () => {
    * Nodes that have no local definition and no registry match are tracked
    * as unresolved so downstream consumers can surface them to the user.
    */
-  const getWorkflowPacks = async () => {
+  const getWorkflowPacks = async (): Promise<boolean> => {
     const rootGraph = app.rootGraphOrUndefined
-    if (!rootGraph) return
+    if (!rootGraph) return false
 
     const resolvedPacks: WorkflowPack[] = []
     const unresolved: string[] = []
@@ -132,6 +144,7 @@ const _useWorkflowPacks = () => {
 
     workflowPacks.value = resolvedPacks
     unresolvedNodeNames.value = [...new Set(unresolved)]
+    return true
   }
 
   const packsToUniqueIds = (packs: WorkflowPack[]) =>
@@ -153,6 +166,23 @@ const _useWorkflowPacks = () => {
   const filterWorkflowPack = (packs: components['schemas']['Node'][]) =>
     packs.filter((pack) => !!pack.id && isIdInWorkflow(pack.id))
 
+  const startFetchWorkflowPacks = async () => {
+    const parsed = await getWorkflowPacks() // Parse the packs from the workflow nodes
+    if (!parsed) {
+      retryWhenGraphReady.value = true
+      return
+    }
+    await startFetch() // Fetch the packs infos from the registry
+  }
+
+  whenever(
+    () => retryWhenGraphReady.value && !!canvasStore.canvas && app.isGraphReady,
+    () => {
+      retryWhenGraphReady.value = false
+      void startFetchWorkflowPacks()
+    }
+  )
+
   onUnmounted(() => {
     cleanup()
   })
@@ -163,10 +193,7 @@ const _useWorkflowPacks = () => {
     isReady,
     workflowPacks: nodePacks,
     unresolvedNodeNames,
-    startFetchWorkflowPacks: async () => {
-      await getWorkflowPacks() // Parse the packs from the workflow nodes
-      await startFetch() // Fetch the packs infos from the registry
-    },
+    startFetchWorkflowPacks,
     filterWorkflowPack
   }
 }
