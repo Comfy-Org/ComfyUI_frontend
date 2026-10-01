@@ -79,7 +79,7 @@ export type OnboardingSurvey = {
  * Remote configuration type
  * Configuration fetched from the server at runtime
  */
-export type RemoteConfig = GetFeaturesResponses[200] & {
+export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   gtm_container_id?: string
   ga_measurement_id?: string
   mixpanel_token?: string

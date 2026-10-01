@@ -11,15 +11,36 @@
  * so no server or payment-provider text can reach a consumer through this
  * state.
  */
-import { zBillingOpStatusResponse } from '@comfyorg/ingest-types/zod'
-import type { z } from 'zod'
+import {
+  zBillingOpChargeBreakdown,
+  zBillingOpChargeReason,
+  zBillingOpStatusResponse,
+  zSubscriptionDiscount
+} from '@comfyorg/ingest-types/zod'
+import { z } from 'zod'
 
 import type { BillingScope } from './billingScope.js'
 import { wireCents } from './wireCents.js'
 
 export const BillingOpStatusSchema = zBillingOpStatusResponse.extend({
   amount_charged_cents: wireCents.optional(),
-  credits_added: wireCents.optional()
+  credits_added: wireCents.optional(),
+  charge_breakdown: zBillingOpChargeBreakdown
+    .extend({
+      amount_charged_cents: wireCents,
+      reasons: z.array(
+        zBillingOpChargeReason.extend({
+          amount_cents: wireCents,
+          discount: zSubscriptionDiscount
+            .extend({
+              amount_off_cents: wireCents.optional(),
+              duration_in_months: wireCents.optional()
+            })
+            .optional()
+        })
+      )
+    })
+    .optional()
 })
 
 export type BillingOpStatus = z.infer<typeof BillingOpStatusSchema>

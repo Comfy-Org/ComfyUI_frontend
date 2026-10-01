@@ -116,6 +116,8 @@ const PlanInfoSchema = zPreviewPlanInfo.extend({
   credits_cents: wireCents,
   price_cents: wireCents,
   list_price_cents: wireCents.optional(),
+  monthly_list_price_cents: wireCents.optional(),
+  monthly_price_cents: wireCents.optional(),
   seat_summary: zPreviewPlanInfo.shape.seat_summary.extend({
     total_cost_cents: wireCents,
     total_credits_cents: wireCents
@@ -131,6 +133,8 @@ const PreviewSchema = zPreviewSubscribeResponse.extend({
   renewal_amount_cents: wireCents.optional(),
   subtotal_cents: wireCents.optional(),
   balance_applied_cents: wireCents.optional(),
+  proration_remaining_cents: wireCents.optional(),
+  proration_unused_cents: wireCents.optional(),
   current_plan: PlanInfoSchema.optional(),
   new_plan: PlanInfoSchema,
   discounts: z
