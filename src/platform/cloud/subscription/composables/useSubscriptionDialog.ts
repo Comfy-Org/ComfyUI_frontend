@@ -1,4 +1,3 @@
-import type { SubscriptionCheckoutTier } from '@comfyorg/account-core/billing'
 import { defineAsyncComponent } from 'vue'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -12,10 +11,9 @@ import {
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
-import type { SubscriptionTier } from '@/platform/workspace/api/workspaceApi'
 import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composables/useSubscriptionCheckout'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
-import { toTierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+import { toCurrentTier } from '@/platform/cloud/subscription/utils/billingPlanTelemetry'
 import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -47,13 +45,6 @@ function paymentIntentSourceOf(
   options?: SubscriptionDialogOptions
 ): PaymentIntentSource | undefined {
   return options?.paymentIntentSource ?? options?.reason
-}
-
-function toCurrentTier(
-  tier: SubscriptionTier | null
-): SubscriptionCheckoutTier | undefined {
-  if (tier === 'TEAM') return 'team'
-  return (tier && toTierKey(tier)) || undefined
 }
 
 function getInitialPlanMode(
