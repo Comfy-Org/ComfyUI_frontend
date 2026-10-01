@@ -90,6 +90,7 @@ describe('useCanvasScheduler', () => {
       offsetWidth: { configurable: true, value: 640 },
       offsetHeight: { configurable: true, value: 480 }
     })
+    document.body.append(operationCanvas)
 
     testState.offsetParent = null
     scheduler.schedule({ element: operationCanvas, run: op })
@@ -253,6 +254,31 @@ describe('useCanvasScheduler', () => {
 
     while (testState.pendingFrames.size > 0) runNextAnimationFrame()
     expect(op).toHaveBeenCalledOnce()
+  })
+
+  it('does not poll forever when a transition target stays unready', async () => {
+    const scheduler = await createScheduler()
+    const op = vi.fn()
+    const staleCanvas = document.createElement('canvas')
+    Object.defineProperties(staleCanvas, {
+      offsetParent: { configurable: true, value: null },
+      offsetWidth: { configurable: true, value: 640 },
+      offsetHeight: { configurable: true, value: 480 }
+    })
+    document.body.append(staleCanvas)
+
+    scheduler.schedule({ element: staleCanvas, run: op })
+    staleCanvas.remove()
+    useCanvasStore().linearMode = true
+    await nextTick()
+    useCanvasStore().linearMode = false
+    await nextTick()
+
+    expect(testState.pendingFrames.size).toBe(1)
+    runNextAnimationFrame()
+    expect(testState.pendingFrames.size).toBe(0)
+    expect(op).not.toHaveBeenCalled()
+    expect(scheduler.pending()).toBe(0)
   })
 
   it('replaces a pending operation with the same key', async () => {

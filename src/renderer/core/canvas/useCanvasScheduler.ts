@@ -46,7 +46,7 @@ export function createCanvasScheduler(): CanvasScheduler {
     if (rafId != null || queue.length === 0) return
     rafId = requestAnimationFrame(() => {
       rafId = null
-      flushQueued(true)
+      flushQueued()
     })
   }
 
@@ -60,12 +60,12 @@ export function createCanvasScheduler(): CanvasScheduler {
     else queue[existingIndex] = operation
 
     if (isElementReady(operation.element ?? canvasStore.canvas?.canvas)) {
-      flushQueued(false)
+      flushQueued()
     }
   }
 
   function flush(): void {
-    flushQueued(false)
+    flushQueued()
   }
 
   function executeOperation(
@@ -73,6 +73,13 @@ export function createCanvasScheduler(): CanvasScheduler {
     remainingInBatch: number
   ): 'complete' | 'pending' {
     if (operation.isCurrent?.() === false) return 'complete'
+    if (
+      operation.element &&
+      operation.element !== canvasStore.canvas?.canvas &&
+      !operation.element.isConnected
+    ) {
+      return 'complete'
+    }
     if (!isElementReady(operation.element ?? canvasStore.canvas?.canvas)) {
       return 'pending'
     }
@@ -92,7 +99,7 @@ export function createCanvasScheduler(): CanvasScheduler {
     return 'complete'
   }
 
-  function flushQueued(retryIfNotReady: boolean): void {
+  function flushQueued(): void {
     const operations = queue.splice(0)
     for (const [index, operation] of operations.entries()) {
       if (
@@ -101,7 +108,6 @@ export function createCanvasScheduler(): CanvasScheduler {
         queue.push(operation)
       }
     }
-    if (retryIfNotReady && queue.length > 0) requestFlush()
   }
 
   function clear(): void {
