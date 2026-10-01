@@ -18,7 +18,7 @@ export interface MoveImage {
   readonly height: number
 }
 
-export type MovePhase =
+type MovePhase =
   | { readonly kind: 'arranging' }
   | { readonly kind: 'moving' }
   | { readonly kind: 'done'; readonly result: MoveResult }

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { MousePointer2 } from '@lucide/vue'
 import { ref } from 'vue'
 
 import type { MoveView } from '../../../composables/useMoveAnything'
@@ -10,12 +9,12 @@ import { workshopAppRepo } from '../../../lib/workshop/apps'
 import { mc } from '../../../lib/workshop/move-anything/copy'
 import AppEditorShell from '../app-editor/AppEditorShell.vue'
 import EditorBusy from '../app-editor/EditorBusy.vue'
-import EditorCompare from '../app-editor/EditorCompare.vue'
-import EditorFrame from '../app-editor/EditorFrame.vue'
 import MoveAnythingDock from './MoveAnythingDock.vue'
 import MoveAnythingEmpty from './MoveAnythingEmpty.vue'
+import MoveAnythingHint from './MoveAnythingHint.vue'
 import MoveAnythingObjects from './MoveAnythingObjects.vue'
 import MoveAnythingQuality from './MoveAnythingQuality.vue'
+import MoveAnythingResult from './MoveAnythingResult.vue'
 import MoveAnythingResultDock from './MoveAnythingResultDock.vue'
 import MoveAnythingStage from './MoveAnythingStage.vue'
 
@@ -54,31 +53,13 @@ function busyDetail() {
       @file="move.useFile"
       @example="move.useExample"
     />
-    <div v-else-if="phase.kind === 'done'" class="size-full max-w-5xl">
-      <EditorCompare
-        v-if="view === 'compare'"
-        :before="image.url"
-        :after="phase.result.url"
-        :alt="mc('move.alt.result', locale)"
-        :before-label="mc('move.view.original', locale)"
-        :after-label="mc('move.view.result', locale)"
-        :slider-label="mc('move.compare', locale)"
-        :width="image.width"
-        :height="image.height"
-      />
-      <EditorFrame v-else :width="image.width" :height="image.height">
-        <img
-          :src="view === 'result' ? phase.result.url : image.url"
-          :alt="
-            mc(
-              view === 'result' ? 'move.alt.result' : 'move.alt.example',
-              locale
-            )
-          "
-          class="size-full rounded-sm object-cover"
-        />
-      </EditorFrame>
-    </div>
+    <MoveAnythingResult
+      v-else-if="phase.kind === 'done'"
+      :image
+      :result-url="phase.result.url"
+      :view
+      :locale
+    />
     <div v-else class="relative size-full">
       <MoveAnythingStage
         :image
@@ -98,13 +79,11 @@ function busyDetail() {
       />
     </div>
     <template #overlay>
-      <p
+      <MoveAnythingHint
         v-if="image && phase.kind === 'arranging'"
-        class="pointer-events-none absolute top-3.5 left-1/2 flex h-6.5 -translate-x-1/2 items-center gap-1.5 rounded-full border border-transparency-white-t8 bg-primary-comfy-ink-light/90 px-2.5 text-[11px] whitespace-nowrap text-primary-warm-gray max-sm:hidden"
-      >
-        <MousePointer2 class="size-3" aria-hidden="true" />
-        {{ mc(tool === 'add' ? 'move.hint.add' : 'move.hint.move', locale) }}
-      </p>
+        :tool
+        :locale
+      />
     </template>
     <template #tray>
       <p
