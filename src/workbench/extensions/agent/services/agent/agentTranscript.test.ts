@@ -233,6 +233,25 @@ describe('normalizeAgentTranscript', () => {
     ])
   })
 
+  it('restores a persisted skill name', () => {
+    const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
+    message.content = {
+      tool_calls: [
+        {
+          id: 'audit-row-uuid-1',
+          tool_call_id: 'call-1',
+          tool_name: 'load_skill',
+          status: 'success',
+          skill: 'comfy-director'
+        }
+      ]
+    }
+
+    expect(
+      normalizeAgentTranscript([message]).messages[0].parts[0]
+    ).toMatchObject({ skill: 'comfy-director' })
+  })
+
   it('keys callId on tool_call_id, matching what live frames key on', () => {
     const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
     message.content = {
