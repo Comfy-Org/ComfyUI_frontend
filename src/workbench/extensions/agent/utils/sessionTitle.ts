@@ -15,5 +15,10 @@ export function deriveSessionTitle(
     (entry): entry is Extract<ConversationEntry, { role: 'user' }> =>
       entry.role === 'user'
   )
-  return firstUser?.text.trim().slice(0, MAX_DERIVED_TITLE_LENGTH) || undefined
+  return (
+    Array.from(firstUser?.text.trim() ?? '')
+      .slice(0, MAX_DERIVED_TITLE_LENGTH)
+      .join('')
+      .trimEnd() || undefined
+  )
 }
