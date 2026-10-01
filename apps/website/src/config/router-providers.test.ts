@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 import { z } from 'astro/zod'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import {
   ROUTER_COMFY_ONLY_PREVIEW,
@@ -80,11 +80,6 @@ function parseCoverageTable(markdown: string): {
 }
 
 describe('Router provider source availability', () => {
-  afterEach(() => {
-    vi.unstubAllEnvs()
-    vi.unstubAllGlobals()
-  })
-
   it('skips an unavailable source outside CI', async () => {
     vi.stubEnv('CI', '')
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')))
