@@ -166,6 +166,22 @@ describe('Agent target deletion', () => {
       selected: undefined
     },
     {
+      // The opposite order to the row above. Nothing is retained when the
+      // delete settles, so the store cannot own this outcome; the restoration
+      // reports it from the Cloud listing instead, and cannot commit the
+      // deleted workflow afterwards. Covered in
+      // `useAgentWorkflowSelection.test.ts`.
+      event: 'deleting the saved target before a restoring chat commits it',
+      act: async ({ workflows, panel, target }: TargetSetup) => {
+        saveTarget(target)
+        panel.beginWorkflowRestoration()
+        await workflows.deleteWorkflow(target)
+        panel.setWorkflowTarget(target)
+      },
+      unavailable: false,
+      selected: undefined
+    },
+    {
       event: 'only closing the target',
       act: async ({ workflows, target }: TargetSetup) =>
         workflows.closeWorkflow(target),
