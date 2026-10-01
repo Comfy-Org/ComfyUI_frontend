@@ -25,6 +25,8 @@ vi.mock(import('@/services/customerEventsService'))
 
 vi.mock(import('@/platform/telemetry'))
 
+const CONFIRMED_AT_MS = Date.parse('2024-06-15T12:30:00Z')
+
 const mockPendingTopup = vi.hoisted(() => ({
   consumeCompletedTopup: vi.fn().mockReturnValue({ startedAtMs: Date.now() })
 }))
@@ -439,15 +441,15 @@ describe('UsageLogsTable', () => {
 
     it.for([
       {
-        name: 'a completed legacy top-up closes as succeeded',
-        completedTopup: { startedAtMs: Date.now() },
+        name: 'a completed legacy top-up closes as succeeded, measured from its start',
+        completedTopup: { startedAtMs: CONFIRMED_AT_MS - 90_000 },
         expectedEvents: [
           [
             {
               operation: 'topup',
               stage: 'succeeded',
               outcome: 'success',
-              duration_ms: expect.any(Number)
+              duration_ms: 90_000
             }
           ]
         ]
@@ -460,6 +462,7 @@ describe('UsageLogsTable', () => {
     ])(
       'reports top-up completion to the billing funnel: $name',
       async ({ completedTopup, expectedEvents }) => {
+        vi.spyOn(Date, 'now').mockReturnValue(CONFIRMED_AT_MS)
         mockPendingTopup.consumeCompletedTopup.mockReturnValue(completedTopup)
 
         await renderLoaded()
