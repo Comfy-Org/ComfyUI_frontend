@@ -649,4 +649,31 @@ describe('the embedded checkout journey', () => {
       'billing.checkout.preview_ready'
     ])
   })
+
+  it('reports nothing for a promo quote a newer one overtook', async () => {
+    let answerOvertaken: (result: PreviewSubscribeResult) => void = () => {}
+    const fake = await renderCheckout()
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+    await userEvent.type(
+      screen.getByRole('textbox', { name: 'Promo code' }),
+      'SPRING'
+    )
+    fake.previewSubscribe.mockImplementationOnce(
+      () => new Promise((resolve) => (answerOvertaken = resolve))
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }))
+    await waitFor(() => expect(fake.previewSubscribe).toHaveBeenCalledTimes(2))
+    const next = `/v1/checkout?${ENTRY_QUERY}&plan=creator_annual`
+    recordBillingEntry(parseBillingEntry(next))
+    await fake.router.push(next)
+    await waitFor(() => expect(fake.previewSubscribe).toHaveBeenCalledTimes(3))
+
+    answerOvertaken({
+      status: 'ok',
+      value: cardQuote({ promotion_code: 'SPRING', quote_version: 4 })
+    })
+    await nextMacrotask()
+
+    expect(journeyNames()).not.toContain('billing.checkout.promo')
+  })
 })
