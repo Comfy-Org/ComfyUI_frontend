@@ -2,6 +2,7 @@ import {
   challengeRequiredOperation,
   succeededOperation
 } from './fixtures/scenario'
+import { installFakeStripe } from './fixtures/stripe'
 import { entryPath, expect, test } from './fixtures/test'
 
 const RESULT = entryPath('result')
@@ -51,11 +52,13 @@ test('says so when nothing is pending for the workspace', async ({
   )
 })
 
-test('back from a redirect payment the server has not settled yet, it waits instead of re-running the challenge', async ({
+test('back from a redirect payment the server has not settled yet, it shows no decline and lands on the outcome', async ({
   page,
+  context,
   cloud,
   signIn
 }) => {
+  await installFakeStripe(context)
   await page.addInitScript(() => {
     const seen = { declined: false }
     Object.assign(window, {
@@ -89,26 +92,15 @@ test('back from a redirect payment the server has not settled yet, it waits inst
       cloud.requests.some((request) => request.path === '/billing/ops/op_1')
     )
     .toBe(true)
-  await page.waitForLoadState('networkidle')
+  cloud.scenario.operations.op_1 = succeededOperation('op_1')
+
+  await expect(
+    page.getByRole('region', { name: 'Payment complete' })
+  ).toBeVisible()
   expect(
     await page.evaluate(
       () =>
         (window as { __e2eSeen?: { declined: boolean } }).__e2eSeen?.declined
     )
   ).toBe(false)
-  await expect(
-    page.getByRole('region', { name: 'Verify your payment' })
-  ).toBeVisible()
-
-  cloud.scenario.status = {
-    ...cloud.scenario.status,
-    pending_billing_op_id: undefined,
-    pending_billing_op_type: undefined
-  }
-  cloud.scenario.operations.op_1 = succeededOperation('op_1')
-  await page.reload()
-
-  await expect(
-    page.getByRole('region', { name: 'Payment complete' })
-  ).toBeVisible()
 })

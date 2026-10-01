@@ -64,7 +64,9 @@ const FAKE_STRIPE_JS = `
       // or the redirect a method such as Alipay finishes on.
       retrievePaymentIntent: () =>
         Promise.resolve({
-          paymentIntent: {
+          paymentIntent: window.__e2eStripeIntentSettled
+            ? { status: 'succeeded', next_action: null }
+            : {
             status: 'requires_action',
             next_action: {
               type: window.__e2eStripeRedirectTo
