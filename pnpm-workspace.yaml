@@ -170,6 +170,7 @@ catalog:
   '@datadog/browser-logs': 6.33.0
   '@comfyorg/comfy-multi-player': 0.3.6
   typescript-native-bridge: 6.0.3-bridge.17.tsgo.7.0.2
+  '@churnkey/react': 0.8.0
 
 cleanupUnusedCatalogs: true
 

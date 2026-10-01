@@ -144,6 +144,14 @@ export const workspaceApi = vi.mockObject<typeof realWorkspaceApi>(
       customer_id: 'customer-1',
       mode: 'test'
     }),
+    prepareChurnkeyFlow: async () => {
+      throw new WorkspaceApiError('unavailable', 503)
+    },
+    acceptChurnkeyRetention: async () => ({
+      billing_op_id: 'op-retention',
+      status: 'pending'
+    }),
+    recordChurnkeyFlowEvent: async () => {},
     resubscribe: async () => ({
       billing_op_id: 'op-1',
       status: 'active'

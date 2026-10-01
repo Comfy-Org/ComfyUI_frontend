@@ -46,6 +46,7 @@
   ],
 
   "ignoreDependencies": [
+    "typescript-native-bridge",
     // Iconify icon sets consumed at build time by the iconify tailwind plugin /
     // importmap, never via a JS import (mirrors knip ignoreDependencies).
     "@iconify/json",

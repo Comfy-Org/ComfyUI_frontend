@@ -10,6 +10,10 @@ import type {
   CancelSubscriptionRequest,
   CancelSubscriptionResponse,
   ChurnkeyAuthResponse,
+  ChurnkeyFlowResponse,
+  ChurnkeyFlowEventRequest,
+  ChurnkeyRetentionAcceptance,
+  ChurnkeyRetentionRequest,
   CreateInviteRequest,
   CreateTopupRequest,
   CreateTopupResponse,
@@ -40,6 +44,10 @@ import type {
   WorkspaceWithRole
 } from '@comfyorg/ingest-types'
 import axios from 'axios'
+import {
+  zChurnkeyFlowResponse,
+  zChurnkeyRetentionAcceptance
+} from '@comfyorg/ingest-types/zod'
 
 import {
   webSessionRequests,
@@ -632,6 +640,51 @@ export const workspaceApi = {
         auth
       )
       return churnkeyAuthResponseSchema.parse(response.data)
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  async prepareChurnkeyFlow(): Promise<ChurnkeyFlowResponse> {
+    const auth = await requestAuth()
+    try {
+      const response = await workspaceApiClient.post<unknown>(
+        workspaceApiUrl('/billing/churnkey/prepare'),
+        {},
+        auth
+      )
+      return zChurnkeyFlowResponse.parse(response.data)
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  async acceptChurnkeyRetention(
+    sessionId: string
+  ): Promise<ChurnkeyRetentionAcceptance> {
+    const auth = await requestAuth()
+    try {
+      const response = await workspaceApiClient.post<unknown>(
+        workspaceApiUrl('/billing/churnkey/accept'),
+        { session_id: sessionId } satisfies ChurnkeyRetentionRequest,
+        auth
+      )
+      return zChurnkeyRetentionAcceptance.parse(response.data)
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  async recordChurnkeyFlowEvent(
+    request: ChurnkeyFlowEventRequest
+  ): Promise<void> {
+    const auth = await requestAuth()
+    try {
+      await workspaceApiClient.post(
+        workspaceApiUrl('/billing/churnkey/events'),
+        request,
+        auth
+      )
     } catch (err) {
       handleAxiosError(err)
     }

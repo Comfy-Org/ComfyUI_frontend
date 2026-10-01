@@ -14141,3 +14141,96 @@ export type GetWebsocketErrors = {
 }
 
 export type GetWebsocketError = GetWebsocketErrors[keyof GetWebsocketErrors]
+
+export type ChurnkeyFlowEventRequest = {
+  session_id: string
+  /**
+   * flow_opened is reported at the same point for both assigned variants.
+   */
+  event: 'flow_opened' | 'offer_shown'
+}
+
+export type ChurnkeyFlowResponse = {
+  /**
+   * Server-fetched and restricted Churnkey SDK account configuration.
+   */
+  sdk_config: {
+    [key: string]: unknown
+  }
+  /**
+   * Separate Churnkey Direct-mode application, with no native Stripe billing actions.
+   */
+  app_id: string
+  /**
+   * Workspace identity in the Direct-mode application.
+   */
+  customer_id: string
+  /**
+   * HMAC for this workspace in the Direct-mode application only.
+   */
+  auth_hash: string
+  mode: 'live' | 'test'
+  session_id: string
+  /**
+   * Unix seconds; the offer must be refreshed after expiry.
+   */
+  expires_at: number
+  /**
+   * Absent for ineligible workspaces or an unavailable assignment. Never treat absence as control.
+   */
+  experiment_variant?: 'control' | 'treatment'
+  allowed_offer?: ChurnkeyRetentionOffer
+  subscription: ChurnkeyRetentionSubscription
+}
+
+export type ChurnkeyRetentionAcceptance = {
+  billing_op_id: string
+  /**
+   * Only succeeded authorizes Churnkey to display successful application. Poll the billing operation otherwise.
+   */
+  status: 'pending' | 'succeeded'
+}
+
+export type ChurnkeyRetentionOffer = {
+  id: 'save_30_next_3_v1'
+  percent_off: 30
+  renewals: 3
+}
+
+export type ChurnkeyRetentionRequest = {
+  /**
+   * Server-issued session; contains no client-selected coupon or variant.
+   */
+  session_id: string
+}
+
+/**
+ * Fields to set on the workspace's Stripe customer. Every group is
+ * optional; omit a group to leave that part of the customer unchanged.
+ *
+ */
+
+export type ChurnkeyRetentionSubscription = {
+  /**
+   * Unix seconds of subscription creation, for accurate subscription age.
+   */
+  started_at: number
+  id: string
+  price_id: string
+  currency: string
+  /**
+   * Recurring unit price in the currency's smallest unit.
+   */
+  unit_amount: number
+  quantity: number
+  /**
+   * Unix seconds.
+   */
+  period_start: number
+  /**
+   * Unix seconds of the current renewal boundary.
+   */
+  period_end: number
+  interval: 'month' | 'year'
+  interval_count: number
+}
