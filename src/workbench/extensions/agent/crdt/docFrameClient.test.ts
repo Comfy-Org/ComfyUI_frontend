@@ -316,4 +316,13 @@ describe('doc frame client', () => {
       data: { workflowId: 'wf-1', seq: 0, update: new Uint8Array([1]) }
     })
   })
+
+  it('rejects inherited object keys as frame types', () => {
+    expect(
+      parseServerDocFrame({
+        type: 'constructor',
+        data: { v: 1, workflow_id: 'wf-1' }
+      })
+    ).toBeNull()
+  })
 })

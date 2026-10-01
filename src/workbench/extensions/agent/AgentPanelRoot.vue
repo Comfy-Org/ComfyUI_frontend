@@ -622,8 +622,6 @@ function targetWorkflowTurnContext(
     : { id, tabPath: target.path }
 }
 
-// The serialized graph a tab shows right now. The active tab's change tracker
-// is flushed first so the last edit is in it.
 function serializedCanvas(
   target: ComfyWorkflow
 ): DraftSnapshot['content'] | undefined {
@@ -641,8 +639,6 @@ function targetWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
   return { content }
 }
 
-// What the CRDT follower sends to re-mint a document the server refused as an
-// older schema: the same serialized canvas a prompt posts as its draft.
 function canvasForWorkflow(workflowId: string): Record<string, unknown> | null {
   const target = boundOrOpenWorkflowFor(workflowId)
   if (!target) return null

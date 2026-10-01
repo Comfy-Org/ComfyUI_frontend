@@ -47,19 +47,6 @@ function trySend(send: () => boolean): boolean {
   }
 }
 
-/**
- * {@link assert} for a guard whose caller must still bail out where assert
- * does not throw (production reports instead).
- */
-function holdsInvariant(
-  condition: boolean,
-  message: string,
-  context: Record<string, unknown>
-): boolean {
-  assert(condition, message, context)
-  return condition
-}
-
 function reseedRefusalState(subscribed: DocSubscribed): {
   workflowId: string | null
   expectedSeq: number | null
@@ -286,22 +273,22 @@ export class LayoutFollowerBridge extends EventTarget {
    */
   reseed(workflowId: string, workflow: Record<string, unknown>): boolean {
     const expectedSeq = this.reseedExpectedSeq
-    const eligible =
+    if (
       workflowId === this.reseedEligibleWorkflowId &&
       workflowId === this.desiredWorkflowId &&
       expectedSeq !== null &&
       expectedSeq > 0
-    if (
-      !holdsInvariant(
-        eligible,
-        'followers send a whole canvas only to answer the host refusing that document as stale-schema, once — see ADR-CRDT-FOLLOWER-0025',
+    ) {
+      this.reseedEligibleWorkflowId = null
+      this.reseedExpectedSeq = null
+    } else {
+      assert(
+        false,
+        'followers send a whole canvas only to answer a current stale-schema refusal — see ADR-CRDT-FOLLOWER-0025',
         { workflowId }
       )
-    )
       return false
-    if (expectedSeq === null) return false
-    this.reseedEligibleWorkflowId = null
-    this.reseedExpectedSeq = null
+    }
     if (!trySend(() => this.client.reseed(workflowId, expectedSeq, workflow)))
       return false
     this.reseedWorkflowId = workflowId
