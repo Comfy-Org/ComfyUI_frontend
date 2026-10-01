@@ -112,3 +112,7 @@
 
 # Agent instructions
 **/AGENTS.md                                      @christian-byrne
+
+# Domain architecture contracts and enforcement
+/docs/architecture/domains/                       @christian-byrne @Comfy-Org/comfy_frontend_devs
+/scripts/architecture/                            @christian-byrne @Comfy-Org/comfy_frontend_devs

@@ -22,7 +22,6 @@ or legacy. `architecture:report` prints live denominators, declaration counts,
 distinct importer counts, and the classified edges without changing committed
 files. The check fails when:
 
-- a source file newly remains outside every enrolled domain;
 - an external caller newly imports an enrolled domain's internal file;
 - a dependency is not permitted by both the producer's allowed consumers and
   the consumer's allowed dependencies;
@@ -40,6 +39,15 @@ An empty `publicEntryPoints` list records that no supported domain API has been
 declared yet; existing consumers are debt, not accidental public contracts.
 Promotion is incremental: introduce and test an entry point, migrate a finite
 consumer cohort, remove its fingerprints, then promote the rule to `error`.
+
+Unclassified `src` modules are inventory-only during Wave 1 because total
+classification is not yet complete. Promote that signal to a no-new/error gate
+only after every legacy module has an accepted capability and role; until then,
+ordinary additions and renames outside enrolled pilots do not edit the shared
+exception ledger. Imports between enrolled and unclassified code remain
+`legacy`, and role direction is enforced only when both endpoints are enrolled.
+The census covers `src/**/*.{ts,tsx,vue}`; `browser_tests`, workspace packages,
+and other roots are outside this first-wave census.
 
 Do not edit `catalog.json`, `catalog.md`, or `baseline.json` by hand.
 `architecture:update` refuses baseline additions. The explicit acceptance

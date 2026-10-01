@@ -3,15 +3,6 @@
   "schemaVersion": 1,
   "exceptions": [
     {
-      "id": "DDD-EX-001",
-      "owner": "@Comfy-Org/comfy_frontend_devs",
-      "rationale": "Wave 1 enrolls two pilots while the remaining source tree is classified incrementally.",
-      "sunset": "2027-03-31",
-      "removalCriteria": "Every src module is enrolled in one non-overlapping capability and architectural role.",
-      "exactFingerprints": [],
-      "fingerprintPrefixes": ["unclassified-module:"]
-    },
-    {
       "id": "DDD-EX-002",
       "owner": "@christian-byrne",
       "rationale": "Workflow-template callers predate a declared public entry point.",
