@@ -235,7 +235,7 @@ async function relightFromPanel(page: Page) {
   return app
 }
 
-test('relights the Relight example from the side panel', async ({
+test('relights the Relight example from the floating panel', async ({
   page,
   context
 }) => {
@@ -278,17 +278,29 @@ test('relights the Relight example from the bottom composer', async ({
   await expect(key).toHaveAttribute('style', /left: 25%/)
 })
 
-test('stacks the Relight side panel under the photo on phones @mobile', async ({
+test('relights from the Relight bottom sheet on phones @mobile', async ({
   page,
   context
 }) => {
   await mockFlags(context, { apps: true, workflows: false })
   await page.goto('/hub/apps/relight/')
-  await relightFromPanel(page)
-  const width = await page.evaluate(
+  const app = page.getByTestId('relight')
+  await app.getByRole('button', { name: 'Try the example' }).click()
+  const sheet = app.getByRole('complementary', { name: 'Relight settings' })
+  await expect(sheet.getByRole('region', { name: 'Lights' })).toHaveCount(0)
+
+  await sheet.getByRole('radio', { name: 'Neon' }).click()
+  await expect(sheet.getByRole('radio', { name: 'Neon' })).toBeChecked()
+  await sheet.getByRole('button', { name: 'Show all settings' }).click()
+  await expect(sheet.getByRole('region', { name: 'Lights' })).toBeVisible()
+  await sheet.getByRole('button', { name: 'Hide settings' }).click()
+
+  await sheet.getByTestId('relight-run').click()
+  await expect(app.getByRole('link', { name: 'Download' })).toBeVisible()
+  const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth - window.innerWidth
   )
-  expect(width).toBe(0)
+  expect(overflow).toBe(0)
 })
 
 test('sends an old catalogue link for the Apps tab to the hub apps page', async ({
