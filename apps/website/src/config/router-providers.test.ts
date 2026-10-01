@@ -55,6 +55,22 @@ interface DocsCoverageRow {
   providers: string[]
 }
 
+const altProvidersSchema = z.object({
+  'x-comfy-router-alt-providers': z
+    .array(z.object({ provider: z.string() }))
+    .default([])
+})
+
+function expectAlternateProviders(specs: string[], expected: string[][]): void {
+  const actual = specs.map((spec) =>
+    altProvidersSchema
+      .parse(JSON.parse(spec))
+      ['x-comfy-router-alt-providers'].map(({ provider }) => provider)
+      .sort()
+  )
+  expect(actual).toEqual(expected.map((providers) => [...providers].sort()))
+}
+
 /** Reads the "Provider coverage" table from the docs page's Markdown. */
 function parseCoverageTable(markdown: string): {
   providers: string[]
@@ -97,6 +113,22 @@ describe('Router provider source availability', () => {
       `Could not fetch ${PROVIDERS_PAGE}`
     )
   })
+
+  it('detects provider drift from a successful source response', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            'x-comfy-router-alt-providers': [{ provider: 'anthropic' }]
+          })
+        )
+      )
+    )
+
+    const spec = await fetchDocs(PROVIDERS_PAGE)
+    expect(() => expectAlternateProviders([spec], [['openai']])).toThrow()
+  })
 })
 
 describe('Router provider coverage', () => {
@@ -115,19 +147,10 @@ describe('Router provider coverage', () => {
       )
     )
 
-    const altProviders = z.object({
-      'x-comfy-router-alt-providers': z
-        .array(z.object({ provider: z.string() }))
-        .default([])
-    })
-    expect(
-      specs.map((spec) =>
-        altProviders
-          .parse(JSON.parse(spec))
-          ['x-comfy-router-alt-providers'].map(({ provider }) => provider)
-          .sort()
-      )
-    ).toEqual(ROUTER_PROVIDER_COVERAGE.map((row) => [...row.providers].sort()))
+    expectAlternateProviders(
+      specs,
+      ROUTER_PROVIDER_COVERAGE.map((row) => row.providers)
+    )
   }, 15_000)
 
   it('lists every model the docs show with an alternate provider', async (ctx) => {
