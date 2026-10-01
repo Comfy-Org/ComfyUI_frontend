@@ -134,11 +134,5 @@ declare global {
     __comfyDesktop2Remote?: boolean
 
     __comfyDesktop2?: ComfyDesktop2Bridge
-
-    /** Browser-test host bridge callback. */
-    __captureHostTelemetry: (captured: {
-      event: string
-      properties: Record<string, unknown>
-    }) => Promise<void>
   }
 }

@@ -24,7 +24,7 @@ export const hostTelemetryFixture = base.extend<{
           isRemote: () => false,
           Telemetry: {
             capture: (event: string, properties: Record<string, unknown>) => {
-              void window.__captureHostTelemetry({ event, properties })
+              void window.__captureHostTelemetry?.({ event, properties })
             }
           }
         }
