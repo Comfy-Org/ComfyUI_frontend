@@ -7,6 +7,7 @@ import {
   useFocusWithin,
   useFullscreen,
   useMediaControls,
+  useMediaQuery,
   useMouseInElement,
   whenever
 } from '@vueuse/core'
@@ -40,6 +41,7 @@ const {
   hideControls = false,
   hideFullscreen = false,
   controlsOnHover = false,
+  persistentControls = false,
   playButtonVariant = 'solid',
   fit = 'cover',
   noCors = false,
@@ -69,6 +71,8 @@ const {
    * paused frame should not carry a bar across it: the controls wait for a
    * pointer. */
   controlsOnHover?: boolean
+  /** Keep the bottom control bar visible during playback. */
+  persistentControls?: boolean
   /** Style of the centered play/pause button in `minimal` mode. */
   playButtonVariant?: 'solid' | 'overlay'
   fit?: 'cover' | 'contain'
@@ -119,10 +123,16 @@ watch(
 // Controls fade
 const hovering = useElementHover(playerEl)
 const { focused } = useFocusWithin(playerEl)
-const recentActivity = refAutoReset(false, 800)
+// A pointer that hovers keeps the bar up for as long as it rests here, so the
+// window after it moves can be short. A finger cannot hover: the tap that
+// summoned the bar is the whole of its visit, and 800ms was long enough to see
+// the controls and too short to hit one.
+const canHover = useMediaQuery('(hover: hover)')
+const recentActivity = refAutoReset(false, () => (canHover.value ? 800 : 4000))
 
 const controlsVisible = computed(
   () =>
+    persistentControls ||
     focused.value ||
     (controlsOnHover
       ? hovering.value || recentActivity.value
@@ -379,6 +389,7 @@ function toggleFullscreen() {
     <!-- Bottom control bar -->
     <div
       v-if="src && !minimal && !hideControls && !muteOnly"
+      data-testid="player-control-bar"
       :class="
         cn(
           'absolute inset-x-0 bottom-0 flex items-center gap-3 p-4 transition-opacity duration-300 lg:px-6 lg:py-5',

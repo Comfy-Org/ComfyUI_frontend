@@ -53,14 +53,23 @@
         >
           {{ $t('workspacePanel.billingStatus.ending.reactivate') }}
         </Button>
-        <Button
-          v-else-if="banner.action === 'updatePayment'"
-          variant="inverted"
-          size="lg"
-          @click="handleUpdatePayment"
-        >
-          {{ $t('workspacePanel.billingStatus.updatePayment') }}
-        </Button>
+        <template v-else-if="banner.action === 'updatePayment'">
+          <Button
+            v-if="banner.payInvoiceUrl"
+            variant="inverted"
+            size="lg"
+            @click="handlePayInvoice(banner.payInvoiceUrl)"
+          >
+            {{ $t('workspacePanel.billingStatus.payInvoice') }}
+          </Button>
+          <Button
+            :variant="banner.payInvoiceUrl ? 'secondary' : 'inverted'"
+            size="lg"
+            @click="handleUpdatePayment"
+          >
+            {{ $t('workspacePanel.billingStatus.updatePayment') }}
+          </Button>
+        </template>
       </div>
     </div>
   </div>
@@ -83,7 +92,8 @@ import { useDialogService } from '@/services/dialogService'
 type BannerAction = 'addCredits' | 'reactivate' | 'updatePayment'
 
 const { t, d } = useI18n()
-const { renewalDate, subscription, manageSubscription } = useBillingContext()
+const { renewalDate, renewalInvoice, subscription, manageSubscription } =
+  useBillingContext()
 const { permissions, canReactivatePlan } = useWorkspaceUI()
 const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
 const { kind, dismiss } = useBillingBanner()
@@ -96,6 +106,11 @@ const {
 const dialogService = useDialogService()
 
 const canManage = computed(() => permissions.value.canManageSubscription)
+// Strictly ENTERPRISE: an unrecognized tier must not borrow Enterprise copy
+// (isUnknownTier's contract) nor lose its Reactivate path.
+const isEnterprisePlan = computed(
+  () => subscription.value?.tier === 'ENTERPRISE'
+)
 const cycleResetDate = computed(() => {
   const raw = renewalDate.value
   return raw ? d(new Date(raw), { month: 'short', day: 'numeric' }) : ''
@@ -113,55 +128,77 @@ interface BannerView {
   body: string
   action: BannerAction | null
   dismissible: boolean
+  payInvoiceUrl?: string
 }
 
-const banner = computed<BannerView | null>(() => {
-  const bs = 'workspacePanel.billingStatus'
-  switch (kind.value) {
-    case 'paused':
-      return {
-        muted: false,
-        title: t(`${bs}.paused.title`),
-        body: canManage.value
-          ? t(`${bs}.paused.body`)
-          : t(`${bs}.paused.memberBody`),
-        action: canManage.value ? 'updatePayment' : null,
+const bs = 'workspacePanel.billingStatus'
+
+const pausedView = (): BannerView => ({
+  muted: !canManage.value,
+  title: t(`${bs}.paused.title`),
+  body: canManage.value ? t(`${bs}.paused.body`) : t(`${bs}.paused.memberBody`),
+  action: canManage.value ? 'updatePayment' : null,
+  dismissible: false
+})
+
+// Only an https payment page is opened; anything else hides the action.
+function safeInvoiceUrl(value: string | undefined): string | undefined {
+  if (!value) return undefined
+  try {
+    return new URL(value).protocol === 'https:' ? value : undefined
+  } catch {
+    return undefined
+  }
+}
+
+// Runs are already blocked on payment_failed; reads as paused until BE-6970.
+const paymentFailedView = (): BannerView => ({
+  ...pausedView(),
+  payInvoiceUrl: safeInvoiceUrl(renewalInvoice.value?.hosted_invoice_url)
+})
+
+const outOfCreditsBody = (): string => {
+  if (canTopUp.value) {
+    return cycleResetDate.value
+      ? t(`${bs}.outOfCredits.body`, { date: cycleResetDate.value })
+      : t(`${bs}.outOfCredits.bodyNoDate`)
+  }
+  return canSubscribeSelfServe.value
+    ? t(`${bs}.outOfCredits.upgradeBody`)
+    : t(`${bs}.outOfCredits.memberBody`)
+}
+
+const outOfCreditsView = (): BannerView => ({
+  muted: false,
+  title: t(`${bs}.outOfCredits.title`),
+  body: outOfCreditsBody(),
+  action: canTopUp.value || canSubscribeSelfServe.value ? 'addCredits' : null,
+  dismissible: true
+})
+
+// An Enterprise contract renews through sales, not self-serve reactivation,
+// so it gets its own copy and never a Reactivate action — even where the
+// legacy rail would resolve canReactivatePlan true.
+const endingView = (): BannerView =>
+  isEnterprisePlan.value
+    ? {
+        muted: true,
+        title: t(`${bs}.ending.enterpriseTitle`, { date: planEndDate.value }),
+        body: t(`${bs}.ending.enterpriseBody`),
+        action: null,
         dismissible: false
       }
-    case 'paymentFailed':
-      return {
-        muted: false,
-        title: t(`${bs}.warning.title`),
-        body: t(`${bs}.warning.bodyNoDate`),
-        action: 'updatePayment',
-        dismissible: false
-      }
-    case 'outOfCredits':
-      return {
-        muted: false,
-        title: t(`${bs}.outOfCredits.title`),
-        body: canTopUp.value
-          ? cycleResetDate.value
-            ? t(`${bs}.outOfCredits.body`, { date: cycleResetDate.value })
-            : t(`${bs}.outOfCredits.bodyNoDate`)
-          : canSubscribeSelfServe.value
-            ? t(`${bs}.outOfCredits.upgradeBody`)
-            : t(`${bs}.outOfCredits.memberBody`),
-        action:
-          canTopUp.value || canSubscribeSelfServe.value ? 'addCredits' : null,
-        dismissible: true
-      }
-    case 'ending':
-      return {
+    : {
         muted: true,
         title: t(`${bs}.ending.title`, { date: planEndDate.value }),
         body: t(`${bs}.ending.body`),
         action: canReactivatePlan.value ? 'reactivate' : null,
         dismissible: false
       }
-    case 'planChange':
-      if (!canShowScheduledChange.value) return null
-      return {
+
+const planChangeView = (): BannerView | null =>
+  canShowScheduledChange.value
+    ? {
         muted: true,
         title: t(`${bs}.planChange.title`, {
           plan: scheduledPlanName.value,
@@ -171,6 +208,20 @@ const banner = computed<BannerView | null>(() => {
         action: null,
         dismissible: false
       }
+    : null
+
+const banner = computed<BannerView | null>(() => {
+  switch (kind.value) {
+    case 'paused':
+      return pausedView()
+    case 'paymentFailed':
+      return paymentFailedView()
+    case 'outOfCredits':
+      return outOfCreditsView()
+    case 'ending':
+      return endingView()
+    case 'planChange':
+      return planChangeView()
     default:
       return null
   }
@@ -178,6 +229,9 @@ const banner = computed<BannerView | null>(() => {
 
 function handleAddCredits() {
   void dialogService.showTopUpCreditsDialog()
+}
+function handlePayInvoice(url: string) {
+  window.open(url, '_blank', 'noopener,noreferrer')
 }
 function handleUpdatePayment() {
   void manageSubscription()

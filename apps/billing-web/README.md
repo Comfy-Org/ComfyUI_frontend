@@ -7,12 +7,14 @@ billing experience.
 
 This package contains the application shell, routing, localization, test/build
 tooling, the hosted embedded subscription checkout presentation, this origin's
-own Firebase identity and workspace session, and the Billing SDK composition
-over it. The checkout component owns the payment-summary and success layouts
+own Firebase identity and workspace session, the shared web session behind the
+`unified_web_session` flag, and the Billing SDK composition over them. The
+checkout component owns the payment-summary and success layouts
 and emits host events for the Billing SDK adapter. It does not contain:
 
 - a server runtime or BFF
-- a cookie-backed session transport
+- a cookie-backed session of its own: the shared web session is Cloud's, read
+  through `@comfyorg/account-core`
 - Stripe Elements initialization
 
 The hosted views read the SDK client, but the checkout's confirm action stays
@@ -27,9 +29,10 @@ this app.
 
 Every route but `/sign-in` requires an authenticated workspace session; the
 router guard redirects anyone else to `/sign-in?returnTo=<path>`, and only a
-same-origin absolute path is ever honoured as a return destination. The
-session is this origin's own: a Firebase identity for the project its Cloud
-origin's `/api/features` names at runtime, exchanged at
+same-origin absolute path is ever honoured as a return destination.
+
+**Flag off (default).** The session is this origin's own: a Firebase identity
+for the project its Cloud origin's `/api/features` names at runtime, exchanged at
 `${cloud}/api/auth/token` for the workspace-scoped JWT, cached in
 `sessionStorage` so it survives a reload but never outlives the tab. There is
 no build-time Firebase configuration and no fallback if that fetch fails: a
@@ -37,6 +40,26 @@ stale project surviving a rotation is worse than reporting sign-in
 unavailable, since a usable session only ever comes from token exchange at
 that same Cloud origin anyway. Password recovery stays a single flow, owned
 by the Cloud app's own page.
+
+**`unified_web_session` on.** The mode is decided once per page load in
+`src/session/billingWebAuth.ts`. It reads the `web_session_probe` from the
+`/api/features` document this app already fetches, then a credentialed read of
+`unified_web_session`. If neither answers within 800 ms the page stays on
+Firebase, and the mode never changes after that. On the session path:
+
+- Identity comes from the shared session cookie, read at
+  `${cloud}/api/auth/session`.
+- The workspace comes from `GET /api/workspaces/current`, sent with the entry
+  link's `X-Comfy-Workspace-ID`. Without one it is the personal workspace.
+- Billing calls use the cookie transport: no `Authorization` header, and a CSRF
+  token on unsafe methods (`createWebSessionBillingClient`).
+- Firebase loads only when the session reports none, to restore a login or to
+  sign in. A sign-in creates the shared session, so the next page load needs no
+  Firebase.
+
+See [ADR-AUTH-SESSION-0037](../../docs/adr/AUTH-SESSION-0037-shared-web-session-on-a-host-only-cookie.md)
+for the decision and `packages/account-core/docs/web-session.md` for the
+shared building blocks.
 
 ## Environment variables
 

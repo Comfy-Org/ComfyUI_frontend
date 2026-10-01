@@ -599,6 +599,7 @@ export const comfyPageFixture = base.extend<{
   initialSettings: Record<string, unknown>
   initialUrl: string | undefined
   mockReleases: boolean
+  firebaseLogin: boolean
   comfyPage: ComfyPage
   comfyMouse: ComfyMouse
   comfyFiles: ComfyFiles
@@ -614,6 +615,8 @@ export const comfyPageFixture = base.extend<{
   initialSettings: [{}, { option: true }],
   initialUrl: [undefined, { option: true }],
   mockReleases: [true, { option: true }],
+  // Set `false` to open a cloud tab that holds no Firebase login.
+  firebaseLogin: [true, { option: true }],
 
   page: async ({ page, browserName }, use) => {
     if (browserName !== 'chromium' || !COLLECT_COVERAGE) {
@@ -641,7 +644,8 @@ export const comfyPageFixture = base.extend<{
       initialLocalStorage,
       initialSettings,
       initialUrl,
-      mockReleases
+      mockReleases,
+      firebaseLogin
     },
     use,
     testInfo
@@ -705,7 +709,8 @@ export const comfyPageFixture = base.extend<{
         await mockWorkspace(context, workspace('personal', 'owner'), [])
       }
       if (testInfo.tags.includes('@cloud') || testInfo.tags.includes('@auth')) {
-        await comfyPage.cloudAuth.mockAuth()
+        if (firebaseLogin) await comfyPage.cloudAuth.mockAuth()
+        else await comfyPage.cloudAuth.mockFirebaseEndpoints()
       }
 
       if (isCustomNodes) await installCustomNodeBlankStartup(page)
