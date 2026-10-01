@@ -706,6 +706,29 @@ describe('duplicate widget-name identity', () => {
     })
   })
 
+  it('keeps the positional default when constructor is absent from the named register', () => {
+    LiteGraph.namedValuesRestore = true
+    node.addWidget('text', 'constructor', 'default-c', () => {})
+    addDuplicatePair()
+
+    node.configure(
+      serialisedNode({
+        widgets_values: ['default-c', firstValue, secondValue],
+        widgets_values_named: { same: secondValue },
+        widgets_values_ordered: [
+          { name: 'same', occurrence: 0, value: firstValue },
+          { name: 'same', occurrence: 1, value: secondValue }
+        ]
+      })
+    )
+
+    expect(node.widgets!.map((widget) => widget.value)).toEqual([
+      'default-c',
+      firstValue,
+      secondValue
+    ])
+  })
+
   describe('register independence', () => {
     it('gives each serialized register its own copy of every value', () => {
       addDuplicatePair()
