@@ -40,11 +40,11 @@ Viewport measurement normalizes every finite positive DPR to at least `1`, prese
 Two functions operate on this type:
 
 - **`measureViewport(cssWidth, cssHeight, rawDpr)`** — a pure function that produces a new `CanvasViewport` from numeric dimensions and DPR. `measureViewportFromElement(element, rawDpr?)` is the DOM adapter used by canvas lifecycle code.
-- **`applyViewport(viewport, fgCanvas, bgCanvas, consumer?)`** — a side-effecting function that atomically sizes both foreground and background canvases to the viewport's physical dimensions, scales their 2D contexts, and passes the applied CSS dimensions to an optional viewport consumer such as `DragAndScale`. Both canvases are updated in a single call, eliminating the possibility of a partial resize or a later layout read to recover the CSS size.
+- **`applyViewport(viewport, fgCanvas, bgCanvas, consumer?)`** — a side-effecting function that atomically sizes both foreground and background canvases to the viewport's physical dimensions, scales their 2D contexts, and updates an optional viewport consumer such as `LGraphCanvas` with both the applied DPR and CSS dimensions. Both canvases and the consumer are updated in a single call, eliminating the possibility of a partial resize or a later layout read to recover the CSS size.
 
 The existing `LGraphCanvas.resize()` method and `resizeCanvas()` in app.ts both delegate their sizing work to the viewport system. Both paths follow the same sequence: measure → apply → draw.
 
-`LGraphCanvas` caches the active DPR in its `dpr` property. The three viewport callers update that cache after applying a viewport: `resizeCanvas()` and the scheduled graph-load path in app.ts, plus `LGraphCanvas.resize()`. Most internal consumers (`drawFrontCanvas`, `drawBackCanvas`, `centerOnNode`, `renderInfo`, `processMouseDown` hit testing, and LOD threshold calculation) read the cache. Direct browser-DPR readers remain in `LGraphCanvas.setCanvas()`, `LGraphCanvas.resize()` during measurement, and `useBoundingBoxes`; viewport measurement functions also read the browser value, while `layoutStore` retains a browser fallback for legacy callers. The viewport system therefore coordinates canvas sizing but does not yet own a single DPR read or write boundary.
+`LGraphCanvas` caches the active DPR in its `dpr` property. `applyViewport()` updates the consumer's DPR and CSS viewport size atomically; the three viewport callers pass `LGraphCanvas` as that consumer. Most internal consumers (`drawFrontCanvas`, `drawBackCanvas`, `centerOnNode`, `renderInfo`, `processMouseDown` hit testing, and LOD threshold calculation) read the cache. Direct browser-DPR readers remain in `LGraphCanvas.setCanvas()`, `LGraphCanvas.resize()` during measurement, and `useBoundingBoxes`; viewport measurement functions also read the browser value, while `layoutStore` retains a browser fallback for legacy callers. The viewport system therefore coordinates canvas sizing but does not yet own a single DPR read boundary.
 
 The new `CanvasScheduler` and viewport system have separate responsibilities: the scheduler handles **when** by deferring work until the canvas is visible, while the viewport handles **what** by applying correct DPR-scaled dimensions atomically to both canvases.
 
@@ -75,7 +75,7 @@ Following the principles established in [ADR-ECS-0008](ECS-0008-entity-component
 ### Negative
 
 - Adds a new abstraction layer that all canvas-sizing code must flow through.
-- `LGraphCanvas.setCanvas()`, `LGraphCanvas.resize()`, and `useBoundingBoxes` still read `window.devicePixelRatio` directly. `layoutStore` accepts a caller-supplied `dpr` and falls back to the browser value for legacy callers. A future refactor could consolidate these reads and the three viewport-driven cache writes behind one boundary.
+- `LGraphCanvas.setCanvas()`, `LGraphCanvas.resize()`, and `useBoundingBoxes` still read `window.devicePixelRatio` directly. `layoutStore` accepts a caller-supplied `dpr` and falls back to the browser value for legacy callers. A future refactor could consolidate these reads behind one boundary.
 
 ## Notes
 
