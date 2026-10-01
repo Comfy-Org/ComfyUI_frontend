@@ -16,6 +16,7 @@ const ACTOR = 'human:test-user:tab-1'
 
 type SettlementListener = (outcome: BatchOutcome) => void
 type SettlementSummary = { state: BatchOutcome['state']; nodeIds: unknown[] }
+type AddNodeOperation = Extract<GraphOperation, { op: 'add_node' }>
 
 function summarizeSettlement(outcome: BatchOutcome): SettlementSummary {
   return {
@@ -77,7 +78,7 @@ const detachListenerFailureCases = [
   ]
 >
 
-function addNode(id: number): GraphOperation {
+function addNode(id: number): AddNodeOperation {
   return {
     op: 'add_node',
     node_id: id,
@@ -809,9 +810,11 @@ describe('createOpSender', () => {
 
   it('clears live state and unsubscribes when teardown cannot chunk an open batch', () => {
     const circularNode = addNode(1)
-    if (!('node' in circularNode)) throw new Error('expected an add-node op')
-    const node = circularNode.node as Record<string, unknown>
+    const node: AddNodeOperation['node'] & Record<string, unknown> = {
+      ...circularNode.node
+    }
     node.circular = node
+    circularNode.node = node
     sender.admit([circularNode])
 
     expect(() => sender.detach()).not.toThrow()
@@ -830,9 +833,11 @@ describe('createOpSender', () => {
 
   it('isolates an unchunkable live op so serializable siblings still send', () => {
     const circularNode = addNode(2)
-    if (!('node' in circularNode)) throw new Error('expected an add-node op')
-    const node = circularNode.node as Record<string, unknown>
+    const node: AddNodeOperation['node'] & Record<string, unknown> = {
+      ...circularNode.node
+    }
     node.circular = node
+    circularNode.node = node
 
     sender.admit([addNode(1), circularNode, addNode(3)])
     expect(() => sender.flush()).not.toThrow()
