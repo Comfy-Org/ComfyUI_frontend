@@ -30,13 +30,9 @@ import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 //    onConnectInput/onConnectionsChange override), so it is a genuinely
 //    different code path from the interior-rewire case above.
 //
-// Caveat for the undo tests: the change tracker does not capture a Vue slot
-// drag-connect (useSlotLinkInteraction.ts preventDefault()s pointerdown,
-// which suppresses the mouseup capture changeTracker.ts relies on), so the
-// wire action itself may not create its own undo snapshot -- undo may
-// restore an earlier snapshot than the one these tests assume. If an undo
-// assertion here fails unexpectedly, check which snapshot undo actually
-// targeted before blaming the widget-promotion code.
+// Undo-test note: a Vue slot drag-connect records its own undo snapshot on
+// drop (useSlotLinkInteraction.ts captureCanvasState, #18117), so undo right
+// after the wire action deterministically restores the pre-wire state.
 
 const KSAMPLER_ID = '3'
 const EMPTY_LATENT_ID = '5'
@@ -191,12 +187,6 @@ test.describe(
         await comfyPage.nextFrame()
         await source.connectWidget(0, subgraphNodeRef, textWidgetIndex)
         await comfyPage.nextFrame()
-
-        // The drag-connect suppresses the mouseup state capture (see the
-        // caveat in the header), so capture the post-connect state with a
-        // plain click before undoing -- otherwise undo targets a snapshot
-        // from before the width/height promotions.
-        await comfyPage.canvasOps.clickEmptySpace()
 
         await comfyPage.keyboard.undo()
         await comfyPage.nextFrame()
