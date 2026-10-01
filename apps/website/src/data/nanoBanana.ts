@@ -80,6 +80,11 @@ const photographyCards = localCards('photography', [
     slug: 'street-market',
     en: 'Shoppers at a busy street market',
     'zh-CN': '热闹街市中的顾客'
+  },
+  {
+    slug: 'octopus',
+    en: 'Octopus swimming beneath sunlit water',
+    'zh-CN': '在阳光穿透的海水中游动的章鱼'
   }
 ])
 
