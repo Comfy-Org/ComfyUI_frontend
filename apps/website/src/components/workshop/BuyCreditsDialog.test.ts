@@ -161,10 +161,6 @@ describe('BuyCreditsDialog', () => {
     credits.topUp.value = { status: 'waiting', ...topUpScope }
     expect(await screen.findByTestId('buy-credits-polling')).toBeTruthy()
 
-    auth.session.value = {
-      ...credential,
-      workspace: { ...credential.workspace, id: 'workspace-2', name: 'Team B' }
-    }
     credits.topUp.value = {
       status: 'landed',
       ...topUpScope,
@@ -177,7 +173,6 @@ describe('BuyCreditsDialog', () => {
       '5,375'
     )
     expect(screen.getByRole('dialog').textContent).toContain('Personal')
-    expect(screen.getByRole('dialog').textContent).not.toContain('Team B')
 
     await user.click(screen.getByTestId('buy-credits-resume'))
     expect(credits.topUp.value).toEqual({ status: 'idle' })
@@ -329,6 +324,49 @@ describe('BuyCreditsDialog', () => {
     expect(
       screen.getByTestId('buy-credits-less').hasAttribute('disabled')
     ).toBe(true)
+  })
+
+  it.for([
+    {
+      change: 'workspace',
+      session: {
+        ...credential,
+        workspace: {
+          ...credential.workspace,
+          id: 'workspace-2',
+          name: 'Team B'
+        }
+      }
+    },
+    {
+      change: 'owner role',
+      session: { ...credential, role: 'member' as const }
+    }
+  ])('closes before checkout when the $change changes', async ({ session }) => {
+    const { isOpen } = renderControlledDialog()
+
+    auth.session.value = session
+
+    await vi.waitFor(() => expect(isOpen.value).toBe(false))
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('closes a visible receipt when the account scope changes', async () => {
+    const { isOpen } = renderControlledDialog()
+    credits.topUp.value = { status: 'waiting', ...topUpScope }
+    await screen.findByTestId('buy-credits-polling')
+
+    auth.session.value = {
+      ...credential,
+      workspace: { ...credential.workspace, id: 'workspace-2', name: 'Team B' }
+    }
+
+    await vi.waitFor(() => expect(isOpen.value).toBe(false))
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(
+      credits.topUp.value,
+      'the detached receipt watcher may still finish for its captured workspace'
+    ).toEqual({ status: 'waiting', ...topUpScope })
   })
 
   it('locks and snapshots the selected amount while checkout is prepared', async () => {
@@ -656,7 +694,7 @@ describe('BuyCreditsDialog', () => {
     })
   })
 
-  it('refuses checkout if refreshing changes the signed-in identity', async () => {
+  it('closes checkout if refreshing changes the signed-in identity', async () => {
     const user = userEvent.setup()
     const tab = claimTab()
     const fetchCheckout = stubCheckout()
@@ -667,17 +705,18 @@ describe('BuyCreditsDialog', () => {
         token: 'other-token'
       }
     })
-    renderOpenDialog()
+    const { isOpen } = renderControlledDialog()
 
     await user.click(await screen.findByTestId('buy-credits-continue'))
 
-    expect(await screen.findByTestId('checkout-error')).toBeTruthy()
+    await vi.waitFor(() => expect(isOpen.value).toBe(false))
+    expect(screen.queryByTestId('checkout-error')).toBeNull()
     expect(fetchCheckout).not.toHaveBeenCalled()
     expect(tab.close).toHaveBeenCalled()
     expect(captureWorkshopEvent).not.toHaveBeenCalled()
   })
 
-  it('does not report checkout failure if the session changes while credentials are pending', async () => {
+  it('closes without reporting failure if the session changes while credentials are pending', async () => {
     const user = userEvent.setup()
     const tab = claimTab()
     const fetchCheckout = stubCheckout()
@@ -691,7 +730,7 @@ describe('BuyCreditsDialog', () => {
           resolveCredential = resolve
         })
     )
-    renderOpenDialog()
+    const { isOpen } = renderControlledDialog()
 
     await user.click(await screen.findByTestId('buy-credits-continue'))
     await vi.waitFor(() =>
@@ -703,7 +742,8 @@ describe('BuyCreditsDialog', () => {
     }
     resolveCredential({ status: 'ok', session: credential })
 
-    expect(await screen.findByTestId('checkout-error')).toBeTruthy()
+    await vi.waitFor(() => expect(isOpen.value).toBe(false))
+    expect(screen.queryByTestId('checkout-error')).toBeNull()
     expect(fetchCheckout).not.toHaveBeenCalled()
     expect(tab.close).toHaveBeenCalled()
     expect(captureWorkshopEvent).not.toHaveBeenCalled()
@@ -742,7 +782,7 @@ describe('BuyCreditsDialog', () => {
     })
   })
 
-  it('does not open checkout if the session changes while checkout is pending', async () => {
+  it('closes without opening checkout if the session changes while checkout is pending', async () => {
     const user = userEvent.setup()
     const tab = claimTab()
     let resolveCheckout!: (response: Response) => void
@@ -753,7 +793,7 @@ describe('BuyCreditsDialog', () => {
         })
     )
     vi.stubGlobal('fetch', fetchCheckout)
-    renderOpenDialog()
+    const { isOpen } = renderControlledDialog()
 
     await user.click(await screen.findByTestId('buy-credits-continue'))
     await vi.waitFor(() => expect(fetchCheckout).toHaveBeenCalledOnce())
@@ -775,7 +815,8 @@ describe('BuyCreditsDialog', () => {
       )
     )
 
-    expect(await screen.findByTestId('checkout-error')).toBeTruthy()
+    await vi.waitFor(() => expect(isOpen.value).toBe(false))
+    expect(screen.queryByTestId('checkout-error')).toBeNull()
     expect(tab.location.assign).not.toHaveBeenCalled()
     expect(tab.close).toHaveBeenCalled()
     expect(captureWorkshopEvent).not.toHaveBeenCalled()

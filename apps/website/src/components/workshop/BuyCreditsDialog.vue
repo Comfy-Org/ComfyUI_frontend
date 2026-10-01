@@ -73,6 +73,7 @@ interface CheckoutAttempt extends CheckoutScope {
 let checkoutController: AbortController | undefined
 let checkoutTab: Window | null = null
 let checkoutAttempt: CheckoutAttempt | undefined
+let dialogScope: CheckoutScope | undefined
 let unsubscribeFromTopUpReturns: (() => void) | undefined
 
 // The hand-off owns the step from the moment it happens: waiting is 4a,
@@ -115,7 +116,19 @@ const STALE_RECEIPT_MS = 60_000
 const AUTO_CLOSE_MS = 3_600
 let autoCloseTimer: ReturnType<typeof setTimeout> | undefined
 
-watch(open, handleOpenChange)
+watch(open, handleOpenChange, { immediate: true })
+
+watch(
+  () => {
+    const current = session.value
+    return current
+      ? `${current.uid}:${current.workspace.id}:${current.role}`
+      : undefined
+  },
+  () => {
+    if (open.value && !dialogScopeIsCurrent()) open.value = false
+  }
+)
 
 function handleOpenChange(value: boolean): void {
   if (value) prepareOpenDialog()
@@ -125,6 +138,7 @@ function handleOpenChange(value: boolean): void {
 function resetClosedDialog(): void {
   stopAutoClose()
   cancelPendingCheckout()
+  dialogScope = undefined
   usd.value = 25
   state.value = 'amount'
   if (latchedReturn.value === 'landed' || latchedReturn.value === 'unresolved')
@@ -132,6 +146,11 @@ function resetClosedDialog(): void {
 }
 
 function prepareOpenDialog(): void {
+  dialogScope = captureCheckoutScope()
+  if (!dialogScope && topUp.value.status === 'idle') {
+    open.value = false
+    return
+  }
   if (
     topUp.value.status === 'landed' &&
     Date.now() - topUp.value.landedAt > STALE_RECEIPT_MS
@@ -254,7 +273,7 @@ function navigateCheckoutTab(tab: Window | null, url: string): void {
 
 function captureCheckoutScope(): CheckoutScope | undefined {
   const current = session.value
-  if (!current) return undefined
+  if (!current || current.role !== 'owner') return undefined
   return {
     uid: current.uid,
     workspaceId: current.workspace.id,
@@ -265,8 +284,14 @@ function captureCheckoutScope(): CheckoutScope | undefined {
 function checkoutScopeIsCurrent(scope: CheckoutScope): boolean {
   const current = session.value
   return (
-    current?.uid === scope.uid && current.workspace.id === scope.workspaceId
+    current?.role === 'owner' &&
+    current.uid === scope.uid &&
+    current.workspace.id === scope.workspaceId
   )
+}
+
+function dialogScopeIsCurrent(): boolean {
+  return dialogScope !== undefined && checkoutScopeIsCurrent(dialogScope)
 }
 
 function requireCurrentCheckoutScope(

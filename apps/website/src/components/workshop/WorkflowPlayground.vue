@@ -17,7 +17,7 @@ import {
   workflowNoticeKey,
   workflowStatusKey
 } from '../../config/workshop-workflow-presentation'
-import { requestWorkshopBuyCredits } from '../../config/workshop-buy-credits'
+import { requestWorkshopBuyCreditsAutomatically } from '../../config/workshop-buy-credits'
 import { refreshWorkshopCredits } from '../../config/workshop-credits'
 import { useWorkshopModelBalance } from '../../config/workshop-model-balance'
 import { useWorkshopSession } from '../../config/workshop-session-state'
@@ -172,7 +172,8 @@ watch(
   (refused) => {
     refusal.value = refused ? { credits: credits.value } : undefined
     if (!refused) return
-    if (session.value?.role === 'owner') requestWorkshopBuyCredits()
+    if (session.value?.role === 'owner')
+      requestWorkshopBuyCreditsAutomatically()
     void refreshWorkshopCredits({ force: true })
   }
 )

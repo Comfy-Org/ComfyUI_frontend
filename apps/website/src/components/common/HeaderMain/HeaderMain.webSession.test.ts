@@ -9,7 +9,10 @@ import { readonly, ref } from 'vue'
 
 import { COMFY_CLIENT } from '@comfyorg/account-core/requestAuth'
 
-import { WORKSHOP_CLOUD_BASE_URL } from '../../../config/workshop-env'
+import {
+  WORKSHOP_CLOUD_BASE_URL,
+  WORKSHOP_CREDITS_URL
+} from '../../../config/workshop-env'
 import { ACCOUNT_SOURCE_CAP_MS } from '../../../config/workshop-account-source'
 
 vi.mock(import('../../../scripts/posthog'))
@@ -223,6 +226,64 @@ describe('HeaderMain account source', () => {
     expect(
       sent.filter(({ url }) => /identitytoolkit|securetoken/.test(url))
     ).toEqual([])
+  })
+
+  it('routes an explicit session-account credits action to the supported Cloud purchase UI', async () => {
+    stubCloud({
+      anonymous: { web_session_probe: true },
+      perUser: { unified_web_session: true },
+      session: LIVE_SESSION,
+      balance: {
+        status: 200,
+        body: {
+          amount_micros: 0,
+          currency: 'usd',
+          effective_balance_micros: 0
+        }
+      }
+    })
+    const open = vi.spyOn(window, 'open').mockReturnValue(null)
+    const { useWorkshopSession } = await renderHeader()
+    await screen.findAllByTestId('header-session-account')
+    const { requestWorkshopBuyCredits } =
+      await import('../../../config/workshop-buy-credits')
+
+    requestWorkshopBuyCredits()
+
+    await vi.waitFor(() =>
+      expect(open).toHaveBeenCalledExactlyOnceWith(
+        WORKSHOP_CREDITS_URL,
+        '_blank',
+        'noopener,noreferrer'
+      )
+    )
+    expect(useWorkshopSession).not.toHaveBeenCalled()
+  })
+
+  it('does not rely on a blocked popup for an automatic session-account refusal', async () => {
+    stubCloud({
+      anonymous: { web_session_probe: true },
+      perUser: { unified_web_session: true },
+      session: LIVE_SESSION,
+      balance: {
+        status: 200,
+        body: {
+          amount_micros: 0,
+          currency: 'usd',
+          effective_balance_micros: 0
+        }
+      }
+    })
+    const open = vi.spyOn(window, 'open').mockReturnValue(null)
+    await renderHeader()
+    await screen.findAllByTestId('header-session-account')
+    const { requestWorkshopBuyCreditsAutomatically } =
+      await import('../../../config/workshop-buy-credits')
+
+    requestWorkshopBuyCreditsAutomatically()
+    await Promise.resolve()
+
+    expect(open).not.toHaveBeenCalled()
   })
 
   it('flag on with a revoked session: signs the remembered login out and falls back to Firebase', async () => {

@@ -14,6 +14,7 @@ import type { Locale } from '../../../i18n/translations.ts'
 import { t } from '../../../i18n/translations.ts'
 import { externalLinks, getRoutes } from '../../../config/routes.ts'
 import { subscribeToWorkshopBuyCredits } from '../../../config/workshop-buy-credits.ts'
+import { WORKSHOP_CREDITS_URL } from '../../../config/workshop-env.ts'
 import { resolveWorkshopAccountSource } from '../../../config/workshop-account-source.ts'
 import {
   useWorkshopAuthFlag,
@@ -44,11 +45,20 @@ const showWorkshop = computed(
 const showAccount = computed(
   () => showWorkshop.value && workshopAuthEnabled.value
 )
+let accountSource: ReturnType<typeof resolveWorkshopAccountSource> | undefined
+let resolvedAccountSource: Awaited<
+  ReturnType<typeof resolveWorkshopAccountSource>
+>
+const workshopAccountSource = () =>
+  (accountSource ??= resolveWorkshopAccountSource().then((source) => {
+    resolvedAccountSource = source
+    return source
+  }))
 // Each loader waits for the account source, so a visitor the web session
 // knows never mounts an island that would start Firebase.
 const HeaderAccount = defineAsyncComponent(async () => {
   const [source, firebaseHeader] = await Promise.all([
-    resolveWorkshopAccountSource(),
+    workshopAccountSource(),
     import('../../workshop/HeaderAccount.vue')
   ])
   return source === 'session'
@@ -57,7 +67,7 @@ const HeaderAccount = defineAsyncComponent(async () => {
 })
 const BuyCreditsDialog = defineAsyncComponent<Component>(async () => {
   const [source, dialog] = await Promise.all([
-    resolveWorkshopAccountSource(),
+    workshopAccountSource(),
     import('../../workshop/BuyCreditsDialog.vue')
   ])
   return source === 'session' ? { render: () => null } : dialog
@@ -67,8 +77,22 @@ const buyCreditsDialogMounted = ref(false)
 let stopBuyCreditsRequests: (() => void) | undefined
 
 onMounted(() => {
-  stopBuyCreditsRequests = subscribeToWorkshopBuyCredits(() => {
-    if (showAccount.value) buyingCredits.value = true
+  stopBuyCreditsRequests = subscribeToWorkshopBuyCredits((trigger) => {
+    if (!showAccount.value) return
+    const handle = (source: typeof resolvedAccountSource) => {
+      if (!showAccount.value) return
+      if (source === 'session') {
+        // An automatic request arrives after the network refusal, outside a
+        // browser user gesture. Keep the visible Add credits action as the
+        // reliable recovery instead of asking a popup blocker to guess.
+        if (trigger === 'action')
+          window.open(WORKSHOP_CREDITS_URL, '_blank', 'noopener,noreferrer')
+        return
+      }
+      buyingCredits.value = true
+    }
+    if (resolvedAccountSource) handle(resolvedAccountSource)
+    else void workshopAccountSource().then(handle)
   })
 })
 onBeforeUnmount(() => stopBuyCreditsRequests?.())

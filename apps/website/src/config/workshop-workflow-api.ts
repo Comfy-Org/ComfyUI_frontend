@@ -137,6 +137,13 @@ const cloudErrorSchema = z.object({
   error: z.object({ type: z.string() })
 })
 
+const CREDIT_REFUSAL_TYPES = new Set([
+  'PAYMENT_REQUIRED',
+  'FREE_TIER_UNAVAILABLE',
+  'FREE_TIER_EXHAUSTED',
+  'PARTNER_NODE_PAYMENT_REQUIRED'
+])
+
 async function cloudErrorType(response: Response): Promise<string | undefined> {
   try {
     const parsed = cloudErrorSchema.safeParse(
@@ -152,7 +159,7 @@ async function failedResponseError(
   response: Response
 ): Promise<WorkshopWorkflowError> {
   const errorType = await cloudErrorType(response)
-  if (errorType === 'PAYMENT_REQUIRED' || errorType === 'FREE_TIER_EXHAUSTED')
+  if (errorType && CREDIT_REFUSAL_TYPES.has(errorType))
     return new WorkshopWorkflowError(
       'insufficient_credits',
       {},

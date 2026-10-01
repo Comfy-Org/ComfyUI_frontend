@@ -10,6 +10,9 @@ import {
 import HeaderMain from './HeaderMain.vue'
 
 vi.mock(import('../../../scripts/posthog'))
+vi.mock(import('../../../config/workshop-account-source'), () => ({
+  resolveWorkshopAccountSource: () => Promise.resolve('firebase')
+}))
 
 let flag = ref(false)
 let visibility = ref(false)
