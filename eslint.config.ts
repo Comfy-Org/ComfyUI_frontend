@@ -381,27 +381,6 @@ export default defineConfig([
           ]
         }
       },
-      {
-        files: ['**/*.test.ts'],
-        rules: {
-          // Tests routinely define stub and harness components side-by-side with
-          // the system under test and stub emits for documentation only — these
-          // production-SFC rules are noise in a test file.
-          'vue/one-component-per-file': 'off',
-          'vue/no-reserved-component-names': 'off',
-          'vue/no-unused-emit-declarations': 'off'
-        }
-      },
-      {
-        // Devtools extension scripts are loaded by ComfyUI in the browser.
-        files: ['tools/devtools/web/**/*.js'],
-        languageOptions: {
-          globals: {
-            ...globals.browser
-          }
-        }
-      },
-
       ...rulesCoveredByOxlint,
       {
         rules: {
