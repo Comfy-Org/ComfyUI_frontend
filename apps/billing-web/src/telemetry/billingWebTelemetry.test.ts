@@ -679,10 +679,7 @@ describe('RUM user', () => {
 
     identity.value = { kind: 'signed_in', userId: 'user_1' }
     await nextTick()
-    telemetry.trackBillingEvent('billing.operation.started', {
-      operation: 'operation',
-      stage: 'started'
-    })
+    telemetry.trackBillingEvent(STARTED)
 
     expect(datadogRum.setUserProperty).not.toHaveBeenCalled()
     expect(datadogRum.setGlobalContext).not.toHaveBeenCalled()
@@ -690,11 +687,7 @@ describe('RUM user', () => {
     expect(datadogRum.setAccount).not.toHaveBeenCalled()
     expect(datadogRum.addAction).toHaveBeenCalledExactlyOnceWith(
       'billing.operation.started',
-      {
-        operation: 'operation',
-        stage: 'started',
-        billing_surface: 'billing_web'
-      }
+      { ...STARTED, billing_surface: 'billing_web' }
     )
   })
 
