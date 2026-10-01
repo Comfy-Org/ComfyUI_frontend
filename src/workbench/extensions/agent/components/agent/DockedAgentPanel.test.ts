@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, defineComponent, nextTick, ref } from 'vue'
 
 import type { SubscriptionInfo } from '@/composables/billing/types'
+import { WORKSPACE_INSET_RIGHT } from '@/composables/useWorkspaceInset'
 import { i18n } from '@/i18n'
 import { api } from '@/scripts/api'
 import { WORKSPACE_INSET_RIGHT } from '@/composables/useWorkspaceInset'

@@ -2,7 +2,6 @@ import { computed, ref } from 'vue'
 import { ZodError } from 'zod'
 
 import { i18n } from '@/i18n'
-import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type {
   AgentErrorClass,
@@ -12,11 +11,7 @@ import type {
   AgentThreadStartSource,
   AgentWorkflowBindSource
 } from '@/platform/telemetry/types'
-import { clearLegacyAgentStorage } from '@/platform/workflow/persistence/base/storageIO'
-import {
-  getWorkspaceId,
-  StorageKeys
-} from '@/platform/workflow/persistence/base/storageKeys'
+import { useTelemetry } from '@/platform/telemetry'
 import { createUuidv4 } from '@/utils/uuid'
 import type {
   AgentActiveTabData,
@@ -127,6 +122,7 @@ export interface AgentSessionDeps {
   }
 }
 
+const THREAD_STORAGE_KEY = 'Comfy.Agent.ThreadId'
 const PREPARE_TIMEOUT_MS = 3000
 
 const NON_RETRYABLE_REQUEST_STATUSES = new Set([
@@ -138,6 +134,11 @@ export function isRetryableRequestFailure(
   accepted: boolean
 ): boolean {
   if (accepted) return false
+  if (
+    error instanceof ZodError ||
+    error instanceof AgentResponseUnreadableError
+  )
+    return false
   if (error instanceof AgentApiError)
     return !NON_RETRYABLE_REQUEST_STATUSES.has(error.status)
   return true
@@ -199,14 +200,6 @@ function parseAdmissionError(error: unknown) {
   return { ...parsed.data.error, retryAfterSeconds: error.retryAfterSeconds }
 }
 
-function disownsWorkflow(error: unknown): boolean {
-  return (
-    error instanceof AgentApiError &&
-    error.status === 403 &&
-    zDisownedWorkflowError.safeParse(error.body).success
-  )
-}
-
 export function useAgentSession(deps: AgentSessionDeps) {
   const {
     rest,
@@ -216,8 +209,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     onAskResolved,
     workflow
   } = deps
-  const threadStorageKey = StorageKeys.agentThread(getWorkspaceId())
-  clearLegacyAgentStorage()
 
   const conversationStore = useAgentConversationStore()
   const bindingStore = useAgentWorkflowTabBindingStore()
@@ -313,15 +304,27 @@ export function useAgentSession(deps: AgentSessionDeps) {
     eventType: string,
     turnId: TurnId | null,
     uiTreatment: AgentErrorMetadata['ui_treatment']
-  ): void {
+  ): boolean {
     const visible = uiTreatment !== 'none'
     const priorVisible = malformedStreamReports.get(turnId)
-    if (priorVisible === true || (priorVisible === false && !visible)) return
+    if (priorVisible === true || (priorVisible === false && !visible))
+      return false
+    if (
+      !malformedStreamReports.has(turnId) &&
+      malformedStreamReports.size >= 32
+    )
+      return false
     malformedStreamReports.set(turnId, visible)
     reportError(new Error('Malformed agent stream event'), {
       errorType: 'agent_malformed_stream_event',
       tags: { ui_treatment: uiTreatment, event_type: eventType },
-      context: { issues: cause.issues }
+      context: {
+        issues: cause.issues.slice(0, 10).map(({ code, path, message }) => ({
+          code,
+          path,
+          message
+        }))
+      }
     })
     trackAgentError(
       'malformed_stream_event',
@@ -329,6 +332,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       uiTreatment,
       { retryable: false }
     )
+    return true
   }
 
   function initializeWorkflowContext(hasThread: boolean): void {
@@ -337,7 +341,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     // with no surviving thread has no resumed turn the binding could serve.
     if (
       conversationStore.threadId === null &&
-      localStorage.getItem(threadStorageKey) === null
+      localStorage.getItem(THREAD_STORAGE_KEY) === null
     ) {
       rememberedWorkflowId = null
       boundWorkflowId.value = null
@@ -351,7 +355,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const surviving = conversationStore.threadId
     const stored =
       conversationStore.messages.length === 0
-        ? localStorage.getItem(threadStorageKey)
+        ? localStorage.getItem(THREAD_STORAGE_KEY)
         : null
     const initialThreadId = surviving ?? stored
     initializeWorkflowContext(initialThreadId !== null)
@@ -438,8 +442,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (error instanceof AgentApiError && error.status === 404) {
       if (conversationStore.threadId === threadId)
         conversationStore.setThreadId(null)
-      if (localStorage.getItem(threadStorageKey) === threadId)
-        localStorage.removeItem(threadStorageKey)
+      if (localStorage.getItem(THREAD_STORAGE_KEY) === threadId)
+        localStorage.removeItem(THREAD_STORAGE_KEY)
       return false
     }
     reportError(error, { errorType: 'agent_history_load_failed' })
@@ -460,7 +464,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const stoppedGeneration = ownedGeneration
     queueMicrotask(() => {
       if (stoppedGeneration !== sessionGeneration) return
-      loadGeneration++
       turnStartedAt.clear()
       conversationStore.abortActiveTurn()
       conversationStore.dropBackgroundTurns()
@@ -636,7 +639,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const startsThread = conversationStore.threadId === null
     conversationStore.setThreadId(ack.thread_id)
     onThreadActivated?.(ack.thread_id)
-    localStorage.setItem(threadStorageKey, ack.thread_id)
+    localStorage.setItem(THREAD_STORAGE_KEY, ack.thread_id)
     if (ack.workflow_id !== undefined) {
       const boundAtAck = boundWorkflowId.value
       bindWorkflow(ack.workflow_id)
@@ -669,7 +672,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     error: unknown,
     text: string,
     accepted: boolean
-  ): void {
+  ): boolean {
     const admission = parseAdmissionError(error)
     if (admission?.reason === 'no_funds') {
       conversationStore.recordPaywall(
@@ -677,7 +680,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         text,
         admission.message
       )
-      return
+      return false
     }
     if (admission !== undefined) {
       conversationStore.recordFailedSend(
@@ -688,7 +691,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
           ? admission.retryAfterSeconds
           : undefined
       )
-      return
+      return false
     }
     const message =
       error instanceof AgentApiError
@@ -702,31 +705,32 @@ export function useAgentSession(deps: AgentSessionDeps) {
       `${i18n.global.t('agent.sendFailed')}: ${message}`
     )
     const turnAccepted = accepted || isUnreadableAckFailure(error)
-    reportError(error, { errorType: 'agent_send_message_failed' })
+    const disowned =
+      error instanceof AgentApiError &&
+      error.status === 403 &&
+      zDisownedWorkflowError.safeParse(error.body).success
+    if (!disowned)
+      reportError(error, { errorType: 'agent_send_message_failed' })
     trackAgentError(
       'request_failed',
       turnAccepted ? 'post_acceptance' : 'pre_acceptance',
       'inline_notice',
       { retryable: isRetryableRequestFailure(error, turnAccepted) }
     )
+    return turnAccepted
   }
 
-  /**
-   * The server will not serve the id this turn was posted under, and the
-   * binding that produced it outlives the page. Left in place it poisons the
-   * tab: every later turn re-posts the same dead id, and a reload re-affirms
-   * the binding through the thread's own workflow pointer.
-   *
-   * Everything here is keyed by the refused id, never by its tab path: the tab
-   * may already have been rebound to a healthy workflow while the POST was in
-   * flight. `disowned` evicts the id from the resolver's cloud index, which
-   * `cloudIdFor` consults ahead of the binding store.
-   */
   function releaseDisownedWorkflow(
     sent: WorkflowTurnContext | undefined,
     error: unknown
   ): void {
-    if (sent?.id === undefined || !disownsWorkflow(error)) return
+    if (
+      sent?.id === undefined ||
+      !(error instanceof AgentApiError) ||
+      error.status !== 403 ||
+      !zDisownedWorkflowError.safeParse(error.body).success
+    )
+      return
     bindingStore.unbindWorkflow(sent.id)
     workflow?.disowned?.(sent.id)
     if (boundWorkflowId.value === sent.id) boundWorkflowId.value = null
@@ -749,7 +753,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     let accepted = false
     try {
       await prepareWorkflow()
-      if (generation !== loadGeneration) return false
+      if (sendWasSuperseded(generation)) return false
       const wfContext = workflow?.current(origin)
       if (workflowTargetChanged(originContext, wfContext)) {
         recordUnavailableTarget(text)
@@ -771,14 +775,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
       acceptTurn(ack, text, wfContext, attachments, tags, workflowReferences)
       return true
     } catch (error) {
-      // Before the generation guard: the binding store is page-global and
-      // persisted, so a refusal that lands after newChat()/loadThread() has
-      // moved on still has to release, or the dead id survives the reload.
       releaseDisownedWorkflow(sentContext, error)
       if (generation !== loadGeneration) return false
-      recordSendError(error, text, accepted)
-      return false
+      return recordSendError(error, text, accepted)
     }
+  }
+
+  function sendWasSuperseded(generation: number): boolean {
+    return generation !== loadGeneration
   }
 
   function workflowTargetChanged(
@@ -951,7 +955,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     rememberedWorkflowId = null
     pendingWorkflowBind = null
     malformedStreamReports.clear()
-    localStorage.removeItem(threadStorageKey)
+    localStorage.removeItem(THREAD_STORAGE_KEY)
     pendingThreadSource.value = source ?? null
   }
 
@@ -979,7 +983,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.setThreadId(threadId)
     const hydrated = await hydrateFromServer(threadId, isCurrent, stashedTurn)
     if (hydrated && isCurrent()) {
-      localStorage.setItem(threadStorageKey, threadId)
+      localStorage.setItem(THREAD_STORAGE_KEY, threadId)
       onThreadActivated?.(threadId)
       conversationStore.resumeBackgroundTurn()
     }
@@ -1000,21 +1004,27 @@ export function useAgentSession(deps: AgentSessionDeps) {
     error: ZodError
   ): void {
     const turnId = malformedEventTurnId(raw)
-    let reportedTurnId = turnId ?? conversationStore.activeTurnId
+    let reportedTurnId =
+      turnId !== undefined && conversationStore.hasPendingTurn(turnId)
+        ? turnId
+        : conversationStore.activeTurnId
     let uiTreatment: AgentErrorMetadata['ui_treatment'] = 'none'
     if (type === 'agent_message_done') {
       if (turnId !== undefined) turnStartedAt.delete(turnId)
       if (turnId === undefined || turnId === conversationStore.activeTurnId) {
         forgetActiveTurnStartedAt()
         conversationStore.abortActiveTurn()
-        pushError(i18n.global.t('agent.malformedEvent'))
         uiTreatment = 'error_overlay'
       } else {
         reportedTurnId =
           conversationStore.settleBackgroundTurn(turnId) ?? reportedTurnId
       }
     }
-    trackMalformedStreamEvent(error, type, reportedTurnId, uiTreatment)
+    if (
+      trackMalformedStreamEvent(error, type, reportedTurnId, uiTreatment) &&
+      uiTreatment === 'error_overlay'
+    )
+      pushError(i18n.global.t('agent.malformedEvent'))
     console.warn('[agent] dropping malformed agent event', error)
   }
 
