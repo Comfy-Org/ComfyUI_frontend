@@ -12,7 +12,7 @@ LGraphCanvas uses a dual-canvas architecture: a foreground canvas (the DOM eleme
 
 Two independent resize paths exist today:
 
-- **`resizeCanvas()` in app.ts** is DPR-aware: it multiplies CSS pixels by `devicePixelRatio` to set physical canvas dimensions and calls `ctx.scale()` on both contexts.
+- **`resizeCanvas()` in app.ts** is DPR-aware for the foreground canvas: it multiplies CSS pixels by `devicePixelRatio` to set that canvas's physical dimensions and scales its context. The background canvas is sized and transformed later by `drawBackCanvas()`.
 - **`LGraphCanvas.resize()`** is DPR-unaware: it sets both canvases to CSS pixel dimensions directly, producing canvases at 1× regardless of display density.
 
 Neither path documents that it depends on the other, creating implicit temporal coupling. Code that calls one without the other produces a background/foreground size mismatch.
