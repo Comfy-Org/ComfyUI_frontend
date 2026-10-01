@@ -34,9 +34,9 @@ const MOCK_DELAY_MS = 2400
 
 export const RELIGHT_EXAMPLE = {
   url: EXAMPLE,
-  name: 'portrait.jpg',
-  width: 640,
-  height: 400
+  name: 'motel-portrait.jpg',
+  width: 1280,
+  height: 720
 } as const
 
 /** The request for a photo, its lights, masks, scene and generation. */

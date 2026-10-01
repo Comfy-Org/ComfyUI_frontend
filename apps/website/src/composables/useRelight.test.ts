@@ -217,7 +217,7 @@ describe('useRelight', () => {
 
   it.for([
     { decodes: true, expected: 'photo.png' },
-    { decodes: false, expected: 'portrait.jpg' }
+    { decodes: false, expected: 'motel-portrait.jpg' }
   ])(
     'swaps in an uploaded photo only when it decodes (decodes: $decodes)',
     async ({ decodes, expected }) => {
