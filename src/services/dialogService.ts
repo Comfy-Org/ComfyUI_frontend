@@ -485,6 +485,14 @@ export const useDialogService = () => {
   }
 
   async function showTopUpCreditsDialog(options?: TopUpCreditsDialogOptions) {
+    useTelemetry()?.trackBillingEvent({
+      operation: 'entry',
+      stage: 'add_credits_clicked',
+      outcome: 'pending',
+      payment_intent_source:
+        options?.source ??
+        (options?.isInsufficientCredits ? 'out_of_credits' : undefined)
+    })
     const { type } = useBillingContext()
     const { canTopUp, canSubscribeSelfServe, isReady, initialize } =
       useBillingCapabilities()
