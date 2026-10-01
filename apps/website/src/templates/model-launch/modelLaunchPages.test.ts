@@ -11,6 +11,7 @@ import {
   qwenImage21Page
 } from '../../data/qwenImage21'
 import { minimaxMusic3Page } from '../../data/minimaxMusic3'
+import { nanoBananaPage } from '../../data/nanoBanana'
 import { seedancePage } from '../../data/seedance'
 import { wanAnimate2Page } from '../../data/wanAnimate2'
 import { wan3Page } from '../../data/wan3'
@@ -28,6 +29,7 @@ const pages: { name: string; page: ModelLaunchPage }[] = [
   { name: 'chatgptImage25', page: chatgptImage25Page },
   { name: 'qwenImage21', page: qwenImage21Page },
   { name: 'qwenImage21Announcement', page: qwenImage21AnnouncementPage },
+  { name: 'nanoBanana', page: nanoBananaPage },
   { name: 'seedance', page: seedancePage },
   { name: 'ltx', page: ltxPage },
   { name: 'geminiOmni', page: geminiOmniPage },

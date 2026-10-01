@@ -7837,6 +7837,100 @@ Enterprise`
     en: 'ChatGPT Images 2.5',
     'zh-CN': 'ChatGPT Images 2.5'
   },
+  // Nano Banana launch page placeholder (/nano-banana)
+  'nanoBanana.meta.title': {
+    en: 'Nano Banana on Comfy: Generate and Edit Images',
+    'zh-CN': 'Comfy 上的 Nano Banana：生成与编辑图像'
+  },
+  'nanoBanana.meta.description': {
+    en: 'Run Nano Banana in ComfyUI. Generate images from text, edit existing visuals, and direct results with reference images in a repeatable workflow.',
+    'zh-CN':
+      '在 ComfyUI 中运行 Nano Banana。通过文字生成图像、编辑现有视觉内容，并使用参考图像在可复用工作流中引导结果。'
+  },
+  'nanoBanana.breadcrumb.model': {
+    en: 'Nano Banana',
+    'zh-CN': 'Nano Banana'
+  },
+  'nanoBanana.breadcrumb.updated': {
+    en: 'Updated October 2026',
+    'zh-CN': '更新于 2026 年 10 月'
+  },
+  'nanoBanana.hero.title': {
+    en: 'Nano Banana\nis here',
+    'zh-CN': 'Nano Banana 已上线'
+  },
+  'nanoBanana.hero.description': {
+    en: 'Placeholder copy. Turn a plain language brief into a finished image, or revise an existing visual without rebuilding it from scratch. Nano Banana brings generation, reference guided creation, and precise editing into ComfyUI workflows through Partner Nodes.',
+    'zh-CN':
+      '占位文案。用自然语言简报生成完整图像，或在无需从头制作的情况下修改现有视觉内容。Nano Banana 通过合作伙伴节点，将图像生成、参考图引导创作与精确编辑带入 ComfyUI 工作流。'
+  },
+  'nanoBanana.hero.tagTextToImage': {
+    en: 'Text to Image',
+    'zh-CN': '文生图'
+  },
+  'nanoBanana.hero.tagImageEditing': {
+    en: 'Image Editing',
+    'zh-CN': '图像编辑'
+  },
+  'nanoBanana.hero.tagReferenceImages': {
+    en: 'Reference Images',
+    'zh-CN': '参考图像'
+  },
+  'nanoBanana.hero.primaryCta': {
+    en: 'RUN NANO BANANA',
+    'zh-CN': '运行 Nano Banana'
+  },
+  'nanoBanana.hero.secondaryCta': {
+    en: 'READ THE GUIDE',
+    'zh-CN': '查看教程'
+  },
+  'nanoBanana.gallery.heading': {
+    en: 'Made with Nano Banana',
+    'zh-CN': '由 Nano Banana 创作'
+  },
+  'nanoBanana.pricing.banner.title': {
+    en: "Start Comfy Cloud for free. Upgrade when you're ready.",
+    'zh-CN': '免费开始使用 Comfy Cloud，准备好了再升级。'
+  },
+  'nanoBanana.pricing.banner.subtitle': {
+    en: '5 free runs on real GPUs — no credit card required.',
+    'zh-CN': '在真实 GPU 上免费运行 5 次 — 无需信用卡。'
+  },
+  'nanoBanana.pricing.banner.cta': {
+    en: 'TRY FREE',
+    'zh-CN': '免费试用'
+  },
+  'nanoBanana.faq.heading': { en: 'Q&A', 'zh-CN': '问答' },
+  'nanoBanana.runOptions.heading': {
+    en: 'One engine, every way to run it',
+    'zh-CN': '同一引擎，多种运行方式'
+  },
+  'nanoBanana.runOptions.subtitle': {
+    en: 'Build workflows in the browser today. Batch campaigns with the API, or connect image generation to the rest of your creative pipeline.',
+    'zh-CN':
+      '今天就在浏览器中搭建工作流。用 API 批量制作，或将图像生成接入完整创意流程。'
+  },
+  'nanoBanana.runOptions.cta': {
+    en: 'LEARN MORE',
+    'zh-CN': '了解更多'
+  },
+  'nanoBanana.reviews.heading': {
+    en: '4+ million Comfy creators say',
+    'zh-CN': '超过 400 万 Comfy 创作者这样说'
+  },
+  'nanoBanana.reviews.highlightTitle': {
+    en: 'Comfy MCP: now turn your agent into a creative technologist.',
+    'zh-CN': 'Comfy MCP：让你的智能体成为创意技术专家。'
+  },
+  'nanoBanana.reviews.highlightDescription': {
+    en: 'Your AI assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.',
+    'zh-CN':
+      '你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。'
+  },
+  'nanoBanana.reviews.highlightCta': {
+    en: 'GET STARTED',
+    'zh-CN': '开始使用'
+  },
   // Qwen-Image 2.1 model page (/qwen-image-2.1)
   'qwenImage21.meta.title': {
     en: 'Qwen-Image 2.1 on Comfy: Open-Weight Image Generation and Editing',
