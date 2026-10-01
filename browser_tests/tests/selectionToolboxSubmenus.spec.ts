@@ -42,12 +42,11 @@ test.describe(
       )[0]
 
       await openMoreOptions(comfyPage)
-      await comfyPage.contextMenu.menuItem('Shape').click()
-      const boxItem = comfyPage.page.getByRole('menuitemcheckbox', {
+      const shapeSubmenu = await comfyPage.contextMenu.openShapeSubmenu()
+      const boxItem = shapeSubmenu.getByRole('menuitemcheckbox', {
         name: 'Box',
         exact: true
       })
-      await expect(boxItem).toBeVisible()
       await boxItem.click()
       await comfyPage.nextFrame()
 
@@ -62,12 +61,11 @@ test.describe(
       )[0]
 
       await openMoreOptions(comfyPage)
-      await comfyPage.contextMenu.menuItem('Color').click()
-      const blueSwatch = comfyPage.page.getByRole('menuitem', {
+      const colorSubmenu = await comfyPage.contextMenu.openColorSubmenu()
+      const blueSwatch = colorSubmenu.getByRole('menuitem', {
         name: 'Blue',
         exact: true
       })
-      await expect(blueSwatch).toBeVisible()
       await blueSwatch.click()
       await comfyPage.nextFrame()
 
@@ -100,10 +98,6 @@ test.describe(
       await openMoreOptions(comfyPage)
       const renameItem = comfyPage.page.getByText('Rename', { exact: true })
       await expect(renameItem).toBeVisible()
-
-      for (let i = 0; i < 30; i++) {
-        await comfyPage.nextFrame()
-      }
 
       await comfyPage.canvasOps.mouseClickAt({ x: 0, y: 50 })
       await expect(

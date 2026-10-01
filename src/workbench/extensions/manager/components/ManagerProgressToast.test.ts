@@ -102,11 +102,58 @@ it('shows failed installations without suggesting a successful change', async ()
   expect(screen.getByText('Failed')).toBeInTheDocument()
   const user = userEvent.setup()
   await user.click(screen.getByRole('button', { name: 'Expand' }))
-  await user.click(screen.getByRole('menuitem', { name: 'Failed' }))
+  await user.click(screen.getByRole('tab', { name: 'Failed' }))
   expect(screen.getByText('Denied')).toBeInTheDocument()
   expect(
     screen.queryByText(en.g.completedWithCheckmark)
   ).not.toBeInTheDocument()
+})
+
+it('supports keyboard tab navigation and associates each tab with its panel', async () => {
+  const store = useComfyManagerStore()
+  const succeeded = {
+    taskId: 'succeeded',
+    taskName: 'Installed pack',
+    logs: ['Installed']
+  }
+  const failed = {
+    taskId: 'failed',
+    taskName: 'Failed pack',
+    logs: ['Denied']
+  }
+  store.taskLogs = [succeeded, failed]
+  store.succeededTasksLogs = [succeeded]
+  store.failedTasksIds = ['failed']
+  store.failedTasksLogs = [failed]
+  render(ManagerProgressToast, {
+    global: {
+      plugins: [createI18n({ legacy: false, locale: 'en', messages: { en } })]
+    }
+  })
+  const user = userEvent.setup()
+  await user.click(screen.getByRole('button', { name: 'Expand' }))
+
+  const installationTab = screen.getByRole('tab', {
+    name: en.manager.installationQueue
+  })
+  const failedTab = screen.getByRole('tab', { name: 'Failed' })
+  expect(installationTab).toHaveAttribute('aria-selected', 'true')
+  expect(installationTab).toHaveAttribute(
+    'aria-controls',
+    screen.getByRole('tabpanel').id
+  )
+
+  installationTab.focus()
+  await user.keyboard('{ArrowRight}')
+
+  expect(failedTab).toHaveFocus()
+  expect(failedTab).toHaveAttribute('aria-selected', 'true')
+  expect(failedTab).toHaveAttribute(
+    'aria-controls',
+    screen.getByRole('tabpanel').id
+  )
+  expect(screen.getByText('Denied')).toBeVisible()
+  expect(screen.queryByText('Installed')).not.toBeInTheDocument()
 })
 
 it.for([[], ['failed']])(
@@ -254,7 +301,7 @@ it.for([
     ).toBeVisible()
     expect(screen.queryByText('Updating all packs')).not.toBeInTheDocument()
     expect(screen.getByText(en.g.completedWithCheckmark)).toBeVisible()
-    await user.click(screen.getByRole('menuitem', { name: 'Failed' }))
+    await user.click(screen.getByRole('tab', { name: 'Failed' }))
     expect(screen.getByText('Updating all packs')).toBeVisible()
     expect(screen.getByText('Update denied')).toBeVisible()
     expect(

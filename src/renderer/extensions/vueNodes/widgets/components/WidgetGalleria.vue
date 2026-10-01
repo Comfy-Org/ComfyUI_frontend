@@ -15,25 +15,13 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
+import type { IGalleriaWidget } from '@/lib/litegraph/src/types/widgets'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetGalleriaCarousel from './WidgetGalleriaCarousel.vue'
 
-export interface GalleryImage {
-  itemImageSrc?: string
-  thumbnailImageSrc?: string
-  src?: string
-  alt?: string
-}
-
-export type GalleryValue = string[] | GalleryImage[]
-
-interface GalleryWidgetOptions extends IWidgetOptions {
-  circular?: boolean
-  autoPlay?: boolean
-  transitionInterval?: number
-}
+type GalleryValue = NonNullable<IGalleriaWidget['value']>
+type GalleryWidgetOptions = IGalleriaWidget['options']
 
 const value = defineModel<GalleryValue>({ required: true })
 

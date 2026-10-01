@@ -42,9 +42,11 @@ const emit = defineEmits<{
 
 const open = ref(false)
 const anchor = ref<HTMLElement>()
+const focusTarget = ref<HTMLElement>()
 const anchorRect = ref({ left: 0, top: 0, width: 0, height: 0 })
 const content = ref<InstanceType<typeof PopoverContent>>()
 const contentStyle = useModalLiftedZIndex(open)
+let showRequest = 0
 
 function setOpen(value: boolean) {
   if (open.value === value) return
@@ -54,12 +56,14 @@ function setOpen(value: boolean) {
 }
 
 function show(event: Event, target?: EventTarget | null) {
-  const eventTarget =
-    target ??
-    (event.currentTarget instanceof HTMLElement
+  const sourceTarget =
+    event.currentTarget instanceof HTMLElement
       ? event.currentTarget
-      : event.target)
+      : event.target
+  const eventTarget = target ?? sourceTarget
   if (!(eventTarget instanceof HTMLElement)) return
+  focusTarget.value =
+    sourceTarget instanceof HTMLElement ? sourceTarget : eventTarget
   anchor.value = eventTarget
   const rect = eventTarget.getBoundingClientRect()
   anchorRect.value = {
@@ -68,24 +72,30 @@ function show(event: Event, target?: EventTarget | null) {
     width: rect.width,
     height: rect.height
   }
-  void nextTick(() => setOpen(true))
+  const request = ++showRequest
+  void nextTick(() => {
+    if (request === showRequest) setOpen(true)
+  })
 }
 
 function hide() {
+  showRequest++
   setOpen(false)
 }
 
 function onScroll(event: Event) {
   if (
     anchor.value &&
-    event.target instanceof Element &&
-    event.target.contains(anchor.value)
+    (event.target === document ||
+      event.target instanceof Window ||
+      (event.target instanceof Element && event.target.contains(anchor.value)))
   ) {
     hide()
   }
 }
 
 useEventListener(window, 'scroll', onScroll, { capture: true })
+useEventListener(document, 'scroll', onScroll, { capture: true })
 
 function toggle(event: Event, target?: EventTarget | null) {
   if (open.value) hide()
@@ -106,25 +116,9 @@ function onInteractOutside(event: FocusOutsideEvent | PointerDownOutsideEvent) {
   }
 }
 
-const tabbableSelector =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), [contenteditable]'
-
-// Reka falls back to focusing the popper wrapper when the content has nothing
-// tabbable. Browsers ignore that (the wrapper is not focusable); happy-dom
-// honors it and the resulting focusin outside the layer dismisses the popover.
-function onOpenAutoFocus(event: Event) {
-  const element: unknown = content.value?.$el
-  if (
-    element instanceof HTMLElement &&
-    element.querySelector(tabbableSelector) === null
-  ) {
-    event.preventDefault()
-  }
-}
-
 function onCloseAutoFocus(event: Event) {
   event.preventDefault()
-  anchor.value?.focus()
+  focusTarget.value?.focus()
 }
 
 defineExpose({ show, hide, toggle, container: content, open })
@@ -163,7 +157,6 @@ defineExpose({ show, hide, toggle, container: content, open })
           )
         "
         @escape-key-down="!closeOnEscape && $event.preventDefault()"
-        @open-auto-focus="onOpenAutoFocus"
         @close-auto-focus="onCloseAutoFocus"
         @interact-outside="onInteractOutside"
       >

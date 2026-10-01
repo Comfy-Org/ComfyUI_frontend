@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { useScroll, whenever } from '@vueuse/core'
+import type { ComponentPublicInstance } from 'vue'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import DotSpinner from '@/components/common/DotSpinner.vue'
 import HoneyToast from '@/components/honeyToast/HoneyToast.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Tabs from '@/components/ui/tabs/Tabs.vue'
+import TabsContent from '@/components/ui/tabs/TabsContent.vue'
+import TabsList from '@/components/ui/tabs/TabsList.vue'
+import TabsTrigger from '@/components/ui/tabs/TabsTrigger.vue'
 import { useApplyChanges } from '@/workbench/extensions/manager/composables/useApplyChanges'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
@@ -15,19 +20,25 @@ const comfyManagerStore = useComfyManagerStore()
 const { isRestarting, isRestartCompleted, applyChanges } = useApplyChanges()
 
 const isExpanded = ref(false)
-const activeTabIndex = ref(0)
+const activeTab = ref('installation')
 
 const tabs = computed(() => [
-  { label: t('manager.installationQueue') },
   {
+    value: 'installation',
+    label: t('manager.installationQueue'),
+    logs: comfyManagerStore.succeededTasksLogs
+  },
+  {
+    value: 'failed',
     label: t('manager.failed', {
       count: comfyManagerStore.failedTasksIds.length
-    })
+    }),
+    logs: comfyManagerStore.failedTasksLogs
   }
 ])
 
 const focusedLogs = computed(() => {
-  if (activeTabIndex.value === 0) {
+  if (activeTab.value === 'installation') {
     return comfyManagerStore.succeededTasksLogs
   }
   return comfyManagerStore.failedTasksLogs
@@ -80,6 +91,14 @@ const { y: scrollY } = useScroll(sectionsContainerRef, {
 const lastPanelRef = ref<HTMLElement | null>(null)
 const isUserScrolling = ref(false)
 const lastPanelLogs = computed(() => focusedLogs.value?.at(-1)?.logs)
+
+function setSectionsContainer(el: Element | ComponentPublicInstance | null) {
+  sectionsContainerRef.value = el instanceof HTMLElement ? el : null
+}
+
+function setLastPanel(el: Element | ComponentPublicInstance | null) {
+  lastPanelRef.value = el instanceof HTMLElement ? el : null
+}
 
 function isAtBottom(el: HTMLElement | null) {
   if (!el) return false
@@ -141,84 +160,91 @@ onBeforeUnmount(() => {
 <template>
   <HoneyToast v-model:expanded="isExpanded" :visible>
     <template #default>
-      <div v-if="isExpanded" class="flex items-center px-4 py-2">
-        <div class="flex w-full" role="tablist">
-          <Button
-            v-for="(tab, index) in tabs"
-            :key="tab.label"
-            role="tab"
-            variant="muted-textonly"
-            class="rounded-none px-4 py-2 font-medium"
-            :aria-selected="activeTabIndex === index"
-            @click="activeTabIndex = index"
-          >
-            {{ tab.label }}
-          </Button>
-        </div>
-      </div>
-
-      <div
-        ref="sectionsContainerRef"
-        class="scroll-container max-h-[450px] overflow-y-auto px-6 py-4"
-        :style="{
-          scrollbarWidth: 'thin',
-          scrollbarColor: 'rgba(156, 163, 175, 0.5) transparent'
-        }"
+      <Tabs
+        v-if="isExpanded"
+        v-model="activeTab"
+        class="gap-0"
+        orientation="horizontal"
       >
-        <details
-          v-for="(log, index) in focusedLogs"
-          :key="log.taskId"
-          open
-          class="group/log mt-2 rounded-lg border border-interface-stroke bg-interface-panel-surface shadow-interface"
+        <div class="flex items-center px-4 py-2">
+          <TabsList class="flex w-full gap-0">
+            <TabsTrigger
+              v-for="tab in tabs"
+              :key="tab.value"
+              :value="tab.value"
+              class="h-auto rounded-none px-4 py-2 font-medium data-[state=active]:bg-transparent"
+            >
+              {{ tab.label }}
+            </TabsTrigger>
+          </TabsList>
+        </div>
+
+        <TabsContent
+          v-for="tab in tabs"
+          :key="tab.value"
+          :value="tab.value"
+          class="mt-0"
         >
-          <summary
-            class="flex w-full cursor-pointer list-none items-center justify-between px-4 py-2 [&::-webkit-details-marker]:hidden"
-          >
-            <span class="flex flex-col text-sm/normal font-medium">
-              <span>{{ log.taskName }}</span>
-              <span class="text-muted">
-                {{
-                  comfyManagerStore.isTaskFailed(log.taskId)
-                    ? t('g.failed')
-                    : comfyManagerStore.isTaskInProgress(log.taskId)
-                      ? t('g.inProgress')
-                      : t('g.completedWithCheckmark')
-                }}
-              </span>
-            </span>
-            <i
-              aria-hidden="true"
-              class="icon-[lucide--chevron-right] size-4 text-neutral-300 group-open/log:rotate-90"
-            />
-          </summary>
           <div
-            :ref="
-              index === focusedLogs.length - 1
-                ? (el) => (lastPanelRef = el as HTMLElement)
-                : undefined
-            "
-            :class="
-              cn(
-                'h-64 overflow-y-auto rounded-lg bg-black',
-                index === focusedLogs.length - 1 && 'grow'
-              )
-            "
-            @scroll="handleScroll"
+            :ref="tab.value === activeTab ? setSectionsContainer : undefined"
+            class="scroll-container max-h-[450px] overflow-y-auto px-6 py-4"
+            :style="{
+              scrollbarWidth: 'thin',
+              scrollbarColor: 'rgba(156, 163, 175, 0.5) transparent'
+            }"
           >
-            <div class="h-full">
-              <div
-                v-for="(logLine, logIndex) in log.logs"
-                :key="logIndex"
-                class="text-muted"
+            <details
+              v-for="(log, index) in tab.logs"
+              :key="log.taskId"
+              open
+              class="group/log mt-2 rounded-lg border border-interface-stroke bg-interface-panel-surface shadow-interface"
+            >
+              <summary
+                class="flex w-full cursor-pointer list-none items-center justify-between px-4 py-2 [&::-webkit-details-marker]:hidden"
               >
-                <pre class="wrap-break-word whitespace-pre-wrap">{{
-                  logLine
-                }}</pre>
+                <span class="flex flex-col text-sm/normal font-medium">
+                  <span>{{ log.taskName }}</span>
+                  <span class="text-muted">
+                    {{
+                      comfyManagerStore.isTaskFailed(log.taskId)
+                        ? t('g.failed')
+                        : comfyManagerStore.isTaskInProgress(log.taskId)
+                          ? t('g.inProgress')
+                          : t('g.completedWithCheckmark')
+                    }}
+                  </span>
+                </span>
+                <i
+                  aria-hidden="true"
+                  class="icon-[lucide--chevron-right] size-4 text-neutral-300 group-open/log:rotate-90"
+                />
+              </summary>
+              <div
+                :ref="index === tab.logs.length - 1 ? setLastPanel : undefined"
+                :class="
+                  cn(
+                    'h-64 overflow-y-auto rounded-lg bg-black',
+                    index === tab.logs.length - 1 && 'grow'
+                  )
+                "
+                @scroll="handleScroll"
+              >
+                <div class="h-full">
+                  <div
+                    v-for="(logLine, logIndex) in log.logs"
+                    :key="logIndex"
+                    class="text-muted"
+                  >
+                    <pre class="wrap-break-word whitespace-pre-wrap">{{
+                      logLine
+                    }}</pre>
+                  </div>
+                </div>
               </div>
-            </div>
+            </details>
           </div>
-        </details>
-      </div>
+        </TabsContent>
+      </Tabs>
     </template>
 
     <template #footer="{ toggle }">

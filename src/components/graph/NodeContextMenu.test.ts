@@ -39,15 +39,8 @@ describe('NodeContextMenu', () => {
     })
   })
 
-  it('opens for a widget pointer context-menu event', async () => {
+  it('opens through the registered instance', async () => {
     render(NodeContextMenu)
-    const widget = document.createElement('button')
-    document.body.append(widget)
-    widget.addEventListener('contextmenu', (event) => {
-      event.preventDefault()
-      event.stopPropagation()
-      registeredInstance.value?.show(event)
-    })
     const event = new PointerEvent('contextmenu', {
       bubbles: true,
       button: 2,
@@ -55,9 +48,8 @@ describe('NodeContextMenu', () => {
       clientY: 120
     })
 
-    widget.dispatchEvent(event)
+    registeredInstance.value?.show(event)
 
     expect(await screen.findByRole('menu')).toBeVisible()
-    widget.remove()
   })
 })

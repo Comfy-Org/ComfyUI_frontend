@@ -307,10 +307,29 @@ export interface IChartWidget extends IBaseWidget<object, 'chart'> {
   value: object
 }
 
+export interface GalleriaImage {
+  itemImageSrc?: string
+  thumbnailImageSrc?: string
+  src?: string
+  alt?: string
+}
+
+export type GalleriaValue = string[] | GalleriaImage[]
+
+export interface GalleriaWidgetOptions extends IWidgetOptions {
+  circular?: boolean
+  autoPlay?: boolean
+  transitionInterval?: number
+}
+
 /** Gallery widget for displaying multiple images */
-export interface IGalleriaWidget extends IBaseWidget<string[], 'galleria'> {
+export interface IGalleriaWidget extends IBaseWidget<
+  GalleriaValue,
+  'galleria',
+  GalleriaWidgetOptions
+> {
   type: 'galleria'
-  value: string[]
+  value: GalleriaValue
 }
 
 /** Image comparison widget for comparing two images side by side */

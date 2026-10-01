@@ -1,27 +1,50 @@
 <template>
-  <!-- Icon-only mode with Popover -->
-  <PopoverRoot
-    v-if="displayMode === 'icon-only'"
-    v-model:open="iconPopoverOpen"
-  >
+  <PopoverRoot v-if="displayMode !== 'full'" v-model:open="popoverOpen">
     <PopoverTrigger as-child>
       <button
         type="button"
-        class="relative inline-flex h-full shrink-0 cursor-pointer items-center justify-center border-0 px-2 transition-opacity hover:opacity-80"
+        :aria-label="badge.text"
+        :class="
+          cn(
+            'relative flex h-full shrink-0 cursor-pointer items-center border-0 bg-transparent transition-opacity hover:opacity-80',
+            displayMode === 'icon-only'
+              ? 'justify-center px-2'
+              : 'gap-2 whitespace-nowrap',
+            displayMode === 'compact' && reverseOrder && 'flex-row-reverse',
+            displayMode === 'compact' && !noPadding && 'px-3'
+          )
+        "
         :style="menuBackgroundStyle"
       >
-        <i v-if="iconClass" data-testid="badge-icon" :class="badgeIconClass" />
-        <div v-else-if="badge.label" :class="labelClasses">
+        <i
+          v-if="iconClass"
+          data-testid="badge-icon"
+          aria-hidden="true"
+          :class="badgeIconClass"
+        />
+        <div
+          v-if="displayMode === 'compact' ? showLabel : badge.label && !iconClass"
+          :class="labelClasses"
+        >
           {{ badge.label }}
         </div>
-        <div v-else class="size-2 shrink-0 rounded-full" :class="dotClasses" />
+        <div
+          v-else-if="displayMode === 'icon-only' && !iconClass"
+          class="size-2 shrink-0 rounded-full"
+          :class="dotClasses"
+        />
       </button>
     </PopoverTrigger>
     <PopoverContent
       align="start"
       class="w-auto max-w-xs min-w-40 border-border-default bg-base-background p-3"
+      @open-auto-focus.prevent="badgeContent?.focus()"
     >
-      <div class="flex flex-col gap-2">
+      <div
+        ref="badgeContent"
+        tabindex="-1"
+        class="flex flex-col gap-2 outline-none"
+      >
         <div v-if="showLabel" :class="cn(labelClasses, 'w-fit')">
           {{ badge.label }}
         </div>
@@ -32,50 +55,6 @@
       </div>
     </PopoverContent>
   </PopoverRoot>
-
-  <!-- Compact mode: Icon + Label only with Popover -->
-  <div
-    v-else-if="displayMode === 'compact'"
-    class="relative inline-flex h-full"
-    :style="menuBackgroundStyle"
-  >
-    <PopoverRoot v-model:open="compactPopoverOpen">
-      <PopoverTrigger as-child>
-        <button
-          type="button"
-          class="flex h-full shrink-0 items-center gap-2 whitespace-nowrap"
-          :class="[
-            { 'flex-row-reverse': reverseOrder },
-            noPadding ? '' : 'px-3',
-            clickableClasses
-          ]"
-        >
-          <i
-            v-if="iconClass"
-            data-testid="badge-icon"
-            :class="badgeIconClass"
-          />
-          <div v-if="showLabel" :class="labelClasses">
-            {{ badge.label }}
-          </div>
-        </button>
-      </PopoverTrigger>
-      <PopoverContent
-        align="start"
-        class="w-auto max-w-xs min-w-40 border-border-default bg-base-background p-3"
-      >
-        <div class="flex flex-col gap-2">
-          <div v-if="showLabel" :class="cn(labelClasses, 'w-fit')">
-            {{ badge.label }}
-          </div>
-          <div class="font-inter text-sm">{{ badge.text }}</div>
-          <div v-if="badge.tooltip" class="text-xs">
-            {{ badge.tooltip }}
-          </div>
-        </div>
-      </PopoverContent>
-    </PopoverRoot>
-  </div>
 
   <!-- Full mode: Icon + Label + Text -->
   <div
@@ -90,7 +69,12 @@
     "
     :style="menuBackgroundStyle"
   >
-    <i v-if="iconClass" data-testid="badge-icon" :class="badgeIconClass" />
+    <i
+      v-if="iconClass"
+      data-testid="badge-icon"
+      aria-hidden="true"
+      :class="badgeIconClass"
+    />
     <div class="font-inter text-xs font-medium" :class="textClasses">
       {{ badge.text }}
     </div>
@@ -102,7 +86,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { PopoverRoot, PopoverTrigger } from 'reka-ui'
-import { computed, ref } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
 
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import type { TopbarBadge } from '@/types/comfy'
@@ -121,8 +105,8 @@ const {
   backgroundColor?: string
 }>()
 
-const iconPopoverOpen = ref(false)
-const compactPopoverOpen = ref(false)
+const popoverOpen = ref(false)
+const badgeContent = useTemplateRef('badgeContent')
 
 const variant = computed(() => badge.variant ?? 'info')
 
@@ -174,8 +158,6 @@ const iconClass = computed(() => {
 const badgeIconClass = computed(() =>
   cn('size-4 shrink-0 text-base', iconClass.value, textClasses.value)
 )
-
-const clickableClasses = 'cursor-pointer transition-opacity hover:opacity-80'
 
 const dotClasses = computed(() => {
   switch (variant.value) {
