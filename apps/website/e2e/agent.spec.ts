@@ -65,6 +65,21 @@ async function assertLandingPage(
     })
   ).toBeVisible()
 
+  // Source: https://comfy-organization.slack.com/archives/C0BBBQ7GHQS/p1790882891660659?thread_ts=1790882891.660659&cid=C0BBBQ7GHQS
+  const featuredStoryLink = page.getByRole('link', {
+    name: tAgent('agentPage.usecases.featured.cta', locale),
+    exact: true
+  })
+  await expect(featuredStoryLink).toBeVisible()
+  await expect(featuredStoryLink).toHaveAttribute(
+    'href',
+    'https://blog.comfy.org/p/comfy-agent-the-first-agent-for-craft'
+  )
+  await expect(featuredStoryLink).toHaveAttribute('target', '_blank')
+  await expect(featuredStoryLink).toHaveAttribute('rel', 'noopener noreferrer')
+  await featuredStoryLink.focus()
+  await expect(featuredStoryLink).toBeFocused()
+
   await expect(
     page.getByRole('heading', {
       level: 2,
