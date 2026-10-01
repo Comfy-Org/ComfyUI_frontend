@@ -7,6 +7,9 @@
 import { render, screen } from '@testing-library/vue'
 import { createMemoryHistory } from 'vue-router'
 
+import type { BillingTelemetryEvent } from '@comfyorg/account-core/billing'
+
+import type * as ControllerModule from '@/auth/useSignInController'
 import type { SignInPort } from '@/auth/useSignInController'
 import type * as AuthModule from '@/session/billingWebAuth'
 import type * as ClientModule from '@/session/billingWebClient'
@@ -114,20 +117,33 @@ async function signInThenCallBilling(
     readonly session: typeof SessionModule
     readonly client: typeof ClientModule
     readonly signIn: (port?: SignInPort) => Promise<void>
+    readonly useSignInController: typeof ControllerModule.useSignInController
+    readonly events: () => BillingTelemetryEvent[]
   }) => Promise<void>
 ) {
   vi.resetModules()
-  const [auth, session, client, { useSignInController }] = await Promise.all([
+  const [
+    auth,
+    session,
+    client,
+    { useSignInController },
+    { billingWebTelemetry }
+  ] = await Promise.all([
     import('@/session/billingWebAuth'),
     import('@/session/billingWebSession'),
     import('@/session/billingWebClient'),
-    import('@/auth/useSignInController')
+    import('@/auth/useSignInController'),
+    import('@/telemetry/billingWebTelemetry')
   ])
+  const track = vi
+    .spyOn(billingWebTelemetry, 'trackBillingEvent')
+    .mockImplementation(() => undefined)
+  const events = () => track.mock.calls.map(([event]) => event)
   const signIn = (port?: SignInPort) =>
     new Promise<void>((resolve) => {
       useSignInController(resolve, port)
     })
-  await run({ auth, session, client, signIn })
+  await run({ auth, session, client, signIn, useSignInController, events })
 }
 
 async function mainRequests(): Promise<SentRequest[]> {
@@ -293,6 +309,63 @@ describe('billing-web with unified_web_session off, after sign-in', () => {
       expect(requestsSinceSignIn()).toEqual([])
       expect(sessionStorage.getItem('comfy.billing-web.session.v1')).toBeNull()
     })
+  })
+})
+
+describe('billing-web with unified_web_session off, as a funnel', () => {
+  it('reports a restored sign-in as established on the session client', async () => {
+    const { fetchImpl } = recordingFetch(
+      { firebase_config: FIREBASE_CONFIG },
+      {}
+    )
+    vi.stubGlobal('fetch', fetchImpl)
+
+    await signInThenCallBilling(async ({ auth, signIn, events }) => {
+      await signIn(auth.billingWebSignInPort())
+
+      expect(events()).toEqual([
+        {
+          operation: 'web_session',
+          stage: 'established',
+          outcome: 'pending',
+          origin: 'restored',
+          mode: 'session-client'
+        }
+      ])
+    })
+  })
+
+  it('reports a refused mint as sign-in required and failed with the refusal’s code', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>(async (input) =>
+        String(input).endsWith('/api/features')
+          ? new Response(JSON.stringify({ firebase_config: FIREBASE_CONFIG }))
+          : new Response('{}', { status: 403 })
+      )
+    )
+
+    await signInThenCallBilling(
+      async ({ auth, useSignInController, events }) => {
+        useSignInController(() => undefined, auth.billingWebSignInPort())
+
+        await vi.waitFor(() => expect(events()).toHaveLength(2))
+        expect(events()).toEqual([
+          {
+            operation: 'web_session',
+            stage: 'signin_required',
+            outcome: 'pending',
+            reason: 'refused'
+          },
+          {
+            operation: 'web_session',
+            stage: 'failed',
+            outcome: 'pending',
+            code: 'ACCESS_DENIED'
+          }
+        ])
+      }
+    )
   })
 })
 
