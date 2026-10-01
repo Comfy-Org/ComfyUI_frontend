@@ -1686,12 +1686,11 @@ describe('SubgraphWidgetPromotion', () => {
 // render. The fix defers the demotion itself by a microtask, cancelled by a
 // same-tick reconnect, so a rewire never drops the widget at all.
 describe('Promoted widget rewire desync (PM-1328 / PM-1253 / PM-1254)', () => {
-  function makeInteriorNode(title: string, value: unknown = 1) {
+  function makeInteriorNode(title: string, value: WidgetValue = 1) {
     const node = new LGraphNode(title)
     const input = node.addInput('value', 'number')
     node.addOutput('out', 'number')
-    // @ts-expect-error Abstract class instantiation
-    const widget = new BaseWidget({
+    const widget: LegacyWidget = new LegacyWidget({
       name: 'widget',
       type: 'number',
       value,
