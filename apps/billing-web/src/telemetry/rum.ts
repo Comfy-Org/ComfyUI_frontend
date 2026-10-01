@@ -139,6 +139,14 @@ export function addRumAction(name: string, context: object): void {
   if (datadogRum.getInitConfiguration()) datadogRum.addAction(name, context)
 }
 
+export function setRumUser(id: string): void {
+  if (datadogRum.getInitConfiguration()) datadogRum.setUser({ id })
+}
+
+export function clearRumUser(): void {
+  if (datadogRum.getInitConfiguration()) datadogRum.clearUser()
+}
+
 /** Never throws: a failing reporter must not become a second failure in the billing flow. */
 export function reportBillingWebError(
   cause: unknown,
