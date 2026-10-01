@@ -59,7 +59,7 @@ export interface RelightScene {
   readonly reflections: number
 }
 
-export type GenerateArea = 'whole' | 'masked'
+type GenerateArea = 'whole' | 'masked'
 
 export interface RelightGeneration {
   readonly prompt: string

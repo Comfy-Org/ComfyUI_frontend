@@ -108,7 +108,7 @@ void main() {
   gl_FragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
 }`
 
-export interface RelightDrawOptions {
+interface RelightDrawOptions {
   readonly lightMap?: boolean
   /** A generated image's finish: a touch more contrast, and grain. */
   readonly finish?: { readonly contrast: number; readonly grain: number }
