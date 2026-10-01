@@ -168,6 +168,7 @@ export {
   operationRoute
 } from './operationLifecycle.js'
 export { BILLING_OPERATION_TELEMETRY_EVENT } from '../../telemetry.js'
+export * from './telemetry/index.js'
 export type {
   EmbeddedChallengeOutcome,
   EmbeddedChallengePort

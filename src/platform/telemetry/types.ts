@@ -17,18 +17,16 @@ import {
   SESSION_TELEMETRY_EVENT
 } from '@comfyorg/account-core/telemetry'
 import type {
-  BillingDeclineReason,
-  BillingPresentation
+  BillingTelemetryErrorCode as BillingErrorCode,
+  BillingTelemetryEvent,
+  BillingTelemetryFailureCategory as BillingFailureCategory,
+  ResubscribeSource,
+  SubscriptionCheckoutTier,
+  SubscriptionCheckoutType
 } from '@comfyorg/account-core/billing'
-import type {
-  BillingIntent as HostedBillingIntent,
-  BillingSource
-} from '@comfyorg/billing-contract'
-import type {
-  AgentRunMode,
-  CreateTopupResponse,
-  SubscribeResponse
-} from '@comfyorg/ingest-types'
+import { BILLING_TELEMETRY_EVENTS } from '@comfyorg/account-core/billing'
+import type { BillingSource } from '@comfyorg/billing-contract'
+import type { AgentRunMode } from '@comfyorg/ingest-types'
 import type {
   AuthErrorMetadata,
   AuthFlowAction,
@@ -44,8 +42,19 @@ export type { AuthMethod }
 
 export type PaymentIntentSource = BillingSource
 
-export type SubscriptionCheckoutType = 'new' | 'change'
-export type SubscriptionCheckoutTier = TierKey | 'team'
+export type {
+  BillingOperationTerminal,
+  BillingTelemetryEvent,
+  BillingTelemetryEventName,
+  BillingTelemetryFailure as BillingFailure,
+  SubscriptionCheckoutTier,
+  SubscriptionCheckoutType
+} from '@comfyorg/account-core/billing'
+export {
+  getBillingTelemetryEventName,
+  getBillingTelemetryEventPayload,
+  getCloudAppBillingTelemetryEventPayload
+} from '@comfyorg/account-core/billing'
 
 /**
  * Authentication metadata for sign-up tracking
@@ -1196,7 +1205,7 @@ export interface SubscriptionCancellationMetadata {
 }
 
 export interface ResubscribeClickMetadata {
-  source: 'pricing_dialog' | 'settings_billing_panel'
+  source: ResubscribeSource
   /** Why the pricing dialog was opened, when the click came from one. */
   payment_intent_source?: PaymentIntentSource
 }
@@ -1261,293 +1270,6 @@ export interface WorkspaceInviteFailedMetadata extends Record<string, unknown> {
   source: WorkspaceInviteMetadata['source']
   attempted_count: number
   failed_count: number
-}
-
-type BillingFailureCategory =
-  | 'validation'
-  | 'network'
-  | 'api_rejected'
-  | 'provider_decline'
-  | 'redirect'
-  | 'poll_timeout'
-  | 'reconciliation_needed'
-  | 'stale_operation'
-  | 'rendering'
-  | 'unknown'
-
-type BillingErrorCode =
-  | 'downgrade_not_allowed'
-  | 'member_removal_failed'
-  | 'missing_checkout_response'
-  | 'missing_payment_method_url'
-  | 'payment_popup_blocked'
-  | 'reactivation_not_confirmed'
-  | 'reactivation_amount_changed'
-
-export interface BillingFailure {
-  failure_category: BillingFailureCategory
-  error_code?: BillingErrorCode
-}
-
-type BillingIntent = {
-  stage: 'intent'
-  outcome: 'pending'
-}
-
-type BillingRequestSent = {
-  stage: 'request_sent'
-  outcome: 'pending'
-}
-
-type BillingCheckoutReceived<Status extends string> = {
-  stage: 'checkout_received'
-  outcome: 'pending'
-  billing_op_id: string
-  checkout_status: Status
-}
-
-type BillingStarted = {
-  stage: 'started'
-  outcome: 'pending'
-}
-
-type BillingSucceeded = {
-  stage: 'succeeded'
-  outcome: 'success'
-}
-
-type BillingRecoveredSucceeded = BillingSucceeded & {
-  recovery_outcome?: 'late_success'
-}
-
-type BillingFailed = BillingFailure & {
-  stage: 'failed'
-  outcome: 'failure'
-}
-
-type BillingTimedOut = {
-  stage: 'timeout'
-  outcome: 'failure'
-  failure_category: 'poll_timeout'
-}
-
-/** The stage one attempt at a billing operation settled on. */
-export type BillingOperationTerminal =
-  | BillingSucceeded
-  | (BillingFailed & { decline_reason?: BillingDeclineReason })
-  | BillingTimedOut
-
-type SubscriptionCheckoutBillingEvent = {
-  operation: 'subscription_checkout'
-  billing_op_id?: string
-  checkout_attempt_id?: string
-  tier?: SubscriptionCheckoutTier
-  cycle?: BillingCycle
-  checkout_type?: SubscriptionCheckoutType
-  payment_intent_source?: PaymentIntentSource
-  /**
-   * Client-observed end-to-end wall time from this attempt's canonical
-   * `started` event through to this terminal event.
-   */
-  duration_ms?: number
-} & (
-  | BillingIntent
-  | BillingCheckoutReceived<SubscribeResponse['status']>
-  | BillingRequestSent
-  | BillingStarted
-  | BillingRecoveredSucceeded
-  | BillingFailed
-  | BillingTimedOut
-)
-
-type BillingOperationBillingEvent = {
-  operation: 'operation'
-  /** Absent when the initiating call itself failed, before the backend returned one to poll. */
-  billing_op_id?: string
-  operation_type: 'subscription' | 'topup' | 'cancel'
-  /** Set by the billing SDK rail, as is `resumed`; the poller never sets either. */
-  presentation?: BillingPresentation
-  /** True when this tab reattached to an operation it did not issue. */
-  resumed?: boolean
-  tier?: SubscriptionCheckoutTier
-  cycle?: BillingCycle
-  checkout_type?: SubscriptionCheckoutType
-  payment_intent_source?: PaymentIntentSource
-  /**
-   * Client-observed end-to-end wall time from this attempt's canonical
-   * `started` event through to this terminal event, including the
-   * initiating API call's latency (not just the poll-observation window).
-   * On `timeout` this is how long the client watched, not the operation's
-   * true duration.
-   */
-  duration_ms?: number
-} & (BillingStarted | BillingOperationTerminal)
-
-type ResubscribeBillingEvent = {
-  operation: 'resubscribe'
-  source: ResubscribeClickMetadata['source']
-  checkout_attempt_id?: string
-  payment_intent_source?: PaymentIntentSource
-} & (BillingStarted | BillingRecoveredSucceeded | BillingFailed)
-
-type TopupBillingEvent = {
-  operation: 'topup'
-  billing_op_id?: string
-  /**
-   * Surface the top-up was opened from. Absent when the caller named none,
-   * exactly as on the subscription rail's events — absent is no claim, never
-   * an implied default. Named `payment_intent_source` to match its siblings
-   * above; the journey's own `entry_source` is a separate, smaller enum.
-   */
-  payment_intent_source?: PaymentIntentSource
-  /**
-   * Client-observed end-to-end wall time from this attempt's canonical
-   * `started` event through to this terminal event.
-   */
-  duration_ms?: number
-} & (
-  | BillingIntent
-  | BillingCheckoutReceived<CreateTopupResponse['status']>
-  | BillingRequestSent
-  | BillingStarted
-  | BillingSucceeded
-  | BillingFailed
-)
-
-type DowngradeToPersonalBillingEvent = {
-  operation: 'downgrade_to_personal'
-  member_removal_count: number
-  member_removal_failures: number
-  target_tier?: TierKey
-  /**
-   * Client-observed end-to-end wall time from this attempt's canonical
-   * `started` event through to this terminal event.
-   */
-  duration_ms?: number
-} & (BillingStarted | BillingSucceeded | BillingFailed)
-
-type CapabilityReadBillingEvent = {
-  operation: 'capability_read'
-} & (BillingSucceeded | Pick<BillingFailed, 'stage' | 'outcome'>)
-
-type WebHandoffBillingEvent = {
-  operation: 'web_handoff'
-  stage: 'opened'
-  outcome: 'pending'
-  intent: HostedBillingIntent
-  result: 'opened' | 'blocked'
-  payment_intent_source?: PaymentIntentSource
-  /** The cloud journey id the entry link carries as `correlation_id`. */
-  correlation_id: string
-}
-
-type BillingSurface = 'cloud_app' | 'billing_web'
-
-type BillingClient = 'sdk' | 'legacy'
-
-export type BillingTelemetryEvent = {
-  /** The rail of the code that emitted the event; absent when the emitter does not know it. */
-  billing_client?: BillingClient
-} & (
-  | CapabilityReadBillingEvent
-  | SubscriptionCheckoutBillingEvent
-  | BillingOperationBillingEvent
-  | ResubscribeBillingEvent
-  | TopupBillingEvent
-  | DowngradeToPersonalBillingEvent
-  | WebHandoffBillingEvent
-)
-
-type BillingTelemetryEventNameFor<T extends BillingTelemetryEvent> =
-  T extends BillingTelemetryEvent
-    ? `billing.${T['operation']}.${T['stage']}`
-    : never
-
-export type BillingTelemetryEventName =
-  BillingTelemetryEventNameFor<BillingTelemetryEvent>
-
-export function getBillingTelemetryEventName(
-  event: BillingTelemetryEvent
-): BillingTelemetryEventName {
-  return `billing.${event.operation}.${event.stage}` as BillingTelemetryEventName
-}
-
-type BillingTelemetryPayload = Record<string, unknown>
-
-type KeysOfUnion<T> = T extends unknown ? keyof T : never
-
-type BillingPayloadField = Exclude<
-  KeysOfUnion<BillingTelemetryEvent>,
-  'operation' | 'stage' | 'outcome'
->
-
-const BILLING_PAYLOAD_FIELD_HANDLING = {
-  checkout_status: 'required',
-  correlation_id: 'required',
-  failure_category: 'required',
-  intent: 'required',
-  member_removal_count: 'required',
-  member_removal_failures: 'required',
-  operation_type: 'required',
-  result: 'required',
-  source: 'required',
-  billing_client: 'optional',
-  billing_op_id: 'optional',
-  checkout_attempt_id: 'optional',
-  checkout_type: 'optional',
-  cycle: 'optional',
-  decline_reason: 'optional',
-  duration_ms: 'optional',
-  error_code: 'optional',
-  payment_intent_source: 'optional',
-  presentation: 'optional',
-  recovery_outcome: 'optional',
-  resumed: 'optional',
-  target_tier: 'optional',
-  tier: 'optional'
-} as const satisfies Record<BillingPayloadField, 'optional' | 'required'>
-
-const OPTIONAL_BILLING_PAYLOAD_FIELDS = Object.entries(
-  BILLING_PAYLOAD_FIELD_HANDLING
-).flatMap(([field, handling]) => (handling === 'optional' ? [field] : []))
-
-const REQUIRED_BILLING_PAYLOAD_FIELDS = Object.entries(
-  BILLING_PAYLOAD_FIELD_HANDLING
-).flatMap(([field, handling]) => (handling === 'required' ? [field] : []))
-
-const optionalBillingPayloadFields: ReadonlySet<string> = new Set(
-  OPTIONAL_BILLING_PAYLOAD_FIELDS
-)
-const requiredBillingPayloadFields: ReadonlySet<string> = new Set(
-  REQUIRED_BILLING_PAYLOAD_FIELDS
-)
-
-export function getBillingTelemetryEventPayload(event: BillingTelemetryEvent) {
-  const payload: BillingTelemetryPayload = {
-    operation: event.operation,
-    stage: event.stage,
-    outcome: event.outcome
-  }
-
-  for (const [field, value] of Object.entries(event)) {
-    if (requiredBillingPayloadFields.has(field)) {
-      payload[field] = value
-    } else if (optionalBillingPayloadFields.has(field) && value !== undefined) {
-      payload[field] = value
-    }
-  }
-
-  return payload
-}
-
-/** Only the cloud build registers the sinks that call this; the desktop host sink claims no surface. */
-export function getCloudAppBillingTelemetryEventPayload(
-  event: BillingTelemetryEvent
-): BillingTelemetryPayload & { billing_surface: BillingSurface } {
-  return {
-    ...getBillingTelemetryEventPayload(event),
-    billing_surface: 'cloud_app'
-  }
 }
 
 /**
@@ -1953,39 +1675,7 @@ export const TelemetryEvents = {
   AGENT_PAYWALL_CTA_CLICKED: 'app:agent_paywall_cta_clicked',
 
   // Canonical Billing Lifecycle
-  BILLING_SUBSCRIPTION_CHECKOUT_RECEIVED:
-    'billing.subscription_checkout.checkout_received',
-  BILLING_TOPUP_CHECKOUT_RECEIVED: 'billing.topup.checkout_received',
-  BILLING_SUBSCRIPTION_CHECKOUT_REQUEST_SENT:
-    'billing.subscription_checkout.request_sent',
-  BILLING_TOPUP_REQUEST_SENT: 'billing.topup.request_sent',
-  BILLING_SUBSCRIPTION_CHECKOUT_INTENT: 'billing.subscription_checkout.intent',
-  BILLING_TOPUP_INTENT: 'billing.topup.intent',
-  BILLING_SUBSCRIPTION_CHECKOUT_STARTED:
-    'billing.subscription_checkout.started',
-  BILLING_SUBSCRIPTION_CHECKOUT_SUCCEEDED:
-    'billing.subscription_checkout.succeeded',
-  BILLING_SUBSCRIPTION_CHECKOUT_FAILED: 'billing.subscription_checkout.failed',
-  BILLING_SUBSCRIPTION_CHECKOUT_TIMEOUT:
-    'billing.subscription_checkout.timeout',
-  BILLING_OPERATION_STARTED: 'billing.operation.started',
-  BILLING_CAPABILITY_READ_SUCCEEDED: 'billing.capability_read.succeeded',
-  BILLING_CAPABILITY_READ_FAILED: 'billing.capability_read.failed',
-  BILLING_OPERATION_SUCCEEDED: 'billing.operation.succeeded',
-  BILLING_OPERATION_FAILED: 'billing.operation.failed',
-  BILLING_OPERATION_TIMEOUT: 'billing.operation.timeout',
-  BILLING_RESUBSCRIBE_STARTED: 'billing.resubscribe.started',
-  BILLING_RESUBSCRIBE_SUCCEEDED: 'billing.resubscribe.succeeded',
-  BILLING_RESUBSCRIBE_FAILED: 'billing.resubscribe.failed',
-  BILLING_TOPUP_STARTED: 'billing.topup.started',
-  BILLING_TOPUP_SUCCEEDED: 'billing.topup.succeeded',
-  BILLING_TOPUP_FAILED: 'billing.topup.failed',
-  BILLING_DOWNGRADE_TO_PERSONAL_STARTED:
-    'billing.downgrade_to_personal.started',
-  BILLING_DOWNGRADE_TO_PERSONAL_SUCCEEDED:
-    'billing.downgrade_to_personal.succeeded',
-  BILLING_DOWNGRADE_TO_PERSONAL_FAILED: 'billing.downgrade_to_personal.failed',
-  BILLING_WEB_HANDOFF_OPENED: 'billing.web_handoff.opened',
+  ...BILLING_TELEMETRY_EVENTS,
 
   // Onboarding Survey
   USER_SURVEY_OPENED: 'app:user_survey_opened',
