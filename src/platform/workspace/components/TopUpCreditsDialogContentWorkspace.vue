@@ -110,7 +110,7 @@
       </h3>
       <div class="flex gap-2 pt-3">
         <Button
-          v-for="amount in PRESET_AMOUNTS"
+          v-for="amount in TOPUP_AMOUNT_PRESETS_USD"
           :key="amount"
           :autofocus="amount === 50"
           variant="secondary"
@@ -302,6 +302,10 @@ import type {
   BillingOperationTerminal,
   CheckoutJourneyPhaseEvent
 } from '@comfyorg/account-core/billing'
+import {
+  getTopupAmountPreset,
+  TOPUP_AMOUNT_PRESETS_USD
+} from '@comfyorg/account-core/billing'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -447,7 +451,6 @@ const verifyingBody = computed(() => {
 })
 
 // Constants
-const PRESET_AMOUNTS = [10, 25, 50, 100]
 const MIN_AMOUNT = 5
 const MAX_AMOUNT = 10000
 
@@ -612,13 +615,16 @@ async function handleBuy() {
   loading.value = true
   paymentSubmitted.value = true
   const attemptStartedAt = Date.now()
+  const amountCents = payAmount.value * 100
   try {
     telemetry?.trackApiCreditTopupButtonPurchaseClicked(payAmount.value)
     telemetry?.trackBillingEvent({
       operation: 'topup',
       stage: 'started',
       outcome: 'pending',
-      payment_intent_source: source
+      payment_intent_source: source,
+      amount_cents: amountCents,
+      amount_preset: getTopupAmountPreset(selectedPreset.value)
     })
     telemetry?.trackBillingEvent({
       operation: 'operation',
@@ -632,7 +638,6 @@ async function handleBuy() {
       emitTopupJourneyPhase(submittingJourney, { phase: 'submitted' })
     }
 
-    const amountCents = payAmount.value * 100
     const response = await topup(amountCents)
     if (!response) {
       if (isCurrentAttempt()) paymentSubmitted.value = false
