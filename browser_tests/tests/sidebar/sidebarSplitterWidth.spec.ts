@@ -48,6 +48,29 @@ test.describe('Sidebar splitter width independence', () => {
     await comfyPage.menu.nodeLibraryTab.open()
   }
 
+  test('keeps sidebar search state and pixel width when the viewport resizes', async ({
+    comfyPage
+  }) => {
+    await comfyPage.page.setViewportSize({ width: 1400, height: 900 })
+    await openSidebarAt(comfyPage, 'left')
+    await dragGutter(comfyPage, 80)
+    const sidebar = comfyPage.page.getByRole('complementary', {
+      name: enMessages.sideToolbar.sidebar
+    })
+    const width = (await sidebar.boundingBox())?.width
+    const search = comfyPage.menu.nodeLibraryTab.nodeLibrarySearchBoxInput
+    await search.fill('KSampler')
+    await expect(search).toBeFocused()
+
+    await comfyPage.page.setViewportSize({ width: 1200, height: 900 })
+
+    await expect
+      .poll(async () => (await sidebar.boundingBox())?.width)
+      .toBeCloseTo(width ?? 0, 0)
+    await expect(search).toHaveValue('KSampler')
+    await expect(search).toBeFocused()
+  })
+
   test('left and right sidebars use separate localStorage keys', async ({
     comfyPage
   }) => {

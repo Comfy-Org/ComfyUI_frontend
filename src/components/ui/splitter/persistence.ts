@@ -23,8 +23,9 @@ export function loadSplitterSizes(
       value.length === panelCount &&
       value.every(
         (size): size is number =>
-          typeof size === 'number' && Number.isFinite(size)
-      )
+          typeof size === 'number' && Number.isFinite(size) && size >= 0
+      ) &&
+      value.reduce((total, size) => total + size, 0) > 0
     ) {
       return value
     }
@@ -41,7 +42,8 @@ export function saveSplitterSizes(
 ) {
   try {
     storage?.setItem(key, JSON.stringify(sizes))
+    return Boolean(storage)
   } catch {
-    return
+    return false
   }
 }
