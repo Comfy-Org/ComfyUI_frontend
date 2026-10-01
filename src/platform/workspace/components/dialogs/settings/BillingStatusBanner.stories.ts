@@ -162,19 +162,6 @@ export const OutOfCreditsMember: Story = story(
   { canTopUp: false }
 )
 
-/** No top-up entitlement but self-serve upgrade is open: upgrade copy, not contact-admin. */
-export const OutOfCreditsSelfServe: Story = story(
-  {
-    subscription: exhausted,
-    canAccessSubscriptionFeatures: true,
-    billingStatus: 'paid',
-    subscriptionStatus: 'active',
-    renewalDate: RENEWAL_DATE
-  },
-  owner,
-  { canTopUp: false, canSubscribeSelfServe: true }
-)
-
 /** Cancelled but still active until the period end. Informational. */
 export const EndingOwner: Story = story(
   {
@@ -184,6 +171,18 @@ export const EndingOwner: Story = story(
     subscriptionStatus: 'canceled'
   },
   owner
+)
+
+/** Members see the end date without an action. */
+export const EndingMember: Story = story(
+  {
+    subscription: cancelled,
+    canAccessSubscriptionFeatures: true,
+    billingStatus: 'paid',
+    subscriptionStatus: 'canceled'
+  },
+  member,
+  { canTopUp: false }
 )
 
 export const EndingPromotedOwner: Story = story(
@@ -217,17 +216,18 @@ export const PlanChangeOwner: Story = story(
 const TEN_DAYS_MS = 10 * 24 * 60 * 60 * 1000
 
 /** An Enterprise end date stays quiet until it is two weeks out. */
-export const EndingEnterpriseOwner: Story = story(
-  {
-    subscription: {
-      ...cancelled,
-      tier: 'ENTERPRISE',
-      endDate: new Date(Date.now() + TEN_DAYS_MS).toISOString()
-    },
-    isTeamPlan: false,
-    canAccessSubscriptionFeatures: true,
-    billingStatus: 'paid',
-    subscriptionStatus: 'canceled'
+const enterpriseEnding: Partial<BillingContextMockState> = {
+  subscription: {
+    ...cancelled,
+    tier: 'ENTERPRISE',
+    endDate: new Date(Date.now() + TEN_DAYS_MS).toISOString()
   },
-  owner
-)
+  isTeamPlan: false,
+  canAccessSubscriptionFeatures: true,
+  billingStatus: 'paid',
+  subscriptionStatus: 'canceled'
+}
+
+export const EndingEnterpriseOwner: Story = story(enterpriseEnding, owner)
+
+export const EndingEnterpriseMember: Story = story(enterpriseEnding, member)
