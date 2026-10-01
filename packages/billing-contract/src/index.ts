@@ -26,6 +26,7 @@ export type {
   BillingEntryUrlResult
 } from './entryUrl.js'
 export { buildBillingEntryUrl } from './entryUrl.js'
+export { isContractIdentifier } from './identifiers.js'
 export type { ReturnTarget } from './returnTargets.js'
 export {
   RETURN_TARGETS,

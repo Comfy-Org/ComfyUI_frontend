@@ -1,3 +1,5 @@
+import { isContractIdentifier } from '@comfyorg/billing-contract'
+
 import type { ServerFeatureFlag } from '@/composables/useFeatureFlags'
 import type {
   CheckoutAssignmentStatus,
@@ -440,8 +442,10 @@ function readIdentity(
     candidate
   // A non-finite started_at_ms would make every expiry comparison false, so an
   // immortal journey could be persisted by hand; an unparseable entered_at
-  // would reach telemetry as the journey's declared UTC entry time.
+  // would reach telemetry as the journey's declared UTC entry time; a
+  // journey_id the billing contract refuses would stop the hosted handoff.
   return typeof journey_id === 'string' &&
+    isContractIdentifier(journey_id) &&
     typeof entered_at === 'string' &&
     !Number.isNaN(Date.parse(entered_at)) &&
     typeof started_at_ms === 'number' &&
