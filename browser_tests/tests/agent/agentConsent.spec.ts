@@ -605,7 +605,6 @@ test.describe(
           .toBeGreaterThan(0)
         await approve.click({ trial: true })
         await expect(consent).toHaveCount(0)
-        await expect(agentPanel.root).toHaveCount(0)
         expect(
           await page.evaluate(() =>
             localStorage.getItem(
@@ -615,10 +614,11 @@ test.describe(
         ).toBeNull()
       })
 
-      await test.step('Approving clears the screen and the offer follows', async () => {
+      await test.step('Approving clears the screen and reveals the activated panel', async () => {
         await approve.click()
         await expect(approval).toHaveCount(0)
-        await expect(consent).toBeVisible()
+        await expect(agentPanel.root).toBeVisible()
+        await expect(consent).toHaveCount(0)
       })
     })
   }

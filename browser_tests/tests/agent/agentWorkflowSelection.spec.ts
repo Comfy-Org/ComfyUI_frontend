@@ -148,7 +148,7 @@ test.describe(
       await composer.fill('Start in this workflow')
       await composer.press('Enter')
       await expect.poll(() => workflowSelection.postedMessages.length).toBe(1)
-      await expect(composer).toHaveText('Start in this workflow')
+      await expect(composer).toHaveText('')
       await composer.fill('@')
       await panel
         .getByRole('menuitem', {
@@ -228,8 +228,7 @@ test.describe(
       await composer.fill('Start in this workflow')
       await composer.press('Enter')
       await expect.poll(() => workflowSelection.postedMessages.length).toBe(1)
-      await expect(composer).toHaveText('Start in this workflow')
-      await composer.fill('')
+      await expect(composer).toHaveText('')
       await page
         .getByRole('button', {
           name: enMessages.sideToolbar.newBlankWorkflow,
@@ -417,7 +416,7 @@ test.describe(
 
       await composer.press('Enter')
       await expect.poll(() => workflowSelection.postedMessages.length).toBe(1)
-      await expect(composer).toHaveText('Find a workflow for skin upscaling')
+      await expect(composer).toHaveText('')
 
       const editorTabs = page.getByTestId('workflow-tab')
       const targetTab = editorTabs

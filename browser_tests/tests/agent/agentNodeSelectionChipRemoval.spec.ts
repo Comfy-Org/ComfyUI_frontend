@@ -28,9 +28,9 @@ test.describe(
       const panel = agentPanel.root
       await agentPanel.enterNodeSelectionMode()
       await comfyPage.canvasOps.waitForViewToSettle()
-      const unselectedCanvas = await comfyPage.canvas.screenshot({
-        mask: [panel]
-      })
+      await expect
+        .poll(() => comfyPage.nodeOps.getSelectedGraphNodesCount())
+        .toBe(0)
 
       await test.step('Select the node into the composer', async () => {
         const [{ x, y }, { width, height }] = await Promise.all([
@@ -47,6 +47,9 @@ test.describe(
             name: `Remove KSampler #${node.id} reference`
           })
         ).toBeVisible()
+        await expect
+          .poll(() => comfyPage.nodeOps.getSelectedGraphNodesCount())
+          .toBe(1)
       })
 
       const removeButton = panel.getByRole('button', {
@@ -57,8 +60,8 @@ test.describe(
         await removeButton.click()
         await expect(removeButton).toHaveCount(0)
         await expect
-          .poll(() => comfyPage.canvas.screenshot({ mask: [panel] }))
-          .toEqual(unselectedCanvas)
+          .poll(() => comfyPage.nodeOps.getSelectedGraphNodesCount())
+          .toBe(0)
       })
     })
   }
