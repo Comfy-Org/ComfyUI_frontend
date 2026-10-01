@@ -159,6 +159,7 @@ function parseToolCallEntry(
       tool_call_id: true,
       tool_name: true,
       status: true,
+      skill: true,
       duration_ms: true
     })
     .safeParse(entry)
