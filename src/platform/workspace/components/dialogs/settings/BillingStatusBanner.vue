@@ -121,9 +121,9 @@ const isEnterprisePlan = computed(
   () => subscription.value?.tier === 'ENTERPRISE'
 )
 function longDate(raw: string | null | undefined): string {
-  return raw
-    ? d(new Date(raw), { year: 'numeric', month: 'long', day: 'numeric' })
-    : ''
+  const date = raw ? new Date(raw) : null
+  if (!date || Number.isNaN(date.getTime())) return ''
+  return d(date, { year: 'numeric', month: 'long', day: 'numeric' })
 }
 const cycleResetDate = computed(() => longDate(renewalDate.value))
 const planEndDate = computed(() => longDate(subscription.value?.endDate))

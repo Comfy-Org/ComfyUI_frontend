@@ -535,6 +535,20 @@ describe('BillingStatusBanner', () => {
     )
   })
 
+  it('still renders the ending banner when the end date is malformed', () => {
+    state.subscription = {
+      hasFunds: true,
+      isCancelled: true,
+      endDate: 'not-a-date',
+      scheduledChange: null
+    }
+    renderBanner()
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Members keep full access until then.'
+    )
+  })
+
   it('dismisses a scheduled change banner', async () => {
     scheduledFor('pro-annual')
     renderBanner()
