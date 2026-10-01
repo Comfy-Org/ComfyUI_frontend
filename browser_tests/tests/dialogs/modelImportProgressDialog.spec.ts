@@ -165,10 +165,12 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
         toast.getByRole('button', { name: 'Collapse' })
       ).toBeVisible()
       const cancelButton = toast.getByRole('button', {
-        name: 'Cancel Download'
+        name: 'Cancel',
+        exact: true
       })
       await expect(cancelButton).toBeVisible()
-      await cancelButton.click()
+      await cancelButton.focus()
+      await page.keyboard.press('Enter')
 
       const response = await cancellationResponse
       expect(response.status()).toBe(204)
@@ -176,6 +178,9 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
         toast.getByText('Cancelled', { exact: true }).first()
       ).toBeVisible()
       await expect(toast.getByRole('button', { name: 'Close' })).toBeHidden()
+      await expect(
+        toast.getByRole('button', { name: 'Collapse' })
+      ).toBeFocused()
     })
 
     await test.step('keep the terminal backend state rendered', async () => {
@@ -192,7 +197,7 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
         toast.getByText('Cancelled', { exact: true }).first()
       ).toBeVisible()
       await expect(
-        toast.getByRole('button', { name: 'Cancel Download' })
+        toast.getByRole('button', { name: 'Cancel', exact: true })
       ).toBeHidden()
       await expect(toast.getByRole('button', { name: 'Close' })).toBeVisible()
     })
