@@ -84,6 +84,7 @@
     "historyCurrent": "Geçerli",
     "historyEarlier": "Daha önce",
     "historyEmpty": "Henüz konuşma yok",
+    "historyOpenFailed": "Açılamadı. Yeniden denemek için bu sohbeti seçin.",
     "historyToday": "Bugün",
     "historyYesterday": "Dün",
     "latest": "En son",
@@ -169,19 +170,30 @@
     "skip": "Atla",
     "stop": "Durdur",
     "stopShortcut": "Esc",
-    "suggestedPrompts": [
-      "Hokey maskeli sarı bir ördek oluştur",
-      "Kaydedilmiş iş akışlarımı listele",
-      "Cilt büyütme için en iyi iş akışını bul",
-      "Seçili düğümü açıkla",
-      "3 modelle görüntüden videoya iş akışı oluştur"
-    ],
+    "suggestedPrompts": {
+      "cloud": [
+        "Bir astronotun karakter tasarım sayfasını oluştur",
+        "Ürün görselini kısa bir reklama dönüştür",
+        "Seçili düğümleri açıkla",
+        "4K için en iyi görüntü büyütme iş akışı",
+        "Bu iş akışındaki hataları düzelt"
+      ],
+      "local": [
+        "Bir astronotun gerçekçi portresini oluştur",
+        "GPU'ma uygun bir görüntüden videoya iş akışı",
+        "Seçili düğümleri açıkla",
+        "Bu iş akışı için eksik düğümleri yüklememe yardım et",
+        "Bu iş akışındaki hataları düzelt"
+      ]
+    },
     "switchWorkflow": "İş akışını değiştir",
     "switchWorkflowForNodes": "Düğüm eklemek için {workflowName} iş akışına geçin.",
     "takeTour": "Turu başlat",
     "targetFollowsVisibleWorkflow": "Hedef iş akışı, bir hedef seçene, düğüm referansı ekleyene veya mesaj gönderene kadar görünür sekmeyi takip eder.",
     "targetForThisChat": "Bu sohbet için ajan hedefi",
     "targetNavigationUnavailable": "Bu iş akışı hedefi artık kullanılamıyor.",
+    "targetWorkflowOpenFailed": "Hedef iş akışı açılamadı.",
+    "targetWorkflowUnavailable": "Hedef iş akışı artık kullanılamıyor.",
     "thinking": "Düşünüyor...",
     "title": "Comfy Agent",
     "toolForgettingPreference": "Bir tercih unutuluyor",
@@ -543,6 +555,20 @@
       "expired": "Doğrulamanın süresi doldu. Lütfen doğrulama işlemini tekrar tamamlayın.",
       "failed": "Doğrulama başarısız oldu. Lütfen tekrar deneyin.",
       "submitBlockedHint": "Kayıt olmayı etkinleştirmek için yukarıdaki doğrulama işlemini tamamlayın."
+    },
+    "webSession": {
+      "reconnecting": {
+        "detail": "Şu anda Comfy'ye ulaşamıyoruz. Yeniden denemeye devam edeceğiz; oturumunuz açık kalacak.",
+        "retry": "Şimdi yeniden dene",
+        "title": "Hesabınıza yeniden bağlanılıyor"
+      },
+      "token": {
+        "ended": "Oturumunuz sona erdi. Devam etmek için yeniden oturum açın.",
+        "identityChanged": "Oturumunuz değişti. Devam etmek için yeniden yükleyin.",
+        "refused": "İsteğiniz reddedildi. Sayfayı yeniden yükleyip tekrar deneyin.",
+        "unavailable": "Hesabınıza ulaşamadık. Biraz sonra tekrar deneyin.",
+        "workspaceDenied": "Bu çalışma alanına erişiminiz yok. Bu durum devam ederse destek ekibiyle iletişime geçin."
+      }
     }
   },
   "batch": {
@@ -648,6 +674,46 @@
     "saveAs": "Farklı kaydet",
     "switchToOutputs": "Çıktılara Geç",
     "viewApp": "Uygulamayı görüntüle"
+  },
+  "cameraAngle": {
+    "cameraView": "Kamera",
+    "cameraViewTooltip": "Kamerayı öznenin etrafında hareket ettirin",
+    "faces": {
+      "back": "ARKA",
+      "bottom": "ALT",
+      "left": "SOL",
+      "right": "SAĞ",
+      "top": "ÜST"
+    },
+    "hidePreview": "Çekim önizlemesini gizle",
+    "horizontal": {
+      "back": "Arka",
+      "backLeft": "Sol arka",
+      "backRight": "Sağ arka",
+      "front": "Ön",
+      "frontLeft": "Sol ön",
+      "frontRight": "Sağ ön",
+      "left": "Sol taraf",
+      "right": "Sağ taraf"
+    },
+    "horizontalLabel": "Yatay açı",
+    "objectView": "Nesne",
+    "objectViewTooltip": "Kameradan bakın ve özneyi döndürün",
+    "preview": "Önizleme",
+    "showPreview": "Çekim önizlemesini göster",
+    "vertical": {
+      "elevated": "Yüksek konum",
+      "eyeLevel": "Göz hizası",
+      "highAngle": "Yüksek açı",
+      "lowAngle": "Alçak açı"
+    },
+    "verticalLabel": "Dikey açı",
+    "zoom": {
+      "closeUp": "Yakın plan",
+      "medium": "Orta çekim",
+      "wide": "Geniş çekim"
+    },
+    "zoomLabel": "Çekim boyutu"
   },
   "clipboard": {
     "errorMessage": "Panoya kopyalanamadı",
@@ -1901,6 +1967,7 @@
     "itemsSelected": "Hiç öğe seçilmedi | {count} öğe seçildi | {count} öğe seçildi",
     "job": "Görev",
     "jobIdCopied": "İş kimliği panoya kopyalandı",
+    "jobs": "İşler",
     "keybinding": "Tuş Ataması",
     "keybindingAlreadyExists": "Tuş ataması zaten mevcut:",
     "keybindingListAriaLabel": "Kısayol Tuşları: {combos}",
@@ -2054,6 +2121,7 @@
     "restore": "Geri yükle",
     "restoreDialog": "Diyaloğu geri yükle",
     "resultsCount": "{count} Sonuç Bulundu",
+    "retry": "Yeniden Dene",
     "running": "Çalışıyor",
     "save": "Kaydet",
     "saveAnyway": "Yine de Kaydet",
@@ -2190,6 +2258,7 @@
       "r": "R",
       "rgb": "RGB"
     },
+    "checkerboard": "Saydamlığı göster",
     "clipWarnings": "Kırpma uyarıları",
     "dither": "Dithering",
     "exposure": "Pozlama",
@@ -4922,6 +4991,7 @@
     "failedToFetchBalance": "Bakiye alınamadı: {error}",
     "failedToFetchLogs": "Sunucu günlükleri alınamadı",
     "failedToFetchSubscription": "Abonelik durumu alınamadı: {error}",
+    "failedToInitializeCameraAngleViewer": "Kamera Açısı görüntüleyicisi başlatılamadı. Sayfayı yeniden yüklemeyi deneyin.",
     "failedToInitializeCameraInfoViewer": "Kamera Bilgisi görüntüleyicisi başlatılamadı. Sayfayı yeniden yüklemeyi deneyin.",
     "failedToInitializeLoad3dViewer": "3D Görüntüleyici başlatılamadı",
     "failedToInitiateCreditPurchase": "Kredi satın alma başlatılamadı: {error}",
@@ -5199,6 +5269,7 @@
         "memberBody": "Bu çalışma alanının aboneliği duraklatıldı. Çalışma alanı yöneticilerinizin ödeme yöntemini güncellemesi gerekiyor.",
         "title": "Abonelik duraklatıldı"
       },
+      "payInvoice": "Faturayı öde",
       "planChange": {
         "body": "Mevcut planınız o tarihe kadar etkin kalır.",
         "title": "Planınız {date} tarihinde {plan} olarak değişecek"
@@ -5206,6 +5277,7 @@
       "updatePayment": "Ödemeyi güncelle",
       "warning": {
         "bodyNoDate": "Son ödemeniz gerçekleşmedi. Duraklatmayı önlemek için ödemeyi güncelleyin.",
+        "bodyWithAmount": "{amount} tutarındaki ödemeniz işlenemedi. Duraklamayı önlemek için faturayı ödeyin veya ödeme bilgilerinizi güncelleyin.",
         "title": "Ödeme reddedildi"
       }
     },
@@ -5246,10 +5318,19 @@
     "inviteLimitReached": "En fazla {count} üyeye ulaştınız",
     "inviteLinks": {
       "copied": "Kopyalandı!",
+      "copiedToast": "Davet bağlantısı kopyalandı",
       "copyAll": "Davet bağlantısını kopyala | Tüm bağlantıları kopyala ({count})",
+      "copyFailedToast": "Davet bağlantısı kopyalanamadı",
       "copyLink": "Davet bağlantısını kopyala",
+      "invalidBody": "Süresi dolmuş veya değiştirilmiş olabilir. Sizi davet eden kişiden yeni bir bağlantı isteyin.",
+      "invalidDismiss": "Anladım",
+      "invalidTitle": "Bu davet bağlantısı artık geçerli değil",
       "sentLead": "Her davetin doğrudan paylaşabileceğiniz kişisel bir bağlantısı vardır:",
-      "sentTitle": "{count} davet gönderildi | {count} davet gönderildi"
+      "sentTitle": "{count} davet gönderildi | {count} davet gönderildi",
+      "switchAccount": "Hesap değiştir",
+      "wrongAccountBody": "{email} olarak oturum açtınız. Kabul etmek için bu daveti alan e-posta adresiyle oturum açın.",
+      "wrongAccountBodyGeneric": "Bu davet, oturum açtığınız e-posta adresinden farklı bir e-posta adresine gönderildi. Daveti alan e-posta adresiyle oturum açın.",
+      "wrongAccountTitle": "Bu davet farklı bir e-posta adresine gönderildi"
     },
     "inviteMember": "Üye Davet Et",
     "inviteMemberDialog": {
@@ -5290,7 +5371,8 @@
         "minutesAgo": "{n} dakika önce"
       },
       "columns": {
-        "creditsUsed": "Aylık kredi",
+        "creditsUsed": "Bu ay kullanılan krediler",
+        "email": "E-posta",
         "expiryDate": "Son kullanma tarihi",
         "inviteDate": "Davet tarihi",
         "role": "Rol"
@@ -5310,11 +5392,13 @@
       "endedPlanTitle": "Planınız sona erdi",
       "endedTeamTitle": "Ekip planınız sona erdi",
       "expiredOn": "{date} tarihinde sona erdi",
-      "header": "Üyeler",
+      "loadFailed": "Bu sayfadaki her şey yüklenemedi.",
       "membersCount": "{maxSeats} üyeden {count} üye",
       "needMoreMembers": "Daha fazla üyeye mi ihtiyacınız var?",
       "noInvites": "Bekleyen davet yok",
+      "noInvitesMatch": "\"{query}\" ile eşleşen davet yok",
       "noMembers": "Üye yok",
+      "noMembersMatch": "\"{query}\" ile eşleşen üye yok",
       "pendingInvitesCount": "{count} bekleyen davet | {count} bekleyen davet",
       "reactivateTeam": "Takımı Yeniden Etkinleştir",
       "resubscribe": "Yeniden abone ol",
@@ -5323,6 +5407,8 @@
         "active": "Aktif",
         "pendingCount": "Bekliyor ({count})"
       },
+      "totalMembersCount": "Toplam {maxSeats} üyenin {count} kadarı.",
+      "totalMembersUnlimited": "Toplam {count} üye. | Toplam {count} üye.",
       "upgradeToTeam": "Takıma Yükselt",
       "upsellBanner": "Takım arkadaşları eklemek için planınızı yükseltin.",
       "upsellBannerEnterpriseEnded": "Enterprise planınızı yeniden etkinleştirmek için satış ekibiyle iletişime geçin.",
@@ -5400,9 +5486,7 @@
       "title": "Bu kişiyi davet etme?"
     },
     "tabs": {
-      "dashboard": "Kontrol Paneli",
-      "membersCount": "Üyeler ({count})",
-      "planCredits": "Plan & Kredi"
+      "dashboard": "Kontrol Paneli"
     },
     "toast": {
       "failedToCreateWorkspace": "Çalışma alanı oluşturulamadı",

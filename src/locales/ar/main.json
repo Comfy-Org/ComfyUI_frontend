@@ -84,6 +84,7 @@
     "historyCurrent": "الحالية",
     "historyEarlier": "سابقًا",
     "historyEmpty": "لا توجد محادثات بعد",
+    "historyOpenFailed": "تعذّر الفتح. حدّد هذه الدردشة لإعادة المحاولة.",
     "historyToday": "اليوم",
     "historyYesterday": "أمس",
     "latest": "الأحدث",
@@ -169,19 +170,30 @@
     "skip": "تخطي",
     "stop": "إيقاف",
     "stopShortcut": "Esc",
-    "suggestedPrompts": [
-      "أنشئ بطة صفراء ترتدي قناع هوكي",
-      "اعرض سير العمل المحفوظ لدي",
-      "اعثر على أفضل سير عمل لتحسين دقة البشرة",
-      "اشرح العقدة المحددة",
-      "أنشئ سير عمل لتحويل صورة إلى فيديو باستخدام 3 نماذج"
-    ],
+    "suggestedPrompts": {
+      "cloud": [
+        "أنشئ ورقة شخصية لرائد فضاء",
+        "حوّل صورة المنتج إلى إعلان قصير",
+        "اشرح العقد المحددة",
+        "أفضل سير عمل لترقية دقة الصور إلى 4K",
+        "أصلح الأخطاء في سير العمل هذا"
+      ],
+      "local": [
+        "أنشئ صورة شخصية واقعية لرائد فضاء",
+        "سير عمل من صورة إلى فيديو يناسب GPU لدي",
+        "اشرح العقد المحددة",
+        "ساعدني في تثبيت العقد المفقودة لسير العمل هذا",
+        "أصلح الأخطاء في سير العمل هذا"
+      ]
+    },
     "switchWorkflow": "تبديل سير العمل",
     "switchWorkflowForNodes": "انتقل إلى {workflowName} لإضافة عُقد.",
     "takeTour": "ابدأ الجولة",
     "targetFollowsVisibleWorkflow": "يتبع مخطط سير العمل المستهدف علامة التبويب الظاهرة إلى أن تختار هدفًا أو تشير إلى عقد أو ترسل رسالة.",
     "targetForThisChat": "هدف الوكيل لهذه الدردشة",
     "targetNavigationUnavailable": "لم يعد هدف سير العمل هذا متاحًا.",
+    "targetWorkflowOpenFailed": "تعذّر فتح سير العمل المستهدف.",
+    "targetWorkflowUnavailable": "لم يعد سير العمل المستهدف متاحًا.",
     "thinking": "جارٍ التفكير...",
     "title": "Comfy Agent",
     "toolForgettingPreference": "إزالة تفضيل",
@@ -543,6 +555,20 @@
       "expired": "انتهت صلاحية التحقق. يرجى إكمال التحقق مرة أخرى.",
       "failed": "فشل التحقق. يرجى المحاولة مرة أخرى.",
       "submitBlockedHint": "يرجى إكمال التحقق أعلاه لتفعيل التسجيل."
+    },
+    "webSession": {
+      "reconnecting": {
+        "detail": "يتعذر علينا الوصول إلى Comfy الآن. سنواصل إعادة المحاولة، وستبقى مسجّلًا للدخول.",
+        "retry": "إعادة المحاولة الآن",
+        "title": "جارٍ إعادة الاتصال بحسابك"
+      },
+      "token": {
+        "ended": "انتهت جلستك. سجّل الدخول مجددًا للمتابعة.",
+        "identityChanged": "تغيّرت جلستك. أعد التحميل للمتابعة.",
+        "refused": "تم رفض طلبك. أعد تحميل الصفحة وحاول مجددًا.",
+        "unavailable": "لم نتمكن من الوصول إلى حسابك. حاول مجددًا بعد لحظات.",
+        "workspaceDenied": "ليس لديك وصول إلى مساحة العمل هذه. تواصل مع الدعم إذا استمر حدوث ذلك."
+      }
     }
   },
   "batch": {
@@ -648,6 +674,46 @@
     "saveAs": "حفظ باسم",
     "switchToOutputs": "الانتقال إلى المخرجات",
     "viewApp": "عرض التطبيق"
+  },
+  "cameraAngle": {
+    "cameraView": "الكاميرا",
+    "cameraViewTooltip": "حرّك الكاميرا حول العنصر",
+    "faces": {
+      "back": "خلف",
+      "bottom": "أسفل",
+      "left": "يسار",
+      "right": "يمين",
+      "top": "أعلى"
+    },
+    "hidePreview": "إخفاء معاينة اللقطة",
+    "horizontal": {
+      "back": "خلفي",
+      "backLeft": "خلفي أيسر",
+      "backRight": "خلفي أيمن",
+      "front": "أمامي",
+      "frontLeft": "أمامي أيسر",
+      "frontRight": "أمامي أيمن",
+      "left": "الجانب الأيسر",
+      "right": "الجانب الأيمن"
+    },
+    "horizontalLabel": "الزاوية الأفقية",
+    "objectView": "العنصر",
+    "objectViewTooltip": "انظر عبر الكاميرا ودوّر العنصر",
+    "preview": "معاينة",
+    "showPreview": "إظهار معاينة اللقطة",
+    "vertical": {
+      "elevated": "مرتفع",
+      "eyeLevel": "مستوى العين",
+      "highAngle": "زاوية عالية",
+      "lowAngle": "زاوية منخفضة"
+    },
+    "verticalLabel": "الزاوية العمودية",
+    "zoom": {
+      "closeUp": "لقطة مقرّبة",
+      "medium": "لقطة متوسطة",
+      "wide": "لقطة واسعة"
+    },
+    "zoomLabel": "حجم اللقطة"
   },
   "clipboard": {
     "errorMessage": "فشل النسخ إلى الحافظة",
@@ -1901,6 +1967,7 @@
     "itemsSelected": "لم يتم تحديد أي عناصر | تم تحديد عنصر واحد | تم تحديد {count} عناصر",
     "job": "مهمة",
     "jobIdCopied": "تم نسخ معرف المهمة إلى الحافظة",
+    "jobs": "المهام",
     "keybinding": "اختصار لوحة المفاتيح",
     "keybindingAlreadyExists": "الاختصار موجود بالفعل في",
     "keybindingListAriaLabel": "اختصارات لوحة المفاتيح: {combos}",
@@ -2054,6 +2121,7 @@
     "restore": "استعادة",
     "restoreDialog": "استعادة الحوار",
     "resultsCount": "تم العثور على {count} نتيجة",
+    "retry": "إعادة المحاولة",
     "running": "يعمل",
     "save": "حفظ",
     "saveAnyway": "احفظ على أي حال",
@@ -2190,6 +2258,7 @@
       "r": "R",
       "rgb": "RGB"
     },
+    "checkerboard": "إظهار الشفافية",
     "clipWarnings": "تحذيرات القص",
     "dither": "تنعيم",
     "exposure": "التعريض",
@@ -4922,6 +4991,7 @@
     "failedToFetchBalance": "فشل في جلب الرصيد: {error}",
     "failedToFetchLogs": "فشل في جلب سجلات الخادم",
     "failedToFetchSubscription": "فشل في جلب حالة الاشتراك: {error}",
+    "failedToInitializeCameraAngleViewer": "تعذّر تهيئة عارض زاوية الكاميرا. حاول إعادة تحميل الصفحة.",
     "failedToInitializeCameraInfoViewer": "تعذّر تهيئة عارض معلومات الكاميرا. حاول إعادة تحميل الصفحة.",
     "failedToInitializeLoad3dViewer": "فشل في تهيئة عارض ثلاثي الأبعاد",
     "failedToInitiateCreditPurchase": "فشل في بدء شراء الرصيد: {error}",
@@ -5199,6 +5269,7 @@
         "memberBody": "تم إيقاف اشتراك هذه المساحة workspace مؤقتًا. يجب على مسؤولي المساحة تحديث طريقة الدفع.",
         "title": "تم إيقاف الاشتراك مؤقتًا"
       },
+      "payInvoice": "دفع الفاتورة",
       "planChange": {
         "body": "تظل خطتك الحالية نشطة حتى ذلك الحين.",
         "title": "تتغير خطتك إلى {plan} في {date}"
@@ -5206,6 +5277,7 @@
       "updatePayment": "تحديث الدفع",
       "warning": {
         "bodyNoDate": "لم تتم معالجة آخر دفعة لك. يرجى تحديث الدفع لتجنب الإيقاف.",
+        "bodyWithAmount": "تعذّرت معالجة دفعتك البالغة {amount}. ادفع الفاتورة أو حدّث طريقة الدفع لتجنّب الإيقاف المؤقت.",
         "title": "تم رفض الدفع"
       }
     },
@@ -5246,10 +5318,19 @@
     "inviteLimitReached": "لقد وصلت إلى الحد الأقصى البالغ {count} من الأعضاء",
     "inviteLinks": {
       "copied": "تم النسخ!",
+      "copiedToast": "تم نسخ رابط الدعوة",
       "copyAll": "نسخ رابط الدعوة | نسخ كل الروابط ({count})",
+      "copyFailedToast": "تعذّر نسخ رابط الدعوة",
       "copyLink": "نسخ رابط الدعوة",
+      "invalidBody": "ربما انتهت صلاحيته أو تم استبداله. اطلب من الشخص الذي دعاك رابطًا جديدًا.",
+      "invalidDismiss": "فهمت",
+      "invalidTitle": "لم يعد رابط الدعوة هذا صالحًا",
       "sentLead": "لكل دعوة رابط شخصي يمكنك مشاركته مباشرةً:",
-      "sentTitle": "تم إرسال {count} دعوة | تم إرسال {count} دعوات"
+      "sentTitle": "تم إرسال {count} دعوة | تم إرسال {count} دعوات",
+      "switchAccount": "تبديل الحساب",
+      "wrongAccountBody": "أنت مسجّل الدخول باسم {email}. سجّل الدخول بالبريد الإلكتروني الذي تلقّى هذه الدعوة لقبولها.",
+      "wrongAccountBodyGeneric": "أُرسلت هذه الدعوة إلى عنوان بريد إلكتروني مختلف عن العنوان الذي سجّلت الدخول به. سجّل الدخول بالبريد الإلكتروني الذي تلقّاها.",
+      "wrongAccountTitle": "أُرسلت هذه الدعوة إلى بريد إلكتروني مختلف"
     },
     "inviteMember": "دعوة عضو",
     "inviteMemberDialog": {
@@ -5290,7 +5371,8 @@
         "minutesAgo": "منذ {n} دقيقة"
       },
       "columns": {
-        "creditsUsed": "الرصيد الشهري",
+        "creditsUsed": "الأرصدة المستخدمة هذا الشهر",
+        "email": "البريد الإلكتروني",
         "expiryDate": "تاريخ الانتهاء",
         "inviteDate": "تاريخ الدعوة",
         "role": "الدور"
@@ -5310,11 +5392,13 @@
       "endedPlanTitle": "انتهت خطتك",
       "endedTeamTitle": "انتهت خطة فريقك",
       "expiredOn": "انتهت في {date}",
-      "header": "الأعضاء",
+      "loadFailed": "تعذّر تحميل كل شيء في هذه الصفحة.",
       "membersCount": "{count} من أصل {maxSeats} أعضاء",
       "needMoreMembers": "تحتاج إلى المزيد من الأعضاء؟",
       "noInvites": "لا توجد دعوات معلقة",
+      "noInvitesMatch": "لا توجد دعوات تطابق \"{query}\"",
       "noMembers": "لا يوجد أعضاء",
+      "noMembersMatch": "لا يوجد أعضاء يطابقون \"{query}\"",
       "pendingInvitesCount": "{count} دعوة معلقة | {count} دعوات معلقة",
       "reactivateTeam": "إعادة تفعيل الفريق",
       "resubscribe": "إعادة الاشتراك",
@@ -5323,6 +5407,8 @@
         "active": "نشط",
         "pendingCount": "معلق ({count})"
       },
+      "totalMembersCount": "{count} من أصل {maxSeats} عضوًا إجمالًا.",
+      "totalMembersUnlimited": "{count} عضو إجمالًا. | {count} أعضاء إجمالًا.",
       "upgradeToTeam": "الترقية إلى فريق",
       "upsellBanner": "لإضافة زملاء، قم بترقية خطتك.",
       "upsellBannerEnterpriseEnded": "تواصل مع المبيعات لإعادة تفعيل خطة المؤسسات الخاصة بك.",
@@ -5400,9 +5486,7 @@
       "title": "إلغاء دعوة هذا الشخص؟"
     },
     "tabs": {
-      "dashboard": "لوحة التحكم",
-      "membersCount": "الأعضاء ({count})",
-      "planCredits": "الخطة والأرصدة"
+      "dashboard": "لوحة التحكم"
     },
     "toast": {
       "failedToCreateWorkspace": "فشل في إنشاء مساحة العمل",
