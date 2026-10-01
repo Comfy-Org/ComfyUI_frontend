@@ -445,6 +445,7 @@ defineExpose({
     <slot name="aboveInput" />
 
     <div
+      data-testid="composer-input-box"
       :class="
         cn(
           'relative -m-px flex flex-col border transition-colors',

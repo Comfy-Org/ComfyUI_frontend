@@ -70,6 +70,16 @@ describe('AgentPanel free-use placement', () => {
     expect(notices[0]).toHaveAttribute('data-placement', variant)
   })
 
+  it.for([
+    ['above-input', false],
+    ['inside-input', true]
+  ] as const)('renders %s relative to the input box', ([variant, isInside]) => {
+    mount(variant)
+
+    const inputBox = screen.getByTestId('composer-input-box')
+    expect(inputBox.contains(notice())).toBe(isInside)
+  })
+
   it('hides the top banner while chat history is open', async () => {
     mount('top-banner')
 
