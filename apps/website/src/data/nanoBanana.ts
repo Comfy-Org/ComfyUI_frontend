@@ -39,6 +39,11 @@ const photographyCards = localCards('photography', [
     slug: 'octopus',
     en: 'Octopus swimming beneath sunlit water',
     'zh-CN': '在阳光穿透的海水中游动的章鱼'
+  },
+  {
+    slug: 'rain-cyclist',
+    en: 'Cyclist splashing through a rain-soaked city street at dusk',
+    'zh-CN': '黄昏时分骑行者溅水穿过雨后城市街道'
   }
 ])
 
