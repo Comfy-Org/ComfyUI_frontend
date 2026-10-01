@@ -40,9 +40,8 @@ const section = (name: string) => within(panel()).getByRole('region', { name })
 const undo = () => screen.getByRole('button', { name: 'Undo' })
 const lightNames = () =>
   within(within(section('Lights')).getByRole('list', { name: 'Lights' }))
-    .getAllByRole('button')
-    .filter((button) => button.hasAttribute('aria-pressed'))
-    .map((button) => button.textContent.trim())
+    .getAllByRole('listitem')
+    .map((item) => within(item).getAllByRole('button')[0].textContent.trim())
 
 describe('RelightStudio', () => {
   it('relights from the floating panel: pick a light, change it, then get the result', async () => {
@@ -113,13 +112,36 @@ describe('RelightStudio', () => {
     ).toBeVisible()
   })
 
-  it('adds a directional light from the add menu and selects it', async () => {
+  it('places a directional light from the orbit presets and handles', async () => {
+    const user = await openExample()
+    const lights = section('Lights')
+    const elevation = within(lights).getByRole('slider', { name: 'Elevation' })
+
+    await user.click(within(lights).getByRole('button', { name: 'Top' }))
+
+    expect(
+      within(lights).getByRole('slider', { name: 'Direction' })
+    ).toHaveValue('90')
+    expect(elevation).toHaveValue('20')
+    expect(within(lights).getByRole('button', { name: 'Top' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
+    within(lights).getByRole('slider', { name: 'Height' }).focus()
+    await user.keyboard('{ArrowDown}')
+    expect(elevation).not.toHaveValue('20')
+    await user.click(undo())
+    expect(elevation).toHaveValue('20')
+  })
+
+  it('adds a directional light from the floating Add light menu and selects it', async () => {
     const user = await openExample()
     const lights = section('Lights')
 
-    await user.click(within(lights).getByRole('button', { name: 'Add light' }))
+    const tools = screen.getByRole('toolbar', { name: 'Relight tools' })
+    await user.click(within(tools).getByRole('button', { name: 'Add light' }))
     await user.click(
-      within(lights).getByRole('menuitem', { name: 'Directional' })
+      within(tools).getByRole('menuitem', { name: 'Directional' })
     )
 
     expect(lightNames()).toEqual([
@@ -133,7 +155,7 @@ describe('RelightStudio', () => {
     expect(
       within(lights).getByRole('slider', { name: 'Elevation' })
     ).toBeVisible()
-    expect(within(lights).queryByRole('menu')).toBeNull()
+    expect(within(tools).queryByRole('menu')).toBeNull()
   })
 
   it('duplicates, hides and deletes lights from the list, and undoes', async () => {

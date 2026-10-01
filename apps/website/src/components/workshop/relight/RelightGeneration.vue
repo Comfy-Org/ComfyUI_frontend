@@ -7,6 +7,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { Relight } from '../../../composables/useRelight'
 import type { Locale } from '../../../i18n/translations'
 import { lc } from '../../../lib/workshop/relight/copy'
+import EditorNumberField from '../app-editor/EditorNumberField.vue'
 import EditorSelect from '../app-editor/EditorSelect.vue'
 import EditorSlider from '../app-editor/EditorSlider.vue'
 
@@ -17,7 +18,6 @@ const { relight, locale = 'en' } = defineProps<{
 
 const { setup } = relight
 const promptId = useId()
-const seedId = useId()
 const areas = computed(() => [
   { id: 'whole' as const, label: lc('relight.generation.whole', locale) },
   {
@@ -32,15 +32,6 @@ const field =
 function onPrompt(event: Event) {
   if (event.target instanceof HTMLTextAreaElement)
     relight.updateGeneration({ prompt: event.target.value }, 'prompt')
-}
-
-function onSeed(event: Event) {
-  const seed =
-    event.target instanceof HTMLInputElement
-      ? Math.round(Number(event.target.value))
-      : NaN
-  if (Number.isFinite(seed) && seed >= 0)
-    relight.updateGeneration({ seed }, 'seed')
 }
 </script>
 
@@ -83,20 +74,13 @@ function onSeed(event: Event) {
         :options="areas"
         @update:model-value="(area) => relight.updateGeneration({ area })"
       />
-      <div class="flex items-center gap-2 px-1">
-        <label :for="seedId" class="shrink-0 text-xs text-primary-warm-gray">{{
-          lc('relight.generation.seed', locale)
-        }}</label>
-        <input
-          :id="seedId"
-          :value="setup.generation.seed"
-          type="number"
-          min="0"
-          step="1"
-          :class="cn('h-8 min-w-0 flex-1 font-mono tabular-nums', field)"
-          @change="onSeed"
-        />
-      </div>
+      <EditorNumberField
+        :model-value="setup.generation.seed"
+        :label="lc('relight.generation.seed', locale)"
+        @update:model-value="
+          (seed) => relight.updateGeneration({ seed }, 'seed')
+        "
+      />
     </div>
   </details>
 </template>

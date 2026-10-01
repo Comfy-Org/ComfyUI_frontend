@@ -1,11 +1,8 @@
 <script setup lang="ts">
-import { Lightbulb, Sun } from '@lucide/vue'
-
 import type { Relight } from '../../../composables/useRelight'
 import type { Locale } from '../../../i18n/translations'
 import { lc } from '../../../lib/workshop/relight/copy'
 import { MAX_LIGHTS } from '../../../lib/workshop/relight/lights'
-import EditorMenuButton from '../app-editor/EditorMenuButton.vue'
 import RelightLightEditor from './RelightLightEditor.vue'
 import RelightLightRow from './RelightLightRow.vue'
 
@@ -15,14 +12,6 @@ const { relight, locale = 'en' } = defineProps<{
 }>()
 
 const { lights, selected, full } = relight
-const kinds = [
-  { id: 'point', label: lc('relight.kind.point', locale), icon: Lightbulb },
-  {
-    id: 'directional',
-    label: lc('relight.kind.directional', locale),
-    icon: Sun
-  }
-] as const
 </script>
 
 <template>
@@ -54,15 +43,9 @@ const kinds = [
   <p v-else class="px-1 text-xs text-primary-warm-gray">
     {{ lc('relight.lights.empty', locale) }}
   </p>
-  <div class="flex items-center justify-between">
-    <EditorMenuButton
-      :label="lc('relight.tool.add', locale)"
-      :items="kinds"
-      :disabled="full"
-      @pick="relight.addLight"
-    />
-    <span class="px-1 text-[11px] text-primary-warm-gray tabular-nums">{{
+  <p class="px-1 text-right text-[11px] text-primary-warm-gray tabular-nums">
+    {{
       lc('relight.lights.count', locale, { n: lights.length, max: MAX_LIGHTS })
-    }}</span>
-  </div>
+    }}
+  </p>
 </template>

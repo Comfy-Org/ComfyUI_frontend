@@ -66,6 +66,18 @@ const copy = {
   'relight.softness': { en: 'Softness', 'zh-CN': '柔和度' },
   'relight.direction': { en: 'Direction', 'zh-CN': '方向' },
   'relight.elevation': { en: 'Elevation', 'zh-CN': '仰角' },
+  'relight.orbit': { en: 'Light position', 'zh-CN': '灯光位置' },
+  'relight.orbit.around': {
+    en: 'Around the subject',
+    'zh-CN': '环绕主体'
+  },
+  'relight.orbit.height': { en: 'Height', 'zh-CN': '高度' },
+  'relight.orbit.front': { en: 'Front', 'zh-CN': '正面' },
+  'relight.orbit.top': { en: 'Top', 'zh-CN': '顶部' },
+  'relight.orbit.left': { en: 'Left', 'zh-CN': '左侧' },
+  'relight.orbit.back': { en: 'Back', 'zh-CN': '背面' },
+  'relight.orbit.bottom': { en: 'Bottom', 'zh-CN': '底部' },
+  'relight.orbit.right': { en: 'Right', 'zh-CN': '右侧' },
   'relight.castShadows': { en: 'Cast shadows', 'zh-CN': '投射阴影' },
   'relight.color': { en: 'Color', 'zh-CN': '颜色' },
   'relight.color.warm': { en: 'Warm', 'zh-CN': '暖色' },

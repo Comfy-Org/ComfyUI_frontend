@@ -5,6 +5,7 @@ import type { Light } from '../../../lib/workshop/relight/lights'
 import EditorSegmented from '../app-editor/EditorSegmented.vue'
 import EditorSlider from '../app-editor/EditorSlider.vue'
 import EditorSwitch from '../app-editor/EditorSwitch.vue'
+import RelightOrbit from './RelightOrbit.vue'
 import RelightSwatches from './RelightSwatches.vue'
 
 const { light, locale = 'en' } = defineProps<{
@@ -53,6 +54,11 @@ const kinds = [
       "
     />
     <template v-else>
+      <RelightOrbit
+        :light
+        :locale
+        @change="(patch, key) => emit('change', patch, key)"
+      />
       <EditorSlider
         :model-value="light.direction"
         :label="lc('relight.direction', locale)"

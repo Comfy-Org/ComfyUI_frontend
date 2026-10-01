@@ -31,9 +31,6 @@ const panel = computed(() => layout !== 'e')
 const editing = computed(
   () => Boolean(image.value) && phase.value.kind !== 'done'
 )
-const showDock = computed(
-  () => Boolean(image.value) && (!panel.value || phase.value.kind === 'done')
-)
 reportStudioBusy(() => phase.value.kind === 'running')
 
 const panelLabels = {
@@ -57,7 +54,7 @@ const historyLabels = {
     :repo="workshopAppRepo('relight')"
     :locale
     data-testid="relight"
-    :show-dock="showDock"
+    :show-dock="Boolean(image)"
   >
     <RelightMain :relight :view="result" :locale />
     <template v-if="editing" #center>

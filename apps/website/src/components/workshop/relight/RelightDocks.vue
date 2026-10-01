@@ -5,6 +5,7 @@ import { lc } from '../../../lib/workshop/relight/copy'
 import EditorResultDock from '../app-editor/EditorResultDock.vue'
 import type { EditorView } from '../app-editor/view'
 import RelightDock from './RelightDock.vue'
+import RelightTools from './RelightTools.vue'
 
 const {
   relight,
@@ -39,5 +40,6 @@ const labels = {
     @edit="relight.edit"
     @again="relight.relight"
   />
-  <RelightDock v-else-if="!panel" :relight :locale />
+  <RelightTools v-else-if="panel" :relight :locale />
+  <RelightDock v-else :relight :locale />
 </template>
