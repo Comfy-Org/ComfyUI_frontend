@@ -57,6 +57,7 @@ describe('linkBadgeText', () => {
       expected: 'Checkpoint'
     },
     { type: 'MODEL', presentation: {}, expected: 'MODEL' },
+    { type: ['IMAGE', 'MASK'], presentation: {}, expected: 'IMAGE,MASK' },
     { type: '', presentation: {}, expected: '*' },
     { type: -1, presentation: {}, expected: '*' }
   ] satisfies {
