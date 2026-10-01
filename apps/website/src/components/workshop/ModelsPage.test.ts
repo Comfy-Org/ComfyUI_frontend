@@ -147,6 +147,30 @@ describe('Models page entry', () => {
     }
   )
 
+  it('follows the section when the persisted page swaps to another space', async () => {
+    appsEnabled.value = true
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>().mockResolvedValue(Response.json(workshopPages))
+    )
+    enabled.value = true
+    const { rerender } = render(ModelsPage, {
+      props: { section: 'models', heading: 'Section heading' }
+    })
+    const spaces = within(
+      await screen.findByRole('navigation', { name: 'Hub spaces' })
+    )
+    expect(spaces.getByRole('link', { current: 'page' })).toHaveTextContent(
+      'Build'
+    )
+
+    await rerender({ section: 'apps', heading: 'Section heading' })
+
+    expect(spaces.getByRole('link', { current: 'page' })).toHaveTextContent(
+      'Create'
+    )
+  })
+
   it('leaves the hub unsplit while apps are off', async () => {
     await renderSection('models')
 

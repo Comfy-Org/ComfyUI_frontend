@@ -25,30 +25,36 @@ function linkBetween(from: HubSection, to: HubSection) {
   return from === 'apps' ? 'hub-space-build' : `catalogue-tab-${to}`
 }
 
-for (const { from, to, copy, reducedMotion } of [
+// The catalogue marker lives in Build's tabs, so it only travels between
+// Models and Workflows; crossing to Create swaps the whole page instead.
+for (const { from, to, copy, reducedMotion, marker } of [
   {
     from: 'models',
     to: 'workflows',
     copy: 'Turn your ideas into finished results',
-    reducedMotion: 'no-preference'
+    reducedMotion: 'no-preference',
+    marker: true
   },
   {
     from: 'workflows',
     to: 'apps',
     copy: 'Take on bigger ideas with apps',
-    reducedMotion: 'no-preference'
+    reducedMotion: 'no-preference',
+    marker: false
   },
   {
     from: 'apps',
     to: 'models',
     copy: 'Try the latest AI models',
-    reducedMotion: 'no-preference'
+    reducedMotion: 'no-preference',
+    marker: false
   },
   {
     from: 'models',
     to: 'workflows',
     copy: 'Turn your ideas into finished results',
-    reducedMotion: 'reduce'
+    reducedMotion: 'reduce',
+    marker: true
   }
 ] as const) {
   test(`${from} to ${to} respects ${reducedMotion} motion preferences`, async ({
@@ -76,8 +82,8 @@ for (const { from, to, copy, reducedMotion } of [
       ).toPass()
     // A named transition can animate a marker that never moves, so the
     // positions either side of the navigation are what prove it travelled.
-    await expectMarkerOver(from)
-    const departed = await centreOf('catalogue-marker')
+    if (marker) await expectMarkerOver(from)
+    const departed = marker ? await centreOf('catalogue-marker') : 0
     const motion = await page.evaluateHandle((destination) => {
       const observed = { crossfade: false, marker: false }
       const finished = new Promise<void>((resolve) => {
@@ -127,13 +133,15 @@ for (const { from, to, copy, reducedMotion } of [
       )
       await motion.evaluate((probe) => probe.finished)
       await expect(page.getByTestId('workshop-hero')).toContainText(copy)
-      await expectMarkerOver(to)
-      expect(
-        Math.abs((await centreOf('catalogue-marker')) - departed)
-      ).toBeGreaterThan(1)
+      if (marker) {
+        await expectMarkerOver(to)
+        expect(
+          Math.abs((await centreOf('catalogue-marker')) - departed)
+        ).toBeGreaterThan(1)
+      }
       expect(await motion.evaluate((probe) => probe.observed)).toEqual({
         crossfade: reducedMotion === 'no-preference',
-        marker: reducedMotion === 'no-preference'
+        marker: marker && reducedMotion === 'no-preference'
       })
     } finally {
       await motion.evaluate((probe) => probe.stop())

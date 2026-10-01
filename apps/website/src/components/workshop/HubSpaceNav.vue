@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { computed } from 'vue'
 
 import { getRoutes } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
@@ -14,7 +15,7 @@ const { section, locale = 'en' } = defineProps<{
 
 const appsEnabled = useWorkshopAppsEnabled()
 const routes = getRoutes(locale)
-const current = section === 'apps' ? 'create' : 'build'
+const current = computed(() => (section === 'apps' ? 'create' : 'build'))
 const spaces = [
   { id: 'create', label: 'workshop.space.create', href: routes.hubApps },
   { id: 'build', label: 'workshop.space.build', href: routes.workshop }
