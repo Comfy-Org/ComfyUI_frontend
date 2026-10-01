@@ -8,11 +8,15 @@ export interface CapturedTelemetryEvent {
 export const hostTelemetryFixture = base.extend<{
   hostTelemetry: CapturedTelemetryEvent[]
 }>({
-  hostTelemetry: async ({ page }, use) => {
-    const capturedTelemetry: CapturedTelemetryEvent[] = []
+  hostTelemetry: async (_fixtures, use) => {
+    await use([])
+  },
+  page: async ({ page, hostTelemetry }, use) => {
     await page.exposeFunction(
       '__captureHostTelemetry',
-      (captured: CapturedTelemetryEvent) => capturedTelemetry.push(captured)
+      (captured: CapturedTelemetryEvent) => {
+        hostTelemetry.push(captured)
+      }
     )
     await page.addInitScript(() => {
       Object.assign(window, {
@@ -26,6 +30,6 @@ export const hostTelemetryFixture = base.extend<{
         }
       })
     })
-    await use(capturedTelemetry)
+    await use(page)
   }
 })
