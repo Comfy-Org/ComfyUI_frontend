@@ -1,5 +1,6 @@
 import { useEventListener } from '@vueuse/core'
 
+import { LAST_COPY_ID_KEY } from '@/composables/useCopy'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { zClipboardItems } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -42,11 +43,11 @@ export function cloneDataTransfer(original: DataTransfer): DataTransfer {
   return persistent
 }
 
+const clipboardHtmlPattern =
+  /^<meta charset="utf-8"><div><span (?:data-copy-id="([^"]+)" )?data-(?:comfy-)?metadata="([A-Za-z0-9+/=]+)"><\/span><\/div><span style="white-space:pre-wrap;">Text<\/span>$/
+
 function pasteClipboardItems(data: DataTransfer): boolean {
-  const rawData = data.getData('text/html')
-  const match = rawData.match(
-    /^<meta charset="utf-8"><div><span data-(?:comfy-)?metadata="([A-Za-z0-9+/=]+)"><\/span><\/div><span style="white-space:pre-wrap;">Text<\/span>$/
-  )?.[1]
+  const match = data.getData('text/html').match(clipboardHtmlPattern)?.[2]
   if (!match) return false
 
   let parsed: unknown
@@ -72,6 +73,18 @@ function pasteClipboardItems(data: DataTransfer): boolean {
     useErrorHandling().toastErrorHandler(err)
   }
   return true
+}
+
+/** Stale when the copy that produced it is not the last one made here. */
+function hasStaleNodeMetadata(rawHtml: string): boolean {
+  const match = rawHtml.match(clipboardHtmlPattern)
+  if (!match) return false
+  const copyId = match[1]
+  try {
+    return !copyId || copyId !== localStorage.getItem(LAST_COPY_ID_KEY)
+  } catch {
+    return false
+  }
 }
 
 function isWorkflow(
@@ -274,6 +287,8 @@ export const usePaste = () => {
     const isMediaNodeSelected =
       isImageNodeSelected || isVideoNodeSelected || isAudioNodeSelected
     if (!isMediaNodeSelected && pasteClipboardItems(data)) return
+    const staleMetadataOnMediaNode =
+      isMediaNodeSelected && hasStaleNodeMetadata(data.getData('text/html'))
 
     // No image found. Look for node data
     data = data.getData('text/plain')
@@ -302,8 +317,8 @@ export const usePaste = () => {
         return
       }
 
-      // Litegraph default paste
-      canvas.pasteFromClipboard()
+      // Litegraph default paste.
+      if (!staleMetadataOnMediaNode) canvas.pasteFromClipboard()
     }
   })
 }
