@@ -54,6 +54,15 @@ const copy = {
     en: 'Video · MiniMax H3',
     'zh-CN': '视频 · MiniMax H3'
   },
+  'cinematic.hub.moveAnything': { en: 'Move anything', 'zh-CN': '随意移动' },
+  'cinematic.hub.moveAnythingSummary': {
+    en: 'Drag the things in a photo somewhere new, and the model rebuilds the scene around them.',
+    'zh-CN': '把照片中的物体拖到新位置，模型会围绕它们重建画面。'
+  },
+  'cinematic.hub.moveAnythingMeta': {
+    en: 'Image · Qwen Image 2.1',
+    'zh-CN': '图像 · Qwen Image 2.1'
+  },
   'cinematic.stage.longWait': {
     en: 'Still going. Some models take about a minute. Nothing is queued; yours already started.',
     'zh-CN': '仍在进行。部分模型需要约一分钟。没有排队，你的任务已经开始。'
