@@ -6,6 +6,7 @@ import { defineComponent } from 'vue'
 
 import { i18n } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useFeatureUsageTracker } from '@/platform/surveys/useFeatureUsageTracker'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
@@ -14,9 +15,7 @@ import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 function deferred<T>() {
   let resolve: (value: T | PromiseLike<T>) => void = () => {}
@@ -519,6 +518,7 @@ describe('useTemplateWorkflows', () => {
 
     expect(result).toBe('not-started')
     expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+      surface: 'graph',
       errorType: 'error_loading_template'
     })
     expect(loader.loadingTemplateId.value).toBeNull()
@@ -539,7 +539,7 @@ describe('useTemplateWorkflows', () => {
     expect(app.loadGraphData).not.toHaveBeenCalled()
     expect(reportError).toHaveBeenCalledWith(
       expect.stringContaining('Failed to fetch workflow template'),
-      { errorType: 'workflow_template_fetch_failed' }
+      { surface: 'graph', errorType: 'workflow_template_fetch_failed' }
     )
     expect(useToastStore().messagesToAdd).toContainEqual({
       severity: 'error',
@@ -643,7 +643,7 @@ describe('useTemplateWorkflows', () => {
     expect(app.loadGraphData).not.toHaveBeenCalled()
     expect(reportError).toHaveBeenCalledWith(
       expect.stringContaining('not a loadable workflow'),
-      { errorType: 'workflow_template_invalid' }
+      { surface: 'graph', errorType: 'workflow_template_invalid' }
     )
   })
 
@@ -661,7 +661,7 @@ describe('useTemplateWorkflows', () => {
     expect(app.loadGraphData).not.toHaveBeenCalled()
     expect(reportError).toHaveBeenCalledWith(
       expect.stringContaining('not a loadable workflow'),
-      { errorType: 'workflow_template_invalid' }
+      { surface: 'graph', errorType: 'workflow_template_invalid' }
     )
   })
 
@@ -1049,6 +1049,7 @@ describe('useTemplateWorkflows', () => {
     expect(await first).toBe('graph-failed')
 
     expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+      surface: 'graph',
       errorType: 'error_loading_template'
     })
     expect(useToastStore().messagesToAdd).toEqual([
@@ -1257,4 +1258,44 @@ describe('useTemplateWorkflows', () => {
       ).toEqual([])
     }
   )
+
+  describe('example workflows survey tracking', () => {
+    const SURVEY_ID = 'example-workflows'
+
+    beforeEach(() => {
+      localStorage.clear()
+      mockWorkflowTemplatesStore.isLoaded = true
+    })
+
+    it('counts a template that reached the canvas', async () => {
+      const { loader } = mountTemplateWorkflows()
+
+      expect(await loader.loadWorkflowTemplate('template1', 'default')).toBe(
+        'loaded'
+      )
+
+      expect(useFeatureUsageTracker(SURVEY_ID).useCount.value).toBe(1)
+    })
+
+    it('does not count a template whose graph failed to load', async () => {
+      vi.mocked(app.loadGraphData).mockResolvedValueOnce(false)
+      const { loader } = mountTemplateWorkflows()
+
+      expect(await loader.loadWorkflowTemplate('template1', 'default')).toBe(
+        'graph-failed'
+      )
+
+      expect(useFeatureUsageTracker(SURVEY_ID).useCount.value).toBe(0)
+    })
+
+    it('does not count a custom-node template', async () => {
+      const { loader } = mountTemplateWorkflows()
+
+      expect(await loader.loadWorkflowTemplate('video', 'extension')).toBe(
+        'loaded'
+      )
+
+      expect(useFeatureUsageTracker(SURVEY_ID).useCount.value).toBe(0)
+    })
+  })
 })

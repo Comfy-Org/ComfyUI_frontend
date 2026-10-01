@@ -11,7 +11,7 @@ const {
 } = defineProps<{
   variant: 'pill' | 'banner'
   status?: ModelStatus
-  successor?: { name: string; href: string }
+  successor?: { name: string; href?: string }
   locale?: Locale
 }>()
 </script>
@@ -37,15 +37,14 @@ const {
       <template v-if="shown === 'deprecated'">
         {{ t('workshop.model.deprecatedBody', locale) }}
         <a
-          v-if="successor"
+          v-if="successor?.href"
           :href="successor.href"
           class="ml-2 font-bold text-primary-comfy-yellow hover:underline"
         >
           {{
-            t('workshop.model.deprecatedSuccessor', locale).replace(
-              '{successor}',
-              successor.name
-            )
+            t('workshop.model.deprecatedSuccessor', locale, {
+              successor: successor.name
+            })
           }}
           →
         </a>

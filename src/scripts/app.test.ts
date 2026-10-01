@@ -6,7 +6,16 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { ref } from 'vue'
 
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
@@ -15,6 +24,8 @@ import { addAutogrow } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpe
 import type { CurveData } from '@/components/curve/types'
 import type { useExtensionService } from '@/services/extensionService'
 import { t } from '@/i18n'
+import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
+import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
 import {
   LGraph,
   LGraphCanvas,
@@ -36,11 +47,16 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import type { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
+import { useNodeReplacement } from '@/platform/nodeReplacement/useNodeReplacement'
 import type { NodeReplacement } from '@/platform/nodeReplacement/types'
 import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
 import type { NodeError } from '@/platform/remote/comfyui/types'
 import { ComfyApp, app as singletonApp } from './app'
-import { createNode, isSelectOnly } from '@/utils/litegraphUtil'
+import * as litegraphUtil from '@/utils/litegraphUtil'
+import { createNode, executeWidgetsCallback } from '@/utils/litegraphUtil'
+import { graphToPrompt } from '@/utils/executionUtil'
+import { applyTextReplacements } from '@/utils/searchAndReplace'
+import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
   pasteAudioNode,
   pasteAudioNodes,
@@ -122,14 +138,7 @@ vi.mock(
   })
 )
 
-vi.mock(import('@/utils/litegraphUtil'), () => ({
-  createNode: vi.fn(),
-  isImageNode: fromAny(vi.fn()),
-  isVideoNode: fromAny(vi.fn()),
-  isAudioNode: fromAny(vi.fn()),
-  isSelectOnly: vi.fn(() => false),
-  executeWidgetsCallback: vi.fn()
-}))
+vi.mock(import('@/utils/litegraphUtil'), { spy: true })
 
 vi.mock(import('@/composables/usePaste'), () => ({
   pasteAudioNode: vi.fn(),
@@ -252,6 +261,8 @@ describe('ComfyApp', () => {
   let mockCanvas: LGraphCanvas
 
   beforeEach(() => {
+    vi.mocked(createNode).mockResolvedValue(null)
+    vi.mocked(executeWidgetsCallback).mockImplementation(() => {})
     vi.mocked(useWorkflowService).mockReturnValue(
       fromPartial<WorkflowService>(mockWorkflowService)
     )
@@ -582,6 +593,64 @@ describe('ComfyApp', () => {
       expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
         'afterConfigureGraph',
         expect.anything()
+      )
+    })
+
+    it('applies load-time widget fixups as load provenance, not local edits', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      class KSampler extends LGraphNode {
+        constructor(title = 'KSampler') {
+          super(title)
+          this.addWidget('combo', 'sampler_name', 'euler', () => {}, {
+            values: ['euler']
+          })
+          this.serialize_widgets = true
+        }
+      }
+      LiteGraph.registerNodeType('KSampler', KSampler)
+      const intents: GraphIntentEvent[] = []
+      const unsubscribe = onGraphIntent((event) => {
+        if (event.type === 'set_widget') intents.push(event)
+      })
+
+      try {
+        await app.loadGraphData(
+          {
+            ...createWorkflowGraphData(),
+            last_node_id: 1,
+            nodes: [
+              {
+                id: 1,
+                type: 'KSampler',
+                pos: [0, 0],
+                size: [200, 100],
+                flags: {},
+                order: 0,
+                mode: 0,
+                properties: {},
+                widgets_values: ['sample_euler']
+              }
+            ]
+          },
+          false
+        )
+      } finally {
+        unsubscribe()
+        LiteGraph.unregisterNodeType('KSampler')
+      }
+
+      expect(app.rootGraph.getNodeById(toNodeId(1))?.widgets?.[0]?.value).toBe(
+        'euler'
+      )
+      expect(intents.map(({ source }) => source)).not.toContain('local')
+      expect(intents).toContainEqual(
+        expect.objectContaining({
+          source: 'load',
+          name: 'sampler_name',
+          value: 'euler',
+          previous: 'sample_euler'
+        })
       )
     })
 
@@ -1666,6 +1735,204 @@ describe('ComfyApp', () => {
       expect(mockCanvas.subgraph).toBeNull()
     })
 
+    it.for([
+      { cnr_id: 'some-pack', ver: '9.9.9' },
+      { aux_id: 'someuser/some-repo', ver: 'abcdef12' },
+      { cnr_id: 'some-pack', aux_id: 'someuser/some-repo', ver: '9.9.9' }
+    ])(
+      'preserves pack identity through API import and workflow reload: %j',
+      async (properties) => {
+        const sourceGraph = new LGraph()
+        const source = new LGraphNode('Uninstalled')
+        source.comfyClass = 'UninstalledPackNode'
+        Object.assign(source.properties, properties)
+        sourceGraph.add(source)
+        const { output } = await graphToPrompt(sourceGraph)
+        expect(output[String(source.id)]._meta).toEqual({
+          title: 'Uninstalled',
+          ...properties
+        })
+
+        const graph = new LGraph()
+        Reflect.set(app, 'rootGraphInternal', graph)
+        Reflect.set(singletonApp, 'rootGraphInternal', graph)
+        const nodeReplacementStore = useNodeReplacementStore()
+        vi.spyOn(nodeReplacementStore, 'load').mockResolvedValue()
+
+        const cleanup = installErrorClearingHooks(graph)
+        try {
+          await app.loadApiJson(output, '')
+          expect(
+            useMissingNodesErrorStore().missingNodesError?.nodeTypes
+          ).toEqual([
+            expect.objectContaining({
+              type: 'UninstalledPackNode',
+              cnrId: properties.cnr_id ?? properties.aux_id
+            })
+          ])
+
+          const saved = graph.serialize()
+          expect(saved.nodes[0].properties).toEqual(properties)
+          expect(zComfyWorkflow.safeParse(saved).success).toBe(true)
+          const reloaded = new LGraph()
+          reloaded.configure({ ...saved, id: reloaded.id })
+          expect(reloaded.nodes[0].properties).toEqual(properties)
+          expect(reloaded.serialize().nodes[0].properties).toEqual(properties)
+        } finally {
+          cleanup()
+        }
+      }
+    )
+
+    it.for([
+      {
+        name: 'non-string fields',
+        metadata: { cnr_id: {}, aux_id: {}, ver: [] },
+        expectedProperties: {},
+        expectedCnrId: undefined
+      },
+      {
+        name: 'empty fields',
+        metadata: { cnr_id: '', aux_id: '', ver: '' },
+        expectedProperties: {},
+        expectedCnrId: undefined
+      },
+      {
+        name: 'invalid formats',
+        metadata: {
+          cnr_id: 'owner/repo',
+          aux_id: 'missing-slash',
+          ver: 'not a version'
+        },
+        expectedProperties: {},
+        expectedCnrId: undefined
+      },
+      {
+        name: 'invalid cnr_id with valid siblings',
+        metadata: { cnr_id: {}, aux_id: 'owner/repo', ver: '1.0.0' },
+        expectedProperties: { aux_id: 'owner/repo', ver: '1.0.0' },
+        expectedCnrId: 'owner/repo'
+      },
+      {
+        name: 'invalid aux_id with valid siblings',
+        metadata: { cnr_id: 'some-pack', aux_id: {}, ver: '1.0.0' },
+        expectedProperties: { cnr_id: 'some-pack', ver: '1.0.0' },
+        expectedCnrId: 'some-pack'
+      },
+      {
+        name: 'invalid ver with valid siblings',
+        metadata: { cnr_id: 'some-pack', aux_id: 'owner/repo', ver: [] },
+        expectedProperties: { cnr_id: 'some-pack', aux_id: 'owner/repo' },
+        expectedCnrId: 'some-pack'
+      },
+      {
+        name: 'empty cnr_id with valid aux_id fallback',
+        metadata: { cnr_id: '', aux_id: 'owner/repo', ver: '1.0.0' },
+        expectedProperties: { aux_id: 'owner/repo', ver: '1.0.0' },
+        expectedCnrId: 'owner/repo'
+      }
+    ])(
+      'validates API placeholder pack metadata: $name',
+      async ({ metadata, expectedProperties, expectedCnrId }) => {
+        const graph = new LGraph()
+        Reflect.set(app, 'rootGraphInternal', graph)
+        Reflect.set(singletonApp, 'rootGraphInternal', graph)
+        const cleanupErrorHooks = installErrorClearingHooks(graph)
+        const missingNodesStore = useMissingNodesErrorStore()
+        const nodeReplacementStore = useNodeReplacementStore()
+        vi.spyOn(nodeReplacementStore, 'load').mockResolvedValue()
+        const apiData: unknown = {
+          '1': {
+            class_type: 'UninstalledPackNode',
+            inputs: {},
+            _meta: {
+              title: 'Uninstalled',
+              ...metadata
+            }
+          }
+        }
+        assert(app.isApiJson(apiData), 'Expected valid API JSON')
+
+        try {
+          await app.loadApiJson(apiData, '')
+
+          const [placeholder] = graph.nodes
+          expect(placeholder.properties).toEqual(expectedProperties)
+          expect(missingNodesStore.missingNodesError?.nodeTypes).toEqual([
+            expect.objectContaining({
+              type: 'UninstalledPackNode',
+              cnrId: expectedCnrId
+            })
+          ])
+        } finally {
+          cleanupErrorHooks()
+        }
+      }
+    )
+
+    it.for([
+      { name: 'without pack metadata', metadata: { title: 'Original text' } },
+      {
+        name: 'with pack metadata',
+        metadata: { title: 'Original text', cnr_id: 'old-pack', ver: '1.0.0' }
+      }
+    ])(
+      'preserves replacement defaults for API text substitutions $name',
+      async ({ metadata }) => {
+        const graph = new LGraph()
+        const previousGraph = Reflect.get(singletonApp, 'rootGraphInternal')
+        Reflect.set(app, 'rootGraphInternal', graph)
+        Reflect.set(singletonApp, 'rootGraphInternal', graph)
+        const nodeType = 'test/ReplacementText'
+        class ReplacementText extends LGraphNode {
+          constructor() {
+            super('Replacement text')
+            this.addProperty('Node name for S&R', nodeType, 'string')
+            this.addWidget('text', 'text', 'Default text', () => {})
+          }
+        }
+        LiteGraph.registerNodeType(nodeType, ReplacementText)
+        const cleanupErrorHooks = installErrorClearingHooks(graph)
+        onTestFinished(() => {
+          cleanupErrorHooks()
+          Reflect.set(singletonApp, 'rootGraphInternal', previousGraph)
+        })
+        useSettingStore().settingValues['Comfy.NodeReplacement.Enabled'] = true
+        const replacementStore = useNodeReplacementStore()
+        replacementStore.isLoaded = true
+        replacementStore.replacements = {
+          OldTextNode: [
+            {
+              old_node_id: 'OldTextNode',
+              new_node_id: nodeType,
+              old_widget_ids: ['text'],
+              input_mapping: [{ old_id: 'text', new_id: 'text' }],
+              output_mapping: null
+            }
+          ]
+        }
+
+        await app.loadApiJson(
+          {
+            '1': {
+              class_type: 'OldTextNode',
+              inputs: { text: 'Imported prompt text' },
+              _meta: metadata
+            }
+          },
+          ''
+        )
+        const missingTypes =
+          useMissingNodesErrorStore().missingNodesError?.nodeTypes ?? []
+        expect(useNodeReplacement().replaceNodesInPlace(missingTypes)).toEqual([
+          'OldTextNode'
+        ])
+        expect(
+          applyTextReplacements(graph, '%test/ReplacementText.text%')
+        ).toBe('Imported prompt text')
+      }
+    )
+
     it('restores late autogrow widgets and links without repeating callbacks', async () => {
       const graph = new LGraph()
       const previousAppGraph = Reflect.get(app, 'rootGraphInternal')
@@ -2030,6 +2297,64 @@ describe('ComfyApp', () => {
         expect(passthroughNode?.widgets?.[1].value).toEqual(passthrough)
       } finally {
         missingNodesStore.setMissingNodeTypes(previousMissingNodeTypes)
+        Reflect.set(app, 'rootGraphInternal', previousAppGraph)
+        Reflect.set(singletonApp, 'rootGraphInternal', previousSingletonGraph)
+      }
+    })
+
+    it('keeps importing when a widget callback rejects an API value', async () => {
+      const graph = new LGraph()
+      const previousAppGraph = app.rootGraph
+      const previousSingletonGraph = singletonApp.rootGraph
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      const videoCallback = (value: string) => value.lastIndexOf('.')
+      class VhsLoadVideoNode extends LGraphNode {
+        constructor() {
+          super('Load Video')
+          this.addWidget('text', 'video', 'default.mp4', videoCallback)
+        }
+      }
+      LiteGraph.registerNodeType('VHS_LoadVideo', VhsLoadVideoNode)
+
+      try {
+        await expect(
+          app.loadApiJson(
+            {
+              '1': {
+                class_type: 'VHS_LoadVideo',
+                inputs: { video: 1 },
+                _meta: { title: 'Load Video' }
+              },
+              '2': {
+                class_type: 'VHS_LoadVideo',
+                inputs: { video: 'input/later.mp4' },
+                _meta: { title: 'Later Video' }
+              }
+            },
+            'invalid-vhs-api-prompt.json'
+          )
+        ).resolves.toBeUndefined()
+
+        const videoWidget = graph.nodes[0]?.widgets?.find(
+          ({ name }) => name === 'video'
+        )
+        expect(videoWidget?.value).toBe(1)
+        expect(
+          graph.nodes[1]?.widgets?.find(({ name }) => name === 'video')?.value
+        ).toBe('input/later.mp4')
+        expect(mockWorkflowService.afterLoadNewGraph).toHaveBeenCalled()
+        expect(reportError).toHaveBeenCalledWith(expect.any(TypeError), {
+          surface: 'graph',
+          errorType: 'failure_invoking_api_workflow_widget_callback',
+          tags: {
+            node_type: 'VHS_LoadVideo',
+            widget_name: 'video'
+          },
+          context: { fileName: 'invalid-vhs-api-prompt.json' }
+        })
+      } finally {
+        LiteGraph.unregisterNodeType('VHS_LoadVideo')
         Reflect.set(app, 'rootGraphInternal', previousAppGraph)
         Reflect.set(singletonApp, 'rootGraphInternal', previousSingletonGraph)
       }
@@ -2936,6 +3261,25 @@ describe('ComfyApp', () => {
       expect(createNode).not.toHaveBeenCalled()
     })
 
+    it('should alert the user when loading an embedded API prompt fails', async () => {
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+        prompt: { '1': { class_type: 'KSampler', inputs: {} } },
+        parameters: 'a photo of a cat\nSteps: 20'
+      })
+      const loadApiJson = vi
+        .spyOn(app, 'loadApiJson')
+        .mockRejectedValue(new Error('build failed'))
+
+      const imageFile = createTestFile('api.png', 'image/png')
+
+      await expect(app.handleFile(imageFile)).resolves.toBeUndefined()
+
+      expect(loadApiJson).toHaveBeenCalled()
+      expect(useToastStore().addAlert).toHaveBeenCalledTimes(1)
+      expect(mockImportA1111).not.toHaveBeenCalled()
+      expect(createNode).not.toHaveBeenCalled()
+    })
+
     it('should not create Load3DAdvanced node when mesh upload fails', async () => {
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue(undefined)
       vi.mocked(Load3dUtils.uploadFile).mockResolvedValue(undefined)
@@ -3240,7 +3584,7 @@ describe('ComfyApp', () => {
         graph_mouse: [0, 0],
         adjustMouseEvent: vi.fn()
       })
-      vi.mocked(isSelectOnly).mockReturnValue(true)
+      vi.spyOn(litegraphUtil, 'isSelectOnly').mockReturnValue(true)
       const onDragDrop = vi.fn()
       app.dragOverNode = fromPartial({ onDragDrop })
       app['addDropHandler']()

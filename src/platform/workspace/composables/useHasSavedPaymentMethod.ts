@@ -26,6 +26,7 @@ export function useHasSavedPaymentMethod() {
     {
       onError: (lookupError) =>
         reportError(lookupError, {
+          surface: 'workspace',
           errorType: 'saved_payment_methods_read_failure'
         })
     }

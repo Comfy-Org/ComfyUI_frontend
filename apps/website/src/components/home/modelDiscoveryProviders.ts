@@ -1,6 +1,10 @@
-import type { DiscoveryProvider } from '../../data/modelDiscovery'
+import type {
+  DiscoveryProvider,
+  DiscoveryWorkflow
+} from '../../data/modelDiscovery'
 
 type LoadDiscoveryProviders = () => Promise<readonly DiscoveryProvider[]>
+type LoadDiscoveryWorkflows = () => Promise<readonly DiscoveryWorkflow[]>
 
 /**
  * Dynamic so a disabled build never evaluates the catalogue. A static import
@@ -19,6 +23,18 @@ export async function resolveDiscoveryProviders(
   enabled: boolean,
   load: LoadDiscoveryProviders = loadCatalogueProviders
 ): Promise<readonly DiscoveryProvider[]> {
+  if (!enabled) return []
+  return load()
+}
+
+const loadCatalogueWorkflows: LoadDiscoveryWorkflows = async () =>
+  (await import('../../data/modelDiscovery')).discoveryWorkflows
+
+/** The workflows behind the section's second tab, on the same terms. */
+export async function resolveDiscoveryWorkflows(
+  enabled: boolean,
+  load: LoadDiscoveryWorkflows = loadCatalogueWorkflows
+): Promise<readonly DiscoveryWorkflow[]> {
   if (!enabled) return []
   return load()
 }

@@ -16,7 +16,7 @@ const PORTAL_PARAM = 'portal'
 const PORTAL_RETURN = 'return'
 
 const { t } = useI18n()
-const { coded } = useHostedCopy()
+const { coded, refusal } = useHostedCopy()
 const route = useRoute()
 const router = useRouter()
 const { commands } = useBillingClient<'commands'>(undefined)
@@ -60,7 +60,7 @@ async function openPortal() {
   })
   openingPortal.value = false
   if (result.status === 'error') {
-    portalFailure.value = coded('failure', result.code)
+    portalFailure.value = refusal(result)
     return
   }
   window.location.assign(result.value.url)
@@ -85,7 +85,7 @@ if (returningFromPortal) void resumeFromPortal()
       {{ t('hosted.loading') }}
     </p>
     <p v-if="failure" class="m-0 text-sm text-destructive-background">
-      {{ coded('failure', failure.code) }}
+      {{ refusal(failure) }}
     </p>
     <p
       v-if="!loading && !failure && rows.length === 0"

@@ -3,6 +3,7 @@ import { useI18n } from 'vue-i18n'
 
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -66,6 +67,7 @@ export function useTemplateWorkflows() {
   const { t } = useI18n()
   const workflowTemplatesStore = useWorkflowTemplatesStore()
   const dialogStore = useDialogStore()
+  const { trackFeatureUsed } = useSurveyFeatureTracking('example-workflows')
 
   // State
   const selectedTemplate = ref<WorkflowTemplates | null>(null)
@@ -173,6 +175,7 @@ export function useTemplateWorkflows() {
           getBridge: () => window.__comfyDesktop2,
           reportError: (error) => {
             reportError(error, {
+              surface: 'graph',
               errorType: 'workflow_template_input_download_failed',
               level: 'warning'
             })
@@ -192,7 +195,10 @@ export function useTemplateWorkflows() {
   }
 
   function reportTemplateError(error: unknown) {
-    reportError(error, { errorType: 'error_loading_template' })
+    reportError(error, {
+      surface: 'graph',
+      errorType: 'error_loading_template'
+    })
     showTemplateError(t('templateWorkflows.error.loading'))
   }
 
@@ -243,7 +249,10 @@ export function useTemplateWorkflows() {
     if (errors.length) {
       reportError(
         new AggregateError(errors, 'Template sample preparation failed'),
-        { errorType: 'error_loading_template_media' }
+        {
+          surface: 'graph',
+          errorType: 'error_loading_template_media'
+        }
       )
       toast.add({
         severity: 'warn',
@@ -283,7 +292,8 @@ export function useTemplateWorkflows() {
       json,
       template
     }: NonNullable<Awaited<ReturnType<typeof loadTemplateData>>>,
-    workflowName: string
+    workflowName: string,
+    sourceModule: string
   ): Promise<TemplateLoadResult> {
     try {
       const loadedWorkflow = await app.loadGraphData(
@@ -297,6 +307,7 @@ export function useTemplateWorkflows() {
 
       updateTemplateEducation(template?.isPartnerNode, loadedWorkflow)
       await syncCompletedTemplateInputsWithCurrentGraph()
+      if (sourceModule === 'default') trackFeatureUsed()
       return 'loaded'
     } catch (error) {
       reportTemplateError(error)
@@ -379,7 +390,7 @@ export function useTemplateWorkflows() {
 
       dialogStore.closeDialog()
       startTemplateInputDownloads(id, sourceModule)
-      return await loadTemplateGraph(data, workflowName)
+      return await loadTemplateGraph(data, workflowName, sourceModule)
     } catch (error) {
       if (!controller.signal.aborted) reportTemplateError(error)
       return 'not-started'
@@ -423,6 +434,7 @@ export function useTemplateWorkflows() {
     const response = await fetch(url, { signal })
     if (!response.ok) {
       reportError(`Failed to fetch workflow template ${id}`, {
+        surface: 'graph',
         errorType: 'workflow_template_fetch_failed'
       })
       return null
@@ -438,12 +450,14 @@ export function useTemplateWorkflows() {
     const legacy = zLegacyLoadableWorkflow.safeParse(json)
     if (!legacy.success) {
       reportError(`Workflow template ${id} is not a loadable workflow`, {
+        surface: 'graph',
         errorType: 'workflow_template_invalid'
       })
       return null
     }
     if (schemaMismatch) {
       reportError(new Error(schemaMismatch), {
+        surface: 'graph',
         errorType: 'workflow_template_schema_mismatch',
         level: 'warning'
       })

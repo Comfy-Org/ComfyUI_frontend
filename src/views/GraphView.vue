@@ -146,6 +146,7 @@ const templateInputGraphSync = startTemplateInputDownloadGraphSync({
   },
   reportError: (error) => {
     reportError(error, {
+      surface: 'graph',
       errorType: 'workflow_template_input_refresh_failed'
     })
   }

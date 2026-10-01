@@ -108,12 +108,7 @@ vi.mock(import('@/composables/useCoreCommands'), () => ({
 vi.mock(import('@/platform/remote/comfyui/useQueuePolling'), () => ({
   useQueuePolling: vi.fn()
 }))
-vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
-  useErrorHandling: () => ({
-    wrapWithErrorHandling: (f: unknown) => f,
-    wrapWithErrorHandlingAsync: (f: unknown) => f
-  })
-}))
+vi.mock(import('@/composables/useErrorHandling'))
 vi.mock(import('@/composables/useProgressFavicon'), () => ({
   useProgressFavicon: vi.fn()
 }))
@@ -251,10 +246,8 @@ describe('GraphView - reconnect wiring', () => {
     // `handleReconnected` calls both before its first `await`, so dispatching
     // the event is enough — there is nothing to wait for, and waiting for it
     // only hid how long the import above was taking.
-    const { onReconnected } = useReconnectingNotification()
-    const refreshOnReconnect = useReconnectQueueRefresh()
-    expect(onReconnected).toHaveBeenCalledTimes(1)
-    expect(refreshOnReconnect).toHaveBeenCalledTimes(1)
+    expect(useReconnectingNotification().onReconnected).toHaveBeenCalledTimes(1)
+    expect(useReconnectQueueRefresh()).toHaveBeenCalledTimes(1)
   })
 
   it('reconciles a completed template input without a page refresh', async () => {

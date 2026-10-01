@@ -5,6 +5,7 @@ import type { AgentMessage } from '@comfyorg/ingest-types'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 // FE-1305: a completed turn's tool calls (the work-summary trace shown live,
@@ -25,9 +26,7 @@ test(
   'keeps a completed turn work summary after reload and chat switching',
   { tag: ['@cloud', '@ui'] },
   async ({ page, promptHistory, workflowSelection }) => {
-    await page
-      .getByRole('button', { name: enMessages.agent.entryButton, exact: true })
-      .click()
+    await new AgentPanel(page).open()
     await page
       .getByRole('button', {
         name: enMessages.sideToolbar.newBlankWorkflow,
@@ -92,13 +91,14 @@ test(
             tool_calls: [
               {
                 id: 'call-1',
+                tool_call_id: 'call-1',
                 tool_name: 'search_nodes',
-                status: 'ok',
+                status: 'success',
                 duration_ms: 420
               },
               {
-                // Deliberately 'success' (not 'ok', like call-1) to cover both terminal vocabularies.
                 id: 'call-2',
+                tool_call_id: 'call-2',
                 tool_name: 'add_node',
                 status: 'success',
                 duration_ms: 180

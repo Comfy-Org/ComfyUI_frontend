@@ -455,7 +455,7 @@ import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import TemplatePreview from '@/components/templates/thumbnails/TemplatePreview.vue'
 import Button from '@/components/ui/button/Button.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
-import { selectCountBadgeClass } from '@/components/ui/select/select.variants'
+import { selectCountBadgeClass } from '@comfyorg/design-system/select.variants'
 import type { SelectOption } from '@/components/ui/select/types'
 import Spinner from '@/components/ui/spinner/Spinner.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
@@ -1169,6 +1169,7 @@ function handleTemplateModelMetadataError(
   const setup = activeDetail.value?.modelSetup
   if (setup) setup.pending = false
   reportError(error, {
+    surface: 'graph',
     errorType: 'workflow_template_model_metadata_failed',
     level: 'warning'
   })

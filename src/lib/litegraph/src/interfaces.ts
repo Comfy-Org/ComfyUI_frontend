@@ -9,7 +9,6 @@ import type { UUID } from '@/utils/uuid'
 import type { ContextMenu } from './ContextMenu'
 import type { GroupId } from '@/types/groupId'
 
-import type { LGraphGroup } from './LGraphGroup'
 import type { LGraphNode, NodeProperty } from './LGraphNode'
 import type { LLink, LinkId } from './LLink'
 import type { Reroute, RerouteId } from './Reroute'
@@ -333,6 +332,7 @@ export interface INodeSlot extends HasBoundingRect {
   locked?: boolean
   nameLocked?: boolean
   pos?: Point
+  slot_index?: SlotIndex
   /** @remarks Automatically calculated; not included in serialisation. */
   boundingRect: ReadOnlyRect
   /**
@@ -379,6 +379,13 @@ export interface INodeInputSlot extends INodeSlot {
    * Internal use only; API is not finalised and may change at any time.
    */
   _widget?: IBaseWidget
+
+  /**
+   * Internal use only. Set while a promoted widget's demotion is deferred by
+   * a microtask, so a same-tick reconnect (a rewire) can cancel it instead
+   * of the widget being torn down and immediately rebuilt.
+   */
+  _pendingDemotionToken?: symbol
 }
 
 export interface IWidgetInputSlot extends INodeInputSlot {
@@ -394,7 +401,6 @@ export interface INodeOutputSlot extends INodeSlot {
    */
   links?: LinkId[] | null
   _data?: unknown
-  slot_index?: SlotIndex
 }
 
 /** Options for {@link LiteGraphGlobal.createNode}. Shallow-copied onto the new node. */
@@ -539,7 +545,9 @@ export interface PanelWidgetOptions {
   label?: string
   type?: string
   widget?: string
-  values?: Array<string | IContextMenuValue | null>
+  values?:
+    | Array<string | IContextMenuValue | null>
+    | Record<string, TWidgetValue>
   callback?: PanelWidgetCallback
 }
 

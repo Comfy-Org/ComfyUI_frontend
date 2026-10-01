@@ -103,6 +103,7 @@ describe('LGraph Serialisation', () => {
         message: 'Graph serialization state mismatch'
       }),
       {
+        surface: 'graph',
         errorType: 'graph_serialization_state_mismatch',
         context: {
           graphId: graph.id,
