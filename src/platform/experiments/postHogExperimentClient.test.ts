@@ -70,4 +70,21 @@ describe('readExperimentVariant', () => {
     await expect(readExperimentVariant('placement')).resolves.toBe('control')
     expect(posthog.getFeatureFlag).toHaveBeenCalledTimes(2)
   })
+
+  it('retries an assignment after a transient failure', async () => {
+    posthog.onFeatureFlags
+      .mockImplementationOnce(() => {
+        throw new Error('PostHog unavailable')
+      })
+      .mockImplementationOnce((callback) => {
+        callback()
+        return vi.fn()
+      })
+    const { readExperimentVariant } = await import('./postHogExperimentClient')
+
+    await expect(readExperimentVariant('placement')).rejects.toThrow(
+      'PostHog unavailable'
+    )
+    await expect(readExperimentVariant('placement')).resolves.toBe('treatment')
+  })
 })

@@ -33,7 +33,14 @@ export async function readExperimentVariant(
   const existing = assignments.get(assignmentKey)
   if (existing) return existing
 
-  const assignment = loadExperimentVariant(posthog, flagKey)
+  const assignment = loadExperimentVariant(posthog, flagKey).catch(
+    (error: unknown) => {
+      if (assignments.get(assignmentKey) === assignment) {
+        assignments.delete(assignmentKey)
+      }
+      throw error
+    }
+  )
   assignments.set(assignmentKey, assignment)
   return assignment
 }
