@@ -49,12 +49,11 @@ describe('ModelLaunchShowcaseSection', () => {
     }
   )
 
-  it('exposes each still once and hides the looping copy from assistive tech', () => {
+  it('renders each still once with its localized alt text', () => {
     render(ModelLaunchShowcaseSection, { props: { showcase, locale: 'zh-CN' } })
 
     expect(
       screen.getAllByRole('img').map((img) => img.getAttribute('alt'))
     ).toEqual(['第一张', '第二张'])
-    expect(screen.getAllByRole('img', { hidden: true })).toHaveLength(4)
   })
 })

@@ -122,9 +122,10 @@ interface ModelLaunchShowcaseCard {
   src: string
 }
 
-// A centred eyebrow, heading and subhead over a full-bleed, auto-scrolling
-// strip of stills. The strip loops, pauses on hover, and stands still for
-// visitors who prefer reduced motion. A page stacks one per use case.
+// A centred eyebrow, heading and subhead over a full-bleed strip of stills that
+// slides sideways as the page scrolls past it. Visitors who prefer reduced
+// motion get a still strip they can scroll by hand. A page stacks one per use
+// case.
 export interface ModelLaunchShowcase {
   // Small uppercase label above the heading, e.g. PHOTOGRAPHY.
   eyebrowKey?: TranslationKey

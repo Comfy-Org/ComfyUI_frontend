@@ -76,7 +76,11 @@ const sectionOrder = page.sectionOrder ?? DEFAULT_SECTION_ORDER
     switch (section) {
       case 'showcases':
         return page.showcases?.map((showcase) => (
-          <ModelLaunchShowcaseSection showcase={showcase} locale={locale} />
+          <ModelLaunchShowcaseSection
+            client:visible={{ rootMargin: '400px' }}
+            showcase={showcase}
+            locale={locale}
+          />
         ))
       case 'gallery':
         return (
