@@ -15,6 +15,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { reportError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import type { AgentRunModeValue } from '../../../stores/agent/agentRunModeStore'
@@ -39,9 +40,15 @@ async function onSelectMode(value: string): Promise<void> {
   if (!match || savingMode.value !== null) return
 
   const openedAs = openCount
+  const previousMode = store.mode
   savingMode.value = match.mode
   try {
     await store.save(match.mode, null)
+    if (previousMode !== match.mode)
+      useTelemetry()?.trackAgentRunModeChanged({
+        from: previousMode,
+        to: match.mode
+      })
     if (openedAs === openCount) open.value = false
   } catch (error) {
     reportError(error, { errorType: 'agent_run_mode_save_failure' })

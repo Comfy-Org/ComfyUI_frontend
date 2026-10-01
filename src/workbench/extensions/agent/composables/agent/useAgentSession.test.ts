@@ -2,11 +2,11 @@ import type {
   AgentAdmissionError,
   UploadImageResponse
 } from '@comfyorg/ingest-types'
-import { createPinia, setActivePinia } from 'pinia'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
-import { reportError } from '@/platform/telemetry/reportError'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 
@@ -42,6 +42,7 @@ import { useAgentSession } from './useAgentSession'
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 vi.mock(import('@/platform/telemetry'))
 const telemetryProvider = useTelemetry()
 assert.exists(telemetryProvider)
@@ -235,7 +236,6 @@ function admissionError(
 
 describe('useAgentSession (v1 composition root)', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     localStorage.clear()
     vi.mocked(reportError).mockClear()
     telemetry.trackAgentStopClicked.mockClear()
@@ -2066,9 +2066,9 @@ describe('useAgentSession (v1 composition root)', () => {
   // workflow for it and an empty mint would drop whatever is already on
   // the tab's canvas. This must hold even once the thread already exists
   // (started elsewhere, or an earlier turn already exists), not only on the
-  // very first "new" turn - the shouldSendDraft threadId==='new' clause
-  // would otherwise drop the draft here.
-  it('an unbound target on an existing thread is flagged unbound and keeps its draft', async () => {
+  // very first "new" turn - canSendDraft's own threadId==='new' clause would
+  // otherwise drop the draft here.
+  it('(h9) an unbound target on an existing thread is flagged unbound and keeps its draft', async () => {
     const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
       thread_id: 'th-9',
       message_id: 'msg-1',
@@ -2104,7 +2104,7 @@ describe('useAgentSession (v1 composition root)', () => {
   // unbound tab must NOT keep re-minting: the second turn falls back to
   // today's pre-existing behaviour (no signal at all) rather than asking
   // the server to mint yet another empty workflow every turn.
-  it('a second turn on a still-unbound tab does not re-flag it as unbound', async () => {
+  it('(h10) a second turn on a still-unbound tab does not re-flag it as unbound', async () => {
     const postMessage = vi
       .fn<AgentRestClient['postMessage']>()
       .mockResolvedValueOnce({
@@ -2178,11 +2178,11 @@ describe('useAgentSession (v1 composition root)', () => {
   )
 
   it('(h7) a tab switch while prepare() is pending does not reattribute the send to the new tab', async () => {
-    const postMessage = vi.fn(async () => ({
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
       thread_id: 'th-1',
       message_id: 'msg-1',
       workflow_id: 'wf-1'
-    })) as unknown as AgentRestClient['postMessage']
+    }))
     const rest = fakeRest({ postMessage })
     const { source } = fakeEvents()
     const adopted = vi.fn()
@@ -2242,11 +2242,11 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   it('(h8) the draft snapshot follows the originating tab, not the tab switched to during prepare()', async () => {
-    const postMessage = vi.fn(async () => ({
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
       thread_id: 'th-1',
       message_id: 'msg-1',
       workflow_id: 'wf-1'
-    })) as unknown as AgentRestClient['postMessage']
+    }))
     const rest = fakeRest({ postMessage })
     const { source } = fakeEvents()
     let releasePrepare: () => void = () => undefined
@@ -2295,11 +2295,11 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   it('(h9) a send that starts with no origin tab is not reattributed to a tab attached during prepare()', async () => {
-    const postMessage = vi.fn(async () => ({
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
       thread_id: 'th-1',
       message_id: 'msg-1',
       workflow_id: 'wf-b'
-    })) as unknown as AgentRestClient['postMessage']
+    }))
     const rest = fakeRest({ postMessage })
     const { source } = fakeEvents()
     const adopted = vi.fn()
@@ -2410,7 +2410,8 @@ describe('useAgentSession (v1 composition root)', () => {
       'wf-existing',
       'workflows/existing.json'
     )
-    setActivePinia(createPinia())
+    await nextTick()
+    useAgentWorkflowTabBindingStore().$dispose()
     localStorage.setItem('Comfy.Agent.ThreadId', 'th-existing')
 
     const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
@@ -2565,7 +2566,7 @@ describe('useAgentSession (v1 composition root)', () => {
     })
     session.start()
     session.bindWorkflow('wf-dead')
-    abandon = () => void session.newChat()
+    abandon = () => session.newChat()
 
     expect(await session.sendMessage('run it')).toBe(false)
 
@@ -3345,7 +3346,6 @@ describe('thread resume (B17)', () => {
   ]
 
   beforeEach(() => {
-    setActivePinia(createPinia())
     localStorage.clear()
   })
 
@@ -3846,7 +3846,6 @@ describe('app:agent_error telemetry (TEL-8)', () => {
     const rest = fakeRest({
       postMessage: vi.fn(async () => {
         throw new AgentResponseUnreadableError(
-          '/agent/threads/new/messages',
           new SyntaxError('Unexpected end of JSON input')
         )
       })

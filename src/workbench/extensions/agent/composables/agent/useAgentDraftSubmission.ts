@@ -14,6 +14,7 @@ import type { ComposerAttachment } from './useComposer'
 
 interface UseAgentDraftSubmissionOptions {
   canSubmit: () => boolean
+  onSubmit: () => void
   target: () => ComfyWorkflow | null
   editableWorkflowId: () => string | undefined
   selection: Pick<
@@ -30,7 +31,6 @@ interface UseAgentDraftSubmissionOptions {
     references: WorkflowReference[],
     meta: SubmissionMeta
   ) => Promise<boolean>
-  stop: () => Promise<void>
 }
 
 interface SubmissionMeta {
@@ -88,6 +88,7 @@ export function useAgentDraftSubmission(
     )
       return
 
+    options.onSubmit()
     const prompt = composer.prompt
     const inputMethod = composer.promptOrigin
     const starterPrompt = composer.starterPrompt
@@ -112,11 +113,7 @@ export function useAgentDraftSubmission(
       sentReferences,
       { clientMessageId: uuidv4(), inputMethod, starterPrompt }
     )
-    const stopRequested =
-      composer.submission?.id === submissionId &&
-      composer.submission.stopRequested
     composer.settleSubmission(submissionId, sent)
-    if (sent && stopRequested) await options.stop()
   }
 
   return { submit }

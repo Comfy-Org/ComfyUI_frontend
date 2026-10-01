@@ -218,7 +218,13 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   // storage, so the localStorage-backed restore-on-reload behaviour
   // (FE-1284/PM-648) is untouched.
   useEventListener(window, 'pagehide', () => {
-    if (!isVisible.value || openedAt === null || teardownReported) return
+    if (
+      !isVisible.value ||
+      !consentAccepted.value ||
+      openedAt === null ||
+      teardownReported
+    )
+      return
     teardownReported = true
     useTelemetry()?.trackAgentPanelClosed({
       source: 'pagehide',
@@ -272,7 +278,6 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     isMaximized,
     dismissedSelectionSignature,
     open,
-    targetTracking,
     followsVisibleWorkflow,
     initializeTargetTracking,
     retainWorkflowTarget,

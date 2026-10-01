@@ -21,6 +21,7 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExtensionService } from '@/services/extensionService'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import {
@@ -161,6 +162,7 @@ export function registerAgentPanelExtension(): void {
       const { withConsent } = useAgentConsent()
       const { firstRunHoldsScreen, whenStartupDecided } = useFirstRunEntry()
       const onboardingTourStore = useOnboardingTourStore()
+      const dialogStore = useDialogStore()
       registerWorkflowTabActivityTracker(enabled)
 
       watch(
@@ -176,7 +178,9 @@ export function registerAgentPanelExtension(): void {
           ? 'first_run_screen'
           : onboardingTourStore.activeTour !== null
             ? 'tour_active'
-            : null
+            : dialogStore.dialogStack.length > 0
+              ? 'dialog_open'
+              : null
       const screenIsClear = computed(() => screenHolder() === null)
 
       const reportedWithheld = new Set<string>()

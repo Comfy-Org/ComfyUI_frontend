@@ -128,7 +128,6 @@ const emit = defineEmits<{
   ]
   stop: [method: AgentStopMethod]
   attach: []
-  attachFiles: [files: File[]]
   openAssets: []
   selectNodes: []
   removeTag: [id: string]
@@ -139,7 +138,6 @@ const emit = defineEmits<{
   paywallAction: [action: AgentPaywallAction, surface: AgentPaywallSurface]
   standingPaywallShown: []
   newChat: []
-  startTour: []
   toggleSize: []
   close: []
   openHistory: []
@@ -343,7 +341,6 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
     <PanelHeader
       :is-maximized
       @new-chat="onNewChat"
-      @start-tour="emit('startTour')"
       @toggle-size="emit('toggleSize')"
       @close="onClose"
     />
@@ -366,14 +363,15 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       <div class="flex h-10 shrink-0 items-center px-2">
         <Button
           id="agent-chat-history"
-          v-tooltip.right="buildTooltipConfig(t('agent.showChatHistory'))"
+          v-tooltip.bottom="buildTooltipConfig(t('agent.showChatHistory'))"
           type="button"
           variant="muted-textonly"
           size="icon-sm"
           :aria-label="t('agent.showChatHistory')"
-          class="size-6 shrink-0 data-coach-hover:bg-secondary-background-hover"
+          class="size-6 shrink-0"
           @click="onOpenHistory"
         >
+          <!-- fallow-ignore-next-line css-token-drift -- Iconify selectors name the exact product icon; they are not spacing or color scale values. -->
           <span class="icon-[lucide--history] size-4 shrink-0" />
         </Button>
         <template v-if="renaming">
@@ -520,7 +518,6 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             @send="onComposerSend"
             @stop="emit('stop', $event)"
             @attach="emit('attach')"
-            @attach-files="emit('attachFiles', $event)"
             @open-assets="emit('openAssets')"
             @select-nodes="emit('selectNodes')"
             @remove-tag="emit('removeTag', $event)"

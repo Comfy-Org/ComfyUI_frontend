@@ -1,10 +1,10 @@
 import type { SubscriptionTier } from '@comfyorg/ingest-types'
 
-import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 import type {
   AgentPaywallCta,
   AgentPaywallReason
 } from '@/platform/telemetry/types'
+import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 
 export type AgentPaywallAction = 'addCredits' | 'subscribe' | 'upgrade'
 

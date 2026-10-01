@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, ref } from 'vue'
+import { computed, inject, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -17,8 +17,11 @@ const hideWorkflowName = computed(
 )
 const emit = defineEmits<{
   answer: [askId: string, selection: 'run' | 'cancel']
-  openWorkflow: [workflowId: string, workflowName?: string]
+  openWorkflow: [askId: string, workflowId: string, workflowName?: string]
+  shown: [askId: string, workflowId: string | null]
 }>()
+
+onMounted(() => emit('shown', part.askId, part.workflowId ?? null))
 
 const { t } = useI18n()
 const workflowLabel = computed(
@@ -54,7 +57,14 @@ const workflowLabel = computed(
             variant="link"
             size="unset"
             class="max-w-full justify-start text-left font-normal wrap-break-word whitespace-normal text-inherit underline underline-offset-2"
-            @click="emit('openWorkflow', part.workflowId, part.workflowName)"
+            @click="
+              emit(
+                'openWorkflow',
+                part.askId,
+                part.workflowId,
+                part.workflowName
+              )
+            "
           >
             {{ workflowLabel }}
           </Button>
