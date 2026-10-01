@@ -29,8 +29,8 @@ const skipReason = isCI()
   ? null
   : 'checks the published API spec; runs in CI only (set CI=1 to run it here)'
 
-async function fetchDocs(url: string): Promise<string | null> {
-  const attempts = isCI() ? FETCH_ATTEMPTS : 1
+async function fetchDocs(url: string): Promise<string> {
+  const attempts = FETCH_ATTEMPTS
   let lastError: unknown
   for (let attempt = 0; attempt < attempts; attempt++) {
     try {
@@ -45,8 +45,7 @@ async function fetchDocs(url: string): Promise<string | null> {
         await new Promise((resolve) => setTimeout(resolve, 250 * 2 ** attempt))
     }
   }
-  if (isCI()) throw new Error(`Could not fetch ${url}`, { cause: lastError })
-  return null
+  throw new Error(`Could not fetch ${url}`, { cause: lastError })
 }
 
 interface DocsCoverageRow {
@@ -90,13 +89,6 @@ function parseCoverageTable(markdown: string): {
 }
 
 describe('Router provider source availability', () => {
-  it('skips an unavailable source outside CI', async () => {
-    vi.stubEnv('CI', '')
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')))
-
-    await expect(fetchDocs(PROVIDERS_PAGE)).resolves.toBeNull()
-  })
-
   it('fails when a required source is unavailable in CI', async () => {
     vi.stubEnv('CI', '1')
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')))
@@ -122,7 +114,6 @@ describe('Router provider coverage', () => {
         fetchDocs(`${ROUTER_SCHEMAS}/${row.modelId}.json`)
       )
     )
-    if (specs.includes(null)) return ctx.skip('could not fetch the API spec')
 
     const altProviders = z.object({
       'x-comfy-router-alt-providers': z
@@ -132,7 +123,7 @@ describe('Router provider coverage', () => {
     expect(
       specs.map((spec) =>
         altProviders
-          .parse(JSON.parse(spec ?? '{}'))
+          .parse(JSON.parse(spec))
           ['x-comfy-router-alt-providers'].map(({ provider }) => provider)
           .sort()
       )
@@ -142,7 +133,6 @@ describe('Router provider coverage', () => {
   it('lists every model the docs show with an alternate provider', async (ctx) => {
     if (skipReason) return ctx.skip(skipReason)
     const markdown = await fetchDocs(PROVIDERS_PAGE)
-    if (markdown === null) return ctx.skip(`could not fetch ${PROVIDERS_PAGE}`)
 
     const docs = parseCoverageTable(markdown)
     expect(docs.providers).toEqual(
@@ -169,8 +159,6 @@ describe('Router provider coverage', () => {
       fetchDocs(MODELS_PAGE),
       fetchDocs(PROVIDERS_PAGE)
     ])
-    if (catalog === null || coverage === null)
-      return ctx.skip('could not fetch the docs catalog')
 
     for (const { name, docsUrl } of ROUTER_COMFY_ONLY_PREVIEW) {
       const path = docsUrl.slice(DOCS_ORIGIN.length)
