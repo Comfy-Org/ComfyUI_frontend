@@ -31,13 +31,14 @@ import { recordDevEvent } from './devPanelLog'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import { readCrdtSnapshot } from './crdtSnapshot'
 import { DocFrameClient } from './docFrameClient'
-import { STALE_SCHEMA_RESEED_REQUIRED } from './docFrameCodes'
+import {
+  RESEED_CONFLICT,
+  STALE_SCHEMA_RESEED_REQUIRED,
+  isRetryableReseedCode
+} from './docFrameCodes'
 import type { GraphOperation } from './graphOperations'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
-import {
-  LayoutFollowerBridge,
-  isRetryableReseedCode
-} from './layoutFollowerBridge'
+import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import type { LiveGraphApplierDeps } from './liveGraphApplier'
 import { readDocSlotNames } from './liveGraphApplier'
 import { createOpCoalescer } from './opCoalescer'
@@ -533,7 +534,7 @@ function startAgentCrdtFollower(
     }
     // The bridge resets and resubscribes after this listener returns for an
     // ok/conflict result. Anything else is final for this document.
-    if (detail.ok !== true && detail.code !== 'conflict')
+    if (detail.ok !== true && detail.code !== RESEED_CONFLICT)
       lifecycle.stopProbing()
   }
 

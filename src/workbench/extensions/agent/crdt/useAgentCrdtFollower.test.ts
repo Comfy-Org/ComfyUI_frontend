@@ -107,8 +107,6 @@ const apiState = vi.hoisted(() => {
 })
 
 vi.mock<unknown>(import('./layoutFollowerBridge'), () => ({
-  isRetryableReseedCode: (code: string | undefined) =>
-    ['retry', 'unavailable', 'overloaded', 'error'].includes(code ?? ''),
   LayoutFollowerBridge: class {
     constructor() {
       const bridge = new bridgeState.FakeBridge()

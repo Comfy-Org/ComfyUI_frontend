@@ -10,7 +10,7 @@ import type {
   DocUpdate
 } from './docFrameClient'
 import { wireLog } from './crdtLog'
-import { STALE_SCHEMA_RESEED_REQUIRED } from './docFrameCodes'
+import { RESEED_CONFLICT, STALE_SCHEMA_RESEED_REQUIRED } from './docFrameCodes'
 import { FollowerDoc } from './followerDoc'
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
 
@@ -497,7 +497,7 @@ export class LayoutFollowerBridge extends EventTarget {
     this.dispatchEvent(new CustomEvent(event.type, { detail: result }))
     if (result.workflowId !== this.desiredWorkflowId) return
     // Retryable failures are rescheduled by the lifecycle's bounded backoff.
-    if (!result.ok && result.code !== 'conflict') return
+    if (!result.ok && result.code !== RESEED_CONFLICT) return
     const reset: DocReset = {
       workflowId: result.workflowId,
       seq: result.seq ?? 0,
@@ -514,14 +514,4 @@ export class LayoutFollowerBridge extends EventTarget {
     if (!(event instanceof CustomEvent)) return
     this.dispatchEvent(new CustomEvent(event.type, { detail: event.detail }))
   }
-}
-
-/** Transient reseed refusals for which a fresh subscribe/reseed is safe. */
-export function isRetryableReseedCode(code: string | undefined): boolean {
-  return (
-    code === 'retry' ||
-    code === 'unavailable' ||
-    code === 'overloaded' ||
-    code === 'error'
-  )
 }
