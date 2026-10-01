@@ -20,7 +20,10 @@ pnpm test:unit scripts/architecture/check.test.ts
 files. Every resolved internal declaration is classified as allowed, forbidden,
 or legacy. `architecture:report` prints live denominators, declaration counts,
 distinct importer counts, and the classified edges without changing committed
-files. The check fails when:
+files. It also reports unresolved internal-looking relative and `@/` specifiers;
+packages remain excluded from internal-edge totals. The first wave does not yet
+model `vi.mock`, `import.meta.glob`, or arbitrary `tsconfig` path aliases.
+The check fails when:
 
 - an external caller newly imports an enrolled domain's internal file;
 - a dependency is not permitted by both the producer's allowed consumers and

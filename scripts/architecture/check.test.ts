@@ -308,7 +308,20 @@ describe('censusRepository accounting and suppressions', () => {
     const census = censusRepository(root, [])
     expect(census.parsedDeclarations).toBe(2)
     expect(census.resolvedInternalDeclarations).toBe(0)
+    expect(census.unresolvedInternal).toEqual([
+      { source: 'src/domain.ts', specifier: '@/missing' }
+    ])
     expect(census.edges).toEqual([])
+  })
+
+  test('resolves internal imports with bundler query suffixes', () => {
+    const root = createRepository({
+      'src/asset.ts': 'export const asset = true',
+      'src/consumer.ts': "import asset from '@/asset?raw'"
+    })
+    const census = censusRepository(root, [])
+    expect(census.resolvedInternalDeclarations).toBe(1)
+    expect(census.unresolvedInternal).toEqual([])
   })
 
   test('retains named and anonymous layer suppressions as violations', () => {

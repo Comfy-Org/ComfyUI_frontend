@@ -100,6 +100,7 @@ export interface Census {
   parsedDeclarations: number
   resolvedInternalDeclarations: number
   resolvedInternalSources: number
+  unresolvedInternal: Array<{ source: string; specifier: string }>
   edges: ClassifiedEdge[]
   violations: Violation[]
 }
@@ -282,10 +283,11 @@ const resolveInternalImport = (
   specifier: string,
   sourceFiles: Set<string>
 ): string | undefined => {
-  const unresolved = specifier.startsWith('@/')
-    ? `src/${specifier.slice(2)}`
-    : specifier.startsWith('.')
-      ? toPosix(join(dirname(source), specifier))
+  const pathSpecifier = specifier.replace(/[?#].*$/, '')
+  const unresolved = pathSpecifier.startsWith('@/')
+    ? `src/${pathSpecifier.slice(2)}`
+    : pathSpecifier.startsWith('.')
+      ? toPosix(join(dirname(source), pathSpecifier))
       : undefined
   if (!unresolved) return undefined
   return [
@@ -520,6 +522,12 @@ export const censusRepository = (
       Boolean(edge.target)
     )
     .map((edge) => classifyEdge(edge, records))
+  const unresolvedInternal = imports
+    .filter(
+      ({ specifier, target }) =>
+        !target && (specifier.startsWith('@/') || specifier.startsWith('.'))
+    )
+    .map(({ source, specifier }) => ({ source, specifier }))
   const occurrences = new Map<string, number>()
   for (const edge of resolved) {
     const violation = edgeViolation(edge, records, occurrences)
@@ -531,6 +539,7 @@ export const censusRepository = (
     parsedDeclarations: imports.length,
     resolvedInternalDeclarations: resolved.length,
     resolvedInternalSources: new Set(resolved.map(({ source }) => source)).size,
+    unresolvedInternal,
     edges: resolved,
     violations: violations.sort((left, right) =>
       lexicalCompare(left.fingerprint, right.fingerprint)
@@ -985,10 +994,12 @@ const report = (census: Census) => {
       sourceFiles: census.sourceFiles,
       parsedDeclarations: census.parsedDeclarations,
       resolvedInternalDeclarations: census.resolvedInternalDeclarations,
-      resolvedInternalSources: census.resolvedInternalSources
+      resolvedInternalSources: census.resolvedInternalSources,
+      unresolvedInternalDeclarations: census.unresolvedInternal.length
     },
     edgeCounts,
     violationCounts,
+    unresolvedInternal: census.unresolvedInternal,
     edges: census.edges
   }
 }
