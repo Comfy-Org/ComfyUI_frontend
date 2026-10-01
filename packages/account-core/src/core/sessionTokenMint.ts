@@ -48,6 +48,8 @@ export class SessionTokenError extends Error {
 export interface SessionTokenMint {
   /** Never throws: every outcome is a result. */
   readonly mint: (workspaceId?: string) => Promise<SessionTokenResult>
+  /** Like `mint`, but never serves the cached token; for the one 401 retry. */
+  readonly remint: (workspaceId?: string) => Promise<SessionTokenResult>
   /** For `createRequestAuthorizer`; rejects with a `SessionTokenError`. */
   readonly getWorkspaceToken: (workspaceId?: string) => Promise<string>
 }
@@ -251,8 +253,14 @@ export function createSessionTokenMint({
     return running
   }
 
+  function remint(workspaceId?: string): Promise<SessionTokenResult> {
+    if (!inFlight.has(workspaceId)) cache.delete(workspaceId)
+    return mint(workspaceId)
+  }
+
   return {
     mint,
+    remint,
     async getWorkspaceToken(workspaceId) {
       const result = await mint(workspaceId)
       if (result.status === 'ok') return result.credential.token

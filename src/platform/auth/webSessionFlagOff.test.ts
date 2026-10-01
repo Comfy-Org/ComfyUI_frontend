@@ -15,6 +15,7 @@ import {
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
 import { TOKEN_REFRESH_BUFFER_MS } from '@/platform/workspace/workspaceConstants'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
@@ -148,11 +149,22 @@ function jsonResponse(body: unknown, status = 200): Response {
   })
 }
 
+const BILLING_STATUS = {
+  billing_rail: 'stripe',
+  has_funds: true,
+  is_active: true,
+  max_seats: 1,
+  occupied_seats: 1,
+  scheduled_change: null,
+  team_credit_stop: null
+}
+
 function installFetchRecorder(features: Record<string, unknown>) {
   const all: RecordedRequest[] = []
   let pending: RecordedRequest[] = []
   let socketCloses = 0
   let mintCount = 0
+  let billingUnauthorized = 0
 
   const mintResponse = (): ExchangeTokenResponse => {
     mintCount += 1
@@ -180,6 +192,12 @@ function installFetchRecorder(features: Record<string, unknown>) {
         return jsonResponse({ queue_running: [], queue_pending: [] })
       case 'POST /api/prompt':
         return jsonResponse({ prompt_id: 'prompt-1', number: 1 })
+      case 'GET /api/billing/status':
+        if (billingUnauthorized > 0) {
+          billingUnauthorized -= 1
+          return jsonResponse({ message: 'invalid auth token' }, 401)
+        }
+        return jsonResponse(BILLING_STATUS)
       default:
         return jsonResponse({ message: 'unexpected request' }, 404)
     }
@@ -229,6 +247,9 @@ function installFetchRecorder(features: Record<string, unknown>) {
     },
     get socketCloses() {
       return socketCloses
+    },
+    rejectNextBillingRead() {
+      billingUnauthorized = 1
     },
     take() {
       const taken = pending
@@ -510,6 +531,66 @@ describe('cloud auth requests with unified_web_session off', () => {
       ).toEqual([])
     }
   )
+})
+
+describe.for([
+  { name: 'absent', features: {} },
+  { name: 'false', features: { unified_web_session: false } }
+])('billing SDK rails with unified_web_session $name', ({ features }) => {
+  const BILLING_SDK_RAILS = {
+    unified_cloud_auth: true,
+    billing_sdk_topup_enabled: true,
+    billing_sdk_subscription_enabled: true
+  }
+
+  const billingStatusRead = (token: string): RecordedRequest => ({
+    method: 'GET',
+    path: '/api/billing/status',
+    headers: {
+      authorization: `Bearer ${token}`,
+      'content-type': 'application/json'
+    },
+    credentials: null
+  })
+
+  let hooks: ReturnType<typeof effectScope> | undefined
+
+  beforeEach(() => {
+    identity.reset()
+  })
+
+  afterEach(() => {
+    hooks?.stop()
+    hooks = undefined
+    remoteConfig.value = {}
+  })
+
+  it('reads on the Firebase-minted Cloud JWT and re-mints a 401 through Firebase once', async () => {
+    const recorder = installFetchRecorder({
+      ...BILLING_SDK_RAILS,
+      ...features
+    })
+    await refreshRemoteConfig({ useAuth: false })
+    expect(recorder.take()).toEqual(FEATURES_BOOTSTRAP)
+    hooks = wireSessionCookieExtension()
+    await useAuthStore().login('user-a@example.com', 'password')
+    await vi.waitFor(() =>
+      expect(recorder.pending).toEqual(UNIFIED_CLOUD_AUTH_ON.signIn)
+    )
+    recorder.take()
+    recorder.rejectNextBillingRead()
+
+    const rail = useBillingReadRail()
+    assert.exists(rail)
+    const status = await rail.readStatus()
+
+    expect(status.status).toBe('ok')
+    expect(recorder.take()).toEqual([
+      billingStatusRead('cloud-jwt-1'),
+      TOKEN_MINT,
+      billingStatusRead('cloud-jwt-2')
+    ])
+  })
 })
 
 describe.for([

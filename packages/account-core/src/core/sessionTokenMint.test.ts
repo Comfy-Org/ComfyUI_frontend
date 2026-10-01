@@ -397,6 +397,35 @@ describe('createSessionTokenMint', () => {
     expect(sent).toHaveLength(3)
   })
 
+  it('remint replaces a fresh cached token and keeps the other workspaces', async () => {
+    const { mint, sent } = setup()
+
+    await mint.mint()
+    await mint.mint('ws-1')
+    const reminted = await mint.remint()
+    const afterwards = await Promise.all([
+      mint.getWorkspaceToken(),
+      mint.getWorkspaceToken('ws-1')
+    ])
+
+    expect(reminted).toMatchObject({ credential: { token: 'jwt-3' } })
+    expect(afterwards).toEqual(['jwt-3', 'jwt-2'])
+    expect(sent).toHaveLength(3)
+  })
+
+  it('shares one request among concurrent remints', async () => {
+    const { mint, sent } = setup()
+    await mint.mint()
+
+    const reminted = await Promise.all([mint.remint(), mint.remint()])
+
+    expect(reminted).toMatchObject([
+      { credential: { token: 'jwt-2' } },
+      { credential: { token: 'jwt-2' } }
+    ])
+    expect(sent).toHaveLength(2)
+  })
+
   it('honours Retry-After on 429 before asking again', async () => {
     const { mint, sent } = setup({
       respond: (_, index) =>
