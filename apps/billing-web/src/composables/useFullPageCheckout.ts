@@ -74,6 +74,11 @@ export type PayChoice =
 
 const CARD_METHOD_TYPE = 'card'
 
+function selectedRailOf(choice: PayChoice) {
+  if (choice === undefined) return 'on_file'
+  return 'confirmationToken' in choice ? 'new' : 'saved'
+}
+
 /** The method's type when it authenticates away from this page, else nothing. */
 function redirectMethodOf(choice: PayChoice): string | undefined {
   if (choice === undefined || choice.methodType === CARD_METHOD_TYPE)
@@ -289,6 +294,10 @@ export function useFullPageCheckout() {
       return quoted
     }
   })
+
+  watch(promo.entry, (after, before) =>
+    journey.promoEntryChanged(before, after)
+  )
 
   const asksReactivation = (quoted: SubscriptionPreview) =>
     quoted.requires_reactivation_confirmation === true
@@ -661,6 +670,10 @@ export function useFullPageCheckout() {
     dispatch({ type: 'consentMissing' })
   }
 
+  function reportMethodSelected(choice: PayChoice) {
+    journey.methodSelected(selectedRailOf(choice), choice?.methodType)
+  }
+
   let payGeneration = 0
 
   /**
@@ -676,11 +689,15 @@ export function useFullPageCheckout() {
     const arrival = entry.value
     const quoted = preview.value
     if (arrival?.plan === undefined || !quoted || !canPay.value) return
-    if (promo.unapplied.value) return promo.apply()
+    if (promo.unapplied.value) {
+      journey.track({ phase: 'pay_blocked', reason: 'promo_unapplied' })
+      return promo.apply()
+    }
     if (needsConsent(page.value)) return payWithoutConsent()
     const planned = { ...arrival, plan: arrival.plan }
     const mine = ++payGeneration
     const redirectMethod = redirectMethodOf(choice)
+    reportMethodSelected(choice)
     dispatch({
       type: 'paySubmitted',
       ...(redirectMethod === undefined ? {} : { redirectMethod })

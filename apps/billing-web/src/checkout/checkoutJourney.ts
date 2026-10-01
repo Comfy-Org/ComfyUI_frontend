@@ -9,6 +9,8 @@ import type {
 import type { BillingSource } from '@comfyorg/billing-contract'
 
 import type { CheckoutPageEvent } from '@/checkout/checkoutPage'
+import type { PromoEntry } from '@/checkout/promoEntry'
+import { promoRejectionOf } from '@/checkout/promoEntry'
 
 type PreviewReadyPhase = Extract<
   CheckoutJourneyPhaseEvent,
@@ -126,4 +128,61 @@ export function previewFailureOfResult(
     phase: 'preview_failed',
     failure_category: failureCategoryOf(result)
   }
+}
+
+type MethodSelectedPhase = Extract<
+  CheckoutJourneyPhaseEvent,
+  { phase: 'method_selected' }
+>
+type PromoPhase = Extract<CheckoutJourneyPhaseEvent, { phase: 'promo' }>
+
+export type PaymentRail = MethodSelectedPhase['rail']
+export type PromoResult = PromoPhase['result']
+
+function methodKindOf(
+  methodType: string | undefined
+): MethodSelectedPhase['method_kind'] {
+  if (methodType === undefined || methodType === '') return undefined
+  return methodType === 'card' || methodType === 'alipay' ? methodType : 'other'
+}
+
+export function methodSelectedPhase(
+  rail: PaymentRail,
+  methodType: string | undefined
+): MethodSelectedPhase {
+  const kind = methodKindOf(methodType)
+  return {
+    phase: 'method_selected',
+    rail,
+    ...(kind !== undefined && { method_kind: kind })
+  }
+}
+
+/** The code a promo entry just settled on, from the move it made; typing and in-flight moves settle nothing. */
+export function promoSettlementOf(
+  before: PromoEntry,
+  after: PromoEntry
+): { readonly result: PromoResult; readonly code: string } | undefined {
+  if (before.kind === 'applying' && after.kind === 'applied')
+    return { result: 'applied', code: before.draft }
+  if (
+    before.kind === 'applying' &&
+    after.kind === 'rejected' &&
+    after.reason === 'invalid'
+  )
+    return { result: 'rejected', code: before.draft }
+  if (before.kind === 'removing' && after.kind === 'idle')
+    return { result: 'removed', code: before.code }
+  if (before.kind === 'applied' && after.kind === 'idle')
+    return { result: 'expired', code: before.code }
+  return undefined
+}
+
+/** What a quote priced with a code says about it; a quote that failed for another reason judged nothing. */
+export function promoResultOfQuote(
+  result: PreviewSubscribeResult
+): 'applied' | 'rejected' | undefined {
+  if (result.status === 'ok')
+    return result.value.promotion_code ? 'applied' : 'rejected'
+  return promoRejectionOf(result) === 'invalid' ? 'rejected' : undefined
 }

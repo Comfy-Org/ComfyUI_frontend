@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { readBillingErrorCode } from '@comfyorg/account-core/billing'
 import type {
   BillingTelemetryFailureCategory,
   CheckoutEntryFlow,
@@ -14,10 +15,14 @@ import {
   entryFlowOf,
   entrySourceOf,
   failureCategoryOf,
+  methodSelectedPhase,
   previewFailureOfPageEvent,
   previewFailureOfResult,
-  previewReadyPhase
+  previewReadyPhase,
+  promoResultOfQuote,
+  promoSettlementOf
 } from '@/checkout/checkoutJourney'
+import type { PromoEntry } from '@/checkout/promoEntry'
 import { previewOf } from '@/test/fakeBillingClient'
 
 describe('entrySourceOf', () => {
@@ -244,5 +249,174 @@ describe('previewFailureOfResult', () => {
     }
   ])('$name', ({ result, failed }) => {
     expect(previewFailureOfResult(result)).toStrictEqual(failed)
+  })
+})
+
+describe('methodSelectedPhase', () => {
+  it.for<{
+    name: string
+    rail: 'saved' | 'new' | 'on_file'
+    methodType: string | undefined
+    selected: object
+  }>([
+    {
+      name: 'a new card',
+      rail: 'new',
+      methodType: 'card',
+      selected: { phase: 'method_selected', rail: 'new', method_kind: 'card' }
+    },
+    {
+      name: 'a new Alipay account',
+      rail: 'new',
+      methodType: 'alipay',
+      selected: { phase: 'method_selected', rail: 'new', method_kind: 'alipay' }
+    },
+    {
+      name: 'a new method of any other type',
+      rail: 'new',
+      methodType: 'sepa_debit',
+      selected: { phase: 'method_selected', rail: 'new', method_kind: 'other' }
+    },
+    {
+      name: 'a saved card',
+      rail: 'saved',
+      methodType: 'card',
+      selected: { phase: 'method_selected', rail: 'saved', method_kind: 'card' }
+    },
+    {
+      name: 'a saved method the list gives no type',
+      rail: 'saved',
+      methodType: '',
+      selected: { phase: 'method_selected', rail: 'saved' }
+    },
+    {
+      name: 'the method on file, whose type this page never learns',
+      rail: 'on_file',
+      methodType: undefined,
+      selected: { phase: 'method_selected', rail: 'on_file' }
+    }
+  ])('names $name', ({ rail, methodType, selected }) => {
+    expect(methodSelectedPhase(rail, methodType)).toStrictEqual(selected)
+  })
+})
+
+describe('promoSettlementOf', () => {
+  it.for<{
+    name: string
+    before: PromoEntry
+    after: PromoEntry
+    settled: object | undefined
+  }>([
+    {
+      name: 'a code the server priced is applied',
+      before: { kind: 'applying', draft: 'SPRING' },
+      after: { kind: 'applied', code: 'SPRING' },
+      settled: { result: 'applied', code: 'SPRING' }
+    },
+    {
+      name: 'a code the server refused is rejected',
+      before: { kind: 'applying', draft: 'NOPE' },
+      after: { kind: 'rejected', draft: 'NOPE', reason: 'invalid' },
+      settled: { result: 'rejected', code: 'NOPE' }
+    },
+    {
+      name: 'a code no quote could judge is not a verdict',
+      before: { kind: 'applying', draft: 'SPRING' },
+      after: { kind: 'rejected', draft: 'SPRING', reason: 'unchecked' },
+      settled: undefined
+    },
+    {
+      name: 'a code taken off is removed',
+      before: { kind: 'removing', code: 'SPRING' },
+      after: { kind: 'idle' },
+      settled: { result: 'removed', code: 'SPRING' }
+    },
+    {
+      name: 'a removal that failed keeps the code and reports nothing',
+      before: { kind: 'removing', code: 'SPRING' },
+      after: { kind: 'applied', code: 'SPRING' },
+      settled: undefined
+    },
+    {
+      name: 'an applied code Pay found lapsed is expired',
+      before: { kind: 'applied', code: 'SPRING' },
+      after: { kind: 'idle' },
+      settled: { result: 'expired', code: 'SPRING' }
+    },
+    {
+      name: 'typing a code is not a result',
+      before: { kind: 'editing', draft: 'SPR' },
+      after: { kind: 'editing', draft: 'SPRI' },
+      settled: undefined
+    },
+    {
+      name: 'a code sent to be priced is not a result yet',
+      before: { kind: 'editing', draft: 'SPRING' },
+      after: { kind: 'applying', draft: 'SPRING' },
+      settled: undefined
+    },
+    {
+      name: 'a code sent to be removed is not a result yet',
+      before: { kind: 'applied', code: 'SPRING' },
+      after: { kind: 'removing', code: 'SPRING' },
+      settled: undefined
+    }
+  ])('$name', ({ before, after, settled }) => {
+    expect(promoSettlementOf(before, after)).toStrictEqual(settled)
+  })
+})
+
+describe('promoResultOfQuote', () => {
+  it.for<{
+    name: string
+    result: PreviewSubscribeResult
+    settled: 'applied' | 'rejected' | undefined
+  }>([
+    {
+      name: 'a quote that carries the code back applied it',
+      result: {
+        status: 'ok',
+        value: previewOf({ promotion_code: 'SPRING' })
+      },
+      settled: 'applied'
+    },
+    {
+      name: 'a quote that drops the code rejected it',
+      result: { status: 'ok', value: previewOf() },
+      settled: 'rejected'
+    },
+    {
+      name: 'a code the server calls invalid is rejected',
+      result: {
+        status: 'error',
+        code: 'REQUEST_FAILED',
+        httpStatus: 400,
+        serverCode: readBillingErrorCode({
+          code: 'PROMOTION_CODE_INVALID',
+          message: 'no'
+        })
+      },
+      settled: 'rejected'
+    },
+    {
+      name: 'a code the server calls inapplicable is rejected',
+      result: {
+        status: 'error',
+        code: 'REQUEST_FAILED',
+        httpStatus: 400,
+        serverCode: readBillingErrorCode({
+          code: 'PROMOTION_CODE_INAPPLICABLE',
+          message: 'no'
+        })
+      },
+      settled: 'rejected'
+    },
+    {
+      name: 'a quote that failed for another reason judged nothing',
+      result: { status: 'error', code: 'REQUEST_FAILED' },
+      settled: undefined
+    }
+  ])('$name', ({ result, settled }) => {
+    expect(promoResultOfQuote(result)).toBe(settled)
   })
 })
