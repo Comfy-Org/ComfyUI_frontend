@@ -5,18 +5,7 @@ import { openWorkflowFromSidebar } from '@e2e/fixtures/utils/builderTestUtils'
 
 import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 
-const defaults = [{ source: 'first default' }, { source: 'second default' }]
-const savedValues = [
-  {
-    trim: { start_time: 1, duration: 2 },
-    extension_only: { untouched: true }
-  },
-  {
-    crop: { x: 1, y: 2, width: 3, height: 4 },
-    unknown_key: ['kept', 2]
-  }
-]
-const workflowName = 'duplicate-widget-names'
+const workflowName = `duplicate-widget-names-${Date.now()}`
 
 test.describe(
   'duplicate widget-name persistence',
@@ -26,9 +15,24 @@ test.describe(
       await comfyPage.workflow.deleteWorkflow(workflowName)
     })
 
-    test('preserves both dict-shaped values across a live workflow save and reload', async ({
+    test('keeps both object values after closing, reopening, and re-saving the workflow', async ({
       comfyPage
     }) => {
+      const defaults = [
+        { source: 'first default' },
+        { source: 'second default' }
+      ]
+      const savedValues = [
+        {
+          trim: { start_time: 1, duration: 2 },
+          extension_only: { untouched: true }
+        },
+        {
+          crop: { x: 1, y: 2, width: 3, height: 4 },
+          unknown_key: ['kept', 2]
+        }
+      ]
+
       const nodeId =
         await test.step('create and save duplicate widget values', async () => {
           await comfyPage.nodeOps.clearGraph()
