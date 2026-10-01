@@ -57,9 +57,13 @@ function getProgressText(state: DownloadingState): string {
     return knownProgress ?? t('templateWorkflows.detail.downloading')
   }
   return knownProgress
-    ? t('templateWorkflows.detail.downloadPausedProgress', {
-        progress: knownProgress
-      })
+    ? t(
+        'templateWorkflows.detail.downloadPausedProgress',
+        { progress: knownProgress },
+        // Byte counts composed with a separator; escaping turns the slash
+        // into an entity in both the label and aria-valuetext.
+        { escapeParameter: false }
+      )
     : t('templateWorkflows.detail.downloadPaused')
 }
 

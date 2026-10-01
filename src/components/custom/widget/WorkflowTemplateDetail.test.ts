@@ -12,7 +12,9 @@ import WorkflowTemplateDetail from './WorkflowTemplateDetail.vue'
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: { en: enMessages }
+  messages: { en: enMessages },
+  // Mirror src/i18n.ts, or the suite certifies strings production escapes.
+  escapeParameter: true
 })
 
 const groups = [
