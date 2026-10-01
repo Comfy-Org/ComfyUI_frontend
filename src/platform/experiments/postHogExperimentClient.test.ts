@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const posthog = vi.hoisted(() => ({
-  get_distinct_id: vi.fn(),
   getFeatureFlag: vi.fn(),
   onFeatureFlags: vi.fn()
 }))
@@ -12,7 +11,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 describe('readExperimentVariant', () => {
   beforeEach(() => {
     vi.resetModules()
-    posthog.get_distinct_id.mockReturnValue('person-a')
     posthog.getFeatureFlag.mockReturnValue('treatment')
   })
 
@@ -25,8 +23,7 @@ describe('readExperimentVariant', () => {
     })
     const { readExperimentVariant } = await import('./postHogExperimentClient')
 
-    const first = readExperimentVariant('waits-for-flags')
-    const second = readExperimentVariant('waits-for-flags')
+    const assignment = readExperimentVariant('waits-for-flags')
     await vi.waitFor(() =>
       expect(posthog.onFeatureFlags).toHaveBeenCalledOnce()
     )
@@ -34,10 +31,7 @@ describe('readExperimentVariant', () => {
 
     flagsReady()
 
-    await expect(Promise.all([first, second])).resolves.toEqual([
-      'treatment',
-      'treatment'
-    ])
+    await expect(assignment).resolves.toBe('treatment')
     expect(posthog.getFeatureFlag).toHaveBeenCalledOnce()
     expect(unsubscribe).toHaveBeenCalledOnce()
   })
@@ -56,7 +50,7 @@ describe('readExperimentVariant', () => {
     expect(unsubscribe).toHaveBeenCalledOnce()
   })
 
-  it('reads a fresh assignment after identity changes', async () => {
+  it('reads the current assignment on each mount', async () => {
     posthog.onFeatureFlags.mockImplementation((callback) => {
       callback()
       return vi.fn()
@@ -64,7 +58,6 @@ describe('readExperimentVariant', () => {
     const { readExperimentVariant } = await import('./postHogExperimentClient')
 
     await expect(readExperimentVariant('placement')).resolves.toBe('treatment')
-    posthog.get_distinct_id.mockReturnValue('person-b')
     posthog.getFeatureFlag.mockReturnValue('control')
 
     await expect(readExperimentVariant('placement')).resolves.toBe('control')

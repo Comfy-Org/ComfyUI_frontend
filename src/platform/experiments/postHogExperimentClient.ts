@@ -1,9 +1,4 @@
-import type { PostHog } from 'posthog-js'
-
 import { isCloud } from '@/platform/distribution/types'
-
-const assignments = new Map<string, Promise<string | undefined>>()
-let posthogPromise: Promise<PostHog> | undefined
 
 /**
  * Resolves a PostHog multivariate flag once PostHog has loaded its flags for
@@ -26,29 +21,7 @@ export async function readExperimentVariant(
   flagKey: string
 ): Promise<string | undefined> {
   if (!isCloud) return undefined
-  const posthog = await (posthogPromise ??= import('posthog-js').then(
-    ({ default: posthog }) => posthog
-  ))
-  const assignmentKey = `${posthog.get_distinct_id()}:${flagKey}`
-  const existing = assignments.get(assignmentKey)
-  if (existing) return existing
-
-  const assignment = loadExperimentVariant(posthog, flagKey).catch(
-    (error: unknown) => {
-      if (assignments.get(assignmentKey) === assignment) {
-        assignments.delete(assignmentKey)
-      }
-      throw error
-    }
-  )
-  assignments.set(assignmentKey, assignment)
-  return assignment
-}
-
-async function loadExperimentVariant(
-  posthog: PostHog,
-  flagKey: string
-): Promise<string | undefined> {
+  const { default: posthog } = await import('posthog-js')
   let unsubscribe = (): void => {}
   await new Promise<void>((resolve) => {
     unsubscribe = posthog.onFeatureFlags(() => resolve())
