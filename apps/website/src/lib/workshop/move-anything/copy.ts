@@ -17,6 +17,7 @@ const copy = {
   'move.empty.example': { en: 'Try the example', 'zh-CN': '试用示例' },
   'move.tool.move': { en: 'Move', 'zh-CN': '移动' },
   'move.tool.add': { en: 'Add object', 'zh-CN': '添加物体' },
+  'move.history': { en: 'History', 'zh-CN': '历史记录' },
   'move.tool.undo': { en: 'Undo', 'zh-CN': '撤销' },
   'move.tool.redo': { en: 'Redo', 'zh-CN': '重做' },
   'move.hint.move': {

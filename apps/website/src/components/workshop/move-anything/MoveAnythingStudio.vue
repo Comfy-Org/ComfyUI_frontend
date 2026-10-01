@@ -12,6 +12,7 @@ import EditorAlert from '../app-editor/EditorAlert.vue'
 import EditorBusy from '../app-editor/EditorBusy.vue'
 import EditorEmpty from '../app-editor/EditorEmpty.vue'
 import EditorHint from '../app-editor/EditorHint.vue'
+import EditorHistory from '../app-editor/EditorHistory.vue'
 import EditorResult from '../app-editor/EditorResult.vue'
 import EditorResultDock from '../app-editor/EditorResultDock.vue'
 import { MOVE_EXAMPLE } from '../../../lib/workshop/move-anything/mock-run'
@@ -133,6 +134,20 @@ function busyDetail() {
         @close="tray = undefined"
       />
     </template>
+    <template v-if="image && phase.kind !== 'done'" #start>
+      <EditorHistory
+        :can-undo="move.canUndo.value"
+        :can-redo="move.canRedo.value"
+        :disabled="phase.kind === 'moving'"
+        :labels="{
+          group: mc('move.history', locale),
+          undo: mc('move.tool.undo', locale),
+          redo: mc('move.tool.redo', locale)
+        }"
+        @undo="move.undo"
+        @redo="move.redo"
+      />
+    </template>
     <template #dock>
       <EditorResultDock
         v-if="image && phase.kind === 'done'"
@@ -151,14 +166,10 @@ function busyDetail() {
         :quality
         :object-count="objects.length"
         :moved-count="move.moved.value.length"
-        :can-undo="move.canUndo.value"
-        :can-redo="move.canRedo.value"
         :can-generate="move.canGenerate.value"
         :moving="phase.kind === 'moving'"
         :locale
         @tool="(next) => (tool = next)"
-        @undo="move.undo"
-        @redo="move.redo"
         @file="move.useFile"
         @tray="move.toggleTray"
         @generate="move.generate"

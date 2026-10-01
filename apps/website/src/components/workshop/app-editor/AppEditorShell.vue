@@ -57,6 +57,12 @@ const {
       </div>
       <slot name="overlay" />
       <div
+        class="pointer-events-none absolute inset-x-3 top-3 flex items-start justify-between gap-2 *:pointer-events-auto"
+      >
+        <slot name="start" />
+        <slot name="end" />
+      </div>
+      <div
         class="pointer-events-none absolute inset-x-0 bottom-4 flex flex-col items-center gap-2 px-3"
       >
         <slot name="tray" />
