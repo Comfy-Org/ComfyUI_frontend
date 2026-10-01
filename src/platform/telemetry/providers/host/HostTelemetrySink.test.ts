@@ -203,7 +203,9 @@ describe('HostTelemetrySink', () => {
         operation_type: 'subscription',
         tier: 'pro',
         cycle: 'monthly',
-        checkout_type: 'new'
+        checkout_type: 'new',
+        billing_surface: 'cloud_app',
+        billing_client: 'legacy'
       }
     )
   })
@@ -224,7 +226,9 @@ describe('HostTelemetrySink', () => {
         stage: 'failed',
         outcome: 'failure',
         billing_op_id: 'op-2',
-        failure_category: 'provider_decline'
+        failure_category: 'provider_decline',
+        billing_surface: 'cloud_app',
+        billing_client: 'legacy'
       }
     )
   })

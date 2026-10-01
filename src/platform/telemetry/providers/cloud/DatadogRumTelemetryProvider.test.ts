@@ -118,7 +118,7 @@ describe('DatadogRumTelemetryProvider', () => {
       expect(addAction.mock.calls).toEqual(
         events.map((event) => [
           `billing.${event.operation}.${event.stage}`,
-          event
+          { ...event, billing_surface: 'cloud_app', billing_client: 'legacy' }
         ])
       )
     }
@@ -218,7 +218,7 @@ describe('DatadogRumTelemetryProvider', () => {
 
     expect(addAction).toHaveBeenCalledExactlyOnceWith(
       TelemetryEvents.BILLING_OPERATION_FAILED,
-      event
+      { ...event, billing_surface: 'cloud_app', billing_client: 'legacy' }
     )
   })
 
@@ -245,7 +245,9 @@ describe('DatadogRumTelemetryProvider', () => {
         stage: 'failed',
         outcome: 'failure',
         billing_op_id: 'opaque-op-id',
-        failure_category: 'unknown'
+        failure_category: 'unknown',
+        billing_surface: 'cloud_app',
+        billing_client: 'legacy'
       }
     )
   })
