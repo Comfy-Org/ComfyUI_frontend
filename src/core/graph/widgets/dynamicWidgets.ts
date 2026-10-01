@@ -139,16 +139,22 @@ function dynamicComboWidget(
       const addedWidget = widgets.find((widget) => widget.name === name)
       if (!addedWidget) continue
       const removed = removedValues?.get(name)
-      const positionalIndex = widgets
-        .filter((widget) => widget.serialize !== false)
-        .indexOf(addedWidget)
+      const serializable = widgets.filter(
+        (widget) => widget.serialize !== false
+      )
+      const positionalIndex = serializable.indexOf(addedWidget)
+      const sameName = serializable.filter((widget) => widget.name === name)
       const restored =
         graphId && positionalIndex >= 0
           ? useWidgetValueStore().getRestoredWidgetValue(
               graphId,
               node.id,
               name,
-              positionalIndex
+              {
+                positionalIndex,
+                occurrence: sameName.indexOf(addedWidget),
+                occurrenceCount: sameName.length
+              }
             )
           : undefined
       if (!restored && removed?.type === addedWidget.type) {

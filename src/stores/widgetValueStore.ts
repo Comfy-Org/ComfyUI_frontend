@@ -39,6 +39,35 @@ interface WidgetRestorationState {
   restoreNamed: boolean
 }
 
+/**
+ * Which live widget a restored value is being resolved for.
+ *
+ * Every field is required on purpose. An optional `occurrence` silently gave
+ * first-occurrence semantics to any call site that had not been updated — and
+ * first-occurrence is exactly the case the ordered form treats as
+ * authoritative, so the omission read as a deliberate claim. Requiring the
+ * whole identity turns a missed call site into a compile error instead.
+ */
+interface RestoredWidgetIdentity {
+  /** Index among the node's live serializable widgets. */
+  positionalIndex: number
+  /**
+   * Zero-based index among the live serializable widgets sharing the name.
+   * Only the name-restore path reads it; positional restore already
+   * distinguishes repeated names by index.
+   */
+  occurrence: number
+  /**
+   * How many live serializable widgets share the name, or `undefined` while
+   * the node's widget list is still being built — `addCustomWidget` fires per
+   * widget during `onConfigure`, so the total is not yet knowable there and a
+   * just-appended widget must not be read as the final occurrence on the
+   * strength of being the last one so far. Required key, so a call site cannot
+   * omit it by accident; pass `undefined` deliberately.
+   */
+  occurrenceCount: number | undefined
+}
+
 interface WidgetEntity {
   state: WidgetState
   render: WidgetRenderState
@@ -142,55 +171,77 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   }
 
   /**
-   * The occurrence-addressed value for every repeat of `name` except the last.
+   * Whether this identity is the last occurrence of `name`, which is the only
+   * one a name-only write could have been aimed at.
    *
-   * `named[name]` is the LAST widget of a repeated name, both in this app's
-   * serializer and in the comfy-multi-player projection, so the final
-   * occurrence deliberately keeps reading `named`: a name-only writer that
-   * predates occurrence addressing still lands on the slot its write meant.
-   * Earlier occurrences exist nowhere but the ordered form, and collapsing
-   * them onto `named[name]` is the loss that form exists to stop.
+   * "Last" has to hold on both sides of the load. An identity at or past the
+   * *document's* highest occurrence has no later entry for such a write to
+   * have displaced. An identity at or past the live node's last occurrence is
+   * what such a write would reach now — a node definition that dropped one of
+   * two same-named widgets must not hand the survivor the stale first entry.
+   * The live side is only consulted when the caller knows the live total; see
+   * {@link RestoredWidgetIdentity.occurrenceCount}.
    */
-  function getOrderedWidgetValue(
-    restoration: WidgetRestorationState,
+  function isLastOccurrence(
+    ordered: OrderedWidgetValues,
     name: string,
-    occurrence: number
-  ): { value: WidgetValue } | undefined {
-    const ordered = restoration.ordered
-    if (!ordered) return
-    const lastOccurrence = ordered.lastOccurrence.get(name)
-    if (lastOccurrence === undefined || occurrence >= lastOccurrence) return
-
-    const identity = widgetIdentityKey(name, occurrence)
-    return ordered.byIdentity.has(identity)
-      ? { value: ordered.byIdentity.get(identity) }
-      : undefined
+    { occurrence, occurrenceCount }: RestoredWidgetIdentity
+  ): boolean {
+    const documentLast = ordered.lastOccurrence.get(name)
+    if (documentLast === undefined || occurrence >= documentLast) return true
+    return occurrenceCount !== undefined && occurrence >= occurrenceCount - 1
   }
 
   /**
-   * @param occurrence Zero-based index among the node's live serializable
-   * widgets sharing `name`. Only the name-restore path reads it; positional
-   * restore already distinguishes repeated names by index.
+   * Resolves a name-addressed restore against the ordered form and `named`.
+   *
+   * `named[name]` can only ever address the LAST widget of a repeated name,
+   * both in this app's serializer and in the comfy-multi-player projection, so
+   * a name-only write — from a producer that predates occurrence addressing —
+   * belongs to the last occurrence and wins there. Every earlier occurrence
+   * exists nowhere but the ordered form, and collapsing those onto
+   * `named[name]` is the loss that form exists to stop.
+   *
+   * Either register may be missing: a document carrying only the ordered form
+   * resolves entirely from it, and the last occurrence falls back to its own
+   * ordered entry when `named` has no own key for the name. Without that
+   * fallback the last entry would be write-only data.
    */
+  function getNameAddressedValue(
+    restoration: WidgetRestorationState,
+    name: string,
+    identity: RestoredWidgetIdentity
+  ): { value: WidgetValue } | undefined {
+    const { named, ordered } = restoration
+    const namedValue =
+      named && Object.hasOwn(named, name) ? { value: named[name] } : undefined
+    if (!ordered) return namedValue
+    if (namedValue && isLastOccurrence(ordered, name, identity)) {
+      return namedValue
+    }
+
+    const key = widgetIdentityKey(name, identity.occurrence)
+    return ordered.byIdentity.has(key)
+      ? { value: ordered.byIdentity.get(key) }
+      : namedValue
+  }
+
   function getRestoredWidgetValue(
     graphId: UUID,
     nodeId: NodeId,
     name: string,
-    positionalIndex: number,
-    occurrence = 0
+    identity: RestoredWidgetIdentity
   ): { value: WidgetValue } | undefined {
     const restoration = graphWidgetRestorations.get(graphId)?.get(nodeId)
     if (!restoration) return
-    if (restoration.restoreNamed && restoration.named) {
-      return (
-        getOrderedWidgetValue(restoration, name, occurrence) ??
-        (Object.hasOwn(restoration.named, name)
-          ? { value: restoration.named[name] }
-          : undefined)
-      )
+    if (
+      restoration.restoreNamed &&
+      (restoration.named || restoration.ordered)
+    ) {
+      return getNameAddressedValue(restoration, name, identity)
     }
-    return positionalIndex < restoration.positional.length
-      ? { value: restoration.positional[positionalIndex] }
+    return identity.positionalIndex < restoration.positional.length
+      ? { value: restoration.positional[identity.positionalIndex] }
       : undefined
   }
 

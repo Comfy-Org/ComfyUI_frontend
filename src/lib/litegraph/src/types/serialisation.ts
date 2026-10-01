@@ -134,7 +134,18 @@ export interface ISerialisedNode {
  * One serializable widget's value, addressed losslessly by `(name, occurrence)`.
  *
  * Producers may add their own keys to an entry; a consumer that rewrites a
- * `value` must leave the keys it does not understand alone.
+ * `value` must leave the keys it does not understand alone. This app re-emits
+ * the field from live widget state on every save rather than rewriting entries
+ * in place, so it carries those keys forward itself, matched by
+ * `(name, occurrence)` — an identity the live node no longer has drops out.
+ *
+ * Each `value` is this entry's own copy: the three serialized registers never
+ * share an object, so rewriting one entry's `value` in place cannot reach
+ * `widgets_values`, `widgets_values_named`, or a different widget's entry.
+ *
+ * The field is passed through the workflow schema unvalidated, so this type
+ * describes what this app writes, not what a loaded document holds.
+ * `readOrderedWidgetValues` is the validation boundary on the read side.
  */
 export interface ISerialisedWidgetValueEntry {
   name: string

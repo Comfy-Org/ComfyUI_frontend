@@ -8,6 +8,13 @@ import type {
 import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 
 /**
+ * The separator `widgetIdentityKey` puts between occurrence and name. Written
+ * as an escape, never as a raw byte: a raw control byte makes the whole file
+ * binary to git, which hides it from the diff and from every grep-based audit.
+ */
+const KEY_SEPARATOR = '\u0000'
+
+/**
  * `widgets_values_named` cannot represent two serializable widgets that share a
  * name — the later one overwrites the earlier — and a name-addressed consumer
  * cannot read `widgets_values` back. `widgets_values_ordered` carries
@@ -321,7 +328,7 @@ describe('duplicate widget-name identity', () => {
       ])
     })
 
-    it('preserves an entry key it does not understand', () => {
+    it('tolerates an entry key it does not understand', () => {
       addDuplicatePair()
       const withExtras = [
         { name: 'same', occurrence: 0, value: firstValue, source: 'extension' },
@@ -341,7 +348,9 @@ describe('duplicate widget-name identity', () => {
     })
 
     it('distinguishes identities whose names contain the key separator', () => {
-      const hostile = ' 0'
+      // Spelled apart from the digit that follows it: inlined, the two
+      // would read as a single five-digit escape.
+      const hostile = `${KEY_SEPARATOR}0`
       node.addWidget('custom', hostile, 'hostile first', () => {})
       node.addWidget('custom', hostile, 'hostile second', () => {})
       node.addWidget('custom', '', 'empty name', () => {})
@@ -389,6 +398,339 @@ describe('duplicate widget-name identity', () => {
         'first',
         'second',
         'second'
+      ])
+    })
+
+    it('reads the final occurrence from the ordered form when named has no key for the name', () => {
+      addDuplicatePair()
+
+      node.configure(
+        serialisedNode({
+          widgets_values: [firstValue, secondValue],
+          // A document whose `named` register never learned this name — the
+          // `__proto__` case below produces exactly this shape.
+          widgets_values_named: { unrelated: 'other' },
+          widgets_values_ordered: [
+            { name: 'same', occurrence: 0, value: firstValue },
+            { name: 'same', occurrence: 1, value: secondValue }
+          ]
+        })
+      )
+
+      // Deferring to `named` at the final occurrence only makes sense when
+      // `named` actually holds something for the name. Otherwise the last
+      // entry is write-only data and the widget silently keeps its default.
+      expect(node.widgets!.map((widget) => widget.value)).toEqual([
+        firstValue,
+        secondValue
+      ])
+    })
+
+    it('restores from the ordered form alone when the document has no named register', () => {
+      addDuplicatePair()
+
+      node.configure(
+        serialisedNode({
+          widgets_values_ordered: [
+            { name: 'same', occurrence: 0, value: firstValue },
+            { name: 'same', occurrence: 1, value: secondValue }
+          ]
+        })
+      )
+
+      // The ordered form lists every serializable widget of the node that
+      // wrote it, so it is sufficient on its own. A newer or third-party
+      // producer may emit it without `widgets_values_named`.
+      expect(node.widgets!.map((widget) => widget.value)).toEqual([
+        firstValue,
+        secondValue
+      ])
+    })
+
+    it('gives a surviving widget the named value when the document has more occurrences than the node', () => {
+      node.addWidget('custom', 'same', 'construction default', () => {})
+      node.serialize_widgets = true
+
+      node.configure(
+        serialisedNode({
+          widgets_values: ['first', 'second'] as TWidgetValue[],
+          widgets_values_named: { same: 'second' },
+          widgets_values_ordered: [
+            { name: 'same', occurrence: 0, value: 'first' },
+            { name: 'same', occurrence: 1, value: 'second' }
+          ]
+        })
+      )
+
+      // A newer node definition dropped one of two same-named widgets. Which
+      // document entry the survivor corresponds to is unknowable, so it keeps
+      // what a name-addressed read gave it before this field existed, and the
+      // two drift directions stay consistent with each other.
+      expect(node.widgets!.map((widget) => widget.value)).toEqual(['second'])
+    })
+
+    it('rejects a string occurrence that would collide with a well-formed identity', () => {
+      node.addWidget('custom', 'same', 'a', () => {})
+      node.addWidget('custom', 'same', 'b', () => {})
+      node.addWidget('custom', 'same', 'c', () => {})
+      node.serialize_widgets = true
+
+      node.configure(
+        serialisedNode({
+          widgets_values: ['first', 'second', 'third'],
+          widgets_values_named: { same: 'third' },
+          widgets_values_ordered: [
+            { name: 'same', occurrence: 0, value: 'first' },
+            { name: 'same', occurrence: 1, value: 'second' },
+            { name: 'same', occurrence: 2, value: 'third' },
+            // `String('0')` is `'0'`, so without the integer guard this entry
+            // takes occurrence 0's key and overwrites a well-formed identity.
+            { name: 'same', occurrence: '0', value: 'hijacked' }
+          ] as unknown as ISerialisedWidgetValueEntry[]
+        })
+      )
+
+      expect(node.widgets!.map((widget) => widget.value)).toEqual([
+        'first',
+        'second',
+        'third'
+      ])
+    })
+
+    it.for([
+      ['an object', {}],
+      ['a number', 5],
+      ['a string', 'ordered'],
+      ['a boolean', true]
+    ] as const)(
+      'loads the node without throwing when widgets_values_ordered is %s',
+      ([, container]) => {
+        addDuplicatePair()
+
+        // `createWidgetRestorationState` runs outside `configure`'s
+        // try/finally, so a TypeError on this untrusted field would abort the
+        // whole graph load rather than degrade one node.
+        expect(() => {
+          node.configure(
+            serialisedNode({
+              widgets_values: [firstValue, secondValue],
+              widgets_values_named: { same: secondValue },
+              widgets_values_ordered:
+                container as unknown as ISerialisedWidgetValueEntry[]
+            })
+          )
+        }).not.toThrow()
+
+        expect(node.widgets!.map((widget) => widget.value)).toEqual([
+          secondValue,
+          secondValue
+        ])
+      }
+    )
+  })
+
+  describe('a widget named __proto__', () => {
+    beforeEach(() => {
+      LiteGraph.namedValuesRestore = true
+    })
+
+    /** Repeats `same` so the ordered field is emitted at all. */
+    function addProtoNamedWidget() {
+      node.addWidget('custom', '__proto__', 'construction default', () => {})
+      addDuplicatePair()
+    }
+
+    it('becomes an own key of the named register rather than a prototype write', () => {
+      addProtoNamedWidget()
+      node.widgets![0].value = 'prototype named'
+
+      const serialised = node.serialize()
+      const named = serialised.widgets_values_named!
+
+      // A plain object literal routes this assignment through the inherited
+      // `__proto__` setter: no own key, nothing in the JSON, and the widget
+      // resets to its construction default on restore.
+      expect(Object.hasOwn(named, '__proto__')).toBe(true)
+      expect(named['__proto__']).toBe('prototype named')
+      // Null-prototype internally, ordinary object on the way out, so every
+      // existing consumer of this field still sees `Object.prototype`.
+      expect(Object.getPrototypeOf(named)).toBe(Object.prototype)
+      expect(
+        JSON.parse(JSON.stringify(serialised)).widgets_values_named.__proto__
+      ).toBe('prototype named')
+    })
+
+    it('survives a serialize/configure round trip', () => {
+      addProtoNamedWidget()
+      node.widgets![0].value = 'prototype named'
+      node.widgets![1].value = firstValue
+      node.widgets![2].value = secondValue
+      const serialised = JSON.parse(
+        JSON.stringify(node.serialize())
+      ) as ISerialisedNode
+
+      const reloaded = new LGraphNode('TestNode')
+      reloaded.addWidget(
+        'custom',
+        '__proto__',
+        'construction default',
+        () => {}
+      )
+      reloaded.addWidget('custom', 'same', 'first default', () => {})
+      reloaded.addWidget('custom', 'same', 'second default', () => {})
+      reloaded.serialize_widgets = true
+      reloaded.configure(serialised)
+
+      expect(reloaded.widgets!.map((widget) => widget.value)).toEqual([
+        'prototype named',
+        firstValue,
+        secondValue
+      ])
+    })
+  })
+
+  describe('register independence', () => {
+    it('gives each serialized register its own copy of every value', () => {
+      addDuplicatePair()
+      node.widgets![0].value = firstValue
+      node.widgets![1].value = secondValue
+
+      const serialised = node.serialize()
+      const positional = serialised.widgets_values!
+      const named = serialised.widgets_values_named!
+      const ordered = serialised.widgets_values_ordered!
+
+      // Rewriting one entry's `value` in place is the pattern
+      // `ISerialisedWidgetValueEntry` sanctions. Aliased registers would make
+      // it reach `widgets_values`, `widgets_values_named`, and — for a
+      // repeated name — a different widget's slot. Nothing breaks the aliasing
+      // on the in-memory `configure(serialize())` paths: copy/paste, undo,
+      // subgraph conversion.
+      ;(ordered[0].value as Record<string, unknown>).trim = 'rewritten'
+      ;(ordered[1].value as Record<string, unknown>).crop = 'rewritten'
+      expect(positional[0]).toEqual(firstValue)
+      expect(positional[1]).toEqual(secondValue)
+      expect(named['same']).toEqual(secondValue)
+      ;(named['same'] as Record<string, unknown>).crop = 'rewritten again'
+      expect(positional[1]).toEqual(secondValue)
+    })
+
+    it('keeps the live widget value out of every register', () => {
+      addDuplicatePair()
+      node.widgets![0].value = firstValue
+      node.widgets![1].value = secondValue
+
+      const serialised = node.serialize()
+      ;(
+        serialised.widgets_values_ordered![0].value as Record<string, unknown>
+      ).trim = 'rewritten'
+
+      expect(node.widgets![0].value).toEqual(firstValue)
+    })
+  })
+
+  describe('unknown entry keys across a load/save cycle', () => {
+    beforeEach(() => {
+      LiteGraph.namedValuesRestore = true
+    })
+
+    it('writes back a producer-specific key it does not interpret', () => {
+      addDuplicatePair()
+
+      node.configure(
+        serialisedNode({
+          widgets_values: [firstValue, secondValue],
+          widgets_values_named: { same: secondValue },
+          widgets_values_ordered: [
+            {
+              name: 'same',
+              occurrence: 0,
+              value: firstValue,
+              source: 'extension'
+            },
+            { name: 'same', occurrence: 1, value: secondValue }
+          ] as unknown as ISerialisedWidgetValueEntry[]
+        })
+      )
+
+      // Rebuilding the field from `{ name, value }` alone deletes another
+      // producer's metadata on every save, which is the loss the entry
+      // contract forbids.
+      expect(node.serialize().widgets_values_ordered).toEqual([
+        { name: 'same', occurrence: 0, value: firstValue, source: 'extension' },
+        { name: 'same', occurrence: 1, value: secondValue }
+      ])
+    })
+
+    it('never lets an unknown key shadow the identity or the live value', () => {
+      addDuplicatePair()
+
+      node.configure(
+        serialisedNode({
+          widgets_values: [firstValue, secondValue],
+          widgets_values_named: { same: secondValue },
+          widgets_values_ordered: [
+            { name: 'same', occurrence: 0, value: firstValue, extra: 1 },
+            { name: 'same', occurrence: 1, value: secondValue }
+          ] as unknown as ISerialisedWidgetValueEntry[]
+        })
+      )
+      node.widgets![0].value = 'edited after load'
+
+      expect(node.serialize().widgets_values_ordered).toEqual([
+        { name: 'same', occurrence: 0, value: 'edited after load', extra: 1 },
+        { name: 'same', occurrence: 1, value: secondValue }
+      ])
+    })
+
+    it('drops the keys of an identity the node no longer has', () => {
+      addDuplicatePair()
+
+      node.configure(
+        serialisedNode({
+          widgets_values: [firstValue, secondValue],
+          widgets_values_named: { same: secondValue },
+          widgets_values_ordered: [
+            { name: 'same', occurrence: 0, value: firstValue },
+            { name: 'same', occurrence: 1, value: secondValue },
+            { name: 'same', occurrence: 2, value: 'gone', source: 'extension' }
+          ] as unknown as ISerialisedWidgetValueEntry[]
+        })
+      )
+
+      expect(node.serialize().widgets_values_ordered).toEqual([
+        { name: 'same', occurrence: 0, value: firstValue },
+        { name: 'same', occurrence: 1, value: secondValue }
+      ])
+    })
+
+    it('forgets the keys when the node is reconfigured without the field', () => {
+      addDuplicatePair()
+
+      node.configure(
+        serialisedNode({
+          widgets_values_named: { same: secondValue },
+          widgets_values_ordered: [
+            {
+              name: 'same',
+              occurrence: 0,
+              value: firstValue,
+              source: 'extension'
+            },
+            { name: 'same', occurrence: 1, value: secondValue }
+          ] as unknown as ISerialisedWidgetValueEntry[]
+        })
+      )
+      node.configure(
+        serialisedNode({
+          widgets_values: [firstValue, secondValue],
+          widgets_values_named: { same: secondValue }
+        })
+      )
+
+      expect(node.serialize().widgets_values_ordered).toEqual([
+        { name: 'same', occurrence: 0, value: secondValue },
+        { name: 'same', occurrence: 1, value: secondValue }
       ])
     })
   })
