@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import type { MoveView } from '../../../composables/useMoveAnything'
 import { useMoveAnything } from '../../../composables/useMoveAnything'
@@ -27,13 +27,16 @@ const { image, objects, phase, tool, tray, quality, selected } = move
 const view = ref<MoveView>('compare')
 reportStudioBusy(() => phase.value.kind === 'moving')
 
-const resultLabels = {
+const resultLabels = computed(() => ({
   resultAlt: mc('move.alt.result', locale),
-  originalAlt: mc('move.alt.example', locale),
+  originalAlt:
+    image.value?.url === MOVE_EXAMPLE.url
+      ? mc('move.alt.example', locale)
+      : (image.value?.name ?? ''),
   original: mc('move.view.original', locale),
   result: mc('move.view.result', locale),
   slider: mc('move.compare', locale)
-}
+}))
 const dockLabels = {
   compare: mc('move.view.compare', locale),
   result: mc('move.view.result', locale),

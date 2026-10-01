@@ -111,4 +111,30 @@ describe('useRelight', () => {
 
     expect(relight.phase.value.kind).toBe('editing')
   })
+
+  it.for([
+    { decodes: true, expected: 'photo.png' },
+    { decodes: false, expected: 'portrait.jpg' }
+  ])(
+    'swaps in an uploaded photo only when it decodes (decodes: $decodes)',
+    async ({ decodes, expected }) => {
+      vi.stubGlobal(
+        'Image',
+        class {
+          naturalWidth = 800
+          naturalHeight = 600
+          onload?: () => void
+          onerror?: () => void
+          set src(_url: string) {
+            queueMicrotask(() => (decodes ? this.onload?.() : this.onerror?.()))
+          }
+        }
+      )
+      const relight = start()
+
+      await relight.useFile(new File(['x'], 'photo.png', { type: 'image/png' }))
+
+      expect(relight.image.value?.name).toBe(expected)
+    }
+  )
 })

@@ -64,6 +64,7 @@ export function useRelight(locale: Locale = 'en') {
   let lastEdit: string | undefined
   let added = 0
   let ownUrl: string | undefined
+  let pendingUrl: string | undefined
   let run: AbortController | undefined
 
   const lights = computed(() => setup.value.lights)
@@ -91,16 +92,22 @@ export function useRelight(locale: Locale = 'en') {
   }
 
   function useExample() {
+    pendingUrl = undefined
     releaseOwnUrl()
     reset(RELIGHT_EXAMPLE, 'sunset')
   }
 
   async function useFile(file: File) {
-    releaseOwnUrl()
     const url = URL.createObjectURL(file)
-    ownUrl = url
+    pendingUrl = url
     const size = await imageSize(url)
-    if (ownUrl !== url) return
+    if (pendingUrl !== url || !size) {
+      URL.revokeObjectURL(url)
+      return
+    }
+    pendingUrl = undefined
+    releaseOwnUrl()
+    ownUrl = url
     reset({ url, name: file.name, ...size }, 'studio')
   }
 
@@ -225,6 +232,7 @@ export function useRelight(locale: Locale = 'en') {
 
   tryOnScopeDispose(() => {
     run?.abort()
+    pendingUrl = undefined
     releaseOwnUrl()
   })
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { useRelight } from '../../../composables/useRelight'
 import { reportStudioBusy } from '../../../composables/useStudioSwitchGuard'
@@ -25,13 +25,16 @@ const { image, setup, phase, tray, preview } = relight
 const view = ref<EditorView>('compare')
 reportStudioBusy(() => phase.value.kind === 'running')
 
-const resultLabels = {
+const resultLabels = computed(() => ({
   resultAlt: lc('relight.alt.result', locale),
-  originalAlt: lc('relight.alt.example', locale),
+  originalAlt:
+    image.value?.url === RELIGHT_EXAMPLE.url
+      ? lc('relight.alt.example', locale)
+      : (image.value?.name ?? ''),
   original: lc('relight.view.original', locale),
   result: lc('relight.view.result', locale),
   slider: lc('relight.compare', locale)
-}
+}))
 const dockLabels = {
   compare: lc('relight.view.compare', locale),
   result: lc('relight.view.result', locale),
