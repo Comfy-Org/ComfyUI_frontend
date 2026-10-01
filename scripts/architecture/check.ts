@@ -416,7 +416,7 @@ const collectSource = (
       kind: 'unclassified-module',
       fingerprint: `unclassified-module:${filename}`,
       detail: `${filename} is outside every enrolled domain`,
-      maturity: 'baseline',
+      maturity: 'inventory',
       source: filename
     })
   const source = readFileSync(join(repositoryRoot, filename), 'utf8')

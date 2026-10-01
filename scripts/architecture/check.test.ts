@@ -78,11 +78,13 @@ const createConfiguredRepository = (): string => {
     'docs/architecture/domains/exceptions.json': JSON.stringify({
       $schema: './exceptions.schema.json',
       schemaVersion: 1,
-      exceptions: [exception()]
+      exceptions: [
+        exception({ fingerprintPrefixes: ['anonymous-suppression:'] })
+      ]
     }),
     'docs/architecture/domains/baseline.json': JSON.stringify({
       schemaVersion: 1,
-      violations: ['unclassified-module:src/check.test.ts']
+      violations: []
     })
   })
 }
@@ -489,7 +491,10 @@ describe('baseline admission and catalog stability', () => {
   test('acceptance requires exact coverage instead of a historical prefix', () => {
     const root = createConfiguredRepository()
     runArchitectureCheck(root, 'update')
-    writeFileSync(join(root, 'src/new.ts'), 'export const added = true')
+    writeFileSync(
+      join(root, 'src/new.ts'),
+      '// eslint-disable-next-line import-x/no-restricted-paths\nexport const added = true'
+    )
     expect(() => runArchitectureCheck(root, 'update')).toThrow(
       'architecture:accept-baseline'
     )
@@ -499,7 +504,7 @@ describe('baseline admission and catalog stability', () => {
     const ledgerPath = join(root, 'docs/architecture/domains/exceptions.json')
     const ledger = JSON.parse(readFileSync(ledgerPath, 'utf8'))
     ledger.exceptions[0].exactFingerprints.push(
-      'unclassified-module:src/new.ts'
+      'anonymous-suppression:src/new.ts:import-x/no-restricted-paths#1'
     )
     writeFileSync(ledgerPath, JSON.stringify(ledger))
     runArchitectureCheck(root, 'accept-baseline')
@@ -510,7 +515,9 @@ describe('baseline admission and catalog stability', () => {
           'utf8'
         )
       ).violations
-    ).toContain('unclassified-module:src/new.ts')
+    ).toContain(
+      'anonymous-suppression:src/new.ts:import-x/no-restricted-paths#1'
+    )
   })
 
   test('rejects expired exception sunsets', () => {
@@ -552,8 +559,7 @@ describe('baseline admission and catalog stability', () => {
       JSON.stringify({
         schemaVersion: 1,
         violations: [
-          'unclassified-module:src/check.test.ts',
-          'unclassified-module:src/resolved.ts'
+          'anonymous-suppression:src/resolved.ts:import-x/no-restricted-paths#1'
         ]
       })
     )
@@ -561,8 +567,8 @@ describe('baseline admission and catalog stability', () => {
       'run pnpm architecture:update'
     )
     runArchitectureCheck(root, 'update')
-    expect(JSON.parse(readFileSync(baselinePath, 'utf8')).violations).toEqual([
-      'unclassified-module:src/check.test.ts'
-    ])
+    expect(JSON.parse(readFileSync(baselinePath, 'utf8')).violations).toEqual(
+      []
+    )
   })
 })

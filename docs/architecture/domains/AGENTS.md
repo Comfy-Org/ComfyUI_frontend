@@ -19,6 +19,9 @@ Enforcement maturity is explicit:
 - `baseline` rejects new fingerprints while allowing recorded debt to shrink.
 - `error` permits no violation.
 
+Unclassified modules remain `inventory` until the total-classification program
+gate is met. Do not add per-file exceptions for the legacy unclassified tree.
+
 Do not add a public entry point merely to silence a deep-import finding. It is
 a contract: document and characterize it before promotion. Keep allowed
 dependencies and consumers reciprocal. Every baseline fingerprint must map to
