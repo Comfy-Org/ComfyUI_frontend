@@ -21,6 +21,7 @@
       />
     </video>
     <Button
+      v-if="pausable"
       variant="overlay-white"
       size="icon"
       class="absolute right-3 bottom-3"
@@ -45,11 +46,13 @@ import Button from '@/components/ui/button/Button.vue'
 const {
   webmSrc = '',
   mp4Src = '',
-  posterSrc = ''
+  posterSrc = '',
+  pausable = false
 } = defineProps<{
   webmSrc?: string
   mp4Src?: string
   posterSrc?: string
+  pausable?: boolean
 }>()
 
 defineOptions({ inheritAttrs: false })

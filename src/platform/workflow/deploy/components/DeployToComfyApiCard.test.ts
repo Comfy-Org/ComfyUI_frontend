@@ -94,6 +94,7 @@ describe('DeployToComfyApiCard', () => {
     expect(
       screen.queryByTestId('deploy-to-comfy-api-video-placeholder')
     ).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Play' })).toBeInTheDocument()
   })
 
   it('shows the placeholder when there is no video', () => {
