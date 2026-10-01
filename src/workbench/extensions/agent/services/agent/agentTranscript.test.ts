@@ -247,9 +247,39 @@ describe('normalizeAgentTranscript', () => {
       ]
     }
 
-    expect(
-      normalizeAgentTranscript([message]).messages[0].parts[0]
-    ).toMatchObject({ skill: 'comfy-director' })
+    const parsed = zAgentMessages.parse([message])
+
+    expect(normalizeAgentTranscript(parsed).messages[0].parts[0]).toMatchObject(
+      {
+        skill: 'comfy-director'
+      }
+    )
+  })
+
+  it('retains a persisted tool call with a null skill', () => {
+    const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
+    message.content = {
+      tool_calls: [
+        {
+          id: 'audit-row-uuid-1',
+          tool_call_id: 'call-1',
+          tool_name: 'load_skill',
+          status: 'success',
+          skill: null
+        }
+      ]
+    }
+
+    const parsed = zAgentMessages.parse([message])
+
+    expect(normalizeAgentTranscript(parsed).messages[0].parts[0]).toEqual({
+      type: 'tool',
+      callId: 'call-1',
+      name: 'load_skill',
+      state: 'done',
+      ok: true,
+      durationMs: undefined
+    })
   })
 
   it('keys callId on tool_call_id, matching what live frames key on', () => {
