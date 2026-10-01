@@ -107,6 +107,50 @@ describe('TopUpCreditsDialogContentLegacy', () => {
 
   it.for([
     {
+      name: 'a preset',
+      choose: async (user: ReturnType<typeof userEvent.setup>) => {
+        await user.click(screen.getByRole('button', { name: '$25' }))
+      },
+      reported: { amount_cents: 2500, amount_preset: '25' }
+    },
+    {
+      name: 'a typed amount',
+      choose: async (user: ReturnType<typeof userEvent.setup>) => {
+        const payInput = screen.getByRole('spinbutton', { name: 'You pay' })
+        await user.tripleClick(payInput)
+        await user.keyboard('75{Enter}')
+      },
+      reported: { amount_cents: 7500, amount_preset: 'custom' }
+    },
+    {
+      name: 'a typed amount that equals a preset',
+      choose: async (user: ReturnType<typeof userEvent.setup>) => {
+        const payInput = screen.getByRole('spinbutton', { name: 'You pay' })
+        await user.tripleClick(payInput)
+        await user.keyboard('100{Enter}')
+      },
+      reported: { amount_cents: 10000, amount_preset: 'custom' }
+    }
+  ])(
+    'reports the amount and the preset of $name on the started event',
+    async ({ choose, reported }) => {
+      renderDialog({ source: 'deep_link' })
+
+      await choose(userEvent.setup())
+      await clickBuyCredits()
+
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
+        operation: 'topup',
+        stage: 'started',
+        outcome: 'pending',
+        payment_intent_source: 'deep_link',
+        ...reported
+      })
+    }
+  )
+
+  it.for([
+    {
       name: 'a rejected purchase',
       purchase: () => Promise.reject(new Error('declined')),
       expectedEvents: [
@@ -115,7 +159,9 @@ describe('TopUpCreditsDialogContentLegacy', () => {
             operation: 'topup',
             stage: 'started',
             outcome: 'pending',
-            payment_intent_source: 'deep_link'
+            payment_intent_source: 'deep_link',
+            amount_cents: 5000,
+            amount_preset: '50'
           }
         ],
         [
@@ -139,7 +185,9 @@ describe('TopUpCreditsDialogContentLegacy', () => {
             operation: 'topup',
             stage: 'started',
             outcome: 'pending',
-            payment_intent_source: 'deep_link'
+            payment_intent_source: 'deep_link',
+            amount_cents: 5000,
+            amount_preset: '50'
           }
         ]
       ]
@@ -309,7 +357,15 @@ describe('TopUpCreditsDialogContentLegacy', () => {
         Promise.resolve({ checkout_url: 'https://checkout.stripe.test' }),
       openedWindow: window,
       expectedEvents: [
-        [{ operation: 'topup', stage: 'started', outcome: 'pending' }]
+        [
+          {
+            operation: 'topup',
+            stage: 'started',
+            outcome: 'pending',
+            amount_cents: 5000,
+            amount_preset: '50'
+          }
+        ]
       ],
       markerKept: true,
       settingsCalls: [['workspace']]
@@ -319,7 +375,15 @@ describe('TopUpCreditsDialogContentLegacy', () => {
       purchase: () => Promise.reject(new Error('declined')),
       openedWindow: window,
       expectedEvents: [
-        [{ operation: 'topup', stage: 'started', outcome: 'pending' }],
+        [
+          {
+            operation: 'topup',
+            stage: 'started',
+            outcome: 'pending',
+            amount_cents: 5000,
+            amount_preset: '50'
+          }
+        ],
         [
           {
             operation: 'topup',
@@ -338,7 +402,15 @@ describe('TopUpCreditsDialogContentLegacy', () => {
         Promise.resolve({ checkout_url: 'https://checkout.stripe.test' }),
       openedWindow: null,
       expectedEvents: [
-        [{ operation: 'topup', stage: 'started', outcome: 'pending' }],
+        [
+          {
+            operation: 'topup',
+            stage: 'started',
+            outcome: 'pending',
+            amount_cents: 5000,
+            amount_preset: '50'
+          }
+        ],
         [
           {
             operation: 'topup',

@@ -304,6 +304,117 @@ describe('CancelSubscriptionDialogContent', () => {
     })
   })
 
+  describe('cancel flow billing events', () => {
+    const intent = {
+      operation: 'cancel',
+      stage: 'intent',
+      outcome: 'pending',
+      current_tier: 'standard'
+    }
+    const abandoned = {
+      operation: 'cancel',
+      stage: 'abandoned',
+      outcome: 'pending',
+      current_tier: 'standard'
+    }
+    const failed = {
+      operation: 'cancel',
+      stage: 'failed',
+      outcome: 'failure',
+      failure_category: 'unknown',
+      current_tier: 'standard'
+    }
+    const confirm = () =>
+      userEvent.click(
+        screen.getByRole('button', { name: /^cancel subscription$/i })
+      )
+    const keep = () =>
+      userEvent.click(
+        screen.getByRole('button', { name: /keep subscription/i })
+      )
+    const cancelFailsOn = (workspaceRail: boolean) => () => {
+      mockShouldUseWorkspaceBilling.value = workspaceRail
+      vi.mocked(useBillingContext().cancelSubscription).mockRejectedValue({
+        message: 'timed out'
+      })
+    }
+
+    it.for<{
+      name: string
+      arrange: () => void
+      props?: { flowAlreadyOpened?: boolean; isScopeCurrent?: () => boolean }
+      act: () => Promise<unknown>
+      reported: object[]
+    }>([
+      {
+        name: 'keeping the subscription',
+        arrange: () => {},
+        act: keep,
+        reported: [intent, abandoned]
+      },
+      {
+        name: 'keeping the subscription after the provider opened the flow',
+        arrange: () => {},
+        props: { flowAlreadyOpened: true },
+        act: keep,
+        reported: [abandoned]
+      },
+      {
+        name: 'a cancel that goes through',
+        arrange: () => {},
+        act: confirm,
+        reported: [intent]
+      },
+      {
+        name: 'a workspace cancel that fails, which its operation reports',
+        arrange: cancelFailsOn(true),
+        act: confirm,
+        reported: [intent]
+      },
+      {
+        name: 'a legacy cancel that fails',
+        arrange: cancelFailsOn(false),
+        act: confirm,
+        reported: [intent, failed]
+      },
+      {
+        name: 'a legacy cancel that fails before the customer leaves',
+        arrange: cancelFailsOn(false),
+        act: async () => {
+          await confirm()
+          await waitFor(() =>
+            expect(mockToastAdd).toHaveBeenCalledWith(
+              expect.objectContaining({ severity: 'error' })
+            )
+          )
+          await keep()
+        },
+        reported: [intent, failed]
+      },
+      {
+        name: 'a confirm after the workspace changed',
+        arrange: () => {},
+        props: { isScopeCurrent: () => false },
+        act: confirm,
+        reported: [intent]
+      }
+    ])('reports $name as its cancel events', async (row) => {
+      setSubscription(null)
+      row.arrange()
+
+      const { unmount } = renderComponent(row.props)
+      await row.act()
+      unmount()
+
+      expect(
+        vi
+          .mocked(useTelemetry()!.trackBillingEvent)
+          .mock.calls.filter(([event]) => event.operation === 'cancel')
+          .map(([event]) => event)
+      ).toEqual(row.reported)
+    })
+  })
+
   describe('cancel flow', () => {
     it('shows an error toast and keeps the dialog open when cancellation fails', async () => {
       setSubscription(null)
