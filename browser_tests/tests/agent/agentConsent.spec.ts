@@ -559,7 +559,7 @@ test.describe(
 )
 
 test.describe(
-  'Automatic agent consent behind a desktop sign-in approval',
+  'Agent activation behind a desktop sign-in approval',
   { tag: ['@cloud', '@ui'] },
   () => {
     test.use({
@@ -579,7 +579,7 @@ test.describe(
       )
     })
 
-    test('waits for the approval before offering Agent', async ({
+    test('waits for the approval before leaving Agent available', async ({
       comfyPage,
       agentPanel,
       agentConsentReads
@@ -605,7 +605,7 @@ test.describe(
           .toBeGreaterThan(0)
         await approve.click({ trial: true })
         await expect(consent).toHaveCount(0)
-        await expect(agentPanel.root).toHaveCount(0)
+        await expect(agentPanel.root).toBeVisible()
         expect(
           await page.evaluate(() =>
             localStorage.getItem(
@@ -615,10 +615,11 @@ test.describe(
         ).toBeNull()
       })
 
-      await test.step('Approving clears the screen and the offer follows', async () => {
+      await test.step('Approving clears the screen without covering the activated panel', async () => {
         await approve.click()
         await expect(approval).toHaveCount(0)
-        await expect(consent).toBeVisible()
+        await expect(consent).toHaveCount(0)
+        await expect(agentPanel.root).toBeVisible()
       })
     })
   }
