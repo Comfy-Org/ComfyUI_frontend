@@ -710,6 +710,56 @@ describe('useAgentSession (v1 composition root)', () => {
     ownerSession.stop()
   })
 
+  it('fences stale turn recovery across A-to-B-to-A same-id reuse', async () => {
+    const recoveryDeliveries: Array<(history: AgentMessages) => void> = []
+    let deliveredResponses = 0
+    const getMessages = vi.fn(() =>
+      new Promise<AgentMessages>((resolve) => {
+        recoveryDeliveries.push(resolve)
+      }).then((history) => {
+        deliveredResponses++
+        return history
+      })
+    )
+    const events = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: events.source
+    })
+    const conversation = useAgentConversationStore()
+    session.start()
+    events.status(true)
+    await session.sendMessage('owner A old turn')
+    events.emit(delta('msg-1', 'old partial'))
+
+    events.status(false)
+    events.status(true)
+    await vi.waitFor(() => expect(recoveryDeliveries).toHaveLength(1))
+
+    setStorageIdentity('user-b')
+    setStorageWorkspaceId('personal')
+    setStorageIdentity('user-test')
+    await session.sendMessage('owner A new turn')
+    events.emit(delta('msg-1', 'new partial'))
+    expect(conversation.activeTurnId).toBe('msg-1')
+
+    recoveryDeliveries[0]?.([
+      historyRow(1, 'user', 'msg-1', 'owner A old turn'),
+      historyRow(2, 'assistant', 'msg-1', 'old done', 'msg-1')
+    ])
+    await vi.waitFor(() => expect(deliveredResponses).toBe(1))
+
+    expect(conversation.activeTurnId).toBe('msg-1')
+    expect(session.isStreaming.value).toBe(true)
+    const assistant = session.entries.value.at(-1)
+    assert(assistant?.role === 'assistant')
+    expect(assistant.parts).toEqual([
+      { type: 'text', text: 'new partial', state: 'streaming' }
+    ])
+
+    session.stop()
+  })
+
   it('watches storage ownership only while started and resumes once', async () => {
     const conversationStore = useAgentConversationStore()
     const reset = vi.spyOn(conversationStore, 'resetForStorageOwnerTransition')

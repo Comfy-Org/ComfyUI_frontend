@@ -1783,13 +1783,19 @@ export function useAgentSession(deps: AgentSessionDeps) {
   async function reconcileTurn(turn: LiveTurn): Promise<void> {
     const key = recoveryKey(turn)
     const recovery = new AbortController()
+    const recoveryLoadGeneration = loadGeneration
     recoveringTurns.set(key, recovery)
     const deadline = setTimeout(
       () => recovery.abort(),
       TURN_RECOVERY_DEADLINE_MS
     )
     try {
-      await recoverTurn(turn, ownedGeneration, recovery.signal)
+      await recoverTurn(
+        turn,
+        ownedGeneration,
+        recoveryLoadGeneration,
+        recovery.signal
+      )
     } catch (error) {
       // `onStatus` floats this job (`void reconcileTurn(turn)`), so a rethrow
       // would land as an `unhandledrejection` the session never sees. Abort is
@@ -1809,14 +1815,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
   async function recoverTurn(
     turn: LiveTurn,
     generation: number,
+    recoveryLoadGeneration: number,
     signal: AbortSignal
   ): Promise<void> {
     let consecutiveThreadMissing = 0
     for (const ms of TURN_RECOVERY_DELAYS_MS) {
       await delay(ms, { signal })
-      if (!isTurnLive(turn, generation)) return
+      if (!isTurnLive(turn, generation, recoveryLoadGeneration)) return
       const outcome = await fetchTurnOutcome(turn, signal)
-      if (!isTurnLive(turn, generation)) return
+      if (!isTurnLive(turn, generation, recoveryLoadGeneration)) return
       consecutiveThreadMissing =
         outcome.kind === 'thread-missing' ? consecutiveThreadMissing + 1 : 0
       if (outcome.kind === 'thread-missing' && consecutiveThreadMissing < 2)
@@ -1825,9 +1832,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
-  function isTurnLive(turn: LiveTurn, generation: number): boolean {
+  function isTurnLive(
+    turn: LiveTurn,
+    generation: number,
+    recoveryLoadGeneration: number
+  ): boolean {
     return (
       generation === sessionGeneration &&
+      recoveryLoadGeneration === loadGeneration &&
       conversationStore
         .liveTurns()
         .some(
