@@ -31,11 +31,13 @@ import type {
 import {
   RESOLVING,
   UNREADABLE_LINK,
+  awaitingServer,
   challengeToReopen,
   isParked,
   needsConsent,
   railAcceptsPay,
-  reduceCheckoutPage
+  reduceCheckoutPage,
+  settledPlanSource
 } from '@/checkout/checkoutPage'
 import { planCreditsSettingsUrl, pricingTableUrl } from '@/checkout/cloudLinks'
 import { createOperationChannel } from '@/checkout/operationChannel'
@@ -458,25 +460,31 @@ export function useFullPageCheckout() {
   }
 
   /**
-   * "We couldn't confirm your payment" promises to update on its own, but the
-   * lifecycle stops polling an operation the server parked for a human. The
-   * page re-reads it on the parked cadence until it settles either way.
+   * "We couldn't confirm your payment" and "Payment received" promise to
+   * update on their own, but the lifecycle stops polling an operation the
+   * server parked for a human or already settled. The page re-reads it on the
+   * parked cadence until the verdict, or the credits, arrive.
    */
-  const recheckUnconfirmed = useIntervalFn(
+  const recheck = useIntervalFn(
     () => void reconcile(),
     OPERATION_POLL_TIMING.parkedMs,
     { immediate: false }
   )
   watch(
-    () => page.value.kind === 'unconfirmed',
-    (unconfirmed) =>
-      unconfirmed ? recheckUnconfirmed.resume() : recheckUnconfirmed.pause()
+    () => awaitingServer(page.value),
+    (awaiting) => (awaiting ? recheck.resume() : recheck.pause())
   )
 
-  /** A returned payment names the plan the server now lists, never the fresh quote. */
-  async function readSettledPlan() {
-    const [read, catalog] = await Promise.all([status.read(), plans.read()])
-    const slug = read.status === 'ok' ? read.value.status.plan_slug : undefined
+  /**
+   * A settled payment this page did not price names the plan the catalog
+   * lists for its receipt, or for a returned one without a receipt plan, the
+   * plan the status now reports; never the fresh quote.
+   */
+  async function readSettledPlan(receiptSlug: string | undefined) {
+    const [slug, catalog] = await Promise.all([
+      receiptSlug ?? statusPlanSlug(),
+      plans.read()
+    ])
     const listed =
       slug !== undefined && catalog.status === 'ok'
         ? catalog.value.data.plans.find((plan) => plan.slug === slug)
@@ -489,6 +497,11 @@ export function useFullPageCheckout() {
     })
   }
 
+  async function statusPlanSlug() {
+    const read = await status.read()
+    return read.status === 'ok' ? read.value.status.plan_slug : undefined
+  }
+
   /** A finished checkout has no code left to re-apply. */
   watch(
     () => page.value.kind === 'terminal',
@@ -498,10 +511,10 @@ export function useFullPageCheckout() {
   )
 
   watch(
-    () =>
-      page.value.kind === 'terminal' && page.value.attribution === 'returned',
-    (returned) => {
-      if (returned) void readSettledPlan()
+    () => settledPlanSource(page.value)?.key,
+    () => {
+      const source = settledPlanSource(page.value)
+      if (source !== undefined) void readSettledPlan(source.receiptSlug)
     }
   )
 

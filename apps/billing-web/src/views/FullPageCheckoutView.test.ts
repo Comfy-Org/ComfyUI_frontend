@@ -4,6 +4,7 @@ import { nextTick, ref } from 'vue'
 import type { VNode } from 'vue'
 
 import type {
+  BillingOperationReceipt,
   BillingOperationState,
   BillingResult,
   PendingBillingOperation,
@@ -1929,6 +1930,76 @@ describe("FullPageCheckoutView over this tab's own payment", () => {
       'Pro'
     )
     expect(fake.subscribe).not.toHaveBeenCalled()
+  })
+
+  const RECEIPT_PLAN = { slug: 'pro_monthly', duration: 'MONTHLY' } as const
+  const withReceipt = (
+    operation: BillingOperationState,
+    receipt: BillingOperationReceipt
+  ): BillingOperationState => ({ ...operation, phase: 'succeeded', receipt })
+
+  it('328-4444: Already completed names the plan and credits its receipt reports, from the catalog', async () => {
+    await renderCheckout({
+      plans: ON_PRO.plans,
+      recover: {
+        status: 'ok',
+        value: withReceipt(succeededOperation('op_done'), {
+          plan: RECEIPT_PLAN,
+          creditsAdded: 10_000
+        })
+      },
+      preview: { status: 'ok', value: previewOf({ allowed: false }) }
+    })
+
+    expect(
+      await screen.findByRole('heading', { name: 'Already completed' })
+    ).toBeInTheDocument()
+    const plan = await screen.findByTestId('checkout-ending-plan')
+    expect(plan).toHaveTextContent('Pro$50.00 USD / mo10,000 credits added')
+    expect(screen.queryByTestId('checkout-ending-code')).not.toBeInTheDocument()
+  })
+
+  it('390-4947: shows Payment received while its credits land, and Success once a re-read reports them', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
+    const landing = withReceipt(awaited(succeededOperation('op_mine')), {
+      amountChargedCents: 5000,
+      plan: RECEIPT_PLAN
+    })
+    const fake = await renderCheckout({
+      ...ON_PRO,
+      recover: { status: 'ok', value: landing },
+      preview: { status: 'ok', value: previewOf({ allowed: false }) }
+    })
+
+    expect(
+      await screen.findByRole('heading', { name: 'Payment received' })
+    ).toBeInTheDocument()
+    await waitFor(() =>
+      expect(screen.getByTestId('checkout-ending-receipt')).toHaveTextContent(
+        'Payment$50.00Credits addedAdding…PlanPro'
+      )
+    )
+
+    const landed = withReceipt(landing, {
+      amountChargedCents: 5000,
+      creditsAdded: 10_000,
+      plan: RECEIPT_PLAN
+    })
+    fake.recover.mockImplementation(async () => ({
+      status: 'ok',
+      value: landed
+    }))
+    vi.advanceTimersByTime(OPERATION_POLL_TIMING.parkedMs)
+
+    expect(
+      await screen.findByRole('heading', { name: "You're all set" })
+    ).toBeInTheDocument()
+    expect(await screen.findByTestId('checkout-ending-plan')).toHaveTextContent(
+      '10,000 credits added'
+    )
+    const reads = fake.recover.mock.calls.length
+    vi.advanceTimersByTime(OPERATION_POLL_TIMING.parkedMs * 3)
+    expect(fake.recover).toHaveBeenCalledTimes(reads)
   })
 })
 

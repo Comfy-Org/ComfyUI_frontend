@@ -1,3 +1,5 @@
+import type { BillingOperationReceipt } from '@comfyorg/account-core/billing'
+
 import type { CheckoutPage } from '@/checkout/checkoutPage'
 import { RESOLVING } from '@/checkout/checkoutPage'
 import type { EndingScreen } from '@/checkout/endingScreen'
@@ -122,6 +124,87 @@ describe('endingOf', () => {
       name: 'a link the contract cannot read',
       page: { kind: 'plan_unavailable', reason: 'unreadable' },
       screen: { kind: 'plan_unavailable', code: 'CHECKOUT_LINK_INVALID' }
+    }
+  ])('$name', ({ page, screen }) => {
+    expect(endingOf(page)).toEqual(screen)
+  })
+})
+
+describe('endingOf with the receipt the server reported', () => {
+  const PLAN = { slug: 'pro_monthly', duration: 'MONTHLY' } as const
+  const settledWith = (receipt: BillingOperationReceipt) => ({
+    ...succeededOperation('op_paid'),
+    receipt
+  })
+
+  it.for<{
+    name: string
+    page: CheckoutPage
+    screen: EndingScreen
+  }>([
+    {
+      name: "this page's own Pay, with the credits it added",
+      page: {
+        kind: 'terminal',
+        operation: settledWith({
+          amountChargedCents: 3250,
+          creditsAdded: 6858,
+          plan: PLAN
+        }),
+        attribution: 'started'
+      },
+      screen: {
+        kind: 'success',
+        receipt: { amountChargedCents: 3250, creditsAdded: 6858, plan: PLAN }
+      }
+    },
+    {
+      name: 'a payment already through, with its plan and credits',
+      page: {
+        kind: 'terminal',
+        operation: settledWith({ creditsAdded: 6858, plan: PLAN }),
+        attribution: 'settled'
+      },
+      screen: {
+        kind: 'already_completed',
+        code: 'op_paid',
+        receipt: { creditsAdded: 6858, plan: PLAN }
+      }
+    },
+    {
+      name: 'a payment the page watched settle, with its plan',
+      page: {
+        kind: 'terminal',
+        operation: settledWith({ plan: PLAN }),
+        attribution: 'followed'
+      },
+      screen: { kind: 'completed', code: 'op_paid', receipt: { plan: PLAN } }
+    },
+    {
+      name: "this page's own charge whose credits are still landing",
+      page: {
+        kind: 'terminal',
+        operation: settledWith({ amountChargedCents: 3250, plan: PLAN }),
+        attribution: 'started'
+      },
+      screen: {
+        kind: 'received',
+        code: 'op_paid',
+        receipt: { amountChargedCents: 3250, plan: PLAN }
+      }
+    },
+    {
+      name: 'a charge already through whose credits are still landing',
+      page: {
+        kind: 'terminal',
+        operation: settledWith({ amountChargedCents: 1500 }),
+        attribution: 'settled'
+      },
+      screen: {
+        kind: 'received',
+        code: 'op_paid',
+        receipt: { amountChargedCents: 1500 }
+      }
     }
   ])('$name', ({ page, screen }) => {
     expect(endingOf(page)).toEqual(screen)
