@@ -218,6 +218,16 @@ test.describe(
       await test.step('recover the closed workflow from its durable draft', async () => {
         // The original tab is no longer open, cloud-listed, or locally
         // persisted, so navigation must use the durable Agent draft.
+        //
+        // A recovered tab is named after the cloud row, because that name is
+        // the join key a later save promotes the row through. The chat
+        // reference already carries the name, so this flow must reuse it
+        // rather than spend a by-id read on it - hence the counter.
+        let workflowRowReads = 0
+        await page.route('**/api/workflows/*', (route) => {
+          workflowRowReads++
+          return route.fulfill({ status: 404, body: 'not found' })
+        })
         await page.route('**/api/workflows?*', (route) =>
           route.fulfill(
             jsonRoute({
@@ -279,6 +289,7 @@ test.describe(
         )
         await expect(chip).toBeVisible()
         expect(workflowSelection.postedMessages).toHaveLength(1)
+        expect(workflowRowReads).toBe(0)
         await testInfo.attach('recovered-workflow-reference', {
           body: await page.screenshot({
             path: testInfo.outputPath('recovered-workflow-reference.png')

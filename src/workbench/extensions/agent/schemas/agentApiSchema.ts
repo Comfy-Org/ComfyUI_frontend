@@ -8,6 +8,7 @@ import {
   zAgentRunMode as zGeneratedAgentRunMode,
   zAgentThreadListResponse as zGeneratedAgentThreadListResponse,
   zAgentTurnAccepted as zGeneratedAgentTurnAccepted,
+  zGetWorkflowResponse,
   zToolCallSummary,
   zWorkflowListResponse
 } from '@comfyorg/ingest-types/zod'
@@ -137,6 +138,14 @@ export const zAgentThreads = zGeneratedAgentThreadListResponse.passthrough()
 
 export const zAgentDraft = zAgentGetDraftResponse
 export type AgentDraft = AgentGetDraftResponse
+
+/**
+ * The name field of `GET /api/workflows/{id}`, narrowed to what the agent
+ * reads. Picked rather than parsed whole so an unrelated metadata field the
+ * generated schema is stricter about than the server (`created_at` is
+ * `z.string().datetime()`) cannot fail a lookup whose only output is a name.
+ */
+export const zCloudWorkflowName = zGetWorkflowResponse.pick({ name: true })
 
 export const zCloudWorkflowIndex = zWorkflowListResponse
   .pick({ pagination: true })

@@ -449,6 +449,22 @@ function json(status: number, body: unknown): Response {
   })
 }
 
+/**
+ * A `GET /api/workflows/{id}` body. Version-less Agent drafts are excluded
+ * from the index but not from this read, so it is where a recovered tab's
+ * name comes from.
+ */
+function cloudWorkflowRow(id: string, name: string) {
+  return {
+    id,
+    name,
+    created_by: 'user-1',
+    created_at: '2026-10-01T00:00:00Z',
+    updated_at: '2026-10-01T00:00:00Z',
+    latest_version: 0
+  }
+}
+
 function agentThread({
   id,
   title,
@@ -6125,7 +6141,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(useWorkflowService().saveWorkflowAs).not.toHaveBeenCalled()
   })
 
-  it('recovers a closed unsaved workflow from its durable Agent draft', async () => {
+  it('recovers a closed unsaved workflow from its durable Agent draft under the name the cloud row carries', async () => {
     const viewed = makeTab('wf-viewed')
     useAgentConversationStore().setThreadId('th-history')
     const recoveredGraph = {
@@ -6151,6 +6167,10 @@ describe('AgentPanelRoot workflow binding', () => {
       vi.fn(async (url: string) => {
         if (url.includes('/agent/draft'))
           return json(200, { content: recoveredGraph, version: 4 })
+        // The version-less row is hidden from the index but still readable by
+        // id, which is the only place its name exists.
+        if (url.includes('/workflows/wf-closed-unsaved'))
+          return json(200, cloudWorkflowRow('wf-closed-unsaved', 'Nebula pass'))
         if (url.includes('/messages'))
           return json(200, [
             {
@@ -6177,7 +6197,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     await vi.waitFor(() =>
       expect(useAgentPanelStore().selectedWorkflow).toMatchObject({
-        filename: 'Recovered Workflow',
+        filename: 'Nebula pass',
         isTemporary: true
       })
     )
@@ -6222,6 +6242,8 @@ describe('AgentPanelRoot workflow binding', () => {
             },
             version: 1
           })
+        if (url.includes('/workflows/wf-closed-unsaved'))
+          return json(200, cloudWorkflowRow('wf-closed-unsaved', 'Nebula pass'))
         if (url.includes('/messages'))
           return json(200, [
             {
@@ -6247,7 +6269,7 @@ describe('AgentPanelRoot workflow binding', () => {
     const view = render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await vi.waitFor(() =>
       expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
-        expect.objectContaining({ filename: 'Recovered Workflow' }),
+        expect.objectContaining({ filename: 'Nebula pass' }),
         { isCurrent: expect.any(Function) }
       )
     )
@@ -6256,16 +6278,15 @@ describe('AgentPanelRoot workflow binding', () => {
 
     await vi.waitFor(() => {
       expect(useWorkflowService().closeWorkflow).toHaveBeenCalledWith(
-        expect.objectContaining({ filename: 'Recovered Workflow' }),
+        expect.objectContaining({ filename: 'Nebula pass' }),
         { warnIfUnsaved: false }
       )
       expect(workflowStore.activeWorkflow?.path).toBe(viewed.path)
-      expect(recovered).not.toBeNull()
-      if (recovered === null) throw new Error('Recovery was never opened')
+      assert.exists(recovered)
       expect(workflowStore.getWorkflowByPath(recovered.path)).toBeNull()
       expect(
         workflowStore.openWorkflows.filter(
-          ({ filename }) => filename === 'Recovered Workflow'
+          ({ filename }) => filename === 'Nebula pass'
         )
       ).toHaveLength(0)
     })
@@ -6312,11 +6333,74 @@ describe('AgentPanelRoot workflow binding', () => {
       isCurrent: expect.any(Function)
     })
     expect(
-      workflowStore.openWorkflows.filter(
-        ({ filename }) => filename === 'Recovered Workflow'
-      )
+      workflowStore.openWorkflows.filter(({ isTemporary }) => isTemporary)
     ).toHaveLength(0)
   })
+
+  it.for([
+    {
+      row: 'is refused',
+      respond: () => json(404, { code: 'NOT_FOUND', message: 'not found' })
+    },
+    {
+      row: 'carries no name',
+      respond: () => json(200, { id: 'wf-closed-unsaved', latest_version: 0 })
+    }
+  ])(
+    'declines recovery, rather than naming the tab itself, when the cloud row $row',
+    async ({ respond }) => {
+      makeTab('wf-viewed')
+      useAgentConversationStore().setThreadId('th-history')
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (url: string) => {
+          if (url.includes('/agent/draft'))
+            return json(200, {
+              content: {
+                version: 0.4,
+                last_node_id: 0,
+                last_link_id: 0,
+                nodes: [],
+                links: []
+              },
+              version: 1
+            })
+          if (url.includes('/workflows/wf-closed-unsaved')) return respond()
+          if (url.includes('/messages'))
+            return json(200, [
+              {
+                id: 'history-user',
+                thread_id: 'th-history',
+                seq: 1,
+                role: 'user',
+                status: 'complete',
+                turn_id: 'history-turn',
+                workflow_id: 'wf-closed-unsaved',
+                content: { text: 'Continue the closed workflow' }
+              }
+            ])
+          if (url.includes('/workflows'))
+            return json(200, {
+              data: [],
+              pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+            })
+          return json(200, agentThreadList())
+        })
+      )
+
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+      await vi.waitFor(() =>
+        expect(useAgentPanelStore().targetUnavailable).toBe(true)
+      )
+      // An unnamed tab would fork a second cloud workflow the first time the
+      // user saved it, so no tab is better than a misnamed one.
+      expect(
+        workflowStore.openWorkflows.filter(({ isTemporary }) => isTemporary)
+      ).toHaveLength(0)
+      expect(useAgentPanelStore().selectedWorkflow).toBeNull()
+    }
+  )
 
   it.for(['wf-old', '', 'missing'])(
     'retains the explicit target when reopening history for %s',

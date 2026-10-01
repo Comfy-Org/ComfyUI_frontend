@@ -355,11 +355,33 @@ const workflowResolver = useAgentWorkflowResolver({
   listCloudWorkflows: () => rest.listCloudWorkflows()
 })
 
+/**
+ * Opens a temporary tab holding `workflowId`'s durable draft snapshot, for a
+ * workflow the agent minted that the user never saved: the draft is the only
+ * place its graph exists, so neither the workflow list nor userdata can
+ * produce it.
+ *
+ * The tab is always named after the cloud row, never after this feature.
+ * userdata->workflow sync joins on the derived filename, so the name is the
+ * identity of the workflow: under the row's own name a later save promotes
+ * the draft row the chat is already bound to, and under any invented name it
+ * creates a second workflow and orphans the first. A caller that already
+ * holds the name (a chat reference carries one) passes it; the restoration
+ * path has only an id, so the name is read back from the row. There is
+ * deliberately no placeholder - when no name can be established, recovery
+ * declines, and the caller's existing unavailable/retry handling runs rather
+ * than a tab opening under an identity that is not the workflow's.
+ */
 async function recoverWorkflow(
   workflowId: string,
   workflowName?: string
 ): Promise<ComfyWorkflow | null> {
-  const { content } = await rest.getDraft(workflowId)
+  const [{ content }, name] = await Promise.all([
+    rest.getDraft(workflowId),
+    workflowName ?? rest.getWorkflowName(workflowId)
+  ])
+  const filename = agentTabFilename(name)
+  if (filename === undefined) return null
   const graph = await validateComfyWorkflow(content, (details) => {
     reportError(new Error(details), {
       surface: 'agent',
@@ -369,10 +391,7 @@ async function recoverWorkflow(
   })
   return graph === null
     ? null
-    : workflowStore.createNewTemporary(
-        agentTabFilename(workflowName) ?? 'Recovered Workflow.json',
-        graph
-      )
+    : workflowStore.createNewTemporary(filename, graph)
 }
 
 const {
