@@ -117,7 +117,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
         value = nextValue
         const widgetId = createWidgetId(graphId, state.nodeId, state.name)
         if (getWidget(widgetId) !== state) return
-        if (state.type === 'button' || state.serialize === false) return
         emitGraphIntent({
           type: 'set_widget',
           graphId,

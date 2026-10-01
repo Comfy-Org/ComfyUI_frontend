@@ -264,8 +264,6 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   private setWidgetType(value: TWidget['type']): void {
     const wasLegacyHiding = isLegacyWidgetHidingType(this._type)
     this._type = value
-    const state = Reflect.get(this, '_state') as typeof this._state | undefined
-    if (state) state.type = value
     if (isLegacyHiddenWidgetType(value)) {
       applyLegacyHiddenWrite(this._visibility, true)
     } else if (wasLegacyHiding) {
@@ -379,8 +377,6 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     return this._state.value
   }
   set value(value: TWidget['value']) {
-    this._state.serialize = this.serialize
-    this._state.type = this.type
     this._state.value = value
   }
 
@@ -427,7 +423,6 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     const id = widgetId(graphId, nodeId, this.name)
     const state = useWidgetValueStore().getWidget(id)
     if (!state) return false
-    if (!Object.hasOwn(state, 'serialize')) state.serialize = this.serialize
     this._state = state
     const visibility = useWidgetValueStore().getWidgetVisibility(id)
     if (visibility) this._visibility = visibility

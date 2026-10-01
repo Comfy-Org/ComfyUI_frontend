@@ -448,25 +448,6 @@ describe('useWidgetValueStore', () => {
   })
 
   describe('value mutation', () => {
-    it('does not announce writes for non-value widgets', () => {
-      const store = useWidgetValueStore()
-      const preview = store.registerWidget(
-        seedA,
-        state('progressText', '', { serialize: false })
-      )!
-      const button = store.registerWidget(seedB, state('button', false))!
-      const intents: GraphIntentEvent[] = []
-      const unsubscribe = onGraphIntent((event) => intents.push(event))
-
-      preview.value = 'rendering'
-      button.value = true
-      unsubscribe()
-
-      expect(preview.value).toBe('rendering')
-      expect(button.value).toBe(true)
-      expect(intents).toEqual([])
-    })
-
     it('announces each effective write once, direct or through setValue', () => {
       const store = useWidgetValueStore()
       const widget = store.registerWidget(seedA, state('number', 100))!

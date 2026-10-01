@@ -113,11 +113,19 @@ function valueWidgetsOnly(
   const filtered: Record<string, unknown> = {}
   for (const [name, value] of Object.entries(named)) {
     const widget = node.widgets?.find((candidate) => candidate.name === name)
-    if (widget && widget.type !== 'button' && widget.serialize !== false) {
-      filtered[name] = value
-    }
+    if (isValueWidget(widget)) filtered[name] = value
   }
   return filtered
+}
+
+function isValueWidget(
+  widget: { type?: string; serialize?: boolean } | undefined
+): boolean {
+  return (
+    widget !== undefined &&
+    widget.type !== 'button' &&
+    widget.serialize !== false
+  )
 }
 
 function nodeKey(graphId: string, nodeId: NodeId): string {
@@ -280,6 +288,11 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     if (pendingAdds.has(nodeKey(event.graphId, event.nodeId))) return
     const graph = deps.getGraph()
     if (!graph) return
+    const node = findNodeInHierarchy(graph, event.nodeId)
+    const widget = node?.widgets?.find(
+      (candidate) => candidate.name === event.name
+    )
+    if (widget && !isValueWidget(widget)) return
     const rootGraphId = deps.boundRootGraphId() ?? graph.id
     const operation = {
       op: 'set_widget',

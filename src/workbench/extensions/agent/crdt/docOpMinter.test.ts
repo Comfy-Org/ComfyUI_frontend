@@ -665,6 +665,36 @@ describe('attachDocOpMinter', () => {
     ])
   })
 
+  it('does not mint writes for live non-value widgets', async () => {
+    const { source } = seedGraph(graph)
+    const valueWidget = source.widgets![0]
+    const buttonWidget = source.widgets![1]
+
+    valueWidget.serialize = false
+    valueWidget.value = 21
+    buttonWidget.value = 'clicked'
+    await afterFlush()
+
+    expect(minted).toEqual([])
+  })
+
+  it('uses the live serialize flag for direct store-path intents', async () => {
+    const { source } = seedGraph(graph)
+    source.widgets![0].serialize = false
+
+    emitGraphIntent({
+      type: 'set_widget',
+      graphId: graph.id,
+      nodeId: source.id,
+      name: 'steps',
+      value: 21,
+      previous: 20
+    })
+    await afterFlush()
+
+    expect(minted).toEqual([])
+  })
+
   it('mints a set_widget that names a subgraph owner with the subgraph-node path', async () => {
     const subgraph = createTestSubgraph({ rootGraph: graph })
     const host = createTestSubgraphNode(subgraph)
