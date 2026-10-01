@@ -20,7 +20,8 @@ const { objects, selected, tray, tool, quality } = move
     :locale
     @select="(id) => (selected = id)"
     @remove="move.remove"
-    @add="tool = 'add'"
+    @add="tool = 'smart'"
+    @rename="move.rename"
     @close="tray = undefined"
   />
   <MoveAnythingQuality

@@ -21,7 +21,12 @@ const {
   locale?: Locale
 }>()
 
-const { objects, phase, tool, quality, selected } = move
+const { objects, phase, tool, quality, selected, detecting } = move
+const HINTS = {
+  move: 'move.hint.move',
+  smart: 'move.hint.smart',
+  box: 'move.hint.box'
+} as const
 const touched = ref(false)
 watch([tool, () => image], () => (touched.value = false))
 
@@ -55,15 +60,17 @@ function busyDetail() {
       :objects
       :tool
       :selected
+      :detecting
       :locale
       @select="select"
       @begin="begin"
       @place="move.place"
-      @add="move.add"
+      @pick="move.smartSelect"
+      @box="move.boxSelect"
     >
       <EditorHint
-        v-if="!touched && phase.kind === 'arranging'"
-        :text="mc(tool === 'add' ? 'move.hint.add' : 'move.hint.move', locale)"
+        v-if="!touched && !detecting && phase.kind === 'arranging'"
+        :text="mc(HINTS[tool], locale)"
       />
     </MoveAnythingStage>
     <EditorBusy

@@ -16,7 +16,9 @@ const copy = {
   'move.empty.upload': { en: 'Choose a photo', 'zh-CN': '选择照片' },
   'move.empty.example': { en: 'Try the example', 'zh-CN': '试用示例' },
   'move.tool.move': { en: 'Move', 'zh-CN': '移动' },
-  'move.tool.add': { en: 'Add object', 'zh-CN': '添加物体' },
+  'move.tool.smart': { en: 'Smart select', 'zh-CN': '智能选择' },
+  'move.tool.box': { en: 'Box select', 'zh-CN': '框选' },
+  'move.detecting': { en: 'Detecting…', 'zh-CN': '识别中…' },
   'move.history': { en: 'History', 'zh-CN': '历史记录' },
   'move.tool.undo': { en: 'Undo', 'zh-CN': '撤销' },
   'move.tool.redo': { en: 'Redo', 'zh-CN': '重做' },
@@ -24,29 +26,34 @@ const copy = {
     en: 'Drag to move · Corners to resize · Arrow keys to nudge',
     'zh-CN': '拖动以移动 · 拖动角落调整大小 · 方向键微调'
   },
-  'move.hint.add': {
-    en: 'Draw a box around the thing you want to move',
-    'zh-CN': '框选你想移动的物体'
+  'move.hint.smart': {
+    en: 'Click a thing to select it',
+    'zh-CN': '点击物体即可选中'
+  },
+  'move.hint.box': {
+    en: 'Draw a box around a thing',
+    'zh-CN': '框选一个物体'
   },
   'move.image': { en: 'Image', 'zh-CN': '图像' },
   'move.change': { en: 'Change photo', 'zh-CN': '更换照片' },
   'move.objects': { en: 'Objects', 'zh-CN': '物体' },
   'move.objects.count': { en: '{n} of {max}', 'zh-CN': '{n} / {max}' },
   'move.objects.add': {
-    en: 'Draw a box on the image to add one',
-    'zh-CN': '在图像上框选以添加'
+    en: 'Click a thing on the image to add it',
+    'zh-CN': '点击图像中的物体以添加'
   },
   'move.objects.full': {
     en: 'Up to {max} things per photo',
     'zh-CN': '每张照片最多 {max} 个物体'
   },
   'move.objects.empty': {
-    en: 'Nothing selected yet. Choose Add object and draw a box.',
-    'zh-CN': '尚未选择。点击“添加物体”并框选。'
+    en: 'Nothing selected yet. Click a thing on the image.',
+    'zh-CN': '尚未选择。点击图像中的物体。'
   },
   'move.object.moved': { en: 'Moved', 'zh-CN': '已移动' },
   'move.object.inPlace': { en: 'In place', 'zh-CN': '原位' },
   'move.object.remove': { en: 'Remove {label}', 'zh-CN': '移除{label}' },
+  'move.object.rename': { en: 'Rename {label}', 'zh-CN': '重命名{label}' },
   'move.object.label': { en: 'Object {n}', 'zh-CN': '物体 {n}' },
   'move.object.box': {
     en: '{label}. Arrow keys move it, Shift moves further.',
