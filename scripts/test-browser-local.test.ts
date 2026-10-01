@@ -1,12 +1,6 @@
-import {
-  chmodSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  writeFileSync
-} from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { delimiter, join } from 'node:path'
+import { join } from 'node:path'
 import { spawnSync } from 'node:child_process'
 
 import { describe, expect, it } from 'vitest'
@@ -16,15 +10,16 @@ import { getPnpmInvocation } from './test-browser-local.utils'
 const root = join(import.meta.dirname, '..')
 const script = join(import.meta.dirname, 'test-browser-local.ts')
 
-function runLauncher(testUrl?: string) {
+function runLauncher(
+  testUrl?: string,
+  forwardedArgs = ['widget.spec.ts', '--workers=1']
+) {
   const fixture = mkdtempSync(join(tmpdir(), 'test-browser-local-'))
   const capture = join(fixture, 'capture.json')
-  const pnpm = join(fixture, 'pnpm')
-  const pnpmCmd = join(fixture, 'pnpm.cmd')
+  const pnpmEntry = join(fixture, 'pnpm.mjs')
   writeFileSync(
-    pnpm,
-    `#!/usr/bin/env node
-const { writeFileSync } = require('node:fs')
+    pnpmEntry,
+    `import { writeFileSync } from 'node:fs'
 writeFileSync(process.env.CAPTURE, JSON.stringify({
   args: process.argv.slice(2),
   local: process.env.PLAYWRIGHT_LOCAL,
@@ -32,13 +27,11 @@ writeFileSync(process.env.CAPTURE, JSON.stringify({
 }))
 `
   )
-  chmodSync(pnpm, 0o755)
-  writeFileSync(pnpmCmd, '@echo off\r\nnode "%~dp0pnpm" %*\r\n')
 
   const env: NodeJS.ProcessEnv = {
     ...process.env,
     CAPTURE: capture,
-    PATH: `${fixture}${delimiter}${process.env.PATH}`,
+    npm_execpath: pnpmEntry,
     PLAYWRIGHT_LOCAL: '1'
   }
   if (testUrl === undefined) delete env.PLAYWRIGHT_TEST_URL
@@ -46,7 +39,7 @@ writeFileSync(process.env.CAPTURE, JSON.stringify({
 
   const result = spawnSync(
     process.execPath,
-    ['--import', 'tsx', script, 'widget.spec.ts', '--workers=1'],
+    ['--import', 'tsx', script, ...forwardedArgs],
     {
       cwd: root,
       env,
@@ -69,22 +62,28 @@ writeFileSync(process.env.CAPTURE, JSON.stringify({
 }
 
 describe('local browser test launcher', () => {
-  it('quotes forwarded arguments when Windows requires pnpm.cmd through a shell', () => {
-    expect(
-      getPnpmInvocation(
-        ['test:browser', 'specs/my test.spec.ts', 'a&b'],
-        'win32'
-      )
-    ).toEqual({
-      command: 'pnpm.cmd',
-      args: ['test:browser', '"specs/my test.spec.ts"', '"a&b"'],
-      shell: true
-    })
+  it('runs pnpm through Node without a shell', () => {
+    expect(getPnpmInvocation(['test:browser', 'spec.ts'], '/pnpm.mjs')).toEqual(
+      {
+        command: process.execPath,
+        args: ['/pnpm.mjs', 'test:browser', 'spec.ts']
+      }
+    )
   })
 
   it('preserves an explicit frontend URL and forwards arguments', () => {
     expect(runLauncher('http://127.0.0.1:6201')).toEqual({
       args: ['test:browser', 'widget.spec.ts', '--workers=1'],
+      local: '1',
+      url: 'http://127.0.0.1:6201'
+    })
+  })
+
+  it('preserves percent expressions and embedded shell metacharacters', () => {
+    expect(
+      runLauncher('http://127.0.0.1:6201', ['%OS%', 'a" & b', 'x|y'])
+    ).toEqual({
+      args: ['test:browser', '%OS%', 'a" & b', 'x|y'],
       local: '1',
       url: 'http://127.0.0.1:6201'
     })

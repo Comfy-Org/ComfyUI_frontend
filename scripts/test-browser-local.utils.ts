@@ -1,17 +1,15 @@
-export function quoteForCmd(argument: string): string {
-  if (argument === '') return '""'
-  if (!/[\s"&|<>^()]/.test(argument)) return argument
-  return `"${argument.replace(/(\\*)"/g, '$1$1\\"').replace(/(\\+)$/, '$1$1')}"`
-}
-
 export function getPnpmInvocation(
   args: string[],
-  platform: NodeJS.Platform = process.platform
-): { command: string; args: string[]; shell: boolean } {
-  const shell = platform === 'win32'
+  pnpmEntry = process.env.npm_execpath
+): { command: string; args: string[] } {
+  if (!pnpmEntry) {
+    throw new Error(
+      'Unable to resolve pnpm: run this launcher through a pnpm package script'
+    )
+  }
+
   return {
-    command: shell ? 'pnpm.cmd' : 'pnpm',
-    args: shell ? args.map(quoteForCmd) : args,
-    shell
+    command: process.execPath,
+    args: [pnpmEntry, ...args]
   }
 }

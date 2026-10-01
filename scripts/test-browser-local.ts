@@ -13,7 +13,6 @@ const result = spawnSync(invocation.command, invocation.args, {
         ? configuredUrl
         : 'http://localhost:5173'
   },
-  shell: invocation.shell,
   stdio: 'inherit'
 })
 
