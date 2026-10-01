@@ -57,6 +57,7 @@ export interface DomainRecord {
 }
 
 export interface ArchitectureException {
+  exactFingerprints: string[]
   id: string
   owner: string
   rationale: string
@@ -145,6 +146,7 @@ const DOMAIN_KEYS = [
   'enforcement'
 ]
 const EXCEPTION_KEYS = [
+  'exactFingerprints',
   'id',
   'owner',
   'rationale',
@@ -710,7 +712,11 @@ const validateException = (
     exception.fingerprintPrefixes,
     `${label}.fingerprintPrefixes`
   )
-  if (!validExceptionMetadata(exception) || !prefixes.length)
+  const exact = uniqueStrings(
+    exception.exactFingerprints,
+    `${label}.exactFingerprints`
+  )
+  if (!validExceptionMetadata(exception) || ![...prefixes, ...exact].length)
     throw new Error(`${label} does not match exceptions.schema.json`)
   if (Date.parse(`${exception.sunset}T23:59:59Z`) < Date.now())
     throw new Error(`${label} ${exception.id} is expired`)
@@ -820,11 +826,16 @@ export const validateExceptionCoverage = (
   for (const violation of violations.filter(
     ({ maturity }) => maturity === 'baseline'
   )) {
-    const matches = exceptions.filter(({ fingerprintPrefixes }) =>
-      fingerprintPrefixes.some((prefix) =>
-        violation.fingerprint.startsWith(prefix)
-      )
+    const exact = exceptions.filter(({ exactFingerprints }) =>
+      exactFingerprints.includes(violation.fingerprint)
     )
+    const matches = exact.length
+      ? exact
+      : exceptions.filter(({ fingerprintPrefixes }) =>
+          fingerprintPrefixes.some((prefix) =>
+            violation.fingerprint.startsWith(prefix)
+          )
+        )
     if (matches.length !== 1) {
       throw new Error(
         `${violation.fingerprint} must match exactly one owned exception`
@@ -843,8 +854,8 @@ const validateNewBaselineCoverage = (
   exceptions: ArchitectureException[]
 ): void => {
   for (const violation of violations) {
-    const exactOwners = exceptions.filter(({ fingerprintPrefixes }) =>
-      fingerprintPrefixes.includes(violation.fingerprint)
+    const exactOwners = exceptions.filter(({ exactFingerprints }) =>
+      exactFingerprints.includes(violation.fingerprint)
     )
     if (
       exactOwners.length !== 1 ||

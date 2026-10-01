@@ -55,6 +55,7 @@ const domain = (
 const exception = (
   options: Partial<ArchitectureException> = {}
 ): ArchitectureException => ({
+  exactFingerprints: [],
   id: 'DDD-EX-001',
   owner: '@owner',
   rationale: 'Fixture debt',
@@ -462,7 +463,8 @@ describe('baseline and exception controls', () => {
 
     const exactOwner = exception({
       id: 'DDD-EX-001',
-      fingerprintPrefixes: ['named-suppression:DDD-EX-001:']
+      exactFingerprints: [named.fingerprint],
+      fingerprintPrefixes: []
     })
     expect(() => validateExceptionCoverage([named], [exactOwner])).not.toThrow()
   })
@@ -481,7 +483,7 @@ describe('baseline admission and catalog stability', () => {
     )
     const ledgerPath = join(root, 'docs/architecture/domains/exceptions.json')
     const ledger = JSON.parse(readFileSync(ledgerPath, 'utf8'))
-    ledger.exceptions[0].fingerprintPrefixes.push(
+    ledger.exceptions[0].exactFingerprints.push(
       'unclassified-module:src/new.ts'
     )
     writeFileSync(ledgerPath, JSON.stringify(ledger))

@@ -47,6 +47,9 @@ command succeeds only when every baseline violation is owned by exactly one
 exception-ledger entry. Every newly admitted fingerprint must also appear
 verbatim in the owning entry; a broad historical prefix cannot authorize new
 debt. Baseline acceptance must never accompany unrelated product work.
+Exact fingerprints and historical prefix scopes are separate ledger fields;
+exact ownership wins when both could match, and exact matching never treats one
+occurrence suffix as a prefix of another.
 When recorded debt is removed, `architecture:check` requires an update and
 `architecture:update` deletes only the resolved fingerprints. This prevents a
 later reintroduction from inheriting stale baseline permission.
