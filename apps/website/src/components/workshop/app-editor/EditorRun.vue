@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+
 defineOptions({ inheritAttrs: false })
 
 const {
@@ -6,13 +8,16 @@ const {
   credits,
   cancelLabel,
   running,
-  disabled = false
+  disabled = false,
+  block = false
 } = defineProps<{
   label: string
   credits: string
   cancelLabel: string
   running: boolean
   disabled?: boolean
+  /** Fills its row at a larger size, for a panel's pinned action. */
+  block?: boolean
 }>()
 
 const emit = defineEmits<{ run: []; cancel: [] }>()
@@ -22,7 +27,12 @@ const emit = defineEmits<{ run: []; cancel: [] }>()
   <button
     v-if="running"
     type="button"
-    class="flex h-8 shrink-0 items-center gap-2 rounded-full bg-transparency-white-t8 px-3.5 text-xs font-medium text-primary-warm-white focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
+    :class="
+      cn(
+        'flex h-8 shrink-0 items-center gap-2 rounded-full bg-transparency-white-t8 px-3.5 text-xs font-medium text-primary-warm-white focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none',
+        block && 'h-10 w-full justify-center text-sm'
+      )
+    "
     @click="emit('cancel')"
   >
     <span
@@ -36,7 +46,12 @@ const emit = defineEmits<{ run: []; cancel: [] }>()
     v-bind="$attrs"
     type="button"
     :disabled
-    class="flex h-8 shrink-0 items-center gap-2 rounded-full bg-primary-comfy-yellow pr-1.5 pl-3.5 text-xs font-semibold text-primary-comfy-ink focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none disabled:opacity-40"
+    :class="
+      cn(
+        'flex h-8 shrink-0 items-center gap-2 rounded-full bg-primary-comfy-yellow pr-1.5 pl-3.5 text-xs font-semibold text-primary-comfy-ink focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none disabled:opacity-40',
+        block && 'h-10 w-full justify-center text-sm'
+      )
+    "
     @click="emit('run')"
   >
     {{ label }}

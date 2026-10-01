@@ -34,7 +34,9 @@ const emit = defineEmits<{ close: [] }>()
         </button>
       </span>
     </div>
-    <div class="flex flex-col gap-2 p-2.5">
+    <div
+      class="flex max-h-[min(28rem,50svh)] flex-col gap-2 overflow-y-auto p-2.5"
+    >
       <slot />
     </div>
   </div>
