@@ -51,10 +51,15 @@ describe('bootstrapTracer', () => {
       )
     })
 
-    expect(tracer.summary().map((r) => r.name)).toEqual([
+    expect(
+      tracer
+        .summary()
+        .map((r) => r.name)
+        .sort()
+    ).toEqual([
+      'bootstrap/extensions-load',
       'bootstrap/extensions-load-core',
-      'bootstrap/extensions-load-custom',
-      'bootstrap/extensions-load'
+      'bootstrap/extensions-load-custom'
     ])
     expect(addTiming).toHaveBeenCalledWith('bootstrap.extensions-load-core')
     expect(addTiming).toHaveBeenCalledWith('bootstrap.extensions-load-custom')

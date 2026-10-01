@@ -1,5 +1,6 @@
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useExtensionStore } from '@/stores/extensionStore'
 
@@ -45,6 +46,10 @@ export async function loadExtensions() {
             await import(/* @vite-ignore */ api.fileURL(ext))
           } catch (error) {
             console.error('Error loading extension', ext, error)
+            reportError(error, {
+              errorType: 'extension_load_failed',
+              level: 'warning'
+            })
           }
         })
     )
