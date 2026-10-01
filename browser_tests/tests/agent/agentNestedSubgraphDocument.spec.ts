@@ -55,25 +55,22 @@ test.describe(
       })
 
       await test.step('the nested definition renders as a usable canvas node', async () => {
-        let nodeId: string | undefined
         await expect
           .poll(
-            async () => {
-              if (nodeId) return nodeId
-              try {
-                nodeId = await agentConversation.addNodeOfType(
-                  NESTED_OUTER_ID,
-                  [300, 300]
-                )
-                return nodeId
-              } catch {
-                return undefined
-              }
-            },
+            () =>
+              page.evaluate(
+                (type) =>
+                  Boolean(window.LiteGraph?.registered_node_types[type]),
+                NESTED_OUTER_ID
+              ),
             { timeout: 15_000 }
           )
           .toBeTruthy()
 
+        const nodeId = await agentConversation.addNodeOfType(
+          NESTED_OUTER_ID,
+          [300, 300]
+        )
         const renderedNode = page.locator(`[data-node-id="${nodeId}"]`)
         await expect(renderedNode).toBeVisible()
         await expect(renderedNode.getByTestId('node-title')).toHaveText(
