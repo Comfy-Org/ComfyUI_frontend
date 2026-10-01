@@ -54,6 +54,63 @@ function videoFor(
 
 export const drops: readonly Drop[] = [
   {
+    id: 'comfy-router',
+    badge: NEW_BADGE,
+    category: DEVELOPER,
+    media: imageFor('Drops_2x2card_Router.jpg', {
+      en: 'Comfy Router',
+      'zh-CN': 'Comfy Router'
+    }),
+    title: { en: 'Comfy Router', 'zh-CN': 'Comfy Router' },
+    description: {
+      en: 'Use thousands of the latest models in one API. Call Seedance, Minimax H3, Nano Banana, and GPT-Image.',
+      'zh-CN':
+        '在一个 API 中使用数千个最新模型。调用 Seedance、Minimax H3、Nano Banana 和 GPT-Image。'
+    },
+    cta: {
+      label: EXPLORE,
+      href: { en: '/platform/router/', 'zh-CN': '/zh-CN/platform/router/' }
+    }
+  },
+  {
+    id: 'events',
+    badge: NEW_BADGE,
+    category: COMMUNITY,
+    media: imageFor('Drops_2x2card_Events.jpg', {
+      en: 'Comfy Events',
+      'zh-CN': 'Comfy 活动'
+    }),
+    title: { en: 'Events', 'zh-CN': '活动' },
+    description: {
+      en: 'Livestreams, hackathons, and meetups — find ComfyUI events around the world, or host your own.',
+      'zh-CN':
+        '直播、黑客松与社区聚会 — 发现世界各地的 ComfyUI 活动，或主办你自己的活动。'
+    },
+    cta: {
+      label: EXPLORE,
+      href: { en: '/events/', 'zh-CN': '/zh-CN/events/' }
+    }
+  },
+  {
+    id: 'comfy-cli',
+    badge: NEW_BADGE,
+    category: DEVELOPER,
+    media: imageFor('Drops_2x2card_CLI.jpg', {
+      en: 'Comfy CLI',
+      'zh-CN': 'Comfy CLI'
+    }),
+    title: { en: 'Comfy CLI', 'zh-CN': 'Comfy CLI' },
+    description: {
+      en: 'Drive ComfyUI from your terminal or any coding agent — generate images, video, audio, and 3D without leaving the shell.',
+      'zh-CN':
+        '在终端或任意编程智能体中驱动 ComfyUI — 无需离开命令行即可生成图像、视频、音频和 3D 内容。'
+    },
+    cta: {
+      label: EXPLORE,
+      href: { en: '/cli/', 'zh-CN': '/zh-CN/cli/' }
+    }
+  },
+  {
     id: 'comfy-cloud-nodes',
     badge: NEW_BADGE,
     category: MODELS_AND_NODES,
@@ -74,7 +131,6 @@ export const drops: readonly Drop[] = [
   },
   {
     id: 'desktop-client',
-    badge: NEW_BADGE,
     category: PLATFORM,
     media: imageFor('Drops_2x2card_Desktop.jpg', {
       en: 'New Desktop Client',
@@ -92,7 +148,6 @@ export const drops: readonly Drop[] = [
   },
   {
     id: 'comfy-mcp',
-    badge: NEW_BADGE,
     category: CLOUD,
     media: imageFor('Drops_2x2card_MCP.jpg', {
       en: 'Comfy MCP',
@@ -110,7 +165,6 @@ export const drops: readonly Drop[] = [
   },
   {
     id: 'app-mode',
-    badge: NEW_BADGE,
     category: PLATFORM,
     media: videoFor('Drops_2x2card_APP.mp4', {
       en: 'App Mode',
@@ -132,20 +186,23 @@ export const drops: readonly Drop[] = [
   },
   {
     id: 'comfy-api',
-    badge: NEW_BADGE,
     category: DEVELOPER,
     media: imageFor('Drops_2x2card_API.jpg', {
       en: 'Comfy API',
       'zh-CN': 'Comfy API'
     }),
-    title: { en: 'Developer Platform', 'zh-CN': '开发者平台' },
+    title: { en: 'Comfy API', 'zh-CN': 'Comfy API' },
     description: {
-      en: 'Turn any workflow into a production endpoint. Automate generation and scale to thousands of outputs.',
-      'zh-CN': '将任意工作流变成生产端点。自动化生成并扩展到数千个输出。'
+      en: 'Deploy your ComfyUI workflow as a production API. It scales effortlessly with your team or project’s needs.',
+      'zh-CN':
+        '将你的 ComfyUI 工作流部署为生产级 API，随团队或项目的需求轻松扩展。'
     },
     cta: {
       label: EXPLORE,
-      href: { en: '/platform/', 'zh-CN': '/zh-CN/platform/' }
+      href: {
+        en: '/platform/comfy-api/',
+        'zh-CN': '/zh-CN/platform/comfy-api/'
+      }
     }
   },
   {
@@ -243,7 +300,6 @@ export const drops: readonly Drop[] = [
   },
   {
     id: 'share-comfy',
-    badge: NEW_BADGE,
     category: COMMUNITY,
     media: videoFor('Drops_3x3card_Affilliate.mp4', {
       en: 'Comfy Affiliate',
