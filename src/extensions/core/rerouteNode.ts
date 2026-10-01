@@ -6,6 +6,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type { ISlotType } from '@/lib/litegraph/src/interfaces'
 import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
+import { slotTypeKey } from '@/lib/litegraph/src/utils/type'
 
 import { app } from '../../scripts/app'
 import { getWidgetConfig, mergeIfValid, setWidgetConfig } from './widgetInputs'
@@ -115,7 +116,7 @@ app.registerExtension({
           }
         }
 
-        const displayType = inputType || outputType || '*'
+        const displayType = slotTypeKey(inputType || outputType || '*')
         const color = LGraphCanvas.link_type_colors[displayType]
 
         let widgetConfig

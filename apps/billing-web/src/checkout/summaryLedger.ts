@@ -4,10 +4,7 @@ import { centsToCredits } from '@comfyorg/shared-frontend-utils/creditsUtil'
 
 import { longDate, monthDay } from '@/checkout/longDate'
 
-/**
- * The four summary families of the checkout guidebook. `top_up`
- * has no quote on billing-web yet, so no builder produces it.
- */
+/** The four summary families of the checkout guidebook; `top_up` is built by `topupLedger`. */
 type SummaryFamily = 'charge_now' | 'prorated_change' | 'scheduled' | 'top_up'
 
 /**
@@ -57,6 +54,8 @@ export interface SummaryLedger {
     readonly amount: string
     readonly currency: string
     readonly rate?: string
+    /** A credits-first headline leads with the credits icon. */
+    readonly icon?: 'coins'
   }
   readonly credits?: { readonly count: string; readonly qualifier: string }
   /** Money rows the total reconciles with; see `moneyItems`. */
@@ -480,10 +479,15 @@ const deduction = (r: QuoteReading, cents: number) =>
 
 /**
  * How long a coupon keeps applying, stated as bounds only: `once` covers the
- * first period, `repeating` its months, and `forever` needs no subline.
+ * first period, except a change to a monthly plan where it covers only today's
+ * charge, `repeating` its months, and `forever` needs no subline.
  */
 function discountTerm(r: QuoteReading, discount: Discount): string | undefined {
-  if (discount.duration === 'once') return r.t(r.byNew.onceTerm, {})
+  if (discount.duration === 'once')
+    return r.quote.transition_type !== 'new_subscription' &&
+      r.next.duration === 'MONTHLY'
+      ? r.t(`${S}.discount.thisPaymentOnly`, {})
+      : r.t(r.byNew.onceTerm, {})
   const months = discount.duration_in_months
   if (discount.duration !== 'repeating' || months === undefined)
     return undefined

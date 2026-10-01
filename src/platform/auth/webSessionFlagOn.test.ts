@@ -1158,7 +1158,7 @@ describe('comfy-api calls on the shared web session', () => {
     }
   )
 
-  it('a sign-out while the mint is in flight is not reported and says the session changed', async () => {
+  it('a sign-out while the mint is in flight is not reported and says the session ended', async () => {
     firebaseSignOut.mockImplementation(async () => identity.signOut())
     const ingest = await bootOnSession()
     const release = ingest.holdMint()
@@ -1170,8 +1170,10 @@ describe('comfy-api calls on the shared web session', () => {
     const rejection = await pending
 
     assert(rejection instanceof WebSessionTokenError)
-    expect(rejection.failure.code).toBe('IDENTITY_CHANGED')
-    expect(rejection.message).toBe('Your session changed. Reload to continue.')
+    expect(rejection.failure.code).toBe('NO_SESSION')
+    expect(rejection.message).toBe(
+      'Your session ended. Sign in again to continue.'
+    )
     expect(reportError).not.toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ errorType: 'auth_session_token_mint_failure' })
@@ -1390,6 +1392,80 @@ describe.for([{ unified: false }, { unified: true }])(
       await expect(authStore.getWorkspaceAuthToken()).resolves.toBe(
         'session-jwt-1'
       )
+    })
+
+    const switchSessionTo = async (
+      ingest: ReturnType<typeof installIngest>,
+      userId: string
+    ) => {
+      ingest.userId = userId
+      await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
+      expect(useCloudWebSessionStore().signedInUser?.id).toBe(userId)
+    }
+
+    it.for([
+      { name: 'another user', switches: ['user-b'] },
+      { name: 'another user and back', switches: ['user-b', 'user-a'] }
+    ])(
+      'a Run token whose session goes to $name while minting is not sent',
+      async ({ switches }) => {
+        const ingest = await boot()
+        const release = ingest.holdMint()
+
+        const pending = useAuthStore().getWorkspaceAuthToken()
+        await vi.waitFor(() => expect(ingest.heldMints).toBe(1))
+        for (const userId of switches) await switchSessionTo(ingest, userId)
+        release()
+
+        await expect(pending).resolves.toBeUndefined()
+      }
+    )
+
+    it.for([
+      {
+        name: 'is signed out',
+        change: () => useAuthStore().logout(),
+        code: 'NO_SESSION'
+      },
+      {
+        name: 'goes to another user',
+        change: (ingest: ReturnType<typeof installIngest>) =>
+          switchSessionTo(ingest, 'user-b'),
+        code: 'IDENTITY_CHANGED'
+      }
+    ])(
+      'a workspace token whose session $name while minting fails with $code',
+      async ({ change, code }) => {
+        const ingest = await boot()
+        const requests = webSessionRequests()
+        assert(requests)
+        const scope = await requests.scope()
+        assert(scope)
+        const release = ingest.holdMint()
+
+        const pending = requests.workspaceToken(scope)
+        await vi.waitFor(() => expect(ingest.heldMints).toBe(1))
+        await change(ingest)
+        release()
+
+        expect(await pending).toMatchObject({ status: 'error', code })
+      }
+    )
+
+    it('a token asked for a scope another user has since taken is refused', async () => {
+      const ingest = await boot()
+      const requests = webSessionRequests()
+      assert(requests)
+      const scope = await requests.scope()
+      assert(scope)
+      await switchSessionTo(ingest, 'user-b')
+
+      const result = await requests.workspaceToken(scope)
+
+      expect(result).toMatchObject({
+        status: 'error',
+        code: 'IDENTITY_CHANGED'
+      })
     })
 
     it('resolves undefined and mints nothing after sign-out', async () => {
