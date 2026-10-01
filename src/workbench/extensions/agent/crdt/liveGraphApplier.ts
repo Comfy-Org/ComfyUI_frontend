@@ -679,7 +679,12 @@ export class LiveGraphApplier {
     if (node.isSubgraphNode() && Array.isArray(widgets)) {
       const promoted = promotedInputs(node)
       if (widgets.length !== promoted.length) {
-        this.reportHostWidgetDrift(node, widgets.length, promoted.length)
+        this.reportHostWidgetDrift(
+          node,
+          widgets.length,
+          promoted.length,
+          'load'
+        )
         return undefined
       }
     }
@@ -689,13 +694,14 @@ export class LiveGraphApplier {
   private reportHostWidgetDrift(
     node: LGraphNode,
     actual: number,
-    expected: number
+    expected: number,
+    phase: 'load' | 'incremental'
   ): void {
     this.reportOnce(
-      `host-widgets:${String(node.id)}:${actual}`,
+      `host-widgets:${phase}:${String(node.id)}:${actual}`,
       `Subgraph host ${String(node.id)} (${node.type}) carries ${actual} opaque widget values for ${expected} promoted widgets`,
       'agent_graph_host_widgets_mismatch',
-      { nodeId: node.id, type: node.type, expected, actual }
+      { nodeId: node.id, type: node.type, expected, actual, phase }
     )
   }
 
@@ -705,7 +711,12 @@ export class LiveGraphApplier {
   ): void {
     const promoted = promotedInputs(node)
     if (Array.isArray(widgets) && widgets.length !== promoted.length) {
-      this.reportHostWidgetDrift(node, widgets.length, promoted.length)
+      this.reportHostWidgetDrift(
+        node,
+        widgets.length,
+        promoted.length,
+        'incremental'
+      )
       return
     }
     const store = useWidgetValueStore()
