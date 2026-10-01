@@ -1,3 +1,4 @@
+import type { CancelBillingEvent } from './cancelEvent.js'
 import type { CapabilityReadBillingEvent } from './capabilityReadEvent.js'
 import type { DowngradeToPersonalBillingEvent } from './downgradeToPersonalEvent.js'
 import type { EntryBillingEvent } from './entryEvent.js'
@@ -27,6 +28,7 @@ export type BillingTelemetryEvent = {
   | WebHandoffBillingEvent
   | WebSessionBillingEvent
   | EntryBillingEvent
+  | CancelBillingEvent
 )
 
 type BillingTelemetryEventNameFor<T extends BillingTelemetryEvent> =

@@ -35,5 +35,8 @@ export const BILLING_TELEMETRY_EVENTS = {
   BILLING_DOWNGRADE_TO_PERSONAL_FAILED: 'billing.downgrade_to_personal.failed',
   BILLING_WEB_HANDOFF_OPENED: 'billing.web_handoff.opened',
   BILLING_ENTRY_PAYWALL_SHOWN: 'billing.entry.paywall_shown',
-  BILLING_ENTRY_ADD_CREDITS_CLICKED: 'billing.entry.add_credits_clicked'
+  BILLING_ENTRY_ADD_CREDITS_CLICKED: 'billing.entry.add_credits_clicked',
+  BILLING_CANCEL_INTENT: 'billing.cancel.intent',
+  BILLING_CANCEL_ABANDONED: 'billing.cancel.abandoned',
+  BILLING_CANCEL_FAILED: 'billing.cancel.failed'
 } as const satisfies Record<string, BillingTelemetryEventName>

@@ -4,13 +4,16 @@ import type {
 } from '@comfyorg/account-core/billing'
 import { BILLING_OPERATION_TELEMETRY_EVENT } from '@comfyorg/account-core/billing'
 
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
+
 /**
  * The lifecycle's event onto the poller's `billing.operation.*` stages, so
  * both rails count in one funnel; only this rail sets `presentation` and
  * `resumed`.
  */
 export function toBillingTelemetryEvent(
-  event: BillingOperationTelemetryEvent
+  event: BillingOperationTelemetryEvent,
+  paymentIntentSource?: PaymentIntentSource
 ): BillingTelemetryEvent {
   const shared = {
     operation: 'operation',
@@ -19,6 +22,9 @@ export function toBillingTelemetryEvent(
     billing_op_id: event.billing_op_id,
     presentation: event.presentation,
     resumed: event.resumed,
+    ...(paymentIntentSource === undefined
+      ? {}
+      : { payment_intent_source: paymentIntentSource }),
     ...(event.duration_ms === undefined
       ? {}
       : { duration_ms: event.duration_ms })

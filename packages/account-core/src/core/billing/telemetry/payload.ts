@@ -28,6 +28,8 @@ export const BILLING_PAYLOAD_FIELD_HANDLING = {
   result: 'required',
   source: 'required',
   to: 'required',
+  amount_cents: 'optional',
+  amount_preset: 'optional',
   billing_client: 'optional',
   billing_op_id: 'optional',
   checkout_attempt_id: 'optional',

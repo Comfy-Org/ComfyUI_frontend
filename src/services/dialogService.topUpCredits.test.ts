@@ -187,7 +187,7 @@ describe('showTopUpCreditsDialog', () => {
     })
   })
 
-  it('withholds the surface from the legacy rail content', async () => {
+  it('passes the surface to the legacy rail content too', async () => {
     useBillingContext().type = computed(() => 'legacy')
 
     await useDialogService().showTopUpCreditsDialog({
@@ -196,7 +196,10 @@ describe('showTopUpCreditsDialog', () => {
     })
 
     const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
-    expect(args.props).toEqual({ isInsufficientCredits: true })
+    expect(args.props).toEqual({
+      isInsufficientCredits: true,
+      source: 'agent_paywall'
+    })
   })
 
   describe('add-credits entries reported to Datadog', () => {
