@@ -70,6 +70,9 @@ describe.for(pages)('$name launch page config', ({ page }) => {
       page.hero.promptBar?.sampleKey,
       page.hero.promptBar?.cta.labelKey,
       ...(page.hero.badgeKeys ?? []),
+      page.showcase?.headingAccentKey,
+      page.showcase?.headingKey,
+      page.showcase?.descriptionKey,
       page.gallery?.headingKey,
       page.pricing?.banner?.titleKey,
       page.pricing?.banner?.subtitleKey,
@@ -99,6 +102,11 @@ describe.for(pages)('$name launch page config', ({ page }) => {
   })
 
   it('localizes every gallery card and FAQ entry in both locales', () => {
+    for (const card of page.showcase?.cards ?? []) {
+      for (const locale of ['en', 'zh-CN'] as const) {
+        expect(card.alt[locale] || card.alt.en, `${card.id} alt`).not.toBe('')
+      }
+    }
     for (const card of page.gallery?.cards ?? []) {
       for (const locale of ['en', 'zh-CN'] as const) {
         expect(card.name[locale] || card.name.en, `${card.id} name`).not.toBe(
@@ -202,6 +210,12 @@ describe.for(pages)('$name launch page config', ({ page }) => {
     )
 
     expect(offenders.map((card) => card.id)).toEqual([])
+
+    const showcaseOffenders = (page.showcase?.cards ?? []).filter(
+      (card) => !IMAGE_URL.test(card.src)
+    )
+
+    expect(showcaseOffenders.map((card) => card.id)).toEqual([])
 
     const audioOffenders = (page.audioGallery?.cards ?? []).filter(
       (card) =>

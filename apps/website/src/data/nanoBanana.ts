@@ -30,6 +30,11 @@ const media = {
 
 const premiumNote = { en: 'Pay-as-you-go', 'zh-CN': '按量付费' }
 
+const showcaseAlt = (index: number) => ({
+  en: `Placeholder style transfer example ${index} for Nano Banana`,
+  'zh-CN': `Nano Banana 风格迁移占位示例 ${index}`
+})
+
 export const nanoBananaPage: ModelLaunchPage = {
   metaTitleKey: 'nanoBanana.meta.title',
   metaDescriptionKey: 'nanoBanana.meta.description',
@@ -59,6 +64,19 @@ export const nanoBananaPage: ModelLaunchPage = {
       href: nanoBananaLinks.workflows,
       target: '_blank'
     }
+  },
+  showcase: {
+    headingAccentKey: 'nanoBanana.showcase.headingAccent',
+    headingKey: 'nanoBanana.showcase.heading',
+    descriptionKey: 'nanoBanana.showcase.description',
+    cards: [
+      { id: 'style-1', alt: showcaseAlt(1), src: media.vaporwave.src },
+      { id: 'style-2', alt: showcaseAlt(2), src: media.aliens.src },
+      { id: 'style-3', alt: showcaseAlt(3), src: media.goldfish.src },
+      { id: 'style-4', alt: showcaseAlt(4), src: media.engine.src },
+      { id: 'style-5', alt: showcaseAlt(5), src: media.canyon.src },
+      { id: 'style-6', alt: showcaseAlt(6), src: media.horizon.src }
+    ]
   },
   gallery: {
     headingKey: 'nanoBanana.gallery.heading',

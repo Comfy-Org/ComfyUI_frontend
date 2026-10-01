@@ -7884,6 +7884,19 @@ Enterprise`
     en: 'READ THE GUIDE',
     'zh-CN': '查看教程'
   },
+  'nanoBanana.showcase.headingAccent': {
+    en: 'Style',
+    'zh-CN': '风格'
+  },
+  'nanoBanana.showcase.heading': {
+    en: 'applied in seconds.',
+    'zh-CN': '，数秒即成。'
+  },
+  'nanoBanana.showcase.description': {
+    en: 'Reimagine the look of your image. Take the texture, color, or style from any reference photo and apply it to your subject. Try a different aesthetic without starting from scratch.',
+    'zh-CN':
+      '重新定义图像的外观。从任意参考照片中提取纹理、色彩或风格，并应用到你的主体上。无需从头开始，即可尝试不同的美学方向。'
+  },
   'nanoBanana.gallery.heading': {
     en: 'Made with Nano Banana',
     'zh-CN': '由 Nano Banana 创作'

@@ -9,6 +9,7 @@ import ModelLaunchGallerySection from './ModelLaunchGallerySection.vue'
 import ModelLaunchHeroSection from './ModelLaunchHeroSection.vue'
 import ModelLaunchPricingSection from './ModelLaunchPricingSection.vue'
 import ModelLaunchReviewsSection from './ModelLaunchReviewsSection.vue'
+import ModelLaunchShowcaseSection from './ModelLaunchShowcaseSection.vue'
 import ModelLaunchStepsSection from './ModelLaunchStepsSection.vue'
 import ModelLaunchRunOptionsSection from './ModelLaunchRunOptionsSection.vue'
 import type { ModelLaunchPage } from './types'
@@ -73,6 +74,15 @@ const sectionOrder = page.sectionOrder ?? DEFAULT_SECTION_ORDER
   <ModelLaunchHeroSection client:load hero={page.hero} locale={locale} />
   {sectionOrder.map((section) => {
     switch (section) {
+      case 'showcase':
+        return (
+          page.showcase && (
+            <ModelLaunchShowcaseSection
+              showcase={page.showcase}
+              locale={locale}
+            />
+          )
+        )
       case 'gallery':
         return (
           page.gallery && (
