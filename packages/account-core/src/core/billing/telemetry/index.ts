@@ -25,6 +25,10 @@ export type {
   WebEntryProduct
 } from './webEntryEvent.js'
 export type {
+  WebReturnBillingEvent,
+  WebReturnControl
+} from './webReturnEvent.js'
+export type {
   WebSessionBillingEvent,
   WebSessionMode
 } from './webSessionEvent.js'
