@@ -164,7 +164,7 @@ test('758-15763: a Pay under a promo code keeps the plan rate on Success and lis
   )
 })
 
-test('a one-time code on a plan change reads This payment only, on the summary and on Success', async ({
+test('a one-time code on a monthly plan change reads This payment only, on the summary and on Success', async ({
   page,
   cloud,
   signIn

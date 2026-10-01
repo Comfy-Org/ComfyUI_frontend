@@ -743,7 +743,7 @@ describe('buildSummaryLedger server-reported fields', () => {
       discount: { duration: 'once' },
       duration: 'ANNUAL',
       transition: 'duration_change',
-      subline: 'This payment only'
+      subline: 'First year'
     },
     {
       name: 'a once coupon on a yearly plan',
