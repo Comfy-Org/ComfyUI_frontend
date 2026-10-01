@@ -105,11 +105,15 @@ function nudge(light: Light, dx: number, dy: number) {
         :scene
         :light-map="view === 'lightmap'"
       />
-      <RelightMaskOutline
-        v-for="mask in masks.filter((candidate) => candidate.visible)"
-        :key="mask.id"
-        :mask
-      />
+      <div
+        class="pointer-events-none absolute inset-0 overflow-hidden rounded-sm"
+      >
+        <RelightMaskOutline
+          v-for="mask in masks.filter((candidate) => candidate.visible)"
+          :key="mask.id"
+          :mask
+        />
+      </div>
       <template v-if="handles">
         <RelightLightDot
           v-for="light in lights"
@@ -122,6 +126,7 @@ function nudge(light: Light, dx: number, dy: number) {
           @focus="emit('select', light.id)"
         />
       </template>
+      <slot />
     </div>
   </EditorFrame>
 </template>

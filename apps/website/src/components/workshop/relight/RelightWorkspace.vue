@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { useNow } from '@vueuse/core'
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import type { Relight, RelightImage } from '../../../composables/useRelight'
 import type { Locale } from '../../../i18n/translations'
 import { elapsedLabel } from '../../../lib/workshop/elapsed'
 import { lc } from '../../../lib/workshop/relight/copy'
 import EditorBusy from '../app-editor/EditorBusy.vue'
+import EditorHint from '../app-editor/EditorHint.vue'
 import RelightStage from './RelightStage.vue'
 
 const {
@@ -20,6 +21,26 @@ const {
 }>()
 
 const { setup, phase, view, handles, selected, lit } = relight
+const touched = ref(false)
+watch(
+  () => image.url,
+  () => (touched.value = false)
+)
+
+function touch() {
+  touched.value = true
+}
+
+function select(id: string) {
+  selected.value = id
+  touch()
+}
+
+function nudge(id: string, x: number, y: number) {
+  touch()
+  relight.updateLight(id, { x, y }, `nudge:${id}`)
+}
+
 const now = useNow({ interval: 1000 })
 const elapsed = computed(() =>
   phase.value.kind === 'running'
@@ -39,11 +60,16 @@ const elapsed = computed(() =>
       :view
       :handles
       :locale
-      @select="(id) => (selected = id)"
+      @select="select"
       @begin="relight.checkpoint()"
       @place="(id, x, y) => relight.place(id, x, y)"
-      @nudge="(id, x, y) => relight.updateLight(id, { x, y }, `nudge:${id}`)"
-    />
+      @nudge="nudge"
+    >
+      <EditorHint
+        v-if="!touched && phase.kind === 'editing'"
+        :text="lc('relight.hint', locale)"
+      />
+    </RelightStage>
     <EditorBusy
       v-if="phase.kind === 'running'"
       :title="lc('relight.busy.title', locale)"

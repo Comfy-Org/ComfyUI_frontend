@@ -82,9 +82,9 @@ export const LIGHT_COLORS = [
 const [WARM, CREAM, WHITE, COOL, MAGENTA] = LIGHT_COLORS.map(({ hex }) => hex)
 
 export const DEFAULT_SCENE: RelightScene = {
-  ambient: 30,
+  ambient: 20,
   ambientColor: WHITE,
-  removeOriginal: 40,
+  removeOriginal: 65,
   reflections: 20
 }
 
@@ -194,7 +194,7 @@ export function newLight(
 }
 
 const MASK_SHAPES = [
-  { cx: 0.5, cy: 0.52, rx: 0.3, ry: 0.6 },
+  { cx: 0.5, cy: 0.55, rx: 0.3, ry: 0.5 },
   { cx: 0.5, cy: 0.35, rx: 0.2, ry: 0.32 },
   { cx: 0.5, cy: 0.8, rx: 0.45, ry: 0.3 },
   { cx: 0.3, cy: 0.5, rx: 0.25, ry: 0.45 }

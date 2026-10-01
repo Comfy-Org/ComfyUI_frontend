@@ -17,7 +17,7 @@ describe('relightRequest', () => {
   it('sends the mask areas without whether they are drawn on the photo', () => {
     const sent = request('/photo.jpg')
     expect(sent.masks).toEqual([
-      { id: 'm', name: 'Subject', cx: 0.5, cy: 0.52, rx: 0.3, ry: 0.6 }
+      { id: 'm', name: 'Subject', cx: 0.5, cy: 0.55, rx: 0.3, ry: 0.5 }
     ])
     expect(sent.generation.seed).toBe(42)
   })

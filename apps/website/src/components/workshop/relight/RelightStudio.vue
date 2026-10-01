@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import type { ComponentPublicInstance } from 'vue'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 
 import { useRelight } from '../../../composables/useRelight'
 import { reportStudioBusy } from '../../../composables/useStudioSwitchGuard'
@@ -36,6 +37,22 @@ const editing = computed(
 )
 reportStudioBusy(() => phase.value.kind === 'running')
 
+const shell = useTemplateRef<ComponentPublicInstance>('shell')
+watch(
+  () => phase.value.kind,
+  (kind) => {
+    const element: unknown = shell.value?.$el
+    const stacked = window.matchMedia('(max-width: 1023px)').matches
+    if (
+      kind === 'running' &&
+      panel.value &&
+      stacked &&
+      element instanceof HTMLElement
+    )
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+)
+
 const resultLabels = computed(() => ({
   resultAlt: lc('relight.alt.result', locale),
   originalAlt:
@@ -63,6 +80,7 @@ const historyLabels = {
 
 <template>
   <AppEditorShell
+    ref="shell"
     :title="lc('relight.title', locale)"
     :tools-label="lc('relight.tools', locale)"
     :panel-label="lc('relight.panel', locale)"
@@ -92,7 +110,7 @@ const historyLabels = {
       :labels="resultLabels"
     />
     <RelightWorkspace v-else :image :relight :locale />
-    <template v-if="editing" #start>
+    <template v-if="editing" #center>
       <EditorHistory
         :can-undo="relight.canUndo.value"
         :can-redo="relight.canRedo.value"

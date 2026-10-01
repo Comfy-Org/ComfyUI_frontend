@@ -83,7 +83,4 @@ const adds = [
       (patch, key) => current && relight.updateLight(current.id, patch, key)
     "
   />
-  <p class="px-1 text-[11px] text-primary-warm-gray">
-    {{ lc('relight.hint', locale) }}
-  </p>
 </template>

@@ -39,7 +39,7 @@ vec3 normalAt(vec2 uv) {
   vec2 dy = vec2(0.0, uTexel.y);
   float slopeX = heightAt(uv - dx) - heightAt(uv + dx);
   float slopeY = heightAt(uv - dy) - heightAt(uv + dy);
-  return normalize(vec3(slopeX * 7.0, slopeY * 7.0, 1.0));
+  return normalize(vec3(slopeX * 11.0, slopeY * 11.0, 1.0));
 }
 
 float shadowAt(vec2 uv, vec3 toward, float h) {
@@ -85,14 +85,14 @@ void main() {
     float falloff = 1.0;
     float rim = 0.0;
     if (pos.z < 0.5) {
-      vec3 offset = vec3((pos.x - vUv.x) * uAspect, pos.y - vUv.y, 0.32);
-      float reach = 0.22 + soft * 0.8;
-      falloff = 1.0 / (1.0 + dot(offset.xy, offset.xy) / (reach * reach) * 5.0);
+      vec3 offset = vec3((pos.x - vUv.x) * uAspect, pos.y - vUv.y, 0.25);
+      float reach = 0.15 + soft * 0.55;
+      falloff = 1.0 / (1.0 + dot(offset.xy, offset.xy) / (reach * reach) * 3.0);
       l = normalize(offset);
     } else {
       rim = pow(1.0 - n.z, 1.2) * max(-l.z, 0.0) * 3.0;
     }
-    float wrap = soft * 0.6;
+    float wrap = soft * 0.4;
     float lambert = max((dot(n, l) + wrap) / (1.0 + wrap), 0.0);
     float shade = toward.w > 0.5 ? shadowAt(vUv, l, h) : 1.0;
     float energy = pos.w * falloff * shade * maskAt(uMask[i], vUv);
@@ -100,7 +100,7 @@ void main() {
     vec3 halfway = normalize(l + vec3(0.0, 0.0, 1.0));
     shine += color.rgb * energy * pow(max(dot(n, halfway), 0.0), 40.0) * uReflect;
   }
-  vec3 lit = albedo * (1.0 - uRemove) + albedo * light * 1.4 + shine * 0.5;
+  vec3 lit = albedo * (1.0 - uRemove) + albedo * light * 1.7 + shine * 0.5;
   vec3 shown = uLightMap > 0.5 ? light * 0.45 + shine * 0.5 : lit;
   vec3 color = sqrt(shown / (1.0 + shown * 0.2));
   color = (color - 0.5) * uContrast + 0.5;

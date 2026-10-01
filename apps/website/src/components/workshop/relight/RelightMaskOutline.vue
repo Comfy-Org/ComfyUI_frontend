@@ -17,7 +17,7 @@ const { mask } = defineProps<{ mask: RelightMask }>()
     aria-hidden="true"
   >
     <span
-      class="absolute top-0 left-1/2 -translate-1/2 rounded-full bg-primary-comfy-yellow px-2 py-0.5 text-[10px] font-medium whitespace-nowrap text-primary-comfy-ink"
+      class="absolute top-2 left-1/2 -translate-x-1/2 rounded-full bg-primary-comfy-yellow px-2 py-0.5 text-[10px] font-medium whitespace-nowrap text-primary-comfy-ink"
       >{{ mask.name }}</span
     >
   </div>

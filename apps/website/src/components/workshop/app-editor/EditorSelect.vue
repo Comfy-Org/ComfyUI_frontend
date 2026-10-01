@@ -7,12 +7,15 @@ import { cn } from '@comfyorg/tailwind-utils'
 const {
   label,
   options,
-  bare = false
+  bare = false,
+  compact = false
 } = defineProps<{
   label: string
   options: readonly { id: T; label: string; disabled?: boolean }[]
   /** Drops the field's own border and fill, to sit inside a pill. */
   bare?: boolean
+  /** Keeps the label for screen readers only on phones. */
+  compact?: boolean
 }>()
 const value = defineModel<T>({ required: true })
 const id = useId()
@@ -27,9 +30,16 @@ function onChange(event: Event) {
 
 <template>
   <div class="flex min-w-0 items-center gap-2 px-1">
-    <label :for="id" class="shrink-0 text-xs text-primary-warm-gray">{{
-      label
-    }}</label>
+    <label
+      :for="id"
+      :class="
+        cn(
+          'shrink-0 text-xs text-primary-warm-gray',
+          compact && 'max-sm:sr-only'
+        )
+      "
+      >{{ label }}</label
+    >
     <div class="relative min-w-0 flex-1">
       <select
         :id

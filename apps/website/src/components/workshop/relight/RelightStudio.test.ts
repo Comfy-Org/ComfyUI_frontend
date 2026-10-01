@@ -184,6 +184,16 @@ describe('RelightStudio', () => {
     ).toBeEnabled()
   })
 
+  it('shows the how-to hint on the photo until a light is touched', async () => {
+    const user = await openExample()
+    const hint = 'Drag a light to move it · Arrow keys to nudge'
+    expect(screen.getByTestId('relight-stage')).toHaveTextContent(hint)
+
+    await user.click(screen.getByRole('button', { name: /^Cool fill\./ }))
+
+    expect(screen.queryByText(hint)).toBeNull()
+  })
+
   it('keeps the bottom dock and its trays in the bottom composer layout', async () => {
     const user = await openExample('e')
     expect(screen.queryByRole('complementary')).toBeNull()

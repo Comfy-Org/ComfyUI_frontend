@@ -66,7 +66,8 @@ const {
         :class="
           cn(
             'relative flex min-h-0 flex-1 flex-col bg-black/25',
-            $slots.panel && 'max-lg:h-[58svh] max-lg:min-h-90 max-lg:flex-none'
+            $slots.panel &&
+              'max-lg:h-[min(60svh,calc(62vw+5.5rem))] max-lg:min-h-80 max-lg:flex-none'
           )
         "
       >

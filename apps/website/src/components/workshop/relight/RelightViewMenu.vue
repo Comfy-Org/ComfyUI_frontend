@@ -28,7 +28,8 @@ const options = [
       :label="lc('relight.view', locale)"
       :options
       bare
-      class="w-40 sm:w-44"
+      compact
+      class="w-34 sm:w-44"
     />
     <EditorDivider />
     <EditorTool
