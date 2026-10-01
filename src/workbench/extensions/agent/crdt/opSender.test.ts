@@ -781,7 +781,9 @@ describe('createOpSender', () => {
 
   it('clears live state and unsubscribes when teardown cannot chunk an open batch', () => {
     const circularNode = addNode(1)
-    ;(circularNode.node as Record<string, unknown>).circular = circularNode.node
+    if (!('node' in circularNode)) throw new Error('expected an add-node op')
+    const node = circularNode.node as Record<string, unknown>
+    node.circular = node
     sender.admit([circularNode])
 
     expect(() => sender.detach()).not.toThrow()
