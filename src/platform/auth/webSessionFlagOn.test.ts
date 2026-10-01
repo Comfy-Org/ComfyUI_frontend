@@ -5,7 +5,13 @@ import { setActivePinia } from 'pinia'
 import { defineComponent, effectScope } from 'vue'
 
 import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
-import type { BillingCapabilitiesResponse } from '@comfyorg/ingest-types'
+import type {
+  BillingBalanceResponse,
+  BillingCapabilitiesResponse,
+  BillingOpStatusResponse,
+  BillingStatusResponse,
+  CreateTopupResponse
+} from '@comfyorg/ingest-types'
 import { OPERATION_POLL_TIMING } from '@comfyorg/account-core/billing'
 import { MISSING_CUSTOMER_MESSAGE } from '@comfyorg/account-core/customerRecovery'
 import { COMFY_CLIENT } from '@comfyorg/account-core/requestAuth'
@@ -507,9 +513,12 @@ function billingAnswer(path: string, scope: BillingScope): unknown {
         occupied_seats: 1,
         scheduled_change: null,
         team_credit_stop: null
-      }
+      } satisfies BillingStatusResponse
     case '/api/billing/balance':
-      return { amount_micros: 12_500_000, currency: 'USD' }
+      return {
+        amount_micros: 12_500_000,
+        currency: 'USD'
+      } satisfies BillingBalanceResponse
     case '/api/billing/capabilities':
       return capabilitiesResponse(scope)
     case '/api/billing/topup':
@@ -518,13 +527,13 @@ function billingAnswer(path: string, scope: BillingScope): unknown {
         billing_op_id: 'op-1',
         status: 'completed',
         topup_id: 'topup-1'
-      }
+      } satisfies CreateTopupResponse
     case '/api/billing/ops/op-1':
       return {
         id: 'op-1',
         status: 'succeeded',
         started_at: new Date(Date.now()).toISOString()
-      }
+      } satisfies BillingOpStatusResponse
     default:
       return {}
   }
@@ -1434,7 +1443,11 @@ describe('billing SDK rails on a tab that arrived by session', () => {
 
       const capabilities = await readRail().readCapabilities({})
 
-      expect(capabilities.status).toBe('ok')
+      assert(capabilities.status === 'ok')
+      expect(capabilities.value.resolved_for).toEqual({
+        user_id: 'user-a',
+        workspace_id: workspace
+      })
       expect(useAuthStore().currentUser).toBeNull()
       expect(ingest.mintedFor).toEqual([mintedFor])
       expect(sent(ingest)).toEqual([
