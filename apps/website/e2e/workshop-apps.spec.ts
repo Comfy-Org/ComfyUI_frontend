@@ -205,45 +205,90 @@ test('closes Relight while its flag is off', async ({ page, context }) => {
   await expect(page.getByTestId('relight')).toHaveCount(0)
 })
 
-test('relights the Relight example and shows the result', async ({
-  page,
-  context
-}) => {
-  await mockFlags(context, { apps: true, workflows: false })
-  await page.goto('/hub/apps/relight/')
+async function relightFromPanel(page: Page) {
   const app = page.getByTestId('relight')
   await expect(app.getByTestId('relight-empty')).toBeVisible()
-  const run = app.getByTestId('relight-run')
-  await expect(run).toHaveCount(0)
-
   await app.getByRole('button', { name: 'Try the example' }).click()
-  await expect(run).toBeEnabled()
-  const key = app.getByRole('button', { name: /^Warm key\./ })
-  await key.focus()
-  await page.keyboard.press('Shift+ArrowRight')
-  await expect(key).toHaveAttribute('style', /left: 25%/)
+  const panel = app.getByRole('complementary', { name: 'Relight settings' })
+  const lights = panel.getByRole('region', { name: 'Lights' })
 
-  await app.getByRole('button', { name: /Lights/ }).click()
-  const brightness = app
-    .getByRole('dialog', { name: 'Lights' })
-    .getByRole('slider', { name: 'Brightness' })
-  await brightness.fill('40')
-  await expect(brightness).toHaveValue('40')
+  await app.getByRole('button', { name: /^Cool fill\./ }).click()
+  await expect(
+    lights.getByRole('button', { name: /^Cool fill/ })
+  ).toHaveAttribute('aria-pressed', 'true')
+  const intensity = lights.getByRole('slider', { name: 'Intensity' })
+  await intensity.fill('70')
+  await expect(intensity).toHaveValue('70')
+  await expect(app.getByRole('button', { name: 'Undo' })).toBeEnabled()
 
-  await run.click()
+  await panel.getByTestId('relight-run').click()
   await expect(app.getByRole('status')).toContainText('Relighting')
   await expect(app.getByRole('link', { name: 'Download' })).toHaveAttribute(
     'href',
-    '/images/apps/relight/example-relit.jpg'
+    /^(blob:|\/images\/apps\/relight\/example-relit\.jpg)/
   )
   await expect(
     app.getByRole('slider', {
       name: 'Drag to compare the original and the relit photo'
     })
   ).toBeVisible()
+  return app
+}
+
+test('relights the Relight example from the side panel', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/hub/apps/relight/')
+  const app = await relightFromPanel(page)
 
   await app.getByRole('button', { name: 'Edit lights' }).click()
+  await expect(
+    app
+      .getByRole('region', { name: 'Lights' })
+      .getByRole('slider', { name: 'Intensity' })
+  ).toHaveValue('70')
+})
+
+test('relights the Relight example from the bottom composer', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/hub/apps/relight/?ux=e')
+  const app = page.getByTestId('relight')
+  await app.getByRole('button', { name: 'Try the example' }).click()
+  await expect(app.getByRole('complementary')).toHaveCount(0)
+  const key = app.getByRole('button', { name: /^Warm key\./ })
+  await key.focus()
+  await page.keyboard.press('Shift+ArrowRight')
   await expect(key).toHaveAttribute('style', /left: 25%/)
+
+  await app.getByRole('button', { name: /Lights/ }).click()
+  const intensity = app
+    .getByRole('dialog', { name: 'Lights' })
+    .getByRole('slider', { name: 'Intensity' })
+  await intensity.fill('40')
+  await expect(intensity).toHaveValue('40')
+
+  await app.getByTestId('relight-run').click()
+  await expect(app.getByRole('link', { name: 'Download' })).toBeVisible()
+  await app.getByRole('button', { name: 'Edit lights' }).click()
+  await expect(key).toHaveAttribute('style', /left: 25%/)
+})
+
+test('stacks the Relight side panel under the photo on phones @mobile', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/hub/apps/relight/')
+  await relightFromPanel(page)
+  const width = await page.evaluate(
+    () => document.documentElement.scrollWidth - window.innerWidth
+  )
+  expect(width).toBe(0)
 })
 
 test('sends an old catalogue link for the Apps tab to the hub apps page', async ({
