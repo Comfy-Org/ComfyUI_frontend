@@ -2816,7 +2816,11 @@ describe('store construction order', () => {
   it('building the workspace store first subscribes its port and mints once Firebase delivers on its microtask', async () => {
     const port = replayIdentityPort(() => mockUser)
     vi.mocked(firebaseAuth.onAuthStateChanged).mockImplementation(
-      (_, callback) => port.register(callback as IdentityObserver)
+      (_, callback) => {
+        if (typeof callback !== 'function')
+          throw new TypeError('Expected a function identity observer')
+        return port.register(callback)
+      }
     )
 
     const workspaceAuth = useWorkspaceAuthStore()
@@ -2833,7 +2837,11 @@ describe('store construction order', () => {
   it('observes a user replayed synchronously during store construction', () => {
     const port = replayIdentityPort(() => mockUser, 'sync')
     vi.mocked(firebaseAuth.onAuthStateChanged).mockImplementation(
-      (_, callback) => port.register(callback as IdentityObserver)
+      (_, callback) => {
+        if (typeof callback !== 'function')
+          throw new TypeError('Expected a function identity observer')
+        return port.register(callback)
+      }
     )
 
     const store = useAuthStore()
