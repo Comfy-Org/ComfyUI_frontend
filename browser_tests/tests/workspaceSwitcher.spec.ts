@@ -294,7 +294,6 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
       })
 
       await test.step('Switch to and establish the team workspace state', async () => {
-        workspaceSwitchTokenGate.arm()
         await workspaceAuth.openSwitcherPanel()
         await page
           .getByTestId('workspace-switcher-panel')

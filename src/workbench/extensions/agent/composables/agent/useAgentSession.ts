@@ -501,7 +501,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     sendInFlight = null
     stopPendingAck = null
     sending.value = false
-    everLive = false
+    connection = 'initial'
     malformedStreamReports.clear()
   }
 
@@ -1882,7 +1882,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     onThreadActivated?.(null)
     boundWorkflowId.value = null
     rememberedWorkflowId = null
-    localStorage.removeItem(threadStorageKey)
+    if (readStoredThread() === turn.threadId) removeStoredThread()
   }
 
   const isSending = computed(() => sending.value)

@@ -200,6 +200,7 @@ describe('useStorageScopeLifecycle', () => {
     await nextTick()
 
     expect(reportError).toHaveBeenCalledWith(initializationError, {
+      surface: 'auth',
       errorType: 'workspace_auth_gate_initialization_failure'
     })
     scope.stop()

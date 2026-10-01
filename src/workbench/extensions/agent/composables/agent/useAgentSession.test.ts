@@ -3841,7 +3841,11 @@ describe('useAgentSession (v1 composition root)', () => {
       'Comfy.Workspace.Current',
       JSON.stringify({ type: 'team', id: 'workspace-b' })
     )
-    localStorage.setItem(StorageKeys.agentThread('workspace-a'), 'th-a')
+    setStorageWorkspaceId('workspace-b')
+    localStorage.setItem(
+      StorageKeys.agentThread(scope('user-test:workspace-a')),
+      'th-a'
+    )
     const rest = fakeRest({
       getMessages: vi.fn(async (): Promise<AgentMessages> => {
         throw new AgentApiError('gone', 404, undefined)
@@ -3860,9 +3864,11 @@ describe('useAgentSession (v1 composition root)', () => {
 
     await session.sendMessage('go')
     emit(delta('msg-1', 'partial'))
-    expect(localStorage.getItem(StorageKeys.agentThread('workspace-b'))).toBe(
-      'th-1'
-    )
+    expect(
+      localStorage.getItem(
+        StorageKeys.agentThread(scope('user-test:workspace-b'))
+      )
+    ).toBe('th-1')
 
     status(false)
     status(true)
@@ -3872,11 +3878,15 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(onThreadActivated).toHaveBeenLastCalledWith(null)
     expect(session.boundWorkflowId.value).toBeNull()
     expect(
-      localStorage.getItem(StorageKeys.agentThread('workspace-b'))
+      localStorage.getItem(
+        StorageKeys.agentThread(scope('user-test:workspace-b'))
+      )
     ).toBeNull()
-    expect(localStorage.getItem(StorageKeys.agentThread('workspace-a'))).toBe(
-      'th-a'
-    )
+    expect(
+      localStorage.getItem(
+        StorageKeys.agentThread(scope('user-test:workspace-a'))
+      )
+    ).toBe('th-a')
 
     await session.sendMessage('again')
     expect(vi.mocked(rest.postMessage).mock.calls.at(-1)?.[0]).toBe('new')
@@ -3930,9 +3940,9 @@ describe('useAgentSession (v1 composition root)', () => {
       role: 'assistant',
       parts: [{ type: 'text', text: 'two', state: 'done' }]
     })
-    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
-      'th-2'
-    )
+    expect(
+      localStorage.getItem(StorageKeys.agentThread(scope('user-test:personal')))
+    ).toBe('th-2')
   })
 
   it('(g18) a history fetch that never answers is abandoned at the recovery deadline', async () => {
@@ -5665,7 +5675,10 @@ describe('thread resume (B17)', () => {
   })
 
   it('reconciles a hydrated streaming turn without waiting for a socket transition', async () => {
-    localStorage.setItem(StorageKeys.agentThread('personal'), 'th-9')
+    localStorage.setItem(
+      StorageKeys.agentThread(scope('user-test:personal')),
+      'th-9'
+    )
     const streaming = HISTORY.map((row) =>
       row.role === 'assistant'
         ? { ...row, status: 'streaming' as const, content: {} }

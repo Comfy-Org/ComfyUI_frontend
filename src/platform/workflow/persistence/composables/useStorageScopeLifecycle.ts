@@ -67,6 +67,7 @@ export function useStorageScopeLifecycle(): void {
     workspaceInitializationPending = false
     void teamWorkspaceStore.initialize().catch((error: unknown) => {
       reportError(error, {
+        surface: 'auth',
         errorType: 'workspace_auth_gate_initialization_failure'
       })
     })
