@@ -377,6 +377,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     return this._state.value
   }
   set value(value: TWidget['value']) {
+    this._state.serialize = this.serialize
     this._state.value = value
   }
 
@@ -423,6 +424,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     const id = widgetId(graphId, nodeId, this.name)
     const state = useWidgetValueStore().getWidget(id)
     if (!state) return false
+    if (!Object.hasOwn(state, 'serialize')) state.serialize = this.serialize
     this._state = state
     const visibility = useWidgetValueStore().getWidgetVisibility(id)
     if (visibility) this._visibility = visibility
