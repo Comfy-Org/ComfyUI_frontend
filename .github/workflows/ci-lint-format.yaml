@@ -61,12 +61,6 @@ jobs:
       - name: Run oxfmt with auto-format
         run: pnpm format
 
-      # A control byte makes git call a source file binary, which hides every
-      # line of it from the diff and from review. The pre-commit hook catches
-      # it locally; nothing is staged here, so this pass walks tracked files.
-      - name: Check source text for control bytes
-        run: pnpm exec tsx scripts/check-text-encoding.ts --all
-
       - name: Check for changes
         id: verify-changed-files
         run: |

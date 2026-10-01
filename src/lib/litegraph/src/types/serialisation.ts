@@ -152,6 +152,12 @@ export interface ISerialisedWidgetValueEntry {
   /** Zero-based index among the serializable widgets sharing {@link name}. */
   occurrence: number
   value: TWidgetValue
+  /**
+   * A producer-specific key this app does not interpret. Part of the type so
+   * an entry carrying one is ordinary data rather than something a consumer
+   * has to assert into shape.
+   */
+  [key: string]: unknown
 }
 
 /** Properties of nodes that are used by subgraph instances. */

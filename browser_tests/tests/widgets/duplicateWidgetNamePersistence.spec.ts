@@ -93,6 +93,11 @@ test.describe(
         )
 
         expect(duplicateNode?.widgets_values).toEqual(savedValues)
+        // The rename succeeded here, so the names are already unambiguous and
+        // the occurrence-addressed form has nothing to add. Absence is the
+        // contract: an ordinary workflow must not grow a third copy of its
+        // widget values.
+        expect(duplicateNode).not.toHaveProperty('widgets_values_ordered')
       })
     })
   }

@@ -65,6 +65,66 @@ Entity registration collision and recovery policy is defined by
 Node ID reminting policy is defined by
 [ADR MINT](CRDT-MINT-0018-merge-identity-for-node-transfers.md).
 
+### Amendment (2026-10-01, PR 19717): serialized widget identity — DRAFT, NOT RATIFIED
+
+> **This amendment is a draft and does not govern.** It is written by the author
+> of PR 19717 to record a decision the code in that PR already makes, so the
+> decision can be accepted or rejected explicitly rather than inferred from a
+> merge. It needs a maintainer's ratification before it has any force. If it is
+> rejected, the correct outcome is to drop `widgets_values_ordered` from that PR
+> and report the unrenameable-duplicate case loudly instead; see the alternative
+> below.
+
+**The cost this revisits.** "Two widgets on one node cannot share a name" is
+listed above as an accepted cost of name-keyed identity, and
+[ADR-ECS-WIDGETS-0023](ECS-WIDGETS-0023-widget-entities-with-a-legacy-layer.md)
+repeats that `WidgetId` cannot tell duplicates apart. Neither says what should
+happen when a node carries the pair anyway. One does: `ensureUniqueWidgetNames`
+(`src/types/widgetId.ts`) renames the repeat to `name#1` before any id is
+derived, but it cannot rename a widget whose `name` is not a writable property.
+It returns `false` by two routes — a non-writable descriptor, logged as
+`Cannot safely rename duplicate widgets`, and any throw from a getter, setter
+or descriptor read, logged as `Failed to rename duplicate widgets` — and in both
+the node keeps two serializable widgets under one name. `widgets_values_named`
+can then hold only the later one, so saving and reopening the workflow loses the
+earlier widget's value.
+
+**The split this records.** Widget identity is two things, not one:
+
+|                     | Key                                                                              | Collides on a repeated name? | Who reads it                                                                                                      |
+| ------------------- | -------------------------------------------------------------------------------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Runtime identity    | `WidgetId` = `graphId:nodeId:name`                                               | Yes, and still does          | `widgetValueStore`, every `WidgetId` consumer                                                                     |
+| Serialized identity | `(name, occurrence)`, zero-based among the serializable widgets sharing the name | No                           | `widgets_values_ordered` only — its reader, its writer, and `@comfyorg/comfy-multi-player` schema v5 `set_widget` |
+
+The accepted cost above is unchanged for the runtime key. What changes is that
+the duplicate pair is no longer only a thing the renamer tries to prevent: when
+the rename cannot happen, persistence now represents it losslessly instead of
+silently collapsing it. The occurrence is derived from the live widget list at
+serialization time and is not stored on the widget, so nothing acquires a second
+durable id and no migration exists to write.
+
+**Why not unify them.** Making `WidgetId` occurrence-aware is the larger change
+this deliberately does not make. It would have to clear the four bars the
+"Future work" section above sets — and the one that bites is the second,
+a migration story for persisted workflows, since every stored `WidgetId`
+elsewhere in the app is name-keyed. It is also unnecessary for the defect:
+nothing _addresses_ a duplicate widget at runtime, because an ambiguous name
+cannot be typed into a store lookup. Only persistence has to tell the two apart,
+because only persistence has to put both values back.
+
+**What is owed if this is accepted.** `widgets_values_ordered` becomes a storage
+format this app must keep reading, which is the part that cannot be undone by a
+revert. The field is written only when a name actually repeats, so an ordinary
+workflow's JSON is unchanged, and the reader
+(`readOrderedWidgetValues`, `src/lib/litegraph/src/utils/widgetIdentity.ts`) is a
+validation boundary that degrades one node rather than failing a load.
+
+**The alternative, if this is rejected.** Drop the field, and make
+`ensureUniqueWidgetNames` returning `false` a loud, user-visible report rather
+than a console warning, accepting that the earlier widget's value is lost. That
+is a smaller change and a worse product outcome; it is written here because the
+choice between the two belongs to a maintainer, not to the PR.
+
 ## Context
 
 The litegraph layer is built on deeply coupled OOP classes (`LGraphNode`, `LLink`, `Subgraph`, `BaseWidget`, `Reroute`, `LGraphGroup`, `SlotBase`). Each entity directly references its container and children — nodes hold widget arrays, widgets back-reference their node, links reference origin/target node IDs, subgraphs extend the graph class, and so on.

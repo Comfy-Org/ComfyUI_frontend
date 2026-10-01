@@ -39,15 +39,7 @@ interface WidgetRestorationState {
   restoreNamed: boolean
 }
 
-/**
- * Which live widget a restored value is being resolved for.
- *
- * Every field is required on purpose. An optional `occurrence` silently gave
- * first-occurrence semantics to any call site that had not been updated — and
- * first-occurrence is exactly the case the ordered form treats as
- * authoritative, so the omission read as a deliberate claim. Requiring the
- * whole identity turns a missed call site into a compile error instead.
- */
+/** Which live widget a restored value is being resolved for. */
 interface RestoredWidgetIdentity {
   /** Index among the node's live serializable widgets. */
   positionalIndex: number
@@ -206,6 +198,12 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
    * resolves entirely from it, and the last occurrence falls back to its own
    * ordered entry when `named` has no own key for the name. Without that
    * fallback the last entry would be write-only data.
+   *
+   * A document carrying only the ordered form may also be partial — nothing
+   * obliges a third-party producer to list every live widget — so a widget it
+   * does not name keeps its positional value rather than its construction
+   * default. Where a `named` register exists, a missing name already means "no
+   * value", and that reading predates this field.
    */
   function getNameAddressedValue(
     restoration: WidgetRestorationState,
@@ -221,9 +219,20 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     }
 
     const key = widgetIdentityKey(name, identity.occurrence)
-    return ordered.byIdentity.has(key)
-      ? { value: ordered.byIdentity.get(key) }
-      : namedValue
+    if (ordered.byIdentity.has(key)) {
+      return { value: ordered.byIdentity.get(key) }
+    }
+    if (namedValue) return namedValue
+    return named ? undefined : getPositionalValue(restoration, identity)
+  }
+
+  function getPositionalValue(
+    restoration: WidgetRestorationState,
+    { positionalIndex }: RestoredWidgetIdentity
+  ): { value: WidgetValue } | undefined {
+    return positionalIndex < restoration.positional.length
+      ? { value: restoration.positional[positionalIndex] }
+      : undefined
   }
 
   function getRestoredWidgetValue(
@@ -240,9 +249,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     ) {
       return getNameAddressedValue(restoration, name, identity)
     }
-    return identity.positionalIndex < restoration.positional.length
-      ? { value: restoration.positional[identity.positionalIndex] }
-      : undefined
+    return getPositionalValue(restoration, identity)
   }
 
   function clearNodeWidgetRestoration(graphId: UUID, nodeId: NodeId): void {

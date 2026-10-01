@@ -283,8 +283,6 @@ export class PrimitiveNode extends LGraphNode {
           this.graph.rootGraph.id,
           this.id,
           'value',
-          // A PrimitiveNode carries exactly one widget, named `value`, so the
-          // name cannot repeat and the occurrence is always the only one.
           { positionalIndex: 0, occurrence: 0, occurrenceCount: 1 }
         )
       : undefined

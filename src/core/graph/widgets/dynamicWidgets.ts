@@ -7,6 +7,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import { commonType } from '@/lib/litegraph/src/utils/type'
+import { serializableWidgetIdentities } from '@/lib/litegraph/src/utils/widgetIdentity'
 import {
   getWidgetIds,
   resolveNodeRootGraphId
@@ -135,25 +136,24 @@ function dynamicComboWidget(
     const removedValues = removedWidgetValues.get(value)
     const names = new Set(widgetNames)
     for (const name of removedValues?.keys() ?? []) names.add(name)
+    // The same walk the serializer and `configure` use, so a widget's
+    // occurrence here is the one its value was written under.
+    const identities = [...serializableWidgetIdentities(widgets)]
     for (const name of names) {
       const addedWidget = widgets.find((widget) => widget.name === name)
       if (!addedWidget) continue
       const removed = removedValues?.get(name)
-      const serializable = widgets.filter(
-        (widget) => widget.serialize !== false
-      )
-      const positionalIndex = serializable.indexOf(addedWidget)
-      const sameName = serializable.filter((widget) => widget.name === name)
+      const identity = identities.find(({ widget }) => widget === addedWidget)
       const restored =
-        graphId && positionalIndex >= 0
+        graphId && identity
           ? useWidgetValueStore().getRestoredWidgetValue(
               graphId,
               node.id,
               name,
               {
-                positionalIndex,
-                occurrence: sameName.indexOf(addedWidget),
-                occurrenceCount: sameName.length
+                positionalIndex: identity.positionalIndex,
+                occurrence: identity.occurrence,
+                occurrenceCount: identity.occurrenceCount
               }
             )
           : undefined

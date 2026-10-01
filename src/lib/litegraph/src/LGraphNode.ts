@@ -158,9 +158,11 @@ import { distributeSpace } from './utils/spaceDistribution'
 import {
   buildOrderedWidgetValues,
   cloneWidgetValue,
-  readOrderedWidgetValues
+  getUnknownOrderedWidgetKeys,
+  readOrderedWidgetValues,
+  serializableWidgetIdentities,
+  setUnknownOrderedWidgetKeys
 } from './utils/widgetIdentity'
-import type { UnknownEntryKeys } from './utils/widgetIdentity'
 import { truncateText } from './utils/textUtils'
 import { BaseWidget } from './widgets/BaseWidget'
 import { toConcreteWidget } from './widgets/widgetMap'
@@ -197,22 +199,8 @@ function legacyValue<T>(value: T): T | undefined {
   return value
 }
 
-/** How many serializable widgets carry each name. */
-function countSerializableNames(
-  widgets: readonly IBaseWidget[]
-): ReadonlyMap<string, number> {
-  const counts = new Map<string, number>()
-  for (const widget of widgets) {
-    if (widget.serialize === false) continue
-    counts.set(widget.name, (counts.get(widget.name) ?? 0) + 1)
-  }
-  return counts
-}
-
-function serialiseWidgetValues(
-  widgets: IBaseWidget[],
-  unknownOrderedKeys?: ReadonlyMap<string, UnknownEntryKeys>
-) {
+function serialiseWidgetValues(node: LGraphNode, widgets: IBaseWidget[]) {
+  const identities = [...serializableWidgetIdentities(widgets)]
   const positional: TWidgetValue[] = []
   // Null-prototype so a widget legitimately named `__proto__` becomes an own
   // key instead of hitting the inherited prototype setter, which would drop
@@ -220,20 +208,19 @@ function serialiseWidgetValues(
   // back into an ordinary object below, which copies `__proto__` as a data
   // property rather than invoking that setter.
   const named: Record<string, TWidgetValue> = Object.create(null)
-  const live: { name: string; value: TWidgetValue }[] = []
 
-  for (const widget of widgets) {
-    if (widget.serialize === false) continue
-    const { value } = widget
-    positional.push(cloneWidgetValue(value))
+  for (const { widget } of identities) {
+    positional.push(cloneWidgetValue(widget.value))
     // Only the LAST widget of a repeated name survives here; the ordered form
     // below is what keeps the earlier ones addressable. Each register gets its
     // own clone — see `cloneWidgetValue`.
-    named[widget.name] = cloneWidgetValue(value)
-    live.push({ name: widget.name, value })
+    named[widget.name] = cloneWidgetValue(widget.value)
   }
 
-  const ordered = buildOrderedWidgetValues(live, unknownOrderedKeys)
+  const ordered = buildOrderedWidgetValues(
+    identities,
+    getUnknownOrderedWidgetKeys(node)
+  )
   return ordered
     ? {
         widgets_values: positional,
@@ -480,14 +467,6 @@ export class LGraphNode
 
   /** The graph scope this node is registered with in `nodeDataStore`, if any. */
   _graphScope?: GraphScope
-
-  /**
-   * `widgets_values_ordered` entry keys the last configured document carried
-   * that this app does not interpret, by `widgetIdentityKey`. Written back on
-   * serialize so a load/save cycle here does not delete another producer's
-   * metadata. Empty or absent for every ordinary node.
-   */
-  _unknownOrderedWidgetKeys?: ReadonlyMap<string, UnknownEntryKeys>
 
   get id(): NodeId {
     return this._state.id
@@ -1275,9 +1254,9 @@ export class LGraphNode
     )
     const namedValues = restoration.named
     // Carried to the next `serialize()` so a producer-specific entry key is
-    // not deleted by a load/save cycle here. Reassigned unconditionally, so
+    // not deleted by a load/save cycle here. Set unconditionally, so
     // reconfiguring from a document without the field clears the old keys.
-    this._unknownOrderedWidgetKeys = restoration.ordered?.unknownKeys
+    setUnknownOrderedWidgetKeys(this, restoration.ordered?.unknownKeys)
     const graphId = this.graph?.rootGraph.id ?? zeroUuid
     try {
       useWidgetValueStore().setNodeWidgetRestoration(
@@ -1303,26 +1282,18 @@ export class LGraphNode
             )
         }
 
-        // Counted up front: resolving the final occurrence needs the live
-        // total for the name, not just the running index, so a node definition
-        // that dropped one of two same-named widgets does not hand the
-        // survivor an earlier document entry.
-        const occurrenceCounts = countSerializableNames(this.widgets)
-        let positionalIndex = 0
-        const occurrences = new Map<string, number>()
-        for (const widget of this.widgets) {
-          if (widget.serialize === false) continue
-          const occurrence = occurrences.get(widget.name) ?? 0
-          occurrences.set(widget.name, occurrence + 1)
+        // `occurrenceCount` is the live total, not the running index:
+        // resolving the final occurrence needs it, so a node definition that
+        // dropped one of two same-named widgets does not hand the survivor an
+        // earlier document entry.
+        for (const { widget, ...identity } of serializableWidgetIdentities(
+          this.widgets
+        )) {
           const restored = useWidgetValueStore().getRestoredWidgetValue(
             graphId,
             this.id,
             widget.name,
-            {
-              positionalIndex: positionalIndex++,
-              occurrence,
-              occurrenceCount: occurrenceCounts.get(widget.name) ?? 1
-            }
+            identity
           )
           if (restored) widget.value = restored.value
         }
@@ -1397,10 +1368,7 @@ export class LGraphNode
 
     const { widgets } = this
     if (widgets?.length && this.serialize_widgets)
-      Object.assign(
-        o,
-        serialiseWidgetValues(widgets, this._unknownOrderedWidgetKeys)
-      )
+      Object.assign(o, serialiseWidgetValues(this, widgets))
 
     if (!o.type && this.constructor.type) o.type = this.constructor.type
 

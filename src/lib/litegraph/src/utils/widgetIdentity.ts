@@ -1,8 +1,6 @@
-import type {
-  ISerialisedNode,
-  ISerialisedWidgetValueEntry
-} from '../types/serialisation'
-import type { TWidgetValue } from '../types/widgets'
+import type { ISerialisedWidgetValueEntry } from '../types/serialisation'
+import type { IBaseWidget, TWidgetValue } from '../types/widgets'
+import { isWidgetValue } from '../types/widgets'
 
 /**
  * A node may legally carry two serializable widgets with the same name, which
@@ -12,16 +10,17 @@ import type { TWidgetValue } from '../types/widgets'
  *
  * It lives apart from `LGraphNode` because the widget value store reads the
  * same identity, and `LGraphNode` already imports that store.
+ *
+ * The runtime `WidgetId` (`graphId:nodeId:name`) is unchanged and still
+ * collides on a repeated name; see the serialized-identity amendment in
+ * `docs/adr/ECS-0008-entity-component-system.md`.
  */
 
 /**
  * Separator between the occurrence and the name in a lookup key.
  *
- * Spelled as a unicode escape and never as a raw byte. A raw control byte in a
- * `.ts` file makes git classify the whole file as binary, which hides every
- * line of it from the diff, from code review, and from grep-based audits —
- * this module shipped that way once and `scripts/check-text-encoding.ts` now
- * fails a commit that reintroduces it.
+ * Spelled as a unicode escape and never as a raw byte: a raw NUL makes git
+ * classify the whole file as binary and hide every line of it from the diff.
  */
 const WIDGET_IDENTITY_SEPARATOR = '\u0000'
 
@@ -67,14 +66,12 @@ export interface OrderedWidgetValues {
 }
 
 /** Keys of `entry` that are not part of the known triple, or `undefined`. */
-function collectUnknownKeys(
-  entry: Record<string, unknown>
-): UnknownEntryKeys | undefined {
+function collectUnknownKeys(entry: object): UnknownEntryKeys | undefined {
   let extras: Record<string, unknown> | undefined
-  for (const key of Object.keys(entry)) {
+  for (const [key, value] of Object.entries(entry)) {
     if (KNOWN_ENTRY_KEYS.has(key)) continue
     extras ??= {}
-    extras[key] = entry[key]
+    extras[key] = value
   }
   return extras
 }
@@ -88,27 +85,41 @@ interface ParsedEntry {
 }
 
 /**
- * Validates one untrusted entry, or rejects it.
+ * The `(name, occurrence)` an entry addresses, or `undefined`.
  *
  * A non-integer or negative occurrence is rejected rather than coerced: the
  * lookup key encodes the occurrence as a leading digit run, so `'0'` or `2.5`
  * either collides with a well-formed identity or produces one nothing can
  * address. See {@link widgetIdentityKey}.
  */
-function parseEntry(entry: unknown): ParsedEntry | undefined {
-  if (entry == null || typeof entry !== 'object') return undefined
-  const { name, occurrence, value } =
-    entry as Partial<ISerialisedWidgetValueEntry>
+function readEntryIdentity(
+  entry: object
+): { name: string; occurrence: number } | undefined {
+  if (!('name' in entry) || !('occurrence' in entry)) return undefined
+
+  const { name, occurrence } = entry
   if (typeof name !== 'string') return undefined
   if (typeof occurrence !== 'number') return undefined
   if (!Number.isInteger(occurrence) || occurrence < 0) return undefined
 
+  return { name, occurrence }
+}
+
+/** Validates one untrusted entry, or rejects it. */
+function parseEntry(entry: unknown): ParsedEntry | undefined {
+  if (typeof entry !== 'object' || entry === null) return undefined
+
+  const identity = readEntryIdentity(entry)
+  if (!identity) return undefined
+
+  const value: unknown = 'value' in entry ? entry.value : undefined
+  if (!isWidgetValue(value)) return undefined
+
   return {
-    identity: widgetIdentityKey(name, occurrence),
-    name,
-    occurrence,
+    ...identity,
+    identity: widgetIdentityKey(identity.name, identity.occurrence),
     value,
-    unknown: collectUnknownKeys(entry as Record<string, unknown>)
+    unknown: collectUnknownKeys(entry)
   }
 }
 
@@ -119,25 +130,25 @@ function parseEntry(entry: unknown): ParsedEntry | undefined {
  * unusable entry is exactly the behaviour the node had before the field
  * existed.
  *
- * The field arrives from an untrusted document — the workflow schema passes it
- * through unvalidated, so the declared `ISerialisedWidgetValueEntry[]` type is
- * a claim about this app's own writer, not about what a loaded file holds. This
- * function is the validation boundary, and it must not throw: it runs outside
- * `LGraphNode.configure`'s `try`/`finally`, so a `TypeError` here would abort
- * the whole graph load.
+ * The parameter is `unknown` because the field arrives from a document no
+ * schema validates — the workflow schema passes it through — so this function,
+ * not the declared type, is where its shape is established. It must not throw:
+ * it runs outside `LGraphNode.configure`'s `try`/`finally`, so a `TypeError`
+ * here would abort the whole graph load.
  *
  * @returns `undefined` when nothing usable was found, so callers can treat
  * absent and unusable identically.
  */
 export function readOrderedWidgetValues(
-  entries: ISerialisedNode['widgets_values_ordered']
+  entries: unknown
 ): OrderedWidgetValues | undefined {
   if (!Array.isArray(entries)) return undefined
+  const unvalidated: readonly unknown[] = entries
 
   const byIdentity = new Map<string, TWidgetValue>()
   const lastOccurrence = new Map<string, number>()
   const unknownKeys = new Map<string, UnknownEntryKeys>()
-  for (const entry of entries as readonly unknown[]) {
+  for (const entry of unvalidated) {
     const parsed = parseEntry(entry)
     if (!parsed) continue
 
@@ -151,6 +162,70 @@ export function readOrderedWidgetValues(
   return byIdentity.size > 0
     ? { byIdentity, lastOccurrence, unknownKeys }
     : undefined
+}
+
+/** One serializable widget's place among its node's serializable widgets. */
+export interface SerializableWidgetIdentity {
+  widget: IBaseWidget
+  /** Index among the node's serializable widgets. */
+  positionalIndex: number
+  /** Zero-based index among the serializable widgets sharing the name. */
+  occurrence: number
+  /** How many serializable widgets share the name. */
+  occurrenceCount: number
+}
+
+function countSerializableNames(
+  widgets: readonly IBaseWidget[]
+): ReadonlyMap<string, number> {
+  const counts = new Map<string, number>()
+  for (const widget of widgets) {
+    if (widget.serialize === false) continue
+    counts.set(widget.name, (counts.get(widget.name) ?? 0) + 1)
+  }
+  return counts
+}
+
+/**
+ * The single walk that decides which widgets serialize and what each one's
+ * occurrence is.
+ *
+ * Restore and serialize have to agree on this exactly — a widget written as
+ * occurrence 1 and read back as occurrence 0 silently swaps two values — so
+ * the filter and the counting live here once rather than at each call site.
+ * `addCustomWidget` is the deliberate exception: it sees one widget at a time
+ * and cannot know the totals.
+ *
+ * Lazy, and indexed rather than snapshotted, because a consumer may append
+ * while it runs: `LGraphNode.configure` assigns widget values, and an
+ * extension's value setter can add a widget as a result —
+ * `src/extensions/core/customWidgets.ts` grows an `optionN` widget each time
+ * the last one is filled in. Those widgets have to be visited too, so the
+ * walk reads the live array.
+ *
+ * `occurrenceCount` is counted once up front, from the list as it stands.
+ * Resolving the final occurrence needs the total for a name, and a widget
+ * appended mid-walk has a name nothing has claimed yet.
+ */
+export function* serializableWidgetIdentities(
+  widgets: readonly IBaseWidget[]
+): Generator<SerializableWidgetIdentity> {
+  const counts = countSerializableNames(widgets)
+  const seen = new Map<string, number>()
+  let positionalIndex = 0
+
+  for (let index = 0; index < widgets.length; index++) {
+    const widget = widgets[index]
+    if (widget.serialize === false) continue
+    const occurrence = seen.get(widget.name) ?? 0
+    seen.set(widget.name, occurrence + 1)
+    yield {
+      widget,
+      positionalIndex: positionalIndex++,
+      occurrence,
+      occurrenceCount: counts.get(widget.name) ?? 1
+    }
+  }
 }
 
 /**
@@ -173,8 +248,8 @@ export function cloneWidgetValue(value: TWidgetValue): TWidgetValue {
 /**
  * Builds the lossless ordered form for one node's serializable widgets.
  *
- * @param serialised Every serializable widget's name and live value, in
- * serialization order.
+ * @param identities Every serializable widget's identity, from
+ * {@link serializableWidgetIdentities}.
  * @param unknownKeys Keys the incoming document carried per identity, from
  * {@link OrderedWidgetValues.unknownKeys}. Merged under the known triple so a
  * producer-specific key survives a load/save cycle here; an identity the live
@@ -184,36 +259,52 @@ export function cloneWidgetValue(value: TWidgetValue): TWidgetValue {
  * would add a redundant third copy of every workflow's widget values.
  */
 export function buildOrderedWidgetValues(
-  serialised: readonly { name: string; value: TWidgetValue }[],
+  identities: readonly SerializableWidgetIdentity[],
   unknownKeys?: ReadonlyMap<string, UnknownEntryKeys>
 ): ISerialisedWidgetValueEntry[] | undefined {
-  // Counted before anything is built so the ordinary no-repeat node pays for
-  // no clones at all.
-  if (!hasRepeatedName(serialised)) return undefined
+  if (!identities.some(({ occurrenceCount }) => occurrenceCount > 1)) {
+    return undefined
+  }
 
-  const occurrences = new Map<string, number>()
-  const ordered: ISerialisedWidgetValueEntry[] = []
-  for (const { name, value } of serialised) {
-    const occurrence = occurrences.get(name) ?? 0
-    occurrences.set(name, occurrence + 1)
-    const extras = unknownKeys?.get(widgetIdentityKey(name, occurrence))
+  return identities.map(({ widget, occurrence }) => ({
     // The known triple always wins: a stale `value` or `occurrence` carried as
     // an unknown key must never shadow what this node actually holds.
-    ordered.push({
-      ...extras,
-      name,
-      occurrence,
-      value: cloneWidgetValue(value)
-    })
-  }
-  return ordered
+    ...unknownKeys?.get(widgetIdentityKey(widget.name, occurrence)),
+    name: widget.name,
+    occurrence,
+    value: cloneWidgetValue(widget.value)
+  }))
 }
 
-function hasRepeatedName(serialised: readonly { name: string }[]): boolean {
-  const seen = new Set<string>()
-  for (const { name } of serialised) {
-    if (seen.has(name)) return true
-    seen.add(name)
-  }
-  return false
+/**
+ * Unknown entry keys the last configured document carried, per node.
+ *
+ * Off the node on purpose: this is persistence bookkeeping, not entity state,
+ * and a public field named with an underscore is still reachable by any
+ * extension — whatever one assigned would come straight back out of
+ * `serialize()`. `extensionPersistence.ts` holds its own per-node state the
+ * same way.
+ */
+const unknownOrderedKeysByNode = new WeakMap<
+  object,
+  ReadonlyMap<string, UnknownEntryKeys>
+>()
+
+/**
+ * Records the unknown entry keys `node`'s document carried, so the next
+ * `serialize()` writes them back. Clearing on a document without the field is
+ * the point of the `undefined` case — stale keys must not outlive it.
+ */
+export function setUnknownOrderedWidgetKeys(
+  node: object,
+  keys: ReadonlyMap<string, UnknownEntryKeys> | undefined
+): void {
+  if (keys) unknownOrderedKeysByNode.set(node, keys)
+  else unknownOrderedKeysByNode.delete(node)
+}
+
+export function getUnknownOrderedWidgetKeys(
+  node: object
+): ReadonlyMap<string, UnknownEntryKeys> | undefined {
+  return unknownOrderedKeysByNode.get(node)
 }

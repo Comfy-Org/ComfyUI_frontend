@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type {
-  ISerialisedNode,
-  ISerialisedWidgetValueEntry
-} from '@/lib/litegraph/src/types/serialisation'
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
+import {
+  readOrderedWidgetValues,
+  widgetIdentityKey
+} from '@/lib/litegraph/src/utils/widgetIdentity'
 
 /**
  * The separator `widgetIdentityKey` puts between occurrence and name. Written
@@ -52,6 +53,25 @@ describe('duplicate widget-name identity', () => {
     }
   }
 
+  /**
+   * A loaded document whose `widgets_values_ordered` is whatever a foreign
+   * producer actually wrote.
+   *
+   * The workflow schema passes the field through unvalidated, so
+   * `ISerialisedNode` describes this app's own writer rather than what arrives
+   * from a file. Malformed rows therefore pass `unknown` and this one place
+   * models the gap, instead of each row asserting invalid data into the
+   * writer's type. `readOrderedWidgetValues` is the parser that has to cope.
+   */
+  function foreignDocument(
+    ordered: unknown,
+    overrides: Partial<ISerialisedNode> = {}
+  ): ISerialisedNode {
+    const document = serialisedNode(overrides)
+    Object.assign(document, { widgets_values_ordered: ordered })
+    return document
+  }
+
   function addDuplicatePair() {
     node.addWidget('custom', 'same', 'first default', () => {})
     node.addWidget('custom', 'same', 'second default', () => {})
@@ -80,8 +100,6 @@ describe('duplicate widget-name identity', () => {
         { name: 'same', occurrence: 1, value: secondValue },
         { name: 'unique', occurrence: 0, value: 7 }
       ])
-      // The two legacy forms are unchanged: positional keeps both values,
-      // named keeps only the last widget of the repeated name.
       expect(serialised.widgets_values).toEqual([firstValue, secondValue, 7])
       expect(serialised.widgets_values_named).toEqual({
         same: secondValue,
@@ -158,6 +176,59 @@ describe('duplicate widget-name identity', () => {
       expect(node.widgets!.map((widget) => widget.value)).toEqual([
         firstValue,
         secondValue
+      ])
+    })
+
+    it('restores a widget that an earlier widget’s setter appended', () => {
+      addDuplicatePair()
+      // An extension can grow the widget list from a value setter:
+      // `src/extensions/core/customWidgets.ts` adds the next `optionN` as
+      // soon as the previous one is filled in. Restore therefore walks the
+      // live list — over a snapshot the appended widget is never visited and
+      // keeps its construction default, which is how a clone/paste of such a
+      // node loses its last option.
+      const trigger = node.addWidget('string', 'trigger', '', () => {})
+      let stored = ''
+      Object.defineProperty(trigger, 'value', {
+        get: () => stored,
+        set(next: string) {
+          stored = next
+          if (!next) return
+          if (node.widgets!.some(({ name }) => name === 'grown')) return
+          // Pushed rather than added through `addWidget`, which is what an
+          // extension that owns its own widget objects does, and what leaves
+          // the restore walk as the only thing that can give this one a
+          // value.
+          node.widgets!.push({
+            name: 'grown',
+            type: 'string',
+            value: 'construction default',
+            options: {},
+            y: 0,
+            draw: () => undefined
+          })
+        }
+      })
+
+      node.configure(
+        serialisedNode({
+          widgets_values_named: {
+            same: secondValue,
+            trigger: 'filled',
+            grown: 'grown value'
+          },
+          widgets_values_ordered: [
+            { name: 'same', occurrence: 0, value: firstValue },
+            { name: 'same', occurrence: 1, value: secondValue }
+          ]
+        })
+      )
+
+      expect(node.widgets!.map((widget) => widget.value)).toEqual([
+        firstValue,
+        secondValue,
+        'filled',
+        'grown value'
       ])
     })
 
@@ -254,20 +325,19 @@ describe('duplicate widget-name identity', () => {
 
     it('ignores malformed entries and falls back to the named value', () => {
       addDuplicatePair()
-      const malformed = [
+      const malformed: unknown = [
         null,
         'not an entry',
         { name: 'same' },
         { name: 'same', occurrence: -1, value: 'negative' },
         { name: 'same', occurrence: 1.5, value: 'fractional' },
         { occurrence: 0, value: 'nameless' }
-      ] as unknown as ISerialisedWidgetValueEntry[]
+      ]
 
       node.configure(
-        serialisedNode({
+        foreignDocument(malformed, {
           widgets_values: [firstValue, secondValue],
-          widgets_values_named: { same: secondValue },
-          widgets_values_ordered: malformed
+          widgets_values_named: { same: secondValue }
         })
       )
 
@@ -333,7 +403,7 @@ describe('duplicate widget-name identity', () => {
       const withExtras = [
         { name: 'same', occurrence: 0, value: firstValue, source: 'extension' },
         { name: 'same', occurrence: 1, value: secondValue }
-      ] as unknown as ISerialisedWidgetValueEntry[]
+      ]
 
       node.configure(
         serialisedNode({
@@ -447,6 +517,54 @@ describe('duplicate widget-name identity', () => {
       ])
     })
 
+    it('leaves a widget an ordered-only document omits on its positional value', () => {
+      node.addWidget('custom', 'a', 'construction default a', () => {})
+      node.addWidget('custom', 'b', 'construction default b', () => {})
+      node.serialize_widgets = true
+
+      node.configure(
+        serialisedNode({
+          widgets_values: ['positional-a', 'positional-b'],
+          widgets_values_ordered: [
+            { name: 'a', occurrence: 0, value: 'ordered-a' }
+          ]
+        })
+      )
+
+      // Nothing obliges a third-party producer to list every live widget, and
+      // switching the whole node to name-addressed restore on the strength of
+      // a partial field would leave `b` on its construction default — strictly
+      // worse than the positional restore it would have had without the field.
+      expect(node.widgets!.map((widget) => widget.value)).toEqual([
+        'ordered-a',
+        'positional-b'
+      ])
+    })
+
+    it('still treats a missing name as "no value" when a named register exists', () => {
+      node.addWidget('custom', 'a', 'construction default a', () => {})
+      node.addWidget('custom', 'b', 'construction default b', () => {})
+      node.serialize_widgets = true
+
+      node.configure(
+        serialisedNode({
+          widgets_values: ['positional-a', 'positional-b'],
+          widgets_values_named: { a: 'named-a' },
+          widgets_values_ordered: [
+            { name: 'a', occurrence: 0, value: 'ordered-a' }
+          ]
+        })
+      )
+
+      // The positional fall-through above is scoped to a document with no
+      // named register. Where one exists, an absent name already meant "no
+      // value", and that reading predates this field.
+      expect(node.widgets!.map((widget) => widget.value)).toEqual([
+        'named-a',
+        'construction default b'
+      ])
+    })
+
     it('gives a surviving widget the named value when the document has more occurrences than the node', () => {
       node.addWidget('custom', 'same', 'construction default', () => {})
       node.serialize_widgets = true
@@ -476,18 +594,20 @@ describe('duplicate widget-name identity', () => {
       node.serialize_widgets = true
 
       node.configure(
-        serialisedNode({
-          widgets_values: ['first', 'second', 'third'],
-          widgets_values_named: { same: 'third' },
-          widgets_values_ordered: [
+        foreignDocument(
+          [
             { name: 'same', occurrence: 0, value: 'first' },
             { name: 'same', occurrence: 1, value: 'second' },
             { name: 'same', occurrence: 2, value: 'third' },
             // `String('0')` is `'0'`, so without the integer guard this entry
             // takes occurrence 0's key and overwrites a well-formed identity.
             { name: 'same', occurrence: '0', value: 'hijacked' }
-          ] as unknown as ISerialisedWidgetValueEntry[]
-        })
+          ],
+          {
+            widgets_values: ['first', 'second', 'third'],
+            widgets_values_named: { same: 'third' }
+          }
+        )
       )
 
       expect(node.widgets!.map((widget) => widget.value)).toEqual([
@@ -512,11 +632,9 @@ describe('duplicate widget-name identity', () => {
         // whole graph load rather than degrade one node.
         expect(() => {
           node.configure(
-            serialisedNode({
+            foreignDocument(container, {
               widgets_values: [firstValue, secondValue],
-              widgets_values_named: { same: secondValue },
-              widgets_values_ordered:
-                container as unknown as ISerialisedWidgetValueEntry[]
+              widgets_values_named: { same: secondValue }
             })
           )
         }).not.toThrow()
@@ -649,7 +767,7 @@ describe('duplicate widget-name identity', () => {
               source: 'extension'
             },
             { name: 'same', occurrence: 1, value: secondValue }
-          ] as unknown as ISerialisedWidgetValueEntry[]
+          ]
         })
       )
 
@@ -672,7 +790,7 @@ describe('duplicate widget-name identity', () => {
           widgets_values_ordered: [
             { name: 'same', occurrence: 0, value: firstValue, extra: 1 },
             { name: 'same', occurrence: 1, value: secondValue }
-          ] as unknown as ISerialisedWidgetValueEntry[]
+          ]
         })
       )
       node.widgets![0].value = 'edited after load'
@@ -694,7 +812,7 @@ describe('duplicate widget-name identity', () => {
             { name: 'same', occurrence: 0, value: firstValue },
             { name: 'same', occurrence: 1, value: secondValue },
             { name: 'same', occurrence: 2, value: 'gone', source: 'extension' }
-          ] as unknown as ISerialisedWidgetValueEntry[]
+          ]
         })
       )
 
@@ -702,6 +820,36 @@ describe('duplicate widget-name identity', () => {
         { name: 'same', occurrence: 0, value: firstValue },
         { name: 'same', occurrence: 1, value: secondValue }
       ])
+    })
+
+    it('holds the carried keys off the node itself', () => {
+      addDuplicatePair()
+
+      node.configure(
+        serialisedNode({
+          widgets_values_named: { same: secondValue },
+          widgets_values_ordered: [
+            {
+              name: 'same',
+              occurrence: 0,
+              value: firstValue,
+              source: 'extension'
+            },
+            { name: 'same', occurrence: 1, value: secondValue }
+          ]
+        })
+      )
+
+      // Persistence bookkeeping, not entity state. An own field would be
+      // reachable by any extension, and whatever one assigned to it would
+      // come straight back out of `serialize()`.
+      expect(
+        Object.keys(node).filter((key) => key.toLowerCase().includes('unknown'))
+      ).toEqual([])
+      expect(node.serialize().widgets_values_ordered?.[0]).toHaveProperty(
+        'source',
+        'extension'
+      )
     })
 
     it('forgets the keys when the node is reconfigured without the field', () => {
@@ -718,7 +866,7 @@ describe('duplicate widget-name identity', () => {
               source: 'extension'
             },
             { name: 'same', occurrence: 1, value: secondValue }
-          ] as unknown as ISerialisedWidgetValueEntry[]
+          ]
         })
       )
       node.configure(
@@ -732,6 +880,67 @@ describe('duplicate widget-name identity', () => {
         { name: 'same', occurrence: 0, value: secondValue },
         { name: 'same', occurrence: 1, value: secondValue }
       ])
+    })
+  })
+  describe('the boundary parser', () => {
+    /**
+     * `readOrderedWidgetValues` is where the shape of this untrusted field is
+     * established, so these rows drive it directly with what a file can hold
+     * rather than through a node.
+     */
+    it.for([
+      ['an object', {}],
+      ['a number', 5],
+      ['a string', 'ordered'],
+      ['a boolean', true],
+      ['null', null],
+      ['absent', undefined]
+    ] as const)('rejects a container that is %s', ([, container]) => {
+      expect(readOrderedWidgetValues(container)).toBeUndefined()
+    })
+
+    it.for([
+      ['null', null],
+      ['a string', 'not an entry'],
+      ['an entry with no occurrence', { name: 'same' }],
+      ['an entry with no name', { occurrence: 0, value: 'nameless' }],
+      ['a negative occurrence', { name: 'same', occurrence: -1, value: 'x' }],
+      [
+        'a fractional occurrence',
+        { name: 'same', occurrence: 1.5, value: 'x' }
+      ],
+      ['a string occurrence', { name: 'same', occurrence: '0', value: 'x' }],
+      ['a function value', { name: 'same', occurrence: 0, value: () => {} }]
+    ] as const)('skips %s', ([, entry]) => {
+      expect(readOrderedWidgetValues([entry])).toBeUndefined()
+    })
+
+    it('keeps the usable entries of a partly malformed field', () => {
+      const parsed = readOrderedWidgetValues([
+        'not an entry',
+        { name: 'same', occurrence: 1, value: 'second' },
+        { name: 'same', occurrence: '0', value: 'hijacked' }
+      ])
+
+      // The string occurrence must not reach occurrence 0's key:
+      // `String('0')` is `'0'`, so an unguarded entry would take it.
+      expect(
+        parsed?.byIdentity.get(widgetIdentityKey('same', 0))
+      ).toBeUndefined()
+      expect(parsed?.byIdentity.get(widgetIdentityKey('same', 1))).toBe(
+        'second'
+      )
+      expect(parsed?.lastOccurrence.get('same')).toBe(1)
+    })
+
+    it('separates the unknown keys from the known triple', () => {
+      const parsed = readOrderedWidgetValues([
+        { name: 'same', occurrence: 0, value: 'first', source: 'extension' }
+      ])
+
+      expect(parsed?.unknownKeys.get(widgetIdentityKey('same', 0))).toEqual({
+        source: 'extension'
+      })
     })
   })
 })
