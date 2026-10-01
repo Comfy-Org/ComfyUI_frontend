@@ -7,36 +7,18 @@ import {
   project,
   type ConnectOp,
   type Op,
-  type WidgetCatalog,
   type WorkflowJSON,
 } from "../src/index.js";
 import { appliedMap, isStorableArrayItem, isStorableMapValue } from "../src/doc.js";
-import { loadCatalog } from "./helpers.js";
-import { cleanRejection, rejectionEvidence } from "./rejection-oracle.js";
-
-const catalog = loadCatalog();
-/** Same catalog, but with a real `inputcount` widget on the grow destination. */
-const countingCatalog: WidgetCatalog = {
-  ...catalog,
-  types: {
-    ...catalog.types,
-    BatchImagesNode: { ...catalog.types["BatchImagesNode"]!, widget_order: ["inputcount"] },
-  },
-};
-const opId = (tag: string) => (tag + "0".repeat(32)).slice(0, 32);
-
-/**
- * A trailing op that is valid on its own against every fixture in this file:
- * a fresh node id no fixture or rejected row uses, of a catalogued type.
- */
-const trailingOp: Op = {
-  op: "add_node", op_id: opId("trailing"), actor: "human:z", base_version: 9,
-  stamp: [9, "human:z"], node_id: 990, class_type: "LoadImage", pos: [],
-  node: {
-    id: 990, type: "LoadImage", inputs: [],
-    outputs: [{ name: "IMAGE", type: "IMAGE", links: [] }], widgets_values: [],
-  },
-};
+import {
+  assertRejectedWithAbort as assertRejectedWithoutMutation,
+  countingRejectionCatalog as countingCatalog,
+  rejectedConnectDestination,
+  rejectedConnectSource,
+  rejectedConnectWorkflow,
+  rejectionCatalog as catalog,
+  rejectionOpId as opId,
+} from "./rejection-test-helpers.js";
 
 /**
  * The shared rejection oracle (`test/rejection-oracle.ts`), defaulting to this
@@ -44,75 +26,14 @@ const trailingOp: Op = {
  * to apply alone on a fresh copy of the same fixture, so the `batch_aborted`
  * it gets behind the rejected op is caused by that rejection and nothing else.
  */
-function assertRejectedWithoutMutation(
-  workflow: WorkflowJSON,
-  op: Op,
-  code: string,
-  withCatalog: WidgetCatalog = catalog,
-): void {
-  const alone = mint(workflow, withCatalog);
-  try {
-    expect(applyOps(alone, [trailingOp], withCatalog).outcomes.map((outcome) => outcome.outcome)).toEqual(["applied"]);
-  } finally {
-    alone.destroy();
-  }
-  expect(rejectionEvidence(workflow, op, withCatalog, trailingOp)).toEqual(cleanRejection(code, true));
-}
-
 describe("regression: rejected connect ops leave document bytes unchanged (#10)", () => {
-  const source = {
-    id: 300, type: "LoadImage", inputs: [],
-    outputs: [{ name: "IMAGE", type: "IMAGE", links: [9000] }], widgets_values: [],
-  };
-  const destination = {
-    id: 700, type: "BatchImagesNode",
-    inputs: [{ name: "images.image0", type: "IMAGE", link: 9000 }],
-    outputs: [{ name: "IMAGE", type: "IMAGE", links: [] }], widgets_values: [],
-  };
-  const workflow: WorkflowJSON = {
-    nodes: [source, destination],
-    links: [[9000, 300, 0, 700, 0, "IMAGE"]],
-    groups: [], extra: {}, last_node_id: 700, last_link_id: 9000,
-  };
+  // The shared rejection matrix lives in reject-no-mutation.regression.test.ts.
+  // Keep this suite limited to KA-4/storage cases with distinct evidence.
+  const source = rejectedConnectSource;
+  const destination = rejectedConnectDestination;
+  const workflow = rejectedConnectWorkflow;
 
-  it("invalid source output does not claim the input or remove its incumbent link", () => {
-    assertRejectedWithoutMutation(workflow, {
-      op: "connect", op_id: opId("bad-output"), actor: "human:z", base_version: 9,
-      stamp: [9, "human:z"], link_id: 9500, from_node: 300, from_slot: 5,
-      to_node: 700, to_slot: 0, link_type: "IMAGE",
-    }, "output_slot_missing");
-  });
-
-  it("invalid inputcount widget does not append a grown slot", () => {
-    assertRejectedWithoutMutation(workflow, {
-      op: "connect", op_id: opId("bad-count"), actor: "human:z", base_version: 9,
-      stamp: [9, "human:z"], link_id: 9501, from_node: 300, from_slot: 0,
-      to_node: 700, to_slot: null, link_type: "IMAGE",
-      grow: {
-        name: "images.image0", type: "IMAGE",
-        inputcount: { widget: "not_a_widget", value: 2 },
-      },
-    }, "unknown_widget");
-  });
-
-  it("non-string inputcount widget does not append a grown slot (the verified #10 repro)", () => {
-    // The exact path recorded against issue #10: `growInput` appended the slot
-    // and `applyInputcountBump` then threw `malformed_op` on a non-string
-    // `grow.inputcount.widget`. Yjs does not roll a transact body back on
-    // throw and `mset(op_id)` never ran, so the doc gained an input slot
-    // (inputs 1 -> 2) while the rejected outcome reported nothing had
-    // happened, and a retry appended a second slot.
-    assertRejectedWithoutMutation(workflow, {
-      op: "connect", op_id: opId("nonstr-count"), actor: "human:z", base_version: 9,
-      stamp: [9, "human:z"], link_id: 9502, from_node: 300, from_slot: 0,
-      to_node: 700, to_slot: null, link_type: "IMAGE",
-      grow: {
-        name: "images.image0", type: "IMAGE",
-        inputcount: { widget: 7 as unknown as string, value: 2 },
-      },
-    }, "malformed_op");
-  });
-
+  // eslint-disable-next-line sonarjs/assertions-in-tests -- assertion is in the shared rejection helper
   it("a non-string inputcount widget that stringifies to a real widget is refused before the slot is grown", () => {
     // `["inputcount"]` coerces to the catalogued "inputcount" under String(),
     // so a dst-side check that validates `String(widget)` passes it. The
@@ -130,86 +51,7 @@ describe("regression: rejected connect ops leave document bytes unchanged (#10)"
     }, "malformed_op", countingCatalog);
   });
 
-  it("malformed grow payload does not append a grown slot", () => {
-    assertRejectedWithoutMutation(workflow, {
-      op: "connect", op_id: opId("bad-grow"), actor: "human:z", base_version: 9,
-      stamp: [9, "human:z"], link_id: 9503, from_node: 300, from_slot: 0,
-      to_node: 700, to_slot: null, link_type: "IMAGE",
-      grow: { name: 5 as unknown as string, type: "IMAGE" },
-    }, "malformed_op");
-  });
-
-  it("an opaque destination refuses an inputcount grow before growing the slot", () => {
-    const opaque = {
-      id: 800, type: "MarkdownNode",
-      inputs: [{ name: "images.image0", type: "IMAGE", link: null }],
-      outputs: [], widgets_values: ["opaque"],
-    };
-    assertRejectedWithoutMutation(
-      {
-        nodes: [source, opaque],
-        links: [],
-        groups: [], extra: {}, last_node_id: 800, last_link_id: 9000,
-      },
-      {
-        op: "connect", op_id: opId("opaque-count"), actor: "human:z", base_version: 9,
-        stamp: [9, "human:z"], link_id: 9504, from_node: 300, from_slot: 0,
-        to_node: 800, to_slot: null, link_type: "IMAGE",
-        grow: {
-          name: "images.image0", type: "IMAGE",
-          inputcount: { widget: "inputcount", value: 2 },
-        },
-      },
-      "opaque_widgets",
-    );
-  });
-
-  it("a non-cloneable inputcount value is refused before the slot is grown", () => {
-    // `structuredClone` throws DataCloneError on a value JSON cannot carry.
-    // It used to be evaluated as an argument to `mset`, i.e. after `widgetsOf`
-    // had created the widgets map and after the autogrow had appended a slot.
-    assertRejectedWithoutMutation(workflow, {
-      op: "connect", op_id: opId("uncloneable"), actor: "human:z", base_version: 9,
-      stamp: [9, "human:z"], link_id: 9505, from_node: 300, from_slot: 0,
-      to_node: 700, to_slot: null, link_type: "IMAGE",
-      grow: {
-        name: "images.image0", type: "IMAGE",
-        inputcount: { widget: "inputcount", value: (() => undefined) as unknown as number },
-      },
-    }, "malformed_op", countingCatalog);
-  });
-
-  it.each([
-    ["negative", -1],
-    ["fractional", 0.5],
-    ["NaN", Number.NaN],
-    ["out of range", 99],
-  ])("a %s from_slot is refused before the link tuple is written", (_label, fromSlot) => {
-    // `from_slot >= outs.length` alone admitted every one of these: each
-    // reached `outs.get(from_slot)` returning `undefined` and threw a raw
-    // TypeError, reported as the generic `apply_failed`, only AFTER the link
-    // tuple and the input slot had been written — with `__applied` unwritten,
-    // so the retry re-mutated. Identical on `main` and on the first pass of
-    // this fix; the fix closed two instances of #10, not the class.
-    assertRejectedWithoutMutation(workflow, {
-      op: "connect", op_id: opId(`slot${String(fromSlot)}`), actor: "human:z", base_version: 9,
-      stamp: [9, "human:z"], link_id: 9506, from_node: 300, from_slot: fromSlot,
-      to_node: 700, to_slot: 0, link_type: "IMAGE",
-    }, "output_slot_missing");
-  });
-
-  it.each([
-    ["negative", -1],
-    ["fractional", 1.5],
-    ["NaN", Number.NaN],
-  ])("a %s to_slot is refused before the register is claimed", (_label, toSlot) => {
-    assertRejectedWithoutMutation(workflow, {
-      op: "connect", op_id: opId(`to${String(toSlot)}`), actor: "human:z", base_version: 9,
-      stamp: [9, "human:z"], link_id: 9507, from_node: 300, from_slot: 0,
-      to_node: 700, to_slot: toSlot, link_type: "IMAGE",
-    }, "input_slot_missing");
-  });
-
+  // eslint-disable-next-line sonarjs/assertions-in-tests -- assertion is in the shared rejection helper
   it("an out-of-range from_slot onto an EMPTY destination slot is refused before the register is claimed", () => {
     // The projection-invisible member of the family. Slot 1 holds no incumbent
     // link, so the only footprint of the premature register claim is the
@@ -325,6 +167,7 @@ describe("KA-4 / D4: a rejected op leaves the document byte-identical (the whole
       },
     );
 
+    // eslint-disable-next-line sonarjs/assertions-in-tests -- assertion is in the shared rejection helper
     it("a node that already has a widgets map is refused too (the ordering must not regress)", () => {
       assertRejectedWithoutMutation(workflow, {
         op: "set_widget", op_id: opId("unstorable-sw-existing"), actor: "human:z",
@@ -400,6 +243,7 @@ describe("KA-4 / D4: a rejected op leaves the document byte-identical (the whole
       }, "malformed_op");
     });
 
+    // eslint-disable-next-line sonarjs/assertions-in-tests -- assertion is in the shared rejection helper
     it("an absent target with a non-iterable removed_links is refused the same way", () => {
       assertRejectedWithoutMutation(workflow, {
         op: "delete_node", op_id: opId("bad-removed-absent"), actor: "human:z",
@@ -425,6 +269,7 @@ describe("KA-4 / D4: a rejected op leaves the document byte-identical (the whole
       },
     );
 
+    // eslint-disable-next-line sonarjs/assertions-in-tests -- assertion is in the shared rejection helper
     it("a nested flags value is refused", () => {
       assertRejectedWithoutMutation(workflow, {
         op: "add_node", op_id: opId("unstorable-add-flags"), actor: "human:z",
@@ -433,6 +278,7 @@ describe("KA-4 / D4: a rejected op leaves the document byte-identical (the whole
       } as unknown as Op, "invalid_node_payload");
     });
 
+    // eslint-disable-next-line sonarjs/assertions-in-tests -- assertion is in the shared rejection helper
     it("a name-keyed widgets_values entry is refused", () => {
       assertRejectedWithoutMutation(workflow, {
         op: "add_node", op_id: opId("unstorable-add-widgets"), actor: "human:z",
@@ -441,6 +287,7 @@ describe("KA-4 / D4: a rejected op leaves the document byte-identical (the whole
       } as unknown as Op, "invalid_node_payload");
     });
 
+    // eslint-disable-next-line sonarjs/assertions-in-tests -- assertion is in the shared rejection helper
     it("a Date inside an output's links array is refused (Y.Array insert is stricter than Y.Map set)", () => {
       assertRejectedWithoutMutation(workflow, {
         op: "add_node", op_id: opId("unstorable-add-links"), actor: "human:z",

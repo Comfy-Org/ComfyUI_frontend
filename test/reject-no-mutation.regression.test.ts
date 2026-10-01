@@ -1,21 +1,17 @@
 import * as Y from "yjs";
 import { describe, expect, it } from "vitest";
 import { applyOps, mint, project } from "../src/index.js";
-import type { ConnectOp, Op, WidgetCatalog, WorkflowJSON } from "../src/index.js";
+import type { ConnectOp, Op, WorkflowJSON } from "../src/index.js";
 import { appliedMap } from "../src/doc.js";
-import { loadCatalog } from "./helpers.js";
 import { checkGraphInvariants } from "./graph-invariant-oracle.js";
-
-const catalog = loadCatalog();
-/** Same catalog, but with a real `inputcount` widget on the grow destination. */
-const countingCatalog: WidgetCatalog = {
-  ...catalog,
-  types: {
-    ...catalog.types,
-    BatchImagesNode: { ...catalog.types["BatchImagesNode"]!, widget_order: ["inputcount"] },
-  },
-};
-const opId = (tag: string) => (tag + "0".repeat(32)).slice(0, 32);
+import {
+  assertRejectedWithoutMutation,
+  countingRejectionCatalog as countingCatalog,
+  rejectedConnectSource as source,
+  rejectedConnectWorkflow as workflow,
+  rejectionCatalog as catalog,
+  rejectionOpId as opId,
+} from "./rejection-test-helpers.js";
 
 function rejected(result: ReturnType<typeof applyOps>) {
   const index = result.outcomes.findIndex((outcome) => outcome.outcome === "rejected");
@@ -31,38 +27,7 @@ function rejected(result: ReturnType<typeof applyOps>) {
  * re-submitting it is re-attempted (and re-rejected) rather than deduped —
  * which is what makes the retry non-mutating too, the second half of #10.
  */
-function assertRejectedWithoutMutation(
-  workflow: WorkflowJSON,
-  op: ConnectOp,
-  code: string,
-  withCatalog: WidgetCatalog = catalog,
-): void {
-  const doc = mint(workflow, withCatalog);
-  const before = Buffer.from(Y.encodeStateAsUpdate(doc));
-  expect(rejected(applyOps(doc, [op], withCatalog))).toMatchObject({ code });
-  expect(Buffer.from(Y.encodeStateAsUpdate(doc)).equals(before)).toBe(true);
-
-  const retry = applyOps(doc, [op], withCatalog);
-  expect(rejected(retry)).toMatchObject({ code });
-  expect(Buffer.from(Y.encodeStateAsUpdate(doc)).equals(before)).toBe(true);
-}
-
 describe("regression: rejected connect ops leave document bytes unchanged (#10)", () => {
-  const source = {
-    id: 300, type: "LoadImage", inputs: [],
-    outputs: [{ name: "IMAGE", type: "IMAGE", links: [9000] }], widgets_values: [],
-  };
-  const destination = {
-    id: 700, type: "BatchImagesNode",
-    inputs: [{ name: "images.image0", type: "IMAGE", link: 9000 }],
-    outputs: [{ name: "IMAGE", type: "IMAGE", links: [] }], widgets_values: [],
-  };
-  const workflow: WorkflowJSON = {
-    nodes: [source, destination],
-    links: [[9000, 300, 0, 700, 0, "IMAGE"]],
-    groups: [], extra: {}, last_node_id: 700, last_link_id: 9000,
-  };
-
   it.each([
     ["number", 7],
     ["null", null],
@@ -112,6 +77,7 @@ describe("regression: rejected connect ops leave document bytes unchanged (#10)"
     ]);
   });
 
+  // eslint-disable-next-line sonarjs/assertions-in-tests -- assertion is in the shared rejection helper
   it("invalid source output does not claim the input or remove its incumbent link", () => {
     assertRejectedWithoutMutation(workflow, {
       op: "connect", op_id: opId("bad-output"), actor: "human:z", base_version: 9,
@@ -120,6 +86,7 @@ describe("regression: rejected connect ops leave document bytes unchanged (#10)"
     }, "output_slot_missing");
   });
 
+  // eslint-disable-next-line sonarjs/assertions-in-tests -- assertion is in the shared rejection helper
   it("invalid inputcount widget does not append a grown slot", () => {
     assertRejectedWithoutMutation(workflow, {
       op: "connect", op_id: opId("bad-count"), actor: "human:z", base_version: 9,
@@ -132,6 +99,7 @@ describe("regression: rejected connect ops leave document bytes unchanged (#10)"
     }, "unknown_widget");
   });
 
+  // eslint-disable-next-line sonarjs/assertions-in-tests -- assertion is in the shared rejection helper
   it("non-string inputcount widget does not append a grown slot (the verified #10 repro)", () => {
     // The exact path recorded against issue #10: `growInput` appended the slot
     // and `applyInputcountBump` then threw `malformed_op` on a non-string
@@ -150,6 +118,7 @@ describe("regression: rejected connect ops leave document bytes unchanged (#10)"
     }, "malformed_op");
   });
 
+  // eslint-disable-next-line sonarjs/assertions-in-tests -- assertion is in the shared rejection helper
   it("malformed grow payload does not append a grown slot", () => {
     assertRejectedWithoutMutation(workflow, {
       op: "connect", op_id: opId("bad-grow"), actor: "human:z", base_version: 9,
@@ -159,6 +128,7 @@ describe("regression: rejected connect ops leave document bytes unchanged (#10)"
     }, "malformed_op");
   });
 
+  // eslint-disable-next-line sonarjs/assertions-in-tests -- assertion is in the shared rejection helper
   it("an opaque destination refuses an inputcount grow before growing the slot", () => {
     const opaque = {
       id: 800, type: "MarkdownNode",
@@ -184,6 +154,7 @@ describe("regression: rejected connect ops leave document bytes unchanged (#10)"
     );
   });
 
+  // eslint-disable-next-line sonarjs/assertions-in-tests -- assertion is in the shared rejection helper
   it("a non-cloneable inputcount value is refused before the slot is grown", () => {
     // `structuredClone` throws DataCloneError on a value JSON cannot carry.
     // It used to be evaluated as an argument to `mset`, i.e. after `widgetsOf`
