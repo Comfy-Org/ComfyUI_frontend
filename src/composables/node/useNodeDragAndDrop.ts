@@ -31,6 +31,9 @@ export const useNodeDragAndDrop = <T>(
   const filterFiles = (files: FileList | File[]) =>
     Array.from(files).filter(fileFilter)
 
+  const handleRejectedFiles = (files: File[]) =>
+    files.length > 0 && (options.onReject?.(files) ?? false)
+
   const isDraggingFiles = (e: DragEvent | undefined) => {
     if (!e?.dataTransfer?.items) return false
     return (
@@ -49,9 +52,7 @@ export const useNodeDragAndDrop = <T>(
 
     const droppedFiles = Array.from(dataTransfer.files)
     const [files, rejectedFiles] = partition(droppedFiles, fileFilter)
-    const rejectedFilesClaimed = rejectedFiles.length
-      ? (options.onReject?.(rejectedFiles) ?? false)
-      : false
+    const rejectedFilesClaimed = handleRejectedFiles(rejectedFiles)
     if (files.length) {
       await onDrop(files)
       return true
@@ -82,7 +83,7 @@ export const useNodeDragAndDrop = <T>(
       const file = new File([blob], fileName, { type: blob.type })
       const uriFiles = filterFiles([file])
       if (!uriFiles.length) {
-        return options.onReject?.([file]) ?? false
+        return handleRejectedFiles([file])
       }
 
       await onDrop(uriFiles)
