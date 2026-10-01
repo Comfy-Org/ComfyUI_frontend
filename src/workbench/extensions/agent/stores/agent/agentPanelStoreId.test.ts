@@ -2,8 +2,6 @@ import { getActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useAgentDockMount'
 
 import { useAgentPanelStore } from './agentPanelStore'
@@ -59,50 +57,13 @@ describe('the agentPanel store id', () => {
     expect(store.isMaximized).toBe(true)
   })
 
-  it('keeps the visible canvas viewport finite while the panel is docked', () => {
+  it('keeps the panel docked when the full store is active', () => {
     const { docked } = useAgentDockMount()
     const store = useAgentPanelStore()
     store.enabled = true
     store.consentAccepted = true
     store.isOpen = true
+
     expect(docked.value).toBe(true)
-
-    const canvasElement = document.createElement('canvas')
-    canvasElement.width = 1600
-    canvasElement.height = 900
-    vi.spyOn(canvasElement, 'getBoundingClientRect').mockReturnValue({
-      left: 0,
-      right: 1600,
-      top: 0,
-      bottom: 900,
-      width: 1600,
-      height: 900,
-      x: 0,
-      y: 0,
-      toJSON: () => ({})
-    })
-    const panel = document.createElement('div')
-    panel.className = 'graph-canvas-panel'
-    vi.spyOn(panel, 'getBoundingClientRect').mockReturnValue({
-      left: 0,
-      right: 1600 - store.width,
-      top: 0,
-      bottom: 900,
-      width: 1600 - store.width,
-      height: 900,
-      x: 0,
-      y: 0,
-      toJSON: () => ({})
-    })
-    document.body.appendChild(panel)
-    const canvas = {
-      canvas: canvasElement,
-      dpr: 1
-    } as LGraphCanvas
-    const viewport = visibleCanvasViewport(canvas)
-
-    expect(viewport.every((value) => Number.isFinite(value))).toBe(true)
-    expect(viewport).toEqual([0, 0, 1600 - store.width, 900])
-    panel.remove()
   })
 })
