@@ -7,6 +7,8 @@ import {
 } from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
 import type { AgentFreeUsePlacement } from '@/platform/telemetry/types'
+import { getDevOverride } from '@/utils/devFeatureFlagOverride'
+import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 
 const FREE_USE_PLACEMENT_FLAG = 'agent-free-use-message-placement'
 
@@ -29,12 +31,15 @@ export function useFreeUsePlacement() {
   const variant = computed(() => assigned.value ?? 'control')
 
   const assign = () => {
-    const value = remoteConfig.value[FREE_USE_PLACEMENT_FLAG]
+    const value =
+      getSessionOverride<string>(FREE_USE_PLACEMENT_FLAG) ??
+      getDevOverride<string>(FREE_USE_PLACEMENT_FLAG) ??
+      remoteConfig.value[FREE_USE_PLACEMENT_FLAG]
     assigned.value = isFreeUseVariant(value) ? value : 'control'
-    useTelemetry()?.trackFeatureFlagEvaluation(
-      FREE_USE_PLACEMENT_FLAG,
-      assigned.value
-    )
+    useTelemetry()?.trackAgentFreeUseExposure({
+      placement: assigned.value,
+      [`$feature/${FREE_USE_PLACEMENT_FLAG}`]: assigned.value
+    })
   }
 
   if (isAuthenticatedConfigLoaded.value) {

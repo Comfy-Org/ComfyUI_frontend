@@ -21,6 +21,7 @@ import type {
   AgentConsentShownMetadata,
   AgentEntryButtonClickedMetadata,
   AgentErrorMetadata,
+  AgentFreeUseExposureMetadata,
   AgentFreeUseNoticeMetadata,
   AgentPaywallCtaMetadata,
   AgentPaywallShownMetadata,
@@ -796,9 +797,12 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.AGENT_STARTER_PROMPT_CLICKED, metadata)
   }
 
-  // fallow-ignore-next-line unused-class-member
   trackAgentFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_FREE_USE_NOTICE, metadata)
+  }
+
+  trackAgentFreeUseExposure(metadata: AgentFreeUseExposureMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_FREE_USE_EXPOSURE, metadata)
   }
 
   trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {

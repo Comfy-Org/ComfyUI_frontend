@@ -893,6 +893,10 @@ export type AgentFreeUsePlacement =
   | 'near-composer'
   | 'above-input'
   | 'inside-input'
+export interface AgentFreeUseExposureMetadata extends Record<string, unknown> {
+  placement: 'control' | AgentFreeUsePlacement
+  '$feature/agent-free-use-message-placement': 'control' | AgentFreeUsePlacement
+}
 /**
  * Interactions with the notice itself. The experiment's primary outcome and
  * guardrails are all read off events that already exist — `agent_panel_opened`,
@@ -1866,6 +1870,7 @@ export interface TelemetryProvider {
     metadata: AgentStarterPromptClickedMetadata
   ): void
   trackAgentFreeUseNotice?(metadata: AgentFreeUseNoticeMetadata): void
+  trackAgentFreeUseExposure?(metadata: AgentFreeUseExposureMetadata): void
   trackAgentNodeTagged?(metadata: AgentNodeTaggedMetadata): void
   trackAgentAttachButtonClicked?(
     metadata: AgentAttachButtonClickedMetadata
@@ -2071,6 +2076,7 @@ export const TelemetryEvents = {
   AGENT_MESSAGE_SENT: 'app:agent_message_sent',
   AGENT_STARTER_PROMPT_CLICKED: 'app:agent_starter_prompt_clicked',
   AGENT_FREE_USE_NOTICE: 'app:agent_free_use_notice',
+  AGENT_FREE_USE_EXPOSURE: 'app:agent_free_use_exposure',
   AGENT_NODE_TAGGED: 'app:agent_node_tagged',
   AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',
   AGENT_WORKFLOW_APPLIED: 'app:agent_workflow_applied',
