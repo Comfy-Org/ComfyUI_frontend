@@ -15,8 +15,17 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 // clipboard verbatim. Kept out of translations.ts (which every page bundles)
 // since it's only ever used here — see deploy-prompt.ts for why.
 const deployPrompt = computed(() => deployPromptFor(locale))
-const deployTranscript = computed(() => deployPrompt.value.split('\n'))
 const { copy, copied } = useClipboard({ source: deployPrompt, legacy: true })
+
+// What the terminal actually shows: the three commands a run of the deploy
+// prompt produces, not the prompt's own prose (that's what the copy button
+// puts on the clipboard). Real commands rather than prose, so — like the
+// code samples elsewhere on this page — it isn't translated per-locale.
+const DEPLOY_TRANSCRIPT = [
+  '$ comfy build init',
+  '✓ Scanned this ComfyUI install, custom nodes, models, pinned deps',
+  '$ comfy build push --release'
+]
 </script>
 
 <template>
@@ -54,8 +63,10 @@ const { copy, copied } = useClipboard({ source: deployPrompt, legacy: true })
       </button>
       <LiveTerminal
         class="[&_pre]:pt-14"
-        :lines="deployTranscript"
+        :lines="DEPLOY_TRANSCRIPT"
         :label="t('platform.serverlessDeploy.heading', locale)"
+        :typewriter="false"
+        highlight-lang="shell"
       />
     </div>
   </section>

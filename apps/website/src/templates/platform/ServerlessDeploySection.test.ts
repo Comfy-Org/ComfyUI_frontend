@@ -1,3 +1,4 @@
+import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -30,7 +31,7 @@ describe('ServerlessDeploySection', () => {
     expect(await navigator.clipboard.readText()).toBe(EXPECTED_PROMPT_EN)
     expect(screen.getByRole('button', { name: 'Copied' })).toBeTruthy()
   })
-  it('presents the agent prompt as a live terminal', () => {
+  it('shows the three deploy commands statically, with no typing cursor', () => {
     render(ServerlessDeploySection, { props: { locale: 'en' } })
 
     expect(
@@ -46,14 +47,12 @@ describe('ServerlessDeploySection', () => {
     const terminal = screen.getByRole('img', {
       name: t('platform.serverlessDeploy.heading', 'en')
     })
-    const transcript = terminal.textContent
-    for (const line of [
-      'Install comfy-cli and read its build skill:',
-      '`pip install -U comfy-cli`, then `comfy skills show comfy-build`.',
-      '`comfy skills show comfy-deploy` covers running that release as a serverless endpoint.'
-    ]) {
-      expect(transcript).toContain(line)
-    }
+    expect(terminal.textContent).toBe(
+      '$ comfy build init' +
+        '✓ Scanned this ComfyUI install, custom nodes, models, pinned deps' +
+        '$ comfy build push --release'
+    )
+    expect(terminal.textContent).not.toContain('▋')
   })
   it('localizes the prompt for zh-CN', async () => {
     const user = userEvent.setup()
@@ -64,4 +63,3 @@ describe('ServerlessDeploySection', () => {
     expect(await navigator.clipboard.readText()).toBe(EXPECTED_PROMPT_ZH_CN)
   })
 })
-import userEvent from '@testing-library/user-event'

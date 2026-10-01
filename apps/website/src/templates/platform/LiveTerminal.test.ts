@@ -92,4 +92,34 @@ describe('LiveTerminal', () => {
 
     expect(transcript()).toBe('$ comfy up Ready in 2.1s')
   })
+
+  it('shows the full transcript statically when typewriter is disabled', async () => {
+    render(LiveTerminal, {
+      props: { lines: LINES, label: 'Demo', typewriter: false }
+    })
+    await nextTick()
+
+    expect(transcript()).toBe('$ comfy up✔ Done')
+    await advance(10000)
+    expect(transcript()).toBe('$ comfy up✔ Done')
+  })
+
+  it('renders colored tokens and skips the typewriter when highlightLang is set', async () => {
+    render(LiveTerminal, {
+      props: { lines: ['$ echo hi'], label: 'Demo', highlightLang: 'shell' }
+    })
+    await nextTick()
+
+    const terminal = screen.getByRole('img', { name: 'Demo' })
+    expect(terminal.textContent).toBe('$ echo hi')
+
+    const prompt = screen.getByText('$')
+    const command = screen.getByText('echo')
+    expect(getComputedStyle(prompt).color).not.toBe(
+      getComputedStyle(command).color
+    )
+
+    await advance(10000)
+    expect(terminal.textContent).toBe('$ echo hi')
+  })
 })
