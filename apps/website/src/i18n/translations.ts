@@ -4,6 +4,280 @@ import type { NamedValues } from './interpolate'
 import { interpolate } from './interpolate'
 
 const translations = {
+  'models.explore.eyebrow': {
+    en: 'SUPPORTED MODELS',
+    'zh-CN': '支持的模型'
+  },
+  'models.explore.title.first': {
+    en: 'Every model.',
+    'zh-CN': '每一个模型。'
+  },
+  'models.explore.title.second': {
+    en: 'One graph.',
+    'zh-CN': '一张图。'
+  },
+  'models.explore.description': {
+    en: 'Explore {count} open-weight components and partner integrations for image, video, audio, and 3D workflows. Run supported models on your own hardware or with Comfy Cloud.',
+    'zh-CN':
+      '探索用于图像、视频、音频和 3D 工作流的 {count} 个开放权重组件和合作伙伴集成。在自己的硬件或 Comfy Cloud 上运行受支持的模型。'
+  },
+  'models.explore.primaryCta': {
+    en: 'RUN A MODEL NOW',
+    'zh-CN': '立即运行模型'
+  },
+  'models.explore.secondaryCta': {
+    en: 'BROWSE WORKFLOWS',
+    'zh-CN': '浏览工作流'
+  },
+  'models.explore.stats': {
+    en: '{count} catalog entries · {localCount} local components · {partnerCount} partner integrations',
+    'zh-CN':
+      '{count} 个目录条目 · {localCount} 个本地组件 · {partnerCount} 个合作伙伴集成'
+  },
+  'models.explore.featuredBadge': {
+    en: 'DAY ZERO',
+    'zh-CN': '首发'
+  },
+  'models.explore.openWeightsBadge': {
+    en: 'OPEN WEIGHTS',
+    'zh-CN': '开放权重'
+  },
+  'models.explore.featuredTitle': {
+    en: 'Wan 2.6 — open-weights video, native audio',
+    'zh-CN': 'Wan 2.6 — 开放权重视频，原生音频'
+  },
+  'models.explore.search.label': {
+    en: 'Search supported models',
+    'zh-CN': '搜索支持的模型'
+  },
+  'models.explore.search.placeholder': {
+    en: 'Search models, tasks, and publishers...',
+    'zh-CN': '搜索模型、任务和发布者...'
+  },
+  'models.explore.categories.label': {
+    en: 'Model categories',
+    'zh-CN': '模型类别'
+  },
+  'models.explore.categories': {
+    en: 'ALL|Image|Video|Audio|3D|Edit|Upscale|LLM|Train',
+    'zh-CN': '全部|图像|视频|音频|3D|编辑|放大|LLM|训练'
+  },
+  'models.explore.filters.openSource': {
+    en: 'Open Weights',
+    'zh-CN': '开放权重'
+  },
+  'models.explore.filters.partnerNodes': {
+    en: 'Partner Nodes',
+    'zh-CN': '合作伙伴节点'
+  },
+  'models.explore.catalog.workflowCountOne': {
+    en: 'Used by {count} supported workflow.',
+    'zh-CN': '由 {count} 个受支持的工作流使用。'
+  },
+  'models.explore.catalog.workflowCountMany': {
+    en: 'Used by {count} supported workflows.',
+    'zh-CN': '由 {count} 个受支持的工作流使用。'
+  },
+  'models.explore.catalog.partner': {
+    en: 'Partner API',
+    'zh-CN': '合作伙伴 API'
+  },
+  'models.explore.catalog.viewLabel': {
+    en: 'Catalog view',
+    'zh-CN': '目录视图'
+  },
+  'models.explore.catalog.releases': {
+    en: 'Models',
+    'zh-CN': '模型'
+  },
+  'models.explore.catalog.components': {
+    en: 'Components',
+    'zh-CN': '组件'
+  },
+  'models.explore.catalog.componentCountOne': {
+    en: '{count} component.',
+    'zh-CN': '{count} 个组件。'
+  },
+  'models.explore.catalog.componentCountMany': {
+    en: '{count} components.',
+    'zh-CN': '{count} 个组件。'
+  },
+  'models.explore.catalog.resultCount': {
+    en: '{count} matching models',
+    'zh-CN': '{count} 个匹配模型'
+  },
+  'models.explore.catalog.empty': {
+    en: 'No supported models match this search yet.',
+    'zh-CN': '暂无与此搜索匹配的受支持模型。'
+  },
+  'models.explore.collections.viewAll': {
+    en: 'VIEW ALL',
+    'zh-CN': '查看全部'
+  },
+  'models.explore.collections.viewAllModels': {
+    en: 'VIEW ALL MODELS',
+    'zh-CN': '查看所有模型'
+  },
+  'models.explore.trending.label': {
+    en: 'TRENDING',
+    'zh-CN': '热门'
+  },
+  'models.explore.trending.description': {
+    en: 'Models with the most supported workflows.',
+    'zh-CN': '拥有最多受支持工作流的模型。'
+  },
+  'models.explore.dayZero.label': {
+    en: 'LATEST IN THE CATALOG',
+    'zh-CN': '目录中的最新模型'
+  },
+  'models.explore.dayZero.description': {
+    en: 'Explore the latest additions from supported workflows.',
+    'zh-CN': '探索受支持工作流中的最新模型。'
+  },
+  'models.explore.tasks.label': {
+    en: 'START FROM THE TASK',
+    'zh-CN': '从任务开始'
+  },
+  'models.explore.tasks.description': {
+    en: 'Category pages that match how people actually search.',
+    'zh-CN': '符合人们实际搜索方式的分类页面。'
+  },
+  'models.explore.tasks.viewAll': {
+    en: 'VIEW ALL USE CASES',
+    'zh-CN': '查看所有用例'
+  },
+  'models.explore.access.heading': {
+    en: 'Choose how you access models',
+    'zh-CN': '选择模型访问方式'
+  },
+  'models.explore.access.open.title': {
+    en: 'Open\nweights',
+    'zh-CN': '开放\n权重'
+  },
+  'models.explore.access.open.description': {
+    en: 'Download the checkpoint, chain your LoRAs, and keep the graph forever.',
+    'zh-CN': '下载检查点、串联 LoRA，并永久保留工作流。'
+  },
+  'models.explore.access.open.cta': {
+    en: 'BROWSE OPEN MODELS',
+    'zh-CN': '浏览开放模型'
+  },
+  'models.explore.access.partner.title': {
+    en: 'Partner\nAPIs',
+    'zh-CN': '合作伙伴\nAPI'
+  },
+  'models.explore.access.partner.description': {
+    en: 'Use partner models on the same canvas as your open models.',
+    'zh-CN': '在同一画布中使用合作伙伴模型和开放模型。'
+  },
+  'models.explore.access.partner.cta': {
+    en: 'BROWSE PARTNER MODELS',
+    'zh-CN': '浏览合作伙伴模型'
+  },
+  'models.explore.family.eyebrow': {
+    en: 'MODEL FAMILY',
+    'zh-CN': '模型家族'
+  },
+  'models.explore.family.title': {
+    en: 'Explore model families',
+    'zh-CN': '探索模型家族'
+  },
+  'models.explore.family.description': {
+    en: 'Move between leading model lineages without leaving the graph. Compare their newest releases, specializations, and access paths.',
+    'zh-CN':
+      '无需离开工作流即可探索领先的模型谱系，比较最新版本、专长和访问方式。'
+  },
+  'models.explore.family.explore': {
+    en: 'EXPLORE {name}',
+    'zh-CN': '探索 {name}'
+  },
+  'models.explore.family.mediaAlt': {
+    en: '{name} preview',
+    'zh-CN': '{name} 预览'
+  },
+  'models.explore.family.wan.title': {
+    en: 'The Wan family',
+    'zh-CN': 'Wan 模型家族'
+  },
+  'models.explore.family.wan.description': {
+    en: 'Open and hosted video models spanning text-to-video, image-to-video, character animation, and native audio.',
+    'zh-CN': '覆盖文生视频、图生视频、角色动画和原生音频的开放及托管视频模型。'
+  },
+  'models.explore.family.minimax.title': {
+    en: 'The MiniMax family',
+    'zh-CN': 'MiniMax 模型家族'
+  },
+  'models.explore.family.minimax.description': {
+    en: 'Direct high-fidelity video and complete music generation from the same ComfyUI graph.',
+    'zh-CN': '在同一个 ComfyUI 工作流中控制高保真视频和完整音乐生成。'
+  },
+  'models.explore.family.seedance.title': {
+    en: 'The Seedance family',
+    'zh-CN': 'Seedance 模型家族'
+  },
+  'models.explore.family.seedance.description': {
+    en: 'Create longer video shots from text and multiple references with strong motion and prompt adherence.',
+    'zh-CN':
+      '通过文本和多个参考创建更长的视频镜头，并保持出色的动态和提示词遵循度。'
+  },
+  'models.explore.faq.label': {
+    en: 'QUESTIONS',
+    'zh-CN': '常见问题'
+  },
+  'models.explore.faq.heading': {
+    en: 'AI models in ComfyUI',
+    'zh-CN': 'ComfyUI 中的 AI 模型'
+  },
+  'models.explore.faq.1.q': {
+    en: 'What does day-zero support mean?',
+    'zh-CN': '首发支持是什么意思？'
+  },
+  'models.explore.faq.1.a': {
+    en: 'It means a newly released model can be used in ComfyUI as soon as its supported integration is available.',
+    'zh-CN': '这意味着新发布的模型在受支持的集成可用后即可在 ComfyUI 中使用。'
+  },
+  'models.explore.faq.2.q': {
+    en: 'Is ComfyUI free?',
+    'zh-CN': 'ComfyUI 免费吗？'
+  },
+  'models.explore.faq.2.a': {
+    en: 'ComfyUI Desktop is free to run on your own hardware. Cloud and partner services have separate usage terms.',
+    'zh-CN':
+      'ComfyUI 桌面版可在您自己的硬件上免费运行。Cloud 和合作伙伴服务有各自的使用条款。'
+  },
+  'models.explore.faq.3.q': {
+    en: 'Do partner models need separate accounts?',
+    'zh-CN': '合作伙伴模型需要单独的账户吗？'
+  },
+  'models.explore.faq.3.a': {
+    en: 'Account and billing requirements depend on the partner integration used by a workflow.',
+    'zh-CN': '账户和计费要求取决于工作流使用的合作伙伴集成。'
+  },
+  'models.explore.faq.4.q': {
+    en: 'What VRAM do open models need?',
+    'zh-CN': '开放模型需要多少显存？'
+  },
+  'models.explore.faq.4.a': {
+    en: 'Requirements vary by model, resolution, precision, and workflow. Quantized variants can reduce memory use.',
+    'zh-CN': '要求因模型、分辨率、精度和工作流而异。量化变体可以减少内存使用。'
+  },
+  'models.explore.faq.5.q': {
+    en: 'Can I run these models through an API?',
+    'zh-CN': '可以通过 API 运行这些模型吗？'
+  },
+  'models.explore.faq.5.a': {
+    en: 'Comfy API can turn supported workflows into production endpoints.',
+    'zh-CN': 'Comfy API 可以将受支持的工作流转换为生产端点。'
+  },
+  'models.explore.faq.6.q': {
+    en: 'Can I use these models commercially, and where are they available?',
+    'zh-CN': '这些模型可以用于商业用途吗？在哪里可以使用？'
+  },
+  'models.explore.faq.6.a': {
+    en: 'Commercial-use rights are model-specific. Local availability means you can run a model on your own hardware, but it does not grant commercial rights—review that model’s license and restrictions. Comfy Cloud availability depends on the models supported there and their applicable terms. Organizations that need negotiated terms, indemnity, or other contractual assurances should contact Comfy Enterprise to discuss a commercial agreement.',
+    'zh-CN':
+      '商业使用权取决于具体模型。本地可用表示你可以在自己的硬件上运行模型，但不代表自动获得商业使用权；请查看该模型的许可证和限制。Comfy Cloud 的可用性取决于云端支持的模型及其适用条款。需要协商条款、赔偿保障或其他合同保证的组织，应联系 Comfy Enterprise 讨论商业协议。'
+  },
   'home.workshop.heading': {
     en: 'Run any model, from one place',
     'zh-CN': '在同一个地方运行任何模型'
@@ -746,8 +1020,8 @@ const translations = {
     'zh-CN': '开放权重'
   },
   'tags.openSource': {
-    en: 'Open Source',
-    'zh-CN': '开源'
+    en: 'Open Weights',
+    'zh-CN': '开放权重'
   },
   'tags.imageToVideo': {
     en: 'Image To Video',
@@ -1725,7 +1999,7 @@ Enterprise`
       '完全离线运行。安装后无需网络连接。你的工作流、你的模型、你的数据。'
   },
   'download.reason.4.title': {
-    en: 'Free. Open Source.\nNo ceiling.',
+    en: 'Free. Open Weights.\nNo ceiling.',
     'zh-CN': '免费。开源。\n没有上限。'
   },
   'download.reason.4.description': {
@@ -4916,9 +5190,9 @@ Enterprise`
       '“Customer Data” means electronic data and information submitted or generated by Customer in connection with its use of the Comfy Products, including all Inputs and Outputs.'
   },
   'tos.definitions.block.9': {
-    en: '“Open Source License” means the open source license(s) under which Comfy makes Comfy OSS available, as identified in the applicable source code repository.',
+    en: '“Open Weights License” means the open source license(s) under which Comfy makes Comfy OSS available, as identified in the applicable source code repository.',
     'zh-CN':
-      '“Open Source License” means the open source license(s) under which Comfy makes Comfy OSS available, as identified in the applicable source code repository.'
+      '“Open Weights License” means the open source license(s) under which Comfy makes Comfy OSS available, as identified in the applicable source code repository.'
   },
   'tos.definitions.block.10': {
     en: '“Operational Metadata” means usage and diagnostic information generated by the Comfy Products and collected by Comfy to support, maintain, and optimize the performance and security of the Comfy Products, including information regarding software versions, system configuration, uptime, error logs, health metrics, and feature usage. Operational Metadata does not include Customer Data or Confidential Information.',
@@ -4976,9 +5250,9 @@ Enterprise`
     'zh-CN': 'Comfy OSS.'
   },
   'tos.comfy-products.block.7': {
-    en: 'You may use Comfy OSS under the terms of the applicable Open Source License(s) governing each respective component, as identified in the corresponding source code repository, rather than under these Terms. Nothing in these Terms shall be construed to limit, supersede, or modify any rights or obligations arising under an applicable Open Source License. If you choose to use the Comfy Products in conjunction with Comfy OSS, these Terms apply solely to your use of the Comfy Products and not to the Comfy OSS itself.',
+    en: 'You may use Comfy OSS under the terms of the applicable Open Weights License(s) governing each respective component, as identified in the corresponding source code repository, rather than under these Terms. Nothing in these Terms shall be construed to limit, supersede, or modify any rights or obligations arising under an applicable Open Weights License. If you choose to use the Comfy Products in conjunction with Comfy OSS, these Terms apply solely to your use of the Comfy Products and not to the Comfy OSS itself.',
     'zh-CN':
-      'You may use Comfy OSS under the terms of the applicable Open Source License(s) governing each respective component, as identified in the corresponding source code repository, rather than under these Terms. Nothing in these Terms shall be construed to limit, supersede, or modify any rights or obligations arising under an applicable Open Source License. If you choose to use the Comfy Products in conjunction with Comfy OSS, these Terms apply solely to your use of the Comfy Products and not to the Comfy OSS itself.'
+      'You may use Comfy OSS under the terms of the applicable Open Weights License(s) governing each respective component, as identified in the corresponding source code repository, rather than under these Terms. Nothing in these Terms shall be construed to limit, supersede, or modify any rights or obligations arising under an applicable Open Weights License. If you choose to use the Comfy Products in conjunction with Comfy OSS, these Terms apply solely to your use of the Comfy Products and not to the Comfy OSS itself.'
   },
   'tos.comfy-products.block.8.heading': {
     en: 'Partner Nodes.',
@@ -5680,9 +5954,9 @@ Enterprise`
       '<strong>“Customer Data”</strong> means electronic data and information submitted or generated by Customer in connection with its use of the Comfy Products, including all Inputs and Outputs.'
   },
   'enterprise-msa.1-definitions.block.9': {
-    en: '<strong>“Open Source License”</strong> means the open source license(s) under which Comfy makes Comfy OSS available, as identified in the applicable source code repository.',
+    en: '<strong>“Open Weights License”</strong> means the open source license(s) under which Comfy makes Comfy OSS available, as identified in the applicable source code repository.',
     'zh-CN':
-      '<strong>“Open Source License”</strong> means the open source license(s) under which Comfy makes Comfy OSS available, as identified in the applicable source code repository.'
+      '<strong>“Open Weights License”</strong> means the open source license(s) under which Comfy makes Comfy OSS available, as identified in the applicable source code repository.'
   },
   'enterprise-msa.1-definitions.block.10': {
     en: '<strong>“Operational Metadata”</strong> means usage and diagnostic information generated by the Comfy Products and collected by Comfy to support, maintain, and optimize the performance and security of the Comfy Products, including information regarding software versions, system configuration, uptime, error logs, health metrics, and feature usage. Operational Metadata does not include Customer Data or Confidential Information.',
@@ -5723,9 +5997,9 @@ Enterprise`
       '<strong>No AI Training.</strong> Comfy will not use Input or Output to train generative AI or diffusion models. Comfy may, however, collect and use limited metadata derived from Customer’s use of the Comfy Products, such as prompt classifications, workflow structures, and node configurations, to improve the performance, functionality, and user experience of the Comfy Products.'
   },
   'enterprise-msa.2-comfy-products.block.3': {
-    en: '<strong>Comfy OSS.</strong> Customer may use Comfy OSS under the terms of the applicable Open Source License(s) governing each respective component, as identified in the corresponding source code repository, rather than under this Agreement. Nothing in this Agreement shall be construed to limit, supersede, or modify any rights or obligations arising under an applicable Open Source License. If Customer chooses to use the Comfy Products in conjunction with Comfy OSS, this Agreement applies solely to Customer’s use of the Comfy Products and not to the Comfy OSS itself.',
+    en: '<strong>Comfy OSS.</strong> Customer may use Comfy OSS under the terms of the applicable Open Weights License(s) governing each respective component, as identified in the corresponding source code repository, rather than under this Agreement. Nothing in this Agreement shall be construed to limit, supersede, or modify any rights or obligations arising under an applicable Open Weights License. If Customer chooses to use the Comfy Products in conjunction with Comfy OSS, this Agreement applies solely to Customer’s use of the Comfy Products and not to the Comfy OSS itself.',
     'zh-CN':
-      '<strong>Comfy OSS.</strong> Customer may use Comfy OSS under the terms of the applicable Open Source License(s) governing each respective component, as identified in the corresponding source code repository, rather than under this Agreement. Nothing in this Agreement shall be construed to limit, supersede, or modify any rights or obligations arising under an applicable Open Source License. If Customer chooses to use the Comfy Products in conjunction with Comfy OSS, this Agreement applies solely to Customer’s use of the Comfy Products and not to the Comfy OSS itself.'
+      '<strong>Comfy OSS.</strong> Customer may use Comfy OSS under the terms of the applicable Open Weights License(s) governing each respective component, as identified in the corresponding source code repository, rather than under this Agreement. Nothing in this Agreement shall be construed to limit, supersede, or modify any rights or obligations arising under an applicable Open Weights License. If Customer chooses to use the Comfy Products in conjunction with Comfy OSS, this Agreement applies solely to Customer’s use of the Comfy Products and not to the Comfy OSS itself.'
   },
   'enterprise-msa.2-comfy-products.block.4': {
     en: '<strong>Partner Nodes.</strong> Certain features of the Comfy Products allow Customer to access third-party AI model providers (“Partner Nodes”) through Comfy. When Customer uses a Partner Node, Comfy proxies Customer’s request to the applicable third-party provider, transmitting the information necessary to fulfill Customer’s request, including prompts, images, models, and parameters. Comfy does not transmit Customer’s identity or account information to third-party providers in connection with Partner Node requests. Customer’s use of Partner Nodes is subject to the terms and policies of the applicable third-party provider, and Comfy is not responsible for the data practices of such providers. Usage of Partner Nodes is metered and billed through Comfy.',
@@ -6827,7 +7101,7 @@ Enterprise`
     'zh-CN':
       'LTX 是全球最快的视频生成模型，这一版本全面提升了提示词遵循度、画面表现与音频质量。凭借全新的 Diffusion Fidelity Rendering 能力，细腻的纹理、人物面部与复杂镜头都能保持电影级的细节。'
   },
-  'ltx.hero.tagOpenSource': { en: 'Open Source', 'zh-CN': '开源' },
+  'ltx.hero.tagOpenSource': { en: 'Open Weights', 'zh-CN': '开放权重' },
   'ltx.hero.tagPartnerNode': { en: 'Partner Node', 'zh-CN': '合作伙伴节点' },
   'ltx.hero.tagImageToVideo': { en: 'Image to Video', 'zh-CN': '图像转视频' },
   'ltx.hero.tagTextToVideo': { en: 'Text to Video', 'zh-CN': '文本转视频' },
@@ -7612,8 +7886,8 @@ Enterprise`
     'zh-CN': '运行 Wan Animate 2'
   },
   'wanAnimate2.hero.tagOpenSource': {
-    en: 'Open Source',
-    'zh-CN': '开源'
+    en: 'Open Weights',
+    'zh-CN': '开放权重'
   },
   'wanAnimate2.hero.tagReferenceToVideo': {
     en: 'Reference to Video',
@@ -8684,7 +8958,7 @@ Enterprise`
     'zh-CN': '通过 Comfy API 在自定义环境中扩展你的 Comfy 工作流和自定义节点。'
   },
   'enterprise.managedBuilds.1.title': {
-    en: 'Open Source Models',
+    en: 'Open Weights Models',
     'zh-CN': '开源模型'
   },
   'enterprise.managedBuilds.1.description': {
