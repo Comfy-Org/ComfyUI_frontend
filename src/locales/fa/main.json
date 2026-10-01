@@ -372,9 +372,6 @@
     "processingModelDescription": "می‌توانید این پنجره را ببندید. دانلود در پس‌زمینه ادامه خواهد داشت.",
     "providerCivitai": "Civitai",
     "providerHuggingFace": "Hugging Face",
-    "rename": {
-      "failed": "امکان تغییر نام دارایی وجود ندارد."
-    },
     "searchModels": "جستجوی مدل‌ها",
     "selectFrameworks": "فریم‌ورک‌ها را انتخاب کنید",
     "selectModelType": "نوع مدل را انتخاب کنید",

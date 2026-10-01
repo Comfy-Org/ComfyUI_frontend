@@ -372,9 +372,6 @@
     "processingModelDescription": "Você pode fechar este diálogo. O download continuará em segundo plano.",
     "providerCivitai": "Civitai",
     "providerHuggingFace": "Hugging Face",
-    "rename": {
-      "failed": "Não foi possível renomear o ativo."
-    },
     "searchModels": "Buscar modelos",
     "selectFrameworks": "Selecione Frameworks",
     "selectModelType": "Selecione o tipo de modelo",

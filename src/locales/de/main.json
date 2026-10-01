@@ -372,9 +372,6 @@
     "processingModelDescription": "Sie können diesen Dialog schließen. Der Download wird im Hintergrund fortgesetzt.",
     "providerCivitai": "Civitai",
     "providerHuggingFace": "Hugging Face",
-    "rename": {
-      "failed": "Asset konnte nicht umbenannt werden."
-    },
     "searchModels": "Modelle suchen",
     "selectFrameworks": "Frameworks auswählen",
     "selectModelType": "Modelltyp auswählen",

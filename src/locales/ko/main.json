@@ -372,9 +372,6 @@
     "processingModelDescription": "이 대화 상자를 닫아도 됩니다. 다운로드는 백그라운드에서 계속됩니다.",
     "providerCivitai": "Civitai",
     "providerHuggingFace": "Hugging Face",
-    "rename": {
-      "failed": "에셋 이름을 변경할 수 없습니다."
-    },
     "searchModels": "모델 검색",
     "selectFrameworks": "프레임워크 선택",
     "selectModelType": "모델 유형 선택",

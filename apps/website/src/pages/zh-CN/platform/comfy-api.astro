@@ -9,6 +9,7 @@ import ServerlessHero from '../../../templates/platform/ServerlessHero.vue'
 import ServerlessHowItWorksSection from '../../../templates/platform/ServerlessHowItWorksSection.vue'
 import ServerlessProductVideoSection from '../../../templates/platform/ServerlessProductVideoSection.vue'
 import ServerlessScaleSection from '../../../templates/platform/ServerlessScaleSection.vue'
+import ServerlessSkipSetupBanner from '../../../templates/platform/ServerlessSkipSetupBanner.vue'
 import { t } from '../../../i18n/translations'
 ---
 
@@ -19,6 +20,7 @@ import { t } from '../../../i18n/translations'
   <ServerlessHero locale="zh-CN" client:load />
   <ServerlessHowItWorksSection locale="zh-CN" client:visible />
   <ServerlessDeploySection locale="zh-CN" client:visible />
+  <ServerlessSkipSetupBanner locale="zh-CN" client:visible />
   <ServerlessScaleSection locale="zh-CN" client:visible />
   <ServerlessCustomerProofSection locale="zh-CN" showCustomerProof />
   <ComfyApiPricingSection locale="zh-CN" />

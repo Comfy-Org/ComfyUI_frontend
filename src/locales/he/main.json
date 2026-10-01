@@ -372,9 +372,6 @@
     "processingModelDescription": "ניתן לסגור חלון זה. ההורדה תימשך ברקע.",
     "providerCivitai": "Civitai",
     "providerHuggingFace": "Hugging Face",
-    "rename": {
-      "failed": "לא ניתן היה לשנות את שם הנכס."
-    },
     "searchModels": "חפש מודלים",
     "selectFrameworks": "בחירת מסגרות עבודה",
     "selectModelType": "בחר סוג מודל",

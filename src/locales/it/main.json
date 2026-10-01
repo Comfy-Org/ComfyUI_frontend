@@ -372,9 +372,6 @@
     "processingModelDescription": "Puoi chiudere questa finestra. Il download continuerà in background.",
     "providerCivitai": "Civitai",
     "providerHuggingFace": "Hugging Face",
-    "rename": {
-      "failed": "Impossibile rinominare l'asset."
-    },
     "searchModels": "Cerca modelli",
     "selectFrameworks": "Seleziona framework",
     "selectModelType": "Seleziona tipo di modello",
