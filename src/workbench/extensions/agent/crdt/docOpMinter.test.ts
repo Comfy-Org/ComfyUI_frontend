@@ -22,9 +22,11 @@ import {
 import { reportError } from '@/platform/telemetry/reportError'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import { useLitegraphService } from '@/services/litegraphService'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toRootGraphId } from '@/types/graphScopeId'
 import type { RootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
 import { createUuidv4 } from '@/utils/uuid'
 
 import { attachDocOpMinter } from './docOpMinter'
@@ -693,6 +695,69 @@ describe('attachDocOpMinter', () => {
     await afterFlush()
 
     expect(minted).toEqual([])
+  })
+
+  it('uses the store serialize flag when a projected widget omits it', async () => {
+    const { source } = seedGraph(graph)
+    const widget = source.widgets![0]
+    const stored = useWidgetValueStore().getWidget(
+      widgetId(graph.id, source.id, widget.name)
+    )
+    expect(stored).toBeDefined()
+    stored!.serialize = false
+    widget.serialize = undefined
+
+    emitGraphIntent({
+      type: 'set_widget',
+      graphId: graph.id,
+      nodeId: source.id,
+      name: 'steps',
+      value: 21,
+      previous: 20
+    })
+    await afterFlush()
+
+    expect(minted).toEqual([])
+  })
+
+  it('does not mint an active-graph widget write without a live widget', async () => {
+    emitGraphIntent({
+      type: 'set_widget',
+      graphId: graph.id,
+      nodeId: toNodeId(999),
+      name: 'missing',
+      value: 21,
+      previous: 20
+    })
+    await afterFlush()
+
+    expect(minted).toEqual([])
+  })
+
+  it('mints button values for virtual nodes whose snapshots persist them', async () => {
+    const note = new TestNote()
+    note.addWidget('button', 'action', 'idle', () => {})
+    withGraphIntentSource('load', () => graph.add(note))
+
+    emitGraphIntent({
+      type: 'set_widget',
+      graphId: graph.id,
+      nodeId: note.id,
+      name: 'action',
+      value: 'clicked',
+      previous: 'idle'
+    })
+    await afterFlush()
+
+    expect(minted).toEqual([
+      {
+        op: 'set_widget',
+        node_id: note.id,
+        widget: 'action',
+        value: 'clicked',
+        old: 'idle'
+      }
+    ])
   })
 
   it('mints a set_widget that names a subgraph owner with the subgraph-node path', async () => {

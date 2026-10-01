@@ -25,9 +25,12 @@ import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { RootGraphId } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
 import {
   findNodeInHierarchy,
   findSubgraphNodePathById
@@ -118,9 +121,7 @@ function valueWidgetsOnly(
   return filtered
 }
 
-function isValueWidget(
-  widget: { type?: string; serialize?: boolean } | undefined
-): boolean {
+function isValueWidget(widget: IBaseWidget | undefined): boolean {
   return (
     widget !== undefined &&
     widget.type !== 'button' &&
@@ -130,6 +131,62 @@ function isValueWidget(
 
 function nodeKey(graphId: string, nodeId: NodeId): string {
   return `${graphId}:${String(nodeId)}`
+}
+
+/**
+ * Returns the matching live node for an active-graph widget intent, `null`
+ * when that intent cannot name a persisted widget, and `undefined` for a
+ * different graph scope whose routing is resolved from the graph hierarchy.
+ */
+function validatedWidgetNode(
+  graph: LGraph,
+  event: IntentOf<'set_widget'>
+): LGraphNode | null | undefined {
+  if (event.graphId !== graph.id) return undefined
+  const node = findNodeInHierarchy(graph, event.nodeId)
+  if (!node) return null
+  const widget = node.widgets?.find(
+    (candidate) => candidate.name === event.name
+  )
+  if (!widget) return null
+  const stored = useWidgetValueStore().getWidget(
+    widgetId(graph.id, event.nodeId, event.name)
+  )
+  const serialize = widget.serialize ?? stored?.serialize
+  if (serialize === false) return null
+  if (!node.isVirtualNode && widget.type === 'button') return null
+  return node
+}
+
+function routedWidgetOperation(
+  graph: LGraph,
+  rootGraphId: string,
+  event: IntentOf<'set_widget'>,
+  node: LGraphNode | undefined
+): GraphOperation | null {
+  const operation = {
+    op: 'set_widget',
+    node_id: event.nodeId,
+    widget: event.name,
+    value: event.value,
+    old: event.previous
+  } as const
+  const owningGraphId = node?.graph?.id ?? owningGraphIdOf(graph, event)
+  if (owningGraphId === rootGraphId) return operation
+  const subgraphNodePath = findSubgraphNodePathById(graph, owningGraphId)
+  if (subgraphNodePath === null || subgraphNodePath.length === 0) {
+    console.error(
+      '[agent-crdt] set_widget with an unresolvable owner not minted; the bound doc diverges from the local graph',
+      nodeKey(owningGraphId, event.nodeId) + `:${event.name}`
+    )
+    return null
+  }
+  const [head, ...rest] = subgraphNodePath
+  return {
+    ...operation,
+    path: [head, ...rest, String(event.nodeId)],
+    inner_widget: event.name
+  }
 }
 
 /**
@@ -288,41 +345,11 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     if (pendingAdds.has(nodeKey(event.graphId, event.nodeId))) return
     const graph = deps.getGraph()
     if (!graph) return
-    const node = findNodeInHierarchy(graph, event.nodeId)
-    const widget = node?.widgets?.find(
-      (candidate) => candidate.name === event.name
-    )
-    if (widget && !isValueWidget(widget)) return
+    const node = validatedWidgetNode(graph, event)
+    if (node === null) return
     const rootGraphId = deps.boundRootGraphId() ?? graph.id
-    const operation = {
-      op: 'set_widget',
-      node_id: event.nodeId,
-      widget: event.name,
-      value: event.value,
-      old: event.previous
-    } as const
-    const owningGraphId = owningGraphIdOf(graph, event)
-    if (owningGraphId === rootGraphId) {
-      schedule({ kind: 'op', operation })
-      return
-    }
-    const subgraphNodePath = findSubgraphNodePathById(graph, owningGraphId)
-    if (subgraphNodePath === null || subgraphNodePath.length === 0) {
-      console.error(
-        '[agent-crdt] set_widget with an unresolvable owner not minted; the bound doc diverges from the local graph',
-        nodeKey(owningGraphId, event.nodeId) + `:${event.name}`
-      )
-      return
-    }
-    const [head, ...rest] = subgraphNodePath
-    schedule({
-      kind: 'op',
-      operation: {
-        ...operation,
-        path: [head, ...rest, String(event.nodeId)],
-        inner_widget: event.name
-      }
-    })
+    const operation = routedWidgetOperation(graph, rootGraphId, event, node)
+    if (operation) schedule({ kind: 'op', operation })
   }
 
   function mintSetNodeField(event: IntentOf<'set_node_field'>): void {
