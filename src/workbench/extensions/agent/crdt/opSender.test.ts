@@ -853,6 +853,39 @@ describe('createOpSender', () => {
     expect(sent).toHaveLength(1)
   })
 
+  it('queues serializable siblings before an invalid-op settlement detaches', () => {
+    const circularNode = addNode(2)
+    const node: AddNodeOperation['node'] & Record<string, unknown> = {
+      ...circularNode.node
+    }
+    node.circular = node
+    circularNode.node = node
+    const localSettled: BatchOutcome[] = []
+    const localSender = createOpSender({
+      sendOps: () => true,
+      onOpsResult: () => vi.fn(),
+      workflowId: () => boundWorkflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: (outcome) => {
+        localSettled.push(outcome)
+        if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 2)) {
+          localSender.detach()
+        }
+      }
+    })
+
+    localSender.admit([addNode(1), circularNode, addNode(3)])
+    localSender.flush()
+
+    expect(localSender.pending()).toBe(0)
+    expect(localSettled.map(summarizeSettlement)).toEqual([
+      { state: 'undeliverable', nodeIds: [2] },
+      { state: 'undeliverable', nodeIds: [1, 3] }
+    ])
+  })
+
   it('contains unsubscribe failures after completing teardown', () => {
     const localSender = createOpSender({
       sendOps: () => true,

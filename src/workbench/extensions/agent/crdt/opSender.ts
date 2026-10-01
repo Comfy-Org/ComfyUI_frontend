@@ -378,18 +378,22 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     } catch (cause) {
       reportDegraded(cause, 'failure_chunking_agent_op_sender')
       const sendable: Op[] = []
+      const rejected: Op[] = []
       for (const op of ops) {
         try {
           chunkWireOps([op])
           sendable.push(op)
         } catch {
-          guardedSettlementNotifier('failure_settling_agent_op_sender')({
-            state: 'undeliverable',
-            ops: [op]
-          })
+          rejected.push(op)
         }
       }
       queue.push(...chunkWireOps(sendable).map((ops) => ({ workflowId, ops })))
+      const notify = guardedSettlementNotifier(
+        'failure_settling_agent_op_sender'
+      )
+      for (const op of rejected) {
+        notify({ state: 'undeliverable', ops: [op] })
+      }
     }
   }
 
