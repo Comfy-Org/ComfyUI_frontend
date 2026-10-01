@@ -101,6 +101,9 @@ const isActive = computed(
 const filteredCatalog = computed(() =>
   filterModelExploreCatalog(catalog, query.value, category.value, access.value)
 )
+const isEmpty = computed(
+  () => isActive.value && filteredCatalog.value.length === 0
+)
 const displayedCatalog = computed(() =>
   resultLimit === undefined
     ? filteredCatalog.value
@@ -242,7 +245,7 @@ const displayEntries = computed(() =>
       </div>
     </div>
     <p
-      v-if="isActive && filteredCatalog.length === 0"
+      v-if="isEmpty"
       class="py-10 text-center text-base font-light text-content-secondary"
     >
       {{ emptyLabel }}
