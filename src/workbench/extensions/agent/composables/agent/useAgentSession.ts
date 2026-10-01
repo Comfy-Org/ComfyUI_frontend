@@ -502,6 +502,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     sending.value = false
     connection = 'initial'
     malformedStreamReports.clear()
+    snapshotTurns.clear()
   }
 
   let stopStorageOwnerWatcher: (() => void) | null = null
@@ -1295,13 +1296,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
    * arrives after the turn settled and a newer send took the active slot is
    * discarded instead of overwriting the newer transport.
    */
-  async function reconcileSnapshotTurn(turnId: TurnId): Promise<void> {
+  async function reconcileSnapshotTurn(
+    turnId: TurnId,
+    isCurrentStop: () => boolean
+  ): Promise<void> {
     const threadId = conversationStore.threadId
     if (threadId !== null)
       await Promise.race([
         hydrateFromServer(
           threadId,
           () =>
+            isCurrentStop() &&
             conversationStore.threadId === threadId &&
             conversationStore.activeTurnId === turnId
         ),
@@ -1309,6 +1314,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
           setTimeout(resolve, RECONCILE_TIMEOUT_MS)
         )
       ])
+    if (!isCurrentStop()) return
     if (conversationStore.activeTurnId === turnId)
       conversationStore.abortActiveTurn()
     snapshotTurns.delete(turnId)
@@ -1327,7 +1333,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   async function handleStopFailure(
     error: unknown,
-    turnId: TurnId
+    turnId: TurnId,
+    isCurrentStop: () => boolean
   ): Promise<void> {
     if (abandonedStop(turnId)) {
       releaseStoppingPhase(turnId)
@@ -1343,9 +1350,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     // -- the state this whole change exists to remove.
     if ((status === 404 || status === 409) && snapshotTurns.has(turnId)) {
       try {
-        await reconcileSnapshotTurn(turnId)
+        await reconcileSnapshotTurn(turnId, isCurrentStop)
       } finally {
-        releaseStoppingPhase(turnId)
+        if (isCurrentStop()) releaseStoppingPhase(turnId)
       }
       return
     }
@@ -1390,7 +1397,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       trackCommittedStop(stopMetadata)
     } catch (error) {
       if (!isCurrentStop()) return
-      await handleStopFailure(error, turnId)
+      await handleStopFailure(error, turnId, isCurrentStop)
     }
   }
 

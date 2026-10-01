@@ -595,6 +595,121 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   )
 
+  it("does not treat owner B's same-id turn as owner A's restored snapshot", async () => {
+    const streamingHistory: AgentMessages = [
+      historyRow(1, 'user', 'turn-1', 'go'),
+      {
+        ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+        content: {},
+        status: 'streaming'
+      }
+    ]
+    const getMessages = vi.fn(
+      async (): Promise<AgentMessages> => streamingHistory
+    )
+    const cancelMessage = vi
+      .fn<AgentRestClient['cancelMessage']>()
+      .mockRejectedValue(
+        new AgentApiError('turn is no longer running', 404, undefined)
+      )
+    const rest = fakeRest({ getMessages, cancelMessage })
+
+    const minimized = useAgentSession({ rest, events: fakeEvents().source })
+    minimized.start()
+    await minimized.sendMessage('owner A turn')
+    minimized.stop()
+    await Promise.resolve()
+
+    const ownerSession = useAgentSession({ rest, events: fakeEvents().source })
+    ownerSession.start()
+    await vi.waitFor(() => expect(ownerSession.isStreaming.value).toBe(true))
+    const hydrationCallCount = getMessages.mock.calls.length
+
+    setStorageIdentity('user-b')
+    setStorageWorkspaceId('personal')
+    await ownerSession.sendMessage('owner B turn')
+    await ownerSession.stopTurn('button')
+
+    expect(cancelMessage).toHaveBeenCalledWith('th-1', 'msg-1')
+    expect(getMessages).toHaveBeenCalledTimes(hydrationCallCount)
+    expect(ownerSession.isStreaming.value).toBe(true)
+    expect(useAgentConversationStore().activeTurnId).toBe('msg-1')
+
+    setStorageIdentity('user-test')
+    ownerSession.stop()
+  })
+
+  it('fences stale snapshot reconciliation across A-to-B-to-A same-id reuse', async () => {
+    const streamingHistory: AgentMessages = [
+      historyRow(1, 'user', 'turn-1', 'go'),
+      {
+        ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+        content: {},
+        status: 'streaming'
+      }
+    ]
+    const terminalHistory: AgentMessages = [
+      historyRow(1, 'user', 'turn-1', 'go'),
+      historyRow(2, 'assistant', 'turn-1', 'done', 'msg-1')
+    ]
+    const reconcileDeliveries: Array<(history: AgentMessages) => void> = []
+    let holdReconciliations = false
+    const getMessages = vi.fn<(threadId: string) => Promise<AgentMessages>>(
+      () => {
+        if (!holdReconciliations) return Promise.resolve(streamingHistory)
+        return new Promise<AgentMessages>((resolve) => {
+          reconcileDeliveries.push(resolve)
+        })
+      }
+    )
+    const cancelMessage = vi
+      .fn<AgentRestClient['cancelMessage']>()
+      .mockRejectedValue(
+        new AgentApiError('turn is no longer running', 404, undefined)
+      )
+    const rest = fakeRest({ getMessages, cancelMessage })
+    const conversation = useAgentConversationStore()
+
+    const minimized = useAgentSession({ rest, events: fakeEvents().source })
+    minimized.start()
+    await minimized.sendMessage('owner A turn')
+    minimized.stop()
+    await Promise.resolve()
+
+    const ownerSession = useAgentSession({ rest, events: fakeEvents().source })
+    ownerSession.start()
+    await vi.waitFor(() => expect(ownerSession.isStreaming.value).toBe(true))
+    holdReconciliations = true
+    const staleStop = ownerSession.stopTurn('button')
+    await vi.waitFor(() => expect(reconcileDeliveries).toHaveLength(1))
+
+    setStorageIdentity('user-b')
+    setStorageWorkspaceId('personal')
+    setStorageIdentity('user-test')
+    holdReconciliations = false
+    await ownerSession.loadThread('th-1')
+    expect(conversation.activeTurnId).toBe('msg-1')
+
+    holdReconciliations = true
+    const currentStop = ownerSession.stopTurn('button')
+    await vi.waitFor(() => expect(reconcileDeliveries).toHaveLength(2))
+
+    reconcileDeliveries[0]?.(terminalHistory)
+    await staleStop
+
+    expect(conversation.activeTurnId).toBe('msg-1')
+    expect(ownerSession.isStreaming.value).toBe(true)
+    await ownerSession.stopTurn('button')
+    expect(cancelMessage).toHaveBeenCalledTimes(2)
+
+    reconcileDeliveries[1]?.(terminalHistory)
+    await currentStop
+    expect(conversation.activeTurnId).toBeNull()
+    expect(ownerSession.isStreaming.value).toBe(false)
+
+    ownerSession.stop()
+  })
+
   it('watches storage ownership only while started and resumes once', async () => {
     const conversationStore = useAgentConversationStore()
     const reset = vi.spyOn(conversationStore, 'resetForStorageOwnerTransition')
