@@ -135,14 +135,20 @@ const templateInputGraphSync = startTemplateInputDownloadGraphSync({
       scanAllMediaCandidates(app.rootGraph, isCloud).map(({ name }) => name)
     ),
   refreshGraphBindings: async (completedInputNames) => {
-    await app.reloadNodeDefs()
-    refreshDownloadedTemplateInputBindings(
-      app.rootGraph,
-      scanAllMediaCandidates(app.rootGraph, isCloud),
-      new Set(completedInputNames)
-    )
-    await runMissingMediaPipeline({ rootGraph: app.rootGraph, silent: true })
-    templateInputDownloadStore.completeGraphSync(completedInputNames)
+    try {
+      await app.reloadNodeDefs()
+      refreshDownloadedTemplateInputBindings(
+        app.rootGraph,
+        scanAllMediaCandidates(app.rootGraph, isCloud),
+        new Set(completedInputNames)
+      )
+      await runMissingMediaPipeline({ rootGraph: app.rootGraph, silent: true })
+    } finally {
+      // The transfers finished even if rebinding them did not. Releasing them
+      // either way keeps a failed rebind from holding the run action behind a
+      // permanent finalizing state; the failure is reported separately.
+      templateInputDownloadStore.completeGraphSync(completedInputNames)
+    }
   },
   reportError: (error) => {
     reportError(error, {
