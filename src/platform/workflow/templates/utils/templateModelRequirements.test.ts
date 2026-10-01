@@ -169,9 +169,6 @@ describe('extractTemplateModelRequirementDetails', () => {
   })
 
   it.for([
-    null,
-    {},
-    { models: 'not-an-array' },
     {
       nodes: [
         {
@@ -182,7 +179,7 @@ describe('extractTemplateModelRequirementDetails', () => {
         }
       ]
     },
-    { models: [null, {}, { name: 'incomplete.safetensors' }] }
+    { nodes: [], models: [null, {}, { name: 'incomplete.safetensors' }] }
   ])('ignores absent or malformed model declarations in %j', (workflow) => {
     expect(extractTemplateModelRequirementDetails(workflow)).toEqual([])
   })

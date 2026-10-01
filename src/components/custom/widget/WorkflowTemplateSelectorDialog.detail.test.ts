@@ -277,6 +277,41 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('applies the resolved model size to the visible row', async () => {
+    let resolveMetadata:
+      | ((
+          value: Awaited<ReturnType<typeof mocks.resolveTemplateModelMetadata>>
+        ) => void)
+      | undefined
+    mocks.resolveTemplateModelMetadata.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveMetadata = resolve
+        })
+    )
+    renderDialog()
+    await clickTemplateCard()
+
+    const detail = await screen.findByRole('article', {
+      name: fixtures.template.title
+    })
+    // Before the metadata settles the row describes the model without a size.
+    expect(
+      within(detail).getByText(/^Checkpoint · Used by Active loader$/)
+    ).toBeInTheDocument()
+
+    resolveMetadata?.({
+      status: 'completed',
+      entries: [{ model: fixtures.activeModel, fileSize: 1024 }]
+    })
+
+    await waitFor(() => {
+      expect(
+        within(detail).getByText(/^Checkpoint · 1 KB · Used by Active loader$/)
+      ).toBeInTheDocument()
+    })
+  })
+
   it('opens directly outside Desktop without resolving model inventory', async () => {
     runtime.isDesktop = false
     renderDialog()
