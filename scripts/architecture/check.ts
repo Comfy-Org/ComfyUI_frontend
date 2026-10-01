@@ -960,15 +960,21 @@ const synchronizeCatalog = (
   const writes = mode === 'update' || mode === 'accept-baseline'
   for (const [filename, expected] of generated) {
     if (writes) writeFileSync(filename, expected)
-    else if (
-      !existsSync(filename) ||
-      readFileSync(filename, 'utf8') !== expected
-    )
+    else if (!generatedFileMatches(filename, expected))
       throw new Error(
         `${toPosix(relative(repositoryRoot, filename))} is stale; run pnpm architecture:update`
       )
   }
   return directory
+}
+
+const generatedFileMatches = (filename: string, expected: string): boolean => {
+  if (!existsSync(filename)) return false
+  const actual = readFileSync(filename, 'utf8')
+  if (!filename.endsWith('.json')) return actual === expected
+  return (
+    JSON.stringify(JSON.parse(actual)) === JSON.stringify(JSON.parse(expected))
+  )
 }
 
 const acceptBaseline = (
