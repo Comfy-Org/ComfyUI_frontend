@@ -14,7 +14,6 @@ interface SlotLinkRevealOptions {
   nodeId?: NodeId
   index: number
   type: 'input' | 'output'
-  source?: 'hover' | 'drag'
 }
 
 export function useSlotLinkReveal(options: SlotLinkRevealOptions) {
@@ -42,7 +41,7 @@ export function useSlotLinkReveal(options: SlotLinkRevealOptions) {
         ? [link.id]
         : []
     )
-    if (setRevealedLinks(scope.rootGraphId, linkIds, owner, options.source)) {
+    if (setRevealedLinks(scope.rootGraphId, linkIds, owner)) {
       app.canvas.setDirty(false, true)
     }
   }

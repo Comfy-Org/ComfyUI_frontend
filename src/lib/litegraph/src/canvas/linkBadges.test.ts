@@ -386,3 +386,53 @@ describe('link badge frame layout', () => {
     expect(queryLinkBadgeAtPoint(host, 176, 110)).toBeUndefined()
   })
 })
+
+describe('badge ordering tie breakers', () => {
+  it('places output before input even when the input is supplied first', () => {
+    const host = {}
+    const layouts = layoutHiddenLinkBadges(host, createContext(), [
+      {
+        link: new LLink(toLinkId(1), 'MODEL', 6, 0, 4, 0),
+        presentation: { hidden: true },
+        startPos: [600, 300],
+        endPos: [190, 100],
+        color: BADGE_COLOR
+      },
+      {
+        link: new LLink(toLinkId(2), 'MODEL', 4, 0, 5, 0),
+        presentation: { hidden: true },
+        startPos: [100, 100],
+        endPos: [400, 200],
+        color: BADGE_COLOR
+      }
+    ])
+    expect(layouts.get(toLinkId(2))?.output.tip[1]).toBe(100)
+    expect(layouts.get(toLinkId(1))?.input.tip[1]).toBe(122)
+    expect(queryLinkBadgeAtPoint(host, 120, 100)).toBe(toLinkId(2))
+    expect(queryLinkBadgeAtPoint(host, 120, 122)).toBe(toLinkId(1))
+  })
+
+  it('uses slot order before link ID and insertion order at equal socket Y', () => {
+    const host = {}
+    const layouts = layoutHiddenLinkBadges(host, createContext(), [
+      {
+        link: new LLink(toLinkId(1), 'MODEL', 4, 3, 5, 0),
+        presentation: { hidden: true },
+        startPos: [100, 100],
+        endPos: [400, 200],
+        color: BADGE_COLOR
+      },
+      {
+        link: new LLink(toLinkId(2), 'MODEL', 4, 1, 6, 0),
+        presentation: { hidden: true },
+        startPos: [100, 100],
+        endPos: [600, 300],
+        color: BADGE_COLOR
+      }
+    ])
+    expect(layouts.get(toLinkId(2))?.output.tip[1]).toBe(100)
+    expect(layouts.get(toLinkId(1))?.output.tip[1]).toBe(122)
+    expect(queryLinkBadgeAtPoint(host, 120, 100)).toBe(toLinkId(2))
+    expect(queryLinkBadgeAtPoint(host, 120, 122)).toBe(toLinkId(1))
+  })
+})

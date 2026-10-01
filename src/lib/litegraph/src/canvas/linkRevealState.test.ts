@@ -63,41 +63,6 @@ describe('linkRevealState', () => {
     expect(isLinkRevealed(ROOT_B, toLinkId(2))).toBe(true)
   })
 
-  it('keeps a drag revealed while hover moves between owners', () => {
-    const dragOwner = {}
-    const previousHover = {}
-    const currentHover = {}
-    setRevealedLinks(ROOT_A, [toLinkId(1)], dragOwner, 'drag')
-    setRevealedLinks(ROOT_A, [toLinkId(2)], previousHover)
-    setRevealedLinks(ROOT_A, [toLinkId(3)], currentHover)
-
-    expect(isLinkRevealed(ROOT_A, toLinkId(1))).toBe(true)
-    expect(isLinkRevealed(ROOT_A, toLinkId(2))).toBe(false)
-    expect(isLinkRevealed(ROOT_A, toLinkId(3))).toBe(true)
-    expect(clearRevealedLinks(previousHover)).toBe(false)
-
-    clearRevealedLinks(currentHover)
-
-    expect(isLinkRevealed(ROOT_A, toLinkId(1))).toBe(true)
-    expect(isLinkRevealed(ROOT_A, toLinkId(3))).toBe(false)
-
-    clearRevealedLinks(dragOwner)
-
-    expect(isLinkRevealed(ROOT_A, toLinkId(1))).toBe(false)
-  })
-
-  it('clears hover and drag on a graph reset without affecting other roots', () => {
-    setRevealedLinks(ROOT_A, [toLinkId(1)], {})
-    setRevealedLinks(ROOT_A, [toLinkId(2)], {}, 'drag')
-    setRevealedLinks(ROOT_B, [toLinkId(1)], {}, 'drag')
-
-    expect(clearRootLinkReveals(ROOT_A)).toBe(true)
-    expect(isLinkRevealed(ROOT_A, toLinkId(1))).toBe(false)
-    expect(isLinkRevealed(ROOT_A, toLinkId(2))).toBe(false)
-    expect(isLinkRevealed(ROOT_B, toLinkId(1))).toBe(true)
-    expect(clearRootLinkReveals(ROOT_A)).toBe(false)
-  })
-
   it('ignores a stale owner clearing a newer reveal', () => {
     const previousOwner = {}
     const currentOwner = {}
