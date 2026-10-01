@@ -445,6 +445,42 @@ describe('BaseWidget store integration', () => {
       expect(widget.advanced).toBe(true)
     })
 
+    it('syncs live serialize changes before registered value writes', () => {
+      const widget = node.addWidget(
+        'number',
+        'serializeWidget',
+        42,
+        () => undefined,
+        {}
+      )
+
+      widget.serialize = false
+      widget.value = 43
+
+      expect(
+        store.getWidget(widgetId(graph.id, toNodeId(1), 'serializeWidget'))
+          ?.serialize
+      ).toBe(false)
+    })
+
+    it('preserves serialize when rebinding to legacy state without the key', () => {
+      const widget = createTestWidget(node, {
+        name: 'reboundWidget',
+        serialize: false
+      })
+      const id = widgetId(graph.id, toNodeId(1), 'reboundWidget')
+      const registered = store.registerWidget(id, {
+        type: 'number',
+        value: 42,
+        options: {}
+      })!
+
+      expect(Object.hasOwn(registered, 'serialize')).toBe(false)
+      expect(widget.bindRegisteredState(toNodeId(1))).toBe(true)
+      expect(registered.serialize).toBe(false)
+      expect(widget.serialize).toBe(false)
+    })
+
     it('maps legacy visibility APIs to the visibility component', () => {
       const widget = createMutableTypeWidget(node, 'visibleWidget')
       widget.setNodeId(toNodeId(1))
