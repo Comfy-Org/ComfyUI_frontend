@@ -16,6 +16,8 @@ const funded: BillingBannerInputs = {
   isCancelled: false,
   endDate: null,
   canManage: true,
+  isPlanEnded: false,
+  planEndedDismissed: false,
   outOfCreditsDismissed: false,
   planChangeDismissed: false,
   hasScheduledChange: false
@@ -151,6 +153,37 @@ describe('deriveBillingBanner', () => {
         canManage: false
       })
     ).toBe('ending')
+  })
+
+  describe('plan ended', () => {
+    const ended: Partial<BillingBannerInputs> = {
+      isPlanEnded: true,
+      canAccessSubscriptionFeatures: false,
+      billingStatus: 'inactive'
+    }
+
+    it('shows for team and Enterprise, owners and members alike', () => {
+      expect(derive(ended)).toBe('planEnded')
+      expect(derive({ ...ended, canManage: false })).toBe('planEnded')
+      expect(derive({ ...ended, isTeamPlan: false, isEnterprise: true })).toBe(
+        'planEnded'
+      )
+    })
+
+    it('ships without the billing control flag', () => {
+      expect(derive({ ...ended, billingControlEnabled: false })).toBe(
+        'planEnded'
+      )
+    })
+
+    it('ranks below payment recovery and above out of credits', () => {
+      expect(derive({ ...ended, ...paused })).toBe('paused')
+      expect(derive({ ...ended, hasFunds: false })).toBe('planEnded')
+    })
+
+    it('stays hidden once dismissed', () => {
+      expect(derive({ ...ended, planEndedDismissed: true })).toBeNull()
+    })
   })
 
   it('shows no banner for an inactive subscription (that is a run-lock modal)', () => {
