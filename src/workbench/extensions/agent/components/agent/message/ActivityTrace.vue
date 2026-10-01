@@ -65,7 +65,7 @@ function rowSignature(row: ActivityRow): string {
 </script>
 
 <template>
-  <div role="list" class="flex flex-col">
+  <div role="list" data-testid="agent-activity-trace" class="flex flex-col">
     <div
       v-for="(row, index) in rows"
       :key="index"
