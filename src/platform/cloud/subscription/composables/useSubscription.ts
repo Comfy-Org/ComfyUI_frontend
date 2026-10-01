@@ -28,7 +28,10 @@ import {
 } from '@/platform/workspace/api/workspaceApi'
 import { readOnRail } from '@/platform/workspace/composables/readOnRail'
 import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
-import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
+import {
+  PaymentPopupBlockedError,
+  categorizeBillingApiError
+} from '@/platform/telemetry/utils/billingFailureCategory'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { platformLink } from '@/platform/workspace/utils/platformLink'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
@@ -46,8 +49,10 @@ import {
   claimPendingCheckoutTerminal,
   getPendingCheckoutTerminal,
   hasPendingSubscriptionCheckoutAttempt,
-  recordPendingSubscriptionCheckoutAttempt
+  persistPendingSubscriptionCheckoutAttempt
 } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
+import type { ReportedCheckoutAttemptInput } from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
+import { runReportedCheckoutAttempt } from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
 import { useSubscriptionCancellationWatcher } from './useSubscriptionCancellationWatcher'
 
 type CloudSubscriptionCheckoutResponse = NonNullable<
@@ -377,7 +382,8 @@ function useSubscriptionInternal() {
 
   const trackSubscriptionCheckoutSuccess = (
     metadata: SubscriptionSuccessMetadata,
-    startReported: boolean
+    startReported: boolean,
+    startedAtMs: number
   ) => {
     if (!startReported && metadata.recovery_outcome !== 'late_success') return
     telemetry?.trackBillingEvent({
@@ -389,7 +395,8 @@ function useSubscriptionInternal() {
       cycle: metadata.cycle,
       checkout_type: metadata.checkout_type,
       payment_intent_source: metadata.payment_intent_source,
-      recovery_outcome: metadata.recovery_outcome
+      recovery_outcome: metadata.recovery_outcome,
+      duration_ms: Date.now() - startedAtMs
     })
   }
 
@@ -426,14 +433,22 @@ function useSubscriptionInternal() {
       return
     }
 
-    const { start_reported: startReported, ...metadata } = consumed
+    const {
+      start_reported: startReported,
+      started_at_ms: startedAtMs,
+      ...metadata
+    } = consumed
 
     telemetry?.trackMonthlySubscriptionSucceeded({
       ...(authStore.userId ? { user_id: authStore.userId } : {}),
       ...metadata
     })
 
-    trackSubscriptionCheckoutSuccess(metadata, startReported === true)
+    trackSubscriptionCheckoutSuccess(
+      metadata,
+      startReported === true,
+      startedAtMs
+    )
 
     // The recovery flow is shared with plain (non-resubscribe) legacy subscribes,
     // which all funnel through the same subscribeDirect(). Only emit the canonical
@@ -477,70 +492,66 @@ function useSubscriptionInternal() {
     if (subscriptionDuration.value === 'MONTHLY') return 'monthly'
   }
 
-  const recordStandardCheckoutAttempt = (
-    options: SubscribeDirectOptions | undefined,
-    scope: {
-      ownerId: string | undefined
-      workspaceId: string | null
-      previousCancelAt: string | null | undefined
-    }
+  const resubscribeAttemptDetails = (
+    options: SubscribeDirectOptions | undefined
   ) => {
+    if (options?.operation !== 'resubscribe') return {}
+    const previousCancelAt = subscriptionStatus.value
+      ? (subscriptionStatus.value.cancel_at ?? null)
+      : undefined
+
+    return {
+      operation: options.operation,
+      resubscribe_source: options.source,
+      ...(previousCancelAt !== undefined
+        ? { previous_cancel_at: previousCancelAt }
+        : {})
+    }
+  }
+
+  const standardCheckoutAttemptInput = (
+    options: SubscribeDirectOptions | undefined
+  ): ReportedCheckoutAttemptInput => {
     const previousTier = subscriptionTier.value
       ? toTierKey(subscriptionTier.value)
       : null
-    const previousCycle = getPreviousCycle()
 
-    const resubscribeDetails =
-      options?.operation === 'resubscribe'
-        ? {
-            operation: options.operation,
-            resubscribe_source: options.source,
-            ...(scope.previousCancelAt !== undefined
-              ? { previous_cancel_at: scope.previousCancelAt }
-              : {})
-          }
-        : {}
-
-    recordPendingSubscriptionCheckoutAttempt({
+    return {
       tier: 'standard',
       cycle: 'monthly',
       checkout_type: canAccessSubscriptionFeatures.value ? 'change' : 'new',
       previous_tier: previousTier ?? undefined,
-      previous_cycle: previousCycle,
-      ...resubscribeDetails,
-      owner_id: scope.ownerId,
-      workspace_id: scope.workspaceId
-    })
+      previous_cycle: getPreviousCycle(),
+      ...resubscribeAttemptDetails(options),
+      owner_id: authStore.userId ?? undefined,
+      workspace_id: workspaceStore.activeWorkspaceId
+    }
   }
 
   /** Unwrapped `subscribe`, for callers that need rejections to propagate (e.g. telemetry). */
-  const subscribeDirect = async (
-    options?: SubscribeDirectOptions
-  ): Promise<void> => {
-    const checkoutScope = {
-      ownerId: authStore.userId ?? undefined,
-      workspaceId: workspaceStore.activeWorkspaceId,
-      previousCancelAt: subscriptionStatus.value
-        ? (subscriptionStatus.value.cancel_at ?? null)
-        : undefined
-    }
-    const response = await initiateSubscriptionCheckout()
+  const subscribeDirect = (options?: SubscribeDirectOptions): Promise<void> =>
+    runReportedCheckoutAttempt(
+      standardCheckoutAttemptInput(options),
+      async (attempt) => {
+        const response = await initiateSubscriptionCheckout()
 
-    if (!response.checkout_url) {
-      throw new Error(
-        t('toastMessages.failedToInitiateSubscription', {
-          error: 'No checkout URL returned'
-        })
-      )
-    }
+        if (!response.checkout_url) {
+          throw new Error(
+            t('toastMessages.failedToInitiateSubscription', {
+              error: 'No checkout URL returned'
+            })
+          )
+        }
 
-    const checkoutWindow = window.open(response.checkout_url, '_blank')
-    if (!checkoutWindow) {
-      return
-    }
+        if (!window.open(response.checkout_url, '_blank')) {
+          throw new PaymentPopupBlockedError(
+            t('subscription.preview.paymentPopupBlocked')
+          )
+        }
 
-    recordStandardCheckoutAttempt(options, checkoutScope)
-  }
+        persistPendingSubscriptionCheckoutAttempt(attempt)
+      }
+    )
 
   const subscribe = wrapWithErrorHandlingAsync(subscribeDirect, reportError)
 

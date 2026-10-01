@@ -269,7 +269,7 @@ const { showPricingTable } = useSubscriptionDialog()
 const customerEventsService = useCustomerEventsService()
 const dialogService = useDialogService()
 const telemetry = useTelemetry()
-const { pendingTopupNeedsRefresh, isPendingTopupCompleted } = usePendingTopup()
+const { pendingTopupNeedsRefresh, consumeCompletedTopup } = usePendingTopup()
 
 const tierKey = computed(() => {
   const tier = subscription.value?.tier
@@ -488,12 +488,14 @@ async function refreshCredits() {
       customerEventsService.error.value ?? 'Fetching customer events failed'
     )
   }
-  if (isPendingTopupCompleted(response.events)) {
+  const completedTopup = consumeCompletedTopup(response.events)
+  if (completedTopup) {
     telemetry?.trackApiCreditTopupSucceeded()
     telemetry?.trackBillingEvent({
       operation: 'topup',
       stage: 'succeeded',
-      outcome: 'success'
+      outcome: 'success',
+      duration_ms: Date.now() - completedTopup.startedAtMs
     })
   }
 }

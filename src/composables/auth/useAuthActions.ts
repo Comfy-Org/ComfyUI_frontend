@@ -18,6 +18,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { AuthFlowAction } from '@/platform/telemetry/types'
+import { PaymentPopupBlockedError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import {
   clearAllWorkspaceStorage,
@@ -197,8 +198,14 @@ export const useAuthActions = () => {
 
     // Mark the pending top-up directly, not via telemetry, so the balance
     // refresh on return still fires when telemetry consent is off.
-    usePendingTopup().startPendingTopup()
-    window.open(response.checkout_url, '_blank')
+    const pendingTopup = usePendingTopup()
+    pendingTopup.startPendingTopup()
+    if (!window.open(response.checkout_url, '_blank')) {
+      pendingTopup.clearPendingTopup()
+      throw new PaymentPopupBlockedError(
+        t('subscription.preview.paymentPopupBlocked')
+      )
+    }
     watchForTopupBalanceUpdate()
   }
 
@@ -207,10 +214,10 @@ export const useAuthActions = () => {
     reportError
   )
 
-  const accessBillingPortal = wrapWithErrorHandlingAsync<
-    [targetTier?: BillingPortalTargetTier, openInNewTab?: boolean],
-    boolean
-  >(async (targetTier, openInNewTab = true) => {
+  /** Unwrapped `accessBillingPortal`: rejects on failure, false when the tab is blocked. */
+  const accessBillingPortalDirect = async (
+    targetTier?: BillingPortalTargetTier
+  ): Promise<boolean> => {
     const response = await authStore.accessBillingPortal(targetTier)
     if (!response.billing_portal_url) {
       throw new Error(
@@ -219,13 +226,13 @@ export const useAuthActions = () => {
         })
       )
     }
-    if (openInNewTab) {
-      return window.open(response.billing_portal_url, '_blank') !== null
-    }
+    return window.open(response.billing_portal_url, '_blank') !== null
+  }
 
-    globalThis.location.href = response.billing_portal_url
-    return true
-  }, reportError)
+  const accessBillingPortal = wrapWithErrorHandlingAsync(
+    accessBillingPortalDirect,
+    reportError
+  )
 
   const fetchBalance = wrapWithErrorHandlingAsync(async () => {
     const result = await authStore.fetchBalance()
@@ -325,6 +332,7 @@ export const useAuthActions = () => {
     purchaseCredits,
     purchaseCreditsDirect,
     accessBillingPortal,
+    accessBillingPortalDirect,
     fetchBalance,
     signInWithGoogle,
     signInWithGithub,

@@ -3,7 +3,37 @@ import { describe, expect, it } from 'vitest'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { AuthStoreError } from '@/stores/authStore'
 
-import { categorizeBillingApiError } from './billingFailureCategory'
+import {
+  PaymentPopupBlockedError,
+  categorizeBillingApiError,
+  describeBillingFailure
+} from './billingFailureCategory'
+
+describe('describeBillingFailure', () => {
+  it.for([
+    {
+      name: 'a blocked payment tab is a redirect with its own code',
+      error: new PaymentPopupBlockedError('blocked'),
+      failure: {
+        failure_category: 'redirect',
+        error_code: 'payment_popup_blocked'
+      }
+    },
+    {
+      name: 'a request rejection keeps its category and names no code',
+      error: new AuthStoreError('rejected', 400),
+      failure: { failure_category: 'api_rejected' }
+    }
+  ])('$name', ({ error, failure }) => {
+    expect(describeBillingFailure(error)).toEqual(failure)
+  })
+
+  it('shows a blocked tab as a redirect to callers that read only the category', () => {
+    expect(
+      categorizeBillingApiError(new PaymentPopupBlockedError('blocked'))
+    ).toBe('redirect')
+  })
+})
 
 describe('categorizeBillingApiError', () => {
   it('categorizes a WorkspaceApiError with no status as a network failure', () => {

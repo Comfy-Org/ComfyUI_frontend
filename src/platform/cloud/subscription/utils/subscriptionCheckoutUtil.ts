@@ -1,7 +1,10 @@
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
-import type { PendingSubscriptionCheckoutAttempt } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
+import type {
+  PendingSubscriptionCheckoutAttempt,
+  PendingSubscriptionCheckoutAttemptInput
+} from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 import {
   createPendingSubscriptionCheckoutAttempt,
   persistPendingSubscriptionCheckoutAttempt,
@@ -16,7 +19,10 @@ import type {
   PaymentIntentSource
 } from '@/platform/telemetry/types'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
-import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
+import {
+  PaymentPopupBlockedError,
+  describeBillingFailure
+} from '@/platform/telemetry/utils/billingFailureCategory'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 
@@ -93,7 +99,6 @@ const checkoutAuthHeader = async (authStore: ReturnType<typeof useAuthStore>) =>
   (await authStore.getFirebaseAuthHeader())
 
 interface PerformSubscriptionCheckoutOptions {
-  openInNewTab?: boolean
   paymentIntentSource?: PaymentIntentSource
 }
 
@@ -118,23 +123,46 @@ export async function performSubscriptionCheckout(
 ): Promise<void> {
   if (!isCloud) return
 
+  await runReportedCheckoutAttempt(
+    {
+      tier: tierKey,
+      cycle: currentBillingCycle,
+      checkout_type: 'new',
+      payment_intent_source: options.paymentIntentSource,
+      owner_id: useAuthStore().userId ?? undefined,
+      workspace_id: useTeamWorkspaceStore().activeWorkspaceId
+    },
+    (pendingAttempt) =>
+      initiateSubscriptionCheckout(pendingAttempt, options.paymentIntentSource)
+  )
+}
+
+export type ReportedCheckoutAttemptInput = Omit<
+  PendingSubscriptionCheckoutAttemptInput,
+  'start_reported'
+>
+
+/**
+ * Reports `started` for one legacy checkout attempt and `failed` when `launch`
+ * rejects. Its success is reported later by the pending-checkout recovery,
+ * which closes only attempts marked `start_reported`.
+ */
+export async function runReportedCheckoutAttempt(
+  input: ReportedCheckoutAttemptInput,
+  launch: (attempt: PendingSubscriptionCheckoutAttempt) => Promise<void>
+): Promise<void> {
   const telemetry = useTelemetry()
-  const pendingAttempt = createPendingSubscriptionCheckoutAttempt({
-    tier: tierKey,
-    cycle: currentBillingCycle,
-    checkout_type: 'new',
-    payment_intent_source: options.paymentIntentSource,
-    owner_id: useAuthStore().userId ?? undefined,
-    workspace_id: useTeamWorkspaceStore().activeWorkspaceId,
+  const attempt = createPendingSubscriptionCheckoutAttempt({
+    ...input,
     start_reported: true
   })
   const attemptEvent = {
     operation: 'subscription_checkout',
-    checkout_attempt_id: pendingAttempt.attempt_id,
-    tier: tierKey,
-    cycle: currentBillingCycle,
-    checkout_type: 'new',
-    payment_intent_source: options.paymentIntentSource
+    checkout_attempt_id: attempt.attempt_id,
+    tier: attempt.tier,
+    cycle: attempt.cycle,
+    checkout_type: attempt.checkout_type,
+    payment_intent_source: attempt.payment_intent_source
   } as const
   telemetry?.trackBillingEvent({
     ...attemptEvent,
@@ -143,14 +171,14 @@ export async function performSubscriptionCheckout(
   })
 
   try {
-    await initiateSubscriptionCheckout(pendingAttempt, options)
+    await launch(attempt)
   } catch (error) {
     telemetry?.trackBillingEvent({
       ...attemptEvent,
       stage: 'failed',
       outcome: 'failure',
-      failure_category: categorizeBillingApiError(error),
-      duration_ms: Date.now() - pendingAttempt.started_at_ms
+      ...describeBillingFailure(error),
+      duration_ms: Date.now() - attempt.started_at_ms
     })
     throw error
   }
@@ -158,9 +186,8 @@ export async function performSubscriptionCheckout(
 
 async function initiateSubscriptionCheckout(
   pendingAttempt: PendingSubscriptionCheckoutAttempt,
-  options: PerformSubscriptionCheckoutOptions
+  paymentIntentSource: PaymentIntentSource | undefined
 ): Promise<void> {
-  const { openInNewTab = true, paymentIntentSource } = options
   const { tier: tierKey, cycle: currentBillingCycle } = pendingAttempt
 
   const authStore = useAuthStore()
@@ -201,7 +228,6 @@ async function initiateSubscriptionCheckout(
     tierKey,
     currentBillingCycle,
     paymentIntentSource,
-    openInNewTab,
     pendingAttempt,
     checkoutAttribution,
     telemetry
@@ -212,7 +238,6 @@ interface CheckoutCompletionContext {
   tierKey: TierKey
   currentBillingCycle: BillingCycle
   paymentIntentSource?: PaymentIntentSource
-  openInNewTab: boolean
   pendingAttempt: PendingSubscriptionCheckoutAttempt
   checkoutAttribution: CheckoutAttributionMetadata
   telemetry: ReturnType<typeof useTelemetry>
@@ -246,18 +271,12 @@ function completeSubscriptionCheckout(
 ) {
   if (!checkoutUrl) return
 
-  const { openInNewTab, pendingAttempt } = context
-
   trackBeginCheckout(context)
 
-  if (openInNewTab) {
-    const checkoutWindow = window.open(checkoutUrl, '_blank')
-    if (!checkoutWindow) {
-      return
-    }
-    persistPendingSubscriptionCheckoutAttempt(pendingAttempt)
-  } else {
-    persistPendingSubscriptionCheckoutAttempt(pendingAttempt)
-    globalThis.location.href = checkoutUrl
+  if (!window.open(checkoutUrl, '_blank')) {
+    throw new PaymentPopupBlockedError(
+      t('subscription.preview.paymentPopupBlocked')
+    )
   }
+  persistPendingSubscriptionCheckoutAttempt(context.pendingAttempt)
 }

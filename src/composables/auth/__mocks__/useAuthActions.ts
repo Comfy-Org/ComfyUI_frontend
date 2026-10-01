@@ -9,6 +9,7 @@ const actions: ReturnType<typeof realUseAuthActions> = {
   purchaseCredits: vi.fn(async () => undefined),
   purchaseCreditsDirect: vi.fn(async () => undefined),
   accessBillingPortal: vi.fn(async () => true),
+  accessBillingPortalDirect: vi.fn(async () => true),
   fetchBalance: vi.fn(async () => null),
   signInWithGoogle: vi.fn(async () => undefined),
   signInWithGithub: vi.fn(async () => undefined),

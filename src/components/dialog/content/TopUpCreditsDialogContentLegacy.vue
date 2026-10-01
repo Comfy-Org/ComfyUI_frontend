@@ -161,7 +161,7 @@ import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
-import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
+import { describeBillingFailure } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -276,7 +276,7 @@ async function handleBuy() {
       operation: 'topup',
       stage: 'failed',
       outcome: 'failure',
-      failure_category: categorizeBillingApiError(error)
+      ...describeBillingFailure(error)
     })
     toast.add({
       severity: 'error',
