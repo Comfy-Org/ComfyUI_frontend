@@ -60,6 +60,64 @@ describe('template model download state', () => {
     ).toBe(downloading)
   })
 
+  it('ignores events carrying a stale attempt', () => {
+    const queued = reduceTemplateModelDownloadState(
+      createTemplateModelDownloadState(),
+      { type: 'request' }
+    )
+    const failed = reduceTemplateModelDownloadState(queued, {
+      type: 'error',
+      attempt: 1
+    })
+    expect(failed).toEqual({ status: 'failed', attempt: 1, reason: 'error' })
+
+    const retried = reduceTemplateModelDownloadState(failed, {
+      type: 'request'
+    })
+    expect(retried).toEqual({ status: 'queued', attempt: 2 })
+
+    // The first attempt's host is still reporting; none of it may land on the
+    // second, which is a different transfer.
+    for (const event of [
+      { type: 'started', attempt: 1 } as const,
+      { type: 'error', attempt: 1 } as const,
+      { type: 'cancelled', attempt: 1 } as const,
+      { type: 'completed', attempt: 1 } as const,
+      {
+        type: 'progress',
+        attempt: 1,
+        activity: 'active',
+        receivedBytes: 1,
+        totalBytes: 2,
+        fraction: 0.5
+      } as const
+    ]) {
+      expect(reduceTemplateModelDownloadState(retried, event)).toBe(retried)
+    }
+  })
+
+  it('treats a finished download as absorbing', () => {
+    const queued = reduceTemplateModelDownloadState(
+      createTemplateModelDownloadState(),
+      { type: 'request' }
+    )
+    const starting = reduceTemplateModelDownloadState(queued, {
+      type: 'started',
+      attempt: 1
+    })
+    const done = reduceTemplateModelDownloadState(starting, {
+      type: 'completed',
+      attempt: 1
+    })
+    expect(done).toEqual({ status: 'done', attempt: 1 })
+
+    // Re-requesting an installed model is a no-op rather than a new attempt;
+    // the row offers no affordance for it.
+    expect(reduceTemplateModelDownloadState(done, { type: 'request' })).toBe(
+      done
+    )
+  })
+
   it('keeps exact nullable progress and requires explicit completion', () => {
     const queued = reduceTemplateModelDownloadState(
       createTemplateModelDownloadState(),
