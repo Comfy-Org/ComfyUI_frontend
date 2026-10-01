@@ -171,11 +171,11 @@
     "unavailable": "The payment form isn't available right now. Please try again later.",
     "fullPage": {
       "logo": "Comfy",
-      "payForCredits": "Pay and add credits",
+      "payForCredits": "Pay",
       "planName": "{tier} Plan",
       "terms": {
         "agreement": "By continuing, you agree to Comfy Org's {terms} and {privacy}, and authorize Comfy Org to charge your payment method each billing period until you cancel.",
-        "agreementOnce": "By continuing, you agree to Comfy Org's {terms} and {privacy}, and authorize Comfy Org to charge your payment method once for these credits.",
+        "agreementOnce": "By continuing, you agree to Comfy Org's {terms} and {privacy}, and authorize Comfy Org to charge your payment method once for this purchase.",
         "terms": "Terms",
         "privacyPolicy": "Privacy Policy"
       },
@@ -288,7 +288,8 @@
         "actions": {
           "close": "Close",
           "retry": "Try again",
-          "view_plans": "View plans"
+          "view_plans": "View plans",
+          "add_credits": "Add credits"
         },
         "success": {
           "title": "You're all set",
@@ -341,6 +342,11 @@
         "plan_unavailable": {
           "title": "This plan isn't available",
           "body": "The plan in your link isn't available. Nothing has been charged. See our current plans instead.",
+          "codeLabel": "If you think this is a mistake, contact support with this code:"
+        },
+        "link_invalid": {
+          "title": "This link isn't valid",
+          "body": "The amount in your link isn't valid. Nothing has been charged. Choose an amount in your billing settings.",
           "codeLabel": "If you think this is a mistake, contact support with this code:"
         },
         "load_failed": {
@@ -407,6 +413,7 @@
           "amount": "−{amount}",
           "firstMonth": "First month",
           "firstYear": "First year",
+          "thisPaymentOnly": "This payment only",
           "forMonths": "For {count} month | For {count} months"
         },
         "promo": {

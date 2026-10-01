@@ -18,6 +18,7 @@ const {
   quote,
   canPay,
   returnLink,
+  settingsLink,
   openedByScript,
   close,
   retryLoad,
@@ -43,6 +44,10 @@ const locked = computed(() => isLocked(page.value))
 function returnToProduct() {
   window.location.assign(returnLink.value)
 }
+
+function openBillingSettings() {
+  window.location.assign(settingsLink.value)
+}
 </script>
 
 <template>
@@ -56,6 +61,7 @@ function returnToProduct() {
     @close="close"
     @retry="retryLoad"
     @view-plans="returnToProduct"
+    @add-credits="openBillingSettings"
   />
   <main
     v-else

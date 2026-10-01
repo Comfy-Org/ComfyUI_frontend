@@ -12,6 +12,7 @@ import { OPERATION_POLL_TIMING } from '@comfyorg/account-core/billing'
 
 import type { CheckoutPage, CheckoutPageEvent } from '@/checkout/checkoutPage'
 import {
+  INVALID_AMOUNT_LINK,
   RESOLVING,
   UNREADABLE_LINK,
   awaitingServer,
@@ -24,6 +25,8 @@ import {
   reconciledEvent,
   topupVerdictOf
 } from '@/checkout/payVerdict'
+import { planCreditsSettingsUrl } from '@/checkout/cloudLinks'
+import { useBilledWorkspace } from '@/composables/useBilledWorkspace'
 import { useCheckoutExit } from '@/composables/useCheckoutExit'
 import { awaitBillingWebStripeKey } from '@/config/stripeKey'
 import { useBillingEntry } from '@/entry/billingEntry'
@@ -74,11 +77,13 @@ export function useFullPageTopup() {
   >(undefined)
 
   const amountCents = entry.value?.amountCents
-  const page = shallowRef<CheckoutPage>(
-    unreadableLink.value === undefined && amountCents !== undefined
-      ? RESOLVING
-      : UNREADABLE_LINK
-  )
+  const page = shallowRef<CheckoutPage>(arrivalPage())
+
+  function arrivalPage(): CheckoutPage {
+    if (unreadableLink.value === 'INVALID_AMOUNT') return INVALID_AMOUNT_LINK
+    if (unreadableLink.value !== undefined) return UNREADABLE_LINK
+    return amountCents === undefined ? INVALID_AMOUNT_LINK : RESOLVING
+  }
   const quote = shallowRef<TopupQuote>()
 
   const submitting = computed(
@@ -204,6 +209,8 @@ export function useFullPageTopup() {
   }
 
   const { returnLink, openedByScript, close } = useCheckoutExit(page)
+  const billedWorkspace = useBilledWorkspace()
+  const settingsLink = computed(() => planCreditsSettingsUrl(billedWorkspace()))
 
   function retryLoad() {
     void reconcile()
@@ -215,6 +222,7 @@ export function useFullPageTopup() {
     quote: shallowReadonly(quote),
     canPay,
     returnLink,
+    settingsLink,
     openedByScript,
     close,
     retryLoad,

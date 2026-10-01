@@ -34,7 +34,7 @@ const ENDINGS: Readonly<
     EndingKind,
     {
       readonly tone: Tone
-      readonly primary?: 'close' | 'retry' | 'view_plans'
+      readonly primary?: 'close' | 'retry' | 'view_plans' | 'add_credits'
       readonly support: boolean
     }
   >
@@ -47,6 +47,7 @@ const ENDINGS: Readonly<
   unconfirmed: { tone: 'waiting', support: true },
   refused: { tone: 'refused', support: true },
   plan_unavailable: { tone: 'refused', primary: 'view_plans', support: true },
+  link_invalid: { tone: 'refused', primary: 'add_credits', support: true },
   load_failed: { tone: 'refused', primary: 'retry', support: true }
 }
 
@@ -70,7 +71,12 @@ const {
   closesItself?: boolean
 }>()
 
-const emit = defineEmits<{ close: []; retry: []; viewPlans: [] }>()
+const emit = defineEmits<{
+  close: []
+  retry: []
+  viewPlans: []
+  addCredits: []
+}>()
 
 const { t, locale } = useI18n()
 const { coded } = useHostedCopy()
@@ -159,6 +165,7 @@ function act() {
   if (primary.value === 'close') emit('close')
   else if (primary.value === 'retry') emit('retry')
   else if (primary.value === 'view_plans') emit('viewPlans')
+  else if (primary.value === 'add_credits') emit('addCredits')
 }
 </script>
 
@@ -212,8 +219,16 @@ function act() {
           class="flex items-baseline justify-between gap-4"
         >
           <dt class="text-muted-foreground">{{ row.label }}</dt>
-          <dd class="m-0 text-base-foreground tabular-nums">
-            {{ row.value }}
+          <dd
+            class="m-0 flex items-center gap-1.5 text-base-foreground tabular-nums"
+          >
+            <i
+              v-if="row.kind === 'added'"
+              class="icon-[lucide--coins] size-4 shrink-0"
+              aria-hidden="true"
+              data-testid="checkout-ending-credits-icon"
+            />
+            <span>{{ row.value }}</span>
           </dd>
         </div>
       </dl>

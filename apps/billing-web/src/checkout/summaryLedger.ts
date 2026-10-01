@@ -478,11 +478,15 @@ const deduction = (r: QuoteReading, cents: number) =>
   r.t(`${S}.discount.amount`, { amount: r.money(cents) })
 
 /**
- * How long a coupon keeps applying, stated as bounds only: `once` covers the
- * first period, `repeating` its months, and `forever` needs no subline.
+ * How long a coupon keeps applying, stated as bounds only: `once` covers a new
+ * subscription's first period but only today's charge on a plan change,
+ * `repeating` its months, and `forever` needs no subline.
  */
 function discountTerm(r: QuoteReading, discount: Discount): string | undefined {
-  if (discount.duration === 'once') return r.t(r.byNew.onceTerm, {})
+  if (discount.duration === 'once')
+    return r.quote.transition_type === 'new_subscription'
+      ? r.t(r.byNew.onceTerm, {})
+      : r.t(`${S}.discount.thisPaymentOnly`, {})
   const months = discount.duration_in_months
   if (discount.duration !== 'repeating' || months === undefined)
     return undefined

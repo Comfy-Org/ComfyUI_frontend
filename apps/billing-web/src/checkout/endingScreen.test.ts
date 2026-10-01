@@ -121,6 +121,11 @@ describe('endingOf', () => {
       screen: { kind: 'plan_unavailable', code: 'CHECKOUT_LINK_INVALID' }
     },
     {
+      name: 'a top-up link with no readable amount',
+      page: { kind: 'plan_unavailable', reason: 'amount_invalid' },
+      screen: { kind: 'link_invalid', code: 'CHECKOUT_LINK_INVALID' }
+    },
+    {
       name: 'a link the contract cannot read',
       page: { kind: 'plan_unavailable', reason: 'unreadable' },
       screen: { kind: 'plan_unavailable', code: 'CHECKOUT_LINK_INVALID' }

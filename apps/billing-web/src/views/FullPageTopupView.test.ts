@@ -104,8 +104,7 @@ function settledTopup(
   }
 }
 
-const payButton = () =>
-  screen.getByRole('button', { name: 'Pay and add credits' })
+const payButton = () => screen.getByRole('button', { name: 'Pay' })
 
 afterEach(() => {
   sessionStorage.clear()
@@ -198,17 +197,43 @@ describe('FullPageTopupView', () => {
     )
   })
 
-  it('treats a top-up link without an amount as unreadable', async () => {
-    const fake = renderTopup(
-      {},
-      '/v1/top-up?product=comfyui&return_to=comfyui_workspace'
-    )
+  it.for([
+    { name: 'no amount', query: '' },
+    { name: 'an unreadable amount', query: '&amount_cents=12.50' }
+  ])(
+    '769-15773: a top-up link with $name is not valid and sends the customer to add credits in settings',
+    async ({ query }) => {
+      const assign = vi
+        .spyOn(window.location, 'assign')
+        .mockImplementation(() => {})
+      const fake = renderTopup(
+        {},
+        `/v1/top-up?product=comfyui&return_to=comfyui_workspace${query}`
+      )
 
-    expect(
-      await screen.findByRole('heading', { name: "This plan isn't available" })
-    ).toBeInTheDocument()
-    expect(fake.quoteTopup).not.toHaveBeenCalled()
-  })
+      expect(
+        await screen.findByRole('heading', { name: "This link isn't valid" })
+      ).toBeInTheDocument()
+      expect(
+        screen.getByText(
+          "The amount in your link isn't valid. Nothing has been charged. Choose an amount in your billing settings."
+        )
+      ).toBeInTheDocument()
+      expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
+        'CHECKOUT_LINK_INVALID'
+      )
+      expect(
+        screen.getByRole('link', { name: 'Contact support' })
+      ).toBeInTheDocument()
+      expect(fake.quoteTopup).not.toHaveBeenCalled()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Add credits' }))
+
+      expect(assign).toHaveBeenCalledWith(
+        'https://testcloud.comfy.org/?settings=plan-credits&workspace=ws-team'
+      )
+    }
+  )
 
   it('410-5225: a revisit after the top-up went through is Already completed, never a second form', async () => {
     renderTopup({
@@ -225,7 +250,7 @@ describe('FullPageTopupView', () => {
       'Added+5,275Amount paid$25.00'
     )
     expect(
-      screen.queryByRole('button', { name: 'Pay and add credits' })
+      screen.queryByRole('button', { name: 'Pay' })
     ).not.toBeInTheDocument()
   })
 })

@@ -21,7 +21,7 @@ function renderEnding(ending: EndingScreen, closesItself = false) {
 const CLOSE_LINE =
   "You can close this page. We'll email your invoice once this goes through and this page will automatically update."
 
-type Action = 'Close' | 'Try again' | 'View plans'
+type Action = 'Close' | 'Try again' | 'View plans' | 'Add credits'
 
 describe('CheckoutEnding', () => {
   const UNKNOWN =
@@ -182,6 +182,16 @@ describe('CheckoutEnding', () => {
       closeLine: false
     },
     {
+      ending: { kind: 'link_invalid', code: 'CHECKOUT_LINK_INVALID' },
+      title: "This link isn't valid",
+      body: "The amount in your link isn't valid. Nothing has been charged. Choose an amount in your billing settings.",
+      codeLabel:
+        'If you think this is a mistake, contact support with this code:',
+      action: 'Add credits',
+      support: true,
+      closeLine: false
+    },
+    {
       ending: { kind: 'load_failed', cause: 'quote', code: 'REQUEST_FAILED' },
       title: "Couldn't load your checkout",
       body: "We couldn't load your quote. Nothing has been charged. Try again, or contact support if this keeps happening.",
@@ -335,6 +345,7 @@ describe('CheckoutEnding', () => {
       expect(screen.getByTestId('checkout-ending-receipt')).toHaveTextContent(
         'Added+3,000Amount paid$15.00'
       )
+      expect(screen.getByTestId('checkout-ending-credits-icon')).toBeVisible()
       expect(screen.queryByText(/balance/i)).not.toBeInTheDocument()
       expect(
         screen.queryByTestId('checkout-ending-plan')
@@ -360,6 +371,7 @@ describe('CheckoutEnding', () => {
       expect(screen.getByTestId('checkout-ending-receipt')).toHaveTextContent(
         'Added+3,165Amount paid$15.00'
       )
+      expect(screen.getByTestId('checkout-ending-credits-icon')).toBeVisible()
       expect(
         screen.queryByTestId('checkout-ending-plan')
       ).not.toBeInTheDocument()
@@ -404,6 +416,9 @@ describe('CheckoutEnding', () => {
       expect(screen.getByTestId('checkout-ending-receipt')).toHaveTextContent(
         'Payment$25.00Credits addedAdding…'
       )
+      expect(
+        screen.queryByTestId('checkout-ending-credits-icon')
+      ).not.toBeInTheDocument()
       expect(screen.queryByText('Plan')).not.toBeInTheDocument()
     })
 
@@ -432,6 +447,11 @@ describe('CheckoutEnding', () => {
       ending: { kind: 'plan_unavailable', code: 'PLAN_NOT_FOUND' },
       action: 'View plans',
       event: 'viewPlans'
+    },
+    {
+      ending: { kind: 'link_invalid', code: 'CHECKOUT_LINK_INVALID' },
+      action: 'Add credits',
+      event: 'addCredits'
     }
   ])('$action emits $event', async ({ ending, action, event }) => {
     const { emitted } = renderEnding(ending)

@@ -12,10 +12,11 @@ import type {
 } from '@/checkout/checkoutPage'
 import { waitingOn } from '@/checkout/checkoutPage'
 
-/** The code Plan not available shows support: the catalog's verdict on a retired slug, or a link that could not be read. */
+/** The code a link's 404 shows support: the catalog's verdict on a retired slug, or a link that could not be read. */
 const PLAN_UNAVAILABLE_CODE: Readonly<Record<PlanUnavailableReason, string>> = {
   retired: 'PLAN_NOT_FOUND',
   team_stop_missing: 'CHECKOUT_LINK_INVALID',
+  amount_invalid: 'CHECKOUT_LINK_INVALID',
   unreadable: 'CHECKOUT_LINK_INVALID'
 }
 
@@ -86,6 +87,8 @@ export type EndingScreen =
       readonly scheduled: ScheduledChange
     }
   | { readonly kind: 'plan_unavailable'; readonly code: string }
+  /** A top-up link with no amount to quote: there is no plan to offer instead. */
+  | { readonly kind: 'link_invalid'; readonly code: string }
   | {
       readonly kind: 'load_failed'
       readonly cause: LoadFailure
@@ -103,7 +106,10 @@ export function endingOf(page: CheckoutPage): EndingScreen | undefined {
       return { kind: 'load_failed', cause: page.cause, code: page.code }
     case 'plan_unavailable':
       return {
-        kind: 'plan_unavailable',
+        kind:
+          page.reason === 'amount_invalid'
+            ? 'link_invalid'
+            : 'plan_unavailable',
         code: PLAN_UNAVAILABLE_CODE[page.reason]
       }
     case 'unconfirmed':

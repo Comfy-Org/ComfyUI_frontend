@@ -164,6 +164,44 @@ test('758-15763: a Pay under a promo code keeps the plan rate on Success and lis
   )
 })
 
+test('a one-time code on a plan change reads This payment only, on the summary and on Success', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  const preview = cloud.scenario.preview
+  cloud.scenario.preview = {
+    ...preview,
+    transition_type: 'upgrade',
+    amount_due_cents: 4000,
+    promotion_code: 'LAUNCH20',
+    discounts: [
+      {
+        kind: 'promotion',
+        code: 'LAUNCH20',
+        name: 'Launch 20%',
+        amount_off_cents: 1000,
+        duration: 'once'
+      }
+    ],
+    current_plan: {
+      ...preview.new_plan,
+      slug: 'creator_monthly',
+      tier: 'CREATOR',
+      price_cents: 3500
+    }
+  }
+  await signIn(CHECKOUT)
+  await expect(page.getByText('This payment only')).toBeVisible()
+  await expect(page.getByText('First month')).toHaveCount(0)
+  await payButton(page).click()
+
+  await expect(heading(page, "You're all set")).toBeVisible()
+  await expect(paidToday(page)).toHaveText(
+    /Launch 20%\s*−\$10\.00\s*This payment only\s*Paid today\s*\$40\.00/
+  )
+})
+
 test('765-15713: a prorated upgrade reads Paid today and why, without itemizing the proration', async ({
   page,
   cloud,
