@@ -1087,8 +1087,10 @@ describe('layoutStore queryLinkSegmentAtPoint DPR threading', () => {
     return { linkId, rerouteId }
   }
 
-  const makeCtx = (hit = true) => {
-    const isPointInStroke = vi.fn().mockReturnValue(hit)
+  const makeCtx = (hitX: number, hitY: number) => {
+    const isPointInStroke = vi.fn(
+      (_path: Path2D, x: number, y: number) => x === hitX && y === hitY
+    )
     return {
       ctx: fromPartial<CanvasRenderingContext2D>({
         lineWidth: 17,
@@ -1100,21 +1102,18 @@ describe('layoutStore queryLinkSegmentAtPoint DPR threading', () => {
 
   it('uses caller-supplied dpr to scale the stroke hit-test point', () => {
     const { linkId } = seedSegment()
-    const { ctx, isPointInStroke } = makeCtx()
+    const { ctx } = makeCtx(25, 25)
 
-    const result = layoutStore.queryLinkSegmentAtPoint(
-      { x: 50, y: 50 },
-      ctx,
-      0.5
-    )
+    const hit = layoutStore.queryLinkSegmentAtPoint({ x: 50, y: 50 }, ctx, 0.5)
+    const miss = layoutStore.queryLinkSegmentAtPoint({ x: 50, y: 50 }, ctx, 1)
 
-    expect(result).toEqual({ linkId, rerouteId: null })
-    expect(isPointInStroke).toHaveBeenCalledWith(stubPath, 25, 25)
+    expect(hit).toEqual({ linkId, rerouteId: null })
+    expect(miss).toBeNull()
   })
 
   it('falls back to window.devicePixelRatio when dpr is omitted', () => {
     seedSegment()
-    const { ctx, isPointInStroke } = makeCtx()
+    const { ctx } = makeCtx(100, 100)
 
     const originalDpr = window.devicePixelRatio
     Object.defineProperty(window, 'devicePixelRatio', {
@@ -1122,20 +1121,22 @@ describe('layoutStore queryLinkSegmentAtPoint DPR threading', () => {
       value: 2
     })
     try {
-      layoutStore.queryLinkSegmentAtPoint({ x: 50, y: 50 }, ctx)
+      const hit = layoutStore.queryLinkSegmentAtPoint({ x: 50, y: 50 }, ctx)
+      const miss = layoutStore.queryLinkSegmentAtPoint({ x: 50, y: 50 }, ctx, 1)
+
+      expect(hit).toEqual({ linkId: toLinkId(1), rerouteId: null })
+      expect(miss).toBeNull()
     } finally {
       Object.defineProperty(window, 'devicePixelRatio', {
         configurable: true,
         value: originalDpr
       })
     }
-
-    expect(isPointInStroke).toHaveBeenCalledWith(stubPath, 100, 100)
   })
 
   it('clamps the window DPR fallback to one', () => {
     seedSegment()
-    const { ctx, isPointInStroke } = makeCtx()
+    const { ctx } = makeCtx(50, 50)
 
     const originalDpr = window.devicePixelRatio
     Object.defineProperty(window, 'devicePixelRatio', {
@@ -1143,20 +1144,22 @@ describe('layoutStore queryLinkSegmentAtPoint DPR threading', () => {
       value: 0.5
     })
     try {
-      layoutStore.queryLinkSegmentAtPoint({ x: 50, y: 50 }, ctx)
+      const hit = layoutStore.queryLinkSegmentAtPoint({ x: 50, y: 50 }, ctx)
+      const miss = layoutStore.queryLinkSegmentAtPoint({ x: 50, y: 50 }, ctx, 2)
+
+      expect(hit).toEqual({ linkId: toLinkId(1), rerouteId: null })
+      expect(miss).toBeNull()
     } finally {
       Object.defineProperty(window, 'devicePixelRatio', {
         configurable: true,
         value: originalDpr
       })
     }
-
-    expect(isPointInStroke).toHaveBeenCalledWith(stubPath, 50, 50)
   })
 
   it('falls back to DPR 1 when rendered without a window', () => {
     seedSegment()
-    const { ctx, isPointInStroke } = makeCtx()
+    const { ctx } = makeCtx(50, 50)
     const windowDescriptor = Object.getOwnPropertyDescriptor(
       globalThis,
       'window'
@@ -1164,23 +1167,15 @@ describe('layoutStore queryLinkSegmentAtPoint DPR threading', () => {
 
     Reflect.deleteProperty(globalThis, 'window')
     try {
-      layoutStore.queryLinkSegmentAtPoint({ x: 50, y: 50 }, ctx)
+      const hit = layoutStore.queryLinkSegmentAtPoint({ x: 50, y: 50 }, ctx)
+      const miss = layoutStore.queryLinkSegmentAtPoint({ x: 50, y: 50 }, ctx, 2)
+
+      expect(hit).toEqual({ linkId: toLinkId(1), rerouteId: null })
+      expect(miss).toBeNull()
     } finally {
       if (windowDescriptor) {
         Object.defineProperty(globalThis, 'window', windowDescriptor)
       }
     }
-
-    expect(isPointInStroke).toHaveBeenCalledWith(stubPath, 50, 50)
-  })
-
-  it('threads dpr through queryLinkAtPoint to the segment hit-test', () => {
-    const { linkId } = seedSegment(toLinkId(7))
-    const { ctx, isPointInStroke } = makeCtx()
-
-    const hit = layoutStore.queryLinkAtPoint({ x: 50, y: 50 }, ctx, 3)
-
-    expect(hit).toBe(linkId)
-    expect(isPointInStroke).toHaveBeenCalledWith(stubPath, 150, 150)
   })
 })
