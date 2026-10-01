@@ -164,7 +164,7 @@ test.describe('Download page @smoke', () => {
 
       const installers = page.getByRole('menu').getByRole('menuitem')
       await expect(installers).toHaveText([
-        'Windows x64 (including Snapdragon)',
+        'Windows x64',
         'Windows ARM64 (NVIDIA only)',
         'macOS (Apple Silicon)',
         'Linux x64 (AppImage)'

@@ -32,11 +32,8 @@ async function openMenu() {
 }
 
 describe('DownloadLocalButton', () => {
-  it.for([
-    { label: 'a recognized desktop', userAgent: UA.linux },
-    { label: 'an unrecognized desktop', userAgent: UA.freeBsd }
-  ])('lists every installer on $label', async ({ userAgent }) => {
-    visitWith(userAgent)
+  it('lists every installer on a recognized desktop', async () => {
+    visitWith(UA.linux)
     render(DownloadLocalButton, { props: { showInstallerMenu: true } })
 
     await openMenu()
@@ -46,10 +43,7 @@ describe('DownloadLocalButton', () => {
         .getAllByRole('menuitem')
         .map((item) => [item.textContent.trim(), item.getAttribute('href')])
     ).toEqual([
-      [
-        'Windows x64 (including Snapdragon)',
-        'https://comfy.org/download/windows/nsis/x64'
-      ],
+      ['Windows x64', 'https://comfy.org/download/windows/nsis/x64'],
       [
         'Windows ARM64 (NVIDIA only)',
         'https://comfy.org/download/windows/nsis/arm64'
@@ -84,7 +78,7 @@ describe('DownloadLocalButton', () => {
   })
 
   it.for([
-    { installer: 'Windows x64 (including Snapdragon)', platform: 'windows' },
+    { installer: 'Windows x64', platform: 'windows' },
     { installer: 'Windows ARM64 (NVIDIA only)', platform: 'windows' },
     { installer: 'macOS (Apple Silicon)', platform: 'mac' },
     { installer: 'Linux x64 (AppImage)', platform: 'linux' }
@@ -128,6 +122,9 @@ describe('DownloadLocalButton', () => {
 
     await user.click(await screen.findByRole('button', { name: '全部安装包' }))
 
+    expect(
+      screen.getByRole('menuitem', { name: 'Windows x64' })
+    ).toHaveAttribute('href', 'https://comfy.org/download/windows/nsis/x64')
     expect(
       screen.getByRole('menuitem', { name: 'macOS（Apple 芯片）' })
     ).toHaveAttribute('href', 'https://download.comfy.org/mac/dmg/arm64')

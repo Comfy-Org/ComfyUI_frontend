@@ -1764,8 +1764,8 @@ Enterprise`
     'zh-CN': '全部安装包'
   },
   'download.hero.installers.windowsX64': {
-    en: 'Windows x64 (including Snapdragon)',
-    'zh-CN': 'Windows x64（含骁龙电脑）'
+    en: 'Windows x64',
+    'zh-CN': 'Windows x64'
   },
   'download.hero.installers.windowsArm64': {
     en: 'Windows ARM64 (NVIDIA only)',
