@@ -50,6 +50,12 @@ function toggle() {
       )
     "
   >
+    <div
+      v-if="$slots.above && !expanded"
+      class="absolute bottom-full left-1/2 mb-3 flex -translate-x-1/2 justify-center"
+    >
+      <slot name="above" />
+    </div>
     <button
       v-if="!wide"
       type="button"

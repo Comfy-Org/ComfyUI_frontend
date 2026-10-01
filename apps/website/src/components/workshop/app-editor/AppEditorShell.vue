@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { ChevronLeft } from '@lucide/vue'
+import { useMediaQuery } from '@vueuse/core'
+import { useSlots } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -7,6 +9,7 @@ import { getRoutes } from '../../../config/routes'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import AppRepoLink from '../cinematic-studio/AppRepoLink.vue'
+import EditorDock from './EditorDock.vue'
 import EditorFloatingPanel from './EditorFloatingPanel.vue'
 
 const {
@@ -27,6 +30,11 @@ const {
   panelDimmed?: boolean
   locale?: Locale
 }>()
+
+const slots = useSlots()
+const wide = useMediaQuery('(min-width: 1024px)')
+const floating = () => Boolean(slots.panel && panelLabels)
+const dockOverSheet = () => floating() && !wide.value && !panelDimmed
 </script>
 
 <template>
@@ -57,13 +65,15 @@ const {
       <span class="flex-1" />
       <AppRepoLink :repo :locale class="max-sm:hidden" />
     </header>
-    <div class="relative flex min-h-0 flex-1 flex-col bg-black/25">
+    <div
+      class="relative flex min-h-0 flex-1 flex-col bg-black/30 bg-[radial-gradient(var(--color-transparency-white-t8)_1px,transparent_1px)] bg-size-[18px_18px]"
+    >
       <div
         :class="
           cn(
             'flex min-h-0 flex-1 items-start justify-center px-4 pt-14 pb-36 sm:px-8',
-            $slots.panel && 'lg:pr-6 lg:pl-86',
-            $slots.panel && !showDock && 'pb-44 lg:pb-6'
+            floating() && 'pt-16 pb-60 lg:pr-6 lg:pb-20 lg:pl-86',
+            floating() && panelDimmed && 'pb-24'
           )
         "
       >
@@ -74,7 +84,7 @@ const {
         :class="
           cn(
             'pointer-events-none absolute inset-x-3 top-3 grid grid-cols-[1fr_auto_1fr] items-start gap-2',
-            $slots.panel && 'lg:left-86'
+            floating() && 'lg:left-86'
           )
         "
       >
@@ -92,26 +102,26 @@ const {
         :class="
           cn(
             'pointer-events-none absolute inset-x-0 bottom-4 flex flex-col items-center gap-2 px-3',
-            $slots.panel && 'lg:left-83'
+            floating() && 'lg:left-83'
           )
         "
       >
         <slot name="tray" />
-        <div
-          v-if="showDock"
-          role="toolbar"
-          :aria-label="toolsLabel"
-          class="pointer-events-auto flex max-w-full flex-wrap items-center justify-center gap-0.5 rounded-3xl border border-transparency-white-t20 bg-primary-comfy-ink-light p-1 shadow-xl shadow-black/40 sm:flex-nowrap sm:rounded-full"
-        >
+        <EditorDock v-if="showDock && !dockOverSheet()" :label="toolsLabel">
           <slot name="dock" />
-        </div>
+        </EditorDock>
       </div>
       <EditorFloatingPanel
-        v-if="$slots.panel && panelLabels"
+        v-if="floating() && panelLabels"
         :label="panelLabels.label"
         :labels="panelLabels"
         :dimmed="panelDimmed"
       >
+        <template v-if="showDock && dockOverSheet()" #above>
+          <EditorDock :label="toolsLabel">
+            <slot name="dock" />
+          </EditorDock>
+        </template>
         <slot name="panel" />
         <template v-if="$slots['panel-peek']" #peek>
           <slot name="panel-peek" />

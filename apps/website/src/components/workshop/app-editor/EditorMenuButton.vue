@@ -4,14 +4,19 @@ import { onClickOutside } from '@vueuse/core'
 import type { Component } from 'vue'
 import { ref, useTemplateRef } from 'vue'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 const {
   label,
   items,
-  disabled = false
+  disabled = false,
+  up = false
 } = defineProps<{
   label: string
   items: readonly { id: T; label: string; icon: Component }[]
   disabled?: boolean
+  /** Opens the menu above the button, for a button low on the screen. */
+  up?: boolean
 }>()
 
 const emit = defineEmits<{ pick: [id: T] }>()
@@ -32,7 +37,7 @@ function pick(id: T) {
       aria-haspopup="menu"
       :aria-expanded="open"
       :disabled
-      class="flex h-7 items-center gap-1.5 rounded-full px-2 text-xs text-primary-warm-white transition hover:bg-transparency-white-t8 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none disabled:opacity-40 disabled:hover:bg-transparent"
+      class="flex h-8 items-center gap-1.5 rounded-full px-3 text-xs text-primary-warm-white transition hover:bg-transparency-white-t8 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none disabled:opacity-40 disabled:hover:bg-transparent"
       @click="open = !open"
     >
       <Plus class="size-3.5" aria-hidden="true" />
@@ -42,7 +47,12 @@ function pick(id: T) {
       v-if="open"
       role="menu"
       :aria-label="label"
-      class="absolute top-full left-0 z-30 mt-1 flex min-w-40 flex-col rounded-xl border border-transparency-white-t8 bg-primary-comfy-ink-light p-1 shadow-xl shadow-black/40"
+      :class="
+        cn(
+          'absolute left-0 z-30 flex min-w-40 flex-col rounded-xl border border-transparency-white-t8 bg-primary-comfy-ink-light p-1 shadow-xl shadow-black/40',
+          up ? 'bottom-full mb-2' : 'top-full mt-1'
+        )
+      "
     >
       <button
         v-for="item in items"
