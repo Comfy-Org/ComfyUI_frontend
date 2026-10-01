@@ -17,7 +17,7 @@ Two independent resize paths exist today:
 
 Neither path documents that it depends on the other, creating implicit temporal coupling. Code that calls one without the other produces a background/foreground size mismatch.
 
-The original bug: when switching from app mode (canvas hidden via `v-show`) to graph mode, `resize()` was called to force dimensions onto the newly-visible canvas. Because `resize()` is DPR-unaware, the background canvas received CSS pixel dimensions while `drawFrontCanvas()` divided those dimensions by DPR (expecting physical pixels), producing a scaled-down composite. The canvas scheduler (`useCanvasScheduler`) solved the "hidden canvas" lifecycle problem (deferring draws until the canvas is visible) but left the DPR mismatch because it calls the DPR-unaware `LGraphCanvas.resize()`.
+The original bug: when switching from app mode (canvas hidden via `v-show`) to graph mode, `resize()` was called to force dimensions onto the newly-visible canvas. Because `resize()` is DPR-unaware, the background canvas received CSS pixel dimensions while `drawFrontCanvas()` divided those dimensions by DPR (expecting physical pixels), producing a scaled-down composite. This change introduces a canvas scheduler (`useCanvasScheduler`) to solve the hidden-canvas lifecycle problem by deferring work until the canvas is visible, together with the viewport system to remove the DPR mismatch when that work runs.
 
 `window.devicePixelRatio` is read at 6+ call sites across LGraphCanvas (`drawFrontCanvas`, `drawBackCanvas`, `centerOnNode`, `renderInfo`, `processMouseDown` hit testing, font scaling) and 3+ call sites in app.ts/renderer code. Each reads independently with no shared source of truth, so any change to DPR handling requires auditing every call site.
 
@@ -47,7 +47,7 @@ The existing `LGraphCanvas.resize()` method and `resizeCanvas()` in app.ts both 
 
 `LGraphCanvas` stores a `dpr` property that is set whenever a viewport is applied. All internal DPR consumers (`drawFrontCanvas`, `drawBackCanvas`, `centerOnNode`, `renderInfo`, `processMouseDown` hit testing, LOD threshold calculation) read `this.dpr` instead of `window.devicePixelRatio`. External consumers with access to the canvas instance (e.g. `litegraphService`, minimap composables) also read `canvas.dpr`. The only code that reads `window.devicePixelRatio` directly is (a) the viewport measurement functions themselves, (b) `DragAndScale` which doesn't have access to the canvas instance, and (c) `layoutStore` which operates at a layer without a direct canvas reference.
 
-The viewport system composes with the existing `CanvasScheduler` — the scheduler handles **when** (deferring until the canvas is visible), the viewport handles **what** (correct DPR-scaled dimensions applied atomically to both canvases). Neither modifies the other.
+The new `CanvasScheduler` and viewport system have separate responsibilities: the scheduler handles **when** by deferring work until the canvas is visible, while the viewport handles **what** by applying correct DPR-scaled dimensions atomically to both canvases.
 
 ### Design Principles
 
@@ -72,7 +72,7 @@ Following the principles established in [ADR-ECS-0008](ECS-0008-entity-component
 - The generation counter enables stale-state detection — any consumer can verify it is reading from a consistent resize cycle.
 - Phase separation (measure vs apply) makes the resize lifecycle explicit and testable.
 - Pure functions (`measureViewport`) are trivially testable without DOM fixtures.
-- Composes cleanly with the existing `CanvasScheduler` without modifying it.
+- Separates hidden-canvas scheduling from the dimensions and transforms applied when scheduled work runs.
 
 ### Negative
 
