@@ -13,7 +13,15 @@ import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflo
 import { useAgentWorkflowResolver } from './useAgentWorkflowResolver'
 import { useAgentWorkflowSelection } from './useAgentWorkflowSelection'
 
-vi.mock(import('@/platform/workflow/core/services/workflowService'))
+const workflowService = vi.hoisted(() => ({
+  openWorkflow: vi.fn(),
+  saveWorkflowAs: vi.fn()
+}))
+
+vi.mock<unknown>(
+  import('@/platform/workflow/core/services/workflowService'),
+  () => ({ useWorkflowService: () => workflowService })
+)
 
 function setup() {
   const workflows = useWorkflowStore()
