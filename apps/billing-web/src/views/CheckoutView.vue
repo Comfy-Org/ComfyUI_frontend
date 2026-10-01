@@ -119,8 +119,10 @@ async function quotePlan(
     ...(promotionCode ? { promotionCode } : {})
   })
   if (result.status === 'ok') quoteIsCurrent.value = true
-  if (promotionCode === undefined && call === latestQuoteCall)
-    journey.quoted(result)
+  if (call === latestQuoteCall) {
+    if (promotionCode === undefined) journey.quoted(result)
+    else journey.promoQuoted(result, promotionCode)
+  }
   return result
 }
 
@@ -193,7 +195,6 @@ async function applyPromotionCode(code: string) {
     code.trim()
   )
   applyingPromotionCode.value = false
-  if (result !== undefined) journey.promoQuoted(result, code.trim())
   if (result?.status === 'error') submitFailure.value = refusal(result)
 }
 
