@@ -225,8 +225,7 @@ class TurnLockServer {
       seq: 2,
       role: 'assistant',
       status: 'streaming',
-      workflow_id: WORKFLOW_ID,
-      pending_ask: this.pendingAsk
+      workflow_id: WORKFLOW_ID
     })
     return rows
   }
@@ -418,16 +417,6 @@ export class AgentTurnLockHarness {
 
   finishTurnOnServer(): void {
     this.server.completeTurn()
-  }
-
-  /** Makes an ask available through transcript hydration, independently of WS delivery. */
-  primePendingAsk(event: AgentWsEvent): void {
-    this.server.recordAsk(event)
-  }
-
-  /** True only when a test explicitly primed transcript-based recovery. */
-  pendingAskIsPrimed(): boolean {
-    return this.server.askIsPending
   }
 
   /**
