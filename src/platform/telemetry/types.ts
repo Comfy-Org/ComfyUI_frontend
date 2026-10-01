@@ -18,6 +18,7 @@ import {
 } from '@comfyorg/account-core/telemetry'
 import type {
   BillingTelemetryEvent,
+  BillingTelemetryEventName,
   CheckoutJourneyTelemetryEvent,
   CheckoutJourneyTelemetryEventName,
   CheckoutJourneyTelemetryEventPayload,
@@ -1605,6 +1606,7 @@ export const TelemetryEvents = {
 
 export type TelemetryEventName =
   | (typeof TelemetryEvents)[keyof typeof TelemetryEvents]
+  | BillingTelemetryEventName
   | CheckoutJourneyTelemetryEventName
 
 export const OnboardingTourEvents: Record<
