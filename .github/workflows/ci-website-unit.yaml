@@ -37,6 +37,8 @@ jobs:
         uses: ./.github/actions/setup-frontend
 
       - name: Run website unit tests with coverage
+        env:
+          CI: 1
         run: pnpm --filter @comfyorg/website test:coverage
 
       - name: Upload website coverage to Codecov

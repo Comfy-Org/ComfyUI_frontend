@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 import { z } from 'astro/zod'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
   ROUTER_COMFY_ONLY_PREVIEW,
@@ -20,8 +20,8 @@ const ROUTER_SCHEMAS =
 
 // The API spec and the docs are the source of truth and live outside this
 // repository, so the drift checks reach the network. They run in CI and skip
-// elsewhere, or when a source cannot be fetched, so an outage never fails a
-// build: the day the spec changes, CI is where it shows.
+// elsewhere. CI treats an unavailable source as a failure so missing coverage
+// cannot produce a green build.
 const skipReason = process.env.CI
   ? null
   : 'checks the published API spec; runs in CI only (set CI=1 to run it here)'
@@ -30,7 +30,9 @@ async function fetchDocs(url: string): Promise<string | null> {
   let response: Response
   try {
     response = await fetch(url, { signal: AbortSignal.timeout(15_000) })
-  } catch {
+  } catch (error) {
+    if (process.env.CI)
+      throw new Error(`Could not fetch ${url}`, { cause: error })
     return null
   }
   if (!response.ok) throw new Error(`${url} responded ${response.status}`)
@@ -76,6 +78,29 @@ function parseCoverageTable(markdown: string): {
   })
   return { providers, rows }
 }
+
+describe('Router provider source availability', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.unstubAllGlobals()
+  })
+
+  it('skips an unavailable source outside CI', async () => {
+    vi.stubEnv('CI', '')
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')))
+
+    await expect(fetchDocs(PROVIDERS_PAGE)).resolves.toBeNull()
+  })
+
+  it('fails when a required source is unavailable in CI', async () => {
+    vi.stubEnv('CI', '1')
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')))
+
+    await expect(fetchDocs(PROVIDERS_PAGE)).rejects.toThrow(
+      `Could not fetch ${PROVIDERS_PAGE}`
+    )
+  })
+})
 
 describe('Router provider coverage', () => {
   it('lists each model once, alphabetically', () => {
