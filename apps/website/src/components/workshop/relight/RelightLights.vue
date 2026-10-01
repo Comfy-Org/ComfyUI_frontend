@@ -2,81 +2,88 @@
 import { Plus } from '@lucide/vue'
 import { computed } from 'vue'
 
+import type { Relight } from '../../../composables/useRelight'
 import type { Locale } from '../../../i18n/translations'
 import { lc } from '../../../lib/workshop/relight/copy'
-import type { Light } from '../../../lib/workshop/relight/lights'
 import { MAX_LIGHTS } from '../../../lib/workshop/relight/lights'
-import EditorTray from '../app-editor/EditorTray.vue'
 import RelightLightEditor from './RelightLightEditor.vue'
 import RelightLightRow from './RelightLightRow.vue'
 
-const {
-  lights,
-  selected,
-  locale = 'en'
-} = defineProps<{
-  lights: readonly Light[]
-  selected?: string
+const { relight, locale = 'en' } = defineProps<{
+  relight: Relight
   locale?: Locale
 }>()
 
-const emit = defineEmits<{
-  select: [id: string]
-  change: [id: string, patch: Partial<Light>, key?: string]
-  remove: [id: string]
-  add: []
-  close: []
-}>()
-
-const current = computed(() => lights.find((light) => light.id === selected))
+const { lights, selected, full } = relight
+const current = computed(() =>
+  lights.value.find((light) => light.id === selected.value)
+)
+const adds = [
+  {
+    kind: 'point',
+    text: lc('relight.kind.point', locale),
+    label: lc('relight.lights.add.point', locale)
+  },
+  {
+    kind: 'directional',
+    text: lc('relight.kind.directional', locale),
+    label: lc('relight.lights.add.directional', locale)
+  }
+] as const
 </script>
 
 <template>
-  <EditorTray
-    :title="lc('relight.lights', locale)"
-    :close-label="lc('relight.close', locale)"
-    class="max-w-100"
-    @close="emit('close')"
+  <div class="flex items-center gap-1.5 px-1">
+    <button
+      v-for="add in adds"
+      :key="add.kind"
+      type="button"
+      :aria-label="add.label"
+      :disabled="full"
+      class="flex h-7 items-center gap-1 rounded-full border border-primary-comfy-yellow/50 px-2.5 text-[11px] font-medium text-primary-comfy-yellow transition hover:bg-primary-comfy-yellow/10 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none disabled:opacity-40"
+      @click="relight.addLight(add.kind)"
+    >
+      <Plus class="size-3" aria-hidden="true" />
+      {{ add.text }}
+    </button>
+    <span class="flex-1" />
+    <span class="text-[11px] text-primary-warm-gray tabular-nums">{{
+      lc('relight.lights.count', locale, {
+        n: lights.length,
+        max: MAX_LIGHTS
+      })
+    }}</span>
+  </div>
+  <p v-if="!lights.length" class="px-1 text-xs text-primary-warm-gray">
+    {{ lc('relight.lights.empty', locale) }}
+  </p>
+  <ul
+    v-else
+    class="flex flex-col gap-1"
+    :aria-label="lc('relight.lights', locale)"
   >
-    <template #actions>
-      <span class="text-[11px] text-primary-warm-gray">{{
-        lc('relight.lights.count', locale, {
-          n: lights.length,
-          max: MAX_LIGHTS
-        })
-      }}</span>
-      <button
-        type="button"
-        :disabled="lights.length >= MAX_LIGHTS"
-        class="flex h-6 items-center gap-1 rounded-full bg-transparency-white-t8 px-2 text-[11px] text-primary-warm-white hover:bg-transparency-white-t20 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none disabled:opacity-40"
-        @click="emit('add')"
-      >
-        <Plus class="size-3" aria-hidden="true" />
-        {{ lc('relight.lights.add', locale) }}
-      </button>
-    </template>
-    <p v-if="!lights.length" class="px-2 py-1 text-xs text-primary-warm-gray">
-      {{ lc('relight.lights.empty', locale) }}
-    </p>
-    <ul v-else class="flex flex-col gap-px">
-      <RelightLightRow
-        v-for="light in lights"
-        :key="light.id"
-        :light
-        :selected="light.id === selected"
-        :locale
-        @select="emit('select', light.id)"
-        @toggle="emit('change', light.id, { visible: !light.visible })"
-        @remove="emit('remove', light.id)"
-      />
-    </ul>
-    <RelightLightEditor
-      v-if="current"
-      :light="current"
+    <RelightLightRow
+      v-for="light in lights"
+      :key="light.id"
+      :light
+      :selected="light.id === selected"
+      :can-duplicate="!full"
       :locale
-      @change="
-        (patch, key) => current && emit('change', current.id, patch, key)
-      "
+      @select="selected = light.id"
+      @toggle="relight.updateLight(light.id, { visible: !light.visible })"
+      @duplicate="relight.duplicateLight(light.id)"
+      @remove="relight.removeLight(light.id)"
     />
-  </EditorTray>
+  </ul>
+  <RelightLightEditor
+    v-if="current"
+    :light="current"
+    :locale
+    @change="
+      (patch, key) => current && relight.updateLight(current.id, patch, key)
+    "
+  />
+  <p class="px-1 text-[11px] text-primary-warm-gray">
+    {{ lc('relight.hint', locale) }}
+  </p>
 </template>

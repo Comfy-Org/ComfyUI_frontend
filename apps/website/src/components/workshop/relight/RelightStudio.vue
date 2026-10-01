@@ -10,19 +10,30 @@ import { RELIGHT_EXAMPLE } from '../../../lib/workshop/relight/mock-run'
 import AppEditorShell from '../app-editor/AppEditorShell.vue'
 import EditorAlert from '../app-editor/EditorAlert.vue'
 import EditorEmpty from '../app-editor/EditorEmpty.vue'
-import EditorHint from '../app-editor/EditorHint.vue'
+import EditorHistory from '../app-editor/EditorHistory.vue'
 import EditorResult from '../app-editor/EditorResult.vue'
 import EditorResultDock from '../app-editor/EditorResultDock.vue'
 import type { EditorView } from '../app-editor/view'
 import RelightDock from './RelightDock.vue'
+import RelightPanel from './RelightPanel.vue'
+import RelightRun from './RelightRun.vue'
 import RelightTrays from './RelightTrays.vue'
+import RelightViewMenu from './RelightViewMenu.vue'
 import RelightWorkspace from './RelightWorkspace.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale = 'en', layout = 'd' } = defineProps<{
+  locale?: Locale
+  /** The review menu's layout: `e` keeps the bottom dock, else a side panel. */
+  layout?: string
+}>()
 
 const relight = useRelight(locale)
-const { image, setup, phase, tray, preview } = relight
-const view = ref<EditorView>('compare')
+const { image, phase, view, handles } = relight
+const result = ref<EditorView>('compare')
+const panel = computed(() => layout !== 'e')
+const editing = computed(
+  () => Boolean(image.value) && phase.value.kind !== 'done'
+)
 reportStudioBusy(() => phase.value.kind === 'running')
 
 const resultLabels = computed(() => ({
@@ -43,16 +54,22 @@ const dockLabels = {
   again: lc('relight.again', locale),
   download: lc('relight.download', locale)
 }
+const historyLabels = {
+  group: lc('relight.history', locale),
+  undo: lc('relight.tool.undo', locale),
+  redo: lc('relight.tool.redo', locale)
+}
 </script>
 
 <template>
   <AppEditorShell
     :title="lc('relight.title', locale)"
     :tools-label="lc('relight.tools', locale)"
+    :panel-label="lc('relight.panel', locale)"
     :repo="workshopAppRepo('relight')"
     :locale
     data-testid="relight"
-    :show-dock="Boolean(image)"
+    :show-dock="Boolean(image) && (!panel || phase.kind === 'done')"
   >
     <EditorEmpty
       v-if="!image"
@@ -69,54 +86,48 @@ const dockLabels = {
       v-else-if="phase.kind === 'done'"
       :before="image.url"
       :after="phase.result.url"
-      :view
+      :view="result"
       :width="image.width"
       :height="image.height"
       :labels="resultLabels"
     />
     <RelightWorkspace v-else :image :relight :locale />
-    <template #overlay>
-      <EditorHint
-        v-if="image && phase.kind === 'editing'"
-        :text="lc('relight.hint', locale)"
+    <template v-if="editing" #start>
+      <EditorHistory
+        :can-undo="relight.canUndo.value"
+        :can-redo="relight.canRedo.value"
+        :disabled="phase.kind === 'running'"
+        :labels="historyLabels"
+        @undo="relight.undo"
+        @redo="relight.redo"
       />
+    </template>
+    <template v-if="editing" #end>
+      <RelightViewMenu v-model:view="view" v-model:handles="handles" :locale />
     </template>
     <template #tray>
       <EditorAlert v-if="phase.kind === 'failed'">
         {{ lc('relight.failed', locale) }}
       </EditorAlert>
-      <RelightTrays :relight :locale />
+      <RelightTrays v-if="!panel" :relight :locale />
     </template>
     <template #dock>
       <EditorResultDock
         v-if="image && phase.kind === 'done'"
-        v-model:view="view"
+        v-model:view="result"
         :href="phase.result.url"
         :file-name="`relit-${image.name}`"
         :labels="dockLabels"
         @edit="relight.edit"
         @again="relight.relight"
       />
-      <RelightDock
-        v-else
-        v-model:preview="preview"
-        :lights="setup.lights"
-        :mood="setup.mood"
-        :scene="setup.scene"
-        :tray
-        :full="relight.full.value"
-        :can-undo="relight.canUndo.value"
-        :can-redo="relight.canRedo.value"
-        :can-run="relight.canRun.value"
-        :running="phase.kind === 'running'"
-        :locale
-        @add="relight.addLight"
-        @undo="relight.undo"
-        @redo="relight.redo"
-        @tray="relight.toggleTray"
-        @run="relight.relight"
-        @cancel="relight.cancel"
-      />
+      <RelightDock v-else-if="!panel" :relight :locale />
+    </template>
+    <template v-if="panel && image" #panel>
+      <RelightPanel :relight :locale />
+    </template>
+    <template v-if="panel && image" #panel-footer>
+      <RelightRun :relight :locale block />
     </template>
   </AppEditorShell>
 </template>

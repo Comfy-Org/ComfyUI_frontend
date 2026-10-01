@@ -1,8 +1,5 @@
 <script setup lang="ts">
-import type { LightColor } from '../../../lib/workshop/relight/lights'
-import { lightHex } from '../../../lib/workshop/relight/lights'
-
-const { colors } = defineProps<{ colors: readonly LightColor[] }>()
+const { colors } = defineProps<{ colors: readonly string[] }>()
 </script>
 
 <template>
@@ -11,7 +8,7 @@ const { colors } = defineProps<{ colors: readonly LightColor[] }>()
       v-for="(color, index) in colors.slice(0, 3)"
       :key="index"
       class="size-3 rounded-full border border-primary-comfy-ink-light not-first:-ml-1"
-      :style="{ backgroundColor: lightHex(color) }"
+      :style="{ backgroundColor: color }"
     />
   </span>
 </template>

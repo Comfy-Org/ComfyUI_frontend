@@ -5,6 +5,7 @@ import type { Locale, LocalizedText } from '../../../i18n/translations'
 const copy = {
   'relight.title': { en: 'Relight', 'zh-CN': '重新布光' },
   'relight.tools': { en: 'Relight tools', 'zh-CN': '重新布光工具' },
+  'relight.panel': { en: 'Relight settings', 'zh-CN': '重新布光设置' },
   'relight.empty.title': {
     en: 'Drop a photo to relight',
     'zh-CN': '拖入一张照片来重新布光'
@@ -15,16 +16,19 @@ const copy = {
   },
   'relight.empty.upload': { en: 'Choose a photo', 'zh-CN': '选择照片' },
   'relight.empty.example': { en: 'Try the example', 'zh-CN': '试用示例' },
-  'relight.tool.preview': { en: 'Preview', 'zh-CN': '预览' },
-  'relight.tool.original': { en: 'Original', 'zh-CN': '原图' },
   'relight.tool.add': { en: 'Add light', 'zh-CN': '添加灯光' },
   'relight.tool.undo': { en: 'Undo', 'zh-CN': '撤销' },
   'relight.tool.redo': { en: 'Redo', 'zh-CN': '重做' },
+  'relight.history': { en: 'History', 'zh-CN': '历史记录' },
+  'relight.view': { en: 'View', 'zh-CN': '视图' },
+  'relight.view.live': { en: 'Live lighting', 'zh-CN': '实时光照' },
+  'relight.view.lightmap': { en: 'Light map', 'zh-CN': '光照图' },
+  'relight.handles': { en: 'Light handles', 'zh-CN': '灯光控制点' },
   'relight.hint': {
     en: 'Drag a light to move it · Arrow keys to nudge',
     'zh-CN': '拖动灯光以移动 · 方向键微调'
   },
-  'relight.mood': { en: 'Mood', 'zh-CN': '氛围' },
+  'relight.mood': { en: 'Presets', 'zh-CN': '预设' },
   'relight.mood.studio': { en: 'Studio', 'zh-CN': '影棚' },
   'relight.mood.sunset': { en: 'Sunset', 'zh-CN': '日落' },
   'relight.mood.window': { en: 'Window', 'zh-CN': '窗光' },
@@ -32,15 +36,22 @@ const copy = {
   'relight.mood.neon': { en: 'Neon', 'zh-CN': '霓虹' },
   'relight.mood.moonlight': { en: 'Moonlight', 'zh-CN': '月光' },
   'relight.mood.note': {
-    en: 'Picking a mood replaces your lights. Undo brings them back.',
-    'zh-CN': '选择氛围会替换当前灯光，可撤销恢复。'
+    en: 'A preset replaces your lights. Undo brings them back.',
+    'zh-CN': '选择预设会替换当前灯光，可撤销恢复。'
   },
   'relight.lights': { en: 'Lights', 'zh-CN': '灯光' },
   'relight.lights.count': { en: '{n} of {max}', 'zh-CN': '{n} / {max}' },
-  'relight.lights.add': { en: 'Add', 'zh-CN': '添加' },
+  'relight.lights.add.point': {
+    en: 'Add a point light',
+    'zh-CN': '添加点光'
+  },
+  'relight.lights.add.directional': {
+    en: 'Add a directional light',
+    'zh-CN': '添加平行光'
+  },
   'relight.lights.empty': {
-    en: 'No lights yet. Choose Add to place one.',
-    'zh-CN': '还没有灯光。点击“添加”放置一盏。'
+    en: 'No lights yet. Add a point or directional light.',
+    'zh-CN': '还没有灯光。添加一盏点光或平行光。'
   },
   'relight.light.key': { en: 'Key', 'zh-CN': '主光' },
   'relight.light.fill': { en: 'Fill', 'zh-CN': '补光' },
@@ -51,49 +62,101 @@ const copy = {
   'relight.light.blue': { en: 'Blue neon', 'zh-CN': '蓝色霓虹' },
   'relight.light.moon': { en: 'Moon', 'zh-CN': '月光' },
   'relight.light.new': { en: 'Light {n}', 'zh-CN': '灯光 {n}' },
+  'relight.light.copy': { en: '{name} copy', 'zh-CN': '{name} 副本' },
   'relight.light.dot': {
     en: '{name}. Arrow keys move it, Shift moves further.',
     'zh-CN': '{name}。方向键移动，按住 Shift 移动更多。'
   },
   'relight.light.hide': { en: 'Hide {name}', 'zh-CN': '隐藏{name}' },
   'relight.light.show': { en: 'Show {name}', 'zh-CN': '显示{name}' },
-  'relight.light.remove': { en: 'Remove {name}', 'zh-CN': '移除{name}' },
+  'relight.light.duplicate': {
+    en: 'Duplicate {name}',
+    'zh-CN': '复制{name}'
+  },
+  'relight.light.remove': { en: 'Delete {name}', 'zh-CN': '删除{name}' },
   'relight.kind': { en: 'Kind', 'zh-CN': '类型' },
   'relight.kind.point': { en: 'Point', 'zh-CN': '点光' },
   'relight.kind.directional': { en: 'Directional', 'zh-CN': '平行光' },
-  'relight.brightness': { en: 'Brightness', 'zh-CN': '亮度' },
+  'relight.intensity': { en: 'Intensity', 'zh-CN': '强度' },
   'relight.softness': { en: 'Softness', 'zh-CN': '柔和度' },
+  'relight.direction': { en: 'Direction', 'zh-CN': '方向' },
+  'relight.elevation': { en: 'Elevation', 'zh-CN': '仰角' },
+  'relight.castShadows': { en: 'Cast shadows', 'zh-CN': '投射阴影' },
   'relight.color': { en: 'Color', 'zh-CN': '颜色' },
   'relight.color.warm': { en: 'Warm', 'zh-CN': '暖色' },
   'relight.color.cream': { en: 'Cream', 'zh-CN': '奶油色' },
   'relight.color.white': { en: 'White', 'zh-CN': '白色' },
   'relight.color.cool': { en: 'Cool blue', 'zh-CN': '冷蓝' },
   'relight.color.magenta': { en: 'Magenta', 'zh-CN': '洋红' },
+  'relight.color.custom': { en: 'Custom color', 'zh-CN': '自定义颜色' },
   'relight.scene': { en: 'Scene', 'zh-CN': '场景' },
-  'relight.scene.shadows': { en: 'Shadows', 'zh-CN': '有阴影' },
-  'relight.scene.noShadows': { en: 'No shadows', 'zh-CN': '无阴影' },
-  'relight.scene.castShadows': { en: 'Cast shadows', 'zh-CN': '投射阴影' },
   'relight.scene.ambient': { en: 'Ambient light', 'zh-CN': '环境光' },
+  'relight.scene.ambientColor': { en: 'Ambient color', 'zh-CN': '环境光颜色' },
   'relight.scene.removeOriginal': {
     en: 'Remove original lighting',
     'zh-CN': '去除原有光照'
   },
-  'relight.scene.prompt': {
-    en: 'Describe the light, optional',
-    'zh-CN': '描述灯光（可选）'
+  'relight.scene.reflections': {
+    en: 'Surface reflections',
+    'zh-CN': '表面反射'
   },
-  'relight.scene.promptPlaceholder': {
-    en: 'Late sun through a window',
-    'zh-CN': '傍晚阳光透过窗户'
+  'relight.masks': { en: 'Masks', 'zh-CN': '蒙版' },
+  'relight.masks.applyTo': { en: 'Apply to', 'zh-CN': '应用于' },
+  'relight.masks.area': {
+    en: 'Where {name} shines',
+    'zh-CN': '{name}的照射范围'
   },
+  'relight.masks.whole': { en: 'Whole image', 'zh-CN': '整张图片' },
+  'relight.masks.noLights': {
+    en: 'Add a light to keep it inside a mask.',
+    'zh-CN': '添加一盏灯光后可将其限制在蒙版内。'
+  },
+  'relight.masks.subject': { en: 'Subject', 'zh-CN': '主体' },
+  'relight.masks.subjectPlaceholder': {
+    en: 'Person, sky, red jacket…',
+    'zh-CN': '人物、天空、红色外套…'
+  },
+  'relight.masks.create': { en: 'Create mask', 'zh-CN': '创建蒙版' },
+  'relight.mask.subject': { en: 'Subject', 'zh-CN': '主体' },
+  'relight.mask.show': {
+    en: 'Show {name} on the photo',
+    'zh-CN': '在照片上显示{name}'
+  },
+  'relight.mask.hide': {
+    en: 'Hide {name} on the photo',
+    'zh-CN': '在照片上隐藏{name}'
+  },
+  'relight.mask.remove': { en: 'Delete {name}', 'zh-CN': '删除{name}' },
+  'relight.generation': { en: 'Generation', 'zh-CN': '生成' },
+  'relight.generation.prompt': {
+    en: 'Direction (optional)',
+    'zh-CN': '描述（可选）'
+  },
+  'relight.generation.promptPlaceholder': {
+    en: 'Softer shadow transitions, natural reflections…',
+    'zh-CN': '更柔和的阴影过渡，自然的反射…'
+  },
+  'relight.generation.strength': {
+    en: 'Change strength',
+    'zh-CN': '变化强度'
+  },
+  'relight.generation.options': {
+    en: 'Generation options',
+    'zh-CN': '生成选项'
+  },
+  'relight.generation.area': { en: 'Where to generate', 'zh-CN': '生成区域' },
+  'relight.generation.whole': { en: 'Whole image', 'zh-CN': '整张图片' },
+  'relight.generation.masked': { en: 'Masked area', 'zh-CN': '蒙版区域' },
+  'relight.generation.seed': { en: 'Seed', 'zh-CN': '种子' },
+  'relight.generation.value': { en: '{n}%', 'zh-CN': '{n}%' },
   'relight.close': { en: 'Close', 'zh-CN': '关闭' },
   'relight.run': { en: 'Relight', 'zh-CN': '重新布光' },
   'relight.credits': { en: '{n} credits', 'zh-CN': '{n} 积分' },
   'relight.cancel': { en: 'Cancel', 'zh-CN': '取消' },
   'relight.busy.title': { en: 'Relighting…', 'zh-CN': '正在重新布光…' },
   'relight.busy.detail': {
-    en: '{n} light · about 1 min | {n} lights · about 1 min',
-    'zh-CN': '{n} 盏灯 · 约 1 分钟'
+    en: '{time} · {n} light | {time} · {n} lights',
+    'zh-CN': '{time} · {n} 盏灯'
   },
   'relight.failed': {
     en: 'The relight didn’t finish. No credits were used.',

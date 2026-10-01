@@ -1,5 +1,4 @@
 import type { Light, RelightScene } from './lights'
-import { lightHex } from './lights'
 
 export interface PreviewGlow {
   readonly id: string
@@ -15,13 +14,12 @@ const clamp = (value: number, min: number, max: number) =>
 
 /**
  * How dark to lay a shade over the photo before the new lights: more as
- * the original lighting is removed or shadows are cast, less with ambient.
+ * the original lighting is removed, less with ambient. Where WebGL is not
+ * available this stands in for the per-pixel preview.
  */
 export function previewShade(scene: RelightScene): number {
   const shade =
-    (scene.removeOriginal / 100) * 0.55 +
-    (scene.shadows ? 0.12 : 0) -
-    (scene.ambient / 100) * 0.3
+    (scene.removeOriginal / 100) * 0.55 + 0.1 - (scene.ambient / 100) * 0.3
   return clamp(shade, 0, 0.7)
 }
 
@@ -40,8 +38,8 @@ export function previewGlows(lights: readonly Light[]): PreviewGlow[] {
       return {
         id: light.id,
         style: {
-          backgroundImage: `radial-gradient(ellipse ${reach}% ${reach}% at ${at}, ${lightHex(light.color)} 0%, transparent 100%)`,
-          opacity: clamp(light.brightness / 100, 0, 1),
+          backgroundImage: `radial-gradient(ellipse ${reach}% ${reach}% at ${at}, ${light.color} 0%, transparent 100%)`,
+          opacity: clamp(light.intensity / 100, 0, 1),
           mixBlendMode: light.kind === 'directional' ? 'soft-light' : 'screen'
         }
       }

@@ -2,8 +2,9 @@
 import type { Locale } from '../../../i18n/translations'
 import { lc } from '../../../lib/workshop/relight/copy'
 import type { Light } from '../../../lib/workshop/relight/lights'
-import RelightKind from './RelightKind.vue'
-import RelightSlider from './RelightSlider.vue'
+import EditorSegmented from '../app-editor/EditorSegmented.vue'
+import EditorSlider from '../app-editor/EditorSlider.vue'
+import EditorSwitch from '../app-editor/EditorSwitch.vue'
 import RelightSwatches from './RelightSwatches.vue'
 
 const { light, locale = 'en' } = defineProps<{
@@ -12,35 +13,71 @@ const { light, locale = 'en' } = defineProps<{
 }>()
 
 const emit = defineEmits<{ change: [patch: Partial<Light>, key?: string] }>()
+
+const kinds = [
+  { id: 'point', label: lc('relight.kind.point', locale) },
+  { id: 'directional', label: lc('relight.kind.directional', locale) }
+] as const
 </script>
 
 <template>
   <div
-    class="flex flex-col gap-2.5 border-t border-transparency-white-t8 px-1 pt-2.5"
+    class="flex flex-col gap-3 rounded-xl border border-transparency-white-t8 bg-transparency-white-t4 p-3"
+    data-testid="relight-light-editor"
   >
-    <RelightSlider
-      :model-value="light.brightness"
-      :label="lc('relight.brightness', locale)"
+    <EditorSegmented
+      :model-value="light.kind"
+      :label="lc('relight.kind', locale)"
+      :options="kinds"
+      @update:model-value="(kind) => emit('change', { kind })"
+    />
+    <RelightSwatches
+      :model-value="light.color"
+      :label="lc('relight.color', locale)"
+      :locale
+      @update:model-value="(color) => emit('change', { color })"
+    />
+    <EditorSlider
+      :model-value="light.intensity"
+      :label="lc('relight.intensity', locale)"
       @update:model-value="
-        (brightness) => emit('change', { brightness }, `brightness:${light.id}`)
+        (intensity) => emit('change', { intensity }, `intensity:${light.id}`)
       "
     />
-    <RelightSlider
+    <EditorSlider
+      v-if="light.kind === 'point'"
       :model-value="light.softness"
       :label="lc('relight.softness', locale)"
       @update:model-value="
         (softness) => emit('change', { softness }, `softness:${light.id}`)
       "
     />
-    <RelightSwatches
-      :model-value="light.color"
-      :locale
-      @update:model-value="(color) => emit('change', { color })"
-    />
-    <RelightKind
-      :model-value="light.kind"
-      :locale
-      @update:model-value="(kind) => emit('change', { kind })"
+    <template v-else>
+      <EditorSlider
+        :model-value="light.direction"
+        :label="lc('relight.direction', locale)"
+        :min="-180"
+        :max="180"
+        unit="°"
+        @update:model-value="
+          (direction) => emit('change', { direction }, `direction:${light.id}`)
+        "
+      />
+      <EditorSlider
+        :model-value="light.elevation"
+        :label="lc('relight.elevation', locale)"
+        :min="-90"
+        :max="90"
+        unit="°"
+        @update:model-value="
+          (elevation) => emit('change', { elevation }, `elevation:${light.id}`)
+        "
+      />
+    </template>
+    <EditorSwitch
+      :model-value="light.shadows"
+      :label="lc('relight.castShadows', locale)"
+      @update:model-value="(shadows) => emit('change', { shadows })"
     />
   </div>
 </template>

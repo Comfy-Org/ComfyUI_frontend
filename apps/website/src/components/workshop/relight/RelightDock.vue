@@ -1,141 +1,73 @@
 <script setup lang="ts">
-import { Eye, Lightbulb, Plus, Redo2, SunDim, Undo2 } from '@lucide/vue'
+import { Plus, SunDim } from '@lucide/vue'
 
-import type { RelightTray } from '../../../composables/useRelight'
+import type { Relight } from '../../../composables/useRelight'
 import type { Locale } from '../../../i18n/translations'
 import { lc } from '../../../lib/workshop/relight/copy'
-import type {
-  Light,
-  MoodId,
-  RelightScene
-} from '../../../lib/workshop/relight/lights'
 import { MOOD_LABELS } from '../../../lib/workshop/relight/lights'
-import { RELIGHT_CREDITS } from '../../../lib/workshop/relight/mock-run'
 import EditorChip from '../app-editor/EditorChip.vue'
 import EditorDivider from '../app-editor/EditorDivider.vue'
-import EditorRun from '../app-editor/EditorRun.vue'
 import EditorTool from '../app-editor/EditorTool.vue'
 import RelightDots from './RelightDots.vue'
+import RelightRun from './RelightRun.vue'
 
-const {
-  lights,
-  mood,
-  scene,
-  tray,
-  full,
-  canUndo,
-  canRedo,
-  canRun,
-  running,
-  locale = 'en'
-} = defineProps<{
-  lights: readonly Light[]
-  mood: MoodId
-  scene: RelightScene
-  tray?: RelightTray
-  full: boolean
-  canUndo: boolean
-  canRedo: boolean
-  canRun: boolean
-  running: boolean
+const { relight, locale = 'en' } = defineProps<{
+  relight: Relight
   locale?: Locale
 }>()
 
-const preview = defineModel<boolean>('preview', { required: true })
-const emit = defineEmits<{
-  add: []
-  undo: []
-  redo: []
-  tray: [tray: RelightTray]
-  run: []
-  cancel: []
-}>()
+const { setup, tray, phase, full } = relight
 </script>
 
 <template>
   <EditorTool
-    :icon="Lightbulb"
-    :label="lc('relight.tool.preview', locale)"
-    :pressed="preview"
-    :disabled="running"
-    @click="preview = true"
-  />
-  <EditorTool
-    :icon="Eye"
-    :label="lc('relight.tool.original', locale)"
-    :pressed="!preview"
-    :disabled="running"
-    @click="preview = false"
-  />
-  <EditorDivider />
-  <EditorTool
     :icon="Plus"
     :label="lc('relight.tool.add', locale)"
-    :disabled="running || full"
-    @click="emit('add')"
-  />
-  <EditorTool
-    :icon="Undo2"
-    :label="lc('relight.tool.undo', locale)"
-    icon-only
-    :disabled="running || !canUndo"
-    @click="emit('undo')"
-  />
-  <EditorTool
-    :icon="Redo2"
-    :label="lc('relight.tool.redo', locale)"
-    icon-only
-    :disabled="running || !canRedo"
-    @click="emit('redo')"
+    :disabled="phase.kind === 'running' || full"
+    @click="relight.addLight()"
   />
   <EditorDivider />
   <EditorChip
-    :label="lc('relight.mood', locale)"
-    :value="lc(MOOD_LABELS[mood], locale)"
-    :expanded="tray === 'mood'"
-    :disabled="running"
-    compact
-    @click="emit('tray', 'mood')"
-  >
-    <RelightDots :colors="lights.slice(0, 1).map((light) => light.color)" />
-  </EditorChip>
-  <EditorChip
     :label="lc('relight.lights', locale)"
-    :value="String(lights.length)"
+    :value="String(setup.lights.length)"
     :expanded="tray === 'lights'"
-    :disabled="running"
+    :disabled="phase.kind === 'running'"
     compact
-    @click="emit('tray', 'lights')"
+    @click="relight.toggleTray('lights')"
   >
-    <RelightDots :colors="lights.map((light) => light.color)" />
+    <RelightDots :colors="setup.lights.map((light) => light.color)" />
   </EditorChip>
   <EditorChip
     :label="lc('relight.scene', locale)"
-    :value="
-      lc(
-        scene.shadows ? 'relight.scene.shadows' : 'relight.scene.noShadows',
-        locale
-      )
-    "
+    :value="lc(MOOD_LABELS[setup.mood], locale)"
     :expanded="tray === 'scene'"
-    :disabled="running"
+    :disabled="phase.kind === 'running'"
     compact
-    @click="emit('tray', 'scene')"
+    @click="relight.toggleTray('scene')"
   >
     <SunDim
       class="-ml-0.5 size-3.5 text-primary-warm-gray"
       aria-hidden="true"
     />
   </EditorChip>
-  <EditorDivider class="max-sm:hidden" />
-  <EditorRun
-    :label="lc('relight.run', locale)"
-    :credits="lc('relight.credits', locale, { n: RELIGHT_CREDITS })"
-    :cancel-label="lc('relight.cancel', locale)"
-    :running
-    :disabled="!canRun"
-    data-testid="relight-run"
-    @run="emit('run')"
-    @cancel="emit('cancel')"
+  <EditorChip
+    :label="lc('relight.masks', locale)"
+    :value="String(setup.masks.length)"
+    :expanded="tray === 'masks'"
+    :disabled="phase.kind === 'running'"
+    compact
+    @click="relight.toggleTray('masks')"
   />
+  <EditorChip
+    :label="lc('relight.generation', locale)"
+    :value="
+      lc('relight.generation.value', locale, { n: setup.generation.strength })
+    "
+    :expanded="tray === 'generation'"
+    :disabled="phase.kind === 'running'"
+    compact
+    @click="relight.toggleTray('generation')"
+  />
+  <EditorDivider class="max-sm:hidden" />
+  <RelightRun :relight :locale />
 </template>

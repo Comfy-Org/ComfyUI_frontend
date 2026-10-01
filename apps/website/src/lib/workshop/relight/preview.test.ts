@@ -5,7 +5,7 @@ import { previewGlows, previewShade } from './preview'
 
 describe('previewGlows', () => {
   it('draws a glow for each visible light at its place, in its color', () => {
-    const shown = { ...newLight('a', 'A', 0), color: 'warm' as const }
+    const shown = { ...newLight('a', 'A', 0), color: '#ffb35c' }
     const hidden = { ...newLight('b', 'B', 1), visible: false }
 
     const glows = previewGlows([shown, hidden])
@@ -13,7 +13,7 @@ describe('previewGlows', () => {
     expect(glows.map(({ id }) => id)).toEqual(['a'])
     expect(glows[0].style.backgroundImage).toContain('at 50% 20%')
     expect(glows[0].style.backgroundImage).toContain('#ffb35c')
-    expect(glows[0].style.opacity).toBeCloseTo(shown.brightness / 100)
+    expect(glows[0].style.opacity).toBeCloseTo(shown.intensity / 100)
   })
 
   it('spreads a softer light further', () => {
@@ -30,17 +30,12 @@ describe('previewShade', () => {
     {
       name: 'darkens as the original lighting is removed',
       scene: { removeOriginal: 100, ambient: 0 },
-      shade: 0.67
+      shade: 0.65
     },
     {
       name: 'lifts with ambient light',
       scene: { removeOriginal: 0, ambient: 100 },
       shade: 0
-    },
-    {
-      name: 'lightens when shadows are off',
-      scene: { removeOriginal: 100, ambient: 0, shadows: false },
-      shade: 0.55
     }
   ])('$name', ({ scene, shade }) => {
     expect(previewShade({ ...DEFAULT_SCENE, ...scene })).toBeCloseTo(shade)

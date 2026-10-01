@@ -1,29 +1,38 @@
 <script setup lang="ts">
 import { useTemplateRef } from 'vue'
 
-import type { RelightImage } from '../../../composables/useRelight'
+import type { RelightImage, RelightView } from '../../../composables/useRelight'
 import type { Locale } from '../../../i18n/translations'
 import { lc } from '../../../lib/workshop/relight/copy'
-import type { Light, RelightScene } from '../../../lib/workshop/relight/lights'
+import type {
+  Light,
+  RelightMask,
+  RelightScene
+} from '../../../lib/workshop/relight/lights'
 import { moveLight } from '../../../lib/workshop/relight/lights'
 import { RELIGHT_EXAMPLE } from '../../../lib/workshop/relight/mock-run'
 import EditorFrame from '../app-editor/EditorFrame.vue'
+import RelightCanvas from './RelightCanvas.vue'
 import RelightLightDot from './RelightLightDot.vue'
-import RelightPreview from './RelightPreview.vue'
+import RelightMaskOutline from './RelightMaskOutline.vue'
 
 const {
   image,
   lights,
+  masks,
   scene,
   selected,
-  preview,
+  view,
+  handles,
   locale = 'en'
 } = defineProps<{
   image: RelightImage
   lights: readonly Light[]
+  masks: readonly RelightMask[]
   scene: RelightScene
   selected?: string
-  preview: boolean
+  view: RelightView
+  handles: boolean
   locale?: Locale
 }>()
 
@@ -88,17 +97,31 @@ function nudge(light: Light, dx: number, dy: number) {
         draggable="false"
         class="pointer-events-none size-full rounded-sm object-cover"
       />
-      <RelightPreview v-if="preview" :lights :scene />
-      <RelightLightDot
-        v-for="light in lights"
-        :key="light.id"
-        :light
-        :label="lc('relight.light.dot', locale, { name: light.name })"
-        :selected="light.id === selected"
-        @grab="(event) => grab(light, event)"
-        @nudge="(dx, dy) => nudge(light, dx, dy)"
-        @focus="emit('select', light.id)"
+      <RelightCanvas
+        v-show="view !== 'original'"
+        :url="image.url"
+        :lights
+        :masks
+        :scene
+        :light-map="view === 'lightmap'"
       />
+      <RelightMaskOutline
+        v-for="mask in masks.filter((candidate) => candidate.visible)"
+        :key="mask.id"
+        :mask
+      />
+      <template v-if="handles">
+        <RelightLightDot
+          v-for="light in lights"
+          :key="light.id"
+          :light
+          :label="lc('relight.light.dot', locale, { name: light.name })"
+          :selected="light.id === selected"
+          @grab="(event) => grab(light, event)"
+          @nudge="(dx, dy) => nudge(light, dx, dy)"
+          @focus="emit('select', light.id)"
+        />
+      </template>
     </div>
   </EditorFrame>
 </template>
