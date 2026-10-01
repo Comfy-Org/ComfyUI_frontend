@@ -458,7 +458,11 @@ describe('error mapping', () => {
     expect(error.body).toBeUndefined()
   })
 
-  it('falls back to the HTTP status when the response has no error text', async () => {
+  // `toApiError` falls back to `statusText`, so this branch is only reachable
+  // when the response carries no reason phrase — which is every HTTP/2
+  // response. A `Response` built here leaves `statusText` empty, matching that;
+  // Chromium over HTTP/1.1 would supply "Service Unavailable" instead.
+  it('falls back to the HTTP status when the response has no reason phrase', async () => {
     respond(new Response('', { status: 503 }))
 
     const error = await makeClient()
