@@ -1,7 +1,9 @@
+import type { CapabilityDenialReason } from '../capabilityDenials.js'
 import type {
   BillingTelemetryErrorCode,
   BillingTelemetryFailureCategory
 } from './stages.js'
+import type { PaymentIntentSource } from './vocabulary.js'
 
 /**
  * Checkout-journey lifecycle events for the embedded-checkout rollout.
@@ -16,7 +18,7 @@ export const CHECKOUT_JOURNEY_SCHEMA_VERSION = 1
 
 export type CheckoutJourneyArm = 'control' | 'treatment'
 export type CheckoutAssignmentStatus = 'resolved' | 'unavailable'
-export type CheckoutUiMode = 'embedded' | 'hosted' | 'unknown'
+export type CheckoutUiMode = 'embedded' | 'full_page' | 'hosted' | 'unknown'
 export type CheckoutEntryFlow =
   | 'initial_subscription'
   | 'paid_upgrade'
@@ -60,15 +62,23 @@ export type CheckoutJourneyContext = {
   billing_op_id?: string
 } & CheckoutJourneyAssignment
 
-type CheckoutJourneyEntered = { phase: 'entered' }
+type CheckoutJourneyEntered = {
+  phase: 'entered'
+  /** The click-time entry the link carried, at the shared source grain. */
+  payment_intent_source?: PaymentIntentSource
+}
 type CheckoutJourneyPreviewReady = {
   phase: 'preview_ready'
   preview_revision?: string
 }
+/** Refusals the checkout names itself, beside the codes the billing events share. */
+type CheckoutPreviewErrorCode = 'quote_not_allowed' | 'plan_unavailable'
 type CheckoutJourneyPreviewFailed = {
   phase: 'preview_failed'
   failure_category: BillingTelemetryFailureCategory
-  error_code?: BillingTelemetryErrorCode
+  error_code?: BillingTelemetryErrorCode | CheckoutPreviewErrorCode
+  /** Why the capabilities read refused this checkout. */
+  denial_reason?: CapabilityDenialReason
   preview_revision?: string
 }
 type CheckoutJourneyPaymentElementReady = {

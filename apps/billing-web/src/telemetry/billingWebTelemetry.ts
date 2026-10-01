@@ -4,7 +4,9 @@ import type { WatchSource } from 'vue'
 
 import type {
   BillingTelemetryEvent,
-  BillingTelemetryEventName
+  BillingTelemetryEventName,
+  CheckoutJourneyTelemetryEvent,
+  CheckoutJourneyTelemetryEventName
 } from '@comfyorg/account-core/billing'
 import {
   getBillingTelemetryEventName,
@@ -39,7 +41,7 @@ type PostHogClient = Pick<
 >
 
 interface BillingEvent {
-  readonly name: BillingTelemetryEventName
+  readonly name: BillingTelemetryEventName | CheckoutJourneyTelemetryEventName
   readonly properties: Readonly<Record<string, unknown>>
 }
 
@@ -186,7 +188,9 @@ export function createBillingWebTelemetry() {
     })
   }
 
-  return { startPostHog, trackBillingEvent }
+  function trackCheckoutJourneyEvent(_event: CheckoutJourneyTelemetryEvent) {}
+
+  return { startPostHog, trackBillingEvent, trackCheckoutJourneyEvent }
 }
 
 export const billingWebTelemetry = createBillingWebTelemetry()
