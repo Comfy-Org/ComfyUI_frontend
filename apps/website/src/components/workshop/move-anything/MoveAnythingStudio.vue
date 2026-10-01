@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 
 import type { MoveView } from '../../../composables/useMoveAnything'
 import { useMoveAnything } from '../../../composables/useMoveAnything'
@@ -8,47 +8,21 @@ import type { Locale } from '../../../i18n/translations'
 import { workshopAppRepo } from '../../../lib/workshop/apps'
 import { mc } from '../../../lib/workshop/move-anything/copy'
 import AppEditorShell from '../app-editor/AppEditorShell.vue'
-import EditorBusy from '../app-editor/EditorBusy.vue'
 import EditorHistory from '../app-editor/EditorHistory.vue'
 import MoveAnythingDock from './MoveAnythingDock.vue'
 import MoveAnythingEmpty from './MoveAnythingEmpty.vue'
-import MoveAnythingHint from './MoveAnythingHint.vue'
 import MoveAnythingObjects from './MoveAnythingObjects.vue'
 import MoveAnythingQuality from './MoveAnythingQuality.vue'
 import MoveAnythingResult from './MoveAnythingResult.vue'
 import MoveAnythingResultDock from './MoveAnythingResultDock.vue'
-import MoveAnythingStage from './MoveAnythingStage.vue'
+import MoveAnythingWorkspace from './MoveAnythingWorkspace.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const move = useMoveAnything(locale)
 const { image, objects, phase, tool, tray, quality, selected } = move
 const view = ref<MoveView>('compare')
-const touched = ref(false)
-watch([tool, image], () => (touched.value = false))
-
-function select(id: string) {
-  selected.value = id
-  touched.value = true
-}
-
-function begin() {
-  move.checkpoint()
-  touched.value = true
-}
 reportStudioBusy(() => phase.value.kind === 'moving')
-
-function busyDetail() {
-  return mc('move.busy.detail', locale, {
-    n: move.moved.value.length,
-    wait: mc(
-      quality.value === 'fast'
-        ? 'move.quality.fastHint'
-        : 'move.quality.bestHint',
-      locale
-    )
-  })
-}
 </script>
 
 <template>
@@ -73,30 +47,7 @@ function busyDetail() {
       :view
       :locale
     />
-    <div v-else class="relative size-full">
-      <MoveAnythingStage
-        :image
-        :objects
-        :tool
-        :selected
-        :locale
-        @select="select"
-        @begin="begin"
-        @place="move.place"
-        @add="move.add"
-      >
-        <MoveAnythingHint
-          v-if="!touched && phase.kind === 'arranging'"
-          :tool
-          :locale
-        />
-      </MoveAnythingStage>
-      <EditorBusy
-        v-if="phase.kind === 'moving'"
-        :title="mc('move.busy.title', locale)"
-        :detail="busyDetail()"
-      />
-    </div>
+    <MoveAnythingWorkspace v-else :image :move :locale />
     <template #tray>
       <p
         v-if="phase.kind === 'failed'"
