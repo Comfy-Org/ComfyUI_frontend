@@ -161,7 +161,8 @@ class Load3dAgentHarness {
       // Only the Vue node renderer projects follower edits onto the canvas.
       settings: {
         'Comfy.VueNodes.Enabled': true,
-        'Comfy.Graph.CanvasInfo': false
+        'Comfy.Graph.CanvasInfo': false,
+        'Comfy.Canvas.SelectionToolbox': true
       },
       // The node materializes from the black-box backend's Load3D definition.
       objectInfo: 'server'

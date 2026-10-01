@@ -134,8 +134,9 @@ test.describe(
       await page.setViewportSize({ width: 1600, height: 900 })
       await bootAgentApp(page, true)
 
-      await new AgentPanel(page).open()
-      const panel = page.getByTestId('docked-agent-panel')
+      const agentPanel = new AgentPanel(page)
+      await agentPanel.open()
+      const panel = agentPanel.dockedPanel
       await expect(panel).toBeVisible()
 
       await panel
@@ -147,21 +148,7 @@ test.describe(
 
       await page.setViewportSize({ width: 900, height: 900 })
 
-      await expect
-        .poll(async () => (await panel.boundingBox())?.width ?? 0)
-        .toBeLessThan(960)
-      const box = await panel.boundingBox()
-      expect(box).not.toBeNull()
-      expect(box!.x).toBeGreaterThanOrEqual(-1)
-      expect(box!.x + box!.width).toBeLessThanOrEqual(901)
-
-      // "Inside the window" is not enough on its own: a panel that ignored the
-      // sidebar and took all 900px would satisfy every bound above. Pin it
-      // against the workspace it is supposed to be reserving room for.
-      const sideToolbar = page.getByTestId('side-toolbar')
-      const railBox = await sideToolbar.boundingBox()
-      expect(railBox).not.toBeNull()
-      expect(box!.x).toBeGreaterThanOrEqual(railBox!.x + railBox!.width - 1)
+      await agentPanel.expectPanelSize({ x: 0, width: 900 })
 
       // Still maximized, so the header offers to minimize rather than maximize.
       await expect(

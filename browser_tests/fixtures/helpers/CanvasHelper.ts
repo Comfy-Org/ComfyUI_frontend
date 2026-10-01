@@ -30,6 +30,27 @@ export class CanvasHelper {
     await nextFrame(this.page)
   }
 
+  async getNodesOutsideViewportCount(): Promise<number> {
+    return this.page.evaluate(() => {
+      const app = window.app!
+      const view = app.canvas.canvas.getBoundingClientRect()
+      return app.graph.nodes.filter((node) => {
+        const bounds = node.getBounding()
+        const [left, top] = app.canvasPosToClientPos([bounds[0], bounds[1]])
+        const [right, bottom] = app.canvasPosToClientPos([
+          bounds[0] + bounds[2],
+          bounds[1] + bounds[3]
+        ])
+        return (
+          left < view.left ||
+          top < view.top ||
+          right > view.right ||
+          bottom > view.bottom
+        )
+      }).length
+    })
+  }
+
   async zoom(deltaY: number, steps: number = 1): Promise<void> {
     await this.page.mouse.move(10, 10)
     for (let i = 0; i < steps; i++) {
