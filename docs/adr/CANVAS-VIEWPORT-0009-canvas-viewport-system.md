@@ -44,7 +44,7 @@ Two functions operate on this type:
 
 The existing `LGraphCanvas.resize()` method and `resizeCanvas()` in app.ts both delegate their sizing work to the viewport system. Both paths follow the same sequence: measure → apply → draw.
 
-`LGraphCanvas` caches the active DPR in its `dpr` property. `applyViewport()` updates the consumer's DPR and CSS viewport size atomically; the three viewport callers pass `LGraphCanvas` as that consumer. Most internal consumers (`drawFrontCanvas`, `drawBackCanvas`, `centerOnNode`, `renderInfo`, `processMouseDown` hit testing, and LOD threshold calculation) read the cache. Direct browser-DPR readers remain in `LGraphCanvas.setCanvas()`, `LGraphCanvas.resize()` during measurement, and `useBoundingBoxes`; viewport measurement functions also read the browser value, while `layoutStore` retains a browser fallback for legacy callers. The viewport system therefore coordinates canvas sizing but does not yet own a single DPR read boundary.
+`LGraphCanvas` caches the active DPR in its `dpr` property. `applyViewport()` updates the consumer's DPR and CSS viewport size atomically; the three viewport callers pass `LGraphCanvas` as that consumer. Most internal consumers (`drawFrontCanvas`, `drawBackCanvas`, `centerOnNode`, `renderInfo`, `processMouseDown` hit testing, and LOD threshold calculation) read the cache. Direct browser-DPR readers remain in `LGraphCanvas.setCanvas()`, `LGraphCanvas.resize()` during measurement, `DragAndScale.getViewportSize()`, and `useBoundingBoxes`; viewport measurement functions also read the browser value, while `layoutStore` retains a browser fallback for legacy callers. The viewport system therefore coordinates canvas sizing but does not yet own a single DPR read boundary.
 
 The new `CanvasScheduler` and viewport system have separate responsibilities: the scheduler handles **when** by deferring work until the canvas is visible, while the viewport handles **what** by applying correct DPR-scaled dimensions atomically to both canvases.
 
@@ -75,7 +75,7 @@ Following the principles established in [ADR-ECS-0008](ECS-0008-entity-component
 ### Negative
 
 - Adds a new abstraction layer that all canvas-sizing code must flow through.
-- `LGraphCanvas.setCanvas()`, `LGraphCanvas.resize()`, and `useBoundingBoxes` still read `window.devicePixelRatio` directly. `layoutStore` accepts a caller-supplied `dpr` and falls back to the browser value for legacy callers. A future refactor could consolidate these reads behind one boundary.
+- `LGraphCanvas.setCanvas()`, `LGraphCanvas.resize()`, `DragAndScale.getViewportSize()`, and `useBoundingBoxes` still read `window.devicePixelRatio` directly. `layoutStore` accepts a caller-supplied `dpr` and falls back to the browser value for legacy callers. A future refactor could consolidate these reads behind one boundary.
 
 ## Notes
 
