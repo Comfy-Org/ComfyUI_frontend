@@ -62,7 +62,6 @@ const DEPLOY_TRANSCRIPT = [
         />
       </button>
       <LiveTerminal
-        class="[&_pre]:pt-14"
         :lines="DEPLOY_TRANSCRIPT"
         :label="t('platform.serverlessDeploy.heading', locale)"
         :typewriter="false"
