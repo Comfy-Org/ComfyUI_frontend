@@ -143,8 +143,7 @@ const conversationStore = useAgentConversationStore()
 watch(
   subscription,
   (currentSubscription) => {
-    if (currentSubscription?.agentHasFunds ?? currentSubscription?.hasFunds)
-      conversationStore.resolvePaywalls()
+    if (currentSubscription?.agentHasFunds) conversationStore.resolvePaywalls()
   },
   { immediate: true }
 )
@@ -197,24 +196,22 @@ function onPaywallAction(
         source: 'agent_paywall'
       })
     }
-    openAccountPrecondition('credits')
+    openAccountPrecondition('credits', { source: 'agent_paywall' })
     return
   }
-  openAccountPrecondition('subscription')
+  openAccountPrecondition('subscription', { source: 'agent_paywall' })
 }
 
-const { entries: conversationEntries, completedTurnCount } =
+const { messages: conversationMessages, entries: conversationEntries } =
   storeToRefs(conversationStore)
 watch(
   () =>
-    snapshotAuthoritative.value
-      ? conversationEntries.value
-          .filter(
-            (entry) =>
-              entry.role === 'assistant' &&
-              entry.parts.some((part) => part.type === 'paywall')
+    capabilityReadSettled.value
+      ? conversationMessages.value
+          .filter((message) =>
+            message.parts.some((part) => part.type === 'paywall')
           )
-          .map((entry) => entry.id)
+          .map((message) => message.id)
       : [],
   (paywallMessageIds) => {
     const telemetry = useTelemetry()
@@ -222,7 +219,9 @@ watch(
     for (const id of paywallMessageIds) {
       if (!conversationStore.claimPaywallImpression(id)) continue
       telemetry.trackAgentPaywallShown({
-        reason: toAgentPaywallReason(paywallPresentation.value),
+        reason: snapshotAuthoritative.value
+          ? toAgentPaywallReason(paywallPresentation.value)
+          : 'unknown',
         surface: 'refused_send'
       })
     }
@@ -230,9 +229,7 @@ watch(
   { immediate: true }
 )
 
-const agentHasFunds = computed(
-  () => subscription.value?.agentHasFunds ?? subscription.value?.hasFunds
-)
+const agentHasFunds = computed(() => subscription.value?.agentHasFunds)
 const creditsExhausted = computed(() => {
   if (billingType.value !== 'workspace') return false
   if (!capabilityReadSettled.value) return false
@@ -249,23 +246,26 @@ const creditsExhausted = computed(() => {
 
 const showStandingPaywall = computed(() => {
   if (!creditsExhausted.value) return false
-  return !conversationEntries.value.some(
-    (entry) =>
-      entry.role === 'assistant' &&
-      entry.parts.some((part) => part.type === 'paywall')
+  const latestEntry = conversationEntries.value.at(-1)
+  return !(
+    latestEntry?.role === 'assistant' &&
+    latestEntry.parts.some((part) => part.type === 'paywall')
   )
 })
 
 const agentPanelStore = useAgentPanelStore()
 const billingIdentity = computed(
   () =>
-    `${resolvedUserInfo.value?.id ?? 'anonymous'}:${teamWorkspaceStore.activeWorkspaceId ?? 'none'}`
+    `${resolvedUserInfo.value?.id ?? 'anonymous'}:${teamWorkspaceStore.workspaceId ?? 'none'}`
 )
+
+watch(billingIdentity, () => {
+  agentPanelStore.reportedExhaustionIdentity = null
+})
 
 function onStandingPaywallShown(): void {
   if (
     !showStandingPaywall.value ||
-    !snapshotAuthoritative.value ||
     agentPanelStore.reportedExhaustionIdentity === billingIdentity.value
   )
     return
@@ -273,20 +273,12 @@ function onStandingPaywallShown(): void {
   if (!telemetry) return
   agentPanelStore.reportedExhaustionIdentity = billingIdentity.value
   telemetry.trackAgentPaywallShown({
-    reason: toAgentPaywallReason(paywallPresentation.value),
+    reason: snapshotAuthoritative.value
+      ? toAgentPaywallReason(paywallPresentation.value)
+      : 'unknown',
     surface: 'credits_exhausted'
   })
 }
-
-watch(
-  [billingIdentity, showStandingPaywall, snapshotAuthoritative],
-  ([identity], [previousIdentity]) => {
-    if (identity !== previousIdentity)
-      agentPanelStore.reportedExhaustionIdentity = null
-    onStandingPaywallShown()
-  },
-  { immediate: true }
-)
 
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
@@ -814,30 +806,28 @@ watch(
   [status, conversationTurnId],
   ([value, turnId]) => {
     const completedTurn = wasTurnActive && value === 'idle'
+    wasTurnActive = value !== 'idle'
     if (value === 'idle') {
-      // The immediate idle value on remount is a hydration snapshot, not a
-      // completed turn. A real idle transition is observed after this pass.
-      if (completedTurn) graphActivity.finishTurn()
-    } else graphActivity.startTurn(turnId)
-    if (value === 'idle') {
+      if (completedTurn && billingType.value === 'workspace') {
+        void refreshBillingStatus().catch((error: unknown) => {
+          reportError(error, {
+            errorType: 'error_refreshing_agent_billing_status'
+          })
+        })
+      }
       const completedPath = tabActivity.editingTabPath
       tabActivity.setEditing(null)
       if (completedPath !== null) tabActivity.markModified(completedPath)
     } else if (tabActivity.editingTabPath === null)
       tabActivity.setEditing(resumedTurnTabPath())
-    wasTurnActive = value !== 'idle'
+    if (value === 'idle') {
+      // The immediate idle value on remount is a hydration snapshot, not a
+      // completed turn. A real idle transition is observed after this pass.
+      if (completedTurn) graphActivity.finishTurn()
+    } else graphActivity.startTurn(turnId)
   },
   { immediate: true, flush: 'sync' }
 )
-
-watch(completedTurnCount, () => {
-  if (billingType.value !== 'workspace') return
-  void refreshBillingStatus().catch((error: unknown) => {
-    reportError(error, {
-      errorType: 'error_refreshing_agent_billing_status'
-    })
-  })
-})
 
 const executionErrorStore = useExecutionErrorStore()
 
