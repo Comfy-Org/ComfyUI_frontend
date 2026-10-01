@@ -131,7 +131,6 @@ export function useAgentWorkflowSelection({
     try {
       const workflowId = await prepareWorkflowSelection(tab, isCurrent)
       if (workflowId === undefined || !isCurrent()) return false
-      const previousWorkflowId = editableWorkflowId.value ?? null
       if (!(await workflowService.openWorkflow(tab))) {
         if (isCurrent())
           warnWorkflowSelectionFailed(t('agent.targetNavigationUnavailable'))

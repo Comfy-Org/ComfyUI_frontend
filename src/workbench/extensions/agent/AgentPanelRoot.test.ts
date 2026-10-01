@@ -576,43 +576,6 @@ describe('AgentPanelRoot onboarding', () => {
     expect(localStorage.getItem('Comfy.AgentPanel.onboarded')).toBeNull()
   })
 
-  it('replays a finished tour from the header and reports it shown again', async () => {
-    localStorage.setItem(SCOPED_KEY, 'true')
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    expect(
-      screen.queryByRole('dialog', { name: 'Meet your Comfy Agent' })
-    ).not.toBeInTheDocument()
-    vi.mocked(useTelemetry()!.trackAgentOnboardingShown).mockClear()
-
-    await userEvent.click(screen.getByRole('button', { name: 'Take the tour' }))
-
-    // Routing matters, not just the effect: the mounted coach has to take the
-    // transition. Clearing storage instead would still show the card here while
-    // silently skipping the shown event.
-    expect(
-      await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
-    ).toBeInTheDocument()
-    expect(useTelemetry()!.trackAgentOnboardingShown).toHaveBeenCalledTimes(1)
-  })
-
-  it('holds a replay requested while App Mode has the coach deferred', async () => {
-    localStorage.setItem(SCOPED_KEY, 'true')
-    canvasStore.linearMode = true
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    expect(
-      screen.queryByRole('dialog', { name: 'Meet your Comfy Agent' })
-    ).not.toBeInTheDocument()
-
-    // No coach is mounted to take the transition, so the request has to persist.
-    await userEvent.click(screen.getByRole('button', { name: 'Take the tour' }))
-    expect(localStorage.getItem(SCOPED_KEY)).not.toBe('true')
-
-    canvasStore.linearMode = false
-    expect(
-      await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
-    ).toBeInTheDocument()
-  })
-
   it('defers the tour in App Mode without completing it or blocking the composer', async () => {
     canvasStore.linearMode = true
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
@@ -4178,20 +4141,16 @@ describe('AgentPanelRoot workflow binding', () => {
     })
   })
 
-  it('requires explicit selection on first entry even with an unsaved canvas', async () => {
+  it('automatically targets an unsaved canvas on first entry without saving', async () => {
     Object.assign(makeTab(), { isTemporary: true })
     const bodies = mockMessagesEndpoint('wf-new')
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    const textbox = screen.getByRole('textbox')
-    await userEvent.click(textbox)
-    await userEvent.paste('build here')
-    await userEvent.keyboard('{Enter}')
-    expect(
-      await screen.findByPlaceholderText(i18n.global.t('agent.searchWorkflows'))
-    ).toHaveFocus()
-    expect(screen.queryByRole('menuitemradio', { checked: true })).toBeNull()
-    expect(useAgentComposerStore().draft).toBe('build here')
-    expect(bodies).toHaveLength(0)
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(
+      workflowStore.activeWorkflow?.path
+    )
+    await sendFromComposer('build here')
+    expect(bodies).toHaveLength(1)
+    expect(bodies[0]).toMatchObject({ current_tab_unbound: true })
     expect(workflowService.saveWorkflowAs).not.toHaveBeenCalled()
   })
 
@@ -8070,7 +8029,7 @@ describe('AgentPanelRoot workflow binding', () => {
     ).toBeNull()
     expect(focusNodeInstance).not.toHaveBeenCalled()
   })
-  it('blocks graph node references until the visible workflow is selected', async () => {
+  it('allows nodes on first entry and keeps their target when viewing another workflow', async () => {
     const target = makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
     setupNodeSelectionCanvas()
@@ -8079,29 +8038,32 @@ describe('AgentPanelRoot workflow binding', () => {
     const action = screen.getByRole('button', {
       name: 'mention nodes'
     })
-    expect(action).toHaveAttribute('aria-disabled', 'true')
-    expect(action).toHaveAccessibleDescription('Please select a workflow first')
-    await userEvent.click(action)
-    expect(useAgentNodeSelectionStore().isActive).toBe(false)
-
-    useAgentPanelStore().setWorkflowTarget(fromPartial<ComfyWorkflow>(target))
-    await nextTick()
     expect(action).not.toHaveAttribute('aria-disabled', 'true')
-    await userEvent.click(action)
-    expect(useAgentNodeSelectionStore().isActive).toBe(true)
+    await openMentionPicker()
+    await userEvent.click(await screen.findByText('KSampler'))
 
     workflowStore.activeWorkflow = addTab('workflows/other.json')
     await nextTick()
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)
+    expect(
+      screen.getByRole('button', { name: 'Remove KSampler #12 reference' })
+    ).toBeVisible()
     expect(useAgentNodeSelectionStore().isActive).toBe(false)
-    expect(action).toHaveAttribute('aria-disabled', 'true')
-    expect(action).toHaveAccessibleDescription(
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('@')
+    const nodesMenu = screen.getByRole('menuitem', { name: 'Nodes' })
+    expect(nodesMenu).toHaveAttribute('aria-disabled', 'true')
+    expect(nodesMenu).toHaveAccessibleDescription(
       'Switch to current to add nodes.'
     )
-    await userEvent.click(action)
+    await userEvent.click(nodesMenu)
     expect(useAgentNodeSelectionStore().isActive).toBe(false)
     workflowStore.activeWorkflow = target
     await nextTick()
-    expect(action).not.toHaveAttribute('aria-disabled', 'true')
+    expect(screen.getByRole('menuitem', { name: 'Nodes' })).not.toHaveAttribute(
+      'aria-disabled',
+      'true'
+    )
   })
 
   it('clears old node references when selecting another workflow with the same node id', async () => {

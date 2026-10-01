@@ -5,19 +5,10 @@ import {
   clampSpotlight,
   hitRegionPath,
   noTargetCardLeft,
-  topSafeInset,
-  unionRect
+  topSafeInset
 } from './coachmarkLayout'
 
 const VIEWPORT = { width: 1000, height: 800 }
-
-describe('unionRect', () => {
-  it('spans both rects when they sit side by side', () => {
-    expect(
-      unionRect(new DOMRect(100, 100, 24, 24), new DOMRect(124, 101, 80, 22))
-    ).toEqual(new DOMRect(100, 100, 104, 24))
-  })
-})
 
 describe('clampSpotlight', () => {
   it('grows the target rect by the pad on every side', () => {
