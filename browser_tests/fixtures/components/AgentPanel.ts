@@ -19,6 +19,8 @@ export class AgentPanel {
   public readonly composer: Locator
   public readonly composerPromptArea: Locator
   public readonly sendButton: Locator
+  public readonly nodeSelectionBanner: Locator
+  public readonly activityRows: Locator
 
   constructor(private readonly page: Page) {
     this.root = page.locator('#agent-panel-root')
@@ -49,6 +51,12 @@ export class AgentPanel {
     this.sendButton = this.root.getByRole('button', {
       name: enMessages.agent.send
     })
+    this.nodeSelectionBanner = page.getByTestId('node-selection-mode-banner')
+    this.activityRows = this.root.getByRole('listitem')
+  }
+
+  activityRow(label: string): Locator {
+    return this.activityRows.getByText(label, { exact: true })
   }
 
   /**
