@@ -126,6 +126,20 @@ describe('parseImportSpecifiers', () => {
       )
     ).toEqual(['./script'])
   })
+
+  test('parses TypeScript generics without treating them as JSX', () => {
+    const source = [
+      'const identity = <T>(value: T) => value',
+      "const lazy = import('./dynamic')"
+    ].join('\n')
+    expect(parseImportSpecifiers('generic.ts', source)).toEqual(['./dynamic'])
+    expect(
+      parseImportSpecifiers(
+        'generic.vue',
+        `<script lang="ts">${source}</script>`
+      )
+    ).toEqual(['./dynamic'])
+  })
 })
 
 describe('censusRepository', () => {

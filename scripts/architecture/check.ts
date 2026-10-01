@@ -210,10 +210,27 @@ const owningRole = (
 ): ArchitecturalRole | undefined =>
   record?.modules.find(({ path }) => matchesPath(filename, path))?.role
 
-const scriptBodies = (filename: string, source: string): string[] => {
-  if (!filename.endsWith('.vue')) return [source]
-  return [...source.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(
-    (match) => match[1]
+const scriptKind = (language: string): ScriptKind => {
+  if (language === 'tsx') return ScriptKind.TSX
+  if (language === 'jsx') return ScriptKind.JSX
+  if (language === 'js') return ScriptKind.JS
+  return ScriptKind.TS
+}
+
+const scriptBodies = (
+  filename: string,
+  source: string
+): Array<{ body: string; kind: ScriptKind }> => {
+  if (!filename.endsWith('.vue')) {
+    const extension = filename.split('.').at(-1) ?? 'ts'
+    return [{ body: source, kind: scriptKind(extension) }]
+  }
+  return [...source.matchAll(/<script(\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(
+    (match) => {
+      const attributes = match[1] as string | undefined
+      const language = attributes?.match(/\blang=["'](\w+)["']/)?.[1] ?? 'js'
+      return { body: match[2], kind: scriptKind(language) }
+    }
   )
 }
 
@@ -221,13 +238,13 @@ export const parseImportSpecifiers = (
   filename: string,
   source: string
 ): string[] =>
-  scriptBodies(filename, source).flatMap((body) => {
+  scriptBodies(filename, source).flatMap(({ body, kind }) => {
     const sourceFile = createSourceFile(
       filename,
       body,
       ScriptTarget.Latest,
       true,
-      ScriptKind.TSX
+      kind
     )
     const specifiers: string[] = []
     const visit = (node: Node): void => {
