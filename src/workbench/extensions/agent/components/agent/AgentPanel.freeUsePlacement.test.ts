@@ -78,6 +78,16 @@ describe('AgentPanel free-use placement', () => {
     expect(screen.getByTestId('agent-composer').contains(notice())).toBe(false)
   })
 
+  it('hides the top banner while chat history is open', async () => {
+    mount('top-banner')
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Show chat history' })
+    )
+
+    expect(screen.queryByTestId('agent-free-use-notice')).toBeNull()
+  })
+
   it('puts the near-composer notice between the chat body and the composer', () => {
     mount('near-composer')
 

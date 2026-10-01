@@ -360,7 +360,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
     />
 
     <FreeUseNotice
-      v-if="freeUsePlacement === 'top-banner'"
+      v-if="!showHistory && freeUsePlacement === 'top-banner'"
       placement="top-banner"
       @notice="emit('freeUseNotice', $event)"
     />
