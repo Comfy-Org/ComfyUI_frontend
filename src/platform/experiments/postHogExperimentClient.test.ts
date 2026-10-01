@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const posthog = vi.hoisted(() => ({
+  get_distinct_id: vi.fn(),
   getFeatureFlag: vi.fn(),
   onFeatureFlags: vi.fn()
 }))
@@ -11,6 +12,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 describe('readExperimentVariant', () => {
   beforeEach(() => {
     vi.resetModules()
+    posthog.get_distinct_id.mockReturnValue('person-a')
     posthog.getFeatureFlag.mockReturnValue('treatment')
   })
 
@@ -52,5 +54,20 @@ describe('readExperimentVariant', () => {
       'treatment'
     )
     expect(unsubscribe).toHaveBeenCalledOnce()
+  })
+
+  it('reads a fresh assignment after identity changes', async () => {
+    posthog.onFeatureFlags.mockImplementation((callback) => {
+      callback()
+      return vi.fn()
+    })
+    const { readExperimentVariant } = await import('./postHogExperimentClient')
+
+    await expect(readExperimentVariant('placement')).resolves.toBe('treatment')
+    posthog.get_distinct_id.mockReturnValue('person-b')
+    posthog.getFeatureFlag.mockReturnValue('control')
+
+    await expect(readExperimentVariant('placement')).resolves.toBe('control')
+    expect(posthog.getFeatureFlag).toHaveBeenCalledTimes(2)
   })
 })
