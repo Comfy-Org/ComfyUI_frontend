@@ -61,7 +61,10 @@ const altProvidersSchema = z.object({
     .default([])
 })
 
-function expectAlternateProviders(specs: string[], expected: string[][]): void {
+function expectAlternateProviders(
+  specs: string[],
+  expected: readonly (readonly string[])[]
+): void {
   const actual = specs.map((spec) =>
     altProvidersSchema
       .parse(JSON.parse(spec))
