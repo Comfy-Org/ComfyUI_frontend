@@ -99,6 +99,10 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
       await comfyPage.nodeOps.getNodeRefsByType('LoadVideo')
     expect(loadVideoNode, 'Load Video node was added').toBeDefined()
     const videoWidget = await loadVideoNode.getWidgetByName('file')
+    const rejectionToasts = comfyPage.page.getByText(
+      'Video files need a filename extension. Rename the file (for example, clip.mp4) and try again.',
+      { exact: true }
+    )
     let uploadRequests = 0
     await comfyPage.page.route('**/upload/image', async (route) => {
       uploadRequests += 1
@@ -126,12 +130,9 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
         )
       })
 
-      await expect(
-        comfyPage.page.getByText(
-          'Video files need a filename extension. Rename the file (for example, clip.mp4) and try again.',
-          { exact: true }
-        )
-      ).toBeVisible()
+      await expect(rejectionToasts).toHaveCount(1)
+      await expect(rejectionToasts.first()).toBeVisible()
+      expect(uploadRequests).toBe(0)
       await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
     })
 
@@ -146,12 +147,9 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
         buffer: Buffer.from('video')
       })
 
-      await expect(
-        comfyPage.page.getByText(
-          'Video files need a filename extension. Rename the file (for example, clip.mp4) and try again.',
-          { exact: true }
-        )
-      ).toBeVisible()
+      await expect(rejectionToasts).toHaveCount(2)
+      await expect(rejectionToasts.last()).toBeVisible()
+      expect(uploadRequests).toBe(0)
     })
 
     await test.step('upload a valid video through the same control', async () => {
