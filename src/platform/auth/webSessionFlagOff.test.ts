@@ -16,6 +16,7 @@ import {
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useTelemetry } from '@/platform/telemetry'
 import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
 import { TOKEN_REFRESH_BUFFER_MS } from '@/platform/workspace/workspaceConstants'
 import { api } from '@/scripts/api'
@@ -714,7 +715,7 @@ describe('an interactive sign-in with unified_web_session off', () => {
     remoteConfig.value = {}
   })
 
-  it('never consumes the marker and sends no session request', async () => {
+  it('never consumes the marker and sends no session request or session event', async () => {
     const recorder = installFetchRecorder({ unified_cloud_auth: false })
     await refreshRemoteConfig({ useAuth: false })
 
@@ -725,6 +726,7 @@ describe('an interactive sign-in with unified_web_session off', () => {
     expect(
       recorder.all.filter(({ path }) => path === '/api/auth/session')
     ).toEqual([])
+    expect(useTelemetry()?.trackWebSessionEvent).not.toHaveBeenCalled()
   })
 })
 

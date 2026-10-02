@@ -8,6 +8,7 @@ import type { User } from 'firebase/auth'
 
 import { createWebSessionBillingClient } from '@/session/billingWebClient'
 import { createUnifiedBillingSession } from '@/session/unifiedBillingSession'
+import { billingWebTelemetry } from '@/telemetry/billingWebTelemetry'
 
 const API = 'https://testcloud.comfy.org/api'
 
@@ -28,7 +29,8 @@ function firebaseUser(uid: string): User {
   return user as User
 }
 
-function rememberedFirebase(remembered: User | null) {
+function rememberedFirebase(initial: User | null) {
+  let remembered = initial
   const signOut = vi.fn(async () => undefined)
   const identity: Pick<FirebaseIdentity, 'onUserChanged' | 'signOut'> = {
     onUserChanged: (callback) => {
@@ -39,8 +41,20 @@ function rememberedFirebase(remembered: User | null) {
   }
   return {
     signOut,
+    remember: (user: User) => {
+      remembered = user
+    },
     loadFirebase: vi.fn(async () => identity as FirebaseIdentity)
   }
+}
+
+function unsettledAfter<T>(settling: Promise<T>, ms: number) {
+  return Promise.race([
+    settling,
+    new Promise<'unsettled'>((resolve) =>
+      setTimeout(() => resolve('unsettled'), ms)
+    )
+  ])
 }
 
 function workspaceRoute(workspace: Response | (() => Response)) {
@@ -66,13 +80,29 @@ const TEAM = new Response(
   })
 )
 
+function trackedWebSessionEvents() {
+  const track = vi
+    .spyOn(billingWebTelemetry, 'trackWebSessionEvent')
+    .mockImplementation(() => undefined)
+  return () => track.mock.calls.map(([event]) => event)
+}
+
+function bootstrapEvent(outcome: string) {
+  return {
+    name: 'session_bootstrap',
+    properties: { outcome, origin: globalThis.location.origin }
+  }
+}
+
 function setup({
   state = LIVE,
   remembered = null as User | null,
   workspace = workspaceRoute(TEAM),
-  workspaceId = undefined as string | undefined
+  workspaceId = undefined as string | undefined,
+  creationOutages = 0
 } = {}) {
   const endpoint = createFakeWebSessionEndpoint({ state })
+  const outage = { remaining: creationOutages }
   const sent: SentRequest[] = []
   const fetchImpl = vi.fn<typeof fetch>(async (input, init = {}) => {
     const url = new URL(String(input))
@@ -85,6 +115,16 @@ function setup({
       )
     })
     if (url.pathname === '/api/workspaces/current') return workspace()
+    if (
+      init.method === 'POST' &&
+      url.pathname === '/api/auth/session' &&
+      outage.remaining > 0
+    ) {
+      outage.remaining -= 1
+      return new Response(JSON.stringify({ code: 'unavailable' }), {
+        status: 503
+      })
+    }
     if (url.pathname.startsWith('/api/billing/')) {
       return new Response(JSON.stringify({}))
     }
@@ -99,11 +139,12 @@ function setup({
     workspaceId: () => entry.workspaceId
   })
   const paths = () => sent.map((r) => `${r.method} ${r.path}`)
-  return { session, sent, firebase, paths, entry }
+  return { session, sent, firebase, paths, entry, outage }
 }
 
 describe('billing-web on the shared web session', () => {
   it('signs in from a live session without touching Firebase (SS1)', async () => {
+    const tracked = trackedWebSessionEvents()
     const { session, firebase, sent, paths } = setup({
       workspaceId: 'ws-team'
     })
@@ -112,6 +153,7 @@ describe('billing-web on the shared web session', () => {
     await expect(session.signInPort.loadIdentity()).resolves.toBeUndefined()
 
     expect(firebase.loadFirebase).not.toHaveBeenCalled()
+    expect(tracked()).toEqual([bootstrapEvent('signed_in')])
     expect(paths()).toEqual([
       'GET /api/auth/session',
       'GET /api/workspaces/current'
@@ -145,29 +187,34 @@ describe('billing-web on the shared web session', () => {
       name: 'no session, nothing remembered: sign-in',
       state: { kind: 'dead', code: 'no_session' },
       remembered: null,
-      phase: 'signed-out'
+      phase: 'signed-out',
+      outcome: 'signed_out'
     },
     {
       name: 'expired session, nothing remembered: sign-in',
       state: { kind: 'dead', code: 'session_expired' },
       remembered: null,
-      phase: 'signed-out'
+      phase: 'signed-out',
+      outcome: 'signed_out'
     },
     {
       name: 'no session, a remembered login: silent restore',
       state: { kind: 'dead', code: 'no_session' },
       remembered: 'user-1',
-      phase: 'authenticated'
+      phase: 'authenticated',
+      outcome: 'restored'
     },
     {
       name: 'revoked session: sign-in',
       state: { kind: 'dead', code: 'session_revoked' },
       remembered: 'user-1',
-      phase: 'signed-out'
+      phase: 'signed-out',
+      outcome: 'revoked'
     }
   ] as const)(
     '$name, consulting Firebase only then',
-    async ({ state, remembered, phase }) => {
+    async ({ state, remembered, phase, outcome }) => {
+      const tracked = trackedWebSessionEvents()
       const { session, firebase } = setup({
         state,
         remembered: remembered === null ? null : firebaseUser(remembered)
@@ -176,6 +223,7 @@ describe('billing-web on the shared web session', () => {
       await expect(session.settledPhase()).resolves.toBe(phase)
 
       expect(firebase.loadFirebase).toHaveBeenCalled()
+      expect(tracked()).toEqual([bootstrapEvent(outcome)])
     }
   )
 
@@ -349,4 +397,62 @@ describe('billing-web on the shared web session', () => {
       expect(session.scopeSource.getScope()?.workspaceId).toBe(scope)
     }
   )
+
+  describe('when creating the shared session is unavailable', () => {
+    it('Try again creates it for the Firebase user who just signed in', async () => {
+      const { session, firebase, paths } = setup({
+        state: { kind: 'dead', code: 'no_session' },
+        creationOutages: 1
+      })
+      await expect(session.settledPhase()).resolves.toBe('signed-out')
+      await session.signInPort.loadIdentity()
+      const user = firebaseUser('user-1')
+      firebase.remember(user)
+
+      await expect(session.signInPort.establish(user)).resolves.toEqual({
+        status: 'error',
+        code: 'TOKEN_EXCHANGE_FAILED'
+      })
+      await expect(session.signInPort.establish()).resolves.toEqual({
+        status: 'ok'
+      })
+
+      expect(
+        paths().filter((path) => path === 'POST /api/auth/session')
+      ).toHaveLength(2)
+      expect(session.billedScope.value?.workspace.id).toBe('ws-team')
+    })
+
+    it('settles to sign-in for a remembered login, and Try again restores it once the endpoint answers', async () => {
+      const { session, outage } = setup({
+        state: { kind: 'dead', code: 'no_session' },
+        remembered: firebaseUser('user-1'),
+        creationOutages: Number.POSITIVE_INFINITY
+      })
+
+      await expect(unsettledAfter(session.settledPhase(), 100)).resolves.toBe(
+        'signed-out'
+      )
+
+      outage.remaining = 0
+      await expect(session.signInPort.establish()).resolves.toEqual({
+        status: 'ok'
+      })
+      expect(session.billedScope.value?.workspace.id).toBe('ws-team')
+    })
+
+    it('Try again without any Firebase user asks for sign-in without a request', async () => {
+      const { session, sent } = setup({
+        state: { kind: 'dead', code: 'no_session' }
+      })
+      await session.settledPhase()
+      const before = sent.length
+
+      await expect(session.signInPort.establish()).resolves.toEqual({
+        status: 'error',
+        code: 'NOT_AUTHENTICATED'
+      })
+      expect(sent).toHaveLength(before)
+    })
+  })
 })

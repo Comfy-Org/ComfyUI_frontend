@@ -38,6 +38,7 @@ import {
   webSessionResourceHeader,
   webSessionSend
 } from '@/platform/auth/session/webSessionFetch'
+import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
@@ -385,40 +386,69 @@ describe('cloud app on the shared web session (unified_web_session on)', () => {
       name: '200 for the remembered user signs in as is',
       session: { userId: 'user-a' },
       requests: ['GET'],
-      signsOutLocally: false
+      signsOutLocally: false,
+      outcome: 'signed_in'
     },
     {
       name: '200 for another user signs the remembered login out',
       session: { userId: 'user-b' },
       requests: ['GET'],
-      signsOutLocally: true
+      signsOutLocally: true,
+      outcome: 'signed_in'
     },
     {
       name: '401 session_revoked signs out and never restores',
       session: 'revoked',
       requests: ['GET'],
-      signsOutLocally: true
+      signsOutLocally: true,
+      outcome: 'revoked'
     },
     {
       name: '401 no_session restores once from the remembered login',
       session: 'none',
       requests: ['GET', 'POST', 'GET'],
-      signsOutLocally: false
+      signsOutLocally: false,
+      outcome: 'restored'
     }
   ] satisfies {
     name: string
     session: ServerSession
     requests: string[]
     signsOutLocally: boolean
-  }[])('boot: $name', async ({ session, requests, signsOutLocally }) => {
-    const server = installServer(session)
+    outcome: string
+  }[])(
+    'boot: $name',
+    async ({ session, requests, signsOutLocally, outcome }) => {
+      const server = installServer(session)
+      await refreshRemoteConfig({ useAuth: false })
+      identity.signIn(USER_A)
+
+      await useSessionCookie().ensureSessionCookie()
+
+      expect(methodsOf(server.requests)).toEqual(requests)
+      expect(firebaseSignOut).toHaveBeenCalledTimes(signsOutLocally ? 1 : 0)
+      expect(
+        useTelemetry()?.trackWebSessionEvent
+      ).toHaveBeenCalledExactlyOnceWith({
+        name: 'session_bootstrap',
+        properties: { outcome, origin: location.origin }
+      })
+    }
+  )
+
+  it('reports a session revoked under a signed-in tab as signed out remotely', async () => {
+    const server = installServer({ userId: 'user-a' })
     await refreshRemoteConfig({ useAuth: false })
     identity.signIn(USER_A)
-
     await useSessionCookie().ensureSessionCookie()
 
-    expect(methodsOf(server.requests)).toEqual(requests)
-    expect(firebaseSignOut).toHaveBeenCalledTimes(signsOutLocally ? 1 : 0)
+    server.session = 'revoked'
+    await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
+
+    expect(useTelemetry()?.trackWebSessionEvent).toHaveBeenLastCalledWith({
+      name: 'session_signed_out_remotely',
+      properties: { origin: location.origin }
+    })
   })
 
   it.for([
@@ -601,6 +631,7 @@ function installIngest(features: Record<string, boolean> = {}) {
   const ingest = {
     userId: 'user-a',
     csrfToken: 'csrf-1',
+    sessionDown: false,
     refusals: [] as string[],
     mintRefusal: undefined as (() => Response) | undefined,
     mintGate: undefined as Promise<void> | undefined,
@@ -668,14 +699,17 @@ function installIngest(features: Record<string, boolean> = {}) {
     )
   }
 
+  const answerSession = (): Response =>
+    ingest.sessionDown
+      ? jsonResponse({ code: 'unavailable', message: 'down' }, 503)
+      : jsonResponse({
+          ...sessionBody(ingest.userId),
+          csrf_token: ingest.csrfToken
+        })
+
   const respond = (request: ApiRequest, body: unknown): Response => {
     const { path, headers } = request
-    if (path === '/api/auth/session') {
-      return jsonResponse({
-        ...sessionBody(ingest.userId),
-        csrf_token: ingest.csrfToken
-      })
-    }
+    if (path === '/api/auth/session') return answerSession()
     if (path === '/api/auth/token') return mint(body)
     if (path === '/api/workspaces/current') {
       if (ingest.currentWorkspaceDown) return ingest.currentWorkspaceDown()
@@ -814,31 +848,46 @@ describe('cloud API requests on the shared web session', () => {
     {
       name: 'the same user is re-read once and retried once with the fresh token',
       sessionUser: 'user-a',
+      sessionDown: false,
       status: 200,
       tokens: ['csrf-1', 'session', 'csrf-2', 'csrf-2']
     },
     {
-      name: 'a changed user abandons the request',
+      name: 'a changed user abandons the request and the tab follows the new account',
       sessionUser: 'user-b',
+      sessionDown: false,
+      status: 403,
+      tokens: ['csrf-1', 'session', 'csrf-2']
+    },
+    {
+      name: 'a failed re-read abandons the request',
+      sessionUser: 'user-a',
+      sessionDown: true,
       status: 403,
       tokens: ['csrf-1', 'session', 'csrf-1']
     }
-  ])('csrf_invalid: $name', async ({ sessionUser, status, tokens }) => {
-    const ingest = await bootOnSession()
-    ingest.refusals.push('csrf_invalid')
-    ingest.userId = sessionUser
-    ingest.csrfToken = 'csrf-2'
+  ])(
+    'csrf_invalid: $name',
+    async ({ sessionUser, sessionDown, status, tokens }) => {
+      const ingest = await bootOnSession()
+      ingest.refusals.push('csrf_invalid')
+      ingest.userId = sessionUser
+      ingest.sessionDown = sessionDown
+      ingest.csrfToken = 'csrf-2'
 
-    const response = await postPrompt()
-    await postPrompt()
+      const response = await postPrompt()
+      const signedInAfterRefusal = useCloudWebSessionStore().signedInUser?.id
+      await postPrompt()
 
-    expect(response.status).toBe(status)
-    expect(
-      ingest.requests.map(({ path, headers }) =>
-        path === '/api/auth/session' ? 'session' : headers['x-csrf-token']
-      )
-    ).toEqual(tokens)
-  })
+      expect(response.status).toBe(status)
+      expect(signedInAfterRefusal).toBe(sessionUser)
+      expect(
+        ingest.requests.map(({ path, headers }) =>
+          path === '/api/auth/session' ? 'session' : headers['x-csrf-token']
+        )
+      ).toEqual(tokens)
+    }
+  )
 
   it('workspace_access_denied drops the selection and is never replayed', async () => {
     const ingest = await bootOnSession()
