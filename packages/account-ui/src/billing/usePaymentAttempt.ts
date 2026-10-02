@@ -83,7 +83,8 @@ export function usePaymentAttempt(
     openUrl,
     navigationMode = 'new_tab',
     challengePort,
-    autoContinue = () => true
+    autoContinue = () => true,
+    methodKind = () => undefined
   } = navigation
   const tracked = useBillingOperation({ kind }, client)
   const dismissedId = ref<string>()
@@ -103,13 +104,27 @@ export function usePaymentAttempt(
   function continueVerification() {
     const state = operation.value
     if (state?.phase !== 'pending') return
+    const method = methodKind()
     if (state.presentation === 'hosted') {
       if (state.actionUrl !== undefined) {
+        client.lifecycle.reportHostedStepOpened(
+          state.id,
+          navigationMode === 'redirect' ? 'redirect' : 'new_tab',
+          method
+        )
         openUrl(state.actionUrl, navigationMode)
       }
       return
     }
     if (challengePort === undefined) return
+    // A non-card method finishes its challenge on the provider's site.
+    if (
+      state.challenge?.status === 'required' &&
+      method !== undefined &&
+      method !== 'card'
+    ) {
+      client.lifecycle.reportHostedStepOpened(state.id, 'redirect', method)
+    }
     void driveEmbeddedChallenge(client.lifecycle, state.id, challengePort)
   }
 

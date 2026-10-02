@@ -262,6 +262,8 @@ interface OperationRecord {
   waitingWithoutActionSince: number | undefined
   timer: ReturnType<typeof setTimeout> | undefined
   inFlightPoll: Promise<void> | undefined
+  /** A hosted step this tab opened in a new tab; the next wake is the customer back. */
+  awaitingReturn: HostedStepVisit | undefined
   readonly settled: Promise<BillingOperationState>
   resolveSettled: (state: BillingOperationState) => void
 }
@@ -278,6 +280,8 @@ interface AdoptInput {
   readonly awaitedHere: boolean
   /** A status already read for this operation; observed from it instead of polled again. */
   readonly initialStatus?: BillingOpStatus
+  /** The hosted step a redirect left this page for; adopting it is the return. */
+  readonly returnedFrom?: BillingOperationPointer['redirect']
 }
 
 interface ServerPendingOperation {
@@ -363,6 +367,19 @@ const FRICTION_EVENT_NAME = {
     BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT.challengeCompleted,
   challenge_failed: BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT.challengeFailed
 } as const satisfies Record<PaymentFrictionSignal['stage'], string>
+
+/** What the hosted page asks of the customer, from what the server waits on. */
+function hostedStepOf(state: PendingBillingOperation): CheckoutHostedStep {
+  if (
+    state.authenticationState === 'requires_action' ||
+    (state.presentation === 'embedded' && state.challenge !== undefined)
+  ) {
+    return 'authentication'
+  }
+  if (state.serverPhase === 'awaiting_payment_method') return 'payment_method'
+  if (state.serverPhase === 'awaiting_invoice_payment') return 'invoice_payment'
+  return 'checkout'
+}
 
 /** The pause is this tab's own challenge on screen; a hosted page never pauses. */
 function isDrivingChallenge(state: PendingBillingOperation): boolean {
@@ -510,13 +527,33 @@ export function createBillingOperationLifecycle(
     return request
   }
 
-  function writePointer(scope: BillingScope, state: BillingOperationState) {
+  function writePointer(
+    scope: BillingScope,
+    state: BillingOperationState,
+    redirect?: BillingOperationPointer['redirect']
+  ) {
     pointers.write(scope, {
       operationId: state.id,
       kind: state.kind,
       presentation: state.presentation,
       attemptStartedAt: state.attemptStartedAt,
-      ...(state.awaitedHere ? { awaited: true } : {})
+      ...(state.awaitedHere ? { awaited: true } : {}),
+      ...(redirect === undefined ? {} : { redirect })
+    })
+  }
+
+  function emitHostedStepTelemetry(
+    record: OperationRecord,
+    name: HostedStepEventName,
+    visit: HostedStepVisit
+  ) {
+    onTelemetry?.({
+      name,
+      billing_op_id: record.state.id,
+      operation_type: record.state.kind,
+      presentation: record.state.presentation,
+      resumed: record.resumed,
+      ...visit
     })
   }
 
@@ -628,6 +665,7 @@ export function createBillingOperationLifecycle(
       waitingWithoutActionSince: undefined,
       timer: undefined,
       inFlightPoll: undefined,
+      awaitingReturn: undefined,
       settled,
       resolveSettled
     }
@@ -641,6 +679,12 @@ export function createBillingOperationLifecycle(
       resumed: input.resumed
     })
     emitFrictionTelemetry(record, undefined)
+    if (input.returnedFrom !== undefined) {
+      emitHostedStepTelemetry(record, BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT.returned, {
+        ...input.returnedFrom,
+        navigation: 'redirect'
+      })
+    }
     startObserving(record, input, state)
     return record
   }
@@ -832,7 +876,10 @@ export function createBillingOperationLifecycle(
       presentation: pointer.presentation,
       attemptStartedAt: pointer.attemptStartedAt,
       resumed: true,
-      awaitedHere: pointer.awaited === true
+      awaitedHere: pointer.awaited === true,
+      ...(pointer.redirect === undefined
+        ? {}
+        : { returnedFrom: pointer.redirect })
     }
   }
 
@@ -866,7 +913,10 @@ export function createBillingOperationLifecycle(
         presentation: known?.presentation ?? routeFor(rail, pending),
         attemptStartedAt: known?.attemptStartedAt ?? now(),
         resumed: true,
-        awaitedHere: known?.awaited === true
+        awaitedHere: known?.awaited === true,
+        ...(known?.redirect === undefined
+          ? {}
+          : { returnedFrom: known.redirect })
       },
       includeSettled
     )
@@ -939,6 +989,7 @@ export function createBillingOperationLifecycle(
 
   function wake() {
     for (const record of operations.values()) {
+      reportReturnFromNewTab(record)
       if (record.state.phase !== 'pending') continue
       if (isDrivingChallenge(record.state)) continue
       void poll(record)
@@ -987,6 +1038,44 @@ export function createBillingOperationLifecycle(
     return 'switched'
   }
 
+  function reportReturnFromNewTab(record: OperationRecord) {
+    const visit = record.awaitingReturn
+    if (visit === undefined) return
+    record.awaitingReturn = undefined
+    emitHostedStepTelemetry(
+      record,
+      BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT.returned,
+      visit
+    )
+  }
+
+  function reportHostedStepOpened(
+    operationId: string,
+    navigation: CheckoutRedirectNavigation,
+    methodKind?: CheckoutMethodKind
+  ) {
+    const record = operations.get(operationId)
+    if (record === undefined || record.state.phase !== 'pending') return
+    const state = record.state
+    const redirect = {
+      destination:
+        state.presentation === 'hosted' ? state.hostedDestination : 'stripe',
+      step: hostedStepOf(state),
+      ...(methodKind === undefined ? {} : { method_kind: methodKind })
+    } as const
+    const visit = { ...redirect, navigation }
+    if (navigation === 'redirect') {
+      writePointer(record.context.scope, state, redirect)
+    } else {
+      record.awaitingReturn = visit
+    }
+    emitHostedStepTelemetry(
+      record,
+      BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT.redirectStarted,
+      visit
+    )
+  }
+
   function reportChallengeStarted(operationId: string) {
     const record = operations.get(operationId)
     if (record === undefined) return
@@ -1016,7 +1105,7 @@ export function createBillingOperationLifecycle(
     recover,
     wake,
     switchPresentation,
-    reportHostedStepOpened: () => {},
+    reportHostedStepOpened,
     reportChallengeStarted,
     reportChallengeSettled,
     get: (operationId) => operations.get(operationId)?.state,

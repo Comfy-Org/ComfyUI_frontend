@@ -39,6 +39,7 @@ import {
   reduceCheckoutPage,
   settledPlanSource
 } from '@/checkout/checkoutPage'
+import { methodKindOf } from '@/checkout/checkoutJourney'
 import { pricingTableUrl } from '@/checkout/cloudLinks'
 import { createOperationChannel } from '@/checkout/operationChannel'
 import { promoEntryLive, promoRejectionOf } from '@/checkout/promoEntry'
@@ -208,7 +209,11 @@ export function useFullPageCheckout() {
     openUrl: (url) => window.location.assign(url),
     navigationMode: 'redirect',
     challengePort,
-    autoContinue: () => submitting.value
+    autoContinue: () => submitting.value,
+    methodKind: () =>
+      page.value.kind === 'capture' && page.value.attempt.kind === 'sent'
+        ? methodKindOf(page.value.attempt.redirectMethod)
+        : undefined
   })
   const attempts = createSubscriptionCheckoutTelemetry({ ui: 'full_page' })
 

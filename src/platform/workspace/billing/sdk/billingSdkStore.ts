@@ -367,7 +367,10 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     const offered = offeredActions.get(state.id) ?? new Set<string>()
     if (offered.has(actionUrl)) return
     offeredActions.set(state.id, offered.add(actionUrl))
-    if (window.open(actionUrl, '_blank')) return
+    if (window.open(actionUrl, '_blank')) {
+      sdk.lifecycle.reportHostedStepOpened(state.id, 'new_tab')
+      return
+    }
     toastStore.add({
       severity: 'warn',
       summary: t('g.warning'),
