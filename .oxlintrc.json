@@ -29,7 +29,10 @@
     "vue"
   ],
   "jsPlugins": ["./tools/oxlint-plugins/comfy.ts"],
-  "extends": ["./scripts/primevue-import-allowlist.json"],
+  "extends": [
+    "./packages/oxlint-config/dist/imports.json",
+    "./scripts/primevue-import-allowlist.json"
+  ],
   "rules": {
     "comfy/no-duplicate-ingest-type": "error",
     "comfy/no-js-private-class-members": "error",
@@ -94,7 +97,6 @@
     "import/export": "error",
     "import/namespace": "error",
     "import/no-duplicates": "error",
-    "import/consistent-type-specifier-style": ["error", "prefer-top-level"],
     "vitest/expect-expect": "off",
     "vitest/no-conditional-expect": "off",
     "vitest/no-disabled-tests": "error",
@@ -103,7 +105,6 @@
     "vitest/valid-title": "off",
     "vitest/require-to-throw-message": "off",
     "typescript/ban-ts-comment": ["error", { "ts-expect-error": true }],
-    "typescript/consistent-type-imports": "error",
     "typescript/no-namespace": "error",
     "typescript/no-require-imports": "error",
     "typescript/no-this-alias": "error",
