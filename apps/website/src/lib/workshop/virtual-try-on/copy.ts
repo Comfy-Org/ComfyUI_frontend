@@ -51,6 +51,7 @@ const copy = {
   'tryOn.fit.relaxed': { en: 'Relaxed', 'zh-CN': '宽松' },
   'tryOn.advanced': { en: 'Advanced', 'zh-CN': '高级' },
   'tryOn.seed': { en: 'Seed', 'zh-CN': '种子' },
+  'tryOn.seed.shuffle': { en: 'New seed', 'zh-CN': '换一个种子' },
   'tryOn.advanced.summary': { en: 'Seed {n}', 'zh-CN': '种子 {n}' },
   'tryOn.summary': {
     en: '{garment} · {fit} fit',

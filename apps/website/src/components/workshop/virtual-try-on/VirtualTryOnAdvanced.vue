@@ -2,7 +2,7 @@
 import type { VirtualTryOn } from '../../../composables/useVirtualTryOn'
 import type { Locale } from '../../../i18n/translations'
 import { vc } from '../../../lib/workshop/virtual-try-on/copy'
-import EditorNumberField from '../app-editor/EditorNumberField.vue'
+import EditorSeedField from '../app-editor/EditorSeedField.vue'
 
 const { tryOn, locale = 'en' } = defineProps<{
   tryOn: VirtualTryOn
@@ -13,9 +13,10 @@ const { setup } = tryOn
 </script>
 
 <template>
-  <EditorNumberField
+  <EditorSeedField
     :model-value="setup.seed"
     :label="vc('tryOn.seed', locale)"
+    :shuffle-label="vc('tryOn.seed.shuffle', locale)"
     @update:model-value="tryOn.setSeed"
   />
 </template>
