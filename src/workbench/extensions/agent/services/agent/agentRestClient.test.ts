@@ -1,8 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { CloudWorkflowEntry } from '@/platform/workflow/cloud/cloudWorkflowPages'
 import { api } from '@/scripts/api'
-
-import type { CloudWorkflowEntry } from '../../schemas/agentApiSchema'
 
 vi.mock(import('@/scripts/api'))
 
@@ -68,6 +67,17 @@ const turnAccepted = {
 beforeEach(() => {
   vi.mocked(api.fetchApi).mockReset()
 })
+
+function cloudWorkflow(id: string, name: string): CloudWorkflowEntry {
+  return {
+    id,
+    name,
+    created_at: '2026-09-01T00:00:00Z',
+    updated_at: '2026-09-01T00:00:00Z',
+    created_by: 'user-1',
+    latest_version: 1
+  }
+}
 
 describe('agentRestClient route + method', () => {
   it('postMessage targets the literal "new" thread path to open a thread', async () => {
@@ -194,8 +204,8 @@ describe('agentRestClient route + method', () => {
           next_cursor: nextCursor
         }
       })
-    respond(page(0, [{ id: 'wf-1', name: 'one' }], true, 'next page'))
-    respond(page(1, [{ id: 'wf-2', name: 'two' }], false))
+    respond(page(0, [cloudWorkflow('wf-1', 'one')], true, 'next page'))
+    respond(page(1, [cloudWorkflow('wf-2', 'two')], false))
 
     const workflows = await makeClient().listCloudWorkflows()
 
@@ -244,7 +254,7 @@ describe('agentRestClient route + method', () => {
     for (let page = 0; page < 6; page++) {
       respond(
         jsonResponse(200, {
-          data: [{ id: `wf-${page}`, name: `Workflow ${page}` }],
+          data: [cloudWorkflow(`wf-${page}`, `Workflow ${page}`)],
           pagination: {
             offset: page,
             limit: 100,

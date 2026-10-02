@@ -79,12 +79,9 @@
             variant="inverted"
             size="lg"
             class="w-full @xl:w-auto"
-            as="a"
-            :href="platformUrl"
-            target="_blank"
-            rel="noopener noreferrer"
             data-testid="deploy-to-comfy-api-platform"
-            @click="emit('done')"
+            :disabled="pending"
+            @click="deployOnPlatform"
           >
             {{ $t('deployToComfyApi.deployOnPlatform') }}
           </Button>
@@ -96,12 +93,14 @@
 
 <script setup lang="ts">
 import { createReusableTemplate } from '@vueuse/core'
+import { ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import Video from '@/components/common/Video.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import { usePlatformBuildHandoff } from '@/platform/workflow/deploy/composables/usePlatformBuildHandoff'
 
 const { videoSources = [], posterSrc = '' } = defineProps<{
   titleId?: string
@@ -117,8 +116,21 @@ const emit = defineEmits<{
 defineOptions({ inheritAttrs: false })
 
 const { buildDocsUrl } = useExternalLink()
+const { open: openPlatformBuild } = usePlatformBuildHandoff()
+const { toastErrorHandler } = useErrorHandling()
 const [DefineDocsLink, ReuseDocsLink] = createReusableTemplate()
+const pending = ref(false)
 
 const docsUrl = buildDocsUrl('/development/overview', { includeLocale: true })
-const platformUrl = getComfyPlatformBaseUrl()
+
+async function deployOnPlatform() {
+  pending.value = true
+  try {
+    if (await openPlatformBuild()) emit('done')
+  } catch (error) {
+    toastErrorHandler(error)
+  } finally {
+    pending.value = false
+  }
+}
 </script>

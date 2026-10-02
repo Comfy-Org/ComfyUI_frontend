@@ -2,7 +2,7 @@ import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationF
 
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import type { CloudWorkflowEntry } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type { CloudWorkflowEntry } from '@/platform/workflow/cloud/cloudWorkflowPages'
 
 import { bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -105,7 +105,11 @@ export const workflowSelectionTest = base.extend<{
         return route.fulfill({ status: 500, body: 'Save unavailable' })
       workflows.push({
         id: `a81718a4-02ae-41e6-ae85-${String(workflows.length + 1).padStart(12, '0')}`,
-        name: path.slice('workflows/'.length, -'.json'.length)
+        name: path.slice('workflows/'.length, -'.json'.length),
+        created_at: '2026-09-01T00:00:00Z',
+        updated_at: '2026-09-01T00:00:00Z',
+        created_by: 'test-user-e2e',
+        latest_version: 1
       })
       const file: UserDataFullInfo = {
         path,

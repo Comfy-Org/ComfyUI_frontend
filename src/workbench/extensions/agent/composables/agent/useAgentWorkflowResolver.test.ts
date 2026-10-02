@@ -5,7 +5,7 @@ import { reactive } from 'vue'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
-import type { CloudWorkflowEntry } from '../../schemas/agentApiSchema'
+import type { CloudWorkflowRef } from '@/platform/workflow/cloud/cloudWorkflowPages'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
 
 import { useAgentWorkflowResolver } from './useAgentWorkflowResolver'
@@ -28,7 +28,7 @@ function workflow(
 
 function setup(
   open: ComfyWorkflow[],
-  cloud: CloudWorkflowEntry[] = [],
+  cloud: CloudWorkflowRef[] = [],
   closed: ComfyWorkflow[] = []
 ) {
   const workflows = reactive({
@@ -40,7 +40,7 @@ function setup(
   })
   const bindings = useAgentWorkflowTabBindingStore()
   const listCloudWorkflows = vi.fn(
-    async (): Promise<CloudWorkflowEntry[]> => cloud
+    async (): Promise<CloudWorkflowRef[]> => cloud
   )
   const resolver = useAgentWorkflowResolver({
     workflows,
@@ -267,7 +267,7 @@ describe('Agent workflow resolution', () => {
       const { resolver, listCloudWorkflows } = setup([
         workflow('workflows/current.json', 'Current')
       ])
-      let resolveFirst: (entries: CloudWorkflowEntry[]) => void = () => {}
+      let resolveFirst: (entries: CloudWorkflowRef[]) => void = () => {}
       let rejectFirst: (error: Error) => void = () => {}
       listCloudWorkflows.mockReturnValueOnce(
         new Promise((resolve, reject) => {

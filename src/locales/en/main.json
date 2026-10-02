@@ -4216,7 +4216,9 @@
     "buttonLabel": "Deploy to Comfy API",
     "body": "Deploy this workflow as a production API in minutes. Package your custom nodes, models and Python dependencies into a reproducible build, and Comfy API runs it as an autoscaling endpoint.",
     "readDocs": "Read the docs",
-    "deployOnPlatform": "Deploy on Platform"
+    "deployOnPlatform": "Deploy on Platform",
+    "popupBlocked": "Your browser blocked the new tab. Allow pop-ups for this site and try again, or open this link:",
+    "popupBlockedDownloadStarted": "Your browser blocked the new tab. A download of the workflow file was started: open this link and drop it in, or allow pop-ups and try again."
   },
   "openSharedWorkflow": {
     "dialogTitle": "Open shared workflow",

@@ -3,11 +3,11 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 
 import { i18n } from '@/i18n'
+import type { CloudWorkflowRef } from '@/platform/workflow/cloud/cloudWorkflowPages'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
-import type { CloudWorkflowEntry } from '../../schemas/agentApiSchema'
 import { useAgentPanelStore } from '../../stores/agent/agentPanelStore'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
 import { useAgentWorkflowResolver } from './useAgentWorkflowResolver'
@@ -22,7 +22,7 @@ function setup() {
   panel.beginWorkflowRestoration()
   const warnRestoreFailed = vi.fn()
   const listCloudWorkflows = vi.fn(
-    async (): Promise<CloudWorkflowEntry[]> => [
+    async (): Promise<CloudWorkflowRef[]> => [
       { id: 'wf-saved', name: 'saved' },
       { id: 'wf-current', name: 'current' }
     ]
