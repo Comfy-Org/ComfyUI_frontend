@@ -147,8 +147,6 @@ test.describe(
       })
 
       await test.step('no rejection toast, hand edit still on screen', async () => {
-        // The round trip above has settled, so a rejection toast would
-        // already have been rendered by now.
         const rejectionToast = new ToastHelper(page).toastErrors.filter({
           hasText: 'Widget edit was rejected and was not saved'
         })
