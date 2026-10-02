@@ -393,6 +393,10 @@ describe('Models page entry', () => {
 
     await user.click(screen.getByTestId('browse-all-end'))
     expect(headingWrapper()).toHaveClass('sr-only')
+    // Hidden, not removed: the page still owns the only h1.
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Models heading' })
+    ).toBeInTheDocument()
     expect(screen.queryByTestId('catalogue-tabs')).toBeNull()
 
     await user.click(screen.getByTestId('section-back'))
