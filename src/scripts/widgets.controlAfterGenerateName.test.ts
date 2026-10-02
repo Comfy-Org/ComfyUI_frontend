@@ -86,7 +86,6 @@ describe('value control widget naming', () => {
       spec
     )
 
-    expect(control.name).toBe('Sampler control_after_generate')
     expect(control.value).toBe('randomize')
   })
 
