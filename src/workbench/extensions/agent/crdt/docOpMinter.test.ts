@@ -755,6 +755,24 @@ describe('attachDocOpMinter', () => {
     expect(minted).toEqual([])
   })
 
+  it('does not mint widgets for nodes that omit widget serialization', async () => {
+    const node = new LGraphNode('No widget serialization')
+    node.addWidget('number', 'steps', 20, () => {})
+    withGraphIntentSource('load', () => graph.add(node))
+
+    emitGraphIntent({
+      type: 'set_widget',
+      graphId: graph.id,
+      nodeId: node.id,
+      name: 'steps',
+      value: 21,
+      previous: 20
+    })
+    await afterFlush()
+
+    expect(minted).toEqual([])
+  })
+
   it('fails closed for stale writes from a different rendered graph', async () => {
     const previousGraph = new LGraph()
     const { source } = seedGraph(previousGraph)

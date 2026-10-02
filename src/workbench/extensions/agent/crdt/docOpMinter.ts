@@ -167,6 +167,7 @@ function isPersistedWidgetIntent(
   node: LGraphNode,
   event: IntentOf<'set_widget'>
 ): boolean {
+  if (!node.serialize_widgets) return false
   const widget = node.widgets?.find(
     (candidate) => candidate.name === event.name
   )
