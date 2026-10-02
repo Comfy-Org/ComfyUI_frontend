@@ -63,6 +63,15 @@ const copy = {
     en: 'Image · Qwen Image 2.1',
     'zh-CN': '图像 · Qwen Image 2.1'
   },
+  'cinematic.hub.relight': { en: 'Relight', 'zh-CN': '重新布光' },
+  'cinematic.hub.relightSummary': {
+    en: 'Place new lights on a photo, and the model redraws its shadows and highlights while keeping the subject.',
+    'zh-CN': '在照片上放置新的光源，模型会重绘阴影与高光，同时保留主体。'
+  },
+  'cinematic.hub.relightMeta': {
+    en: 'Image · Beeble SwitchX',
+    'zh-CN': '图像 · Beeble SwitchX'
+  },
   'cinematic.stage.longWait': {
     en: 'Still going. Some models take about a minute. Nothing is queued; yours already started.',
     'zh-CN': '仍在进行。部分模型需要约一分钟。没有排队，你的任务已经开始。'
@@ -217,6 +226,21 @@ const copy = {
   'cinematic.repo.soon': {
     en: 'GitHub · Coming soon',
     'zh-CN': 'GitHub · 即将推出'
+  },
+  'cinematic.download': { en: 'Download', 'zh-CN': '下载' },
+  'cinematic.zoom': { en: 'Zoom', 'zh-CN': '缩放' },
+  'cinematic.zoom.in': { en: 'Zoom in', 'zh-CN': '放大' },
+  'cinematic.zoom.out': { en: 'Zoom out', 'zh-CN': '缩小' },
+  'cinematic.zoom.fit': {
+    en: 'Fit to screen, now {n}%',
+    'zh-CN': '适应屏幕，当前 {n}%'
+  },
+  'cinematic.compare': { en: 'Compare', 'zh-CN': '对比' },
+  'cinematic.compare.before': { en: 'Before', 'zh-CN': '之前' },
+  'cinematic.compare.after': { en: 'After', 'zh-CN': '之后' },
+  'cinematic.download.locked': {
+    en: 'Run to download',
+    'zh-CN': '运行后即可下载'
   },
   'cinematic.meta.description': {
     en: 'Direct cinematic stills: pick the camera, shot, light, film and grade, then run any image model through the Comfy Router.',
