@@ -1455,7 +1455,9 @@ describe('createOpSender', () => {
     localSender.admit([addNode(2)])
 
     expect(localSent).toHaveLength(1)
-    expect('node_id' in localSent[0][0] ? localSent[0][0].node_id : null).toBe(1)
+    expect('node_id' in localSent[0][0] ? localSent[0][0].node_id : null).toBe(
+      1
+    )
     localSender.detach()
   })
 
