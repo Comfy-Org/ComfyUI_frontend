@@ -37,6 +37,7 @@ const options = [
     :heading="mc('move.quality', locale)"
     :options
     :icon="Gauge"
+    :label="mc('move.quality', locale)"
     :composer
     :disabled
   />
