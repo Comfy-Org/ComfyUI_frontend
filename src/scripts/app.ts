@@ -1429,6 +1429,7 @@ export class ComfyApp implements IComfyApp {
               'AbortError'
             )
           )
+          if (clean) useDocumentLifecycleStore().invalidate()
           return undefined
         }
 
