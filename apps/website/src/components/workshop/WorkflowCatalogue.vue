@@ -45,6 +45,10 @@ const filterMenu =
 const browseAll = defineModel<boolean>('browseAll', { default: false })
 const emit = defineEmits<{ section: [boolean] }>()
 watch(browseAll, (value) => emit('section', value), { immediate: true })
+// Browsing them all, the tabs give up the row and the search takes it.
+const searchClass = computed(() =>
+  cn('min-w-0 flex-1', !browseAll.value && 'sm:max-w-120')
+)
 watch(browseAll, () => {
   clear()
   void nextTick(() => window.scrollTo({ top: 0 }))
@@ -206,7 +210,7 @@ function leaveSection() {
           :locale
           kind="workflows"
           compact
-          :class="cn('min-w-0 flex-1', !browseAll && 'sm:max-w-120')"
+          :class="searchClass"
         />
         <WorkshopFilterMenu
           ref="filterMenu"

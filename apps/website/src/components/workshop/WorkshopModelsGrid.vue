@@ -153,6 +153,10 @@ const sectionTitleKey = computed<TranslationKey>(() =>
 // the catalogue's name twice.
 const emit = defineEmits<{ section: [boolean] }>()
 watch(inSection, (value) => emit('section', value), { immediate: true })
+// Inside a category the tabs give up the row, and the search takes it.
+const searchClass = computed(() =>
+  cn('min-w-0 flex-1', !inSection.value && 'sm:max-w-120')
+)
 
 // Keep the launch-requested video models in the set, then let the same curated
 // order used by the rows decide where every selected model appears.
@@ -253,7 +257,7 @@ watch(browseAll, (on) => on && resetFilters())
             :models
             :locale
             compact
-            :class="cn('min-w-0 flex-1', !inSection && 'sm:max-w-120')"
+            :class="searchClass"
           />
 
           <div class="flex items-center gap-2" data-testid="workshop-filters">
