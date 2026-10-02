@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { Upload } from '@lucide/vue'
-import { useTemplateRef } from 'vue'
+
+import EditorDropZone from './EditorDropZone.vue'
+import EditorUploadSlot from './EditorUploadSlot.vue'
 
 const { title, meta, uploadLabel, exampleLabel, exampleImage } = defineProps<{
   title: string
@@ -10,24 +12,12 @@ const { title, meta, uploadLabel, exampleLabel, exampleImage } = defineProps<{
   exampleImage: string
 }>()
 const emit = defineEmits<{ file: [file: File]; example: [] }>()
-
-const input = useTemplateRef<HTMLInputElement>('input')
-
-function pick(files: FileList | null | undefined) {
-  const file = files?.[0]
-  if (file?.type.startsWith('image/')) emit('file', file)
-}
-
-function onChange(event: Event) {
-  if (event.target instanceof HTMLInputElement) pick(event.target.files)
-}
 </script>
 
 <template>
-  <div
+  <EditorDropZone
     class="flex w-full max-w-120 flex-col items-center gap-5 self-center rounded-2xl border border-dashed border-transparency-white-t20 bg-primary-comfy-ink/70 px-6 py-8 text-center backdrop-blur-sm sm:px-10"
-    @dragover.prevent
-    @drop.prevent="pick($event.dataTransfer?.files)"
+    @file="emit('file', $event)"
   >
     <span
       class="flex size-11 items-center justify-center rounded-xl bg-transparency-white-t8 text-primary-warm-white"
@@ -41,13 +31,13 @@ function onChange(event: Event) {
       <span class="text-xs text-primary-warm-gray">{{ meta }}</span>
     </span>
     <span class="flex flex-wrap items-center justify-center gap-2">
-      <button
-        type="button"
+      <EditorUploadSlot
+        input-test-id="editor-empty-file"
         class="h-9 rounded-full bg-primary-warm-white px-4 text-xs font-semibold text-primary-comfy-ink focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
-        @click="input?.click()"
+        @file="emit('file', $event)"
       >
         {{ uploadLabel }}
-      </button>
+      </EditorUploadSlot>
       <button
         type="button"
         class="flex h-9 items-center gap-2 rounded-full bg-transparency-white-t8 pr-4 pl-1 text-xs text-primary-warm-white focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
@@ -61,15 +51,5 @@ function onChange(event: Event) {
         {{ exampleLabel }}
       </button>
     </span>
-    <input
-      ref="input"
-      type="file"
-      data-testid="editor-empty-file"
-      accept="image/png,image/jpeg,image/webp"
-      class="sr-only"
-      tabindex="-1"
-      aria-hidden="true"
-      @change="onChange"
-    />
-  </div>
+  </EditorDropZone>
 </template>

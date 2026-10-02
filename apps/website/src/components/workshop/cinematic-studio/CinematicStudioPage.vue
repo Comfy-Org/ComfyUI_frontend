@@ -211,6 +211,7 @@ function pickApp(id: string) {
       v-if="reviewing"
       :app
       :layout
+      :editor="editorShown"
       :apps="appOptions"
       :layouts="layoutOptions"
       :app-heading="tc('cinematic.ux.app', locale)"
