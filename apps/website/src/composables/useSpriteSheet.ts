@@ -36,7 +36,7 @@ type SpritePhase =
   | { readonly kind: 'failed' }
 
 export type SpriteTray = 'animation' | 'style' | 'motion' | 'seed'
-export type SpriteView = 'sheet' | 'preview'
+type SpriteView = 'sheet' | 'preview'
 
 const revocable = (url: string | undefined, keep?: string) =>
   url?.startsWith('blob:') && url !== keep ? url : undefined
