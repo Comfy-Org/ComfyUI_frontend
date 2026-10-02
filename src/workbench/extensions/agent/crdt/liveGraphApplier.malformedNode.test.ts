@@ -142,7 +142,6 @@ describe('LiveGraphApplier malformed node report', () => {
         }
       }
     })
-    // The actor's identity segments are a user id and must not be reported.
     expect(JSON.stringify(vi.mocked(reportError).mock.calls)).not.toContain(
       'user-1'
     )
