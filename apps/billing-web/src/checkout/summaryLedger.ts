@@ -104,7 +104,6 @@ const BY_DURATION = {
     rate: `${S}.rate.monthly`,
     itemRate: `${S}.item.rateMonthly`,
     comparedRate: `${S}.item.comparedMonthly`,
-    onceTerm: `${S}.discount.firstMonth`,
     perPeriod: `${S}.credits.perMonth`,
     refillAfter: `${S}.credits.refillMonthlyAfter`,
     refillsTo: `${S}.item.refillsMonthly`,
@@ -115,7 +114,6 @@ const BY_DURATION = {
     rate: `${S}.rate.yearly`,
     itemRate: `${S}.item.rateYearly`,
     comparedRate: `${S}.item.comparedYearly`,
-    onceTerm: `${S}.discount.firstYear`,
     perPeriod: `${S}.credits.perYear`,
     refillAfter: `${S}.credits.refillYearlyAfter`,
     refillsTo: `${S}.item.refillsYearly`,
@@ -503,42 +501,37 @@ type Discount = NonNullable<SubscriptionPreview['discounts']>[number]
 export interface DeductionFormat {
   readonly t: Translate
   readonly money: (cents: number) => string
-  /** The plan's cadence, which bounds a `once` coupon; unknown leaves it unbounded. */
-  readonly duration: Duration | undefined
 }
 
 const deduction = (format: DeductionFormat, cents: number) =>
   format.t(`${S}.discount.amount`, { amount: format.money(cents) })
 
-/**
- * How long a coupon keeps applying, stated as bounds only: `once` covers the
- * first period, or only today's charge when `thisPaymentOnly`, `repeating`
- * its months, and `forever` needs no subline.
- */
-function discountTerm(
-  format: DeductionFormat,
-  discount: Pick<Discount, 'duration' | 'duration_in_months'>,
-  thisPaymentOnly = false
-): string | undefined {
-  if (discount.duration === 'once') {
-    if (thisPaymentOnly) return format.t(`${S}.discount.thisPaymentOnly`, {})
-    return format.duration === undefined
+type DiscountTerm = NonNullable<Discount['term']>
+
+/** How long a discount keeps applying, worded from the term the server reported. */
+const TERM_LINE = {
+  this_payment: (t) => t(`${S}.discount.thisPaymentOnly`, {}),
+  first_month: (t) => t(`${S}.discount.firstMonth`, {}),
+  first_year: (t) => t(`${S}.discount.firstYear`, {}),
+  months: (t, months) =>
+    months === undefined
       ? undefined
-      : format.t(BY_DURATION[format.duration].onceTerm, {})
-  }
-  const months = discount.duration_in_months
-  if (discount.duration !== 'repeating' || months === undefined)
-    return undefined
-  return format.t(`${S}.discount.forMonths`, { count: months }, months)
-}
+      : t(`${S}.discount.forMonths`, { count: months }, months),
+  ongoing: () => undefined
+} satisfies Record<
+  DiscountTerm,
+  (t: Translate, months: number | undefined) => string | undefined
+>
 
 export function discountRow(
   format: DeductionFormat,
-  discount: Pick<Discount, 'name' | 'duration' | 'duration_in_months'>,
-  amountCents: number | undefined,
-  thisPaymentOnly = false
+  discount: Pick<Discount, 'name' | 'term' | 'duration_in_months'>,
+  amountCents: number | undefined
 ): DiscountRow {
-  const subline = discountTerm(format, discount, thisPaymentOnly)
+  const subline =
+    discount.term === undefined
+      ? undefined
+      : TERM_LINE[discount.term](format.t, discount.duration_in_months)
   return {
     label: discount.name ?? format.t(`${S}.discount.fallbackLabel`, {}),
     ...(amountCents === undefined
@@ -587,16 +580,13 @@ function discountSlots(r: QuoteReading, moneyRows: number): DiscountSlots {
     (discount) => discount.code.toUpperCase() !== enteredCode
   )
   const subtotal = subtotalOf(r, moneyRows, r.promotions.length)
-  const format = { t: r.t, money: r.money, duration: r.next.duration }
-  const thisPaymentOnly =
-    r.quote.transition_type !== 'new_subscription' &&
-    r.next.duration === 'MONTHLY'
+  const format = { t: r.t, money: r.money }
   const balanceCents = r.quote.balance_applied_cents
   const balance =
     balanceCents === undefined ? undefined : balanceRow(format, balanceCents)
   return {
     discounts: r.promotions.map((discount) =>
-      discountRow(format, discount, discount.amount_off_cents, thisPaymentOnly)
+      discountRow(format, discount, discount.amount_off_cents)
     ),
     ...(subtotal === undefined ? {} : { subtotal }),
     ...(balance === undefined ? {} : { balance }),

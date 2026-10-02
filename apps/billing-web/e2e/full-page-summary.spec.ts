@@ -219,7 +219,8 @@ test('a promo code on a yearly switch is bounded to the first year', async ({
         kind: 'promotion',
         code: 'COMFY20',
         amount_off_cents: 5376,
-        duration: 'once'
+        duration: 'once',
+        term: 'first_year'
       }
     ]
   }
