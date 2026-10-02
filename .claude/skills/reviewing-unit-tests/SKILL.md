@@ -20,10 +20,11 @@ Review for behavior and current repo rules, not motion. Compare to authoritative
 
 ### Inventory Before Reading
 
-List the shared factories, global stubs, and reuse rules before judging any setup in the diff:
+List the shared factories, shared automocks, global stubs, and reuse rules before judging any setup in the diff:
 
 ```bash
 rg --files src | rg 'TestUtils\.ts$'
+rg --files src __mocks__ | rg '__mocks__/'
 rg -n -i '\breuse|instead of hand-rolling' docs/testing/*.md
 ```
 
@@ -61,7 +62,7 @@ Apply these repo-specific clarifications:
 | Assertions only check defaults, mock plumbing, or CSS hooks                                                                                                                                                | non-behavioral test             | Request changes                                                             |
 | Bugfix test has no proof it fails on pre-fix code                                                                                                                                                          | unproven regression             | Request changes                                                             |
 | Hand-rolled canvas/graph/node/subgraph/workflow fixture or mock when [`litegraphTestUtils.ts`](../../../src/utils/__tests__/litegraphTestUtils.ts) or another matching `*TestUtils.ts` already provides it | duplicated fixture              | Request changes, point at the shared factory                                |
-| More than three mocks in one file (`vi.mock`, `vi.fn`, `vi.spyOn`, hand-built fakes)                                                                                                                       | over-mocking                    | Request changes: ask what the test still proves about owned code            |
+| More than three mocks in one file (`vi.mock`, `vi.fn`, `vi.spyOn`, hand-built fakes), excluding shared automocks                                                                                           | over-mocking                    | Request changes: ask what the test still proves about owned code            |
 | Test rebuilds production logic (scheduler loop, rAF queue, state machine) or computes the expected value with the logic under test                                                                         | replicated logic                | Request changes, exercise the real code                                     |
 | Hand-rolled runner primitive: `Object.defineProperty` write counters, global save/restore in `try/finally`, `if (arg === ...)` mock ladders                                                                | hand-rolled runner primitive    | Request changes: `vi.spyOn(obj, 'prop', 'set')`, `vi.stubGlobal`, `vi.when` |
 
@@ -89,6 +90,8 @@ Apply these repo-specific clarifications:
 ### Over-Mocking and Replicated Logic
 
 - Count `vi.mock`, `vi.fn`, `vi.spyOn`, and hand-built fakes per file. Above three, ask what the test still proves about owned code. The author answers or the mocks go.
+- Do not count shared automocks: a factory-less `vi.mock(import('…'))` that activates a `__mocks__/` file, plus `vi.mocked(...)` configuration of it, per [`docs/guidance/vitest.md`](../../../docs/guidance/vitest.md) "Shared manual mocks". The exemption covers the count only. Automocking the module under test is still a finding.
+- A hand-written `vi.mock` factory for a module that already has a `__mocks__/` file is a `duplicated fixture`.
 - Deletion test: imagine deleting the production wiring. If every test still passes, nothing covers it.
 - A test that re-implements the code it covers passes on bugs that both copies share. Request the real module plus a double at its true boundary (network, clock, `reportError`).
 - Name the Desiderata property the test gives up, usually predictive, behavioral, or structure-insensitive. See [`docs/guidance/testing-principles.md`](../../../docs/guidance/testing-principles.md) "Judge every test by Beck's Test Desiderata".
