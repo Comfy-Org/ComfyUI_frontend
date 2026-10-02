@@ -6,6 +6,8 @@ import {
   useEventListener
 } from '@vueuse/core'
 
+import type { BillingPortalTarget } from '@comfyorg/account-core/billing'
+
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -15,6 +17,7 @@ import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetc
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError as reportTelemetryError } from '@/platform/telemetry/reportError'
+import { createBillingPortalReporter } from '@/platform/telemetry/utils/billingPortalTelemetry'
 import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type {
   CheckoutAttributionMetadata,
@@ -113,7 +116,7 @@ function useSubscriptionInternal() {
 
     return subscriptionStatus.value?.is_active ?? false
   })
-  const { reportError, accessBillingPortal } = useAuthActions()
+  const { reportError, accessBillingPortalDirect } = useAuthActions()
   const { showSubscriptionRequiredDialog } = useDialogService()
 
   const authStore = useAuthStore()
@@ -577,8 +580,25 @@ function useSubscriptionInternal() {
       shouldWatchCancellation: isSubscriptionEnabled
     })
 
+  const openBillingPortal = wrapWithErrorHandlingAsync(
+    async (target: BillingPortalTarget) => {
+      const portal = createBillingPortalReporter(telemetry, target)
+      let opened: boolean
+      try {
+        opened = await accessBillingPortalDirect()
+      } catch (error) {
+        portal.failed(error, 'legacy')
+        throw error
+      }
+      if (opened) portal.opened('legacy')
+      else portal.blocked('legacy')
+      return opened
+    },
+    reportError
+  )
+
   const manageSubscription = async () => {
-    const didOpenPortal = await accessBillingPortal()
+    const didOpenPortal = await openBillingPortal('manage_subscription')
     if (!didOpenPortal) {
       return
     }
@@ -603,7 +623,7 @@ function useSubscriptionInternal() {
   }
 
   const handleInvoiceHistory = async () => {
-    await accessBillingPortal()
+    await openBillingPortal('invoices')
   }
 
   type PendingCheckoutRecoverySource =
