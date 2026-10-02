@@ -1556,17 +1556,12 @@ describe('createOpSender', () => {
 
     localSender.admit([addNode(2)])
 
-    // The deferred pump runs once the admission is placed, not mid-seal: node 2
-    // was minted before the node 3 its serialization enqueued, so it goes first.
     expect(
       localSent.map(({ workflowId, ops }) => ({
         workflowId,
         nodeIds: ops.map((op) => ('node_id' in op ? op.node_id : undefined))
       }))
     ).toEqual([{ workflowId: 'wf-new', nodeIds: [2] }])
-    // Nothing is dropped: the admission displaced by the nested enqueue keeps
-    // its place in mint order ahead of it, and node 1's unbound batch waits its
-    // turn instead of being re-addressed.
     expect(
       localSender.pendingOps().map(({ workflowId, ops }) => ({
         workflowId,
