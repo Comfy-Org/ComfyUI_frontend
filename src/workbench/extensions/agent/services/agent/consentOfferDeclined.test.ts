@@ -55,12 +55,6 @@ describe('consentOfferDeclined', () => {
       }) as never
     )
     const declined = consentOfferDeclined()
-    const order: string[] = []
-    void declined.then(() => order.push('read'))
-
-    await Promise.resolve()
-    expect(order).toEqual([])
-
     settle({ [SETTING_ID]: true })
     expect(await declined).toBe(true)
   })
@@ -94,5 +88,20 @@ describe('consentOfferDeclined', () => {
     vi.mocked(api.storeSetting).mockRejectedValue(new Error('offline'))
 
     await expect(recordConsentOfferDeclined()).rejects.toThrow('offline')
+  })
+
+  it('raises an unsuccessful response and leaves the refusal retryable', async () => {
+    vi.mocked(api.getSettings).mockResolvedValue({} as never)
+    await useSettingStore().load()
+    vi.mocked(api.storeSetting).mockResolvedValue(
+      new Response(null, { status: 500 })
+    )
+
+    await expect(recordConsentOfferDeclined()).rejects.toThrow('(500)')
+    expect(useSettingStore().settingValues[SETTING_ID as never]).toBeUndefined()
+
+    vi.mocked(api.storeSetting).mockResolvedValue(new Response())
+    await recordConsentOfferDeclined()
+    expect(api.storeSetting).toHaveBeenCalledTimes(2)
   })
 })

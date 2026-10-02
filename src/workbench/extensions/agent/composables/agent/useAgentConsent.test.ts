@@ -202,6 +202,34 @@ describe('useAgentConsent', () => {
     ).toEqual([])
   })
 
+  it('does not attach a refusal to an account that did not own the card', async () => {
+    const identity = ref('account-a')
+    useCurrentUser().resolvedUserInfo = computed(() => ({ id: identity.value }))
+    const request = useAgentConsent().withConsent('button_click', vi.fn())
+    const dialog = await waitForConsentDialog()
+    await renderConsentCard(dialog)
+
+    identity.value = 'account-b'
+    await clickCardAction('reject')
+    await request
+
+    expect(recordConsentOfferDeclined).not.toHaveBeenCalled()
+  })
+
+  it('does not persist a refusal from the signed-out card', async () => {
+    useCurrentUser().isLoggedIn = computed(() => false)
+    useCurrentUser().resolvedUserInfo = computed(() => null)
+    const request = useAgentConsent().withConsent('button_click', vi.fn())
+    const dialog = await waitForConsentDialog()
+    await renderConsentCard(dialog)
+
+    await clickCardAction('reject')
+    await request
+
+    expect(recordConsentOfferDeclined).not.toHaveBeenCalled()
+    expect(useDialogService().showSignInDialog).not.toHaveBeenCalled()
+  })
+
   it('records no refusal when the card is dismissed instead of refused', async () => {
     // Escape, the backdrop and a programmatic close are `dismissed`, which the
     // product ruling deliberately leaves alone - suppressing promotion on them

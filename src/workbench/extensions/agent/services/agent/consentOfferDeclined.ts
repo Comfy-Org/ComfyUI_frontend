@@ -1,5 +1,8 @@
 import { AGENT_CONSENT_OFFER_DECLINED_SETTING_ID } from '@/platform/settings/constants/agent'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { api } from '@/scripts/api'
+
+class ConsentOfferDeclinedWriteError extends Error {}
 
 /**
  * Whether the user has pressed the consent card's explicit Reject action, which
@@ -26,7 +29,8 @@ export async function consentOfferDeclined(): Promise<boolean> {
   } catch {
     return false
   }
-  return settingStore.get(AGENT_CONSENT_OFFER_DECLINED_SETTING_ID)
+  if (settingStore.error !== undefined) return false
+  return  settingStore.get(AGENT_CONSENT_OFFER_DECLINED_SETTING_ID)
 }
 
 /**
@@ -42,5 +46,18 @@ export async function consentOfferDeclined(): Promise<boolean> {
  * promotion once" stays true after they later accept from the composer.
  */
 export async function recordConsentOfferDeclined(): Promise<void> {
-  await useSettingStore().set(AGENT_CONSENT_OFFER_DECLINED_SETTING_ID, true)
+  const response = await api.storeSetting(
+    AGENT_CONSENT_OFFER_DECLINED_SETTING_ID,
+    true
+  )
+  if (!response.ok) {
+    throw new ConsentOfferDeclinedWriteError(
+      `Failed to store consent refusal (${response.status})`
+    )
+  }
+
+  // Update memory only after the server accepted the refusal. If the request
+  // fails, a later Reject in this page must still be able to retry it.
+  useSettingStore().settingValues[AGENT_CONSENT_OFFER_DECLINED_SETTING_ID] =
+    true
 }

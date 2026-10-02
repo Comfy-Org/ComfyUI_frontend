@@ -382,8 +382,13 @@ async function mockAgentBoot(
     const id = decodeURIComponent(
       new URL(request.url()).pathname.split('/settings/')[1] ?? ''
     )
-    if (request.method() === 'POST') storedSettings[id] = request.postDataJSON()
-    else if (!(id in storedSettings))
+    if (request.method() === 'POST') {
+      const value = request.postDataJSON()
+      if (value === null) delete storedSettings[id]
+      else storedSettings[id] = value
+    } else if (request.method() === 'DELETE') {
+      delete storedSettings[id]
+    } else if (!(id in storedSettings))
       return route.fulfill({
         ...jsonRoute({ code: 'NOT_FOUND', message: 'Setting is not set' }),
         status: 404

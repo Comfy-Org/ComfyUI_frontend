@@ -216,7 +216,15 @@ export function useAgentConsent() {
           onAccept: () => void accept(),
           onReject: () => {
             reportOutcome('rejected')
-            void declineOffer()
+            // The signed-out card has no account to attach a refusal to, and a
+            // card left open across a scope change must not write into the new
+            // account. Acceptance already enforces this same ownership check.
+            if (
+              persistOnAccept &&
+              expectedIdentity &&
+              identity.value === expectedIdentity
+            )
+              void declineOffer()
             closeWith(false)
           }
         },
