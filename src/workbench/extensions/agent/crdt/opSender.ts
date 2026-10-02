@@ -415,9 +415,10 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     return { admitted, rejected, cause }
   }
 
-  function admit(operations: GraphOperation[]): void {
-    if (operations.length === 0) return
-    const workflowId = deps.workflowId()
+  function mintAdmission(
+    operations: GraphOperation[],
+    workflowId: string | null
+  ): Op[] {
     if (workflowId !== lastMintedWorkflowId) {
       lastMintedVersion = -1
       lastMintedWorkflowId = workflowId
@@ -428,6 +429,20 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       mintWireOps([operation], { actor, baseVersion: baseVersion + index })
     )
     lastMintedVersion = baseVersion + minted.length - 1
+    return minted
+  }
+
+  function appendToOpenGroup(workflowId: string, admitted: SizedOp[]): void {
+    if (open?.workflowId !== workflowId) seal()
+    if (admitted.length === 0) return
+    if (open) for (const sized of admitted) open.ops.push(sized)
+    else open = { workflowId, ops: admitted }
+  }
+
+  function admit(operations: GraphOperation[]): void {
+    if (operations.length === 0) return
+    const workflowId = deps.workflowId()
+    const minted = mintAdmission(operations, workflowId)
     // Measurement runs user-controlled toJSON before any state changes, so a
     // serializer that re-enters the sender cannot leave a half-applied admit.
     const { admitted, rejected, cause } = measureMintedOps(minted)
@@ -442,11 +457,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       settleUndeliverableInBoundedGroups(minted, notifyFailure)
       return
     }
-    if (open?.workflowId !== workflowId) seal()
-    if (admitted.length > 0) {
-      if (open) for (const sized of admitted) open.ops.push(sized)
-      else open = { workflowId, ops: admitted }
-    }
+    appendToOpenGroup(workflowId, admitted)
     if (rejected.length === 0) return
     if (mayReportSerializationFailure()) {
       reportDegraded(cause, 'failure_serializing_agent_op_sender')
