@@ -1133,10 +1133,6 @@
       "youGet": "Kredi",
       "youPay": "Tutar (USD)"
     },
-    "unified": {
-      "message": "Krediler birleştirildi",
-      "tooltip": "Comfy genelinde ödemeleri birleştirdik. Artık her şey Comfy Kredileri ile çalışıyor:\n- Partner Düğümleri (eski adıyla API düğümleri)\n- Bulut iş akışları\n\nMevcut Partner düğümü bakiyeniz kredilere dönüştürüldü."
-    },
     "workspaceCredits": "Çalışma alanı kredileri",
     "yourCreditBalance": "Kredi bakiyeniz"
   },

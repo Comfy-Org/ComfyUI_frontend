@@ -1133,10 +1133,6 @@
       "youGet": "Crediti",
       "youPay": "Importo (USD)"
     },
-    "unified": {
-      "message": "I crediti sono stati unificati",
-      "tooltip": "Abbiamo unificato i pagamenti su Comfy. Ora tutto funziona con i Comfy Credits:\n- Nodi partner (precedentemente nodi API)\n- Workflow cloud\n\nIl tuo saldo esistente dei nodi partner è stato convertito in crediti."
-    },
     "workspaceCredits": "Crediti dello spazio di lavoro",
     "yourCreditBalance": "Il tuo saldo crediti"
   },

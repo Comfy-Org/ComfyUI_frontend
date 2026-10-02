@@ -72,20 +72,17 @@
       class="flex items-center gap-2 px-4 py-2"
     >
       <i class="icon-[lucide--coins] text-sm text-credit" />
-      <Skeleton v-if="isLoading" width="4rem" height="1.25rem" class="w-full" />
-      <span v-else class="text-base font-semibold text-base-foreground">{{
-        formattedBalance
-      }}</span>
-      <Button
-        v-tooltip="{ value: $t('credits.unified.tooltip'), showDelay: 300 }"
-        variant="muted-textonly"
-        size="icon-sm"
-        class="mr-auto"
-        :aria-label="$t('credits.unified.tooltip')"
-        data-testid="credits-info-button"
+      <Skeleton
+        v-if="isLoading"
+        width="4rem"
+        height="1.25rem"
+        class="mr-auto w-full"
+      />
+      <span
+        v-else
+        class="mr-auto text-base font-semibold text-base-foreground"
+        >{{ formattedBalance }}</span
       >
-        <i class="icon-[lucide--circle-help]" />
-      </Button>
       <Button
         v-if="showAddCredits"
         variant="secondary"
