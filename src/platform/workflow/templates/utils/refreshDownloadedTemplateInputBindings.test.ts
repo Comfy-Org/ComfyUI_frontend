@@ -1,50 +1,66 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { toNodeId } from '@/types/nodeId'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
-import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 import { refreshDownloadedTemplateInputBindings } from './refreshDownloadedTemplateInputBindings'
 
-vi.mock(import('@/utils/graphTraversalUtil'), () => ({
-  getNodeByExecutionId: vi.fn()
-}))
-
-const findNode = vi.mocked(getNodeByExecutionId)
+function graphWith(node: LGraphNode, id: number): LGraph {
+  const graph = new LGraph()
+  node.id = toNodeId(id)
+  graph.add(node)
+  return graph
+}
 
 describe('refreshDownloadedTemplateInputBindings', () => {
-  beforeEach(() => findNode.mockReset())
-
-  it('refreshes each matching widget once by execution ID', () => {
+  it('refreshes each matching widget once, found by execution ID', () => {
     const callback = vi.fn()
     const node = new LGraphNode('test')
     node.addWidget('text', 'image', 'subject.png', callback)
-    findNode.mockReturnValue(node)
     const candidate = fromPartial<MissingMediaCandidate>({
-      nodeId: '1:2',
+      nodeId: '7',
       widgetName: 'image',
       name: 'subject.png'
     })
 
     refreshDownloadedTemplateInputBindings(
-      new LGraph(),
+      graphWith(node, 7),
       [candidate, candidate],
       new Set(['subject.png'])
     )
 
-    expect(findNode).toHaveBeenCalledWith(expect.anything(), '1:2')
     expect(callback).toHaveBeenCalledOnce()
     expect(callback).toHaveBeenCalledWith('subject.png', undefined, node)
+  })
+
+  it('refreshes nothing when the execution ID is not in the graph', () => {
+    const callback = vi.fn()
+    const node = new LGraphNode('test')
+    node.addWidget('text', 'image', 'subject.png', callback)
+
+    refreshDownloadedTemplateInputBindings(
+      graphWith(node, 7),
+      [
+        fromPartial<MissingMediaCandidate>({
+          nodeId: '99',
+          widgetName: 'image',
+          name: 'subject.png'
+        })
+      ],
+      new Set(['subject.png'])
+    )
+
+    expect(callback).not.toHaveBeenCalled()
   })
 
   it('ignores unmatched filenames and widget values', () => {
     const callback = vi.fn()
     const node = new LGraphNode('test')
     node.addWidget('text', 'image', 'other.png', callback)
-    findNode.mockReturnValue(node)
 
     refreshDownloadedTemplateInputBindings(
-      new LGraph(),
+      graphWith(node, 1),
       [
         fromPartial<MissingMediaCandidate>({
           nodeId: '1',
