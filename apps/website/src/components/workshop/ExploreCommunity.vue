@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { externalLinks, getRoutes } from '../../config/routes'
+import type { GalleryItem } from '../../data/gallery'
 import { visibleGalleryItems } from '../../data/gallery'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -7,10 +8,13 @@ import GalleryItemAttribution from '../gallery/GalleryItemAttribution.vue'
 
 const POSTS = 8
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { items = visibleGalleryItems, locale = 'en' } = defineProps<{
+  items?: readonly GalleryItem[]
+  locale?: Locale
+}>()
 
 const gallery = getRoutes(locale).gallery
-const posts = visibleGalleryItems.slice(0, POSTS)
+const posts = items.slice(0, POSTS)
 </script>
 
 <template>
