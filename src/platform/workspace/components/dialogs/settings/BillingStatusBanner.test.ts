@@ -124,6 +124,10 @@ const i18n = createI18n({
           paused: {
             title: 'Subscription paused',
             body: "This workspace's subscription is paused. Update payment to resume.",
+            personalBody:
+              'Your subscription is paused. Update your payment method to resume.',
+            personalPaymentFailedBody:
+              "Your payment didn't go through. Update your payment method to resume.",
             memberBody:
               "Ask your workspace owner to restore the workspace's subscription."
           },
@@ -453,6 +457,10 @@ describe('BillingStatusBanner', () => {
     renderBanner()
 
     expect(screen.getByRole('status')).toHaveTextContent('Subscription paused')
+    expect(screen.getByRole('status')).toHaveTextContent(
+      "Your payment didn't go through. Update your payment method to resume."
+    )
+    expect(screen.getByRole('status')).not.toHaveTextContent('workspace')
     await userEvent.click(
       screen.getByRole('button', { name: 'Update payment' })
     )
@@ -467,6 +475,10 @@ describe('BillingStatusBanner', () => {
     renderBanner()
 
     expect(screen.getByRole('status')).toHaveTextContent('Subscription paused')
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Your subscription is paused. Update your payment method to resume.'
+    )
+    expect(screen.getByRole('status')).not.toHaveTextContent('workspace')
     await userEvent.click(
       screen.getByRole('button', { name: 'Update payment' })
     )

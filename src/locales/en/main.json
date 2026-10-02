@@ -3339,6 +3339,8 @@
       "paused": {
         "title": "Subscription paused",
         "body": "This workspace's subscription is paused. Update payment to resume.",
+        "personalBody": "Your subscription is paused. Update your payment method to resume.",
+        "personalPaymentFailedBody": "Your payment didn't go through. Update your payment method to resume.",
         "memberBody": "Ask your workspace owner to restore the workspace's subscription."
       },
       "outOfCredits": {
