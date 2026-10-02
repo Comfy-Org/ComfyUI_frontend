@@ -9,6 +9,7 @@
       "signInCaption": "パートナーノードにはアカウントが必要です",
       "signInToRun": "実行するにはサインイン"
     },
+    "share": "共有",
     "shareTooltip": "ワークフローを共有"
   },
   "agent": {
