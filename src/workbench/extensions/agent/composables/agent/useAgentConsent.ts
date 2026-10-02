@@ -13,6 +13,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
+import { recordConsentOfferDeclined } from '@/workbench/extensions/agent/services/agent/consentOfferDeclined'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 
 export const CONSENT_DIALOG_KEY = 'agent-consent'
@@ -74,6 +75,28 @@ export function useAgentConsent() {
       retry_armed: false,
       trigger
     })
+  }
+
+  /**
+   * Remembers an explicit refusal so no later page load, panel session or
+   * device promotes the card automatically again. Not awaited by the card's
+   * close: the refusal is already a decision, and holding the dialog open on a
+   * write would make "no thanks" feel like it had failed.
+   *
+   * A failed write is reported rather than surfaced. The user has said no and
+   * the card is gone; a toast about not having remembered that is noise, and the
+   * only user-visible consequence - being offered again - is the state this
+   * replaces rather than a regression on it.
+   */
+  async function declineOffer(): Promise<void> {
+    try {
+      await recordConsentOfferDeclined()
+    } catch (error) {
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'agent_consent_decline_write_failure'
+      })
+    }
   }
 
   function showConsentDialog(
@@ -193,6 +216,15 @@ export function useAgentConsent() {
           onAccept: () => void accept(),
           onReject: () => {
             reportOutcome('rejected')
+            // The signed-out card has no account to attach a refusal to, and a
+            // card left open across a scope change must not write into the new
+            // account. Acceptance already enforces this same ownership check.
+            if (
+              persistOnAccept &&
+              expectedIdentity &&
+              identity.value === expectedIdentity
+            )
+              void declineOffer()
             closeWith(false)
           }
         },

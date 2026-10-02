@@ -44,6 +44,15 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError
 }))
 
+const recordConsentOfferDeclined = vi.hoisted(() => vi.fn())
+vi.mock(
+  import('@/workbench/extensions/agent/services/agent/consentOfferDeclined'),
+  () => ({
+    consentOfferDeclined: () => Promise.resolve(false),
+    recordConsentOfferDeclined
+  })
+)
+
 const telemetry = vi.hoisted(() => ({
   trackAgentConsentShown: vi.fn(),
   trackAgentConsentResolved: vi.fn(),
@@ -137,6 +146,8 @@ describe('useAgentConsent', () => {
     fetchWithUnifiedRemint.mockReset()
     fetchWithUnifiedRemint.mockResolvedValue(settingResponse(false))
     reportError.mockReset()
+    recordConsentOfferDeclined.mockReset()
+    recordConsentOfferDeclined.mockResolvedValue(undefined)
     vi.mocked(useToastStore().add).mockReset()
   })
 
@@ -170,6 +181,91 @@ describe('useAgentConsent', () => {
       [{ decision: 'rejected', save_error_shown: false }]
     ])
     expect(onOpen).not.toHaveBeenCalled()
+  })
+
+  it('records the refusal durably, without writing consent', async () => {
+    const request = useAgentConsent().withConsent('button_click', vi.fn())
+    const dialog = await waitForConsentDialog()
+    await renderConsentCard(dialog)
+
+    await clickCardAction('reject')
+    await request
+
+    expect(recordConsentOfferDeclined).toHaveBeenCalledOnce()
+    // The refusal is a promotion preference, not a consent record. Nothing may
+    // reach the consent registry here: it is write-true-only, so the only thing
+    // a refusal could write there is a lie.
+    expect(
+      fetchWithUnifiedRemint.mock.calls.filter(
+        ([, init]) => (init as RequestInit | undefined)?.method === 'POST'
+      )
+    ).toEqual([])
+  })
+
+  it('does not attach a refusal to an account that did not own the card', async () => {
+    const identity = ref('account-a')
+    useCurrentUser().resolvedUserInfo = computed(() => ({ id: identity.value }))
+    const request = useAgentConsent().withConsent('button_click', vi.fn())
+    const dialog = await waitForConsentDialog()
+    await renderConsentCard(dialog)
+
+    identity.value = 'account-b'
+    await clickCardAction('reject')
+    await request
+
+    expect(recordConsentOfferDeclined).not.toHaveBeenCalled()
+  })
+
+  it('does not persist a refusal from the signed-out card', async () => {
+    useCurrentUser().isLoggedIn = computed(() => false)
+    useCurrentUser().resolvedUserInfo = computed(() => null)
+    const request = useAgentConsent().withConsent('button_click', vi.fn())
+    const dialog = await waitForConsentDialog()
+    await renderConsentCard(dialog)
+
+    await clickCardAction('reject')
+    await request
+
+    expect(recordConsentOfferDeclined).not.toHaveBeenCalled()
+    expect(useDialogService().showSignInDialog).not.toHaveBeenCalled()
+  })
+
+  it('records no refusal when the card is dismissed instead of refused', async () => {
+    // Escape, the backdrop and a programmatic close are `dismissed`, which the
+    // product ruling deliberately leaves alone - suppressing promotion on them
+    // would silence the offer for users who never decided anything.
+    const request = useAgentConsent().withConsent('button_click', vi.fn())
+    const dialog = await waitForConsentDialog()
+    await renderConsentCard(dialog)
+
+    const close = dialog.dialogComponentProps.onClose
+    if (typeof close !== 'function') throw new Error('Missing close handler')
+    close()
+    await request
+
+    expect(recordConsentOfferDeclined).not.toHaveBeenCalled()
+  })
+
+  it('still closes the card when recording the refusal fails', async () => {
+    // Nothing on screen reports this: the user said no and the card is gone. The
+    // only consequence is being offered again, which is the behaviour this
+    // replaces rather than a regression on it.
+    recordConsentOfferDeclined.mockRejectedValue(new Error('offline'))
+    const request = useAgentConsent().withConsent('button_click', vi.fn())
+    const dialog = await waitForConsentDialog()
+    await renderConsentCard(dialog)
+
+    await clickCardAction('reject')
+    expect(await request).toBeUndefined()
+
+    await vi.waitFor(() => {
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'agent',
+        errorType: 'agent_consent_decline_write_failure'
+      })
+    })
+    expect(useToastStore().add).not.toHaveBeenCalled()
+    expect(useDialogStore().dialogStack).toHaveLength(0)
   })
 
   it('reports an acceptance as the resolved decision once the save lands', async () => {

@@ -682,6 +682,14 @@ export type AgentConsentOfferExit =
   /** The first-run startup probe rejected. */
   | 'startup_probe_failed'
   /**
+   * The user pressed the consent card's explicit Reject action at some earlier
+   * point, so the agent no longer promotes itself automatically. Unlike every
+   * other exit here this one is durable and account-scoped rather than
+   * per-page-load, so its rate over a population is a measure of accumulated
+   * refusals, not of this session's conditions. `startup` stage only.
+   */
+  | 'consent_declined'
+  /**
    * The consent scope moved while it was being resolved - a different account,
    * a workspace transition, or a switch that started - so the read that would
    * have decided whether to ask was never made. `request` stage only.

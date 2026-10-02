@@ -1669,10 +1669,15 @@ export class ComfyApi extends EventTarget {
   /**
    * Stores a setting for the current user
    */
-  async storeSetting(id: keyof Settings, value: Settings[keyof Settings]) {
+  async storeSetting(
+    id: keyof Settings,
+    value: Settings[keyof Settings],
+    options?: Pick<RequestInit, 'keepalive'>
+  ) {
     return this.fetchApi(`/settings/${encodeURIComponent(id)}`, {
       method: 'POST',
-      body: JSON.stringify(value)
+      body: JSON.stringify(value),
+      ...options
     })
   }
 
