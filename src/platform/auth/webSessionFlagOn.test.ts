@@ -488,6 +488,7 @@ function capabilitiesResponse({
       can_top_up: true,
       can_cancel: true,
       can_reactivate: false,
+      can_revert_scheduled_change: false,
       can_change_seats: false,
       can_invite_members: false,
       can_downgrade_to_personal: false

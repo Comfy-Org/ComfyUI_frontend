@@ -1,3 +1,4 @@
+import { datadogRum } from '@datadog/browser-rum'
 import userEvent from '@testing-library/user-event'
 import { cleanup, render, screen, waitFor } from '@testing-library/vue'
 import { nextTick, ref } from 'vue'
@@ -40,6 +41,7 @@ import {
   previewOf,
   succeededOperation
 } from '@/test/fakeBillingClient'
+import { trackedBillingEvents } from '@/test/trackedBillingEvents'
 import FullPageCheckoutView from '@/views/FullPageCheckoutView.vue'
 
 /** Money the bank is capturing: the phase that can no longer be called back. */
@@ -50,6 +52,8 @@ const processingOperation = (id = 'op_1'): PendingBillingOperation => ({
 
 const CHECKOUT_PATH =
   '/v1/checkout?product=comfyui&return_to=comfyui_workspace&plan=creator_monthly'
+
+vi.mock(import('@datadog/browser-rum'))
 
 vi.mock<unknown>(import('@/config/env'), () => ({
   BILLING_WEB_ENV: 'test',
@@ -557,6 +561,7 @@ describe('FullPageCheckoutView', () => {
     const assign = vi
       .spyOn(window.location, 'assign')
       .mockImplementation(() => {})
+    const sent = trackedBillingEvents()
     await renderCheckout(
       {},
       () => {},
@@ -567,6 +572,14 @@ describe('FullPageCheckoutView', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Back' }))
 
     expect(assign).toHaveBeenCalledWith(href)
+    expect(sent()).toStrictEqual([
+      {
+        operation: 'web_return',
+        stage: 'clicked',
+        outcome: 'pending',
+        control: 'back'
+      }
+    ])
   })
 
   it.for<{ name: string; serverCode: string; heading: string }>([
@@ -1111,6 +1124,7 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
         .spyOn(window.location, 'assign')
         .mockImplementation(() => {})
       const close = vi.spyOn(window, 'close').mockImplementation(() => {})
+      const sent = trackedBillingEvents()
       await payReady(SETTLED)
       form.emit('confirm', 'ctoken_1')
 
@@ -1124,6 +1138,16 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
         result: 'success',
         reference: 'op_mine'
       })
+      expect(
+        sent().filter((event) => event.operation === 'web_return')
+      ).toStrictEqual([
+        {
+          operation: 'web_return',
+          stage: 'clicked',
+          outcome: 'pending',
+          control: 'success_close'
+        }
+      ])
     })
 
     it("goes to the workspace's Plan & Credits settings when this family has no destination for return_to", async () => {
@@ -3049,5 +3073,166 @@ describe('FullPageCheckoutView restoring a code this page applied', () => {
     const [request] = fake.subscribe.mock.calls[0]
     expect(request.promotion_code).toBe('LAUNCH20')
     expect(request.return_url).not.toMatch(/LAUNCH20/i)
+  })
+})
+
+/** What the facade sent to the RUM sink for one billing operation, in order. */
+function reportedBillingEvents(operation: string) {
+  return vi
+    .mocked(datadogRum.addAction)
+    .mock.calls.filter(([name]) => name.startsWith(`billing.${operation}.`))
+    .map(([name, context]) => ({ name, context }))
+}
+
+describe('FullPageCheckoutView attempt telemetry', () => {
+  const ATTEMPT = {
+    operation: 'subscription_checkout',
+    tier: 'creator',
+    cycle: 'monthly',
+    checkout_type: 'new',
+    payment_intent_source: 'subscribe_now_button',
+    checkout_ui: 'full_page',
+    billing_client: 'sdk',
+    billing_surface: 'billing_web'
+  }
+
+  const SETTLED: FakeBillingClientOptions['subscribe'] = {
+    status: 'ok',
+    value: {
+      phase: 'succeeded',
+      operation: succeededOperation('op_1'),
+      issuedStatus: 'subscribed'
+    }
+  }
+
+  const phaseOf = (stage: string, outcome: string) => ({
+    ...ATTEMPT,
+    stage,
+    outcome
+  })
+
+  async function readyToPay(options: FakeBillingClientOptions) {
+    const fake = await renderCheckout(
+      options,
+      undefined,
+      `${CHECKOUT_PATH}&source=subscribe_now_button`
+    )
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+    await waitFor(() => expect(payButton()).toBeEnabled())
+    return fake
+  }
+
+  beforeEach(() => {
+    form.mounts = 0
+    vi.mocked(datadogRum.getInitConfiguration).mockReturnValue({
+      clientToken: 'pub',
+      applicationId: 'app'
+    })
+  })
+
+  it.for<{
+    name: string
+    subscribe: FakeBillingClientOptions['subscribe']
+    terminal: Record<string, unknown>
+  }>([
+    {
+      name: 'a payment the server settled',
+      subscribe: SETTLED,
+      terminal: {
+        stage: 'succeeded',
+        outcome: 'success',
+        billing_op_id: 'op_1'
+      }
+    },
+    {
+      name: 'a decline',
+      subscribe: {
+        status: 'ok',
+        value: {
+          phase: 'failed',
+          operation: failedOperation('insufficient_funds', 'op_declined')
+        }
+      },
+      terminal: {
+        stage: 'failed',
+        outcome: 'failure',
+        failure_category: 'provider_decline',
+        decline_reason: 'insufficient_funds',
+        billing_op_id: 'op_declined'
+      }
+    },
+    {
+      name: 'a server error before any operation exists',
+      subscribe: { status: 'error', code: 'REQUEST_FAILED', httpStatus: 503 },
+      terminal: {
+        stage: 'failed',
+        outcome: 'failure',
+        failure_category: 'api_rejected'
+      }
+    }
+  ])('reports $name as one intent, one start and one terminal', async (row) => {
+    await readyToPay({ subscribe: row.subscribe })
+
+    form.emit('confirm', 'ctoken_1')
+
+    await waitFor(() =>
+      expect(reportedBillingEvents('subscription_checkout')).toHaveLength(3)
+    )
+    expect(reportedBillingEvents('subscription_checkout')).toEqual([
+      {
+        name: 'billing.subscription_checkout.intent',
+        context: phaseOf('intent', 'pending')
+      },
+      {
+        name: 'billing.subscription_checkout.started',
+        context: phaseOf('started', 'pending')
+      },
+      {
+        name: `billing.subscription_checkout.${row.terminal.stage}`,
+        context: {
+          ...ATTEMPT,
+          ...row.terminal,
+          duration_ms: expect.any(Number)
+        }
+      }
+    ])
+  })
+
+  it('reports no attempt for a payment this page only recovers', async () => {
+    await renderCheckout({
+      recover: { status: 'ok', value: succeededOperation('op_done') },
+      preview: { status: 'ok', value: previewOf({ allowed: false }) }
+    })
+
+    await screen.findByRole('heading', { name: 'Already completed' })
+
+    expect(reportedBillingEvents('subscription_checkout')).toEqual([])
+  })
+
+  it('starts a second attempt only after the first reached its terminal', async () => {
+    const fake = await readyToPay({ subscribe: SETTLED })
+    fake.subscribe.mockResolvedValueOnce({
+      status: 'error',
+      code: 'REQUEST_FAILED'
+    })
+
+    form.emit('confirm', 'ctoken_1')
+    await screen.findByRole('alert')
+    await waitFor(() => expect(payButton()).toBeEnabled())
+    form.emit('confirm', 'ctoken_2')
+
+    await waitFor(() =>
+      expect(
+        reportedBillingEvents('subscription_checkout').map(({ name }) => name)
+      ).toEqual([
+        'billing.subscription_checkout.intent',
+        'billing.subscription_checkout.started',
+        'billing.subscription_checkout.failed',
+        'billing.subscription_checkout.intent',
+        'billing.subscription_checkout.started',
+        'billing.subscription_checkout.succeeded'
+      ])
+    )
   })
 })

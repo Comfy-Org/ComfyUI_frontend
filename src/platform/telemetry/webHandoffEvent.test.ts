@@ -1,9 +1,8 @@
-import { describe, expect, it } from 'vitest'
-
 import {
   getBillingTelemetryEventPayload,
   getCloudAppBillingTelemetryEventPayload
-} from './types'
+} from '@comfyorg/account-core/billing'
+import { describe, expect, it } from 'vitest'
 
 describe('the web handoff event payload', () => {
   it.for([

@@ -2,6 +2,18 @@ import type { PostHog } from 'posthog-js'
 import { watch } from 'vue'
 import type { WatchSource } from 'vue'
 
+import type {
+  BillingTelemetryEvent,
+  BillingTelemetryEventName,
+  CheckoutJourneyTelemetryEvent,
+  CheckoutJourneyTelemetryEventName
+} from '@comfyorg/account-core/billing'
+import {
+  getBillingTelemetryEventName,
+  getBillingWebTelemetryEventPayload,
+  getCheckoutJourneyTelemetryEventName,
+  getCheckoutJourneyTelemetryEventPayload
+} from '@comfyorg/account-core/billing'
 import type { CloudTelemetryConfig } from '@comfyorg/account-core/firebase'
 import {
   createPostHogBeforeSend,
@@ -14,9 +26,6 @@ import {
 
 import type { BillingWebSessionPhase } from '@/router'
 import { addRumAction, clearRumUser, setRumUser } from '@/telemetry/rum'
-
-type BillingEventName = `billing.${string}.${string}`
-type BillingEventPayload = Readonly<Record<string, unknown>>
 
 export type SessionIdentity =
   | { readonly kind: 'signed_in'; readonly userId: string }
@@ -34,7 +43,7 @@ type PostHogClient = Pick<
 >
 
 interface BillingEvent {
-  readonly name: BillingEventName
+  readonly name: BillingTelemetryEventName | CheckoutJourneyTelemetryEventName
   readonly properties: Readonly<Record<string, unknown>>
 }
 
@@ -51,8 +60,6 @@ type PostHogSink =
       readonly client: PostHogClient
       readonly disabledEvents: ReadonlySet<string>
     }
-
-const BILLING_SURFACE = 'billing_web'
 
 /** Query parameters PostHog masks wherever it stores a URL, its cross-subdomain cookie included. */
 const MASKED_URL_PARAMS = [
@@ -184,20 +191,35 @@ export function createBillingWebTelemetry() {
     for (const event of waiting) attempt(() => capture(event))
   }
 
+  function send(event: BillingEvent): void {
+    attempt(() => addRumAction(event.name, event.properties))
+    capture(event)
+  }
+
   /**
-   * One `billing.<operation>.<stage>` event to RUM and PostHog, stamped with
-   * this surface. The payload is the cloud contract's allowlisted payload.
+   * One typed billing event to RUM and PostHog: the contract's allowlisted
+   * payload, stamped with this surface.
    */
-  function trackBillingEvent(
-    name: BillingEventName,
-    payload: BillingEventPayload
-  ): void {
-    const event: BillingEvent = {
-      name,
-      properties: { ...payload, billing_surface: BILLING_SURFACE }
-    }
-    attempt(() => addRumAction(name, event.properties))
-    attempt(() => capture(event))
+  function trackBillingEvent(event: BillingTelemetryEvent): void {
+    attempt(() =>
+      send({
+        name: getBillingTelemetryEventName(event),
+        properties: getBillingWebTelemetryEventPayload(event)
+      })
+    )
+  }
+
+  /** One phase of the checkout journey, in the same stamped shape. */
+  function trackCheckoutJourneyEvent(event: CheckoutJourneyTelemetryEvent) {
+    attempt(() =>
+      send({
+        name: getCheckoutJourneyTelemetryEventName(event),
+        properties: {
+          ...getCheckoutJourneyTelemetryEventPayload(event),
+          billing_surface: 'billing_web'
+        }
+      })
+    )
   }
 
   /** The RUM user is the opaque id of the signed-in user, nothing else. */
@@ -205,7 +227,12 @@ export function createBillingWebTelemetry() {
     syncIdentity(RUM_USER, identity)
   }
 
-  return { startPostHog, startRumUser, trackBillingEvent }
+  return {
+    startPostHog,
+    startRumUser,
+    trackBillingEvent,
+    trackCheckoutJourneyEvent
+  }
 }
 
 export const billingWebTelemetry = createBillingWebTelemetry()

@@ -1,4 +1,5 @@
 import { SparkRenderer } from '@sparkjsdev/spark'
+import { delay } from 'es-toolkit'
 import * as THREE from 'three'
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
@@ -11,6 +12,9 @@ import type {
   EventManagerInterface,
   SceneManagerInterface
 } from './interfaces'
+
+const SPLAT_SORT_TIMEOUT_MS = 5_000
+const SPLAT_SORT_POLL_MS = 16
 
 export class SceneManager implements SceneManagerInterface {
   scene!: THREE.Scene
@@ -26,6 +30,15 @@ export class SceneManager implements SceneManagerInterface {
       this.nextSparkDirtyResolve = resolve
     })
     return this.nextSparkDirtyPromise
+  }
+
+  async whenSplatsSorted(camera: THREE.Camera): Promise<void> {
+    const spark = this.sparkRenderer
+    await spark.update({ scene: this.scene, camera })
+    const deadline = performance.now() + SPLAT_SORT_TIMEOUT_MS
+    while ((spark.sorting || spark.sortDirty) && performance.now() < deadline) {
+      await delay(SPLAT_SORT_POLL_MS)
+    }
   }
 
   backgroundScene!: THREE.Scene

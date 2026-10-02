@@ -18,6 +18,7 @@ import {
   failedOperation,
   succeededOperation
 } from '@/test/fakeBillingClient'
+import { trackedBillingEvents } from '@/test/trackedBillingEvents'
 import FullPageTopupView from '@/views/FullPageTopupView.vue'
 
 vi.mock<unknown>(import('@/config/env'), () => ({
@@ -111,6 +112,29 @@ afterEach(() => {
 })
 
 describe('FullPageTopupView', () => {
+  it('reports the back arrow and goes back to the product', async () => {
+    const assign = vi
+      .spyOn(window.location, 'assign')
+      .mockImplementation(() => {})
+    const sent = trackedBillingEvents()
+    renderTopup()
+    await screen.findByText('Add credits · Acme Team')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Back' }))
+
+    expect(assign).toHaveBeenCalledExactlyOnceWith(
+      'https://testcloud.comfy.org/?workspace=ws-team'
+    )
+    expect(sent()).toStrictEqual([
+      {
+        operation: 'web_return',
+        stage: 'clicked',
+        outcome: 'pending',
+        control: 'back'
+      }
+    ])
+  })
+
   it('265-4362: quotes the link amount and leads with the credits the server quotes, with no promo entry', async () => {
     const fake = renderTopup()
 

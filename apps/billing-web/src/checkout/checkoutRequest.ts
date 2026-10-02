@@ -63,6 +63,7 @@ export function tierCheckoutPlan(
 
 export interface PaymentChoice {
   readonly confirmationToken?: string
+  readonly methodType?: string
   readonly savedPaymentMethodId?: string
   readonly confirmReactivation?: boolean
 }

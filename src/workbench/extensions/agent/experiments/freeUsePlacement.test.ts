@@ -5,11 +5,15 @@ import {
   remoteConfig,
   remoteConfigRevision
 } from '@/platform/remoteConfig/remoteConfig'
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 
-import { useFreeUsePlacement } from './freeUsePlacement'
+import {
+  FREE_USE_PLACEMENT_FLAG,
+  useFreeUsePlacement
+} from './freeUsePlacement'
 
 vi.mock(import('@/platform/remoteConfig/remoteConfig'))
 vi.mock(import('@/platform/telemetry'))
@@ -39,17 +43,32 @@ describe('useFreeUsePlacement', () => {
     })
   })
 
-  it.for([undefined, 'unknown'])('keeps control for %s', async (value) => {
-    remoteConfig.value = {
-      'agent-free-use-message-placement': value
-    }
+  it('keeps control when the flag is absent', () => {
+    remoteConfig.value = {}
     authenticatedRemoteConfigState.value = 'authenticated'
     const { variant } = useFreeUsePlacement()
 
     expect(variant.value).toBe('control')
     expect(useTelemetry()?.trackAgentFreeUseExposure).toHaveBeenCalledWith({
       placement: 'control',
-      '$feature/agent-free-use-message-placement': 'control'
+      [`$feature/${FREE_USE_PLACEMENT_FLAG}`]: 'control'
+    })
+  })
+
+  it('keeps control for an unknown flag value', () => {
+    const config: RemoteConfig = {}
+    Object.defineProperty(config, FREE_USE_PLACEMENT_FLAG, {
+      enumerable: true,
+      value: 'unknown'
+    })
+    remoteConfig.value = config
+    authenticatedRemoteConfigState.value = 'authenticated'
+    const { variant } = useFreeUsePlacement()
+
+    expect(variant.value).toBe('control')
+    expect(useTelemetry()?.trackAgentFreeUseExposure).toHaveBeenCalledWith({
+      placement: 'control',
+      [`$feature/${FREE_USE_PLACEMENT_FLAG}`]: 'control'
     })
   })
 

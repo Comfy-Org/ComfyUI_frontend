@@ -19,7 +19,7 @@ const PaymentFormStub = defineComponent({
         'button',
         {
           'data-testid': 'payment-form',
-          onClick: () => emit('confirm', 'ctoken_1')
+          onClick: () => emit('confirm', 'ctoken_1', 'card')
         },
         `${props.amountCents} ${props.currency}`
       )
@@ -109,7 +109,7 @@ describe('CheckoutSubscribeConfirm', () => {
     expect(screen.getByText(/Spring sale/).textContent).toContain('−$5.00')
   })
 
-  it('withholds the card form until the quote can price it, then submits its token', async () => {
+  it('withholds the card form until the quote can price it, then submits its token and its method type', async () => {
     const onConfirmPayment = vi.fn()
     const { rerender } = renderConfirm({
       usePaymentElement: true,
@@ -123,7 +123,7 @@ describe('CheckoutSubscribeConfirm', () => {
     await rerender({ previewData: exactPreview(), quoteIsCurrent: true })
     expect(screen.getByTestId('payment-form').textContent).toBe('1500 usd')
     await userEvent.click(screen.getByTestId('payment-form'))
-    expect(onConfirmPayment).toHaveBeenCalledWith('ctoken_1')
+    expect(onConfirmPayment).toHaveBeenCalledWith('ctoken_1', 'card')
   })
 
   it('confirms a zero-dollar quote without mounting the card form', async () => {

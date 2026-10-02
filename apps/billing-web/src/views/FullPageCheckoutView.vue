@@ -28,6 +28,7 @@ import { useFullPageCheckout } from '@/composables/useFullPageCheckout'
 import { useHostedCopy } from '@/composables/useHostedCopy'
 import { useBillingWebStripeKey } from '@/config/stripeKey'
 import { useBillingWebSession } from '@/session/billingWebSession'
+import { reportReturnClicked } from '@/telemetry/webReturnTelemetry'
 
 const { t, locale } = useI18n()
 const { coded } = useHostedCopy()
@@ -157,7 +158,8 @@ const endingPlan = computed<EndingPlan | undefined>(() => {
   }
 })
 
-function returnToProduct() {
+function goBack() {
+  reportReturnClicked('back')
   window.location.assign(returnLink.value)
 }
 
@@ -191,7 +193,7 @@ function viewPlans() {
         :ledger
         :locked
         :repricing="promo.busy.value"
-        @back="returnToProduct"
+        @back="goBack"
       >
         <PromoCodeEntry
           :chips="shown.chips"
