@@ -426,25 +426,25 @@ function booleanValue(fallback = false): boolean {
               *
             </span>
           </label>
-          <span
-            v-if="group"
-            class="text-xs text-primary-warm-gray tabular-nums"
-            :aria-label="
-              t('workshop.field.chosenOfMax', locale, {
-                count: groupFiles.length,
-                max: group.length
-              })
-            "
-            :data-testid="`field-${field.name}-count`"
-          >
-            {{ groupFiles.length }} / {{ group.length }}
-          </span>
           <InfoTooltip
             v-if="field.hint"
             :text="field.hint"
             :label="field.hint"
           />
         </div>
+        <span
+          v-if="group"
+          class="text-xs text-primary-warm-gray tabular-nums"
+          :aria-label="
+            t('workshop.field.chosenOfMax', locale, {
+              count: groupFiles.length,
+              max: group.length
+            })
+          "
+          :data-testid="`field-${field.name}-count`"
+        >
+          {{ groupFiles.length }} / {{ group.length }}
+        </span>
         <input
           v-if="field.kind === 'number' && isSlider"
           type="number"
