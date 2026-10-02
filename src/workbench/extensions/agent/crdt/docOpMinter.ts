@@ -145,7 +145,6 @@ function nodeKey(graphId: string, nodeId: NodeId): string {
   return `${graphId}:${String(nodeId)}`
 }
 
-/** The graph an intent names, when this canvas still renders it. */
 function reachableIntentGraph(
   graph: LGraph,
   graphId: string
