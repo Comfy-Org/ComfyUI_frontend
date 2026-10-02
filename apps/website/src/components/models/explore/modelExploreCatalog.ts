@@ -70,7 +70,7 @@ export function createModelExploreCatalog(
       return {
         slug: model.slug,
         title: model.displayName,
-        href: `/p/supported-models/${model.slug}`,
+        href: `/p/supported-models/${model.slug}/`,
         directory: model.directory,
         workflowCount: model.workflowCount,
         categories,

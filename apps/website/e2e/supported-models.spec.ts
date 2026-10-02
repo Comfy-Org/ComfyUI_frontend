@@ -97,7 +97,7 @@ test.describe('Supported model explorer @smoke', () => {
       'Generate and edit images with typography and transparent backgrounds.'
     )
     await expect(
-      latest.getByText('OPEN WEIGHTS', { exact: true })
+      latest.getByText('OPEN WEIGHTS', { exact: true }).first()
     ).toBeVisible()
     await expect(latest).not.toContainText('Release announcements')
     await latest

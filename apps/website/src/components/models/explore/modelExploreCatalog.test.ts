@@ -64,11 +64,11 @@ describe('model explore catalog presentation', () => {
     expect(catalog.map(({ slug, href }) => ({ slug, href }))).toEqual([
       {
         slug: 'wan-video',
-        href: '/p/supported-models/wan-video'
+        href: '/p/supported-models/wan-video/'
       },
       {
         slug: 'partner-image',
-        href: '/p/supported-models/partner-image'
+        href: '/p/supported-models/partner-image/'
       }
     ])
   })
