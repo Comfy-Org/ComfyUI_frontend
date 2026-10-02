@@ -12,7 +12,6 @@ import {
 } from '@e2e/fixtures/utils/liveCloudBillingPolicy'
 import type { NetworkPolicy } from '@e2e/fixtures/utils/networkPolicy'
 import { assetPath } from '@e2e/fixtures/utils/paths'
-import { mockDistributionsFlag } from '@e2e/fixtures/utils/platformFlagMocks'
 
 dotenvConfig()
 
@@ -165,7 +164,6 @@ export const networkIsolationFixture = base.extend<{
     await context.route('https://cloud.comfy.org/cdn-cgi/trace', (route) =>
       route.fulfill({ contentType: 'text/plain', body: 'loc=US\n' })
     )
-    await mockDistributionsFlag(context, false)
     for (const slide of HERO_SLIDES) {
       await context.route(slide.poster, (route) =>
         route.fulfill({ path: assetPath('image32x32.webp') })

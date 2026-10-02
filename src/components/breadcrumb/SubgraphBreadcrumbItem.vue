@@ -47,8 +47,6 @@
         class: 'py-2'
       }
     }"
-    @show="menuOpen = true"
-    @hide="menuOpen = false"
   />
   <Input
     v-if="isEditing"
@@ -168,11 +166,7 @@ const startRename = async () => {
   })
 }
 
-const menuOpen = ref(false)
-const { menuItems } = useWorkflowActionsMenu(startRename, {
-  isRoot,
-  isOpen: menuOpen
-})
+const { menuItems } = useWorkflowActionsMenu(startRename, { isRoot })
 
 const handleClick = (event: MouseEvent) => {
   if (isEditing.value) {

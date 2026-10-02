@@ -56,14 +56,12 @@ describe('DeployToComfyApiCard', () => {
   it('links to the platform developer docs', () => {
     renderCard()
 
-    for (const link of screen.getAllByRole('link', {
-      name: /read the docs/i
-    })) {
-      expect(link).toHaveAttribute(
-        'href',
-        'https://docs.comfy.org/development/overview'
-      )
-    }
+    const docs = 'https://docs.comfy.org/development/overview'
+    expect(
+      screen
+        .getAllByRole('link', { name: /read the docs/i })
+        .map((link) => link.getAttribute('href'))
+    ).toEqual([docs, docs])
     expect(buildDocsUrl).toHaveBeenCalledWith('/development/overview', {
       includeLocale: true
     })
