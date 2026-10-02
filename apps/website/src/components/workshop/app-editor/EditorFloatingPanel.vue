@@ -46,7 +46,7 @@ function toggle() {
     :aria-label="label"
     :class="
       cn(
-        'pointer-events-auto absolute inset-x-0 bottom-0 z-20 flex max-h-[80%] flex-col rounded-t-2xl border border-transparency-white-t8 bg-primary-comfy-ink-light/90 shadow-2xl shadow-black/50 backdrop-blur-xl transition-opacity lg:inset-x-auto lg:top-15 lg:bottom-auto lg:left-3 lg:max-h-[calc(100%-4.5rem)] lg:w-80 lg:rounded-2xl',
+        'pointer-events-auto absolute inset-x-0 bottom-0 z-20 flex max-h-[80%] flex-col rounded-t-2xl border border-transparency-white-t8 bg-primary-comfy-ink-light/90 shadow-2xl shadow-black/50 backdrop-blur-xl transition-opacity lg:inset-x-auto lg:top-15 lg:bottom-auto lg:left-3 lg:max-h-[calc(100%-4.5rem)] lg:w-editor-panel lg:rounded-2xl',
         dimmed && 'pointer-events-none opacity-40 max-lg:hidden'
       )
     "

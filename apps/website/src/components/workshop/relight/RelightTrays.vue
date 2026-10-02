@@ -3,6 +3,7 @@ import type { Relight } from '../../../composables/useRelight'
 import type { Locale } from '../../../i18n/translations'
 import { lc } from '../../../lib/workshop/relight/copy'
 import EditorTray from '../app-editor/EditorTray.vue'
+import RelightTools from './RelightTools.vue'
 import { RELIGHT_SECTIONS, RELIGHT_TRAYS, sectionMeta } from './sections'
 
 const { relight, locale = 'en' } = defineProps<{
@@ -26,6 +27,7 @@ const { tray } = relight
         <span class="text-[11px] text-primary-warm-gray tabular-nums">{{
           sectionMeta(open.id, relight, locale)
         }}</span>
+        <RelightTools v-if="open.id === 'lights'" :relight :locale compact />
       </template>
       <template v-for="section in RELIGHT_SECTIONS" :key="section.id">
         <component

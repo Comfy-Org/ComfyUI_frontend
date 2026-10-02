@@ -1,4 +1,4 @@
-import type { BrowserContext, Page } from '@playwright/test'
+import type { BrowserContext, Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
@@ -178,6 +178,12 @@ test('closes Move anything while its flag is off', async ({
   await expect(page.getByTestId('move-anything')).toHaveCount(0)
 })
 
+/** The editors' side panel is as wide as Cinematic Studio's side column. */
+async function expectCinematicPanelWidth(page: Page, panel: Locator) {
+  const width = (await panel.boundingBox())?.width ?? 0
+  expect(width).toBeCloseTo(((page.viewportSize()?.width ?? 0) - 136) * 0.4, 0)
+}
+
 test('moves a thing from the Move anything side panel and shows the result', async ({
   page,
   context
@@ -190,9 +196,11 @@ test('moves a thing from the Move anything side panel and shows the result', asy
   await expect(generate).toHaveCount(0)
 
   const kitten = await openDetectedExample(page)
-  await expect(
-    app.getByRole('complementary', { name: 'Move anything settings' })
-  ).toContainText('kitten.jpg')
+  const panel = app.getByRole('complementary', {
+    name: 'Move anything settings'
+  })
+  await expect(panel).toContainText('kitten.jpg')
+  await expectCinematicPanelWidth(page, panel)
   await expect(generate).toBeDisabled()
   await kitten.focus()
   await page.keyboard.press('Shift+ArrowRight')
@@ -322,10 +330,17 @@ async function relightFromPanel(page: Page) {
   const lights = panel.getByRole('region', { name: 'Lights' })
 
   await app.getByRole('button', { name: /^Cool fill\./ }).click()
-  await expect(lights.getByRole('tab', { name: /^Cool fill/ })).toHaveAttribute(
-    'aria-selected',
-    'true'
-  )
+  await expect(
+    lights.getByRole('button', { name: /^Cool fill\s*Point/ })
+  ).toHaveAttribute('aria-expanded', 'true')
+  await expect(
+    lights.getByRole('button', { name: /^Warm key\s*Directional/ })
+  ).toHaveAttribute('aria-expanded', 'false')
+  await lights.getByRole('button', { name: 'Hide Cool fill' }).click()
+  await expect(
+    lights.getByRole('button', { name: 'Show Cool fill' })
+  ).toBeVisible()
+  await lights.getByRole('button', { name: 'Show Cool fill' }).click()
   const compare = app
     .getByRole('toolbar', { name: 'Relight tools' })
     .getByRole('button', { name: 'Compare' })
@@ -373,11 +388,22 @@ test('relights the Relight example from the floating panel', async ({
   const app = await relightFromPanel(page)
 
   await app.getByRole('button', { name: 'Edit lights' }).click()
-  await expect(
-    app
-      .getByRole('region', { name: 'Lights' })
-      .getByRole('slider', { name: 'Intensity' })
-  ).toHaveValue('70')
+  const panel = app.getByRole('complementary', { name: 'Relight settings' })
+  const lights = panel.getByRole('region', { name: 'Lights' })
+  await expect(lights.getByRole('slider', { name: 'Intensity' })).toHaveValue(
+    '70'
+  )
+  await expectCinematicPanelWidth(page, panel)
+
+  await lights.getByRole('button', { name: /^Warm key\s*Directional/ }).click()
+  const readout = lights.getByTestId('relight-dial-readout')
+  await expect(readout).toHaveText(/^-?\d+° · 15°$/)
+  await lights.getByRole('slider', { name: 'Direction' }).focus()
+  await page.keyboard.press('ArrowUp')
+  await expect(readout).toHaveText(/^-?\d+° · 20°$/)
+  await expect(lights.getByRole('slider', { name: 'Elevation' })).toHaveValue(
+    '20'
+  )
 })
 
 test('relights the Relight example from the bottom composer', async ({
