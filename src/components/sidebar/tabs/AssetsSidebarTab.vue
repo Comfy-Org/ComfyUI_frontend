@@ -249,7 +249,7 @@ const Load3dViewerContent = defineAsyncComponent(
 
 const { t } = useI18n()
 
-const { closable } = defineProps<{ closable?: boolean }>()
+const { closable = true } = defineProps<{ closable?: boolean }>()
 
 const emit = defineEmits<{ assetSelected: [asset: AssetItem] }>()
 
