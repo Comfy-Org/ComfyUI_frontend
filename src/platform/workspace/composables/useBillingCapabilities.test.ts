@@ -1,3 +1,5 @@
+import { setTelemetryRegistry } from '@/platform/telemetry'
+import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
 import { useAuthStore } from '@/stores/authStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import type { BillingCapabilitiesResponse } from '@comfyorg/ingest-types'
@@ -64,6 +66,7 @@ function capabilitiesResponse(
       can_top_up: canTopUp,
       can_cancel: true,
       can_reactivate: true,
+      can_revert_scheduled_change: false,
       can_change_seats: true,
       can_invite_members: true,
       can_downgrade_to_personal: true,
@@ -184,6 +187,58 @@ describe('useBillingCapabilities', () => {
 
   afterEach(() => scope.stop())
 
+  it.for([
+    [
+      'allowed',
+      () => Promise.resolve(capabilitiesResponse(true)),
+      'succeeded',
+      'success'
+    ],
+    [
+      'policy denied',
+      () => Promise.resolve(capabilitiesResponse(false)),
+      'succeeded',
+      'success'
+    ],
+    [
+      'access denied',
+      () =>
+        Promise.reject(
+          Object.assign(new Error('signed out'), { name: 'AuthStoreError' })
+        ),
+      undefined,
+      undefined
+    ],
+    [
+      'unavailable',
+      () => Promise.reject(new Error('network failed')),
+      'failed',
+      'failure'
+    ]
+  ] as const)(
+    'records capability reads when %s',
+    async ([, response, stage, outcome]) => {
+      const record = vi.fn()
+      const registry = new TelemetryRegistry()
+      registry.registerProvider({ trackBillingEvent: record })
+      setTelemetryRegistry(registry)
+      vi.mocked(workspaceApi.getBillingCapabilities).mockImplementationOnce(
+        response
+      )
+      await billingCapabilities.initialize()
+      if (stage === undefined) {
+        expect(record).not.toHaveBeenCalled()
+        return
+      }
+      expect(record).toHaveBeenCalledExactlyOnceWith({
+        operation: 'capability_read',
+        stage,
+        outcome
+      })
+    }
+  )
+  afterEach(() => setTelemetryRegistry(null))
+
   it('denies Cloud actions while loading, then applies the server capability', async () => {
     let resolveRequest!: (value: BillingCapabilitiesResponse) => void
     vi.mocked(workspaceApi.getBillingCapabilities).mockImplementationOnce(
@@ -230,6 +285,7 @@ describe('useBillingCapabilities', () => {
         {
           can_cancel: false,
           can_reactivate: false,
+          can_revert_scheduled_change: false,
           can_change_seats: false,
           can_invite_members: false,
           can_downgrade_to_personal: false

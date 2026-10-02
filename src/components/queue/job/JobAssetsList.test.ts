@@ -174,6 +174,40 @@ describe('JobAssetsList', () => {
     expect(container.querySelector('[data-job-id="job-2"]')).not.toBeNull()
   })
 
+  it('lets keyboard users focus the scroll container', async () => {
+    const { user } = renderJobAssetsList({
+      jobs: [buildJob({ id: 'job-1' })]
+    })
+
+    await user.tab()
+
+    expect(screen.getByRole('region', { name: 'Jobs' })).toHaveFocus()
+  })
+
+  it('lets callers opt the scroll container out of the tab order', async () => {
+    const { user } = renderJobAssetsList({
+      attrs: { tabindex: '-1' },
+      jobs: [buildJob({ id: 'job-1' })]
+    })
+
+    await user.tab()
+
+    const list = screen.getByRole('region', { name: 'Jobs' })
+    expect(list).not.toHaveFocus()
+    expect(list).toHaveAttribute('tabindex', '-1')
+  })
+
+  it('leaves a list with no jobs out of the tab order and landmarks', async () => {
+    const { user } = renderJobAssetsList({ jobs: [] })
+
+    await user.tab()
+
+    const list = screen.getByTestId('job-assets-list')
+    expect(list).not.toHaveFocus()
+    expect(list).toHaveAttribute('tabindex', '-1')
+    expect(screen.queryByRole('region')).not.toBeInTheDocument()
+  })
+
   it('forwards parent attrs to the scroll container', () => {
     renderJobAssetsList({
       attrs: {

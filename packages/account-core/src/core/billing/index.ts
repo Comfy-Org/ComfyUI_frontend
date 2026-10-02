@@ -76,6 +76,14 @@ export type {
 } from './plans.js'
 export { PLANS_ROUTE, createPlansReader } from './plans.js'
 export type {
+  WorkspaceInvite,
+  WorkspaceInviteCommands
+} from './workspaceInvites.js'
+export {
+  WORKSPACE_INVITES_ROUTE,
+  createWorkspaceInviteCommands
+} from './workspaceInvites.js'
+export type {
   PaymentMethodsReadOptions,
   PaymentMethodsReader,
   PaymentMethodsReaderOptions,
@@ -98,10 +106,13 @@ export type {
 export { BILLING_STATUS_ROUTE, createBillingStatusReader } from './status.js'
 export type {
   BillingAuthenticationState,
+  BillingChargeBreakdown,
+  BillingChargeReason,
   BillingDeclineReason,
   BillingOpStatus,
   BillingOperationEvent,
   BillingOperationIdentity,
+  BillingOperationReceipt,
   BillingOperationKind,
   BillingOperationPhase,
   BillingOperationServerPhase,
@@ -112,10 +123,12 @@ export type {
   EmbeddedChallenge,
   FailedBillingOperation,
   HostedBillingDestination,
-  PendingBillingOperation
+  PendingBillingOperation,
+  SucceededBillingOperation
 } from './operationState.js'
 export {
   isBlockedOnCustomerPhase,
+  isGrantLanding,
   isTerminal,
   reduceBillingOperation,
   validateActionUrl
@@ -123,11 +136,14 @@ export {
 export {
   OPERATION_POLL_BUDGET,
   OPERATION_POLL_TIMING,
+  customerCanActHere,
   hasExhaustedPollBudget,
   isParkedOnCustomer,
   nextPollDelayMs,
+  pendingOperationActionHold,
   pollBudgetMs
 } from './operationPolicy.js'
+export type { CustomerActionHold } from './operationPolicy.js'
 export type {
   BillingOperationPointer,
   BillingOperationPointerStorage,
@@ -145,6 +161,7 @@ export type {
   BillingOperationLifecycle,
   BillingOperationLifecycleOptions,
   BillingOperationTelemetryEvent,
+  BillingRecoverOptions,
   IssuedBillingOperation,
   PresentationSwitchOutcome
 } from './operationLifecycle.js'
@@ -153,6 +170,7 @@ export {
   operationRoute
 } from './operationLifecycle.js'
 export { BILLING_OPERATION_TELEMETRY_EVENT } from '../../telemetry.js'
+export * from './telemetry/index.js'
 export type {
   EmbeddedChallengeOutcome,
   EmbeddedChallengePort
@@ -191,11 +209,16 @@ export type {
   PaymentReasonKey,
   PaymentStep
 } from './paymentProjection.js'
-export { projectPaymentStep } from './paymentProjection.js'
-export type { PaymentCopyKey, PaymentCopyKeys } from './paymentCopy.js'
+export { awaitsHostedAction, projectPaymentStep } from './paymentProjection.js'
+export type {
+  DeclineDetailKey,
+  PaymentCopyKey,
+  PaymentCopyKeys
+} from './paymentCopy.js'
 export {
   DEFAULT_PAYMENT_COPY,
   createPaymentCopy,
+  declineDetailKey,
   paymentCopyKeys
 } from './paymentCopy.js'
 export type {
@@ -204,6 +227,7 @@ export type {
   HostedTopupCheckout,
   HostedTopupCheckoutFailure,
   HostedTopupCheckoutResult,
+  QuoteTopupInput,
   TopupCommand,
   TopupCommandOptions,
   TopupDeclined,
@@ -213,12 +237,15 @@ export type {
   TopupInvalidReturnUrl,
   TopupNoPaymentMethod,
   TopupNotAvailable,
+  TopupQuote,
+  TopupQuoteResult,
   TopupResult,
   TopupSucceeded,
   TopupUnsettled
 } from './topup.js'
 export {
   TOPUP_CHECKOUT_ROUTE,
+  TOPUP_QUOTE_ROUTE,
   TOPUP_ROUTE,
   createTopupCommand
 } from './topup.js'

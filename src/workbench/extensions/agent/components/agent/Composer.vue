@@ -32,6 +32,7 @@ import type { AgentStopMethod } from '@/platform/telemetry/types'
 
 import InlinePromptEditor from './composer/InlinePromptEditor.vue'
 import { composerPromptForSend } from '../../utils/composerPrompt'
+import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
 import { useAgentMentionPicker } from '../../composables/agent/useAgentMentionPicker'
 import { useWorkflowReferencePicker } from '../../composables/agent/useWorkflowReferencePicker'
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
@@ -86,6 +87,7 @@ const emit = defineEmits<{
   ]
   stop: [method: AgentStopMethod]
   attach: []
+  attachFiles: [files: File[]]
   openAssets: []
   selectNodes: []
   removeTag: [id: string]
@@ -285,7 +287,7 @@ const composerContainerRef = useTemplateRef<HTMLDivElement>(
 // (src/platform/keybindings/keybindingService.ts), the mention picker closes
 // itself first via stopPropagation (useAgentMentionPicker.ts's
 // onComposerKeydown), select has its own stopEscapeToDocument
-// (src/components/ui/select/select.variants.ts), and the capture-phase
+// (packages/design-system/src/select.variants.ts), and the capture-phase
 // document listeners in OnboardingCoach.vue and TourSpotlight.vue let a
 // full-screen overlay pre-empt everything else. This handler only ever runs
 // when none of those more specific handlers claimed the event first.
@@ -314,8 +316,11 @@ onUnmounted(() => {
   unregisterEscapeOverride?.()
 })
 
-function insert(text: string): void {
-  composer.insert(text)
+function insert(
+  text: string,
+  starterPrompt?: AgentStarterPromptAttribution
+): void {
+  composer.insert(text, starterPrompt)
   editorRef.value?.focus()
 }
 
@@ -337,6 +342,7 @@ defineExpose({
   <div
     id="agent-composer"
     ref="composerContainerRef"
+    data-testid="agent-composer"
     class="relative flex flex-col rounded-lg border border-border-subtle bg-base-background"
   >
     <div
@@ -437,7 +443,10 @@ defineExpose({
       <slot name="header" />
     </div>
 
+    <slot name="aboveInput" />
+
     <div
+      data-testid="composer-input-box"
       :class="
         cn(
           'relative -m-px flex flex-col border transition-colors',
@@ -458,6 +467,7 @@ defineExpose({
         />
         <span>{{ t('agent.dragAndDropAssets') }}</span>
       </div>
+      <slot name="insideInput" />
       <div
         v-if="selectionTags.length"
         data-testid="composer-node-section"
@@ -504,48 +514,53 @@ defineExpose({
 
       <div
         data-testid="composer-inline-input"
-        class="max-h-100 min-h-16 overflow-x-hidden overflow-y-auto p-3"
+        class="flex max-h-100 min-h-16 flex-col overflow-x-hidden overflow-y-auto"
       >
         <div
           v-if="workflowSelecting"
           role="status"
-          class="mb-1 flex items-center gap-1 text-xs text-muted-foreground"
+          class="-mb-2 flex items-center gap-1 px-3 pt-3 text-xs text-muted-foreground"
         >
           <span class="icon-[lucide--loader-circle] size-3 animate-spin" />
           {{ t('agent.savingWorkflow') }}
         </div>
-        <div class="relative min-h-7">
-          <InlinePromptEditor
-            ref="editorRef"
-            :model-value="composer.prompt.value"
-            :label="t('agent.placeholder')"
-            :expanded="mentionVisible"
-            :active-descendant="
-              mentionVisible
-                ? `agent-reference-item-${mentionActive}`
-                : undefined
-            "
-            :history-epoch="composer.promptEpoch.value"
-            :editable-workflow-id
-            @keydown="onComposerKeydown"
-            @update:model-value="composer.applyEditorPrompt"
-            @keyup="onComposerKeyup"
-            @input="syncMention"
-            @selection-change="onEditorSelectionChange"
-            @click="syncMention"
-            @blur="closeMention()"
-            @open-reference-workflow="
-              (id, name) => emit('openReferenceWorkflow', id, name)
-            "
-            @remove-node-reference="emit('removeTag', $event)"
-            @remove-workflow-reference="emit('removeWorkflowReference', $event)"
-          />
+        <div class="grid flex-1">
+          <div class="col-start-1 row-start-1 flex flex-col">
+            <InlinePromptEditor
+              ref="editorRef"
+              :model-value="composer.prompt.value"
+              :label="t('agent.placeholder')"
+              :expanded="mentionVisible"
+              :active-descendant="
+                mentionVisible
+                  ? `agent-reference-item-${mentionActive}`
+                  : undefined
+              "
+              :history-epoch="composer.promptEpoch.value"
+              :editable-workflow-id
+              @keydown="onComposerKeydown"
+              @update:model-value="composer.applyEditorPrompt"
+              @keyup="onComposerKeyup"
+              @input="syncMention"
+              @selection-change="onEditorSelectionChange"
+              @click="syncMention"
+              @blur="closeMention()"
+              @attach-files="emit('attachFiles', $event)"
+              @open-reference-workflow="
+                (id, name) => emit('openReferenceWorkflow', id, name)
+              "
+              @remove-node-reference="emit('removeTag', $event)"
+              @remove-workflow-reference="
+                emit('removeWorkflowReference', $event)
+              "
+            />
+          </div>
 
           <div
             v-if="
               !composer.draft.value && !composer.prompt.value.references.length
             "
-            class="pointer-events-none relative z-10 -mt-7 font-inter text-[14px]/5 font-normal text-muted-foreground"
+            class="pointer-events-none z-10 col-start-1 row-start-1 self-start p-3 font-inter text-[14px]/5 font-normal text-muted-foreground"
           >
             <span>{{ placeholderHint.text }} </span>
             <AccessibleTooltip

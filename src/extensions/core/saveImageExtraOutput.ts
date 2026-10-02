@@ -41,13 +41,12 @@ app.registerExtension({
       nodeType.prototype.onNodeCreated = function () {
         const r = onNodeCreated?.call(this)
 
-        // @ts-expect-error fixme ts strict error
-        const widget = this.widgets.find((w) => w.name === 'filename_prefix')
-        // @ts-expect-error fixme ts strict error
-        widget.serializeValue = () => {
-          // @ts-expect-error fixme ts strict error
-          return applyTextReplacements(app.graph, widget.value)
-        }
+        const widget = this.widgets?.find((w) => w.name === 'filename_prefix')
+        if (!widget) return r
+        widget.serializeValue = () =>
+          typeof widget.value === 'string'
+            ? applyTextReplacements(app.graph, widget.value)
+            : widget.value
 
         return r
       }

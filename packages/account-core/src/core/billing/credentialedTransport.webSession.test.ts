@@ -230,6 +230,21 @@ describe('createCredentialedBillingTransport with a web session', () => {
     expect(endpoint.requests).toEqual([])
   })
 
+  it('does not replay once the host left the scope during the re-read', async () => {
+    let reread = () => false
+    const { transport, fetchImpl, endpoint } = makeTransport({
+      responses: [refusal('csrf_invalid')],
+      scope: () => (reread() ? { ...SCOPE, workspaceId: 'ws-2' } : SCOPE)
+    })
+    reread = () => endpoint.requests.length > 0
+
+    const result = await transport({ method: 'POST', route: '/billing/topup' })
+
+    expect(result).toEqual({ status: 'error', code: 'SUPERSEDED' })
+    expect(endpoint.requests).toHaveLength(1)
+    expect(fetchImpl).toHaveBeenCalledOnce()
+  })
+
   it('reports NOT_AUTHENTICATED without sending when there is no session', async () => {
     const { transport, fetchImpl } = makeTransport({ session: undefined })
 

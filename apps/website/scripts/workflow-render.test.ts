@@ -14,14 +14,19 @@ describe('CLI workflow rendering', () => {
     async (model) => {
       const initial = initialWorkshopPageState(model)
       expect(workflow_for_model(model.slug)).toEqual(initial.values)
-      const inputs = Object.fromEntries(
-        initial.schema
+      // An empty `randomize` input (the seed) is drawn per run, so pin it to
+      // compare the CLI submission with the browser's prepared request.
+      const inputs = Object.fromEntries([
+        ...initial.schema
           .filter((field) => urlUploadField(field))
           .map((field) => [
             field.name,
             `https://storage.googleapis.com/inputs/${field.name}`
-          ])
-      )
+          ]),
+        ...Object.entries(model.workflow.inputs)
+          .filter(([, input]) => input.randomize)
+          .map(([name]) => [name, 7])
+      ])
       const expected = await prepareWorkflowRender(
         model,
         inputs,
@@ -49,7 +54,10 @@ describe('CLI workflow rendering', () => {
         fetch,
         uploadFile: async () => 'uploaded-image.png'
       })
-      expect(submitted).toEqual(workflowCloudRequest(model.workflow, expected))
+      expect(submitted).toEqual({
+        ...workflowCloudRequest(model.workflow, expected),
+        extra_data: { api_key_comfy_org: 'test-key' }
+      })
       expect(rendered.run.run.id).toBe(id)
       expect(rendered.outputs).toEqual([])
       expect(fetch).toHaveBeenCalledTimes(2)

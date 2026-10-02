@@ -519,22 +519,6 @@ function addAutogrowGroup(
 
 const ORDINAL_REGEX = /\d+$/
 
-/**
- * Whether `key` -- an autogrow input name's segment after the group
- * prefix -- is a member of an autogrow group: matched against an explicit
- * `names` list when the group defines one, or (absent that) required to
- * end in a numeric ordinal. The one membership rule a live autogrow
- * registration (`resolveAutogrowOrdinal` below) and a node type's own
- * static schema (`nodeDefAutogrowGroupOf` in `graphMutations.ts`) must
- * agree on, so it is shared rather than reimplemented at each call site.
- */
-export function isAutogrowGroupMember(
-  key: string,
-  names: readonly string[] | undefined
-): boolean {
-  return names ? names.includes(key) : ORDINAL_REGEX.test(key)
-}
-
 function resolveAutogrowOrdinal(
   inputName: string,
   groupName: string,
@@ -542,8 +526,10 @@ function resolveAutogrowOrdinal(
 ): number | undefined {
   const name = inputName.slice(groupName.length + 1)
   const { names } = node.comfyDynamic.autogrow[groupName]
-  if (!isAutogrowGroupMember(name, names)) return undefined
-  if (names) return names.indexOf(name)
+  if (names) {
+    const index = names.indexOf(name)
+    return index === -1 ? undefined : index
+  }
   const match = name.match(ORDINAL_REGEX)
   return match ? parseInt(match[0]) : undefined
 }
@@ -593,17 +579,44 @@ export function liveAutogrowGroupOf(
   return undefined
 }
 
-export function reconcileAutogrowInputs(node: LGraphNode): void {
-  if (!node.comfyDynamic?.autogrow) return
-  withComfyAutogrow(node)
-  for (const groupName of Object.keys(node.comfyDynamic.autogrow)) {
-    const slot = node.inputs.findLastIndex(
-      (input, index) =>
-        input.name.slice(0, input.name.lastIndexOf('.')) === groupName &&
-        node.getInputLink(index)
-    )
-    if (slot !== -1) autogrowInputConnected(slot, node)
+function highestAutogrowOrdinal(node: AutogrowNode, groupName: string): number {
+  let highest = -1
+  for (const input of node.inputs) {
+    if (!input.name.startsWith(`${groupName}.`)) continue
+    const ordinal = resolveAutogrowOrdinal(input.name, groupName, node)
+    if (ordinal !== undefined && ordinal > highest) highest = ordinal
   }
+  return highest
+}
+
+/**
+ * Grows the autogrow group `name` belongs to until the node holds an input by
+ * that name, and returns its live index. A local connect onto a slot the bound
+ * document has not seen mints a `grow` op (`docOpMinter.mintConnect`); this is
+ * the read leg of that exchange, for a slot the host grew whose live
+ * counterpart does not exist yet. Growth starts above the group's highest live
+ * ordinal, so the slots already carrying links are left alone. Undefined when
+ * `name` belongs to no autogrow group of this node, or the group's `max` stops
+ * short of it.
+ */
+export function growAutogrowInput(
+  node: LGraphNode,
+  name: string
+): number | undefined {
+  if (!hasAutogrowGroups(node)) return undefined
+  const groupName = liveAutogrowGroupOf(node, name)
+  if (groupName === undefined) return undefined
+  const ordinal = resolveAutogrowOrdinal(name, groupName, node)
+  if (ordinal === undefined) return undefined
+  for (
+    let next = highestAutogrowOrdinal(node, groupName) + 1;
+    next <= ordinal;
+    next++
+  ) {
+    addAutogrowGroup(next, groupName, node)
+  }
+  const index = node.inputs.findIndex((input) => input.name === name)
+  return index === -1 ? undefined : index
 }
 
 function autogrowInputDisconnected(index: number, node: AutogrowNode) {

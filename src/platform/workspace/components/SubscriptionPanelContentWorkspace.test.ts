@@ -69,7 +69,7 @@ const teamCreditStops: TeamCreditStops = {
 const mockSubscriptionStatus = ref<BillingSubscriptionStatus>('active')
 const mockBillingStatus = ref<BillingStatus>('paid')
 const mockBillingType = ref<BillingType>('workspace')
-const mockSubscriptionDuration = ref<'MONTHLY' | 'ANNUAL'>('MONTHLY')
+const mockSubscriptionDuration = ref<'MONTHLY' | 'ANNUAL' | null>('MONTHLY')
 const mockRenewalDate = ref<string | null>(RENEWAL_DATE_ISO)
 const mockEndDate = ref<string | null>(END_DATE_ISO)
 const mockScheduledChange = ref<SubscriptionInfo['scheduledChange']>(null)
@@ -157,7 +157,8 @@ const mockSubscription = computed<SubscriptionInfo | null>(() =>
         renewalDate: mockRenewalDate.value,
         endDate: mockEndDate.value,
         isCancelled: mockSubscriptionStatus.value === 'canceled',
-        hasFunds: true
+        hasFunds: true,
+        agentHasFunds: true
       }
     : null
 )
@@ -748,6 +749,24 @@ describe('SubscriptionPanelContentWorkspace', () => {
     // team_2500 yearly.price_cents 200000 -> $2,000, labelled per month.
     expect(screen.getByText('$2,000')).toBeInTheDocument()
     expect(screen.getByText('USD / mo')).toBeInTheDocument()
+  })
+
+  it('omits the price when the subscription duration is unknown', () => {
+    mockSubscriptionDuration.value = null
+    mockCurrentTeamCreditStop.value = {
+      id: 'team_2500',
+      credits_monthly: 527500,
+      stop_usd: 2500
+    }
+    renderComponent()
+
+    expect(screen.queryByText('$2,250')).not.toBeInTheDocument()
+    expect(screen.queryByText('$2,000')).not.toBeInTheDocument()
+    expect(screen.queryByText('USD / mo')).not.toBeInTheDocument()
+    expect(screen.getByText('Team')).toBeInTheDocument()
+    expect(
+      screen.getByText(`Renews on ${formatPanelDate(RENEWAL_DATE_ISO)}`)
+    ).toBeInTheDocument()
   })
 
   it('falls back to the per-member tier price until stops resolve', () => {

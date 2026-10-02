@@ -11,6 +11,7 @@ import {
 
 import { isCredentialFresh } from './credentialCache.js'
 import { COMFY_CLIENT } from './requestAuth.js'
+import { timedSignal } from './requestTimeout.js'
 import type {
   AccountCredential,
   WebSession,
@@ -27,6 +28,8 @@ export interface SessionTokenMintOptions {
   readonly now?: () => number
   /** Re-mint once a cached token has this long left. Default 60s. */
   readonly refreshBufferMs?: number
+  /** Caps each mint, body included; a timeout is `SESSION_UNAVAILABLE`. Default: none. */
+  readonly timeoutMs?: number
 }
 
 export interface SessionTokenFailure extends WebSessionFailure {
@@ -48,6 +51,8 @@ export class SessionTokenError extends Error {
 export interface SessionTokenMint {
   /** Never throws: every outcome is a result. */
   readonly mint: (workspaceId?: string) => Promise<SessionTokenResult>
+  /** Like `mint`, but never serves the cached token; for the one 401 retry. */
+  readonly remint: (workspaceId?: string) => Promise<SessionTokenResult>
   /** For `createRequestAuthorizer`; rejects with a `SessionTokenError`. */
   readonly getWorkspaceToken: (workspaceId?: string) => Promise<string>
 }
@@ -64,7 +69,8 @@ const STATUS_RULES: Partial<Record<number, StatusRule>> = {
   401: {
     byServerCode: {
       session_expired: 'SESSION_EXPIRED',
-      session_revoked: 'SESSION_REVOKED'
+      session_revoked: 'SESSION_REVOKED',
+      TOKEN_REVOKED: 'SESSION_REVOKED'
     },
     fallback: 'NO_SESSION'
   },
@@ -73,6 +79,11 @@ const STATUS_RULES: Partial<Record<number, StatusRule>> = {
       csrf_invalid: 'CSRF_STALE',
       workspace_access_denied: 'WORKSPACE_ACCESS_DENIED'
     },
+    fallback: 'SESSION_REQUEST_REFUSED'
+  },
+  /** The workspace is unknown, deleted, or not the user's: one remedy. */
+  404: {
+    byServerCode: { NOT_FOUND: 'WORKSPACE_ACCESS_DENIED' },
     fallback: 'SESSION_REQUEST_REFUSED'
   }
 }
@@ -123,14 +134,15 @@ function codeFor(status: number, serverCode: string | undefined) {
   return rule.byServerCode[serverCode ?? ''] ?? rule.fallback
 }
 
-async function classifyFailure(
+function classifyFailure(
   response: Response,
+  body: unknown,
   nowMs: number
-): Promise<SessionTokenFailure> {
+): SessionTokenFailure {
   const { status } = response
   if (status === 429) return rateLimited(response, nowMs)
   if (status >= 500) return failure('SESSION_UNAVAILABLE', status)
-  const parsed = zServerCode.safeParse(await readJson(response))
+  const parsed = zServerCode.safeParse(body)
   const serverCode = parsed.success ? parsed.data.code : undefined
   return failure(codeFor(status, serverCode), status, serverCode)
 }
@@ -140,7 +152,8 @@ export function createSessionTokenMint({
   fetchImpl,
   getSession,
   now = Date.now,
-  refreshBufferMs = DEFAULT_REFRESH_BUFFER_MS
+  refreshBufferMs = DEFAULT_REFRESH_BUFFER_MS,
+  timeoutMs
 }: SessionTokenMintOptions): SessionTokenMint {
   const tokenUrl = `${apiBaseUrl.replace(/\/+$/, '')}/auth/token`
   /** Keyed by workspace; every entry belongs to `cacheOwner`. */
@@ -164,9 +177,9 @@ export function createSessionTokenMint({
     session: WebSession,
     workspaceId: string | undefined
   ): Promise<SessionTokenResult> {
-    let response: Response
+    const { signal, release } = timedSignal(undefined, timeoutMs)
     try {
-      response = await fetchImpl(tokenUrl, {
+      const response = await fetchImpl(tokenUrl, {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -179,25 +192,38 @@ export function createSessionTokenMint({
         },
         body: JSON.stringify(
           workspaceId === undefined ? {} : { workspace_id: workspaceId }
-        )
+        ),
+        signal
       })
+      const body = await readJson(response)
+      if (signal?.aborted) return failure('SESSION_UNAVAILABLE')
+      return response.ok
+        ? credentialFrom(session, response.status, body)
+        : classifyFailure(response, body, now())
     } catch {
       return failure('SESSION_UNAVAILABLE')
+    } finally {
+      release()
     }
-    if (!response.ok) return classifyFailure(response, now())
+  }
 
-    const parsed = zExchangeTokenResponse.safeParse(await readJson(response))
+  function credentialFrom(
+    session: WebSession,
+    status: number,
+    body: unknown
+  ): SessionTokenResult {
+    const parsed = zExchangeTokenResponse.safeParse(body)
     const expiresAt = parsed.success
       ? Date.parse(parsed.data.expires_at)
       : Number.NaN
     if (!parsed.success || parsed.data.token === '' || !(expiresAt > now())) {
-      return failure('SESSION_UNAVAILABLE', response.status)
+      return failure('SESSION_UNAVAILABLE', status)
     }
     return {
       status: 'ok',
       credential: {
         token: parsed.data.token,
-        expiresAt,
+        expiresAt: Math.min(expiresAt, session.expiresAt),
         uid: session.user.id,
         workspace: parsed.data.workspace,
         role: parsed.data.role,
@@ -228,6 +254,8 @@ export function createSessionTokenMint({
     if (session === undefined) return failure('NO_SESSION')
     const userId = session.user.id
 
+    // The cache is checked before the backoff on purpose: a caller already
+    // holding a fresh token is still served while new mints wait.
     const cached = cache.get(workspaceId)
     if (cached && isCredentialFresh(cached, now(), refreshBufferMs)) {
       return { status: 'ok', credential: cached }
@@ -241,7 +269,9 @@ export function createSessionTokenMint({
     const generation = ownerGeneration
     const running = request(session, workspaceId).then((result) => {
       if (inFlight.get(workspaceId) === running) inFlight.delete(workspaceId)
-      if (getSession()?.user.id !== userId) return failure('IDENTITY_CHANGED')
+      const current = getSession()
+      if (current === undefined) return failure('NO_SESSION')
+      if (current.user.id !== userId) return failure('IDENTITY_CHANGED')
       commit(workspaceId, generation, result)
       return result
     })
@@ -249,8 +279,14 @@ export function createSessionTokenMint({
     return running
   }
 
+  function remint(workspaceId?: string): Promise<SessionTokenResult> {
+    if (!inFlight.has(workspaceId)) cache.delete(workspaceId)
+    return mint(workspaceId)
+  }
+
   return {
     mint,
+    remint,
     async getWorkspaceToken(workspaceId) {
       const result = await mint(workspaceId)
       if (result.status === 'ok') return result.credential.token

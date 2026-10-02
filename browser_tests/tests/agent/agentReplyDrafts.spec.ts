@@ -16,6 +16,7 @@ import {
 } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const WORKFLOW_ID = 'b4d7e1f2-8a3c-4d5e-9f60-7a1b2c3d4e5f'
@@ -25,7 +26,6 @@ const SOCKET_SID = '8e2f3a4b-5c6d-4e7f-9a01-2b3c4d5e6f70'
 const CATALOG: WidgetCatalog = { types: {} }
 const SEED: WorkflowJSON = { nodes: [], links: [] }
 
-const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 const SEND_LABEL = enMessages.agent.send
 const STOP_LABEL = enMessages.agent.stop
 const WORKING_LABEL = enMessages.agent.working
@@ -119,10 +119,7 @@ async function startTurn(page: Page, prompt: string): Promise<Turn> {
     'true',
     { timeout: 8_000 }
   )
-  await topbarActions
-    .getByRole('button', { name: OPEN_AGENT_LABEL, exact: true })
-    .click()
-  await expect(panel).toBeVisible({ timeout: 30_000 })
+  await new AgentPanel(page).open(30_000)
 
   let savedName: string | undefined
   await page.route('**/api/userdata/*', (route) => {
@@ -258,7 +255,7 @@ test.describe('Agent reply drafts', { tag: ['@cloud', '@agent'] }, () => {
     })
 
     await expect(
-      panel.getByText(enMessages.agent.runApproval.lead)
+      panel.getByText(enMessages.agent.runApproval.leadBound)
     ).toBeVisible()
     await expect(
       panel.getByRole('button', {

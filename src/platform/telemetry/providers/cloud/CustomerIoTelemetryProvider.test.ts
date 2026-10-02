@@ -191,6 +191,7 @@ describe('CustomerIoTelemetryProvider', () => {
     )
     expect(hoisted.analytics.page).toHaveBeenCalledOnce()
     expect(hoisted.reportError).toHaveBeenCalledWith(registrationError, {
+      surface: 'platform',
       errorType: 'customerio_in_app_plugin_registration_failure'
     })
 

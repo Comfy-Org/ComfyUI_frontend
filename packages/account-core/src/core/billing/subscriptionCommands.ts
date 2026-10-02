@@ -19,8 +19,7 @@ import {
   zPreviewSubscribeResponse,
   zResubscribeResponse,
   zSubscribeRequest,
-  zSubscribeResponse,
-  zSubscriptionDiscount
+  zSubscribeResponse
 } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
@@ -40,6 +39,8 @@ import type {
 import { validateActionUrl } from './operationState.js'
 import { readValidatedBillingResponse } from './sharedRead.js'
 import type { BillingStatusReader } from './status.js'
+import { SubscriptionDiscountSchema } from './subscriptionDiscount.js'
+import { wireCents } from './wireCents.js'
 
 export const SUBSCRIBE_ROUTE = '/billing/subscribe'
 export const RESUBSCRIBE_ROUTE = '/billing/subscription/resubscribe'
@@ -54,6 +55,9 @@ const REACTIVATION_CONFIRMATION_REQUIRED_SERVER_CODE =
 const NOT_SCHEDULED_FOR_CANCELLATION_SERVER_CODE =
   'NOT_SCHEDULED_FOR_CANCELLATION'
 const ALREADY_CANCELED_SERVER_CODE = 'ALREADY_CANCELED'
+const SUBSCRIPTION_QUOTE_STALE_SERVER_CODE = 'SUBSCRIPTION_QUOTE_STALE'
+const SUBSCRIPTION_CHANGE_IN_PROGRESS_SERVER_CODE =
+  'SUBSCRIPTION_CHANGE_IN_PROGRESS'
 
 export type SubscribeInput = z.infer<typeof zSubscribeRequest>
 
@@ -73,6 +77,8 @@ export type SubscriptionCommandCode =
   | 'NO_ACTIVE_SUBSCRIPTION'
   /** The server asked for a hosted payment step but offered no page for it. */
   | 'MISSING_PAYMENT_METHOD_URL'
+  /** The quote no longer matches what the server would charge; re-preview. */
+  | 'QUOTE_STALE'
 
 export type SubscriptionCommandFailure =
   | BillingFailure
@@ -106,38 +112,32 @@ export type PaymentPortalResult =
   | { readonly status: 'ok'; readonly value: { readonly url: string } }
   | BillingFailure
 
-/**
- * The generated schema coerces every int64 to a `bigint`, which no caller can
- * add to a price or hand to a currency formatter — and the generated *type*
- * for the same field is a `number`. Money on this route is bounded to cents
- * well inside the JavaScript-safe range, so the cents are read as numbers, the
- * way `capabilities` reads `revision` — as whole units of currency that
- * survive arithmetic, since these amounts are displayed as prices and
- * confirmed as charges.
- */
-const cents = z.number().int().safe()
-
 const PlanInfoSchema = zPreviewPlanInfo.extend({
-  credits_cents: cents,
-  price_cents: cents,
+  credits_cents: wireCents,
+  price_cents: wireCents,
+  list_price_cents: wireCents.optional(),
+  monthly_list_price_cents: wireCents.optional(),
+  monthly_price_cents: wireCents.optional(),
   seat_summary: zPreviewPlanInfo.shape.seat_summary.extend({
-    total_cost_cents: cents,
-    total_credits_cents: cents
+    total_cost_cents: wireCents,
+    total_credits_cents: wireCents
   })
 })
 
 const PreviewSchema = zPreviewSubscribeResponse.extend({
-  amount_due_cents: cents.optional(),
-  cost_next_period_cents: cents,
-  cost_today_cents: cents,
-  credits_next_period_cents: cents,
-  credits_today_cents: cents,
-  renewal_amount_cents: cents.optional(),
+  amount_due_cents: wireCents.optional(),
+  cost_next_period_cents: wireCents,
+  cost_today_cents: wireCents,
+  credits_next_period_cents: wireCents,
+  credits_today_cents: wireCents,
+  renewal_amount_cents: wireCents.optional(),
+  subtotal_cents: wireCents.optional(),
+  balance_applied_cents: wireCents.optional(),
+  proration_remaining_cents: wireCents.optional(),
+  proration_unused_cents: wireCents.optional(),
   current_plan: PlanInfoSchema.optional(),
   new_plan: PlanInfoSchema,
-  discounts: z
-    .array(zSubscriptionDiscount.extend({ amount_off_cents: cents.optional() }))
-    .optional()
+  discounts: z.array(SubscriptionDiscountSchema).optional()
 })
 
 /**
@@ -218,14 +218,11 @@ function coded(code: SubscriptionCommandCode): SubscriptionCommandFailure {
 }
 
 /**
- * A server code the caller's request already satisfies is a success, but
- * only from a 4xx: a 5xx echoing the code is an upstream failure that
- * happens to carry it, and the requested state cannot be assumed to hold.
+ * A server code is trusted as state only from a 4xx: a 5xx echoing the code
+ * is an upstream failure that happens to carry it, and the state it names
+ * cannot be assumed to hold.
  */
-function alreadyInRequestedState(
-  failure: BillingFailure,
-  serverCode: string
-): boolean {
+function refusedWith(failure: BillingFailure, serverCode: string): boolean {
   return (
     matchesServerCode(failure, serverCode) &&
     failure.httpStatus !== undefined &&
@@ -234,16 +231,27 @@ function alreadyInRequestedState(
   )
 }
 
+/**
+ * The server's refusal because another subscription operation is still open
+ * is the same answer the lifecycle gives when it sees that operation first.
+ */
+function refusedWhilePending(failure: BillingFailure): BillingFailure {
+  return refusedWith(failure, SUBSCRIPTION_CHANGE_IN_PROGRESS_SERVER_CODE)
+    ? { ...failure, code: 'OPERATION_ALREADY_PENDING' }
+    : failure
+}
+
 function mapServerCode(
   failure: BillingFailure,
   alreadyHeldCode: string
 ): IssueOutcome {
-  if (alreadyInRequestedState(failure, alreadyHeldCode)) {
+  // A server code the caller's request already satisfies is a success.
+  if (refusedWith(failure, alreadyHeldCode)) {
     return { status: 'already_held' }
   }
   return matchesServerCode(failure, NO_ACTIVE_SUBSCRIPTION_SERVER_CODE)
     ? coded('NO_ACTIVE_SUBSCRIPTION')
-    : failure
+    : refusedWhilePending(failure)
 }
 
 function dropEmpty(value: string | undefined): string | undefined {
@@ -352,12 +360,17 @@ export function createBillingCommands(
       key
     )
     if (response.status === 'error') {
-      return matchesServerCode(
-        response,
-        REACTIVATION_CONFIRMATION_REQUIRED_SERVER_CODE
-      )
-        ? coded('REACTIVATION_CONFIRMATION_REQUIRED')
-        : response
+      if (
+        matchesServerCode(
+          response,
+          REACTIVATION_CONFIRMATION_REQUIRED_SERVER_CODE
+        )
+      ) {
+        return coded('REACTIVATION_CONFIRMATION_REQUIRED')
+      }
+      return refusedWith(response, SUBSCRIPTION_QUOTE_STALE_SERVER_CODE)
+        ? coded('QUOTE_STALE')
+        : refusedWhilePending(response)
     }
     const { billing_op_id, status, payment_method_url } = response.value.data
     if (status !== 'needs_payment_method') {

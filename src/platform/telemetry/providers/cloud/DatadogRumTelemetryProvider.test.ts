@@ -1,9 +1,9 @@
+import type { BillingTelemetryEvent } from '@comfyorg/account-core/billing'
 import { computed } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 
-import type { BillingTelemetryEvent } from '../../types'
 import { TelemetryEvents } from '../../types'
 import { DatadogRumTelemetryProvider } from './DatadogRumTelemetryProvider'
 
@@ -78,6 +78,51 @@ describe('DatadogRumTelemetryProvider', () => {
     expect(setUser).not.toHaveBeenCalled()
     expect(useCurrentUser().onUserLogout).not.toHaveBeenCalled()
   })
+  it.for(['subscription_checkout', 'topup'] as const)(
+    'emits %s phase and terminal events as RUM actions',
+    (operation) => {
+      const provider = new DatadogRumTelemetryProvider()
+      const events: BillingTelemetryEvent[] = [
+        { operation, stage: 'intent', outcome: 'pending' },
+        { operation, stage: 'request_sent', outcome: 'pending' },
+        operation === 'topup'
+          ? {
+              operation,
+              stage: 'checkout_received',
+              outcome: 'pending',
+              billing_op_id: 'op-1',
+              checkout_status: 'pending'
+            }
+          : {
+              operation,
+              stage: 'checkout_received',
+              outcome: 'pending',
+              billing_op_id: 'op-1',
+              checkout_status: 'pending_payment'
+            },
+        {
+          operation,
+          stage: 'succeeded',
+          outcome: 'success',
+          billing_op_id: 'op-1'
+        },
+        {
+          operation,
+          stage: 'failed',
+          outcome: 'failure',
+          billing_op_id: 'op-2',
+          failure_category: 'provider_decline'
+        }
+      ]
+      for (const event of events) provider.trackBillingEvent(event)
+      expect(addAction.mock.calls).toEqual(
+        events.map((event) => [
+          `billing.${event.operation}.${event.stage}`,
+          { ...event, billing_surface: 'cloud_app' }
+        ])
+      )
+    }
+  )
 
   it('records fetch timeouts as RUM actions', () => {
     new DatadogRumTelemetryProvider().trackFetchTimeout({
@@ -173,7 +218,7 @@ describe('DatadogRumTelemetryProvider', () => {
 
     expect(addAction).toHaveBeenCalledExactlyOnceWith(
       TelemetryEvents.BILLING_OPERATION_FAILED,
-      event
+      { ...event, billing_surface: 'cloud_app' }
     )
   })
 
@@ -200,7 +245,8 @@ describe('DatadogRumTelemetryProvider', () => {
         stage: 'failed',
         outcome: 'failure',
         billing_op_id: 'opaque-op-id',
-        failure_category: 'unknown'
+        failure_category: 'unknown',
+        billing_surface: 'cloud_app'
       }
     )
   })

@@ -28,11 +28,9 @@ interface FacetSheetLabels {
   readonly title: string
   readonly search: string
   readonly noMatches: string
-  /** Carries {n}. */
-  readonly applied: string
+  readonly applied: (count: number) => string
   readonly clearAll: string
-  /** Carries {n}. */
-  readonly show: string
+  readonly show: (count: number) => string
   readonly close: string
   readonly resize: string
 }
@@ -318,7 +316,7 @@ function visibleOptions(group: FacetSheetGroup) {
         class="px-1 text-xs text-content-secondary"
         data-testid="workshop-filter-applied"
       >
-        {{ labels.applied.replace('{n}', String(selectedCount)) }}
+        {{ labels.applied(selectedCount) }}
       </span>
       <button
         type="button"
@@ -351,11 +349,7 @@ function visibleOptions(group: FacetSheetGroup) {
         data-testid="workshop-filter-show"
         @click="resultCount > 0 ? emit('close') : emit('clearAll')"
       >
-        {{
-          resultCount > 0
-            ? labels.show.replace('{n}', String(resultCount))
-            : labels.clearAll
-        }}
+        {{ resultCount > 0 ? labels.show(resultCount) : labels.clearAll }}
       </button>
     </div>
   </div>
