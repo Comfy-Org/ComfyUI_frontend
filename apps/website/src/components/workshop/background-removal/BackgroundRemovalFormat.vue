@@ -31,6 +31,7 @@ const options = CUTOUT_FORMATS.map((id) => ({
     :heading="brc('cutout.format', locale)"
     :options
     :icon="FileImage"
+    :label="brc('cutout.format', locale)"
     :composer
     :disabled="composer && phase.kind === 'running'"
     @update:model-value="(format) => cutout.update({ format })"

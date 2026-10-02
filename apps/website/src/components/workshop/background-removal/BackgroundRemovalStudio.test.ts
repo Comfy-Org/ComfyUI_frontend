@@ -57,7 +57,7 @@ describe('BackgroundRemovalStudio', () => {
 
     await user.click(tile('Lilac'))
     await user.click(
-      within(section('Format')).getByRole('button', { name: 'Format: PNG' })
+      within(panel()).getByRole('button', { name: 'Format: PNG' })
     )
     await user.click(
       screen.getByRole('menuitemradio', { name: 'WebP Smaller file' })
@@ -110,7 +110,7 @@ describe('BackgroundRemovalStudio', () => {
     expect(tile('White')).toBeChecked()
   })
 
-  it('keeps the edge softness and seed in the collapsed Advanced section', async () => {
+  it('keeps the edge softness in the collapsed Advanced section and the seed as a row of the panel', async () => {
     const user = await openExample()
     expect(
       within(panel()).queryByRole('slider', { name: 'Edge softness' })
@@ -128,15 +128,12 @@ describe('BackgroundRemovalStudio', () => {
     ).toBeVisible()
     await user.click(undo())
     expect(edge).toHaveValue('20')
-    const seed = within(section('Advanced')).getByRole('spinbutton', {
-      name: 'Seed'
-    })
+    const seed = within(panel()).getByRole('spinbutton', { name: 'Seed' })
+    expect(section('Advanced')).not.toContainElement(seed)
     expect(seed).toHaveValue(42)
 
     vi.spyOn(Math, 'random').mockReturnValue(0.5)
-    await user.click(
-      within(section('Advanced')).getByRole('button', { name: 'New seed' })
-    )
+    await user.click(within(panel()).getByRole('button', { name: 'New seed' }))
     expect(seed).toHaveValue(500_000_000)
   })
 

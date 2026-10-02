@@ -3,6 +3,7 @@ import type { BackgroundRemoval } from '../../../composables/useBackgroundRemova
 import type { Locale } from '../../../i18n/translations'
 import { brc } from '../../../lib/workshop/background-removal/copy'
 import EditorTray from '../app-editor/EditorTray.vue'
+import BackgroundRemovalSeed from './BackgroundRemovalSeed.vue'
 import { CUTOUT_SECTIONS, sectionMeta } from './sections'
 
 const { cutout, locale = 'en' } = defineProps<{
@@ -28,6 +29,7 @@ const { tray } = cutout
         }}</span>
       </template>
       <component :is="section.content" :cutout :locale />
+      <BackgroundRemovalSeed v-if="section.id === 'advanced'" :cutout :locale />
     </EditorTray>
   </template>
 </template>
