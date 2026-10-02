@@ -1291,6 +1291,176 @@ describe('createOpSender', () => {
     ])
   })
 
+  it('settles an interrupted oversized seal in bounded groups', () => {
+    const localSettled: BatchOutcome[] = []
+    const localSender = createOpSender({
+      sendOps: () => true,
+      onOpsResult: () => vi.fn(),
+      workflowId: () => WORKFLOW,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: (outcome) => localSettled.push(outcome)
+    })
+    const operations = Array.from({ length: 300 }, (_, id) => addNode(id))
+    let aborted = false
+    operations[0].node = {
+      ...operations[0].node,
+      toJSON() {
+        if (!aborted) {
+          aborted = true
+          localSender.abortAll()
+        }
+        return { id: 0, type: 'TestNode' }
+      }
+    }
+
+    localSender.admit(operations)
+    localSender.flush()
+
+    expect(localSettled.map((outcome) => outcome.ops.length)).toEqual([256, 44])
+    expect(
+      localSettled.every((outcome) => outcome.state === 'undeliverable')
+    ).toBe(true)
+    expect(
+      localSettled
+        .flatMap((outcome) => outcome.ops)
+        .map((op) => ('node_id' in op ? op.node_id : null))
+    ).toEqual(Array.from({ length: 300 }, (_, id) => id))
+    expect(localSender.pending()).toBe(0)
+    localSender.detach()
+  })
+
+  it('does not rechunk a prefix after serialization aborts and throws', () => {
+    const localSettled: BatchOutcome[] = []
+    const localSender = createOpSender({
+      sendOps: () => true,
+      onOpsResult: () => vi.fn(),
+      workflowId: () => WORKFLOW,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: (outcome) => localSettled.push(outcome)
+    })
+    const first = addNode(1)
+    let firstSerializations = 0
+    first.node = {
+      ...first.node,
+      toJSON() {
+        firstSerializations++
+        return { id: 1, type: 'TestNode' }
+      }
+    }
+    const second = addNode(2)
+    let aborted = false
+    second.node = {
+      ...second.node,
+      toJSON() {
+        if (!aborted) {
+          aborted = true
+          localSender.abortAll()
+        }
+        throw new Error('serialization boom')
+      }
+    }
+
+    localSender.admit([first, second])
+    localSender.flush()
+
+    expect(firstSerializations).toBe(2)
+    expect(localSettled).toHaveLength(1)
+    expect(localSettled[0].state).toBe('undeliverable')
+    expect(localSettled[0].ops).toHaveLength(2)
+    expect(localSender.pending()).toBe(0)
+    localSender.detach()
+  })
+
+  it('sends an outer admission before work enqueued during serialization', () => {
+    const localSent: Op[][] = []
+    let localResultListener!: (result: OpsResultView) => void
+    const localSender = createOpSender({
+      sendOps: (_workflowId, _tab, ops) => {
+        localSent.push(ops)
+        return true
+      },
+      onOpsResult: (listener) => {
+        localResultListener = listener
+        return vi.fn()
+      },
+      workflowId: () => WORKFLOW,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: vi.fn()
+    })
+    const outer = addNode(1)
+    let reentered = false
+    outer.node = {
+      ...outer.node,
+      toJSON() {
+        if (!reentered) {
+          reentered = true
+          localSender.enqueue([addNode(2)])
+        }
+        return { id: 1, type: 'TestNode' }
+      }
+    }
+
+    localSender.enqueue([outer])
+    expect(
+      localSent.map((ops) => ('node_id' in ops[0] ? ops[0].node_id : null))
+    ).toEqual([1])
+
+    localResultListener({
+      ok: true,
+      applied: [localSent[0][0].op_id],
+      skipped: []
+    })
+    expect(
+      localSent.map((ops) => ('node_id' in ops[0] ? ops[0].node_id : null))
+    ).toEqual([1, 2])
+    localSender.detach()
+  })
+
+  it('resumes a pump requested during workflow-change sealing', () => {
+    const localSent: Op[][] = []
+    let workflow = 'wf-old'
+    const localSender = createOpSender({
+      sendOps: (_workflowId, _tab, ops) => {
+        localSent.push(ops)
+        return true
+      },
+      onOpsResult: () => vi.fn(),
+      workflowId: () => workflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: vi.fn()
+    })
+    const outer = addNode(1)
+    let reentered = false
+    outer.node = {
+      ...outer.node,
+      toJSON() {
+        if (!reentered) {
+          reentered = true
+          localSender.enqueue([addNode(3)])
+        }
+        return { id: 1, type: 'TestNode' }
+      }
+    }
+    localSender.admit([outer])
+    workflow = 'wf-new'
+
+    localSender.admit([addNode(2)])
+
+    expect(localSent).toHaveLength(1)
+    expect('node_id' in localSent[0][0] ? localSent[0][0].node_id : null).toBe(
+      1
+    )
+    localSender.detach()
+  })
+
   it('contains a large malformed admission without argument spread overflow', () => {
     const operations = Array.from({ length: 140_000 }, (_, id) => addNode(id))
     let serializations = 0
@@ -1314,6 +1484,7 @@ describe('createOpSender', () => {
 
     expect(() => sender.flush()).not.toThrow()
     expect(settled.at(-1)?.state).toBe('undeliverable')
+    expect(settled.every((outcome) => outcome.ops.length <= 256)).toBe(true)
   })
 
   it('queues the valid prefix before an invalid suffix settlement detaches', () => {
