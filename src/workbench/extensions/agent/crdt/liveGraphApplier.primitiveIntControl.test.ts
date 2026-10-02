@@ -152,7 +152,6 @@ describe('PrimitiveInt control_after_generate projection', () => {
       }),
       expect.objectContaining({
         errorType: 'agent_graph_widget_missing',
-        // The exact Sentry routing context PM-1914 is triaged on.
         context: expect.objectContaining({
           nodeId: '143',
           type: 'PrimitiveInt',
