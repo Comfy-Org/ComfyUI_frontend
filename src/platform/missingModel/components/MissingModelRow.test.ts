@@ -1,3 +1,8 @@
+import {
+  downloadMissingModels,
+  cancelMissingModelDownload
+} from '@/platform/remote/comfyui/modelDownload'
+vi.mock(import('@/platform/remote/comfyui/modelDownload'), { spy: true })
 import { getActivePinia } from 'pinia'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -143,7 +148,7 @@ function renderRow(
 ) {
   const pinia = getActivePinia()!
 
-  render(MissingModelRow, {
+  const view = render(MissingModelRow, {
     props: {
       model,
       directory,
@@ -159,7 +164,7 @@ function renderRow(
     }
   })
 
-  return { onLocateModel }
+  return { ...view, onLocateModel }
 }
 
 describe('MissingModelRow', () => {
@@ -661,5 +666,69 @@ describe('MissingModelRow', () => {
       },
       {}
     )
+  })
+
+  it('shows server progress after remount and cancels through the current row', async () => {
+    mockIsCloud.value = false
+    vi.mocked(api.getServerFeature).mockReturnValue(true)
+    let resolveDownload!: (
+      value: Awaited<ReturnType<typeof downloadMissingModels>>
+    ) => void
+    const response = new Promise<
+      Awaited<ReturnType<typeof downloadMissingModels>>
+    >((resolve) => {
+      resolveDownload = resolve
+    })
+    vi.mocked(downloadMissingModels).mockReturnValue(response)
+    vi.mocked(cancelMissingModelDownload).mockResolvedValue({
+      ok: true,
+      value: true
+    })
+    const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
+    model.representative.url =
+      'https://huggingface.co/org/model/resolve/main/model.safetensors'
+    const mounted = renderRow(model)
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Download model.safetensors' })
+    )
+    const request = vi.mocked(downloadMissingModels).mock.calls[0]
+    expect(request).toBeDefined()
+    const [models, , batchId] = request
+    mockApiListeners.get('missing_model_download')?.(
+      new CustomEvent('missing_model_download', {
+        detail: {
+          ...models[0],
+          task_id: 'task',
+          batch_id: batchId,
+          status: 'running',
+          bytes_downloaded: 1024
+        }
+      })
+    )
+    await screen.findByText('Downloading')
+    mounted.unmount()
+    renderRow(model)
+    expect(screen.getByText('Downloading')).toBeVisible()
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: 'Cancel download of model.safetensors'
+      })
+    )
+    expect(cancelMissingModelDownload).toHaveBeenCalledWith(
+      'task',
+      expect.any(String),
+      batchId
+    )
+    resolveDownload({
+      ok: true,
+      value: {
+        downloaded: 0,
+        skipped: 0,
+        failed: 0,
+        canceled: 1,
+        results: [{ ...models[0], status: 'canceled' }]
+      }
+    })
+    await screen.findByText('Canceled')
   })
 })

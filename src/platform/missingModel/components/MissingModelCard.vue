@@ -75,6 +75,7 @@
         size="sm"
         class="h-8 min-w-0 flex-1 rounded-md text-xs"
         :aria-describedby="showGatedModelsHint ? gatedHintId : undefined"
+        :disabled="isDownloading"
         @click="downloadAllModels"
       >
         <i aria-hidden="true" class="icon-[lucide--download] size-4 shrink-0" />
@@ -123,7 +124,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const gatedHintId = useId()
-const { downloadMissingModel, fileSizeFor, gatedRepoUrlFor } =
+const { downloadMissingModels, isDownloading, fileSizeFor, gatedRepoUrlFor } =
   useMissingModelDownload()
 
 const sortedModelRows = computed(() =>
@@ -188,9 +189,7 @@ const downloadAllLabel = computed(() => {
 })
 
 function downloadAllModels() {
-  for (const model of downloadableModels.value) {
-    downloadMissingModel(model)
-  }
+  downloadMissingModels(downloadableModels.value)
 }
 
 function getModelRowKey(

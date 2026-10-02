@@ -4565,6 +4565,19 @@
       "expand": "Expand"
     },
     "missingModels": {
+      "downloadRequestFailed": "Could not download models. Check the connection and try again.",
+      "cancelDownloadFailed": "Could not cancel the download. Try again.",
+      "cancelDownload": "Cancel download of {model}",
+      "downloadStatus": {
+        "queued": "Queued",
+        "running": "Downloading",
+        "canceling": "Canceling",
+        "completed": "Downloaded",
+        "skipped_existing": "Already installed",
+        "failed": "Download failed",
+        "blocked": "Download blocked",
+        "canceled": "Canceled"
+      },
       "import": "Import",
       "importing": "Importing...",
       "customNodeDownloadDisabled": "Nodes that reference the models below do not support imported models. Open the node to choose a supported built-in model, or replace it with a standard node that supports imported models.",

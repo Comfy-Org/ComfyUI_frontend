@@ -172,6 +172,7 @@
           :aria-describedby="
             showGatedRepoAction ? gatedDownloadDescriptionId : undefined
           "
+          :disabled="isDownloading"
           @click="handleDownload"
         >
           {{ t('g.download') }}
@@ -196,6 +197,41 @@
       >
         <i aria-hidden="true" class="icon-[lucide--locate] size-4" />
       </Button>
+    </div>
+
+    <div
+      v-if="!isCloud && serverDownload"
+      class="flex flex-wrap items-center gap-2 text-xs text-muted-foreground"
+    >
+      <span role="status" aria-live="polite">{{ serverDownloadLabel }}</span>
+      <span v-if="serverDownload.bytesDownloaded">{{
+        formatSize(serverDownload.bytesDownloaded)
+      }}</span>
+      <Button
+        v-if="
+          serverDownload.status === 'running' ||
+          serverDownload.status === 'canceling'
+        "
+        variant="textonly"
+        size="icon-sm"
+        :aria-label="
+          t('rightSidePanel.missingModels.cancelDownload', {
+            model: model.name
+          })
+        "
+        :disabled="serverDownload.status === 'canceling'"
+        @click="
+          cancelServerDownload({
+            name: model.representative.name,
+            directory: model.representative.directory ?? ''
+          })
+        "
+      >
+        <i aria-hidden="true" class="icon-[lucide--x] size-4" />
+      </Button>
+      <span v-if="serverDownload.error" role="alert">{{
+        serverDownload.error
+      }}</span>
     </div>
 
     <TransitionCollapse>
@@ -338,6 +374,9 @@ const {
   gatedRepoUrlFor,
   prefetchModelMetadata,
   downloadMissingModel,
+  isDownloading,
+  serverDownloadState,
+  cancelServerDownload,
   openModelAccessPage
 } = useMissingModelDownload()
 
@@ -373,6 +412,28 @@ const downloadable = computed(() => {
       directory: rep.directory
     })
   )
+})
+
+const serverDownload = computed(() =>
+  serverDownloadState({
+    name: model.representative.name,
+    directory: model.representative.directory ?? ''
+  })
+)
+const serverDownloadLabel = computed(() => {
+  const status = serverDownload.value?.status
+  const keys = {
+    queued: 'rightSidePanel.missingModels.downloadStatus.queued',
+    running: 'rightSidePanel.missingModels.downloadStatus.running',
+    canceling: 'rightSidePanel.missingModels.downloadStatus.canceling',
+    completed: 'rightSidePanel.missingModels.downloadStatus.completed',
+    skipped_existing:
+      'rightSidePanel.missingModels.downloadStatus.skipped_existing',
+    failed: 'rightSidePanel.missingModels.downloadStatus.failed',
+    blocked: 'rightSidePanel.missingModels.downloadStatus.blocked',
+    canceled: 'rightSidePanel.missingModels.downloadStatus.canceled'
+  }
+  return status ? t(keys[status]) : ''
 })
 
 const showDownloadAction = computed(() => !isCloud && downloadable.value)

@@ -1,3 +1,7 @@
+import { computed } from 'vue'
+import { api } from '@/scripts/api'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { useMissingModelDownloadStore } from '@/platform/missingModel/missingModelDownloadStore'
 import {
   downloadModel,
   isTrustedHuggingFaceUrl,
@@ -9,6 +13,20 @@ import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 
 export function useMissingModelDownload() {
   const store = useMissingModelStore()
+  const downloads = useMissingModelDownloadStore()
+  const usesServerDownloads = computed(() => {
+    const bridge = window.__comfyDesktop2
+    const remote = bridge?.isRemote?.() ?? window.__comfyDesktop2Remote ?? false
+    const nativeDownload = !remote && (isDesktop || !!bridge?.downloadModel)
+    return (
+      !isCloud &&
+      !nativeDownload &&
+      api.getServerFeature<boolean>('supports_missing_model_downloads', false)
+    )
+  })
+  const isDownloading = computed(
+    () => usesServerDownloads.value && downloads.isDownloading
+  )
 
   function fileSizeFor(url: string): number | undefined {
     return store.fileSizes[url]
@@ -25,7 +43,16 @@ export function useMissingModelDownload() {
   }
 
   function downloadMissingModel(model: ModelWithUrl): void {
-    downloadModel(model, store.folderPaths)
+    downloadMissingModels([model])
+  }
+
+  function downloadMissingModels(models: ModelWithUrl[]): void {
+    if (isCloud) return
+    if (usesServerDownloads.value) {
+      void downloads.start(models)
+    } else {
+      for (const model of models) downloadModel(model, store.folderPaths)
+    }
   }
 
   // Always try the bridge: it opens in the user's Electron session. isRemote()
@@ -51,6 +78,10 @@ export function useMissingModelDownload() {
   }
 
   return {
+    isDownloading,
+    serverDownloadState: downloads.stateFor,
+    cancelServerDownload: downloads.cancel,
+    downloadMissingModels,
     fileSizeFor,
     gatedRepoUrlFor,
     prefetchModelMetadata,

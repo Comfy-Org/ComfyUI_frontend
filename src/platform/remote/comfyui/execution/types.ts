@@ -143,3 +143,47 @@ export interface AssetExportWsMessage {
 
 export const zTaskOutput = z.record(zNodeId, zOutputs)
 export type TaskOutput = z.infer<typeof zTaskOutput>
+
+const zModel = z.object({
+  name: z.string(),
+  directory: z.string(),
+  url: z.string()
+})
+const zDownloadResult = zModel.extend({
+  status: z.enum([
+    'downloaded',
+    'skipped_existing',
+    'failed',
+    'blocked',
+    'canceled'
+  ]),
+  error: z.string().optional()
+})
+export const zMissingModelDownloadResponse = z.object({
+  downloaded: z.number(),
+  skipped: z.number(),
+  canceled: z.number(),
+  failed: z.number(),
+  results: z.array(zDownloadResult)
+})
+export const zMissingModelDownloadWsMessage = zModel.extend({
+  batch_id: z.string(),
+  task_id: z.string(),
+  status: z.enum([
+    'running',
+    'completed',
+    'failed',
+    'blocked',
+    'skipped_existing',
+    'canceled'
+  ]),
+  bytes_downloaded: z.number().nonnegative(),
+  error: z.string().optional()
+})
+export type MissingModelDownloadWsMessage = z.infer<
+  typeof zMissingModelDownloadWsMessage
+>
+
+export type MissingModelDownloadResponse = z.infer<
+  typeof zMissingModelDownloadResponse
+>
