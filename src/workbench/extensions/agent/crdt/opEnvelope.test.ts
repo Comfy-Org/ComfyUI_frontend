@@ -151,18 +151,13 @@ describe('chunkWireOps', () => {
     { label: 'a number', serialized: 42 },
     { label: 'a string', serialized: 'not-an-operation' },
     { label: 'an array', serialized: [] },
-    // The only row that reaches the post-parse op_id check; every other
-    // serialized form is refused by the leading-brace guard above it.
     { label: 'an object without op_id', serialized: { op: 'add_node' } }
-  ])(
-    'rejects an op whose toJSON returns $label',
-    ({ serialized }: { serialized: unknown }) => {
-      const [op] = mintWireOps([addNode(1)], MINT)
-      Object.assign(op, { toJSON: () => serialized })
+  ])('rejects an op whose toJSON returns $label', ({ serialized }) => {
+    const [op] = mintWireOps([addNode(1)], MINT)
+    Object.assign(op, { toJSON: () => serialized })
 
-      expect(() => chunkWireOps([op])).toThrow(
-        'Operation did not serialize to a wire object'
-      )
-    }
-  )
+    expect(() => chunkWireOps([op])).toThrow(
+      'Operation did not serialize to a wire object'
+    )
+  })
 })
