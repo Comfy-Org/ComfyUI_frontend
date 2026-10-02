@@ -658,19 +658,27 @@ describe('useAgentSession (v1 composition root)', () => {
   // The discriminator is load-bearing: a 409 from any other endpoint, or one
   // whose body this client cannot read, must stay an ordinary send failure
   // rather than trigger a re-read of a thread that is not actually busy.
-  it('leaves a 409 without the TURN_IN_PROGRESS discriminator as a plain failure', async () => {
+  it('leaves an undiscriminated 409 on an existing thread as a plain failure', async () => {
     const postMessage = vi
       .fn<
         (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
       >()
+      .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
       .mockRejectedValue(
         new AgentApiError('conflict', 409, { error: 'conflict' })
       )
     const rest = fakeRest({ postMessage })
-    const session = useAgentSession({ rest, events: fakeEvents().source })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
     session.start()
 
     await session.sendMessage('make a cat')
+    emit({
+      type: 'agent_message_done',
+      data: { message_id: 'msg-1', thread_id: 'th-1' }
+    })
+
+    await session.sendMessage('make it orange')
 
     expect(rest.getMessages).not.toHaveBeenCalled()
     expect(session.isStreaming.value).toBe(false)
