@@ -92,8 +92,11 @@ describe('AgentConsentCard', () => {
   })
 
   it('falls back to the placeholder when the video fails to load', async () => {
-    renderCard({ videoSrc: 'https://example.test/a.mp4' })
+    renderCard({
+      videoSources: [{ src: 'https://example.test/a.mp4', type: 'video/mp4' }]
+    })
     expect(screen.queryByText('Video unavailable')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Play' })).toBeInTheDocument()
 
     await fireEvent.error(screen.getByTestId('agent-consent-video'))
 

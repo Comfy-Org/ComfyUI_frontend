@@ -1,12 +1,12 @@
+import type { BillingTelemetryFailure } from '@comfyorg/account-core/billing'
+
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { AuthStoreError } from '@/stores/authStore'
-
-import type { BillingFailure } from '../types'
 
 export class BillingFailureError extends Error {
   constructor(
     message: string,
-    public readonly failure: BillingFailure
+    public readonly failure: BillingTelemetryFailure
   ) {
     super(message)
     this.name = 'BillingFailureError'
@@ -23,7 +23,7 @@ export class PaymentPopupBlockedError extends BillingFailureError {
   }
 }
 
-export function describeBillingFailure(err: unknown): BillingFailure {
+export function describeBillingFailure(err: unknown): BillingTelemetryFailure {
   return err instanceof BillingFailureError
     ? err.failure
     : { failure_category: categorizeBillingApiError(err) }
@@ -37,7 +37,7 @@ export function describeBillingFailure(err: unknown): BillingFailure {
  */
 export function categorizeBillingApiError(
   err: unknown
-): BillingFailure['failure_category'] {
+): BillingTelemetryFailure['failure_category'] {
   if (err instanceof BillingFailureError) return err.failure.failure_category
   if (err instanceof WorkspaceApiError) {
     if (err.failureCategory) return err.failureCategory

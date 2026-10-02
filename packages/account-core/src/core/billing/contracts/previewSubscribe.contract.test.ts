@@ -63,7 +63,9 @@ const MONEY_FIELDS = [
   'credits_today_cents',
   'renewal_amount_cents',
   'subtotal_cents',
-  'balance_applied_cents'
+  'balance_applied_cents',
+  'proration_remaining_cents',
+  'proration_unused_cents'
 ] as const satisfies readonly (keyof PreviewResponseBody)[]
 
 const INT64_MIN = -9223372036854775808n

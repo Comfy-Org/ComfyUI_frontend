@@ -1,6 +1,5 @@
+import type { CheckoutEntrySource } from '@comfyorg/account-core/billing'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import type { CheckoutEntrySource } from '@/platform/telemetry/types'
 
 import {
   bindOperationToCheckoutJourney,
@@ -134,7 +133,9 @@ describe('resolveCheckoutJourney', () => {
   it.for([
     // Infinity survives JSON.parse and makes every expiry comparison false.
     { field: 'started_at_ms', value: 1e400 },
-    { field: 'entered_at', value: 'not-a-timestamp' }
+    { field: 'entered_at', value: 'not-a-timestamp' },
+    // The billing entry link carries the id as its `correlation_id`.
+    { field: 'journey_id', value: 'journey/../1' }
   ])(
     'discards a persisted record with an invalid $field',
     ({ field, value }) => {

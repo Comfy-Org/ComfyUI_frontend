@@ -1753,7 +1753,9 @@ describe('useAgentSession (v1 composition root)', () => {
 
     const parkedOnApproval = async () => {
       const answerAsk = vi.fn(
-        async (): Promise<AgentAnswerAccepted> => ({ status: 'answered' })
+        async (): Promise<AgentAnswerAccepted> => ({
+          status: 'answered'
+        })
       )
       const rest = fakeRest({ answerAsk })
       const events = fakeEvents()
@@ -2253,7 +2255,12 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.entries.value.at(-1)).toMatchObject({
       role: 'assistant',
       parts: [
-        { type: 'notice', level: 'error', text: message, retryAfterSeconds: 30 }
+        {
+          type: 'notice',
+          level: 'error',
+          text: message,
+          retryAfterSeconds: 30
+        }
       ]
     })
   })
@@ -3221,6 +3228,105 @@ describe('useAgentSession (v1 composition root)', () => {
     ])
   })
 
+  it('an empty terminal row preserves the locally streamed reply', async () => {
+    const terminalWithoutParts = {
+      ...historyRow(2, 'assistant', 'msg-1', '', 'msg-1'),
+      content: {}
+    }
+    const rest = fakeRest({
+      getMessages: vi.fn(
+        async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'msg-1', 'go'),
+          terminalWithoutParts
+        ]
+      )
+    })
+    const { source, emit, status } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    status(true)
+
+    await session.sendMessage('go')
+    emit(delta('msg-1', 'locally streamed answer'))
+    status(false)
+    status(true)
+
+    await vi.waitFor(() => expect(session.isStreaming.value).toBe(false))
+    const assistant = session.entries.value.at(-1)
+    assert(assistant?.role === 'assistant')
+    expect(assistant.parts).toEqual([
+      { type: 'text', text: 'locally streamed answer', state: 'done' }
+    ])
+  })
+
+  it('an empty failed row does not preserve a partial local reply', async () => {
+    const failedWithoutParts = {
+      ...historyRow(2, 'assistant', 'msg-1', '', 'msg-1'),
+      content: {},
+      status: 'error' as const
+    }
+    const rest = fakeRest({
+      getMessages: vi.fn(
+        async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'msg-1', 'go'),
+          failedWithoutParts
+        ]
+      )
+    })
+    const { source, emit, status } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    status(true)
+
+    await session.sendMessage('go')
+    emit(delta('msg-1', 'partial local answer'))
+    status(false)
+    status(true)
+
+    await vi.waitFor(() => expect(session.isStreaming.value).toBe(false))
+    const assistant = session.entries.value.at(-1)
+    assert(assistant?.role === 'assistant')
+    expect(assistant.parts).toEqual([
+      {
+        type: 'notice',
+        level: 'error',
+        text: 'The agent could not complete this response.'
+      }
+    ])
+  })
+
+  it('an empty interrupted row preserves the locally streamed reply', async () => {
+    const interruptedWithoutParts = {
+      ...historyRow(2, 'assistant', 'msg-1', '', 'msg-1'),
+      content: {},
+      status: 'interrupted' as const
+    }
+    const rest = fakeRest({
+      getMessages: vi.fn(
+        async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'msg-1', 'go'),
+          interruptedWithoutParts
+        ]
+      )
+    })
+    const { source, emit, status } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    status(true)
+
+    await session.sendMessage('go')
+    emit(delta('msg-1', 'partial local answer'))
+    status(false)
+    status(true)
+
+    await vi.waitFor(() => expect(session.isStreaming.value).toBe(false))
+    const assistant = session.entries.value.at(-1)
+    assert(assistant?.role === 'assistant')
+    expect(assistant.parts).toEqual([
+      { type: 'text', text: 'partial local answer', state: 'done' }
+    ])
+  })
+
   it('(g6) a row still streaming on the first check is polled with backoff until it goes terminal', async () => {
     const getMessages = vi
       .fn<() => Promise<AgentMessages>>()
@@ -3306,6 +3412,41 @@ describe('useAgentSession (v1 composition root)', () => {
     status(false)
     status(true)
     await vi.waitFor(() => expect(rest.getMessages).toHaveBeenCalledTimes(1))
+  })
+
+  it('keeps a successor recovery registered when an aborted job settles', async () => {
+    const recoverySignals: AbortSignal[] = []
+    const getMessages = vi.fn<AgentRestClient['getMessages']>(
+      (_threadId, { signal } = {}) => {
+        assert.exists(signal)
+        recoverySignals.push(signal)
+        return new Promise<AgentMessages>((_, reject) => {
+          signal.addEventListener('abort', () => reject(signal.reason))
+        })
+      }
+    )
+    const rest = fakeRest({ getMessages })
+    const events = fakeEvents()
+    const session = useAgentSession({ rest, events: events.source })
+    session.start()
+    events.status(true)
+
+    await session.sendMessage('go')
+    events.emit(delta('msg-1', 'partial'))
+    events.status(false)
+    events.status(true)
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledTimes(1))
+
+    session.stop()
+    session.start({ restore: false })
+    events.status(false)
+    events.status(true)
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledTimes(2))
+    await Promise.resolve()
+
+    session.stop()
+    expect(recoverySignals).toHaveLength(2)
+    expect(recoverySignals[1].aborted).toBe(true)
   })
 
   it('(g8) a recovery result landing after the session stopped touches nothing', async () => {
@@ -3457,7 +3598,11 @@ describe('useAgentSession (v1 composition root)', () => {
     })
     const { source, emit, status } = fakeEvents()
     const onThreadActivated = vi.fn()
-    const session = useAgentSession({ rest, events: source, onThreadActivated })
+    const session = useAgentSession({
+      rest,
+      events: source,
+      onThreadActivated
+    })
     session.start()
     status(true)
     session.bindWorkflow('wf-1')
@@ -5074,7 +5219,11 @@ describe('useAgentSession (v1 composition root)', () => {
     emit(
       wire({
         type: 'agent_active_tab',
-        data: { workflow_id: 'wf-9', name: 'Video test', thread_id: 'th-OTHER' }
+        data: {
+          workflow_id: 'wf-9',
+          name: 'Video test',
+          thread_id: 'th-OTHER'
+        }
       })
     )
     expect(activeTab).not.toHaveBeenCalled()
@@ -5764,7 +5913,6 @@ describe('app:agent_error telemetry (TEL-8)', () => {
     const rest = fakeRest({
       postMessage: vi.fn(async () => {
         throw new AgentResponseUnreadableError(
-          '/agent/threads/new/messages',
           new SyntaxError('Unexpected end of JSON input')
         )
       })

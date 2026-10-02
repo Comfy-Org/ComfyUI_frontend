@@ -533,6 +533,9 @@ importers:
       '@comfyorg/object-info-parser':
         specifier: workspace:*
         version: link:packages/object-info-parser
+      '@comfyorg/quad-wireframe-three':
+        specifier: ^0.1.0
+        version: 0.1.0(three@0.184.0)
       '@comfyorg/registry-types':
         specifier: workspace:*
         version: link:packages/registry-types
@@ -981,6 +984,9 @@ importers:
       '@comfyorg/tailwind-utils':
         specifier: workspace:*
         version: link:../../packages/tailwind-utils
+      '@datadog/browser-rum':
+        specifier: 'catalog:'
+        version: 6.33.0(@datadog/browser-logs@6.33.0)
       '@stripe/stripe-js':
         specifier: 'catalog:'
         version: 9.12.1
@@ -990,6 +996,9 @@ importers:
       firebase:
         specifier: 'catalog:'
         version: 11.10.0
+      posthog-js:
+        specifier: 'catalog:'
+        version: 1.402.3
       primeicons:
         specifier: 'catalog:'
         version: 7.0.0
@@ -2006,6 +2015,12 @@ packages:
     peerDependenciesMeta:
       '@types/three':
         optional: true
+
+  '@comfyorg/quad-wireframe-three@0.1.0':
+    resolution: {integrity: sha512-RJ0FrWZ/Dpg+3qgQHWVSVN1h1qPYSILY0phYESstX2bh/Vd32LmFSRl02i0iyJ2rAEI31w1KFJAYKJXzHoiBgA==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      three: '>=0.160.0'
 
   '@comfyorg/sdk@0.2.0':
     resolution: {integrity: sha512-x2a9mat9+s6xOACYFnlsAri7ovNaFD2VjwKohsNWJ65RodnLU5Rviq2fd7feQyfQS2C6XKZRjXj81AfypHonTQ==}
@@ -10651,6 +10666,11 @@ snapshots:
       three: 0.184.0
     optionalDependencies:
       '@types/three': 0.184.1
+
+  '@comfyorg/quad-wireframe-three@0.1.0(three@0.184.0)':
+    dependencies:
+      fflate: 0.8.3
+      three: 0.184.0
 
   '@comfyorg/sdk@0.2.0':
     dependencies:

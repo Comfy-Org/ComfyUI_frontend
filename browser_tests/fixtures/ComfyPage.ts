@@ -1,9 +1,9 @@
-import type { Settings } from '@/platform/settings/types'
 import type { APIRequestContext, Locator, Page } from '@playwright/test'
 import { config as dotenvConfig } from 'dotenv'
 import MCR from 'monocart-coverage-reports'
 
 import { COVERAGE_OUTPUT_DIR } from '@e2e/coverageConfig'
+import { DEPLOY_ACTION_SEEN_SETTINGS } from '@e2e/fixtures/constants/workflowActions'
 import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 import {
   ENTRY_PATHS,
@@ -336,9 +336,7 @@ export class ComfyPage {
           'Comfy.EnableTooltips': false,
           'Comfy.TutorialCompleted': true,
           [TOUR_SEEN_SETTING]: [...ENTRY_PATHS],
-          ...({
-            'Comfy.WorkflowActions.SeenItems': ['deploy-as-api']
-          } satisfies Partial<Settings>),
+          ...DEPLOY_ACTION_SEEN_SETTINGS,
           'Comfy.Queue.MaxHistoryItems': 64,
           'Comfy.SnapToGrid.GridSize': testComfySnapToGridGridSize,
           'Comfy.VersionCompatibility.DisableWarnings': true,
