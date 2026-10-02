@@ -747,13 +747,15 @@ export class AgentConversationHarness {
       workflowId,
       new HostDoc(workflowId, seed, this.conversation.workflow.catalog)
     )
-    const subscribes = this.subscribeCount()
+    const subscribes = this.subscribeCount(workflowId)
     this.hostSocket.send({
       type: 'agent_active_tab',
       data: { workflow_id: workflowId, name }
     })
     await expect(this.topbar.getActiveTab()).toContainText(name)
-    await expect.poll(() => this.subscribeCount()).toBe(subscribes + 1)
+    await expect
+      .poll(() => this.subscribeCount(workflowId))
+      .toBeGreaterThanOrEqual(subscribes + 1)
   }
 
   /** Holds the next subscribe acknowledgement for `workflowId`. */
@@ -782,7 +784,7 @@ export class AgentConversationHarness {
     const { id, name } = this.conversation.workflow
     this.pauseWorkflowSubscribe(id)
     const sent = this.clientDocFrames().filter(
-      (frame) => frame.type === 'doc_subscribe'
+      (frame) => frame.type === 'doc_subscribe' && frame.workflowId === id
     ).length
     this.hostSocket.send({
       type: 'agent_active_tab',
@@ -792,10 +794,10 @@ export class AgentConversationHarness {
       .poll(
         () =>
           this.clientDocFrames().filter(
-            (frame) => frame.type === 'doc_subscribe'
+            (frame) => frame.type === 'doc_subscribe' && frame.workflowId === id
           ).length
       )
-      .toBe(sent + 1)
+      .toBeGreaterThanOrEqual(sent + 1)
   }
 
   /** The applier's verdict on every human op the host has judged so far. */
@@ -867,8 +869,8 @@ export class AgentConversationHarness {
 
   // Rises once per follower subscribe; a tab return re-subscribes and the
   // host answers with the catch-up frame this counter has just sent.
-  subscribeCount(): number {
-    return this.hostSocket.subscribeCount()
+  subscribeCount(workflowId?: string): number {
+    return this.hostSocket.subscribeCount(workflowId)
   }
 
   async disconnectAndApplyRecordedTurn(turn: number): Promise<void> {

@@ -89,12 +89,6 @@ function opLabel(op: WireOpEnvelope): string {
   return `${op.op}:${'node_id' in op ? String(op.node_id) : ''}`
 }
 
-function baseVersion(op: WireOpEnvelope): number {
-  if (!('base_version' in op) || typeof op.base_version !== 'number')
-    throw new Error('wire op has no numeric base_version')
-  return op.base_version
-}
-
 function parseClientDocFrame(
   raw: string | Buffer
 ): ParsedClientDocFrame | null {
@@ -119,10 +113,13 @@ export class AgentFollowerHostSocket {
   private refusedSubscribes = 0
 
   private socket: WebSocketRoute | null = null
-  private subscribes = 0
+  private readonly subscribes = new Map<string, number>()
   private readonly createdAt = Date.now()
   private readonly clientFrames: ClientDocFrame[] = []
-  private readonly heldBatches: WireOpEnvelope[][] = []
+  private readonly heldBatches: Array<{
+    workflowId: string
+    ops: WireOpEnvelope[]
+  }> = []
   private readonly humanOutcomes: ApplyOutcome[] = []
   private resolveSubscribed: (() => void) | null = null
   private readonly subscribed = new Promise<void>((resolve) => {
@@ -230,7 +227,11 @@ export class AgentFollowerHostSocket {
       workflowId: frame.workflowId,
       ops: ops.map((op) => opLabel(op)),
       opIds: ops.map((op) => op.op_id),
-      baseVersions: ops.map(baseVersion)
+      baseVersions: ops.flatMap((op) =>
+        'base_version' in op && typeof op.base_version === 'number'
+          ? [op.base_version]
+          : []
+      )
     })
   }
 
@@ -249,7 +250,10 @@ export class AgentFollowerHostSocket {
       return
     }
     if (frame.type === 'doc_ops' && frame.opsResult.ok) {
-      this.heldBatches.push(frame.opsResult.ops)
+      this.heldBatches.push({
+        workflowId: frame.workflowId!,
+        ops: frame.opsResult.ops
+      })
     }
   }
 
@@ -261,7 +265,7 @@ export class AgentFollowerHostSocket {
    * applier alone skips the relay gate and records no outcome.
    */
   heldClientOps(): WireOpEnvelope[] {
-    return this.heldBatches.flat()
+    return this.heldBatches.flatMap(({ ops }) => ops)
   }
 
   /**
@@ -275,8 +279,8 @@ export class AgentFollowerHostSocket {
   releaseHeldClientOps(): WireOpEnvelope[] {
     const batch = this.heldBatches.shift()
     if (!batch) return []
-    this.judgeHumanOps(this.workflowId, { ok: true, ops: batch })
-    return batch
+    this.judgeHumanOps(batch.workflowId, { ok: true, ops: batch.ops })
+    return batch.ops
   }
 
   /**
@@ -303,14 +307,18 @@ export class AgentFollowerHostSocket {
       this.refusalsLeft -= 1
       this.refusedSubscribes += 1
       this.send(host.subscribeRefused(this.refuseReason))
-      this.subscribes += 1
+      this.recordSubscribe(workflowId)
       this.resolveSubscribed?.()
       return
     }
     this.send(host.subscribed())
     this.send(host.catchUp(stateVector))
-    this.subscribes += 1
+    this.recordSubscribe(workflowId)
     this.resolveSubscribed?.()
+  }
+
+  private recordSubscribe(workflowId: string): void {
+    this.subscribes.set(workflowId, this.subscribeCount(workflowId) + 1)
   }
 
   /** Subscribes this host turned away, so a retry ladder can be asserted. */
@@ -373,8 +381,12 @@ export class AgentFollowerHostSocket {
   }
 
   /** Rises once per follower subscribe, after the catch-up frame was sent. */
-  subscribeCount(): number {
-    return this.subscribes
+  subscribeCount(workflowId?: string): number {
+    if (workflowId !== undefined) return this.subscribes.get(workflowId) ?? 0
+    return [...this.subscribes.values()].reduce(
+      (total, count) => total + count,
+      0
+    )
   }
 
   async disconnect(): Promise<void> {

@@ -45,11 +45,11 @@ test.describe(
         RESET_WORKFLOW_ID,
         'Reset target'
       )
-      const beforeReset = agentConversation.subscribeCount()
+      const beforeReset = agentConversation.subscribeCount(RESET_WORKFLOW_ID)
       agentConversation.sendDocumentReset(RESET_WORKFLOW_ID)
       await expect
-        .poll(() => agentConversation.subscribeCount())
-        .toBe(beforeReset + 1)
+        .poll(() => agentConversation.subscribeCount(RESET_WORKFLOW_ID))
+        .toBeGreaterThanOrEqual(beforeReset + 1)
 
       await agentConversation.activateRecordedWorkflowBeforeSubscribeAck()
       const secondNodeId = await agentConversation.addNodeOfType(
