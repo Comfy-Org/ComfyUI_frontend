@@ -96,7 +96,9 @@ describe('AgentConsentCard', () => {
       videoSources: [{ src: 'https://example.test/a.mp4', type: 'video/mp4' }]
     })
     expect(screen.queryByText('Video unavailable')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Play' })).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Play' })
+    ).not.toBeInTheDocument()
 
     await fireEvent.error(screen.getByTestId('agent-consent-video'))
 

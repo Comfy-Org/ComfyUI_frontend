@@ -81,7 +81,6 @@ function choose(action: 'accept' | 'reject'): void {
           muted
           loop
           plays-inline
-          playback-control
           data-testid="agent-consent-video"
           class="aspect-video w-full rounded-lg object-cover"
         >
