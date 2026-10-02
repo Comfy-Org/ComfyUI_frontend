@@ -77,37 +77,59 @@ function subjectLayer(
   return context.canvas
 }
 
-/** Paints what goes behind the subject, or the whole result (`done`). */
-async function drawBackground(
+type ModeRequest<M extends CutoutRequest['mode']> = Extract<
+  CutoutRequest,
+  { mode: M }
+>
+type Layer = 'subject' | 'done'
+
+function drawRemoveBackground(
   context: Context,
-  request: CutoutRequest,
+  request: ModeRequest<'remove'>
+): Layer {
+  if (request.background.kind === 'color') {
+    context.fillStyle = request.background.color
+    context.fillRect(0, 0, context.canvas.width, context.canvas.height)
+  }
+  return 'subject'
+}
+
+function drawAdjustBackground(
+  context: Context,
+  request: ModeRequest<'adjust'>,
   photo: HTMLImageElement
-): Promise<'subject' | 'done'> {
+): Layer {
   const { width, height } = context.canvas
-  if (request.mode === 'remove') {
-    if (request.background.kind === 'color') {
-      context.fillStyle = request.background.color
-      context.fillRect(0, 0, width, height)
-    }
-    return 'subject'
-  }
-  if (request.mode === 'adjust') {
-    if (request.adjust.target === 'background')
-      context.filter = adjustFilter(
-        request.adjust,
-        (share) => `${share * width}px`
-      )
-    const bleed = blurBleed(request.adjust)
-    context.drawImage(
-      photo,
-      (width * (1 - bleed)) / 2,
-      (height * (1 - bleed)) / 2,
-      width * bleed,
-      height * bleed
+  if (request.adjust.target === 'background')
+    context.filter = adjustFilter(
+      request.adjust,
+      (share) => `${share * width}px`
     )
-    context.filter = 'none'
-    return 'subject'
-  }
+  const bleed = blurBleed(request.adjust)
+  context.drawImage(
+    photo,
+    (width * (1 - bleed)) / 2,
+    (height * (1 - bleed)) / 2,
+    width * bleed,
+    height * bleed
+  )
+  context.filter = 'none'
+  return 'subject'
+}
+
+function drawReplaceGradient(context: Context) {
+  const { width, height } = context.canvas
+  const fill = context.createLinearGradient(0, 0, 0, height)
+  fill.addColorStop(0, REPLACE_GRADIENT[0])
+  fill.addColorStop(1, REPLACE_GRADIENT[1])
+  context.fillStyle = fill
+  context.fillRect(0, 0, width, height)
+}
+
+async function drawReplaceBackground(
+  context: Context,
+  request: ModeRequest<'replace'>
+): Promise<Layer> {
   const { referenceUrl } = request.replace
   const prepared =
     !referenceUrl && request.imageUrl === CUTOUT_EXAMPLE.url
@@ -115,16 +137,24 @@ async function drawBackground(
       : undefined
   const backdropUrl = prepared ?? referenceUrl
   const backdrop = backdropUrl ? await loadImage(backdropUrl) : undefined
-  if (backdrop) {
-    drawCover(context, backdrop)
-    return prepared ? 'done' : 'subject'
+  if (!backdrop) {
+    drawReplaceGradient(context)
+    return 'subject'
   }
-  const fill = context.createLinearGradient(0, 0, 0, height)
-  fill.addColorStop(0, REPLACE_GRADIENT[0])
-  fill.addColorStop(1, REPLACE_GRADIENT[1])
-  context.fillStyle = fill
-  context.fillRect(0, 0, width, height)
-  return 'subject'
+  drawCover(context, backdrop)
+  return prepared ? 'done' : 'subject'
+}
+
+/** Paints what goes behind the subject, or the whole result (`done`). */
+async function drawBackground(
+  context: Context,
+  request: CutoutRequest,
+  photo: HTMLImageElement
+): Promise<Layer> {
+  if (request.mode === 'remove') return drawRemoveBackground(context, request)
+  if (request.mode === 'adjust')
+    return drawAdjustBackground(context, request, photo)
+  return drawReplaceBackground(context, request)
 }
 
 /**

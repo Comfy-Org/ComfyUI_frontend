@@ -8,7 +8,7 @@ import { REPLACE_MODELS } from '../../../lib/workshop/background-removal/contrac
 import { brc } from '../../../lib/workshop/background-removal/copy'
 import EditorOutput from '../app-editor/EditorOutput.vue'
 import BackgroundRemovalReference from './BackgroundRemovalReference.vue'
-import { modelName } from './sections'
+import { modelName } from './model-name'
 
 const { cutout, locale = 'en' } = defineProps<{
   cutout: BackgroundRemoval

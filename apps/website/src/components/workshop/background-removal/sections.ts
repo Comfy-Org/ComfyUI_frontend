@@ -5,19 +5,14 @@ import type {
   CutoutTray
 } from '../../../composables/useBackgroundRemoval'
 import type { Locale } from '../../../i18n/translations'
-import type {
-  CutoutBackground,
-  ReplaceModel
-} from '../../../lib/workshop/background-removal/contract'
-import {
-  REPLACE_MODELS,
-  backgroundSwatch
-} from '../../../lib/workshop/background-removal/contract'
+import type { CutoutBackground } from '../../../lib/workshop/background-removal/contract'
+import { backgroundSwatch } from '../../../lib/workshop/background-removal/contract'
 import type { CutoutCopyKey } from '../../../lib/workshop/background-removal/copy'
 import { brc } from '../../../lib/workshop/background-removal/copy'
 import BackgroundRemovalAdvanced from './BackgroundRemovalAdvanced.vue'
 import BackgroundRemovalBackgrounds from './BackgroundRemovalBackgrounds.vue'
 import BackgroundRemovalFormat from './BackgroundRemovalFormat.vue'
+import { modelName } from './model-name'
 
 /**
  * Background Removal's controls in panel order. In the side panel each is
@@ -54,11 +49,6 @@ function backgroundName(background: CutoutBackground, locale: Locale) {
   const swatch = backgroundSwatch(background)
   if (swatch) return brc(`cutout.swatch.${swatch.id}`, locale)
   return background.kind === 'color' ? background.color.toUpperCase() : ''
-}
-
-export function modelName(model: ReplaceModel, locale: Locale) {
-  const label = REPLACE_MODELS.find(({ id }) => id === model)?.label
-  return label ?? brc('cutout.replace.model.auto', locale)
 }
 
 /** The current value beside a section's title, so a closed one says it. */
