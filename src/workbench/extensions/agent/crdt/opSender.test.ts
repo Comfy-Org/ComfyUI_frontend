@@ -1319,9 +1319,9 @@ describe('createOpSender', () => {
     localSender.flush()
 
     expect(localSettled.map((outcome) => outcome.ops.length)).toEqual([256, 44])
-    expect(localSettled.every((outcome) => outcome.state === 'undeliverable')).toBe(
-      true
-    )
+    expect(
+      localSettled.every((outcome) => outcome.state === 'undeliverable')
+    ).toBe(true)
     expect(
       localSettled
         .flatMap((outcome) => outcome.ops)
