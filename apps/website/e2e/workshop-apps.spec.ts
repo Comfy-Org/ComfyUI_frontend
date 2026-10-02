@@ -496,6 +496,84 @@ test('zooms the Relight photo from the control, ctrl+wheel and the keys, and sti
     .toBeCloseTo(fitted.width, 0)
 })
 
+async function dragTo(page: Page, from: Locator, x: number, y: number) {
+  const dot = await from.boundingBox()
+  if (!dot) throw new Error('no dot')
+  await page.mouse.move(dot.x + dot.width / 2, dot.y + dot.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(x, y, { steps: 6 })
+  await page.mouse.up()
+}
+
+test('turns and raises a Relight light from the light map, and hides the map', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/hub/apps/relight/')
+  const app = page.getByTestId('relight')
+  await app.getByRole('button', { name: 'Try the example' }).click()
+  const map = app.getByRole('group', { name: 'Light map' })
+  await expect(map).toBeVisible()
+  const top = map.getByRole('slider', { name: 'Warm key, top view' })
+  const side = map.getByRole('slider', { name: 'Warm key, side view' })
+
+  const topView = await app.getByTestId('relight-map-top').boundingBox()
+  if (!topView) throw new Error('no top view')
+  await dragTo(
+    page,
+    top,
+    topView.x + topView.width * 0.95,
+    topView.y + topView.height / 2
+  )
+  await expect(top).toHaveAttribute('aria-valuenow', /^(8[5-9]|9[0-5])$/)
+
+  const sideView = await app.getByTestId('relight-map-side').boundingBox()
+  if (!sideView) throw new Error('no side view')
+  await dragTo(
+    page,
+    side,
+    sideView.x + sideView.width * 0.2,
+    sideView.y + sideView.height * 0.2
+  )
+  await expect(side).toHaveAttribute('aria-valuenow', /^(4[0-9]|5[0-9])$/)
+  await expect(app.getByTestId('editor-zoom-fit')).toHaveText('100%')
+  const lights = app
+    .getByRole('complementary', { name: 'Relight settings' })
+    .getByRole('region', { name: 'Lights' })
+  await expect(
+    lights.getByRole('button', { name: /^Warm key\s*Directional/ })
+  ).toHaveAttribute('aria-expanded', 'true')
+
+  const tool = app
+    .getByRole('toolbar', { name: 'Relight tools' })
+    .getByRole('button', { name: 'Light map' })
+  await tool.click()
+  await expect(map).toHaveCount(0)
+  await expect(tool).toHaveAttribute('aria-pressed', 'false')
+  await tool.click()
+  await expect(map).toBeVisible()
+})
+
+test('folds the Relight light map to a chip on phones @mobile', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/hub/apps/relight/')
+  const app = page.getByTestId('relight')
+  await app.getByRole('button', { name: 'Try the example' }).click()
+  const map = app.getByRole('group', { name: 'Light map' })
+  const chip = map.getByRole('button', { name: 'Light map' })
+  await expect(chip).toHaveAttribute('aria-expanded', 'false')
+  await expect(map.getByRole('slider')).toHaveCount(0)
+
+  await chip.click()
+  await expect(map.getByRole('slider')).toHaveCount(4)
+  await map.getByRole('button', { name: 'Collapse light map' }).click()
+  await expect(chip).toBeVisible()
+})
+
 test('relights the Relight example from the bottom composer', async ({
   page,
   context

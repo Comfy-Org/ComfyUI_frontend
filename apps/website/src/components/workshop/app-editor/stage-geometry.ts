@@ -18,6 +18,17 @@ export function pointerFraction(
   }
 }
 
+/**
+ * The stage's fitted box inside a `container-type: size` parent: as wide
+ * as fits, at the image's aspect ratio.
+ */
+export function fittedSize(width: number, height: number) {
+  return {
+    width: `min(100cqw, calc(100cqh * ${width || 3} / ${height || 2}))`,
+    aspectRatio: `${width || 3} / ${height || 2}`
+  }
+}
+
 /** Absolute placement for a box given in fractions of its frame. */
 export function rectStyle(rect: FractionRect) {
   return {
