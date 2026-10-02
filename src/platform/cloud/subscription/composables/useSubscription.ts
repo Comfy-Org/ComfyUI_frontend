@@ -123,6 +123,11 @@ function useSubscriptionInternal() {
 
   const { isLoggedIn } = useCurrentUser()
 
+  // Web-session billing reads need the workspace the gate selects after sign-in.
+  const awaitingSessionWorkspace = computed(
+    () => !!authStore.sessionUser && !workspaceStore.activeWorkspaceId
+  )
+
   const isCancelled = computed(() => {
     return !!subscriptionStatus.value?.cancel_at
   })
@@ -614,7 +619,10 @@ function useSubscriptionInternal() {
     | 'deadline'
 
   const canRecoverPendingCheckout = () =>
-    isCloud && isLoggedIn.value && hasOwnedPendingCheckoutAttempt()
+    isCloud &&
+    isLoggedIn.value &&
+    !awaitingSessionWorkspace.value &&
+    hasOwnedPendingCheckoutAttempt()
 
   const hasOwnedPendingCheckoutAttempt = () => {
     const attempt = getPendingSubscriptionCheckoutAttempt()
@@ -837,9 +845,16 @@ function useSubscriptionInternal() {
   }
 
   watch(
-    () => [authStore.userId, workspaceStore.activeWorkspaceId] as const,
-    ([ownerId, workspaceId]) => {
+    () =>
+      [
+        authStore.userId,
+        workspaceStore.activeWorkspaceId,
+        awaitingSessionWorkspace.value
+      ] as const,
+    ([ownerId, workspaceId], [, , wasAwaitingWorkspace]) => {
       observeStatusScope(ownerId ?? null, workspaceId)
+      // The bootstrap watcher reads for the session's first workspace.
+      if (wasAwaitingWorkspace) return
       if (
         workspaceId &&
         hasPendingSubscriptionCheckoutAttempt() &&
@@ -1006,11 +1021,6 @@ function useSubscriptionInternal() {
       void recoverPendingSubscriptionCheckout('visibilitychange')
     }
   })
-
-  // Web-session billing reads need the workspace the gate selects after sign-in.
-  const awaitingSessionWorkspace = computed(
-    () => !!authStore.sessionUser && !workspaceStore.activeWorkspaceId
-  )
 
   watch(
     () =>

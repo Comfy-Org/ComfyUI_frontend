@@ -2548,14 +2548,59 @@ describe('useSubscription', () => {
       expect(consoleError).not.toHaveBeenCalled()
     })
 
-    it('reads at once without a web session, as before', async () => {
+    it('recovers a pending checkout on a web session only once the workspace is selected', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-session-boot',
+          started_at_ms: Date.now(),
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+      let resolveRead!: (
+        result: Awaited<ReturnType<BillingReadRail['readStatus']>>
+      ) => void
+      mockReadStatus.mockReturnValue(
+        new Promise((resolve) => {
+          resolveRead = resolve
+        })
+      )
       vi.spyOn(console, 'error').mockImplementation(() => {})
+      Object.assign(useAuthStore(), { sessionUser: SESSION_USER })
       mockIsLoggedIn.value = true
 
-      const { isInitialized } = useSubscriptionWithScope()
+      const { subscriptionStatus, isInitialized } = useSubscriptionWithScope()
+      window.dispatchEvent(new Event('pageshow'))
+      await flushPromises()
+
+      expect(mockReadStatus).not.toHaveBeenCalled()
+
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-123'
+      })
       await flushPromises()
 
       expect(mockReadStatus).toHaveBeenCalledOnce()
+      expect(isInitialized.value).toBe(false)
+
+      resolveRead({ status: 'ok', value: buildStatus() })
+      await flushPromises()
+
+      expect(subscriptionStatus.value).toEqual(buildStatus())
+      expect(isInitialized.value).toBe(true)
+    })
+
+    it('reads at once without a web session, as before', async () => {
+      mockReadStatus.mockResolvedValue({ status: 'ok', value: buildStatus() })
+      mockIsLoggedIn.value = true
+
+      const { subscriptionStatus, isInitialized } = useSubscriptionWithScope()
+      await flushPromises()
+
+      expect(mockReadStatus).toHaveBeenCalledOnce()
+      expect(subscriptionStatus.value).toEqual(buildStatus())
       expect(isInitialized.value).toBe(true)
     })
   })
