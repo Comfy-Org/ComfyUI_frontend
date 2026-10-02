@@ -1,5 +1,5 @@
 import type { Ref } from 'vue'
-import { computed, ref, watch } from 'vue'
+import { computed, onScopeDispose, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -85,6 +85,7 @@ export function useUploadModelWizard(
   const uploadError = ref('')
   const uploadTypeMismatch = ref<UploadModelTypeMismatch | null>(null)
   let stopAsyncWatch: (() => void) | undefined
+  onScopeDispose(() => stopAsyncWatch?.())
 
   const wizardData = ref<WizardData>({
     url: '',

@@ -81,7 +81,7 @@ describe('ModelImportProgressDialog cancellation', () => {
     store.downloadList[0].status = 'cancellation_pending'
     await nextTick()
 
-    expect(screen.queryByRole('button', { name: 'Close' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Close' })).toBeVisible()
     expect(screen.getAllByText('Cancelled')).not.toHaveLength(0)
   })
 
@@ -90,7 +90,7 @@ describe('ModelImportProgressDialog cancellation', () => {
 
     store.downloadList[0].status = 'cancellation_pending'
     await nextTick()
-    expect(screen.queryByRole('button', { name: 'Close' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Close' })).toBeVisible()
 
     // The store bounds how long a cancellation stays provisional, so the
     // dialog cannot be pinned open without a close control until a reload.
