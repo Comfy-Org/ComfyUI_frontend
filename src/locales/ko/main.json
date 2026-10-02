@@ -9,6 +9,7 @@
       "signInCaption": "파트너 노드에는 계정이 필요합니다",
       "signInToRun": "실행하려면 로그인"
     },
+    "share": "공유",
     "shareTooltip": "워크플로우 공유"
   },
   "agent": {

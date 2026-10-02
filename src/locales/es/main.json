@@ -9,6 +9,7 @@
       "signInCaption": "Los nodos asociados requieren una cuenta",
       "signInToRun": "Inicia sesión para ejecutar"
     },
+    "share": "Compartir",
     "shareTooltip": "Compartir flujo de trabajo"
   },
   "agent": {

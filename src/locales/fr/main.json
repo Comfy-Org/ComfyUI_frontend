@@ -9,6 +9,7 @@
       "signInCaption": "Les nœuds partenaires nécessitent un compte",
       "signInToRun": "Connectez-vous pour exécuter"
     },
+    "share": "Partager",
     "shareTooltip": "Partager le workflow"
   },
   "agent": {
