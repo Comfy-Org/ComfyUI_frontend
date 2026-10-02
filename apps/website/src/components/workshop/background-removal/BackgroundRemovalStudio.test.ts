@@ -50,6 +50,10 @@ describe('BackgroundRemovalStudio', () => {
     const user = await openExample()
     expect(tile('Transparent')).toBeChecked()
     expect(undo()).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Download' })).toHaveAttribute(
+      'aria-disabled',
+      'true'
+    )
 
     await user.click(tile('Lilac'))
     await user.click(
@@ -72,6 +76,11 @@ describe('BackgroundRemovalStudio', () => {
     const download = await screen.findByRole('link', { name: 'Download' })
     expect(download).toHaveAttribute('href', 'blob:cutout')
     expect(download).toHaveAttribute('download', 'potted-plant-cutout.webp')
+    expect(
+      within(
+        screen.getByRole('toolbar', { name: 'Background Removal tools' })
+      ).queryByRole('link')
+    ).toBeNull()
     expect(vi.mocked(renderCutout)).toHaveBeenCalledWith({
       imageUrl: '/images/apps/background-removal/example.jpg',
       background: 'lilac',
@@ -182,6 +191,31 @@ describe('BackgroundRemovalStudio', () => {
 
     expect(section('Background')).toBeVisible()
   })
+
+  it.for([
+    { layout: 'd', wide: true, tools: ['Undo', 'Redo'] },
+    { layout: 'd', wide: false, tools: ['Undo', 'Redo'] },
+    {
+      layout: 'e',
+      wide: true,
+      tools: ['Remove background 4 credits', 'Undo', 'Redo']
+    }
+  ])(
+    'keeps undo and redo at the right end of the tools in layout $layout (wide: $wide)',
+    async ({ layout, wide, tools }) => {
+      screenIsWide(wide)
+      await openExample(layout)
+
+      const names = within(
+        screen.getByRole('toolbar', { name: 'Background Removal tools' })
+      )
+        .getAllByRole('button')
+        .map(
+          (tool) => tool.getAttribute('aria-label') ?? tool.textContent.trim()
+        )
+      expect(names.slice(-tools.length)).toEqual(tools)
+    }
+  )
 
   it('keeps the bottom dock and its trays in the bottom composer layout', async () => {
     const user = await openExample('e')

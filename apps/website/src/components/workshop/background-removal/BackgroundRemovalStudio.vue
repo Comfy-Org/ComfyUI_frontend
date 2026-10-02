@@ -5,11 +5,13 @@ import { useBackgroundRemoval } from '../../../composables/useBackgroundRemoval'
 import { reportStudioBusy } from '../../../composables/useStudioSwitchGuard'
 import type { Locale } from '../../../i18n/translations'
 import { workshopAppRepo } from '../../../lib/workshop/apps'
+import { cutoutFileName } from '../../../lib/workshop/background-removal/contract'
 import { brc } from '../../../lib/workshop/background-removal/copy'
 import AppEditorShell from '../app-editor/AppEditorShell.vue'
 import EditorAlert from '../app-editor/EditorAlert.vue'
 import type { EditorView } from '../app-editor/view'
 import BackgroundRemovalDocks from './BackgroundRemovalDocks.vue'
+import BackgroundRemovalHistory from './BackgroundRemovalHistory.vue'
 import BackgroundRemovalMain from './BackgroundRemovalMain.vue'
 import BackgroundRemovalPanel from './BackgroundRemovalPanel.vue'
 import BackgroundRemovalRun from './BackgroundRemovalRun.vue'
@@ -26,6 +28,14 @@ const cutout = useBackgroundRemoval()
 const { image, phase } = cutout
 const view = ref<EditorView>('compare')
 const panel = computed(() => layout !== 'e')
+const download = computed(() =>
+  image.value && phase.value.kind === 'done'
+    ? {
+        href: phase.value.result.url,
+        name: cutoutFileName(image.value.name, phase.value.result.format)
+      }
+    : undefined
+)
 reportStudioBusy(() => phase.value.kind === 'running')
 watch(
   () => phase.value.kind === 'done',
@@ -45,6 +55,7 @@ const panelLabels = {
     :tools-label="brc('cutout.tools', locale)"
     :panel-labels="panelLabels"
     :panel-dimmed="phase.kind === 'done'"
+    :download
     :repo="workshopAppRepo('background-removal')"
     :locale
     data-testid="background-removal"
@@ -59,6 +70,9 @@ const panelLabels = {
     </template>
     <template #dock>
       <BackgroundRemovalDocks v-model:view="view" :cutout :panel :locale />
+    </template>
+    <template v-if="phase.kind !== 'done'" #history>
+      <BackgroundRemovalHistory :cutout :locale />
     </template>
     <template v-if="panel && image" #panel>
       <BackgroundRemovalPanel :cutout :locale />

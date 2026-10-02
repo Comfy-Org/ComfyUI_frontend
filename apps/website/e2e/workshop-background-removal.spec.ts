@@ -49,12 +49,16 @@ test('removes the background of the example from the floating panel', async ({
   await panel.getByRole('button', { name: 'Format: PNG' }).click()
   await page.getByRole('menuitemradio', { name: /^WebP/ }).click()
   await expect(app.getByRole('button', { name: 'Undo' })).toBeEnabled()
+  expect(await panel.boundingBox()).toMatchObject({ width: 280 })
 
   await panel.getByTestId('background-removal-run').click()
   await expect(app.getByRole('status')).toContainText('Removing the background')
   const download = app.getByRole('link', { name: 'Download' })
   await expect(download).toHaveAttribute('href', /^blob:/)
   await expect(download).toHaveAttribute('download', 'potted-plant-cutout.webp')
+  expect((await download.boundingBox())?.y).toBe(
+    (await app.getByText('GitHub · Coming soon').boundingBox())?.y
+  )
   const split = app.getByRole('slider', {
     name: 'Drag to compare the original and the cutout'
   })
@@ -83,6 +87,12 @@ test('removes the background from the bottom composer', async ({
     .click()
   await app.getByRole('button', { name: 'Format: PNG' }).click()
   await page.getByRole('menuitemradio', { name: /^WebP/ }).click()
+  await expect(
+    app
+      .getByRole('toolbar', { name: 'Background Removal tools' })
+      .getByRole('button')
+      .last()
+  ).toHaveAccessibleName('Redo')
   await app.getByTestId('background-removal-run').click()
   await expect(app.getByRole('link', { name: 'Download' })).toHaveAttribute(
     'download',

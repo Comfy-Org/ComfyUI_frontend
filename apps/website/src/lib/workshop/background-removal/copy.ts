@@ -67,7 +67,6 @@ const copy = {
   'cutout.view.original': { en: 'Original', 'zh-CN': '原图' },
   'cutout.edit': { en: 'Edit settings', 'zh-CN': '编辑设置' },
   'cutout.again': { en: 'Try again', 'zh-CN': '再试一次' },
-  'cutout.download': { en: 'Download', 'zh-CN': '下载' },
   'cutout.compare': {
     en: 'Drag to compare the original and the cutout',
     'zh-CN': '拖动以对比原图与抠图结果'
