@@ -19,6 +19,7 @@ import { mc } from '../../../lib/workshop/move-anything/copy'
 import { MOVE_EXAMPLE } from '../../../lib/workshop/move-anything/mock-run'
 import type { MoveImage, MoveTool } from '../../../composables/useMoveAnything'
 import EditorFrame from '../app-editor/EditorFrame.vue'
+import { pointerFraction, rectStyle } from '../app-editor/stage-geometry'
 import MoveAnythingBox from './MoveAnythingBox.vue'
 import MoveAnythingDetecting from './MoveAnythingDetecting.vue'
 import MoveAnythingOutlines from './MoveAnythingOutlines.vue'
@@ -53,14 +54,7 @@ const frame = useTemplateRef<HTMLElement>('frame')
 const drawing = ref<Rect>()
 let gesture: (move: { x: number; y: number }) => void = () => {}
 
-function point(event: PointerEvent) {
-  const box = frame.value?.getBoundingClientRect()
-  if (!box?.width || !box.height) return { x: 0, y: 0 }
-  return {
-    x: (event.clientX - box.left) / box.width,
-    y: (event.clientY - box.top) / box.height
-  }
-}
+const point = (event: PointerEvent) => pointerFraction(event, frame.value)
 
 function track(
   event: PointerEvent,
@@ -111,13 +105,6 @@ function nudge(object: MoveObject, dx: number, dy: number) {
   emit('begin')
   emit('place', object.id, moveRect(object.to, dx, dy))
 }
-
-const boxStyle = (rect: Rect) => ({
-  left: `${rect.x * 100}%`,
-  top: `${rect.y * 100}%`,
-  width: `${rect.w * 100}%`,
-  height: `${rect.h * 100}%`
-})
 </script>
 
 <template>
@@ -152,7 +139,7 @@ const boxStyle = (rect: Rect) => ({
         )"
         :key="`ghost-${object.id}`"
         class="pointer-events-none absolute rounded-sm border-[1.5px] border-dashed border-primary-comfy-yellow/60 bg-primary-comfy-yellow/5"
-        :style="boxStyle(object.from)"
+        :style="rectStyle(object.from)"
         aria-hidden="true"
       />
       <MoveAnythingOutlines :objects :selected />
@@ -180,7 +167,7 @@ const boxStyle = (rect: Rect) => ({
       <span
         v-if="drawing"
         class="pointer-events-none absolute rounded-sm border-[1.5px] border-dashed border-primary-comfy-yellow bg-primary-comfy-yellow/10"
-        :style="boxStyle(drawing)"
+        :style="rectStyle(drawing)"
         aria-hidden="true"
       />
       <MoveAnythingDetecting

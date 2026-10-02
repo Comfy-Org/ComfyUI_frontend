@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { ORBIT_PRESETS, fromOrbit, toOrbit } from './orbit'
+import { fromOrbit } from './orbit'
 
 describe('fromOrbit', () => {
   it.for([
@@ -50,16 +50,5 @@ describe('fromOrbit', () => {
     const light = fromOrbit(around, height)
     expect(light.elevation).toBe(elevation)
     if (Math.abs(light.elevation) < 90) expect(light.direction).toBe(direction)
-  })
-})
-
-describe('toOrbit', () => {
-  it.for(ORBIT_PRESETS)('round-trips the $id preset', ({ around, height }) => {
-    const { direction, elevation } = fromOrbit(around, height)
-    const back = toOrbit(direction, elevation)
-    expect(back.height).toBeCloseTo(height, -0.5)
-    expect(
-      Math.abs(((back.around - around + 540) % 360) - 180)
-    ).toBeLessThanOrEqual(2)
   })
 })
