@@ -40,9 +40,10 @@ describe('useFreeUsePlacement', () => {
   })
 
   it.for([undefined, 'unknown'])('keeps control for %s', async (value) => {
-    remoteConfig.value = {
+    const wireConfig: Record<string, unknown> = {
       'agent-free-use-message-placement': value
     }
+    remoteConfig.value = wireConfig
     authenticatedRemoteConfigState.value = 'authenticated'
     const { variant } = useFreeUsePlacement()
 
