@@ -3222,14 +3222,10 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   it('an empty terminal row preserves the locally streamed reply', async () => {
-    const terminalWithoutParts = historyRow(
-      2,
-      'assistant',
-      'msg-1',
-      '',
-      'msg-1'
-    )
-    terminalWithoutParts.content = {}
+    const terminalWithoutParts = {
+      ...historyRow(2, 'assistant', 'msg-1', '', 'msg-1'),
+      content: {}
+    }
     const rest = fakeRest({
       getMessages: vi.fn(
         async (): Promise<AgentMessages> => [
