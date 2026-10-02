@@ -55,8 +55,6 @@ describe('value control widget naming', () => {
   )
 
   it('still honours a group node’s prefixed name override', () => {
-    // `groupNode.ts` writes `${prefix}control_after_generate` so a flattened
-    // node’s controls stay distinct from each other.
     const { node, target } = intNode()
 
     const control = addValueControlWidget(
