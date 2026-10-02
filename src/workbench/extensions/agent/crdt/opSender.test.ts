@@ -1303,7 +1303,7 @@ describe('createOpSender', () => {
 
   it('sends an outer admission before work enqueued during serialization', () => {
     const localSent: Op[][] = []
-    let localResultListener: ((result: OpsResultView) => void) | null = null
+    let localResultListener!: (result: OpsResultView) => void
     const localSender = createOpSender({
       sendOps: (_workflowId, _tab, ops) => {
         localSent.push(ops)
@@ -1337,7 +1337,7 @@ describe('createOpSender', () => {
       localSent.map((ops) => ('node_id' in ops[0] ? ops[0].node_id : null))
     ).toEqual([1])
 
-    localResultListener?.({
+    localResultListener({
       ok: true,
       applied: [localSent[0][0].op_id],
       skipped: []
