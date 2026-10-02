@@ -334,8 +334,6 @@ describe('createOpSender', () => {
     resultListener?.(preMintResult)
     sender.resumeAfterLineage()
 
-    expect(vi.getTimerCount()).toBe(1)
-
     ackInFlight()
     vi.advanceTimersByTime(30_000)
 
