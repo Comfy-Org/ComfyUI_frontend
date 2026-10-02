@@ -227,8 +227,7 @@ const queueMenuTriggerVariant = computed<
 const queueMenuTriggerVariantClass = {
   destructive: 'data-[state=open]:bg-destructive-background-hover',
   inverted: 'data-[state=open]:bg-base-foreground/80',
-  secondary:
-    'text-muted-foreground data-[state=open]:bg-secondary-background-hover'
+  secondary: 'text-muted-foreground'
 }
 const queueMenuTriggerClass =
   'h-full w-6 rounded-l-none rounded-r-lg border-y-0 border-r-0 border-l border-solid border-base-background/25 p-0'
