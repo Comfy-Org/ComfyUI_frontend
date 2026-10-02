@@ -108,8 +108,6 @@ describe('value control widget naming', () => {
   })
 
   it('offers every declared mode on the control, plus the combo-only one', () => {
-    // The mode list that decides name-versus-mode must stay the same list the
-    // widget actually offers, or a new mode is read as a name again.
     const { node: intHost, target: intTarget } = intNode()
     const intControl = addValueControlWidget(
       intHost,
