@@ -87,7 +87,6 @@ export interface OpSender {
    * starting transport delivery. Consecutive admissions for one workflow
    * share the group until `flush()` seals it.
    *
-   *
    * If custom serialization re-enters and closes the open group, these ops are
    * sealed at the queue position they were admitted at, keeping their
    * `op_id`s, and delivery waits until they are placed. Mint order is
