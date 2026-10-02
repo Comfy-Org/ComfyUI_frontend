@@ -1,4 +1,4 @@
-import type { BrowserContext, Locator } from '@playwright/test'
+import type { BrowserContext } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
@@ -568,31 +568,24 @@ test('@mobile keeps the catalogue tabs in place from one hub page to the next', 
   const before = await workflows.boundingBox()
 
   // A reader taps the tab where they can see it. Playwright scrolls a target
-  // into view before it clicks, and on a toolbar still settling it sometimes
-  // scrolls a pinned one — which is the state under test, so the tap is sent
-  // where the tab already is, with the checks that scroll would have stood in
-  // for made here instead: it is visible, it is where the reader sees it, and
-  // nothing covers the point the tap lands on.
-  const tapIsOn = (tab: Locator) =>
-    tab.evaluate((element) => {
-      const { x, y, width, height } = element.getBoundingClientRect()
-      const hit = document.elementFromPoint(x + width / 2, y + height / 2)
-      return hit !== null && element.contains(hit)
-    })
+  // into view first, and on a toolbar still settling it sometimes scrolls a
+  // pinned one — which is the state under test. Only that scrolling is turned
+  // off: every other check it makes before tapping, the hit test included,
+  // still runs, and a tab out of the viewport now fails rather than being
+  // fetched into it.
+  //
   // The tabs sit in the same place on both pages and mark themselves current
   // as soon as they render, so neither tells the page apart from the one it
   // replaced. The address does, and the place they come to rest is reached
   // after it — a measurement taken before either is of the page being left.
-  await expect.poll(() => tapIsOn(workflows)).toBe(true)
-  await workflows.click({ force: true })
+  await workflows.click({ scroll: 'none' })
   await expect(page).toHaveURL('/hub/workflows/')
   await expect(workflows).toHaveAttribute('aria-current', 'page')
   await expect
     .poll(async () => (await workflows.boundingBox())?.y)
     .toBeCloseTo(before?.y ?? 0, 0)
 
-  await expect.poll(() => tapIsOn(models)).toBe(true)
-  await models.click({ force: true })
+  await models.click({ scroll: 'none' })
   await expect(page).toHaveURL('/hub/models/')
   await expect(models).toHaveAttribute('aria-current', 'page')
   await expect
