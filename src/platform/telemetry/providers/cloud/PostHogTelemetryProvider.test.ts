@@ -1,4 +1,7 @@
-import type { BillingTelemetryEvent } from '@comfyorg/account-core/billing'
+import type {
+  BillingTelemetryEvent,
+  CheckoutJourneyTelemetryEvent
+} from '@comfyorg/account-core/billing'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Ref } from 'vue'
 import { computed, nextTick, ref } from 'vue'
@@ -1142,6 +1145,28 @@ describe('PostHogTelemetryProvider', () => {
           failure_category: 'unknown',
           billing_surface: 'cloud_app'
         }
+      )
+    })
+
+    it('stamps the cloud app surface on checkout journey events', async () => {
+      const provider = createProvider()
+      const event = {
+        checkout_journey_id: 'journey-1',
+        checkout_entered_at: '2026-10-01T00:00:00.000Z',
+        assignment_status: 'unavailable',
+        entry_flow: 'initial_subscription',
+        entry_source: 'other',
+        ui_mode: 'full_page',
+        phase: 'entered',
+        payment_intent_source: 'subscribe_to_run'
+      } satisfies CheckoutJourneyTelemetryEvent
+      await vi.dynamicImportSettled()
+
+      provider.trackCheckoutJourneyEvent(event)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        'billing.checkout.entered',
+        { ...event, schema_version: 1, billing_surface: 'cloud_app' }
       )
     })
 

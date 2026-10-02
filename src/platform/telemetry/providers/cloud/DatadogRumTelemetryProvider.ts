@@ -1,8 +1,8 @@
 import {
   getBillingTelemetryEventName,
   getCheckoutJourneyTelemetryEventName,
-  getCheckoutJourneyTelemetryEventPayload,
-  getCloudAppBillingTelemetryEventPayload
+  getCloudAppBillingTelemetryEventPayload,
+  getCloudAppCheckoutJourneyTelemetryEventPayload
 } from '@comfyorg/account-core/billing'
 import type {
   BillingTelemetryEvent,
@@ -89,7 +89,7 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
   trackCheckoutJourneyEvent(event: CheckoutJourneyTelemetryEvent): void {
     datadogRum.addAction(
       getCheckoutJourneyTelemetryEventName(event),
-      getCheckoutJourneyTelemetryEventPayload(event)
+      getCloudAppCheckoutJourneyTelemetryEventPayload(event)
     )
   }
 

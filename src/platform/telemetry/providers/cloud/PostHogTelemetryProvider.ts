@@ -2,8 +2,8 @@ import {
   CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE,
   getBillingTelemetryEventName,
   getCheckoutJourneyTelemetryEventName,
-  getCheckoutJourneyTelemetryEventPayload,
-  getCloudAppBillingTelemetryEventPayload
+  getCloudAppBillingTelemetryEventPayload,
+  getCloudAppCheckoutJourneyTelemetryEventPayload
 } from '@comfyorg/account-core/billing'
 import type {
   BillingTelemetryEvent,
@@ -523,7 +523,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   trackCheckoutJourneyEvent(event: CheckoutJourneyTelemetryEvent): void {
     this.trackEvent(
       getCheckoutJourneyTelemetryEventName(event),
-      getCheckoutJourneyTelemetryEventPayload(event)
+      getCloudAppCheckoutJourneyTelemetryEventPayload(event)
     )
   }
 
