@@ -21,7 +21,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 
 import type { DocOpsResult } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
-import { chunkWireOps, mintWireOps } from './opEnvelope'
+import { chunkWireOps, mintWireOps, WIRE_MAX_OPS_PER_BATCH } from './opEnvelope'
 
 const SEND_RETRY_LIMIT = 5
 const SEND_RETRY_INTERVAL_MS = 500
@@ -153,6 +153,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   let detached = false
   let suspended = false
   let pumping = false
+  let sealing = 0
   let stateEpoch = 0
   let abortGeneration = 0
   // Late-result credits: every send a batch leaves the client with may still
@@ -372,7 +373,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   }
 
   function pump(): void {
-    if (pumping) return
+    if (pumping || sealing > 0) return
     pumping = true
     try {
       while (!detached && inFlight === null) {
@@ -478,61 +479,63 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     stateEpoch++
   }
 
-  function settleInterruptedSeal(
-    ops: Op[],
+  function sealInterruption(
     sealAbortGeneration: number
-  ): boolean {
-    if (detached) {
-      notifyDetachSettlement({ state: 'undeliverable', ops })
-      return true
-    }
-    if (abortGeneration !== sealAbortGeneration) {
-      guardedSettlementNotifier('failure_settling_agent_op_sender_abort')({
-        state: 'undeliverable',
-        ops
-      })
-      return true
-    }
-    return false
+  ): 'detach' | 'abort' | null {
+    if (detached) return 'detach'
+    if (abortGeneration !== sealAbortGeneration) return 'abort'
+    return null
   }
 
-  function enqueueSealChunks(
+  function settleInterruptedSeal(ops: Op[], kind: 'detach' | 'abort'): void {
+    const notify =
+      kind === 'detach'
+        ? notifyDetachSettlement
+        : guardedSettlementNotifier('failure_settling_agent_op_sender_abort')
+    for (let index = 0; index < ops.length; index += WIRE_MAX_OPS_PER_BATCH) {
+      notify({
+        state: 'undeliverable',
+        ops: ops.slice(index, index + WIRE_MAX_OPS_PER_BATCH)
+      })
+    }
+  }
+
+  function insertSealChunks(
     chunks: Op[][],
     workflowId: string,
-    ops: Op[],
-    sealAbortGeneration: number
-  ): boolean {
-    if (settleInterruptedSeal(ops, sealAbortGeneration)) return false
+    insertionIndex: number
+  ): void {
+    const nested = queue.splice(insertionIndex)
     for (const chunk of chunks) queue.push({ workflowId, ops: chunk })
-    return true
+    for (const batch of nested) queue.push(batch)
   }
 
   function recoverSeal(
     cause: unknown,
     workflowId: string,
     ops: Op[],
-    sealAbortGeneration: number
+    sealAbortGeneration: number,
+    insertionIndex: number
   ): void {
-    if (settleInterruptedSeal(ops, sealAbortGeneration)) return
     reportChunkFailure(cause, 'failure_chunking_agent_op_sender')
-    let rejectedFrom = ops.length
-    for (const [index, op] of ops.entries()) {
-      try {
-        chunkWireOps([op])
-      } catch {
-        rejectedFrom = index
-        break
-      }
+    const interruptedBeforeProbe = sealInterruption(sealAbortGeneration)
+    if (interruptedBeforeProbe) {
+      settleInterruptedSeal(ops, interruptedBeforeProbe)
+      return
     }
+    const rejectedFrom = findRejectedFrom(ops, sealAbortGeneration)
+    if (rejectedFrom === null) return
 
-    // Preserve only the valid prefix. Once one op is rejected, later ops may
-    // depend on it, so sending a suffix would diverge from local state.
     const sendable = ops.slice(0, rejectedFrom)
     let rejected = ops.slice(rejectedFrom)
     try {
       const recovered = chunkWireOps(sendable)
-      if (!enqueueSealChunks(recovered, workflowId, ops, sealAbortGeneration))
+      const interrupted = sealInterruption(sealAbortGeneration)
+      if (interrupted) {
+        settleInterruptedSeal(ops, interrupted)
         return
+      }
+      insertSealChunks(recovered, workflowId, insertionIndex)
     } catch (recoveryCause) {
       reportChunkFailure(
         recoveryCause,
@@ -540,7 +543,11 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       )
       rejected = [...sendable, ...rejected]
     }
-    if (settleInterruptedSeal(ops, sealAbortGeneration)) return
+    const interrupted = sealInterruption(sealAbortGeneration)
+    if (interrupted) {
+      settleInterruptedSeal(ops, interrupted)
+      return
+    }
     if (rejected.length > 0)
       guardedSettlementNotifier('failure_settling_agent_op_sender')({
         state: 'undeliverable',
@@ -548,15 +555,46 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       })
   }
 
+  function findRejectedFrom(
+    ops: Op[],
+    sealAbortGeneration: number
+  ): number | null {
+    for (const [index, op] of ops.entries()) {
+      try {
+        chunkWireOps([op])
+      } catch {
+        const interrupted = sealInterruption(sealAbortGeneration)
+        if (interrupted) {
+          settleInterruptedSeal(ops, interrupted)
+          return null
+        }
+        return index
+      }
+      const interrupted = sealInterruption(sealAbortGeneration)
+      if (interrupted) {
+        settleInterruptedSeal(ops, interrupted)
+        return null
+      }
+    }
+    return ops.length
+  }
+
   function seal(): boolean {
     if (!open) return detached
     const { workflowId, ops } = open
     const sealAbortGeneration = abortGeneration
+    const insertionIndex = queue.length
     open = null
+    sealing++
     try {
-      enqueueSealChunks(chunkWireOps(ops), workflowId, ops, sealAbortGeneration)
+      const chunks = chunkWireOps(ops)
+      const interrupted = sealInterruption(sealAbortGeneration)
+      if (interrupted) settleInterruptedSeal(ops, interrupted)
+      else insertSealChunks(chunks, workflowId, insertionIndex)
     } catch (cause) {
-      recoverSeal(cause, workflowId, ops, sealAbortGeneration)
+      recoverSeal(cause, workflowId, ops, sealAbortGeneration, insertionIndex)
+    } finally {
+      sealing--
     }
     return detached
   }
