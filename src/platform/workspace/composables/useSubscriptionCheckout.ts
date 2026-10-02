@@ -1,3 +1,8 @@
+import type {
+  CheckoutEntryFlow,
+  CheckoutJourneyPhaseEvent,
+  SubscriptionCheckoutType
+} from '@comfyorg/account-core/billing'
 import { useToast } from 'primevue/usetoast'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { computed, onScopeDispose, ref, watch } from 'vue'
@@ -15,12 +20,7 @@ import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscript
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
-import type {
-  CheckoutEntryFlow,
-  CheckoutJourneyPhaseEvent,
-  PaymentIntentSource,
-  SubscriptionCheckoutType
-} from '@/platform/telemetry/types'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'

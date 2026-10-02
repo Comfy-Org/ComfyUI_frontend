@@ -1,12 +1,18 @@
 import { createMemoryHistory } from 'vue-router'
 
+import type { WebEntryBounceTarget } from '@comfyorg/account-core/billing'
 import type { BillingEnvironment } from '@comfyorg/billing-contract'
 
 import type { BillingWebSessionPhase } from '@/router'
 
 const h = vi.hoisted(() => ({
   livePhase: undefined as BillingWebSessionPhase | undefined,
-  bind: vi.fn<(workspaceId: string) => void>()
+  bind: vi.fn<(workspaceId: string) => void>(),
+  track: vi.fn<(event: unknown) => void>()
+}))
+
+vi.mock<unknown>(import('@/telemetry/billingWebTelemetry'), () => ({
+  billingWebTelemetry: { trackBillingEvent: h.track }
 }))
 
 vi.mock<unknown>(import('@/session/billingWebAuth'), () => ({
@@ -51,12 +57,21 @@ function flagAnswers(variant: string) {
 const PLANLESS =
   '/v1/checkout?product=comfyui&return_to=comfyui_workspace&workspace=ws-team'
 const PRICING_TABLE = 'https://testcloud.comfy.org/?pricing=1&workspace=ws-team'
+const PLANLESS_BOUNCE = {
+  operation: 'web_entry',
+  stage: 'bounced',
+  outcome: 'pending',
+  reason: 'planless_checkout',
+  to: 'pricing_table'
+}
 
 beforeEach(() => {
+  sessionStorage.clear()
   vi.resetModules()
   vi.stubGlobal('fetch', fetchMock)
   fetchMock.mockReset()
   h.bind.mockReset()
+  h.track.mockReset()
 })
 
 async function openPlanless(
@@ -126,6 +141,7 @@ describe('a checkout link that names no plan', () => {
       expect(router.currentRoute.value.path).not.toBe('/sign-in')
       expect(h.bind).not.toHaveBeenCalled()
       expect(fetchMock).not.toHaveBeenCalled()
+      expect(h.track).toHaveBeenCalledExactlyOnceWith(PLANLESS_BOUNCE)
     }
   )
 
@@ -140,6 +156,7 @@ describe('a checkout link that names no plan', () => {
       expect(leave).toHaveBeenCalledExactlyOnceWith(PRICING_TABLE)
       expect(router.currentRoute.value.path).not.toBe('/sign-in')
       expect(h.bind).not.toHaveBeenCalled()
+      expect(h.track).toHaveBeenCalledExactlyOnceWith(PLANLESS_BOUNCE)
     }
   )
 
@@ -158,6 +175,14 @@ describe('a checkout link that names no plan', () => {
     })
     expect(entry.value?.plan).toBeUndefined()
     expect(error.value).toBeUndefined()
+    expect(h.track).toHaveBeenCalledExactlyOnceWith({
+      operation: 'web_entry',
+      stage: 'received',
+      outcome: 'pending',
+      intent: 'checkout',
+      product: 'comfyui',
+      has_plan: false
+    })
   })
 })
 
@@ -169,52 +194,61 @@ describe('where a checkout link that names no plan sends the customer to pick on
     env: BillingEnvironment
     query: string
     destination: string
+    to: WebEntryBounceTarget
   }>([
     {
       name: 'a cloud link to the pricing table',
       env: 'staging',
       query: 'product=comfyui&return_to=comfyui_workspace&workspace=ws-1',
-      destination: 'https://stagingcloud.comfy.org/?pricing=1&workspace=ws-1'
+      destination: 'https://stagingcloud.comfy.org/?pricing=1&workspace=ws-1',
+      to: 'pricing_table'
     },
     {
       name: 'a cloud link without a return_to to the pricing table',
       env: 'production',
       query: 'product=comfyui',
-      destination: 'https://cloud.comfy.org/?pricing=1'
+      destination: 'https://cloud.comfy.org/?pricing=1',
+      to: 'pricing_table'
     },
     {
       name: 'a cloud link that names a team to the Team tab',
       env: 'staging',
       query:
         'product=comfyui&return_to=comfyui_workspace&workspace=ws-1&team_credit_stop_id=stop_700',
-      destination: 'https://stagingcloud.comfy.org/?pricing=team&workspace=ws-1'
+      destination:
+        'https://stagingcloud.comfy.org/?pricing=team&workspace=ws-1',
+      to: 'pricing_table'
     },
     {
       name: 'a platform link to its return_to',
       env: 'staging',
       query: 'product=platform&return_to=platform_account&workspace=ws-1',
-      destination: 'https://stagingplatform.comfy.org/?workspace=ws-1'
+      destination: 'https://stagingplatform.comfy.org/?workspace=ws-1',
+      to: 'platform_account'
     },
     {
       name: 'a platform link to a return_to in another product',
       env: 'production',
       query: 'product=platform&return_to=comfyui_credits',
-      destination: 'https://cloud.comfy.org/?settings=plan-credits'
+      destination: 'https://cloud.comfy.org/?settings=plan-credits',
+      to: 'comfyui_credits'
     },
     {
       name: 'a platform link with an unregistered return_to to the platform billing page',
       env: 'staging',
       query: 'product=platform&return_to=https://evil.test&workspace=ws-1',
       destination:
-        'https://stagingplatform.comfy.org/profile/billing?workspace=ws-1'
+        'https://stagingplatform.comfy.org/profile/billing?workspace=ws-1',
+      to: 'platform_billing'
     },
     {
       name: 'a platform link without a return_to to the platform billing page',
       env: 'production',
       query: 'product=platform',
-      destination: 'https://platform.comfy.org/profile/billing'
+      destination: 'https://platform.comfy.org/profile/billing',
+      to: 'platform_billing'
     }
-  ])('sends $name', async ({ env, query, destination }) => {
+  ])('sends $name', async ({ env, query, destination, to }) => {
     vi.stubEnv('VITE_BILLING_ENV', env)
 
     const { router, leave } = await openPlanless(
@@ -226,6 +260,10 @@ describe('where a checkout link that names no plan sends the customer to pick on
     expect(router.currentRoute.value.path).not.toBe('/sign-in')
     expect(h.bind).not.toHaveBeenCalled()
     expect(fetchMock).not.toHaveBeenCalled()
+    expect(h.track).toHaveBeenCalledExactlyOnceWith({
+      ...PLANLESS_BOUNCE,
+      to
+    })
   })
 
   it('explains a platform link where this deployment has no platform to send it to', async () => {
@@ -237,6 +275,12 @@ describe('where a checkout link that names no plan sends the customer to pick on
     expect(leave).not.toHaveBeenCalled()
     expect(entry.value).toBeUndefined()
     expect(error.value).toBe('UNKNOWN_RETURN_TARGET')
+    expect(h.track).toHaveBeenCalledExactlyOnceWith({
+      operation: 'web_entry',
+      stage: 'rejected',
+      outcome: 'pending',
+      error_code: 'UNKNOWN_RETURN_TARGET'
+    })
   })
 })
 
@@ -279,6 +323,9 @@ describe('a planless checkout link the customer navigates away from', () => {
         intent: 'subscription',
         workspaceId: 'ws-other'
       })
+      expect(h.track).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ stage: 'received', intent: 'subscription' })
+      )
     }
   )
 })

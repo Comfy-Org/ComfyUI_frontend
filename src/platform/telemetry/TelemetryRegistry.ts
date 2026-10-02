@@ -1,4 +1,8 @@
 import type {
+  BillingTelemetryEvent,
+  CheckoutJourneyTelemetryEvent
+} from '@comfyorg/account-core/billing'
+import type {
   AddCreditsClickMetadata,
   AgentAttachButtonClickedMetadata,
   AgentConsentNotOfferedMetadata,
@@ -29,9 +33,7 @@ import type {
   AuthErrorMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
-  BillingTelemetryEvent,
   BootstrapCompleteMetadata,
-  CheckoutJourneyTelemetryEvent,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ExecutionErrorMetadata,
