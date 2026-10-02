@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { useResizeObserver } from '@vueuse/core'
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -18,11 +17,14 @@ import WorkshopCardMedia from './WorkshopCardMedia.vue'
 const {
   model,
   locale = 'en',
-  providerBadge = false
+  providerBadge = false,
+  underHeading = false
 } = defineProps<{
   model: WorkshopModel
   locale?: Locale
   providerBadge?: boolean
+  /** The card is listed under a heading that already names its kind. */
+  underHeading?: boolean
 }>()
 
 const workflow = computed(() =>
@@ -48,23 +50,15 @@ const logo = computed(
 )
 
 const taskLabel = computed(() => taskLabelFor(model, locale))
-const cardName = computed(() => nameWithoutTask(model.name, taskLabel.value))
+// Only a product name repeats its task as a suffix. A workflow is named with
+// a sentence, whose last word the pill may happen to match — "Upscale a video"
+// beside "Video" — and dropping it leaves "Upscale a".
+const cardName = computed(() =>
+  workflow.value ? model.name : nameWithoutTask(model.name, taskLabel.value)
+)
 const thumbnailLabel = computed(() =>
   model.thumbnail ? model.thumbnailLabel : undefined
 )
-
-const name = useTemplateRef<HTMLElement>('name')
-const nameClips = ref(false)
-let measuredWidth = -1
-
-// Hovering re-clamps the name to two lines, so a measurement taken then would
-// read "it fits". Only a change of width can change the answer.
-useResizeObserver(name, ([entry]) => {
-  if (entry.contentRect.width === measuredWidth) return
-  measuredWidth = entry.contentRect.width
-  const element = name.value
-  if (element) nameClips.value = element.scrollHeight > element.clientHeight
-})
 
 const pillClass =
   'inline-flex h-6 w-fit shrink-0 items-center justify-center rounded-full bg-hub-surface px-4 py-1 text-xs font-normal whitespace-nowrap text-content'
@@ -104,20 +98,14 @@ const pillClass =
       </span>
     </div>
 
-    <!-- A workflow carries one tag, so hovering can spend its line on a name
-        that does not fit. A model carries several and keeps them. -->
-    <div :class="cn('flex flex-col gap-3 px-3', workflow && 'h-13 lg:h-14')">
+    <div class="flex flex-col gap-3 px-3">
       <!-- The mark over the artwork already says who answers for this, so the
           line under it is the card's own name and nothing else. -->
       <h3
-        ref="name"
         :class="
           cn(
             'text-xs font-medium text-content-bright lg:text-sm',
-            workflow ? 'line-clamp-1' : 'truncate',
-            workflow &&
-              nameClips &&
-              'group-hover:line-clamp-2 group-focus-visible:line-clamp-2'
+            workflow ? 'line-clamp-2 h-[2lh]' : 'truncate'
           )
         "
         :title="model.name"
@@ -125,15 +113,13 @@ const pillClass =
       >
         {{ cardName }}
       </h3>
+      <!-- Under a heading that names its kind, a workflow's artwork says the
+          rest, so the line a tag would take goes to the name instead. Listed
+          on its own — searched, filtered, or beside models — it keeps the tag,
+          which is then the only place the kind is written. -->
       <div
-        :class="
-          cn(
-            'flex h-6 min-w-0 items-center gap-1.5 overflow-hidden',
-            workflow &&
-              nameClips &&
-              'group-hover:hidden group-focus-visible:hidden'
-          )
-        "
+        v-if="!workflow || !underHeading"
+        class="flex h-6 min-w-0 items-center gap-1.5 overflow-hidden"
       >
         <span :class="pillClass" data-testid="model-card-task">
           {{ taskLabel }}
