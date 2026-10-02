@@ -14,9 +14,11 @@ import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import type {
+  AgentFreeUseNoticeMetadata,
   AgentPaywallSurface,
   AgentStopMethod
 } from '@/platform/telemetry/types'
+import type { FreeUseVariant } from '../../experiments/freeUsePlacement'
 
 import type { ActiveTab } from '../../types/activeTab'
 import type {
@@ -40,6 +42,7 @@ import ChatHistoryScreen from './ChatHistoryScreen.vue'
 import Composer from './Composer.vue'
 import ConversationView from './ConversationView.vue'
 import EmptyState from './EmptyState.vue'
+import FreeUseNotice from './FreeUseNotice.vue'
 import PanelHeader from './PanelHeader.vue'
 import RunNoticeBanner from './RunNoticeBanner.vue'
 import WorkflowSelectorChip from './composer/WorkflowSelectorChip.vue'
@@ -73,7 +76,8 @@ const {
   customTitle,
   historyGroups,
   editableTurnId = null,
-  answeringAskIds = new Set<string>()
+  answeringAskIds = new Set<string>(),
+  freeUsePlacement = 'control'
 } = defineProps<{
   entries: ConversationEntry[]
   userName?: string
@@ -110,6 +114,7 @@ const {
   historyGroups: HistoryGroups
   editableTurnId?: TurnId | null
   answeringAskIds?: ReadonlySet<string>
+  freeUsePlacement?: FreeUseVariant
 }>()
 const emit = defineEmits<{
   send: [
@@ -142,6 +147,7 @@ const emit = defineEmits<{
   approvalShown: [askId: string, turnId: string, workflowId: string | null]
   openReferenceWorkflow: [workflowId: string, workflowName: string]
   showTarget: []
+  freeUseNotice: [metadata: AgentFreeUseNoticeMetadata]
 }>()
 
 const targetNotice = computed(() => {
@@ -271,6 +277,12 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       @new-chat="onNewChat"
       @toggle-size="emit('toggleSize')"
       @close="emit('close')"
+    />
+
+    <FreeUseNotice
+      v-if="!showHistory && freeUsePlacement === 'top-banner'"
+      placement="top-banner"
+      @notice="emit('freeUseNotice', $event)"
     />
 
     <template v-if="showHistory">
@@ -427,6 +439,11 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             :context="targetNotice"
             @show-target="emit('showTarget')"
           />
+          <FreeUseNotice
+            v-if="freeUsePlacement === 'near-composer'"
+            placement="near-composer"
+            @notice="emit('freeUseNotice', $event)"
+          />
           <Composer
             ref="composerRef"
             :streaming
@@ -466,6 +483,20 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
                 :select-tab
                 :detached="workflowDetached"
                 :disabled="streaming || submitting || savingReference"
+              />
+            </template>
+            <template #aboveInput>
+              <FreeUseNotice
+                v-if="freeUsePlacement === 'above-input'"
+                placement="above-input"
+                @notice="emit('freeUseNotice', $event)"
+              />
+            </template>
+            <template #insideInput>
+              <FreeUseNotice
+                v-if="freeUsePlacement === 'inside-input'"
+                placement="inside-input"
+                @notice="emit('freeUseNotice', $event)"
               />
             </template>
           </Composer>
