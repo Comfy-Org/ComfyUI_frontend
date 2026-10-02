@@ -22,7 +22,9 @@ test('static HTML at /hub/models/ names the catalogue and links every model', as
     expect.stringContaining('ComfyUI models')
   ])
   expect(live).not.toMatch(/Grok Imagine in ComfyUI|Try Grok Imagine Now/)
-  expect(live).toMatch(/>\s*Hub\s*<\/p>/)
+  expect(live).toMatch(
+    /href="\/hub\/"[^>]*data-testid="hub-back"[^>]*>[\s\S]*?Hub\s*<\/a>/
+  )
   expect(live).toContain('data-testid="workshop-loading"')
   expect(live).not.toContain('data-testid="workshop-search"')
   const directory = live.match(
