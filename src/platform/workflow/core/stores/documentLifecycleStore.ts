@@ -26,13 +26,10 @@ export type DocumentTransition = number & {
  * Owns the one fact that the shared canvas cannot answer for itself: which root
  * graph the presented document is on, and when there is no valid answer yet.
  *
- * It deliberately does **not** own which document is presented. `activeWorkflow`
- * already owns that, and it moves without a graph load: `openWorkflow` on the
- * workflow store activates a tab by moving that pointer, which is the path a
- * reopen from persistence takes, so a different document is presented while the
- * canvas graph stands still. A uid snapshotted at load completion goes stale
- * there with no event that could correct it, and the stale snapshot wins — which
- * silenced the agent's follower after a close/reopen
+ * It deliberately does **not** own which document is presented.
+ * `activeWorkflow` already owns that, and a second copy written in
+ * load-completion order went stale against it, which silenced the agent's
+ * follower after a close/reopen
  * (`browser_tests/tests/agent/agentCloseReopenRemoteDelete.spec.ts`). So
  * identity is read live from the active pointer, and only the root graph id is
  * stored.
