@@ -3,6 +3,7 @@ import type { CapabilityReadBillingEvent } from './capabilityReadEvent.js'
 import type { DowngradeToPersonalBillingEvent } from './downgradeToPersonalEvent.js'
 import type { EntryBillingEvent } from './entryEvent.js'
 import type { BillingOperationBillingEvent } from './operationEvent.js'
+import type { PortalBillingEvent } from './portalEvent.js'
 import type { ResubscribeBillingEvent } from './resubscribeEvent.js'
 import type { SubscriptionCheckoutBillingEvent } from './subscriptionCheckoutEvent.js'
 import type { TopupBillingEvent } from './topupEvent.js'
@@ -31,6 +32,7 @@ export type BillingTelemetryEvent = {
   | WebSessionBillingEvent
   | EntryBillingEvent
   | CancelBillingEvent
+  | PortalBillingEvent
 )
 
 type BillingTelemetryEventNameFor<T extends BillingTelemetryEvent> =

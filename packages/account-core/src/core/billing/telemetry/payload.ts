@@ -28,6 +28,7 @@ export const BILLING_PAYLOAD_FIELD_HANDLING = {
   reason: 'required',
   result: 'required',
   source: 'required',
+  target: 'required',
   to: 'required',
   amount_cents: 'optional',
   amount_preset: 'optional',
