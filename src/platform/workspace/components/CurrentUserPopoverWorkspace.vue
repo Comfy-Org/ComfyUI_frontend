@@ -80,9 +80,12 @@
       </template>
     </div>
 
-    <!-- Which developer-platform Release this browser runs on (FE-2434).
-         The switcher renders nothing when the account is outside the rollout. -->
-    <ReleaseSwitcher v-if="!accountActionsOnly && isCloud && !isApiKeyLogin" />
+    <!-- Which developer-platform deployment this browser runs on (FE-2434).
+         The switcher renders nothing until its listing answers, and nothing
+         when the account is outside the rollout or its first listing fails. -->
+    <DeploymentSwitcher
+      v-if="!accountActionsOnly && isCloud && !isApiKeyLogin"
+    />
 
     <!-- Credits Section -->
 
@@ -264,7 +267,7 @@ import { useI18n } from 'vue-i18n'
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
-import ReleaseSwitcher from '@/platform/workspace/components/ReleaseSwitcher.vue'
+import DeploymentSwitcher from '@/platform/workspace/components/DeploymentSwitcher.vue'
 import WorkspaceSwitcherPopover from '@/platform/workspace/components/WorkspaceSwitcherPopover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
