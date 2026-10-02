@@ -82,8 +82,8 @@ const copy = {
       '把一个角色变成可直接用于游戏的精灵图：选择风格和动作，模型会绘制每一帧。'
   },
   'cinematic.hub.spriteSheetMeta': {
-    en: 'Image · Sprite sheet',
-    'zh-CN': '图像 · 精灵图'
+    en: 'Image · Nano Banana Pro',
+    'zh-CN': '图像 · Nano Banana Pro'
   },
   'cinematic.stage.longWait': {
     en: 'Still going. Some models take about a minute. Nothing is queued; yours already started.',
