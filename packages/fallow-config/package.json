@@ -1,0 +1,33 @@
+{
+  "name": "@comfyorg/fallow-config",
+  "version": "0.1.0",
+  "description": "Shared Comfy Fallow audit policy",
+  "license": "GPL-3.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Comfy-Org/ComfyUI_frontend.git",
+    "directory": "packages/fallow-config"
+  },
+  "files": [
+    "fallow.json"
+  ],
+  "type": "module",
+  "main": "./fallow.json",
+  "exports": {
+    ".": "./fallow.json",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "fallow": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
