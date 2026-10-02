@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { useId } from 'vue'
-
 import { cn } from '@comfyorg/tailwind-utils'
 
 import EditorRunCancel from './EditorRunCancel.vue'
@@ -31,16 +29,13 @@ const {
   /** Shown while the run waits in the queue. */
   queuedLabel?: string
   /**
-   * What the run still needs. Disables the button and says so in place of
-   * the credits it would cost.
+   * What the run still needs. Disables the button, which says so in place
+   * of its label and the credits it would cost.
    */
   missing?: string
 }>()
 
 const emit = defineEmits<{ run: []; cancel: [] }>()
-const missingId = useId()
-const describedBy = () => (missing && block ? missingId : undefined)
-const text = () => (missing && !block ? missing : label)
 </script>
 
 <template>
@@ -52,36 +47,28 @@ const text = () => (missing && !block ? missing : label)
     :queued-label
     @cancel="emit('cancel')"
   />
-  <template v-else>
-    <p
-      v-if="missing && block"
-      :id="missingId"
-      class="pb-2 text-center text-[11px] text-primary-warm-gray"
-      data-testid="editor-run-missing"
-    >
-      {{ missing }}
-    </p>
-    <button
-      v-bind="$attrs"
-      type="button"
-      :disabled="disabled || Boolean(missing)"
-      :title="missing"
-      :aria-describedby="describedBy()"
-      :class="
-        cn(
-          'flex h-8 shrink-0 items-center gap-2 rounded-full bg-primary-comfy-yellow pr-1.5 pl-3.5 text-xs font-semibold text-primary-comfy-ink focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none disabled:opacity-40',
-          missing && 'pr-3.5',
-          block && 'h-10 w-full justify-center text-sm'
-        )
-      "
-      @click="emit('run')"
-    >
-      {{ text() }}
+  <button
+    v-else
+    v-bind="$attrs"
+    type="button"
+    :disabled="disabled || Boolean(missing)"
+    :title="missing"
+    :class="
+      cn(
+        'flex h-8 min-w-0 shrink-0 items-center gap-2 rounded-full bg-primary-comfy-yellow pr-1.5 pl-3.5 text-xs font-semibold text-primary-comfy-ink focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none disabled:opacity-40',
+        block && 'h-10 w-full justify-center text-sm',
+        missing && 'px-3.5 text-xs'
+      )
+    "
+    @click="emit('run')"
+  >
+    <span v-if="missing" class="truncate">{{ missing }}</span>
+    <template v-else>
+      {{ label }}
       <span
-        v-if="!missing"
         class="rounded-full bg-primary-comfy-ink/10 px-2 py-0.5 text-[11px] font-medium"
         >{{ credits }}</span
       >
-    </button>
-  </template>
+    </template>
+  </button>
 </template>

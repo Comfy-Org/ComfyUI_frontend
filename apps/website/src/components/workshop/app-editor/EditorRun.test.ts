@@ -50,19 +50,15 @@ describe('EditorRun', () => {
     expect(emitted('cancel')).toHaveLength(1)
   })
 
-  it.for([
-    { block: false, button: 'Upload a garment' },
-    { block: true, button: 'Try it on' }
-  ])(
-    'says what is missing instead of the credits (block: $block)',
-    ({ block, button }) => {
+  it.for([false, true])(
+    'says what is missing instead of its label and credits (block: %s)',
+    (block) => {
       renderRun({ block, missing: 'Upload a garment' })
 
-      const run = screen.getByRole('button', { name: button })
+      const run = screen.getByRole('button', { name: 'Upload a garment' })
       expect(run).toBeDisabled()
       expect(run).toHaveAttribute('title', 'Upload a garment')
       expect(screen.queryByText('8 credits')).toBeNull()
-      if (block) expect(run).toHaveAccessibleDescription('Upload a garment')
     }
   )
 
