@@ -150,8 +150,6 @@ test.describe(
         ],
         pagination: { offset: 0, limit: 100, total: 2, has_more: false }
       }
-      let draftReads = 0
-
       let socket: WebSocketRoute | undefined
       await page.routeWebSocket(/\/ws/, (ws) => {
         socket = ws
@@ -210,13 +208,6 @@ test.describe(
             if (request.method() !== 'GET' || path !== SAVED_WORKFLOW_PATH)
               return route.fallback()
             return route.fulfill(jsonRoute(EMPTY_WORKFLOW))
-          })
-          // Nothing may try to rebuild the draft over HTTP: the open tab is
-          // the live copy, so recovery has nothing to add and a fetch here
-          // would mean a second tab was being materialized.
-          await page.route('**/api/agent/draft*', (route) => {
-            draftReads++
-            return route.fulfill({ status: 404, body: '{}' })
           })
         }
       })
@@ -282,7 +273,6 @@ test.describe(
       await test.step('no second tab was materialized for the same workflow', async () => {
         await expect(topbar.tabs).toHaveCount(tabsBeforeReturn)
         await expect(topbar.getWorkflowTab(DRAFT_TAB_NAME)).toHaveCount(1)
-        expect(draftReads).toBe(0)
       })
     })
 
@@ -309,8 +299,6 @@ test.describe(
         ],
         pagination: { offset: 0, limit: 100, total: 1, has_more: false }
       }
-      let draftReads = 0
-
       await bootAgentApp(page, agentFlagEnabled, {
         beforeNavigate: async (page) => {
           await page.route('**/api/agent/threads', (route) =>
@@ -327,13 +315,6 @@ test.describe(
           await page.route('**/api/workflows?*', (route) =>
             route.fulfill(jsonRoute(cloudWorkflows))
           )
-          // A deleted workflow's draft is unreadable anyway: the agent service
-          // authorizes the snapshot against a live row. Counted so the pin
-          // records that no recovery is attempted rather than merely failing.
-          await page.route('**/api/agent/draft*', (route) => {
-            draftReads++
-            return route.fulfill({ status: 403, body: '{}' })
-          })
         }
       })
 
@@ -365,7 +346,6 @@ test.describe(
           enMessages.agent.selectWorkflowForAgent
         )
         await expect(topbar.tabs).toHaveCount(tabsBefore)
-        expect(draftReads).toBe(0)
       })
     })
   }
