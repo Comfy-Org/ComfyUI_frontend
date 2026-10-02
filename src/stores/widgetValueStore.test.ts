@@ -604,6 +604,30 @@ describe('useWidgetValueStore', () => {
       expect(visibility.suppression.byExtension).toBe(true)
     })
 
+    it('setOptions does not retain omitted declared surfaces as runtime state', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(
+        seedA,
+        state('number', 100, {
+          options: {
+            surfaces: {
+              canvas: 'advanced',
+              vueNode: 'advanced',
+              panel: 'advanced'
+            }
+          }
+        })
+      )
+
+      expect(store.setOptions(seedA, { max: 10 })).toBe(true)
+
+      expect(store.getWidgetVisibility(seedA)?.surfaces).toEqual({
+        canvas: 'shown',
+        vueNode: 'shown',
+        panel: 'shown'
+      })
+    })
+
     it('maps legacy option updates to the visibility component', () => {
       const store = useWidgetValueStore()
       store.registerWidget(seedA, state('number', 100))
