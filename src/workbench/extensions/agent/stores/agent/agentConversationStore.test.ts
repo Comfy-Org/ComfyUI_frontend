@@ -1036,6 +1036,21 @@ describe('useAgentConversationStore', () => {
     ])
   })
 
+  it('finalizes locally streaming parts when an empty successful row settles the turn', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.ingest(delta('t1', 'partial'))
+    store.ingest(toolCall('t1', 'add_node', 'running'))
+
+    store.settleTurn({ threadId: 'th', messageId: T1 }, undefined)
+
+    expect(store.messages[0].parts).toMatchObject([
+      { type: 'text', text: 'partial', state: 'done' },
+      { type: 'tool', name: 'add_node', state: 'done' }
+    ])
+  })
+
   it('splits persisted text around a local tab link when there is no tool', () => {
     const store = useAgentConversationStore()
     store.setThreadId('th')
