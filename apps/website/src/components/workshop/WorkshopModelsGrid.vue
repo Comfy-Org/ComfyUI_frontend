@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ChevronLeft, ChevronRight } from '@lucide/vue'
+import { cn } from '@comfyorg/tailwind-utils'
 import {
   computed,
   nextTick,
@@ -153,6 +154,10 @@ const sectionTitleKey = computed<TranslationKey>(() =>
 // the catalogue's name twice.
 const emit = defineEmits<{ section: [boolean] }>()
 watch(inSection, (value) => emit('section', value), { immediate: true })
+// Inside a category the tabs give up the row, and the search takes it.
+const searchClass = computed(() =>
+  cn('min-w-0 flex-1', !inSection.value && 'sm:max-w-120')
+)
 
 // Keep the launch-requested video models in the set, then let the same curated
 // order used by the rows decide where every selected model appears.
@@ -219,7 +224,7 @@ watch(browseAll, (on) => on && resetFilters())
       <button
         v-if="inSection"
         type="button"
-        class="-ml-1 inline-flex cursor-pointer items-center gap-1 rounded-lg px-1 text-sm font-medium text-primary-warm-gray opacity-60 transition hover:text-primary-comfy-yellow hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+        class="-ml-2.5 inline-flex cursor-pointer items-center gap-1 rounded-lg px-1 text-sm font-medium text-primary-warm-gray opacity-60 transition hover:text-primary-comfy-yellow hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
         data-testid="section-back"
         @click="leaveSection"
       >
@@ -231,7 +236,7 @@ watch(browseAll, (on) => on && resetFilters())
       <h2
         v-if="inSection"
         ref="heading"
-        class="mt-3 mb-4 scroll-mt-24 text-3xl font-bold text-primary-warm-white sm:text-4xl lg:scroll-mt-32"
+        class="mt-5 mb-4 scroll-mt-24 text-3xl font-bold text-primary-warm-white sm:text-4xl lg:scroll-mt-32"
       >
         {{ t(sectionTitleKey, locale) }}
         <span class="text-base font-normal text-primary-warm-gray tabular-nums">
@@ -254,7 +259,7 @@ watch(browseAll, (on) => on && resetFilters())
             :models
             :locale
             compact
-            class="min-w-0 flex-1 sm:max-w-120"
+            :class="searchClass"
           />
 
           <div class="flex items-center gap-2" data-testid="workshop-filters">
