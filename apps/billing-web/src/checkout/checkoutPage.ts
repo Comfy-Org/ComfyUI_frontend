@@ -77,7 +77,7 @@ export type Reactivation = 'not_required' | 'required' | 'invalid' | 'confirmed'
  * Cancel payment on a challenge still pending. `canceling` from the click
  * until the server settles it, the code once the server kept the payment.
  */
-export type PaymentCancel = 'canceling' | CancelRefusalCode
+type PaymentCancel = 'canceling' | CancelRefusalCode
 
 /**
  * `sent` from the Pay click until the attempt settles, so an operation the
@@ -1045,7 +1045,7 @@ export type SubmitPhase =
  * What Cancel payment offers on a challenge. Absent for an operation the
  * server never cancels (a top-up), so the button never shows there.
  */
-export type CancelOffer = 'offered' | 'canceling' | 'not_cancelable'
+type CancelOffer = 'offered' | 'canceling' | 'not_cancelable'
 
 export function submitPhaseOf(
   page: Extract<CheckoutPage, { kind: 'resolving' | 'capture' | 'waiting' }>
