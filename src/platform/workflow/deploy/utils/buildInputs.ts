@@ -5,9 +5,14 @@ import { getCnrIdFromProperties } from '@/platform/nodeReplacement/cnrIdUtil'
 import { collectReachableSubgraphDefinitions } from '@/platform/workflow/core/utils/workflowFlattening'
 import type { FlattenableWorkflowNode } from '@/platform/workflow/core/utils/workflowFlattening'
 
+/**
+ * `versions` holds every distinct version the workflow's nodes record for the
+ * pack, sorted. More than one means the nodes disagree, and nothing here picks
+ * between them.
+ */
 export interface NodePack {
   id: string
-  version?: string
+  versions: string[]
 }
 
 /**
@@ -48,9 +53,9 @@ function embeddedModelNames(
 
 const CORE_PACK_ID = 'comfy-core'
 
-function nodePack(
+function recordedPack(
   properties: Record<string, unknown> | undefined
-): NodePack | undefined {
+): { id: string; version?: string } | undefined {
   const id = getCnrIdFromProperties(properties)
   if (!id || id === CORE_PACK_ID) return undefined
   const version = properties?.ver
@@ -160,15 +165,19 @@ export function deriveBuildInputs(
     ...definitions.flatMap((definition) => parseNodes(definition.nodes))
   ]
   const nodeClasses = new Set<string>()
-  const nodePacks = new Map<string, NodePack>()
+  const packVersions = new Map<string, Set<string>>()
   const models = new Set<string>()
 
   for (const node of nodes) {
     // A subgraph container node's `type` is the definition's id, not a class.
     if (!subgraphIds.has(node.type)) nodeClasses.add(node.type)
 
-    const pack = nodePack(node.properties)
-    if (pack && !nodePacks.has(pack.id)) nodePacks.set(pack.id, pack)
+    const pack = recordedPack(node.properties)
+    if (pack) {
+      const versions = packVersions.get(pack.id) ?? new Set<string>()
+      if (pack.version) versions.add(pack.version)
+      packVersions.set(pack.id, versions)
+    }
 
     for (const name of modelNames(node, modelInputsFor)) models.add(name)
   }
@@ -182,9 +191,9 @@ export function deriveBuildInputs(
     workflowName: workflow.name,
     workflowFileName: workflow.fileName,
     nodeClasses: sorted(nodeClasses),
-    nodePacks: [...nodePacks.values()].sort((a, b) =>
-      collator.compare(a.id, b.id)
-    ),
+    nodePacks: [...packVersions]
+      .map(([id, versions]) => ({ id, versions: sorted(versions) }))
+      .sort((a, b) => collator.compare(a.id, b.id)),
     models: sorted(models)
   }
 }

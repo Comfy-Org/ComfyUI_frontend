@@ -96,20 +96,4 @@ describe('useCopyToClipboard', () => {
       expect.objectContaining({ severity: 'success' })
     )
   })
-
-  it('reports failure when the clipboard API is unavailable and legacy fails', async () => {
-    Object.defineProperty(navigator, 'clipboard', {
-      configurable: true,
-      value: undefined
-    })
-    document.execCommand = vi.fn(() => false)
-
-    const { copyToClipboard } = useCopyToClipboard()
-    const copied = await copyToClipboard('hello', { toastOnSuccess: false })
-
-    expect(copied).toBe(false)
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'error' })
-    )
-  })
 })

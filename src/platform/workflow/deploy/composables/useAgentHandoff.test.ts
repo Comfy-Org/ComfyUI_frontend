@@ -232,6 +232,28 @@ describe('useAgentHandoff', () => {
     expect(downloadBlob).not.toHaveBeenCalled()
   })
 
+  it('reports a download that fails after the brief was copied, and tells the user', async () => {
+    setActiveWorkflow()
+    vi.mocked(downloadBlob).mockImplementationOnce(() => {
+      throw new Error('download blocked')
+    })
+    const toast = vi.spyOn(useToastStore(), 'add')
+
+    await expect(useAgentHandoff().copyBrief()).resolves.toBe(false)
+
+    expect(copyToClipboard).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'error_copying_deploy_agent_brief',
+      surface: 'platform'
+    })
+    expect(toast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        severity: 'error',
+        detail: 'The brief for your agent could not be prepared. Try again.'
+      })
+    )
+  })
+
   it('reads the graph after capturing an edit still in a focused field', async () => {
     const workflow = {
       filename: 'portrait-upscale.json',

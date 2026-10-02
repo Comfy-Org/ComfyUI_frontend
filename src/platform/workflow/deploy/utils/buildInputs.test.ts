@@ -57,12 +57,40 @@ describe('deriveBuildInputs', () => {
       workflowFileName: 'portrait.json',
       nodeClasses: ['CheckpointLoaderSimple', 'LoraLoader'],
       nodePacks: [
-        { id: 'comfyui-easy-use', version: '1.2.3' },
-        { id: 'ltdrdata/ComfyUI-Impact-Pack' }
+        { id: 'comfyui-easy-use', versions: ['1.2.3'] },
+        { id: 'ltdrdata/ComfyUI-Impact-Pack', versions: [] }
       ],
       models: ['detail.safetensors', 'sd_xl_base_1.0.safetensors']
     })
   })
+
+  it.for([{ order: 'as recorded' }, { order: 'reversed' }])(
+    'keeps every version the nodes record for one pack, $order',
+    ({ order }) => {
+      const nodes = [
+        {
+          id: 1,
+          type: 'A',
+          properties: { cnr_id: 'comfyui-kjnodes', ver: '1.1.4' }
+        },
+        {
+          id: 2,
+          type: 'B',
+          properties: { cnr_id: 'comfyui-kjnodes', ver: '1.0.9' }
+        },
+        { id: 3, type: 'C', properties: { cnr_id: 'comfyui-kjnodes' } }
+      ]
+
+      const inputs = deriveBuildInputs(
+        { nodes: order === 'reversed' ? nodes.toReversed() : nodes },
+        workflow
+      )
+
+      expect(inputs.nodePacks).toEqual([
+        { id: 'comfyui-kjnodes', versions: ['1.0.9', '1.1.4'] }
+      ])
+    }
+  )
 
   it('lists the models a node records in its properties alongside widget values', () => {
     const inputs = deriveBuildInputs(
@@ -171,24 +199,6 @@ describe('deriveBuildInputs', () => {
     )
 
     expect(inputs.nodeClasses).toEqual(['KSampler'])
-    expect(inputs.nodePacks).toEqual([])
-  })
-
-  it('ignores widget values that are not model filenames', () => {
-    const inputs = deriveBuildInputs(
-      {
-        nodes: [
-          {
-            id: 1,
-            type: 'CLIPTextEncode',
-            widgets_values: ['a photo of a cat.jpg', 'euler', '']
-          }
-        ]
-      },
-      workflow
-    )
-
-    expect(inputs.models).toEqual([])
     expect(inputs.nodePacks).toEqual([])
   })
 

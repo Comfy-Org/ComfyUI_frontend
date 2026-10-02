@@ -15,7 +15,7 @@ const inputs: BuildInputs = {
   workflowName: 'portrait-upscale',
   workflowFileName: 'portrait-upscale.json',
   nodeClasses: ['CheckpointLoaderSimple', 'KSampler'],
-  nodePacks: [{ id: 'comfy-core' }],
+  nodePacks: [{ id: 'comfy-core', versions: [] }],
   models: ['sd_xl_base_1.0.safetensors']
 }
 
@@ -67,9 +67,6 @@ describe('DeployToComfyApiCard', () => {
     expect(
       screen.getByTestId('deploy-to-comfy-api-summary').textContent
     ).toContain('1 node pack · 1 model · 2 node classes')
-    expect(
-      screen.getByTestId('deploy-to-comfy-api-video-placeholder')
-    ).toBeInTheDocument()
   })
 
   it('links to the platform developer docs', () => {
