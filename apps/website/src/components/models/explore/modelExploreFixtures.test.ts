@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterAll, describe, expect, it, vi } from 'vitest'
 
 import {
   catalogCardFixtures,
@@ -7,6 +7,14 @@ import {
 } from './modelExploreFixtures'
 import { modelVersionReleases } from './modelVersionReleases'
 import { trendModelVersions } from './modelTrends'
+
+await vi.hoisted(async () => {
+  const { default: snapshot } =
+    await import('../../../data/model-trends.snapshot.json')
+  vi.setSystemTime(new Date(snapshot.asOf))
+})
+
+afterAll(() => vi.useRealTimers())
 
 describe('measured trending collection', () => {
   it('lists unique individual versions with owned destinations', () => {
