@@ -1548,6 +1548,7 @@ export class ComfyApp {
               'AbortError'
             )
           )
+          if (clean) useDocumentLifecycleStore().invalidate()
           return undefined
         }
 
