@@ -97,9 +97,7 @@ test to make it pass, and never resolve a human reviewer's comment.
 
 ## Commits and pull requests
 
-This repository fails any pull request whose commits carry an AI co-author
-trailer (`.github/scripts/check-ai-co-authors.sh`). Never add a
-`Co-Authored-By` line, a session link, or any mention of Claude or AI to a
+Never add a `Co-Authored-By` line, a session link, or any mention of Claude or AI to a
 commit message, a pull request title, or a pull request body.
 The repository's root `.claude/settings.json` turns the automatic trailer off
 for every session started inside the repository; check the last commit message
