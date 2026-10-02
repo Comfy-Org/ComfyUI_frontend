@@ -1742,8 +1742,8 @@ describe('CinematicStudio', () => {
       const tab = await screen.findByRole('button', { name: 'Apps' })
       expect(tab).toHaveAttribute('aria-pressed', 'true')
       const apps = screen.getAllByRole('listitem')
-      expect(apps, 'Apps that do not open yet stay off the Hub').toHaveLength(4)
-      const [firstApp, secondApp, thirdApp, fourthApp] = apps
+      expect(apps, 'Apps that do not open yet stay off the Hub').toHaveLength(5)
+      const [firstApp, secondApp, thirdApp, fourthApp, fifthApp] = apps
       expect(
         within(firstApp).getByRole('link', { name: 'Cinematic Studio' })
       ).toHaveAttribute('href', '/hub/apps/cinematic-studio/')
@@ -1756,6 +1756,9 @@ describe('CinematicStudio', () => {
       expect(
         within(fourthApp).getByRole('link', { name: 'Relight' })
       ).toHaveAttribute('href', '/hub/apps/relight/')
+      expect(
+        within(fifthApp).getByRole('link', { name: 'Background Removal' })
+      ).toHaveAttribute('href', '/hub/apps/background-removal/')
     })
 
     it('runs a shot from the side panel on the model picked there', async () => {

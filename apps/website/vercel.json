@@ -4318,6 +4318,16 @@
       "permanent": false
     },
     {
+      "source": "/models/apps/background-removal",
+      "destination": "/hub/apps/background-removal/",
+      "permanent": false
+    },
+    {
+      "source": "/models/apps/background-removal/",
+      "destination": "/hub/apps/background-removal/",
+      "permanent": false
+    },
+    {
       "source": "/models/apps/cinematic-studio",
       "destination": "/hub/apps/cinematic-studio/",
       "permanent": false
