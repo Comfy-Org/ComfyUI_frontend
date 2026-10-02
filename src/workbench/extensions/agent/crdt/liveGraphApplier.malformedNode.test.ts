@@ -42,8 +42,9 @@ function setup(workflow: WorkflowJSON) {
   const graph = new LGraph()
   const { doc, collector } = followedDoc(workflow, CATALOG)
   const applier = new LiveGraphApplier({ getGraph: () => graph })
-  const applyCollected = () =>
-    applier.applyChanges(doc, collector.take(), CONTEXT)
+  function applyCollected() {
+    return applier.applyChanges(doc, collector.take(), CONTEXT)
+  }
   return { graph, doc, collector, applier, applyCollected }
 }
 
