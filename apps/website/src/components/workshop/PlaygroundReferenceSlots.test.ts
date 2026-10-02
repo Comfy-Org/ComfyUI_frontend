@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 
-import type { FormValues } from '../../config/workshop-playground'
+import type { FieldSchema, FormValues } from '../../config/workshop-playground'
 import { defaultValues, schemaForModel } from '../../config/workshop-playground'
 import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
 import PlaygroundForm from './PlaygroundForm.vue'
@@ -95,5 +95,51 @@ describe('numbered reference slots', () => {
     expect(
       screen.getByTestId('field-reference_image_url-count')
     ).toHaveTextContent('2 / 7')
+  })
+})
+
+// Grouping only requires the slots to be the same kind of upload, not to carry
+// the same limits, so a complaint about one of them has to be worded from that
+// slot rather than from the one that happens to lead the group.
+describe('a complaint about a later slot', () => {
+  function slot(name: string, label: string, hint?: string): FieldSchema {
+    return {
+      kind: 'text',
+      name,
+      label,
+      required: false,
+      multiline: false,
+      ...(hint ? { hint } : {}),
+      presentation: {
+        label,
+        help: hint ?? '',
+        hidden: false,
+        advanced: false,
+        control: 'text-box',
+        urlUpload: 'image'
+      }
+    }
+  }
+
+  it('is worded from the slot it came from', () => {
+    const schema = [
+      slot('image_url', 'Image', 'The first one has to be square.'),
+      slot('image_url_2', 'Image 2', 'The second one has to be wide.')
+    ]
+    render(
+      defineComponent({
+        setup: () => () =>
+          h(PlaygroundForm, {
+            schema,
+            errors: { image_url_2: 'incompatible' },
+            modelValue: {},
+            'onUpdate:modelValue': () => {}
+          })
+      })
+    )
+
+    expect(screen.getByTestId('error-image_url')).toHaveTextContent(
+      'The second one has to be wide.'
+    )
   })
 })

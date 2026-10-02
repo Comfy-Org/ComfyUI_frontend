@@ -51,8 +51,15 @@ const primary = computed(() =>
   groups.value.primary.filter((field) => !followers.value.has(field.name))
 )
 
-function membersOf(name: string): readonly string[] | undefined {
-  return uploadGroups.value.find((group) => group.base === name)?.members
+// The whole slot, not just its name: a complaint about one of them is written
+// in its own terms, and the control that shows it needs them.
+function membersOf(name: string): readonly FieldSchema[] | undefined {
+  const members = uploadGroups.value.find(
+    (group) => group.base === name
+  )?.members
+  return members?.flatMap(
+    (member) => schema.find((field) => field.name === member) ?? []
+  )
 }
 
 // The frames are ordinary fields, so the pair is read off the values their own
