@@ -14,6 +14,7 @@ import { useWidgetStore } from '@/stores/widgetStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import type { ComfyExtension } from '@/types/comfy'
 import type { AuthUserInfo } from '@/types/authTypes'
+import { toError } from '@/utils/errorUtil'
 import { app } from '@/scripts/app'
 import type { ComfyApp } from '@/scripts/app'
 
@@ -30,28 +31,84 @@ export function shouldLoadExtension(
   return !isCloudBuild || !INLINED_CLOUD_EXTENSIONS.has(extension)
 }
 
+/** Paths named in a batch report before the rest are elided to a count. */
+const MAX_NAMED_FAILED_EXTENSIONS = 10
+
+export interface ExtensionLoadFailure {
+  ext: string
+  error: unknown
+}
+
 /**
- * Import one backend-provided extension. A failure is reported and swallowed so
- * that one broken custom node cannot abort the rest of the parallel load.
+ * Import one backend-provided extension, returning the failure rather than
+ * throwing, so one broken pack cannot abort the rest of the parallel load.
  *
- * `reportError` writes the console line itself, so there is deliberately no
- * `console.error` here — pairing the two emits the same failure twice, once
- * untyped.
+ * Reporting deliberately does not happen here. A systemic failure — a backend
+ * restart, or a proxy serving HTML for every `.js` — rejects the whole list at
+ * once, and one report per extension is then unbounded. Off cloud that is
+ * actively harmful: with no sink live, each report is held in `reportError`'s
+ * 25-entry pending buffer, so a handful of broken packs during bootstrap would
+ * silently crowd out every later error in the session. The batch is reported
+ * once, by `reportExtensionLoadFailures`.
  *
  * Exported for the rejected-import test: `loadExtensions` also imports the
  * whole core extension entry point, which a unit test cannot pull in.
  */
-export async function importCustomExtension(ext: string): Promise<void> {
+export async function importCustomExtension(
+  ext: string
+): Promise<ExtensionLoadFailure | undefined> {
   try {
     await import(/* @vite-ignore */ api.fileURL(ext))
   } catch (error) {
-    reportError(error, {
+    return { ext, error }
+  }
+}
+
+/**
+ * Report one load's worth of extension import failures as a single typed error.
+ *
+ * The failing paths go in the message, not only in `tags`: `reportError` writes
+ * its own console line from the error and never from `options.tags`, and on DEV
+ * and self-hosted installs the console is the only live sink — so a path
+ * carried only as a tag tells the user that an extension failed without saying
+ * which one. That is what the removed `console.error` used to provide.
+ *
+ * Only the count is tagged. The paths are backend-controlled and unbounded,
+ * which is not something to index as a Sentry/RUM facet, so they ride in
+ * context instead.
+ *
+ * `reportError` writes that console line itself, so there is deliberately no
+ * `console.error` alongside it — pairing the two emits one failure twice, once
+ * untyped.
+ */
+export function reportExtensionLoadFailures(
+  failures: ExtensionLoadFailure[]
+): void {
+  if (failures.length === 0) return
+
+  const named = failures.slice(0, MAX_NAMED_FAILED_EXTENSIONS)
+  const elided = failures.length - named.length
+  const paths = named.map(({ ext }) => ext).join(', ')
+
+  reportError(
+    new Error(
+      `Error loading ${failures.length} extension(s): ${paths}` +
+        (elided > 0 ? ` (+${elided} more)` : ''),
+      { cause: failures[0].error }
+    ),
+    {
       errorType: 'extension_load_failed',
       surface: 'platform',
       level: 'warning',
-      tags: { extension: ext }
-    })
-  }
+      tags: { failed_extension_count: failures.length },
+      context: {
+        failures: named.map(({ ext, error }) => ({
+          ext,
+          message: toError(error).message
+        }))
+      }
+    }
+  )
 }
 
 export const useExtensionService = () => {
@@ -81,15 +138,18 @@ export const useExtensionService = () => {
       () => import('../extensions/core/index')
     )
     extensionStore.captureCoreExtensions()
-    await bootstrapTracer.settle('bootstrap/extensions-load-custom', () =>
-      Promise.all(
-        extensions
-          .filter((extension) =>
-            shouldLoadExtension(extension, __DISTRIBUTION__ === 'cloud')
-          )
-          .map((ext) => importCustomExtension(ext))
-      )
+    const outcomes = await bootstrapTracer.settle(
+      'bootstrap/extensions-load-custom',
+      () =>
+        Promise.all(
+          extensions
+            .filter((extension) =>
+              shouldLoadExtension(extension, __DISTRIBUTION__ === 'cloud')
+            )
+            .map((ext) => importCustomExtension(ext))
+        )
     )
+    reportExtensionLoadFailures(outcomes.filter((outcome) => !!outcome))
   }
 
   /**

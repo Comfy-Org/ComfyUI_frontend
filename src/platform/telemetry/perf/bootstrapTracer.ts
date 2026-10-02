@@ -26,7 +26,15 @@
  * than replacing it: the aggregate stays intact for the existing monitors, and
  * the residual (aggregate minus both children) is `api.getExtensions()` plus
  * bookkeeping. So read the children and the residual against the aggregate —
- * never sum rows across the flattened phase map.
+ * never sum rows across the flattened phase map, which would double-count
+ * extension load time.
+ *
+ * Two consequences worth knowing before you build on these rows. `phase_count`
+ * is 11 rather than 9 for an identical startup, so an alert thresholded on it
+ * shifts. And each row is rounded independently, so the residual is a floor,
+ * not an exact figure: on a fast load both children can round up while the
+ * aggregate rounds down and the residual reads slightly negative. Compute it
+ * from unrounded timings if the exact value matters.
  *
  * Startup ends when the loading screen comes down, not when any one subsystem
  * finishes. `complete()` is therefore called from the single place that owns

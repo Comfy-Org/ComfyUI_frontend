@@ -42,35 +42,33 @@ describe('bootstrapTracer', () => {
   it('records extension loading subphases inside the aggregate load phase', async () => {
     const tracer = new BootstrapTracer()
 
+    // Advancing between the span starts is what makes this non-vacuous: the
+    // start times are distinct values the assertions below can actually order.
+    // Durations cannot carry the nesting claim here — `perfMark` takes them
+    // from `performance.measure()`, whose happy-dom implementation reports a
+    // constant regardless of elapsed time, so any duration comparison in this
+    // environment holds trivially.
     await tracer.settle('bootstrap/extensions-load', async () => {
+      await vi.advanceTimersByTimeAsync(5)
       await tracer.settle('bootstrap/extensions-load-core', () =>
-        Promise.resolve()
+        vi.advanceTimersByTimeAsync(40)
       )
       await tracer.settle('bootstrap/extensions-load-custom', () =>
-        Promise.resolve()
+        vi.advanceTimersByTimeAsync(7)
       )
     })
 
+    // Sorted by start, so this pins the nesting: the aggregate opened before
+    // either child, and `startPhase`'s re-entry guard did not swallow a row.
     const rows = tracer.summary()
-    expect(rows.map((r) => r.name).sort()).toEqual([
+    expect(rows.map((r) => r.name)).toEqual([
       'bootstrap/extensions-load',
       'bootstrap/extensions-load-core',
       'bootstrap/extensions-load-custom'
     ])
+    expect(rows.map((r) => r.startMs)).toEqual([0, 5, 45])
     expect(addTiming).toHaveBeenCalledWith('bootstrap.extensions-load-core')
     expect(addTiming).toHaveBeenCalledWith('bootstrap.extensions-load-custom')
-
-    // The children are nested, not sequential siblings: the aggregate must
-    // still span both, which is what makes the residual readable.
-    const byName = new Map(rows.map((r) => [r.name, r]))
-    const aggregate = byName.get('bootstrap/extensions-load')!
-    for (const child of [
-      byName.get('bootstrap/extensions-load-core')!,
-      byName.get('bootstrap/extensions-load-custom')!
-    ]) {
-      expect(child.startMs).toBeGreaterThanOrEqual(aggregate.startMs)
-      expect(child.durationMs).toBeLessThanOrEqual(aggregate.durationMs)
-    }
   })
 
   it('publishes milestones under RUM-safe timing names', () => {
