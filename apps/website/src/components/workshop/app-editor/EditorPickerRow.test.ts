@@ -11,6 +11,7 @@ function renderRow(props: {
 }) {
   return render(EditorPickerRow, {
     props: { label: 'Scene', value: 'Red carpet', expanded: false, ...props },
+    attrs: { 'data-testid': 'scene-row' },
     slots: { default: '<img alt="" src="/carpet.jpg" />' }
   })
 }
@@ -20,6 +21,7 @@ describe('EditorPickerRow', () => {
     const { emitted } = renderRow({ expanded: true })
 
     const row = screen.getByRole('button', { name: 'Scene: Red carpet' })
+    expect(row).toBe(screen.getByTestId('scene-row'))
     expect(row).toHaveAttribute('aria-haspopup', 'dialog')
     expect(row).toHaveAttribute('aria-expanded', 'true')
 

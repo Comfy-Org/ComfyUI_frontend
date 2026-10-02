@@ -18,7 +18,9 @@ function renderTiles(
   } = {}
 ) {
   const value = ref<string>('carpet')
-  const { emitted } = render({
+  const uploads: File[] = []
+  const picks: string[] = []
+  render({
     setup: () => () =>
       h(EditorTiles<string>, {
         ...props,
@@ -28,24 +30,26 @@ function renderTiles(
         'onUpdate:modelValue': (next?: string) => {
           if (next) value.value = next
         },
-        onUpload: (file: File) => uploads.push(file)
+        onUpload: (file: File) => uploads.push(file),
+        onPick: (id: string) => picks.push(id)
       })
   })
-  const uploads: File[] = []
   return {
     value,
     uploads,
-    emitted,
+    picks,
     group: screen.getByRole('radiogroup', { name: 'Scene' })
   }
 }
 
 describe('EditorTiles', () => {
   it('picks a tile and marks it checked', async () => {
-    const { value, group } = renderTiles()
+    const { value, group, picks } = renderTiles()
 
     await userEvent.click(within(group).getByRole('radio', { name: 'Yacht' }))
+    await userEvent.click(within(group).getByRole('radio', { name: 'Yacht' }))
 
+    expect(picks).toEqual(['yacht', 'yacht'])
     expect(value.value).toBe('yacht')
     expect(within(group).getByRole('radio', { name: 'Yacht' })).toBeChecked()
     expect(
