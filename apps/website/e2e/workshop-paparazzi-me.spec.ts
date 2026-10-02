@@ -47,12 +47,20 @@ test('snaps the Paparazzi me example from the floating panel', async ({
   await expect(name).toHaveValue('Sable Quinn')
   await panel.getByRole('radio', { name: 'Street at night' }).click()
   await expect(app.getByRole('button', { name: 'Undo' })).toBeEnabled()
+  expect(await panel.boundingBox()).toMatchObject({ width: 280 })
+  await expect(
+    app
+      .getByRole('toolbar', { name: 'Paparazzi tools' })
+      .getByRole('button')
+      .last()
+  ).toHaveAccessibleName('Redo')
 
   await panel.getByTestId('paparazzi-run').click()
   await expect(app.getByRole('status')).toContainText('Developing the shot')
-  await expect(app.getByRole('link', { name: 'Download' })).toHaveAttribute(
-    'href',
-    /^blob:/
+  const download = app.getByRole('link', { name: 'Download' })
+  await expect(download).toHaveAttribute('href', /^blob:/)
+  expect((await download.boundingBox())?.y).toBe(
+    (await app.getByText('GitHub · Coming soon').boundingBox())?.y
   )
   await app.getByRole('button', { name: 'Compare' }).click()
   await expect(

@@ -103,7 +103,6 @@ const copy = {
   },
   'paparazzi.edit': { en: 'Edit shot', 'zh-CN': '编辑画面' },
   'paparazzi.again': { en: 'Try again', 'zh-CN': '再拍一张' },
-  'paparazzi.download': { en: 'Download', 'zh-CN': '下载' },
   'paparazzi.alt.result': {
     en: 'A paparazzi photo of you next to {name}',
     'zh-CN': '你与 {name} 同框的狗仔照'

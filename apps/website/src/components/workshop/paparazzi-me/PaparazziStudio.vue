@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 
 import { usePaparazziMe } from '../../../composables/usePaparazziMe'
+import { useResultDownload } from '../../../composables/useResultDownload'
 import { reportStudioBusy } from '../../../composables/useStudioSwitchGuard'
 import type { Locale } from '../../../i18n/translations'
 import { workshopAppRepo } from '../../../lib/workshop/apps'
@@ -9,6 +10,7 @@ import { pc } from '../../../lib/workshop/paparazzi-me/copy'
 import AppEditorShell from '../app-editor/AppEditorShell.vue'
 import EditorAlert from '../app-editor/EditorAlert.vue'
 import PaparazziDocks from './PaparazziDocks.vue'
+import PaparazziHistory from './PaparazziHistory.vue'
 import PaparazziMain from './PaparazziMain.vue'
 import PaparazziPanel from './PaparazziPanel.vue'
 import PaparazziRun from './PaparazziRun.vue'
@@ -24,6 +26,10 @@ const { locale = 'en', layout = 'd' } = defineProps<{
 const paparazzi = usePaparazziMe()
 const { phase } = paparazzi
 const panel = computed(() => layout !== 'e')
+const download = useResultDownload(
+  phase,
+  ({ result }) => `paparazzi-me-${result.seed}.jpg`
+)
 reportStudioBusy(() => phase.value.kind === 'running')
 
 const panelLabels = {
@@ -39,6 +45,7 @@ const panelLabels = {
     :tools-label="pc('paparazzi.tools', locale)"
     :panel-labels="panelLabels"
     :panel-dimmed="phase.kind === 'done'"
+    :download
     :repo="workshopAppRepo('paparazzi-me')"
     :locale
     data-testid="paparazzi-me"
@@ -52,6 +59,9 @@ const panelLabels = {
     </template>
     <template #dock>
       <PaparazziDocks :paparazzi :panel :locale />
+    </template>
+    <template v-if="phase.kind !== 'done'" #history>
+      <PaparazziHistory :paparazzi :locale />
     </template>
     <template v-if="panel" #panel>
       <PaparazziPanel :paparazzi :locale />

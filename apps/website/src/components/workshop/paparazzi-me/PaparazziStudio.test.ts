@@ -38,6 +38,7 @@ const panel = () =>
   screen.getByRole('complementary', { name: 'Paparazzi settings' })
 const section = (name: string) => within(panel()).getByRole('region', { name })
 const faceCard = () => screen.getByRole('region', { name: 'Your face' })
+const tools = () => screen.getByRole('toolbar', { name: 'Paparazzi tools' })
 
 describe('PaparazziStudio', () => {
   it('opens on the example and snaps it from the floating panel', async () => {
@@ -48,6 +49,10 @@ describe('PaparazziStudio', () => {
       })
     ).toBeVisible()
     expect(screen.getByRole('button', { name: 'Undo' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Download' })).toHaveAttribute(
+      'aria-disabled',
+      'true'
+    )
 
     await user.click(
       within(section('Scene')).getByRole('radio', { name: 'Café' })
@@ -66,6 +71,7 @@ describe('PaparazziStudio', () => {
     expect(
       await screen.findByRole('link', { name: 'Download' })
     ).toHaveAttribute('href', '/images/apps/paparazzi-me/result-cafe.jpg')
+    expect(within(tools()).queryByRole('link')).toBeNull()
     expect(
       screen.getByRole('img', {
         name: 'A paparazzi photo of you next to Nova Reyes'
@@ -86,6 +92,25 @@ describe('PaparazziStudio', () => {
     await user.click(screen.getByRole('button', { name: 'Edit shot' }))
     expect(screen.getByRole('button', { name: 'Undo' })).toBeEnabled()
   })
+
+  it.for([
+    { layout: 'd', wide: true, last: 'Shuffle the crowd' },
+    { layout: 'd', wide: false, last: 'Shuffle the crowd' },
+    { layout: 'e', wide: true, last: 'Get snapped 10 credits' }
+  ])(
+    'keeps undo and redo at the right end of the tools in layout $layout (wide: $wide)',
+    ({ layout, wide, last }) => {
+      screenIsWide(wide)
+      open(layout)
+
+      const names = within(tools())
+        .getAllByRole('button')
+        .map(
+          (tool) => tool.getAttribute('aria-label') ?? tool.textContent.trim()
+        )
+      expect(names.slice(-3)).toEqual([last, 'Undo', 'Redo'])
+    }
+  )
 
   it('looks up a star by name and picks one with the keyboard', async () => {
     const user = open()
