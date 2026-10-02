@@ -27,6 +27,9 @@ const config: KnipConfig = {
     'packages/account-core': {
       project: ['src/**/*.{js,ts}']
     },
+    'packages/eslint-config': {
+      project: ['src/**/*.ts']
+    },
     'packages/account-ui': {
       project: ['src/**/*.{js,ts,vue}']
     },

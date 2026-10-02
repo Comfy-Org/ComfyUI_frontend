@@ -81,6 +81,7 @@ jobs:
             --filter @comfyorg/object-info-parser \
             --filter @comfyorg/shared-frontend-utils \
             --filter @comfyorg/design-system \
+            --filter @comfyorg/eslint-config \
             exec vitest run --coverage --maxWorkers=3
 
       - name: Upload package coverage

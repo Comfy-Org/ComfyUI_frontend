@@ -170,6 +170,7 @@
     "zod-validation-error": "catalog:"
   },
   "devDependencies": {
+    "@comfyorg/eslint-config": "workspace:*",
     "@comfyorg/ingest-types": "workspace:*",
     "@eslint/js": "catalog:",
     "@intlify/eslint-plugin-vue-i18n": "catalog:",

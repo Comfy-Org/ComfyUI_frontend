@@ -64,7 +64,8 @@ const PUBLISHED_PACKAGES = [
   'account-core',
   'account-ui',
   'billing-contract',
-  'ingest-types'
+  'ingest-types',
+  'eslint-config'
 ]
 
 function readWorkspaceManifest(dir: string): WorkspaceManifest {
@@ -133,6 +134,44 @@ import { createSessionClient } from '@comfyorg/account-core/session'
 import { createTestIdentity } from '@comfyorg/account-core/testing'
 import { buildBillingEntryUrl } from '@comfyorg/billing-contract'
 import { zExchangeTokenResponse } from '@comfyorg/ingest-types/zod'
+import sharedImports from '@comfyorg/eslint-config/imports'
+import sharedVue from '@comfyorg/eslint-config/vue'
+import { ESLint } from 'eslint'
+import importX from 'eslint-plugin-import-x'
+import pluginVue from 'eslint-plugin-vue'
+import { parser, plugin } from 'typescript-eslint'
+import vueParser from 'vue-eslint-parser'
+
+const eslint = new ESLint({
+  overrideConfigFile: true,
+  overrideConfig: [
+    {
+      files: ['**/*.vue'],
+      languageOptions: { parser: vueParser, parserOptions: { parser } },
+      plugins: { '@typescript-eslint': plugin, import: importX, vue: pluginVue }
+    },
+    sharedImports('import'),
+    sharedVue
+  ]
+})
+const [invalidLint] = await eslint.lintText(
+  '<script setup lang="ts">import { Ref } from "vue"; import { type ComputedRef } from "vue"; defineProps<{ items: Ref<string[]>; computed: ComputedRef<string> }>()</script><template><span v-if="false" /><span v-for="item in items" v-else :key="item">{{ item }}</span></template>',
+  { filePath: 'Probe.vue' }
+)
+const expectedRules = ['@typescript-eslint/consistent-type-imports', 'import/consistent-type-specifier-style', 'vue/no-use-v-else-with-v-for']
+for (const ruleId of expectedRules) {
+  if (!invalidLint.messages.some((message) => message.ruleId === ruleId && message.severity === 2)) {
+    throw new Error('Packed ESLint preset did not enforce ' + ruleId)
+  }
+}
+const [validLint] = await eslint.lintText(
+  '<script setup lang="ts">import { Widget } from "./widgets"; import type { Ref, ComputedRef } from "vue"; defineProps<{ items: Ref<string[]>; computed: ComputedRef<string>; widget: InstanceType<typeof Widget> }>()</script><template><span v-if="false" /><template v-else><Widget v-for="item in items" :key="item" /></template></template>',
+  { filePath: 'Probe.vue' }
+)
+if (validLint.errorCount !== 0) {
+  throw new Error('Packed ESLint preset rejected valid Vue: ' + JSON.stringify(validLint.messages))
+}
+console.log('@comfyorg/eslint-config: import and template rules enforced')
 
 const memory = new Map()
 const client = createSessionClient(
@@ -202,6 +241,10 @@ for (const name of PACKAGES) {
 `
 
 const TYPED_CONSUMER_SOURCE = `
+import sharedImports from '@comfyorg/eslint-config/imports'
+import sharedVue from '@comfyorg/eslint-config/vue'
+void sharedImports('import')
+void sharedVue
 import type { OperationHandle } from '@comfyorg/account-core/boundedOperation'
 import { createBoundedOperation } from '@comfyorg/account-core/boundedOperation'
 import type { AccountUser, SessionSnapshot } from '@comfyorg/account-core/session'

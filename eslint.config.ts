@@ -1,5 +1,7 @@
 // For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
 
+import sharedImports from '@comfyorg/eslint-config/imports'
+import sharedVue from '@comfyorg/eslint-config/vue'
 import pluginJs from '@eslint/js'
 import pluginI18n from '@intlify/eslint-plugin-vue-i18n'
 import { configs as astroConfigs } from 'eslint-plugin-astro'
@@ -301,6 +303,8 @@ export default defineConfig([
   ...(storybookConfigs['flat/recommended'] as unknown as Linter.Config[]),
   importX.flatConfigs.recommended,
   importX.flatConfigs.typescript,
+  sharedImports(),
+  sharedVue,
   {
     // oxlint runs this rule elsewhere; it cannot see template usages in SFCs
     files: ['**/*.vue', '**/*.astro'],
@@ -315,7 +319,6 @@ export default defineConfig([
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unused-vars': 'off',
       '@typescript-eslint/prefer-as-const': 'off',
-      '@typescript-eslint/consistent-type-imports': 'error',
       'import-x/no-useless-path-segments': 'error',
       'import-x/no-relative-packages': 'error',
       'vue/no-v-html': 'off',
@@ -329,7 +332,6 @@ export default defineConfig([
       'vue/no-useless-mustaches': 'error',
       'vue/no-useless-v-bind': 'error',
       'vue/no-unused-emit-declarations': 'error',
-      'vue/no-use-v-else-with-v-for': 'error',
       'vue/one-component-per-file': 'error',
       'vue/require-default-prop': 'off', // TODO: fix -- this one is very worthwhile
 
