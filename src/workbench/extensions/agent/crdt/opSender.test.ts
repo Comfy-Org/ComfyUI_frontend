@@ -672,6 +672,34 @@ describe('createOpSender', () => {
     localSender.detach()
   })
 
+  it('bounds repeated settlement failure telemetry for one sender', () => {
+    const localSender = createOpSender({
+      sendOps: (workflowId, tab, ops) => {
+        sent.push({ workflowId, tab, ops })
+        return true
+      },
+      onOpsResult: (listener) => {
+        resultListener = listener
+        return vi.fn()
+      },
+      workflowId: () => boundWorkflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: () => {
+        throw new Error('listener boom')
+      }
+    })
+
+    for (const id of [1, 2, 3, 4, 5]) {
+      localSender.enqueue([addNode(id)])
+      ackInFlight()
+    }
+
+    expect(reportError).toHaveBeenCalledTimes(3)
+    localSender.detach()
+  })
+
   it('contains settlement failures when admitting while unbound', () => {
     boundWorkflow = null
     const localSender = createOpSender({
@@ -831,7 +859,7 @@ describe('createOpSender', () => {
     )
   })
 
-  it('isolates an unchunkable live op so serializable siblings still send', () => {
+  it('sends the valid prefix but rejects a malformed op and its dependent suffix', () => {
     const circularNode = addNode(2)
     const node: AddNodeOperation['node'] & Record<string, unknown> = {
       ...circularNode.node
@@ -845,15 +873,96 @@ describe('createOpSender', () => {
     expect(sent).toHaveLength(1)
     expect(
       sent[0].ops.map((op) => ('node_id' in op ? op.node_id : null))
-    ).toEqual([1, 3])
+    ).toEqual([1])
     expect(settled.map(summarizeSettlement)).toEqual([
-      { state: 'undeliverable', nodeIds: [2] }
+      { state: 'undeliverable', nodeIds: [2, 3] }
     ])
     ackInFlight()
     expect(sent).toHaveLength(1)
   })
 
-  it('queues serializable siblings before an invalid-op settlement detaches', () => {
+  it('contains a second serialization failure while rechunking recovery', () => {
+    const unstableNode = addNode(1)
+    let serializations = 0
+    unstableNode.node = {
+      ...unstableNode.node,
+      toJSON() {
+        serializations++
+        if (serializations >= 3) throw new Error('stateful toJSON failed')
+        return { id: 1, type: 'TestNode' }
+      }
+    } as AddNodeOperation['node']
+    const circularNode = addNode(2)
+    const node: AddNodeOperation['node'] & Record<string, unknown> = {
+      ...circularNode.node
+    }
+    node.circular = node
+    circularNode.node = node
+
+    sender.admit([unstableNode, circularNode])
+
+    expect(() => sender.flush()).not.toThrow()
+    expect(sent).toHaveLength(0)
+    expect(settled.map(summarizeSettlement)).toEqual([
+      { state: 'undeliverable', nodeIds: [1, 2] }
+    ])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'failure_rechunking_agent_op_sender_recovery'
+      })
+    )
+  })
+
+  it('rejects an unserializable non-batchable op before transport', () => {
+    const clear = {
+      op: 'clear',
+      removed_nodes: [1]
+    } as GraphOperation & Record<string, unknown>
+    clear.circular = clear
+
+    sender.admit([clear])
+
+    expect(() => sender.flush()).not.toThrow()
+    expect(sent).toHaveLength(0)
+    expect(settled).toHaveLength(1)
+    expect(settled[0]).toMatchObject({ state: 'undeliverable' })
+  })
+
+  it('does not recreate an admission after sealing detaches the sender', () => {
+    const circularNode = addNode(1)
+    const node: AddNodeOperation['node'] & Record<string, unknown> = {
+      ...circularNode.node
+    }
+    node.circular = node
+    circularNode.node = node
+    const localSettled: BatchOutcome[] = []
+    let workflow = 'wf-old'
+    const localSender = createOpSender({
+      sendOps: () => true,
+      onOpsResult: () => vi.fn(),
+      workflowId: () => workflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: (outcome) => {
+        localSettled.push(outcome)
+        localSender.detach()
+      }
+    })
+    localSender.admit([circularNode])
+    workflow = 'wf-new'
+
+    localSender.admit([addNode(2)])
+
+    expect(localSender.pending()).toBe(0)
+    expect(localSettled.map(summarizeSettlement)).toEqual([
+      { state: 'undeliverable', nodeIds: [1] },
+      { state: 'undeliverable', nodeIds: [2] }
+    ])
+  })
+
+  it('queues the valid prefix before an invalid suffix settlement detaches', () => {
     const circularNode = addNode(2)
     const node: AddNodeOperation['node'] & Record<string, unknown> = {
       ...circularNode.node
@@ -881,8 +990,8 @@ describe('createOpSender', () => {
 
     expect(localSender.pending()).toBe(0)
     expect(localSettled.map(summarizeSettlement)).toEqual([
-      { state: 'undeliverable', nodeIds: [2] },
-      { state: 'undeliverable', nodeIds: [1, 3] }
+      { state: 'undeliverable', nodeIds: [2, 3] },
+      { state: 'undeliverable', nodeIds: [1] }
     ])
   })
 
