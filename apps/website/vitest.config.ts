@@ -30,7 +30,11 @@ export default defineConfig({
     },
     include: ['src/**/*.{test,spec}.ts', 'scripts/**/*.{test,spec}.ts'],
     globals: false,
-    setupFiles: ['../../vitest.timer.setup.ts', './src/test/setup.ts'],
+    setupFiles: [
+      '../../vitest.network.setup.ts',
+      '../../vitest.timer.setup.ts',
+      './src/test/setup.ts'
+    ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],
