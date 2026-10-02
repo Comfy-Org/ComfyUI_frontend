@@ -32,7 +32,7 @@ describe('useFreeUsePlacement', () => {
 
     expect(variant.value).toBe('control')
     remoteConfig.value = {
-      'agent-free-use-message-placement': 'above-input'
+      [FREE_USE_PLACEMENT_FLAG]: 'above-input'
     }
     authenticatedRemoteConfigState.value = 'authenticated'
     remoteConfigRevision.value++
@@ -59,7 +59,7 @@ describe('useFreeUsePlacement', () => {
 
   it('prefers session and dev overrides for QA', () => {
     authenticatedRemoteConfigState.value = 'authenticated'
-    remoteConfig.value = { 'agent-free-use-message-placement': 'top-banner' }
+    remoteConfig.value = { [FREE_USE_PLACEMENT_FLAG]: 'top-banner' }
     vi.mocked(getDevOverride).mockReturnValue('near-composer')
     vi.mocked(getSessionOverride).mockReturnValue('inside-input')
 
