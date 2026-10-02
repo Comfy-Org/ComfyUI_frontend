@@ -11,9 +11,7 @@ const { label } = defineProps<{ label: string }>()
     class="pointer-events-auto flex max-w-full flex-wrap items-center justify-center gap-0.5 rounded-3xl border border-transparency-white-t20 bg-primary-comfy-ink-light p-1 shadow-xl shadow-black/40 sm:flex-nowrap sm:rounded-full"
   >
     <slot />
-    <template v-if="$slots.history">
-      <EditorDivider class="first:hidden" />
-      <slot name="history" />
-    </template>
+    <EditorDivider class="first:hidden last:hidden" />
+    <slot name="history" />
   </div>
 </template>

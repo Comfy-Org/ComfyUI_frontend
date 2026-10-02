@@ -110,7 +110,7 @@ const dockOverSheet = () => floating() && !wide.value && !panelDimmed
         <slot name="tray" />
         <EditorDock v-if="showDock && !dockOverSheet()" :label="toolsLabel">
           <slot name="dock" />
-          <template v-if="$slots.history" #history>
+          <template #history>
             <slot name="history" />
           </template>
         </EditorDock>
@@ -124,7 +124,7 @@ const dockOverSheet = () => floating() && !wide.value && !panelDimmed
         <template v-if="showDock && dockOverSheet()" #above>
           <EditorDock :label="toolsLabel">
             <slot name="dock" />
-            <template v-if="$slots.history" #history>
+            <template #history>
               <slot name="history" />
             </template>
           </EditorDock>
