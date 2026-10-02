@@ -72,6 +72,7 @@ async function mockAgentBoot(
     features: agentFeatures(agentFlag),
     settings: {
       'Comfy.TutorialCompleted': true,
+      'Comfy.WorkflowActions.SeenItems': ['deploy-as-api'],
       'Comfy.RightSidePanel.ShowErrorsTab': false,
       ...settings,
       ...((vueNodes || cloudAppFixture.info().tags.includes('@vue-nodes')) && {
