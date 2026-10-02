@@ -28,13 +28,13 @@ const emit = defineEmits<{ file: [file: File] }>()
     @file="emit('file', $event)"
   >
     <span
-      class="relative block aspect-square overflow-hidden rounded-lg bg-[radial-gradient(circle_at_50%_40%,var(--color-transparency-white-t20),transparent_70%)]"
+      class="relative block aspect-square overflow-hidden rounded-lg bg-white"
     >
       <img
         :src="product.url"
         alt=""
         draggable="false"
-        class="absolute inset-0 m-auto max-h-[85%] max-w-[85%] object-contain drop-shadow-lg"
+        class="absolute inset-0 m-auto max-h-[88%] max-w-[88%] object-contain mix-blend-multiply"
       />
       <span
         class="absolute top-1 right-1 flex size-5 items-center justify-center rounded-full bg-primary-comfy-ink/70 text-primary-warm-white opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100"

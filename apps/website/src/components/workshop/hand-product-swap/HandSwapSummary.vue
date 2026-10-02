@@ -13,12 +13,12 @@ const { product, productName, resolution } = swap
 
 <template>
   <span
-    class="flex size-9 shrink-0 items-center justify-center rounded-md bg-transparency-white-t4 ring-1 ring-transparency-white-t8"
+    class="flex size-9 shrink-0 items-center justify-center rounded-md bg-white ring-1 ring-transparency-white-t8"
   >
     <img
       :src="product.url"
       alt=""
-      class="max-h-[80%] max-w-[80%] object-contain"
+      class="max-h-[84%] max-w-[84%] object-contain mix-blend-multiply"
     />
   </span>
   <span class="min-w-0 flex-1 truncate text-[13px] text-primary-warm-white">{{
