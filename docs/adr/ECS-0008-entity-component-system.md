@@ -69,7 +69,7 @@ Node ID reminting policy is defined by
 
 > **This amendment is a draft and does not govern.** It is written by the author
 > of PR 19717 to record how the frontend follows the occurrence-aware widget
-> identity already established by `@comfyorg/comfy-multi-player` schema v5, so
+> identity merged upstream for `@comfyorg/comfy-multi-player` schema v5, so
 > that compatibility can be accepted or rejected explicitly rather than
 > inferred from a merge. It needs a frontend maintainer's ratification before it
 > has any force in this repository. See the alternative below for what rejecting
@@ -96,12 +96,14 @@ earlier widget's value.
 | Runtime identity    | `WidgetId` = `graphId:nodeId:name`                                               | Yes, and still does          | `widgetValueStore`, every `WidgetId` consumer                                                                     |
 | Serialized identity | `(name, occurrence)`, zero-based among the serializable widgets sharing the name | No                           | `widgets_values_ordered` only — its reader, its writer, and `@comfyorg/comfy-multi-player` schema v5 `set_widget` |
 
-This is not a frontend-only identity design. The shared document host already
-uses `(name, occurrence)` for widget storage, projection, and `set_widget`
-operations under schema v5 ([comfy-multi-player PR
-266](https://github.com/Comfy-Org/comfy-multi-player/pull/266)). Cloud and local
-run that same applier. The frontend field is the serialized boundary that lets
-the canvas preserve and restore the identity the document host already uses.
+This is not a frontend-only identity design. Schema v5 support for
+`(name, occurrence)` widget storage, projection, and `set_widget` operations is
+merged upstream in [comfy-multi-player PR
+266](https://github.com/Comfy-Org/comfy-multi-player/pull/266), but is unreleased
+and not yet consumed here: this repository still pins version 0.3.6. Cloud and
+local run the shared applier, but not yet a version containing that support.
+The frontend field is the serialized boundary that will let the canvas preserve
+and restore the occurrence identity when the dependency is adopted.
 
 The accepted cost above is unchanged for the runtime key. What changes is that
 the duplicate pair is no longer only a thing the renamer tries to prevent: when
@@ -131,13 +133,13 @@ workflow's JSON is unchanged, and the reader
 validation boundary that degrades one node rather than failing a load.
 
 **The alternative, if this is rejected.** Rejection means choosing an explicit
-frontend/document-host incompatibility: either revise the shared schema before
-the frontend consumes it, or define an adapter and a loss policy for
-occurrence-aware values received from the document host. Merely dropping
-`widgets_values_ordered` and reporting `ensureUniqueWidgetNames` failures would
-leave the cloud/local applier able to address state the canvas cannot restore,
-so it is not an architecture-neutral smaller route. The choice belongs to a
-frontend maintainer, not to the PR author.
+future frontend/document-host incompatibility: either revise the unreleased
+shared schema before the frontend consumes it, or define an adapter and a loss
+policy for occurrence-aware values received from the document host. Merely
+dropping `widgets_values_ordered` and reporting `ensureUniqueWidgetNames`
+failures would leave the canvas unable to restore state once cloud/local adopt
+the occurrence-aware applier, so it is not an architecture-neutral smaller
+route. The choice belongs to a frontend maintainer, not to the PR author.
 
 ## Context
 
