@@ -4,23 +4,19 @@
   "id": "image-compositor",
   "capability": "Image compositor",
   "description": "Layered image-composition presentation, editing orchestration, extension registration, and LiteGraph widget integration.",
-  "expectedFileCount": 24,
+  "expectedFileCount": 25,
   "modules": [
     {
-      "path": "src/renderer/extensions/compositor/components/WidgetCompositor.vue",
+      "path": "src/renderer/extensions/compositor/components/**",
       "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/compositor/components/WidgetCompositor.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/compositor/components/types.ts",
-      "role": "application"
     },
     {
       "path": "src/renderer/extensions/compositor/composables/**",
       "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useCompositorWidget.ts",
+      "role": "integration"
     },
     {
       "path": "src/extensions/core/imageCompositor.ts",
@@ -45,6 +41,7 @@
       "checks": [
         "src/renderer/extensions/compositor/composables/compositorSession.test.ts",
         "src/renderer/extensions/compositor/composables/compositorSave.test.ts",
+        "src/renderer/extensions/compositor/composables/compositorLayerState.test.ts",
         "src/renderer/extensions/compositor/components/WidgetCompositor.test.ts",
         "src/extensions/core/imageCompositor.test.ts"
       ]
