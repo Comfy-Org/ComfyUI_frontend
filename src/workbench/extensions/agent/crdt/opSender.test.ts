@@ -260,9 +260,6 @@ describe('createOpSender', () => {
   it('keeps a workflow its counter while a re-subscribe has not been acknowledged', () => {
     sender.admit([addNode(1)])
     sender.admit([addNode(2)])
-    // Switching docs re-subscribes, and a subscribe resets the follower's
-    // observed sequence until `doc_subscribed` acks it. A human edit landing in
-    // that window has nothing but this doc's own cursor to mint past.
     boundWorkflow = 'wf-2'
     observedSequence = 0
     sender.admit([addNode(3)])
