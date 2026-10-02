@@ -597,6 +597,16 @@ describe('baseline admission and catalog stability', () => {
     expect(readFileSync(filename, 'utf8')).toBe(before)
   })
 
+  test('stable catalog keeps short owner lists formatter-compatible', () => {
+    const root = createConfiguredRepository()
+    runArchitectureCheck(root, 'update')
+    const catalog = readFileSync(
+      join(root, 'docs/architecture/domains/catalog.json'),
+      'utf8'
+    )
+    expect(catalog).toContain('"owners": ["@owner"]')
+  })
+
   test('catalog checks tolerate formatter-only JSON layout changes', () => {
     const root = createConfiguredRepository()
     runArchitectureCheck(root, 'update')

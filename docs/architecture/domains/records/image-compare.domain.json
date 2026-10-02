@@ -1,0 +1,57 @@
+{
+  "$schema": "../domain.schema.json",
+  "schemaVersion": 1,
+  "id": "image-compare",
+  "capability": "Image compare",
+  "description": "Image comparison presentation, image selection behavior, extension registration, and LiteGraph widget integration.",
+  "expectedFileCount": 7,
+  "modules": [
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useImageCompareImages.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useImageCompareImages.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useImageCompareWidget.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/extensions/core/imageCompare.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/ImageCompareWidget.ts",
+      "role": "integration"
+    }
+  ],
+  "publicEntryPoints": [],
+  "owners": ["@jtydhr88", "@Comfy-Org/comfy_frontend_devs"],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Image selection and compare-widget presentation remain stable",
+      "checks": [
+        "src/renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.test.ts",
+        "src/renderer/extensions/vueNodes/widgets/composables/useImageCompareImages.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "The core extension and LiteGraph widget remain the host integration seams.",
+    "Image selection remains isolated from compare presentation."
+  ],
+  "enforcement": { "deepImports": "baseline", "dependencies": "baseline" }
+}

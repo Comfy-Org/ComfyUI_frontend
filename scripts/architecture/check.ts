@@ -927,10 +927,16 @@ const validateNewBaselineCoverage = (
 }
 
 const stableJson = (value: unknown): string =>
-  `${JSON.stringify(value, null, 2).replace(
-    /"fingerprintPrefixes": \[\n\s+"([^"]+)"\n\s+\]/g,
-    '"fingerprintPrefixes": ["$1"]'
-  )}\n`
+  `${JSON.stringify(value, null, 2)
+    .replace(
+      /"fingerprintPrefixes": \[\n\s+"([^"]+)"\n\s+\]/g,
+      '"fingerprintPrefixes": ["$1"]'
+    )
+    .replace(/"owners": \[\n\s+"([^"]+)"\n\s+\]/g, '"owners": ["$1"]')
+    .replace(
+      /"owners": \[\n\s+"([^"]+)",\n\s+"([^"]+)"\n\s+\]/g,
+      '"owners": ["$1", "$2"]'
+    )}\n`
 
 const stableCatalog = (
   records: DomainRecord[],
