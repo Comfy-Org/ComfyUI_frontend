@@ -53,6 +53,16 @@ describe('EditorTiles', () => {
     ).not.toBeChecked()
   })
 
+  it('draws each option from its picture unless the tile slot draws it', () => {
+    const { group } = renderTiles()
+
+    const yacht = within(group).getByRole('radio', { name: 'Yacht' })
+    expect(within(yacht).getByRole('img', { hidden: true })).toHaveAttribute(
+      'src',
+      '/yacht.jpg'
+    )
+  })
+
   it('holds placeholders while the options load', () => {
     const { group } = renderTiles({ busy: true })
 
