@@ -30,7 +30,8 @@ export const RELIGHT_CREDITS = 20
 
 const EXAMPLE = '/images/apps/relight/example.jpg'
 const EXAMPLE_RELIT = '/images/apps/relight/example-relit.jpg'
-const MOCK_DELAY_MS = 2400
+/** How long the mock takes to answer, which its progress counts towards. */
+export const RELIGHT_RUN_MS = 2400
 
 export const RELIGHT_EXAMPLE = {
   url: EXAMPLE,
@@ -72,7 +73,7 @@ export async function runRelight(
 ): Promise<RelightResult> {
   const rendered = render(request).catch(() => undefined)
   try {
-    await mockJob(undefined, signal, MOCK_DELAY_MS)
+    await mockJob(undefined, signal, RELIGHT_RUN_MS)
   } catch (error) {
     void rendered.then((url) => url && URL.revokeObjectURL(url))
     throw error
