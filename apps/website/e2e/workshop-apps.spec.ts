@@ -17,6 +17,7 @@ async function mockFlags(
     reshoot?: boolean
     moveAnything?: boolean
     relight?: boolean
+    spriteSheet?: boolean
   }
 ) {
   await context.route('**/t.comfy.org/**', (route) =>
@@ -31,6 +32,7 @@ async function mockFlags(
               'workshop-reshoot-app-enabled': flags.reshoot ?? true,
               'workshop-move-anything-app-enabled': flags.moveAnything ?? true,
               'workshop-relight-app-enabled': flags.relight ?? true,
+              'workshop-sprite-sheet-app-enabled': flags.spriteSheet ?? true,
               ...(flags.auth ? { 'workshop-auth': true } : {})
             },
             featureFlagPayloads: {}
@@ -122,7 +124,7 @@ test('lists every app on the hub apps page, on /hub/apps/ pages', async ({
   )
   const shelf = page.getByTestId('app-shelf')
   const cards = shelf.getByRole('link')
-  await expect(cards).toHaveCount(4)
+  await expect(cards).toHaveCount(5)
   await expect(cards.nth(0)).toHaveAttribute(
     'href',
     '/hub/apps/cinematic-studio/'
@@ -130,6 +132,7 @@ test('lists every app on the hub apps page, on /hub/apps/ pages', async ({
   await expect(cards.nth(1)).toHaveAttribute('href', '/hub/apps/reshoot/')
   await expect(cards.nth(2)).toHaveAttribute('href', '/hub/apps/move-anything/')
   await expect(cards.nth(3)).toHaveAttribute('href', '/hub/apps/relight/')
+  await expect(cards.nth(4)).toHaveAttribute('href', '/hub/apps/sprite-sheet/')
   await expect(
     page.getByRole('button', { name: /Browse all apps/ })
   ).toHaveCount(0)
@@ -142,13 +145,14 @@ test('hides Re-shoot from the hub apps page and closes its page while its flag i
   await mockFlags(context, { apps: true, workflows: false, reshoot: false })
   await page.goto('/hub/apps/')
   const cards = page.getByTestId('app-shelf').getByRole('link')
-  await expect(cards).toHaveCount(3)
+  await expect(cards).toHaveCount(4)
   await expect(cards.nth(0)).toHaveAttribute(
     'href',
     '/hub/apps/cinematic-studio/'
   )
   await expect(cards.nth(1)).toHaveAttribute('href', '/hub/apps/move-anything/')
   await expect(cards.nth(2)).toHaveAttribute('href', '/hub/apps/relight/')
+  await expect(cards.nth(3)).toHaveAttribute('href', '/hub/apps/sprite-sheet/')
 
   await page.goto('/hub/apps/reshoot/')
   await expect(page.getByText('Cinematic Studio is not open yet')).toBeVisible()
@@ -311,7 +315,11 @@ test('hides the site header in the editor apps only', async ({
 }) => {
   await mockFlags(context, { apps: true, workflows: false })
   const header = page.getByRole('navigation', { name: 'Main navigation' })
-  for (const path of ['/hub/apps/relight/', '/hub/apps/move-anything/']) {
+  for (const path of [
+    '/hub/apps/relight/',
+    '/hub/apps/move-anything/',
+    '/hub/apps/sprite-sheet/'
+  ]) {
     await page.goto(path)
     await expect(page.getByTestId('apps-home')).toBeVisible()
     await expect(header).toBeHidden()
@@ -650,6 +658,70 @@ test('relights from the Relight bottom sheet on phones @mobile', async ({
     () => document.documentElement.scrollWidth - window.innerWidth
   )
   expect(overflow).toBe(0)
+})
+
+test('closes the Sprite Sheet Generator while its flag is off', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, {
+    apps: true,
+    workflows: false,
+    spriteSheet: false
+  })
+  await page.goto('/hub/apps/sprite-sheet/')
+  await expect(page.getByText('Cinematic Studio is not open yet')).toBeVisible()
+  await expect(page.getByTestId('sprite-sheet')).toHaveCount(0)
+})
+
+test('makes a sprite sheet of the example from the floating panel', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/hub/apps/sprite-sheet/')
+  const app = page.getByTestId('sprite-sheet')
+  await expect(app.getByTestId('sprite-empty')).toBeVisible()
+  await app.getByRole('button', { name: 'Try the example' }).click()
+  const panel = app.getByRole('complementary', {
+    name: 'Sprite sheet settings'
+  })
+  await expect(panel).toContainText('fox-explorer.png')
+
+  await panel.getByRole('textbox', { name: 'Animation' }).fill('dancing')
+  await panel.getByTestId('sprite-picker-style').click()
+  await app
+    .getByRole('dialog', { name: 'Style' })
+    .getByRole('radio', { name: 'Toon' })
+    .click()
+  await panel.getByTestId('sprite-picker-motion').click()
+  await app
+    .getByRole('dialog', { name: 'Motion' })
+    .getByRole('radio', { name: 'Jump' })
+    .click()
+  await expect(panel.getByTestId('sprite-picker-motion')).toContainText('Jump')
+  await expect(app.getByRole('button', { name: 'Undo' })).toBeEnabled()
+  await expectPanelWidth(panel)
+  const tools = app.getByRole('toolbar', { name: 'Sprite sheet tools' })
+  await expect(tools.getByRole('button').last()).toHaveAccessibleName('Redo')
+
+  await tools.getByRole('radio', { name: 'Preview' }).click()
+  await expect(app.getByTestId('sprite-preview')).toBeVisible()
+  await expect(tools.getByRole('button', { name: 'Pause' })).toBeVisible()
+  await tools.getByRole('radio', { name: 'Sheet' }).click()
+
+  await panel.getByTestId('sprite-run').click()
+  await expect(app.getByRole('status')).toContainText('Drawing the frames')
+  await expect(app.getByRole('link', { name: 'Download' })).toHaveAttribute(
+    'download',
+    'fox-explorer-toon-jump-sheet.png'
+  )
+  await expectDownloadBesideGitHub(app)
+  await expect(app.getByTestId('sprite-sheet-result')).toBeVisible()
+  await expect(tools.getByRole('button', { name: 'Compare' })).toHaveCount(0)
+
+  await tools.getByRole('button', { name: 'Edit', exact: true }).click()
+  await expect(panel.getByTestId('sprite-picker-motion')).toContainText('Jump')
 })
 
 test('sends an old catalogue link for the Apps tab to the hub apps page', async ({

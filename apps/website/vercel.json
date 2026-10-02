@@ -4356,6 +4356,16 @@
       "source": "/models/apps/reshoot/",
       "destination": "/hub/apps/reshoot/",
       "permanent": false
+    },
+    {
+      "source": "/models/apps/sprite-sheet",
+      "destination": "/hub/apps/sprite-sheet/",
+      "permanent": false
+    },
+    {
+      "source": "/models/apps/sprite-sheet/",
+      "destination": "/hub/apps/sprite-sheet/",
+      "permanent": false
     }
   ]
 }

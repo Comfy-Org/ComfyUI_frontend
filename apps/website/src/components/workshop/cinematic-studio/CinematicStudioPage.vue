@@ -26,6 +26,7 @@ import {
 import { rc } from '../../../lib/workshop/cinematic-studio/reshoot-copy'
 import { mc } from '../../../lib/workshop/move-anything/copy'
 import { lc } from '../../../lib/workshop/relight/copy'
+import { spc } from '../../../lib/workshop/sprite-sheet/copy'
 import RunLeaveDialog from '../RunLeaveDialog.vue'
 import WorkshopGate from '../WorkshopGate.vue'
 import CinematicAppsHub from './CinematicAppsHub.vue'
@@ -35,6 +36,7 @@ import CinematicStudioPanel from './CinematicStudioPanel.vue'
 import ReshootStudio from './reshoot/ReshootStudio.vue'
 import MoveAnythingStudio from '../move-anything/MoveAnythingStudio.vue'
 import RelightStudio from '../relight/RelightStudio.vue'
+import SpriteSheetStudio from '../sprite-sheet/SpriteSheetStudio.vue'
 import { isWorkshopModelShown } from '../../../scripts/workshop-model-flags'
 
 const {
@@ -57,8 +59,18 @@ const LAYOUTS = [
   { id: 'hub', label: 'cinematic.ux.hub' }
 ] as const
 
-const APPS = ['studio', 'reshoot', 'move-anything', 'relight'] as const
-const EDITOR_APPS: readonly WorkshopAppId[] = ['move-anything', 'relight']
+const APPS = [
+  'studio',
+  'reshoot',
+  'move-anything',
+  'relight',
+  'sprite-sheet'
+] as const
+const EDITOR_APPS: readonly WorkshopAppId[] = [
+  'move-anything',
+  'relight',
+  'sprite-sheet'
+]
 const reviewing = WORKSHOP_DEPLOY_ENV !== 'production'
 
 const appsEnabled = useWorkshopAppsEnabled()
@@ -116,7 +128,8 @@ const appOptions = computed(() =>
     { id: 'studio', label: tc('cinematic.title', locale) },
     { id: 'reshoot', label: rc('reshoot.title', locale) },
     { id: 'move-anything', label: mc('move.title', locale) },
-    { id: 'relight', label: lc('relight.title', locale) }
+    { id: 'relight', label: lc('relight.title', locale) },
+    { id: 'sprite-sheet', label: spc('sprite.title', locale) }
   ].filter((option) =>
     shownApps.value.some((candidate) => candidate.appId === option.id)
   )
@@ -186,6 +199,7 @@ function pickApp(id: string) {
     <ReshootStudio v-else-if="app === 'reshoot'" :locale />
     <MoveAnythingStudio v-else-if="app === 'move-anything'" :layout :locale />
     <RelightStudio v-else-if="app === 'relight'" :layout :locale />
+    <SpriteSheetStudio v-else-if="app === 'sprite-sheet'" :layout :locale />
     <CinematicStudioPanel
       v-else-if="layout === 'd'"
       :models
