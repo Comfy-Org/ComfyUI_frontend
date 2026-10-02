@@ -40,7 +40,8 @@ describe('modelsByProvider', () => {
 
   it('has no groups without models', () => {
     expect(modelsByProvider([], 'Other')).toEqual([])
-    for (const group of modelsByProvider(catalogue, 'Other'))
-      expect(group.models.length).toBeGreaterThan(0)
+    expect(
+      modelsByProvider(catalogue, 'Other').map((group) => group.models.length)
+    ).toEqual([2, 2, 1, 1])
   })
 })
