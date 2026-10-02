@@ -48,7 +48,6 @@ function setup(workflow: WorkflowJSON) {
   return { graph, doc, collector, applier, applyCollected }
 }
 
-/** The one report `reportOnce` emitted, as `[error, options]`. */
 function onlyReport() {
   const calls = vi.mocked(reportError).mock.calls
   expect(calls).toHaveLength(1)
