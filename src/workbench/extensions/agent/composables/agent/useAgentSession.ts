@@ -1740,9 +1740,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
       const parts = mergeAdjacentTextParts(
         normalizeAgentTranscript(rows).messages[0]?.parts ?? []
       )
-      // A terminal row can be persisted before its content is populated. Do
-      // not replace locally streamed text with an empty transcript in that
-      // window; settling without persisted parts preserves what the user saw.
       return { kind: 'terminal', parts: parts.length === 0 ? undefined : parts }
     } catch (error) {
       if (signal.aborted) throw error
