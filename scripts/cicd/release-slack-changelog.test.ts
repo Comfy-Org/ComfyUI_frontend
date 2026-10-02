@@ -45,11 +45,24 @@ function release(overrides: Partial<ReleaseNotification> = {}) {
 }
 
 function bodyWithPullRequests(count: number): string {
-  const lines = ["## What's Changed"]
-  for (let i = 1; i <= count; i++) {
-    lines.push(`* fix: change number ${i} by @someone in ${PR}/${20000 + i}`)
-  }
-  return lines.join('\n')
+  return [
+    "## What's Changed",
+    ...pullNumbers(count).map(
+      (pull, index) =>
+        `* fix: change number ${index + 1} by @someone in ${PR}/${pull}`
+    )
+  ].join('\n')
+}
+
+function pullNumbers(count: number): string[] {
+  return Array.from({ length: count }, (_, index) => String(20001 + index))
+}
+
+/** Every pull number the replies actually carry, in order. */
+function postedPullNumbers(replies: string[]): string[] {
+  return [...replies.join('\n').matchAll(/\/pull\/(\d+)/g)].map(
+    (match) => match[1]
+  )
 }
 
 describe('countMergedPullRequests', () => {
@@ -130,7 +143,7 @@ describe('chunkByLines', () => {
     const chunks = chunkByLines(lines.join('\n'), 400)
 
     expect(chunks.join('\n').split('\n')).toEqual(lines)
-    for (const chunk of chunks) expect(chunk.length).toBeLessThanOrEqual(400)
+    expect(chunks.filter((chunk) => chunk.length > 400)).toEqual([])
   })
 
   it('emits an over-long single line on its own rather than breaking it', () => {
@@ -143,6 +156,16 @@ describe('chunkByLines', () => {
   it('returns nothing for blank input', () => {
     expect(chunkByLines('', 100)).toEqual([])
     expect(chunkByLines('\n  \n', 100)).toEqual([])
+  })
+
+  it('never emits a blank chunk before an over-long line', () => {
+    // chat.postMessage rejects empty text with `no_text`, which would end the
+    // thread partway through. A whitespace line followed by a line past the
+    // limit used to flush the whitespace as its own chunk.
+    const chunks = chunkByLines(`   \n${'x'.repeat(5000)}\nafter`, 3500)
+
+    expect(chunks.filter((chunk) => chunk.trim() === '')).toEqual([])
+    expect(chunks).toEqual(['x'.repeat(5000), 'after'])
   })
 })
 
@@ -160,9 +183,9 @@ describe('buildSlackChangelogPost', () => {
     const { headline, replies } = buildSlackChangelogPost(release())
 
     expect(headline).not.toContain('backport core/1.54')
-    for (const pull of ['19838', '19848', '19917']) {
-      expect(replies.join('\n')).toContain(`${PR}/${pull}`)
-    }
+    expect(postedPullNumbers(replies)).toEqual(
+      expect.arrayContaining(['19838', '19848', '19917'])
+    )
   })
 
   it('posts the largest real release as one short headline plus replies', () => {
@@ -173,13 +196,12 @@ describe('buildSlackChangelogPost', () => {
 
     expect(headline).toContain('110 merged PRs')
     expect(headline.length).toBeLessThan(200)
-    for (const chunk of replies) {
-      expect(chunk.length).toBeLessThanOrEqual(SLACK_CHUNK_CHAR_LIMIT)
-    }
-    const posted = replies.join('\n')
-    for (let i = 1; i <= 110; i++) {
-      expect(posted).toContain(`${PR}/${20000 + i}`)
-    }
+    expect(
+      replies.filter((chunk) => chunk.length > SLACK_CHUNK_CHAR_LIMIT)
+    ).toEqual([])
+    expect(postedPullNumbers(replies)).toEqual(
+      expect.arrayContaining(pullNumbers(110))
+    )
   })
 
   it('names a pre-release as one', () => {
@@ -300,11 +322,13 @@ describe('createSlackPoster', () => {
           body: JSON.parse(init.body) as Record<string, unknown>
         })
         const next = responses[Math.min(index++, responses.length - 1)]
-        return {
-          status: next.status ?? 200,
-          headers: new Headers(next.headers ?? {}),
-          json: async () => next.body
-        }
+        // A real Response, so `.json()` and `.headers.get()` behave as they do
+        // in production — and so the 429 case genuinely has no JSON body,
+        // proving the poster checks the status before parsing.
+        return new Response(
+          next.body === undefined ? null : JSON.stringify(next.body),
+          { status: next.status ?? 200, headers: next.headers ?? {} }
+        )
       }
     )
     return calls

@@ -128,7 +128,11 @@ export function chunkByLines(text: string, limit: number): string[] {
       current = candidate
       continue
     }
-    if (current !== '') chunks.push(current)
+    // `.trim()`, matching the final-chunk guard below. A whitespace-only line
+    // followed by a line longer than the limit otherwise emits a blank chunk,
+    // and chat.postMessage rejects empty text with `no_text`, which would end
+    // the thread partway through.
+    if (current.trim() !== '') chunks.push(current)
     current = line
   }
 
@@ -397,8 +401,10 @@ async function main(): Promise<void> {
     return
   }
 
-  const token = process.env.SLACK_BOT_TOKEN ?? ''
-  const channel = process.env.SLACK_CHANNEL_ID ?? ''
+  const token = process.env.SLACK_BOT_TOKEN
+  const channel = process.env.SLACK_CHANNEL_ID
+  if (!token) throw new Error('SLACK_BOT_TOKEN is required')
+  if (!channel) throw new Error('SLACK_CHANNEL_ID is required')
 
   // Degrades to posting rather than failing: the history read needs
   // channels:history, which chat:write does not imply, and a silent release is
