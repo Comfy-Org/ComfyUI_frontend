@@ -1,7 +1,7 @@
 import { datadogRum } from '@datadog/browser-rum'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import type { VNode } from 'vue'
 
 import type {
@@ -120,7 +120,8 @@ function reportPhase(phase: StripePaymentPhase) {
 async function renderCheckout(
   options: FakeBillingClientOptions = {},
   arrange: (fake: FakeBillingClient) => void = () => {},
-  path = CHECKOUT_PATH
+  path = CHECKOUT_PATH,
+  errorHandler?: (error: unknown) => void
 ) {
   recordBillingEntry(parseBillingEntry(path))
   const fake = createFakeBillingClient({
@@ -135,7 +136,8 @@ async function renderCheckout(
   render(FullPageCheckoutView, {
     global: {
       plugins: [createBillingI18n()],
-      provide: { [BILLING_CLIENT_KEY]: fake.client }
+      provide: { [BILLING_CLIENT_KEY]: fake.client },
+      ...(errorHandler === undefined ? {} : { config: { errorHandler } })
     }
   })
   return fake
@@ -176,6 +178,12 @@ const REFUSED_BY_THE_SERVER = {
   httpStatus: 400,
   serverCode: readBillingErrorCode({ code: 'INVALID_PLAN', message: 'no' })
 } as const
+
+const vueErrors: unknown[] = []
+
+beforeEach(() => {
+  vueErrors.length = 0
+})
 
 afterEach(() => {
   sessionStorage.clear()
@@ -704,5 +712,115 @@ describe('the full-page checkout promo journey', () => {
 
     expect(await screen.findByRole('alert')).toBeInTheDocument()
     expect(promoEvents()).toHaveLength(0)
+  })
+})
+
+describe('the full-page operation a Pay links', () => {
+  beforeEach(() => {
+    vi.mocked(datadogRum.getInitConfiguration).mockReturnValue({
+      clientToken: 'pub',
+      applicationId: 'app'
+    })
+  })
+
+  const linked = () =>
+    journey().filter(({ name }) => name === 'billing.checkout.operation_linked')
+
+  async function renderReady(
+    options: FakeBillingClientOptions = {},
+    errorHandler?: (error: unknown) => void
+  ) {
+    const fake = await renderCheckout(
+      options,
+      () => {},
+      CHECKOUT_PATH,
+      errorHandler
+    )
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+    return fake
+  }
+
+  it.for<{ name: string; code: 'OPERATION_ALREADY_PENDING' | 'CONFLICT' }>([
+    {
+      name: 'a Pay refused because an operation is already pending',
+      code: 'OPERATION_ALREADY_PENDING'
+    },
+    { name: 'a Pay refused as a conflict', code: 'CONFLICT' }
+  ])(
+    'does not link the operation the SDK surfaces after $name',
+    async ({ code }) => {
+      const fake = await renderReady()
+      fake.subscribe.mockResolvedValueOnce({ status: 'error', code })
+      fake.recover.mockImplementation(async () => {
+        fake.publishOperation(pendingOperation('op_old'))
+        return { status: 'ok', value: pendingOperation('op_old') }
+      })
+
+      form.emit('confirm', 'ctoken_1', 'card')
+      await waitFor(() => expect(fake.subscribe).toHaveBeenCalled())
+      await fake.subscribe.mock.results[0]?.value
+      fake.publishOperation(pendingOperation('op_old'))
+      expect(await screen.findByTestId('checkout-waiting')).toBeInTheDocument()
+      reportPhase({ phase: 'payment_submit_attempted' })
+
+      expect(linked()).toHaveLength(0)
+      expect(journey().at(-1)).toMatchObject({
+        name: 'billing.checkout.payment_submit_attempted'
+      })
+      expect(journey().at(-1)).not.toHaveProperty('billing_op_id')
+    }
+  )
+
+  it.for<{
+    name: string
+    fail: (fake: FakeBillingClient) => void
+    settled: () => Promise<unknown>
+  }>([
+    {
+      name: 'a Pay whose request never got an answer',
+      fail: (fake) =>
+        fake.subscribe.mockResolvedValueOnce({
+          status: 'error',
+          code: 'REQUEST_FAILED'
+        }),
+      settled: () => screen.findByRole('alert')
+    },
+    {
+      name: 'a Pay whose command rejects',
+      fail: (fake) =>
+        fake.subscribe.mockRejectedValueOnce(new TypeError('Failed to fetch')),
+      settled: () => waitFor(() => expect(vueErrors).toHaveLength(1))
+    }
+  ])(
+    'does not link an operation that appears after $name',
+    async ({ fail, settled }) => {
+      const fake = await renderReady({}, (error) => vueErrors.push(error))
+      fail(fake)
+
+      form.emit('confirm', 'ctoken_1', 'card')
+      await settled()
+      fake.publishOperation(pendingOperation('op_late'))
+      await nextTick()
+
+      expect(linked()).toHaveLength(0)
+    }
+  )
+
+  it('links the operation a Pay issued once, with its id, whatever follows', async () => {
+    const fake = await renderReady({
+      subscribe: {
+        status: 'ok',
+        value: { phase: 'succeeded', operation: succeededOperation('op_9') }
+      }
+    })
+
+    form.emit('confirm', 'ctoken_1', 'card')
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalled())
+    await fake.subscribe.mock.results[0]?.value
+    fake.publishOperation(succeededOperation('op_9'))
+    await waitFor(() => expect(linked()).toHaveLength(1))
+
+    expect(linked()).toMatchObject([{ billing_op_id: 'op_9' }])
   })
 })

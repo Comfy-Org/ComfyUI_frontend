@@ -112,7 +112,8 @@ function cardQuote(overrides: Partial<SubscriptionPreview> = {}) {
 async function renderCheckout(
   path = CHECKOUT_PATH,
   options: FakeBillingClientOptions = {},
-  arrange: (fake: FakeBillingClient) => void = () => {}
+  arrange: (fake: FakeBillingClient) => void = () => {},
+  errorHandler?: (error: unknown) => void
 ) {
   recordBillingEntry(parseBillingEntry(path))
   const router = createRouter({
@@ -133,7 +134,8 @@ async function renderCheckout(
         [BILLING_CLIENT_KEY]: fake.client,
         [WORKSPACE_INVITES_KEY]: fake.invites
       },
-      stubs: { CheckoutPaymentForm: PaymentFormStub }
+      stubs: { CheckoutPaymentForm: PaymentFormStub },
+      ...(errorHandler === undefined ? {} : { config: { errorHandler } })
     }
   })
   return { ...fake, router }
@@ -158,6 +160,12 @@ function journey(): ReportedAction[] {
 const journeyNames = () => journey().map(({ name }) => name)
 
 const nextMacrotask = () => new Promise((resolve) => setTimeout(resolve))
+
+const vueErrors: unknown[] = []
+
+beforeEach(() => {
+  vueErrors.length = 0
+})
 
 describe('the embedded checkout journey', () => {
   beforeEach(() => {
@@ -675,5 +683,103 @@ describe('the embedded checkout journey', () => {
     await nextMacrotask()
 
     expect(journeyNames()).not.toContain('billing.checkout.promo')
+  })
+
+  describe('the operation a Pay links', () => {
+    const linked = () =>
+      journey().filter(
+        ({ name }) => name === 'billing.checkout.operation_linked'
+      )
+    const payButton = () =>
+      screen.getByRole('button', { name: 'Pay and subscribe' })
+
+    it.for<{ name: string; code: 'OPERATION_ALREADY_PENDING' | 'CONFLICT' }>([
+      {
+        name: 'a Pay refused because an operation is already pending',
+        code: 'OPERATION_ALREADY_PENDING'
+      },
+      { name: 'a Pay refused as a conflict', code: 'CONFLICT' }
+    ])(
+      'does not link the operation the SDK surfaces after $name',
+      async ({ code }) => {
+        const fake = await renderCheckout()
+        await waitFor(() => expect(journey()).toHaveLength(2))
+        fake.subscribe.mockResolvedValueOnce({ status: 'error', code })
+        reportConfirm('ctoken_1', 'card')
+        expect(await screen.findByRole('alert')).toBeInTheDocument()
+
+        fake.publishOperation(pendingOperation('op_old'))
+        await waitFor(() =>
+          expect(payButton()).toHaveAttribute('aria-busy', 'true')
+        )
+        reportPhase({ phase: 'payment_submit_attempted' })
+
+        expect(linked()).toHaveLength(0)
+        expect(journey().at(-1)).toMatchObject({
+          name: 'billing.checkout.payment_submit_attempted'
+        })
+        expect(journey().at(-1)).not.toHaveProperty('billing_op_id')
+      }
+    )
+
+    it.for<{
+      name: string
+      fail: (fake: FakeBillingClient) => void
+      settled: () => Promise<unknown>
+    }>([
+      {
+        name: 'a Pay whose request never got an answer',
+        fail: (fake) =>
+          fake.subscribe.mockResolvedValueOnce({
+            status: 'error',
+            code: 'REQUEST_FAILED'
+          }),
+        settled: () => screen.findByRole('alert')
+      },
+      {
+        name: 'a Pay whose command rejects',
+        fail: (fake) =>
+          fake.subscribe.mockRejectedValueOnce(
+            new TypeError('Failed to fetch')
+          ),
+        settled: () => waitFor(() => expect(vueErrors).toHaveLength(1))
+      }
+    ])(
+      'does not link an operation that appears after $name',
+      async ({ fail, settled }) => {
+        const fake = await renderCheckout(
+          CHECKOUT_PATH,
+          {},
+          () => {},
+          (error) => vueErrors.push(error)
+        )
+        await waitFor(() => expect(journey()).toHaveLength(2))
+        fail(fake)
+        reportConfirm('ctoken_1', 'card')
+        await settled()
+
+        fake.publishOperation(pendingOperation('op_late'))
+        await waitFor(() =>
+          expect(payButton()).toHaveAttribute('aria-busy', 'true')
+        )
+
+        expect(linked()).toHaveLength(0)
+      }
+    )
+
+    it('links the operation a Pay issued once, with its id, whatever follows', async () => {
+      await renderCheckout(CHECKOUT_PATH, {
+        subscribe: {
+          status: 'ok',
+          value: { phase: 'succeeded', operation: succeededOperation('op_9') }
+        }
+      })
+      await waitFor(() => expect(journey()).toHaveLength(2))
+
+      reportConfirm('ctoken_1', 'card')
+      await screen.findByRole('heading', { name: "You're all set" })
+
+      expect(linked()).toMatchObject([{ billing_op_id: 'op_9' }])
+    })
   })
 })
