@@ -23,7 +23,9 @@
           :class="badgeIconClass"
         />
         <div
-          v-if="displayMode === 'compact' ? showLabel : badge.label && !iconClass"
+          v-if="
+            displayMode === 'compact' ? showLabel : badge.label && !iconClass
+          "
           :class="labelClasses"
         >
           {{ badge.label }}

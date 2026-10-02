@@ -37,13 +37,6 @@ const tabs = computed(() => [
   }
 ])
 
-const focusedLogs = computed(() => {
-  if (activeTab.value === 'installation') {
-    return comfyManagerStore.succeededTasksLogs
-  }
-  return comfyManagerStore.failedTasksLogs
-})
-
 const visible = computed(() => comfyManagerStore.taskLogs.length > 0)
 
 const isInProgress = computed(
@@ -90,7 +83,10 @@ const { y: scrollY } = useScroll(sectionsContainerRef, {
 
 const lastPanelRef = ref<HTMLElement | null>(null)
 const isUserScrolling = ref(false)
-const lastPanelLogs = computed(() => focusedLogs.value?.at(-1)?.logs)
+const lastPanelLogs = computed(
+  () =>
+    tabs.value.find((tab) => tab.value === activeTab.value)?.logs.at(-1)?.logs
+)
 
 function setSectionsContainer(el: Element | ComponentPublicInstance | null) {
   sectionsContainerRef.value = el instanceof HTMLElement ? el : null

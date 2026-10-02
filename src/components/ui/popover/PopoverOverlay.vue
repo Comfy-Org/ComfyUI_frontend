@@ -62,8 +62,16 @@ function show(event: Event, target?: EventTarget | null) {
       : event.target
   const eventTarget = target ?? sourceTarget
   if (!(eventTarget instanceof HTMLElement)) return
-  focusTarget.value =
-    sourceTarget instanceof HTMLElement ? sourceTarget : eventTarget
+  focusTarget.value = [
+    'mouseenter',
+    'mouseover',
+    'pointerenter',
+    'pointerover'
+  ].includes(event.type)
+    ? undefined
+    : sourceTarget instanceof HTMLElement
+      ? sourceTarget
+      : eventTarget
   anchor.value = eventTarget
   const rect = eventTarget.getBoundingClientRect()
   anchorRect.value = {
@@ -95,7 +103,7 @@ function onScroll(event: Event) {
 }
 
 useEventListener(window, 'scroll', onScroll, { capture: true })
-useEventListener(document, 'scroll', onScroll, { capture: true })
+useEventListener(window, 'resize', hide)
 
 function toggle(event: Event, target?: EventTarget | null) {
   if (open.value) hide()

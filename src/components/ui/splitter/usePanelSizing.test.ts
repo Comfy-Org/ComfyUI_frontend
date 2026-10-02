@@ -147,6 +147,7 @@ describe('pixel panel sizing', () => {
 
   it('loads a new storage key without overwriting the previous tab', async () => {
     localStorage.setItem('left', '550')
+    localStorage.setItem('other', '-10')
     const { leftKey } = await setupSizing()
     leftKey.value = 'other'
     await nextTick()

@@ -90,6 +90,7 @@ import { useI18n } from 'vue-i18n'
 import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
+import type { MenuItem } from '@/components/ui/menu/types'
 import Message from '@/components/ui/message/Message.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Switch from '@/components/ui/switch/Switch.vue'
@@ -206,7 +207,7 @@ const applyChanges = () => {
 }
 
 const menu = ref<InstanceType<typeof ContextMenu>>()
-const contextMenuItems = computed(() => [
+const contextMenuItems = computed<MenuItem[]>(() => [
   {
     label: t('g.enableSelected'),
     icon: 'pi pi-check',

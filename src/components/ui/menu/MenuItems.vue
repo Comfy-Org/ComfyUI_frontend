@@ -1,102 +1,120 @@
 <script setup lang="ts">
+import { createReusableTemplate } from '@vueuse/core'
 import {
-  DropdownMenuCheckboxItem,
-  DropdownMenuItem,
   DropdownMenuPortal,
   DropdownMenuSeparator,
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger
 } from 'reka-ui'
-import { toValue } from 'vue'
+import { computed, toValue } from 'vue'
+import type { Slot, StyleValue } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import MenuAction from './MenuAction.vue'
 import MenuItemContent from './MenuItemContent.vue'
 import { menuContentClass, menuItemClass } from './menuStyles'
 import type { MenuItem } from './types'
 
 defineOptions({ name: 'MenuItems' })
 
-defineProps<{
+type ItemSlotProps = {
+  item: MenuItem
+  props: { action: Record<string, never> }
+  hasSubmenu: boolean
+}
+
+const [DefineItemContent, ReuseItemContent] =
+  createReusableTemplate<Omit<ItemSlotProps, 'props'>>()
+
+const {
+  contentClass = menuContentClass,
+  disableCommandless = false,
+  itemClass = menuItemClass,
+  itemContent,
+  items,
+  legacyCheckedRole = false,
+  separatorClass = 'my-1 h-px bg-border-subtle'
+} = defineProps<{
   items: MenuItem[]
+  contentClass?: string
+  contentStyle?: StyleValue
+  disableCommandless?: boolean
+  itemClass?: string
+  itemContent?: Slot<ItemSlotProps>
+  legacyCheckedRole?: boolean
+  separatorClass?: string
 }>()
 
 const emit = defineEmits<{
   select: []
 }>()
 
-function select(item: MenuItem, event: Event) {
-  if (!item.command) {
-    event.preventDefault()
-    return
-  }
-  if (item.checked !== undefined || item.comfyCommand?.active) {
-    event.preventDefault()
-    void item.command({ originalEvent: event, item })
-    return
-  }
-  void item.command({ originalEvent: event, item })
-  emit('select')
-}
+const visibleItems = computed(() =>
+  items.filter((item) => item.separator || toValue(item.visible) !== false)
+)
 </script>
 
 <template>
+  <DefineItemContent v-slot="{ item, hasSubmenu }">
+    <component
+      :is="itemContent"
+      v-if="itemContent"
+      v-bind="{ item, props: { action: {} }, hasSubmenu }"
+    />
+    <slot v-else name="item" :item :props="{ action: {} }" :has-submenu>
+      <MenuItemContent :item :has-submenu />
+    </slot>
+  </DefineItemContent>
   <template
-    v-for="(item, index) in items"
+    v-for="(item, index) in visibleItems"
     :key="item.key ?? toValue(item.label) ?? index"
   >
-    <DropdownMenuSeparator
-      v-if="item.separator"
-      class="my-1 h-px bg-border-subtle"
-    />
-    <DropdownMenuSub v-else-if="toValue(item.visible) !== false && item.items">
+    <DropdownMenuSeparator v-if="item.separator" :class="separatorClass" />
+    <DropdownMenuSub v-else-if="item.items">
       <DropdownMenuSubTrigger
         :aria-label="toValue(item.label)"
         :disabled="toValue(item.disabled) || item.items.length === 0"
-        :class="cn(menuItemClass, item.class)"
+        :class="cn(itemClass, item.class)"
       >
-        <slot name="item" :item :props="{ action: {} }" :has-submenu="true">
-          <MenuItemContent :item :has-submenu="true" />
-        </slot>
+        <ReuseItemContent :item :has-submenu="true" />
       </DropdownMenuSubTrigger>
       <DropdownMenuPortal>
         <DropdownMenuSubContent
           :class="
             cn(
-              menuContentClass,
+              contentClass,
               'max-h-(--reka-dropdown-menu-content-available-height)'
             )
           "
+          :style="contentStyle"
           :side-offset="2"
           :align-offset="-5"
         >
-          <MenuItems :items="item.items" @select="emit('select')" />
+          <MenuItems
+            :items="item.items"
+            :content-class
+            :content-style
+            :disable-commandless
+            :item-class
+            :item-content="itemContent ?? $slots.item"
+            :legacy-checked-role
+            :separator-class
+            @select="emit('select')"
+          />
         </DropdownMenuSubContent>
       </DropdownMenuPortal>
     </DropdownMenuSub>
-    <DropdownMenuItem
-      v-else-if="toValue(item.visible) !== false && item.checked === undefined"
-      :aria-label="toValue(item.label)"
-      :disabled="toValue(item.disabled)"
-      :class="cn(menuItemClass, item.class)"
-      @select="select(item, $event)"
+    <MenuAction
+      v-else
+      :item
+      :item-class
+      :disable-commandless
+      :legacy-checked-role
+      @select="emit('select')"
     >
-      <slot name="item" :item :props="{ action: {} }" :has-submenu="false">
-        <MenuItemContent :item :has-submenu="false" />
-      </slot>
-    </DropdownMenuItem>
-    <DropdownMenuCheckboxItem
-      v-else-if="toValue(item.visible) !== false"
-      :aria-label="toValue(item.label)"
-      :model-value="item.checked"
-      :disabled="toValue(item.disabled)"
-      :class="cn(menuItemClass, item.class)"
-      @select="select(item, $event)"
-    >
-      <slot name="item" :item :props="{ action: {} }" :has-submenu="false">
-        <MenuItemContent :item :has-submenu="false" />
-      </slot>
-    </DropdownMenuCheckboxItem>
+      <ReuseItemContent :item :has-submenu="false" />
+    </MenuAction>
   </template>
 </template>

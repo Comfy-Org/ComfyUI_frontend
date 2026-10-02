@@ -11,7 +11,7 @@
     class="p-breadcrumb-item-link flex h-8 cursor-pointer items-center overflow-hidden px-2 select-none"
     :class="{
       'gap-1': isActive,
-      'p-breadcrumb-item-link-menu-visible': menu?.overlayVisible,
+      'p-breadcrumb-item-link-menu-visible': menu?.visible,
       'p-breadcrumb-item-link-icon-visible': isActive,
       'text-text-primary': isActive
     }"

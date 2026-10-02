@@ -146,11 +146,13 @@ const translateMenuItem = (item: MenuItem): MenuItem => {
     ? t(`menuLabels.${normalizeI18nKey(label)}`, label)
     : undefined
 
-  return {
-    ...item,
-    label: translatedLabel,
-    items: item.items?.map(translateMenuItem)
-  }
+  return item.items
+    ? {
+        ...item,
+        label: translatedLabel,
+        items: item.items.map(translateMenuItem)
+      }
+    : { ...item, label: translatedLabel }
 }
 
 const showSettings = (defaultPanel?: SettingPanelType) => {
@@ -178,7 +180,7 @@ const themeMenuItems = computed(() => {
   }))
 })
 
-const extraMenuItems = computed(() => [
+const extraMenuItems = computed<MenuItem[]>(() => [
   { separator: true },
   {
     key: 'theme',
@@ -218,7 +220,9 @@ const extraMenuItems = computed(() => [
   }
 ])
 
-const translatedItems = computed(() => {
+const menuSeparator: MenuItem = { separator: true }
+
+const translatedItems = computed<MenuItem[]>(() => {
   const items = menuItemStore.menuItems.map(translateMenuItem)
   let helpIndex = items.findIndex((item) => item.key === 'Help')
   let helpItem: MenuItem | undefined
@@ -230,13 +234,7 @@ const translatedItems = computed(() => {
     helpItem = items.splice(
       helpIndex,
       1,
-      ...(isLastItem
-        ? [
-            {
-              separator: true
-            }
-          ]
-        : [])
+      ...(isLastItem ? [menuSeparator] : [])
     )[0]
   }
   helpIndex = items.length
@@ -245,14 +243,7 @@ const translatedItems = computed(() => {
     helpIndex,
     0,
     ...extraMenuItems.value,
-    ...(helpItem
-      ? [
-          {
-            separator: true
-          },
-          helpItem
-        ]
-      : [])
+    ...(helpItem ? [menuSeparator, helpItem] : [])
   )
 
   return items

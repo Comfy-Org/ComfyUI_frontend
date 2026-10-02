@@ -1,7 +1,3 @@
-export function getSplitterStorageKey(baseKey: string, panelIds: string[]) {
-  return `${baseKey}:${panelIds.join(',')}`
-}
-
 function getStorage() {
   try {
     return globalThis.localStorage
