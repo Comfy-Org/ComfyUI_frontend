@@ -48,7 +48,8 @@ export async function consentOfferDeclined(): Promise<boolean> {
 export async function recordConsentOfferDeclined(): Promise<void> {
   const response = await api.storeSetting(
     AGENT_CONSENT_OFFER_DECLINED_SETTING_ID,
-    true
+    true,
+    { keepalive: true }
   )
   if (!response.ok) {
     throw new ConsentOfferDeclinedWriteError(

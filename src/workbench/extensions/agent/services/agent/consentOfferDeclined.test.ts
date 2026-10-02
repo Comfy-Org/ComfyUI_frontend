@@ -78,7 +78,9 @@ describe('consentOfferDeclined', () => {
 
     await recordConsentOfferDeclined()
 
-    expect(api.storeSetting).toHaveBeenCalledExactlyOnceWith(SETTING_ID, true)
+    expect(api.storeSetting).toHaveBeenCalledExactlyOnceWith(SETTING_ID, true, {
+      keepalive: true
+    })
     expect(await consentOfferDeclined()).toBe(true)
   })
 
