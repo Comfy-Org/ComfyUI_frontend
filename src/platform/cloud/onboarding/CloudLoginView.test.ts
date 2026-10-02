@@ -72,16 +72,17 @@ afterEach(() => {
 })
 
 describe('CloudLoginView', () => {
+  it('hides the free-runs offer when the server sends none', async () => {
+    await renderLoginView('/cloud/login', FREE_RUN_MESSAGES)
+
+    expect(screen.queryByText(/free run/)).not.toBeInTheDocument()
+  })
+
   it.for<{
     name: string
-    offer: RemoteConfig['free_tier_offer']
-    expected: string | null
+    offer: NonNullable<RemoteConfig['free_tier_offer']>
+    expected: string
   }>([
-    {
-      name: 'hides the offer when the server sends none',
-      offer: undefined,
-      expected: null
-    },
     {
       name: 'states the server allowance',
       offer: { job_allowance: 3, requires_google_sign_in: false },
@@ -101,11 +102,7 @@ describe('CloudLoginView', () => {
     remoteConfig.value = { free_tier_offer: offer }
     await renderLoginView('/cloud/login', FREE_RUN_MESSAGES)
 
-    if (expected === null) {
-      expect(screen.queryByText(/free run/)).not.toBeInTheDocument()
-    } else {
-      expect(screen.getByText(expected)).toBeInTheDocument()
-    }
+    expect(screen.getByText(expected)).toBeInTheDocument()
   })
 
   it('carries the incoming query onto the sign-up link', async () => {
