@@ -134,6 +134,7 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackUnifiedAuthRefresh?.(metadata))
   }
 
+  // fallow-ignore-next-line unused-class-member
   trackWebSessionEvent(event: WebSessionTelemetryEvent): void {
     this.dispatch((provider) => provider.trackWebSessionEvent?.(event))
   }
