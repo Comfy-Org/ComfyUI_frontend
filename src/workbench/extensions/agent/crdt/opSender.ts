@@ -224,6 +224,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     if (opId === undefined || !batch.opIds.has(opId)) return false
     if (batch.waitingForLineage) return true
     if (batch.timer) clearTimeout(batch.timer)
+    batch.sends--
     batch.waitingForLineage = true
     batch.timer = setTimeout(() => {
       if (inFlight !== batch || !batch.waitingForLineage) return

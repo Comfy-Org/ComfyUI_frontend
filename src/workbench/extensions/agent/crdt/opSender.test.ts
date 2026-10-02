@@ -314,6 +314,31 @@ describe('createOpSender', () => {
     expect(settled.map((outcome) => outcome.state)).toEqual(['acknowledged'])
   })
 
+  it('does not reserve a stale-result credit for an answered pre-mint send', () => {
+    sender.enqueue([addNode(1)])
+    sender.enqueue([addNode(2)])
+    resultListener?.({
+      ok: false,
+      applied: [],
+      skipped: [],
+      failed: {
+        index: 0,
+        op_id: sent[0].ops[0].op_id,
+        code: 'pre_mint',
+        message: 'workflow document is not ready; retry after doc_reset'
+      }
+    })
+
+    sender.resumeAfterLineage()
+    ackInFlight()
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+
+    expect(settled.map(summarizeSettlement)).toEqual([
+      { state: 'acknowledged', nodeIds: [1] },
+      { state: 'acknowledged', nodeIds: [2] }
+    ])
+  })
+
   it('serializes batches: the next sends only after the result settles the first', () => {
     sender.enqueue([addNode(1)])
     sender.enqueue([addNode(2)])
