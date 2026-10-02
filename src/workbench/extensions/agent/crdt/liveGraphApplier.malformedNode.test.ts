@@ -16,23 +16,6 @@ import { LiveGraphApplier } from './liveGraphApplier'
 
 vi.mock(import('@/platform/telemetry/reportError'))
 
-/**
- * The malformed-document discriminator (PM-1913).
- *
- * Production reported `Document node 149 is malformed: inputs.10.type Invalid
- * input` with a context of only `{ nodeId, issues }`. Seven distinct received
- * values produce that byte-identical string — `type` absent, `undefined`,
- * `null`, `true`, `[]`, `{}`, `{ name: 'IMAGE' }` — because `zDocSlot.type` is
- * a union and zod's `invalid_union` message is a constant. With no node class
- * and no producer attribution either, the report could not name the producer
- * however often it recurred. These cases pin the three reads that close that:
- * class, value shape, and the node's own LWW stamp.
- *
- * The node is still skipped and the document is still left alone — fail-closed
- * is not relaxed here, because choosing between normalizing and rejecting a
- * slot type needs the evidence this report is for.
- */
-
 class TestSink extends LGraphNode {
   constructor() {
     super('Test Sink')
