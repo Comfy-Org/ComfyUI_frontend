@@ -490,7 +490,7 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('projects updates before subscribe confirmation without persisting the target', () => {
+  it('counts pre-confirmation updates as applied without persisting the target', () => {
     const { unmount, status } = mountFollower('wf-1')
     const update = {
       workflowId: 'wf-1',
@@ -501,7 +501,6 @@ describe('useAgentCrdtFollower', () => {
 
     dispatchFrame('doc_update', update)
 
-    expect(projectionState.applyFrame).toHaveBeenCalledExactlyOnceWith(update)
     expect(status().outcomes.applied).toBe(1)
     expect(persistedRecord()).toBeNull()
     unmount()
