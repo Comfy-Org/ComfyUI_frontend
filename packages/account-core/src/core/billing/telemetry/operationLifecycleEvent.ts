@@ -1,10 +1,7 @@
-import type {
-  BillingOperationTelemetryEvent,
-  BillingTelemetryEvent
-} from '@comfyorg/account-core/billing'
-import { BILLING_OPERATION_TELEMETRY_EVENT } from '@comfyorg/account-core/billing'
-
-import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import { BILLING_OPERATION_TELEMETRY_EVENT } from '../../../telemetry.js'
+import type { BillingOperationTelemetryEvent } from '../operationLifecycle.js'
+import type { BillingTelemetryEvent } from './billingTelemetryEvent.js'
+import type { PaymentIntentSource } from './vocabulary.js'
 
 /**
  * The lifecycle's event onto the poller's `billing.operation.*` stages, so

@@ -8,6 +8,7 @@ import type { SubscriptionCheckoutBillingEvent } from './subscriptionCheckoutEve
 import type { TopupBillingEvent } from './topupEvent.js'
 import type { WebEntryBillingEvent } from './webEntryEvent.js'
 import type { WebHandoffBillingEvent } from './webHandoffEvent.js'
+import type { WebReturnBillingEvent } from './webReturnEvent.js'
 import type { WebSessionBillingEvent } from './webSessionEvent.js'
 
 export type BillingSurface = 'cloud_app' | 'billing_web'
@@ -26,6 +27,7 @@ export type BillingTelemetryEvent = {
   | DowngradeToPersonalBillingEvent
   | WebEntryBillingEvent
   | WebHandoffBillingEvent
+  | WebReturnBillingEvent
   | WebSessionBillingEvent
   | EntryBillingEvent
   | CancelBillingEvent

@@ -17,6 +17,8 @@ export {
   getCloudAppBillingTelemetryEventPayload
 } from './payload.js'
 export { BILLING_TELEMETRY_EVENTS } from './eventNames.js'
+export { toBillingTelemetryEvent } from './operationLifecycleEvent.js'
+export type { SubscriptionCheckoutUi } from './subscriptionCheckoutEvent.js'
 export type {
   WebEntryBillingEvent,
   WebEntryBounceReason,
@@ -24,6 +26,10 @@ export type {
   WebEntryErrorCode,
   WebEntryProduct
 } from './webEntryEvent.js'
+export type {
+  WebReturnBillingEvent,
+  WebReturnControl
+} from './webReturnEvent.js'
 export type {
   WebSessionBillingEvent,
   WebSessionMode

@@ -1,7 +1,7 @@
-import type { BillingOperationTelemetryEvent } from '@comfyorg/account-core/billing'
 import { describe, expect, it } from 'vitest'
 
-import { toBillingTelemetryEvent } from './billingSdkTelemetry'
+import type { BillingOperationTelemetryEvent } from '../operationLifecycle.js'
+import { toBillingTelemetryEvent } from './operationLifecycleEvent.js'
 
 describe('toBillingTelemetryEvent', () => {
   it.for<{
@@ -127,5 +127,30 @@ describe('toBillingTelemetryEvent', () => {
     }
   ])('maps $name', ({ event, expected }) => {
     expect(toBillingTelemetryEvent(event)).toEqual(expected)
+  })
+
+  it('reports the source of the journey the operation is bound to', () => {
+    expect(
+      toBillingTelemetryEvent(
+        {
+          name: 'billing.operation.succeeded',
+          billing_op_id: 'op-bound',
+          operation_type: 'topup',
+          presentation: 'hosted',
+          resumed: true
+        },
+        'avatar_menu_plans'
+      )
+    ).toEqual({
+      operation: 'operation',
+      billing_client: 'sdk',
+      stage: 'succeeded',
+      outcome: 'success',
+      operation_type: 'topup',
+      billing_op_id: 'op-bound',
+      presentation: 'hosted',
+      resumed: true,
+      payment_intent_source: 'avatar_menu_plans'
+    })
   })
 })

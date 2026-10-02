@@ -1,12 +1,11 @@
 import {
   getBillingTelemetryEventPayload,
-  getCloudAppBillingTelemetryEventPayload
+  getCloudAppBillingTelemetryEventPayload,
+  toBillingTelemetryEvent
 } from '@comfyorg/account-core/billing'
 import type { BillingTelemetryEvent } from '@comfyorg/account-core/billing'
 import { pick } from 'es-toolkit'
 import { describe, expect, expectTypeOf, it } from 'vitest'
-
-import { toBillingTelemetryEvent } from '@/platform/workspace/billing/sdk/billingSdkTelemetry'
 
 type LateSuccessEvent = Extract<
   BillingTelemetryEvent,

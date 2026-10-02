@@ -14,6 +14,7 @@ export type BillingPayloadFieldHandling<Event = BillingTelemetryEvent> = Record<
 
 export const BILLING_PAYLOAD_FIELD_HANDLING = {
   checkout_status: 'required',
+  control: 'required',
   correlation_id: 'required',
   failure_category: 'required',
   has_plan: 'required',
@@ -34,6 +35,7 @@ export const BILLING_PAYLOAD_FIELD_HANDLING = {
   billing_op_id: 'optional',
   checkout_attempt_id: 'optional',
   checkout_type: 'optional',
+  checkout_ui: 'optional',
   current_tier: 'optional',
   cycle: 'optional',
   decline_reason: 'optional',
