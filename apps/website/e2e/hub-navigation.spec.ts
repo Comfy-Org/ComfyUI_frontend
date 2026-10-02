@@ -449,28 +449,28 @@ async function searchWidth(page: Page) {
 
 const SEARCH_CAP = 480
 // On models the shared row already holds the field well under the cap, so a
-// measurement under it says nothing about whether the cap is applied. Carrying
-// the class is what the cap being in force looks like; only growing past it is
-// something the box alone can show.
-const SEARCH_CAP_CLASS = /(^|\s)sm:max-w-120(\s|$)/
+// measurement under it says nothing about whether the cap is applied. What the
+// cap is doing is read from the field itself; only growing past it is something
+// the box alone can show.
+const SEARCH_CAP_PX = '480px'
 
 test('a models category hands the search the width its tabs held', async ({
   page
 }) => {
   await page.goto('/hub/models/')
-  await expect(searchField(page)).toHaveClass(SEARCH_CAP_CLASS)
+  await expect(searchField(page)).toHaveCSS('max-width', SEARCH_CAP_PX)
   await expect(page.getByTestId('catalogue-tabs')).toBeVisible()
 
   await page.goto('/hub/models/?useCase=generate-images')
   await expect(page.getByTestId('catalogue-tabs')).toHaveCount(0)
-  await expect(searchField(page)).not.toHaveClass(SEARCH_CAP_CLASS)
+  await expect(searchField(page)).toHaveCSS('max-width', 'none')
   // Past the cap, which only a field that has dropped it can be: outside a
   // category the row is shared, so the cap is not what holds the field back.
   expect(await searchWidth(page)).toBeGreaterThan(SEARCH_CAP)
 
   await page.getByTestId('section-back').click()
   await expect(page.getByTestId('catalogue-tabs')).toBeVisible()
-  await expect(searchField(page)).toHaveClass(SEARCH_CAP_CLASS)
+  await expect(searchField(page)).toHaveCSS('max-width', SEARCH_CAP_PX)
 })
 
 test('browsing all workflows hands the search the width its tabs held', async ({
