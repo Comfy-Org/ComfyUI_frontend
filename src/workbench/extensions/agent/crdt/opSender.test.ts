@@ -234,6 +234,34 @@ describe('createOpSender', () => {
     expect(sent[2].ops[0].base_version).toBe(43)
   })
 
+  it.for([
+    ['successful', true, [], [], 0],
+    ['prefix-applied', false, ['applied-op'], [], 0],
+    ['prefix-skipped', false, [], ['skipped-op'], 0],
+    ['noninitial', false, [], [], 1]
+  ] as const)(
+    'does not retain a %s pre-mint result',
+    ([_name, ok, applied, skipped, failedIndex]) => {
+      sender.enqueue([addNode(1), addNode(2)])
+      const opId = sent[0].ops[0].op_id
+
+      resultListener?.({
+        ok,
+        applied: [...applied],
+        skipped: [...skipped],
+        failed: {
+          index: failedIndex,
+          op_id: opId,
+          code: 'pre_mint',
+          message: 'rejected after reaching the applier'
+        }
+      })
+
+      expect(settled.map((outcome) => outcome.state)).toEqual(['acknowledged'])
+      expect(sender.pending()).toBe(0)
+    }
+  )
+
   it('settles a pre-mint batch after a bounded lineage wait without extending the deadline for duplicates', () => {
     sender.enqueue([addNode(1)])
     sender.enqueue([addNode(2)])

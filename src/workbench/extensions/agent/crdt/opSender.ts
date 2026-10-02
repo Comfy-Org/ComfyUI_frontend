@@ -154,6 +154,18 @@ interface InFlight {
   timer: ReturnType<typeof setTimeout> | null
 }
 
+function isExactPreMintRefusal(
+  result: OpsResultView
+): result is OpsResultView & { failed: NonNullable<OpsResultView['failed']> } {
+  return (
+    !result.ok &&
+    result.applied.length === 0 &&
+    result.skipped.length === 0 &&
+    result.failed?.code === 'pre_mint' &&
+    result.failed.index === 0
+  )
+}
+
 export function createOpSender(deps: OpSenderDeps): OpSender {
   const queue: Array<{ workflowId: string; ops: Op[] }> = []
   let queueHead = 0
@@ -207,7 +219,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     result: OpsResultView,
     batch: InFlight | null
   ): boolean {
-    if (batch === null || result.failed?.code !== 'pre_mint') return false
+    if (batch === null || !isExactPreMintRefusal(result)) return false
     const opId = result.failed.op_id
     if (opId === undefined || !batch.opIds.has(opId)) return false
     if (batch.waitingForLineage) return true
