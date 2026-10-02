@@ -14,7 +14,7 @@ import { useWidgetStore } from '@/stores/widgetStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import type { ComfyExtension } from '@/types/comfy'
 import type { AuthUserInfo } from '@/types/authTypes'
-import { toError } from '@/utils/errorUtil'
+import { getErrorMessage } from '@/utils/errorUtil'
 import { app } from '@/scripts/app'
 import type { ComfyApp } from '@/scripts/app'
 
@@ -51,11 +51,6 @@ export interface ExtensionLoadFailure {
  * silently crowd out every later error in the session. The batch is reported
  * once, by `reportExtensionLoadFailures`.
  *
- * Exported so the rejected-import path has a direct seam: calling this gives a
- * real unresolvable dynamic import without the rest of a load. `loadExtensions`
- * is also driven end to end in the tests — it imports the whole core extension
- * entry point, which takes a stub (`vi.mock('@/extensions/core/index')`) but is
- * not the barrier it was once described as.
  */
 export async function importCustomExtension(
   ext: string
@@ -95,7 +90,7 @@ export function reportExtensionLoadFailures(
 
   reportError(
     new Error(
-      `Error loading ${failures.length} extension(s): ${paths}` +
+      `Error loading ${failures.length} ${failures.length === 1 ? 'extension' : 'extensions'}: ${paths}` +
         (elided > 0 ? ` (+${elided} more)` : ''),
       { cause: failures[0].error }
     ),
@@ -107,7 +102,7 @@ export function reportExtensionLoadFailures(
       context: {
         failures: named.map(({ ext, error }) => ({
           ext,
-          message: toError(error).message
+          message: getErrorMessage(error)
         }))
       }
     }
