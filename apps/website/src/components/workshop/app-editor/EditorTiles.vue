@@ -1,59 +1,88 @@
 <script setup lang="ts" generic="T extends string">
 import { cn } from '@comfyorg/tailwind-utils'
 
+import EditorTile from './EditorTile.vue'
+import EditorUploadTile from './EditorUploadTile.vue'
+import type { TileAspect } from './tile-classes'
+import { TILE_ASPECT } from './tile-classes'
+
 const {
   label,
   options,
   columns = 3,
-  square = false
+  aspect = 'video',
+  busy = false,
+  upload
 } = defineProps<{
   label: string
-  options: readonly { id: T; label: string }[]
-  columns?: 3 | 4
-  /** Square tiles, for pictures of things rather than scenes. */
-  square?: boolean
+  /** Each tile shows `src` unless the `tile` slot draws it. */
+  options: readonly { id: T; label: string; src?: string }[]
+  /** Two columns make large tiles that mark the picked one with a check. */
+  columns?: 2 | 3 | 4
+  /** `square` for pictures of things, `photo` (3:2) for places. */
+  aspect?: TileAspect
+  /** Holds placeholders while the options load. */
+  busy?: boolean
+  /**
+   * Ends the grid with a tile that takes the visitor's own image, named
+   * `label` and captioned `caption` when that differs.
+   */
+  upload?: { label: string; caption?: string; inputTestId?: string }
 }>()
 
-const GRID = { 3: 'grid-cols-3', 4: 'grid-cols-4' } as const
+const emit = defineEmits<{ upload: [file: File] }>()
+
+const GRID = {
+  2: 'grid-cols-2 gap-x-4 gap-y-5',
+  3: 'grid-cols-3 gap-x-2 gap-y-3.5',
+  4: 'grid-cols-4 gap-x-2 gap-y-3'
+} as const
 const value = defineModel<T>()
+const large = columns === 2
 </script>
 
 <template>
   <div
     role="radiogroup"
     :aria-label="label"
-    :class="cn('grid gap-x-2 gap-y-3.5 px-1', GRID[columns])"
+    :aria-busy="busy || undefined"
+    :class="cn('grid px-1', GRID[columns])"
   >
-    <button
-      v-for="option in options"
-      :key="option.id"
-      type="button"
-      role="radio"
-      :aria-checked="value === option.id"
-      class="group flex min-w-0 flex-col gap-1 text-left focus-visible:outline-none disabled:opacity-40"
-      @click="value = option.id"
-    >
+    <template v-if="busy">
       <span
+        v-for="index in 4"
+        :key="index"
         :class="
           cn(
-            'relative block w-full overflow-hidden rounded-lg ring-1 ring-transparency-white-t8 transition group-hover:ring-transparency-white-t20 group-focus-visible:ring-2 group-focus-visible:ring-primary-comfy-yellow/60',
-            square ? 'aspect-square' : 'aspect-video',
-            value === option.id &&
-              'ring-2 ring-primary-warm-white group-hover:ring-primary-warm-white'
+            'w-full rounded-lg bg-transparency-white-t4 motion-safe:animate-pulse',
+            TILE_ASPECT[aspect]
           )
         "
+        aria-hidden="true"
+      />
+    </template>
+    <template v-else>
+      <EditorTile
+        v-for="option in options"
+        :key="option.id"
+        :label="option.label"
+        :src="option.src"
+        :checked="value === option.id"
+        :aspect
+        :large
+        @pick="value = option.id"
       >
         <slot name="tile" :option />
-      </span>
-      <span
-        :class="
-          cn(
-            'truncate text-[11px] tracking-tight text-primary-warm-gray group-hover:text-primary-comfy-canvas',
-            value === option.id && 'text-primary-warm-white'
-          )
-        "
-        >{{ option.label }}</span
-      >
-    </button>
+      </EditorTile>
+    </template>
+    <EditorUploadTile
+      v-if="upload"
+      :label="upload.label"
+      :caption="upload.caption"
+      :input-test-id="upload.inputTestId"
+      :aspect
+      :large
+      @file="emit('upload', $event)"
+    />
   </div>
 </template>

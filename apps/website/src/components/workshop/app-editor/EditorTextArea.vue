@@ -11,7 +11,9 @@ const id = useId()
 
 <template>
   <div class="flex flex-col gap-2 px-1">
-    <label :for="id" class="text-xs text-primary-warm-gray">{{ label }}</label>
+    <label :for="id" data-field-label class="text-xs text-primary-warm-gray">{{
+      label
+    }}</label>
     <textarea
       :id
       v-model="value"

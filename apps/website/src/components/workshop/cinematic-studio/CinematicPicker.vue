@@ -11,7 +11,8 @@ import CinematicGradeImageTile from './CinematicGradeImageTile.vue'
 import CinematicOptionGrid from './CinematicOptionGrid.vue'
 import CinematicPaletteEditor from './CinematicPaletteEditor.vue'
 import CinematicPickerLists from './CinematicPickerLists.vue'
-import CinematicPopover from './CinematicPopover.vue'
+import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import EditorPopover from '../app-editor/EditorPopover.vue'
 
 const {
   groups,
@@ -64,7 +65,12 @@ const selectedIn = (part: DirectionPart) =>
 </script>
 
 <template>
-  <CinematicPopover :title :locale @close="emit('close')">
+  <EditorPopover
+    :title
+    :close-label="tc('cinematic.picker.close', locale)"
+    data-testid="cinematic-picker"
+    @close="emit('close')"
+  >
     <CinematicPickerLists
       v-if="multiple"
       :groups
@@ -107,5 +113,5 @@ const selectedIn = (part: DirectionPart) =>
         </template>
       </CinematicOptionGrid>
     </template>
-  </CinematicPopover>
+  </EditorPopover>
 </template>
