@@ -19,6 +19,7 @@ import type {
 } from '@comfyorg/account-core/billing'
 import {
   BILLING_OPERATION_TELEMETRY_EVENT,
+  toBillingTelemetryEvent,
   validateActionUrl
 } from '@comfyorg/account-core/billing'
 import { loadStripe } from '@stripe/stripe-js/pure'
@@ -59,7 +60,6 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 import { projectBillingCapabilities } from './billingCapabilitiesView'
 import { projectBillingPlans } from './billingPlansView'
-import { toBillingTelemetryEvent } from './billingSdkTelemetry'
 import { projectBillingStatus } from './billingStatusView'
 import type { BillingSdkOptions } from './createBillingSdk'
 import { createBillingSdk } from './createBillingSdk'
