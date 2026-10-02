@@ -1,7 +1,7 @@
 # @comfyorg/fallow-config
 
 Shared Fallow policy used by ComfyUI_frontend and available to other Comfy repos.
-This package contains JSON only; Fallow resolves it natively.
+The preset is a single JSON file with no code; Fallow resolves it natively.
 
 ## Usage
 
@@ -24,14 +24,15 @@ exceptions in that file. Fallow merges the local config over
 the preset. The shared settings are `duplicates.minOccurrences: 3`,
 `audit.gate: "new-only"`, and `dev-dependencies-in-production: "error"`.
 All other rule severities and thresholds retain Fallow 3.24.1's defaults.
-Pin the CLI in both package scripts and CI actions to preserve those defaults.
+Pin the `fallow` dev dependency and any Fallow CI action to 3.24.1 to keep
+those defaults.
 
-The preset uses `.fallow-baselines/{dead-code,health,dupes}.json` in the consuming
-repository. Baseline contents stay in that repository. Fallow 3.24.1 deep-merges
-local `audit` fields over the preset; overriding one baseline path inherits the
-gate and the other baseline paths.
-The three baseline files must exist; installing this package does not create or
-refresh them.
+Baseline paths and contents stay in the consuming repository. The preset does
+not require baseline files. ComfyUI_frontend keeps its existing
+`.fallow-baselines/{dead-code,health,dupes}.json` paths in its local `audit` block.
+Fallow 3.24.1 deep-merges local `audit` fields over the preset, preserving the
+shared gate. Any locally configured baseline files must exist; installing this
+package does not create or refresh them.
 
 Fallow supports path-specific `overrides[].rules` and
 `health.thresholdOverrides`. Those remain local when they describe a particular

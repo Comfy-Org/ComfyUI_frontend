@@ -1,10 +1,7 @@
 {
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "target": "ESNext",
-    "module": "NodeNext",
-    "strict": true,
-    "noEmit": true,
-    "skipLibCheck": true,
+    "rootDir": ".",
     "types": ["node"]
   },
   "include": ["tests/**/*.ts", "vitest.config.ts"]

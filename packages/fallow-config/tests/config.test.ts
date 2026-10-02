@@ -89,14 +89,6 @@ const test = baseTest.extend<{
       run(directory, 'git', ['init', '-q'])
       run(directory, 'git', ['config', 'user.name', 'Fixture'])
       run(directory, 'git', ['config', 'user.email', 'fixture@example.invalid'])
-      mkdirSync(join(directory, '.fallow-baselines'))
-      for (const command of ['dead-code', 'health', 'dupes']) {
-        run(directory, binary, [
-          command,
-          '--save-baseline',
-          `.fallow-baselines/${command}.json`
-        ])
-      }
       await use({ write, configure, commit, audit })
     } finally {
       rmSync(directory, { recursive: true, force: true })
@@ -205,11 +197,11 @@ test('applies a local path override without weakening other paths', ({
   expect(legacy).toMatchObject({ status: 0 })
   consumer.write(
     'src/lib.ts',
-    'export const live = 1\nexport const unused = 2\n'
+    'export const current = 1\nexport const stale = 2\n'
   )
   consumer.write(
     'src/main.ts',
-    'import { live } from "./lib"\nimport { live as legacy } from "./legacy/lib"\nconsole.log(live, legacy)\n'
+    'import { current } from "./lib"\nimport { live } from "./legacy/lib"\nconsole.log(current, live)\n'
   )
   const current = consumer.audit(base)
   expect(current).toMatchObject({ status: 1 })

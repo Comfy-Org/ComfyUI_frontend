@@ -1,5 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/v3.24.1/schema.json",
+  "extends": "npm:@comfyorg/fallow-config",
 
   // Staged adoption: the residual dead-code, complexity, and duplication findings
   // are inherited legacy (litegraph extension-API members, store members, intra-lib
@@ -7,7 +8,11 @@
   // per-analysis baselines so `fallow audit` fails only on NEWLY introduced issues
   // in changed files. Baselines are a migration aid, not the desired steady state;
   // shrink them as the underlying code is cleaned up, then re-save.
-  "extends": "npm:@comfyorg/fallow-config",
+  "audit": {
+    "deadCodeBaseline": ".fallow-baselines/dead-code.json",
+    "healthBaseline": ".fallow-baselines/health.json",
+    "dupesBaseline": ".fallow-baselines/dupes.json"
+  },
 
   // Runtime entry points fallow cannot infer.
   "entry": [
