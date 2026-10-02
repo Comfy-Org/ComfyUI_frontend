@@ -22,10 +22,8 @@ import type { IWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
-import {
-  createMockCanvasPointerEvent,
-  createMockLGraphNode
-} from '@/utils/__tests__/litegraphTestUtils'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasPointerEvent } from '@/utils/__tests__/canvasTestUtils'
 
 vi.mock('@/extensions/core/load3d/Load3d', () => ({
   default: vi.fn()
