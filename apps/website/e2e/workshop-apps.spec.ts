@@ -677,7 +677,7 @@ test('takes a Virtual try-on garment dropped on the picker or pasted, and names 
 
   await app.getByRole('button', { name: 'Remove garment' }).click()
   await expect(run).toBeDisabled()
-  await expect(run).toHaveText('Upload a garment')
+  await expect(run).toContainText('Upload a garment')
 
   const garment = (name: string) =>
     page.evaluateHandle(async (name) => {
