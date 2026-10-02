@@ -170,8 +170,6 @@ export function addValueControlWidgets(
     if (nameOverride) return nameOverride
     const inputOptions = inputData?.[1]
     const specValue = inputOptions?.[defaultName]
-    // Only `control_after_generate` is overloaded; see
-    // `controlAfterGenerateNameOverride`.
     const defaultNameOverride =
       defaultName === 'control_after_generate'
         ? controlAfterGenerateNameOverride(specValue)
