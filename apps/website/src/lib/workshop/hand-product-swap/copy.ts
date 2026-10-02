@@ -67,6 +67,7 @@ const copy = {
   },
   'swap.advanced': { en: 'Advanced', 'zh-CN': '高级' },
   'swap.seed': { en: 'Seed', 'zh-CN': '种子' },
+  'swap.seed.shuffle': { en: 'New seed', 'zh-CN': '换一个种子' },
   'swap.advanced.summary': { en: 'Seed {n}', 'zh-CN': '种子 {n}' },
   'swap.summary': {
     en: '{product} · {resolution}',

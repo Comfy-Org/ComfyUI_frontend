@@ -53,8 +53,11 @@ describe('HandSwapStudio', () => {
       within(section('Product')).getByRole('radio', { name: 'Serum' })
     )
     await user.click(
-      within(section('Resolution')).getByRole('radio', { name: '4K' })
+      within(section('Resolution')).getByRole('button', {
+        name: 'Resolution: 2K'
+      })
     )
+    await user.click(screen.getByRole('menuitemradio', { name: /^4K/ }))
     expect(
       within(section('Product')).getByRole('radio', { name: 'Serum' })
     ).toHaveAttribute('aria-checked', 'true')
@@ -100,7 +103,7 @@ describe('HandSwapStudio', () => {
     expect(parseFloat(box().style.left)).toBeCloseTo(left)
   })
 
-  it('keeps the seed in a closed Advanced section that shows it', async () => {
+  it('keeps a shuffleable seed in a closed Advanced section that shows it', async () => {
     const user = await openExample()
     const advanced = within(section('Advanced')).getByRole('button', {
       name: /Advanced/
@@ -116,9 +119,15 @@ describe('HandSwapStudio', () => {
     await user.type(seed, '7')
     await user.tab()
     expect(advanced).toHaveTextContent('Seed 7')
+
+    vi.spyOn(Math, 'random').mockReturnValue(0.25)
+    await user.click(
+      within(section('Advanced')).getByRole('button', { name: 'New seed' })
+    )
+    expect(seed).toHaveValue(250_000_000)
   })
 
-  it('opens each setting as a tray from the bottom composer', async () => {
+  it('picks the resolution from a pill in the bottom composer, each size with its pixels', async () => {
     const user = await openExample('e')
     expect(
       screen.queryByRole('complementary', {
@@ -127,14 +136,15 @@ describe('HandSwapStudio', () => {
     ).toBeNull()
 
     await user.click(
-      within(tools()).getByRole('button', { name: /Resolution/ })
+      within(tools()).getByRole('button', { name: 'Resolution: 2K' })
     )
-    const tray = screen.getByRole('dialog', { name: 'Resolution' })
-    await user.click(within(tray).getByRole('radio', { name: '1K' }))
+    await user.click(
+      screen.getByRole('menuitemradio', { name: '1K 1024 × 768 px' })
+    )
     expect(
-      within(tools()).getByRole('button', { name: /Resolution/ })
+      within(tools()).getByRole('button', { name: 'Resolution: 1K' })
     ).toHaveTextContent('1K')
-    expect(within(tray).getByText('1024 × 768 px')).toBeVisible()
+    expect(screen.queryByRole('dialog', { name: 'Resolution' })).toBeNull()
   })
 
   it('opens on phones as a sheet with a one-line summary and the run button', async () => {

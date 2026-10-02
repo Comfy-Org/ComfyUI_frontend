@@ -501,7 +501,8 @@ test('swaps the product in the Hand product swap example and compares the result
     name: 'Hand product swap settings'
   })
   await panel.getByRole('radio', { name: 'Serum' }).click()
-  await panel.getByRole('radio', { name: '1K' }).click()
+  await panel.getByRole('button', { name: 'Resolution: 2K' }).click()
+  await page.getByRole('menuitemradio', { name: /^1K/ }).click()
   const box = app.getByRole('button', { name: /^Where the product goes/ })
   await box.focus()
   await page.keyboard.press('Shift+ArrowLeft')

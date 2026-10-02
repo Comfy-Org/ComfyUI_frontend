@@ -5,6 +5,7 @@ import { hc } from '../../../lib/workshop/hand-product-swap/copy'
 import EditorChip from '../app-editor/EditorChip.vue'
 import EditorDivider from '../app-editor/EditorDivider.vue'
 import HandSwapHistory from './HandSwapHistory.vue'
+import HandSwapResolution from './HandSwapResolution.vue'
 import HandSwapRun from './HandSwapRun.vue'
 import HandSwapTools from './HandSwapTools.vue'
 import { SWAP_SECTIONS, sectionMeta } from './sections'
@@ -23,7 +24,7 @@ const { tray, phase } = swap
   <HandSwapHistory :swap :locale />
   <EditorDivider />
   <EditorChip
-    v-for="section in SWAP_SECTIONS"
+    v-for="section in SWAP_SECTIONS.filter(({ id }) => id !== 'resolution')"
     :key="section.id"
     :label="hc(section.title, locale)"
     :value="sectionMeta(section.id, swap, locale)"
@@ -32,6 +33,7 @@ const { tray, phase } = swap
     compact
     @click="swap.toggleTray(section.id)"
   />
+  <HandSwapResolution :swap :locale composer />
   <EditorDivider class="max-sm:hidden" />
   <HandSwapRun :swap :locale />
 </template>

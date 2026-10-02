@@ -8,34 +8,40 @@ import {
   outputSize
 } from '../../../lib/workshop/hand-product-swap/contract'
 import { hc } from '../../../lib/workshop/hand-product-swap/copy'
-import EditorSegmented from '../app-editor/EditorSegmented.vue'
+import EditorOutput from '../app-editor/EditorOutput.vue'
 
-const { swap, locale = 'en' } = defineProps<{
+const {
+  swap,
+  locale = 'en',
+  composer = false
+} = defineProps<{
   swap: HandProductSwap
   locale?: Locale
+  composer?: boolean
 }>()
 
-const { resolution, hand } = swap
-const options = SWAP_RESOLUTIONS.map((id) => ({ id, label: id }))
-const size = computed(() =>
-  hand.value
-    ? hc(
-        'swap.resolution.size',
-        locale,
-        outputSize(resolution.value, hand.value.width, hand.value.height)
-      )
-    : ''
+const { resolution, hand, phase } = swap
+const options = computed(() =>
+  SWAP_RESOLUTIONS.map((id) => ({
+    id,
+    label: id,
+    detail: hand.value
+      ? hc(
+          'swap.resolution.size',
+          locale,
+          outputSize(id, hand.value.width, hand.value.height)
+        )
+      : undefined
+  }))
 )
 </script>
 
 <template>
-  <EditorSegmented
+  <EditorOutput
     v-model="resolution"
-    :label="hc('swap.resolution', locale)"
+    :heading="hc('swap.resolution', locale)"
     :options
-    fill
+    :composer
+    :disabled="composer && phase.kind === 'running'"
   />
-  <p class="px-1 text-[11px] text-primary-warm-gray tabular-nums">
-    {{ size }}
-  </p>
 </template>
