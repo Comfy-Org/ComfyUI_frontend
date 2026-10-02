@@ -656,7 +656,10 @@ export const useDialogService = () => {
         new Error(
           'showSubscriptionRequiredDialog: subscription_required gate closed'
         ),
-        { errorType: 'error_opening_subscription_dialog_gate_closed' }
+        {
+          surface: 'billing',
+          errorType: 'error_opening_subscription_dialog_gate_closed'
+        }
       )
       return
     }
@@ -804,6 +807,34 @@ export const useDialogService = () => {
     return dialogStore.showDialog({
       key: 'invite-member-upsell',
       component,
+      dialogComponentProps: {
+        ...workspaceDialogProps
+      }
+    })
+  }
+
+  async function showInviteLinkInvalidDialog() {
+    const { default: component } =
+      await import('@/platform/workspace/components/dialogs/InviteLinkInvalidDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'invite-link-invalid',
+      component,
+      dialogComponentProps: {
+        ...workspaceDialogProps
+      }
+    })
+  }
+
+  async function showInviteWrongAccountDialog(props: { inviteToken: string }) {
+    const { default: component } =
+      await import('@/platform/workspace/components/dialogs/InviteWrongAccountDialogContent.vue')
+    // showDialog keeps an existing entry's props; close first so a repeat 403
+    // carries the fresh token instead of replaying the previous one.
+    dialogStore.closeDialog({ key: 'invite-wrong-account' })
+    return dialogStore.showDialog({
+      key: 'invite-wrong-account',
+      component,
+      props,
       dialogComponentProps: {
         ...workspaceDialogProps
       }
@@ -1054,6 +1085,8 @@ export const useDialogService = () => {
     showRevokeInviteDialog,
     showInviteMemberDialog,
     showInviteMemberUpsellDialog,
+    showInviteLinkInvalidDialog,
+    showInviteWrongAccountDialog,
     showBillingComingSoonDialog,
     showCancelSubscriptionDialog,
     showCancelSubscriptionFlow,

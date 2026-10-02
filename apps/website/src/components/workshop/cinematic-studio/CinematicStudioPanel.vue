@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import { nextTick, ref, useTemplateRef } from 'vue'
+import { nextTick, ref, useTemplateRef, watch } from 'vue'
+
+import { cn } from '@comfyorg/tailwind-utils'
 
 import { useCinematicLeaveGuard } from '../../../composables/useCinematicLeaveGuard'
 import { useCinematicPopover } from '../../../composables/useCinematicPopover'
 import { useCinematicShot } from '../../../composables/useCinematicShot'
 import { reportStudioBusy } from '../../../composables/useStudioSwitchGuard'
 import { workshopAppRepo } from '../../../lib/workshop/apps'
+
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
@@ -50,7 +53,6 @@ const {
   resolution,
   takes,
   cast,
-  palette,
   colors,
   mainColor,
   estimate,
@@ -68,6 +70,9 @@ const {
   toggle: togglePicker,
   close: closePicker
 } = useCinematicPopover<PickerKey>()
+
+const editingPalette = ref(false)
+watch(picker, () => (editingPalette.value = false))
 
 const output = useTemplateRef<HTMLElement>('output')
 const layout = useTemplateRef<HTMLElement>('layout')
@@ -104,8 +109,8 @@ function generate() {
     class="mx-auto max-w-10xl px-4 py-8 sm:px-8 lg:px-14"
     data-testid="cinematic"
   >
-    <AppsBackLink :locale class="mb-3" />
-    <div class="mb-6 flex flex-wrap items-center gap-3">
+    <AppsBackLink :locale class="mb-5" />
+    <div class="mb-3 flex flex-wrap items-center gap-3">
       <h1 class="text-2xl font-semibold text-primary-warm-white lg:text-3xl">
         {{ tc('cinematic.title', locale) }}
       </h1>
@@ -114,22 +119,15 @@ function generate() {
       >
         {{ tc('cinematic.beta', locale) }}
       </span>
-      <AppRepoLink
-        :repo="workshopAppRepo('studio')"
-        :locale
-        class="sm:ml-auto"
-      />
     </div>
-    <p class="-mt-3 mb-6 text-lg text-primary-warm-gray">
-      {{ tc('cinematic.lead', locale) }}
-    </p>
-    <CinematicModeSwitch
-      v-if="hasVideo"
-      v-model="mode"
-      :disabled="studio.rendering.value"
-      :locale
-      class="mb-4 w-fit"
-    />
+    <div
+      class="mb-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between"
+    >
+      <p class="text-lg text-primary-warm-gray">
+        {{ tc('cinematic.lead', locale) }}
+      </p>
+      <AppRepoLink :repo="workshopAppRepo('studio')" :locale class="shrink-0" />
+    </div>
     <div
       ref="layout"
       class="relative grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]"
@@ -143,15 +141,13 @@ function generate() {
         v-model:resolution="resolution"
         v-model:takes="takes"
         v-model:cast="cast"
-        v-model:palette="palette"
-        v-model:colors="colors"
-        v-model:main-color="mainColor"
         v-model:duration="duration"
         v-model:video-resolution="videoResolution"
         v-model:audio="audio"
         v-model:first-frame="firstFrame"
         v-model:last-frame="lastFrame"
         v-model:source-video="sourceVideo"
+        :colors
         :models="modeModels"
         :blocked
         :video
@@ -166,7 +162,17 @@ function generate() {
         @open="openPicker"
         @generate="generate"
         @cancel="studio.cancel"
-      />
+      >
+        <template #mode>
+          <CinematicModeSwitch
+            v-if="hasVideo"
+            v-model="mode"
+            :disabled="studio.rendering.value"
+            compact
+            :locale
+          />
+        </template>
+      </CinematicPanel>
       <div
         ref="output"
         class="relative flex min-w-0 flex-col lg:sticky lg:top-26 lg:self-start"
@@ -189,11 +195,19 @@ function generate() {
       <CinematicPicker
         v-if="picker"
         :key="picker"
+        v-model:colors="colors"
+        v-model:main-color="mainColor"
+        v-model:editing="editingPalette"
         :groups="pickerGroups(picker)"
         :direction
         :title="popoverTitle(picker, locale)"
         :locale
-        class="fixed inset-x-0 bottom-0 z-50 max-h-[85svh] rounded-b-none lg:absolute lg:top-(--anchor-top) lg:right-0 lg:bottom-auto lg:left-[calc((100%-1.5rem)*0.4+1.5rem)] lg:z-20 lg:max-h-[calc(100svh-8rem)] lg:rounded-b-2xl"
+        :class="
+          cn(
+            'fixed inset-x-0 bottom-0 z-50 max-h-[80svh] rounded-b-none lg:absolute lg:top-(--anchor-top) lg:right-0 lg:bottom-auto lg:left-[calc((100%-1.5rem)*0.4+1.5rem)] lg:z-20 lg:max-h-[calc(100svh-8rem)] lg:rounded-b-2xl lg:transition-[max-width] lg:duration-300 lg:ease-out',
+            picker === 'camera' ? 'lg:max-w-full' : 'lg:max-w-120'
+          )
+        "
         :style="{ '--anchor-top': `${anchorTop}px` }"
         @choose="choose"
         @close="closePicker"

@@ -9,6 +9,8 @@ import {
   pageContext
 } from '../../../utils/jsonLd'
 
+const canonicalModels = models.filter((model) => !model.canonicalSlug)
+
 const title = t('models.index.title')
 const subtitle = t('models.index.subtitle')
 
@@ -20,7 +22,7 @@ const { url, locale } = pageContext(
 const modelList = itemListNode(
   url,
   title,
-  models.map((model) => ({
+  canonicalModels.map((model) => ({
     url: absoluteUrl(Astro.site, `/p/supported-models/${model.slug}`)
   }))
 )
@@ -69,7 +71,7 @@ const dirLabel: Record<string, string> = {
     </header>
 
     <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {models.map((model) => <li>
+      {canonicalModels.map((model) => <li>
         <a
           href={`/p/supported-models/${model.slug}/`}
           class="flex h-full flex-col gap-3 rounded-xl border border-white/10 p-5 transition-colors hover:border-white/25 hover:bg-white/5"

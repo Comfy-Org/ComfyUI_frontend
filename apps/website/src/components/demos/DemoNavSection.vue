@@ -16,7 +16,7 @@ const {
   locale?: Locale
 }>()
 
-const nextHref = localizeHref(`/demos/${nextSlug}`, locale)
+const nextHref = localizeHref(`/demos/${nextSlug}/`, locale)
 </script>
 
 <template>

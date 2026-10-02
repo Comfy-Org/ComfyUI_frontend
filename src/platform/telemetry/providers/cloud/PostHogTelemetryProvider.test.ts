@@ -516,6 +516,39 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it('captures free-use notice interactions with their placement', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackAgentFreeUseNotice({
+        action: 'dismissed',
+        placement: 'top-banner'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.AGENT_FREE_USE_NOTICE,
+        { action: 'dismissed', placement: 'top-banner' }
+      )
+    })
+
+    it('captures panel-open experiment exposure with the PostHog arm', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackAgentFreeUseExposure({
+        placement: 'control',
+        '$feature/agent-free-use-message-placement': 'control'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.AGENT_FREE_USE_EXPOSURE,
+        {
+          placement: 'control',
+          '$feature/agent-free-use-message-placement': 'control'
+        }
+      )
+    })
+
     it('captures link dedup drop events with metadata', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
@@ -959,6 +992,7 @@ describe('PostHogTelemetryProvider', () => {
           operation: 'subscription_checkout',
           stage: 'failed',
           outcome: 'failure',
+          checkout_attempt_id: 'attempt-abandoned',
           tier: 'pro',
           cycle: 'monthly',
           checkout_type: 'new',
@@ -1074,7 +1108,10 @@ describe('PostHogTelemetryProvider', () => {
 
       provider.trackBillingEvent(event)
 
-      expect(hoisted.mockCapture).toHaveBeenCalledWith(eventName, event)
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(eventName, {
+        ...event,
+        billing_surface: 'cloud_app'
+      })
     })
 
     it('drops fields outside the billing telemetry contract', async () => {
@@ -1102,7 +1139,8 @@ describe('PostHogTelemetryProvider', () => {
           stage: 'failed',
           outcome: 'failure',
           billing_op_id: 'opaque-op-id',
-          failure_category: 'unknown'
+          failure_category: 'unknown',
+          billing_surface: 'cloud_app'
         }
       )
     })

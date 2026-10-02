@@ -486,6 +486,7 @@ export class DocFrameClient extends EventTarget {
         if (reportedTypes.has(type)) return
         reportedTypes.add(type)
         reportError(new Error('Discarded invalid server document frame'), {
+          surface: 'agent',
           errorType: 'agent_crdt_invalid_server_frame',
           tags: { frame_type: type },
           level: 'warning'

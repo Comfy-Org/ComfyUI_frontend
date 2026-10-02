@@ -29,7 +29,7 @@ const routes = getRoutes(locale)
     }"
     :secondary-cta="{
       label: routerT('platform.router.cta.browseModels', locale),
-      href: routes.modelsShowcase
+      href: routes.workshop
     }"
   >
     <template #aboveCtas>

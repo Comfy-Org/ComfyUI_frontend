@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ChevronDown, Layers, Maximize } from '@lucide/vue'
+import { ChevronDown, Maximize, Minus, Plus } from '@lucide/vue'
 
 import type {
   AspectRatio,
   Resolution
 } from '../../../lib/workshop/cinematic-studio/catalog'
+import { MAX_TAKES } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import { framedStyle } from './aspect-style'
@@ -22,20 +23,14 @@ const aspect = defineModel<AspectRatio>('aspect', { required: true })
 const resolution = defineModel<Resolution>('resolution', { required: true })
 const takes = defineModel<number>('takes', { required: true })
 
-const {
-  aspectOptions,
-  resolutionOptions,
-  takeOptions,
-  aspectValue,
-  resolutionValue,
-  takesValue
-} = useFormatMenus(
-  aspect,
-  resolution,
-  takes,
-  () => locale,
-  () => aspects
-)
+const { aspectOptions, resolutionOptions, aspectValue, resolutionValue } =
+  useFormatMenus(
+    aspect,
+    resolution,
+    takes,
+    () => locale,
+    () => aspects
+  )
 </script>
 
 <template>
@@ -48,7 +43,7 @@ const {
       v-model="aspectValue"
       :options="aspectOptions"
       :heading="tc('cinematic.output.aspect', locale)"
-      side="bottom"
+      side="top"
       tooltip
       :trigger-class="FORMAT_TRIGGER_CLASS"
     >
@@ -65,7 +60,7 @@ const {
       v-model="resolutionValue"
       :options="resolutionOptions"
       :heading="tc('cinematic.output.resolution', locale)"
-      side="bottom"
+      side="top"
       tooltip
       :trigger-class="FORMAT_TRIGGER_CLASS"
     >
@@ -73,17 +68,37 @@ const {
       <span class="flex-1 text-left">{{ resolution }}</span>
       <ChevronDown class="size-3.5 text-primary-warm-gray" aria-hidden="true" />
     </CinematicMenu>
-    <CinematicMenu
-      v-model="takesValue"
-      :options="takeOptions"
-      :heading="tc('cinematic.output.takes', locale)"
-      side="bottom"
-      tooltip
-      :trigger-class="FORMAT_TRIGGER_CLASS"
+    <div
+      role="group"
+      :aria-label="tc('cinematic.output.takes', locale)"
+      :title="tc('cinematic.output.takes', locale)"
+      class="flex h-10 items-center justify-between rounded-xl border border-transparency-white-t8 px-1"
     >
-      <Layers class="size-3.5 text-primary-warm-gray" aria-hidden="true" />
-      <span class="flex-1 text-left tabular-nums">×{{ takes }}</span>
-      <ChevronDown class="size-3.5 text-primary-warm-gray" aria-hidden="true" />
-    </CinematicMenu>
+      <button
+        type="button"
+        class="grid size-8 place-items-center rounded-lg text-primary-warm-gray outline-none hover:text-primary-warm-white focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 disabled:opacity-40"
+        :disabled="takes <= 1"
+        :aria-label="tc('cinematic.output.fewerTakes', locale)"
+        @click="takes = Math.max(1, takes - 1)"
+      >
+        <Minus class="size-3.5" aria-hidden="true" />
+      </button>
+      <span
+        class="text-sm text-primary-warm-white tabular-nums"
+        aria-live="polite"
+        data-testid="cinematic-takes"
+      >
+        {{ takes }}
+      </span>
+      <button
+        type="button"
+        class="grid size-8 place-items-center rounded-lg text-primary-warm-gray outline-none hover:text-primary-warm-white focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 disabled:opacity-40"
+        :disabled="takes >= MAX_TAKES"
+        :aria-label="tc('cinematic.output.moreTakes', locale)"
+        @click="takes = Math.min(MAX_TAKES, takes + 1)"
+      >
+        <Plus class="size-3.5" aria-hidden="true" />
+      </button>
+    </div>
   </div>
 </template>

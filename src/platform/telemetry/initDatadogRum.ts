@@ -1,10 +1,11 @@
 // eslint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
 import { datadogRum } from '@datadog/browser-rum'
 
+import { COMFY_RUM_APPLICATION } from '@comfyorg/shared-frontend-utils/telemetry'
+import type { DeployEnv } from '@comfyorg/shared-frontend-utils/telemetry'
+
 import { rumBeforeSend } from './datadogRumBeforeSend'
 import { trackUserManualRefresh } from './manualRefreshTracker'
-
-export type DeployEnv = 'prod-v2' | 'stg-v2' | 'test-v2'
 
 const DATADOG_ENV_BY_HOSTNAME = new Map<string, DeployEnv>([
   ['cloud.comfy.org', 'prod-v2'],
@@ -41,9 +42,7 @@ async function initializeDatadogRum(env: string): Promise<void> {
   if (datadogRum.getInitConfiguration()) return
 
   datadogRum.init({
-    clientToken: 'pub7704486e5b64eb4ff6f62891cda45559',
-    applicationId: '041a9897-5516-4b1f-a245-1a9aa6895488',
-    site: 'us5.datadoghq.com',
+    ...COMFY_RUM_APPLICATION,
     service: 'comfy-cloud-frontend',
     env,
     version: __COMFYUI_FRONTEND_COMMIT__,

@@ -25,6 +25,8 @@ import {
   OPERATION_POLL_TIMING
 } from './operationPolicy.js'
 import type {
+  BillingChargeBreakdown,
+  BillingOperationState,
   BillingOpStatus,
   HostedBillingDestination
 } from './operationState.js'
@@ -858,6 +860,57 @@ describe('createBillingOperationLifecycle', () => {
       })
     })
 
+    it("announces the backend's pending operation with the phase it read, never as an unread pending", async () => {
+      const { lifecycle, calls } = harness({
+        status: statusSnapshot({
+          pending_billing_op_id: 'op-1',
+          pending_billing_op_type: 'subscription'
+        }),
+        answers: [httpOk(opStatus({ phase: 'awaiting_payment_method' }))]
+      })
+      const announced: BillingOperationState[] = []
+      lifecycle.subscribe((state) => announced.push(state))
+
+      const recovered = await lifecycle.recover()
+      await flush()
+
+      expect(calls.map((call) => call.route)).toEqual([operationRoute('op-1')])
+      expect(
+        announced.map((state) =>
+          state.phase === 'pending' ? state.serverPhase : state.phase
+        )
+      ).toEqual(['awaiting_payment_method'])
+      expect(recovered).toMatchObject({
+        status: 'ok',
+        value: { id: 'op-1', phase: 'pending' }
+      })
+    })
+
+    it("announces the backend's pending operation with its served link even when the operation read fails", async () => {
+      const { lifecycle, calls } = harness({
+        status: statusSnapshot({
+          pending_billing_op_id: 'op-1',
+          pending_billing_op_type: 'subscription',
+          action_url: 'https://billing.example/continue'
+        }),
+        answers: [httpStatus(503)]
+      })
+      const announced: BillingOperationState[] = []
+      lifecycle.subscribe((state) => announced.push(state))
+
+      await lifecycle.recover()
+      await flush()
+
+      expect(calls.map((call) => call.route)).toEqual([operationRoute('op-1')])
+      expect(announced).toEqual([
+        expect.objectContaining({
+          id: 'op-1',
+          phase: 'pending',
+          actionUrl: 'https://billing.example/continue'
+        })
+      ])
+    })
+
     it('resumes from the pointer when the status read is unreachable', async () => {
       const { lifecycle } = harness({
         storage: storageWith(POINTER),
@@ -1061,6 +1114,154 @@ describe('createBillingOperationLifecycle', () => {
       expect(recovered.status === 'ok' && recovered.value).not.toHaveProperty(
         'awaitedHere'
       )
+    })
+
+    const RECEIPT_PLAN = { slug: 'pro_monthly', duration: 'MONTHLY' } as const
+
+    it('keeps the receipt a succeeded operation reports', async () => {
+      const { lifecycle } = harness({
+        answers: [
+          httpOk(
+            opStatus({
+              status: 'succeeded',
+              amount_charged_cents: 3250,
+              credits_added: 6858,
+              plan: RECEIPT_PLAN
+            })
+          )
+        ]
+      })
+      await lifecycle.begin('subscription', issued())
+      await flush()
+
+      expect(lifecycle.get('op-1')).toMatchObject({
+        phase: 'succeeded',
+        receipt: {
+          amountChargedCents: 3250,
+          creditsAdded: 6858,
+          plan: RECEIPT_PLAN
+        }
+      })
+    })
+
+    const CHARGE_BREAKDOWN: BillingChargeBreakdown = {
+      amount_charged_cents: 2600,
+      currency: 'usd',
+      prorated: false,
+      reasons: [
+        {
+          kind: 'promo_code',
+          amount_cents: 400,
+          discount: {
+            kind: 'promotion',
+            code: 'SAVE20',
+            name: 'Save 20%',
+            duration: 'repeating',
+            duration_in_months: 3
+          }
+        },
+        { kind: 'account_balance', amount_cents: 250 }
+      ]
+    }
+
+    it('keeps the charge breakdown a succeeded operation reports', async () => {
+      const { lifecycle } = harness({
+        answers: [
+          httpOk(
+            opStatus({
+              status: 'succeeded',
+              amount_charged_cents: 2600,
+              charge_breakdown: CHARGE_BREAKDOWN
+            })
+          )
+        ]
+      })
+      await lifecycle.begin('subscription', issued())
+      await flush()
+
+      expect(lifecycle.get('op-1')).toMatchObject({
+        phase: 'succeeded',
+        receipt: { amountChargedCents: 2600, chargeBreakdown: CHARGE_BREAKDOWN }
+      })
+    })
+
+    it('does not settle on a status whose charge breakdown is malformed', async () => {
+      const { lifecycle } = harness({
+        answers: [
+          httpOk({
+            ...opStatus({ status: 'succeeded' }),
+            charge_breakdown: {
+              ...CHARGE_BREAKDOWN,
+              reasons: [{ kind: 'gift_card', amount_cents: 400 }]
+            }
+          })
+        ]
+      })
+      await lifecycle.begin('subscription', issued())
+      await flush()
+
+      expect(lifecycle.get('op-1')).toMatchObject({ phase: 'pending' })
+    })
+
+    it('leaves the receipt off a success that reported none', async () => {
+      const { lifecycle } = harness({
+        answers: [httpOk(opStatus({ status: 'succeeded' }))]
+      })
+      await lifecycle.begin('subscription', issued())
+      await flush()
+
+      expect(lifecycle.get('op-1')).not.toHaveProperty('receipt')
+    })
+
+    it('re-reads a success whose credits are still landing, when asked for settled operations', async () => {
+      const charged = {
+        status: 'succeeded' as const,
+        amount_charged_cents: 3250
+      }
+      const { lifecycle } = harness({
+        retainSettled: true,
+        answers: [
+          httpOk(opStatus(charged)),
+          httpOk(opStatus({ ...charged, credits_added: 6858 }))
+        ]
+      })
+      await lifecycle.begin('subscription', issued())
+      await flush()
+      expect(lifecycle.get('op-1')).toMatchObject({
+        receipt: { amountChargedCents: 3250 }
+      })
+
+      await expect(
+        lifecycle.recover({ includeSettled: true })
+      ).resolves.toMatchObject({
+        status: 'ok',
+        value: {
+          phase: 'succeeded',
+          receipt: { amountChargedCents: 3250, creditsAdded: 6858 }
+        }
+      })
+    })
+
+    it('keeps a success whose credits already landed as it was', async () => {
+      const landed = {
+        status: 'succeeded' as const,
+        amount_charged_cents: 3250,
+        credits_added: 6858
+      }
+      const { lifecycle } = harness({
+        retainSettled: true,
+        answers: [
+          httpOk(opStatus(landed)),
+          httpOk(opStatus({ ...landed, credits_added: 1 }))
+        ]
+      })
+      await lifecycle.begin('subscription', issued())
+      await flush()
+      const settled = lifecycle.get('op-1')
+
+      await lifecycle.recover({ includeSettled: true })
+
+      expect(lifecycle.get('op-1')).toBe(settled)
     })
 
     it('re-reads an operation that needed reconciliation, following it forward to success', async () => {

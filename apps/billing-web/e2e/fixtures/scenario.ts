@@ -5,7 +5,8 @@ import type {
   BillingPlansResponse,
   BillingStatusResponse,
   PreviewSubscribeResponse,
-  SavedPaymentMethod
+  SavedPaymentMethod,
+  TopupQuoteResponse
 } from '@comfyorg/ingest-types'
 
 import { E2E_USER } from './env'
@@ -18,6 +19,7 @@ export interface CloudScenario {
   plans: BillingPlansResponse
   paymentMethods: SavedPaymentMethod[]
   preview: PreviewSubscribeResponse
+  topupQuote: TopupQuoteResponse
   operations: Record<string, BillingOpStatusResponse>
   /** `billing_web_checkout_ui`, answered only to an authenticated `/features` read, as the real Cloud does. */
   checkoutUi?: string
@@ -201,6 +203,74 @@ export function defaultScenario(): CloudScenario {
         }
       }
     },
+    topupQuote: {
+      amount_cents: 2500,
+      credits: 5275,
+      expires_at: '2027-09-30T12:00:00.000Z'
+    },
     operations: {}
+  }
+}
+
+const CREATOR_YEARLY = {
+  slug: 'creator_yearly',
+  tier: 'CREATOR',
+  duration: 'ANNUAL',
+  price_cents: 26_880,
+  credits_cents: 82_800,
+  max_seats: 1,
+  availability: { available: true },
+  seat_summary: {
+    seat_count: 1,
+    total_cost_cents: 26_880,
+    total_credits_cents: 82_800
+  }
+} as const
+
+/**
+ * The default Creator Monthly subscriber switching to Creator Yearly, quoted
+ * as the real Cloud quotes it: the reset to yearly charges in full today,
+ * carries no proration instant, and reports the yearly renewal date, the
+ * plan's list price, its monthly figures and the pre-discount subtotal.
+ */
+export function switchToYearly(scenario: CloudScenario): void {
+  const monthly = scenario.plans.plans[0]
+  scenario.plans = {
+    ...scenario.plans,
+    plans: [...scenario.plans.plans, CREATOR_YEARLY]
+  }
+  scenario.preview = {
+    ...scenario.preview,
+    transition_type: 'duration_change',
+    is_immediate: true,
+    effective_at: new Date().toISOString(),
+    renewal_at: '2027-09-30T00:00:00.000Z',
+    cost_today_cents: 26_880,
+    amount_due_cents: 26_880,
+    subtotal_cents: 26_880,
+    cost_next_period_cents: 26_880,
+    renewal_amount_cents: 26_880,
+    credits_today_cents: 82_800,
+    credits_next_period_cents: 82_800,
+    current_plan: {
+      slug: monthly.slug,
+      tier: monthly.tier,
+      duration: monthly.duration,
+      price_cents: monthly.price_cents,
+      credits_cents: monthly.credits_cents,
+      seat_summary: monthly.seat_summary,
+      period_end: '2026-10-30T00:00:00.000Z'
+    },
+    new_plan: {
+      slug: CREATOR_YEARLY.slug,
+      tier: CREATOR_YEARLY.tier,
+      duration: CREATOR_YEARLY.duration,
+      price_cents: CREATOR_YEARLY.price_cents,
+      list_price_cents: 33_600,
+      monthly_price_cents: 2240,
+      monthly_list_price_cents: 2800,
+      credits_cents: CREATOR_YEARLY.credits_cents,
+      seat_summary: CREATOR_YEARLY.seat_summary
+    }
   }
 }

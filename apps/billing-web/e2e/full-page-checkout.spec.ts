@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 import { declinedOperation } from './fixtures/scenario'
 import { installFakeStripe } from './fixtures/stripe'
@@ -157,6 +157,33 @@ test('two saved methods keep the picker, and Pay charges the one picked', async 
       cloud.requests.find((request) => request.path === '/billing/subscribe')
     )
     .toMatchObject({ body: { saved_payment_method_id: 'pm_e2e_mastercard' } })
+})
+
+test('the saved-method list opens on the same dark surface as its picker', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.paymentMethods = [
+    ...cloud.scenario.paymentMethods,
+    {
+      id: 'pm_e2e_mastercard',
+      type: 'card',
+      brand: 'mastercard',
+      last4: '4402',
+      is_default: false
+    }
+  ]
+  await signIn(CHECKOUT)
+
+  const background = (locator: Locator) =>
+    locator.evaluate((element) => getComputedStyle(element).backgroundColor)
+  const pickerBackground = await background(savedPicker(page))
+
+  await savedPicker(page).click()
+  const list = page.getByRole('listbox')
+  await expect(list).toBeVisible()
+  await expect.poll(() => background(list)).toBe(pickerBackground)
 })
 
 test('368-15319: a failed form beside a saved method stays inside Add new, and Saved stays payable', async ({

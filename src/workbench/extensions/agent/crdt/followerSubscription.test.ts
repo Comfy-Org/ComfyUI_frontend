@@ -31,9 +31,7 @@ import { FollowerDoc } from './followerDoc'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 const WORKFLOW_ID = 'wf-1'
 
@@ -316,6 +314,7 @@ describe('FE-TEARDOWN-1 — teardown completes with a dead socket', () => {
     expect(transport.listenerCount).toBe(0)
     expect(bridge.subscribedWorkflowId).toBeNull()
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
       errorType: 'failure_sending_agent_doc_frame',
       logToConsole: false,
       tags: {
@@ -448,6 +447,7 @@ describe('doc_reset — a lineage break drops the doc and resubscribes from zero
     expect(bridge.follower.updatesApplied).toBe(1)
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
       errorType: 'agent_crdt_invalid_server_frame',
       tags: { frame_type: 'doc_reset' },
       level: 'warning'

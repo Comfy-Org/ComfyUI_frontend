@@ -12,7 +12,7 @@ describe('ComfyApiPlanLimitsSection', () => {
     ).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Contact Us' })).toHaveAttribute(
       'href',
-      '/contact'
+      '/contact/'
     )
   })
 
@@ -22,7 +22,7 @@ describe('ComfyApiPlanLimitsSection', () => {
     expect(screen.getByText('企业版的限制由合同约定。')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: '联系我们' })).toHaveAttribute(
       'href',
-      '/zh-CN/contact'
+      '/zh-CN/contact/'
     )
   })
 })

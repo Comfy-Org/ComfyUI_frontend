@@ -1,5 +1,5 @@
 import { zGlobalSettingValue } from '@comfyorg/ingest-types/zod'
-import type { Page, Route } from '@playwright/test'
+import type { Page, Route, WebSocketRoute } from '@playwright/test'
 
 import type {
   AgentThreadListResponse,
@@ -38,6 +38,10 @@ const TURN_ACCEPTED: AgentTurnAccepted = {
 
 const CANCEL_ACCEPTED: AgentCancelAccepted = { status: 'cancelling' }
 
+export function pushAgentEvent(ws: WebSocketRoute, event: AgentWsEvent): void {
+  ws.send(JSON.stringify(event))
+}
+
 const FUNDED_BILLING_STATUS = {
   billing_rail: 'stripe',
   billing_status: 'paid',
@@ -59,13 +63,30 @@ type HeldBillingRefresh = {
   release: () => void
 }
 
+type DeferredGate = {
+  promise: Promise<void>
+  release: () => void
+}
+
+function createDeferredGate(): DeferredGate {
+  let release: (value?: void | PromiseLike<void>) => void = () => {
+    throw new Error('Deferred gate was released before initialization')
+  }
+  const promise = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  return { promise, release: () => release() }
+}
+
 class AgentBillingFixture {
   private status: BillingStatusResponse = FUNDED_BILLING_STATUS
+  private available = true
   private heldRefresh:
     | {
-        resolveEntered: () => void
-        resolveCompleted: () => void
-        releaseRequest?: () => void
+        entered: DeferredGate
+        completed: DeferredGate
+        request: DeferredGate
+        requestEntered: boolean
       }
     | undefined
 
@@ -77,47 +98,52 @@ class AgentBillingFixture {
     }
   }
 
+  failSubsequentRefreshes(): void {
+    this.available = false
+  }
+
+  resumeRefreshes(): void {
+    this.available = true
+  }
+
   holdNextFundedRefresh(): HeldBillingRefresh {
-    let resolveEntered!: () => void
-    let resolveCompleted!: () => void
-    const entered = new Promise<void>((resolve) => {
-      resolveEntered = resolve
-    })
-    const completed = new Promise<void>((resolve) => {
-      resolveCompleted = resolve
-    })
     const heldRefresh: NonNullable<AgentBillingFixture['heldRefresh']> = {
-      resolveEntered,
-      resolveCompleted
+      entered: createDeferredGate(),
+      completed: createDeferredGate(),
+      request: createDeferredGate(),
+      requestEntered: false
     }
     this.heldRefresh = heldRefresh
 
     return {
-      entered,
-      completed,
+      entered: heldRefresh.entered.promise,
+      completed: heldRefresh.completed.promise,
       release: () => {
-        if (heldRefresh.releaseRequest === undefined) {
+        if (!heldRefresh.requestEntered) {
           throw new Error('Funded billing refresh has not entered the fixture')
         }
-        heldRefresh.releaseRequest()
+        heldRefresh.request.release()
       }
     }
   }
 
   async fulfillStatus(route: Route): Promise<void> {
+    if (!this.available) {
+      await route.fulfill({ status: 503 })
+      return
+    }
     const response = this.status
     const heldRefresh = this.heldRefresh
     let completedHeldRefresh: typeof heldRefresh
     if (heldRefresh && response.scoped_effective_has_funds?.agent) {
       this.heldRefresh = undefined
       completedHeldRefresh = heldRefresh
-      heldRefresh.resolveEntered()
-      await new Promise<void>((resolve) => {
-        heldRefresh.releaseRequest = resolve
-      })
+      heldRefresh.requestEntered = true
+      heldRefresh.entered.release()
+      await heldRefresh.request.promise
     }
     await route.fulfill(jsonRoute(response))
-    completedHeldRefresh?.resolveCompleted()
+    completedHeldRefresh?.completed.release()
   }
 }
 

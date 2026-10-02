@@ -31,6 +31,7 @@ function trySend(send: () => boolean): boolean {
     return send()
   } catch (error) {
     reportError(error, {
+      surface: 'agent',
       errorType: 'failure_sending_agent_doc_frame',
       logToConsole: false,
       tags: {

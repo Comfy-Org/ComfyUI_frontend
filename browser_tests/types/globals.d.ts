@@ -61,6 +61,10 @@ declare global {
     __autoShownReads?: number
     __perfFrameState?: PerfFrameState
     __perfLongtaskState?: PerfLongtaskState
+    __captureHostTelemetry?: (captured: {
+      event: string
+      properties: Record<string, unknown>
+    }) => Promise<void>
 
     // Feature flags test globals
     __capturedMessages?: CapturedMessages

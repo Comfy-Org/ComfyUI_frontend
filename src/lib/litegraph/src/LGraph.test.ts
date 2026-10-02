@@ -1,6 +1,6 @@
 import { toGroupId } from '@/types/groupId'
 import { graphScopeOf } from '@/types/graphScopeId'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { NodeLifecycleEvent } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
@@ -57,7 +57,7 @@ import {
 } from './__fixtures__/duplicateLinks'
 import { duplicateSubgraphNodeIds } from './__fixtures__/duplicateSubgraphNodeIds'
 import { nestedSubgraphProxyWidgets } from './__fixtures__/nestedSubgraphProxyWidgets'
-import { nodeIdSpaceExhausted } from './__fixtures__/nodeIdSpaceExhausted'
+import { nodeIdsFromReservedMintRange } from './__fixtures__/nodeIdsFromReservedMintRange'
 import { uniqueSubgraphNodeIds } from './__fixtures__/uniqueSubgraphNodeIds'
 import { test } from './__fixtures__/testExtensions'
 
@@ -431,12 +431,11 @@ describe('LGraph', () => {
     })
   })
 
-  test('can be instantiated', ({ expect }) => {
-    // @ts-expect-error Intentional - extra holds any / all consumer data that should be serialised
-    const graph = new LGraph({ extra: 'TestGraph' })
+  test('can be instantiated', ({ expect, minimalSerialisableGraph }) => {
+    const extra = { consumerData: 'TestGraph' }
+    const graph = new LGraph({ ...minimalSerialisableGraph, extra })
     expect(graph).toBeInstanceOf(LGraph)
-    expect(graph.extra).toBe('TestGraph')
-    expect(graph.extra).toBe('TestGraph')
+    expect(graph.extra).toEqual(extra)
   })
 
   test('is exactly the same type', ({ expect }) => {
@@ -934,6 +933,7 @@ describe('Store-driven serialization parity', () => {
         message: 'Graph serialization state mismatch'
       }),
       {
+        surface: 'graph',
         errorType: 'graph_serialization_state_mismatch',
         context: {
           graphId: graph.id,
@@ -2385,11 +2385,32 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
     })
   })
 
-  it('throws when node ID space is exhausted', () => {
+  it('remaps duplicate subgraph IDs when a reserved-range mint has raised the counters', () => {
+    const graph = new LGraph()
+    const observedNodeId = 4_462_758_126_524_329
+    const observedLinkId = toLinkId(7_729_209_487_955_825)
+
     expect(() => {
-      const graph = new LGraph()
-      graph.configure(structuredClone(nodeIdSpaceExhausted))
-    }).toThrow('Node ID space exhausted')
+      graph.configure(structuredClone(nodeIdsFromReservedMintRange))
+    }).not.toThrow()
+
+    expect(nodeIdSet(graph, SUBGRAPH_B)).toEqual(
+      new Set([
+        toNodeId(observedNodeId + 2),
+        toNodeId(observedNodeId + 3),
+        toNodeId(observedNodeId + 4)
+      ])
+    )
+    expect(graph.state.lastNodeId).toBe(observedNodeId + 4)
+
+    expect(nodeIdSet(graph, SUBGRAPH_A)).toEqual(
+      new Set([toNodeId(3), toNodeId(8), toNodeId(37)])
+    )
+
+    const subgraphB = graph.subgraphs.get(SUBGRAPH_B)
+    assert.exists(subgraphB)
+    expect([...subgraphB.links.keys()]).toEqual([toLinkId(observedLinkId + 1)])
+    expect(graph.state.lastLinkId).toBe(toLinkId(observedLinkId + 1))
   })
 
   it('is a no-op when subgraph node IDs are already unique', () => {

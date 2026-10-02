@@ -184,11 +184,6 @@
       "count": 1
     }
   },
-  "src/lib/litegraph/src/subgraph/subgraphDeduplication.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
   "src/platform/assets/services/assetService.ts": {
     "comfy/no-new-error-throw": {
       "count": 21
@@ -205,11 +200,6 @@
     }
   },
   "src/platform/cloud/subscription/components/CreditsTile.vue": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
-  "src/platform/cloud/subscription/composables/useSubscription.ts": {
     "comfy/no-new-error-throw": {
       "count": 1
     }
@@ -237,11 +227,6 @@
   "src/platform/settings/settingStore.ts": {
     "comfy/no-new-error-throw": {
       "count": 1
-    }
-  },
-  "src/platform/tasks/services/taskService.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 3
     }
   },
   "src/platform/workflow/management/stores/comfyWorkflow.ts": {

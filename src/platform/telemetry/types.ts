@@ -17,6 +17,14 @@ import {
   SESSION_TELEMETRY_EVENT
 } from '@comfyorg/account-core/telemetry'
 import type {
+  BillingDeclineReason,
+  BillingPresentation
+} from '@comfyorg/account-core/billing'
+import type {
+  BillingIntent as HostedBillingIntent,
+  BillingSource
+} from '@comfyorg/billing-contract'
+import type {
   AgentRunMode,
   CreateTopupResponse,
   SubscribeResponse
@@ -34,22 +42,7 @@ import type { AppMode } from '@/utils/appMode'
 
 export type { AuthMethod }
 
-export type PaymentIntentSource =
-  | 'subscription_required'
-  | 'out_of_credits'
-  | 'top_up_blocked'
-  | 'deep_link'
-  | 'subscribe_to_run'
-  | 'subscribe_now_button'
-  | 'upgrade_to_add_credits'
-  | 'settings_billing_panel'
-  | 'avatar_menu_plans'
-  | 'team_members_panel'
-  | 'invite_member_upsell'
-  | 'upload_model_upgrade'
-  | 'team_upgrade_resume'
-  | 'free_tier_quota'
-  | 'agent_paywall'
+export type PaymentIntentSource = BillingSource
 
 export type SubscriptionCheckoutType = 'new' | 'change'
 export type SubscriptionCheckoutTier = TierKey | 'team'
@@ -685,6 +678,8 @@ export type AgentConsentOfferExit =
   | 'offer_in_flight'
   /** The card has already been on screen for this scope this page load. */
   | 'card_already_seen'
+  /** Panel activation owns consent timing, so the automatic offer is dropped. */
+  | 'activation_opened_panel'
   /** The one-shot auto-show key for this scope is already burned. */
   | 'already_offered'
   /** The first-run startup probe rejected. */
@@ -875,6 +870,34 @@ export type AgentStarterPromptId =
   | 'slot_4'
   | 'slot_5'
   | 'unregistered'
+/**
+ * Where the free-use notice was placed, for the DES-1221 placement experiment.
+ *
+ * Deliberately the PostHog variant keys verbatim: the analysis joins this property to
+ * `$feature/agent-free-use-message-placement`, and a translation layer between
+ * the two is one more place for the arms to drift apart.
+ */
+export type AgentFreeUsePlacement =
+  | 'top-banner'
+  | 'near-composer'
+  | 'above-input'
+  | 'inside-input'
+export interface AgentFreeUseExposureMetadata extends Record<string, unknown> {
+  placement: 'control' | AgentFreeUsePlacement
+  '$feature/agent-free-use-message-placement': 'control' | AgentFreeUsePlacement
+}
+/**
+ * Interactions with the notice itself. The experiment's primary outcome and
+ * guardrails are all read off events that already exist — `agent_panel_opened`,
+ * `agent_message_sent`, `agent_panel_closed`, node edits and run events — split
+ * by the PostHog variant property. This event adds only what those cannot say:
+ * whether the notice was actually on screen in its assigned arm, and what the
+ * viewer did with it.
+ */
+export interface AgentFreeUseNoticeMetadata extends Record<string, unknown> {
+  action: 'shown' | 'dismissed' | 'learn_more_clicked'
+  placement: AgentFreeUsePlacement
+}
 export interface AgentStarterPromptClickedMetadata extends Record<
   string,
   unknown
@@ -1254,6 +1277,7 @@ export interface SubscriptionSuccessMetadata extends Record<string, unknown> {
   operation?: 'resubscribe'
   /** The click-time source, carried through so the terminal event can report it. */
   resubscribe_source?: ResubscribeClickMetadata['source']
+  recovery_outcome?: 'late_success'
 }
 
 export interface WorkspaceInviteMetadata extends Record<string, unknown> {
@@ -1320,6 +1344,10 @@ type BillingSucceeded = {
   outcome: 'success'
 }
 
+type BillingRecoveredSucceeded = BillingSucceeded & {
+  recovery_outcome?: 'late_success'
+}
+
 type BillingFailed = BillingFailure & {
   stage: 'failed'
   outcome: 'failure'
@@ -1331,9 +1359,16 @@ type BillingTimedOut = {
   failure_category: 'poll_timeout'
 }
 
+/** The stage one attempt at a billing operation settled on. */
+export type BillingOperationTerminal =
+  | BillingSucceeded
+  | (BillingFailed & { decline_reason?: BillingDeclineReason })
+  | BillingTimedOut
+
 type SubscriptionCheckoutBillingEvent = {
   operation: 'subscription_checkout'
   billing_op_id?: string
+  checkout_attempt_id?: string
   tier?: SubscriptionCheckoutTier
   cycle?: BillingCycle
   checkout_type?: SubscriptionCheckoutType
@@ -1348,8 +1383,9 @@ type SubscriptionCheckoutBillingEvent = {
   | BillingCheckoutReceived<SubscribeResponse['status']>
   | BillingRequestSent
   | BillingStarted
-  | BillingSucceeded
+  | BillingRecoveredSucceeded
   | BillingFailed
+  | BillingTimedOut
 )
 
 type BillingOperationBillingEvent = {
@@ -1357,6 +1393,10 @@ type BillingOperationBillingEvent = {
   /** Absent when the initiating call itself failed, before the backend returned one to poll. */
   billing_op_id?: string
   operation_type: 'subscription' | 'topup' | 'cancel'
+  /** Set by the billing SDK rail, as is `resumed`; the poller never sets either. */
+  presentation?: BillingPresentation
+  /** True when this tab reattached to an operation it did not issue. */
+  resumed?: boolean
   tier?: SubscriptionCheckoutTier
   cycle?: BillingCycle
   checkout_type?: SubscriptionCheckoutType
@@ -1369,13 +1409,14 @@ type BillingOperationBillingEvent = {
    * true duration.
    */
   duration_ms?: number
-} & (BillingStarted | BillingSucceeded | BillingFailed | BillingTimedOut)
+} & (BillingStarted | BillingOperationTerminal)
 
 type ResubscribeBillingEvent = {
   operation: 'resubscribe'
   source: ResubscribeClickMetadata['source']
+  checkout_attempt_id?: string
   payment_intent_source?: PaymentIntentSource
-} & (BillingStarted | BillingSucceeded | BillingFailed)
+} & (BillingStarted | BillingRecoveredSucceeded | BillingFailed)
 
 type TopupBillingEvent = {
   operation: 'topup'
@@ -1417,13 +1458,33 @@ type CapabilityReadBillingEvent = {
   operation: 'capability_read'
 } & (BillingSucceeded | Pick<BillingFailed, 'stage' | 'outcome'>)
 
-export type BillingTelemetryEvent =
+type WebHandoffBillingEvent = {
+  operation: 'web_handoff'
+  stage: 'opened'
+  outcome: 'pending'
+  intent: HostedBillingIntent
+  result: 'opened' | 'blocked'
+  payment_intent_source?: PaymentIntentSource
+  /** The cloud journey id the entry link carries as `correlation_id`. */
+  correlation_id: string
+}
+
+type BillingSurface = 'cloud_app' | 'billing_web'
+
+type BillingClient = 'sdk' | 'legacy'
+
+export type BillingTelemetryEvent = {
+  /** The rail of the code that emitted the event; absent when the emitter does not know it. */
+  billing_client?: BillingClient
+} & (
   | CapabilityReadBillingEvent
   | SubscriptionCheckoutBillingEvent
   | BillingOperationBillingEvent
   | ResubscribeBillingEvent
   | TopupBillingEvent
   | DowngradeToPersonalBillingEvent
+  | WebHandoffBillingEvent
+)
 
 type BillingTelemetryEventNameFor<T extends BillingTelemetryEvent> =
   T extends BillingTelemetryEvent
@@ -1439,46 +1500,81 @@ export function getBillingTelemetryEventName(
   return `billing.${event.operation}.${event.stage}` as BillingTelemetryEventName
 }
 
+type BillingTelemetryPayload = Record<string, unknown>
+
+type KeysOfUnion<T> = T extends unknown ? keyof T : never
+
+type BillingPayloadField = Exclude<
+  KeysOfUnion<BillingTelemetryEvent>,
+  'operation' | 'stage' | 'outcome'
+>
+
+const BILLING_PAYLOAD_FIELD_HANDLING = {
+  checkout_status: 'required',
+  correlation_id: 'required',
+  failure_category: 'required',
+  intent: 'required',
+  member_removal_count: 'required',
+  member_removal_failures: 'required',
+  operation_type: 'required',
+  result: 'required',
+  source: 'required',
+  billing_client: 'optional',
+  billing_op_id: 'optional',
+  checkout_attempt_id: 'optional',
+  checkout_type: 'optional',
+  cycle: 'optional',
+  decline_reason: 'optional',
+  duration_ms: 'optional',
+  error_code: 'optional',
+  payment_intent_source: 'optional',
+  presentation: 'optional',
+  recovery_outcome: 'optional',
+  resumed: 'optional',
+  target_tier: 'optional',
+  tier: 'optional'
+} as const satisfies Record<BillingPayloadField, 'optional' | 'required'>
+
+const OPTIONAL_BILLING_PAYLOAD_FIELDS = Object.entries(
+  BILLING_PAYLOAD_FIELD_HANDLING
+).flatMap(([field, handling]) => (handling === 'optional' ? [field] : []))
+
+const REQUIRED_BILLING_PAYLOAD_FIELDS = Object.entries(
+  BILLING_PAYLOAD_FIELD_HANDLING
+).flatMap(([field, handling]) => (handling === 'required' ? [field] : []))
+
+const optionalBillingPayloadFields: ReadonlySet<string> = new Set(
+  OPTIONAL_BILLING_PAYLOAD_FIELDS
+)
+const requiredBillingPayloadFields: ReadonlySet<string> = new Set(
+  REQUIRED_BILLING_PAYLOAD_FIELDS
+)
+
 export function getBillingTelemetryEventPayload(event: BillingTelemetryEvent) {
-  return {
+  const payload: BillingTelemetryPayload = {
     operation: event.operation,
     stage: event.stage,
-    outcome: event.outcome,
-    ...('billing_op_id' in event &&
-      event.billing_op_id !== undefined && {
-        billing_op_id: event.billing_op_id
-      }),
-    ...('checkout_status' in event && {
-      checkout_status: event.checkout_status
-    }),
-    ...('operation_type' in event && {
-      operation_type: event.operation_type
-    }),
-    ...('tier' in event && event.tier !== undefined && { tier: event.tier }),
-    ...('cycle' in event &&
-      event.cycle !== undefined && { cycle: event.cycle }),
-    ...('checkout_type' in event &&
-      event.checkout_type !== undefined && {
-        checkout_type: event.checkout_type
-      }),
-    ...('payment_intent_source' in event &&
-      event.payment_intent_source !== undefined && {
-        payment_intent_source: event.payment_intent_source
-      }),
-    ...('source' in event && { source: event.source }),
-    ...('failure_category' in event && {
-      failure_category: event.failure_category
-    }),
-    ...('error_code' in event &&
-      event.error_code !== undefined && { error_code: event.error_code }),
-    ...('member_removal_count' in event && {
-      member_removal_count: event.member_removal_count,
-      member_removal_failures: event.member_removal_failures
-    }),
-    ...('target_tier' in event &&
-      event.target_tier !== undefined && { target_tier: event.target_tier }),
-    ...('duration_ms' in event &&
-      event.duration_ms !== undefined && { duration_ms: event.duration_ms })
+    outcome: event.outcome
+  }
+
+  for (const [field, value] of Object.entries(event)) {
+    if (requiredBillingPayloadFields.has(field)) {
+      payload[field] = value
+    } else if (optionalBillingPayloadFields.has(field) && value !== undefined) {
+      payload[field] = value
+    }
+  }
+
+  return payload
+}
+
+/** Only the cloud build registers the sinks that call this; the desktop host sink claims no surface. */
+export function getCloudAppBillingTelemetryEventPayload(
+  event: BillingTelemetryEvent
+): BillingTelemetryPayload & { billing_surface: BillingSurface } {
+  return {
+    ...getBillingTelemetryEventPayload(event),
+    billing_surface: 'cloud_app'
   }
 }
 
@@ -1796,6 +1892,8 @@ export interface TelemetryProvider {
   trackAgentStarterPromptClicked?(
     metadata: AgentStarterPromptClickedMetadata
   ): void
+  trackAgentFreeUseNotice?(metadata: AgentFreeUseNoticeMetadata): void
+  trackAgentFreeUseExposure?(metadata: AgentFreeUseExposureMetadata): void
   trackAgentNodeTagged?(metadata: AgentNodeTaggedMetadata): void
   trackAgentAttachButtonClicked?(
     metadata: AgentAttachButtonClickedMetadata
@@ -1898,6 +1996,8 @@ export const TelemetryEvents = {
   BILLING_SUBSCRIPTION_CHECKOUT_SUCCEEDED:
     'billing.subscription_checkout.succeeded',
   BILLING_SUBSCRIPTION_CHECKOUT_FAILED: 'billing.subscription_checkout.failed',
+  BILLING_SUBSCRIPTION_CHECKOUT_TIMEOUT:
+    'billing.subscription_checkout.timeout',
   BILLING_OPERATION_STARTED: 'billing.operation.started',
   BILLING_CAPABILITY_READ_SUCCEEDED: 'billing.capability_read.succeeded',
   BILLING_CAPABILITY_READ_FAILED: 'billing.capability_read.failed',
@@ -1915,6 +2015,7 @@ export const TelemetryEvents = {
   BILLING_DOWNGRADE_TO_PERSONAL_SUCCEEDED:
     'billing.downgrade_to_personal.succeeded',
   BILLING_DOWNGRADE_TO_PERSONAL_FAILED: 'billing.downgrade_to_personal.failed',
+  BILLING_WEB_HANDOFF_OPENED: 'billing.web_handoff.opened',
 
   // Onboarding Survey
   USER_SURVEY_OPENED: 'app:user_survey_opened',
@@ -1998,6 +2099,8 @@ export const TelemetryEvents = {
   AGENT_ONBOARDING_STEP: 'app:agent_onboarding_step',
   AGENT_MESSAGE_SENT: 'app:agent_message_sent',
   AGENT_STARTER_PROMPT_CLICKED: 'app:agent_starter_prompt_clicked',
+  AGENT_FREE_USE_NOTICE: 'app:agent_free_use_notice',
+  AGENT_FREE_USE_EXPOSURE: 'app:agent_free_use_exposure',
   AGENT_NODE_TAGGED: 'app:agent_node_tagged',
   AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',
   AGENT_WORKFLOW_APPLIED: 'app:agent_workflow_applied',

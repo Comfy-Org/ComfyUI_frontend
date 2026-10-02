@@ -5,9 +5,7 @@ import { inputSpecTree, ownSlotTypes } from '@/schemas/nodeDef/inputSpecTree'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 it('reports the first 10 unique locations and suppresses the 11th', () => {
   const locations: Array<{

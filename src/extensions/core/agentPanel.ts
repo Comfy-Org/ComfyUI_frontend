@@ -42,6 +42,34 @@ export const GATE_SETTLE_TIMEOUT_MS = 5_000
 
 const CONSENT_AUTO_SHOWN_PREFIX = 'Comfy.AgentConsent.AutoShown'
 
+function automaticConsentOfferScope(
+  {
+    activationOpenedPanel,
+    panelOpen,
+    userId,
+    workspaceId,
+    workspaceSwitching
+  }: {
+    activationOpenedPanel: boolean
+    panelOpen: boolean
+    userId: string | undefined
+    workspaceId: string | null
+    workspaceSwitching: boolean
+  },
+  onMissingScope: () => void,
+  onActivatedPanel: () => void
+): [userId: string, workspaceId: string] | null {
+  if (!userId || !workspaceId || workspaceSwitching) {
+    onMissingScope()
+    return null
+  }
+  if (activationOpenedPanel && panelOpen) {
+    onActivatedPanel()
+    return null
+  }
+  return [userId, workspaceId]
+}
+
 function writeAutoShown(key: string, shown: boolean): boolean {
   try {
     localStorage.setItem(key, String(shown))
@@ -248,6 +276,7 @@ export function registerAgentPanelExtension(): void {
         return userId && workspaceId ? `${userId}.${workspaceId}` : null
       }
       const consentCardSeenIn = new Set<string>()
+      let activationOpenedPanel = false
       whenever(
         () => dialogStore.isDialogOpen(CONSENT_DIALOG_KEY),
         () => {
@@ -322,12 +351,23 @@ export function registerAgentPanelExtension(): void {
           return
         }
 
-        const userId = resolvedUserInfo.value?.id
-        const workspaceId = workspaceStore.activeWorkspaceId
-        if (!userId || !workspaceId || workspaceStore.isSwitching) {
-          reportOfferExit(missingScopeExit(userId), 'offer')
-          return
-        }
+        const candidateUserId = resolvedUserInfo.value?.id
+        const offerScope = automaticConsentOfferScope(
+          {
+            activationOpenedPanel,
+            panelOpen: agentPanelStore.isOpen,
+            userId: candidateUserId,
+            workspaceId: workspaceStore.activeWorkspaceId,
+            workspaceSwitching: workspaceStore.isSwitching
+          },
+          () => reportOfferExit(missingScopeExit(candidateUserId), 'offer'),
+          () => {
+            reportOfferExit('activation_opened_panel', 'offer')
+            dropHold()
+          }
+        )
+        if (!offerScope) return
+        const [userId, workspaceId] = offerScope
         const key = `${CONSENT_AUTO_SHOWN_PREFIX}.${userId}.${workspaceId}`
         const autoShow = prepareAutoShow(key)
         if (autoShow !== 'ready') {
@@ -394,6 +434,7 @@ export function registerAgentPanelExtension(): void {
           .catch((error: unknown) => {
             reportOfferExit('startup_probe_failed', 'startup')
             reportError(error, {
+              surface: 'agent',
               errorType: 'agent_consent_auto_offer_failure'
             })
           })
@@ -409,11 +450,15 @@ export function registerAgentPanelExtension(): void {
           .then((decided) => {
             if (decided && agentPanelStore.enabled) {
               activationOffered = true
-              if (!agentPanelStore.isOpen) agentPanelStore.open('activation')
+              if (!agentPanelStore.isOpen) {
+                agentPanelStore.open('activation')
+                activationOpenedPanel = true
+              }
             }
           })
           .catch((error: unknown) => {
             reportError(error, {
+              surface: 'agent',
               errorType: 'agent_panel_activation_failure'
             })
           })
@@ -445,6 +490,7 @@ export function registerAgentPanelExtension(): void {
           .catch((error: unknown) => {
             reportOfferExit('consent_read_failed', 'load')
             reportError(error, {
+              surface: 'agent',
               errorType: 'agent_consent_setting_load_failure'
             })
           })
