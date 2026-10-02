@@ -2083,10 +2083,19 @@ export function useAgentSession(deps: AgentSessionDeps) {
         // PM-1738: a turn parked on an approval persists the unanswered ask on
         // whichever of its rows is still open, which is the last one to carry
         // one -- not necessarily the anchor the turn is keyed by.
+        //
+        // Only an open row is read. The server clears `pending_ask` behind the
+        // answer rather than with it (see `(g33)`), so a row it has already
+        // closed can still be carrying one that is spent, and restoring that
+        // would draw a card over a resolved ask. `applyAssistantRow` gates the
+        // hydrate path on the same `row.status` authority.
         return {
           kind: 'streaming',
           pendingAsk: rows.reduce<PendingAsk | undefined>(
-            (found, row) => row.pending_ask ?? found,
+            (found, row) =>
+              isTerminalTurnStatus(row.status)
+                ? found
+                : (row.pending_ask ?? found),
             undefined
           )
         }
