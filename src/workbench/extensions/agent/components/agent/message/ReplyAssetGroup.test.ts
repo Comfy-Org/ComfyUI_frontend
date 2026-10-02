@@ -159,9 +159,7 @@ describe('ReplyAssetGroup', () => {
     expect(screen.getByTestId('audio-card').dataset.title).toBe('song.mp3')
     await userEvent.click(screen.getByRole('button', { name: 'model.glb' }))
     expect(vi.mocked(useDialogStore().showDialog)).toHaveBeenCalledWith(
-      expect.objectContaining({
-        title: 'model.glb'
-      })
+      expect.objectContaining({ title: 'model.glb' })
     )
   })
 
