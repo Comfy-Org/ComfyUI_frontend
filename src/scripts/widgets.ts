@@ -33,6 +33,7 @@ import { useVideoEditWidget } from '@/renderer/extensions/vueNodes/widgets/compo
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
+import { CONTROL_OPTIONS } from '@/types/simplifiedWidget'
 
 import type { ComfyApp } from './app'
 import { IS_CONTROL_WIDGET } from './controlWidgetMarker'
@@ -101,16 +102,27 @@ export function updateControlWidgetLabel(widget: IBaseWidget) {
 const HAS_EXECUTED = Symbol()
 
 /**
- * The modes a value-control widget holds. Kept next to
- * {@link controlAfterGenerateNameOverride} because the two must agree.
+ * The extra mode a combo target gets, pushed into the control's own `values`
+ * below. It is not in {@link CONTROL_OPTIONS} because it is frontend-only —
+ * `io.ControlAfterGenerate` does not declare it.
+ */
+const COMBO_ONLY_CONTROL_MODE = 'increment-wrap'
+
+/**
+ * Every mode a value-control widget can hold, derived from the canonical list
+ * so a mode added to `io.ControlAfterGenerate` and mirrored into the schema
+ * cannot silently fall through {@link controlAfterGenerateNameOverride} and be
+ * read as a widget name again.
  */
 const VALUE_CONTROL_MODES: readonly string[] = [
-  'fixed',
-  'increment',
-  'decrement',
-  'randomize',
-  'increment-wrap'
+  ...CONTROL_OPTIONS,
+  COMBO_ONLY_CONTROL_MODE
 ]
+
+/** True for any string the control widget could legitimately hold. */
+function isValueControlMode(value: unknown): value is string {
+  return typeof value === 'string' && VALUE_CONTROL_MODES.includes(value)
+}
 
 /**
  * The `control_after_generate` key of an input spec carries two unrelated
@@ -131,10 +143,14 @@ const VALUE_CONTROL_MODES: readonly string[] = [
  * `app.ts`'s `PrimitiveNode` value coercion, and the agent's shared document.
  * The caller already passes the mode through as the widget's default value, so
  * a mode here is never also a name.
+ *
+ * Returns `undefined` — "not a name" — for a mode and for a blank string, so
+ * the caller falls through to `control_prefix` or the canonical name rather
+ * than creating a widget with an empty name.
  */
 function controlAfterGenerateNameOverride(value: unknown): string | undefined {
-  if (typeof value !== 'string') return undefined
-  return VALUE_CONTROL_MODES.includes(value) ? undefined : value
+  if (typeof value !== 'string' || value.trim() === '') return undefined
+  return isValueControlMode(value) ? undefined : value
 }
 
 export function addValueControlWidget(
@@ -174,7 +190,12 @@ export function addValueControlWidgets(
   options: ValueControlWidgetOptions = {},
   inputData?: InputSpec
 ): [IComboWidget, ...IStringWidget[]] {
-  if (!defaultValue) defaultValue = 'randomize'
+  // Callers derive `defaultValue` from the same overloaded
+  // `control_after_generate` key (`useIntWidget`, `useComboWidget`), so a name
+  // override arrives here as a mode. Seating it would leave the control
+  // holding a value `nextValueForLinkedTarget` matches no case for, and the
+  // target would never advance.
+  if (!isValueControlMode(defaultValue)) defaultValue = 'randomize'
 
   const getName = (
     defaultName: 'control_after_generate' | 'control_filter_list',
@@ -205,7 +226,7 @@ export function addValueControlWidgets(
     defaultValue,
     function () {},
     {
-      values: ['fixed', 'increment', 'decrement', 'randomize'],
+      values: [...CONTROL_OPTIONS],
       serialize: false, // Don't include this in prompt.
       surfaces: { canvas: 'shown', vueNode: 'never', panel: 'never' }
     }
@@ -224,7 +245,7 @@ export function addValueControlWidgets(
   let comboFilter: IStringWidget
   if (isCombo) {
     const values = valueControl.options.values
-    if (Array.isArray(values)) values.push('increment-wrap')
+    if (Array.isArray(values)) values.push(COMBO_ONLY_CONTROL_MODE)
   }
   if (isCombo && options.addFilterList !== false) {
     comboFilter = node.addWidget(

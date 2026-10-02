@@ -1,6 +1,7 @@
 import { mint, nodesMap } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -37,10 +38,10 @@ vi.mock(import('@/platform/telemetry/reportError'))
  * `control_after_generate=io.ControlAfterGenerate.fixed`, and that `str` Enum
  * serialises as its own value.
  */
-const PRIMITIVE_INT_VALUE = [
+const PRIMITIVE_INT_VALUE: InputSpec = [
   'INT',
   { default: 0, min: 0, max: 2147483647, control_after_generate: 'fixed' }
-] as unknown as InputSpec
+]
 
 /** Built by the real int widget constructor, exactly as production does. */
 class PrimitiveInt extends LGraphNode {
@@ -48,13 +49,7 @@ class PrimitiveInt extends LGraphNode {
     super('PrimitiveInt')
     this.comfyClass = 'PrimitiveInt'
     this.serialize_widgets = true
-    ComfyWidgets.INT(
-      this,
-      'value',
-      PRIMITIVE_INT_VALUE,
-      undefined as never,
-      undefined
-    )
+    ComfyWidgets.INT(this, 'value', PRIMITIVE_INT_VALUE, fromPartial({}))
     this.addOutput('INT', 'INT')
   }
 }
@@ -186,13 +181,13 @@ describe('PrimitiveInt control_after_generate projection', () => {
       },
       CATALOG
     )
+    onTestFinished(() => reminted.destroy())
     const widgets = nodesMap(reminted).get('143')?.get('widgets')
     if (!(widgets instanceof Y.Map)) throw new Error('not named storage')
     expect(Object.fromEntries(widgets.entries())).toEqual({
       value: 5,
       control_after_generate: 'randomize'
     })
-    reminted.destroy()
   })
 
   it('positive control: a widget the live node really lacks is still reported', () => {
