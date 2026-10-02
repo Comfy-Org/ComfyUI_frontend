@@ -2,7 +2,7 @@ import type {
   BillingTelemetryEvent,
   CheckoutJourneyTelemetryEvent
 } from '@comfyorg/account-core/billing'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 
 import { TelemetryRegistry } from './TelemetryRegistry'
 import type {
@@ -25,14 +25,7 @@ import type {
   TelemetryProvider
 } from './types'
 
-/** The agent dispatch surface, read off the provider interface itself. */
 type AgentDispatchMethod = keyof TelemetryProvider & `trackAgent${string}`
-
-/**
- * Compiles only when `T` is `never`; otherwise the error names the members of
- * `T`, which is how a missing dispatch case is reported by `vue-tsc`.
- */
-type AssertNever<T extends never> = T
 
 describe('TelemetryRegistry', () => {
   it('dispatches feature flag evaluations to supporting providers', () => {
@@ -368,11 +361,6 @@ describe('TelemetryRegistry', () => {
       placement: 'above-input'
     } satisfies AgentFreeUseNoticeMetadata
 
-    /**
-     * `satisfies` rather than a type annotation: the annotation widened every
-     * `method` to the whole union, which is what made a dropped case invisible.
-     * Keeping the literals lets `UncoveredDispatchMethod` below name the gap.
-     */
     const cases = [
       {
         method: 'trackAgentError',
@@ -591,27 +579,13 @@ describe('TelemetryRegistry', () => {
       invoke: (registry: TelemetryRegistry) => void
     }>
 
-    /** Every `trackAgent*` method the cases above actually exercise. */
     type CoveredDispatchMethod = (typeof cases)[number]['method']
 
-    /**
-     * `never` while the cases cover every dispatch method. If one is dropped —
-     * the silent failure mode of resolving this file one-sidedly during a rebase
-     * — this resolves to the missing method name and `AssertNever` turns it into
-     * a `vue-tsc` error that quotes it.
-     */
-    type UncoveredDispatchMethod = AssertNever<
-      Exclude<AgentDispatchMethod, CoveredDispatchMethod>
-    >
-
     it('covers every agent dispatch method with a case', () => {
-      // The compile-time half. This annotation is well-typed only while every
-      // dispatch method has a case; the assertion below is the formality that
-      // keeps the type referenced. What fails is `vue-tsc`, naming the method.
-      const uncoveredAtCompileTime: UncoveredDispatchMethod[] = []
-      expect(uncoveredAtCompileTime).toEqual([])
+      expectTypeOf<
+        Exclude<AgentDispatchMethod, CoveredDispatchMethod>
+      >().toBeNever()
 
-      // Runtime half: derived from the registry, never hand-maintained.
       const dispatched = Object.getOwnPropertyNames(TelemetryRegistry.prototype)
         .filter((name) => name.startsWith('trackAgent'))
         .sort()
