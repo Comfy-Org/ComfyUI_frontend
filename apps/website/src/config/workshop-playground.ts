@@ -1,3 +1,4 @@
+import type { Locale } from '../i18n/translations'
 import { t } from '../i18n/translations'
 import { fieldsForDefinition } from './workshop-form-definition'
 import { workshopExampleFiles } from './workshop-example-file'
@@ -572,6 +573,7 @@ export interface PlaygroundExample {
   /** The few settings worth reading back: size, then length. */
   readonly specs: readonly string[]
   readonly values: WorkshopExampleValues
+  readonly prompt?: string
   readonly outputUrl: string
   readonly mediaKind?: 'image' | 'video' | 'audio'
   readonly sampleOnly?: boolean
@@ -629,10 +631,25 @@ export function examplesForModel(
       outputUrl: example.thumbnailUrl,
       ...(example.sampleOnly ? { sampleOnly: true } : {}),
       ...(example.mediaKind ? { mediaKind: example.mediaKind } : {}),
+      ...(example.prompt?.trim() ? { prompt: example.prompt } : {}),
       ...(example.node ? { nodeDisplayName: example.node.displayName } : {}),
       ...(example.fields ? { fields: example.fields } : {})
     }
   })
+}
+
+export function exampleAlt(
+  modelName: string,
+  title: string,
+  locale: Locale = 'en'
+): string {
+  const sample = /^Sample (\d+)$/.exec(title)
+  return sample
+    ? t('workshop.examples.sampleAlt', locale, {
+        name: modelName,
+        n: sample[1]
+      })
+    : `${modelName}: ${title}`
 }
 
 export function exampleValues(
@@ -644,4 +661,9 @@ export function exampleValues(
 
 export function isVideoUrl(url: string): boolean {
   return /\.(mp4|webm|mov)(?:[?#]|$)/i.test(url)
+}
+
+/** A video address that makes Safari paint a frame before playback. */
+export function videoPosterUrl(url: string): string {
+  return url.includes('#') ? url : `${url}#t=0.1`
 }

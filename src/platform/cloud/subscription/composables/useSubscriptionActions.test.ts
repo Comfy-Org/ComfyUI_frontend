@@ -124,6 +124,7 @@ describe('useSubscriptionActions', () => {
       await handleMessageSupport()
 
       expect(mockReportError).toHaveBeenCalledWith(failure, {
+        surface: 'billing',
         errorType: 'contact_support_failed'
       })
     })
@@ -141,6 +142,7 @@ describe('useSubscriptionActions', () => {
       await handleMessageSupport()
 
       expect(mockReportError).toHaveBeenCalledWith('Command failed', {
+        surface: 'billing',
         errorType: 'contact_support_failed'
       })
     })

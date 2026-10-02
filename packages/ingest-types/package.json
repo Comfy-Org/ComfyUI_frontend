@@ -1,6 +1,6 @@
 {
   "name": "@comfyorg/ingest-types",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Comfy Cloud Ingest API TypeScript types and Zod schemas",
   "homepage": "https://comfy.org",
   "license": "MIT",
@@ -43,7 +43,7 @@
     "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; rmSync('dist', { recursive: true, force: true })\"",
     "prepack": "pnpm run build",
     "generate": "openapi-ts && node -e \"const fs=require('fs'); ['src/zod.gen.ts'].forEach(f => fs.writeFileSync(f, fs.readFileSync(f,'utf8').replaceAll(\\\"from 'zod/v3'\\\", \\\"from 'zod'\\\")));\"",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsx ../../scripts/vue-tsc-native.ts --noEmit"
   },
   "devDependencies": {
     "@hey-api/openapi-ts": "0.97.3",

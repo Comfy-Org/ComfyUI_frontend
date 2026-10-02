@@ -3,6 +3,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { breakpointsTailwind, unrefElement, useBreakpoints } from '@vueuse/core'
 import type { MaybeElement } from '@vueuse/core'
 import Splitter from 'primevue/splitter'
+import type { SplitterResizeStartEvent } from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
 import { storeToRefs } from 'pinia'
 import { computed, useTemplateRef } from 'vue'
@@ -83,13 +84,18 @@ const splitterKey = computed(() => {
 const leftPanelRef = useTemplateRef<MaybeElement>('leftPanel')
 const rightPanelRef = useTemplateRef<MaybeElement>('rightPanel')
 
-const { onResizeEnd } = useStablePrimeVueSplitterSizer(
+const { onResizeStart, onResizeEnd } = useStablePrimeVueSplitterSizer(
   [
     { ref: leftPanelRef, storageKey: 'Comfy.LinearView.LeftPanelWidth' },
     { ref: rightPanelRef, storageKey: 'Comfy.LinearView.RightPanelWidth' }
   ],
   [activeTab, splitterKey]
 )
+
+function onSplitterResizeStart(event: SplitterResizeStartEvent) {
+  event.originalEvent.preventDefault()
+  onResizeStart(event)
+}
 
 const bottomLeftRef = useTemplateRef('bottomLeftRef')
 const bottomRightRef = useTemplateRef('bottomRightRef')
@@ -127,7 +133,7 @@ function dragDrop(e: DragEvent) {
         <Splitter
           :key="splitterKey"
           class="h-full flex-1 border-none bg-secondary-background"
-          @resizestart="$event.originalEvent.preventDefault()"
+          @resizestart="onSplitterResizeStart"
           @resizeend="onResizeEnd"
         >
           <SplitterPanel

@@ -70,6 +70,13 @@ const outcome = computed<BillingOutcome>(() => {
   }
 })
 
+// No confirm form here: an operation in the preview step awaits the server.
+const awaitingServer = computed(
+  () =>
+    checkout.operation.value !== undefined &&
+    checkout.projection.value.step === 'preview'
+)
+
 const returnResult = computed(() => ({
   result: outcome.value,
   reference: checkout.projection.value.operationId
@@ -78,7 +85,10 @@ const returnResult = computed(() => ({
 
 <template>
   <HostedSurface :return-result="returnResult">
-    <p v-if="recovering" class="m-0 text-sm text-muted-foreground">
+    <p
+      v-if="recovering || awaitingServer"
+      class="m-0 text-sm text-muted-foreground"
+    >
       {{ t('hosted.result.recovering') }}
     </p>
     <p
@@ -102,7 +112,7 @@ const returnResult = computed(() => ({
       reason-class="m-0 text-sm text-destructive-background"
       safety-class="m-0 text-sm text-muted-foreground"
       actions-class="mt-2 flex gap-2"
-      action-class="h-11 cursor-pointer rounded-lg bg-base-foreground px-5 font-semibold text-base-background"
+      action-class="inline-flex h-11 cursor-pointer items-center justify-center rounded-lg bg-base-foreground px-5 font-semibold text-base-background"
       @retry="retryPayment"
       @cancel="checkout.cancel()"
       @continue-verification="checkout.continueVerification()"

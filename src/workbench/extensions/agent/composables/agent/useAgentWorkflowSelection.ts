@@ -21,6 +21,7 @@ interface WorkflowSelectionOptions {
   resolver: ReturnType<typeof useAgentWorkflowResolver>
   canSelectTarget: () => boolean
   warnWorkflowUnavailable: () => void
+  warnRestoreFailed: () => void
   onTargetBound?: (
     workflowId: string,
     previousWorkflowId: string | null,
@@ -32,6 +33,7 @@ export function useAgentWorkflowSelection({
   resolver,
   canSelectTarget,
   warnWorkflowUnavailable,
+  warnRestoreFailed,
   onTargetBound
 }: WorkflowSelectionOptions) {
   const workflowStore = useWorkflowStore()
@@ -49,7 +51,10 @@ export function useAgentWorkflowSelection({
     cloudIdFor,
     cloudWorkflowName,
     nextSaveFilename,
-    boundOrOpenWorkflowFor
+    boundOrOpenWorkflowFor,
+    cachedOpenWorkflowFor,
+    storedWorkflowFor,
+    isCloudWorkflowListed
   } = resolver
   const editableWorkflowId = computed(() =>
     selectedTarget.value ? cloudIdFor(selectedTarget.value) : undefined
@@ -69,14 +74,21 @@ export function useAgentWorkflowSelection({
     () => workflowSelection.value?.purpose === 'reference'
   )
   let targetSelectionGeneration = 0
+  function onVisibleWorkflowChanged(): void {
+    if (!panelStore.followsVisibleWorkflow) return
+    if (
+      workflowSelection.value?.purpose === 'target' &&
+      workflowSelection.value.workflow !== workflowStore.activeWorkflow
+    )
+      ++targetSelectionGeneration
+  }
+
   function commitWorkflowTarget(
     workflow: ComfyWorkflow,
     workflowId: string,
-    source: Extract<AgentWorkflowBindSource, 'selector_chip' | 'restored'>
+    source: Extract<AgentWorkflowBindSource, 'selector_chip' | 'restored'>,
+    previousWorkflowId: string | null = editableWorkflowId.value ?? null
   ): void {
-    const previousWorkflowId = selectedTarget.value
-      ? (cloudIdFor(selectedTarget.value) ?? null)
-      : null
     bindingStore.bind(workflowId, workflow.path)
     panelStore.setWorkflowTarget(workflow)
     composerStore.removeWorkflowReference(workflowId)
@@ -135,13 +147,14 @@ export function useAgentWorkflowSelection({
     try {
       const workflowId = await prepareWorkflowSelection(tab, isCurrent)
       if (workflowId === undefined || !isCurrent()) return false
+      const previousWorkflowId = editableWorkflowId.value ?? null
       if (!(await workflowService.openWorkflow(tab))) {
         if (isCurrent())
           warnWorkflowSelectionFailed(t('agent.targetNavigationUnavailable'))
         return false
       }
       if (!isCurrent()) return false
-      commitWorkflowTarget(tab, workflowId, 'selector_chip')
+      commitWorkflowTarget(tab, workflowId, 'selector_chip', previousWorkflowId)
       return true
     } catch (error) {
       if (isCurrent())
@@ -204,34 +217,63 @@ export function useAgentWorkflowSelection({
   async function onWorkflowRestored(
     workflowId: string | undefined,
     isSessionCurrent: () => boolean
-  ): Promise<void> {
-    if (!canRestoreWorkflow.value || !isSessionCurrent()) return
+  ): Promise<boolean> {
+    if (!isSessionCurrent()) return false
+    // A target that is already decided (e.g. a remounted panel) needs no
+    // restoration, so the chat is ready as far as its workflow goes.
+    if (!canRestoreWorkflow.value) return true
     const generation = ++targetSelectionGeneration
     const isCurrent = () =>
       generation === targetSelectionGeneration &&
       isSessionCurrent() &&
       canRestoreWorkflow.value
-    if (workflowId === undefined) return
-    await refreshCloudWorkflowIds()
-    if (!isCurrent()) return
-    const target = boundOrOpenWorkflowFor(workflowId)
+    if (workflowId === undefined) return true
+    let target = cachedOpenWorkflowFor(workflowId)
     if (target === null) {
-      panelStore.setWorkflowTarget(null)
-      warnWorkflowUnavailable()
-      return
+      const listed = await refreshCloudWorkflowIds()
+      if (!isCurrent()) return false
+      // A successful listing without the id means the workflow is gone, even
+      // when a stale local binding still names a tab; a failed listing stays
+      // a retryable restoration failure.
+      if (listed && !isCloudWorkflowListed(workflowId)) {
+        panelStore.markWorkflowTargetUnavailable()
+        return true
+      }
+      target =
+        boundOrOpenWorkflowFor(workflowId) ?? storedWorkflowFor(workflowId)
     }
+    return openRestoredWorkflow(target, workflowId, isCurrent)
+  }
+
+  async function openRestoredWorkflow(
+    target: ComfyWorkflow | null,
+    workflowId: string,
+    isCurrent: () => boolean
+  ): Promise<boolean> {
     try {
-      const opened = await workflowService.openWorkflow(target)
-      if (!isCurrent()) return
+      if (target === null) {
+        await workflowStore.syncWorkflows()
+        if (!isCurrent()) return false
+        target = storedWorkflowFor(workflowId)
+      }
+      if (target === null) {
+        panelStore.setWorkflowTarget(null)
+        warnRestoreFailed()
+        return false
+      }
+      const opened = await workflowService.openWorkflow(target, { isCurrent })
+      if (!isCurrent()) return false
       if (!opened) {
         panelStore.setWorkflowTarget(null)
-        warnWorkflowUnavailable()
-        return
+        warnRestoreFailed()
+        return false
       }
       commitWorkflowTarget(target, workflowId, 'restored')
+      return true
     } catch {
-      if (!isCurrent()) return
-      warnWorkflowUnavailable()
+      if (!isCurrent()) return false
+      warnRestoreFailed()
+      return false
     }
   }
 
@@ -245,6 +287,7 @@ export function useAgentWorkflowSelection({
     isSelecting: computed(() => workflowSelection.value !== null),
     selectingTarget,
     savingReference,
+    onVisibleWorkflowChanged,
     selectTarget: onSelectWorkflowTarget,
     selectReference: onSelectWorkflowReference,
     restoreTarget: onWorkflowRestored,

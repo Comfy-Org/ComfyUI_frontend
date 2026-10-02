@@ -37,9 +37,8 @@ export type Load3dDeps = Viewport3dDeps & {
 
 function positionThumbnailCamera(
   camera: THREE.PerspectiveCamera,
-  model: THREE.Object3D
+  box: THREE.Box3
 ) {
-  const box = new THREE.Box3().setFromObject(model)
   const size = box.getSize(new THREE.Vector3())
   const center = box.getCenter(new THREE.Vector3())
   const maxDim = Math.max(size.x, size.y, size.z)
@@ -67,6 +66,7 @@ class Load3d extends Viewport3d {
   private loadingPromise: Promise<boolean> | null = null
   private _loadGeneration: number = 0
   private hasLoadedModel: boolean = false
+  private thumbnailCaptureQueue: Promise<unknown> = Promise.resolve()
 
   constructor(
     container: HTMLElement,
@@ -566,9 +566,20 @@ class Load3d extends Viewport3d {
     this.forceRender()
   }
 
-  public async captureThumbnail(
+  public captureThumbnail(
     width: number = 256,
     height: number = 256
+  ): Promise<string> {
+    const capture = this.thumbnailCaptureQueue.then(() =>
+      this.captureThumbnailNow(width, height)
+    )
+    this.thumbnailCaptureQueue = capture.catch(() => {})
+    return capture
+  }
+
+  private async captureThumbnailNow(
+    width: number,
+    height: number
   ): Promise<string> {
     if (!this.modelManager.currentModel) {
       throw new Error('No model loaded for thumbnail capture')
@@ -585,16 +596,22 @@ class Load3d extends Viewport3d {
         this.cameraManager.toggleCamera('perspective')
       }
 
-      positionThumbnailCamera(
-        this.cameraManager.perspectiveCamera,
-        this.modelManager.currentModel
-      )
+      const box =
+        this.modelManager.getCurrentBounds() ??
+        new THREE.Box3().setFromObject(this.modelManager.currentModel)
 
-      const box = new THREE.Box3().setFromObject(this.modelManager.currentModel)
+      positionThumbnailCamera(this.cameraManager.perspectiveCamera, box)
+
       this.controlsManager.controls.target.copy(
         box.getCenter(new THREE.Vector3())
       )
       this.controlsManager.controls.update()
+
+      if (this.isSplatModel()) {
+        await this.sceneManager.whenSplatsSorted(
+          this.cameraManager.perspectiveCamera
+        )
+      }
 
       const result = await this.captureScene(width, height)
       return result.scene

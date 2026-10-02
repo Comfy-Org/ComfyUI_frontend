@@ -5,9 +5,12 @@ import { toRaw, watch } from 'vue'
 import { areWorkflowIdsEquivalent } from '@/platform/workflow/core/utils/workflowId'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { clearLegacyAgentStorage } from '@/platform/workflow/persistence/base/storageIO'
+import {
+  getWorkspaceId,
+  StorageKeys
+} from '@/platform/workflow/persistence/base/storageKeys'
 
-const LEGACY_STORAGE_KEY = 'Comfy.Agent.WorkflowTabBindings'
-const STORAGE_KEY = 'Comfy.Agent.WorkflowTabBindings.v2'
 const BINDING_TTL_MS = 30 * 24 * 60 * 60 * 1000
 
 interface PersistedBinding {
@@ -31,24 +34,6 @@ function isPersistedBinding(value: unknown): value is PersistedBinding {
     (graphId === null || typeof graphId === 'string') &&
     typeof confirmedAt === 'number'
   )
-}
-
-function readLegacyBindings(now: number): PersistedBindings {
-  try {
-    const parsed: unknown = JSON.parse(
-      localStorage.getItem(LEGACY_STORAGE_KEY) ?? 'null'
-    )
-    if (typeof parsed !== 'object' || parsed === null) return {}
-    return Object.fromEntries(
-      Object.entries(parsed).flatMap(([workflowId, tabPath]) =>
-        typeof tabPath === 'string'
-          ? [[workflowId, { tabPath, graphId: null, confirmedAt: now }]]
-          : []
-      )
-    )
-  } catch {
-    return {}
-  }
 }
 
 function liveBindings(
@@ -84,13 +69,12 @@ function graphIdOf(tab: ComfyWorkflow): string | undefined {
 export const useAgentWorkflowTabBindingStore = defineStore(
   'agentWorkflowTabBinding',
   () => {
-    const now = Date.now()
-    const hasStoredBindings = localStorage.getItem(STORAGE_KEY) !== null
-    const tabByWorkflow = useLocalStorage<PersistedBindings>(STORAGE_KEY, {})
-    tabByWorkflow.value = liveBindings(
-      hasStoredBindings ? tabByWorkflow.value : readLegacyBindings(now),
-      now
+    clearLegacyAgentStorage()
+    const tabByWorkflow = useLocalStorage<PersistedBindings>(
+      StorageKeys.agentWorkflowTabBindings(getWorkspaceId()),
+      {}
     )
+    tabByWorkflow.value = liveBindings(tabByWorkflow.value, Date.now())
 
     const workflows = useWorkflowStore()
     const boundInstances = new Map<string, ComfyWorkflow>()

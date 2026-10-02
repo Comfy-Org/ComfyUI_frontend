@@ -69,6 +69,7 @@ function subscription(
     endDate: null,
     isCancelled: false,
     hasFunds: true,
+    agentHasFunds: true,
     ...overrides
   }
 }
@@ -90,7 +91,7 @@ vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 vi.mock(import('@/platform/telemetry'))
 
 vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
 
   () => ({
     useToast: vi.fn(() => ({
@@ -100,7 +101,11 @@ vi.mock<unknown>(
 )
 
 function renderComponent(
-  props: { cancelAt?: string; flowAlreadyOpened?: boolean } = {}
+  props: {
+    cancelAt?: string
+    flowAlreadyOpened?: boolean
+    isScopeCurrent?: () => boolean
+  } = {}
 ) {
   const i18n = createI18n({
     legacy: false,
@@ -188,6 +193,29 @@ describe('CancelSubscriptionDialogContent', () => {
         'confirmed',
         expect.objectContaining({ current_tier: 'standard' })
       )
+      expect(
+        useTelemetry()?.trackSubscriptionCancellation
+      ).not.toHaveBeenCalledWith('abandoned', expect.anything())
+    })
+
+    it('does not cancel when the workspace scope changed after opening', async () => {
+      setSubscription(null)
+      const closeDialog = vi.spyOn(useDialogStore(), 'closeDialog')
+      const view = renderComponent({ isScopeCurrent: () => false })
+
+      await userEvent.click(
+        screen.getByRole('button', { name: /^cancel subscription$/i })
+      )
+
+      expect(useBillingContext().cancelSubscription).not.toHaveBeenCalled()
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'warn',
+          summary: 'Your active workspace changed. Switch back and try again.'
+        })
+      )
+      expect(closeDialog).toHaveBeenCalledWith({ key: 'cancel-subscription' })
+      view.unmount()
       expect(
         useTelemetry()?.trackSubscriptionCancellation
       ).not.toHaveBeenCalledWith('abandoned', expect.anything())

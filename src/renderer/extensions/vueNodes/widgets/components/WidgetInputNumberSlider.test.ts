@@ -1,12 +1,19 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
 import { describe, expect, it } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetInputNumberSlider from './WidgetInputNumberSlider.vue'
 import { createMockWidget } from './widgetTestUtils'
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: enMessages }
+})
 
 function renderComponent(
   value: number,
@@ -19,7 +26,7 @@ function renderComponent(
     options: { min: 0, max: 100, step: 1, precision: 0, ...options }
   })
   return render(WidgetInputNumberSlider, {
-    global: { plugins: [PrimeVue] },
+    global: { plugins: [i18n] },
     props: { widget, modelValue: value }
   })
 }
@@ -79,5 +86,15 @@ describe('WidgetInputNumberSlider', () => {
     await user.keyboard('{ArrowRight}')
 
     expect(emitted('update:modelValue')).toEqual([[expected]])
+  })
+
+  it('commits a typed number input on Enter', async () => {
+    const user = userEvent.setup()
+    const { emitted } = renderComponent(5)
+
+    await user.tripleClick(screen.getByRole('spinbutton'))
+    await user.keyboard('7{Enter}')
+
+    expect(emitted('update:modelValue')).toEqual([[7]])
   })
 })
