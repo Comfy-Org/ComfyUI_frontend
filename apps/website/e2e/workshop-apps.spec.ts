@@ -610,37 +610,40 @@ test('makes a sprite sheet of the example from the floating panel', async ({
   })
   await expect(panel).toContainText('fox-explorer.png')
 
-  await panel.getByRole('radio', { name: 'Toon' }).click()
-  await panel.getByRole('radio', { name: 'Jump' }).click()
+  await panel.getByRole('textbox', { name: 'Animation' }).fill('dancing')
+  await panel.getByTestId('sprite-picker-style').click()
+  await app
+    .getByRole('dialog', { name: 'Style' })
+    .getByRole('radio', { name: 'Toon' })
+    .click()
+  await panel.getByTestId('sprite-picker-motion').click()
+  await app
+    .getByRole('dialog', { name: 'Motion' })
+    .getByRole('radio', { name: 'Jump' })
+    .click()
+  await expect(panel.getByTestId('sprite-picker-motion')).toContainText('Jump')
   await expect(app.getByRole('button', { name: 'Undo' })).toBeEnabled()
-  await expect(app.getByTestId('sprite-preview')).toBeVisible()
   await expectPanelWidth(panel)
-  await expect(
-    app
-      .getByRole('toolbar', { name: 'Sprite sheet tools' })
-      .getByRole('button')
-      .last()
-  ).toHaveAccessibleName('Redo')
+  const tools = app.getByRole('toolbar', { name: 'Sprite sheet tools' })
+  await expect(tools.getByRole('button').last()).toHaveAccessibleName('Redo')
+
+  await tools.getByRole('radio', { name: 'Preview' }).click()
+  await expect(app.getByTestId('sprite-preview')).toBeVisible()
+  await expect(tools.getByRole('button', { name: 'Pause' })).toBeVisible()
+  await tools.getByRole('radio', { name: 'Sheet' }).click()
 
   await panel.getByTestId('sprite-run').click()
   await expect(app.getByRole('status')).toContainText('Drawing the frames')
   await expect(app.getByRole('link', { name: 'Download' })).toHaveAttribute(
-    'href',
-    /^blob:/
+    'download',
+    'fox-explorer-toon-jump-sheet.png'
   )
   await expectDownloadBesideGitHub(app)
   await expect(app.getByTestId('sprite-sheet-result')).toBeVisible()
-
-  const tools = app.getByRole('toolbar', { name: 'Sprite sheet tools' })
-  await tools.getByRole('button', { name: 'Compare' }).click()
-  await expect(
-    app.getByRole('slider', {
-      name: 'Drag to compare the character and the sprite sheet'
-    })
-  ).toBeVisible()
+  await expect(tools.getByRole('button', { name: 'Compare' })).toHaveCount(0)
 
   await tools.getByRole('button', { name: 'Edit', exact: true }).click()
-  await expect(panel.getByRole('radio', { name: 'Jump' })).toBeChecked()
+  await expect(panel.getByTestId('sprite-picker-motion')).toContainText('Jump')
 })
 
 test('sends an old catalogue link for the Apps tab to the hub apps page', async ({

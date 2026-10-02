@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import type { SpriteSheetProgress } from './contract'
+import { spriteSheetRequest } from './contract'
 import type { SpriteSheetRender } from './mock-run'
-import { runSpriteSheet, spriteSheetRequest } from './mock-run'
+import { runSpriteSheet } from './mock-run'
 
 vi.mock(import('./render-sheet'), () => ({
   renderSpriteSheet: vi.fn(() => Promise.resolve(undefined)),
@@ -9,33 +11,18 @@ vi.mock(import('./render-sheet'), () => ({
 }))
 
 const request = spriteSheetRequest('/fox.png', {
+  description: 'dancing',
   style: 'toon',
   motion: 'jump',
-  frames: 12,
   seed: 42
-})
-
-describe('spriteSheetRequest', () => {
-  it('sends the character, the setup and how to lay out the sheet', () => {
-    expect(request).toEqual({
-      imageUrl: '/fox.png',
-      style: 'toon',
-      motion: 'jump',
-      frames: 12,
-      columns: 4,
-      frameSize: 256,
-      background: 'transparent',
-      seed: 42
-    })
-  })
 })
 
 describe('runSpriteSheet', () => {
   it.for([
     {
-      name: 'answers with the drawn sheet, laid out four to a row',
+      name: 'answers with the drawn sheet, eight frames four to a row',
       rendered: 'blob:sheet',
-      expected: { url: 'blob:sheet', frames: 12, columns: 4, rows: 3 }
+      expected: { url: 'blob:sheet', frames: 8, columns: 4, rows: 2 }
     },
     {
       name: 'answers with the character as one frame where it cannot draw',
@@ -46,14 +33,28 @@ describe('runSpriteSheet', () => {
     vi.useFakeTimers()
     const render: SpriteSheetRender = () => Promise.resolve(rendered)
 
-    const run = runSpriteSheet(request, new AbortController().signal, render)
+    const run = runSpriteSheet(request, new AbortController().signal, {
+      render
+    })
     await vi.runAllTimersAsync()
 
-    await expect(run).resolves.toEqual({
-      ...expected,
-      frameSize: 256,
-      seed: 42
+    await expect(run).resolves.toEqual({ ...expected, seed: 42 })
+  })
+
+  it('reports the queue, then the run counting up', async () => {
+    vi.useFakeTimers()
+    const seen: SpriteSheetProgress[] = []
+
+    const run = runSpriteSheet(request, new AbortController().signal, {
+      onProgress: (progress) => seen.push(progress),
+      render: () => Promise.resolve('blob:sheet')
     })
+    await vi.runAllTimersAsync()
+    await run
+
+    expect(seen[0]).toEqual({ stage: 'queued' })
+    expect(seen[1]).toEqual({ stage: 'running', percent: 0 })
+    expect(seen.at(-1)).toEqual({ stage: 'running', percent: 90 })
   })
 
   it('releases a drawn sheet when the run is cancelled', async () => {
@@ -61,9 +62,9 @@ describe('runSpriteSheet', () => {
     const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
     const controller = new AbortController()
 
-    const run = runSpriteSheet(request, controller.signal, () =>
-      Promise.resolve('blob:sheet')
-    )
+    const run = runSpriteSheet(request, controller.signal, {
+      render: () => Promise.resolve('blob:sheet')
+    })
     controller.abort()
 
     await expect(run).rejects.toBeDefined()

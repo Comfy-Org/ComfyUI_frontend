@@ -5,7 +5,7 @@ import { spc } from '../../../lib/workshop/sprite-sheet/copy'
 import EditorChip from '../app-editor/EditorChip.vue'
 import EditorDivider from '../app-editor/EditorDivider.vue'
 import SpriteSheetRun from './SpriteSheetRun.vue'
-import { SPRITE_SECTIONS, sectionMeta } from './sections'
+import { SPRITE_TRAYS, sectionMeta } from './sections'
 
 const { sprite, locale = 'en' } = defineProps<{
   sprite: SpriteSheet
@@ -17,7 +17,7 @@ const { tray, phase } = sprite
 
 <template>
   <EditorChip
-    v-for="section in SPRITE_SECTIONS"
+    v-for="section in SPRITE_TRAYS"
     :key="section.id"
     :label="spc(section.title, locale)"
     :value="sectionMeta(section.id, sprite, locale)"

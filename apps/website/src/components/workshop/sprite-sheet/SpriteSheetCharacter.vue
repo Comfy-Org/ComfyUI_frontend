@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useTemplateRef } from 'vue'
+import { ref, useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -15,6 +15,13 @@ const { image, locale = 'en' } = defineProps<{
 
 const emit = defineEmits<{ file: [file: File] }>()
 const picker = useTemplateRef<HTMLInputElement>('picker')
+const dragging = ref(false)
+
+function dropped(event: DragEvent) {
+  dragging.value = false
+  const [file] = event.dataTransfer?.files ?? []
+  if (file?.type.startsWith('image/')) emit('file', file)
+}
 
 function picked(event: Event) {
   if (!(event.target instanceof HTMLInputElement)) return
@@ -27,7 +34,18 @@ function picked(event: Event) {
 <template>
   <section
     :aria-label="spc('sprite.character', locale)"
-    class="flex items-center gap-3 px-1 pt-2 pb-3"
+    :title="spc('sprite.character.drop', locale)"
+    :class="
+      cn(
+        'flex items-center gap-3 rounded-lg px-1 pt-2 pb-3 transition',
+        dragging &&
+          'bg-transparency-white-t8 ring-2 ring-primary-comfy-yellow/50'
+      )
+    "
+    data-testid="sprite-character"
+    @dragover.prevent="dragging = true"
+    @dragleave="dragging = false"
+    @drop.prevent="dropped"
   >
     <span
       :class="

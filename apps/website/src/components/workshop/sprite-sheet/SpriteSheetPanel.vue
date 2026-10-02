@@ -1,20 +1,24 @@
 <script setup lang="ts">
 import type { SpriteSheet } from '../../../composables/useSpriteSheet'
 import type { Locale } from '../../../i18n/translations'
-import { spc } from '../../../lib/workshop/sprite-sheet/copy'
-import EditorCollapsible from '../app-editor/EditorCollapsible.vue'
 import EditorPanelRow from '../app-editor/EditorPanelRow.vue'
-import SpriteSheetAdvanced from './SpriteSheetAdvanced.vue'
+import SpriteSheetAnimation from './SpriteSheetAnimation.vue'
 import SpriteSheetCharacter from './SpriteSheetCharacter.vue'
-import { SPRITE_SECTIONS, sectionMeta } from './sections'
+import SpriteSheetPickers from './SpriteSheetPickers.vue'
+import SpriteSheetSeed from './SpriteSheetSeed.vue'
 
-const { sprite, locale = 'en' } = defineProps<{
+const {
+  sprite,
+  inline = false,
+  locale = 'en'
+} = defineProps<{
   sprite: SpriteSheet
+  /** Unfolds the style and motion grids in the panel, for phones. */
+  inline?: boolean
   locale?: Locale
 }>()
 
 const { image, phase } = sprite
-const sections = SPRITE_SECTIONS.filter(({ id }) => id !== 'advanced')
 </script>
 
 <template>
@@ -24,17 +28,14 @@ const sections = SPRITE_SECTIONS.filter(({ id }) => id !== 'advanced')
     data-testid="sprite-panel"
   >
     <SpriteSheetCharacter v-if="image" :image :locale @file="sprite.useFile" />
-    <EditorCollapsible
-      v-for="section in sections"
-      :key="section.id"
-      :title="spc(section.title, locale)"
-      :meta="sectionMeta(section.id, sprite, locale)"
-      :initially-open="section.open"
-    >
-      <component :is="section.content" :sprite :locale />
-    </EditorCollapsible>
     <EditorPanelRow>
-      <SpriteSheetAdvanced :sprite :locale />
+      <SpriteSheetAnimation :sprite :locale />
+    </EditorPanelRow>
+    <EditorPanelRow>
+      <SpriteSheetPickers :sprite :inline :locale />
+    </EditorPanelRow>
+    <EditorPanelRow>
+      <SpriteSheetSeed :sprite :locale />
     </EditorPanelRow>
   </fieldset>
 </template>

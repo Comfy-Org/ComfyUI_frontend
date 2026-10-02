@@ -9,55 +9,50 @@ import type { SpriteCopyKey } from '../../../lib/workshop/sprite-sheet/copy'
 import { spc } from '../../../lib/workshop/sprite-sheet/copy'
 import {
   MOTION_LABELS,
+  SPRITE_GRID,
   STYLE_LABELS
 } from '../../../lib/workshop/sprite-sheet/options'
-import SpriteSheetAdvanced from './SpriteSheetAdvanced.vue'
+import SpriteSheetAnimation from './SpriteSheetAnimation.vue'
 import SpriteSheetMotion from './SpriteSheetMotion.vue'
+import SpriteSheetSeed from './SpriteSheetSeed.vue'
 import SpriteSheetStyle from './SpriteSheetStyle.vue'
 
 /**
- * The controls in panel order. In the side panel each is a collapsible
- * section; in the bottom composer each opens as a tray.
+ * The controls in order. The side panel shows the animation and the seed
+ * as rows and opens style and motion as trays; the bottom composer opens
+ * every one as a tray.
  */
-export const SPRITE_SECTIONS = [
-  { id: 'style', title: 'sprite.style', content: SpriteSheetStyle, open: true },
-  {
-    id: 'motion',
-    title: 'sprite.motion',
-    content: SpriteSheetMotion,
-    open: true
-  },
-  {
-    id: 'advanced',
-    title: 'sprite.advanced',
-    content: SpriteSheetAdvanced,
-    open: false
-  }
+export const SPRITE_TRAYS = [
+  { id: 'animation', title: 'sprite.animation', content: SpriteSheetAnimation },
+  { id: 'style', title: 'sprite.style', content: SpriteSheetStyle },
+  { id: 'motion', title: 'sprite.motion', content: SpriteSheetMotion },
+  { id: 'seed', title: 'sprite.seed', content: SpriteSheetSeed }
 ] as const satisfies readonly {
   id: SpriteTray
   title: SpriteCopyKey
   content: Component
-  open: boolean
 }[]
 
-/** The current value beside a section's title, so a closed one says it. */
+/** The current value of a control, beside its name. */
 export function sectionMeta(
   id: SpriteTray,
   sprite: SpriteSheet,
   locale: Locale
 ): string {
-  const { style, motion, frames, seed } = sprite.setup.value
+  const { description, style, motion, seed } = sprite.setup.value
+  if (id === 'animation')
+    return description.trim() || spc('sprite.animation.none', locale)
   if (id === 'style') return spc(STYLE_LABELS[style], locale)
   if (id === 'motion') return spc(MOTION_LABELS[motion], locale)
-  return spc('sprite.advanced.summary', locale, { n: frames, seed })
+  return String(seed)
 }
 
 /** The one-line summary of a setup, for the collapsed phone sheet. */
 export function setupSummary(sprite: SpriteSheet, locale: Locale): string {
-  const { style, motion, frames } = sprite.setup.value
+  const { style, motion } = sprite.setup.value
   return spc('sprite.summary', locale, {
     style: spc(STYLE_LABELS[style], locale),
     motion: spc(MOTION_LABELS[motion], locale),
-    n: frames
+    n: SPRITE_GRID.frames
   })
 }

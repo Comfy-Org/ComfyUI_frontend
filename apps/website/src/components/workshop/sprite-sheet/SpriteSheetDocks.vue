@@ -5,6 +5,7 @@ import EditorDivider from '../app-editor/EditorDivider.vue'
 import SpriteSheetChips from './SpriteSheetChips.vue'
 import SpriteSheetPlayback from './SpriteSheetPlayback.vue'
 import SpriteSheetResultTools from './SpriteSheetResultTools.vue'
+import SpriteSheetViews from './SpriteSheetViews.vue'
 
 const {
   sprite,
@@ -17,20 +18,21 @@ const {
   locale?: Locale
 }>()
 
-const { phase, playback } = sprite
+const { phase, playback, view } = sprite
 </script>
 
 <template>
-  <template v-if="phase.kind === 'done'">
+  <SpriteSheetViews :sprite :locale />
+  <template v-if="view === 'preview'">
+    <EditorDivider />
     <SpriteSheetPlayback :playback :locale />
+  </template>
+  <template v-if="phase.kind === 'done'">
     <EditorDivider class="max-sm:hidden" />
     <SpriteSheetResultTools :sprite :locale />
   </template>
-  <template v-else>
-    <SpriteSheetPlayback :playback :locale />
-    <template v-if="!panel">
-      <EditorDivider />
-      <SpriteSheetChips :sprite :locale />
-    </template>
+  <template v-else-if="!panel">
+    <EditorDivider />
+    <SpriteSheetChips :sprite :locale />
   </template>
 </template>

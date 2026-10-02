@@ -2,15 +2,20 @@ import { tryOnScopeDispose } from '@vueuse/core'
 import { computed, ref, shallowRef } from 'vue'
 
 import { imageSize } from '../lib/workshop/image-size'
-import type { SpriteSheetResult } from '../lib/workshop/sprite-sheet/mock-run'
+import type {
+  SpriteSheetProgress,
+  SpriteSheetResult
+} from '../lib/workshop/sprite-sheet/contract'
+import { spriteSheetRequest } from '../lib/workshop/sprite-sheet/contract'
 import {
   SPRITE_EXAMPLE,
-  runSpriteSheet,
-  spriteSheetRequest
+  runSpriteSheet
 } from '../lib/workshop/sprite-sheet/mock-run'
 import type { SpriteSetup } from '../lib/workshop/sprite-sheet/options'
-import { DEFAULT_SETUP } from '../lib/workshop/sprite-sheet/options'
-import { renderSpriteSheet } from '../lib/workshop/sprite-sheet/render-sheet'
+import {
+  DEFAULT_SETUP,
+  SPRITE_GRID
+} from '../lib/workshop/sprite-sheet/options'
 import { useSpritePlayback } from './useSpritePlayback'
 
 export interface SpriteImage {
@@ -22,11 +27,16 @@ export interface SpriteImage {
 
 type SpritePhase =
   | { readonly kind: 'editing' }
-  | { readonly kind: 'running'; readonly startedAt: number }
+  | {
+      readonly kind: 'running'
+      readonly startedAt: number
+      readonly progress: SpriteSheetProgress
+    }
   | { readonly kind: 'done'; readonly result: SpriteSheetResult }
   | { readonly kind: 'failed' }
 
-export type SpriteTray = 'style' | 'motion' | 'advanced'
+export type SpriteTray = 'animation' | 'style' | 'motion' | 'seed'
+export type SpriteView = 'sheet' | 'preview'
 
 const revocable = (url: string | undefined, keep?: string) =>
   url?.startsWith('blob:') && url !== keep ? url : undefined
@@ -42,15 +52,14 @@ export function useSpriteSheet() {
   const future = shallowRef<SpriteSetup[]>([])
   const phase = shallowRef<SpritePhase>({ kind: 'editing' })
   const tray = ref<SpriteTray>()
-  const compare = ref(false)
-  const source = ref<string>()
+  const view = ref<SpriteView>('sheet')
   let lastEdit: string | undefined
   let ownUrl: string | undefined
   let pendingUrl: string | undefined
   let run: AbortController | undefined
 
   const frames = computed(() =>
-    phase.value.kind === 'done' ? phase.value.result.frames : setup.value.frames
+    phase.value.kind === 'done' ? phase.value.result.frames : SPRITE_GRID.frames
   )
   const playback = useSpritePlayback(() => frames.value)
   const canRun = computed(
@@ -65,26 +74,15 @@ export function useSpriteSheet() {
   function leaveResult(next: SpritePhase) {
     const current = phase.value
     if (current.kind === 'done') release(current.result.url)
-    release(source.value)
-    source.value = undefined
-    compare.value = false
     phase.value = next
   }
 
-  function reset(next: SpriteImage) {
+  /** Shows `next`, keeping the setup, releasing the previous upload. */
+  function adopt(next: SpriteImage, own?: string) {
+    pendingUrl = undefined
     run?.abort()
     leaveResult({ kind: 'editing' })
     image.value = next
-    setup.value = DEFAULT_SETUP
-    past.value = []
-    future.value = []
-    lastEdit = undefined
-  }
-
-  /** Shows `next`, releasing the visitor's previous upload. */
-  function adopt(next: SpriteImage, own?: string) {
-    pendingUrl = undefined
-    reset(next)
     if (ownUrl) URL.revokeObjectURL(ownUrl)
     ownUrl = own
   }
@@ -94,11 +92,13 @@ export function useSpriteSheet() {
   }
 
   async function useFile(file: File) {
+    if (!file.type.startsWith('image/') || phase.value.kind === 'running')
+      return
     const url = URL.createObjectURL(file)
     pendingUrl = url
     const size = await imageSize(url)
     if (pendingUrl === url && size)
-      adopt({ url, name: file.name, ...size }, url)
+      adopt({ url, name: file.name || 'character.png', ...size }, url)
     else URL.revokeObjectURL(url)
   }
 
@@ -130,32 +130,28 @@ export function useSpriteSheet() {
     lastEdit = undefined
   }
 
-  async function showSource(url: string, current: SpriteSetup) {
-    const plain = await renderSpriteSheet(url, current, true).catch(
-      () => undefined
-    )
-    if (phase.value.kind === 'done' && image.value?.url === url)
-      source.value = plain ?? url
-    else release(plain)
-  }
-
   async function generate() {
     const current = image.value
     if (!current || !canRun.value) return
     tray.value = undefined
     const controller = new AbortController()
     run = controller
-    leaveResult({ kind: 'running', startedAt: Date.now() })
-    const sent = setup.value
+    const startedAt = Date.now()
+    leaveResult({ kind: 'running', startedAt, progress: { stage: 'queued' } })
     try {
       const result = await runSpriteSheet(
-        spriteSheetRequest(current.url, sent),
-        controller.signal
+        spriteSheetRequest(current.url, setup.value),
+        controller.signal,
+        {
+          onProgress: (progress) => {
+            if (run === controller)
+              phase.value = { kind: 'running', startedAt, progress }
+          }
+        }
       )
       if (run !== controller) return release(result.url)
       phase.value = { kind: 'done', result }
       playback.frame.value = 0
-      void showSource(current.url, sent)
     } catch {
       if (run === controller && !controller.signal.aborted)
         phase.value = { kind: 'failed' }
@@ -182,6 +178,12 @@ export function useSpriteSheet() {
     tray.value = tray.value === next ? undefined : next
   }
 
+  /** Opens the Preview stopped on frame `index`, to look at it. */
+  function showFrame(index: number) {
+    view.value = 'preview'
+    playback.show(index)
+  }
+
   tryOnScopeDispose(() => {
     run?.abort()
     pendingUrl = undefined
@@ -194,8 +196,7 @@ export function useSpriteSheet() {
     setup,
     phase,
     tray,
-    compare,
-    source,
+    view,
     playback,
     canRun,
     canUndo: computed(() => past.value.length > 0),
@@ -209,7 +210,8 @@ export function useSpriteSheet() {
     again,
     cancel,
     edit,
-    toggleTray
+    toggleTray,
+    showFrame
   }
 }
 

@@ -1,6 +1,6 @@
 import { loadImage } from '../relight/render-image'
-import type { SpriteSetup, SpriteStyle } from './options'
-import { SPRITE_STYLES, sheetGrid } from './options'
+import type { SpriteMotion, SpriteStyle } from './options'
+import { SPRITE_GRID, SPRITE_STYLES } from './options'
 import type { Bounds, Pixels } from './pixels'
 import { inkOutline, opaqueBounds, pixelArt, toonShade } from './pixels'
 import type { FramePose } from './poses'
@@ -167,15 +167,15 @@ function drawFrame(
   target: CanvasRenderingContext2D,
   character: Character,
   pose: FramePose,
-  style: SpriteStyle | 'plain'
+  style: SpriteStyle
 ) {
   const size = style === 'pixel' ? CELL / PIXEL_SCALE : CELL
   const layer = canvas(size, size)
   if (!layer) return
-  if (style !== 'plain') drawShadow(layer.context, pose, size, style === '3d')
+  drawShadow(layer.context, pose, size, style === '3d')
   const figure = canvas(size, size)
   if (!figure) return
-  drawPosed(figure.context, character, style === 'plain' ? STILL : pose, size)
+  drawPosed(figure.context, character, pose, size)
   if (style === 'pixel')
     filtered(figure.context, (pixels) => inkOutline(pixelArt(pixels), 1, INK))
   if (style === 'toon')
@@ -196,28 +196,30 @@ function toBlobUrl(element: HTMLCanvasElement): Promise<string | undefined> {
 }
 
 /**
- * The sheet for a setup: its frames four to a row on a clear background,
- * as a PNG object URL the caller revokes. `plain` lays the untouched
- * character in every frame instead, to compare against. Undefined where
- * the image or a 2D canvas is not available.
+ * The sheet for a pose and a style: eight frames four to a row on a clear
+ * background, as a PNG object URL the caller revokes. Undefined where the
+ * image or a 2D canvas is not available.
  */
 export async function renderSpriteSheet(
   url: string,
-  setup: SpriteSetup,
-  plain = false
+  look: {
+    readonly style: SpriteStyle
+    readonly motion: SpriteMotion
+    readonly seed: number
+  }
 ): Promise<string | undefined> {
   const character = await loadCharacter(url)
-  const { columns, rows } = sheetGrid(setup.frames)
+  const { frames, columns, rows } = SPRITE_GRID
   const sheet = character && canvas(columns * CELL, rows * CELL)
   if (!character || !sheet) return undefined
-  for (let index = 0; index < setup.frames; index++) {
-    const pose = framePose(setup.motion, index, setup.frames, setup.seed)
+  for (let index = 0; index < frames; index++) {
+    const pose = framePose(look.motion, index, frames, look.seed)
     sheet.context.save()
     sheet.context.translate(
       (index % columns) * CELL,
       Math.floor(index / columns) * CELL
     )
-    drawFrame(sheet.context, character, pose, plain ? 'plain' : setup.style)
+    drawFrame(sheet.context, character, pose, look.style)
     sheet.context.restore()
   }
   return toBlobUrl(sheet.element)

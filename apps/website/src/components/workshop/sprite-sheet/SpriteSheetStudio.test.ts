@@ -1,14 +1,17 @@
-import { render, screen, within } from '@testing-library/vue'
+import { fireEvent, render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { renderSpriteSheet } from '../../../lib/workshop/sprite-sheet/render-sheet'
 import SpriteSheetStudio from './SpriteSheetStudio.vue'
 
 vi.mock(import('../../../lib/workshop/sprite-sheet/render-sheet'), () => ({
-  renderSpriteSheet: vi.fn((_url: string, _setup: unknown, plain?: boolean) =>
-    Promise.resolve(plain ? 'blob:plain' : 'blob:sheet')
-  ),
+  renderSpriteSheet: vi.fn(() => Promise.resolve('blob:sheet')),
   renderStyleThumbnails: vi.fn(() => Promise.resolve(undefined))
+}))
+
+vi.mock(import('../../../lib/workshop/image-size'), () => ({
+  imageSize: vi.fn(() => Promise.resolve({ width: 64, height: 64 }))
 }))
 
 function screenIsWide(wide: boolean) {
@@ -27,6 +30,8 @@ function screenIsWide(wide: boolean) {
 beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true })
   vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+  vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:upload')
+  vi.mocked(renderSpriteSheet).mockClear()
   screenIsWide(true)
 })
 
@@ -41,122 +46,168 @@ const panel = () =>
   screen.getByRole('complementary', { name: 'Sprite sheet settings' })
 const tools = () => screen.getByRole('toolbar', { name: 'Sprite sheet tools' })
 
-async function makeSheet(user: ReturnType<typeof userEvent.setup>) {
+async function generate(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getAllByTestId('sprite-run')[0])
-  expect(screen.getByRole('status')).toHaveTextContent('Drawing the frames')
-  await vi.advanceTimersByTimeAsync(3000)
+  expect(screen.getByRole('status')).toHaveTextContent('Queued')
+  await vi.advanceTimersByTimeAsync(1000)
+  expect(screen.getByRole('status')).toHaveTextContent(/\d+% · /)
+  await vi.advanceTimersByTimeAsync(2000)
   await screen.findByRole('link', { name: 'Download' })
 }
 
 describe('SpriteSheetStudio', () => {
-  it('picks a style and a motion from the panel, then makes the sheet', async () => {
+  it('describes the animation, picks a style and a motion from picker rows, then generates the sheet', async () => {
     const user = await openExample()
     expect(screen.getByRole('button', { name: 'Download' })).toHaveAttribute(
       'aria-disabled',
       'true'
     )
-    const style = within(panel()).getByRole('region', { name: 'Style' })
-    const motion = within(panel()).getByRole('region', { name: 'Motion' })
-
-    await user.click(within(style).getByRole('radio', { name: 'Toon' }))
-    await user.click(within(motion).getByRole('radio', { name: 'Jump' }))
-    expect(within(style).getByRole('radio', { name: 'Toon' })).toBeChecked()
+    await user.type(
+      within(panel()).getByRole('textbox', { name: 'Animation' }),
+      'dancing'
+    )
+    await user.click(within(panel()).getByRole('button', { name: /Style/ }))
+    await user.click(
+      within(screen.getByRole('dialog', { name: 'Style' })).getByRole('radio', {
+        name: 'Toon'
+      })
+    )
+    await user.click(within(panel()).getByRole('button', { name: /Motion/ }))
+    await user.click(
+      within(screen.getByRole('dialog', { name: 'Motion' })).getByRole(
+        'radio',
+        { name: 'Jump' }
+      )
+    )
     expect(
-      within(panel()).getByRole('button', { name: 'Frames: 8 frames' })
-    ).toBeInTheDocument()
+      within(panel()).getByRole('button', { name: /Style\s*Toon/ })
+    ).toHaveAttribute('aria-haspopup', 'dialog')
 
-    await makeSheet(user)
+    await generate(user)
 
     expect(screen.getByRole('link', { name: 'Download' })).toHaveAttribute(
-      'href',
-      'blob:sheet'
+      'download',
+      'fox-explorer-toon-jump-sheet.png'
     )
-    expect(within(tools()).queryByRole('link')).toBeNull()
     expect(screen.getByRole('img', { name: /8 frames of Jump in Toon/ })).toBe(
       screen.getByTestId('sprite-sheet-result')
     )
+    expect(renderSpriteSheet).toHaveBeenCalledWith(
+      '/images/apps/sprite-sheet/example.png',
+      expect.objectContaining({
+        description: 'dancing',
+        style: 'toon',
+        motion: 'jump'
+      })
+    )
   })
 
-  it('sets the frame count and a new seed as rows of the panel, with no Advanced section', async () => {
+  it('keeps the seed a direct row of the panel, with no frame count to pick', async () => {
     const user = await openExample()
-    expect(
-      within(panel()).queryByRole('region', { name: 'Advanced' })
-    ).toBeNull()
+    expect(within(panel()).queryByRole('button', { name: /Frames/ })).toBeNull()
 
-    await user.click(
-      within(panel()).getByRole('button', { name: 'Frames: 8 frames' })
-    )
-    await user.click(screen.getByRole('menuitemradio', { name: '12 frames' }))
     vi.spyOn(Math, 'random').mockReturnValue(0.5)
     await user.click(within(panel()).getByRole('button', { name: 'New seed' }))
 
     expect(
       within(panel()).getByRole('spinbutton', { name: 'Seed' })
     ).toHaveValue(500_000_000)
-    expect(
-      within(panel()).getByRole('button', { name: 'Frames: 12 frames' })
-    ).toBeInTheDocument()
   })
 
-  it('undoes a style change from the control pill', async () => {
+  it('undoes typing in the animation as one step from the control pill', async () => {
     const user = await openExample()
-    const style = within(panel()).getByRole('region', { name: 'Style' })
-    await user.click(within(style).getByRole('radio', { name: '3D' }))
+    const animation = within(panel()).getByRole('textbox', {
+      name: 'Animation'
+    })
+    await user.type(animation, 'soft blink')
 
     await user.click(within(tools()).getByRole('button', { name: 'Undo' }))
 
-    expect(within(style).getByRole('radio', { name: 'Pixel' })).toBeChecked()
+    expect(animation).toHaveValue('')
   })
 
-  it('pauses the preview on a frame picked on the sheet', async () => {
+  it('plays the frames in Preview and stops on a frame picked on the Sheet', async () => {
     const user = await openExample()
-    await user.click(screen.getByRole('button', { name: 'Pause' }))
+    expect(within(tools()).queryByRole('button', { name: 'Pause' })).toBeNull()
 
     await user.click(
       screen.getByRole('button', { name: 'Show frame 3 in the preview' })
     )
 
-    expect(screen.getByTestId('sprite-preview')).toHaveTextContent('3 / 8')
     expect(
-      screen.getByRole('button', { name: 'Show frame 3 in the preview' })
-    ).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByRole('button', { name: 'Play' })).toBeInTheDocument()
-  })
-
-  it('compares the character and the sheet on a split line', async () => {
-    const user = await openExample()
-    await makeSheet(user)
-
-    await user.click(within(tools()).getByRole('button', { name: 'Compare' }))
-
+      within(tools()).getByRole('radio', { name: 'Preview' })
+    ).toBeChecked()
+    expect(screen.getByTestId('sprite-preview-frame')).toHaveTextContent(
+      '3 / 8'
+    )
     expect(
-      screen.getByRole('slider', {
-        name: 'Drag to compare the character and the sprite sheet'
-      })
+      within(tools()).getByRole('button', { name: 'Play' })
     ).toBeInTheDocument()
-    expect(screen.getByText('Original')).toBeInTheDocument()
-    expect(screen.getByText('Result')).toBeInTheDocument()
+
+    await user.click(within(tools()).getByRole('radio', { name: 'Sheet' }))
+    expect(screen.getByTestId('sprite-stage')).toBeInTheDocument()
   })
 
-  it('opens the settings as trays in the bottom composer', async () => {
+  it('replaces the character with an image pasted from the clipboard', async () => {
+    await openExample()
+    const file = new File(['png'], 'knight.png', { type: 'image/png' })
+
+    await fireEvent(
+      window,
+      Object.assign(new Event('paste'), {
+        clipboardData: { files: [file] }
+      })
+    )
+
+    expect(await within(panel()).findByText('knight.png')).toBeInTheDocument()
+  })
+
+  it('replaces the character with an image dropped on its row', async () => {
+    await openExample()
+    const file = new File(['png'], 'robot.png', { type: 'image/png' })
+
+    await fireEvent.drop(screen.getByTestId('sprite-character'), {
+      dataTransfer: { files: [file] }
+    })
+
+    expect(await within(panel()).findByText('robot.png')).toBeInTheDocument()
+  })
+
+  it('opens every setting as a tray in the bottom composer', async () => {
     const user = await openExample('e')
     expect(screen.queryByRole('complementary')).toBeNull()
 
     await user.click(within(tools()).getByRole('button', { name: /Motion/ }))
     const tray = screen.getByRole('dialog', { name: 'Motion' })
     await user.click(within(tray).getByRole('radio', { name: 'Idle' }))
+    await user.click(within(tools()).getByRole('button', { name: /Animation/ }))
+    await user.type(
+      within(screen.getByRole('dialog', { name: 'Animation' })).getByRole(
+        'textbox'
+      ),
+      'waving'
+    )
 
     expect(
       within(tools()).getByRole('button', { name: /Motion\s*Idle/ })
     ).toBeInTheDocument()
+    expect(
+      within(tools()).getByRole('button', { name: /Animation\s*waving/ })
+    ).toBeInTheDocument()
   })
 
-  it('sums up the setup in the phone sheet', async () => {
+  it('unfolds the style grid inside the phone sheet', async () => {
     screenIsWide(false)
-    await openExample()
+    const user = await openExample()
 
-    expect(
+    await user.click(
       within(panel()).getByRole('button', { name: 'Pixel · Walk · 8 frames' })
+    )
+    await user.click(within(panel()).getByRole('button', { name: /Style/ }))
+
+    expect(screen.queryByRole('dialog', { name: 'Style' })).toBeNull()
+    expect(
+      within(panel()).getByRole('radiogroup', { name: 'Style' })
     ).toBeInTheDocument()
   })
 })

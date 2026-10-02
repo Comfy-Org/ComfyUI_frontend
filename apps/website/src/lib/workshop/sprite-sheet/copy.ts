@@ -28,6 +28,16 @@ const copy = {
     en: 'Replace the character',
     'zh-CN': '替换角色'
   },
+  'sprite.character.drop': {
+    en: 'Drop or paste an image to replace the character',
+    'zh-CN': '拖入或粘贴图片以替换角色'
+  },
+  'sprite.animation': { en: 'Animation', 'zh-CN': '动画' },
+  'sprite.animation.placeholder': {
+    en: 'e.g. dancing, soft blink…',
+    'zh-CN': '例如：跳舞、轻轻眨眼…'
+  },
+  'sprite.animation.none': { en: 'Not set', 'zh-CN': '未填写' },
   'sprite.style': { en: 'Style', 'zh-CN': '风格' },
   'sprite.style.pixel': { en: 'Pixel', 'zh-CN': '像素' },
   'sprite.style.toon': { en: 'Toon', 'zh-CN': '卡通' },
@@ -36,13 +46,6 @@ const copy = {
   'sprite.motion.idle': { en: 'Idle', 'zh-CN': '待机' },
   'sprite.motion.walk': { en: 'Walk', 'zh-CN': '行走' },
   'sprite.motion.jump': { en: 'Jump', 'zh-CN': '跳跃' },
-  'sprite.advanced': { en: 'Advanced', 'zh-CN': '高级' },
-  'sprite.advanced.summary': {
-    en: '{n} frames · Seed {seed}',
-    'zh-CN': '{n} 帧 · 种子 {seed}'
-  },
-  'sprite.frames': { en: 'Frames', 'zh-CN': '帧数' },
-  'sprite.frames.value': { en: '{n} frames', 'zh-CN': '{n} 帧' },
   'sprite.seed': { en: 'Seed', 'zh-CN': '种子' },
   'sprite.seed.shuffle': { en: 'New seed', 'zh-CN': '换一个种子' },
   'sprite.summary': {
@@ -60,16 +63,12 @@ const copy = {
     'zh-CN': '帧率 {n} 帧/秒。点击切换。'
   },
   'sprite.onion': { en: 'Onion skin', 'zh-CN': '洋葱皮' },
-  'sprite.compare': { en: 'Compare', 'zh-CN': '对比' },
-  'sprite.compare.slider': {
-    en: 'Drag to compare the character and the sprite sheet',
-    'zh-CN': '拖动以对比角色与精灵图'
-  },
-  'sprite.view.original': { en: 'Original', 'zh-CN': '原图' },
-  'sprite.view.result': { en: 'Result', 'zh-CN': '结果' },
+  'sprite.views': { en: 'View', 'zh-CN': '视图' },
+  'sprite.view.sheet': { en: 'Sheet', 'zh-CN': '精灵图' },
+  'sprite.view.preview': { en: 'Preview', 'zh-CN': '预览' },
   'sprite.hint': {
-    en: 'Pick a style and a motion, then make the sheet',
-    'zh-CN': '选择风格和动作，然后生成精灵图'
+    en: 'Describe the animation, pick a style and a motion, then generate',
+    'zh-CN': '描述动画，选择风格和动作，然后生成'
   },
   'sprite.draft': { en: 'Draft poses', 'zh-CN': '姿势草稿' },
   'sprite.frame': { en: 'Frame {n}', 'zh-CN': '第 {n} 帧' },
@@ -77,21 +76,28 @@ const copy = {
     en: 'Show frame {n} in the preview',
     'zh-CN': '在预览中显示第 {n} 帧'
   },
-  'sprite.preview': { en: 'Preview', 'zh-CN': '预览' },
+  'sprite.preview.alt': {
+    en: 'The sheet’s frames as an animation',
+    'zh-CN': '精灵图各帧的动画'
+  },
   'sprite.preview.frame': {
     en: '{n} / {total}',
     'zh-CN': '{n} / {total}'
   },
-  'sprite.run': { en: 'Make sheet', 'zh-CN': '生成精灵图' },
+  'sprite.run': { en: 'Generate sheet', 'zh-CN': '生成精灵图' },
   'sprite.credits': { en: '{n} credits', 'zh-CN': '{n} 积分' },
   'sprite.cancel': { en: 'Cancel', 'zh-CN': '取消' },
   'sprite.busy.title': {
     en: 'Drawing the frames',
     'zh-CN': '正在绘制帧'
   },
-  'sprite.busy.detail': {
-    en: '{time} · {n} frames',
-    'zh-CN': '{time} · {n} 帧'
+  'sprite.busy.queued': {
+    en: 'Queued · {time}',
+    'zh-CN': '排队中 · {time}'
+  },
+  'sprite.busy.running': {
+    en: '{percent}% · {time} · {n} frames',
+    'zh-CN': '{percent}% · {time} · {n} 帧'
   },
   'sprite.failed': {
     en: 'The sheet didn’t finish. No credits were used.',
@@ -107,10 +113,6 @@ const copy = {
   'sprite.alt.sheet': {
     en: 'The sprite sheet, {n} frames of {motion} in {style}',
     'zh-CN': '精灵图，{style}风格的{motion}动作，共 {n} 帧'
-  },
-  'sprite.alt.source': {
-    en: 'The character in every frame, before the sheet',
-    'zh-CN': '生成前每一帧中的角色'
   }
 } as const satisfies Record<string, LocalizedText>
 

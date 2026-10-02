@@ -7,6 +7,7 @@ import { spc } from '../../../lib/workshop/sprite-sheet/copy'
 import type { SpriteMotion } from '../../../lib/workshop/sprite-sheet/options'
 import {
   MOTION_LABELS,
+  SPRITE_GRID,
   SPRITE_MOTIONS
 } from '../../../lib/workshop/sprite-sheet/options'
 import { framePose } from '../../../lib/workshop/sprite-sheet/poses'
@@ -37,9 +38,7 @@ const motion = computed({
       <SpriteSheetTile v-if="image">
         <SpriteSheetDraftFrame
           :url="image.url"
-          :pose="
-            framePose(option.id, frame % setup.frames, setup.frames, setup.seed)
-          "
+          :pose="framePose(option.id, frame, SPRITE_GRID.frames, setup.seed)"
         />
       </SpriteSheetTile>
     </template>

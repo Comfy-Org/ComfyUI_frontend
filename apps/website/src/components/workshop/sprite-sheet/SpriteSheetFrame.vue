@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { SpriteSheet } from '../../../composables/useSpriteSheet'
+import { SPRITE_GRID } from '../../../lib/workshop/sprite-sheet/options'
 import { framePose } from '../../../lib/workshop/sprite-sheet/poses'
 import SpriteSheetCell from './SpriteSheetCell.vue'
 import SpriteSheetDraftFrame from './SpriteSheetDraftFrame.vue'
@@ -19,6 +20,6 @@ const { image, setup, phase } = sprite
   <SpriteSheetDraftFrame
     v-else-if="image"
     :url="image.url"
-    :pose="framePose(setup.motion, index, setup.frames, setup.seed)"
+    :pose="framePose(setup.motion, index, SPRITE_GRID.frames, setup.seed)"
   />
 </template>

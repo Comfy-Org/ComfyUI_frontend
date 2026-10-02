@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useEventListener, useMediaQuery } from '@vueuse/core'
 import { computed } from 'vue'
 
 import { useResultDownload } from '../../../composables/useResultDownload'
@@ -26,12 +27,22 @@ const { locale = 'en', layout = 'd' } = defineProps<{
 const sprite = useSpriteSheet()
 const { image, phase, setup } = sprite
 const panel = computed(() => layout !== 'e')
-const download = useResultDownload(
-  phase,
-  () =>
-    `${(image.value?.name ?? 'sprite').replace(/\.\w+$/, '')}-${setup.value.motion}-sheet.png`
-)
+const wide = useMediaQuery('(min-width: 1024px)')
+const download = useResultDownload(phase, () => {
+  const { style, motion } = setup.value
+  const base = (image.value?.name ?? 'sprite').replace(/\.\w+$/, '')
+  return `${base}-${style}-${motion}-sheet.png`
+})
 reportStudioBusy(() => phase.value.kind === 'running')
+
+useEventListener('paste', (event: ClipboardEvent) => {
+  const file = [...(event.clipboardData?.files ?? [])].find((pasted) =>
+    pasted.type.startsWith('image/')
+  )
+  if (!file) return
+  event.preventDefault()
+  void sprite.useFile(file)
+})
 
 const panelLabels = {
   label: spc('sprite.panel', locale),
@@ -57,7 +68,7 @@ const panelLabels = {
       <EditorAlert v-if="phase.kind === 'failed'">
         {{ spc('sprite.failed', locale) }}
       </EditorAlert>
-      <SpriteSheetTrays v-if="!panel" :sprite :locale />
+      <SpriteSheetTrays v-if="!panel || wide" :sprite :locale />
     </template>
     <template #dock>
       <SpriteSheetDocks :sprite :panel :locale />
@@ -66,7 +77,7 @@ const panelLabels = {
       <SpriteSheetHistory :sprite :locale />
     </template>
     <template v-if="panel && image" #panel>
-      <SpriteSheetPanel :sprite :locale />
+      <SpriteSheetPanel :sprite :inline="!wide" :locale />
     </template>
     <template v-if="panel && image" #panel-peek>
       <SpriteSheetSummary :sprite :locale />
