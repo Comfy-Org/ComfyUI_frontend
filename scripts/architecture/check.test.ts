@@ -10,6 +10,7 @@ import {
   loadArchitectureConfiguration,
   parseImportSpecifiers,
   runArchitectureCheck,
+  stableJson,
   validateExceptionCoverage
 } from './check'
 
@@ -597,14 +598,22 @@ describe('baseline admission and catalog stability', () => {
     expect(readFileSync(filename, 'utf8')).toBe(before)
   })
 
-  test('stable catalog keeps short owner lists formatter-compatible', () => {
-    const root = createConfiguredRepository()
-    runArchitectureCheck(root, 'update')
-    const catalog = readFileSync(
-      join(root, 'docs/architecture/domains/catalog.json'),
-      'utf8'
+  test('stable JSON uses formatter-compatible owner layouts', () => {
+    expect(stableJson({ owners: ['@one'] })).toContain('"owners": ["@one"]')
+    expect(stableJson({ owners: ['@one', '@two'] })).toContain(
+      '"owners": ["@one", "@two"]'
     )
-    expect(catalog).toContain('"owners": ["@owner"]')
+    expect(stableJson({ owners: ['@one', '@two', '@three'] })).toContain(
+      '"owners": ["@one", "@two", "@three"]'
+    )
+    expect(
+      stableJson({
+        owners: [
+          '@Comfy-Org/comfy_frontend_developers_with_a_long_name',
+          '@Comfy-Org/comfy_website_developers_with_a_long_name'
+        ]
+      })
+    ).toContain('"owners": [\n')
   })
 
   test('catalog checks tolerate formatter-only JSON layout changes', () => {

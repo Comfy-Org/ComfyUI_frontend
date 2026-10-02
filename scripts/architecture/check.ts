@@ -926,16 +926,21 @@ const validateNewBaselineCoverage = (
   }
 }
 
-const stableJson = (value: unknown): string =>
+export const stableJson = (value: unknown): string =>
   `${JSON.stringify(value, null, 2)
     .replace(
       /"fingerprintPrefixes": \[\n\s+"([^"]+)"\n\s+\]/g,
       '"fingerprintPrefixes": ["$1"]'
     )
-    .replace(/"owners": \[\n\s+"([^"]+)"\n\s+\]/g, '"owners": ["$1"]')
     .replace(
-      /"owners": \[\n\s+"([^"]+)",\n\s+"([^"]+)"\n\s+\]/g,
-      '"owners": ["$1", "$2"]'
+      /^(\s*)"owners": \[\n((?:\s+"[^"]+",?\n)+)\s+\]/gm,
+      (block, indentation: string, ownerLines: string) => {
+        const owners = [...ownerLines.matchAll(/"([^"]+)"/g)].map(
+          ([, owner]) => `"${owner}"`
+        )
+        const collapsed = `${indentation}"owners": [${owners.join(', ')}]`
+        return collapsed.length <= 80 ? collapsed : block
+      }
     )}\n`
 
 const stableCatalog = (

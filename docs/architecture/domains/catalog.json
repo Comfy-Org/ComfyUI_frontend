@@ -26,7 +26,7 @@
         },
         {
           "path": "src/renderer/extensions/vueNodes/widgets/composables/useImageCompareWidget.ts",
-          "role": "application"
+          "role": "integration"
         },
         {
           "path": "src/extensions/core/imageCompare.ts",
@@ -367,10 +367,6 @@
       "exactFingerprints": [
         "deep-import:mask-editor:src/components/builder/AppModeWidgetList.vue->src/composables/maskeditor/useMaskEditor.ts#1",
         "deep-import:mask-editor:src/components/builder/useLoaderDropIndicator.ts->src/composables/maskeditor/useMaskEditorLoader.ts#1",
-        "deep-import:mask-editor:src/composables/painter/usePainter.test.ts->src/composables/maskeditor/StrokeProcessor.ts#1",
-        "deep-import:mask-editor:src/composables/painter/usePainter.ts->src/composables/maskeditor/StrokeProcessor.ts#1",
-        "deep-import:mask-editor:src/composables/painter/usePainter.ts->src/composables/maskeditor/brushUtils.ts#1",
-        "deep-import:mask-editor:src/composables/painter/usePainter.ts->src/extensions/core/maskeditor/types.ts#1",
         "deep-import:mask-editor:src/composables/useCoreCommands.selectOnly.test.ts->src/stores/maskEditorStore.ts#1",
         "deep-import:mask-editor:src/composables/useCoreCommands.ts->src/stores/maskEditorStore.ts#1",
         "deep-import:mask-editor:src/extensions/core/index.ts->src/extensions/core/maskeditor.ts#1",
@@ -437,10 +433,9 @@
         "deep-import:image-crop:src/composables/video/useCropRatioLock.ts->src/composables/useImageCrop.ts#1",
         "deep-import:image-crop:src/extensions/core/index.ts->src/extensions/core/imageCrop.ts#1",
         "deep-import:image-crop:src/lib/litegraph/src/widgets/widgetMap.ts->src/lib/litegraph/src/widgets/ImageCropWidget.ts#1",
-        "deep-import:image-crop:src/renderer/extensions/vueNodes/widgets/registry/widgetRegistry.ts->src/components/imagecrop/WidgetImageCrop.vue#1",
-        "forbidden-edge:image-crop->image-crop:src/composables/useImageCrop.test.ts->src/components/imagecrop/WidgetImageCrop.vue#1"
+        "deep-import:image-crop:src/renderer/extensions/vueNodes/widgets/registry/widgetRegistry.ts->src/components/imagecrop/WidgetImageCrop.vue#1"
       ],
-      "fingerprintPrefixes": ["deep-import:image-crop:"]
+      "fingerprintPrefixes": []
     },
     {
       "id": "DDD-EX-007",
@@ -454,7 +449,7 @@
         "deep-import:image-compare:src/renderer/extensions/vueNodes/widgets/registry/widgetRegistry.ts->src/renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.vue#1",
         "deep-import:image-compare:src/scripts/widgets.ts->src/renderer/extensions/vueNodes/widgets/composables/useImageCompareWidget.ts#1"
       ],
-      "fingerprintPrefixes": ["deep-import:image-compare:"]
+      "fingerprintPrefixes": []
     },
     {
       "id": "DDD-EX-008",
@@ -466,13 +461,34 @@
         "deep-import:painter:src/extensions/core/index.ts->src/extensions/core/painter.ts#1",
         "deep-import:painter:src/lib/litegraph/src/widgets/widgetMap.ts->src/lib/litegraph/src/widgets/PainterWidget.ts#1",
         "deep-import:painter:src/renderer/extensions/vueNodes/widgets/registry/widgetRegistry.ts->src/components/painter/WidgetPainter.vue#1",
-        "deep-import:painter:src/scripts/widgets.ts->src/renderer/extensions/vueNodes/widgets/composables/usePainterWidget.ts#1",
+        "deep-import:painter:src/scripts/widgets.ts->src/renderer/extensions/vueNodes/widgets/composables/usePainterWidget.ts#1"
+      ],
+      "fingerprintPrefixes": []
+    },
+    {
+      "id": "DDD-EX-009",
+      "owner": "@jtydhr88",
+      "rationale": "The image-crop application composable currently imports presentation while its orchestration boundary is extracted.",
+      "sunset": "2027-03-31",
+      "removalCriteria": "Move image-crop presentation composition out of useImageCrop and remove the characterized dependency occurrence.",
+      "exactFingerprints": [
+        "forbidden-edge:image-crop->image-crop:src/composables/useImageCrop.test.ts->src/components/imagecrop/WidgetImageCrop.vue#1"
+      ],
+      "fingerprintPrefixes": []
+    },
+    {
+      "id": "DDD-EX-010",
+      "owner": "@Comfy-Org/comfy_frontend_devs",
+      "rationale": "Painter application code currently depends directly on mask-editor internals.",
+      "sunset": "2027-03-31",
+      "removalCriteria": "Expose the required stroke-processing contract from the mask-editor boundary and migrate the four characterized painter dependency occurrences.",
+      "exactFingerprints": [
         "forbidden-edge:painter->mask-editor:src/composables/painter/usePainter.test.ts->src/composables/maskeditor/StrokeProcessor.ts#1",
         "forbidden-edge:painter->mask-editor:src/composables/painter/usePainter.ts->src/composables/maskeditor/StrokeProcessor.ts#1",
         "forbidden-edge:painter->mask-editor:src/composables/painter/usePainter.ts->src/composables/maskeditor/brushUtils.ts#1",
         "forbidden-edge:painter->mask-editor:src/composables/painter/usePainter.ts->src/extensions/core/maskeditor/types.ts#1"
       ],
-      "fingerprintPrefixes": ["deep-import:painter:"]
+      "fingerprintPrefixes": []
     }
   ]
 }

@@ -24,7 +24,7 @@
     },
     {
       "path": "src/renderer/extensions/vueNodes/widgets/composables/useImageCompareWidget.ts",
-      "role": "application"
+      "role": "integration"
     },
     {
       "path": "src/extensions/core/imageCompare.ts",
