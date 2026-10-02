@@ -41,7 +41,9 @@ describe('useFreeUsePlacement', () => {
 
   it.for([undefined, 'unknown'])('keeps control for %s', async (value) => {
     remoteConfig.value = {
-      'agent-free-use-message-placement': value
+      // Exercise malformed remote input even though the generated config type
+      // correctly narrows this flag to its known variants.
+      'agent-free-use-message-placement': value as never
     }
     authenticatedRemoteConfigState.value = 'authenticated'
     const { variant } = useFreeUsePlacement()
