@@ -40,7 +40,9 @@ describe('useFreeUsePlacement', () => {
   })
 
   it.for([undefined, 'unknown'])('keeps control for %s', async (value) => {
-    Reflect.set(remoteConfig.value, 'agent-free-use-message-placement', value)
+    remoteConfig.value = {
+      'agent-free-use-message-placement': value as never
+    }
     authenticatedRemoteConfigState.value = 'authenticated'
     const { variant } = useFreeUsePlacement()
 
