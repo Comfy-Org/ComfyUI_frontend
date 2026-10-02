@@ -145,7 +145,7 @@ test('retains local support roots and blocks runtime development dependencies', 
       name: 'consumer',
       private: true,
       devDependencies: {
-        '@comfyorg/fallow-config': '0.1.0',
+        '@comfyorg/fallow-config': '0.0.1',
         'build-only': '1.0.0'
       }
     })
@@ -167,6 +167,11 @@ test('retains local support roots and blocks runtime development dependencies', 
   )
   const support = consumer.audit(base)
   expect(support).toMatchObject({ status: 0 })
+  expect(JSON.parse(support.stdout)).toMatchObject({
+    changed_files_count: 1,
+    dead_code: { entry_points: { sources: { plugin: 1 } } },
+    complexity: { summary: { files_analyzed: 1 } }
+  })
   consumer.write(
     'src/main.ts',
     'import { build } from "build-only"\nconsole.log(build)\n'
