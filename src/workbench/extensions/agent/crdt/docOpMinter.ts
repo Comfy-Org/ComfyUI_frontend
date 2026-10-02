@@ -32,6 +32,7 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { RootGraphId } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
+import type { WidgetState } from '@/types/widgetState'
 import {
   findNodeInHierarchy,
   findSubgraphByUuid,
@@ -131,26 +132,13 @@ function valueWidgetsOnly(
 
 function isValueWidget(
   widget: IBaseWidget | undefined,
-  stored?: { type: string; serialize?: boolean }
+  stored?: WidgetState
 ): boolean {
   if (!widget && !stored) return false
-  if (widgetType(widget, stored) === 'button') return false
-  return widgetSerialize(widget, stored) !== false
-}
-
-function widgetType(
-  widget: IBaseWidget | undefined,
-  stored?: { type: string }
-): string | undefined {
-  return widget ? widget.type : stored?.type
-}
-
-function widgetSerialize(
-  widget: IBaseWidget | undefined,
-  stored?: { serialize?: boolean }
-): boolean | undefined {
-  if (!widget) return stored?.serialize
-  return 'serialize' in widget ? widget.serialize : stored?.serialize
+  const type = widget ? widget.type : stored?.type
+  const serialize =
+    widget && 'serialize' in widget ? widget.serialize : stored?.serialize
+  return type !== 'button' && serialize !== false
 }
 
 function nodeKey(graphId: string, nodeId: NodeId): string {
