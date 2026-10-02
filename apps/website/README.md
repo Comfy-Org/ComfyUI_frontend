@@ -186,6 +186,32 @@ can't be accidentally committed. Otherwise the `Release: Website` GitHub
 Actions workflow runs the same step on every manual dispatch and opens a PR
 with the refreshed snapshot.
 
+## Hub sections
+
+The hub has one page per section, linked by the catalogue tabs: `/hub/models/`,
+`/hub/workflows/` and `/hub/apps/`. The workflows and apps pages show the
+showcase until their flag is on. Both are always noindex and left out of the
+sitemap, whatever `launchedWorkflowPages` says (it launches only the
+`/hub/workflows/<slug>/` pages), so neither has a markdown twin. Old
+`/hub/models/?type=workflows` and `?type=apps` links replace themselves with
+the section page in the browser, keeping the other query parameters, once that
+section's flag is on for the visitor; otherwise they stay on the models
+catalogue.
+
+## Hub workflows routing
+
+The website builds the workflow pages listed in `src/config/hub-workflow-names.json` at `/hub/workflows/<name>/`. It publishes `/hub/workflows/manifest.json` (`{ version, defaultOwner, pages, legacyRedirects }`), which comfy-router reads to decide who answers each `/hub/workflows/*` URL. The build validates the manifest and fails if it is invalid.
+
+The router (comfy-router#46) fetches the manifest from the website origin directly, not through comfy.org, so it never depends on its own routing to reach it. It also passes the public `comfy.org/hub/workflows/manifest.json` path straight through to the website, even though `manifest.json` is not in `pages`.
+
+To move more workflows onto the website:
+
+1. Add the pages; `hub-workflow-names.test.ts` fails until you refresh the list with `vitest -u`. The router picks up the new `pages` from the live manifest on the next website deploy.
+2. To redirect an old `/workflows/<slug>/` URL, list it in `legacyRedirects` in `src/config/hub-workflows-routing.ts` (exact paths only, each pointing at a page in the list), then copy the same entry into the router's bundled `src/hub-workflow-manifest.js` and redeploy the router. The router reads only its bundled copy for `/workflows/*`, so the website's entry alone redirects nothing.
+3. Once every workflow has moved, flip `defaultOwner` to `website`. This one is data only: it affects `/hub/workflows/*`, which reads the live manifest.
+
+The website itself never redirects `/workflows/*`; the router does.
+
 ## Models rollout
 
 Models is included in production and preview builds by default. The boolean
@@ -242,7 +268,10 @@ applies only outside production. The `workshop` PR label is no longer needed.
 `workshop-test` only selects test Cloud; neither label bypasses the PostHog
 visibility flag.
 
-`WORKSHOP_IN_BUILD=0` remains an explicit build exclusion for diagnostics.
+`WORKSHOP_IN_BUILD=0` turns Workshop off: Run, the Models nav tab and the account
+menu stay hidden whatever the PostHog flag says. Except the four noindex
+checkout pages, it never removes or replaces a page; every Models page keeps its
+URL and content.
 `PUBLIC_WORKSHOP_AUTH_FLAG=1` overrides a remote auth disable outside production.
 `PUBLIC_WORKSHOP_ROUTER_RUN=1` enables execution; neither grants Models visibility.
 For local development without PostHog:
@@ -270,6 +299,15 @@ saved run remains recoverable after that flag is disabled; sign-out or workspace
 switching detaches its controller and hides its results. Backend authorization and
 admission controls remain authoritative. Local development also accepts
 `PUBLIC_WORKSHOP_WORKFLOWS_ENABLED=1`.
+
+Workshop apps (Cinematic Studio and Re-shoot) are gated separately by the
+`workshop-apps-enabled` PostHog flag: their pages at `/hub/apps/<slug>/`, the
+`/hub/apps/` page and its tab, the featured slide on `/hub/models/` and a model
+page's Open in Studio link. `/cinematic-studio` and the old
+`/models/apps/<slug>/` addresses redirect to the app pages. The built apps are
+listed in `src/config/hub-app-names.json`; `hub-app-names.test.ts` fails until
+you add or remove the app there too. Local development also accepts
+`PUBLIC_WORKSHOP_APPS_ENABLED=1`.
 
 `src/config/workflow-render.ts` implements the shared workflow request and polling
 helper. Node scripts import `workflow_render` and `workflow_for_model` from
@@ -361,6 +399,77 @@ sitekey in this mapping, so the client widget stays off there.
 The `workshop-release-gate` Astro integration registers the Models routes and
 always removes the retired `/workshop` output, including in enabled builds.
 
+## Authentication
+
+Every account call goes to the Cloud origin that `PUBLIC_WORKSHOP_CLOUD_ENV`
+selects (see [Which Cloud the Workshop talks to](#which-cloud-the-workshop-talks-to)).
+Which identity the header shows is decided once per page load in
+`src/config/workshop-account-source.ts`.
+
+**Flag off (default).** Sign-in is the website's own Firebase login. It is
+exchanged at `${cloud}/api/auth/token` for a workspace-scoped JWT and cached in
+`sessionStorage` (`src/config/workshop-account.ts`). The flag adds one plain
+anonymous `GET /api/features` per page load, read for `web_session_probe`. That
+read sends no cookie and no custom header, so it needs no preflight. The
+session code never loads.
+
+**`unified_web_session` on.** When the probe is `true`, a credentialed
+`GET /api/features` with `X-Comfy-Client` reads `unified_web_session`. Only a
+literal `true` turns it on. If no answer comes within 800 ms, the page keeps the
+Firebase header and never swaps. On the session path:
+
+- Identity comes from `GET ${cloud}/api/auth/session`, read once at boot. The
+  browser attaches the `__Host-comfy_session` cookie because the request goes
+  to the Cloud host with `credentials: 'include'`. The cookie is host-only, so
+  comfy.org itself never receives it. The website runs no heartbeat.
+- The header shows the session account and reads `GET /api/billing/balance` on
+  the cookie, with `X-Comfy-Client` and no `Authorization`. That balance is
+  always the personal workspace's. A 401 hides it. The Buy credits dialog is
+  not mounted.
+- Firebase does not load to answer the header. The session is restored with
+  `POST /api/auth/session` (Firebase ID token as proof) only if this page
+  already loaded a Firebase login. With no session, the Firebase header
+  mounts. A revoked session also signs the local Firebase login out.
+- The website sends no unsafe method on the cookie, so it never needs
+  `X-CSRF-Token`. It never calls `DELETE /api/auth/session`, and a Firebase
+  sign-in on comfy.org does not create the shared session. Sign-in and
+  sign-out on comfy.org are still Firebase's.
+
+**Not wired yet: Run on the session (F3b).** Model pages, workflows and the
+cinematic studio start the Firebase lifecycle whatever the flag says. A Run
+sends the `/api/auth/token` JWT to the Router as `Authorization: Bearer` with
+`credentials: 'omit'`. The session balance's authorizer rejects any mint, so
+the website never calls `POST /api/auth/token` on the cookie. Moving Run onto
+the session is blocked on the backend. The Router must accept tokens minted
+from the session, and ingest must trust comfy.org for credentialed `POST`s.
+
+CLI, MCP, Desktop, API keys and a localhost frontend keep their tokens. The
+cookie never reaches localhost or a preview host, so there the session read
+finds nothing and the Firebase header mounts. The workflow API's `X-API-Key`
+mode (`src/config/workshop-workflow-api.ts`) is unaffected.
+
+See [ADR-AUTH-SESSION-0037](../../docs/adr/AUTH-SESSION-0037-shared-web-session-on-a-host-only-cookie.md)
+for the decision and
+[`packages/account-core/docs/web-session.md`](../../packages/account-core/docs/web-session.md)
+for the shared building blocks.
+
+## Search indexing
+
+Only the production build (`VERCEL_ENV=production`) can be indexed. Every
+other build (local, CI, Vercel previews) puts
+`<meta name="robots" content="noindex, nofollow">` on every page, so a copy of
+the site never competes with comfy.org. Those builds also drop the canonical
+link and hreflang alternates, so a preview never points its noindex at
+comfy.org. `WEBSITE_INDEXABLE=1` gives a build outside Vercel the production
+head; `pnpm build:e2e` sets it for the e2e and screenshot builds. Pages that are
+noindex on their own stay noindex either way.
+
+The decision is baked into the HTML at build time, so never use Vercel's
+Promote to Production on a preview deployment: it would serve
+`noindex, nofollow` on comfy.org. The `deploy-production` job fails if its
+build has a robots meta on `/`, and `CI: Website Build` fails if a
+non-production build doesn't.
+
 ## HubSpot forms
 
 Pages that collect leads use HubSpot's hosted form embed:
@@ -396,8 +505,9 @@ the hosted script once, and renders the documented embed container.
 
 - `pnpm dev` — Astro dev server
 - `pnpm build` — production build to `dist/`
+- `pnpm build:e2e` — indexable build to `dist/`, the one e2e and screenshots run against
 - `pnpm typecheck` — `astro check`
 - `pnpm test:unit` — Vitest unit tests
-- `pnpm test:e2e` — Playwright E2E tests (requires `pnpm build` first)
+- `pnpm test:e2e` — Playwright E2E tests (requires `pnpm build:e2e` first)
 - `pnpm ashby:refresh-snapshot` — refresh the committed careers snapshot
 - `pnpm cloud-nodes:refresh-snapshot` — refresh the committed cloud nodes snapshot

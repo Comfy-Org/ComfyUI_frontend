@@ -1,7 +1,6 @@
 import { useAuthStore } from '@/stores/authStore'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import { createMemoryHistory, createRouter } from 'vue-router'
@@ -30,7 +29,6 @@ function renderForm(
     global: {
       plugins: [
         router,
-        PrimeVue,
         createI18n({ legacy: false, locale: 'en', messages: { en: messages } })
       ]
     }
@@ -85,6 +83,17 @@ describe('CloudSignInForm password manager support', () => {
     expect(passwordField()).toHaveAttribute('autocomplete', 'current-password')
   })
 
+  it('toggles password visibility', async () => {
+    const user = userEvent.setup()
+    renderRealForm()
+
+    await user.click(
+      screen.getByRole('button', { name: enMessages.auth.showPassword })
+    )
+
+    expect(passwordField()).toHaveAttribute('type', 'text')
+  })
+
   it('binds both labels to their inputs', () => {
     renderRealForm()
 
@@ -96,8 +105,14 @@ describe('CloudSignInForm password manager support', () => {
 })
 
 describe('CloudSignInForm submit gating', () => {
-  // PrimeVue leaves `$form.valid` undefined until a field is touched, so the
-  // pristine button is enabled by design and is not asserted here.
+  it('disables submit while pristine', async () => {
+    renderRealForm()
+
+    await waitFor(() => {
+      expect(submitButton()).toBeDisabled()
+    })
+  })
+
   it('disables submit once a field is touched and invalid', async () => {
     const user = userEvent.setup()
     renderRealForm()
@@ -153,7 +168,9 @@ describe('CloudSignInForm submit gating', () => {
     const { emitted } = renderRealForm()
 
     await user.type(emailField(), 'user@example.com')
-    await user.type(passwordField(), 'Password1!{Enter}')
+    await user.type(passwordField(), 'Password1!')
+    await waitFor(() => expect(submitButton()).toBeEnabled())
+    await user.keyboard('{Enter}')
 
     await waitFor(() => {
       expect(

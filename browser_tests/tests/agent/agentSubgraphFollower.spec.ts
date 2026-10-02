@@ -21,6 +21,8 @@ import {
   agentSubgraphNodeDefs,
   agentSubgraphFrames
 } from '@e2e/fixtures/data/agentSubgraphFollower'
+import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
+import subgraphWorkflow from '@e2e/assets/subgraphs/agent-subgraph-with-two-promoted-widgets.json' with { type: 'json' }
 
 const test = mergeTests(agentTest, webSocketFixture)
 
@@ -39,9 +41,6 @@ test.describe(
       const socket =
         await test.step('open the agent-enabled workflow', async () => {
           await page.setViewportSize({ width: 1920, height: 1280 })
-          await page.addInitScript(() => {
-            localStorage.setItem('Comfy.Agent.CrdtFollower', 'true')
-          })
           await bootAgentApp(page, true, {
             onboardingCompleted: true,
             settings: { 'Comfy.VueNodes.Enabled': true },
@@ -62,6 +61,7 @@ test.describe(
       socket.onMessage((message) => outboundFrames.push(String(message)))
 
       await test.step('select the workflow and send an agent turn', async () => {
+        await loadSeedIntoActiveTab(page, subgraphWorkflow)
         const agentPanel = new AgentPanel(page)
         await agentPanel.open()
         await agentPanel.selectWorkflow()

@@ -228,6 +228,18 @@ void z
   {
     file: path.join(probeDirs.browserTests, 'allowed.spec.ts'),
     source: "test('allowed', () => {})\n"
+  },
+  {
+    file: path.join(probeDirs.source, 'disabled.test.ts'),
+    source: `it.skipIf(true)('a', () => {})
+describe.runIf(false)('b', () => {})
+test.skipIf(1).sequential('c', () => {})
+suite.runIf(0)('d', () => {})
+it.skipIf(false)('e', () => {})
+it.runIf(true)('f', () => {})
+it.skipIf(runtime)('g', () => {})
+other.skipIf(true)('h', () => {})
+`
   }
 ]
 
@@ -456,6 +468,19 @@ describe('restricted syntax rules', () => {
       ['arrayCopy.vue', 2]
     ])
     expect(copyFindings.every(({ severity }) => severity === 'error')).toBe(
+      true
+    )
+  })
+
+  it('rejects test declarations disabled by a literal condition', () => {
+    const disabledFindings = findingsFor('no-statically-disabled-test')
+    expect(locations(disabledFindings)).toEqual([
+      ['disabled.test.ts', 1],
+      ['disabled.test.ts', 2],
+      ['disabled.test.ts', 3],
+      ['disabled.test.ts', 4]
+    ])
+    expect(disabledFindings.every(({ severity }) => severity === 'error')).toBe(
       true
     )
   })

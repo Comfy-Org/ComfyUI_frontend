@@ -2,6 +2,7 @@ import { nextTick } from 'vue'
 
 import Load3D from '@/components/load3d/Load3D.vue'
 import Load3DViewerContent from '@/components/load3d/Load3dViewerContent.vue'
+import { LOAD3D_VIEWER_CONTENT_CLASS } from '@/components/load3d/load3dViewerDialog'
 import {
   getLoad3dOutputCache,
   getLoad3dSceneRevision,
@@ -108,7 +109,7 @@ async function handleModelUpload(files: FileList, node: LGraphNode) {
     useLoad3d(node).waitForLoad3d(async (load3d) => {
       try {
         await load3d.loadModel(modelUrl)
-      } catch (error) {
+      } catch {
         useToastStore().addAlert(t('toastMessages.failedToLoadModel'))
       }
     })
@@ -287,8 +288,7 @@ useExtensionService().registerExtension({
           dialogComponentProps: {
             renderer: 'reka',
             size: 'full',
-            contentClass:
-              'left-1/2 w-[80vw] sm:max-w-[80vw] h-[80vh] max-h-[80vh]',
+            contentClass: LOAD3D_VIEWER_CONTENT_CLASS,
             maximizable: true,
             onClose: async () => {
               await useLoad3dService().handleViewerClose(props.node)
@@ -494,7 +494,10 @@ useExtensionService().registerExtension({
             if (attempt >= MAX_STALE_CAPTURE_RETRIES) {
               reportError(
                 new Error('Load3D scene did not stabilize during capture'),
-                { errorType: 'error_capturing_load3d_scene_unstable' }
+                {
+                  surface: 'assets',
+                  errorType: 'error_capturing_load3d_scene_unstable'
+                }
               )
               return null
             }
@@ -566,8 +569,9 @@ useExtensionService().registerExtension({
     nodeData: ComfyNodeDef
   ) {
     if ('Preview3D' === nodeData.name) {
-      // @ts-expect-error InputSpec is not typed correctly
-      nodeData.input.required.image = ['PREVIEW_3D']
+      const input = (nodeData.input ??= {})
+      const required = (input.required ??= {})
+      required.image = ['PREVIEW_3D']
     }
   },
 

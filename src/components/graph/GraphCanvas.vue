@@ -561,8 +561,9 @@ onMounted(async () => {
       )
     }
 
-    // @ts-expect-error fixme ts strict error
-    await comfyApp.setup(canvasRef.value)
+    const canvas = canvasRef.value
+    if (!canvas) throw new TypeError('GraphCanvas mounted without a canvas')
+    await comfyApp.setup(canvas)
     canvasStore.canvas = comfyApp.canvas
     canvasStore.canvas.render_canvas_border = false
     useSearchBoxStore().setPopoverRef(nodeSearchboxPopoverRef.value)

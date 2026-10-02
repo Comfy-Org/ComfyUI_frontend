@@ -425,13 +425,10 @@ describe('WidgetSelectDefault', () => {
     })
 
     it('does not mark a placeholder combo widget invalid before its real options load', () => {
-      // Mirrors registerPlaceholder() in
-      // src/workbench/extensions/agent/crdt/graphMutations.ts: an
-      // agent-created node's widget starts as a placeholder with
-      // `options: {}` (no `values` key at all) until the node is
-      // materialized into a live node with its real, populated option
-      // list. A value that will be a legitimate option once that arrives
-      // should not flash the invalid ring in the meantime.
+      // A combo widget whose options have not loaded yet has
+      // `options: {}` (no `values` key at all). A value that will be a
+      // legitimate option once they arrive should not flash the invalid
+      // ring in the meantime.
       renderComponent(createWidget(undefined), 'sdxl.safetensors')
 
       const trigger = screen.getByTestId('widget-select-default-trigger')

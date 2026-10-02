@@ -1,4 +1,4 @@
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -253,6 +253,16 @@ describe('PrimitiveNode', () => {
     expect(primitive.widgets?.[0].type).toBe('custom_widget')
   })
 
+  it('rejects an array slot type when no widget describes its construction', () => {
+    const primitive = new PrimitiveNode('Primitive')
+    const target = new LGraphNode('Target')
+    target.addInput('seed', ['INT'])
+
+    expect(primitive.onConnectOutput(0, '*', target.inputs[0], target, 0)).toBe(
+      false
+    )
+  })
+
   it('restores its serialized value through the reroute lifecycle', async () => {
     await widgetInputsExtension.registerCustomNodes?.(app)
     localStorage.setItem('Comfy.RerouteNode.DefaultVisibility', 'true')
@@ -393,16 +403,16 @@ describe('getWidgetConfig', () => {
     const declared: InputSpec = ['FLOAT', { step: 0.1 }]
 
     expect(getWidgetConfig(widgetSlot(declared))).toEqual(declared)
-    expect(getWidgetConfig(fromPartial({ name: 'image' }))).toEqual(['*', {}])
+    expect(
+      getWidgetConfig(fromPartial<INodeInputSlot>({ name: 'image' }))
+    ).toEqual(['*', {}])
   })
 })
 
 describe('mergeIfValid', () => {
   it('narrows a numeric range to the intersection and records it on the slot', () => {
-    // The call shape used by groupNode.ts: `config1` is supplied explicitly and
-    // the "slot" is a bare object whose `widget` is the spec itself.
     const spec: InputSpec = ['INT', { min: 0, max: 100 }]
-    const output: Parameters<typeof mergeIfValid>[0] = fromAny({ widget: spec })
+    const output = widgetSlot(spec)
 
     const { customConfig } = mergeIfValid(
       output,
