@@ -5658,6 +5658,25 @@ describe('AgentPanelRoot workflow binding', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('says the target workflow is no longer available after the user deletes it', async () => {
+    const target = addTab('workflows/current.json', {
+      delete: vi.fn(async () => {})
+    })
+    workflowStore.activeWorkflow = target
+    useAgentWorkflowTabBindingStore().bind('wf-42', target.path)
+    const other = addTab('workflows/other.json')
+    renderWithSelectedTarget()
+    workflowStore.activeWorkflow = other
+
+    await workflowStore.closeWorkflow(target)
+    await workflowStore.deleteWorkflow(target)
+
+    expect(
+      await screen.findByText(i18n.global.t('agent.targetWorkflowUnavailable'))
+    ).toBeVisible()
+    expect(useAgentPanelStore().selectedWorkflow).toBeNull()
+  })
+
   it.for([
     {
       listing: 'omits the workflow',
