@@ -90,9 +90,31 @@
         height="1.25rem"
         class="w-full"
       />
-      <span v-else class="text-base font-semibold text-base-foreground">{{
-        displayedCredits
-      }}</span>
+      <span
+        v-else
+        class="text-base font-semibold text-base-foreground"
+        :title="
+          isBalanceUnavailable
+            ? $t('subscription.balanceUnavailable')
+            : undefined
+        "
+        data-testid="credits-amount"
+        >{{ displayedCredits }}</span
+      >
+      <Button
+        v-if="isBalanceUnavailable"
+        v-tooltip="{
+          value: $t('subscription.balanceUnavailableRetry'),
+          showDelay: 300
+        }"
+        variant="muted-textonly"
+        size="icon-sm"
+        :aria-label="$t('subscription.balanceUnavailableRetry')"
+        data-testid="retry-balance-button"
+        @click="handleRetryBalance"
+      >
+        <i class="icon-[lucide--refresh-cw] size-4" />
+      </Button>
       <Button
         v-tooltip="{ value: $t('credits.unified.tooltip'), showDelay: 300 }"
         variant="muted-textonly"
@@ -265,8 +287,10 @@ import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 
 import { useExternalLink } from '@/composables/useExternalLink'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
+import { UNKNOWN_CREDITS_PLACEHOLDER } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
@@ -332,12 +356,20 @@ const subscriptionDialog = useSubscriptionDialog()
 const { locale } = useI18n()
 const isLoadingBalance = isLoading
 
+// No balance read has landed, so the amount is unknown rather than zero. The
+// previous `?? 0` showed a failed read as `0` coins beside an untouched ledger,
+// which reads as the money being gone (FE-3164).
+const isBalanceUnavailable = computed(
+  () => initState.value === 'ready' && balance.value == null
+)
+
 const displayedCredits = computed(() => {
   if (initState.value !== 'ready') return ''
+  if (balance.value == null) return UNKNOWN_CREDITS_PLACEHOLDER
 
   // API field is named _micros but contains cents (naming inconsistency)
   const cents =
-    balance.value?.effectiveBalanceMicros ?? balance.value?.amountMicros ?? 0
+    balance.value.effectiveBalanceMicros ?? balance.value.amountMicros ?? 0
   return formatCreditsFromCents({
     cents,
     locale: locale.value,
@@ -347,6 +379,9 @@ const displayedCredits = computed(() => {
     }
   })
 })
+
+const { wrapWithErrorHandlingAsync } = useErrorHandling()
+const handleRetryBalance = wrapWithErrorHandlingAsync(fetchBalance)
 
 const showPlansAndPricing = canOpenPricingSurface
 // Subscribing is a Cloud-only concept: Local users manage plan/credits

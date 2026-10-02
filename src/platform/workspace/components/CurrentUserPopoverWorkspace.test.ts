@@ -23,6 +23,12 @@ import type { BillingStatus } from '@/platform/workspace/api/workspaceApi'
 
 import CurrentUserPopoverWorkspace from './CurrentUserPopoverWorkspace.vue'
 
+/** `null` stands for "no balance read has landed yet" (FE-3164). */
+type MockBalance = {
+  amountMicros: number
+  effectiveBalanceMicros?: number
+} | null
+
 const state = vi.hoisted(() => {
   function initialPlanSlug(): string | null {
     return 'pro-monthly'
@@ -36,8 +42,13 @@ const state = vi.hoisted(() => {
     return 'paid'
   }
 
+  function initialBalance(): MockBalance {
+    return { amountMicros: 100 }
+  }
+
   return {
     isCloud: true,
+    balance: initialBalance(),
     billingStatus: initialBillingStatus(),
     canAccessSubscriptionFeatures: true,
     isCancelled: false,
@@ -145,6 +156,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     useCurrentUser().userEmail = computed(() => 'liz@example.com')
     useCurrentUser().userPhotoUrl = computed(() => null)
     state.isCloud = true
+    state.balance = { amountMicros: 100 }
     state.billingStatus = 'paid'
     state.canAccessSubscriptionFeatures = true
     state.isCancelled = false
@@ -178,8 +190,10 @@ describe('CurrentUserPopoverWorkspace', () => {
           agentHasFunds: true
         }) satisfies SubscriptionInfo
     )
-    billingContext.balance = computed(
-      () => ({ amountMicros: 100, currency: 'USD' }) satisfies BalanceInfo
+    billingContext.balance = computed(() =>
+      state.balance
+        ? ({ currency: 'USD', ...state.balance } satisfies BalanceInfo)
+        : null
     )
     billingContext.isLoading = ref(false)
     vi.mocked(useBillingContext).mockReturnValue(billingContext)
@@ -707,5 +721,59 @@ describe('CurrentUserPopoverWorkspace', () => {
     expect(
       screen.queryByTestId('plans-credits-menu-item')
     ).not.toBeInTheDocument()
+  })
+
+  // FE-3164: the row used to coerce a missing balance with `?? 0`, so a failed
+  // balance read showed `0` coins beside an untouched ledger — the user's whole
+  // balance apparently gone, with no error and no way to ask again.
+  describe('credits row with no balance read', () => {
+    it('shows an unavailable amount rather than zero', () => {
+      state.balance = null
+
+      renderComponent()
+
+      const amount = screen.getByTestId('credits-amount')
+      expect(amount).toHaveTextContent('—')
+      expect(amount).not.toHaveTextContent('0')
+      expect(amount).toHaveAttribute('title', 'Balance unavailable')
+    })
+
+    it('offers a retry that re-reads the balance', async () => {
+      const user = userEvent.setup()
+      state.balance = null
+      const { fetchBalance } = useBillingContext()
+
+      renderComponent()
+
+      const retry = screen.getByTestId('retry-balance-button')
+      expect(retry).toHaveAttribute('aria-label', 'Balance unavailable. Retry')
+
+      await user.click(retry)
+      expect(fetchBalance).toHaveBeenCalled()
+    })
+
+    it('shows the amount with no retry once a balance has been read', () => {
+      state.balance = { amountMicros: 100 }
+
+      renderComponent()
+
+      expect(screen.getByTestId('credits-amount')).toHaveTextContent('211')
+      expect(
+        screen.queryByTestId('retry-balance-button')
+      ).not.toBeInTheDocument()
+    })
+
+    it('still shows a known zero balance as zero', () => {
+      state.balance = { amountMicros: 0 }
+
+      renderComponent()
+
+      const amount = screen.getByTestId('credits-amount')
+      expect(amount).toHaveTextContent('0')
+      expect(amount).not.toHaveAttribute('title')
+      expect(
+        screen.queryByTestId('retry-balance-button')
+      ).not.toBeInTheDocument()
+    })
   })
 })

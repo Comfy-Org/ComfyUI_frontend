@@ -8,6 +8,13 @@ import {
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 
 /**
+ * Stands in for a credit figure the client does not know, as opposed to one it
+ * knows to be zero. Matches the unknown-pool-total treatment already used for
+ * the monthly credit pool in `CreditsTile.vue`.
+ */
+export const UNKNOWN_CREDITS_PLACEHOLDER = '—'
+
+/**
  * Composable for handling subscription credit calculations and formatting.
  *
  * Uses useBillingContext which automatically selects the correct billing source:
@@ -36,19 +43,34 @@ export function useSubscriptionCredits() {
   const billingContext = useBillingContext()
   const { locale } = useI18n()
 
+  /**
+   * A null balance means no read has landed: a page load whose balance request
+   * failed leaves it null until a later read succeeds. Formatting that as `0`
+   * tells the user their whole balance is gone while the ledger is untouched,
+   * so the display figures stay null and the surfaces render an unavailable
+   * state instead (FE-3164). A *present* balance with a missing field is still
+   * a known zero and still formats as `0`.
+   */
+  const isBalanceUnavailable = computed(
+    () => toValue(billingContext.balance) == null
+  )
+
   const totalCredits = computed(() => {
     const balance = toValue(billingContext.balance)
-    return formatBalance(balance?.amountMicros, locale.value)
+    if (!balance) return null
+    return formatBalance(balance.amountMicros, locale.value)
   })
 
   const monthlyBonusCredits = computed(() => {
     const balance = toValue(billingContext.balance)
-    return formatBalance(balance?.cloudCreditBalanceMicros, locale.value)
+    if (!balance) return null
+    return formatBalance(balance.cloudCreditBalanceMicros, locale.value)
   })
 
   const prepaidCredits = computed(() => {
     const balance = toValue(billingContext.balance)
-    return formatBalance(balance?.prepaidBalanceMicros, locale.value)
+    if (!balance) return null
+    return formatBalance(balance.prepaidBalanceMicros, locale.value)
   })
 
   const isLoadingBalance = computed(() => toValue(billingContext.isLoading))
@@ -70,6 +92,7 @@ export function useSubscriptionCredits() {
     prepaidCredits,
     monthlyBonusCreditsValue,
     prepaidCreditsValue,
-    isLoadingBalance
+    isLoadingBalance,
+    isBalanceUnavailable
   }
 }

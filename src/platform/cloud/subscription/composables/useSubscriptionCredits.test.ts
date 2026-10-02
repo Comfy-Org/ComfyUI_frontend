@@ -54,10 +54,22 @@ describe('useSubscriptionCredits', () => {
   })
 
   describe('totalCredits', () => {
-    it('should return "0" when balance is null', () => {
+    // Replaces `it('should return "0" when balance is null')`: a failed or
+    // absent balance read is unknown, and rendering it as `0` told the user
+    // their whole balance was gone while the ledger was untouched (FE-3164).
+    it('should not report a null balance as zero', () => {
       mockBillingBalance = null
-      const { totalCredits } = mountComposable()
+      const { totalCredits, isBalanceUnavailable } = mountComposable()
+      expect(totalCredits.value).not.toBe('0')
+      expect(totalCredits.value).toBeNull()
+      expect(isBalanceUnavailable.value).toBe(true)
+    })
+
+    it('should leave a known balance of zero reading "0"', () => {
+      mockBillingBalance = { amountMicros: 0 }
+      const { totalCredits, isBalanceUnavailable } = mountComposable()
       expect(totalCredits.value).toBe('0')
+      expect(isBalanceUnavailable.value).toBe(false)
     })
 
     it('should reactively format amountMicros for the active locale', () => {
@@ -83,6 +95,12 @@ describe('useSubscriptionCredits', () => {
   })
 
   describe('monthlyBonusCredits', () => {
+    it('should not report a null balance as zero', () => {
+      mockBillingBalance = null
+      const { monthlyBonusCredits } = mountComposable()
+      expect(monthlyBonusCredits.value).toBeNull()
+    })
+
     it('should return "0" when cloudCreditBalanceMicros is missing', () => {
       mockBillingBalance = { amountMicros: 100 }
       const { monthlyBonusCredits } = mountComposable()
@@ -100,6 +118,12 @@ describe('useSubscriptionCredits', () => {
   })
 
   describe('prepaidCredits', () => {
+    it('should not report a null balance as zero', () => {
+      mockBillingBalance = null
+      const { prepaidCredits } = mountComposable()
+      expect(prepaidCredits.value).toBeNull()
+    })
+
     it('should return "0" when prepaidBalanceMicros is missing', () => {
       mockBillingBalance = { amountMicros: 100 }
       const { prepaidCredits } = mountComposable()

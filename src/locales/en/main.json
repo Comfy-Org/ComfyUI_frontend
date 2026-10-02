@@ -2994,6 +2994,8 @@
     "creditsLeftOfTotal": "{remaining} left of {total}",
     "monthlyUsageProgress": "{used} of {total} monthly credits used",
     "yearlyUsageProgress": "{used} of {total} yearly credits used",
+    "balanceUnavailable": "Balance unavailable",
+    "balanceUnavailableRetry": "Balance unavailable. Retry",
     "additionalCreditsInfo": "About additional credits",
     "additionalCredits": "Additional credits",
     "additionalCreditsInUse": "In use",

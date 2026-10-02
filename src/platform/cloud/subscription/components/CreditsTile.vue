@@ -32,8 +32,18 @@
             )
           "
         />
-        <span class="text-2xl leading-none font-bold">{{ displayTotal }}</span>
-        <span class="text-sm text-muted @max-[300px]:hidden">{{
+        <span
+          class="text-2xl leading-none font-bold"
+          data-testid="credits-total"
+          >{{ displayTotal }}</span
+        >
+        <span
+          v-if="showsBalanceUnavailable"
+          class="text-sm text-muted"
+          data-testid="credits-balance-unavailable"
+          >{{ $t('subscription.balanceUnavailable') }}</span
+        >
+        <span v-else class="text-sm text-muted @max-[300px]:hidden">{{
           $t('subscription.remaining')
         }}</span>
       </div>
@@ -224,7 +234,10 @@ import { formatCredits } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
+import {
+  UNKNOWN_CREDITS_PLACEHOLDER,
+  useSubscriptionCredits
+} from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import {
   DEFAULT_TIER_KEY,
@@ -262,7 +275,8 @@ const {
   totalCredits,
   monthlyBonusCreditsValue,
   prepaidCreditsValue,
-  isLoadingBalance
+  isLoadingBalance,
+  isBalanceUnavailable
 } = useSubscriptionCredits()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const { showPricingTable } = useSubscriptionDialog()
@@ -352,7 +366,7 @@ const formatCreditCount = (value: number) =>
 
 const creditPoolTotalDisplay = computed(() => {
   const total = creditPoolTotalCredits.value
-  return total === null ? '—' : formatCreditCount(total)
+  return total === null ? UNKNOWN_CREDITS_PLACEHOLDER : formatCreditCount(total)
 })
 
 const usedDisplay = computed(() => formatCreditCount(usage.value.used))
@@ -368,13 +382,23 @@ const monthlyRemainingCompact = computed(() =>
 )
 const creditPoolTotalCompact = computed(() => {
   const total = creditPoolTotalCredits.value
-  return total === null ? '—' : compactNumber.value.format(total)
+  return total === null
+    ? UNKNOWN_CREDITS_PLACEHOLDER
+    : compactNumber.value.format(total)
 })
+
+// A deliberately zeroed state (unsubscribed, member view, lapsed plan) is a
+// known zero and keeps reading `0`. An unread balance is not, and must not
+// borrow that display — the refresh control beside this figure is the retry.
+const showsBalanceUnavailable = computed(
+  () =>
+    isBalanceUnavailable.value && !zeroState && !showsInactivePlanState.value
+)
 
 const displayTotal = computed(() =>
   zeroState || showsInactivePlanState.value
     ? formatCreditCount(0)
-    : totalCredits.value
+    : (totalCredits.value ?? UNKNOWN_CREDITS_PLACEHOLDER)
 )
 // An ended sales-managed plan retains its prepaid balance: the note beside
 // this number says the credits become spendable once the plan is restored,
@@ -387,7 +411,7 @@ const displayPrepaid = computed(() => {
   if (showsInactivePlanState.value && !retainsPrepaidWhileInactive.value) {
     return formatCreditCount(0)
   }
-  return prepaidCredits.value
+  return prepaidCredits.value ?? UNKNOWN_CREDITS_PLACEHOLDER
 })
 const usedBarWidth = computed(
   () => `${(usage.value.usedFraction * 100).toFixed(2)}%`
@@ -404,11 +428,15 @@ const monthlyUsageLabel = computed(() =>
   )
 )
 
+// The breakdown reports used/remaining against the monthly pool, and with no
+// balance read those are derived from a 0 that is not known to be 0 — so it
+// would assert a full allowance as confidently as it asserted an empty one.
 const showBreakdown = computed(
   () =>
     canAccessSubscriptionFeatures.value &&
     !zeroState &&
-    !showsInactivePlanState.value
+    !showsInactivePlanState.value &&
+    !showsBalanceUnavailable.value
 )
 // The monthly allowance bar is a Cloud-only presentation; Local/Desktop shows
 // only the total and additional-credit balances.

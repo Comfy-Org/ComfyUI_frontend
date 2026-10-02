@@ -81,6 +81,7 @@ const i18n = createI18n({
         creditsLeftOfTotal: '{remaining} left of {total}',
         monthlyUsageProgress: '{used} of {total} monthly credits used',
         yearlyUsageProgress: '{used} of {total} yearly credits used',
+        balanceUnavailable: 'Balance unavailable',
         additionalCreditsInfo: 'About additional credits',
         additionalCreditsTooltip: 'Credits you add on top of your plan.',
         additionalCredits: 'Additional credits',
@@ -433,6 +434,53 @@ describe('CreditsTile', () => {
     const { container } = renderTile()
     expect(container.textContent).toContain("You're out of credits")
     expect(container.textContent).not.toContain('Credits refill')
+  })
+
+  // FE-3164: an unread balance is unknown, not empty. Showing it as `0` with a
+  // full usage breakdown reports the customer's money as gone while the ledger
+  // is untouched, and is indistinguishable from a genuinely empty balance.
+  it('reports an unread balance as unavailable rather than zero', () => {
+    activeProSubscription()
+    state.balance = null
+    const { container } = renderTile()
+
+    expect(screen.getByTestId('credits-total')).toHaveTextContent('—')
+    expect(screen.getByTestId('credits-total')).not.toHaveTextContent('0')
+    expect(
+      screen.getByTestId('credits-balance-unavailable')
+    ).toBeInTheDocument()
+    expect(container.textContent).not.toContain('remaining')
+    expect(container.textContent).not.toContain('left of')
+    // The refresh control stays the retry, so the state is recoverable.
+    expect(
+      screen.getByRole('button', { name: 'Refresh credits' })
+    ).toBeInTheDocument()
+  })
+
+  it('still reads zero when the balance is known to be zero', () => {
+    activeProSubscription()
+    state.balance = {
+      amountMicros: 0,
+      cloudCreditBalanceMicros: 0,
+      prepaidBalanceMicros: 0
+    }
+    renderTile()
+
+    expect(screen.getByTestId('credits-total')).toHaveTextContent('0')
+    expect(
+      screen.queryByTestId('credits-balance-unavailable')
+    ).not.toBeInTheDocument()
+  })
+
+  it('keeps the deliberate zero state at zero when the balance is unread', () => {
+    activeProSubscription()
+    state.balance = null
+    renderTile({ zeroState: true })
+
+    expect(screen.getByTestId('credits-total')).toHaveTextContent('0')
+    expect(
+      screen.queryByTestId('credits-balance-unavailable')
+    ).not.toBeInTheDocument()
   })
 
   it('hides the breakdown and forces zeros in the zero state', () => {
