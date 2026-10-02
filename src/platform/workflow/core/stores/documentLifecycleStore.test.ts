@@ -80,12 +80,11 @@ describe('useDocumentLifecycleStore', () => {
     a.present()
     publish(toRootGraphId('graph-a'))
 
-    // `workflowStore.openWorkflow` activates a tab by moving the pointer, with
-    // no graph load — reopening from persistence takes that path — so no
-    // transition opens and nothing republishes. The canvas graph stands still,
-    // so the newly presented document is the one on `graph-a`. A uid
-    // snapshotted at load completion would still name the outgoing document
-    // and silence the agent's follower
+    // A pointer move with no graph load. In the app the pointer moves only
+    // inside `activateLoadedWorkflow`; the e2e helper `openPersistedWorkflow`
+    // moves it directly. Identity follows the pointer, so B now reads the stored
+    // id. A uid snapshotted at load completion would still name A and silence
+    // the follower
     // (`browser_tests/tests/agent/agentCloseReopenRemoteDelete.spec.ts`).
     b.present()
 
