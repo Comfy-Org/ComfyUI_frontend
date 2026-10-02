@@ -434,6 +434,7 @@ function booleanValue(fallback = false): boolean {
         </div>
         <span
           v-if="group"
+          role="status"
           class="text-xs text-primary-warm-gray tabular-nums"
           :aria-label="
             t('workshop.field.chosenOfMax', locale, {
