@@ -102,7 +102,7 @@ const pillClass =
         :class="
           cn(
             'text-xs font-medium text-content-bright lg:text-sm',
-            workflow ? 'line-clamp-2 h-8 lg:h-10' : 'truncate'
+            workflow ? 'line-clamp-2 h-[2lh]' : 'truncate'
           )
         "
         :title="model.name"

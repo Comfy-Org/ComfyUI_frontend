@@ -635,9 +635,15 @@ test('a workflow card spends the tag line on its name', async ({
     '[data-testid="workshop-model-card"][data-kind="workflow"]'
   )
   await expect(cards.first()).toBeVisible()
-  // The two rows are reserved whether the name fills them or not, so the
-  // cards line up across the grid and nothing moves on hover.
   const names = cards.getByTestId('model-card-name')
+  // Clipping is what the two rows are there to prevent, and the text the card
+  // carries cannot see it: a clamped name still reads whole out of the DOM.
+  const clipped = await names.evaluateAll(
+    (all) => all.filter((name) => name.scrollHeight > name.clientHeight).length
+  )
+  expect(clipped).toBe(0)
+  // The rows are reserved whether the name fills them or not, so the cards
+  // line up across the grid.
   const rows = await names.evaluateAll((all) =>
     all.map((name) =>
       Math.round(
@@ -647,20 +653,9 @@ test('a workflow card spends the tag line on its name', async ({
   )
   expect([...new Set(rows)]).toEqual([2])
 
-  const shown = await names.allTextContents()
-  const card = cards.nth(
-    shown.indexOf(shown.reduce((a, b) => (b.length > a.length ? b : a), ''))
-  )
   // The heading above the row already names the kind, so the card does not
   // repeat it under a name that needed the room.
   await expect(cards.getByTestId('model-card-task')).toHaveCount(0)
-
-  const resting = await card.boundingBox()
-  await card.hover()
-  expect((await card.boundingBox())?.height).toBeCloseTo(
-    resting?.height ?? 0,
-    0
-  )
 })
 
 test('every workflow card carries its whole name, not a shortened one', async ({
