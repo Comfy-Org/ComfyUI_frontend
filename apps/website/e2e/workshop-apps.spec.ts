@@ -272,7 +272,19 @@ signedInTest(
   }
 )
 
-test('keeps the Re-shoot camera help behind info buttons', async ({
+signedInTest(
+  'keeps the Re-shoot camera help behind info buttons',
+  async ({ page, context, modelsAccount }) => {
+    await openReadReshootScene(page, context, modelsAccount)
+
+    const help = 'Distance is approximate; angles give the most control.'
+    await expect(page.getByText(help)).toBeHidden()
+    await page.getByRole('button', { name: help }).hover()
+    await expect(page.getByText(help).first()).toBeVisible()
+  }
+)
+
+test('holds the Re-shoot camera controls until the depth is read', async ({
   page,
   context
 }) => {
@@ -280,10 +292,11 @@ test('keeps the Re-shoot camera help behind info buttons', async ({
   await page.goto('/hub/apps/reshoot/')
   await page.getByText('Sci-fi pilot').first().click()
 
-  const help = 'Distance is approximate; angles give the most control.'
-  await expect(page.getByText(help)).toBeHidden()
-  await page.getByRole('button', { name: help }).hover()
-  await expect(page.getByText(help).first()).toBeVisible()
+  await expect(page.getByTestId('reshoot-depth-step')).toBeVisible()
+  await expect(page.getByRole('slider', { name: 'Rotation' })).toBeHidden()
+  await expect(page.getByTestId('reshoot-frame-label')).toHaveText(
+    /Original clip\s*· Nothing generated yet/
+  )
 })
 
 test('shows a preview frame for every Cinematic Studio shot option', async ({

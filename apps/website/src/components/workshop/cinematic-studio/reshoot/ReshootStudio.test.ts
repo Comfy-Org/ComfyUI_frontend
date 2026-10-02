@@ -8,7 +8,10 @@ import {
   fakeTransport,
   signIn
 } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/__fixtures__/reshootFakes'
+import { ReshootError } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/transport'
 import { reshootTransport } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/transport-config'
+import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
+import { RESHOOT_LIMITS } from '../../../../lib/workshop/cinematic-studio/reshoot-limits'
 import ReshootStudio from './ReshootStudio.vue'
 
 vi.mock(import('../../../../config/workshop-session-state'))
@@ -29,6 +32,7 @@ function setup() {
 }
 
 beforeEach(() => {
+  localStorage.clear()
   vi.useFakeTimers({ shouldAdvanceTime: true })
   vi.mocked(reshootTransport).mockReturnValue(fakeTransport())
   vi.mocked(readGeometry).mockResolvedValue(fakeGeometry())
@@ -52,11 +56,20 @@ describe('Re-shoot on one screen', () => {
 
     await user.click(screen.getByRole('button', { name: /Sci-fi pilot/ }))
 
-    expect(screen.getByRole('status')).toHaveTextContent('Estimating depth')
+    expect(screen.getByTestId('reshoot-depth-step')).toHaveTextContent(
+      rc('reshoot.pending.depth')
+    )
+    expect(screen.getByTestId('reshoot-frame-label')).toHaveTextContent(
+      `${rc('reshoot.frameLabel.original')} · ${rc('reshoot.frameLabel.nothingYet')}`
+    )
+    expect(screen.getByTestId('reshoot-aim-controls')).toHaveAttribute('inert')
     expect(screen.getByTestId('reshoot-action')).toBeDisabled()
-    expect(screen.getByRole('slider', { name: 'Rotation' })).toBeDisabled()
 
     await vi.advanceTimersByTimeAsync(3000)
+    expect(screen.queryByTestId('reshoot-aim-pending')).toBeNull()
+    expect(screen.getByTestId('reshoot-aim-controls')).not.toHaveAttribute(
+      'inert'
+    )
     screen.getByTestId('reshoot-globe').focus()
     await user.keyboard('{ArrowRight}')
 
@@ -167,5 +180,59 @@ describe('Re-shoot on one screen', () => {
     expect(
       screen.getByRole('button', { name: 'Aim', current: true })
     ).toBeInTheDocument()
+  })
+
+  it('says how many takes are left this hour and stops at the limit', async () => {
+    const user = setup()
+    await pickExample(user)
+    const limit = () => screen.getByTestId('reshoot-limit')
+    expect(limit()).toHaveTextContent('3 of 3 takes left this hour')
+
+    const takeAndCancel = async () => {
+      await user.click(screen.getByTestId('reshoot-action'))
+      await user.click(screen.getByRole('button', { name: 'Cancel' }))
+    }
+    await takeAndCancel()
+    expect(limit()).toHaveTextContent('2 of 3 takes left this hour')
+    await takeAndCancel()
+    expect(limit()).toHaveTextContent('1 of 3 takes left this hour')
+    await takeAndCancel()
+
+    expect(limit()).toHaveTextContent('No takes left this hour')
+    expect(screen.getByTestId('reshoot-action')).toBeDisabled()
+  })
+
+  it('does not count a take the server refused', async () => {
+    const transport = fakeTransport()
+    vi.mocked(reshootTransport).mockReturnValue(transport)
+    const user = setup()
+    await pickExample(user)
+    vi.mocked(transport.submit).mockRejectedValueOnce(
+      new ReshootError('insufficient_credits')
+    )
+
+    await user.click(screen.getByTestId('reshoot-action'))
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(screen.getByTestId('reshoot-limit')).toHaveTextContent(
+      '3 of 3 takes left this hour'
+    )
+  })
+
+  it('names the hourly ceiling when too many clips were analyzed', async () => {
+    localStorage.setItem(
+      'comfy.reshoot.runs.depth.user-1',
+      JSON.stringify(
+        Array.from({ length: RESHOOT_LIMITS.depth.runs }, () => Date.now())
+      )
+    )
+    const user = setup()
+    await pickExample(user)
+
+    expect(screen.getByTestId('reshoot-depth-step')).toHaveTextContent(
+      'Too many clips analyzed this hour'
+    )
+    expect(screen.getByTestId('reshoot-analyze')).toBeInTheDocument()
+    expect(screen.getByTestId('reshoot-action')).toBeDisabled()
   })
 })

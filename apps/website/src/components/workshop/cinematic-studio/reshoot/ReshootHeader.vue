@@ -9,23 +9,27 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 <template>
   <header class="flex flex-col gap-3" data-testid="reshoot-hero">
-    <div class="flex flex-wrap items-center gap-3">
-      <h1
-        class="max-w-4xl text-3xl font-light text-primary-comfy-canvas lg:text-5xl"
-      >
-        {{ rc('reshoot.title', locale) }}
-      </h1>
+    <h1
+      class="max-w-4xl text-3xl font-light text-primary-comfy-canvas lg:text-5xl"
+    >
+      {{ rc('reshoot.title', locale) }}
+    </h1>
+    <div
+      class="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between"
+    >
+      <div class="flex flex-col gap-3">
+        <p class="text-lg text-primary-warm-gray">
+          {{ rc('reshoot.pick.lead', locale) }}
+        </p>
+        <p class="text-xs text-primary-warm-gray/80">
+          {{ rc('reshoot.credit', locale) }}
+        </p>
+      </div>
       <AppRepoLink
         :repo="workshopAppRepo('reshoot')"
         :locale
-        class="sm:ml-auto"
+        class="shrink-0"
       />
     </div>
-    <p class="text-lg text-primary-warm-gray">
-      {{ rc('reshoot.pick.lead', locale) }}
-    </p>
-    <p class="text-xs text-primary-warm-gray/80">
-      {{ rc('reshoot.credit', locale) }}
-    </p>
   </header>
 </template>

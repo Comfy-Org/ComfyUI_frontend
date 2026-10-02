@@ -40,6 +40,7 @@ import type { ReshootRun } from '../lib/workshop/cinematic-studio/reshoot-engine
 import {
   failureNote,
   quoteNote,
+  relativeTime,
   runPrice
 } from '../lib/workshop/cinematic-studio/reshoot-engine/notes'
 import type { ReshootRunPhase } from '../lib/workshop/cinematic-studio/reshoot-engine/run'
@@ -60,6 +61,7 @@ import {
   generateWorkflow
 } from '../lib/workshop/cinematic-studio/reshoot-engine/workflow'
 import { useWorkshopAuthFlag } from '../scripts/posthog'
+import { useReshootAllowance } from './useReshootAllowance'
 
 /** Waits before asking for the price again after a failed quote. */
 const QUOTE_RETRY_MS = [5_000, 15_000, 30_000, 60_000]
@@ -72,6 +74,9 @@ const MAX_READ_SCENES = 4
 /** The node's frame rate, and the longest clip it takes. */
 const FPS = 24
 const MAX_SECONDS = 15
+
+/** The code a depth read gets when this person's hourly ceiling is reached. */
+const DEPTH_LIMIT = 'reshoot_depth_limit'
 
 export type DepthState = 'none' | 'analyzing' | 'ready' | 'failed'
 
@@ -87,6 +92,8 @@ export interface ReshootTake {
   readonly warpUrl?: string
   /** The same take with the clip's own sound instead of the generated one. */
   readonly originalUrl?: string
+  /** The clip this take was shot from, untouched. */
+  readonly sourceUrl?: string
   readonly note?: string
 }
 
@@ -111,7 +118,8 @@ const EXAMPLE_TAKE: ReshootTake = {
   keys: 0,
   status: 'done',
   startedAt: 0,
-  url: RESHOOT_EXAMPLE.result
+  url: RESHOOT_EXAMPLE.result,
+  sourceUrl: RESHOOT_EXAMPLE.clip
 }
 
 /**
@@ -129,6 +137,10 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
     if (credential?.status !== 'ok') throw new ReshootError('unauthorized')
     return credential.session.token
   })
+
+  const owner = () => session.value?.uid
+  const takeAllowance = useReshootAllowance('generate', owner)
+  const depthAllowance = useReshootAllowance('depth', owner)
 
   const upload = shallowRef<File>()
   const uploadUrl = useObjectUrl(upload)
@@ -261,6 +273,7 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
       depth.value === 'ready' &&
       !clipError.value &&
       !rendering.value &&
+      takeAllowance.allowance.value.left > 0 &&
       quoteSettled.value &&
       quote.value?.next_run !== 'blocked'
   )
@@ -276,6 +289,17 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
   const priceNote = computed(() => {
     if (quote.value) return quoteNote(quote.value, locale, run.value)
     return quoteFailed.value ? rc('reshoot.quote.failed', locale) : undefined
+  })
+  const secondsUntil = (at?: number) =>
+    at === undefined
+      ? rc('reshoot.quote.later', locale)
+      : relativeTime(Math.max(0, (at - Date.now()) / 1000), locale)
+  /** What this person may still generate this hour, said before a refusal. */
+  const limitNote = computed(() => {
+    const { left, runs, nextAt } = takeAllowance.allowance.value
+    return left > 0
+      ? rc('reshoot.limit.left', locale, { left, runs })
+      : rc('reshoot.limit.none', locale, { when: secondsUntil(nextAt) })
   })
   /** Why the viewport cannot show a read scene, if it cannot. */
   const notice = computed(() => {
@@ -338,6 +362,10 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
   }
 
   function noteFor(error: unknown): string {
+    if (error instanceof ReshootError && error.code === DEPTH_LIMIT)
+      return rc('reshoot.limit.depth', locale, {
+        when: secondsUntil(depthAllowance.allowance.value.nextAt)
+      })
     if (error instanceof ReshootError && error.code === 'insufficient_credits')
       return noCreditsNote()
     return failureNote(
@@ -396,6 +424,19 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
     return readGeometry(await bytes.arrayBuffer())
   }
 
+  /** A read that finishes, not one kept from before, counts against the hourly ceiling. */
+  async function freshRead(
+    via: ReshootTransport,
+    clip: ReshootClip,
+    signal: AbortSignal
+  ) {
+    if (depthAllowance.allowance.value.left === 0)
+      throw new ReshootError(DEPTH_LIMIT)
+    const geometry = await readScene(via, clip, signal)
+    if (!signal.aborted) depthAllowance.record()
+    return geometry
+  }
+
   /** The chosen clip, uploaded once, and its scene, read once per settings. */
   async function clipScene(via: ReshootTransport, signal: AbortSignal) {
     const file = upload.value ?? (await exampleFile())
@@ -403,7 +444,7 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
     uploads.set(file, video)
     const clip = { video, aspect: aspect.value, size: size.value }
     const key = `${video}|${clip.aspect}|${clip.size}`
-    const geometry = reads.get(key) ?? (await readScene(via, clip, signal))
+    const geometry = reads.get(key) ?? (await freshRead(via, clip, signal))
     remember(key, geometry)
     return { clip, geometry }
   }
@@ -442,6 +483,9 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
   // turns out too long retires that read rather than letting it finish.
   watch(clipError, (tooLong) => {
     if (tooLong && depth.value === 'analyzing') void analyze()
+  })
+  watch(unavailable, (isUnavailable) => {
+    if (!isUnavailable && picked.value && depth.value === 'none') void analyze()
   })
   watch([aspect, size], () => {
     if (picked.value) void analyze()
@@ -508,7 +552,8 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
         camera: still,
         keys: keys.value.length,
         status: 'rendering',
-        startedAt: Date.now()
+        startedAt: Date.now(),
+        sourceUrl: objectUrl(upload.value) ?? clip.value
       }
     ]
     selected.value = id
@@ -531,7 +576,8 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
           seed: seed.value ?? Math.floor(Math.random() * 2 ** 32)
         }),
         (phase) => updateTake(id, { phase }),
-        signal
+        signal,
+        () => takeAllowance.record()
       )
       const optional = (part: string) =>
         downloadOutput(transport, job, part, signal).catch(() => undefined)
@@ -642,6 +688,7 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
     gate,
     canGenerate,
     priceNote,
+    limitNote,
     session,
     pick,
     analyze,

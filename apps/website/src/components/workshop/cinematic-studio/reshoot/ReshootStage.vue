@@ -80,6 +80,10 @@ const aiming = computed(() =>
 const frameEl = useTemplateRef<HTMLElement>('frameEl')
 const { isFullscreen, toggle: toggleFullscreen } = useFullscreen(frameEl)
 
+const generated = computed(() =>
+  takes.some((take) => take.id !== 'example' && take.status === 'done')
+)
+
 const view = ref<ReshootView>('result')
 const sound = ref<ReshootSound>('generated')
 const finished = computed(() =>
@@ -141,6 +145,7 @@ const fileName = computed(
           :pose
           :keep-aim="keepAim"
           :frame
+          :generated
           :locale
           @aim="emit('aim', $event)"
         />

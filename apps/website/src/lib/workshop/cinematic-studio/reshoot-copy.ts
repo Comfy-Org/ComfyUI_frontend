@@ -53,12 +53,12 @@ const copy = {
   'reshoot.axis.tilt': { en: 'Tilt', 'zh-CN': '俯仰' },
   'reshoot.axis.lens': { en: 'Lens', 'zh-CN': '镜头' },
   'reshoot.axis.height': { en: 'Height', 'zh-CN': '高度' },
-  'reshoot.view.result': { en: 'Result', 'zh-CN': '结果' },
+  'reshoot.view.result': { en: 'New angle', 'zh-CN': '新机位' },
   'reshoot.view.warp': { en: 'Warp guide', 'zh-CN': '变形引导' },
-  'reshoot.view.source': { en: 'Source', 'zh-CN': '原片' },
+  'reshoot.view.source': { en: 'Original clip', 'zh-CN': '原始片段' },
   'reshoot.views': { en: 'Show', 'zh-CN': '显示' },
   'reshoot.sound': { en: 'Sound', 'zh-CN': '声音' },
-  'reshoot.sound.generated': { en: 'Generated', 'zh-CN': '生成的声音' },
+  'reshoot.sound.generated': { en: 'New audio', 'zh-CN': '新音频' },
   'reshoot.sound.original': { en: 'Original audio', 'zh-CN': '原始音频' },
   'reshoot.warpNote': {
     en: 'The warp guide of a real run shows here: the clip pushed to the new camera, magenta where it has to be invented.',
@@ -93,8 +93,8 @@ const copy = {
     'zh-CN': '生成期间可以继续调整机位。'
   },
   'reshoot.generate.wait': {
-    en: 'Reading the scene · 20 to 40 seconds',
-    'zh-CN': '正在读取场景 · 约 20 到 40 秒'
+    en: 'Generate unlocks once the depth is ready.',
+    'zh-CN': '深度分析完成后即可生成。'
   },
   'reshoot.clipLength': {
     en: 'This clip is {seconds} s. Use one between 5 and 15 seconds.',
@@ -281,12 +281,52 @@ const copy = {
     en: 'e.g. a stone wall behind her, more wheat to the left',
     'zh-CN': '例如：她身后是一面石墙，左边有更多麦田'
   },
-  'reshoot.analyzing': { en: 'Estimating depth…', 'zh-CN': '正在估算深度…' },
+  'reshoot.analyzing': { en: 'Analyzing depth…', 'zh-CN': '正在分析深度…' },
   'reshoot.generate': { en: 'Generate', 'zh-CN': '生成' },
   'reshoot.cancel': { en: 'Cancel', 'zh-CN': '取消' },
   'reshoot.generating': {
     en: 'Generating the new view',
     'zh-CN': '正在生成新视角'
+  },
+  'reshoot.pending.clip': { en: 'Clip loaded', 'zh-CN': '片段已载入' },
+  'reshoot.pending.depth': { en: 'Analyzing depth', 'zh-CN': '正在分析深度' },
+  'reshoot.pending.depthTime': {
+    en: 'About 20 to 40 seconds',
+    'zh-CN': '约 20 到 40 秒'
+  },
+  'reshoot.pending.depthFailed': {
+    en: 'Depth analysis failed',
+    'zh-CN': '深度分析失败'
+  },
+  'reshoot.pending.depthWaiting': {
+    en: 'Depth analysis has not started',
+    'zh-CN': '深度分析尚未开始'
+  },
+  'reshoot.pending.aim': { en: 'Aim the new camera', 'zh-CN': '设置新机位' },
+  'reshoot.pending.aimHint': {
+    en: 'The globe and camera controls appear here once the depth is ready.',
+    'zh-CN': '深度分析完成后，这里会出现球形视图和机位控制。'
+  },
+  'reshoot.frameLabel.original': { en: 'Original clip', 'zh-CN': '原始片段' },
+  'reshoot.frameLabel.preview': {
+    en: 'Preview of the new angle',
+    'zh-CN': '新机位预览'
+  },
+  'reshoot.frameLabel.nothingYet': {
+    en: 'Nothing generated yet',
+    'zh-CN': '尚未生成'
+  },
+  'reshoot.limit.left': {
+    en: '{left} of {runs} takes left this hour',
+    'zh-CN': '本小时还剩 {left}/{runs} 次'
+  },
+  'reshoot.limit.none': {
+    en: 'No takes left this hour. Next one {when}.',
+    'zh-CN': '本小时次数已用完，下一次{when}可用。'
+  },
+  'reshoot.limit.depth': {
+    en: 'Too many clips analyzed this hour. Try again {when}.',
+    'zh-CN': '本小时分析的片段过多，请{when}再试。'
   },
   'reshoot.takes': { en: 'Takes', 'zh-CN': '镜头' },
   'reshoot.take.aim': { en: 'Aim', 'zh-CN': '取景' },
