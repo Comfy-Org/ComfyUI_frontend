@@ -1,3 +1,4 @@
+import type { Settings } from '@/platform/settings/types'
 import { zGlobalSettingValue } from '@comfyorg/ingest-types/zod'
 import type { Page, Route, WebSocketRoute } from '@playwright/test'
 
@@ -354,6 +355,9 @@ async function mockAgentBoot(
     settings: {
       'Comfy.TutorialCompleted': true,
       'Comfy.RightSidePanel.ShowErrorsTab': false,
+      ...({
+        'Comfy.WorkflowActions.SeenItems': ['deploy-as-api']
+      } satisfies Partial<Settings>),
       ...(vueNodes && { 'Comfy.VueNodes.Enabled': true }),
       ...initialSettings
     },
