@@ -149,7 +149,12 @@ export function addValueControlWidgets(
   inputData?: InputSpec
 ): [IComboWidget, ...IStringWidget[]] {
   // `useIntWidget` forwards a group-node name override here as the mode.
-  if (!isValueControlMode(defaultValue)) defaultValue = 'randomize'
+  const specNameOverride = controlAfterGenerateNameOverride(
+    inputData?.[1]?.control_after_generate
+  )
+  if (!defaultValue || defaultValue === specNameOverride) {
+    defaultValue = 'randomize'
+  }
 
   const getName = (
     defaultName: 'control_after_generate' | 'control_filter_list',
