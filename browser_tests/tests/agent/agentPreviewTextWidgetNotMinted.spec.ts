@@ -180,40 +180,41 @@ test.describe(
       const rig = await AgentNonValueWidgetRig.boot(page, rigConfig)
       const { hostSocket } = rig
 
-      // The node finishes and its text output streams into `preview_text`,
-      // through the node's own `onExecuted` hook.
-      sendTextOutput(hostSocket, 'tensor([1, 2, 3])')
+      await test.step('stream a text output into the preview widget', async () => {
+        // Through the node's own `onExecuted` hook.
+        sendTextOutput(hostSocket, 'tensor([1, 2, 3])')
 
-      // The widget really was written, so this test cannot pass by never
-      // exercising the path at all.
-      await expect
-        .poll(() => rig.widgetValue(PREVIEW_NODE_ID, PREVIEW_WIDGET))
-        .toBe('tensor([1, 2, 3])')
-
-      // A hand edit committed after that write, in its own tick, is the
-      // settlement barrier. `opSender` sends batches in order and the host
-      // judges them in order, so once this edit's verdict is in, anything the
-      // preview write minted ahead of it has already been judged and is
-      // already in `humanOpOutcomes()`.
-      await rig.editSeed(EDITED_SEED_VALUE)
-
-      // Exactly one op reached the applier: the hand edit. The preview write
-      // minted nothing — before the fix it produced
-      // `widget 'preview_text' not found on PreviewAny`, which would sit
-      // ahead of `applied` here.
-      await expect
-        .poll(() => hostSocket.humanOpOutcomes().map((o) => o.outcome))
-        .toEqual(['applied'])
-
-      // And the human was never told that an edit they did not make was
-      // refused and undone.
-      const rejectionToast = new ToastHelper(page).toastErrors.filter({
-        hasText: 'Widget edit was rejected and was not saved'
+        // The widget really was written, so this test cannot pass by never
+        // exercising the path at all.
+        await expect
+          .poll(() => rig.widgetValue(PREVIEW_NODE_ID, PREVIEW_WIDGET))
+          .toBe('tensor([1, 2, 3])')
       })
-      await expect(rejectionToast).toHaveCount(0)
 
-      // The hand edit is still the value on screen, not reverted as collateral.
-      await expect(rig.seedField()).toHaveValue(String(EDITED_SEED_VALUE))
+      await test.step('commit a hand edit as the settlement barrier', async () => {
+        // `opSender` sends batches in order and the host judges them in
+        // order, so once this edit's verdict is in, anything the preview
+        // write minted ahead of it has already been judged and is already
+        // in `humanOpOutcomes()`.
+        await rig.editSeed(EDITED_SEED_VALUE)
+      })
+
+      await test.step('only the hand edit reached the applier', async () => {
+        // Before the fix the preview write produced
+        // `widget 'preview_text' not found on PreviewAny`, which would sit
+        // ahead of `applied` here.
+        await expect
+          .poll(() => hostSocket.humanOpOutcomes().map((o) => o.outcome))
+          .toEqual(['applied'])
+      })
+
+      await test.step('no rejection toast, hand edit still on screen', async () => {
+        const rejectionToast = new ToastHelper(page).toastErrors.filter({
+          hasText: 'Widget edit was rejected and was not saved'
+        })
+        await expect(rejectionToast).toHaveCount(0)
+        await expect(rig.seedField()).toHaveValue(String(EDITED_SEED_VALUE))
+      })
     })
 
     test('a hand edit minted in the same tick as a text-output write survives the batch', async ({
@@ -223,58 +224,56 @@ test.describe(
       const rig = await AgentNonValueWidgetRig.boot(page, rigConfig)
       const { host, hostSocket } = rig
 
-      // Execution populates the preview once, so the tick under test has an
-      // existing widget to overwrite rather than one to create.
-      sendTextOutput(hostSocket, 'tensor([1, 2, 3])')
-      await expect
-        .poll(() => rig.widgetValue(PREVIEW_NODE_ID, PREVIEW_WIDGET))
-        .toBe('tensor([1, 2, 3])')
+      await test.step('populate the preview so the tick under test overwrites it', async () => {
+        sendTextOutput(hostSocket, 'tensor([1, 2, 3])')
+        await expect
+          .poll(() => rig.widgetValue(PREVIEW_NODE_ID, PREVIEW_WIDGET))
+          .toBe('tensor([1, 2, 3])')
+      })
 
-      // ONE tick: the preview write and the user's own `seed` edit commit
-      // together. The minter collects a tick's intents synchronously and
-      // `opSender` sends them as a single batch, with the preview write
-      // leading it. `applyOps` is abort-remainder, so before the fix the
-      // host refused the preview write as `unknown_widget`, the hand edit
-      // behind it came back `batch_aborted`, and `revertRejectedOps` took the
-      // user's value off the canvas with it.
-      await page.evaluate(
-        ({ previewNodeId, samplerNodeId, preview, text, seed }) => {
-          const nodes = window.app!.graph.nodes
-          const previewNode = nodes.find(
-            (candidate) => String(candidate.id) === previewNodeId
-          )!
-          const samplerNode = nodes.find(
-            (candidate) => String(candidate.id) === samplerNodeId
-          )!
-          previewNode.widgets!.find(
-            (widget) => widget.name === preview
-          )!.value = text
-          samplerNode.widgets!.find((widget) => widget.name === 'seed')!.value =
-            seed
-        },
-        {
-          previewNodeId: String(PREVIEW_NODE_ID),
-          samplerNodeId: String(SAMPLER_NODE_ID),
-          preview: PREVIEW_WIDGET,
-          text: 'tensor([4, 5, 6])',
-          seed: EDITED_SEED_VALUE
-        }
-      )
+      await test.step('write the preview and the hand edit in one tick', async () => {
+        // The minter collects a tick's intents synchronously and `opSender`
+        // sends them as a single batch, with the preview write leading it.
+        await page.evaluate(
+          ({ previewNodeId, samplerNodeId, preview, text, seed }) => {
+            const nodes = window.app!.graph.nodes
+            const previewNode = nodes.find(
+              (candidate) => String(candidate.id) === previewNodeId
+            )!
+            const samplerNode = nodes.find(
+              (candidate) => String(candidate.id) === samplerNodeId
+            )!
+            previewNode.widgets!.find(
+              (widget) => widget.name === preview
+            )!.value = text
+            samplerNode.widgets!.find(
+              (widget) => widget.name === 'seed'
+            )!.value = seed
+          },
+          {
+            previewNodeId: String(PREVIEW_NODE_ID),
+            samplerNodeId: String(SAMPLER_NODE_ID),
+            preview: PREVIEW_WIDGET,
+            text: 'tensor([4, 5, 6])',
+            seed: EDITED_SEED_VALUE
+          }
+        )
+      })
 
-      // The applier saw exactly the hand edit, and took it.
-      await expect
-        .poll(() => hostSocket.humanOpOutcomes().map((o) => o.outcome))
-        .toEqual(['applied'])
+      await test.step('only the hand edit reached the applier and the document', async () => {
+        await expect
+          .poll(() => hostSocket.humanOpOutcomes().map((o) => o.outcome))
+          .toEqual(['applied'])
 
-      // It landed in the shared document, rather than merely surviving on a
-      // canvas the document disagrees with.
-      expect(
-        host.projection().nodes.find((node) => node.id === SAMPLER_NODE_ID)
-          ?.widgets_values
-      ).toEqual([EDITED_SEED_VALUE, 20])
+        expect(
+          host.projection().nodes.find((node) => node.id === SAMPLER_NODE_ID)
+            ?.widgets_values
+        ).toEqual([EDITED_SEED_VALUE, 20])
+      })
 
-      // And the value the user typed is still the one on screen.
-      await expect(rig.seedField()).toHaveValue(String(EDITED_SEED_VALUE))
+      await test.step('the typed value is still on screen', async () => {
+        await expect(rig.seedField()).toHaveValue(String(EDITED_SEED_VALUE))
+      })
     })
   }
 )
