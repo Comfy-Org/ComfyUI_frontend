@@ -476,6 +476,22 @@ describe('error mapping', () => {
     expect((error as Error).message).toBe('Unreadable agent response body')
   })
 
+  it('wraps a syntax error without relying on constructor identity', async () => {
+    const cause = Object.assign(new Error('Unexpected token secret'), {
+      name: 'SyntaxError'
+    })
+    const response = jsonResponse(200, [])
+    vi.spyOn(response, 'json').mockRejectedValueOnce(cause)
+    respond(response)
+
+    const error = await makeClient()
+      .listThreads()
+      .catch((caught: unknown) => caught)
+
+    expect(error).toBeInstanceOf(AgentResponseUnreadableError)
+    expect(error).toMatchObject({ cause })
+  })
+
   it.for([
     new TypeError('Failed to fetch'),
     new DOMException('The operation was aborted', 'AbortError')
