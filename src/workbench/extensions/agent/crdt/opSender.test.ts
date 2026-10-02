@@ -1234,16 +1234,7 @@ describe('createOpSender', () => {
 
   it('does not queue chunks when serialization reenters abortAll', () => {
     const localSettled: BatchOutcome[] = []
-    const operation = addNode(1)
-    let localSender: ReturnType<typeof createOpSender>
-    operation.node = {
-      ...operation.node,
-      toJSON() {
-        localSender.abortAll()
-        return { id: 1, type: 'TestNode' }
-      }
-    }
-    localSender = createOpSender({
+    const localSender = createOpSender({
       sendOps: () => true,
       onOpsResult: () => vi.fn(),
       workflowId: () => WORKFLOW,
@@ -1252,6 +1243,14 @@ describe('createOpSender', () => {
       baseVersion: () => 41,
       onBatchSettled: (outcome) => localSettled.push(outcome)
     })
+    const operation = addNode(1)
+    operation.node = {
+      ...operation.node,
+      toJSON() {
+        localSender.abortAll()
+        return { id: 1, type: 'TestNode' }
+      }
+    }
 
     localSender.admit([operation])
     localSender.flush()
@@ -1265,16 +1264,7 @@ describe('createOpSender', () => {
 
   it('does not queue chunks when serialization reenters detach', () => {
     const localSettled: BatchOutcome[] = []
-    const operation = addNode(1)
-    let localSender: ReturnType<typeof createOpSender>
-    operation.node = {
-      ...operation.node,
-      toJSON() {
-        localSender.detach()
-        return { id: 1, type: 'TestNode' }
-      }
-    }
-    localSender = createOpSender({
+    const localSender = createOpSender({
       sendOps: () => true,
       onOpsResult: () => vi.fn(),
       workflowId: () => WORKFLOW,
@@ -1283,6 +1273,14 @@ describe('createOpSender', () => {
       baseVersion: () => 41,
       onBatchSettled: (outcome) => localSettled.push(outcome)
     })
+    const operation = addNode(1)
+    operation.node = {
+      ...operation.node,
+      toJSON() {
+        localSender.detach()
+        return { id: 1, type: 'TestNode' }
+      }
+    }
 
     localSender.admit([operation])
     localSender.flush()
