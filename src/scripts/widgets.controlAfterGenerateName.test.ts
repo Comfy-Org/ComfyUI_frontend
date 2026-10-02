@@ -8,15 +8,6 @@ import {
   addValueControlWidgets
 } from '@/scripts/widgets'
 
-/**
- * `control_after_generate` means two things on one key, and the frontend used
- * to resolve the ambiguity by type alone: any string became the control
- * widget's *name*. Core's V3 `io.ControlAfterGenerate` is a `str` Enum, so
- * `object_info` now carries the control's *mode* there — and
- * `zIntInputOptions` already declares the string form as that enum, not a
- * name. These cases pin which strings are names and which are modes.
- */
-
 /** A node left as the int widget constructor leaves it, before the control. */
 function intNode() {
   const graph = new LGraph()
