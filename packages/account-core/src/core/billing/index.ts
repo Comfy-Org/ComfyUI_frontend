@@ -183,6 +183,8 @@ export {
 export type {
   BillingCommands,
   BillingCommandsOptions,
+  CancelOperationResult,
+  CancelRefusalCode,
   PaymentPortalResult,
   PreviewSubscribeInput,
   PreviewSubscribeOptions,

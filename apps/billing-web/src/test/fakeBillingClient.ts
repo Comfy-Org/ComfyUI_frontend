@@ -310,6 +310,7 @@ export function createFakeBillingClient(
       previewSubscribe,
       resubscribe,
       cancelSubscription,
+      cancelOperation: unusedByHostedSurfaces('commands.cancelOperation'),
       openPaymentPortal
     }
   }
