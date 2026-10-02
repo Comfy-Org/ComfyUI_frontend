@@ -31,8 +31,8 @@ const translations = {
     'zh-CN': 'ComfyUI 模型'
   },
   'workshop.catalogue.directory': {
-    en: 'All models A to Z',
-    'zh-CN': '全部模型（A 到 Z）'
+    en: 'All models by provider',
+    'zh-CN': '全部模型（按提供商）'
   },
   'workshop.catalogue.directoryCount': {
     en: '{count} models',
