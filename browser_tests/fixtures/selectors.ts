@@ -20,6 +20,7 @@ export const TestIds = {
     nodePreviewBody: 'node-preview-body',
     workflows: 'workflows-sidebar',
     workflowsRefreshButton: 'workflows-refresh-button',
+    closeButton: 'sidebar-close-button',
     modeToggle: 'mode-toggle',
     tabButton: (tabId: string) => `${tabId}-tab-button`
   },

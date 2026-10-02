@@ -385,8 +385,19 @@ export type UsageTimeSeries = {
   buckets: Array<UsageBucket>
   ending_before: string
   granularity: 'hour' | 'day' | 'month'
-  group_by: 'model' | 'endpoint' | 'product'
+  group_by:
+    | 'model'
+    | 'endpoint'
+    | 'product'
+    | 'product_line'
+    | 'person'
+    | 'source'
+  /**
+   * One entry per value in `groups` for `product_line`, `person` and `source`; absent for the other groupings.
+   */
+  group_labels?: Array<UsageGroupLabel>
   groups: Array<string>
+  not_available?: UsageNotAvailable
   starting_on: string
   summary: UsageSummary
 }
@@ -401,6 +412,44 @@ export type UsageBalance = {
 export type UsageSummary = {
   balance?: UsageBalance
   spend_micros: number
+}
+
+/**
+ * Present, with empty groups, buckets and breakdown, when the requested grouping has no data source yet. Render as unavailable, not as zero spend.
+ */
+export type UsageNotAvailable = {
+  reason: 'no_attribution_source'
+}
+
+export type UsageGroupLabel = {
+  /**
+   * Human-readable name for the key: a person's name, a product line's label, or the key's owner and prefix.
+   */
+  display_name?: string
+  /**
+   * The value as it appears in `groups`, `buckets` and `breakdown`.
+   */
+  key: string
+  /**
+   * Only for `source` when the key is known to this workspace.
+   */
+  key_name?: string
+  /**
+   * Only for `source` when kind is `api_key`.
+   */
+  key_prefix?: string
+  /**
+   * Only for `source`.
+   */
+  kind?: 'api_key' | 'session' | 'deployment'
+  /**
+   * Only for `source` when the key's owner is known.
+   */
+  owner_display_name?: string
+  /**
+   * Only for `source` when the key is known to this workspace.
+   */
+  owner_user_id?: string
 }
 
 export type UsageBucket = {
@@ -8610,7 +8659,23 @@ export type GetBillingUsageTimeSeriesData = {
   body?: never
   path?: never
   query?: {
-    group_by?: 'model' | 'endpoint' | 'product'
+    /**
+     * `product_line` folds products into the customer-facing lines (Agent,
+     * Third-Party Partner API, Comfy Cloud, Serverless) plus an
+     * `unattributed` bucket that is always counted in the total.
+     * `person` and `source` attribute spend to the member or to the API
+     * key (`spend_source`) that caused it; until a data source serves
+     * them the response is an empty series with `not_available` set.
+     * Group keys for those three carry a matching entry in `group_labels`.
+     *
+     */
+    group_by?:
+      | 'model'
+      | 'endpoint'
+      | 'product'
+      | 'product_line'
+      | 'person'
+      | 'source'
     granularity?: 'hour' | 'day' | 'month'
     starting_on?: string
     ending_before?: string
@@ -8919,9 +8984,26 @@ export type GetFeaturesResponses = {
       used: number
     }
     /**
+     * The free-tier job allowance offered to new users, so a signed-out visitor sees the real offer before signing up. Same value for authenticated and unauthenticated requests. Absent when the free-tier allowance is disabled or zero.
+     */
+    free_tier_offer?: {
+      /**
+       * Number of free jobs granted to a new FREE-tier user
+       */
+      job_allowance: number
+      /**
+       * True when only Google-authenticated sessions receive the allowance; email/password signups get none.
+       */
+      requires_google_sign_in: boolean
+    }
+    /**
      * Maximum upload size in bytes
      */
     max_upload_size?: number
+    /**
+     * Whether new free-tier subscriptions are enabled for this caller. Current servers always emit a boolean; clients should tolerate absence when talking to older servers that predate this declared field.
+     */
+    new_free_tier_subscriptions?: boolean
     /**
      * Stripe publishable key (pk_...) for the environment's Stripe account. Public by design (the secret key is never exposed here). Absent when STRIPE_PUBLISHABLE_KEY is not configured on the server, so a client can tell "not configured" from "configured as empty".
      */

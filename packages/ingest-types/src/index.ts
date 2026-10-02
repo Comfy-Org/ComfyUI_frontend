@@ -1171,6 +1171,8 @@ export type {
   UsageBalance,
   UsageBreakdownRow,
   UsageBucket,
+  UsageGroupLabel,
+  UsageNotAvailable,
   UsageSummary,
   UsageTimeSeries,
   UserDataResponseFull,

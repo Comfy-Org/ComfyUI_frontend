@@ -724,85 +724,103 @@ describe('buildSummaryLedger discounts', () => {
 })
 
 describe('buildSummaryLedger server-reported fields', () => {
+  const discountRowsOf = (
+    discount: Partial<Discount>,
+    transition: SubscriptionPreview['transition_type'] = 'new_subscription',
+    duration: Plan['duration'] = 'MONTHLY'
+  ) =>
+    ledgerOf({
+      transition_type: transition,
+      amount_due_cents: 604_800,
+      cost_today_cents: 756_000,
+      new_plan: planOf('TEAM', duration, 756_000),
+      promotion_code: 'COMFY20',
+      discounts: [{ ...entered('COMFY20', 151_200), ...discount }]
+    }).discounts
+
   it.for<{
     name: string
     discount: Partial<Discount>
-    duration: Plan['duration']
-    transition?: SubscriptionPreview['transition_type']
     subline?: string
   }>([
     {
-      name: 'a once coupon on a monthly plan change',
-      discount: { duration: 'once' },
-      duration: 'MONTHLY',
-      transition: 'upgrade',
+      name: 'this payment only',
+      discount: { term: 'this_payment', duration: 'once' },
       subline: 'This payment only'
     },
     {
-      name: 'a once coupon on a yearly plan change',
-      discount: { duration: 'once' },
-      duration: 'ANNUAL',
-      transition: 'duration_change',
-      subline: 'First year'
-    },
-    {
-      name: 'a once coupon on a yearly plan',
-      discount: { duration: 'once' },
-      duration: 'ANNUAL',
-      subline: 'First year'
-    },
-    {
-      name: 'a once coupon on a monthly plan',
-      discount: { duration: 'once' },
-      duration: 'MONTHLY',
+      name: 'the first month',
+      discount: { term: 'first_month', duration: 'once' },
       subline: 'First month'
     },
     {
-      name: 'a repeating coupon',
-      discount: { duration: 'repeating', duration_in_months: 3 },
-      duration: 'MONTHLY',
+      name: 'the first year',
+      discount: { term: 'first_year', duration: 'once' },
+      subline: 'First year'
+    },
+    {
+      name: 'a number of months',
+      discount: {
+        term: 'months',
+        duration: 'repeating',
+        duration_in_months: 3
+      },
       subline: 'For 3 months'
     },
     {
-      name: 'a one-month repeating coupon',
-      discount: { duration: 'repeating', duration_in_months: 1 },
-      duration: 'MONTHLY',
+      name: 'a single month',
+      discount: {
+        term: 'months',
+        duration: 'repeating',
+        duration_in_months: 1
+      },
       subline: 'For 1 month'
     },
     {
-      name: 'a repeating coupon whose term the quote leaves out',
-      discount: { duration: 'repeating' },
-      duration: 'MONTHLY'
+      name: 'months the quote does not count',
+      discount: { term: 'months', duration: 'repeating' }
     },
     {
-      name: 'a forever coupon, the bare basis',
-      discount: { duration: 'forever' },
-      duration: 'ANNUAL'
+      name: 'an ongoing discount',
+      discount: { term: 'ongoing', duration: 'forever' }
     },
     {
-      name: 'a coupon whose term the server does not know',
-      discount: {},
-      duration: 'ANNUAL'
+      name: 'no term from the server',
+      discount: { duration: 'once' }
     }
   ])(
-    'bounds a discount row by its term: $name',
-    ({ discount, duration, transition = 'new_subscription', subline }) => {
-      const { discounts } = ledgerOf({
-        transition_type: transition,
-        amount_due_cents: 604_800,
-        cost_today_cents: 756_000,
-        new_plan: planOf('TEAM', duration, 756_000),
-        promotion_code: 'COMFY20',
-        discounts: [{ ...entered('COMFY20', 151_200), ...discount }]
-      })
-
-      expect(discounts).toEqual([
+    'bounds a discount row by the server-reported term: $name',
+    ({ discount, subline }) => {
+      expect(discountRowsOf(discount)).toEqual([
         {
           label: 'Promo code',
           amount: '−$1,512.00',
           ...(subline === undefined ? {} : { subline })
         }
       ])
+    }
+  )
+
+  it.for<{
+    transition: SubscriptionPreview['transition_type']
+    duration: Plan['duration']
+  }>([
+    { transition: 'new_subscription', duration: 'MONTHLY' },
+    { transition: 'upgrade', duration: 'MONTHLY' },
+    { transition: 'downgrade', duration: 'MONTHLY' },
+    { transition: 'duration_change', duration: 'ANNUAL' }
+  ])(
+    'words the term the same on a $transition to a $duration plan',
+    ({ transition, duration }) => {
+      const sublineOf = (term: Discount['term']) =>
+        discountRowsOf({ term, duration: 'once' }, transition, duration)[0]
+          .subline
+
+      expect([
+        sublineOf('this_payment'),
+        sublineOf('first_month'),
+        sublineOf('first_year')
+      ]).toEqual(['This payment only', 'First month', 'First year'])
     }
   )
 
