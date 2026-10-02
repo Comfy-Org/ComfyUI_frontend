@@ -194,6 +194,54 @@ describe('createOpSender', () => {
     expect(sent[1].ops[0].base_version).toBe(41)
   })
 
+  it('an admission taken while unbound leaves the bound workflow its own counter', () => {
+    sender.admit([addNode(1)])
+    boundWorkflow = null
+
+    sender.admit([addNode(2)])
+
+    boundWorkflow = WORKFLOW
+    sender.admit([addNode(3)])
+    sender.flush()
+
+    // The unbound admission is settled, not addressed to any doc, so it must
+    // not move or reset this doc's cursor: node 3 mints past node 1 instead of
+    // reusing its counter and colliding on the stamp.
+    expect(
+      sender.pendingOps().flatMap(({ ops }) => ops.map((op) => op.base_version))
+    ).toEqual([41, 42])
+    expect(settled.map(summarizeSettlement)).toEqual([
+      { state: 'undeliverable', nodeIds: [2] }
+    ])
+  })
+
+  it('keeps one Lamport counter per workflow across a switch away and back', () => {
+    sender.admit([addNode(1)])
+    boundWorkflow = 'wf-2'
+    sender.admit([addNode(2)])
+    boundWorkflow = WORKFLOW
+    sender.admit([addNode(3)])
+    sender.flush()
+
+    const minted = sender.pendingOps().map(({ workflowId, ops }) => ({
+      workflowId,
+      versions: ops.map((op) => op.base_version)
+    }))
+    expect(minted).toEqual([
+      { workflowId: WORKFLOW, versions: [41] },
+      { workflowId: 'wf-2', versions: [41] },
+      { workflowId: WORKFLOW, versions: [42] }
+    ])
+    const perWorkflow = new Map<string, number[]>()
+    for (const { workflowId, versions } of minted)
+      perWorkflow.set(workflowId, [
+        ...(perWorkflow.get(workflowId) ?? []),
+        ...versions
+      ])
+    for (const versions of perWorkflow.values())
+      expect(new Set(versions).size).toBe(versions.length)
+  })
+
   it('serializes batches: the next sends only after the result settles the first', () => {
     sender.enqueue([addNode(1)])
     sender.enqueue([addNode(2)])
@@ -1367,10 +1415,25 @@ describe('createOpSender', () => {
     localSender.admit([first, second])
     localSender.flush()
 
-    expect(firstSerializations).toBe(2)
+    // The abort invalidated the seal before recovery began, so the valid prefix
+    // is never probed and never rechunked: one serialization, not three.
+    expect(firstSerializations).toBe(1)
     expect(localSettled).toHaveLength(1)
     expect(localSettled[0].state).toBe('undeliverable')
     expect(localSettled[0].ops).toHaveLength(2)
+    // The abort, not the serialization failure, is why the seal was dropped.
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'failure_chunking_agent_op_sender_abort'
+      })
+    )
+    expect(reportError).not.toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'failure_chunking_agent_op_sender'
+      })
+    )
     expect(localSender.pending()).toBe(0)
     localSender.detach()
   })
@@ -1423,19 +1486,24 @@ describe('createOpSender', () => {
   })
 
   it('resumes a pump requested during workflow-change sealing', () => {
-    const localSent: Op[][] = []
+    const localSent: Array<{ workflowId: string; ops: Op[] }> = []
+    const localSettled: BatchOutcome[] = []
+    let localResultListener!: (result: OpsResultView) => void
     let workflow = 'wf-old'
     const localSender = createOpSender({
-      sendOps: (_workflowId, _tab, ops) => {
-        localSent.push(ops)
+      sendOps: (workflowId, _tab, ops) => {
+        localSent.push({ workflowId, ops })
         return true
       },
-      onOpsResult: () => vi.fn(),
+      onOpsResult: (listener) => {
+        localResultListener = listener
+        return vi.fn()
+      },
       workflowId: () => workflow,
       tab: TAB,
       actor: () => ACTOR,
       baseVersion: () => 41,
-      onBatchSettled: vi.fn()
+      onBatchSettled: (outcome) => localSettled.push(outcome)
     })
     const outer = addNode(1)
     let reentered = false
@@ -1454,10 +1522,50 @@ describe('createOpSender', () => {
 
     localSender.admit([addNode(2)])
 
-    expect(localSent).toHaveLength(1)
-    expect('node_id' in localSent[0][0] ? localSent[0][0].node_id : null).toBe(
-      1
-    )
+    // The deferred pump runs once the admission is placed, not mid-seal: node 2
+    // was minted before the node 3 its serialization enqueued, so it goes first.
+    expect(
+      localSent.map(({ workflowId, ops }) => ({
+        workflowId,
+        nodeIds: ops.map((op) => ('node_id' in op ? op.node_id : undefined))
+      }))
+    ).toEqual([{ workflowId: 'wf-new', nodeIds: [2] }])
+    // Nothing is dropped: the admission displaced by the nested enqueue keeps
+    // its place in mint order ahead of it, and node 1's unbound batch waits its
+    // turn instead of being re-addressed.
+    expect(
+      localSender.pendingOps().map(({ workflowId, ops }) => ({
+        workflowId,
+        nodeIds: ops.map((op) => ('node_id' in op ? op.node_id : undefined)),
+        versions: ops.map((op) => op.base_version)
+      }))
+    ).toEqual([
+      { workflowId: 'wf-new', nodeIds: [2], versions: [41] },
+      { workflowId: 'wf-old', nodeIds: [1], versions: [41] },
+      { workflowId: 'wf-new', nodeIds: [3], versions: [42] }
+    ])
+    const deliveredIds = localSent[0].ops.map((op) => op.op_id)
+
+    localResultListener({ ok: true, applied: deliveredIds, skipped: [] })
+
+    expect(
+      localSent.map(({ workflowId, ops }) => ({
+        workflowId,
+        nodeIds: ops.map((op) => ('node_id' in op ? op.node_id : undefined)),
+        opIds: ops.map((op) => op.op_id)
+      }))
+    ).toEqual([
+      { workflowId: 'wf-new', nodeIds: [2], opIds: deliveredIds },
+      {
+        workflowId: 'wf-new',
+        nodeIds: [3],
+        opIds: [expect.stringMatching(/^[0-9a-f]{32}$/)]
+      }
+    ])
+    expect(localSettled.map(summarizeSettlement)).toEqual([
+      { state: 'acknowledged', nodeIds: [2] },
+      { state: 'undeliverable', nodeIds: [1] }
+    ])
     localSender.detach()
   })
 
