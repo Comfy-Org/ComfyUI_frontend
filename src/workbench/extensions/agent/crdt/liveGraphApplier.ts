@@ -175,18 +175,8 @@ const zDocNodeFields = zComfyNode
   })
 
 /**
- * What produced a document node, read from the LWW ledger (`__stamps`), which
- * is the only durable record of per-op attribution.
- *
- * `operation` means an op wrote the node and the stamp names it; `import` means
- * no stamp exists for the node, which `mint()` is the only way to reach — it
- * seeds the whole document at bootstrap and stamps nothing.
- *
- * `actorKind` is the actor's *kind* segment and nothing else. The actor grammar
- * is `agent:<thread>:<turn>` / `human:<user>:<tab>`, so the remaining segments
- * carry a user identifier and must not leave the client; the kind is what
- * discriminates the producer family, and `opId` already joins this report to
- * the op record for anyone who needs more.
+ * Only the actor's kind is reported: the segments after it in
+ * `agent:<thread>:<turn>` and `human:<user>:<tab>` identify a user.
  */
 interface NodeProducer {
   origin: 'operation' | 'import' | 'unreadable'
