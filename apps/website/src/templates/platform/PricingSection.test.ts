@@ -38,7 +38,9 @@ describe('PricingSection', () => {
     }
     expect(screen.getAllByText('42.20/GB/mo')).toHaveLength(1)
     expect(
-      screen.getAllByText(t('platform.pricing.storage.title', 'en'))
+      screen.getAllByText(
+        t('platform.pricing.storage.title', {}, { locale: 'en' })
+      )
     ).toHaveLength(2)
     expect(screen.getAllByText('$0.20/GB/mo')).toHaveLength(2)
     expect(screen.queryAllByText('Container disk')).toHaveLength(0)
@@ -77,13 +79,19 @@ describe('PricingSection', () => {
     const amount = formatStorageExampleAmount(
       getStorageRate('network_standard')
     )
-    const expected = t('platform.pricing.storageExample', 'en', { amount })
+    const expected = t(
+      'platform.pricing.storageExample',
+      { amount },
+      { locale: 'en' }
+    )
     expect(screen.getAllByText(expected, { exact: false })).toHaveLength(2)
   })
 
   it('uses the platform heading by default and accepts overrides', () => {
     render(PricingSection, { props: { locale: 'en' } })
-    expect(screen.getByText(t('platform.pricing.heading', 'en'))).toBeTruthy()
+    expect(
+      screen.getByText(t('platform.pricing.heading', {}, { locale: 'en' }))
+    ).toBeTruthy()
   })
 
   it('shows the note only when provided', () => {

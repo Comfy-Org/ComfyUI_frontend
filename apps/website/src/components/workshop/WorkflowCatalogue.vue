@@ -14,7 +14,7 @@ import {
   sortWorkshopModels
 } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import { HUB_TOOLBAR_ID } from '../../scripts/hubToolbar'
 import CardRow from './CardRow.vue'
 import FeaturedBanner from './FeaturedBanner.vue'
@@ -36,6 +36,7 @@ const {
   initialSearch?: string
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const query = ref('')
 const selected = ref<string[]>([])
@@ -148,7 +149,7 @@ const chips = computed<FilterChip[]>(() => [
   })),
   ...runsOn.value.map((name) => ({
     key: `model:${name}`,
-    label: t('workshop.filter.runsOn', locale, { model: name })
+    label: t('workshop.filter.runsOn', { model: name })
   }))
 ])
 
@@ -185,12 +186,12 @@ function leaveSection() {
         @click="leaveSection"
       >
         <ChevronLeft class="size-4" aria-hidden="true" />
-        {{ t('workshop.sections.back', locale) }}
+        {{ t('workshop.sections.back') }}
       </button>
       <h2
         class="mt-5 mb-4 scroll-mt-24 text-3xl font-bold text-primary-warm-white sm:text-4xl lg:scroll-mt-32"
       >
-        {{ t('workshop.catalogue.allWorkflows', locale) }}
+        {{ t('workshop.catalogue.allWorkflows') }}
         <span
           class="text-base font-normal text-primary-warm-gray tabular-nums"
           >{{ visible.length }}</span
@@ -280,7 +281,7 @@ function leaveSection() {
         data-testid="browse-all-end"
         @click="browseAll = true"
       >
-        {{ t('workshop.catalogue.browseAllWorkflows', locale) }}
+        {{ t('workshop.catalogue.browseAllWorkflows') }}
         <ChevronRight
           class="size-4 transition-transform group-hover:translate-x-0.5"
           aria-hidden="true"
@@ -291,7 +292,7 @@ function leaveSection() {
     <ul
       v-else-if="visible.length"
       :class="CARD_GRID"
-      :aria-label="t('workshop.hub.workflows', locale)"
+      :aria-label="t('workshop.hub.workflows')"
       data-testid="workflow-search-results"
     >
       <li v-for="model in visible" :key="model.slug">
@@ -303,10 +304,10 @@ function leaveSection() {
       class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-transparency-white-t8 px-6 py-16 text-center"
     >
       <p class="text-lg font-semibold text-primary-comfy-canvas">
-        {{ t('workshop.catalogue.noWorkflows', locale) }}
+        {{ t('workshop.catalogue.noWorkflows') }}
       </p>
       <Button variant="outline" size="sm" @click="clear">
-        {{ t('workshop.empty.clear', locale) }}
+        {{ t('workshop.empty.clear') }}
       </Button>
     </div>
   </section>

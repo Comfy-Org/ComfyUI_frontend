@@ -843,7 +843,8 @@
         "label": "创作者",
         "title": "从创意到成品，\n只需几分钟。"
       },
-      "heading": "为追求质量、控制与简约的{creators}而生。",
+      "headingAfter": "而生。",
+      "headingBefore": "为追求质量、控制与简约的",
       "headingHighlight": "创作者",
       "teams": {
         "description": "无需 IT 部署、GPU 采购，也没有环境配置的烦恼。所有人在同一个最新平台上工作。通过 App Mode 链接分享工作流——团队立即运行，无需培训。",
@@ -1382,6 +1383,13 @@
       "downloadLocal": "下载桌面版",
       "heading": "在你的硬件上运行。\n永久免费。",
       "installGithub": "从 GITHUB 安装",
+      "installers": {
+        "label": "全部安装包",
+        "windowsX64": "Windows x64",
+        "windowsArm64": "Windows ARM64（仅限 NVIDIA）",
+        "macArm64": "macOS（Apple 芯片）",
+        "linuxX64": "Linux x64（AppImage）"
+      },
       "subtitle": "完整的 ComfyUI 引擎——开源、快速、可扩展，随你运行。"
     },
     "meta": {
@@ -2082,7 +2090,8 @@
       "visitHub": "访问社区中心"
     },
     "heroSubtitle": "社区使用 ComfyUI 创作成果的一小部分展示。",
-    "heroTitle": "在 {brand} 中构建、调整与创想",
+    "heroTitleAfter": " 中构建、调整与创想",
+    "heroTitleBefore": "在 ",
     "label": "画廊"
   },
   "geminiOmni": {
@@ -2816,7 +2825,8 @@
       },
       "heroCta": "立即试用 {name}",
       "heroSubtitle": "从开源扩散模型到合作伙伴 API，涵盖每一个主流模型，并附带可直接运行的社区工作流模板。",
-      "heroTitle": "{brand} 中的 {name}",
+      "heroTitleAfter": " 中的 {name}",
+      "heroTitleBefore": "",
       "label": "模型"
     },
     "llms": {
@@ -3179,6 +3189,12 @@
       "role": "Silverside AI 技术负责人",
       "linkLabel": "阅读 Silverside AI 客户案例"
     },
+    "serverlessSkipSetup": {
+      "heading": "或者跳过手动设置。",
+      "subtitle": "把它粘贴到你的编码智能体里。",
+      "copyPrompt": "复制智能体提示词",
+      "copied": "已复制"
+    },
     "meta": {
       "description": "部署并扩展 ComfyUI 工作流。你的工作流。所有模型。一个 API。",
       "title": "开发者平台"
@@ -3256,7 +3272,7 @@
       "subtitle": "Builder 将你的 ComfyUI 工作流和环境打包成可复现的构建。将该构建部署到 Comfy API，并按需扩展。",
       "tabInstall": "从你的环境开始",
       "tabWorkflow": "从你的工作流开始",
-      "copy": "复制命令",
+      "copy": "复制提示词",
       "copied": "已复制"
     },
     "serverlessHero": {
@@ -3283,6 +3299,137 @@
     "serverlessVisual": {
       "ariaLabel": "动画图示：请求点亮 RTX 6000 PRO、H100 和 B200 GPU 工作节点，COMFYUI 字样在网格中滚动。",
       "worker": "工作节点"
+    },
+    "router": {
+      "badge": {
+        "label": "ROUTER"
+      },
+      "cta": {
+        "getApiKey": "获取 API 密钥",
+        "browseModels": "浏览模型"
+      },
+      "migrate": {
+        "title": "用你的智能体迁移到 Comfy Router",
+        "subtitle": "帮我把这个项目现有的模型集成迁移到 Comfy Router。",
+        "copyPrompt": "复制提示词",
+        "copied": "已复制"
+      },
+      "proof": {
+        "caption": "300 万+ ComfyUI 用户正在使用的同一批模型，现在都在一个 API 之后。"
+      },
+      "code": {
+        "heading": "一行代码，选择供应商。",
+        "supporting": "更换供应商，其余代码不变。",
+        "providerLabel": "供应商"
+      },
+      "video": {
+        "alt": "Comfy Router 介绍：一个 API，每个任务都由你选择供应商"
+      },
+      "section1": {
+        "heading": "集成一次，模型随时添加。",
+        "body": "每新增一个供应商，就多一套 SDK、一个密钥、一套任务生命周期和一组错误处理。通过 Comfy Router 一次性搭建好这些，之后每加一个模型只需一行代码。"
+      },
+      "section2": {
+        "heading": "更高可用性。更优价格。无需订阅。",
+        "body": "同一个模型可在 fal、Runware 或 Wavespeed 上运行，当某个供应商被限流或另一个更便宜时，只需改一个参数即可切换。Comfy 绝不会替你切换路由，每个任务都会报告实际运行它的供应商。",
+        "providersLabel": "受支持的供应商",
+        "providers": "fal · Runware · Wavespeed"
+      },
+      "coverage": {
+        "heading": "同样的模型，更多运行选择。",
+        "body": "每个模型默认在 Comfy 上运行，你可以设置 `model_provider` 让它们在其他供应商上运行。我们从流量最高的模型开始，更多模型和供应商即将上线。",
+        "modelColumn": "模型",
+        "moreModels": "另有 {count} 个模型",
+        "moreModelsSuffix": "在 Comfy 上运行",
+        "browseAll": "浏览全部 {count} 个模型",
+        "served": "可提供服务",
+        "notServed": "不提供服务"
+      },
+      "section3": {
+        "heading": "遇到并发限制？把任务排入队列。",
+        "body": "让 Comfy 替你等待。使用 `submit` 立即获得请求 ID。任务会在有空闲槽位时运行，你可以用这个 ID 查询进度并获取结果。或者使用 `subscribe` 提交任务并等待其完成。"
+      },
+      "roadmap": {
+        "1": {
+          "title": "Comfy 工作流",
+          "description": "用同一个 SDK 运行 ComfyUI 工作流，就像调用模型一样。",
+          "details": "工作流目前通过开发者平台上的 Comfy API 运行。Router 支持将把它们纳入同一个密钥、同一个任务接口和同一份积分，你在 ComfyUI 中构建的流水线只需一次请求即可接入你的应用。"
+        },
+        "2": {
+          "title": "路由策略",
+          "description": "指定策略：reliable、fast_start、fast_finish 或 lowest_cost。",
+          "details": "不再指定供应商，而是指定你想要的结果。Comfy 会选择符合策略的路由，每个任务仍会报告实际执行的供应商。有序回退也将同步推出：仅在确认可安全重试时才启用备用列表。"
+        },
+        "3": {
+          "title": "按使用场景路由",
+          "description": "请求一次放大、抠图或动画生成，Comfy 会自动选择能完成任务的模型或工作流。",
+          "details": "描述任务而不是模型。Comfy 会匹配一个能完成该任务的模型或工作流，并在可用的供应商上运行，新模型上线时你无需改动任何代码。"
+        },
+        "4": {
+          "title": "自带密钥（BYOK）",
+          "description": "在支持的模型上使用你自己的供应商密钥，同时保留同一套 Comfy Router 集成。",
+          "details": "接入你自己的供应商凭据，通过同一套 Comfy Router API 运行支持的模型。SDK 和任务生命周期保持不变，这些调用的用量与计费仍归属于你的供应商。"
+        },
+        "eyebrow": "路线图",
+        "heading": "即将登陆同一个 API。",
+        "subtitle": "供应商选择是基础。以下所有能力都会加入到你今天集成的这个 API 上。",
+        "learnMore": "了解更多"
+      },
+      "faq": {
+        "1": {
+          "q": "为什么不直接调用 fal、Runware 或 Wavespeed？",
+          "a": "你当然可以，很多团队也是这么做的。但当你需要不止一个供应商时，Comfy Router 就有了价值：同一个模型可在多个供应商上运行，只用一个密钥和一套任务接口，路由由你选择。每个供应商只路由到它自己，Comfy Router 让你用一套接口覆盖所有供应商。"
+        },
+        "2": {
+          "q": "Comfy Router 是“媒体版的 OpenRouter”吗？",
+          "a": "OpenRouter 以路由语言模型著称。Comfy Router 则是为生成式媒体打造的：大体积资源、模型专属的控制参数，以及可能运行数分钟的任务。"
+        },
+        "3": {
+          "q": "Comfy 会替我选择供应商吗？",
+          "a": "目前发布阶段不会。你指定供应商，Comfy 就在那里运行，绝不会在背后替你更换。"
+        },
+        "4": {
+          "q": "如果我指定的供应商不可用怎么办？",
+          "a": "请求会在你选择的供应商上失败，不会被静默替换。有序的故障转移已在路线图上：一份备用列表，仅在确认重试安全时才会启用。"
+        },
+        "5": {
+          "q": "当我达到并发上限时会发生什么？",
+          "a": "把任务排入队列，而不是在收到 429 后自行重试。使用 submit 发送任务并立即获得请求 ID，之后可按自己的节奏用该 ID 查询进度、获取结果。如果希望 Comfy 代为等待结果，可使用 subscribe，它会提交任务并轮询直到完成。所有受支持的模型都支持排队。\n\n<a href=\"https://docs.comfy.org/tutorials/partner-nodes/concurrency-limits\">了解更多并发限制信息。</a>"
+        },
+        "6": {
+          "q": "我的输入和输出会保留多久？",
+          "a": "输入在上传后保留 24 小时，输出在生成后保留 24 小时，之后即被删除。"
+        },
+        "7": {
+          "q": "我已经在使用 ComfyUI 了，Comfy Router 还能带来什么？",
+          "a": "为你正在使用的模型提供更多运行方式。跨供应商调用受支持的模型，选择它们在哪里运行，并在价格、速度或可用性变化时随时切换。"
+        },
+        "8": {
+          "q": "我也可以调用 Comfy 工作流吗？",
+          "a": "目前还不能通过 Comfy Router 调用。工作流现在通过开发者平台上的 Comfy API 运行，Router 对工作流的支持已在路线图上。"
+        },
+        "9": {
+          "q": "我的 API 密钥、用量和账单在哪里管理？",
+          "a": "在开发者平台。你的 API 密钥、运行记录、积分和付款都在那里。"
+        },
+        "10": {
+          "q": "我可以使用自己的供应商密钥吗？",
+          "a": "在企业版中，部分模型支持自带密钥（BYOK），需申请开通。\n\n<a href=\"/zh-CN/enterprise/\">联系企业销售</a>"
+        },
+        "11": {
+          "q": "Comfy Router 如何计费？",
+          "a": "Comfy Router 使用与 Partner Nodes、Comfy Cloud 工作流运行及其他受支持模型调用相同的 Comfy 积分。每个模型的价格都列在模型目录中，运行前即可查看费用。"
+        },
+        "12": {
+          "q": "我需要订阅 Comfy 吗？",
+          "a": "不需要。Router 使用积分运行。充值积分后即可开始调用模型。"
+        },
+        "heading": "常见问题"
+      },
+      "closing": {
+        "headingAfterBadge": "现在就开始使用 Comfy Router 构建。",
+        "subtitle": "调用前沿媒体模型，自由选择供应商，获得更好的价格与可用性，一切都在一个 API 之内。"
+      }
     }
   },
   "player": {
@@ -4229,8 +4376,8 @@
       "needsEndpoint": "接口地址",
       "needsKey": "密钥",
       "needsFiles": "你的文件",
-      "runsOnRouter": "由 Comfy Router 运行",
-      "runsOnCloud": "由 Comfy Cloud 运行",
+      "runsOnRouter": "Comfy Router",
+      "runsOnCloud": "Comfy Cloud",
       "filesRead": "代码运行时从代码中的路径读取",
       "filesUploaded": "调用前先上传，再通过链接读取",
       "filesOmitted": "cURL 已省略上传的文件，请求可能不完整。请使用 Python 或 TypeScript 包含这些文件。",
@@ -4239,7 +4386,10 @@
       "heading": "从代码中调用该模型",
       "inputInvalid": "请在试用区填写有效的模型参数以生成请求。",
       "localFiles": "代码运行时会读取文件并进行 Base64 编码。请将路径设置为您的本地文件。",
-      "mappingUnavailable": "此模型的原生 Router 请求映射尚未验证。调用前请查看 Router 文档。"
+      "mappingUnavailable": "此模型的原生 Router 请求映射尚未验证。调用前请查看 Router 文档。",
+      "copyEndpoint": "复制接口地址",
+      "runsOn": "运行于",
+      "filesSdk": "由代码根据链接上传"
     },
     "card": {
       "creditsPerRun": "积分 / 次",
@@ -4284,6 +4434,8 @@
       "returnMetaDescription": "正在返回发起结账的页面。",
       "returnMetaTitle": "正在返回模型页面 - Comfy",
       "returnTitle": "正在返回模型页面",
+      "subscriptionPrompt": "想每月获得更多积分？",
+      "subscriptionLink": "查看 Cloud 订阅方案",
       "title": "添加积分",
       "waitingBody": "你已从结账页返回。新积分到账后，此页面会自动更新。",
       "waitingPolling": "正在查询积分…",
@@ -4789,7 +4941,7 @@
       "previewHint": "源模板的只读预览。在 Cloud 中打开，即可查看节点并进行修改。",
       "fullPreview": "打开完整尺寸的工作流预览",
       "apiHint": "以下请求使用与体验区相同的预设图和设置。每次提交都可能开始一次付费运行；如果提交结果未知，请勿自动重试。",
-      "apiNote": "需要付费的 Cloud 方案和可用额度。",
+      "apiNote": "需要付费的 Cloud 方案和额度。",
       "apiDocs": "API 文档",
       "apiSteps": "完整调用步骤",
       "apiUploads": "先上传媒体",
@@ -4841,7 +4993,8 @@
       "searchWorkflows": "搜索工作流…",
       "showWorkflows": "显示 {n} 个工作流",
       "heading": "ComfyUI 模型",
-      "directory": "全部模型（A 到 Z）"
+      "directory": "全部模型（按提供商）",
+      "directoryCount": "{count} 个模型"
     },
     "assets": {
       "title": "你的素材",
@@ -4856,8 +5009,491 @@
       "notSaved": "这次生成未能保存到你的素材。结果在过期前仍然留在页面上。",
       "cancelError": "无法请求取消。生成可能仍在进行。"
     },
-    "cinematic": {
-      "openInStudio": "在 Cinematic Studio 中打开"
+    "cinematic": {}
+  },
+  "cinematic": {
+    "ux": {
+      "hub": "Hub · 应用标签页",
+      "app": "应用",
+      "heading": "评审布局",
+      "composer": "E · 底部输入栏",
+      "panel": "D · 侧边面板"
+    },
+    "hub": {
+      "eyebrow": "Hub",
+      "heading": "接下来你想创造什么？",
+      "subtitle": "模型、基于模型的工作流，以及为单一任务打造的应用。",
+      "tabs": "显示",
+      "models": "模型",
+      "workflows": "工作流",
+      "apps": "应用",
+      "appsIntro": "围绕一类工作打造的工具，为你运行模型和工作流。",
+      "elsewhere": "模型和工作流在新版 Hub 原型中。",
+      "openHub": "打开 Hub",
+      "beta": "测试版",
+      "studioSummary": "用真实的摄影机、光线与调色导演一个镜头，然后在任意图像模型上运行。",
+      "studioMeta": "图像 · 5 个模型",
+      "prototype": "原型",
+      "reshoot": "重拍视频",
+      "reshootSummary": "为你的片段重新架设机位，从新的角度生成这一场景。",
+      "reshootMeta": "视频 · MiniMax H3"
+    },
+    "stage": {
+      "longWait": "仍在进行。部分模型需要约一分钟。没有排队，你的任务已经开始。",
+      "generatingImage": "正在生成图像",
+      "generatingVideo": "正在生成视频",
+      "loadingTake": "正在加载镜头",
+      "again": "再生成一次",
+      "useAsReference": "用作参考",
+      "emptyTitle": "你的第一个镜头会显示在这里",
+      "emptyBody": "写下场景，设置导演选项，然后点击生成。",
+      "label": "镜头",
+      "rendering": "渲染中…",
+      "shot": "镜头 {number}",
+      "takes": "条数",
+      "download": "下载",
+      "sequence": "序列",
+      "takeName": "镜头 {shot}，第 {take} 条",
+      "renderingTakeName": "正在渲染镜头 {shot}，第 {take} 条"
+    },
+    "state": {
+      "failed": "这一条生成失败",
+      "blocked": "被模型的内容政策拦截",
+      "noCredits": "积分不足，无法生成这个镜头",
+      "cancelled": "你已停止这一条",
+      "tryOn": "换用 {model}",
+      "editScene": "修改场景"
+    },
+    "credits": {
+      "estimate": "约 {credits} 积分",
+      "perTake": "{takes} 条 × 约 {credits} 积分",
+      "varies": "费用不定",
+      "variesHint": "该模型暂无公开价格，每一条按模型实际计费扣除积分。",
+      "short": "{takes} 条需要约 {credits} 积分，你有 {balance} 积分。",
+      "shortOne": "1 条需要约 {credits} 积分，你有 {balance} 积分。",
+      "reduce": "改为 {takes} 条",
+      "reduceOne": "改为 1 条",
+      "skipped": "{total} 条中有 {failed} 条因积分不足未运行",
+      "retrySkipped": "立即运行"
+    },
+    "output": {
+      "checking": "检查中…",
+      "takes": "条数",
+      "fewerTakes": "减少条数",
+      "moreTakes": "增加条数",
+      "aspect": "画面比例",
+      "resolution": "分辨率",
+      "generate": "生成",
+      "cancel": "取消",
+      "unavailable": "此处暂不支持运行模型。"
+    },
+    "model": {
+      "degraded": "当前较慢",
+      "heading": "模型"
+    },
+    "picker": {
+      "close": "关闭"
+    },
+    "backToApps": "返回应用",
+    "panel": {
+      "label": "镜头设置",
+      "newShot": "新镜头"
+    },
+    "section": {
+      "output": "画幅",
+      "shot": "镜头",
+      "direction": "导演",
+      "scene": "场景",
+      "camera": "摄影机",
+      "references": "参考"
+    },
+    "scene": {
+      "placeholder": "描述这一刻：谁、在哪里、发生了什么。",
+      "enhance": "AI 提示词",
+      "enhanceHint": "在提示词中加入“电影静帧”描述"
+    },
+    "reference": {
+      "optional": "可选",
+      "cast": "角色",
+      "castAction": "添加角色参考",
+      "remove": "移除参考"
+    },
+    "title": "电影工作室",
+    "beta": "测试版",
+    "repo": {
+      "view": "在 GitHub 上查看",
+      "soon": "GitHub · 即将推出"
+    },
+    "meta": {
+      "description": "导演电影感静帧：选择摄影机、景别、光线、胶片与调色，然后通过 Comfy Router 运行任意图像模型。"
+    },
+    "unavailable": {
+      "title": "电影工作室尚未开放",
+      "link": "浏览模型"
+    },
+    "composer": {
+      "label": "导演镜头",
+      "references": "添加参考图",
+      "format": "画幅"
+    },
+    "firstRun": {
+      "body": "描述这一刻。选择摄影机、光线与风格。随时切换模型。",
+      "desert": "黎明时分独自穿越沙丘的骑手",
+      "portrait": "阴天码头上的老渔夫",
+      "train": "蓝调时刻的夜车车窗"
+    },
+    "lead": "执导每一个镜头。选择摄影机、镜头、光线与调色，用任意模型生成电影级画面。",
+    "camera": {
+      "body": "机身",
+      "lens": "镜头",
+      "focal": "焦距",
+      "aperture": "光圈"
+    },
+    "part": {
+      "shot": "景别",
+      "light": "光线",
+      "film": "胶片",
+      "look": "风格",
+      "grade": "调色"
+    },
+    "option": {
+      "auto": "自动",
+      "digital": "数字电影机",
+      "largeFormat": "大画幅",
+      "super35": "Super 35",
+      "film35": "35mm 胶片",
+      "film16": "16mm 胶片",
+      "handheld": "手持",
+      "prime": "球面定焦",
+      "anamorphic": "变形宽银幕",
+      "vintage": "复古镜头",
+      "macro": "微距",
+      "tiltShift": "移轴",
+      "mm14": "14mm",
+      "mm24": "24mm",
+      "mm35": "35mm",
+      "mm50": "50mm",
+      "mm85": "85mm",
+      "mm135": "135mm",
+      "f14": "f/1.4",
+      "f2": "f/2",
+      "f28": "f/2.8",
+      "f4": "f/4",
+      "f8": "f/8",
+      "extremeWide": "大远景",
+      "wide": "远景",
+      "medium": "中景",
+      "closeUp": "特写",
+      "extremeCloseUp": "大特写",
+      "overShoulder": "过肩镜头",
+      "lowAngle": "仰拍",
+      "goldenHour": "黄金时刻",
+      "overcast": "阴天",
+      "blueHour": "蓝调时刻",
+      "practicalNight": "实景夜光",
+      "neon": "霓虹",
+      "lowKey": "低调光",
+      "silhouette": "剪影",
+      "digitalClean": "纯净数字",
+      "tungsten500": "钨丝灯 500T",
+      "daylight250": "日光 250D",
+      "blackWhite400": "黑白 400",
+      "reversal": "反转片",
+      "expired": "过期胶片",
+      "bleachBypass": "漂白效果",
+      "neoNoir": "新黑色电影",
+      "western": "西部片",
+      "sciFi": "科幻",
+      "periodDrama": "年代剧",
+      "thriller": "惊悚片",
+      "documentary": "纪录片",
+      "roadMovie": "公路片",
+      "tealOrange": "青橙色调",
+      "noir": "黑白",
+      "kodachrome": "柯达克罗姆",
+      "neonNight": "霓虹之夜",
+      "desertDust": "沙漠尘土",
+      "nordicCold": "北欧冷调"
+    },
+    "aspect": {
+      "scope": "宽银幕",
+      "widescreen": "宽屏",
+      "academy": "学院比例",
+      "landscapePhoto": "横向照片",
+      "portraitPhoto": "纵向照片",
+      "square": "方形",
+      "vertical": "竖屏"
+    },
+    "video": {
+      "audioOn": "开启",
+      "audioOff": "关闭",
+      "enhanceHint": "在提示词中添加电影运镜和连续动作",
+      "mode": "创作类型",
+      "image": "图像",
+      "video": "视频",
+      "animate": "将图像转为视频",
+      "preview": "生成的视频",
+      "duration": "时长",
+      "audio": "生成音频",
+      "firstFrame": "起始帧",
+      "lastFrame": "结束帧",
+      "addFirstFrame": "添加起始帧",
+      "addLastFrame": "添加结束帧",
+      "uploadFrame": "上传图像",
+      "needFrame": "请为此模型添加起始帧。",
+      "oneClip": "每次请求生成一个片段。请在场景中描述动作和镜头运动。",
+      "start": "描述运动，选择视频模型，或将你的静帧转为视频。",
+      "frameError": "无法加载起始帧。请下载图像并在视频设置中上传。",
+      "frameLoading": "正在准备起始帧…",
+      "sourceVideo": "要编辑的视频",
+      "addSourceVideo": "添加要编辑的视频",
+      "noFirstFrame": "{model} 无法从图像开始。请移除该帧或选择其他模型。",
+      "needSourceVideo": "请先添加要编辑的视频。",
+      "audioTag": "音频",
+      "resolution": "分辨率",
+      "aspect": "画幅",
+      "modelDecides": "此模型自行决定时长和分辨率。",
+      "audioHint": "为片段添加声音。"
+    },
+    "references": {
+      "needsPicture": "{model} 需要图片本身，但此处无法读取该图片。请下载后通过 + 添加，或选择其他模型。",
+      "unreadable": "无法使用此图片。请下载后通过 + 添加。",
+      "unsupported": "{model} 无法使用参考图。请移除参考图或选择其他模型。"
+    },
+    "colors": {
+      "title": "颜色",
+      "color": "颜色",
+      "add": "添加颜色",
+      "remove": "移除颜色",
+      "makeMain": "设为主色",
+      "main": "主色",
+      "sampleError": "无法从该图片读取颜色。",
+      "clear": "清除颜色",
+      "shade": "饱和度与亮度",
+      "hue": "色相",
+      "hex": "十六进制颜色"
+    },
+    "grade": {
+      "fromImage": "来自图片",
+      "fromImageAction": "匹配图片的色彩",
+      "yourPalette": "你的色板",
+      "edit": "编辑色板",
+      "done": "完成"
     }
+  },
+  "reshoot": {
+    "title": "重拍视频",
+    "prototype": "原型",
+    "panel": "重拍设置",
+    "section": {
+      "video": "视频",
+      "camera": "新机位",
+      "move": "运镜",
+      "prompt": "新视角中出现的内容",
+      "format": "格式"
+    },
+    "step": "第 {n} 步",
+    "step1": {
+      "label": "准备片段",
+      "hint": "选择片段、画面比例以及新视角要呈现的内容。深度只需分析一次，之后可自由取景。"
+    },
+    "step2": {
+      "label": "设置机位并生成",
+      "hint": "拖动预览或使用控件，需要时添加关键帧运镜，然后生成。"
+    },
+    "continue": "继续",
+    "back": "返回片段",
+    "edit": "编辑",
+    "credit": "基于 Cseti 的 CrossView-Warp LoRA 与节点",
+    "pick": {
+      "lead": "从任意角度重拍任意视频。机位随心移动，无需补拍。",
+      "drop": "将视频拖到这里",
+      "upload": "上传视频",
+      "exampleMeta": "无需上传即可试用",
+      "exampleTitle": "科幻飞行员"
+    },
+    "aim": {
+      "globe": "围绕片段拖动机位 · 滚动以靠近",
+      "more": "更多：镜头、高度、保持朝向",
+      "less": "收起",
+      "reading": "正在读取场景"
+    },
+    "axis": {
+      "rotation": "旋转",
+      "tilt": "俯仰",
+      "lens": "镜头",
+      "height": "高度",
+      "azimuth": "水平角",
+      "elevation": "俯仰角",
+      "distance": "距离",
+      "fov": "镜头视角",
+      "shift": "垂直位移"
+    },
+    "view": {
+      "result": "结果",
+      "warp": "变形引导",
+      "source": "原片"
+    },
+    "views": "显示",
+    "sound": {
+      "label": "声音",
+      "generated": "生成的声音",
+      "original": "原始音频"
+    },
+    "warpNote": "真实运行时这里显示变形引导：片段被推到新机位，洋红色为需要生成的部分。",
+    "seed": {
+      "label": "种子",
+      "random": "随机",
+      "help": "留空则每次生成使用新的种子；输入数字即可固定。"
+    },
+    "prompt": {
+      "dialogue": "模型也会生成新的音频：如果视频中有对白，请在这里写下台词，新生成的内容会更好地保留它们。",
+      "placeholder": "例如：她身后是一面石墙，左边有更多麦田"
+    },
+    "clip": {
+      "length": "该片段长 {seconds} 秒，请使用 5 到 15 秒的片段。",
+      "change": "更换",
+      "ready": "场景已读取",
+      "yours": "你的片段",
+      "example": "示例",
+      "replace": "选择其他片段",
+      "help": "5–15 秒，主体清晰，无黑边",
+      "rejected": "{name} 长 {seconds} 秒，当前片段保持不变。请选择 5 到 15 秒的片段。"
+    },
+    "reuse": "再次使用此机位",
+    "generate": {
+      "note": "生成期间可以继续调整机位。",
+      "wait": "正在读取场景 · 约 20 到 40 秒",
+      "label": "生成"
+    },
+    "expand": "全屏",
+    "collapse": "退出全屏",
+    "sample": {
+      "street": "夜晚街道",
+      "diner": "餐馆对话",
+      "train": "火车车窗",
+      "meta": "示例"
+    },
+    "nudge": {
+      "up": "机位升高",
+      "down": "机位降低",
+      "left": "机位向左",
+      "right": "机位向右"
+    },
+    "dolly": {
+      "in": "机位靠近",
+      "out": "机位远离"
+    },
+    "advanced": {
+      "label": "高级",
+      "value": "提示词、对白、种子"
+    },
+    "distanceHelp": "距离只是近似值，角度的控制最精确。",
+    "keepAimHelp": "围绕主体移动，但保持原片的朝向，与训练数据一致。",
+    "promptHelp": "描述原机位未拍到的区域应填充什么内容。",
+    "generatingHelp": "闲置一段时间后的首次运行还需要加载模型。",
+    "take": {
+      "exampleHelp": "示例结果：该片段以 768p 从新角度重拍。设置你自己的机位试试。",
+      "aim": "取景",
+      "example": "示例结果",
+      "static": "第 {n} 条 · 水平 {az}° 俯仰 {el}°",
+      "move": "第 {n} 条 · 运镜，{keys} 个关键帧",
+      "cancelled": "已取消",
+      "failed": "此镜头生成失败"
+    },
+    "frames": "{frames} 帧，24 fps（{seconds} 秒）",
+    "speed": {
+      "480p": "更快",
+      "768p": "更清晰"
+    },
+    "empty": {
+      "title": "新机位的画面将在这里播放",
+      "hint": "先选一段 5 到 15 秒的片段，或挑一个示例。"
+    },
+    "optional": "可选",
+    "aspect": {
+      "label": "画面比例",
+      "source": "与原片一致"
+    },
+    "size": {
+      "label": "输出尺寸",
+      "480p": "0.4 MP · 864×480 · 更快",
+      "768p": "1.0 MP · 1376×768 · 更清晰，更慢"
+    },
+    "keepAim": "保持原机位的朝向",
+    "zone": {
+      "green": "在 LoRA 验证过的范围内。",
+      "yellow": "训练过，但不太稳定。",
+      "red": "超出训练范围，看不到的一面将由模型想象。"
+    },
+    "dragHint": {
+      "label": "拖动以环绕 · 滚动以靠近",
+      "touch": "拖动以环绕"
+    },
+    "needsDepth": "分析深度后即可设置新机位。",
+    "stale": "画面比例或尺寸已更改，需要重新分析深度。",
+    "move": {
+      "static": "固定机位",
+      "keys": "{count} 个关键帧",
+      "help": "拖动预览下方的时间轴，调整机位，按“关键帧”。两个以上的关键帧构成运镜；第一个之前和最后一个之后机位保持不动。在关键帧上调整机位会直接修改它。",
+      "frame": "帧",
+      "key": "关键帧",
+      "remove": "删除 {time} 处的关键帧",
+      "clear": "清除关键帧",
+      "motion": "运动曲线",
+      "unkey": "删除关键帧",
+      "noKeys": "没有关键帧：整个片段使用同一机位。设置两个关键帧即可形成运镜。",
+      "oneKey": "一个关键帧会让机位固定在此。再设置一帧即可形成运镜。",
+      "goTo": "跳到 {time} 处的关键帧"
+    },
+    "motion": {
+      "linear": "线性",
+      "ease_in": "缓入",
+      "ease_out": "缓出",
+      "ease_in_out": "缓入缓出",
+      "smooth": "平滑样条"
+    },
+    "analyzing": "正在估算深度…",
+    "cancel": "取消",
+    "generating": "正在生成新视角",
+    "takes": "镜头",
+    "download": "下载",
+    "stage": {
+      "starting": "正在启动服务器",
+      "queued": "正在等待服务器",
+      "uploading": "正在上传片段",
+      "queuedAt": "排队中 · 第 {n} 位",
+      "fetching": "正在获取结果"
+    },
+    "signIn": "登录后即可读取场景。",
+    "unavailable": "重拍功能暂不可用，请稍后再试。",
+    "quote": {
+      "free": "免费 · {period}剩余 {left}/{runs} 次",
+      "freeOnly": "免费",
+      "paid": "{price} 积分",
+      "perSecond": "每秒 {rate} 积分",
+      "failed": "暂时无法获取价格，正在重试…",
+      "priceUnknown": "暂无价格",
+      "exhausted": "免费次数已用完，下一次{when}可用",
+      "later": "稍后"
+    },
+    "period": {
+      "day": "今天",
+      "week": "本周",
+      "days": "每 {n} 天",
+      "hours": "每 {n} 小时"
+    },
+    "error": {
+      "busy": "一次只能生成一条镜头，请等待当前镜头完成。",
+      "rateLimited": "尝试次数过多，请{when}再试。",
+      "failed": "出了点问题，请重试。"
+    },
+    "demoNote": "预览版：目前镜头播放示例结果。",
+    "clipLength": "此片段时长 {seconds} 秒，请使用 5 到 15 秒的片段。",
+    "failed": "出现问题",
+    "tryAgain": "重试",
+    "noWebgl": "此预览需要 WebGL2，当前浏览器不支持。",
+    "play": "播放",
+    "pause": "暂停"
   }
 }

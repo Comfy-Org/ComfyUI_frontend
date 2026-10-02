@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { Locale, TranslationKey } from '../../i18n/translations'
 
-import { hasKey, t, tPlural } from '../../i18n/translations'
+import { t, te } from '../../i18n/translations'
 
 const locales: Locale[] = ['en', 'zh-CN']
 
@@ -52,18 +52,20 @@ const allKeys: string[] = [...staticKeys, ...dynamicKeys]
 
 describe('cloud-nodes copy', () => {
   it('defines every key the page renders', () => {
-    const missing = [...allKeys, pluralKey].filter((key) => !hasKey(key))
+    const missing = [...allKeys, pluralKey].filter((key) => !te(key, 'en'))
     expect(missing).toEqual([])
   })
 
   it.for(locales)('has non-empty copy in %s', (locale) => {
     const empty = allKeys.filter(
-      (key) => t(key as TranslationKey, locale).trim() === ''
+      (key) => t(key as TranslationKey, {}, { locale }).trim() === ''
     )
     expect(empty).toEqual([])
   })
 
   it.for(locales)('has non-empty plural copy in %s', (locale) => {
-    expect(tPlural(pluralKey, 2, locale).trim()).not.toBe('')
+    expect(t(pluralKey, { count: 2 }, { locale, plural: 2 }).trim()).not.toBe(
+      ''
+    )
   })
 })

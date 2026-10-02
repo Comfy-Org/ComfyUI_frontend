@@ -4,10 +4,11 @@ import { ref } from 'vue'
 import { useHeroAnimation } from '../../composables/useHeroAnimation'
 import SectionLabel from '../common/SectionLabel.vue'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import { ScrollTrigger } from '../../scripts/gsapSetup'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 const sectionRef = ref<HTMLElement>()
 const logoRef = ref<HTMLElement>()
@@ -49,19 +50,19 @@ function handleLogoLoad() {
         class="order-1 flex flex-col items-center lg:order-2 lg:w-7/12 lg:items-start lg:pt-16 lg:pl-12"
       >
         <SectionLabel ref="labelRef">
-          {{ t('customers.hero.label', locale) }}
+          {{ t('customers.hero.label') }}
         </SectionLabel>
         <h1
           ref="headingRef"
           class="mt-4 text-4xl/tight font-light text-primary-comfy-canvas lg:text-6xl"
         >
-          {{ t('customers.hero.heading', locale) }}
+          {{ t('customers.hero.heading') }}
         </h1>
         <p
           ref="bodyRef"
           class="mt-6 max-w-lg text-base text-primary-comfy-canvas"
         >
-          {{ t('customers.hero.body', locale) }}
+          {{ t('customers.hero.body') }}
         </p>
       </div>
     </div>

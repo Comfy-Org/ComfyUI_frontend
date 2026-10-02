@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { translationsFor } from '../../../../i18n/translations'
 import { ChevronDown, Maximize, RectangleHorizontal } from '@lucide/vue'
 import { computed } from 'vue'
 
@@ -10,18 +11,18 @@ import {
   RESHOOT_ASPECTS,
   RESHOOT_SIZES
 } from '../../../../lib/workshop/cinematic-studio/reshoot'
-import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
 import type { Locale } from '../../../../i18n/translations'
 import { FORMAT_TRIGGER_CLASS } from '../cinematic-menu-trigger'
 import CinematicMenu from '../CinematicMenu.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 const aspect = defineModel<ReshootAspect>('aspect', { required: true })
 const size = defineModel<ReshootSize>('size', { required: true })
 
 const aspectLabel = (id: ReshootAspect) =>
-  id === 'source' ? rc('reshoot.aspect.source', locale) : id
+  id === 'source' ? t('reshoot.aspect.source') : id
 const aspectOptions = computed(() =>
   RESHOOT_ASPECTS.map((id) => ({ id, label: aspectLabel(id) }))
 )
@@ -29,7 +30,7 @@ const sizeOptions = computed(() =>
   RESHOOT_SIZES.map((id) => ({
     id,
     label: id,
-    meta: rc(`reshoot.size.${id}`, locale)
+    meta: t(`reshoot.size.${id}`)
   }))
 )
 const aspectValue = computed({
@@ -50,13 +51,13 @@ const sizeValue = computed({
 <template>
   <div
     role="group"
-    :aria-label="rc('reshoot.section.format', locale)"
+    :aria-label="t('reshoot.section.format')"
     class="grid grid-cols-2 gap-2"
   >
     <CinematicMenu
       v-model="aspectValue"
       :options="aspectOptions"
-      :heading="rc('reshoot.aspect.label', locale)"
+      :heading="t('reshoot.aspect.label')"
       tooltip
       :trigger-class="FORMAT_TRIGGER_CLASS"
     >
@@ -70,7 +71,7 @@ const sizeValue = computed({
     <CinematicMenu
       v-model="sizeValue"
       :options="sizeOptions"
-      :heading="rc('reshoot.size.label', locale)"
+      :heading="t('reshoot.size.label')"
       tooltip
       :trigger-class="FORMAT_TRIGGER_CLASS"
     >

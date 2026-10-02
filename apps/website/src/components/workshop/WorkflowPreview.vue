@@ -5,10 +5,11 @@ import { computed } from 'vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { WorkflowWorkshopModelDetail } from '../../config/models-catalogue'
 import type { TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import SectionHeading from './SectionHeading.vue'
 import WorkflowGraph from './WorkflowGraph.vue'
 
+const { t } = translationsFor('en')
 const {
   model,
   cloudHref,
@@ -40,7 +41,7 @@ const OUTPUT_LABEL: Record<string, TranslationKey> = {
 const produces = computed(() => {
   const outputs = model.workflow.outputs ?? []
   if (!outputs.length) return undefined
-  const perRun = t('workshop.workflow.perRun', 'en', {
+  const perRun = t('workshop.workflow.perRun', {
     count: outputs.length
   })
   const kinds = new Set(outputs.map((output) => output.kind))

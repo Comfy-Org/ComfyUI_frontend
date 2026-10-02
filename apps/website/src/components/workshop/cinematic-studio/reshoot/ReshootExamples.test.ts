@@ -1,20 +1,19 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
+import { translationsFor } from '../../../../i18n/translations'
 import ReshootExamples from './ReshootExamples.vue'
 
+const { t: english } = translationsFor('en')
+const { t: chinese } = translationsFor('zh-CN')
+
 describe('ReshootExamples', () => {
-  it('names the examples in the locale it is given now', async () => {
-    const { rerender } = render(ReshootExamples, { props: { locale: 'en' } })
-    expect(
-      screen.getByText(rc('reshoot.pick.exampleTitle', 'en'))
-    ).toBeInTheDocument()
+  it.for([
+    { locale: 'en', expected: english('reshoot.pick.exampleTitle') },
+    { locale: 'zh-CN', expected: chinese('reshoot.pick.exampleTitle') }
+  ] as const)('names the $locale example', ({ locale, expected }) => {
+    render(ReshootExamples, { props: { locale } })
 
-    await rerender({ locale: 'zh-CN' })
-
-    expect(
-      screen.getByText(rc('reshoot.pick.exampleTitle', 'zh-CN'))
-    ).toBeInTheDocument()
+    expect(screen.getByText(expected)).toBeInTheDocument()
   })
 })
