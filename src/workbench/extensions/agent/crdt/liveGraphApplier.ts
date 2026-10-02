@@ -181,7 +181,7 @@ const zDocNodeFields = zComfyNode
 type ActorKind = 'agent' | 'human' | 'unknown'
 type NodeProducer =
   | { origin: 'operation'; actorKind: ActorKind; opId: string; version: number }
-  | { origin: 'import' | 'unreadable' }
+  | { origin: 'unstamped' | 'unreadable' }
 
 interface MalformedDocNode {
   malformed: string
@@ -236,7 +236,7 @@ function nodeProducer(doc: Y.Doc, id: string): NodeProducer {
     return { origin: 'unreadable' }
   }
   const stamp = stamps[JSON.stringify(['node', id])]
-  if (!Array.isArray(stamp)) return { origin: 'import' }
+  if (!Array.isArray(stamp)) return { origin: 'unstamped' }
   const [version, actor, opId] = stamp as unknown[]
   return {
     origin: 'operation',

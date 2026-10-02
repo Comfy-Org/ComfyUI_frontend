@@ -100,7 +100,7 @@ describe('LiveGraphApplier malformed node report', () => {
         issues: 'inputs.0.type Invalid input',
         classType: 'TestSink',
         valueShapes: 'inputs.0.type invalid_union absent',
-        producer: { origin: 'import' }
+        producer: { origin: 'unstamped' }
       }
     })
     // Fail-closed, and no normalization written back into the document.
