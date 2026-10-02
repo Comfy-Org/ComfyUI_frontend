@@ -422,6 +422,44 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
     expect(mocks.openPreparedWorkflowTemplate).not.toHaveBeenCalled()
   })
 
+  it.for([
+    { name: 'the bridge lists none', assets: [] },
+    { name: 'the bridge answers nullish', assets: undefined }
+  ])('omits the input inventory when $name', async ({ assets }) => {
+    mocks.getTemplateInputAssets.mockResolvedValueOnce(assets as never)
+    await clickTemplateCardAfterRender()
+
+    const requirements = await screen.findByRole('region', {
+      name: 'Template requirements'
+    })
+    expect(
+      within(requirements).queryByRole('region', { name: 'Input Assets' })
+    ).not.toBeInTheDocument()
+    // The model inventory is unaffected by the input lookup.
+    expect(
+      within(requirements).getByText(fixtures.activeModel.name)
+    ).toBeVisible()
+  })
+
+  it('keeps Detail usable when the input lookup rejects', async () => {
+    mocks.getTemplateInputAssets.mockRejectedValueOnce(
+      new Error('bridge unavailable')
+    )
+    const { user } = await clickTemplateCardAfterRender()
+
+    const requirements = await screen.findByRole('region', {
+      name: 'Template requirements'
+    })
+    expect(
+      within(requirements).queryByRole('region', { name: 'Input Assets' })
+    ).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Open now' }))
+    await waitFor(() => {
+      expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledOnce()
+    })
+  })
+
   it('shows official input assets as a read-only Detail inventory', async () => {
     const { user } = await clickTemplateCardAfterRender()
     const requirements = await screen.findByRole('region', {
