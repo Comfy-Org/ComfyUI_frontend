@@ -274,11 +274,13 @@ function readDocNode(
       malformed: error.issues
         .map((issue) => `${issue.path.join('.')} ${issue.message}`)
         .join('; '),
-      discriminate: () => ({
-        classType: typeof fields.type === 'string' ? fields.type : undefined,
-        valueShapes: issueShapes(fields, error),
-        producer: nodeProducer(doc, id)
-      })
+      discriminate() {
+        return {
+          classType: typeof fields.type === 'string' ? fields.type : undefined,
+          valueShapes: issueShapes(fields, error),
+          producer: nodeProducer(doc, id)
+        }
+      }
     }
   }
   const {
