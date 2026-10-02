@@ -64,7 +64,9 @@ it.for([
 })
 
 it('provides a provider mark for every model in both collections', () => {
-  for (const model of [...trendingModelFixtures, ...dayZeroModelFixtures]) {
-    expect(model.provider).toBeTruthy()
-  }
+  expect(
+    [...trendingModelFixtures, ...dayZeroModelFixtures].filter(
+      (model) => !model.provider
+    )
+  ).toEqual([])
 })

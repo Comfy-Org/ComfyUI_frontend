@@ -1,5 +1,6 @@
 ---
 import { t } from '../../../i18n/translations'
+import type { Locale } from '../../../config/locales'
 
 import SectionLabel from '../../common/SectionLabel.vue'
 import BrandButton from '../../common/BrandButton.vue'
@@ -13,9 +14,11 @@ interface Props {
   tasks: ExploreTaskFixture[]
   actionLabel: string
   actionHref: string
+  locale: Locale
 }
 
-const { label, description, tasks, actionLabel, actionHref } = Astro.props
+const { label, description, tasks, actionLabel, actionHref, locale } =
+  Astro.props
 ---
 
 <section
@@ -43,7 +46,7 @@ const { label, description, tasks, actionLabel, actionHref } = Astro.props
           task.workflowCount === 1
             ? 'models.explore.tasks.workflowCountOne'
             : 'models.explore.tasks.workflowCountMany',
-          'en',
+          locale,
           { count: task.workflowCount }
         )}
         mediaSrc={task.mediaSrc}

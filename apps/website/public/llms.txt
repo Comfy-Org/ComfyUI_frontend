@@ -95,6 +95,7 @@ Languages: comfy.org is published in English and Simplified Chinese, with a Japa
 ## Models
 
 - [Supported Models](https://comfy.org/p/supported-models/): Directory of 380+ models that run in ComfyUI: image, video, audio, 3D, and utility models, each with its own page. Machine-readable catalog at https://comfy.org/p/supported-models/llms.txt.
+- [All Supported Models](https://comfy.org/p/supported-models/all/): Searchable full directory of every supported model with category filters, loaded 24 at a time. English only.
 - [Models Overview](https://comfy.org/hub/models/): Hosted AI models you can try in the browser and call through the Comfy API, with a page per model. For the full list of models that run in ComfyUI, see Supported Models above.
 - [ChatGPT Images 2.5 (OpenAI, image model)](https://comfy.org/chatgpt-image-2.5/): Generate new images, edit existing visuals, and direct results with reference images in repeatable ComfyUI workflows through Partner Nodes.
 - [Qwen-Image 2.1 (Alibaba Qwen, image model)](https://comfy.org/qwen-image-2.1/): Open-weights 7B image model that generates and edits in one checkpoint, with native 2K output, RGBA transparency, and accurate English and Chinese text rendering.

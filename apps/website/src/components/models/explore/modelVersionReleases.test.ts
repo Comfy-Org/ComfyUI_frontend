@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 
 import { models } from '../../../config/models'
 import { modelPageUrls } from '../../../config/model-urls'
@@ -24,8 +24,7 @@ describe('latest verified model versions', () => {
     const qwen = modelVersionReleases.find(
       ({ versionId }) => versionId === 'Qwen/Qwen-Image-2.1'
     )
-    expect(qwen).toBeDefined()
-    if (!qwen) return
+    assert.exists(qwen)
     const releases = latestVerifiedModelVersions(
       [qwen, { ...qwen, variantSlugs: ['another-quantization'] }],
       '2026-10-01'
@@ -34,21 +33,22 @@ describe('latest verified model versions', () => {
     expect(releases[0]?.name).toBe('Qwen Image 2.1')
   })
 
-  it.for(modelVersionReleases)(
-    '$name links to a built individual model',
+  it.for(modelVersionReleases.filter(({ catalogSlug }) => catalogSlug))(
+    '$name with a catalog slug links to a built individual model',
     (release) => {
-      if (release.catalogSlug) {
-        expect(models.some(({ slug }) => slug === release.catalogSlug)).toBe(
-          true
+      expect(models.some(({ slug }) => slug === release.catalogSlug)).toBe(true)
+      expect(release.href).toBe(`/p/supported-models/${release.catalogSlug}/`)
+    }
+  )
+
+  it.for(modelVersionReleases.filter(({ catalogSlug }) => !catalogSlug))(
+    '$name without a catalog slug links to a built hub model page',
+    (release) => {
+      expect(
+        modelPageUrls.some(
+          ({ newSlug }) => release.href === `/hub/models/${newSlug}/`
         )
-        expect(release.href).toBe(`/p/supported-models/${release.catalogSlug}/`)
-      } else {
-        expect(
-          modelPageUrls.some(
-            ({ newSlug }) => release.href === `/hub/models/${newSlug}/`
-          )
-        ).toBe(true)
-      }
+      ).toBe(true)
     }
   )
 })
