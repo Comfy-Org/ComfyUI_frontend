@@ -49,14 +49,14 @@ as the application's `src/locales/` at the repository root:
   written as `{'{'}`, `{'}'}`, `{'@'}` and `{'|'}`.
 
 `src/i18n/translations.ts` configures vue-i18n and exports its public translation
-API. Pass the locale in each call's options rather than changing the global
-locale, because the site renders locales concurrently. Missing messages fall
+API. Astro middleware binds `Astro.locals.t` to the request locale. In Vue and
+TypeScript, bind once with `translationsFor(locale).t`; each locale has its own
+composer because the site renders locales concurrently. Missing messages fall
 back to English. The catalog test compiles every message and checks that each
 English message has Chinese copy.
 
-`main.json` is the site-wide catalog every page loads. A feature whose copy
-should ship only with its own pages keeps a catalog beside it. The Cinematic
-Studio and re-shoot app share `studio.json`; the Router page uses `router.json`.
+`main.json` is the catalog for each locale. Keep feature copy grouped under a
+nested feature key.
 
 Add new English copy to the English catalog; translated copy lives in the
 matching file under each locale. Every English message requires a Chinese
