@@ -169,10 +169,7 @@ function validatedWidgetNode(
 ): LGraphNode | null | undefined {
   const eventGraph = reachableIntentGraph(graph, event.graphId)
   if (!eventGraph) return undefined
-  const exactNode = eventGraph.getNodeById(event.nodeId)
-  const node =
-    exactNode ??
-    (eventGraph === graph ? findNodeInHierarchy(graph, event.nodeId) : null)
+  const node = eventGraph.getNodeById(event.nodeId)
   if (!node) return null
   return isPersistedWidgetIntent(node, event) ? node : null
 }

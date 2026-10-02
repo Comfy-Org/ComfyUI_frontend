@@ -642,7 +642,7 @@ describe('attachDocOpMinter', () => {
     })
   })
 
-  it('mints a live subgraph-interior widget write with the subgraph-node path', async () => {
+  it('does not route a root-scoped write through an ID-colliding subgraph node', async () => {
     const subgraph = createTestSubgraph({ rootGraph: graph })
     const host = createTestSubgraphNode(subgraph)
     const interior = new TestSource()
@@ -654,17 +654,7 @@ describe('attachDocOpMinter', () => {
     interior.widgets![0].value = 3
     await afterFlush()
 
-    expect(minted).toEqual([
-      {
-        op: 'set_widget',
-        node_id: interior.id,
-        widget: 'steps',
-        value: 3,
-        old: 20,
-        path: [String(host.id), String(interior.id)],
-        inner_widget: 'steps'
-      }
-    ])
+    expect(minted).toEqual([])
   })
 
   it('does not mint writes for live non-value widgets', async () => {
