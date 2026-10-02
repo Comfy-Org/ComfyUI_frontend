@@ -154,6 +154,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   let suspended = false
   let pumping = false
   let sealing = 0
+  let pumpRequested = false
   let stateEpoch = 0
   let abortGeneration = 0
   // Late-result credits: every send a batch leaves the client with may still
@@ -373,7 +374,11 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   }
 
   function pump(): void {
-    if (pumping || sealing > 0) return
+    if (sealing > 0) {
+      pumpRequested = true
+      return
+    }
+    if (pumping) return
     pumping = true
     try {
       while (!detached && inFlight === null) {
@@ -492,6 +497,13 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       kind === 'detach'
         ? notifyDetachSettlement
         : guardedSettlementNotifier('failure_settling_agent_op_sender_abort')
+    settleInBoundedGroups(ops, notify)
+  }
+
+  function settleInBoundedGroups(
+    ops: Op[],
+    notify: (outcome: BatchOutcome) => void
+  ): void {
     for (let index = 0; index < ops.length; index += WIRE_MAX_OPS_PER_BATCH) {
       notify({
         state: 'undeliverable',
@@ -505,7 +517,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     workflowId: string,
     insertionIndex: number
   ): void {
-    const nested = queue.splice(insertionIndex)
+    const nested = queue.splice(Math.min(insertionIndex, queue.length))
     for (const chunk of chunks) queue.push({ workflowId, ops: chunk })
     for (const batch of nested) queue.push(batch)
   }
@@ -517,12 +529,18 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     sealAbortGeneration: number,
     insertionIndex: number
   ): void {
-    reportChunkFailure(cause, 'failure_chunking_agent_op_sender')
     const interruptedBeforeProbe = sealInterruption(sealAbortGeneration)
     if (interruptedBeforeProbe) {
+      reportChunkFailure(
+        cause,
+        interruptedBeforeProbe === 'detach'
+          ? 'failure_chunking_agent_op_sender_teardown'
+          : 'failure_chunking_agent_op_sender_abort'
+      )
       settleInterruptedSeal(ops, interruptedBeforeProbe)
       return
     }
+    reportChunkFailure(cause, 'failure_chunking_agent_op_sender')
     const rejectedFrom = findRejectedFrom(ops, sealAbortGeneration)
     if (rejectedFrom === null) return
 
@@ -549,10 +567,10 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       return
     }
     if (rejected.length > 0)
-      guardedSettlementNotifier('failure_settling_agent_op_sender')({
-        state: 'undeliverable',
-        ops: rejected
-      })
+      settleInBoundedGroups(
+        rejected,
+        guardedSettlementNotifier('failure_settling_agent_op_sender')
+      )
   }
 
   function findRejectedFrom(
@@ -595,6 +613,10 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       recoverSeal(cause, workflowId, ops, sealAbortGeneration, insertionIndex)
     } finally {
       sealing--
+      if (sealing === 0 && pumpRequested) {
+        pumpRequested = false
+        pump()
+      }
     }
     return detached
   }
