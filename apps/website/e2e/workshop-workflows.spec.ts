@@ -559,6 +559,12 @@ test('@mobile keeps the catalogue tabs in place from one hub page to the next', 
   const models = page.getByTestId('catalogue-tab-models')
   const workflows = page.getByTestId('catalogue-tab-workflows')
   await expect(workflows).toBeVisible()
+  // Stuck under the header is where a reader meets the tabs on a phone, and
+  // the position a tab has to hold is the one it is clicked in.
+  await page.evaluate(() => window.scrollBy(0, 1200))
+  await expect
+    .poll(async () => (await workflows.boundingBox())?.y)
+    .toBeLessThan(200)
   const before = await workflows.boundingBox()
 
   await workflows.click()

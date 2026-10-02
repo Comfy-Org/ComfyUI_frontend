@@ -58,6 +58,24 @@ function pinToolbar() {
   return Math.round(window.scrollY) === Math.round(target)
 }
 
+// The incoming listing renders after the swap: until it does there is no
+// toolbar to pin, and the page can be too short to hold the scroll. One
+// observer waits for it to arrive, the other for the page to grow under it.
+function pinWhenReady() {
+  const growing = new ResizeObserver(() => retry())
+  const mounting = new MutationObserver(() => retry())
+  const stop = () => {
+    growing.disconnect()
+    mounting.disconnect()
+  }
+  function retry() {
+    if (pinToolbar()) stop()
+  }
+  growing.observe(document.documentElement)
+  mounting.observe(document.body, { childList: true, subtree: true })
+  document.addEventListener('astro:before-preparation', stop, { once: true })
+}
+
 let toolbarWasPinned = false
 
 function isHubNavigation(from: URL, to: URL) {
@@ -70,8 +88,13 @@ function isHubNavigation(from: URL, to: URL) {
 
 document.addEventListener('astro:before-preparation', (event) => {
   const hub = isHubNavigation(event.from, event.to)
-  // Back and forward restore their own scroll, so only a tab click carries one.
-  toolbarWasPinned = hub && event.direction === 'forward' && toolbarIsPinned()
+  // Back and Forward restore their own scroll, and Forward reads as a forward
+  // direction too, so the kind of navigation is what tells a click apart.
+  toolbarWasPinned =
+    hub &&
+    event.direction === 'forward' &&
+    event.navigationType !== 'traverse' &&
+    toolbarIsPinned()
 
   if (!hub) return
   const prepare = event.loader
@@ -100,18 +123,5 @@ document.addEventListener('astro:before-swap', (event) => {
 document.addEventListener('astro:after-swap', () => {
   if (!toolbarWasPinned) return
   toolbarWasPinned = false
-  if (pinToolbar()) return
-  // The incoming listing renders after the swap: until it does there is no
-  // toolbar to pin and the page can be too short to hold the scroll.
-  const growing = new ResizeObserver(() => {
-    if (pinToolbar()) growing.disconnect()
-  })
-  growing.observe(document.documentElement)
-  document.addEventListener(
-    'astro:before-preparation',
-    () => growing.disconnect(),
-    {
-      once: true
-    }
-  )
+  if (!pinToolbar()) pinWhenReady()
 })
