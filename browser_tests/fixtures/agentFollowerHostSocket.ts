@@ -47,9 +47,11 @@ export type ExecutionHostFrame =
 /**
  * How the fake host treats a `doc_ops` batch the page mints for a human edit:
  * `apply` runs it through the real applier and answers like the relay does;
- * `hold` records it and never answers, so the batch stays in flight.
+ * `hold` records it and never answers, so the batch stays in flight;
+ * `pre_mint_once` refuses the first batch before the applier, announces the
+ * newly minted lineage, then applies the exact retry.
  */
-export type HumanOpsHost = 'apply' | 'hold'
+export type HumanOpsHost = 'apply' | 'hold' | 'pre_mint_once'
 
 /** One `doc_*` frame the page sent, as the test attaches it. */
 export interface ClientDocFrame {
@@ -114,6 +116,7 @@ export class AgentFollowerHostSocket {
   private readonly clientFrames: ClientDocFrame[] = []
   private readonly heldBatches: WireOpEnvelope[][] = []
   private readonly humanOutcomes: ApplyOutcome[] = []
+  private preMintRefused = false
   private resolveSubscribed: (() => void) | null = null
   private readonly subscribed = new Promise<void>((resolve) => {
     this.resolveSubscribed = resolve
@@ -212,9 +215,32 @@ export class AgentFollowerHostSocket {
       this.judgeHumanOps(frame.opsResult)
       return
     }
+    if (this.handlePreMintOps(frame)) return
     if (frame.type === 'doc_ops' && frame.opsResult.ok) {
       this.heldBatches.push(frame.opsResult.ops)
     }
+  }
+
+  private handlePreMintOps(frame: ParsedClientDocFrame): boolean {
+    if (frame.type !== 'doc_ops' || this.humanOpsHost !== 'pre_mint_once')
+      return false
+    if (this.preMintRefused) {
+      this.judgeHumanOps(frame.opsResult)
+      return true
+    }
+    this.preMintRefused = true
+    this.send(this.preMintResult(frame.opsResult))
+    this.send({
+      type: 'doc_reset',
+      data: {
+        v: DOC_PROTOCOL_VERSION,
+        workflow_id: this.workflowId,
+        seq: 1,
+        lineage_seq: 1,
+        actor: 'system:mint'
+      }
+    })
+    return true
   }
 
   /**
@@ -328,6 +354,25 @@ export class AgentFollowerHostSocket {
         ok: false,
         code: 'invalid_frame',
         message: 'doc_ops frame was not structurally valid'
+      }
+    }
+  }
+
+  private preMintResult(opsResult: ParsedWireBatch): HostFrame {
+    if (!opsResult.ok || opsResult.ops.length === 0)
+      return this.invalidFrameResult()
+    return {
+      type: 'doc_ops_result',
+      data: {
+        v: DOC_PROTOCOL_VERSION,
+        workflow_id: this.workflowId,
+        ok: false,
+        failed: {
+          index: 0,
+          op_id: opsResult.ops[0].op_id,
+          code: 'pre_mint',
+          message: 'workflow document is not ready; retry after doc_reset'
+        }
       }
     }
   }

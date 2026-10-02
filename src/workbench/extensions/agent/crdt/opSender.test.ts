@@ -198,6 +198,42 @@ describe('createOpSender', () => {
     expect(sent[1].ops[0].base_version).toBe(41)
   })
 
+  it('retains a pre-mint batch until the replacement lineage is subscribed', () => {
+    sender.enqueue([addNode(1), addNode(2)])
+    sender.enqueue([addNode(3)])
+    const original = sent[0].ops.map((op) => ({
+      id: op.op_id,
+      version: op.base_version
+    }))
+
+    resultListener?.({
+      ok: false,
+      applied: [],
+      skipped: [],
+      failed: {
+        index: 0,
+        op_id: sent[0].ops[0].op_id,
+        code: 'pre_mint',
+        message: 'workflow document is not ready; retry after doc_reset'
+      }
+    })
+    sender.handleLineageReset()
+
+    expect(sender.pending()).toBe(2)
+    expect(settled).toHaveLength(0)
+    expect(sent).toHaveLength(1)
+
+    sender.resumeAfterLineage()
+
+    expect(sent).toHaveLength(2)
+    expect(
+      sent[1].ops.map((op) => ({ id: op.op_id, version: op.base_version }))
+    ).toEqual(original)
+    ackInFlight()
+    expect(sent).toHaveLength(3)
+    expect(sent[2].ops[0].base_version).toBe(43)
+  })
+
   it('serializes batches: the next sends only after the result settles the first', () => {
     sender.enqueue([addNode(1)])
     sender.enqueue([addNode(2)])

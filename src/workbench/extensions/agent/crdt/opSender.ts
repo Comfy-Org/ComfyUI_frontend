@@ -120,6 +120,15 @@ export interface OpSender {
    */
   abortIfUnbound(): void
   /**
+   * Handle a lineage break. Ordinarily this has abortAll semantics because
+   * the replacement seed already contains the human effect. A batch refused
+   * with `pre_mint` is the exception: it provably never reached the applier,
+   * so retain it and its FIFO successors for delivery after resubscribe.
+   */
+  handleLineageReset(): void
+  /** Retry a retained pre-mint batch after the replacement lineage is bound. */
+  resumeAfterLineage(): void
+  /**
    * Lineage-break seam: settle the in-flight batch ('unconfirmed' once
    * transmitted, 'undeliverable' otherwise) and every queued batch
    * `undeliverable` NOW, in mint order, although the doc is still bound. A
@@ -140,6 +149,7 @@ interface InFlight {
   reportedThrow: boolean
   resent: boolean
   parked: boolean
+  waitingForLineage: boolean
   timer: ReturnType<typeof setTimeout> | null
 }
 
@@ -190,6 +200,19 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     if (staleAnonymousBudget === 0) return
     staleAnonymousBudget--
     if (staleAnonymousBudget === 0) retiredOpIds.clear()
+  }
+
+  function parkMatchingPreMintResult(
+    result: OpsResultView,
+    batch: InFlight | null
+  ): boolean {
+    if (batch === null || result.failed?.code !== 'pre_mint') return false
+    const opId = result.failed.op_id
+    if (opId === undefined || !batch.opIds.has(opId)) return false
+    if (batch.timer) clearTimeout(batch.timer)
+    batch.timer = null
+    batch.waitingForLineage = true
+    return true
   }
 
   function reportDegraded(cause: unknown, errorType: string): void {
@@ -392,6 +415,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
           reportedThrow: false,
           resent: false,
           parked: false,
+          waitingForLineage: false,
           timer: null
         }
         transmit(inFlight, 0)
@@ -635,41 +659,63 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     pump()
   }
 
-  const unsubscribe = deps.onOpsResult((result) => {
-    if (detached) return
-    if (inFlight === null && staleAnonymousBudget === 0) return
+  function matchingBatch(result: OpsResultView): InFlight | null {
+    if (inFlight === null) return null
+    if (
+      result.workflowId !== undefined &&
+      result.workflowId !== inFlight.workflowId
+    )
+      return null
+    return inFlight
+  }
+
+  function identifiedOpIds(result: OpsResultView): string[] {
     const identified = [...result.applied, ...result.skipped]
     if (result.failed?.op_id) identified.push(result.failed.op_id)
-    const batch =
-      inFlight !== null &&
-      (result.workflowId === undefined ||
-        result.workflowId === inFlight.workflowId)
-        ? inFlight
-        : null
-    if (identified.length > 0) {
-      if (batch && identified.some((opId) => batch.opIds.has(opId))) {
-        retire(batch, 1)
-        settle({ state: 'acknowledged', ops: batch.ops, result })
-      } else if (identified.some((opId) => retiredOpIds.has(opId))) {
-        // A retired batch's own answer consumes the credit reserved for it;
-        // ops this sender never minted are nobody's answer here.
-        drainStaleCredit()
-      }
+    return identified
+  }
+
+  function handleIdentifiedResult(
+    result: OpsResultView,
+    batch: InFlight | null,
+    identified: string[]
+  ): void {
+    if (batch && identified.some((opId) => batch.opIds.has(opId))) {
+      retire(batch, 1)
+      settle({ state: 'acknowledged', ops: batch.ops, result })
       return
     }
-    // Anonymous failure (empty lists, no failed op_id): a late result with
-    // no batch waiting, one addressed to another workflow, or one a stale
-    // credit could explain drains that credit so it cannot swallow a future
-    // batch's own result. Only then is it the in-flight batch's.
+    if (identified.some((opId) => retiredOpIds.has(opId))) drainStaleCredit()
+  }
+
+  function handleAnonymousResult(
+    result: OpsResultView,
+    batch: InFlight | null
+  ): void {
+    // A late result with no batch waiting, one addressed to another workflow,
+    // or one a stale credit could explain drains that credit before it can be
+    // mistaken for the current batch's answer.
     if (batch === null || staleAnonymousBudget > 0) {
       drainStaleCredit()
       return
     }
-    // A parked batch or one waiting for a transport retry has not put a send
-    // on the wire, so an anonymous result cannot belong to it.
+    // A parked batch or one waiting for a transport retry has not sent yet.
     if (batch.sends === 0) return
     retire(batch, 1)
     settle({ state: 'acknowledged', ops: batch.ops, result })
+  }
+
+  const unsubscribe = deps.onOpsResult((result) => {
+    if (detached) return
+    if (inFlight === null && staleAnonymousBudget === 0) return
+    const identified = identifiedOpIds(result)
+    const batch = matchingBatch(result)
+    if (parkMatchingPreMintResult(result, batch)) return
+    if (identified.length > 0) {
+      handleIdentifiedResult(result, batch, identified)
+      return
+    }
+    handleAnonymousResult(result, batch)
   })
 
   return {
@@ -703,6 +749,17 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       if (inFlight && deps.workflowId() !== inFlight.workflowId) {
         settleUnbound(inFlight)
       }
+    },
+    handleLineageReset() {
+      lastMintedVersion = -1
+      lastMintedWorkflowId = null
+      if (inFlight?.waitingForLineage) return
+      this.abortAll()
+    },
+    resumeAfterLineage() {
+      if (!inFlight?.waitingForLineage) return
+      inFlight.waitingForLineage = false
+      transmit(inFlight, 0)
     },
     abortAll() {
       stateEpoch++
