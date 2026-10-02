@@ -192,7 +192,6 @@ interface MalformedDocNode {
   }
 }
 
-/** The received value's type, never its content. */
 function valueShape(value: unknown): string {
   if (value === null) return 'null'
   if (Array.isArray(value)) return `array:${value.length}`
