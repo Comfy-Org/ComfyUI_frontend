@@ -48,6 +48,12 @@ declare global {
     changeCount?: number
     widgetValue?: unknown
     __commandExecutionCounts?: Record<string, number>
+    __perfFrameState?: PerfFrameState
+    __perfLongtaskState?: PerfLongtaskState
+    __captureHostTelemetry?: (captured: {
+      event: string
+      properties: Record<string, unknown>
+    }) => Promise<void>
 
     // Feature flags test globals
     __autoShownReads?: number
