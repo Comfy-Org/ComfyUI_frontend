@@ -5,6 +5,7 @@ import { h, ref } from 'vue'
 
 import {
   DEFAULT_CAMERA,
+  MAX_SEED,
   RESHOOT_ASPECTS,
   RESHOOT_MOTIONS,
   RESHOOT_SIZES
@@ -57,6 +58,33 @@ describe('ReshootSide', () => {
     expect(
       screen.getByRole('button', { name: `${rc('reshoot.size')}: 768p` })
     ).toBeInTheDocument()
+  })
+
+  it('holds a typed seed to the largest a take can use', async () => {
+    const seed = ref<number | undefined>(0)
+    render({
+      setup: () => () =>
+        h(ReshootSide, {
+          ...props,
+          size: RESHOOT_SIZES[0],
+          seed: seed.value,
+          'onUpdate:seed': (next: number | undefined) => {
+            seed.value = next
+          }
+        })
+    })
+    await userEvent.click(screen.getByText(rc('reshoot.advanced')))
+    const field = screen.getByLabelText(rc('reshoot.seed'))
+
+    await userEvent.clear(field)
+    await userEvent.type(field, '1e30')
+    await userEvent.tab()
+    expect(seed.value).toBe(MAX_SEED)
+
+    await userEvent.clear(field)
+    await userEvent.type(field, '7')
+    await userEvent.tab()
+    expect(seed.value).toBe(7)
   })
 
   it('keeps the prompt help behind its info button until asked for', async () => {

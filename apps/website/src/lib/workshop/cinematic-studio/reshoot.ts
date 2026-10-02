@@ -1,9 +1,10 @@
 /**
- * The Re-shoot prototype: the CrossView Warp app (#18691) in the Cinematic
- * Studio's review switcher. Jobs run on a dedicated Comfy API deployment
- * (see reshoot-engine/); the worked example's clip and result come from the
- * media CDN.
+ * The Re-shoot app: the CrossView Warp app (#18691) in the Cinematic Studio's
+ * review switcher. Jobs run through the Comfy app proxy (see reshoot-engine/);
+ * the worked example's clip and result come from the media CDN.
  */
+import { zoneOf } from './reshoot-engine/camera'
+
 const MEDIA = 'https://media.comfy.org/website/workshop/crossview'
 
 export const RESHOOT_EXAMPLE = {
@@ -14,6 +15,9 @@ export const RESHOOT_EXAMPLE = {
 
 const MIN_SECONDS = 5
 const MAX_SECONDS = 15
+
+/** The largest seed a take is given: the range each random draw spans. */
+export const MAX_SEED = 2 ** 32 - 1
 
 export function clipFits(seconds: number): boolean {
   return seconds >= MIN_SECONDS && seconds <= MAX_SECONDS
@@ -57,22 +61,11 @@ export function clampAxis(axis: CameraAxis, value: number): number {
 export type ReshootZone = 'green' | 'yellow' | 'red'
 
 /**
- * The ranges the CrossView LoRA was trained on, as the node's own orbit
- * picker draws them: ellipses of (azimuth, elevation up, elevation down).
- * Green is where the model has been checked; yellow is trained but looser.
+ * Where the camera sits against the ranges the CrossView LoRA was trained on.
+ * One definition, the engine's, so the globe, readouts and preview agree.
  */
-const ZONE_GREEN = [45, 30, 20] as const
-const ZONE_YELLOW = [90, 45, 35] as const
-
 export function cameraZone({ azimuth, elevation }: ReshootCamera): ReshootZone {
-  const inside = ([turn, up, down]: readonly number[]) => {
-    const a = azimuth / turn
-    const e = elevation >= 0 ? elevation / up : elevation / down
-    return a * a + e * e <= 1
-  }
-  if (inside(ZONE_GREEN)) return 'green'
-  if (inside(ZONE_YELLOW)) return 'yellow'
-  return 'red'
+  return zoneOf(azimuth, elevation)
 }
 
 export function viewTransform({

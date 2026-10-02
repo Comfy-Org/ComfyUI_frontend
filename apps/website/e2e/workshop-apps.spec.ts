@@ -37,20 +37,21 @@ async function mockFlags(
 }
 
 /**
- * Signs in with a workspace, opens Re-shoot on the example clip and waits
- * for the app proxy (mocked) to read its scene, so the viewport is aimable.
+ * Signs in with a workspace and opens Re-shoot on the example clip, whose
+ * scene the app proxy (mocked, with any `overrides`) then reads.
  */
-async function openReadReshootScene(
+async function openReshootExample(
   page: Page,
   context: BrowserContext,
-  account: { email: string; password: string }
+  account: { email: string; password: string },
+  overrides?: Parameters<typeof mockReshootProxy>[2]
 ) {
   await mockFlags(context, { apps: true, workflows: false, auth: true })
   // Firebase waits for gapi's onload, which the empty stub never calls.
   await context.route('https://apis.google.com/js/api.js*', (route) =>
     route.abort('blockedbyclient')
   )
-  const proxy = await mockReshootProxy(page, MODELS_WORKSPACE_TOKEN)
+  const proxy = await mockReshootProxy(page, MODELS_WORKSPACE_TOKEN, overrides)
   await page.goto('/login/')
   await page.getByRole('button', { name: 'Use email instead' }).click()
   await page.getByLabel('Email').fill(account.email)
@@ -60,6 +61,19 @@ async function openReadReshootScene(
 
   await page.goto('/hub/apps/reshoot/')
   await page.getByText('Sci-fi pilot').first().click()
+  return proxy
+}
+
+/**
+ * Signs in with a workspace, opens Re-shoot on the example clip and waits
+ * for the app proxy (mocked) to read its scene, so the viewport is aimable.
+ */
+async function openReadReshootScene(
+  page: Page,
+  context: BrowserContext,
+  account: { email: string; password: string }
+) {
+  const proxy = await openReshootExample(page, context, account)
   await expect(page.getByTestId('reshoot-drag-hint')).toBeVisible()
   expect(proxy).toEqual(
     expect.arrayContaining([
@@ -284,6 +298,40 @@ test('keeps the Re-shoot camera help behind info buttons', async ({
   await expect(page.getByText(help)).toBeHidden()
   await page.getByRole('button', { name: help }).hover()
   await expect(page.getByText(help).first()).toBeVisible()
+})
+
+signedInTest(
+  'says a failed Re-shoot scene reading once, beside Try again',
+  async ({ page, context, modelsAccount }) => {
+    await openReshootExample(page, context, modelsAccount, {
+      'POST /jobs': () => ({
+        status: 500,
+        json: { error_type: 'server_error' }
+      })
+    })
+
+    const failed = 'Something went wrong. Try again.'
+    await expect(page.getByRole('alert')).toContainText(failed)
+    await expect(page.getByTestId('reshoot-analyze')).toBeVisible()
+    await expect(
+      page.getByTestId('reshoot-viewport').getByText(failed)
+    ).toHaveCount(0)
+  }
+)
+
+test('holds a typed Re-shoot seed to the largest a take can use', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/models/apps/reshoot/')
+  await page.getByText('Sci-fi pilot').first().click()
+  await page.getByText('Advanced', { exact: true }).click()
+
+  const seed = page.getByLabel('Seed', { exact: true })
+  await seed.fill('1e30')
+  await seed.blur()
+  await expect(seed).toHaveValue(String(2 ** 32 - 1))
 })
 
 test('shows a preview frame for every Cinematic Studio shot option', async ({

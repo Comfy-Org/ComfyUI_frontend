@@ -11,7 +11,10 @@ import type {
   ReshootCamera,
   ReshootSize
 } from '../../../../lib/workshop/cinematic-studio/reshoot'
-import { clipFits } from '../../../../lib/workshop/cinematic-studio/reshoot'
+import {
+  MAX_SEED,
+  clipFits
+} from '../../../../lib/workshop/cinematic-studio/reshoot'
 import { fileSecondsOf } from '../../../../lib/workshop/cinematic-studio/reshoot-clip'
 import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
 import type { Locale } from '../../../../i18n/translations'
@@ -67,14 +70,18 @@ const upload = defineModel<File | undefined>('upload')
 const aspect = defineModel<ReshootAspect>('aspect', { required: true })
 const size = defineModel<ReshootSize>('size', { required: true })
 const seed = defineModel<number | undefined>('seed')
-/** Empty is random; a number, whole and not negative, is a fixed seed. */
+/**
+ * Empty is random; a whole number from 0 to MAX_SEED is a fixed seed. Larger
+ * ones are held to MAX_SEED, the range every random draw spans, rather than
+ * sent where the run would refuse them.
+ */
 const seedText = computed({
   get: () => (seed.value === undefined ? '' : String(seed.value)),
   // a number field's v-model already hands over a number, or '' when empty
   set: (entry: string | number) => {
     const value = typeof entry === 'number' ? entry : Number.parseFloat(entry)
     seed.value = Number.isFinite(value)
-      ? Math.max(0, Math.floor(value))
+      ? Math.min(MAX_SEED, Math.max(0, Math.floor(value)))
       : undefined
   }
 })
@@ -98,13 +105,18 @@ const framesText = computed(() =>
 // the first pick: one outside 5 to 15 seconds is turned away and the clip
 // already in use stays.
 const rejected = ref<string>()
+// Reading a length is async: only the latest pick may land, so an earlier,
+// slower one cannot replace a clip chosen after it.
+let picks = 0
 async function choose(event: Event) {
   const input = event.target
   if (!(input instanceof HTMLInputElement)) return
   const file = input.files?.[0]
   input.value = ''
   if (!file) return
+  const mine = ++picks
   const seconds = await fileSecondsOf(file)
+  if (mine !== picks) return
   if (Number.isFinite(seconds) && !clipFits(seconds)) {
     rejected.value = rc('reshoot.clip.rejected', locale, {
       name: file.name,
@@ -242,6 +254,7 @@ async function choose(event: Event) {
                 v-model.lazy="seedText"
                 type="number"
                 min="0"
+                :max="MAX_SEED"
                 step="1"
                 :placeholder="rc('reshoot.seed.random', locale)"
                 class="h-9 w-28 rounded-xl bg-transparency-white-t4 px-3 font-mono text-sm text-primary-warm-white tabular-nums outline-none placeholder:font-sans placeholder:text-primary-warm-gray focus-visible:ring-1 focus-visible:ring-primary-comfy-yellow/60"

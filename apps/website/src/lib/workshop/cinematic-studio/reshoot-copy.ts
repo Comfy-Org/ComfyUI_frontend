@@ -347,10 +347,6 @@ const copy = {
   'reshoot.error.failed': {
     en: 'Something went wrong. Try again.',
     'zh-CN': '出了点问题，请重试。'
-  },
-  'reshoot.demoNote': {
-    en: 'Preview: takes play the example result for now.',
-    'zh-CN': '预览版：目前镜头播放示例结果。'
   }
 } as const satisfies Record<string, LocalizedText>
 

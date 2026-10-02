@@ -251,5 +251,8 @@ export class WarpRenderer {
     gl.deleteTexture(this.colorTex)
     gl.deleteProgram(this.program)
     gl.deleteVertexArray(this.vao)
+    // Each re-read mounts a new preview; browsers cap live WebGL contexts,
+    // so release this one now rather than waiting for garbage collection.
+    gl.getExtension('WEBGL_lose_context')?.loseContext()
   }
 }

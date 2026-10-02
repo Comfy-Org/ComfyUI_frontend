@@ -1,5 +1,13 @@
 import { useMounted, useObjectUrl } from '@vueuse/core'
-import { computed, onScopeDispose, reactive, ref, shallowRef, watch } from 'vue'
+import {
+  computed,
+  onScopeDispose,
+  reactive,
+  readonly,
+  ref,
+  shallowRef,
+  watch
+} from 'vue'
 
 import { refreshWorkshopCredits } from '../config/workshop-credits'
 import { useWorkshopSession } from '../config/workshop-session-state'
@@ -15,6 +23,7 @@ import type {
 } from '../lib/workshop/cinematic-studio/reshoot'
 import {
   DEFAULT_CAMERA,
+  MAX_SEED,
   RESHOOT_EXAMPLE,
   clipFits,
   withKey
@@ -528,7 +537,7 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
           keys: keys.value,
           motion: motion.value,
           prompt: prompt.value,
-          seed: seed.value ?? Math.floor(Math.random() * 2 ** 32)
+          seed: seed.value ?? Math.floor(Math.random() * (MAX_SEED + 1))
         }),
         (phase) => updateTake(id, { phase }),
         signal
@@ -643,6 +652,8 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
     canGenerate,
     priceNote,
     session,
+    /** The app is not available on this Cloud: no read or take can run. */
+    unavailable: readonly(unavailable),
     pick,
     analyze,
     generate,
