@@ -5385,6 +5385,7 @@
     "noNodesToMention": "No nodes in this workflow",
     "friend": "there",
     "sendFailed": "Message failed to send",
+    "recoveredTurnFailed": "The agent could not complete this response.",
     "sendBusy": "A message is already being sent",
     "retryAfterSeconds": "You can try again in {seconds}s.",
     "malformedEvent": "The agent sent an event this panel could not read",
