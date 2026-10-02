@@ -159,11 +159,7 @@ export function addValueControlWidgets(
   options: ValueControlWidgetOptions = {},
   inputData?: InputSpec
 ): [IComboWidget, ...IStringWidget[]] {
-  // Callers derive `defaultValue` from the same overloaded
-  // `control_after_generate` key (`useIntWidget`, `useComboWidget`), so a name
-  // override arrives here as a mode. Seating it would leave the control
-  // holding a value `nextValueForLinkedTarget` matches no case for, and the
-  // target would never advance.
+  // `useIntWidget` forwards a group-node name override here as the mode.
   if (!isValueControlMode(defaultValue)) defaultValue = 'randomize'
 
   const getName = (
