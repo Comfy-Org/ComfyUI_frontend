@@ -304,6 +304,12 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: false
   },
   {
+    id: 'Comfy.AgentPanel.ConsentOfferDeclined',
+    name: 'Agent consent offer declined',
+    type: 'hidden',
+    defaultValue: false
+  },
+  {
     id: 'Comfy.Graph.ZoomSpeed',
     category: ['LiteGraph', 'Canvas', 'ZoomSpeed'],
     name: 'Canvas zoom speed',
