@@ -115,7 +115,7 @@ type BannerAction =
 const { t, d } = useI18n()
 const { renewalDate, renewalInvoice, subscription, manageSubscription } =
   useBillingContext()
-const { permissions, canReactivatePlan } = useWorkspaceUI()
+const { permissions, canReactivatePlan, workspaceType } = useWorkspaceUI()
 const { canTopUp } = useBillingCapabilities()
 const { kind, dismiss } = useBillingBanner()
 const { isResubscribing, handleResubscribe } = useResubscribe()
@@ -164,10 +164,19 @@ function safeInvoiceUrl(value: string | undefined): string | undefined {
   }
 }
 
+function pausedOwnerBody(): string {
+  if (workspaceType.value !== 'personal') return t(`${bs}.paused.body`)
+  return t(
+    kind.value === 'paymentFailed'
+      ? `${bs}.paused.personalPaymentFailedBody`
+      : `${bs}.paused.personalBody`
+  )
+}
+
 const pausedView = (): BannerView => ({
   muted: !canManage.value,
   title: t(`${bs}.paused.title`),
-  body: canManage.value ? t(`${bs}.paused.body`) : t(`${bs}.paused.memberBody`),
+  body: canManage.value ? pausedOwnerBody() : t(`${bs}.paused.memberBody`),
   action: canManage.value ? 'updatePayment' : null,
   dismissible: false,
   payInvoiceUrl: safeInvoiceUrl(renewalInvoice.value?.hosted_invoice_url)
