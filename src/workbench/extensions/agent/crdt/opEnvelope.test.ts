@@ -150,7 +150,8 @@ describe('chunkWireOps', () => {
     { label: 'null', serialized: null },
     { label: 'a number', serialized: 42 },
     { label: 'a string', serialized: 'not-an-operation' },
-    { label: 'an array', serialized: [] }
+    { label: 'an array', serialized: [] },
+    { label: 'an object without op_id', serialized: { op: 'add_node' } }
   ])(
     'rejects an op whose toJSON returns $label',
     ({ serialized }: { serialized: unknown }) => {

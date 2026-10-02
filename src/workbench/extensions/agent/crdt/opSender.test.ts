@@ -1225,6 +1225,7 @@ describe('createOpSender', () => {
     }
     node.circular = node
     circularNode.node = node
+    const localSettled: BatchOutcome[] = []
     let workflow = 'wf-old'
     const localSender = createOpSender({
       sendOps: () => true,
@@ -1234,6 +1235,7 @@ describe('createOpSender', () => {
       actor: () => ACTOR,
       baseVersion: () => 41,
       onBatchSettled: (outcome) => {
+        localSettled.push(outcome)
         if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 1))
           localSender.detach()
         throw new Error('listener boom')
@@ -1245,6 +1247,10 @@ describe('createOpSender', () => {
     expect(() => localSender.admit([addNode(2)])).not.toThrow()
 
     expect(localSender.pending()).toBe(0)
+    expect(localSettled.map(summarizeSettlement)).toContainEqual({
+      state: 'undeliverable',
+      nodeIds: [2]
+    })
     expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({
