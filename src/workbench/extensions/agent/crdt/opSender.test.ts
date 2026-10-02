@@ -1232,6 +1232,65 @@ describe('createOpSender', () => {
     localSender.detach()
   })
 
+  it('does not queue chunks when serialization reenters abortAll', () => {
+    const localSettled: BatchOutcome[] = []
+    const localSender = createOpSender({
+      sendOps: () => true,
+      onOpsResult: () => vi.fn(),
+      workflowId: () => WORKFLOW,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: (outcome) => localSettled.push(outcome)
+    })
+    const operation = addNode(1)
+    operation.node = {
+      ...operation.node,
+      toJSON() {
+        localSender.abortAll()
+        return { id: 1, type: 'TestNode' }
+      }
+    }
+
+    localSender.admit([operation])
+    localSender.flush()
+
+    expect(localSender.pending()).toBe(0)
+    expect(localSettled.map(summarizeSettlement)).toEqual([
+      { state: 'undeliverable', nodeIds: [1] }
+    ])
+    localSender.detach()
+  })
+
+  it('does not queue chunks when serialization reenters detach', () => {
+    const localSettled: BatchOutcome[] = []
+    const localSender = createOpSender({
+      sendOps: () => true,
+      onOpsResult: () => vi.fn(),
+      workflowId: () => WORKFLOW,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: (outcome) => localSettled.push(outcome)
+    })
+    const operation = addNode(1)
+    operation.node = {
+      ...operation.node,
+      toJSON() {
+        localSender.detach()
+        return { id: 1, type: 'TestNode' }
+      }
+    }
+
+    localSender.admit([operation])
+    localSender.flush()
+
+    expect(localSender.pending()).toBe(0)
+    expect(localSettled.map(summarizeSettlement)).toEqual([
+      { state: 'undeliverable', nodeIds: [1] }
+    ])
+  })
+
   it('contains a large malformed admission without argument spread overflow', () => {
     const operations = Array.from({ length: 140_000 }, (_, id) => addNode(id))
     let serializations = 0
