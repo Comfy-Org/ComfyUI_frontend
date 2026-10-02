@@ -1440,10 +1440,17 @@ describe('createOpSender', () => {
     expect(localSent).toHaveLength(1)
     expect(localSent[0].workflowId).toBe('wf-new')
     expect(nodeIdsOf(localSent[0].ops)).toEqual([3])
-    expect(localSettled.map(summarizeSettlement)).toContainEqual({
-      state: 'undeliverable',
-      nodeIds: [1]
-    })
+    // Pinned as an exact list rather than a `toContainEqual`: the post-seal
+    // admission of node 2 also settles `undeliverable` without ever reaching
+    // the wire, and a containment check hides that. Whether dropping it is
+    // right is a question for the sender's own owner, not for this test — but
+    // it should at least be visible, and a change to it should fail here.
+    expect(localSettled.map(summarizeSettlement)).toEqual([
+      { state: 'undeliverable', nodeIds: [1] },
+      { state: 'undeliverable', nodeIds: [2] }
+    ])
+    // Node 3's send is the one still in flight; node 2 was dropped, not held.
+    expect(localSender.pending()).toBe(1)
     localSender.detach()
   })
 
