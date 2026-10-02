@@ -523,25 +523,8 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       settleInterruptedSeal(ops, interruptedBeforeProbe)
       return
     }
-    let rejectedFrom = ops.length
-    for (const [index, op] of ops.entries()) {
-      try {
-        chunkWireOps([op])
-      } catch {
-        const interrupted = sealInterruption(sealAbortGeneration)
-        if (interrupted) {
-          settleInterruptedSeal(ops, interrupted)
-          return
-        }
-        rejectedFrom = index
-        break
-      }
-      const interrupted = sealInterruption(sealAbortGeneration)
-      if (interrupted) {
-        settleInterruptedSeal(ops, interrupted)
-        return
-      }
-    }
+    const rejectedFrom = findRejectedFrom(ops, sealAbortGeneration)
+    if (rejectedFrom === null) return
 
     const sendable = ops.slice(0, rejectedFrom)
     let rejected = ops.slice(rejectedFrom)
@@ -570,6 +553,30 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
         state: 'undeliverable',
         ops: rejected
       })
+  }
+
+  function findRejectedFrom(
+    ops: Op[],
+    sealAbortGeneration: number
+  ): number | null {
+    for (const [index, op] of ops.entries()) {
+      try {
+        chunkWireOps([op])
+      } catch {
+        const interrupted = sealInterruption(sealAbortGeneration)
+        if (interrupted) {
+          settleInterruptedSeal(ops, interrupted)
+          return null
+        }
+        return index
+      }
+      const interrupted = sealInterruption(sealAbortGeneration)
+      if (interrupted) {
+        settleInterruptedSeal(ops, interrupted)
+        return null
+      }
+    }
+    return ops.length
   }
 
   function seal(): boolean {
