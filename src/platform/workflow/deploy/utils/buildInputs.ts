@@ -11,8 +11,8 @@ import type { FlattenableWorkflowNode } from '@/platform/workflow/core/utils/wor
  * between them.
  */
 export interface NodePack {
-  id: string
-  versions: string[]
+  readonly id: string
+  readonly versions: readonly string[]
 }
 
 /**
@@ -21,11 +21,11 @@ export interface NodePack {
  * with none is core ComfyUI or is left for the platform to resolve.
  */
 export interface BuildInputs {
-  workflowName: string
-  workflowFileName: string
-  nodeClasses: string[]
-  nodePacks: NodePack[]
-  models: string[]
+  readonly workflowName: string
+  readonly workflowFileName: string
+  readonly nodeClasses: readonly string[]
+  readonly nodePacks: readonly NodePack[]
+  readonly models: readonly string[]
 }
 
 function widgetStrings(

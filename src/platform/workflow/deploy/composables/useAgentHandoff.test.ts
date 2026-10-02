@@ -68,7 +68,7 @@ describe('useAgentHandoff', () => {
       { toastOnSuccess: false }
     )
     expect(copyToClipboard).toHaveBeenCalledWith(
-      expect.stringContaining('downloaded the file as `portrait-upscale.json`'),
+      expect.stringContaining('downloaded it as `portrait-upscale.json`'),
       expect.anything()
     )
     expect(copyToClipboard).toHaveBeenCalledWith(
@@ -100,13 +100,13 @@ describe('useAgentHandoff', () => {
   it.for([
     {
       distribution: 'localhost' as const,
-      recipe: 'comfy which',
-      other: '--from-snapshot'
+      recipe: '## Your path: A, from this install',
+      other: '## Your path: A′'
     },
     {
       distribution: 'desktop' as const,
-      recipe: '--from-snapshot',
-      other: 'comfy which'
+      recipe: '## Your path: A′, from the Desktop snapshot',
+      other: '## Your path: A,'
     }
   ])(
     'sends $distribution its own recipe and downloads nothing',
@@ -120,7 +120,7 @@ describe('useAgentHandoff', () => {
       const brief = String(copyToClipboard.mock.lastCall?.[0])
       expect(brief).toContain(recipe)
       expect(brief).not.toContain(other)
-      expect(brief).not.toContain('--from-workflow')
+      expect(brief).not.toContain('## Your path: B')
       expect(downloadBlob).not.toHaveBeenCalled()
     }
   )
@@ -281,7 +281,7 @@ describe('useAgentHandoff', () => {
     await useAgentHandoff().copyBrief()
 
     expect(copyToClipboard).toHaveBeenCalledWith(
-      expect.stringContaining('downloaded the file as `releasev2.json`'),
+      expect.stringContaining('downloaded it as `releasev2.json`'),
       expect.anything()
     )
     expect(vi.mocked(downloadBlob).mock.calls[0][0]).toBe('releasev2.json')

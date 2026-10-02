@@ -64,10 +64,10 @@ describe('deriveBuildInputs', () => {
     })
   })
 
-  it.for([{ order: 'as recorded' }, { order: 'reversed' }])(
-    'keeps every version the nodes record for one pack, $order',
-    ({ order }) => {
-      const nodes = [
+  it.for([
+    {
+      order: 'as recorded',
+      nodes: [
         {
           id: 1,
           type: 'A',
@@ -80,13 +80,27 @@ describe('deriveBuildInputs', () => {
         },
         { id: 3, type: 'C', properties: { cnr_id: 'comfyui-kjnodes' } }
       ]
-
-      const inputs = deriveBuildInputs(
-        { nodes: order === 'reversed' ? nodes.toReversed() : nodes },
-        workflow
-      )
-
-      expect(inputs.nodePacks).toEqual([
+    },
+    {
+      order: 'reversed',
+      nodes: [
+        { id: 3, type: 'C', properties: { cnr_id: 'comfyui-kjnodes' } },
+        {
+          id: 2,
+          type: 'B',
+          properties: { cnr_id: 'comfyui-kjnodes', ver: '1.0.9' }
+        },
+        {
+          id: 1,
+          type: 'A',
+          properties: { cnr_id: 'comfyui-kjnodes', ver: '1.1.4' }
+        }
+      ]
+    }
+  ])(
+    'keeps every version the nodes record for one pack, $order',
+    ({ nodes }) => {
+      expect(deriveBuildInputs({ nodes }, workflow).nodePacks).toEqual([
         { id: 'comfyui-kjnodes', versions: ['1.0.9', '1.1.4'] }
       ])
     }

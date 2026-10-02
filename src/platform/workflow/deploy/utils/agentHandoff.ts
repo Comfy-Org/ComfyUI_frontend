@@ -55,10 +55,6 @@ export function handoffFileName(workflowName: string): string {
   return `${base || 'workflow'}.json`
 }
 
-function quoteForShell(name: string): string {
-  return singleLine(name).replace(/["\\$`]/g, '\\$&')
-}
-
 /**
  * The brief tells the agent to paste these values into shell commands, so a
  * value that carries a shell metacharacter is omitted from the brief and
@@ -77,7 +73,7 @@ function leftOutNote(count: number): string {
     : ''
 }
 
-function bulletList(items: string[]): string {
+function bulletList(items: readonly string[]): string {
   const safe = items.filter(isShellSafe)
   return (
     safe.map((item) => `- ${codeSpan(item)}`).join('\n') +
@@ -100,80 +96,51 @@ separate decision.`
 function prerequisites(): string {
   return `## Before you start
 
-Run \`comfy build --help\`. If it does not list \`init\`, \`push\` and \`release\`,
-upgrade the CLI:
-
-\`\`\`bash
-pip install -U comfy-cli
-\`\`\`
-
-Then read the build recipe, and follow it for everything this brief does not
-say:
+Read the build recipe, and follow it:
 
 \`\`\`bash
 comfy skills show comfy-build
 \`\`\`
 
-The recipe owns the commands, the pins, the models, the cut, watching the
-release and reading a failure. This brief adds what the editor knows about this
-workflow, and the points where the user decides.
+If \`comfy\` or that skill is missing, install the current CLI first with
+\`pip install -U comfy-cli\`. The recipe owns every command, the pins, the
+models, the targets, the cut, watching the release and reading a failure. This
+brief adds only what the editor knows about this workflow, and the points where
+the user decides.`
+}
 
-Replace each \`<placeholder>\` with its value and keep the quotes around it, so
-a path with spaces stays one argument.`
+function buildName(inputs: BuildInputs): string {
+  return `Name the Build ${codeSpan(inputs.workflowName)}.`
 }
 
 function cloudPath(inputs: BuildInputs): string {
-  const name = quoteForShell(inputs.workflowName)
   return `## Your path: B, from the workflow file
 
 This workflow lives in Comfy Cloud, so there is no install to scan. The browser
-downloaded the file as ${codeSpan(inputs.workflowFileName)}. Find it — the
-download directory is the first place to look:
+downloaded it as ${codeSpan(inputs.workflowFileName)}, most likely to the
+download directory. ${buildName(inputs)}
 
-\`\`\`bash
-ls -t ~/Downloads/*.json | head -5
-\`\`\`
-
-The import sends the whole workflow JSON to the Comfy builder. Tell the user
-that, and wait for a yes before you run it:
-
-\`\`\`bash
-comfy --json build init comfy-build --name "${name}" --from-workflow "<path-to-file>" > build-report.json
-\`\`\``
+The recipe's import sends the whole workflow JSON to the Comfy builder. Tell the
+user that, and wait for a yes before you run it.`
 }
 
 function localhostPath(inputs: BuildInputs): string {
-  const name = quoteForShell(inputs.workflowName)
   return `## Your path: A, from this install
 
-ComfyUI runs on this machine, so \`comfy-cli\` reads the install directly and
-nothing is uploaded to start. \`comfy which\` prints the install to use as
-\`<install>\`:
-
-\`\`\`bash
-comfy which
-comfy build init "<install>" --name "${name}"
-\`\`\``
+ComfyUI runs on this machine, so build from that install; nothing is uploaded
+to start. ${buildName(inputs)}`
 }
 
 function desktopPath(inputs: BuildInputs): string {
-  const name = quoteForShell(inputs.workflowName)
   return `## Your path: A′, from the Desktop snapshot
 
-This is Comfy Desktop. \`<install>\` is the ComfyUI base path Desktop was set up
+This is Comfy Desktop. Its install is the ComfyUI base path Desktop was set up
 with, \`~/Documents/ComfyUI\` unless the user chose another directory; ask when
-it is not there. Use the newest snapshot:
+it is not there. Use the newest snapshot in its \`.launcher/snapshots\`
+directory. ${buildName(inputs)}
 
-\`\`\`bash
-ls -t "<install>"/.launcher/snapshots/*.json | head -1
-\`\`\`
-
-The import sends the whole snapshot JSON to the Comfy builder. Tell the user
-that, and wait for a yes before you run it:
-
-\`\`\`bash
-comfy build init comfy-build --name "${name}" --from-snapshot "<newest-snapshot>"
-\`\`\``
+The recipe's import sends the whole snapshot JSON to the Comfy builder. Tell the
+user that, and wait for a yes before you run it.`
 }
 
 const PATH_BY_DISTRIBUTION: Record<
@@ -244,8 +211,8 @@ Before anything is pushed or cut, go through the recipe's "Before you cut" with
 the user, and wait for a yes. A yes covers one cut: before every retry, tell the
 user the cause, the exact edit and which cut this is, and wait for a new yes.
 
-Cut \`linux/nvidia\`. The API runs there, and only a ready \`linux/nvidia\`
-artifact makes a release deployable.`
+The user means to deploy this Build later, so cut the target the recipe says a
+deployment needs.`
 }
 
 function closing(): string {
