@@ -27,12 +27,7 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyW
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
-import {
-  DragAndScale,
-  LGraph,
-  LGraphCanvas,
-  LGraphNode
-} from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
@@ -69,7 +64,8 @@ import {
   createMockCanvasRenderingContext2D,
   createMockLoadedWorkflow,
   createMockChangeTracker,
-  createMockLGraphNode
+  createMockLGraphNode,
+  createTestDragAndScale
 } from '@/utils/__tests__/litegraphTestUtils'
 
 const getServerFeature = vi.hoisted(() =>
@@ -2133,8 +2129,6 @@ function setupNodeSelectionCanvas() {
     getNodeById: (id: string | number) =>
       nodes.find((node) => String(node.id) === String(id)) ?? null
   }
-  const ds = new DragAndScale(canvasElement)
-  ds.setViewportSize(900, 700)
   appMock.graph.nodes = nodes
   const canvas = {
     graph,
@@ -2144,7 +2138,7 @@ function setupNodeSelectionCanvas() {
     deselectAll,
     animateToBounds: vi.fn(),
     canvas: canvasElement,
-    ds
+    ds: createTestDragAndScale(900, 700)
   }
   appMock.canvas = canvas
   canvasStore.canvas = fromPartial(canvas)

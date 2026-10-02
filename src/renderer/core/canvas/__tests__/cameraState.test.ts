@@ -14,17 +14,14 @@ describe('normalizeCameraState', () => {
     expect(normalizeCameraState(value)).toBeNull()
   })
 
-  it('accepts finite offsets and a positive scale', () => {
-    expect(normalizeCameraState({ offset: [-120, 42], scale: 0.5 })).toEqual({
+  it.for([
+    { name: 'array offsets', offset: [-120, 42] },
+    { name: 'legacy object-shaped offsets', offset: { 0: -120, 1: 42 } }
+  ])('accepts $name with a positive scale', ({ offset }) => {
+    expect(normalizeCameraState({ offset, scale: 0.5 })).toEqual({
       offset: [-120, 42],
       scale: 0.5
     })
-  })
-
-  it('accepts legacy object-shaped offsets', () => {
-    expect(
-      normalizeCameraState({ offset: { 0: -120, 1: 42 }, scale: 0.5 })
-    ).toEqual({ offset: [-120, 42], scale: 0.5 })
   })
 
   it.for([

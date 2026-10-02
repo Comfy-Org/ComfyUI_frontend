@@ -5,12 +5,16 @@ import { api } from '@/scripts/api'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import { DragAndScale, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { toNodeId } from '@/types/nodeId'
+import {
+  createTestCanvasElement,
+  createTestDragAndScale
+} from '@/utils/__tests__/litegraphTestUtils'
 
 /**
  * Real nodes carry `pos`/`size`; `boundingRect` is litegraph-renderer cache that
@@ -36,11 +40,7 @@ function stubCanvas(nodes: LGraphNode[], selected: unknown[] = []) {
   // A real element, not a `{ width, height }` literal: canvasStore attaches its
   // litegraph event listeners to `canvas.canvas` on assignment, and a plain
   // object rejects that registration on a post-flush tick nothing can await.
-  const element = document.createElement('canvas')
-  element.width = 1600
-  element.height = 900
-  const ds = new DragAndScale(element)
-  ds.setViewportSize(1600, 900)
+  const element = createTestCanvasElement({ width: 1600, height: 900 })
   useCanvasStore().canvas = fromPartial<LGraphCanvas>({
     graph: fromPartial<LGraph>({ nodes }),
     selectedItems,
@@ -48,7 +48,7 @@ function stubCanvas(nodes: LGraphNode[], selected: unknown[] = []) {
     animateToBounds,
     canvas: element,
     dpr: 1,
-    ds
+    ds: createTestDragAndScale(1600, 900)
   })
   return { animateToBounds, deselectAll, selectedItems }
 }

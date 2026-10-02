@@ -1,88 +1,59 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { createTestCanvasElement } from '@/utils/__tests__/litegraphTestUtils'
 
 describe('LGraphCanvas.resize', () => {
-  it('keeps a parent-sized canvas at its logical CSS dimensions', () => {
+  beforeEach(() => {
     vi.stubGlobal('devicePixelRatio', 2)
-    const parent = document.createElement('div')
-    Object.defineProperties(parent, {
-      offsetWidth: { value: 800 },
-      offsetHeight: { value: 600 }
-    })
-    const element = document.createElement('canvas')
-    element.getContext = vi.fn().mockReturnValue({
-      scale: vi.fn(),
-      setTransform: vi.fn()
-    })
-    parent.append(element)
-    const canvas = new LGraphCanvas(element, new LGraph(), {
-      skip_render: true,
-      skip_events: true
-    })
-
-    canvas.resize()
-
-    expect(element.style.width).toBe('800px')
-    expect(element.style.height).toBe('600px')
-    expect(element.width).toBe(1600)
-    expect(element.height).toBe(1200)
   })
 
-  it('follows parent growth after the first resize', () => {
-    vi.stubGlobal('devicePixelRatio', 2)
+  function createParentSizedCanvas() {
+    const parentSize = { width: 800, height: 600 }
     const parent = document.createElement('div')
-    const size = { width: 800, height: 600 }
     Object.defineProperties(parent, {
-      offsetWidth: { get: () => size.width },
-      offsetHeight: { get: () => size.height }
+      offsetWidth: { get: () => parentSize.width },
+      offsetHeight: { get: () => parentSize.height }
     })
-    const element = document.createElement('canvas')
-    element.getContext = vi.fn().mockReturnValue({
-      scale: vi.fn(),
-      setTransform: vi.fn()
-    })
+    const element = createTestCanvasElement()
     parent.append(element)
     const canvas = new LGraphCanvas(element, new LGraph(), {
       skip_render: true,
       skip_events: true
     })
+    return { canvas, parentSize }
+  }
+
+  it('follows parent growth with logical CSS size and DPR-scaled backing size', () => {
+    const { canvas, parentSize } = createParentSizedCanvas()
     canvas.resize()
 
-    size.width = 1000
-    size.height = 700
+    parentSize.width = 1000
+    parentSize.height = 700
     canvas.resize()
 
-    expect([element.style.width, element.style.height]).toEqual([
+    const { style, width, height } = canvas.canvas
+    expect([style.width, style.height, width, height]).toEqual([
       '1000px',
-      '700px'
+      '700px',
+      2000,
+      1400
     ])
-    expect([element.width, element.height]).toEqual([2000, 1400])
   })
 
-  it('preserves CSS dimensions supplied by the caller', () => {
-    vi.stubGlobal('devicePixelRatio', 2)
-    const parent = document.createElement('div')
-    Object.defineProperties(parent, {
-      offsetWidth: { value: 800 },
-      offsetHeight: { value: 600 }
-    })
-    const element = document.createElement('canvas')
-    element.style.width = '75%'
-    element.style.height = '50vh'
-    element.getContext = vi.fn().mockReturnValue({
-      scale: vi.fn(),
-      setTransform: vi.fn()
-    })
-    parent.append(element)
-    const canvas = new LGraphCanvas(element, new LGraph(), {
-      skip_render: true,
-      skip_events: true
-    })
+  it('sizes the backing store without overriding caller CSS dimensions', () => {
+    const { canvas } = createParentSizedCanvas()
+    canvas.canvas.style.width = '75%'
+    canvas.canvas.style.height = '50vh'
 
     canvas.resize()
 
-    expect([element.style.width, element.style.height]).toEqual(['75%', '50vh'])
-    expect([element.width, element.height]).toEqual([1600, 1200])
+    const { style, width, height } = canvas.canvas
+    expect([style.width, style.height, width, height]).toEqual([
+      '75%',
+      '50vh',
+      1600,
+      1200
+    ])
   })
 })

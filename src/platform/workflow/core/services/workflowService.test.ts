@@ -814,7 +814,6 @@ describe('useWorkflowService', () => {
       workflowStore.attachWorkflow(retained, 0)
       workflowStore.attachWorkflow(superseded, 1)
       workflowStore.activeWorkflow = retained as LoadedComfyWorkflow
-      vi.mocked(app.loadGraphData).mockClear()
       vi.mocked(app.loadGraphData).mockResolvedValueOnce(undefined)
 
       await expect(useWorkflowService().openWorkflow(superseded)).resolves.toBe(

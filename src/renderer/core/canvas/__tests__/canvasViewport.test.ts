@@ -1,238 +1,166 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import {
+  applyParentSizedCanvasStyle,
   applyViewport,
   measureViewport,
   measureViewportFromElement
 } from '@/renderer/core/canvas/canvasViewport'
-
-function mockCanvas(
-  width = 0,
-  height = 0
-): { canvas: HTMLCanvasElement; scaleArgs: number[][] } {
-  const scaleArgs: number[][] = []
-  const canvas = document.createElement('canvas')
-  canvas.width = width
-  canvas.height = height
-  vi.spyOn(canvas, 'getContext').mockReturnValue(
-    fromPartial<CanvasRenderingContext2D & GPUCanvasContext>({
-      scale: (x: number, y: number) => scaleArgs.push([x, y])
-    })
-  )
-  return { canvas, scaleArgs }
-}
-
-function observedCanvas(width: number, height: number) {
-  const writes = { width: 0, height: 0 }
-  let currentWidth = width
-  let currentHeight = height
-  const canvas = document.createElement('canvas')
-  Object.defineProperties(canvas, {
-    width: {
-      configurable: true,
-      get: () => currentWidth,
-      set: (value: number) => {
-        writes.width++
-        currentWidth = value
-      }
-    },
-    height: {
-      configurable: true,
-      get: () => currentHeight,
-      set: (value: number) => {
-        writes.height++
-        currentHeight = value
-      }
-    }
-  })
-  vi.spyOn(canvas, 'getContext').mockReturnValue(
-    fromPartial<CanvasRenderingContext2D & GPUCanvasContext>({ scale: vi.fn() })
-  )
-  return { canvas, writes }
-}
+import {
+  createMockCanvasRenderingContext2D,
+  createTestCanvasElement
+} from '@/utils/__tests__/litegraphTestUtils'
 
 describe('measureViewport', () => {
   it('computes physical dimensions from CSS dimensions and DPR', () => {
-    const vp = measureViewport(800, 600, 2)
-    expect(vp.cssWidth).toBe(800)
-    expect(vp.cssHeight).toBe(600)
-    expect(vp.dpr).toBe(2)
-    expect(vp.physicalWidth).toBe(1600)
-    expect(vp.physicalHeight).toBe(1200)
+    expect(measureViewport(800, 600, 2)).toEqual({
+      cssWidth: 800,
+      cssHeight: 600,
+      dpr: 2,
+      physicalWidth: 1600,
+      physicalHeight: 1200
+    })
   })
 
-  it('clamps sub-1 DPR to one backing pixel per CSS pixel', () => {
-    const vp = measureViewport(800, 600, 0.5)
-    expect(vp.dpr).toBe(1)
-    expect(vp.physicalWidth).toBe(800)
-    expect(vp.physicalHeight).toBe(600)
-  })
-
-  it('falls back to 1 for invalid (non-positive) DPR', () => {
-    const vp = measureViewport(100, 100, -1)
-    expect(vp.dpr).toBe(1)
-  })
-
-  it('falls back to 1 for non-finite DPR', () => {
-    expect(measureViewport(100, 100, Number.POSITIVE_INFINITY).dpr).toBe(1)
-    expect(measureViewport(100, 100, Number.NaN).dpr).toBe(1)
+  it.for([
+    { rawDpr: 0.5, dpr: 1 },
+    { rawDpr: -1, dpr: 1 },
+    { rawDpr: Number.POSITIVE_INFINITY, dpr: 1 },
+    { rawDpr: Number.NaN, dpr: 1 },
+    { rawDpr: 1.5, dpr: 1.5 }
+  ])('normalizes a raw DPR of $rawDpr to $dpr', ({ rawDpr, dpr }) => {
+    expect(measureViewport(800, 600, rawDpr).dpr).toBe(dpr)
   })
 
   it('rounds physical dimensions', () => {
-    const vp = measureViewport(801, 601, 1.5)
-    expect(vp.physicalWidth).toBe(1202)
-    expect(vp.physicalHeight).toBe(902)
+    const viewport = measureViewport(801, 601, 1.5)
+
+    expect([viewport.physicalWidth, viewport.physicalHeight]).toEqual([
+      1202, 902
+    ])
   })
 
   it('returns a frozen object', () => {
-    const vp = measureViewport(800, 600, 2)
-    expect(Object.isFrozen(vp)).toBe(true)
+    expect(Object.isFrozen(measureViewport(800, 600, 2))).toBe(true)
   })
 })
 
 describe('measureViewportFromElement', () => {
-  it('measures before mutating a canvas without CSS dimensions', () => {
-    const canvas = document.createElement('canvas')
-    canvas.width = 800
-    canvas.height = 600
-    vi.spyOn(canvas, 'getBoundingClientRect').mockImplementation(() =>
-      fromPartial({ width: canvas.width, height: canvas.height })
+  it.for([
+    { name: 'a visible canvas', cssSize: [800, 600], expected: [800, 600] },
+    { name: 'a hidden canvas', cssSize: [0, 0], expected: [0, 0] }
+  ] as const)(
+    'measures CSS dimensions independently of the backing store for $name',
+    ({ cssSize, expected }) => {
+      const canvas = createTestCanvasElement({
+        width: 1600,
+        height: 1200,
+        cssSize: [...cssSize]
+      })
+
+      const viewport = measureViewportFromElement(canvas, 2)
+
+      expect([viewport.cssWidth, viewport.cssHeight]).toEqual(expected)
+    }
+  )
+
+  it('does not multiply an intrinsically sized canvas across measurements', () => {
+    const canvas = createTestCanvasElement()
+    vi.spyOn(canvas, 'getBoundingClientRect').mockImplementation(
+      () => new DOMRect(0, 0, canvas.width, canvas.height)
     )
 
-    const viewport = measureViewportFromElement(canvas, 2)
-
-    expect(viewport.cssWidth).toBe(800)
-    expect(viewport.cssHeight).toBe(600)
-    expect(canvas.width).toBe(800)
-    expect(canvas.height).toBe(600)
-  })
-
-  it('does not multiply backing dimensions across repeated measurements', () => {
-    const { canvas } = mockCanvas(800, 600)
-    vi.spyOn(canvas, 'getBoundingClientRect').mockImplementation(() =>
-      fromPartial({ width: canvas.width, height: canvas.height })
-    )
-
-    const first = measureViewportFromElement(canvas, 2)
-    applyViewport(first, canvas, canvas)
+    applyViewport(measureViewportFromElement(canvas, 2), canvas, canvas)
     const second = measureViewportFromElement(canvas, 2)
 
-    expect(second.cssWidth).toBe(800)
-    expect(second.cssHeight).toBe(600)
-    expect(second.physicalWidth).toBe(1600)
-    expect(second.physicalHeight).toBe(1200)
-  })
-
-  it('measures CSS dimensions independently of backing dimensions', () => {
-    const canvas = document.createElement('canvas')
-    canvas.width = 1600
-    canvas.height = 1200
-    vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue(
-      fromPartial({ width: 800, height: 600 })
-    )
-
-    const viewport = measureViewportFromElement(canvas, 2)
-
-    expect(viewport.cssWidth).toBe(800)
-    expect(viewport.cssHeight).toBe(600)
-  })
-
-  it('preserves a hidden canvas measurement', () => {
-    const canvas = document.createElement('canvas')
-    canvas.width = 1600
-    canvas.height = 1200
-    vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue(
-      fromPartial({ width: 0, height: 0 })
-    )
-
-    const viewport = measureViewportFromElement(canvas, 2)
-
-    expect(viewport.cssWidth).toBe(0)
-    expect(viewport.cssHeight).toBe(0)
+    expect(second).toMatchObject({
+      cssWidth: 800,
+      cssHeight: 600,
+      physicalWidth: 1600,
+      physicalHeight: 1200
+    })
   })
 })
 
 describe('applyViewport', () => {
-  it('sets both canvases to physical dimensions', () => {
-    const vp = measureViewport(800, 600, 2)
-    const { canvas: fg } = mockCanvas()
-    const { canvas: bg } = mockCanvas()
+  it('sizes and scales both canvases to the physical dimensions', () => {
+    const fgContext = createMockCanvasRenderingContext2D()
+    const bgContext = createMockCanvasRenderingContext2D()
+    const fg = createTestCanvasElement({ ctx: fgContext })
+    const bg = createTestCanvasElement({ ctx: bgContext })
 
-    applyViewport(vp, fg, bg)
+    applyViewport(measureViewport(800, 600, 2), fg, bg)
 
-    expect(fg.width).toBe(1600)
-    expect(fg.height).toBe(1200)
-    expect(bg.width).toBe(1600)
-    expect(bg.height).toBe(1200)
+    expect([fg.width, fg.height, bg.width, bg.height]).toEqual([
+      1600, 1200, 1600, 1200
+    ])
+    expect(fgContext.scale).toHaveBeenCalledExactlyOnceWith(2, 2)
+    expect(bgContext.scale).toHaveBeenCalledExactlyOnceWith(2, 2)
   })
 
-  it('hands CSS dimensions to the viewport consumer', () => {
-    const vp = measureViewport(800, 600, 2)
+  it('scales a shared foreground/background context only once', () => {
+    const ctx = createMockCanvasRenderingContext2D()
+    const canvas = createTestCanvasElement({ ctx })
+
+    applyViewport(measureViewport(800, 600, 2), canvas, canvas)
+
+    expect(ctx.scale).toHaveBeenCalledExactlyOnceWith(2, 2)
+  })
+
+  it('hands the applied DPR and CSS dimensions to the consumer', () => {
     const consumer = { dpr: 1, ds: { setViewportSize: vi.fn() } }
 
-    applyViewport(vp, mockCanvas().canvas, mockCanvas().canvas, consumer)
+    applyViewport(
+      measureViewport(800, 600, 2),
+      createTestCanvasElement(),
+      createTestCanvasElement(),
+      consumer
+    )
 
     expect(consumer.dpr).toBe(2)
     expect(consumer.ds.setViewportSize).toHaveBeenCalledWith(800, 600)
   })
 
-  it('scales both canvas contexts by DPR', () => {
-    const vp = measureViewport(800, 600, 2)
-    const fg = mockCanvas()
-    const bg = mockCanvas()
+  it('does not reset backing stores that already match', () => {
+    const viewport = measureViewport(800, 600, 2)
+    const fg = createTestCanvasElement()
+    const bg = createTestCanvasElement()
+    applyViewport(viewport, fg, bg)
+    const sizeWrites = [
+      vi.spyOn(fg, 'width', 'set'),
+      vi.spyOn(fg, 'height', 'set'),
+      vi.spyOn(bg, 'width', 'set'),
+      vi.spyOn(bg, 'height', 'set')
+    ]
 
-    applyViewport(vp, fg.canvas, bg.canvas)
+    applyViewport(viewport, fg, bg)
 
-    expect(fg.scaleArgs).toEqual([[2, 2]])
-    expect(bg.scaleArgs).toEqual([[2, 2]])
+    expect(sizeWrites.map((write) => write.mock.calls.length)).toEqual([
+      0, 0, 0, 0
+    ])
+  })
+})
+
+describe('applyParentSizedCanvasStyle', () => {
+  it('follows the parent while the canvas style is its own', () => {
+    const canvas = createTestCanvasElement()
+
+    applyParentSizedCanvasStyle(canvas, 800, 600)
+    applyParentSizedCanvasStyle(canvas, 1000, 700)
+
+    expect([canvas.style.width, canvas.style.height]).toEqual([
+      '1000px',
+      '700px'
+    ])
   })
 
-  it('scales a shared foreground/background context only once', () => {
-    const vp = measureViewport(800, 600, 2)
-    const { canvas, scaleArgs } = mockCanvas()
+  it('keeps CSS dimensions supplied by the caller', () => {
+    const canvas = createTestCanvasElement()
+    canvas.style.width = '75%'
+    canvas.style.height = '50vh'
 
-    applyViewport(vp, canvas, canvas)
+    applyParentSizedCanvasStyle(canvas, 800, 600)
 
-    expect(scaleArgs).toEqual([[2, 2]])
-  })
-
-  it('produces identical dimensions on both canvases', () => {
-    const vp = measureViewport(1920, 1080, 2.5)
-    const { canvas: fg } = mockCanvas(100, 100)
-    const { canvas: bg } = mockCanvas(200, 300)
-
-    applyViewport(vp, fg, bg)
-
-    expect(fg.width).toBe(bg.width)
-    expect(fg.height).toBe(bg.height)
-  })
-
-  it('handles DPR of 1 without scaling artifacts', () => {
-    const vp = measureViewport(800, 600, 1)
-    const fg = mockCanvas()
-    const bg = mockCanvas()
-
-    applyViewport(vp, fg.canvas, bg.canvas)
-
-    expect(fg.canvas.width).toBe(800)
-    expect(fg.canvas.height).toBe(600)
-    expect(fg.scaleArgs).toEqual([[1, 1]])
-  })
-
-  it('does not reset matching canvas backing stores', () => {
-    const vp = measureViewport(800, 600, 2)
-    const fg = observedCanvas(1600, 1200)
-    const bg = observedCanvas(1600, 1200)
-
-    applyViewport(vp, fg.canvas, bg.canvas)
-    fg.writes.width = 0
-    fg.writes.height = 0
-    bg.writes.width = 0
-    bg.writes.height = 0
-    applyViewport(vp, fg.canvas, bg.canvas)
-
-    expect(fg.writes).toEqual({ width: 0, height: 0 })
-    expect(bg.writes).toEqual({ width: 0, height: 0 })
+    expect([canvas.style.width, canvas.style.height]).toEqual(['75%', '50vh'])
   })
 })
