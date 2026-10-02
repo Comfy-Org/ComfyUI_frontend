@@ -10,7 +10,7 @@ export function useImagePaste(
   take: (file: File) => unknown,
   ready: () => boolean = () => true
 ) {
-  useEventListener(document, 'paste', (event: ClipboardEvent) => {
+  useEventListener('paste', (event: ClipboardEvent) => {
     const file = imageFileOf(event.clipboardData)
     if (!file || !ready()) return
     event.preventDefault()

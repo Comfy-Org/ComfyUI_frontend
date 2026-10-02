@@ -3,6 +3,8 @@ import { ChevronRight } from '@lucide/vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+defineOptions({ inheritAttrs: false })
+
 const {
   label,
   value,
@@ -28,6 +30,7 @@ const emit = defineEmits<{ toggle: [] }>()
     label
   }}</span>
   <button
+    v-bind="$attrs"
     type="button"
     :aria-haspopup="popup ? 'dialog' : undefined"
     :aria-expanded="expanded"
