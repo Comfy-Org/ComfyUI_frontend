@@ -545,6 +545,7 @@ function installIngest(features: Record<string, boolean> = {}) {
     userId: 'user-a',
     csrfToken: 'csrf-1',
     refusals: [] as string[],
+    sessionReads: [] as Response[],
     mintRefusal: undefined as (() => Response) | undefined,
     mintGate: undefined as Promise<void> | undefined,
     heldMints: 0,
@@ -614,6 +615,9 @@ function installIngest(features: Record<string, boolean> = {}) {
   const respond = (request: ApiRequest, body: unknown): Response => {
     const { path, headers } = request
     if (path === '/api/auth/session') {
+      if (request.method === 'POST') return jsonResponse({ success: true })
+      const read = ingest.sessionReads.shift()
+      if (read) return read
       return jsonResponse({
         ...sessionBody(ingest.userId),
         csrf_token: ingest.csrfToken
@@ -755,33 +759,101 @@ describe('cloud API requests on the shared web session', () => {
 
   it.for([
     {
-      name: 'the same user is re-read once and retried once with the fresh token',
+      name: 'the same user is refreshed once and retried once with the fresh token',
       sessionUser: 'user-a',
+      sessionRead: undefined,
       status: 200,
-      tokens: ['csrf-1', 'session', 'csrf-2', 'csrf-2']
+      tokens: ['csrf-1', 'session', 'csrf-2', 'csrf-2'],
+      signedInAs: 'user-a',
+      localSignOuts: 0,
+      accountChangeToasts: 0
     },
     {
-      name: 'a changed user abandons the request',
-      sessionUser: 'user-b',
+      name: 'a missing session is restored for the same user, then retried',
+      sessionUser: 'user-a',
+      sessionRead: [401, 'no_session'],
+      status: 200,
+      tokens: ['csrf-1', 'session', 'session', 'session', 'csrf-2', 'csrf-2'],
+      signedInAs: 'user-a',
+      localSignOuts: 0,
+      accountChangeToasts: 0
+    },
+    {
+      name: 'an unreadable session keeps the user and abandons the request',
+      sessionUser: 'user-a',
+      sessionRead: [503, 'unavailable'],
       status: 403,
-      tokens: ['csrf-1', 'session', 'csrf-1']
+      tokens: ['csrf-1', 'session', 'csrf-1'],
+      signedInAs: 'user-a',
+      localSignOuts: 0,
+      accountChangeToasts: 0
+    },
+    {
+      name: 'a revoked session signs out and abandons the request',
+      sessionUser: 'user-a',
+      sessionRead: [401, 'session_revoked'],
+      status: 403,
+      tokens: ['csrf-1', 'session', 'off-session'],
+      signedInAs: undefined,
+      localSignOuts: 1,
+      accountChangeToasts: 0
+    },
+    {
+      name: 'a changed user takes the account-change path and abandons the request',
+      sessionUser: 'user-b',
+      sessionRead: undefined,
+      status: 403,
+      tokens: ['csrf-1', 'session', 'csrf-2'],
+      signedInAs: 'user-b',
+      localSignOuts: 1,
+      accountChangeToasts: 1
     }
-  ])('csrf_invalid: $name', async ({ sessionUser, status, tokens }) => {
-    const ingest = await bootOnSession()
-    ingest.refusals.push('csrf_invalid')
-    ingest.userId = sessionUser
-    ingest.csrfToken = 'csrf-2'
+  ] as const)(
+    'csrf_invalid: $name',
+    async ({
+      sessionUser,
+      sessionRead,
+      status,
+      tokens,
+      signedInAs,
+      localSignOuts,
+      accountChangeToasts
+    }) => {
+      const ingest = await bootOnSession()
+      firebaseSignOut.mockReset()
+      firebaseSignOut.mockResolvedValue()
+      ingest.refusals.push('csrf_invalid')
+      if (sessionRead) {
+        const [readStatus, code] = sessionRead
+        ingest.sessionReads.push(
+          jsonResponse({ code, message: code }, readStatus)
+        )
+      }
+      ingest.userId = sessionUser
+      ingest.csrfToken = 'csrf-2'
 
-    const response = await postPrompt()
-    await postPrompt()
+      const response = await postPrompt()
+      await postPrompt()
 
-    expect(response.status).toBe(status)
-    expect(
-      ingest.requests.map(({ path, headers }) =>
-        path === '/api/auth/session' ? 'session' : headers['x-csrf-token']
-      )
-    ).toEqual(tokens)
-  })
+      expect(response.status).toBe(status)
+      expect(
+        ingest.requests
+          .filter(({ path }) => !path.startsWith('/api/workspaces'))
+          .map(({ path, headers }) =>
+            path === '/api/auth/session'
+              ? 'session'
+              : (headers['x-csrf-token'] ?? 'off-session')
+          )
+      ).toEqual(tokens)
+      expect(useCloudWebSessionStore().signedInUser?.id).toBe(signedInAs)
+      expect(firebaseSignOut).toHaveBeenCalledTimes(localSignOuts)
+      expect(
+        useToastStore().messagesToAdd.filter(({ detail }) =>
+          String(detail).includes(`${sessionUser}@example.com`)
+        )
+      ).toHaveLength(accountChangeToasts)
+    }
+  )
 
   it('workspace_access_denied drops the selection and is never replayed', async () => {
     const ingest = await bootOnSession()

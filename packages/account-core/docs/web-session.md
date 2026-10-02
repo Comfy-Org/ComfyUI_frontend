@@ -94,9 +94,9 @@ workspace. `httpStatus` (404) and `serverCode` still tell it from a 403.
 
 ## Per app
 
-| App         | Use                                                                                                                                                                            |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| cloud       | `cloudWebSessionStore.start()` builds the identity, the mint and the authorizer. Ingest calls go through `fetchOnWebSession`; comfy-api calls take `webSessionResourceHeader`. |
-| website     | Header identity and the balance read on the cookie. The authorizer's token path rejects, so the website never mints.                                                           |
-| billing-web | Identity, workspace and billing calls on the cookie, with no mint. See `apps/billing-web/README.md`.                                                                           |
-| platform    | platform.comfy.org (Comfy-Org/platform). Identity on the cookie and a mint for its API calls; a refused mint asks `refresh()` and mints once more if the user is kept.         |
+| App         | Use                                                                                                                                                                                                                                                                                   |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| cloud       | `cloudWebSessionStore.start()` builds the identity, the mint and the authorizer. Ingest calls go through `fetchOnWebSession`, where a `csrf_invalid` refusal asks `refresh()` and retries once if the user is kept with a new token; comfy-api calls take `webSessionResourceHeader`. |
+| website     | Header identity and the balance read on the cookie. The authorizer's token path rejects, so the website never mints.                                                                                                                                                                  |
+| billing-web | Identity, workspace and billing calls on the cookie, with no mint. See `apps/billing-web/README.md`.                                                                                                                                                                                  |
+| platform    | platform.comfy.org (Comfy-Org/platform). Identity on the cookie and a mint for its API calls; a refused mint asks `refresh()` and mints once more if the user is kept.                                                                                                                |
