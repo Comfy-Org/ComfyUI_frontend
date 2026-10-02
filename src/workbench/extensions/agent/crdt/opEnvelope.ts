@@ -57,7 +57,10 @@ function isBatchable(op: Op): boolean {
 }
 
 function wireSize(op: Op): number {
-  return new TextEncoder().encode(JSON.stringify(op)).length
+  const json = JSON.stringify(op)
+  if (typeof json !== 'string')
+    throw new TypeError('Operation did not serialize to JSON')
+  return new TextEncoder().encode(json).length
 }
 
 /**
