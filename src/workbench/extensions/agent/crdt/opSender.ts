@@ -367,22 +367,22 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     }
   }
 
-  function settleUnsendableAdmission(
+  function admissionTargetOrSettle(
     minted: Op[],
     workflowId: string | null
-  ): boolean {
+  ): string | null {
     if (detached) {
       notifyDetachSettlement({ state: 'undeliverable', ops: minted })
-      return true
+      return null
     }
     if (workflowId === null) {
       guardedSettlementNotifier('failure_settling_agent_op_sender')({
         state: 'undeliverable',
         ops: minted
       })
-      return true
+      return null
     }
-    return false
+    return workflowId
   }
 
   function admit(operations: GraphOperation[]): void {
@@ -399,11 +399,12 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       mintWireOps([operation], { actor, baseVersion: baseVersion + index })
     )
     lastMintedVersion = baseVersion + minted.length - 1
-    if (settleUnsendableAdmission(minted, workflowId)) return
+    const admissionTarget = admissionTargetOrSettle(minted, workflowId)
+    if (admissionTarget === null) return
     // seal() can synchronously re-enter the sender through its settlement
     // callback. Do not resurrect an aborted admission or append old-workflow
     // ops to state installed by a nested admit().
-    if (open?.workflowId !== workflowId) seal()
+    if (open?.workflowId !== admissionTarget) seal()
     if (stateEpoch !== admissionEpoch) {
       guardedSettlementNotifier('failure_settling_agent_op_sender')({
         state: 'undeliverable',
@@ -412,7 +413,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       return
     }
     if (open) for (const op of minted) open.ops.push(op)
-    else open = { workflowId, ops: minted }
+    else open = { workflowId: admissionTarget, ops: minted }
   }
 
   function seal(): boolean {
