@@ -135,6 +135,10 @@ describe('PrimitiveInt control_after_generate projection', () => {
       docWidgets().set('control_after_generate', 'randomize')
     })
     expect(node.serialize().widgets_values).toEqual([5, 'randomize'])
+    expect(node.serialize().widgets_values_named).toEqual({
+      value: 5,
+      control_after_generate: 'randomize'
+    })
   })
 
   it('positive control: a widget the live node really lacks is still reported', () => {
