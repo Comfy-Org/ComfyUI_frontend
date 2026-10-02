@@ -375,24 +375,33 @@ export function useUploadModelWizard(
             )?.status,
           async (status) => {
             if (status === 'completed') {
+              // `completed` is the only status the download store treats as
+              // immutable, so it is the only one worth stopping on.
               watchState.resolved = true
               uploadStatus.value = 'success'
+              uploadError.value = ''
               await refreshModelCaches()
               stopAsyncWatch?.()
               stopAsyncWatch = undefined
-            } else if (status === 'failed') {
-              watchState.resolved = true
+            } else if (
+              status === 'failed' ||
+              status === 'cancellation_pending' ||
+              status === 'cancelled'
+            ) {
+              // Keep watching: the download store leaves `failed` recheckable
+              // and lets an authoritative `completed` replace a confirmed
+              // `cancelled`, so this error screen can still be recovered from.
               const download = assetDownloadStore.downloadList.find(
                 (d) => d.taskId === result.task.task_id
               )
               uploadStatus.value = 'error'
               uploadError.value =
-                download?.error ||
-                t('assetBrowser.downloadFailed', {
-                  name: download?.assetName || ''
-                })
-              stopAsyncWatch?.()
-              stopAsyncWatch = undefined
+                status === 'cancelled' || status === 'cancellation_pending'
+                  ? t('electronFileDownload.cancelled')
+                  : download?.error ||
+                    t('assetBrowser.downloadFailed', {
+                      name: download?.assetName || ''
+                    })
             }
           },
           { immediate: true }
