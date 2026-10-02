@@ -76,6 +76,7 @@ describe('createCapabilitiesReader', () => {
     expect(result.status).toBe('ok')
     if (result.status !== 'ok') return
     expect(result.value.capabilities.can_top_up).toBe(true)
+    expect(result.value.capabilities.can_revert_scheduled_change).toBe(false)
     expect(result.value.revision).toBe(42)
     expect(result.value.scope).toEqual({
       userId: 'uid-1',
