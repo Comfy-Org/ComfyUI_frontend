@@ -478,68 +478,90 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     stateEpoch++
   }
 
+  function settleInterruptedSeal(
+    ops: Op[],
+    sealAbortGeneration: number
+  ): boolean {
+    if (detached) {
+      notifyDetachSettlement({ state: 'undeliverable', ops })
+      return true
+    }
+    if (abortGeneration !== sealAbortGeneration) {
+      guardedSettlementNotifier('failure_settling_agent_op_sender_abort')({
+        state: 'undeliverable',
+        ops
+      })
+      return true
+    }
+    return false
+  }
+
+  function enqueueSealChunks(
+    chunks: Op[][],
+    workflowId: string,
+    ops: Op[],
+    sealAbortGeneration: number
+  ): boolean {
+    if (settleInterruptedSeal(ops, sealAbortGeneration)) return false
+    for (const chunk of chunks) queue.push({ workflowId, ops: chunk })
+    return true
+  }
+
+  function recoverSeal(
+    cause: unknown,
+    workflowId: string,
+    ops: Op[],
+    sealAbortGeneration: number
+  ): void {
+    if (settleInterruptedSeal(ops, sealAbortGeneration)) return
+    reportChunkFailure(cause, 'failure_chunking_agent_op_sender')
+    let rejectedFrom = ops.length
+    for (const [index, op] of ops.entries()) {
+      try {
+        chunkWireOps([op])
+      } catch {
+        rejectedFrom = index
+        break
+      }
+    }
+
+    // Preserve only the valid prefix. Once one op is rejected, later ops may
+    // depend on it, so sending a suffix would diverge from local state.
+    const sendable = ops.slice(0, rejectedFrom)
+    let rejected = ops.slice(rejectedFrom)
+    try {
+      const recovered = chunkWireOps(sendable)
+      if (!enqueueSealChunks(recovered, workflowId, ops, sealAbortGeneration))
+        return
+    } catch (recoveryCause) {
+      reportChunkFailure(
+        recoveryCause,
+        'failure_rechunking_agent_op_sender_recovery'
+      )
+      rejected = [...sendable, ...rejected]
+    }
+    if (settleInterruptedSeal(ops, sealAbortGeneration)) return
+    if (rejected.length > 0)
+      guardedSettlementNotifier('failure_settling_agent_op_sender')({
+        state: 'undeliverable',
+        ops: rejected
+      })
+  }
+
   function seal(): boolean {
     if (!open) return detached
     const { workflowId, ops } = open
-    open = null
     const sealAbortGeneration = abortGeneration
-
-    const settleIfInvalidated = (): boolean => {
-      if (detached) {
-        notifyDetachSettlement({ state: 'undeliverable', ops })
-        return true
-      }
-      if (abortGeneration !== sealAbortGeneration) {
-        guardedSettlementNotifier('failure_settling_agent_op_sender_abort')({
-          state: 'undeliverable',
-          ops
-        })
-        return true
-      }
-      return false
-    }
-
+    open = null
     try {
-      const chunks = chunkWireOps(ops)
-      if (settleIfInvalidated()) return detached
-      for (const chunk of chunks)
-        queue.push({ workflowId, ops: chunk })
+      enqueueSealChunks(
+        chunkWireOps(ops),
+        workflowId,
+        ops,
+        sealAbortGeneration
+      )
     } catch (cause) {
-      if (settleIfInvalidated()) return detached
-      reportChunkFailure(cause, 'failure_chunking_agent_op_sender')
-      let rejectedFrom = ops.length
-      for (const [index, op] of ops.entries()) {
-        try {
-          chunkWireOps([op])
-        } catch {
-          rejectedFrom = index
-          break
-        }
-      }
-
-      // Preserve only the valid prefix. Once one op is rejected, later ops
-      // may depend on it (for example a connect after add_node), so sending a
-      // suffix would create a partial admission and diverge from local state.
-      const sendable = ops.slice(0, rejectedFrom)
-      let rejected = ops.slice(rejectedFrom)
-      try {
-        const recovered = chunkWireOps(sendable)
-        if (settleIfInvalidated()) return detached
-        for (const chunk of recovered) queue.push({ workflowId, ops: chunk })
-      } catch (recoveryCause) {
-        // Serialization can be stateful. A getter or toJSON may pass the
-        // per-op probe and fail when recovery chunks the prefix again.
-        reportChunkFailure(
-          recoveryCause,
-          'failure_rechunking_agent_op_sender_recovery'
-        )
-        rejected = [...sendable, ...rejected]
-      }
-      if (rejected.length > 0)
-        guardedSettlementNotifier('failure_settling_agent_op_sender')({
-          state: 'undeliverable',
-          ops: rejected
-        })
+      recoverSeal(cause, workflowId, ops, sealAbortGeneration)
     }
     return detached
   }
