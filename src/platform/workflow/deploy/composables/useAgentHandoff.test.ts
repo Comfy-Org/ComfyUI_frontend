@@ -10,9 +10,12 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
-const distribution = vi.hoisted((): { DISTRIBUTION: Distribution } => ({
-  DISTRIBUTION: 'cloud'
-}))
+const distribution = vi.hoisted(
+  (): { DISTRIBUTION: Distribution; isCloud: boolean } => ({
+    DISTRIBUTION: 'cloud',
+    isCloud: true
+  })
+)
 vi.mock(import('@/platform/distribution/types'), () => distribution)
 
 const copyToClipboard = vi.hoisted(() =>
