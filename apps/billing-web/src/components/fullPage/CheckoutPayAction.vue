@@ -9,6 +9,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { InlineOutcome, SubmitPhase } from '@/checkout/checkoutPage'
 import { isChallengeReopenable } from '@/checkout/checkoutPage'
 import { supportLinkFor } from '@/checkout/payVerdict'
+import CancelPaymentControl from '@/components/fullPage/CancelPaymentControl.vue'
 import InlineOutcomeCard from '@/components/fullPage/InlineOutcomeCard.vue'
 import type { KeepSubscriptionConsent } from '@/components/fullPage/KeepSubscriptionNotice.vue'
 import KeepSubscriptionNotice from '@/components/fullPage/KeepSubscriptionNotice.vue'
@@ -128,9 +129,6 @@ const reopenable = computed(
 
 const PRIMARY_BUTTON =
   'flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-base-foreground px-4 text-sm font-semibold text-base-background transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-secondary-background focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40'
-
-const SECONDARY_BUTTON =
-  'flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-tertiary-background px-4 text-sm font-semibold text-base-foreground hover:bg-tertiary-background-hover focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40'
 </script>
 
 <template>
@@ -187,33 +185,11 @@ const SECONDARY_BUTTON =
           {{ payLabel }}
         </span>
       </button>
-      <button
-        v-if="cancel === 'offered' || canceling"
-        type="button"
-        :disabled="canceling"
-        :aria-busy="canceling"
-        :class="SECONDARY_BUTTON"
-        @click="emit('cancel')"
-      >
-        <i
-          v-if="canceling"
-          class="icon-[lucide--loader-circle] size-4 motion-safe:animate-spin"
-          aria-hidden="true"
-        />
-        {{
-          t(
-            canceling
-              ? 'checkout.fullPage.phase.canceling'
-              : 'checkout.fullPage.phase.cancel'
-          )
-        }}
-      </button>
-      <p
-        v-else-if="cancel === 'not_cancelable'"
-        class="m-0 text-center text-xs/4 text-muted-foreground"
-      >
-        {{ t('checkout.fullPage.phase.notCancelable') }}
-      </p>
+      <CancelPaymentControl
+        v-if="cancel"
+        :offer="cancel"
+        @cancel="emit('cancel')"
+      />
       <a
         v-if="supportLink"
         :href="supportLink"

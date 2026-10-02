@@ -426,6 +426,7 @@ export function reduceCheckoutPage(
 ): CheckoutPage {
   if (isRailEvent(event)) return reduceRail(page, event)
   if (isAttemptEvent(event)) return reduceAttempt(page, event)
+  if (isCancelEvent(event)) return reduceCancel(page, event)
   if (isStopEvent(event))
     return page.kind === 'resolving' ? stoppedOn(page, event) : page
   switch (event.type) {
@@ -449,6 +450,34 @@ export function reduceCheckoutPage(
         : followed(page, event.operation, event.outcome)
     case 'operationChanged':
       return followed(page, event.operation, event.outcome)
+  }
+}
+
+type CancelEvent = Extract<
+  CheckoutPageEvent,
+  {
+    type:
+      | 'cancelRequested'
+      | 'cancelRefused'
+      | 'cancelFailed'
+      | 'paymentCanceled'
+  }
+>
+
+const CANCEL_EVENT: Readonly<Record<CancelEvent['type'], true>> = {
+  cancelRequested: true,
+  cancelRefused: true,
+  cancelFailed: true,
+  paymentCanceled: true
+}
+
+function isCancelEvent(event: CheckoutPageEvent): event is CancelEvent {
+  return Object.hasOwn(CANCEL_EVENT, event.type)
+}
+
+/** Cancel payment on a challenge, from the click to the server's answer. */
+function reduceCancel(page: CheckoutPage, event: CancelEvent): CheckoutPage {
+  switch (event.type) {
     case 'cancelRequested':
       return cancelTarget(page) === undefined
         ? page
@@ -516,17 +545,21 @@ function canceled(page: CheckoutPage, operationId: string): CheckoutPage {
     case 'resolving':
       return namesOperation(page.outcome, operationId) ? RESOLVING : page
     case 'capture':
-      if (
-        page.attempt.kind === 'sent' &&
-        page.attempt.operation?.id === operationId
-      )
-        return { ...page, attempt: IDLE }
-      return namesOperation(page.outcome, operationId)
-        ? { ...page, outcome: undefined }
-        : page
+      return canceledInCapture(page, operationId)
     default:
       return page
   }
+}
+
+function canceledInCapture(page: Capture, operationId: string): Capture {
+  if (
+    page.attempt.kind === 'sent' &&
+    page.attempt.operation?.id === operationId
+  )
+    return { ...page, attempt: IDLE }
+  return namesOperation(page.outcome, operationId)
+    ? { ...page, outcome: undefined }
+    : page
 }
 
 /** A lapsed code changed the price, so its card outranks a carried verdict. */
@@ -1045,7 +1078,7 @@ export type SubmitPhase =
  * What Cancel payment offers on a challenge. Absent for an operation the
  * server never cancels (a top-up), so the button never shows there.
  */
-type CancelOffer = 'offered' | 'canceling' | 'not_cancelable'
+export type CancelOffer = 'offered' | 'canceling' | 'not_cancelable'
 
 export function submitPhaseOf(
   page: Extract<CheckoutPage, { kind: 'resolving' | 'capture' | 'waiting' }>
