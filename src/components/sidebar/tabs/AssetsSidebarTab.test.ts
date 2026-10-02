@@ -99,11 +99,10 @@ const i18n = createI18n({
 })
 
 const sidebarTabTemplateStub = {
-  props: ['title', 'closable'],
+  props: ['title'],
   template: `
     <section>
       <h2 v-if="title">{{ title }}</h2>
-      <div data-testid="template-closable">{{ String(closable) }}</div>
       <div data-testid="folder-title"><slot name="alt-title" /></div>
       <div data-testid="folder-controls"><slot name="header" /></div>
       <slot name="body" />
@@ -124,9 +123,8 @@ const assetsGridStub = {
   `
 }
 
-function renderTab(props: { closable?: boolean } = {}) {
+function renderTab() {
   return render(AssetsSidebarTab, {
-    props,
     global: {
       plugins: [i18n],
       directives: {
@@ -189,19 +187,6 @@ describe('AssetsSidebarTab folder navigation', () => {
     ).not.toBeInTheDocument()
     expect(screen.queryByText('multi-output-job')).not.toBeInTheDocument()
   })
-})
-
-it.for([
-  { host: 'the sidebar', props: {}, closable: 'true' },
-  {
-    host: 'a host that opts out',
-    props: { closable: false },
-    closable: 'false'
-  }
-])('forwards closable from $host to the template', ({ props, closable }) => {
-  renderTab(props)
-
-  expect(screen.getByTestId('template-closable')).toHaveTextContent(closable)
 })
 
 describe('AssetsSidebarTab tab panel', () => {

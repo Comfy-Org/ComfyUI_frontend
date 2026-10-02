@@ -9,7 +9,6 @@
   >
     <div class="comfy-vue-side-bar-header flex flex-col">
       <div
-        v-if="!hideToolbar"
         class="flex min-h-16 items-center justify-between border-b border-interface-stroke bg-transparent px-4"
       >
         <div class="flex min-w-0 flex-1 items-center overflow-hidden">
@@ -46,12 +45,10 @@ import SidebarTabCloseButton from '@/components/sidebar/tabs/SidebarTabCloseButt
 const {
   title,
   class: className,
-  hideToolbar,
   closable = true
 } = defineProps<{
   title: string
   class?: string
-  hideToolbar?: boolean
   closable?: boolean
 }>()
 </script>

@@ -7,6 +7,7 @@ import { TestIds } from '@e2e/fixtures/selectors'
 export class SidebarTab {
   public readonly tabButton: Locator
   public readonly selectedTabButton: Locator
+  public readonly panelHeader: Locator
   public readonly closeButton: Locator
 
   constructor(
@@ -17,9 +18,9 @@ export class SidebarTab {
     this.selectedTabButton = this.tabButton.and(
       page.locator('.side-bar-button-selected')
     )
-    this.closeButton = page
-      .locator('.sidebar-content-container')
-      .getByTestId(TestIds.sidebar.closeButton)
+    const panel = page.locator('.sidebar-content-container')
+    this.panelHeader = panel.locator('.comfy-vue-side-bar-header')
+    this.closeButton = panel.getByTestId(TestIds.sidebar.closeButton)
   }
 
   async open() {
@@ -341,9 +342,6 @@ export class AssetsSidebarTab extends SidebarTab {
   // --- Folder view ---
   public readonly backToAssetsButton: Locator
 
-  // --- Panel chrome ---
-  public readonly panelHeader: Locator
-
   // --- Loading ---
   public readonly skeletonLoaders: Locator
 
@@ -402,7 +400,6 @@ export class AssetsSidebarTab extends SidebarTab {
     this.backToAssetsButton = page.getByRole('button', {
       name: 'Back to all assets'
     })
-    this.panelHeader = page.locator('.comfy-vue-side-bar-header')
     this.skeletonLoaders = page.locator(
       '.sidebar-content-container .animate-pulse'
     )
