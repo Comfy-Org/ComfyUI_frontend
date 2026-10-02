@@ -178,12 +178,10 @@ const zDocNodeFields = zComfyNode
  * Only the actor's kind is reported: the segments after it in
  * `agent:<thread>:<turn>` and `human:<user>:<tab>` identify a user.
  */
-interface NodeProducer {
-  origin: 'operation' | 'import' | 'unreadable'
-  actorKind?: 'agent' | 'human' | 'unknown'
-  opId?: string
-  version?: number
-}
+type ActorKind = 'agent' | 'human' | 'unknown'
+type NodeProducer =
+  | { origin: 'operation'; actorKind: ActorKind; opId: string; version: number }
+  | { origin: 'import' | 'unreadable' }
 
 /**
  * What a malformed node needs to be actionable, beyond the issue text. Read
