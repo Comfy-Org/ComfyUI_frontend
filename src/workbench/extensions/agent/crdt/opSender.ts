@@ -552,12 +552,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     const sealAbortGeneration = abortGeneration
     open = null
     try {
-      enqueueSealChunks(
-        chunkWireOps(ops),
-        workflowId,
-        ops,
-        sealAbortGeneration
-      )
+      enqueueSealChunks(chunkWireOps(ops), workflowId, ops, sealAbortGeneration)
     } catch (cause) {
       recoverSeal(cause, workflowId, ops, sealAbortGeneration)
     }
