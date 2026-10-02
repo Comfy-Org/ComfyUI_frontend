@@ -737,7 +737,7 @@ describe('attachDocOpMinter', () => {
     expect(minted).toEqual([])
   })
 
-  it('mints button values for virtual nodes whose snapshots persist them', async () => {
+  it('does not mint name-addressed button values for virtual nodes', async () => {
     const note = new TestNote()
     note.addWidget('button', 'action', 'idle', () => {})
     withGraphIntentSource('load', () => graph.add(note))
@@ -752,15 +752,7 @@ describe('attachDocOpMinter', () => {
     })
     await afterFlush()
 
-    expect(minted).toEqual([
-      {
-        op: 'set_widget',
-        node_id: note.id,
-        widget: 'action',
-        value: 'clicked',
-        old: 'idle'
-      }
-    ])
+    expect(minted).toEqual([])
   })
 
   it('fails closed for stale writes from a different rendered graph', async () => {

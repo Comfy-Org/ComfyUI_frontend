@@ -174,10 +174,7 @@ function isPersistedWidgetIntent(
   const stored = useWidgetValueStore().getWidget(
     widgetId(node.graph!.rootGraph.id, event.nodeId, event.name)
   )
-  return (
-    isValueWidget(widget, stored) ||
-    (node.isVirtualNode === true && widget.type === 'button')
-  )
+  return isValueWidget(widget, stored)
 }
 
 type WidgetIntentValidation =
