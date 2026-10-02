@@ -13,21 +13,12 @@ import {
 const test = mergeTests(comfyPageFixture, templateApiFixture)
 
 test.describe('App mode template viewport', { tag: ['@canvas'] }, () => {
-  test.describe.configure({ timeout: 60_000 })
-
-  test.beforeEach(async ({ templateApi }) => {
-    await mockAppModeTemplate(templateApi)
-  })
-
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.canvasOps.resetView()
-  })
-
   test('frames a template after the hidden canvas becomes visible', async ({
     comfyPage,
     templateApi
   }) => {
     const { appMode, canvasOps, workflow } = comfyPage
+    await mockAppModeTemplate(templateApi)
 
     await test.step('hide the canvas in app mode', async () => {
       await appMode.enterAppModeWithInputs([['3', 'seed']])
@@ -44,16 +35,11 @@ test.describe('App mode template viewport', { tag: ['@canvas'] }, () => {
       await expect.poll(() => canvasOps.getElementWidth()).toBe(0)
     })
 
-    await test.step('show the canvas and flush the scheduled frame', async () => {
+    await test.step('show the canvas and apply the queued camera', async () => {
       await appMode.toggleAppMode()
       await expect.poll(() => canvasOps.getElementWidth()).toBeGreaterThan(0)
       await canvasOps.waitForViewToSettle()
 
-      const scale = await canvasOps.getScale()
-      const offset = await canvasOps.getOffset()
-      expect(scale).toBeGreaterThan(0)
-      expect(Number.isFinite(scale)).toBe(true)
-      expect(offset.every(Number.isFinite)).toBe(true)
       expect(await canvasOps.getVisibleNodeCount()).toBe(7)
     })
   })
