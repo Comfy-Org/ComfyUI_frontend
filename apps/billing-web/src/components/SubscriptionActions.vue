@@ -6,7 +6,7 @@
  * the checkout composable, whose continuation redirects this tab when the
  * server asks for a card.
  */
-import { nextTick, onMounted, ref } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type {
@@ -18,6 +18,13 @@ import { useBillingClient, useCheckout } from '@comfyorg/account-ui/billing'
 import { useHostedCopy } from '@/composables/useHostedCopy'
 import { awaitBillingWebStripeKey } from '@/config/stripeKey'
 import { createDeferredStripeChallengePort } from '@/session/stripeChallengePort'
+import { createCancelFlowTelemetry } from '@/telemetry/cancelTelemetry'
+import type { CancelledPlan } from '@/telemetry/cancelTelemetry'
+
+const { currentPlan } = defineProps<{
+  /** The plan a cancel would end, for the cancel flow's telemetry. */
+  currentPlan?: CancelledPlan
+}>()
 
 const emit = defineEmits<{
   /** The subscription changed on the server; readers over it are stale. */
@@ -36,6 +43,9 @@ const checkout = useCheckout({
   // Deferred: reads the key at challenge time, not this setup's snapshot.
   challengePort: createDeferredStripeChallengePort(awaitBillingWebStripeKey)
 })
+
+const cancelFlow = createCancelFlowTelemetry({ plan: () => currentPlan })
+onBeforeUnmount(() => cancelFlow.abandoned())
 
 const allowed = ref<BillingCapabilities | undefined>()
 const confirmingCancel = ref(false)
@@ -83,12 +93,14 @@ async function settle(
 /** The trigger is replaced by these controls, so the keyboard has to follow. */
 async function askToCancel() {
   confirmingCancel.value = true
+  cancelFlow.intent()
   await nextTick()
   confirmCancelAction.value?.focus()
 }
 
 async function keepPlan() {
   confirmingCancel.value = false
+  cancelFlow.abandoned()
   await nextTick()
   cancelTrigger.value?.focus()
 }
@@ -96,7 +108,7 @@ async function keepPlan() {
 async function cancelSubscription() {
   confirmingCancel.value = false
   await settle(
-    () => commands.cancelSubscription(),
+    () => cancelFlow.confirm(() => commands.cancelSubscription()),
     t('hosted.subscription.cancelled')
   )
 }
