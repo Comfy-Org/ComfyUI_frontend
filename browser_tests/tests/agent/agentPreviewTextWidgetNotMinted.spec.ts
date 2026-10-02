@@ -1,20 +1,12 @@
 import { expect } from '@playwright/test'
-import type { Page } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
-import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
-import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
-import {
-  agentTest as test,
-  bootAgentApp,
-  mockAgentTurnApi,
-  mockWorkflowPersistence
-} from '@e2e/fixtures/agentPanelFixture'
-import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { AgentNonValueWidgetRig } from '@e2e/fixtures/agentNonValueWidgetRig'
+import type { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
+import { agentTest as test } from '@e2e/fixtures/agentPanelFixture'
 import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
-import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 
 /**
  * FE-3161 sub-cause C2, as production actually emits it.
@@ -142,74 +134,19 @@ const seed: WorkflowJSON = {
   version: 0.4
 }
 
-interface Rig {
-  host: HostDoc
-  hostSocket: AgentFollowerHostSocket
-  vueNodes: VueNodeHelpers
-}
-
-/** The live value of one widget on a node. */
-function widgetValue(
-  page: Page,
-  nodeId: number,
-  name: string
-): Promise<unknown> {
-  return page.evaluate(
-    ({ nodeId, name }) =>
-      window
-        .app!.graph.nodes.find((node) => String(node.id) === nodeId)
-        ?.widgets?.find((widget) => widget.name === name)?.value,
-    { nodeId: String(nodeId), name }
-  )
-}
-
-/**
- * Boots the agent app on a document the host already holds, with the host
- * judging every client batch through the real applier.
- */
-async function bootBoundToHost(page: Page): Promise<Rig> {
-  const host = new HostDoc(WORKFLOW_ID, seed, catalog)
-  const hostSocket = new AgentFollowerHostSocket(
-    page,
-    WORKFLOW_ID,
-    host,
-    SOCKET_SID,
-    'apply'
-  )
-  await hostSocket.install()
-
-  await bootAgentApp(page, true, {
-    objectInfo: {
-      [PREVIEW_TYPE]: previewNodeDef,
-      [SAMPLER_TYPE]: samplerNodeDef
-    },
-    settings: {
-      'Comfy.VueNodes.Enabled': true,
-      'Comfy.Graph.CanvasInfo': false
-    },
-    beforeNavigate: async (page) => {
-      await mockAgentTurnApi(page, {
-        message_id: MESSAGE_ID,
-        thread_id: THREAD_ID,
-        workflow_id: WORKFLOW_ID
-      })
-      await mockWorkflowPersistence(page, WORKFLOW_ID)
-    }
-  })
-
-  const agentPanel = new AgentPanel(page)
-  await agentPanel.open()
-  await agentPanel.selectWorkflow()
-  await agentPanel.sendMessage('hello')
-  hostSocket.send({
-    type: 'agent_message_done',
-    data: { message_id: MESSAGE_ID, thread_id: THREAD_ID }
-  })
-  await hostSocket.waitForSubscribe()
-
-  const vueNodes = new VueNodeHelpers(page)
-  await expect(vueNodes.getNodeLocator(String(PREVIEW_NODE_ID))).toBeVisible()
-  return { host, hostSocket, vueNodes }
+const rigConfig = {
+  catalog,
+  messageId: MESSAGE_ID,
+  nodeDefs: {
+    [PREVIEW_TYPE]: previewNodeDef,
+    [SAMPLER_TYPE]: samplerNodeDef
+  },
+  samplerNodeId: SAMPLER_NODE_ID,
+  seed,
+  socketSid: SOCKET_SID,
+  threadId: THREAD_ID,
+  visibleNodeId: PREVIEW_NODE_ID,
+  workflowId: WORKFLOW_ID
 }
 
 /**
@@ -232,27 +169,6 @@ function sendTextOutput(
   })
 }
 
-/** Commits a hand edit on the sampler's real `seed` widget. */
-function editSeed(page: Page, value: number): Promise<void> {
-  return page.evaluate(
-    ({ nodeId, value }) => {
-      const node = window.app!.graph.nodes.find(
-        (candidate) => String(candidate.id) === nodeId
-      )!
-      node.widgets!.find((widget) => widget.name === 'seed')!.value = value
-    },
-    { nodeId: String(SAMPLER_NODE_ID), value }
-  )
-}
-
-/** The rendered `seed` input on the sampler. */
-function seedField(vueNodes: VueNodeHelpers) {
-  return vueNodes
-    .getNodeLocator(String(SAMPLER_NODE_ID))
-    .getByLabel('seed', { exact: true })
-    .getByRole('spinbutton')
-}
-
 test.describe(
   'Agent CRDT: a PreviewAny text-preview widget is never minted outbound',
   { tag: ['@cloud', '@agent', '@vue-nodes', '@widget'] },
@@ -261,7 +177,8 @@ test.describe(
       page
     }) => {
       test.setTimeout(60_000)
-      const { hostSocket, vueNodes } = await bootBoundToHost(page)
+      const rig = await AgentNonValueWidgetRig.boot(page, rigConfig)
+      const { hostSocket } = rig
 
       // The node finishes and its text output streams into `preview_text`,
       // through the node's own `onExecuted` hook.
@@ -270,7 +187,7 @@ test.describe(
       // The widget really was written, so this test cannot pass by never
       // exercising the path at all.
       await expect
-        .poll(() => widgetValue(page, PREVIEW_NODE_ID, PREVIEW_WIDGET))
+        .poll(() => rig.widgetValue(PREVIEW_NODE_ID, PREVIEW_WIDGET))
         .toBe('tensor([1, 2, 3])')
 
       // A hand edit committed after that write, in its own tick, is the
@@ -278,7 +195,7 @@ test.describe(
       // judges them in order, so once this edit's verdict is in, anything the
       // preview write minted ahead of it has already been judged and is
       // already in `humanOpOutcomes()`.
-      await editSeed(page, EDITED_SEED_VALUE)
+      await rig.editSeed(EDITED_SEED_VALUE)
 
       // Exactly one op reached the applier: the hand edit. The preview write
       // minted nothing — before the fix it produced
@@ -296,20 +213,21 @@ test.describe(
       await expect(rejectionToast).toHaveCount(0)
 
       // The hand edit is still the value on screen, not reverted as collateral.
-      await expect(seedField(vueNodes)).toHaveValue(String(EDITED_SEED_VALUE))
+      await expect(rig.seedField()).toHaveValue(String(EDITED_SEED_VALUE))
     })
 
     test('a hand edit minted in the same tick as a text-output write survives the batch', async ({
       page
     }) => {
       test.setTimeout(60_000)
-      const { host, hostSocket, vueNodes } = await bootBoundToHost(page)
+      const rig = await AgentNonValueWidgetRig.boot(page, rigConfig)
+      const { host, hostSocket } = rig
 
       // Execution populates the preview once, so the tick under test has an
       // existing widget to overwrite rather than one to create.
       sendTextOutput(hostSocket, 'tensor([1, 2, 3])')
       await expect
-        .poll(() => widgetValue(page, PREVIEW_NODE_ID, PREVIEW_WIDGET))
+        .poll(() => rig.widgetValue(PREVIEW_NODE_ID, PREVIEW_WIDGET))
         .toBe('tensor([1, 2, 3])')
 
       // ONE tick: the preview write and the user's own `seed` edit commit
@@ -356,7 +274,7 @@ test.describe(
       ).toEqual([EDITED_SEED_VALUE, 20])
 
       // And the value the user typed is still the one on screen.
-      await expect(seedField(vueNodes)).toHaveValue(String(EDITED_SEED_VALUE))
+      await expect(rig.seedField()).toHaveValue(String(EDITED_SEED_VALUE))
     })
   }
 )

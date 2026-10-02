@@ -4,18 +4,11 @@ import type { Page } from '@playwright/test'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
-import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
-import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
-import {
-  agentTest as test,
-  bootAgentApp,
-  mockAgentTurnApi,
-  mockWorkflowPersistence
-} from '@e2e/fixtures/agentPanelFixture'
-import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { AgentNonValueWidgetRig } from '@e2e/fixtures/agentNonValueWidgetRig'
+import type { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
+import { agentTest as test } from '@e2e/fixtures/agentPanelFixture'
 import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
-import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 
 /**
  * FE-3161 sub-cause C2, measured in production (`cloud-frontend-prod`,
@@ -116,67 +109,16 @@ function progressTextFrame(nodeId: string, text: string): Buffer {
   return frame
 }
 
-interface Rig {
-  host: HostDoc
-  hostSocket: AgentFollowerHostSocket
-  vueNodes: VueNodeHelpers
-}
-
-/** The live value of one widget on the node under test. */
-function widgetValue(page: Page, name: string): Promise<unknown> {
-  return page.evaluate(
-    ({ nodeId, name }) =>
-      window
-        .app!.graph.nodes.find((node) => String(node.id) === nodeId)
-        ?.widgets?.find((widget) => widget.name === name)?.value,
-    { nodeId: String(NODE_ID), name }
-  )
-}
-
-/**
- * Boots the agent app on a document the host already holds, with the host
- * judging every client batch through the real applier.
- */
-async function bootBoundToHost(page: Page): Promise<Rig> {
-  const host = new HostDoc(WORKFLOW_ID, seed, catalog)
-  const hostSocket = new AgentFollowerHostSocket(
-    page,
-    WORKFLOW_ID,
-    host,
-    SOCKET_SID,
-    'apply'
-  )
-  await hostSocket.install()
-
-  await bootAgentApp(page, true, {
-    objectInfo: { [NODE_TYPE]: nodeDef },
-    settings: {
-      'Comfy.VueNodes.Enabled': true,
-      'Comfy.Graph.CanvasInfo': false
-    },
-    beforeNavigate: async (page) => {
-      await mockAgentTurnApi(page, {
-        message_id: MESSAGE_ID,
-        thread_id: THREAD_ID,
-        workflow_id: WORKFLOW_ID
-      })
-      await mockWorkflowPersistence(page, WORKFLOW_ID)
-    }
-  })
-
-  const agentPanel = new AgentPanel(page)
-  await agentPanel.open()
-  await agentPanel.selectWorkflow()
-  await agentPanel.sendMessage('hello')
-  hostSocket.send({
-    type: 'agent_message_done',
-    data: { message_id: MESSAGE_ID, thread_id: THREAD_ID }
-  })
-  await hostSocket.waitForSubscribe()
-
-  const vueNodes = new VueNodeHelpers(page)
-  await expect(vueNodes.getNodeLocator(String(NODE_ID))).toBeVisible()
-  return { host, hostSocket, vueNodes }
+const rigConfig = {
+  catalog,
+  messageId: MESSAGE_ID,
+  nodeDefs: { [NODE_TYPE]: nodeDef },
+  samplerNodeId: NODE_ID,
+  seed,
+  socketSid: SOCKET_SID,
+  threadId: THREAD_ID,
+  visibleNodeId: NODE_ID,
+  workflowId: WORKFLOW_ID
 }
 
 /** One execution progress tick, through the widget's real setter. */
@@ -189,27 +131,6 @@ async function streamProgress(
   await nextFrame(page)
 }
 
-/** Commits a hand edit on the node's real `seed` widget. */
-function editSeed(page: Page, value: number): Promise<void> {
-  return page.evaluate(
-    ({ nodeId, value }) => {
-      const node = window.app!.graph.nodes.find(
-        (candidate) => String(candidate.id) === nodeId
-      )!
-      node.widgets!.find((widget) => widget.name === 'seed')!.value = value
-    },
-    { nodeId: String(NODE_ID), value }
-  )
-}
-
-/** The rendered `seed` input on the node under test. */
-function seedField(vueNodes: VueNodeHelpers) {
-  return vueNodes
-    .getNodeLocator(String(NODE_ID))
-    .getByLabel('seed', { exact: true })
-    .getByRole('spinbutton')
-}
-
 test.describe(
   'Agent CRDT: an ephemeral progress widget is never minted outbound',
   { tag: ['@cloud', '@agent', '@vue-nodes', '@widget'] },
@@ -218,7 +139,8 @@ test.describe(
       page
     }) => {
       test.setTimeout(60_000)
-      const { hostSocket, vueNodes } = await bootBoundToHost(page)
+      const rig = await AgentNonValueWidgetRig.boot(page, rigConfig)
+      const { hostSocket } = rig
 
       // Execution streams progress text, three ticks of it, as a running node
       // does. Each tick writes `$$node-text-preview` through its real setter.
@@ -229,7 +151,7 @@ test.describe(
       // The widget really was written, so this test cannot pass by never
       // exercising the path at all.
       await expect
-        .poll(() => widgetValue(page, PREVIEW_WIDGET))
+        .poll(() => rig.widgetValue(NODE_ID, PREVIEW_WIDGET))
         .toBe('Status: Done')
 
       // A hand edit committed AFTER those three writes, in its own tick, is
@@ -239,7 +161,7 @@ test.describe(
       // already in `humanOpOutcomes()`. That turns "nothing was minted" from a
       // negative assertion that passes while ops are still in flight into a
       // positive one on the whole collection.
-      await editSeed(page, EDITED_SEED_VALUE)
+      await rig.editSeed(EDITED_SEED_VALUE)
 
       // Exactly one op reached the applier: the hand edit. The three progress
       // writes minted nothing — before the fix each produced its own
@@ -257,14 +179,15 @@ test.describe(
       await expect(rejectionToast).toHaveCount(0)
 
       // The hand edit is still the value on screen, not reverted as collateral.
-      await expect(seedField(vueNodes)).toHaveValue(String(EDITED_SEED_VALUE))
+      await expect(rig.seedField()).toHaveValue(String(EDITED_SEED_VALUE))
     })
 
     test('a hand edit minted in the same tick as a progress write survives the batch', async ({
       page
     }) => {
       test.setTimeout(60_000)
-      const { host, hostSocket, vueNodes } = await bootBoundToHost(page)
+      const rig = await AgentNonValueWidgetRig.boot(page, rigConfig)
+      const { host, hostSocket } = rig
 
       // Execution creates the ephemeral widget on its first progress frame,
       // so the tick under test has one to write.
@@ -272,7 +195,7 @@ test.describe(
         progressTextFrame(String(NODE_ID), PROGRESS_TEXT)
       )
       await expect
-        .poll(() => widgetValue(page, PREVIEW_WIDGET))
+        .poll(() => rig.widgetValue(NODE_ID, PREVIEW_WIDGET))
         .toBe(PROGRESS_TEXT)
 
       // ONE tick: progress text streams into the ephemeral widget while the
@@ -309,7 +232,7 @@ test.describe(
 
       // And the value the user typed is still the one on screen — not
       // reverted as collateral of an op they never made.
-      await expect(seedField(vueNodes)).toHaveValue(String(EDITED_SEED_VALUE))
+      await expect(rig.seedField()).toHaveValue(String(EDITED_SEED_VALUE))
     })
   }
 )

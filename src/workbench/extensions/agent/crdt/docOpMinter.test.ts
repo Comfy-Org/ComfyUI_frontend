@@ -737,6 +737,37 @@ describe('attachDocOpMinter', () => {
     expect(minted).toEqual([])
   })
 
+  it('lets an explicit live serialize flag override stale store metadata', async () => {
+    const { source } = seedGraph(graph)
+    const widget = source.widgets![0]
+    const stored = useWidgetValueStore().getWidget(
+      widgetId(graph.id, source.id, widget.name)
+    )
+    expect(stored).toBeDefined()
+    stored!.serialize = false
+    widget.serialize = true
+
+    emitGraphIntent({
+      type: 'set_widget',
+      graphId: graph.id,
+      nodeId: source.id,
+      name: 'steps',
+      value: 21,
+      previous: 20
+    })
+    await afterFlush()
+
+    expect(minted).toEqual([
+      {
+        op: 'set_widget',
+        node_id: source.id,
+        widget: 'steps',
+        value: 21,
+        old: 20
+      }
+    ])
+  })
+
   it('uses the store serialize flag when a projected widget omits it', async () => {
     const { source } = seedGraph(graph)
     const widget = source.widgets![0]

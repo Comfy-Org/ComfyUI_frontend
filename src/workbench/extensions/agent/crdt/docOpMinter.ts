@@ -159,12 +159,8 @@ function nodeKey(graphId: string, nodeId: NodeId): string {
 /**
  * The live node a widget intent names, or null when this canvas holds none.
  *
- * The widget store keys by ROOT graph id (`resolveNodeRootGraphId`), so an
- * interior node's intent carries the root graph's id and the node id alone is
- * ambiguous: ids are unique per graph, not per hierarchy, so a root node and a
- * subgraph-interior node can share one. Prefer whichever node actually carries
- * the named widget, and fall back to plain hierarchy order when none does —
- * that fallback is the resolution the routing below has always used.
+ * Node ids are unique across a root graph and its subgraphs, so a root-keyed
+ * intent for an interior node resolves through the hierarchy.
  */
 function widgetOwnerOf(
   graph: LGraph,
