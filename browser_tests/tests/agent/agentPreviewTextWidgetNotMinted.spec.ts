@@ -9,36 +9,9 @@ import { agentTest as test } from '@e2e/fixtures/agentPanelFixture'
 import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 
 /**
- * FE-3161 sub-cause C2, as production actually emits it.
- *
- * The sibling spec `agentProgressTextWidgetNotMinted.spec.ts` covers
- * `$$node-text-preview`, the widget the ticket was filed on. Every
- * `unknown_widget` rejection in the live `cloud-frontend-prod` sample on
- * 2026-10-02 names a *different* widget on a different code path:
- * `preview_text` on `PreviewAny`, with the doc host reporting
- * `available: (none — all inputs are links)`. Same family, same fix, but
- * nothing proved it.
- *
- * The two paths differ in how the write arrives, which is why one spec does
- * not stand in for the other:
- *
- * - `$$node-text-preview` is injected by `useNodeProgressText` and driven by
- *   BINARY `progress_text` frames.
- * - `preview_text` is a `ComponentWidgetImpl` added by
- *   `addTextPreviewWidgets` at `onNodeCreated`, and driven by the JSON
- *   `executed` frame through the node's own `onExecuted` hook. Its value
- *   setter writes `widgetValueStore` state directly
- *   (`textPreviewWidgets.ts:46-50`), so the `set_widget` intent is raised from
- *   the store rather than from a litegraph widget assignment.
- *
- * Both carry `serialize: false`, so the minter's value-widget predicate is the
- * one fix for both. `PreviewAny` additionally has no serializable widgets at
- * all, so its catalog entry is empty and the host can only answer
- * `unknown_widget` — exactly the production message.
- *
- * Runs against a REAL host: `AgentFollowerHostSocket` in `apply` mode judges
- * every client batch with the real `comfy-multi-player` applier, so the
- * rejection is the library's verdict and not a hand-written frame.
+ * `preview_text` reaches the minter through an `executed` frame, the node's
+ * `onExecuted` hook, and its store-backed setter rather than the binary
+ * `progress_text` path exercised by the sibling spec.
  */
 
 const PREVIEW_TYPE = 'PreviewAny'
