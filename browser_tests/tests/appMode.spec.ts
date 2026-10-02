@@ -11,21 +11,25 @@ const test = mergeTests(comfyPageFixture, subgraphBreadcrumbFixture)
 
 test.describe('App mode usage', () => {
   test('keeps both side panels at least 312px wide', async ({ comfyPage }) => {
-    await comfyPage.appMode.enterAppModeWithInputs([['3', 'seed']])
-    await comfyPage.menu.assetsTab.open({ waitForAssets: false })
+    await test.step('Open app mode with both side panels', async () => {
+      await comfyPage.appMode.enterAppModeWithInputs([['3', 'seed']])
+      await comfyPage.menu.assetsTab.open({ waitForAssets: false })
+    })
 
-    const sidePanels = comfyPage.page
-      .getByTestId('linear-left-panel')
-      .or(comfyPage.page.getByTestId('linear-right-panel'))
-    await expect(sidePanels).toHaveCount(2)
-    await expect
-      .poll(async () => {
-        const widths = await sidePanels.evaluateAll((panels) =>
-          panels.map((panel) => panel.getBoundingClientRect().width)
-        )
-        return Math.min(...widths)
-      })
-      .toBeGreaterThanOrEqual(312)
+    await test.step('Verify both panels keep their minimum width', async () => {
+      const sidePanels = comfyPage.page
+        .getByTestId('linear-left-panel')
+        .or(comfyPage.page.getByTestId('linear-right-panel'))
+      await expect(sidePanels).toHaveCount(2)
+      await expect
+        .poll(async () => {
+          const widths = await sidePanels.evaluateAll((panels) =>
+            panels.map((panel) => panel.getBoundingClientRect().width)
+          )
+          return Math.min(...widths)
+        })
+        .toBeGreaterThanOrEqual(312)
+    })
   })
 
   test('Drag and Drop @vue-nodes', async ({ comfyPage, comfyFiles }) => {

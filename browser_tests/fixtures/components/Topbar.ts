@@ -51,6 +51,16 @@ export class Topbar {
     return this.page.locator('[role="menu"]:visible').last()
   }
 
+  async holdMenuItem(itemLabel: string, parent: Locator): Promise<void> {
+    const item = this.getMenuItem(itemLabel, parent)
+    await item.hover()
+    await this.page.mouse.down()
+  }
+
+  async releaseMenuItem(): Promise<void> {
+    await this.page.mouse.up()
+  }
+
   /**
    * Check if a menu item has an active checkmark
    */

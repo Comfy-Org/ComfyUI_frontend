@@ -46,38 +46,42 @@ test.describe('Bottom Panel', { tag: '@ui' }, () => {
   }) => {
     const { bottomPanel } = comfyPage
 
-    await bottomPanel.toggleButton.click()
-    await expect(
-      bottomPanel.root,
-      'Panel should be open before resizing'
-    ).toBeVisible()
-
-    const initialHeight = await bottomPanel.root.evaluate(
-      (el) => el.getBoundingClientRect().height
-    )
-
-    await bottomPanel.resizeByDragging(-100)
-
-    await expect
-      .poll(
-        () =>
-          bottomPanel.root.evaluate((el) => el.getBoundingClientRect().height),
-        {
-          message:
-            'Panel height should increase after dragging the resize gutter'
-        }
+    await test.step('Open and resize the bottom panel', async () => {
+      await bottomPanel.toggleButton.click()
+      await expect(
+        bottomPanel.root,
+        'Panel should be open before resizing'
+      ).toBeVisible()
+      const initialHeight = await bottomPanel.root.evaluate(
+        (el) => el.getBoundingClientRect().height
       )
-      .toBeGreaterThan(initialHeight)
+      await bottomPanel.resizeByDragging(-100)
+      await expect
+        .poll(
+          () =>
+            bottomPanel.root.evaluate(
+              (el) => el.getBoundingClientRect().height
+            ),
+          {
+            message:
+              'Panel height should increase after dragging the resize gutter'
+          }
+        )
+        .toBeGreaterThan(initialHeight)
+    })
 
     const resizedHeight = await bottomPanel.root.evaluate(
       (el) => el.getBoundingClientRect().height
     )
-    await comfyPage.settings.setSetting('Comfy.Sidebar.Location', 'right')
-    await expect
-      .poll(() =>
-        bottomPanel.root.evaluate((el) => el.getBoundingClientRect().height)
-      )
-      .toBeCloseTo(resizedHeight, 0)
+
+    await test.step('Remount the layout and preserve the height', async () => {
+      await comfyPage.settings.setSetting('Comfy.Sidebar.Location', 'right')
+      await expect
+        .poll(() =>
+          bottomPanel.root.evaluate((el) => el.getBoundingClientRect().height)
+        )
+        .toBeCloseTo(resizedHeight, 0)
+    })
   })
 
   test('should not block canvas interactions when panel is closed', async ({
@@ -113,7 +117,10 @@ test.describe('Bottom Panel', { tag: '@ui' }, () => {
   }) => {
     const { bottomPanel } = comfyPage
     const { essentialsTab, viewControlsTab } = bottomPanel.shortcuts
-    await bottomPanel.keyboardShortcutsButton.click()
+
+    await test.step('Open the shortcuts panel', async () => {
+      await bottomPanel.keyboardShortcutsButton.click()
+    })
 
     const essentials = bottomPanel.root.getByRole('tabpanel', {
       name: /Essential/i
@@ -124,8 +131,10 @@ test.describe('Bottom Panel', { tag: '@ui' }, () => {
       (await essentials.getAttribute('id')) ?? ''
     )
 
-    await essentialsTab.focus()
-    await essentialsTab.press('ArrowRight')
+    await test.step('Navigate to View Controls with the keyboard', async () => {
+      await essentialsTab.focus()
+      await essentialsTab.press('ArrowRight')
+    })
 
     const viewControls = bottomPanel.root.getByRole('tabpanel', {
       name: /View Controls/i

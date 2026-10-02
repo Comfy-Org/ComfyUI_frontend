@@ -202,6 +202,45 @@ describe('WidgetGalleria', () => {
     ).toBeInTheDocument()
   })
 
+  it('stays paused when the image count changes', async () => {
+    vi.useFakeTimers()
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    const gallery = renderGallery(images, {
+      autoPlay: true,
+      circular: true,
+      transitionInterval: 1000
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Pause gallery' }))
+    await gallery.rerender({
+      modelValue: [...images, 'https://example.com/four.jpg']
+    })
+    await vi.advanceTimersByTimeAsync(1000)
+
+    expect(
+      screen.getByRole('img', { name: 'Gallery image 1 of 4' })
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Play gallery' })).toBeVisible()
+  })
+
+  it('pauses autoplay after manual navigation', async () => {
+    vi.useFakeTimers()
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    renderGallery(images, {
+      autoPlay: true,
+      circular: true,
+      transitionInterval: 1000
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Next image' }))
+    await vi.advanceTimersByTimeAsync(1000)
+
+    expect(
+      screen.getByRole('img', { name: 'Gallery image 2 of 3' })
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Play gallery' })).toBeVisible()
+  })
+
   it('localizes the complete image and thumbnail positions', () => {
     const translated = createI18n({
       legacy: false,

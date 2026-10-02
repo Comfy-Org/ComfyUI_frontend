@@ -42,6 +42,12 @@ export class ContextMenu {
     return submenu
   }
 
+  colorSwatch(name: string, submenu: Locator): Locator {
+    return submenu
+      .getByRole('menuitem', { name, exact: true })
+      .locator('[style*="background-color"]')
+  }
+
   async openShapeSubmenu(): Promise<Locator> {
     await this.menuItem('Shape').click()
     const submenu = this.page.getByRole('menu').filter({

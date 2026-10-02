@@ -60,6 +60,29 @@ test.describe('Topbar menu commands', { tag: '@ui' }, () => {
     await comfyPage.menu.topbar.triggerTopbarCommand(['View', 'Bottom Panel'])
     await expect(comfyPage.bottomPanel.root).toBeHidden()
   })
+
+  test('holding View > Zoom In repeatedly zooms without closing the menu', async ({
+    comfyPage
+  }) => {
+    const topbar = comfyPage.menu.topbar
+    const initialScale = await comfyPage.canvasOps.getScale()
+    await topbar.openTopbarMenu()
+    const viewSubmenu = await topbar.openSubmenu('View')
+    await topbar.holdMenuItem('Zoom In', viewSubmenu)
+    try {
+      await expect
+        .poll(() => comfyPage.canvasOps.getScale())
+        .toBeGreaterThan(initialScale)
+      const firstScale = await comfyPage.canvasOps.getScale()
+      await expect
+        .poll(() => comfyPage.canvasOps.getScale())
+        .toBeGreaterThan(firstScale)
+    } finally {
+      await topbar.releaseMenuItem()
+    }
+
+    await expect(viewSubmenu).toBeVisible()
+  })
 })
 
 test.describe('Topbar Help menu', { tag: '@ui' }, () => {
