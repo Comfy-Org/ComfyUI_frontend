@@ -1461,7 +1461,7 @@ describe('createOpSender', () => {
 
     expect(localSent).toHaveLength(1)
     expect(localSent[0].workflowId).toBe('wf-new')
-    expect(nodeIdsOf(localSent[0].ops)).toContain(3)
+    expect(nodeIdsOf(localSent[0].ops)).toEqual([3])
     expect(localSettled.map(summarizeSettlement)).toContainEqual({
       state: 'undeliverable',
       nodeIds: [1]
