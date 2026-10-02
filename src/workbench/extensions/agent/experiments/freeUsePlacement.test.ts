@@ -43,11 +43,23 @@ describe('useFreeUsePlacement', () => {
     })
   })
 
-  it.for([undefined, 'unknown'])('keeps control for %s', (value) => {
+  it('keeps control when the flag is absent', () => {
+    remoteConfig.value = {}
+    authenticatedRemoteConfigState.value = 'authenticated'
+    const { variant } = useFreeUsePlacement()
+
+    expect(variant.value).toBe('control')
+    expect(useTelemetry()?.trackAgentFreeUseExposure).toHaveBeenCalledWith({
+      placement: 'control',
+      [`$feature/${FREE_USE_PLACEMENT_FLAG}`]: 'control'
+    })
+  })
+
+  it('keeps control for an unknown flag value', () => {
     const config: RemoteConfig = {}
     Object.defineProperty(config, FREE_USE_PLACEMENT_FLAG, {
       enumerable: true,
-      value
+      value: 'unknown'
     })
     remoteConfig.value = config
     authenticatedRemoteConfigState.value = 'authenticated'
