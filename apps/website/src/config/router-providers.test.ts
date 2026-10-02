@@ -111,25 +111,26 @@ function parseCoverageTable(markdown: string): {
 }
 
 describe('Router provider source availability', () => {
-  for (const [value, expected] of [
+  it.for([
     ['1', true],
     ['true', true],
     ['TRUE', true],
     ['0', false],
     ['false', false],
     ['', false]
-  ] as const) {
-    it(`classifies CI=${value} as ${expected}`, () => {
-      expect(isCI(value)).toBe(expected)
-    })
-  }
+  ] as const)('classifies CI=%s as %s', ([value, expected]) => {
+    expect(isCI(value)).toBe(expected)
+  })
 
   it('fails after retrying a source that stays unavailable', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')))
 
-    const result = fetchDocs(PROVIDERS_PAGE)
-    await vi.runAllTimersAsync()
-    await expect(result).rejects.toThrow(`Could not fetch ${PROVIDERS_PAGE}`)
+    await Promise.all([
+      expect(fetchDocs(PROVIDERS_PAGE)).rejects.toThrow(
+        `Could not fetch ${PROVIDERS_PAGE}`
+      ),
+      vi.runAllTimersAsync()
+    ])
   })
 
   it('detects provider drift when the spec lists different alternate providers', () => {
@@ -205,11 +206,16 @@ describe('Router provider coverage', () => {
         fetchDocs(PROVIDERS_PAGE)
       ])
 
-      for (const { name, docsUrl } of ROUTER_COMFY_ONLY_PREVIEW) {
-        const path = docsUrl.slice(DOCS_ORIGIN.length)
-        expect(catalog).toContain(`[${name}](${path})`)
-        expect(coverage).not.toContain(path)
-      }
+      const missingCatalogLinks = ROUTER_COMFY_ONLY_PREVIEW.filter(
+        ({ name, docsUrl }) =>
+          !catalog.includes(`[${name}](${docsUrl.slice(DOCS_ORIGIN.length)})`)
+      ).map(({ name }) => name)
+      const previewPathsInCoverage = ROUTER_COMFY_ONLY_PREVIEW.map(
+        ({ docsUrl }) => docsUrl.slice(DOCS_ORIGIN.length)
+      ).filter((path) => coverage.includes(path))
+
+      expect(missingCatalogLinks).toEqual([])
+      expect(previewPathsInCoverage).toEqual([])
     },
     SOURCE_TEST_TIMEOUT_MS
   )
