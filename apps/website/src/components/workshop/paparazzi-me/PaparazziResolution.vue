@@ -38,6 +38,7 @@ const resolution = computed({
     v-model="resolution"
     :heading="pc('paparazzi.resolution', locale)"
     :options
+    :label="pc('paparazzi.resolution', locale)"
     :composer
     :disabled="composer && phase.kind === 'running'"
   />
