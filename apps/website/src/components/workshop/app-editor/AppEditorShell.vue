@@ -50,7 +50,8 @@ const dockOverSheet = () => floating() && !wide.value && !panelDimmed
         :class="
           cn(
             'flex min-h-0 flex-1 items-start justify-center px-4 pt-16 pb-36 sm:px-8',
-            floating() && 'pb-52 lg:pr-6 lg:pb-20 lg:pl-86',
+            floating() &&
+              'pb-52 lg:pr-6 lg:pb-20 lg:pl-[calc(var(--container-editor-panel)+1.5rem)]',
             floating() && panelDimmed && 'pb-24'
           )
         "
@@ -96,7 +97,8 @@ const dockOverSheet = () => floating() && !wide.value && !panelDimmed
         :class="
           cn(
             'pointer-events-none absolute inset-x-0 bottom-4 flex flex-col items-center gap-2 px-3',
-            floating() && 'lg:left-83'
+            floating() &&
+              'lg:left-[calc(var(--container-editor-panel)+0.75rem)]'
           )
         "
       >
