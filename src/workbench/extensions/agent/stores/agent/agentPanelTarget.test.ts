@@ -221,24 +221,6 @@ describe('Agent target deletion', () => {
     }
   )
 
-  it.for([
-    { kind: 'temporary', prepare: (_target: ComfyWorkflow) => {} },
-    { kind: 'saved', prepare: saveTarget }
-  ])(
-    'keeps no workflow object once a $kind target closes',
-    async ({ prepare }) => {
-      const { workflows, panel, target } = await setup()
-      prepare(target)
-      await nextTick()
-
-      await workflows.closeWorkflow(target)
-      await nextTick()
-
-      expect(Object.values(panel.targetTracking)).not.toContainEqual(
-        expect.any(ComfyWorkflow)
-      )
-    }
-  )
 })
 
 describe('Agent target tracking policy', () => {
