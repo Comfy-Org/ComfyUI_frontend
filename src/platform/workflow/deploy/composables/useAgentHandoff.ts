@@ -70,10 +70,9 @@ export function useAgentHandoff() {
   }
 
   /**
-   * The clipboard write comes first: it needs the click's user activation,
-   * which a download prompt would spend. The workflow file, downloaded
-   * everywhere but Desktop, is written under the name the brief gives it, without the export filename prompt, for the
-   * same reason.
+   * The clipboard write comes first because it needs the click's user
+   * activation. Every distribution except Desktop then downloads the workflow
+   * under the filename named in the brief, bypassing the export filename prompt.
    */
   async function copyBrief(): Promise<boolean> {
     try {
