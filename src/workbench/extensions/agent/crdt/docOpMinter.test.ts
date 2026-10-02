@@ -750,6 +750,29 @@ describe('attachDocOpMinter', () => {
     ])
   })
 
+  it('fails closed for stale writes from a different rendered graph', async () => {
+    const previousGraph = new LGraph()
+    const { source } = seedGraph(previousGraph)
+    const stored = useWidgetValueStore().getWidget(
+      widgetId(previousGraph.id, source.id, 'steps')
+    )
+    expect(stored).toBeDefined()
+    stored!.serialize = false
+    rootGraphId = toRootGraphId(previousGraph.id)
+
+    emitGraphIntent({
+      type: 'set_widget',
+      graphId: previousGraph.id,
+      nodeId: source.id,
+      name: 'steps',
+      value: 21,
+      previous: 20
+    })
+    await afterFlush()
+
+    expect(minted).toEqual([])
+  })
+
   it('mints a set_widget that names a subgraph owner with the subgraph-node path', async () => {
     const subgraph = createTestSubgraph({ rootGraph: graph })
     const host = createTestSubgraphNode(subgraph)

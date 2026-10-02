@@ -167,7 +167,14 @@ function validateWidgetIntent(
   event: IntentOf<'set_widget'>
 ): WidgetIntentValidation {
   const eventGraph = reachableIntentGraph(graph, event.graphId)
-  if (!eventGraph) return { kind: 'validated' }
+  if (!eventGraph) {
+    const stored = useWidgetValueStore().getWidget(
+      widgetId(event.graphId, event.nodeId, event.name)
+    )
+    return stored && stored.type !== 'button' && stored.serialize !== false
+      ? { kind: 'validated' }
+      : { kind: 'drop' }
+  }
   const node = eventGraph.getNodeById(event.nodeId)
   return node && isPersistedWidgetIntent(node, event)
     ? { kind: 'validated', node }
