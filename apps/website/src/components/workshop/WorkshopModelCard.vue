@@ -17,11 +17,14 @@ import WorkshopCardMedia from './WorkshopCardMedia.vue'
 const {
   model,
   locale = 'en',
-  providerBadge = false
+  providerBadge = false,
+  underHeading = false
 } = defineProps<{
   model: WorkshopModel
   locale?: Locale
   providerBadge?: boolean
+  /** The card is listed under a heading that already names its kind. */
+  underHeading?: boolean
 }>()
 
 const workflow = computed(() =>
@@ -110,11 +113,12 @@ const pillClass =
       >
         {{ cardName }}
       </h3>
-      <!-- A workflow sits under the heading that already names its kind, and
-          its artwork shows what it does, so the line a tag would take goes to
-          the name instead. A model is listed on its own and keeps its tags. -->
+      <!-- Under a heading that names its kind, a workflow's artwork says the
+          rest, so the line a tag would take goes to the name instead. Listed
+          on its own — searched, filtered, or beside models — it keeps the tag,
+          which is then the only place the kind is written. -->
       <div
-        v-if="!workflow"
+        v-if="!workflow || !underHeading"
         class="flex h-6 min-w-0 items-center gap-1.5 overflow-hidden"
       >
         <span :class="pillClass" data-testid="model-card-task">
