@@ -154,13 +154,9 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   let queueHead = 0
   let open: { workflowId: string; ops: Op[] } | null = null
   let inFlight: InFlight | null = null
-  // Creator-owned Lamport counters, one per workflow: the stamp must be
-  // monotonic per (actor, doc), so a mint that is never addressed to a doc — an
-  // admission taken while unbound, or on a detached sender — must not move or
-  // reset the cursor of a doc that is still live. A single shared slot let an
-  // unbound admission between two bound ones hand the second one a counter the
-  // first had already used, and two ops with the same stamp fall through to the
-  // op_id tiebreak, so which of the two human edits survives is arbitrary.
+  // One Lamport cursor per workflow, cleared only by that doc's reset: the
+  // observed sequence reads 0 between a subscribe and its ack, so only the
+  // cursor keeps a re-bound workflow's stamps past ones this actor used there.
   const lastMintedVersions = new Map<string, number>()
   let detached = false
   let suspended = false
