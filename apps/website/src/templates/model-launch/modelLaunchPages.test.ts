@@ -11,6 +11,7 @@ import {
   qwenImage21Page
 } from '../../data/qwenImage21'
 import { minimaxMusic3Page } from '../../data/minimaxMusic3'
+import { nvidiaRtxPage } from '../../data/nvidiaRtx'
 import { seedancePage } from '../../data/seedance'
 import { wanAnimate2Page } from '../../data/wanAnimate2'
 import { wan3Page } from '../../data/wan3'
@@ -32,7 +33,8 @@ const pages: { name: string; page: ModelLaunchPage }[] = [
   { name: 'ltx', page: ltxPage },
   { name: 'geminiOmni', page: geminiOmniPage },
   { name: 'wanAnimate2', page: wanAnimate2Page },
-  { name: 'wan3', page: wan3Page }
+  { name: 'wan3', page: wan3Page },
+  { name: 'nvidiaRtx', page: nvidiaRtxPage }
 ]
 
 const VIDEO_URL =
@@ -52,6 +54,24 @@ describe.for(pages)('$name launch page config', ({ page }) => {
     expect(new Set(ids).size).toBe(ids.length)
   })
 
+  it('gives every before/after tab a unique id, English copy, and a clip pair', () => {
+    const tabs = page.beforeAfter?.tabs ?? []
+    // A page that defines the section but lists no tabs would render a
+    // heading over an empty box.
+    expect(page.beforeAfter === undefined || tabs.length > 0).toBe(true)
+    expect(new Set(tabs.map((tab) => tab.id)).size).toBe(tabs.length)
+
+    const offenders = tabs.filter(
+      (tab) =>
+        !tab.label.en ||
+        !tab.caption.en ||
+        !VIDEO_URL.test(tab.beforeSrc) ||
+        !VIDEO_URL.test(tab.afterSrc)
+    )
+
+    expect(offenders.map((tab) => tab.id)).toEqual([])
+  })
+
   it('translates every referenced key in both locales', () => {
     // Every key the ModelLaunchPage contract can render, optional ones included.
     const keys = [
@@ -68,6 +88,8 @@ describe.for(pages)('$name launch page config', ({ page }) => {
       page.hero.promptBar?.sampleKey,
       page.hero.promptBar?.cta.labelKey,
       ...(page.hero.badgeKeys ?? []),
+      page.beforeAfter?.headingKey,
+      page.beforeAfter?.bodyKey,
       page.gallery?.headingKey,
       page.pricing?.banner?.titleKey,
       page.pricing?.banner?.subtitleKey,

@@ -33,6 +33,41 @@ describe('ModelLaunchHeroSection', () => {
     ).toBeTruthy()
   })
 
+  it.for([
+    { titleSize: undefined, desktopClass: 'lg:text-6xl/tight' },
+    { titleSize: 'compact' as const, desktopClass: 'lg:text-5xl/tight' }
+  ])(
+    'sizes the desktop heading by titleSize=$titleSize',
+    ({ titleSize, desktopClass }) => {
+      render(ModelLaunchHeroSection, {
+        props: { hero: { ...hero, titleSize } }
+      })
+
+      expect(screen.getByRole('heading', { level: 1 })).toHaveClass(
+        desktopClass
+      )
+    }
+  )
+
+  it('shows the placeholder still above the content when a media-first hero has no video', () => {
+    render(ModelLaunchHeroSection, {
+      props: {
+        hero: {
+          layout: 'media-first',
+          placeholderImageSrc: '/still.webp',
+          titleKey: 'chatgptImage25.hero.title'
+        }
+      }
+    })
+    const blocks = screen.getAllByTestId('model-launch-hero-block')
+
+    expect(blocks).toHaveLength(2)
+    expect(within(blocks[0]).getByAltText('').getAttribute('src')).toBe(
+      '/still.webp'
+    )
+    expect(within(blocks[1]).getByRole('heading', { level: 1 })).toBeTruthy()
+  })
+
   it('spins the logo mask over the placeholder for overlay heroes that opt in', () => {
     render(ModelLaunchHeroSection, {
       props: {

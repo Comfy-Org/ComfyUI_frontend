@@ -28,6 +28,8 @@ export const NOINDEX_ROUTES = [
   '/privacy-policy',
   '/terms-of-service',
   '/platform/serverless-animation',
+  // Pre-launch: lift once the RTX Video nodes page has final media and copy.
+  '/nvidia-rtx',
   ...PLACEHOLDER_PATHNAMES
 ] as const
 

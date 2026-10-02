@@ -7673,6 +7673,17 @@ Enterprise`
     'zh-CN': 'Gemini Omni 1.1 Flash'
   },
   'modelLaunch.copyPrompt': { en: 'Copy prompt', 'zh-CN': '复制提示词' },
+  'modelLaunch.loadMore': { en: 'Load more', 'zh-CN': '加载更多' },
+  'modelLaunch.beforeAfter.tabsLabel': {
+    en: 'Comparison',
+    'zh-CN': '对比项目'
+  },
+  'modelLaunch.beforeAfter.sliderLabel': {
+    en: 'Comparison slider',
+    'zh-CN': '对比滑块'
+  },
+  'modelLaunch.beforeAfter.before': { en: 'Before', 'zh-CN': '处理前' },
+  'modelLaunch.beforeAfter.after': { en: 'After', 'zh-CN': '处理后' },
   // Wan 3.0 model page (/wan-3.0)
   'wan3.meta.title': {
     en: 'Wan 3.0 on Comfy: Text, Image and Reference to Video',
@@ -7836,6 +7847,105 @@ Enterprise`
   'footer.chatgptImage25': {
     en: 'ChatGPT Images 2.5',
     'zh-CN': 'ChatGPT Images 2.5'
+  },
+  // NVIDIA RTX landing page (/nvidia-rtx)
+  'nvidiaRtx.meta.title': {
+    en: 'ComfyUI on NVIDIA RTX: Run AI Models Locally',
+    'zh-CN': 'NVIDIA RTX 上的 ComfyUI：在本地运行 AI 模型'
+  },
+  'nvidiaRtx.meta.description': {
+    en: 'Run open image, video, audio, and 3D models on your NVIDIA RTX GPU with ComfyUI. Free, private, and fully under your control.',
+    'zh-CN':
+      '使用 ComfyUI 在你的 NVIDIA RTX GPU 上运行开源图像、视频、音频与 3D 模型。免费、私密，完全由你掌控。'
+  },
+  'nvidiaRtx.breadcrumb.model': {
+    en: 'NVIDIA RTX',
+    'zh-CN': 'NVIDIA RTX'
+  },
+  'nvidiaRtx.breadcrumb.updated': {
+    en: 'Updated September 2026',
+    'zh-CN': '更新于 2026 年 9 月'
+  },
+  'nvidiaRtx.hero.title': {
+    en: 'RTX Video nodes\nare here',
+    'zh-CN': 'RTX Video 节点已上线'
+  },
+  'nvidiaRtx.hero.description': {
+    en: 'Three open-source nodes, now in ComfyUI. Upscale, multiply frame rate up to 4×, and convert SDR to HDR on your own RTX GPU. Built for VFX artists and professional video creators.',
+    'zh-CN':
+      '三个开源节点，现已加入 ComfyUI。在你自己的 RTX GPU 上进行视频放大、最高 4 倍帧率提升，以及 SDR 转 HDR。专为 VFX 艺术家与专业视频创作者打造。'
+  },
+  'nvidiaRtx.hero.tagUpscale': {
+    en: 'Upscale',
+    'zh-CN': '视频放大'
+  },
+  'nvidiaRtx.hero.tagFrameRate': {
+    en: 'Frame Rate up to 4×',
+    'zh-CN': '最高 4 倍帧率'
+  },
+  'nvidiaRtx.hero.tagSdrToHdr': {
+    en: 'SDR to HDR',
+    'zh-CN': 'SDR 转 HDR'
+  },
+  'nvidiaRtx.hero.primaryCta': {
+    en: 'DOWNLOAD DESKTOP',
+    'zh-CN': '下载桌面版'
+  },
+  'nvidiaRtx.hero.secondaryCta': {
+    en: 'READ THE GUIDE',
+    'zh-CN': '查看教程'
+  },
+  'nvidiaRtx.beforeAfter.heading': {
+    en: 'One clip, two states.',
+    'zh-CN': '一段视频，两种状态。'
+  },
+  'nvidiaRtx.beforeAfter.body': {
+    en: 'Source on one side, output on the other. Drag the line to compare them frame by frame.',
+    'zh-CN': '一侧是原始素材，另一侧是输出结果。拖动分割线，逐帧比较两者。'
+  },
+  'nvidiaRtx.gallery.heading': {
+    en: 'Made on NVIDIA RTX',
+    'zh-CN': '在 NVIDIA RTX 上创作'
+  },
+  'nvidiaRtx.steps.heading': {
+    en: 'Start in three steps',
+    'zh-CN': '三步即可开始'
+  },
+  'nvidiaRtx.steps.step': { en: 'Step', 'zh-CN': '步骤' },
+  'nvidiaRtx.steps.primaryCta': {
+    en: 'DOWNLOAD DESKTOP',
+    'zh-CN': '下载桌面版'
+  },
+  'nvidiaRtx.faq.heading': { en: 'Q&A', 'zh-CN': '问答' },
+  'nvidiaRtx.runOptions.heading': {
+    en: 'One engine, every way to run it',
+    'zh-CN': '同一引擎，多种运行方式'
+  },
+  'nvidiaRtx.runOptions.subtitle': {
+    en: 'Run on your RTX PC today. Move the same workflow to Comfy Cloud or the API when a job outgrows your desk.',
+    'zh-CN':
+      '今天就在你的 RTX 电脑上运行。当任务超出本地算力时，将同一工作流迁移到 Comfy Cloud 或 API。'
+  },
+  'nvidiaRtx.runOptions.cta': {
+    en: 'LEARN MORE',
+    'zh-CN': '了解更多'
+  },
+  'nvidiaRtx.reviews.heading': {
+    en: '4+ million Comfy creators say',
+    'zh-CN': '超过 400 万 Comfy 创作者这样说'
+  },
+  'nvidiaRtx.reviews.highlightTitle': {
+    en: 'COMFY AGENT',
+    'zh-CN': 'COMFY AGENT'
+  },
+  'nvidiaRtx.reviews.highlightDescription': {
+    en: 'Now live in Comfy Desktop. Describe what you want, and it plans, builds, and runs the workflow side by side with you. Every step stays on the canvas for you to adjust.',
+    'zh-CN':
+      '现已登陆 Comfy Desktop。描述你想要的效果，它会与你并肩规划、搭建并运行工作流。每一步都保留在画布上，随时可以调整。'
+  },
+  'nvidiaRtx.reviews.highlightCta': {
+    en: 'TRY IN COMFY DESKTOP',
+    'zh-CN': '在 Comfy Desktop 中试用'
   },
   // Qwen-Image 2.1 model page (/qwen-image-2.1)
   'qwenImage21.meta.title': {

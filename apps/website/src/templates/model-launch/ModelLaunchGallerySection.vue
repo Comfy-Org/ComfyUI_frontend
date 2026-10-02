@@ -7,6 +7,7 @@ import { ref, useTemplateRef } from 'vue'
 import type { Locale } from '../../i18n/translations'
 import type { ModelLaunchGallery } from './types'
 
+import BrandButton from '../../components/common/BrandButton.vue'
 import Badge from '../../components/ui/badge/Badge.vue'
 import CopyTextButton from '../../components/ui/copy-text-button/CopyTextButton.vue'
 import IconButton from '../../components/ui/icon-button/IconButton.vue'
@@ -16,6 +17,18 @@ const { locale = 'en', gallery } = defineProps<{
   gallery: ModelLaunchGallery
   locale?: Locale
 }>()
+
+const showCardMeta = gallery.cardMeta !== 'none'
+const showCardLink = gallery.ctaVariant !== 'none'
+
+const mobileExpanded = ref(false)
+const hasMobileOverflow =
+  gallery.mobileVisibleCards !== undefined &&
+  gallery.cards.length > gallery.mobileVisibleCards
+const collapsedOnMobile = (index: number) =>
+  hasMobileOverflow &&
+  !mobileExpanded.value &&
+  index >= (gallery.mobileVisibleCards ?? 0)
 
 // The cards sit well below the fold; defer their videos until the section
 // nears the viewport instead of fetching all of them during first paint.
@@ -48,7 +61,11 @@ const { stop } = useIntersectionObserver(
     <div
       class="mx-auto mt-16 grid max-w-7xl grid-cols-1 gap-x-6 gap-y-10 md:grid-cols-2"
     >
-      <article v-for="card in gallery.cards" :key="card.id">
+      <article
+        v-for="(card, index) in gallery.cards"
+        :key="card.id"
+        :class="cn(collapsedOnMobile(index) && 'hidden md:block')"
+      >
         <div
           class="group relative block aspect-19/10 overflow-hidden rounded-4.5xl bg-black/40"
         >
@@ -98,8 +115,11 @@ const { stop } = useIntersectionObserver(
           </div>
         </div>
 
-        <div class="mt-5 flex items-center justify-between gap-3">
-          <div class="flex items-center gap-3">
+        <div
+          v-if="showCardMeta || showCardLink"
+          class="mt-5 flex items-center justify-between gap-3"
+        >
+          <div v-if="showCardMeta" class="flex items-center gap-3">
             <Badge :variant="card.tier === 'free' ? 'accent' : 'callout'">
               {{
                 card.tier === 'free'
@@ -113,6 +133,7 @@ const { stop } = useIntersectionObserver(
           </div>
 
           <IconButton
+            v-if="showCardLink"
             as="a"
             :href="card.href"
             target="_blank"
@@ -121,7 +142,7 @@ const { stop } = useIntersectionObserver(
             size="sm"
             :class="
               cn(
-                'rounded-xl text-primary-comfy-ink hover:text-primary-comfy-ink',
+                'ml-auto rounded-xl text-primary-comfy-ink hover:text-primary-comfy-ink',
                 gallery.ctaVariant === 'accent'
                   ? 'bg-primary-comfy-yellow hover:opacity-90'
                   : 'bg-primary-warm-gray hover:bg-primary-comfy-yellow'
@@ -154,6 +175,21 @@ const { stop } = useIntersectionObserver(
           />
         </div>
       </article>
+    </div>
+
+    <div
+      v-if="hasMobileOverflow && !mobileExpanded"
+      class="mt-10 flex justify-center md:hidden"
+    >
+      <BrandButton
+        type="button"
+        variant="outline"
+        size="lg"
+        class="uppercase"
+        @click="mobileExpanded = true"
+      >
+        {{ t('modelLaunch.loadMore', locale) }}
+      </BrandButton>
     </div>
   </section>
 </template>

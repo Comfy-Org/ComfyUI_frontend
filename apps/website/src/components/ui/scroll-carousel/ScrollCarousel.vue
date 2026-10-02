@@ -1,19 +1,29 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useScroll } from '@vueuse/core'
+import {
+  useElementHover,
+  useIntersectionObserver,
+  useScroll
+} from '@vueuse/core'
 import type { HTMLAttributes } from 'vue'
 import { computed, ref } from 'vue'
 
+import { useCarouselAutoplay } from '../../../composables/useCarouselAutoplay'
+import { prefersReducedMotion } from '../../../composables/useReducedMotion'
 import { t } from '../../../i18n/translations'
 import type { Locale } from '../../../i18n/translations'
 
 const {
   locale = 'en',
   gapClass = 'gap-12 lg:gap-20',
+  autoplayMs,
   class: className
 } = defineProps<{
   locale?: Locale
   gapClass?: string
+  // Advances one viewport every `autoplayMs`, wrapping to the start; paused
+  // while hovered, off-screen, or for reduced-motion visitors. Off by default.
+  autoplayMs?: number
   class?: HTMLAttributes['class']
 }>()
 
@@ -33,6 +43,31 @@ function scroll(direction: -1 | 1) {
   el.scrollBy({ left: direction * el.clientWidth, behavior: 'smooth' })
 }
 
+function advance() {
+  const el = trackRef.value
+  if (!el) return
+  const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1
+  if (atEnd) el.scrollTo({ left: 0, behavior: 'smooth' })
+  else scroll(1)
+}
+
+const isVisible = ref(false)
+useIntersectionObserver(trackRef, ([entry]) => {
+  isVisible.value = entry?.isIntersecting ?? false
+})
+const isHovered = useElementHover(trackRef)
+
+useCarouselAutoplay({
+  delayMs: () => autoplayMs ?? 0,
+  active: () =>
+    Boolean(autoplayMs) &&
+    !prefersReducedMotion() &&
+    isVisible.value &&
+    !isHovered.value,
+  resetKey: x,
+  advance
+})
+
 const progressPercent = computed(() => `${progress.value * 100}%`)
 </script>
 
@@ -42,6 +77,7 @@ const progressPercent = computed(() => `${progress.value * 100}%`)
   >
     <div
       ref="trackRef"
+      data-testid="scroll-carousel-track"
       :class="
         cn(
           'scrollbar-none flex snap-x snap-mandatory overflow-x-auto',
