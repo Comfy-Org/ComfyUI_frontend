@@ -79,12 +79,15 @@ export function chunkWireOps(ops: Op[]): Op[][] {
   }
 
   for (const op of ops) {
+    // Validate every operation at the transport boundary, including `clear`.
+    // Non-batchable ops still have to survive the enclosing frame's
+    // JSON.stringify before they can be considered deliverable.
+    const bytes = wireSize(op)
     if (!isBatchable(op)) {
       flush()
       batches.push([op])
       continue
     }
-    const bytes = wireSize(op)
     const overOps = current.length + 1 > WIRE_MAX_OPS_PER_BATCH
     const overBytes =
       current.length > 0 && currentBytes + bytes > WIRE_MAX_BATCH_BYTES
