@@ -75,6 +75,11 @@ export type BatchOutcome =
   | { state: 'unconfirmed'; ops: Op[] }
   | { state: 'undeliverable'; ops: Op[] }
 
+interface AdmissionGroup {
+  workflowId: string
+  ops: Op[]
+}
+
 export interface OpSender {
   enqueue(operations: GraphOperation[]): void
   /**
@@ -94,7 +99,7 @@ export interface OpSender {
   /** Unsettled batch count for observability; 0 = drained. */
   pending(): number
   /** Every unsettled batch, in-flight first, each addressed to its mint-time workflow. */
-  pendingOps(): ReadonlyArray<{ workflowId: string; ops: Op[] }>
+  pendingOps(): ReadonlyArray<AdmissionGroup>
   /**
    * The bound workflow's tab went inactive: the subscription is paused, not
    * lost. Until `resume()`, a batch reaching `transmit()` is parked instead
@@ -150,9 +155,9 @@ interface InFlight {
 }
 
 export function createOpSender(deps: OpSenderDeps): OpSender {
-  const queue: Array<{ workflowId: string; ops: Op[] }> = []
+  const queue: AdmissionGroup[] = []
   let queueHead = 0
-  let open: { workflowId: string; ops: Op[] } | null = null
+  let open: AdmissionGroup | null = null
   let inFlight: InFlight | null = null
   // One Lamport cursor per workflow, cleared only by that doc's reset: the
   // observed sequence reads 0 between a subscribe and its ack, so only the
@@ -390,7 +395,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     }
   }
 
-  function dequeue(): { workflowId: string; ops: Op[] } | undefined {
+  function dequeue(): AdmissionGroup | undefined {
     if (queueHead >= queue.length) return
     const queued = queue[queueHead]
     queueHead++
@@ -637,7 +642,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
    * position the group held when it was admitted.
    */
   function sealGroup(
-    { workflowId, ops }: { workflowId: string; ops: Op[] },
+    { workflowId, ops }: AdmissionGroup,
     insertionIndex: number
   ): void {
     const sealAbortGeneration = abortGeneration
