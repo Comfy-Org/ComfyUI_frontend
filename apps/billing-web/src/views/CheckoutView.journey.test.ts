@@ -159,8 +159,6 @@ function journey(): ReportedAction[] {
 
 const journeyNames = () => journey().map(({ name }) => name)
 
-const nextMacrotask = () => new Promise((resolve) => setTimeout(resolve))
-
 const vueErrors: unknown[] = []
 
 beforeEach(() => {
@@ -636,26 +634,40 @@ describe('the embedded checkout journey', () => {
     ).toMatchObject([{ billing_op_id: 'op_1' }, { billing_op_id: 'op_2' }])
   })
 
-  it('reports nothing for a quote a newer one overtook', async () => {
+  it('reports nothing for a re-quote a newer quote overtook', async () => {
     let answerOvertaken: (result: PreviewSubscribeResult) => void = () => {}
-    const fake = await renderCheckout(CHECKOUT_PATH, {}, (client) =>
-      client.previewSubscribe.mockImplementationOnce(
+    const fake = await renderCheckout()
+    await waitFor(() => expect(journey()).toHaveLength(2))
+    fake.subscribe.mockResolvedValueOnce({
+      status: 'error',
+      code: 'QUOTE_STALE'
+    })
+    fake.previewSubscribe
+      .mockImplementationOnce(
         () => new Promise((resolve) => (answerOvertaken = resolve))
       )
-    )
-    await waitFor(() => expect(fake.previewSubscribe).toHaveBeenCalledOnce())
+      .mockResolvedValueOnce({
+        status: 'ok',
+        value: cardQuote({ quote_version: 5 })
+      })
+    reportConfirm('ctoken_1', 'card')
+    await waitFor(() => expect(fake.previewSubscribe).toHaveBeenCalledTimes(2))
     const next = `/v1/checkout?${ENTRY_QUERY}&plan=creator_annual`
     recordBillingEntry(parseBillingEntry(next))
     await fake.router.push(next)
-    await waitFor(() => expect(journey()).toHaveLength(2))
+    await waitFor(() =>
+      expect(
+        journeyNames().filter(
+          (name) => name === 'billing.checkout.preview_ready'
+        )
+      ).toHaveLength(2)
+    )
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
 
     answerOvertaken({ status: 'error', code: 'REQUEST_FAILED' })
-    await nextMacrotask()
+    expect(await screen.findByRole('alert')).toBeInTheDocument()
 
-    expect(journeyNames()).toEqual([
-      'billing.checkout.entered',
-      'billing.checkout.preview_ready'
-    ])
+    expect(journeyNames()).not.toContain('billing.checkout.preview_failed')
   })
 
   it('reports nothing for a promo quote a newer one overtook', async () => {
@@ -675,12 +687,15 @@ describe('the embedded checkout journey', () => {
     recordBillingEntry(parseBillingEntry(next))
     await fake.router.push(next)
     await waitFor(() => expect(fake.previewSubscribe).toHaveBeenCalledTimes(3))
+    expect(screen.getByRole('button', { name: 'Apply' })).toBeDisabled()
 
     answerOvertaken({
       status: 'ok',
       value: cardQuote({ promotion_code: 'SPRING', quote_version: 4 })
     })
-    await nextMacrotask()
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Apply' })).toBeEnabled()
+    )
 
     expect(journeyNames()).not.toContain('billing.checkout.promo')
   })
