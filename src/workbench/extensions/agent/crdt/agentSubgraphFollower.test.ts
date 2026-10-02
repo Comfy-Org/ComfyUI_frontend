@@ -112,9 +112,11 @@ interface FixtureOptions {
  * otherwise asserts on load.
  */
 function expectsDriftingHost(options: FixtureOptions): boolean {
+  const promotedCount = options.extraInput === true ? 2 : 1
   return (
     options.unpromotedDefinition === true ||
-    options.hostWidgetValues !== undefined
+    (options.hostWidgetValues !== undefined &&
+      options.hostWidgetValues.length !== promotedCount)
   )
 }
 
