@@ -199,22 +199,6 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       : Math.max(observed, lastMinted + 1)
   }
 
-  /**
-   * Kept for every workflow this actor has minted against, for this sender's
-   * whole life: no eviction policy is safe here. A `subscribe` resets the
-   * follower's observed sequence to 0 until `doc_subscribed` acks it, so an
-   * edit made in that window mints against 0 and the cursor is the ONLY thing
-   * keeping it past this actor's last stamp for that doc. Dropping a cursor
-   * therefore does not "fall back to the observed sequence" — it hands a
-   * re-bound workflow a counter it has already used, which is the stamp
-   * collision this cursor exists to prevent. A retained cursor can only ever
-   * raise a stamp (`Math.max`), never lower one, so retention is the safe
-   * direction; the cost is one number per edited workflow per page session.
-   */
-  function rememberMintedVersion(workflowId: string, version: number): void {
-    lastMintedVersions.set(workflowId, version)
-  }
-
   function releasePumpDeferral(): void {
     pumpDeferrals--
     if (pumpDeferrals === 0 && pumpRequested) {
