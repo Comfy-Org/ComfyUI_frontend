@@ -4124,6 +4124,50 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   })
 
+  // The same lag `(g33)` describes, read from the other side: the server
+  // clears `pending_ask` behind the answer, so a row it has already closed can
+  // still be carrying a spent one. A later row keeps the turn open, so
+  // recovery still polls -- and must take the ask only from the open row, or
+  // the turn's own closed row resurrects a card nobody can answer. The
+  // hydrate path is already gated this way (`applyAssistantRow`).
+  it('(g36) a closed row still carrying a spent ask does not restore a card', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = fakeRest({
+        getMessages: vi.fn(
+          async (): Promise<AgentMessages> => [
+            historyRow(1, 'user', 'msg-1', 'go'),
+            {
+              ...parkedRow(),
+              status: 'interrupted'
+            },
+            {
+              ...historyRow(3, 'assistant', 'msg-1', '', 'row-3'),
+              content: {},
+              status: 'streaming'
+            }
+          ]
+        )
+      })
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+
+      await session.sendMessage('go')
+      emit(delta('msg-1', 'partial'))
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(31_000)
+
+      expect(approvalParts(session)).toHaveLength(0)
+      expect(reportError).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   // A frame published while the first history fetch is still in flight has no
   // turn in memory to reach: `ingest` drops it. Recovery is the only thing
   // left that can draw the card, so the drop must not be recorded as a
