@@ -110,7 +110,13 @@ const pillClass =
       >
         {{ cardName }}
       </h3>
-      <div class="flex h-6 min-w-0 items-center gap-1.5 overflow-hidden">
+      <!-- A workflow sits under the heading that already names its kind, and
+          its artwork shows what it does, so the line a tag would take goes to
+          the name instead. A model is listed on its own and keeps its tags. -->
+      <div
+        v-if="!workflow"
+        class="flex h-6 min-w-0 items-center gap-1.5 overflow-hidden"
+      >
         <span :class="pillClass" data-testid="model-card-task">
           {{ taskLabel }}
         </span>

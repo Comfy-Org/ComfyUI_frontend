@@ -624,7 +624,7 @@ test('the examples belong to the playground, not to Details or API', async ({
   await expect(examples).toBeVisible()
 })
 
-test('a workflow card gives every name two rows and keeps its tag', async ({
+test('a workflow card spends the tag line on its name', async ({
   page,
   context
 }) => {
@@ -635,8 +635,8 @@ test('a workflow card gives every name two rows and keeps its tag', async ({
     '[data-testid="workshop-model-card"][data-kind="workflow"]'
   )
   await expect(cards.first()).toBeVisible()
-  // The two rows are reserved whether the name fills them or not, so the tags
-  // below them line up across the grid and nothing moves on hover.
+  // The two rows are reserved whether the name fills them or not, so the
+  // cards line up across the grid and nothing moves on hover.
   const names = cards.getByTestId('model-card-name')
   const rows = await names.evaluateAll((all) =>
     all.map((name) =>
@@ -651,12 +651,12 @@ test('a workflow card gives every name two rows and keeps its tag', async ({
   const card = cards.nth(
     shown.indexOf(shown.reduce((a, b) => (b.length > a.length ? b : a), ''))
   )
+  // The heading above the row already names the kind, so the card does not
+  // repeat it under a name that needed the room.
+  await expect(cards.getByTestId('model-card-task')).toHaveCount(0)
+
   const resting = await card.boundingBox()
-  await expect(card.getByTestId('model-card-task')).toBeVisible()
-
   await card.hover()
-
-  await expect(card.getByTestId('model-card-task')).toBeVisible()
   expect((await card.boundingBox())?.height).toBeCloseTo(
     resting?.height ?? 0,
     0
