@@ -178,6 +178,51 @@
         "forbidden-edge:painter->mask-editor:src/composables/painter/usePainter.ts->src/extensions/core/maskeditor/types.ts#1"
       ],
       "fingerprintPrefixes": []
+    },
+    {
+      "id": "DDD-EX-011",
+      "owner": "@jtydhr88",
+      "rationale": "Image-compositor callers predate a declared public entry point, including the coupled layer editor.",
+      "sunset": "2027-03-31",
+      "removalCriteria": "Publish focused image-compositor entry points and migrate every recorded external caller.",
+      "exactFingerprints": [
+        "deep-import:image-compositor:src/extensions/core/index.ts->src/extensions/core/imageCompositor.ts#1",
+        "deep-import:image-compositor:src/lib/litegraph/src/widgets/widgetMap.ts->src/lib/litegraph/src/widgets/CompositorWidget.ts#1",
+        "deep-import:image-compositor:src/renderer/extensions/layerEditor/components/LayerEditorContent.test.ts->src/renderer/extensions/compositor/composables/compositorSave.ts#1",
+        "deep-import:image-compositor:src/renderer/extensions/layerEditor/components/LayerEditorContent.test.ts->src/renderer/extensions/compositor/composables/compositorSession.ts#1",
+        "deep-import:image-compositor:src/renderer/extensions/layerEditor/components/LayerEditorContent.test.ts->src/renderer/extensions/compositor/composables/useCompositorAutoSave.ts#1",
+        "deep-import:image-compositor:src/renderer/extensions/layerEditor/components/LayerEditorContent.test.ts->src/renderer/extensions/compositor/composables/useCompositorAutoSave.ts#2",
+        "deep-import:image-compositor:src/renderer/extensions/layerEditor/components/LayerEditorContent.vue->src/renderer/extensions/compositor/composables/compositorSave.ts#1",
+        "deep-import:image-compositor:src/renderer/extensions/layerEditor/components/LayerEditorContent.vue->src/renderer/extensions/compositor/composables/compositorSession.ts#1",
+        "deep-import:image-compositor:src/renderer/extensions/layerEditor/components/LayerEditorContent.vue->src/renderer/extensions/compositor/composables/useCompositorAutoSave.ts#1",
+        "deep-import:image-compositor:src/renderer/extensions/layerEditor/composables/useLayerEditorSession.test.ts->src/renderer/extensions/compositor/composables/compositorLayerState.ts#1",
+        "deep-import:image-compositor:src/renderer/extensions/vueNodes/widgets/registry/widgetRegistry.ts->src/renderer/extensions/compositor/components/WidgetCompositor.vue#1",
+        "deep-import:image-compositor:src/scripts/widgets.ts->src/renderer/extensions/vueNodes/widgets/composables/useCompositorWidget.ts#1"
+      ],
+      "fingerprintPrefixes": []
+    },
+    {
+      "id": "DDD-EX-012",
+      "owner": "@Comfy-Org/comfy_frontend_devs",
+      "rationale": "LiteGraph widget types currently depend on the image-compositor renderer's value type.",
+      "sunset": "2027-03-31",
+      "removalCriteria": "Relocate CompositorWidgetValue to a neutral shared contract and migrate the characterized LiteGraph dependency.",
+      "exactFingerprints": [
+        "deep-import:image-compositor:src/lib/litegraph/src/types/widgets.ts->src/renderer/extensions/compositor/components/types.ts#1"
+      ],
+      "fingerprintPrefixes": []
+    },
+    {
+      "id": "DDD-EX-013",
+      "owner": "@jtydhr88",
+      "rationale": "Compositor application helpers currently consume renderer-owned widget value types.",
+      "sunset": "2027-03-31",
+      "removalCriteria": "Move compositor widget value contracts out of presentation and remove both characterized dependency occurrences.",
+      "exactFingerprints": [
+        "forbidden-edge:image-compositor->image-compositor:src/renderer/extensions/compositor/composables/compositorWidgets.ts->src/renderer/extensions/compositor/components/types.ts#1",
+        "forbidden-edge:image-compositor->image-compositor:src/renderer/extensions/compositor/composables/compositorWidgets.ts->src/renderer/extensions/compositor/components/types.ts#2"
+      ],
+      "fingerprintPrefixes": []
     }
   ]
 }
