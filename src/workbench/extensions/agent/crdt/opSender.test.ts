@@ -18,10 +18,14 @@ type SettlementListener = (outcome: BatchOutcome) => void
 type SettlementSummary = { state: BatchOutcome['state']; nodeIds: unknown[] }
 type AddNodeOperation = Extract<GraphOperation, { op: 'add_node' }>
 
+function nodeIdsOf(ops: readonly Op[]): unknown[] {
+  return ops.map((op) => ('node_id' in op ? op.node_id : undefined))
+}
+
 function summarizeSettlement(outcome: BatchOutcome): SettlementSummary {
   return {
     state: outcome.state,
-    nodeIds: outcome.ops.map((op) => ('node_id' in op ? op.node_id : undefined))
+    nodeIds: nodeIdsOf(outcome.ops)
   }
 }
 
@@ -1435,9 +1439,7 @@ describe('createOpSender', () => {
 
     expect(localSent).toHaveLength(1)
     expect(localSent[0].workflowId).toBe('wf-new')
-    expect(
-      localSent[0].ops.map((op) => ('node_id' in op ? op.node_id : undefined))
-    ).toEqual([3])
+    expect(nodeIdsOf(localSent[0].ops)).toEqual([3])
     // Pinned as an exact list rather than a `toContainEqual`: the post-seal
     // admission of node 2 also settles `undeliverable` without ever reaching
     // the wire, and a containment check hides that. Whether dropping it is

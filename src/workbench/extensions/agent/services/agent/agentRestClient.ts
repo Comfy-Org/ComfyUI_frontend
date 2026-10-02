@@ -350,7 +350,7 @@ export function createAgentRestClient() {
     try {
       payload = await response.json()
     } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') throw error
+      if (!(error instanceof SyntaxError)) throw error
       throw new AgentResponseUnreadableError(error)
     }
     return schema.parse(payload)
