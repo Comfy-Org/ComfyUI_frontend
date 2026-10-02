@@ -86,15 +86,15 @@ const tasks = computed(() =>
 )
 
 const popular = computed(() => [
-  ...apps.flatMap((app) => (app.image ? [app.image] : [])),
+  ...apps.map((app) => app.image),
   ...everything.value
     .slice(0, RESULTS - apps.length)
-    .flatMap((model) => (model.thumbnail ? [model.thumbnail.url] : []))
+    .map((model) => model.thumbnail?.url)
 ])
 const doorArt = computed(() => {
   const shown = new Set([
     ...popular.value,
-    ...tasks.value.flatMap((task) => (task.cover ? [task.cover.url] : []))
+    ...tasks.value.map((task) => task.cover?.url)
   ])
   const pick = (list: readonly string[]) =>
     list.filter((url) => !shown.has(url)).slice(0, 3)
