@@ -131,6 +131,23 @@ describe('agentApiSchema contract subtleties', () => {
     expect(parsed.data.skill).toBe('a'.repeat(256))
   })
 
+  it('does not split a Unicode code point when clamping a skill', () => {
+    const parsed = zAgentWsEvent.parse({
+      type: 'agent_tool_call',
+      data: {
+        tool_call_id: 'call-1',
+        tool_name: 'load_skill',
+        status: 'running',
+        skill: `${'a'.repeat(255)}😀tail`,
+        message_id: 'm1',
+        thread_id: 't1'
+      }
+    })
+
+    assert(parsed.type === 'agent_tool_call')
+    expect(parsed.data.skill).toBe(`${'a'.repeat(255)}😀`)
+  })
+
   it('keeps a whole transcript readable when one persisted skill is over-long', () => {
     const parsed = zAgentMessages.parse([
       {

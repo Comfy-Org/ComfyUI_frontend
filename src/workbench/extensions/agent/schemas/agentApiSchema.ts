@@ -114,7 +114,9 @@ const zSkillName = z
   .string()
   .nullish()
   .transform((skill) =>
-    typeof skill === 'string' ? skill.slice(0, SKILL_NAME_MAX) : skill
+    typeof skill === 'string'
+      ? Array.from(skill).slice(0, SKILL_NAME_MAX).join('')
+      : skill
   )
 
 /**
