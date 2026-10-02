@@ -145,6 +145,7 @@ interface InFlight {
 
 export function createOpSender(deps: OpSenderDeps): OpSender {
   const queue: Array<{ workflowId: string; ops: Op[] }> = []
+  let queueHead = 0
   let open: { workflowId: string; ops: Op[] } | null = null
   let inFlight: InFlight | null = null
   let lastMintedVersion = -1
@@ -333,7 +334,9 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     // malformed custom-node value must not leave timers or queued work behind.
     const unsealed = open
     open = null
-    const queued = queue.splice(0)
+    const queued = queue.slice(queueHead)
+    queue.length = 0
+    queueHead = 0
     const active = inFlight
     inFlight = null
     if (active) {
@@ -356,12 +359,23 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     }
   }
 
+  function dequeue(): { workflowId: string; ops: Op[] } | undefined {
+    if (queueHead >= queue.length) return
+    const queued = queue[queueHead]
+    queueHead++
+    if (queueHead >= 1_024 && queueHead * 2 >= queue.length) {
+      queue.splice(0, queueHead)
+      queueHead = 0
+    }
+    return queued
+  }
+
   function pump(): void {
     if (pumping) return
     pumping = true
     try {
       while (!detached && inFlight === null) {
-        const queued = queue.shift()
+        const queued = dequeue()
         if (!queued) return
         inFlight = {
           workflowId: queued.workflowId,
@@ -544,13 +558,13 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     admit,
     flush,
     pending() {
-      return queue.length + (inFlight ? 1 : 0) + (open ? 1 : 0)
+      return queue.length - queueHead + (inFlight ? 1 : 0) + (open ? 1 : 0)
     },
     pendingOps() {
       const batches = inFlight
         ? [{ workflowId: inFlight.workflowId, ops: inFlight.ops }]
         : []
-      return [...batches, ...queue, ...(open ? [open] : [])]
+      return [...batches, ...queue.slice(queueHead), ...(open ? [open] : [])]
     },
     suspend() {
       suspended = true
