@@ -88,6 +88,13 @@ function addNode(id: number): AddNodeOperation {
   }
 }
 
+function enqueueNodeBacklog(
+  sender: ReturnType<typeof createOpSender>,
+  count: number
+): void {
+  for (let id = 0; id < count; id++) sender.enqueue([addNode(id)])
+}
+
 function disconnect(linkId: number): GraphOperation {
   return { op: 'disconnect', link_id: linkId, to_node: 2, to_slot: 0 }
 }
@@ -288,10 +295,7 @@ describe('createOpSender', () => {
   })
 
   it('drains 20,000 queued batches after unbinding without overflowing the stack', () => {
-    sender.enqueue([addNode(0)])
-    for (let index = 1; index < 20_000; index++) {
-      sender.enqueue([addNode(index)])
-    }
+    enqueueNodeBacklog(sender, 20_000)
     boundWorkflow = null
 
     expect(() => sender.abortIfUnbound()).not.toThrow()
@@ -309,10 +313,7 @@ describe('createOpSender', () => {
   })
 
   it('drains an old-workflow backlog before sending the next workflow batch', () => {
-    sender.enqueue([addNode(0)])
-    for (let index = 1; index < 20_000; index++) {
-      sender.enqueue([addNode(index)])
-    }
+    enqueueNodeBacklog(sender, 20_000)
     boundWorkflow = 'wf-2'
     sender.enqueue([addNode(20_000)])
 
@@ -773,10 +774,12 @@ describe('createOpSender', () => {
       }
     })
 
-    for (let id = 1; id <= 3; id++) {
-      localSender.enqueue([addNode(id)])
-      ackInFlight()
-    }
+    localSender.enqueue([addNode(1)])
+    ackInFlight()
+    localSender.enqueue([addNode(2)])
+    ackInFlight()
+    localSender.enqueue([addNode(3)])
+    ackInFlight()
     expect(reportError).toHaveBeenCalledTimes(3)
 
     shouldFail = false
