@@ -213,31 +213,34 @@ for (const width of [1440, 390]) {
   })
 }
 
-// Inside a category the tabs give up the row to the category's own title, so
-// the way to another hub section starts by leaving the category. A use case
-// opens one on models; a workflow category filter does not.
-async function leaveCategory(page: Page, inCategory: boolean) {
-  const tabs = page.getByTestId('catalogue-tab-models')
-  await expect(tabs).toHaveCount(inCategory ? 0 : 1)
-  if (!inCategory) return
+// Inside a category the tabs give up the whole row to the category's own title,
+// so the way to another hub section starts by leaving the category.
+async function leaveCategory(page: Page) {
+  await expect(page.getByTestId('catalogue-tabs')).toHaveCount(0)
   await page.getByTestId('section-back').click()
-  await expect(tabs).toBeVisible()
+  await expect(page.getByTestId('catalogue-tabs')).toBeVisible()
 }
 
-for (const { section, destination, query, filter, inCategory } of [
+async function expectTabs(page: Page) {
+  await expect(page.getByTestId('catalogue-tabs')).toBeVisible()
+}
+
+for (const { section, destination, query, filter, reachTabs } of [
   {
     section: 'models',
     destination: 'workflows',
     query: 'kling',
+    // A use case is a category on models, so the tabs are not on the page.
     filter: 'useCase=generate-images',
-    inCategory: true
+    reachTabs: leaveCategory
   },
   {
     section: 'workflows',
     destination: 'models',
     query: 'material',
+    // A workflow category filter opens no category, so the tabs stay.
     filter: 'category=product',
-    inCategory: false
+    reachTabs: expectTabs
   }
 ]) {
   test(`the active ${section} tab resets its URL filters, including history`, async ({
@@ -249,7 +252,7 @@ for (const { section, destination, query, filter, inCategory } of [
     const count = page.getByTestId('workshop-filter-count')
     await expect(search).toHaveValue(query)
     await expect(count).toHaveText('1')
-    await leaveCategory(page, inCategory)
+    await reachTabs(page)
     await page.getByTestId(`catalogue-tab-${section}`).click()
     await expect(page).toHaveURL(`/hub/${section}/`)
     await expect(search).toHaveValue('')
@@ -273,7 +276,7 @@ for (const { section, destination, query, filter, inCategory } of [
     await page.goto(filtered)
     await expect(search).toHaveValue(query)
     await expect(count).toHaveText('1')
-    await leaveCategory(page, inCategory)
+    await reachTabs(page)
     await page.getByTestId(`catalogue-tab-${destination}`).click()
     await expect(page).toHaveURL(`/hub/${destination}/`)
     await expect(search).toHaveValue('')
