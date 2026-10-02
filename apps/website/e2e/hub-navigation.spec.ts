@@ -1,5 +1,5 @@
-import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
 import { observeHubNavigation } from './fixtures/hubNavigation'
@@ -171,16 +171,25 @@ for (const width of [1440, 390]) {
   })
 }
 
-for (const { section, query, filter } of [
+// A use case is a category on models, and a category hides the hub link behind
+// its own way back, so the way to the Hub starts by leaving the category.
+async function leaveCategory(page: Page) {
+  await page.getByTestId('section-back').click()
+  await expect(page.getByTestId('section-back')).toHaveCount(0)
+}
+
+for (const { section, query, filter, reachHubLink } of [
   {
     section: 'models' as const,
     query: 'kling',
-    filter: 'useCase=generate-images'
+    filter: 'useCase=generate-images',
+    reachHubLink: leaveCategory
   },
   {
     section: 'workflows' as const,
     query: 'material',
-    filter: 'category=product'
+    filter: 'category=product',
+    reachHubLink: async () => {}
   }
 ]) {
   test(`leaving filtered ${section} through the Hub does not carry its filters back`, async ({
@@ -193,6 +202,7 @@ for (const { section, query, filter } of [
     await expect(search).toHaveValue(query)
     await expect(count).toHaveText('1')
 
+    await reachHubLink(page)
     await page.getByTestId('hub-back').click()
     await expectAt(page, 'explore')
     await page.getByTestId(`explore-door-${section}`).click()
@@ -259,3 +269,50 @@ test('keeps the Hub visible until a cold section is ready', async ({
   await expectAt(page, 'workflows')
   await expect(page.getByTestId('workflow-catalogue')).toBeVisible()
 })
+
+// With no section tabs, the search owns the toolbar row, inside a category and
+// out of it. The cap is read off the field, and the box shows the width really
+// went to the field.
+const NO_CAP = 'none'
+const WIDER_THAN_OLD_CAP = 480
+
+function searchField(page: Page) {
+  return page.getByTestId('workshop-search-field')
+}
+
+async function expectSearchFillsRow(page: Page) {
+  const field = searchField(page)
+  await expect(field).toBeVisible()
+  await expect(field).toHaveCSS('max-width', NO_CAP)
+  const box = await field.boundingBox()
+  if (!box) throw new Error('The search field has no box')
+  expect(box.width).toBeGreaterThan(WIDER_THAN_OLD_CAP)
+}
+
+for (const { section, openCategory } of [
+  {
+    section: 'models',
+    openCategory: (page: Page) =>
+      page.goto('/hub/models/?useCase=generate-images')
+  },
+  {
+    section: 'workflows',
+    openCategory: (page: Page) =>
+      page.getByRole('button', { name: 'Browse all workflows' }).click()
+  }
+] as const) {
+  test(`the ${section} search fills the toolbar row in and out of a category`, async ({
+    page
+  }) => {
+    await page.goto(`/hub/${section}/`)
+    await expectSearchFillsRow(page)
+
+    await openCategory(page)
+    await expect(page.getByTestId('section-back')).toBeVisible()
+    await expectSearchFillsRow(page)
+
+    await page.getByTestId('section-back').click()
+    await expect(page.getByTestId('section-back')).toHaveCount(0)
+    await expectSearchFillsRow(page)
+  })
+}

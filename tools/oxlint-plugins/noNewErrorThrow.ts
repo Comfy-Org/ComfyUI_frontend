@@ -1,6 +1,8 @@
-import type { Rule } from 'eslint'
+import type { RuleTester } from 'oxlint/plugins-dev'
 
-export const noNewErrorThrow: Rule.RuleModule = {
+type Rule = Parameters<RuleTester['run']>[1]
+
+export const noNewErrorThrow: Rule = {
   meta: {
     type: 'problem',
     docs: {

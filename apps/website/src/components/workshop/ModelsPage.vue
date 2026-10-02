@@ -72,6 +72,11 @@ const catalogueView = computed(() => {
   if (!mounted.value || (!isPublic && !settled.value)) return 'loading'
   return isPublic || (enabled.value && gateAllows.value) ? 'granted' : 'denied'
 })
+// Inside a category the category's own title carries the page, so the hub's
+// eyebrow and heading give up their space to it. They stay in the document
+// rather than leaving: the page keeps the one heading it is supposed to have,
+// and the category reads as the section of it that it is.
+const inSection = shallowRef(false)
 const recoveringWorkflow = shallowRef(false)
 const savedWorkflow = shallowRef(false)
 const session =
@@ -193,6 +198,9 @@ function createContent() {
             h(ModelsCatalogue, {
               key: `${section}:${catalogueRevision.value}`,
               initialSearch: catalogueSearch.value,
+              onSection: (open: boolean) => {
+                inSection.value = open
+              },
               models: models.filter(
                 (model) =>
                   model.routerId !== undefined ||
@@ -221,9 +229,12 @@ const Content = shallowRef(createContent())
   <template v-if="!slug">
     <div
       v-if="heading && catalogueView !== 'denied'"
-      class="mx-auto max-w-10xl px-6 pt-8 pb-4 max-sm:pt-5 lg:px-8 lg:pt-12 sm:short:pb-3"
+      class="mx-auto max-w-10xl px-6 pt-8 max-sm:pt-5 lg:px-8 lg:pt-12"
     >
-      <div class="animate-soft-in">
+      <div
+        data-testid="workshop-heading"
+        :class="inSection ? 'sr-only' : 'animate-soft-in pb-4 sm:short:pb-3'"
+      >
         <HubEyebrow :section />
         <h1 :class="workshopHeadingClass">{{ heading }}</h1>
       </div>

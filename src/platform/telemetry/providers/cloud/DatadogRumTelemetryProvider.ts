@@ -8,7 +8,7 @@ import type {
   BillingTelemetryEvent,
   CheckoutJourneyTelemetryEvent
 } from '@comfyorg/account-core/billing'
-// eslint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
+// oxlint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
 import { datadogRum } from '@datadog/browser-rum'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'

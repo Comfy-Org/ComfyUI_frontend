@@ -1,6 +1,6 @@
-// eslint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
+// oxlint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
 import { datadogRum } from '@datadog/browser-rum'
-// eslint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
+// oxlint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
 import { captureException, isEnabled as isSentryEnabled } from '@sentry/vue'
 
 import type { ComfyDesktop2TelemetryProperties } from '@comfyorg/comfyui-desktop-bridge-types'

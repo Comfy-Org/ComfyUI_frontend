@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, ref } from 'vue'
+import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import { useMounted, whenever } from '@vueuse/core'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -46,6 +46,10 @@ const {
 }>()
 
 const inSection = ref(false)
+// A category replaces the page's own heading and the switch between
+// catalogues, so the state has to reach the page that renders them.
+const emit = defineEmits<{ section: [boolean] }>()
+watch(inSection, (value) => emit('section', value), { immediate: true })
 const browseAll = ref(false)
 const mounted = useMounted()
 const enabled = useWorkshopEnabled()
