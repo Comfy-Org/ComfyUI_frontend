@@ -15,11 +15,11 @@ import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@/types/graphScopeId'
+import { createTestLink } from '@/utils/__tests__/litegraphTestUtils'
 import {
   createMockCanvasRenderingContext2D,
-  createTestCanvas,
-  createTestLink
-} from '@/utils/__tests__/litegraphTestUtils'
+  createTestCanvas
+} from '@/utils/__tests__/canvasTestUtils'
 
 function createLinkedNodes(graph: LGraph): LLink {
   const source = new LGraphNode('Source')

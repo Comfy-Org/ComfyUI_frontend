@@ -11,6 +11,7 @@ import type { ResolvedMinimapNodeDecoration } from '@/platform/canvas/minimapDec
  */
 export interface MinimapCanvas {
   canvas: HTMLCanvasElement
+  dpr: number
   ds: {
     scale: number
     offset: [number, number]

@@ -5,6 +5,7 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { layoutHiddenLinkBadges, queryLinkBadgeAtPoint } from './linkBadges'
 import { getLinkEndpointPositions } from './linkGeometry'
+import { slotTypeKey } from '../utils/type'
 
 export function queryHiddenLinkBadgeAtPoint(
   host: object,
@@ -48,7 +49,7 @@ export function layoutGraphLinkBadges(
       endPos: endpoints[1],
       color:
         (typeof link.color === 'string' && link.color) ||
-        linkTypeColors[link.type] ||
+        linkTypeColors[slotTypeKey(link.type)] ||
         defaultLinkColor
     })
   }

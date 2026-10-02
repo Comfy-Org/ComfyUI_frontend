@@ -137,7 +137,7 @@ describe('useAuthActions.purchaseCreditsDirect', () => {
   })
 
   it('starts top-up tracking before opening Stripe checkout', async () => {
-    const open = vi.spyOn(window, 'open').mockImplementation(() => null)
+    const open = vi.spyOn(window, 'open').mockImplementation(() => window)
     const { purchaseCreditsDirect } = useAuthActions()
 
     await purchaseCreditsDirect(25)

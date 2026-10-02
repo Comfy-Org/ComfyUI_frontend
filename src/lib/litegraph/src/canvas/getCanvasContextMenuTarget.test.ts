@@ -1,4 +1,3 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getCanvasContextMenuTarget } from '@/lib/litegraph/src/canvas/getCanvasContextMenuTarget'
@@ -20,7 +19,7 @@ import { toRerouteId } from '@/types/rerouteId'
 import {
   createMockCanvasRenderingContext2D,
   createTestCanvas
-} from '@/utils/__tests__/litegraphTestUtils'
+} from '@/utils/__tests__/canvasTestUtils'
 
 const { mockQueryLinkSegmentAtPoint, mockQueryRerouteAtPoint } = vi.hoisted(
   () => ({
@@ -64,6 +63,7 @@ describe('getCanvasContextMenuTarget', () => {
     )
     canvas.connections_width = 3
     canvas.links_render_mode = LinkRenderType.SPLINE_LINK
+    canvas.dpr = 1
   })
 
   function resolve() {
@@ -148,19 +148,20 @@ describe('getCanvasContextMenuTarget', () => {
 
     expect(mockQueryLinkSegmentAtPoint).toHaveBeenCalledWith(
       { x: 10, y: 20 },
-      canvas.ctx
+      canvas.ctx,
+      1
     )
     expect(target.group).toBe(group)
     expect(target.link).toBe(link)
   })
 
   it.for([
-    { dpi: 0.5, x: 10, y: 20 },
-    { dpi: 2, x: 20, y: 40 }
-  ])('falls back to current-frame paths at DPI $dpi', ({ dpi, x, y }) => {
-    vi.stubGlobal('devicePixelRatio', dpi)
+    { dpr: 1, x: 10, y: 20 },
+    { dpr: 2, x: 20, y: 40 }
+  ])('falls back to current-frame paths at DPR $dpr', ({ dpr, x, y }) => {
+    canvas.dpr = dpr
     const link = createLink(4)
-    link.path = fromPartial<Path2D>({})
+    link.path = new Path2D()
     canvas.renderedPaths.add(link)
     vi.mocked(canvas.ctx.isPointInStroke).mockReturnValue(true)
 
@@ -206,9 +207,9 @@ describe('getCanvasContextMenuTarget', () => {
   it('skips a revealed hidden curve and returns the visible link behind it', () => {
     const hiddenLink = createLink(5)
     hide(hiddenLink)
-    hiddenLink.path = fromPartial<Path2D>({})
+    hiddenLink.path = new Path2D()
     const visibleLink = createLink(6)
-    visibleLink.path = fromPartial<Path2D>({})
+    visibleLink.path = new Path2D()
     canvas.renderedPaths.add(hiddenLink)
     canvas.renderedPaths.add(visibleLink)
     vi.mocked(canvas.ctx.isPointInStroke).mockReturnValue(true)

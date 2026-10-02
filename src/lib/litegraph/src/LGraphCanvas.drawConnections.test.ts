@@ -24,17 +24,16 @@ import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
+import { createTestLink } from '@/utils/__tests__/litegraphTestUtils'
 import {
-  createMockCanvas2DContext,
-  createTestCanvas,
-  createTestLink,
-  StubPath2D
-} from '@/utils/__tests__/litegraphTestUtils'
+  createMockCanvasRenderingContext2D,
+  createTestCanvas
+} from '@/utils/__tests__/canvasTestUtils'
 
 vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 
 function createMockCtx(): CanvasRenderingContext2D {
-  return createMockCanvas2DContext({
+  return createMockCanvasRenderingContext2D({
     translate: vi.fn(),
     scale: vi.fn(),
     drawImage: vi.fn(),
@@ -744,7 +743,6 @@ describe('drawConnections hidden links', () => {
   })
 
   it('releases the badge-hover reveal after the last badge disappears', () => {
-    vi.stubGlobal('Path2D', StubPath2D)
     const link = createHiddenLink()
     canvas.drawConnections(createMockCtx())
     const [badgeX, badgeY] = outputBadgePoint(link)
@@ -874,7 +872,6 @@ describe('drawConnections hidden links', () => {
   it('hides a revealed link when the same graph instance is reset', () => {
     const link = createHiddenLink()
     const scope = graphScopeOf(graph)
-    vi.stubGlobal('Path2D', StubPath2D)
     setRevealedLinks(scope.rootGraphId, [link.id], {})
     canvas.drawConnections(createMockCtx())
     expect(canvas.renderedPaths.has(link)).toBe(true)
@@ -1058,7 +1055,6 @@ describe('drawConnections hidden links', () => {
       expect(queryLinkBadgeAtPoint(canvas, 380, 110)).toBe(upperInputLink.id)
       expect(queryLinkBadgeAtPoint(canvas, 380, 132)).toBe(upperOutputLink.id)
 
-      vi.stubGlobal('Path2D', StubPath2D)
       canvas.processMouseMove(
         new PointerEvent('pointermove', {
           clientX: 380,
@@ -1133,7 +1129,6 @@ describe('drawConnections hidden links', () => {
     expect(drawReroute).not.toHaveBeenCalled()
     expect(renderLink).not.toHaveBeenCalled()
 
-    vi.stubGlobal('Path2D', StubPath2D)
     const revealOwner = {}
     setRevealedLinks(graphScopeOf(graph).rootGraphId, [link.id], revealOwner)
     const ctx = createMockCtx()
@@ -1167,7 +1162,6 @@ describe('drawConnections hidden links', () => {
   ])(
     'draws badge entries and deduplicates shared reroute segments: $name',
     ({ hidden }) => {
-      vi.stubGlobal('Path2D', StubPath2D)
       const firstLink = createHiddenLink()
       const source = graph.getNodeById(firstLink.origin_id)
       if (!source) throw new Error('Missing source node')

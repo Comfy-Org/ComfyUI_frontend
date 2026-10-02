@@ -269,6 +269,7 @@ video.wf-node-image {
 }
 .wf-user-badge img:last-child {
   transform: rotate(180deg);
+  margin-left: -1px;
 }
 @media (max-width: 1023px) {
   .wf-showcase {

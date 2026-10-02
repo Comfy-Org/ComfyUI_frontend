@@ -8,6 +8,7 @@ import type { LinkPresentation } from '@/types/linkPresentation'
 import { compareNodeIds } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import { overlapBounding } from '../measure'
+import { slotTypeKey } from '../utils/type'
 
 export const BADGE_GAP = 14
 const BADGE_HEIGHT = 18
@@ -69,7 +70,7 @@ export function linkBadgeText(
   const label = presentation.label?.trim()
   if (label) return label
   if (typeof type === 'number') return '*'
-  return type || '*'
+  return String(slotTypeKey(type) || '*')
 }
 
 function makeBadge(text: string, color: string): LGraphBadge {

@@ -1,4 +1,4 @@
-import type { BrowserContext, Page } from '@playwright/test'
+import type { BrowserContext, Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
@@ -78,6 +78,23 @@ function heroLocator(page: Page) {
   })
 }
 
+async function expectAlignedButtons(buttons: Locator) {
+  await expect
+    .poll(() =>
+      buttons.evaluateAll((elements) => {
+        const boxes = elements.map((element) => element.getBoundingClientRect())
+        if (boxes.length < 2) return Number.POSITIVE_INFINITY
+        const heights = boxes.map(({ height }) => height)
+        const bottoms = boxes.map(({ bottom }) => bottom)
+        return Math.max(
+          Math.max(...heights) - Math.min(...heights),
+          Math.max(...bottoms) - Math.min(...bottoms)
+        )
+      })
+    )
+    .toBeLessThan(0.5)
+}
+
 test.describe('Download page @smoke', () => {
   test('has correct title', async ({ page }) => {
     await page.goto('/download')
@@ -129,6 +146,8 @@ test.describe('Download page @smoke', () => {
         'https://github.com/Comfy-Org/ComfyUI#installing'
       )
 
+      await expectAlignedButtons(downloadBtn.or(githubBtn))
+
       await expect(hero.getByRole('textbox')).toHaveCount(0)
 
       await page.waitForLoadState('networkidle')
@@ -144,6 +163,43 @@ test.describe('Download page @smoke', () => {
       await expect(
         heroLocator(page).getByRole('link', { name: /DOWNLOAD DESKTOP/i })
       ).toHaveAttribute('href', 'https://comfy.org/download/windows/nsis/arm64')
+    })
+
+    test('HeroSection opens the installer dropdown from the download button with the keyboard', async ({
+      page
+    }) => {
+      await page.goto('/download')
+
+      const visibleTrigger = page.getByRole('button', {
+        name: 'All installers'
+      })
+      await visibleTrigger.press('ArrowDown')
+
+      const trigger = page.getByRole('button', {
+        name: 'All installers',
+        includeHidden: true
+      })
+      await expect(trigger).toHaveAttribute('aria-expanded', 'true')
+
+      const installers = page.getByRole('menu').getByRole('menuitem')
+      await expect(installers).toHaveText([
+        'Windows x64',
+        'Windows ARM64 (NVIDIA only)',
+        'macOS (Apple Silicon)',
+        'Linux x64 (AppImage)'
+      ])
+      expect(
+        await installers.evaluateAll((items) =>
+          items.map((item) => item.getAttribute('data-astro-prefetch'))
+        )
+      ).toEqual(['false', 'false', 'false', 'false'])
+
+      await page.keyboard.press('Escape')
+      await expect(page.getByRole('menu')).toBeHidden()
+      await expect(trigger).toBeFocused()
+      await expect(
+        heroLocator(page).getByRole('link', { name: /DOWNLOAD DESKTOP/i })
+      ).toHaveAttribute('href', 'https://comfy.org/download/windows/nsis/x64')
     })
   })
 
@@ -174,6 +230,27 @@ test.describe('Download page @smoke', () => {
   test.describe('unrecognized desktop', () => {
     test.use({ userAgent: FREEBSD_UA })
 
+    for (const width of [1024, 1280]) {
+      test(`HeroSection aligns fallback buttons at ${width}px`, async ({
+        page
+      }) => {
+        await page.setViewportSize({ width, height: 900 })
+        await page.goto('/download')
+
+        const hero = heroLocator(page)
+        const downloadButtons = hero.getByRole('link', {
+          name: /DOWNLOAD DESKTOP/i
+        })
+        const githubButton = hero.getByRole('link', {
+          name: /INSTALL FROM GITHUB/i
+        })
+        await waitForIsland(page, githubButton)
+        await expect(downloadButtons).toHaveCount(2)
+        await expect(githubButton).toBeVisible()
+        await expectAlignedButtons(downloadButtons.or(githubButton))
+      })
+    }
+
     test('HeroSection falls back to both Windows + Mac when UA is unrecognized', async ({
       page
     }) => {
@@ -181,17 +258,23 @@ test.describe('Download page @smoke', () => {
 
       const hero = heroLocator(page)
 
-      const windowsBtn = hero.locator(
-        'a[href="https://comfy.org/download/windows/nsis/x64"]'
-      )
+      const windowsBtn = hero.getByRole('link', {
+        name: 'DOWNLOAD DESKTOP Windows x64'
+      })
       await expect(windowsBtn).toBeVisible()
-      await expect(windowsBtn).toHaveText(/DOWNLOAD DESKTOP/i)
-
-      const macBtn = hero.locator(
-        'a[href="https://download.comfy.org/mac/dmg/arm64"]'
+      await expect(windowsBtn).toHaveAttribute(
+        'href',
+        'https://comfy.org/download/windows/nsis/x64'
       )
+
+      const macBtn = hero.getByRole('link', {
+        name: 'DOWNLOAD DESKTOP macOS (Apple Silicon)'
+      })
       await expect(macBtn).toBeVisible()
-      await expect(macBtn).toHaveText(/DOWNLOAD DESKTOP/i)
+      await expect(macBtn).toHaveAttribute(
+        'href',
+        'https://download.comfy.org/mac/dmg/arm64'
+      )
 
       await expect(
         hero.getByRole('link', { name: /DOWNLOAD DESKTOP/i })
@@ -207,10 +290,17 @@ test.describe('Download page @smoke', () => {
     test('HeroSection hides every desktop CTA on mobile', async ({ page }) => {
       await page.goto('/download')
       const hero = heroLocator(page)
+      await waitForIsland(
+        page,
+        hero.getByRole('link', { name: /INSTALL FROM GITHUB/i })
+      )
 
       await expect(
         hero.getByRole('link', { name: /DOWNLOAD DESKTOP/i })
       ).toBeHidden()
+      await expect(
+        hero.getByRole('button', { name: 'All installers' })
+      ).toHaveCount(0)
       await expect(
         hero.getByRole('link', { name: /INSTALL FROM GITHUB/i })
       ).toBeVisible()
@@ -457,7 +547,18 @@ test.describe('Download page mobile @mobile', () => {
   })
 
   test.describe('Windows buttons', () => {
-    test.use({ userAgent: WINDOWS_UA })
+    test.use({ userAgent: WINDOWS_UA, viewport: { width: 320, height: 844 } })
+
+    test('installer menu stays usable within a narrow viewport', async ({
+      page
+    }) => {
+      const trigger = heroLocator(page).getByRole('button', {
+        name: 'All installers'
+      })
+      await expect(trigger).toBeInViewport({ ratio: 1 })
+      await trigger.click()
+      await expect(page.getByRole('menu')).toBeInViewport({ ratio: 1 })
+    })
 
     test('download buttons are stacked vertically', async ({ page }) => {
       const hero = heroLocator(page)

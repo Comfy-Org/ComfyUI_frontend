@@ -84,6 +84,7 @@
     "historyCurrent": "נוכחי",
     "historyEarlier": "מוקדם יותר",
     "historyEmpty": "אין שיחות עדיין",
+    "historyOpenFailed": "לא ניתן היה לפתוח. בחרו בצ'אט זה כדי לנסות שוב.",
     "historyToday": "היום",
     "historyYesterday": "אתמול",
     "latest": "העדכני ביותר",
@@ -169,19 +170,30 @@
     "skip": "דלג",
     "stop": "עצור",
     "stopShortcut": "Esc",
-    "suggestedPrompts": [
-      "צור ברווז צהוב עם מסכת הוקי",
-      "הצג את תהליכי העבודה השמורים שלי",
-      "מצא את תהליך העבודה הטוב ביותר להגדלת רזולוציה של עור",
-      "הסבר את הצומת שנבחר",
-      "בנה תהליך עבודה להמרת תמונה לווידאו עם 3 מודלים"
-    ],
+    "suggestedPrompts": {
+      "cloud": [
+        "יצירת דף דמות של אסטרונאוט",
+        "הפיכת תמונת המוצר לפרסומת קצרה",
+        "הסבר על הצמתים שנבחרו",
+        "תהליך העבודה הטוב ביותר להגדלת תמונה ל-4K",
+        "תיקון השגיאות בתהליך העבודה הזה"
+      ],
+      "local": [
+        "יצירת דיוקן מציאותי של אסטרונאוט",
+        "תהליך עבודה מתמונה לווידאו שמתאים ל-GPU שלי",
+        "הסבר על הצמתים שנבחרו",
+        "עזרו לי להתקין את הצמתים החסרים עבור תהליך העבודה הזה",
+        "תיקון השגיאות בתהליך העבודה הזה"
+      ]
+    },
     "switchWorkflow": "החלף תהליך עבודה",
     "switchWorkflowForNodes": "עברו אל {workflowName} כדי להוסיף צמתים.",
     "takeTour": "התחל סיור",
     "targetFollowsVisibleWorkflow": "תהליך העבודה המיועד מתעדכן לפי הלשונית הגלויה, עד שתבחר יעד, תפנה לצמתים או תשלח הודעה.",
     "targetForThisChat": "יעד הסוכן עבור שיחה זו",
     "targetNavigationUnavailable": "יעד זה של תהליך העבודה אינו זמין עוד.",
+    "targetWorkflowOpenFailed": "לא ניתן היה לפתוח את תהליך העבודה המבוקש.",
+    "targetWorkflowUnavailable": "תהליך העבודה המבוקש אינו זמין עוד.",
     "thinking": "חושב...",
     "title": "Comfy Agent",
     "toolForgettingPreference": "שכחת העדפה",
@@ -372,9 +384,6 @@
     "processingModelDescription": "ניתן לסגור חלון זה. ההורדה תימשך ברקע.",
     "providerCivitai": "Civitai",
     "providerHuggingFace": "Hugging Face",
-    "rename": {
-      "failed": "לא ניתן היה לשנות את שם הנכס."
-    },
     "searchModels": "חפש מודלים",
     "selectFrameworks": "בחירת מסגרות עבודה",
     "selectModelType": "בחר סוג מודל",
@@ -543,6 +552,20 @@
       "expired": "האימות פג תוקף. אנא השלם את האתגר שוב.",
       "failed": "האימות נכשל. נסה שוב.",
       "submitBlockedHint": "השלם את אתגר האימות למעלה כדי לאפשר הרשמה."
+    },
+    "webSession": {
+      "reconnecting": {
+        "detail": "אין אפשרות להגיע ל-Comfy כרגע. נמשיך לנסות מחדש, ואתם תישארו מחוברים.",
+        "retry": "נסו שוב כעת",
+        "title": "מתחבר מחדש לחשבון שלך"
+      },
+      "token": {
+        "ended": "תוקף ההפעלה שלך הסתיים. יש להתחבר שוב כדי להמשיך.",
+        "identityChanged": "ההפעלה שלך השתנתה. יש לטעון מחדש כדי להמשיך.",
+        "refused": "הבקשה שלך נדחתה. טען מחדש את הדף ונסה שוב.",
+        "unavailable": "לא הצלחנו להגיע לחשבון שלך. נסה שוב בעוד רגע.",
+        "workspaceDenied": "אין לך גישה לסביבת עבודה זו. צור קשר עם התמיכה אם זה ממשיך לקרות."
+      }
     }
   },
   "batch": {
@@ -648,6 +671,46 @@
     "saveAs": "שמירה בשם",
     "switchToOutputs": "מעבר לפלטים",
     "viewApp": "הצגת היישום"
+  },
+  "cameraAngle": {
+    "cameraView": "מצלמה",
+    "cameraViewTooltip": "הזז את המצלמה סביב הנושא",
+    "faces": {
+      "back": "אחורי",
+      "bottom": "תחתון",
+      "left": "שמאל",
+      "right": "ימין",
+      "top": "עליון"
+    },
+    "hidePreview": "הסתר תצוגה מקדימה של השוט",
+    "horizontal": {
+      "back": "אחורי",
+      "backLeft": "אחורי שמאלי",
+      "backRight": "אחורי ימני",
+      "front": "קדמי",
+      "frontLeft": "קדמי שמאלי",
+      "frontRight": "קדמי ימני",
+      "left": "צד שמאל",
+      "right": "צד ימין"
+    },
+    "horizontalLabel": "זווית אופקית",
+    "objectView": "אובייקט",
+    "objectViewTooltip": "הבט דרך המצלמה וסובב את הנושא",
+    "preview": "תצוגה מקדימה",
+    "showPreview": "הצג תצוגה מקדימה של השוט",
+    "vertical": {
+      "elevated": "מוגבה",
+      "eyeLevel": "בגובה העיניים",
+      "highAngle": "זווית גבוהה",
+      "lowAngle": "זווית נמוכה"
+    },
+    "verticalLabel": "זווית אנכית",
+    "zoom": {
+      "closeUp": "תקריב",
+      "medium": "שוט בינוני",
+      "wide": "שוט רחב"
+    },
+    "zoomLabel": "גודל שוט"
   },
   "clipboard": {
     "errorMessage": "ההעתקה ללוח נכשלה",
@@ -1901,6 +1964,7 @@
     "itemsSelected": "לא נבחרו פריטים | נבחר פריט {count} | נבחרו {count} פריטים",
     "job": "משימה",
     "jobIdCopied": "מזהה המשימה הועתק ללוח",
+    "jobs": "משימות",
     "keybinding": "מקש קיצור",
     "keybindingAlreadyExists": "מקש הקיצור כבר קיים עבור",
     "keybindingListAriaLabel": "קיצורי מקשים: {combos}",
@@ -2054,6 +2118,7 @@
     "restore": "שחזר",
     "restoreDialog": "שחזור החלון",
     "resultsCount": "נמצאו {count} תוצאות",
+    "retry": "נסה שוב",
     "running": "פועל",
     "save": "שמירה",
     "saveAnyway": "שמור בכל זאת",
@@ -2190,6 +2255,7 @@
       "r": "R",
       "rgb": "RGB"
     },
+    "checkerboard": "הצג שקיפות",
     "clipWarnings": "אזהרות Clip",
     "dither": "דיתר",
     "exposure": "חשיפה",
@@ -4922,6 +4988,7 @@
     "failedToFetchBalance": "אחזור היתרה נכשל: {error}",
     "failedToFetchLogs": "אחזור יומני השרת נכשל",
     "failedToFetchSubscription": "אחזור סטטוס המנוי נכשל: {error}",
+    "failedToInitializeCameraAngleViewer": "אתחול מציג זווית המצלמה נכשל. נסה לטעון מחדש את הדף.",
     "failedToInitializeCameraInfoViewer": "אתחול מציג פרטי המצלמה נכשל. נסה לרענן את הדף.",
     "failedToInitializeLoad3dViewer": "אתחול מציג התלת-ממד נכשל",
     "failedToInitiateCreditPurchase": "יזימת רכישת הקרדיטים נכשלה: {error}",
@@ -5199,6 +5266,7 @@
         "memberBody": "המנוי של סביבת עבודה זו מושהה. מנהלי סביבת העבודה צריכים לעדכן את אמצעי התשלום.",
         "title": "המנוי מושהה"
       },
+      "payInvoice": "תשלום חשבונית",
       "planChange": {
         "body": "התוכנית הנוכחית שלך נשארת פעילה עד אז.",
         "title": "התוכנית שלך משתנה ל-{plan} ב-{date}"
@@ -5206,6 +5274,7 @@
       "updatePayment": "עדכן תשלום",
       "warning": {
         "bodyNoDate": "התשלום האחרון שלך לא עבר. עדכן את התשלום כדי למנוע השהיה.",
+        "bodyWithAmount": "עיבוד התשלום שלך בסך {amount} נכשל. יש לשלם את החשבונית או לעדכן את אמצעי התשלום כדי למנוע השהיה.",
         "title": "התשלום נדחה"
       }
     },
@@ -5246,10 +5315,19 @@
     "inviteLimitReached": "הגעת למקסימום של {count} חברים",
     "inviteLinks": {
       "copied": "הועתק!",
+      "copiedToast": "קישור ההזמנה הועתק",
       "copyAll": "העתקת קישור הזמנה | העתקת כל הקישורים ({count})",
+      "copyFailedToast": "לא ניתן היה להעתיק את קישור ההזמנה",
       "copyLink": "העתקת קישור הזמנה",
+      "invalidBody": "ייתכן שתוקפו פג או שהוא הוחלף. בקשו מהאדם שהזמין אתכם קישור חדש.",
+      "invalidDismiss": "הבנתי",
+      "invalidTitle": "קישור ההזמנה הזה אינו תקף עוד",
       "sentLead": "לכל הזמנה יש קישור אישי שאפשר לשתף ישירות:",
-      "sentTitle": "{count} הזמנה נשלחה | {count} הזמנות נשלחו"
+      "sentTitle": "{count} הזמנה נשלחה | {count} הזמנות נשלחו",
+      "switchAccount": "החלפת חשבון",
+      "wrongAccountBody": "אתם מחוברים כ-{email}. כדי לאשר את ההזמנה, התחברו באמצעות כתובת הדוא\"ל שקיבלה אותה.",
+      "wrongAccountBodyGeneric": "הזמנה זו נשלחה לכתובת דוא\"ל שונה מזו שאיתה אתם מחוברים. התחברו באמצעות כתובת הדוא\"ל שקיבלה אותה.",
+      "wrongAccountTitle": "הזמנה זו נשלחה לכתובת דוא\"ל אחרת"
     },
     "inviteMember": "הזמנת חבר",
     "inviteMemberDialog": {
@@ -5290,7 +5368,8 @@
         "minutesAgo": "לפני {n} דקות"
       },
       "columns": {
-        "creditsUsed": "קרדיטים חודשיים",
+        "creditsUsed": "קרדיטים שנוצלו החודש",
+        "email": "דוא\"ל",
         "expiryDate": "תאריך התפוגה",
         "inviteDate": "תאריך ההזמנה",
         "role": "תפקיד"
@@ -5310,11 +5389,13 @@
       "endedPlanTitle": "התוכנית שלך הסתיימה",
       "endedTeamTitle": "תוכנית הצוות שלך הסתיימה",
       "expiredOn": "פג בתאריך {date}",
-      "header": "חברים",
+      "loadFailed": "לא ניתן היה לטעון את כל התוכן בדף זה.",
       "membersCount": "{count}/{maxSeats} חברים",
       "needMoreMembers": "צריך עוד חברים?",
       "noInvites": "אין הזמנות ממתינות",
+      "noInvitesMatch": "אין הזמנות התואמות ל-\"{query}\"",
       "noMembers": "אין חברים",
+      "noMembersMatch": "אין חברים התואמים ל-\"{query}\"",
       "pendingInvitesCount": "{count} הזמנה ממתינה | {count} הזמנות ממתינות",
       "reactivateTeam": "הפעל מחדש את ה-Team",
       "resubscribe": "הירשם מחדש",
@@ -5323,6 +5404,8 @@
         "active": "פעילים",
         "pendingCount": "ממתינים ({count})"
       },
+      "totalMembersCount": "{count} מתוך {maxSeats} חברים בסך הכול.",
+      "totalMembersUnlimited": "{count} חבר בסך הכול. | {count} חברים בסך הכול.",
       "upgradeToTeam": "שדרג ל-Team",
       "upsellBanner": "להוספת חברי צוות, שדרג את התוכנית שלך.",
       "upsellBannerEnterpriseEnded": "צור קשר עם מחלקת המכירות כדי להפעיל מחדש את תוכנית ה־Enterprise שלך.",
@@ -5400,9 +5483,7 @@
       "title": "לבטל את הזמנת האדם הזה?"
     },
     "tabs": {
-      "dashboard": "לוח בקרה",
-      "membersCount": "חברים ({count})",
-      "planCredits": "מסלול וקרדיטים"
+      "dashboard": "לוח בקרה"
     },
     "toast": {
       "failedToCreateWorkspace": "יצירת סביבת העבודה נכשלה",

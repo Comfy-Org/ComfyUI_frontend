@@ -22,7 +22,10 @@ export class AgentPanel {
   public readonly composer: Locator
   public readonly composerPromptArea: Locator
   public readonly sendButton: Locator
+  public readonly stopButton: Locator
+  public readonly creditsExhaustedPaywall: Locator
   public readonly nodeSelectionBanner: Locator
+  public readonly activityRows: Locator
 
   constructor(private readonly page: Page) {
     this.root = page.locator('#agent-panel-root')
@@ -32,9 +35,10 @@ export class AgentPanel {
       exact: true
     })
     this.closeButton = this.root
+      .locator('header')
       .getByRole('button', { name: enMessages.g.close, exact: true })
       .or(
-        this.root.getByRole('button', {
+        this.root.locator('header').getByRole('button', {
           name: frMessages.g.close,
           exact: true
         })
@@ -62,7 +66,18 @@ export class AgentPanel {
     this.sendButton = this.root.getByRole('button', {
       name: enMessages.agent.send
     })
+    this.stopButton = this.root.getByRole('button', {
+      name: enMessages.agent.stop
+    })
+    this.creditsExhaustedPaywall = this.root.getByRole('alert').filter({
+      hasText: enMessages.agent.paywall.title
+    })
     this.nodeSelectionBanner = page.getByTestId('node-selection-mode-banner')
+    this.activityRows = this.root.getByRole('listitem')
+  }
+
+  activityRow(label: string): Locator {
+    return this.activityRows.getByText(label, { exact: true })
   }
 
   /**

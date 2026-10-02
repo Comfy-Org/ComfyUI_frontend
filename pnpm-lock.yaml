@@ -84,9 +84,6 @@ catalogs:
     '@primevue/core':
       specifier: 4.2.5
       version: 4.2.5
-    '@primevue/forms':
-      specifier: 4.2.5
-      version: 4.2.5
     '@primevue/themes':
       specifier: 4.2.5
       version: 4.2.5
@@ -536,6 +533,9 @@ importers:
       '@comfyorg/object-info-parser':
         specifier: workspace:*
         version: link:packages/object-info-parser
+      '@comfyorg/quad-wireframe-three':
+        specifier: ^0.1.0
+        version: 0.1.0(three@0.184.0)
       '@comfyorg/registry-types':
         specifier: workspace:*
         version: link:packages/registry-types
@@ -564,9 +564,6 @@ importers:
         specifier: 'catalog:'
         version: 0.3.2
       '@primevue/core':
-        specifier: 'catalog:'
-        version: 4.2.5(vue@3.5.42(typescript@6.0.3))
-      '@primevue/forms':
         specifier: 'catalog:'
         version: 4.2.5(vue@3.5.42(typescript@6.0.3))
       '@primevue/themes':
@@ -987,6 +984,9 @@ importers:
       '@comfyorg/tailwind-utils':
         specifier: workspace:*
         version: link:../../packages/tailwind-utils
+      '@datadog/browser-rum':
+        specifier: 'catalog:'
+        version: 6.33.0(@datadog/browser-logs@6.33.0)
       '@stripe/stripe-js':
         specifier: 'catalog:'
         version: 9.12.1
@@ -996,6 +996,9 @@ importers:
       firebase:
         specifier: 'catalog:'
         version: 11.10.0
+      posthog-js:
+        specifier: 'catalog:'
+        version: 1.402.3
       primeicons:
         specifier: 'catalog:'
         version: 7.0.0
@@ -2012,6 +2015,12 @@ packages:
     peerDependenciesMeta:
       '@types/three':
         optional: true
+
+  '@comfyorg/quad-wireframe-three@0.1.0':
+    resolution: {integrity: sha512-RJ0FrWZ/Dpg+3qgQHWVSVN1h1qPYSILY0phYESstX2bh/Vd32LmFSRl02i0iyJ2rAEI31w1KFJAYKJXzHoiBgA==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      three: '>=0.160.0'
 
   '@comfyorg/sdk@0.2.0':
     resolution: {integrity: sha512-x2a9mat9+s6xOACYFnlsAri7ovNaFD2VjwKohsNWJ65RodnLU5Rviq2fd7feQyfQS2C6XKZRjXj81AfypHonTQ==}
@@ -3829,10 +3838,6 @@ packages:
   '@prettier/parse-srcset@3.1.0':
     resolution: {integrity: sha512-FIRv2rZotO9NP/r66taYqD1zICpPiBbrECqjKV/xqNotqDxF7fLzzUeK+1RSRx9Tenk0DajR/GcRmTJ2qtHaKQ==}
 
-  '@primeuix/forms@0.0.2':
-    resolution: {integrity: sha512-DpecPQd/Qf/kav4LKCaIeGuT3AkwhJzuHCkLANTVlN/zBvo8KIj3OZHsCkm0zlIMVVnaJdtx1ULNlRQdudef+A==}
-    engines: {node: '>=12.11.0'}
-
   '@primeuix/styled@0.3.2':
     resolution: {integrity: sha512-ColZes0+/WKqH4ob2x8DyNYf1NENpe5ZguOvx5yCLxaP8EIMVhLjWLO/3umJiDnQU4XXMLkn2mMHHw+fhTX/mw==}
     engines: {node: '>=12.11.0'}
@@ -3846,10 +3851,6 @@ packages:
     engines: {node: '>=12.11.0'}
     peerDependencies:
       vue: ^3.3.0
-
-  '@primevue/forms@4.2.5':
-    resolution: {integrity: sha512-5jarJQ9Qv32bOo/0tY5bqR3JZI6+YmmoUQ2mjhVSbVElQsE4FNfhT7a7JwF+xgBPMPc8KWGNA1QB248HhPNVAg==}
-    engines: {node: '>=12.11.0'}
 
   '@primevue/icons@4.2.5':
     resolution: {integrity: sha512-WFbUMZhQkXf/KmwcytkjGVeJ9aGEDXjP3uweOjQZMmRdEIxFnqYYpd90wE90JE1teZn3+TVnT4ZT7ejGyEXnFQ==}
@@ -10666,6 +10667,11 @@ snapshots:
     optionalDependencies:
       '@types/three': 0.184.1
 
+  '@comfyorg/quad-wireframe-three@0.1.0(three@0.184.0)':
+    dependencies:
+      fflate: 0.8.3
+      three: 0.184.0
+
   '@comfyorg/sdk@0.2.0':
     dependencies:
       eventsource-parser: 4.1.0
@@ -12253,10 +12259,6 @@ snapshots:
 
   '@prettier/parse-srcset@3.1.0': {}
 
-  '@primeuix/forms@0.0.2':
-    dependencies:
-      '@primeuix/utils': 0.3.2
-
   '@primeuix/styled@0.3.2':
     dependencies:
       '@primeuix/utils': 0.3.2
@@ -12268,14 +12270,6 @@ snapshots:
       '@primeuix/styled': 0.3.2
       '@primeuix/utils': 0.3.2
       vue: 3.5.42(typescript@6.0.3)
-
-  '@primevue/forms@4.2.5(vue@3.5.42(typescript@6.0.3))':
-    dependencies:
-      '@primeuix/forms': 0.0.2
-      '@primeuix/utils': 0.3.2
-      '@primevue/core': 4.2.5(vue@3.5.42(typescript@6.0.3))
-    transitivePeerDependencies:
-      - vue
 
   '@primevue/icons@4.2.5(vue@3.5.42(typescript@6.0.3))':
     dependencies:
