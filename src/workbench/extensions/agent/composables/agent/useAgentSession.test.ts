@@ -3221,7 +3221,7 @@ describe('useAgentSession (v1 composition root)', () => {
     ])
   })
 
-  it('(g5c) an empty terminal row preserves the locally streamed reply', async () => {
+  it('an empty terminal row preserves the locally streamed reply', async () => {
     const terminalWithoutParts = historyRow(
       2,
       'assistant',
