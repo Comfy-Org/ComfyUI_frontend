@@ -604,9 +604,10 @@ test('draws an uploaded product into the Hand product swap example', async ({
   await panel
     .getByTestId('swap-product-input')
     .setInputFiles('public/images/apps/hand-product-swap/product-can.jpg')
-  await expect(
-    panel.getByRole('radio', { name: 'Your product' })
-  ).toHaveAttribute('aria-checked', 'true')
+  await expect(panel.getByRole('radio', { name: 'Yours' })).toHaveAttribute(
+    'aria-checked',
+    'true'
+  )
   await panel.getByTestId('swap-run').click()
   await expect(app.getByRole('link', { name: 'Download' })).toHaveAttribute(
     'href',

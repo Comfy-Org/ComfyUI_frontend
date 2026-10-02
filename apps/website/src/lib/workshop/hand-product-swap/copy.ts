@@ -49,7 +49,7 @@ const copy = {
   'swap.product.can': { en: 'Can', 'zh-CN': '易拉罐' },
   'swap.product.serum': { en: 'Serum', 'zh-CN': '精华' },
   'swap.product.tube': { en: 'Cream', 'zh-CN': '护手霜' },
-  'swap.product.own': { en: 'Your product', 'zh-CN': '你的产品' },
+  'swap.product.own': { en: 'Yours', 'zh-CN': '你的产品' },
   'swap.product.upload': { en: 'Upload', 'zh-CN': '上传' },
   'swap.product.uploadLabel': {
     en: 'Upload a product image',
