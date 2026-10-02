@@ -777,13 +777,11 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       }
     },
     abortIfUnbound() {
-      if (
-        inFlight &&
-        !inFlight.waitingForLineage &&
-        deps.workflowId() !== inFlight.workflowId
-      ) {
-        settleUnbound(inFlight)
-      }
+      if (!inFlight) return
+      const workflowId = deps.workflowId()
+      if (workflowId === inFlight.workflowId) return
+      if (inFlight.waitingForLineage && workflowId === null) return
+      settleUnbound(inFlight)
     },
     handleLineageReset() {
       lastMintedVersion = -1

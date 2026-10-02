@@ -263,6 +263,33 @@ describe('createOpSender', () => {
     expect(sent[1].ops).toEqual(originalOps)
   })
 
+  it('settles a pre-mint batch and its old-workflow successors after binding a different workflow', () => {
+    sender.enqueue([addNode(1)])
+    sender.enqueue([addNode(2)])
+    resultListener?.({
+      ok: false,
+      applied: [],
+      skipped: [],
+      failed: {
+        index: 0,
+        op_id: sent[0].ops[0].op_id,
+        code: 'pre_mint',
+        message: 'workflow document is not ready; retry after doc_reset'
+      }
+    })
+    boundWorkflow = 'wf-2'
+    sender.enqueue([addNode(3)])
+
+    sender.abortIfUnbound()
+
+    expect(settled.map(summarizeSettlement)).toEqual([
+      { state: 'undeliverable', nodeIds: [1] },
+      { state: 'undeliverable', nodeIds: [2] }
+    ])
+    expect(sent.map(({ workflowId }) => workflowId)).toEqual([WORKFLOW, 'wf-2'])
+    expect(sender.pending()).toBe(1)
+  })
+
   it.for([
     ['successful', true, [], [], 0],
     ['prefix-applied', false, ['applied-op'], [], 0],
