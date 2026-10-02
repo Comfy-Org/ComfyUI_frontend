@@ -39,7 +39,10 @@ import { useDialogService } from '@/services/dialogService'
 import { toTierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { operations } from '@/types/comfyRegistryTypes'
-import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
+import {
+  isWorkspaceBillingRequiredError,
+  parseErrorResponse
+} from '@/platform/remote/comfyui/errors'
 import {
   PENDING_SUBSCRIPTION_CHECKOUT_EVENT,
   PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
@@ -113,7 +116,8 @@ function useSubscriptionInternal() {
 
     return subscriptionStatus.value?.is_active ?? false
   })
-  const { reportError, accessBillingPortal } = useAuthActions()
+  const { reportError, accessBillingPortal, accessBillingPortalDirect } =
+    useAuthActions()
   const { showSubscriptionRequiredDialog } = useDialogService()
 
   const authStore = useAuthStore()
@@ -578,7 +582,14 @@ function useSubscriptionInternal() {
     })
 
   const manageSubscription = async () => {
-    const didOpenPortal = await accessBillingPortal()
+    let didOpenPortal: boolean | undefined
+    try {
+      didOpenPortal = await accessBillingPortalDirect()
+    } catch (err) {
+      // The legacy billing adapter recovers from a rail-mismatch refusal.
+      if (isWorkspaceBillingRequiredError(err)) throw err
+      reportError(err)
+    }
     if (!didOpenPortal) {
       return
     }
@@ -1055,12 +1066,13 @@ function useSubscriptionInternal() {
       )
 
       if (!response.ok) {
-        const { message } = await parseErrorResponse(response)
+        const { message, code } = await parseErrorResponse(response)
         throw new AuthStoreError(
           t('toastMessages.failedToInitiateSubscription', {
             error: message
           }),
-          response.status
+          response.status,
+          code
         )
       }
 
@@ -1088,6 +1100,7 @@ function useSubscriptionInternal() {
     subscribe,
     subscribeDirect,
     fetchStatus,
+    fetchStatusDirect: fetchSubscriptionStatus,
     showSubscriptionDialog,
     manageSubscription,
     requireActiveSubscription,
