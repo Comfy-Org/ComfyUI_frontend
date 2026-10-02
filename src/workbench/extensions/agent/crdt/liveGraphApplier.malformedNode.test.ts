@@ -28,7 +28,6 @@ const CONTEXT = { actor: 'agent:test:turn-1', opIds: ['op-1'] }
 const HUMAN_ACTOR = 'human:user-1:tab-1'
 const NODE_ID = 149
 
-/** A node whose single input slot is the production failure shape. */
 function sinkNode(slot: Record<string, unknown>) {
   return {
     id: NODE_ID,
