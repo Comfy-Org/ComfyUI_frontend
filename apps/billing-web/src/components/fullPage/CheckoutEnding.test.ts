@@ -8,6 +8,7 @@ import { endingOf } from '@/checkout/endingScreen'
 import type { EndingPlan } from '@/components/fullPage/EndingPlanCard.vue'
 import CheckoutEnding from '@/components/fullPage/CheckoutEnding.vue'
 import { createBillingI18n } from '@/i18n'
+import { trackedBillingEvents } from '@/test/trackedBillingEvents'
 
 const PLAN: EndingPlan = { name: 'Pro', price: '$50.00', period: 'USD / mo' }
 
@@ -573,5 +574,67 @@ describe('CheckoutEnding', () => {
     expect(
       await screen.findByRole('button', { name: 'Copied' })
     ).toBeInTheDocument()
+  })
+})
+
+describe('CheckoutEnding, leaving for the product', () => {
+  it.for<{ name: string; ending: EndingScreen }>([
+    { name: 'a finished checkout', ending: { kind: 'success' } },
+    {
+      name: 'a payment that went through earlier',
+      ending: { kind: 'completed', code: 'op_seen' }
+    },
+    {
+      name: 'a payment already completed',
+      ending: { kind: 'already_completed', code: 'op_old' }
+    }
+  ])('reports Close on $name as a success close', async ({ ending }) => {
+    const sent = trackedBillingEvents()
+    const { emitted } = renderEnding(ending)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }))
+
+    expect(emitted('close')).toHaveLength(1)
+    expect(sent()).toStrictEqual([
+      {
+        operation: 'web_return',
+        stage: 'clicked',
+        outcome: 'pending',
+        control: 'success_close'
+      }
+    ])
+  })
+
+  it.for<{ action: Action; ending: EndingScreen }>([
+    {
+      action: 'Try again',
+      ending: { kind: 'load_failed', cause: 'quote', code: 'REQUEST_FAILED' }
+    },
+    {
+      action: 'View plans',
+      ending: { kind: 'plan_unavailable', code: 'PLAN_NOT_FOUND' }
+    },
+    {
+      action: 'Add credits',
+      ending: { kind: 'link_invalid', code: 'CHECKOUT_LINK_INVALID' }
+    }
+  ])('reports nothing for $action, which is not a way back', async (row) => {
+    const sent = trackedBillingEvents()
+    renderEnding(row.ending)
+
+    await userEvent.click(screen.getByRole('button', { name: row.action }))
+
+    expect(sent()).toStrictEqual([])
+  })
+
+  it('closes itself after the countdown without reporting a click', async () => {
+    vi.useFakeTimers()
+    const sent = trackedBillingEvents()
+    const { emitted } = renderEnding({ kind: 'success' }, true)
+
+    await vi.advanceTimersByTimeAsync(5000)
+
+    expect(emitted('close')).toHaveLength(1)
+    expect(sent()).toStrictEqual([])
   })
 })

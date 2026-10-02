@@ -1,4 +1,8 @@
 import type {
+  BillingTelemetryEvent,
+  CheckoutJourneyTelemetryEvent
+} from '@comfyorg/account-core/billing'
+import type {
   AddCreditsClickMetadata,
   AgentAttachButtonClickedMetadata,
   AgentConsentNotOfferedMetadata,
@@ -9,6 +13,8 @@ import type {
   AgentPaywallShownMetadata,
   AgentEntryButtonClickedMetadata,
   AgentErrorMetadata,
+  AgentFreeUseExposureMetadata,
+  AgentFreeUseNoticeMetadata,
   AgentMessageSentMetadata,
   AgentMessageFeedbackMetadata,
   AgentNodeTaggedMetadata,
@@ -27,9 +33,7 @@ import type {
   AuthErrorMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
-  BillingTelemetryEvent,
   BootstrapCompleteMetadata,
-  CheckoutJourneyTelemetryEvent,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ExecutionErrorMetadata,
@@ -428,6 +432,16 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) =>
       provider.trackAgentStarterPromptClicked?.(metadata)
     )
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  trackAgentFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {
+    this.dispatch((provider) => provider.trackAgentFreeUseNotice?.(metadata))
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  trackAgentFreeUseExposure(metadata: AgentFreeUseExposureMetadata): void {
+    this.dispatch((provider) => provider.trackAgentFreeUseExposure?.(metadata))
   }
 
   trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {

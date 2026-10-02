@@ -15,14 +15,17 @@ import {
 } from '@/telemetry/billingWebTelemetry'
 import { initBillingWebRum } from '@/telemetry/rum'
 
+const sessionIdentity = () =>
+  toSessionIdentity(billingWebLivePhase.value, billedScope.value?.uid)
+
 initBillingWebRum({
   hostname: currentHostname(),
   version: __BILLING_WEB_COMMIT__
 })
+billingWebTelemetry.startRumUser(sessionIdentity)
 void billingWebTelemetry.startPostHog({
   config: resolveBillingWebTelemetryConfig(),
-  identity: () =>
-    toSessionIdentity(billingWebLivePhase.value, billedScope.value?.uid)
+  identity: sessionIdentity
 })
 
 const app = createApp(App)
