@@ -782,7 +782,7 @@ export class LiveGraphApplier {
     phase: 'load' | 'incremental'
   ): void {
     this.reportOnce(
-      `host-widgets:${phase}:${String(node.id)}:${actual}`,
+      `host-widgets:${phase}:${String(node.id)}`,
       `Subgraph host ${String(node.id)} (${node.type}) carries ${actual} opaque widget values for ${expected} promoted widgets`,
       'agent_graph_host_widgets_mismatch',
       { nodeId: node.id, type: node.type, expected, actual, phase }
