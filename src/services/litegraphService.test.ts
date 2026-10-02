@@ -37,8 +37,11 @@ describe('useLitegraphService().getCanvasCenter', () => {
   ])(
     'returns the CSS-pixel visible-area centre at DPR $dpr',
     ({ dpr, visibleArea, center }) => {
-      app.canvas.dpr = dpr
-      app.canvas.ds.visible_area.set(visibleArea)
+      Reflect.set(app, 'isGraphReady', true)
+      Reflect.set(app, 'canvas', {
+        dpr,
+        ds: { visible_area: visibleArea }
+      })
 
       expect(useLitegraphService().getCanvasCenter()).toEqual(center)
     }
