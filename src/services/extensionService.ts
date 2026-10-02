@@ -2,6 +2,8 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExtensionStore } from '@/stores/extensionStore'
@@ -28,6 +30,30 @@ export function shouldLoadExtension(
   return !isCloudBuild || !INLINED_CLOUD_EXTENSIONS.has(extension)
 }
 
+/**
+ * Import one backend-provided extension. A failure is reported and swallowed so
+ * that one broken custom node cannot abort the rest of the parallel load.
+ *
+ * `reportError` writes the console line itself, so there is deliberately no
+ * `console.error` here — pairing the two emits the same failure twice, once
+ * untyped.
+ *
+ * Exported for the rejected-import test: `loadExtensions` also imports the
+ * whole core extension entry point, which a unit test cannot pull in.
+ */
+export async function importCustomExtension(ext: string): Promise<void> {
+  try {
+    await import(/* @vite-ignore */ api.fileURL(ext))
+  } catch (error) {
+    reportError(error, {
+      errorType: 'extension_load_failed',
+      surface: 'platform',
+      level: 'warning',
+      tags: { extension: ext }
+    })
+  }
+}
+
 export const useExtensionService = () => {
   const extensionStore = useExtensionStore()
   const settingStore = useSettingStore()
@@ -50,20 +76,19 @@ export const useExtensionService = () => {
 
     // Need to load core extensions first as some custom extensions
     // may depend on them.
-    await import('../extensions/core/index')
+    await bootstrapTracer.settle(
+      'bootstrap/extensions-load-core',
+      () => import('../extensions/core/index')
+    )
     extensionStore.captureCoreExtensions()
-    await Promise.all(
-      extensions
-        .filter((extension) =>
-          shouldLoadExtension(extension, __DISTRIBUTION__ === 'cloud')
-        )
-        .map(async (ext) => {
-          try {
-            await import(/* @vite-ignore */ api.fileURL(ext))
-          } catch (error) {
-            console.error('Error loading extension', ext, error)
-          }
-        })
+    await bootstrapTracer.settle('bootstrap/extensions-load-custom', () =>
+      Promise.all(
+        extensions
+          .filter((extension) =>
+            shouldLoadExtension(extension, __DISTRIBUTION__ === 'cloud')
+          )
+          .map((ext) => importCustomExtension(ext))
+      )
     )
   }
 

@@ -39,6 +39,40 @@ describe('bootstrapTracer', () => {
     expect(addTiming).toHaveBeenCalledExactlyOnceWith('bootstrap.object-info')
   })
 
+  it('records extension loading subphases inside the aggregate load phase', async () => {
+    const tracer = new BootstrapTracer()
+
+    await tracer.settle('bootstrap/extensions-load', async () => {
+      await tracer.settle('bootstrap/extensions-load-core', () =>
+        Promise.resolve()
+      )
+      await tracer.settle('bootstrap/extensions-load-custom', () =>
+        Promise.resolve()
+      )
+    })
+
+    const rows = tracer.summary()
+    expect(rows.map((r) => r.name).sort()).toEqual([
+      'bootstrap/extensions-load',
+      'bootstrap/extensions-load-core',
+      'bootstrap/extensions-load-custom'
+    ])
+    expect(addTiming).toHaveBeenCalledWith('bootstrap.extensions-load-core')
+    expect(addTiming).toHaveBeenCalledWith('bootstrap.extensions-load-custom')
+
+    // The children are nested, not sequential siblings: the aggregate must
+    // still span both, which is what makes the residual readable.
+    const byName = new Map(rows.map((r) => [r.name, r]))
+    const aggregate = byName.get('bootstrap/extensions-load')!
+    for (const child of [
+      byName.get('bootstrap/extensions-load-core')!,
+      byName.get('bootstrap/extensions-load-custom')!
+    ]) {
+      expect(child.startMs).toBeGreaterThanOrEqual(aggregate.startMs)
+      expect(child.durationMs).toBeLessThanOrEqual(aggregate.durationMs)
+    }
+  })
+
   it('publishes milestones under RUM-safe timing names', () => {
     new BootstrapTracer().milestone('stores-ready')
 
