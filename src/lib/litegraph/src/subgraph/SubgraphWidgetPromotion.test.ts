@@ -1723,6 +1723,99 @@ describe('Promoted widget rewire desync (PM-1328 / PM-1253 / PM-1254)', () => {
   })
 })
 
+// Deferring the demotion by a microtask (above) moved three things that used
+// to run synchronously *after* the clearing to running *before* it, or to
+// running against a slot something else already tore down. Each case below
+// is a reviewer finding on the backport carrier
+// https://github.com/Comfy-Org/ComfyUI_frontend/pull/19750 that the suite did
+// not cover: no test in the repo asserted store reclamation on a genuine
+// disconnect, which is why CI stayed green.
+describe('Deferred promoted-widget demotion — teardown ordering', () => {
+  function promoteSingleWidget() {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'input', type: 'number' }]
+    })
+    const { node } = createNodeWithWidget('Test Node')
+    const subgraphNode = setupPromotedWidget(subgraph, node)
+
+    const promotedId = subgraphNode.inputs[0].widgetId
+    if (!promotedId) throw new Error('Expected the input to be promoted')
+    expect(useWidgetValueStore().getWidget(promotedId)).toBeDefined()
+
+    return { subgraph, node, subgraphNode, promotedId }
+  }
+
+  it('reclaims the widget store entry on a genuine disconnect', async () => {
+    const { subgraph, subgraphNode, promotedId } = promoteSingleWidget()
+
+    subgraph.inputNode.slots[0].disconnect()
+    await Promise.resolve()
+
+    expect(subgraphNode.inputs[0]?.widgetId).toBeUndefined()
+    // The deferred teardown clears the slot before asking whether any slot
+    // still holds `promotedId`. Asking first always matched the input being
+    // demoted, so the entry (and its node-widget-order entry) leaked for the
+    // host and a later re-promotion of the same slot name resurrected the
+    // stale value.
+    expect(useWidgetValueStore().getWidget(promotedId)).toBeUndefined()
+  })
+
+  it('still demotes when a same-tick rewire lands on an interior input with no widget', async () => {
+    const { subgraph, node, subgraphNode, promotedId } = promoteSingleWidget()
+
+    // SubgraphInput.connect dispatches 'input-connected' with no
+    // widget/node when the new interior target has no widget locator.
+    const plainTarget = new LGraphNode('No Widget Target')
+    plainTarget.addInput('value', 'number')
+    subgraph.add(plainTarget)
+
+    node.disconnectInput(0, true)
+    subgraph.inputNode.slots[0].connect(plainTarget.inputs[0], plainTarget)
+    await Promise.resolve()
+
+    // Cancelling the demotion here without promoting a replacement stranded
+    // widgetId/.widget/._widget on a widget whose interior source is gone —
+    // a phantom promoted widget that renders and serializes, with no
+    // 'widget-demoted' for the promotion-error reconciler to catch.
+    expect(subgraphNode.inputs[0]?.widgetId).toBeUndefined()
+    expect(subgraphNode.inputs[0]?._widget).toBeUndefined()
+    expect(subgraphNode.widgets).toHaveLength(0)
+    expect(useWidgetValueStore().getWidget(promotedId)).toBeUndefined()
+  })
+
+  it('dispatches no demotion event when the node is removed in the same tick', async () => {
+    const { subgraph, subgraphNode } = promoteSingleWidget()
+    const eventCapture = createEventCapture(subgraph.events, ['widget-demoted'])
+
+    subgraph.inputNode.slots[0].disconnect()
+    // onRemoved() already runs _clearPromotedWidget, and an AbortSignal
+    // cannot cancel an already-queued microtask. Re-running the teardown
+    // dispatched a spurious 'widget-demoted' — which makes
+    // createPromotionErrorReconciler.removeHostWidgetCandidate drop a live
+    // candidate — and broke the invariant asserted above, that onRemoved()
+    // dispatches no demotion events.
+    subgraphNode.onRemoved()
+    await Promise.resolve()
+
+    expect(eventCapture.getEventsByType('widget-demoted')).toHaveLength(0)
+    eventCapture.cleanup()
+  })
+
+  it('dispatches no demotion event when the host is reconfigured in the same tick', async () => {
+    const { subgraph, subgraphNode } = promoteSingleWidget()
+    const eventCapture = createEventCapture(subgraph.events, ['widget-demoted'])
+
+    subgraph.inputNode.slots[0].disconnect()
+    // configure() replaces this.inputs wholesale, so the queued callback
+    // would otherwise run against a slot that is no longer the node's.
+    subgraphNode.configure(subgraphNode.serialize())
+    await Promise.resolve()
+
+    expect(eventCapture.getEventsByType('widget-demoted')).toHaveLength(0)
+    eventCapture.cleanup()
+  })
+})
+
 // Speculative lead for PM-1328's duplication (not the confirmed disappear
 // mechanism above): a promoted textarea's host widget is a DOMWidgetImpl
 // living in useDomWidgetStore, materialized by createPromotedHostWidget
@@ -1811,8 +1904,12 @@ describe('Promoted textarea dual-registration (PM-1328 duplication lead)', () =>
     expect(domStoreEntryCount(hostNode)).toBe(1)
 
     textNode.disconnectInput(0, true)
-    expect(textRowCount(hostNode)).toBeLessThanOrEqual(1)
-    expect(domStoreEntryCount(hostNode)).toBeLessThanOrEqual(1)
+    // Mid-rewire: the demotion is deferred, so the row and its DOM
+    // registration must still be present. `toBeLessThanOrEqual(1)` is
+    // satisfied by 0, which is exactly the "rewired widget disappears"
+    // symptom (PM-1254) this suite exists to catch.
+    expect(textRowCount(hostNode)).toBe(1)
+    expect(domStoreEntryCount(hostNode)).toBe(1)
 
     subgraph.inputNode.slots[0].connect(textNode.inputs[0], textNode)
     expect(textRowCount(hostNode)).toBe(1)

@@ -440,11 +440,19 @@ function demotePromotedInput(
   const hostWidgetId = hostInput.widgetId
 
   if (subgraphNode.isInputConnected(subgraphNode.inputs.indexOf(hostInput))) {
+    // SubgraphNode defers this demotion by a microtask so a same-tick rewire
+    // can cancel it, and reclaims the store entry itself once the teardown
+    // runs. Deleting it here as well would leave one tick in which
+    // host.widgets still holds the projection while store.getWidget(id) is
+    // already undefined — the model/store disagreement this path exists to
+    // avoid.
     linkedInput.disconnect()
   } else {
+    // Removing the slot goes through 'removing-input', which tears the host
+    // widget down without queuing a demotion, so reclaim the entry here.
     subgraphNode.subgraph.removeInput(linkedInput)
+    if (hostWidgetId) useWidgetValueStore().deleteWidget(hostWidgetId)
   }
-  if (hostWidgetId) useWidgetValueStore().deleteWidget(hostWidgetId)
   return true
 }
 

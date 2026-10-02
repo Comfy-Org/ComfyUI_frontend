@@ -311,11 +311,18 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       'input-connected',
       (e) => {
         input.shape = this.getSlotShape(subgraphInput, e.detail.input)
+        if (!e.detail.widget || !e.detail.node) return
+
         // A reconnect landing before the deferred demotion below runs is a
         // rewire, not a real disconnect: cancel the pending demotion so the
-        // widget is never torn down.
+        // widget is never torn down. Only once a replacement is actually
+        // being promoted, though — SubgraphInput.connect dispatches
+        // 'input-connected' with no widget/node when the new interior target
+        // has no widget locator, and cancelling there would strand
+        // input.widgetId/.widget/._widget on a widget whose interior source
+        // is gone (a phantom promoted widget that renders and serializes,
+        // with no 'widget-demoted' for the promotion-error reconciler).
         input._pendingDemotionToken = undefined
-        if (!e.detail.widget || !e.detail.node) return
 
         this._setWidget(
           subgraphInput,
@@ -356,16 +363,39 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           if (input._pendingDemotionToken !== token) return
           input._pendingDemotionToken = undefined
 
-          if (widget) this.ensureWidgetRemoved(widget)
-          if (id && !this.inputs.some((i) => i.widgetId === id)) {
-            useWidgetValueStore().deleteWidget(id)
+          // configure(), onRemoved() and the 'removing-input' handler can
+          // tear this slot down in the same tick, and _setWidget can
+          // re-promote it; an AbortSignal cannot cancel an already-queued
+          // microtask, so detect it here. Repeating the teardown would run
+          // widget.onRemove() a second time (a double unregister for
+          // DOM-backed host widgets) and dispatch a spurious
+          // 'widget-demoted' that makes the promotion-error reconciler drop
+          // a live candidate.
+          const slotUnchanged =
+            this.inputs.includes(input) && input._widget === widget
+
+          if (slotUnchanged) {
+            if (widget) this.ensureWidgetRemoved(widget)
+
+            input.pos = undefined
+            input.widget = undefined
+            input.widgetId = undefined
+            input._widget = undefined
+            this.invalidatePromotedViews()
           }
 
-          input.pos = undefined
-          input.widget = undefined
-          input.widgetId = undefined
-          input._widget = undefined
-          this.invalidatePromotedViews()
+          // Reclaim the store entry once no slot holds a live promotion of
+          // `id`. Checked *after* the clearing above, so the slot being
+          // demoted no longer counts — testing before it would always match
+          // the input we are demoting and leak the entry (and its
+          // node-widget-order entry) for the host, letting a later
+          // re-promotion of the same slot name resurrect the stale value
+          // via registerWidget's same-type reuse. `_widget` is what tells a
+          // slot re-promoted to the same id from one already torn down.
+          const stillPromoted = this.inputs.some(
+            (i) => i.widgetId === id && i._widget !== undefined
+          )
+          if (id && !stillPromoted) useWidgetValueStore().deleteWidget(id)
         })
       },
       { signal }

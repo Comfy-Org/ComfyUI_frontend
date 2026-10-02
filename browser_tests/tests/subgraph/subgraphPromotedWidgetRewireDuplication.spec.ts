@@ -194,12 +194,21 @@ test.describe(
 
         // Which snapshot undo targets depends on change-tracker capture
         // timing this test does not control (captures fire on window
-        // mouseup, before the click handlers that apply promotions), so
-        // assert render/model consistency instead of a fixed widget set:
-        // whatever state undo restored, the host's model must hold each
-        // promoted widget at most once and the grid must render exactly
-        // one row per model widget. Both reported symptoms -- duplicated
-        // rows and a disappeared widget -- violate this invariant.
+        // mouseup, before the click handlers that apply promotions), so the
+        // only promoted widget whose post-undo presence is genuinely
+        // undetermined is the one the wire action touched ('text'): undo may
+        // restore either the pre-wire state (promoted) or the post-wire one
+        // (socket externally connected). Every *other* promoted widget was
+        // untouched by the wire and must survive undo, so assert those
+        // against the fixed PROMOTED_WIDGET_NAMES set — deriving the whole
+        // expectation from the live model is tautological for PM-1254's
+        // disappearance symptom, since a widget missing from both the model
+        // and the DOM yields expected === 0 and passes.
+        const REWIRED_WIDGET_NAME = 'text'
+        const untouchedWidgetNames = PROMOTED_WIDGET_NAMES.filter(
+          (name) => name !== REWIRED_WIDGET_NAME
+        )
+
         const modelWidgetNames = await comfyPage.page.evaluate((id) => {
           const node = window.app!.canvas.graph!.getNodeById(id)
           return node
@@ -212,12 +221,26 @@ test.describe(
           new Set(modelWidgetNames).size,
           'model should hold no duplicate widgets'
         ).toBe(modelWidgetNames!.length)
+        expect(
+          untouchedWidgetNames.filter(
+            (name) => !modelWidgetNames!.includes(name)
+          ),
+          'undo must not drop promoted widgets the wire action never touched'
+        ).toEqual([])
 
         for (const [name, locator] of widgetLocators(
           comfyPage,
           subgraphNodeId
         )) {
-          const expected = modelWidgetNames!.includes(name) ? 1 : 0
+          // Concrete for the three untouched widgets; model-derived only for
+          // the rewired one, whose promoted state legitimately varies with
+          // the restored snapshot.
+          const expected =
+            name === REWIRED_WIDGET_NAME
+              ? modelWidgetNames!.includes(name)
+                ? 1
+                : 0
+              : 1
           await expect(
             locator,
             `"${name}" should render ${expected === 1 ? 'exactly once' : 'not at all'}`
