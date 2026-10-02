@@ -200,9 +200,6 @@ describe('createOpSender', () => {
     sender.admit([addNode(1)])
     sender.admit([addNode(2)])
     sender.flush()
-    // The reset lands on wf-2, which is what the follower is bound to: it is
-    // dispatched under an isCurrentWorkflow guard, so no other doc's lineage
-    // broke and no other doc's high-water mark may be discarded.
     boundWorkflow = 'wf-2'
     sender.admit([addNode(3)])
     sender.abortAll()
@@ -212,9 +209,6 @@ describe('createOpSender', () => {
     observedSequence = 0
     sender.admit([addNode(5)])
 
-    // wf-2's lineage broke, so it restarts at the new document's sequence.
-    // wf-1's did not, so node 5 mints past node 2 rather than at the
-    // not-yet-acknowledged 0.
     expect(
       sender.pendingOps().map(({ workflowId, ops }) => ({
         workflowId,
