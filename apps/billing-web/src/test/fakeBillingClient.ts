@@ -417,6 +417,14 @@ export function succeededOperation(id = 'op_1'): TerminalBillingOperation {
   return { ...operationIdentity(id), phase: 'succeeded' }
 }
 
+/** Ended without a verdict: the poll budget ran out, the server parked it, or another replaced it. */
+export function unresolvedOperation(
+  phase: 'timed_out' | 'reconciliation_needed' | 'superseded',
+  id = 'op_1'
+): TerminalBillingOperation {
+  return { ...operationIdentity(id), phase }
+}
+
 /** Pending with no continuation on offer: the lifecycle is still polling it. */
 export function pendingOperation(id = 'op_1'): PendingBillingOperation {
   return {

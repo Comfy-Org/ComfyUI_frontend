@@ -106,6 +106,8 @@ export type {
 export { BILLING_STATUS_ROUTE, createBillingStatusReader } from './status.js'
 export type {
   BillingAuthenticationState,
+  BillingChargeBreakdown,
+  BillingChargeReason,
   BillingDeclineReason,
   BillingOpStatus,
   BillingOperationEvent,
@@ -168,6 +170,7 @@ export {
   operationRoute
 } from './operationLifecycle.js'
 export { BILLING_OPERATION_TELEMETRY_EVENT } from '../../telemetry.js'
+export * from './telemetry/index.js'
 export type {
   EmbeddedChallengeOutcome,
   EmbeddedChallengePort

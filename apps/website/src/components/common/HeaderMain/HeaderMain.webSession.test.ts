@@ -5,11 +5,14 @@
  */
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { readonly, ref } from 'vue'
+import { nextTick, readonly, ref } from 'vue'
 
 import { COMFY_CLIENT } from '@comfyorg/account-core/requestAuth'
 
-import { WORKSHOP_CLOUD_BASE_URL } from '../../../config/workshop-env'
+import {
+  WORKSHOP_CLOUD_BASE_URL,
+  WORKSHOP_CREDITS_URL
+} from '../../../config/workshop-env'
 import { ACCOUNT_SOURCE_CAP_MS } from '../../../config/workshop-account-source'
 
 vi.mock(import('../../../scripts/posthog'))
@@ -223,6 +226,143 @@ describe('HeaderMain account source', () => {
     expect(
       sent.filter(({ url }) => /identitytoolkit|securetoken/.test(url))
     ).toEqual([])
+  })
+
+  it('routes an explicit session-account credits action to the supported Cloud purchase UI', async () => {
+    stubCloud({
+      anonymous: { web_session_probe: true },
+      perUser: { unified_web_session: true },
+      session: LIVE_SESSION,
+      balance: {
+        status: 200,
+        body: {
+          amount_micros: 0,
+          currency: 'usd',
+          effective_balance_micros: 0
+        }
+      }
+    })
+    const open = vi.spyOn(window, 'open').mockReturnValue(null)
+    const { useWorkshopSession } = await renderHeader()
+    await screen.findAllByTestId('header-session-account')
+    const { requestWorkshopBuyCredits } =
+      await import('../../../config/workshop-buy-credits')
+
+    requestWorkshopBuyCredits()
+
+    await vi.waitFor(() =>
+      expect(open).toHaveBeenCalledExactlyOnceWith(
+        WORKSHOP_CREDITS_URL,
+        '_blank',
+        'noopener,noreferrer'
+      )
+    )
+    expect(useWorkshopSession).not.toHaveBeenCalled()
+  })
+
+  it('does not rely on a blocked popup for an automatic session-account refusal', async () => {
+    stubCloud({
+      anonymous: { web_session_probe: true },
+      perUser: { unified_web_session: true },
+      session: LIVE_SESSION,
+      balance: {
+        status: 200,
+        body: {
+          amount_micros: 0,
+          currency: 'usd',
+          effective_balance_micros: 0
+        }
+      }
+    })
+    const open = vi.spyOn(window, 'open').mockReturnValue(null)
+    await renderHeader()
+    await screen.findAllByTestId('header-session-account')
+    const { requestWorkshopBuyCreditsAutomatically } =
+      await import('../../../config/workshop-buy-credits')
+
+    requestWorkshopBuyCreditsAutomatically()
+    await Promise.resolve()
+
+    expect(open).not.toHaveBeenCalled()
+  })
+
+  const SESSION_ACCOUNT: CloudAnswers = {
+    anonymous: { web_session_probe: true },
+    perUser: { unified_web_session: true },
+    session: LIVE_SESSION,
+    balance: {
+      status: 200,
+      body: {
+        amount_micros: 0,
+        currency: 'usd',
+        effective_balance_micros: 0
+      }
+    }
+  }
+
+  async function clickBeforeSourceSettles(
+    answers: CloudAnswers,
+    { placeholderBlocked = false } = {}
+  ) {
+    let answer!: () => void
+    const answered = new Promise<void>((resolve) => {
+      answer = resolve
+    })
+    stubCloud({ ...answers, answered })
+    const tab = {
+      opener: window as Window | null,
+      location: { assign: vi.fn() },
+      close: vi.fn()
+    }
+    const open = vi
+      .spyOn(window, 'open')
+      .mockReturnValue(placeholderBlocked ? null : (tab as unknown as Window))
+    await renderHeader()
+    await nextTick()
+    const { requestWorkshopBuyCredits } =
+      await import('../../../config/workshop-buy-credits')
+
+    requestWorkshopBuyCredits()
+
+    expect(open).toHaveBeenCalledExactlyOnceWith('/checkout-opening', '_blank')
+    answer()
+    return { tab, open }
+  }
+
+  it('sends a tab claimed before the session source settles to Cloud credits', async () => {
+    const { tab } = await clickBeforeSourceSettles(SESSION_ACCOUNT)
+
+    await vi.waitFor(() =>
+      expect(tab.location.assign).toHaveBeenCalledExactlyOnceWith(
+        WORKSHOP_CREDITS_URL
+      )
+    )
+    expect(tab.opener).toBeNull()
+    expect(tab.close).not.toHaveBeenCalled()
+  })
+
+  it('navigates this tab to Cloud credits when the placeholder tab is blocked', async () => {
+    const assign = vi
+      .spyOn(window.location, 'assign')
+      .mockImplementation(() => {})
+
+    const { open } = await clickBeforeSourceSettles(SESSION_ACCOUNT, {
+      placeholderBlocked: true
+    })
+
+    await vi.waitFor(() =>
+      expect(assign).toHaveBeenCalledExactlyOnceWith(WORKSHOP_CREDITS_URL)
+    )
+    expect(open).toHaveBeenCalledOnce()
+  })
+
+  it('releases a tab claimed before the source settles on Firebase', async () => {
+    const { tab } = await clickBeforeSourceSettles({
+      anonymous: { web_session_probe: false }
+    })
+
+    await vi.waitFor(() => expect(tab.close).toHaveBeenCalledOnce())
+    expect(tab.location.assign).not.toHaveBeenCalled()
   })
 
   it('flag on with a revoked session: signs the remembered login out and falls back to Firebase', async () => {

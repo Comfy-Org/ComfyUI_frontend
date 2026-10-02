@@ -187,6 +187,53 @@ describe('SceneManager', () => {
     })
   })
 
+  describe('whenSplatsSorted', () => {
+    function stubSpark({ sortsFinish }: { sortsFinish: boolean }) {
+      const spark = manager.scene.children.find(
+        (child): child is SparkRenderer => child instanceof SparkRenderer
+      )!
+      const update = vi.fn(async () => {
+        spark.sorting = true
+        if (sortsFinish) {
+          setTimeout(() => {
+            spark.sorting = false
+            spark.sortDirty = false
+          }, 100)
+        }
+      })
+      Object.assign(spark, { update, sorting: false, sortDirty: false })
+      return { update }
+    }
+
+    async function settle(promise: Promise<void>, advanceMs: number) {
+      let settled = false
+      void promise.then(() => (settled = true))
+      await vi.advanceTimersByTimeAsync(advanceMs)
+      return settled
+    }
+
+    beforeEach(() => vi.useFakeTimers())
+
+    it('sorts for the capture camera and resolves only once sorting finishes', async () => {
+      const { update } = stubSpark({ sortsFinish: true })
+
+      const sorted = manager.whenSplatsSorted(camera)
+
+      expect(update).toHaveBeenCalledWith({ scene: manager.scene, camera })
+      expect(await settle(sorted, 50)).toBe(false)
+      expect(await settle(sorted, 100)).toBe(true)
+    })
+
+    it('gives up after the timeout when sorting never finishes', async () => {
+      stubSpark({ sortsFinish: false })
+
+      const sorted = manager.whenSplatsSorted(camera)
+
+      expect(await settle(sorted, 4_900)).toBe(false)
+      expect(await settle(sorted, 200)).toBe(true)
+    })
+  })
+
   describe('toggleGrid', () => {
     it('hides and shows the grid and emits showGridChange', () => {
       manager.toggleGrid(false)

@@ -188,9 +188,17 @@ export type CheckoutPageEvent =
       readonly reason: CapabilityDenialReason
       readonly scheduled?: ScheduledChange
     }
-  | { readonly type: 'unavailable'; readonly code: string }
+  | {
+      readonly type: 'unavailable'
+      readonly code: string
+      readonly httpStatus?: number
+    }
   /** The capabilities read failed, so the page cannot say whether this workspace may check out. */
-  | { readonly type: 'capabilitiesFailed'; readonly code: string }
+  | {
+      readonly type: 'capabilitiesFailed'
+      readonly code: string
+      readonly httpStatus?: number
+    }
   /** The lifecycle could not say what the workspace is waiting on. */
   | { readonly type: 'recheckFailed'; readonly code: string }
   | { readonly type: 'planUnavailable'; readonly reason: PlanUnavailableReason }

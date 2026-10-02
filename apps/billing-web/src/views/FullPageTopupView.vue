@@ -10,6 +10,7 @@ import CheckoutPaymentColumn from '@/components/fullPage/CheckoutPaymentColumn.v
 import CheckoutSummaryColumn from '@/components/fullPage/CheckoutSummaryColumn.vue'
 import { useFullPageTopup } from '@/composables/useFullPageTopup'
 import { useBillingWebSession } from '@/session/billingWebSession'
+import { reportReturnClicked } from '@/telemetry/webReturnTelemetry'
 
 const { t, locale } = useI18n()
 const { session } = useBillingWebSession()
@@ -45,6 +46,11 @@ function returnToProduct() {
   window.location.assign(returnLink.value)
 }
 
+function goBack() {
+  reportReturnClicked('back')
+  returnToProduct()
+}
+
 function openBillingSettings() {
   window.location.assign(settingsLink.value)
 }
@@ -69,7 +75,7 @@ function openBillingSettings() {
   >
     <h1 class="sr-only">{{ t('hosted.title.checkout') }}</h1>
     <div class="flex min-h-full flex-col lg:flex-row">
-      <CheckoutSummaryColumn :ledger :locked @back="returnToProduct" />
+      <CheckoutSummaryColumn :ledger :locked @back="goBack" />
       <CheckoutPaymentColumn
         v-if="
           page.kind === 'resolving' ||
