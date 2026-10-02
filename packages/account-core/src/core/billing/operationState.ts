@@ -19,10 +19,7 @@ import {
 import type { z } from 'zod'
 
 import type { BillingScope } from './billingScope.js'
-import {
-  centsSchema,
-  subscriptionDiscountSchema
-} from './moneySchemas.js'
+import { centsSchema, subscriptionDiscountSchema } from './moneySchemas.js'
 
 export const BillingOpStatusSchema = zBillingOpStatusResponse.extend({
   amount_charged_cents: centsSchema.optional(),

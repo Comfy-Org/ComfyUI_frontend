@@ -27,10 +27,7 @@ import type { BillingFailure, BillingTransport } from './billingContracts.js'
 import { matchesServerCode } from './billingContracts.js'
 import type { CapabilitiesReader } from './capabilities.js'
 import type { CreditsReader } from './credits.js'
-import {
-  centsSchema,
-  subscriptionDiscountSchema
-} from './moneySchemas.js'
+import { centsSchema, subscriptionDiscountSchema } from './moneySchemas.js'
 import type {
   BillingOperationLifecycle,
   IssuedBillingOperation
