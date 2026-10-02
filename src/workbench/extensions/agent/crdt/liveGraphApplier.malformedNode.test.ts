@@ -147,6 +147,21 @@ describe('LiveGraphApplier malformed node report', () => {
     )
   })
 
+  it('still reports when the producer ledger is unreadable', () => {
+    const { doc, applyCollected } = setup({
+      nodes: [sinkNode({ name: 'image', link: null })],
+      links: []
+    })
+    doc.getMap('meta').set('schema_version', 'unreadable')
+
+    applyCollected()
+
+    const [, options] = onlyReport()
+    expect(options).toMatchObject({
+      context: { producer: { origin: 'unreadable' } }
+    })
+  })
+
   it('reports a node that stays malformed once, not once per frame that reads it', () => {
     const { doc, collector, applier, applyCollected } = setup({
       nodes: [sinkNode({ name: 'image', link: null })],
