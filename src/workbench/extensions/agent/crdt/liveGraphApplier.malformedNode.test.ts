@@ -190,7 +190,7 @@ describe('LiveGraphApplier malformed node report', () => {
      * field — so each edit rides with a title change, which is what makes the
      * frame reach `readDocNode` at all.
      */
-    const reslot = (slot: Record<string, unknown>, title: string) => {
+    function reslot(slot: Record<string, unknown>, title: string) {
       doc.transact(() => {
         const node = nodesMap(doc).get('149')
         node?.set('inputs', [slot])
