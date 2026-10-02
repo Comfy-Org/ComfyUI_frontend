@@ -2,12 +2,15 @@ import { tryOnScopeDispose } from '@vueuse/core'
 import { computed, ref, shallowRef } from 'vue'
 
 import type {
+  AdjustSetup,
   CutoutResult,
-  CutoutSetup
+  CutoutSetup,
+  ReplaceSetup
 } from '../lib/workshop/background-removal/contract'
 import {
   DEFAULT_SETUP,
-  cutoutRequest
+  cutoutRequest,
+  missingInput
 } from '../lib/workshop/background-removal/contract'
 import { CUTOUT_EXAMPLE } from '../lib/workshop/background-removal/mask'
 import { runCutout } from '../lib/workshop/background-removal/mock-run'
@@ -28,6 +31,7 @@ export function useBackgroundRemoval() {
   const phase = shallowRef<CutoutPhase>({ kind: 'editing' })
   const tray = ref<CutoutTray>()
   const touched = ref(false)
+  const references = new Set<string>()
   let run: AbortController | undefined
 
   function releaseResult(url: string) {
@@ -41,21 +45,43 @@ export function useBackgroundRemoval() {
     phase.value = next
   }
 
+  function releaseReferences() {
+    references.forEach((url) => URL.revokeObjectURL(url))
+    references.clear()
+  }
+
   const { image, useExample, useFile } = useEditorImage(() => {
     run?.abort()
     run = undefined
     leaveResult({ kind: 'editing' })
     history.reset(DEFAULT_SETUP)
+    releaseReferences()
     touched.value = false
   })
 
+  const missing = computed(() => missingInput(history.state.value))
   const canRun = computed(
-    () => Boolean(image.value) && phase.value.kind !== 'running'
+    () =>
+      Boolean(image.value) && phase.value.kind !== 'running' && !missing.value
   )
 
   function update(patch: Partial<CutoutSetup>, key?: string) {
     touched.value = true
     history.change({ ...history.state.value, ...patch }, key)
+  }
+
+  function updateReplace(patch: Partial<ReplaceSetup>, key?: string) {
+    update({ replace: { ...history.state.value.replace, ...patch } }, key)
+  }
+
+  function updateAdjust(patch: Partial<AdjustSetup>, key?: string) {
+    update({ adjust: { ...history.state.value.adjust, ...patch } }, key)
+  }
+
+  function setReference(file: File | undefined) {
+    const referenceUrl = file && URL.createObjectURL(file)
+    if (referenceUrl) references.add(referenceUrl)
+    updateReplace({ referenceUrl })
   }
 
   async function removeBackground() {
@@ -91,6 +117,7 @@ export function useBackgroundRemoval() {
   tryOnScopeDispose(() => {
     run?.abort()
     leaveResult({ kind: 'editing' })
+    releaseReferences()
   })
 
   return {
@@ -99,12 +126,16 @@ export function useBackgroundRemoval() {
     phase,
     tray,
     touched,
+    missing,
     canRun,
     canUndo: history.canUndo,
     canRedo: history.canRedo,
     useExample: () => useExample(CUTOUT_EXAMPLE),
     useFile,
     update,
+    updateReplace,
+    updateAdjust,
+    setReference,
     undo: history.undo,
     redo: history.redo,
     removeBackground,

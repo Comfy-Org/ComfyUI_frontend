@@ -60,7 +60,7 @@ test('removes the background of the example from the floating panel', async ({
     (await app.getByText('GitHub · Coming soon').boundingBox())?.y
   )
   const split = app.getByRole('slider', {
-    name: 'Drag to compare the original and the cutout'
+    name: 'Drag to compare the original and the result'
   })
   await split.focus()
   await page.keyboard.press('ArrowLeft')
@@ -68,6 +68,73 @@ test('removes the background of the example from the floating panel', async ({
 
   await app.getByRole('button', { name: 'Edit settings' }).click()
   await expect(panel.getByRole('radio', { name: 'Lilac' })).toBeChecked()
+})
+
+test('replaces the background of the example with a described one', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, true)
+  await page.goto('/hub/apps/background-removal/')
+  const app = page.getByTestId('background-removal')
+  await app.getByRole('button', { name: 'Try the example' }).click()
+  const panel = app.getByRole('complementary', {
+    name: 'Background Removal settings'
+  })
+  await panel.getByRole('radio', { name: 'Replace' }).click()
+  const run = panel.getByTestId('background-removal-run')
+  await expect(run).toBeDisabled()
+  await expect(run).toHaveAttribute(
+    'title',
+    'Describe a background or add a reference image.'
+  )
+  await expect(panel.getByRole('spinbutton', { name: 'Seed' })).toBeVisible()
+
+  await panel
+    .getByRole('textbox', { name: 'New background' })
+    .fill('a terracotta wall and a travertine shelf')
+  await run.click()
+
+  await expect(app.getByRole('link', { name: 'Download' })).toHaveAttribute(
+    'download',
+    'potted-plant-new-background.png'
+  )
+  await app.getByRole('button', { name: 'Result' }).click()
+  await expect(
+    app.getByRole('img', { name: 'The finished image' })
+  ).toHaveJSProperty('naturalWidth', 1200)
+})
+
+test('adjusts the background live from the panel', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, true)
+  await page.goto('/hub/apps/background-removal/')
+  const app = page.getByTestId('background-removal')
+  await app.getByRole('button', { name: 'Try the example' }).click()
+  const panel = app.getByRole('complementary', {
+    name: 'Background Removal settings'
+  })
+  await panel.getByRole('radio', { name: 'Adjust' }).click()
+  const blur = panel.getByRole('slider', { name: 'Blur' })
+  await blur.focus()
+  for (let step = 0; step < 5; step++) await page.keyboard.press('ArrowRight')
+
+  await expect(
+    app.getByRole('img', {
+      name: 'A pilea in a white pot on an oak side table in a living room'
+    })
+  ).toHaveCSS('filter', /blur/)
+  await expect(app.getByTestId('background-removal-foreground')).toHaveCSS(
+    'filter',
+    'none'
+  )
+  await panel.getByTestId('background-removal-run').click()
+  await expect(app.getByRole('link', { name: 'Download' })).toHaveAttribute(
+    'download',
+    'potted-plant-adjusted.png'
+  )
 })
 
 test('removes the background from the bottom composer', async ({

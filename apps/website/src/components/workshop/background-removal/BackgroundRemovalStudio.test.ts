@@ -82,12 +82,11 @@ describe('BackgroundRemovalStudio', () => {
       ).queryByRole('link')
     ).toBeNull()
     expect(vi.mocked(renderCutout)).toHaveBeenCalledWith({
-      imageUrl: '/images/apps/background-removal/example.jpg',
-      background: 'lilac',
-      backgroundColor: '#D9CCF5',
+      imageUrl: '/images/apps/background-removal/plant.jpg',
+      mode: 'remove',
+      background: { kind: 'color', color: '#d9ccf5' },
       format: 'webp',
-      edgeSoftness: 20,
-      seed: 42
+      edgeSoftness: 20
     })
     expect(screen.getByRole('button', { name: 'Compare' })).toHaveAttribute(
       'aria-pressed',
@@ -95,7 +94,7 @@ describe('BackgroundRemovalStudio', () => {
     )
     expect(
       screen.getByRole('slider', {
-        name: 'Drag to compare the original and the cutout'
+        name: 'Drag to compare the original and the result'
       })
     ).toBeVisible()
   })
@@ -110,10 +109,13 @@ describe('BackgroundRemovalStudio', () => {
     expect(tile('White')).toBeChecked()
   })
 
-  it('keeps the edge softness in the collapsed Advanced section and the seed as a row of the panel', async () => {
+  it('keeps only the edge softness in the collapsed Advanced section, and no seed outside Replace', async () => {
     const user = await openExample()
     expect(
       within(panel()).queryByRole('slider', { name: 'Edge softness' })
+    ).toBeNull()
+    expect(
+      within(panel()).queryByRole('spinbutton', { name: 'Seed' })
     ).toBeNull()
 
     await user.click(within(panel()).getByRole('button', { name: /^Advanced/ }))
@@ -128,13 +130,107 @@ describe('BackgroundRemovalStudio', () => {
     ).toBeVisible()
     await user.click(undo())
     expect(edge).toHaveValue('20')
-    const seed = within(panel()).getByRole('spinbutton', { name: 'Seed' })
-    expect(section('Advanced')).not.toContainElement(seed)
-    expect(seed).toHaveValue(42)
+    expect(within(section('Advanced')).getAllByRole('slider')).toHaveLength(1)
+  })
 
-    vi.spyOn(Math, 'random').mockReturnValue(0.5)
-    await user.click(within(panel()).getByRole('button', { name: 'New seed' }))
-    expect(seed).toHaveValue(500_000_000)
+  it('picks a custom colour from the last swatch', async () => {
+    const user = await openExample()
+    await user.click(tile('Custom colour'))
+
+    const picker = screen.getByRole('dialog', { name: 'Custom colour' })
+    const hex = within(picker).getByRole('textbox')
+    await user.clear(hex)
+    await user.type(hex, '#336699{Enter}')
+
+    expect(tile('Custom colour')).toBeChecked()
+    expect(tile('Transparent')).not.toBeChecked()
+    expect(
+      within(panel()).getByRole('button', { name: /^Background\s*#336699/ })
+    ).toBeVisible()
+    await user.click(within(panel()).getByTestId('background-removal-run'))
+    expect(vi.mocked(renderCutout)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        background: { kind: 'color', color: '#336699' }
+      })
+    )
+  })
+
+  it('replaces the background from a description, with the seed as a row of its own', async () => {
+    const user = await openExample()
+    await user.click(
+      within(section('Background')).getByRole('radio', { name: 'Replace' })
+    )
+    const run = within(panel()).getByTestId('background-removal-run')
+    expect(run).toHaveTextContent('Replace background')
+    expect(run).toBeDisabled()
+    expect(
+      within(section('Background')).getByText(
+        'Describe a background or add a reference image.'
+      )
+    ).toBeVisible()
+    const seed = within(panel()).getByRole('spinbutton', { name: 'Seed' })
+    expect(section('Background')).not.toContainElement(seed)
+
+    await user.click(
+      within(section('Background')).getByRole('button', { name: 'Model: Auto' })
+    )
+    await user.click(
+      screen.getByRole('menuitemradio', { name: 'Seedream 4.5' })
+    )
+    await user.type(
+      within(section('Background')).getByRole('textbox', {
+        name: 'New background'
+      }),
+      'a terracotta wall'
+    )
+    expect(run).toBeEnabled()
+    await user.click(run)
+
+    expect(vi.mocked(renderCutout)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mode: 'replace',
+        replace: {
+          prompt: 'a terracotta wall',
+          model: 'byteplus--seedream-4-5--edit-images',
+          count: 1,
+          seed: 42
+        }
+      })
+    )
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(
+      await screen.findByRole('link', { name: 'Download' })
+    ).toHaveAttribute('download', 'potted-plant-new-background.png')
+  })
+
+  it('adjusts the chosen layer live on the photo and sends the values', async () => {
+    const user = await openExample()
+    await user.click(
+      within(section('Background')).getByRole('radio', { name: 'Adjust' })
+    )
+    await user.click(
+      within(section('Background')).getByRole('radio', { name: 'Foreground' })
+    )
+    await fireEvent.update(
+      within(section('Background')).getByRole('slider', { name: 'Grayscale' }),
+      '40'
+    )
+
+    expect(screen.getByTestId('background-removal-foreground')).toHaveStyle({
+      filter: 'grayscale(40%)'
+    })
+    expect(
+      within(panel()).getByRole('button', {
+        name: /^Background\s*Adjust · Foreground/
+      })
+    ).toBeVisible()
+    await user.click(within(panel()).getByTestId('background-removal-run'))
+    expect(vi.mocked(renderCutout)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mode: 'adjust',
+        adjust: expect.objectContaining({ target: 'foreground', grayscale: 40 })
+      })
+    )
   })
 
   it('shows the hint on the photo until a setting is touched', async () => {

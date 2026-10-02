@@ -29,9 +29,67 @@ const copy = {
   'cutout.undo': { en: 'Undo', 'zh-CN': '撤销' },
   'cutout.redo': { en: 'Redo', 'zh-CN': '重做' },
   'cutout.background': { en: 'Background', 'zh-CN': '背景' },
-  'cutout.background.transparent': { en: 'Transparent', 'zh-CN': '透明' },
-  'cutout.background.white': { en: 'White', 'zh-CN': '白色' },
-  'cutout.background.lilac': { en: 'Lilac', 'zh-CN': '淡紫色' },
+  'cutout.mode': { en: 'Mode', 'zh-CN': '模式' },
+  'cutout.mode.remove': { en: 'Remove', 'zh-CN': '移除' },
+  'cutout.mode.replace': { en: 'Replace', 'zh-CN': '替换' },
+  'cutout.mode.adjust': { en: 'Adjust', 'zh-CN': '调整' },
+  'cutout.swatches': { en: 'Background colour', 'zh-CN': '背景颜色' },
+  'cutout.swatch.transparent': { en: 'Transparent', 'zh-CN': '透明' },
+  'cutout.swatch.white': { en: 'White', 'zh-CN': '白色' },
+  'cutout.swatch.lilac': { en: 'Lilac', 'zh-CN': '淡紫色' },
+  'cutout.swatch.sand': { en: 'Sand', 'zh-CN': '沙色' },
+  'cutout.swatch.sage': { en: 'Sage', 'zh-CN': '鼠尾草绿' },
+  'cutout.swatch.sky': { en: 'Sky', 'zh-CN': '天蓝' },
+  'cutout.swatch.blush': { en: 'Blush', 'zh-CN': '浅粉' },
+  'cutout.swatch.butter': { en: 'Butter', 'zh-CN': '奶油黄' },
+  'cutout.swatch.clay': { en: 'Clay', 'zh-CN': '陶土色' },
+  'cutout.swatch.navy': { en: 'Navy', 'zh-CN': '藏青' },
+  'cutout.swatch.ink': { en: 'Ink', 'zh-CN': '墨黑' },
+  'cutout.swatch.custom': { en: 'Custom colour', 'zh-CN': '自定义颜色' },
+  'cutout.replace.model': { en: 'Model', 'zh-CN': '模型' },
+  'cutout.replace.model.auto': { en: 'Auto', 'zh-CN': '自动' },
+  'cutout.replace.prompt': {
+    en: 'New background',
+    'zh-CN': '新背景'
+  },
+  'cutout.replace.placeholder': {
+    en: 'Describe the background you want to generate',
+    'zh-CN': '描述你想生成的背景'
+  },
+  'cutout.replace.reference': {
+    en: 'Add a reference image',
+    'zh-CN': '添加参考图'
+  },
+  'cutout.replace.reference.remove': {
+    en: 'Remove the reference image',
+    'zh-CN': '移除参考图'
+  },
+  'cutout.replace.count': {
+    en: 'Generates {n} image',
+    'zh-CN': '生成 {n} 张图片'
+  },
+  'cutout.replace.count.short': { en: '×{n}', 'zh-CN': '×{n}' },
+  'cutout.replace.missing': {
+    en: 'Describe a background or add a reference image.',
+    'zh-CN': '请描述背景或添加参考图。'
+  },
+  'cutout.replace.value': {
+    en: 'Replace · {model}',
+    'zh-CN': '替换 · {model}'
+  },
+  'cutout.adjust.target': { en: 'Apply to', 'zh-CN': '应用于' },
+  'cutout.adjust.target.background': { en: 'Background', 'zh-CN': '背景' },
+  'cutout.adjust.target.foreground': { en: 'Foreground', 'zh-CN': '前景' },
+  'cutout.adjust.blur': { en: 'Blur', 'zh-CN': '模糊' },
+  'cutout.adjust.grayscale': { en: 'Grayscale', 'zh-CN': '灰度' },
+  'cutout.adjust.sepia': { en: 'Sepia', 'zh-CN': '复古' },
+  'cutout.adjust.brightness': { en: 'Brightness', 'zh-CN': '亮度' },
+  'cutout.adjust.contrast': { en: 'Contrast', 'zh-CN': '对比度' },
+  'cutout.adjust.saturation': { en: 'Saturation', 'zh-CN': '饱和度' },
+  'cutout.adjust.value': {
+    en: 'Adjust · {target}',
+    'zh-CN': '调整 · {target}'
+  },
   'cutout.format': { en: 'Format', 'zh-CN': '格式' },
   'cutout.format.png': { en: 'PNG', 'zh-CN': 'PNG' },
   'cutout.format.png.detail': { en: 'Lossless', 'zh-CN': '无损' },
@@ -47,20 +105,30 @@ const copy = {
     'zh-CN': '{background} · {format}'
   },
   'cutout.close': { en: 'Close', 'zh-CN': '关闭' },
-  'cutout.run': { en: 'Remove background', 'zh-CN': '移除背景' },
+  'cutout.run.remove': { en: 'Remove background', 'zh-CN': '移除背景' },
+  'cutout.run.replace': { en: 'Replace background', 'zh-CN': '替换背景' },
+  'cutout.run.adjust': { en: 'Apply adjustments', 'zh-CN': '应用调整' },
   'cutout.credits': { en: '{n} credits', 'zh-CN': '{n} 积分' },
   'cutout.cancel': { en: 'Cancel', 'zh-CN': '取消' },
-  'cutout.busy.title': {
+  'cutout.busy.remove': {
     en: 'Removing the background…',
     'zh-CN': '正在移除背景…'
+  },
+  'cutout.busy.replace': {
+    en: 'Generating the new background…',
+    'zh-CN': '正在生成新背景…'
+  },
+  'cutout.busy.adjust': {
+    en: 'Applying the adjustments…',
+    'zh-CN': '正在应用调整…'
   },
   'cutout.busy.detail': {
     en: '{time} · {background} {format}',
     'zh-CN': '{time} · {background} {format}'
   },
   'cutout.failed': {
-    en: 'The cutout didn’t finish. No credits were used.',
-    'zh-CN': '抠图未完成，未扣除积分。'
+    en: 'The run didn’t finish. No credits were used.',
+    'zh-CN': '运行未完成，未扣除积分。'
   },
   'cutout.view.compare': { en: 'Compare', 'zh-CN': '对比' },
   'cutout.view.result': { en: 'Result', 'zh-CN': '结果' },
@@ -68,16 +136,16 @@ const copy = {
   'cutout.edit': { en: 'Edit settings', 'zh-CN': '编辑设置' },
   'cutout.again': { en: 'Try again', 'zh-CN': '再试一次' },
   'cutout.compare': {
-    en: 'Drag to compare the original and the cutout',
-    'zh-CN': '拖动以对比原图与抠图结果'
+    en: 'Drag to compare the original and the result',
+    'zh-CN': '拖动以对比原图与结果'
   },
   'cutout.alt.example': {
-    en: 'A leafy plant in a terracotta pot on a wooden table',
-    'zh-CN': '木桌上一盆种在陶土盆里的绿叶植物'
+    en: 'A pilea in a white pot on an oak side table in a living room',
+    'zh-CN': '客厅橡木边桌上，一盆种在白色花盆里的镜面草'
   },
   'cutout.alt.result': {
-    en: 'The subject with its background removed',
-    'zh-CN': '移除背景后的主体'
+    en: 'The finished image',
+    'zh-CN': '完成的图片'
   }
 } as const satisfies Record<string, LocalizedText>
 

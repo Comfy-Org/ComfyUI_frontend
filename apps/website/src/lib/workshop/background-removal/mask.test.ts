@@ -3,10 +3,10 @@ import { describe, expect, it } from 'vitest'
 import { CUTOUT_EXAMPLE, subjectMaskImage, subjectMatte } from './mask'
 
 describe('subject matte', () => {
-  it('uses the hand-drawn matte for the example', () => {
-    expect(subjectMatte(CUTOUT_EXAMPLE.url)).toBe(CUTOUT_EXAMPLE.mask)
+  it('uses the prepared cut-out as the example matte', () => {
+    expect(subjectMatte(CUTOUT_EXAMPLE.url)).toBe(CUTOUT_EXAMPLE.cutout)
     expect(subjectMaskImage(CUTOUT_EXAMPLE.url)).toBe(
-      `url("${CUTOUT_EXAMPLE.mask}")`
+      `url("${CUTOUT_EXAMPLE.cutout}")`
     )
   })
 

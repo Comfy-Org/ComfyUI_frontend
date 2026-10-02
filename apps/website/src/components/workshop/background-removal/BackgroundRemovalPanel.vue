@@ -13,7 +13,7 @@ const { cutout, locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
 
-const { phase } = cutout
+const { phase, setup } = cutout
 </script>
 
 <template>
@@ -25,7 +25,11 @@ const { phase } = cutout
     <template v-for="section in CUTOUT_SECTIONS" :key="section.id">
       <EditorPanelRow v-if="section.id === 'format'">
         <BackgroundRemovalFormat :cutout :locale />
-        <BackgroundRemovalSeed :cutout :locale />
+        <BackgroundRemovalSeed
+          v-if="setup.mode === 'replace'"
+          :cutout
+          :locale
+        />
       </EditorPanelRow>
       <EditorCollapsible
         v-else

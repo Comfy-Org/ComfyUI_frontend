@@ -5,7 +5,10 @@ import type { CutoutRender } from './mock-run'
 import { runCutout } from './mock-run'
 
 const request = (imageUrl: string) =>
-  cutoutRequest(imageUrl, { ...DEFAULT_SETUP, background: 'lilac' })
+  cutoutRequest(imageUrl, {
+    ...DEFAULT_SETUP,
+    background: { kind: 'color', color: '#d9ccf5' }
+  })
 
 describe('runCutout', () => {
   it.for([
@@ -32,10 +35,22 @@ describe('runCutout', () => {
 
     await expect(run).resolves.toEqual({
       url: expected,
-      background: 'lilac',
+      mode: 'remove',
       format: 'png',
-      seed: DEFAULT_SETUP.seed
+      transparent: false
     })
+  })
+
+  it('says a transparent Remove keeps its alpha', async () => {
+    vi.useFakeTimers()
+    const run = runCutout(
+      cutoutRequest('/photo.jpg', DEFAULT_SETUP),
+      new AbortController().signal,
+      () => Promise.resolve('blob:cutout')
+    )
+    await vi.runAllTimersAsync()
+
+    await expect(run).resolves.toMatchObject({ transparent: true })
   })
 
   it('releases a drawn cutout when the run is cancelled', async () => {

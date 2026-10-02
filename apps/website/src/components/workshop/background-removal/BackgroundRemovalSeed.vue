@@ -14,9 +14,9 @@ const { setup } = cutout
 
 <template>
   <EditorSeedField
-    :model-value="setup.seed"
+    :model-value="setup.replace.seed"
     :label="brc('cutout.seed', locale)"
     :shuffle-label="brc('cutout.seed.shuffle', locale)"
-    @update:model-value="(seed) => cutout.update({ seed }, 'seed')"
+    @update:model-value="(seed) => cutout.updateReplace({ seed }, 'seed')"
   />
 </template>

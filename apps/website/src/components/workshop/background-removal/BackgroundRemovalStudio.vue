@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useEventListener } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 
 import { useBackgroundRemoval } from '../../../composables/useBackgroundRemoval'
@@ -31,9 +32,18 @@ const view = ref<EditorView>('compare')
 const panel = computed(() => layout !== 'e')
 const download = useResultDownload(
   phase,
-  ({ result }) => image.value && cutoutFileName(image.value.name, result.format)
+  ({ result }) =>
+    image.value && cutoutFileName(image.value.name, result.mode, result.format)
 )
 reportStudioBusy(() => phase.value.kind === 'running')
+useEventListener('paste', (event: ClipboardEvent) => {
+  const file = [...(event.clipboardData?.files ?? [])].find(({ type }) =>
+    type.startsWith('image/')
+  )
+  if (!file || phase.value.kind === 'running') return
+  event.preventDefault()
+  void cutout.useFile(file)
+})
 watch(
   () => phase.value.kind === 'done',
   (done) => done && (view.value = 'compare')

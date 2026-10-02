@@ -53,7 +53,7 @@ const resultLabels = computed(() => ({
     :width="image.width"
     :height="image.height"
     :labels="resultLabels"
-    :checker="phase.result.background === 'transparent'"
+    :checker="phase.result.transparent"
   />
   <BackgroundRemovalWorkspace v-else :image :cutout :locale />
 </template>

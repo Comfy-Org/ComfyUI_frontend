@@ -15,17 +15,18 @@ const {
   locale?: Locale
 }>()
 
-const { phase, canRun } = cutout
+const { phase, canRun, setup, missing } = cutout
 </script>
 
 <template>
   <EditorRun
-    :label="brc('cutout.run', locale)"
-    :credits="brc('cutout.credits', locale, { n: CUTOUT_CREDITS })"
+    :label="brc(`cutout.run.${setup.mode}`, locale)"
+    :credits="brc('cutout.credits', locale, { n: CUTOUT_CREDITS[setup.mode] })"
     :cancel-label="brc('cutout.cancel', locale)"
     :running="phase.kind === 'running'"
     :disabled="!canRun"
     :block
+    :title="missing ? brc('cutout.replace.missing', locale) : undefined"
     data-testid="background-removal-run"
     @run="cutout.removeBackground"
     @cancel="cutout.cancel"

@@ -3,36 +3,41 @@ import { computed } from 'vue'
 
 import type { BackgroundRemoval } from '../../../composables/useBackgroundRemoval'
 import type { Locale } from '../../../i18n/translations'
-import type { CutoutBackground } from '../../../lib/workshop/background-removal/contract'
-import { CUTOUT_BACKGROUNDS } from '../../../lib/workshop/background-removal/contract'
+import type { CutoutMode } from '../../../lib/workshop/background-removal/contract'
+import { CUTOUT_MODES } from '../../../lib/workshop/background-removal/contract'
 import { brc } from '../../../lib/workshop/background-removal/copy'
-import EditorTiles from '../app-editor/EditorTiles.vue'
-import BackgroundRemovalSwatch from './BackgroundRemovalSwatch.vue'
+import EditorSegmented from '../app-editor/EditorSegmented.vue'
+import BackgroundRemovalAdjust from './BackgroundRemovalAdjust.vue'
+import BackgroundRemovalReplace from './BackgroundRemovalReplace.vue'
+import BackgroundRemovalSwatches from './BackgroundRemovalSwatches.vue'
 
 const { cutout, locale = 'en' } = defineProps<{
   cutout: BackgroundRemoval
   locale?: Locale
 }>()
 
-const { image, setup } = cutout
-const options = CUTOUT_BACKGROUNDS.map((id) => ({
+const { setup } = cutout
+const modes = CUTOUT_MODES.map((id) => ({
   id,
-  label: brc(`cutout.background.${id}`, locale)
+  label: brc(`cutout.mode.${id}`, locale)
 }))
-const background = computed({
-  get: () => setup.value.background,
-  set: (next?: CutoutBackground) => next && cutout.update({ background: next })
+const mode = computed({
+  get: () => setup.value.mode,
+  set: (next: CutoutMode) => cutout.update({ mode: next })
 })
+const CONTENT = {
+  remove: BackgroundRemovalSwatches,
+  replace: BackgroundRemovalReplace,
+  adjust: BackgroundRemovalAdjust
+} as const
 </script>
 
 <template>
-  <EditorTiles
-    v-model="background"
-    :label="brc('cutout.background', locale)"
-    :options
-  >
-    <template #tile="{ option }">
-      <BackgroundRemovalSwatch :background="option.id" :image />
-    </template>
-  </EditorTiles>
+  <EditorSegmented
+    v-model="mode"
+    :label="brc('cutout.mode', locale)"
+    :options="modes"
+    fill
+  />
+  <component :is="CONTENT[mode]" :cutout :locale />
 </template>

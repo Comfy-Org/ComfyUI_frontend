@@ -28,7 +28,10 @@ function start() {
 describe('useBackgroundRemoval', () => {
   it('runs on the current setup and lands on the result', async () => {
     const cutout = start()
-    cutout.update({ background: 'white', format: 'webp' })
+    cutout.update({
+      background: { kind: 'color', color: '#ffffff' },
+      format: 'webp'
+    })
 
     const run = cutout.removeBackground()
     expect(cutout.phase.value.kind).toBe('running')
@@ -40,23 +43,48 @@ describe('useBackgroundRemoval', () => {
       kind: 'done',
       result: {
         url: 'blob:cutout',
-        background: 'white',
+        mode: 'remove',
         format: 'webp',
-        seed: 42
+        transparent: false
       }
     })
   })
 
   it('starts a new photo from the default setup with nothing to undo', () => {
     const cutout = start()
-    cutout.update({ background: 'lilac' })
+    cutout.update({ mode: 'adjust' })
     expect(cutout.touched.value).toBe(true)
 
     cutout.useExample()
 
-    expect(cutout.setup.value.background).toBe('transparent')
+    expect(cutout.setup.value.mode).toBe('remove')
     expect(cutout.canUndo.value).toBe(false)
     expect(cutout.touched.value).toBe(false)
+  })
+
+  it('waits for a description or a reference before it replaces', () => {
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:reference')
+    const cutout = start()
+    cutout.update({ mode: 'replace' })
+    expect(cutout.missing.value).toBe('replace')
+    expect(cutout.canRun.value).toBe(false)
+
+    cutout.setReference(new File(['x'], 'wall.jpg', { type: 'image/jpeg' }))
+
+    expect(cutout.setup.value.replace.referenceUrl).toBe('blob:reference')
+    expect(cutout.canRun.value).toBe(true)
+  })
+
+  it('releases the reference pictures with the photo', () => {
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:reference')
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const cutout = start()
+    cutout.setReference(new File(['x'], 'wall.jpg', { type: 'image/jpeg' }))
+
+    cutout.useExample()
+
+    expect(revoke).toHaveBeenCalledWith('blob:reference')
+    expect(cutout.setup.value.replace.referenceUrl).toBeUndefined()
   })
 
   it('releases the result when it goes back to editing', async () => {

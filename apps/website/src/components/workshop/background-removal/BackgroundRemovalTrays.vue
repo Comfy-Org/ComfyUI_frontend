@@ -11,7 +11,7 @@ const { cutout, locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
 
-const { tray } = cutout
+const { tray, setup } = cutout
 </script>
 
 <template>
@@ -29,7 +29,11 @@ const { tray } = cutout
         }}</span>
       </template>
       <component :is="section.content" :cutout :locale />
-      <BackgroundRemovalSeed v-if="section.id === 'advanced'" :cutout :locale />
+      <BackgroundRemovalSeed
+        v-if="section.id === 'background' && setup.mode === 'replace'"
+        :cutout
+        :locale
+      />
     </EditorTray>
   </template>
 </template>
