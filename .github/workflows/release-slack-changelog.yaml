@@ -7,10 +7,10 @@
 # #frontend. A release event is already a push, so neither the poll nor its
 # MongoDB dedup collection moved across.
 #
-# DO NOT ENABLE THIS WHILE THE COMFY-PR TASK IS STILL RUNNING — both post to the
-# same channel and the release would be announced twice. Leaving
-# SLACK_FRONTEND_CHANNEL_ID unset keeps this job a no-op, which is the intended
-# state until the Comfy-PR side is retired.
+# DO NOT SET SLACK_FRONTEND_CHANNEL_ID WHILE THE COMFY-PR TASK IS STILL RUNNING
+# — both post to the same channel and the release would be announced twice.
+# With the variable unset this job is a no-op on `release: published`, which is
+# the intended state until the Comfy-PR side is retired.
 name: 'Release: Slack Changelog'
 
 permissions:
@@ -27,7 +27,10 @@ on:
         type: string
 
 # Keyed by tag, and NOT cancel-in-progress: a cancelled run can leave a headline
-# posted with only some of its thread replies underneath it.
+# posted with only some of its thread replies underneath it. There is no
+# persisted thread identity, so a re-run posts a second headline and a second
+# full thread rather than resuming — re-dispatch only after a failed run, and
+# expect to clean up whatever that run already posted.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.release.tag_name || inputs.tag }}
   cancel-in-progress: false
@@ -36,7 +39,7 @@ jobs:
   announce:
     if: github.repository == 'Comfy-Org/ComfyUI_frontend'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -47,7 +50,10 @@ jobs:
       # Read back through the API for both triggers rather than using
       # github.event.release.*: it gives workflow_dispatch the same shape, and
       # release notes are attacker-influenced text (any contributor's PR title
-      # lands in them) that should never be expanded into a shell script.
+      # lands in them) that should never be expanded into a shell script. The
+      # body stays in this file and never enters the environment — at ~90KB it
+      # is most of Linux's 128KB MAX_ARG_STRLEN budget, and overflowing that
+      # breaks every later step with "Argument list too long".
       - name: Resolve release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -55,30 +61,25 @@ jobs:
         run: |
           set -euo pipefail
           gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${TAG}" > release.json
-          {
-            echo "RELEASE_TAG=$(jq -r '.tag_name' release.json)"
-            echo "RELEASE_URL=$(jq -r '.html_url' release.json)"
-            echo "RELEASE_PRERELEASE=$(jq -r '.prerelease' release.json)"
-          } >> "$GITHUB_ENV"
-          # Random delimiter: a release body containing the literal heredoc
-          # marker would otherwise close it early and append arbitrary variables
-          # to the job environment.
-          DELIM="EOF_$(openssl rand -hex 16)"
-          {
-            echo "RELEASE_BODY<<${DELIM}"
-            jq -r '.body // ""' release.json
-            echo "${DELIM}"
-          } >> "$GITHUB_ENV"
+          echo "Resolved $(jq -r '.tag_name' release.json) ($(wc -c < release.json) bytes)"
 
       - name: Post changelog to Slack
         env:
+          RELEASE_JSON: release.json
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_CHANNEL_ID: ${{ vars.SLACK_FRONTEND_CHANNEL_ID }}
         run: |
           set -euo pipefail
           if [ -z "${SLACK_CHANNEL_ID}" ]; then
+            # Hard failure on a manual run: someone testing the cutover should
+            # not get a green check for a post that never happened. On the
+            # release trigger it stays a warning, so an unconfigured variable
+            # cannot fail a release.
+            if [ "${GITHUB_EVENT_NAME}" = 'workflow_dispatch' ]; then
+              echo "::error::SLACK_FRONTEND_CHANNEL_ID is unset — nothing was posted."
+              exit 1
+            fi
             echo "::warning::SLACK_FRONTEND_CHANNEL_ID is unset — skipping the Slack post."
-            echo "Set the repo variable to #frontend's channel ID to enable it." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
           pnpm exec tsx scripts/cicd/release-slack-changelog.ts
@@ -90,6 +91,7 @@ jobs:
       - name: Job summary
         if: always()
         env:
+          RELEASE_JSON: release.json
           DRY_RUN: 'true'
         run: |
           set -uo pipefail
@@ -97,8 +99,10 @@ jobs:
           {
             echo '## Release Slack changelog'
             echo ''
-            echo '```'
-            head -c 8000 preview.txt
-            echo ''
-            echo '```'
+            # Six backticks and a line limit: release notes legitimately contain
+            # triple-backtick fences, and `head -c` would cut a multi-byte
+            # character in half.
+            echo '``````text'
+            head -n 120 preview.txt
+            echo '``````'
           } >> "$GITHUB_STEP_SUMMARY"

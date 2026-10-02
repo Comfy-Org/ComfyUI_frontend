@@ -9,6 +9,7 @@
  * for. A release event is already a push, so the poll and its MongoDB dedup
  * collection are not needed on this side.
  */
+import { readFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
 
 /**
@@ -78,12 +79,17 @@ export function countNewContributors(body: string): number {
   return section.split('\n').filter((line) => /^\s*[*-]\s+\S/.test(line)).length
 }
 
+/** Slack bold is one asterisk, GitHub's is two. */
+function inline(text: string): string {
+  return escapeSlackText(text).replace(/\*\*(.+?)\*\*/g, '*$1*')
+}
+
 export function toSlackMrkdwn(body: string): string {
   return body
     .split('\n')
     .map((line) => {
       const heading = /^#{1,6}\s+(.*?)\s*$/.exec(line)
-      if (heading) return `*${escapeSlackText(heading[1])}*`
+      if (heading) return `*${inline(heading[1])}*`
 
       const item = /^\s*[*-]\s+(.*)$/.exec(line)
       if (item) {
@@ -91,16 +97,16 @@ export function toSlackMrkdwn(body: string): string {
           item[1]
         )
         if (authored) {
-          return `• <${authored[3]}|${escapeSlackText(authored[1])}> by ${escapeSlackText(authored[2])}`
+          return `• <${authored[3]}|${inline(authored[1])}> by ${inline(authored[2])}`
         }
         const linked = /^(.*?) in (https?:\/\/\S+)$/.exec(item[1])
         if (linked) {
-          return `• <${linked[2]}|${escapeSlackText(linked[1])}>`
+          return `• <${linked[2]}|${inline(linked[1])}>`
         }
-        return `• ${escapeSlackText(item[1])}`
+        return `• ${inline(item[1])}`
       }
 
-      return escapeSlackText(line).replace(/\*\*(.+?)\*\*/g, '*$1*')
+      return inline(line)
     })
     .join('\n')
 }
@@ -169,16 +175,33 @@ export function buildSlackChangelogPost(
 }
 
 /**
+ * `chat.postMessage` is Slack's special tier: roughly one message per second
+ * per channel. A 623-PR release is 27 posts, so an unpaced burst is throttled,
+ * not an edge case.
+ */
+export const SLACK_PACING_MS = 1100
+
+export interface PostChangelogOptions {
+  pacingMs?: number
+  sleep?: (ms: number) => Promise<void>
+}
+
+const wait = (ms: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, ms))
+
+/**
  * The headline is posted first and every chunk is a reply to it, so the channel
  * sees one short message however long the changelog is. Replies are sequential
  * because Slack orders a thread by arrival, not by request time.
  */
 export async function postChangelog(
   post: SlackChangelogPost,
-  send: SlackPoster
+  send: SlackPoster,
+  { pacingMs = SLACK_PACING_MS, sleep = wait }: PostChangelogOptions = {}
 ): Promise<string> {
   const parent = await send({ text: post.headline })
   for (const reply of post.replies) {
+    if (pacingMs > 0) await sleep(pacingMs)
     await send({ text: reply, threadTs: parent })
   }
   return parent
@@ -190,56 +213,99 @@ interface SlackResponse {
   error?: string
 }
 
-export function createSlackPoster(token: string, channel: string): SlackPoster {
-  return async ({ text, threadTs }) => {
-    const response = await fetch('https://slack.com/api/chat.postMessage', {
-      method: 'POST',
-      headers: {
-        authorization: `Bearer ${token}`,
-        'content-type': 'application/json; charset=utf-8'
-      },
-      body: JSON.stringify({
-        channel,
-        text,
-        thread_ts: threadTs,
-        unfurl_links: false,
-        unfurl_media: false
-      })
-    })
+export interface SlackPosterOptions {
+  maxAttempts?: number
+  sleep?: (ms: number) => Promise<void>
+}
 
-    // Slack answers 200 with {"ok":false} for auth and channel errors, so the
-    // HTTP status alone would report a silent drop as a success.
-    const payload = (await response.json()) as SlackResponse
-    if (!payload.ok || !payload.ts) {
-      throw new Error(
-        `Slack rejected chat.postMessage: ${payload.error ?? response.status}`
-      )
+/** Slack sends `Retry-After` in seconds; this is the floor when it omits it. */
+const RETRY_AFTER_FALLBACK_MS = 1000
+
+function retryAfterMs(response: Response): number {
+  const header = Number(response.headers.get('retry-after'))
+  return Number.isFinite(header) && header > 0
+    ? header * 1000
+    : RETRY_AFTER_FALLBACK_MS
+}
+
+export function createSlackPoster(
+  token: string,
+  channel: string,
+  { maxAttempts = 5, sleep = wait }: SlackPosterOptions = {}
+): SlackPoster {
+  return async ({ text, threadTs }) => {
+    let lastError = 'no attempt was made'
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      const response = await fetch('https://slack.com/api/chat.postMessage', {
+        method: 'POST',
+        headers: {
+          authorization: `Bearer ${token}`,
+          'content-type': 'application/json; charset=utf-8'
+        },
+        body: JSON.stringify({
+          channel,
+          text,
+          thread_ts: threadTs,
+          unfurl_links: false,
+          unfurl_media: false
+        })
+      })
+
+      // A throttled call answers 429 with no JSON body at all, so this has to
+      // come before the parse.
+      if (response.status === 429) {
+        lastError = 'ratelimited'
+        await sleep(retryAfterMs(response))
+        continue
+      }
+
+      // Slack answers 200 with {"ok":false} for auth and channel errors, so the
+      // HTTP status alone would report a silent drop as a success.
+      const payload = (await response.json()) as SlackResponse
+      if (payload.ok && payload.ts) return payload.ts
+
+      lastError = payload.error ?? `HTTP ${response.status}`
+      if (lastError !== 'ratelimited') break
+      await sleep(retryAfterMs(response))
     }
-    return payload.ts
+
+    throw new Error(`Slack rejected chat.postMessage: ${lastError}`)
   }
 }
 
-export function readReleaseFromEnv(
-  env: NodeJS.ProcessEnv
-): ReleaseNotification {
-  const required = (name: string): string => {
-    const value = env[name]
-    if (!value) throw new Error(`${name} is required`)
-    return value
+export function readRelease(env: NodeJS.ProcessEnv): ReleaseNotification {
+  const repo = env.GITHUB_REPOSITORY
+  const path = env.RELEASE_JSON
+  if (!repo) throw new Error('GITHUB_REPOSITORY is required')
+  if (!path) throw new Error('RELEASE_JSON is required')
+
+  // Read from the file `gh api` wrote rather than from the environment: a
+  // release body is up to ~90KB today and the whole environment block has to
+  // fit in Linux's 128KB MAX_ARG_STRLEN, which would fail the step after this
+  // one with "Argument list too long".
+  const release = JSON.parse(readFileSync(path, 'utf8')) as {
+    tag_name?: string
+    html_url?: string
+    body?: string | null
+    prerelease?: boolean
   }
 
+  if (!release.tag_name) throw new Error(`${path} has no tag_name`)
+  if (!release.html_url) throw new Error(`${path} has no html_url`)
+
   return {
-    repo: required('GITHUB_REPOSITORY'),
-    tagName: required('RELEASE_TAG'),
-    htmlUrl: required('RELEASE_URL'),
-    body: env.RELEASE_BODY ?? '',
-    prerelease: env.RELEASE_PRERELEASE === 'true'
+    repo,
+    tagName: release.tag_name,
+    htmlUrl: release.html_url,
+    body: release.body ?? '',
+    prerelease: release.prerelease === true
   }
 }
 
 /* c8 ignore start -- CLI entry, exercised by the workflow rather than a unit test */
 async function main(): Promise<void> {
-  const post = buildSlackChangelogPost(readReleaseFromEnv(process.env))
+  const post = buildSlackChangelogPost(readRelease(process.env))
 
   if (process.env.DRY_RUN === 'true') {
     console.log(`[headline]\n${post.headline}\n`)

@@ -1,4 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { mkdtempSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { describe, expect, it, vi } from 'vitest'
 
 import type {
   ReleaseNotification,
@@ -10,8 +13,9 @@ import {
   chunkByLines,
   countMergedPullRequests,
   countNewContributors,
+  createSlackPoster,
   postChangelog,
-  readReleaseFromEnv,
+  readRelease,
   toSlackMrkdwn
 } from './release-slack-changelog'
 
@@ -214,10 +218,14 @@ describe('postChangelog', () => {
       replies: ['one', 'two', 'three']
     }
 
-    const parent = await postChangelog(post, async (message) => {
-      sent.push(message)
-      return sent.length === 1 ? '1700000000.000100' : '1700000000.000200'
-    })
+    const parent = await postChangelog(
+      post,
+      async (message) => {
+        sent.push(message)
+        return sent.length === 1 ? '1700000000.000100' : '1700000000.000200'
+      },
+      { pacingMs: 0 }
+    )
 
     expect(parent).toBe('1700000000.000100')
     expect(sent[0]).toEqual({ text: 'headline' })
@@ -235,22 +243,170 @@ describe('postChangelog', () => {
       async ({ text }) => {
         order.push(text)
         return '1.1'
-      }
+      },
+      { pacingMs: 0 }
     )
 
     expect(order).toEqual(['h', 'a', 'b', 'c'])
   })
+
+  it('paces the replies but not the headline', async () => {
+    // chat.postMessage allows ~1 message/second/channel, and a large release
+    // is 27 posts.
+    const slept: number[] = []
+    await postChangelog(
+      { headline: 'h', replies: ['a', 'b'] },
+      async () => '1.1',
+      {
+        pacingMs: 1100,
+        sleep: async (ms) => {
+          slept.push(ms)
+        }
+      }
+    )
+
+    expect(slept).toEqual([1100, 1100])
+  })
 })
 
-describe('readReleaseFromEnv', () => {
-  it('reads the fields the workflow exports', () => {
+describe('createSlackPoster', () => {
+  function stubFetch(
+    responses: {
+      status?: number
+      headers?: Record<string, string>
+      body?: unknown
+    }[]
+  ) {
+    const calls: { url: string; body: Record<string, unknown> }[] = []
+    let index = 0
+    vi.stubGlobal(
+      'fetch',
+      async (
+        url: string,
+        init: { body: string; headers: Record<string, string> }
+      ) => {
+        calls.push({
+          url,
+          body: JSON.parse(init.body) as Record<string, unknown>
+        })
+        const next = responses[Math.min(index++, responses.length - 1)]
+        return {
+          status: next.status ?? 200,
+          headers: new Headers(next.headers ?? {}),
+          json: async () => next.body
+        }
+      }
+    )
+    return calls
+  }
+
+  it('sends the message Slack expects and returns its ts', async () => {
+    const calls = stubFetch([{ body: { ok: true, ts: '1700000000.000100' } }])
+
+    const ts = await createSlackPoster(
+      'xoxb-tok',
+      'C123'
+    )({
+      text: 'hello',
+      threadTs: '1700000000.000001'
+    })
+
+    expect(ts).toBe('1700000000.000100')
+    expect(calls[0].url).toBe('https://slack.com/api/chat.postMessage')
+    expect(calls[0].body).toEqual({
+      channel: 'C123',
+      text: 'hello',
+      thread_ts: '1700000000.000001',
+      unfurl_links: false,
+      unfurl_media: false
+    })
+  })
+
+  it('treats HTTP 200 with ok:false as the failure it is', async () => {
+    stubFetch([{ body: { ok: false, error: 'channel_not_found' } }])
+
+    await expect(
+      createSlackPoster('xoxb-tok', 'C123')({ text: 'x' })
+    ).rejects.toThrow('Slack rejected chat.postMessage: channel_not_found')
+  })
+
+  it('retries a 429 after Retry-After and succeeds', async () => {
+    // A throttled call has no JSON body, so a parse-first poster would crash
+    // here instead of backing off.
+    stubFetch([
+      { status: 429, headers: { 'retry-after': '3' } },
+      { body: { ok: true, ts: '1700000000.000200' } }
+    ])
+    const slept: number[] = []
+
+    const ts = await createSlackPoster('xoxb-tok', 'C123', {
+      sleep: async (ms) => {
+        slept.push(ms)
+      }
+    })({ text: 'x' })
+
+    expect(ts).toBe('1700000000.000200')
+    expect(slept).toEqual([3000])
+  })
+
+  it('retries a ratelimited payload returned with HTTP 200', async () => {
+    stubFetch([
+      { body: { ok: false, error: 'ratelimited' } },
+      { body: { ok: true, ts: '1700000000.000300' } }
+    ])
+    const slept: number[] = []
+
+    const ts = await createSlackPoster('xoxb-tok', 'C123', {
+      sleep: async (ms) => {
+        slept.push(ms)
+      }
+    })({ text: 'x' })
+
+    expect(ts).toBe('1700000000.000300')
+    expect(slept).toEqual([1000])
+  })
+
+  it('gives up after maxAttempts rather than retrying forever', async () => {
+    const calls = stubFetch([{ status: 429, headers: { 'retry-after': '1' } }])
+
+    await expect(
+      createSlackPoster('xoxb-tok', 'C123', {
+        maxAttempts: 3,
+        sleep: async () => {}
+      })({ text: 'x' })
+    ).rejects.toThrow('Slack rejected chat.postMessage: ratelimited')
+    expect(calls).toHaveLength(3)
+  })
+
+  it('does not retry a non-rate-limit error', async () => {
+    const calls = stubFetch([{ body: { ok: false, error: 'invalid_auth' } }])
+
+    await expect(
+      createSlackPoster('bad', 'C123', { sleep: async () => {} })({ text: 'x' })
+    ).rejects.toThrow('invalid_auth')
+    expect(calls).toHaveLength(1)
+  })
+})
+
+describe('readRelease', () => {
+  function releaseFile(contents: unknown): string {
+    const path = join(mkdtempSync(join(tmpdir(), 'rel-')), 'release.json')
+    writeFileSync(path, JSON.stringify(contents))
+    return path
+  }
+
+  it('reads the release off disk rather than out of the environment', () => {
+    const RELEASE_JSON = releaseFile({
+      tag_name: 'v1.54.12',
+      html_url: 'https://example.com/tag',
+      body: 'notes',
+      prerelease: true
+    })
+
     expect(
-      readReleaseFromEnv({
+      readRelease({
         GITHUB_REPOSITORY: 'Comfy-Org/ComfyUI_frontend',
-        RELEASE_TAG: 'v1.54.12',
-        RELEASE_URL: 'https://example.com/tag',
-        RELEASE_BODY: 'notes',
-        RELEASE_PRERELEASE: 'true'
+        RELEASE_JSON
       })
     ).toEqual({
       repo: 'Comfy-Org/ComfyUI_frontend',
@@ -261,19 +417,29 @@ describe('readReleaseFromEnv', () => {
     })
   })
 
-  it('treats a missing body as empty rather than failing the release', () => {
-    expect(
-      readReleaseFromEnv({
-        GITHUB_REPOSITORY: 'o/r',
-        RELEASE_TAG: 'v1',
-        RELEASE_URL: 'https://example.com'
-      }).body
-    ).toBe('')
+  it('treats a null body as empty rather than failing the release', () => {
+    const RELEASE_JSON = releaseFile({
+      tag_name: 'v1',
+      html_url: 'https://example.com',
+      body: null
+    })
+
+    const release = readRelease({ GITHUB_REPOSITORY: 'o/r', RELEASE_JSON })
+    expect(release.body).toBe('')
+    expect(release.prerelease).toBe(false)
   })
 
-  it('fails loudly when an identifying field is missing', () => {
+  it('fails loudly when the payload is missing an identifying field', () => {
+    const RELEASE_JSON = releaseFile({ html_url: 'https://example.com' })
+
     expect(() =>
-      readReleaseFromEnv({ GITHUB_REPOSITORY: 'o/r', RELEASE_TAG: 'v1' })
-    ).toThrow('RELEASE_URL is required')
+      readRelease({ GITHUB_REPOSITORY: 'o/r', RELEASE_JSON })
+    ).toThrow('has no tag_name')
+  })
+
+  it('fails loudly when the workflow did not point at a release file', () => {
+    expect(() => readRelease({ GITHUB_REPOSITORY: 'o/r' })).toThrow(
+      'RELEASE_JSON is required'
+    )
   })
 })
