@@ -7,6 +7,7 @@ import { t } from '../../i18n/translations'
 import { CARD_GRID, SHELF_CARD } from '../../lib/workshop/card-layout'
 import type { CatalogueApp } from '../../lib/workshop/catalogue-apps'
 import { ac } from '../../lib/workshop/catalogue-apps'
+import { HUB_TOOLBAR_ID } from '../../scripts/hubToolbar'
 import CardRow from './CardRow.vue'
 import WorkshopAppCard from './WorkshopAppCard.vue'
 
@@ -49,6 +50,7 @@ const hasMore = computed(() => apps.length > ROW_LIMIT)
       </h2>
     </template>
     <div
+      :id="HUB_TOOLBAR_ID"
       class="sticky top-20 z-30 -mx-1 mb-8 flex flex-wrap items-center gap-3 bg-page px-1 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26"
       data-testid="workshop-toolbar"
     >

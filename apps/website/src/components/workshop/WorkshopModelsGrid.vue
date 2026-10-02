@@ -29,6 +29,7 @@ import {
 } from '../../config/models-catalogue'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { HUB_TOOLBAR_ID } from '../../scripts/hubToolbar'
 import { rememberShelfOnClick } from '../../lib/workshop/shelf-memory'
 import { openedUseCases, shelfOf } from '../../lib/workshop/shelf-use-cases'
 import { sectionTitleKeyFor } from '../../lib/workshop/section-title'
@@ -244,6 +245,7 @@ watch(browseAll, (on) => on && resetFilters())
       </h2>
 
       <div
+        :id="HUB_TOOLBAR_ID"
         ref="toolbar"
         data-testid="workshop-toolbar"
         class="sticky top-20 z-30 -mx-1 mb-8 flex scroll-mt-20 flex-wrap items-center gap-3 bg-page px-1 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26 lg:scroll-mt-26"

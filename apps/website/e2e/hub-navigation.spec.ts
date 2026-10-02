@@ -213,6 +213,82 @@ for (const width of [1440, 390]) {
   })
 }
 
+for (const { width, from, to } of [
+  { width: 1440, from: 'workflows', to: 'models' },
+  { width: 1440, from: 'workflows', to: 'apps' },
+  { width: 390, from: 'models', to: 'workflows' }
+] as const) {
+  test(`${from} to ${to} at ${width}px leaves the tabs where the reader clicked them`, async ({
+    page
+  }) => {
+    await page.setViewportSize({ width, height: 900 })
+    await page.goto(`/hub/${from}/`)
+    await expect(page.getByTestId(`catalogue-tab-${from}`)).toHaveAttribute(
+      'aria-current',
+      'page'
+    )
+    await page.getByRole('button', { name: 'Close', exact: true }).click()
+
+    const toolbar = page.getByTestId('workshop-toolbar')
+    const tabs = page.getByTestId('catalogue-tabs')
+    await expect(page.getByTestId('workshop-model-card').first()).toBeVisible()
+    // Far enough down that the toolbar has left the page and stuck under the
+    // header, which is the state the reader is in when a tab is a jump.
+    const stuck = await toolbar.evaluate((element) =>
+      Number.parseFloat(getComputedStyle(element).top)
+    )
+    await page.evaluate(() => window.scrollBy(0, 1200))
+    await expect
+      .poll(async () => (await toolbar.boundingBox())?.y)
+      .toBeCloseTo(stuck, 0)
+    const pinned = (await tabs.boundingBox())?.y
+    expect(pinned).toBeDefined()
+
+    await page.getByTestId(`catalogue-tab-${to}`).click()
+    await expect(page).toHaveURL(`/hub/${to}/`)
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+      `ComfyUI ${to}`
+    )
+
+    // The listing swaps under a control the reader is pointing at, so the
+    // control holds its place and the new listing starts beneath it. Landing
+    // at the top of the page would drop the tabs out from under the pointer.
+    await expect
+      .poll(async () => (await tabs.boundingBox())?.y)
+      .toBeCloseTo(pinned ?? 0, 0)
+    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
+
+    // A pinned toolbar reads the same anywhere further down the new listing,
+    // so pinned alone would also pass for a scroll measured against the page
+    // the reader left — and the two sections hold their toolbar at different
+    // heights. The page sits at the first scroll that pins it, so handing a
+    // few pixels back puts the toolbar into the flow again.
+    const landed = await toolbar.evaluate((element) =>
+      Number.parseFloat(getComputedStyle(element).top)
+    )
+    await page.evaluate(() => window.scrollBy(0, -4))
+    await expect
+      .poll(async () => (await toolbar.boundingBox())?.y)
+      .toBeGreaterThan(landed + 2)
+  })
+}
+
+test('switching tabs from the top of the page stays at the top', async ({
+  page
+}) => {
+  await page.goto('/hub/workflows/')
+  await expect(page.getByTestId('catalogue-tab-workflows')).toHaveAttribute(
+    'aria-current',
+    'page'
+  )
+  await page.getByTestId('catalogue-tab-models').click()
+  await expect(page).toHaveURL('/hub/models/')
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+    'ComfyUI models'
+  )
+  expect(await page.evaluate(() => window.scrollY)).toBe(0)
+})
+
 // Inside a category the tabs give up the whole row to the category's own title,
 // so the way to another hub section starts by leaving the category.
 async function leaveCategory(page: Page) {
