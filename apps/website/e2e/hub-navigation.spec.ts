@@ -434,17 +434,28 @@ test('keeps the current listing visible until a cold destination is ready', asyn
 
 // The tabs and the search share one row. Inside a category the tabs are gone,
 // and the cap the search wears outside one has to go with them or the width
-// they held goes nowhere. What is read is the cap itself rather than the
-// rendered box: the shared row already holds the field under 480px, so a
-// measurement cannot tell a dropped cap from a crowded row, and it would turn
-// red on any later change that widens the row by a few pixels.
+// they held goes nowhere. The cap is read off the field rather than measured:
+// outside a category the shared row already holds the field under 480px, so a
+// measurement there cannot tell a dropped cap from a crowded row. Inside one,
+// the box says the width really went to the field and not nowhere.
 const SEARCH_CAP = '480px'
 const NO_CAP = 'none'
+const WIDER_THAN_CAP = 480
+
+function searchField(page: Page) {
+  return page.getByTestId('workshop-search-field')
+}
 
 async function expectSearchCap(page: Page, cap: string) {
-  const field = page.getByTestId('workshop-search-field')
+  const field = searchField(page)
   await expect(field).toBeVisible()
   await expect(field).toHaveCSS('max-width', cap)
+}
+
+async function searchWidth(page: Page) {
+  const box = await searchField(page).boundingBox()
+  if (!box) throw new Error('The search field has no box')
+  return box.width
 }
 
 test('a models category hands the search the width its tabs held', async ({
@@ -457,6 +468,7 @@ test('a models category hands the search the width its tabs held', async ({
   await page.goto('/hub/models/?useCase=generate-images')
   await expect(page.getByTestId('catalogue-tabs')).toHaveCount(0)
   await expectSearchCap(page, NO_CAP)
+  expect(await searchWidth(page)).toBeGreaterThan(WIDER_THAN_CAP)
 
   await page.getByTestId('section-back').click()
   await expect(page.getByTestId('catalogue-tabs')).toBeVisible()
@@ -472,6 +484,7 @@ test('browsing all workflows hands the search the width its tabs held', async ({
   await page.getByRole('button', { name: 'Browse all workflows' }).click()
   await expect(page.getByTestId('catalogue-tabs')).toHaveCount(0)
   await expectSearchCap(page, NO_CAP)
+  expect(await searchWidth(page)).toBeGreaterThan(WIDER_THAN_CAP)
 
   await page.getByTestId('section-back').click()
   await expect(page.getByTestId('catalogue-tabs')).toBeVisible()
