@@ -60,19 +60,6 @@ export function addLoadImageNode(
   return addNodeWithInputs(nodeId, index, [])
 }
 
-/**
- * The same node with one input slot that carries no `type`, which is the
- * document shape production reported as `inputs.<n>.type Invalid input`
- * (PM-1913). Both `mint` and `applyOps` accept it, so the shared document
- * holds the node and only the follower's read-time schema refuses it.
- */
-export function addMalformedSlotNode(
-  nodeId: number,
-  index: number
-): RecordedGraphOperation {
-  return addNodeWithInputs(nodeId, index, [{ name: 'image', link: null }])
-}
-
 /** The five-node build the golden path asks for, in one batch. */
 export function addFiveLoadImageNodes(): RecordedGraphOperation[] {
   return AGENT_NODE_IDS.map((id, index) => addLoadImageNode(id, index))
