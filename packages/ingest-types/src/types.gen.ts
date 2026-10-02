@@ -1699,7 +1699,13 @@ export type PlanAvailability = {
 export type Plan = {
   availability: PlanAvailability
   /**
-   * Per-member raw credit grant, when present in the catalog.
+   * Raw credit count (not cents) the plan grants for one billing period,
+   * read from the catalog grant the subscription actually receives. An
+   * annual plan carries the whole year's grant. Omitted when the plan
+   * grants no flat credit amount: per-credit Team plans (see
+   * team_credit_stops), team-only seat plans, zero-grant plans and plans
+   * absent from the catalog.
+   *
    */
   credits?: number
   /**
