@@ -1,7 +1,7 @@
 import { applyOps, mint, project } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 
 import { isRootGraphDocBound } from '@/lib/litegraph/src/docBoundGraphs'
@@ -650,10 +650,6 @@ describe('attachDocOpMinter', () => {
       graph.add(host)
       subgraph.add(interior)
     })
-    // The widget store keys by ROOT graph id, so this write arrives naming the
-    // root graph even though the node lives one level down. Resolving it with
-    // the root graph's own `getNodeById` instead of a hierarchy search drops
-    // every interior edit silently.
     interior.widgets![0].value = 3
     await afterFlush()
 
@@ -672,8 +668,8 @@ describe('attachDocOpMinter', () => {
 
   it('does not let an ephemeral widget write roll a hand edit back with it', async () => {
     const { source } = seedGraph(graph)
-    // `$$node-text-preview` as `useProgressTextWidget` builds it: injected at
-    // run time, `serialize: false`, absent from the pinned catalog.
+    // Built the way useNodeProgressText builds it: `serialize: false` and
+    // absent from the pinned catalog.
     const preview = source.addWidget(
       'text',
       '$$node-text-preview',
@@ -699,10 +695,6 @@ describe('attachDocOpMinter', () => {
         old: 20
       }
     ])
-    // `applyOps` is abort-remainder. Before the predicate, the preview write
-    // led the batch, the host refused it as `unknown_widget`, the hand edit
-    // behind it came back `batch_aborted`, and `revertRejectedOps` reverted
-    // every op the batch did not apply — taking the user's 42 off the canvas.
     expect(applyMinted(doc, minted)).toEqual(['applied'])
     doc.destroy()
   })
@@ -743,8 +735,8 @@ describe('attachDocOpMinter', () => {
     const stored = useWidgetValueStore().getWidget(
       widgetId(graph.id, source.id, widget.name)
     )
-    expect(stored).toBeDefined()
-    stored!.serialize = false
+    assert.exists(stored)
+    stored.serialize = false
     widget.serialize = true
 
     emitGraphIntent({
@@ -774,8 +766,8 @@ describe('attachDocOpMinter', () => {
     const stored = useWidgetValueStore().getWidget(
       widgetId(graph.id, source.id, widget.name)
     )
-    expect(stored).toBeDefined()
-    stored!.serialize = false
+    assert.exists(stored)
+    stored.serialize = false
     delete widget.serialize
 
     emitGraphIntent({
@@ -797,8 +789,8 @@ describe('attachDocOpMinter', () => {
     const stored = useWidgetValueStore().getWidget(
       widgetId(graph.id, source.id, widget.name)
     )
-    expect(stored).toBeDefined()
-    stored!.serialize = false
+    assert.exists(stored)
+    stored.serialize = false
     delete widget.serialize
 
     expect(wireNodeSnapshot(source)?.widgets_values).toEqual({})
@@ -837,11 +829,6 @@ describe('attachDocOpMinter', () => {
   })
 
   it('mints a value-widget write on a node that omits the node-level serialize flag', async () => {
-    // `node.serialize_widgets` is NOT a mint gate. `SubgraphNode` never sets
-    // it, so gating on it would silently drop every blueprint-host widget
-    // edit — trading FE-3161's visible rejection for an invisible divergence
-    // between the canvas and the document, and erasing the Sentry signal that
-    // FE-3036's fix is verified against. Only the widget's own flags decide.
     const node = new LGraphNode('No widget serialization')
     node.addWidget('number', 'steps', 20, () => {})
     withGraphIntentSource('load', () => graph.add(node))
@@ -867,14 +854,14 @@ describe('attachDocOpMinter', () => {
     ])
   })
 
-  it('fails closed for stale writes from a different rendered graph', async () => {
+  it('judges a stale bound-graph write on its stored serialize flag', async () => {
     const previousGraph = new LGraph()
     const { source } = seedGraph(previousGraph)
     const stored = useWidgetValueStore().getWidget(
       widgetId(previousGraph.id, source.id, 'steps')
     )
-    expect(stored).toBeDefined()
-    stored!.serialize = false
+    assert.exists(stored)
+    stored.serialize = false
     rootGraphId = toRootGraphId(previousGraph.id)
 
     emitGraphIntent({
