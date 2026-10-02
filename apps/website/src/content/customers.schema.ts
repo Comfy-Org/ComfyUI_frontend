@@ -7,6 +7,7 @@ export const customerStorySchema = z.strictObject({
   category: z.string(),
   description: z.string(),
   cover: z.url(),
+  hideHeroImage: z.boolean().optional(),
   readMore: z.url().optional(),
   order: z.number().int().nonnegative(),
   dateAdded: z.iso.date(),

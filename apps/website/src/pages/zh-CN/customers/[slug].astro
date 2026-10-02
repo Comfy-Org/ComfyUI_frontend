@@ -74,7 +74,7 @@ const relatedVideo = customerVideoForStory(storySlug(entry.id))
     label={entry.data.category}
     title={entry.data.title}
     description={entry.data.description}
-    image={entry.data.cover}
+    image={entry.data.hideHeroImage ? undefined : entry.data.cover}
   />
   <CustomerArticle entry={entry} locale="zh-CN" />
   {relatedVideo && <div class="mx-auto max-w-9xl px-6 pb-10 lg:px-16">
