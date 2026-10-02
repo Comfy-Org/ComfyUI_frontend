@@ -183,28 +183,13 @@ type NodeProducer =
   | { origin: 'operation'; actorKind: ActorKind; opId: string; version: number }
   | { origin: 'import' | 'unreadable' }
 
-/**
- * What a malformed node needs to be actionable, beyond the issue text. Read
- * lazily because a node stays malformed for every later frame that touches it
- * while the report fires once, and `readStamps` copies the whole LWW ledger.
- */
-interface MalformedNodeDiscriminator {
-  /** Node class (`class_type`) when the document holds a usable one. */
-  classType?: string
-  /**
-   * Per-issue `path code shape`, where `shape` describes the received value's
-   * *type* and never its content. `zDocSlot.type` is a union, and zod collapses
-   * every union failure to the constant message `Invalid input`, so the issue
-   * text alone cannot tell an absent slot type from `null`, `true`, `[]` or an
-   * object — which is what made the production report unactionable.
-   */
-  valueShapes: string
-  producer: NodeProducer
-}
-
 interface MalformedDocNode {
   malformed: string
-  discriminate(): MalformedNodeDiscriminator
+  discriminate(): {
+    classType?: string
+    valueShapes: string
+    producer: NodeProducer
+  }
 }
 
 /** The received value's type, never its content. */
