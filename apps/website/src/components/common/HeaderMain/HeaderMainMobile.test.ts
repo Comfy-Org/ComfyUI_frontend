@@ -25,6 +25,17 @@ describe('HeaderMainMobile', () => {
     }
   )
 
+  it('describes each Products column in the drill-down', async () => {
+    await openMenu(true)
+    await userEvent.click(screen.getByRole('button', { name: /^Products/ }))
+
+    expect(
+      ['Use a ready-made tool', 'Control the process'].map(
+        (text) => screen.getByText(text).tagName
+      )
+    ).toEqual(['P', 'P'])
+  })
+
   it('labels a new top-level section with a NEW badge', async () => {
     await openMenu(false)
 
