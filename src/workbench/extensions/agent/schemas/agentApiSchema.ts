@@ -134,6 +134,7 @@ const zSkillName = z
 export const zPersistedToolCallSummary = zToolCallSummary.extend({
   skill: zSkillName
 })
+export type PersistedToolCallSummary = z.infer<typeof zPersistedToolCallSummary>
 
 /**
  * The generated `AgentMessage.content` schema narrows to just `tool_calls`

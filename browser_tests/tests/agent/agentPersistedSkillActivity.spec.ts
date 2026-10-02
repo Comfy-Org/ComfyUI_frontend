@@ -1,8 +1,7 @@
 import { expect } from '@playwright/test'
 
-import type { ToolCallSummary } from '@comfyorg/ingest-types'
-
 import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
+import type { PersistedToolCallSummary } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 test.describe.configure({ timeout: 120_000 })
 test.use({ connectWebSocketToServer: false })
@@ -19,9 +18,7 @@ test(
       await agentPanel.sendMessage('Use the comfy-director skill')
       await expect.poll(() => promptHistory.requests.length).toBe(1)
 
-      // The persisted row carries `skill`, which the generated ToolCallSummary
-      // does not declare; the schema boundary decides whether it survives.
-      const loadSkillCall: ToolCallSummary & { skill: string } = {
+      const loadSkillCall: PersistedToolCallSummary = {
         id: 'call-load-skill',
         tool_call_id: 'call-load-skill',
         tool_name: 'load_skill',
