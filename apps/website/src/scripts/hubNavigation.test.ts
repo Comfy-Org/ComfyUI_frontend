@@ -352,16 +352,13 @@ describe('hubNavigation', () => {
 
       document.dispatchEvent(new KeyboardEvent('keydown', { key }))
 
-      // The wait itself is what the key must leave alone, so the watchers are
-      // read directly: that the pin lands afterwards says the same thing only
-      // for as long as the pin scrolls at all.
       expect(resizes[0].connected).toBe(true)
       expect(mutations[0].connected).toBe(true)
 
       page.scrollHeight = TALL_PAGE
       resizes[0].fire()
 
-      expect(scrollTo).toHaveBeenCalled()
+      expect(scrollTo).toHaveBeenCalledExactlyOnceWith(0, PINNED_SCROLL)
     }
   )
 
