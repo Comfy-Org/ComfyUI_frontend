@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
@@ -51,50 +51,55 @@ describe('TemplatePreview', () => {
     expect(screen.getByTestId('compare-slider-container')).toBeInTheDocument()
   })
 
+  // LazyImage holds images behind an intersection observer that never fires in
+  // jsdom, so stub it to the img it eventually renders.
+  const stubs = {
+    LazyImage: {
+      props: ['src', 'alt'],
+      template: '<img :src="src" :alt="alt" />'
+    }
+  }
+
   it.for([
     {
       name: 'audio',
       overrides: { mediaType: 'audio' as const },
-      expect: (root: HTMLElement) =>
-        expect(within(root).getByTestId('audio-player')).toBeInTheDocument()
+      assert: () =>
+        expect(screen.getByTestId('audio-player')).toBeInTheDocument()
     },
     {
       name: 'compareSlider',
       overrides: { thumbnailVariant: 'compareSlider' as const },
-      expect: (root: HTMLElement) =>
+      assert: () =>
         expect(
-          within(root).getByTestId('compare-slider-container')
+          screen.getByTestId('compare-slider-container')
         ).toBeInTheDocument()
     },
     {
       name: 'hoverDissolve',
       overrides: { thumbnailVariant: 'hoverDissolve' as const },
       // Dissolve stacks a base and an overlay image; the default renders one.
-      // Images stay lazy in jsdom, so count their placeholders instead.
-      expect: (root: HTMLElement) =>
-        expect(root.querySelectorAll('[data-pc-name="skeleton"]')).toHaveLength(
-          2
-        )
+      assert: () =>
+        expect(screen.getAllByAltText('Workflow preview')).toHaveLength(2)
     },
     {
       name: 'default',
       overrides: {},
-      expect: (root: HTMLElement) =>
-        expect(root.querySelectorAll('[data-pc-name="skeleton"]')).toHaveLength(
-          1
-        )
+      assert: () =>
+        expect(screen.getAllByAltText('Workflow preview')).toHaveLength(1)
     }
-  ])('dispatches the $name media branch', ({ overrides, expect: assert }) => {
-    const { container } = render(TemplatePreview, {
+  ])('dispatches the $name media branch', ({ overrides, assert }) => {
+    render(TemplatePreview, {
       props: {
         template: { ...template, ...overrides },
         baseImageSrc: '/preview.png',
         overlayImageSrc: '/overlay.png',
         alt: 'Workflow preview',
         getLogoUrl: vi.fn()
-      }
+      },
+      global: { stubs }
     })
 
-    assert(container.firstElementChild as HTMLElement)
+    assert()
   })
 })
