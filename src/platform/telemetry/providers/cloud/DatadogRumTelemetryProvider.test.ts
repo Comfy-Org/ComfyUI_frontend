@@ -1,9 +1,9 @@
+import type { BillingTelemetryEvent } from '@comfyorg/account-core/billing'
 import { computed } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 
-import type { BillingTelemetryEvent } from '../../types'
 import { TelemetryEvents } from '../../types'
 import { DatadogRumTelemetryProvider } from './DatadogRumTelemetryProvider'
 

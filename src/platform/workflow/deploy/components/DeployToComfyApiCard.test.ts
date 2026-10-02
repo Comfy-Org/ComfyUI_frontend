@@ -62,9 +62,6 @@ describe('DeployToComfyApiCard', () => {
         .getAllByRole('link', { name: /read the docs/i })
         .map((link) => link.getAttribute('href'))
     ).toEqual([docs, docs])
-    expect(buildDocsUrl).toHaveBeenCalledWith('/development/overview', {
-      includeLocale: true
-    })
   })
 
   it('reports dismiss from the close control', async () => {
@@ -128,8 +125,10 @@ describe('DeployToComfyApiCard', () => {
 
   it('shows its media over the poster', () => {
     renderCard({
-      videoSrc: 'https://example.test/a.webm',
-      videoSrcMp4: 'https://example.test/a.mp4',
+      videoSources: [
+        { src: 'https://example.test/a.webm', type: 'video/webm' },
+        { src: 'https://example.test/a.mp4', type: 'video/mp4' }
+      ],
       posterSrc: 'https://example.test/a.jpg'
     })
 

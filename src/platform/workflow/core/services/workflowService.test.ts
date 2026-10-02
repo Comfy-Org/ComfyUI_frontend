@@ -4,7 +4,7 @@ import { graphToPrompt } from '@/utils/executionUtil'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { useDialogService } from '@/services/dialogService'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // eslint-disable-line import-x/no-restricted-paths
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // oxlint-disable-line comfy/no-restricted-paths
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 
@@ -99,7 +99,7 @@ vi.mock(import('@/base/common/downloadUtil'), () => ({
 vi.mock(import('@/scripts/app'))
 
 vi.mock<unknown>(
-  import('@/renderer/core/thumbnail/useWorkflowThumbnail'), // eslint-disable-line import-x/no-restricted-paths
+  import('@/renderer/core/thumbnail/useWorkflowThumbnail'), // oxlint-disable-line comfy/no-restricted-paths
 
   () => ({
     useWorkflowThumbnail: () => ({
@@ -807,6 +807,28 @@ describe('useWorkflowService', () => {
         expect.anything()
       )
       expect(workflowStore.activeWorkflow.path).toBe('workflows/retained.json')
+    })
+
+    it('does not repaint the retained workflow for a superseded load', async () => {
+      const workflowStore = useWorkflowStore()
+      const retained = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/retained.json'
+      })
+      const superseded = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/superseded.json'
+      })
+      workflowStore.attachWorkflow(retained, 0)
+      workflowStore.attachWorkflow(superseded, 1)
+      workflowStore.activeWorkflow = retained as LoadedComfyWorkflow
+      vi.mocked(app.loadGraphData).mockResolvedValueOnce(undefined)
+
+      await expect(useWorkflowService().openWorkflow(superseded)).resolves.toBe(
+        true
+      )
+
+      expect(app.loadGraphData).toHaveBeenCalledOnce()
     })
 
     it('serializes rapid workflow opens so the final selection stays active', async () => {

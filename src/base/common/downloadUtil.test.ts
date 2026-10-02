@@ -14,7 +14,7 @@ const { mockIsCloud } = vi.hoisted(() => ({
 }))
 
 vi.mock(
-  import('@/platform/distribution/types'), // eslint-disable-line import-x/no-restricted-paths
+  import('@/platform/distribution/types'), // oxlint-disable-line comfy/no-restricted-paths
   () => ({
     get isCloud() {
       return mockIsCloud.value

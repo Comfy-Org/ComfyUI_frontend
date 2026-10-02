@@ -9,14 +9,21 @@ import type { BillingIntent } from '@comfyorg/billing-contract'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useTelemetry } from '@/platform/telemetry'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { hostedBillingRoute } from '@/platform/workspace/billing/hostedBillingRoutes'
 import { registerRefreshOnReturn } from '@/platform/workspace/billing/refreshOnReturn'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { createJourneyId } from '@/platform/workspace/utils/checkoutJourney'
 
 export interface OpenHostedBillingTabOptions {
   readonly plan?: string
   readonly teamCreditStopId?: string
+  /** Why the customer asked, when the click knew. */
+  readonly source?: PaymentIntentSource
+  /** The cloud journey this hands off; one is minted when the entry has none. */
+  readonly journeyId?: string
 }
 
 /**
@@ -127,15 +134,27 @@ export function openHostedBillingTabOutcome(
 ): HostedBillingTabOutcome {
   const { flags } = useFeatureFlags()
   const workspaceId = useTeamWorkspaceStore().activeWorkspaceId ?? undefined
+  const correlationId = options.journeyId ?? createJourneyId()
   const route = hostedBillingRoute(flags.hostedBillingDestination, intent, {
     plan: options.plan,
     teamCreditStopId: options.teamCreditStopId,
-    workspaceId
+    workspaceId,
+    correlationId,
+    source: options.source
   })
   if (route.kind !== 'billing_web') return 'unavailable'
-  if (!openDisownedTab(route.url)) return 'blocked'
-  armReturnRefresh(intent, workspaceId)
-  return 'opened'
+  const result = openDisownedTab(route.url) ? 'opened' : 'blocked'
+  useTelemetry()?.trackBillingEvent({
+    operation: 'web_handoff',
+    stage: 'opened',
+    outcome: 'pending',
+    intent,
+    result,
+    payment_intent_source: options.source,
+    correlation_id: correlationId
+  })
+  if (result === 'opened') armReturnRefresh(intent, workspaceId)
+  return result
 }
 
 /**

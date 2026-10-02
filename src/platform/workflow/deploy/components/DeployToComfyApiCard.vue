@@ -2,8 +2,8 @@
   <DefineDocsLink>
     <Button
       variant="link"
-      size="unset"
-      class="w-fit gap-1 px-0 py-2 text-sm/5 font-normal hover:underline"
+      size="link"
+      class="w-fit"
       as="a"
       :href="docsUrl"
       target="_blank"
@@ -30,11 +30,14 @@
       </Button>
 
       <div class="p-2">
-        <LoopingVideo
-          :webm-src="videoSrc"
-          :mp4-src="videoSrcMp4"
+        <Video
+          :sources="videoSources"
           :poster-src="posterSrc"
-          pausable
+          autoplay
+          muted
+          loop
+          plays-inline
+          playback-control
           data-testid="deploy-to-comfy-api-video"
           class="aspect-video w-full rounded-lg object-cover"
         >
@@ -51,7 +54,7 @@
               </span>
             </div>
           </template>
-        </LoopingVideo>
+        </Video>
       </div>
 
       <section class="flex flex-col gap-9 p-6 @xl:gap-6 @xl:p-9">
@@ -91,21 +94,17 @@
 <script setup lang="ts">
 import { createReusableTemplate } from '@vueuse/core'
 import { ref } from 'vue'
+import type { ComponentProps } from 'vue-component-type-helpers'
 
-import LoopingVideo from '@/components/common/LoopingVideo.vue'
+import Video from '@/components/common/Video.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { usePlatformBuildHandoff } from '@/platform/workflow/deploy/composables/usePlatformBuildHandoff'
 
-const {
-  videoSrc = '',
-  videoSrcMp4 = '',
-  posterSrc = ''
-} = defineProps<{
+const { videoSources = [], posterSrc = '' } = defineProps<{
   titleId?: string
-  videoSrc?: string
-  videoSrcMp4?: string
+  videoSources?: ComponentProps<typeof Video>['sources']
   posterSrc?: string
 }>()
 

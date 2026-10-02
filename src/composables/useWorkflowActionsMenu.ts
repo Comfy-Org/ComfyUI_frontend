@@ -6,6 +6,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'
+import { DEPLOY_TO_COMFY_API_ACTION_ID } from '@/platform/workflow/deploy/constants'
 import { openShareDialog } from '@/platform/workflow/sharing/composables/lazyShareDialog'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -39,8 +40,7 @@ interface AddItemOptions {
   visible?: boolean
   disabled?: boolean
   prependSeparator?: boolean
-  isNew?: boolean
-  badge?: string
+  newItemBadge?: string
 }
 
 export function useWorkflowActionsMenu(
@@ -66,8 +66,8 @@ export function useWorkflowActionsMenu(
 
   /** Switch to the target workflow tab if it's not already active */
   const ensureWorkflowActive = async (wf: ComfyWorkflow | null) => {
-    if (!wf || wf === workflowStore.activeWorkflow) return
-    await workflowService.openWorkflow(wf)
+    if (!wf || wf === workflowStore.activeWorkflow) return true
+    return await workflowService.openWorkflow(wf)
   }
 
   const menuItems = computed<WorkflowMenuItem[]>(() => {
@@ -86,14 +86,15 @@ export function useWorkflowActionsMenu(
       visible = true,
       disabled = false,
       prependSeparator = false,
-      isNew = false,
-      badge = isNew ? t('g.experimental') : undefined
+      newItemBadge
     }: AddItemOptions) => {
       if (prependSeparator && visible) items.push({ separator: true })
       const item: WorkflowMenuAction = { id, label, icon, command, disabled }
       if (!visible) item.visible = false
-      if (isNew) item.isNew = true
-      if (badge) item.badge = badge
+      if (newItemBadge) {
+        item.isNew = true
+        item.badge = newItemBadge
+      }
       items.push(item)
     }
 
@@ -203,16 +204,15 @@ export function useWorkflowActionsMenu(
     })
 
     addItem({
-      id: 'deploy-as-api',
+      id: DEPLOY_TO_COMFY_API_ACTION_ID,
       label: t('deployToComfyApi.buttonLabel'),
       icon: 'icon-[lucide--rocket]',
       command: async () => {
-        await ensureWorkflowActive(targetWorkflow.value)
+        if (!(await ensureWorkflowActive(targetWorkflow.value))) return
         await openDeployToComfyApiDialog().catch(toastErrorHandler)
       },
       visible: isRoot,
-      isNew: true,
-      badge: t('g.new')
+      newItemBadge: t('g.new')
     })
 
     addItem({
@@ -222,7 +222,7 @@ export function useWorkflowActionsMenu(
       command: toggleLinear,
       visible: showAppModeItems && !isLinearMode,
       prependSeparator: true,
-      isNew: true
+      newItemBadge: t('g.experimental')
     })
 
     addItem({
@@ -267,7 +267,7 @@ export function useWorkflowActionsMenu(
         enterBuilder()
       },
       visible: showAppModeItems,
-      isNew: true
+      newItemBadge: t('g.experimental')
     })
 
     addItem({

@@ -188,9 +188,17 @@ export type CheckoutPageEvent =
       readonly reason: CapabilityDenialReason
       readonly scheduled?: ScheduledChange
     }
-  | { readonly type: 'unavailable'; readonly code: string }
+  | {
+      readonly type: 'unavailable'
+      readonly code: string
+      readonly httpStatus?: number
+    }
   /** The capabilities read failed, so the page cannot say whether this workspace may check out. */
-  | { readonly type: 'capabilitiesFailed'; readonly code: string }
+  | {
+      readonly type: 'capabilitiesFailed'
+      readonly code: string
+      readonly httpStatus?: number
+    }
   /** The lifecycle could not say what the workspace is waiting on. */
   | { readonly type: 'recheckFailed'; readonly code: string }
   | { readonly type: 'planUnavailable'; readonly reason: PlanUnavailableReason }
@@ -259,19 +267,25 @@ export type CheckoutPageEvent =
 export const RESOLVING: CheckoutPage = { kind: 'resolving' }
 
 /**
- * Why no plan can be quoted for this link: the checkout's 404. `retired` is
- * a slug the catalog no longer has; the other two are links nobody could
- * have been sent, a team plan named without its commit stop, or a URL the
- * entry contract cannot read at all.
+ * Why nothing can be quoted for this link: the checkout's 404. `retired` is
+ * a slug the catalog no longer has; the rest are links nobody could have
+ * been sent, a team plan named without its commit stop, a top-up with no
+ * readable amount, or a URL the entry contract cannot read at all.
  */
 export type PlanUnavailableReason =
   | 'retired'
   | 'team_stop_missing'
+  | 'amount_invalid'
   | 'unreadable'
 
 export const UNREADABLE_LINK: CheckoutPage = {
   kind: 'plan_unavailable',
   reason: 'unreadable'
+}
+
+export const INVALID_AMOUNT_LINK: CheckoutPage = {
+  kind: 'plan_unavailable',
+  reason: 'amount_invalid'
 }
 
 /** The first read picks the tab: Saved whenever the tab row shows at all. */

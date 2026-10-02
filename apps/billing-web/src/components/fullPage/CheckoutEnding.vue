@@ -21,6 +21,7 @@ import type { EndingPlan } from '@/components/fullPage/EndingPlanCard.vue'
 import EndingPlanCard from '@/components/fullPage/EndingPlanCard.vue'
 import SuccessCloseFooter from '@/components/fullPage/SuccessCloseFooter.vue'
 import { useHostedCopy } from '@/composables/useHostedCopy'
+import { reportReturnClicked } from '@/telemetry/webReturnTelemetry'
 
 type Tone = 'done' | 'waiting' | 'refused'
 
@@ -34,7 +35,7 @@ const ENDINGS: Readonly<
     EndingKind,
     {
       readonly tone: Tone
-      readonly primary?: 'close' | 'retry' | 'view_plans'
+      readonly primary?: 'close' | 'retry' | 'view_plans' | 'add_credits'
       readonly support: boolean
     }
   >
@@ -47,6 +48,7 @@ const ENDINGS: Readonly<
   unconfirmed: { tone: 'waiting', support: true },
   refused: { tone: 'refused', support: true },
   plan_unavailable: { tone: 'refused', primary: 'view_plans', support: true },
+  link_invalid: { tone: 'refused', primary: 'add_credits', support: true },
   load_failed: { tone: 'refused', primary: 'retry', support: true }
 }
 
@@ -70,13 +72,37 @@ const {
   closesItself?: boolean
 }>()
 
-const emit = defineEmits<{ close: []; retry: []; viewPlans: [] }>()
+const emit = defineEmits<{
+  close: []
+  retry: []
+  viewPlans: []
+  addCredits: []
+}>()
 
 const { t, locale } = useI18n()
 const { coded } = useHostedCopy()
 
+const R = 'checkout.fullPage.ending.receipt'
+const credits = (count: number) =>
+  new Intl.NumberFormat(locale.value).format(count)
+const money = (cents: number) => formatQuoteMoney(cents, 'usd', locale.value)
+
 const ending = computed(() => ENDINGS[screen.kind])
-const copyKey = computed(() => `checkout.fullPage.ending.${screen.kind}`)
+const copyKey = computed(() =>
+  screen.kind === 'success' && screen.purchase === 'credits'
+    ? 'checkout.fullPage.ending.success_credits'
+    : `checkout.fullPage.ending.${screen.kind}`
+)
+/** A top-up's Success leads with the credits the server counted, when it has. */
+const title = computed(() => {
+  const added =
+    screen.kind === 'success' && screen.purchase === 'credits'
+      ? screen.receipt?.creditsAdded
+      : undefined
+  return added === undefined
+    ? t(`${copyKey.value}.title`)
+    : t(`${copyKey.value}.titleCounted`, { count: credits(added) })
+})
 const bodyKey = computed(() => {
   if (screen.kind === 'refused') return `${copyKey.value}.body.${screen.copy}`
   if (screen.kind === 'load_failed')
@@ -110,11 +136,6 @@ const creditsAdded = computed(() =>
   'receipt' in screen ? screen.receipt?.creditsAdded : undefined
 )
 
-const R = 'checkout.fullPage.ending.receipt'
-const credits = (count: number) =>
-  new Intl.NumberFormat(locale.value).format(count)
-const money = (cents: number) => formatQuoteMoney(cents, 'usd', locale.value)
-
 /** Each row the receipt shows, as label and value; a plan row needs the plan's name. */
 const receiptRows = computed(() =>
   receipt.value.rows.flatMap((row) => {
@@ -142,9 +163,12 @@ const supportLink = computed(() => supportLinkWithCode(code.value))
 const primary = computed(() => ending.value.primary)
 
 function act() {
-  if (primary.value === 'close') emit('close')
-  else if (primary.value === 'retry') emit('retry')
+  if (primary.value === 'close') {
+    reportReturnClicked('success_close')
+    emit('close')
+  } else if (primary.value === 'retry') emit('retry')
   else if (primary.value === 'view_plans') emit('viewPlans')
+  else if (primary.value === 'add_credits') emit('addCredits')
 }
 </script>
 
@@ -161,7 +185,7 @@ function act() {
         <h1
           class="m-0 text-2xl font-semibold text-balance text-base-foreground sm:whitespace-nowrap"
         >
-          {{ t(`${copyKey}.title`) }}
+          {{ title }}
         </h1>
         <p class="m-0 text-sm/5 text-muted-foreground">
           {{ t(bodyKey, bodyParams) }}
@@ -198,8 +222,16 @@ function act() {
           class="flex items-baseline justify-between gap-4"
         >
           <dt class="text-muted-foreground">{{ row.label }}</dt>
-          <dd class="m-0 text-base-foreground tabular-nums">
-            {{ row.value }}
+          <dd
+            class="m-0 flex items-center gap-1.5 text-base-foreground tabular-nums"
+          >
+            <i
+              v-if="row.kind === 'added'"
+              class="icon-[lucide--coins] size-4 shrink-0"
+              aria-hidden="true"
+              data-testid="checkout-ending-credits-icon"
+            />
+            <span>{{ row.value }}</span>
           </dd>
         </div>
       </dl>

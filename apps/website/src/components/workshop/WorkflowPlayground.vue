@@ -17,6 +17,7 @@ import {
   workflowNoticeKey,
   workflowStatusKey
 } from '../../config/workshop-workflow-presentation'
+import { requestWorkshopBuyCreditsAutomatically } from '../../config/workshop-buy-credits'
 import { refreshWorkshopCredits } from '../../config/workshop-credits'
 import { useWorkshopModelBalance } from '../../config/workshop-model-balance'
 import { useWorkshopSession } from '../../config/workshop-session-state'
@@ -170,7 +171,10 @@ watch(
     state.value.error.code === 'insufficient_credits',
   (refused) => {
     refusal.value = refused ? { credits: credits.value } : undefined
-    if (refused) void refreshWorkshopCredits({ force: true })
+    if (!refused) return
+    if (session.value?.role === 'owner')
+      requestWorkshopBuyCreditsAutomatically()
+    void refreshWorkshopCredits({ force: true })
   }
 )
 watch(credits, (known) => {

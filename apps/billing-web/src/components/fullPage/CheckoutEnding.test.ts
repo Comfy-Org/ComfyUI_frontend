@@ -8,6 +8,7 @@ import { endingOf } from '@/checkout/endingScreen'
 import type { EndingPlan } from '@/components/fullPage/EndingPlanCard.vue'
 import CheckoutEnding from '@/components/fullPage/CheckoutEnding.vue'
 import { createBillingI18n } from '@/i18n'
+import { trackedBillingEvents } from '@/test/trackedBillingEvents'
 
 const PLAN: EndingPlan = { name: 'Pro', price: '$50.00', period: 'USD / mo' }
 
@@ -21,7 +22,7 @@ function renderEnding(ending: EndingScreen, closesItself = false) {
 const CLOSE_LINE =
   "You can close this page. We'll email your invoice once this goes through and this page will automatically update."
 
-type Action = 'Close' | 'Try again' | 'View plans'
+type Action = 'Close' | 'Try again' | 'View plans' | 'Add credits'
 
 describe('CheckoutEnding', () => {
   const UNKNOWN =
@@ -182,6 +183,16 @@ describe('CheckoutEnding', () => {
       closeLine: false
     },
     {
+      ending: { kind: 'link_invalid', code: 'CHECKOUT_LINK_INVALID' },
+      title: "This link isn't valid",
+      body: "The amount in your link isn't valid. Nothing has been charged. Choose an amount in your billing settings.",
+      codeLabel:
+        'If you think this is a mistake, contact support with this code:',
+      action: 'Add credits',
+      support: true,
+      closeLine: false
+    },
+    {
       ending: { kind: 'load_failed', cause: 'quote', code: 'REQUEST_FAILED' },
       title: "Couldn't load your checkout",
       body: "We couldn't load your quote. Nothing has been charged. Try again, or contact support if this keeps happening.",
@@ -335,12 +346,49 @@ describe('CheckoutEnding', () => {
       expect(screen.getByTestId('checkout-ending-receipt')).toHaveTextContent(
         'Added+3,000Amount paid$15.00'
       )
+      expect(screen.getByTestId('checkout-ending-credits-icon')).toBeVisible()
       expect(screen.queryByText(/balance/i)).not.toBeInTheDocument()
       expect(
         screen.queryByTestId('checkout-ending-plan')
       ).not.toBeInTheDocument()
       expect(
         screen.queryByTestId('checkout-ending-code')
+      ).not.toBeInTheDocument()
+    })
+
+    it('77-3783: a top-up Success counts the credits added and what they cost, and names no plan', () => {
+      renderEnding({
+        kind: 'success',
+        purchase: 'credits',
+        receipt: { creditsAdded: 3165, amountChargedCents: 1500 }
+      })
+
+      expect(
+        screen.getByRole('heading', { name: '3,165 credits added' })
+      ).toBeInTheDocument()
+      expect(
+        screen.getByText('Credits for Acme Team have been successfully added.')
+      ).toBeInTheDocument()
+      expect(screen.getByTestId('checkout-ending-receipt')).toHaveTextContent(
+        'Added+3,165Amount paid$15.00'
+      )
+      expect(screen.getByTestId('checkout-ending-credits-icon')).toBeVisible()
+      expect(
+        screen.queryByTestId('checkout-ending-plan')
+      ).not.toBeInTheDocument()
+    })
+
+    it('a top-up Success the server has not counted yet claims no number', () => {
+      renderEnding({ kind: 'success', purchase: 'credits' })
+
+      expect(
+        screen.getByRole('heading', { name: "You're all set" })
+      ).toBeInTheDocument()
+      expect(
+        screen.getByText('Credits for Acme Team have been successfully added.')
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByTestId('checkout-ending-plan')
       ).not.toBeInTheDocument()
     })
 
@@ -369,6 +417,9 @@ describe('CheckoutEnding', () => {
       expect(screen.getByTestId('checkout-ending-receipt')).toHaveTextContent(
         'Payment$25.00Credits addedAdding…'
       )
+      expect(
+        screen.queryByTestId('checkout-ending-credits-icon')
+      ).not.toBeInTheDocument()
       expect(screen.queryByText('Plan')).not.toBeInTheDocument()
     })
 
@@ -397,6 +448,11 @@ describe('CheckoutEnding', () => {
       ending: { kind: 'plan_unavailable', code: 'PLAN_NOT_FOUND' },
       action: 'View plans',
       event: 'viewPlans'
+    },
+    {
+      ending: { kind: 'link_invalid', code: 'CHECKOUT_LINK_INVALID' },
+      action: 'Add credits',
+      event: 'addCredits'
     }
   ])('$action emits $event', async ({ ending, action, event }) => {
     const { emitted } = renderEnding(ending)
@@ -518,5 +574,67 @@ describe('CheckoutEnding', () => {
     expect(
       await screen.findByRole('button', { name: 'Copied' })
     ).toBeInTheDocument()
+  })
+})
+
+describe('CheckoutEnding, leaving for the product', () => {
+  it.for<{ name: string; ending: EndingScreen }>([
+    { name: 'a finished checkout', ending: { kind: 'success' } },
+    {
+      name: 'a payment that went through earlier',
+      ending: { kind: 'completed', code: 'op_seen' }
+    },
+    {
+      name: 'a payment already completed',
+      ending: { kind: 'already_completed', code: 'op_old' }
+    }
+  ])('reports Close on $name as a success close', async ({ ending }) => {
+    const sent = trackedBillingEvents()
+    const { emitted } = renderEnding(ending)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }))
+
+    expect(emitted('close')).toHaveLength(1)
+    expect(sent()).toStrictEqual([
+      {
+        operation: 'web_return',
+        stage: 'clicked',
+        outcome: 'pending',
+        control: 'success_close'
+      }
+    ])
+  })
+
+  it.for<{ action: Action; ending: EndingScreen }>([
+    {
+      action: 'Try again',
+      ending: { kind: 'load_failed', cause: 'quote', code: 'REQUEST_FAILED' }
+    },
+    {
+      action: 'View plans',
+      ending: { kind: 'plan_unavailable', code: 'PLAN_NOT_FOUND' }
+    },
+    {
+      action: 'Add credits',
+      ending: { kind: 'link_invalid', code: 'CHECKOUT_LINK_INVALID' }
+    }
+  ])('reports nothing for $action, which is not a way back', async (row) => {
+    const sent = trackedBillingEvents()
+    renderEnding(row.ending)
+
+    await userEvent.click(screen.getByRole('button', { name: row.action }))
+
+    expect(sent()).toStrictEqual([])
+  })
+
+  it('closes itself after the countdown without reporting a click', async () => {
+    vi.useFakeTimers()
+    const sent = trackedBillingEvents()
+    const { emitted } = renderEnding({ kind: 'success' }, true)
+
+    await vi.advanceTimersByTimeAsync(5000)
+
+    expect(emitted('close')).toHaveLength(1)
+    expect(sent()).toStrictEqual([])
   })
 })

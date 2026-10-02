@@ -1,12 +1,20 @@
-// eslint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
+import {
+  getBillingTelemetryEventName,
+  getCheckoutJourneyTelemetryEventName,
+  getCheckoutJourneyTelemetryEventPayload,
+  getCloudAppBillingTelemetryEventPayload
+} from '@comfyorg/account-core/billing'
+import type {
+  BillingTelemetryEvent,
+  CheckoutJourneyTelemetryEvent
+} from '@comfyorg/account-core/billing'
+// oxlint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
 import { datadogRum } from '@datadog/browser-rum'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 
 import type {
   AuthMetadata,
-  BillingTelemetryEvent,
-  CheckoutJourneyTelemetryEvent,
   ExecutionOutcomeMetadata,
   FetchTimeoutMetadata,
   ImageLoadFailureMetadata,
@@ -14,13 +22,7 @@ import type {
   UnifiedAuthRefreshMetadata,
   UnifiedAuthRetryMetadata
 } from '../../types'
-import {
-  getBillingTelemetryEventName,
-  getCheckoutJourneyTelemetryEventName,
-  getCheckoutJourneyTelemetryEventPayload,
-  getCloudAppBillingTelemetryEventPayload,
-  TelemetryEvents
-} from '../../types'
+import { TelemetryEvents } from '../../types'
 
 export class DatadogRumTelemetryProvider implements TelemetryProvider {
   private isWatchingLogout = false

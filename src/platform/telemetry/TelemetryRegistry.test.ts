@@ -1,3 +1,7 @@
+import type {
+  BillingTelemetryEvent,
+  CheckoutJourneyTelemetryEvent
+} from '@comfyorg/account-core/billing'
 import { describe, expect, it, vi } from 'vitest'
 
 import { TelemetryRegistry } from './TelemetryRegistry'
@@ -15,8 +19,6 @@ import type {
   AgentPaywallShownMetadata,
   AgentStarterPromptClickedMetadata,
   AgentWorkflowAppliedMetadata,
-  BillingTelemetryEvent,
-  CheckoutJourneyTelemetryEvent,
   TelemetryProvider
 } from './types'
 

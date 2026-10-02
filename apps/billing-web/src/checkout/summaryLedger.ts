@@ -4,10 +4,7 @@ import { centsToCredits } from '@comfyorg/shared-frontend-utils/creditsUtil'
 
 import { longDate, monthDay } from '@/checkout/longDate'
 
-/**
- * The four summary families of the checkout guidebook. `top_up`
- * has no quote on billing-web yet, so no builder produces it.
- */
+/** The four summary families of the checkout guidebook; `top_up` is built by `topupLedger`. */
 type SummaryFamily = 'charge_now' | 'prorated_change' | 'scheduled' | 'top_up'
 
 /**
@@ -57,6 +54,8 @@ export interface SummaryLedger {
     readonly amount: string
     readonly currency: string
     readonly rate?: string
+    /** A credits-first headline leads with the credits icon. */
+    readonly icon?: 'coins'
   }
   readonly credits?: { readonly count: string; readonly qualifier: string }
   /** Money rows the total reconciles with; see `moneyItems`. */
@@ -105,7 +104,6 @@ const BY_DURATION = {
     rate: `${S}.rate.monthly`,
     itemRate: `${S}.item.rateMonthly`,
     comparedRate: `${S}.item.comparedMonthly`,
-    onceTerm: `${S}.discount.firstMonth`,
     perPeriod: `${S}.credits.perMonth`,
     refillAfter: `${S}.credits.refillMonthlyAfter`,
     refillsTo: `${S}.item.refillsMonthly`,
@@ -116,7 +114,6 @@ const BY_DURATION = {
     rate: `${S}.rate.yearly`,
     itemRate: `${S}.item.rateYearly`,
     comparedRate: `${S}.item.comparedYearly`,
-    onceTerm: `${S}.discount.firstYear`,
     perPeriod: `${S}.credits.perYear`,
     refillAfter: `${S}.credits.refillYearlyAfter`,
     refillsTo: `${S}.item.refillsYearly`,
@@ -398,18 +395,39 @@ function zeroDueLine(r: QuoteReading): string[] {
 }
 
 /**
- * The rate a plan discount (the yearly or team-commitment price) brought
- * down from its list price, both as the server rated them.
+ * The plan's rate under its label: struck against the list price whenever
+ * the server sends one, else a plain cadence line. A yearly plan the server
+ * also rates per month reads in those monthly figures.
  */
-function comparedRateOf(r: QuoteReading): ComparedRate | undefined {
-  const listCents = r.next.list_price_cents
-  if (listCents === undefined || listCents <= r.next.price_cents)
-    return undefined
-  return {
-    keypath: r.byNew.comparedRate,
-    amount: r.headlineMoney(r.next.price_cents),
-    listAmount: r.headlineMoney(listCents)
+type RateLine =
+  | { readonly comparedRate: ComparedRate }
+  | { readonly subline: string }
+
+function rateLineOf(r: QuoteReading): RateLine {
+  const monthlyCents = r.next.monthly_price_cents
+  if (r.next.duration === 'ANNUAL' && monthlyCents !== undefined) {
+    const amount = r.headlineMoney(monthlyCents)
+    const listCents = r.next.monthly_list_price_cents
+    return listCents === undefined
+      ? { subline: r.t(`${S}.item.billedYearlyMonthly`, { amount }) }
+      : {
+          comparedRate: {
+            keypath: `${S}.item.comparedYearlyMonthly`,
+            amount,
+            listAmount: r.headlineMoney(listCents)
+          }
+        }
   }
+  const listCents = r.next.list_price_cents
+  return listCents === undefined
+    ? { subline: cadenceLineOf(r) }
+    : {
+        comparedRate: {
+          keypath: r.byNew.comparedRate,
+          amount: r.headlineMoney(r.next.price_cents),
+          listAmount: r.headlineMoney(listCents)
+        }
+      }
 }
 
 function cadenceLineOf(r: QuoteReading): string {
@@ -421,7 +439,7 @@ function cadenceLineOf(r: QuoteReading): string {
 }
 
 function chargeNowLedger(r: QuoteReading): FamilyLedger {
-  const comparedRate = comparedRateOf(r)
+  const rateLine = rateLineOf(r)
   const refills =
     r.cadenceChanges || !grantIsAllowance(r) ? [refillsToLine(r)] : []
   return {
@@ -432,9 +450,13 @@ function chargeNowLedger(r: QuoteReading): FamilyLedger {
     items: moneyItems(
       r,
       r.quote.cost_today_cents,
-      comparedRate === undefined
-        ? { label: r.plan, sublines: [cadenceLineOf(r), ...refills] }
-        : { label: r.plan, comparedRate, sublines: refills }
+      'comparedRate' in rateLine
+        ? {
+            label: r.plan,
+            comparedRate: rateLine.comparedRate,
+            sublines: refills
+          }
+        : { label: r.plan, sublines: [rateLine.subline, ...refills] }
     ),
     trailing: chargeNowTrailing(r)
   }
@@ -475,39 +497,58 @@ export function acceptsPromoCode(quote: SubscriptionPreview): boolean {
 
 type Discount = NonNullable<SubscriptionPreview['discounts']>[number]
 
-const deduction = (r: QuoteReading, cents: number) =>
-  r.t(`${S}.discount.amount`, { amount: r.money(cents) })
-
-/**
- * How long a coupon keeps applying, stated as bounds only: `once` covers the
- * first period, `repeating` its months, and `forever` needs no subline.
- */
-function discountTerm(r: QuoteReading, discount: Discount): string | undefined {
-  if (discount.duration === 'once') return r.t(r.byNew.onceTerm, {})
-  const months = discount.duration_in_months
-  if (discount.duration !== 'repeating' || months === undefined)
-    return undefined
-  return r.t(`${S}.discount.forMonths`, { count: months }, months)
+/** What a deduction row needs to word itself, shared by the summary and the Success card. */
+export interface DeductionFormat {
+  readonly t: Translate
+  readonly money: (cents: number) => string
 }
 
-function discountRow(r: QuoteReading, discount: Discount): DiscountRow {
-  const subline = discountTerm(r, discount)
+const deduction = (format: DeductionFormat, cents: number) =>
+  format.t(`${S}.discount.amount`, { amount: format.money(cents) })
+
+type DiscountTerm = NonNullable<Discount['term']>
+
+/** How long a discount keeps applying, worded from the term the server reported. */
+const TERM_LINE = {
+  this_payment: (t) => t(`${S}.discount.thisPaymentOnly`, {}),
+  first_month: (t) => t(`${S}.discount.firstMonth`, {}),
+  first_year: (t) => t(`${S}.discount.firstYear`, {}),
+  months: (t, months) =>
+    months === undefined
+      ? undefined
+      : t(`${S}.discount.forMonths`, { count: months }, months),
+  ongoing: () => undefined
+} satisfies Record<
+  DiscountTerm,
+  (t: Translate, months: number | undefined) => string | undefined
+>
+
+export function discountRow(
+  format: DeductionFormat,
+  discount: Pick<Discount, 'name' | 'term' | 'duration_in_months'>,
+  amountCents: number | undefined
+): DiscountRow {
+  const subline =
+    discount.term === undefined
+      ? undefined
+      : TERM_LINE[discount.term](format.t, discount.duration_in_months)
   return {
-    label: discount.name ?? r.t(`${S}.discount.fallbackLabel`, {}),
-    ...(discount.amount_off_cents === undefined
+    label: discount.name ?? format.t(`${S}.discount.fallbackLabel`, {}),
+    ...(amountCents === undefined
       ? {}
-      : { amount: deduction(r, discount.amount_off_cents) }),
+      : { amount: deduction(format, amountCents) }),
     ...(subline === undefined ? {} : { subline })
   }
 }
 
-function balanceRow(r: QuoteReading): DiscountRow | undefined {
-  const cents = r.quote.balance_applied_cents
-  if (cents === undefined) return undefined
+export function balanceRow(
+  format: DeductionFormat,
+  cents: number
+): DiscountRow {
   return {
-    label: r.t(`${S}.balance.label`, {}),
-    amount: deduction(r, cents),
-    subline: r.t(`${S}.balance.subline`, {})
+    label: format.t(`${S}.balance.label`, {}),
+    amount: deduction(format, cents),
+    subline: format.t(`${S}.balance.subline`, {})
   }
 }
 
@@ -539,9 +580,14 @@ function discountSlots(r: QuoteReading, moneyRows: number): DiscountSlots {
     (discount) => discount.code.toUpperCase() !== enteredCode
   )
   const subtotal = subtotalOf(r, moneyRows, r.promotions.length)
-  const balance = balanceRow(r)
+  const format = { t: r.t, money: r.money }
+  const balanceCents = r.quote.balance_applied_cents
+  const balance =
+    balanceCents === undefined ? undefined : balanceRow(format, balanceCents)
   return {
-    discounts: r.promotions.map((discount) => discountRow(r, discount)),
+    discounts: r.promotions.map((discount) =>
+      discountRow(format, discount, discount.amount_off_cents)
+    ),
     ...(subtotal === undefined ? {} : { subtotal }),
     ...(balance === undefined ? {} : { balance }),
     chips: [
