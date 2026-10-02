@@ -16,7 +16,7 @@ import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolveDynamicInputSpec } from '@/core/graph/widgets/dynamicInputSpec'
 import { setBackendNodeText, st, t } from '@/i18n'
-import { normalizeI18nKey } from '@/utils/formatUtil'
+import { appendJsonExt, normalizeI18nKey } from '@/utils/formatUtil'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { registerApp } from '@/scripts/appRegistry'
 import {
@@ -66,6 +66,10 @@ import { restoreDynamicGroupInputs } from '@/platform/workflow/core/utils/restor
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
+  toDocumentUid,
+  useDocumentLifecycleStore
+} from '@/platform/workflow/core/stores/documentLifecycleStore'
+import {
   ComfyWorkflow,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
@@ -77,6 +81,7 @@ import type {
   WorkflowJSON04
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { toNodeId } from '@/types/nodeId'
+import { toRootGraphId } from '@/types/graphScopeId'
 import { zNodePackMetadata } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import {
@@ -1189,6 +1194,16 @@ export class ComfyApp implements IComfyApp {
       silentAssetErrors = false,
       workflowNavigationId
     } = options
+    const activeWorkflow = useWorkflowStore().activeWorkflow
+    const requestedUid =
+      workflow instanceof ComfyWorkflow
+        ? toDocumentUid(workflow.instanceId)
+        : typeof workflow === 'string' &&
+            activeWorkflow?.path ===
+              ComfyWorkflow.basePath + appendJsonExt(workflow)
+          ? toDocumentUid(activeWorkflow.instanceId)
+          : null
+    useDocumentLifecycleStore().beginTransition(requestedUid)
     useWorkflowService().beforeLoadNewGraph(clean)
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
 
@@ -1563,6 +1578,13 @@ export class ComfyApp implements IComfyApp {
         this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
         effectiveShareId
       )
+      const publishedWorkflow = useWorkflowStore().activeWorkflow
+      if (publishedWorkflow !== null) {
+        useDocumentLifecycleStore().activate({
+          uid: toDocumentUid(publishedWorkflow.instanceId),
+          rootGraphId: toRootGraphId(this.rootGraph.id)
+        })
+      }
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
       // Capture the workflow this load activated before the asset-scan awaits
       // below can hand control back and let the user switch to another one.
