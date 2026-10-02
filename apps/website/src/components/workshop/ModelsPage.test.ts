@@ -1,3 +1,4 @@
+import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { readonly, ref, createSSRApp, h, nextTick } from 'vue'
@@ -367,6 +368,36 @@ describe('Models page entry', () => {
         expect(replace).not.toHaveBeenCalled()
       }
     )
+  })
+
+  it('gives the hub heading and the tabs to a category, and takes them back', async () => {
+    const user = userEvent.setup()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>().mockResolvedValue(Response.json(workshopPages))
+    )
+    enabled.value = true
+    workflowsEnabled.value = true
+    render(ModelsPage, {
+      props: { section: 'models', heading: 'Models heading' },
+      slots: { fallback: '<h1>Public Models</h1>' }
+    })
+    expect(await screen.findByTestId('workshop-search')).toBeVisible()
+    const headingWrapper = () => screen.getByTestId('workshop-heading')
+
+    expect(headingWrapper()).not.toHaveClass('sr-only')
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Models heading' })
+    ).toBeVisible()
+    expect(screen.getByTestId('catalogue-tabs')).toBeVisible()
+
+    await user.click(screen.getByTestId('browse-all-end'))
+    expect(headingWrapper()).toHaveClass('sr-only')
+    expect(screen.queryByTestId('catalogue-tabs')).toBeNull()
+
+    await user.click(screen.getByTestId('section-back'))
+    expect(headingWrapper()).not.toHaveClass('sr-only')
+    expect(screen.getByTestId('catalogue-tabs')).toBeVisible()
   })
 
   it('switches the loaded catalogue and heading without fetching its data again', async () => {

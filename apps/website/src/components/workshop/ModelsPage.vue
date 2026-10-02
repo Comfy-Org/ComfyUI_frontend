@@ -233,6 +233,7 @@ const Content = shallowRef(createContent())
   <template v-if="!slug">
     <div
       v-if="heading && catalogueView !== 'denied'"
+      data-testid="workshop-heading"
       :class="
         inSection
           ? 'sr-only'

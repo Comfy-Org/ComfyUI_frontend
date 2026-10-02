@@ -91,6 +91,19 @@ describe('WorkshopModelsGrid', () => {
     expect(screen.queryByTestId('workshop-search-panel')).toBeNull()
   })
 
+  it('lets the search take the width the tabs give up in a category', async () => {
+    const user = userEvent.setup()
+    render(WorkshopModelsGrid, { props: { models } })
+    const field = () => screen.getByTestId('workshop-search-field')
+
+    expect(field()).toHaveClass('min-w-0', 'flex-1', 'sm:max-w-120')
+    await user.click(screen.getByRole('button', { name: 'Edit images' }))
+    expect(field()).toHaveClass('min-w-0', 'flex-1')
+    expect(field()).not.toHaveClass('sm:max-w-120')
+    await user.click(screen.getByRole('button', { name: /Back to/ }))
+    expect(field()).toHaveClass('sm:max-w-120')
+  })
+
   it('narrows the grid to one use case', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
