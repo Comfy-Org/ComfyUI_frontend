@@ -142,6 +142,43 @@ const CASES: readonly PayloadCase[] = [
       phase: 'preview_failed',
       failure_category: 'network'
     }
+  },
+  {
+    name: 'an abandoned checkout names the last phase it reached and how the customer left',
+    event: {
+      ...CONTEXT,
+      billing_op_id: 'op-1',
+      phase: 'abandoned',
+      last_phase: 'operation_linked',
+      exit: 'page_exit'
+    },
+    payload: {
+      ...PAYLOAD_OF_CONTEXT,
+      billing_op_id: 'op-1',
+      phase: 'abandoned',
+      last_phase: 'operation_linked',
+      exit: 'page_exit'
+    }
+  },
+  {
+    name: 'an ending names its screen and whose payment it was',
+    event: {
+      ...CONTEXT,
+      phase: 'ended',
+      ending_kind: 'success',
+      attribution: 'started'
+    },
+    payload: {
+      ...PAYLOAD_OF_CONTEXT,
+      phase: 'ended',
+      ending_kind: 'success',
+      attribution: 'started'
+    }
+  },
+  {
+    name: 'an ending no payment reached carries no attribution',
+    event: { ...CONTEXT, phase: 'ended', ending_kind: 'refused' },
+    payload: { ...PAYLOAD_OF_CONTEXT, phase: 'ended', ending_kind: 'refused' }
   }
 ]
 

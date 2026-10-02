@@ -40,10 +40,14 @@ export type {
 } from './webSessionEvent.js'
 export type {
   CheckoutAssignmentStatus,
+  CheckoutEndingAttribution,
+  CheckoutEndingKind,
   CheckoutEntryFlow,
+  CheckoutExit,
   CheckoutEntrySource,
   CheckoutJourneyArm,
   CheckoutJourneyContext,
+  CheckoutJourneyPhase,
   CheckoutJourneyPhaseEvent,
   CheckoutJourneyTelemetryEvent,
   CheckoutJourneyTelemetryEventName,
