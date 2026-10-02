@@ -108,7 +108,6 @@ const VALUE_CONTROL_MODES: readonly string[] = [
   COMBO_ONLY_CONTROL_MODE
 ]
 
-/** True for any string the control widget could legitimately hold. */
 function isValueControlMode(value: unknown): value is string {
   return typeof value === 'string' && VALUE_CONTROL_MODES.includes(value)
 }
