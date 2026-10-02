@@ -204,19 +204,21 @@ export class WorkflowHelper {
   }
 
   /** The active workflow's mode, resolved by the production utility. */
-  async getActiveWorkflowResolvedMode(): Promise<AppMode> {
+  async getActiveWorkflowResolvedMode(): Promise<AppMode | null> {
     // Read both fields in one evaluate so they cannot come from different
     // workflow objects, then resolve precedence with the production utility.
     const modes = await this.comfyPage.page.evaluate(() => {
       const { activeWorkflow } = (
         window.app!.extensionManager as WorkspaceStore
       ).workflow
-      return {
-        activeMode: activeWorkflow?.activeMode ?? null,
-        initialMode: activeWorkflow?.initialMode
-      }
+      return activeWorkflow
+        ? {
+            activeMode: activeWorkflow.activeMode ?? null,
+            initialMode: activeWorkflow.initialMode
+          }
+        : null
     })
-    return getWorkflowMode(modes)
+    return modes ? getWorkflowMode(modes) : null
   }
 
   async getLinearModeFromGraph(): Promise<boolean | undefined> {

@@ -42,10 +42,10 @@ test.describe('App mode template load', { tag: ['@canvas'] }, () => {
         await appMode.enterAppModeWithInputs([['3', 'seed']])
         await expect(appMode.centerPanel).toBeVisible()
         await expect.poll(() => canvasOps.getElementWidth()).toBe(0)
-        return {
-          scale: await canvasOps.getScale(),
-          offset: await canvasOps.getOffset()
-        }
+        const camera = await canvasOps.getCamera()
+        expect(Number.isFinite(camera.scale)).toBe(true)
+        expect(camera.offset.every(Number.isFinite)).toBe(true)
+        return camera
       })
 
     await test.step('the template loads while the canvas is hidden', async () => {
@@ -65,12 +65,24 @@ test.describe('App mode template load', { tag: ['@canvas'] }, () => {
       await expect
         .poll(() => workflow.getActiveWorkflowResolvedMode())
         .toBe('graph')
-      await expect.poll(() => canvasOps.getElementWidth()).toBeGreaterThan(0)
+      await expect
+        .poll(async () => {
+          const { width, height } = await canvasOps.getElementSize()
+          return width > 0 && height > 0
+        })
+        .toBe(true)
+      await canvasOps.waitForViewToSettle()
 
-      expect(await canvasOps.getScale(), 'camera scale is unchanged').toBe(
+      const cameraOnExit = await canvasOps.getCamera()
+      expect(
+        Number.isFinite(cameraOnExit.scale),
+        'camera scale is finite'
+      ).toBe(true)
+      expect(cameraOnExit.offset.every(Number.isFinite)).toBe(true)
+      expect(cameraOnExit.scale, 'camera scale is unchanged').toBe(
         cameraOnEntry.scale
       )
-      expect(await canvasOps.getOffset(), 'camera offset is unchanged').toEqual(
+      expect(cameraOnExit.offset, 'camera offset is unchanged').toEqual(
         cameraOnEntry.offset
       )
     })
