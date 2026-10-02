@@ -1699,6 +1699,10 @@ export type PlanAvailability = {
 export type Plan = {
   availability: PlanAvailability
   /**
+   * Per-member raw credit grant, when present in the catalog.
+   */
+  credits?: number
+  /**
    * Per-member credits in cents (base + one seat)
    */
   credits_cents: number
