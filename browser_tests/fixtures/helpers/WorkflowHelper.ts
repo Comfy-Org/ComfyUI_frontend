@@ -4,6 +4,7 @@ import { expect } from '@playwright/test'
 import { networkIsolationFixture as test } from '@e2e/fixtures/networkIsolationFixture'
 
 import type { AppMode } from '@/utils/appMode'
+import { getWorkflowMode } from '@/utils/appMode'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
@@ -200,6 +201,24 @@ export class WorkflowHelper {
       return (window.app!.extensionManager as WorkspaceStore).workflow
         .activeWorkflow?.initialMode
     })
+  }
+
+  /** The active workflow's mode, resolved by the production utility. */
+  async getActiveWorkflowResolvedMode(): Promise<AppMode | null> {
+    // Read both fields in one evaluate so they cannot come from different
+    // workflow objects, then resolve precedence with the production utility.
+    const modes = await this.comfyPage.page.evaluate(() => {
+      const { activeWorkflow } = (
+        window.app!.extensionManager as WorkspaceStore
+      ).workflow
+      return activeWorkflow
+        ? {
+            activeMode: activeWorkflow.activeMode ?? null,
+            initialMode: activeWorkflow.initialMode
+          }
+        : null
+    })
+    return modes ? getWorkflowMode(modes) : null
   }
 
   async getLinearModeFromGraph(): Promise<boolean | undefined> {

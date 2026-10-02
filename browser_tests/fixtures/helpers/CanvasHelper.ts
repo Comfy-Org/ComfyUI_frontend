@@ -202,6 +202,28 @@ export class CanvasHelper {
     )
   }
 
+  async getCamera(): Promise<{
+    scale: number
+    offset: [number, number]
+  }> {
+    return this.page.evaluate(() => ({
+      scale: window.app!.canvas.ds.scale,
+      offset: [...window.app!.canvas.ds.offset] as [number, number]
+    }))
+  }
+
+  /** Backing-store width of the canvas element; 0 while App Mode hides it. */
+  async getElementWidth(): Promise<number> {
+    return this.page.evaluate(() => window.app!.canvasEl.width)
+  }
+
+  async getElementSize(): Promise<{ width: number; height: number }> {
+    return this.page.evaluate(() => ({
+      width: window.app!.canvasEl.width,
+      height: window.app!.canvasEl.height
+    }))
+  }
+
   async waitForViewToSettle(): Promise<void> {
     await this.page.waitForFunction(
       () =>
