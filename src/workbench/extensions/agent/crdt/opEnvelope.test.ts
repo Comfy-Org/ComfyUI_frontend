@@ -145,4 +145,16 @@ describe('chunkWireOps', () => {
       'Operation did not serialize to JSON'
     )
   })
+
+  it.for([null, 42, 'not-an-operation', []])(
+    'rejects an op whose toJSON returns %j',
+    (serialized) => {
+      const [op] = mintWireOps([addNode(1)], MINT)
+      Object.assign(op, { toJSON: () => serialized })
+
+      expect(() => chunkWireOps([op])).toThrow(
+        'Operation did not serialize to a wire object'
+      )
+    }
+  )
 })
