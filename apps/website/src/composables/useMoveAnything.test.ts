@@ -7,10 +7,44 @@ import { useMoveAnything } from './useMoveAnything'
 
 let scope: EffectScope
 
-function start() {
+function open() {
   const move = scope.run(() => useMoveAnything('en'))
   if (!move) throw new Error('no scope')
   move.useExample()
+  return move
+}
+
+async function start() {
+  const move = open()
+  await vi.advanceTimersByTimeAsync(700)
+  return move
+}
+
+function stubImage(decodes = true) {
+  vi.stubGlobal(
+    'Image',
+    class {
+      naturalWidth = 800
+      naturalHeight = 600
+      onload?: () => void
+      onerror?: () => void
+      set src(_url: string) {
+        queueMicrotask(() => (decodes ? this.onload?.() : this.onerror?.()))
+      }
+    }
+  )
+}
+
+async function startUpload() {
+  stubImage()
+  const move = await start()
+  await move.useFile(new File(['x'], 'photo.png', { type: 'image/png' }))
+  return move
+}
+
+async function startWithoutFirstSucculent() {
+  const move = await start()
+  move.remove(move.objects.value[1].id)
   return move
 }
 
@@ -28,7 +62,7 @@ async function pick(
 }
 
 async function shiftKitten(move: ReturnType<typeof useMoveAnything>) {
-  const kitten = await pick(move, KITTEN)
+  const [kitten] = move.objects.value
   move.checkpoint()
   move.place(kitten.id, moveRect(kitten.to, 0.2, 0))
 }
@@ -43,37 +77,62 @@ afterEach(() => {
 })
 
 describe('useMoveAnything', () => {
-  it('opens the example with Smart select and nothing selected yet', () => {
-    const move = start()
+  it('detects the three things in the example in place, then switches to Move', async () => {
+    const move = open()
+    expect(move.detecting.value).toHaveLength(3)
+    expect(move.objects.value).toEqual([])
+
+    await vi.advanceTimersByTimeAsync(700)
+
+    expect(move.detecting.value).toBeUndefined()
+    expect(move.objects.value.map((object) => object.label)).toEqual([
+      'Orange kitten',
+      'Succulent',
+      'Succulent'
+    ])
+    expect(move.objects.value[0].mask?.path).toMatch(/^M.*Z$/)
+    expect(move.objects.value[0].from.h).toBeGreaterThan(0.6)
+    expect(move.moved.value).toEqual([])
+    expect(move.selected.value).toBeUndefined()
+    expect(move.tool.value).toBe('move')
+    expect(move.canUndo.value).toBe(false)
+    move.undo()
+    expect(move.objects.value).toHaveLength(3)
+  })
+
+  it('starts an uploaded photo with Smart select and nothing selected', async () => {
+    const move = await startUpload()
+    await vi.advanceTimersByTimeAsync(700)
     expect(move.tool.value).toBe('smart')
     expect(move.objects.value).toEqual([])
     expect(move.canGenerate.value).toBe(false)
   })
 
-  it('detects the kitten under a click, outlines and names it, then switches to Move', async () => {
-    const move = start()
+  it('outlines an unknown thing under a click in an uploaded photo, then switches to Move', async () => {
+    const move = await startUpload()
     move.smartSelect(KITTEN)
-    expect(move.detecting.value).toEqual(KITTEN)
+    expect(move.detecting.value).toEqual([KITTEN])
 
-    const kitten = await pick(move, KITTEN)
+    const object = await pick(move, KITTEN)
 
     expect(move.detecting.value).toBeUndefined()
-    expect(move.objects.value).toHaveLength(1)
-    expect(kitten).toMatchObject({
-      label: 'Orange kitten',
+    expect(object).toMatchObject({
+      label: 'Object 1',
       mask: { path: expect.stringMatching(/^M.*Z$/) }
     })
-    expect(kitten.from.x).toBeCloseTo(0)
-    expect(kitten.from.h).toBeGreaterThan(0.6)
-    expect(move.selected.value).toBe(kitten.id)
+    expect(move.selected.value).toBe(object.id)
     expect(move.tool.value).toBe('move')
   })
 
-  it('selects an already detected thing instead of adding it twice', async () => {
-    const move = start()
+  it('re-detects a removed kitten under a click, and selects it instead of adding it twice', async () => {
+    const move = await start()
+    move.remove(move.objects.value[0].id)
+
+    const kitten = await pick(move, KITTEN)
+    expect(kitten.label).toBe('Orange kitten')
     await pick(move, KITTEN)
-    await pick(move, KITTEN)
-    expect(move.objects.value).toHaveLength(1)
+    expect(move.objects.value).toHaveLength(3)
+    expect(move.selected.value).toBe(kitten.id)
   })
 
   it.for([
@@ -81,26 +140,28 @@ describe('useMoveAnything', () => {
       name: 'snaps a box around a succulent to its outline',
       box: { x: 0.28, y: 0.53, w: 0.15, h: 0.25 },
       label: 'Succulent',
+      open: startWithoutFirstSucculent,
       snapped: true
     },
     {
       name: 'keeps a box over nothing known as a rounded box',
       box: { x: 0.7, y: 0.1, w: 0.2, h: 0.2 },
       label: 'Object 1',
+      open: startUpload,
       snapped: false
     }
-  ])('$name', ({ box, label, snapped }) => {
-    const move = start()
+  ])('$name', async ({ box, label, open, snapped }) => {
+    const move = await open()
     move.boxSelect(box)
-    const [object] = move.objects.value
-    expect(object.label).toBe(label)
-    expect(object.mask?.path).toMatch(snapped ? /C/ : /A/)
-    if (!snapped) expect(object.from).toEqual(box)
+    const object = move.objects.value.at(-1)
+    expect(object?.label).toBe(label)
+    expect(object?.mask?.path).toMatch(snapped ? /C/ : /A/)
+    if (!snapped) expect(object?.from).toEqual(box)
   })
 
   it('renames a thing, and undoes it', async () => {
-    const move = start()
-    const kitten = await pick(move, KITTEN)
+    const move = await start()
+    const [kitten] = move.objects.value
 
     move.rename(kitten.id, '  Ginger  ')
     expect(move.objects.value[0].label).toBe('Ginger')
@@ -112,7 +173,7 @@ describe('useMoveAnything', () => {
   })
 
   it('undoes and redoes a move', async () => {
-    const move = start()
+    const move = await start()
     await shiftKitten(move)
     expect(move.moved.value).toHaveLength(1)
 
@@ -123,7 +184,7 @@ describe('useMoveAnything', () => {
   })
 
   it('runs a move and lands on the result, then goes back to arranging', async () => {
-    const move = start()
+    const move = await start()
     await shiftKitten(move)
 
     const run = move.generate()
@@ -141,7 +202,7 @@ describe('useMoveAnything', () => {
   })
 
   it('cancels a run without a result', async () => {
-    const move = start()
+    const move = await start()
     await shiftKitten(move)
     const run = move.generate()
 
@@ -152,8 +213,8 @@ describe('useMoveAnything', () => {
     expect(move.phase.value.kind).toBe('arranging')
   })
 
-  it('caps a photo at four things', () => {
-    const move = start()
+  it('caps a photo at four things', async () => {
+    const move = await startUpload()
     for (const x of [0.6, 0.7, 0.8, 0.9])
       move.boxSelect({ x, y: 0.05, w: 0.05, h: 0.05 })
     expect(move.full.value).toBe(true)
@@ -167,24 +228,20 @@ describe('useMoveAnything', () => {
   ])(
     'swaps in an uploaded photo only when it decodes (decodes: $decodes)',
     async ({ decodes, expected }) => {
-      vi.stubGlobal(
-        'Image',
-        class {
-          naturalWidth = 800
-          naturalHeight = 600
-          onload?: () => void
-          onerror?: () => void
-          set src(_url: string) {
-            queueMicrotask(() => (decodes ? this.onload?.() : this.onerror?.()))
-          }
-        }
-      )
-      const move = start()
+      stubImage(decodes)
+      const move = await start()
 
       await move.useFile(new File(['x'], 'photo.png', { type: 'image/png' }))
 
       expect(move.image.value?.name).toBe(expected)
-      vi.unstubAllGlobals()
     }
   )
+
+  it('detects the example again when going back to it from an upload', async () => {
+    const move = await startUpload()
+    move.useExample()
+    expect(move.objects.value).toEqual([])
+    await vi.advanceTimersByTimeAsync(700)
+    expect(move.objects.value).toHaveLength(3)
+  })
 })

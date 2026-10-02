@@ -21,10 +21,34 @@ function screenIsWide(wide: boolean) {
   }))
 }
 
-async function openPanelExample() {
+async function openExample(layout?: string) {
+  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+  render(MoveAnythingStudio, { props: { layout } })
+  await user.click(screen.getByRole('button', { name: 'Try the example' }))
+  expect(screen.getByRole('status')).toHaveTextContent('Detecting…')
+  await vi.advanceTimersByTimeAsync(700)
+  return user
+}
+
+async function openUpload() {
+  vi.stubGlobal(
+    'Image',
+    class {
+      naturalWidth = 800
+      naturalHeight = 600
+      onload?: () => void
+      set src(_url: string) {
+        queueMicrotask(() => this.onload?.())
+      }
+    }
+  )
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
   render(MoveAnythingStudio)
-  await user.click(screen.getByRole('button', { name: 'Try the example' }))
+  await user.upload(
+    screen.getByTestId('editor-empty-file'),
+    new File(['x'], 'photo.png', { type: 'image/png' })
+  )
+  await screen.findByTestId('move-stage')
   return user
 }
 
@@ -39,17 +63,7 @@ function stageAt1000x600() {
   return stage
 }
 
-async function smartSelectKitten(user: ReturnType<typeof userEvent.setup>) {
-  const stage = stageAt1000x600()
-  await user.pointer({
-    keys: '[MouseLeft]',
-    target: stage,
-    coords: { clientX: 200, clientY: 300 }
-  })
-  expect(screen.getByRole('status')).toHaveTextContent('Detecting…')
-  await vi.advanceTimersByTimeAsync(600)
-  return screen.getByRole('button', { name: /^Orange kitten\./ })
-}
+const kitten = () => screen.getByRole('button', { name: /^Orange kitten\./ })
 
 describe('MoveAnythingStudio', () => {
   it('moves a thing in the example, waits, then offers the result', async () => {
@@ -60,13 +74,17 @@ describe('MoveAnythingStudio', () => {
     await user.click(screen.getByRole('button', { name: 'Try the example' }))
     const generate = screen.getByTestId('move-generate')
     expect(generate).toBeDisabled()
-    ;(await smartSelectKitten(user)).focus()
+    await vi.advanceTimersByTimeAsync(700)
+    kitten().focus()
     await user.keyboard('{Shift>}{ArrowRight}{/Shift}')
     expect(generate).toHaveTextContent('Move 1 object')
     expect(screen.getByTestId('move-ghost')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Quality: Fast' }))
+    await user.click(screen.getByRole('menuitemradio', { name: /^Best/ }))
 
     await user.click(generate)
     expect(screen.getByRole('status')).toHaveTextContent('Making the move')
+    expect(screen.getByRole('status')).toHaveTextContent('About a minute')
     await vi.runAllTimersAsync()
 
     expect(
@@ -74,86 +92,112 @@ describe('MoveAnythingStudio', () => {
     ).toHaveAttribute('href', '/images/apps/move-anything/example-moved.jpg')
   })
 
-  it('lists the selected things in the Objects tray and removes one', async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-    render(MoveAnythingStudio, { props: { layout: 'e' } })
-    await user.click(screen.getByRole('button', { name: 'Try the example' }))
-    await smartSelectKitten(user)
+  it.for([
+    { layout: 'e', how: 'the × on its chip' },
+    { layout: 'd', how: 'the × on its chip' },
+    { layout: 'e', how: 'Delete' },
+    { layout: 'd', how: 'Backspace' }
+  ])(
+    'removes the selected thing in layout $layout with $how, and undoes it',
+    async ({ layout, how }) => {
+      screenIsWide(true)
+      const user = await openExample(layout)
+      expect(
+        screen.queryByRole('button', { name: 'Remove Orange kitten' })
+      ).toBeNull()
 
-    await user.click(screen.getByRole('button', { name: /Objects/ }))
-    const tray = screen.getByRole('dialog', { name: 'Objects' })
-    expect(tray).toHaveTextContent('1 of 4')
-    await user.click(
-      screen.getByRole('button', { name: 'Remove Orange kitten' })
-    )
+      kitten().focus()
+      if (how === 'Delete' || how === 'Backspace')
+        await user.keyboard(`{${how}}`)
+      else
+        await user.click(
+          await screen.findByRole('button', { name: 'Remove Orange kitten' })
+        )
 
-    expect(tray).toHaveTextContent('0 of 4')
-    expect(
-      screen.queryByRole('button', { name: /^Orange kitten\./ })
-    ).toBeNull()
+      expect(
+        screen.queryByRole('button', { name: /^Orange kitten\./ })
+      ).toBeNull()
+      expect(screen.getAllByTestId('move-object-chip')).toHaveLength(2)
+      await user.click(screen.getByRole('button', { name: 'Undo' }))
+      expect(kitten()).toBeVisible()
+    }
+  )
+
+  it('keeps the tools as icons named for assistive tech, with no Objects list or tray', async () => {
+    screenIsWide(true)
+    await openExample()
+    const tools = screen.getByRole('toolbar', { name: 'Move anything tools' })
+
+    for (const name of ['Move', 'Smart select', 'Box select'])
+      expect(within(tools).getByRole('button', { name })).toHaveTextContent(
+        /^$/
+      )
+    expect(screen.queryByRole('list', { name: 'Objects' })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Objects/ })).toBeNull()
   })
-  it('undoes and redoes a move from the history controls above the photo', async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-    render(MoveAnythingStudio, { props: { layout: 'e' } })
-    await user.click(screen.getByRole('button', { name: 'Try the example' }))
-    const history = screen.getByRole('group', { name: 'History' })
-    const generate = screen.getByTestId('move-generate')
 
-    ;(await smartSelectKitten(user)).focus()
+  it('undoes and redoes a move from the history controls, but never the detection', async () => {
+    const user = await openExample('e')
+    const history = screen.getByRole('group', { name: 'History' })
+    const undo = within(history).getByRole('button', { name: 'Undo' })
+    const generate = screen.getByTestId('move-generate')
+    expect(undo).toBeDisabled()
+
+    kitten().focus()
     await user.keyboard('{Shift>}{ArrowRight}{/Shift}')
-    await user.click(within(history).getByRole('button', { name: 'Undo' }))
+    await user.click(undo)
     expect(generate).toBeDisabled()
+    expect(undo).toBeDisabled()
+    expect(screen.getAllByTestId('move-outline')).toHaveLength(3)
 
     await user.click(within(history).getByRole('button', { name: 'Redo' }))
     expect(generate).toHaveTextContent('Move 1 object')
   })
-  it('shows the how-to hint on the photo until a thing is touched', async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-    render(MoveAnythingStudio, { props: { layout: 'e' } })
-    await user.click(screen.getByRole('button', { name: 'Try the example' }))
-    const hint = /^Drag to move/
 
-    expect(screen.getByText('Click a thing to select it')).toBeInTheDocument()
-    const kitten = await smartSelectKitten(user)
+  it('shows the how-to hint on the photo until a thing is touched', async () => {
+    const user = await openExample('e')
+    const hint = 'Drag a thing to move it'
+
     expect(screen.getByText(hint)).toBeInTheDocument()
-    kitten.focus()
+    kitten().focus()
     await user.keyboard('{ArrowRight}')
 
     expect(screen.queryByText(hint)).toBeNull()
   })
 
-  it('moves a thing from the side panel layout, with its tools floating over the photo', async () => {
+  it('detects the example things and moves one from the side panel layout, with its tools floating over the photo', async () => {
     screenIsWide(true)
-    const user = await openPanelExample()
+    const user = await openExample()
     expect(panel()).toHaveTextContent('kitten.jpg')
     expect(panel()).toHaveTextContent('1043 × 693')
     const tools = screen.getByRole('toolbar', { name: 'Move anything tools' })
     expect(
       within(tools).getByRole('group', { name: 'History' })
     ).toContainElement(screen.getByRole('button', { name: 'Undo' }))
-    expect(
-      within(tools).getByRole('button', { name: 'Smart select' })
-    ).toHaveAttribute('aria-pressed', 'true')
-    const generate = within(panel()).getByTestId('move-generate')
-    expect(generate).toBeDisabled()
-
-    const kitten = await smartSelectKitten(user)
     expect(within(tools).getByRole('button', { name: 'Move' })).toHaveAttribute(
       'aria-pressed',
       'true'
     )
-    expect(screen.getByTestId('move-outline')).toBeInTheDocument()
-    kitten.focus()
+    expect(screen.getAllByTestId('move-outline')).toHaveLength(3)
+    const chips = screen.getAllByTestId('move-object-chip')
+    expect(chips.map((chip) => chip.textContent.trim())).toEqual([
+      '1Orange kitten',
+      '2Succulent',
+      '3Succulent'
+    ])
+    const generate = within(panel()).getByTestId('move-generate')
+    expect(generate).toBeDisabled()
+
+    kitten().focus()
     await user.keyboard('{Shift>}{ArrowRight}{/Shift}')
-    expect(
-      within(panel()).getByRole('list', { name: 'Objects' })
-    ).toHaveTextContent('Moved')
+    expect(generate).toHaveTextContent('Move 1 object')
     await user.click(
-      within(panel()).getByRole('radio', { name: 'Best · 1 min' })
+      within(panel()).getByRole('button', { name: 'Quality: Fast' })
     )
+    await user.click(screen.getByRole('menuitemradio', { name: /^Best/ }))
     expect(
-      within(panel()).getByRole('radio', { name: 'Best · 1 min' })
-    ).toBeChecked()
+      within(panel()).getByRole('button', { name: 'Quality: Best' })
+    ).toBeVisible()
     await user.click(generate)
     expect(screen.getByRole('status')).toHaveTextContent('About a minute')
     await vi.advanceTimersByTimeAsync(3000)
@@ -163,9 +207,34 @@ describe('MoveAnythingStudio', () => {
     ).toHaveAttribute('href', '/images/apps/move-anything/example-moved.jpg')
   })
 
-  it('snaps a box drawn with Box select to the succulent it surrounds', async () => {
+  it('starts an uploaded photo with Smart select and selects a clicked thing', async () => {
     screenIsWide(true)
-    const user = await openPanelExample()
+    const user = await openUpload()
+    const tools = screen.getByRole('toolbar', { name: 'Move anything tools' })
+    expect(
+      within(tools).getByRole('button', { name: 'Smart select' })
+    ).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByText('Click a thing to select it')).toBeInTheDocument()
+
+    await user.pointer({
+      keys: '[MouseLeft]',
+      target: stageAt1000x600(),
+      coords: { clientX: 500, clientY: 300 }
+    })
+    expect(screen.getByRole('status')).toHaveTextContent('Detecting…')
+    await vi.advanceTimersByTimeAsync(600)
+
+    expect(screen.getByRole('button', { name: /^Object 1\./ })).toBeVisible()
+    expect(within(tools).getByRole('button', { name: 'Move' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
+    expect(screen.getByText(/^Drag to move/)).toBeInTheDocument()
+  })
+
+  it('adds a box drawn with Box select on an uploaded photo', async () => {
+    screenIsWide(true)
+    const user = await openUpload()
     await user.click(screen.getByRole('button', { name: 'Box select' }))
     expect(screen.getByText('Draw a box around a thing')).toBeInTheDocument()
     const stage = stageAt1000x600()
@@ -180,36 +249,42 @@ describe('MoveAnythingStudio', () => {
       { keys: '[/MouseLeft]', target: stage }
     ])
 
-    expect(panel()).toHaveTextContent('1 of 4')
-    expect(
-      within(panel()).getByRole('list', { name: 'Objects' })
-    ).toHaveTextContent('Succulent')
+    expect(screen.getByRole('button', { name: /^Object 1\./ })).toBeVisible()
+    expect(screen.getByTestId('move-object-chip')).toHaveTextContent('Object 1')
   })
 
-  it('renames a thing inline in the Objects list, and undoes it', async () => {
+  it('renames a thing by double-clicking its chip on the photo, and undoes it', async () => {
     screenIsWide(true)
-    const user = await openPanelExample()
-    await smartSelectKitten(user)
+    const user = await openExample()
 
-    await user.click(
-      within(panel()).getByRole('button', { name: 'Rename Orange kitten' })
-    )
-    const field = within(panel()).getByRole('textbox', {
-      name: 'Rename Orange kitten'
-    })
+    await user.dblClick(screen.getAllByTestId('move-object-chip')[0])
+    const field = screen.getByRole('textbox', { name: 'Rename Orange kitten' })
     await user.clear(field)
     await user.type(field, 'Ginger{Enter}')
 
-    expect(screen.getByRole('button', { name: /^Ginger\./ })).toBeVisible()
+    expect(screen.getByRole('button', { name: /^Ginger\./ })).toHaveFocus()
     await user.click(screen.getByRole('button', { name: 'Undo' }))
-    expect(
-      screen.getByRole('button', { name: /^Orange kitten\./ })
-    ).toBeVisible()
+    expect(kitten()).toBeVisible()
   })
 
-  it('keeps the scene description and seed under Advanced', async () => {
+  it('renames a focused thing with F2 and keeps the name on Escape', async () => {
     screenIsWide(true)
-    const user = await openPanelExample()
+    const user = await openExample()
+
+    kitten().focus()
+    await user.keyboard('{F2}')
+    await user.type(
+      screen.getByRole('textbox', { name: 'Rename Orange kitten' }),
+      'Ginger{Escape}'
+    )
+
+    expect(screen.queryByRole('textbox')).toBeNull()
+    expect(kitten()).toHaveFocus()
+  })
+
+  it('keeps the scene description and a shuffleable seed under Advanced', async () => {
+    screenIsWide(true)
+    const user = await openExample()
     expect(
       within(panel()).queryByRole('spinbutton', { name: 'Seed' })
     ).toBeNull()
@@ -224,23 +299,33 @@ describe('MoveAnythingStudio', () => {
         name: 'Describe the scene (optional)'
       })
     ).toHaveValue('')
+
+    vi.spyOn(Math, 'random').mockReturnValue(0.5)
+    await user.click(within(panel()).getByRole('button', { name: 'New seed' }))
+    expect(
+      within(panel()).getByRole('spinbutton', { name: 'Seed' })
+    ).toHaveValue(500_000_000)
+    expect(
+      within(panel()).getByRole('button', { name: /^Advanced/ })
+    ).toHaveTextContent('Seed 500000000')
   })
 
   it('opens on phones as a sheet with a one-line summary and the run button', async () => {
     screenIsWide(false)
-    const user = await openPanelExample()
+    const user = await openExample()
     const summary = within(panel()).getByRole('button', {
-      name: '0 objects · 0 moved · Fast'
+      name: '3 objects · 0 moved · Fast'
     })
     expect(within(panel()).getByTestId('move-generate')).toBeDisabled()
-    expect(within(panel()).queryByText(/^Nothing selected yet/)).toBeNull()
     expect(
       within(panel()).getByRole('toolbar', { name: 'Move anything tools' })
     ).toBeVisible()
 
     await user.click(summary)
 
-    expect(within(panel()).getByText(/^Nothing selected yet/)).toBeVisible()
+    expect(
+      within(panel()).getByRole('button', { name: 'Quality: Fast' })
+    ).toBeVisible()
     expect(
       within(panel()).getByRole('button', { name: 'Hide settings' })
     ).toHaveAttribute('aria-expanded', 'true')

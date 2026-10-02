@@ -4,16 +4,15 @@ import { useTemplateRef } from 'vue'
 import type {
   MoveImage,
   MoveTool,
-  MoveTray,
   useMoveAnything
 } from '../../../composables/useMoveAnything'
 import type { Locale } from '../../../i18n/translations'
 import { mc } from '../../../lib/workshop/move-anything/copy'
-import type { MoveQuality } from '../../../lib/workshop/move-anything/mock-run'
 import EditorChip from '../app-editor/EditorChip.vue'
 import EditorDivider from '../app-editor/EditorDivider.vue'
 import EditorTool from '../app-editor/EditorTool.vue'
 import MoveAnythingHistory from './MoveAnythingHistory.vue'
+import MoveAnythingQuality from './MoveAnythingQuality.vue'
 import MoveAnythingRun from './MoveAnythingRun.vue'
 import { MOVE_TOOLS } from './tools'
 
@@ -21,26 +20,20 @@ const {
   move,
   image,
   tool,
-  tray,
-  quality,
-  objectCount,
   locale = 'en'
 } = defineProps<{
   move: ReturnType<typeof useMoveAnything>
   image?: MoveImage
   tool: MoveTool
-  tray?: MoveTray
-  quality: MoveQuality
-  objectCount: number
   locale?: Locale
 }>()
 
 const emit = defineEmits<{
   tool: [tool: MoveTool]
   file: [file: File]
-  tray: [tray: MoveTray]
 }>()
 
+const { quality } = move
 const input = useTemplateRef<HTMLInputElement>('input')
 const moving = () => move.phase.value.kind === 'moving'
 const locked = () => !image || moving()
@@ -60,6 +53,7 @@ function onChange(event: Event) {
     :key="option.id"
     :icon="option.icon"
     :label="mc(option.label, locale)"
+    icon-only
     :pressed="tool === option.id"
     :disabled="locked()"
     @click="emit('tool', option.id)"
@@ -81,21 +75,11 @@ function onChange(event: Event) {
       class="-ml-1 size-5 rounded-full object-cover"
     />
   </EditorChip>
-  <EditorChip
-    :label="mc('move.objects', locale)"
-    :value="String(objectCount)"
-    :expanded="tray === 'objects'"
+  <MoveAnythingQuality
+    v-model="quality"
+    :locale
     :disabled="locked()"
-    @click="emit('tray', 'objects')"
-  />
-  <EditorChip
-    :label="mc('move.quality', locale)"
-    :value="
-      mc(quality === 'fast' ? 'move.quality.fast' : 'move.quality.best', locale)
-    "
-    :expanded="tray === 'quality'"
-    :disabled="locked()"
-    @click="emit('tray', 'quality')"
+    composer
   />
   <EditorDivider />
   <MoveAnythingRun :move :locale />
