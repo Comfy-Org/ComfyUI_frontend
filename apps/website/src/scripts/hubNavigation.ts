@@ -42,6 +42,15 @@ function pinnedScroll() {
   return top - sticky.offset
 }
 
+/** Whether the toolbar is stuck under the header rather than sitting in flow. */
+function toolbarIsPinned() {
+  const sticky = stickyToolbar()
+  return (
+    sticky !== undefined &&
+    sticky.toolbar.getBoundingClientRect().top <= sticky.offset + 1
+  )
+}
+
 function pinToolbar() {
   const target = pinnedScroll()
   if (target === undefined) return false
@@ -61,13 +70,8 @@ function isHubNavigation(from: URL, to: URL) {
 
 document.addEventListener('astro:before-preparation', (event) => {
   const hub = isHubNavigation(event.from, event.to)
-  const sticky = stickyToolbar()
   // Back and forward restore their own scroll, so only a tab click carries one.
-  toolbarWasPinned =
-    hub &&
-    event.direction === 'forward' &&
-    sticky !== undefined &&
-    sticky.toolbar.getBoundingClientRect().top <= sticky.offset + 1
+  toolbarWasPinned = hub && event.direction === 'forward' && toolbarIsPinned()
 
   if (!hub) return
   const prepare = event.loader
