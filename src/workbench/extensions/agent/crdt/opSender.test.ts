@@ -1101,9 +1101,10 @@ describe('createOpSender', () => {
       { state: 'undeliverable', nodeIds: [1] },
       { state: 'undeliverable', nodeIds: [2] }
     ])
+    localSender.detach()
   })
 
-  it('does not resurrect an admission after sealing reenters abortAll', () => {
+  it('does not restore an admission across abortAll before same-workflow fresh work', () => {
     const circularNode = addNode(1)
     const node: AddNodeOperation['node'] & Record<string, unknown> = {
       ...circularNode.node
@@ -1121,20 +1122,25 @@ describe('createOpSender', () => {
       baseVersion: () => 41,
       onBatchSettled: (outcome) => {
         localSettled.push(outcome)
-        if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 1))
+        if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 1)) {
           localSender.abortAll()
+          localSender.admit([addNode(3)])
+        }
       }
     })
     localSender.admit([circularNode])
     workflow = 'wf-new'
 
     localSender.admit([addNode(2)])
+    localSender.flush()
 
-    expect(localSender.pending()).toBe(0)
+    expect(sent).toHaveLength(0)
+    expect(localSender.pending()).toBe(1)
     expect(localSettled.map(summarizeSettlement)).toEqual([
       { state: 'undeliverable', nodeIds: [1] },
       { state: 'undeliverable', nodeIds: [2] }
     ])
+    localSender.detach()
   })
 
   it('keeps a nested admission separate when sealing reenters admit', () => {
