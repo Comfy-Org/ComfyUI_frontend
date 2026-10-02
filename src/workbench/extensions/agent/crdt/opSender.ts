@@ -482,10 +482,30 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     if (!open) return detached
     const { workflowId, ops } = open
     open = null
+    const sealAbortGeneration = abortGeneration
+
+    const settleIfInvalidated = (): boolean => {
+      if (detached) {
+        notifyDetachSettlement({ state: 'undeliverable', ops })
+        return true
+      }
+      if (abortGeneration !== sealAbortGeneration) {
+        guardedSettlementNotifier('failure_settling_agent_op_sender_abort')({
+          state: 'undeliverable',
+          ops
+        })
+        return true
+      }
+      return false
+    }
+
     try {
-      for (const chunk of chunkWireOps(ops))
+      const chunks = chunkWireOps(ops)
+      if (settleIfInvalidated()) return detached
+      for (const chunk of chunks)
         queue.push({ workflowId, ops: chunk })
     } catch (cause) {
+      if (settleIfInvalidated()) return detached
       reportChunkFailure(cause, 'failure_chunking_agent_op_sender')
       let rejectedFrom = ops.length
       for (const [index, op] of ops.entries()) {
@@ -504,6 +524,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       let rejected = ops.slice(rejectedFrom)
       try {
         const recovered = chunkWireOps(sendable)
+        if (settleIfInvalidated()) return detached
         for (const chunk of recovered) queue.push({ workflowId, ops: chunk })
       } catch (recoveryCause) {
         // Serialization can be stateful. A getter or toJSON may pass the
