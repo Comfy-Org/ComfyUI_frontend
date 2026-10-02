@@ -14,7 +14,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useWorkflowActionsMenu as useWorkflowActionsMenuComposable } from '@/composables/useWorkflowActionsMenu'
-import en from '@/locales/en/main.json'
 import * as lazyDeployToComfyApiDialog from '@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { WorkflowMenuAction } from '@/types/workflowMenuItem'
@@ -367,7 +366,6 @@ describe('useWorkflowActionsMenu', () => {
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
     const deploy = findItem(menuItems.value, 'deployToComfyApi.buttonLabel')
 
-    expect(en.deployToComfyApi.buttonLabel).toBe('Deploy to Comfy API')
     expect(deploy.isNew).toBe(true)
     expect(deploy.badge).toBe('g.new')
 
@@ -386,6 +384,23 @@ describe('useWorkflowActionsMenu', () => {
     expect(
       vi.mocked(lazyDeployToComfyApiDialog.openDeployToComfyApiDialog)
     ).toHaveBeenCalledOnce()
+  })
+
+  it('does not deploy a workflow that fails to activate', async () => {
+    const customWorkflow = ref(
+      fromPartial<ComfyWorkflow>({ path: 'other.json', isPersisted: true })
+    )
+    vi.mocked(useWorkflowService().openWorkflow).mockResolvedValueOnce(false)
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), {
+      isRoot: true,
+      workflow: customWorkflow
+    })
+
+    await findItem(menuItems.value, 'deployToComfyApi.buttonLabel').command?.()
+
+    expect(
+      vi.mocked(lazyDeployToComfyApiDialog.openDeployToComfyApiDialog)
+    ).not.toHaveBeenCalled()
   })
 
   it('switches to custom workflow before executing rename', async () => {

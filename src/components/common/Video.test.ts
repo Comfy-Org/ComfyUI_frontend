@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { usePreferredReducedMotion } from '@vueuse/core'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
@@ -29,10 +29,6 @@ function sources() {
 }
 
 describe('Video', () => {
-  afterEach(() => {
-    vi.mocked(usePreferredReducedMotion).mockRestore()
-  })
-
   it('offers its sources in order over the poster', () => {
     renderVideo({
       sources: [

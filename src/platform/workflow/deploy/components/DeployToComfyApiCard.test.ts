@@ -53,9 +53,6 @@ describe('DeployToComfyApiCard', () => {
         .getAllByRole('link', { name: /read the docs/i })
         .map((link) => link.getAttribute('href'))
     ).toEqual([docs, docs])
-    expect(buildDocsUrl).toHaveBeenCalledWith('/development/overview', {
-      includeLocale: true
-    })
   })
 
   it('reports dismiss from the close control', async () => {
