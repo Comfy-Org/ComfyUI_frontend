@@ -236,15 +236,16 @@ describe('layout follower bridge: stale-schema reseed', () => {
       seq: 8
     })
     bridge.subscribe('wf-2')
+    bridge.subscribe('wf-1')
     transport.receive('doc_subscribed', {
       v: 1,
-      workflow_id: 'wf-2',
+      workflow_id: 'wf-1',
       ok: false,
       code: STALE_SCHEMA_RESEED_REQUIRED,
-      expected_seq: 1
+      expected_seq: 9
     })
 
-    expect(bridge.canReseed('wf-2')).toBe(true)
+    expect(bridge.canReseed('wf-1')).toBe(true)
   })
 
   it.for([undefined, 0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY])(
