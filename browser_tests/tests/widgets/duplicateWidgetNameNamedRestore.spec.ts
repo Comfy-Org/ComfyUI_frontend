@@ -5,7 +5,7 @@ import { openWorkflowFromSidebar } from '@e2e/fixtures/utils/builderTestUtils'
 import {
   duplicateSavedValues,
   installUnrenameableDuplicatePair,
-  overwriteStoredWorkflow,
+  overwriteStoredWidgetValues,
   readWidgetNames,
   readWidgetValues,
   writeWidgetValues
@@ -25,7 +25,10 @@ import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowS
  * the reopen, because a document this app wrote cannot disagree with itself:
  * `widgets_values` and `widgets_values_ordered` come from one walk of the same
  * widget list, so reloading an untouched save proves nothing about which
- * register the restore actually read.
+ * register the restore actually read. Collapsing it to two copies of the last
+ * value — what a name-keyed-only writer produces, and the loss
+ * `widgets_values_ordered` exists to prevent — leaves the ordered register as
+ * the only place the earlier occurrence survives.
  *
  * Source: FE-3036, item 5 of PM-1783.
  */
@@ -48,14 +51,13 @@ test.describe(
     }) => {
       await comfyPage.nodeOps.clearGraph()
 
-      // The restore route under test only runs while this setting is on, and
-      // `test.use` above is the only thing that turns it on. Read it back from
-      // the app rather than trusting the injection: without this, a setting
-      // that never arrived would silently reroute the case through positional
-      // restore instead of failing.
-      expect(
-        await comfyPage.settings.getSetting('Comfy.Workflow.NamedValuesRestore')
-      ).toBe(true)
+      // Fails here if the `test.use` injection never reached the app, rather
+      // than silently rerouting the case through positional restore.
+      await expect
+        .poll(() =>
+          comfyPage.settings.getSetting('Comfy.Workflow.NamedValuesRestore')
+        )
+        .toBe(true)
 
       await installUnrenameableDuplicatePair(comfyPage)
 
@@ -110,24 +112,13 @@ test.describe(
         await comfyPage.workflow.newBlankWorkflow()
         await comfyPage.menu.topbar.closeWorkflowTab(workflowName)
 
-        // `widgets_values` as saved holds both values in widget order, so a
-        // positional restore reproduces them too and the canvas assertion
-        // below would pass whether or not the ordered register was read.
-        // Overwriting it with two copies of the last value — what a
-        // name-keyed-only writer produces, and what this case exists to rule
-        // out — leaves `widgets_values_ordered` as the only place the earlier
-        // occurrence survives.
-        const storedNode = savedDocument.nodes.find(
-          (node) => node.type === 'DevToolsNodeWithOutputList'
+        await overwriteStoredWidgetValues(
+          comfyPage,
+          workflowName,
+          savedDocument,
+          'DevToolsNodeWithOutputList',
+          [duplicateSavedValues[1], duplicateSavedValues[1]]
         )
-        if (!storedNode) {
-          throw new Error('Saved document is missing the duplicate-widget node')
-        }
-        storedNode.widgets_values = [
-          duplicateSavedValues[1],
-          duplicateSavedValues[1]
-        ]
-        await overwriteStoredWorkflow(comfyPage, workflowName, savedDocument)
 
         await openWorkflowFromSidebar(comfyPage, workflowName)
 

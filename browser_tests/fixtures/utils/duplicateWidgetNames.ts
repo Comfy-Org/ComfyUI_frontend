@@ -1,5 +1,6 @@
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
+import type { WorkflowJSON04 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 
 /**
@@ -63,16 +64,30 @@ export async function installUnrenameableDuplicatePair(
 }
 
 /**
+ * Replaces one node type's positional `widgets_values` in a saved document and
+ * writes the result back to the store, so the next open reads the altered
+ * register. Throws if the document carries no node of that type.
+ */
+export async function overwriteStoredWidgetValues(
+  comfyPage: ComfyPage,
+  workflowName: string,
+  workflow: WorkflowJSON04,
+  nodeType: string,
+  values: readonly WidgetValue[]
+): Promise<void> {
+  const storedNode = workflow.nodes.find((node) => node.type === nodeType)
+  if (!storedNode) {
+    throw new Error(`Saved document is missing a ${nodeType} node`)
+  }
+  storedNode.widgets_values = [...values]
+  await overwriteStoredWorkflow(comfyPage, workflowName, workflow)
+}
+
+/**
  * Overwrites a saved workflow in place, through the app's own userdata client
  * so the next open reads it back from the real store.
- *
- * Used to hand the reload a document whose positional register disagrees with
- * `widgets_values_ordered`. A document this app wrote can never disagree —
- * `widgets_values` and `widgets_values_ordered` are built from one walk of the
- * same widget list — so a case that reloads its own save cannot tell an ordered
- * restore from a positional one.
  */
-export async function overwriteStoredWorkflow(
+async function overwriteStoredWorkflow(
   comfyPage: ComfyPage,
   workflowName: string,
   workflow: unknown
