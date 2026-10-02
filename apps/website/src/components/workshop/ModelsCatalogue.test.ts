@@ -411,6 +411,24 @@ describe('ModelsCatalogue', () => {
       }
     )
 
+    it('closes on work from the community, leading to the gallery and to sharing', async () => {
+      renderExplore()
+
+      const community = within(await screen.findByTestId('explore-community'))
+      expect(community.getAllByTestId('explore-community-post')).toHaveLength(8)
+      expect(
+        community
+          .getByRole('link', { name: 'Explore the gallery' })
+          .getAttribute('href')
+      ).toBe('/gallery/')
+      expect(
+        community.getByRole('link', { name: 'Share yours' })
+      ).toHaveAttribute(
+        'href',
+        expect.stringMatching(/^https:\/\/docs\.google\.com\/forms\//)
+      )
+    })
+
     it('shows only the doors when the catalogue is empty', async () => {
       renderExplore([])
 

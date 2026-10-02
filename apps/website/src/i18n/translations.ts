@@ -97,6 +97,26 @@ const translations = {
     en: 'Try them here or call them by API.',
     'zh-CN': '在这里试用，或通过 API 调用。'
   },
+  'workshop.explore.communityTitle': {
+    en: 'From the community',
+    'zh-CN': '来自社区'
+  },
+  'workshop.explore.communityHeading': {
+    en: 'See what people make with Comfy',
+    'zh-CN': '看看大家用 Comfy 做了什么'
+  },
+  'workshop.explore.communityBody': {
+    en: 'Real work from the community, made in ComfyUI.',
+    'zh-CN': '社区用 ComfyUI 创作的真实作品。'
+  },
+  'workshop.explore.communityExplore': {
+    en: 'Explore the gallery',
+    'zh-CN': '浏览作品集'
+  },
+  'workshop.explore.communityShare': {
+    en: 'Share yours',
+    'zh-CN': '分享你的作品'
+  },
   'workshop.explore.modelsSeeAll': {
     en: 'See all models',
     'zh-CN': '查看全部模型'
@@ -9691,7 +9711,6 @@ Enterprise`
   'nav.hubApps': { en: 'Apps', 'zh-CN': '应用' },
   'nav.hubWorkflows': { en: 'Workflows', 'zh-CN': '工作流' },
   'nav.hubModels': { en: 'Models', 'zh-CN': '模型' },
-  'nav.hubTag': { en: 'Hub', 'zh-CN': 'Hub' },
   'nav.serverlessApi': { en: 'Serverless API', 'zh-CN': '无服务器 API' },
   'nav.builds': { en: 'Builds', 'zh-CN': 'Builds' },
   'nav.comfySdks': { en: 'Comfy SDKs', 'zh-CN': 'Comfy SDK' },

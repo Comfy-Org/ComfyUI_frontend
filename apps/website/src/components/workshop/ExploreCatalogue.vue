@@ -20,6 +20,7 @@ import type { CatalogueApp } from '../../lib/workshop/catalogue-apps'
 import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
 import { TASK_CARD } from '../../lib/workshop/card-layout'
 import CardRow from './CardRow.vue'
+import ExploreCommunity from './ExploreCommunity.vue'
 import ExploreDoors from './ExploreDoors.vue'
 import ExploreFinder from './ExploreFinder.vue'
 import ExploreResults from './ExploreResults.vue'
@@ -54,6 +55,14 @@ const tasks = computed(() =>
     return items.length ? [{ useCase: value, items }] : []
   })
 )
+
+const imageOf = (list: readonly WorkshopModel[]) =>
+  list.find((model) => model.thumbnail?.kind === 'image')?.thumbnail?.url
+const covers = computed(() => ({
+  apps: apps.find((app) => app.image)?.image,
+  workflows: imageOf(sortWorkshopModels(workflows, 'popular')),
+  models: imageOf(sortWorkshopModels(models, 'popular'))
+}))
 
 const needle = computed(() => query.value.trim().toLowerCase())
 const filtered = computed(() => needle.value !== '' || useCase.value !== 'all')
@@ -101,6 +110,13 @@ function clear() {
       :locale
     />
 
+    <ExploreDoors
+      :apps="apps.length > 0"
+      :workflows="workflows.length > 0"
+      :covers
+      :locale
+    />
+
     <section
       v-if="!filtered && tasks.length"
       aria-labelledby="explore-tasks"
@@ -136,10 +152,6 @@ function clear() {
       @clear="clear"
     />
 
-    <ExploreDoors
-      :apps="apps.length > 0"
-      :workflows="workflows.length > 0"
-      :locale
-    />
+    <ExploreCommunity :locale />
   </div>
 </template>

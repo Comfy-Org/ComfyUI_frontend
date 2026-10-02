@@ -202,6 +202,8 @@ export const externalLinks = {
   routerApiKeys:
     'https://platform.comfy.org/profile/api-keys?onboarding=router',
   blog: 'https://blog.comfy.org/',
+  gallerySubmit:
+    'https://docs.google.com/forms/d/1B6_RPQfhTyKvqHk9OO2bUn8z1Qgh6QIZsF3GNMiCXDw/preview',
   cloud: 'https://cloud.comfy.org',
   cloudLogin: 'https://cloud.comfy.org/cloud/login',
   cloudCta: (content: string) =>

@@ -26,7 +26,7 @@ const chipClass = (active: boolean) =>
 </script>
 
 <template>
-  <div class="flex flex-col items-start gap-4">
+  <div class="flex flex-col items-start gap-7">
     <label class="relative flex w-full max-w-2xl items-center">
       <span class="sr-only">{{
         t('workshop.explore.searchLabel', locale)

@@ -36,7 +36,7 @@ describe('HeaderMainDesktop', () => {
     expect(
       ['Apps', 'Workflows', 'Models'].map((name) =>
         menu
-          .getByRole('link', { name: new RegExp(`^${name}\\s*Hub$`) })
+          .getByRole('link', { name: new RegExp(`^${name}$`) })
           .getAttribute('href')
       )
     ).toEqual(['/hub/apps/', '/hub/workflows/', '/hub/models/'])

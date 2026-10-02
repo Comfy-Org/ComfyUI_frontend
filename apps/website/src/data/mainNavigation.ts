@@ -8,7 +8,6 @@ export type NavColumnItem = {
   href: string
   badge?: 'new' | 'beta'
   external?: boolean
-  hub?: boolean
 }
 
 export type NavColumn = {
@@ -83,8 +82,7 @@ export function getMainNavigation(
             ...inHub([
               {
                 label: t('nav.hubApps', locale),
-                href: routes.hubApps,
-                hub: true
+                href: routes.hubApps
               },
               {
                 label: t('nav.cinematicStudio', locale),
@@ -102,8 +100,7 @@ export function getMainNavigation(
             ...inHub([
               {
                 label: t('nav.hubWorkflows', locale),
-                href: routes.hubWorkflows,
-                hub: true
+                href: routes.hubWorkflows
               }
             ]),
             { label: t('nav.comfyLocal', locale), href: routes.download },
@@ -122,8 +119,7 @@ export function getMainNavigation(
               ? [
                   {
                     label: t('nav.hubModels', locale),
-                    href: routes.workshop,
-                    hub: true
+                    href: routes.workshop
                   }
                 ]
               : [
