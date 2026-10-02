@@ -215,7 +215,6 @@ test.describe(
       })
 
       await test.step('the typed value is still on screen', async () => {
-        // Not reverted as collateral of an op the user never made.
         await expect(rig.seedField()).toHaveValue(String(EDITED_SEED_VALUE))
       })
     })
