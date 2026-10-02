@@ -149,6 +149,7 @@ const {
   fetchStatus: refreshBillingStatus
 } = useBillingContext()
 const conversationStore = useAgentConversationStore()
+const history = useAgentChatHistoryStore()
 watch(
   subscription,
   (currentSubscription) => {
@@ -373,6 +374,7 @@ const {
   resolver: workflowResolver,
   canSelectTarget: () => !isSending.value && status.value === 'idle',
   warnWorkflowUnavailable,
+  warnRestoreFailed,
   onTargetBound: (workflowId, previousWorkflowId, source) =>
     reportWorkflowBound(workflowId, previousWorkflowId, source)
 })
@@ -677,10 +679,22 @@ function warnWorkflowUnavailable(): void {
   })
 }
 
+function warnRestoreFailed(): void {
+  const { view } = agentPanelStore
+  // A loading history row reports its own failure.
+  if (view.screen === 'history' && view.selection.status === 'loading') return
+  toast.add({
+    severity: 'warn',
+    detail: t('agent.targetWorkflowOpenFailed'),
+    life: 5000
+  })
+}
+
 const {
   sendMessage,
   stopTurn,
   isSending: sessionIsSending,
+  isTranscriptReady,
   newChat,
   start,
   stop,
@@ -702,6 +716,7 @@ const {
   events,
   onThreadStarted: (source) =>
     useTelemetry()?.trackAgentThreadStarted({ source }),
+  onThreadActivated: (id) => history.setActive(id),
   onAskResolved: forgetApproval,
   workflow: {
     initialize: agentPanelStore.initializeTargetTracking,
@@ -989,13 +1004,22 @@ async function onNavigateToReferenceWorkflow(
   }
 }
 
-async function onShowTarget(): Promise<void> {
+async function onShowTarget(
+  isNavigationCurrent: () => boolean = () => true,
+  warnOpenFailed: () => void = warnWorkflowUnavailable
+): Promise<boolean> {
   const target = selectedTarget.value
-  if (target === null) return
+  if (target === null) return false
+  const isCurrent = () =>
+    isNavigationCurrent() && selectedTarget.value === target
   try {
-    if (!(await workflowService.openWorkflow(target))) warnWorkflowUnavailable()
+    const opened = await workflowService.openWorkflow(target, { isCurrent })
+    if (!isCurrent()) return false
+    if (!opened) warnOpenFailed()
+    return opened
   } catch {
-    warnWorkflowUnavailable()
+    if (isCurrent()) warnOpenFailed()
+    return false
   }
 }
 
@@ -1180,8 +1204,6 @@ onBeforeUnmount(() => {
   )
 })
 
-const history = useAgentChatHistoryStore()
-
 const { copy } = useClipboard({ legacy: true })
 
 function onFeedback(turnId: string, vote: 'up' | 'down' | null): void {
@@ -1233,18 +1255,31 @@ async function refreshHistory(): Promise<void> {
   }
 }
 
-watch(threadId, (id) => history.setActive(id), { immediate: true })
-
 void refreshHistory()
 
-async function onSelectHistory(id: string): Promise<void> {
+const currentChatReady = computed(
+  () =>
+    isTranscriptReady.value &&
+    threadId.value === history.activeId &&
+    selectedTarget.value !== null
+)
+
+async function onSelectHistory(
+  id: string,
+  isCurrent: () => boolean
+): Promise<boolean> {
+  if (currentChatReady.value && id === threadId.value)
+    return onShowTarget(isCurrent, warnRestoreFailed)
+
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
   agentPanelStore.beginWorkflowRestoration()
   exitNodeSelectionMode()
-  if (await loadThread(id))
+  const opened = await loadThread(id, isCurrent)
+  if (opened)
     useTelemetry()?.trackAgentThreadStarted({ source: 'history_select' })
   void refreshHistory()
+  return opened
 }
 
 function buildTranscriptMarkdown(entries: ConversationEntry[]): string {
@@ -1261,7 +1296,8 @@ function buildTranscriptMarkdown(entries: ConversationEntry[]): string {
 }
 
 function onCopyMarkdown(id: string): void {
-  if (id === history.activeId) void copy(buildTranscriptMarkdown(entries.value))
+  if (id === history.activeId && id === threadId.value)
+    void copy(buildTranscriptMarkdown(entries.value))
   else toast.add({ severity: 'info', summary: t('agent.copyUnavailable') })
 }
 
@@ -1366,9 +1402,12 @@ function onRenameHistory(id: string, title: string): void {
 }
 
 function onDeleteHistory(id: string): void {
+  const isCurrent =
+    id === history.activeId ||
+    (history.activeId === null && id === threadId.value)
   history.remove(id)
   // Deleting the open chat also ends it; a dead thread must not stay editable.
-  if (id === threadId.value) onNewChat('history_delete')
+  if (isCurrent) onNewChat('history_delete')
 }
 
 function onNewChat(source?: 'new_chat_button' | 'history_delete'): void {
@@ -1443,7 +1482,12 @@ watch(
 
 // Target startup is an explicit session event, not a read of a thread ID that
 // happens to have been assigned by start(). Register scope cleanup first.
-start()
+start({
+  restore:
+    agentPanelStore.view.screen === 'chat' ||
+    (agentPanelStore.view.selection.status === 'idle' &&
+      threadId.value === agentPanelStore.view.previousThreadId)
+})
 
 watch(
   () => canvasStore.currentGraph,
@@ -1683,6 +1727,8 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       :can-open-assets="!isBuilderMode"
       :is-maximized="agentPanelStore.isMaximized"
       :history-groups="history.grouped"
+      :select-history="onSelectHistory"
+      :current-chat-ready="currentChatReady"
       :session-id="threadId"
       :custom-title="history.titleFor(threadId)"
       :selection-tags="selectionTags"
@@ -1698,6 +1744,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       :selecting-tab-path="selectingTarget?.path ?? null"
       :select-tab="onSelectWorkflowTarget"
       :workflow-detached="workflowDetached"
+      :target-unavailable="agentPanelStore.targetUnavailable"
       :get-mention-nodes="mentionableNodes"
       :paywall-presentation="paywallPresentation"
       :credits-exhausted="showStandingPaywall"
@@ -1722,7 +1769,6 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       @toggle-size="agentPanelStore.toggleMaximize()"
       @close="onClosePanel"
       @open-history="refreshHistory()"
-      @select-history="onSelectHistory"
       @delete-history="onDeleteHistory"
       @rename-history="onRenameHistory"
       @rename-chat="onRenameChat"
