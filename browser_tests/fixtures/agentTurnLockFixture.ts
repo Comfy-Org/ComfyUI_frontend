@@ -675,6 +675,13 @@ export class AgentTurnLockHarness {
     this.push(ws, FOREIGN_TURN_DONE_EVENT)
   }
 
+  /**
+   * Both ids, because the cancel contract is the pair: `stopTurn` reads the
+   * thread and the turn from the conversation store independently, so a
+   * reattachment that adopts the foreign turn while the thread is stale sends
+   * the right message id to the wrong thread. The route glob accepts any
+   * thread, so this waiter is what holds that half of the contract.
+   */
   async waitForForeignTurnCancellation(): Promise<void> {
     const request = await this.page.waitForRequest(
       '**/api/agent/threads/*/messages/*/cancel'
@@ -683,6 +690,7 @@ export class AgentTurnLockHarness {
       .split('/')
       .map(decodeURIComponent)
     expect(request.method()).toBe('POST')
+    expect(segments[segments.indexOf('threads') + 1]).toBe(THREAD_ID)
     expect(segments[segments.indexOf('messages') + 1]).toBe(FOREIGN_TURN_ID)
   }
 
