@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
@@ -49,5 +49,52 @@ describe('TemplatePreview', () => {
     expect(screen.getByText('Featured workflow')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Comfy' })).toBeInTheDocument()
     expect(screen.getByTestId('compare-slider-container')).toBeInTheDocument()
+  })
+
+  it.for([
+    {
+      name: 'audio',
+      overrides: { mediaType: 'audio' as const },
+      expect: (root: HTMLElement) =>
+        expect(within(root).getByTestId('audio-player')).toBeInTheDocument()
+    },
+    {
+      name: 'compareSlider',
+      overrides: { thumbnailVariant: 'compareSlider' as const },
+      expect: (root: HTMLElement) =>
+        expect(
+          within(root).getByTestId('compare-slider-container')
+        ).toBeInTheDocument()
+    },
+    {
+      name: 'hoverDissolve',
+      overrides: { thumbnailVariant: 'hoverDissolve' as const },
+      // Dissolve stacks a base and an overlay image; the default renders one.
+      // Images stay lazy in jsdom, so count their placeholders instead.
+      expect: (root: HTMLElement) =>
+        expect(root.querySelectorAll('[data-pc-name="skeleton"]')).toHaveLength(
+          2
+        )
+    },
+    {
+      name: 'default',
+      overrides: {},
+      expect: (root: HTMLElement) =>
+        expect(root.querySelectorAll('[data-pc-name="skeleton"]')).toHaveLength(
+          1
+        )
+    }
+  ])('dispatches the $name media branch', ({ overrides, expect: assert }) => {
+    const { container } = render(TemplatePreview, {
+      props: {
+        template: { ...template, ...overrides },
+        baseImageSrc: '/preview.png',
+        overlayImageSrc: '/overlay.png',
+        alt: 'Workflow preview',
+        getLogoUrl: vi.fn()
+      }
+    })
+
+    assert(container.firstElementChild as HTMLElement)
   })
 })
