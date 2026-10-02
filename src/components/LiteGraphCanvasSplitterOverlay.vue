@@ -96,6 +96,7 @@
                   )
                 "
                 direction="vertical"
+                style="width: auto"
                 @layout="saveBottomPanelLayout"
               >
                 <SplitterPanel
