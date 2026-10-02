@@ -405,6 +405,8 @@
           "startsYearly": "Starts {date}, billed yearly",
           "comparedMonthly": "{amount} {listAmount} /mo, billed monthly",
           "comparedYearly": "{amount} {listAmount} /yr, billed yearly",
+          "comparedYearlyMonthly": "{amount} {listAmount} /mo × 12 months, billed yearly",
+          "billedYearlyMonthly": "{amount} /mo × 12 months, billed yearly",
           "credits": "Credits",
           "creditsExpire": "Expire {date}"
         },

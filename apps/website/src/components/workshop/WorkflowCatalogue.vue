@@ -263,7 +263,7 @@ function leaveSection() {
             :key="model.slug"
             :class="SHELF_CARD"
           >
-            <WorkshopModelCard :model :locale />
+            <WorkshopModelCard :model :locale under-heading />
           </li>
         </CardRow>
       </section>

@@ -225,4 +225,30 @@ describe('WorkshopModelCard', () => {
     render(WorkshopModelCard, { props: { model: card } })
     expect(screen.queryByTestId('model-thumbnail-label')).toBeNull()
   })
+
+  it.for([
+    {
+      kind: 'a workflow, whose name is a sentence',
+      model: {
+        type: 'CLOUD',
+        workflowId: 'workflows/upscale-a-video',
+        slug: 'workflows/upscale-a-video',
+        name: 'Upscale a video',
+        href: '/models/workflows/upscale-a-video/',
+        workflowCount: 1,
+        capabilities: [],
+        models: ['Topaz'],
+        modality: 'video'
+      },
+      shown: 'Upscale a video'
+    },
+    {
+      kind: 'a model, whose name repeats its task as a suffix',
+      model: { ...base, name: 'Flux Image-to-Image' },
+      shown: 'Flux'
+    }
+  ] as const)('shows the whole name of $kind', ({ model, shown }) => {
+    render(WorkshopModelCard, { props: { model } })
+    expect(screen.getByTestId('model-card-name').textContent).toBe(shown)
+  })
 })
