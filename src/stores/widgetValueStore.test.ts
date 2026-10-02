@@ -576,6 +576,21 @@ describe('useWidgetValueStore', () => {
       expect(store.getWidget(seedA)?.options).toEqual({})
     })
 
+    it('setOptions applies an explicit hidden replacement', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(
+        seedA,
+        state('number', 100, { options: { hidden: true } })
+      )
+
+      expect(store.setOptions(seedA, { hidden: false })).toBe(true)
+
+      expect(store.getWidget(seedA)?.options.hidden).toBe(false)
+      expect(
+        store.getWidgetVisibility(seedA)?.suppression.byExtension
+      ).toBe(false)
+    })
+
     it('maps legacy option updates to the visibility component', () => {
       const store = useWidgetValueStore()
       store.registerWidget(seedA, state('number', 100))

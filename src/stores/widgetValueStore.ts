@@ -336,7 +336,9 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     const visibility = getWidgetVisibility(widgetId)
     const hidden = state.options.hidden
     state.options = { ...(options ?? {}) }
-    if (hidden !== undefined) state.options.hidden = hidden
+    if (state.options.hidden === undefined && hidden !== undefined) {
+      state.options.hidden = hidden
+    }
     if (visibility) {
       const nextVisibility = deriveWidgetVisibility({
         type: state.type,
