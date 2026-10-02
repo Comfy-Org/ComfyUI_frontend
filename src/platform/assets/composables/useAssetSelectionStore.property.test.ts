@@ -1,7 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import * as fc from 'fast-check'
-import { createPinia, setActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -29,7 +28,6 @@ describe('useAssetSelectionStore properties', () => {
           arbAssets(1, 15),
           arbAssets(1, 15),
           (initialAssets, visibleAssets) => {
-            setActivePinia(createPinia())
             const store = useAssetSelectionStore()
 
             store.setSelection(initialAssets.map((a) => a.id))
@@ -50,7 +48,6 @@ describe('useAssetSelectionStore properties', () => {
           arbAssets(1, 15),
           arbAssets(1, 15),
           (initialAssets, visibleAssets) => {
-            setActivePinia(createPinia())
             const store = useAssetSelectionStore()
 
             const initialIds = new Set(initialAssets.map((a) => a.id))
@@ -69,7 +66,6 @@ describe('useAssetSelectionStore properties', () => {
     it('reconcile with superset of selected assets preserves all selections', () => {
       fc.assert(
         fc.property(arbAssets(1, 15), (assets) => {
-          setActivePinia(createPinia())
           const store = useAssetSelectionStore()
 
           const selectedIds = assets.map((a) => a.id)
@@ -85,7 +81,6 @@ describe('useAssetSelectionStore properties', () => {
     it('reconcile with empty visible assets clears selection', () => {
       fc.assert(
         fc.property(arbAssets(1, 15), (initialAssets) => {
-          setActivePinia(createPinia())
           const store = useAssetSelectionStore()
 
           store.setSelection(initialAssets.map((a) => a.id))
@@ -101,7 +96,6 @@ describe('useAssetSelectionStore properties', () => {
     it('selectAll then getSelectedAssets returns all assets', () => {
       fc.assert(
         fc.property(arbAssets(0, 20), (assets) => {
-          setActivePinia(createPinia())
           const store = useAssetSelectionStore()
 
           store.selectAll(assets)
@@ -135,7 +129,6 @@ describe('useAssetSelectionStore properties', () => {
 
       fc.assert(
         fc.property(arbAssetWithMeta, (asset) => {
-          setActivePinia(createPinia())
           const store = useAssetSelectionStore()
           expect(store.getOutputCount(asset)).toBeGreaterThanOrEqual(1)
         })
@@ -162,7 +155,6 @@ describe('useAssetSelectionStore properties', () => {
 
       fc.assert(
         fc.property(fc.array(arbAssetWithMeta, { maxLength: 20 }), (assets) => {
-          setActivePinia(createPinia())
           const store = useAssetSelectionStore()
           expect(store.getTotalOutputCount(assets)).toBeGreaterThanOrEqual(
             assets.length
