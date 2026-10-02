@@ -24,9 +24,16 @@ function claimReport(name: string): boolean {
   }
 }
 
-/** Reports an event the first time this tab produces it, whatever it navigates through after. */
-export function trackOncePerTab(event: BillingTelemetryEvent): void {
-  if (claimReport(getBillingTelemetryEventName(event))) {
+/**
+ * Reports an event the first time this tab produces it, whatever it navigates
+ * through after. An `occurrence` makes each of its values count on its own.
+ */
+export function trackOncePerTab(
+  event: BillingTelemetryEvent,
+  occurrence?: string
+): void {
+  const name = getBillingTelemetryEventName(event)
+  if (claimReport(occurrence === undefined ? name : `${name}:${occurrence}`)) {
     billingWebTelemetry.trackBillingEvent(event)
   }
 }
