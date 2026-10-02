@@ -19,7 +19,7 @@ const value = defineModel<T>()
   <div
     role="radiogroup"
     :aria-label="label"
-    :class="cn('grid gap-x-2.5 gap-y-3.5 px-1', GRID[columns])"
+    :class="cn('grid gap-x-2 gap-y-3.5 px-1', GRID[columns])"
   >
     <button
       v-for="option in options"
@@ -44,7 +44,7 @@ const value = defineModel<T>()
       <span
         :class="
           cn(
-            'truncate text-xs text-primary-warm-gray group-hover:text-primary-comfy-canvas',
+            'truncate text-[11px] tracking-tight text-primary-warm-gray group-hover:text-primary-comfy-canvas',
             value === option.id && 'text-primary-warm-white'
           )
         "

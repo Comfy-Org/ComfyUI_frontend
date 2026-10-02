@@ -5,10 +5,8 @@ import type {
 } from '../../../composables/useMoveAnything'
 import type { Locale } from '../../../i18n/translations'
 import { mc } from '../../../lib/workshop/move-anything/copy'
-import EditorDivider from '../app-editor/EditorDivider.vue'
 import EditorResultDock from '../app-editor/EditorResultDock.vue'
 import MoveAnythingDock from './MoveAnythingDock.vue'
-import MoveAnythingHistory from './MoveAnythingHistory.vue'
 import MoveAnythingTools from './MoveAnythingTools.vue'
 
 const {
@@ -29,8 +27,7 @@ const labels = {
   result: mc('move.view.result', locale),
   original: mc('move.view.original', locale),
   edit: mc('move.edit', locale),
-  again: mc('move.again', locale),
-  download: mc('move.download', locale)
+  again: mc('move.again', locale)
 }
 </script>
 
@@ -38,17 +35,11 @@ const labels = {
   <EditorResultDock
     v-if="image && phase.kind === 'done'"
     v-model:view="view"
-    :href="phase.result.url"
-    :file-name="`moved-${image.name}`"
     :labels
     @edit="move.edit"
     @again="move.generate"
   />
-  <template v-else-if="panel">
-    <MoveAnythingTools :move :locale />
-    <EditorDivider />
-    <MoveAnythingHistory :move :locale />
-  </template>
+  <MoveAnythingTools v-else-if="panel" :move :locale />
   <MoveAnythingDock
     v-else
     :move
