@@ -754,14 +754,8 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     abortAll() {
       stateEpoch++
       abortGeneration++
-      // A doc_reset breaks the lineage of the BOUND document only — the
-      // follower dispatches this under an `isCurrentWorkflow` guard — so only
-      // that cursor is against a document that no longer exists and only it
-      // restarts from the new doc's sequence. Clearing the whole map would
-      // discard the high-water mark of every other doc visited this session,
-      // and returning to one of those before its observed sequence catches up
-      // would then re-mint a counter this actor already used there, which is
-      // the stamp collision this map exists to prevent.
+      // A doc_reset replaces only the bound document (the follower guards on
+      // isCurrentWorkflow), so only its cursor restarts.
       const resetWorkflowId = deps.workflowId()
       if (resetWorkflowId !== null) lastMintedVersions.delete(resetWorkflowId)
       drainOutstanding(
