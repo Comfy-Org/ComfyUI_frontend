@@ -216,7 +216,7 @@ describe('deriveBuildInputs', () => {
     expect(inputs.nodePacks).toEqual([])
   })
 
-  it('keeps the valid nodes of a subgraph that also holds a malformed one', () => {
+  it('keeps valid nodes when a nested subgraph also holds a malformed one', () => {
     const inputs = deriveBuildInputs(
       {
         nodes: [{ id: 1, type: 'outer' }],
@@ -227,15 +227,26 @@ describe('deriveBuildInputs', () => {
               name: 'outer',
               inputNode: null,
               outputNode: null,
-              nodes: [
-                {
-                  id: 9,
-                  type: 'KSampler',
-                  properties: { cnr_id: 'comfyui-kjnodes', ver: '1.1.4' }
-                },
-                { id: 10 },
-                { id: 11, type: 'VAEDecode' }
-              ]
+              nodes: [{ id: 2, type: 'inner' }],
+              definitions: {
+                subgraphs: [
+                  {
+                    id: 'inner',
+                    name: 'inner',
+                    inputNode: null,
+                    outputNode: null,
+                    nodes: [
+                      {
+                        id: 9,
+                        type: 'KSampler',
+                        properties: { cnr_id: 'comfyui-kjnodes', ver: '1.1.4' }
+                      },
+                      { id: 10 },
+                      { id: 11, type: 'VAEDecode' }
+                    ]
+                  }
+                ]
+              }
             }
           ]
         }
@@ -247,6 +258,91 @@ describe('deriveBuildInputs', () => {
     expect(inputs.nodePacks).toEqual([
       { id: 'comfyui-kjnodes', versions: ['1.1.4'] }
     ])
+  })
+
+  it('still rejects a definition whose nodes are not a list, keeping the class that names it', () => {
+    const inputs = deriveBuildInputs(
+      {
+        nodes: [{ id: 1, type: 'CustomClass' }],
+        definitions: {
+          subgraphs: [
+            {
+              id: 'CustomClass',
+              name: 'CustomClass',
+              inputNode: null,
+              outputNode: null,
+              nodes: 'not a list'
+            }
+          ]
+        }
+      },
+      workflow
+    )
+
+    expect(inputs.nodeClasses).toEqual(['CustomClass'])
+  })
+
+  it('reads definitions that contain each other without overflowing', () => {
+    const outer: Record<string, unknown> = {
+      id: 'outer',
+      name: 'outer',
+      inputNode: null,
+      outputNode: null,
+      nodes: [{ id: 2, type: 'inner' }]
+    }
+    const inner = {
+      id: 'inner',
+      name: 'inner',
+      inputNode: null,
+      outputNode: null,
+      nodes: [{ id: 3, type: 'KSampler' }],
+      definitions: { subgraphs: [outer] }
+    }
+    outer.definitions = { subgraphs: [inner] }
+
+    const inputs = deriveBuildInputs(
+      {
+        nodes: [{ id: 1, type: 'outer' }],
+        definitions: { subgraphs: [outer] }
+      },
+      workflow
+    )
+
+    expect(inputs.nodeClasses).toEqual(['KSampler'])
+  })
+
+  it('reads a chain of definitions thousands deep without overflowing', () => {
+    const depth = 5000
+    const innermost = {
+      id: 'd0',
+      name: 'd0',
+      inputNode: null,
+      outputNode: null,
+      nodes: [{ id: 1, type: 'KSampler' }]
+    }
+    const outermost = Array.from({ length: depth - 1 }, (_, i) => i + 1).reduce<
+      Record<string, unknown>
+    >(
+      (inner, level) => ({
+        id: `d${level}`,
+        name: `d${level}`,
+        inputNode: null,
+        outputNode: null,
+        nodes: [{ id: 1, type: `d${level - 1}` }],
+        definitions: { subgraphs: [inner] }
+      }),
+      innermost
+    )
+
+    const inputs = deriveBuildInputs(
+      {
+        nodes: [{ id: 1, type: `d${depth - 1}` }],
+        definitions: { subgraphs: [outermost] }
+      },
+      workflow
+    )
+
+    expect(inputs.nodeClasses).toEqual(['KSampler'])
   })
 
   it('leaves out a subgraph definition the graph no longer uses', () => {

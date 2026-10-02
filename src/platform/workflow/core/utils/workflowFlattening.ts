@@ -113,23 +113,24 @@ export function collectSubgraphDefinitions(
 ): FlattenableSubgraphDefinition[] {
   const result: FlattenableSubgraphDefinition[] = []
   const seen = new Set<string>()
+  const levels: Iterator<unknown>[] = [rootDefs[Symbol.iterator]()]
 
-  function collect(defs: readonly unknown[]) {
-    for (const def of defs) {
-      if (!isSubgraphDefinition(def)) continue
-      if (seen.has(def.id)) continue
-      seen.add(def.id)
-      result.push(def)
-
-      const nestedSubgraphs = def.definitions?.subgraphs
-      if (!Array.isArray(nestedSubgraphs) || nestedSubgraphs.length === 0) {
-        continue
-      }
-      collect(nestedSubgraphs)
+  while (levels.length) {
+    const next = levels[levels.length - 1].next()
+    if (next.done) {
+      levels.pop()
+      continue
     }
+    const def = next.value
+    if (!isSubgraphDefinition(def) || seen.has(def.id)) continue
+    seen.add(def.id)
+    result.push(def)
+
+    const nestedSubgraphs = def.definitions?.subgraphs
+    if (Array.isArray(nestedSubgraphs) && nestedSubgraphs.length)
+      levels.push(nestedSubgraphs[Symbol.iterator]())
   }
 
-  collect(rootDefs)
   return result
 }
 

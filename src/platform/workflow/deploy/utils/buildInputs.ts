@@ -1,3 +1,4 @@
+import { isPlainObject } from 'es-toolkit'
 import { z } from 'zod'
 
 import { isModelFileName } from '@/platform/missingModel/missingModelScan'
@@ -84,32 +85,37 @@ function parseNodes(nodes: readonly unknown[]): FlattenableWorkflowNode[] {
   })
 }
 
-const zSubgraphShape = z
-  .object({
-    nodes: z.array(z.unknown()).catch([]),
-    definitions: z
-      .object({ subgraphs: z.array(z.unknown()).catch([]) })
-      .optional()
-      .catch(undefined)
-  })
-  .passthrough()
-
 /**
- * A subgraph definition with its malformed nodes dropped, nested definitions
- * included, so one bad node does not discard its valid siblings: the shared
- * flattening guard rejects a definition whole when any node is malformed.
+ * The subgraph definitions with each one's malformed nodes dropped, nested
+ * definitions included, so one bad node does not discard its valid siblings:
+ * the shared flattening guard rejects a definition whole when any node is
+ * malformed. A definition whose `nodes` is not a list stays as it is, for
+ * that guard to reject. Iterative and keyed by object, so a cyclic or deeply
+ * nested file cannot overflow the stack; cycles are left for the shared
+ * collector, which handles them.
  */
-function withWellFormedNodes(definition: unknown): unknown {
-  const parsed = zSubgraphShape.safeParse(definition)
-  if (!parsed.success) return definition
-  const { nodes, definitions } = parsed.data
-  return {
-    ...parsed.data,
-    nodes: parseNodes(nodes),
-    ...(definitions && {
-      definitions: { subgraphs: definitions.subgraphs.map(withWellFormedNodes) }
-    })
+function withWellFormedNodes(subgraphs: readonly unknown[]): unknown[] {
+  const copies = new Map<object, Record<PropertyKey, unknown>>()
+  const pending: Record<PropertyKey, unknown>[] = []
+
+  function copy(definition: unknown): unknown {
+    if (!isPlainObject(definition) || !Array.isArray(definition.nodes))
+      return definition
+    const existing = copies.get(definition)
+    if (existing) return existing
+    const clone = { ...definition, nodes: parseNodes(definition.nodes) }
+    copies.set(definition, clone)
+    pending.push(clone)
+    return clone
   }
+
+  const result = subgraphs.map(copy)
+  for (let clone = pending.pop(); clone; clone = pending.pop()) {
+    const nested = clone.definitions
+    if (isPlainObject(nested) && Array.isArray(nested.subgraphs))
+      clone.definitions = { ...nested, subgraphs: nested.subgraphs.map(copy) }
+  }
+  return result
 }
 
 const zWorkflowShape = z.object({
@@ -132,7 +138,7 @@ function workflowParts(graph: unknown): {
   if (!parsed.success) return { roots: [], subgraphs: [] }
   return {
     roots: parseNodes(parsed.data.nodes),
-    subgraphs: parsed.data.definitions.subgraphs.map(withWellFormedNodes)
+    subgraphs: withWellFormedNodes(parsed.data.definitions.subgraphs)
   }
 }
 
