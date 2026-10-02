@@ -102,11 +102,15 @@ test.describe('Node search box', { tag: '@node' }, () => {
       await comfyPage.canvasOps.dragAndDrop(outputSlotPos, emptySpacePos)
       await comfyPage.page.keyboard.up('Shift')
 
-      // Select the second item as the first item is always reroute
       await comfyPage.searchBox.fillAndSelectFirstNode('Load Checkpoint', {
-        suggestionIndex: 0
+        exact: true
       })
       await waitForSearchInsertion(comfyPage, initialNodeCount)
+      await expect
+        .poll(() =>
+          comfyPage.nodeOps.getNodeRefsByType('CheckpointLoaderSimple')
+        )
+        .toHaveLength(3)
       await expect(comfyPage.canvas).toHaveScreenshot(
         'auto-linked-node-batch.png'
       )
