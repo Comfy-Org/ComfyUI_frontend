@@ -81,8 +81,8 @@ const copy = {
     'zh-CN': '将主体从照片中抠出，放在干净的背景上，或保留透明背景。'
   },
   'cinematic.hub.backgroundRemovalMeta': {
-    en: 'Image · Background removal',
-    'zh-CN': '图像 · 背景移除'
+    en: 'Image · Recraft Remove Background',
+    'zh-CN': '图像 · Recraft Remove Background'
   },
   'cinematic.stage.longWait': {
     en: 'Still going. Some models take about a minute. Nothing is queued; yours already started.',
