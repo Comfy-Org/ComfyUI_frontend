@@ -6,6 +6,11 @@ import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
+import type { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
+import type { resolveTemplateModelMetadata } from '@/platform/workflow/templates/utils/templateModelMetadata'
+import type { useTemplateFiltering } from '@/composables/useTemplateFiltering'
+import type { useLazyPagination } from '@/composables/useLazyPagination'
+import type { useTelemetry } from '@/platform/telemetry'
 import type { ResolvedTemplateModelAvailability } from '@/platform/workflow/templates/utils/templateModelAvailability'
 import type { TemplateModelDownloadState } from '@/platform/workflow/templates/utils/templateModelDownloadState'
 import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -112,7 +117,12 @@ const mocks = vi.hoisted(() => ({
   resolveAvailability: vi.fn<
     () => Promise<ResolvedTemplateModelAvailability[]>
   >(async () => [{ model: fixtures.activeModel, status: 'missing' }]),
-  resolveTemplateModelMetadata: vi.fn(async () => ({
+  resolveTemplateModelMetadata: vi.fn<
+    () => Promise<
+      | { status: 'completed'; entries: { model: unknown; fileSize: number }[] }
+      | { status: 'aborted' }
+    >
+  >(async () => ({
     status: 'completed' as const,
     entries: [
       {
@@ -134,10 +144,11 @@ const mocks = vi.hoisted(() => ({
   rowDownloadStateFor: vi.fn<(model: ModelFile) => TemplateModelDownloadState>(
     () => ({ status: 'idle', attempt: 0 })
   ),
-  trackTemplateLibraryClosed: vi.fn()
+  trackTemplateLibraryClosed: vi.fn(),
+  reportError: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return runtime.isCloud
   },
@@ -146,30 +157,31 @@ vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock<unknown>(
-  import('@/platform/missingModel/missingModelDownload'),
-  () => ({
-    isModelDownloadable: mocks.isModelDownloadable
-  })
-)
+vi.mock(import('@/platform/missingModel/missingModelDownload'), () => ({
+  isModelDownloadable: mocks.isModelDownloadable
+}))
 
-vi.mock<unknown>(
+vi.mock(
   import('@/platform/workflow/templates/composables/useTemplateWorkflows'),
   () => ({
-    useTemplateWorkflows: () => ({
-      getTemplateDescription: mocks.getTemplateDescription,
-      getTemplateThumbnailUrl: mocks.getTemplateThumbnailUrl,
-      getTemplateTitle: mocks.getTemplateTitle,
-      loadTemplates: mocks.loadTemplates,
-      loadingTemplateId: computed(() => null),
-      openPreparedWorkflowTemplate: mocks.openPreparedWorkflowTemplate,
-      prepareWorkflowTemplate: mocks.prepareWorkflowTemplate,
-      discardPreparedWorkflowTemplate: mocks.discardPreparedWorkflowTemplate
-    })
+    // Asserted to the real return type: the dialog consumes a handful of
+    // members, and spelling out the rest would pin the test to production
+    // internals. The module-level check still catches a renamed export.
+    useTemplateWorkflows: () =>
+      ({
+        getTemplateDescription: mocks.getTemplateDescription,
+        getTemplateThumbnailUrl: mocks.getTemplateThumbnailUrl,
+        getTemplateTitle: mocks.getTemplateTitle,
+        loadTemplates: mocks.loadTemplates,
+        loadingTemplateId: computed(() => null),
+        openPreparedWorkflowTemplate: mocks.openPreparedWorkflowTemplate,
+        prepareWorkflowTemplate: mocks.prepareWorkflowTemplate,
+        discardPreparedWorkflowTemplate: mocks.discardPreparedWorkflowTemplate
+      }) as unknown as ReturnType<typeof useTemplateWorkflows>
   })
 )
 
-vi.mock<unknown>(
+vi.mock(
   import('@/platform/workflow/templates/composables/useTemplateModelAvailability'),
   () => ({
     useTemplateModelAvailability: () => ({
@@ -178,7 +190,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(
+vi.mock(
   import('@/platform/workflow/templates/composables/useTemplateModelRowDownloads'),
   () => ({
     useTemplateModelRowDownloads: () => ({
@@ -189,15 +201,16 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(
+vi.mock(
   import('@/platform/workflow/templates/utils/templateModelMetadata'),
   () => ({
-    resolveTemplateModelMetadata: mocks.resolveTemplateModelMetadata
+    resolveTemplateModelMetadata:
+      mocks.resolveTemplateModelMetadata as unknown as typeof resolveTemplateModelMetadata
   })
 )
 
-vi.mock<unknown>(import('@/composables/useTemplateFiltering'), () => ({
-  useTemplateFiltering: (templates: {
+vi.mock(import('@/composables/useTemplateFiltering'), () => ({
+  useTemplateFiltering: ((templates: {
     value: (typeof fixtures.template)[]
   }) => {
     const searchQuery = ref('')
@@ -223,27 +236,32 @@ vi.mock<unknown>(import('@/composables/useTemplateFiltering'), () => ({
       totalCount: computed(() => templates.value.length),
       resetFilters: vi.fn()
     }
-  }
+  }) as unknown as typeof useTemplateFiltering
 }))
 
-vi.mock<unknown>(import('@/composables/useLazyPagination'), () => ({
-  useLazyPagination: (items: { value: unknown[] }) => ({
+vi.mock(import('@/composables/useLazyPagination'), () => ({
+  useLazyPagination: ((items: { value: unknown[] }) => ({
     paginatedItems: items,
     isLoading: ref(false),
     hasMoreItems: computed(() => false),
     loadNextPage: vi.fn(async () => {}),
     reset: vi.fn()
-  })
+  })) as unknown as typeof useLazyPagination
 }))
 
-vi.mock<unknown>(import('@/composables/useIntersectionObserver'), () => ({
+vi.mock(import('@/composables/useIntersectionObserver'), () => ({
   useIntersectionObserver: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackTemplateLibraryClosed: mocks.trackTemplateLibraryClosed
-  })
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: mocks.reportError
+}))
+
+vi.mock(import('@/platform/telemetry'), () => ({
+  useTelemetry: () =>
+    ({
+      trackTemplateLibraryClosed: mocks.trackTemplateLibraryClosed
+    }) as unknown as ReturnType<typeof useTelemetry>
 }))
 
 import WorkflowTemplateSelectorDialog from './WorkflowTemplateSelectorDialog.vue'
@@ -465,6 +483,51 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
         within(detail).getByText(/^Checkpoint · 1 KB · Used by Active loader$/)
       ).toBeInTheDocument()
     })
+  })
+
+  it.for([
+    {
+      name: 'a rejected metadata batch',
+      outcome: () =>
+        mocks.resolveTemplateModelMetadata.mockRejectedValueOnce(
+          new Error('metadata unavailable')
+        ),
+      reports: true
+    },
+    {
+      name: 'an aborted metadata batch',
+      outcome: () =>
+        mocks.resolveTemplateModelMetadata.mockResolvedValueOnce({
+          status: 'aborted' as const
+        }),
+      reports: false
+    }
+  ])('keeps Detail usable after $name', async ({ outcome, reports }) => {
+    outcome()
+    renderDialog()
+    await clickTemplateCard()
+
+    const detail = await screen.findByRole('article', {
+      name: fixtures.template.title
+    })
+
+    // The row still describes the model from local inventory; only its size
+    // is missing, and the view stays operable.
+    await waitFor(() => {
+      expect(
+        within(detail).getByText(/^Checkpoint · Used by Active loader$/)
+      ).toBeInTheDocument()
+    })
+    // Detail is still mounted and did not fall back to the list.
+    expect(detail).toBeInTheDocument()
+    expect(mocks.openPreparedWorkflowTemplate).not.toHaveBeenCalled()
+
+    // An abort is an expected outcome of navigating away, not a fault.
+    if (reports) {
+      expect(mocks.reportError).toHaveBeenCalledOnce()
+    } else {
+      expect(mocks.reportError).not.toHaveBeenCalled()
+    }
   })
 
   it('opens directly outside Desktop without resolving model inventory', async () => {
