@@ -18,10 +18,14 @@ type SettlementListener = (outcome: BatchOutcome) => void
 type SettlementSummary = { state: BatchOutcome['state']; nodeIds: unknown[] }
 type AddNodeOperation = Extract<GraphOperation, { op: 'add_node' }>
 
+function nodeIdsOf(ops: readonly Op[]): unknown[] {
+  return ops.map((op) => ('node_id' in op ? op.node_id : undefined))
+}
+
 function summarizeSettlement(outcome: BatchOutcome): SettlementSummary {
   return {
     state: outcome.state,
-    nodeIds: outcome.ops.map((op) => ('node_id' in op ? op.node_id : undefined))
+    nodeIds: nodeIdsOf(outcome.ops)
   }
 }
 
@@ -1453,9 +1457,9 @@ describe('createOpSender', () => {
     localSender.flush()
 
     expect(firstSerializations).toBe(1)
-    expect(localSettled).toHaveLength(1)
-    expect(localSettled[0].state).toBe('undeliverable')
-    expect(localSettled[0].ops).toHaveLength(2)
+    expect(localSettled.map(summarizeSettlement)).toEqual([
+      { state: 'undeliverable', nodeIds: [1, 2] }
+    ])
     expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({
@@ -1559,13 +1563,13 @@ describe('createOpSender', () => {
     expect(
       localSent.map(({ workflowId, ops }) => ({
         workflowId,
-        nodeIds: ops.map((op) => ('node_id' in op ? op.node_id : undefined))
+        nodeIds: nodeIdsOf(ops)
       }))
     ).toEqual([{ workflowId: 'wf-new', nodeIds: [2] }])
     expect(
       localSender.pendingOps().map(({ workflowId, ops }) => ({
         workflowId,
-        nodeIds: ops.map((op) => ('node_id' in op ? op.node_id : undefined)),
+        nodeIds: nodeIdsOf(ops),
         versions: ops.map((op) => op.base_version)
       }))
     ).toEqual([
@@ -1580,7 +1584,7 @@ describe('createOpSender', () => {
     expect(
       localSent.map(({ workflowId, ops }) => ({
         workflowId,
-        nodeIds: ops.map((op) => ('node_id' in op ? op.node_id : undefined)),
+        nodeIds: nodeIdsOf(ops),
         opIds: ops.map((op) => op.op_id)
       }))
     ).toEqual([
