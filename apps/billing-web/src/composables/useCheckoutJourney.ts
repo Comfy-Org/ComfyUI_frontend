@@ -35,7 +35,8 @@ export function useCheckoutJourney(uiMode: 'embedded' | 'full_page') {
   const enteredAt = new Date().toISOString()
   let entryFlow: CheckoutEntryFlow = 'unknown'
   let lastPreviewRevision: string | undefined
-  let awaitingOperation = false
+  let presses = 0
+  let linkingPress: number | undefined
   let billingOpId: string | undefined
 
   function track(phase: CheckoutJourneyPhaseEvent) {
@@ -73,16 +74,24 @@ export function useCheckoutJourney(uiMode: 'embedded' | 'full_page') {
     track(phase)
   }
 
-  function submitted() {
-    awaitingOperation = true
+  /** A Pay goes ahead. Returns the press, which only its own settling may close. */
+  function submitted(): number {
+    const press = ++presses
+    linkingPress = press
     billingOpId = undefined
     track({ phase: 'submitted' })
+    return press
+  }
+
+  /** The command of this press settled, so an operation that surfaces later is not one it issued. */
+  function submitSettled(press: number) {
+    if (linkingPress === press) linkingPress = undefined
   }
 
   /** Only the operation a press of Pay issued is linked, never one the checkout recovered. */
   function operationIssued(operationId: string) {
-    if (!awaitingOperation) return
-    awaitingOperation = false
+    if (linkingPress === undefined) return
+    linkingPress = undefined
     billingOpId = operationId
     track({ phase: 'operation_linked', billing_op_id: operationId })
   }
@@ -128,7 +137,6 @@ export function useCheckoutJourney(uiMode: 'embedded' | 'full_page') {
     shown: SubscriptionPreview | undefined
   ) {
     if (event.type === 'quoted' && shown) return previewReady(shown)
-    if (event.type === 'paySubmitted') return submitted()
     if (event.type === 'consentMissing')
       return track({ phase: 'pay_blocked', reason: 'reactivation_unconfirmed' })
     const failed = previewFailureOfPageEvent(event)
@@ -139,6 +147,7 @@ export function useCheckoutJourney(uiMode: 'embedded' | 'full_page') {
     enter,
     track,
     submitted,
+    submitSettled,
     operationIssued,
     methodSelected,
     promoEntryChanged,

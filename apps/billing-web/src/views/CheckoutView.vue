@@ -12,6 +12,7 @@ import { useI18n } from 'vue-i18n'
 
 import type {
   BillingDeclineReason,
+  SubscriptionCommandResult,
   WebReturnControl
 } from '@comfyorg/account-core/billing'
 import {
@@ -521,10 +522,10 @@ async function pay(choice: PaymentChoice) {
   if (slug === undefined || !quoted || loading.value) return
   submitFailure.value = undefined
   reportMethodSelected(choice)
-  journey.submitted()
-  const result = await attempts.run(
-    checkoutAttemptOf(quoted, entry.value),
-    () =>
+  const press = journey.submitted()
+  let result: SubscriptionCommandResult
+  try {
+    result = await attempts.run(checkoutAttemptOf(quoted, entry.value), () =>
       checkout.subscribe(
         buildSubscribeRequest(
           {
@@ -536,7 +537,10 @@ async function pay(choice: PaymentChoice) {
           choice
         )
       )
-  )
+    )
+  } finally {
+    journey.submitSettled(press)
+  }
   if (result.status === 'ok') return
   if (result.code === 'REACTIVATION_CONFIRMATION_REQUIRED') {
     // The quote did not say so, the server did: price it again and ask.

@@ -13,6 +13,7 @@ import type {
   BillingResult,
   CapabilitiesSnapshot,
   SubscribeInput,
+  SubscriptionCommandResult,
   SubscriptionPreview
 } from '@comfyorg/account-core/billing'
 import {
@@ -703,13 +704,19 @@ export function useFullPageCheckout() {
     const mine = ++payGeneration
     const redirectMethod = redirectMethodOf(choice)
     reportMethodSelected(choice)
+    const press = journey.submitted()
     dispatch({
       type: 'paySubmitted',
       ...(redirectMethod === undefined ? {} : { redirectMethod })
     })
-    const result = await attempts.run(checkoutAttemptOf(quoted, arrival), () =>
-      checkout.subscribe(requestFor(planned, quoted, choice))
-    )
+    let result: SubscriptionCommandResult
+    try {
+      result = await attempts.run(checkoutAttemptOf(quoted, arrival), () =>
+        checkout.subscribe(requestFor(planned, quoted, choice))
+      )
+    } finally {
+      journey.submitSettled(press)
+    }
     if (mine !== payGeneration) return
     await settle(payVerdictOf(result), planned)
   }
