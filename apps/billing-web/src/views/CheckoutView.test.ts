@@ -1,3 +1,4 @@
+import { datadogRum } from '@datadog/browser-rum'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { defineComponent, h, nextTick, ref } from 'vue'
@@ -31,6 +32,8 @@ import CheckoutView from '@/views/CheckoutView.vue'
 const ENTRY_QUERY = 'product=comfyui&return_to=comfyui_workspace'
 const ENTRY_QUERY_PATH = `/v1/checkout?${ENTRY_QUERY}`
 const CHECKOUT_PATH = `${ENTRY_QUERY_PATH}&plan=creator_monthly`
+
+vi.mock(import('@datadog/browser-rum'))
 
 /** The values this view and its surface read; a test-family key stands in for a deployment's. */
 vi.mock<unknown>(import('@/config/env'), () => ({
@@ -609,7 +612,9 @@ describe('CheckoutView', () => {
     expect(assign).toHaveBeenCalledExactlyOnceWith(
       'https://testcloud.comfy.org/?billing_result=success&billing_ref=op_9'
     )
-    expect(sent()).toStrictEqual([
+    expect(
+      sent().filter((event) => event.operation === 'web_return')
+    ).toStrictEqual([
       {
         operation: 'web_return',
         stage: 'clicked',
@@ -1210,5 +1215,156 @@ describe('CheckoutView', () => {
     reportConfirm('ctoken_1')
 
     expect(await screen.findByRole('alert')).toHaveTextContent(shown)
+  })
+})
+
+/** What the facade sent to the RUM sink for one billing operation, in order. */
+function reportedBillingEvents(operation: string) {
+  return vi
+    .mocked(datadogRum.addAction)
+    .mock.calls.filter(([name]) => name.startsWith(`billing.${operation}.`))
+    .map(([name, context]) => ({ name, context }))
+}
+
+describe('CheckoutView attempt telemetry', () => {
+  const SOURCE_PATH = `${CHECKOUT_PATH}&source=subscribe_now_button`
+  const ATTEMPT = {
+    operation: 'subscription_checkout',
+    tier: 'creator',
+    cycle: 'monthly',
+    checkout_type: 'new',
+    payment_intent_source: 'subscribe_now_button',
+    checkout_ui: 'embedded',
+    billing_client: 'sdk',
+    billing_surface: 'billing_web'
+  }
+
+  beforeEach(() => {
+    workspace.session = undefined
+    workspace.bound = undefined
+    formProps.mounted = false
+    vi.mocked(datadogRum.getInitConfiguration).mockReturnValue({
+      clientToken: 'pub',
+      applicationId: 'app'
+    })
+  })
+
+  it.for<{
+    name: string
+    subscribe: FakeBillingClientOptions['subscribe']
+    terminal: Record<string, unknown>
+  }>([
+    {
+      name: 'a payment the server settled',
+      subscribe: {
+        status: 'ok',
+        value: {
+          phase: 'succeeded',
+          operation: succeededOperation('op_1'),
+          issuedStatus: 'subscribed'
+        }
+      },
+      terminal: {
+        stage: 'succeeded',
+        outcome: 'success',
+        billing_op_id: 'op_1'
+      }
+    },
+    {
+      name: 'a decline',
+      subscribe: {
+        status: 'ok',
+        value: {
+          phase: 'failed',
+          operation: failedOperation('card_declined', 'op_1')
+        }
+      },
+      terminal: {
+        stage: 'failed',
+        outcome: 'failure',
+        failure_category: 'provider_decline',
+        decline_reason: 'card_declined',
+        billing_op_id: 'op_1'
+      }
+    },
+    {
+      name: 'a refusal before any operation exists',
+      subscribe: { status: 'error', code: 'REQUEST_FAILED' },
+      terminal: {
+        stage: 'failed',
+        outcome: 'failure',
+        failure_category: 'network'
+      }
+    }
+  ])('reports $name as one intent, one start and one terminal', async (row) => {
+    await renderCheckout(SOURCE_PATH, { subscribe: row.subscribe })
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+    reportConfirm('ctoken_1')
+
+    await waitFor(() =>
+      expect(reportedBillingEvents('subscription_checkout')).toHaveLength(3)
+    )
+    expect(reportedBillingEvents('subscription_checkout')).toEqual([
+      {
+        name: 'billing.subscription_checkout.intent',
+        context: { ...ATTEMPT, stage: 'intent', outcome: 'pending' }
+      },
+      {
+        name: 'billing.subscription_checkout.started',
+        context: { ...ATTEMPT, stage: 'started', outcome: 'pending' }
+      },
+      {
+        name: `billing.subscription_checkout.${row.terminal.stage}`,
+        context: {
+          ...ATTEMPT,
+          ...row.terminal,
+          duration_ms: expect.any(Number)
+        }
+      }
+    ])
+  })
+
+  it('keeps one attempt open across the reactivation the server demands, and ends it once', async () => {
+    const fake = await renderCheckout(SOURCE_PATH, {
+      preview: { status: 'ok', value: upgradeQuote() },
+      subscribe: {
+        status: 'ok',
+        value: {
+          phase: 'succeeded',
+          operation: succeededOperation('op_1'),
+          issuedStatus: 'subscribed'
+        }
+      }
+    })
+    fake.subscribe.mockResolvedValueOnce({
+      status: 'error',
+      code: 'REACTIVATION_CONFIRMATION_REQUIRED'
+    })
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Confirm upgrade' })
+    )
+    const reactivate = await screen.findByRole('button', {
+      name: 'Confirm & reactivate — $28.00 today'
+    })
+    expect(
+      reportedBillingEvents('subscription_checkout').map(({ name }) => name)
+    ).toEqual([
+      'billing.subscription_checkout.intent',
+      'billing.subscription_checkout.started'
+    ])
+
+    await userEvent.click(screen.getByRole('checkbox'))
+    await userEvent.click(reactivate)
+
+    await waitFor(() =>
+      expect(
+        reportedBillingEvents('subscription_checkout').map(({ name }) => name)
+      ).toEqual([
+        'billing.subscription_checkout.intent',
+        'billing.subscription_checkout.started',
+        'billing.subscription_checkout.succeeded'
+      ])
+    )
   })
 })
