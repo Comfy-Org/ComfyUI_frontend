@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+
 import { describe, expect, it, vi } from 'vitest'
 
 function chunkOf(prefix: string, count: number) {
@@ -14,6 +16,14 @@ const typecheckCommandsOf = (commands: string | string[]) =>
   [commands].flat().filter((command) => command.startsWith('pnpm typecheck'))
 
 describe('lint-staged config', () => {
+  it('scopes merge hooks to the branch diff without stash cleanup', () => {
+    const hook = readFileSync('.husky/pre-commit', 'utf8')
+
+    expect(hook).toContain('git rev-parse -q --verify MERGE_HEAD')
+    expect(hook).toContain('git merge-base HEAD "$merge_head"')
+    expect(hook).toContain('lint-staged --diff "$merge_base..HEAD"')
+  })
+
   it('hands a repo-wide command to the first chunk that asks', async () => {
     const lintStaged = await freshConfig()
 

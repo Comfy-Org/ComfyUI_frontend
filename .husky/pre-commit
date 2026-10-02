@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 set -e
 
-pnpm exec lint-staged
+merge_head=$(git rev-parse -q --verify MERGE_HEAD || true)
+if [ -n "$merge_head" ]; then
+  # A merge stages every upstream path absent from the stale first parent. Lint
+  # the branch-owned diff instead; --diff also disables lint-staged's stash and
+  # revert cleanup, which must never rewrite a live merge index after failure.
+  merge_base=$(git merge-base HEAD "$merge_head")
+  pnpm exec lint-staged --diff "$merge_base..HEAD"
+else
+  pnpm exec lint-staged
+fi
 pnpm exec tsx scripts/check-unused-i18n-keys.ts
 pnpm exec tsx scripts/check-frozen-dirs.ts
