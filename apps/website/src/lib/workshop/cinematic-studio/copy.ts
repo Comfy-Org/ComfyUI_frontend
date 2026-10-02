@@ -79,8 +79,8 @@ const copy = {
       '为照片中的人物换上一件衣服，可选修身、常规或宽松版型，模型会保留姿势与光线。'
   },
   'cinematic.hub.virtualTryOnMeta': {
-    en: 'Image · Try-on',
-    'zh-CN': '图像 · 试穿'
+    en: 'Image · Kling Virtual Try-On',
+    'zh-CN': '图像 · Kling Virtual Try-On'
   },
   'cinematic.stage.longWait': {
     en: 'Still going. Some models take about a minute. Nothing is queued; yours already started.',
