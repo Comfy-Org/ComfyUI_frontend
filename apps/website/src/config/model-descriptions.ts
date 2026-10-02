@@ -53,6 +53,7 @@ export const dirLabels: Record<string, string> = {
   vae: 'VAE',
   text_encoders: 'Text encoder',
   audio_encoders: 'Audio encoder',
+  embeddings: 'Embedding',
   latent_upscale_models: 'Latent upscale model',
   upscale_models: 'Upscale model',
   style_models: 'Style model',

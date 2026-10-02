@@ -63,6 +63,18 @@ describe('extractApiModels', () => {
     )
   })
 
+  it.for([
+    ['api_fishaudio_text_to_speech.json', 'fish-audio'],
+    ['api_meta_muse_image_t2i.json', 'muse-image'],
+    ['api_pixverse6_t2v.json', 'pixverse-6'],
+    ['api_pruna_p_video_t2v.json', 'pruna-p-video-2'],
+    ['api_tencent_hy_image_3_5_preview_t2i.json', 'hy-image-3-5-preview']
+  ])('maps current template %s to %s', ([file, slug]) => {
+    expect(extractApiModels([file])).toEqual([
+      expect.objectContaining({ slug, templateCount: 1 })
+    ])
+  })
+
   it('removes .json extensions regardless of casing', () => {
     const files = ['api_KLING.JSON']
 

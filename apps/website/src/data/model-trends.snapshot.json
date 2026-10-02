@@ -1,0 +1,78 @@
+{
+  "asOf": "2026-10-02T00:00:00Z",
+  "source": "comfy-cloud-partner-successes",
+  "rows": [
+    {
+      "model": "gemini-3-pro-image",
+      "usersCurrent": 1291,
+      "usersPrevious": 1215,
+      "runsCurrent": 39754
+    },
+    {
+      "model": "dreamina-seedance-2-5-260628",
+      "usersCurrent": 1189,
+      "usersPrevious": 1115,
+      "runsCurrent": 13918
+    },
+    {
+      "model": "gemini-3.1-flash-image",
+      "usersCurrent": 1106,
+      "usersPrevious": 1104,
+      "runsCurrent": 38079
+    },
+    {
+      "model": "seedream-5-0-pro-260628",
+      "usersCurrent": 673,
+      "usersPrevious": 582,
+      "runsCurrent": 36281
+    },
+    {
+      "model": "kling-v3",
+      "usersCurrent": 246,
+      "usersPrevious": 208,
+      "runsCurrent": 1736
+    },
+    {
+      "model": "kling-v3-omni",
+      "usersCurrent": 187,
+      "usersPrevious": 177,
+      "runsCurrent": 1424
+    },
+    {
+      "model": "flux-2-pro",
+      "usersCurrent": 159,
+      "usersPrevious": 151,
+      "runsCurrent": 2269
+    },
+    {
+      "model": "hy-image-v3.5-preview",
+      "usersCurrent": 148,
+      "usersPrevious": 136,
+      "runsCurrent": 2385
+    },
+    {
+      "model": "seedream-5-0-flash-260915",
+      "usersCurrent": 145,
+      "usersPrevious": 0,
+      "runsCurrent": 2317
+    },
+    {
+      "model": "eleven_v3",
+      "usersCurrent": 86,
+      "usersPrevious": 51,
+      "runsCurrent": 1084
+    },
+    {
+      "model": "eleven_sfx_v2",
+      "usersCurrent": 84,
+      "usersPrevious": 47,
+      "runsCurrent": 1438
+    },
+    {
+      "model": "meshy-7.1",
+      "usersCurrent": 76,
+      "usersPrevious": 22,
+      "runsCurrent": 288
+    }
+  ]
+}

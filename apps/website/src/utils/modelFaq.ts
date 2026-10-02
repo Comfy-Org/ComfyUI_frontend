@@ -26,6 +26,7 @@ const dirDescriptionKeys: Record<
   vae: 'models.dirDescription.vae',
   text_encoders: 'models.dirDescription.text_encoders',
   audio_encoders: 'models.dirDescription.audio_encoders',
+  embeddings: 'models.dirDescription.embeddings',
   upscale_models: 'models.dirDescription.upscale_models',
   latent_upscale_models: 'models.dirDescription.latent_upscale_models',
   style_models: 'models.dirDescription.style_models',

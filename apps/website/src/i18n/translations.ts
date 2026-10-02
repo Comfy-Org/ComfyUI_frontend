@@ -4,6 +4,392 @@ import type { NamedValues } from './interpolate'
 import { interpolate } from './interpolate'
 
 const translations = {
+  'models.explore.eyebrow': {
+    en: 'SUPPORTED MODELS',
+    'zh-CN': '支持的模型'
+  },
+  'models.explore.title.first': {
+    en: 'Every model.',
+    'zh-CN': '每一个模型。'
+  },
+  'models.explore.title.second': {
+    en: 'One graph.',
+    'zh-CN': '一张图。'
+  },
+  'models.explore.description': {
+    en: 'Explore {count} open-weight components and partner integrations for image, video, audio, and 3D workflows. Run supported models on your own hardware or with Comfy Cloud.',
+    'zh-CN':
+      '探索用于图像、视频、音频和 3D 工作流的 {count} 个开放权重组件和合作伙伴集成。在自己的硬件或 Comfy Cloud 上运行受支持的模型。'
+  },
+  'models.explore.primaryCta': {
+    en: 'RUN A MODEL NOW',
+    'zh-CN': '立即运行模型'
+  },
+  'models.explore.secondaryCta': {
+    en: 'BROWSE WORKFLOWS',
+    'zh-CN': '浏览工作流'
+  },
+  'models.explore.stats': {
+    en: '{count} catalog entries · {localCount} local components · {partnerCount} partner integrations',
+    'zh-CN':
+      '{count} 个目录条目 · {localCount} 个本地组件 · {partnerCount} 个合作伙伴集成'
+  },
+  'models.explore.featuredBadge': {
+    en: 'DAY ZERO',
+    'zh-CN': '首发'
+  },
+  'models.explore.openWeightsBadge': {
+    en: 'OPEN WEIGHTS',
+    'zh-CN': '开放权重'
+  },
+  'models.explore.featuredTitle': {
+    en: 'Wan 2.6 — open-weights video, native audio',
+    'zh-CN': 'Wan 2.6 — 开放权重视频，原生音频'
+  },
+  'models.explore.search.label': {
+    en: 'Search supported models',
+    'zh-CN': '搜索支持的模型'
+  },
+  'models.explore.search.placeholder': {
+    en: 'Search models, tasks, and publishers...',
+    'zh-CN': '搜索模型、任务和发布者...'
+  },
+  'models.explore.categories.label': {
+    en: 'Model categories',
+    'zh-CN': '模型类别'
+  },
+  'models.explore.categories.all': { en: 'ALL', 'zh-CN': '全部' },
+  'models.explore.categories.image': { en: 'Image', 'zh-CN': '图像' },
+  'models.explore.categories.video': { en: 'Video', 'zh-CN': '视频' },
+  'models.explore.categories.audio': { en: 'Audio', 'zh-CN': '音频' },
+  'models.explore.categories.3d': { en: '3D', 'zh-CN': '3D' },
+  'models.explore.categories.edit': { en: 'Edit', 'zh-CN': '编辑' },
+  'models.explore.categories.upscale': { en: 'Upscale', 'zh-CN': '放大' },
+  'models.explore.categories.llm': { en: 'LLM', 'zh-CN': 'LLM' },
+  'models.explore.filters.openSource': {
+    en: 'Open Weights',
+    'zh-CN': '开放权重'
+  },
+  'models.explore.filters.partnerNodes': {
+    en: 'Partner Nodes',
+    'zh-CN': '合作伙伴节点'
+  },
+  'models.explore.catalog.workflowCountOne': {
+    en: 'Used by {count} supported workflow.',
+    'zh-CN': '由 {count} 个受支持的工作流使用。'
+  },
+  'models.all.title': {
+    en: 'All supported models',
+    'zh-CN': '所有受支持的模型'
+  },
+  'models.all.description': {
+    en: 'Browse every supported model. Search by name and filter by category or access.',
+    'zh-CN': '浏览所有受支持的模型。按名称搜索，并按类别或访问方式筛选。'
+  },
+  'models.all.loadMore': {
+    en: 'Load more',
+    'zh-CN': '加载更多'
+  },
+  'models.explore.catalog.label': {
+    en: 'ALL MODELS',
+    'zh-CN': '模型目录'
+  },
+  'models.explore.catalog.workflowCountMany': {
+    en: 'Used by {count} supported workflows.',
+    'zh-CN': '由 {count} 个受支持的工作流使用。'
+  },
+  'models.explore.catalog.partner': {
+    en: 'Partner API',
+    'zh-CN': '合作伙伴 API'
+  },
+  'models.explore.catalog.viewLabel': {
+    en: 'Catalog view',
+    'zh-CN': '目录视图'
+  },
+  'models.explore.catalog.releases': {
+    en: 'Models',
+    'zh-CN': '模型'
+  },
+  'models.explore.catalog.components': {
+    en: 'Components',
+    'zh-CN': '组件'
+  },
+  'models.explore.catalog.componentCountOne': {
+    en: '{count} component.',
+    'zh-CN': '{count} 个组件。'
+  },
+  'models.explore.catalog.componentCountMany': {
+    en: '{count} components.',
+    'zh-CN': '{count} 个组件。'
+  },
+  'models.explore.catalog.resultCount': {
+    en: '{count} matching models',
+    'zh-CN': '{count} 个匹配模型'
+  },
+  'models.explore.trendingEmpty': {
+    en: 'No trending models match these filters.',
+    'zh-CN': '没有符合这些筛选条件的热门模型。'
+  },
+  'models.explore.latestEmpty': {
+    en: 'No recent releases match these filters.',
+    'zh-CN': '没有符合这些筛选条件的近期发布。'
+  },
+  'models.explore.catalog.empty': {
+    en: 'No supported models match this search yet.',
+    'zh-CN': '暂无与此搜索匹配的受支持模型。'
+  },
+  'models.explore.catalog.showMore': {
+    en: 'Click to show more',
+    'zh-CN': '点击显示更多'
+  },
+  'models.explore.collections.viewAll': {
+    en: 'VIEW ALL',
+    'zh-CN': '查看全部'
+  },
+  'models.explore.collections.viewAllModels': {
+    en: 'VIEW ALL MODELS',
+    'zh-CN': '查看所有模型'
+  },
+  'models.explore.version.flux2Pro': {
+    en: 'Generate detailed images from text and reference images.',
+    'zh-CN': '根据文本和参考图像生成细节丰富的图像。'
+  },
+  'models.explore.version.klingO3': {
+    en: 'Animate reference images with controlled motion.',
+    'zh-CN': '通过可控运动将参考图像转换为视频。'
+  },
+  'models.explore.version.meshy71': {
+    en: 'Turn text or images into detailed 3D models.',
+    'zh-CN': '将文本或图像转换为精细的 3D 模型。'
+  },
+  'models.explore.version.kling3': {
+    en: 'Create videos from text prompts or reference images.',
+    'zh-CN': '根据文本提示或参考图像生成视频。'
+  },
+  'models.explore.version.soundEffectsV2': {
+    en: 'Create sound effects and ambient audio from text.',
+    'zh-CN': '根据文本生成音效和环境声音。'
+  },
+  'models.explore.version.elevenV3': {
+    en: 'Expressive speech and dialogue with emotional voice control.',
+    'zh-CN': '生成富有表现力的语音和对话，并控制情绪表达。'
+  },
+  'models.explore.version.seedreamFlash': {
+    en: 'Generate and edit images from text or reference images.',
+    'zh-CN': '根据文本或参考图像生成和编辑图像。'
+  },
+  'models.explore.version.seedreamPro': {
+    en: 'Create detailed images with text and multiple visual references.',
+    'zh-CN': '根据文本和多张参考图像创作精细图像。'
+  },
+  'models.explore.version.seedance25': {
+    en: 'Create and edit videos from text and visual references.',
+    'zh-CN': '根据文本和视觉参考生成与编辑视频。'
+  },
+  'models.explore.version.geminiPro': {
+    en: 'Generate and edit images with precise creative control.',
+    'zh-CN': '精准控制图像生成和编辑的创意细节。'
+  },
+  'models.explore.version.hy35': {
+    en: 'Generate and edit images from text or visual references.',
+    'zh-CN': '根据文本或视觉参考生成和编辑图像。'
+  },
+  'models.explore.version.qwen21': {
+    en: 'Generate and edit images with typography and transparent backgrounds.',
+    'zh-CN': '生成和编辑图像，支持文字排版和透明背景。'
+  },
+  'models.explore.version.nanoBanana2': {
+    en: 'Generate and edit images with fast, precise visual control.',
+    'zh-CN': '快速生成和编辑图像，精准控制视觉效果。'
+  },
+  'models.explore.trending.label': {
+    en: 'TRENDING',
+    'zh-CN': '热门'
+  },
+  'models.explore.trending.description': {
+    en: 'What is running this week.',
+    'zh-CN': '本周正在运行的模型。'
+  },
+  'models.explore.trending.growth': {
+    en: '+{users} weekly users · +{percent}%',
+    'zh-CN': '每周用户增加 {users} 人 · +{percent}%'
+  },
+  'models.explore.trending.new': {
+    en: '+{users} weekly users · new activity',
+    'zh-CN': '每周用户增加 {users} 人 · 新增使用记录'
+  },
+  'models.explore.trending.unavailable': {
+    en: 'A fresh usage ranking is currently unavailable.',
+    'zh-CN': '暂无最新使用排名。'
+  },
+  'models.explore.release.date': {
+    en: 'Released {date}',
+    'zh-CN': '发布于 {date}'
+  },
+  'models.explore.release.sources': {
+    en: 'Release announcements',
+    'zh-CN': '发布公告'
+  },
+  'models.explore.dayZero.label': {
+    en: 'LATEST',
+    'zh-CN': '最新'
+  },
+  'models.explore.dayZero.description': {
+    en: 'New models, supported the day they drop. That is the standard.',
+    'zh-CN': '新模型，发布当天即支持。这就是标准。'
+  },
+  'models.explore.tasks.workflowCountOne': {
+    en: '{count} workflow',
+    'zh-CN': '{count} 个工作流'
+  },
+  'models.explore.tasks.workflowCountMany': {
+    en: '{count} workflows',
+    'zh-CN': '{count} 个工作流'
+  },
+  'models.explore.tasks.label': {
+    en: 'START FROM THE TASK',
+    'zh-CN': '从任务开始'
+  },
+  'models.explore.tasks.description': {
+    en: 'Find workflows for what you want to create.',
+    'zh-CN': '找到适合你创作目标的工作流。'
+  },
+  'models.explore.tasks.viewAll': {
+    en: 'VIEW ALL USE CASES',
+    'zh-CN': '查看所有用例'
+  },
+  'models.explore.access.heading': {
+    en: 'Choose how you access models',
+    'zh-CN': '选择模型访问方式'
+  },
+  'models.explore.access.open.title': {
+    en: 'Open weights',
+    'zh-CN': '开放权重'
+  },
+  'models.explore.access.open.description': {
+    en: 'Download the checkpoint, chain your LoRAs, and keep the graph forever.',
+    'zh-CN': '下载检查点、串联 LoRA，并永久保留工作流。'
+  },
+  'models.explore.access.open.cta': {
+    en: 'BROWSE OPEN MODELS',
+    'zh-CN': '浏览开放模型'
+  },
+  'models.explore.access.partner.title': {
+    en: 'Partner APIs',
+    'zh-CN': '合作伙伴 API'
+  },
+  'models.explore.access.partner.description': {
+    en: 'Use partner models on the same canvas as your open models.',
+    'zh-CN': '在同一画布中使用合作伙伴模型和开放模型。'
+  },
+  'models.explore.access.partner.cta': {
+    en: 'BROWSE PARTNER MODELS',
+    'zh-CN': '浏览合作伙伴模型'
+  },
+  'models.explore.family.eyebrow': {
+    en: 'MODEL FAMILY',
+    'zh-CN': '模型家族'
+  },
+  'models.explore.family.title': {
+    en: 'Explore model families',
+    'zh-CN': '探索模型家族'
+  },
+  'models.explore.family.description': {
+    en: 'Move between leading model lineages without leaving the graph. Compare their newest releases, specializations, and access paths.',
+    'zh-CN':
+      '无需离开工作流即可探索领先的模型谱系，比较最新版本、专长和访问方式。'
+  },
+  'models.explore.family.explore': {
+    en: 'EXPLORE {name}',
+    'zh-CN': '探索 {name}'
+  },
+  'models.explore.family.mediaAlt': {
+    en: '{name} preview',
+    'zh-CN': '{name} 预览'
+  },
+  'models.explore.family.wan.title': {
+    en: 'The Wan family',
+    'zh-CN': 'Wan 模型家族'
+  },
+  'models.explore.family.wan.description': {
+    en: 'Open and hosted video models spanning text-to-video, image-to-video, character animation, and native audio.',
+    'zh-CN': '覆盖文生视频、图生视频、角色动画和原生音频的开放及托管视频模型。'
+  },
+  'models.explore.family.minimax.title': {
+    en: 'The MiniMax family',
+    'zh-CN': 'MiniMax 模型家族'
+  },
+  'models.explore.family.minimax.description': {
+    en: 'Direct high-fidelity video and complete music generation from the same ComfyUI graph.',
+    'zh-CN': '在同一个 ComfyUI 工作流中控制高保真视频和完整音乐生成。'
+  },
+  'models.explore.family.seedance.title': {
+    en: 'The Seedance family',
+    'zh-CN': 'Seedance 模型家族'
+  },
+  'models.explore.family.seedance.description': {
+    en: 'Create longer video shots from text and multiple references with strong motion and prompt adherence.',
+    'zh-CN':
+      '通过文本和多个参考创建更长的视频镜头，并保持出色的动态和提示词遵循度。'
+  },
+  'models.explore.faq.label': {
+    en: 'QUESTIONS',
+    'zh-CN': '常见问题'
+  },
+  'models.explore.faq.heading': {
+    en: 'AI models in ComfyUI',
+    'zh-CN': 'ComfyUI 中的 AI 模型'
+  },
+  'models.explore.faq.1.q': {
+    en: 'What does day-zero support mean?',
+    'zh-CN': '首发支持是什么意思？'
+  },
+  'models.explore.faq.1.a': {
+    en: 'It means a newly released model can be used in ComfyUI as soon as its supported integration is available.',
+    'zh-CN': '这意味着新发布的模型在受支持的集成可用后即可在 ComfyUI 中使用。'
+  },
+  'models.explore.faq.2.q': {
+    en: 'Is ComfyUI free?',
+    'zh-CN': 'ComfyUI 免费吗？'
+  },
+  'models.explore.faq.2.a': {
+    en: 'ComfyUI Desktop is free to run on your own hardware. Cloud and partner services have separate usage terms.',
+    'zh-CN':
+      'ComfyUI 桌面版可在您自己的硬件上免费运行。Cloud 和合作伙伴服务有各自的使用条款。'
+  },
+  'models.explore.faq.3.q': {
+    en: 'Do partner models need separate accounts?',
+    'zh-CN': '合作伙伴模型需要单独的账户吗？'
+  },
+  'models.explore.faq.3.a': {
+    en: 'Account and billing requirements depend on the partner integration used by a workflow.',
+    'zh-CN': '账户和计费要求取决于工作流使用的合作伙伴集成。'
+  },
+  'models.explore.faq.4.q': {
+    en: 'What VRAM do open models need?',
+    'zh-CN': '开放模型需要多少显存？'
+  },
+  'models.explore.faq.4.a': {
+    en: 'Requirements vary by model, resolution, precision, and workflow. Quantized variants can reduce memory use.',
+    'zh-CN': '要求因模型、分辨率、精度和工作流而异。量化变体可以减少内存使用。'
+  },
+  'models.explore.faq.5.q': {
+    en: 'Can I run these models through an API?',
+    'zh-CN': '可以通过 API 运行这些模型吗？'
+  },
+  'models.explore.faq.5.a': {
+    en: 'Comfy API can turn supported workflows into production endpoints.',
+    'zh-CN': 'Comfy API 可以将受支持的工作流转换为生产端点。'
+  },
+  'models.explore.faq.6.q': {
+    en: 'Can I use these models commercially, and where are they available?',
+    'zh-CN': '这些模型可以用于商业用途吗？在哪里可以使用？'
+  },
+  'models.explore.faq.6.a': {
+    en: 'Commercial-use rights are model-specific. Local availability means you can run a model on your own hardware, but it does not grant commercial rights—review that model’s license and restrictions. Comfy Cloud availability depends on the models supported there and their applicable terms. Organizations that need negotiated terms, indemnity, or other contractual assurances should contact Comfy Enterprise to discuss a commercial agreement.',
+    'zh-CN':
+      '商业使用权取决于具体模型。本地可用表示你可以在自己的硬件上运行模型，但不代表自动获得商业使用权；请查看该模型的许可证和限制。Comfy Cloud 的可用性取决于云端支持的模型及其适用条款。需要协商条款、赔偿保障或其他合同保证的组织，应联系 Comfy Enterprise 讨论商业协议。'
+  },
   'home.workshop.heading': {
     en: 'Run any model, from one place',
     'zh-CN': '在同一个地方运行任何模型'
@@ -6457,6 +6843,10 @@ Enterprise`
   'models.dirDescription.audio_encoders': {
     en: 'an audio encoder that converts audio into embeddings for audio-conditioned generation',
     'zh-CN': '一个将音频转换为嵌入向量、用于音频条件生成的音频编码器'
+  },
+  'models.dirDescription.embeddings': {
+    en: 'a learned embedding that adds a concept or style to prompt conditioning',
+    'zh-CN': '一种为提示词条件引入概念或风格的学习嵌入'
   },
   'models.dirDescription.geometry_estimation': {
     en: 'a geometry estimation model that predicts depth, surface normals, or 3D structure from images',

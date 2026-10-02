@@ -2,6 +2,8 @@
 name: 'CI: Vercel Website Preview'
 
 on:
+  schedule:
+    - cron: '15 8 * * *'
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled]
     branches-ignore:
@@ -57,6 +59,7 @@ jobs:
 
       - name: Build project artifacts
         env:
+          WEBSITE_POSTHOG_READ_TOKEN: ${{ secrets.WEBSITE_POSTHOG_READ_TOKEN }}
           WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
           WEBSITE_ASHBY_JOB_BOARD_NAME: ${{ secrets.WEBSITE_ASHBY_JOB_BOARD_NAME }}
           WEBSITE_CLOUD_API_KEY: ${{ secrets.WEBSITE_CLOUD_API_KEY }}
@@ -144,7 +147,7 @@ jobs:
           path: temp/vercel-preview
 
   deploy-production:
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || github.event_name == 'schedule'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -175,6 +178,8 @@ jobs:
 
       - name: Build project artifacts
         env:
+          WEBSITE_POSTHOG_READ_TOKEN: ${{ secrets.WEBSITE_POSTHOG_READ_TOKEN }}
+          REQUIRE_MODEL_TRENDS_REFRESH: ${{ github.event_name == 'schedule' && '1' || '0' }}
           WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
           WEBSITE_ASHBY_JOB_BOARD_NAME: ${{ secrets.WEBSITE_ASHBY_JOB_BOARD_NAME }}
           WEBSITE_CLOUD_API_KEY: ${{ secrets.WEBSITE_CLOUD_API_KEY }}

@@ -235,7 +235,7 @@ function examplesFor(template: HubTemplate): GeneratedExample[] {
     name: `${template.name}-${index + 1}`,
     title: template.title,
     description: details[template.name]?.description ?? '',
-    tags: template.tags.map(tagDisplayName),
+    tags: template.tags.map((tag) => tagDisplayName(tag)),
     thumbnailUrl,
     values: {}
   }))
@@ -263,7 +263,7 @@ export function getHubWorkflowPage(name: string): HubWorkflowPage | undefined {
     routerId: `hub/${template.name}`,
     provider: template.username || 'ComfyUI',
     modality: MEDIA_TO_MODALITY[mediaType],
-    capabilities: template.tags.map(tagDisplayName),
+    capabilities: template.tags.map((tag) => tagDisplayName(tag)),
     creditsPerRun,
     thumbnailUrl: template.thumbnails[0],
     fields,

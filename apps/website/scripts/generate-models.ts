@@ -1,6 +1,10 @@
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { z } from 'zod'
+
+import { deriveModelCategories } from '../src/config/modelCategories'
+import type { ModelCategory } from '../src/config/modelCategories'
 
 const WORKFLOW_TEMPLATES_BASE =
   'https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates'
@@ -39,12 +43,22 @@ interface OutputModel {
   docsUrl?: string
   thumbnailUrl?: string
   canonicalSlug?: string
+  categories?: ModelCategory[]
+  releaseDate?: string
 }
 
 // Maps api_*.json filename prefix to a canonical display name and slug.
 // Add entries here as new partner integrations land in workflow_templates.
 export const API_PROVIDER_MAP: Record<string, { name: string; slug: string }> =
   {
+    fishaudio: { name: 'Fish Audio', slug: 'fish-audio' },
+    meta_muse_image: { name: 'Muse Image 1.0', slug: 'muse-image' },
+    pixverse6: { name: 'PixVerse 6.0', slug: 'pixverse-6' },
+    pruna_p_video: { name: 'Pruna P-Video 2', slug: 'pruna-p-video-2' },
+    tencent_hy_image_3_5_preview: {
+      name: 'HY Image 3.5 Preview',
+      slug: 'hy-image-3-5-preview'
+    },
     nano: { name: 'Nano Banana', slug: 'nano-banana' },
     kling: { name: 'Kling AI', slug: 'kling-ai' },
     kling2: { name: 'Kling AI', slug: 'kling-ai' },
@@ -401,6 +415,54 @@ function templateThumbnailUrl(
 function run(): void {
   const models = new Map<string, ModelData>()
 
+  const sections = z
+    .array(
+      z.object({
+        title: z.string(),
+        templates: z.array(
+          z.object({
+            name: z.string(),
+            tags: z.array(z.string()).default([]),
+            date: z.string().optional()
+          })
+        )
+      })
+    )
+    .parse(JSON.parse(readFileSync(join(TEMPLATES_DIR, 'index.json'), 'utf8')))
+  const templateMetadata = new Map<
+    string,
+    { categories: ModelCategory[]; date: string | undefined }
+  >(
+    sections.flatMap((section) =>
+      section.templates.map(
+        (template) =>
+          [
+            `${template.name}.json`,
+            {
+              categories: deriveModelCategories(section.title, template.tags),
+              date: template.date
+            }
+          ] as const
+      )
+    )
+  )
+
+  function metadataFor(templates: readonly string[]) {
+    const metadata = templates.flatMap((template) => {
+      const entry = templateMetadata.get(template)
+      return entry ? [entry] : []
+    })
+    const releaseDate = metadata
+      .flatMap(({ date }) => (date ? [date] : []))
+      .sort()[0]
+    return {
+      categories: [
+        ...new Set(metadata.flatMap(({ categories }) => categories))
+      ],
+      ...(releaseDate ? { releaseDate } : {})
+    }
+  }
+
   const files = readdirSync(TEMPLATES_DIR).filter((f) => f.endsWith('.json'))
 
   for (const file of files) {
@@ -459,7 +521,8 @@ function run(): void {
       huggingFaceUrl: data.url,
       directory: data.directory,
       workflowCount: data.templates.size,
-      displayName: makeDisplayName(name)
+      displayName: makeDisplayName(name),
+      ...metadataFor([...data.templates])
     }
     const docsUrl = tutorialUrlMap.get(name)
     if (docsUrl) result.docsUrl = docsUrl
@@ -471,16 +534,35 @@ function run(): void {
     return result
   })
 
+  const apiFilesBySlug = new Map<string, string[]>()
+  for (const file of files) {
+    if (!file.startsWith('api_')) continue
+    const model = extractApiModels([file]).at(0)
+    if (!model) continue
+    const templates = apiFilesBySlug.get(model.slug) ?? []
+    templates.push(file)
+    apiFilesBySlug.set(model.slug, templates)
+  }
+
   const apiOutput: OutputModel[] = apiModels
     .sort((a, b) => b.templateCount - a.templateCount)
-    .map((m) => ({
-      slug: m.slug,
-      name: m.name,
-      huggingFaceUrl: '',
-      directory: m.directory,
-      workflowCount: m.templateCount,
-      displayName: m.name
-    }))
+    .map((m) => {
+      const templates = apiFilesBySlug.get(m.slug) ?? []
+      const firstTemplate = templates.find((file) =>
+        templateThumbnailUrl(file, TEMPLATES_DIR)
+      )
+      const thumbnailUrl = templateThumbnailUrl(firstTemplate, TEMPLATES_DIR)
+      return {
+        slug: m.slug,
+        name: m.name,
+        huggingFaceUrl: '',
+        directory: m.directory,
+        workflowCount: m.templateCount,
+        displayName: m.name,
+        ...metadataFor(templates),
+        ...(thumbnailUrl ? { thumbnailUrl } : {})
+      }
+    })
 
   const combined = [...apiOutput, ...output, ...LEGACY_SLUG_REDIRECTS]
 
