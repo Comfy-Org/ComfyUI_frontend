@@ -7,9 +7,18 @@ import { t } from '../../i18n/translations'
 import { modelsHubMeta } from './models-hub-meta'
 
 const { title, description } = modelsHubMeta(workshopModels)
-const directory = workshopModels.toSorted((a, b) =>
+const byName = workshopModels.toSorted((a, b) =>
   a.name.localeCompare(b.name, 'en', { numeric: true })
 )
+const unnamedProvider = t('workshop.filter.other')
+const providerOf = (model: (typeof byName)[number]) =>
+  model.provider ?? unnamedProvider
+const directory = [...new Set(byName.map(providerOf))]
+  .toSorted((a, b) => a.localeCompare(b, 'en'))
+  .map((provider) => ({
+    provider,
+    models: byName.filter((model) => providerOf(model) === provider)
+  }))
 ---
 
 <BaseLayout {title} {description} preloadFonts={['Medium']}>
@@ -29,24 +38,53 @@ const directory = workshopModels.toSorted((a, b) =>
     class="mx-auto max-w-10xl px-6 pb-16 max-sm:pb-10 lg:px-8 lg:pb-24"
     data-testid="models-directory"
   >
-    <h2
-      id="models-directory-heading"
-      class="text-2xl font-medium text-primary-warm-white"
-    >
-      {t('workshop.catalogue.directory')}
-    </h2>
-    <ul class="mt-6 gap-x-8 sm:columns-2 lg:columns-3 xl:columns-4">
-      {directory.map((model) => <li class="break-inside-avoid py-1.5 text-sm">
-        <a
-          href={model.href}
-          class="text-primary-warm-white transition-colors hover:text-primary-comfy-yellow"
+    <details class="group">
+      <summary
+        class="flex cursor-pointer list-none items-center gap-3 rounded-lg border-t border-transparency-white-t8 pt-6 text-primary-warm-white transition-colors hover:text-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 [&::-webkit-details-marker]:hidden"
+        data-testid="models-directory-toggle"
+      >
+        <h2 id="models-directory-heading" class="text-xl font-medium">
+          {t('workshop.catalogue.directory')}
+        </h2>
+        <span class="text-sm text-primary-warm-gray tabular-nums">
+          {t('workshop.catalogue.directoryCount', 'en', {
+            count: workshopModels.length
+          })}
+        </span>
+        <svg
+          class="ml-auto size-5 shrink-0 transition-transform duration-200 group-open:rotate-180"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          aria-hidden="true"
         >
-          {model.name}
-        </a>
-        {model.provider && <span class="text-primary-warm-gray"
-          >· {model.provider}</span
-        >}
-      </li>)}
-    </ul>
+          <path
+            d="m6 9 6 6 6-6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          ></path>
+        </svg>
+      </summary>
+      <div class="mt-8 gap-x-8 sm:columns-2 lg:columns-3">
+        {directory.map((group) => <div class="mb-8 break-inside-avoid">
+          <h3
+            class="text-xs font-medium tracking-wide text-primary-warm-gray uppercase"
+          >
+            {group.provider}
+          </h3>
+          <ul class="mt-2">
+            {group.models.map((model) => <li class="py-1 text-sm">
+              <a
+                href={model.href}
+                class="text-primary-comfy-canvas transition-colors hover:text-primary-comfy-yellow"
+              >
+                {model.name}
+              </a>
+            </li>)}
+          </ul>
+        </div>)}
+      </div>
+    </details>
   </section>
 </BaseLayout>

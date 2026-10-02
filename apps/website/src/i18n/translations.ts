@@ -34,6 +34,10 @@ const translations = {
     en: 'All models A to Z',
     'zh-CN': '全部模型（A 到 Z）'
   },
+  'workshop.catalogue.directoryCount': {
+    en: '{count} models',
+    'zh-CN': '{count} 个模型'
+  },
   'workshop.catalogue.apps': { en: 'Apps', 'zh-CN': '应用' },
   'workshop.catalogue.eyebrow': { en: 'Hub', 'zh-CN': 'Hub' },
   'workshop.catalogue.categories': { en: 'Categories', 'zh-CN': '分类' },
