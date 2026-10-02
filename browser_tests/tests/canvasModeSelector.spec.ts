@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { CanvasModeSelector } from '@e2e/fixtures/components/CanvasModeSelector'
 
 const getLocators = (page: Page) => ({
   trigger: page.getByRole('button', { name: 'Canvas Mode' }),
@@ -54,6 +55,25 @@ test.describe('CanvasModeSelector', { tag: '@canvas' }, () => {
   })
 
   test.describe('Popover lifecycle', () => {
+    test('closes on viewport resize rather than leaving a detached popup', async ({
+      comfyPage
+    }) => {
+      const selector = new CanvasModeSelector(comfyPage.page)
+
+      await test.step('Open the canvas mode popup', async () => {
+        await comfyPage.page.setViewportSize({ width: 1280, height: 720 })
+        await selector.open()
+        await comfyPage.canvas.hover()
+        await expect(selector.menu).toBeVisible()
+      })
+
+      await test.step('Resize the viewport', async () => {
+        await comfyPage.page.setViewportSize({ width: 960, height: 720 })
+        await expect(selector.menu).toBeHidden()
+        await expect(selector.trigger).toHaveAttribute('aria-expanded', 'false')
+      })
+    })
+
     test('opens when trigger is clicked', async ({ comfyPage }) => {
       const { trigger, menu } = getLocators(comfyPage.page)
       await trigger.click()

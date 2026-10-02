@@ -109,16 +109,38 @@ describe('SearchAutocomplete', () => {
   })
 
   it('does not select an option when Enter is pressed during composition', async () => {
-    renderComponent({ suggestions: ['foo'] })
-    const input = screen.getByRole('textbox')
-    await fireEvent.compositionStart(input)
-    const enter = new KeyboardEvent('keydown', {
-      key: 'Enter',
-      bubbles: true,
-      cancelable: true
+    const onSelect = vi.fn()
+    const onUpdateModelValue = vi.fn()
+    const user = userEvent.setup()
+    render(SearchAutocomplete, {
+      global: { plugins: [i18n] },
+      props: {
+        modelValue: '',
+        suggestions: ['foo'],
+        openOnFocus: true,
+        onSelect,
+        'onUpdate:modelValue': onUpdateModelValue
+      }
     })
 
-    expect(input.dispatchEvent(enter)).toBe(false)
-    expect(enter.defaultPrevented).toBe(true)
+    const input = screen.getByRole('combobox')
+    await user.click(input)
+    await screen.findByRole('option', { name: 'foo' })
+    await user.keyboard('{ArrowDown}')
+    await fireEvent.compositionStart(input)
+    await user.keyboard('{Enter}')
+
+    expect(input).toHaveValue('')
+    expect(onUpdateModelValue).not.toHaveBeenCalled()
+    expect(onSelect).not.toHaveBeenCalled()
+
+    await fireEvent.compositionEnd(input)
+    await user.click(input)
+    await screen.findByRole('option', { name: 'foo' })
+    await user.keyboard('{Home}')
+    await user.keyboard('{Enter}')
+
+    expect(onUpdateModelValue).toHaveBeenCalledWith('foo')
+    expect(onSelect).toHaveBeenCalledWith('foo')
   })
 })

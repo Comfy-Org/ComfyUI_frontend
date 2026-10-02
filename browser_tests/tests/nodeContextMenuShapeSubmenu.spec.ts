@@ -57,5 +57,16 @@ test.describe(
       await shapeItem.click()
       await expectShapePopoverVisible(comfyPage)
     })
+
+    test('Color submenu items render their color swatches', async ({
+      comfyPage
+    }) => {
+      await openMoreOptionsMenu(comfyPage, 'KSampler')
+      const submenu = await comfyPage.contextMenu.openColorSubmenu()
+
+      await expect(
+        comfyPage.contextMenu.colorSwatch('Blue', submenu)
+      ).toBeVisible()
+    })
   }
 )
