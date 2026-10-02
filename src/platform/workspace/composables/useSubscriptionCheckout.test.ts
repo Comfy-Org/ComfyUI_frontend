@@ -1470,7 +1470,8 @@ describe('useSubscriptionCheckout', () => {
     it.for([
       ['SUBSCRIPTION_PAYMENT_REQUIRED', null],
       ['OUTSTANDING_PAYMENT_REQUIRED', null],
-      ['TRANSITION_NOT_ALLOWED', 'payment_failed']
+      ['TRANSITION_NOT_ALLOWED', 'payment_failed'],
+      ['TRANSITION_NOT_ALLOWED', 'paused']
     ] as const)(
       'routes %s previews to the billing portal',
       async ([code, status]) => {

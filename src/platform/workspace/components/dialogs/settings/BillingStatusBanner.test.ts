@@ -376,6 +376,16 @@ describe('BillingStatusBanner', () => {
       ).toBeInTheDocument()
     })
 
+    it('offers Pay invoice on a paused workspace', () => {
+      pausedState()
+      state.renewalInvoice = invoice
+      renderBanner()
+
+      expect(
+        screen.getByRole('button', { name: 'Pay invoice' })
+      ).toBeInTheDocument()
+    })
+
     it('omits Pay invoice when there is no renewal invoice', () => {
       paymentFailedState()
       renderBanner()
@@ -439,6 +449,20 @@ describe('BillingStatusBanner', () => {
     state.isTeamPlan = false
     state.workspaceType = 'personal'
     // A known personal tier: an unrecognized one is denied recovery outright.
+    state.subscription = { ...state.subscription!, tier: 'PRO' }
+    renderBanner()
+
+    expect(screen.getByRole('status')).toHaveTextContent('Subscription paused')
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Update payment' })
+    )
+    expect(state.manageSubscription).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows the paused banner to personal workspace owners', async () => {
+    pausedState()
+    state.isTeamPlan = false
+    state.workspaceType = 'personal'
     state.subscription = { ...state.subscription!, tier: 'PRO' }
     renderBanner()
 

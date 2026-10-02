@@ -97,6 +97,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { ENTERPRISE_URL } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useBillingBanner } from '@/platform/workspace/composables/useBillingBanner'
+import type { BillingBannerKind } from '@/platform/workspace/composables/useBillingBanner'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { usePlanEnded } from '@/platform/workspace/composables/usePlanEnded'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
@@ -153,14 +154,6 @@ interface BannerView {
 
 const bs = 'workspacePanel.billingStatus'
 
-const pausedView = (): BannerView => ({
-  muted: !canManage.value,
-  title: t(`${bs}.paused.title`),
-  body: canManage.value ? t(`${bs}.paused.body`) : t(`${bs}.paused.memberBody`),
-  action: canManage.value ? 'updatePayment' : null,
-  dismissible: false
-})
-
 // Only an https payment page is opened; anything else hides the action.
 function safeInvoiceUrl(value: string | undefined): string | undefined {
   if (!value) return undefined
@@ -171,9 +164,12 @@ function safeInvoiceUrl(value: string | undefined): string | undefined {
   }
 }
 
-// Runs are already blocked on payment_failed; reads as paused until BE-6970.
-const paymentFailedView = (): BannerView => ({
-  ...pausedView(),
+const pausedView = (): BannerView => ({
+  muted: !canManage.value,
+  title: t(`${bs}.paused.title`),
+  body: canManage.value ? t(`${bs}.paused.body`) : t(`${bs}.paused.memberBody`),
+  action: canManage.value ? 'updatePayment' : null,
+  dismissible: false,
   payInvoiceUrl: safeInvoiceUrl(renewalInvoice.value?.hosted_invoice_url)
 })
 
@@ -285,24 +281,19 @@ const planChangeView = (): BannerView | null =>
       }
     : null
 
-const banner = computed<BannerView | null>(() => {
-  switch (kind.value) {
-    case 'paused':
-      return pausedView()
-    case 'paymentFailed':
-      return paymentFailedView()
-    case 'planEnded':
-      return planEndedView()
-    case 'outOfCredits':
-      return outOfCreditsView()
-    case 'ending':
-      return endingView()
-    case 'planChange':
-      return planChangeView()
-    default:
-      return null
-  }
-})
+// Runs are already blocked on payment_failed, so it reads as paused.
+const bannerViews: Record<BillingBannerKind, () => BannerView | null> = {
+  paused: pausedView,
+  paymentFailed: pausedView,
+  planEnded: planEndedView,
+  outOfCredits: outOfCreditsView,
+  ending: endingView,
+  planChange: planChangeView
+}
+
+const banner = computed<BannerView | null>(() =>
+  kind.value ? bannerViews[kind.value]() : null
+)
 
 function handleAddCredits() {
   void dialogService.showTopUpCreditsDialog()
