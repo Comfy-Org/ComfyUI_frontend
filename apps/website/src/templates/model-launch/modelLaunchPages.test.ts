@@ -74,6 +74,7 @@ describe.for(pages)('$name launch page config', ({ page }) => {
       ...(page.hero.badgeKeys ?? []),
       ...(page.showcases ?? []).flatMap((showcase) => [
         showcase.headingKey,
+        showcase.cta?.labelKey,
         showcase.descriptionKey
       ]),
       page.gallery?.headingKey,
@@ -186,7 +187,8 @@ describe.for(pages)('$name launch page config', ({ page }) => {
       page.steps?.secondaryCta?.href,
       page.hero.promptBar?.cta.href,
       page.pricing?.banner?.cta.href,
-      ...(page.gallery?.cards.map((card) => card.href) ?? [])
+      ...(page.gallery?.cards.map((card) => card.href) ?? []),
+      ...(page.showcases ?? []).map((showcase) => showcase.cta?.href)
     ].filter((href): href is string => href !== undefined)
 
     expect(hrefs.filter((href) => !href.startsWith('https://'))).toEqual([])

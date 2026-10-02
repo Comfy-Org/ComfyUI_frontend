@@ -49,6 +49,30 @@ describe('ModelLaunchShowcaseSection', () => {
     }
   )
 
+  it('renders the optional CTA as a link after the description', () => {
+    render(ModelLaunchShowcaseSection, {
+      props: {
+        showcase: {
+          ...showcase,
+          descriptionKey: 'nanoBanana.showcase.photography.description',
+          cta: {
+            labelKey: 'nanoBanana.hero.primaryCta',
+            href: 'https://cloud.comfy.org/',
+            target: '_blank'
+          }
+        }
+      }
+    })
+
+    const link = screen.getByRole('link', { name: 'RUN NANO BANANA' })
+    expect(link.getAttribute('href')).toBe('https://cloud.comfy.org/')
+    expect(
+      screen.getByText(t('nanoBanana.showcase.photography.description', 'en'), {
+        exact: false
+      })
+    ).toBeTruthy()
+  })
+
   it('exposes each still once and hides the looping copy from assistive tech', () => {
     render(ModelLaunchShowcaseSection, { props: { showcase, locale: 'zh-CN' } })
 

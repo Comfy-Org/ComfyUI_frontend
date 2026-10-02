@@ -132,6 +132,8 @@ interface ModelLaunchShowcaseCard {
 export interface ModelLaunchShowcase {
   headingKey: TranslationKey
   descriptionKey?: TranslationKey
+  // Inline text link rendered after the description.
+  cta?: ModelLaunchCta
   cards: readonly ModelLaunchShowcaseCard[]
 }
 

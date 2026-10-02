@@ -43,10 +43,20 @@ const loopDuration = computed(
         {{ t(showcase.headingKey, locale) }}
       </h2>
       <p
-        v-if="showcase.descriptionKey"
+        v-if="showcase.descriptionKey || showcase.cta"
         class="mt-6 text-base/relaxed font-light text-primary-comfy-canvas lg:text-lg/relaxed"
       >
-        {{ t(showcase.descriptionKey, locale) }}
+        <template v-if="showcase.descriptionKey">{{
+          t(showcase.descriptionKey, locale)
+        }}</template>
+        <a
+          v-if="showcase.cta"
+          :href="showcase.cta.href"
+          :target="showcase.cta.target"
+          rel="noopener"
+          class="font-bold whitespace-nowrap text-primary-comfy-yellow underline underline-offset-4 transition-opacity hover:opacity-70"
+          >{{ t(showcase.cta.labelKey, locale) }}</a
+        >
       </p>
     </div>
 

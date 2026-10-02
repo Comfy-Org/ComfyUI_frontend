@@ -133,6 +133,12 @@ const advertisingCards = localCards('advertising', [
   }
 ])
 
+const showcaseCta = {
+  labelKey: 'nanoBanana.hero.primaryCta',
+  href: nanoBananaLinks.cloud,
+  target: '_blank'
+} as const
+
 export const nanoBananaPage: ModelLaunchPage = {
   metaTitleKey: 'nanoBanana.meta.title',
   metaDescriptionKey: 'nanoBanana.meta.description',
@@ -163,16 +169,19 @@ export const nanoBananaPage: ModelLaunchPage = {
     {
       headingKey: 'nanoBanana.showcase.photography.heading',
       descriptionKey: 'nanoBanana.showcase.photography.description',
+      cta: showcaseCta,
       cards: photographyCards
     },
     {
       headingKey: 'nanoBanana.showcase.design.heading',
       descriptionKey: 'nanoBanana.showcase.design.description',
+      cta: showcaseCta,
       cards: designCards
     },
     {
       headingKey: 'nanoBanana.showcase.advertising.heading',
       descriptionKey: 'nanoBanana.showcase.advertising.description',
+      cta: showcaseCta,
       cards: advertisingCards
     }
   ],
