@@ -413,6 +413,36 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     return workflowId
   }
 
+  function restoreReentrantAdmission(
+    minted: Op[],
+    admissionTarget: string,
+    admissionEpoch: number,
+    admissionAbortGeneration: number
+  ): boolean {
+    if (stateEpoch === admissionEpoch) return false
+    if (detached) {
+      notifyDetachSettlement({ state: 'undeliverable', ops: minted })
+      return true
+    }
+    if (abortGeneration !== admissionAbortGeneration) {
+      guardedSettlementNotifier('failure_settling_agent_op_sender_abort')({
+        state: 'undeliverable',
+        ops: minted
+      })
+      return true
+    }
+    if (open?.workflowId === admissionTarget) {
+      open.ops = [...minted, ...open.ops]
+      stateEpoch++
+      return true
+    }
+    guardedSettlementNotifier('failure_settling_agent_op_sender')({
+      state: 'undeliverable',
+      ops: minted
+    })
+    return true
+  }
+
   function admit(operations: GraphOperation[]): void {
     if (operations.length === 0) return
     const workflowId = deps.workflowId()
@@ -434,29 +464,15 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     // callback. Do not resurrect an aborted admission or append old-workflow
     // ops to state installed by a nested admit().
     if (open?.workflowId !== admissionTarget) seal()
-    if (stateEpoch !== admissionEpoch) {
-      if (detached) {
-        notifyDetachSettlement({ state: 'undeliverable', ops: minted })
-        return
-      }
-      if (abortGeneration !== admissionAbortGeneration) {
-        guardedSettlementNotifier('failure_settling_agent_op_sender_abort')({
-          state: 'undeliverable',
-          ops: minted
-        })
-        return
-      }
-      if (open?.workflowId === admissionTarget) {
-        open.ops = [...minted, ...open.ops]
-        stateEpoch++
-        return
-      }
-      guardedSettlementNotifier('failure_settling_agent_op_sender')({
-        state: 'undeliverable',
-        ops: minted
-      })
+    if (
+      restoreReentrantAdmission(
+        minted,
+        admissionTarget,
+        admissionEpoch,
+        admissionAbortGeneration
+      )
+    )
       return
-    }
     if (open) for (const op of minted) open.ops.push(op)
     else open = { workflowId: admissionTarget, ops: minted }
     stateEpoch++
