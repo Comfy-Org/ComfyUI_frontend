@@ -2085,6 +2085,29 @@ describe('FullPageCheckoutView payment authentication', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
+  it('stops asking after a cancel the server never settles, and offers Cancel payment again', async () => {
+    const fake = await payReady({
+      cancelOperation: { status: 'cancel_requested' }
+    })
+    fake.subscribe.mockImplementation(() => new Promise(() => {}))
+    form.emit('confirm', 'ctoken_1')
+    fake.publishOperation(challengedOperation('op_3ds', 'required'))
+    const cancel = await screen.findByRole('button', { name: 'Cancel payment' })
+
+    vi.useFakeTimers({ toFake: ['setTimeout'] })
+    await userEvent
+      .setup({ advanceTimers: vi.advanceTimersByTime })
+      .click(cancel)
+    await vi.advanceTimersByTimeAsync(OPERATION_POLL_TIMING.initialMs * 30)
+    vi.useRealTimers()
+
+    expect(fake.cancelOperation).toHaveBeenCalledTimes(10)
+    expect(
+      await screen.findByRole('button', { name: 'Cancel payment' })
+    ).toBeEnabled()
+    expect(footnote()).toHaveTextContent(PHASE_A)
+  })
+
   it('locks its own Pay through a challenge, then processing, then lands on the success', async () => {
     const fake = await payReady()
     expect(screen.getByRole('button', { name: 'Back' })).toBeInTheDocument()

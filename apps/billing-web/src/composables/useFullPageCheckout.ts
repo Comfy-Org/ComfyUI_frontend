@@ -35,6 +35,7 @@ import {
   awaitingServer,
   cancelTarget,
   challengeToReopen,
+  isCanceling,
   isParked,
   needsConsent,
   railAcceptsPay,
@@ -80,6 +81,10 @@ export type PayChoice =
   | undefined
 
 const CARD_METHOD_TYPE = 'card'
+
+/** How often, and how many times, a cancel the server has not settled is asked again. */
+const CANCEL_REASK_MS = OPERATION_POLL_TIMING.initialMs
+const CANCEL_ASKS = 10
 
 function selectedRailOf(choice: PayChoice) {
   if (choice === undefined) return 'on_file'
@@ -690,7 +695,8 @@ export function useFullPageCheckout() {
   /**
    * One cancel per challenge: a click while one is unanswered sends nothing.
    * A cancel the server has not settled yet is asked again, which it answers
-   * the same way until it settles; a refusal re-reads the payment and
+   * the same way until it settles, for as long as the page still waits on
+   * it; one that never settles, like a refusal, re-reads the payment and
    * follows it from there.
    */
   async function cancelPayment() {
@@ -704,20 +710,23 @@ export function useFullPageCheckout() {
 
   async function askToCancel(operationId: string) {
     let answer = await commands.cancelOperation(operationId)
-    while (answer.status === 'cancel_requested') {
-      await new Promise((resolve) =>
-        setTimeout(resolve, OPERATION_POLL_TIMING.initialMs)
-      )
+    for (let asked = 1; asksAgain(answer, asked); asked++) {
+      await new Promise((resolve) => setTimeout(resolve, CANCEL_REASK_MS))
       if (disposed) return
       answer = await commands.cancelOperation(operationId)
     }
-    settleCancel(operationId, answer)
+    if (disposed) return
+    if (answer.status === 'canceled' || isCanceling(page.value))
+      settleCancel(operationId, answer)
   }
 
-  function settleCancel(
-    operationId: string,
-    answer: Exclude<CancelOperationResult, { status: 'cancel_requested' }>
-  ) {
+  const asksAgain = (answer: CancelOperationResult, asked: number) =>
+    !disposed &&
+    answer.status === 'cancel_requested' &&
+    isCanceling(page.value) &&
+    asked < CANCEL_ASKS
+
+  function settleCancel(operationId: string, answer: CancelOperationResult) {
     if (answer.status === 'canceled') {
       payGeneration++
       dispatch({ type: 'paymentCanceled', operationId })

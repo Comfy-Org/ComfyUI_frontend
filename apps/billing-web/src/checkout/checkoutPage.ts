@@ -103,6 +103,8 @@ type Capture = {
   readonly reactivation: Reactivation
   readonly attempt: Attempt
   readonly outcome?: InlineOutcome
+  /** The operation the server canceled from here; a later read of it is stale. */
+  readonly canceled?: string
 }
 
 /**
@@ -150,6 +152,7 @@ export type CheckoutPage =
       readonly kind: 'resolving'
       readonly outcome?: InlineOutcome
       readonly settled?: TerminalBillingOperation
+      readonly canceled?: string
     }
   | {
       readonly kind: 'refused'
@@ -498,7 +501,8 @@ function cancelOf(page: CheckoutPage): PaymentCancel | undefined {
     : undefined
 }
 
-const isCanceling = (page: CheckoutPage) => cancelOf(page) === 'canceling'
+export const isCanceling = (page: CheckoutPage) =>
+  cancelOf(page) === 'canceling'
 
 function withCancel(
   page: CheckoutPage,
@@ -541,11 +545,15 @@ function namesOperation(
 function canceled(page: CheckoutPage, operationId: string): CheckoutPage {
   switch (page.kind) {
     case 'waiting':
-      return page.operation.id === operationId ? RESOLVING : page
+      return page.operation.id === operationId
+        ? { kind: 'resolving', canceled: operationId }
+        : page
     case 'resolving':
-      return namesOperation(page.outcome, operationId) ? RESOLVING : page
+      return namesOperation(page.outcome, operationId)
+        ? { kind: 'resolving', canceled: operationId }
+        : { ...page, canceled: operationId }
     case 'capture':
-      return canceledInCapture(page, operationId)
+      return { ...canceledInCapture(page, operationId), canceled: operationId }
     default:
       return page
   }
@@ -560,6 +568,28 @@ function canceledInCapture(page: Capture, operationId: string): Capture {
   return namesOperation(page.outcome, operationId)
     ? { ...page, outcome: undefined }
     : page
+}
+
+/** A verdict reached while the server settles a cancel waits for its answer. */
+const heldForCancel = (
+  page: CheckoutPage,
+  outcome: OperationOutcome | undefined
+) => outcome !== undefined && isCanceling(page)
+
+/**
+ * A read of a canceled operation still short of its end, or ending unpaid,
+ * says nothing new: a poll taken before the cancel committed can land after
+ * it, and the unpaid end is the cancel itself, not a verdict.
+ */
+function isCanceledHere(
+  page: CheckoutPage,
+  operation: BillingOperationState
+): boolean {
+  return (
+    (page.kind === 'capture' || page.kind === 'resolving') &&
+    page.canceled === operation.id &&
+    operation.phase !== 'succeeded'
+  )
 }
 
 /** A lapsed code changed the price, so its card outranks a carried verdict. */
@@ -600,7 +630,8 @@ function arrived(
     rail: quotedRail(event),
     reactivation: reactivationOf(event.reactivation),
     attempt: IDLE,
-    ...(outcome === undefined ? {} : { outcome })
+    ...(outcome === undefined ? {} : { outcome }),
+    ...(page.canceled === undefined ? {} : { canceled: page.canceled })
   }
 }
 
@@ -886,6 +917,8 @@ function followed(
   operation: BillingOperationState,
   outcome: OperationOutcome | undefined
 ): CheckoutPage {
+  if (isCanceledHere(page, operation) || heldForCancel(page, outcome))
+    return page
   if (page.kind === 'terminal') return withSettled(page, operation)
   if (page.kind === 'resolving') return arrivedOn(page, operation, outcome)
   if (page.kind === 'capture')

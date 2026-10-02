@@ -1890,7 +1890,30 @@ describe('reduceCheckoutPage through Cancel payment', () => {
       {
         name: 'a cancel the server settled goes back to the form, as typed, with no card',
         events: [...challenged, cancel, canceledHere],
-        expected: capturing({ kind: 'idle' })
+        expected: { ...capturing({ kind: 'idle' }), canceled: 'op_3ds' }
+      },
+      {
+        name: 'a read of the canceled operation taken before the cancel committed keeps the form',
+        events: [
+          ...challenged,
+          cancel,
+          canceledHere,
+          changed(challengedOperation())
+        ],
+        expected: { ...capturing({ kind: 'idle' }), canceled: 'op_3ds' }
+      },
+      {
+        name: "the canceled operation's unpaid end is not a card",
+        events: [
+          ...challenged,
+          cancel,
+          canceledHere,
+          changed(
+            failedOperation('authentication_failed', 'op_3ds'),
+            notCompleted
+          )
+        ],
+        expected: { ...capturing({ kind: 'idle' }), canceled: 'op_3ds' }
       },
       {
         name: "a cancel settled after the operation's own verdict drops that card",
@@ -1900,7 +1923,18 @@ describe('reduceCheckoutPage through Cancel payment', () => {
           changed(refusedChallenge(), notCompleted),
           canceledHere
         ],
-        expected: capturing({ kind: 'idle' })
+        expected: { ...capturing({ kind: 'idle' }), canceled: 'op_3ds' }
+      },
+      {
+        name: 'a verdict the operation reaches while the cancel is unanswered shows once the server refuses the cancel',
+        events: [
+          ...challenged,
+          cancel,
+          changed(refusedChallenge(), notCompleted),
+          refusedAs('NOT_CANCELABLE'),
+          reconciled(refusedChallenge(), notCompleted)
+        ],
+        expected: { ...capturing({ kind: 'idle' }), outcome: notCompleted }
       },
       {
         name: 'a payment that won the race keeps the form locked and follows the operation',
@@ -1937,7 +1971,48 @@ describe('reduceCheckoutPage through Cancel payment', () => {
       {
         name: 'a page that arrived on the challenge resolves a fresh form once canceled',
         events: [reconciled(challengedOperation()), cancel, canceledHere],
-        expected: RESOLVING
+        expected: { kind: 'resolving', canceled: 'op_3ds' }
+      },
+      {
+        name: 'a page that arrived on the challenge holds its verdict while the cancel is unanswered',
+        events: [
+          reconciled(challengedOperation()),
+          cancel,
+          changed(
+            failedOperation('authentication_failed', 'op_3ds'),
+            notCompleted
+          )
+        ],
+        expected: {
+          kind: 'waiting',
+          operation: challengedOperation(),
+          cancel: 'canceling'
+        }
+      },
+      {
+        name: 'a fresh form after a cancel opens with no card for the canceled operation',
+        events: [
+          reconciled(challengedOperation()),
+          cancel,
+          canceledHere,
+          reconciled(
+            failedOperation('authentication_failed', 'op_3ds'),
+            notCompleted
+          ),
+          quoted(0)
+        ],
+        expected: {
+          kind: 'capture',
+          rail: {
+            method: 'collect',
+            element: 'loading',
+            saved: 'none',
+            tab: 'new'
+          },
+          reactivation: 'not_required',
+          attempt: { kind: 'idle' },
+          canceled: 'op_3ds'
+        }
       },
       {
         name: 'a refusal keeps a page that arrived on the challenge waiting',
