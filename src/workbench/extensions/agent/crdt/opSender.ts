@@ -151,6 +151,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   let lastMintedWorkflowId: string | null = null
   let detached = false
   let suspended = false
+  let pumping = false
   let stateEpoch = 0
   // Late-result credits: every send a batch leaves the client with may still
   // draw a result, including the send whose silence provoked the resend and
@@ -343,20 +344,27 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   }
 
   function pump(): void {
-    if (detached || inFlight !== null) return
-    const queued = queue.shift()
-    if (!queued) return
-    inFlight = {
-      workflowId: queued.workflowId,
-      ops: queued.ops,
-      opIds: new Set(queued.ops.map((op) => op.op_id)),
-      sends: 0,
-      reportedThrow: false,
-      resent: false,
-      parked: false,
-      timer: null
+    if (pumping) return
+    pumping = true
+    try {
+      while (!detached && inFlight === null) {
+        const queued = queue.shift()
+        if (!queued) return
+        inFlight = {
+          workflowId: queued.workflowId,
+          ops: queued.ops,
+          opIds: new Set(queued.ops.map((op) => op.op_id)),
+          sends: 0,
+          reportedThrow: false,
+          resent: false,
+          parked: false,
+          timer: null
+        }
+        transmit(inFlight, 0)
+      }
+    } finally {
+      pumping = false
     }
-    transmit(inFlight, 0)
   }
 
   function settleUnsendableAdmission(
