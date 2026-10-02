@@ -148,7 +148,7 @@ describe('useAgentConsent', () => {
     reportError.mockReset()
     recordConsentOfferDeclined.mockReset()
     recordConsentOfferDeclined.mockResolvedValue(undefined)
-    vi.mocked(useToastStore().add).mockReset()
+    vi.mocked(useToast().error).mockReset()
   })
 
   it.for(['first_load', 'button_click'] as const)(
@@ -227,7 +227,7 @@ describe('useAgentConsent', () => {
     await request
 
     expect(recordConsentOfferDeclined).not.toHaveBeenCalled()
-    expect(useDialogService().showSignInDialog).not.toHaveBeenCalled()
+    expect(useAuthDialogs().showSignInDialog).not.toHaveBeenCalled()
   })
 
   it('records no refusal when the card is dismissed instead of refused', async () => {
@@ -264,7 +264,7 @@ describe('useAgentConsent', () => {
         errorType: 'agent_consent_decline_write_failure'
       })
     })
-    expect(useToastStore().add).not.toHaveBeenCalled()
+    expect(useToast().error).not.toHaveBeenCalled()
     expect(useDialogStore().dialogStack).toHaveLength(0)
   })
 
