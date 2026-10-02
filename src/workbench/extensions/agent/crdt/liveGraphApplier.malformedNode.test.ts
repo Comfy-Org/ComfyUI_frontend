@@ -58,7 +58,7 @@ beforeEach(() => {
 })
 
 describe('LiveGraphApplier malformed node report', () => {
-  it('names the node class and the importing producer, and still skips the node', () => {
+  it('names the node class and unstamped producer, and still skips the node', () => {
     const slot = { name: 'image', link: null }
     const { graph, doc, applyCollected } = setup({
       nodes: [sinkNode(slot)],
