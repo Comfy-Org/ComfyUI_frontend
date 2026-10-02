@@ -26,6 +26,7 @@ import { chunkWireOps, mintWireOps } from './opEnvelope'
 const SEND_RETRY_LIMIT = 5
 const SEND_RETRY_INTERVAL_MS = 500
 const RESULT_TIMEOUT_MS = 10_000
+const FAILURE_REPORT_WINDOW_MS = 60_000
 
 /**
  * The sender's view of a parsed `doc_ops_result`. Derived from the
@@ -150,6 +151,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   let lastMintedWorkflowId: string | null = null
   let detached = false
   let suspended = false
+  let stateEpoch = 0
   // Late-result credits: every send a batch leaves the client with may still
   // draw a result, including the send whose silence provoked the resend and
   // the sends of a batch that has already settled. As ANONYMOUS failures
@@ -164,7 +166,10 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   let staleAnonymousBudget = 0
   const retiredOpIds = new Set<string>()
   let settlementFailureReports = 0
+  let settlementFailureWindowStartedAt = 0
   const MAX_SETTLEMENT_FAILURE_REPORTS = 3
+  let chunkFailureReports = 0
+  const MAX_CHUNK_FAILURE_REPORTS = 3
 
   function retire(batch: InFlight, answered: number): void {
     const outstanding = batch.sends - answered
@@ -186,6 +191,12 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     })
   }
 
+  function reportChunkFailure(cause: unknown, errorType: string): void {
+    if (chunkFailureReports >= MAX_CHUNK_FAILURE_REPORTS) return
+    chunkFailureReports++
+    reportDegraded(cause, errorType)
+  }
+
   function guardedSettlementNotifier(
     errorType: string
   ): (outcome: BatchOutcome) => void {
@@ -193,7 +204,17 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     return (outcome) => {
       try {
         deps.onBatchSettled(outcome)
+        settlementFailureReports = 0
+        settlementFailureWindowStartedAt = 0
       } catch (cause) {
+        const now = Date.now()
+        if (
+          settlementFailureWindowStartedAt === 0 ||
+          now - settlementFailureWindowStartedAt >= FAILURE_REPORT_WINDOW_MS
+        ) {
+          settlementFailureReports = 0
+          settlementFailureWindowStartedAt = now
+        }
         if (
           reportedFailure ||
           settlementFailureReports >= MAX_SETTLEMENT_FAILURE_REPORTS
@@ -293,10 +314,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     }, RESULT_TIMEOUT_MS)
   }
 
-  function drainOutstanding(
-    notify: (outcome: BatchOutcome) => void,
-    chunkErrorType: string
-  ): void {
+  function drainOutstanding(notify: (outcome: BatchOutcome) => void): void {
     // Tear down live state before any fallible serialization or callback. A
     // malformed custom-node value must not leave timers or queued work behind.
     const unsealed = open
@@ -317,7 +335,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       notify({ state: 'undeliverable', ops: batch.ops })
     }
     if (unsealed) {
-      const chunks = safelyChunkWireOps(unsealed.ops, chunkErrorType)
+      const chunks = safelyChunkWireOps(unsealed.ops)
       for (const ops of chunks) {
         notify({ state: 'undeliverable', ops })
       }
@@ -343,6 +361,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
 
   function admit(operations: GraphOperation[]): void {
     if (operations.length === 0) return
+    const admissionEpoch = ++stateEpoch
     const workflowId = deps.workflowId()
     if (workflowId !== lastMintedWorkflowId) {
       lastMintedVersion = -1
@@ -368,13 +387,18 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       })
       return
     }
-    // seal() can synchronously settle a malformed admission. Consumers may
-    // detach from that callback, so never recreate live state afterwards.
-    if (open?.workflowId !== workflowId && seal()) {
-      notifyDetachSettlement({ state: 'undeliverable', ops: minted })
+    // seal() can synchronously re-enter the sender through its settlement
+    // callback. Do not resurrect an aborted admission or append old-workflow
+    // ops to state installed by a nested admit().
+    if (open?.workflowId !== workflowId) seal()
+    if (stateEpoch !== admissionEpoch) {
+      guardedSettlementNotifier('failure_settling_agent_op_sender')({
+        state: 'undeliverable',
+        ops: minted
+      })
       return
     }
-    if (open) open.ops.push(...minted)
+    if (open) for (const op of minted) open.ops.push(op)
     else open = { workflowId, ops: minted }
   }
 
@@ -383,9 +407,11 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     const { workflowId, ops } = open
     open = null
     try {
-      queue.push(...chunkWireOps(ops).map((ops) => ({ workflowId, ops })))
+      for (const chunk of chunkWireOps(ops))
+        queue.push({ workflowId, ops: chunk })
+      chunkFailureReports = 0
     } catch (cause) {
-      reportDegraded(cause, 'failure_chunking_agent_op_sender')
+      reportChunkFailure(cause, 'failure_chunking_agent_op_sender')
       let rejectedFrom = ops.length
       for (const [index, op] of ops.entries()) {
         try {
@@ -400,18 +426,18 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       // may depend on it (for example a connect after add_node), so sending a
       // suffix would create a partial admission and diverge from local state.
       const sendable = ops.slice(0, rejectedFrom)
-      const rejected = ops.slice(rejectedFrom)
+      let rejected = ops.slice(rejectedFrom)
       try {
         const recovered = chunkWireOps(sendable)
-        queue.push(...recovered.map((ops) => ({ workflowId, ops })))
+        for (const chunk of recovered) queue.push({ workflowId, ops: chunk })
       } catch (recoveryCause) {
         // Serialization can be stateful. A getter or toJSON may pass the
         // per-op probe and fail when recovery chunks the prefix again.
-        reportDegraded(
+        reportChunkFailure(
           recoveryCause,
           'failure_rechunking_agent_op_sender_recovery'
         )
-        rejected.unshift(...sendable)
+        rejected = [...sendable, ...rejected]
       }
       if (rejected.length > 0)
         guardedSettlementNotifier('failure_settling_agent_op_sender')({
@@ -422,11 +448,11 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     return detached
   }
 
-  function safelyChunkWireOps(ops: Op[], errorType: string): Op[][] {
+  function safelyChunkWireOps(ops: Op[]): Op[][] {
     try {
       return chunkWireOps(ops)
     } catch (cause) {
-      reportDegraded(cause, errorType)
+      reportChunkFailure(cause, 'failure_chunking_agent_op_sender_teardown')
       return ops.map((op) => [op])
     }
   }
@@ -506,21 +532,19 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       }
     },
     abortAll() {
+      stateEpoch++
       lastMintedVersion = -1
       lastMintedWorkflowId = null
       drainOutstanding(
-        guardedSettlementNotifier('failure_settling_agent_op_sender_abort'),
-        'failure_chunking_agent_op_sender_abort'
+        guardedSettlementNotifier('failure_settling_agent_op_sender_abort')
       )
     },
     detach() {
       if (detached) return
       detached = true
+      stateEpoch++
       try {
-        drainOutstanding(
-          notifyDetachSettlement,
-          'failure_chunking_agent_op_sender_teardown'
-        )
+        drainOutstanding(notifyDetachSettlement)
         // The listener is inert once detached. Release late-result bookkeeping
         // even if an injected unsubscribe implementation fails below.
         staleAnonymousBudget = 0

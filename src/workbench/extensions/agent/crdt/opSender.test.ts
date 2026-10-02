@@ -703,6 +703,11 @@ describe('createOpSender', () => {
     ackInFlight()
 
     expect(reportError).toHaveBeenCalledTimes(3)
+
+    vi.advanceTimersByTime(60_000)
+    localSender.enqueue([addNode(6)])
+    ackInFlight()
+    expect(reportError).toHaveBeenCalledTimes(4)
     localSender.detach()
   })
 
@@ -920,6 +925,26 @@ describe('createOpSender', () => {
     )
   })
 
+  it('bounds repeated chunk failure telemetry for one sender', () => {
+    const enqueueCircular = (id: number) => {
+      const operation = addNode(id)
+      const node: AddNodeOperation['node'] & Record<string, unknown> = {
+        ...operation.node
+      }
+      node.circular = node
+      operation.node = node
+      sender.enqueue([operation])
+    }
+
+    enqueueCircular(1)
+    enqueueCircular(2)
+    enqueueCircular(3)
+    enqueueCircular(4)
+    enqueueCircular(5)
+
+    expect(reportError).toHaveBeenCalledTimes(3)
+  })
+
   it('rejects an unserializable non-batchable op before transport', () => {
     const clear = {
       op: 'clear',
@@ -966,6 +991,100 @@ describe('createOpSender', () => {
       { state: 'undeliverable', nodeIds: [1] },
       { state: 'undeliverable', nodeIds: [2] }
     ])
+  })
+
+  it('does not resurrect an admission after sealing reenters abortAll', () => {
+    const circularNode = addNode(1)
+    const node: AddNodeOperation['node'] & Record<string, unknown> = {
+      ...circularNode.node
+    }
+    node.circular = node
+    circularNode.node = node
+    const localSettled: BatchOutcome[] = []
+    let workflow = 'wf-old'
+    const localSender = createOpSender({
+      sendOps: () => true,
+      onOpsResult: () => vi.fn(),
+      workflowId: () => workflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: (outcome) => {
+        localSettled.push(outcome)
+        if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 1))
+          localSender.abortAll()
+      }
+    })
+    localSender.admit([circularNode])
+    workflow = 'wf-new'
+
+    localSender.admit([addNode(2)])
+
+    expect(localSender.pending()).toBe(0)
+    expect(localSettled.map(summarizeSettlement)).toEqual([
+      { state: 'undeliverable', nodeIds: [1] },
+      { state: 'undeliverable', nodeIds: [2] }
+    ])
+  })
+
+  it('keeps a nested admission separate when sealing reenters admit', () => {
+    const circularNode = addNode(1)
+    const node: AddNodeOperation['node'] & Record<string, unknown> = {
+      ...circularNode.node
+    }
+    node.circular = node
+    circularNode.node = node
+    const localSettled: BatchOutcome[] = []
+    let workflow = 'wf-old'
+    const localSender = createOpSender({
+      sendOps: (workflowId, tab, ops) => {
+        sent.push({ workflowId, tab, ops })
+        return true
+      },
+      onOpsResult: () => vi.fn(),
+      workflowId: () => workflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: (outcome) => {
+        localSettled.push(outcome)
+        if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 1)) {
+          workflow = 'wf-nested'
+          localSender.admit([addNode(3)])
+        }
+      }
+    })
+    localSender.admit([circularNode])
+    workflow = 'wf-new'
+
+    localSender.admit([addNode(2)])
+    localSender.flush()
+
+    expect(sent).toHaveLength(1)
+    expect(sent[0].workflowId).toBe('wf-nested')
+    expect(
+      sent[0].ops.map((op) => ('node_id' in op ? op.node_id : null))
+    ).toEqual([3])
+    expect(localSettled.map(summarizeSettlement)).toEqual([
+      { state: 'undeliverable', nodeIds: [1] },
+      { state: 'undeliverable', nodeIds: [2] }
+    ])
+    localSender.detach()
+  })
+
+  it('contains a large malformed admission without argument spread overflow', () => {
+    const operations = Array.from({ length: 70_000 }, (_, id) => addNode(id))
+    const circularNode = operations.at(-1)!
+    const node: AddNodeOperation['node'] & Record<string, unknown> = {
+      ...circularNode.node
+    }
+    node.circular = node
+    circularNode.node = node
+
+    sender.admit(operations)
+
+    expect(() => sender.flush()).not.toThrow()
+    expect(settled.at(-1)?.state).toBe('undeliverable')
   })
 
   it('queues the valid prefix before an invalid suffix settlement detaches', () => {
