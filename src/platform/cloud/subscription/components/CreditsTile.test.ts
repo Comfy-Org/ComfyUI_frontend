@@ -414,6 +414,7 @@ describe('CreditsTile', () => {
     }
     const { container } = renderTile()
     expect(container.textContent).not.toContain('left of')
+    expect(container.textContent).not.toContain('Used after')
     expect(screen.queryByRole('progressbar')).toBeNull()
   })
 

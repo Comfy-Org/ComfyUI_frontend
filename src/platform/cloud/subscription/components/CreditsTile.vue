@@ -148,7 +148,10 @@
             {{ displayPrepaid }}
           </span>
         </div>
-        <span class="text-sm text-muted @max-[300px]:hidden">
+        <span
+          v-if="!isDurationUnknown"
+          class="text-sm text-muted @max-[300px]:hidden"
+        >
           {{ usedAfterAllowanceLabel }}
         </span>
       </div>
