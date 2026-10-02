@@ -666,6 +666,15 @@ describe('launchCancellationFlow', () => {
       cycle: 'yearly'
     }
 
+    const renderingFailure = {
+      operation: 'cancel',
+      stage: 'failed',
+      outcome: 'failure',
+      failure_category: 'rendering',
+      current_tier: 'pro',
+      cycle: 'yearly'
+    }
+
     function reportedCancelEvents() {
       return vi
         .mocked(useTelemetry()!.trackBillingEvent)
@@ -673,7 +682,12 @@ describe('launchCancellationFlow', () => {
         .map(([event]) => event)
     }
 
-    it.for([
+    it.for<{
+      name: string
+      show: (options: ChurnkeyShowOptions) => Promise<ChurnkeySessionOutcome>
+      showFallback: () => Promise<boolean>
+      reported: object[]
+    }>([
       {
         name: 'the customer leaves without cancelling',
         show: async () => ({ type: 'abandoned' }) as const,
@@ -732,17 +746,32 @@ describe('launchCancellationFlow', () => {
         showFallback: async () => {
           throw new Error('chunk unavailable')
         },
-        reported: [
-          intent,
-          {
-            operation: 'cancel',
-            stage: 'failed',
-            outcome: 'failure',
-            failure_category: 'rendering',
-            current_tier: 'pro',
-            cycle: 'yearly'
-          }
-        ]
+        reported: [intent, renderingFailure]
+      },
+      {
+        name: 'the customer confirms, the provider then fails and the native dialog cannot open',
+        show: async (options: ChurnkeyShowOptions) => {
+          await options.handleCancel('Too expensive')
+          throw new Error('provider unavailable')
+        },
+        showFallback: async () => {
+          throw new Error('chunk unavailable')
+        },
+        reported: [intent, renderingFailure]
+      },
+      {
+        name: 'the customer confirms, the cancel fails and the native dialog cannot open',
+        show: async (options: ChurnkeyShowOptions) => {
+          vi.mocked(useBillingContext().cancelSubscription).mockRejectedValue(
+            new Error('API down')
+          )
+          await options.handleCancel('Too expensive')
+          return { type: 'closed' } as const
+        },
+        showFallback: async () => {
+          throw new Error('chunk unavailable')
+        },
+        reported: [intent, renderingFailure]
       }
     ])('reports $name as its cancel events', async (row) => {
       mocks.prepare.mockResolvedValue(session(row.show))
@@ -750,6 +779,33 @@ describe('launchCancellationFlow', () => {
       await launchCancellationFlow({ showFallback: row.showFallback })
 
       expect(reportedCancelEvents()).toEqual(row.reported)
+    })
+
+    it.for([
+      {
+        name: 'a customer who confirmed before the provider failed',
+        show: async (options: ChurnkeyShowOptions) => {
+          await options.handleCancel('Too expensive')
+          throw new Error('provider unavailable')
+        },
+        handed: { flowAlreadyOpened: true, flowAlreadyConfirmed: true }
+      },
+      {
+        name: 'a customer who never confirmed before the provider failed',
+        show: async () => {
+          throw new Error('provider unavailable')
+        },
+        handed: { flowAlreadyOpened: true, flowAlreadyConfirmed: false }
+      }
+    ])('hands the native dialog the state of $name', async (row) => {
+      mocks.prepare.mockResolvedValue(session(row.show))
+      const showFallback = vi.fn()
+
+      await launchCancellationFlow({ showFallback })
+
+      expect(showFallback).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining(row.handed)
+      )
     })
 
     it('reaches Datadog as billing actions', async () => {

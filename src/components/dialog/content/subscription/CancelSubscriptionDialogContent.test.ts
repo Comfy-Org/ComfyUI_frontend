@@ -104,6 +104,7 @@ function renderComponent(
   props: {
     cancelAt?: string
     flowAlreadyOpened?: boolean
+    flowAlreadyConfirmed?: boolean
     isScopeCurrent?: () => boolean
   } = {}
 ) {
@@ -342,7 +343,11 @@ describe('CancelSubscriptionDialogContent', () => {
     it.for<{
       name: string
       arrange: () => void
-      props?: { flowAlreadyOpened?: boolean; isScopeCurrent?: () => boolean }
+      props?: {
+        flowAlreadyOpened?: boolean
+        flowAlreadyConfirmed?: boolean
+        isScopeCurrent?: () => boolean
+      }
       act: () => Promise<unknown>
       reported: object[]
     }>([
@@ -358,6 +363,13 @@ describe('CancelSubscriptionDialogContent', () => {
         props: { flowAlreadyOpened: true },
         act: keep,
         reported: [abandoned]
+      },
+      {
+        name: 'keeping the subscription after the provider flow the customer confirmed',
+        arrange: () => {},
+        props: { flowAlreadyOpened: true, flowAlreadyConfirmed: true },
+        act: keep,
+        reported: []
       },
       {
         name: 'a cancel that goes through',
