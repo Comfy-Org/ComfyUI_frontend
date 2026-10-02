@@ -124,8 +124,8 @@ const copy = {
   },
   'relight.masks.subject': { en: 'Subject', 'zh-CN': '主体' },
   'relight.masks.subjectPlaceholder': {
-    en: 'Person, sky, red jacket…',
-    'zh-CN': '人物、天空、红色外套…'
+    en: 'Person, sky…',
+    'zh-CN': '人物、天空…'
   },
   'relight.masks.create': { en: 'Create mask', 'zh-CN': '创建蒙版' },
   'relight.mask.subject': { en: 'Subject', 'zh-CN': '主体' },
@@ -179,7 +179,6 @@ const copy = {
   'relight.view.original': { en: 'Original', 'zh-CN': '原图' },
   'relight.edit': { en: 'Edit lights', 'zh-CN': '编辑灯光' },
   'relight.again': { en: 'Try again', 'zh-CN': '再试一次' },
-  'relight.download': { en: 'Download', 'zh-CN': '下载' },
   'relight.compare': {
     en: 'Drag to compare the original and the relit photo',
     'zh-CN': '拖动以对比原图与重新布光后的照片'

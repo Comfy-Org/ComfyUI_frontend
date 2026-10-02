@@ -53,6 +53,10 @@ const expandedRows = () =>
     .queryAllByRole('button', { expanded: true })
     .map((row) => row.textContent.trim())
 const editor = () => screen.getByTestId('relight-light-editor')
+const toolNames = (toolbar: HTMLElement) =>
+  within(toolbar)
+    .getAllByRole('button')
+    .map((tool) => tool.getAttribute('aria-label') ?? tool.textContent.trim())
 
 async function lightAction(
   user: ReturnType<typeof userEvent.setup>,
@@ -73,6 +77,10 @@ describe('RelightStudio', () => {
   it('relights from the floating panel: pick a light, change it, then get the result', async () => {
     const user = await openExample()
     expect(undo()).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Download' })).toHaveAttribute(
+      'aria-disabled',
+      'true'
+    )
     const lights = section('Lights')
 
     await user.click(lightRow('Cool fill'))
@@ -93,6 +101,11 @@ describe('RelightStudio', () => {
     expect(
       await screen.findByRole('link', { name: 'Download' })
     ).toHaveAttribute('href', '/images/apps/relight/example-relit.jpg')
+    expect(
+      within(
+        screen.getByRole('toolbar', { name: 'Relight tools' })
+      ).queryByRole('link')
+    ).toBeNull()
     expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull()
   })
 
@@ -338,6 +351,23 @@ describe('RelightStudio', () => {
       expect(
         within(lights).getByRole('slider', { name: 'Elevation' })
       ).toHaveValue(elevation)
+    }
+  )
+
+  it.for([
+    { layout: 'd', wide: true, last: 'Light handles' },
+    { layout: 'd', wide: false, last: 'Light handles' },
+    { layout: 'e', wide: true, last: 'Relight 20 credits' }
+  ])(
+    'keeps undo and redo at the right end of the tools in layout $layout (wide: $wide)',
+    async ({ layout, wide, last }) => {
+      screenIsWide(wide)
+      await openExample(layout)
+
+      const tools = toolNames(
+        screen.getByRole('toolbar', { name: 'Relight tools' })
+      )
+      expect(tools.slice(-3)).toEqual([last, 'Undo', 'Redo'])
     }
   )
 

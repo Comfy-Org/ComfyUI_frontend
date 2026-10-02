@@ -182,10 +182,18 @@ test('closes Move anything while its flag is off', async ({
   await expect(page.getByTestId('move-anything')).toHaveCount(0)
 })
 
-/** The editors' side panel is as wide as Cinematic Studio's side column. */
-async function expectCinematicPanelWidth(page: Page, panel: Locator) {
-  const width = (await panel.boundingBox())?.width ?? 0
-  expect(width).toBeCloseTo(((page.viewportSize()?.width ?? 0) - 136) * 0.4, 0)
+async function expectDownloadBesideGitHub(app: Locator) {
+  const download = await app
+    .getByRole('link', { name: 'Download' })
+    .boundingBox()
+  const github = await app.getByText('GitHub · Coming soon').boundingBox()
+  if (!download || !github) throw new Error('no header buttons')
+  expect(download.y).toBe(github.y)
+  expect(github.x - (download.x + download.width)).toBeLessThanOrEqual(8)
+}
+
+async function expectPanelWidth(panel: Locator) {
+  expect((await panel.boundingBox())?.width).toBe(280)
 }
 
 test('moves a thing from the Move anything side panel and shows the result', async ({
@@ -204,7 +212,7 @@ test('moves a thing from the Move anything side panel and shows the result', asy
     name: 'Move anything settings'
   })
   await expect(panel).toContainText('kitten.jpg')
-  await expectCinematicPanelWidth(page, panel)
+  await expectPanelWidth(panel)
   await expect(generate).toBeDisabled()
   await kitten.focus()
   await page.keyboard.press('Shift+ArrowRight')
@@ -213,6 +221,7 @@ test('moves a thing from the Move anything side panel and shows the result', asy
   await generate.click()
   await expect(app.getByRole('status')).toContainText('Making the move')
   await expect(app.getByRole('link', { name: 'Download' })).toBeVisible()
+  await expectDownloadBesideGitHub(app)
   await expect(
     app.getByRole('slider', {
       name: 'Drag to compare the original and the new image'
@@ -349,9 +358,10 @@ async function relightFromPanel(page: Page) {
     lights.getByRole('button', { name: 'Show Cool fill' })
   ).toBeVisible()
   await lights.getByRole('button', { name: 'Show Cool fill' }).click()
-  const compare = app
-    .getByRole('toolbar', { name: 'Relight tools' })
-    .getByRole('button', { name: 'Compare' })
+  const tools = app.getByRole('toolbar', { name: 'Relight tools' })
+  await expect(tools.getByRole('button').nth(-2)).toHaveAccessibleName('Undo')
+  await expect(tools.getByRole('button').last()).toHaveAccessibleName('Redo')
+  const compare = tools.getByRole('button', { name: 'Compare' })
   const stage = app.getByTestId('relight-stage')
   await compare.click()
   await expect(compare).toHaveAttribute('aria-pressed', 'true')
@@ -372,6 +382,10 @@ async function relightFromPanel(page: Page) {
   await intensity.fill('70')
   await expect(intensity).toHaveValue('70')
   await expect(app.getByRole('button', { name: 'Undo' })).toBeEnabled()
+  const locked = app.getByRole('button', { name: 'Download' })
+  await expect(locked).toHaveAttribute('aria-disabled', 'true')
+  await locked.hover()
+  await expect(page.getByText('Run to download')).toBeVisible()
 
   await panel.getByTestId('relight-run').click()
   await expect(app.getByRole('status')).toContainText('Relighting')
@@ -379,6 +393,7 @@ async function relightFromPanel(page: Page) {
     'href',
     /^(blob:|\/images\/apps\/relight\/example-relit\.jpg)/
   )
+  await expectDownloadBesideGitHub(app)
   await expect(
     app.getByRole('slider', {
       name: 'Drag to compare the original and the relit photo'
@@ -401,7 +416,7 @@ test('relights the Relight example from the floating panel', async ({
   await expect(lights.getByRole('slider', { name: 'Intensity' })).toHaveValue(
     '70'
   )
-  await expectCinematicPanelWidth(page, panel)
+  await expectPanelWidth(panel)
 
   await lights.getByRole('button', { name: /^Warm key\s*Directional/ }).click()
   const readout = lights.getByTestId('relight-dial-readout')

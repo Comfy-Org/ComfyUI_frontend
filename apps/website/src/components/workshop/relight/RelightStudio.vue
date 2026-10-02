@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 
 import { useRelight } from '../../../composables/useRelight'
+import { useResultDownload } from '../../../composables/useResultDownload'
 import { reportStudioBusy } from '../../../composables/useStudioSwitchGuard'
 import type { Locale } from '../../../i18n/translations'
 import { workshopAppRepo } from '../../../lib/workshop/apps'
@@ -10,6 +11,7 @@ import AppEditorShell from '../app-editor/AppEditorShell.vue'
 import EditorAlert from '../app-editor/EditorAlert.vue'
 import type { EditorView } from '../app-editor/view'
 import RelightDocks from './RelightDocks.vue'
+import RelightHistory from './RelightHistory.vue'
 import RelightMain from './RelightMain.vue'
 import RelightPanel from './RelightPanel.vue'
 import RelightRun from './RelightRun.vue'
@@ -26,6 +28,10 @@ const relight = useRelight(locale)
 const { image, phase } = relight
 const result = ref<EditorView>('compare')
 const panel = computed(() => layout !== 'e')
+const download = useResultDownload(
+  phase,
+  () => image.value && `relit-${image.value.name}`
+)
 reportStudioBusy(() => phase.value.kind === 'running')
 
 const panelLabels = {
@@ -41,6 +47,7 @@ const panelLabels = {
     :tools-label="lc('relight.tools', locale)"
     :panel-labels="panelLabels"
     :panel-dimmed="phase.kind === 'done'"
+    :download
     :repo="workshopAppRepo('relight')"
     :locale
     data-testid="relight"
@@ -55,6 +62,9 @@ const panelLabels = {
     </template>
     <template #dock>
       <RelightDocks v-model:view="result" :relight :panel :locale />
+    </template>
+    <template v-if="phase.kind !== 'done'" #history>
+      <RelightHistory :relight :locale />
     </template>
     <template v-if="panel && image" #panel>
       <RelightPanel :relight :locale />
