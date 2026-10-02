@@ -76,21 +76,6 @@ describe('workflow catalogue ordering and shared links', () => {
     ])
   })
 
-  it('lets the search take the width the tabs give up when browsing them all', async () => {
-    const user = userEvent.setup()
-    render(WorkflowCatalogue, { props: { models } })
-    const field = () => screen.getByTestId('workshop-search-field')
-
-    expect(field()).toHaveClass('min-w-0', 'flex-1', 'sm:max-w-120')
-    await user.click(
-      screen.getByRole('button', { name: 'Browse all workflows' })
-    )
-    expect(field()).toHaveClass('min-w-0', 'flex-1')
-    expect(field()).not.toHaveClass('sm:max-w-120')
-    await user.click(screen.getByTestId('section-back'))
-    expect(field()).toHaveClass('sm:max-w-120')
-  })
-
   it('narrows the outcomes to the model they run on, and lets go of it', async () => {
     const user = userEvent.setup()
     render(WorkflowCatalogue, { props: { models } })

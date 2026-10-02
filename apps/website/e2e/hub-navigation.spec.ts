@@ -353,3 +353,51 @@ test('keeps the current listing visible until a cold destination is ready', asyn
     'ComfyUI workflows'
   )
 })
+
+// The tabs and the search share one row. Inside a category the tabs are gone,
+// and the width they held has to go to the search rather than nowhere — which
+// only a rendered box can show, since the cap is a breakpoint class.
+async function searchWidth(page: Page) {
+  const field = page.getByTestId('workshop-search-field')
+  await expect(field).toBeVisible()
+  const box = await field.boundingBox()
+  if (!box) throw new Error('The search field has no box')
+  return box.width
+}
+
+const SEARCH_CAP = 480
+
+test('a models category hands the search the width its tabs held', async ({
+  page
+}) => {
+  await page.goto('/hub/models/')
+  const capped = await searchWidth(page)
+  expect(capped).toBeLessThanOrEqual(SEARCH_CAP)
+  await expect(page.getByTestId('catalogue-tabs')).toBeVisible()
+
+  await page.goto('/hub/models/?useCase=generate-images')
+  await expect(page.getByTestId('catalogue-tabs')).toHaveCount(0)
+  // Past the cap, which only a field that has dropped it can be: outside a
+  // category the row is shared, so the cap is not what holds the field back.
+  expect(await searchWidth(page)).toBeGreaterThan(SEARCH_CAP)
+
+  await page.getByTestId('section-back').click()
+  await expect(page.getByTestId('catalogue-tabs')).toBeVisible()
+  expect(await searchWidth(page)).toBeLessThanOrEqual(SEARCH_CAP)
+})
+
+test('browsing all workflows hands the search the width its tabs held', async ({
+  page
+}) => {
+  await page.goto('/hub/workflows/')
+  const capped = await searchWidth(page)
+  expect(capped).toBeLessThanOrEqual(SEARCH_CAP)
+
+  await page.getByRole('button', { name: 'Browse all workflows' }).click()
+  await expect(page.getByTestId('catalogue-tabs')).toHaveCount(0)
+  expect(await searchWidth(page)).toBeGreaterThan(SEARCH_CAP)
+
+  await page.getByTestId('section-back').click()
+  await expect(page.getByTestId('catalogue-tabs')).toBeVisible()
+  expect(await searchWidth(page)).toBeLessThanOrEqual(SEARCH_CAP)
+})
