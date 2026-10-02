@@ -83,7 +83,12 @@ const mocks = vi.hoisted(() => ({
   resolveAvailability: vi.fn<
     () => Promise<ResolvedTemplateModelAvailability[]>
   >(async () => [{ model: fixtures.activeModel, status: 'missing' }]),
-  resolveTemplateModelMetadata: vi.fn(async () => ({
+  resolveTemplateModelMetadata: vi.fn<
+    () => Promise<
+      | { status: 'completed'; entries: { model: unknown; fileSize: number }[] }
+      | { status: 'aborted' }
+    >
+  >(async () => ({
     status: 'completed' as const,
     entries: [
       {
@@ -92,7 +97,8 @@ const mocks = vi.hoisted(() => ({
       }
     ]
   })),
-  trackTemplateLibraryClosed: vi.fn()
+  trackTemplateLibraryClosed: vi.fn(),
+  reportError: vi.fn()
 }))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -183,6 +189,10 @@ vi.mock(import('@/composables/useLazyPagination'), () => ({
 
 vi.mock(import('@/composables/useIntersectionObserver'), () => ({
   useIntersectionObserver: vi.fn()
+}))
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: mocks.reportError
 }))
 
 vi.mock(import('@/platform/telemetry'), () => ({
@@ -323,6 +333,51 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
         within(detail).getByText(/^Checkpoint · 1 KB · Used by Active loader$/)
       ).toBeInTheDocument()
     })
+  })
+
+  it.for([
+    {
+      name: 'a rejected metadata batch',
+      outcome: () =>
+        mocks.resolveTemplateModelMetadata.mockRejectedValueOnce(
+          new Error('metadata unavailable')
+        ),
+      reports: true
+    },
+    {
+      name: 'an aborted metadata batch',
+      outcome: () =>
+        mocks.resolveTemplateModelMetadata.mockResolvedValueOnce({
+          status: 'aborted' as const
+        }),
+      reports: false
+    }
+  ])('keeps Detail usable after $name', async ({ outcome, reports }) => {
+    outcome()
+    renderDialog()
+    await clickTemplateCard()
+
+    const detail = await screen.findByRole('article', {
+      name: fixtures.template.title
+    })
+
+    // The row still describes the model from local inventory; only its size
+    // is missing, and the view stays operable.
+    await waitFor(() => {
+      expect(
+        within(detail).getByText(/^Checkpoint · Used by Active loader$/)
+      ).toBeInTheDocument()
+    })
+    // Detail is still mounted and did not fall back to the list.
+    expect(detail).toBeInTheDocument()
+    expect(mocks.openPreparedWorkflowTemplate).not.toHaveBeenCalled()
+
+    // An abort is an expected outcome of navigating away, not a fault.
+    if (reports) {
+      expect(mocks.reportError).toHaveBeenCalledOnce()
+    } else {
+      expect(mocks.reportError).not.toHaveBeenCalled()
+    }
   })
 
   it('opens directly outside Desktop without resolving model inventory', async () => {
