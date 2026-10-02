@@ -32,7 +32,6 @@ const PRIMITIVE_INT_VALUE: InputSpec = [
   { default: 0, min: 0, max: 2147483647, control_after_generate: 'fixed' }
 ]
 
-/** Built by the real int widget constructor, exactly as production does. */
 class PrimitiveInt extends LGraphNode {
   constructor() {
     super('PrimitiveInt')
