@@ -57,7 +57,9 @@ test.describe(
       })
 
       await test.step('stopping it unlocks the composer and the retry is accepted', async () => {
+        const foreignTurnCancelled = turnLock.waitForForeignTurnCancellation()
         await turnLock.stopButton.click()
+        await foreignTurnCancelled
         turnLock.finishForeignTurn(live)
 
         await expect(turnLock.sendButton).toBeVisible({ timeout: 40_000 })
