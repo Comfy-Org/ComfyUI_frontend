@@ -1036,9 +1036,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
    * would be describing the Stop button the user is now looking at. The typed
    * copy names the recovery instead.
    */
-  function sendFailureNotice(error: unknown): string {
-    if (parseTurnInProgress(error) !== undefined)
-      return i18n.global.t('agent.sendTurnInProgress')
+  function sendFailureNotice(error: unknown, reattached: boolean): string {
+    if (reattached) return i18n.global.t('agent.sendTurnInProgress')
     const message = error instanceof Error ? error.message : String(error)
     return `${i18n.global.t('agent.sendFailed')}: ${message}`
   }
@@ -1046,7 +1045,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function recordSendError(
     error: unknown,
     text: string,
-    accepted: boolean
+    accepted: boolean,
+    reattached = false
   ): void {
     const admission = parseAdmissionError(error)
     if (admission?.reason === 'no_funds') {
@@ -1071,7 +1071,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.recordFailedSend(
       nextLocalErrorId(),
       text,
-      sendFailureNotice(error)
+      sendFailureNotice(error, reattached)
     )
     const turnAccepted = accepted || isUnreadableAckFailure(error)
     reportError(error, {
@@ -1084,6 +1084,18 @@ export function useAgentSession(deps: AgentSessionDeps) {
       'inline_notice',
       { retryable: isRetryableRequestFailure(error, turnAccepted) }
     )
+  }
+
+  function recordCurrentSendError(
+    error: unknown,
+    text: string,
+    accepted: boolean,
+    reattached: boolean,
+    threadAtSend: string
+  ): void {
+    if (threadAtSend !== 'new' && conversationStore.threadId !== threadAtSend)
+      return
+    recordSendError(error, text, accepted, reattached)
   }
 
   /**
@@ -1137,11 +1149,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
     error: unknown,
     threadAtSend: string,
     generation: number
-  ): Promise<void> {
-    if (parseTurnInProgress(error) === undefined) return
+  ): Promise<boolean> {
+    if (parseTurnInProgress(error) === undefined) return false
     // 'new' is the sentinel for a thread the server had not minted yet, and a
     // thread that does not exist cannot already be busy.
-    if (threadAtSend === 'new') return
+    if (threadAtSend === 'new') return false
     const reattachGeneration = ++refusedTurnReattachGeneration
     const reattached = await Promise.race([
       hydrateFromServer(
@@ -1149,6 +1161,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         () =>
           reattachGeneration === refusedTurnReattachGeneration &&
           generation === loadGeneration &&
+          ownedGeneration === sessionGeneration &&
           conversationStore.threadId === threadAtSend
       ),
       new Promise<void>((resolve) => setTimeout(resolve, RECONCILE_TIMEOUT_MS))
@@ -1156,6 +1169,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (reattachGeneration === refusedTurnReattachGeneration)
       refusedTurnReattachGeneration++
     if (reattached === true) stopPendingActiveTurn()
+    return reattached === true && conversationStore.activeTurnId !== null
   }
 
   async function performSend(
@@ -1204,9 +1218,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
       // Before recordSendError, not after: the re-read rebuilds `messages` from
       // the server transcript, which would discard a local failed-send row
       // appended first.
-      await reattachRefusedTurn(error, threadAtSend, generation)
+      const reattached = await reattachRefusedTurn(
+        error,
+        threadAtSend,
+        generation
+      )
       if (generation !== loadGeneration) return false
-      recordSendError(error, text, accepted)
+      recordCurrentSendError(error, text, accepted, reattached, threadAtSend)
       return false
     }
   }
