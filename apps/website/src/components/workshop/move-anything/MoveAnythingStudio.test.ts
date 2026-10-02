@@ -74,6 +74,10 @@ describe('MoveAnythingStudio', () => {
     await user.click(screen.getByRole('button', { name: 'Try the example' }))
     const generate = screen.getByTestId('move-generate')
     expect(generate).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Download' })).toHaveAttribute(
+      'aria-disabled',
+      'true'
+    )
     await vi.advanceTimersByTimeAsync(700)
     kitten().focus()
     await user.keyboard('{Shift>}{ArrowRight}{/Shift}')
@@ -90,6 +94,11 @@ describe('MoveAnythingStudio', () => {
     expect(
       await screen.findByRole('link', { name: 'Download' })
     ).toHaveAttribute('href', '/images/apps/move-anything/example-moved.jpg')
+    expect(
+      within(
+        screen.getByRole('toolbar', { name: 'Move anything tools' })
+      ).queryByRole('link')
+    ).toBeNull()
   })
 
   it.for([
@@ -135,6 +144,27 @@ describe('MoveAnythingStudio', () => {
     expect(screen.queryByRole('list', { name: 'Objects' })).toBeNull()
     expect(screen.queryByRole('button', { name: /Objects/ })).toBeNull()
   })
+
+  it.for([
+    { layout: 'd', wide: true, last: 'Box select' },
+    { layout: 'd', wide: false, last: 'Box select' },
+    { layout: 'e', wide: true, last: 'Move something first 12 credits' }
+  ])(
+    'keeps undo and redo at the right end of the tools in layout $layout (wide: $wide)',
+    async ({ layout, wide, last }) => {
+      screenIsWide(wide)
+      await openExample(layout)
+
+      const tools = within(
+        screen.getByRole('toolbar', { name: 'Move anything tools' })
+      )
+        .getAllByRole('button')
+        .map(
+          (tool) => tool.getAttribute('aria-label') ?? tool.textContent.trim()
+        )
+      expect(tools.slice(-3)).toEqual([last, 'Undo', 'Redo'])
+    }
+  )
 
   it('undoes and redoes a move from the history controls, but never the detection', async () => {
     const user = await openExample('e')
