@@ -167,6 +167,7 @@
     "zod-validation-error": "catalog:"
   },
   "devDependencies": {
+    "@comfyorg/fallow-config": "workspace:*",
     "@comfyorg/ingest-types": "workspace:*",
     "@comfyorg/website": "workspace:*",
     "@eslint/js": "catalog:",

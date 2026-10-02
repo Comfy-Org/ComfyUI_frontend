@@ -1,6 +1,14 @@
 {
   "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/v3.24.1/schema.json",
 
+  // Staged adoption: the residual dead-code, complexity, and duplication findings
+  // are inherited legacy (litegraph extension-API members, store members, intra-lib
+  // cycles, the marketing-media file pending page adoption). They are captured in
+  // per-analysis baselines so `fallow audit` fails only on NEWLY introduced issues
+  // in changed files. Baselines are a migration aid, not the desired steady state;
+  // shrink them as the underlying code is cleaned up, then re-save.
+  "extends": "npm:@comfyorg/fallow-config",
+
   // Runtime entry points fallow cannot infer.
   "entry": [
     // Astro injects these routes when WORKSHOP_IN_BUILD is enabled.
@@ -136,29 +144,11 @@
   ],
 
   "duplicates": {
-    "minOccurrences": 3,
     "ignore": [
       "**/*.gen.ts",
       "**/*.generated.*",
       "**/generatedManagerTypes.ts",
       "packages/registry-types/src/comfyRegistryTypes.ts"
     ]
-  },
-
-  // Staged adoption: the residual dead-code, complexity, and duplication findings
-  // are inherited legacy (litegraph extension-API members, store members, intra-lib
-  // cycles, the marketing-media file pending page adoption). They are captured in
-  // per-analysis baselines so `fallow audit` fails only on NEWLY introduced issues
-  // in changed files. Baselines are a migration aid, not the desired steady state;
-  // shrink them as the underlying code is cleaned up, then re-save.
-  "audit": {
-    "gate": "new-only",
-    "deadCodeBaseline": ".fallow-baselines/dead-code.json",
-    "healthBaseline": ".fallow-baselines/health.json",
-    "dupesBaseline": ".fallow-baselines/dupes.json"
-  },
-
-  "rules": {
-    "dev-dependencies-in-production": "error"
   }
 }
