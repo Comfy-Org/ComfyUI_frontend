@@ -63,6 +63,7 @@ type GizmoStub = {
 type ModelManagerStub = {
   fitToViewer: ReturnType<typeof vi.fn>
   clearModel: ReturnType<typeof vi.fn>
+  getCurrentBounds: ReturnType<typeof vi.fn>
 }
 
 type CameraManagerStub = {
@@ -104,7 +105,8 @@ function makeInstance() {
   const gizmo = makeGizmoStub()
   const modelManager: ModelManagerStub = {
     fitToViewer: vi.fn(),
-    clearModel: vi.fn()
+    clearModel: vi.fn(),
+    getCurrentBounds: vi.fn(() => null)
   }
   const cameraManager: CameraManagerStub = {
     toggleCamera: vi.fn(),
@@ -138,6 +140,7 @@ function makeInstance() {
     adapterRef: { current: null },
     _loadGeneration: 0,
     loadingPromise: null,
+    thumbnailCaptureQueue: Promise.resolve(),
     forceRender: vi.fn(),
     handleResize: vi.fn(),
     preRenderCallbacks: [],
@@ -1190,20 +1193,22 @@ describe('Load3d', () => {
       })
       const modelGroup = new THREE.Group()
       modelGroup.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1)))
+      const sceneStub = {
+        ...ctx.sceneManager,
+        gridHelper: { visible: true },
+        captureScene: sceneCaptureMock,
+        whenSplatsSorted: vi.fn().mockResolvedValue(undefined)
+      }
       Object.assign(ctx.load3d, {
         cameraManager: cameraStub,
         controlsManager: controlsStub,
-        sceneManager: {
-          ...ctx.sceneManager,
-          gridHelper: { visible: true },
-          captureScene: sceneCaptureMock
-        },
+        sceneManager: sceneStub,
         modelManager: {
           ...ctx.modelManager,
           currentModel: modelGroup
         }
       })
-      return { cameraStub, sceneCaptureMock }
+      return { cameraStub, controlsStub, sceneCaptureMock, sceneStub }
     }
 
     it('rejects thumbnail capture when no model is loaded', async () => {
@@ -1236,6 +1241,82 @@ describe('Load3d', () => {
       await expect(ctx.load3d.captureThumbnail(64, 64)).rejects.toThrow('boom')
       expect(ctx.forceRender).toHaveBeenCalled()
     })
+
+    it('frames the camera and controls target using the adapter-aware bounds, not a naive Box3 of the model', async () => {
+      const { cameraStub, controlsStub } = setupForCapture()
+      // A degenerate model (e.g. a Gaussian splat) whose naive Box3 would be
+      // empty/zero-sized, but whose adapter reports real bounds far away.
+      const adapterBounds = new THREE.Box3(
+        new THREE.Vector3(100, 100, 100),
+        new THREE.Vector3(102, 102, 102)
+      )
+      Object.assign(ctx.load3d, {
+        modelManager: {
+          ...ctx.modelManager,
+          currentModel: new THREE.Group(),
+          getCurrentBounds: vi.fn(() => adapterBounds)
+        }
+      })
+
+      await ctx.load3d.captureThumbnail(64, 64)
+
+      const expectedCenter = adapterBounds.getCenter(new THREE.Vector3())
+      expect(cameraStub.perspectiveCamera.position.x).toBeGreaterThan(90)
+      expect(controlsStub.controls.target.copy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          x: expectedCenter.x,
+          y: expectedCenter.y,
+          z: expectedCenter.z
+        })
+      )
+    })
+
+    it('runs concurrent captures one at a time so each restores the live camera and grid', async () => {
+      const { cameraStub, sceneStub } = setupForCapture()
+      let finishSort = () => {}
+      const whenSplatsSorted =
+        sceneStub.whenSplatsSorted.mockImplementationOnce(
+          () => new Promise<void>((resolve) => (finishSort = resolve))
+        )
+      Object.assign(ctx.load3d, { adapterRef: { current: { kind: 'splat' } } })
+
+      const first = ctx.load3d.captureThumbnail(64, 64)
+      const second = ctx.load3d.captureThumbnail(64, 64)
+      await vi.waitFor(() => expect(whenSplatsSorted).toHaveBeenCalledOnce())
+      expect(cameraStub.getCameraState).toHaveBeenCalledOnce()
+
+      finishSort()
+      await Promise.all([first, second])
+
+      expect(cameraStub.getCameraState).toHaveBeenCalledTimes(2)
+      expect(cameraStub.setCameraState).toHaveBeenCalledTimes(2)
+      expect(sceneStub.gridHelper.visible).toBe(true)
+    })
+
+    it.for([
+      { kind: 'splat', waitsForSort: true },
+      { kind: 'mesh', waitsForSort: false }
+    ])(
+      'waits for splat sorting before capture: $kind -> $waitsForSort',
+      async ({ kind, waitsForSort }) => {
+        const { cameraStub, sceneCaptureMock, sceneStub } = setupForCapture()
+        const { whenSplatsSorted } = sceneStub
+        Object.assign(ctx.load3d, { adapterRef: { current: { kind } } })
+
+        await ctx.load3d.captureThumbnail(64, 64)
+
+        if (!waitsForSort) {
+          expect(whenSplatsSorted).not.toHaveBeenCalled()
+          return
+        }
+        expect(whenSplatsSorted).toHaveBeenCalledWith(
+          cameraStub.perspectiveCamera
+        )
+        expect(whenSplatsSorted.mock.invocationCallOrder[0]).toBeLessThan(
+          sceneCaptureMock.mock.invocationCallOrder[0]
+        )
+      }
+    )
   })
 
   describe('exportModel', () => {

@@ -22,6 +22,7 @@ import { createRequestAuthorizer } from '@comfyorg/account-core/requestAuth'
 import type { SessionErrorCode } from '@comfyorg/account-core/session'
 import type {
   WebSession,
+  WebSessionFailure,
   WebSessionOptions
 } from '@comfyorg/account-core/webSession'
 import {
@@ -31,7 +32,10 @@ import {
 import type { WebSessionIdentityState } from '@comfyorg/account-core/webSessionIdentity'
 import { createWebSessionIdentity } from '@comfyorg/account-core/webSessionIdentity'
 
-import type { SignInPort } from '@/auth/useSignInController'
+import type {
+  SessionEstablishment,
+  SignInPort
+} from '@/auth/useSignInController'
 import type { BillingWebSessionPhase } from '@/router'
 
 export interface UnifiedBillingSessionDeps {
@@ -56,6 +60,21 @@ async function refusalCode(response: Response): Promise<SessionErrorCode> {
   if (response.status === 401) return 'NOT_AUTHENTICATED'
   const body = zErrorResponse.safeParse(await response.json().catch(() => 0))
   return (body.success && REFUSALS[body.data.code]) || 'TOKEN_EXCHANGE_FAILED'
+}
+
+function establishmentOf(
+  resolution: WorkspaceResolution
+): SessionEstablishment {
+  return resolution.status === 'ok'
+    ? { status: 'ok' }
+    : { status: 'error', code: resolution.code }
+}
+
+/** A refused credential is its own code; every other failure to create the session is one bucket, as in the token exchange. */
+function creationFailureCode(failure: WebSessionFailure): SessionErrorCode {
+  return failure.httpStatus === 401
+    ? 'INVALID_FIREBASE_TOKEN'
+    : 'TOKEN_EXCHANGE_FAILED'
 }
 
 function restoredUser(identity: FirebaseIdentity): Promise<User | null> {
@@ -187,12 +206,19 @@ export function createUnifiedBillingSession(deps: UnifiedBillingSessionDeps) {
     })
   }
 
-  async function establish(user?: User): Promise<boolean> {
-    if (user === undefined) return (await resolveWorkspace()).status === 'ok'
+  async function establish(user?: User): Promise<SessionEstablishment> {
+    if (user === undefined) return establishmentOf(await resolveWorkspace())
     const created = await createWebSession(session, () => user.getIdToken())
-    if (created.status !== 'ok') return false
+    if (created.status !== 'ok') {
+      return { status: 'error', code: creationFailureCode(created) }
+    }
     identity.dispose()
-    return (await settledPhase()) === 'authenticated'
+    if ((await settledPhase()) === 'authenticated') return { status: 'ok' }
+    const resolved = workspace.value
+    return {
+      status: 'error',
+      code: resolved?.status === 'error' ? resolved.code : 'NOT_AUTHENTICATED'
+    }
   }
 
   const scope = computed<BillingScope | undefined>(() => {
