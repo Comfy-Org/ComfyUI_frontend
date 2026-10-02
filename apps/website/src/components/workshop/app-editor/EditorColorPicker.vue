@@ -2,16 +2,17 @@
 import { clamp } from 'es-toolkit'
 import { computed, ref, useTemplateRef, watch } from 'vue'
 
-import type { Locale } from '../../../i18n/translations'
 import type { Hsv } from '../../../lib/workshop/cinematic-studio/color-space'
 import {
   hexToHsv,
   hsvToHex,
   isHex
 } from '../../../lib/workshop/cinematic-studio/color-space'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { labels } = defineProps<{
+  /** Names the shade area, the hue slider and the hex field. */
+  labels: { shade: string; hue: string; hex: string }
+}>()
 
 const color = defineModel<string>({ required: true })
 
@@ -86,7 +87,7 @@ const hueColor = computed(() => hsvToHex({ h: hsv.value.h, s: 1, v: 1 }))
       ref="area"
       role="slider"
       tabindex="0"
-      :aria-label="tc('cinematic.colors.shade', locale)"
+      :aria-label="labels.shade"
       aria-valuemin="0"
       aria-valuemax="100"
       :aria-valuenow="Math.round(hsv.s * 100)"
@@ -116,7 +117,7 @@ const hueColor = computed(() => hsvToHex({ h: hsv.value.h, s: 1, v: 1 }))
       min="0"
       max="360"
       :value="Math.round(hsv.h)"
-      :aria-label="tc('cinematic.colors.hue', locale)"
+      :aria-label="labels.hue"
       class="h-3 w-full cursor-pointer appearance-none rounded-full bg-[linear-gradient(to_right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)] [&::-moz-range-thumb]:size-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:bg-transparent [&::-webkit-slider-thumb]:size-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-[0_0_0_1px_rgb(0_0_0/0.4)]"
       @input="setHue"
     />
@@ -126,7 +127,7 @@ const hueColor = computed(() => hsvToHex({ h: hsv.value.h, s: 1, v: 1 }))
         :style="{ backgroundColor: color }"
         aria-hidden="true"
       />
-      <span class="sr-only">{{ tc('cinematic.colors.hex', locale) }}</span>
+      <span class="sr-only">{{ labels.hex }}</span>
       <input
         v-model="hexText"
         type="text"
