@@ -162,14 +162,15 @@ describe('LiveGraphApplier malformed node report', () => {
     })
   })
 
-  it('reports a malformed producer stamp as unreadable', () => {
+  it.for<[string, unknown]>([
+    ['a non-array stamp', 'malformed'],
+    ['a stamp whose version is not a number', ['1', 'agent:a:b', 'op-1']]
+  ])('reports %s as an unreadable producer', ([, stamp]) => {
     const { doc, applyCollected } = setup({
       nodes: [sinkNode({ name: 'image', link: null })],
       links: []
     })
-    doc
-      .getMap('__stamps')
-      .set(JSON.stringify(['node', String(NODE_ID)]), 'malformed')
+    doc.getMap('__stamps').set(JSON.stringify(['node', String(NODE_ID)]), stamp)
 
     applyCollected()
 

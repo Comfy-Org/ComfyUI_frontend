@@ -26,10 +26,9 @@ export const AGENT_NODE_IDS = [
 ] as const
 
 /** Laid out in a row, the way a batched agent build places a group. */
-function addNodeWithInputs(
+export function addLoadImageNode(
   nodeId: number,
-  index: number,
-  inputs: readonly unknown[]
+  index: number
 ): RecordedGraphOperation {
   const pos = [120 + index * 260, 140]
   return {
@@ -43,7 +42,7 @@ function addNodeWithInputs(
       type: LOAD_IMAGE_TYPE,
       flags: {},
       order: index,
-      inputs,
+      inputs: [],
       outputs: [],
       properties: {},
       widgets_values: [`agent-${index + 1}.png`, 'image']
@@ -51,13 +50,6 @@ function addNodeWithInputs(
     node_id: nodeId,
     class_type: LOAD_IMAGE_TYPE
   }
-}
-
-export function addLoadImageNode(
-  nodeId: number,
-  index: number
-): RecordedGraphOperation {
-  return addNodeWithInputs(nodeId, index, [])
 }
 
 /** The five-node build the golden path asks for, in one batch. */
