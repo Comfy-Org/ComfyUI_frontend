@@ -23,7 +23,7 @@ function asset(
 }
 
 function bridge(overrides: Partial<ComfyDesktop2Bridge>): ComfyDesktop2Bridge {
-  return overrides as ComfyDesktop2Bridge
+  return overrides
 }
 
 type DownloadInput = NonNullable<
@@ -147,7 +147,7 @@ describe('startMissingTemplateInputDownloads', () => {
       .mockResolvedValueOnce({
         status: 'not-started',
         reason: 'unavailable'
-      } as ComfyTemplateInputAssetDownloadResult)
+      })
       .mockRejectedValueOnce(new Error('second failed'))
     const reportError = vi.fn()
 
