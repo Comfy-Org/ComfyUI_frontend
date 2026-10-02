@@ -7,8 +7,14 @@
  * Account-core owns the fetch, construction, and failure handling; this
  * origin only names the Cloud origin and its own app name.
  */
-import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
-import { resolveFirebaseIdentity } from '@comfyorg/account-core/firebase'
+import type {
+  CloudTelemetryConfig,
+  FirebaseIdentity
+} from '@comfyorg/account-core/firebase'
+import {
+  resolveCloudTelemetryConfig,
+  resolveFirebaseIdentity
+} from '@comfyorg/account-core/firebase'
 
 import { CLOUD_BASE_URL } from '@/config/env'
 
@@ -21,6 +27,14 @@ export function resolveBillingWebIdentity(): Promise<
   return resolveFirebaseIdentity({
     cloudBaseUrl: CLOUD_BASE_URL,
     appName: APP_NAME,
+    timeoutMs: CONFIG_FETCH_TIMEOUT_MS
+  })
+}
+
+/** Read from the same `/api/features` fetch as the identity above. */
+export function resolveBillingWebTelemetryConfig(): Promise<CloudTelemetryConfig> {
+  return resolveCloudTelemetryConfig({
+    cloudBaseUrl: CLOUD_BASE_URL,
     timeoutMs: CONFIG_FETCH_TIMEOUT_MS
   })
 }

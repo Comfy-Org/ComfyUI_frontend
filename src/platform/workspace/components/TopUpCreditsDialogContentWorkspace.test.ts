@@ -1,7 +1,9 @@
-import type { TopupResult } from '@comfyorg/account-core/billing'
+import type {
+  BillingTelemetryEvent,
+  TopupResult
+} from '@comfyorg/account-core/billing'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import type { BillingTelemetryEvent } from '@/platform/telemetry/types'
 import {
   failedTopup,
   fakeBillingSdk,
@@ -126,14 +128,7 @@ function renderDialog(
   return render(TopUpCreditsDialogContentWorkspace, {
     props,
     global: {
-      plugins: [i18n],
-      stubs: {
-        FormattedNumberStepper: {
-          name: 'FormattedNumberStepper',
-          props: ['modelValue'],
-          template: '<div />'
-        }
-      }
+      plugins: [i18n]
     }
   })
 }

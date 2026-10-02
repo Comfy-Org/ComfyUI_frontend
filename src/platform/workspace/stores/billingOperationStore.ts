@@ -1,3 +1,9 @@
+import type {
+  BillingTelemetryEvent,
+  BillingTelemetryFailure,
+  SubscriptionCheckoutTier,
+  SubscriptionCheckoutType
+} from '@comfyorg/account-core/billing'
 import type { ToastMessageOptions } from 'primevue/toast'
 import type { PaymentIntent } from '@stripe/stripe-js'
 import { loadStripe } from '@stripe/stripe-js/pure'
@@ -15,12 +21,7 @@ import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDi
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
-import type {
-  BillingFailure,
-  PaymentIntentSource,
-  SubscriptionCheckoutTier,
-  SubscriptionCheckoutType
-} from '@/platform/telemetry/types'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type {
@@ -70,6 +71,11 @@ const UNMOVED_INTENT_STATUSES: ReadonlySet<PaymentIntent.Status> = new Set([
   'requires_action',
   'canceled'
 ])
+
+// The poller adopts only operations the legacy rail issued; the SDK rail settles its own.
+function trackLegacyBillingEvent(event: BillingTelemetryEvent) {
+  useTelemetry()?.trackBillingEvent({ ...event, billing_client: 'legacy' })
+}
 
 type OperationType = 'subscription' | 'topup' | 'cancel'
 type OperationStatus =
@@ -349,7 +355,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     intervals.set(opId, INITIAL_INTERVAL_MS)
 
     if (metadata?.attemptStartedAt === undefined) {
-      useTelemetry()?.trackBillingEvent({
+      trackLegacyBillingEvent({
         operation: 'operation',
         stage: 'started',
         outcome: 'pending',
@@ -812,7 +818,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       const telemetry = useTelemetry()
       const now = Date.now()
       const operationDurationMs = now - operation.operationStartedAt
-      telemetry?.trackBillingEvent({
+      trackLegacyBillingEvent({
         operation: 'operation',
         stage: 'succeeded',
         outcome: 'success',
@@ -830,7 +836,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         operation.businessAttemptStartedAt !== undefined
       ) {
         const durationMs = now - operation.businessAttemptStartedAt
-        telemetry?.trackBillingEvent({
+        trackLegacyBillingEvent({
           operation: 'subscription_checkout',
           stage: 'succeeded',
           outcome: 'success',
@@ -858,7 +864,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         operation.type === 'topup' &&
         operation.businessAttemptStartedAt !== undefined
       ) {
-        telemetry?.trackBillingEvent({
+        trackLegacyBillingEvent({
           operation: 'topup',
           stage: 'succeeded',
           outcome: 'success',
@@ -870,7 +876,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       // Mirrors handleFailure's structure: not gated on businessAttemptStartedAt,
       // since a downgrade always has its own startedAt for duration_ms below.
       if (operation.downgradeToPersonal) {
-        telemetry?.trackBillingEvent({
+        trackLegacyBillingEvent({
           operation: 'downgrade_to_personal',
           stage: 'succeeded',
           outcome: 'success',
@@ -957,7 +963,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     updateOperationStatus(opId, 'failed', detail ?? defaultMessage)
     cleanup(opId)
 
-    const telemetry = useTelemetry()
     const now = Date.now()
     const failureCategory = superseded
       ? 'stale_operation'
@@ -966,7 +971,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
           errorMessage,
           Boolean(operation.downgradeToPersonal)
         )
-    telemetry?.trackBillingEvent({
+    trackLegacyBillingEvent({
       operation: 'operation',
       stage: 'failed',
       outcome: 'failure',
@@ -983,7 +988,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       operation.type === 'subscription' &&
       operation.businessAttemptStartedAt !== undefined
     ) {
-      telemetry?.trackBillingEvent({
+      trackLegacyBillingEvent({
         operation: 'subscription_checkout',
         stage: 'failed',
         outcome: 'failure',
@@ -999,7 +1004,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       operation.type === 'topup' &&
       operation.businessAttemptStartedAt !== undefined
     ) {
-      telemetry?.trackBillingEvent({
+      trackLegacyBillingEvent({
         operation: 'topup',
         stage: 'failed',
         outcome: 'failure',
@@ -1010,7 +1015,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       })
     }
     if (operation.downgradeToPersonal) {
-      telemetry?.trackBillingEvent({
+      trackLegacyBillingEvent({
         operation: 'downgrade_to_personal',
         stage: 'failed',
         outcome: 'failure',
@@ -1048,9 +1053,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     })
     cleanup(opId)
 
-    const telemetry = useTelemetry()
     const now = Date.now()
-    telemetry?.trackBillingEvent({
+    trackLegacyBillingEvent({
       operation: 'operation',
       stage: 'failed',
       outcome: 'failure',
@@ -1067,7 +1071,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       operation.type === 'subscription' &&
       operation.businessAttemptStartedAt !== undefined
     ) {
-      telemetry?.trackBillingEvent({
+      trackLegacyBillingEvent({
         operation: 'subscription_checkout',
         stage: 'failed',
         outcome: 'failure',
@@ -1083,7 +1087,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       operation.type === 'topup' &&
       operation.businessAttemptStartedAt !== undefined
     ) {
-      telemetry?.trackBillingEvent({
+      trackLegacyBillingEvent({
         operation: 'topup',
         stage: 'failed',
         outcome: 'failure',
@@ -1094,7 +1098,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       })
     }
     if (operation.downgradeToPersonal) {
-      telemetry?.trackBillingEvent({
+      trackLegacyBillingEvent({
         operation: 'downgrade_to_personal',
         stage: 'failed',
         outcome: 'failure',
@@ -1118,9 +1122,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     updateOperationStatus(opId, 'timeout', message)
     cleanup(opId)
 
-    const telemetry = useTelemetry()
     const now = Date.now()
-    telemetry?.trackBillingEvent({
+    trackLegacyBillingEvent({
       operation: 'operation',
       stage: 'timeout',
       outcome: 'failure',
@@ -1137,7 +1140,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       operation.type === 'subscription' &&
       operation.businessAttemptStartedAt !== undefined
     ) {
-      telemetry?.trackBillingEvent({
+      trackLegacyBillingEvent({
         operation: 'subscription_checkout',
         stage: 'failed',
         outcome: 'failure',
@@ -1153,7 +1156,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       operation.type === 'topup' &&
       operation.businessAttemptStartedAt !== undefined
     ) {
-      telemetry?.trackBillingEvent({
+      trackLegacyBillingEvent({
         operation: 'topup',
         stage: 'failed',
         outcome: 'failure',
@@ -1164,7 +1167,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       })
     }
     if (operation.downgradeToPersonal) {
-      telemetry?.trackBillingEvent({
+      trackLegacyBillingEvent({
         operation: 'downgrade_to_personal',
         stage: 'failed',
         outcome: 'failure',
@@ -1200,7 +1203,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     type: OperationType,
     errorMessage: string | null,
     isZeroPaymentOperation: boolean
-  ): BillingFailure['failure_category'] {
+  ): BillingTelemetryFailure['failure_category'] {
     if (type === 'cancel' || isZeroPaymentOperation) return 'api_rejected'
 
     if (errorMessage && /network|connection|unreachable/i.test(errorMessage)) {

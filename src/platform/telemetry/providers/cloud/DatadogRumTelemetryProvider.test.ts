@@ -1,9 +1,9 @@
+import type { BillingTelemetryEvent } from '@comfyorg/account-core/billing'
 import { computed } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 
-import type { BillingTelemetryEvent } from '../../types'
 import { TelemetryEvents } from '../../types'
 import { DatadogRumTelemetryProvider } from './DatadogRumTelemetryProvider'
 
@@ -118,7 +118,7 @@ describe('DatadogRumTelemetryProvider', () => {
       expect(addAction.mock.calls).toEqual(
         events.map((event) => [
           `billing.${event.operation}.${event.stage}`,
-          event
+          { ...event, billing_surface: 'cloud_app' }
         ])
       )
     }
@@ -218,7 +218,7 @@ describe('DatadogRumTelemetryProvider', () => {
 
     expect(addAction).toHaveBeenCalledExactlyOnceWith(
       TelemetryEvents.BILLING_OPERATION_FAILED,
-      event
+      { ...event, billing_surface: 'cloud_app' }
     )
   })
 
@@ -245,7 +245,8 @@ describe('DatadogRumTelemetryProvider', () => {
         stage: 'failed',
         outcome: 'failure',
         billing_op_id: 'opaque-op-id',
-        failure_category: 'unknown'
+        failure_category: 'unknown',
+        billing_surface: 'cloud_app'
       }
     )
   })

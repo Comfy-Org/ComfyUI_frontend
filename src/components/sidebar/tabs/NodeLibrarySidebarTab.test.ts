@@ -9,6 +9,7 @@ import { useLitegraphService } from '@/services/litegraphService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { NodeSearchService } from '@/services/nodeSearchService'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
 import type { TreeExplorerNode, TreeNode } from '@/types/treeExplorerTypes'
 
 import NodeLibrarySidebarTab from './NodeLibrarySidebarTab.vue'
@@ -153,6 +154,15 @@ describe('NodeLibrarySidebarTab', () => {
 
     await leaf?.handleClick?.(new MouseEvent('click'))
     expect(useLitegraphService().addNodeOnGraph).toHaveBeenCalledWith(mockNode)
+  })
+
+  it('closes node help when the panel unmounts', () => {
+    const { unmount } = renderComponent()
+    useNodeHelpStore().openHelp(mockNode)
+
+    unmount()
+
+    expect(useNodeHelpStore().isHelpOpen).toBe(false)
   })
 
   it('adds and removes filters', async () => {

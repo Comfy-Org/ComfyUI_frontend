@@ -153,9 +153,9 @@ function renderDialog() {
 
 async function scrollPanelTo(scrollTop: number) {
   const scrollerHost = screen.getByTestId('panel-scroller')
-  // eslint-disable-next-line testing-library/no-node-access -- the capture wrapper is an unlabeled layout div; the test plants a nested scroller inside it, which no Testing Library query can address
+  // oxlint-disable-next-line testing-library/no-node-access -- the capture wrapper is an unlabeled layout div; the test plants a nested scroller inside it, which no Testing Library query can address
   const wrapper = scrollerHost.firstElementChild as HTMLElement
-  // eslint-disable-next-line testing-library/no-node-access -- same fixture: reuse the planted scroller across calls within a test
+  // oxlint-disable-next-line testing-library/no-node-access -- same fixture: reuse the planted scroller across calls within a test
   let nested = wrapper.querySelector<HTMLElement>('[data-nested-scroller]')
   if (!nested) {
     nested = document.createElement('div')

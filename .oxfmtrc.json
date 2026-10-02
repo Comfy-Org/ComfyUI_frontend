@@ -7,6 +7,7 @@
   "printWidth": 80,
   "ignorePatterns": [
     ".import-cycles-baseline.json",
+    "oxlint-suppressions.json",
     "packages/registry-types/src/comfyRegistryTypes.ts",
     "public/materialdesignicons.min.css",
     "scripts/registry-census/corpus.pins.json",

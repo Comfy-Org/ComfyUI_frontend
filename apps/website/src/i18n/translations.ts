@@ -31,8 +31,12 @@ const translations = {
     'zh-CN': 'ComfyUI 模型'
   },
   'workshop.catalogue.directory': {
-    en: 'All models A to Z',
-    'zh-CN': '全部模型（A 到 Z）'
+    en: 'All models by provider',
+    'zh-CN': '全部模型（按提供商）'
+  },
+  'workshop.catalogue.directoryCount': {
+    en: '{count} models',
+    'zh-CN': '{count} 个模型'
   },
   'workshop.catalogue.apps': { en: 'Apps', 'zh-CN': '应用' },
   'workshop.catalogue.eyebrow': { en: 'Hub', 'zh-CN': 'Hub' },
@@ -1758,6 +1762,26 @@ Enterprise`
   'download.hero.installGithub': {
     en: 'INSTALL FROM GITHUB',
     'zh-CN': '从 GITHUB 安装'
+  },
+  'download.hero.installers.label': {
+    en: 'All installers',
+    'zh-CN': '全部安装包'
+  },
+  'download.hero.installers.windowsX64': {
+    en: 'Windows x64',
+    'zh-CN': 'Windows x64'
+  },
+  'download.hero.installers.windowsArm64': {
+    en: 'Windows ARM64 (NVIDIA only)',
+    'zh-CN': 'Windows ARM64（仅限 NVIDIA）'
+  },
+  'download.hero.installers.macArm64': {
+    en: 'macOS (Apple Silicon)',
+    'zh-CN': 'macOS（Apple 芯片）'
+  },
+  'download.hero.installers.linuxX64': {
+    en: 'Linux x64 (AppImage)',
+    'zh-CN': 'Linux x64（AppImage）'
   },
 
   // Download – MobileDownloadEmailForm
@@ -8934,6 +8958,22 @@ Enterprise`
     en: 'Read the Silverside AI customer story',
     'zh-CN': '阅读 Silverside AI 客户案例'
   },
+  'platform.serverlessSkipSetup.heading': {
+    en: 'Or skip the setup.',
+    'zh-CN': '或者跳过手动设置。'
+  },
+  'platform.serverlessSkipSetup.subtitle': {
+    en: 'Paste this into your coding agent.',
+    'zh-CN': '把它粘贴到你的编码智能体里。'
+  },
+  'platform.serverlessSkipSetup.copyPrompt': {
+    en: 'COPY AGENT PROMPT',
+    'zh-CN': '复制智能体提示词'
+  },
+  'platform.serverlessSkipSetup.copied': {
+    en: 'COPIED',
+    'zh-CN': '已复制'
+  },
   'platform.serverlessScale.heading': {
     en: 'Built for teams',
     'zh-CN': '为团队打造'
@@ -9891,6 +9931,14 @@ Enterprise`
     'zh-CN': '选择一个额度，或自定义金额。'
   },
   'workshop.credits.continue': { en: 'Continue', 'zh-CN': '继续' },
+  'workshop.credits.subscriptionPrompt': {
+    en: 'Want more credits every month?',
+    'zh-CN': '想每月获得更多积分？'
+  },
+  'workshop.credits.subscriptionLink': {
+    en: 'View Cloud subscription plans',
+    'zh-CN': '查看 Cloud 订阅方案'
+  },
   'workshop.credits.custom': {
     en: 'Custom · $5 – $4,739',
     'zh-CN': '自定义 · $5 – $4,739'

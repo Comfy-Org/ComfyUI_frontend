@@ -127,7 +127,7 @@ export interface BillingState {
   subscriptionStatus: ComputedRef<BillingSubscriptionStatus | null>
   tier: ComputedRef<SubscriptionTier | null>
   renewalDate: ComputedRef<string | null>
-  /** Open renewal invoice to pay; owners on the stripe rail while payment_failed. */
+  /** Open renewal invoice to pay; owners on the stripe rail while payment_failed or paused. */
   renewalInvoice: ComputedRef<RenewalInvoice | null>
 }
 
