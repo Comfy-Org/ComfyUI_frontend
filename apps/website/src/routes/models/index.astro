@@ -28,9 +28,11 @@ const directory = modelsByProvider(workshopModels, t('workshop.filter.other'))
     class="mx-auto max-w-10xl px-6 pb-16 max-sm:pb-10 lg:px-8 lg:pb-24"
     data-testid="models-directory"
   >
-    <details class="group">
+    <details
+      class="group rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4"
+    >
       <summary
-        class="flex cursor-pointer list-none items-center gap-3 rounded-lg border-t border-transparency-white-t8 pt-6 text-primary-warm-white transition-colors hover:text-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 [&::-webkit-details-marker]:hidden"
+        class="flex cursor-pointer list-none items-center gap-3 rounded-2xl px-6 py-5 text-primary-warm-white transition-colors hover:text-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 max-sm:px-4 [&::-webkit-details-marker]:hidden"
         data-testid="models-directory-toggle"
       >
         <h2 id="models-directory-heading" class="text-xl font-medium">
@@ -56,7 +58,9 @@ const directory = modelsByProvider(workshopModels, t('workshop.filter.other'))
           ></path>
         </svg>
       </summary>
-      <div class="mt-8 gap-x-8 sm:columns-2 lg:columns-3">
+      <div
+        class="gap-x-8 border-t border-transparency-white-t8 px-6 pt-6 pb-2 max-sm:px-4 sm:columns-2 lg:columns-3"
+      >
         {directory.map((group) => <div class="mb-8 break-inside-avoid">
           <h3
             class="text-xs font-medium tracking-wide text-primary-warm-gray uppercase"
