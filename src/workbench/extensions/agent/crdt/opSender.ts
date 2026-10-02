@@ -154,6 +154,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   let suspended = false
   let pumping = false
   let stateEpoch = 0
+  let abortGeneration = 0
   // Late-result credits: every send a batch leaves the client with may still
   // draw a result, including the send whose silence provoked the resend and
   // the sends of a batch that has already settled. As ANONYMOUS failures
@@ -426,6 +427,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     const admissionTarget = admissionTargetOrSettle(minted, workflowId)
     if (admissionTarget === null) return
     const admissionEpoch = stateEpoch
+    const admissionAbortGeneration = abortGeneration
     // seal() can synchronously re-enter the sender through its settlement
     // callback. Do not resurrect an aborted admission or append old-workflow
     // ops to state installed by a nested admit().
@@ -433,6 +435,13 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     if (stateEpoch !== admissionEpoch) {
       if (detached) {
         notifyDetachSettlement({ state: 'undeliverable', ops: minted })
+        return
+      }
+      if (abortGeneration !== admissionAbortGeneration) {
+        guardedSettlementNotifier('failure_settling_agent_op_sender_abort')({
+          state: 'undeliverable',
+          ops: minted
+        })
         return
       }
       if (open?.workflowId === admissionTarget) {
@@ -581,6 +590,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     },
     abortAll() {
       stateEpoch++
+      abortGeneration++
       lastMintedVersion = -1
       lastMintedWorkflowId = null
       drainOutstanding(
