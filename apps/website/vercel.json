@@ -4328,6 +4328,16 @@
       "permanent": false
     },
     {
+      "source": "/models/apps/hand-product-swap",
+      "destination": "/hub/apps/hand-product-swap/",
+      "permanent": false
+    },
+    {
+      "source": "/models/apps/hand-product-swap/",
+      "destination": "/hub/apps/hand-product-swap/",
+      "permanent": false
+    },
+    {
       "source": "/models/apps/move-anything",
       "destination": "/hub/apps/move-anything/",
       "permanent": false

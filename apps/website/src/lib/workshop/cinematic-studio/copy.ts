@@ -72,6 +72,18 @@ const copy = {
     en: 'Image · Beeble SwitchX',
     'zh-CN': '图像 · Beeble SwitchX'
   },
+  'cinematic.hub.handProductSwap': {
+    en: 'Hand product swap',
+    'zh-CN': '手持产品替换'
+  },
+  'cinematic.hub.handProductSwapSummary': {
+    en: 'Put your product in the hand from any photo, and the model matches the grip, light and shadows.',
+    'zh-CN': '把你的产品放进任意照片中的手里，模型会匹配握姿、光线与阴影。'
+  },
+  'cinematic.hub.handProductSwapMeta': {
+    en: 'Image · Nano Banana Pro',
+    'zh-CN': '图像 · Nano Banana Pro'
+  },
   'cinematic.stage.longWait': {
     en: 'Still going. Some models take about a minute. Nothing is queued; yours already started.',
     'zh-CN': '仍在进行。部分模型需要约一分钟。没有排队，你的任务已经开始。'

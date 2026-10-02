@@ -17,6 +17,7 @@ async function mockFlags(
     reshoot?: boolean
     moveAnything?: boolean
     relight?: boolean
+    handProductSwap?: boolean
   }
 ) {
   await context.route('**/t.comfy.org/**', (route) =>
@@ -31,6 +32,8 @@ async function mockFlags(
               'workshop-reshoot-app-enabled': flags.reshoot ?? true,
               'workshop-move-anything-app-enabled': flags.moveAnything ?? true,
               'workshop-relight-app-enabled': flags.relight ?? true,
+              'workshop-hand-product-swap-app-enabled':
+                flags.handProductSwap ?? true,
               ...(flags.auth ? { 'workshop-auth': true } : {})
             },
             featureFlagPayloads: {}
@@ -122,7 +125,7 @@ test('lists every app on the hub apps page, on /hub/apps/ pages', async ({
   )
   const shelf = page.getByTestId('app-shelf')
   const cards = shelf.getByRole('link')
-  await expect(cards).toHaveCount(4)
+  await expect(cards).toHaveCount(5)
   await expect(cards.nth(0)).toHaveAttribute(
     'href',
     '/hub/apps/cinematic-studio/'
@@ -130,6 +133,10 @@ test('lists every app on the hub apps page, on /hub/apps/ pages', async ({
   await expect(cards.nth(1)).toHaveAttribute('href', '/hub/apps/reshoot/')
   await expect(cards.nth(2)).toHaveAttribute('href', '/hub/apps/move-anything/')
   await expect(cards.nth(3)).toHaveAttribute('href', '/hub/apps/relight/')
+  await expect(cards.nth(4)).toHaveAttribute(
+    'href',
+    '/hub/apps/hand-product-swap/'
+  )
   await expect(
     page.getByRole('button', { name: /Browse all apps/ })
   ).toHaveCount(0)
@@ -142,13 +149,17 @@ test('hides Re-shoot from the hub apps page and closes its page while its flag i
   await mockFlags(context, { apps: true, workflows: false, reshoot: false })
   await page.goto('/hub/apps/')
   const cards = page.getByTestId('app-shelf').getByRole('link')
-  await expect(cards).toHaveCount(3)
+  await expect(cards).toHaveCount(4)
   await expect(cards.nth(0)).toHaveAttribute(
     'href',
     '/hub/apps/cinematic-studio/'
   )
   await expect(cards.nth(1)).toHaveAttribute('href', '/hub/apps/move-anything/')
   await expect(cards.nth(2)).toHaveAttribute('href', '/hub/apps/relight/')
+  await expect(cards.nth(3)).toHaveAttribute(
+    'href',
+    '/hub/apps/hand-product-swap/'
+  )
 
   await page.goto('/hub/apps/reshoot/')
   await expect(page.getByText('Cinematic Studio is not open yet')).toBeVisible()
@@ -311,7 +322,11 @@ test('hides the site header in the editor apps only', async ({
 }) => {
   await mockFlags(context, { apps: true, workflows: false })
   const header = page.getByRole('navigation', { name: 'Main navigation' })
-  for (const path of ['/hub/apps/relight/', '/hub/apps/move-anything/']) {
+  for (const path of [
+    '/hub/apps/relight/',
+    '/hub/apps/move-anything/',
+    '/hub/apps/hand-product-swap/'
+  ]) {
     await page.goto(path)
     await expect(page.getByTestId('apps-home')).toBeVisible()
     await expect(header).toBeHidden()
@@ -650,6 +665,114 @@ test('relights from the Relight bottom sheet on phones @mobile', async ({
     () => document.documentElement.scrollWidth - window.innerWidth
   )
   expect(overflow).toBe(0)
+})
+
+test('closes Hand product swap while its flag is off', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, {
+    apps: true,
+    workflows: false,
+    handProductSwap: false
+  })
+  await page.goto('/hub/apps/hand-product-swap/')
+  await expect(page.getByText('Cinematic Studio is not open yet')).toBeVisible()
+  await expect(page.getByTestId('hand-product-swap')).toHaveCount(0)
+})
+
+async function openHandSwapExample(page: Page, context: BrowserContext) {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/hub/apps/hand-product-swap/')
+  const app = page.getByTestId('hand-product-swap')
+  await expect(app.getByTestId('swap-empty')).toBeVisible()
+  await app.getByRole('button', { name: 'Try the example' }).click()
+  const panel = app.getByRole('complementary', {
+    name: 'Hand product swap settings'
+  })
+  return { app, panel }
+}
+
+test('swaps the product in the Hand product swap example and compares the result', async ({
+  page,
+  context
+}) => {
+  const { app, panel } = await openHandSwapExample(page, context)
+  await expectPanelWidth(panel)
+  await expect(app.getByText('Same hand & grip, new product')).toBeVisible()
+  await expect(
+    app.getByRole('button', { name: /Where the product goes/ })
+  ).toHaveCount(0)
+  await panel.getByRole('radio', { name: 'Serum' }).click()
+  await panel.getByRole('button', { name: 'Resolution: 2K' }).click()
+  await page.getByRole('menuitemradio', { name: /^1K/ }).click()
+  const tools = app.getByRole('toolbar', { name: 'Hand product swap tools' })
+  await expect(tools.getByRole('button').last()).toHaveAccessibleName('Redo')
+
+  await panel.getByTestId('swap-run').click()
+  await expect(app.getByRole('status')).toContainText('Swapping the product')
+  const download = app.getByRole('link', { name: 'Download' })
+  await expect(download).toHaveAttribute(
+    'href',
+    '/images/apps/hand-product-swap/result-serum.jpg'
+  )
+  await expect(download).toHaveAttribute(
+    'download',
+    'hand-holding-can-swapped-42.jpg'
+  )
+  await expectDownloadBesideGitHub(app)
+  const compare = tools.getByRole('button', { name: 'Compare' })
+  await expect(compare).toHaveAttribute('aria-pressed', 'false')
+  await compare.click()
+  const split = app.getByRole('slider', {
+    name: 'Drag to compare the original and the result'
+  })
+  await split.focus()
+  await page.keyboard.press('ArrowRight')
+  await expect(split).toHaveValue('51')
+
+  await tools.getByRole('button', { name: 'Edit' }).click()
+  await expect(panel.getByRole('radio', { name: 'Serum' })).toHaveAttribute(
+    'aria-checked',
+    'true'
+  )
+})
+
+for (const { product, result } of [
+  { product: 'Can', result: 'result-can.jpg' },
+  { product: 'Serum', result: 'result-serum.jpg' },
+  { product: 'Cream', result: 'result-tube.jpg' }
+])
+  test(`answers the Hand product swap example holding the ${product} with its example photo`, async ({
+    page,
+    context
+  }) => {
+    const { app, panel } = await openHandSwapExample(page, context)
+    await panel.getByRole('radio', { name: product }).click()
+    await panel.getByTestId('swap-run').click()
+    await expect(app.getByRole('link', { name: 'Download' })).toHaveAttribute(
+      'href',
+      `/images/apps/hand-product-swap/${result}`
+    )
+  })
+
+test('draws an uploaded product into the Hand product swap example', async ({
+  page,
+  context
+}) => {
+  const { app, panel } = await openHandSwapExample(page, context)
+  await panel
+    .getByTestId('swap-product-input')
+    .setInputFiles('public/images/apps/hand-product-swap/product-can.jpg')
+  await expect(panel.getByRole('radio', { name: 'Yours' })).toHaveAttribute(
+    'aria-checked',
+    'true'
+  )
+  await panel.getByTestId('swap-run').click()
+  await expect(app.getByRole('link', { name: 'Download' })).toHaveAttribute(
+    'href',
+    /^blob:/
+  )
 })
 
 test('sends an old catalogue link for the Apps tab to the hub apps page', async ({

@@ -9,7 +9,8 @@ const appRoutes = {
   studio: 'cinematicStudio',
   reshoot: 'reshoot',
   'move-anything': 'moveAnything',
-  relight: 'relight'
+  relight: 'relight',
+  'hand-product-swap': 'handProductSwap'
 } as const satisfies Record<WorkshopAppId, keyof ReturnType<typeof getRoutes>>
 
 export function workshopAppHref(app: WorkshopAppId, locale: Locale): string {
@@ -55,6 +56,12 @@ const appCopy = {
     summary: 'cinematic.hub.relightSummary',
     badge: 'cinematic.hub.prototype',
     meta: 'cinematic.hub.relightMeta'
+  },
+  'hand-product-swap': {
+    name: 'cinematic.hub.handProductSwap',
+    summary: 'cinematic.hub.handProductSwapSummary',
+    badge: 'cinematic.hub.prototype',
+    meta: 'cinematic.hub.handProductSwapMeta'
   }
 } as const satisfies Record<
   WorkshopAppId,
