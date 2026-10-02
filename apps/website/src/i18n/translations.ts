@@ -7889,6 +7889,10 @@ Enterprise`
     en: 'READ THE GUIDE',
     'zh-CN': '查看教程'
   },
+  'nanoBanana.showcase.cta': {
+    en: 'TRY NOW',
+    'zh-CN': '立即试用'
+  },
   'nanoBanana.showcase.photography.heading': {
     en: 'Shot like it happened.',
     'zh-CN': '如实拍摄。'

@@ -54,7 +54,7 @@ const loopDuration = computed(
           :href="showcase.cta.href"
           :target="showcase.cta.target"
           rel="noopener"
-          class="font-bold whitespace-nowrap text-primary-comfy-yellow underline underline-offset-4 transition-opacity hover:opacity-70"
+          class="ms-1 whitespace-nowrap text-primary-comfy-yellow transition-opacity hover:opacity-70"
           >{{ t(showcase.cta.labelKey, locale) }}</a
         >
       </p>

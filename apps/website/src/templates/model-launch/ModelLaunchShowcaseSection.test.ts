@@ -56,7 +56,7 @@ describe('ModelLaunchShowcaseSection', () => {
           ...showcase,
           descriptionKey: 'nanoBanana.showcase.photography.description',
           cta: {
-            labelKey: 'nanoBanana.hero.primaryCta',
+            labelKey: 'nanoBanana.showcase.cta',
             href: 'https://cloud.comfy.org/',
             target: '_blank'
           }
@@ -64,7 +64,7 @@ describe('ModelLaunchShowcaseSection', () => {
       }
     })
 
-    const link = screen.getByRole('link', { name: 'RUN NANO BANANA' })
+    const link = screen.getByRole('link', { name: 'TRY NOW' })
     expect(link.getAttribute('href')).toBe('https://cloud.comfy.org/')
     expect(
       screen.getByText(t('nanoBanana.showcase.photography.description', 'en'), {

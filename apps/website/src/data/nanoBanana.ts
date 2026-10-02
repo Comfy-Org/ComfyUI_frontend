@@ -134,7 +134,7 @@ const advertisingCards = localCards('advertising', [
 ])
 
 const showcaseCta = {
-  labelKey: 'nanoBanana.hero.primaryCta',
+  labelKey: 'nanoBanana.showcase.cta',
   href: nanoBananaLinks.cloud,
   target: '_blank'
 } as const
