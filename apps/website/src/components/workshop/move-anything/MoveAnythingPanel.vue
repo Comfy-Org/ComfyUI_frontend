@@ -6,6 +6,7 @@ import type {
 import type { Locale } from '../../../i18n/translations'
 import { mc } from '../../../lib/workshop/move-anything/copy'
 import EditorCollapsible from '../app-editor/EditorCollapsible.vue'
+import EditorPanelRow from '../app-editor/EditorPanelRow.vue'
 import EditorSeedField from '../app-editor/EditorSeedField.vue'
 import EditorTextArea from '../app-editor/EditorTextArea.vue'
 import MoveAnythingImageRow from './MoveAnythingImageRow.vue'
@@ -31,31 +32,19 @@ const { quality, seed, prompt, phase } = move
     data-testid="move-panel"
   >
     <MoveAnythingImageRow :image :locale @file="move.useFile" />
-    <EditorCollapsible
-      :title="mc('move.quality', locale)"
-      :meta="
-        mc(
-          quality === 'fast' ? 'move.quality.fast' : 'move.quality.best',
-          locale
-        )
-      "
-      initially-open
-    >
+    <EditorPanelRow>
       <MoveAnythingQuality v-model="quality" :locale />
-    </EditorCollapsible>
-    <EditorCollapsible
-      :title="mc('move.advanced', locale)"
-      :meta="mc('move.advanced.summary', locale, { n: seed })"
-    >
-      <EditorTextArea
-        v-model="prompt"
-        :label="mc('move.prompt', locale)"
-        :placeholder="mc('move.prompt.placeholder', locale)"
-      />
       <EditorSeedField
         v-model="seed"
         :label="mc('move.seed', locale)"
         :shuffle-label="mc('move.seed.shuffle', locale)"
+      />
+    </EditorPanelRow>
+    <EditorCollapsible :title="mc('move.advanced', locale)">
+      <EditorTextArea
+        v-model="prompt"
+        :label="mc('move.prompt', locale)"
+        :placeholder="mc('move.prompt.placeholder', locale)"
       />
     </EditorCollapsible>
   </fieldset>

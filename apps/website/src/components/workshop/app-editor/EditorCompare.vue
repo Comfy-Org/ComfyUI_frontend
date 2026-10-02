@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
+import type { Locale } from '../../../i18n/translations'
+import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import EditorChecker from './EditorChecker.vue'
 import EditorFrame from './EditorFrame.vue'
 import EditorSplitLine from './EditorSplitLine.vue'
@@ -14,18 +16,22 @@ const {
   sliderLabel,
   width,
   height,
-  checker = false
+  checker = false,
+  locale = 'en'
 } = defineProps<{
   before: string
   after: string
   alt: string
-  beforeLabel: string
-  afterLabel: string
+  /** "Before" unless the app names it. */
+  beforeLabel?: string
+  /** "After" unless the app names it. */
+  afterLabel?: string
   sliderLabel: string
   width: number
   height: number
   /** Shows a checkerboard through the result's transparent pixels. */
   checker?: boolean
+  locale?: Locale
 }>()
 
 const split = ref(50)
@@ -44,8 +50,8 @@ const split = ref(50)
       />
       <EditorSplitLine
         v-model="split"
-        :before-label="beforeLabel"
-        :after-label="afterLabel"
+        :before-label="beforeLabel ?? tc('cinematic.compare.before', locale)"
+        :after-label="afterLabel ?? tc('cinematic.compare.after', locale)"
         :slider-label="sliderLabel"
       />
     </div>
