@@ -346,7 +346,6 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     isMaximized,
     dismissedSelectionSignature,
     open,
-    targetTracking,
     followsVisibleWorkflow,
     initializeTargetTracking,
     retainWorkflowTarget,
