@@ -642,7 +642,7 @@ describe('attachDocOpMinter', () => {
     })
   })
 
-  it('does not route a root-scoped write through an ID-colliding subgraph node', async () => {
+  it('mints a live subgraph-interior widget write with the subgraph-node path', async () => {
     const subgraph = createTestSubgraph({ rootGraph: graph })
     const host = createTestSubgraphNode(subgraph)
     const interior = new TestSource()
@@ -650,11 +650,61 @@ describe('attachDocOpMinter', () => {
       graph.add(host)
       subgraph.add(interior)
     })
-
+    // The widget store keys by ROOT graph id, so this write arrives naming the
+    // root graph even though the node lives one level down. Resolving it with
+    // the root graph's own `getNodeById` instead of a hierarchy search drops
+    // every interior edit silently.
     interior.widgets![0].value = 3
     await afterFlush()
 
-    expect(minted).toEqual([])
+    expect(minted).toEqual([
+      {
+        op: 'set_widget',
+        node_id: interior.id,
+        widget: 'steps',
+        value: 3,
+        old: 20,
+        path: [String(host.id), String(interior.id)],
+        inner_widget: 'steps'
+      }
+    ])
+  })
+
+  it('does not let an ephemeral widget write roll a hand edit back with it', async () => {
+    const { source } = seedGraph(graph)
+    // `$$node-text-preview` as `useProgressTextWidget` builds it: injected at
+    // run time, `serialize: false`, absent from the pinned catalog.
+    const preview = source.addWidget(
+      'text',
+      '$$node-text-preview',
+      '',
+      () => {}
+    )
+    preview.serialize = false
+    const doc = mintDocFrom(graph)
+
+    // One tick: execution streams progress text into the preview while the
+    // user edits a real widget. The minter enqueues a tick's intents together
+    // and `opSender` sends them as one batch.
+    preview.value = 'streaming…'
+    source.widgets![0].value = 42
+    await afterFlush()
+
+    expect(minted).toEqual([
+      {
+        op: 'set_widget',
+        node_id: source.id,
+        widget: 'steps',
+        value: 42,
+        old: 20
+      }
+    ])
+    // `applyOps` is abort-remainder. Before the predicate, the preview write
+    // led the batch, the host refused it as `unknown_widget`, the hand edit
+    // behind it came back `batch_aborted`, and `revertRejectedOps` reverted
+    // every op the batch did not apply — taking the user's 42 off the canvas.
+    expect(applyMinted(doc, minted)).toEqual(['applied'])
+    doc.destroy()
   })
 
   it('does not mint writes for live non-value widgets', async () => {
@@ -755,7 +805,12 @@ describe('attachDocOpMinter', () => {
     expect(minted).toEqual([])
   })
 
-  it('does not mint widgets for nodes that omit widget serialization', async () => {
+  it('mints a value-widget write on a node that omits the node-level serialize flag', async () => {
+    // `node.serialize_widgets` is NOT a mint gate. `SubgraphNode` never sets
+    // it, so gating on it would silently drop every blueprint-host widget
+    // edit — trading FE-3161's visible rejection for an invisible divergence
+    // between the canvas and the document, and erasing the Sentry signal that
+    // FE-3036's fix is verified against. Only the widget's own flags decide.
     const node = new LGraphNode('No widget serialization')
     node.addWidget('number', 'steps', 20, () => {})
     withGraphIntentSource('load', () => graph.add(node))
@@ -770,7 +825,15 @@ describe('attachDocOpMinter', () => {
     })
     await afterFlush()
 
-    expect(minted).toEqual([])
+    expect(minted).toEqual([
+      {
+        op: 'set_widget',
+        node_id: node.id,
+        widget: 'steps',
+        value: 21,
+        old: 20
+      }
+    ])
   })
 
   it('fails closed for stale writes from a different rendered graph', async () => {

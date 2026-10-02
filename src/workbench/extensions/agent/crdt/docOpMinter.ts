@@ -24,6 +24,7 @@ import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/LLink'
+import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -155,7 +156,29 @@ function nodeKey(graphId: string, nodeId: NodeId): string {
   return `${graphId}:${String(nodeId)}`
 }
 
-function reachableIntentGraph(graph: LGraph, graphId: string) {
+/**
+ * The live node a widget intent names, or null when this canvas holds none.
+ *
+ * The widget store keys by ROOT graph id (`resolveNodeRootGraphId`), so an
+ * interior node's intent carries the root graph's id and the node id alone is
+ * ambiguous: ids are unique per graph, not per hierarchy, so a root node and a
+ * subgraph-interior node can share one. Prefer whichever node actually carries
+ * the named widget, and fall back to plain hierarchy order when none does —
+ * that fallback is the resolution the routing below has always used.
+ */
+function widgetOwnerOf(
+  graph: LGraph,
+  event: IntentOf<'set_widget'>
+): LGraphNode | null {
+  const eventGraph = reachableIntentGraph(graph, event.graphId)
+  return eventGraph ? findNodeInHierarchy(eventGraph, event.nodeId) : null
+}
+
+/** The graph an intent names, when this canvas still renders it. */
+function reachableIntentGraph(
+  graph: LGraph,
+  graphId: string
+): LGraph | Subgraph | null {
   if (graphId === graph.id) return graph
   const registered = findSubgraphByUuid(graph, graphId)
   if (registered) return registered
@@ -163,49 +186,41 @@ function reachableIntentGraph(graph: LGraph, graphId: string) {
   return path ? traverseSubgraphPath(graph, path) : null
 }
 
-function isPersistedWidgetIntent(
-  node: LGraphNode,
+/**
+ * Whether a widget write is one the document carries at all.
+ *
+ * This is the predicate `valueWidgetsOnly` already applies to the `add_node`
+ * snapshot. Without it here, the incremental path mints an op for a widget
+ * this same file knows is unserializable: `$$node-text-preview` is injected at
+ * run time with `serialize: false`, so every progress tick minted a
+ * `set_widget` the host refused as `unknown_widget`, the user was toasted
+ * "your edit was rejected" for something that was never an edit, and
+ * `revertRejectedOps` rolled the value back. `applyOps` is abort-remainder, so
+ * a genuine hand edit batched behind that write was reverted with it (FE-3161).
+ *
+ * It only ever subtracts a write it can positively identify as non-value. A
+ * node this canvas cannot resolve is judged on the store state the intent was
+ * keyed by, and an unknown widget mints nothing rather than guessing.
+ */
+function isValueWidgetWrite(
+  owner: LGraphNode | null,
   event: IntentOf<'set_widget'>
 ): boolean {
-  if (!node.serialize_widgets) return false
-  const widget = node.widgets?.find(
+  const rootGraphId = owner?.graph?.rootGraph.id ?? event.graphId
+  const stored = useWidgetValueStore().getWidget(
+    widgetId(rootGraphId, event.nodeId, event.name)
+  )
+  const widget = owner?.widgets?.find(
     (candidate) => candidate.name === event.name
   )
-  if (!widget) return false
-  const stored = useWidgetValueStore().getWidget(
-    widgetId(node.graph!.rootGraph.id, event.nodeId, event.name)
-  )
   return isValueWidget(widget, stored)
-}
-
-type WidgetIntentValidation =
-  | { kind: 'drop' }
-  | { kind: 'validated'; node?: LGraphNode }
-
-function validateWidgetIntent(
-  graph: LGraph,
-  event: IntentOf<'set_widget'>
-): WidgetIntentValidation {
-  const eventGraph = reachableIntentGraph(graph, event.graphId)
-  if (!eventGraph) {
-    const stored = useWidgetValueStore().getWidget(
-      widgetId(event.graphId, event.nodeId, event.name)
-    )
-    return isValueWidget(undefined, stored)
-      ? { kind: 'validated' }
-      : { kind: 'drop' }
-  }
-  const node = eventGraph.getNodeById(event.nodeId)
-  return node && isPersistedWidgetIntent(node, event)
-    ? { kind: 'validated', node }
-    : { kind: 'drop' }
 }
 
 function routedWidgetOperation(
   graph: LGraph,
   rootGraphId: string,
   event: IntentOf<'set_widget'>,
-  node: LGraphNode | undefined
+  node: LGraphNode | null
 ): GraphOperation | null {
   const operation = {
     op: 'set_widget',
@@ -388,15 +403,10 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     if (pendingAdds.has(nodeKey(event.graphId, event.nodeId))) return
     const graph = deps.getGraph()
     if (!graph) return
-    const validation = validateWidgetIntent(graph, event)
-    if (validation.kind === 'drop') return
+    const owner = widgetOwnerOf(graph, event)
+    if (!isValueWidgetWrite(owner, event)) return
     const rootGraphId = deps.boundRootGraphId() ?? graph.id
-    const operation = routedWidgetOperation(
-      graph,
-      rootGraphId,
-      event,
-      validation.node
-    )
+    const operation = routedWidgetOperation(graph, rootGraphId, event, owner)
     if (operation) schedule({ kind: 'op', operation })
   }
 
