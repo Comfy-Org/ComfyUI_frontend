@@ -140,6 +140,7 @@ function makeInstance() {
     adapterRef: { current: null },
     _loadGeneration: 0,
     loadingPromise: null,
+    thumbnailCaptureQueue: Promise.resolve(),
     forceRender: vi.fn(),
     handleResize: vi.fn(),
     preRenderCallbacks: [],
@@ -1192,20 +1193,22 @@ describe('Load3d', () => {
       })
       const modelGroup = new THREE.Group()
       modelGroup.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1)))
+      const sceneStub = {
+        ...ctx.sceneManager,
+        gridHelper: { visible: true },
+        captureScene: sceneCaptureMock,
+        whenSplatsSorted: vi.fn().mockResolvedValue(undefined)
+      }
       Object.assign(ctx.load3d, {
         cameraManager: cameraStub,
         controlsManager: controlsStub,
-        sceneManager: {
-          ...ctx.sceneManager,
-          gridHelper: { visible: true },
-          captureScene: sceneCaptureMock
-        },
+        sceneManager: sceneStub,
         modelManager: {
           ...ctx.modelManager,
           currentModel: modelGroup
         }
       })
-      return { cameraStub, controlsStub, sceneCaptureMock }
+      return { cameraStub, controlsStub, sceneCaptureMock, sceneStub }
     }
 
     it('rejects thumbnail capture when no model is loaded', async () => {
@@ -1267,6 +1270,53 @@ describe('Load3d', () => {
         })
       )
     })
+
+    it('runs concurrent captures one at a time so each restores the live camera and grid', async () => {
+      const { cameraStub, sceneStub } = setupForCapture()
+      let finishSort = () => {}
+      const whenSplatsSorted =
+        sceneStub.whenSplatsSorted.mockImplementationOnce(
+          () => new Promise<void>((resolve) => (finishSort = resolve))
+        )
+      Object.assign(ctx.load3d, { adapterRef: { current: { kind: 'splat' } } })
+
+      const first = ctx.load3d.captureThumbnail(64, 64)
+      const second = ctx.load3d.captureThumbnail(64, 64)
+      await vi.waitFor(() => expect(whenSplatsSorted).toHaveBeenCalledOnce())
+      expect(cameraStub.getCameraState).toHaveBeenCalledOnce()
+
+      finishSort()
+      await Promise.all([first, second])
+
+      expect(cameraStub.getCameraState).toHaveBeenCalledTimes(2)
+      expect(cameraStub.setCameraState).toHaveBeenCalledTimes(2)
+      expect(sceneStub.gridHelper.visible).toBe(true)
+    })
+
+    it.for([
+      { kind: 'splat', waitsForSort: true },
+      { kind: 'mesh', waitsForSort: false }
+    ])(
+      'waits for splat sorting before capture: $kind -> $waitsForSort',
+      async ({ kind, waitsForSort }) => {
+        const { cameraStub, sceneCaptureMock, sceneStub } = setupForCapture()
+        const { whenSplatsSorted } = sceneStub
+        Object.assign(ctx.load3d, { adapterRef: { current: { kind } } })
+
+        await ctx.load3d.captureThumbnail(64, 64)
+
+        if (!waitsForSort) {
+          expect(whenSplatsSorted).not.toHaveBeenCalled()
+          return
+        }
+        expect(whenSplatsSorted).toHaveBeenCalledWith(
+          cameraStub.perspectiveCamera
+        )
+        expect(whenSplatsSorted.mock.invocationCallOrder[0]).toBeLessThan(
+          sceneCaptureMock.mock.invocationCallOrder[0]
+        )
+      }
+    )
   })
 
   describe('exportModel', () => {

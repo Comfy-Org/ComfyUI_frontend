@@ -66,6 +66,7 @@ class Load3d extends Viewport3d {
   private loadingPromise: Promise<boolean> | null = null
   private _loadGeneration: number = 0
   private hasLoadedModel: boolean = false
+  private thumbnailCaptureQueue: Promise<unknown> = Promise.resolve()
 
   constructor(
     container: HTMLElement,
@@ -565,9 +566,20 @@ class Load3d extends Viewport3d {
     this.forceRender()
   }
 
-  public async captureThumbnail(
+  public captureThumbnail(
     width: number = 256,
     height: number = 256
+  ): Promise<string> {
+    const capture = this.thumbnailCaptureQueue.then(() =>
+      this.captureThumbnailNow(width, height)
+    )
+    this.thumbnailCaptureQueue = capture.catch(() => {})
+    return capture
+  }
+
+  private async captureThumbnailNow(
+    width: number,
+    height: number
   ): Promise<string> {
     if (!this.modelManager.currentModel) {
       throw new Error('No model loaded for thumbnail capture')
@@ -594,6 +606,12 @@ class Load3d extends Viewport3d {
         box.getCenter(new THREE.Vector3())
       )
       this.controlsManager.controls.update()
+
+      if (this.isSplatModel()) {
+        await this.sceneManager.whenSplatsSorted(
+          this.cameraManager.perspectiveCamera
+        )
+      }
 
       const result = await this.captureScene(width, height)
       return result.scene
