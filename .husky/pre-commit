@@ -3,11 +3,35 @@ set -e
 
 merge_head=$(git rev-parse -q --verify MERGE_HEAD || true)
 if [ -n "$merge_head" ]; then
-  # A merge stages every upstream path absent from the stale first parent. Lint
-  # the branch-owned diff instead; --diff also disables lint-staged's stash and
-  # revert cleanup, which must never rewrite a live merge index after failure.
-  merge_base=$(git merge-base HEAD "$merge_head")
-  pnpm exec lint-staged --diff "$merge_base..HEAD"
+  # A merge stages every upstream path absent from the stale first parent, so
+  # the default staged diff would lint all of upstream. Lint what this commit
+  # contributes on top of the branch being merged in instead: the branch's own
+  # changes plus every conflict resolution, and nothing upstream already has.
+  # "$merge_base..HEAD" looks equivalent and is not - it omits a resolution in
+  # a file the local branch never touched, so the hook would commit that
+  # resolution without formatting, linting or typechecking it.
+  lint_target=$(git diff --diff-filter=ACMR --name-only --cached "$merge_head")
+
+  # --diff also disables lint-staged's stash, which must never rewrite a live
+  # merge index after a failed hook. The stash is also what hides unstaged
+  # edits, so without it a --fix task reads the worktree copy of a file and
+  # lint-staged stages that result. Refuse rather than commit unstaged work.
+  unstaged=$(git diff --name-only | while IFS= read -r file; do
+    if printf '%s\n' "$lint_target" | grep -qxF -- "$file"; then
+      printf '%s\n' "$file"
+    fi
+  done)
+  if [ -n "$unstaged" ]; then
+    printf 'pre-commit: unstaged changes in files this merge commits:\n' >&2
+    printf '%s\n' "$unstaged" >&2
+    printf 'Stage or stash them first, or the commit would include them.\n' >&2
+    exit 1
+  fi
+
+  # --diff="..." and not --diff "...": the value starts with a dash, and the
+  # option takes an optional argument, so the space form is read as a bare
+  # --diff followed by an unknown --cached option.
+  pnpm exec lint-staged --diff="--cached $merge_head"
 else
   pnpm exec lint-staged
 fi
