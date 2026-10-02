@@ -13,6 +13,8 @@ export interface MoveObject {
   readonly from: Rect
   /** Where the visitor wants it. */
   readonly to: Rect
+  /** The thing's outline where it sits, an SVG path in image fractions. */
+  readonly mask?: { readonly path: string }
 }
 
 export type Corner = 'nw' | 'ne' | 'sw' | 'se'

@@ -27,7 +27,8 @@ const {
   triggerClass,
   side = 'top',
   tooltip = false,
-  showHeading = true
+  showHeading = true,
+  disabled = false
 } = defineProps<{
   options: readonly MenuOption[]
   heading: string
@@ -35,6 +36,7 @@ const {
   side?: 'top' | 'bottom'
   tooltip?: boolean
   showHeading?: boolean
+  disabled?: boolean
 }>()
 
 const value = defineModel<string>({ required: true })
@@ -50,6 +52,7 @@ const triggerLabel = computed(() => {
       <DropdownMenuRoot>
         <DropdownMenuTrigger
           :aria-label="triggerLabel"
+          :disabled
           :class="
             cn(
               'flex items-center rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 data-[state=open]:bg-transparency-white-t8',
