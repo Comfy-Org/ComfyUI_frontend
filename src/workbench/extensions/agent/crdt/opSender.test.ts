@@ -339,6 +339,38 @@ describe('createOpSender', () => {
     ])
   })
 
+  it('does not attribute later results to a batch waiting for lineage', () => {
+    sender.enqueue([addNode(1)])
+    const opId = sent[0].ops[0].op_id
+    resultListener?.({
+      ok: false,
+      applied: [],
+      skipped: [],
+      failed: {
+        index: 0,
+        op_id: opId,
+        code: 'pre_mint',
+        message: 'workflow document is not ready; retry after doc_reset'
+      }
+    })
+
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+    resultListener?.({
+      ok: false,
+      applied: [],
+      skipped: [],
+      failed: {
+        index: 0,
+        op_id: opId,
+        code: 'opaque_widgets',
+        message: 'late duplicate result'
+      }
+    })
+
+    expect(settled).toHaveLength(0)
+    expect(sender.pending()).toBe(1)
+  })
+
   it('serializes batches: the next sends only after the result settles the first', () => {
     sender.enqueue([addNode(1)])
     sender.enqueue([addNode(2)])

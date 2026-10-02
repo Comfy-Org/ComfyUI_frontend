@@ -730,6 +730,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     const identified = identifiedOpIds(result)
     const batch = matchingBatch(result)
     if (parkMatchingPreMintResult(result, batch)) return
+    if (batch?.waitingForLineage) return
     if (identified.length > 0) {
       handleIdentifiedResult(result, batch, identified)
       return
