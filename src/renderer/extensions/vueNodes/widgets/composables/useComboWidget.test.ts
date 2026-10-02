@@ -19,7 +19,7 @@ import {
 import { t } from '@/i18n'
 import { useComboWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useComboWidget'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { addValueControlWidgets } from '@/scripts/widgets'
+import { addValueControlWidgets } from '@/scripts/valueControlWidgets'
 
 function createMockAssetItem(overrides: Partial<AssetItem> = {}): AssetItem {
   return {
@@ -38,7 +38,7 @@ function createMockAssetItem(overrides: Partial<AssetItem> = {}): AssetItem {
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
 
-vi.mock(import('@/scripts/widgets'), () => ({
+vi.mock(import('@/scripts/valueControlWidgets'), () => ({
   addValueControlWidgets: vi.fn()
 }))
 

@@ -3,7 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { INumericWidget } from '@/lib/litegraph/src/types/widgets'
 import { _for_testing } from '@/renderer/extensions/vueNodes/widgets/composables/useFloatWidget'
 
-vi.mock(import('@/scripts/widgets'), () => ({
+vi.mock(import('@/scripts/app'))
+vi.mock(import('@/scripts/valueControlWidgets'), () => ({
   addValueControlWidgets: vi.fn()
 }))
 
