@@ -327,6 +327,37 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return true
   }
 
+  function setOptions(
+    widgetId: WidgetId,
+    options: WidgetState['options']
+  ): boolean {
+    const state = getWidget(widgetId)
+    if (!state) return false
+    const visibility = getWidgetVisibility(widgetId)
+    const hidden = state.options.hidden
+    const hadDeclaredSurfaces = state.options.surfaces !== undefined
+    state.options = { ...options }
+    if (state.options.hidden === undefined && hidden !== undefined) {
+      state.options.hidden = hidden
+    }
+    if (visibility) {
+      const nextVisibility = deriveWidgetVisibility({
+        type: state.type,
+        advanced:
+          !hadDeclaredSurfaces && visibility.surfaces.canvas === 'advanced',
+        options: state.options
+      })
+      if (hidden === undefined && state.options.hidden === undefined) {
+        nextVisibility.suppression.byExtension =
+          visibility.suppression.byExtension
+      }
+      Object.assign(visibility.surfaces, nextVisibility.surfaces)
+      visibility.suppression.byExtension =
+        nextVisibility.suppression.byExtension
+    }
+    return true
+  }
+
   function updateOptions(
     widgetId: WidgetId,
     options: Partial<WidgetState['options']>
@@ -512,6 +543,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     getWidgetVisibility,
     setValue,
     setLabel,
+    setOptions,
     updateOptions,
     deleteWidget,
     renameWidget,

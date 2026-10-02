@@ -533,6 +533,101 @@ describe('useWidgetValueStore', () => {
       ).toBe(false)
     })
 
+    it('setOptions replaces options and resets omitted visibility tiers', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(
+        seedA,
+        state('number', 100, {
+          options: { min: 0, hideInPanel: true, advanced: true }
+        })
+      )
+
+      expect(store.setOptions(seedA, { max: 10 })).toBe(true)
+      expect(store.getWidget(seedA)?.options).toEqual({ max: 10 })
+      expect(store.getWidgetVisibility(seedA)?.surfaces).toEqual({
+        canvas: 'shown',
+        vueNode: 'shown',
+        panel: 'shown'
+      })
+      expect(
+        store.setOptions(widgetId(graphA, toNodeId('missing'), 'seed'), {})
+      ).toBe(false)
+    })
+
+    it('setOptions copies caller-owned options', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(seedA, state('number', 100))
+      const options = { max: 10 }
+
+      expect(store.setOptions(seedA, options)).toBe(true)
+      options.max = 20
+
+      expect(store.getWidget(seedA)?.options).toEqual({ max: 10 })
+    })
+
+    it('setOptions normalizes nullish legacy assignments', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(seedA, state('number', 100))
+
+      expect(Reflect.apply(store.setOptions, store, [seedA, undefined])).toBe(
+        true
+      )
+
+      expect(store.getWidget(seedA)?.options).toEqual({})
+    })
+
+    it('setOptions applies an explicit hidden replacement', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(
+        seedA,
+        state('number', 100, { options: { hidden: true } })
+      )
+
+      expect(store.setOptions(seedA, { hidden: false })).toBe(true)
+
+      expect(store.getWidget(seedA)?.options.hidden).toBe(false)
+      expect(store.getWidgetVisibility(seedA)?.suppression.byExtension).toBe(
+        false
+      )
+    })
+
+    it('setOptions preserves extension suppression without hidden metadata', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(seedA, state('converted-widget', 100))
+      const visibility = store.getWidgetVisibility(seedA)
+      expect(visibility).toBeDefined()
+      if (!visibility) throw new Error('Expected registered widget visibility')
+      visibility.suppression.byExtension = true
+
+      expect(store.setOptions(seedA, { max: 10 })).toBe(true)
+
+      expect(visibility.suppression.byExtension).toBe(true)
+    })
+
+    it('setOptions does not retain omitted declared surfaces as runtime state', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(
+        seedA,
+        state('number', 100, {
+          options: {
+            surfaces: {
+              canvas: 'advanced',
+              vueNode: 'advanced',
+              panel: 'advanced'
+            }
+          }
+        })
+      )
+
+      expect(store.setOptions(seedA, { max: 10 })).toBe(true)
+
+      expect(store.getWidgetVisibility(seedA)?.surfaces).toEqual({
+        canvas: 'shown',
+        vueNode: 'shown',
+        panel: 'shown'
+      })
+    })
+
     it('maps legacy option updates to the visibility component', () => {
       const store = useWidgetValueStore()
       store.registerWidget(seedA, state('number', 100))
