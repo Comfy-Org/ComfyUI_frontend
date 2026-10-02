@@ -631,7 +631,6 @@ jobs:
         shell: bash
         env:
           RECORD_VIDEO: 'true'
-          SLOW_MO: '250'
           FALLBACK_SPEC_FILES: ${{ steps.detect.outputs.fallback-files }}
           CHROMIUM_HAS_TESTS: ${{ steps.recordable.outputs.chromium-has-tests }}
           CLOUD_HAS_TESTS: ${{ steps.recordable.outputs.cloud-has-tests }}
