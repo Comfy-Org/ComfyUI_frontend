@@ -3,6 +3,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Corner, Rect } from '../../../lib/workshop/move-anything/arrange'
 import { nudgeFor } from '../../../lib/workshop/nudge'
+import { rectStyle } from '../app-editor/stage-geometry'
 
 const { rect, label, description } = defineProps<{
   rect: Rect
@@ -35,12 +36,7 @@ function onKey(event: KeyboardEvent) {
     type="button"
     :aria-label="description"
     class="absolute cursor-move touch-none rounded-sm border-[1.5px] border-dashed border-primary-warm-white shadow-[0_0_0_1px_rgb(0_0_0/0.25)] focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
-    :style="{
-      left: `${rect.x * 100}%`,
-      top: `${rect.y * 100}%`,
-      width: `${rect.w * 100}%`,
-      height: `${rect.h * 100}%`
-    }"
+    :style="rectStyle(rect)"
     data-testid="swap-box"
     @pointerdown="emit('grab', $event)"
     @keydown="onKey"

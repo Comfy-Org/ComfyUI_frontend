@@ -19,6 +19,7 @@ import {
   resizeRect
 } from '../../../lib/workshop/move-anything/arrange'
 import EditorFrame from '../app-editor/EditorFrame.vue'
+import { pointerFraction, rectStyle } from '../app-editor/stage-geometry'
 import HandSwapBox from './HandSwapBox.vue'
 
 const {
@@ -48,28 +49,12 @@ const sketch = ref<Rect>()
 let gesture: (at: { x: number; y: number }) => void = () => {}
 
 const ghost = computed(() =>
-  boxStyle(
+  rectStyle(
     gripRect(product.width, product.height, region, hand.width / hand.height)
   )
 )
 
-function boxStyle(rect: Rect) {
-  return {
-    left: `${rect.x * 100}%`,
-    top: `${rect.y * 100}%`,
-    width: `${rect.w * 100}%`,
-    height: `${rect.h * 100}%`
-  }
-}
-
-function point(event: PointerEvent) {
-  const box = frame.value?.getBoundingClientRect()
-  if (!box?.width || !box.height) return { x: 0, y: 0 }
-  return {
-    x: (event.clientX - box.left) / box.width,
-    y: (event.clientY - box.top) / box.height
-  }
-}
+const point = (event: PointerEvent) => pointerFraction(event, frame.value)
 
 function track(event: PointerEvent, onMove: typeof gesture) {
   frame.value?.setPointerCapture?.(event.pointerId)
@@ -160,7 +145,7 @@ function finish() {
       <span
         v-if="sketch"
         class="pointer-events-none absolute rounded-sm border-[1.5px] border-dashed border-primary-warm-white bg-primary-warm-white/10"
-        :style="boxStyle(sketch)"
+        :style="rectStyle(sketch)"
         aria-hidden="true"
       />
       <slot />
