@@ -196,6 +196,7 @@ import { UnauthorizedError } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
+import { loadExtensions } from '@/services/extensionLoader'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useNewUserService } from '@/services/useNewUserService'
 import {
@@ -560,6 +561,8 @@ onMounted(async () => {
         i18nError.value
       )
     }
+
+    await bootstrapTracer.settle('bootstrap/extensions-load', loadExtensions)
 
     // @ts-expect-error fixme ts strict error
     await comfyApp.setup(canvasRef.value)

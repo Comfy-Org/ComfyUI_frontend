@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { shouldLoadExtension } from './extensionService'
+import { shouldLoadExtension } from './extensionLoader'
 
 describe('shouldLoadExtension', () => {
   it.for(['/extensions/cloud/rum.js', '/extensions/cloud/sentry.js'])(
