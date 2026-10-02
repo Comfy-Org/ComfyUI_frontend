@@ -11,9 +11,9 @@ import type { ModelCategoryOption } from '../../../components/models/explore/Mod
 import {
   dayZeroModelFixtures,
   latestModelReleaseFixture,
+  measuredTrendingModelFixtures,
   modelFamilyFixtures,
-  taskFixtures,
-  trendingModelFixtures
+  taskFixtures
 } from '../../../components/models/explore/modelExploreFixtures'
 import {
   createModelExploreCatalog,
@@ -148,7 +148,7 @@ const conversionCards = [
     client:load
     showCatalogOnFilter={false}
     catalogLabel={t('models.explore.catalog.label', locale)}
-    defaultModels={trendingModelFixtures}
+    defaultModels={measuredTrendingModelFixtures}
     latestCollection={{
       headingId: 'day-zero-models-heading',
       label: t('models.explore.dayZero.label', locale),
@@ -158,7 +158,7 @@ const conversionCards = [
     collectionHeadingId="trending-models-heading"
     collectionLabel={t('models.explore.trending.label', locale)}
     collectionDescription={
-      trendingModelFixtures.length
+      measuredTrendingModelFixtures.length
         ? t('models.explore.trending.description', locale)
         : t('models.explore.trending.unavailable', locale)
     }

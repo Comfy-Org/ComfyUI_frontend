@@ -8,7 +8,7 @@
     "dev:no-toolbar": "cross-env NO_TOOLBAR=1 astro dev",
     "dev:crossview-proxy": "tsx scripts/crossview-dev-proxy.ts",
     "build": "tsx scripts/refresh-model-trends-snapshot.ts && astro build",
-    "build:e2e": "tsx scripts/refresh-model-trends-snapshot.ts && cross-env WEBSITE_INDEXABLE=1 astro build",
+    "build:e2e": "cross-env WEBSITE_INDEXABLE=1 WEBSITE_MODEL_TRENDS_PIN_SNAPSHOT_TIME=1 astro build",
     "format": "prettier --write \"src/**/*.astro\"",
     "format:check": "prettier --check \"src/**/*.astro\"",
     "preview": "astro preview",

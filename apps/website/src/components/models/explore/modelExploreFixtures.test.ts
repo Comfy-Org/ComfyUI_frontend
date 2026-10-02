@@ -1,72 +1,78 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  catalogCardFixtures,
   dayZeroModelFixtures,
-  trendingModelFixtures
+  measuredTrendingModelFixtures
 } from './modelExploreFixtures'
+import { modelVersionReleases } from './modelVersionReleases'
+import { trendModelVersions } from './modelTrends'
 
-describe('expanded trending collection', () => {
-  it('includes more than one preview of image models with unique owned destinations', () => {
-    const images = trendingModelFixtures.filter(
-      (model) => model.modality === 'image'
-    )
-    expect(images.length).toBeGreaterThan(8)
-    const hrefs = trendingModelFixtures.map((model) => model.href)
+describe('measured trending collection', () => {
+  it('lists unique individual versions with owned destinations', () => {
+    const hrefs = measuredTrendingModelFixtures.map((model) => model.href)
+    expect(measuredTrendingModelFixtures).toHaveLength(8)
     expect(new Set(hrefs).size).toBe(hrefs.length)
     expect(
-      hrefs.every(
+      hrefs.filter(
         (href) =>
-          href.startsWith('/hub/models/') ||
-          href.startsWith('/p/supported-models/')
+          !href.startsWith('/hub/models/') &&
+          !href.startsWith('/p/supported-models/')
       )
-    ).toBe(true)
+    ).toEqual([])
     expect(
-      trendingModelFixtures.every((model) => model.description.length > 0)
-    ).toBe(true)
+      measuredTrendingModelFixtures.filter(
+        (model) => model.description.length === 0
+      )
+    ).toEqual([])
+  })
+
+  it('contains only tracked versions, never support-dated or popularity-ordered cards', () => {
+    const trackedHrefs = new Set<string>(
+      trendModelVersions.map((model) => model.href)
+    )
+    expect(
+      measuredTrendingModelFixtures.filter(
+        (model) => !trackedHrefs.has(model.href)
+      )
+    ).toEqual([])
   })
 })
 
-it('includes open-weight audio in both collections and orders Latest by date', () => {
-  expect(
-    trendingModelFixtures.filter((model) => model.modality === 'audio').length
-  ).toBeGreaterThan(8)
-  expect(
-    dayZeroModelFixtures.filter((model) => model.modality === 'audio').length
-  ).toBeGreaterThan(4)
-  const dates = dayZeroModelFixtures.map(
-    (model) => model.releasedAt ?? model.supportedAt ?? ''
-  )
-  expect(dates).toEqual([...dates].sort().reverse())
-})
-
-it.for([
-  'image',
-  'video',
-  'audio',
-  '3d',
-  'llm',
-  'edit',
-  'upscale',
-  'open',
-  'partner'
-])('has enough eligible models for the %s previews', (filter) => {
-  const matches = (model: (typeof trendingModelFixtures)[number]) => {
-    if (filter === 'open') return model.statuses?.includes('open-weights')
-    if (filter === 'partner') return !model.statuses?.includes('open-weights')
-    if (filter === 'edit' || filter === 'upscale')
-      return model.capabilities?.some((capability) =>
-        capability.includes(filter)
-      )
-    return model.modality === filter
-  }
-  expect(trendingModelFixtures.filter(matches).length).toBeGreaterThanOrEqual(8)
-  expect(dayZeroModelFixtures.filter(matches).length).toBeGreaterThanOrEqual(4)
-})
-
-it('provides a provider mark for every model in both collections', () => {
-  expect(
-    [...trendingModelFixtures, ...dayZeroModelFixtures].filter(
-      (model) => !model.provider
+describe('latest collection', () => {
+  it('contains only publisher-dated releases ordered newest first', () => {
+    expect(dayZeroModelFixtures).toHaveLength(
+      new Set(modelVersionReleases.map(({ versionId }) => versionId)).size
     )
+    expect(
+      dayZeroModelFixtures.filter(
+        (model) => !model.releasedAt || !model.sourceUrl || model.supportedAt
+      )
+    ).toEqual([])
+    const dates = dayZeroModelFixtures.map((model) => model.releasedAt ?? '')
+    expect(dates).toEqual(dates.toSorted((a, b) => b.localeCompare(a)))
+  })
+})
+
+describe('catalog card fixtures', () => {
+  it('are kept apart from Trending and Latest', () => {
+    const featuredHrefs = new Set(
+      [...measuredTrendingModelFixtures, ...dayZeroModelFixtures].map(
+        (model) => model.href
+      )
+    )
+    const dated = catalogCardFixtures.filter((model) => model.supportedAt)
+    expect(dated.length).toBeGreaterThan(0)
+    expect(dated.filter((model) => featuredHrefs.has(model.href))).toEqual([])
+  })
+})
+
+it('provides a provider mark for every featured and catalog card', () => {
+  expect(
+    [
+      ...measuredTrendingModelFixtures,
+      ...dayZeroModelFixtures,
+      ...catalogCardFixtures
+    ].filter((model) => !model.provider)
   ).toEqual([])
 })

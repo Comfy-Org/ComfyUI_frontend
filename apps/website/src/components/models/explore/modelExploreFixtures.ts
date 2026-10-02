@@ -93,21 +93,27 @@ function hubTags(href: string) {
 
 const validatedTrendSnapshot = modelTrendSnapshotSchema.parse(trendSnapshot)
 
-const measuredTrendingModels: ExploreModelCardFixture[] = rankModelTrends(
-  validatedTrendSnapshot
-).map((model) => ({
-  name: model.name,
-  provider: model.provider,
-  description: t(model.descriptionKey, 'en'),
-  href: model.href,
-  ...hubTags(model.href),
-  target: model.href.startsWith('https:') ? '_blank' : '_self',
-  modality: model.modality,
-  tag: 'Partner API',
-  media: model.mediaSrc
-    ? { type: 'image', src: model.mediaSrc }
-    : { type: 'placeholder', tone: 'canvas' }
-}))
+// Fixture builds (e2e) pin the clock to the snapshot so its age never changes
+// which cards render. Production builds always judge age against today.
+const trendReferenceTime =
+  process.env.WEBSITE_MODEL_TRENDS_PIN_SNAPSHOT_TIME === '1'
+    ? new Date(validatedTrendSnapshot.asOf)
+    : new Date()
+
+export const measuredTrendingModelFixtures: ExploreModelCardFixture[] =
+  rankModelTrends(validatedTrendSnapshot, trendReferenceTime).map((model) => ({
+    name: model.name,
+    provider: model.provider,
+    description: t(model.descriptionKey, 'en'),
+    href: model.href,
+    ...hubTags(model.href),
+    target: model.href.startsWith('https:') ? '_blank' : '_self',
+    modality: model.modality,
+    tag: 'Partner API',
+    media: model.mediaSrc
+      ? { type: 'image', src: model.mediaSrc }
+      : { type: 'placeholder', tone: 'canvas' }
+  }))
 
 const audioDescriptions: Readonly<Record<string, string>> = {
   'acestep-v1-5-turbo':
@@ -329,19 +335,16 @@ const additionalModelFixtures: ExploreModelCardFixture[] =
     ]
   })
 
-const measuredTrendHrefs = new Set(
-  measuredTrendingModels.map((model) => model.href)
-)
-
-export const trendingModelFixtures: ExploreModelCardFixture[] = [
-  ...measuredTrendingModels,
+// Support-dated and popularity-ordered cards. They carry no usage measurement
+// or verified release date, so they never feed Trending or Latest and only
+// enrich catalog cards in the full directory.
+export const catalogCardFixtures: ExploreModelCardFixture[] = [
   ...openAudioModels,
   ...additionalModelFixtures,
   ...sortWorkshopModels(workshopModels, 'popular').flatMap(
     (model): ExploreModelCardFixture[] => {
       if (
         !model.href?.startsWith('/hub/models/') ||
-        measuredTrendHrefs.has(model.href) ||
         model.status === 'deprecated' ||
         !model.summary ||
         !model.modality
@@ -389,16 +392,10 @@ const verifiedReleaseFixtures: ExploreModelCardFixture[] =
     media: { type: 'image', src: model.mediaSrc }
   }))
 
-export const dayZeroModelFixtures: ExploreModelCardFixture[] = [
-  ...verifiedReleaseFixtures,
-  ...[...openAudioModels, ...additionalModelFixtures].filter(
-    (model) => model.supportedAt
+export const dayZeroModelFixtures: ExploreModelCardFixture[] =
+  verifiedReleaseFixtures.toSorted((a, b) =>
+    (b.releasedAt ?? '').localeCompare(a.releasedAt ?? '')
   )
-].sort((a, b) =>
-  (b.releasedAt ?? b.supportedAt ?? '').localeCompare(
-    a.releasedAt ?? a.supportedAt ?? ''
-  )
-)
 
 export const taskFixtures: ExploreTaskFixture[] = [
   {

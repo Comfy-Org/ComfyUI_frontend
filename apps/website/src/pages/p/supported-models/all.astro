@@ -5,8 +5,9 @@ import ModelCatalogExplorer from '../../../components/models/explore/ModelCatalo
 import type { ModelCategoryOption } from '../../../components/models/explore/ModelCategoryFilter.vue'
 import { createModelExploreCatalog } from '../../../components/models/explore/modelExploreCatalog'
 import {
+  catalogCardFixtures,
   dayZeroModelFixtures,
-  trendingModelFixtures
+  measuredTrendingModelFixtures
 } from '../../../components/models/explore/modelExploreFixtures'
 import { models } from '../../../config/models'
 import { MODEL_FILTER_CATEGORIES } from '../../../config/modelCategories'
@@ -52,7 +53,11 @@ const categoryOptions: ModelCategoryOption[] = [
     showCatalogByDefault
     pageSize={24}
     catalogCardVariant="hub"
-    catalogCardModels={[...dayZeroModelFixtures, ...trendingModelFixtures]}
+    catalogCardModels={[
+      ...dayZeroModelFixtures,
+      ...measuredTrendingModelFixtures,
+      ...catalogCardFixtures
+    ]}
     openWeightsBadgeLabel={t('models.explore.openWeightsBadge', locale)}
     {catalog}
     {categoryOptions}

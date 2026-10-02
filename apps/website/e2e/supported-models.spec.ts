@@ -74,12 +74,12 @@ test.describe('Supported model explorer @smoke', () => {
       page
         .getByRole('region', { name: 'TRENDING', exact: true })
         .getByRole('heading', { level: 3 })
-    ).toHaveCount(8)
+    ).toHaveCount(5)
     await expect(
       page
         .getByRole('region', { name: 'LATEST', exact: true })
         .getByRole('heading', { level: 3 })
-    ).toHaveCount(4)
+    ).toHaveCount(3)
   })
 
   test('shows verified releases with quantization variants grouped', async ({

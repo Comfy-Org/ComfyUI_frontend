@@ -7,14 +7,7 @@ import {
   trendModelVersions
 } from '../src/components/models/explore/modelTrends'
 
-const token = process.env.WEBSITE_POSTHOG_READ_TOKEN
-if (!token) {
-  if (process.env.REQUIRE_MODEL_TRENDS_REFRESH === '1')
-    throw new Error(
-      'Daily model trends refresh requires WEBSITE_POSTHOG_READ_TOKEN'
-    )
-  process.stdout.write('Model trends: using the dated committed snapshot.\n')
-} else {
+async function refreshSnapshot(token: string) {
   const response = await fetch(
     'https://us.posthog.com/api/projects/204330/query/',
     {
@@ -69,4 +62,23 @@ if (!token) {
     JSON.stringify(snapshot, null, 2) + '\n'
   )
   process.stdout.write('Refreshed model trends from production analytics.\n')
+}
+
+const token = process.env.WEBSITE_POSTHOG_READ_TOKEN
+const refreshRequired = process.env.REQUIRE_MODEL_TRENDS_REFRESH === '1'
+if (!token) {
+  if (refreshRequired)
+    throw new Error(
+      'Daily model trends refresh requires WEBSITE_POSTHOG_READ_TOKEN'
+    )
+  process.stdout.write('Model trends: using the dated committed snapshot.\n')
+} else {
+  try {
+    await refreshSnapshot(token)
+  } catch (error) {
+    if (refreshRequired) throw error
+    process.stderr.write(
+      `Model trends: refresh failed, keeping the dated committed snapshot (${error instanceof Error ? error.message : String(error)}).\n`
+    )
+  }
 }

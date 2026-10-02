@@ -510,7 +510,7 @@ Task card workflow totals match their linked use-case pages, verified on
 
 “Latest” uses publisher announcement dates in
 `src/components/models/explore/modelVersionReleases.ts`. Template dates are
-not model release dates. Quantizations share one version record; releases
+not model release dates, so support-dated cards never appear in Latest. Quantizations share one version record; releases
 without a verifiable date are excluded. Cards display model descriptions,
 while the release dates stay in the ordering metadata.
 
@@ -518,18 +518,26 @@ while the release dates stay in the ordering metadata.
 generations over two complete seven-day UTC windows. It orders tracked
 versions by the increase in weekly users, requires at least 50 users, and
 does not infer local open-weight usage from Desktop model-class telemetry.
-The collection shows eight individual versions with capability descriptions.
-The dated snapshot is hidden after seven days if it cannot be refreshed.
+The collection shows eight individual versions with capability descriptions,
+and only versions with a measurement appear. Open-weight and support-dated
+catalog cards never fill it. The dated snapshot is hidden after seven days if
+it cannot be refreshed.
 
 Builds refresh this small aggregate through the
 [PostHog query API](https://posthog.com/docs/api/query) when the GitHub Actions
 secret `WEBSITE_POSTHOG_READ_TOKEN` is present. Use a project-scoped credential
 permitted to read queries for production project 204330. It stays in the build
 environment and is never sent to visitors. Without it, normal builds use the
-committed measured snapshot. The daily website deployment requires a fresh
-query and fails if the credential is missing; this schedule starts only after
-the workflow is merged to the default branch. Add new verified provider
-version identities to `trendModelVersions` to extend coverage.
+committed measured snapshot, and so do builds where the query fails: the
+failure is logged as a warning and the build continues. The daily website
+deployment (`REQUIRE_MODEL_TRENDS_REFRESH=1`) requires a fresh query and fails
+if the credential is missing or the query fails; this schedule starts only
+after the workflow is merged to the default branch, so add the secret first.
+`pnpm build:e2e` never queries PostHog and sets
+`WEBSITE_MODEL_TRENDS_PIN_SNAPSHOT_TIME=1`, which judges the snapshot's age
+against its own date so the committed snapshot renders the same Trending cards
+whenever the e2e suite runs. Add new verified provider version identities to
+`trendModelVersions` to extend coverage.
 
 - `pnpm dev` — Astro dev server
 - `pnpm build` — production build to `dist/`
