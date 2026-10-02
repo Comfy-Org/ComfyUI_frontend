@@ -3,7 +3,7 @@ import { computed, nextTick, onMounted, ref } from 'vue'
 import { useEventListener } from '@vueuse/core'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import ModelExploreGrid from './ModelExploreGrid.vue'
+import ModelCollectionResults from './ModelCollectionResults.vue'
 import ModelCatalogResults from './ModelCatalogResults.vue'
 import type { CardWorkflowItem } from './ModelExploreCard.vue'
 import ModelCollectionHeader from './ModelCollectionHeader.vue'
@@ -423,17 +423,9 @@ const latestEntries = computed(() =>
       :action-label="collectionActionLabel"
       :action-href="collectionHref()"
     />
-    <p
-      v-if="!defaultEntries.length"
-      class="py-4 text-center text-base font-light text-content-secondary"
-    >
-      {{ trendingEmptyLabel ?? emptyLabel }}
-    </p>
-    <ModelExploreGrid
-      v-else
+    <ModelCollectionResults
       :entries="trendingExpanded ? defaultEntries : defaultEntries.slice(0, 8)"
-      variant="hub"
-      class="mt-7"
+      :empty-label="trendingEmptyLabel ?? emptyLabel"
     />
   </section>
   <section
@@ -465,17 +457,9 @@ const latestEntries = computed(() =>
       :action-label="collectionActionLabel"
       :action-href="collectionHref(true)"
     />
-    <p
-      v-if="!latestEntries.length"
-      class="py-4 text-center text-base font-light text-content-secondary"
-    >
-      {{ latestEmptyLabel ?? emptyLabel }}
-    </p>
-    <ModelExploreGrid
-      v-else
+    <ModelCollectionResults
       :entries="latestOnly ? latestEntries : latestEntries.slice(0, 4)"
-      variant="hub"
-      class="mt-7"
+      :empty-label="latestEmptyLabel ?? emptyLabel"
     />
   </section>
 </template>
