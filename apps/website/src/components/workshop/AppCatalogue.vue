@@ -7,8 +7,9 @@ import { t } from '../../i18n/translations'
 import { CARD_GRID, SHELF_CARD } from '../../lib/workshop/card-layout'
 import type { CatalogueApp } from '../../lib/workshop/catalogue-apps'
 import { ac } from '../../lib/workshop/catalogue-apps'
-import { COMING_SOON_APPS } from '../../lib/workshop/coming-soon-apps'
+import AppFeatured from './AppFeatured.vue'
 import CardRow from './CardRow.vue'
+import ComingSoonApps from './ComingSoonApps.vue'
 import WorkshopAppCard from './WorkshopAppCard.vue'
 
 const ROW_LIMIT = 8
@@ -63,36 +64,7 @@ const hasMore = computed(() => apps.length > ROW_LIMIT)
     </ul>
 
     <div v-else class="flex flex-col gap-12">
-      <a
-        v-if="featured"
-        :href="featured.href"
-        class="group grid overflow-hidden rounded-3xl bg-hub-surface outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 md:grid-cols-2"
-        data-testid="app-featured"
-      >
-        <div class="aspect-video overflow-hidden md:aspect-auto">
-          <img
-            v-if="featured.image"
-            :src="featured.image"
-            alt=""
-            class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
-            decoding="async"
-          />
-        </div>
-        <div class="flex flex-col justify-center gap-3 p-6 lg:p-10">
-          <p class="text-sm font-medium text-primary-comfy-yellow">
-            {{ ac('featured', locale) }}
-          </p>
-          <h2 class="text-2xl font-medium text-primary-warm-white lg:text-3xl">
-            {{ featured.name }}
-          </h2>
-          <p class="text-content-secondary">{{ featured.task }}</p>
-          <span
-            class="mt-3 inline-flex h-11 w-fit items-center rounded-2xl bg-primary-comfy-yellow px-6 text-sm font-bold text-primary-comfy-ink"
-          >
-            {{ ac('tryFree', locale) }}
-          </span>
-        </div>
-      </a>
+      <AppFeatured v-if="featured" :app="featured" :locale />
       <section aria-labelledby="app-shelf" data-testid="app-shelf">
         <CardRow :locale>
           <template #heading>
@@ -107,21 +79,10 @@ const hasMore = computed(() => apps.length > ROW_LIMIT)
             <WorkshopAppCard :app />
           </li>
         </CardRow>
-        <div
-          class="mt-4 flex flex-wrap items-center gap-2"
+        <ComingSoonApps
+          :label="ac('comingSoon', locale)"
           data-testid="app-coming-soon"
-        >
-          <span class="mr-1 text-sm text-content-secondary">
-            {{ ac('comingSoon', locale) }}
-          </span>
-          <span
-            v-for="name in COMING_SOON_APPS"
-            :key="name"
-            class="rounded-full border border-transparency-white-t8 px-3 py-1 text-sm text-content-secondary"
-          >
-            {{ name }}
-          </span>
-        </div>
+        />
       </section>
       <button
         v-if="hasMore"

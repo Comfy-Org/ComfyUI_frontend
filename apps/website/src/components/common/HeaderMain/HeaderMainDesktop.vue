@@ -17,8 +17,7 @@ import {
 import { getMainNavigation } from '../../../data/mainNavigation'
 import type { NavItem } from '../../../data/mainNavigation'
 import type { Locale } from '../../../i18n/translations'
-import NavColumn from './NavColumn.vue'
-import NavFeaturedCard from './NavFeaturedCard.vue'
+import NavDropdownBody from './NavDropdownBody.vue'
 import NewBadge from './NewBadge.vue'
 
 const { locale = 'en', workshopInBuild = false } = defineProps<{
@@ -64,39 +63,12 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
             </span>
           </NavigationMenuTrigger>
           <NavigationMenuContent class="w-auto" data-testid="nav-dropdown">
-            <ul class="flex w-max gap-16">
-              <NavFeaturedCard
-                v-if="navItem.featured"
-                :featured="navItem.featured"
-              />
-              <li class="flex flex-col gap-8">
-                <ul class="flex gap-16">
-                  <NavColumn
-                    v-for="column in navItem.columns.filter(
-                      (column) => column.placement !== 'footer'
-                    )"
-                    :key="column.header"
-                    :column="column"
-                    :locale="locale"
-                    :current-path="currentPath"
-                  />
-                </ul>
-                <ul
-                  v-if="navItem.columns.some((c) => c.placement === 'footer')"
-                  class="border-t border-transparency-white-t8 pt-4"
-                >
-                  <NavColumn
-                    v-for="column in navItem.columns.filter(
-                      (column) => column.placement === 'footer'
-                    )"
-                    :key="column.header"
-                    :column="column"
-                    :locale="locale"
-                    :current-path="currentPath"
-                  />
-                </ul>
-              </li>
-            </ul>
+            <NavDropdownBody
+              :columns="navItem.columns"
+              :featured="navItem.featured"
+              :locale
+              :current-path="currentPath"
+            />
           </NavigationMenuContent>
         </template>
         <NavigationMenuLink

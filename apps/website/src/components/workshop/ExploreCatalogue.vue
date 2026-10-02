@@ -12,8 +12,8 @@ import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { SHELF_CARD } from '../../lib/workshop/card-layout'
 import type { CatalogueApp } from '../../lib/workshop/catalogue-apps'
-import { COMING_SOON_APPS } from '../../lib/workshop/coming-soon-apps'
 import CardRow from './CardRow.vue'
+import ComingSoonApps from './ComingSoonApps.vue'
 import ExploreSeeAll from './ExploreSeeAll.vue'
 import UseCaseCard from './UseCaseCard.vue'
 import WorkshopAppCard from './WorkshopAppCard.vue'
@@ -130,21 +130,10 @@ const chipClass = (active: boolean) =>
           <WorkshopAppCard :app />
         </li>
       </CardRow>
-      <div
-        class="mt-4 flex flex-wrap items-center gap-2"
+      <ComingSoonApps
+        :label="t('workshop.explore.comingSoon', locale)"
         data-testid="explore-coming-soon"
-      >
-        <span class="mr-1 text-sm text-content-secondary">
-          {{ t('workshop.explore.comingSoon', locale) }}
-        </span>
-        <span
-          v-for="name in COMING_SOON_APPS"
-          :key="name"
-          class="rounded-full border border-transparency-white-t8 px-3 py-1 text-sm text-content-secondary"
-        >
-          {{ name }}
-        </span>
-      </div>
+      />
     </section>
 
     <section
