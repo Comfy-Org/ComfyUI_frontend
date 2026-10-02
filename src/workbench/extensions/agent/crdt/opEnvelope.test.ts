@@ -136,4 +136,13 @@ describe('chunkWireOps', () => {
 
     expect(chunkWireOps(ops)).toEqual([ops])
   })
+
+  it('rejects an op whose toJSON returns undefined', () => {
+    const [op] = mintWireOps([addNode(1)], MINT)
+    Object.assign(op, { toJSON: () => undefined })
+
+    expect(() => chunkWireOps([op])).toThrow(
+      'Operation did not serialize to JSON'
+    )
+  })
 })
