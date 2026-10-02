@@ -76,16 +76,19 @@ async function assertLandingPage(
     'https://blog.comfy.org/p/comfy-agent-the-first-agent-for-craft'
   )
   await expect(featuredStoryLink).toHaveAttribute('target', '_blank')
-  await expect(featuredStoryLink).toHaveAttribute('rel', 'noopener noreferrer')
+  await expect(featuredStoryLink).toHaveAttribute('rel', /\bnoopener\b/)
+  await expect(featuredStoryLink).toHaveAttribute('rel', /\bnoreferrer\b/)
+  let reachedFeaturedStoryLink = false
   for (let press = 0; press < 50; press++) {
     await page.keyboard.press('Tab')
-    if (
-      await featuredStoryLink.evaluate(
-        (link) => link === document.activeElement
-      )
+    reachedFeaturedStoryLink = await featuredStoryLink.evaluate(
+      (link) => link === document.activeElement
     )
+    if (reachedFeaturedStoryLink) {
       break
+    }
   }
+  expect(reachedFeaturedStoryLink).toBe(true)
   await expect(featuredStoryLink).toBeFocused()
 
   await expect(
