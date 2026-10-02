@@ -466,7 +466,10 @@ describe('SubscriptionView', () => {
         name: 'a cancel operation that failed',
         cancel: {
           status: 'ok',
-          value: { phase: 'failed', operation: failedOperation('card_declined') }
+          value: {
+            phase: 'failed',
+            operation: failedOperation('card_declined')
+          }
         }
       },
       {
