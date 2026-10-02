@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAgentPanelStore } from './agentPanelStore'
 
@@ -220,7 +220,6 @@ describe('Agent target deletion', () => {
       expect(context.panel.selectedWorkflow?.path).toBe(selected)
     }
   )
-
 })
 
 describe('Agent target tracking policy', () => {
