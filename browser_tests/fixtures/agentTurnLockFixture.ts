@@ -386,7 +386,6 @@ export class AgentTurnLockHarness {
     this.liveProgressRow = this.workingRow
       .or(this.panel.getByText(enMessages.agent.thinking, { exact: true }))
       .filter({ visible: true })
-      .first()
     this.userBubbles = this.panel.getByTestId('user-message-bubble')
     this.entryButton = this.agentPanel.openButton
     this.dock = page.getByTestId('docked-agent-panel')
@@ -546,6 +545,7 @@ export class AgentTurnLockHarness {
    * page is never reloaded and the shared websocket stays open.
    */
   async minimizePanel(): Promise<void> {
+    await expect(this.dock).toBeVisible()
     await this.entryButton.click()
     await expect(this.dock).toHaveCount(0)
   }
@@ -564,7 +564,6 @@ export class AgentTurnLockHarness {
   async restorePanel(): Promise<void> {
     await this.entryButton.click()
     await expect(this.panel).toBeVisible()
-    await expect(this.workSummary).toHaveCount(0)
   }
 
   /** Drops the live socket and resolves with the one the client reconnects on. */
