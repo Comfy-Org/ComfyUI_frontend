@@ -85,8 +85,7 @@ describe('LiveGraphApplier malformed node report', () => {
         producer: { origin: 'unstamped' }
       }
     })
-    // Fail-closed, and no normalization written back into the document.
-    expect(nodesMap(doc).get('149')?.get('inputs')).toHaveProperty('length', 1)
+    expect(nodesMap(doc).get('149')?.toJSON().inputs).toEqual([slot])
   })
 
   it.for([
