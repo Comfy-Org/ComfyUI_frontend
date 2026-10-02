@@ -2644,6 +2644,7 @@
       "cloudNewUser": "New to Comfy?",
       "cloudSignUp": "Sign up here",
       "freeRunsSuffix": "to get {count} free run. | to get {count} free runs.",
+      "freeRunsSuffixGoogle": "with Google to get {count} free run. | with Google to get {count} free runs.",
       "emailLabel": "Email",
       "emailPlaceholder": "Enter your email",
       "passwordLabel": "Password",
