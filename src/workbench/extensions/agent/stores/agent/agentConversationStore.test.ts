@@ -1047,7 +1047,7 @@ describe('useAgentConversationStore', () => {
 
     expect(store.messages[0].parts).toMatchObject([
       { type: 'text', text: 'partial', state: 'done' },
-      { type: 'tool', name: 'add_node', state: 'done' }
+      { type: 'tool', name: 'add_node', state: 'done', ok: false }
     ])
   })
 
