@@ -228,12 +228,6 @@ function actorKind(actor: unknown): ActorKind {
   return kind === 'agent' || kind === 'human' ? kind : 'unknown'
 }
 
-/**
- * Reads the node's own LWW stamp, `[base_version, actor, op_id]`. Only called
- * on the malformed branch: `readStamps` copies the whole ledger, and it refuses
- * a document whose schema version the pinned package cannot read — which must
- * cost the attribution, not the whole report.
- */
 function nodeProducer(doc: Y.Doc, id: string): NodeProducer {
   let stamps: Readonly<Record<string, unknown>>
   try {
