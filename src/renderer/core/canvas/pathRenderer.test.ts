@@ -6,7 +6,6 @@ import type {
   RenderContext
 } from '@/renderer/core/canvas/pathRenderer'
 import { CanvasPathRenderer } from '@/renderer/core/canvas/pathRenderer'
-import { asStubPath, StubPath2D } from '@/utils/__tests__/stubPath2D'
 
 function createMockCtx(): CanvasRenderingContext2D {
   return {
@@ -183,9 +182,9 @@ describe('CanvasPathRenderer', () => {
 
       const path = renderer.drawLink(ctx, link, context)
 
-      const lineToCalls = asStubPath(path).lineTo.mock.calls
+      const lineToCalls = vi.mocked(path.lineTo).mock.calls
 
-      expect(asStubPath(path).moveTo).toHaveBeenCalled()
+      expect(path.moveTo).toHaveBeenCalled()
       // Linear mode: start -> innerA -> innerB -> end = 3 lineTo calls
       expect(lineToCalls).toHaveLength(3)
       // innerA.x = start.x + 15 (right direction)
@@ -209,7 +208,7 @@ describe('CanvasPathRenderer', () => {
       })
 
       const path = renderer.drawLink(ctx, link, context)
-      const lineToCalls = asStubPath(path).lineTo.mock.calls
+      const lineToCalls = vi.mocked(path.lineTo).mock.calls
 
       // innerA: y + 15 (down), innerB: y - 15 (up)
       expect(lineToCalls[0]).toEqual([50, 65])
@@ -227,7 +226,7 @@ describe('CanvasPathRenderer', () => {
       })
 
       const path = renderer.drawLink(ctx, link, context)
-      const lineToCalls = asStubPath(path).lineTo.mock.calls
+      const lineToCalls = vi.mocked(path.lineTo).mock.calls
 
       // No offset — innerA == start, innerB == end
       expect(lineToCalls[0]).toEqual([0, 0])
@@ -249,7 +248,7 @@ describe('CanvasPathRenderer', () => {
       })
 
       const path = renderer.drawLink(ctx, link, context)
-      const lineToCalls = asStubPath(path).lineTo.mock.calls
+      const lineToCalls = vi.mocked(path.lineTo).mock.calls
 
       // straight: start -> innerA -> (midX, innerA.y) -> (midX, innerB.y) -> innerB -> end
       expect(lineToCalls).toHaveLength(5)
@@ -275,7 +274,7 @@ describe('CanvasPathRenderer', () => {
       })
 
       const path = renderer.drawLink(ctx, link, context)
-      const lineToCalls = asStubPath(path).lineTo.mock.calls
+      const lineToCalls = vi.mocked(path.lineTo).mock.calls
 
       // innerA = (100, 90), innerB = (100, 310), midX = 100
       expect(lineToCalls[0]).toEqual([100, 90])
@@ -294,14 +293,7 @@ describe('CanvasPathRenderer', () => {
       const context = makeContext()
 
       const path = renderer.drawLink(ctx, link, context)
-      expect(asStubPath(path).bezierCurveTo).toHaveBeenCalledWith(
-        50,
-        10,
-        150,
-        90,
-        200,
-        100
-      )
+      expect(path.bezierCurveTo).toHaveBeenCalledWith(50, 10, 150, 90, 200, 100)
     })
 
     it('auto-calculates control points when none provided', () => {
@@ -310,7 +302,7 @@ describe('CanvasPathRenderer', () => {
       const context = makeContext()
 
       const path = renderer.drawLink(ctx, link, context)
-      expect(asStubPath(path).bezierCurveTo).toHaveBeenCalled()
+      expect(path.bezierCurveTo).toHaveBeenCalled()
     })
 
     it('uses quadratic curve for single control point', () => {
@@ -319,12 +311,7 @@ describe('CanvasPathRenderer', () => {
       const context = makeContext()
 
       const path = renderer.drawLink(ctx, link, context)
-      expect(asStubPath(path).quadraticCurveTo).toHaveBeenCalledWith(
-        100,
-        50,
-        200,
-        100
-      )
+      expect(path.quadraticCurveTo).toHaveBeenCalledWith(100, 50, 200, 100)
     })
 
     it('falls back to lineTo when no control points', () => {
@@ -333,7 +320,7 @@ describe('CanvasPathRenderer', () => {
       const context = makeContext()
 
       const path = renderer.drawLink(ctx, link, context)
-      expect(asStubPath(path).lineTo).toHaveBeenCalledWith(200, 100)
+      expect(path.lineTo).toHaveBeenCalledWith(200, 100)
     })
   })
 
@@ -349,7 +336,7 @@ describe('CanvasPathRenderer', () => {
       const context = makeContext()
 
       const path = renderer.drawLink(ctx, link, context)
-      const bezier = asStubPath(path).bezierCurveTo.mock.calls[0]
+      const bezier = vi.mocked(path.bezierCurveTo).mock.calls[0]
 
       // dist=400, controlDist = max(30, 400*0.25) = 100
       // cp1 = (0+100, 0) = (100, 0)
@@ -371,7 +358,7 @@ describe('CanvasPathRenderer', () => {
       const context = makeContext()
 
       const path = renderer.drawLink(ctx, link, context)
-      const bezier = asStubPath(path).bezierCurveTo.mock.calls[0]
+      const bezier = vi.mocked(path.bezierCurveTo).mock.calls[0]
 
       // dist=10, controlDist = max(30, 10*0.25) = 30
       expect(bezier[0]).toBe(30) // cp1.x = 0 + 30
@@ -797,7 +784,7 @@ describe('CanvasPathRenderer', () => {
       )
 
       // When fromInput, dragPoint becomes start and fixedPoint becomes end
-      expect(asStubPath(path).moveTo).toHaveBeenCalledWith(0, 0)
+      expect(path.moveTo).toHaveBeenCalledWith(0, 0)
     })
 
     it('uses custom dragDirection when provided', () => {
@@ -870,7 +857,7 @@ describe('CanvasPathRenderer', () => {
 
       const result = renderer.drawLink(ctx, link, context)
 
-      expect(result).toBeInstanceOf(StubPath2D)
+      expect(result).toBeInstanceOf(Path2D)
     })
   })
 
@@ -896,7 +883,7 @@ describe('CanvasPathRenderer', () => {
         })
 
         const path = renderer.drawLink(ctx, link, context)
-        const lineToCalls = asStubPath(path).lineTo.mock.calls
+        const lineToCalls = vi.mocked(path.lineTo).mock.calls
 
         expect(lineToCalls[0]).toEqual(expectedInnerA)
       }
