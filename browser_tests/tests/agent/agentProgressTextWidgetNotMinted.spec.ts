@@ -179,6 +179,37 @@ async function bootBoundToHost(page: Page): Promise<Rig> {
   return { host, hostSocket, vueNodes }
 }
 
+/** One execution progress tick, through the widget's real setter. */
+async function streamProgress(
+  page: Page,
+  hostSocket: AgentFollowerHostSocket,
+  text: string
+): Promise<void> {
+  hostSocket.sendExecutionBinary(progressTextFrame(String(NODE_ID), text))
+  await nextFrame(page)
+}
+
+/** Commits a hand edit on the node's real `seed` widget. */
+function editSeed(page: Page, value: number): Promise<void> {
+  return page.evaluate(
+    ({ nodeId, value }) => {
+      const node = window.app!.graph.nodes.find(
+        (candidate) => String(candidate.id) === nodeId
+      )!
+      node.widgets!.find((widget) => widget.name === 'seed')!.value = value
+    },
+    { nodeId: String(NODE_ID), value }
+  )
+}
+
+/** The rendered `seed` input on the node under test. */
+function seedField(vueNodes: VueNodeHelpers) {
+  return vueNodes
+    .getNodeLocator(String(NODE_ID))
+    .getByLabel('seed', { exact: true })
+    .getByRole('spinbutton')
+}
+
 test.describe(
   'Agent CRDT: an ephemeral progress widget is never minted outbound',
   { tag: ['@cloud', '@agent', '@vue-nodes', '@widget'] },
@@ -187,14 +218,13 @@ test.describe(
       page
     }) => {
       test.setTimeout(60_000)
-      const { hostSocket } = await bootBoundToHost(page)
+      const { hostSocket, vueNodes } = await bootBoundToHost(page)
 
       // Execution streams progress text, three ticks of it, as a running node
       // does. Each tick writes `$$node-text-preview` through its real setter.
-      for (const text of [PROGRESS_TEXT, LATER_PROGRESS_TEXT, 'Status: Done']) {
-        hostSocket.sendExecutionBinary(progressTextFrame(String(NODE_ID), text))
-        await nextFrame(page)
-      }
+      await streamProgress(page, hostSocket, PROGRESS_TEXT)
+      await streamProgress(page, hostSocket, LATER_PROGRESS_TEXT)
+      await streamProgress(page, hostSocket, 'Status: Done')
 
       // The widget really was written, so this test cannot pass by never
       // exercising the path at all.
@@ -202,16 +232,32 @@ test.describe(
         .poll(() => widgetValue(page, PREVIEW_WIDGET))
         .toBe('Status: Done')
 
-      // Nothing about it reached the host, so the applier had nothing to
-      // refuse. Before the fix every tick produced an `unknown_widget`.
-      expect(hostSocket.humanOpOutcomes()).toEqual([])
+      // A hand edit committed AFTER those three writes, in its own tick, is
+      // the settlement barrier. `opSender` sends batches in order and the host
+      // judges them in order, so once this edit's verdict is in, anything the
+      // progress writes minted ahead of it has already been judged and is
+      // already in `humanOpOutcomes()`. That turns "nothing was minted" from a
+      // negative assertion that passes while ops are still in flight into a
+      // positive one on the whole collection.
+      await editSeed(page, EDITED_SEED_VALUE)
+
+      // Exactly one op reached the applier: the hand edit. The three progress
+      // writes minted nothing — before the fix each produced its own
+      // `unknown_widget` rejection, which would sit ahead of `applied` here.
+      await expect
+        .poll(() => hostSocket.humanOpOutcomes().map((o) => o.outcome))
+        .toEqual(['applied'])
 
       // And the human was never told that an edit they did not make was
-      // refused and undone.
+      // refused and undone. The round trip above has settled, so a rejection
+      // toast would already have been rendered by now.
       const rejectionToast = new ToastHelper(page).toastErrors.filter({
         hasText: 'Widget edit was rejected and was not saved'
       })
       await expect(rejectionToast).toHaveCount(0)
+
+      // The hand edit is still the value on screen, not reverted as collateral.
+      await expect(seedField(vueNodes)).toHaveValue(String(EDITED_SEED_VALUE))
     })
 
     test('a hand edit minted in the same tick as a progress write survives the batch', async ({
@@ -263,11 +309,7 @@ test.describe(
 
       // And the value the user typed is still the one on screen — not
       // reverted as collateral of an op they never made.
-      const seedField = vueNodes
-        .getNodeLocator(String(NODE_ID))
-        .getByLabel('seed', { exact: true })
-        .getByRole('spinbutton')
-      await expect(seedField).toHaveValue(String(EDITED_SEED_VALUE))
+      await expect(seedField(vueNodes)).toHaveValue(String(EDITED_SEED_VALUE))
     })
   }
 )
