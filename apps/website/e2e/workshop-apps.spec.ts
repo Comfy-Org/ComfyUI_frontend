@@ -43,6 +43,17 @@ async function mockFlags(
   )
 }
 
+async function openDetectedExample(page: Page) {
+  const app = page.getByTestId('move-anything')
+  await app.getByRole('button', { name: 'Try the example' }).click()
+  await expect(app.getByRole('status')).toContainText('Detecting')
+  const kitten = app.getByRole('button', { name: /^Orange kitten\./ })
+  await expect(kitten).toBeVisible()
+  await expect(app.getByTestId('move-outline')).toHaveCount(3)
+  await expect(app.getByText('Drag a thing to move it')).toBeVisible()
+  return kitten
+}
+
 /**
  * Signs in with a workspace, opens Re-shoot on the example clip and waits
  * for the app proxy (mocked) to read its scene, so the viewport is aimable.
@@ -189,12 +200,11 @@ test('moves a thing from the Move anything side panel and shows the result', asy
   const generate = app.getByTestId('move-generate')
   await expect(generate).toHaveCount(0)
 
-  await app.getByRole('button', { name: 'Try the example' }).click()
+  const kitten = await openDetectedExample(page)
   await expect(
     app.getByRole('complementary', { name: 'Move anything settings' })
   ).toContainText('kitten.jpg')
   await expect(generate).toBeDisabled()
-  const kitten = app.getByRole('button', { name: /^Orange kitten\./ })
   await kitten.focus()
   await page.keyboard.press('Shift+ArrowRight')
   await expect(generate).toHaveText(/Move 1 object/)
@@ -219,13 +229,13 @@ test('moves a thing from the Move anything bottom composer', async ({
   await mockFlags(context, { apps: true, workflows: false })
   await page.goto('/hub/apps/move-anything/?ux=e')
   const app = page.getByTestId('move-anything')
-  await app.getByRole('button', { name: 'Try the example' }).click()
+  const kitten = await openDetectedExample(page)
   await expect(app.getByRole('complementary')).toHaveCount(0)
+  await expect(app.getByTestId('move-object-chip')).toHaveCount(3)
 
-  await app.getByRole('button', { name: /Objects/ }).click()
-  const tray = app.getByRole('dialog', { name: 'Objects' })
-  await expect(tray).toContainText('3 of 4')
-  const kitten = app.getByRole('button', { name: /^Orange kitten\./ })
+  await app.getByRole('button', { name: 'Quality: Fast' }).click()
+  await page.getByRole('menuitemradio', { name: /^Best/ }).click()
+  await expect(app.getByRole('button', { name: 'Quality: Best' })).toBeVisible()
   await kitten.focus()
   await page.keyboard.press('Shift+ArrowRight')
   const generate = app
@@ -236,6 +246,32 @@ test('moves a thing from the Move anything bottom composer', async ({
   await expect(app.getByRole('link', { name: 'Download' })).toBeVisible()
 })
 
+test('renames and removes a thing from its chip on the Move anything photo', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/hub/apps/move-anything/')
+  const app = page.getByTestId('move-anything')
+  await openDetectedExample(page)
+  const chips = app.getByTestId('move-object-chip')
+
+  await chips.first().dblclick()
+  const field = app.getByRole('textbox', { name: 'Rename Orange kitten' })
+  await field.fill('Ginger')
+  await field.press('Enter')
+  const ginger = app.getByRole('button', { name: /^Ginger\./ })
+  await expect(ginger).toBeFocused()
+
+  await app.getByRole('button', { name: 'Remove Ginger' }).click()
+  await expect(chips).toHaveCount(2)
+  await app.getByRole('button', { name: 'Undo' }).click()
+  await expect(chips).toHaveCount(3)
+  await ginger.focus()
+  await page.keyboard.press('Delete')
+  await expect(ginger).toHaveCount(0)
+})
+
 test('moves a thing from the Move anything bottom sheet on phones @mobile', async ({
   page,
   context
@@ -243,14 +279,13 @@ test('moves a thing from the Move anything bottom sheet on phones @mobile', asyn
   await mockFlags(context, { apps: true, workflows: false })
   await page.goto('/hub/apps/move-anything/')
   const app = page.getByTestId('move-anything')
-  await app.getByRole('button', { name: 'Try the example' }).click()
+  const kitten = await openDetectedExample(page)
   const sheet = app.getByRole('complementary', {
     name: 'Move anything settings'
   })
   await expect(
     sheet.getByRole('button', { name: '3 objects · 0 moved · Fast' })
   ).toBeVisible()
-  const kitten = app.getByRole('button', { name: /^Orange kitten\./ })
   await kitten.focus()
   await page.keyboard.press('Shift+ArrowRight')
   const generate = sheet.getByTestId('move-generate')
@@ -306,13 +341,25 @@ async function relightFromPanel(page: Page) {
     'aria-selected',
     'true'
   )
-  const tools = app.getByRole('toolbar', { name: 'Relight tools' })
-  await tools.getByRole('button', { name: 'Compare' }).click()
-  await tools.getByRole('menuitemradio', { name: 'Original' }).click()
-  await expect(app.getByTestId('relight-preview')).toBeHidden()
-  await tools.getByRole('button', { name: 'Compare' }).click()
-  await tools.getByRole('menuitemradio', { name: 'Relit' }).click()
-  await expect(app.getByTestId('relight-preview')).toBeVisible()
+  const compare = app
+    .getByRole('toolbar', { name: 'Relight tools' })
+    .getByRole('button', { name: 'Compare' })
+  const stage = app.getByTestId('relight-stage')
+  await compare.click()
+  await expect(compare).toHaveAttribute('aria-pressed', 'true')
+  const divider = stage.getByRole('slider', {
+    name: 'Drag to compare the original and the live preview'
+  })
+  await expect(divider).toBeVisible()
+  await expect(stage.getByText('Original', { exact: true })).toBeVisible()
+  await expect(stage.getByText('Relit', { exact: true })).toBeVisible()
+  await expect(app.getByRole('button', { name: /^Cool fill\./ })).toHaveCount(0)
+  await divider.focus()
+  await page.keyboard.press('ArrowRight')
+  await expect(divider).toHaveValue('51')
+  await compare.click()
+  await expect(divider).toHaveCount(0)
+  await expect(app.getByRole('button', { name: /^Cool fill\./ })).toBeVisible()
   const intensity = lights.getByRole('slider', { name: 'Intensity' })
   await intensity.fill('70')
   await expect(intensity).toHaveValue('70')
@@ -385,6 +432,29 @@ test('relights from the Relight bottom sheet on phones @mobile', async ({
   await app.getByRole('button', { name: 'Try the example' }).click()
   const sheet = app.getByRole('complementary', { name: 'Relight settings' })
   await expect(sheet.getByRole('region', { name: 'Lights' })).toHaveCount(0)
+
+  await app
+    .getByRole('toolbar', { name: 'Relight tools' })
+    .getByRole('button', { name: 'Compare' })
+    .click()
+  const divider = app.getByRole('slider', {
+    name: 'Drag to compare the original and the live preview'
+  })
+  const area = await divider.boundingBox()
+  if (!area) throw new Error('no divider')
+  const scrolled = await page.evaluate(() => window.scrollY)
+  await page.mouse.move(area.x + area.width / 2, area.y + area.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(area.x + area.width * 0.8, area.y + area.height * 0.2, {
+    steps: 6
+  })
+  await page.mouse.up()
+  await expect(divider).not.toHaveValue('50')
+  expect(await page.evaluate(() => window.scrollY)).toBe(scrolled)
+  await app
+    .getByRole('toolbar', { name: 'Relight tools' })
+    .getByRole('button', { name: 'Compare' })
+    .click()
 
   await sheet.getByRole('button', { name: 'Sunset · 2 lights · Long' }).click()
   await expect(sheet.getByRole('region', { name: 'Lights' })).toBeVisible()

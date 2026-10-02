@@ -3,6 +3,7 @@ import type { Relight } from '../../../composables/useRelight'
 import type { Locale } from '../../../i18n/translations'
 import { lc } from '../../../lib/workshop/relight/copy'
 import EditorSlider from '../app-editor/EditorSlider.vue'
+import EditorSwitch from '../app-editor/EditorSwitch.vue'
 import RelightSwatches from './RelightSwatches.vue'
 
 const { relight, locale = 'en' } = defineProps<{
@@ -10,7 +11,7 @@ const { relight, locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
 
-const { setup } = relight
+const { setup, lightMap } = relight
 </script>
 
 <template>
@@ -46,5 +47,9 @@ const { setup } = relight
     @update:model-value="
       (reflections) => relight.updateScene({ reflections }, 'reflections')
     "
+  />
+  <EditorSwitch
+    v-model="lightMap"
+    :label="lc('relight.view.lightmap', locale)"
   />
 </template>

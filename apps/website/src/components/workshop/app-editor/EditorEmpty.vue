@@ -64,6 +64,7 @@ function onChange(event: Event) {
     <input
       ref="input"
       type="file"
+      data-testid="editor-empty-file"
       accept="image/png,image/jpeg,image/webp"
       class="sr-only"
       tabindex="-1"
