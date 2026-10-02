@@ -234,6 +234,35 @@ describe('createOpSender', () => {
     expect(sent[2].ops[0].base_version).toBe(43)
   })
 
+  it('retains a pre-mint batch when a replacement subscribe is refused', () => {
+    sender.enqueue([addNode(1)])
+    const originalOps = sent[0].ops
+
+    resultListener?.({
+      ok: false,
+      applied: [],
+      skipped: [],
+      failed: {
+        index: 0,
+        op_id: originalOps[0].op_id,
+        code: 'pre_mint',
+        message: 'workflow document is not ready; retry after doc_reset'
+      }
+    })
+    sender.handleLineageReset()
+    boundWorkflow = null
+    sender.abortIfUnbound()
+
+    expect(sender.pending()).toBe(1)
+    expect(settled).toHaveLength(0)
+
+    boundWorkflow = WORKFLOW
+    sender.resumeAfterLineage()
+
+    expect(sent).toHaveLength(2)
+    expect(sent[1].ops).toEqual(originalOps)
+  })
+
   it.for([
     ['successful', true, [], [], 0],
     ['prefix-applied', false, ['applied-op'], [], 0],

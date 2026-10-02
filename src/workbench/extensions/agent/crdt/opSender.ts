@@ -777,7 +777,11 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       }
     },
     abortIfUnbound() {
-      if (inFlight && deps.workflowId() !== inFlight.workflowId) {
+      if (
+        inFlight &&
+        !inFlight.waitingForLineage &&
+        deps.workflowId() !== inFlight.workflowId
+      ) {
         settleUnbound(inFlight)
       }
     },
