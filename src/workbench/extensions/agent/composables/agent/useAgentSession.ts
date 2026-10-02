@@ -1324,7 +1324,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
       const parts = mergeAdjacentTextParts(
         normalizeAgentTranscript(rows).messages[0]?.parts ?? []
       )
-      return { kind: 'terminal', parts: parts.length === 0 ? undefined : parts }
+      const preserveLocalParts =
+        parts.length === 0 && rows.every((row) => row.status === 'complete')
+      return {
+        kind: 'terminal',
+        parts: preserveLocalParts ? undefined : parts
+      }
     } catch (error) {
       if (signal.aborted) throw error
       return turnOutcomeFromError(error)
