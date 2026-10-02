@@ -45,6 +45,8 @@ const emit = defineEmits<{
   place: [id: string, to: Rect]
   pick: [at: { x: number; y: number }]
   box: [drawn: Rect]
+  rename: [id: string, label: string]
+  remove: [id: string]
 }>()
 
 const frame = useTemplateRef<HTMLElement>('frame')
@@ -161,12 +163,19 @@ const boxStyle = (rect: Rect) => ({
         :n="index + 1"
         :label="object.label"
         :description="mc('move.object.box', locale, { label: object.label })"
+        :labels="{
+          rename: mc('move.object.rename', locale, { label: object.label }),
+          remove: mc('move.object.remove', locale, { label: object.label }),
+          hint: mc('move.object.renameHint', locale)
+        }"
         :selected="object.id === selected"
         :outlined="Boolean(object.mask)"
         :class="tool === 'box' && 'pointer-events-none'"
         @grab="(event, corner) => grab(object, event, corner)"
         @nudge="(dx, dy) => nudge(object, dx, dy)"
-        @focus="emit('select', object.id)"
+        @select="emit('select', object.id)"
+        @rename="(label) => emit('rename', object.id, label)"
+        @remove="emit('remove', object.id)"
       />
       <span
         v-if="drawing"

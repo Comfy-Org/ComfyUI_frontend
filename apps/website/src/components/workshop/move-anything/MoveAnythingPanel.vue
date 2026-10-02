@@ -4,13 +4,11 @@ import type {
   useMoveAnything
 } from '../../../composables/useMoveAnything'
 import type { Locale } from '../../../i18n/translations'
-import { MAX_OBJECTS } from '../../../lib/workshop/move-anything/arrange'
 import { mc } from '../../../lib/workshop/move-anything/copy'
 import EditorCollapsible from '../app-editor/EditorCollapsible.vue'
 import EditorSeedField from '../app-editor/EditorSeedField.vue'
 import EditorTextArea from '../app-editor/EditorTextArea.vue'
 import MoveAnythingImageRow from './MoveAnythingImageRow.vue'
-import MoveAnythingObjectList from './MoveAnythingObjectList.vue'
 import MoveAnythingQuality from './MoveAnythingQuality.vue'
 
 const {
@@ -23,7 +21,7 @@ const {
   locale?: Locale
 }>()
 
-const { objects, selected, quality, seed, prompt, phase } = move
+const { quality, seed, prompt, phase } = move
 </script>
 
 <template>
@@ -33,32 +31,6 @@ const { objects, selected, quality, seed, prompt, phase } = move
     data-testid="move-panel"
   >
     <MoveAnythingImageRow :image :locale @file="move.useFile" />
-    <EditorCollapsible
-      :title="mc('move.objects', locale)"
-      :meta="
-        mc('move.objects.count', locale, {
-          n: objects.length,
-          max: MAX_OBJECTS
-        })
-      "
-      initially-open
-    >
-      <MoveAnythingObjectList
-        :objects
-        :selected
-        :locale
-        @select="(id) => (selected = id)"
-        @remove="move.remove"
-        @rename="move.rename"
-      />
-      <p v-if="objects.length" class="px-1 text-xs text-primary-warm-gray">
-        {{
-          objects.length >= MAX_OBJECTS
-            ? mc('move.objects.full', locale, { max: MAX_OBJECTS })
-            : mc('move.objects.add', locale)
-        }}
-      </p>
-    </EditorCollapsible>
     <EditorCollapsible
       :title="mc('move.quality', locale)"
       :meta="

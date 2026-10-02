@@ -19,6 +19,7 @@ const { tool, phase } = move
     :key="option.id"
     :icon="option.icon"
     :label="mc(option.label, locale)"
+    icon-only
     :pressed="tool === option.id"
     :disabled="phase.kind === 'moving'"
     @click="tool = option.id"

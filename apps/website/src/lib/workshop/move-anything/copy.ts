@@ -40,28 +40,21 @@ const copy = {
   },
   'move.image': { en: 'Image', 'zh-CN': '图像' },
   'move.change': { en: 'Change photo', 'zh-CN': '更换照片' },
-  'move.objects': { en: 'Objects', 'zh-CN': '物体' },
-  'move.objects.count': { en: '{n} of {max}', 'zh-CN': '{n} / {max}' },
-  'move.objects.add': {
-    en: 'Click a thing on the image to add it',
-    'zh-CN': '点击图像中的物体以添加'
-  },
   'move.objects.full': {
     en: 'Up to {max} things per photo',
     'zh-CN': '每张照片最多 {max} 个物体'
   },
-  'move.objects.empty': {
-    en: 'Nothing selected yet. Click a thing on the image.',
-    'zh-CN': '尚未选择。点击图像中的物体。'
-  },
-  'move.object.moved': { en: 'Moved', 'zh-CN': '已移动' },
-  'move.object.inPlace': { en: 'In place', 'zh-CN': '原位' },
   'move.object.remove': { en: 'Remove {label}', 'zh-CN': '移除{label}' },
   'move.object.rename': { en: 'Rename {label}', 'zh-CN': '重命名{label}' },
+  'move.object.renameHint': {
+    en: 'Double-click to rename',
+    'zh-CN': '双击以重命名'
+  },
   'move.object.label': { en: 'Object {n}', 'zh-CN': '物体 {n}' },
   'move.object.box': {
-    en: '{label}. Arrow keys move it, Shift moves further.',
-    'zh-CN': '{label}。方向键移动，按住 Shift 移动更多。'
+    en: '{label}. Arrow keys move it, Shift moves further. F2 renames it, Delete removes it.',
+    'zh-CN':
+      '{label}。方向键移动，按住 Shift 移动更多。F2 重命名，Delete 移除。'
   },
   'move.quality': { en: 'Quality', 'zh-CN': '质量' },
   'move.quality.fast': { en: 'Fast', 'zh-CN': '快速' },
@@ -98,7 +91,6 @@ const copy = {
   'move.panel': { en: 'Move anything settings', 'zh-CN': '随意移动设置' },
   'move.panel.expand': { en: 'Show all settings', 'zh-CN': '显示全部设置' },
   'move.panel.collapse': { en: 'Hide settings', 'zh-CN': '收起设置' },
-  'move.close': { en: 'Close', 'zh-CN': '关闭' },
   'move.generate': {
     en: 'Move {n} object | Move {n} objects',
     'zh-CN': '移动 {n} 个物体'

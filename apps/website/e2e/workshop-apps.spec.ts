@@ -220,10 +220,11 @@ test('moves a thing from the Move anything bottom composer', async ({
   const app = page.getByTestId('move-anything')
   const kitten = await openDetectedExample(page)
   await expect(app.getByRole('complementary')).toHaveCount(0)
+  await expect(app.getByTestId('move-object-chip')).toHaveCount(3)
 
-  await app.getByRole('button', { name: /Objects/ }).click()
-  const tray = app.getByRole('dialog', { name: 'Objects' })
-  await expect(tray).toContainText('3 of 4')
+  await app.getByRole('button', { name: 'Quality: Fast' }).click()
+  await page.getByRole('menuitemradio', { name: /^Best/ }).click()
+  await expect(app.getByRole('button', { name: 'Quality: Best' })).toBeVisible()
   await kitten.focus()
   await page.keyboard.press('Shift+ArrowRight')
   const generate = app
@@ -232,6 +233,32 @@ test('moves a thing from the Move anything bottom composer', async ({
   await expect(generate).toHaveText(/Move 1 object/)
   await generate.click()
   await expect(app.getByRole('link', { name: 'Download' })).toBeVisible()
+})
+
+test('renames and removes a thing from its chip on the Move anything photo', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/hub/apps/move-anything/')
+  const app = page.getByTestId('move-anything')
+  await openDetectedExample(page)
+  const chips = app.getByTestId('move-object-chip')
+
+  await chips.first().dblclick()
+  const field = app.getByRole('textbox', { name: 'Rename Orange kitten' })
+  await field.fill('Ginger')
+  await field.press('Enter')
+  const ginger = app.getByRole('button', { name: /^Ginger\./ })
+  await expect(ginger).toBeFocused()
+
+  await app.getByRole('button', { name: 'Remove Ginger' }).click()
+  await expect(chips).toHaveCount(2)
+  await app.getByRole('button', { name: 'Undo' }).click()
+  await expect(chips).toHaveCount(3)
+  await ginger.focus()
+  await page.keyboard.press('Delete')
+  await expect(ginger).toHaveCount(0)
 })
 
 test('moves a thing from the Move anything bottom sheet on phones @mobile', async ({

@@ -92,20 +92,48 @@ describe('MoveAnythingStudio', () => {
     ).toHaveAttribute('href', '/images/apps/move-anything/example-moved.jpg')
   })
 
-  it('lists the detected things in the Objects tray and removes one', async () => {
-    const user = await openExample('e')
+  it.for([
+    { layout: 'e', how: 'the × on its chip' },
+    { layout: 'd', how: 'the × on its chip' },
+    { layout: 'e', how: 'Delete' },
+    { layout: 'd', how: 'Backspace' }
+  ])(
+    'removes the selected thing in layout $layout with $how, and undoes it',
+    async ({ layout, how }) => {
+      screenIsWide(true)
+      const user = await openExample(layout)
+      expect(
+        screen.queryByRole('button', { name: 'Remove Orange kitten' })
+      ).toBeNull()
 
-    await user.click(screen.getByRole('button', { name: /Objects/ }))
-    const tray = screen.getByRole('dialog', { name: 'Objects' })
-    expect(tray).toHaveTextContent('3 of 4')
-    await user.click(
-      screen.getByRole('button', { name: 'Remove Orange kitten' })
-    )
+      kitten().focus()
+      if (how === 'Delete' || how === 'Backspace')
+        await user.keyboard(`{${how}}`)
+      else
+        await user.click(
+          await screen.findByRole('button', { name: 'Remove Orange kitten' })
+        )
 
-    expect(tray).toHaveTextContent('2 of 4')
-    expect(
-      screen.queryByRole('button', { name: /^Orange kitten\./ })
-    ).toBeNull()
+      expect(
+        screen.queryByRole('button', { name: /^Orange kitten\./ })
+      ).toBeNull()
+      expect(screen.getAllByTestId('move-object-chip')).toHaveLength(2)
+      await user.click(screen.getByRole('button', { name: 'Undo' }))
+      expect(kitten()).toBeVisible()
+    }
+  )
+
+  it('keeps the tools as icons named for assistive tech, with no Objects list or tray', async () => {
+    screenIsWide(true)
+    await openExample()
+    const tools = screen.getByRole('toolbar', { name: 'Move anything tools' })
+
+    for (const name of ['Move', 'Smart select', 'Box select'])
+      expect(within(tools).getByRole('button', { name })).toHaveTextContent(
+        /^$/
+      )
+    expect(screen.queryByRole('list', { name: 'Objects' })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Objects/ })).toBeNull()
   })
 
   it('undoes and redoes a move from the history controls, but never the detection', async () => {
@@ -151,15 +179,18 @@ describe('MoveAnythingStudio', () => {
       'true'
     )
     expect(screen.getAllByTestId('move-outline')).toHaveLength(3)
-    const objects = within(panel()).getByRole('list', { name: 'Objects' })
-    expect(objects).toHaveTextContent('Orange kitten')
-    expect(objects).toHaveTextContent('Succulent')
+    const chips = screen.getAllByTestId('move-object-chip')
+    expect(chips.map((chip) => chip.textContent.trim())).toEqual([
+      '1Orange kitten',
+      '2Succulent',
+      '3Succulent'
+    ])
     const generate = within(panel()).getByTestId('move-generate')
     expect(generate).toBeDisabled()
 
     kitten().focus()
     await user.keyboard('{Shift>}{ArrowRight}{/Shift}')
-    expect(objects).toHaveTextContent('Moved')
+    expect(generate).toHaveTextContent('Move 1 object')
     await user.click(
       within(panel()).getByRole('button', { name: 'Quality: Fast' })
     )
@@ -184,7 +215,6 @@ describe('MoveAnythingStudio', () => {
       within(tools).getByRole('button', { name: 'Smart select' })
     ).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByText('Click a thing to select it')).toBeInTheDocument()
-    expect(panel()).toHaveTextContent('0 of 4')
 
     await user.pointer({
       keys: '[MouseLeft]',
@@ -219,28 +249,37 @@ describe('MoveAnythingStudio', () => {
       { keys: '[/MouseLeft]', target: stage }
     ])
 
-    expect(panel()).toHaveTextContent('1 of 4')
-    expect(
-      within(panel()).getByRole('list', { name: 'Objects' })
-    ).toHaveTextContent('Object 1')
+    expect(screen.getByRole('button', { name: /^Object 1\./ })).toBeVisible()
+    expect(screen.getByTestId('move-object-chip')).toHaveTextContent('Object 1')
   })
 
-  it('renames a thing inline in the Objects list, and undoes it', async () => {
+  it('renames a thing by double-clicking its chip on the photo, and undoes it', async () => {
     screenIsWide(true)
     const user = await openExample()
 
-    await user.click(
-      within(panel()).getByRole('button', { name: 'Rename Orange kitten' })
-    )
-    const field = within(panel()).getByRole('textbox', {
-      name: 'Rename Orange kitten'
-    })
+    await user.dblClick(screen.getAllByTestId('move-object-chip')[0])
+    const field = screen.getByRole('textbox', { name: 'Rename Orange kitten' })
     await user.clear(field)
     await user.type(field, 'Ginger{Enter}')
 
-    expect(screen.getByRole('button', { name: /^Ginger\./ })).toBeVisible()
+    expect(screen.getByRole('button', { name: /^Ginger\./ })).toHaveFocus()
     await user.click(screen.getByRole('button', { name: 'Undo' }))
     expect(kitten()).toBeVisible()
+  })
+
+  it('renames a focused thing with F2 and keeps the name on Escape', async () => {
+    screenIsWide(true)
+    const user = await openExample()
+
+    kitten().focus()
+    await user.keyboard('{F2}')
+    await user.type(
+      screen.getByRole('textbox', { name: 'Rename Orange kitten' }),
+      'Ginger{Escape}'
+    )
+
+    expect(screen.queryByRole('textbox')).toBeNull()
+    expect(kitten()).toHaveFocus()
   })
 
   it('keeps the scene description and a shuffleable seed under Advanced', async () => {
@@ -278,7 +317,6 @@ describe('MoveAnythingStudio', () => {
       name: '3 objects · 0 moved · Fast'
     })
     expect(within(panel()).getByTestId('move-generate')).toBeDisabled()
-    expect(within(panel()).queryByRole('list', { name: 'Objects' })).toBeNull()
     expect(
       within(panel()).getByRole('toolbar', { name: 'Move anything tools' })
     ).toBeVisible()
@@ -286,8 +324,8 @@ describe('MoveAnythingStudio', () => {
     await user.click(summary)
 
     expect(
-      within(panel()).getByRole('list', { name: 'Objects' })
-    ).toHaveTextContent('Orange kitten')
+      within(panel()).getByRole('button', { name: 'Quality: Fast' })
+    ).toBeVisible()
     expect(
       within(panel()).getByRole('button', { name: 'Hide settings' })
     ).toHaveAttribute('aria-expanded', 'true')

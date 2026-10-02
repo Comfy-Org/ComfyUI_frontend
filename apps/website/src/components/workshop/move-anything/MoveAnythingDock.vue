@@ -4,7 +4,6 @@ import { useTemplateRef } from 'vue'
 import type {
   MoveImage,
   MoveTool,
-  MoveTray,
   useMoveAnything
 } from '../../../composables/useMoveAnything'
 import type { Locale } from '../../../i18n/translations'
@@ -21,22 +20,17 @@ const {
   move,
   image,
   tool,
-  tray,
-  objectCount,
   locale = 'en'
 } = defineProps<{
   move: ReturnType<typeof useMoveAnything>
   image?: MoveImage
   tool: MoveTool
-  tray?: MoveTray
-  objectCount: number
   locale?: Locale
 }>()
 
 const emit = defineEmits<{
   tool: [tool: MoveTool]
   file: [file: File]
-  tray: [tray: MoveTray]
 }>()
 
 const { quality } = move
@@ -59,6 +53,7 @@ function onChange(event: Event) {
     :key="option.id"
     :icon="option.icon"
     :label="mc(option.label, locale)"
+    icon-only
     :pressed="tool === option.id"
     :disabled="locked()"
     @click="emit('tool', option.id)"
@@ -80,13 +75,6 @@ function onChange(event: Event) {
       class="-ml-1 size-5 rounded-full object-cover"
     />
   </EditorChip>
-  <EditorChip
-    :label="mc('move.objects', locale)"
-    :value="String(objectCount)"
-    :expanded="tray === 'objects'"
-    :disabled="locked()"
-    @click="emit('tray', 'objects')"
-  />
   <MoveAnythingQuality
     v-model="quality"
     :locale

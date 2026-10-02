@@ -36,7 +36,6 @@ type MovePhase =
   | { readonly kind: 'failed' }
 
 export type MoveTool = 'move' | 'smart' | 'box'
-export type MoveTray = 'objects'
 export type MoveView = 'compare' | 'result' | 'original'
 
 type StagePoint = { readonly x: number; readonly y: number }
@@ -52,7 +51,6 @@ export function useMoveAnything(locale: Locale = 'en') {
   const future = shallowRef<MoveObject[][]>([])
   const phase = shallowRef<MovePhase>({ kind: 'arranging' })
   const tool = ref<MoveTool>('move')
-  const tray = ref<MoveTray>()
   const quality = ref<MoveQuality>('fast')
   const seed = ref(42)
   const prompt = ref('')
@@ -241,7 +239,6 @@ export function useMoveAnything(locale: Locale = 'en') {
   async function generate() {
     const current = image.value
     if (!current || !canGenerate.value) return
-    tray.value = undefined
     const controller = new AbortController()
     run = controller
     phase.value = { kind: 'moving' }
@@ -272,10 +269,6 @@ export function useMoveAnything(locale: Locale = 'en') {
     phase.value = { kind: 'arranging' }
   }
 
-  function toggleTray(next: MoveTray) {
-    tray.value = tray.value === next ? undefined : next
-  }
-
   tryOnScopeDispose(() => {
     clearTimeout(detect)
     run?.abort()
@@ -288,7 +281,6 @@ export function useMoveAnything(locale: Locale = 'en') {
     objects,
     phase,
     tool,
-    tray,
     quality,
     seed,
     prompt,
@@ -311,7 +303,6 @@ export function useMoveAnything(locale: Locale = 'en') {
     redo,
     generate,
     cancel,
-    edit,
-    toggleTray
+    edit
   }
 }
