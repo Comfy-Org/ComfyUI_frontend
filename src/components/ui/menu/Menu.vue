@@ -34,7 +34,6 @@ const showTimer = ref<number>()
 const showRequest = ref(0)
 const anchor = ref({ x: 0, y: 0 })
 const visible = open
-const overlayVisible = open
 const contentStyle = useModalLiftedZIndex(open)
 
 function show(event: Event) {
@@ -79,7 +78,7 @@ function updateOpen(value: boolean) {
   else emit('hide')
 }
 
-defineExpose({ hide, overlayVisible, show, toggle, visible })
+defineExpose({ hide, show, toggle, visible })
 </script>
 
 <template>

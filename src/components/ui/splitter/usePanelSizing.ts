@@ -1,8 +1,7 @@
 import { StorageSerializers, useStorage } from '@vueuse/core'
+import type { SplitterPanel } from 'reka-ui'
 import { computed, nextTick, shallowRef, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
-
-import type SplitterPanel from './SplitterPanel.vue'
 
 interface SidePanel {
   id: string
@@ -31,11 +30,6 @@ export function usePanelSizing(
           width.value <= 0
         ) {
           width.value = panel.defaultWidth()
-          try {
-            localStorage.setItem(toValue(panel.storageKey), String(width.value))
-          } catch {
-            return
-          }
         }
       },
       { immediate: true }

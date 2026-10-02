@@ -5,12 +5,9 @@ export interface MenuItemCommandEvent {
   item: MenuItem
 }
 
-export interface MenuItem {
+interface MenuItemMetadata {
   label?: string | (() => string)
   icon?: string
-  command?: (event: MenuItemCommandEvent) => unknown
-  items?: MenuItem[]
-  separator?: boolean
   disabled?: boolean | (() => boolean)
   visible?: boolean | (() => boolean)
   key?: string
@@ -18,7 +15,6 @@ export interface MenuItem {
   target?: string
   class?: string | (() => string)
   tooltip?: string
-  checked?: boolean
   new?: boolean
   comfyCommand?: Partial<ComfyCommandImpl>
   parentPath?: string
@@ -29,3 +25,26 @@ export interface MenuItem {
   color?: string
   isShapeSubmenuItem?: boolean
 }
+
+interface MenuItemSeparator extends MenuItemMetadata {
+  separator: true
+  command?: never
+  items?: never
+  checked?: never
+}
+
+interface MenuItemSubmenu extends MenuItemMetadata {
+  separator?: false
+  items: MenuItem[]
+  command?: never
+  checked?: never
+}
+
+export interface MenuItemAction extends MenuItemMetadata {
+  separator?: false
+  items?: never
+  command?: (event: MenuItemCommandEvent) => unknown
+  checked?: boolean
+}
+
+export type MenuItem = MenuItemSeparator | MenuItemSubmenu | MenuItemAction

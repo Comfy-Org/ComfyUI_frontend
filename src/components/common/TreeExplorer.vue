@@ -207,14 +207,16 @@ const menuItems = computed<MenuItem[]>(() => {
       isAsync: true // The delete command can be async
     },
     ...extraMenuItems.value
-  ].map((menuItem: MenuItem) => ({
-    ...menuItem,
-    command: menuItem.command
-      ? wrapCommandWithErrorHandler(menuItem.command, {
-          isAsync: menuItem.isAsync ?? false
-        })
-      : undefined
-  }))
+  ].map((menuItem: MenuItem) =>
+    menuItem.command
+      ? {
+          ...menuItem,
+          command: wrapCommandWithErrorHandler(menuItem.command, {
+            isAsync: menuItem.isAsync ?? false
+          })
+        }
+      : menuItem
+  )
 })
 
 const handleContextMenu = (

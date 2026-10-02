@@ -116,32 +116,33 @@ watchEffect(() => {
 function convertToMenuItem(option: MenuOption): MenuItem {
   if (option.type === 'divider') return { separator: true }
 
-  const item: MenuItem = {
+  if (option.hasSubmenu && option.submenu) {
+    return {
+      label: option.label,
+      icon: option.icon,
+      disabled: option.disabled,
+      shortcut: option.shortcut,
+      items: option.submenu.map((sub) => ({
+        label: sub.label,
+        icon: sub.icon,
+        color: sub.color,
+        checked: option.isShapePicker
+          ? getCurrentShape()?.localizedName === sub.label
+          : undefined,
+        isShapeSubmenuItem: Boolean(option.isShapePicker),
+        disabled: sub.disabled,
+        command: sub.action
+      }))
+    }
+  }
+
+  return {
     label: option.label,
     icon: option.icon,
     disabled: option.disabled,
-    shortcut: option.shortcut
+    shortcut: option.shortcut,
+    command: option.action
   }
-
-  if (option.hasSubmenu && option.submenu) {
-    item.items = option.submenu.map((sub) => ({
-      label: sub.label,
-      icon: sub.icon,
-      color: sub.color,
-      checked: option.isShapePicker
-        ? getCurrentShape()?.localizedName === sub.label
-        : undefined,
-      isShapeSubmenuItem: Boolean(option.isShapePicker),
-      disabled: sub.disabled,
-      command: sub.action
-    }))
-  }
-
-  if (!option.hasSubmenu && option.action) {
-    item.command = option.action
-  }
-
-  return item
 }
 
 // Build menu items
@@ -179,7 +180,11 @@ function hide() {
 }
 
 function toggle(event: Event) {
-  contextMenu.value?.toggle(event)
+  if (isOpen.value) {
+    hide()
+  } else if (event instanceof MouseEvent) {
+    show(event)
+  }
 }
 
 defineExpose({ toggle, hide, isOpen, show })

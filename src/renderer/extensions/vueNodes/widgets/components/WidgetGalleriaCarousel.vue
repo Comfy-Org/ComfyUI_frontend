@@ -80,7 +80,7 @@
 
 <script setup lang="ts">
 import { useIntervalFn } from '@vueuse/core'
-import { computed, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -110,6 +110,7 @@ const {
 
 const activeIndex = defineModel<number>('activeIndex', { default: 0 })
 const { t } = useI18n()
+const userPaused = ref(false)
 
 const activeItem = computed(() => images[activeIndex.value])
 const previousDisabled = computed(() => !circular && activeIndex.value === 0)
@@ -161,12 +162,11 @@ const { isActive, pause, resume } = useIntervalFn(
 )
 
 function toggleAutoplay() {
-  if (isActive.value) pause()
-  else resume()
+  userPaused.value = !userPaused.value
 }
 
 function previous() {
-  pause()
+  userPaused.value = true
   if (activeIndex.value > 0) {
     activeIndex.value -= 1
   } else if (circular) {
@@ -175,12 +175,12 @@ function previous() {
 }
 
 function next() {
-  pause()
+  userPaused.value = true
   goNext()
 }
 
 function select(index: number) {
-  pause()
+  userPaused.value = true
   activeIndex.value = index
 }
 
@@ -193,9 +193,9 @@ watch(
 )
 
 watch(
-  [() => autoPlay, () => images.length],
-  ([shouldPlay, length]) => {
-    if (shouldPlay && length > 1) resume()
+  [() => autoPlay, () => images.length, userPaused],
+  ([shouldPlay, length, paused]) => {
+    if (shouldPlay && length > 1 && !paused) resume()
     else pause()
   },
   { immediate: true }

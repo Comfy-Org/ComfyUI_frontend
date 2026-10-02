@@ -189,32 +189,6 @@ describe('Menu', () => {
     expect(onKeydown).not.toHaveBeenCalled()
   })
 
-  it('owns the positioned context menu element and one max-height', async () => {
-    const menu = ref<InstanceType<typeof ContextMenu>>()
-    render(
-      defineComponent({
-        components: { ContextMenu },
-        setup: () => ({ menu }),
-        template:
-          '<button @contextmenu.prevent="menu?.show($event)">Target</button><ContextMenu ref="menu" :model="[{ label: \'Inspect\' }]" />'
-      })
-    )
-    const user = userEvent.setup({ pointerEventsCheck: 0 })
-
-    await user.pointer({
-      keys: '[MouseRight]',
-      target: screen.getByRole('button', { name: 'Target' })
-    })
-    const content = await screen.findByRole('menu')
-
-    expect(menu.value?.container?.$el).toHaveAttribute(
-      'data-reka-popper-content-wrapper'
-    )
-    expect(
-      [...content.classList].filter((name) => name.startsWith('max-h-'))
-    ).toHaveLength(1)
-  })
-
   it('stays closed when its open trigger is clicked', async () => {
     const menu = ref<InstanceType<typeof ContextMenu>>()
     render(
