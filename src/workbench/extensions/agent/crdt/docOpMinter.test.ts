@@ -699,14 +699,81 @@ describe('attachDocOpMinter', () => {
     doc.destroy()
   })
 
-  it('does not mint writes for live non-value widgets', async () => {
-    const { source } = seedGraph(graph)
-    const valueWidget = source.widgets![0]
-    const buttonWidget = source.widgets![1]
-
-    valueWidget.serialize = false
-    valueWidget.value = 21
-    buttonWidget.value = 'clicked'
+  it.for([
+    {
+      name: 'serialize false (live setter)',
+      setup: () => {
+        const { source } = seedGraph(graph)
+        source.widgets![0].serialize = false
+        source.widgets![0].value = 21
+      }
+    },
+    {
+      name: 'button (live setter)',
+      setup: () => {
+        const { source } = seedGraph(graph)
+        source.widgets![1].value = 'clicked'
+      }
+    },
+    {
+      name: 'serialize false (reachable subgraph)',
+      setup: () => {
+        const subgraph = createTestSubgraph({ rootGraph: graph })
+        const host = createTestSubgraphNode(subgraph)
+        const source = new TestSource()
+        withGraphIntentSource('load', () => {
+          graph.add(host)
+          subgraph.add(source)
+        })
+        source.widgets![0].serialize = false
+        emitGraphIntent({
+          type: 'set_widget',
+          graphId: subgraph.id,
+          nodeId: source.id,
+          name: 'steps',
+          value: 21,
+          previous: 20
+        })
+      }
+    },
+    {
+      name: 'button (reachable subgraph)',
+      setup: () => {
+        const subgraph = createTestSubgraph({ rootGraph: graph })
+        const host = createTestSubgraphNode(subgraph)
+        const source = new TestSource()
+        withGraphIntentSource('load', () => {
+          graph.add(host)
+          subgraph.add(source)
+        })
+        emitGraphIntent({
+          type: 'set_widget',
+          graphId: subgraph.id,
+          nodeId: source.id,
+          name: 'upload',
+          value: 'clicked',
+          previous: 'button-slot'
+        })
+      }
+    },
+    {
+      name: 'button on a virtual node',
+      setup: () => {
+        const note = new TestNote()
+        note.addWidget('button', 'action', 'idle', () => {})
+        withGraphIntentSource('load', () => graph.add(note))
+        emitGraphIntent({
+          type: 'set_widget',
+          graphId: graph.id,
+          nodeId: note.id,
+          name: 'action',
+          value: 'clicked',
+          previous: 'idle'
+        })
+      }
+    }
+  ])('does not mint a non-value widget write: $name', async ({ setup }) => {
+    setup()
     await afterFlush()
 
     expect(minted).toEqual([])
@@ -810,24 +877,6 @@ describe('attachDocOpMinter', () => {
     expect(minted).toEqual([])
   })
 
-  it('does not mint name-addressed button values for virtual nodes', async () => {
-    const note = new TestNote()
-    note.addWidget('button', 'action', 'idle', () => {})
-    withGraphIntentSource('load', () => graph.add(note))
-
-    emitGraphIntent({
-      type: 'set_widget',
-      graphId: graph.id,
-      nodeId: note.id,
-      name: 'action',
-      value: 'clicked',
-      previous: 'idle'
-    })
-    await afterFlush()
-
-    expect(minted).toEqual([])
-  })
-
   it('mints a value-widget write on a node that omits the node-level serialize flag', async () => {
     const node = new LGraphNode('No widget serialization')
     node.addWidget('number', 'steps', 20, () => {})
@@ -907,37 +956,6 @@ describe('attachDocOpMinter', () => {
         inner_widget: 'steps'
       }
     ])
-  })
-
-  it('does not mint non-value widget writes from a reachable subgraph', async () => {
-    const subgraph = createTestSubgraph({ rootGraph: graph })
-    const host = createTestSubgraphNode(subgraph)
-    const source = new TestSource()
-    withGraphIntentSource('load', () => {
-      graph.add(host)
-      subgraph.add(source)
-    })
-    source.widgets![0].serialize = false
-
-    emitGraphIntent({
-      type: 'set_widget',
-      graphId: subgraph.id,
-      nodeId: source.id,
-      name: 'steps',
-      value: 21,
-      previous: 20
-    })
-    emitGraphIntent({
-      type: 'set_widget',
-      graphId: subgraph.id,
-      nodeId: source.id,
-      name: 'upload',
-      value: 'clicked',
-      previous: 'button-slot'
-    })
-    await afterFlush()
-
-    expect(minted).toEqual([])
   })
 
   it('surfaces subgraph-interior node and link commands instead of minting them', async () => {
