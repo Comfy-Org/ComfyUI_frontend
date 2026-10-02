@@ -30,7 +30,12 @@ export async function consentOfferDeclined(): Promise<boolean> {
     return false
   }
   if (settingStore.error !== undefined) return false
-  return settingStore.get(AGENT_CONSENT_OFFER_DECLINED_SETTING_ID)
+  // Hidden settings can be absent before their registration supplies a
+  // default, despite the typed getter's boolean return contract.
+  const declined: unknown = settingStore.get(
+    AGENT_CONSENT_OFFER_DECLINED_SETTING_ID
+  )
+  return declined === true
 }
 
 /**
