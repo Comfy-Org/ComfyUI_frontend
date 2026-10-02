@@ -76,8 +76,6 @@ describe('template model download state', () => {
     })
     expect(retried).toEqual({ status: 'queued', attempt: 2 })
 
-    // The first attempt's host is still reporting; none of it may land on the
-    // second, which is a different transfer.
     for (const event of [
       { type: 'started', attempt: 1 } as const,
       { type: 'error', attempt: 1 } as const,
@@ -111,8 +109,6 @@ describe('template model download state', () => {
     })
     expect(done).toEqual({ status: 'done', attempt: 1 })
 
-    // Re-requesting an installed model is a no-op rather than a new attempt;
-    // the row offers no affordance for it.
     expect(reduceTemplateModelDownloadState(done, { type: 'request' })).toBe(
       done
     )

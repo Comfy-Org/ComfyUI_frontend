@@ -563,8 +563,6 @@ describe('useTemplateModelRowDownloads', () => {
       attempt: 1
     })
 
-    // The folder lookup settles after the picker closed: nothing may start,
-    // because the observers that would report its progress are already gone.
     paths.resolve({ checkpoints: ['/models/checkpoints'] })
     await Promise.resolve()
     await Promise.resolve()
