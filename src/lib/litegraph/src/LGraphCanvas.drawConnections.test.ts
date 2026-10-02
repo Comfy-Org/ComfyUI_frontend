@@ -24,16 +24,16 @@ import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
+import { createTestLink } from '@/utils/__tests__/litegraphTestUtils'
 import {
-  createMockCanvas2DContext,
-  createTestCanvas,
-  createTestLink
-} from '@/utils/__tests__/litegraphTestUtils'
+  createMockCanvasRenderingContext2D,
+  createTestCanvas
+} from '@/utils/__tests__/canvasTestUtils'
 
 vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 
 function createMockCtx(): CanvasRenderingContext2D {
-  return createMockCanvas2DContext({
+  return createMockCanvasRenderingContext2D({
     translate: vi.fn(),
     scale: vi.fn(),
     drawImage: vi.fn(),

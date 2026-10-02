@@ -14,7 +14,7 @@ import { toNodeId } from '@/types/nodeId'
 import {
   createTestCanvasElement,
   createTestDragAndScale
-} from '@/utils/__tests__/litegraphTestUtils'
+} from '@/utils/__tests__/canvasTestUtils'
 
 /**
  * Real nodes carry `pos`/`size`; `boundingRect` is litegraph-renderer cache that

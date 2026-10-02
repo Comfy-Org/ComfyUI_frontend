@@ -9,7 +9,7 @@ import {
 import {
   createMockCanvasRenderingContext2D,
   createTestCanvasElement
-} from '@/utils/__tests__/litegraphTestUtils'
+} from '@/utils/__tests__/canvasTestUtils'
 
 describe('measureViewport', () => {
   it('computes physical dimensions from CSS dimensions and DPR', () => {

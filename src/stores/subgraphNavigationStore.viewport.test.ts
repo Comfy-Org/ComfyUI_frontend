@@ -15,7 +15,7 @@ import {
 import {
   createTestCanvasElement,
   setCanvasVisible
-} from '@/utils/__tests__/litegraphTestUtils'
+} from '@/utils/__tests__/canvasTestUtils'
 
 vi.mock<unknown>(import('@/scripts/app'), () => {
   const mockCanvas = {

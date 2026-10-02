@@ -8,7 +8,7 @@ import { createCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler
 import {
   createTestCanvasElement,
   setCanvasVisible
-} from '@/utils/__tests__/litegraphTestUtils'
+} from '@/utils/__tests__/canvasTestUtils'
 
 vi.mock(import('@/platform/telemetry/reportError'))
 

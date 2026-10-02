@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { createTestCanvasElement } from '@/utils/__tests__/litegraphTestUtils'
+import { createTestCanvasElement } from '@/utils/__tests__/canvasTestUtils'
 
 describe('LGraphCanvas.resize', () => {
   beforeEach(() => {

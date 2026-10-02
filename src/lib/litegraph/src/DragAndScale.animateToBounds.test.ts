@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { DragAndScale } from '@/lib/litegraph/src/DragAndScale'
-import { createTestCanvasElement } from '@/utils/__tests__/litegraphTestUtils'
+import { createTestCanvasElement } from '@/utils/__tests__/canvasTestUtils'
 
 type Bounds = [number, number, number, number]
 

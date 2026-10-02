@@ -14,7 +14,7 @@ import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import {
   createTestCanvasElement,
   createTestDragAndScale
-} from '@/utils/__tests__/litegraphTestUtils'
+} from '@/utils/__tests__/canvasTestUtils'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'

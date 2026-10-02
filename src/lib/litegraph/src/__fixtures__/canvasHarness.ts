@@ -6,7 +6,7 @@ import {
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
-import { createTestCanvasElement } from '@/utils/__tests__/litegraphTestUtils'
+import { createTestCanvasElement } from '@/utils/__tests__/canvasTestUtils'
 
 export type Modifiers = Partial<
   Pick<MouseEventInit, 'shiftKey' | 'ctrlKey' | 'metaKey' | 'altKey'>

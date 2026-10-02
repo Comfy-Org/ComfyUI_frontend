@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import { DragAndScale } from '@/lib/litegraph/src/litegraph'
-import { createTestCanvasElement } from '@/utils/__tests__/litegraphTestUtils'
+import { createTestCanvasElement } from '@/utils/__tests__/canvasTestUtils'
 
 describe('DragAndScale.fitToBounds', () => {
   beforeEach(() => {
