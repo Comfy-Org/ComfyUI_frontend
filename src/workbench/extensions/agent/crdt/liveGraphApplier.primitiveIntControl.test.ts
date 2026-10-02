@@ -16,20 +16,9 @@ import { LiveGraphApplier } from './liveGraphApplier'
 vi.mock(import('@/platform/telemetry/reportError'))
 
 /**
- * Regression cover for the production `agent_graph_widget_missing` alert
- * "Node <id> (PrimitiveInt) has no widget 'control_after_generate'"
- * (Sentry CLOUD-FRONTEND-PROD-202, release 1.55.16).
- *
- * The document named the second `PrimitiveInt` slot `control_after_generate`,
- * because that is what the pinned widget catalog's `widget_order` calls it,
- * while the live node carried a widget named `fixed` — the frontend had read
- * core's `io.ControlAfterGenerate.fixed` mode as a name override. Inbound
- * projection then silently skipped the value (`outcome: degraded`).
- *
- * Every case here goes through the **named (record)** branch of
- * `applyWidgets`; a positional fixture cannot reach the report at all, because
- * that branch derives its names from the live node, so it would pass
- * vacuously.
+ * Every case goes through the named (record) branch of `applyWidgets`. A
+ * positional fixture cannot reach the missing-widget report, because that
+ * branch derives its names from the live node, so it would pass vacuously.
  */
 
 /**
