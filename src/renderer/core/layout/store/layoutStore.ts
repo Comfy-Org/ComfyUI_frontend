@@ -7,6 +7,7 @@ import { toGroupId } from '@/types/groupId'
 import { toNodeId } from '@/types/nodeId'
 import type { GroupId } from '@/types/groupId'
 import { reportError } from '@/platform/telemetry/reportError'
+import { readBrowserDpr } from '@/renderer/core/canvas/canvasViewport'
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 import { toRerouteId } from '@/types/rerouteId'
 import type { UUID } from '@/utils/uuid'
@@ -622,10 +623,17 @@ class LayoutStoreImpl {
   }
   /**
    * Query link segment at point (returns structured data)
+   *
+   * @param dpr Device pixel ratio used to map the CSS-space point into the
+   *   canvas's device-pixel-scaled stroke space. Pass the active
+   *   `LGraphCanvas.dpr` so this hit-test agrees with `processMouseDown`'s
+   *   `isPointInStroke` fallback. Defaults to the normalized browser DPR
+   *   for legacy callers without a canvas reference.
    */
   queryLinkSegmentAtPoint(
     point: Point,
-    ctx?: CanvasRenderingContext2D
+    ctx?: CanvasRenderingContext2D,
+    dpr = readBrowserDpr()
   ): { linkId: LinkId; rerouteId: RerouteId | null } | null {
     // Determine tolerance from current canvas state (if available)
     // - Use the caller-provided ctx.lineWidth (LGraphCanvas sets this to connections_width + padding)
@@ -656,13 +664,10 @@ class LayoutStoreImpl {
       if (!segmentLayout) continue
 
       if (ctx) {
-        // Match LiteGraph behavior: hit test uses device pixel ratio for coordinates
-        const dpi =
-          (typeof window !== 'undefined' && window.devicePixelRatio) || 1
         const hit = ctx.isPointInStroke(
           segmentLayout.path,
-          point.x * dpi,
-          point.y * dpi
+          point.x * dpr,
+          point.y * dpr
         )
 
         if (hit) {
@@ -693,10 +698,11 @@ class LayoutStoreImpl {
    */
   queryLinkAtPoint(
     point: Point,
-    ctx?: CanvasRenderingContext2D
+    ctx?: CanvasRenderingContext2D,
+    dpr?: number
   ): LinkId | null {
     // Invoke segment query and return just the linkId
-    const segment = this.queryLinkSegmentAtPoint(point, ctx)
+    const segment = this.queryLinkSegmentAtPoint(point, ctx, dpr)
     return segment ? segment.linkId : null
   }
 

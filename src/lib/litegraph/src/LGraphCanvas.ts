@@ -32,6 +32,12 @@ import {
   setCanvasItemSelected
 } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import {
+  applyParentSizedCanvasStyle,
+  applyViewport,
+  measureViewport,
+  readBrowserDpr
+} from '@/renderer/core/canvas/canvasViewport'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
@@ -561,7 +567,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     const baseFontSize = LiteGraph.NODE_TEXT_SIZE // 14px
-    const dprAdjustment = Math.sqrt(window.devicePixelRatio || 1) //Using sqrt here because higher DPR monitors do not linearily scale the readability of the font, instead they increase the font by some heurisitc, and to approximate we use sqrt to say basically a DPR of 2 increases the readability by 40%, 3 by 70%
+    const dprAdjustment = Math.sqrt(this.dpr) //Using sqrt here because higher DPR monitors do not linearily scale the readability of the font, instead they increase the font by some heurisitc, and to approximate we use sqrt to say basically a DPR of 2 increases the readability by 40%, 3 by 70%
 
     // Calculate the zoom level where text becomes unreadable
     this._lowQualityZoomThreshold =
@@ -819,6 +825,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
   /** Link rendering adapter for litegraph-to-canvas integration */
   linkRenderer: LitegraphLinkAdapter | null = null
+
+  /** Device pixel ratio applied with the current viewport dimensions. */
+  dpr: number = 1
 
   /** If true, enable drag zoom. Ctrl+Shift+Drag Up/Down: zoom canvas. */
   dragZoomEnabled: boolean = false
@@ -1980,6 +1989,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.bgcanvas = document.createElement('canvas')
     this.bgcanvas.width = this.canvas.width
     this.bgcanvas.height = this.canvas.height
+    this.dpr = readBrowserDpr()
 
     const ctx = element.getContext('2d')
     if (ctx == null) {
@@ -4925,15 +4935,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * centers the camera on a given node
    */
   centerOnNode(node: LGraphNode): void {
-    const dpi = window.devicePixelRatio || 1
+    const { dpr } = this
     this.ds.offset[0] =
       -node.pos[0] -
       node.size[0] * 0.5 +
-      (this.canvas.width * 0.5) / (this.ds.scale * dpi)
+      (this.canvas.width * 0.5) / (this.ds.scale * dpr)
     this.ds.offset[1] =
       -node.pos[1] -
       node.size[1] * 0.5 +
-      (this.canvas.height * 0.5) / (this.ds.scale * dpi)
+      (this.canvas.height * 0.5) / (this.ds.scale * dpr)
     this.setDirty(true, true)
   }
 
@@ -5191,13 +5201,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         : undefined
       this.drawBackCanvas(false, nodesInFrameOrder, nodesGraph)
     } else {
-      const scale = window.devicePixelRatio
+      const { dpr } = this
       ctx.drawImage(
         this.bgcanvas,
         0,
         0,
-        this.bgcanvas.width / scale,
-        this.bgcanvas.height / scale
+        this.bgcanvas.width / dpr,
+        this.bgcanvas.height / dpr
       )
     }
     const graphAfterBackground = this.graph
@@ -5530,12 +5540,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const lineHeight = 13
     const lineCount = (this.graph ? 5 : 1) + (this.info_text ? 1 : 0)
     x = x || 15
-    y =
-      y ||
-      this.canvas.height /
-        ((this.canvas.ownerDocument.defaultView ?? window).devicePixelRatio ||
-          1) -
-        (lineCount + 1) * lineHeight
+    y = y || this.canvas.height / this.dpr - (lineCount + 1) * lineHeight
 
     ctx.save()
     ctx.translate(x, y)
@@ -5610,9 +5615,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     // reset in case of error
     if (!this.viewport) {
-      const scale = window.devicePixelRatio
+      const { dpr } = this
       ctx.restore()
-      ctx.setTransform(scale, 0, 0, scale, 0, 0)
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     }
 
     if (this.graph) {
@@ -6722,10 +6727,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   /**
-   * resizes the canvas to a given size, if no size is passed, then it tries to fill the parentNode
-   * @todo Remove or rewrite
+   * @deprecated Use {@link measureViewport} + {@link applyViewport} from `canvasViewport.ts` instead.
+   * This method remains for legacy callers that rely on parent-element fallback sizing.
    */
   resize(width?: number, height?: number): void {
+    const usesParentSize = !width && !height
     if (!width && !height) {
       const parent = this.canvas.parentElement
       if (!parent)
@@ -6736,12 +6742,26 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       height = parent.offsetHeight
     }
 
-    if (this.canvas.width == width && this.canvas.height == height) return
+    if (usesParentSize) {
+      applyParentSizedCanvasStyle(this.canvas, width ?? 0, height ?? 0)
+    }
 
-    this.canvas.width = width ?? 0
-    this.canvas.height = height ?? 0
-    this.bgcanvas.width = this.canvas.width
-    this.bgcanvas.height = this.canvas.height
+    const viewport = measureViewport(
+      width ?? 0,
+      height ?? 0,
+      window.devicePixelRatio
+    )
+
+    if (
+      this.canvas.width === viewport.physicalWidth &&
+      this.canvas.height === viewport.physicalHeight &&
+      this.bgcanvas.width === viewport.physicalWidth &&
+      this.bgcanvas.height === viewport.physicalHeight &&
+      this.dpr === viewport.dpr
+    )
+      return
+
+    applyViewport(viewport, this.canvas, this.bgcanvas, this)
     this.setDirty(true, true)
   }
 
