@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useEventListener } from '@vueuse/core'
 import { computed } from 'vue'
 
 import { useHandProductSwap } from '../../../composables/useHandProductSwap'
@@ -9,9 +8,9 @@ import type { Locale } from '../../../i18n/translations'
 import { workshopAppRepo } from '../../../lib/workshop/apps'
 import { hc } from '../../../lib/workshop/hand-product-swap/copy'
 import { swapFileName } from '../../../lib/workshop/hand-product-swap/download'
-import { firstImage } from '../../../lib/workshop/hand-product-swap/files'
 import AppEditorShell from '../app-editor/AppEditorShell.vue'
 import EditorAlert from '../app-editor/EditorAlert.vue'
+import { useImagePaste } from '../app-editor/useImagePaste'
 import HandSwapDocks from './HandSwapDocks.vue'
 import HandSwapHistory from './HandSwapHistory.vue'
 import HandSwapMain from './HandSwapMain.vue'
@@ -35,12 +34,7 @@ const download = useResultDownload(
 )
 reportStudioBusy(() => phase.value.kind === 'running')
 
-useEventListener(document, 'paste', (event: ClipboardEvent) => {
-  const file = firstImage(event.clipboardData?.files)
-  if (!file) return
-  event.preventDefault()
-  void swap.usePastedFile(file)
-})
+useImagePaste(swap.usePastedFile)
 
 const panelLabels = {
   label: hc('swap.panel', locale),

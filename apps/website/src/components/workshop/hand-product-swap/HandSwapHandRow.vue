@@ -2,7 +2,7 @@
 import type { Locale } from '../../../i18n/translations'
 import { hc } from '../../../lib/workshop/hand-product-swap/copy'
 import type { SwapImage } from '../../../lib/workshop/hand-product-swap/examples'
-import HandSwapUpload from './HandSwapUpload.vue'
+import EditorUploadSlot from '../app-editor/EditorUploadSlot.vue'
 
 const { hand, locale = 'en' } = defineProps<{
   hand: SwapImage
@@ -23,13 +23,13 @@ const emit = defineEmits<{ file: [file: File] }>()
         hand.name
       }}</span>
     </span>
-    <HandSwapUpload
+    <EditorUploadSlot
       :label="hc('swap.hand.change', locale)"
-      input-id="swap-hand-input"
+      input-test-id="swap-hand-input"
       class="h-7 shrink-0 rounded-full bg-transparency-white-t8 px-3 text-xs text-primary-warm-white transition hover:bg-transparency-white-t20 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none disabled:opacity-40"
       @file="emit('file', $event)"
     >
       {{ hc('swap.change', locale) }}
-    </HandSwapUpload>
+    </EditorUploadSlot>
   </div>
 </template>

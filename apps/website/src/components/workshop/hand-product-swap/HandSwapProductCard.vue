@@ -4,7 +4,7 @@ import { Replace } from '@lucide/vue'
 import type { Locale } from '../../../i18n/translations'
 import { hc } from '../../../lib/workshop/hand-product-swap/copy'
 import type { SwapProduct } from '../../../lib/workshop/hand-product-swap/examples'
-import HandSwapUpload from './HandSwapUpload.vue'
+import EditorUploadSlot from '../app-editor/EditorUploadSlot.vue'
 
 const {
   product,
@@ -20,9 +20,9 @@ const emit = defineEmits<{ file: [file: File] }>()
 </script>
 
 <template>
-  <HandSwapUpload
+  <EditorUploadSlot
     :label="hc('swap.product.change', locale)"
-    input-id="swap-card-input"
+    input-test-id="swap-card-input"
     class="group absolute top-2 right-2 flex w-16 rotate-2 flex-col gap-1.5 rounded-xl border border-transparency-white-t20 bg-primary-comfy-ink-light/90 p-1.5 text-left shadow-2xl shadow-black/50 backdrop-blur-md transition hover:rotate-0 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none sm:top-3 sm:right-3 sm:w-28"
     data-testid="swap-product-card"
     @file="emit('file', $event)"
@@ -51,5 +51,5 @@ const emit = defineEmits<{ file: [file: File] }>()
         name
       }}</span>
     </span>
-  </HandSwapUpload>
+  </EditorUploadSlot>
 </template>

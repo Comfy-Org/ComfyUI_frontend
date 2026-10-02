@@ -24,6 +24,8 @@ const { phase, canRun, resolution } = swap
     :credits="hc('swap.credits', locale, { n: SWAP_CREDITS[resolution] })"
     :cancel-label="hc('swap.cancel', locale)"
     :running="phase.kind === 'running'"
+    :progress="phase.kind === 'running' ? phase.progress : undefined"
+    :queued-label="hc('swap.progress.queued', locale)"
     :disabled="!canRun"
     :block
     data-testid="swap-run"

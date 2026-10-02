@@ -3,7 +3,7 @@ import type { Locale } from '../../../i18n/translations'
 import { hc } from '../../../lib/workshop/hand-product-swap/copy'
 import type { SwapImage } from '../../../lib/workshop/hand-product-swap/examples'
 import { HAND_EXAMPLE } from '../../../lib/workshop/hand-product-swap/examples'
-import { firstImage } from '../../../lib/workshop/hand-product-swap/files'
+import EditorDropZone from '../app-editor/EditorDropZone.vue'
 import EditorFrame from '../app-editor/EditorFrame.vue'
 
 const { hand, locale = 'en' } = defineProps<{
@@ -12,20 +12,14 @@ const { hand, locale = 'en' } = defineProps<{
 }>()
 
 const emit = defineEmits<{ file: [file: File] }>()
-
-function onDrop(event: DragEvent) {
-  const file = firstImage(event.dataTransfer?.files)
-  if (file) emit('file', file)
-}
 </script>
 
 <template>
   <EditorFrame :width="hand.width" :height="hand.height">
-    <div
-      class="relative size-full select-none"
+    <EditorDropZone
+      class="relative size-full rounded-sm select-none"
       data-testid="swap-stage"
-      @dragover.prevent
-      @drop.prevent="onDrop"
+      @file="emit('file', $event)"
     >
       <img
         :src="hand.url"
@@ -38,6 +32,6 @@ function onDrop(event: DragEvent) {
         class="pointer-events-none size-full rounded-sm object-cover"
       />
       <slot />
-    </div>
+    </EditorDropZone>
   </EditorFrame>
 </template>
