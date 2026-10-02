@@ -19,6 +19,7 @@ import { configs as storybookConfigs } from 'eslint-plugin-storybook'
 import unusedImports from 'eslint-plugin-unused-imports'
 import pluginVue from 'eslint-plugin-vue'
 import { defineConfig } from 'eslint/config'
+import type { ESLint, Linter } from 'eslint'
 import globals from 'globals'
 import {
   configs as tseslintConfigs,
@@ -297,15 +298,18 @@ export default defineConfig([
   },
   // Disables ESLint rules that conflict with formatters
   eslintConfigPrettier,
-  // @ts-expect-error Type incompatibility between storybook plugin and ESLint config types
-  storybookConfigs['flat/recommended'],
+  ...(storybookConfigs['flat/recommended'] as unknown as Linter.Config[]),
   importX.flatConfigs.recommended,
   importX.flatConfigs.typescript,
   {
+    // oxlint runs this rule elsewhere; it cannot see template usages in SFCs
+    files: ['**/*.vue', '**/*.astro'],
+    plugins: { 'unused-imports': unusedImports },
+    rules: { 'unused-imports/no-unused-imports': 'error' }
+  },
+  {
     plugins: {
-      'unused-imports': unusedImports,
-      // @ts-expect-error Type incompatibility in i18n plugin
-      '@intlify/vue-i18n': pluginI18n
+      '@intlify/vue-i18n': pluginI18n as unknown as ESLint.Plugin
     },
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
@@ -314,7 +318,6 @@ export default defineConfig([
       '@typescript-eslint/consistent-type-imports': 'error',
       'import-x/no-useless-path-segments': 'error',
       'import-x/no-relative-packages': 'error',
-      'unused-imports/no-unused-imports': 'error',
       'vue/no-v-html': 'off',
       // Prohibit dark-theme: and dark: prefixes
       'vue/no-restricted-class': ['error', '/^dark(-theme)?:/'],
@@ -405,6 +408,14 @@ export default defineConfig([
       'testing-library/prefer-presence-queries': 'error',
       'testing-library/prefer-user-event': 'error',
       'testing-library/no-debugging-utils': 'error'
+    }
+  },
+  {
+    files: ['.github/scripts/**/*.mjs'],
+    languageOptions: {
+      globals: {
+        ...globals.node
+      }
     }
   },
   {

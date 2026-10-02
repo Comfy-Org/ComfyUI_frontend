@@ -84,8 +84,8 @@ test.describe('Launches landing — desktop @smoke', () => {
 
   test('hero primary CTA links to /download per locale', async ({ page }) => {
     for (const [path, locale, expectedHref] of [
-      [PATH_EN, 'en', '/download'],
-      [PATH_ZH, 'zh-CN', '/zh-CN/download']
+      [PATH_EN, 'en', '/download/'],
+      [PATH_ZH, 'zh-CN', '/zh-CN/download/']
     ] as const) {
       await page.goto(path)
       const primary = heroSection(page, locale).getByRole('link', {

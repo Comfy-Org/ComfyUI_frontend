@@ -15,6 +15,7 @@ import {
 } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { emptyAgentThreadPage } from '@e2e/fixtures/utils/agentThreadPage'
 
@@ -35,9 +36,8 @@ const SOCKET_SID = '8e2f3a4b-5c6d-4e7f-9a01-2b3c4d5e6f70'
 const CATALOG: WidgetCatalog = { types: {} }
 const SEED: WorkflowJSON = { nodes: [], links: [] }
 
-const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 const SEND_LABEL = enMessages.agent.send
-const CARD_LEAD = enMessages.agent.runApproval.lead
+const CARD_LEAD = enMessages.agent.runApproval.leadBound
 const RUN_LABEL = enMessages.agent.runApproval.run
 const CANCEL_LABEL = enMessages.agent.runApproval.cancel
 const COMPOSER_LABEL = createI18n({
@@ -182,10 +182,7 @@ async function startTurn(
     'true',
     { timeout: 8_000 }
   )
-  await topbarActions
-    .getByRole('button', { name: OPEN_AGENT_LABEL, exact: true })
-    .click()
-  await expect(panel).toBeVisible({ timeout: 30_000 })
+  await new AgentPanel(page).open(30_000)
 
   await mockWorkflowPersistence(page, WORKFLOW_ID)
 

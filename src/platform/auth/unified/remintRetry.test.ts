@@ -255,6 +255,7 @@ describe('fetchWithUnifiedRemint', () => {
 
     expect(result).toBe(unauthorized)
     expect(reportError).toHaveBeenCalledExactlyOnceWith(thrown, {
+      surface: 'auth',
       errorType: 'auth_unified_remint_unexpected',
       tags: {
         failure_kind: 'caught_unexpected',

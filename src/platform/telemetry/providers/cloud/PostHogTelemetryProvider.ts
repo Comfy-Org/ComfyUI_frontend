@@ -1,8 +1,23 @@
+import {
+  CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE,
+  getBillingTelemetryEventName,
+  getCheckoutJourneyTelemetryEventName,
+  getCheckoutJourneyTelemetryEventPayload,
+  getCloudAppBillingTelemetryEventPayload
+} from '@comfyorg/account-core/billing'
+import type {
+  BillingTelemetryEvent,
+  CheckoutJourneyTelemetryEvent
+} from '@comfyorg/account-core/billing'
 import type { PostHog } from 'posthog-js'
 import { watch } from 'vue'
 import type { WatchStopHandle } from 'vue'
 
 import { createPostHogBeforeSend } from '@comfyorg/shared-frontend-utils/piiUtil'
+import {
+  COMFY_POSTHOG_OPTIONS,
+  DEFAULT_POSTHOG_API_HOST
+} from '@comfyorg/shared-frontend-utils/telemetry'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -16,9 +31,13 @@ import type {
   AddCreditsClickMetadata,
   AgentAttachButtonClickedMetadata,
   AgentConsentNotOfferedMetadata,
+  AgentConsentOfferExitedMetadata,
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
   AgentEntryButtonClickedMetadata,
+  AgentErrorMetadata,
+  AgentFreeUseExposureMetadata,
+  AgentFreeUseNoticeMetadata,
   AgentPaywallCtaMetadata,
   AgentPaywallShownMetadata,
   AgentMessageSentMetadata,
@@ -31,6 +50,7 @@ import type {
   AgentRunApprovalResolvedMetadata,
   AgentRunApprovalShownMetadata,
   AgentRunModeChangedMetadata,
+  AgentStarterPromptClickedMetadata,
   AgentStopClickedMetadata,
   AgentThreadStartedMetadata,
   AgentWorkflowBoundMetadata,
@@ -41,9 +61,7 @@ import type {
   UnifiedAuthRefreshMetadata,
   UnifiedAuthRetryMetadata,
   BeginCheckoutMetadata,
-  BillingTelemetryEvent,
   BootstrapCompleteMetadata,
-  CheckoutJourneyTelemetryEvent,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ExecutionErrorMetadata,
@@ -92,11 +110,6 @@ import type {
 } from '../../types'
 import {
   CANCELLATION_STAGE_EVENTS,
-  CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE,
-  getBillingTelemetryEventName,
-  getBillingTelemetryEventPayload,
-  getCheckoutJourneyTelemetryEventName,
-  getCheckoutJourneyTelemetryEventPayload,
   OnboardingTourEvents,
   TelemetryEvents
 } from '../../types'
@@ -180,14 +193,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
             this.posthog = posthogModule.default
             const serverConfig = remoteConfig.value.posthog_config ?? {}
             this.posthog.init(apiKey, {
-              api_host: windowConfig?.posthog_api_host || 'https://t.comfy.org',
-              ui_host: 'https://us.posthog.com',
-              autocapture: false,
-              capture_pageview: 'history_change',
-              capture_pageleave: false,
-              persistence: 'localStorage+cookie',
+              api_host:
+                windowConfig?.posthog_api_host || DEFAULT_POSTHOG_API_HOST,
+              ...COMFY_POSTHOG_OPTIONS,
               debug: import.meta.env.VITE_POSTHOG_DEBUG === 'true',
-              person_profiles: 'identified_only',
               ...serverConfig,
               // cookie_domain omitted: posthog-js sets a first-party cross-subdomain cookie
               // automatically when persistence includes 'cookie' (the default).
@@ -507,7 +516,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   trackBillingEvent(event: BillingTelemetryEvent): void {
     this.trackEvent(
       getBillingTelemetryEventName(event),
-      getBillingTelemetryEventPayload(event)
+      getCloudAppBillingTelemetryEventPayload(event)
     )
   }
 
@@ -786,6 +795,20 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.AGENT_MESSAGE_SENT, metadata)
   }
 
+  trackAgentStarterPromptClicked(
+    metadata: AgentStarterPromptClickedMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.AGENT_STARTER_PROMPT_CLICKED, metadata)
+  }
+
+  trackAgentFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_FREE_USE_NOTICE, metadata)
+  }
+
+  trackAgentFreeUseExposure(metadata: AgentFreeUseExposureMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_FREE_USE_EXPOSURE, metadata)
+  }
+
   trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_NODE_TAGGED, metadata)
   }
@@ -798,6 +821,11 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackAgentWorkflowApplied(metadata: AgentWorkflowAppliedMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_WORKFLOW_APPLIED, metadata)
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  trackAgentError(metadata: AgentErrorMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_ERROR, metadata)
   }
 
   trackAgentStopClicked(metadata: AgentStopClickedMetadata): void {
@@ -828,6 +856,12 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackAgentConsentNotOffered(metadata: AgentConsentNotOfferedMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_CONSENT_NOT_OFFERED, metadata)
+  }
+
+  trackAgentConsentOfferExited(
+    metadata: AgentConsentOfferExitedMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.AGENT_CONSENT_OFFER_EXITED, metadata)
   }
 
   trackAgentOnboardingNotShown(

@@ -1,16 +1,18 @@
 import { expect } from '@playwright/test'
 import type { Page, Request } from '@playwright/test'
 
+import { isContractIdentifier } from '@comfyorg/billing-contract'
+
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type {
   BillingPlansResponse,
   BillingStatusResponse,
-  Plan,
   PreviewSubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
+import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
@@ -55,20 +57,13 @@ const ACTIVE_BILLING_STATUS: BillingStatusResponse = {
   has_funds: true
 }
 
-const STANDARD_YEARLY_PLAN: Plan = {
+const STANDARD_YEARLY_PLAN = createPlan({
   slug: 'standard-yearly',
   tier: 'STANDARD',
   duration: 'ANNUAL',
-  price_cents: 16_000,
-  credits_cents: 4_200,
-  max_seats: 1,
-  availability: { available: true },
-  seat_summary: {
-    seat_count: 1,
-    total_cost_cents: 16_000,
-    total_credits_cents: 4_200
-  }
-}
+  priceCents: 16_000,
+  monthlyCredits: 4_200
+})
 
 const NEW_STANDARD_SUBSCRIPTION: PreviewSubscribeResponse = {
   allowed: true,
@@ -77,8 +72,8 @@ const NEW_STANDARD_SUBSCRIPTION: PreviewSubscribeResponse = {
   is_immediate: true,
   cost_today_cents: 16_000,
   cost_next_period_cents: 16_000,
-  credits_today_cents: 4_200,
-  credits_next_period_cents: 4_200,
+  credits_today_cents: STANDARD_YEARLY_PLAN.credits_cents,
+  credits_next_period_cents: STANDARD_YEARLY_PLAN.credits_cents,
   new_plan: STANDARD_YEARLY_PLAN
 }
 
@@ -224,6 +219,25 @@ function openedUrl(page: Page) {
   return page.locator('html').getAttribute('data-opened-url')
 }
 
+/**
+ * The opened billing-web entry, with its `correlation_id` checked against the
+ * contract's identifier rule rather than by value: an entry with no checkout
+ * journey mints a fresh one on every open.
+ */
+async function openedBillingEntry(page: Page) {
+  const url = await openedUrl(page)
+  if (url === null) return null
+  const { origin, pathname, searchParams } = new URL(url)
+  const correlationId = searchParams.get('correlation_id')
+  searchParams.delete('correlation_id')
+  return {
+    route: `${origin}${pathname}`,
+    query: Object.fromEntries(searchParams),
+    carriesReadableJourney:
+      correlationId !== null && isContractIdentifier(correlationId)
+  }
+}
+
 /** The avatar menu's Plans and pricing entry. */
 async function clickPlansAndPricing(page: Page) {
   await page.getByRole('button', { name: 'Current user' }).click()
@@ -296,10 +310,16 @@ test.describe('Hosted billing destination (FE-2218)', { tag: '@cloud' }, () => {
     await content.getByRole('button', { name: 'Billing & invoices' }).click()
 
     await expect
-      .poll(() => openedUrl(page))
-      .toBe(
-        `${BILLING_WEB_ORIGIN}/v1/payment-methods?product=comfyui&return_to=comfyui_workspace&workspace=ws-personal`
-      )
+      .poll(() => openedBillingEntry(page))
+      .toEqual({
+        route: `${BILLING_WEB_ORIGIN}/v1/payment-methods`,
+        query: {
+          product: 'comfyui',
+          return_to: 'comfyui_workspace',
+          workspace: 'ws-personal'
+        },
+        carriesReadableJourney: true
+      })
     expect(portalRequests).toHaveLength(0)
   })
 
@@ -355,10 +375,16 @@ test.describe('Hosted billing destination (FE-2218)', { tag: '@cloud' }, () => {
     const content = await openPlanAndCredits(page)
     await content.getByRole('button', { name: 'Billing & invoices' }).click()
     await expect
-      .poll(() => openedUrl(page))
-      .toBe(
-        `${BILLING_WEB_ORIGIN}/v1/payment-methods?product=comfyui&return_to=comfyui_workspace&workspace=ws-personal`
-      )
+      .poll(() => openedBillingEntry(page))
+      .toEqual({
+        route: `${BILLING_WEB_ORIGIN}/v1/payment-methods`,
+        query: {
+          product: 'comfyui',
+          return_to: 'comfyui_workspace',
+          workspace: 'ws-personal'
+        },
+        carriesReadableJourney: true
+      })
 
     const requestsBeforeReturn = statusRequests.length
     await page.evaluate(() => window.dispatchEvent(new Event('focus')))
@@ -413,10 +439,18 @@ test.describe('Hosted billing checkout handoff', { tag: '@cloud' }, () => {
     await standardTierButton(page).click()
 
     await expect
-      .poll(() => openedUrl(page))
-      .toBe(
-        `${BILLING_WEB_ORIGIN}/v1/checkout?product=comfyui&return_to=comfyui_workspace&plan=standard-yearly&workspace=ws-personal`
-      )
+      .poll(() => openedBillingEntry(page))
+      .toEqual({
+        route: `${BILLING_WEB_ORIGIN}/v1/checkout`,
+        query: {
+          product: 'comfyui',
+          return_to: 'comfyui_workspace',
+          plan: 'standard-yearly',
+          workspace: 'ws-personal',
+          source: 'avatar_menu_plans'
+        },
+        carriesReadableJourney: true
+      })
     expect(previewRequests).toHaveLength(0)
     await expect(pricingDialog(page)).toHaveCount(0)
   })

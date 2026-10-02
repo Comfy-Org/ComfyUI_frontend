@@ -37,10 +37,6 @@ test.describe(
     }) => {
       const sidebar = comfyPage.menu.sideToolbar
       await expect(sidebar).toBeVisible()
-      test.fail(
-        true,
-        'Current main lets a wide panel drag hide the sidebar outside the viewport'
-      )
       await expect(sidebar).toBeInViewport({ ratio: 1 })
     })
 
@@ -49,10 +45,6 @@ test.describe(
     }) => {
       const toolbar = comfyPage.actionbar.root
       await expect(toolbar).toBeVisible()
-      test.fail(
-        true,
-        'Current main lets a wide panel drag hide the canvas toolbar outside the viewport'
-      )
       await expect(toolbar).toBeInViewport({ ratio: 1 })
     })
 
@@ -61,10 +53,6 @@ test.describe(
     }) => {
       const runControl = comfyPage.actionbar.queueButton.root
       await expect(runControl).toBeVisible()
-      test.fail(
-        true,
-        'Current main lets a wide panel drag hide the Run control outside the viewport'
-      )
       await expect(runControl).toBeInViewport({ ratio: 1 })
     })
 
@@ -73,10 +61,6 @@ test.describe(
     }) => {
       const panel = comfyPage.page.getByTestId('docked-agent-panel')
       await expect(panel).toBeVisible()
-      test.fail(
-        true,
-        'Current main lets a wide panel drag push the dock beyond the viewport'
-      )
       await expect(panel).toBeInViewport({ ratio: 1 })
     })
   }

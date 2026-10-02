@@ -28,7 +28,11 @@ import {
   useWorkshopCredits,
   watchForTopUp
 } from '../../config/workshop-credits'
-import { WORKSHOP_CREDITS_URL } from '../../config/workshop-env'
+import type { WorkshopBuyCreditsTrigger } from '../../config/workshop-buy-credits'
+import {
+  WORKSHOP_CREDITS_URL,
+  WORKSHOP_SUBSCRIPTION_URL
+} from '../../config/workshop-env'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -47,10 +51,13 @@ import DialogContent from '../ui/dialog/DialogContent.vue'
 import DialogDescription from '../ui/dialog/DialogDescription.vue'
 import DialogTitle from '../ui/dialog/DialogTitle.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale = 'en', trigger = 'action' } = defineProps<{
+  locale?: Locale
+  trigger?: WorkshopBuyCreditsTrigger
+}>()
 const open = defineModel<boolean>('open', { default: false })
 
-const { session, ensureFresh } = useWorkshopSession()
+const { session, sessionFailure, ensureFresh } = useWorkshopSession()
 const { balance } = useWorkshopCredits()
 const usd = ref(25)
 const credits = computed(() => usdToCredits(usd.value))
@@ -67,12 +74,14 @@ interface CheckoutScope {
 interface CheckoutAttempt extends CheckoutScope {
   readonly id: string
   readonly previousCredits: number
-  readonly returned: boolean
 }
 
 let checkoutController: AbortController | undefined
 let checkoutTab: Window | null = null
 let checkoutAttempt: CheckoutAttempt | undefined
+const returnableAttempts = new Map<string, CheckoutAttempt>()
+const deferredReturns = new Map<string, CheckoutAttempt>()
+let dialogScope: CheckoutScope | undefined
 let unsubscribeFromTopUpReturns: (() => void) | undefined
 
 // The hand-off owns the step from the moment it happens: waiting is 4a,
@@ -115,7 +124,39 @@ const STALE_RECEIPT_MS = 60_000
 const AUTO_CLOSE_MS = 3_600
 let autoCloseTimer: ReturnType<typeof setTimeout> | undefined
 
-watch(open, handleOpenChange)
+watch(open, handleOpenChange, { immediate: true })
+
+watch(
+  () => {
+    const current = session.value
+    if (current) return `${current.uid}:${current.workspace.id}:${current.role}`
+    return sessionFailure.value === undefined ? 'pending' : 'failed'
+  },
+  () => {
+    if (!open.value) return
+    if (!dialogScope) {
+      dialogScope = captureCheckoutScope()
+      return
+    }
+    if (dialogScopeStatus() === 'changed') open.value = false
+  }
+)
+
+watch(
+  () => {
+    const current = session.value
+    return current
+      ? `${current.uid}:${current.workspace.id}:${current.role}`
+      : ''
+  },
+  () => {
+    for (const [id, attempt] of deferredReturns) {
+      if (!checkoutScopeIsCurrent(attempt)) continue
+      deferredReturns.delete(id)
+      startTopUpWatch(attempt)
+    }
+  }
+)
 
 function handleOpenChange(value: boolean): void {
   if (value) prepareOpenDialog()
@@ -125,6 +166,7 @@ function handleOpenChange(value: boolean): void {
 function resetClosedDialog(): void {
   stopAutoClose()
   cancelPendingCheckout()
+  dialogScope = undefined
   usd.value = 25
   state.value = 'amount'
   if (latchedReturn.value === 'landed' || latchedReturn.value === 'unresolved')
@@ -132,6 +174,15 @@ function resetClosedDialog(): void {
 }
 
 function prepareOpenDialog(): void {
+  dialogScope = captureCheckoutScope()
+  if (
+    !dialogScope &&
+    topUp.value.status === 'idle' &&
+    trigger === 'automatic'
+  ) {
+    open.value = false
+    return
+  }
   if (
     topUp.value.status === 'landed' &&
     Date.now() - topUp.value.landedAt > STALE_RECEIPT_MS
@@ -140,9 +191,24 @@ function prepareOpenDialog(): void {
     latchedReturn.value = undefined
   } else if (topUp.value.status === 'idle') {
     latchedReturn.value = undefined
-    if (checkoutAttempt && lastCheckout.value) state.value = 'checkout'
+    restoreCheckoutForScope(dialogScope)
   }
   if (step.value === 'landed') scheduleAutoClose()
+}
+
+function restoreCheckoutForScope(scope: CheckoutScope | undefined): void {
+  const belongsToScope =
+    checkoutAttempt &&
+    lastCheckout.value &&
+    scope &&
+    checkoutAttempt.uid === scope.uid &&
+    checkoutAttempt.workspaceId === scope.workspaceId
+  if (belongsToScope) {
+    state.value = 'checkout'
+    return
+  }
+  checkoutAttempt = undefined
+  lastCheckout.value = undefined
 }
 
 function clearReturnReceipt(): void {
@@ -225,9 +291,14 @@ function claimCheckoutTab(): Window | null {
 }
 
 function onTopUpReturn(attemptId: string): void {
-  const attempt = checkoutAttempt
-  if (!attempt || attempt.id !== attemptId || attempt.returned) return
-  checkoutAttempt = { ...attempt, returned: true }
+  const attempt = returnableAttempts.get(attemptId)
+  if (!attempt) return
+  returnableAttempts.delete(attemptId)
+  if (checkoutScopeIsCurrent(attempt)) startTopUpWatch(attempt)
+  else deferredReturns.set(attemptId, attempt)
+}
+
+function startTopUpWatch(attempt: CheckoutAttempt): void {
   watchForTopUp({
     uid: attempt.uid,
     workspaceId: attempt.workspaceId,
@@ -254,7 +325,7 @@ function navigateCheckoutTab(tab: Window | null, url: string): void {
 
 function captureCheckoutScope(): CheckoutScope | undefined {
   const current = session.value
-  if (!current) return undefined
+  if (!current || current.role !== 'owner') return undefined
   return {
     uid: current.uid,
     workspaceId: current.workspace.id,
@@ -265,8 +336,18 @@ function captureCheckoutScope(): CheckoutScope | undefined {
 function checkoutScopeIsCurrent(scope: CheckoutScope): boolean {
   const current = session.value
   return (
-    current?.uid === scope.uid && current.workspace.id === scope.workspaceId
+    current?.role === 'owner' &&
+    current.uid === scope.uid &&
+    current.workspace.id === scope.workspaceId
   )
+}
+
+function dialogScopeStatus(): 'current' | 'pending' | 'changed' {
+  if (!session.value)
+    return sessionFailure.value === undefined ? 'pending' : 'changed'
+  return dialogScope && checkoutScopeIsCurrent(dialogScope)
+    ? 'current'
+    : 'changed'
 }
 
 function requireCurrentCheckoutScope(
@@ -322,9 +403,9 @@ function recordCheckout(
     uid: scope.uid,
     workspaceId: scope.workspaceId,
     workspaceName: scope.workspaceName,
-    previousCredits,
-    returned: false
+    previousCredits
   }
+  returnableAttempts.set(attemptId, checkoutAttempt)
   state.value = 'checkout'
   navigateCheckoutTab(tab, checkout.url)
 }
@@ -391,7 +472,14 @@ async function continueToCheckout() {
   if (state.value === 'pending' || checkoutAttempt) return
   const amountCents = clampTopUp(usd.value) * 100
   const scope = captureCheckoutScope()
-  if (!scope) return
+  if (!scope) {
+    captureWorkshopEvent({
+      name: 'checkout_failed',
+      properties: { stage: 'no_owner_scope' }
+    })
+    state.value = 'failed'
+    return
+  }
   const controller = new AbortController()
   const tab = claimCheckoutTab()
   checkoutController = controller
@@ -528,21 +616,15 @@ const stepperClass =
         </span>
         <div class="flex flex-col gap-2">
           <DialogTitle class="px-8 text-center" data-testid="buy-credits-done">
-            {{
-              t('workshop.credits.done', locale).replace(
-                '{n}',
-                format(landedDelta)
-              )
-            }}
+            {{ t('workshop.credits.done', locale, { n: format(landedDelta) }) }}
           </DialogTitle>
           <DialogDescription
             class="px-8 text-center text-base text-primary-comfy-canvas/70"
           >
             {{
-              t('workshop.credits.addedTo', locale).replace(
-                '{workspace}',
-                topUpWorkspaceName
-              )
+              t('workshop.credits.addedTo', locale, {
+                workspace: topUpWorkspaceName
+              })
             }}
           </DialogDescription>
         </div>
@@ -750,6 +832,19 @@ const stepperClass =
             </template>
           </Button>
         </div>
+
+        <p class="text-sm text-primary-warm-gray">
+          {{ t('workshop.credits.subscriptionPrompt', locale) }}
+          <a
+            :href="WORKSHOP_SUBSCRIPTION_URL"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-primary-comfy-yellow underline-offset-4 hover:underline"
+            data-testid="buy-credits-subscription"
+          >
+            {{ t('workshop.credits.subscriptionLink', locale) }}
+          </a>
+        </p>
       </template>
     </DialogContent>
   </Dialog>

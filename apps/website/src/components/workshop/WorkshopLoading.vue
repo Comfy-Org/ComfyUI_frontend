@@ -20,6 +20,7 @@ const { label, minh = true } = defineProps<{
       )
     "
     data-testid="workshop-loading"
+    data-twin-omit
   >
     <Loader2
       class="size-8 text-primary-comfy-yellow motion-safe:animate-spin"

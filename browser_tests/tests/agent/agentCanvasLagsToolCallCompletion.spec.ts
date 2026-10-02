@@ -17,6 +17,7 @@ import {
 } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { emptyAgentThreadPage } from '@e2e/fixtures/utils/agentThreadPage'
@@ -92,7 +93,6 @@ const CATALOG: WidgetCatalog = {
 }
 const SEED: WorkflowJSON = { nodes: [], links: [] }
 
-const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 const SEND_LABEL = enMessages.agent.send
 const COMPOSER_LABEL = createI18n({
   legacy: false,
@@ -201,10 +201,7 @@ async function driveThroughToolCallDone(
   })
 
   const panel = page.locator('#agent-panel-root')
-  await page
-    .getByRole('button', { name: OPEN_AGENT_LABEL, exact: true })
-    .click()
-  await expect(panel).toBeVisible({ timeout: 30_000 })
+  await new AgentPanel(page).open(30_000)
 
   let savedName: string | undefined
   await page.route('**/api/userdata/*', (route) => {

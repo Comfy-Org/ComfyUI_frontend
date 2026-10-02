@@ -25,8 +25,8 @@ describe('cloudNodesCtas', () => {
   })
 
   it('keeps the localized download path for zh-CN', () => {
-    expect(cloudNodesCtas('en').getStarted.href).toBe('/download')
-    expect(cloudNodesCtas('zh-CN').getStarted.href).toBe('/zh-CN/download')
+    expect(cloudNodesCtas('en').getStarted.href).toBe('/download/')
+    expect(cloudNodesCtas('zh-CN').getStarted.href).toBe('/zh-CN/download/')
   })
 
   it('points updating at the canonical docs page', () => {

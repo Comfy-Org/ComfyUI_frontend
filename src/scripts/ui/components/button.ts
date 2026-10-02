@@ -29,11 +29,11 @@ export class ComfyButton implements ComfyComponent {
   contentElement = $el('span')
   popup?: ComfyPopup
   element: HTMLElement
-  overIcon: string
-  iconSize: number
-  content: string | HTMLElement
-  icon: string
-  tooltip: string
+  overIcon?: string
+  iconSize?: number
+  content?: string | HTMLElement
+  icon?: string
+  tooltip?: string
   classList: ClassList
   hidden: boolean
   enabled: boolean
@@ -70,22 +70,18 @@ export class ComfyButton implements ComfyComponent {
       [this.iconElement, this.contentElement]
     )
 
-    // @ts-expect-error fixme ts strict error
     this.icon = prop(
       this,
       'icon',
       icon,
       toggleElement(this.iconElement, { onShow: this.updateIcon })
     )
-    // @ts-expect-error fixme ts strict error
     this.overIcon = prop(this, 'overIcon', overIcon, () => {
       if (this.isOver) {
         this.updateIcon()
       }
     })
-    // @ts-expect-error fixme ts strict error
     this.iconSize = prop(this, 'iconSize', iconSize, this.updateIcon)
-    // @ts-expect-error fixme ts strict error
     this.content = prop(
       this,
       'content',
@@ -101,7 +97,6 @@ export class ComfyButton implements ComfyComponent {
       })
     )
 
-    // @ts-expect-error fixme ts strict error
     this.tooltip = prop(this, 'tooltip', tooltip, (v) => {
       if (v) {
         this.element.title = v
@@ -129,14 +124,12 @@ export class ComfyButton implements ComfyComponent {
       this.action?.(e, this)
     })
 
-    if (visibilitySetting?.id) {
+    if (visibilitySetting?.id && app) {
       const settingUpdated = () => {
         this.hidden =
-          // @ts-expect-error fixme ts strict error
           app.ui.settings.getSettingValue(visibilitySetting.id) !==
           visibilitySetting.showValue
       }
-      // @ts-expect-error fixme ts strict error
       app.ui.settings.addEventListener(
         visibilitySetting.id + '.change',
         settingUpdated

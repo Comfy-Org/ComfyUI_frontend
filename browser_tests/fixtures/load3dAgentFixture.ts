@@ -3,7 +3,6 @@ import { expect } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { ComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
   zComfyApiWorkflow,
@@ -15,6 +14,7 @@ import load3dWorkflow from '@e2e/assets/3d/load3d_node.json' with { type: 'json'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -162,17 +162,13 @@ class Load3dAgentHarness {
       // Only the Vue node renderer projects follower edits onto the canvas.
       settings: {
         'Comfy.VueNodes.Enabled': true,
-        'Comfy.Graph.CanvasInfo': false
+        'Comfy.Graph.CanvasInfo': false,
+        'Comfy.Canvas.SelectionToolbox': true
       },
       // The node materializes from the black-box backend's Load3D definition.
       objectInfo: 'server'
     })
-    await this.page
-      .getByRole('button', {
-        name: enMessages.agent.entryButton,
-        exact: true
-      })
-      .click()
+    await new AgentPanel(this.page).open()
     await expect(this.page.locator('#agent-panel-root')).toBeVisible({
       timeout: PANEL_MOUNT_TIMEOUT
     })

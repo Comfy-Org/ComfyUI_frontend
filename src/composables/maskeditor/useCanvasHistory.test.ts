@@ -1,5 +1,5 @@
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { useCanvasHistory } from '@/composables/maskeditor/useCanvasHistory'

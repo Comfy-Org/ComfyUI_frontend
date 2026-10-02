@@ -27,7 +27,8 @@ beforeEach(() => {
     renewalDate: null,
     endDate: null,
     isCancelled: false,
-    hasFunds: true
+    hasFunds: true,
+    agentHasFunds: true
   }))
   billingContext.isInitialized = ref(true)
   vi.mocked(useBillingContext).mockReturnValue(billingContext)
@@ -53,7 +54,7 @@ const i18n = createI18n({
 const globalOptions = {
   plugins: [i18n],
   stubs: {
-    SubscriptionTermsNote: { template: '<div />' }
+    CheckoutTermsNote: { template: '<div />' }
   }
 }
 

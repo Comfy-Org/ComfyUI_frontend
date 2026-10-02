@@ -1,3 +1,5 @@
+import type { BillingTierKey } from '@comfyorg/account-core/billing'
+import { TIER_CATALOG } from '@comfyorg/account-ui/billing/catalog'
 import type { SubscriptionTier as IngestSubscriptionTier } from '@comfyorg/ingest-types'
 
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
@@ -7,9 +9,14 @@ export type { IngestSubscriptionTier }
 
 export type RegistrySubscriptionTier = components['schemas']['SubscriptionTier']
 
-export type TierKey = 'free' | 'standard' | 'creator' | 'pro' | 'founder'
+export type TierKey = BillingTierKey
 
-const TIER_TO_KEY: Record<RegistrySubscriptionTier, TierKey> = {
+// Self-serve personal-plan tiers only. TEAM and ENTERPRISE are workspace-level
+// and sales-managed respectively, and intentionally have no catalog key (see
+// toTierKey/isSalesManagedTier below).
+type CatalogTier = Exclude<RegistrySubscriptionTier, 'TEAM' | 'ENTERPRISE'>
+
+const TIER_TO_KEY: Record<CatalogTier, TierKey> = {
   FREE: 'free',
   STANDARD: 'standard',
   CREATOR: 'creator',
@@ -36,9 +43,9 @@ export const TIER_PRICING: Record<
   Exclude<TierKey, 'free' | 'founder'>,
   TierPricing
 > = {
-  standard: { monthly: 20, yearly: 16, credits: 4200, videoEstimate: 380 },
-  creator: { monthly: 35, yearly: 28, credits: 7400, videoEstimate: 670 },
-  pro: { monthly: 100, yearly: 80, credits: 21100, videoEstimate: 1915 }
+  standard: { ...TIER_CATALOG.standard, videoEstimate: 380 },
+  creator: { ...TIER_CATALOG.creator, videoEstimate: 670 },
+  pro: { ...TIER_CATALOG.pro, videoEstimate: 1915 }
 }
 
 const MONTHS_PER_YEAR = 12
@@ -75,9 +82,7 @@ export const DEFAULT_TIER_KEY: TierKey = 'standard'
 //     ['FREE'] would be accepted as FREE and a null toString would throw.
 //   - own-property rather than `in`, which walks the prototype chain and would
 //     return an inherited function for 'constructor' or 'toString'.
-function isRegistrySubscriptionTier(
-  tier: unknown
-): tier is RegistrySubscriptionTier {
+function isRegistrySubscriptionTier(tier: unknown): tier is CatalogTier {
   return (
     typeof tier === 'string' &&
     Object.prototype.hasOwnProperty.call(TIER_TO_KEY, tier)

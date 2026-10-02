@@ -3,13 +3,14 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import type {
   AgentThreadListResponse,
   AgentThreadSummary,
+  BillingStatus,
   SubscriptionTier
 } from '@comfyorg/ingest-types'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Mocked } from 'vitest'
-import { computed, defineComponent, h, nextTick, ref } from 'vue'
+import { computed, defineComponent, h, nextTick, reactive, ref } from 'vue'
 import type { Ref } from 'vue'
 import { useClipboard } from '@vueuse/core'
 
@@ -19,6 +20,7 @@ import { i18n } from '@/i18n'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { setupInlinePromptEditorDom } from './components/agent/composer/inlinePromptEditorTestSetup'
+import { useFreeUsePlacement } from './experiments/freeUsePlacement'
 
 setupInlinePromptEditorDom()
 
@@ -35,6 +37,7 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useTelemetry } from '@/platform/telemetry'
+import type { AgentConsentTrigger } from '@/platform/telemetry/types'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { app } from '@/scripts/app'
@@ -59,25 +62,36 @@ import {
 } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import {
-  createMockCanvasRenderingContext2D,
   createMockLoadedWorkflow,
   createMockChangeTracker,
   createMockLGraphNode
 } from '@/utils/__tests__/litegraphTestUtils'
+import {
+  createMockCanvasRenderingContext2D,
+  createTestDragAndScale
+} from '@/utils/__tests__/canvasTestUtils'
 
 const getServerFeature = vi.hoisted(() =>
   vi.fn((_name: string, defaultValue?: unknown) => defaultValue)
 )
 const focusNodeInstance = vi.hoisted(() => vi.fn())
 const socketSend = vi.hoisted(() => vi.fn())
+const withConsent = vi.hoisted(() =>
+  vi.fn<(trigger: AgentConsentTrigger, onAccept: () => void) => Promise<void>>(
+    async (_trigger, onAccept) => onAccept()
+  )
+)
+
+vi.mock<unknown>(import('./composables/agent/useAgentConsent'), () => ({
+  useAgentConsent: () => ({ withConsent })
+}))
 
 vi.mock<unknown>(import('@/composables/canvas/useFocusNode'), () => ({
   useFocusNode: () => ({ focusNodeInstance })
 }))
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('./experiments/freeUsePlacement'), { spy: true })
 
 const ws = vi.hoisted(() => {
   type Listener = (event: { detail?: unknown }) => void
@@ -91,7 +105,9 @@ const ws = vi.hoisted(() => {
     listeners.get(type)?.delete(listener)
   }
   const emit = (type: string, data?: unknown): void => {
-    for (const listener of listeners.get(type) ?? []) listener({ detail: data })
+    // The doc-frame pipeline ignores events that are not CustomEvent instances.
+    const event = new CustomEvent(type, { detail: data })
+    for (const listener of listeners.get(type) ?? []) listener(event)
   }
   const clear = (): void => listeners.clear()
   return { add, remove, emit, clear }
@@ -104,6 +120,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
       fetch(route.startsWith('/api') ? route : `/api${route}`, options),
     getServerFeature,
     socket: { readyState: 1, send: socketSend },
+    dispatchCustomEvent: vi.fn(),
     addEventListener: ws.add,
     removeEventListener: ws.remove,
     addCustomEventListener: ws.add,
@@ -133,6 +150,7 @@ const appMock = vi.hoisted(() => {
   Object.assign(graph, { rootGraph: graph })
   return {
     loadGraphData: vi.fn(),
+    ui: { autoQueueEnabled: false },
     graph,
     rootGraph: graph,
     isGraphReady: false,
@@ -204,17 +222,21 @@ vi.mock(
 const paywallWorkspace = vi.hoisted(() => ({
   role: 'owner' as 'owner' | 'member' | undefined
 }))
-const paywallCapabilities = vi.hoisted(() => ({
+const paywallCapabilities = reactive({
   canTopUp: true,
   canSubscribeSelfServe: true,
   isReady: true,
   hasResolvedCapabilities: true,
   snapshotAuthoritative: true
-}))
+})
 const paywallBilling = vi.hoisted(() => ({
-  tier: 'STANDARD' as SubscriptionTier | null
+  tier: 'STANDARD' as SubscriptionTier | null,
+  type: 'workspace' as 'workspace' | 'legacy',
+  status: 'paid' as BillingStatus | null,
+  fetchStatus: vi.fn<() => Promise<void>>()
 }))
 const paywallHasFunds = ref<boolean | null>(false)
+const paywallAgentHasFunds = ref<boolean | undefined>()
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'), {
   spy: true
@@ -234,27 +256,27 @@ import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivitySto
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
-import { attachMintPortWiring } from './crdt/mintPortWiring'
-import type { MintPortWiring, MintPortWiringDeps } from './crdt/mintPortWiring'
+import { attachDocOpMinter } from './crdt/docOpMinter'
+import type { DocOpMinter, DocOpMinterDeps } from './crdt/docOpMinter'
 
-const mintPortWiringDeps = vi.hoisted(() => ({
-  current: null as MintPortWiringDeps | null
+const docOpMinterDeps = vi.hoisted(() => ({
+  current: null as DocOpMinterDeps | null
 }))
-vi.mock(import('./crdt/mintPortWiring'), { spy: true })
+vi.mock(import('./crdt/docOpMinter'), { spy: true })
 
-// The mock replaces the real `attachMintPortWiring` body entirely. It only
+// The mock replaces the real `attachDocOpMinter` body entirely. It only
 // captures `deps` for assertions below — it must NOT reproduce any of that
 // body's own behaviour (e.g. the doc-bound probe registration), or a test
 // against the reimplementation could stay green while the real one breaks.
 // The doc-bound probe's registration/disposal is covered directly against
-// the real `attachMintPortWiring` in `mintPortWiring.test.ts`.
-function stubAttachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
-  mintPortWiringDeps.current = deps
-  return fromPartial<MintPortWiring>({
+// the real `attachDocOpMinter` in `docOpMinter.test.ts`.
+function stubAttachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
+  docOpMinterDeps.current = deps
+  return fromPartial<DocOpMinter>({
     detach: vi.fn()
   })
 }
-vi.mocked(attachMintPortWiring).mockImplementation(stubAttachMintPortWiring)
+vi.mocked(attachDocOpMinter).mockImplementation(stubAttachDocOpMinter)
 
 import AgentPanelRoot from './AgentPanelRoot.vue'
 import DockedAgentPanel from './components/agent/DockedAgentPanel.vue'
@@ -297,9 +319,15 @@ beforeEach(() => {
       subscription: computed(() =>
         paywallHasFunds.value === null
           ? null
-          : fromPartial({ hasFunds: paywallHasFunds.value })
+          : fromPartial({
+              hasFunds: paywallHasFunds.value,
+              agentHasFunds: paywallAgentHasFunds.value ?? paywallHasFunds.value
+            })
       ),
-      tier: computed(() => paywallBilling.tier)
+      tier: computed(() => paywallBilling.tier),
+      type: computed(() => paywallBilling.type),
+      billingStatus: computed(() => paywallBilling.status),
+      fetchStatus: paywallBilling.fetchStatus
     })
   )
   vi.mocked(useBillingCapabilities).mockReturnValue(
@@ -384,8 +412,8 @@ beforeEach(() => {
   Object.assign(appMock.rootGraph, { subgraphs: new Map(), id: undefined })
   appMock.isGraphReady = false
   appMock.canvas = undefined
-  mintPortWiringDeps.current = null
-  vi.mocked(attachMintPortWiring).mockImplementation(stubAttachMintPortWiring)
+  docOpMinterDeps.current = null
+  vi.mocked(attachDocOpMinter).mockImplementation(stubAttachDocOpMinter)
   vi.mocked(useWorkflowService()).saveWorkflow.mockClear()
   vi.mocked(useWorkflowService()).saveWorkflowAs.mockClear()
   vi.mocked(useWorkflowService()).openWorkflow.mockClear()
@@ -409,7 +437,11 @@ beforeEach(() => {
   paywallCapabilities.hasResolvedCapabilities = true
   paywallCapabilities.snapshotAuthoritative = true
   paywallBilling.tier = 'STANDARD'
+  paywallBilling.type = 'workspace'
+  paywallBilling.status = 'paid'
+  paywallBilling.fetchStatus.mockReset().mockResolvedValue(undefined)
   paywallHasFunds.value = false
+  paywallAgentHasFunds.value = undefined
 })
 
 const zAgentWsEventForTest = (raw: unknown): AgentChatEvent =>
@@ -455,6 +487,46 @@ function agentThreadList(
       total: threads.length
     }
   }
+}
+
+function stubHistoryWithWorkflowListing(
+  listingStatus: number | Promise<number>
+): void {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: string) => {
+      if (url.includes('/messages'))
+        return json(200, [
+          {
+            id: 'history-user',
+            thread_id: 'th-history',
+            seq: 1,
+            role: 'user',
+            status: 'complete',
+            turn_id: 'history-turn',
+            workflow_id: 'wf-gone',
+            content: { text: 'Historical prompt' }
+          }
+        ] satisfies AgentMessages)
+      if (url.includes('/agent/threads'))
+        return json(
+          200,
+          agentThreadList([
+            agentThread({
+              id: 'th-history',
+              title: 'Earlier chat',
+              last_message_at: '2026-09-01T00:00:00Z'
+            })
+          ])
+        )
+      if (url.includes('/workflows'))
+        return json(await listingStatus, {
+          data: [],
+          pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+        })
+      return json(200, {})
+    })
+  )
 }
 
 function ack(workflowId: string, messageId = 'm-1') {
@@ -532,6 +604,25 @@ describe('AgentPanelRoot first-use experience', () => {
     expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
+
+  it('forwards free-use notice telemetry with its rendered placement', async () => {
+    vi.mocked(useFreeUsePlacement).mockReturnValueOnce(
+      fromPartial({ variant: ref('top-banner') })
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const notice = await screen.findByRole('note', {
+      name: 'Free use notice'
+    })
+    await userEvent.click(
+      within(notice).getByRole('button', { name: 'Dismiss' })
+    )
+
+    expect(useTelemetry()!.trackAgentFreeUseNotice).toHaveBeenCalledWith({
+      action: 'dismissed',
+      placement: 'top-banner'
+    })
+  })
 })
 
 describe('AgentPanelRoot onboarding', () => {
@@ -543,6 +634,68 @@ describe('AgentPanelRoot onboarding', () => {
     })
     localStorage.removeItem('Comfy.AgentPanel.onboarded')
     localStorage.removeItem(SCOPED_KEY)
+  })
+
+  it('shows the scoped coach after first consent despite a legacy seen flag', async () => {
+    localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
+    const consentStore = useAgentConsentStore()
+    Object.assign(consentStore, { accepted: false })
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(localStorage.getItem(SCOPED_KEY)).toBeNull()
+
+    Object.assign(consentStore, { accepted: true })
+
+    expect(
+      await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
+    ).toBeInTheDocument()
+    expect(localStorage.getItem(SCOPED_KEY)).not.toBe('true')
+  })
+
+  it('still carries the legacy seen flag for an already-consented scope', () => {
+    localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(localStorage.getItem(SCOPED_KEY)).toBe('true')
+    expect(localStorage.getItem('Comfy.AgentPanel.onboarded')).toBeNull()
+  })
+
+  it('replays a finished tour from the header and reports it shown again', async () => {
+    localStorage.setItem(SCOPED_KEY, 'true')
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(
+      screen.queryByRole('dialog', { name: 'Meet your Comfy Agent' })
+    ).not.toBeInTheDocument()
+    vi.mocked(useTelemetry()!.trackAgentOnboardingShown).mockClear()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Take the tour' }))
+
+    // Routing matters, not just the effect: the mounted coach has to take the
+    // transition. Clearing storage instead would still show the card here while
+    // silently skipping the shown event.
+    expect(
+      await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
+    ).toBeInTheDocument()
+    expect(useTelemetry()!.trackAgentOnboardingShown).toHaveBeenCalledTimes(1)
+  })
+
+  it('holds a replay requested while App Mode has the coach deferred', async () => {
+    localStorage.setItem(SCOPED_KEY, 'true')
+    canvasStore.linearMode = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(
+      screen.queryByRole('dialog', { name: 'Meet your Comfy Agent' })
+    ).not.toBeInTheDocument()
+
+    // No coach is mounted to take the transition, so the request has to persist.
+    await userEvent.click(screen.getByRole('button', { name: 'Take the tour' }))
+    expect(localStorage.getItem(SCOPED_KEY)).not.toBe('true')
+
+    canvasStore.linearMode = false
+    expect(
+      await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
+    ).toBeInTheDocument()
   })
 
   it('defers the tour in App Mode without completing it or blocking the composer', async () => {
@@ -676,9 +829,9 @@ describe('AgentPanelRoot onboarding', () => {
           'Describe your ideas, ask it to build and run workflows. It sees your canvas and files.'
       },
       {
-        title: 'Select a workflow for your agent to edit',
+        title: "Your agent edits the workflow you're viewing",
         description:
-          'The agent edits only the workflow you choose. You can also upload reference files or mention other workflows.'
+          'It switches with your tabs until you send a message, choose a workflow, or add a node reference.'
       },
       {
         title: 'Let the agent run while you edit',
@@ -727,6 +880,35 @@ describe('AgentPanelRoot onboarding', () => {
   })
 })
 
+/**
+ * The transcript, for assertions that mean the INLINE paywall card - the one
+ * rendered against the turn a 402 refused. The panel now also has a standing
+ * credits-exhausted card beside the composer, and both render the same
+ * component with the same copy, so an unscoped
+ * `getByRole('button', { name: 'Subscribe' })` no longer says which it found.
+ */
+function inlinePaywall() {
+  return within(screen.getByTestId('agent-conversation'))
+}
+
+function findInlinePaywallButton(name: string): Promise<HTMLElement> {
+  return vi.waitFor(() => inlinePaywall().getByRole('button', { name }))
+}
+
+function queryInlinePaywallButton(name: string): HTMLElement | null {
+  const view = screen.queryByTestId('agent-conversation')
+  return view ? within(view).queryByRole('button', { name }) : null
+}
+
+function findInlinePaywallText(text: string): Promise<HTMLElement> {
+  return vi.waitFor(() => inlinePaywall().getByText(text))
+}
+
+function queryInlinePaywallText(text: string): HTMLElement | null {
+  const view = screen.queryByTestId('agent-conversation')
+  return view ? within(view).queryByText(text) : null
+}
+
 describe('AgentPanelRoot paywall actions', () => {
   beforeEach(() => {
     ws.clear()
@@ -743,15 +925,15 @@ describe('AgentPanelRoot paywall actions', () => {
       thinking: false
     })
 
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'Upgrade plan' })
-    )
+    await userEvent.click(await findInlinePaywallButton('Upgrade plan'))
     expect(openAccountPrecondition).toHaveBeenCalledExactlyOnceWith(
       'subscription',
       { source: 'agent_paywall' }
     )
 
-    await userEvent.click(screen.getByRole('button', { name: 'Add credits' }))
+    await userEvent.click(
+      inlinePaywall().getByRole('button', { name: 'Add credits' })
+    )
     expect(openAccountPrecondition.mock.calls).toEqual([
       ['subscription', { source: 'agent_paywall' }],
       ['credits', { source: 'agent_paywall' }]
@@ -769,9 +951,7 @@ describe('AgentPanelRoot paywall actions', () => {
       thinking: false
     })
 
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'Subscribe' })
-    )
+    await userEvent.click(await findInlinePaywallButton('Subscribe'))
 
     expect(openAccountPrecondition).toHaveBeenCalledExactlyOnceWith(
       'subscription',
@@ -787,14 +967,12 @@ describe('AgentPanelRoot paywall actions', () => {
       'continue'
     )
 
-    expect(
-      await screen.findByRole('button', { name: 'Subscribe' })
-    ).toBeInTheDocument()
+    expect(await findInlinePaywallButton('Subscribe')).toBeInTheDocument()
 
     paywallHasFunds.value = true
 
     await vi.waitFor(() =>
-      expect(screen.queryByText('Out of credits')).not.toBeInTheDocument()
+      expect(queryInlinePaywallText('Out of credits')).not.toBeInTheDocument()
     )
   })
 
@@ -805,16 +983,14 @@ describe('AgentPanelRoot paywall actions', () => {
       toTurnId('msg-paywall'),
       'continue'
     )
-    expect(
-      await screen.findByRole('button', { name: 'Subscribe' })
-    ).toBeInTheDocument()
+    expect(await findInlinePaywallButton('Subscribe')).toBeInTheDocument()
 
     panel.unmount()
     paywallHasFunds.value = true
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
     await vi.waitFor(() =>
-      expect(screen.queryByText('Out of credits')).not.toBeInTheDocument()
+      expect(queryInlinePaywallText('Out of credits')).not.toBeInTheDocument()
     )
   })
 
@@ -829,9 +1005,7 @@ describe('AgentPanelRoot paywall actions', () => {
       'render one more frame'
     )
 
-    expect(
-      await screen.findByRole('button', { name: 'Subscribe' })
-    ).toBeInTheDocument()
+    expect(await findInlinePaywallButton('Subscribe')).toBeInTheDocument()
   })
 
   it('keeps a resolved paywall hidden while billing state is unknown', async () => {
@@ -841,20 +1015,16 @@ describe('AgentPanelRoot paywall actions', () => {
       toTurnId('msg-paywall'),
       'continue'
     )
-    expect(
-      await screen.findByRole('button', { name: 'Subscribe' })
-    ).toBeInTheDocument()
+    expect(await findInlinePaywallButton('Subscribe')).toBeInTheDocument()
 
     paywallHasFunds.value = true
     await vi.waitFor(() =>
-      expect(
-        screen.queryByRole('button', { name: 'Subscribe' })
-      ).not.toBeInTheDocument()
+      expect(queryInlinePaywallButton('Subscribe')).not.toBeInTheDocument()
     )
 
     paywallHasFunds.value = null
     await nextTick()
-    expect(screen.queryByText('Out of credits')).not.toBeInTheDocument()
+    expect(queryInlinePaywallText('Out of credits')).not.toBeInTheDocument()
   })
 
   it('shows only a new denial after funds run out again', async () => {
@@ -864,20 +1034,16 @@ describe('AgentPanelRoot paywall actions', () => {
       toTurnId('msg-paywall'),
       'continue'
     )
-    expect(
-      await screen.findByRole('button', { name: 'Subscribe' })
-    ).toBeInTheDocument()
+    expect(await findInlinePaywallButton('Subscribe')).toBeInTheDocument()
 
     paywallHasFunds.value = true
     await vi.waitFor(() =>
-      expect(
-        screen.queryByRole('button', { name: 'Subscribe' })
-      ).not.toBeInTheDocument()
+      expect(queryInlinePaywallButton('Subscribe')).not.toBeInTheDocument()
     )
 
     paywallHasFunds.value = false
     await nextTick()
-    expect(screen.queryByText('Out of credits')).not.toBeInTheDocument()
+    expect(queryInlinePaywallText('Out of credits')).not.toBeInTheDocument()
 
     useAgentConversationStore().recordPaywall(
       toTurnId('msg-paywall-2'),
@@ -885,7 +1051,7 @@ describe('AgentPanelRoot paywall actions', () => {
     )
     await vi.waitFor(() =>
       expect(
-        screen.getByRole('button', { name: 'Subscribe' })
+        inlinePaywall().getByRole('button', { name: 'Subscribe' })
       ).toBeInTheDocument()
     )
   })
@@ -906,9 +1072,7 @@ describe('AgentPanelRoot paywall actions', () => {
     await screen.findByText(
       'This workspace has used all its credits. Ask your workspace owner to add more.'
     )
-    expect(
-      screen.queryByRole('button', { name: 'Add credits' })
-    ).not.toBeInTheDocument()
+    expect(queryInlinePaywallButton('Add credits')).not.toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: /upgrade|subscribe/i })
     ).not.toBeInTheDocument()
@@ -927,9 +1091,7 @@ describe('AgentPanelRoot paywall actions', () => {
         thinking: false
       })
 
-      expect(
-        await screen.findByRole('button', { name: 'Add credits' })
-      ).toBeInTheDocument()
+      expect(await findInlinePaywallButton('Add credits')).toBeInTheDocument()
       expect(
         screen.queryByRole('button', { name: /upgrade|subscribe/i })
       ).not.toBeInTheDocument()
@@ -947,9 +1109,7 @@ describe('AgentPanelRoot paywall actions', () => {
       thinking: false
     })
 
-    expect(
-      await screen.findByRole('button', { name: 'Add credits' })
-    ).toBeInTheDocument()
+    expect(await findInlinePaywallButton('Add credits')).toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: /upgrade|subscribe/i })
     ).not.toBeInTheDocument()
@@ -966,12 +1126,8 @@ describe('AgentPanelRoot paywall actions', () => {
       thinking: false
     })
 
-    expect(
-      await screen.findByRole('button', { name: 'Subscribe' })
-    ).toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'Add credits' })
-    ).not.toBeInTheDocument()
+    expect(await findInlinePaywallButton('Subscribe')).toBeInTheDocument()
+    expect(queryInlinePaywallButton('Add credits')).not.toBeInTheDocument()
   })
 
   it('shows sales-managed remediation for a ready owner with no self-serve capability', async () => {
@@ -987,13 +1143,11 @@ describe('AgentPanelRoot paywall actions', () => {
     })
 
     expect(
-      await screen.findByText(
+      await findInlinePaywallText(
         'This workspace is billed through your Comfy account team. Contact them to add credits.'
       )
     ).toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'Add credits' })
-    ).not.toBeInTheDocument()
+    expect(queryInlinePaywallButton('Add credits')).not.toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: /upgrade|subscribe/i })
     ).not.toBeInTheDocument()
@@ -1056,6 +1210,7 @@ describe('AgentPanelRoot paywall telemetry', () => {
     vi.mocked(useTelemetry())!.trackAgentPaywallShown.mockClear()
     vi.mocked(useTelemetry())!.trackAgentPaywallCtaClicked.mockClear()
     vi.mocked(useTelemetry())!.trackAddApiCreditButtonClicked.mockClear()
+    vi.mocked(useTelemetry())!.trackSubscription.mockClear()
 
     canTopUp = ref(true)
     canSubscribeSelfServe = ref(true)
@@ -1064,7 +1219,10 @@ describe('AgentPanelRoot paywall telemetry', () => {
     snapshotAuthoritative = ref(true)
     workspaceRole = ref<'owner' | 'member' | undefined>('owner')
     tier = ref<SubscriptionTier | null>('STANDARD')
-    hasFunds = ref(false)
+    // Funded, so the standing credits-exhausted card stays off and every
+    // assertion below is unambiguously about the refusal-driven inline card.
+    // The standing surface has its own describe.
+    hasFunds = ref(true)
 
     vi.mocked(useBillingCapabilities).mockReturnValue(
       fromPartial({
@@ -1079,7 +1237,10 @@ describe('AgentPanelRoot paywall telemetry', () => {
     vi.mocked(useBillingContext).mockReturnValue(
       fromPartial({
         subscription: computed(() => fromPartial({ hasFunds: hasFunds.value })),
-        tier
+        tier,
+        type: computed(() => 'workspace'),
+        billingStatus: computed(() => 'paid'),
+        fetchStatus: vi.fn().mockResolvedValue(undefined)
       })
     )
   })
@@ -1135,7 +1296,8 @@ describe('AgentPanelRoot paywall telemetry', () => {
 
       await waitFor(() =>
         expect(useTelemetry()!.trackAgentPaywallShown).toHaveBeenCalledWith({
-          reason
+          reason,
+          surface: 'refused_send'
         })
       )
     }
@@ -1232,7 +1394,8 @@ describe('AgentPanelRoot paywall telemetry', () => {
       expect(
         useTelemetry()!.trackAgentPaywallShown
       ).toHaveBeenCalledExactlyOnceWith({
-        reason: 'subscription_inactive'
+        reason: 'subscription_inactive',
+        surface: 'refused_send'
       })
     )
   })
@@ -1260,7 +1423,8 @@ describe('AgentPanelRoot paywall telemetry', () => {
       expect(
         useTelemetry()!.trackAgentPaywallShown
       ).toHaveBeenCalledExactlyOnceWith({
-        reason: 'subscription_inactive'
+        reason: 'subscription_inactive',
+        surface: 'refused_send'
       })
     )
   })
@@ -1283,7 +1447,8 @@ describe('AgentPanelRoot paywall telemetry', () => {
       expect(
         useTelemetry()!.trackAgentPaywallShown
       ).toHaveBeenCalledExactlyOnceWith({
-        reason: 'unknown'
+        reason: 'unknown',
+        surface: 'refused_send'
       })
     )
   })
@@ -1301,7 +1466,8 @@ describe('AgentPanelRoot paywall telemetry', () => {
       expect(
         useTelemetry()!.trackAgentPaywallShown
       ).toHaveBeenCalledExactlyOnceWith({
-        reason: 'unknown'
+        reason: 'unknown',
+        surface: 'refused_send'
       })
     )
   })
@@ -1317,7 +1483,7 @@ describe('AgentPanelRoot paywall telemetry', () => {
 
     expect(
       useTelemetry()!.trackAgentPaywallCtaClicked
-    ).toHaveBeenCalledExactlyOnceWith({ cta })
+    ).toHaveBeenCalledExactlyOnceWith({ cta, surface: 'refused_send' })
   })
 
   it('reports the Subscribe CTA as subscribe', async () => {
@@ -1331,7 +1497,10 @@ describe('AgentPanelRoot paywall telemetry', () => {
 
     expect(
       useTelemetry()!.trackAgentPaywallCtaClicked
-    ).toHaveBeenCalledExactlyOnceWith({ cta: 'subscribe' })
+    ).toHaveBeenCalledExactlyOnceWith({
+      cta: 'subscribe',
+      surface: 'refused_send'
+    })
   })
 
   it('attributes the add-credits click to the agent paywall', async () => {
@@ -1359,6 +1528,508 @@ describe('AgentPanelRoot paywall telemetry', () => {
     expect(
       useTelemetry()!.trackAddApiCreditButtonClicked
     ).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    { button: 'Subscribe', canSubscriberTopUp: false },
+    { button: 'Upgrade plan', canSubscriberTopUp: true }
+  ])(
+    'carries agent_paywall to the subscribe event from the $button CTA',
+    async ({ button, canSubscriberTopUp }) => {
+      canTopUp.value = canSubscriberTopUp
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      showPaywall()
+
+      await userEvent.click(await screen.findByRole('button', { name: button }))
+
+      expect(useTelemetry()!.trackSubscription).toHaveBeenCalledExactlyOnceWith(
+        'subscribe_clicked',
+        { current_tier: 'standard', reason: 'agent_paywall' }
+      )
+    }
+  )
+
+  it('does not report a subscribe click for the add-credits CTA', async () => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    showPaywall()
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Add credits' })
+    )
+
+    expect(useTelemetry()!.trackSubscription).not.toHaveBeenCalled()
+  })
+})
+
+/**
+ * The standing credits-exhausted surface.
+ *
+ * Distinct from the describes above, which cover the inline card raised by a
+ * turn POST that came back 402/`no_funds`. That card was the ONLY route to
+ * `app:agent_paywall_shown`, so a user who met the ceiling any other way - a
+ * turn that died at the agent runtime's own LLM hop, or one who simply did not
+ * type again - got no upgrade path. These cases pin the surface that reads the
+ * funds signal directly instead of waiting for a refusal to carry it.
+ */
+describe('AgentPanelRoot standing credits-exhausted paywall', () => {
+  const STANDING = 'agent-credits-exhausted-paywall'
+
+  beforeEach(() => {
+    ws.clear()
+    openAccountPrecondition.mockClear()
+    telemetry.trackAgentPaywallShown.mockClear()
+    telemetry.trackAgentPaywallCtaClicked.mockClear()
+    telemetry.trackAddApiCreditButtonClicked.mockClear()
+  })
+
+  it.for([
+    {
+      subscription: null,
+      effectiveFunds: true
+    },
+    {
+      subscription: 'STANDARD' as const,
+      effectiveFunds: true
+    }
+  ])(
+    'stays hidden for subscription=$subscription with effective funds',
+    async ({ subscription, effectiveFunds }) => {
+      paywallBilling.tier = subscription
+      paywallHasFunds.value = effectiveFunds
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      await screen.findByRole('textbox')
+
+      expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+    }
+  )
+
+  it.for([
+    {
+      subscription: null,
+      effectiveFunds: false
+    },
+    {
+      subscription: 'STANDARD' as const,
+      effectiveFunds: false
+    }
+  ])(
+    'shows for subscription=$subscription without effective funds',
+    async ({ subscription, effectiveFunds }) => {
+      paywallBilling.tier = subscription
+      paywallHasFunds.value = effectiveFunds
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+      expect(await screen.findByTestId(STANDING)).toBeInTheDocument()
+    }
+  )
+
+  it('shows an upgrade path when the workspace is out of credits, with no refusal first', async () => {
+    paywallHasFunds.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    const card = await screen.findByTestId(STANDING)
+
+    expect(
+      within(card).getByRole('button', { name: 'Add credits' })
+    ).toBeInTheDocument()
+  })
+
+  it('allows a new turn while the standing card is visible', async () => {
+    const messageBodies: unknown[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.endsWith('/api/agent/threads'))
+          return json(200, agentThreadList())
+        messageBodies.push(JSON.parse(String(init?.body)))
+        return json(202, { thread_id: 'th-1', message_id: 'm-1' })
+      })
+    )
+    paywallHasFunds.value = false
+    workflowStore.activeWorkflow = addTab('workflows/current.json')
+    renderWithSelectedTarget()
+    await screen.findByTestId(STANDING)
+
+    await sendFromComposer('continue anyway')
+
+    expect(messageBodies).toHaveLength(1)
+    expect(messageBodies[0]).toMatchObject({ content: 'continue anyway' })
+  })
+
+  it('reports the impression against the credits_exhausted surface', async () => {
+    paywallHasFunds.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await waitFor(() =>
+      expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledExactlyOnceWith({
+        reason: 'no_funds',
+        surface: 'credits_exhausted'
+      })
+    )
+  })
+
+  it('attributes its CTA to the credits_exhausted surface and opens the credits flow', async () => {
+    paywallHasFunds.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const card = await screen.findByTestId(STANDING)
+
+    await userEvent.click(
+      within(card).getByRole('button', { name: 'Add credits' })
+    )
+
+    expect(
+      telemetry.trackAgentPaywallCtaClicked
+    ).toHaveBeenCalledExactlyOnceWith({
+      cta: 'add_credits',
+      surface: 'credits_exhausted'
+    })
+    expect(openAccountPrecondition).toHaveBeenCalledExactlyOnceWith('credits', {
+      source: 'agent_paywall'
+    })
+  })
+
+  it('stays hidden while the workspace has funds', async () => {
+    paywallHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+    expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
+  })
+
+  it('stays hidden while Agent-scoped gratis can fund the turn', async () => {
+    paywallHasFunds.value = false
+    paywallAgentHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+    expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
+  })
+
+  it('stays hidden on the legacy rail whose unloaded balance reads as false', async () => {
+    paywallHasFunds.value = false
+    paywallBilling.type = 'legacy'
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+  })
+
+  it.for(['payment_failed', 'paused'] as const)(
+    'defers to the %s billing-recovery surface',
+    async (status) => {
+      paywallHasFunds.value = false
+      paywallBilling.status = status
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      await screen.findByRole('textbox')
+
+      expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+    }
+  )
+
+  // `null` is "not loaded yet", not "no funds". Treating it as exhaustion would
+  // flash an out-of-credits card at every funded user on every cold start.
+  it('stays hidden while the billing read has not answered', async () => {
+    paywallHasFunds.value = null
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+    expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
+  })
+
+  // An unsettled capability read cannot say which remediation is right, and a
+  // card naming the wrong one is worse than no card. Same gate the inline
+  // card's impression already used.
+  it('waits for the capability read to settle before showing anything', async () => {
+    paywallHasFunds.value = false
+    paywallCapabilities.isReady = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    await nextTick()
+
+    expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+    expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
+  })
+
+  // `unavailable` renders a body with no action at all, so standing it up would
+  // be noise the user cannot act on.
+  it('stays hidden when the presentation offers no remediation', async () => {
+    paywallHasFunds.value = false
+    paywallCapabilities.canTopUp = false
+    paywallCapabilities.hasResolvedCapabilities = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    await nextTick()
+
+    expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+  })
+
+  it('stays hidden when the current member cannot act on billing', async () => {
+    paywallHasFunds.value = false
+    paywallWorkspace.role = 'member'
+    paywallCapabilities.canTopUp = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+  })
+
+  // Two cards with identical copy is a bug, not redundancy. The inline one is
+  // anchored to the turn that was refused, so it wins.
+  it('yields to an inline paywall card rather than duplicating it', async () => {
+    paywallHasFunds.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByTestId(STANDING)
+
+    useAgentConversationStore().recordPaywall(
+      toTurnId('msg-paywall'),
+      'continue'
+    )
+
+    await waitFor(() =>
+      expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+    )
+    expect(await findInlinePaywallButton('Add credits')).toBeInTheDocument()
+  })
+
+  it('shows the standing card when a normal reply follows an older unresolved inline card', async () => {
+    paywallHasFunds.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const conversation = useAgentConversationStore()
+    conversation.recordPaywall(toTurnId('msg-paywall'), 'continue')
+    await waitFor(() =>
+      expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+    )
+
+    conversation.messages.push({
+      id: toTurnId('msg-later'),
+      role: 'assistant',
+      parts: [{ type: 'text', text: 'Later reply', state: 'done' }],
+      streaming: false,
+      thinking: false
+    })
+
+    expect(await screen.findByTestId(STANDING)).toBeInTheDocument()
+  })
+
+  it('returns after the inline paywall is resolved and credits run out again', async () => {
+    paywallHasFunds.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByTestId(STANDING)
+
+    useAgentConversationStore().recordPaywall(
+      toTurnId('msg-paywall'),
+      'continue'
+    )
+    await waitFor(() =>
+      expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+    )
+
+    paywallHasFunds.value = true
+    await waitFor(() =>
+      expect(queryInlinePaywallButton('Add credits')).not.toBeInTheDocument()
+    )
+    paywallHasFunds.value = false
+
+    expect(await screen.findByTestId(STANDING)).toBeInTheDocument()
+  })
+
+  it('reports only after returning from chat history', async () => {
+    paywallHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await screen.findByRole('heading', { name: i18n.global.t('agent.history') })
+
+    paywallHasFunds.value = false
+    await nextTick()
+    expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.backToPreviousChat')
+      })
+    )
+
+    await waitFor(() =>
+      expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledExactlyOnceWith({
+        reason: 'no_funds',
+        surface: 'credits_exhausted'
+      })
+    )
+  })
+
+  it('reports a new identity only after its standing card is shown', async () => {
+    const accountId = ref('account-a')
+    useCurrentUser().resolvedUserInfo = computed(() => ({
+      id: accountId.value
+    }))
+    paywallHasFunds.value = false
+    const firstPanel = render(AgentPanelRoot, {
+      global: { plugins: [i18n] }
+    })
+    await screen.findByTestId(STANDING)
+    await waitFor(() =>
+      expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+    )
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await screen.findByRole('heading', { name: i18n.global.t('agent.history') })
+    accountId.value = 'account-b'
+    await nextTick()
+
+    expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.backToPreviousChat')
+      })
+    )
+    await waitFor(() =>
+      expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(2)
+    )
+
+    firstPanel.unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByTestId(STANDING)
+
+    expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(2)
+  })
+
+  it('disappears once funds arrive', async () => {
+    paywallHasFunds.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByTestId(STANDING)
+
+    paywallHasFunds.value = true
+
+    await waitFor(() =>
+      expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+    )
+  })
+
+  // One impression per exhaustion episode: the surface is standing, so a
+  // per-render report would make impressions a function of session length.
+  it('reports one impression per exhaustion episode, not per re-evaluation', async () => {
+    paywallHasFunds.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByTestId(STANDING)
+    await waitFor(() =>
+      expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+    )
+
+    paywallCapabilities.canSubscribeSelfServe = false
+    await nextTick()
+    await nextTick()
+
+    expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not re-arm the impression when capabilities refresh while still exhausted', async () => {
+    paywallHasFunds.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByTestId(STANDING)
+    await waitFor(() =>
+      expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+    )
+
+    paywallCapabilities.isReady = false
+    await nextTick()
+    paywallCapabilities.isReady = true
+    await screen.findByTestId(STANDING)
+
+    expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not report the same exhaustion episode after a panel remount', async () => {
+    paywallHasFunds.value = false
+    const firstPanel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByTestId(STANDING)
+    await waitFor(() =>
+      expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+    )
+
+    firstPanel.unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByTestId(STANDING)
+
+    expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+  })
+  it('refreshes workspace billing after an active turn becomes idle', async () => {
+    paywallHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const conversation = useAgentConversationStore()
+    const turnId = toTurnId('billing-refresh')
+
+    conversation.startTurn(turnId)
+    await nextTick()
+    paywallBilling.fetchStatus.mockClear()
+    conversation.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_message_done',
+        data: { message_id: turnId, thread_id: 'th', usage: null }
+      })
+    )
+
+    await waitFor(() =>
+      expect(paywallBilling.fetchStatus).toHaveBeenCalledOnce()
+    )
+  })
+
+  it('does not refresh workspace status for a legacy billing turn', async () => {
+    paywallHasFunds.value = true
+    paywallBilling.type = 'legacy'
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const conversation = useAgentConversationStore()
+    const turnId = toTurnId('legacy-billing-refresh')
+
+    conversation.startTurn(turnId)
+    paywallBilling.fetchStatus.mockClear()
+    conversation.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_message_done',
+        data: { message_id: turnId, thread_id: 'th', usage: null }
+      })
+    )
+    await nextTick()
+
+    expect(paywallBilling.fetchStatus).not.toHaveBeenCalled()
+  })
+
+  it('reports a rejected post-turn billing refresh', async () => {
+    const refreshError = new Error('status unavailable')
+    paywallHasFunds.value = true
+    paywallBilling.fetchStatus.mockRejectedValueOnce(refreshError)
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const conversation = useAgentConversationStore()
+    const turnId = toTurnId('failed-billing-refresh')
+
+    conversation.startTurn(turnId)
+    paywallBilling.fetchStatus.mockClear()
+    conversation.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_message_done',
+        data: { message_id: turnId, thread_id: 'th', usage: null }
+      })
+    )
+
+    await waitFor(() =>
+      expect(reportError).toHaveBeenCalledWith(refreshError, {
+        surface: 'agent',
+        errorType: 'error_refreshing_agent_billing_status'
+      })
+    )
   })
 })
 
@@ -1391,6 +2062,15 @@ describe('AgentPanelRoot session notices', () => {
       type: 'agent_api_failed',
       details: i18n.global.t('agent.malformedEvent')
     })
+    expect(telemetry.trackAgentError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error_class: 'malformed_stream_event',
+        failure_stage: 'pre_acceptance',
+        retryable: false,
+        turn_accepted: false,
+        ui_treatment: 'error_overlay'
+      })
+    )
   })
 })
 
@@ -1480,7 +2160,8 @@ function setupNodeSelectionCanvas() {
     deselect,
     deselectAll,
     animateToBounds: vi.fn(),
-    canvas: canvasElement
+    canvas: canvasElement,
+    ds: createTestDragAndScale(900, 700)
   }
   appMock.canvas = canvas
   canvasStore.canvas = fromPartial(canvas)
@@ -1639,7 +2320,7 @@ async function expectLaterClickCannotRestoreAccumulatedNodes(
 
 // Records what actually reached the upload endpoint, so an exclusion can be
 // asserted on the request rather than on a chip that has not rendered yet.
-function stubUploadFetch(uploaded: string[] = []): string[] {
+function stubUploadFetch(uploaded: string[] = [], status = 200): string[] {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -1650,7 +2331,9 @@ function stubUploadFetch(uploaded: string[] = []): string[] {
         const file = body.get('image')
         if (file instanceof File) uploaded.push(file.name)
       }
-      return json(200, { name: 'uploaded', subfolder: '', type: 'input' })
+      return status === 200
+        ? json(200, { name: 'uploaded', subfolder: '', type: 'input' })
+        : json(status, {})
     })
   )
   return uploaded
@@ -1719,7 +2402,9 @@ describe('AgentPanelRoot attach flow', () => {
       thread_id: null,
       workflow_id: 'wf-42',
       client_message_id: 'client-message-1',
-      input_method: 'typed'
+      input_method: 'typed',
+      starter_prompt_id: null,
+      starter_prompt_click_id: null
     })
 
     expect(screen.getByAltText('cat.png')).toBeInTheDocument()
@@ -1936,6 +2621,104 @@ describe('AgentPanelRoot attach flow', () => {
         telemetry.trackAgentAttachButtonClicked
       ).toHaveBeenCalledExactlyOnceWith({ method: 'drag_drop' })
     )
+  })
+
+  it('attaches a screenshot pasted into the composer and uploads it', async () => {
+    const uploaded = stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+
+    const clipboard = new DataTransfer()
+    clipboard.items.add(new File(['x'], 'image.png', { type: 'image/png' }))
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste(clipboard)
+
+    expect(
+      within(await screen.findByTestId('composer-asset-section')).getByText(
+        'image.png'
+      )
+    ).toBeInTheDocument()
+    await vi.waitFor(() => expect(uploaded).toEqual(['image.png']))
+  })
+
+  // A spreadsheet or document copy puts a bitmap on the clipboard next to the
+  // text, so neither representation may be dropped for the other.
+  it('keeps both the attachment and the text of a mixed clipboard', async () => {
+    const uploaded = stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+
+    const clipboard = new DataTransfer()
+    clipboard.items.add(new File(['x'], 'image.png', { type: 'image/png' }))
+    clipboard.setData('text/plain', 'Q3 revenue by region')
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste(clipboard)
+
+    expect(
+      within(await screen.findByTestId('composer-asset-section')).getByText(
+        'image.png'
+      )
+    ).toBeInTheDocument()
+    expect(screen.getByRole('textbox')).toHaveTextContent(
+      'Q3 revenue by region'
+    )
+    await vi.waitFor(() => expect(uploaded).toEqual(['image.png']))
+  })
+
+  // Pasting happens inside the composer, like typing or a drop; only the +
+  // menu's attach leaves the panel for the OS picker and ends node picking.
+  it('keeps picking nodes when a screenshot is pasted into the composer', async () => {
+    const uploaded = stubUploadFetch()
+    const selection = await startVueNodeSelection()
+
+    const clipboard = new DataTransfer()
+    clipboard.items.add(new File(['x'], 'image.png', { type: 'image/png' }))
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste(clipboard)
+
+    await vi.waitFor(() => expect(uploaded).toEqual(['image.png']))
+    expect(useAgentNodeSelectionStore().isActive).toBe(true)
+    expect([...selection.selectedItems]).toEqual(selection.nodes)
+  })
+
+  async function renderAndPasteScreenshot(): Promise<void> {
+    renderWithSelectedTarget()
+    await nextTick()
+    telemetry.trackAgentAttachButtonClicked.mockClear()
+    const clipboard = new DataTransfer()
+    clipboard.items.add(new File(['x'], 'image.png', { type: 'image/png' }))
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste(clipboard)
+  }
+
+  it('tracks a pasted attachment as a paste once its upload lands', async () => {
+    const uploaded = stubUploadFetch()
+
+    await renderAndPasteScreenshot()
+
+    await vi.waitFor(() => expect(uploaded).toEqual(['image.png']))
+    await vi.waitFor(() =>
+      expect(
+        telemetry.trackAgentAttachButtonClicked
+      ).toHaveBeenCalledExactlyOnceWith({ method: 'paste' })
+    )
+  })
+
+  it('tracks no paste when the pasted upload is rejected', async () => {
+    stubUploadFetch([], 500)
+
+    await renderAndPasteScreenshot()
+
+    await vi.waitFor(() =>
+      expect(useToastStore().messagesToAdd).toContainEqual(
+        expect.objectContaining({
+          severity: 'warn',
+          detail: 'image.png could not be uploaded'
+        })
+      )
+    )
+    await nextTick()
+    expect(telemetry.trackAgentAttachButtonClicked).not.toHaveBeenCalled()
   })
 
   it('names every approved format in the picker accept list', async () => {
@@ -2759,6 +3542,7 @@ describe('AgentPanelRoot attach flow', () => {
     ).toBeInTheDocument()
 
     executionErrors.showErrorOverlay.mockClear()
+    vi.mocked(reportError).mockClear()
     failUpload()
     await vi.waitFor(() =>
       expect(screen.queryByText('cat.png')).not.toBeInTheDocument()
@@ -2773,7 +3557,8 @@ describe('AgentPanelRoot attach flow', () => {
         detail: 'cat.png could not be uploaded'
       })
     )
-    expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
       errorType: 'agent_attachment_upload_failed',
       tags: {
         failure_kind: 'caught_unexpected',
@@ -2954,9 +3739,11 @@ describe('AgentPanelRoot history', () => {
             })
       )
     )
-    renderWithSelectedTarget()
     useAgentConversationStore().setThreadId('th-active')
-    await nextTick()
+    renderWithSelectedTarget()
+    await vi.waitFor(() =>
+      expect(useAgentChatHistoryStore().activeId).toBe('th-active')
+    )
   }
 
   it('renames the current chat from the title menu on Enter', async () => {
@@ -3187,6 +3974,7 @@ describe('AgentPanelRoot history', () => {
 
   it('surfaces a thread-list failure via the host error modal', async () => {
     executionErrors.showErrorOverlay.mockClear()
+    telemetry.trackAgentError.mockClear()
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => new Response('{}', { status: 500 }))
@@ -3200,10 +3988,19 @@ describe('AgentPanelRoot history', () => {
     expect(executionErrors.lastPromptError).toMatchObject({
       type: 'agent_api_failed'
     })
+    expect(telemetry.trackAgentError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error_class: 'thread_list_load_failed',
+        failure_stage: 'pre_acceptance',
+        retryable: true,
+        turn_accepted: false,
+        ui_treatment: 'error_overlay'
+      })
+    )
     expect(useAgentChatHistoryStore().sessions).toHaveLength(0)
   })
 
-  it('marks the adopted thread as the current session', async () => {
+  it('marks the restored thread as the current session', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async (url: string) =>
@@ -3218,14 +4015,12 @@ describe('AgentPanelRoot history', () => {
             })
       )
     )
-    renderWithSelectedTarget()
-
     const convo = useAgentConversationStore()
     convo.setThreadId('th-active')
-    await nextTick()
+    renderWithSelectedTarget()
 
     const history = useAgentChatHistoryStore()
-    expect(history.activeId).toBe('th-active')
+    await vi.waitFor(() => expect(history.activeId).toBe('th-active'))
   })
 })
 
@@ -3235,87 +4030,100 @@ describe('AgentPanelRoot transcript copy', () => {
     clipboard.copy.mockClear()
   })
 
-  it('copies the active session from chat history as formatted markdown', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string) =>
-        url.endsWith('/api/agent/threads')
-          ? new Response(
-              JSON.stringify(
-                agentThreadList([
-                  agentThread({
-                    id: 'th-1',
-                    title: 'make a cat',
-                    last_message_at: '2026-07-07T10:00:00Z'
-                  })
-                ])
-              ),
-              { status: 200, headers: { 'Content-Type': 'application/json' } }
-            )
-          : new Response('{}', { status: 200 })
+  it.for(['current', 'pending'])(
+    'copies only the current transcript when the loaded transcript is %s',
+    async (loaded) => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (url: string) =>
+          url.endsWith('/api/agent/threads')
+            ? new Response(
+                JSON.stringify(
+                  agentThreadList([
+                    agentThread({
+                      id: 'th-1',
+                      title: 'make a cat',
+                      last_message_at: '2026-07-07T10:00:00Z'
+                    })
+                  ])
+                ),
+                { status: 200, headers: { 'Content-Type': 'application/json' } }
+              )
+            : new Response('[]', { status: 200 })
+        )
       )
-    )
 
-    renderWithSelectedTarget()
+      renderWithSelectedTarget()
+      const convo = useAgentConversationStore()
+      const turnId = 'turn-1' as TurnId
+      convo.setThreadId('th-1')
+      useAgentChatHistoryStore().setActive('th-1')
+      convo.recordUser(
+        turnId,
+        'make a cat with ',
+        [{ name: 'brief.txt', ref: 'brief.txt' }],
+        ['KSampler #12'],
+        [{ id: 'reference', name: 'Portrait', textOffset: 16 }]
+      )
+      convo.startTurn(turnId)
+      convo.ingest(
+        zAgentWsEventForTest({
+          type: 'agent_message_delta',
+          data: { delta: 'Here is ', message_id: 'turn-1', thread_id: 'th-1' }
+        })
+      )
+      convo.ingest(
+        zAgentWsEventForTest({
+          type: 'agent_tool_call',
+          data: {
+            tool_call_id: 'call-add-node',
+            tool_name: 'add_node',
+            status: 'success',
+            message_id: 'turn-1',
+            thread_id: 'th-1'
+          }
+        })
+      )
+      convo.ingest(
+        zAgentWsEventForTest({
+          type: 'agent_message_delta',
+          data: { delta: 'a cat.', message_id: 'turn-1', thread_id: 'th-1' }
+        })
+      )
+      convo.ingest(
+        zAgentWsEventForTest({
+          type: 'agent_message_done',
+          data: { message_id: 'turn-1', thread_id: 'th-1', usage: null }
+        })
+      )
+      await nextTick()
+      if (loaded === 'pending') convo.setThreadId('th-pending')
 
-    const convo = useAgentConversationStore()
-    const turnId = 'turn-1' as TurnId
-    convo.setThreadId('th-1')
-    convo.recordUser(
-      turnId,
-      'make a cat with ',
-      [{ name: 'brief.txt', ref: 'brief.txt' }],
-      ['KSampler #12'],
-      [{ id: 'reference', name: 'Portrait', textOffset: 16 }]
-    )
-    convo.startTurn(turnId)
-    convo.ingest(
-      zAgentWsEventForTest({
-        type: 'agent_message_delta',
-        data: { delta: 'Here is ', message_id: 'turn-1', thread_id: 'th-1' }
-      })
-    )
-    convo.ingest(
-      zAgentWsEventForTest({
-        type: 'agent_tool_call',
-        data: {
-          tool_call_id: 'call-add-node',
-          tool_name: 'add_node',
-          status: 'success',
-          message_id: 'turn-1',
-          thread_id: 'th-1'
-        }
-      })
-    )
-    convo.ingest(
-      zAgentWsEventForTest({
-        type: 'agent_message_delta',
-        data: { delta: 'a cat.', message_id: 'turn-1', thread_id: 'th-1' }
-      })
-    )
-    convo.ingest(
-      zAgentWsEventForTest({
-        type: 'agent_message_done',
-        data: { message_id: 'turn-1', thread_id: 'th-1', usage: null }
-      })
-    )
-    await nextTick()
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      await userEvent.click(
+        await screen.findByRole('button', {
+          name: i18n.global.t('agent.copyMarkdown')
+        })
+      )
 
-    await userEvent.click(
-      screen.getByRole('button', {
-        name: i18n.global.t('agent.showChatHistory')
-      })
-    )
-    await userEvent.click(
-      await screen.findByRole('button', {
-        name: i18n.global.t('agent.copyMarkdown')
-      })
-    )
-
-    expect(clipboard.copy).toHaveBeenCalledWith(
-      '**You:** make a cat with @[Workflow: Portrait]\n@[Node: KSampler #12]\n@[File: brief.txt]\n\n**Agent:** Here is a cat.'
-    )
-  })
+      if (loaded === 'current') {
+        expect(clipboard.copy).toHaveBeenCalledWith(
+          '**You:** make a cat with @[Workflow: Portrait]\n@[Node: KSampler #12]\n@[File: brief.txt]\n\n**Agent:** Here is a cat.'
+        )
+      } else {
+        expect(clipboard.copy).not.toHaveBeenCalled()
+        expect(useToastStore().messagesToAdd).toContainEqual(
+          expect.objectContaining({
+            summary: i18n.global.t('agent.copyUnavailable')
+          })
+        )
+      }
+    }
+  )
 })
 
 describe('AgentPanelRoot feedback capture', () => {
@@ -3498,7 +4306,6 @@ describe('AgentPanelRoot run approval telemetry', () => {
     const now = vi.spyOn(Date, 'now').mockImplementation(() => currentTime)
     const workflow = addTab('workflows/Portrait workflow.json')
     workflowStore.activeWorkflow = workflow
-    useAgentWorkflowTabBindingStore().bind('workflow-1', workflow.path)
 
     const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
     const store = useAgentConversationStore()
@@ -3740,25 +4547,111 @@ describe('AgentPanelRoot workflow binding', () => {
             thread_id,
             workflow_id: 'wf-42',
             client_message_id: 'client-message-1',
-            input_method: 'typed'
+            input_method: 'typed',
+            starter_prompt_id: null,
+            starter_prompt_click_id: null
           }
         ]
       ])
     }
   )
 
+  it('keeps the first send pending until consent succeeds, then resumes it', async () => {
+    makeTab('wf-42')
+    const bodies = mockMessagesEndpoint('wf-42')
+    Object.assign(useAgentConsentStore(), { accepted: false })
+    let accept = () => {}
+    withConsent.mockImplementationOnce(
+      (_trigger, onAccept) =>
+        new Promise<void>((resolve) => {
+          accept = () => {
+            onAccept()
+            resolve()
+          }
+        })
+    )
+    renderWithSelectedTarget()
+
+    const textbox = screen.getByRole('textbox')
+    await userEvent.click(textbox)
+    await userEvent.paste('build me a workflow')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(withConsent).toHaveBeenCalledExactlyOnceWith(
+      'first_message',
+      expect.any(Function)
+    )
+    expect(bodies).toHaveLength(0)
+
+    accept()
+    await screen.findByRole('button', { name: 'Stop' })
+    await waitFor(() => expect(bodies).toHaveLength(1))
+  })
+
+  it('does not resume a consent-held send after closing in App Mode', async () => {
+    makeTab('wf-42')
+    const bodies = mockMessagesEndpoint('wf-42')
+    const settleSubmission = vi.spyOn(
+      useAgentComposerStore(),
+      'settleSubmission'
+    )
+    Object.assign(useAgentConsentStore(), { accepted: false })
+    let accept = () => {}
+    withConsent.mockImplementationOnce(
+      (_trigger, onAccept) =>
+        new Promise<void>((resolve) => {
+          accept = () => {
+            onAccept()
+            resolve()
+          }
+        })
+    )
+    const { unmount } = renderWithSelectedTarget()
+
+    const textbox = screen.getByRole('textbox')
+    await userEvent.click(textbox)
+    await userEvent.paste('build me a workflow')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    canvasStore.linearMode = true
+    useAgentPanelStore().close('close_button')
+    unmount()
+    accept()
+    await waitFor(() =>
+      expect(settleSubmission).toHaveBeenCalledWith(expect.any(Number), false)
+    )
+    expect(bodies).toHaveLength(0)
+  })
+
   it('reports a message sent from an empty-state suggestion chip as a suggestion', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
     vi.mocked(useTelemetry())!.trackAgentMessageSent.mockClear()
+    vi.mocked(useTelemetry())!.trackAgentStarterPromptClicked.mockClear()
     renderWithSelectedTarget()
 
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'List my saved workflows' })
-    )
+    const prompt = i18n.global.t('agent.suggestedPrompts.cloud.1')
+    await userEvent.click(await screen.findByRole('button', { name: prompt }))
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await screen.findByRole('button', { name: 'Stop' })
 
+    // The click is reported when it happens, so it holds the first minted id and
+    // the send that follows holds the second.
+    expect(
+      vi.mocked(useTelemetry())!.trackAgentStarterPromptClicked.mock.calls
+    ).toEqual([
+      [
+        {
+          prompt_id: 'slot_2',
+          prompt_index: 1,
+          prompt_count: 5,
+          prompt_text_hash: expect.stringMatching(/^[0-9a-f]{8}$/),
+          locale: 'en',
+          click_id: 'client-message-1',
+          draft_was_empty: true
+        }
+      ]
+    ])
     expect(vi.mocked(useTelemetry())!.trackAgentMessageSent.mock.calls).toEqual(
       [
         [
@@ -3767,8 +4660,10 @@ describe('AgentPanelRoot workflow binding', () => {
             node_tag_count: 0,
             thread_id: null,
             workflow_id: 'wf-42',
-            client_message_id: 'client-message-1',
-            input_method: 'suggestion'
+            client_message_id: 'client-message-2',
+            input_method: 'suggestion',
+            starter_prompt_id: 'slot_2',
+            starter_prompt_click_id: 'client-message-1'
           }
         ]
       ]
@@ -3812,7 +4707,9 @@ describe('AgentPanelRoot workflow binding', () => {
             thread_id: null,
             workflow_id: 'wf-42',
             client_message_id: 'client-message-1',
-            input_method: 'typed'
+            input_method: 'typed',
+            starter_prompt_id: null,
+            starter_prompt_click_id: null
           }
         ]
       ]
@@ -3845,7 +4742,9 @@ describe('AgentPanelRoot workflow binding', () => {
             thread_id: null,
             workflow_id: 'wf-77',
             client_message_id: 'client-message-1',
-            input_method: 'typed'
+            input_method: 'typed',
+            starter_prompt_id: null,
+            starter_prompt_click_id: null
           }
         ]
       ]
@@ -4441,7 +5340,7 @@ describe('AgentPanelRoot workflow binding', () => {
       targetId: 'wf-42',
       references: [{ path: 'workflows/other.json', workflowId: 'wf-other' }]
     })
-    mockMessagesEndpoint('wf-other')
+    mockMessagesEndpoint('wf-other', [{ id: 'wf-other', name: 'other' }])
     localStorage.setItem(StorageKeys.agentThread('personal'), 'th-restored')
     const defaultFetch = vi.mocked(fetch).getMockImplementation()
     assert.exists(defaultFetch)
@@ -4484,6 +5383,712 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(panel.selectedWorkflow?.path).toBe(other.path)
   })
 
+  it.for([
+    { targetVisible: true, restored: false },
+    { targetVisible: false, restored: false },
+    { targetVisible: true, restored: true },
+    { targetVisible: false, restored: true }
+  ])(
+    'returns to Current without refetching (targetVisible=$targetVisible, restored=$restored)',
+    async ({ targetVisible, restored }) => {
+      const target = makeTab('wf-42')
+      mockMessagesEndpoint(
+        'wf-42',
+        [{ id: 'wf-42', name: 'current' }],
+        [
+          agentThread({
+            id: 'th-1',
+            title: 'Current chat',
+            last_message_at: '2026-09-25T00:00:00Z'
+          })
+        ]
+      )
+      if (restored) {
+        useAgentConversationStore().setThreadId('th-1')
+        const originalFetch = vi.mocked(fetch).getMockImplementation()
+        assert.exists(originalFetch)
+        const messages: AgentMessages = [
+          {
+            id: 'earlier',
+            thread_id: 'th-1',
+            seq: 1,
+            role: 'user',
+            status: 'complete',
+            turn_id: 'earlier',
+            workflow_id: 'wf-42',
+            content: { text: 'Keep working on this workflow' }
+          }
+        ]
+        vi.mocked(fetch).mockImplementation((input, init) =>
+          String(input).includes('/messages')
+            ? Promise.resolve(json(200, messages))
+            : originalFetch(input, init)
+        )
+      }
+      renderWithSelectedTarget()
+      if (restored) await screen.findByTestId('user-message-bubble')
+      else await sendFromComposer('Keep working on this workflow')
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste('Keep my unsent follow-up')
+      if (!targetVisible)
+        workflowStore.activeWorkflow = addTab('workflows/other.json')
+
+      const originalFetch = vi.mocked(fetch).getMockImplementation()
+      assert.exists(originalFetch)
+      const blockedFetch = vi.fn(() => new Promise<Response>(() => {}))
+      vi.mocked(fetch).mockImplementation((input, init) =>
+        String(input).includes('/messages') ||
+        String(input).includes('/workflows')
+          ? blockedFetch()
+          : originalFetch(input, init)
+      )
+      let finishOpening = () => {}
+      const opening = new Promise<void>((resolve) => {
+        finishOpening = resolve
+      })
+      const openWorkflow = vi.mocked(useWorkflowService().openWorkflow)
+      const open = openWorkflow.getMockImplementation()
+      assert.exists(open)
+      if (!targetVisible)
+        openWorkflow.mockImplementationOnce(async (...args) => {
+          await opening
+          return open(...args)
+        })
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      const currentRow = await screen.findByRole('button', {
+        name: 'Current chat'
+      })
+      expect(currentRow).toBeEnabled()
+      await userEvent.click(currentRow)
+      if (!targetVisible) {
+        expect(currentRow).toHaveAttribute('aria-busy', 'true')
+        expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+        finishOpening()
+      }
+
+      expect(await screen.findByRole('textbox')).toHaveTextContent(
+        'Keep my unsent follow-up'
+      )
+      expect(screen.getByTestId('user-message-bubble')).toHaveTextContent(
+        'Keep working on this workflow'
+      )
+      if (restored)
+        expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull()
+      else expect(screen.getByRole('button', { name: 'Stop' })).toBeEnabled()
+      expect(screen.queryByRole('heading', { name: 'Chat history' })).toBeNull()
+      expect(workflowStore.activeWorkflow?.path).toBe(target.path)
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)
+      expect(useAgentChatHistoryStore().activeId).toBe('th-1')
+      expect(useToastStore().messagesToAdd).toHaveLength(0)
+      expect(blockedFetch).not.toHaveBeenCalled()
+    }
+  )
+
+  it.for([
+    { failure: 'false', leaveHistory: false },
+    { failure: 'throw', leaveHistory: false },
+    { failure: 'false', leaveHistory: true },
+    { failure: 'throw', leaveHistory: true }
+  ])(
+    'handles a $failure Current switch failure with leaveHistory=$leaveHistory',
+    async ({ failure, leaveHistory }) => {
+      const target = makeTab('wf-42')
+      mockMessagesEndpoint(
+        'wf-42',
+        [{ id: 'wf-42', name: 'current' }],
+        [
+          agentThread({
+            id: 'th-1',
+            title: 'Current chat',
+            last_message_at: '2026-09-25T00:00:00Z'
+          })
+        ]
+      )
+      renderWithSelectedTarget()
+      await sendFromComposer('Keep working on this workflow')
+      const other = addTab('workflows/other.json')
+      workflowStore.activeWorkflow = other
+      let finishOpening = () => {}
+      const opening = new Promise<void>((resolve) => {
+        finishOpening = resolve
+      })
+      const openWorkflow = vi.mocked(useWorkflowService().openWorkflow)
+      openWorkflow.mockImplementationOnce(async () => {
+        await opening
+        if (failure === 'throw') throw new Error('Workflow switch failed')
+        return false
+      })
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Current chat' })
+      )
+      expect(
+        screen.getByRole('button', { name: 'Current chat' })
+      ).toHaveAttribute('aria-busy', 'true')
+      if (leaveHistory)
+        await userEvent.click(
+          screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+        )
+      finishOpening()
+      await Promise.allSettled(
+        openWorkflow.mock.results.map(({ value }) => value)
+      )
+      await nextTick()
+
+      if (leaveHistory) {
+        expect(
+          screen.queryByRole('heading', { name: 'Chat history' })
+        ).toBeNull()
+        expect(
+          screen.queryByText(i18n.global.t('agent.historyOpenFailed'))
+        ).toBeNull()
+        expect(useToastStore().messagesToAdd).toHaveLength(0)
+        expect(useAgentChatHistoryStore().activeId).toBeNull()
+        expect(workflowStore.activeWorkflow.path).toBe(other.path)
+      } else {
+        expect(await screen.findByRole('alert')).toHaveTextContent(
+          i18n.global.t('agent.historyOpenFailed')
+        )
+        expect(useToastStore().messagesToAdd).not.toContainEqual(
+          expect.objectContaining({ severity: 'warn' })
+        )
+        expect(useAgentChatHistoryStore().activeId).toBe('th-1')
+        expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)
+        await userEvent.click(
+          screen.getByRole('button', { name: 'Current chat' })
+        )
+        expect(
+          await screen.findByTestId('user-message-bubble')
+        ).toHaveTextContent('Keep working on this workflow')
+        expect(screen.getByRole('button', { name: 'Stop' })).toBeEnabled()
+        expect(workflowStore.activeWorkflow.path).toBe(target.path)
+      }
+    }
+  )
+
+  it('returns to the intact Current chat on Back after its switch fails, without reopening', async () => {
+    const target = makeTab('wf-42')
+    mockMessagesEndpoint(
+      'wf-42',
+      [{ id: 'wf-42', name: 'current' }],
+      [
+        agentThread({
+          id: 'th-1',
+          title: 'Current chat',
+          last_message_at: '2026-09-25T00:00:00Z'
+        })
+      ]
+    )
+    renderWithSelectedTarget()
+    await sendFromComposer('Keep working on this workflow')
+    const other = addTab('workflows/other.json')
+    workflowStore.activeWorkflow = other
+    const openWorkflow = vi.mocked(useWorkflowService().openWorkflow)
+    openWorkflow.mockResolvedValueOnce(false)
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Current chat' })
+    )
+    await screen.findByRole('alert')
+    const attempts = openWorkflow.mock.calls.length
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Back to previous chat' })
+    )
+
+    expect(screen.queryByRole('heading', { name: 'Chat history' })).toBeNull()
+    expect(await screen.findByTestId('user-message-bubble')).toHaveTextContent(
+      'Keep working on this workflow'
+    )
+    expect(screen.getByRole('button', { name: 'Stop' })).toBeEnabled()
+    expect(openWorkflow).toHaveBeenCalledTimes(attempts)
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)
+    expect(workflowStore.activeWorkflow.path).toBe(other.path)
+  })
+
+  it('restores Current after remounting an interrupted return instead of reusing stale messages', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint(
+      'wf-42',
+      [{ id: 'wf-42', name: 'current' }],
+      [
+        agentThread({
+          id: 'th-1',
+          title: 'Current chat',
+          last_message_at: '2026-09-25T00:00:00Z'
+        })
+      ]
+    )
+    const first = renderWithSelectedTarget()
+    await sendFromComposer('Before closing the panel')
+    workflowStore.activeWorkflow = addTab('workflows/other.json')
+    vi.mocked(useWorkflowService().openWorkflow).mockResolvedValueOnce(false)
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Current chat' })
+    )
+    await screen.findByRole('alert')
+    first.unmount()
+    await nextTick()
+
+    let finishHistory = () => {}
+    const pendingHistory = new Promise<void>((resolve) => {
+      finishHistory = resolve
+    })
+    const originalFetch = vi.mocked(fetch).getMockImplementation()
+    assert.exists(originalFetch)
+    const messages: AgentMessages = [
+      {
+        id: 'later',
+        thread_id: 'th-1',
+        seq: 1,
+        role: 'user',
+        status: 'complete',
+        turn_id: 'later',
+        workflow_id: 'wf-42',
+        content: { text: 'Server update while panel closed' }
+      }
+    ]
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      if (String(input).includes('/messages')) {
+        await pendingHistory
+        return json(200, messages)
+      }
+      return originalFetch(input, init)
+    })
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Current chat' })
+    )
+    expect(
+      screen.getByRole('button', { name: 'Current chat' })
+    ).toHaveAttribute('aria-busy', 'true')
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+    finishHistory()
+    expect(await screen.findByTestId('user-message-bubble')).toHaveTextContent(
+      'Server update while panel closed'
+    )
+    expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull()
+  })
+
+  it('switches between historical chats with open targets without refetching known Cloud identities', async () => {
+    makeTab('wf-current')
+    const other = addTab('workflows/other.json')
+    mockMessagesEndpoint(
+      'wf-current',
+      [
+        { id: 'wf-current', name: 'current' },
+        { id: 'wf-other', name: 'other' }
+      ],
+      ['th-current', 'th-other'].map((id) =>
+        agentThread({ id, title: id, last_message_at: '2026-09-25T00:00:00Z' })
+      )
+    )
+    const originalFetch = vi.mocked(fetch).getMockImplementation()
+    assert.exists(originalFetch)
+    const refreshCloud = vi.fn(() => new Promise<Response>(() => {}))
+    let identitiesFetched = false
+    vi.mocked(fetch).mockImplementation((input, init) => {
+      const url = String(input)
+      if (url.includes('/workflows')) {
+        if (identitiesFetched) return refreshCloud()
+        identitiesFetched = true
+      }
+      if (url.includes('/messages')) {
+        const threadId = url.includes('/th-other/') ? 'th-other' : 'th-current'
+        const messages: AgentMessages = [
+          {
+            id: `message-${threadId}`,
+            thread_id: threadId,
+            seq: 1,
+            role: 'user',
+            status: 'complete',
+            turn_id: `turn-${threadId}`,
+            workflow_id: threadId === 'th-other' ? 'wf-other' : 'wf-current',
+            content: { text: `Transcript of ${threadId}` }
+          }
+        ]
+        return Promise.resolve(json(200, messages))
+      }
+      return originalFetch(input, init)
+    })
+    renderWithSelectedTarget()
+    for (const threadId of ['th-current', 'th-other']) {
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      await userEvent.click(
+        await screen.findByRole('button', { name: threadId })
+      )
+      expect(
+        await screen.findByTestId('user-message-bubble')
+      ).toHaveTextContent(`Transcript of ${threadId}`)
+      expect(useAgentChatHistoryStore().activeId).toBe(threadId)
+    }
+
+    expect(workflowStore.activeWorkflow?.path).toBe(other.path)
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(other.path)
+    expect(refreshCloud).not.toHaveBeenCalled()
+    expect(useToastStore().messagesToAdd).toHaveLength(0)
+  })
+
+  it.for([null, 'th-current'])(
+    'reopens a saved workflow from chat history while keeping %s current until ready',
+    async (previousThread) => {
+      makeTab('wf-current')
+      const saved = addTab('workflows/portrait.json')
+      await workflowStore.closeWorkflow(saved)
+      let finishHistory = () => {}
+      const historyReady = new Promise<void>((resolve) => {
+        finishHistory = resolve
+      })
+      let finishOpening = () => {}
+      const workflowReady = new Promise<void>((resolve) => {
+        finishOpening = resolve
+      })
+      const openWorkflow = vi.mocked(useWorkflowService().openWorkflow)
+      const open = openWorkflow.getMockImplementation()
+      assert.exists(open)
+      openWorkflow.mockImplementationOnce(async (...args) => {
+        await workflowReady
+        return open(...args)
+      })
+      const bodies: unknown[] = []
+      const messages: AgentMessages = [
+        {
+          id: 'history-user',
+          thread_id: 'th-history',
+          seq: 1,
+          role: 'user',
+          status: 'complete',
+          turn_id: 'history-turn',
+          workflow_id: 'wf-portrait',
+          content: { text: 'Earlier portrait request' }
+        }
+      ]
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (url: string, init?: RequestInit) => {
+          if (url.includes('/messages') && init?.method === 'POST') {
+            bodies.push(JSON.parse(String(init.body)))
+            return json(202, ack('wf-portrait'))
+          }
+          if (url.includes('/th-current/messages')) return json(200, [])
+          if (url.includes('/messages')) {
+            await historyReady
+            return json(200, messages)
+          }
+          if (url.includes('/workflows'))
+            return json(200, {
+              data: [{ id: 'wf-portrait', name: 'portrait' }],
+              pagination: { offset: 0, limit: 100, total: 1, has_more: false }
+            })
+          return json(
+            200,
+            agentThreadList([
+              ...(previousThread === null
+                ? []
+                : [
+                    agentThread({
+                      id: previousThread,
+                      title: 'Current chat',
+                      last_message_at: '2026-09-25T01:00:00Z'
+                    })
+                  ]),
+              agentThread({
+                id: 'th-history',
+                title: 'Portrait chat',
+                last_message_at: '2026-09-25T00:00:00Z'
+              })
+            ])
+          )
+        })
+      )
+      useAgentConversationStore().setThreadId(previousThread)
+      renderWithSelectedTarget()
+      const history = useAgentChatHistoryStore()
+      await vi.waitFor(() => expect(history.activeId).toBe(previousThread))
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      await userEvent.click(await screen.findByText('Portrait chat'))
+
+      expect(
+        screen.getByRole('button', { name: 'Portrait chat' })
+      ).toHaveAttribute('aria-busy', 'true')
+      expect(
+        screen.getByRole('heading', { name: 'Chat history' })
+      ).toBeVisible()
+      expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+      expect(history.grouped.current.map(({ id }) => id)).toEqual(
+        previousThread === null ? [] : [previousThread]
+      )
+      expect(workflowStore.activeWorkflow?.path).toBe('workflows/current.json')
+      finishHistory()
+      await vi.waitFor(() => expect(openWorkflow).toHaveBeenCalled())
+      expect(
+        screen.getByRole('heading', { name: 'Chat history' })
+      ).toBeVisible()
+      expect(history.grouped.current.map(({ id }) => id)).toEqual(
+        previousThread === null ? [] : [previousThread]
+      )
+      expect(
+        screen.queryByText('Earlier portrait request')
+      ).not.toBeInTheDocument()
+      expect(workflowStore.activeWorkflow?.path).toBe('workflows/current.json')
+      finishOpening()
+
+      await vi.waitFor(() => {
+        expect(workflowStore.activeWorkflow?.path).toBe(saved.path)
+        expect(useAgentPanelStore().selectedWorkflow?.path).toBe(saved.path)
+        expect(useAgentChatHistoryStore().activeId).toBe('th-history')
+      })
+      expect(workflowStore.openWorkflows.map(({ path }) => path)).toEqual([
+        'workflows/current.json',
+        'workflows/portrait.json'
+      ])
+      expect(useToastStore().messagesToAdd).toHaveLength(0)
+      await sendFromComposer('Continue the portrait')
+      expect(bodies[0]).toMatchObject({ workflow_id: 'wf-portrait' })
+      expect(useWorkflowService().saveWorkflowAs).not.toHaveBeenCalled()
+    }
+  )
+
+  it.for([
+    { previous: null, outcome: 'pending' },
+    { previous: null, outcome: 'failed' },
+    { previous: 'th-current', outcome: 'pending' },
+    { previous: 'th-current', outcome: 'failed' }
+  ])(
+    'keeps an unfinished history selection hidden after remount: %o',
+    async ({ previous, outcome }) => {
+      makeTab('wf-current')
+      const saved = addTab('workflows/portrait.json')
+      await workflowStore.closeWorkflow(saved)
+      useAgentConversationStore().setThreadId(previous)
+      if (previous)
+        localStorage.setItem(StorageKeys.agentThread('personal'), previous)
+      let finishOpening = () => {}
+      const opening = new Promise<boolean>((resolve) => {
+        finishOpening = () => resolve(false)
+      })
+      const openWorkflow = vi.mocked(useWorkflowService().openWorkflow)
+      openWorkflow.mockReturnValueOnce(opening)
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (url: string) => {
+          if (url.includes('/th-current/messages')) return json(200, [])
+          if (url.includes('/messages'))
+            return json(200, [
+              {
+                id: 'history-user',
+                thread_id: 'th-history',
+                seq: 1,
+                role: 'user',
+                status: 'complete',
+                turn_id: 'history-turn',
+                workflow_id: 'wf-portrait',
+                content: { text: 'Earlier portrait request' }
+              }
+            ])
+          if (url.includes('/workflows'))
+            return json(200, {
+              data: [{ id: 'wf-portrait', name: 'portrait' }],
+              pagination: { offset: 0, limit: 100, total: 1, has_more: false }
+            })
+          return json(
+            200,
+            agentThreadList([
+              agentThread({
+                id: 'th-history',
+                title: 'Portrait chat',
+                last_message_at: '2026-09-25T00:00:00Z'
+              })
+            ])
+          )
+        })
+      )
+      const first = renderWithSelectedTarget()
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Show chat history' })
+      )
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Portrait chat' })
+      )
+      await vi.waitFor(() => expect(openWorkflow).toHaveBeenCalledOnce())
+      if (outcome === 'failed') {
+        finishOpening()
+        await screen.findByRole('alert')
+      }
+      first.unmount()
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      finishOpening()
+      await opening
+      await nextTick()
+
+      expect(
+        screen.getByRole('heading', { name: 'Chat history' })
+      ).toBeVisible()
+      expect(
+        screen.queryByText('Earlier portrait request')
+      ).not.toBeInTheDocument()
+      expect(useAgentChatHistoryStore().activeId).toBe(previous)
+      expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
+        previous
+      )
+      if (outcome === 'pending') {
+        await userEvent.click(
+          screen.getByRole('button', { name: 'Back to previous chat' })
+        )
+        await screen.findByRole('button', { name: 'Show chat history' })
+        expect(useAgentChatHistoryStore().activeId).toBe(previous)
+        expect(workflowStore.activeWorkflow?.path).toBe(
+          'workflows/current.json'
+        )
+        expect(
+          screen.queryByText('Earlier portrait request')
+        ).not.toBeInTheDocument()
+        return
+      }
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Portrait chat' })
+      )
+      await screen.findAllByText('Earlier portrait request')
+      expect(useAgentChatHistoryStore().activeId).toBe('th-history')
+      expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
+        'th-history'
+      )
+      expect(workflowStore.activeWorkflow?.path).toBe(saved.path)
+    }
+  )
+
+  it.for([
+    { failure: 'missing messages', status: 404, listingStatus: 200 },
+    { failure: 'message server error', status: 500, listingStatus: 200 },
+    { failure: 'failed workflow listing', status: 200, listingStatus: 500 }
+  ])(
+    'preserves Current after deleting a chat with $failure',
+    async ({ status, listingStatus }) => {
+      makeTab('wf-current')
+      useAgentConversationStore().setThreadId('th-current')
+      localStorage.setItem(StorageKeys.agentThread('personal'), 'th-current')
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (url: string) => {
+          if (url.includes('/th-failed/messages'))
+            return json(status, [
+              {
+                id: 'failed-user',
+                thread_id: 'th-failed',
+                seq: 1,
+                role: 'user',
+                status: 'complete',
+                turn_id: 'failed-turn',
+                workflow_id: 'wf-unavailable',
+                content: { text: 'Failed request' }
+              }
+            ] satisfies AgentMessages)
+          if (url.includes('/messages'))
+            return json(200, [
+              {
+                id: 'current-user',
+                thread_id: 'th-current',
+                seq: 1,
+                role: 'user',
+                status: 'complete',
+                turn_id: 'current-turn',
+                content: { text: 'Current request' }
+              }
+            ])
+          if (url.includes('/workflows'))
+            return json(listingStatus, {
+              data: [],
+              pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+            })
+          return json(
+            200,
+            agentThreadList([
+              agentThread({
+                id: 'th-current',
+                title: 'Current chat',
+                last_message_at: '2026-09-25T01:00:00Z'
+              }),
+              agentThread({
+                id: 'th-failed',
+                title: 'Failed chat',
+                last_message_at: '2026-09-25T00:00:00Z'
+              })
+            ])
+          )
+        })
+      )
+      const first = renderWithSelectedTarget()
+      await screen.findAllByText('Current request')
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Show chat history' })
+      )
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Failed chat' })
+      )
+      await screen.findByRole('alert')
+      await userEvent.click(
+        screen.getAllByRole('button', {
+          name: i18n.global.t('agent.chatOptions')
+        })[1]
+      )
+      await userEvent.click(
+        await screen.findByRole('menuitem', { name: i18n.global.t('g.delete') })
+      )
+      expect(useAgentChatHistoryStore().activeId).toBe('th-current')
+      expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
+        'th-current'
+      )
+      first.unmount()
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      await nextTick()
+
+      expect(
+        screen.getByRole('heading', { name: 'Chat history' })
+      ).toBeVisible()
+      expect(useAgentChatHistoryStore().activeId).toBe('th-current')
+      expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
+        'th-current'
+      )
+      expect(
+        screen.queryByRole('button', { name: 'Failed chat' })
+      ).not.toBeInTheDocument()
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Back to previous chat' })
+      )
+      await screen.findAllByText('Current request')
+      expect(useAgentChatHistoryStore().activeId).toBe('th-current')
+      expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
+        'th-current'
+      )
+      expect(screen.queryByText('Failed request')).not.toBeInTheDocument()
+    }
+  )
+
   it('restores an agent-minted draft target after reload and keeps its Cloud identity on send', async () => {
     const draftGraphId = '3d4d7f1e-3c8b-4a0a-9a3c-1d2e3f4a5b6c'
     localStorage.setItem(
@@ -4524,8 +6129,8 @@ describe('AgentPanelRoot workflow binding', () => {
         if (url.includes('/messages')) return json(200, history)
         if (url.includes('/workflows'))
           return json(200, {
-            data: [],
-            pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+            data: [{ id: 'wf-minted', name: 'minted' }],
+            pagination: { offset: 0, limit: 100, total: 1, has_more: false }
           })
         return json(200, agentThreadList())
       })
@@ -4623,8 +6228,8 @@ describe('AgentPanelRoot workflow binding', () => {
             return json(200, { assets: [], total: 0, has_more: false })
           if (url.includes('/workflows'))
             return json(200, {
-              data: [],
-              pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+              data: [{ id: 'wf-old', name: 'old' }],
+              pagination: { offset: 0, limit: 100, total: 1, has_more: false }
             })
           return json(
             200,
@@ -4679,8 +6284,162 @@ describe('AgentPanelRoot workflow binding', () => {
     }
   )
 
+  it('opens a history chat whose workflow the Cloud no longer lists and marks its target unavailable', async () => {
+    makeTab('wf-42')
+    stubHistoryWithWorkflowListing(200)
+    renderWithSelectedTarget()
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(await screen.findByText('Earlier chat'))
+
+    await screen.findAllByText('Historical prompt')
+    expect(
+      screen.getByText(i18n.global.t('agent.targetWorkflowUnavailable'))
+    ).toBeVisible()
+    expect(useAgentPanelStore().selectedWorkflow).toBeNull()
+    expect(useAgentChatHistoryStore().activeId).toBe('th-history')
+    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
+      'th-history'
+    )
+    expect(useToastStore().messagesToAdd).not.toContainEqual(
+      expect.objectContaining({ severity: 'warn' })
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'New chat' }))
+    expect(
+      screen.queryByText(i18n.global.t('agent.targetWorkflowUnavailable'))
+    ).not.toBeInTheDocument()
+  })
+
+  it('says the target workflow is no longer available after the user deletes it', async () => {
+    const target = addTab('workflows/current.json', {
+      delete: vi.fn(async () => {})
+    })
+    workflowStore.activeWorkflow = target
+    useAgentWorkflowTabBindingStore().bind('wf-42', target.path)
+    const other = addTab('workflows/other.json')
+    renderWithSelectedTarget()
+    workflowStore.activeWorkflow = other
+
+    await workflowStore.closeWorkflow(target)
+    await workflowStore.deleteWorkflow(target)
+
+    expect(
+      await screen.findByText(i18n.global.t('agent.targetWorkflowUnavailable'))
+    ).toBeVisible()
+    expect(useAgentPanelStore().selectedWorkflow).toBeNull()
+  })
+
+  it.for([
+    {
+      listing: 'omits the workflow',
+      listingStatus: 200,
+      notices: [i18n.global.t('agent.targetWorkflowUnavailable')],
+      toasts: [],
+      current: 'th-history'
+    },
+    {
+      listing: 'fails',
+      listingStatus: 500,
+      notices: [],
+      toasts: [i18n.global.t('agent.targetWorkflowOpenFailed')],
+      current: null
+    }
+  ])(
+    'restores a stored chat on startup when the workflow listing $listing',
+    async ({ listingStatus, notices, toasts, current }) => {
+      makeTab('wf-42')
+      useAgentConversationStore().setThreadId('th-history')
+      localStorage.setItem(StorageKeys.agentThread('personal'), 'th-history')
+      stubHistoryWithWorkflowListing(listingStatus)
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+      await screen.findAllByText('Historical prompt')
+      await vi.waitFor(() => {
+        expect(
+          useToastStore()
+            .messagesToAdd.filter(({ severity }) => severity === 'warn')
+            .map(({ detail }) => detail)
+        ).toEqual(toasts)
+        expect(
+          screen
+            .queryAllByText(i18n.global.t('agent.targetWorkflowUnavailable'))
+            .map((notice) => notice.textContent.trim())
+        ).toEqual(notices)
+      })
+      expect(useAgentPanelStore().selectedWorkflow).toBeNull()
+      expect(useAgentChatHistoryStore().activeId).toBe(current)
+    }
+  )
+
+  it('does not mark a stored chat Current when its messages fail to load on startup', async () => {
+    telemetry.trackAgentError.mockClear()
+    makeTab('wf-42')
+    localStorage.setItem(StorageKeys.agentThread('personal'), 'th-history')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.includes('/messages')) return json(500, { error: 'down' })
+        if (url.includes('/agent/threads'))
+          return json(
+            200,
+            agentThreadList([
+              agentThread({
+                id: 'th-history',
+                title: 'Earlier chat',
+                last_message_at: '2026-09-01T00:00:00Z'
+              })
+            ])
+          )
+        return json(200, {})
+      })
+    )
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await vi.waitFor(() =>
+      expect(telemetry.trackAgentError).toHaveBeenCalledWith(
+        expect.objectContaining({ error_class: 'history_load_failed' })
+      )
+    )
+    expect(useAgentChatHistoryStore().activeId).toBeNull()
+  })
+
+  it('toasts a startup restoration failure that lands while history is open without a selection', async () => {
+    let failListing = () => {}
+    const listing = new Promise<number>((resolve) => {
+      failListing = () => resolve(500)
+    })
+    makeTab('wf-42')
+    useAgentConversationStore().setThreadId('th-history')
+    localStorage.setItem(StorageKeys.agentThread('personal'), 'th-history')
+    stubHistoryWithWorkflowListing(listing)
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findAllByText('Historical prompt')
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await screen.findByRole('heading', { name: 'Chat history' })
+
+    failListing()
+
+    await vi.waitFor(() =>
+      expect(useToastStore().messagesToAdd).toContainEqual(
+        expect.objectContaining({
+          severity: 'warn',
+          detail: i18n.global.t('agent.targetWorkflowOpenFailed')
+        })
+      )
+    )
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
   it.for(['false', 'throw', 'missing-id'])(
-    'leaves history targetless when restoration has %s',
+    'handles a history restoration with %s without showing an unready chat',
     async (outcome) => {
       makeTab('wf-42')
       const other = addTab('workflows/history-target.json')
@@ -4716,8 +6475,8 @@ describe('AgentPanelRoot workflow binding', () => {
             )
           if (url.includes('/workflows'))
             return json(200, {
-              data: [],
-              pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+              data: [{ id: 'wf-history', name: 'history-target' }],
+              pagination: { offset: 0, limit: 100, total: 1, has_more: false }
             })
           return json(200, {})
         })
@@ -4737,25 +6496,35 @@ describe('AgentPanelRoot workflow binding', () => {
         })
       )
       await userEvent.click(await screen.findByText('Earlier chat'))
-      await screen.findAllByText('Historical prompt')
-      if (outcome !== 'missing-id')
-        await vi.waitFor(() =>
-          expect(useToastStore().messagesToAdd).toEqual(
-            expect.arrayContaining([
-              expect.objectContaining({
-                detail: i18n.global.t('agent.targetNavigationUnavailable')
-              })
-            ])
-          )
+      if (outcome !== 'missing-id') {
+        expect(await screen.findByRole('alert')).toHaveTextContent(
+          i18n.global.t('agent.historyOpenFailed')
         )
-      await vi.waitFor(() =>
+        expect(
+          screen.getByRole('heading', { name: 'Chat history' })
+        ).toBeVisible()
+        expect(screen.queryByText('Historical prompt')).not.toBeInTheDocument()
+        expect(useToastStore().messagesToAdd).not.toContainEqual(
+          expect.objectContaining({ severity: 'warn' })
+        )
         expect(useAgentPanelStore().selectedWorkflow).toBeNull()
-      )
-      expect(
-        screen.getByRole('button', {
-          name: i18n.global.t('agent.switchWorkflow')
-        })
-      ).toHaveTextContent(i18n.global.t('agent.selectWorkflowForAgent'))
+        expect(useAgentChatHistoryStore().activeId).toBeNull()
+        await userEvent.click(
+          screen.getByRole('button', { name: 'Earlier chat' })
+        )
+        await screen.findAllByText('Historical prompt')
+        expect(useAgentPanelStore().selectedWorkflow?.path).toBe(other.path)
+        expect(workflowStore.activeWorkflow?.path).toBe(other.path)
+        expect(useAgentChatHistoryStore().activeId).toBe('th-history')
+      } else {
+        await screen.findAllByText('Historical prompt')
+        expect(useAgentPanelStore().selectedWorkflow).toBeNull()
+        expect(
+          screen.getByRole('button', {
+            name: i18n.global.t('agent.switchWorkflow')
+          })
+        ).toHaveTextContent(i18n.global.t('agent.selectWorkflowForAgent'))
+      }
     }
   )
 
@@ -5373,6 +7142,7 @@ describe('AgentPanelRoot workflow binding', () => {
     )
 
     await renderAndSend('work here')
+    vi.useFakeTimers()
 
     ws.emit('agent_active_tab', {
       workflow_id: 'wf-new',
@@ -5380,7 +7150,8 @@ describe('AgentPanelRoot workflow binding', () => {
       thread_id: 'th-1'
     })
     const activity = useWorkflowTabActivityStore()
-    await vi.waitFor(() => expect(activity.creatingTab).toBe(true))
+    await vi.advanceTimersByTimeAsync(0)
+    expect(activity.creatingTab).toBe(true)
 
     ws.emit('agent_active_tab', { workflow_id: 'wf-42', thread_id: 'th-1' })
     resolveLookup?.(json(404, { error: 'none' }))
@@ -5442,6 +7213,30 @@ describe('AgentPanelRoot workflow binding', () => {
     ).toBeInTheDocument()
   })
 
+  it('shows a sticky error toast when the doc-host permanently refuses the subscribe', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    await renderAndSend('add a node')
+
+    ws.emit('doc_subscribed', {
+      v: 1,
+      workflow_id: 'wf-42',
+      ok: false,
+      code: 'schema_version_mismatch',
+      message: 'Expected schema 2, found 1'
+    })
+
+    expect(useToastStore().messagesToAdd).toContainEqual(
+      expect.objectContaining({
+        severity: 'error',
+        summary: i18n.global.t('agent.workflowSyncFailedTitle'),
+        detail: `${i18n.global.t('agent.workflowSyncFailedDetail')} (Expected schema 2, found 1)`,
+        life: 0
+      })
+    )
+  })
+
   it('moves the spinner to the tab the agent creates mid-turn', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
@@ -5449,12 +7244,14 @@ describe('AgentPanelRoot workflow binding', () => {
     await renderAndSend('work here')
     const activity = useWorkflowTabActivityStore()
     expect(activity.editingTabPath).toBe('workflows/current.json')
+    vi.useFakeTimers()
 
     ws.emit('agent_active_tab', {
       workflow_id: 'wf-77',
       name: 'Video test',
       thread_id: 'th-1'
     })
+    await vi.advanceTimersByTimeAsync(500)
 
     await vi.waitFor(() =>
       expect(activity.editingTabPath).toBe('workflows/Video test.json')
@@ -5662,6 +7459,26 @@ describe('AgentPanelRoot workflow binding', () => {
         target: 'active_tab_switch'
       })
     )
+  })
+
+  it('agent_active_tab reports when a bound tab cannot be opened', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    await renderAndSend('work here')
+    telemetry.trackAgentError.mockClear()
+    vi.mocked(useWorkflowService()).openWorkflow.mockResolvedValueOnce(false)
+
+    ws.emit('agent_active_tab', { workflow_id: 'wf-42', thread_id: 'th-1' })
+
+    await vi.waitFor(() =>
+      expect(telemetry.trackAgentError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error_class: 'workflow_open_failed',
+          ui_treatment: 'toast'
+        })
+      )
+    )
+    expect(useTelemetry()!.trackAgentWorkflowApplied).not.toHaveBeenCalled()
   })
 
   // A browser tab closed without the SPA's own unbind() left 'wf-abandoned'
@@ -5889,12 +7706,14 @@ describe('AgentPanelRoot workflow binding', () => {
     await renderAndSend('work here')
     const mint = vi.spyOn(workflowStore, 'createNewTemporary')
     telemetry.trackAgentWorkflowBound.mockClear()
+    vi.useFakeTimers()
 
     ws.emit('agent_active_tab', {
       workflow_id: 'wf-77',
       name: 'Video test',
       thread_id: 'th-1'
     })
+    await vi.advanceTimersByTimeAsync(500)
 
     await vi.waitFor(() =>
       expect(useWorkflowService().openWorkflow).toHaveBeenCalled()
@@ -5937,12 +7756,14 @@ describe('AgentPanelRoot workflow binding', () => {
       await renderAndSend('work here')
       vi.mocked(useWorkflowService()).openWorkflow.mockResolvedValueOnce(false)
       vi.mocked(useTelemetry())!.trackAgentWorkflowApplied.mockClear()
+      vi.useFakeTimers()
 
       ws.emit('agent_active_tab', {
         workflow_id: 'wf-other',
         name: 'Other',
         thread_id: 'th-1'
       })
+      await vi.advanceTimersByTimeAsync(500)
 
       await vi.waitFor(() =>
         expect(useToastStore().messagesToAdd).toContainEqual(
@@ -6085,12 +7906,14 @@ describe('AgentPanelRoot workflow binding', () => {
     mockMessagesEndpoint('wf-42')
 
     await renderAndSend('work here')
+    vi.useFakeTimers()
 
     ws.emit('agent_active_tab', {
       workflow_id: 'wf-88',
       name: 'a/b',
       thread_id: 'th-1'
     })
+    await vi.advanceTimersByTimeAsync(500)
     await vi.waitFor(() =>
       expect(
         workflowStore.getWorkflowByPath('workflows/a-b.json')
@@ -6102,6 +7925,7 @@ describe('AgentPanelRoot workflow binding', () => {
       name: '  ',
       thread_id: 'th-1'
     })
+    await vi.advanceTimersByTimeAsync(500)
     await vi.waitFor(() =>
       expect(
         workflowStore.getWorkflowByPath('workflows/Unsaved Workflow.json')
@@ -6109,20 +7933,21 @@ describe('AgentPanelRoot workflow binding', () => {
     )
   })
 
-  it('agent_active_tab closes the minted tab when opening it fails', async () => {
+  it('agent_active_tab reports when a minted tab cannot be opened', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
 
     await renderAndSend('work here')
-    vi.mocked(useWorkflowService()).openWorkflow.mockRejectedValueOnce(
-      new Error('disk full')
-    )
+    telemetry.trackAgentError.mockClear()
+    vi.mocked(useWorkflowService()).openWorkflow.mockResolvedValueOnce(false)
+    vi.useFakeTimers()
 
     ws.emit('agent_active_tab', {
       workflow_id: 'wf-77',
       name: 'Video test',
       thread_id: 'th-1'
     })
+    await vi.advanceTimersByTimeAsync(500)
 
     await vi.waitFor(() =>
       expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
@@ -6134,20 +7959,31 @@ describe('AgentPanelRoot workflow binding', () => {
         workflowStore.getWorkflowByPath('workflows/Video test.json')
       ).toBeNull()
     )
+    expect(telemetry.trackAgentError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error_class: 'workflow_open_failed',
+        ui_treatment: 'toast'
+      })
+    )
   })
 
-  it('agent_active_tab closes the minted tab when opening it reports failure', async () => {
+  it('agent_active_tab closes the minted tab when opening it throws', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
 
     await renderAndSend('work here')
-    vi.mocked(useWorkflowService()).openWorkflow.mockResolvedValueOnce(false)
+    telemetry.trackAgentError.mockClear()
+    vi.mocked(useWorkflowService()).openWorkflow.mockRejectedValueOnce(
+      new Error('open boom')
+    )
+    vi.useFakeTimers()
 
     ws.emit('agent_active_tab', {
       workflow_id: 'wf-77',
       name: 'Video test',
       thread_id: 'th-1'
     })
+    await vi.advanceTimersByTimeAsync(500)
 
     await vi.waitFor(() =>
       expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
@@ -6163,6 +7999,15 @@ describe('AgentPanelRoot workflow binding', () => {
       useAgentWorkflowTabBindingStore().tabPathFor('wf-77')
     ).toBeUndefined()
     expect(useTelemetry()!.trackAgentWorkflowApplied).not.toHaveBeenCalled()
+    expect(telemetry.trackAgentError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error_class: 'workflow_open_failed',
+        failure_stage: 'post_acceptance',
+        retryable: false,
+        turn_accepted: true,
+        ui_treatment: 'error_overlay'
+      })
+    )
   })
 
   it('agent_active_tab strips dotfile prefixes hidden behind whitespace', async () => {
@@ -6170,12 +8015,14 @@ describe('AgentPanelRoot workflow binding', () => {
     mockMessagesEndpoint('wf-42')
 
     await renderAndSend('work here')
+    vi.useFakeTimers()
 
     ws.emit('agent_active_tab', {
       workflow_id: 'wf-95',
       name: ' .hidden',
       thread_id: 'th-1'
     })
+    await vi.advanceTimersByTimeAsync(500)
     await vi.waitFor(() =>
       expect(
         workflowStore.getWorkflowByPath('workflows/hidden.json')
@@ -6188,14 +8035,17 @@ describe('AgentPanelRoot workflow binding', () => {
     mockMessagesEndpoint('wf-42')
 
     await renderAndSend('work here')
+    vi.useFakeTimers()
 
     ws.emit('agent_active_tab', { workflow_id: 'wf-a', thread_id: 'th-1' })
+    await vi.advanceTimersByTimeAsync(500)
     await vi.waitFor(() =>
       expect(
         workflowStore.getWorkflowByPath('workflows/Unsaved Workflow.json')
       ).not.toBeNull()
     )
     ws.emit('agent_active_tab', { workflow_id: 'wf-b', thread_id: 'th-1' })
+    await vi.advanceTimersByTimeAsync(500)
     await vi.waitFor(() =>
       expect(
         workflowStore.getWorkflowByPath('workflows/Unsaved Workflow (2).json')
@@ -6233,27 +8083,30 @@ describe('AgentPanelRoot workflow binding', () => {
     )
 
     await renderAndSend('work here')
+    vi.useFakeTimers()
 
     ws.emit('agent_active_tab', { workflow_id: 'wf-42', thread_id: 'th-1' })
-    await vi.waitFor(() => expect(resolveSlowOpen).toBeDefined())
+    await vi.advanceTimersByTimeAsync(0)
+    expect(resolveSlowOpen).toBeDefined()
     ws.emit('agent_active_tab', {
       workflow_id: 'wf-quick',
       name: 'Quick tab',
       thread_id: 'th-1'
     })
 
-    await new Promise((resolve) => setTimeout(resolve))
+    await vi.advanceTimersByTimeAsync(0)
     expect(useWorkflowService().openWorkflow).toHaveBeenCalledTimes(1)
     expect(
       workflowStore.getWorkflowByPath('workflows/Quick tab.json')
     ).toBeNull()
     resolveSlowOpen?.()
+    await vi.advanceTimersByTimeAsync(500)
     await vi.waitFor(() =>
       expect(
         workflowStore.getWorkflowByPath('workflows/Quick tab.json')
       ).not.toBeNull()
     )
-    await new Promise((resolve) => setTimeout(resolve))
+    await vi.advanceTimersByTimeAsync(0)
 
     expect(workflowStore.activeWorkflow?.filename).toBe('Quick tab')
     expect(tab).not.toBe(workflowStore.activeWorkflow)
@@ -6264,6 +8117,7 @@ describe('AgentPanelRoot workflow binding', () => {
     mockMessagesEndpoint('wf-42')
 
     await renderAndSend('work here')
+    vi.useFakeTimers()
 
     // Hold the SLOW tab's open so the newer activation lands mid-flight.
     let releaseSlowOpen: (() => void) | undefined
@@ -6278,20 +8132,22 @@ describe('AgentPanelRoot workflow binding', () => {
       name: 'Slow tab',
       thread_id: 'th-1'
     })
-    await vi.waitFor(() => expect(releaseSlowOpen).toBeDefined())
+    await vi.advanceTimersByTimeAsync(500)
+    expect(releaseSlowOpen).toBeDefined()
     ws.emit('agent_active_tab', {
       workflow_id: 'wf-fast',
       name: 'Fast tab',
       thread_id: 'th-1'
     })
     releaseSlowOpen?.()
+    await vi.advanceTimersByTimeAsync(500)
 
     await vi.waitFor(() =>
       expect(
         workflowStore.getWorkflowByPath('workflows/Fast tab.json')
       ).not.toBeNull()
     )
-    await new Promise((resolve) => setTimeout(resolve))
+    await vi.advanceTimersByTimeAsync(0)
 
     // The superseded activation closed its own minted tab and bound nothing.
     expect(
@@ -6309,6 +8165,7 @@ describe('AgentPanelRoot workflow binding', () => {
     mockMessagesEndpoint('wf-42')
 
     await renderAndSend('work here')
+    vi.useFakeTimers()
 
     ws.emit('agent_active_tab', {
       workflow_id: 'wf-a',
@@ -6320,13 +8177,14 @@ describe('AgentPanelRoot workflow binding', () => {
       name: 'B tab',
       thread_id: 'th-1'
     })
+    await vi.advanceTimersByTimeAsync(500)
 
     await vi.waitFor(() =>
       expect(
         workflowStore.getWorkflowByPath('workflows/B tab.json')
       ).not.toBeNull()
     )
-    await new Promise((resolve) => setTimeout(resolve))
+    await vi.advanceTimersByTimeAsync(0)
 
     expect(workflowStore.getWorkflowByPath('workflows/A tab.json')).toBeNull()
     expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-b')).toBe(
@@ -8085,7 +9943,9 @@ describe('AgentPanelRoot workflow binding', () => {
       thread_id: null,
       workflow_id: null,
       client_message_id: 'client-message-1',
-      input_method: 'typed'
+      input_method: 'typed',
+      starter_prompt_id: null,
+      starter_prompt_click_id: null
     })
     expect(screen.getByText('VAEDecode #7')).toBeInTheDocument()
     expect(screen.queryByText(/KSampler/)).not.toBeInTheDocument()
@@ -8946,16 +10806,16 @@ describe('AgentPanelRoot workflow binding', () => {
 
     appMock.isGraphReady = true
     Object.assign(appMock.rootGraph, { id: 'graph-a' })
-    expect(mintPortWiringDeps.current?.getGraph()?.id).toBe('graph-a')
+    expect(docOpMinterDeps.current?.getGraph()?.id).toBe('graph-a')
 
     // A workflow switch rebuilds the canvas against a new root graph without
-    // touching agentPanelStore.enabled or isBoundWorkflowActive, so the mint
-    // port wiring's own doc-bound predicate (covered directly against the
-    // real `attachMintPortWiring` in `mintPortWiring.test.ts`) has to read
-    // this live graph at mint time to follow the swap.
+    // touching agentPanelStore.enabled or isBoundWorkflowActive, so the
+    // minter's own doc-bound predicate (covered directly against the real
+    // `attachDocOpMinter` in `docOpMinter.test.ts`) has to read this live
+    // graph at mint time to follow the swap.
     Object.assign(appMock.rootGraph, { id: 'graph-b' })
 
-    expect(mintPortWiringDeps.current?.getGraph()?.id).toBe('graph-b')
+    expect(docOpMinterDeps.current?.getGraph()?.id).toBe('graph-b')
   })
 
   it('wires getGraph() to null before the graph is ready', async () => {
@@ -8966,7 +10826,7 @@ describe('AgentPanelRoot workflow binding', () => {
     Object.assign(appMock.rootGraph, { id: 'graph-a' })
     appMock.isGraphReady = false
 
-    expect(mintPortWiringDeps.current?.getGraph()).toBeNull()
+    expect(docOpMinterDeps.current?.getGraph()).toBeNull()
   })
 
   it("reports the bound workflow's own stored root graph id once bound", async () => {
@@ -8976,7 +10836,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await renderAndSend('add an upscaler')
 
     await vi.waitFor(() =>
-      expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+      expect(docOpMinterDeps.current?.boundRootGraphId()).toBe(
         toRootGraphId('wf-42')
       )
     )
@@ -8985,7 +10845,7 @@ describe('AgentPanelRoot workflow binding', () => {
   it('leaves the bound root graph id null while no workflow is bound and active', () => {
     renderWithSelectedTarget()
 
-    expect(mintPortWiringDeps.current?.boundRootGraphId()).toBeNull()
+    expect(docOpMinterDeps.current?.boundRootGraphId()).toBeNull()
   })
 
   it("reports the newly bound workflow's root graph id after an active-tab switch, even though the previously bound workflow stayed correct while its tab was inactive", async () => {
@@ -8999,7 +10859,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await renderAndSend('start on A')
 
     await vi.waitFor(() =>
-      expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+      expect(docOpMinterDeps.current?.boundRootGraphId()).toBe(
         toRootGraphId('wf-a')
       )
     )
@@ -9008,7 +10868,7 @@ describe('AgentPanelRoot workflow binding', () => {
     // still report wf-a here, so this alone would not catch a regression.
     workflowStore.activeWorkflow = addTab('workflows/elsewhere.json')
     await nextTick()
-    expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+    expect(docOpMinterDeps.current?.boundRootGraphId()).toBe(
       toRootGraphId('wf-a')
     )
 
@@ -9018,7 +10878,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await vi.waitFor(() =>
       expect(workflowStore.activeWorkflow?.path).toBe(tabB.path)
     )
-    expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+    expect(docOpMinterDeps.current?.boundRootGraphId()).toBe(
       toRootGraphId('wf-b')
     )
   })
@@ -9030,7 +10890,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await renderAndSend('add an upscaler')
 
     await vi.waitFor(() =>
-      expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+      expect(docOpMinterDeps.current?.boundRootGraphId()).toBe(
         toRootGraphId('wf-42')
       )
     )
@@ -9039,7 +10899,7 @@ describe('AgentPanelRoot workflow binding', () => {
     // mints a fresh uuid) without boundWorkflowId itself ever changing.
     tab.activeState = fromPartial<ComfyWorkflowJSON>({ id: 'wf-42-rotated' })
 
-    expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+    expect(docOpMinterDeps.current?.boundRootGraphId()).toBe(
       toRootGraphId('wf-42-rotated')
     )
   })

@@ -16,6 +16,7 @@ import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
@@ -51,7 +52,6 @@ const CATALOG: WidgetCatalog = {
 }
 const SEED: WorkflowJSON = { nodes: [], links: [] }
 
-const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 const SEND_LABEL = enMessages.agent.send
 const STOP_LABEL = enMessages.agent.stop
 // The composer names itself with the rendered message, escapes resolved.
@@ -172,10 +172,7 @@ test.describe(
       })
 
       const panel = page.locator('#agent-panel-root')
-      await page
-        .getByRole('button', { name: OPEN_AGENT_LABEL, exact: true })
-        .click()
-      await expect(panel).toBeVisible({ timeout: 30_000 })
+      await new AgentPanel(page).open(30_000)
 
       let savedName: string | undefined
       await page.route('**/api/userdata/*', (route) => {
