@@ -30,7 +30,6 @@ test.describe(
       await expect(turnLock.userBubbles).toHaveText([PROMPT])
       await expect(turnLock.composer).toBeVisible()
 
-      test.fail()
       await expect(turnLock.stopButton).toBeVisible()
       await expect(turnLock.sendButton).toHaveCount(0)
     })
@@ -48,28 +47,15 @@ test.describe(
       // the guard below would skip the whole point of the test.
       await expect(turnLock.sendButton.or(turnLock.stopButton)).toBeVisible()
 
-      test.fail()
-      // The busy state is the test above; this one owns what happens to the
-      // message the user is invited to send. The send is guarded rather than
-      // unconditional because the two states are mutually exclusive: once the
-      // turn comes back marked running there is no Send to click, and an
-      // unconditional click would time out and report a hard failure instead of
-      // the unexpected pass that signals the fix.
-      if ((await turnLock.sendButton.count()) > 0) {
-        await turnLock.composer.fill('are you still there?')
-        await turnLock.sendButton.click({ timeout: 10_000 })
-        // Wait for the post to actually reach the fake server, so the assertion
-        // below cannot pass just by running before the alert renders.
-        await expect
-          .poll(() => turnLock.postAttempts())
-          .toBeGreaterThanOrEqual(2)
-        await expect(
-          turnLock.panel
-            .getByRole('alert')
-            .filter({ hasText: TURN_IN_PROGRESS_MESSAGE })
-        ).toHaveCount(0)
-        expect(turnLock.rejectedPosts()).toBe(0)
-      }
+      await expect(turnLock.stopButton).toBeVisible()
+      await expect(turnLock.sendButton).toHaveCount(0)
+      expect(turnLock.postAttempts()).toBe(1)
+      await expect(
+        turnLock.panel
+          .getByRole('alert')
+          .filter({ hasText: TURN_IN_PROGRESS_MESSAGE })
+      ).toHaveCount(0)
+      expect(turnLock.rejectedPosts()).toBe(0)
     })
   }
 )
