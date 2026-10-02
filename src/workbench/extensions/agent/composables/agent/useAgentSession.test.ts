@@ -1428,7 +1428,13 @@ describe('useAgentSession (v1 composition root)', () => {
     await vi.waitFor(() => expect(session.isStreaming.value).toBe(false))
     const assistant = session.entries.value.at(-1)
     assert(assistant?.role === 'assistant')
-    expect(assistant.parts).toEqual([])
+    expect(assistant.parts).toEqual([
+      {
+        type: 'notice',
+        level: 'error',
+        text: 'The agent could not complete this response.'
+      }
+    ])
   })
 
   it('(g6) a row still streaming on the first check is polled with backoff until it goes terminal', async () => {
