@@ -554,6 +554,17 @@ describe('useWidgetValueStore', () => {
       ).toBe(false)
     })
 
+    it('setOptions copies caller-owned options', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(seedA, state('number', 100))
+      const options = { max: 10 }
+
+      expect(store.setOptions(seedA, options)).toBe(true)
+      options.max = 20
+
+      expect(store.getWidget(seedA)?.options).toEqual({ max: 10 })
+    })
+
     it('maps legacy option updates to the visibility component', () => {
       const store = useWidgetValueStore()
       store.registerWidget(seedA, state('number', 100))
