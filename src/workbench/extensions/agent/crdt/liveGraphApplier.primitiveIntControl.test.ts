@@ -75,10 +75,10 @@ function setup() {
     doc.transact(edit)
     return applyCollected()
   }
-  const docWidgets = () => {
+  const docWidgets = (): Y.Map<unknown> => {
     const widgets = nodesMap(doc).get('143')?.get('widgets')
     if (!(widgets instanceof Y.Map)) throw new Error('not named storage')
-    return widgets as Y.Map<unknown>
+    return widgets
   }
   return { graph, doc, applyCollected, applyEdit, docWidgets }
 }
