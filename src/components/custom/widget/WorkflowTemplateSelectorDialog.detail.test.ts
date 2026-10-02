@@ -233,7 +233,11 @@ function renderDialog() {
             '<div><slot /><slot name="top-left" /><slot name="top-right" /></div>'
         },
         CardBottom: { template: '<div><slot /></div>' },
-        TemplatePreview: { template: '<div><slot name="overlay" /></div>' },
+        TemplatePreview: {
+          props: ['isHovered'],
+          template:
+            '<div :data-hovered="String(isHovered)"><slot name="overlay" /></div>'
+        },
         TemplateFilterControls: true,
         AsyncSearchInput: true,
         AccessibleTooltip: { template: '<div><slot /></div>' },
@@ -378,6 +382,25 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
     } else {
       expect(mocks.reportError).not.toHaveBeenCalled()
     }
+  })
+
+  it('tracks the pointer over the detail preview', async () => {
+    renderDialog()
+    const { user } = await clickTemplateCard()
+
+    const detail = await screen.findByRole('article', {
+      name: fixtures.template.title
+    })
+    // Detail renders one preview with no grid behind it, so this view owns the
+    // hover state the card grid owns for each card.
+    const preview = within(detail).getByTestId('detail-preview')
+    expect(preview).toHaveAttribute('data-hovered', 'false')
+
+    await user.hover(preview)
+    expect(preview).toHaveAttribute('data-hovered', 'true')
+
+    await user.unhover(preview)
+    expect(preview).toHaveAttribute('data-hovered', 'false')
   })
 
   it('opens directly outside Desktop without resolving model inventory', async () => {

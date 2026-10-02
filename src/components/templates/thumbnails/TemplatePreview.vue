@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { useElementHover } from '@vueuse/core'
-import { computed, useTemplateRef } from 'vue'
+import { computed } from 'vue'
 
 import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue'
 import CompareSliderThumbnail from '@/components/templates/thumbnails/CompareSliderThumbnail.vue'
@@ -19,34 +18,24 @@ const {
   overlayImageSrc: string
   alt: string
   getLogoUrl: (provider: string) => string
-  /**
-   * Set by a parent that already tracks hover, as the card grid does. Left
-   * out, the preview detects its own hover - which is what the detail view
-   * relies on, since it renders a single preview with no grid state.
-   */
-  isHovered?: boolean
+  /** Owned by the parent, which tracks what the pointer is over. */
+  isHovered: boolean
   hoverZoom?: number
 }>()
-const previewElement = useTemplateRef<HTMLElement>('previewElement')
-const internalHovered = useElementHover(previewElement)
-const hovered = computed(() => isHovered ?? internalHovered.value)
 const isVideo = computed(
   () => template.mediaType === 'video' || template.mediaSubtype === 'webp'
 )
 </script>
 
 <template>
-  <div
-    ref="previewElement"
-    class="relative size-full overflow-hidden rounded-lg"
-  >
+  <div class="relative size-full overflow-hidden rounded-lg">
     <AudioThumbnail v-if="template.mediaType === 'audio'" :src="baseImageSrc" />
     <CompareSliderThumbnail
       v-else-if="template.thumbnailVariant === 'compareSlider'"
       :base-image-src="baseImageSrc"
       :overlay-image-src="overlayImageSrc"
       :alt="alt"
-      :is-hovered="hovered"
+      :is-hovered="isHovered"
       :is-video="isVideo"
     />
     <HoverDissolveThumbnail
@@ -54,14 +43,14 @@ const isVideo = computed(
       :base-image-src="baseImageSrc"
       :overlay-image-src="overlayImageSrc"
       :alt="alt"
-      :is-hovered="hovered"
+      :is-hovered="isHovered"
       :is-video="isVideo"
     />
     <DefaultThumbnail
       v-else
       :src="baseImageSrc"
       :alt="alt"
-      :is-hovered="hovered"
+      :is-hovered="isHovered"
       :is-video="isVideo"
       :hover-zoom="hoverZoom"
     />
