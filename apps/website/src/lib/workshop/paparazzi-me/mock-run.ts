@@ -32,7 +32,7 @@ export function faceCrop(url: string): FaceCrop {
 }
 
 /** The example photo for the example face with the example star in a preset scene. */
-export function preparedResult(request: PaparazziRequest): string | undefined {
+function preparedResult(request: PaparazziRequest): string | undefined {
   if (
     request.faceUrl !== PAPARAZZI_EXAMPLE.url ||
     request.celebrity !== DEFAULT_SETUP.celebrity ||
