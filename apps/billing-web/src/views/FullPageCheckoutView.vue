@@ -8,11 +8,7 @@ import {
   isAnnualDuration
 } from '@comfyorg/account-ui/billing/checkout'
 
-import {
-  PENDING_PAYMENT_CANCEL_AVAILABLE,
-  isLocked,
-  submitPhaseOf
-} from '@/checkout/checkoutPage'
+import { isLocked, submitPhaseOf } from '@/checkout/checkoutPage'
 import { endingOf } from '@/checkout/endingScreen'
 import type { EndingPlan } from '@/components/fullPage/EndingPlanCard.vue'
 import CheckoutEnding from '@/components/fullPage/CheckoutEnding.vue'
@@ -57,6 +53,7 @@ const {
   pay,
   reopening,
   continueVerification,
+  cancelPayment,
   reconcile
 } = useFullPageCheckout()
 
@@ -123,9 +120,6 @@ const breakdown = computed(() =>
 )
 
 const locked = computed(() => isLocked(page.value))
-
-/** The server cannot cancel a pending payment yet; the click has nowhere honest to go. */
-function cancelPayment() {}
 
 /**
  * The plan a settled payment bought: as this page's own quote priced it, or,
@@ -218,7 +212,6 @@ function viewPlans() {
         :publishable-key="stripeKey ?? ''"
         :can-pay="canPay"
         :reopening
-        :can-cancel="PENDING_PAYMENT_CANCEL_AVAILABLE"
         :keep-subscription="keepSubscription"
         :saved-methods="savedMethods"
         @phase="onPaymentPhase"

@@ -19,6 +19,7 @@ import type {
 import {
   RESOLVING,
   awaitingServer,
+  cancelTarget,
   challengeToReopen,
   isChallengeReopenable,
   isLocked,
@@ -1514,7 +1515,11 @@ describe('submitPhaseOf', () => {
     {
       name: 'a Pay whose operation asks for a challenge',
       page: capturing({ kind: 'sent', operation: challengedOperation() }),
-      phase: { kind: 'challenge', operation: challengedOperation() }
+      phase: {
+        kind: 'challenge',
+        operation: challengedOperation(),
+        cancel: 'offered'
+      }
     },
     {
       name: 'a Pay whose operation is processing',
@@ -1536,7 +1541,57 @@ describe('submitPhaseOf', () => {
     {
       name: 'waiting over a challenge',
       page: { kind: 'waiting', operation: challengedOperation() },
-      phase: { kind: 'challenge', operation: challengedOperation() }
+      phase: {
+        kind: 'challenge',
+        operation: challengedOperation(),
+        cancel: 'offered'
+      }
+    },
+    {
+      name: 'a top-up waiting over a challenge, which the server never cancels',
+      page: {
+        kind: 'waiting',
+        operation: { ...challengedOperation(), kind: 'topup' }
+      },
+      phase: {
+        kind: 'challenge',
+        operation: { ...challengedOperation(), kind: 'topup' }
+      }
+    },
+    {
+      name: 'a challenge whose cancel the server is settling',
+      page: capturing({
+        kind: 'sent',
+        operation: challengedOperation(),
+        cancel: 'canceling'
+      }),
+      phase: {
+        kind: 'challenge',
+        operation: challengedOperation(),
+        cancel: 'canceling'
+      }
+    },
+    {
+      name: 'a challenge the server would not cancel',
+      page: {
+        kind: 'waiting',
+        operation: challengedOperation(),
+        cancel: 'NOT_CANCELABLE'
+      },
+      phase: {
+        kind: 'challenge',
+        operation: challengedOperation(),
+        cancel: 'not_cancelable'
+      }
+    },
+    {
+      name: 'a challenge whose payment won the race to cancel it',
+      page: capturing({
+        kind: 'sent',
+        operation: challengedOperation(),
+        cancel: 'PAYMENT_IN_FLIGHT'
+      }),
+      phase: { kind: 'processing' }
     },
     {
       name: 'waiting over money the bank has not answered for',
@@ -1798,5 +1853,155 @@ describe('reduceCheckoutPage through a challenge', () => {
     }
   ])('accepts Pay after $name: $pay', ({ events, pay }) => {
     expect(railAcceptsPay(replay(events))).toBe(pay)
+  })
+})
+
+describe('reduceCheckoutPage through Cancel payment', () => {
+  const challenged = [...live, submitted, changed(challengedOperation())]
+  const cancel: CheckoutPageEvent = { type: 'cancelRequested' }
+  const canceledHere: CheckoutPageEvent = {
+    type: 'paymentCanceled',
+    operationId: 'op_3ds'
+  }
+  const refusedAs = (
+    code: 'NOT_CANCELABLE' | 'PAYMENT_IN_FLIGHT'
+  ): CheckoutPageEvent => ({ type: 'cancelRefused', code })
+
+  it.for<{ name: string; events: CheckoutPageEvent[]; expected: CheckoutPage }>(
+    [
+      {
+        name: "this page's own Pay holds Cancel until the server answers",
+        events: [...challenged, cancel],
+        expected: capturing({
+          kind: 'sent',
+          operation: challengedOperation(),
+          cancel: 'canceling'
+        })
+      },
+      {
+        name: 'a second click while a cancel is unanswered',
+        events: [...challenged, cancel, cancel],
+        expected: capturing({
+          kind: 'sent',
+          operation: challengedOperation(),
+          cancel: 'canceling'
+        })
+      },
+      {
+        name: 'a cancel the server settled goes back to the form, as typed, with no card',
+        events: [...challenged, cancel, canceledHere],
+        expected: capturing({ kind: 'idle' })
+      },
+      {
+        name: "a cancel settled after the operation's own verdict drops that card",
+        events: [
+          ...challenged,
+          cancel,
+          changed(refusedChallenge(), notCompleted),
+          canceledHere
+        ],
+        expected: capturing({ kind: 'idle' })
+      },
+      {
+        name: 'a payment that won the race keeps the form locked and follows the operation',
+        events: [...challenged, cancel, refusedAs('PAYMENT_IN_FLIGHT')],
+        expected: capturing({
+          kind: 'sent',
+          operation: challengedOperation(),
+          cancel: 'PAYMENT_IN_FLIGHT'
+        })
+      },
+      {
+        name: 'a payment that won the race still lands on its success',
+        events: [
+          ...challenged,
+          cancel,
+          refusedAs('PAYMENT_IN_FLIGHT'),
+          changed(succeededOperation('op_3ds'))
+        ],
+        expected: {
+          kind: 'terminal',
+          operation: succeededOperation('op_3ds'),
+          attribution: 'started'
+        }
+      },
+      {
+        name: 'a cancel that got no answer offers Cancel again',
+        events: [...challenged, cancel, { type: 'cancelFailed' }],
+        expected: capturing({
+          kind: 'sent',
+          operation: challengedOperation(),
+          cancel: undefined
+        })
+      },
+      {
+        name: 'a page that arrived on the challenge resolves a fresh form once canceled',
+        events: [reconciled(challengedOperation()), cancel, canceledHere],
+        expected: RESOLVING
+      },
+      {
+        name: 'a refusal keeps a page that arrived on the challenge waiting',
+        events: [
+          reconciled(challengedOperation()),
+          cancel,
+          refusedAs('NOT_CANCELABLE')
+        ],
+        expected: {
+          kind: 'waiting',
+          operation: challengedOperation(),
+          cancel: 'NOT_CANCELABLE'
+        }
+      },
+      {
+        name: 'Cancel on a top-up challenge sends nothing',
+        events: [
+          reconciled({ ...challengedOperation(), kind: 'topup' }),
+          cancel
+        ],
+        expected: {
+          kind: 'waiting',
+          operation: { ...challengedOperation(), kind: 'topup' }
+        }
+      },
+      {
+        name: 'Cancel once the bank has moved on to processing sends nothing',
+        events: [
+          ...live,
+          submitted,
+          changed({
+            ...pendingOperation('op_3ds'),
+            authenticationState: 'processing'
+          }),
+          cancel
+        ],
+        expected: capturing({
+          kind: 'sent',
+          operation: {
+            ...pendingOperation('op_3ds'),
+            authenticationState: 'processing'
+          }
+        })
+      }
+    ]
+  )('$name', ({ events, expected }) => {
+    expect(replay(events)).toEqual(expected)
+  })
+
+  it.for<{ name: string; events: CheckoutPageEvent[]; target?: string }>([
+    { name: 'a challenge still pending', events: challenged, target: 'op_3ds' },
+    { name: 'a cancel already asked', events: [...challenged, cancel] },
+    {
+      name: 'a cancel the server refused',
+      events: [...challenged, cancel, refusedAs('NOT_CANCELABLE')]
+    },
+    { name: 'a Pay with no operation yet', events: [...live, submitted] }
+  ])('cancels $target on $name', ({ events, target }) => {
+    expect(cancelTarget(replay(events))).toBe(target)
+  })
+
+  it('accepts Pay again once the server canceled the challenge', () => {
+    expect(railAcceptsPay(replay([...challenged, cancel, canceledHere]))).toBe(
+      true
+    )
   })
 })

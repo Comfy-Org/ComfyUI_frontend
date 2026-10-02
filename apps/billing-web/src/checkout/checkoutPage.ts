@@ -1,6 +1,7 @@
 import type {
   BillingOperationState,
   BillingPlansData,
+  CancelRefusalCode,
   CapabilityDenialReason,
   PaymentReasonKey,
   PendingBillingOperation,
@@ -73,6 +74,12 @@ export type InlineOutcome =
 export type Reactivation = 'not_required' | 'required' | 'invalid' | 'confirmed'
 
 /**
+ * Cancel payment on a challenge still pending. `canceling` from the click
+ * until the server settles it, the code once the server kept the payment.
+ */
+export type PaymentCancel = 'canceling' | CancelRefusalCode
+
+/**
  * `sent` from the Pay click until the attempt settles, so an operation the
  * lifecycle publishes meanwhile is known to be this page's own and is kept
  * here. `redirectMethod` names a method that authenticates on its own site
@@ -85,6 +92,7 @@ export type Attempt =
       readonly kind: 'sent'
       readonly redirectMethod?: string
       readonly operation?: PendingBillingOperation
+      readonly cancel?: PaymentCancel
     }
 
 const IDLE: Attempt = { kind: 'idle' }
@@ -163,6 +171,7 @@ export type CheckoutPage =
       readonly operation: PendingBillingOperation
       readonly sibling?: true
       readonly rail?: PaymentRail
+      readonly cancel?: PaymentCancel
     }
   | {
       readonly kind: 'unconfirmed'
@@ -263,6 +272,14 @@ export type CheckoutPageEvent =
       readonly operation: BillingOperationState
       readonly outcome?: OperationOutcome
     }
+  /** Cancel payment clicked on a challenge still pending. */
+  | { readonly type: 'cancelRequested' }
+  /** The server dropped the operation; nothing was charged. */
+  | { readonly type: 'paymentCanceled'; readonly operationId: string }
+  /** The server kept the payment it was asked to cancel. */
+  | { readonly type: 'cancelRefused'; readonly code: CancelRefusalCode }
+  /** The cancel got no answer that names the payment's fate. */
+  | { readonly type: 'cancelFailed' }
 
 export const RESOLVING: CheckoutPage = { kind: 'resolving' }
 
@@ -432,6 +449,83 @@ export function reduceCheckoutPage(
         : followed(page, event.operation, event.outcome)
     case 'operationChanged':
       return followed(page, event.operation, event.outcome)
+    case 'cancelRequested':
+      return cancelTarget(page) === undefined
+        ? page
+        : withCancel(page, 'canceling')
+    case 'cancelRefused':
+      return isCanceling(page) ? withCancel(page, event.code) : page
+    case 'cancelFailed':
+      return isCanceling(page) ? withCancel(page, undefined) : page
+    case 'paymentCanceled':
+      return canceled(page, event.operationId)
+  }
+}
+
+function cancelOf(page: CheckoutPage): PaymentCancel | undefined {
+  if (page.kind === 'waiting') return page.cancel
+  return page.kind === 'capture' && page.attempt.kind === 'sent'
+    ? page.attempt.cancel
+    : undefined
+}
+
+const isCanceling = (page: CheckoutPage) => cancelOf(page) === 'canceling'
+
+function withCancel(
+  page: CheckoutPage,
+  cancel: PaymentCancel | undefined
+): CheckoutPage {
+  if (page.kind === 'waiting') return { ...page, cancel }
+  if (page.kind !== 'capture' || page.attempt.kind !== 'sent') return page
+  return { ...page, attempt: { ...page.attempt, cancel } }
+}
+
+/**
+ * The operation Cancel payment would cancel: a plan payment whose challenge
+ * is still pending, with no cancel already asked or refused.
+ */
+export function cancelTarget(page: CheckoutPage): string | undefined {
+  if (page.kind !== 'capture' && page.kind !== 'waiting') return undefined
+  const phase = submitPhaseOf(page)
+  return phase.kind === 'challenge' && phase.cancel === 'offered'
+    ? phase.operation.id
+    : undefined
+}
+
+/** A card the canceled operation earned on its way out is not a verdict to show. */
+function namesOperation(
+  outcome: InlineOutcome | undefined,
+  operationId: string
+): boolean {
+  return (
+    outcome !== undefined &&
+    'operationId' in outcome &&
+    outcome.operationId === operationId
+  )
+}
+
+/**
+ * Cancel is navigation, never an outcome: this page's own Pay goes back to
+ * the form it was sent from, as typed; a page that arrived on the money
+ * resolves a fresh one.
+ */
+function canceled(page: CheckoutPage, operationId: string): CheckoutPage {
+  switch (page.kind) {
+    case 'waiting':
+      return page.operation.id === operationId ? RESOLVING : page
+    case 'resolving':
+      return namesOperation(page.outcome, operationId) ? RESOLVING : page
+    case 'capture':
+      if (
+        page.attempt.kind === 'sent' &&
+        page.attempt.operation?.id === operationId
+      )
+        return { ...page, attempt: IDLE }
+      return namesOperation(page.outcome, operationId)
+        ? { ...page, outcome: undefined }
+        : page
+    default:
+      return page
   }
 }
 
@@ -940,24 +1034,61 @@ export type SubmitPhase =
   | { readonly kind: 'capture' }
   | { readonly kind: 'unknown' }
   | { readonly kind: 'processing' }
-  | { readonly kind: 'challenge'; readonly operation: PendingBillingOperation }
+  | {
+      readonly kind: 'challenge'
+      readonly operation: PendingBillingOperation
+      readonly cancel?: CancelOffer
+    }
   | { readonly kind: 'redirecting'; readonly method: string }
+
+/**
+ * What Cancel payment offers on a challenge. Absent for an operation the
+ * server never cancels (a top-up), so the button never shows there.
+ */
+export type CancelOffer = 'offered' | 'canceling' | 'not_cancelable'
 
 export function submitPhaseOf(
   page: Extract<CheckoutPage, { kind: 'resolving' | 'capture' | 'waiting' }>
 ): SubmitPhase {
-  if (page.kind === 'waiting') return phaseOver(page.operation)
+  if (page.kind === 'waiting') return phaseOver(page.operation, page.cancel)
   if (page.kind !== 'capture' || page.attempt.kind === 'idle')
     return { kind: 'capture' }
-  const { redirectMethod, operation } = page.attempt
+  const { redirectMethod, operation, cancel } = page.attempt
   if (redirectMethod !== undefined)
     return { kind: 'redirecting', method: redirectMethod }
-  return operation === undefined ? { kind: 'unknown' } : phaseOver(operation)
+  return operation === undefined
+    ? { kind: 'unknown' }
+    : phaseOver(operation, cancel)
 }
 
-function phaseOver(operation: PendingBillingOperation): SubmitPhase {
-  if (isChallengePending(operation)) return { kind: 'challenge', operation }
+/** A payment the server would not cancel because it is already moving is Phase B on its word. */
+function phaseOver(
+  operation: PendingBillingOperation,
+  cancel: PaymentCancel | undefined
+): SubmitPhase {
+  if (cancel === 'PAYMENT_IN_FLIGHT') return { kind: 'processing' }
+  if (isChallengePending(operation))
+    return {
+      kind: 'challenge',
+      operation,
+      ...cancelOfferOf(operation, cancel)
+    }
   return isProcessing(operation) ? { kind: 'processing' } : { kind: 'unknown' }
+}
+
+const CANCEL_OFFER: Readonly<
+  Record<Exclude<PaymentCancel, 'PAYMENT_IN_FLIGHT'>, CancelOffer>
+> = {
+  canceling: 'canceling',
+  NOT_CANCELABLE: 'not_cancelable'
+}
+
+function cancelOfferOf(
+  operation: PendingBillingOperation,
+  cancel: Exclude<PaymentCancel, 'PAYMENT_IN_FLIGHT'> | undefined
+): { readonly cancel?: CancelOffer } {
+  if (operation.kind !== 'subscription') return {}
+  return { cancel: cancel === undefined ? 'offered' : CANCEL_OFFER[cancel] }
 }
 
 /** Past the bank's challenge on the server's word, so it can no longer be called back. */
@@ -1006,13 +1137,6 @@ export function challengeToReopen(page: CheckoutPage): string | undefined {
     ? operation.challenge.clientSecret
     : undefined
 }
-
-/**
- * No endpoint cancels a pending payment yet (BE gap named on FE-3022), so
- * Cancel payment stays hidden rather than claiming a cancel the server
- * never made. Flip this once the endpoint lands and wire the click to it.
- */
-export const PENDING_PAYMENT_CANCEL_AVAILABLE = false
 
 /**
  * What the payment column shows for a rail. With no saved method to fall

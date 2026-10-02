@@ -23,7 +23,6 @@ const {
   disabled,
   loading = false,
   phase,
-  canCancel = false,
   locked = false,
   reopening = false,
   outcome,
@@ -37,8 +36,6 @@ const {
     loading?: boolean
     /** The submit area's phase; only the visible pay action carries one, so the page has one live region. */
     phase?: SubmitPhase
-    /** Cancel payment renders only once the server can cancel a pending payment. */
-    canCancel?: boolean
     /** Money is on its way, so the consent it was sent with stands. */
     locked?: boolean
     /** The page is re-opening the challenge on its own; offering it too would flash. */
@@ -115,6 +112,12 @@ const challenge = computed(() =>
   phase?.kind === 'challenge' ? phase.operation : undefined
 )
 
+const cancel = computed(() =>
+  phase?.kind === 'challenge' ? phase.cancel : undefined
+)
+
+const canceling = computed(() => cancel.value === 'canceling')
+
 /** A challenge the page is not showing, and is not about to, turns Pay into the one way back to it. */
 const reopenable = computed(
   () =>
@@ -127,7 +130,7 @@ const PRIMARY_BUTTON =
   'flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-base-foreground px-4 text-sm font-semibold text-base-background transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-secondary-background focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40'
 
 const SECONDARY_BUTTON =
-  'flex h-10 w-full cursor-pointer items-center justify-center rounded-lg bg-tertiary-background px-4 text-sm font-semibold text-base-foreground hover:bg-tertiary-background-hover focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:outline-none'
+  'flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-tertiary-background px-4 text-sm font-semibold text-base-foreground hover:bg-tertiary-background-hover focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40'
 </script>
 
 <template>
@@ -161,6 +164,7 @@ const SECONDARY_BUTTON =
       <button
         v-if="reopenable"
         type="button"
+        :disabled="canceling"
         :class="PRIMARY_BUTTON"
         @click="emit('continueVerification')"
       >
@@ -184,13 +188,32 @@ const SECONDARY_BUTTON =
         </span>
       </button>
       <button
-        v-if="challenge && canCancel"
+        v-if="cancel === 'offered' || canceling"
         type="button"
+        :disabled="canceling"
+        :aria-busy="canceling"
         :class="SECONDARY_BUTTON"
         @click="emit('cancel')"
       >
-        {{ t('checkout.fullPage.phase.cancel') }}
+        <i
+          v-if="canceling"
+          class="icon-[lucide--loader-circle] size-4 motion-safe:animate-spin"
+          aria-hidden="true"
+        />
+        {{
+          t(
+            canceling
+              ? 'checkout.fullPage.phase.canceling'
+              : 'checkout.fullPage.phase.cancel'
+          )
+        }}
       </button>
+      <p
+        v-else-if="cancel === 'not_cancelable'"
+        class="m-0 text-center text-xs/4 text-muted-foreground"
+      >
+        {{ t('checkout.fullPage.phase.notCancelable') }}
+      </p>
       <a
         v-if="supportLink"
         :href="supportLink"
