@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
@@ -45,10 +45,10 @@ describe('importCustomExtension', () => {
 
     // The rejection is the real one from an unresolvable dynamic import, not a
     // stub, so this covers the actual catch rather than a simulated one.
-    expect(failure).toBeDefined()
-    expect(failure!.ext).toBe(BROKEN)
-    expect(failure!.error).toBeInstanceOf(Error)
-    expect((failure!.error as Error).message).toContain(BROKEN)
+    assert.exists(failure)
+    expect(failure.ext).toBe(BROKEN)
+    assert(failure.error instanceof Error)
+    expect(failure.error.message).toContain(BROKEN)
   })
 
   it('does not report per extension', async () => {
@@ -84,13 +84,14 @@ describe('reportExtensionLoadFailures', () => {
 
     expect(reportError).toHaveBeenCalledOnce()
     const [cause, options] = vi.mocked(reportError).mock.calls[0]
+    assert(cause instanceof Error)
     // The paths must be in the message, not only in tags: reportError's console
     // line prints the error and never options.tags, and on DEV and self-hosted
     // installs the console is the only live sink.
-    expect((cause as Error).message).toBe(
+    expect(cause.message).toBe(
       'Error loading 2 extension(s): /extensions/comfyui-broken/main.js, /extensions/b/b.js'
     )
-    expect((cause as Error).cause).toBe(failures[0].error)
+    expect(cause.cause).toBe(failures[0].error)
     expect(options).toMatchObject({
       errorType: 'extension_load_failed',
       surface: 'platform',
@@ -117,9 +118,10 @@ describe('reportExtensionLoadFailures', () => {
     reportExtensionLoadFailures(failures)
 
     const [cause, options] = vi.mocked(reportError).mock.calls[0]
-    expect((cause as Error).message).toContain('Error loading 13 extension(s)')
-    expect((cause as Error).message).toContain('(+3 more)')
-    expect((cause as Error).message).not.toContain('pack-10')
+    assert(cause instanceof Error)
+    expect(cause.message).toContain('Error loading 13 extension(s)')
+    expect(cause.message).toContain('(+3 more)')
+    expect(cause.message).not.toContain('pack-10')
     expect(options.tags).toMatchObject({ failed_extension_count: 13 })
     expect(options.context?.failures).toHaveLength(10)
   })
