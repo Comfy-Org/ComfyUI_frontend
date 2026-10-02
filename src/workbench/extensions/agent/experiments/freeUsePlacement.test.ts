@@ -40,8 +40,10 @@ describe('useFreeUsePlacement', () => {
   })
 
   it.for([undefined, 'unknown'])('keeps control for %s', async (value) => {
+    const flag =
+      'agent-free-use-message-placement' satisfies keyof typeof remoteConfig.value
     remoteConfig.value = {
-      'agent-free-use-message-placement': value as never
+      [flag]: value as (typeof remoteConfig.value)[typeof flag]
     }
     authenticatedRemoteConfigState.value = 'authenticated'
     const { variant } = useFreeUsePlacement()
