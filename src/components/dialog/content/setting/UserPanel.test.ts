@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -5,18 +6,28 @@ import { computed, defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
+import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
 import type { WebSessionCommandResult } from '@comfyorg/account-core/webSession'
+import type { WebSessionIdentityState } from '@comfyorg/account-core/webSessionIdentity'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { api } from '@/scripts/api'
 import { useDialogService } from '@/services/dialogService'
 
 import UserPanel from './UserPanel.vue'
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/platform/auth/firebaseIdentity'), () => ({
+  firebaseIdentity: fromPartial<FirebaseIdentity>({
+    onUserChanged: () => () => {},
+    onTokenChanged: () => () => {},
+    currentUser: () => null
+  })
+}))
 
 const i18n = createI18n({
   legacy: false,
@@ -108,24 +119,56 @@ describe('UserPanel update password', () => {
 describe('UserPanel sign out of all devices', () => {
   const signOutEverywhere = { name: 'Sign out of all devices' }
 
+  beforeEach(() => {
+    vi.spyOn(api, 'reconnectSocket').mockResolvedValue()
+  })
+
+  const signedInSession: WebSessionIdentityState = {
+    phase: 'signed_in',
+    session: {
+      user: {
+        id: 'user-a',
+        email: 'user-a@example.com',
+        emailVerified: true,
+        signInProvider: 'google.com'
+      },
+      csrfToken: 'csrf-user-a',
+      expiresAt: Date.now() + 86_400_000,
+      absoluteExpiresAt: Date.now() + 604_800_000
+    }
+  }
+
   function onWebSession(revokeAll: WebSessionCommandResult) {
     const webSession = useCloudWebSessionStore()
-    vi.spyOn(webSession, 'isActive').mockReturnValue(true)
+    webSession.state = signedInSession
     return vi
       .spyOn(webSession, 'revokeAllSessions')
       .mockResolvedValue(revokeAll)
   }
 
-  it.for([
-    { name: 'the web session is off', sessionOn: false, firebaseLogin: true },
+  it.for<{
+    name: string
+    session: WebSessionIdentityState
+    firebaseLogin: boolean
+  }>([
+    {
+      name: 'the web session is off',
+      session: { phase: 'idle' },
+      firebaseLogin: true
+    },
+    {
+      name: 'the web session is signed out',
+      session: { phase: 'signed_out', outcome: 'signed_out' },
+      firebaseLogin: true
+    },
     {
       name: 'the tab has no Firebase login to prove identity',
-      sessionOn: true,
+      session: signedInSession,
       firebaseLogin: false
     }
-  ])('renders nothing when $name', async ({ sessionOn, firebaseLogin }) => {
+  ])('renders nothing when $name', async ({ session, firebaseLogin }) => {
     signInAsEmailUser({ hasFirebaseLogin: firebaseLogin })
-    vi.spyOn(useCloudWebSessionStore(), 'isActive').mockReturnValue(sessionOn)
+    useCloudWebSessionStore().state = session
     await renderPanel()
 
     expect(screen.getByRole('button', { name: 'Log Out' })).toBeVisible()

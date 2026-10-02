@@ -1,6 +1,6 @@
 <template>
   <Button
-    v-if="webSession.isActive() && !needsFirebaseSignIn"
+    v-if="webSession.signedInUser && !needsFirebaseSignIn"
     variant="destructive-textonly"
     :loading="signingOut"
     @click="signOutEverywhere"
