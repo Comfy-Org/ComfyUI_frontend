@@ -364,7 +364,7 @@ export class AgentFollowerHostSocket {
   }
 
   private preMintResult(opsResult: ParsedWireBatch): HostFrame | null {
-    if (!opsResult.ok || opsResult.ops.length === 0) return null
+    if (!opsResult.ok || !isValidDocOpsBatch(opsResult.ops)) return null
     return {
       type: 'doc_ops_result',
       data: {

@@ -176,4 +176,50 @@ describe('AgentFollowerHostSocket human doc_ops handling', () => {
       })
     }
   )
+
+  it('rejects duplicate op ids before consuming the pre-mint refusal', async () => {
+    const host = new HostDoc(
+      WORKFLOW_ID,
+      { nodes: [], links: [] },
+      { types: {} }
+    )
+    const { page, emitClientFrame, sentFrames } = fakeRoutedPage()
+    const hostSocket = new AgentFollowerHostSocket(
+      page,
+      WORKFLOW_ID,
+      host,
+      'sid-1',
+      'pre_mint_once'
+    )
+    await hostSocket.install()
+
+    emitClientFrame({
+      type: 'doc_ops',
+      data: {
+        workflow_id: WORKFLOW_ID,
+        ops: [validOp('a'.repeat(32), 1), validOp('a'.repeat(32), 2)]
+      }
+    })
+    emitClientFrame({
+      type: 'doc_ops',
+      data: {
+        workflow_id: WORKFLOW_ID,
+        ops: [validOp('b'.repeat(32), 3)]
+      }
+    })
+
+    expect(
+      sentFrames()
+        .slice(1)
+        .map(({ type }) => type)
+    ).toEqual(['doc_ops_result', 'doc_ops_result', 'doc_reset'])
+    expect(sentFrames()[1].data).toMatchObject({
+      ok: false,
+      code: 'invalid_frame'
+    })
+    expect(sentFrames()[2].data).toMatchObject({
+      ok: false,
+      failed: { code: 'pre_mint', op_id: 'b'.repeat(32) }
+    })
+  })
 })
