@@ -5,20 +5,10 @@ import ModelsPage from '../../components/workshop/ModelsPage.vue'
 import ModelsShowcase from '../../components/models/ModelsShowcase.astro'
 import { t } from '../../i18n/translations'
 import { modelsHubMeta } from './models-hub-meta'
+import { modelsByProvider } from './models-directory'
 
 const { title, description } = modelsHubMeta(workshopModels)
-const byName = workshopModels.toSorted((a, b) =>
-  a.name.localeCompare(b.name, 'en', { numeric: true })
-)
-const unnamedProvider = t('workshop.filter.other')
-const providerOf = (model: (typeof byName)[number]) =>
-  model.provider ?? unnamedProvider
-const directory = [...new Set(byName.map(providerOf))]
-  .toSorted((a, b) => a.localeCompare(b, 'en'))
-  .map((provider) => ({
-    provider,
-    models: byName.filter((model) => providerOf(model) === provider)
-  }))
+const directory = modelsByProvider(workshopModels, t('workshop.filter.other'))
 ---
 
 <BaseLayout {title} {description} preloadFonts={['Medium']}>
