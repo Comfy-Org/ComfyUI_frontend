@@ -17,6 +17,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [AUTH-BILLING-0014](AUTH-BILLING-0014-billing-attempt-context-and-workspace-scope.md)                            | Billing Attempt Context and Workspace Scope                       | Proposed | 2026-07-28 |
 | [AUTH-CREDENTIALS-0011](AUTH-CREDENTIALS-0011-cloud-credential-lifecycle-invariants.md)                          | Cloud Credential Lifecycle Invariants                             | Proposed | 2026-07-09 |
 | [BILLING-CHECKOUT-0031](BILLING-CHECKOUT-0031-checkout-journey-instrumentation-contract.md)                      | Checkout Journey Instrumentation Contract                         | Proposed | 2026-09-09 |
+| [CANVAS-VIEWPORT-0009](CANVAS-VIEWPORT-0009-canvas-viewport-system.md)                                           | Canvas Viewport System                                            | Proposed | 2026-09-28 |
 | [CRDT-AUTHORITY-0035](CRDT-AUTHORITY-0035-human-canvas-authority-and-draft-reconciliation.md)                    | Human Canvas Authority and Draft Reconciliation                   | Proposed | 2026-09-19 |
 | [CRDT-FOLLOWER-0025](CRDT-FOLLOWER-0025-in-app-agent-crdt-follower-and-distribution-resolved-boundaries.md)      | In-App Agent CRDT Follower and Distribution-Resolved Boundaries   | Proposed | 2026-08-21 |
 | [CRDT-INPUTS-0030](CRDT-INPUTS-0030-preserve-named-input-targets.md)                                             | Project Document Inputs onto Reordered Live Nodes by Name         | Proposed | 2026-09-09 |

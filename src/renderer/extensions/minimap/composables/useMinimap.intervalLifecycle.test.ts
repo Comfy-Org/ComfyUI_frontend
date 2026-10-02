@@ -7,11 +7,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, shallowRef } from 'vue'
 
+import { createMockLinks } from '@/utils/__tests__/litegraphTestUtils'
 import {
-  createMockCanvas2DContext,
-  createMockLinks,
+  createMockCanvasRenderingContext2D,
   createMockMinimapCanvas
-} from '@/utils/__tests__/litegraphTestUtils'
+} from '@/utils/__tests__/canvasTestUtils'
 
 const mockNodes = [
   {
@@ -140,7 +140,7 @@ describe('useMinimap change-detection interval', () => {
 
   beforeEach(() => {
     vi.useFakeTimers()
-    context = createMockCanvas2DContext()
+    context = createMockCanvasRenderingContext2D()
     mockNodes[0].pos = [0, 0]
   })
 

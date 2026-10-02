@@ -11,7 +11,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import { createMockCanvas2DContext } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
 type GeometryCounts = {
   contentLookups: number
@@ -204,7 +204,7 @@ function createRenderer(nodeCount: number): {
   context: CanvasRenderingContext2D
   nodes: LGraphNode[]
 } {
-  const context = createMockCanvas2DContext({
+  const context = createMockCanvasRenderingContext2D({
     bezierCurveTo: vi.fn(),
     clip: vi.fn(),
     closePath: vi.fn(),
