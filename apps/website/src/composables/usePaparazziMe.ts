@@ -21,7 +21,7 @@ import {
 } from '../lib/workshop/paparazzi-me/setup'
 import { useCinematicPopover } from './useCinematicPopover'
 
-export interface PaparazziImage {
+interface PaparazziImage {
   readonly url: string
   readonly name: string
   readonly width: number
