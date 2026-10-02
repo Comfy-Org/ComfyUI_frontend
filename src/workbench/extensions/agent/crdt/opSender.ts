@@ -634,8 +634,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
 
   /**
    * Chunk one admission group into wire batches at `insertionIndex`, the queue
-   * position the group held when it was admitted. Delivery stays parked until
-   * the seal unwinds, so a reentrant serialization callback cannot overtake it.
+   * position the group held when it was admitted.
    */
   function sealGroup(
     { workflowId, ops }: { workflowId: string; ops: Op[] },
