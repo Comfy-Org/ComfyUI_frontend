@@ -1382,6 +1382,13 @@
       "downloadLocal": "下载桌面版",
       "heading": "在你的硬件上运行。\n永久免费。",
       "installGithub": "从 GITHUB 安装",
+      "installers": {
+        "label": "全部安装包",
+        "windowsX64": "Windows x64",
+        "windowsArm64": "Windows ARM64（仅限 NVIDIA）",
+        "macArm64": "macOS（Apple 芯片）",
+        "linuxX64": "Linux x64（AppImage）"
+      },
       "subtitle": "完整的 ComfyUI 引擎——开源、快速、可扩展，随你运行。"
     },
     "meta": {
@@ -4293,6 +4300,8 @@
       "returnMetaDescription": "正在返回发起结账的页面。",
       "returnMetaTitle": "正在返回模型页面 - Comfy",
       "returnTitle": "正在返回模型页面",
+      "subscriptionPrompt": "想每月获得更多积分？",
+      "subscriptionLink": "查看 Cloud 订阅方案",
       "title": "添加积分",
       "waitingBody": "你已从结账页返回。新积分到账后，此页面会自动更新。",
       "waitingPolling": "正在查询积分…",

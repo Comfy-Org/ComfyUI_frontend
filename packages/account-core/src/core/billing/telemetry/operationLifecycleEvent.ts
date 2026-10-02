@@ -1,7 +1,6 @@
-import type { BillingOperationTelemetryEvent } from '@comfyorg/account-core/billing'
-import { BILLING_OPERATION_TELEMETRY_EVENT } from '@comfyorg/account-core/billing'
-
-import type { BillingTelemetryEvent } from '@/platform/telemetry/types'
+import { BILLING_OPERATION_TELEMETRY_EVENT } from '../../../telemetry.js'
+import type { BillingOperationTelemetryEvent } from '../operationLifecycle.js'
+import type { BillingTelemetryEvent } from './billingTelemetryEvent.js'
 
 /**
  * The lifecycle's event onto the poller's `billing.operation.*` stages, so
@@ -13,6 +12,7 @@ export function toBillingTelemetryEvent(
 ): BillingTelemetryEvent {
   const shared = {
     operation: 'operation',
+    billing_client: 'sdk',
     operation_type: event.operation_type,
     billing_op_id: event.billing_op_id,
     presentation: event.presentation,

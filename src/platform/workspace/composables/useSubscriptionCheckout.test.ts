@@ -19,6 +19,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import {
   clearCheckoutJourney,
+  getActiveCheckoutJourney,
   resolveCheckoutJourney
 } from '@/platform/workspace/utils/checkoutJourney'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
@@ -490,6 +491,12 @@ describe('useSubscriptionCheckout', () => {
       { global: { plugins: [i18n] } }
     )
     return checkout
+  }
+
+  function activeJourneyId(): string {
+    const journey = getActiveCheckoutJourney()
+    assert.exists(journey)
+    return journey.journey_id
   }
 
   async function setupWithApprovedPreview(
@@ -2164,9 +2171,9 @@ describe('useSubscriptionCheckout', () => {
     })
 
     describe('hosted billing handoff', () => {
-      it('opens billing-web with the plan slug and closes without subscribing', async () => {
+      it('opens billing-web with the plan slug, click-time source and checkout journey, and closes without subscribing', async () => {
         mockOpenHostedBillingTab.mockReturnValue(true)
-        const checkout = await setup()
+        const checkout = await setup('subscribe_to_run')
 
         await checkout.handleSubscribeClick({
           tierKey: 'standard',
@@ -2174,7 +2181,9 @@ describe('useSubscriptionCheckout', () => {
         })
 
         expect(mockOpenHostedBillingTab).toHaveBeenCalledWith('checkout', {
-          plan: 'standard-yearly'
+          plan: 'standard-yearly',
+          source: 'subscribe_to_run',
+          journeyId: activeJourneyId()
         })
         expect(mockPreviewSubscribe).not.toHaveBeenCalled()
         expect(emit).toHaveBeenCalledWith('close', false)
@@ -2190,7 +2199,8 @@ describe('useSubscriptionCheckout', () => {
         })
 
         expect(mockOpenHostedBillingTab).toHaveBeenCalledWith('checkout', {
-          plan: 'standard-yearly'
+          plan: 'standard-yearly',
+          journeyId: activeJourneyId()
         })
         expect(mockPreviewSubscribe).toHaveBeenCalledOnce()
         expect(checkout.checkoutStep.value).toBe('preview')
@@ -2206,7 +2216,8 @@ describe('useSubscriptionCheckout', () => {
         })
 
         expect(mockOpenHostedBillingTab).toHaveBeenCalledWith('checkout', {
-          plan: 'standard-yearly'
+          plan: 'standard-yearly',
+          journeyId: activeJourneyId()
         })
 
         await pending
@@ -2801,9 +2812,9 @@ describe('useSubscriptionCheckout', () => {
     })
 
     describe('hosted billing handoff', () => {
-      it('opens billing-web with the team plan slug and credit stop, and closes without subscribing', async () => {
+      it('opens billing-web with the team plan slug, credit stop, click-time source and checkout journey, and closes without subscribing', async () => {
         mockOpenHostedBillingTab.mockReturnValue(true)
-        const checkout = await setup()
+        const checkout = await setup('team_members_panel')
 
         await checkout.handleSubscribeTeamClick({
           stop: teamStop,
@@ -2813,7 +2824,9 @@ describe('useSubscriptionCheckout', () => {
 
         expect(mockOpenHostedBillingTab).toHaveBeenCalledWith('checkout', {
           plan: 'team_per_credit_annual',
-          teamCreditStopId: 'team_1400'
+          teamCreditStopId: 'team_1400',
+          source: 'team_members_panel',
+          journeyId: activeJourneyId()
         })
         expect(mockPreviewSubscribe).not.toHaveBeenCalled()
         expect(emit).toHaveBeenCalledWith('close', false)
@@ -2831,7 +2844,8 @@ describe('useSubscriptionCheckout', () => {
 
         expect(mockOpenHostedBillingTab).toHaveBeenCalledWith('checkout', {
           plan: 'team_per_credit_monthly',
-          teamCreditStopId: 'team_1400'
+          teamCreditStopId: 'team_1400',
+          journeyId: activeJourneyId()
         })
         expect(mockPreviewSubscribe).toHaveBeenCalledOnce()
         expect(checkout.checkoutStep.value).toBe('preview')
@@ -5543,13 +5557,15 @@ describe('useSubscriptionCheckout', () => {
   })
 
   describe('handleResubscribe', () => {
-    it('opens billing-web with the subscription intent and closes without resubscribing', async () => {
+    it('opens billing-web with the subscription intent and click-time source, and closes without resubscribing', async () => {
       mockOpenHostedBillingTab.mockReturnValue(true)
-      const checkout = await setup()
+      const checkout = await setup('settings_billing_panel')
 
       await checkout.handleResubscribe()
 
-      expect(mockOpenHostedBillingTab).toHaveBeenCalledWith('subscription')
+      expect(mockOpenHostedBillingTab).toHaveBeenCalledWith('subscription', {
+        source: 'settings_billing_panel'
+      })
       expect(mockResubscribe).not.toHaveBeenCalled()
       expect(emit).toHaveBeenCalledWith('close', false)
     })
@@ -5566,7 +5582,9 @@ describe('useSubscriptionCheckout', () => {
 
       await checkout.handleResubscribe()
 
-      expect(mockOpenHostedBillingTab).toHaveBeenCalledWith('subscription')
+      expect(mockOpenHostedBillingTab).toHaveBeenCalledWith('subscription', {
+        source: 'subscribe_to_run'
+      })
       expect(mockResubscribe).toHaveBeenCalled()
       expect(emit).toHaveBeenCalledWith('close', true)
     })

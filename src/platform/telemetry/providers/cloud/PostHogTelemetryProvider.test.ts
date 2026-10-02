@@ -1,3 +1,4 @@
+import type { BillingTelemetryEvent } from '@comfyorg/account-core/billing'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Ref } from 'vue'
 import { computed, nextTick, ref } from 'vue'
@@ -9,7 +10,6 @@ import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 import type {
-  BillingTelemetryEvent,
   BootstrapCompleteMetadata,
   OnboardingTourStage,
   RunButtonProperties
@@ -512,6 +512,39 @@ describe('PostHogTelemetryProvider', () => {
           locale: 'en',
           click_id: 'click-1',
           draft_was_empty: true
+        }
+      )
+    })
+
+    it('captures free-use notice interactions with their placement', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackAgentFreeUseNotice({
+        action: 'dismissed',
+        placement: 'top-banner'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.AGENT_FREE_USE_NOTICE,
+        { action: 'dismissed', placement: 'top-banner' }
+      )
+    })
+
+    it('captures panel-open experiment exposure with the PostHog arm', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackAgentFreeUseExposure({
+        placement: 'control',
+        '$feature/agent-free-use-message-placement': 'control'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.AGENT_FREE_USE_EXPOSURE,
+        {
+          placement: 'control',
+          '$feature/agent-free-use-message-placement': 'control'
         }
       )
     })
@@ -1075,7 +1108,10 @@ describe('PostHogTelemetryProvider', () => {
 
       provider.trackBillingEvent(event)
 
-      expect(hoisted.mockCapture).toHaveBeenCalledWith(eventName, event)
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(eventName, {
+        ...event,
+        billing_surface: 'cloud_app'
+      })
     })
 
     it('drops fields outside the billing telemetry contract', async () => {
@@ -1103,7 +1139,8 @@ describe('PostHogTelemetryProvider', () => {
           stage: 'failed',
           outcome: 'failure',
           billing_op_id: 'opaque-op-id',
-          failure_category: 'unknown'
+          failure_category: 'unknown',
+          billing_surface: 'cloud_app'
         }
       )
     })

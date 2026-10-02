@@ -1,7 +1,7 @@
-import type { BillingOperationTelemetryEvent } from '@comfyorg/account-core/billing'
 import { describe, expect, it } from 'vitest'
 
-import { toBillingTelemetryEvent } from './billingSdkTelemetry'
+import type { BillingOperationTelemetryEvent } from '../operationLifecycle.js'
+import { toBillingTelemetryEvent } from './operationLifecycleEvent.js'
 
 describe('toBillingTelemetryEvent', () => {
   it.for<{
@@ -20,6 +20,7 @@ describe('toBillingTelemetryEvent', () => {
       },
       expected: {
         operation: 'operation',
+        billing_client: 'sdk',
         stage: 'started',
         outcome: 'pending',
         operation_type: 'topup',
@@ -40,6 +41,7 @@ describe('toBillingTelemetryEvent', () => {
       },
       expected: {
         operation: 'operation',
+        billing_client: 'sdk',
         stage: 'succeeded',
         outcome: 'success',
         operation_type: 'subscription',
@@ -63,6 +65,7 @@ describe('toBillingTelemetryEvent', () => {
       },
       expected: {
         operation: 'operation',
+        billing_client: 'sdk',
         stage: 'failed',
         outcome: 'failure',
         operation_type: 'topup',
@@ -87,6 +90,7 @@ describe('toBillingTelemetryEvent', () => {
       },
       expected: {
         operation: 'operation',
+        billing_client: 'sdk',
         stage: 'failed',
         outcome: 'failure',
         operation_type: 'cancel',
@@ -110,6 +114,7 @@ describe('toBillingTelemetryEvent', () => {
       },
       expected: {
         operation: 'operation',
+        billing_client: 'sdk',
         stage: 'timeout',
         outcome: 'failure',
         operation_type: 'subscription',

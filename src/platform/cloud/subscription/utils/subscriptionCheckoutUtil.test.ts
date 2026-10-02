@@ -241,7 +241,7 @@ describe('performSubscriptionCheckout', () => {
 
   it('continues checkout when attribution collection fails', async () => {
     const checkoutUrl = 'https://checkout.stripe.com/test'
-    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => window)
     mockGetCheckoutAttribution.mockRejectedValueOnce(
       new Error('Attribution failed')
     )
@@ -282,7 +282,7 @@ describe('performSubscriptionCheckout', () => {
   })
 
   it('reports a failed attribution chunk load as the module_load stage', async () => {
-    vi.spyOn(window, 'open').mockImplementation(() => null)
+    vi.spyOn(window, 'open').mockImplementation(() => window)
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
       json: async () => ({ checkout_url: 'https://checkout.stripe.com/test' })
@@ -388,7 +388,10 @@ describe('performSubscriptionCheckout', () => {
     expect(openSpy).toHaveBeenCalledWith(checkoutUrl, '_blank')
   })
 
-  it('does not persist the pending attempt when the checkout popup is blocked', async () => {
+  it('closes a blocked checkout tab as a popup-blocked failure and keeps no attempt', async () => {
+    vi.spyOn(crypto, 'randomUUID').mockReturnValue(
+      '00000000-0000-4000-8000-000000000004'
+    )
     const checkoutUrl = 'https://checkout.stripe.com/test'
     const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
 
@@ -397,7 +400,11 @@ describe('performSubscriptionCheckout', () => {
       json: async () => ({ checkout_url: checkoutUrl })
     } as Response)
 
-    await performSubscriptionCheckout('pro', 'monthly')
+    await expect(
+      performSubscriptionCheckout('pro', 'monthly', {
+        paymentIntentSource: 'deep_link'
+      })
+    ).rejects.toThrow("Couldn't open the payment page")
 
     expect(openSpy).toHaveBeenCalledWith(checkoutUrl, '_blank')
     const storedAttempt = window.localStorage.getItem(
@@ -407,9 +414,86 @@ describe('performSubscriptionCheckout', () => {
     expect(mockLocalStorage.setItem).not.toHaveBeenCalled()
     expect(useTelemetry()?.trackBeginCheckout).toHaveBeenCalledWith(
       expect.objectContaining({
-        checkout_attempt_id: expect.any(String)
+        checkout_attempt_id: '00000000-0000-4000-8000-000000000004'
       })
     )
+    const telemetry = useTelemetry()
+    assert.exists(telemetry)
+    expect(vi.mocked(telemetry.trackBillingEvent).mock.calls).toEqual([
+      [
+        {
+          operation: 'subscription_checkout',
+          stage: 'started',
+          outcome: 'pending',
+          checkout_attempt_id: '00000000-0000-4000-8000-000000000004',
+          tier: 'pro',
+          cycle: 'monthly',
+          checkout_type: 'new',
+          payment_intent_source: 'deep_link'
+        }
+      ],
+      [
+        {
+          operation: 'subscription_checkout',
+          stage: 'failed',
+          outcome: 'failure',
+          checkout_attempt_id: '00000000-0000-4000-8000-000000000004',
+          tier: 'pro',
+          cycle: 'monthly',
+          checkout_type: 'new',
+          payment_intent_source: 'deep_link',
+          failure_category: 'redirect',
+          error_code: 'payment_popup_blocked',
+          duration_ms: expect.any(Number)
+        }
+      ]
+    ])
+  })
+
+  it('closes an attempt with no checkout URL with one failure and surfaces the error', async () => {
+    vi.spyOn(crypto, 'randomUUID').mockReturnValue(
+      '00000000-0000-4000-8000-000000000007'
+    )
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => window)
+    vi.mocked(global.fetch).mockResolvedValue(new Response(JSON.stringify({})))
+
+    await expect(performSubscriptionCheckout('pro', 'monthly')).rejects.toThrow(
+      'Failed to initiate subscription: No checkout URL returned'
+    )
+
+    const telemetry = useTelemetry()
+    assert.exists(telemetry)
+    expect(vi.mocked(telemetry.trackBillingEvent).mock.calls).toEqual([
+      [
+        {
+          operation: 'subscription_checkout',
+          stage: 'started',
+          outcome: 'pending',
+          checkout_attempt_id: '00000000-0000-4000-8000-000000000007',
+          tier: 'pro',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        }
+      ],
+      [
+        {
+          operation: 'subscription_checkout',
+          stage: 'failed',
+          outcome: 'failure',
+          checkout_attempt_id: '00000000-0000-4000-8000-000000000007',
+          tier: 'pro',
+          cycle: 'monthly',
+          checkout_type: 'new',
+          failure_category: 'unknown',
+          error_code: 'missing_checkout_response',
+          duration_ms: expect.any(Number)
+        }
+      ]
+    ])
+    expect(openSpy).not.toHaveBeenCalled()
+    expect(
+      window.localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
+    ).toBeNull()
   })
 
   it('opens the attempt with one started event that the pending attempt shares', async () => {

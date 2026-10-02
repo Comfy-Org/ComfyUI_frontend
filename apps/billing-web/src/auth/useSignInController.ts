@@ -27,14 +27,18 @@ import {
 
 const AUTH_ERROR_COPY: AuthErrorCopy = en.auth.errors
 
+export type SessionEstablishment =
+  | { readonly status: 'ok' }
+  | { readonly status: 'error'; readonly code: SessionErrorCode }
+
 /** What the flow signs in against: this origin's session client, or the shared web session. */
 export interface SignInPort {
   /** Non-null once someone is signed in, restored or interactive. */
   readonly user: Readonly<Ref<unknown>>
   readonly failureCode: Readonly<Ref<SessionErrorCode | undefined>>
   readonly loadIdentity: () => Promise<FirebaseIdentity | undefined>
-  /** Establishes the workspace session; resolves whether it holds. */
-  readonly establish: (user?: User) => Promise<boolean>
+  /** Establishes the workspace session; resolves whether it holds, and the code when it does not. */
+  readonly establish: (user?: User) => Promise<SessionEstablishment>
 }
 
 export function sessionClientPort(): SignInPort {
@@ -56,6 +60,8 @@ export function sessionClientPort(): SignInPort {
         { workspaceId: boundWorkspaceId() }
       )
       return result?.status === 'ok'
+        ? { status: 'ok' }
+        : { status: 'error', code: result?.code ?? 'NOT_AUTHENTICATED' }
     }
   }
 }
@@ -112,7 +118,9 @@ export function useSignInController(
 
   async function mint(requestedUser?: User): Promise<void> {
     const held = await port.establish(requestedUser)
-    dispatch(held ? { type: 'mintSucceeded' } : { type: 'mintFailed' })
+    dispatch(
+      held.status === 'ok' ? { type: 'mintSucceeded' } : { type: 'mintFailed' }
+    )
   }
 
   async function completeSignIn(

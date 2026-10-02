@@ -6,6 +6,7 @@ import type {
   PendingBillingOperation,
   TerminalBillingOperation
 } from '@comfyorg/account-core/billing'
+import { isGrantLanding } from '@comfyorg/account-core/billing'
 
 type ElementStatus = 'loading' | 'ready' | 'failed'
 
@@ -106,7 +107,11 @@ type Capture = {
  */
 type Attribution = 'started' | 'returned' | 'followed' | 'settled'
 
-/** The plan a returned payment bought, as the server's status and catalog list it. */
+/**
+ * The plan a settled payment bought, as the server's catalog lists it: the
+ * one its receipt names, or for a returned payment without one, the plan the
+ * status now reports.
+ */
 export type SettledPlan = Pick<
   BillingPlansData['plans'][number],
   'tier' | 'duration' | 'price_cents'
@@ -191,7 +196,7 @@ export type CheckoutPageEvent =
   | { readonly type: 'planUnavailable'; readonly reason: PlanUnavailableReason }
   /** The quote answered `allowed: false`; its free-text reason is never read. */
   | { readonly type: 'notAllowed' }
-  /** The server's status and catalog named the plan a returned payment bought. */
+  /** The server's catalog named the plan a settled payment bought. */
   | { readonly type: 'settledPlanRead'; readonly plan: SettledPlan }
   /** Try again on a checkout that could not load. */
   | { readonly type: 'retried' }
@@ -254,19 +259,25 @@ export type CheckoutPageEvent =
 export const RESOLVING: CheckoutPage = { kind: 'resolving' }
 
 /**
- * Why no plan can be quoted for this link: the checkout's 404. `retired` is
- * a slug the catalog no longer has; the other two are links nobody could
- * have been sent, a team plan named without its commit stop, or a URL the
- * entry contract cannot read at all.
+ * Why nothing can be quoted for this link: the checkout's 404. `retired` is
+ * a slug the catalog no longer has; the rest are links nobody could have
+ * been sent, a team plan named without its commit stop, a top-up with no
+ * readable amount, or a URL the entry contract cannot read at all.
  */
 export type PlanUnavailableReason =
   | 'retired'
   | 'team_stop_missing'
+  | 'amount_invalid'
   | 'unreadable'
 
 export const UNREADABLE_LINK: CheckoutPage = {
   kind: 'plan_unavailable',
   reason: 'unreadable'
+}
+
+export const INVALID_AMOUNT_LINK: CheckoutPage = {
+  kind: 'plan_unavailable',
+  reason: 'amount_invalid'
 }
 
 /** The first read picks the tab: Saved whenever the tab row shows at all. */
@@ -394,7 +405,7 @@ export function reduceCheckoutPage(
     return page.kind === 'resolving' ? stoppedOn(page, event) : page
   switch (event.type) {
     case 'settledPlanRead':
-      return page.kind === 'terminal' && page.attribution === 'returned'
+      return page.kind === 'terminal' && page.attribution !== 'started'
         ? { ...page, plan: event.plan }
         : page
     case 'requoteFailed':
@@ -660,6 +671,40 @@ export function waitingOn(operation: PendingBillingOperation): WaitingOn {
   return settling ? 'settling' : 'verifying'
 }
 
+/**
+ * A screen that promised to update but whose operation the lifecycle no
+ * longer polls: an outcome parked for a human, or a success whose credits
+ * the server has not recorded yet. The page re-reads it itself.
+ */
+export function awaitingServer(page: CheckoutPage): boolean {
+  if (page.kind === 'unconfirmed') return true
+  return (
+    page.kind === 'terminal' &&
+    page.operation !== undefined &&
+    isGrantLanding(page.operation)
+  )
+}
+
+/**
+ * Where a settled page reads the plan its payment bought, keyed so a caller
+ * reads it once: the slug its receipt names, or for this tab's own payment
+ * returned without one, the status. A page that priced the payment itself
+ * names the plan from its quote and needs neither.
+ */
+export function settledPlanSource(
+  page: CheckoutPage
+): { readonly key: string; readonly receiptSlug?: string } | undefined {
+  if (page.kind !== 'terminal' || page.attribution === 'started')
+    return undefined
+  const receiptSlug =
+    page.operation?.phase === 'succeeded'
+      ? page.operation.receipt?.plan?.slug
+      : undefined
+  if (receiptSlug !== undefined)
+    return { key: `receipt:${receiptSlug}`, receiptSlug }
+  return page.attribution === 'returned' ? { key: 'status' } : undefined
+}
+
 /** The server parked the operation for a human and cannot say whether money moved. */
 const outcomeUnknown = (operation: BillingOperationState) =>
   operation.phase === 'reconciliation_needed'
@@ -715,12 +760,18 @@ function followed(
   return page
 }
 
-/** A terminal reached before its operation arrived takes the operation's id. */
+/**
+ * A terminal reached before its operation arrived takes the operation, and a
+ * later read of the same operation replaces it, since the server may since
+ * have recorded the credits it added.
+ */
 function withSettled(
   page: Extract<CheckoutPage, { kind: 'terminal' }>,
   operation: BillingOperationState
 ): CheckoutPage {
-  return operation.phase === 'succeeded' && page.operation === undefined
+  const takes =
+    page.operation === undefined || page.operation.id === operation.id
+  return operation.phase === 'succeeded' && takes
     ? { ...page, operation }
     : page
 }

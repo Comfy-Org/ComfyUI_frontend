@@ -84,6 +84,7 @@
     "historyCurrent": "Atual",
     "historyEarlier": "Anteriores",
     "historyEmpty": "Ainda não há conversas",
+    "historyOpenFailed": "Não foi possível abrir. Selecione este chat para tentar novamente.",
     "historyToday": "Hoje",
     "historyYesterday": "Ontem",
     "latest": "Mais recente",
@@ -169,19 +170,30 @@
     "skip": "Pular",
     "stop": "Parar",
     "stopShortcut": "Esc",
-    "suggestedPrompts": [
-      "Gere um pato amarelo com uma máscara de hóquei",
-      "Liste meus fluxos de trabalho salvos",
-      "Encontre o melhor fluxo de trabalho para ampliação de pele",
-      "Explique o nó selecionado",
-      "Crie um fluxo de trabalho de imagem para vídeo com 3 modelos"
-    ],
+    "suggestedPrompts": {
+      "cloud": [
+        "Gere uma folha de personagem de um astronauta",
+        "Transforme a imagem do produto em um anúncio curto",
+        "Explique os nós selecionados",
+        "Melhor fluxo de trabalho de ampliação de imagem para 4K",
+        "Corrija os erros neste fluxo de trabalho"
+      ],
+      "local": [
+        "Gere um retrato realista de um astronauta",
+        "Um fluxo de trabalho de imagem para vídeo compatível com minha GPU",
+        "Explique os nós selecionados",
+        "Ajude-me a instalar os nós ausentes para este fluxo de trabalho",
+        "Corrija os erros neste fluxo de trabalho"
+      ]
+    },
     "switchWorkflow": "Alternar fluxo de trabalho",
     "switchWorkflowForNodes": "Alterne para {workflowName} para adicionar nós.",
     "takeTour": "Faça o tour",
     "targetFollowsVisibleWorkflow": "O fluxo de trabalho de destino segue a aba visível até que você escolha um destino, referencie nós ou envie uma mensagem.",
     "targetForThisChat": "Alvo do agente para este chat",
     "targetNavigationUnavailable": "Este destino do fluxo de trabalho não está mais disponível.",
+    "targetWorkflowOpenFailed": "Não foi possível abrir o fluxo de trabalho de destino.",
+    "targetWorkflowUnavailable": "O fluxo de trabalho de destino não está mais disponível.",
     "thinking": "Pensando...",
     "title": "Comfy Agent",
     "toolForgettingPreference": "Esquecendo uma preferência",
@@ -540,6 +552,20 @@
       "expired": "Verificação expirada. Por favor, complete o desafio novamente.",
       "failed": "Falha na verificação. Por favor, tente novamente.",
       "submitBlockedHint": "Complete o desafio de verificação acima para habilitar o cadastro."
+    },
+    "webSession": {
+      "reconnecting": {
+        "detail": "Não conseguimos acessar o Comfy agora. Vamos continuar tentando, e você permanecerá conectado.",
+        "retry": "Tentar novamente agora",
+        "title": "Reconectando à sua conta"
+      },
+      "token": {
+        "ended": "Sua sessão terminou. Entre novamente para continuar.",
+        "identityChanged": "Sua sessão foi alterada. Recarregue a página para continuar.",
+        "refused": "Sua solicitação foi recusada. Recarregue a página e tente novamente.",
+        "unavailable": "Não foi possível acessar sua conta. Tente novamente em instantes.",
+        "workspaceDenied": "Você não tem acesso a este espaço de trabalho. Entre em contato com o suporte se isso continuar acontecendo."
+      }
     }
   },
   "batch": {
@@ -645,6 +671,46 @@
     "saveAs": "Salvar como",
     "switchToOutputs": "Ir para Saídas",
     "viewApp": "Visualizar aplicativo"
+  },
+  "cameraAngle": {
+    "cameraView": "Câmera",
+    "cameraViewTooltip": "Mova a câmera ao redor do sujeito",
+    "faces": {
+      "back": "TRASEIRA",
+      "bottom": "BASE",
+      "left": "ESQUERDA",
+      "right": "DIREITA",
+      "top": "TOPO"
+    },
+    "hidePreview": "Ocultar pré-visualização do plano",
+    "horizontal": {
+      "back": "Traseira",
+      "backLeft": "Traseira esquerda",
+      "backRight": "Traseira direita",
+      "front": "Frente",
+      "frontLeft": "Frente esquerda",
+      "frontRight": "Frente direita",
+      "left": "Lado esquerdo",
+      "right": "Lado direito"
+    },
+    "horizontalLabel": "Ângulo horizontal",
+    "objectView": "Objeto",
+    "objectViewTooltip": "Olhe pela câmera e gire o sujeito",
+    "preview": "Pré-visualização",
+    "showPreview": "Mostrar pré-visualização do plano",
+    "vertical": {
+      "elevated": "Elevado",
+      "eyeLevel": "Ao nível dos olhos",
+      "highAngle": "Ângulo alto",
+      "lowAngle": "Ângulo baixo"
+    },
+    "verticalLabel": "Ângulo vertical",
+    "zoom": {
+      "closeUp": "Close-up",
+      "medium": "Plano médio",
+      "wide": "Plano aberto"
+    },
+    "zoomLabel": "Tamanho do plano"
   },
   "clipboard": {
     "errorMessage": "Falha ao copiar para a área de transferência",
@@ -1898,6 +1964,7 @@
     "itemsSelected": "Nenhum item selecionado | {count} item selecionado | {count} itens selecionados",
     "job": "Tarefa",
     "jobIdCopied": "ID da tarefa copiado para a área de transferência",
+    "jobs": "Tarefas",
     "keybinding": "Atalho",
     "keybindingAlreadyExists": "Atalho já existe em",
     "keybindingListAriaLabel": "Atalhos de teclado: {combos}",
@@ -2051,6 +2118,7 @@
     "restore": "Restaurar",
     "restoreDialog": "Restaurar diálogo",
     "resultsCount": "{count} resultados encontrados",
+    "retry": "Tentar novamente",
     "running": "Executando",
     "save": "Salvar",
     "saveAnyway": "Salvar mesmo assim",
@@ -2187,6 +2255,7 @@
       "r": "R",
       "rgb": "RGB"
     },
+    "checkerboard": "Mostrar transparência",
     "clipWarnings": "Avisos de recorte",
     "dither": "Dithering",
     "exposure": "Exposição",
@@ -4919,6 +4988,7 @@
     "failedToFetchBalance": "Falha ao buscar saldo: {error}",
     "failedToFetchLogs": "Falha ao buscar logs do servidor",
     "failedToFetchSubscription": "Falha ao buscar status da assinatura: {error}",
+    "failedToInitializeCameraAngleViewer": "Falha ao inicializar o visualizador de ângulo da câmera. Tente recarregar a página.",
     "failedToInitializeCameraInfoViewer": "Falha ao inicializar o visualizador de informações da câmera. Tente recarregar a página.",
     "failedToInitializeLoad3dViewer": "Falha ao inicializar o Visualizador 3D",
     "failedToInitiateCreditPurchase": "Falha ao iniciar compra de créditos: {error}",
@@ -5196,6 +5266,7 @@
         "memberBody": "A assinatura deste workspace está pausada. Os administradores do workspace precisam atualizar o método de pagamento.",
         "title": "Assinatura pausada"
       },
+      "payInvoice": "Pagar fatura",
       "planChange": {
         "body": "Seu plano atual permanece ativo até lá.",
         "title": "Seu plano muda para {plan} em {date}"
@@ -5203,6 +5274,7 @@
       "updatePayment": "Atualizar pagamento",
       "warning": {
         "bodyNoDate": "Seu último pagamento não foi processado. Atualize o pagamento para evitar a pausa.",
+        "bodyWithAmount": "Não foi possível processar seu pagamento de {amount}. Pague a fatura ou atualize a forma de pagamento para evitar uma pausa.",
         "title": "Pagamento recusado"
       }
     },
@@ -5243,10 +5315,19 @@
     "inviteLimitReached": "Você atingiu o máximo de {count} membros",
     "inviteLinks": {
       "copied": "Copiado!",
+      "copiedToast": "Link de convite copiado",
       "copyAll": "Copiar link de convite | Copiar todos os links ({count})",
+      "copyFailedToast": "Não foi possível copiar o link de convite",
       "copyLink": "Copiar link de convite",
+      "invalidBody": "Ele pode ter expirado ou sido substituído. Peça um novo link à pessoa que convidou você.",
+      "invalidDismiss": "Entendi",
+      "invalidTitle": "Este link de convite não é mais válido",
       "sentLead": "Cada convite tem um link pessoal que você pode compartilhar diretamente:",
-      "sentTitle": "{count} convite enviado | {count} convites enviados"
+      "sentTitle": "{count} convite enviado | {count} convites enviados",
+      "switchAccount": "Trocar de conta",
+      "wrongAccountBody": "Você está conectado como {email}. Entre com o e-mail que recebeu este convite para aceitá-lo.",
+      "wrongAccountBodyGeneric": "Este convite foi enviado para um endereço de e-mail diferente daquele com o qual você está conectado. Entre com o e-mail que o recebeu.",
+      "wrongAccountTitle": "Este convite foi enviado para outro e-mail"
     },
     "inviteMember": "Convidar membro",
     "inviteMemberDialog": {
@@ -5287,7 +5368,8 @@
         "minutesAgo": "há {n} min"
       },
       "columns": {
-        "creditsUsed": "Créditos mensais",
+        "creditsUsed": "Créditos usados neste mês",
+        "email": "E-mail",
         "expiryDate": "Data de expiração",
         "inviteDate": "Data do convite",
         "role": "Função"
@@ -5307,11 +5389,13 @@
       "endedPlanTitle": "Seu plano terminou",
       "endedTeamTitle": "Seu plano de equipe terminou",
       "expiredOn": "Expirou em {date}",
-      "header": "Membros",
+      "loadFailed": "Não foi possível carregar tudo nesta página.",
       "membersCount": "{count} de {maxSeats} membros",
       "needMoreMembers": "Precisa de mais membros?",
       "noInvites": "Nenhum convite pendente",
+      "noInvitesMatch": "Nenhum convite corresponde a \"{query}\"",
       "noMembers": "Nenhum membro",
+      "noMembersMatch": "Nenhum membro corresponde a \"{query}\"",
       "pendingInvitesCount": "{count} convite pendente | {count} convites pendentes",
       "reactivateTeam": "Reativar Team",
       "resubscribe": "Assinar novamente",
@@ -5320,6 +5404,8 @@
         "active": "Ativo",
         "pendingCount": "Pendente ({count})"
       },
+      "totalMembersCount": "{count} de {maxSeats} membros no total.",
+      "totalMembersUnlimited": "{count} membro no total. | {count} membros no total.",
       "upgradeToTeam": "Fazer upgrade para Team",
       "upsellBanner": "Para adicionar colegas de equipe, faça upgrade do seu plano.",
       "upsellBannerEnterpriseEnded": "Entre em contato com a equipe de vendas para reativar seu plano Enterprise.",
@@ -5397,9 +5483,7 @@
       "title": "Desfazer convite para esta pessoa?"
     },
     "tabs": {
-      "dashboard": "Painel",
-      "membersCount": "Membros ({count})",
-      "planCredits": "Plano e Créditos"
+      "dashboard": "Painel"
     },
     "toast": {
       "failedToCreateWorkspace": "Falha ao criar o espaço de trabalho",

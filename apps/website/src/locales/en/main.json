@@ -315,6 +315,8 @@
       "title": "Add credits",
       "body": "Pick a bundle, or enter your own amount.",
       "continue": "Continue",
+      "subscriptionPrompt": "Want more credits every month?",
+      "subscriptionLink": "View Cloud subscription plans",
       "custom": "Custom · $5 – $4,739",
       "less": "Less",
       "more": "More",
@@ -1258,7 +1260,14 @@
       "heading": "Run on your hardware.\nFree forever.",
       "subtitle": "The full ComfyUI engine — open source, fast, extensible, and yours to run however you want.",
       "downloadLocal": "DOWNLOAD DESKTOP",
-      "installGithub": "INSTALL FROM GITHUB"
+      "installGithub": "INSTALL FROM GITHUB",
+      "installers": {
+        "label": "All installers",
+        "windowsX64": "Windows x64",
+        "windowsArm64": "Windows ARM64 (NVIDIA only)",
+        "macArm64": "macOS (Apple Silicon)",
+        "linuxX64": "Linux x64 (AppImage)"
+      }
     },
     "emailForm": {
       "heading": "Get download link",
