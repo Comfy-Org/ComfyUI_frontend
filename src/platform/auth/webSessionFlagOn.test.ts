@@ -612,17 +612,20 @@ function installIngest(features: Record<string, boolean> = {}) {
     )
   }
 
-  const respond = (request: ApiRequest, body: unknown): Response => {
-    const { path, headers } = request
-    if (path === '/api/auth/session') {
-      if (request.method === 'POST') return jsonResponse({ success: true })
-      const read = ingest.sessionReads.shift()
-      if (read) return read
-      return jsonResponse({
+  const respondSession = ({ method }: ApiRequest): Response => {
+    if (method === 'POST') return jsonResponse({ success: true })
+    return (
+      ingest.sessionReads.shift() ??
+      jsonResponse({
         ...sessionBody(ingest.userId),
         csrf_token: ingest.csrfToken
       })
-    }
+    )
+  }
+
+  const respond = (request: ApiRequest, body: unknown): Response => {
+    const { path, headers } = request
+    if (path === '/api/auth/session') return respondSession(request)
     if (path === '/api/auth/token') return mint(body)
     if (path === '/api/workspaces/current') {
       if (ingest.currentWorkspaceDown) return ingest.currentWorkspaceDown()
