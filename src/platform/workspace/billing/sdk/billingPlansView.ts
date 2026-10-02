@@ -13,6 +13,14 @@ type DecodedStops = NonNullable<BillingPlansData['team_credit_stops']>
 type DecodedStop = DecodedStops['stops'][number]
 type StopPrice = TeamCreditStops['stops'][number]['monthly']
 
+function projectOptionalCredits(
+  rawCredits: DecodedPlan['credits']
+): Pick<Plan, 'credits'> | undefined {
+  if (rawCredits === undefined) return {}
+  const credits = asSafeNumber(rawCredits)
+  return credits === undefined ? undefined : { credits }
+}
+
 /**
  * The generated zod schema coerces every int64 in the catalog to `bigint` —
  * prices, credits, seat caps, the credit-stop ladder — while the generated
@@ -23,8 +31,7 @@ type StopPrice = TeamCreditStops['stops'][number]['monthly']
  */
 function projectPlan(plan: DecodedPlan): Plan | undefined {
   const { credits: rawCredits, ...planWithoutCredits } = plan
-  const credits =
-    rawCredits === undefined ? undefined : asSafeNumber(rawCredits)
+  const projectedCredits = projectOptionalCredits(rawCredits)
   const credits_cents = asSafeNumber(plan.credits_cents)
   const max_seats = asSafeNumber(plan.max_seats)
   const price_cents = asSafeNumber(plan.price_cents)
@@ -33,7 +40,7 @@ function projectPlan(plan: DecodedPlan): Plan | undefined {
     plan.seat_summary.total_credits_cents
   )
   if (
-    (rawCredits !== undefined && credits === undefined) ||
+    projectedCredits === undefined ||
     credits_cents === undefined ||
     max_seats === undefined ||
     price_cents === undefined ||
@@ -43,7 +50,7 @@ function projectPlan(plan: DecodedPlan): Plan | undefined {
     return undefined
   return {
     ...planWithoutCredits,
-    ...(credits === undefined ? {} : { credits }),
+    ...projectedCredits,
     credits_cents,
     max_seats,
     price_cents,
