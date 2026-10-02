@@ -5,14 +5,9 @@ import {
   previewShade
 } from '../../../lib/workshop/relight/preview'
 
-const {
-  lights,
-  scene,
-  lightMap = false
-} = defineProps<{
+const { lights, scene } = defineProps<{
   lights: readonly Light[]
   scene: RelightScene
-  lightMap?: boolean
 }>()
 </script>
 
@@ -24,7 +19,7 @@ const {
   >
     <div
       class="absolute inset-0 bg-black"
-      :style="{ opacity: lightMap ? 0.9 : previewShade(scene) }"
+      :style="{ opacity: previewShade(scene) }"
     />
     <div
       v-for="glow in previewGlows(lights)"

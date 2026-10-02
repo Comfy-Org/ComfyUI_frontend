@@ -21,6 +21,26 @@ const copy = {
   'relight.tool.redo': { en: 'Redo', 'zh-CN': '重做' },
   'relight.history': { en: 'History', 'zh-CN': '历史记录' },
   'relight.view.lightmap': { en: 'Show light map', 'zh-CN': '显示光照图' },
+  'relight.map': { en: 'Light map', 'zh-CN': '光照图' },
+  'relight.map.hide': { en: 'Hide light map', 'zh-CN': '隐藏光照图' },
+  'relight.map.collapse': { en: 'Collapse light map', 'zh-CN': '收起光照图' },
+  'relight.map.top': { en: 'Top', 'zh-CN': '俯视' },
+  'relight.map.side': { en: 'Side', 'zh-CN': '侧视' },
+  'relight.map.dot.top': {
+    en: '{name}, top view',
+    'zh-CN': '{name}，俯视图'
+  },
+  'relight.map.dot.side': {
+    en: '{name}, side view',
+    'zh-CN': '{name}，侧视图'
+  },
+  'relight.map.around': {
+    en: '{n}° around the subject',
+    'zh-CN': '绕主体 {n}°'
+  },
+  'relight.map.height': { en: '{n}° up', 'zh-CN': '高度 {n}°' },
+  'relight.map.across': { en: '{n}% across', 'zh-CN': '横向 {n}%' },
+  'relight.map.up': { en: '{n}% up', 'zh-CN': '纵向 {n}%' },
   'relight.compare.live': {
     en: 'Drag to compare the original and the live preview',
     'zh-CN': '拖动以对比原图与实时预览'

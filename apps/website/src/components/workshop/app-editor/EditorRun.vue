@@ -15,7 +15,8 @@ const {
   block = false,
   progress,
   queuedLabel,
-  missing
+  missing,
+  missingHint
 } = defineProps<{
   label: string
   credits: string
@@ -33,6 +34,8 @@ const {
    * of its label and the credits it would cost.
    */
   missing?: string
+  /** The full sentence for the tooltip, when `missing` is a short form. */
+  missingHint?: string
 }>()
 
 const emit = defineEmits<{ run: []; cancel: [] }>()
@@ -52,7 +55,7 @@ const emit = defineEmits<{ run: []; cancel: [] }>()
     v-bind="$attrs"
     type="button"
     :disabled="disabled || Boolean(missing)"
-    :title="missing"
+    :title="missingHint ?? missing"
     :class="
       cn(
         'flex h-8 min-w-0 shrink-0 items-center gap-2 rounded-full bg-primary-comfy-yellow pr-1.5 pl-3.5 text-xs font-semibold text-primary-comfy-ink focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none disabled:opacity-40',

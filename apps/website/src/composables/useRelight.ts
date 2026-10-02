@@ -87,7 +87,7 @@ export function useRelight(locale: Locale = 'en') {
   const phase = shallowRef<RelightPhase>({ kind: 'editing' })
   const tray = ref<RelightTray>()
   const comparing = ref(false)
-  const lightMap = ref(false)
+  const lightMap = ref(true)
   const handles = ref(true)
   const selected = ref<string>()
   let lastEdit: string | undefined
@@ -124,7 +124,6 @@ export function useRelight(locale: Locale = 'en') {
     lastEdit = undefined
     selected.value = setup.value.lights[0]?.id
     comparing.value = false
-    lightMap.value = false
   }
 
   function releaseOwnUrl() {
