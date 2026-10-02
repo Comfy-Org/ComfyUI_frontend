@@ -230,9 +230,6 @@ describe('createOpSender', () => {
     sender.admit([addNode(3)])
     sender.flush()
 
-    // The unbound admission is settled, not addressed to any doc, so it must
-    // not move or reset this doc's cursor: node 3 mints past node 1 instead of
-    // reusing its counter and colliding on the stamp.
     expect(
       sender.pendingOps().flatMap(({ ops }) => ops.map((op) => op.base_version))
     ).toEqual([41, 42])
