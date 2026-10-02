@@ -65,7 +65,6 @@ async function assertLandingPage(
     })
   ).toBeVisible()
 
-  // Source: https://comfy-organization.slack.com/archives/C0BBBQ7GHQS/p1790882891660659?thread_ts=1790882891.660659&cid=C0BBBQ7GHQS
   const featuredStoryLink = page.getByRole('link', {
     name: tAgent('agentPage.usecases.featured.cta', locale),
     exact: true
