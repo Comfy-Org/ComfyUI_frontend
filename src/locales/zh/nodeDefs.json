@@ -5842,6 +5842,52 @@
       }
     }
   },
+  "Flux3ImageNode": {
+    "description": "使用 FLUX 3 根据提示词生成图像，或编辑并组合最多 10 张参考图像。在提示词中将参考图像称为图像 1、图像 2，依此类推。",
+    "display_name": "Flux 3 图像",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "宽高比",
+        "tooltip": "“auto”会遵循第一张参考图像，或从提示词中选择宽高比。"
+      },
+      "bounding_boxes": {
+        "name": "边界框",
+        "tooltip": "来自“创建边界框”的可选框，用于在输出中放置对象或文本。位置相对于画布，因此请提供输出的宽高比。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "grounding": {
+        "name": "联网检索",
+        "tooltip": "允许模型在生成前通过网页和图像搜索研究提示词。"
+      },
+      "images": {
+        "name": "图像",
+        "tooltip": "可选参考图像，最多共 10 张，每张至少为 256x256 像素。"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "要生成的内容或要进行的编辑。提示词会在生成前被解析和扩展。"
+      },
+      "resolution": {
+        "name": "分辨率",
+        "tooltip": "所选宽高比下的输出尺寸：0.75K 约为 0.6 兆像素，1K 为 1 兆像素，1.5K 为 2.4 兆像素，2K 为 4.2 兆像素，4K 为 16.8 兆像素。"
+      },
+      "safety_tolerance": {
+        "name": "安全容忍度",
+        "tooltip": "审核容忍度，0 为最严格。"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "用于确定节点是否应重新运行的种子；FLUX 3 会自行选择种子，因此无论此值为何，实际结果均不确定。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Flux3ImageToVideoNode": {
     "description": "使用 FLUX 3 为 1 到 10 张图像制作动画。每张图像成为 clip 的一帧：一张图像作为开头，两张图像从第一张变形到第二张，更多图像则分布在 clip 中或固定在你选择的时间点。",
     "display_name": "Flux 3 图像转视频",
@@ -7434,7 +7480,7 @@
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio",
-        "tooltip": "输出视频的宽高比。"
+        "tooltip": "输出视频的宽高比。提供输入图像时将被忽略；视频会遵循图像的宽高比。"
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -7453,11 +7499,11 @@
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "所需视频的文本描述。提供输入图像时，grok-imagine-video-1.5 可不填。"
+        "tooltip": "所需视频的文本描述。提供输入图像时，对于 grok-imagine-video-1.5 模型可选。"
       },
       "resolution": {
         "name": "resolution",
-        "tooltip": "输出视频的分辨率。1080p 仅适用于 grok-imagine-video-1.5。"
+        "tooltip": "输出视频的分辨率。grok-imagine-video 不支持 1080p。"
       },
       "seed": {
         "name": "seed",

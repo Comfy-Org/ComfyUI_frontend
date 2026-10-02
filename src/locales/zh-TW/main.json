@@ -67,6 +67,8 @@
     "feedbackCaption": "分享意見回饋",
     "focusNode": "在畫布上顯示",
     "focusNodeLabel": "在畫布上顯示 {node}",
+    "freeUseNotice": "測試期間，提示詞與工作流程執行皆為免費。",
+    "freeUseNoticeLabel": "免費使用通知",
     "friend": "你",
     "gotIt": "知道了",
     "greeting": "你好，{name}，",
@@ -114,6 +116,7 @@
       "upgradePlan": "升級方案"
     },
     "placeholder": "描述想法，使用 {'@'} 參照工作流程，拖曳媒體資產和檔案進來，或\n提及節點",
+    "recoveredTurnFailed": "代理無法完成此回應。",
     "reference": "參照",
     "remove": "移除",
     "removeNodeLabel": "移除 {node} 參照",

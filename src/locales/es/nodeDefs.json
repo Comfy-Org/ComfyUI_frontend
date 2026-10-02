@@ -5842,6 +5842,52 @@
       }
     }
   },
+  "Flux3ImageNode": {
+    "description": "Genera una imagen con FLUX 3 a partir de un prompt, o edita y combina hasta 10 imágenes de referencia. Haz referencia a las imágenes en el prompt como imagen 1, imagen 2, etc.",
+    "display_name": "Imagen de Flux 3",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "\"auto\" sigue la primera imagen de referencia o elige una relación de aspecto a partir del prompt."
+      },
+      "bounding_boxes": {
+        "name": "bounding_boxes",
+        "tooltip": "Cuadros opcionales de Create Bounding Boxes que colocan objetos o texto en la salida. Las posiciones son relativas al lienzo, así que proporciona la relación de aspecto de la salida."
+      },
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "grounding": {
+        "name": "grounding",
+        "tooltip": "Permite que el modelo investigue el prompt mediante búsquedas web y de imágenes antes de generar."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Imágenes de referencia opcionales, hasta un total de 10, de al menos 256x256 píxeles cada una."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Qué generar o qué edición realizar. El prompt se interpreta y amplía antes de la generación."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Tamaño de salida con la relación de aspecto elegida: 0.75K equivale a unos 0.6 megapíxeles, 1K a 1 MP, 1.5K a 2.4 MP, 2K a 4.2 MP y 4K a 16.8 MP."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "Tolerancia de moderación; 0 es el valor más estricto."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Semilla para determinar si el nodo debe ejecutarse de nuevo; FLUX 3 elige su propia semilla, por lo que los resultados reales no son deterministas independientemente de este valor."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Flux3ImageToVideoNode": {
     "description": "Anima de 1 a 10 imágenes con FLUX 3. Cada imagen se convierte en un fotograma del clip: una imagen lo inicia, dos se transforman de la primera a la segunda, y más imágenes se distribuyen a lo largo del clip o se fijan en los momentos que elijas.",
     "display_name": "Flux 3 Imagen a Video",
@@ -7434,7 +7480,7 @@
     "inputs": {
       "aspect_ratio": {
         "name": "relación de aspecto",
-        "tooltip": "La relación de aspecto del video de salida."
+        "tooltip": "La relación de aspecto del vídeo de salida. Se ignora cuando se proporciona una imagen de entrada; el vídeo sigue la relación de aspecto de la imagen."
       },
       "control_after_generate": {
         "name": "controlar después de generar"
@@ -7453,11 +7499,11 @@
       },
       "prompt": {
         "name": "indicación",
-        "tooltip": "Descripción textual del video deseado. Es opcional para grok-imagine-video-1.5 cuando se proporciona una imagen de entrada."
+        "tooltip": "Descripción de texto del vídeo deseado. Opcional para los modelos grok-imagine-video-1.5 cuando se proporciona una imagen de entrada."
       },
       "resolution": {
         "name": "resolución",
-        "tooltip": "La resolución del vídeo de salida. 1080p solo está disponible para grok-imagine-video-1.5."
+        "tooltip": "La resolución del vídeo de salida. 1080p no está disponible para grok-imagine-video."
       },
       "seed": {
         "name": "semilla",

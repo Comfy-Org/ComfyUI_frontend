@@ -67,6 +67,8 @@
     "feedbackCaption": "Enviar feedback",
     "focusNode": "Mostrar na tela",
     "focusNodeLabel": "Mostrar {node} na tela",
+    "freeUseNotice": "Os prompts e as execuções de workflow são GRATUITOS durante a BETA.",
+    "freeUseNoticeLabel": "Aviso de uso gratuito",
     "friend": "aí",
     "gotIt": "Entendi",
     "greeting": "Olá, {name},",
@@ -114,6 +116,7 @@
       "upgradePlan": "Fazer upgrade do plano"
     },
     "placeholder": "Descreva ideias, {'@'} para referenciar fluxos de trabalho, arraste recursos de mídia e arquivos ou\nmencione nós",
+    "recoveredTurnFailed": "O agente não pôde concluir esta resposta.",
     "reference": "Referência",
     "remove": "Remover",
     "removeNodeLabel": "Remover referência a {node}",

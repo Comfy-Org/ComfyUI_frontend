@@ -67,6 +67,8 @@
     "feedbackCaption": "分享反馈",
     "focusNode": "在画布上显示",
     "focusNodeLabel": "在画布上显示 {node}",
+    "freeUseNotice": "测试期间，提示词和工作流运行均免费。",
+    "freeUseNoticeLabel": "免费使用须知",
     "friend": "您好",
     "gotIt": "知道了",
     "greeting": "你好，{name}，",
@@ -114,6 +116,7 @@
       "upgradePlan": "升级套餐"
     },
     "placeholder": "描述你的想法，使用 {'@'} 引用工作流，拖入媒体资源和文件，或\n提及节点",
+    "recoveredTurnFailed": "智能代理无法完成此响应。",
     "reference": "引用",
     "remove": "移除",
     "removeNodeLabel": "移除 {node} 引用",
