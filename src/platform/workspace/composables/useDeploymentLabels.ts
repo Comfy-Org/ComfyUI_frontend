@@ -1,0 +1,73 @@
+import type { WorkspaceDeployment } from '@comfyorg/ingest-types'
+import { storeToRefs } from 'pinia'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+
+/** `dep-f24d36bb` out of `dep-f24d36bb-fd1f-...`: enough to tell two apart. */
+function shortId(deploymentId: string): string {
+  return deploymentId.slice(0, 12)
+}
+
+/**
+ * The words the deployment switcher shows (FE-2434): a deployment's label
+ * (its Build name and the Release version it runs now, or its short id when
+ * Build names are hidden), its caption, and the labels of this browser's pick
+ * and of the workspace's default deployment.
+ */
+export function useDeploymentLabels() {
+  const { t } = useI18n()
+  const {
+    pickedDeploymentId,
+    pickedDeployment,
+    defaultDeploymentId,
+    defaultDeployment
+  } = storeToRefs(useDeploymentPickStore())
+
+  function deploymentLabel(deployment: WorkspaceDeployment): string {
+    if (
+      deployment.build_name !== undefined &&
+      deployment.release_version !== undefined
+    ) {
+      return t('deploymentSwitcher.deployment', {
+        build: deployment.build_name,
+        version: deployment.release_version
+      })
+    }
+    return t('deploymentSwitcher.unnamedDeployment', {
+      id: shortId(deployment.deployment_id)
+    })
+  }
+
+  /** The id and status, marking the workspace's default deployment. */
+  function deploymentCaption(deployment: WorkspaceDeployment): string {
+    const caption = t('deploymentSwitcher.caption', {
+      id: shortId(deployment.deployment_id),
+      status: deployment.status
+    })
+    return deployment.deployment_id === defaultDeploymentId.value
+      ? `${caption} · ${t('deploymentSwitcher.workspaceDefault')}`
+      : caption
+  }
+
+  function labelFor(
+    deploymentId: string | null,
+    deployment: WorkspaceDeployment | null
+  ): string {
+    if (deploymentId === null) return t('deploymentSwitcher.comfyCloud')
+    if (deployment) return deploymentLabel(deployment)
+    return t('deploymentSwitcher.unnamedDeployment', {
+      id: shortId(deploymentId)
+    })
+  }
+
+  const currentLabel = computed(() =>
+    labelFor(pickedDeploymentId.value, pickedDeployment.value)
+  )
+  const defaultLabel = computed(() =>
+    labelFor(defaultDeploymentId.value, defaultDeployment.value)
+  )
+
+  return { deploymentLabel, deploymentCaption, currentLabel, defaultLabel }
+}
