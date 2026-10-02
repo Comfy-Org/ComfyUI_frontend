@@ -7,12 +7,24 @@ import { findComboValueIndex } from '@/lib/litegraph/src/utils/widget'
 
 import { IS_CONTROL_WIDGET } from './controlWidgetMarker'
 
-type ValueControlMode =
-  | 'fixed'
-  | 'increment'
-  | 'increment-wrap'
-  | 'decrement'
-  | 'randomize'
+export const CONTROL_OPTIONS = [
+  'fixed',
+  'increment',
+  'decrement',
+  'randomize'
+] as const
+export type ControlOptions = (typeof CONTROL_OPTIONS)[number]
+
+export function isControlOption(value: unknown): value is ControlOptions {
+  return CONTROL_OPTIONS.some((option) => option === value)
+}
+
+const VALUE_CONTROL_MODES = [...CONTROL_OPTIONS, 'increment-wrap'] as const
+type ValueControlMode = (typeof VALUE_CONTROL_MODES)[number]
+
+export function isValueControlMode(value: unknown): value is ValueControlMode {
+  return VALUE_CONTROL_MODES.some((mode) => mode === value)
+}
 
 export function nextValueForLinkedTarget(params: {
   target: IBaseWidget

@@ -6,7 +6,7 @@ import type {
   IComboWidget,
   IStringWidget
 } from '@/lib/litegraph/src/types/widgets'
-import { nextValueForLinkedTarget } from './valueControl'
+import { isValueControlMode, nextValueForLinkedTarget } from './valueControl'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { dynamicWidgets } from '@/core/graph/widgets/dynamicWidgets'
 import { useBooleanWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBooleanWidget'
@@ -100,17 +100,6 @@ export function updateControlWidgetLabel(widget: IBaseWidget) {
 }
 
 const HAS_EXECUTED = Symbol()
-
-const COMBO_ONLY_CONTROL_MODE = 'increment-wrap'
-
-const VALUE_CONTROL_MODES: readonly string[] = [
-  ...CONTROL_OPTIONS,
-  COMBO_ONLY_CONTROL_MODE
-]
-
-function isValueControlMode(value: unknown): value is string {
-  return typeof value === 'string' && VALUE_CONTROL_MODES.includes(value)
-}
 
 /**
  * `control_after_generate` is either a group-node widget name override or a
@@ -208,7 +197,7 @@ export function addValueControlWidgets(
   let comboFilter: IStringWidget
   if (isCombo) {
     const values = valueControl.options.values
-    if (Array.isArray(values)) values.push(COMBO_ONLY_CONTROL_MODE)
+    if (Array.isArray(values)) values.push('increment-wrap')
   }
   if (isCombo && options.addFilterList !== false) {
     comboFilter = node.addWidget(
