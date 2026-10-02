@@ -6,7 +6,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 
 import type { GraphOperation } from './graphOperations'
 import { createOpSender } from './opSender'
-import type { BatchOutcome, OpsResultView } from './opSender'
+import type { BatchOutcome, OpSender, OpsResultView } from './opSender'
 
 vi.mock(import('@/platform/telemetry/reportError'))
 
@@ -1231,6 +1231,43 @@ describe('createOpSender', () => {
     ).toEqual([2, 3])
     localSender.detach()
   })
+
+  it.for(['abortAll', 'detach'] as const)(
+    'settles an admission when serialization reenters %s',
+    (teardown) => {
+      const localSettled: BatchOutcome[] = []
+      const localSender: OpSender = createOpSender({
+        sendOps: (workflowId, tab, ops) => {
+          sent.push({ workflowId, tab, ops })
+          return true
+        },
+        onOpsResult: () => vi.fn(),
+        workflowId: () => boundWorkflow,
+        tab: TAB,
+        actor: () => ACTOR,
+        baseVersion: () => 41,
+        onBatchSettled: (outcome) => localSettled.push(outcome)
+      })
+      const operation = addNode(1)
+      operation.node = {
+        ...operation.node,
+        toJSON() {
+          localSender[teardown]()
+          return { id: 1, type: 'TestNode' }
+        }
+      }
+
+      localSender.admit([operation])
+      localSender.flush()
+
+      expect(sent).toHaveLength(0)
+      expect(localSender.pending()).toBe(0)
+      expect(localSettled.map(summarizeSettlement)).toEqual([
+        { state: 'undeliverable', nodeIds: [1] }
+      ])
+      localSender.detach()
+    }
+  )
 
   it('contains a large malformed admission without argument spread overflow', () => {
     const operations = Array.from({ length: 140_000 }, (_, id) => addNode(id))
