@@ -1137,15 +1137,19 @@ export function useAgentSession(deps: AgentSessionDeps) {
     // 'new' is the sentinel for a thread the server had not minted yet, and a
     // thread that does not exist cannot already be busy.
     if (threadAtSend === 'new') return
+    const reattachGeneration = ++refusedTurnReattachGeneration
     await Promise.race([
       hydrateFromServer(
         threadAtSend,
         () =>
+          reattachGeneration === refusedTurnReattachGeneration &&
           generation === loadGeneration &&
           conversationStore.threadId === threadAtSend
       ),
       new Promise<void>((resolve) => setTimeout(resolve, RECONCILE_TIMEOUT_MS))
     ])
+    if (reattachGeneration === refusedTurnReattachGeneration)
+      refusedTurnReattachGeneration++
   }
 
   async function performSend(
@@ -1514,6 +1518,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   let loadGeneration = 0
+  let refusedTurnReattachGeneration = 0
 
   function newChat(
     source?: Exclude<AgentSessionThreadStartSource, 'first_open'>

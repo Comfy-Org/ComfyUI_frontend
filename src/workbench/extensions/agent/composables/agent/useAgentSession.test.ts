@@ -655,6 +655,69 @@ describe('useAgentSession (v1 composition root)', () => {
     })
   })
 
+  it('does not let a timed-out re-attachment replace a newer turn', async () => {
+    vi.useFakeTimers()
+    try {
+      let resolveHistory: ((history: AgentMessages) => void) | undefined
+      const postMessage = vi
+        .fn<
+          (
+            threadId: string,
+            req: PostMessageInput
+          ) => Promise<AgentTurnAccepted>
+        >()
+        .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+        .mockRejectedValueOnce(
+          new AgentApiError('turn in progress', 409, {
+            error: 'turn in progress',
+            type: 'TURN_IN_PROGRESS',
+            active_message_id: 'msg-2',
+            turn_id: 'turn-2'
+          })
+        )
+        .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-3' })
+      const getMessages = vi.fn(
+        () =>
+          new Promise<AgentMessages>((resolve) => {
+            resolveHistory = resolve
+          })
+      )
+      const { source, emit } = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({ postMessage, getMessages }),
+        events: source
+      })
+      session.start()
+      await session.sendMessage('first')
+      emit(done('msg-1'))
+
+      const refused = session.sendMessage('refused')
+      await vi.waitFor(() => expect(getMessages).toHaveBeenCalledOnce())
+      await vi.advanceTimersByTimeAsync(5_000)
+      await refused
+      await session.sendMessage('newer')
+
+      resolveHistory?.([
+        historyRow(1, 'user', 'turn-2', 'other client'),
+        {
+          ...historyRow(2, 'assistant', 'turn-2', '', 'msg-2'),
+          content: {},
+          status: 'streaming'
+        }
+      ])
+      await Promise.resolve()
+
+      expect(useAgentConversationStore().activeTurnId).toBe('msg-3')
+      expect(
+        session.entries.value
+          .filter((entry) => entry.role === 'user')
+          .map((entry) => entry.text)
+      ).toEqual(['first', 'refused', 'newer'])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   // The discriminator is load-bearing: a 409 from any other endpoint, or one
   // whose body this client cannot read, must stay an ordinary send failure
   // rather than trigger a re-read of a thread that is not actually busy.
