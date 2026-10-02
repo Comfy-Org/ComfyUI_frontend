@@ -345,20 +345,33 @@ describe('CurrentUserPopoverLegacy', () => {
       expect(screen.getByText('1000')).toBeInTheDocument()
     })
 
-    it('falls back to 0 when the facade reports no balance', () => {
+    // Replaces `it('falls back to 0 when the facade reports no balance')`.
+    // This popover is what `CurrentUserButton` renders whenever
+    // `showWorkspacePopover` is false, so the FE-3164 defect — a *failed*
+    // balance read displayed as `0` credits beside an untouched ledger —
+    // survived here after the workspace rail was fixed. A null balance is
+    // unknown, so it must not be formatted as a number at all.
+    it('does not report an unread balance as 0', () => {
       mockBalance.value = null
 
       renderComponent()
 
-      expect(formatCreditsFromCents).toHaveBeenCalledWith({
-        cents: 0,
-        locale: 'en',
-        numberOptions: {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 2
-        }
-      })
+      expect(formatCreditsFromCents).not.toHaveBeenCalled()
+      expect(screen.queryByText('0')).not.toBeInTheDocument()
+      expect(screen.getByText('—')).toBeInTheDocument()
+    })
+
+    it('still reports a known balance of zero as 0', () => {
+      mockBalance.value = {
+        amountMicros: 0,
+        effectiveBalanceMicros: 0,
+        currency: 'usd'
+      }
+
+      renderComponent()
+
       expect(screen.getByText('0')).toBeInTheDocument()
+      expect(screen.queryByText('—')).not.toBeInTheDocument()
     })
   })
   describe('workspace selector (non-cloud)', () => {

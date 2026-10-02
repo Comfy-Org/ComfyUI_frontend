@@ -18,10 +18,18 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import enMessages from '@/locales/en/main.json'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { reportError } from '@/platform/telemetry/reportError'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import type { BillingStatus } from '@/platform/workspace/api/workspaceApi'
 
 import CurrentUserPopoverWorkspace from './CurrentUserPopoverWorkspace.vue'
+
+/** `null` stands for "no balance read has landed yet" (FE-3164). */
+type MockBalance = {
+  amountMicros: number
+  effectiveBalanceMicros?: number
+} | null
 
 const state = vi.hoisted(() => {
   function initialPlanSlug(): string | null {
@@ -36,8 +44,13 @@ const state = vi.hoisted(() => {
     return 'paid'
   }
 
+  function initialBalance(): MockBalance {
+    return { amountMicros: 100 }
+  }
+
   return {
     isCloud: true,
+    balance: initialBalance(),
     billingStatus: initialBillingStatus(),
     canAccessSubscriptionFeatures: true,
     isCancelled: false,
@@ -66,6 +79,8 @@ vi.mock(
 )
 
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
+
+vi.mock(import('@/platform/telemetry/reportError'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -145,6 +160,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     useCurrentUser().userEmail = computed(() => 'liz@example.com')
     useCurrentUser().userPhotoUrl = computed(() => null)
     state.isCloud = true
+    state.balance = { amountMicros: 100 }
     state.billingStatus = 'paid'
     state.canAccessSubscriptionFeatures = true
     state.isCancelled = false
@@ -178,8 +194,10 @@ describe('CurrentUserPopoverWorkspace', () => {
           agentHasFunds: true
         }) satisfies SubscriptionInfo
     )
-    billingContext.balance = computed(
-      () => ({ amountMicros: 100, currency: 'USD' }) satisfies BalanceInfo
+    billingContext.balance = computed(() =>
+      state.balance
+        ? ({ currency: 'USD', ...state.balance } satisfies BalanceInfo)
+        : null
     )
     billingContext.isLoading = ref(false)
     vi.mocked(useBillingContext).mockReturnValue(billingContext)
@@ -707,5 +725,139 @@ describe('CurrentUserPopoverWorkspace', () => {
     expect(
       screen.queryByTestId('plans-credits-menu-item')
     ).not.toBeInTheDocument()
+  })
+
+  // FE-3164: the row used to coerce a missing balance with `?? 0`, so a failed
+  // balance read showed `0` coins beside an untouched ledger — the user's whole
+  // balance apparently gone, with no error and no way to ask again.
+  describe('credits row with no balance read', () => {
+    it('shows an unavailable amount rather than zero', () => {
+      state.balance = null
+
+      renderComponent()
+
+      const amount = screen.getByTestId('credits-amount')
+      expect(amount).toHaveTextContent('—')
+      expect(amount).not.toHaveTextContent('0')
+      expect(amount).toHaveAttribute('title', 'Balance unavailable')
+    })
+
+    it('offers a retry that re-reads the balance', async () => {
+      const user = userEvent.setup()
+      state.balance = null
+      const { fetchBalance } = useBillingContext()
+
+      renderComponent()
+
+      const retry = screen.getByTestId('retry-balance-button')
+      expect(retry).toHaveAttribute('aria-label', 'Balance unavailable. Retry')
+
+      await user.click(retry)
+      expect(fetchBalance).toHaveBeenCalled()
+    })
+
+    it('shows the amount with no retry once a balance has been read', () => {
+      state.balance = { amountMicros: 100 }
+
+      renderComponent()
+
+      expect(screen.getByTestId('credits-amount')).toHaveTextContent('211')
+      expect(
+        screen.queryByTestId('retry-balance-button')
+      ).not.toBeInTheDocument()
+    })
+
+    // `initState` is the workspace store's lifecycle, not billing's, so it
+    // reaches `ready` while the balance read is still out. The retry used to
+    // render in that window, beside the loading skeleton — two controls making
+    // opposite claims about the same figure at the same time.
+    it('offers no retry while the first balance read is still in flight', () => {
+      state.balance = null
+      useBillingContext().isLoading = ref(true)
+
+      renderComponent()
+
+      expect(
+        screen.queryByTestId('retry-balance-button')
+      ).not.toBeInTheDocument()
+      // The skeleton is showing, so there is no amount element at all yet.
+      expect(screen.queryByTestId('credits-amount')).not.toBeInTheDocument()
+    })
+
+    // `authStore.fetchBalance` has no request-sequence guard, so two concurrent
+    // reads can resolve out of order and leave the older response displayed.
+    // The browser case additionally proves the in-flight guard holds against a
+    // dispatched click, which a real user cannot produce on a disabled control.
+    it('marks the retry busy and starts no second read while one is open', async () => {
+      const user = userEvent.setup()
+      state.balance = null
+      const { fetchBalance } = useBillingContext()
+      let finishRead: (() => void) | undefined
+      vi.mocked(fetchBalance).mockImplementation(
+        () =>
+          new Promise<void>((resolve) => {
+            finishRead = resolve
+          })
+      )
+
+      renderComponent()
+
+      const retry = screen.getByTestId('retry-balance-button')
+      await user.click(retry)
+      expect(fetchBalance).toHaveBeenCalledTimes(1)
+      // Visible feedback, so the click does not look inert.
+      await waitFor(() => expect(retry).toBeDisabled())
+      expect(retry).toHaveAttribute('aria-busy', 'true')
+
+      await user.click(retry)
+      expect(fetchBalance).toHaveBeenCalledTimes(1)
+
+      finishRead?.()
+      await waitFor(() => expect(retry).not.toBeDisabled())
+      await user.click(retry)
+      expect(fetchBalance).toHaveBeenCalledTimes(2)
+    })
+
+    // The default error handler toasts `error.message`, and on the legacy rail
+    // that message is assembled from the upstream payment-provider response
+    // body — one click would put raw upstream text in front of the user.
+    it('reports a failed retry without showing the upstream message', async () => {
+      const user = userEvent.setup()
+      state.balance = null
+      const { fetchBalance } = useBillingContext()
+      const upstream = new Error(
+        'failed to fetch balance: metronome 502 customer_id not found'
+      )
+      vi.mocked(fetchBalance).mockRejectedValue(upstream)
+      const add = vi.spyOn(useToastStore(), 'add')
+
+      renderComponent()
+
+      await user.click(screen.getByTestId('retry-balance-button'))
+
+      await waitFor(() => expect(add).toHaveBeenCalledOnce())
+      const detail = String(add.mock.calls[0][0].detail)
+      expect(detail).not.toContain('metronome')
+      expect(detail).toBe(enMessages.subscription.balanceUnavailableRetryFailed)
+      expect(reportError).toHaveBeenCalledWith(
+        upstream,
+        expect.objectContaining({ surface: 'billing' })
+      )
+    })
+
+    it('still shows a known zero balance as zero', () => {
+      state.balance = { amountMicros: 0 }
+
+      renderComponent()
+
+      const amount = screen.getByTestId('credits-amount')
+      // Anchored so a wrong non-zero figure such as `10` cannot satisfy the
+      // substring match and read as a correct known zero.
+      expect(amount).toHaveTextContent(/^0$/)
+      expect(amount).not.toHaveAttribute('title')
+      expect(
+        screen.queryByTestId('retry-balance-button')
+      ).not.toBeInTheDocument()
+    })
   })
 })
