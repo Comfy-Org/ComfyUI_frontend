@@ -1,7 +1,9 @@
-import type { TopupResult } from '@comfyorg/account-core/billing'
+import type {
+  BillingTelemetryEvent,
+  TopupResult
+} from '@comfyorg/account-core/billing'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import type { BillingTelemetryEvent } from '@/platform/telemetry/types'
 import {
   failedTopup,
   fakeBillingSdk,

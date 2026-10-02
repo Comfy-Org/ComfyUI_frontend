@@ -1,3 +1,4 @@
+import type { BillingTelemetryFailure } from '@comfyorg/account-core/billing'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 
@@ -10,7 +11,6 @@ import { toTierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import type { BillingFailure } from '@/platform/telemetry/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
 import type { SettledSubscribeResponse } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
@@ -154,7 +154,7 @@ export function useDowngradeToPersonal() {
     let memberRemovalFailures = 0
     let targetTier: TierKey | undefined
     let targetCycle: BillingCycle | undefined
-    let telemetryFailure: BillingFailure | undefined
+    let telemetryFailure: BillingTelemetryFailure | undefined
     let checkoutStartedAt: number | undefined
 
     const downgradeStartedAt = Date.now()

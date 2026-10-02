@@ -199,7 +199,7 @@ describe('billing-web on the shared web session', () => {
 
     await expect(
       session.signInPort.establish(firebaseUser('user-1'))
-    ).resolves.toBe(true)
+    ).resolves.toEqual({ status: 'ok' })
 
     expect(sent.find((r) => r.method === 'POST')?.headers).toMatchObject({
       authorization: 'Bearer proof-user-1'
@@ -302,7 +302,7 @@ describe('billing-web on the shared web session', () => {
           }),
           { status: 403 }
         ),
-      established: false,
+      established: { status: 'error', code: 'ACCESS_DENIED' },
       scope: undefined
     },
     {
@@ -317,7 +317,7 @@ describe('billing-web on the shared web session', () => {
             role: 'owner'
           })
         ),
-      established: true,
+      established: { status: 'ok' },
       scope: 'ws-b'
     }
   ])(

@@ -1634,6 +1634,26 @@ export type PreviewSubscribeResponse = {
    */
   proration_at?: string
   /**
+   * Stripe's prorated charge for the rest of the current period on the
+   * new plan, before discounts. In embedded checkout, present on an
+   * immediate plan change that Stripe prorates, when every discount on
+   * today's invoice is itemized in discounts or none applies; absent on
+   * the monthly-to-yearly reset, scheduled changes and a first
+   * subscription.
+   * When present, proration_remaining_cents minus proration_unused_cents
+   * is the invoice's proration before discounts; other invoice lines are
+   * not itemized.
+   *
+   */
+  proration_remaining_cents?: number
+  /**
+   * Stripe's credit for unused time on the old plan, as a positive
+   * amount to subtract. Present exactly when proration_remaining_cents
+   * is.
+   *
+   */
+  proration_unused_cents?: number
+  /**
    * Opaque short-lived quote identifier to echo on Subscribe.
    */
   quote_id?: string
@@ -1711,12 +1731,37 @@ export type PreviewPlanInfo = {
   duration: SubscriptionDuration
   /**
    * The plan's price for one billing period before invoice-level
-   * discounts, as rated by Stripe. Present only on new_plan of
+   * discounts, as rated by Stripe: the compare-at price a checkout
+   * strikes through beside price_cents. Present only on new_plan of
    * Stripe-rated quotes that itemize every applied discount in
-   * discounts.
+   * discounts, and only when it is above price_cents, so a client
+   * shows the strikethrough exactly when this field is present.
+   * Same basis as price_cents: the whole subscription for one
+   * billing period. No plan on sale is priced by seat (personal plans
+   * are one seat; Team is priced by its credit stop), so the seat
+   * count changes neither.
    *
    */
   list_price_cents?: number
+  /**
+   * list_price_cents divided by 12 and rounded half up to the nearest
+   * cent, for showing a yearly plan's pre-discount per-month price.
+   * Display only, like monthly_price_cents. Present exactly when
+   * list_price_cents is present on an ANNUAL new_plan, so a client
+   * strikes it through beside monthly_price_cents whenever it is
+   * present.
+   *
+   */
+  monthly_list_price_cents?: number
+  /**
+   * price_cents divided by 12 and rounded half up to the nearest cent,
+   * for showing a yearly plan as a per-month price. Display only: the
+   * yearly charge is still price_cents, and 12 times this value can
+   * differ from it by up to 6 cents. Present only on new_plan, and only
+   * when duration is ANNUAL.
+   *
+   */
+  monthly_price_cents?: number
   /**
    * Current billing period end (only for current_plan)
    */
@@ -4210,6 +4255,7 @@ export type BillingOpStatusResponse = {
     | 'failed_retryable'
     | 'succeeded'
     | 'reconciliation_needed'
+  charge_breakdown?: BillingOpChargeBreakdown
   /**
    * When the operation completed (success or failure)
    */
@@ -4311,6 +4357,69 @@ export type BillingOpStatusResponse = {
 export type BillingOpReceiptPlan = {
   duration: SubscriptionDuration
   slug: string
+}
+
+/**
+ * One deduction from today's charge. discount is the promotion in the
+ * quote's discount shape (kind promotion, without amount_off_cents; the
+ * amount is amount_cents), present exactly for promo_code and
+ * subscription_discount. Its duration_in_months is set only for
+ * promo_code: a carried promotion's remaining term is not the coupon's.
+ *
+ */
+export type BillingOpChargeReason = {
+  /**
+   * What this reason removed from today's charge, as a positive amount.
+   */
+  amount_cents: number
+  discount?: SubscriptionDiscount
+  /**
+   * promo_code is the promotion code entered for this operation;
+   * subscription_discount is a promotion the subscription already
+   * carried; account_balance is existing customer credit applied.
+   *
+   */
+  kind: 'promo_code' | 'subscription_discount' | 'account_balance'
+}
+
+/**
+ * Display only. Why a succeeded subscription operation charged other
+ * than its plan rate, read from the operation's paid Stripe invoice.
+ * Present only when that invoice collected more than zero and a
+ * promotion, the account balance or proration moved the charge off the
+ * plan rate; absent means no rows. Plan coupons (the annual or team
+ * commitment rate) are part of the rate and are never a reason. Never
+ * present for top-ups. Returned only to workspace billing managers,
+ * like amount_charged_cents.
+ *
+ */
+export type BillingOpChargeBreakdown = {
+  /**
+   * What the invoice collected, tax included.
+   */
+  amount_charged_cents: number
+  currency: string
+  /**
+   * The invoice billed the new plan for the rest of the current
+   * period. A prorated charge is named, never itemized, so reasons is
+   * empty exactly when this is true.
+   *
+   */
+  prorated: boolean
+  /**
+   * One row per deduction from today's charge, in display order:
+   * promotions in the invoice's order, then the account balance.
+   *
+   */
+  reasons: Array<BillingOpChargeReason>
+}
+
+export type BillingOpCancelResponse = {
+  billing_op_id: string
+  /**
+   * canceled: the operation was dropped and nothing was charged. cancel_requested: the cancel was delivered but has not settled yet.
+   */
+  status: 'canceled' | 'cancel_requested'
 }
 
 /**
@@ -7921,6 +8030,62 @@ export type GetBillingOpStatusResponses = {
 export type GetBillingOpStatusResponse =
   GetBillingOpStatusResponses[keyof GetBillingOpStatusResponses]
 
+export type CancelBillingOpData = {
+  body?: never
+  path: {
+    /**
+     * The billing operation ID
+     */
+    id: string
+  }
+  query?: never
+  url: '/api/billing/ops/{id}/cancel'
+}
+
+export type CancelBillingOpErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
+  /**
+   * Billing operation not found
+   */
+  404: ErrorResponse
+  /**
+   * Not canceled. `code` is `NOT_CANCELABLE` or `PAYMENT_IN_FLIGHT`.
+   */
+  409: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type CancelBillingOpError =
+  CancelBillingOpErrors[keyof CancelBillingOpErrors]
+
+export type CancelBillingOpResponses = {
+  /**
+   * Canceled; nothing was charged. Also returned for an operation already discarded or expired without authentication, so a repeat is safe.
+   */
+  200: BillingOpCancelResponse
+  /**
+   * Cancel requested but not yet settled. Poll `GET /api/billing/ops/{id}` for the final outcome.
+   */
+  202: BillingOpCancelResponse
+}
+
+export type CancelBillingOpResponse =
+  CancelBillingOpResponses[keyof CancelBillingOpResponses]
+
 export type ListSavedPaymentMethodsData = {
   body?: never
   path?: never
@@ -8648,6 +8813,15 @@ export type GetFeaturesResponses = {
    * Success
    */
   200: {
+    /**
+     * Authenticated assignment for the Agent free-use notice placement experiment. Always present and defaults to control when the caller is unauthenticated, evaluation is unavailable, or no treatment is assigned.
+     */
+    'agent-free-use-message-placement':
+      | 'control'
+      | 'top-banner'
+      | 'near-composer'
+      | 'above-input'
+      | 'inside-input'
     /**
      * Origin of the billing-web deployment paired with this Cloud environment (e.g. https://billing.comfy.org). Absent when BILLING_WEB_URL is not configured on the server, so a client can tell "not configured" from "configured as empty".
      */
@@ -10399,7 +10573,7 @@ export type ExecutePromptErrors = {
    */
   401: ErrorResponse
   /**
-   * Payment required - Insufficient credits
+   * The account's plan does not allow this submission; nothing was queued and retrying without changing the plan never succeeds. Disambiguated by the body's `error.type`, NOT by parsing `error.message`: `PAYMENT_REQUIRED` (no active subscription, no funds, blocked tier), `CLOUD_SUBSCRIPTION_REQUIRED`, `FREE_TIER_EXHAUSTED`, `PARTNER_NODE_PAYMENT_REQUIRED`, or `MODEL_PAYMENT_REQUIRED`.
    */
   402: PromptErrorResponse
   /**
@@ -10411,7 +10585,7 @@ export type ExecutePromptErrors = {
    */
   413: PromptErrorResponse
   /**
-   * Retryable backpressure. Two distinct causes, disambiguated by the body's `error.type`, NOT by parsing `error.message`: `PAYMENT_REQUIRED` / `FREE_TIER_UNAVAILABLE` / `FREE_TIER_EXHAUSTED` / `PARTNER_NODE_PAYMENT_REQUIRED` (a billing gate - retrying without paying never succeeds), or `QUEUE_LIMIT` (this workspace's bounded job queue is full - retrying after some queued jobs complete will succeed).
+   * Retryable backpressure, disambiguated by the body's `error.type`: `QUEUE_LIMIT` (this workspace's bounded job queue is full - retrying after some queued jobs complete will succeed) or `FREE_TIER_UNAVAILABLE` (the free tier is switched off for now - retrying once it is back will succeed). Plan and billing refusals are 402, not 429.
    */
   429: PromptErrorResponse
   /**

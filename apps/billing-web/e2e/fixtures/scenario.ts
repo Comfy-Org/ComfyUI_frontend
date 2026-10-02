@@ -231,7 +231,7 @@ const CREATOR_YEARLY = {
  * The default Creator Monthly subscriber switching to Creator Yearly, quoted
  * as the real Cloud quotes it: the reset to yearly charges in full today,
  * carries no proration instant, and reports the yearly renewal date, the
- * plan's list price and the pre-discount subtotal.
+ * plan's list price, its monthly figures and the pre-discount subtotal.
  */
 export function switchToYearly(scenario: CloudScenario): void {
   const monthly = scenario.plans.plans[0]
@@ -267,6 +267,8 @@ export function switchToYearly(scenario: CloudScenario): void {
       duration: CREATOR_YEARLY.duration,
       price_cents: CREATOR_YEARLY.price_cents,
       list_price_cents: 33_600,
+      monthly_price_cents: 2240,
+      monthly_list_price_cents: 2800,
       credits_cents: CREATOR_YEARLY.credits_cents,
       seat_summary: CREATOR_YEARLY.seat_summary
     }

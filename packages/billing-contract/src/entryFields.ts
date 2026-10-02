@@ -11,6 +11,8 @@ export const ENTRY_PARAM_PRODUCT = 'product'
 export const ENTRY_PARAM_RETURN_TO = 'return_to'
 /** Also what a return URL names the billed workspace under. */
 export const ENTRY_PARAM_WORKSPACE = 'workspace'
+/** Outside the table below: a source off the shared list is dropped, never an error. */
+export const ENTRY_PARAM_SOURCE = 'source'
 
 export type OptionalEntryKey =
   | 'plan'

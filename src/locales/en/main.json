@@ -3356,22 +3356,34 @@
       },
       "outOfCredits": {
         "title": "Out of credits",
-        "body": "Your team has used all its credits. Add more credits to continue generating or wait until credits refill on {date}.",
-        "bodyNoDate": "Your team has used all its credits. Add more credits to continue generating.",
-        "memberBody": "Your team has used all its credits. Your workspace admins need to add more credits to continue generating.",
+        "body": "Your team has used all its credits. Add more credits or wait until credits refill on {date}.",
+        "bodyNoDate": "Your team has used all its credits. Add more credits.",
+        "memberBody": "Your team has used all its credits. Ask your workspace owner to add more credits or wait until credits refill on {date}.",
+        "memberBodyNoDate": "Your team has used all its credits. Ask your workspace owner to add more credits.",
         "addCredits": "Add credits",
-        "dismiss": "Dismiss",
-        "upgradeBody": "Upgrade your plan to add credits and continue generating."
+        "dismiss": "Dismiss"
       },
       "ending": {
         "title": "Your team plan ends on {date}",
-        "body": "Members keep full access until then. Resume your subscription to keep your shared credits and seats.",
+        "body": "Members keep full access until then. Resume your plan to keep your team's shared credits.",
+        "memberBody": "You can run workflows until then.",
         "enterpriseTitle": "Your Enterprise plan ends on {date}",
         "enterpriseBody": "Members keep full access until then. Reach out to our sales team to extend.",
-        "reactivate": "Resume subscription"
+        "reactivate": "Resume plan",
+        "contactSales": "Contact sales"
+      },
+      "planEnded": {
+        "teamTitle": "Your team plan ended on {date}",
+        "teamBody": "Resubscribe to run workflows and get shared credits again.",
+        "teamMemberBody": "Ask your workspace owner to resubscribe.",
+        "enterpriseTitle": "Your Enterprise plan ended on {date}",
+        "enterpriseBody": "Contact sales to start a new Enterprise plan.",
+        "planTitle": "Your plan ended on {date}",
+        "salesBody": "Contact sales to start a new plan.",
+        "salesMemberBody": "Ask your workspace owner to contact sales."
       },
       "planChange": {
-        "title": "Your plan changes to {plan} on {date}",
+        "title": "Your plan changes to {plan} on {date}.",
         "body": "Your current plan stays active until then."
       },
       "updatePayment": "Update payment",
@@ -3442,6 +3454,7 @@
       "reactivateTeam": "Reactivate Team",
       "totalMembersCount": "{count} of {maxSeats} total members.",
       "needMoreMembers": "Need more members?",
+      "planEndedFooter": "Your plan has ended, so you can't add new members.",
       "contactUs": "Contact us",
       "noInvites": "No pending invites",
       "noInvitesMatch": "No invites match \"{query}\"",
@@ -5343,6 +5356,8 @@
     "loadFailed": "The agent panel failed to load.",
     "entryButton": "Agent",
     "feedbackCaption": "Share feedback",
+    "freeUseNoticeLabel": "Free use notice",
+    "freeUseNotice": "Prompts and workflow runs are FREE during BETA.",
     "runNotice": "The agent can modify the graph. Check Run permissions before allowing it to execute the workflow.",
     "runNoticeExpanded": "The agent can modify your workflow. Check Run permissions before allowing it to execute.",
     "workflowEditNotice": "The agent can now edit {workflow}. It works on 1 workflow at a time, and you can switch workflows during chat.",
@@ -5480,6 +5495,7 @@
     "noNodesToMention": "No nodes in this workflow",
     "friend": "there",
     "sendFailed": "Message failed to send",
+    "recoveredTurnFailed": "The agent could not complete this response.",
     "sendBusy": "A message is already being sent",
     "retryAfterSeconds": "You can try again in {seconds}s.",
     "malformedEvent": "The agent sent an event this panel could not read",

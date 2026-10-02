@@ -1,3 +1,8 @@
+import type {
+  CheckoutEntryFlow,
+  CheckoutJourneyPhaseEvent,
+  SubscriptionCheckoutType
+} from '@comfyorg/account-core/billing'
 import { useToast } from 'primevue/usetoast'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { computed, onScopeDispose, ref, watch } from 'vue'
@@ -15,12 +20,7 @@ import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscript
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
-import type {
-  CheckoutEntryFlow,
-  CheckoutJourneyPhaseEvent,
-  PaymentIntentSource,
-  SubscriptionCheckoutType
-} from '@/platform/telemetry/types'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
@@ -105,11 +105,16 @@ type PreviewVariant =
   | 'personal-new'
   | null
 
+const BILLING_PORTAL_ORIGINS = new Set([
+  'https://billing.stripe.com',
+  'https://checkout.comfy.org'
+])
+
 function parseBillingPortalUrl(url: unknown): URL | null {
   if (typeof url !== 'string') return null
   try {
     const portalUrl = new URL(url)
-    return portalUrl.origin === 'https://billing.stripe.com' ? portalUrl : null
+    return BILLING_PORTAL_ORIGINS.has(portalUrl.origin) ? portalUrl : null
   } catch {
     return null
   }
@@ -864,7 +869,7 @@ export function useSubscriptionCheckout(
     loadingTier.value = tierKey
     selectedTierKey.value = tierKey
     selectedBillingCycle.value = billingCycle
-    enterCheckoutJourney(`${tierKey}:${billingCycle}`)
+    const enteredJourney = enterCheckoutJourney(`${tierKey}:${billingCycle}`)
 
     try {
       let planSlug = getApiPlanSlug(tierKey, billingCycle)
@@ -884,7 +889,13 @@ export function useSubscriptionCheckout(
         await showTeamToPersonalDowngrade(planSlug, tierKey)
         return
       }
-      if (openHostedBillingTab('checkout', { plan: planSlug })) {
+      if (
+        openHostedBillingTab('checkout', {
+          plan: planSlug,
+          source: paymentIntentSource,
+          journeyId: enteredJourney?.journey_id
+        })
+      ) {
         emit('close', false)
         return
       }
@@ -977,13 +988,17 @@ export function useSubscriptionCheckout(
     selectedTierKey.value = null
     previewData.value = null
     quoteIsCurrent.value = false
-    enterCheckoutJourney(`team:${payload.stop.id}:${payload.billingCycle}`)
+    const enteredJourney = enterCheckoutJourney(
+      `team:${payload.stop.id}:${payload.billingCycle}`
+    )
 
     if (
       payload.stop.id &&
       openHostedBillingTab('checkout', {
         plan: getTeamPlanSlug(payload.billingCycle),
-        teamCreditStopId: payload.stop.id
+        teamCreditStopId: payload.stop.id,
+        source: paymentIntentSource,
+        journeyId: enteredJourney?.journey_id
       })
     ) {
       emit('close', false)
@@ -1839,7 +1854,7 @@ export function useSubscriptionCheckout(
   async function handleResubscribe() {
     if (!canReactivatePlan.value) return
 
-    if (openHostedBillingTab('subscription')) {
+    if (openHostedBillingTab('subscription', { source: paymentIntentSource })) {
       emit('close', false)
       return
     }

@@ -298,6 +298,10 @@
 </template>
 
 <script setup lang="ts">
+import type {
+  BillingOperationTerminal,
+  CheckoutJourneyPhaseEvent
+} from '@comfyorg/account-core/billing'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -313,11 +317,7 @@ import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
 import { isCloud } from '@/platform/distribution/types'
-import type {
-  BillingOperationTerminal,
-  CheckoutJourneyPhaseEvent,
-  PaymentIntentSource
-} from '@/platform/telemetry/types'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { reportError } from '@/platform/telemetry/reportError'
