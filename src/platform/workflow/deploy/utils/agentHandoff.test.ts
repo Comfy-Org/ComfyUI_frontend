@@ -40,7 +40,9 @@ describe('buildAgentHandoffDocument', () => {
     (distribution) => {
       const document = buildAgentHandoffDocument({ distribution, inputs })
 
-      expect(document).not.toMatch(/^comfy(?:[ \t]+\S+)*[ \t]+build(?:[ \t]|$)/m)
+      expect(document).not.toMatch(
+        /^comfy(?:[ \t]+\S+)*[ \t]+build(?:[ \t]|$)/m
+      )
       expect(document).not.toContain('--from-')
     }
   )
