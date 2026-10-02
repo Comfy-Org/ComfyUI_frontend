@@ -65,15 +65,13 @@ Entity registration collision and recovery policy is defined by
 Node ID reminting policy is defined by
 [ADR MINT](CRDT-MINT-0018-merge-identity-for-node-transfers.md).
 
-### Amendment (2026-10-01, PR 19717): serialized widget identity — DRAFT, NOT RATIFIED
+### Amendment (2026-10-01, PR 19717): serialized widget identity
 
-> **This amendment is a draft and does not govern.** It is written by the author
-> of PR 19717 to record how the frontend follows the occurrence-aware widget
-> identity merged upstream for `@comfyorg/comfy-multi-player` schema v5, so
-> that compatibility can be accepted or rejected explicitly rather than
-> inferred from a merge. It needs a frontend maintainer's ratification before it
-> has any force in this repository. See the alternative below for what rejecting
-> that compatibility requires.
+The frontend follows the occurrence-aware widget identity merged upstream for
+`@comfyorg/comfy-multi-player` schema v5: a serialized `(name, occurrence)`
+identity, written as `widgets_values_ordered`, while the runtime `WidgetId`
+stays name-keyed and still collides on a repeated name. The alternative this
+rejects is recorded at the end of the amendment.
 
 **The cost this revisits.** "Two widgets on one node cannot share a name" is
 listed above as an accepted cost of name-keyed identity, and
@@ -125,21 +123,20 @@ at runtime, because an ambiguous name cannot be typed into a store lookup. Only
 persistence has to tell the two apart, because only persistence has to put both
 values back.
 
-**What is owed if this is accepted.** `widgets_values_ordered` becomes a storage
-format this app must keep reading, which is the part that cannot be undone by a
-revert. The field is written only when a name actually repeats, so an ordinary
+**What this owes.** `widgets_values_ordered` becomes a storage format this app
+must keep reading, which is the part that cannot be undone by a revert. The
+field is written only when a name actually repeats, so an ordinary
 workflow's JSON is unchanged, and the reader
 (`readOrderedWidgetValues`, `src/lib/litegraph/src/utils/widgetIdentity.ts`) is a
 validation boundary that degrades one node rather than failing a load.
 
-**The alternative, if this is rejected.** Rejection means choosing an explicit
-future frontend/document-host incompatibility: either revise the unreleased
-shared schema before the frontend consumes it, or define an adapter and a loss
-policy for occurrence-aware values received from the document host. Merely
-dropping `widgets_values_ordered` and reporting `ensureUniqueWidgetNames`
-failures would leave the canvas unable to restore state once cloud/local adopt
-the occurrence-aware applier, so it is not an architecture-neutral smaller
-route. The choice belongs to a frontend maintainer, not to the PR author.
+**The alternative this rejects.** The rejected option was an explicit future
+frontend/document-host incompatibility: either revise the unreleased shared
+schema before the frontend consumes it, or define an adapter and a loss policy
+for occurrence-aware values received from the document host. Merely dropping
+`widgets_values_ordered` and reporting `ensureUniqueWidgetNames` failures is not
+an architecture-neutral smaller route, because it would leave the canvas unable
+to restore state once cloud/local adopt the occurrence-aware applier.
 
 ## Context
 
