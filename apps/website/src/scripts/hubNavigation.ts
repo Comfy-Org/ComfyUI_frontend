@@ -82,11 +82,13 @@ function pinToolbar() {
 // keystroke that worked the tab in the first place.
 const PIN_TIMEOUT_MS = 3000
 const READER_SCROLLS = ['wheel', 'touchmove']
-// Enter and Space work the tab itself, so only the keys that scroll end the
-// wait: a reader on a keyboard gets out of it the same way a reader on a
-// wheel does. A drag of the scrollbar still does not, having no event of its
-// own that the pin's own scrolling could be told apart from.
+// A tab is a link, which Enter follows and Space does not, so Space scrolls
+// here as it does anywhere else and belongs with the keys that end the wait:
+// a reader on a keyboard gets out of it the same way a reader on a wheel
+// does. A drag of the scrollbar still does not, having no event of its own
+// that the pin's own scrolling could be told apart from.
 const SCROLL_KEYS = new Set([
+  ' ',
   'PageUp',
   'PageDown',
   'ArrowUp',

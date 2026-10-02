@@ -317,6 +317,48 @@ describe('hubNavigation', () => {
     }
   )
 
+  // A tab is a link: Enter follows it, Space scrolls past it. Both reach this
+  // listener, and only one of them means the reader is leaving.
+  it.for([' ', 'PageDown', 'ArrowDown', 'Home', 'End'])(
+    'stops watching when the reader scrolls the page with %s',
+    async (key) => {
+      page.scrollHeight = SHORT_PAGE
+      await loadHubNavigation()
+      addToolbar()
+      startNavigation()
+      finishNavigation()
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key }))
+
+      expect(resizes[0].connected).toBe(false)
+      expect(mutations[0].connected).toBe(false)
+
+      page.scrollHeight = TALL_PAGE
+      resizes[0].fire()
+      mutations[0].fire()
+
+      expect(scrollTo).not.toHaveBeenCalled()
+    }
+  )
+
+  it.for(['Enter', 'Tab', 'a'])(
+    'keeps waiting through %s, which does not scroll the page',
+    async (key) => {
+      page.scrollHeight = SHORT_PAGE
+      await loadHubNavigation()
+      addToolbar()
+      startNavigation()
+      finishNavigation()
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key }))
+
+      page.scrollHeight = TALL_PAGE
+      resizes[0].fire()
+
+      expect(scrollTo).toHaveBeenCalled()
+    }
+  )
+
   it('stops watching when the next navigation starts', async () => {
     page.scrollHeight = SHORT_PAGE
     await loadHubNavigation()
