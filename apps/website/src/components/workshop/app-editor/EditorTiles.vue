@@ -1,6 +1,4 @@
 <script setup lang="ts" generic="T extends string">
-import { Check } from '@lucide/vue'
-
 import { cn } from '@comfyorg/tailwind-utils'
 
 const {
@@ -42,13 +40,6 @@ const value = defineModel<T>()
         "
       >
         <slot name="tile" :option />
-        <span
-          v-if="value === option.id"
-          class="absolute top-2 right-2 grid size-5 place-items-center rounded-full bg-primary-comfy-yellow text-primary-comfy-ink shadow-md"
-          aria-hidden="true"
-        >
-          <Check class="size-3.5" :stroke-width="3" />
-        </span>
       </span>
       <span
         :class="

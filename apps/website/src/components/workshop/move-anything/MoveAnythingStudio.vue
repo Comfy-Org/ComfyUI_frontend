@@ -14,7 +14,6 @@ import MoveAnythingMain from './MoveAnythingMain.vue'
 import MoveAnythingPanel from './MoveAnythingPanel.vue'
 import MoveAnythingRun from './MoveAnythingRun.vue'
 import MoveAnythingSummary from './MoveAnythingSummary.vue'
-import MoveAnythingTrays from './MoveAnythingTrays.vue'
 
 const { locale = 'en', layout = 'd' } = defineProps<{
   locale?: Locale
@@ -51,7 +50,6 @@ const panelLabels = {
       <EditorAlert v-if="phase.kind === 'failed'">
         {{ mc('move.failed', locale) }}
       </EditorAlert>
-      <MoveAnythingTrays v-if="!panel" :move :locale />
     </template>
     <template #dock>
       <MoveAnythingDocks v-model:view="view" :move :panel :locale />

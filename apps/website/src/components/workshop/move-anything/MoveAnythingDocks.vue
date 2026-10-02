@@ -23,7 +23,7 @@ const {
 }>()
 
 const view = defineModel<MoveView>('view', { required: true })
-const { image, phase, objects, tool, tray, quality } = move
+const { image, phase, tool } = move
 const labels = {
   compare: mc('move.view.compare', locale),
   result: mc('move.view.result', locale),
@@ -54,12 +54,8 @@ const labels = {
     :move
     :image
     :tool
-    :tray
-    :quality
-    :object-count="objects.length"
     :locale
     @tool="(next) => (tool = next)"
     @file="move.useFile"
-    @tray="move.toggleTray"
   />
 </template>
