@@ -79,7 +79,16 @@ export type OnboardingSurvey = {
  * Remote configuration type
  * Configuration fetched from the server at runtime
  */
-export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
+type KnownFeatureConfig = {
+  [Key in keyof GetFeaturesResponses[200] as string extends Key
+    ? never
+    : Key]?: GetFeaturesResponses[200][Key]
+}
+
+export type RemoteConfig = Omit<
+  KnownFeatureConfig,
+  'agent-free-use-message-placement'
+> & {
   gtm_container_id?: string
   ga_measurement_id?: string
   mixpanel_token?: string

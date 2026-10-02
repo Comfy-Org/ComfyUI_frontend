@@ -13,7 +13,6 @@ import {
   FREE_USE_PLACEMENT_FLAG,
   useFreeUsePlacement
 } from './freeUsePlacement'
-import type { FreeUseVariant } from './freeUsePlacement'
 
 vi.mock(import('@/platform/remoteConfig/remoteConfig'))
 vi.mock(import('@/platform/telemetry'))
@@ -45,7 +44,7 @@ describe('useFreeUsePlacement', () => {
 
   it.for([undefined, 'unknown'])('keeps control for %s', async (value) => {
     remoteConfig.value = {
-      [FREE_USE_PLACEMENT_FLAG]: value as FreeUseVariant | undefined
+      [FREE_USE_PLACEMENT_FLAG]: value
     }
     authenticatedRemoteConfigState.value = 'authenticated'
     const { variant } = useFreeUsePlacement()
