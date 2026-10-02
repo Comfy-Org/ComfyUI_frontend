@@ -15,15 +15,12 @@ describe('HeaderMainMobile', () => {
     { build: 'in', workshopInBuild: true, hub: '/hub/' },
     { build: 'not in', workshopInBuild: false, hub: undefined }
   ])(
-    'offers Explore the Hub under Products when the workshop is $build the build',
+    'lists the Hub on its own when the workshop is $build the build',
     async ({ workshopInBuild, hub }) => {
       await openMenu(workshopInBuild)
-      await userEvent.click(screen.getByRole('button', { name: /^Products/ }))
 
       expect(
-        screen
-          .queryByRole('link', { name: 'Explore the Hub' })
-          ?.getAttribute('href')
+        screen.queryByRole('link', { name: /^Hub/ })?.getAttribute('href')
       ).toBe(hub)
     }
   )

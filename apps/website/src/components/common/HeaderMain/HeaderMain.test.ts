@@ -1,5 +1,4 @@
 import { render, screen, waitFor, within } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, readonly, ref } from 'vue'
 
@@ -14,16 +13,6 @@ vi.mock(import('../../../scripts/posthog'))
 
 let flag = ref(false)
 let visibility = ref(false)
-
-async function hubLink() {
-  const [products] = screen.getAllByRole('button', { name: /^Products/ })
-  if (products.getAttribute('aria-expanded') !== 'true')
-    await userEvent.click(products)
-  return within(await screen.findByTestId('nav-dropdown')).queryByRole('link', {
-    name: /explore the hub/i,
-    hidden: true
-  })
-}
 
 function renderHeader(workshopInBuild = false) {
   return render(HeaderMain, {
@@ -64,7 +53,9 @@ describe('HeaderMain workshop gating', () => {
       renderHeader(workshopInBuild)
       await nextTick()
 
-      expect((await hubLink()) !== null).toBe(modelsAvailable)
+      expect(screen.queryByRole('link', { name: /^Hub\b/i }) !== null).toBe(
+        modelsAvailable
+      )
     }
   )
 
@@ -189,14 +180,14 @@ describe('HeaderMain workshop gating', () => {
   it('updates navigation and removes the account controls when access is revoked', async () => {
     flag.value = true
     renderHeader(true)
-    expect(await hubLink()).toBeNull()
+    expect(screen.queryByRole('link', { name: /^Hub\b/i })).toBeNull()
     expect(screen.queryByTestId('header-account')).toBeNull()
 
     visibility.value = true
-    await screen.findByRole('link', { name: /explore the hub/i, hidden: true })
+    await screen.findByRole('link', { name: /^Hub\b/i })
     visibility.value = false
     await nextTick()
-    expect(await hubLink()).toBeNull()
+    expect(screen.queryByRole('link', { name: /^Hub\b/i })).toBeNull()
     expect(screen.queryByTestId('header-account')).toBeNull()
   })
 })

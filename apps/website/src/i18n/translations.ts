@@ -9685,15 +9685,6 @@ Enterprise`
   // Workshop – header account + nav
   'nav.workshop': { en: 'Hub', 'zh-CN': 'Hub' },
   'nav.cinematicStudio': { en: 'Cinematic Studio', 'zh-CN': '电影工作室' },
-  'nav.hubFeaturedAlt': {
-    en: 'A neon-lit street scene made in Cinematic Studio',
-    'zh-CN': '用电影工作室制作的霓虹街景'
-  },
-  'nav.hubFeaturedDescription': {
-    en: 'Apps, workflows and models, ready to run',
-    'zh-CN': '应用、工作流和模型，随时可运行'
-  },
-  'nav.hubFeaturedCta': { en: 'Explore the Hub', 'zh-CN': '探索 Hub' },
   'nav.colCreate': { en: 'Create', 'zh-CN': '创作' },
   'nav.colCustomize': { en: 'Customize', 'zh-CN': '定制' },
   'nav.colBuild': { en: 'Build', 'zh-CN': '构建' },

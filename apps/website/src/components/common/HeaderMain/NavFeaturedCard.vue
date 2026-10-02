@@ -52,12 +52,6 @@ function pauseBeforeAutoplayLimit({ currentTarget }: Event) {
       <p class="mt-4 font-extrabold uppercase">
         {{ featured.title }}
       </p>
-      <p
-        v-if="featured.description"
-        class="mt-1 w-62 text-sm text-primary-warm-gray"
-      >
-        {{ featured.description }}
-      </p>
       <div class="mt-1">
         <ButtonPill as="span" icon-position="left" variant="ghost">
           {{ featured.cta.label }}

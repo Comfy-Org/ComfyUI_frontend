@@ -18,12 +18,14 @@ import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import type { CatalogueApp } from '../../lib/workshop/catalogue-apps'
 import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
+import { TASK_CARD } from '../../lib/workshop/card-layout'
+import CardRow from './CardRow.vue'
 import ExploreDoors from './ExploreDoors.vue'
 import ExploreFinder from './ExploreFinder.vue'
 import ExploreResults from './ExploreResults.vue'
 import ExploreTaskTile from './ExploreTaskTile.vue'
 
-const RESULTS = 8
+const RESULTS = 12
 
 const {
   apps,
@@ -104,14 +106,16 @@ function clear() {
       aria-labelledby="explore-tasks"
       data-testid="explore-tasks"
     >
-      <h2
-        id="explore-tasks"
-        class="mb-5 text-xl font-medium text-primary-warm-white"
-      >
-        {{ t('workshop.explore.tasksTitle', locale) }}
-      </h2>
-      <ul class="grid grid-cols-2 gap-5 md:grid-cols-3 xl:grid-cols-4">
-        <li v-for="task in tasks" :key="task.useCase">
+      <CardRow :locale>
+        <template #heading>
+          <h2
+            id="explore-tasks"
+            class="text-xl font-medium text-primary-warm-white"
+          >
+            {{ t('workshop.explore.tasksTitle', locale) }}
+          </h2>
+        </template>
+        <li v-for="task in tasks" :key="task.useCase" :class="TASK_CARD">
           <ExploreTaskTile
             :use-case="task.useCase"
             :items="task.items"
@@ -119,7 +123,7 @@ function clear() {
             @select="useCase = task.useCase"
           />
         </li>
-      </ul>
+      </CardRow>
     </section>
 
     <ExploreResults

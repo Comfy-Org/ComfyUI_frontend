@@ -134,15 +134,6 @@ onUnmounted(() => {
               </Button>
 
               <div v-if="activeItem" class="mt-6 flex flex-col gap-y-12">
-                <Button
-                  v-if="activeItem.featured?.showOnMobile"
-                  :href="activeItem.featured.cta.href"
-                  variant="nav"
-                  as="a"
-                  data-testid="mobile-nav-featured"
-                >
-                  {{ activeItem.featured.cta.label }}
-                </Button>
                 <div
                   v-for="column in activeItem.columns"
                   :key="column.header"

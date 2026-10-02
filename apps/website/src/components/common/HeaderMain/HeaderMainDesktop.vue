@@ -34,13 +34,12 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
   const onLeafPage = mainNavigation.value.some(
     (item) => item.href && isHrefActive(item.href, path)
   )
-  const hrefs = [
-    ...(navItem.featured ? [navItem.featured.cta.href] : []),
-    ...navItem.columns.flatMap((column) =>
-      column.items.map((item) => item.href)
+  return (
+    !onLeafPage &&
+    navItem.columns.some((column) =>
+      column.items.some((item) => isHrefActive(item.href, path))
     )
-  ]
-  return !onLeafPage && hrefs.some((href) => isHrefActive(href, path))
+  )
 }
 </script>
 

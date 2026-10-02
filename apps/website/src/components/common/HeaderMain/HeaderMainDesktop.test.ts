@@ -23,13 +23,16 @@ describe('HeaderMainDesktop', () => {
     )
   })
 
-  it('opens every Hub space from Products', async () => {
+  it('opens every Hub section from Products, with the Hub itself apart', async () => {
     await openProducts('/pricing', true)
     const menu = within(await screen.findByTestId('nav-dropdown'))
 
-    expect(
-      await menu.findByRole('link', { name: /explore the hub/i })
-    ).toHaveAttribute('href', '/hub/')
+    await menu.findAllByRole('link')
+    expect(menu.queryByRole('link', { name: /explore the hub/i })).toBeNull()
+    expect(screen.getByRole('link', { name: /^Hub/ })).toHaveAttribute(
+      'href',
+      '/hub/'
+    )
     expect(
       ['Apps', 'Workflows', 'Models'].map((name) =>
         menu
@@ -57,12 +60,18 @@ describe('HeaderMainDesktop', () => {
   })
 
   it.for([
-    { path: '/hub/', active: true },
-    { path: '/hub/models/', active: true },
-    { path: '/pricing', active: false }
-  ])('marks Products active on $path: $active', async ({ path, active }) => {
-    const products = await openProducts(path, true)
+    { path: '/hub/', hub: true, products: false },
+    { path: '/hub/models/', hub: false, products: true },
+    { path: '/pricing', hub: false, products: false }
+  ])(
+    'marks the Hub or Products active on $path',
+    async ({ path, hub, products }) => {
+      const productsButton = await openProducts(path, true)
 
-    expect(products.hasAttribute('data-active')).toBe(active)
-  })
+      expect([
+        screen.getByRole('link', { name: /^Hub/ }).hasAttribute('data-active'),
+        productsButton.hasAttribute('data-active')
+      ]).toEqual([hub, products])
+    }
+  )
 })

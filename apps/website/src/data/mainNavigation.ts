@@ -23,8 +23,6 @@ export type NavFeatured = {
   videoSrc?: string
   imageAlt?: string
   title: string
-  description?: string
-  showOnMobile?: boolean
   cta: {
     label: string
     ariaLabel?: string
@@ -54,14 +52,6 @@ export function getMainNavigation(
 ): NavItem[] {
   const routes = getRoutes(locale)
   const inHub = <T>(items: T[]) => (workshopInBuild ? items : [])
-  const hubFeatured: NavFeatured = {
-    imageSrc: '/images/cinematic-studio/neon-street.jpg',
-    imageAlt: t('nav.hubFeaturedAlt', locale),
-    title: t('nav.workshop', locale),
-    description: t('nav.hubFeaturedDescription', locale),
-    showOnMobile: true,
-    cta: { label: t('nav.hubFeaturedCta', locale), href: routes.hubExplore }
-  }
   const releaseFeatured: NavFeatured = {
     imageSrc: 'https://media.comfy.org/website/gemini-omni/card-5.webp',
     videoSrc: 'https://media.comfy.org/website/gemini-omni/card-5.webm',
@@ -74,10 +64,17 @@ export function getMainNavigation(
     }
   }
   return [
+    ...inHub<NavItem>([
+      {
+        label: t('nav.workshop', locale),
+        href: routes.hubExplore,
+        badge: 'new'
+      }
+    ]),
     {
       label: t('nav.products', locale),
       badge: 'new',
-      featured: workshopInBuild ? hubFeatured : releaseFeatured,
+      featured: releaseFeatured,
       columns: [
         {
           header: t('nav.colCreate', locale),

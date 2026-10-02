@@ -11,12 +11,9 @@ describe('getMainNavigation', () => {
       const links = (enabled: boolean) =>
         getMainNavigation(locale, enabled).flatMap((item) =>
           item.columns
-            ? [
-                ...(item.featured ? [item.featured.cta.href] : []),
-                ...item.columns.flatMap((column) =>
-                  column.items.map((entry) => entry.href)
-                )
-              ]
+            ? item.columns.flatMap((column) =>
+                column.items.map((entry) => entry.href)
+              )
             : [item.href]
         )
       const { hubExplore, hubApps, hubWorkflows, workshop } = getRoutes(locale)
@@ -79,21 +76,37 @@ describe('getMainNavigation', () => {
       ['Build', undefined],
       ['Resources', 'footer']
     ])
-    expect(products?.featured?.cta).toMatchObject({
-      label: 'Explore the Hub',
-      href: '/hub/'
-    })
+    expect(products?.featured?.cta.href).toBe('/gemini-omni/')
   })
 
-  it('opens an Enterprise menu after Products', () => {
-    expect(getMainNavigation('en').map((item) => item.label)).toEqual([
-      'Products',
-      'Enterprise',
-      'Pricing',
-      'Community',
-      'Company'
-    ])
-  })
+  it.for([
+    {
+      build: 'with',
+      on: true,
+      labels: [
+        'Hub',
+        'Products',
+        'Enterprise',
+        'Pricing',
+        'Community',
+        'Company'
+      ],
+      first: { label: 'Hub', href: '/hub/' }
+    },
+    {
+      build: 'without',
+      on: false,
+      labels: ['Products', 'Enterprise', 'Pricing', 'Community', 'Company'],
+      first: { label: 'Products' }
+    }
+  ])(
+    'leads with Hub on its own, apart from Products, $build the workshop',
+    ({ on, labels, first }) => {
+      const navigation = getMainNavigation('en', on)
+      expect(navigation.map((item) => item.label)).toEqual(labels)
+      expect(navigation[0]).toMatchObject(first)
+    }
+  )
 
   const featuredCards = [
     {
