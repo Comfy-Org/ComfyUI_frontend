@@ -3,6 +3,7 @@ import type { Relight } from '../../../composables/useRelight'
 import type { Locale } from '../../../i18n/translations'
 import { lc } from '../../../lib/workshop/relight/copy'
 import EditorCollapsible from '../app-editor/EditorCollapsible.vue'
+import RelightTools from './RelightTools.vue'
 import { RELIGHT_SECTIONS, sectionMeta } from './sections'
 
 const { relight, locale = 'en' } = defineProps<{
@@ -26,6 +27,9 @@ const { phase } = relight
       :meta="sectionMeta(section.id, relight, locale)"
       :initially-open="section.open"
     >
+      <template v-if="section.id === 'lights'" #actions>
+        <RelightTools :relight :locale compact />
+      </template>
       <component :is="section.content" :relight :locale />
     </EditorCollapsible>
   </fieldset>
