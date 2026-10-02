@@ -177,7 +177,6 @@ export class AgentPanel {
     await expect(this.workSummary).toHaveAttribute('aria-expanded', 'true')
   }
 
-  /** Reloads the page and waits for the agent gate to restore the open panel. */
   async reload(): Promise<void> {
     await this.page.reload()
     await expect(
