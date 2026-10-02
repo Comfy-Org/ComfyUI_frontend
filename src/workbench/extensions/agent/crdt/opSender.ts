@@ -511,7 +511,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     )
     const admissionTarget = admissionTargetOrSettle(minted, workflowId)
     if (admissionTarget === null) return
-    rememberMintedVersion(admissionTarget, baseVersion + minted.length - 1)
+    lastMintedVersions.set(admissionTarget, baseVersion + minted.length - 1)
     // Hold delivery for the whole admission: seal() below can re-enter through
     // custom serialization and request a pump, and draining it before these ops
     // are placed would put later-minted work on the wire first.
