@@ -11,6 +11,7 @@ import {
   qwenImage21Page
 } from '../../data/qwenImage21'
 import { minimaxMusic3Page } from '../../data/minimaxMusic3'
+import { nanoBananaPage } from '../../data/nanoBanana'
 import { seedancePage } from '../../data/seedance'
 import { wanAnimate2Page } from '../../data/wanAnimate2'
 import { wan3Page } from '../../data/wan3'
@@ -28,6 +29,7 @@ const pages: { name: string; page: ModelLaunchPage }[] = [
   { name: 'chatgptImage25', page: chatgptImage25Page },
   { name: 'qwenImage21', page: qwenImage21Page },
   { name: 'qwenImage21Announcement', page: qwenImage21AnnouncementPage },
+  { name: 'nanoBanana', page: nanoBananaPage },
   { name: 'seedance', page: seedancePage },
   { name: 'ltx', page: ltxPage },
   { name: 'geminiOmni', page: geminiOmniPage },
@@ -46,6 +48,7 @@ const HERO_STILL_URL =
 describe.for(pages)('$name launch page config', ({ page }) => {
   it('gives every gallery card a unique id', () => {
     const ids = [
+      ...(page.showcases ?? []).flatMap((s) => s.cards.map((card) => card.id)),
       ...(page.gallery?.cards.map((card) => card.id) ?? []),
       ...(page.audioGallery?.cards.map((card) => card.id) ?? [])
     ]
@@ -63,11 +66,17 @@ describe.for(pages)('$name launch page config', ({ page }) => {
       page.hero.titleKey,
       page.hero.titleRestKey,
       page.hero.descriptionKey,
+      page.hero.mobileDescriptionKey,
       page.hero.primaryCta?.labelKey,
       page.hero.secondaryCta?.labelKey,
       page.hero.promptBar?.sampleKey,
       page.hero.promptBar?.cta.labelKey,
       ...(page.hero.badgeKeys ?? []),
+      ...(page.showcases ?? []).flatMap((showcase) => [
+        showcase.headingKey,
+        showcase.cta?.labelKey,
+        showcase.descriptionKey
+      ]),
       page.gallery?.headingKey,
       page.pricing?.banner?.titleKey,
       page.pricing?.banner?.subtitleKey,
@@ -85,9 +94,12 @@ describe.for(pages)('$name launch page config', ({ page }) => {
       page.runOptions.subtitleKey,
       page.runOptions.ctaKey,
       page.reviews.headingKey,
-      page.reviews.highlight.titleKey,
-      page.reviews.highlight.descriptionKey,
-      page.reviews.highlight.ctaKey
+      page.reviews.highlight?.titleKey,
+      page.reviews.highlight?.descriptionKey,
+      page.reviews.highlight?.ctaKey,
+      page.highlight?.titleKey,
+      page.highlight?.descriptionKey,
+      page.highlight?.ctaKey
     ].filter((key): key is TranslationKey => key !== undefined)
 
     for (const key of keys) {
@@ -97,6 +109,11 @@ describe.for(pages)('$name launch page config', ({ page }) => {
   })
 
   it('localizes every gallery card and FAQ entry in both locales', () => {
+    for (const card of (page.showcases ?? []).flatMap((s) => s.cards)) {
+      for (const locale of ['en', 'zh-CN'] as const) {
+        expect(card.alt[locale] || card.alt.en, `${card.id} alt`).not.toBe('')
+      }
+    }
     for (const card of page.gallery?.cards ?? []) {
       for (const locale of ['en', 'zh-CN'] as const) {
         expect(card.name[locale] || card.name.en, `${card.id} name`).not.toBe(
@@ -170,7 +187,8 @@ describe.for(pages)('$name launch page config', ({ page }) => {
       page.steps?.secondaryCta?.href,
       page.hero.promptBar?.cta.href,
       page.pricing?.banner?.cta.href,
-      ...(page.gallery?.cards.map((card) => card.href) ?? [])
+      ...(page.gallery?.cards.map((card) => card.href) ?? []),
+      ...(page.showcases ?? []).map((showcase) => showcase.cta?.href)
     ].filter((href): href is string => href !== undefined)
 
     expect(hrefs.filter((href) => !href.startsWith('https://'))).toEqual([])
@@ -200,6 +218,12 @@ describe.for(pages)('$name launch page config', ({ page }) => {
     )
 
     expect(offenders.map((card) => card.id)).toEqual([])
+
+    const showcaseOffenders = (page.showcases ?? [])
+      .flatMap((showcase) => showcase.cards)
+      .filter((card) => !IMAGE_URL.test(card.src))
+
+    expect(showcaseOffenders.map((card) => card.id)).toEqual([])
 
     const audioOffenders = (page.audioGallery?.cards ?? []).filter(
       (card) =>

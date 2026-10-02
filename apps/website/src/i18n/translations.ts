@@ -7837,6 +7837,116 @@ Enterprise`
     en: 'ChatGPT Images 2.5',
     'zh-CN': 'ChatGPT Images 2.5'
   },
+  // Nano Banana launch page placeholder (/nano-banana)
+  'nanoBanana.meta.title': {
+    en: 'Nano Banana on Comfy: Generate and Edit Images',
+    'zh-CN': 'Comfy 上的 Nano Banana：生成与编辑图像'
+  },
+  'nanoBanana.meta.description': {
+    en: 'Run Nano Banana in ComfyUI. Generate images from text, edit existing visuals, and direct results with reference images in a repeatable workflow.',
+    'zh-CN':
+      '在 ComfyUI 中运行 Nano Banana。通过文字生成图像、编辑现有视觉内容，并使用参考图像在可复用工作流中引导结果。'
+  },
+  'nanoBanana.breadcrumb.model': {
+    en: 'Nano Banana',
+    'zh-CN': 'Nano Banana'
+  },
+  'nanoBanana.breadcrumb.updated': {
+    en: 'Updated October 2026',
+    'zh-CN': '更新于 2026 年 10 月'
+  },
+  'nanoBanana.hero.title': {
+    en: 'Nano Banana\nis now ripe',
+    'zh-CN': 'Nano Banana 熟了'
+  },
+  'nanoBanana.hero.description': {
+    en: 'Placeholder copy. Turn a plain language brief into a finished image, or revise an existing visual without rebuilding it from scratch. Nano Banana brings generation, reference guided creation, and precise editing into ComfyUI workflows through Partner Nodes.',
+    'zh-CN':
+      '占位文案。用自然语言简报生成完整图像，或在无需从头制作的情况下修改现有视觉内容。Nano Banana 通过合作伙伴节点，将图像生成、参考图引导创作与精确编辑带入 ComfyUI 工作流。'
+  },
+  'nanoBanana.hero.descriptionMobile': {
+    en: 'Placeholder copy. Turn a plain language brief into a finished image, or revise an existing visual without starting over. Nano Banana runs in ComfyUI through Partner Nodes.',
+    'zh-CN':
+      '占位文案。用自然语言简报生成完整图像，或无需从头修改现有视觉内容。Nano Banana 通过合作伙伴节点在 ComfyUI 中运行。'
+  },
+  'nanoBanana.hero.tagTextToImage': {
+    en: 'Text to Image',
+    'zh-CN': '文生图'
+  },
+  'nanoBanana.hero.tagImageEditing': {
+    en: 'Image Editing',
+    'zh-CN': '图像编辑'
+  },
+  'nanoBanana.hero.tagPartnerNode': {
+    en: 'Partner Node',
+    'zh-CN': '合作伙伴节点'
+  },
+  'nanoBanana.hero.primaryCta': {
+    en: 'RUN NANO BANANA',
+    'zh-CN': '运行 Nano Banana'
+  },
+  'nanoBanana.hero.secondaryCta': {
+    en: 'READ THE GUIDE',
+    'zh-CN': '查看教程'
+  },
+  'nanoBanana.showcase.cta': {
+    en: 'TRY NOW',
+    'zh-CN': '立即试用'
+  },
+  'nanoBanana.showcase.photography.heading': {
+    en: 'Shot like it happened.',
+    'zh-CN': '如实拍摄。'
+  },
+  'nanoBanana.showcase.photography.description': {
+    en: "Realistic light and detail for the scenes you've only pictured.",
+    'zh-CN': '为你脑海中的场景，呈现真实的光影与细节。'
+  },
+  'nanoBanana.showcase.design.heading': {
+    en: 'One idea, every style.',
+    'zh-CN': '一个创意，所有风格。'
+  },
+  'nanoBanana.showcase.design.description': {
+    en: 'Iterate your designs in any style you want.',
+    'zh-CN': '以你想要的任意风格迭代设计。'
+  },
+  'nanoBanana.showcase.advertising.heading': {
+    en: 'From brief to campaign.',
+    'zh-CN': '从创意简报到完整广告活动。'
+  },
+  'nanoBanana.showcase.advertising.description': {
+    en: 'Advertising for any industry, with crisp detail and type that reads.',
+    'zh-CN': '适用于任何行业的广告，细节清晰，文字可读。'
+  },
+  'nanoBanana.pricing.banner.title': {
+    en: "Start Comfy Cloud for free. Upgrade when you're ready.",
+    'zh-CN': '免费开始使用 Comfy Cloud，准备好了再升级。'
+  },
+  'nanoBanana.pricing.banner.subtitle': {
+    en: '5 free runs on real GPUs — no credit card required.',
+    'zh-CN': '在真实 GPU 上免费运行 5 次 — 无需信用卡。'
+  },
+  'nanoBanana.pricing.banner.cta': {
+    en: 'TRY FREE',
+    'zh-CN': '免费试用'
+  },
+  'nanoBanana.faq.heading': { en: 'Q&A', 'zh-CN': '问答' },
+  'nanoBanana.runOptions.heading': {
+    en: 'One engine, every way to run it',
+    'zh-CN': '同一引擎，多种运行方式'
+  },
+  'nanoBanana.runOptions.subtitle': {
+    en: 'Build workflows in the browser today. Batch campaigns with the API, or connect image generation to the rest of your creative pipeline.',
+    'zh-CN':
+      '今天就在浏览器中搭建工作流。用 API 批量制作，或将图像生成接入完整创意流程。'
+  },
+  'nanoBanana.runOptions.cta': {
+    en: 'LEARN MORE',
+    'zh-CN': '了解更多'
+  },
+  'nanoBanana.reviews.heading': {
+    en: '4+ million Comfy creators say',
+    'zh-CN': '超过 400 万 Comfy 创作者这样说'
+  },
   // Qwen-Image 2.1 model page (/qwen-image-2.1)
   'qwenImage21.meta.title': {
     en: 'Qwen-Image 2.1 on Comfy: Open-Weight Image Generation and Editing',
