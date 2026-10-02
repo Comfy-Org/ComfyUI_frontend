@@ -28,6 +28,35 @@ export async function getInputNames(
 }
 
 /**
+ * Slot index of the input named `inputName`, for callers that address a slot
+ * by name. Dynamic inputs insert and remove slots, so an index read once goes
+ * stale; read it again before each connection.
+ */
+export async function getInputSlotIndex(
+  comfyPage: ComfyPage,
+  nodeId: string,
+  inputName: string
+): Promise<number> {
+  return comfyPage.page.evaluate(
+    ({ nodeId, inputName }) => {
+      const node = window.app!.canvas.graph!.getNodeById(nodeId)
+      if (!node) throw new Error(`Node ${nodeId} not found`)
+
+      const slot = node.inputs.findIndex((input) => input.name === inputName)
+      if (slot === -1) {
+        throw new Error(
+          `Node ${nodeId} has no input ${inputName}; has ${node.inputs
+            .map((input) => input.name)
+            .join(', ')}`
+        )
+      }
+      return slot
+    },
+    { nodeId: toNodeId(nodeId), inputName }
+  )
+}
+
+/**
  * Connected input slots of a node whose name starts with `namePrefix`, in slot
  * order, paired with the node each link originates from.
  *
