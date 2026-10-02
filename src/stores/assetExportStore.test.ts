@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { assetService } from '@/platform/assets/services/assetService'
 import type { TaskResponse } from '@/platform/tasks/services/taskService'
+import { assetService } from '@/platform/assets/services/assetService'
 import type { AssetExportWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
 import { useAssetExportStore } from '@/stores/assetExportStore'
@@ -144,6 +145,52 @@ describe('useAssetExportStore polling', () => {
     dispatch(createExportMessage({ status: 'running', progress: 0.6 }))
 
     expect(store.finishedExports[0].status).toBe('cancelled')
+    expect(store.activeExports).toHaveLength(0)
+  })
+
+  it('settles an existing export that receives an unknown wire status', () => {
+    const store = useAssetExportStore()
+    dispatch(createExportMessage())
+
+    dispatch(
+      createExportMessage({ status: 'future-status' as TaskResponse['status'] })
+    )
+
+    expect(store.finishedExports[0]).toMatchObject({
+      status: 'failed',
+      error: 'Unknown task status: future-status'
+    })
+  })
+
+  it('settles an export when its task row has been purged', async () => {
+    const store = useAssetExportStore()
+    vi.mocked(api.fetchApi).mockResolvedValue(
+      new Response(null, { status: 404 })
+    )
+    dispatch(createExportMessage())
+
+    await vi.advanceTimersByTimeAsync(10_000)
+
+    expect(store.finishedExports[0]).toMatchObject({
+      status: 'failed',
+      error: expect.stringContaining('Task not found')
+    })
+  })
+
+  it('keeps completion terminal when fetching the download URL fails', async () => {
+    const store = useAssetExportStore()
+    vi.mocked(assetService.getExportDownloadUrl).mockRejectedValueOnce(
+      new Error('signed URL failed')
+    )
+    dispatch(createExportMessage({ status: 'completed', progress: 1 }))
+    await vi.advanceTimersByTimeAsync(0)
+
+    dispatch(createExportMessage({ status: 'running', progress: 0.5 }))
+
+    expect(store.finishedExports[0]).toMatchObject({
+      status: 'completed',
+      downloadError: 'signed URL failed'
+    })
     expect(store.activeExports).toHaveLength(0)
   })
 

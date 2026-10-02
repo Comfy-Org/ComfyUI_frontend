@@ -31,10 +31,13 @@ const recheckableStatuses = new Set<AssetDownloadStatus>([
   'cancellation_pending'
 ])
 const reconcilableTaskStatuses = new Set<TaskStatus>([
+  'created',
+  'running',
   'completed',
   'failed',
   'cancelled'
 ])
+const wireTaskStatuses = new Set<string>(reconcilableTaskStatuses)
 
 function isDownloadActive(status: AssetDownloadStatus) {
   return activeStatuses.has(status)
@@ -131,7 +134,7 @@ function finalizeCancellation(download: AssetDownload) {
  * Record a reconciliation attempt that left a pending cancellation unresolved,
  * settling it locally once the attempts are exhausted.
  */
-function noteUnresolvedCancellation(download: AssetDownload) {
+function noteAuthoritativePendingCancellation(download: AssetDownload) {
   if (download.status !== 'cancellation_pending') return
 
   const attempts = (download.cancellationReconcileAttempts ?? 0) + 1
@@ -144,8 +147,11 @@ function noteUnresolvedCancellation(download: AssetDownload) {
 function createReconciledDownloadMessage(
   download: AssetDownload,
   task: TaskResponse
-): AssetDownloadWsMessage {
+): AssetDownloadWsMessage | undefined {
   const result = parseDownloadFileResult(task.result)
+  // A completed download needs a valid result (or an asset id already learned
+  // from the socket) before it can be recorded as a completed asset.
+  if (task.status === 'completed' && !result && !download.assetId) return
   return {
     task_id: download.taskId,
     asset_id: result?.asset_id ?? download.assetId,
@@ -161,6 +167,7 @@ function createReconciledDownloadMessage(
 export const useAssetDownloadStore = defineStore('assetDownload', () => {
   const downloads = ref<Map<string, AssetDownload>>(new Map())
   const cancellingTaskIds = ref(new Set<TaskId>())
+  const reconcilingTaskIds = new Set<TaskId>()
   const lastCompletedDownload = ref<CompletedDownload | null>(null)
 
   const downloadList = computed(() => Array.from(downloads.value.values()))
@@ -219,6 +226,17 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     const data = e.detail
     const existing = downloads.value.get(data.task_id)
 
+    // WebSocket payloads are not runtime-validated at the event boundary.
+    // Unknown statuses must not create immortal, non-dismissible rows.
+    if (!wireTaskStatuses.has(data.status)) {
+      if (existing) {
+        existing.status = 'failed'
+        existing.error = data.error || `Unknown task status: ${data.status}`
+        existing.lastUpdate = Date.now()
+      }
+      return
+    }
+
     if (shouldIgnoreDownloadUpdate(existing?.status, data.status)) return
 
     const download: AssetDownload = {
@@ -246,34 +264,44 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
   }
 
   async function reconcileDownload(download: AssetDownload) {
-    const result = await taskService.getTask(download.taskId)
-    if (downloads.value.get(download.taskId) !== download) return
+    if (reconcilingTaskIds.has(download.taskId)) return
+    reconcilingTaskIds.add(download.taskId)
+    try {
+      const result = await taskService.getTask(download.taskId)
+      if (downloads.value.get(download.taskId) !== download) return
 
-    if (!result.ok) {
-      // A 404 is authoritative: the task row is gone, so a pending
-      // cancellation has nothing left to wait for. Any other failure is
-      // transient and only counts against the attempt bound.
-      if (result.error instanceof TaskNotFoundError) {
-        if (download.status === 'cancellation_pending') {
-          finalizeCancellation(download)
+      if (!result.ok) {
+        // A 404 is authoritative: the task row is gone, so a pending
+        // cancellation has nothing left to wait for. Other lookup failures are
+        // transient and must not consume the authoritative reconciliation bound.
+        if (result.error instanceof TaskNotFoundError) {
+          if (download.status === 'cancellation_pending') {
+            finalizeCancellation(download)
+          }
+          return
         }
         return
       }
-      noteUnresolvedCancellation(download)
-      return
-    }
 
-    const task = result.value
-    if (!reconcilableTaskStatuses.has(task.status)) {
-      noteUnresolvedCancellation(download)
-      return
-    }
+      const task = result.value
+      if (
+        download.status === 'cancellation_pending' &&
+        activeStatuses.has(task.status)
+      ) {
+        noteAuthoritativePendingCancellation(download)
+        return
+      }
 
-    handleAssetDownload(
-      new CustomEvent('asset_download', {
-        detail: createReconciledDownloadMessage(download, task)
-      })
-    )
+      const message = createReconciledDownloadMessage(download, task)
+      if (!message) return
+      handleAssetDownload(
+        new CustomEvent('asset_download', {
+          detail: message
+        })
+      )
+    } finally {
+      reconcilingTaskIds.delete(download.taskId)
+    }
   }
 
   async function pollStaleDownloads() {
@@ -315,7 +343,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     if (
       cancellingTaskIds.value.has(taskId) ||
       !download ||
-      !activeStatuses.has(download.status)
+      !(activeStatuses.has(download.status) || download.status === 'failed')
     ) {
       return { ok: true, value: false }
     }
@@ -325,14 +353,22 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
       if (!result.ok) return result
 
       const current = downloads.value.get(taskId)
-      if (!current || finishedStatuses.has(current.status)) {
+      if (
+        !current ||
+        current.status === 'completed' ||
+        current.status === 'cancelled'
+      ) {
         return { ok: true, value: result.value === 'cancelling' }
       }
 
-      // The task row is gone, so the cancellation is as settled as it will get.
+      // A DELETE 404 can mean the cancellation route is unavailable, not that
+      // the task is gone. Re-read the task before deciding how to settle it.
       if (result.value === 'missing') {
-        finalizeCancellation(current)
-        return { ok: true, value: true }
+        current.status = 'cancellation_pending'
+        current.cancellationReconcileAttempts = 0
+        current.lastUpdate = Date.now()
+        await reconcileDownload(current)
+        return { ok: true, value: false }
       }
 
       // The backend refused. Re-read the task so the row moves to whatever

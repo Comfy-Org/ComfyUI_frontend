@@ -279,7 +279,7 @@ async function cancelDownload(taskId: TaskId) {
             </Button>
 
             <Button
-              v-if="!isInProgress && !assetDownloadStore.hasPendingCancellation"
+              v-if="!isInProgress"
               variant="muted-textonly"
               size="icon"
               :aria-label="t('g.close')"
