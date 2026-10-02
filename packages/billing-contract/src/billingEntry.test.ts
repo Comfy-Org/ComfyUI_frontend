@@ -67,12 +67,30 @@ describe('buildBillingEntryUrl', () => {
     expect(errorCode({ ...BASE_INPUT, billingOrigin })).toBe(expected)
   })
 
+  it('writes a top-up amount in whole cents', () => {
+    expect(
+      entryUrl({ ...BASE_INPUT, intent: 'top-up', amountCents: 1500 }).href
+    ).toBe(
+      'https://billing.comfy.org/v1/top-up?product=platform&return_to=platform_account&amount_cents=1500'
+    )
+  })
+
+  it.for([0, -500, 12.5, Number.NaN, 1_000_000_000])(
+    'refuses the top-up amount %s',
+    (amountCents) => {
+      expect(errorCode({ ...BASE_INPUT, intent: 'top-up', amountCents })).toBe(
+        'INVALID_AMOUNT'
+      )
+    }
+  )
+
   it.for([
     [{ returnTo: 'attacker_site' }, 'UNKNOWN_RETURN_TARGET'],
     [{ plan: 'pro plan' }, 'INVALID_PLAN'],
     [{ correlationId: '../escape' }, 'INVALID_CORRELATION_ID'],
     [{ workspaceId: '' }, 'INVALID_WORKSPACE_ID'],
-    [{ teamCreditStopId: '../escape' }, 'INVALID_TEAM_CREDIT_STOP_ID']
+    [{ teamCreditStopId: '../escape' }, 'INVALID_TEAM_CREDIT_STOP_ID'],
+    [{ promotionCode: 'SAVE 20' }, 'INVALID_PROMOTION_CODE']
   ] as const)('refuses %o with %s', ([overrides, expected]) => {
     expect(errorCode({ ...BASE_INPUT, ...overrides })).toBe(expected)
   })
@@ -86,7 +104,8 @@ describe('parseBillingEntry', () => {
       plan: 'pro_monthly',
       correlationId: 'corr-1',
       workspaceId: 'ws_1',
-      teamCreditStopId: 'stop_1'
+      teamCreditStopId: 'stop_1',
+      promotionCode: 'LAUNCH20'
     })
 
     expect(parseBillingEntry(url)).toEqual({
@@ -99,7 +118,8 @@ describe('parseBillingEntry', () => {
         plan: 'pro_monthly',
         correlationId: 'corr-1',
         workspaceId: 'ws_1',
-        teamCreditStopId: 'stop_1'
+        teamCreditStopId: 'stop_1',
+        promotionCode: 'LAUNCH20'
       }
     })
   })
@@ -118,6 +138,38 @@ describe('parseBillingEntry', () => {
     })
   })
 
+  it('reads a top-up amount back as whole cents', () => {
+    const url = entryUrl({
+      ...BASE_INPUT,
+      intent: 'top-up',
+      amountCents: 2500,
+      workspaceId: 'ws_1'
+    })
+
+    expect(parseBillingEntry(url)).toEqual({
+      status: 'ok',
+      entry: {
+        version: 'v1',
+        intent: 'top-up',
+        product: 'platform',
+        returnTo: 'platform_account',
+        workspaceId: 'ws_1',
+        amountCents: 2500
+      }
+    })
+  })
+
+  it.for(['0', '-500', '12.5', '1e3', '0100', 'abc', '', '1000000000'])(
+    'refuses the top-up amount %j',
+    (amount) => {
+      expect(
+        parseBillingEntry(
+          `/v1/top-up?product=platform&return_to=platform_account&amount_cents=${encodeURIComponent(amount)}`
+        )
+      ).toEqual({ status: 'error', code: 'INVALID_AMOUNT' })
+    }
+  )
+
   it('ignores a query parameter the contract does not name', () => {
     expect(
       parseBillingEntry(
@@ -133,6 +185,26 @@ describe('parseBillingEntry', () => {
       }
     })
   })
+
+  it.for(['SAVE 20', 'a/b', ''])(
+    'keeps the link when its promo code %j is unreadable, carrying it apart from a usable code',
+    (promo) => {
+      const url = `/v1/checkout?product=platform&return_to=platform_account&plan=pro_monthly&workspace=ws_1&promo=${encodeURIComponent(promo)}`
+
+      expect(parseBillingEntry(url)).toEqual({
+        status: 'ok',
+        entry: {
+          version: 'v1',
+          intent: 'checkout',
+          product: 'platform',
+          returnTo: 'platform_account',
+          plan: 'pro_monthly',
+          workspaceId: 'ws_1',
+          unreadablePromotionCode: promo
+        }
+      })
+    }
+  )
 
   it.for([
     [
@@ -178,6 +250,132 @@ describe('parseBillingEntry', () => {
   ] as const)('refuses %s with %s', ([url, expected]) => {
     expect(parseBillingEntry(url)).toEqual({ status: 'error', code: expected })
   })
+})
+
+describe('the source a product names', () => {
+  it.for([
+    'subscribe_to_run',
+    'settings_billing_panel',
+    'agent_paywall'
+  ] as const)('round-trips %s beside the journey it continues', (source) => {
+    const input = { ...BASE_INPUT, source, correlationId: 'journey-1' }
+    const url = entryUrl(input)
+
+    expect(url.searchParams.get('source')).toBe(source)
+    expect(parseBillingEntry(url)).toEqual({
+      status: 'ok',
+      entry: {
+        version: 'v1',
+        intent: 'checkout',
+        product: 'platform',
+        returnTo: 'platform_account',
+        correlationId: 'journey-1',
+        source
+      }
+    })
+  })
+
+  it.for(BILLING_INTENTS)(
+    'round-trips a source beside the journey on the %s intent',
+    (intent) => {
+      const url = entryUrl({
+        ...BASE_INPUT,
+        intent,
+        source: 'out_of_credits',
+        correlationId: 'journey-1'
+      })
+
+      expect(parseBillingEntry(url)).toEqual({
+        status: 'ok',
+        entry: {
+          version: 'v1',
+          intent,
+          product: 'platform',
+          returnTo: 'platform_account',
+          correlationId: 'journey-1',
+          source: 'out_of_credits'
+        }
+      })
+    }
+  )
+
+  it('round-trips a source and the journey beside a top-up amount', () => {
+    const url = entryUrl({
+      ...BASE_INPUT,
+      intent: 'top-up',
+      amountCents: 2500,
+      source: 'out_of_credits',
+      correlationId: 'journey-1'
+    })
+
+    expect(url.searchParams.get('source')).toBe('out_of_credits')
+    expect(url.searchParams.get('amount_cents')).toBe('2500')
+    expect(parseBillingEntry(url)).toEqual({
+      status: 'ok',
+      entry: {
+        version: 'v1',
+        intent: 'top-up',
+        product: 'platform',
+        returnTo: 'platform_account',
+        correlationId: 'journey-1',
+        amountCents: 2500,
+        source: 'out_of_credits'
+      }
+    })
+  })
+
+  it('keeps a top-up link and its amount when the source is outside the shared list', () => {
+    const url =
+      '/v1/top-up?product=platform&return_to=platform_account&amount_cents=2500&source=newsletter'
+
+    expect(parseBillingEntry(url)).toEqual({
+      status: 'ok',
+      entry: {
+        version: 'v1',
+        intent: 'top-up',
+        product: 'platform',
+        returnTo: 'platform_account',
+        amountCents: 2500
+      }
+    })
+  })
+
+  const UNREADABLE_SOURCES = [
+    ['a value outside the shared list', 'newsletter'],
+    ['a URL', 'https://attacker.example/steal?card=4242'],
+    ['free text', 'jane@example.com paid with 4242'],
+    ['an empty value', ''],
+    ['an inherited property name', 'constructor'],
+    ['a listed value in the wrong case', 'Agent_Paywall']
+  ] as const
+
+  it.for(UNREADABLE_SOURCES)(
+    'leaves %s off the link it builds',
+    ([, source]) => {
+      const input = { ...BASE_INPUT, source }
+
+      expect(entryUrl(input).search).toBe(
+        '?product=platform&return_to=platform_account'
+      )
+    }
+  )
+
+  it.for(UNREADABLE_SOURCES)(
+    'keeps a link that arrives with %s and reads no source from it',
+    ([, source]) => {
+      const url = `/v1/checkout?product=platform&return_to=platform_account&source=${encodeURIComponent(source)}`
+
+      expect(parseBillingEntry(url)).toEqual({
+        status: 'ok',
+        entry: {
+          version: 'v1',
+          intent: 'checkout',
+          product: 'platform',
+          returnTo: 'platform_account'
+        }
+      })
+    }
+  )
 })
 
 describe('the workspace query parameter', () => {

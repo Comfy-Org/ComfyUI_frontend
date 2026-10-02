@@ -20,33 +20,17 @@ export interface CustomerVideoStory {
   description: string
   videoSrc: string
   poster: string
-  /**
-   * Assumed 16:9 dimensions — media.comfy.org could not be reached from the
-   * implementing environment to read the poster's real intrinsic size, so
-   * these are a placeholder matching the `aspect-video` CSS every card and
-   * the player already render at (that class governs on-screen layout
-   * regardless of these numbers, so there's no layout-shift risk from the
-   * assumption, but they should be replaced with the verified pixel size).
-   */
   posterWidth: number
   posterHeight: number
   captions: readonly VideoTrack[]
-  /**
-   * Verified with ffprobe against the source file. BLOCKED: media.comfy.org
-   * is unreachable from the implementing environment (egress denied), and
-   * ffprobe isn't installed there either, so this could not be measured.
-   * Left undefined rather than guessed — every consumer (VideoObject
-   * JSON-LD, the video sitemap, the directory card's duration chip) treats
-   * a missing value as "omit", never as a fabricated placeholder.
-   */
+  /** Measured from the source file, never guessed; consumers omit it when unset. */
   durationSeconds?: number
   /**
-   * ISO 8601 date. Only set when backed by an authoritative source or a
-   * documented proxy (e.g. the asset's first git-log commit date) — never
-   * invented. Left unset for both stories: no such source was available to
-   * the implementing environment.
+   * ISO 8601 datetime with a timezone offset. Must come from an authoritative
+   * source or a documented proxy (e.g. the storage object's Last-Modified) —
+   * never invented. Do not add a story until you have one.
    */
-  uploadDate?: string
+  uploadDate: string
   /** Slug of the reciprocal written story under src/content/customers, if any. */
   relatedStorySlug?: string
 }
@@ -79,9 +63,11 @@ export const customerVideoStories: readonly CustomerVideoStory[] = [
       "Black Math's artists and technical directors explain how they use ComfyUI to build extendable creative systems while keeping art direction and control with the team.",
     videoSrc: 'https://media.comfy.org/website/customers/blackmath/video.webm',
     poster: 'https://media.comfy.org/website/customers/blackmath/poster.webp',
-    posterWidth: 1280,
-    posterHeight: 720,
-    captions: blackMathCaptions
+    posterWidth: 1920,
+    posterHeight: 1080,
+    captions: blackMathCaptions,
+    // Last-Modified of media.comfy.org/website/customers/blackmath/video.webm
+    uploadDate: '2026-04-23T00:12:36+00:00'
   },
   {
     slug: 'silverside-ai',
@@ -92,9 +78,11 @@ export const customerVideoStories: readonly CustomerVideoStory[] = [
       'Silverside AI explains why structured, node-based ComfyUI workflows give creative teams control beyond single-prompt tools.',
     videoSrc: 'https://media.comfy.org/website/customers/silverside/video.webm',
     poster: 'https://media.comfy.org/website/customers/silverside/poster.webp',
-    posterWidth: 1280,
-    posterHeight: 720,
+    posterWidth: 1920,
+    posterHeight: 1080,
     captions: silversideCaptions,
+    // Last-Modified of media.comfy.org/website/customers/silverside/video.webm
+    uploadDate: '2026-04-19T17:14:39+00:00',
     relatedStorySlug: 'svedka-silverside'
   }
 ]
@@ -109,7 +97,7 @@ export function getCustomerVideoStory(
 
 /** Canonical path for a video story's watch page (English-only, no locale twin). */
 export function customerVideoPath(slug: CustomerVideoStory['slug']): string {
-  return `/customers/videos/${slug}`
+  return `/customers/videos/${slug}/`
 }
 
 /** ISO 8601 duration (e.g. "PT4M32S") for VideoObject JSON-LD, or undefined. */

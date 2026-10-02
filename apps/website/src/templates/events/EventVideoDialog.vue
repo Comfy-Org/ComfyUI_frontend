@@ -51,7 +51,7 @@ const closeDialog = () => {
   if (cameFromDirectory() && history.length > 1) {
     history.back()
   } else {
-    location.assign(localizeHref('/events', locale))
+    location.assign(localizeHref('/events/', locale))
   }
 }
 

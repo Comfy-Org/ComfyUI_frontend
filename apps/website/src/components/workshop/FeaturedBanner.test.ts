@@ -269,4 +269,24 @@ describe('FeaturedBanner', () => {
     await advanceAutoplay()
     expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Kling')
   })
+
+  it('carries everything the reader came for', () => {
+    render(FeaturedBanner, {
+      props: { slides: modelSlides([base, kling], 'en') }
+    })
+    expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Flux')
+    expect(screen.getByText('Text to Image')).toBeTruthy()
+    expect(
+      screen.getByText(
+        'Photorealistic images with professional text rendering.'
+      )
+    ).toBeTruthy()
+    expect(screen.getByTestId('featured-slide-link').getAttribute('href')).toBe(
+      '/models/flux/'
+    )
+    expect(screen.getByRole('link', { name: /Try/i })).toHaveAttribute(
+      'href',
+      '/models/flux/'
+    )
+  })
 })

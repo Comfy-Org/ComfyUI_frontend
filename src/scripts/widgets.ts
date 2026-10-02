@@ -178,8 +178,8 @@ export function addValueControlWidgets(
   const isCombo = isComboWidget(targetWidget)
   let comboFilter: IStringWidget
   if (isCombo) {
-    // @ts-expect-error Combo widget values may be a dictionary or legacy function type
-    valueControl.options.values.push('increment-wrap')
+    const values = valueControl.options.values
+    if (Array.isArray(values)) values.push('increment-wrap')
   }
   if (isCombo && options.addFilterList !== false) {
     comboFilter = node.addWidget(

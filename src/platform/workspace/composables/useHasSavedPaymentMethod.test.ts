@@ -89,6 +89,7 @@ describe('useHasSavedPaymentMethod', () => {
 
     expect(hasSavedPaymentMethod.value).toBeNull()
     expect(mockReportError).toHaveBeenCalledWith(failure, {
+      surface: 'workspace',
       errorType: 'saved_payment_methods_read_failure'
     })
   })
@@ -154,7 +155,10 @@ describe('useHasSavedPaymentMethod on the SDK rail', () => {
     expect(hasSavedPaymentMethod.value).toBeNull()
     expect(mockReportError).toHaveBeenCalledWith(
       expect.objectContaining({ code: 'REQUEST_FAILED', status: 503 }),
-      { errorType: 'saved_payment_methods_read_failure' }
+      {
+        surface: 'workspace',
+        errorType: 'saved_payment_methods_read_failure'
+      }
     )
   })
 })

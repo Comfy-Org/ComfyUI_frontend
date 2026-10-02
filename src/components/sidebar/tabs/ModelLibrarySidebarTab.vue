@@ -49,7 +49,6 @@
     <template #body>
       <ElectronDownloadItems v-if="isDesktop" />
 
-      <Divider type="dashed" class="m-2" />
       <TreeExplorer
         v-model:expanded-keys="expandedKeys"
         class="model-lib-tree-explorer"
@@ -66,7 +65,6 @@
 </template>
 
 <script setup lang="ts">
-import { Divider } from 'primevue'
 import { computed, onMounted, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 

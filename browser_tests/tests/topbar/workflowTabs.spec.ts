@@ -5,17 +5,21 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('Workflow tabs', () => {
-  // These Agent-adjacent path-identity cases are staged behind the stacked
-  // workflow-tab slice: https://github.com/Comfy-Org/ComfyUI_frontend/pull/16184
-  test.describe('Agent workflow-tab contract from slice 04', () => {
+  test.describe('Path-backed active-tab identity', () => {
+    const pathBackedWorkflowNames = [
+      'path-backed-first',
+      'path-backed-second'
+    ] as const
+
+    test.afterEach(async ({ comfyPage }) => {
+      for (const name of pathBackedWorkflowNames) {
+        await comfyPage.workflow.deleteWorkflow(name)
+      }
+    })
+
     test('keeps exactly one active tab after selecting several workflows', async ({
       comfyPage
     }) => {
-      test.fixme(
-        true,
-        'Activates after slice PR 16184 merges: https://github.com/Comfy-Org/ComfyUI_frontend/pull/16184'
-      )
-
       const topbar = comfyPage.menu.topbar
       await topbar.newWorkflowButton.click()
       await topbar.newWorkflowButton.click()
@@ -28,27 +32,22 @@ test.describe('Workflow tabs', () => {
     test('keeps path-backed active identity after a tab switch', async ({
       comfyPage
     }) => {
-      test.fixme(
-        true,
-        'Activates after slice PR 16184 merges: https://github.com/Comfy-Org/ComfyUI_frontend/pull/16184'
-      )
-
       const topbar = comfyPage.menu.topbar
+      const [firstWorkflow, secondWorkflow] = pathBackedWorkflowNames
+
+      await topbar.saveWorkflow(firstWorkflow)
       await topbar.newWorkflowButton.click()
-      const names = await topbar.getTabNames()
+      await topbar.saveWorkflow(secondWorkflow)
       await topbar.getTab(0).click()
 
-      await expect.poll(() => topbar.getActiveTabName()).toContain(names[0])
+      await expect
+        .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+        .toContain(firstWorkflow)
     })
 
     test('activates a valid neighbor when the active workflow is closed', async ({
       comfyPage
     }) => {
-      test.fixme(
-        true,
-        'Activates after slice PR 16184 merges: https://github.com/Comfy-Org/ComfyUI_frontend/pull/16184'
-      )
-
       const topbar = comfyPage.menu.topbar
       await topbar.newWorkflowButton.click()
       await topbar.newWorkflowButton.click()
@@ -63,11 +62,6 @@ test.describe('Workflow tabs', () => {
     test('preserves tab identity across browser reload', async ({
       comfyPage
     }) => {
-      test.fixme(
-        true,
-        'Activates after slice PR 16184 merges: https://github.com/Comfy-Org/ComfyUI_frontend/pull/16184'
-      )
-
       const topbar = comfyPage.menu.topbar
       await topbar.newWorkflowButton.click()
       await topbar.getTab(1).click()

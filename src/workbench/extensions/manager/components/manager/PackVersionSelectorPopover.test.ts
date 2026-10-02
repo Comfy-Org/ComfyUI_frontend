@@ -1,9 +1,6 @@
 import { render, screen, within } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
-import Listbox from 'primevue/listbox'
-import Select from 'primevue/select'
 import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MockInstance } from 'vitest'
@@ -140,8 +137,8 @@ describe('PackVersionSelectorPopover', () => {
             showImportFailedDialog: vi.fn()
           }
         },
-        plugins: [PrimeVue, i18n],
-        components: { Listbox, VerifiedIcon, Select },
+        plugins: [i18n],
+        components: { VerifiedIcon },
         directives: { tooltip: Tooltip }
       }
     })
@@ -302,13 +299,19 @@ describe('PackVersionSelectorPopover', () => {
         props: { nodePack: { ...mockNodePack, latest_version: versions[0] } }
       })
 
-      const option = await screen.findByRole('option', { name: label })
+      const option = await screen.findByRole('option', {
+        name: `${label} Flagged`
+      })
       expect(within(option).getByText('Flagged')).toBeVisible()
       expect(
         screen
           .getAllByRole('option', { name: /^Latest/ })
-          .map((item) => item.getAttribute('aria-label'))
-      ).toEqual(latestLabels)
+          .map((item) => item.textContent)
+      ).toEqual(
+        latestLabels.map((latestLabel) =>
+          latestLabel === label ? `${latestLabel} Flagged` : latestLabel
+        )
+      )
       expect(
         within(screen.getByRole('option', { name: activeLabel })).queryByText(
           'Flagged'
@@ -392,7 +395,9 @@ describe('PackVersionSelectorPopover', () => {
     const stable = await screen.findByRole('option', {
       name: 'Latest stable (0.9.0)'
     })
-    const latest = screen.getByRole('option', { name: 'Latest (1.2.0)' })
+    const latest = screen.getByRole('option', {
+      name: 'Latest (1.2.0) Flagged'
+    })
     expect(screen.getAllByRole('option').slice(0, 2)).toEqual([latest, stable])
     expect(stable).toHaveAttribute('aria-selected', 'true')
     expect(latest).toHaveAttribute('aria-selected', 'false')
@@ -541,19 +546,16 @@ describe('PackVersionSelectorPopover', () => {
     it('maintains selected version when switching to a new pack', async () => {
       mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
 
-      const { user, container, rerender } = renderComponent()
+      const { user, rerender } = renderComponent()
       await waitForPromises()
 
       // Select version 0.9.0
       await user.click(screen.getByText('0.9.0'))
 
-      // Verify 0.9.0 is selected via aria-selected
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue Listbox: checking aria-selected on option element
-      const selectedOption = container.querySelector(
-        '[role="option"][aria-selected="true"]'
+      expect(screen.getByRole('option', { name: '0.9.0' })).toHaveAttribute(
+        'aria-selected',
+        'true'
       )
-      expect(selectedOption).not.toBeNull()
-      expect(selectedOption?.textContent).toContain('0.9.0')
 
       mockGetPackVersions.mockResolvedValueOnce([
         { version: '3.0.0', createdAt: '2023-07-01' },
@@ -568,14 +570,10 @@ describe('PackVersionSelectorPopover', () => {
       await rerender({ nodePack: newNodePack })
       await waitForPromises()
 
-      // Selected version should remain 0.9.0 — verify via pi-check icon
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue Listbox: checking selected indicator icon
-      const checkIcons = container.querySelectorAll('.pi.pi-check')
-      const selectedTexts = Array.from(checkIcons).map(
-        // eslint-disable-next-line testing-library/no-node-access -- traversing to parent option element
-        (icon) => icon.closest('[role="option"]')?.textContent
+      expect(screen.getByRole('option', { name: '0.9.0' })).toHaveAttribute(
+        'aria-selected',
+        'true'
       )
-      expect(selectedTexts.some((text) => text?.includes('0.9.0'))).toBe(true)
     })
   })
 
@@ -588,19 +586,15 @@ describe('PackVersionSelectorPopover', () => {
         latest_version: undefined
       }
 
-      const { container } = renderComponent({
+      renderComponent({
         props: { nodePack: packWithRepo }
       })
       await waitForPromises()
 
-      // Nightly should be selected — verify via pi-check icon next to Nightly
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue Listbox: checking selected indicator icon
-      const checkIcons = container.querySelectorAll('.pi.pi-check')
-      const selectedTexts = Array.from(checkIcons).map(
-        // eslint-disable-next-line testing-library/no-node-access -- traversing to parent option element
-        (icon) => icon.closest('[role="option"]')?.textContent
+      expect(screen.getByRole('option', { name: 'Nightly' })).toHaveAttribute(
+        'aria-selected',
+        'true'
       )
-      expect(selectedTexts.some((text) => text?.includes('Nightly'))).toBe(true)
     })
 
     it('defaults to nightly when publisher name is "Unclaimed"', async () => {
@@ -611,19 +605,15 @@ describe('PackVersionSelectorPopover', () => {
         publisher: { name: 'Unclaimed' }
       }
 
-      const { container } = renderComponent({
+      renderComponent({
         props: { nodePack: unclaimedNodePack }
       })
       await waitForPromises()
 
-      // Nightly should be selected
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue Listbox: checking selected indicator icon
-      const checkIcons = container.querySelectorAll('.pi.pi-check')
-      const selectedTexts = Array.from(checkIcons).map(
-        // eslint-disable-next-line testing-library/no-node-access -- traversing to parent option element
-        (icon) => icon.closest('[role="option"]')?.textContent
+      expect(screen.getByRole('option', { name: 'Nightly' })).toHaveAttribute(
+        'aria-selected',
+        'true'
       )
-      expect(selectedTexts.some((text) => text?.includes('Nightly'))).toBe(true)
     })
   })
 
@@ -731,15 +721,14 @@ describe('PackVersionSelectorPopover', () => {
     })
 
     it.for([
-      { status: 'NodeVersionStatusBanned', type: 'banned', label: '1.0.0' },
+      { status: 'NodeVersionStatusBanned', type: 'banned' },
       {
         status: 'NodeVersionStatusPending',
-        type: 'pending',
-        label: 'Latest (1.0.0)'
+        type: 'pending'
       }
     ] as const)(
       'shows $type warnings from version status',
-      async ({ status, type, label }) => {
+      async ({ status, type }) => {
         const versions: components['schemas']['NodeVersion'][] = [
           { ...defaultMockVersions[0], status }
         ]
@@ -753,7 +742,9 @@ describe('PackVersionSelectorPopover', () => {
           })
         )
         renderComponent()
-        const latest = await screen.findByRole('option', { name: label })
+        const latest = await screen.findByRole('option', {
+          name: new RegExp(`${type}.*1\\.0\\.0`, 'i')
+        })
         expect(
           within(latest).getByRole('img', { name: /banned|pending/i })
         ).toBeVisible()

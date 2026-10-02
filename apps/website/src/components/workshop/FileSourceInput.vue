@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Upload } from '@lucide/vue'
 import { useDropZone } from '@vueuse/core'
-import { computed, nextTick, ref, useTemplateRef } from 'vue'
+import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -52,6 +52,13 @@ const uploadLimit = computed(() =>
   formatWorkshopUploadLimit(field.maxBytes, locale)
 )
 const rejection = ref<TranslationKey>()
+// Removing the only picture the example brought left the field empty with no
+// way back but the example card further down, which rewrites the whole form.
+const removed = ref<{
+  at: number
+  file: FileValue
+  left: readonly FileValue[]
+}>()
 const replacement = ref<number>()
 const input = useTemplateRef<HTMLInputElement>('input')
 const zone = useTemplateRef<HTMLElement>('zone')
@@ -76,8 +83,9 @@ const prompt = computed(() => {
       imageOnly.value
         ? 'workshop.field.selectOrDropImages'
         : 'workshop.field.selectOrDropFiles',
-      locale
-    ).replace('{count}', String(allowed))
+      locale,
+      { count: allowed }
+    )
   return t(
     imageOnly.value
       ? 'workshop.field.selectOrDropImage'
@@ -101,7 +109,11 @@ const rejectionMessage = computed(() => {
   const unchanged = imageOnly.value
     ? 'workshop.field.imagesUnchanged'
     : 'workshop.field.filesUnchanged'
-  return `${t(rejection.value, locale).replace('{count}', String(limit.value)).replace('{limit}', uploadLimit.value)} ${t(unchanged, locale)}`
+  const named = {
+    limit: uploadLimit.value,
+    ...(limit.value === undefined ? {} : { count: limit.value })
+  }
+  return `${t(rejection.value, locale, named)} ${t(unchanged, locale)}`
 })
 
 function accepts(file: File): boolean {
@@ -144,6 +156,7 @@ function choose(files: File[], index?: number) {
           ? 'workshop.form.tooLarge'
           : undefined
   if (rejection.value) return
+  removed.value = undefined
   value.value = field.multiple ? next : next[0]
 }
 
@@ -164,12 +177,37 @@ function remove(index: number) {
   const remaining = selectedFiles.value.filter(
     (_, position) => position !== index
   )
+  removed.value = {
+    at: index,
+    file: selectedFiles.value[index],
+    left: remaining
+  }
   value.value = remaining.length
     ? field.multiple
       ? remaining
       : remaining[0]
     : undefined
   rejection.value = undefined
+}
+
+// The undo answers one removal. Anything that replaces the selection afterwards
+// — a new pick, or the form filling itself from an example — is what the reader
+// wants now, and putting the old file back would undo that instead.
+watch(selectedFiles, (files) => {
+  const undo = removed.value
+  if (!undo) return
+  const untouched =
+    files.length === undo.left.length &&
+    files.every((file, position) => file === undo.left[position])
+  if (!untouched) removed.value = undefined
+})
+
+function putBack() {
+  const undo = removed.value
+  if (!undo) return
+  const restored = selectedFiles.value.toSpliced(undo.at, 0, undo.file)
+  value.value = field.multiple ? restored : restored[0]
+  removed.value = undefined
 }
 </script>
 
@@ -185,6 +223,21 @@ function remove(index: number) {
       )
     "
   >
+    <p
+      v-if="removed"
+      class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-primary-warm-gray"
+      data-testid="removed-file-undo"
+    >
+      {{ t('workshop.field.removedFile', locale, { name: removed.file.name }) }}
+      <button
+        type="button"
+        class="cursor-pointer font-medium text-primary-comfy-yellow underline underline-offset-2 disabled:cursor-not-allowed"
+        :disabled
+        @click="putBack"
+      >
+        {{ t('workshop.field.undoRemove', locale) }}
+      </button>
+    </p>
     <ul v-if="selectedFiles.length" class="flex min-w-0 flex-col gap-2">
       <SelectedFileRow
         v-for="(file, index) in selectedFiles"
@@ -215,12 +268,7 @@ function remove(index: number) {
       <span>{{ prompt }}</span>
       <span class="text-2xs">
         <template v-if="acceptedTypes">{{ acceptedTypes }} · </template>
-        {{
-          t('workshop.field.uploadLimit', locale).replace(
-            '{limit}',
-            uploadLimit
-          )
-        }}
+        {{ t('workshop.field.uploadLimit', locale, { limit: uploadLimit }) }}
       </span>
     </label>
     <input

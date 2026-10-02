@@ -148,23 +148,32 @@ export class Topbar {
     await this.getSaveDialog().fill(workflowName)
     await this.page.keyboard.press('Enter')
 
-    // Wait for workflow service to finish saving
-    await this.page.waitForFunction(
-      () => !(window.app!.extensionManager as WorkspaceStore).workflow.isBusy,
-      undefined,
-      { timeout: 3000 }
-    )
-    // Wait for the dialog to close.
     await this.getSaveDialog().waitFor({ state: 'hidden' })
 
-    // Check if a confirmation dialog appeared (e.g., "Overwrite existing file?")
-    // If so, return early to let the test handle the confirmation
+    if (command === 'Export') return
+
     const confirmationDialog = this.page
       .getByRole('dialog')
       .filter({ hasText: 'Overwrite' })
-    if (await confirmationDialog.isVisible()) {
-      return
-    }
+    await expect
+      .poll(async () => {
+        if (await confirmationDialog.isVisible()) return true
+        return this.page.evaluate(
+          (name) => {
+            const store = (window.app!.extensionManager as WorkspaceStore)
+              .workflow
+            const workflow = store.activeWorkflow
+            return (
+              workflow?.filename === name &&
+              workflow.isPersisted &&
+              !workflow.isModified &&
+              !store.isBusy
+            )
+          },
+          workflowName.replace(/\.json$/, '')
+        )
+      })
+      .toBe(true)
   }
 
   async dismissWorkflowPopover() {
@@ -182,6 +191,9 @@ export class Topbar {
 
     await this.menuTrigger.click()
     await this.menuLocator.waitFor({ state: 'visible' })
+    await expect(this.menuLocator).not.toHaveClass(
+      /\bp-connected-overlay-enter-active\b/
+    )
     return this.menuLocator
   }
 

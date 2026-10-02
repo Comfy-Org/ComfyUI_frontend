@@ -126,6 +126,7 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
                   })
                   .catch((error) => {
                     reportError(error, {
+                      surface: 'platform',
                       errorType: 'mixpanel_user_identification_failure'
                     })
                   })
