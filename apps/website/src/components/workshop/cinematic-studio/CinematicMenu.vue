@@ -25,6 +25,7 @@ const {
   options,
   heading,
   triggerClass,
+  contentClass,
   side = 'top',
   tooltip = false,
   showHeading = true,
@@ -33,6 +34,7 @@ const {
   options: readonly MenuOption[]
   heading: string
   triggerClass?: string
+  contentClass?: string
   side?: 'top' | 'bottom'
   tooltip?: boolean
   showHeading?: boolean
@@ -69,7 +71,12 @@ const triggerLabel = computed(() => {
             :side-offset="8"
             :collision-padding="8"
             :aria-label="heading"
-            class="z-50 min-w-72 rounded-2xl border border-transparency-white-t8 bg-site-dropdown p-1.5 shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
+            :class="
+              cn(
+                'z-50 min-w-72 rounded-2xl border border-transparency-white-t8 bg-site-dropdown p-1.5 shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0',
+                contentClass
+              )
+            "
           >
             <DropdownMenuLabel
               v-if="showHeading"
@@ -82,7 +89,7 @@ const triggerLabel = computed(() => {
                 v-for="option in options"
                 :key="option.id"
                 :value="option.id"
-                class="flex h-9 cursor-pointer items-center gap-2.5 rounded-xl px-3 text-sm text-content-secondary outline-none select-none data-highlighted:bg-transparency-white-t4 data-highlighted:text-content-bright data-[state=checked]:bg-transparency-white-t8 data-[state=checked]:text-content-bright"
+                class="flex min-h-9 cursor-pointer items-center gap-2.5 rounded-xl px-3 py-1.5 text-sm text-content-secondary outline-none select-none data-highlighted:bg-transparency-white-t4 data-highlighted:text-content-bright data-[state=checked]:bg-transparency-white-t8 data-[state=checked]:text-content-bright"
               >
                 <img
                   v-if="option.logo"
@@ -91,7 +98,10 @@ const triggerLabel = computed(() => {
                   class="size-4 brightness-0 invert"
                 />
                 <span class="flex-1">{{ option.label }}</span>
-                <span v-if="option.meta" class="text-xs text-primary-warm-gray">
+                <span
+                  v-if="option.meta"
+                  class="text-right text-xs text-primary-warm-gray"
+                >
                   {{ option.meta }}
                 </span>
               </DropdownMenuRadioItem>

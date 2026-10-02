@@ -10,6 +10,7 @@ import { mc } from '../../../lib/workshop/move-anything/copy'
 import AppEditorShell from '../app-editor/AppEditorShell.vue'
 import EditorAlert from '../app-editor/EditorAlert.vue'
 import MoveAnythingDocks from './MoveAnythingDocks.vue'
+import MoveAnythingHistory from './MoveAnythingHistory.vue'
 import MoveAnythingMain from './MoveAnythingMain.vue'
 import MoveAnythingPanel from './MoveAnythingPanel.vue'
 import MoveAnythingRun from './MoveAnythingRun.vue'
@@ -25,6 +26,11 @@ const move = useMoveAnything(locale)
 const { image, phase } = move
 const view = ref<MoveView>('compare')
 const panel = computed(() => layout !== 'e')
+const download = computed(() =>
+  image.value && phase.value.kind === 'done'
+    ? { href: phase.value.result.url, name: `moved-${image.value.name}` }
+    : undefined
+)
 reportStudioBusy(() => phase.value.kind === 'moving')
 
 const panelLabels = {
@@ -40,6 +46,7 @@ const panelLabels = {
     :tools-label="mc('move.tools', locale)"
     :panel-labels="panelLabels"
     :panel-dimmed="phase.kind === 'done'"
+    :download
     :repo="workshopAppRepo('move-anything')"
     :locale
     data-testid="move-anything"
@@ -53,6 +60,9 @@ const panelLabels = {
     </template>
     <template #dock>
       <MoveAnythingDocks v-model:view="view" :move :panel :locale />
+    </template>
+    <template v-if="phase.kind !== 'done'" #history>
+      <MoveAnythingHistory :move :locale />
     </template>
     <template v-if="panel && image" #panel>
       <MoveAnythingPanel :image :move :locale />

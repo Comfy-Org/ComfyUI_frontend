@@ -6,7 +6,6 @@ import EditorDivider from '../app-editor/EditorDivider.vue'
 import EditorResultDock from '../app-editor/EditorResultDock.vue'
 import type { EditorView } from '../app-editor/view'
 import RelightDock from './RelightDock.vue'
-import RelightHistory from './RelightHistory.vue'
 import RelightTools from './RelightTools.vue'
 import RelightViewMenu from './RelightViewMenu.vue'
 
@@ -28,8 +27,7 @@ const labels = {
   result: lc('relight.view.result', locale),
   original: lc('relight.view.original', locale),
   edit: lc('relight.edit', locale),
-  again: lc('relight.again', locale),
-  download: lc('relight.download', locale)
+  again: lc('relight.again', locale)
 }
 </script>
 
@@ -37,8 +35,6 @@ const labels = {
   <EditorResultDock
     v-if="image && phase.kind === 'done'"
     v-model:view="view"
-    :href="phase.result.url"
-    :file-name="`relit-${image.name}`"
     :labels
     @edit="relight.edit"
     @again="relight.relight"
@@ -46,13 +42,9 @@ const labels = {
   <template v-else-if="panel">
     <RelightTools :relight :locale />
     <EditorDivider />
-    <RelightHistory :relight :locale />
-    <EditorDivider />
     <RelightViewMenu :relight :locale />
   </template>
   <template v-else>
-    <RelightHistory :relight :locale />
-    <EditorDivider />
     <RelightViewMenu :relight :locale />
     <EditorDivider />
     <RelightDock :relight :locale />

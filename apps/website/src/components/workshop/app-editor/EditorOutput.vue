@@ -77,6 +77,7 @@ const selected = computed(
     side="bottom"
     tooltip
     :trigger-class="cn(FORMAT_TRIGGER_CLASS, 'disabled:opacity-40')"
+    content-class="w-(--reka-dropdown-menu-trigger-width) min-w-0"
   >
     <component
       :is="icon"
