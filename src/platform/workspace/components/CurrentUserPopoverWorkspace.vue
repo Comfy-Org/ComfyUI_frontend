@@ -92,7 +92,7 @@
         v-if="isLoadingBalance"
         width="4rem"
         height="1.25rem"
-        class="mr-auto w-full"
+        class="mr-auto"
       />
       <span
         v-else
