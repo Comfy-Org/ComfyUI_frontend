@@ -158,20 +158,20 @@ function isPersistedWidgetIntent(
   return node.isVirtualNode || widget.type !== 'button'
 }
 
-/**
- * Returns the matching live node for an active-graph widget intent, `null`
- * when that intent cannot name a persisted widget, and `undefined` for a
- * different graph scope whose routing is resolved from the graph hierarchy.
- */
-function validatedWidgetNode(
+type WidgetIntentValidation =
+  | { kind: 'drop' }
+  | { kind: 'validated'; node?: LGraphNode }
+
+function validateWidgetIntent(
   graph: LGraph,
   event: IntentOf<'set_widget'>
-): LGraphNode | null | undefined {
+): WidgetIntentValidation {
   const eventGraph = reachableIntentGraph(graph, event.graphId)
-  if (!eventGraph) return undefined
+  if (!eventGraph) return { kind: 'validated' }
   const node = eventGraph.getNodeById(event.nodeId)
-  if (!node) return null
-  return isPersistedWidgetIntent(node, event) ? node : null
+  return node && isPersistedWidgetIntent(node, event)
+    ? { kind: 'validated', node }
+    : { kind: 'drop' }
 }
 
 function routedWidgetOperation(
@@ -361,10 +361,15 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     if (pendingAdds.has(nodeKey(event.graphId, event.nodeId))) return
     const graph = deps.getGraph()
     if (!graph) return
-    const node = validatedWidgetNode(graph, event)
-    if (node === null) return
+    const validation = validateWidgetIntent(graph, event)
+    if (validation.kind === 'drop') return
     const rootGraphId = deps.boundRootGraphId() ?? graph.id
-    const operation = routedWidgetOperation(graph, rootGraphId, event, node)
+    const operation = routedWidgetOperation(
+      graph,
+      rootGraphId,
+      event,
+      validation.node
+    )
     if (operation) schedule({ kind: 'op', operation })
   }
 
