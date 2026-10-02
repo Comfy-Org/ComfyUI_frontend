@@ -119,7 +119,7 @@ const TURN_RECOVERY_DELAYS_MS = [0, 1000, 2000, 4000, 8000, 16000]
 const TURN_RECOVERY_DEADLINE_MS = 60_000
 
 type TurnOutcome =
-  | { kind: 'terminal'; parts: AssistantMessage['parts'] }
+  | { kind: 'terminal'; parts: AssistantMessage['parts'] | undefined }
   | { kind: 'thread-missing' }
   | { kind: 'streaming' }
   | { kind: 'error'; message: string }
@@ -150,6 +150,23 @@ function mergeAdjacentTextParts(
     merged.push(part)
   }
   return merged
+}
+
+function terminalRecoveryParts(
+  rows: AgentMessages
+): AssistantMessage['parts'] | undefined {
+  const parts = mergeAdjacentTextParts(
+    normalizeAgentTranscript(rows).messages[0]?.parts ?? []
+  )
+  if (parts.length > 0) return parts
+  if (rows.every((row) => row.status !== 'error')) return undefined
+  return [
+    {
+      type: 'notice',
+      level: 'error',
+      text: i18n.global.t('agent.recoveredTurnFailed')
+    }
+  ]
 }
 
 /**
@@ -309,7 +326,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     return true
   }
 
-  function start(): void {
+  function start({ restore = true }: { restore?: boolean } = {}): void {
     ownedGeneration = ++sessionGeneration
     connection = 'initial'
     const surviving = conversationStore.threadId
@@ -329,6 +346,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
     unsubscribe = events.subscribe(onRaw)
     if (events.onStatus) unsubscribeStatus = events.onStatus(onStatus)
+    if (!restore) return
     if (surviving !== null) {
       const generation = ++loadGeneration
       const isCurrent = () =>
@@ -1002,7 +1020,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         reportError(error, { errorType: 'failure_recovering_agent_turn' })
     } finally {
       clearTimeout(deadline)
-      recoveringTurns.delete(key)
+      if (recoveringTurns.get(key) === recovery) recoveringTurns.delete(key)
     }
   }
 
@@ -1092,10 +1110,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
         .sort((a, b) => a.seq - b.seq)
       if (rows.some((row) => !isTerminalTurnStatus(row.status)))
         return { kind: 'streaming' }
-      const parts = mergeAdjacentTextParts(
-        normalizeAgentTranscript(rows).messages[0]?.parts ?? []
-      )
-      return { kind: 'terminal', parts }
+      return {
+        kind: 'terminal',
+        parts: terminalRecoveryParts(rows)
+      }
     } catch (error) {
       if (signal.aborted) throw error
       return turnOutcomeFromError(error)
