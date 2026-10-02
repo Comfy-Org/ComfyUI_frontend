@@ -1269,6 +1269,85 @@ describe('createOpSender', () => {
     }
   )
 
+  it('settles an interrupted oversized seal in bounded groups', () => {
+    const localSettled: BatchOutcome[] = []
+    const localSender = createOpSender({
+      sendOps: () => true,
+      onOpsResult: () => vi.fn(),
+      workflowId: () => WORKFLOW,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: (outcome) => localSettled.push(outcome)
+    })
+    const operations = Array.from({ length: 300 }, (_, id) => addNode(id))
+    let aborted = false
+    operations[0].node = {
+      ...operations[0].node,
+      toJSON() {
+        if (!aborted) {
+          aborted = true
+          localSender.abortAll()
+        }
+        return { id: 0, type: 'TestNode' }
+      }
+    }
+
+    localSender.admit(operations)
+    localSender.flush()
+
+    expect(localSettled.map((outcome) => outcome.ops.length)).toEqual([256, 44])
+    expect(localSender.pending()).toBe(0)
+    localSender.detach()
+  })
+
+  it('sends an outer admission before work enqueued during serialization', () => {
+    const localSent: Op[][] = []
+    let localResultListener: ((result: OpsResultView) => void) | null = null
+    const localSender = createOpSender({
+      sendOps: (_workflowId, _tab, ops) => {
+        localSent.push(ops)
+        return true
+      },
+      onOpsResult: (listener) => {
+        localResultListener = listener
+        return vi.fn()
+      },
+      workflowId: () => WORKFLOW,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: vi.fn()
+    })
+    const outer = addNode(1)
+    let reentered = false
+    outer.node = {
+      ...outer.node,
+      toJSON() {
+        if (!reentered) {
+          reentered = true
+          localSender.enqueue([addNode(2)])
+        }
+        return { id: 1, type: 'TestNode' }
+      }
+    }
+
+    localSender.enqueue([outer])
+    expect(
+      localSent.map((ops) => ('node_id' in ops[0] ? ops[0].node_id : null))
+    ).toEqual([1])
+
+    localResultListener?.({
+      ok: true,
+      applied: [localSent[0][0].op_id],
+      skipped: []
+    })
+    expect(
+      localSent.map((ops) => ('node_id' in ops[0] ? ops[0].node_id : null))
+    ).toEqual([1, 2])
+    localSender.detach()
+  })
+
   it('contains a large malformed admission without argument spread overflow', () => {
     const operations = Array.from({ length: 140_000 }, (_, id) => addNode(id))
     let serializations = 0
