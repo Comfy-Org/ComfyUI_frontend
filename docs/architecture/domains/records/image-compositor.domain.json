@@ -1,0 +1,59 @@
+{
+  "$schema": "../domain.schema.json",
+  "schemaVersion": 1,
+  "id": "image-compositor",
+  "capability": "Image compositor",
+  "description": "Layered image-composition presentation, editing orchestration, extension registration, and LiteGraph widget integration.",
+  "expectedFileCount": 24,
+  "modules": [
+    {
+      "path": "src/renderer/extensions/compositor/components/WidgetCompositor.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/compositor/components/WidgetCompositor.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/compositor/components/types.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/compositor/composables/**",
+      "role": "application"
+    },
+    {
+      "path": "src/extensions/core/imageCompositor.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/imageCompositor.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/CompositorWidget.ts",
+      "role": "integration"
+    }
+  ],
+  "publicEntryPoints": [],
+  "owners": ["@jtydhr88", "@Comfy-Org/comfy_frontend_devs"],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Compositor sessions preserve layer state, save behavior, and widget integration",
+      "checks": [
+        "src/renderer/extensions/compositor/composables/compositorSession.test.ts",
+        "src/renderer/extensions/compositor/composables/compositorSave.test.ts",
+        "src/renderer/extensions/compositor/components/WidgetCompositor.test.ts",
+        "src/extensions/core/imageCompositor.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "The core extension and LiteGraph widget remain the host integration seams.",
+    "Layer state and save behavior remain characterized independently of presentation."
+  ],
+  "enforcement": { "deepImports": "baseline", "dependencies": "baseline" }
+}
