@@ -8,6 +8,7 @@ on:
       - 'packages/account-ui/**'
       - 'packages/billing-contract/**'
       - 'packages/ingest-types/**'
+      - 'packages/fallow-config/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -52,3 +53,14 @@ jobs:
 
       - name: Install the packed tarballs into a clean consumer and import every entry
         run: pnpm --filter @comfyorg/account-core smoke:pack
+
+  fallow-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+      - name: Typecheck the Fallow preset tests
+        run: pnpm --filter @comfyorg/fallow-config typecheck
+      - name: Test the packed Fallow preset in clean npm consumers
+        run: pnpm --filter @comfyorg/fallow-config test

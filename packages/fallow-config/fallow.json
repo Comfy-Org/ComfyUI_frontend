@@ -1,0 +1,15 @@
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/v3.24.1/schema.json",
+  "duplicates": {
+    "minOccurrences": 3
+  },
+  "audit": {
+    "gate": "new-only",
+    "deadCodeBaseline": ".fallow-baselines/dead-code.json",
+    "healthBaseline": ".fallow-baselines/health.json",
+    "dupesBaseline": ".fallow-baselines/dupes.json"
+  },
+  "rules": {
+    "dev-dependencies-in-production": "error"
+  }
+}
