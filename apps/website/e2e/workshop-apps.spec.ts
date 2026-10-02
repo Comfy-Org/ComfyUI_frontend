@@ -185,7 +185,7 @@ async function expectDownloadBesideGitHub(app: Locator) {
   const github = await app.getByText('GitHub · Coming soon').boundingBox()
   if (!download || !github) throw new Error('no header buttons')
   expect(download.y).toBe(github.y)
-  expect(github.x - (download.x + download.width)).toBeLessThanOrEqual(8)
+  expect(download.x - (github.x + github.width)).toBeLessThanOrEqual(8)
 }
 
 async function expectPanelWidth(panel: Locator) {
@@ -393,6 +393,27 @@ async function relightFromPanel(page: Page) {
   ).toBeVisible()
   return app
 }
+
+for (const { width, panel } of [
+  { width: 1280, panel: 280 },
+  { width: 1920, panel: 307.2 },
+  { width: 2400, panel: 340 }
+])
+  test(`sizes the Relight panel to ${panel}px on a ${width}px screen`, async ({
+    page,
+    context
+  }) => {
+    await page.setViewportSize({ width, height: 900 })
+    await mockFlags(context, { apps: true, workflows: false })
+    await page.goto('/hub/apps/relight/')
+    const app = page.getByTestId('relight')
+    await app.getByRole('button', { name: 'Try the example' }).click()
+    const settings = app.getByRole('complementary', {
+      name: 'Relight settings'
+    })
+    await expect(settings).toBeVisible()
+    expect((await settings.boundingBox())?.width).toBeCloseTo(panel, 0)
+  })
 
 test('relights the Relight example from the floating panel', async ({
   page,

@@ -371,6 +371,27 @@ describe('RelightStudio', () => {
     }
   )
 
+  it('keeps the seed as a row of the panel, outside Generation', async () => {
+    await openExample()
+    expect(
+      within(panel()).getByRole('button', { name: /^Generation/ })
+    ).toHaveAttribute('aria-expanded', 'false')
+    expect(
+      within(panel()).getByRole('spinbutton', { name: 'Seed' })
+    ).toBeVisible()
+  })
+
+  it("keeps the seed in the bottom composer's Generation tray", async () => {
+    const user = await openExample('e')
+    await user.click(screen.getByRole('button', { name: /^Generation/ }))
+    expect(
+      within(screen.getByRole('dialog', { name: 'Generation' })).getByRole(
+        'spinbutton',
+        { name: 'Seed' }
+      )
+    ).toBeVisible()
+  })
+
   it('splits the photo into original and relit while Compare is on', async () => {
     const user = await openExample()
     const tools = screen.getByRole('toolbar', { name: 'Relight tools' })

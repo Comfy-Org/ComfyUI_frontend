@@ -94,8 +94,8 @@ const dockOverSheet = () => floating() && !wide.value && !panelDimmed
         </div>
         <span class="flex-1" />
         <div class="pointer-events-auto flex items-center gap-2">
-          <EditorDownload :file="download" :locale />
           <AppRepoLink :repo :locale class="max-lg:hidden" />
+          <EditorDownload :file="download" :locale />
         </div>
       </header>
       <div
