@@ -789,9 +789,11 @@ describe('cloud API requests on the shared web session', () => {
       ingest.csrfToken = 'csrf-2'
 
       const response = await postPrompt()
+      const signedInAfterRefusal = useCloudWebSessionStore().signedInUser?.id
       await postPrompt()
 
       expect(response.status).toBe(status)
+      expect(signedInAfterRefusal).toBe(sessionUser)
       expect(
         ingest.requests.map(({ path, headers }) =>
           path === '/api/auth/session' ? 'session' : headers['x-csrf-token']
