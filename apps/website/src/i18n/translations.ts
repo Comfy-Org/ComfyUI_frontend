@@ -10102,6 +10102,10 @@ Enterprise`
     en: 'Select or drop an image',
     'zh-CN': '选择或拖入一张图片'
   },
+  'workshop.field.chosenOfMax': {
+    en: '{count} of {max} chosen',
+    'zh-CN': '已选 {count} / {max}'
+  },
   'workshop.field.selectOrDropImages': {
     en: 'Select or drop up to {count} images',
     'zh-CN': '选择或拖入最多 {count} 张图片'

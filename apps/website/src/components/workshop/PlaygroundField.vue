@@ -9,6 +9,7 @@ import type {
   FieldErrorCode,
   FieldErrors,
   FieldSchema,
+  FileValue,
   FieldValue,
   FormValues
 } from '../../config/workshop-playground'
@@ -30,12 +31,18 @@ const {
   field,
   errors,
   attention,
+  group,
   locale = 'en',
   disabled = false,
   fileUploadsDisabled = false
 } = defineProps<{
   field: FieldSchema
   errors: FieldErrors
+  /**
+   * The numbered sibling fields this one starts, itself first, when a model
+   * takes several of the same upload. One control fills them in order.
+   */
+  group?: readonly string[]
   /**
    * The id of a notice about this field's upload. Deliberately not an error:
    * errors abort the run, and this marks something the reader may well decide
@@ -80,13 +87,17 @@ watch(
     edited.value = false
   }
 )
-const fieldError = computed(() =>
-  edited.value ||
-  (field.presentation?.formConstraint &&
-    errors[field.name] === field.presentation.formConstraint.error)
-    ? validateForm([field], values.value)[field.name]
-    : errors[field.name]
-)
+const fieldError = computed(() => {
+  const own =
+    edited.value ||
+    (field.presentation?.formConstraint &&
+      errors[field.name] === field.presentation.formConstraint.error)
+      ? validateForm([field], values.value)[field.name]
+      : errors[field.name]
+  // A grouped control owns its siblings' slots, so a complaint about any of
+  // them has nowhere else to appear.
+  return own ?? group?.map((name) => errors[name]).find(Boolean)
+})
 
 function uploadLimit(): number {
   if (field.kind === 'file') return field.maxBytes ?? MAX_UPLOAD_BYTES
@@ -184,28 +195,67 @@ const declaredDefault = computed(() =>
     ? undefined
     : field.defaultValue
 )
-const selectedFiles = computed({
+function fileFor(name: string): FileValue | FileValue[] | undefined {
+  const value = values.value[name]
+  const upload = urlUploadField(field)
+  if (typeof value === 'string' && upload && isHttpImageSource(value)) {
+    return (
+      workshopExampleFile(value, upload.accept[0]) ?? {
+        name: new URL(value).pathname.split('/').at(-1) || field.label,
+        type: upload.accept[0] ?? 'application/octet-stream',
+        size: 0,
+        previewUrl: value,
+        sourceUrl: value
+      }
+    )
+  }
+  return typeof value === 'object' ? value : undefined
+}
+
+// Each slot is carried with the value it was read from, so a slot that only
+// moves up the list keeps what it held — an example's URL stays a URL rather
+// than being rewritten as the file it was resolved into for display.
+const groupSlots = computed(() =>
+  (group ?? []).flatMap((name) => {
+    const file = fileFor(name)
+    if (file === undefined) return []
+    const files = Array.isArray(file) ? file : [file]
+    return files.map((one) => ({ file: one, held: values.value[name] }))
+  })
+)
+const groupFiles = computed<FileValue[]>(() =>
+  groupSlots.value.map((slot) => slot.file)
+)
+const selectedFiles = computed<FileValue | FileValue[] | undefined>({
   get() {
-    const value = values.value[field.name]
-    const upload = urlUploadField(field)
-    if (typeof value === 'string' && upload && isHttpImageSource(value)) {
-      return (
-        workshopExampleFile(value, upload.accept[0]) ?? {
-          name: new URL(value).pathname.split('/').at(-1) || field.label,
-          type: upload.accept[0] ?? 'application/octet-stream',
-          size: 0,
-          previewUrl: value,
-          sourceUrl: value
-        }
-      )
-    }
-    return typeof value === 'object' ? value : undefined
+    return group ? groupFiles.value : fileFor(field.name)
   },
-  set
+  set(value) {
+    if (!group) {
+      set(value)
+      return
+    }
+    const chosen =
+      value === undefined ? [] : Array.isArray(value) ? value : [value]
+    const held = chosen.map(
+      (file) =>
+        groupSlots.value.find((slot) => slot.file === file)?.held ?? file
+    )
+    edited.value = true
+    values.value = {
+      ...values.value,
+      ...Object.fromEntries(group.map((name, at) => [name, held[at]]))
+    }
+  }
 })
 const uploadField = computed(() => {
   const upload = urlUploadField(field)
-  return upload ? { ...upload, name: `${field.name}-upload` } : undefined
+  if (!upload) return undefined
+  return {
+    ...upload,
+    name: `${field.name}-upload`,
+    ...(group ? { multiple: true, maxItems: group.length } : {})
+  }
 })
 
 function set(value: FieldValue) {
@@ -376,6 +426,19 @@ function booleanValue(fallback = false): boolean {
               *
             </span>
           </label>
+          <span
+            v-if="group"
+            class="text-xs text-primary-warm-gray tabular-nums"
+            :aria-label="
+              t('workshop.field.chosenOfMax', locale, {
+                count: groupFiles.length,
+                max: group.length
+              })
+            "
+            :data-testid="`field-${field.name}-count`"
+          >
+            {{ groupFiles.length }} / {{ group.length }}
+          </span>
           <InfoTooltip
             v-if="field.hint"
             :text="field.hint"

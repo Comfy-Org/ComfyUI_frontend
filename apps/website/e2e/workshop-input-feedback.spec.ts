@@ -230,3 +230,21 @@ test('the upload prompt leaves a full frame field and returns when it empties', 
   await expect(lastFrame.getByRole('listitem')).toHaveCount(1)
   await expect(promptIn(lastFrame)).toHaveCount(0)
 })
+
+// Kling O3 takes seven reference images. Declared one field per slot, they
+// rendered as seven upload boxes down the page, six of them empty, when they
+// are one question the model asks once.
+test('Kling O3 asks for its reference images once, saying how many it takes', async ({
+  page
+}) => {
+  await page.goto('/hub/models/kling-o3-image-to-video/')
+  const inputs = page.getByTestId('playground-inputs')
+  await expect(inputs).toBeVisible()
+  await expect(page.getByTestId('field-reference_image_url-count')).toHaveText(
+    '1 / 7'
+  )
+  await expect(
+    page.getByTestId('field-group-reference_image_url_2')
+  ).toHaveCount(0)
+  await expect(inputs.getByText('Select or drop up to 7 images')).toBeVisible()
+})

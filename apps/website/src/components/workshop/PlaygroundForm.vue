@@ -8,6 +8,7 @@ import type {
   FormValues
 } from '../../config/workshop-playground'
 import { groupPlaygroundFields } from '../../config/workshop-playground'
+import { indexedUploadGroups } from '../../lib/workshop/indexed-uploads'
 import { useFrameRatioMismatch } from '../../composables/useFrameRatioMismatch'
 import type { FrameRatioRule } from '../../config/workshop-model-restrictions'
 import { frameSource } from '../../config/workshop-model-restrictions'
@@ -38,6 +39,21 @@ const values = defineModel<FormValues>({ required: true })
 // Advanced. A legacy positional fallback lives in the helper for workflow
 // fixtures that do not carry that metadata yet.
 const groups = computed(() => groupPlaygroundFields(schema))
+
+// A model that takes several reference images declares one field per slot.
+// They are one input, so the slot that starts the run renders the whole of it
+// and the rest leave the form.
+const uploadGroups = computed(() => indexedUploadGroups(schema))
+const followers = computed(
+  () => new Set(uploadGroups.value.flatMap((group) => group.members.slice(1)))
+)
+const primary = computed(() =>
+  groups.value.primary.filter((field) => !followers.value.has(field.name))
+)
+
+function membersOf(name: string): readonly string[] | undefined {
+  return uploadGroups.value.find((group) => group.base === name)?.members
+}
 
 // The frames are ordinary fields, so the pair is read off the values their own
 // controls already write rather than given state of its own.
@@ -83,16 +99,17 @@ function onAdvancedToggle(event: Event) {
 <template>
   <div class="flex flex-col gap-8" data-testid="playground-form">
     <div
-      v-if="groups.primary.length"
+      v-if="primary.length"
       class="flex flex-col gap-8"
       data-testid="playground-inputs"
     >
       <PlaygroundField
-        v-for="field in groups.primary"
+        v-for="field in primary"
         :key="field.name"
         v-model="values"
         :field
         :errors
+        :group="membersOf(field.name)"
         :attention="attentionFor(field.name)"
         :locale
         :disabled
