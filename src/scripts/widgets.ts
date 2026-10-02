@@ -100,6 +100,43 @@ export function updateControlWidgetLabel(widget: IBaseWidget) {
 
 const HAS_EXECUTED = Symbol()
 
+/**
+ * The modes a value-control widget holds. Kept next to
+ * {@link controlAfterGenerateNameOverride} because the two must agree.
+ */
+const VALUE_CONTROL_MODES: readonly string[] = [
+  'fixed',
+  'increment',
+  'decrement',
+  'randomize',
+  'increment-wrap'
+]
+
+/**
+ * The `control_after_generate` key of an input spec carries two unrelated
+ * meanings, and the value's type alone no longer separates them:
+ *
+ * - a **name override** for the control widget — group nodes emit
+ *   `` `${prefix}control_after_generate` `` so a flattened node's controls stay
+ *   distinct (`groupNode.ts`), and
+ * - the control's **default mode**, because core declares it as the V3
+ *   `io.ControlAfterGenerate` enum, which is a `str` Enum and therefore
+ *   serialises into `object_info` as its own value — `"fixed"` on
+ *   `PrimitiveInt` (`comfy_extras/nodes_primitive.py`) and `SeedNode`
+ *   (`comfy_extras/nodes_seed.py`).
+ *
+ * Reading a mode as a name produced a live widget literally named `fixed`,
+ * while every other reader of the same key treats it as a flag and keeps the
+ * canonical slot name: the widget catalog's `widget_order`, saved workflows,
+ * `app.ts`'s `PrimitiveNode` value coercion, and the agent's shared document.
+ * The caller already passes the mode through as the widget's default value, so
+ * a mode here is never also a name.
+ */
+function controlAfterGenerateNameOverride(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined
+  return VALUE_CONTROL_MODES.includes(value) ? undefined : value
+}
+
 export function addValueControlWidget(
   node: LGraphNode,
   targetWidget: IBaseWidget,
@@ -108,9 +145,9 @@ export function addValueControlWidget(
   widgetName?: string,
   inputData?: InputSpec
 ): IComboWidget {
-  const controlAfterGenerate = inputData?.[1]?.control_after_generate
   const name =
-    typeof controlAfterGenerate === 'string' ? controlAfterGenerate : widgetName
+    controlAfterGenerateNameOverride(inputData?.[1]?.control_after_generate) ??
+    widgetName
   const widgets = addValueControlWidgets(
     node,
     targetWidget,
@@ -140,14 +177,22 @@ export function addValueControlWidgets(
   if (!defaultValue) defaultValue = 'randomize'
 
   const getName = (
-    defaultName: string,
+    defaultName: 'control_after_generate' | 'control_filter_list',
     optionName: 'controlAfterGenerateName' | 'controlFilterListName'
   ) => {
     const nameOverride = options[optionName]
     if (nameOverride) return nameOverride
     const inputOptions = inputData?.[1]
-    const defaultNameOverride = inputOptions?.[defaultName]
-    if (typeof defaultNameOverride === 'string') return defaultNameOverride
+    const specValue = inputOptions?.[defaultName]
+    // Only `control_after_generate` is overloaded; see
+    // `controlAfterGenerateNameOverride`.
+    const defaultNameOverride =
+      defaultName === 'control_after_generate'
+        ? controlAfterGenerateNameOverride(specValue)
+        : typeof specValue === 'string'
+          ? specValue
+          : undefined
+    if (defaultNameOverride !== undefined) return defaultNameOverride
     if (inputOptions?.control_prefix) {
       return inputOptions.control_prefix + ' ' + defaultName
     }
