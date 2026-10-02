@@ -42,14 +42,8 @@ describe('bootstrapTracer', () => {
   it('records extension loading subphases inside the aggregate load phase', async () => {
     const tracer = new BootstrapTracer()
     // Containment has to be read off the mark stream, because nothing on
-    // `summary()` can carry it. Durations are out: `perfMark` takes them from
-    // `performance.measure()`, whose happy-dom implementation reports a
-    // constant regardless of elapsed time, so every duration comparison here
-    // holds trivially. Start times are out too — they order the opens but say
-    // nothing about the closes, so de-nesting the three spans into siblings, or
-    // letting both children overrun the parent, leaves `startMs` reading
-    // [0, 5, 45] either way. The marks are ordered by when each span actually
-    // opened and closed, which is the claim.
+    // happy-dom reports a constant performance.measure() duration, so
+    // containment is read from mark order rather than from durations.
     const mark = vi.spyOn(performance, 'mark')
 
     await tracer.settle('bootstrap/extensions-load', async () => {
@@ -62,9 +56,6 @@ describe('bootstrapTracer', () => {
       )
     })
 
-    // Both children open and close strictly between the aggregate's own two
-    // marks. This fails if either child escapes the aggregate in either
-    // direction: starting before it opens, or still running when it closes.
     expect(mark.mock.calls.map(([name]) => name)).toEqual([
       'bootstrap/extensions-load:start',
       'bootstrap/extensions-load-core:start',
@@ -74,10 +65,6 @@ describe('bootstrapTracer', () => {
       'bootstrap/extensions-load:end'
     ])
 
-    // Advancing between the starts keeps these distinct, so the rows prove the
-    // tracer recorded three separate spans rather than collapsing them — the
-    // re-entry guard in `startPhase` returns a no-op handle on a name it is
-    // already timing, which would silently drop a row.
     const rows = tracer.summary()
     expect(rows.map((r) => r.name)).toEqual([
       'bootstrap/extensions-load',

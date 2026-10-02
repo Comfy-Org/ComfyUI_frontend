@@ -50,9 +50,8 @@ export interface ExtensionLoadFailure {
  * 25-entry pending buffer, so a handful of broken packs during bootstrap would
  * silently crowd out every later error in the session. The batch is reported
  * once, by `reportExtensionLoadFailures`.
- *
  */
-export async function importCustomExtension(
+async function importCustomExtension(
   ext: string
 ): Promise<ExtensionLoadFailure | undefined> {
   try {
@@ -65,19 +64,10 @@ export async function importCustomExtension(
 /**
  * Report one load's worth of extension import failures as a single typed error.
  *
- * The failing paths go in the message, not only in `tags`: `reportError` writes
- * its own console line from the error and never from `options.tags`, and on DEV
- * and self-hosted installs the console is the only live sink — so a path
- * carried only as a tag tells the user that an extension failed without saying
- * which one. That is what the removed `console.error` used to provide.
- *
  * Only the count is tagged. The paths are backend-controlled and unbounded,
  * which is not something to index as a Sentry/RUM facet, so they ride in
  * context instead.
  *
- * `reportError` writes that console line itself, so there is deliberately no
- * `console.error` alongside it — pairing the two emits one failure twice, once
- * untyped.
  */
 export function reportExtensionLoadFailures(
   failures: ExtensionLoadFailure[]
