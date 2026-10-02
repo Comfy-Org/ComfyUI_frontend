@@ -83,7 +83,6 @@ function setup() {
   return { graph, doc, applyCollected, applyEdit, docWidgets }
 }
 
-/** The live node's widget values keyed by name — never by position. */
 function liveWidgets(graph: LGraph): Record<string, unknown> {
   const node = graph.getNodeById(toNodeId(143))
   if (!node) throw new Error('node 143 was not created')
