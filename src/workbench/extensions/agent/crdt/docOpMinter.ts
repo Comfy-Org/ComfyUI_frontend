@@ -172,20 +172,9 @@ function reachableIntentGraph(
 }
 
 /**
- * Whether a widget write is one the document carries at all.
- *
- * This is the predicate `valueWidgetsOnly` already applies to the `add_node`
- * snapshot. Without it here, the incremental path mints an op for a widget
- * this same file knows is unserializable: `$$node-text-preview` is injected at
- * run time with `serialize: false`, so every progress tick minted a
- * `set_widget` the host refused as `unknown_widget`, the user was toasted
- * "your edit was rejected" for something that was never an edit, and
- * `revertRejectedOps` rolled the value back. `applyOps` is abort-remainder, so
- * a genuine hand edit batched behind that write was reverted with it (FE-3161).
- *
- * It only ever subtracts a write it can positively identify as non-value. A
- * node this canvas cannot resolve is judged on the store state the intent was
- * keyed by, and an unknown widget mints nothing rather than guessing.
+ * Whether the live widget, or the store metadata the intent was keyed by when
+ * the live widget is missing or omits a field, identifies a value the document
+ * carries. Unknown widgets fail closed.
  */
 function isValueWidgetWrite(
   owner: LGraphNode | null,
