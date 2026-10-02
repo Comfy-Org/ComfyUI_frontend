@@ -3178,6 +3178,88 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   )
 
+  it('applies a pending stop to an active turn adopted after a refused send', async () => {
+    let rejectPost: ((error: unknown) => void) | undefined
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+      .mockImplementationOnce(
+        () =>
+          new Promise<AgentTurnAccepted>((_resolve, reject) => {
+            rejectPost = reject
+          })
+      )
+    const cancelMessage = vi.fn(
+      async (): Promise<AgentCancelAccepted> => ({ status: 'cancelling' })
+    )
+    const rest = fakeRest({
+      postMessage,
+      cancelMessage,
+      getMessages: vi.fn(
+        async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'turn-2', 'other client'),
+          {
+            ...historyRow(2, 'assistant', 'turn-2', '', 'msg-2'),
+            content: {},
+            status: 'streaming'
+          }
+        ]
+      )
+    })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    await session.sendMessage('first')
+    emit(done('msg-1'))
+
+    const refused = session.sendMessage('refused')
+    await session.stopTurn('button')
+    rejectPost?.(
+      new AgentApiError('turn in progress', 409, {
+        error: 'turn in progress',
+        type: 'TURN_IN_PROGRESS',
+        active_message_id: 'msg-2',
+        turn_id: 'turn-2'
+      })
+    )
+    await refused
+
+    expect(cancelMessage).toHaveBeenCalledExactlyOnceWith('th-1', 'msg-2')
+  })
+
+  it('clears a pending stop when the send fails before adopting a turn', async () => {
+    let rejectPost: ((error: unknown) => void) | undefined
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockImplementationOnce(
+        () =>
+          new Promise<AgentTurnAccepted>((_resolve, reject) => {
+            rejectPost = reject
+          })
+      )
+      .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-2' })
+    const cancelMessage = vi.fn(
+      async (): Promise<AgentCancelAccepted> => ({ status: 'cancelling' })
+    )
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage, cancelMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    const failed = session.sendMessage('failed')
+    await session.stopTurn('button')
+    rejectPost?.(new TypeError('network down'))
+    await failed
+    await session.sendMessage('next')
+
+    expect(cancelMessage).not.toHaveBeenCalled()
+  })
+
   it('(g) a socket blip keeps the turn live and re-checks the server once on the way back up', async () => {
     // PM-1199 / PM-1200. The server never learns the socket went away: it
     // keeps running the turn and keeps the row `streaming`. Aborting locally

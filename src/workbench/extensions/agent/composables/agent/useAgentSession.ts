@@ -1026,6 +1026,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.startTurn(turnId)
     readyThreadId.value = ack.thread_id
     recordTurnStarted(turnId, startsThread)
+    stopPendingActiveTurn()
+  }
+
+  function stopPendingActiveTurn(): void {
+    if (conversationStore.activeTurnId === null) return
     const pendingStop = consumeStopPendingAck()
     if (pendingStop !== null) void stopTurn(pendingStop.method)
   }
@@ -1146,7 +1151,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     // thread that does not exist cannot already be busy.
     if (threadAtSend === 'new') return
     const reattachGeneration = ++refusedTurnReattachGeneration
-    await Promise.race([
+    const reattached = await Promise.race([
       hydrateFromServer(
         threadAtSend,
         () =>
@@ -1158,6 +1163,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     ])
     if (reattachGeneration === refusedTurnReattachGeneration)
       refusedTurnReattachGeneration++
+    if (reattached === true) stopPendingActiveTurn()
   }
 
   async function performSend(
@@ -1244,7 +1250,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     sendInFlight = true
     stopPendingAck = null
     try {
-      return await performSend(
+      const sent = await performSend(
         text,
         attachments,
         tags,
@@ -1252,6 +1258,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
         selectionWorkflowId,
         clientMessageId
       )
+      if (!sent) stopPendingAck = null
+      return sent
     } finally {
       sending.value = false
       sendInFlight = false
