@@ -320,9 +320,25 @@ describe('ModelsCatalogue', () => {
     })
 
     it.for([
-      { covers: 'an image over a video', withImage: true, media: 'IMG' },
-      { covers: 'a video without an image', withImage: false, media: 'VIDEO' }
-    ])('covers a task with $covers', async ({ withImage, media }) => {
+      {
+        covers: 'an image over a video',
+        image: true,
+        video: true,
+        media: 'IMG'
+      },
+      {
+        covers: 'a video without an image',
+        image: false,
+        video: true,
+        media: 'VIDEO'
+      },
+      {
+        covers: 'nothing when no item has art',
+        image: false,
+        video: false,
+        media: null
+      }
+    ])('covers a task with $covers', async ({ image, video, media }) => {
       const withThumb = (
         name: string,
         thumbnail: WorkshopModel['thumbnail']
@@ -331,14 +347,19 @@ describe('ModelsCatalogue', () => {
         thumbnail
       })
       renderExplore([
-        withThumb('moving', { url: '/clip.mp4', kind: 'video' }),
-        ...(withImage
+        withThumb('plain', undefined),
+        ...(video
+          ? [withThumb('moving', { url: '/clip.mp4', kind: 'video' })]
+          : []),
+        ...(image
           ? [withThumb('still', { url: '/still.webp', kind: 'image' })]
           : [])
       ])
 
       const tile = await screen.findByTestId('explore-task')
-      expect(within(tile).getByTestId('model-card-media').tagName).toBe(media)
+      expect(
+        within(tile).queryByTestId('model-card-media')?.tagName ?? null
+      ).toBe(media)
     })
 
     it('says when nothing matches and clears back to everything', async () => {

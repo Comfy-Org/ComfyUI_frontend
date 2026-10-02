@@ -22,8 +22,7 @@ defineEmits<{ select: [] }>()
 const cover = computed(
   () =>
     items.find((item) => item.thumbnail?.kind === 'image') ??
-    items.find((item) => item.thumbnail) ??
-    items[0]
+    items.find((item) => item.thumbnail)
 )
 const kinds = computed(() => [
   ...(items.some((item) => item.workflowId)
