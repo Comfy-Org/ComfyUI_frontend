@@ -17,15 +17,17 @@ interface ThinkingRow {
 
 export type ActivityRow = ToolRow | ThinkingRow
 
-function isSameToolStep(
+function matchingToolStep(
   previous: ActivityRow | undefined,
   part: ToolPart
-): boolean {
-  return (
-    previous?.kind === 'tool' &&
-    previous.name === part.name &&
-    (part.name !== 'load_skill' || previous.skill === part.skill)
+): ToolRow | undefined {
+  if (
+    previous?.kind !== 'tool' ||
+    previous.name !== part.name ||
+    (part.name === 'load_skill' && previous.skill !== part.skill)
   )
+    return undefined
+  return previous
 }
 
 /**
@@ -44,8 +46,8 @@ export function foldActivity(parts: readonly ActivityPart[]): ActivityRow[] {
       })
       continue
     }
-    const previous = rows.at(-1)
-    if (isSameToolStep(previous, part) && previous?.kind === 'tool') {
+    const previous = matchingToolStep(rows.at(-1), part)
+    if (previous) {
       previous.count += 1
       if (part.state === 'streaming') previous.state = 'streaming'
       if (part.ok !== undefined) previous.ok = part.ok
