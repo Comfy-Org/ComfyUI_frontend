@@ -21,6 +21,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type {
   AgentErrorMetadata,
+  AgentFreeUseNoticeMetadata,
   AgentPaywallSurface,
   AgentRunApprovalDecision,
   AgentStopMethod
@@ -72,6 +73,7 @@ import {
   trackCoachDeferral
 } from './composables/agent/useOnboarding'
 
+import { useFreeUsePlacement } from './experiments/freeUsePlacement'
 import AgentPanel from './components/agent/AgentPanel.vue'
 import { agentBoundWorkflowIdKey } from './components/agent/agentBoundWorkflowId'
 import AgentGraphActivityBar from './components/AgentGraphActivityBar.vue'
@@ -1206,6 +1208,17 @@ onBeforeUnmount(() => {
 
 const { copy } = useClipboard({ legacy: true })
 
+/**
+ * DES-1221. This component mounts only while the panel is on screen, so
+ * reading the flag here keeps the exposure — and the experiment's
+ * denominator — to the panel openers the hypothesis is about.
+ */
+const { variant: freeUsePlacement } = useFreeUsePlacement()
+
+function onFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {
+  useTelemetry()?.trackAgentFreeUseNotice(metadata)
+}
+
 function onFeedback(turnId: string, vote: 'up' | 'down' | null): void {
   const message = entries.value.find(
     (entry) => entry.role === 'assistant' && entry.id === turnId
@@ -1748,6 +1761,8 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       :get-mention-nodes="mentionableNodes"
       :paywall-presentation="paywallPresentation"
       :credits-exhausted="showStandingPaywall"
+      :free-use-placement="freeUsePlacement"
+      @free-use-notice="onFreeUseNotice"
       @send="onSend"
       @stop="onStop"
       @attach="onAttach"
