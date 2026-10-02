@@ -1,4 +1,7 @@
-import type { BillingTelemetryEvent } from '@comfyorg/account-core/billing'
+import type {
+  BillingTelemetryEvent,
+  CheckoutJourneyTelemetryEvent
+} from '@comfyorg/account-core/billing'
 import { computed } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -123,6 +126,27 @@ describe('DatadogRumTelemetryProvider', () => {
       )
     }
   )
+
+  it('stamps the cloud app surface on checkout journey actions', () => {
+    const event = {
+      checkout_journey_id: 'journey-1',
+      checkout_entered_at: '2026-10-01T00:00:00.000Z',
+      assignment_status: 'unavailable',
+      entry_flow: 'initial_subscription',
+      entry_source: 'other',
+      ui_mode: 'full_page',
+      phase: 'entered',
+      payment_intent_source: 'subscribe_to_run'
+    } satisfies CheckoutJourneyTelemetryEvent
+
+    new DatadogRumTelemetryProvider().trackCheckoutJourneyEvent(event)
+
+    expect(addAction).toHaveBeenCalledWith('billing.checkout.entered', {
+      ...event,
+      schema_version: 1,
+      billing_surface: 'cloud_app'
+    })
+  })
 
   it('records fetch timeouts as RUM actions', () => {
     new DatadogRumTelemetryProvider().trackFetchTimeout({
