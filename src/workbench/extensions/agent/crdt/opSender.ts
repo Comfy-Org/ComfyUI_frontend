@@ -404,6 +404,17 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     }
   }
 
+  function abortAll(): void {
+    stateEpoch++
+    abortGeneration++
+    lastMintedVersion = -1
+    lastMintedWorkflowId = null
+    drainOutstanding(
+      guardedSettlementNotifier('failure_settling_agent_op_sender_abort'),
+      'failure_chunking_agent_op_sender_abort'
+    )
+  }
+
   function dequeue(): { workflowId: string; ops: Op[] } | undefined {
     if (queueHead >= queue.length) return
     const queued = queue[queueHead]
@@ -774,7 +785,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       lastMintedVersion = -1
       lastMintedWorkflowId = null
       if (inFlight?.waitingForLineage) return
-      this.abortAll()
+      abortAll()
     },
     resumeAfterLineage() {
       if (!inFlight?.waitingForLineage) return
@@ -783,16 +794,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       inFlight.waitingForLineage = false
       transmit(inFlight, 0)
     },
-    abortAll() {
-      stateEpoch++
-      abortGeneration++
-      lastMintedVersion = -1
-      lastMintedWorkflowId = null
-      drainOutstanding(
-        guardedSettlementNotifier('failure_settling_agent_op_sender_abort'),
-        'failure_chunking_agent_op_sender_abort'
-      )
-    },
+    abortAll,
     detach() {
       if (detached) return
       detached = true

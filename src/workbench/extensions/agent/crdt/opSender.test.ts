@@ -1751,6 +1751,15 @@ describe('createOpSender', () => {
     expect(sent).toHaveLength(2)
   })
 
+  it('handles a lineage reset through a detached method reference', () => {
+    sender.enqueue([addNode(1)])
+    const { handleLineageReset } = sender
+
+    expect(() => handleLineageReset()).not.toThrow()
+    expect(settled.map((outcome) => outcome.state)).toEqual(['unconfirmed'])
+    expect(sender.pending()).toBe(0)
+  })
+
   it('abortAll settles every other batch when one settlement listener throws', () => {
     const localSettled: BatchOutcome[] = []
     const localSender = createOpSender({
