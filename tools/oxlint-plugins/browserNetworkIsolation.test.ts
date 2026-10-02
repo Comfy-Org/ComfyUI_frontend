@@ -62,4 +62,28 @@ describe('browser network isolation lint rules', () => {
       isolationRules('browser_tests/fixtures/networkIsolationFixture.ts')
     ).toEqual([])
   })
+
+  it('preserves shared PrimeVue restrictions in the website E2E override', () => {
+    const directory = mkdtempSync(
+      path.resolve('apps/website/e2e/__primevue_policy_')
+    )
+    try {
+      const filename = path.join(directory, 'fixture.spec.ts')
+      writeFileSync(
+        filename,
+        [
+          "import Calendar from 'primevue/calendar'",
+          "import { test } from '@playwright/test'",
+          'void Calendar',
+          'void test'
+        ].join('\n')
+      )
+      expect(isolationRules(filename)).toEqual([
+        'eslint(no-restricted-imports)',
+        'eslint(no-restricted-imports)'
+      ])
+    } finally {
+      rmSync(directory, { recursive: true, force: true })
+    }
+  })
 })
