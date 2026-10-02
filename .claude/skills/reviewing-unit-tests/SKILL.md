@@ -51,35 +51,47 @@ Apply these repo-specific clarifications:
 
 ## 30-Second Red Flags
 
-| If you see...                                                                                                                                                                                              | Failure mode                    | Default action                                                |
-| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------- |
-| New `@vue/test-utils` import in a new component test                                                                                                                                                       | legacy test API                 | Request changes                                               |
-| `vi.mock('vue-i18n', ...)`                                                                                                                                                                                 | mocked i18n                     | Request changes                                               |
-| `as any`, `@ts-expect-error`, `as Mock`, `as ReturnType<typeof vi.fn>`, `as unknown as X`                                                                                                                  | unnecessary cast or type escape | Request changes unless the author proves no safer type exists |
-| `getXMock()`, renamed wrapper, or helper that only returns a mocked value                                                                                                                                  | alias-by-renaming               | Request changes                                               |
-| `beforeEach` recreates the return object for a module-mocked composable or service                                                                                                                         | shared mock setup drift         | Request changes                                               |
-| Assertions only check defaults, mock plumbing, or CSS hooks                                                                                                                                                | non-behavioral test             | Request changes                                               |
-| Bugfix test has no proof it fails on pre-fix code                                                                                                                                                          | unproven regression             | Request changes                                               |
-| Hand-rolled canvas/graph/node/subgraph/workflow fixture or mock when [`litegraphTestUtils.ts`](../../../src/utils/__tests__/litegraphTestUtils.ts) or another matching `*TestUtils.ts` already provides it | duplicated fixture              | Request changes, point at the shared factory                  |
+| If you see...                                                                                                                                                                                              | Failure mode                    | Default action                                                              |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | --------------------------------------------------------------------------- |
+| New `@vue/test-utils` import in a new component test                                                                                                                                                       | legacy test API                 | Request changes                                                             |
+| `vi.mock('vue-i18n', ...)`                                                                                                                                                                                 | mocked i18n                     | Request changes                                                             |
+| `as any`, `@ts-expect-error`, `as Mock`, `as ReturnType<typeof vi.fn>`, `as unknown as X`                                                                                                                  | unnecessary cast or type escape | Request changes unless the author proves no safer type exists               |
+| `getXMock()`, renamed wrapper, or helper that only returns a mocked value                                                                                                                                  | alias-by-renaming               | Request changes                                                             |
+| `beforeEach` recreates the return object for a module-mocked composable or service                                                                                                                         | shared mock setup drift         | Request changes                                                             |
+| Assertions only check defaults, mock plumbing, or CSS hooks                                                                                                                                                | non-behavioral test             | Request changes                                                             |
+| Bugfix test has no proof it fails on pre-fix code                                                                                                                                                          | unproven regression             | Request changes                                                             |
+| Hand-rolled canvas/graph/node/subgraph/workflow fixture or mock when [`litegraphTestUtils.ts`](../../../src/utils/__tests__/litegraphTestUtils.ts) or another matching `*TestUtils.ts` already provides it | duplicated fixture              | Request changes, point at the shared factory                                |
+| More than three mocks in one file (`vi.mock`, `vi.fn`, `vi.spyOn`, hand-built fakes)                                                                                                                       | over-mocking                    | Request changes: ask what the test still proves about owned code            |
+| Test rebuilds production logic (scheduler loop, rAF queue, state machine) or computes the expected value with the logic under test                                                                         | replicated logic                | Request changes, exercise the real code                                     |
+| Hand-rolled runner primitive: `Object.defineProperty` write counters, global save/restore in `try/finally`, `if (arg === ...)` mock ladders                                                                | hand-rolled runner primitive    | Request changes: `vi.spyOn(obj, 'prop', 'set')`, `vi.stubGlobal`, `vi.when` |
 
 ## Rationalization Table
 
-| Excuse                              | Reality                                                                                                |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| "I restructured the mocks"          | If the indirection stayed, nothing improved. Flag `alias-by-renaming`.                                 |
-| "The docs do it"                    | Rule, note, and lint beat legacy snippet. Compare to the current rule, not the nearest example.        |
-| "TypeScript required the cast"      | `vi.mocked()` usually narrows mock methods. Assertion-only references need no cast.                    |
-| "Putting it in `beforeEach` is DRY" | Recreating module mock state in hooks hides singleton behavior and drifts from the documented pattern. |
-| "It is only a nit"                  | Explicit repo-rule violations are never nits.                                                          |
-| "No behavior changed, just cleanup" | Motion != fix. Ask what behavior got stronger.                                                         |
-| "Mental revert is enough"           | For bugfix tests, establish red on pre-fix code or ask the author to show it.                          |
+| Excuse                                    | Reality                                                                                                                                 |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| "I restructured the mocks"                | If the indirection stayed, nothing improved. Flag `alias-by-renaming`.                                                                  |
+| "The docs do it"                          | Rule, note, and lint beat legacy snippet. Compare to the current rule, not the nearest example.                                         |
+| "TypeScript required the cast"            | `vi.mocked()` usually narrows mock methods. Assertion-only references need no cast.                                                     |
+| "Putting it in `beforeEach` is DRY"       | Recreating module mock state in hooks hides singleton behavior and drifts from the documented pattern.                                  |
+| "The real collaborator is hard to set up" | Use the shared factory. If none exists, the missing factory is the finding, not a reason to mock.                                       |
+| "Mocks keep the test isolated"            | Desiderata isolation means tests do not affect each other. Faking owned code gives up predictive and structure-insensitive for nothing. |
+| "It is only a nit"                        | Explicit repo-rule violations are never nits.                                                                                           |
+| "No behavior changed, just cleanup"       | Motion != fix. Ask what behavior got stronger.                                                                                          |
+| "Mental revert is enough"                 | For bugfix tests, establish red on pre-fix code or ask the author to show it.                                                           |
 
 ## Mocking Rules
 
 - Fail helpers that do not remove repeated setup, encode domain meaning, or simplify assertions. Barely earning the abstraction is not enough.
 - For composables with reactive or singleton state, define stable mock state inside the `vi.mock()` factory. Access it per test via the composable itself. See [`docs/testing/unit-testing.md`](../../../docs/testing/unit-testing.md) "Mocking Composables with Reactive State".
 - This does not ban local test data builders or per-test `vi.spyOn(...)`.
-- Mock seams, not the project-owned module you are trying to exercise. For store tests, prefer real Pinia plus `createTestingPinia({ stubActions: false })` per [`docs/testing/vitest-patterns.md`](../../../docs/testing/vitest-patterns.md) and [`docs/testing/store-testing.md`](../../../docs/testing/store-testing.md).
+- Mock seams, not the project-owned module you are trying to exercise. Default to real collaborators and shared factories per [`docs/guidance/testing-principles.md`](../../../docs/guidance/testing-principles.md) "Doubles: real collaborators first". For store tests, prefer real Pinia plus `createTestingPinia({ stubActions: false })` per [`docs/testing/vitest-patterns.md`](../../../docs/testing/vitest-patterns.md) and [`docs/testing/store-testing.md`](../../../docs/testing/store-testing.md).
+
+### Over-Mocking and Replicated Logic
+
+- Count `vi.mock`, `vi.fn`, `vi.spyOn`, and hand-built fakes per file. Above three, ask what the test still proves about owned code. The author answers or the mocks go.
+- Deletion test: imagine deleting the production wiring. If every test still passes, nothing covers it.
+- A test that re-implements the code it covers passes on bugs that both copies share. Request the real module plus a double at its true boundary (network, clock, `reportError`).
+- Name the Desiderata property the test gives up, usually predictive, behavioral, or structure-insensitive. See [`docs/guidance/testing-principles.md`](../../../docs/guidance/testing-principles.md) "Judge every test by Beck's Test Desiderata".
 
 ### Alias-by-Renaming
 
@@ -109,6 +121,7 @@ If the wrapper only renames or relays a mocked value, fail it. Inline the lookup
 
 ### Reset Hygiene
 
+- [`vite.config.mts`](../../../vite.config.mts) sets `mockReset`, `restoreMocks`, `unstubEnvs`, and `unstubGlobals`. Flag manual resets, restores, and global save/restore that duplicate them.
 - Flag per-mock `mockClear()` or `mockReset()` when `vi.clearAllMocks()` or `vi.resetAllMocks()` already runs in the relevant hook chain.
 - Review for redundancy or broken state management. Do not bikeshed `clearAllMocks` vs `resetAllMocks` unless behavior depends on it.
 
@@ -147,7 +160,7 @@ A regression test that never proves red does not pin the bug.
 
 - State verdict before procedural questions.
 - Do not lead with approval language like `LGTM, just one nit` or `approve and move on?`.
-- Name the failure mode directly: `alias-by-renaming`, `unnecessary cast`, `mocked i18n`, `mock-only assertion`, `unproven regression`.
+- Name the failure mode directly: `alias-by-renaming`, `unnecessary cast`, `mocked i18n`, `mock-only assertion`, `unproven regression`, `duplicated fixture`, `over-mocking`, `replicated logic`, `hand-rolled runner primitive`.
 - Link the authoritative doc section in the review comment.
 - If an explicit repo rule, lint rule, or authoritative doc note is violated, do not downgrade it to "minor deviation" or "nit".
 
