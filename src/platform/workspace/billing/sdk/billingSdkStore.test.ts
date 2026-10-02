@@ -819,6 +819,25 @@ describe('useBillingSdkStore subscription commands', () => {
     )
   })
 
+  it.for([
+    { page: 'opened', window: {} as Window, reported: [['op-1', 'new_tab']] },
+    { page: 'had blocked', window: null, reported: [] }
+  ])(
+    'reports to the lifecycle a hosted page it $page in a new tab',
+    ({ window: opened, reported }) => {
+      vi.spyOn(window, 'open').mockReturnValue(opened)
+      useBillingSdkStore()
+
+      harness.publish(
+        pendingSubscription({ actionUrl: 'https://pay.example/first' })
+      )
+
+      expect(
+        vi.mocked(harness.sdk.lifecycle.reportHostedStepOpened).mock.calls
+      ).toEqual(reported)
+    }
+  )
+
   it('offers the next hosted page the same subscribe moves to', () => {
     const openPage = vi.spyOn(window, 'open').mockReturnValue(null)
     const store = useBillingSdkStore()

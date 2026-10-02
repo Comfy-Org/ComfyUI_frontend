@@ -2059,6 +2059,23 @@ describe('FullPageCheckoutView payment authentication', () => {
     nextStep.asked = 0
   })
 
+  it.for([
+    { methodType: 'alipay', reported: [['op_3ds', 'redirect', 'alipay']] },
+    { methodType: 'card', reported: [] }
+  ])(
+    'reports the challenge a $methodType Pay drives as a redirect only when it finishes on another site',
+    async ({ methodType, reported }) => {
+      const fake = await payHeld(methodType)
+
+      fake.publishOperation(challengedOperation('op_3ds', 'required'))
+
+      await waitFor(() =>
+        expect(fake.reportChallengeStarted).toHaveBeenCalledWith('op_3ds')
+      )
+      expect(fake.reportHostedStepOpened.mock.calls).toEqual(reported)
+    }
+  )
+
   it('locks its own Pay through a challenge, then processing, then lands on the success', async () => {
     const fake = await payReady()
     expect(screen.getByRole('button', { name: 'Back' })).toBeInTheDocument()
