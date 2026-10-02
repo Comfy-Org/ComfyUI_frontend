@@ -7,6 +7,8 @@ import type {
 import type { Locale } from '../../../i18n/translations'
 import type { PaparazziCopyKey } from '../../../lib/workshop/paparazzi-me/copy'
 import { pc } from '../../../lib/workshop/paparazzi-me/copy'
+import { PAPARAZZI_RUN_MS } from '../../../lib/workshop/paparazzi-me/mock-run'
+import type { RunProgress } from '../app-editor/run-progress'
 import PaparazziFaceRow from './PaparazziFaceRow.vue'
 import PaparazziSceneGrid from './PaparazziSceneGrid.vue'
 import PaparazziSeed from './PaparazziSeed.vue'
@@ -23,6 +25,23 @@ export const PAPARAZZI_SECTIONS = [
   title: PaparazziCopyKey
   content: Component
 }[]
+
+/**
+ * Where a run is at `nowMs`: queued through the look-up and the first
+ * tenth, then a share of the render.
+ */
+export function runProgress(
+  paparazzi: PaparazziMe,
+  nowMs: number
+): RunProgress | undefined {
+  const current = paparazzi.phase.value
+  if (current.kind !== 'running') return undefined
+  const elapsed = Math.max(0, nowMs - current.startedAt)
+  const percent = Math.min(99, Math.round((elapsed / PAPARAZZI_RUN_MS) * 100))
+  return paparazzi.search.value.kind === 'searching' || percent < 10
+    ? { kind: 'queued' }
+    : { kind: 'running', percent }
+}
 
 /** The scene in words: the photo's place, the visitor's own, or none yet. */
 export function sceneName(paparazzi: PaparazziMe, locale: Locale): string {

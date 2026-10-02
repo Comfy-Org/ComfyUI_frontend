@@ -2,7 +2,8 @@
 import type { PaparazziMe } from '../../../composables/usePaparazziMe'
 import type { Locale } from '../../../i18n/translations'
 import { pc } from '../../../lib/workshop/paparazzi-me/copy'
-import PaparazziUpload from './PaparazziUpload.vue'
+import EditorDropZone from '../app-editor/EditorDropZone.vue'
+import EditorUploadSlot from '../app-editor/EditorUploadSlot.vue'
 
 const { paparazzi, locale = 'en' } = defineProps<{
   paparazzi: PaparazziMe
@@ -10,19 +11,13 @@ const { paparazzi, locale = 'en' } = defineProps<{
 }>()
 
 const { face } = paparazzi
-
-function drop(event: DragEvent) {
-  const file = event.dataTransfer?.files[0]
-  if (file?.type.startsWith('image/')) void paparazzi.useFaceFile(file)
-}
 </script>
 
 <template>
-  <div
-    class="flex flex-col gap-1.5 px-1 pt-2 pb-3"
+  <EditorDropZone
+    class="flex flex-col gap-1.5 rounded-lg px-1 pt-2 pb-3"
     data-testid="paparazzi-face"
-    @dragover.prevent
-    @drop.prevent="drop"
+    @file="paparazzi.useFaceFile"
   >
     <div class="flex items-center gap-3">
       <img
@@ -38,17 +33,17 @@ function drop(event: DragEvent) {
           face.name
         }}</span>
       </span>
-      <PaparazziUpload
+      <EditorUploadSlot
         :label="pc('paparazzi.face.changeLabel', locale)"
-        input-id="paparazzi-face-input"
+        input-test-id="paparazzi-face-input"
         class="h-7 shrink-0 rounded-full bg-transparency-white-t8 px-3 text-xs text-primary-warm-white transition hover:bg-transparency-white-t20 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none disabled:opacity-40"
         @file="paparazzi.useFaceFile"
       >
         {{ pc('paparazzi.face.change', locale) }}
-      </PaparazziUpload>
+      </EditorUploadSlot>
     </div>
     <p class="text-[11px] text-primary-warm-gray">
       {{ pc('paparazzi.face.tip', locale) }}
     </p>
-  </div>
+  </EditorDropZone>
 </template>

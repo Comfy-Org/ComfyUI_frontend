@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import { useNow } from '@vueuse/core'
+
 import type { PaparazziMe } from '../../../composables/usePaparazziMe'
 import type { Locale } from '../../../i18n/translations'
 import { pc } from '../../../lib/workshop/paparazzi-me/copy'
 import { PAPARAZZI_CREDITS } from '../../../lib/workshop/paparazzi-me/mock-run'
 import EditorRun from '../app-editor/EditorRun.vue'
+import { runProgress } from './sections'
 
 const {
   paparazzi,
@@ -16,23 +19,19 @@ const {
 }>()
 
 const { phase, canRun, missingStar } = paparazzi
+const now = useNow({ interval: 250 })
 </script>
 
 <template>
-  <p
-    v-if="block && missingStar"
-    class="pb-2 text-center text-[11px] text-primary-warm-gray"
-    data-testid="paparazzi-missing"
-  >
-    {{ pc('paparazzi.needsStar', locale) }}
-  </p>
   <EditorRun
     :label="pc('paparazzi.run', locale)"
     :credits="pc('paparazzi.credits', locale, { n: PAPARAZZI_CREDITS })"
     :cancel-label="pc('paparazzi.cancel', locale)"
     :running="phase.kind === 'running'"
+    :progress="runProgress(paparazzi, now.getTime())"
+    :queued-label="pc('paparazzi.busy.queued', locale)"
     :disabled="!canRun"
-    :title="missingStar ? pc('paparazzi.needsStar', locale) : undefined"
+    :missing="missingStar ? pc('paparazzi.needsStar', locale) : undefined"
     :block
     data-testid="paparazzi-run"
     @run="paparazzi.snap"

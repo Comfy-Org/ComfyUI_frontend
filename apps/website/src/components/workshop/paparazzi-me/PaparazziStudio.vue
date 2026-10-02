@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useEventListener } from '@vueuse/core'
 import { computed } from 'vue'
 
 import { usePaparazziMe } from '../../../composables/usePaparazziMe'
@@ -7,15 +6,18 @@ import { useResultDownload } from '../../../composables/useResultDownload'
 import { reportStudioBusy } from '../../../composables/useStudioSwitchGuard'
 import type { Locale } from '../../../i18n/translations'
 import { workshopAppRepo } from '../../../lib/workshop/apps'
+import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import { pc } from '../../../lib/workshop/paparazzi-me/copy'
 import AppEditorShell from '../app-editor/AppEditorShell.vue'
 import EditorAlert from '../app-editor/EditorAlert.vue'
+import EditorPicker from '../app-editor/EditorPicker.vue'
+import { useImagePaste } from '../app-editor/useImagePaste'
 import PaparazziDocks from './PaparazziDocks.vue'
 import PaparazziHistory from './PaparazziHistory.vue'
 import PaparazziMain from './PaparazziMain.vue'
 import PaparazziPanel from './PaparazziPanel.vue'
 import PaparazziRun from './PaparazziRun.vue'
-import PaparazziScenePicker from './PaparazziScenePicker.vue'
+import PaparazziSceneGrid from './PaparazziSceneGrid.vue'
 import PaparazziSummary from './PaparazziSummary.vue'
 import PaparazziTrays from './PaparazziTrays.vue'
 
@@ -34,14 +36,7 @@ const download = useResultDownload(
 )
 reportStudioBusy(() => phase.value.kind === 'running')
 
-useEventListener('paste', (event: ClipboardEvent) => {
-  const file = [...(event.clipboardData?.files ?? [])].find((pasted) =>
-    pasted.type.startsWith('image/')
-  )
-  if (!file || phase.value.kind === 'running') return
-  event.preventDefault()
-  void paparazzi.useFaceFile(file)
-})
+useImagePaste(paparazzi.useFaceFile, () => phase.value.kind !== 'running')
 
 const panelLabels = {
   label: pc('paparazzi.panel', locale),
@@ -67,7 +62,18 @@ const panelLabels = {
         {{ pc('paparazzi.failed', locale) }}
       </EditorAlert>
       <PaparazziTrays v-if="!panel" :paparazzi :locale />
-      <PaparazziScenePicker v-if="panel && pickerOpen" :paparazzi :locale />
+      <EditorPicker
+        v-if="panel && pickerOpen"
+        :title="pc('paparazzi.scene.pick', locale)"
+        :close-label="tc('cinematic.picker.close', locale)"
+        @close="paparazzi.closePicker"
+      >
+        <PaparazziSceneGrid
+          :paparazzi
+          :locale
+          @picked="paparazzi.closePicker"
+        />
+      </EditorPicker>
     </template>
     <template #dock>
       <PaparazziDocks :paparazzi :panel :locale />
