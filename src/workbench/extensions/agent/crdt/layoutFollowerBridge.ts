@@ -322,14 +322,12 @@ export class LayoutFollowerBridge extends EventTarget {
 
   private reseedSequenceFor(workflowId: string): number | null {
     const expectedSeq = this.reseedExpectedSeq
-    return (
-      workflowId === this.reseedEligibleWorkflowId &&
+    return workflowId === this.reseedEligibleWorkflowId &&
       workflowId === this.desiredWorkflowId &&
       workflowId !== this.reseedBlockedWorkflowId &&
       expectedSeq !== null &&
       Number.isSafeInteger(expectedSeq) &&
       expectedSeq > 0
-    )
       ? expectedSeq
       : null
   }
