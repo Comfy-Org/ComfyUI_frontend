@@ -214,6 +214,32 @@ export function useAgentWorkflowSelection({
     if (!workflowSelection.value) void refreshCloudWorkflowIds()
   }
 
+  /**
+   * Whether a listing that came back without `workflowId` proves the workflow
+   * is gone, given whatever `local` tab still answers for it. A successful
+   * listing omitting a *saved* workflow does prove it, even when a stale local
+   * binding still names a tab; a failed listing stays a retryable restoration
+   * failure.
+   *
+   * It proves nothing about an unsaved one. `GET /api/workflows` excludes
+   * version-less rows on purpose — those are the agent's own working copies,
+   * hidden from the user's list until a save or run promotes them (cloud
+   * `common/workflow/repository.go`, whose `List` filters on
+   * `LatestVersionIDNotNil`). So the listing can only testify about a workflow
+   * it could have carried, and a draft tab this chat still owns is focused
+   * instead of declared unavailable. `matchesWorkflow` admits a temporary tab
+   * only as the id's verified owner, so this cannot hand a chat someone else's
+   * unsaved tab that merely occupies the same default path.
+   */
+  function listingProvesDeletion(
+    listed: boolean,
+    workflowId: string,
+    local: ComfyWorkflow | null
+  ): boolean {
+    if (!listed || isCloudWorkflowListed(workflowId)) return false
+    return local === null || !local.isTemporary
+  }
+
   async function onWorkflowRestored(
     workflowId: string | undefined,
     isSessionCurrent: () => boolean
@@ -232,15 +258,12 @@ export function useAgentWorkflowSelection({
     if (target === null) {
       const listed = await refreshCloudWorkflowIds()
       if (!isCurrent()) return false
-      // A successful listing without the id means the workflow is gone, even
-      // when a stale local binding still names a tab; a failed listing stays
-      // a retryable restoration failure.
-      if (listed && !isCloudWorkflowListed(workflowId)) {
+      target =
+        boundOrOpenWorkflowFor(workflowId) ?? storedWorkflowFor(workflowId)
+      if (listingProvesDeletion(listed, workflowId, target)) {
         panelStore.markWorkflowTargetUnavailable()
         return true
       }
-      target =
-        boundOrOpenWorkflowFor(workflowId) ?? storedWorkflowFor(workflowId)
     }
     return openRestoredWorkflow(target, workflowId, isCurrent)
   }

@@ -414,6 +414,63 @@ describe('historical workflow restoration', () => {
     }
   )
 
+  // `GET /api/workflows` excludes version-less rows, so an omitting listing
+  // cannot testify about an unsaved workflow. These three pin the split: the
+  // draft tab the chat owns is focused, anything the chat does not own stays
+  // unavailable.
+  it('focuses the unsaved draft tab this chat owns when the listing cannot carry it', async () => {
+    const { selection, workflows, bindings, panel, warnRestoreFailed } = setup()
+    const draft = createMockLoadedWorkflow({
+      path: 'workflows/Unsaved Workflow.json',
+      filename: 'Unsaved Workflow',
+      isTemporary: true
+    })
+    draft.load = vi.fn(async () => draft)
+    workflows.attachWorkflow(draft)
+    workflows.openWorkflowsInBackground({ right: [draft.path] })
+    bindings.bind('wf-draft', draft.path)
+
+    expect(await selection.restoreTarget('wf-draft', () => true)).toBe(true)
+
+    expect(panel.targetUnavailable).toBe(false)
+    expect(workflows.activeWorkflow?.path).toBe(draft.path)
+    expect(panel.selectedWorkflow?.path).toBe(draft.path)
+    expect(warnRestoreFailed).not.toHaveBeenCalled()
+  })
+
+  it('leaves the target unavailable when an unsaved tab occupies the path without owning the id', async () => {
+    const { selection, workflows, panel, current, bindings } = setup()
+    // A record restored from storage, never confirmed against this instance:
+    // `claimable` refuses a temporary tab that carries no document id, so the
+    // tab occupies the path without becoming the id's verified owner.
+    bindings.bind('wf-draft', 'workflows/Unsaved Workflow.json')
+    const impostor = createMockLoadedWorkflow({
+      path: 'workflows/Unsaved Workflow.json',
+      filename: 'Unsaved Workflow',
+      isTemporary: true
+    })
+    impostor.load = vi.fn(async () => impostor)
+    workflows.attachWorkflow(impostor)
+    workflows.openWorkflowsInBackground({ right: [impostor.path] })
+
+    expect(await selection.restoreTarget('wf-draft', () => true)).toBe(true)
+
+    expect(panel.targetUnavailable).toBe(true)
+    expect(workflows.activeWorkflow?.path).toBe(current.path)
+  })
+
+  it('leaves a deleted target unavailable when nothing local answers for it', async () => {
+    const { selection, workflows, panel, current, warnRestoreFailed } = setup()
+
+    expect(await selection.restoreTarget('wf-deleted', () => true)).toBe(true)
+
+    expect(panel.targetUnavailable).toBe(true)
+    expect(panel.selectedWorkflow).toBeNull()
+    expect(workflows.activeWorkflow?.path).toBe(current.path)
+    expect(vi.mocked(workflows.syncWorkflows)).not.toHaveBeenCalled()
+    expect(warnRestoreFailed).not.toHaveBeenCalled()
+  })
+
   it('does not mark a superseded restoration unavailable when its listing omits the workflow', async () => {
     const { selection, panel, current, listCloudWorkflows, warnRestoreFailed } =
       setup()
