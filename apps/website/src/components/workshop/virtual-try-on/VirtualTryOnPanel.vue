@@ -3,6 +3,8 @@ import type { VirtualTryOn } from '../../../composables/useVirtualTryOn'
 import type { Locale } from '../../../i18n/translations'
 import { vc } from '../../../lib/workshop/virtual-try-on/copy'
 import EditorCollapsible from '../app-editor/EditorCollapsible.vue'
+import EditorPanelRow from '../app-editor/EditorPanelRow.vue'
+import VirtualTryOnAdvanced from './VirtualTryOnAdvanced.vue'
 import VirtualTryOnPersonRow from './VirtualTryOnPersonRow.vue'
 import { TRY_ON_SECTIONS, sectionMeta } from './sections'
 
@@ -12,6 +14,7 @@ const { tryOn, locale = 'en' } = defineProps<{
 }>()
 
 const { phase } = tryOn
+const sections = TRY_ON_SECTIONS.filter(({ id }) => id !== 'advanced')
 </script>
 
 <template>
@@ -22,7 +25,7 @@ const { phase } = tryOn
   >
     <VirtualTryOnPersonRow :try-on :locale />
     <EditorCollapsible
-      v-for="section in TRY_ON_SECTIONS"
+      v-for="section in sections"
       :key="section.id"
       :title="vc(section.title, locale)"
       :meta="sectionMeta(section.id, tryOn, locale)"
@@ -30,5 +33,8 @@ const { phase } = tryOn
     >
       <component :is="section.content" :try-on :locale />
     </EditorCollapsible>
+    <EditorPanelRow>
+      <VirtualTryOnAdvanced :try-on :locale />
+    </EditorPanelRow>
   </fieldset>
 </template>

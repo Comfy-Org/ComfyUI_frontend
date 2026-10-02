@@ -130,19 +130,18 @@ describe('VirtualTryOnStudio', () => {
     expect(screen.queryByTestId('try-on-outline')).toBeNull()
   })
 
-  it('keeps a shuffleable seed in the collapsed Advanced section', async () => {
+  it('keeps a shuffleable seed as a row of the panel, with no Advanced section', async () => {
     const user = open()
-    const advanced = within(panel()).getByRole('button', { name: /^Advanced/ })
-    expect(advanced).toHaveTextContent('Seed 7')
+    const seed = within(panel()).getByRole('spinbutton', { name: 'Seed' })
+    expect(seed).toHaveValue(7)
+    expect(
+      within(panel()).queryByRole('button', { name: /^Advanced/ })
+    ).toBeNull()
 
-    await user.click(advanced)
     vi.spyOn(Math, 'random').mockReturnValue(0.5)
     await user.click(within(panel()).getByRole('button', { name: 'New seed' }))
 
-    expect(
-      within(panel()).getByRole('spinbutton', { name: 'Seed' })
-    ).toHaveValue(500_000_000)
-    expect(advanced).toHaveTextContent('Seed 500000000')
+    expect(seed).toHaveValue(500_000_000)
   })
 
   it('sets the fit from a tray in the bottom composer', async () => {
