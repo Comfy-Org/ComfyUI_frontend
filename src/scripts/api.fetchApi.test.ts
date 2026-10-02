@@ -34,6 +34,7 @@ vi.mock(import('@/composables/useFeatureFlags'), () => ({
 }))
 
 import { api } from '@/scripts/api'
+import { downloadMissingModels } from '@/platform/remote/comfyui/modelDownload'
 
 function mockPendingFetch() {
   return vi.mocked(global.fetch).mockImplementation((_input, init) => {
@@ -317,6 +318,38 @@ describe('api.fetchApi', () => {
           timeout_ms: 120_000
         }
       )
+    })
+
+    it('completes a model download that takes longer than the default timeout', async () => {
+      let resolveResponse!: (response: Response) => void
+      vi.mocked(global.fetch).mockImplementation((_input, init) => {
+        return new Promise<Response>((resolve, reject) => {
+          resolveResponse = resolve
+          init?.signal?.addEventListener(
+            'abort',
+            () => reject(init.signal?.reason),
+            { once: true }
+          )
+        })
+      })
+      const request = downloadMissingModels([], 'client', 'batch')
+      const settled = Promise.allSettled([request])
+      await vi.advanceTimersByTimeAsync(120_000)
+      resolveResponse(
+        new Response(
+          JSON.stringify({
+            downloaded: 0,
+            skipped: 0,
+            canceled: 0,
+            failed: 0,
+            results: []
+          })
+        )
+      )
+      expect(await settled).toMatchObject([
+        { status: 'fulfilled', value: { ok: true } }
+      ])
+      expect(useTelemetry()?.trackFetchTimeout).not.toHaveBeenCalled()
     })
 
     it('applies the default timeout alongside caller cancellation', async () => {

@@ -157,6 +157,7 @@ const zDownloadResult = zModel.extend({
     'blocked',
     'canceled'
   ]),
+  error_code: z.string().optional(),
   error: z.string().optional()
 })
 export const zMissingModelDownloadResponse = z.object({
@@ -178,6 +179,7 @@ export const zMissingModelDownloadWsMessage = zModel.extend({
     'canceled'
   ]),
   bytes_downloaded: z.number().nonnegative(),
+  error_code: z.string().optional(),
   error: z.string().optional()
 })
 export type MissingModelDownloadWsMessage = z.infer<

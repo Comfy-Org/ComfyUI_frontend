@@ -78,6 +78,7 @@ export function useMissingModelDownload() {
   }
 
   return {
+    usesServerDownloads,
     isDownloading,
     serverDownloadState: downloads.stateFor,
     cancelServerDownload: downloads.cancel,

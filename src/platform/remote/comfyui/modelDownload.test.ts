@@ -31,6 +31,10 @@ describe('model download requests', () => {
         ok: false,
         error: new Error('HTTP 404: Download task not found')
       })
+      const options = vi.mocked(api.fetchApi).mock.calls[0][1]
+      expect(options?.timeoutMs).toBe(
+        operation === 'download' ? null : undefined
+      )
     }
   )
 
@@ -62,5 +66,32 @@ describe('model download requests', () => {
     await expect(
       downloadMissingModels([model], 'client', 'batch')
     ).resolves.toMatchObject({ ok: false })
+  })
+
+  it('includes a supplied token only in the download request body', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValue(new Response('{}'))
+    await downloadMissingModels([model], 'client', 'batch', 'hf_test')
+    expect(api.fetchApi).toHaveBeenLastCalledWith(
+      '/experiment/models/download_missing',
+      expect.objectContaining({
+        body: JSON.stringify({
+          models: [model],
+          client_id: 'client',
+          batch_id: 'batch',
+          hf_token: 'hf_test'
+        })
+      })
+    )
+    await cancelMissingModelDownload('task', 'client', 'batch')
+    expect(api.fetchApi).toHaveBeenLastCalledWith(
+      '/experiment/models/download_missing/cancel',
+      expect.objectContaining({
+        body: JSON.stringify({
+          task_id: 'task',
+          client_id: 'client',
+          batch_id: 'batch'
+        })
+      })
+    )
   })
 })

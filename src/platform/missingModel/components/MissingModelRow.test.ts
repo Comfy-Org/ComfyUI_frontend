@@ -182,6 +182,7 @@ describe('MissingModelRow', () => {
     mockUploadContext.resolver = undefined
     mockUploadCallbacks.onUploadSuccess = undefined
     mockDownloadModel.mockResolvedValue(undefined)
+    mockOpenGatedRepoPage.mockReturnValue(undefined)
     mockFetchModelMetadata.mockResolvedValue({
       fileSize: null,
       gatedRepoUrl: null
@@ -730,5 +731,56 @@ describe('MissingModelRow', () => {
       }
     })
     await screen.findByText('Canceled')
+  })
+
+  it('offers a retry after a server access failure and completes the next download', async () => {
+    mockIsCloud.value = false
+    vi.mocked(api.getServerFeature).mockReturnValue(true)
+    const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
+    model.representative.url =
+      'https://huggingface.co/org/model/resolve/main/model.safetensors'
+    const download = {
+      name: model.name,
+      directory: 'checkpoints',
+      url: model.representative.url
+    }
+    vi.mocked(downloadMissingModels)
+      .mockResolvedValueOnce({
+        ok: true,
+        value: {
+          downloaded: 0,
+          skipped: 0,
+          canceled: 0,
+          failed: 1,
+          results: [{ ...download, status: 'failed', error_code: 'hf_gated' }]
+        }
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        value: {
+          downloaded: 1,
+          skipped: 0,
+          canceled: 0,
+          failed: 0,
+          results: [{ ...download, status: 'downloaded' }]
+        }
+      })
+    renderRow(model)
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Download model.safetensors' })
+    )
+    expect(await screen.findByRole('alert')).toHaveTextContent('Once approved')
+    expect(
+      screen.getByRole('link', {
+        name: 'Open Hugging Face repository for model.safetensors in a new tab'
+      })
+    ).toHaveAttribute('href', 'https://huggingface.co/org/model')
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: 'Retry download of model.safetensors'
+      })
+    )
+    await screen.findByText('Downloaded')
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 })

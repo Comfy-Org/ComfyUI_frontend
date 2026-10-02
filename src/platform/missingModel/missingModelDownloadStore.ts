@@ -5,6 +5,8 @@ import { uniqBy } from 'es-toolkit'
 import { t } from '@/i18n'
 import { api } from '@/scripts/api'
 import { createUuidv4 } from '@/utils/uuid'
+import { downloadUrlToHfRepoUrl } from '@/utils/formatUtil'
+import { isTrustedHuggingFaceUrl } from '@/platform/missingModel/missingModelDownload'
 import {
   cancelMissingModelDownload,
   downloadMissingModels
@@ -26,12 +28,41 @@ function modelKey(model: Pick<ModelWithUrl, 'name' | 'directory'>): string {
 export const useMissingModelDownloadStore = defineStore(
   'missingModelDownload',
   () => {
+    const hfToken = ref('')
+    const hasHuggingFaceToken = computed(() => !!hfToken.value)
+    function setHuggingFaceToken(token: string) {
+      hfToken.value = token.trim()
+    }
+    onScopeDispose(() => {
+      hfToken.value = ''
+    })
     const downloads = ref<Partial<Record<string, ModelDownloadState>>>({})
     const activeBatch = ref<{ id: string; clientId: string } | null>(null)
     const isDownloading = computed(() => activeBatch.value !== null)
 
     function stateFor(model: Pick<ModelWithUrl, 'name' | 'directory'>) {
       return downloads.value[modelKey(model)]
+    }
+
+    function downloadError(
+      item: Pick<MissingModelDownloadWsMessage, 'url' | 'error' | 'error_code'>
+    ): string | undefined {
+      if (item.error_code === 'hf_gated' && isTrustedHuggingFaceUrl(item.url)) {
+        const repoUrl = downloadUrlToHfRepoUrl(item.url)
+        if (repoUrl) useMissingModelStore().setGatedRepoUrl(item.url, repoUrl)
+      }
+      switch (item.error_code) {
+        case 'hf_authentication':
+          return t('rightSidePanel.missingModels.downloadErrors.authentication')
+        case 'hf_gated':
+          return t('rightSidePanel.missingModels.downloadErrors.gated')
+        case 'hf_access_denied':
+          return t('rightSidePanel.missingModels.downloadErrors.accessDenied')
+        case 'transfer_timeout':
+          return t('rightSidePanel.missingModels.downloadErrors.timeout')
+        default:
+          return item.error
+      }
     }
 
     function handleProgress(event: CustomEvent<MissingModelDownloadWsMessage>) {
@@ -43,7 +74,7 @@ export const useMissingModelDownloadStore = defineStore(
       if (state)
         downloads.value[key] = transitionDownload(state, {
           type: 'progress',
-          data: parsed.data
+          data: { ...parsed.data, error: downloadError(parsed.data) }
         })
     }
 
@@ -76,7 +107,7 @@ export const useMissingModelDownloadStore = defineStore(
         downloads.value[key] = transitionDownload(state, {
           type: 'result',
           status: item.status === 'downloaded' ? 'completed' : item.status,
-          error: item.error
+          error: downloadError(item)
         })
       }
     }
@@ -97,7 +128,8 @@ export const useMissingModelDownloadStore = defineStore(
         const result = await downloadMissingModels(
           pending,
           batch.clientId,
-          batch.id
+          batch.id,
+          hfToken.value
         )
         if (result.ok) {
           applyResults(result.value.results, batch.id)
@@ -165,6 +197,13 @@ export const useMissingModelDownloadStore = defineStore(
       }
     }
 
-    return { isDownloading, stateFor, start, cancel }
+    return {
+      isDownloading,
+      stateFor,
+      start,
+      cancel,
+      hasHuggingFaceToken,
+      setHuggingFaceToken
+    }
   }
 )

@@ -15,6 +15,7 @@ async function postDownloadRequest(
       `/experiment/models/download_missing${path}`,
       {
         method: 'POST',
+        ...(path === '' ? { timeoutMs: null } : {}),
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       }
@@ -35,12 +36,14 @@ async function postDownloadRequest(
 export async function downloadMissingModels(
   models: ModelWithUrl[],
   clientId: string,
-  batchId: string
+  batchId: string,
+  hfToken?: string
 ): Promise<TaskResult<MissingModelDownloadResponse>> {
   const response = await postDownloadRequest('', {
     models,
     client_id: clientId,
-    batch_id: batchId
+    batch_id: batchId,
+    ...(hfToken ? { hf_token: hfToken } : {})
   })
   if (!response.ok) return response
   try {

@@ -15,12 +15,69 @@
         <span class="font-semibold">
           {{ t('rightSidePanel.missingModels.gatedModelsHintLabel') }}
         </span>
-        {{ t('rightSidePanel.missingModels.gatedModelsHint', gatedModelCount) }}
+        {{ gatedModelsHint }}
       </p>
     </div>
     <span role="status" aria-live="polite" class="sr-only">
       {{ gatedModelsAnnouncement }}
     </span>
+
+    <details v-if="showHuggingFaceAccess" class="mb-2 text-xs">
+      <summary class="cursor-pointer py-2">
+        {{ t('rightSidePanel.missingModels.huggingFaceAccess') }}
+      </summary>
+      <p class="text-muted-foreground">
+        {{ t('rightSidePanel.missingModels.huggingFaceAccessHelp') }}
+        <a
+          href="https://huggingface.co/settings/tokens"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="underline"
+          >{{ t('rightSidePanel.missingModels.huggingFaceTokenSettings') }}</a
+        >
+      </p>
+      <form class="flex flex-col gap-2" @submit.prevent="useToken">
+        <label :for="tokenInputId">{{
+          t('rightSidePanel.missingModels.huggingFaceToken')
+        }}</label>
+        <Input
+          :id="tokenInputId"
+          v-model="tokenInput"
+          type="password"
+          autocomplete="off"
+          :spellcheck="false"
+          :maxlength="1024"
+          :disabled="isDownloading"
+        />
+        <div class="flex gap-2">
+          <Button
+            type="submit"
+            variant="secondary"
+            size="sm"
+            :disabled="!canUseToken"
+          >
+            {{ t('rightSidePanel.missingModels.useToken') }}
+          </Button>
+          <Button
+            v-if="downloads.hasHuggingFaceToken"
+            type="button"
+            variant="secondary"
+            size="sm"
+            :disabled="isDownloading"
+            @click="removeToken"
+          >
+            {{ t('rightSidePanel.missingModels.removeToken') }}
+          </Button>
+        </div>
+        <span role="status" aria-live="polite">
+          {{
+            downloads.hasHuggingFaceToken
+              ? t('rightSidePanel.missingModels.tokenProvided')
+              : ''
+          }}
+        </span>
+      </form>
+    </details>
 
     <div
       v-if="importableModelRows.length > 0"
@@ -92,6 +149,8 @@ import type { MissingModelGroup } from '@/platform/missingModel/types'
 import { isCloud } from '@/platform/distribution/types'
 import MissingModelRow from '@/platform/missingModel/components/MissingModelRow.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Input from '@/components/ui/input/Input.vue'
+import { useMissingModelDownloadStore } from '@/platform/missingModel/missingModelDownloadStore'
 import { useMissingModelDownload } from '@/platform/missingModel/composables/useMissingModelDownload'
 import { isTrustedHuggingFaceUrl } from '@/platform/missingModel/missingModelDownload'
 import { getDownloadableModels } from '@/platform/missingModel/missingModelViewUtils'
@@ -124,8 +183,30 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const gatedHintId = useId()
-const { downloadMissingModels, isDownloading, fileSizeFor, gatedRepoUrlFor } =
-  useMissingModelDownload()
+const tokenInputId = useId()
+const tokenInput = ref('')
+const downloads = useMissingModelDownloadStore()
+const {
+  downloadMissingModels,
+  isDownloading,
+  fileSizeFor,
+  gatedRepoUrlFor,
+  usesServerDownloads
+} = useMissingModelDownload()
+
+const canUseToken = computed(
+  () => !isDownloading.value && !!tokenInput.value.trim()
+)
+
+function useToken() {
+  downloads.setHuggingFaceToken(tokenInput.value)
+  tokenInput.value = ''
+}
+
+function removeToken() {
+  downloads.setHuggingFaceToken('')
+  tokenInput.value = ''
+}
 
 const sortedModelRows = computed(() =>
   missingModelGroups
@@ -161,6 +242,19 @@ const gatedModelCount = computed(
       return !!repoUrl && isTrustedHuggingFaceUrl(repoUrl)
     }).length
 )
+const showHuggingFaceAccess = computed(
+  () =>
+    usesServerDownloads.value &&
+    downloadableModels.value.some((model) => isTrustedHuggingFaceUrl(model.url))
+)
+const gatedModelsHint = computed(() =>
+  t(
+    usesServerDownloads.value
+      ? 'rightSidePanel.missingModels.gatedModelsServerHint'
+      : 'rightSidePanel.missingModels.gatedModelsHint',
+    gatedModelCount.value
+  )
+)
 const showGatedModelsHint = computed(() => gatedModelCount.value > 0)
 const gatedModelsAnnouncement = ref('')
 
@@ -173,10 +267,7 @@ watch(showGatedModelsHint, (isVisible, wasVisible) => {
 
   gatedModelsAnnouncement.value = `${t(
     'rightSidePanel.missingModels.gatedModelsHintLabel'
-  )} ${t(
-    'rightSidePanel.missingModels.gatedModelsHint',
-    gatedModelCount.value
-  )}`
+  )} ${gatedModelsHint.value}`
 })
 
 const downloadAllLabel = computed(() => {

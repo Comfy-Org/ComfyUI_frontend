@@ -40,7 +40,8 @@ describe('missing model downloads', () => {
     expect(downloadMissingModels).toHaveBeenCalledWith(
       [model],
       expect.any(String),
-      expect.any(String)
+      expect.any(String),
+      ''
     )
     const batchId = vi.mocked(downloadMissingModels).mock.calls[0][2]
     const progress = {
@@ -137,6 +138,82 @@ describe('missing model downloads', () => {
     vi.mocked(downloadMissingModels).mockResolvedValue(success)
     await store.start([model])
     expect(store.stateFor(model)?.status).toBe('completed')
+  })
+
+  it('retries with the current token without retaining it in serialized state', async () => {
+    const store = useMissingModelDownloadStore()
+    store.setHuggingFaceToken(' hf_first ')
+    expect(store.hasHuggingFaceToken).toBe(true)
+    vi.mocked(downloadMissingModels).mockResolvedValue({
+      ok: true,
+      value: {
+        downloaded: 0,
+        skipped: 0,
+        canceled: 0,
+        failed: 1,
+        results: [
+          {
+            ...model,
+            status: 'failed',
+            error_code: 'hf_authentication',
+            error: 'HTTP 401'
+          }
+        ]
+      }
+    })
+    await store.start([model])
+    expect(downloadMissingModels).toHaveBeenLastCalledWith(
+      [model],
+      expect.any(String),
+      expect.any(String),
+      'hf_first'
+    )
+    expect(store.stateFor(model)?.error).toContain(
+      'valid Hugging Face read token'
+    )
+    store.setHuggingFaceToken('hf_replacement')
+    vi.mocked(downloadMissingModels).mockResolvedValue(success)
+    await store.start([model])
+    expect(downloadMissingModels).toHaveBeenLastCalledWith(
+      [model],
+      expect.any(String),
+      expect.any(String),
+      'hf_replacement'
+    )
+    expect(store.stateFor(model)?.status).toBe('completed')
+    expect(JSON.stringify(store.$state)).not.toContain('hf_replacement')
+    store.setHuggingFaceToken('')
+    expect(store.hasHuggingFaceToken).toBe(false)
+    await store.start([model])
+    expect(downloadMissingModels).toHaveBeenLastCalledWith(
+      [model],
+      expect.any(String),
+      expect.any(String),
+      ''
+    )
+  })
+
+  it('exposes gated access guidance from progress even when browser metadata missed it', async () => {
+    const response = deferred<DownloadResponse>()
+    vi.mocked(downloadMissingModels).mockReturnValue(response.promise)
+    const store = useMissingModelDownloadStore()
+    const finished = store.start([model])
+    api.dispatchCustomEvent('missing_model_download', {
+      ...model,
+      batch_id: vi.mocked(downloadMissingModels).mock.calls[0][2],
+      task_id: 'gated-task',
+      status: 'failed',
+      bytes_downloaded: 0,
+      error_code: 'hf_gated',
+      error: 'HTTP 403'
+    })
+    expect(store.stateFor(model)?.error).toContain('Once approved')
+    expect(useMissingModelStore().gatedRepoUrls[model.url]).toBe(
+      'https://huggingface.co/org/model'
+    )
+    response.resolve({ ok: false, error: new Error('Connection lost') })
+    await finished
+    expect(store.stateFor(model)?.error).toContain('Once approved')
   })
 })
 

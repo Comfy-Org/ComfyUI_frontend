@@ -164,7 +164,9 @@
           class="shrink-0 focus-visible:ring-inset"
           :aria-label="
             t(
-              'rightSidePanel.missingModels.downloadModel',
+              canRetryDownload
+                ? 'rightSidePanel.missingModels.retryModel'
+                : 'rightSidePanel.missingModels.downloadModel',
               { model: model.name },
               { escapeParameter: false }
             )
@@ -175,14 +177,20 @@
           :disabled="isDownloading"
           @click="handleDownload"
         >
-          {{ t('g.download') }}
+          {{ t(canRetryDownload ? 'g.retry' : 'g.download') }}
         </Button>
         <span
           v-if="showGatedRepoAction"
           :id="gatedDownloadDescriptionId"
           hidden
         >
-          {{ t('rightSidePanel.missingModels.gatedModelDownloadTooltip') }}
+          {{
+            t(
+              usesServerDownloads
+                ? 'rightSidePanel.missingModels.gatedModelServerDownloadTooltip'
+                : 'rightSidePanel.missingModels.gatedModelDownloadTooltip'
+            )
+          }}
         </span>
       </template>
 
@@ -375,6 +383,7 @@ const {
   prefetchModelMetadata,
   downloadMissingModel,
   isDownloading,
+  usesServerDownloads,
   serverDownloadState,
   cancelServerDownload,
   openModelAccessPage
@@ -435,6 +444,9 @@ const serverDownloadLabel = computed(() => {
   }
   return status ? t(keys[status]) : ''
 })
+const canRetryDownload = computed(
+  () => usesServerDownloads.value && serverDownload.value?.status === 'failed'
+)
 
 const showDownloadAction = computed(() => !isCloud && downloadable.value)
 const gatedRepoUrl = computed(() => {
