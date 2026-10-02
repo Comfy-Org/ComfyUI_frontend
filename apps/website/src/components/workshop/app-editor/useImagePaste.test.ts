@@ -12,7 +12,7 @@ function paste(...files: File[]): Event {
   files.forEach((file) => data.items.add(file))
   const event = new Event('paste', { cancelable: true })
   Object.defineProperty(event, 'clipboardData', { value: data })
-  document.dispatchEvent(event)
+  window.dispatchEvent(event)
   return event
 }
 
