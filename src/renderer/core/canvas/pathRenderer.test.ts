@@ -6,7 +6,7 @@ import type {
   RenderContext
 } from '@/renderer/core/canvas/pathRenderer'
 import { CanvasPathRenderer } from '@/renderer/core/canvas/pathRenderer'
-import { StubPath2D } from '@/utils/__tests__/litegraphTestUtils'
+import { StubPath2D } from '@/utils/__tests__/stubPath2D'
 
 function createMockCtx(): CanvasRenderingContext2D {
   return {
@@ -62,7 +62,6 @@ describe('CanvasPathRenderer', () => {
   let renderer: CanvasPathRenderer
 
   beforeEach(() => {
-    vi.stubGlobal('Path2D', StubPath2D)
     renderer = new CanvasPathRenderer()
   })
 

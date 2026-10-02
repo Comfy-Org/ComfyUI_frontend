@@ -1,5 +1,3 @@
-import { vi } from 'vitest'
-
 import type { Rect } from '@/lib/litegraph/src/interfaces'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import {
@@ -8,7 +6,7 @@ import {
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
+import { createTestCanvasElement } from '@/utils/__tests__/litegraphTestUtils'
 
 export type Modifiers = Partial<
   Pick<MouseEventInit, 'shiftKey' | 'ctrlKey' | 'metaKey' | 'altKey'>
@@ -26,18 +24,7 @@ export type PointerEventType =
   | 'pointercancel'
 
 export function createCanvas(graph: LGraph): LGraphCanvas {
-  const canvasElement = document.createElement('canvas')
-  canvasElement.width = 800
-  canvasElement.height = 600
-  canvasElement.getContext = vi
-    .fn()
-    .mockReturnValue(createMockCanvasRenderingContext2D())
-  canvasElement.getBoundingClientRect = vi.fn().mockReturnValue({
-    left: 0,
-    top: 0,
-    width: 800,
-    height: 600
-  })
+  const canvasElement = createTestCanvasElement({ cssSize: [800, 600] })
   document.body.append(canvasElement)
   return new LGraphCanvas(canvasElement, graph, { skip_render: true })
 }

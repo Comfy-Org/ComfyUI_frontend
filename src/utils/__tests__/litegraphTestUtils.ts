@@ -15,6 +15,7 @@ import type {
   SerialisableGraph
 } from '@/lib/litegraph/src/litegraph'
 import {
+  DragAndScale,
   LGraphCanvas,
   LGraphEventMode,
   LGraphNode,
@@ -47,33 +48,6 @@ export function createNodeState(overrides: Partial<NodeState> = {}): NodeState {
     type: 'TestNode',
     ...overrides,
     properties: overrides.properties ?? {}
-  }
-}
-
-interface StubPathMethods {
-  moveTo: Path2D['moveTo']
-  lineTo: Path2D['lineTo']
-  bezierCurveTo: Path2D['bezierCurveTo']
-  quadraticCurveTo: Path2D['quadraticCurveTo']
-}
-
-export class StubPath2D implements StubPathMethods {
-  calls: Array<{ method: string; args: unknown[] }> = []
-
-  moveTo(...args: unknown[]): void {
-    this.calls.push({ method: 'moveTo', args })
-  }
-
-  lineTo(...args: unknown[]): void {
-    this.calls.push({ method: 'lineTo', args })
-  }
-
-  bezierCurveTo(...args: unknown[]): void {
-    this.calls.push({ method: 'bezierCurveTo', args })
-  }
-
-  quadraticCurveTo(...args: unknown[]): void {
-    this.calls.push({ method: 'quadraticCurveTo', args })
   }
 }
 
@@ -486,15 +460,56 @@ export function createTestCanvas(
   graph: LGraph,
   ctx: CanvasRenderingContext2D
 ): LGraphCanvas {
-  const element = document.createElement('canvas')
-  element.width = 800
-  element.height = 600
-  element.getContext = vi.fn().mockReturnValue(ctx)
-  element.getBoundingClientRect = vi.fn().mockReturnValue({
-    left: 0,
-    top: 0,
-    width: 800,
-    height: 600
-  })
+  const element = createTestCanvasElement({ ctx, cssSize: [800, 600] })
   return new LGraphCanvas(element, graph, { skip_render: true })
+}
+
+interface TestCanvasElementOptions {
+  /** Backing-store dimensions. */
+  width?: number
+  height?: number
+  /** Layout dimensions reported by `getBoundingClientRect`. */
+  cssSize?: [width: number, height: number]
+  /** Whether layout reports the canvas as rendered; see {@link setCanvasVisible}. */
+  visible?: boolean
+  ctx?: CanvasRenderingContext2D
+}
+
+export function createTestCanvasElement({
+  width = 800,
+  height = 600,
+  cssSize,
+  visible,
+  ctx = createMockCanvasRenderingContext2D()
+}: TestCanvasElementOptions = {}): HTMLCanvasElement {
+  const element = document.createElement('canvas')
+  element.width = width
+  element.height = height
+  element.getContext = vi.fn().mockReturnValue(ctx)
+  if (cssSize) {
+    vi.spyOn(element, 'getBoundingClientRect').mockReturnValue(
+      new DOMRect(0, 0, ...cssSize)
+    )
+  }
+  if (visible !== undefined) setCanvasVisible(element, visible)
+  return element
+}
+
+/** happy-dom has no layout, so report the offset geometry a rendered or hidden canvas has. */
+export function setCanvasVisible(element: HTMLElement, visible: boolean): void {
+  Object.defineProperties(element, {
+    offsetParent: { configurable: true, value: visible ? document.body : null },
+    offsetWidth: { configurable: true, value: visible ? 800 : 0 },
+    offsetHeight: { configurable: true, value: visible ? 600 : 0 }
+  })
+}
+
+/** A `DragAndScale` with an applied CSS viewport, as `applyViewport` leaves it. */
+export function createTestDragAndScale(
+  width = 800,
+  height = 600
+): DragAndScale {
+  const ds = new DragAndScale(createTestCanvasElement({ width, height }))
+  ds.setViewportSize(width, height)
+  return ds
 }
