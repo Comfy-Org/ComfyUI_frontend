@@ -76,6 +76,15 @@ function pinWhenReady() {
   document.addEventListener('astro:before-preparation', stop, { once: true })
 }
 
+/**
+ * A link the reader followed, rather than a history entry the browser restores
+ * the scroll for itself. Forward reads as a forward direction too, so the kind
+ * of navigation is what tells them apart.
+ */
+function followsALink(event: { direction: string; navigationType: string }) {
+  return event.direction === 'forward' && event.navigationType !== 'traverse'
+}
+
 let toolbarWasPinned = false
 
 function isHubNavigation(from: URL, to: URL) {
@@ -88,13 +97,7 @@ function isHubNavigation(from: URL, to: URL) {
 
 document.addEventListener('astro:before-preparation', (event) => {
   const hub = isHubNavigation(event.from, event.to)
-  // Back and Forward restore their own scroll, and Forward reads as a forward
-  // direction too, so the kind of navigation is what tells a click apart.
-  toolbarWasPinned =
-    hub &&
-    event.direction === 'forward' &&
-    event.navigationType !== 'traverse' &&
-    toolbarIsPinned()
+  toolbarWasPinned = hub && followsALink(event) && toolbarIsPinned()
 
   if (!hub) return
   const prepare = event.loader
