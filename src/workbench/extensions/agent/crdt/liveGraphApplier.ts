@@ -237,12 +237,14 @@ function nodeProducer(doc: Y.Doc, id: string): NodeProducer {
   }
   const stamp = stamps[JSON.stringify(['node', id])]
   if (!Array.isArray(stamp)) return { origin: 'unstamped' }
-  const [version, actor, opId] = stamp as unknown[]
+  const [version, actor, opId]: unknown[] = stamp
+  if (typeof version !== 'number' || typeof opId !== 'string')
+    return { origin: 'unreadable' }
   return {
     origin: 'operation',
     actorKind: actorKind(actor),
-    opId: typeof opId === 'string' ? opId : undefined,
-    version: typeof version === 'number' ? version : undefined
+    opId,
+    version
   }
 }
 
