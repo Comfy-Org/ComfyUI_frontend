@@ -265,6 +265,9 @@ test.describe(
       socket.send(JSON.stringify(subscriptionFrame))
       socket.send(JSON.stringify(catchUpFrame))
 
+      await expect
+        .poll(() => page.evaluate(() => window.app?.graph.nodes.length))
+        .toBeGreaterThan(0)
       await page
         .getByRole('button', { name: 'Fit View (.)', exact: true })
         .click()
