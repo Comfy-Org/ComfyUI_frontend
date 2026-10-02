@@ -1247,10 +1247,10 @@ describe('createOpSender', () => {
     expect(() => localSender.admit([addNode(2)])).not.toThrow()
 
     expect(localSender.pending()).toBe(0)
-    expect(localSettled.map(summarizeSettlement)).toContainEqual({
-      state: 'undeliverable',
-      nodeIds: [2]
-    })
+    expect(localSettled.map(summarizeSettlement)).toEqual([
+      { state: 'undeliverable', nodeIds: [1] },
+      { state: 'undeliverable', nodeIds: [2] }
+    ])
     expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({

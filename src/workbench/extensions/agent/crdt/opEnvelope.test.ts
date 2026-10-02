@@ -151,6 +151,8 @@ describe('chunkWireOps', () => {
     { label: 'a number', serialized: 42 },
     { label: 'a string', serialized: 'not-an-operation' },
     { label: 'an array', serialized: [] },
+    // The only row that reaches the post-parse op_id check; every other
+    // serialized form is refused by the leading-brace guard above it.
     { label: 'an object without op_id', serialized: { op: 'add_node' } }
   ])(
     'rejects an op whose toJSON returns $label',
