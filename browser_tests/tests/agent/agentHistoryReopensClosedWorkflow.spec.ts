@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import type {
+  AgentGetDraftResponse,
   AgentMessage,
   AgentThreadListResponse,
   WorkflowListResponse
@@ -258,6 +259,121 @@ test.describe(
         await expect(topbar.getActiveTab()).toHaveText(SAVED_WORKFLOW_NAME)
         await expect(agentPanel.workflowPicker).toHaveText(SAVED_WORKFLOW_NAME)
       })
+    })
+
+    test('keeps an explicitly deleted target unavailable even when a stale draft remains', async ({
+      page,
+      agentFlagEnabled
+    }) => {
+      let draftRequests = 0
+      let workflowRowRequests = 0
+      const threads: AgentThreadListResponse = {
+        threads: [
+          {
+            id: THREAD_ID,
+            title: THREAD_TITLE,
+            preview: USER_REQUEST,
+            workflow_id: SAVED_WORKFLOW_ID,
+            status: 'active',
+            message_count: 2,
+            created_at: SAVED_AT,
+            updated_at: SAVED_AT,
+            last_message_at: SAVED_AT
+          }
+        ],
+        pagination: { offset: 0, limit: 100, total: 1, has_more: false }
+      }
+      const transcript: AgentMessage[] = [
+        {
+          id: 'portrait-user',
+          thread_id: THREAD_ID,
+          turn_id: TURN_ID,
+          seq: 1,
+          role: 'user',
+          status: 'complete',
+          workflow_id: SAVED_WORKFLOW_ID,
+          content: { text: USER_REQUEST }
+        },
+        {
+          id: TURN_ID,
+          thread_id: THREAD_ID,
+          turn_id: TURN_ID,
+          seq: 2,
+          role: 'assistant',
+          status: 'complete',
+          workflow_id: SAVED_WORKFLOW_ID,
+          content: { text: ASSISTANT_REPLY }
+        }
+      ]
+      const staleDraft: AgentGetDraftResponse = {
+        content: SAVED_WORKFLOW,
+        version: 1
+      }
+
+      await bootAgentApp(page, agentFlagEnabled, {
+        objectInfo: NODE_DEFINITIONS,
+        beforeNavigate: async (page) => {
+          await page.route('**/api/agent/threads', (route) =>
+            route.fulfill(jsonRoute(threads))
+          )
+          await page.route('**/api/agent/threads/*/messages', (route) =>
+            route.fulfill(jsonRoute(transcript))
+          )
+          await page.route('**/api/workflows?*', (route) =>
+            route.fulfill(
+              jsonRoute({
+                data: [],
+                pagination: {
+                  offset: 0,
+                  limit: 100,
+                  total: 0,
+                  has_more: false
+                }
+              } satisfies WorkflowListResponse)
+            )
+          )
+          await page.route('**/api/userdata?*', (route) =>
+            route.fulfill(jsonRoute([] satisfies UserDataFullInfo[]))
+          )
+          await page.route('**/api/agent/draft?*', (route) => {
+            draftRequests++
+            return route.fulfill(jsonRoute(staleDraft))
+          })
+          await page.route('**/api/workflows/*', (route) => {
+            workflowRowRequests++
+            return route.fulfill({
+              status: 404,
+              contentType: 'application/json',
+              body: JSON.stringify({ code: 'NOT_FOUND', message: 'not found' })
+            })
+          })
+        }
+      })
+
+      const agentPanel = new AgentPanel(page)
+      const panel = await agentPanel.open()
+      await panel
+        .getByRole('button', { name: enMessages.agent.showChatHistory })
+        .click()
+      await panel.getByRole('button', { name: THREAD_TITLE }).click()
+
+      await expect(panel.getByTestId('user-message-bubble')).toHaveText(
+        USER_REQUEST
+      )
+      await expect(
+        panel.getByText(enMessages.agent.targetWorkflowUnavailable)
+      ).toBeVisible()
+      await expect(agentPanel.workflowPicker).toHaveText(
+        enMessages.agent.selectWorkflowForAgent
+      )
+      await expect(
+        new VueNodeHelpers(page).getNodeByTitle(MARKER_TITLE)
+      ).toHaveCount(0)
+      await expect(
+        new Topbar(page).getWorkflowTab(SAVED_WORKFLOW_NAME)
+      ).toHaveCount(0)
+      expect(draftRequests).toBe(1)
+      expect(workflowRowRequests).toBe(1)
     })
   }
 )
