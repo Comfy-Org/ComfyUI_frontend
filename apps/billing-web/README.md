@@ -123,6 +123,12 @@ the server's words. The server asking for the reactivation consent keeps the
 same attempt open, and a retry after a terminal starts a new one.
 `checkout_ui` names the checkout, `embedded` or `full_page`.
 
+Resubscribing from the subscription screen reports `billing.resubscribe.started`
+and one terminal the same way, with `source: 'billing_web_subscription'`. A plan
+that is already active counts as succeeded. The SDK stream reports a
+resubscribe as a plain `subscription` operation, so these events are the only
+way to tell the two apart. Cancel reports only the SDK stream.
+
 ### Entry, session and return events
 
 These are client journey events: they carry `outcome: 'pending'` and never

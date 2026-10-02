@@ -6,7 +6,10 @@ export type SubscriptionCheckoutType = 'new' | 'change'
 
 export type SubscriptionCheckoutTier = BillingTierKey | 'team'
 
-export type ResubscribeSource = 'pricing_dialog' | 'settings_billing_panel'
+export type ResubscribeSource =
+  | 'pricing_dialog'
+  | 'settings_billing_panel'
+  | 'billing_web_subscription'
 
 /** Mirrors `BillingSource` in `@comfyorg/billing-contract`; a type test there fails when the two drift. */
 export type PaymentIntentSource =
