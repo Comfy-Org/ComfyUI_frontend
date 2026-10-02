@@ -74,8 +74,6 @@ const copy = {
     en: 'About a minute, keeps finer detail',
     'zh-CN': '约 1 分钟，保留更多细节'
   },
-  'move.quality.fastShort': { en: 'Fast · 20 s', 'zh-CN': '快速 · 20 秒' },
-  'move.quality.bestShort': { en: 'Best · 1 min', 'zh-CN': '最佳 · 1 分钟' },
   'move.image.size': {
     en: '{width} × {height}',
     'zh-CN': '{width} × {height}'
@@ -83,6 +81,7 @@ const copy = {
   'move.image.change': { en: 'Change', 'zh-CN': '更换' },
   'move.advanced': { en: 'Advanced', 'zh-CN': '高级' },
   'move.seed': { en: 'Seed', 'zh-CN': '种子' },
+  'move.seed.shuffle': { en: 'New seed', 'zh-CN': '换一个种子' },
   'move.advanced.summary': { en: 'Seed {n}', 'zh-CN': '种子 {n}' },
   'move.prompt': {
     en: 'Describe the scene (optional)',

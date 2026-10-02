@@ -9,11 +9,11 @@ import type {
 } from '../../../composables/useMoveAnything'
 import type { Locale } from '../../../i18n/translations'
 import { mc } from '../../../lib/workshop/move-anything/copy'
-import type { MoveQuality } from '../../../lib/workshop/move-anything/mock-run'
 import EditorChip from '../app-editor/EditorChip.vue'
 import EditorDivider from '../app-editor/EditorDivider.vue'
 import EditorTool from '../app-editor/EditorTool.vue'
 import MoveAnythingHistory from './MoveAnythingHistory.vue'
+import MoveAnythingQuality from './MoveAnythingQuality.vue'
 import MoveAnythingRun from './MoveAnythingRun.vue'
 import { MOVE_TOOLS } from './tools'
 
@@ -22,7 +22,6 @@ const {
   image,
   tool,
   tray,
-  quality,
   objectCount,
   locale = 'en'
 } = defineProps<{
@@ -30,7 +29,6 @@ const {
   image?: MoveImage
   tool: MoveTool
   tray?: MoveTray
-  quality: MoveQuality
   objectCount: number
   locale?: Locale
 }>()
@@ -41,6 +39,7 @@ const emit = defineEmits<{
   tray: [tray: MoveTray]
 }>()
 
+const { quality } = move
 const input = useTemplateRef<HTMLInputElement>('input')
 const moving = () => move.phase.value.kind === 'moving'
 const locked = () => !image || moving()
@@ -88,14 +87,11 @@ function onChange(event: Event) {
     :disabled="locked()"
     @click="emit('tray', 'objects')"
   />
-  <EditorChip
-    :label="mc('move.quality', locale)"
-    :value="
-      mc(quality === 'fast' ? 'move.quality.fast' : 'move.quality.best', locale)
-    "
-    :expanded="tray === 'quality'"
+  <MoveAnythingQuality
+    v-model="quality"
+    :locale
     :disabled="locked()"
-    @click="emit('tray', 'quality')"
+    composer
   />
   <EditorDivider />
   <MoveAnythingRun :move :locale />

@@ -7,11 +7,11 @@ import type { Locale } from '../../../i18n/translations'
 import { MAX_OBJECTS } from '../../../lib/workshop/move-anything/arrange'
 import { mc } from '../../../lib/workshop/move-anything/copy'
 import EditorCollapsible from '../app-editor/EditorCollapsible.vue'
-import EditorNumberField from '../app-editor/EditorNumberField.vue'
+import EditorSeedField from '../app-editor/EditorSeedField.vue'
 import EditorTextArea from '../app-editor/EditorTextArea.vue'
 import MoveAnythingImageRow from './MoveAnythingImageRow.vue'
 import MoveAnythingObjectList from './MoveAnythingObjectList.vue'
-import MoveAnythingQualityPicker from './MoveAnythingQualityPicker.vue'
+import MoveAnythingQuality from './MoveAnythingQuality.vue'
 
 const {
   image,
@@ -69,7 +69,7 @@ const { objects, selected, quality, seed, prompt, phase } = move
       "
       initially-open
     >
-      <MoveAnythingQualityPicker v-model="quality" :locale />
+      <MoveAnythingQuality v-model="quality" :locale />
     </EditorCollapsible>
     <EditorCollapsible
       :title="mc('move.advanced', locale)"
@@ -80,7 +80,11 @@ const { objects, selected, quality, seed, prompt, phase } = move
         :label="mc('move.prompt', locale)"
         :placeholder="mc('move.prompt.placeholder', locale)"
       />
-      <EditorNumberField v-model="seed" :label="mc('move.seed', locale)" />
+      <EditorSeedField
+        v-model="seed"
+        :label="mc('move.seed', locale)"
+        :shuffle-label="mc('move.seed.shuffle', locale)"
+      />
     </EditorCollapsible>
   </fieldset>
 </template>

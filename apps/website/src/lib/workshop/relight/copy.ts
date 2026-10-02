@@ -161,6 +161,7 @@ const copy = {
   'relight.generation.whole': { en: 'Whole image', 'zh-CN': '整张图片' },
   'relight.generation.masked': { en: 'Masked area', 'zh-CN': '蒙版区域' },
   'relight.generation.seed': { en: 'Seed', 'zh-CN': '种子' },
+  'relight.generation.shuffle': { en: 'New seed', 'zh-CN': '换一个种子' },
   'relight.generation.value': { en: '{n}%', 'zh-CN': '{n}%' },
   'relight.close': { en: 'Close', 'zh-CN': '关闭' },
   'relight.run': { en: 'Relight', 'zh-CN': '重新布光' },

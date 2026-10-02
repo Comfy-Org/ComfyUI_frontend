@@ -79,9 +79,12 @@ describe('MoveAnythingStudio', () => {
     await user.keyboard('{Shift>}{ArrowRight}{/Shift}')
     expect(generate).toHaveTextContent('Move 1 object')
     expect(screen.getByTestId('move-ghost')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Quality: Fast' }))
+    await user.click(screen.getByRole('menuitemradio', { name: /^Best/ }))
 
     await user.click(generate)
     expect(screen.getByRole('status')).toHaveTextContent('Making the move')
+    expect(screen.getByRole('status')).toHaveTextContent('About a minute')
     await vi.runAllTimersAsync()
 
     expect(
@@ -158,11 +161,12 @@ describe('MoveAnythingStudio', () => {
     await user.keyboard('{Shift>}{ArrowRight}{/Shift}')
     expect(objects).toHaveTextContent('Moved')
     await user.click(
-      within(panel()).getByRole('radio', { name: 'Best · 1 min' })
+      within(panel()).getByRole('button', { name: 'Quality: Fast' })
     )
+    await user.click(screen.getByRole('menuitemradio', { name: /^Best/ }))
     expect(
-      within(panel()).getByRole('radio', { name: 'Best · 1 min' })
-    ).toBeChecked()
+      within(panel()).getByRole('button', { name: 'Quality: Best' })
+    ).toBeVisible()
     await user.click(generate)
     expect(screen.getByRole('status')).toHaveTextContent('About a minute')
     await vi.advanceTimersByTimeAsync(3000)
@@ -239,7 +243,7 @@ describe('MoveAnythingStudio', () => {
     expect(kitten()).toBeVisible()
   })
 
-  it('keeps the scene description and seed under Advanced', async () => {
+  it('keeps the scene description and a shuffleable seed under Advanced', async () => {
     screenIsWide(true)
     const user = await openExample()
     expect(
@@ -256,6 +260,15 @@ describe('MoveAnythingStudio', () => {
         name: 'Describe the scene (optional)'
       })
     ).toHaveValue('')
+
+    vi.spyOn(Math, 'random').mockReturnValue(0.5)
+    await user.click(within(panel()).getByRole('button', { name: 'New seed' }))
+    expect(
+      within(panel()).getByRole('spinbutton', { name: 'Seed' })
+    ).toHaveValue(500_000_000)
+    expect(
+      within(panel()).getByRole('button', { name: /^Advanced/ })
+    ).toHaveTextContent('Seed 500000000')
   })
 
   it('opens on phones as a sheet with a one-line summary and the run button', async () => {

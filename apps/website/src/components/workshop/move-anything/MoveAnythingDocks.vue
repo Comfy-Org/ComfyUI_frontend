@@ -23,7 +23,7 @@ const {
 }>()
 
 const view = defineModel<MoveView>('view', { required: true })
-const { image, phase, objects, tool, tray, quality } = move
+const { image, phase, objects, tool, tray } = move
 const labels = {
   compare: mc('move.view.compare', locale),
   result: mc('move.view.result', locale),
@@ -55,7 +55,6 @@ const labels = {
     :image
     :tool
     :tray
-    :quality
     :object-count="objects.length"
     :locale
     @tool="(next) => (tool = next)"

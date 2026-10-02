@@ -36,7 +36,7 @@ type MovePhase =
   | { readonly kind: 'failed' }
 
 export type MoveTool = 'move' | 'smart' | 'box'
-export type MoveTray = 'objects' | 'quality'
+export type MoveTray = 'objects'
 export type MoveView = 'compare' | 'result' | 'original'
 
 type StagePoint = { readonly x: number; readonly y: number }
