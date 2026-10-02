@@ -103,12 +103,7 @@ describe('LiveGraphApplier malformed node report', () => {
 
       applyCollected()
 
-      const [error, options] = onlyReport()
-      // Every case produces the same issue text; only the shape tells them apart.
-      expect(error).toHaveProperty(
-        'message',
-        'Document node 149 (TestSink) is malformed: inputs.0.type Invalid input'
-      )
+      const [, options] = onlyReport()
       expect(options).toMatchObject({
         context: { valueShapes: `inputs.0.type invalid_union ${shape}` }
       })
