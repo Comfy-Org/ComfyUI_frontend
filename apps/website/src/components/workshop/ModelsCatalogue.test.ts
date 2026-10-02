@@ -10,6 +10,7 @@ import {
   useWorkshopEnabled,
   useWorkshopFlag
 } from '../../scripts/posthog'
+import { DOOR_ART, TASK_ART } from '../../lib/workshop/explore-art'
 import ModelsCatalogue from './ModelsCatalogue.vue'
 import type { WorkshopModel } from '../../config/models-catalogue'
 
@@ -343,7 +344,7 @@ describe('ModelsCatalogue', () => {
         name: string,
         thumbnail: WorkshopModel['thumbnail']
       ): WorkshopModel => ({
-        ...entry(name, 'model', ['generate-images']),
+        ...entry(name, 'model', ['3d']),
         thumbnail
       })
       renderExplore([
@@ -360,6 +361,49 @@ describe('ModelsCatalogue', () => {
       expect(
         within(tile).queryByTestId('model-card-media')?.tagName ?? null
       ).toBe(media)
+    })
+
+    it('fronts a task with its own art rather than a catalogue thumbnail', async () => {
+      renderExplore([
+        {
+          ...entry('painter', 'model', ['generate-images']),
+          thumbnail: { url: '/painter.webp', kind: 'image' }
+        }
+      ])
+
+      const tile = await screen.findByTestId('explore-task')
+      expect(within(tile).getByTestId('model-card-media')).toHaveAttribute(
+        'src',
+        TASK_ART['generate-images']
+      )
+    })
+
+    it('stacks section art the rest of the landing does not already show', async () => {
+      appsFlag.value = true
+      const [shownElsewhere] = DOOR_ART.models
+      renderExplore([
+        ...launchModels,
+        {
+          ...entry('lake', 'model', ['3d']),
+          thumbnail: { url: shownElsewhere, kind: 'image' }
+        }
+      ])
+
+      const doors = await screen.findByTestId('explore-doors')
+      const art = within(doors)
+        .getAllByTestId('explore-door-art')
+        .map((img) => img.getAttribute('src'))
+      const elsewhere = screen
+        .getAllByAltText('')
+        .filter((img) => !doors.contains(img))
+        .map((img) => img.getAttribute('src'))
+      expect(elsewhere).toContain(shownElsewhere)
+      expect(
+        within(screen.getByTestId('explore-door-models'))
+          .getAllByTestId('explore-door-art')
+          .map((img) => img.getAttribute('src'))
+      ).toEqual(DOOR_ART.models.slice(1, 4))
+      expect(art.filter((src) => elsewhere.includes(src))).toEqual([])
     })
 
     it('says when nothing matches and clears back to everything', async () => {

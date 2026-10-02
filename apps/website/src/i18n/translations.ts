@@ -97,6 +97,18 @@ const translations = {
     en: 'Try them here or call them by API.',
     'zh-CN': '在这里试用，或通过 API 调用。'
   },
+  'workshop.explore.appsCount': {
+    en: '{count} app | {count} apps',
+    'zh-CN': '{count} 个应用'
+  },
+  'workshop.explore.workflowsCount': {
+    en: '{count} workflow | {count} workflows',
+    'zh-CN': '{count} 个工作流'
+  },
+  'workshop.explore.modelsCount': {
+    en: '{count} model | {count} models',
+    'zh-CN': '{count} 个模型'
+  },
   'workshop.explore.communityTitle': {
     en: 'From the community',
     'zh-CN': '来自社区'

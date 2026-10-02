@@ -582,7 +582,7 @@ test('@mobile fits every Hub door on a phone without sideways scrolling', async 
   await page.goto('/hub/')
   const doors = page.getByTestId('explore-doors').getByRole('link')
 
-  await expect(doors).toHaveText([/^Workflows/, /^Models/])
+  await expect(doors).toHaveText([/Workflows/, /Models/])
   const viewport = page.viewportSize()?.width ?? 0
   for (const door of await doors.all()) {
     await door.scrollIntoViewIfNeeded()

@@ -1,37 +1,22 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-
 import type { UseCase, WorkshopModel } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
-import WorkshopCardMedia from './WorkshopCardMedia.vue'
 
 const {
   useCase,
-  items,
+  cover,
+  kinds,
   locale = 'en'
 } = defineProps<{
   useCase: UseCase
-  items: readonly WorkshopModel[]
+  cover?: WorkshopModel['thumbnail']
+  kinds: readonly string[]
   locale?: Locale
 }>()
 
 defineEmits<{ select: [] }>()
-
-const cover = computed(
-  () =>
-    items.find((item) => item.thumbnail?.kind === 'image') ??
-    items.find((item) => item.thumbnail)
-)
-const kinds = computed(() => [
-  ...(items.some((item) => item.workflowId)
-    ? [t('workshop.explore.workflowPill', locale)]
-    : []),
-  ...(items.some((item) => item.routerId)
-    ? [t('workshop.explore.kindModel', locale)]
-    : [])
-])
 </script>
 
 <template>
@@ -41,29 +26,48 @@ const kinds = computed(() => [
     data-testid="explore-task"
     @click="$emit('select')"
   >
+    <video
+      v-if="cover?.kind === 'video'"
+      :src="cover.url"
+      class="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-105"
+      aria-hidden="true"
+      data-testid="model-card-media"
+      autoplay
+      loop
+      muted
+      playsinline
+      preload="metadata"
+    />
+    <img
+      v-else-if="cover"
+      :src="cover.url"
+      alt=""
+      class="absolute inset-0 size-full object-cover transition-transform duration-500 select-none group-hover:scale-105"
+      data-testid="model-card-media"
+      loading="lazy"
+      decoding="async"
+      draggable="false"
+    />
     <span
-      class="absolute inset-0 transition-transform duration-500 group-hover:scale-105"
-    >
-      <WorkshopCardMedia v-if="cover" :model="cover" />
-    </span>
-    <span
-      class="absolute inset-0 bg-linear-to-t from-black/85 via-black/20 to-transparent"
+      class="absolute inset-0 bg-linear-to-t from-black/85 via-black/10 to-transparent"
       aria-hidden="true"
     />
-    <span class="absolute top-3 left-3 flex flex-wrap gap-1.5">
-      <span
-        v-for="kind in kinds"
-        :key="kind"
-        data-testid="explore-task-kind"
-        class="rounded-full bg-black/40 px-2.5 py-0.5 text-xs text-white backdrop-blur-md"
-      >
-        {{ kind }}
+    <span class="absolute inset-x-0 bottom-0 flex flex-col gap-1.5 p-5">
+      <span class="text-xl/tight font-medium text-primary-warm-white">
+        {{ t(useCaseLabelKey[useCase], locale) }}
       </span>
-    </span>
-    <span
-      class="absolute inset-x-0 bottom-0 p-4 text-xl/tight font-medium text-primary-warm-white"
-    >
-      {{ t(useCaseLabelKey[useCase], locale) }}
+      <span
+        class="flex items-center gap-2 text-xs tracking-wide text-primary-warm-white/70 uppercase"
+      >
+        <template v-for="(kind, index) in kinds" :key="kind">
+          <span
+            v-if="index"
+            class="size-1 rounded-full bg-primary-comfy-yellow"
+            aria-hidden="true"
+          />
+          <span data-testid="explore-task-kind">{{ kind }}</span>
+        </template>
+      </span>
     </span>
   </button>
 </template>
