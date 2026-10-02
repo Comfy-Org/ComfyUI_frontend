@@ -8,6 +8,9 @@ import { elapsedLabel } from '../../../lib/workshop/elapsed'
 import { lc } from '../../../lib/workshop/relight/copy'
 import EditorBusy from '../app-editor/EditorBusy.vue'
 import EditorHint from '../app-editor/EditorHint.vue'
+import { fittedSize } from '../app-editor/stage-geometry'
+import type { Light } from '../../../lib/workshop/relight/lights'
+import RelightLightMap from './RelightLightMap.vue'
 import RelightStage from './RelightStage.vue'
 
 const {
@@ -41,6 +44,11 @@ function nudge(id: string, x: number, y: number) {
   relight.updateLight(id, { x, y }, `nudge:${id}`)
 }
 
+function aim(id: string, patch: Partial<Light>) {
+  touch()
+  relight.updateLight(id, patch, `map:${id}`)
+}
+
 const now = useNow({ interval: 1000 })
 const elapsed = computed(() =>
   phase.value.kind === 'running'
@@ -58,7 +66,6 @@ const elapsed = computed(() =>
       :scene="setup.scene"
       :selected
       :comparing
-      :light-map="lightMap"
       :handles="handles && !comparing && phase.kind !== 'running'"
       :locale
       @select="select"
@@ -71,6 +78,26 @@ const elapsed = computed(() =>
         :text="lc('relight.hint', locale)"
       />
     </RelightStage>
+    <div
+      v-if="lightMap && !comparing && phase.kind === 'editing'"
+      class="pointer-events-none absolute inset-0"
+      style="container-type: size"
+    >
+      <div
+        class="relative mx-auto"
+        :style="fittedSize(image.width, image.height)"
+      >
+        <RelightLightMap
+          :lights="setup.lights"
+          :selected
+          :locale
+          class="absolute top-2.5 left-2.5"
+          @select="select"
+          @change="aim"
+          @hide="lightMap = false"
+        />
+      </div>
+    </div>
     <EditorBusy
       v-if="phase.kind === 'running'"
       :title="lc('relight.busy.title', locale)"
