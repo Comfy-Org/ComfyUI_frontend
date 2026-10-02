@@ -2,7 +2,10 @@ import type {
   AgentPostMessageRequest,
   UploadImageResponse
 } from '@comfyorg/ingest-types'
-import { zUploadImageResponse } from '@comfyorg/ingest-types/zod'
+import {
+  zUploadImageResponse,
+  zWorkflowResponse
+} from '@comfyorg/ingest-types/zod'
 import type { z } from 'zod'
 
 import {
@@ -112,6 +115,20 @@ export class AgentResponseUnreadableError extends Error {
     this.name = 'AgentResponseUnreadableError'
   }
 }
+
+/**
+ * One page-walked `GET /api/workflows` index, with whether the walk actually
+ * reached the end. `listCloudWorkflows` gives up when a page reports
+ * `has_more` but offers no usable next cursor, so a resolved listing is not
+ * the same thing as a complete one — and a caller that reads an absent id as
+ * proof the workflow is gone needs to know which it got.
+ */
+export interface CloudWorkflowListing {
+  entries: CloudWorkflowEntry[]
+  complete: boolean
+}
+
+export type CloudWorkflowRow = z.infer<typeof zWorkflowResponse>
 
 export type OpenTabsSnapshot = Pick<
   AgentPostMessageRequest,
@@ -551,7 +568,7 @@ export function createAgentRestClient() {
     )
   }
 
-  async function listCloudWorkflows(): Promise<CloudWorkflowEntry[]> {
+  async function listCloudWorkflows(): Promise<CloudWorkflowListing> {
     const entries: CloudWorkflowEntry[] = []
     let hasMore: boolean
     let cursor: string | undefined
@@ -577,7 +594,27 @@ export function createAgentRestClient() {
       console.warn(
         `[agent] cloud workflow index truncated at ${entries.length} entries`
       )
-    return entries
+    return { entries, complete: !hasMore }
+  }
+
+  /**
+   * The authoritative answer about one workflow, used where the user's listing
+   * cannot answer. Cloud's `GetByID` queries by id and workspace with
+   * `DeletedAtIsNil` and its own comment reads "Soft-deleted workflows are
+   * excluded so a deleted workflow reads as not found" — and unlike `List` it
+   * does **not** filter `LatestVersionIDNotNil`, so a version-less draft is
+   * still served. A 404 is therefore the one definite "this row is gone", and
+   * a 200 means the row is live whether or not a save or run ever promoted it
+   * (`latest_version` is 0 until the first promote).
+   */
+  async function getCloudWorkflow(
+    workflowId: string
+  ): Promise<CloudWorkflowRow> {
+    return request(
+      `/workflows/${encodeURIComponent(workflowId)}`,
+      { method: 'GET' },
+      zWorkflowResponse
+    )
   }
 
   async function cancelMessage(
@@ -632,6 +669,7 @@ export function createAgentRestClient() {
     getRunMode,
     putRunMode,
     listCloudWorkflows,
+    getCloudWorkflow,
     cancelMessage,
     answerAsk,
     uploadImage
