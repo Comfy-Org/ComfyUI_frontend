@@ -163,6 +163,8 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   // correlate a result to the send it answers.
   let staleAnonymousBudget = 0
   const retiredOpIds = new Set<string>()
+  let settlementFailureReports = 0
+  const MAX_SETTLEMENT_FAILURE_REPORTS = 3
 
   function retire(batch: InFlight, answered: number): void {
     const outstanding = batch.sends - answered
@@ -177,7 +179,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     if (staleAnonymousBudget === 0) retiredOpIds.clear()
   }
 
-  function reportSettleFailure(cause: unknown, errorType: string): void {
+  function reportDegraded(cause: unknown, errorType: string): void {
     reportError(cause, {
       errorType,
       surface: 'agent',
@@ -193,17 +195,25 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       try {
         deps.onBatchSettled(outcome)
       } catch (cause) {
-        if (reportedFailure) return
+        if (
+          reportedFailure ||
+          settlementFailureReports >= MAX_SETTLEMENT_FAILURE_REPORTS
+        )
+          return
         reportedFailure = true
-        reportSettleFailure(cause, errorType)
+        settlementFailureReports++
+        reportDegraded(cause, errorType)
       }
     }
   }
 
+  const notifyDetachSettlement = guardedSettlementNotifier(
+    'failure_settling_agent_op_sender_detach'
+  )
   function settle(outcome: BatchOutcome): void {
     if (inFlight?.timer) clearTimeout(inFlight.timer)
     inFlight = null
-    deps.onBatchSettled(outcome)
+    guardedSettlementNotifier('failure_settling_agent_op_sender')(outcome)
     pump()
   }
 
@@ -285,14 +295,21 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     }, RESULT_TIMEOUT_MS)
   }
 
-  function drainOutstanding(notify: (outcome: BatchOutcome) => void): void {
-    seal()
+  function drainOutstanding(
+    notify: (outcome: BatchOutcome) => void,
+    chunkErrorType: string
+  ): void {
+    // Tear down live state before any fallible serialization or callback. A
+    // malformed custom-node value must not leave timers or queued work behind.
+    const unsealed = open
+    open = null
     const queued = queue.splice(0)
-    if (inFlight) {
-      const batch = inFlight
+    const active = inFlight
+    inFlight = null
+    if (active) {
+      const batch = active
       if (batch.timer) clearTimeout(batch.timer)
       retire(batch, 0)
-      inFlight = null
       notify({
         state: batch.sends > 0 ? 'unconfirmed' : 'undeliverable',
         ops: batch.ops
@@ -300,6 +317,12 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     }
     for (const batch of queued) {
       notify({ state: 'undeliverable', ops: batch.ops })
+    }
+    if (unsealed) {
+      const chunks = safelyChunkWireOps(unsealed.ops, chunkErrorType)
+      for (const ops of chunks) {
+        notify({ state: 'undeliverable', ops })
+      }
     }
   }
 
@@ -334,26 +357,80 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     )
     lastMintedVersion = baseVersion + minted.length - 1
     if (detached) {
-      guardedSettlementNotifier('failure_settling_agent_op_sender_detach')({
+      notifyDetachSettlement({
         state: 'undeliverable',
         ops: minted
       })
       return
     }
     if (workflowId === null) {
-      deps.onBatchSettled({ state: 'undeliverable', ops: minted })
+      guardedSettlementNotifier('failure_settling_agent_op_sender')({
+        state: 'undeliverable',
+        ops: minted
+      })
       return
     }
-    if (open?.workflowId !== workflowId) seal()
+    // seal() can synchronously settle a malformed admission. Consumers may
+    // detach from that callback, so never recreate live state afterwards.
+    if (open?.workflowId !== workflowId && seal()) {
+      notifyDetachSettlement({ state: 'undeliverable', ops: minted })
+      return
+    }
     if (open) open.ops.push(...minted)
     else open = { workflowId, ops: minted }
   }
 
-  function seal(): void {
-    if (!open) return
+  function seal(): boolean {
+    if (!open) return detached
     const { workflowId, ops } = open
     open = null
-    queue.push(...chunkWireOps(ops).map((ops) => ({ workflowId, ops })))
+    try {
+      queue.push(...chunkWireOps(ops).map((ops) => ({ workflowId, ops })))
+    } catch (cause) {
+      reportDegraded(cause, 'failure_chunking_agent_op_sender')
+      let rejectedFrom = ops.length
+      for (const [index, op] of ops.entries()) {
+        try {
+          chunkWireOps([op])
+        } catch {
+          rejectedFrom = index
+          break
+        }
+      }
+
+      // Preserve only the valid prefix. Once one op is rejected, later ops
+      // may depend on it (for example a connect after add_node), so sending a
+      // suffix would create a partial admission and diverge from local state.
+      const sendable = ops.slice(0, rejectedFrom)
+      const rejected = ops.slice(rejectedFrom)
+      try {
+        const recovered = chunkWireOps(sendable)
+        queue.push(...recovered.map((ops) => ({ workflowId, ops })))
+      } catch (recoveryCause) {
+        // Serialization can be stateful. A getter or toJSON may pass the
+        // per-op probe and fail when recovery chunks the prefix again.
+        reportDegraded(
+          recoveryCause,
+          'failure_rechunking_agent_op_sender_recovery'
+        )
+        rejected.unshift(...sendable)
+      }
+      if (rejected.length > 0)
+        guardedSettlementNotifier('failure_settling_agent_op_sender')({
+          state: 'undeliverable',
+          ops: rejected
+        })
+    }
+    return detached
+  }
+
+  function safelyChunkWireOps(ops: Op[], errorType: string): Op[][] {
+    try {
+      return chunkWireOps(ops)
+    } catch (cause) {
+      reportDegraded(cause, errorType)
+      return ops.map((op) => [op])
+    }
   }
 
   function flush(): void {
@@ -362,6 +439,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   }
 
   const unsubscribe = deps.onOpsResult((result) => {
+    if (detached) return
     if (inFlight === null && staleAnonymousBudget === 0) return
     const identified = [...result.applied, ...result.skipped]
     if (result.failed?.op_id) identified.push(result.failed.op_id)
@@ -390,6 +468,9 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       drainStaleCredit()
       return
     }
+    // A parked batch or one waiting for a transport retry has not put a send
+    // on the wire, so an anonymous result cannot belong to it.
+    if (batch.sends === 0) return
     retire(batch, 1)
     settle({ state: 'acknowledged', ops: batch.ops, result })
   })
@@ -430,7 +511,8 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       lastMintedVersion = -1
       lastMintedWorkflowId = null
       drainOutstanding(
-        guardedSettlementNotifier('failure_settling_agent_op_sender_abort')
+        guardedSettlementNotifier('failure_settling_agent_op_sender_abort'),
+        'failure_chunking_agent_op_sender_abort'
       )
     },
     detach() {
@@ -438,10 +520,19 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       detached = true
       try {
         drainOutstanding(
-          guardedSettlementNotifier('failure_settling_agent_op_sender_detach')
+          notifyDetachSettlement,
+          'failure_chunking_agent_op_sender_teardown'
         )
+        // The listener is inert once detached. Release late-result bookkeeping
+        // even if an injected unsubscribe implementation fails below.
+        staleAnonymousBudget = 0
+        retiredOpIds.clear()
       } finally {
-        unsubscribe()
+        try {
+          unsubscribe()
+        } catch (cause) {
+          reportDegraded(cause, 'failure_unsubscribing_agent_op_sender')
+        }
       }
     }
   }
