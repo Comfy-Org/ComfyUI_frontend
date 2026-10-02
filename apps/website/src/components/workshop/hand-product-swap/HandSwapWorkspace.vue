@@ -55,6 +55,7 @@ const detail = computed(() => {
       <EditorHint
         v-if="phase.kind === 'editing'"
         :text="hc('swap.hint', locale)"
+        class="max-sm:hidden"
       />
       <template v-if="phase.kind === 'running'">
         <HandSwapShimmer />
