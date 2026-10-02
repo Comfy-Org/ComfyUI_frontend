@@ -60,6 +60,14 @@ function pinToolbar() {
   // pinned wherever the page stands, and a scroll offset snaps to a device
   // pixel, so the landing is read with a pixel of slack rather than exactly.
   const reachable = Math.max(target, 0)
+  const room = Math.max(
+    document.documentElement.scrollHeight - window.innerHeight,
+    0
+  )
+  // A page with no room for the scroll would only take part of it and leave
+  // the reader somewhere they did not ask to be. It may still be growing, so
+  // the wait goes on, but nothing moves under them while it does.
+  if (reachable > room) return false
   window.scrollTo(0, reachable)
   return Math.abs(window.scrollY - reachable) <= 1
 }
