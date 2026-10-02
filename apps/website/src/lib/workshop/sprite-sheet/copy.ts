@@ -42,7 +42,9 @@ const copy = {
     'zh-CN': '{n} 帧 · 种子 {seed}'
   },
   'sprite.frames': { en: 'Frames', 'zh-CN': '帧数' },
+  'sprite.frames.value': { en: '{n} frames', 'zh-CN': '{n} 帧' },
   'sprite.seed': { en: 'Seed', 'zh-CN': '种子' },
+  'sprite.seed.shuffle': { en: 'New seed', 'zh-CN': '换一个种子' },
   'sprite.summary': {
     en: '{style} · {motion} · {n} frames',
     'zh-CN': '{style} · {motion} · {n} 帧'

@@ -72,6 +72,30 @@ describe('SpriteSheetStudio', () => {
     )
   })
 
+  it('sets the frame count and a new seed under Advanced', async () => {
+    const user = await openExample()
+    const advanced = within(panel()).getByRole('region', { name: 'Advanced' })
+    await user.click(
+      within(advanced).getByRole('button', { name: /^Advanced/ })
+    )
+
+    await user.click(
+      within(advanced).getByRole('button', { name: 'Frames: 8 frames' })
+    )
+    await user.click(screen.getByRole('menuitemradio', { name: '12 frames' }))
+    vi.spyOn(Math, 'random').mockReturnValue(0.5)
+    await user.click(within(advanced).getByRole('button', { name: 'New seed' }))
+
+    expect(
+      within(advanced).getByRole('spinbutton', { name: 'Seed' })
+    ).toHaveValue(500_000_000)
+    expect(
+      within(panel()).getByRole('button', {
+        name: /Advanced\s*12 frames · Seed 500000000/
+      })
+    ).toBeInTheDocument()
+  })
+
   it('undoes a style change from the control pill', async () => {
     const user = await openExample()
     const style = within(panel()).getByRole('region', { name: 'Style' })

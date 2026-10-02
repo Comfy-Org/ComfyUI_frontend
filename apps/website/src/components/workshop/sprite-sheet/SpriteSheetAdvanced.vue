@@ -1,12 +1,13 @@
 <script setup lang="ts">
+import { GalleryHorizontal } from '@lucide/vue'
 import { computed } from 'vue'
 
 import type { SpriteSheet } from '../../../composables/useSpriteSheet'
 import type { Locale } from '../../../i18n/translations'
 import { spc } from '../../../lib/workshop/sprite-sheet/copy'
 import { FRAME_COUNTS } from '../../../lib/workshop/sprite-sheet/options'
-import EditorNumberField from '../app-editor/EditorNumberField.vue'
-import EditorSegmented from '../app-editor/EditorSegmented.vue'
+import EditorOutput from '../app-editor/EditorOutput.vue'
+import EditorSeedField from '../app-editor/EditorSeedField.vue'
 
 const { sprite, locale = 'en' } = defineProps<{
   sprite: SpriteSheet
@@ -16,7 +17,7 @@ const { sprite, locale = 'en' } = defineProps<{
 const { setup } = sprite
 const counts = FRAME_COUNTS.map((count) => ({
   id: String(count),
-  label: String(count)
+  label: spc('sprite.frames.value', locale, { n: count })
 }))
 const frames = computed({
   get: () => String(setup.value.frames),
@@ -32,10 +33,15 @@ const seed = computed({
 </script>
 
 <template>
-  <EditorSegmented
+  <EditorOutput
     v-model="frames"
-    :label="spc('sprite.frames', locale)"
+    :heading="spc('sprite.frames', locale)"
     :options="counts"
+    :icon="GalleryHorizontal"
   />
-  <EditorNumberField v-model="seed" :label="spc('sprite.seed', locale)" />
+  <EditorSeedField
+    v-model="seed"
+    :label="spc('sprite.seed', locale)"
+    :shuffle-label="spc('sprite.seed.shuffle', locale)"
+  />
 </template>
