@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 
 import { useBackgroundRemoval } from '../../../composables/useBackgroundRemoval'
+import { useResultDownload } from '../../../composables/useResultDownload'
 import { reportStudioBusy } from '../../../composables/useStudioSwitchGuard'
 import type { Locale } from '../../../i18n/translations'
 import { workshopAppRepo } from '../../../lib/workshop/apps'
@@ -28,13 +29,9 @@ const cutout = useBackgroundRemoval()
 const { image, phase } = cutout
 const view = ref<EditorView>('compare')
 const panel = computed(() => layout !== 'e')
-const download = computed(() =>
-  image.value && phase.value.kind === 'done'
-    ? {
-        href: phase.value.result.url,
-        name: cutoutFileName(image.value.name, phase.value.result.format)
-      }
-    : undefined
+const download = useResultDownload(
+  phase,
+  ({ result }) => image.value && cutoutFileName(image.value.name, result.format)
 )
 reportStudioBusy(() => phase.value.kind === 'running')
 watch(
