@@ -93,7 +93,7 @@ export default defineConfig({
             use: { ...devices['Desktop Chrome'] },
             timeout: 30_000,
             grepInvert:
-              /@mobile|@perf|@audit|@cloud|@desktop|@custom-nodes|@agent-harness/
+              /@mobile|@perf|@audit|@cloud|@desktop|@custom-nodes|@agent-harness|@local-agent/
           },
 
           {
@@ -112,6 +112,14 @@ export default defineConfig({
             use: { ...devices['Desktop Chrome'] },
             timeout: 180000,
             grep: /@agent-harness/
+          },
+
+          {
+            name: 'local-agent',
+            use: { ...devices['Desktop Chrome'] },
+            timeout: 120000,
+            grep: /@local-agent/,
+            fullyParallel: false
           },
 
           // The custom-node suite needs the manifest packs installed and a quiet
