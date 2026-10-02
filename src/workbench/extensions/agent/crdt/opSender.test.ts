@@ -1112,9 +1112,13 @@ describe('createOpSender', () => {
     node.circular = node
     circularNode.node = node
     const localSettled: BatchOutcome[] = []
+    const localSent: Op[][] = []
     let workflow = 'wf-old'
     const localSender = createOpSender({
-      sendOps: () => true,
+      sendOps: (_workflowId, _tab, ops) => {
+        localSent.push(ops)
+        return true
+      },
       onOpsResult: () => vi.fn(),
       workflowId: () => workflow,
       tab: TAB,
@@ -1134,7 +1138,10 @@ describe('createOpSender', () => {
     localSender.admit([addNode(2)])
     localSender.flush()
 
-    expect(sent).toHaveLength(0)
+    expect(localSent).toHaveLength(1)
+    expect(
+      localSent[0].map((op) => ('node_id' in op ? op.node_id : null))
+    ).toEqual([3])
     expect(localSender.pending()).toBe(1)
     expect(localSettled.map(summarizeSettlement)).toEqual([
       { state: 'undeliverable', nodeIds: [1] },
