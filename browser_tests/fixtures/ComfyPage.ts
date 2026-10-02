@@ -1,3 +1,4 @@
+import type { Settings } from '@/platform/settings/types'
 import type { APIRequestContext, Locator, Page } from '@playwright/test'
 import { config as dotenvConfig } from 'dotenv'
 import MCR from 'monocart-coverage-reports'
@@ -335,7 +336,9 @@ export class ComfyPage {
           'Comfy.EnableTooltips': false,
           'Comfy.TutorialCompleted': true,
           [TOUR_SEEN_SETTING]: [...ENTRY_PATHS],
-          'Comfy.WorkflowActions.SeenItems': ['deploy-as-api'],
+          ...({
+            'Comfy.WorkflowActions.SeenItems': ['deploy-as-api']
+          } satisfies Partial<Settings>),
           'Comfy.Queue.MaxHistoryItems': 64,
           'Comfy.SnapToGrid.GridSize': testComfySnapToGridGridSize,
           'Comfy.VersionCompatibility.DisableWarnings': true,
