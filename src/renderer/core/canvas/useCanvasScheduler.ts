@@ -1,5 +1,4 @@
 import { createSharedComposable } from '@vueuse/core'
-import { watch } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -16,7 +15,7 @@ type CanvasOperation =
 export interface CanvasScheduler {
   /** Run an op now when its canvas is visible, otherwise queue it. */
   schedule(operation: CanvasOperation): void
-  /** Execute all queued ops synchronously (if canvas is ready). */
+  /** Run every queued op whose canvas is now visible; keep the rest queued. */
   flush(): void
   /** Discard the pending operation with this key. */
   cancel(key: string): void
@@ -25,27 +24,44 @@ export interface CanvasScheduler {
 export function createCanvasScheduler(): CanvasScheduler {
   const canvasStore = useCanvasStore()
   const queue: CanvasOperation[] = []
-  let rafId: number | null = null
 
-  function isElementReady(element?: HTMLCanvasElement): boolean {
+  function targetOf(operation: CanvasOperation): HTMLCanvasElement | undefined {
+    return operation.element ?? canvasStore.canvas?.canvas
+  }
+
+  function isVisible(element: HTMLCanvasElement | undefined): boolean {
+    return (
+      element?.offsetParent != null &&
+      element.offsetWidth > 0 &&
+      element.offsetHeight > 0
+    )
+  }
+
+  function isStale(operation: CanvasOperation): boolean {
+    if (operation.isCurrent?.() === false) return true
+    const { element } = operation
+    return Boolean(
+      element && element !== canvasStore.canvas?.canvas && !element.isConnected
+    )
+  }
+
+  function run(operation: CanvasOperation): void {
     try {
-      if (element == null || element.offsetParent === null) return false
-      return element.offsetWidth > 0 && element.offsetHeight > 0
-    } catch {
-      return false
+      operation.run()
+    } catch (error) {
+      reportError(error, {
+        errorType: 'canvas_scheduled_operation_failed',
+        surface: 'graph'
+      })
     }
   }
 
-  function isCanvasReady(): boolean {
-    return isElementReady(canvasStore.canvas?.canvas)
-  }
-
-  function requestFlush(): void {
-    if (rafId != null || queue.length === 0) return
-    rafId = requestAnimationFrame(() => {
-      rafId = null
-      flushQueued()
-    })
+  function flush(): void {
+    for (const operation of queue.splice(0)) {
+      if (isStale(operation)) continue
+      if (isVisible(targetOf(operation))) run(operation)
+      else queue.push(operation)
+    }
   }
 
   function schedule(operation: CanvasOperation): void {
@@ -57,79 +73,13 @@ export function createCanvasScheduler(): CanvasScheduler {
     if (existingIndex === -1) queue.push(operation)
     else queue[existingIndex] = operation
 
-    if (isElementReady(operation.element ?? canvasStore.canvas?.canvas)) {
-      flushQueued()
-    }
-  }
-
-  function flush(): void {
-    flushQueued()
-  }
-
-  function shouldDiscard(operation: CanvasOperation): boolean {
-    if (operation.isCurrent?.() === false) return true
-    const { element } = operation
-    return Boolean(
-      element && element !== canvasStore.canvas?.canvas && !element.isConnected
-    )
-  }
-
-  function reportOperationFailure(
-    err: unknown,
-    remainingInBatch: number
-  ): void {
-    reportError(err, {
-      errorType: 'canvas_scheduled_operation_failed',
-      surface: 'graph',
-      context: {
-        remainingInBatch,
-        pendingQueue: queue.length,
-        canvasReady: isCanvasReady()
-      }
-    })
-  }
-
-  function executeOperation(
-    operation: CanvasOperation,
-    remainingInBatch: number
-  ): 'complete' | 'pending' {
-    if (shouldDiscard(operation)) return 'complete'
-    if (!isElementReady(operation.element ?? canvasStore.canvas?.canvas)) {
-      return 'pending'
-    }
-    try {
-      operation.run()
-    } catch (err) {
-      reportOperationFailure(err, remainingInBatch)
-    }
-    return 'complete'
-  }
-
-  function flushQueued(): void {
-    const operations = queue.splice(0)
-    for (const [index, operation] of operations.entries()) {
-      if (
-        executeOperation(operation, operations.length - index - 1) === 'pending'
-      ) {
-        queue.push(operation)
-      }
-    }
+    if (isVisible(targetOf(operation))) flush()
   }
 
   function cancel(key: string): void {
     const index = queue.findIndex((operation) => operation.key === key)
     if (index !== -1) queue.splice(index, 1)
   }
-
-  watch(
-    () => canvasStore.linearMode,
-    (isLinear, wasLinear) => {
-      const canvasBecameVisible = wasLinear && !isLinear
-      if (canvasBecameVisible && queue.length > 0) {
-        requestFlush()
-      }
-    }
-  )
 
   return { schedule, flush, cancel }
 }

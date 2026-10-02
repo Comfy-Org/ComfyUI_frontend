@@ -46,7 +46,7 @@ The existing `LGraphCanvas.resize()` method and `resizeCanvas()` in app.ts both 
 
 `LGraphCanvas` caches the active DPR in its `dpr` property. `applyViewport()` updates the consumer's DPR and CSS viewport size atomically; the three viewport callers pass `LGraphCanvas` as that consumer. Most internal consumers (`drawFrontCanvas`, `drawBackCanvas`, `centerOnNode`, `renderInfo`, `processMouseDown` hit testing, and LOD threshold calculation) read the cache. Direct browser-DPR readers remain in `LGraphCanvas.setCanvas()`, `LGraphCanvas.resize()` during measurement, `DragAndScale.getViewportSize()`, and `useBoundingBoxes`; viewport measurement functions also read the browser value, while `layoutStore` retains a browser fallback for legacy callers. The viewport system therefore coordinates canvas sizing but does not yet own a single DPR read boundary.
 
-The new `CanvasScheduler` and viewport system have separate responsibilities: the scheduler handles **when** by deferring work until the canvas is visible, while the viewport handles **what** by applying correct DPR-scaled dimensions atomically to both canvases.
+The new `CanvasScheduler` and viewport system have separate responsibilities: the scheduler handles **when** by queuing work while the canvas is hidden and flushing it from `resizeCanvas()` once the canvas ResizeObserver applies a visible viewport, while the viewport handles **what** by applying correct DPR-scaled dimensions atomically to both canvases.
 
 ### Design Principles
 
@@ -60,7 +60,7 @@ Following the principles established in [ADR-ECS-0008](ECS-0008-entity-component
 ### Alternatives Considered
 
 1. **Reactive derivation (Vue `computed`)** — rejected because it would require Vue reactivity inside litegraph internals, crossing a hard architectural boundary between the Vue application layer and the litegraph rendering layer.
-2. **Transaction/batch-commit pattern** — rejected as overkill for a single async boundary (the `requestAnimationFrame` call). The measure/apply split achieves the same atomicity guarantee with less machinery.
+2. **Transaction/batch-commit pattern** — rejected as overkill for a single async boundary (the hidden canvas becoming visible). The measure/apply split achieves the same atomicity guarantee with less machinery.
 3. **Just fixing `resizeCanvas()` to also update bgcanvas** — rejected because it doesn't address the scattered DPR reads or prevent future divergence. A point fix solves today's bug but leaves the same class of bug latent at every other DPR read site.
 
 ## Consequences

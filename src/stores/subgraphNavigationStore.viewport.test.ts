@@ -6,23 +6,20 @@ import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
 import { app } from '@/scripts/app'
 import {
   useSubgraphNavigationStore,
   VIEWPORT_CACHE_MAX_SIZE
 } from '@/stores/subgraphNavigationStore'
-
-const schedulerCanvas = vi.hoisted(() => ({ ready: true }))
+import {
+  createTestCanvasElement,
+  setCanvasVisible
+} from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock<unknown>(import('@/scripts/app'), () => {
-  const mockCanvasElement = document.createElement('canvas')
-  Object.defineProperties(mockCanvasElement, {
-    offsetParent: { get: () => (schedulerCanvas.ready ? document.body : null) },
-    offsetWidth: { value: 1920 },
-    offsetHeight: { value: 1080 }
-  })
   const mockCanvas = {
-    canvas: mockCanvasElement,
+    canvas: undefined as unknown,
     subgraph: undefined as unknown,
     graph: undefined as unknown,
     ds: {
@@ -74,7 +71,7 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
   beforeEach(() => {
     useCanvasStore().canvas = app.canvas
     vi.mocked(useCanvasStore().getCanvas).mockImplementation(() => app.canvas)
-    schedulerCanvas.ready = true
+    mockCanvas.canvas = createTestCanvasElement({ visible: true })
     mockCanvas.subgraph = undefined
     mockCanvas.graph = app.graph
     mockCanvas.ds.scale = 1
@@ -157,7 +154,7 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
 
     it('queues a cache-miss fit while the canvas is hidden', () => {
       const store = useSubgraphNavigationStore()
-      schedulerCanvas.ready = false
+      setCanvasVisible(mockCanvas.canvas, false)
       mockCanvas.ds.scale = 1
       mockCanvas.ds.offset = [0, 0]
       vi.mocked(mockCanvas.setDirty).mockClear()
@@ -215,18 +212,16 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       mockGraph._nodes = []
     })
 
-    it('skips a queued fit if the active graph changes while hidden', async () => {
+    it('skips a queued fit if the active graph changes while hidden', () => {
       const store = useSubgraphNavigationStore()
       store.viewportCache.delete(':root')
-      schedulerCanvas.ready = false
+      setCanvasVisible(mockCanvas.canvas, false)
 
       store.restoreViewport('root')
 
       mockCanvas.subgraph = { id: 'different-graph' } as never
-      schedulerCanvas.ready = true
-      useCanvasStore().linearMode = true
-      useCanvasStore().linearMode = false
-      await nextTick()
+      setCanvasVisible(mockCanvas.canvas, true)
+      useCanvasScheduler().flush()
 
       expect(useLitegraphService().fitView).not.toHaveBeenCalled()
     })
