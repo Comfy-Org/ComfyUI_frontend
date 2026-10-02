@@ -675,3 +675,27 @@ test('a hovered workflow card spends its tag line only on a name that is cut off
     0
   )
 })
+
+test('every workflow card carries its whole name, not a shortened one', async ({
+  page,
+  context
+}) => {
+  await mockWorkflowVisibility(context, true)
+  await page.goto('/hub/workflows/')
+
+  const cards = page.locator(
+    '[data-testid="workshop-model-card"][data-kind="workflow"]'
+  )
+  await expect(cards.first()).toBeVisible()
+  // The card drops a trailing task from a product name. A workflow is named
+  // with a sentence, so the name it shows must be the name it has.
+  const shortened = await cards.evaluateAll((all) =>
+    all.flatMap((card) => {
+      const name = card.querySelector('[data-testid="model-card-name"]')
+      const whole = name?.getAttribute('title') ?? ''
+      const shown = name?.textContent.trim() ?? ''
+      return shown === whole ? [] : [`${whole} -> ${shown}`]
+    })
+  )
+  expect(shortened).toEqual([])
+})

@@ -48,7 +48,12 @@ const logo = computed(
 )
 
 const taskLabel = computed(() => taskLabelFor(model, locale))
-const cardName = computed(() => nameWithoutTask(model.name, taskLabel.value))
+// Only a product name repeats its task as a suffix. A workflow is named with
+// a sentence, whose last word the pill may happen to match — "Upscale a video"
+// beside "Video" — and dropping it leaves "Upscale a".
+const cardName = computed(() =>
+  workflow.value ? model.name : nameWithoutTask(model.name, taskLabel.value)
+)
 const thumbnailLabel = computed(() =>
   model.thumbnail ? model.thumbnailLabel : undefined
 )
