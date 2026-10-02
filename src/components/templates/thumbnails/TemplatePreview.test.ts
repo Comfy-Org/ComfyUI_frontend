@@ -41,7 +41,8 @@ describe('TemplatePreview', () => {
         baseImageSrc: '/before.png',
         overlayImageSrc: '/after.png',
         alt: 'Comparison preview',
-        getLogoUrl: () => '/comfy-logo.svg'
+        getLogoUrl: () => '/comfy-logo.svg',
+        isHovered: false
       },
       slots: { overlay: '<span>Featured workflow</span>' }
     })
@@ -95,7 +96,8 @@ describe('TemplatePreview', () => {
         baseImageSrc: '/preview.png',
         overlayImageSrc: '/overlay.png',
         alt: 'Workflow preview',
-        getLogoUrl: vi.fn()
+        getLogoUrl: vi.fn(),
+        isHovered: false
       },
       global: { stubs }
     })
