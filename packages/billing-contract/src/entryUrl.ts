@@ -5,7 +5,7 @@
  * caller text a host could render by accident.
  */
 import type { BillingIntent, BillingProduct } from './contract.js'
-import { billingIntentPath } from './contract.js'
+import { billingIntentPath, isBillingSource } from './contract.js'
 import type {
   InvalidIdentifierCode,
   OptionalEntryValues
@@ -14,6 +14,7 @@ import {
   ENTRY_PARAM_AMOUNT,
   ENTRY_PARAM_PRODUCT,
   ENTRY_PARAM_RETURN_TO,
+  ENTRY_PARAM_SOURCE,
   OPTIONAL_ENTRY_FIELDS,
   isEntryAmountCents
 } from './entryFields.js'
@@ -32,6 +33,8 @@ export interface BillingEntryInput extends OptionalEntryValues {
    * name a registered target.
    */
   readonly returnTo: string
+  /** A `BillingSource`; anything else is left off the link. */
+  readonly source?: string
   /** The credit amount a top-up asks for, in whole cents. */
   readonly amountCents?: number
 }
@@ -90,6 +93,8 @@ export function buildBillingEntryUrl(
     const value = input[field.key]
     if (value !== undefined) url.searchParams.set(field.param, value)
   }
+  if (isBillingSource(input.source))
+    url.searchParams.set(ENTRY_PARAM_SOURCE, input.source)
   if (amountCents !== undefined)
     url.searchParams.set(ENTRY_PARAM_AMOUNT, String(amountCents))
 

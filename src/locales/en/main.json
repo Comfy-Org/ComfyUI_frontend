@@ -3359,6 +3359,16 @@
         "reactivate": "Resume plan",
         "contactSales": "Contact sales"
       },
+      "planEnded": {
+        "teamTitle": "Your team plan ended on {date}",
+        "teamBody": "Resubscribe to run workflows and get shared credits again.",
+        "teamMemberBody": "Ask your workspace owner to resubscribe.",
+        "enterpriseTitle": "Your Enterprise plan ended on {date}",
+        "enterpriseBody": "Contact sales to start a new Enterprise plan.",
+        "planTitle": "Your plan ended on {date}",
+        "salesBody": "Contact sales to start a new plan.",
+        "salesMemberBody": "Ask your workspace owner to contact sales."
+      },
       "planChange": {
         "title": "Your plan changes to {plan} on {date}.",
         "body": "Your current plan stays active until then."
@@ -3431,6 +3441,7 @@
       "reactivateTeam": "Reactivate Team",
       "totalMembersCount": "{count} of {maxSeats} total members.",
       "needMoreMembers": "Need more members?",
+      "planEndedFooter": "Your plan has ended, so you can't add new members.",
       "contactUs": "Contact us",
       "noInvites": "No pending invites",
       "noInvitesMatch": "No invites match \"{query}\"",
@@ -5332,6 +5343,8 @@
     "loadFailed": "The agent panel failed to load.",
     "entryButton": "Agent",
     "feedbackCaption": "Share feedback",
+    "freeUseNoticeLabel": "Free use notice",
+    "freeUseNotice": "Prompts and workflow runs are FREE during BETA.",
     "runNotice": "The agent can modify the graph. Check Run permissions before allowing it to execute the workflow.",
     "runNoticeExpanded": "The agent can modify your workflow. Check Run permissions before allowing it to execute.",
     "workflowEditNotice": "The agent can now edit {workflow}. It works on 1 workflow at a time, and you can switch workflows during chat.",

@@ -16,6 +16,7 @@ const ACTOR = 'human:test-user:tab-1'
 
 type SettlementListener = (outcome: BatchOutcome) => void
 type SettlementSummary = { state: BatchOutcome['state']; nodeIds: unknown[] }
+type AddNodeOperation = Extract<GraphOperation, { op: 'add_node' }>
 
 function summarizeSettlement(outcome: BatchOutcome): SettlementSummary {
   return {
@@ -77,7 +78,7 @@ const detachListenerFailureCases = [
   ]
 >
 
-function addNode(id: number): GraphOperation {
+function addNode(id: number): AddNodeOperation {
   return {
     op: 'add_node',
     node_id: id,
@@ -605,6 +606,95 @@ describe('createOpSender', () => {
     ).toEqual([[1], [2], [3]])
   })
 
+  it('continues pumping queued work when an ordinary settlement listener throws', () => {
+    const localSettled: BatchOutcome[] = []
+    const onBatchSettled = vi
+      .fn<SettlementListener>()
+      .mockImplementationOnce(() => {
+        throw new Error('listener boom')
+      })
+      .mockImplementation((outcome) => localSettled.push(outcome))
+    const localSender = createOpSender({
+      sendOps: (workflowId, tab, ops) => {
+        sent.push({ workflowId, tab, ops })
+        return true
+      },
+      onOpsResult: (listener) => {
+        resultListener = listener
+        return vi.fn()
+      },
+      workflowId: () => boundWorkflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled
+    })
+    localSender.enqueue([addNode(1)])
+    localSender.enqueue([addNode(2)])
+
+    expect(() => ackInFlight()).not.toThrow()
+
+    expect(sent).toHaveLength(2)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'failure_settling_agent_op_sender' })
+    )
+    ackInFlight()
+    expect(localSettled).toHaveLength(1)
+    localSender.detach()
+  })
+
+  it('reports settlement failures again for later batches', () => {
+    const localSender = createOpSender({
+      sendOps: (workflowId, tab, ops) => {
+        sent.push({ workflowId, tab, ops })
+        return true
+      },
+      onOpsResult: (listener) => {
+        resultListener = listener
+        return vi.fn()
+      },
+      workflowId: () => boundWorkflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: () => {
+        throw new Error('listener boom')
+      }
+    })
+    localSender.enqueue([addNode(1)])
+    localSender.enqueue([addNode(2)])
+
+    ackInFlight()
+    ackInFlight()
+
+    expect(reportError).toHaveBeenCalledTimes(2)
+    localSender.detach()
+  })
+
+  it('contains settlement failures when admitting while unbound', () => {
+    boundWorkflow = null
+    const localSender = createOpSender({
+      sendOps: () => true,
+      onOpsResult: () => vi.fn(),
+      workflowId: () => boundWorkflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: () => {
+        throw new Error('listener boom')
+      }
+    })
+
+    expect(() => localSender.enqueue([addNode(1)])).not.toThrow()
+    expect(localSender.pending()).toBe(0)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'failure_settling_agent_op_sender' })
+    )
+    localSender.detach()
+  })
+
   it('a second detach() call is a no-op: no double-settle and no timer left armed', () => {
     sender.enqueue([addNode(1)])
     expect(vi.getTimerCount()).toBeGreaterThan(0)
@@ -690,6 +780,135 @@ describe('createOpSender', () => {
 
     expect(reportError).toHaveBeenCalledTimes(1)
     expect(localUnsubscribe).toHaveBeenCalledOnce()
+  })
+
+  it('reports post-detach settlement failures only once across admissions', () => {
+    const localSender = createOpSender({
+      sendOps: () => true,
+      onOpsResult: () => vi.fn(),
+      workflowId: () => boundWorkflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: () => {
+        throw new Error('listener boom')
+      }
+    })
+    localSender.detach()
+
+    localSender.enqueue([addNode(1)])
+    localSender.enqueue([addNode(2)])
+
+    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'failure_settling_agent_op_sender_detach'
+      })
+    )
+  })
+
+  it('clears live state and unsubscribes when teardown cannot chunk an open batch', () => {
+    const circularNode = addNode(1)
+    const node: AddNodeOperation['node'] & Record<string, unknown> = {
+      ...circularNode.node
+    }
+    node.circular = node
+    circularNode.node = node
+    sender.admit([circularNode])
+
+    expect(() => sender.detach()).not.toThrow()
+
+    expect(sender.pending()).toBe(0)
+    expect(unsubscribe).toHaveBeenCalledOnce()
+    expect(settled).toHaveLength(1)
+    expect(settled[0]).toMatchObject({ state: 'undeliverable' })
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'failure_chunking_agent_op_sender_teardown'
+      })
+    )
+  })
+
+  it('isolates an unchunkable live op so serializable siblings still send', () => {
+    const circularNode = addNode(2)
+    const node: AddNodeOperation['node'] & Record<string, unknown> = {
+      ...circularNode.node
+    }
+    node.circular = node
+    circularNode.node = node
+
+    sender.admit([addNode(1), circularNode, addNode(3)])
+    expect(() => sender.flush()).not.toThrow()
+
+    expect(sent).toHaveLength(1)
+    expect(
+      sent[0].ops.map((op) => ('node_id' in op ? op.node_id : null))
+    ).toEqual([1, 3])
+    expect(settled.map(summarizeSettlement)).toEqual([
+      { state: 'undeliverable', nodeIds: [2] }
+    ])
+    ackInFlight()
+    expect(sent).toHaveLength(1)
+  })
+
+  it('queues serializable siblings before an invalid-op settlement detaches', () => {
+    const circularNode = addNode(2)
+    const node: AddNodeOperation['node'] & Record<string, unknown> = {
+      ...circularNode.node
+    }
+    node.circular = node
+    circularNode.node = node
+    const localSettled: BatchOutcome[] = []
+    const localSender = createOpSender({
+      sendOps: () => true,
+      onOpsResult: () => vi.fn(),
+      workflowId: () => boundWorkflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: (outcome) => {
+        localSettled.push(outcome)
+        if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 2)) {
+          localSender.detach()
+        }
+      }
+    })
+
+    localSender.admit([addNode(1), circularNode, addNode(3)])
+    localSender.flush()
+
+    expect(localSender.pending()).toBe(0)
+    expect(localSettled.map(summarizeSettlement)).toEqual([
+      { state: 'undeliverable', nodeIds: [2] },
+      { state: 'undeliverable', nodeIds: [1, 3] }
+    ])
+  })
+
+  it('contains unsubscribe failures after completing teardown', () => {
+    const localSender = createOpSender({
+      sendOps: () => true,
+      onOpsResult: () => () => {
+        throw new Error('unsubscribe boom')
+      },
+      workflowId: () => boundWorkflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: (outcome) => settled.push(outcome)
+    })
+    localSender.enqueue([addNode(1)])
+
+    expect(() => localSender.detach()).not.toThrow()
+
+    expect(localSender.pending()).toBe(0)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'failure_unsubscribing_agent_op_sender'
+      })
+    )
   })
 
   it('abortAll settles the transmitted batch and every queued batch in mint order', () => {
@@ -1038,6 +1257,16 @@ describe('createOpSender', () => {
 
     it('parks the next batch instead of settling it undeliverable while suspended, and a result still settles the sent one', () => {
       parkSecondBatch()
+
+      expect(sent).toHaveLength(1)
+      expect(settled.map((outcome) => outcome.state)).toEqual(['acknowledged'])
+      expect(sender.pending()).toBe(1)
+    })
+
+    it('does not attribute an anonymous result to a parked batch that was never sent', () => {
+      parkSecondBatch()
+
+      resultListener?.({ ok: false, applied: [], skipped: [] })
 
       expect(sent).toHaveLength(1)
       expect(settled.map((outcome) => outcome.state)).toEqual(['acknowledged'])

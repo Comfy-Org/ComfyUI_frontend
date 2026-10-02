@@ -21,6 +21,10 @@ import type {
   BillingPresentation
 } from '@comfyorg/account-core/billing'
 import type {
+  BillingIntent as HostedBillingIntent,
+  BillingSource
+} from '@comfyorg/billing-contract'
+import type {
   AgentRunMode,
   CreateTopupResponse,
   SubscribeResponse
@@ -38,22 +42,7 @@ import type { AppMode } from '@/utils/appMode'
 
 export type { AuthMethod }
 
-export type PaymentIntentSource =
-  | 'subscription_required'
-  | 'out_of_credits'
-  | 'top_up_blocked'
-  | 'deep_link'
-  | 'subscribe_to_run'
-  | 'subscribe_now_button'
-  | 'upgrade_to_add_credits'
-  | 'settings_billing_panel'
-  | 'avatar_menu_plans'
-  | 'team_members_panel'
-  | 'invite_member_upsell'
-  | 'upload_model_upgrade'
-  | 'team_upgrade_resume'
-  | 'free_tier_quota'
-  | 'agent_paywall'
+export type PaymentIntentSource = BillingSource
 
 export type SubscriptionCheckoutType = 'new' | 'change'
 export type SubscriptionCheckoutTier = TierKey | 'team'
@@ -881,6 +870,34 @@ export type AgentStarterPromptId =
   | 'slot_4'
   | 'slot_5'
   | 'unregistered'
+/**
+ * Where the free-use notice was placed, for the DES-1221 placement experiment.
+ *
+ * Deliberately the PostHog variant keys verbatim: the analysis joins this property to
+ * `$feature/agent-free-use-message-placement`, and a translation layer between
+ * the two is one more place for the arms to drift apart.
+ */
+export type AgentFreeUsePlacement =
+  | 'top-banner'
+  | 'near-composer'
+  | 'above-input'
+  | 'inside-input'
+export interface AgentFreeUseExposureMetadata extends Record<string, unknown> {
+  placement: 'control' | AgentFreeUsePlacement
+  '$feature/agent-free-use-message-placement': 'control' | AgentFreeUsePlacement
+}
+/**
+ * Interactions with the notice itself. The experiment's primary outcome and
+ * guardrails are all read off events that already exist — `agent_panel_opened`,
+ * `agent_message_sent`, `agent_panel_closed`, node edits and run events — split
+ * by the PostHog variant property. This event adds only what those cannot say:
+ * whether the notice was actually on screen in its assigned arm, and what the
+ * viewer did with it.
+ */
+export interface AgentFreeUseNoticeMetadata extends Record<string, unknown> {
+  action: 'shown' | 'dismissed' | 'learn_more_clicked'
+  placement: AgentFreeUsePlacement
+}
 export interface AgentStarterPromptClickedMetadata extends Record<
   string,
   unknown
@@ -1441,6 +1458,17 @@ type CapabilityReadBillingEvent = {
   operation: 'capability_read'
 } & (BillingSucceeded | Pick<BillingFailed, 'stage' | 'outcome'>)
 
+type WebHandoffBillingEvent = {
+  operation: 'web_handoff'
+  stage: 'opened'
+  outcome: 'pending'
+  intent: HostedBillingIntent
+  result: 'opened' | 'blocked'
+  payment_intent_source?: PaymentIntentSource
+  /** The cloud journey id the entry link carries as `correlation_id`. */
+  correlation_id: string
+}
+
 type BillingSurface = 'cloud_app' | 'billing_web'
 
 type BillingClient = 'sdk' | 'legacy'
@@ -1455,6 +1483,7 @@ export type BillingTelemetryEvent = {
   | ResubscribeBillingEvent
   | TopupBillingEvent
   | DowngradeToPersonalBillingEvent
+  | WebHandoffBillingEvent
 )
 
 type BillingTelemetryEventNameFor<T extends BillingTelemetryEvent> =
@@ -1482,10 +1511,13 @@ type BillingPayloadField = Exclude<
 
 const BILLING_PAYLOAD_FIELD_HANDLING = {
   checkout_status: 'required',
+  correlation_id: 'required',
   failure_category: 'required',
+  intent: 'required',
   member_removal_count: 'required',
   member_removal_failures: 'required',
   operation_type: 'required',
+  result: 'required',
   source: 'required',
   billing_client: 'optional',
   billing_op_id: 'optional',
@@ -1860,6 +1892,8 @@ export interface TelemetryProvider {
   trackAgentStarterPromptClicked?(
     metadata: AgentStarterPromptClickedMetadata
   ): void
+  trackAgentFreeUseNotice?(metadata: AgentFreeUseNoticeMetadata): void
+  trackAgentFreeUseExposure?(metadata: AgentFreeUseExposureMetadata): void
   trackAgentNodeTagged?(metadata: AgentNodeTaggedMetadata): void
   trackAgentAttachButtonClicked?(
     metadata: AgentAttachButtonClickedMetadata
@@ -1981,6 +2015,7 @@ export const TelemetryEvents = {
   BILLING_DOWNGRADE_TO_PERSONAL_SUCCEEDED:
     'billing.downgrade_to_personal.succeeded',
   BILLING_DOWNGRADE_TO_PERSONAL_FAILED: 'billing.downgrade_to_personal.failed',
+  BILLING_WEB_HANDOFF_OPENED: 'billing.web_handoff.opened',
 
   // Onboarding Survey
   USER_SURVEY_OPENED: 'app:user_survey_opened',
@@ -2064,6 +2099,8 @@ export const TelemetryEvents = {
   AGENT_ONBOARDING_STEP: 'app:agent_onboarding_step',
   AGENT_MESSAGE_SENT: 'app:agent_message_sent',
   AGENT_STARTER_PROMPT_CLICKED: 'app:agent_starter_prompt_clicked',
+  AGENT_FREE_USE_NOTICE: 'app:agent_free_use_notice',
+  AGENT_FREE_USE_EXPOSURE: 'app:agent_free_use_exposure',
   AGENT_NODE_TAGGED: 'app:agent_node_tagged',
   AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',
   AGENT_WORKFLOW_APPLIED: 'app:agent_workflow_applied',

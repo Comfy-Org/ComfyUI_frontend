@@ -4,11 +4,16 @@
  * product may add analytics noise without breaking the app; everything the
  * contract names is validated, because this is untrusted input.
  */
-import type { BillingIntent, BillingProduct } from './contract.js'
+import type {
+  BillingIntent,
+  BillingProduct,
+  BillingSource
+} from './contract.js'
 import {
   BILLING_CONTRACT_VERSION,
   isBillingIntent,
-  isBillingProduct
+  isBillingProduct,
+  isBillingSource
 } from './contract.js'
 import type {
   InvalidIdentifierCode,
@@ -19,6 +24,7 @@ import {
   ENTRY_PARAM_AMOUNT,
   ENTRY_PARAM_PRODUCT,
   ENTRY_PARAM_RETURN_TO,
+  ENTRY_PARAM_SOURCE,
   OPTIONAL_ENTRY_FIELDS,
   readEntryAmountCents
 } from './entryFields.js'
@@ -32,6 +38,7 @@ export interface BillingEntry extends OptionalEntryValues {
   readonly intent: BillingIntent
   readonly product: BillingProduct
   readonly returnTo: ReturnTarget
+  readonly source?: BillingSource
   /**
    * A `promo` value outside the identifier charset, exactly as the link
    * carried it. Checkout shows it refused in the field; it never reaches a
@@ -129,6 +136,8 @@ export function parseBillingEntry(url: string | URL): BillingEntryResult {
   if (rawAmount !== null && amountCents === undefined)
     return { status: 'error', code: 'INVALID_AMOUNT' }
 
+  const source = parsed.searchParams.get(ENTRY_PARAM_SOURCE)
+
   return {
     status: 'ok',
     entry: {
@@ -137,6 +146,7 @@ export function parseBillingEntry(url: string | URL): BillingEntryResult {
       product,
       returnTo,
       ...optional.values,
+      ...(isBillingSource(source) ? { source } : {}),
       ...(amountCents === undefined ? {} : { amountCents })
     }
   }
