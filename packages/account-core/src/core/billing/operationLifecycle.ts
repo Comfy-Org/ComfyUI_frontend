@@ -680,10 +680,14 @@ export function createBillingOperationLifecycle(
     })
     emitFrictionTelemetry(record, undefined)
     if (input.returnedFrom !== undefined) {
-      emitHostedStepTelemetry(record, BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT.returned, {
-        ...input.returnedFrom,
-        navigation: 'redirect'
-      })
+      emitHostedStepTelemetry(
+        record,
+        BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT.returned,
+        {
+          ...input.returnedFrom,
+          navigation: 'redirect'
+        }
+      )
     }
     startObserving(record, input, state)
     return record
