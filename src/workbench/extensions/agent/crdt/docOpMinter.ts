@@ -117,11 +117,12 @@ function valueWidgetsOnly(
   named: object
 ): Record<string, unknown> {
   const filtered: Record<string, unknown> = {}
+  const rootGraphId = node.graph?.rootGraph.id
+  const widgetValueStore = useWidgetValueStore()
   for (const [name, value] of Object.entries(named)) {
     const widget = node.widgets?.find((candidate) => candidate.name === name)
-    const rootGraphId = node.graph?.rootGraph.id
     const stored = rootGraphId
-      ? useWidgetValueStore().getWidget(widgetId(rootGraphId, node.id, name))
+      ? widgetValueStore.getWidget(widgetId(rootGraphId, node.id, name))
       : undefined
     if (isValueWidget(widget, stored)) filtered[name] = value
   }
