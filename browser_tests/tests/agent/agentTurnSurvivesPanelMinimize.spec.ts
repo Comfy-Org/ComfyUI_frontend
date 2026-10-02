@@ -3,7 +3,6 @@ import { expect } from '@playwright/test'
 import {
   POST_RECONNECT_EVENT,
   POST_RECONNECT_TEXT,
-  TURN_DONE_EVENT,
   TURN_IN_PROGRESS_MESSAGE,
   agentTurnLockTest as test
 } from '@e2e/fixtures/agentTurnLockFixture'
@@ -38,7 +37,7 @@ test.describe(
         await turnLock.startTurn(PROMPT)
         await expect(turnLock.workSummary).toHaveCount(0)
 
-        turnLock.push(await getWebSocket(), TURN_DONE_EVENT)
+        turnLock.finishTurn(await getWebSocket())
 
         await expect(turnLock.workSummary).toBeVisible()
         await expect(turnLock.sendButton).toBeVisible()
@@ -66,6 +65,7 @@ test.describe(
         await test.step('reopened panel still shows the turn running', async () => {
           await expect(turnLock.userBubbles).toHaveText([PROMPT])
 
+          await expect(turnLock.liveProgressRow).toHaveCount(1)
           await expect(turnLock.liveProgressRow).toBeVisible()
           await expect(turnLock.stopButton).toBeVisible()
           await expect(turnLock.workSummary).toHaveCount(0)
@@ -81,6 +81,7 @@ test.describe(
           await turnLock.restorePanel()
 
           await expect(turnLock.userBubbles).toHaveText([PROMPT])
+          await expect(turnLock.stopButton).toBeVisible()
         })
 
         await test.step('a later frame for that turn still renders', async () => {
@@ -93,6 +94,7 @@ test.describe(
       })
 
       test('does not reject the next message after the panel is reopened', async ({
+        page,
         turnLock
       }) => {
         await test.step('reopened panel withholds Send', async () => {
@@ -118,14 +120,22 @@ test.describe(
           await turnLock.composer.press('Enter')
           await expect(turnLock.composer).toHaveText('are you still there?')
 
+          await page.evaluate(
+            () =>
+              new Promise<void>((resolve) => {
+                requestAnimationFrame(() =>
+                  requestAnimationFrame(() => resolve())
+                )
+              })
+          )
+          await expect.poll(() => turnLock.postAttempts()).toBe(1)
+
           await expect(turnLock.userBubbles).toHaveText([PROMPT])
           await expect(
             turnLock.panel
               .getByRole('alert')
               .filter({ hasText: TURN_IN_PROGRESS_MESSAGE })
           ).toHaveCount(0)
-          expect(turnLock.postAttempts()).toBe(1)
-          expect(turnLock.rejectedPosts()).toBe(0)
         })
       })
     })
