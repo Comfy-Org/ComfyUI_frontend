@@ -163,6 +163,8 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   // correlate a result to the send it answers.
   let staleAnonymousBudget = 0
   const retiredOpIds = new Set<string>()
+  let settlementFailureReports = 0
+  const MAX_SETTLEMENT_FAILURE_REPORTS = 3
 
   function retire(batch: InFlight, answered: number): void {
     const outstanding = batch.sends - answered
@@ -193,8 +195,13 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       try {
         deps.onBatchSettled(outcome)
       } catch (cause) {
-        if (reportedFailure) return
+        if (
+          reportedFailure ||
+          settlementFailureReports >= MAX_SETTLEMENT_FAILURE_REPORTS
+        )
+          return
         reportedFailure = true
+        settlementFailureReports++
         reportDegraded(cause, errorType)
       }
     }
@@ -203,7 +210,6 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   const notifyDetachSettlement = guardedSettlementNotifier(
     'failure_settling_agent_op_sender_detach'
   )
-
   function settle(outcome: BatchOutcome): void {
     if (inFlight?.timer) clearTimeout(inFlight.timer)
     inFlight = null
@@ -289,7 +295,10 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     }, RESULT_TIMEOUT_MS)
   }
 
-  function drainOutstanding(notify: (outcome: BatchOutcome) => void): void {
+  function drainOutstanding(
+    notify: (outcome: BatchOutcome) => void,
+    chunkErrorType: string
+  ): void {
     // Tear down live state before any fallible serialization or callback. A
     // malformed custom-node value must not leave timers or queued work behind.
     const unsealed = open
@@ -310,10 +319,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       notify({ state: 'undeliverable', ops: batch.ops })
     }
     if (unsealed) {
-      const chunks = safelyChunkWireOps(
-        unsealed.ops,
-        'failure_chunking_agent_op_sender_teardown'
-      )
+      const chunks = safelyChunkWireOps(unsealed.ops, chunkErrorType)
       for (const ops of chunks) {
         notify({ state: 'undeliverable', ops })
       }
@@ -365,6 +371,12 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       return
     }
     if (open?.workflowId !== workflowId) seal()
+    // seal() can synchronously settle a malformed admission. Consumers may
+    // detach from that callback, so never recreate live state afterwards.
+    if (detached) {
+      notifyDetachSettlement({ state: 'undeliverable', ops: minted })
+      return
+    }
     if (open) open.ops.push(...minted)
     else open = { workflowId, ops: minted }
   }
@@ -377,23 +389,38 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       queue.push(...chunkWireOps(ops).map((ops) => ({ workflowId, ops })))
     } catch (cause) {
       reportDegraded(cause, 'failure_chunking_agent_op_sender')
-      const sendable: Op[] = []
-      const rejected: Op[] = []
-      for (const op of ops) {
+      let rejectedFrom = ops.length
+      for (const [index, op] of ops.entries()) {
         try {
           chunkWireOps([op])
-          sendable.push(op)
         } catch {
-          rejected.push(op)
+          rejectedFrom = index
+          break
         }
       }
-      queue.push(...chunkWireOps(sendable).map((ops) => ({ workflowId, ops })))
-      const notify = guardedSettlementNotifier(
-        'failure_settling_agent_op_sender'
-      )
-      for (const op of rejected) {
-        notify({ state: 'undeliverable', ops: [op] })
+
+      // Preserve only the valid prefix. Once one op is rejected, later ops
+      // may depend on it (for example a connect after add_node), so sending a
+      // suffix would create a partial admission and diverge from local state.
+      const sendable = ops.slice(0, rejectedFrom)
+      const rejected = ops.slice(rejectedFrom)
+      try {
+        const recovered = chunkWireOps(sendable)
+        queue.push(...recovered.map((ops) => ({ workflowId, ops })))
+      } catch (recoveryCause) {
+        // Serialization can be stateful. A getter or toJSON may pass the
+        // per-op probe and fail when recovery chunks the prefix again.
+        reportDegraded(
+          recoveryCause,
+          'failure_rechunking_agent_op_sender_recovery'
+        )
+        rejected.unshift(...sendable)
       }
+      if (rejected.length > 0)
+        guardedSettlementNotifier('failure_settling_agent_op_sender')({
+          state: 'undeliverable',
+          ops: rejected
+        })
     }
   }
 
@@ -487,14 +514,18 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       lastMintedVersion = -1
       lastMintedWorkflowId = null
       drainOutstanding(
-        guardedSettlementNotifier('failure_settling_agent_op_sender_abort')
+        guardedSettlementNotifier('failure_settling_agent_op_sender_abort'),
+        'failure_chunking_agent_op_sender_abort'
       )
     },
     detach() {
       if (detached) return
       detached = true
       try {
-        drainOutstanding(notifyDetachSettlement)
+        drainOutstanding(
+          notifyDetachSettlement,
+          'failure_chunking_agent_op_sender_teardown'
+        )
       } finally {
         try {
           unsubscribe()
