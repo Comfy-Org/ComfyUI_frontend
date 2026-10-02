@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 
 import { useRelight } from '../../../composables/useRelight'
+import { useResultDownload } from '../../../composables/useResultDownload'
 import { reportStudioBusy } from '../../../composables/useStudioSwitchGuard'
 import type { Locale } from '../../../i18n/translations'
 import { workshopAppRepo } from '../../../lib/workshop/apps'
@@ -27,10 +28,9 @@ const relight = useRelight(locale)
 const { image, phase } = relight
 const result = ref<EditorView>('compare')
 const panel = computed(() => layout !== 'e')
-const download = computed(() =>
-  image.value && phase.value.kind === 'done'
-    ? { href: phase.value.result.url, name: `relit-${image.value.name}` }
-    : undefined
+const download = useResultDownload(
+  phase,
+  () => image.value && `relit-${image.value.name}`
 )
 reportStudioBusy(() => phase.value.kind === 'running')
 
