@@ -32,6 +32,7 @@ function onChange(event: Event) {
   <div class="flex min-w-0 items-center gap-2 px-1">
     <label
       :for="id"
+      data-field-label
       :class="
         cn(
           'shrink-0 text-xs text-primary-warm-gray',
