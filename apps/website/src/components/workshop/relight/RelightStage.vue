@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, useTemplateRef } from 'vue'
 
-import type { RelightImage, RelightView } from '../../../composables/useRelight'
+import type { RelightImage } from '../../../composables/useRelight'
 import type { Locale } from '../../../i18n/translations'
 import { lc } from '../../../lib/workshop/relight/copy'
 import type {
@@ -12,6 +12,7 @@ import type {
 import { moveLight } from '../../../lib/workshop/relight/lights'
 import { RELIGHT_EXAMPLE } from '../../../lib/workshop/relight/mock-run'
 import EditorFrame from '../app-editor/EditorFrame.vue'
+import EditorSplitLine from '../app-editor/EditorSplitLine.vue'
 import RelightCanvas from './RelightCanvas.vue'
 import RelightLightDot from './RelightLightDot.vue'
 import RelightMaskOutline from './RelightMaskOutline.vue'
@@ -22,7 +23,8 @@ const {
   masks,
   scene,
   selected,
-  view,
+  comparing,
+  lightMap,
   handles,
   locale = 'en'
 } = defineProps<{
@@ -31,7 +33,8 @@ const {
   masks: readonly RelightMask[]
   scene: RelightScene
   selected?: string
-  view: RelightView
+  comparing: boolean
+  lightMap: boolean
   handles: boolean
   locale?: Locale
 }>()
@@ -46,6 +49,7 @@ const emit = defineEmits<{
 const frame = useTemplateRef<HTMLElement>('frame')
 let drag: ((at: { x: number; y: number }) => void) | undefined
 const dragging = ref<string>()
+const split = ref(50)
 
 function point(event: PointerEvent) {
   const box = frame.value?.getBoundingClientRect()
@@ -101,12 +105,12 @@ function nudge(light: Light, dx: number, dy: number) {
         class="pointer-events-none size-full rounded-sm object-cover"
       />
       <RelightCanvas
-        v-show="view !== 'original'"
         :url="image.url"
         :lights
         :masks
         :scene
-        :light-map="view === 'lightmap'"
+        :light-map
+        :style="comparing ? { clipPath: `inset(0 0 0 ${split}%)` } : undefined"
       />
       <div
         class="pointer-events-none absolute inset-0 overflow-hidden rounded-sm"
@@ -117,6 +121,13 @@ function nudge(light: Light, dx: number, dy: number) {
           :mask
         />
       </div>
+      <EditorSplitLine
+        v-if="comparing"
+        v-model="split"
+        :before-label="lc('relight.view.original', locale)"
+        :after-label="lc('relight.view.result', locale)"
+        :slider-label="lc('relight.compare.live', locale)"
+      />
       <template v-if="handles">
         <RelightLightDot
           v-for="light in lights"

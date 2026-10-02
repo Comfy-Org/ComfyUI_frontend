@@ -53,7 +53,6 @@ type RelightPhase =
   | { readonly kind: 'failed' }
 
 export type RelightTray = 'mood' | 'lights' | 'shadows' | 'masks' | 'generation'
-export type RelightView = 'live' | 'original' | 'lightmap'
 
 /** Relight's page state. The run itself is `runRelight`, mocked for now. */
 export function useRelight(locale: Locale = 'en') {
@@ -87,7 +86,8 @@ export function useRelight(locale: Locale = 'en') {
   const future = shallowRef<RelightSetup[]>([])
   const phase = shallowRef<RelightPhase>({ kind: 'editing' })
   const tray = ref<RelightTray>()
-  const view = ref<RelightView>('live')
+  const comparing = ref(false)
+  const lightMap = ref(false)
   const handles = ref(true)
   const selected = ref<string>()
   let lastEdit: string | undefined
@@ -123,7 +123,8 @@ export function useRelight(locale: Locale = 'en') {
     future.value = []
     lastEdit = undefined
     selected.value = setup.value.lights[0]?.id
-    view.value = 'live'
+    comparing.value = false
+    lightMap.value = false
   }
 
   function releaseOwnUrl() {
@@ -345,7 +346,8 @@ export function useRelight(locale: Locale = 'en') {
     lit,
     phase,
     tray,
-    view,
+    comparing,
+    lightMap,
     handles,
     selected,
     full,

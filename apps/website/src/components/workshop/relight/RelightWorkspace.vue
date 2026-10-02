@@ -20,7 +20,7 @@ const {
   locale?: Locale
 }>()
 
-const { setup, phase, view, handles, selected, lit } = relight
+const { setup, phase, comparing, lightMap, handles, selected, lit } = relight
 const touched = ref(false)
 watch(
   () => image.url,
@@ -57,8 +57,9 @@ const elapsed = computed(() =>
       :masks="setup.masks"
       :scene="setup.scene"
       :selected
-      :view
-      :handles="handles && phase.kind !== 'running'"
+      :comparing
+      :light-map="lightMap"
+      :handles="handles && !comparing && phase.kind !== 'running'"
       :locale
       @select="select"
       @begin="relight.checkpoint()"
@@ -66,7 +67,7 @@ const elapsed = computed(() =>
       @nudge="nudge"
     >
       <EditorHint
-        v-if="!touched && phase.kind === 'editing'"
+        v-if="!touched && !comparing && phase.kind === 'editing'"
         :text="lc('relight.hint', locale)"
       />
     </RelightStage>
