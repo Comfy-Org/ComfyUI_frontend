@@ -6,6 +6,7 @@ import type {
   CheckoutEntryFlow,
   CheckoutEntrySource,
   PreviewSubscribeResult,
+  SubscriptionCommandFailure,
   SubscriptionPreview
 } from '@comfyorg/account-core/billing'
 import type { BillingSource } from '@comfyorg/billing-contract'
@@ -23,6 +24,7 @@ import {
   promoSettlementOf
 } from '@/checkout/checkoutJourney'
 import type { PromoEntry } from '@/checkout/promoEntry'
+import { outcomeOfCommandResult } from '@/telemetry/attemptTelemetry'
 import { previewOf } from '@/test/fakeBillingClient'
 
 describe('entrySourceOf', () => {
@@ -419,4 +421,74 @@ describe('promoResultOfQuote', () => {
   ])('$name', ({ result, settled }) => {
     expect(promoResultOfQuote(result)).toBe(settled)
   })
+})
+
+type SdkRefusalCode = SubscriptionCommandFailure['code']
+
+/** Every code the SDK refuses with, so a code added to its union fails to compile here until it is listed. */
+const SDK_REFUSALS = {
+  NOT_AUTHENTICATED: { code: 'NOT_AUTHENTICATED' },
+  ACCESS_DENIED: { code: 'ACCESS_DENIED' },
+  NOT_FOUND: { code: 'NOT_FOUND' },
+  CONFLICT: { code: 'CONFLICT' },
+  SUPERSEDED: { code: 'SUPERSEDED' },
+  REQUEST_FAILED: { code: 'REQUEST_FAILED' },
+  MALFORMED_RESPONSE: { code: 'MALFORMED_RESPONSE' },
+  OPERATION_ALREADY_PENDING: { code: 'OPERATION_ALREADY_PENDING' },
+  INVALID_REQUEST: { code: 'INVALID_REQUEST' },
+  CONFLICTING_PAYMENT_METHOD: { code: 'CONFLICTING_PAYMENT_METHOD' },
+  REACTIVATION_CONFIRMATION_REQUIRED: {
+    code: 'REACTIVATION_CONFIRMATION_REQUIRED'
+  },
+  NO_ACTIVE_SUBSCRIPTION: { code: 'NO_ACTIVE_SUBSCRIPTION' },
+  MISSING_PAYMENT_METHOD_URL: { code: 'MISSING_PAYMENT_METHOD_URL' },
+  QUOTE_STALE: { code: 'QUOTE_STALE' }
+} satisfies { [Code in SdkRefusalCode]: { code: Code } }
+
+/** Each refusal as the server never answered it and as it answered with an error status. */
+const REFUSALS_BY_STATUS = Object.values(SDK_REFUSALS)
+  .filter(({ code }) => code !== 'REACTIVATION_CONFIRMATION_REQUIRED')
+  .flatMap((refusal) => [
+    { ...refusal, httpStatus: undefined },
+    { ...refusal, httpStatus: 503 }
+  ])
+
+describe('a refusal in the journey and in the attempt', () => {
+  it.for(REFUSALS_BY_STATUS)(
+    'lands in one category for $code answered with HTTP status $httpStatus',
+    ({ code, httpStatus }) => {
+      const status = httpStatus === undefined ? {} : { httpStatus }
+      const category = previewFailureOfPageEvent({
+        type: 'unavailable',
+        code,
+        ...status
+      })?.failure_category
+
+      expect(
+        outcomeOfCommandResult({ status: 'error', code, ...status })
+      ).toMatchObject({
+        kind: 'failed',
+        failure: { failure_category: category }
+      })
+    }
+  )
+
+  it.for(REFUSALS_BY_STATUS.filter(({ code }) => code !== 'SUPERSEDED'))(
+    'lands in the same category through a quote answer for $code answered with HTTP status $httpStatus',
+    ({ code, httpStatus }) => {
+      const status = httpStatus === undefined ? {} : { httpStatus }
+      const category = previewFailureOfResult({
+        status: 'error',
+        code,
+        ...status
+      })?.failure_category
+
+      expect(
+        outcomeOfCommandResult({ status: 'error', code, ...status })
+      ).toMatchObject({
+        kind: 'failed',
+        failure: { failure_category: category }
+      })
+    }
+  )
 })
