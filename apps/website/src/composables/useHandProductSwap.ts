@@ -4,9 +4,9 @@ import { computed, ref, shallowRef } from 'vue'
 import type { Locale } from '../i18n/translations'
 import type {
   HandSwapResult,
+  SwapProgress,
   SwapResolution
 } from '../lib/workshop/hand-product-swap/contract'
-import { swapRequest } from '../lib/workshop/hand-product-swap/contract'
 import { hc } from '../lib/workshop/hand-product-swap/copy'
 import type {
   SwapImage,
@@ -19,27 +19,25 @@ import {
 } from '../lib/workshop/hand-product-swap/examples'
 import * as history from '../lib/workshop/hand-product-swap/history'
 import { runHandSwap } from '../lib/workshop/hand-product-swap/mock-run'
-import { STARTING_BOX } from '../lib/workshop/hand-product-swap/placement'
 import { imageSize } from '../lib/workshop/image-size'
-import type { Rect } from '../lib/workshop/move-anything/arrange'
 
 /** Everything undo and redo cover. */
 interface SwapSetup {
-  readonly region: Rect
   readonly productId: string
+  readonly resolution: SwapResolution
 }
 
 type SwapPhase =
   | { readonly kind: 'editing' }
-  | { readonly kind: 'running'; readonly startedAt: number }
+  | {
+      readonly kind: 'running'
+      readonly startedAt: number
+      readonly progress: SwapProgress
+    }
   | { readonly kind: 'done'; readonly result: HandSwapResult }
   | { readonly kind: 'failed' }
 
-export type SwapTray = 'product' | 'resolution' | 'advanced'
-type SwapView = 'compare' | 'result'
-
-const startingRegion = (url: string) =>
-  url === HAND_EXAMPLE.url ? HAND_EXAMPLE.region : STARTING_BOX
+export type SwapTray = 'product' | 'resolution' | 'seed'
 
 /** Hand product swap's page state. The run is `runHandSwap`, mocked for now. */
 export function useHandProductSwap(locale: Locale = 'en') {
@@ -47,21 +45,29 @@ export function useHandProductSwap(locale: Locale = 'en') {
   const ownProduct = shallowRef<SwapProduct>()
   const steps = shallowRef(
     history.historyOf<SwapSetup>({
-      region: STARTING_BOX,
-      productId: EXAMPLE_PRODUCTS[0].id
+      productId: EXAMPLE_PRODUCTS[0].id,
+      resolution: '2K'
     })
   )
   const phase = shallowRef<SwapPhase>({ kind: 'editing' })
   const tray = ref<SwapTray>()
-  const view = ref<SwapView>('compare')
-  const drawing = ref(false)
-  const resolution = ref<SwapResolution>('2K')
+  const comparing = ref(false)
   const seed = ref(42)
   const owned = new Set<string>()
   let pendingUrl: string | undefined
   let run: AbortController | undefined
 
   const setup = computed(() => steps.value.present)
+  const resolution = computed({
+    get: () => setup.value.resolution,
+    set: (next: SwapResolution) => {
+      if (next !== setup.value.resolution)
+        steps.value = history.commit(steps.value, {
+          ...setup.value,
+          resolution: next
+        })
+    }
+  })
   const products = computed<readonly SwapProduct[]>(() =>
     ownProduct.value
       ? [...EXAMPLE_PRODUCTS, ownProduct.value]
@@ -75,9 +81,8 @@ export function useHandProductSwap(locale: Locale = 'en') {
   const productName = computed(() =>
     product.value.label ? hc(product.value.label, locale) : product.value.name
   )
-  const canRun = computed(
-    () => Boolean(hand.value) && phase.value.kind !== 'running'
-  )
+  const running = computed(() => phase.value.kind === 'running')
+  const canRun = computed(() => Boolean(hand.value) && !running.value)
 
   function leaveResult(next: SwapPhase) {
     const current = phase.value
@@ -97,12 +102,8 @@ export function useHandProductSwap(locale: Locale = 'en') {
     const previous = hand.value?.url
     hand.value = next
     if (previous !== next.url) release(previous)
-    steps.value = history.historyOf({
-      region: startingRegion(next.url),
-      productId: setup.value.productId
-    })
-    drawing.value = false
-    view.value = 'compare'
+    steps.value = history.historyOf(setup.value)
+    comparing.value = false
   }
 
   function useExample() {
@@ -125,13 +126,16 @@ export function useHandProductSwap(locale: Locale = 'en') {
   }
 
   async function useHandFile(file: File) {
+    if (running.value) return
     const next = await decode(file)
     if (next) reset(next)
   }
 
   async function useProductFile(file: File) {
+    if (running.value) return
     const next = await decode(file)
     if (!next) return
+    leaveResult({ kind: 'editing' })
     release(ownProduct.value?.url)
     ownProduct.value = { ...next, id: OWN_PRODUCT_ID }
     steps.value = history.commit(steps.value, {
@@ -140,27 +144,14 @@ export function useHandProductSwap(locale: Locale = 'en') {
     })
   }
 
+  /** A pasted image is the hand photo until there is one, then the product. */
+  function usePastedFile(file: File) {
+    return hand.value ? useProductFile(file) : useHandFile(file)
+  }
+
   function pickProduct(productId: string) {
     if (productId === setup.value.productId) return
     steps.value = history.commit(steps.value, { ...setup.value, productId })
-  }
-
-  /** Call before a drag the visitor can undo as one step. */
-  function checkpoint() {
-    steps.value = history.checkpoint(steps.value)
-  }
-
-  function place(region: Rect) {
-    steps.value = history.replace(steps.value, { ...setup.value, region })
-  }
-
-  function moveBox(region: Rect) {
-    steps.value = history.commit(steps.value, { ...setup.value, region })
-    drawing.value = false
-  }
-
-  function resetBox() {
-    if (hand.value) moveBox(startingRegion(hand.value.url))
   }
 
   function undo() {
@@ -171,27 +162,36 @@ export function useHandProductSwap(locale: Locale = 'en') {
     steps.value = history.redo(steps.value)
   }
 
+  function report(controller: AbortController, progress: SwapProgress) {
+    const current = phase.value
+    if (run === controller && current.kind === 'running')
+      phase.value = { ...current, progress }
+  }
+
   async function swap() {
     const current = hand.value
     if (!current || !canRun.value) return
     tray.value = undefined
-    drawing.value = false
     const controller = new AbortController()
     run = controller
-    leaveResult({ kind: 'running', startedAt: Date.now() })
+    leaveResult({
+      kind: 'running',
+      startedAt: Date.now(),
+      progress: { kind: 'queued' }
+    })
     try {
       const result = await runHandSwap(
-        swapRequest({
-          hand: current,
-          productUrl: product.value.url,
-          region: setup.value.region,
-          resolution: resolution.value,
+        {
+          hand: current.url,
+          product: product.value.url,
+          resolution: setup.value.resolution,
           seed: seed.value
-        }),
-        controller.signal
+        },
+        controller.signal,
+        (progress) => report(controller, progress)
       )
       if (run === controller) {
-        view.value = 'compare'
+        comparing.value = false
         phase.value = { kind: 'done', result }
       }
     } catch {
@@ -229,8 +229,7 @@ export function useHandProductSwap(locale: Locale = 'en') {
     setup,
     phase,
     tray,
-    view,
-    drawing,
+    comparing,
     resolution,
     seed,
     canRun,
@@ -239,11 +238,8 @@ export function useHandProductSwap(locale: Locale = 'en') {
     useExample,
     useHandFile,
     useProductFile,
+    usePastedFile,
     pickProduct,
-    checkpoint,
-    place,
-    moveBox,
-    resetBox,
     undo,
     redo,
     swap,

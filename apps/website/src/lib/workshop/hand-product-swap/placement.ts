@@ -24,5 +24,5 @@ export function gripRect(
   return { x: box.x + (box.w - w) / 2, y: box.y + (box.h - h) / 2, w, h }
 }
 
-/** A box for a photo the visitor brings: a centred upright one to drag. */
-export const STARTING_BOX: Rect = { x: 0.38, y: 0.26, w: 0.24, h: 0.48 }
+/** Where the mock guesses a hand holds things in a photo the visitor brings. */
+export const GUESSED_GRIP: Rect = { x: 0.38, y: 0.26, w: 0.24, h: 0.48 }

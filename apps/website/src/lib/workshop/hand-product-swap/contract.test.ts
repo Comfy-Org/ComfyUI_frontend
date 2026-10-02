@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { outputSize, swapRequest } from './contract'
+import { outputSize } from './contract'
 
 describe('outputSize', () => {
   it.for([
@@ -14,26 +14,4 @@ describe('outputSize', () => {
       expect([out.width, out.height]).toEqual(size)
     }
   )
-})
-
-describe('swapRequest', () => {
-  it('sends the photos, the rounded region, the resolution and the seed', () => {
-    expect(
-      swapRequest({
-        hand: { url: '/hand.jpg', width: 1200, height: 900 },
-        productUrl: '/can.png',
-        region: { x: 0.123456, y: 0.2, w: 1 / 3, h: 0.5 },
-        resolution: '1K',
-        seed: 7
-      })
-    ).toEqual({
-      handImageUrl: '/hand.jpg',
-      productImageUrl: '/can.png',
-      region: { x: 0.1235, y: 0.2, w: 0.3333, h: 0.5 },
-      resolution: '1K',
-      width: 1024,
-      height: 768,
-      seed: 7
-    })
-  })
 })

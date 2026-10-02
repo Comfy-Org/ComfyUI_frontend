@@ -6,7 +6,6 @@ import EditorChip from '../app-editor/EditorChip.vue'
 import EditorDivider from '../app-editor/EditorDivider.vue'
 import HandSwapResolution from './HandSwapResolution.vue'
 import HandSwapRun from './HandSwapRun.vue'
-import HandSwapTools from './HandSwapTools.vue'
 import { SWAP_SECTIONS, sectionMeta } from './sections'
 
 const { swap, locale = 'en' } = defineProps<{
@@ -15,16 +14,15 @@ const { swap, locale = 'en' } = defineProps<{
 }>()
 
 const { tray, phase } = swap
+const chips = SWAP_SECTIONS.filter(({ id }) => id !== 'resolution')
 </script>
 
 <template>
-  <HandSwapTools :swap :locale />
-  <EditorDivider />
   <EditorChip
-    v-for="section in SWAP_SECTIONS.filter(({ id }) => id !== 'resolution')"
+    v-for="section in chips"
     :key="section.id"
     :label="hc(section.title, locale)"
-    :value="sectionMeta(section.id, swap, locale)"
+    :value="sectionMeta(section.id, swap)"
     :expanded="tray === section.id"
     :disabled="phase.kind === 'running'"
     compact

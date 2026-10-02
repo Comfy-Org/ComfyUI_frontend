@@ -1,19 +1,13 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { swapRequest } from './contract'
+import type { HandSwapRequest, SwapProgress } from './contract'
 import { EXAMPLE_PRODUCTS, HAND_EXAMPLE } from './examples'
 import { runHandSwap } from './mock-run'
 
 const DIR = '/images/apps/hand-product-swap'
 
-function requestFor(handUrl: string, productUrl: string) {
-  return swapRequest({
-    hand: { url: handUrl, width: 1200, height: 896 },
-    productUrl,
-    region: HAND_EXAMPLE.region,
-    resolution: '2K',
-    seed: 42
-  })
+function requestFor(hand: string, product: string): HandSwapRequest {
+  return { hand, product, resolution: '2K', seed: 42 }
 }
 
 async function settle(run: Promise<unknown>) {
@@ -34,6 +28,7 @@ describe('runHandSwap', () => {
       const run = runHandSwap(
         requestFor(HAND_EXAMPLE.url, `${DIR}/${product}`),
         new AbortController().signal,
+        undefined,
         render
       )
 
@@ -68,10 +63,34 @@ describe('runHandSwap', () => {
     vi.useFakeTimers()
     const request = requestFor(hand, product)
     const render = vi.fn(() => Promise.resolve(rendered))
-    const run = runHandSwap(request, new AbortController().signal, render)
+    const run = runHandSwap(
+      request,
+      new AbortController().signal,
+      undefined,
+      render
+    )
 
     await expect(settle(run)).resolves.toEqual({ url: expected, seed: 42 })
     expect(render).toHaveBeenCalledWith(request)
+  })
+
+  it('reports queued, then a climbing percent below 100', async () => {
+    vi.useFakeTimers()
+    const reports: SwapProgress[] = []
+    const run = runHandSwap(
+      requestFor(HAND_EXAMPLE.url, EXAMPLE_PRODUCTS[0].url),
+      new AbortController().signal,
+      (progress) => reports.push(progress)
+    )
+    await settle(run)
+
+    expect(reports[0]).toEqual({ kind: 'queued' })
+    const percents = reports.flatMap((report) =>
+      report.kind === 'running' ? [report.percent] : []
+    )
+    expect(percents.length).toBeGreaterThan(2)
+    expect(percents).toEqual([...percents].sort((a, b) => a - b))
+    expect(Math.max(...percents)).toBeLessThan(100)
   })
 
   it('releases a drawn image when the run is cancelled', async () => {
@@ -81,6 +100,7 @@ describe('runHandSwap', () => {
     const run = runHandSwap(
       requestFor('blob:hand', 'blob:product'),
       controller.signal,
+      undefined,
       () => Promise.resolve('blob:swapped')
     )
     controller.abort()

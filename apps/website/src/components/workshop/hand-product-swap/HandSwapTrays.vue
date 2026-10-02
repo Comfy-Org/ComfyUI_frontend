@@ -24,7 +24,7 @@ const { tray } = swap
     >
       <template #actions>
         <span class="text-[11px] text-primary-warm-gray tabular-nums">{{
-          sectionMeta(section.id, swap, locale)
+          sectionMeta(section.id, swap)
         }}</span>
       </template>
       <component :is="section.content" :swap :locale />

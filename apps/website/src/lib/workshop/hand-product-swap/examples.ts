@@ -21,7 +21,7 @@ export const HAND_EXAMPLE = {
   name: 'hand-holding-can.jpg',
   width: 1200,
   height: 896,
-  /** Around the plain white can the hand holds. */
+  /** Around the plain white can the hand holds, for the mock to draw into. */
   region: { x: 0.4333, y: 0.279, w: 0.1833, h: 0.4688 } satisfies Rect
 } as const
 

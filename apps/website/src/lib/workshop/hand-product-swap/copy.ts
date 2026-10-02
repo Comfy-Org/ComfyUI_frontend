@@ -16,35 +16,21 @@ const copy = {
     'zh-CN': '拖入一张手持物品的照片'
   },
   'swap.empty.meta': {
-    en: 'PNG, JPG or WebP. Your product takes the place of what the hand holds.',
-    'zh-CN': 'PNG、JPG 或 WebP。你的产品会替换手中的物品。'
+    en: 'Same hand & grip, new product. Drop, paste or choose a PNG, JPG or WebP.',
+    'zh-CN': '同样的手和握姿，换上新产品。拖入、粘贴或选择 PNG、JPG 或 WebP。'
   },
   'swap.empty.upload': { en: 'Choose a photo', 'zh-CN': '选择照片' },
   'swap.empty.example': { en: 'Try the example', 'zh-CN': '试用示例' },
   'swap.hint': {
-    en: 'Drag the box over what the hand holds · Corners resize',
-    'zh-CN': '将方框拖到手中物品上 · 拖动角落调整大小'
+    en: 'Same hand & grip, new product',
+    'zh-CN': '同样的手和握姿，换上新产品'
   },
-  'swap.hint.draw': {
-    en: 'Draw a box around what the hand holds',
-    'zh-CN': '框选手中的物品'
-  },
-  'swap.tool.draw': { en: 'Redraw box', 'zh-CN': '重新框选' },
-  'swap.tool.reset': { en: 'Reset box', 'zh-CN': '重置方框' },
   'swap.tool.undo': { en: 'Undo', 'zh-CN': '撤销' },
   'swap.tool.redo': { en: 'Redo', 'zh-CN': '重做' },
   'swap.history': { en: 'History', 'zh-CN': '历史记录' },
-  'swap.box': {
-    en: 'Where the product goes. Arrow keys move it, Shift moves further.',
-    'zh-CN': '产品放置的位置。方向键移动，按住 Shift 移动更多。'
-  },
   'swap.hand': { en: 'Hand photo', 'zh-CN': '手部照片' },
   'swap.hand.change': { en: 'Change hand photo', 'zh-CN': '更换手部照片' },
   'swap.change': { en: 'Change', 'zh-CN': '更换' },
-  'swap.image.size': {
-    en: '{width} × {height}',
-    'zh-CN': '{width} × {height}'
-  },
   'swap.product': { en: 'Product', 'zh-CN': '产品' },
   'swap.product.can': { en: 'Can', 'zh-CN': '易拉罐' },
   'swap.product.serum': { en: 'Serum', 'zh-CN': '精华' },
@@ -57,18 +43,16 @@ const copy = {
   },
   'swap.product.change': { en: 'Change product', 'zh-CN': '更换产品' },
   'swap.product.tip': {
-    en: 'A cut-out PNG or a shot on white works best.',
-    'zh-CN': '透明背景 PNG 或白底产品图效果最佳。'
+    en: 'A cut-out PNG or a shot on white works best. Drop or paste one here.',
+    'zh-CN': '透明背景 PNG 或白底产品图效果最佳。可直接拖入或粘贴。'
   },
   'swap.resolution': { en: 'Resolution', 'zh-CN': '分辨率' },
   'swap.resolution.size': {
     en: '{width} × {height} px',
     'zh-CN': '{width} × {height} 像素'
   },
-  'swap.advanced': { en: 'Advanced', 'zh-CN': '高级' },
   'swap.seed': { en: 'Seed', 'zh-CN': '种子' },
   'swap.seed.shuffle': { en: 'New seed', 'zh-CN': '换一个种子' },
-  'swap.advanced.summary': { en: 'Seed {n}', 'zh-CN': '种子 {n}' },
   'swap.summary': {
     en: '{product} · {resolution}',
     'zh-CN': '{product} · {resolution}'
@@ -79,9 +63,11 @@ const copy = {
   'swap.cancel': { en: 'Cancel', 'zh-CN': '取消' },
   'swap.busy.title': { en: 'Swapping the product…', 'zh-CN': '正在替换产品…' },
   'swap.busy.detail': {
-    en: '{product} · {resolution} · {time}',
-    'zh-CN': '{product} · {resolution} · {time}'
+    en: '{status} · {product} · {resolution} · {time}',
+    'zh-CN': '{status} · {product} · {resolution} · {time}'
   },
+  'swap.progress.queued': { en: 'Queued', 'zh-CN': '排队中' },
+  'swap.progress.percent': { en: '{n}%', 'zh-CN': '{n}%' },
   'swap.failed': {
     en: 'The swap didn’t finish. No credits were used.',
     'zh-CN': '替换未完成，未扣除积分。'

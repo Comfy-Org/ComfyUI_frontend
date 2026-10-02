@@ -5,10 +5,11 @@ import { hc } from '../../../lib/workshop/hand-product-swap/copy'
 import type { SwapImage } from '../../../lib/workshop/hand-product-swap/examples'
 import EditorCollapsible from '../app-editor/EditorCollapsible.vue'
 import EditorPanelRow from '../app-editor/EditorPanelRow.vue'
-import HandSwapAdvanced from './HandSwapAdvanced.vue'
 import HandSwapHandRow from './HandSwapHandRow.vue'
+import HandSwapProducts from './HandSwapProducts.vue'
 import HandSwapResolution from './HandSwapResolution.vue'
-import { SWAP_SECTIONS, sectionMeta } from './sections'
+import HandSwapSeed from './HandSwapSeed.vue'
+import { sectionMeta } from './sections'
 
 const {
   hand,
@@ -21,7 +22,6 @@ const {
 }>()
 
 const { phase } = swap
-const sections = SWAP_SECTIONS.filter(({ id }) => id === 'product')
 </script>
 
 <template>
@@ -32,17 +32,15 @@ const sections = SWAP_SECTIONS.filter(({ id }) => id === 'product')
   >
     <HandSwapHandRow :hand :locale @file="swap.useHandFile" />
     <EditorCollapsible
-      v-for="section in sections"
-      :key="section.id"
-      :title="hc(section.title, locale)"
-      :meta="sectionMeta(section.id, swap, locale)"
-      :initially-open="section.open"
+      :title="hc('swap.product', locale)"
+      :meta="sectionMeta('product', swap)"
+      initially-open
     >
-      <component :is="section.content" :swap :locale />
+      <HandSwapProducts :swap :locale />
     </EditorCollapsible>
     <EditorPanelRow>
       <HandSwapResolution :swap :locale />
-      <HandSwapAdvanced :swap :locale />
+      <HandSwapSeed :swap :locale />
     </EditorPanelRow>
   </fieldset>
 </template>

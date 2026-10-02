@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/vue'
+import { fireEvent, render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -38,8 +38,6 @@ const panel = () =>
 const section = (name: string) => within(panel()).getByRole('region', { name })
 const tools = () =>
   screen.getByRole('toolbar', { name: 'Hand product swap tools' })
-const box = () =>
-  screen.getByRole('button', { name: /^Where the product goes/ })
 
 describe('HandSwapStudio', () => {
   it('swaps the product from the floating panel, then compares the result', async () => {
@@ -72,17 +70,29 @@ describe('HandSwapStudio', () => {
     expect(screen.getByRole('status')).toHaveTextContent(
       'Swapping the product…'
     )
-    expect(screen.getByRole('status')).toHaveTextContent('Serum · 4K')
+    expect(screen.getByRole('status')).toHaveTextContent('Queued · Serum · 4K')
+    await vi.advanceTimersByTimeAsync(1400)
+    expect(screen.getByRole('status')).toHaveTextContent('50% · Serum · 4K')
     await vi.advanceTimersByTimeAsync(3000)
 
     const download = await screen.findByRole('link', { name: 'Download' })
-    expect(download).toHaveAttribute('download', 'swapped-hand-holding-can.jpg')
+    expect(download).toHaveAttribute(
+      'download',
+      'hand-holding-can-swapped-42.jpg'
+    )
     expect(download).toHaveAttribute(
       'href',
       '/images/apps/hand-product-swap/result-serum.jpg'
     )
     expect(within(tools()).queryByRole('link')).toBeNull()
     const compare = within(tools()).getByRole('button', { name: 'Compare' })
+    expect(compare).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.queryByRole('slider', { name: /Drag to compare/ })).toBeNull()
+    expect(
+      screen.getByRole('img', { name: 'The hand photo holding your product' })
+    ).toHaveAttribute('src', '/images/apps/hand-product-swap/result-serum.jpg')
+
+    await user.click(compare)
     expect(compare).toHaveAttribute('aria-pressed', 'true')
     expect(
       screen.getByRole('slider', {
@@ -90,49 +100,81 @@ describe('HandSwapStudio', () => {
       })
     ).toBeVisible()
 
-    await user.click(compare)
-    expect(compare).toHaveAttribute('aria-pressed', 'false')
-    expect(screen.queryByRole('slider', { name: /Drag to compare/ })).toBeNull()
-
     await user.click(within(tools()).getByRole('button', { name: 'Edit' }))
-    expect(box()).toBeVisible()
+    expect(screen.getByTestId('swap-stage')).toBeVisible()
+  })
+
+  it('has no placement box: the model keeps the hand and grip by itself', async () => {
+    await openExample()
+    expect(
+      screen.queryByRole('button', { name: /Where the product goes/ })
+    ).toBeNull()
+    expect(screen.queryByRole('button', { name: /box/i })).toBeNull()
+    expect(screen.getByText('Same hand & grip, new product')).toBeVisible()
   })
 
   it.for([
-    { layout: 'd', wide: true, last: 'Reset box' },
-    { layout: 'd', wide: false, last: 'Reset box' },
-    { layout: 'e', wide: true, last: 'Swap product 14 credits' }
+    { layout: 'd', wide: true, names: ['Undo', 'Redo'] },
+    { layout: 'd', wide: false, names: ['Undo', 'Redo'] },
+    {
+      layout: 'e',
+      wide: true,
+      names: ['Swap product 14 credits', 'Undo', 'Redo']
+    }
   ])(
     'keeps undo and redo at the right end of the tools in layout $layout (wide: $wide)',
-    async ({ layout, wide, last }) => {
+    async ({ layout, wide, names }) => {
       screenIsWide(wide)
       await openExample(layout)
 
-      const names = within(tools())
+      const labels = within(tools())
         .getAllByRole('button')
         .map(
           (tool) => tool.getAttribute('aria-label') ?? tool.textContent.trim()
         )
-      expect(names.slice(-3)).toEqual([last, 'Undo', 'Redo'])
+      expect(labels.slice(-names.length)).toEqual(names)
     }
   )
 
-  it('nudges the box with the arrow keys and undoes it', async () => {
-    const user = await openExample()
-    const left = parseFloat(box().style.left)
-    box().focus()
-    await user.keyboard('{Shift>}{ArrowRight}{/Shift}')
-    expect(parseFloat(box().style.left)).toBeCloseTo(left + 5)
+  it('takes a dropped product on the product card and a pasted one anywhere', async () => {
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:upload')
+    const loaded = vi
+      .spyOn(HTMLImageElement.prototype, 'src', 'set')
+      .mockImplementation(function (this: HTMLImageElement) {
+        queueMicrotask(() => this.onload?.(new Event('load')))
+      })
+    await openExample()
+    const bottle = new File(['x'], 'bottle.png', { type: 'image/png' })
 
-    await user.click(within(tools()).getByRole('button', { name: 'Undo' }))
-    expect(parseFloat(box().style.left)).toBeCloseTo(left)
+    await fireEvent.drop(screen.getByTestId('swap-product-card'), {
+      dataTransfer: { files: [bottle] }
+    })
+    expect(
+      await within(section('Product')).findByRole('radio', { name: 'Yours' })
+    ).toHaveAttribute('aria-checked', 'true')
+
+    const paste = new Event('paste', { bubbles: true })
+    Object.assign(paste, {
+      clipboardData: {
+        files: [new File(['y'], 'jar.png', { type: 'image/png' })]
+      }
+    })
+    document.dispatchEvent(paste)
+    await vi.waitFor(() =>
+      expect(screen.getByTestId('swap-product-card')).toHaveTextContent(
+        'jar.png'
+      )
+    )
+    loaded.mockRestore()
   })
 
   it('keeps a shuffleable seed as a row of the panel, with no Advanced section', async () => {
     const user = await openExample()
     expect(
-      within(panel()).queryByRole('region', { name: 'Advanced' })
-    ).toBeNull()
+      within(panel())
+        .getAllByRole('region')
+        .map((region) => region.getAttribute('aria-label'))
+    ).toEqual(['Product'])
     const seed = within(panel()).getByRole('spinbutton', { name: 'Seed' })
     expect(seed).toHaveValue(42)
 

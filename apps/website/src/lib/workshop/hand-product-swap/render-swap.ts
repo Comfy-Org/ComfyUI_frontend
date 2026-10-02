@@ -1,7 +1,8 @@
 import { loadImage } from '../relight/render-image'
 import type { HandSwapRequest } from './contract'
 import { clearWhiteBackdrop } from './cutout'
-import { gripRect } from './placement'
+import { HAND_EXAMPLE } from './examples'
+import { GUESSED_GRIP, gripRect } from './placement'
 
 const MAX_EDGE = 2048
 
@@ -36,15 +37,16 @@ function toBlob(canvas: HTMLCanvasElement): Promise<Blob | null> {
 }
 
 /**
- * The request's product drawn into its hand photo, as an object URL the
- * caller revokes, or undefined where an image does not load.
+ * The request's product drawn where the hand photo's grip is, or is guessed
+ * to be, as an object URL the caller revokes, or undefined where an image
+ * does not load.
  */
 export async function renderSwapImage(
   request: HandSwapRequest
 ): Promise<string | undefined> {
   const [base, product] = await Promise.all([
-    loadImage(request.handImageUrl),
-    loadImage(request.productImageUrl)
+    loadImage(request.hand),
+    loadImage(request.product)
   ])
   if (!base || !product) return undefined
   const scale = Math.min(
@@ -59,7 +61,7 @@ export async function renderSwapImage(
   const spot = gripRect(
     product.naturalWidth,
     product.naturalHeight,
-    request.region,
+    request.hand === HAND_EXAMPLE.url ? HAND_EXAMPLE.region : GUESSED_GRIP,
     width / height
   )
   const x = spot.x * width

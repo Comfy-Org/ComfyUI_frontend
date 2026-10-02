@@ -621,27 +621,31 @@ test('swaps the product in the Hand product swap example and compares the result
 }) => {
   const { app, panel } = await openHandSwapExample(page, context)
   await expectPanelWidth(panel)
+  await expect(app.getByText('Same hand & grip, new product')).toBeVisible()
+  await expect(
+    app.getByRole('button', { name: /Where the product goes/ })
+  ).toHaveCount(0)
   await panel.getByRole('radio', { name: 'Serum' }).click()
   await panel.getByRole('button', { name: 'Resolution: 2K' }).click()
   await page.getByRole('menuitemradio', { name: /^1K/ }).click()
-  const box = app.getByRole('button', { name: /^Where the product goes/ })
-  await box.focus()
-  await page.keyboard.press('Shift+ArrowLeft')
-  await expect(box).toHaveAttribute('style', /left: 38\.3/)
   const tools = app.getByRole('toolbar', { name: 'Hand product swap tools' })
   await expect(tools.getByRole('button').last()).toHaveAccessibleName('Redo')
 
   await panel.getByTestId('swap-run').click()
   await expect(app.getByRole('status')).toContainText('Swapping the product')
-  await expect(app.getByRole('link', { name: 'Download' })).toHaveAttribute(
+  const download = app.getByRole('link', { name: 'Download' })
+  await expect(download).toHaveAttribute(
     'href',
     '/images/apps/hand-product-swap/result-serum.jpg'
   )
-  await expectDownloadBesideGitHub(app)
-  await expect(tools.getByRole('button', { name: 'Compare' })).toHaveAttribute(
-    'aria-pressed',
-    'true'
+  await expect(download).toHaveAttribute(
+    'download',
+    'hand-holding-can-swapped-42.jpg'
   )
+  await expectDownloadBesideGitHub(app)
+  const compare = tools.getByRole('button', { name: 'Compare' })
+  await expect(compare).toHaveAttribute('aria-pressed', 'false')
+  await compare.click()
   const split = app.getByRole('slider', {
     name: 'Drag to compare the original and the result'
   })
@@ -650,7 +654,10 @@ test('swaps the product in the Hand product swap example and compares the result
   await expect(split).toHaveValue('51')
 
   await tools.getByRole('button', { name: 'Edit' }).click()
-  await expect(box).toHaveAttribute('style', /left: 38\.3/)
+  await expect(panel.getByRole('radio', { name: 'Serum' })).toHaveAttribute(
+    'aria-checked',
+    'true'
+  )
 })
 
 for (const { product, result } of [

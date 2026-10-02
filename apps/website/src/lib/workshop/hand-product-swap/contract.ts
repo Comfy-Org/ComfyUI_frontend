@@ -1,22 +1,26 @@
-import type { Rect } from '../move-anything/arrange'
-
 export const SWAP_RESOLUTIONS = ['1K', '2K', '4K'] as const
 export type SwapResolution = (typeof SWAP_RESOLUTIONS)[number]
 
-/** What the Hand product swap backend receives for one run. */
+/**
+ * What the Hand product swap backend receives for one run, one key per
+ * multipart field of `POST /api/run/hand-product-swap`. The model finds what
+ * the hand holds by itself and keeps the same hand and grip, so there is no
+ * placement to send.
+ */
 export interface HandSwapRequest {
   /** The photo of a hand holding something. */
-  readonly handImageUrl: string
-  /** The product that replaces what the hand holds. */
-  readonly productImageUrl: string
-  /** Where the held thing sits, each value a fraction of the hand photo. */
-  readonly region: Rect
+  readonly hand: string
+  /** The product that takes the place of what the hand holds. */
+  readonly product: string
+  /** The output's long edge. */
   readonly resolution: SwapResolution
-  /** The output's size, its long edge set by `resolution`. */
-  readonly width: number
-  readonly height: number
   readonly seed: number
 }
+
+/** How far along a run is, as the backend reports it. */
+export type SwapProgress =
+  | { readonly kind: 'queued' }
+  | { readonly kind: 'running'; readonly percent: number }
 
 export interface HandSwapResult {
   readonly url: string
@@ -46,31 +50,5 @@ export function outputSize(
   return {
     width: Math.max(1, Math.round(width * scale)),
     height: Math.max(1, Math.round(height * scale))
-  }
-}
-
-const round = (value: number) => Math.round(value * 10000) / 10000
-
-/** The request for a hand photo, a product, where it goes and how big. */
-export function swapRequest(input: {
-  hand: { url: string; width: number; height: number }
-  productUrl: string
-  region: Rect
-  resolution: SwapResolution
-  seed: number
-}): HandSwapRequest {
-  const { hand, region, resolution } = input
-  return {
-    handImageUrl: hand.url,
-    productImageUrl: input.productUrl,
-    region: {
-      x: round(region.x),
-      y: round(region.y),
-      w: round(region.w),
-      h: round(region.h)
-    },
-    resolution,
-    ...outputSize(resolution, hand.width, hand.height),
-    seed: input.seed
   }
 }

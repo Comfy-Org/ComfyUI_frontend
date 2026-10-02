@@ -14,7 +14,7 @@ const { swap, locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
 
-const { hand, phase, view } = swap
+const { hand, phase, comparing } = swap
 const labels = computed(() => ({
   resultAlt: hc('swap.alt.result', locale),
   originalAlt:
@@ -43,7 +43,7 @@ const labels = computed(() => ({
     v-else-if="phase.kind === 'done'"
     :before="hand.url"
     :after="phase.result.url"
-    :view
+    :view="comparing ? 'compare' : 'result'"
     :width="hand.width"
     :height="hand.height"
     :labels

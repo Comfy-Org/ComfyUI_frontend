@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ChevronLeft, Columns2, RefreshCw } from '@lucide/vue'
+import { ChevronLeft, RefreshCw } from '@lucide/vue'
 
 import type { HandProductSwap } from '../../../composables/useHandProductSwap'
 import type { Locale } from '../../../i18n/translations'
 import { hc } from '../../../lib/workshop/hand-product-swap/copy'
+import EditorCompareToggle from '../app-editor/EditorCompareToggle.vue'
 import EditorDivider from '../app-editor/EditorDivider.vue'
 import EditorTool from '../app-editor/EditorTool.vue'
 
@@ -12,15 +13,14 @@ const { swap, locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
 
-const { view } = swap
+const { comparing } = swap
 </script>
 
 <template>
-  <EditorTool
-    :icon="Columns2"
+  <EditorCompareToggle
+    v-model="comparing"
     :label="hc('swap.compare', locale)"
-    :pressed="view === 'compare'"
-    @click="view = view === 'compare' ? 'result' : 'compare'"
+    :locale
   />
   <EditorDivider />
   <EditorTool

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { useTemplateRef } from 'vue'
 
+import { firstImage } from '../../../lib/workshop/hand-product-swap/files'
+
 defineOptions({ inheritAttrs: false })
 
 const { label, inputId } = defineProps<{
@@ -11,11 +13,15 @@ const { label, inputId } = defineProps<{
 const emit = defineEmits<{ file: [file: File] }>()
 const input = useTemplateRef<HTMLInputElement>('input')
 
+function pick(files: FileList | null | undefined) {
+  const file = firstImage(files)
+  if (file) emit('file', file)
+}
+
 function onChange(event: Event) {
   if (!(event.target instanceof HTMLInputElement)) return
-  const file = event.target.files?.[0]
+  pick(event.target.files)
   event.target.value = ''
-  if (file?.type.startsWith('image/')) emit('file', file)
 }
 </script>
 
@@ -26,6 +32,8 @@ function onChange(event: Event) {
     :aria-label="label"
     :title="label"
     @click="input?.click()"
+    @dragover.prevent.stop
+    @drop.prevent.stop="pick($event.dataTransfer?.files)"
   >
     <slot />
   </button>
