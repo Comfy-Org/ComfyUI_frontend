@@ -1,7 +1,7 @@
-import type { BillingOperationTelemetryEvent } from '@comfyorg/account-core/billing'
 import { describe, expect, it } from 'vitest'
 
-import { toBillingTelemetryEvent } from './billingSdkTelemetry'
+import type { BillingOperationTelemetryEvent } from '../operationLifecycle.js'
+import { toBillingTelemetryEvent } from './operationLifecycleEvent.js'
 
 describe('toBillingTelemetryEvent', () => {
   it.for<{

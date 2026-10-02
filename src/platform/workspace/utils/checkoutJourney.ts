@@ -1,15 +1,15 @@
-import { isContractIdentifier } from '@comfyorg/billing-contract'
-
-import type { ServerFeatureFlag } from '@/composables/useFeatureFlags'
 import type {
   CheckoutAssignmentStatus,
   CheckoutEntryFlow,
   CheckoutEntrySource,
   CheckoutJourneyArm,
   CheckoutJourneyContext,
-  CheckoutUiMode,
-  PaymentIntentSource
-} from '@/platform/telemetry/types'
+  CheckoutUiMode
+} from '@comfyorg/account-core/billing'
+import { isContractIdentifier } from '@comfyorg/billing-contract'
+
+import type { ServerFeatureFlag } from '@/composables/useFeatureFlags'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
 
 /**
  * One lifecycle owner for a checkout journey's frozen entry context and
