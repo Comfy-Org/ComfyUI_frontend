@@ -43,27 +43,60 @@ describe('tryOnScene', () => {
 })
 
 describe('runTryOn', () => {
-  const request = tryOnRequest(TRY_ON_PERSON.url, breton.url, 'regular', 42)
+  const request = tryOnRequest('blob:me', breton.url, 'regular', 42)
+
+  async function finish(run: Promise<unknown>) {
+    await vi.runAllTimersAsync()
+    return run
+  }
+
+  it.for(EXAMPLE_GARMENTS.map(({ id, url }) => ({ id, url })))(
+    'answers the example person in the $id garment with its example photo',
+    async ({ id, url }) => {
+      vi.useFakeTimers()
+      const render = vi.fn<TryOnRender>()
+
+      const run = runTryOn(
+        tryOnRequest(TRY_ON_PERSON.url, url, 'slim', 3),
+        new AbortController().signal,
+        render
+      )
+
+      await expect(finish(run)).resolves.toEqual({
+        url: `/images/apps/virtual-try-on/result-${id}.jpg`,
+        seed: 3
+      })
+      expect(render).not.toHaveBeenCalled()
+    }
+  )
 
   it.for([
     {
-      name: 'answers with the rendered image',
+      name: 'draws an uploaded person in an example garment',
+      request,
       rendered: 'blob:dressed',
       expected: 'blob:dressed'
     },
     {
-      name: 'falls back to the photo where it cannot render',
+      name: 'draws the example person in an uploaded garment',
+      request: tryOnRequest(TRY_ON_PERSON.url, 'blob:shirt', 'regular', 42),
+      rendered: 'blob:dressed',
+      expected: 'blob:dressed'
+    },
+    {
+      name: 'falls back to the photo where it cannot draw',
+      request,
       rendered: undefined,
-      expected: TRY_ON_PERSON.url
+      expected: 'blob:me'
     }
-  ])('$name', async ({ rendered, expected }) => {
+  ])('$name', async ({ request, rendered, expected }) => {
     vi.useFakeTimers()
-    const render: TryOnRender = () => Promise.resolve(rendered)
+    const render = vi.fn<TryOnRender>(() => Promise.resolve(rendered))
 
     const run = runTryOn(request, new AbortController().signal, render)
-    await vi.runAllTimersAsync()
 
-    await expect(run).resolves.toEqual({ url: expected, seed: 42 })
+    await expect(finish(run)).resolves.toEqual({ url: expected, seed: 42 })
+    expect(render).toHaveBeenCalledWith(request, tryOnScene(request))
   })
 
   it('releases a rendered image when the run is cancelled', async () => {

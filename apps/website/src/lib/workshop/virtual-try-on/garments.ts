@@ -32,12 +32,12 @@ export const EXAMPLE_GARMENTS = [
   {
     id: 'flannel',
     url: '/images/apps/virtual-try-on/garment-flannel.jpg',
-    fabric: { x: 0.53, y: 0.4, w: 0.16, h: 0.2 }
+    fabric: { x: 0.53, y: 0.5, w: 0.16, h: 0.2 }
   },
   {
     id: 'knit',
     url: '/images/apps/virtual-try-on/garment-knit.jpg',
-    fabric: { x: 0.36, y: 0.4, w: 0.28, h: 0.28 }
+    fabric: { x: 0.42, y: 0.4, w: 0.16, h: 0.28 }
   }
 ] as const satisfies readonly Omit<TryOnGarment, 'name'>[]
 

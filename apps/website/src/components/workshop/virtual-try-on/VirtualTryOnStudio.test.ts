@@ -83,7 +83,7 @@ describe('VirtualTryOnStudio', () => {
     expect(screen.queryByRole('slider')).toBeNull()
     expect(
       screen.getByRole('img', { name: 'The photo with the garment tried on' })
-    ).toBeVisible()
+    ).toHaveAttribute('src', '/images/apps/virtual-try-on/result-flannel.jpg')
 
     await user.click(within(tools()).getByRole('button', { name: 'Edit' }))
     expect(

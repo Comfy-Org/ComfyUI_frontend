@@ -96,7 +96,7 @@ describe('useVirtualTryOn', () => {
 
     expect(tryOn.phase.value).toMatchObject({
       kind: 'done',
-      result: { url: '/images/apps/virtual-try-on/person.jpg', seed: 7 }
+      result: { url: '/images/apps/virtual-try-on/result-breton.jpg', seed: 7 }
     })
     expect(tryOn.view.value).toBe('compare')
     tryOn.edit()

@@ -73,23 +73,37 @@ export function tryOnScene(request: TryOnRequest): TryOnScene {
   }
 }
 
+/** The example photo of the example person wearing an example garment. */
+export function preparedResult(request: TryOnRequest): string | undefined {
+  if (request.personImageUrl !== TRY_ON_PERSON.url) return undefined
+  const example = EXAMPLE_GARMENTS.find(
+    (garment) => garment.url === request.garmentImageUrl
+  )
+  return example && `/images/apps/virtual-try-on/result-${example.id}.jpg`
+}
+
 /**
  * Stands in for the Virtual try-on backend until it exists: waits, then
- * answers with the garment drawn over the person (`render`), or the photo
- * itself where that cannot draw. Replace this with the real job call; the
- * page only needs the same request and result shapes.
+ * answers with the example photo for the examples (`preparedResult`), the
+ * garment drawn over the person (`render`), or the photo itself where that
+ * cannot draw. Replace this with the real job call; the page only needs
+ * the same request and result shapes.
  */
 export async function runTryOn(
   request: TryOnRequest,
   signal: AbortSignal,
   render: TryOnRender = renderTryOn
 ): Promise<TryOnResult> {
-  const rendered = render(request, tryOnScene(request)).catch(() => undefined)
+  const prepared = preparedResult(request)
+  const rendered = prepared
+    ? undefined
+    : render(request, tryOnScene(request)).catch(() => undefined)
   try {
     await mockJob(undefined, signal, MOCK_DELAY_MS)
   } catch (error) {
-    void rendered.then((url) => url && URL.revokeObjectURL(url))
+    void rendered?.then((url) => url && URL.revokeObjectURL(url))
     throw error
   }
-  return { url: (await rendered) ?? request.personImageUrl, seed: request.seed }
+  const url = prepared ?? (await rendered) ?? request.personImageUrl
+  return { url, seed: request.seed }
 }

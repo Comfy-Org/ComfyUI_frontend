@@ -510,9 +510,10 @@ test('tries a garment on the Virtual try-on example from the floating panel', as
 
   await panel.getByTestId('try-on-run').click()
   await expect(app.getByRole('status')).toContainText('Dressing the photo')
-  await expect(app.getByRole('link', { name: 'Download' })).toHaveAttribute(
+  const download = app.getByRole('link', { name: 'Download' })
+  await expect(download).toHaveAttribute(
     'href',
-    /^blob:/
+    '/images/apps/virtual-try-on/result-flannel.jpg'
   )
   const slider = app.getByRole('slider', {
     name: 'Drag to compare the original and the try-on'
@@ -526,6 +527,17 @@ test('tries a garment on the Virtual try-on example from the floating panel', as
   await expect(slider).toBeHidden()
   await tools.getByRole('button', { name: 'Edit' }).click()
   await expect(panel.getByRole('radio', { name: 'Relaxed' })).toBeChecked()
+
+  const chooser = page.waitForEvent('filechooser')
+  await panel.getByRole('button', { name: 'Upload a garment' }).click()
+  await (
+    await chooser
+  ).setFiles('public/images/apps/virtual-try-on/garment-knit.jpg')
+  await expect(
+    app.getByRole('img', { name: 'Garment: garment-knit.jpg' })
+  ).toBeVisible()
+  await panel.getByTestId('try-on-run').click()
+  await expect(download).toHaveAttribute('href', /^blob:/)
 })
 
 test('tries a garment on from the Virtual try-on bottom sheet on phones @mobile', async ({
