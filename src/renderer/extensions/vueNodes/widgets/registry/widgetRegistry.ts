@@ -4,8 +4,6 @@
 import { defineAsyncComponent } from 'vue'
 import type { Component } from 'vue'
 
-import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
-
 const WidgetButton = defineAsyncComponent(
   () => import('../components/WidgetButton.vue')
 )
@@ -60,6 +58,9 @@ const Load3DAdvanced = defineAsyncComponent(
 const CameraInfo = defineAsyncComponent(
   () => import('@/components/cameraInfo/CameraInfo.vue')
 )
+const CameraAngle = defineAsyncComponent(
+  () => import('@/components/cameraAngle/CameraAngle.vue')
+)
 const WidgetImageCrop = defineAsyncComponent(
   () => import('@/components/imagecrop/WidgetImageCrop.vue')
 )
@@ -87,6 +88,9 @@ const WidgetVideoEdit = defineAsyncComponent(
 )
 const WidgetColors = defineAsyncComponent(
   () => import('@/components/palette/WidgetColors.vue')
+)
+const WidgetResolutionPreview = defineAsyncComponent(
+  () => import('../components/WidgetResolutionPreview.vue')
 )
 
 export const FOR_TESTING = {
@@ -216,6 +220,14 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
     }
   ],
   [
+    'cameraAngle',
+    {
+      component: CameraAngle,
+      aliases: ['CAMERA_ANGLE_VIEW'],
+      essential: false
+    }
+  ],
+  [
     'imagecrop',
     {
       component: WidgetImageCrop,
@@ -286,6 +298,14 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
       aliases: ['COLORS'],
       essential: false
     }
+  ],
+  [
+    'resolutionpreview',
+    {
+      component: WidgetResolutionPreview,
+      aliases: ['RESOLUTION_PREVIEW'],
+      essential: false
+    }
   ]
 ]
 
@@ -313,13 +333,6 @@ export const isEssential = (type: string): boolean => {
   return widgets.get(canonicalType)?.essential || false
 }
 
-export const shouldRenderAsVue = (widget: {
-  options?: Pick<IWidgetOptions, 'canvasOnly'>
-  type?: string
-}): boolean => {
-  return !widget.options?.canvasOnly && !!widget.type
-}
-
 const EXPANDING_TYPES = [
   'textarea',
   'markdown',
@@ -327,6 +340,7 @@ const EXPANDING_TYPES = [
   'load3D',
   'load3DAdvanced',
   'cameraInfo',
+  'cameraAngle',
   'curve',
   'painter',
   'compositor',

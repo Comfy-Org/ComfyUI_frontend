@@ -7,6 +7,9 @@ import type {
 
 import { externalLinks } from '../config/routes'
 import { t } from '../i18n/translations'
+import { categoryPath } from './learningPaths'
+
+export { categoryPath, tutorialPath } from './learningPaths'
 
 export type LearningCategory = 'basics' | 'vfx' | 'animations' | 'ads'
 
@@ -62,10 +65,10 @@ export const learningCategories: readonly LearningCategory[] = [
 ]
 
 export const categoryLabelKeys: Record<LearningCategory, TranslationKey> = {
-  basics: 'learning.categories.basics',
-  vfx: 'learning.categories.vfx',
-  animations: 'learning.categories.animations',
-  ads: 'learning.categories.ads'
+  basics: 'learning.categories.basics.label',
+  vfx: 'learning.categories.vfx.label',
+  animations: 'learning.categories.animations.label',
+  ads: 'learning.categories.ads.label'
 }
 
 export const categoryBlurbKeys: Record<LearningCategory, TranslationKey> = {
@@ -183,6 +186,7 @@ const imageToImageTag: TranslationKey = 'tags.imageToImage'
 const inpaintingTag: TranslationKey = 'tags.inpainting'
 const outpaintingTag: TranslationKey = 'tags.outpainting'
 const upscalingTag: TranslationKey = 'tags.upscaling'
+const motionControlTag: TranslationKey = 'tags.motionControl'
 
 const dougHogan: TutorialAuthor = {
   name: { en: 'Doug Hogan', 'zh-CN': 'Doug Hogan' },
@@ -290,6 +294,30 @@ export const learningTutorials: readonly LearningTutorial[] = [
     newTab: true,
     ctaLabelKey: 'cta.tryForFree',
     tags: [fundamentalsTag, inpaintingTag, outpaintingTag, upscalingTag]
+  },
+  {
+    id: 'basics_image_to_video',
+    publishedDate: '2026-09-02',
+    slug: 'image-to-video-motion-control-upscaling',
+    category: 'basics',
+    episode: 5,
+    author: dougHogan,
+    youtubeId: 'Yuw8F4E4-7Y',
+    title: {
+      en: 'ComfyUI Tutorial for Beginners: Image-to-Video, Motion Control & Upscaling (2026)',
+      'zh-CN': 'ComfyUI 新手教程：图生视频、运动控制与放大 (2026)'
+    },
+    description: {
+      en: 'Turn a still into a shot: build an image-to-video workflow, steer the result with motion control, and finish at higher resolution with upscaling.',
+      'zh-CN':
+        '让静态图动起来：搭建图生视频工作流，用运动控制引导镜头表现，再通过放大以更高分辨率输出。'
+    },
+    poster:
+      'https://media.comfy.org/website/learning/image-to-video-motion-control-upscaling-thumb.png',
+    href: externalLinks.cloudCta('learning_basics_image_to_video'),
+    newTab: true,
+    ctaLabelKey: 'cta.tryForFree',
+    tags: [fundamentalsTag, imageToVideoTag, motionControlTag, upscalingTag]
   },
   {
     id: 'cleanplate_walkthrough_v03',
@@ -836,14 +864,6 @@ export const getTutorialByCategoryAndSlug = (
 export const youtubeEmbedUrl = (id: string): string =>
   `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=1&rel=0`
 
-/** Canonical path for a category's directory page (wrap with localizeHref for zh-CN). */
-export const categoryPath = (category: LearningCategory): string =>
-  `/learning/${category}`
-
-/** Canonical path for a tutorial's detail page (wrap with localizeHref for zh-CN). */
-export const tutorialPath = (tutorial: LearningTutorial): string =>
-  `${categoryPath(tutorial.category)}/${tutorial.slug}`
-
 export interface LearningCrumb {
   name: string
   path: string
@@ -858,7 +878,7 @@ export const learningCrumbs = (
   category?: LearningCategory
 ): LearningCrumb[] => [
   { name: t('breadcrumb.home', locale), path: '/' },
-  { name: t('learning.title', locale), path: '/learning' },
+  { name: t('learning.title', locale), path: '/learning/' },
   ...(category
     ? [
         {

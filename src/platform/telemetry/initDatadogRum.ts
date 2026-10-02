@@ -1,10 +1,13 @@
 // eslint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
 import { datadogRum } from '@datadog/browser-rum'
 
+import { COMFY_RUM_APPLICATION } from '@comfyorg/shared-frontend-utils/telemetry'
+import type { DeployEnv } from '@comfyorg/shared-frontend-utils/telemetry'
+
 import { rumBeforeSend } from './datadogRumBeforeSend'
 import { trackUserManualRefresh } from './manualRefreshTracker'
 
-const DATADOG_ENV_BY_HOSTNAME = new Map([
+const DATADOG_ENV_BY_HOSTNAME = new Map<string, DeployEnv>([
   ['cloud.comfy.org', 'prod-v2'],
   ['stagingcloud.comfy.org', 'stg-v2'],
   ['testcloud.comfy.org', 'test-v2']
@@ -39,26 +42,39 @@ async function initializeDatadogRum(env: string): Promise<void> {
   if (datadogRum.getInitConfiguration()) return
 
   datadogRum.init({
-    clientToken: 'pub7704486e5b64eb4ff6f62891cda45559',
-    applicationId: '041a9897-5516-4b1f-a245-1a9aa6895488',
-    site: 'us5.datadoghq.com',
+    ...COMFY_RUM_APPLICATION,
     service: 'comfy-cloud-frontend',
     env,
     version: __COMFYUI_FRONTEND_COMMIT__,
     beforeSend: rumBeforeSend,
     sessionSampleRate: 100,
     sessionReplaySampleRate: 0,
+    trackFeatureFlagsForEvents: ['action', 'vital', 'long_task', 'resource'],
     allowedTracingUrls: [/^https:\/\/[^/]+\.comfy\.org/]
   })
   trackUserManualRefresh()
 }
 
+/**
+ * Maps a hostname to the deploy environment name Datadog/backend engineers
+ * already use to distinguish prod from testcloud/staging — shared here so a
+ * caller identifying "which backend is this" (e.g. a bug-report payload)
+ * reads the same classification RUM does, instead of a second hostname list
+ * that can drift from this one.
+ */
+export function resolveDeployEnv(
+  hostname = window.location.hostname
+): DeployEnv | undefined {
+  return (
+    DATADOG_ENV_BY_HOSTNAME.get(hostname) ??
+    (hostname.endsWith('.testenvs.comfy.org') ? 'test-v2' : undefined)
+  )
+}
+
 export function initDatadogRum(
   hostname = window.location.hostname
 ): Promise<void> {
-  const env =
-    DATADOG_ENV_BY_HOSTNAME.get(hostname) ??
-    (hostname.endsWith('.testenvs.comfy.org') ? 'test-v2' : undefined)
+  const env = resolveDeployEnv(hostname)
   if (!env || datadogRum.getInitConfiguration()) return Promise.resolve()
 
   initializationPromise ??= initializeDatadogRum(env).finally(() => {

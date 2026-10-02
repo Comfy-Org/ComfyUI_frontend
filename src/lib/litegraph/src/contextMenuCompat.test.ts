@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { createMockCanvas } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvas } from '@/utils/__tests__/canvasTestUtils'
 
 describe('contextMenuCompat', () => {
   let originalGetCanvasMenuOptions: typeof LGraphCanvas.prototype.getCanvasMenuOptions
@@ -18,7 +18,7 @@ describe('contextMenuCompat', () => {
       constructor: {
         prototype: LGraphCanvas.prototype
       } as typeof LGraphCanvas
-    } as Partial<LGraphCanvas>)
+    })
 
     // Clear console warnings
     vi.spyOn(console, 'warn').mockImplementation(() => {})

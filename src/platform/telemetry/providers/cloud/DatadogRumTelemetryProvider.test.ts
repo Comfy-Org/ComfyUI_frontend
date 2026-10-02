@@ -1,24 +1,146 @@
-import { describe, expect, it, vi } from 'vitest'
+import type { BillingTelemetryEvent } from '@comfyorg/account-core/billing'
+import { computed } from 'vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { BillingTelemetryEvent } from '../../types'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+
 import { TelemetryEvents } from '../../types'
 import { DatadogRumTelemetryProvider } from './DatadogRumTelemetryProvider'
 
-const { addAction, addDurationVital, getInternalContext } = vi.hoisted(() => ({
+const {
+  addAction,
+  addDurationVital,
+  addFeatureFlagEvaluation,
+  getInternalContext,
+  setUser,
+  clearUser
+} = vi.hoisted(() => ({
   addAction: vi.fn(),
   addDurationVital: vi.fn(),
-  getInternalContext: vi.fn()
+  addFeatureFlagEvaluation: vi.fn(),
+  getInternalContext: vi.fn(),
+  setUser: vi.fn(),
+  clearUser: vi.fn()
 }))
 
-vi.mock('@datadog/browser-rum', () => ({
-  datadogRum: { addAction, addDurationVital, getInternalContext }
+vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
+  datadogRum: {
+    addAction,
+    addDurationVital,
+    addFeatureFlagEvaluation,
+    getInternalContext,
+    setUser,
+    clearUser
+  }
 }))
+
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
+beforeEach(() => {
+  useCurrentUser().resolvedUserInfo = computed(() => ({
+    id: 'restored-user'
+  }))
+  useCurrentUser().userEmail = computed(() => 'restored@example.com')
+})
 
 const workflowExecutionIntent = {
   trigger_source: 'keybinding'
 } as const
 
 describe('DatadogRumTelemetryProvider', () => {
+  it('identifies restored sessions and replaces identity on account changes', () => {
+    const provider = new DatadogRumTelemetryProvider()
+    provider.trackUserLoggedIn()
+    provider.trackAuth({ user_id: 'new-user', email: 'new@example.com' })
+    provider.trackAuth({ user_id: 'user-without-email' })
+
+    expect(setUser).toHaveBeenNthCalledWith(1, {
+      id: 'restored-user',
+      email: 'restored@example.com'
+    })
+    expect(setUser).toHaveBeenNthCalledWith(2, {
+      id: 'new-user',
+      email: 'new@example.com'
+    })
+    expect(setUser).toHaveBeenNthCalledWith(3, { id: 'user-without-email' })
+    expect(useCurrentUser().onUserLogout).toHaveBeenCalledOnce()
+    vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]()
+    expect(clearUser).toHaveBeenCalledOnce()
+  })
+
+  it('does not identify an unresolved user or send email without an account ID', () => {
+    useCurrentUser().resolvedUserInfo = computed(() => null)
+    useCurrentUser().userEmail = computed(() => null)
+    const provider = new DatadogRumTelemetryProvider()
+    provider.trackUserLoggedIn()
+    provider.trackAuth({ email: 'unresolved@example.com' })
+
+    expect(setUser).not.toHaveBeenCalled()
+    expect(useCurrentUser().onUserLogout).not.toHaveBeenCalled()
+  })
+  it.for(['subscription_checkout', 'topup'] as const)(
+    'emits %s phase and terminal events as RUM actions',
+    (operation) => {
+      const provider = new DatadogRumTelemetryProvider()
+      const events: BillingTelemetryEvent[] = [
+        { operation, stage: 'intent', outcome: 'pending' },
+        { operation, stage: 'request_sent', outcome: 'pending' },
+        operation === 'topup'
+          ? {
+              operation,
+              stage: 'checkout_received',
+              outcome: 'pending',
+              billing_op_id: 'op-1',
+              checkout_status: 'pending'
+            }
+          : {
+              operation,
+              stage: 'checkout_received',
+              outcome: 'pending',
+              billing_op_id: 'op-1',
+              checkout_status: 'pending_payment'
+            },
+        {
+          operation,
+          stage: 'succeeded',
+          outcome: 'success',
+          billing_op_id: 'op-1'
+        },
+        {
+          operation,
+          stage: 'failed',
+          outcome: 'failure',
+          billing_op_id: 'op-2',
+          failure_category: 'provider_decline'
+        }
+      ]
+      for (const event of events) provider.trackBillingEvent(event)
+      expect(addAction.mock.calls).toEqual(
+        events.map((event) => [
+          `billing.${event.operation}.${event.stage}`,
+          { ...event, billing_surface: 'cloud_app' }
+        ])
+      )
+    }
+  )
+
+  it('records fetch timeouts as RUM actions', () => {
+    new DatadogRumTelemetryProvider().trackFetchTimeout({
+      route: '/userdata/:resource',
+      method: 'GET',
+      timeout_ms: 60_000
+    })
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.FETCH_TIMEOUT,
+      {
+        route: '/userdata/:resource',
+        method: 'GET',
+        timeout_ms: 60_000
+      }
+    )
+  })
+
   it('records terminal unified auth retry outcomes without request data', () => {
     new DatadogRumTelemetryProvider().trackUnifiedAuthRetry({
       transport: 'axios',
@@ -61,6 +183,22 @@ describe('DatadogRumTelemetryProvider', () => {
     )
   })
 
+  it.for([
+    ['extension.manager:supports-v4', 'extension_manager_supports_v4'],
+    ['rollout(beta)[staff]', 'rollout_beta__staff_'],
+    [
+      'a+b=c&&d||e>f<g!h{i}^j"k“l”~m*n?o\\p',
+      'a_b_c__d__e_f_g_h_i__j_k_l__m_n_o_p'
+    ]
+  ])('normalizes feature flag key %s', ([key, normalizedKey]) => {
+    new DatadogRumTelemetryProvider().trackFeatureFlagEvaluation(key, true)
+
+    expect(addFeatureFlagEvaluation).toHaveBeenCalledExactlyOnceWith(
+      normalizedKey,
+      true
+    )
+  })
+
   it('records the same canonical billing name and context as PostHog', () => {
     const event: BillingTelemetryEvent = {
       operation: 'operation',
@@ -80,7 +218,7 @@ describe('DatadogRumTelemetryProvider', () => {
 
     expect(addAction).toHaveBeenCalledExactlyOnceWith(
       TelemetryEvents.BILLING_OPERATION_FAILED,
-      event
+      { ...event, billing_surface: 'cloud_app' }
     )
   })
 
@@ -107,7 +245,8 @@ describe('DatadogRumTelemetryProvider', () => {
         stage: 'failed',
         outcome: 'failure',
         billing_op_id: 'opaque-op-id',
-        failure_category: 'unknown'
+        failure_category: 'unknown',
+        billing_surface: 'cloud_app'
       }
     )
   })

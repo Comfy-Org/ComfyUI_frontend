@@ -5,9 +5,7 @@ import { toNodeId } from '@/types/nodeId'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-})
+test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
 test.describe('Graph', { tag: ['@smoke', '@canvas'] }, () => {
   // Should be able to fix link input slot index after swap the input order
@@ -17,7 +15,7 @@ test.describe('Graph', { tag: ['@smoke', '@canvas'] }, () => {
     await expect
       .poll(() =>
         comfyPage.page.evaluate(
-          (linkId) => window.app!.graph!.links.get(linkId)?.target_slot,
+          (linkId) => window.app!.graph.links.get(linkId)?.target_slot,
           toLinkId(1)
         )
       )
@@ -77,7 +75,7 @@ test.describe('Graph', { tag: ['@smoke', '@canvas'] }, () => {
           ).length
         }
 
-        const graph = window.app!.graph!
+        const graph = window.app!.graph
         const subgraph = graph.subgraphs.values().next().value
         if (!subgraph) return { error: 'No subgraph found' }
 

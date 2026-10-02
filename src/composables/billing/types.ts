@@ -9,6 +9,8 @@ import type {
   Plan,
   PreviewSubscribeOptions,
   PreviewSubscribeResponse,
+  RenewalInvoice,
+  ScheduledPlanChange,
   SubscribeOptions,
   SubscribeResponse,
   SubscriptionDuration,
@@ -24,17 +26,24 @@ export interface SubscriptionInfo {
   tier: SubscriptionTier | null
   duration: SubscriptionDuration | null
   planSlug: string | null
-  scheduledPlanSlug?: string | null
-  /** ISO 8601; format at the display site. */
-  changeAt?: string | null
+  scheduledChange: ScheduledPlanChange | null
   /** ISO 8601; format at the display site. */
   renewalDate: string | null
   /** ISO 8601; format at the display site. */
   endDate: string | null
   isCancelled: boolean
   hasFunds: boolean
+  /** Agent funds across shared credits and the Agent-scoped balance. */
+  agentHasFunds: boolean
 }
 
+/**
+ * Balance amounts from `GET /customers/balance` and `GET /api/billing/balance`.
+ * Despite the `Micros` suffixes every field is in CENTS: the backend reports
+ * Metronome's USD-cents credit balance verbatim, so format with
+ * `formatCreditsFromCents` (credits) or `formatMetronomeCurrency` (dollars)
+ * rather than dividing by 1,000,000.
+ */
 export interface BalanceInfo {
   amountMicros: number
   currency: string
@@ -56,7 +65,7 @@ export interface BillingActions {
     options?: PreviewSubscribeOptions
   ) => Promise<PreviewSubscribeResponse | null>
   manageSubscription: () => Promise<void>
-  cancelSubscription: () => Promise<void>
+  cancelSubscription: (isScopeCurrent?: () => boolean) => Promise<void>
   /**
    * Reactivates a cancelled-but-still-active subscription. Legacy has no
    * dedicated endpoint, so the legacy adapter re-runs the checkout flow.
@@ -118,11 +127,15 @@ export interface BillingState {
   subscriptionStatus: ComputedRef<BillingSubscriptionStatus | null>
   tier: ComputedRef<SubscriptionTier | null>
   renewalDate: ComputedRef<string | null>
+  /** Open renewal invoice to pay; owners on the stripe rail while payment_failed. */
+  renewalInvoice: ComputedRef<RenewalInvoice | null>
 }
 
 export interface BillingContext extends BillingState, BillingActions {
   type: ComputedRef<BillingType>
   reconcileSubscriptionSuccess: () => Promise<void>
+  /** Reads the checkout rail's status; true once its pending operation is adopted. */
+  readCheckoutOperation: () => Promise<boolean>
   /**
    * True when the active team workspace is still on a pre-credit-slider
    * (legacy) per-member tier plan, which keeps the old team pricing table.
@@ -138,6 +151,4 @@ export interface BillingContext extends BillingState, BillingActions {
   getMaxSeats: (tierKey: TierKey) => number
   canRunWorkflows: ComputedRef<boolean>
   showsSubscribeToRunPrompt: ComputedRef<boolean>
-  /** @deprecated Use canAccessSubscriptionFeatures instead */
-  isActiveSubscription: ComputedRef<boolean>
 }

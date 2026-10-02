@@ -78,7 +78,7 @@ const isLive = computed(
 
 <template>
   <section
-    class="max-w-9xl mx-auto flex flex-col items-center px-6 py-16 text-center lg:py-24"
+    class="mx-auto flex max-w-9xl flex-col items-center px-6 py-16 text-center lg:py-24"
   >
     <div
       v-if="isLive"

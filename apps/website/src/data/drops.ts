@@ -54,6 +54,25 @@ function videoFor(
 
 export const drops: readonly Drop[] = [
   {
+    id: 'comfy-cloud-nodes',
+    badge: NEW_BADGE,
+    category: MODELS_AND_NODES,
+    media: imageFor('Drops_2x2card_CloudNodes.jpg', {
+      en: 'Comfy Cloud Nodes',
+      'zh-CN': 'Comfy Cloud 节点'
+    }),
+    title: { en: 'Comfy Cloud Nodes', 'zh-CN': 'Comfy Cloud 节点' },
+    description: {
+      en: 'Run the newest open models on our GPUs from inside your own ComfyUI. No subscription, no downloads.',
+      'zh-CN':
+        '在你自己的 ComfyUI 中，用我们的 GPU 运行最新的开源模型。无需订阅，无需下载。'
+    },
+    cta: {
+      label: EXPLORE,
+      href: { en: '/cloud-nodes/', 'zh-CN': '/zh-CN/cloud-nodes/' }
+    }
+  },
+  {
     id: 'desktop-client',
     badge: NEW_BADGE,
     category: PLATFORM,
@@ -68,7 +87,7 @@ export const drops: readonly Drop[] = [
     },
     cta: {
       label: EXPLORE,
-      href: { en: '/download', 'zh-CN': '/zh-CN/download' }
+      href: { en: '/download/', 'zh-CN': '/zh-CN/download/' }
     }
   },
   {
@@ -86,7 +105,7 @@ export const drops: readonly Drop[] = [
     },
     cta: {
       label: EXPLORE,
-      href: { en: '/mcp', 'zh-CN': '/zh-CN/mcp' }
+      href: { en: '/mcp/', 'zh-CN': '/zh-CN/mcp/' }
     }
   },
   {
@@ -126,7 +145,7 @@ export const drops: readonly Drop[] = [
     },
     cta: {
       label: EXPLORE,
-      href: { en: '/platform', 'zh-CN': '/zh-CN/platform' }
+      href: { en: '/platform/', 'zh-CN': '/zh-CN/platform/' }
     }
   },
   {
@@ -164,7 +183,7 @@ export const drops: readonly Drop[] = [
     },
     cta: {
       label: EXPLORE,
-      href: { en: '/p/supported-models', 'zh-CN': '/zh-CN/p/supported-models' }
+      href: { en: '/p/supported-models/', 'zh-CN': '/p/supported-models/' }
     }
   },
   {
@@ -183,8 +202,8 @@ export const drops: readonly Drop[] = [
     cta: {
       label: EXPLORE,
       href: {
-        en: '/cloud/supported-nodes',
-        'zh-CN': '/zh-CN/cloud/supported-nodes'
+        en: '/cloud/supported-nodes/',
+        'zh-CN': '/zh-CN/cloud/supported-nodes/'
       }
     }
   },
@@ -202,7 +221,7 @@ export const drops: readonly Drop[] = [
     },
     cta: {
       label: EXPLORE,
-      href: { en: '/enterprise', 'zh-CN': '/zh-CN/enterprise' }
+      href: { en: '/enterprise/', 'zh-CN': '/zh-CN/enterprise/' }
     }
   },
   {
@@ -219,7 +238,7 @@ export const drops: readonly Drop[] = [
     },
     cta: {
       label: { en: 'START LEARNING', 'zh-CN': '开始学习' },
-      href: { en: '/learning', 'zh-CN': '/zh-CN/learning' }
+      href: { en: '/learning/', 'zh-CN': '/zh-CN/learning/' }
     }
   },
   {
@@ -241,7 +260,7 @@ export const drops: readonly Drop[] = [
     // /affiliates is locale-invariant: same URL in both locales.
     cta: {
       label: { en: 'LEARN MORE', 'zh-CN': '了解更多' },
-      href: { en: '/affiliates', 'zh-CN': '/affiliates' }
+      href: { en: '/affiliates/', 'zh-CN': '/affiliates/' }
     }
   }
 ]

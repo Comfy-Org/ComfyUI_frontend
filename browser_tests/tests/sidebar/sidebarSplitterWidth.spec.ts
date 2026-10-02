@@ -1,12 +1,19 @@
 import { expect } from '@playwright/test'
+import type { Locator } from '@playwright/test'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+
+import type { ComfyMouse } from '@e2e/fixtures/ComfyMouse'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
+import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
 
 test.describe('Sidebar splitter width independence', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.Sidebar.UnifiedWidth', true)
-    await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', false)
+  test.use({
+    initialSettings: {
+      'Comfy.NodeLibrary.NewDesign': false
+    }
   })
 
   async function dismissToasts(comfyPage: ComfyPage) {
@@ -144,3 +151,92 @@ test.describe('Sidebar splitter width independence', () => {
       .toBeLessThanOrEqual(101)
   })
 })
+
+agentTest.describe(
+  'Sidebar width across neighbouring panel toggles',
+  { tag: ['@cloud', '@ui'] },
+  () => {
+    agentTest.use({
+      initialSettings: {
+        'Comfy.Sidebar.Location': 'left',
+        'Comfy.RightSidePanel.IsOpen': false
+      }
+    })
+
+    function sidebarPanel(comfyPage: ComfyPage) {
+      return comfyPage.page.getByRole('complementary', {
+        name: enMessages.sideToolbar.sidebar
+      })
+    }
+
+    async function widthOf(panel: Locator) {
+      return (await panel.boundingBox())?.width ?? 0
+    }
+
+    async function widenSidebar(comfyPage: ComfyPage, comfyMouse: ComfyMouse) {
+      const sidebar = sidebarPanel(comfyPage)
+      const gutter = comfyPage.page
+        .locator('.p-splitter-gutter:not(.hidden)')
+        .first()
+      const box = await gutter.boundingBox()
+      if (!box) throw new Error('Sidebar gutter is not visible')
+      const widthBeforeDrag = await widthOf(sidebar)
+      const x = box.x + box.width / 2
+      const y = box.y + box.height / 2
+      await comfyMouse.dragAndDrop({ x, y }, { x: x + 80, y })
+      await expect
+        .poll(() => widthOf(sidebar))
+        .toBeGreaterThan(widthBeforeDrag + 40)
+      return widthOf(sidebar)
+    }
+
+    async function expectWidthKept(
+      comfyPage: ComfyPage,
+      panel: Locator,
+      width: number
+    ) {
+      await comfyPage.nextFrame()
+      await expect
+        .poll(async () => Math.abs((await widthOf(panel)) - width))
+        .toBeLessThanOrEqual(2)
+      await comfyPage.nextFrame()
+      expect(Math.abs((await widthOf(panel)) - width)).toBeLessThanOrEqual(2)
+    }
+
+    agentTest(
+      'keeps a dragged sidebar width when the Agent panel closes and reopens',
+      async ({ agentPanel, comfyMouse, comfyPage }) => {
+        const sidebar = sidebarPanel(comfyPage)
+        await comfyPage.menu.assetsTab.open({ waitForAssets: false })
+        await agentPanel.open()
+        await expect(sidebar).toBeVisible()
+
+        const draggedWidth = await widenSidebar(comfyPage, comfyMouse)
+
+        await agentPanel.openButton.click()
+        await expect(agentPanel.root).toHaveCount(0)
+        await expectWidthKept(comfyPage, sidebar, draggedWidth)
+
+        await agentPanel.open()
+        await expectWidthKept(comfyPage, sidebar, draggedWidth)
+      }
+    )
+
+    agentTest(
+      'keeps a dragged sidebar width when the workflow overview opens',
+      async ({ comfyMouse, comfyPage }) => {
+        const sidebar = sidebarPanel(comfyPage)
+        await comfyPage.menu.assetsTab.open({ waitForAssets: false })
+        await expect(sidebar).toBeVisible()
+        const openedWidth = await widenSidebar(comfyPage, comfyMouse)
+
+        await comfyPage.actionbar.propertiesButton.click()
+        await expect(
+          comfyPage.page.getByTestId(TestIds.propertiesPanel.root)
+        ).toBeVisible()
+
+        await expectWidthKept(comfyPage, sidebar, openedWidth)
+      }
+    )
+  }
+)

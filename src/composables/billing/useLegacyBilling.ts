@@ -20,6 +20,15 @@ import type {
   SubscriptionInfo
 } from './types'
 
+type LegacyBalance = NonNullable<ReturnType<typeof useAuthStore>['balance']>
+type RuntimeLegacyBalance = Omit<
+  LegacyBalance,
+  'amount_micros' | 'effective_balance_micros'
+> & {
+  amount_micros?: number
+  effective_balance_micros?: number
+}
+
 /**
  * Adapter for legacy user-scoped billing via /customers/* endpoints.
  * Used for personal workspaces.
@@ -53,6 +62,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
   const maxSeats = computed(() => null)
   const occupiedSeats = computed(() => null)
 
+  const hasFunds = computed(() => (authStore.balance?.amount_micros ?? 0) > 0)
   const subscription = computed<SubscriptionInfo | null>(() => {
     if (!legacyCanAccessSubscriptionFeatures.value && !subscriptionTier.value) {
       return null
@@ -63,20 +73,22 @@ export function useLegacyBilling(): BillingState & BillingActions {
       tier: subscriptionTier.value,
       duration: subscriptionDuration.value,
       planSlug: null, // Legacy doesn't use plan slugs
+      scheduledChange: null, // Legacy rail cannot schedule plan changes
       renewalDate: legacySubscriptionStatus.value?.renewal_date ?? null,
       endDate: legacySubscriptionStatus.value?.cancel_at ?? null,
       isCancelled: isCancelled.value,
-      hasFunds: (authStore.balance?.amount_micros ?? 0) > 0
+      hasFunds: hasFunds.value,
+      agentHasFunds: hasFunds.value
     }
   })
 
   const balance = computed<BalanceInfo | null>(() => {
-    const legacyBalance = authStore.balance
+    const legacyBalance: RuntimeLegacyBalance | null = authStore.balance
     if (!legacyBalance) return null
 
     return {
-      amountMicros: legacyBalance.amount_micros ?? 0,
-      currency: legacyBalance.currency ?? 'usd',
+      amountMicros: legacyBalance.amount_micros || 0,
+      currency: legacyBalance.currency || 'usd',
       effectiveBalanceMicros:
         legacyBalance.effective_balance_micros ??
         legacyBalance.amount_micros ??
@@ -237,6 +249,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
     subscriptionStatus,
     tier,
     renewalDate,
+    renewalInvoice: computed(() => null),
 
     // Actions
     initialize,

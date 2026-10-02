@@ -1,11 +1,16 @@
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useDialogService } from '@/services/dialogService'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import type { SubscriptionInfo } from '@/composables/billing/types'
 import type {
   BillingStatus,
+  RenewalInvoice,
   WorkspaceType
 } from '@/platform/workspace/api/workspaceApi'
 import BillingStatusBanner from '@/platform/workspace/components/dialogs/settings/BillingStatusBanner.vue'
@@ -14,98 +19,94 @@ interface Subscription {
   hasFunds: boolean
   isCancelled: boolean
   endDate: string | null
+  tier?: SubscriptionInfo['tier']
+  scheduledChange?: SubscriptionInfo['scheduledChange']
 }
 
 const state = vi.hoisted(() => ({
-  billingControlEnabled: true,
-  v1PaymentRecovery: true,
-  isActiveSubscription: true,
+  canAccessSubscriptionFeatures: true,
   isTeamPlan: true,
   billingStatus: 'paid' as string | null,
+  subscriptionStatus: 'active' as string | null,
   subscription: {
     hasFunds: true,
     isCancelled: false,
-    endDate: null
+    endDate: null,
+    scheduledChange: null
   } as Subscription | null,
   renewalDate: null as string | null,
+  renewalInvoice: null as RenewalInvoice | null,
   workspaceType: 'team' as WorkspaceType,
   canManageSubscription: true,
   canManageSubscriptionLifecycle: true,
-  canReactivate: true,
   canReactivatePlan: true,
   shouldUseWorkspaceBilling: true,
-  canTopUp: true,
-  canSubscribeSelfServe: false,
-  showTopUpCreditsDialog: vi.fn(),
   manageSubscription: vi.fn(),
-  handleResubscribe: vi.fn()
+  handleResubscribe: vi.fn(),
+  showSubscriptionDialog: vi.fn()
 }))
 
-vi.mock('@/composables/billing/useBillingRouting', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
   useBillingRouting: () => ({
     shouldUseWorkspaceBilling: computed(() => state.shouldUseWorkspaceBilling)
   })
 }))
 
-vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
-vi.mock('@/composables/useFeatureFlags', () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get billingControlEnabled() {
-        return state.billingControlEnabled
-      },
-      get v1PaymentRecovery() {
-        return state.v1PaymentRecovery
-      }
-    }
-  })
-}))
+vi.mock(import('@/composables/useFeatureFlags'))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
-    isActiveSubscription: computed(() => state.isActiveSubscription),
+    canAccessSubscriptionFeatures: computed(
+      () => state.canAccessSubscriptionFeatures
+    ),
     isTeamPlan: computed(() => state.isTeamPlan),
     billingStatus: computed(() => state.billingStatus as BillingStatus | null),
+    subscriptionStatus: computed(() => state.subscriptionStatus),
     subscription: computed(() => state.subscription),
+    plans: computed(() => [
+      { slug: 'pro-annual', tier: 'PRO', duration: 'ANNUAL' }
+    ]),
     renewalDate: computed(() => state.renewalDate),
+    renewalInvoice: computed(() => state.renewalInvoice),
     manageSubscription: state.manageSubscription,
     fetchStatus: vi.fn(),
     fetchBalance: vi.fn()
   })
 }))
 
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({
-    permissions: computed(() => ({
-      canManageSubscription: state.canManageSubscription,
-      canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
-    })),
-    workspaceType: computed(() => state.workspaceType),
-    canReactivatePlan: computed(() => state.canReactivatePlan)
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  () => ({
+    useWorkspaceUI: () => ({
+      permissions: computed(() => ({
+        canManageSubscription: state.canManageSubscription,
+        canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
+      })),
+      workspaceType: computed(() => state.workspaceType),
+      canReactivatePlan: computed(() => state.canReactivatePlan)
+    })
   })
-}))
+)
 
-vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
-  useBillingCapabilities: () => ({
-    canTopUp: computed(() => state.canTopUp),
-    canSubscribeSelfServe: computed(() => state.canSubscribeSelfServe),
-    canReactivate: computed(() => state.canReactivate)
-  })
-}))
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-vi.mock('@/platform/workspace/composables/useResubscribe', () => ({
+vi.mock(import('@/platform/workspace/composables/useResubscribe'), () => ({
   useResubscribe: () => ({
     isResubscribing: computed(() => false),
     handleResubscribe: state.handleResubscribe
   })
 }))
 
-vi.mock('@/services/dialogService', () => ({
-  useDialogService: () => ({
-    showTopUpCreditsDialog: state.showTopUpCreditsDialog
+vi.mock(import('@/services/dialogService'))
+
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
+  () => ({
+    useSubscriptionDialog: () => ({ show: state.showSubscriptionDialog })
   })
-}))
+)
 
 const i18n = createI18n({
   legacy: false,
@@ -113,12 +114,13 @@ const i18n = createI18n({
   messages: {
     en: {
       workspacePanel: {
+        members: {
+          resubscribe: 'Resubscribe',
+          endedTeamTitle: 'Your team plan has ended',
+          endedEnterpriseTitle: 'Your Enterprise plan has ended',
+          endedPlanTitle: 'Your plan has ended'
+        },
         billingStatus: {
-          warning: {
-            title: 'Payment failed',
-            bodyNoDate:
-              'Your payment failed to process. Update payment to avoid a pause.'
-          },
           paused: {
             title: 'Subscription paused',
             body: "This workspace's subscription is paused. Update payment to resume.",
@@ -127,41 +129,59 @@ const i18n = createI18n({
           },
           outOfCredits: {
             title: 'Out of credits',
-            body: 'Your team has used all its credits. Add more credits to continue generating or wait until credits refill on {date}.',
-            bodyNoDate:
-              'Your team has used all its credits. Add more credits to continue generating.',
-            upgradeBody:
-              'Upgrade your plan to add credits and continue generating.',
+            body: 'Your team has used all its credits. Add more credits or wait until credits refill on {date}.',
+            bodyNoDate: 'Your team has used all its credits. Add more credits.',
             memberBody:
-              'Your team has used all its credits. Your workspace admins need to add more credits to continue generating.',
+              'Your team has used all its credits. Ask your workspace owner to add more credits or wait until credits refill on {date}.',
+            memberBodyNoDate:
+              'Your team has used all its credits. Ask your workspace owner to add more credits.',
             addCredits: 'Add credits',
             dismiss: 'Dismiss'
           },
           ending: {
             title: 'Your team plan ends on {date}',
-            body: 'Members keep full access until then. Reactivate to keep your shared credits and seats.',
-            reactivate: 'Reactivate plan'
+            body: "Members keep full access until then. Resume your plan to keep your team's shared credits.",
+            memberBody: 'You can run workflows until then.',
+            enterpriseTitle: 'Your Enterprise plan ends on {date}',
+            enterpriseBody:
+              'Members keep full access until then. Reach out to our sales team to extend.',
+            reactivate: 'Resume plan',
+            contactSales: 'Contact sales'
           },
-          updatePayment: 'Update payment'
+          planEnded: {
+            teamTitle: 'Your team plan ended on {date}',
+            teamBody:
+              'Resubscribe to run workflows and get shared credits again.',
+            teamMemberBody: 'Ask your workspace owner to resubscribe.',
+            enterpriseTitle: 'Your Enterprise plan ended on {date}',
+            enterpriseBody: 'Contact sales to start a new Enterprise plan.',
+            planTitle: 'Your plan ended on {date}',
+            salesBody: 'Contact sales to start a new plan.',
+            salesMemberBody: 'Ask your workspace owner to contact sales.'
+          },
+          planChange: {
+            title: 'Your plan changes to {plan} on {date}.',
+            body: 'Your current plan stays active until then.'
+          },
+          updatePayment: 'Update payment',
+          payInvoice: 'Pay invoice'
         }
       },
       subscription: {
-        upgradeToAddCredits: 'Upgrade to add credits'
+        upgradeToAddCredits: 'Upgrade to add credits',
+        teamPlanName: 'Team',
+        unknownTierName: 'Unknown',
+        tiers: {
+          pro: { name: 'Pro' },
+          enterprise: { name: 'Enterprise' }
+        }
       }
     }
   }
 })
 
 const globalOptions = {
-  plugins: [i18n],
-  stubs: {
-    Button: {
-      template:
-        '<button v-bind="$attrs" @click="$emit(\'click\')"><slot/></button>',
-      props: ['variant', 'size', 'loading'],
-      emits: ['click']
-    }
-  }
+  plugins: [i18n]
 }
 
 function renderBanner() {
@@ -169,37 +189,61 @@ function renderBanner() {
 }
 
 function exhausted() {
-  state.subscription = { hasFunds: false, isCancelled: false, endDate: null }
+  state.subscription = {
+    hasFunds: false,
+    isCancelled: false,
+    endDate: null,
+    scheduledChange: null
+  }
+}
+
+function scheduledFor(planSlug: string) {
+  state.subscription = {
+    hasFunds: true,
+    isCancelled: false,
+    endDate: null,
+    scheduledChange: {
+      plan_slug: planSlug,
+      effective_at: '2026-10-01T00:00:00Z',
+      team_credit_stop: null
+    }
+  }
 }
 
 // The spend gate folds billing_status into is_active, so the backend never emits
 // paused alongside an active subscription.
 function pausedState() {
   state.billingStatus = 'paused'
-  state.isActiveSubscription = false
+  state.canAccessSubscriptionFeatures = false
 }
 
 function paymentFailedState() {
   state.billingStatus = 'payment_failed'
-  state.isActiveSubscription = false
+  state.canAccessSubscriptionFeatures = false
 }
 
 describe('BillingStatusBanner', () => {
   beforeEach(() => {
-    state.billingControlEnabled = true
-    state.v1PaymentRecovery = true
-    state.isActiveSubscription = true
+    vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
+    vi.mocked(useFeatureFlags().flags).v1PaymentRecovery = true
+    state.canAccessSubscriptionFeatures = true
     state.isTeamPlan = true
     state.billingStatus = 'paid'
-    state.subscription = { hasFunds: true, isCancelled: false, endDate: null }
+    state.subscriptionStatus = 'active'
+    state.subscription = {
+      hasFunds: true,
+      isCancelled: false,
+      endDate: null,
+      scheduledChange: null
+    }
     state.renewalDate = null
+    state.renewalInvoice = null
     state.workspaceType = 'team'
     state.canManageSubscription = true
     state.canManageSubscriptionLifecycle = true
-    state.canReactivate = true
+    useBillingCapabilities().canReactivate = computed(() => true)
+    state.canReactivatePlan = true
     state.shouldUseWorkspaceBilling = true
-    state.canTopUp = true
-    state.canSubscribeSelfServe = false
   })
 
   it('renders nothing for a healthy funded team', () => {
@@ -208,47 +252,54 @@ describe('BillingStatusBanner', () => {
   })
 
   it('renders nothing when billing control is rolled back, even out of credits', () => {
-    state.billingControlEnabled = false
-    state.subscription = { hasFunds: false, isCancelled: false, endDate: null }
+    vi.mocked(useFeatureFlags().flags).billingControlEnabled = false
+    state.subscription = {
+      hasFunds: false,
+      isCancelled: false,
+      endDate: null,
+      scheduledChange: null
+    }
     renderBanner()
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 
   it('shows out-of-credits with an Add credits action for owners', async () => {
-    state.subscription = { hasFunds: false, isCancelled: false, endDate: null }
+    state.subscription = {
+      hasFunds: false,
+      isCancelled: false,
+      endDate: null,
+      scheduledChange: null
+    }
     renderBanner()
 
     expect(screen.getByRole('status')).toHaveTextContent('Out of credits')
     await userEvent.click(screen.getByRole('button', { name: 'Add credits' }))
-    expect(state.showTopUpCreditsDialog).toHaveBeenCalledTimes(1)
+    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledTimes(1)
   })
 
-  it('offers an upgrade when self-serve subscription is available', () => {
+  it('shows no out-of-credits banner to an owner who cannot buy credits', () => {
     exhausted()
-    state.canTopUp = false
-    state.canSubscribeSelfServe = true
+    useBillingCapabilities().canTopUp = computed(() => false)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
 
     renderBanner()
 
-    expect(
-      screen.getByRole('button', { name: 'Upgrade to add credits' })
-    ).toBeVisible()
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'Upgrade your plan to add credits and continue generating.'
-    )
-    expect(screen.getByRole('status')).not.toHaveTextContent(
-      'Your workspace admins need to add more credits'
-    )
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 
-  it('shows out-of-credits contact-admin copy without an Add credits action for members', () => {
-    state.subscription = { hasFunds: false, isCancelled: false, endDate: null }
+  it('points members to the owner without an Add credits action', () => {
+    state.subscription = {
+      hasFunds: false,
+      isCancelled: false,
+      endDate: null,
+      scheduledChange: null
+    }
     state.canManageSubscription = false
-    state.canTopUp = false
+    useBillingCapabilities().canTopUp = computed(() => false)
     renderBanner()
 
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Your workspace admins need to add more credits'
+      'Ask your workspace owner to add more credits'
     )
     expect(
       screen.queryByRole('button', { name: 'Add credits' })
@@ -296,7 +347,7 @@ describe('BillingStatusBanner', () => {
   it('shows the paused member notice without an action', () => {
     pausedState()
     state.canManageSubscription = false
-    state.canTopUp = false
+    useBillingCapabilities().canTopUp = computed(() => false)
     renderBanner()
 
     expect(screen.getByRole('status')).toHaveTextContent(
@@ -305,41 +356,124 @@ describe('BillingStatusBanner', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
-  it('shows immediate payment-failed copy with Update payment for owners', () => {
+  describe('renewal invoice', () => {
+    const invoice: RenewalInvoice = {
+      hosted_invoice_url: 'https://invoice.stripe.com/i/acct_1/test_123',
+      amount_due: 5000,
+      currency: 'usd'
+    }
+
+    it('offers Pay invoice next to Update payment', () => {
+      paymentFailedState()
+      state.renewalInvoice = invoice
+      renderBanner()
+
+      expect(
+        screen.getByRole('button', { name: 'Pay invoice' })
+      ).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Update payment' })
+      ).toBeInTheDocument()
+    })
+
+    it('omits Pay invoice when there is no renewal invoice', () => {
+      paymentFailedState()
+      renderBanner()
+
+      expect(
+        screen.queryByRole('button', { name: 'Pay invoice' })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Update payment' })
+      ).toBeInTheDocument()
+    })
+
+    it('opens the hosted invoice URL in a new tab with noopener and noreferrer', async () => {
+      paymentFailedState()
+      state.renewalInvoice = invoice
+      const open = vi.spyOn(window, 'open').mockReturnValue(null)
+      renderBanner()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Pay invoice' }))
+
+      expect(open).toHaveBeenCalledWith(
+        invoice.hosted_invoice_url,
+        '_blank',
+        'noopener,noreferrer'
+      )
+      open.mockRestore()
+    })
+
+    it('hides Pay invoice for a non-https invoice URL', () => {
+      paymentFailedState()
+      state.renewalInvoice = {
+        ...invoice,
+        hosted_invoice_url: 'javascript:alert(1)'
+      }
+      renderBanner()
+
+      expect(
+        screen.queryByRole('button', { name: 'Pay invoice' })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Update payment' })
+      ).toBeInTheDocument()
+    })
+  })
+
+  it('shows the paused copy for a failed renewal, since runs are already blocked', () => {
     paymentFailedState()
-    state.renewalDate = '2026-08-01T00:00:00Z'
     renderBanner()
 
-    expect(screen.getByRole('status')).toHaveTextContent('Payment failed')
+    expect(screen.getByRole('status')).toHaveTextContent('Subscription paused')
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Update payment to avoid a pause'
+      'Update payment to resume'
     )
-    expect(screen.getByRole('status')).not.toHaveTextContent('will pause on')
     expect(
       screen.getByRole('button', { name: 'Update payment' })
     ).toBeInTheDocument()
   })
 
-  it('does not expose payment controls to members', () => {
+  it('shows payment recovery to personal workspace owners', async () => {
     paymentFailedState()
-    state.canManageSubscription = false
+    state.isTeamPlan = false
+    state.workspaceType = 'personal'
+    // A known personal tier: an unrecognized one is denied recovery outright.
+    state.subscription = { ...state.subscription!, tier: 'PRO' }
     renderBanner()
 
-    expect(screen.queryByRole('status')).not.toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'Update payment' })
-    ).not.toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('Subscription paused')
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Update payment' })
+    )
+    expect(state.manageSubscription).toHaveBeenCalledTimes(1)
+  })
+
+  it('points members to the owner on a failed renewal, without payment controls', () => {
+    paymentFailedState()
+    state.canManageSubscription = false
+    state.renewalInvoice = {
+      hosted_invoice_url: 'https://invoice.stripe.com/i/acct_1/test_123',
+      amount_due: 5000,
+      currency: 'usd'
+    }
+    renderBanner()
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      "Ask your workspace owner to restore the workspace's subscription."
+    )
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
     expect(state.manageSubscription).not.toHaveBeenCalled()
   })
 
   it('hides payment recovery states while preserving existing notices when the new flag is off', () => {
-    state.v1PaymentRecovery = false
+    vi.mocked(useFeatureFlags().flags).v1PaymentRecovery = false
     paymentFailedState()
     const { unmount } = renderBanner()
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
     unmount()
 
-    state.isActiveSubscription = true
+    state.canAccessSubscriptionFeatures = true
     state.billingStatus = 'paid'
     exhausted()
     renderBanner()
@@ -350,16 +484,15 @@ describe('BillingStatusBanner', () => {
     state.subscription = {
       hasFunds: true,
       isCancelled: true,
-      endDate: '2026-08-01T00:00:00Z'
+      endDate: '2026-08-01T00:00:00Z',
+      scheduledChange: null
     }
     renderBanner()
 
     expect(screen.getByRole('status')).toHaveTextContent(
       'Your team plan ends on'
     )
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Reactivate plan' })
-    )
+    await userEvent.click(screen.getByRole('button', { name: 'Resume plan' }))
     expect(state.handleResubscribe).toHaveBeenCalledTimes(1)
   })
 
@@ -367,35 +500,37 @@ describe('BillingStatusBanner', () => {
     // Cloud personal on legacy_stripe: handleResubscribe skips its capability
     // guard, so the affordance must follow the client permission instead.
     state.shouldUseWorkspaceBilling = false
-    state.canReactivate = false
+    useBillingCapabilities().canReactivate = computed(() => false)
     state.canManageSubscriptionLifecycle = true
     state.subscription = {
       hasFunds: true,
       isCancelled: true,
-      endDate: '2026-08-01T00:00:00Z'
+      endDate: '2026-08-01T00:00:00Z',
+      scheduledChange: null
     }
     renderBanner()
 
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Reactivate plan' })
-    )
+    await userEvent.click(screen.getByRole('button', { name: 'Resume plan' }))
     expect(state.handleResubscribe).toHaveBeenCalledTimes(1)
   })
 
-  it('does not expose reactivation controls to a member', () => {
+  it('shows members the ending notice without a Resume plan action', () => {
     state.subscription = {
       hasFunds: true,
       isCancelled: true,
-      endDate: '2026-08-01T00:00:00Z'
+      endDate: '2026-08-01T00:00:00Z',
+      scheduledChange: null
     }
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
-    state.canReactivate = false
+    useBillingCapabilities().canReactivate = computed(() => false)
     renderBanner()
 
-    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'You can run workflows until then.'
+    )
     expect(
-      screen.queryByRole('button', { name: 'Reactivate plan' })
+      screen.queryByRole('button', { name: 'Resume plan' })
     ).not.toBeInTheDocument()
   })
 
@@ -403,7 +538,8 @@ describe('BillingStatusBanner', () => {
     state.subscription = {
       hasFunds: true,
       isCancelled: true,
-      endDate: '2026-08-01T00:00:00Z'
+      endDate: '2026-08-01T00:00:00Z',
+      scheduledChange: null
     }
     state.canManageSubscription = true
     state.canManageSubscriptionLifecycle = true
@@ -414,7 +550,205 @@ describe('BillingStatusBanner', () => {
       'Your team plan ends on'
     )
     expect(
-      screen.queryByRole('button', { name: 'Reactivate plan' })
+      screen.queryByRole('button', { name: 'Resume plan' })
     ).not.toBeInTheDocument()
+  })
+
+  it('names the destination plan and date for a scheduled change', () => {
+    scheduledFor('pro-annual')
+    renderBanner()
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Your plan changes to Pro on October 1, 2026.'
+    )
+  })
+
+  it('still renders the ending banner when the end date is malformed', () => {
+    state.subscription = {
+      hasFunds: true,
+      isCancelled: true,
+      endDate: 'not-a-date',
+      scheduledChange: null
+    }
+    renderBanner()
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Members keep full access until then.'
+    )
+  })
+
+  it('dismisses a scheduled change banner', async () => {
+    scheduledFor('pro-annual')
+    renderBanner()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  it('quotes no price for a scheduled change', () => {
+    scheduledFor('pro-annual')
+    renderBanner()
+
+    expect(screen.getByRole('status')).not.toHaveTextContent('$')
+  })
+
+  it('stays silent when the destination plan is absent from the catalog', () => {
+    scheduledFor('plan-the-client-does-not-know')
+    renderBanner()
+
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  describe('plan ended', () => {
+    function endedPlan(tier: SubscriptionInfo['tier'] = 'PRO') {
+      state.subscriptionStatus = 'ended'
+      state.billingStatus = 'inactive'
+      state.canAccessSubscriptionFeatures = false
+      state.subscription = {
+        hasFunds: false,
+        isCancelled: true,
+        endDate: '2026-09-12T12:00:00Z',
+        scheduledChange: null,
+        tier
+      }
+    }
+
+    it('lets a team owner resubscribe through the pricing table', async () => {
+      endedPlan()
+      renderBanner()
+
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Your team plan ended on September 12, 2026'
+      )
+      await userEvent.click(screen.getByRole('button', { name: 'Resubscribe' }))
+      expect(state.showSubscriptionDialog).toHaveBeenCalledWith(
+        expect.objectContaining({ planMode: 'team' })
+      )
+    })
+
+    it('points a team member to the owner', () => {
+      endedPlan()
+      state.canManageSubscription = false
+      renderBanner()
+
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Ask your workspace owner to resubscribe.'
+      )
+      expect(
+        screen.queryByRole('button', { name: 'Resubscribe' })
+      ).not.toBeInTheDocument()
+    })
+
+    it('sends an Enterprise owner to sales', async () => {
+      endedPlan('ENTERPRISE')
+      state.isTeamPlan = false
+      const open = vi.spyOn(window, 'open').mockReturnValue(null)
+      renderBanner()
+
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Your Enterprise plan ended on September 12, 2026'
+      )
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Contact sales' })
+      )
+      expect(open).toHaveBeenCalledWith(
+        'https://comfy.org/cloud/enterprise/',
+        '_blank',
+        'noopener,noreferrer'
+      )
+      open.mockRestore()
+    })
+
+    it('dismisses for the session', async () => {
+      endedPlan()
+      renderBanner()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    })
+
+    it('shows even when billing control is rolled back', () => {
+      endedPlan()
+      vi.mocked(useFeatureFlags().flags).billingControlEnabled = false
+      renderBanner()
+
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Your team plan ended on'
+      )
+    })
+  })
+
+  describe('enterprise ending notice', () => {
+    const NOW = new Date('2026-09-03T12:00:00Z')
+    const DAY = 24 * 60 * 60 * 1000
+
+    // The project vitest setup fakes timers for every test, so pinning the
+    // clock is just a setSystemTime away.
+    beforeEach(() => {
+      vi.setSystemTime(NOW)
+    })
+
+    function enterpriseEndingIn(days: number) {
+      state.isTeamPlan = false
+      state.subscription = {
+        hasFunds: true,
+        isCancelled: true,
+        endDate: new Date(NOW.getTime() + days * DAY).toISOString(),
+        tier: 'ENTERPRISE'
+      }
+    }
+
+    it('shows no banner while the end date is beyond the notice window', () => {
+      enterpriseEndingIn(30)
+      renderBanner()
+
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    })
+
+    it('shows enterprise copy without a Reactivate action inside the window', () => {
+      enterpriseEndingIn(10)
+      // Pin the gate itself: even a rail that resolves reactivation true for
+      // an Enterprise plan must not surface the action.
+      state.canReactivatePlan = true
+      renderBanner()
+
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Your Enterprise plan ends on'
+      )
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Reach out to our sales team to extend'
+      )
+      expect(
+        screen.queryByRole('button', { name: 'Resume plan' })
+      ).not.toBeInTheDocument()
+    })
+
+    it('sends owners to sales', async () => {
+      enterpriseEndingIn(10)
+      const open = vi.spyOn(window, 'open').mockReturnValue(null)
+      renderBanner()
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Contact sales' })
+      )
+
+      expect(open).toHaveBeenCalledWith(
+        'https://comfy.org/cloud/enterprise/',
+        '_blank',
+        'noopener,noreferrer'
+      )
+      open.mockRestore()
+    })
+
+    it('tells members they can run until the end date, with no action', () => {
+      enterpriseEndingIn(10)
+      state.canManageSubscription = false
+      renderBanner()
+
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'You can run workflows until then.'
+      )
+      expect(screen.queryByRole('button')).not.toBeInTheDocument()
+    })
   })
 })

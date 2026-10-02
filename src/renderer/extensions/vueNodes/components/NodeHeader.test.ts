@@ -1,9 +1,6 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { setActivePinia } from 'pinia'
-import PrimeVue from 'primevue/config'
-import InputText from 'primevue/inputtext'
 import { describe, expect, it, vi } from 'vitest'
 
 import { toNodeId } from '@/types/nodeId'
@@ -13,7 +10,7 @@ import { createI18n } from 'vue-i18n'
 import type { NodeState } from '@/types/nodeState'
 import enMessages from '@/locales/en/main.json'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { Settings } from '@/schemas/apiSchema'
+import type { Settings } from '@/platform/settings/types'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 
@@ -33,8 +30,7 @@ const makeNodeData = (overrides: Partial<NodeState> = {}): NodeState => ({
 })
 
 const setupMockStores = () => {
-  const pinia = createTestingPinia({ stubActions: false })
-  setActivePinia(pinia)
+  const pinia = getActivePinia()!
 
   const settingStore = useSettingStore()
   const nodeDefStore = useNodeDefStore()
@@ -104,8 +100,7 @@ const createGlobalConfig = () => {
   return {
     tooltipDirective,
     global: {
-      plugins: [PrimeVue, i18n, pinia],
-      components: { InputText },
+      plugins: [i18n, pinia],
       directives: {
         tooltip: tooltipDirective
       }

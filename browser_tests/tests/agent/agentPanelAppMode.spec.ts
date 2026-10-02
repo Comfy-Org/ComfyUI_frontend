@@ -1,15 +1,16 @@
 import { expect } from '@playwright/test'
 
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { WorkspaceStore } from '@e2e/types/globals'
 
 import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 
-const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
+const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
 
 test.describe('In-App Agent panel across view modes', { tag: '@cloud' }, () => {
-  test('keeps a single docked panel root when toggling app mode and back', async ({
+  test('T-16 / PM-653 / FE-1298 keeps a single docked panel root and active workflow in app mode', async ({
     comfyPage
   }) => {
     test.setTimeout(30_000)
@@ -26,9 +27,12 @@ test.describe('In-App Agent panel across view modes', { tag: '@cloud' }, () => {
 
     expect(selectedWorkflowPath).toBeTruthy()
 
-    const openButton = page.getByRole('button', { name: OPEN_AGENT_LABEL })
+    const openButton = page.getByRole('button', {
+      name: OPEN_AGENT_LABEL,
+      exact: true
+    })
     await expect(openButton).toBeVisible()
-    await openButton.click()
+    await new AgentPanel(page).open()
 
     await expect(panelRoot).toHaveCount(1)
     await expect(panelRoot).toBeVisible()
@@ -51,7 +55,39 @@ test.describe('In-App Agent panel across view modes', { tag: '@cloud' }, () => {
     await expect.poll(activeWorkflowPath).toBe(selectedWorkflowPath)
   })
 
-  test('keeps a stored-closed panel hidden when toggling app mode and back', async ({
+  test('keeps a user-closed panel hidden when toggling app mode and back', async ({
+    comfyPage
+  }) => {
+    test.setTimeout(30_000)
+
+    const page = comfyPage.page
+    const dockedPanel = page.getByTestId('docked-agent-panel')
+    const storedOpenState = () =>
+      page.evaluate((key) => localStorage.getItem(key), OPEN_STORAGE_KEY)
+
+    await test.step('close and persist the panel state', async () => {
+      await expect(dockedPanel).toBeVisible({ timeout: 8_000 })
+      await dockedPanel
+        .getByRole('button', { name: enMessages.g.close, exact: true })
+        .click()
+      await expect(dockedPanel).toHaveCount(0)
+      await expect.poll(storedOpenState).toBe('false')
+    })
+
+    await test.step('keep the panel closed in app mode', async () => {
+      await comfyPage.appMode.toggleAppMode()
+      await expect(dockedPanel).toHaveCount(0)
+      await expect.poll(storedOpenState).toBe('false')
+    })
+
+    await test.step('keep the panel closed after returning to graph mode', async () => {
+      await comfyPage.appMode.toggleAppMode()
+      await expect(dockedPanel).toHaveCount(0)
+      await expect.poll(storedOpenState).toBe('false')
+    })
+  })
+
+  test('activation reopens a stored-closed panel across app mode changes', async ({
     comfyPage
   }) => {
     test.setTimeout(30_000)
@@ -67,15 +103,15 @@ test.describe('In-App Agent panel across view modes', { tag: '@cloud' }, () => {
     )
     await comfyPage.workflow.reloadAndWaitForApp()
 
-    await expect(dockedPanel).toHaveCount(0)
-    await expect.poll(storedOpenState).toBe('false')
+    await expect(dockedPanel).toBeVisible({ timeout: 8_000 })
+    await expect.poll(storedOpenState).toBe('true')
 
     await comfyPage.appMode.toggleAppMode()
-    await expect(dockedPanel).toHaveCount(0)
-    await expect.poll(storedOpenState).toBe('false')
+    await expect(dockedPanel).toBeVisible()
+    await expect.poll(storedOpenState).toBe('true')
 
     await comfyPage.appMode.toggleAppMode()
-    await expect(dockedPanel).toHaveCount(0)
-    await expect.poll(storedOpenState).toBe('false')
+    await expect(dockedPanel).toBeVisible()
+    await expect.poll(storedOpenState).toBe('true')
   })
 })

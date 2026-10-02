@@ -1,6 +1,5 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
-import CloudBannerSection from '../../components/product/shared/CloudBannerSection.vue'
 import AIModelsSection from '../../components/product/shared/AIModelsSection.vue'
 import HeroSection from '../../components/product/local/HeroSection.vue'
 import ReasonSection from '../../components/product/local/ReasonSection.vue'
@@ -13,13 +12,13 @@ import {
   comfyUiApplicationNode,
   comfyUiSoftwareId,
   comfyUiSourceCodeNode,
-  pageContext,
+  pageContext
 } from '../../utils/jsonLd'
 
 const { siteUrl, locale } = pageContext(
   Astro.site,
   Astro.url.pathname,
-  Astro.currentLocale,
+  Astro.currentLocale
 )
 ---
 
@@ -30,14 +29,26 @@ const { siteUrl, locale } = pageContext(
   breadcrumbs={[
     {
       name: t('breadcrumb.home', locale),
-      url: absoluteUrl(Astro.site, '/zh-CN'),
+      url: absoluteUrl(Astro.site, '/zh-CN')
     },
-    { name: t('breadcrumb.download', locale) },
+    { name: t('breadcrumb.download', locale) }
   ]}
-  extraJsonLd={[comfyUiApplicationNode(siteUrl), comfyUiSourceCodeNode(siteUrl)]}
-  keywords={['comfyui app', 'comfyui desktop app', 'comfyui download', 'ComfyUI 下载', 'ComfyUI 桌面应用', 'ComfyUI 应用', 'ComfyUI Windows', 'ComfyUI macOS', 'ComfyUI Linux']}
+  extraJsonLd={[
+    comfyUiApplicationNode(siteUrl),
+    comfyUiSourceCodeNode(siteUrl)
+  ]}
+  keywords={[
+    'comfyui app',
+    'comfyui desktop app',
+    'comfyui download',
+    'ComfyUI 下载',
+    'ComfyUI 桌面应用',
+    'ComfyUI 应用',
+    'ComfyUI Windows',
+    'ComfyUI macOS',
+    'ComfyUI Linux'
+  ]}
 >
-  <CloudBannerSection locale="zh-CN" />
   <HeroSection locale="zh-CN" client:load />
   <ReasonSection locale="zh-CN" />
   <EcoSystemSection locale="zh-CN" client:visible />

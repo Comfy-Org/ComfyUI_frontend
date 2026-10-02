@@ -1,5 +1,13 @@
+import type {
+  BillingTelemetryEvent,
+  BillingTelemetryFailure,
+  SubscriptionCheckoutTier,
+  SubscriptionCheckoutType
+} from '@comfyorg/account-core/billing'
 import type { ToastMessageOptions } from 'primevue/toast'
+import type { PaymentIntent } from '@stripe/stripe-js'
 import { loadStripe } from '@stripe/stripe-js/pure'
+import { customerCanActHere } from '@comfyorg/account-core/billing'
 import { useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
@@ -12,25 +20,38 @@ import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscript
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import type {
-  BillingFailure,
-  PaymentIntentSource,
-  SubscriptionCheckoutTier,
-  SubscriptionCheckoutType
-} from '@/platform/telemetry/types'
+import { reportError } from '@/platform/telemetry/reportError'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type {
   BillingAuthenticationState,
-  BillingDeclineReason
+  BillingOperationPhase,
+  BillingDeclineReason,
+  BillingRecoveryAction
 } from '@/platform/workspace/api/workspaceApi'
+import type { ProgressToastKind } from '@/platform/workspace/billing/customerAttention'
+import {
+  isBlockedOnCustomerPhase,
+  isParkedCheckout,
+  legacyOperationActionHold,
+  needsCustomerAttention,
+  progressToastKind
+} from '@/platform/workspace/billing/customerAttention'
+import { resolveStripePublishableKey } from '@/platform/workspace/billing/stripePublishableKey'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import {
+  clearCheckoutJourney,
+  getActiveCheckoutJourney
+} from '@/platform/workspace/utils/checkoutJourney'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const INITIAL_INTERVAL_MS = 1000
 const MAX_INTERVAL_MS = 8000
 const ACTION_REQUIRED_INTERVAL_MS = 30_000
+// Twenty turns of the backend's 3 s PaymentIntent status cache.
+const ACTION_DISCOVERY_WINDOW_MS = 60_000
 const BACKOFF_MULTIPLIER = 1.5
 const TIMEOUT_MS = 120_000
 const SUBSCRIPTION_ACTION_DISCOVERY_TIMEOUT_MS = 5 * 60_000
@@ -39,6 +60,22 @@ const AUTHENTICATION_TIMEOUT_MS = 23 * 60 * 60_000
 // mid-flow. The operation is terminal-failed only because it never completed —
 // its replacement is proceeding normally, so there is nothing to report.
 const CHECKOUT_SUPERSEDED_REASON = 'checkout_superseded'
+// Statuses that mean the resumed challenge left the intent exactly where it
+// started, so the attempt needs a fresh start rather than a poll. A denylist
+// fails toward the server rather than toward the customer: an unlisted or
+// future Stripe status reports optimistically as processing, which the next
+// poll's own authentication_state corrects if that guess was wrong — unlike
+// an allowlist, where the same gap would report a live payment as failed.
+const UNMOVED_INTENT_STATUSES: ReadonlySet<PaymentIntent.Status> = new Set([
+  'requires_payment_method',
+  'requires_action',
+  'canceled'
+])
+
+// The poller adopts only operations the legacy rail issued; the SDK rail settles its own.
+function trackLegacyBillingEvent(event: BillingTelemetryEvent) {
+  useTelemetry()?.trackBillingEvent({ ...event, billing_client: 'legacy' })
+}
 
 type OperationType = 'subscription' | 'topup' | 'cancel'
 type OperationStatus =
@@ -54,6 +91,12 @@ export interface StartOperationMetadata {
   checkoutType?: SubscriptionCheckoutType
   paymentIntentSource?: PaymentIntentSource
   suppressProcessingToast?: boolean
+  /**
+   * Adopted from a status read rather than started by the customer here. The
+   * read names the operation but not what it waits on, so without a served
+   * link it is announced by its first status, never before it.
+   */
+  resumed?: boolean
   autoHandleRequiresAction?: boolean
   downgradeToPersonal?: {
     memberRemovalCount: number
@@ -85,16 +128,38 @@ interface BillingOperation {
   isAuthenticating: boolean
   canRetryAuthentication: boolean
   authenticationRequiredSeen: boolean
+  // Latches once the server has reported a phase blocked on the customer. The
+  // phase itself moves on — an invoice being finalised reports in_progress —
+  // and elapsed time is counted from the start, so re-reading it would measure
+  // the whole parked wait against the short budget the moment it advances.
+  blockedOnCustomerSeen: boolean
   workspaceId: string | null
   tier?: SubscriptionCheckoutTier
   cycle?: BillingCycle
   checkoutType?: SubscriptionCheckoutType
   paymentIntentSource?: PaymentIntentSource
   autoHandleRequiresAction: boolean
+  // Last phase the server reported for a pending operation. The phases
+  // isBlockedOnCustomerPhase names will not advance until the customer acts, so
+  // a dialog should offer them a way back rather than keep waiting. Null while
+  // unknown — the field is optional in the contract, and absent is explicitly
+  // no claim, never an implied in_progress.
+  phase: BillingOperationPhase | null
   downgradeToPersonal?: StartOperationMetadata['downgradeToPersonal']
+  // Set when the customer walked away from this operation in the UI (e.g.
+  // "Start over" after a failed challenge). The operation itself is not
+  // over — only the server decides that — so it keeps polling and can still
+  // resolve normally; this only hides it from the selectors a dialog reads.
+  dismissed: boolean
 }
 
 type TerminalResolver = (operation: BillingOperation) => void
+
+interface FailureRecovery {
+  readonly action?: BillingRecoveryAction
+  // The contract's authority on whether starting another operation can succeed.
+  readonly retryable?: boolean
+}
 
 export const useBillingOperationStore = defineStore('billingOperation', () => {
   const workspaceStore = useTeamWorkspaceStore()
@@ -102,7 +167,12 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   const operations = ref<Map<string, BillingOperation>>(new Map())
   const timeouts = new Map<string, ReturnType<typeof setTimeout>>()
   const intervals = new Map<string, number>()
-  const receivedToasts = new Map<string, ToastMessageOptions>()
+  const waitingWithoutActionSince = new Map<string, number>()
+  const progressToasts = new Map<
+    string,
+    { kind: ProgressToastKind; message: ToastMessageOptions }
+  >()
+  const progressToastsAwaitingFirstRead = new Set<string>()
   const terminalResolvers = new Map<string, TerminalResolver>()
   const terminalPromises = new Map<string, Promise<BillingOperation>>()
   const autoHandledPaymentActions = new Set<string>()
@@ -123,6 +193,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         op.status === 'pending' &&
         op.authenticationState !== 'requires_action' &&
         op.authenticationState !== 'failed_retryable' &&
+        !isParkedCheckout(op) &&
         op.type === 'subscription' &&
         op.workspaceId === workspaceStore.activeWorkspaceId
     )
@@ -132,6 +203,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     [...operations.value.values()].some(
       (op) =>
         op.status === 'pending' &&
+        op.authenticationState !== 'failed_retryable' &&
+        !op.dismissed &&
         op.type === 'topup' &&
         op.workspaceId === workspaceStore.activeWorkspaceId
     )
@@ -142,11 +215,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       (op) =>
         op.type === 'subscription' &&
         op.workspaceId === workspaceStore.activeWorkspaceId &&
-        ((op.status === 'pending' &&
-          (op.actionUrl !== null ||
-            op.authenticationState === 'requires_action' ||
-            op.authenticationState === 'failed_retryable')) ||
-          op.status === 'reconciliation_needed')
+        needsCustomerAttention(op)
     )
   )
 
@@ -155,9 +224,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       (op) =>
         op.type === 'topup' &&
         op.workspaceId === workspaceStore.activeWorkspaceId &&
-        ((op.status === 'pending' &&
-          (op.actionUrl !== null || op.canRetryAuthentication)) ||
-          op.status === 'reconciliation_needed')
+        !op.dismissed &&
+        needsCustomerAttention(op)
     )
   )
 
@@ -168,32 +236,80 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   // An operation parked on a bank challenge is waiting on the customer, not on
   // us, so it must not keep announcing "processing" — that reads as "nothing to
   // do here" next to the verification prompt the same state renders.
-  function showProgressToast(
+  function syncProgressToast(
     opId: string,
     type: Exclude<OperationType, 'cancel'>,
-    actionRequired: boolean
+    kind: ProgressToastKind | undefined
   ) {
     const toastStore = useToastStore()
-    const previous = receivedToasts.get(opId)
-    if (previous) toastStore.remove(previous)
+    const previous = progressToasts.get(opId)
+    if (previous?.kind === kind) return
+    if (previous) {
+      toastStore.remove(previous.message)
+      progressToasts.delete(opId)
+    }
+    if (kind === undefined) return
 
     const messageKey =
       type === 'subscription'
-        ? actionRequired
+        ? kind === 'action'
           ? 'billingOperation.subscriptionActionRequired'
           : 'billingOperation.subscriptionProcessing'
-        : actionRequired
+        : kind === 'action'
           ? 'billingOperation.topupActionRequired'
           : 'billingOperation.topupProcessing'
 
-    const toastMessage: ToastMessageOptions = {
+    const message: ToastMessageOptions = {
       // 'warn' selects the prompt icon over the spinner in GlobalToast.
-      severity: actionRequired ? 'warn' : 'info',
+      severity: kind === 'action' ? 'warn' : 'info',
       summary: t(messageKey),
       group: 'billing-operation'
     }
-    receivedToasts.set(opId, toastMessage)
-    toastStore.add(toastMessage)
+    progressToasts.set(opId, { kind, message })
+    toastStore.add(message)
+  }
+
+  function announceStart(
+    operation: BillingOperation,
+    metadata: StartOperationMetadata | undefined
+  ) {
+    if (operation.type === 'cancel' || metadata?.suppressProcessingToast) return
+    if (metadata?.resumed && operation.actionUrl === null) {
+      progressToastsAwaitingFirstRead.add(operation.opId)
+      return
+    }
+    syncProgressToast(
+      operation.opId,
+      operation.type,
+      progressToastKind(operation)
+    )
+  }
+
+  // The action URL is the last field a read applies, so an operation awaiting
+  // its first read is announced here by what that read found.
+  function syncProgressToastAfterRead(
+    before: BillingOperation,
+    after: BillingOperation
+  ) {
+    if (
+      after.type !== 'cancel' &&
+      progressToastsAwaitingFirstRead.delete(after.opId)
+    ) {
+      syncProgressToast(after.opId, after.type, progressToastKind(after))
+      return
+    }
+    syncProgressToastOnChange(before, after)
+  }
+
+  function syncProgressToastOnChange(
+    before: BillingOperation,
+    after: BillingOperation
+  ) {
+    if (after.type === 'cancel') return
+    const kind = progressToastKind(after)
+    if (kind !== progressToastKind(before)) {
+      syncProgressToast(after.opId, after.type, kind)
+    }
   }
 
   function startOperation(
@@ -223,20 +339,23 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       isAuthenticating: false,
       canRetryAuthentication: false,
       authenticationRequiredSeen: actionUrl !== null,
+      blockedOnCustomerSeen: false,
       workspaceId: workspaceStore.activeWorkspaceId,
       tier: metadata?.tier,
       cycle: metadata?.cycle,
       checkoutType: metadata?.checkoutType,
       paymentIntentSource: metadata?.paymentIntentSource,
       autoHandleRequiresAction: metadata?.autoHandleRequiresAction ?? false,
-      downgradeToPersonal: metadata?.downgradeToPersonal
+      phase: null,
+      downgradeToPersonal: metadata?.downgradeToPersonal,
+      dismissed: false
     }
 
     operations.value = new Map(operations.value).set(opId, operation)
     intervals.set(opId, INITIAL_INTERVAL_MS)
 
     if (metadata?.attemptStartedAt === undefined) {
-      useTelemetry()?.trackBillingEvent({
+      trackLegacyBillingEvent({
         operation: 'operation',
         stage: 'started',
         outcome: 'pending',
@@ -244,9 +363,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       })
     }
 
-    if (type !== 'cancel' && !metadata?.suppressProcessingToast) {
-      showProgressToast(opId, type, operation.actionUrl !== null)
-    }
+    announceStart(operation, metadata)
 
     const terminal = new Promise<BillingOperation>((resolve) => {
       terminalResolvers.set(opId, resolve)
@@ -301,7 +418,10 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       }
 
       if (response.status === 'failed') {
-        handleFailure(opId, response.error_message ?? null)
+        handleFailure(opId, response.error_message ?? null, {
+          action: response.recovery_action,
+          retryable: response.retryable
+        })
         return
       }
 
@@ -314,7 +434,11 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         return
       }
 
-      if (stopIfTimedOut(opId, operation)) return
+      // The phase can widen the budget, so it is applied before the decision,
+      // which then reads the updated operation. The action URL stays after it:
+      // a link landing on an operation already out of budget is not retained.
+      updateOperationPhase(opId, response.phase ?? null)
+      if (stopIfTimedOut(opId, operations.value.get(opId) ?? operation)) return
 
       const pollingPaused = flags.embeddedCheckoutEnabled
         ? await updateAuthenticationState(
@@ -353,12 +477,49 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   // tab's own challenge completes, the state reads processing and nothing
   // waits on the customer anymore — holding the slow cadence there left a
   // settled payment spinning for half a minute.
-  function isParkedAwaitingCustomer(operation: BillingOperation): boolean {
+  function isWaitingOnCustomer(operation: BillingOperation): boolean {
     return (
+      isBlockedOnCustomerPhase(operation.phase) ||
       operation.authenticationState === 'requires_action' ||
       operation.actionUrl !== null ||
       (operation.authenticationState === 'failed_retryable' &&
         operation.authenticationRequiredSeen)
+    )
+  }
+
+  // Parked straight away only while the customer can act here. The server can
+  // report a blocked phase and a client secret before its cached
+  // authentication_state catches up, so an actionless wait keeps the backoff
+  // for the discovery window. Past it the action is not coming to this tab (a
+  // member without billing permission, embedded checkout off) and it parks.
+  function isParkedAwaitingCustomer(
+    operation: BillingOperation,
+    waitedWithoutActionMs: number
+  ): boolean {
+    if (!isWaitingOnCustomer(operation)) return false
+    return (
+      customerCanAct(operation) ||
+      waitedWithoutActionMs >= ACTION_DISCOVERY_WINDOW_MS
+    )
+  }
+
+  function trackWaitWithoutAction(operation: BillingOperation): number {
+    if (!isWaitingOnCustomer(operation) || customerCanAct(operation)) {
+      waitingWithoutActionSince.delete(operation.opId)
+      return 0
+    }
+    const now = Date.now()
+    const since = waitingWithoutActionSince.get(operation.opId) ?? now
+    waitingWithoutActionSince.set(operation.opId, since)
+    return now - since
+  }
+
+  function customerCanAct(operation: BillingOperation): boolean {
+    return customerCanActHere(
+      legacyOperationActionHold(
+        operation,
+        paymentIntentClientSecrets.has(operation.opId)
+      )
     )
   }
 
@@ -369,7 +530,10 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     // scheduled poll may still be armed, and two chains would double the
     // request rate and race each other's state writes.
     pausePolling(opId)
-    const nextInterval = isParkedAwaitingCustomer(operation)
+    const nextInterval = isParkedAwaitingCustomer(
+      operation,
+      trackWaitWithoutAction(operation)
+    )
       ? ACTION_REQUIRED_INTERVAL_MS
       : Math.min(
           (intervals.get(opId) ?? INITIAL_INTERVAL_MS) * BACKOFF_MULTIPLIER,
@@ -393,7 +557,10 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
   function hasTimedOut(operation: BillingOperation): boolean {
     const elapsed = Date.now() - operation.startedAt
-    if (operation.type !== 'cancel' && operation.authenticationRequiredSeen) {
+    if (
+      operation.type !== 'cancel' &&
+      (operation.authenticationRequiredSeen || operation.blockedOnCustomerSeen)
+    ) {
       return elapsed > AUTHENTICATION_TIMEOUT_MS
     }
     return operation.type === 'subscription'
@@ -415,25 +582,27 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     if (clientSecret) paymentIntentClientSecrets.set(opId, clientSecret)
     const secret = clientSecret ?? knownSecret
     // requires_action after a failed browser attempt is the same challenge the
-    // customer just abandoned — the intent has not moved. Keeping the retry
-    // presentation stops the failure alert and button label flapping between
-    // polls; a state that actually advanced (processing, succeeded, failed)
-    // still flows through and resolves the UI.
+    // customer just abandoned — the intent has not moved. Keeping the failure
+    // presentation stops the alert flapping between polls; a state that
+    // actually advanced (processing, succeeded, failed) still flows through and
+    // resolves the UI. A different client secret is a genuinely new challenge
+    // and still flows through — same rule the echo check below applies.
     //
     // Likewise after a browser attempt that SUCCEEDED: the server can keep
     // reporting requires_action for the same intent until it observes the
     // completion, and downgrading processing back to requires_action reopened
-    // the pay button mid-payment. A different client secret is a genuinely
-    // new challenge and still flows through.
+    // the pay button mid-payment.
+    const isStaleFailure =
+      state === 'requires_action' &&
+      operation.authenticationState === 'failed_retryable' &&
+      (!clientSecret || clientSecret === knownSecret)
     const isEchoOfHandledChallenge =
       state === 'requires_action' &&
       operation.authenticationState === 'processing' &&
       autoHandledPaymentActions.has(opId) &&
       (!clientSecret || clientSecret === knownSecret)
     const displayState =
-      state === 'requires_action' &&
-      (operation.authenticationState === 'failed_retryable' ||
-        isEchoOfHandledChallenge)
+      isStaleFailure || isEchoOfHandledChallenge
         ? operation.authenticationState
         : state
     const declineDetail =
@@ -443,9 +612,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     updateOperation(opId, {
       authenticationState: displayState,
       canRetryAuthentication:
-        Boolean(secret) &&
-        (displayState === 'requires_action' ||
-          displayState === 'failed_retryable'),
+        Boolean(secret) && displayState === 'requires_action',
       authenticationRequiredSeen:
         operation.authenticationRequiredSeen || state === 'requires_action',
       ...(declineDetail && { errorMessage: declineDetail })
@@ -478,7 +645,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       !operation ||
       operation.status !== 'pending' ||
       !paymentIntentClientSecrets.has(opId) ||
-      !operation.canRetryAuthentication
+      operation.authenticationState !== 'requires_action'
     ) {
       return false
     }
@@ -498,22 +665,31 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     })
 
     try {
-      const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+      const publishableKey = resolveStripePublishableKey()
       const stripe = publishableKey ? await loadStripe(publishableKey) : null
       if (!stripe) {
-        setAuthenticationRetry(
+        setAuthenticationFailed(
           opId,
-          t('billingOperation.authenticationUnavailable'),
-          false
+          t('billingOperation.authenticationUnavailable')
         )
         return false
       }
-      const result = await stripe.handleNextAction({ clientSecret })
-      if (result.error) {
-        setAuthenticationRetry(
+      const { error, paymentIntent } = await stripe.handleNextAction({
+        clientSecret
+      })
+      if (error) {
+        setAuthenticationFailed(
           opId,
-          result.error.message ||
-            t('billingOperation.authenticationFailedDetail')
+          error.message || t('billingOperation.authenticationFailedDetail')
+        )
+        return false
+      }
+      // With no action left to resume the call succeeds and changes nothing, so
+      // an intent still sitting on its pre-challenge status has not paid.
+      if (paymentIntent && UNMOVED_INTENT_STATUSES.has(paymentIntent.status)) {
+        setAuthenticationFailed(
+          opId,
+          t('billingOperation.authenticationFailedDetail')
         )
         return false
       }
@@ -526,9 +702,10 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       })
       autoHandledPaymentActions.add(opId)
       intervals.set(opId, INITIAL_INTERVAL_MS)
+      waitingWithoutActionSince.delete(opId)
       return true
     } catch (error) {
-      setAuthenticationRetry(
+      setAuthenticationFailed(
         opId,
         error instanceof Error
           ? error.message
@@ -538,25 +715,20 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     }
   }
 
-  function setAuthenticationRetry(
-    opId: string,
-    errorMessage: string,
-    canRetry = true
-  ) {
+  function setAuthenticationFailed(opId: string, errorMessage: string) {
     const operation = operations.value.get(opId)
     if (!operation) return
     updateOperation(opId, {
       authenticationState: 'failed_retryable',
       isAuthenticating: false,
-      canRetryAuthentication: canRetry && paymentIntentClientSecrets.has(opId),
+      canRetryAuthentication: false,
       errorMessage
     })
     // A browser-step error is not a verdict on the payment: the challenge may
     // have completed server-side despite the client error (observed: the
     // intent succeeded seconds after handleNextAction reported failure, and a
     // paused UI stayed on "failed" for a live subscription). Keep polling so
-    // the server's state resolves the presentation; the retry button remains
-    // the manual path while it is genuinely parked.
+    // the server's state resolves the presentation.
     scheduleNextPoll(opId)
   }
 
@@ -581,6 +753,28 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     return true
   }
 
+  function updateOperationPhase(
+    opId: string,
+    phase: BillingOperationPhase | null
+  ) {
+    const operation = operations.value.get(opId)
+    if (
+      !operation ||
+      operation.status !== 'pending' ||
+      operation.phase === phase
+    ) {
+      return
+    }
+    const updated: BillingOperation = {
+      ...operation,
+      phase,
+      blockedOnCustomerSeen:
+        operation.blockedOnCustomerSeen || isBlockedOnCustomerPhase(phase)
+    }
+    operations.value = new Map(operations.value).set(opId, updated)
+    syncProgressToastOnChange(operation, updated)
+  }
+
   function updateOperationActionUrl(opId: string, actionUrl: string | null) {
     const operation = operations.value.get(opId)
     if (!operation || operation.status !== 'pending') return
@@ -594,21 +788,18 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     ) {
       return
     }
-    operations.value = new Map(operations.value).set(opId, {
+    const updated: BillingOperation = {
       ...operation,
       actionUrl,
       authenticationRequiredSeen:
         operation.authenticationRequiredSeen || actionUrl !== null
-    })
+    }
+    operations.value = new Map(operations.value).set(opId, updated)
     // Tracks the CURRENT action_url, which the contract defines as present
     // exactly while the operation cannot proceed without the customer — so the
     // toast never outlives the verification action it points at. Swapped only
     // when that answer changes, or a dismissed toast would return every poll.
-    const wasActionRequired = operation.actionUrl !== null
-    const isActionRequired = actionUrl !== null
-    if (operation.type !== 'cancel' && wasActionRequired !== isActionRequired) {
-      showProgressToast(opId, operation.type, isActionRequired)
-    }
+    syncProgressToastAfterRead(operation, updated)
   }
 
   async function handleSuccess(opId: string) {
@@ -616,135 +807,162 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     if (!operation) return
 
     updateOperationStatus(opId, 'succeeded', null)
-    cleanup(opId)
 
-    const telemetry = useTelemetry()
-    const now = Date.now()
-    const operationDurationMs = now - operation.operationStartedAt
-    telemetry?.trackBillingEvent({
-      operation: 'operation',
-      stage: 'succeeded',
-      outcome: 'success',
-      billing_op_id: opId,
-      operation_type: operation.type,
-      tier: operation.tier,
-      cycle: operation.cycle,
-      checkout_type: operation.checkoutType,
-      payment_intent_source: operation.paymentIntentSource,
-      duration_ms: operationDurationMs
-    })
+    if (getActiveCheckoutJourney()?.billing_op_id === opId) {
+      clearCheckoutJourney()
+    }
 
-    if (
-      operation.type === 'subscription' &&
-      operation.businessAttemptStartedAt !== undefined
-    ) {
-      const durationMs = now - operation.businessAttemptStartedAt
-      telemetry?.trackBillingEvent({
-        operation: 'subscription_checkout',
+    try {
+      cleanup(opId)
+
+      const telemetry = useTelemetry()
+      const now = Date.now()
+      const operationDurationMs = now - operation.operationStartedAt
+      trackLegacyBillingEvent({
+        operation: 'operation',
         stage: 'succeeded',
         outcome: 'success',
+        billing_op_id: opId,
+        operation_type: operation.type,
         tier: operation.tier,
         cycle: operation.cycle,
         checkout_type: operation.checkoutType,
         payment_intent_source: operation.paymentIntentSource,
-        billing_op_id: opId,
-        duration_ms: durationMs
+        duration_ms: operationDurationMs
       })
-      // Also fires the legacy event for providers (Mixpanel, GTM) that don't
-      // implement trackBillingEvent. Gated to actual new/upgraded
-      // subscriptions — a downgrade-to-personal is churn, not a conversion,
-      // and this event drives a GA4 "subscription succeeded" conversion goal.
-      if (!operation.downgradeToPersonal) {
-        telemetry?.trackMonthlySubscriptionSucceeded({
+
+      if (
+        operation.type === 'subscription' &&
+        operation.businessAttemptStartedAt !== undefined
+      ) {
+        const durationMs = now - operation.businessAttemptStartedAt
+        trackLegacyBillingEvent({
+          operation: 'subscription_checkout',
+          stage: 'succeeded',
+          outcome: 'success',
           tier: operation.tier,
           cycle: operation.cycle,
           checkout_type: operation.checkoutType,
           payment_intent_source: operation.paymentIntentSource,
-          billing_op_id: opId
+          billing_op_id: opId,
+          duration_ms: durationMs
+        })
+        // Also fires the legacy event for providers (Mixpanel, GTM) that don't
+        // implement trackBillingEvent. Gated to actual new/upgraded
+        // subscriptions — a downgrade-to-personal is churn, not a conversion,
+        // and this event drives a GA4 "subscription succeeded" conversion goal.
+        if (!operation.downgradeToPersonal) {
+          telemetry?.trackMonthlySubscriptionSucceeded({
+            tier: operation.tier,
+            cycle: operation.cycle,
+            checkout_type: operation.checkoutType,
+            payment_intent_source: operation.paymentIntentSource,
+            billing_op_id: opId
+          })
+        }
+      } else if (
+        operation.type === 'topup' &&
+        operation.businessAttemptStartedAt !== undefined
+      ) {
+        trackLegacyBillingEvent({
+          operation: 'topup',
+          stage: 'succeeded',
+          outcome: 'success',
+          billing_op_id: opId,
+          payment_intent_source: operation.paymentIntentSource,
+          duration_ms: now - operation.businessAttemptStartedAt
         })
       }
-    } else if (
-      operation.type === 'topup' &&
-      operation.businessAttemptStartedAt !== undefined
-    ) {
-      telemetry?.trackBillingEvent({
-        operation: 'topup',
-        stage: 'succeeded',
-        outcome: 'success',
-        billing_op_id: opId,
-        duration_ms: now - operation.businessAttemptStartedAt
-      })
-    }
-    // Mirrors handleFailure's structure: not gated on businessAttemptStartedAt,
-    // since a downgrade always has its own startedAt for duration_ms below.
-    if (operation.downgradeToPersonal) {
-      telemetry?.trackBillingEvent({
-        operation: 'downgrade_to_personal',
-        stage: 'succeeded',
-        outcome: 'success',
-        member_removal_count: operation.downgradeToPersonal.memberRemovalCount,
-        member_removal_failures:
-          operation.downgradeToPersonal.memberRemovalFailures,
-        target_tier: operation.downgradeToPersonal.targetTier,
-        duration_ms: now - operation.downgradeToPersonal.startedAt
-      })
-    }
+      // Mirrors handleFailure's structure: not gated on businessAttemptStartedAt,
+      // since a downgrade always has its own startedAt for duration_ms below.
+      if (operation.downgradeToPersonal) {
+        trackLegacyBillingEvent({
+          operation: 'downgrade_to_personal',
+          stage: 'succeeded',
+          outcome: 'success',
+          member_removal_count:
+            operation.downgradeToPersonal.memberRemovalCount,
+          member_removal_failures:
+            operation.downgradeToPersonal.memberRemovalFailures,
+          target_tier: operation.downgradeToPersonal.targetTier,
+          duration_ms: now - operation.downgradeToPersonal.startedAt
+        })
+      }
 
-    const billingContext = useBillingContext()
-    const capabilities = useBillingCapabilities()
-    if (operation.type === 'subscription') {
-      await Promise.allSettled([
-        billingContext.reconcileSubscriptionSuccess(),
-        capabilities.refresh()
-      ])
-    } else {
-      await Promise.allSettled([
-        billingContext.fetchStatus(),
-        billingContext.fetchBalance(),
-        capabilities.refresh()
-      ])
-    }
+      const billingContext = useBillingContext()
+      const capabilities = useBillingCapabilities()
+      if (operation.type === 'subscription') {
+        await Promise.allSettled([
+          billingContext.reconcileSubscriptionSuccess(),
+          capabilities.refresh()
+        ])
+      } else {
+        await Promise.allSettled([
+          billingContext.fetchStatus(),
+          billingContext.fetchBalance(),
+          capabilities.refresh()
+        ])
+      }
 
-    if (operation.type === 'cancel') {
-      useTeamWorkspaceStore().updateActiveWorkspace({ isSubscribed: false })
+      if (operation.type === 'cancel') {
+        useTeamWorkspaceStore().updateActiveWorkspace({ isSubscribed: false })
+        return
+      }
+
+      // A subscription checkout shows its own success step in the pricing dialog,
+      // so leave it open. Top-ups have no such step: close and surface settings.
+      if (operation.type === 'topup') {
+        useDialogStore().closeDialog({ key: 'top-up-credits' })
+        useSettingsDialog().show(isCloud ? 'workspace' : 'credits')
+      }
+
+      const toastStore = useToastStore()
+      const messageKey =
+        operation.type === 'subscription'
+          ? 'billingOperation.subscriptionSuccess'
+          : 'billingOperation.topupSuccess'
+
+      toastStore.add({
+        severity: 'success',
+        summary: t(messageKey),
+        life: 5000
+      })
+    } catch (error) {
+      reportError(error, {
+        surface: 'billing',
+        errorType: 'failure_handling_billing_operation_success',
+        context: { billing_op_id: opId }
+      })
+      throw error
+    } finally {
       resolveTerminal(opId)
-      return
     }
-
-    // A subscription checkout shows its own success step in the pricing dialog,
-    // so leave it open. Top-ups have no such step: close and surface settings.
-    if (operation.type === 'topup') {
-      useDialogStore().closeDialog({ key: 'top-up-credits' })
-      useSettingsDialog().show(isCloud ? 'workspace' : 'credits')
-    }
-
-    const toastStore = useToastStore()
-    const messageKey =
-      operation.type === 'subscription'
-        ? 'billingOperation.subscriptionSuccess'
-        : 'billingOperation.topupSuccess'
-
-    toastStore.add({
-      severity: 'success',
-      summary: t(messageKey),
-      life: 5000
-    })
-
-    resolveTerminal(opId)
   }
 
-  function handleFailure(opId: string, errorMessage: string | null) {
+  function handleFailure(
+    opId: string,
+    errorMessage: string | null,
+    recovery?: FailureRecovery
+  ) {
     const operation = operations.value.get(opId)
     if (!operation) return
 
     const superseded = errorMessage === CHECKOUT_SUPERSEDED_REASON
     const defaultMessage = failureMessage(operation.type)
-    const detail = billingFailureDetail(operation.type, errorMessage)
+    // A recovery action describes a card the customer must re-present. An
+    // operation that never charges one — a cancellation, a downgrade — cannot
+    // be recovered that way whatever the server reports.
+    const chargesACard =
+      operation.type !== 'cancel' && !operation.downgradeToPersonal
+    const detail = billingFailureDetail(
+      operation.type,
+      errorMessage,
+      chargesACard ? recovery : undefined
+    )
 
     updateOperationStatus(opId, 'failed', detail ?? defaultMessage)
     cleanup(opId)
 
-    const telemetry = useTelemetry()
     const now = Date.now()
     const failureCategory = superseded
       ? 'stale_operation'
@@ -753,7 +971,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
           errorMessage,
           Boolean(operation.downgradeToPersonal)
         )
-    telemetry?.trackBillingEvent({
+    trackLegacyBillingEvent({
       operation: 'operation',
       stage: 'failed',
       outcome: 'failure',
@@ -770,7 +988,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       operation.type === 'subscription' &&
       operation.businessAttemptStartedAt !== undefined
     ) {
-      telemetry?.trackBillingEvent({
+      trackLegacyBillingEvent({
         operation: 'subscription_checkout',
         stage: 'failed',
         outcome: 'failure',
@@ -786,17 +1004,18 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       operation.type === 'topup' &&
       operation.businessAttemptStartedAt !== undefined
     ) {
-      telemetry?.trackBillingEvent({
+      trackLegacyBillingEvent({
         operation: 'topup',
         stage: 'failed',
         outcome: 'failure',
         billing_op_id: opId,
+        payment_intent_source: operation.paymentIntentSource,
         failure_category: failureCategory,
         duration_ms: now - operation.businessAttemptStartedAt
       })
     }
     if (operation.downgradeToPersonal) {
-      telemetry?.trackBillingEvent({
+      trackLegacyBillingEvent({
         operation: 'downgrade_to_personal',
         stage: 'failed',
         outcome: 'failure',
@@ -834,9 +1053,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     })
     cleanup(opId)
 
-    const telemetry = useTelemetry()
     const now = Date.now()
-    telemetry?.trackBillingEvent({
+    trackLegacyBillingEvent({
       operation: 'operation',
       stage: 'failed',
       outcome: 'failure',
@@ -853,7 +1071,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       operation.type === 'subscription' &&
       operation.businessAttemptStartedAt !== undefined
     ) {
-      telemetry?.trackBillingEvent({
+      trackLegacyBillingEvent({
         operation: 'subscription_checkout',
         stage: 'failed',
         outcome: 'failure',
@@ -869,13 +1087,27 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       operation.type === 'topup' &&
       operation.businessAttemptStartedAt !== undefined
     ) {
-      telemetry?.trackBillingEvent({
+      trackLegacyBillingEvent({
         operation: 'topup',
         stage: 'failed',
         outcome: 'failure',
         billing_op_id: opId,
+        payment_intent_source: operation.paymentIntentSource,
         failure_category: 'reconciliation_needed',
         duration_ms: now - operation.businessAttemptStartedAt
+      })
+    }
+    if (operation.downgradeToPersonal) {
+      trackLegacyBillingEvent({
+        operation: 'downgrade_to_personal',
+        stage: 'failed',
+        outcome: 'failure',
+        member_removal_count: operation.downgradeToPersonal.memberRemovalCount,
+        member_removal_failures:
+          operation.downgradeToPersonal.memberRemovalFailures,
+        target_tier: operation.downgradeToPersonal.targetTier,
+        failure_category: 'reconciliation_needed',
+        duration_ms: now - operation.downgradeToPersonal.startedAt
       })
     }
     resolveTerminal(opId)
@@ -890,9 +1122,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     updateOperationStatus(opId, 'timeout', message)
     cleanup(opId)
 
-    const telemetry = useTelemetry()
     const now = Date.now()
-    telemetry?.trackBillingEvent({
+    trackLegacyBillingEvent({
       operation: 'operation',
       stage: 'timeout',
       outcome: 'failure',
@@ -909,7 +1140,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       operation.type === 'subscription' &&
       operation.businessAttemptStartedAt !== undefined
     ) {
-      telemetry?.trackBillingEvent({
+      trackLegacyBillingEvent({
         operation: 'subscription_checkout',
         stage: 'failed',
         outcome: 'failure',
@@ -925,17 +1156,18 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       operation.type === 'topup' &&
       operation.businessAttemptStartedAt !== undefined
     ) {
-      telemetry?.trackBillingEvent({
+      trackLegacyBillingEvent({
         operation: 'topup',
         stage: 'failed',
         outcome: 'failure',
         billing_op_id: opId,
+        payment_intent_source: operation.paymentIntentSource,
         failure_category: 'poll_timeout',
         duration_ms: now - operation.businessAttemptStartedAt
       })
     }
     if (operation.downgradeToPersonal) {
-      telemetry?.trackBillingEvent({
+      trackLegacyBillingEvent({
         operation: 'downgrade_to_personal',
         stage: 'failed',
         outcome: 'failure',
@@ -971,7 +1203,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     type: OperationType,
     errorMessage: string | null,
     isZeroPaymentOperation: boolean
-  ): BillingFailure['failure_category'] {
+  ): BillingTelemetryFailure['failure_category'] {
     if (type === 'cancel' || isZeroPaymentOperation) return 'api_rejected'
 
     if (errorMessage && /network|connection|unreachable/i.test(errorMessage)) {
@@ -989,7 +1221,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
   function billingFailureDetail(
     type: OperationType,
-    errorMessage: string | null
+    errorMessage: string | null,
+    recovery?: FailureRecovery
   ) {
     switch (errorMessage) {
       case 'insufficient_funds':
@@ -1002,6 +1235,9 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       case 'authentication_failed':
       case 'authentication_required':
       case 'payment_intent_authentication_failure':
+      case 'payment_not_completed':
+      case 'payment_method_customer_decline':
+      case 'payment_intent_payment_attempt_expired':
         return t('billingOperation.authenticationFailedDetail')
       case 'processing_error':
       case 'issuer_not_available':
@@ -1028,6 +1264,16 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       case 'reset_now_payment_declined':
       case 'reset_now_invoice_payment_failed':
         return t('billingOperation.paymentDeclinedDetail')
+    }
+    // Reached only when no coded reason named something more actionable. A
+    // terminal operation is served no action_url, so this copy must promise no
+    // button — and no retry unless the server says another attempt can work.
+    if (recovery?.action === 'authenticate_payment') {
+      return t(
+        recovery.retryable === false
+          ? 'billingOperation.authenticatePaymentBlockedDetail'
+          : 'billingOperation.authenticatePaymentDetail'
+      )
     }
     if (type === 'subscription')
       return t('billingOperation.subscriptionFailedDetail')
@@ -1079,14 +1325,15 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       timeouts.delete(opId)
     }
     intervals.delete(opId)
+    waitingWithoutActionSince.delete(opId)
     autoHandledPaymentActions.delete(opId)
     paymentIntentClientSecrets.delete(opId)
+    progressToastsAwaitingFirstRead.delete(opId)
 
-    // Remove the "received" toast
-    const receivedToast = receivedToasts.get(opId)
-    if (receivedToast) {
-      useToastStore().remove(receivedToast)
-      receivedToasts.delete(opId)
+    const progressToast = progressToasts.get(opId)
+    if (progressToast) {
+      useToastStore().remove(progressToast.message)
+      progressToasts.delete(opId)
     }
   }
 
@@ -1097,6 +1344,17 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     operations.value = newMap
     terminalResolvers.delete(opId)
     terminalPromises.delete(opId)
+  }
+
+  // Unlike clearOperation, this keeps the operation live: polling continues
+  // and a late success or failure still resolves normally. It only removes
+  // the operation from the selectors a dialog reads, since whether the
+  // customer wants to see it is a view concern — whether it is over is not.
+  // A server-side cancel (BE-10064/BE-11559) would let a dismissal actually
+  // end the operation instead of merely hiding it; call that here once it
+  // exists.
+  function dismissOperation(opId: string) {
+    updateOperation(opId, { dismissed: true })
   }
 
   return {
@@ -1110,6 +1368,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     startOperation,
     retryPaymentAuthentication,
     pollPendingOperations,
-    clearOperation
+    clearOperation,
+    dismissOperation
   }
 })

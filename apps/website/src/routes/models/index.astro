@@ -1,0 +1,52 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import { workshopModels } from '../../config/workshop-browse-content'
+import ModelsPage from '../../components/workshop/ModelsPage.vue'
+import ModelsShowcase from '../../components/models/ModelsShowcase.astro'
+import { t } from '../../i18n/translations'
+import { modelsHubMeta } from './models-hub-meta'
+
+const { title, description } = modelsHubMeta(workshopModels)
+const directory = workshopModels.toSorted((a, b) =>
+  a.name.localeCompare(b.name, 'en', { numeric: true })
+)
+---
+
+<BaseLayout {title} {description} preloadFonts={['Medium']}>
+  <script>
+    import '../../scripts/hubNavigation'
+  </script>
+  <ModelsPage
+    section="models"
+    heading={t('workshop.catalogue.heading')}
+    client:load
+    transition:persist="hub-catalogue"
+  >
+    <ModelsShowcase slot="fallback" />
+  </ModelsPage>
+  <section
+    aria-labelledby="models-directory-heading"
+    class="mx-auto max-w-10xl px-6 pb-16 max-sm:pb-10 lg:px-8 lg:pb-24"
+    data-testid="models-directory"
+  >
+    <h2
+      id="models-directory-heading"
+      class="text-2xl font-medium text-primary-warm-white"
+    >
+      {t('workshop.catalogue.directory')}
+    </h2>
+    <ul class="mt-6 gap-x-8 sm:columns-2 lg:columns-3 xl:columns-4">
+      {directory.map((model) => <li class="break-inside-avoid py-1.5 text-sm">
+        <a
+          href={model.href}
+          class="text-primary-warm-white transition-colors hover:text-primary-comfy-yellow"
+        >
+          {model.name}
+        </a>
+        {model.provider && <span class="text-primary-warm-gray"
+          >· {model.provider}</span
+        >}
+      </li>)}
+    </ul>
+  </section>
+</BaseLayout>

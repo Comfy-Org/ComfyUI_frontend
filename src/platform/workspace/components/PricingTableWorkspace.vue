@@ -1,31 +1,18 @@
 <template>
   <div class="flex flex-col gap-6">
     <div class="flex justify-center">
-      <SelectButton
+      <ToggleGroup
         v-model="currentBillingCycle"
-        :options="billingCycleOptions"
-        option-label="label"
-        option-value="value"
+        type="single"
         :allow-empty="false"
-        unstyled
-        :pt="{
-          root: {
-            class: 'flex gap-1 bg-secondary-background rounded-lg p-1.5'
-          },
-          pcToggleButton: {
-            root: ({ context }: ToggleButtonPassThroughMethodOptions) => ({
-              class: [
-                'w-36  h-8 rounded-md transition-colors cursor-pointer border-none outline-none ring-0 text-sm font-medium flex items-center justify-center',
-                context.active
-                  ? 'bg-base-foreground text-base-background'
-                  : 'bg-transparent text-muted-foreground hover:bg-secondary-background-hover'
-              ]
-            }),
-            label: { class: 'flex items-center gap-2 ' }
-          }
-        }"
+        class="rounded-lg bg-secondary-background p-1.5"
       >
-        <template #option="{ option }">
+        <ToggleGroupItem
+          v-for="option in billingCycleOptions"
+          :key="option.value"
+          :value="option.value"
+          class="h-8 w-36 data-[state=on]:bg-base-foreground data-[state=on]:text-base-background"
+        >
           <div class="flex items-center gap-2">
             <span>{{ option.label }}</span>
             <div
@@ -35,8 +22,8 @@
               -20%
             </div>
           </div>
-        </template>
-      </SelectButton>
+        </ToggleGroupItem>
+      </ToggleGroup>
     </div>
     <div class="flex flex-col items-stretch gap-4 xl:flex-row">
       <div
@@ -125,21 +112,21 @@
 
           <div class="flex flex-1 flex-col gap-3 pb-0">
             <div class="flex flex-row items-center justify-between">
-              <span class="text-foreground text-sm font-normal">
-                {{ t('subscription.monthlyCreditsPerMemberLabel') }}
+              <span class="text-sm font-normal text-base-foreground">
+                {{ t(creditsPerMemberLabelKey) }}
               </span>
               <div class="flex flex-row items-center gap-1">
-                <i class="icon-[lucide--coins] text-sm text-credit" />
+                <i class="icon-[lucide--coins] size-4 text-credit" />
                 <span
                   class="font-inter text-sm/normal font-bold text-base-foreground"
                 >
-                  {{ n(getMonthlyCreditsPerMember(tier)) }}
+                  {{ n(getCreditsPerMember(tier)) }}
                 </span>
               </div>
             </div>
 
             <div class="flex flex-row items-center justify-between">
-              <span class="text-foreground text-sm font-normal">
+              <span class="text-sm font-normal text-base-foreground">
                 {{ t('subscription.maxMembersLabel') }}
               </span>
               <span
@@ -150,7 +137,7 @@
             </div>
 
             <div class="flex flex-row items-center justify-between">
-              <span class="text-foreground text-sm font-normal">
+              <span class="text-sm font-normal text-base-foreground">
                 {{ t('subscription.maxDurationLabel') }}
               </span>
               <span
@@ -161,34 +148,36 @@
             </div>
 
             <div class="flex flex-row items-center justify-between">
-              <span class="text-foreground text-sm font-normal">
+              <span class="text-sm font-normal text-base-foreground">
                 {{ t('subscription.gpuLabel') }}
               </span>
-              <i class="pi pi-check text-success-foreground text-xs" />
+              <i class="pi pi-check text-xs text-success-background" />
             </div>
 
             <div class="flex flex-row items-center justify-between">
-              <span class="text-foreground text-sm font-normal">
+              <span class="text-sm font-normal text-base-foreground">
                 {{ t('subscription.addCreditsLabel') }}
               </span>
-              <i class="pi pi-check text-success-foreground text-xs" />
+              <i class="pi pi-check text-xs text-success-background" />
             </div>
 
             <div class="flex flex-row items-center justify-between">
-              <span class="text-foreground text-sm font-normal">
+              <span class="text-sm font-normal text-base-foreground">
                 {{ t('subscription.customLoRAsLabel') }}
               </span>
               <i
                 v-if="tier.customLoRAs"
-                class="pi pi-check text-success-foreground text-xs"
+                class="pi pi-check text-xs text-success-background"
               />
-              <i v-else class="pi pi-times text-foreground text-xs" />
+              <i v-else class="pi pi-times text-xs text-base-foreground" />
             </div>
 
             <div class="flex flex-col gap-2">
               <div class="flex flex-row items-start justify-between">
                 <div class="flex flex-col gap-2">
-                  <span class="text-foreground text-sm/relaxed font-normal">
+                  <span
+                    class="text-sm/relaxed font-normal text-base-foreground"
+                  >
                     {{ t('subscription.videoEstimateLabel') }}
                   </span>
                   <div class="group flex flex-row items-center gap-2 pt-2">
@@ -206,7 +195,7 @@
                 <span
                   class="font-inter text-sm/normal font-bold text-base-foreground"
                 >
-                  ~{{ n(tier.pricing.videoEstimate) }}
+                  ~{{ n(getVideoEstimateDisplay(tier)) }}
                 </span>
               </div>
             </div>
@@ -298,15 +287,15 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import Popover from 'primevue/popover'
-import SelectButton from 'primevue/selectbutton'
-import type { ToggleButtonPassThroughMethodOptions } from 'primevue/togglebutton'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import {
   TIER_PRICING,
+  amountForBillingCycle,
   hasActivePaidPlan,
   toTierKey
 } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -402,6 +391,14 @@ const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
 const popover = ref()
 const currentBillingCycle = ref<BillingCycle>('yearly')
 
+const isYearly = computed(() => currentBillingCycle.value === 'yearly')
+
+const creditsPerMemberLabelKey = computed(() =>
+  isYearly.value
+    ? 'subscription.yearlyCreditsPerMemberLabel'
+    : 'subscription.monthlyCreditsPerMemberLabel'
+)
+
 onMounted(() => {
   void fetchPlans()
 })
@@ -493,7 +490,7 @@ const isButtonDisabled = (tier: PricingTierConfig): boolean => {
 const getButtonTextClass = (tier: PricingTierConfig): string =>
   tier.key === 'creator'
     ? 'font-inter text-sm font-bold leading-normal text-base-background'
-    : 'font-inter text-sm font-bold leading-normal text-primary-foreground'
+    : 'font-inter text-sm font-bold leading-normal text-base-foreground'
 
 const getPrice = (tier: PricingTierConfig): number =>
   getPriceFromApi(tier) ?? tier.pricing[currentBillingCycle.value]
@@ -516,8 +513,15 @@ const maxMembersByTier = computed(
     >
 )
 
-const getMonthlyCreditsPerMember = (tier: PricingTierConfig): number =>
-  tier.pricing.credits
+const getCreditsPerMember = (tier: PricingTierConfig): number =>
+  getApiPlanForTier(tier.key, currentBillingCycle.value)?.credits ??
+  amountForBillingCycle(tier.pricing.credits, isYearly.value)
+
+const getVideoEstimateDisplay = (tier: PricingTierConfig): number =>
+  Math.round(
+    getCreditsPerMember(tier) *
+      (tier.pricing.videoEstimate / tier.pricing.credits)
+  )
 
 function handleSubscribe(tierKey: CheckoutTierKey) {
   if (isLoading) return

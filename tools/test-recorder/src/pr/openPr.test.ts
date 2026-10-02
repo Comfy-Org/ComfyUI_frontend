@@ -1,19 +1,18 @@
-import type * as fs from 'node:fs'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { openPr } from './openPr'
 
-vi.mock('./gh', () => ({
+vi.mock(import('./gh'), () => ({
   checkGhAvailable: vi.fn(),
   createPr: vi.fn(),
   switchBranch: vi.fn()
 }))
-vi.mock('./clipboard', () => ({ copyToClipboard: vi.fn() }))
-vi.mock('node:fs', async (importOriginal) => ({
-  ...(await importOriginal<typeof fs>()),
+vi.mock(import('./clipboard'), () => ({ copyToClipboard: vi.fn() }))
+vi.mock<unknown>(import('node:fs'), () => ({
+  default: { readFileSync: vi.fn(() => 'contents') },
   readFileSync: vi.fn(() => 'contents')
 }))
-vi.mock('@clack/prompts', () => ({
+vi.mock<unknown>(import('@clack/prompts'), () => ({
   confirm: vi.fn(),
   isCancel: vi.fn(() => false)
 }))

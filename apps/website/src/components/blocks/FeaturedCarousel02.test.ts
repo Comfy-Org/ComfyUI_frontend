@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -8,7 +7,7 @@ import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import FeaturedCarousel02 from './FeaturedCarousel02.vue'
 import type { FeaturedSplitSlide } from './FeaturedCarousel02.vue'
 
-vi.mock('../../composables/useReducedMotion', () => ({
+vi.mock(import('../../composables/useReducedMotion'), () => ({
   prefersReducedMotion: vi.fn()
 }))
 

@@ -26,8 +26,6 @@ User-agent: Meta-ExternalAgent
 User-agent: Meta-ExternalFetcher
 User-agent: Diffbot
 Allow: /
-Disallow: /_astro/
-Disallow: /_website/
 Disallow: /_vercel/
 
 # Content Signals (contentsignals.org): this content may be used for search,
@@ -35,3 +33,4 @@ Disallow: /_vercel/
 Content-Signal: search=yes, ai-input=yes, ai-train=yes
 
 Sitemap: https://comfy.org/sitemap-index.xml
+Sitemap: https://comfy.org/video-sitemap.xml

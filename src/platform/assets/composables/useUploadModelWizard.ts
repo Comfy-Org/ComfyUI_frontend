@@ -367,7 +367,7 @@ export function useUploadModelWizard(
         }
 
         stopAsyncWatch?.()
-        let resolved = false
+        const watchState = { resolved: false }
         const stop = watch(
           () =>
             assetDownloadStore.downloadList.find(
@@ -375,29 +375,37 @@ export function useUploadModelWizard(
             )?.status,
           async (status) => {
             if (status === 'completed') {
-              resolved = true
+              watchState.resolved = true
               uploadStatus.value = 'success'
               await refreshModelCaches()
               stopAsyncWatch?.()
               stopAsyncWatch = undefined
-            } else if (status === 'failed') {
-              resolved = true
+            } else if (
+              status === 'failed' ||
+              status === 'cancellation_pending' ||
+              status === 'cancelled'
+            ) {
               const download = assetDownloadStore.downloadList.find(
                 (d) => d.taskId === result.task.task_id
               )
               uploadStatus.value = 'error'
               uploadError.value =
-                download?.error ||
-                t('assetBrowser.downloadFailed', {
-                  name: download?.assetName || ''
-                })
-              stopAsyncWatch?.()
-              stopAsyncWatch = undefined
+                status === 'cancelled' || status === 'cancellation_pending'
+                  ? t('electronFileDownload.cancelled')
+                  : download?.error ||
+                    t('assetBrowser.downloadFailed', {
+                      name: download?.assetName || ''
+                    })
+              if (status !== 'cancellation_pending') {
+                watchState.resolved = true
+                stopAsyncWatch?.()
+                stopAsyncWatch = undefined
+              }
             }
           },
           { immediate: true }
         )
-        if (resolved) {
+        if (watchState.resolved) {
           stop()
           stopAsyncWatch = undefined
         } else {

@@ -49,89 +49,87 @@
       </div>
     </template>
     <template #header>
-      <!-- Filter Bar -->
+      <div v-if="!isInFolderView" class="overflow-x-auto px-4 pt-2 pb-px">
+        <TabList v-model="activeTab">
+          <Tab value="output">{{ $t('sideToolbar.labels.generated') }}</Tab>
+          <Tab value="input">{{ $t('sideToolbar.labels.imported') }}</Tab>
+        </TabList>
+      </div>
       <MediaAssetFilterBar
         v-model:search-query="searchQuery"
         v-model:sort-by="sortBy"
         v-model:view-mode="viewMode"
         v-model:date-filter="dateFilter"
         v-model:media-type-filters="mediaTypeFilters"
-        bottom-divider
         :show-generation-time-sort="activeTab === 'output'"
       />
-      <!-- Tab list -->
-      <div
-        v-if="!isInFolderView"
-        class="border-b border-comfy-input p-2 2xl:px-4"
-      >
-        <TabList v-model="activeTab">
-          <Tab value="output">{{ $t('sideToolbar.labels.generated') }}</Tab>
-          <Tab value="input">{{ $t('sideToolbar.labels.imported') }}</Tab>
-        </TabList>
-      </div>
     </template>
     <template #body>
-      <div
-        v-if="showLoadingState"
-        class="grid gap-2 p-2"
-        :style="skeletonGridStyle"
-      >
+      <div v-bind="tabPanelAttrs" class="size-full">
         <div
-          v-for="n in skeletonCount"
-          :key="`skeleton-${n}`"
-          class="flex flex-col gap-2 p-2"
+          v-if="showLoadingState"
+          class="grid gap-2 p-2"
+          :style="skeletonGridStyle"
         >
-          <Skeleton class="aspect-square w-full rounded-lg" />
-          <div class="flex flex-col gap-1">
-            <Skeleton class="h-4 w-3/4" />
-            <Skeleton class="h-3 w-1/2" />
+          <div
+            v-for="n in skeletonCount"
+            :key="`skeleton-${n}`"
+            class="flex flex-col gap-2 p-2"
+          >
+            <Skeleton class="aspect-square w-full rounded-lg" />
+            <div class="flex flex-col gap-1">
+              <Skeleton class="h-4 w-3/4" />
+              <Skeleton class="h-3 w-1/2" />
+            </div>
           </div>
         </div>
-      </div>
-      <div v-else-if="showEmptyState">
-        <NoResultsPlaceholder
-          icon="pi pi-info-circle"
-          :title="
-            $t(
-              activeTab === 'input'
-                ? 'sideToolbar.noImportedFiles'
-                : 'sideToolbar.noGeneratedFiles'
-            )
-          "
-          :message="$t('sideToolbar.noFilesFoundMessage')"
-        />
-      </div>
-      <div
-        v-else
-        class="relative size-full py-2"
-        @click="handleEmptySpaceClick"
-      >
-        <AssetsSidebarListView
-          v-if="isListView"
-          :asset-items="listViewAssetItems"
-          :is-selected="isSelected"
-          :selectable-assets="listViewSelectableAssets"
-          :is-stack-expanded="isListViewStackExpanded"
-          :toggle-stack="toggleListViewStack"
-          @select-asset="handleAssetSelect"
-          @preview-asset="handleZoomClick"
-          @context-menu="handleAssetContextMenu"
-          @approach-end="handleApproachEnd"
-        />
-        <div v-else class="size-full">
-          <AssetsSidebarGridView
-            :assets="displayAssets"
-            :is-selected
-            :show-output-count
-            :get-output-count
-            :grid-mode
-            @select-asset="handleAssetSelect"
-            @toggle-asset-selection="handleAssetSelectionToggle"
-            @context-menu="handleAssetContextMenu"
-            @approach-end="handleApproachEnd"
-            @zoom="handleZoomClick"
-            @output-count-click="enterFolderView"
+        <div v-else-if="showEmptyState">
+          <NoResultsPlaceholder
+            icon="pi pi-info-circle"
+            :title="
+              $t(
+                activeTab === 'input'
+                  ? 'sideToolbar.noImportedFiles'
+                  : 'sideToolbar.noGeneratedFiles'
+              )
+            "
+            :message="$t('sideToolbar.noFilesFoundMessage')"
           />
+        </div>
+        <div
+          v-else
+          class="relative size-full py-2"
+          @click="handleEmptySpaceClick"
+        >
+          <AssetsSidebarListView
+            v-if="isListView"
+            :asset-items="listViewAssetItems"
+            :is-selected="isSelected"
+            :selectable-assets="listViewSelectableAssets"
+            :is-stack-expanded="isListViewStackExpanded"
+            :toggle-stack="toggleListViewStack"
+            :on-load-more="loadMoreAssets"
+            :can-load-more="canLoadMoreAssets"
+            @select-asset="handleAssetSelect"
+            @preview-asset="handleZoomClick"
+            @context-menu="handleAssetContextMenu"
+          />
+          <div v-else class="size-full">
+            <AssetsSidebarGridView
+              :assets="displayAssets"
+              :is-selected
+              :show-output-count
+              :get-output-count
+              :grid-mode
+              :on-load-more="loadMoreAssets"
+              :can-load-more="canLoadMoreAssets"
+              @select-asset="handleAssetSelect"
+              @toggle-asset-selection="handleAssetSelectionToggle"
+              @context-menu="handleAssetContextMenu"
+              @zoom="handleZoomClick"
+              @output-count-click="enterFolderView"
+            />
+          </div>
         </div>
       </div>
     </template>
@@ -181,7 +179,6 @@
 import {
   unrefElement,
   useAsyncState,
-  useDebounceFn,
   useStorage,
   useTimeoutFn
 } from '@vueuse/core'
@@ -193,6 +190,7 @@ import {
   onMounted,
   onUnmounted,
   ref,
+  toValue,
   useTemplateRef,
   watch
 } from 'vue'
@@ -219,7 +217,6 @@ import type {
   MediaAssetViewMode
 } from '@/platform/assets/components/mediaAssetViewOptions'
 import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
-import { useAssetsApi } from '@/platform/assets/composables/media/useAssetsApi'
 import { useAssetGridSelection } from '@/platform/assets/composables/useAssetGridSelection'
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
@@ -230,19 +227,20 @@ import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataS
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
 import {
-  getAssetSubfolder,
-  getAssetUrl
+  getAssetFileUrl,
+  getAssetSubfolder
 } from '@/platform/assets/utils/assetUrlUtil'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
+import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { ResultItemImpl } from '@/stores/queueStore'
 import {
   formatDuration,
   getMediaTypeFromFilename,
   isPreviewableMediaType
 } from '@/utils/formatUtil'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 
 const Load3dViewerContent = defineAsyncComponent(
   () => import('@/components/load3d/Load3dViewerContent.vue')
@@ -257,6 +255,16 @@ const folderJobId = ref<string | null>(null)
 const folderExecutionTime = ref<number | undefined>(undefined)
 const expectedFolderCount = ref(0)
 const isInFolderView = computed(() => folderJobId.value !== null)
+const tabPanelAttrs = computed(() =>
+  isInFolderView.value
+    ? {}
+    : {
+        id: `tabpanel-${activeTab.value}`,
+        role: 'tabpanel',
+        tabindex: 0,
+        'aria-labelledby': `tab-${activeTab.value}`
+      }
+)
 const viewMode = useStorage<MediaAssetViewMode>(
   'Comfy.Assets.Sidebar.ViewMode',
   MEDIA_ASSET_VIEW_MODE.grid
@@ -302,9 +310,7 @@ const formattedExecutionTime = computed(() => {
 })
 
 const toast = useToast()
-
-const inputAssets = useAssetsApi('input')
-const outputAssets = useAssetsApi('output')
+const assetsStore = useAssetsStore()
 
 // Asset selection
 const {
@@ -339,11 +345,12 @@ const {
 } = useMediaAssetActions()
 
 const currentAssets = computed(() =>
-  activeTab.value === 'input' ? inputAssets : outputAssets
+  activeTab.value === 'input'
+    ? assetsStore.inputAssets
+    : assetsStore.outputAssets
 )
-const loading = computed(() => currentAssets.value.loading.value)
-const error = computed(() => currentAssets.value.error.value)
-const mediaAssets = computed(() => currentAssets.value.media.value)
+const loading = computed(() => toValue(currentAssets.value.isLoading))
+const mediaAssets = computed(() => toValue(currentAssets.value.items))
 
 const galleryActiveIndex = ref(-1)
 const currentGalleryAssetId = ref<string | null>(null)
@@ -434,7 +441,10 @@ const showLoadingState = computed(
 
 const showEmptyState = computed(
   () =>
-    !loading.value && !isFolderLoading.value && displayAssets.value.length === 0
+    !loading.value &&
+    !isFolderLoading.value &&
+    !canLoadMoreAssets.value &&
+    displayAssets.value.length === 0
 )
 
 watch(visibleAssets, (newAssets) => {
@@ -455,33 +465,22 @@ watch(galleryActiveIndex, (index) => {
   }
 })
 
-const galleryItems = computed(() => {
+const galleryItems = computed<AugmentedResultItem[]>(() => {
   return previewableVisibleAssets.value.map((asset) => {
     const mediaType = getMediaTypeFromFilename(asset.name)
-    const resultItem = new ResultItemImpl({
+    return {
       filename: asset.name,
       subfolder: getAssetSubfolder(asset),
       type: 'output',
       nodeId: '0',
-      mediaType: mediaType === 'image' ? 'images' : mediaType
-    })
-
-    Object.defineProperty(resultItem, 'url', {
-      get() {
-        return asset.preview_url || ''
-      },
-      configurable: true
-    })
-
-    return resultItem
+      mediaType: mediaType === 'image' ? 'images' : mediaType,
+      url: asset.preview_url || ''
+    }
   })
 })
 
 const refreshAssets = async () => {
-  await currentAssets.value.fetchMediaList()
-  if (error.value) {
-    console.error('Failed to refresh assets:', error.value)
-  }
+  await currentAssets.value.invalidate()
 }
 
 watch(
@@ -579,7 +578,7 @@ const handleZoomClick = (asset: AssetItem) => {
       title: getAssetDisplayName(asset),
       component: Load3dViewerContent,
       props: {
-        modelUrl: asset.preview_url || getAssetUrl(asset)
+        modelUrl: getAssetFileUrl(asset)
       },
       dialogComponentProps: {
         renderer: 'reka',
@@ -676,14 +675,8 @@ const copyJobId = async () => {
   }
 }
 
-const handleApproachEnd = useDebounceFn(async () => {
-  if (
-    activeTab.value === 'output' &&
-    !isInFolderView.value &&
-    outputAssets.hasMore.value &&
-    !outputAssets.isLoadingMore.value
-  ) {
-    await outputAssets.loadMore()
-  }
-}, 300)
+const loadMoreAssets = () => currentAssets.value.loadMore()
+const canLoadMoreAssets = computed(
+  () => !isInFolderView.value && toValue(currentAssets.value.hasMore)
+)
 </script>

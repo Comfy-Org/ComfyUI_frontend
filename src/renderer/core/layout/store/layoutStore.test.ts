@@ -1,8 +1,6 @@
 import { toGroupId } from '@/types/groupId'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
@@ -20,11 +18,12 @@ import type {
   NodeLayout
 } from '@/renderer/core/layout/types'
 
-const GRAPH = createUuidv4()
+const mockReportError = vi.hoisted(() => vi.fn())
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: mockReportError
+}))
 
-beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
-})
+const GRAPH = createUuidv4()
 
 describe('layoutStore CRDT operations', () => {
   beforeEach(() => {
@@ -299,6 +298,131 @@ describe('layoutStore CRDT operations', () => {
 
     unsubscribeNode()
     unsubscribeGlobal()
+  })
+
+  it('reports listener failures by scope and continues fan-out', async () => {
+    const nodeId = toNodeId('failing-listener-node')
+    const layout = createTestNode(nodeId)
+
+    layoutStore.applyOperation({
+      type: 'createNode',
+      graphId: GRAPH,
+      nodeId,
+      layout,
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas,
+      actor: 'test'
+    })
+
+    const errors = {
+      geometry: new Error('geometry listener failed'),
+      global: new Error('global listener failed'),
+      node: new Error('node listener failed')
+    }
+    const listenersBefore = {
+      geometry: vi.fn(),
+      global: vi.fn(),
+      node: vi.fn()
+    }
+    const listenersAfter = {
+      geometry: vi.fn(),
+      global: vi.fn(),
+      node: vi.fn()
+    }
+    const stopBeforeGeometry = layoutStore.onGeometryChange(
+      listenersBefore.geometry
+    )
+    const stopFailingGeometry = layoutStore.onGeometryChange(() => {
+      throw errors.geometry
+    })
+    const stopAfterGeometry = layoutStore.onGeometryChange(
+      listenersAfter.geometry
+    )
+    const stopBeforeGlobal = layoutStore.onChange(listenersBefore.global)
+    const stopFailingGlobal = layoutStore.onChange(() => {
+      throw errors.global
+    })
+    const stopAfterGlobal = layoutStore.onChange(listenersAfter.global)
+    const stopBeforeNode = layoutStore.onNodeChange(
+      GRAPH,
+      nodeId,
+      listenersBefore.node
+    )
+    const stopFailingNode = layoutStore.onNodeChange(GRAPH, nodeId, () => {
+      throw errors.node
+    })
+    const stopAfterNode = layoutStore.onNodeChange(
+      GRAPH,
+      nodeId,
+      listenersAfter.node
+    )
+    onTestFinished(() => {
+      stopBeforeGeometry()
+      stopFailingGeometry()
+      stopAfterGeometry()
+      stopBeforeGlobal()
+      stopFailingGlobal()
+      stopAfterGlobal()
+      stopBeforeNode()
+      stopFailingNode()
+      stopAfterNode()
+    })
+
+    layoutStore.applyOperation({
+      type: 'moveNode',
+      graphId: GRAPH,
+      nodeId,
+      position: { x: 300, y: 200 },
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas,
+      actor: 'test'
+    })
+
+    await vi.waitFor(() => {
+      expect(mockReportError).toHaveBeenCalledTimes(3)
+    })
+
+    for (const listener of Object.values(listenersBefore)) {
+      expect(listener).toHaveBeenCalledOnce()
+    }
+    for (const listener of Object.values(listenersAfter)) {
+      expect(listener).toHaveBeenCalledOnce()
+    }
+    for (const scope of ['geometry', 'global', 'node'] as const) {
+      expect(mockReportError).toHaveBeenCalledWith(errors[scope], {
+        surface: 'platform',
+        errorType: 'canvas_layout_listener_failed',
+        tags: {
+          failure_kind: 'caught_unexpected',
+          feature_area: 'canvas',
+          operation: 'sync',
+          outcome: 'failed',
+          listener_scope: scope
+        },
+        level: 'error'
+      })
+    }
+
+    layoutStore.applyOperation({
+      type: 'moveNode',
+      graphId: GRAPH,
+      nodeId,
+      position: { x: 400, y: 300 },
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas,
+      actor: 'test'
+    })
+
+    await vi.waitFor(() => {
+      expect(listenersAfter.geometry).toHaveBeenCalledTimes(2)
+    })
+    expect(mockReportError).toHaveBeenCalledTimes(3)
+    for (const listener of Object.values(listenersBefore)) {
+      expect(listener).toHaveBeenCalledTimes(2)
+    }
+    for (const listener of Object.values(listenersAfter)) {
+      expect(listener).toHaveBeenCalledTimes(2)
+    }
   })
 
   it('clears node-scoped listeners when the viewed graph changes', () => {
@@ -939,4 +1063,63 @@ describe('layoutStore content-size performance contract', () => {
       stop()
     }
   )
+})
+
+describe('layoutStore queryLinkSegmentAtPoint DPR threading', () => {
+  beforeEach(() => {
+    layoutStore.resetForTests()
+    layoutStore.updateLinkSegmentLayout(toLinkId(1), null, {
+      path: new Path2D(),
+      bounds: { x: 0, y: 0, width: 100, height: 100 },
+      centerPos: { x: 50, y: 50 }
+    })
+  })
+
+  function strokeHitOnlyAt(x: number, y: number) {
+    return fromPartial<CanvasRenderingContext2D>({
+      lineWidth: 17,
+      isPointInStroke: (_path: Path2D, hitX: number, hitY: number) =>
+        hitX === x && hitY === y
+    })
+  }
+
+  it('scales the CSS-space point by the caller-supplied dpr', () => {
+    expect(
+      layoutStore.queryLinkSegmentAtPoint(
+        { x: 50, y: 50 },
+        strokeHitOnlyAt(25, 25),
+        0.5
+      )
+    ).toEqual({ linkId: toLinkId(1), rerouteId: null })
+  })
+
+  it.for([
+    {
+      name: 'the browser DPR',
+      global: 'devicePixelRatio',
+      value: 2,
+      hitAt: 100
+    },
+    {
+      name: 'a sub-1 browser DPR clamped to 1',
+      global: 'devicePixelRatio',
+      value: 0.5,
+      hitAt: 50
+    },
+    {
+      name: 'DPR 1 without a window',
+      global: 'window',
+      value: undefined,
+      hitAt: 50
+    }
+  ])('falls back to $name when dpr is omitted', ({ global, value, hitAt }) => {
+    vi.stubGlobal(global, value)
+
+    expect(
+      layoutStore.queryLinkSegmentAtPoint(
+        { x: 50, y: 50 },
+        strokeHitOnlyAt(hitAt, hitAt)
+      )
+    ).toEqual({ linkId: toLinkId(1), rerouteId: null })
+  })
 })

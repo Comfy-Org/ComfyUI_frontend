@@ -1,6 +1,6 @@
-import { ref, toValue, watch } from 'vue'
+import { getCurrentScope, onScopeDispose, ref, toValue, watch } from 'vue'
 
-import type { MaybeRefOrGetter, Ref } from 'vue'
+import type { MaybeRefOrGetter, Ref, WatchStopHandle } from 'vue'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 
 export interface SelectedNode {
@@ -14,12 +14,18 @@ export function selectedNodeKey(node: SelectedNode): string {
 }
 
 export interface UseCanvasSelectionOptions {
+  staged?: Ref<SelectedNode[]>
+  retainWhenNotLive?: boolean
   selection: MaybeRefOrGetter<SelectedNode[]>
   isLive: MaybeRefOrGetter<boolean>
+  enabled?: MaybeRefOrGetter<boolean>
   isTracking?: MaybeRefOrGetter<boolean>
   isPaused?: MaybeRefOrGetter<boolean>
   scope?: MaybeRefOrGetter<string | null>
   dismissedSignature?: Ref<string | null>
+  retainStagedNode?: (node: SelectedNode) => boolean
+  /** User additions from canvas tracking or a mention, never draft restoration. */
+  onNodesAdded?: () => void
 }
 
 function signature(scope: string | null, nodes: SelectedNode[]): string {
@@ -27,50 +33,92 @@ function signature(scope: string | null, nodes: SelectedNode[]): string {
 }
 
 export function useCanvasSelection(options: UseCanvasSelectionOptions) {
-  const staged = ref<SelectedNode[]>([])
+  const staged = options.staged ?? ref<SelectedNode[]>([])
   const consumedSig = ref<string | null>(null)
   const stagedSig = ref<string | null>(null)
   const dismissedSig = options.dismissedSignature ?? ref<string | null>(null)
   let lastLiveSig: string | null = null
 
+  let stopSelectionWatch: WatchStopHandle | undefined
+
+  function retainOffSelectionNodes(nodes: SelectedNode[]): SelectedNode[] {
+    if (!options.retainStagedNode) return nodes
+    const selectedKeys = new Set(nodes.map(selectedNodeKey))
+    return [
+      ...staged.value.filter(
+        (node) =>
+          options.retainStagedNode?.(node) &&
+          !selectedKeys.has(selectedNodeKey(node))
+      ),
+      ...nodes
+    ]
+  }
+
+  function stageUserSelection(nodes: SelectedNode[]): void {
+    const previousKeys = new Set(staged.value.map(selectedNodeKey))
+    if (nodes.some((node) => !previousKeys.has(selectedNodeKey(node))))
+      options.onNodesAdded?.()
+    staged.value = nodes
+  }
+
   watch(
-    () =>
-      [
-        toValue(options.isLive),
-        toValue(options.isTracking ?? true),
-        toValue(options.isPaused ?? false),
-        toValue(options.scope ?? null),
-        toValue(options.selection)
-      ] as const,
-    ([isLive, isTracking, isPaused, scope, nodes]) => {
-      if (isPaused) return
-      if (!isLive) {
+    () => toValue(options.enabled ?? true),
+    (enabled) => {
+      stopSelectionWatch?.()
+      stopSelectionWatch = undefined
+      if (!enabled) {
         staged.value = []
         consumedSig.value = null
         stagedSig.value = null
+        dismissedSig.value = null
         lastLiveSig = null
         return
       }
-      if (!isTracking) return
-      if (nodes.length === 0) {
-        staged.value = []
-        consumedSig.value = null
-        stagedSig.value = null
-        if (lastLiveSig !== null) dismissedSig.value = null
-        lastLiveSig = null
-        return
-      }
-      const sig = signature(scope, nodes)
-      lastLiveSig = sig
-      if (sig !== dismissedSig.value) dismissedSig.value = null
-      if (sig === dismissedSig.value) return
-      if (sig === consumedSig.value || sig === stagedSig.value) return
-      consumedSig.value = null
-      stagedSig.value = sig
-      staged.value = [...nodes]
+      stopSelectionWatch = watch(
+        () =>
+          [
+            toValue(options.isLive),
+            toValue(options.isTracking ?? true),
+            toValue(options.isPaused ?? false),
+            toValue(options.scope ?? null),
+            toValue(options.selection)
+          ] as const,
+        ([isLive, isTracking, isPaused, scope, nodes]) => {
+          if (isPaused) return
+          if (!isLive) {
+            if (options.retainWhenNotLive) return
+            staged.value = []
+            consumedSig.value = null
+            stagedSig.value = null
+            lastLiveSig = null
+            return
+          }
+          if (!isTracking) return
+          const projectedNodes = retainOffSelectionNodes(nodes)
+          if (projectedNodes.length === 0) {
+            staged.value = []
+            consumedSig.value = null
+            stagedSig.value = null
+            if (lastLiveSig !== null) dismissedSig.value = null
+            lastLiveSig = null
+            return
+          }
+          const sig = signature(scope, projectedNodes)
+          lastLiveSig = sig
+          if (sig !== dismissedSig.value) dismissedSig.value = null
+          if (sig === dismissedSig.value) return
+          if (sig === consumedSig.value || sig === stagedSig.value) return
+          consumedSig.value = null
+          stagedSig.value = sig
+          stageUserSelection(projectedNodes)
+        },
+        { immediate: true, deep: true, flush: 'sync' }
+      )
     },
-    { immediate: true, deep: true, flush: 'sync' }
+    { immediate: true, flush: 'sync' }
   )
+
+  if (getCurrentScope()) onScopeDispose(() => stopSelectionWatch?.())
 
   function currentSignature(): string {
     return signature(toValue(options.scope ?? null), toValue(options.selection))
@@ -99,7 +147,7 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
       staged.value.some((tag) => selectedNodeKey(tag) === selectedNodeKey(node))
     )
       return
-    staged.value = [...staged.value, node]
+    stageUserSelection([...staged.value, node])
   }
 
   function replace(nodes: SelectedNode[]): void {

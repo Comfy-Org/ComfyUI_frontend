@@ -2,17 +2,26 @@ import { FirebaseError } from 'firebase/app'
 import { AuthErrorCodes } from 'firebase/auth'
 import { ref } from 'vue'
 
+import {
+  authErrorMessage,
+  classifyAuthError,
+  severityForAuthError
+} from '@comfyorg/account-core/firebaseAuthError'
+import type { AuthErrorCopy } from '@comfyorg/account-core/firebaseAuthError'
+
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { watchForTopupBalanceUpdate } from '@/composables/billing/topupBalanceRefresh'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { ErrorRecoveryStrategy } from '@/composables/useErrorHandling'
 import { st, t } from '@/i18n'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { AuthFlowAction } from '@/platform/telemetry/types'
+import { PaymentPopupBlockedError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import {
-  clearAllWorkflowStorage,
+  clearAllWorkspaceStorage,
   prepareWorkflowLogoutTransition
 } from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -20,15 +29,27 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
 import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
-import type { BillingPortalTargetTier } from '@/stores/authStore'
+import type {
+  BillingPortalTargetTier,
+  SocialSignInOptions
+} from '@/stores/authStore'
 import { usdToMicros } from '@/utils/formatUtil'
 
-/** Popup outcomes the user or their browser caused, not app faults. */
-const POPUP_PERMISSION_ERROR_CODES: readonly string[] = [
-  AuthErrorCodes.POPUP_CLOSED_BY_USER,
-  AuthErrorCodes.EXPIRED_POPUP_REQUEST,
-  AuthErrorCodes.POPUP_BLOCKED
-]
+/**
+ * The app's own auth.errors table, read through vue-i18n at resolution time.
+ * The key set is the app's, so a code added to main.json renders without the
+ * package having to know it.
+ */
+export const localizedAuthErrorCopy = (): AuthErrorCopy => ({
+  ...Object.fromEntries(
+    Object.keys(enMessages.auth.errors).map((key) => [
+      key,
+      st(`auth.errors.${key}`, t('auth.errors.generic'))
+    ])
+  ),
+  generic: t('auth.errors.generic'),
+  signupBlocked: st('auth.errors.signupBlocked', t('auth.errors.generic'))
+})
 
 /**
  * Service for Firebase Auth actions.
@@ -52,47 +73,29 @@ export const useAuthActions = () => {
     }
 
   const reportError = (error: unknown) => {
+    const classification = classifyAuthError(error)
     // Ref: https://firebase.google.com/docs/auth/admin/errors
-    if (
-      error instanceof FirebaseError &&
-      [
-        'auth/unauthorized-domain',
-        'auth/invalid-dynamic-link-domain',
-        'auth/unauthorized-continue-uri'
-      ].includes(error.code)
-    ) {
+    const severity = severityForAuthError(classification)
+    const summary = t(severity === 'warn' ? 'g.warning' : 'g.error')
+    if (classification.kind === 'unauthorized-domain') {
       accessError.value = true
       toastStore.add({
-        severity: 'error',
-        summary: t('g.error'),
+        severity,
+        summary,
         detail: t('toastMessages.unauthorizedDomain', {
           domain: window.location.hostname,
           email: 'support@comfy.org'
         })
       })
-    } else if (
-      error instanceof FirebaseError &&
-      error.message.toLowerCase().includes('signup_blocked')
-    ) {
-      // Match on `error.message`, not `error.code`: Firebase `beforeUserCreated`
-      // rejections collapse the thrown code into a generic `auth/internal-error`,
-      // so the message is the only reliable channel. `signup_blocked` is a
-      // cross-repo contract token; matched case-insensitively.
+    } else if (classification.kind !== 'unknown') {
       toastStore.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('auth.errors.signupBlocked')
-      })
-    } else if (
-      error instanceof FirebaseError &&
-      POPUP_PERMISSION_ERROR_CODES.includes(error.code)
-    ) {
-      toastStore.add({
-        severity: 'warn',
-        summary: t('g.warning'),
-        detail: st(`auth.errors.${error.code}`, t('auth.errors.generic'))
+        severity,
+        summary,
+        detail: authErrorMessage(classification, localizedAuthErrorCopy())
       })
     } else if (error instanceof FirebaseError) {
+      // classifyAuthError only knows auth/ codes; an app/ or installations/
+      // FirebaseError still gets the localized copy, never the raw SDK text.
       toastStore.add({
         severity: 'error',
         summary: t('g.error'),
@@ -117,7 +120,7 @@ export const useAuthActions = () => {
         })
         if (confirmed === null) return
 
-        if (confirmed === true) {
+        if (confirmed) {
           const workflowService = useWorkflowService()
           for (const workflow of modifiedWorkflows) {
             try {
@@ -136,7 +139,7 @@ export const useAuthActions = () => {
     await authStore.logout()
     if (isCloud) {
       prepareWorkflowLogoutTransition()
-      clearAllWorkflowStorage()
+      clearAllWorkspaceStorage()
     }
 
     toastStore.add({
@@ -149,7 +152,7 @@ export const useAuthActions = () => {
     if (isCloud) {
       try {
         window.location.href = '/cloud/login'
-      } catch (error) {
+      } catch {
         // needed for local development until we bring in cloud login pages.
         window.location.reload()
       }
@@ -165,9 +168,14 @@ export const useAuthActions = () => {
         detail: t('auth.login.passwordResetSentDetail'),
         life: 5000
       })
+      return true
     },
     reportAuthFlowError('password_reset')
   )
+
+  /** Whether `purchaseCreditsDirect` goes on to open a checkout. */
+  const canPurchaseCredits = (): boolean =>
+    useBillingContext().canAccessSubscriptionFeatures.value
 
   /**
    * Raw (unwrapped) credit purchase. Exposed separately from `purchaseCredits`
@@ -176,8 +184,7 @@ export const useAuthActions = () => {
    * resolves instead of re-throwing on failure.
    */
   const purchaseCreditsDirect = async (amount: number): Promise<void> => {
-    const { canAccessSubscriptionFeatures } = useBillingContext()
-    if (!canAccessSubscriptionFeatures.value) return
+    if (!canPurchaseCredits()) return
 
     const response = await authStore.initiateCreditPurchase({
       amount_micros: usdToMicros(amount),
@@ -194,8 +201,14 @@ export const useAuthActions = () => {
 
     // Mark the pending top-up directly, not via telemetry, so the balance
     // refresh on return still fires when telemetry consent is off.
-    usePendingTopup().startPendingTopup()
-    window.open(response.checkout_url, '_blank')
+    const pendingTopup = usePendingTopup()
+    pendingTopup.startPendingTopup()
+    if (!window.open(response.checkout_url, '_blank')) {
+      pendingTopup.clearPendingTopup()
+      throw new PaymentPopupBlockedError(
+        t('subscription.preview.paymentPopupBlocked')
+      )
+    }
     watchForTopupBalanceUpdate()
   }
 
@@ -204,10 +217,10 @@ export const useAuthActions = () => {
     reportError
   )
 
-  const accessBillingPortal = wrapWithErrorHandlingAsync<
-    [targetTier?: BillingPortalTargetTier, openInNewTab?: boolean],
-    boolean
-  >(async (targetTier, openInNewTab = true) => {
+  /** Unwrapped `accessBillingPortal`: rejects on failure, false when the tab is blocked. */
+  const accessBillingPortalDirect = async (
+    targetTier?: BillingPortalTargetTier
+  ): Promise<boolean> => {
     const response = await authStore.accessBillingPortal(targetTier)
     if (!response.billing_portal_url) {
       throw new Error(
@@ -216,13 +229,13 @@ export const useAuthActions = () => {
         })
       )
     }
-    if (openInNewTab) {
-      return window.open(response.billing_portal_url, '_blank') !== null
-    }
+    return window.open(response.billing_portal_url, '_blank') !== null
+  }
 
-    globalThis.location.href = response.billing_portal_url
-    return true
-  }, reportError)
+  const accessBillingPortal = wrapWithErrorHandlingAsync(
+    accessBillingPortalDirect,
+    reportError
+  )
 
   const fetchBalance = wrapWithErrorHandlingAsync(async () => {
     const result = await authStore.fetchBalance()
@@ -230,7 +243,7 @@ export const useAuthActions = () => {
     return result
   }, reportError)
 
-  const signInWithGoogle = async (options?: { isNewUser?: boolean }) =>
+  const signInWithGoogle = async (options?: SocialSignInOptions) =>
     await wrapWithErrorHandlingAsync(
       async () => await authStore.loginWithGoogle(options),
       reportAuthFlowError(
@@ -238,7 +251,7 @@ export const useAuthActions = () => {
       )
     )()
 
-  const signInWithGithub = async (options?: { isNewUser?: boolean }) =>
+  const signInWithGithub = async (options?: SocialSignInOptions) =>
     await wrapWithErrorHandlingAsync(
       async () => await authStore.loginWithGithub(options),
       reportAuthFlowError(
@@ -321,7 +334,9 @@ export const useAuthActions = () => {
     sendPasswordReset,
     purchaseCredits,
     purchaseCreditsDirect,
+    canPurchaseCredits,
     accessBillingPortal,
+    accessBillingPortalDirect,
     fetchBalance,
     signInWithGoogle,
     signInWithGithub,

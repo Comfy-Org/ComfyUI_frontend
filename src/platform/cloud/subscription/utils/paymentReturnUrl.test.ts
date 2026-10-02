@@ -1,8 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { paymentReturnUrl } from './paymentReturnUrl'
+import {
+  consumePaymentReturn,
+  paymentReturnUrl,
+  stripPaymentReturnParams
+} from './paymentReturnUrl'
 
-vi.mock('@/config/comfyApi', () => ({
+vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
 }))
 
@@ -34,5 +38,32 @@ describe('paymentReturnUrl', () => {
     expect(paymentReturnUrl()).toBe(
       'https://platform.comfy.org/payment/success'
     )
+  })
+})
+
+describe('stripPaymentReturnParams', () => {
+  it('also drops the outcome billing-web appends on the way back', () => {
+    const replaceState = vi.fn()
+    vi.stubGlobal('location', {
+      href: 'https://cloud.comfy.org/?workspace=ws_1&billing_result=success&billing_ref=op_9#graph'
+    })
+    vi.stubGlobal('history', { state: { key: 1 }, replaceState })
+
+    stripPaymentReturnParams()
+
+    expect(replaceState).toHaveBeenCalledWith(
+      { key: 1 },
+      '',
+      new URL('https://cloud.comfy.org/?workspace=ws_1#graph')
+    )
+  })
+
+  it('does not read a billing-web return as a pending Stripe payment', () => {
+    vi.stubGlobal('location', {
+      href: 'https://cloud.comfy.org/?billing_result=success'
+    })
+    vi.stubGlobal('history', { state: null, replaceState: vi.fn() })
+
+    expect(consumePaymentReturn()).toBe(false)
   })
 })

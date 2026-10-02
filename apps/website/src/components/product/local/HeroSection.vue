@@ -165,7 +165,7 @@ onUnmounted(() => {
 
 <template>
   <section
-    class="max-w-9xl relative mx-auto flex flex-col items-center overflow-visible lg:flex-row lg:items-center lg:pb-[min(8vw,10rem)]"
+    class="relative mx-auto flex max-w-9xl flex-col items-center overflow-visible lg:flex-row lg:items-center lg:pb-[min(8vw,10rem)]"
   >
     <!-- Illustration (hidden below lg, left on lg) -->
     <div
@@ -300,21 +300,27 @@ onUnmounted(() => {
 
       <div class="mt-8 flex flex-col gap-4 lg:flex-row lg:items-end">
         <MobileDownloadEmailForm :locale />
-        <DownloadLocalButton :locale class="lg:min-w-60 lg:p-4" />
-        <BrandButton
-          :href="externalLinks.githubInstall"
-          variant="outline"
-          size="lg"
-          class="lg:min-w-60 lg:p-4"
-        >
-          <span class="ppformula-text-center inline-flex items-center gap-2">
-            <i
-              class="icon-mask size-5 -translate-y-px mask-[url('/icons/social/github.svg')]"
-              aria-hidden="true"
-            />
-            {{ t('download.hero.installGithub', locale) }}
-          </span>
-        </BrandButton>
+        <div class="flex flex-col gap-4 lg:flex-row">
+          <DownloadLocalButton
+            :locale
+            show-installer-menu
+            class="lg:min-w-60 lg:p-4"
+          />
+          <BrandButton
+            :href="externalLinks.githubInstall"
+            variant="outline"
+            size="lg"
+            class="lg:min-w-60 lg:p-4"
+          >
+            <span class="inline-flex items-center gap-2">
+              <i
+                class="size-5 icon-mask mask-[url('/icons/social/github.svg')]"
+                aria-hidden="true"
+              />
+              {{ t('download.hero.installGithub', locale) }}
+            </span>
+          </BrandButton>
+        </div>
       </div>
     </div>
   </section>

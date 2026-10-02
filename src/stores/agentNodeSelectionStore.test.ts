@@ -1,32 +1,20 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useDialogStore } from '@/stores/dialogStore'
+import { api } from '@/scripts/api'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-
-const dialogStack = vi.hoisted(() => [] as unknown[])
-
-vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: () => ({ dialogStack })
-}))
-
-const settings = vi.hoisted(() => {
-  const values = new Map<string, unknown>()
-  return {
-    values,
-    get: (key: string) => values.get(key),
-    set: vi.fn((key: string, value: unknown) => {
-      values.set(key, value)
-      return Promise.resolve()
-    })
-  }
-})
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => settings
-}))
+import { toNodeId } from '@/types/nodeId'
+import {
+  createTestCanvasElement,
+  createTestDragAndScale
+} from '@/utils/__tests__/canvasTestUtils'
 
 /**
  * Real nodes carry `pos`/`size`; `boundingRect` is litegraph-renderer cache that
@@ -37,37 +25,38 @@ function graphNode(
   pos?: [number, number],
   size?: [number, number]
 ) {
-  return { id, pos, size, boundingRect: new Float64Array(4) }
+  const node = new LGraphNode('')
+  node.id = toNodeId(String(id))
+  if (pos) node.pos = pos
+  if (size) node.size = size
+  return node
 }
 
 /** The minimum canvas surface entering and leaving the mode touches. */
-function stubCanvas(nodes: unknown[], selected: unknown[] = []) {
+function stubCanvas(nodes: LGraphNode[], selected: unknown[] = []) {
   const animateToBounds = vi.fn()
   const selectedItems = new Set(selected)
   const deselectAll = vi.fn(() => selectedItems.clear())
   // A real element, not a `{ width, height }` literal: canvasStore attaches its
   // litegraph event listeners to `canvas.canvas` on assignment, and a plain
   // object rejects that registration on a post-flush tick nothing can await.
-  const element = document.createElement('canvas')
-  element.width = 1600
-  element.height = 900
-  useCanvasStore().canvas = {
-    graph: { nodes },
+  const element = createTestCanvasElement({ width: 1600, height: 900 })
+  useCanvasStore().canvas = fromPartial<LGraphCanvas>({
+    graph: fromPartial<LGraph>({ nodes }),
     selectedItems,
     deselectAll,
     animateToBounds,
-    canvas: element
-  } as never
+    canvas: element,
+    dpr: 1,
+    ds: createTestDragAndScale(1600, 900)
+  })
   return { animateToBounds, deselectAll, selectedItems }
 }
 
 describe('agentNodeSelectionStore', () => {
   beforeEach(() => {
     vi.useFakeTimers()
-    dialogStack.length = 0
-    settings.values.clear()
-    settings.set.mockClear()
-    setActivePinia(createPinia())
+    vi.spyOn(api, 'storeSetting').mockResolvedValue(new Response())
   })
 
   afterEach(() => {
@@ -93,20 +82,20 @@ describe('agentNodeSelectionStore', () => {
   // Flipping the setting rather than overriding the minimap is what keeps the
   // user's own toggle working while they pick.
   it('turns a visible minimap off on entry and back on when leaving', async () => {
-    settings.values.set('Comfy.Minimap.Visible', true)
+    useSettingStore().settingValues['Comfy.Minimap.Visible'] = true
     const store = useAgentNodeSelectionStore()
 
     store.enter()
     await nextTick()
-    expect(settings.values.get('Comfy.Minimap.Visible')).toBe(false)
+    expect(useSettingStore().get('Comfy.Minimap.Visible')).toBe(false)
 
     store.exit()
     await nextTick()
-    expect(settings.values.get('Comfy.Minimap.Visible')).toBe(true)
+    expect(useSettingStore().get('Comfy.Minimap.Visible')).toBe(true)
   })
 
   it('leaves the minimap setting alone when it was already off', async () => {
-    settings.values.set('Comfy.Minimap.Visible', false)
+    useSettingStore().settingValues['Comfy.Minimap.Visible'] = false
     const store = useAgentNodeSelectionStore()
 
     store.enter()
@@ -114,8 +103,8 @@ describe('agentNodeSelectionStore', () => {
     store.exit()
     await nextTick()
 
-    expect(settings.set).not.toHaveBeenCalled()
-    expect(settings.values.get('Comfy.Minimap.Visible')).toBe(false)
+    expect(vi.mocked(useSettingStore().set)).not.toHaveBeenCalled()
+    expect(useSettingStore().get('Comfy.Minimap.Visible')).toBe(false)
   })
 
   it('clears the canvas selection on exit', () => {
@@ -234,11 +223,12 @@ describe('agentNodeSelectionStore', () => {
     store.enter()
     await nextTick()
 
-    dialogStack.push({})
+    useDialogStore().showDialog({ key: 'test', component: {} })
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
     expect(store.isActive).toBe(true)
 
-    dialogStack.length = 0
+    useDialogStore().dialogStack.length = 0
+    await nextTick()
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
     expect(store.isActive).toBe(false)
   })

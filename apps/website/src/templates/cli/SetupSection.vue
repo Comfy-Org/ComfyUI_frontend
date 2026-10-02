@@ -8,6 +8,7 @@ import CopyableField from '../../components/ui/copyable-field/CopyableField.vue'
 import { externalLinks, getRoutes } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import type { CliClientId } from '../../scripts/posthog'
 import {
   captureCliClientTabClick,
   captureCliConnectionTabClick
@@ -34,7 +35,7 @@ interface CliClient {
   shell?: ShellCard
 }
 
-const clients: Record<string, CliClient> = {
+const clients: Record<CliClientId, CliClient> = {
   'claude-code': { name: 'Claude Code', kind: 'agent' },
   codex: { name: 'Codex', kind: 'agent' },
   cursor: { name: 'Cursor', kind: 'agent' },
@@ -95,27 +96,25 @@ const connections: Record<ConnectionId, CliConnection> = {
     tagline: t('cli.setup.connections.cloud.tagline', locale),
     installDescription: t('cli.setup.install.cloudDescription', locale),
     manualCommand: 'comfy setup --where cloud\ncomfy skills install',
-    agentCommand: t('cli.setup.agent.commandCloud', locale).replace(
-      '{url}',
-      externalLinks.docsCliMd
-    )
+    agentCommand: t('cli.setup.agent.commandCloud', locale, {
+      url: externalLinks.docsCliMd
+    })
   },
   local: {
     name: t('cli.setup.connections.local.name', locale),
     tagline: t('cli.setup.connections.local.tagline', locale),
     installDescription: t('cli.setup.install.localDescription', locale),
     manualCommand: 'comfy setup\ncomfy skills install',
-    agentCommand: t('cli.setup.agent.commandLocal', locale).replace(
-      '{url}',
-      externalLinks.docsCliMd
-    )
+    agentCommand: t('cli.setup.agent.commandLocal', locale, {
+      url: externalLinks.docsCliMd
+    })
   }
 }
 
 const DEFAULT_CLIENT_ID = 'claude-code'
 
 const activeConnectionId = ref<ConnectionId>('cloud')
-const activeClientIds = ref<Record<ConnectionId, string>>({
+const activeClientIds = ref<Record<ConnectionId, CliClientId>>({
   cloud: DEFAULT_CLIENT_ID,
   local: DEFAULT_CLIENT_ID
 })
@@ -125,38 +124,44 @@ function activeClientFor(connId: ConnectionId): CliClient {
 }
 
 function agentTitleFor(connId: ConnectionId): string {
-  return t('cli.setup.agent.title', locale).replace(
-    '{client}',
-    activeClientFor(connId).name
-  )
+  return t('cli.setup.agent.title', locale, {
+    client: activeClientFor(connId).name
+  })
 }
 
 function agentDescriptionFor(connId: ConnectionId): string {
-  return t('cli.setup.agent.description', locale).replace(
-    '{client}',
-    activeClientFor(connId).name
-  )
+  return t('cli.setup.agent.description', locale, {
+    client: activeClientFor(connId).name
+  })
+}
+
+function isConnectionId(value: unknown): value is ConnectionId {
+  return typeof value === 'string' && Object.hasOwn(connections, value)
+}
+
+function isCliClientId(value: unknown): value is CliClientId {
+  return typeof value === 'string' && Object.hasOwn(clients, value)
 }
 
 // reka-ui re-emits update:modelValue even when the value is unchanged
 // (re-clicking the active tab), so dedupe before capturing.
-let lastTrackedConnectionId: string | undefined
+let lastTrackedConnectionId: ConnectionId | undefined
 function onConnectionTabChange(value: string | number | undefined) {
-  if (!value) return
-  const id = String(value)
-  if (id === lastTrackedConnectionId) return
-  lastTrackedConnectionId = id
-  captureCliConnectionTabClick(id)
+  if (!isConnectionId(value) || value === lastTrackedConnectionId) return
+  lastTrackedConnectionId = value
+  captureCliConnectionTabClick(value)
 }
 
-let lastTrackedClientKey: string | undefined
-function onClientTabChange(connId: string, value: string | number | undefined) {
-  if (!value) return
-  const id = String(value)
-  const key = `${connId}:${id}`
+let lastTrackedClientKey: `${ConnectionId}:${CliClientId}` | undefined
+function onClientTabChange(
+  connId: ConnectionId,
+  value: string | number | undefined
+) {
+  if (!isCliClientId(value)) return
+  const key = `${connId}:${value}` as const
   if (key === lastTrackedClientKey) return
   lastTrackedClientKey = key
-  captureCliClientTabClick(id)
+  captureCliClientTabClick(value)
 }
 
 const copyLabel = t('ui.copy', locale)
@@ -166,7 +171,7 @@ const copiedLabel = t('ui.copied', locale)
 <template>
   <section
     id="setup"
-    class="max-w-9xl mx-auto scroll-mt-24 px-6 py-16 lg:scroll-mt-36 lg:py-24"
+    class="mx-auto max-w-9xl scroll-mt-24 px-6 py-16 lg:scroll-mt-36 lg:py-24"
   >
     <SectionHeader
       max-width="xl"
@@ -187,7 +192,7 @@ const copiedLabel = t('ui.copied', locale)
           {{ t('cli.setup.requirementPrefix', locale)
           }}<a
             :href="getRoutes(locale).pricing"
-            class="focus-visible:ring-primary-comfy-yellow/50 rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:outline-none"
+            class="rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
             >{{ t('cli.setup.requirementLinkLabel', locale) }}</a
           >{{ t('cli.setup.requirementSuffix', locale)
           }}{{ t('cli.setup.requirementFootnote', locale) }}
@@ -198,7 +203,7 @@ const copiedLabel = t('ui.copied', locale)
             :href="externalLinks.comfyCliRepo"
             target="_blank"
             rel="noopener noreferrer"
-            class="focus-visible:ring-primary-comfy-yellow/50 rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:outline-none"
+            class="rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
             >{{ t('cli.setup.local.requirementLinkLabel', locale) }}</a
           >{{ t('cli.setup.local.requirementSuffix', locale) }}
         </p>
@@ -221,7 +226,7 @@ const copiedLabel = t('ui.copied', locale)
           v-for="(conn, connId) in connections"
           :key="connId"
           :value="connId"
-          class="focus-visible:ring-primary-comfy-yellow/50 data-[state=active]:border-primary-comfy-yellow cursor-pointer rounded-2xl border border-white/15 bg-white/4 p-5 text-left transition-colors hover:bg-white/8 focus-visible:ring-2 focus-visible:outline-none data-[state=active]:bg-white/8"
+          class="cursor-pointer rounded-2xl border border-white/15 bg-white/4 p-5 text-left transition-colors hover:bg-white/8 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none data-[state=active]:border-primary-comfy-yellow data-[state=active]:bg-white/8"
         >
           <span
             class="block text-sm font-bold tracking-wider text-primary-comfy-canvas uppercase"
@@ -254,7 +259,7 @@ const copiedLabel = t('ui.copied', locale)
               v-for="(client, clientId) in clients"
               :key="clientId"
               :value="clientId"
-              class="focus-visible:ring-primary-comfy-yellow/50 data-[state=active]:bg-primary-comfy-yellow shrink-0 cursor-pointer rounded-lg bg-white/8 px-2 py-2.5 text-[10px] font-bold tracking-wider whitespace-nowrap text-smoke-700 uppercase transition-colors hover:text-primary-comfy-canvas focus-visible:ring-2 focus-visible:outline-none data-[state=active]:text-primary-comfy-ink lg:rounded-none lg:px-6 lg:text-xs lg:first:rounded-l-xl lg:last:rounded-r-xl"
+              class="shrink-0 cursor-pointer rounded-lg bg-white/8 px-2 py-2.5 text-[10px] font-bold tracking-wider whitespace-nowrap text-smoke-700 uppercase transition-colors hover:text-primary-comfy-canvas focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none data-[state=active]:bg-primary-comfy-yellow data-[state=active]:text-primary-comfy-ink lg:rounded-none lg:px-6 lg:text-xs lg:first:rounded-l-xl lg:last:rounded-r-xl"
             >
               {{ client.name }}
             </TabsTrigger>
@@ -262,7 +267,7 @@ const copiedLabel = t('ui.copied', locale)
 
           <div class="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-2">
             <div
-              class="bg-transparency-white-t4 flex flex-col rounded-3xl p-6 lg:p-8"
+              class="flex flex-col rounded-3xl bg-transparency-white-t4 p-6 lg:p-8"
             >
               <h3
                 class="text-xl font-light text-primary-comfy-canvas lg:text-2xl"
@@ -292,7 +297,7 @@ const copiedLabel = t('ui.copied', locale)
             </div>
 
             <div
-              class="bg-transparency-white-t4 flex flex-col rounded-3xl p-6 lg:p-8"
+              class="flex flex-col rounded-3xl bg-transparency-white-t4 p-6 lg:p-8"
             >
               <template v-if="activeClientFor(connId).kind === 'agent'">
                 <h3
@@ -340,7 +345,7 @@ const copiedLabel = t('ui.copied', locale)
                     :href="externalLinks.apiKeys"
                     target="_blank"
                     rel="noopener noreferrer"
-                    class="focus-visible:ring-primary-comfy-yellow/50 rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:outline-none"
+                    class="rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
                     >{{ t('cli.setup.shell.ci.keyLinkLabel', locale) }}</a
                   >
                 </p>
@@ -361,7 +366,7 @@ const copiedLabel = t('ui.copied', locale)
           :href="externalLinks.docsCliReference"
           target="_blank"
           rel="noopener noreferrer"
-          class="focus-visible:ring-primary-comfy-yellow/50 rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:outline-none"
+          class="rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
           >{{ t('cli.setup.docsLinkLabel', locale) }}</a
         >{{ t('cli.setup.docsSuffix', locale) }}
       </p>

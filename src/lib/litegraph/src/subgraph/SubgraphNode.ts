@@ -50,6 +50,7 @@ import { createNodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeState } from '@/types/nodeState'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
+import { deriveWidgetVisibility } from '@/types/widgetVisibility'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
 import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
@@ -73,7 +74,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   override get type(): SubgraphId {
-    return super.type as SubgraphId
+    return super.type
   }
 
   override set type(value: string) {
@@ -157,7 +158,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         if (existingInput) {
           this._addSubgraphInputListeners(subgraphInput, existingInput)
           const linkId = subgraphInput.linkIds[0]
-          if (linkId === undefined) return
 
           const link = this.subgraph.getLink(linkId)
           if (!link) return
@@ -226,10 +226,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         // identifier used by onGraphConfigured (widgetInputs.ts) to match
         // inputs to widgets. Changing it to the display label would cause
         // collisions when two promoted inputs share the same label.
-        if (input._widget) input._widget.label = newName
         if (input.widgetId) {
-          const state = useWidgetValueStore().getWidget(input.widgetId)
-          if (state) state.label = newName
+          useWidgetValueStore().setLabel(input.widgetId, newName)
         }
         this.invalidatePromotedViews()
         this.graph?.trigger('node:slot-label:changed', {
@@ -312,6 +310,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       'input-connected',
       (e) => {
         input.shape = this.getSlotShape(subgraphInput, e.detail.input)
+        // A reconnect landing before the deferred demotion below runs is a
+        // rewire, not a real disconnect: cancel the pending demotion so the
+        // widget is never torn down.
+        input._pendingDemotionToken = undefined
         if (!e.detail.widget || !e.detail.node) return
 
         this._setWidget(
@@ -337,20 +339,33 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           return
         }
 
-        if (input._widget) this.ensureWidgetRemoved(input._widget)
-        if (input.widgetId) {
-          const id = input.widgetId
-          queueMicrotask(() => {
-            if (this.inputs.some((input) => input.widgetId === id)) return
-            useWidgetValueStore().deleteWidget(id)
-          })
-        }
+        // Defer the actual demotion by a microtask instead of clearing
+        // input.widgetId/.widget/._widget here: a rewire (this disconnect
+        // immediately followed by a reconnect of the same input, e.g.
+        // dragging a new source onto an already-promoted widget) would
+        // otherwise drop the widget from `this.widgets` for one tick, which
+        // is exactly the window the Vue widget grid can render from. The
+        // 'input-connected' listener above cancels this token on a
+        // same-tick reconnect.
+        const widget = input._widget
+        const id = input.widgetId
+        const token = Symbol()
+        input._pendingDemotionToken = token
+        queueMicrotask(() => {
+          if (input._pendingDemotionToken !== token) return
+          input._pendingDemotionToken = undefined
 
-        delete input.pos
-        delete input.widget
-        delete input.widgetId
-        input._widget = undefined
-        this.invalidatePromotedViews()
+          if (widget) this.ensureWidgetRemoved(widget)
+          if (id && !this.inputs.some((i) => i.widgetId === id)) {
+            useWidgetValueStore().deleteWidget(id)
+          }
+
+          input.pos = undefined
+          input.widget = undefined
+          input.widgetId = undefined
+          input._widget = undefined
+          this.invalidatePromotedViews()
+        })
       },
       { signal }
     )
@@ -364,7 +379,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const slotsByName = new Map<string, SubgraphInput[]>()
 
     for (const slot of subgraphSlots) {
-      const signature = `${slot.name}:${String(slot.type)}`
+      const signature = `${slot.name}:${slot.type}`
       const signatureSlots = slotsBySignature.get(signature)
       if (signatureSlots) {
         signatureSlots.push(slot)
@@ -385,7 +400,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       slots: SubgraphInput[] | undefined
     ): SubgraphInput | undefined => {
       if (!slots) return undefined
-      return slots.find((slot) => !assignedSlotIds.has(String(slot.id)))
+      return slots.find((slot) => !assignedSlotIds.has(slot.id))
     }
 
     for (const input of this.inputs) {
@@ -394,7 +409,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         existingSlot &&
         this.subgraph.inputNode.slots.some((slot) => slot === existingSlot)
       ) {
-        assignedSlotIds.add(String(existingSlot.id))
+        assignedSlotIds.add(existingSlot.id)
         continue
       }
 
@@ -405,7 +420,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
       if (matchedSlot) {
         input._subgraphSlot = matchedSlot
-        assignedSlotIds.add(String(matchedSlot.id))
+        assignedSlotIds.add(matchedSlot.id)
       } else {
         delete input._subgraphSlot
       }
@@ -488,10 +503,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   private _readQuarantineHostValuesByName(): Map<string, TWidgetValue> {
     return new Map(
-      parseProxyWidgetErrorQuarantine(
-        this.properties.proxyWidgetErrorQuarantine
-      )
-        .toReversed()
+      [
+        ...parseProxyWidgetErrorQuarantine(
+          this.properties.proxyWidgetErrorQuarantine
+        )
+      ]
+        .reverse()
         .flatMap(({ originalEntry: [sourceNodeId, name], hostValue }) =>
           sourceNodeId === '-1' && hostValue !== undefined
             ? [[name, hostValue] as const]
@@ -650,24 +667,39 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     input.widget.name = subgraphInput.name
     if (inputWidget) Object.setPrototypeOf(input.widget, inputWidget)
 
+    if (this.id === UNASSIGNED_NODE_ID) {
+      // Registering now would key the store under a construction-time id
+      // shared by every not-yet-added SubgraphNode (e.g. a clipboard clone
+      // that gets discarded), letting a later unrelated instance inherit
+      // this value. onAdded() performs the deferred registration once a
+      // real id is assigned.
+      input.widgetId = undefined
+      return
+    }
+
     const id = widgetId(this.rootGraph.id, this.id, subgraphInput.name)
     const store = useWidgetValueStore()
+    const visibility = cloneDeep(
+      interiorWidget.visibility ?? deriveWidgetVisibility(interiorWidget)
+    )
+    visibility.suppression.byConnection = false
     const registered = store.registerWidget(
       id,
       {
         type: interiorWidget.type,
         value: interiorWidget.value,
-        options: cloneDeep(interiorWidget.options ?? {}),
+        options: cloneDeep(interiorWidget.options),
         label: input.label ?? subgraphInput.name,
         serialize: interiorWidget.serialize,
         disabled: interiorWidget.disabled
       },
-      deriveWidgetRenderState(interiorWidget)
+      deriveWidgetRenderState(interiorWidget),
+      visibility
     )
     if (!registered) {
-      delete input.pos
-      delete input.widget
-      delete input.widgetId
+      input.pos = undefined
+      input.widget = undefined
+      input.widgetId = undefined
       input._widget = undefined
       return
     }
@@ -710,17 +742,29 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const store = useWidgetValueStore()
     for (const input of this.inputs) {
       const previousId = input.widgetId
-      if (!previousId) continue
+      if (!previousId) {
+        // Registration deferred by _setWidget while this.id was still
+        // UNASSIGNED_NODE_ID (e.g. widget resolution during construction).
+        // Perform it now that a real id is assigned.
+        if (input._subgraphSlot)
+          this._resolveInputWidget(input._subgraphSlot, input)
+        continue
+      }
       const nextId = widgetId(this.rootGraph.id, this.id, input.name)
       if (nextId === previousId) continue
 
       const state = store.getWidget(previousId)
       if (!state) continue
       const renderState = store.getWidgetRenderState(previousId)
+      const visibility = store.getWidgetVisibility(previousId)
+      if (!visibility) continue
+      const migratedVisibility = cloneDeep(visibility)
+      migratedVisibility.suppression.byConnection = false
       const migrated = store.registerWidget(
         nextId,
         { ...state },
-        { ...renderState }
+        { ...renderState },
+        migratedVisibility
       )
       if (!migrated) continue
       store.setValue(nextId, state.value)
@@ -952,7 +996,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   override serializeFromStoreState(state: NodeState): ISerialisedNode {
     const serialized = super.serializeFromStoreState(state)
-    const serializedProperties = { ...(serialized.properties ?? {}) }
+    const serializedProperties = { ...serialized.properties }
     const rootGraphId = this.rootGraph.id
     const hostLocator = tryGetPreviewExposureHostLocator(this)
 
@@ -1000,7 +1044,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
   getSlotShape(slot: SubgraphInput, extraInput?: INodeInputSlot) {
     const shapes = slot.linkIds.map(
-      (id) => this.subgraph.links[id]?.resolve(this.subgraph)?.input?.shape
+      (id) => this.subgraph.getLink(id)?.resolve(this.subgraph).input?.shape
     )
     if (extraInput) shapes.push(extraInput.shape)
     return shapes.every((shape) => shape === shapes[0]) ? shapes[0] : undefined

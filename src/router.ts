@@ -1,4 +1,5 @@
 import { until } from '@vueuse/core'
+import { delay } from 'es-toolkit'
 import { storeToRefs } from 'pinia'
 import {
   createRouter,
@@ -8,6 +9,9 @@ import {
 import type { RouteLocationNormalized } from 'vue-router'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import type { CloudSignIn } from '@/platform/auth/session/cloudIdentityBoot'
+import { cloudSignIn } from '@/platform/auth/session/cloudIdentityBoot'
+import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
@@ -16,9 +20,12 @@ import { useUserStore } from '@/stores/userStore'
 import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
 
 import { captureOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
-import { installDesktopLoginRedemption } from '@/platform/cloud/onboarding/desktopLoginRedemption'
+import {
+  hasPendingDesktopLoginCode,
+  installDesktopLoginRedemption
+} from '@/platform/cloud/onboarding/desktopLoginRedemption'
+import { PRESERVED_QUERY_DEFINITIONS } from '@/platform/navigation/preservedQueryDefinitions'
 import { installPreservedQueryTracker } from '@/platform/navigation/preservedQueryTracker'
-import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { unmatchedRouteRedirect } from '@/platform/navigation/unmatchedRoute'
 import { preserveLoggedOutShareAuthAttribution } from '@/platform/workflow/sharing/utils/shareAuthAttribution'
 
@@ -38,7 +45,7 @@ const isFileProtocol = window.location.protocol === 'file:'
  */
 function getBasePath(): string {
   if (isDesktop) return '/'
-  if (isCloud) return import.meta.env?.BASE_URL || '/'
+  if (isCloud) return import.meta.env.BASE_URL || '/'
   return window.location.pathname
 }
 
@@ -97,46 +104,7 @@ const router = createRouter({
   }
 })
 
-installPreservedQueryTracker(router, [
-  {
-    namespace: PRESERVED_QUERY_NAMESPACES.TEMPLATE,
-    keys: ['template', 'source', 'mode']
-  },
-  {
-    namespace: PRESERVED_QUERY_NAMESPACES.SHARE,
-    keys: ['share']
-  },
-  {
-    namespace: PRESERVED_QUERY_NAMESPACES.INVITE,
-    keys: ['invite']
-  },
-  {
-    namespace: PRESERVED_QUERY_NAMESPACES.CREATE_WORKSPACE,
-    keys: ['create_workspace']
-  },
-  {
-    namespace: PRESERVED_QUERY_NAMESPACES.OAUTH,
-    keys: ['oauth_request_id']
-  },
-  {
-    namespace: PRESERVED_QUERY_NAMESPACES.PRICING,
-    keys: ['pricing', 'stop', 'cycle'],
-    requiredKey: 'pricing'
-  },
-  {
-    namespace: PRESERVED_QUERY_NAMESPACES.TOPUP,
-    keys: ['topup']
-  },
-  {
-    namespace: PRESERVED_QUERY_NAMESPACES.SETTINGS,
-    keys: ['settings']
-  },
-  {
-    namespace: PRESERVED_QUERY_NAMESPACES.DESKTOP_LOGIN,
-    keys: ['desktop_login_code'],
-    stripAfterCapture: true
-  }
-])
+installPreservedQueryTracker(router, PRESERVED_QUERY_DEFINITIONS)
 
 router.beforeEach((to, _from, next) => {
   captureOAuthRequestId(to.query)
@@ -146,6 +114,8 @@ router.beforeEach((to, _from, next) => {
 router.afterEach(() => {
   trackPageView()
 })
+
+const PUBLIC_ROUTE_SIGN_IN_TIMEOUT_MS = 3_000
 
 if (isCloud) {
   const { flags } = useFeatureFlags()
@@ -170,6 +140,12 @@ if (isCloud) {
     const path = to.path
     return PUBLIC_ROUTE_PATHS.has(path)
   }
+  async function publicRouteSignIn(): Promise<CloudSignIn> {
+    return Promise.race([
+      cloudSignIn(),
+      delay(PUBLIC_ROUTE_SIGN_IN_TIMEOUT_MS).then(() => 'signed_out' as const)
+    ])
+  }
   // Global authentication guard
   router.beforeEach(async (to, _from, next) => {
     const authStore = useAuthStore()
@@ -186,9 +162,18 @@ if (isCloud) {
       }
     }
 
-    // Pass authenticated users
-    const authHeader = await authStore.getAuthHeader()
-    const isLoggedIn = !!authHeader
+    let signIn = isPublicRoute(to)
+      ? await publicRouteSignIn()
+      : await cloudSignIn()
+    if (signIn === 'pending' && !isPublicRoute(to)) {
+      await useCloudWebSessionStore().whenDecided()
+      signIn = await cloudSignIn()
+    }
+    const needsFirebaseForDesktopCode =
+      signIn === 'signed_in' &&
+      authStore.currentUser === null &&
+      hasPendingDesktopLoginCode()
+    const isLoggedIn = signIn === 'signed_in' && !needsFirebaseForDesktopCode
     preserveLoggedOutShareAuthAttribution(to.query, isLoggedIn)
 
     // Allow public routes
@@ -210,10 +195,12 @@ if (isCloud) {
       return next()
     }
 
-    const query =
-      to.fullPath === '/'
-        ? undefined
-        : { previousFullPath: encodeURIComponent(to.fullPath) }
+    const query = {
+      ...(to.fullPath !== '/' && {
+        previousFullPath: encodeURIComponent(to.fullPath)
+      }),
+      ...(needsFirebaseForDesktopCode && { switchAccount: 'true' })
+    }
 
     // Check if route requires authentication
     if (to.meta.requiresAuth && !isLoggedIn) {
@@ -241,7 +228,7 @@ if (isCloud) {
 
     // User is logged in - check if they need onboarding (when enabled)
     // For root path, check actual user status to handle waitlisted users
-    if (!isDesktop && isLoggedIn && to.path === '/') {
+    if (!isDesktop && to.path === '/') {
       if (!flags.onboardingSurveyEnabled) {
         return next()
       }
@@ -250,7 +237,9 @@ if (isCloud) {
         await import('@/platform/cloud/onboarding/auth')
       try {
         // Check user's actual status
-        const surveyCompleted = await getSurveyCompletedStatus()
+        const surveyCompleted = await getSurveyCompletedStatus(
+          useAuthStore().userId
+        )
 
         // Survey is required for all users (when feature flag enabled)
         if (!surveyCompleted) {

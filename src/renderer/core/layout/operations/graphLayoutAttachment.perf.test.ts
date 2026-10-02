@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { effect, stop } from 'vue'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
@@ -11,7 +9,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import { createMockCanvas2DContext } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
 type GeometryCounts = {
   contentLookups: number
@@ -26,7 +24,6 @@ type RenderCounts = {
 
 describe('renderer geometry boundary complexity', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     layoutStore.resetForTests()
     LiteGraph.vueNodesMode = false
   })
@@ -204,7 +201,7 @@ function createRenderer(nodeCount: number): {
   context: CanvasRenderingContext2D
   nodes: LGraphNode[]
 } {
-  const context = createMockCanvas2DContext({
+  const context = createMockCanvasRenderingContext2D({
     bezierCurveTo: vi.fn(),
     clip: vi.fn(),
     closePath: vi.fn(),

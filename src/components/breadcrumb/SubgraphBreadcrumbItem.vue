@@ -8,13 +8,14 @@
     :data-testid="`subgraph-breadcrumb-item-${item.key}`"
     :data-active="isActive ? '' : undefined"
     draggable="false"
-    class="p-breadcrumb-item-link h-8 cursor-pointer px-2"
-    :class="{
-      'flex items-center gap-1': isActive,
-      'p-breadcrumb-item-link-menu-visible': menu?.overlayVisible,
-      'p-breadcrumb-item-link-icon-visible': isActive,
-      'active-breadcrumb-item': isActive
-    }"
+    :class="
+      cn('p-breadcrumb-item-link flex h-8 cursor-pointer items-center px-2', {
+        'gap-1': isActive,
+        'p-breadcrumb-item-link-menu-visible': menu?.overlayVisible,
+        'p-breadcrumb-item-link-icon-visible': isActive,
+        'active-breadcrumb-item': isActive
+      })
+    "
     @click="handleClick"
   >
     <i
@@ -23,12 +24,13 @@
       class="icon-[lucide--triangle-alert] text-warning-background"
     />
     <span class="p-breadcrumb-item-label max-w-72 px-2">{{ item.label }}</span>
-    <Tag
+    <Badge
       v-if="item.isBlueprint"
       data-testid="subgraph-breadcrumb-blueprint-tag"
-      :value="t('breadcrumbsMenu.blueprint')"
       severity="primary"
-    />
+    >
+      {{ t('breadcrumbsMenu.blueprint') }}
+    </Badge>
     <i v-if="isActive" class="pi pi-angle-down text-2xs"></i>
   </div>
   <Menu
@@ -46,12 +48,12 @@
       }
     }"
   />
-  <InputText
+  <Input
     v-if="isEditing"
     ref="itemInputRef"
     v-model="itemLabel"
     data-testid="subgraph-breadcrumb-rename-input"
-    class="fixed z-10000 p-2 text-[.8rem]"
+    class="fixed z-10000 w-50 p-2 text-[.8rem]"
     @blur="inputBlur(false)"
     @click.stop
     @keydown.enter="inputBlur(true)"
@@ -60,16 +62,16 @@
 </template>
 
 <script setup lang="ts">
-import InputText from 'primevue/inputtext'
+import { cn } from '@comfyorg/tailwind-utils'
 import type { MenuState } from 'primevue/menu'
 import Menu from 'primevue/menu'
 import type { MenuItem } from 'primevue/menuitem'
-import Tag from 'primevue/tag'
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Badge from '@/components/ui/badge/Badge.vue'
+import Input from '@/components/ui/input/Input.vue'
 import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
-import { ensureWorkflowSuffix, getWorkflowSuffix } from '@/utils/formatUtil'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
   ComfyWorkflow,
@@ -79,7 +81,9 @@ import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { isMissingWarningVisible } from '@/platform/settings/missingWarningVisibility'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import { ensureWorkflowSuffix, getWorkflowSuffix } from '@/utils/formatUtil'
 import { graphHasMissingNodes } from '@/workbench/extensions/manager/utils/graphHasMissingNodes'
 
 interface Props {
@@ -90,8 +94,10 @@ interface Props {
 const { item, isActive } = defineProps<Props>()
 
 const nodeDefStore = useNodeDefStore()
-const hasMissingNodes = computed(() =>
-  graphHasMissingNodes(app.rootGraph, nodeDefStore.nodeDefsByName)
+const hasMissingNodes = computed(
+  () =>
+    isMissingWarningVisible('nodes') &&
+    graphHasMissingNodes(app.rootGraph, nodeDefStore.nodeDefsByName)
 )
 
 const { t } = useI18n()
@@ -101,7 +107,7 @@ const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const isEditing = ref(false)
 const itemLabel = ref<string>()
-const itemInputRef = ref<{ $el?: HTMLInputElement }>()
+const itemInputRef = ref<InstanceType<typeof Input>>()
 const wrapperRef = ref<HTMLAnchorElement>()
 
 const rename = async (
@@ -155,13 +161,8 @@ const startRename = async () => {
   isEditing.value = true
   itemLabel.value = item.label as string
   void nextTick(() => {
-    if (itemInputRef.value?.$el) {
-      itemInputRef.value.$el.focus()
-      itemInputRef.value.$el.select()
-      if (wrapperRef.value) {
-        itemInputRef.value.$el.style.width = `${Math.max(200, wrapperRef.value.offsetWidth)}px`
-      }
-    }
+    itemInputRef.value?.focus()
+    itemInputRef.value?.select()
   })
 }
 

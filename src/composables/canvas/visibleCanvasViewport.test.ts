@@ -1,37 +1,31 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { createTestDragAndScale } from '@/utils/__tests__/canvasTestUtils'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
-
 import { visibleCanvasViewport } from './visibleCanvasViewport'
 
-vi.mock('@/platform/telemetry', () => ({ useTelemetry: () => undefined }))
+vi.mock(import('@/platform/telemetry'))
 
 describe('visibleCanvasViewport', () => {
   beforeEach(() => {
     localStorage.clear()
-    setActivePinia(createPinia())
-    vi.stubGlobal('devicePixelRatio', 2)
   })
 
-  it('uses the full CSS-pixel canvas while the Agent panel is closed', () => {
-    const canvas = {
-      canvas: { width: 1600, height: 900 }
-    } as LGraphCanvas
-
-    expect(visibleCanvasViewport(canvas)).toEqual([0, 0, 800, 450])
+  it('uses the applied CSS viewport while the agent panel is closed', () => {
+    expect(
+      visibleCanvasViewport({ ds: createTestDragAndScale(640, 360) })
+    ).toEqual([0, 0, 640, 360])
   })
 
-  it('excludes the docked Agent panel width from the visible canvas', () => {
+  it('subtracts the visible agent panel from the CSS viewport', () => {
     const panel = useAgentPanelStore()
     panel.enabled = true
+    panel.consentAccepted = true
     panel.isOpen = true
     panel.setWidth(500)
-    const canvas = {
-      canvas: { width: 1600, height: 900 }
-    } as LGraphCanvas
 
-    expect(visibleCanvasViewport(canvas)).toEqual([0, 0, 300, 450])
+    expect(
+      visibleCanvasViewport({ ds: createTestDragAndScale(800, 450) })
+    ).toEqual([0, 0, 300, 450])
   })
 })

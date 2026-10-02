@@ -52,19 +52,19 @@ useHeroAnimation({
         </SectionLabel>
         <h1
           ref="headingRef"
-          class="text-primary-comfy-canvas mt-4 text-4xl/tight font-light lg:text-6xl"
+          class="mt-4 text-4xl/tight font-light text-primary-comfy-canvas lg:text-6xl"
         >
           {{ t('about.hero.heading', locale) }}
         </h1>
         <p
           ref="bodyRef"
-          class="text-primary-comfy-canvas mt-6 max-w-sm text-base"
+          class="mt-6 max-w-sm text-base text-primary-comfy-canvas"
         >
           {{ t('about.hero.body', locale) }}
         </p>
         <div ref="ctaRef" class="mt-8">
           <BrandButton
-            :href="locale === 'zh-CN' ? '/zh-CN/careers' : '/careers'"
+            :href="locale === 'zh-CN' ? '/zh-CN/careers/' : '/careers/'"
             variant="outline"
           >
             {{ t('about.hero.cta', locale) }}
@@ -74,7 +74,7 @@ useHeroAnimation({
     </div>
 
     <!-- Video -->
-    <div ref="videoRef" class="max-w-9xl mx-auto px-4 pb-20 lg:px-20 lg:pb-40">
+    <div ref="videoRef" class="mx-auto max-w-9xl px-4 pb-20 lg:px-20 lg:pb-40">
       <VideoPlayer
         src="https://media.comfy.org/website/about/co-founders.webm"
         poster="https://media.comfy.org/website/about/co-founders-poster.webp"
