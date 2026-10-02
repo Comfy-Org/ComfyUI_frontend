@@ -13,6 +13,7 @@ import { moveLight } from '../../../lib/workshop/relight/lights'
 import { RELIGHT_EXAMPLE } from '../../../lib/workshop/relight/mock-run'
 import EditorFrame from '../app-editor/EditorFrame.vue'
 import EditorSplitLine from '../app-editor/EditorSplitLine.vue'
+import { pointerFraction } from '../app-editor/stage-geometry'
 import RelightCanvas from './RelightCanvas.vue'
 import RelightLightDot from './RelightLightDot.vue'
 import RelightMaskOutline from './RelightMaskOutline.vue'
@@ -51,14 +52,7 @@ let drag: ((at: { x: number; y: number }) => void) | undefined
 const dragging = ref<string>()
 const split = ref(50)
 
-function point(event: PointerEvent) {
-  const box = frame.value?.getBoundingClientRect()
-  if (!box?.width || !box.height) return { x: 0, y: 0 }
-  return {
-    x: (event.clientX - box.left) / box.width,
-    y: (event.clientY - box.top) / box.height
-  }
-}
+const point = (event: PointerEvent) => pointerFraction(event, frame.value)
 
 function grab(light: Light, event: PointerEvent) {
   event.preventDefault()
