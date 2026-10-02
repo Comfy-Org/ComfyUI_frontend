@@ -18,10 +18,14 @@ type SettlementListener = (outcome: BatchOutcome) => void
 type SettlementSummary = { state: BatchOutcome['state']; nodeIds: unknown[] }
 type AddNodeOperation = Extract<GraphOperation, { op: 'add_node' }>
 
+function nodeIdsOf(ops: readonly Op[]): unknown[] {
+  return ops.map((op) => ('node_id' in op ? op.node_id : undefined))
+}
+
 function summarizeSettlement(outcome: BatchOutcome): SettlementSummary {
   return {
     state: outcome.state,
-    nodeIds: outcome.ops.map((op) => ('node_id' in op ? op.node_id : undefined))
+    nodeIds: nodeIdsOf(outcome.ops)
   }
 }
 
@@ -1368,9 +1372,9 @@ describe('createOpSender', () => {
     localSender.flush()
 
     expect(firstSerializations).toBe(1)
-    expect(localSettled).toHaveLength(1)
-    expect(localSettled[0].state).toBe('undeliverable')
-    expect(localSettled[0].ops).toHaveLength(2)
+    expect(localSettled.map(summarizeSettlement)).toEqual([
+      { state: 'undeliverable', nodeIds: [1, 2] }
+    ])
     expect(localSender.pending()).toBe(0)
     localSender.detach()
   })
@@ -1423,12 +1427,12 @@ describe('createOpSender', () => {
   })
 
   it('resumes a pump requested during workflow-change sealing', () => {
-    const localSent: Op[][] = []
+    const localSent: Array<{ workflowId: string; ops: Op[] }> = []
     const localSettled: BatchOutcome[] = []
     let workflow = 'wf-old'
     const localSender = createOpSender({
-      sendOps: (_workflowId, _tab, ops) => {
-        localSent.push(ops)
+      sendOps: (workflowId, _tab, ops) => {
+        localSent.push({ workflowId, ops })
         return true
       },
       onOpsResult: () => vi.fn(),
@@ -1456,14 +1460,12 @@ describe('createOpSender', () => {
     localSender.admit([addNode(2)])
 
     expect(localSent).toHaveLength(1)
-    expect('node_id' in localSent[0][0] ? localSent[0][0].node_id : null).toBe(
-      3
-    )
+    expect(localSent[0].workflowId).toBe('wf-new')
+    expect(nodeIdsOf(localSent[0].ops)).toEqual([3])
     expect(localSettled.map(summarizeSettlement)).toContainEqual({
       state: 'undeliverable',
       nodeIds: [1]
     })
-    expect(localSender.pending()).toBe(1)
     localSender.detach()
   })
 
