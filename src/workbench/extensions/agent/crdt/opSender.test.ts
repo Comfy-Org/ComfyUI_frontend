@@ -1452,13 +1452,10 @@ describe('createOpSender', () => {
     localSender.admit([first, second])
     localSender.flush()
 
-    // The abort invalidated the seal before recovery began, so the valid prefix
-    // is never probed and never rechunked: one serialization, not three.
     expect(firstSerializations).toBe(1)
     expect(localSettled).toHaveLength(1)
     expect(localSettled[0].state).toBe('undeliverable')
     expect(localSettled[0].ops).toHaveLength(2)
-    // The abort, not the serialization failure, is why the seal was dropped.
     expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({
