@@ -55,6 +55,24 @@
       "usersCurrent": 86,
       "usersPrevious": 51,
       "runsCurrent": 1084
+    },
+    {
+      "model": "flux-2-pro",
+      "usersCurrent": 159,
+      "usersPrevious": 151,
+      "runsCurrent": 2269
+    },
+    {
+      "model": "kling-v3-omni",
+      "usersCurrent": 187,
+      "usersPrevious": 177,
+      "runsCurrent": 1424
+    },
+    {
+      "model": "gemini-3.1-flash-image",
+      "usersCurrent": 1106,
+      "usersPrevious": 1104,
+      "runsCurrent": 38079
     }
   ]
 }

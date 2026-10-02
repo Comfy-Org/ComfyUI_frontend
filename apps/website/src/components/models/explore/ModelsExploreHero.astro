@@ -1,4 +1,5 @@
 ---
+import { t } from '../../../i18n/translations'
 import BrandButton from '../../common/BrandButton.vue'
 import SectionHeader from '../../common/SectionHeader.vue'
 import ModelExploreCard from './ModelExploreCard.vue'
@@ -35,6 +36,13 @@ const {
 const featuredItem: CardWorkflowItem = {
   id: 'latest-model-release',
   title: featured.name,
+  provider: featured.provider,
+  taskLabel: featured.taskLabel,
+  capabilities: featured.capabilities,
+  statusBadges: featured.statuses?.map((type) => ({
+    type,
+    label: t('models.explore.openWeightsBadge', 'en')
+  })),
   href: featured.href,
   target: '_self',
   media: {
@@ -81,7 +89,7 @@ const featuredItem: CardWorkflowItem = {
     </div>
 
     <div class="min-w-0">
-      <ModelExploreCard item={featuredItem} variant="feature" />
+      <ModelExploreCard client:visible item={featuredItem} variant="feature" />
     </div>
   </div>
 </section>

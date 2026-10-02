@@ -78,8 +78,20 @@ const translations = {
     en: 'Used by {count} supported workflow.',
     'zh-CN': '由 {count} 个受支持的工作流使用。'
   },
+  'models.all.title': {
+    en: 'All supported models',
+    'zh-CN': '所有受支持的模型'
+  },
+  'models.all.description': {
+    en: 'Browse every supported model. Search by name and filter by category or access.',
+    'zh-CN': '浏览所有受支持的模型。按名称搜索，并按类别或访问方式筛选。'
+  },
+  'models.all.loadMore': {
+    en: 'Load more',
+    'zh-CN': '加载更多'
+  },
   'models.explore.catalog.label': {
-    en: 'MODEL CATALOG',
+    en: 'ALL MODELS',
     'zh-CN': '模型目录'
   },
   'models.explore.catalog.workflowCountMany': {
@@ -114,9 +126,21 @@ const translations = {
     en: '{count} matching models',
     'zh-CN': '{count} 个匹配模型'
   },
+  'models.explore.trendingEmpty': {
+    en: 'No trending models match these filters.',
+    'zh-CN': '没有符合这些筛选条件的热门模型。'
+  },
+  'models.explore.latestEmpty': {
+    en: 'No recent releases match these filters.',
+    'zh-CN': '没有符合这些筛选条件的近期发布。'
+  },
   'models.explore.catalog.empty': {
     en: 'No supported models match this search yet.',
     'zh-CN': '暂无与此搜索匹配的受支持模型。'
+  },
+  'models.explore.catalog.showMore': {
+    en: 'Click to show more',
+    'zh-CN': '点击显示更多'
   },
   'models.explore.collections.viewAll': {
     en: 'VIEW ALL',
@@ -125,6 +149,14 @@ const translations = {
   'models.explore.collections.viewAllModels': {
     en: 'VIEW ALL MODELS',
     'zh-CN': '查看所有模型'
+  },
+  'models.explore.version.flux2Pro': {
+    en: 'Generate detailed images from text and reference images.',
+    'zh-CN': '根据文本和参考图像生成细节丰富的图像。'
+  },
+  'models.explore.version.klingO3': {
+    en: 'Animate reference images with controlled motion.',
+    'zh-CN': '通过可控运动将参考图像转换为视频。'
   },
   'models.explore.version.meshy71': {
     en: 'Turn text or images into detailed 3D models.',
@@ -203,9 +235,8 @@ const translations = {
     'zh-CN': '最新'
   },
   'models.explore.dayZero.description': {
-    en: 'Individual versions with release dates verified against their publishers. Includes verified catalog releases; quantization variants are grouped.',
-    'zh-CN':
-      '依据发布方公告核实发布日期的独立模型版本。展示目录中已核实的发布版本；量化变体合并展示。'
+    en: 'New models, supported the day they drop. That is the standard.',
+    'zh-CN': '新模型，发布当天即支持。这就是标准。'
   },
   'models.explore.tasks.workflowCountOne': {
     en: '{count} workflow',
@@ -220,8 +251,8 @@ const translations = {
     'zh-CN': '从任务开始'
   },
   'models.explore.tasks.description': {
-    en: 'Category pages that match how people actually search.',
-    'zh-CN': '符合人们实际搜索方式的分类页面。'
+    en: 'Find workflows for what you want to create.',
+    'zh-CN': '找到适合你创作目标的工作流。'
   },
   'models.explore.tasks.viewAll': {
     en: 'VIEW ALL USE CASES',
@@ -232,8 +263,8 @@ const translations = {
     'zh-CN': '选择模型访问方式'
   },
   'models.explore.access.open.title': {
-    en: 'Open\nweights',
-    'zh-CN': '开放\n权重'
+    en: 'Open weights',
+    'zh-CN': '开放权重'
   },
   'models.explore.access.open.description': {
     en: 'Download the checkpoint, chain your LoRAs, and keep the graph forever.',
@@ -244,8 +275,8 @@ const translations = {
     'zh-CN': '浏览开放模型'
   },
   'models.explore.access.partner.title': {
-    en: 'Partner\nAPIs',
-    'zh-CN': '合作伙伴\nAPI'
+    en: 'Partner APIs',
+    'zh-CN': '合作伙伴 API'
   },
   'models.explore.access.partner.description': {
     en: 'Use partner models on the same canvas as your open models.',

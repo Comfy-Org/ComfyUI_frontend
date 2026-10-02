@@ -43,7 +43,7 @@ const snapshot = {
 } satisfies z.infer<typeof modelTrendSnapshotSchema>
 
 describe('model usage trends', () => {
-  it('shows only the eight versions with the greatest weekly user gains', () => {
+  it('excludes versions without a Comfy model page before ranking', () => {
     const rows = trendModelVersions.map((model, index) => ({
       model: model.id,
       usersCurrent: 100 + index,
@@ -52,6 +52,7 @@ describe('model usage trends', () => {
     }))
     const ranked = rankModelTrends({ ...snapshot, rows }, now)
     expect(ranked).toHaveLength(8)
+    expect(ranked.every((model) => model.href.startsWith('/'))).toBe(true)
     expect(ranked[0]?.id).toBe(trendModelVersions.at(-1)?.id)
     expect(ranked.some((model) => model.id === trendModelVersions[0].id)).toBe(
       false
@@ -75,7 +76,7 @@ describe('model usage trends', () => {
         ...snapshot,
         rows: [
           {
-            model: 'seedream-5-0-flash-260915',
+            model: 'seedream-5-0-pro-260628',
             usersCurrent: 145,
             usersPrevious: 0,
             runsCurrent: 2317
@@ -85,7 +86,7 @@ describe('model usage trends', () => {
       now
     )
     expect(trend).toMatchObject({
-      name: 'Seedream 5.0 Flash',
+      name: 'Seedream 5.0 Pro',
       growthPercent: null
     })
   })

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { models } from '../../../config/models'
 import type { Model } from '../../../config/models'
 import {
   createModelExploreCatalog,
@@ -92,5 +93,23 @@ describe('model explore catalog presentation', () => {
         ({ slug }) => slug
       )
     ).toEqual(['partner-image'])
+  })
+})
+
+describe('model category accuracy', () => {
+  it('excludes shared workflow dependencies and image tools from 3D model results', () => {
+    const results = filterModelExploreCatalog(
+      createModelExploreCatalog(models),
+      '',
+      '3d'
+    ).map((model) => model.title)
+    expect(results).toContain('Hunyuan 3D')
+    expect(results).toContain('Tripo 3D')
+    expect(results).not.toEqual(
+      expect.arrayContaining(['Qwen Image Vae', 'Qwen 2.5 Vl 7b FP8 scaled'])
+    )
+    expect(results).not.toContain('Qwen Image Edit 2511 BF16')
+    expect(results).not.toContain('Birefnet')
+    expect(results).not.toContain('Rt Detr V4 X Hgnet FP32')
   })
 })

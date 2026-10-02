@@ -8,7 +8,7 @@ import {
   Image,
   LayoutGrid,
   MessageSquareText,
-  PackageOpen,
+  LockKeyholeOpen,
   Pencil,
   Video
 } from '@lucide/vue'
@@ -48,7 +48,7 @@ const categoryIcons: Readonly<
   upscale: Expand,
   llm: MessageSquareText,
   train: BrainCircuit,
-  open: PackageOpen,
+  open: LockKeyholeOpen,
   partner: Handshake
 }
 const items = computed<HubFilterTab[]>(() =>

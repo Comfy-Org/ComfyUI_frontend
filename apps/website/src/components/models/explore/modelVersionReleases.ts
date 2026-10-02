@@ -88,7 +88,7 @@ export const modelVersionReleases: readonly ModelVersionRelease[] = [
 export function latestVerifiedModelVersions(
   releases: readonly ModelVersionRelease[] = modelVersionReleases,
   asOf: string = new Date().toISOString().slice(0, 10),
-  limit = 4
+  limit = Number.POSITIVE_INFINITY
 ): ModelVersionRelease[] {
   const versions = new Map<string, ModelVersionRelease>()
   for (const release of releases) {

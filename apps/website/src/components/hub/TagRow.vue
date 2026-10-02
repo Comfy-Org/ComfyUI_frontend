@@ -17,17 +17,21 @@ import { tagDisplayName } from '../../lib/hub/tag-aliases'
 const {
   tags,
   fallbackLabel = '',
-  linkTags = true
+  linkTags = true,
+  collapseTags = false,
+  titleCaseLabels = false
 } = defineProps<{
   tags: readonly string[]
   fallbackLabel?: string
   linkTags?: boolean
+  collapseTags?: boolean
+  titleCaseLabels?: boolean
 }>()
 
 const allTags = computed(() =>
   tags.map((tag) => ({
     key: tag,
-    label: tagDisplayName(tag),
+    label: tagDisplayName(tag, titleCaseLabels),
     href: hubTagUrl(tag)
   }))
 )
@@ -66,8 +70,9 @@ function recompute() {
 useResizeObserver(row, recompute)
 watch(allTags, () => nextTick(recompute), { immediate: true })
 
-const visibleTags = computed(() => allTags.value.slice(0, visibleCount.value))
-const hiddenTags = computed(() => allTags.value.slice(visibleCount.value))
+const shownCount = computed(() => (collapseTags ? 0 : visibleCount.value))
+const visibleTags = computed(() => allTags.value.slice(0, shownCount.value))
+const hiddenTags = computed(() => allTags.value.slice(shownCount.value))
 const pillClass =
   'inline-flex h-6 w-fit shrink-0 items-center justify-center rounded-full bg-hub-surface px-3 py-1 text-xs font-normal whitespace-nowrap text-content transition-colors'
 </script>

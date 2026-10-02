@@ -18,7 +18,6 @@ interface Props {
   openWeightsBadgeLabel: string
   actionLabel: string
   actionHref: string
-  sourcesLabel?: string
 }
 
 const {
@@ -28,8 +27,7 @@ const {
   models,
   openWeightsBadgeLabel,
   actionLabel,
-  actionHref,
-  sourcesLabel
+  actionHref
 } = Astro.props
 
 const statusLabels: Record<ExploreModelStatus, string> = {
@@ -40,6 +38,9 @@ function toWorkflowItem(model: ExploreModelCardFixture): CardWorkflowItem {
   return {
     id: model.name,
     title: model.name,
+    provider: model.provider,
+    taskLabel: model.taskLabel,
+    capabilities: model.capabilities,
     href: model.href,
     target: model.target,
     description: model.description,
@@ -76,26 +77,13 @@ function toWorkflowItem(model: ExploreModelCardFixture): CardWorkflowItem {
   </div>
   <div class="mt-7 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
     {models.map((model) => <ModelExploreCard
+      client:visible
       item={toWorkflowItem(model)}
-      variant="compact"
+      variant="hub"
     >
       {model.media.type === 'placeholder' && (
         <ModelMediaPlaceholder slot="media" tone={model.media.tone} />
       )}
     </ModelExploreCard>)}
   </div>
-  {sourcesLabel && <p
-    class="mt-5 flex flex-wrap gap-x-4 gap-y-2 text-sm text-primary-warm-gray"
-  >
-    <span>{sourcesLabel}:</span>
-    {models
-      .filter((model) => model.sourceUrl)
-      .map((model) => <a
-        href={model.sourceUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        class="underline hover:text-primary-comfy-yellow"
-        >{model.name}</a
-      >)}
-  </p>}
 </section>

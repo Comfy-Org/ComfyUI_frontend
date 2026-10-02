@@ -5,6 +5,7 @@ import { t } from '../../i18n/translations'
 
 const {
   displayName,
+  thumbnailUrl,
   huggingFaceUrl,
   docsUrl,
   blogUrl,
@@ -13,6 +14,7 @@ const {
   directory
 } = defineProps<{
   displayName: string
+  thumbnailUrl?: string
   huggingFaceUrl: string
   docsUrl?: string
   blogUrl?: string
@@ -62,12 +64,15 @@ const isPartnerNode = directory === 'partner_nodes'
       </p>
 
       <h1 class="text-4xl font-bold text-primary-comfy-canvas lg:text-6xl">
-        {{ displayName }} in ComfyUI
+        {{ displayName }}
       </h1>
 
-      <p class="text-sm text-primary-comfy-canvas/60">
+      <a
+        :href="workflowsUrl ?? 'https://comfy.org/workflows/'"
+        class="w-fit text-sm text-primary-comfy-canvas/60 underline underline-offset-4 hover:text-primary-comfy-canvas"
+      >
         {{ t('models.hero.workflowCount', 'en', { count: workflowCount }) }}
-      </p>
+      </a>
 
       <div class="flex flex-col gap-3 sm:flex-row">
         <BrandButton
@@ -127,6 +132,16 @@ const isPartnerNode = directory === 'partner_nodes'
           {{ t('models.hero.blogLink') }}
         </a>
       </div>
+    </div>
+    <div v-if="thumbnailUrl" class="min-w-0 flex-1">
+      <img
+        :src="thumbnailUrl"
+        :alt="displayName"
+        width="640"
+        height="480"
+        fetchpriority="high"
+        class="aspect-4/3 w-full rounded-3xl object-cover"
+      />
     </div>
   </section>
 </template>

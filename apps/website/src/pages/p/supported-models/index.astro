@@ -3,7 +3,6 @@ import BaseLayout from '../../../layouts/BaseLayout.astro'
 import FAQSection from '../../../components/common/FAQSection.vue'
 import ModelAccessSection from '../../../components/models/explore/ModelAccessSection.astro'
 import ModelCatalogExplorer from '../../../components/models/explore/ModelCatalogExplorer.vue'
-import ModelCollectionSection from '../../../components/models/explore/ModelCollectionSection.astro'
 import ModelConversionSection from '../../../components/models/explore/ModelConversionSection.astro'
 import ModelFamilySection from '../../../components/models/explore/ModelFamilySection.astro'
 import ModelTaskSection from '../../../components/models/explore/ModelTaskSection.astro'
@@ -79,14 +78,14 @@ const accessCards = [
     title: t('models.explore.access.open.title', locale),
     description: t('models.explore.access.open.description', locale),
     cta: t('models.explore.access.open.cta', locale),
-    href: `${routes.models}?catalog=all&access=open#model-catalog-results`,
+    href: `${routes.allModels}?access=open`,
     bg: 'bg-secondary-deep-plum'
   },
   {
     title: t('models.explore.access.partner.title', locale),
     description: t('models.explore.access.partner.description', locale),
     cta: t('models.explore.access.partner.cta', locale),
-    href: `${routes.models}?catalog=all&access=partner#model-catalog-results`,
+    href: `${routes.allModels}?access=partner`,
     bg: 'bg-secondary-cool-gray'
   }
 ]
@@ -147,8 +146,15 @@ const conversionCards = [
   />
   <ModelCatalogExplorer
     client:load
+    showCatalogOnFilter={false}
     catalogLabel={t('models.explore.catalog.label', locale)}
     defaultModels={trendingModelFixtures}
+    latestCollection={{
+      headingId: 'day-zero-models-heading',
+      label: t('models.explore.dayZero.label', locale),
+      description: t('models.explore.dayZero.description', locale),
+      models: dayZeroModelFixtures
+    }}
     collectionHeadingId="trending-models-heading"
     collectionLabel={t('models.explore.trending.label', locale)}
     collectionDescription={
@@ -160,7 +166,7 @@ const conversionCards = [
       'models.explore.collections.viewAllModels',
       locale
     )}
-    collectionActionHref={`${routes.models}?catalog=all#model-catalog-results`}
+    collectionActionHref={routes.allModels}
     openWeightsBadgeLabel={t('models.explore.openWeightsBadge', locale)}
     {catalog}
     {categoryOptions}
@@ -172,16 +178,9 @@ const conversionCards = [
     partnerLabel={t('models.explore.catalog.partner', locale)}
     resultCountLabel={t('models.explore.catalog.resultCount', locale)}
     emptyLabel={t('models.explore.catalog.empty', locale)}
-  />
-  <ModelCollectionSection
-    headingId="day-zero-models-heading"
-    label={t('models.explore.dayZero.label', locale)}
-    description={t('models.explore.dayZero.description', locale)}
-    models={dayZeroModelFixtures}
-    openWeightsBadgeLabel={t('models.explore.openWeightsBadge', locale)}
-    actionLabel={t('models.explore.collections.viewAllModels', locale)}
-    actionHref={`${routes.models}?catalog=all#model-catalog-results`}
-    sourcesLabel={t('models.explore.release.sources', locale)}
+    trendingEmptyLabel={t('models.explore.trendingEmpty', locale)}
+    latestEmptyLabel={t('models.explore.latestEmpty', locale)}
+    showMoreLabel={t('models.explore.catalog.showMore', locale)}
   />
   <ModelTaskSection
     label={t('models.explore.tasks.label', locale)}

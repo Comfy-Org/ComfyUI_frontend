@@ -11,7 +11,7 @@ test.describe('Supported model explorer @smoke', () => {
     await expect(trending.getByRole('heading', { level: 3 })).toHaveCount(8)
     await expect(trending).toContainText('What is running this week.')
     await expect(trending).toContainText(
-      'Generate and edit images from text or reference images.'
+      'Create detailed images with text and multiple visual references.'
     )
     await expect(
       trending.getByRole('link', { name: 'Seedance (ByteDance)', exact: true })
@@ -27,27 +27,59 @@ test.describe('Supported model explorer @smoke', () => {
     )
   })
 
-  test('keeps eight individual trending versions when the full catalog is filtered', async ({
+  test('opens the full directory with the selected filter and returns through the breadcrumb', async ({
     page
   }) => {
-    await page.goto(
-      '/p/supported-models/?catalog=all&access=open#model-catalog-results'
+    await page.goto('/p/supported-models/')
+    await page.getByRole('radio', { name: 'Video', exact: true }).click()
+    await page
+      .getByRole('region', { name: 'TRENDING', exact: true })
+      .getByRole('link', { name: 'VIEW ALL MODELS', exact: true })
+      .click()
+    await expect(page).toHaveURL(
+      /\/p\/supported-models\/all\/\?category=video$/
     )
-    const trending = page.getByRole('region', { name: 'TRENDING', exact: true })
-    await expect(trending.getByRole('heading', { level: 3 })).toHaveCount(8)
     await expect(
-      trending.getByRole('link', { name: 'Seedance (ByteDance)', exact: true })
-    ).toHaveCount(0)
+      page.getByRole('radio', { name: 'Video', exact: true })
+    ).toBeChecked()
     await expect(
-      page.getByRole('region', { name: 'MODEL CATALOG', exact: true })
+      page.locator('#model-catalog-results').getByRole('heading', { level: 3 })
+    ).toHaveCount(24)
+    await page.getByRole('button', { name: 'Load more', exact: true }).click()
+    await expect(
+      page.locator('#model-catalog-results').getByRole('heading', { level: 3 })
+    ).toHaveCount(48)
+    await page
+      .getByRole('navigation', { name: 'Breadcrumb', exact: true })
+      .getByRole('link')
+      .click()
+    await expect(
+      page.getByRole('region', { name: 'TRENDING', exact: true })
     ).toBeVisible()
     await expect(
-      page.getByRole('heading', { name: 'MODEL CATALOG', exact: true })
-    ).toBeInViewport()
-    await page
-      .getByRole('radio', { name: 'Partner Nodes', exact: true })
-      .click()
-    await expect(trending.getByRole('heading', { level: 3 })).toHaveCount(8)
+      page.getByRole('region', { name: 'LATEST', exact: true })
+    ).toBeVisible()
+    await expect(page.locator('#model-catalog-results')).toHaveCount(0)
+  })
+
+  test('filters featured collections without revealing the catalog', async ({
+    page
+  }) => {
+    await page.goto('/p/supported-models/')
+    await page.getByRole('radio', { name: 'Image', exact: true }).click()
+    await expect(
+      page.getByRole('region', { name: 'ALL MODELS', exact: true })
+    ).toHaveCount(0)
+    await expect(
+      page
+        .getByRole('region', { name: 'TRENDING', exact: true })
+        .getByRole('heading', { level: 3 })
+    ).toHaveCount(8)
+    await expect(
+      page
+        .getByRole('region', { name: 'LATEST', exact: true })
+        .getByRole('heading', { level: 3 })
+    ).toHaveCount(4)
   })
 
   test('shows verified releases with quantization variants grouped', async ({
@@ -67,7 +99,7 @@ test.describe('Supported model explorer @smoke', () => {
     await expect(
       latest.getByText('OPEN WEIGHTS', { exact: true })
     ).toBeVisible()
-    await expect(latest).toContainText('Release announcements')
+    await expect(latest).not.toContainText('Release announcements')
     await latest
       .getByRole('link', { name: 'Qwen Image 2.1', exact: true })
       .first()
@@ -80,9 +112,9 @@ test.describe('Supported model explorer @smoke', () => {
   test('finds a refreshed partner model and opens its detail page', async ({
     page
   }) => {
-    await page.goto('/p/supported-models/')
+    await page.goto('/p/supported-models/all/')
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      'Every model. One graph.'
+      'All supported models'
     )
 
     await page
@@ -96,14 +128,14 @@ test.describe('Supported model explorer @smoke', () => {
 
     await expect(page).toHaveURL(/\/p\/supported-models\/fish-audio\/?$/)
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      'Fish Audio in ComfyUI'
+      'Fish Audio'
     )
   })
 
   test('opens the complete catalog and shows an empty state for an unknown model', async ({
     page
   }) => {
-    await page.goto('/p/supported-models/?catalog=all&access=open')
+    await page.goto('/p/supported-models/all/?access=open')
     await expect(
       page.getByRole('radio', { name: 'Open Weights', exact: true })
     ).toBeChecked()
@@ -114,8 +146,10 @@ test.describe('Supported model explorer @smoke', () => {
       .fill('no-such-model-987654321')
     await expect(page.getByRole('status')).toHaveText('0 matching models')
     await expect(
-      page.getByText('No supported models match this search yet.')
-    ).toBeVisible()
+      page.getByText('No supported models match this search yet.', {
+        exact: true
+      })
+    ).toHaveCount(1)
   })
 })
 

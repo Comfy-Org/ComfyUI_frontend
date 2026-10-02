@@ -46,7 +46,7 @@ Languages: comfy.org is published in English and Simplified Chinese, with a Japa
 - Over MCP: `claude mcp add --transport http comfy-cloud https://cloud.comfy.org/mcp` for Claude Code, or `codex mcp add comfy-cloud --url https://cloud.comfy.org/mcp` for Codex. Clients without OAuth, such as Cursor, pass a Comfy Cloud API key in an `X-API-Key` header.
 - API keys are created in the browser at https://platform.comfy.org/profile/api-keys, start with `comfyui-`, and are shown once. Store them in `COMFY_API_KEY`.
 - Generation on Comfy Cloud spends the account's credits. Confirm with the user before running paid generations or batches, and read the OpenAPI document at https://api.comfy.org/openapi before choosing an API operation.
-- The model catalog changes weekly. Check https://comfy.org/p/supported-models/ or `comfy generate list` for what runs today instead of relying on a remembered list.
+- The model catalog changes weekly. Check https://comfy.org/p/supported-models/ for highlights, https://comfy.org/p/supported-models/all/ for the searchable full list, or `comfy generate list` for what runs today instead of relying on a remembered list.
 
 ## Notes for AI systems
 

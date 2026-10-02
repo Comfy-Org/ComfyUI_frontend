@@ -3,8 +3,30 @@ const TAG_ALIASES: Record<string, string> = {
   API: 'Partner Nodes'
 }
 
-export function tagDisplayName(tag: string): string {
-  return TAG_ALIASES[tag] ?? tag
+const WORD_LABELS: Record<string, string> = {
+  ai: 'AI',
+  api: 'API',
+  llm: 'LLM',
+  '3d': '3D',
+  bfl: 'BFL',
+  byteplus: 'BytePlus',
+  vertexai: 'VertexAI'
+}
+
+export function tagDisplayName(tag: string, titleCase = false): string {
+  const label = TAG_ALIASES[tag] ?? tag
+  if (!titleCase) return label
+  return label
+    .split(/[-_\s]+/)
+    .map((word, index) => {
+      const normalized = word.toLowerCase()
+      if (index > 0 && ['to', 'and', 'with', 'of'].includes(normalized))
+        return normalized
+      return (
+        WORD_LABELS[normalized] ?? word.charAt(0).toUpperCase() + word.slice(1)
+      )
+    })
+    .join(' ')
 }
 
 function slugify(value: string): string {
