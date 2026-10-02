@@ -184,10 +184,16 @@ export function useAgentWorkflowResolver({
   /**
    * Asks the server about one id directly, for the cases the user's listing
    * structurally cannot answer: it hides version-less drafts, and it is a
-   * snapshot that a save can outrun. Only a 404 is read as deletion. A refusal
-   * or an unreachable server stays `unknown` — including a 403, which is the
-   * route's ownership check but is also what a stale web session answers, and
-   * mistaking one for the other would retire a live workflow.
+   * snapshot that a save can outrun.
+   *
+   * Only a 404 is read as deletion. A 403 stays `unknown` even though the
+   * route's own refusal is an ownership check, because the auth middleware
+   * answers 403 for things that say nothing about the workflow — a
+   * soft-deleted account, an auth method the route does not take, an API-key
+   * policy failure — and only the body distinguishes them. Reading those as
+   * deletion would retire a live workflow on an auth hiccup; reading them as
+   * inconclusive only leaves the local tab focused, which is already what a
+   * failed listing does.
    */
   async function cloudWorkflowLifecycle(
     workflowId: string
