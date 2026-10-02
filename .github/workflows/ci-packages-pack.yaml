@@ -8,6 +8,7 @@ on:
       - 'packages/account-ui/**'
       - 'packages/billing-contract/**'
       - 'packages/ingest-types/**'
+      - 'packages/eslint-config/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -22,7 +23,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package: [account-core, account-ui, billing-contract, ingest-types]
+        package:
+          [
+            account-core,
+            account-ui,
+            billing-contract,
+            ingest-types,
+            eslint-config
+          ]
     steps:
       - uses: actions/checkout@v7
 

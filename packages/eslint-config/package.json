@@ -1,0 +1,53 @@
+{
+  "name": "@comfyorg/eslint-config",
+  "version": "0.1.0-alpha.0",
+  "description": "Shared Comfy import and Vue lint policies",
+  "license": "GPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Comfy-Org/ComfyUI_frontend.git",
+    "directory": "packages/eslint-config"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    "./imports": "./src/imports.ts",
+    "./vue": "./src/vue.ts",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "exports": {
+      "./imports": {
+        "types": "./dist/imports.d.ts",
+        "import": "./dist/imports.js"
+      },
+      "./vue": {
+        "types": "./dist/vue.d.ts",
+        "import": "./dist/vue.js"
+      },
+      "./package.json": "./package.json"
+    },
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepack": "pnpm run build",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "vue-eslint-parser": "catalog:"
+  },
+  "peerDependencies": {
+    "eslint": "^9.0.0 || ^10.0.0",
+    "eslint-plugin-import-x": "^4.13.3",
+    "eslint-plugin-vue": "^10.1.0",
+    "typescript-eslint": "^8.33.1"
+  }
+}
