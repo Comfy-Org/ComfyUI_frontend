@@ -74,7 +74,7 @@ export function tryOnScene(request: TryOnRequest): TryOnScene {
 }
 
 /** The example photo of the example person wearing an example garment. */
-export function preparedResult(request: TryOnRequest): string | undefined {
+function preparedResult(request: TryOnRequest): string | undefined {
   if (request.personImageUrl !== TRY_ON_PERSON.url) return undefined
   const example = EXAMPLE_GARMENTS.find(
     (garment) => garment.url === request.garmentImageUrl
