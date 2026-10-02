@@ -190,11 +190,6 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   >()
   const MAX_CHUNK_FAILURE_REPORTS = 3
 
-  /**
-   * The counter the next op for `workflowId` mints at: at least the follower's
-   * last observed sequence, and always past this actor's last mint for that
-   * same doc. An unbound admission has no doc to be monotonic against.
-   */
   function mintBaseVersion(workflowId: string | null): number {
     const observed = deps.baseVersion()
     if (workflowId === null) return observed
