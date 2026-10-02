@@ -105,6 +105,12 @@ interface FixtureOptions {
   unpromotedDefinition?: boolean
   /** Serialize the host with this positional widget array. */
   hostWidgetValues?: WidgetValue[]
+  /** Reverse serialized inputs without changing their cardinality. */
+  reverseHostInputs?: boolean
+  /** Promote the extra input through a second interior widget. */
+  promoteExtra?: boolean
+  /** Mark the first delivered frame as a document-lineage replacement. */
+  replaceOnFirstFrame?: boolean
 }
 
 /**
@@ -115,6 +121,7 @@ function expectsDriftingHost(options: FixtureOptions): boolean {
   const promotedCount = options.extraInput === true ? 2 : 1
   return (
     options.unpromotedDefinition === true ||
+    options.reverseHostInputs === true ||
     (options.hostWidgetValues !== undefined &&
       options.hostWidgetValues.length !== promotedCount)
   )
@@ -141,6 +148,12 @@ function promotedWorkflow(options: FixtureOptions = {}): WorkflowJSON {
   subgraph.add(interior)
   const valueSlot = subgraph.inputNode.slots[options.extraInput ? 1 : 0]
   valueSlot.connect(interior.inputs[0], interior)
+  if (options.promoteExtra) {
+    const extraInterior = LiteGraph.createNode('promoted-widget')!
+    extraInterior.id = toNodeId(9)
+    subgraph.add(extraInterior)
+    subgraph.inputNode.slots[0].connect(extraInterior.inputs[0], extraInterior)
+  }
 
   if (options.secondDefinition) {
     const second = createTestSubgraph({
@@ -185,6 +198,7 @@ function reshapeHost(
   if (options.hostWidgetValues) {
     hostNode.widgets_values = options.hostWidgetValues
   }
+  if (options.reverseHostInputs) hostNode.inputs?.reverse()
 }
 
 /** Leaves each definition declaring `value` with no interior to promote it. */
@@ -218,6 +232,7 @@ function startFollower(options: FixtureOptions = {}) {
   const follower = new FollowerDoc()
   const adapter = new AgentCrdtProjection(() => graph)
   adapter.bind('workflow', follower)
+  if (options.replaceOnFirstFrame) adapter.replaceOnNextFrame('workflow')
   const update = Y.encodeStateAsUpdate(hostDoc)
   follower.applyRemoteUpdate(update)
   expect(
@@ -231,7 +246,11 @@ function startFollower(options: FixtureOptions = {}) {
     )
   }
   expect(instance.inputs.map((i) => i.name)).toEqual(
-    options.extraInput ? ['extra', 'value'] : ['value']
+    options.reverseHostInputs
+      ? ['value', 'extra']
+      : options.extraInput
+        ? ['extra', 'value']
+        : ['value']
   )
   onTestFinished(disableSubgraphNodeCreation)
   return {
@@ -945,7 +964,7 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
         context: expect.objectContaining({
           expected: 0,
           actual: 1,
-          phase: 'load'
+          phase: 'incremental'
         })
       })
     )
@@ -970,14 +989,46 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
         context: expect.objectContaining({
           expected: 1,
           actual: 2,
-          phase: 'load'
+          phase: 'incremental'
+        })
+      })
+    )
+  })
+
+  it('S1x keeps host defaults when configure restores a different promoted order', () => {
+    const state = startFollower({
+      extraInput: true,
+      promoteExtra: true,
+      hostWidgetValues: [99, 77],
+      reverseHostInputs: true
+    })
+
+    expect(state.instance.inputs.map((input) => input.name)).toEqual([
+      'value',
+      'extra'
+    ])
+    expect(state.instance.widgets.map((widget) => widget.value)).toEqual([
+      INTERIOR_DEFAULT_VALUE,
+      INTERIOR_DEFAULT_VALUE
+    ])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'agent_graph_host_widgets_mismatch',
+        context: expect.objectContaining({
+          expected: 2,
+          actual: 2,
+          phase: 'incremental'
         })
       })
     )
   })
 
   it('S1w reports load and incremental drift once each', () => {
-    const state = startFollower({ hostWidgetValues: [99, 77] })
+    const state = startFollower({
+      hostWidgetValues: [99, 77],
+      replaceOnFirstFrame: true
+    })
 
     forwardRaw(
       state,
