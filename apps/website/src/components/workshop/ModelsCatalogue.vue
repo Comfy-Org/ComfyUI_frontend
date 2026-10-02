@@ -21,6 +21,7 @@ import {
 } from '../../scripts/posthog'
 import type { CatalogueApp } from '../../lib/workshop/catalogue-apps'
 import { ac } from '../../lib/workshop/catalogue-apps'
+import { upcomingApps } from '../../lib/workshop/coming-soon-apps'
 import {
   loadAppCatalogue,
   loadExploreCatalogue,
@@ -159,6 +160,7 @@ whenever(
     v-else
     v-model:browse-all="browseAll"
     :apps="appCards"
+    :upcoming="upcomingApps(locale)"
     :locale
     @section="inSection = $event"
   />

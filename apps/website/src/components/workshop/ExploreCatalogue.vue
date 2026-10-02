@@ -157,26 +157,23 @@ function clear() {
     />
 
     <div class="flex flex-col gap-8">
-      <ExploreTaskChips
-        v-model="useCase"
-        :use-cases="tasks.map((task) => task.useCase)"
-        :locale
-      />
-
       <section
-        v-if="!filtered && tasks.length"
+        v-if="tasks.length"
         aria-labelledby="explore-tasks"
-        data-testid="explore-tasks"
+        class="flex flex-col gap-5"
       >
-        <CardRow :locale>
-          <template #heading>
-            <h2
-              id="explore-tasks"
-              class="text-xl font-medium text-primary-warm-white"
-            >
-              {{ t('workshop.explore.tasksTitle', locale) }}
-            </h2>
-          </template>
+        <h2
+          id="explore-tasks"
+          class="text-xl font-medium text-primary-warm-white"
+        >
+          {{ t('workshop.explore.tasksTitle', locale) }}
+        </h2>
+        <ExploreTaskChips
+          v-model="useCase"
+          :use-cases="tasks.map((task) => task.useCase)"
+          :locale
+        />
+        <CardRow v-if="!filtered" :locale data-testid="explore-tasks">
           <li v-for="task in tasks" :key="task.useCase" :class="TASK_CARD">
             <ExploreTaskTile
               :use-case="task.useCase"

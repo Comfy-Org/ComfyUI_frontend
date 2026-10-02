@@ -6,7 +6,7 @@ import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import GalleryItemAttribution from '../gallery/GalleryItemAttribution.vue'
 
-const POSTS = 8
+const POSTS = 16
 
 const { items = visibleGalleryItems, locale = 'en' } = defineProps<{
   items?: readonly GalleryItem[]

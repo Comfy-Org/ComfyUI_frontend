@@ -29,7 +29,19 @@ const chipClass = (active: boolean) =>
     :aria-label="t('workshop.explore.tasks', locale)"
   >
     <button
-      v-for="value in ['all', ...useCases] as const"
+      type="button"
+      :class="chipClass(useCase === 'all')"
+      :aria-pressed="useCase === 'all'"
+      @click="useCase = 'all'"
+    >
+      {{ t(useCaseLabelKey.all, locale) }}
+    </button>
+    <span
+      class="mx-1 h-6 w-px self-center bg-transparency-white-t20"
+      aria-hidden="true"
+    />
+    <button
+      v-for="value in useCases"
       :key="value"
       type="button"
       :class="chipClass(useCase === value)"

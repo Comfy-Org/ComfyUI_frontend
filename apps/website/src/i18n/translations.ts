@@ -62,8 +62,8 @@ const translations = {
   },
   'workshop.explore.tasks': { en: 'Tasks', 'zh-CN': '任务' },
   'workshop.explore.tasksTitle': {
-    en: 'Start from a task',
-    'zh-CN': '从一个任务开始'
+    en: 'Use cases',
+    'zh-CN': '使用场景'
   },
   'workshop.explore.popularTitle': {
     en: 'Popular right now',

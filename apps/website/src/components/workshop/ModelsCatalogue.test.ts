@@ -459,7 +459,9 @@ describe('ModelsCatalogue', () => {
       renderExplore()
 
       const community = within(await screen.findByTestId('explore-community'))
-      expect(community.getAllByTestId('explore-community-post')).toHaveLength(8)
+      expect(community.getAllByTestId('explore-community-post')).toHaveLength(
+        16
+      )
       expect(
         community
           .getByRole('link', { name: 'Explore the gallery' })
@@ -482,7 +484,7 @@ describe('ModelsCatalogue', () => {
     })
   })
 
-  it('leads the apps page with a featured app and names what is coming', async () => {
+  it('leads the apps page with a featured app and lists the apps still being built', async () => {
     render(ModelsCatalogue, {
       props: { models: launchModels, section: 'apps' }
     })
@@ -491,9 +493,24 @@ describe('ModelsCatalogue', () => {
       'href',
       '/hub/apps/cinematic-studio/'
     )
-    expect(screen.getByTestId('app-coming-soon')).toHaveTextContent(
-      /Virtual try-on.*Hand product swap.*Background removal.*Sprite sheet generator/
-    )
+    expect(
+      within(screen.getByTestId('app-shelf'))
+        .getAllByTestId('workshop-app-card')
+        .map((card) => [
+          within(card).getByTestId('app-card-name').textContent.trim(),
+          card.getAttribute('href')
+        ])
+    ).toEqual([
+      ['Cinematic Studio', '/hub/apps/cinematic-studio/'],
+      ['Re-shoot a video', '/hub/apps/reshoot/'],
+      ['Move anything', null],
+      ['Relight', null],
+      ['Hand product swap', null],
+      ['Background Removal', null],
+      ['Virtual try-on', null],
+      ['Sprite Sheet Generator', null]
+    ])
+    expect(screen.getByTestId('browse-all-end')).toBeVisible()
   })
 
   it('opens the models page with the API paths and a key link', async () => {
@@ -534,7 +551,6 @@ describe('ModelsCatalogue', () => {
         .getAllByRole('link')
         .map((link) => link.getAttribute('href'))
     ).toEqual(['/hub/apps/cinematic-studio/', '/hub/apps/reshoot/'])
-    expect(screen.queryByRole('button', { name: /Browse all apps/ })).toBeNull()
   })
 
   it('hides an app whose PostHog flag is off, and shows it once it turns on', async () => {

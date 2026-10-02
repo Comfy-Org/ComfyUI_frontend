@@ -92,7 +92,7 @@ test('keeps Cinematic Studio closed on the workflows flag alone', async ({
   await expect(page.getByTestId('cinematic')).toHaveCount(0)
 })
 
-test('lists both apps on the hub apps page, on /hub/apps/ pages', async ({
+test('lists both apps, then the apps still being built, on the hub apps page', async ({
   page,
   context
 }) => {
@@ -110,9 +110,12 @@ test('lists both apps on the hub apps page, on /hub/apps/ pages', async ({
     '/hub/apps/cinematic-studio/'
   )
   await expect(cards.nth(1)).toHaveAttribute('href', '/hub/apps/reshoot/')
+  await expect(shelf.getByTestId('workshop-app-card').nth(2)).toContainText(
+    'Move anything'
+  )
   await expect(
     page.getByRole('button', { name: /Browse all apps/ })
-  ).toHaveCount(0)
+  ).toBeVisible()
 })
 
 test('hides Re-shoot from the hub apps page and closes its page while its flag is off', async ({

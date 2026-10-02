@@ -9,13 +9,17 @@ import type { CatalogueApp } from '../../lib/workshop/catalogue-apps'
 import { ac } from '../../lib/workshop/catalogue-apps'
 import AppFeatured from './AppFeatured.vue'
 import CardRow from './CardRow.vue'
-import ComingSoonApps from './ComingSoonApps.vue'
 import WorkshopAppCard from './WorkshopAppCard.vue'
 
 const ROW_LIMIT = 8
 
-const { apps, locale = 'en' } = defineProps<{
+const {
+  apps,
+  upcoming = [],
+  locale = 'en'
+} = defineProps<{
   apps: readonly CatalogueApp[]
+  upcoming?: readonly CatalogueApp[]
   locale?: Locale
 }>()
 
@@ -25,8 +29,9 @@ watch(browseAll, (value) => emit('section', value), { immediate: true })
 watch(browseAll, () => void nextTick(() => window.scrollTo({ top: 0 })))
 
 const featured = computed(() => apps[0])
-const shelf = computed(() => apps.slice(0, ROW_LIMIT))
-const hasMore = computed(() => apps.length > ROW_LIMIT)
+const listed = computed(() => [...apps, ...upcoming])
+const shelf = computed(() => listed.value.slice(0, ROW_LIMIT))
+const hasMore = computed(() => listed.value.length > ROW_LIMIT)
 </script>
 
 <template>
@@ -47,7 +52,7 @@ const hasMore = computed(() => apps.length > ROW_LIMIT)
         {{ ac('allApps', locale) }}
         <span
           class="text-base font-normal text-primary-warm-gray tabular-nums"
-          >{{ apps.length }}</span
+          >{{ listed.length }}</span
         >
       </h2>
     </template>
@@ -58,7 +63,7 @@ const hasMore = computed(() => apps.length > ROW_LIMIT)
       :aria-label="ac('apps', locale)"
       data-testid="app-search-results"
     >
-      <li v-for="app in apps" :key="app.key">
+      <li v-for="app in listed" :key="app.key">
         <WorkshopAppCard :app />
       </li>
     </ul>
@@ -79,10 +84,6 @@ const hasMore = computed(() => apps.length > ROW_LIMIT)
             <WorkshopAppCard :app />
           </li>
         </CardRow>
-        <ComingSoonApps
-          :label="ac('comingSoon', locale)"
-          data-testid="app-coming-soon"
-        />
       </section>
       <button
         v-if="hasMore"
