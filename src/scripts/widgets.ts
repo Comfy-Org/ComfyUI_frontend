@@ -103,12 +103,6 @@ const HAS_EXECUTED = Symbol()
 
 const COMBO_ONLY_CONTROL_MODE = 'increment-wrap'
 
-/**
- * Every mode a value-control widget can hold, derived from the canonical list
- * so a mode added to `io.ControlAfterGenerate` and mirrored into the schema
- * cannot silently fall through {@link controlAfterGenerateNameOverride} and be
- * read as a widget name again.
- */
 const VALUE_CONTROL_MODES: readonly string[] = [
   ...CONTROL_OPTIONS,
   COMBO_ONLY_CONTROL_MODE
