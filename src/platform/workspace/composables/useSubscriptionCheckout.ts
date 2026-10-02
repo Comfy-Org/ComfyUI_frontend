@@ -105,11 +105,16 @@ type PreviewVariant =
   | 'personal-new'
   | null
 
+const BILLING_PORTAL_ORIGINS = new Set([
+  'https://billing.stripe.com',
+  'https://checkout.comfy.org'
+])
+
 function parseBillingPortalUrl(url: unknown): URL | null {
   if (typeof url !== 'string') return null
   try {
     const portalUrl = new URL(url)
-    return portalUrl.origin === 'https://billing.stripe.com' ? portalUrl : null
+    return BILLING_PORTAL_ORIGINS.has(portalUrl.origin) ? portalUrl : null
   } catch {
     return null
   }
@@ -594,7 +599,9 @@ export function useSubscriptionCheckout(
           readRail === null
             ? await workspaceApi.getBillingStatus()
             : await readOnRail(readRail.readStatus)
-        requiresRecovery = status?.billing_status === 'payment_failed'
+        requiresRecovery =
+          status?.billing_status === 'payment_failed' ||
+          status?.billing_status === 'paused'
       } catch {
         return null
       }

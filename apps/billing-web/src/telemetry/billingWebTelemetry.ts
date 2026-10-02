@@ -4,11 +4,15 @@ import type { WatchSource } from 'vue'
 
 import type {
   BillingTelemetryEvent,
-  BillingTelemetryEventName
+  BillingTelemetryEventName,
+  CheckoutJourneyTelemetryEvent,
+  CheckoutJourneyTelemetryEventName
 } from '@comfyorg/account-core/billing'
 import {
   getBillingTelemetryEventName,
-  getBillingWebTelemetryEventPayload
+  getBillingWebTelemetryEventPayload,
+  getCheckoutJourneyTelemetryEventName,
+  getCheckoutJourneyTelemetryEventPayload
 } from '@comfyorg/account-core/billing'
 import type { CloudTelemetryConfig } from '@comfyorg/account-core/firebase'
 import {
@@ -39,7 +43,7 @@ type PostHogClient = Pick<
 >
 
 interface BillingEvent {
-  readonly name: BillingTelemetryEventName
+  readonly name: BillingTelemetryEventName | CheckoutJourneyTelemetryEventName
   readonly properties: Readonly<Record<string, unknown>>
 }
 
@@ -187,17 +191,35 @@ export function createBillingWebTelemetry() {
     for (const event of waiting) attempt(() => capture(event))
   }
 
+  function send(event: BillingEvent): void {
+    attempt(() => addRumAction(event.name, event.properties))
+    capture(event)
+  }
+
   /**
    * One typed billing event to RUM and PostHog: the contract's allowlisted
    * payload, stamped with this surface.
    */
   function trackBillingEvent(event: BillingTelemetryEvent): void {
-    attempt(() => {
-      const name = getBillingTelemetryEventName(event)
-      const properties = getBillingWebTelemetryEventPayload(event)
-      attempt(() => addRumAction(name, properties))
-      capture({ name, properties })
-    })
+    attempt(() =>
+      send({
+        name: getBillingTelemetryEventName(event),
+        properties: getBillingWebTelemetryEventPayload(event)
+      })
+    )
+  }
+
+  /** One phase of the checkout journey, in the same stamped shape. */
+  function trackCheckoutJourneyEvent(event: CheckoutJourneyTelemetryEvent) {
+    attempt(() =>
+      send({
+        name: getCheckoutJourneyTelemetryEventName(event),
+        properties: {
+          ...getCheckoutJourneyTelemetryEventPayload(event),
+          billing_surface: 'billing_web'
+        }
+      })
+    )
   }
 
   /** The RUM user is the opaque id of the signed-in user, nothing else. */
@@ -205,7 +227,12 @@ export function createBillingWebTelemetry() {
     syncIdentity(RUM_USER, identity)
   }
 
-  return { startPostHog, startRumUser, trackBillingEvent }
+  return {
+    startPostHog,
+    startRumUser,
+    trackBillingEvent,
+    trackCheckoutJourneyEvent
+  }
 }
 
 export const billingWebTelemetry = createBillingWebTelemetry()

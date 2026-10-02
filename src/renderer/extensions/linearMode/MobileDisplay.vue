@@ -230,6 +230,7 @@ const menuEntries = computed<MenuItem[]>(() => [
           :aria-hidden="activeIndex !== 2"
           aria-labelledby="mobile-app-output-tab"
           :inert="activeIndex !== 2"
+          :closable="false"
         />
       </div>
     </div>

@@ -88,7 +88,7 @@ const clearButtonClass =
 </script>
 
 <template>
-  <div class="relative">
+  <div class="relative" data-testid="workshop-search-field">
     <button
       v-if="compact"
       ref="sheetTrigger"

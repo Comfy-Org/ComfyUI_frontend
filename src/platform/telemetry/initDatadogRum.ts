@@ -1,4 +1,4 @@
-// eslint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
+// oxlint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
 import { datadogRum } from '@datadog/browser-rum'
 
 import { COMFY_RUM_APPLICATION } from '@comfyorg/shared-frontend-utils/telemetry'

@@ -148,7 +148,10 @@
             {{ displayPrepaid }}
           </span>
         </div>
-        <span class="text-sm text-muted @max-[300px]:hidden">
+        <span
+          v-if="!isDurationUnknown"
+          class="text-sm text-muted @max-[300px]:hidden"
+        >
           {{ usedAfterAllowanceLabel }}
         </span>
       </div>
@@ -281,7 +284,19 @@ const isAnnualBilling = computed(
   () => subscription.value?.duration === 'ANNUAL'
 )
 
+// Paid plan with no reported duration: the allowance cycle is unknown, so no
+// total is shown rather than guessing monthly. Free has no duration by design,
+// and Founders Edition is a fixed monthly grant.
+const isDurationUnknown = computed(
+  () =>
+    !!subscription.value?.tier &&
+    !subscription.value.duration &&
+    tierKey.value !== 'free' &&
+    tierKey.value !== 'founder'
+)
+
 const creditPoolTotalCredits = computed<number | null>(() => {
+  if (isDurationUnknown.value) return null
   const monthlyCredits =
     currentTeamCreditStop.value?.credits_monthly ??
     (isSalesManagedTier(subscription.value?.tier)
@@ -433,11 +448,23 @@ const isMonthlyDepleted = computed(
     balance.value != null &&
     monthlyBonusCreditsValue.value <= 0
 )
+// Depletion needs only the remaining allowance, not its cycle, so the
+// cycle-neutral signals still work when the duration is unknown.
+const isAllowanceDepleted = computed(
+  () =>
+    isMonthlyDepleted.value ||
+    (isDurationUnknown.value &&
+      isCloud &&
+      showBreakdown.value &&
+      !isLoadingBalance.value &&
+      balance.value != null &&
+      monthlyBonusCreditsValue.value <= 0)
+)
 const isOutOfCredits = computed(
-  () => isMonthlyDepleted.value && prepaidCreditsValue.value <= 0
+  () => isAllowanceDepleted.value && prepaidCreditsValue.value <= 0
 )
 const isSpendingAdditional = computed(
-  () => isMonthlyDepleted.value && prepaidCreditsValue.value > 0
+  () => isAllowanceDepleted.value && prepaidCreditsValue.value > 0
 )
 
 const emptyStateNotice = computed(() => {

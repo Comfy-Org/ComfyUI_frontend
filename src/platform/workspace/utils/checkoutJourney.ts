@@ -426,6 +426,7 @@ function readPersistedJourney(): CheckoutJourneyRecord | null {
 
 const UI_MODES = {
   embedded: true,
+  full_page: true,
   hosted: true,
   unknown: true
 } satisfies Record<CheckoutUiMode, true>
