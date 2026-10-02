@@ -442,6 +442,60 @@ test('relights the Relight example from the floating panel', async ({
   )
 })
 
+test('zooms the Relight photo from the control, ctrl+wheel and the keys, and still drags a light', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/hub/apps/relight/')
+  const app = page.getByTestId('relight')
+  await app.getByRole('button', { name: 'Try the example' }).click()
+  const stage = app.getByTestId('relight-stage')
+  const percent = app.getByTestId('editor-zoom-fit')
+  await expect(percent).toHaveText('100%')
+  const fitted = await stage.boundingBox()
+  if (!fitted) throw new Error('no stage')
+
+  await app.getByRole('button', { name: 'Zoom in' }).click()
+  await expect(percent).toHaveText('125%')
+  await expect
+    .poll(async () => (await stage.boundingBox())?.width)
+    .toBeCloseTo(fitted.width * 1.25, 0)
+
+  const zoomed = await stage.boundingBox()
+  if (!zoomed) throw new Error('no stage')
+  const key = app.getByRole('button', { name: /^Warm key\./ })
+  const handle = await key.boundingBox()
+  if (!handle) throw new Error('no light')
+  await page.mouse.move(
+    handle.x + handle.width / 2,
+    handle.y + handle.height / 2
+  )
+  await page.mouse.down()
+  await page.mouse.move(
+    zoomed.x + zoomed.width / 2,
+    zoomed.y + zoomed.height / 2,
+    { steps: 6 }
+  )
+  await page.mouse.up()
+  await expect(key).toHaveAttribute('style', /left: (4[89]|5[0-2])/)
+
+  await page.mouse.move(
+    fitted.x + fitted.width / 2,
+    fitted.y + fitted.height / 2
+  )
+  await page.keyboard.down('Control')
+  await page.mouse.wheel(0, -100)
+  await page.keyboard.up('Control')
+  await expect(percent).not.toHaveText('125%')
+
+  await page.keyboard.press('0')
+  await expect(percent).toHaveText('100%')
+  await expect
+    .poll(async () => (await stage.boundingBox())?.width)
+    .toBeCloseTo(fitted.width, 0)
+})
+
 test('relights the Relight example from the bottom composer', async ({
   page,
   context

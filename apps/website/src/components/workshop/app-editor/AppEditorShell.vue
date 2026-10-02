@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ChevronLeft } from '@lucide/vue'
 import { useMediaQuery } from '@vueuse/core'
-import { useSlots } from 'vue'
+import { provide, useSlots, useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import { EDITOR_ZOOM, useEditorZoom } from '../../../composables/useEditorZoom'
 import { getRoutes } from '../../../config/routes'
 import type { Locale } from '../../../i18n/translations'
 import { t } from '../../../i18n/translations'
@@ -13,6 +14,7 @@ import AppRepoLink from '../cinematic-studio/AppRepoLink.vue'
 import EditorDock from './EditorDock.vue'
 import EditorDownload from './EditorDownload.vue'
 import EditorFloatingPanel from './EditorFloatingPanel.vue'
+import EditorZoom from './EditorZoom.vue'
 
 const {
   title,
@@ -40,6 +42,9 @@ const slots = useSlots()
 const wide = useMediaQuery('(min-width: 1024px)')
 const floating = () => Boolean(slots.panel && panelLabels)
 const dockOverSheet = () => floating() && !wide.value && !panelDimmed
+const zoom = useEditorZoom(useTemplateRef<HTMLElement>('canvas'))
+provide(EDITOR_ZOOM, zoom)
+const { frame } = zoom
 </script>
 
 <template>
@@ -51,9 +56,10 @@ const dockOverSheet = () => floating() && !wide.value && !panelDimmed
       class="relative flex min-h-0 flex-1 flex-col bg-black/30 bg-[radial-gradient(var(--color-transparency-white-t4)_1px,transparent_1px)] bg-size-[24px_24px]"
     >
       <div
+        ref="canvas"
         :class="
           cn(
-            'flex min-h-0 flex-1 items-start justify-center px-4 pt-16 pb-36 sm:px-8',
+            'flex min-h-0 flex-1 touch-none items-start justify-center px-4 pt-16 pb-36 sm:px-8',
             floating() &&
               'pb-52 lg:pr-6 lg:pb-20 lg:pl-[calc(var(--container-editor-panel)+1.5rem)]',
             floating() && panelDimmed && 'pb-24'
@@ -101,7 +107,7 @@ const dockOverSheet = () => floating() && !wide.value && !panelDimmed
       <div
         :class="
           cn(
-            'pointer-events-none absolute inset-x-0 bottom-4 flex flex-col items-center gap-2 px-3',
+            'pointer-events-none absolute inset-x-0 bottom-4 flex flex-col items-center gap-2 px-3 lg:pr-44',
             floating() &&
               'lg:left-[calc(var(--container-editor-panel)+0.75rem)]'
           )
@@ -115,6 +121,12 @@ const dockOverSheet = () => floating() && !wide.value && !panelDimmed
           </template>
         </EditorDock>
       </div>
+      <EditorZoom
+        v-if="frame"
+        :zoom
+        :locale
+        class="absolute right-16 bottom-4 max-lg:hidden"
+      />
       <EditorFloatingPanel
         v-if="floating() && panelLabels"
         :label="panelLabels.label"

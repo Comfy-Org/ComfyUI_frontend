@@ -3,9 +3,9 @@ import type { Relight } from '../../../composables/useRelight'
 import type { Locale } from '../../../i18n/translations'
 import { lc } from '../../../lib/workshop/relight/copy'
 import EditorTray from '../app-editor/EditorTray.vue'
-import RelightSeed from './RelightSeed.vue'
 import RelightTools from './RelightTools.vue'
-import { RELIGHT_SECTIONS, RELIGHT_TRAYS, sectionMeta } from './sections'
+import RelightTrayBody from './RelightTrayBody.vue'
+import { RELIGHT_TRAYS, sectionMeta } from './sections'
 
 const { relight, locale = 'en' } = defineProps<{
   relight: Relight
@@ -30,15 +30,7 @@ const { tray } = relight
         }}</span>
         <RelightTools v-if="open.id === 'lights'" :relight :locale compact />
       </template>
-      <template v-for="section in RELIGHT_SECTIONS" :key="section.id">
-        <component
-          :is="section.content"
-          v-if="section.tray === open.id"
-          :relight
-          :locale
-        />
-      </template>
-      <RelightSeed v-if="open.id === 'generation'" :relight :locale />
+      <RelightTrayBody :tray="open.id" :relight :locale />
     </EditorTray>
   </template>
 </template>
