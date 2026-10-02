@@ -194,7 +194,7 @@ function querySlotElements(
   container: Element,
   selector: string
 ): HTMLElement[] {
-  // eslint-disable-next-line testing-library/no-node-access
+  // oxlint-disable-next-line testing-library/no-node-access
   const nodes = container.querySelectorAll(selector)
   return Array.from(nodes).filter(
     (el): el is HTMLElement => el instanceof HTMLElement
@@ -206,7 +206,7 @@ function getRenderedSlotIndex(container: Element, slotName: string) {
 }
 
 function getRenderedSlotElement(container: Element, slotName: string) {
-  // eslint-disable-next-line testing-library/no-node-access
+  // oxlint-disable-next-line testing-library/no-node-access
   const el = container.querySelector(`[data-name="${slotName}"]`)
   if (!(el instanceof HTMLElement)) {
     throw new Error(`Slot element "${slotName}" not found`)
@@ -384,7 +384,7 @@ describe('NodeSlots.vue', () => {
       }
     ])
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('[data-name="objWithWidget"]')).toBeNull()
   })
 

@@ -31,8 +31,12 @@ const translations = {
     'zh-CN': 'ComfyUI 模型'
   },
   'workshop.catalogue.directory': {
-    en: 'All models A to Z',
-    'zh-CN': '全部模型（A 到 Z）'
+    en: 'All models by provider',
+    'zh-CN': '全部模型（按提供商）'
+  },
+  'workshop.catalogue.directoryCount': {
+    en: '{count} models',
+    'zh-CN': '{count} 个模型'
   },
   'workshop.catalogue.apps': { en: 'Apps', 'zh-CN': '应用' },
   'workshop.catalogue.eyebrow': { en: 'Hub', 'zh-CN': 'Hub' },
@@ -9927,6 +9931,14 @@ Enterprise`
     'zh-CN': '选择一个额度，或自定义金额。'
   },
   'workshop.credits.continue': { en: 'Continue', 'zh-CN': '继续' },
+  'workshop.credits.subscriptionPrompt': {
+    en: 'Want more credits every month?',
+    'zh-CN': '想每月获得更多积分？'
+  },
+  'workshop.credits.subscriptionLink': {
+    en: 'View Cloud subscription plans',
+    'zh-CN': '查看 Cloud 订阅方案'
+  },
   'workshop.credits.custom': {
     en: 'Custom · $5 – $4,739',
     'zh-CN': '自定义 · $5 – $4,739'

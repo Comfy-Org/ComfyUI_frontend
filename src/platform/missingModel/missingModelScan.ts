@@ -5,7 +5,7 @@ import { flattenWorkflowNodes } from '@/platform/workflow/core/utils/workflowFla
 import type { MissingModelCandidate, MissingModelViewModel } from './types'
 import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-// eslint-disable-next-line import-x/no-restricted-paths
+// oxlint-disable-next-line comfy/no-restricted-paths
 import { getSelectedModelsMetadata } from '@/workbench/utils/modelMetadataUtil'
 import {
   inputForWidget,

@@ -106,6 +106,8 @@ export type {
 export { BILLING_STATUS_ROUTE, createBillingStatusReader } from './status.js'
 export type {
   BillingAuthenticationState,
+  BillingChargeBreakdown,
+  BillingChargeReason,
   BillingDeclineReason,
   BillingOpStatus,
   BillingOperationEvent,
@@ -168,6 +170,7 @@ export {
   operationRoute
 } from './operationLifecycle.js'
 export { BILLING_OPERATION_TELEMETRY_EVENT } from '../../telemetry.js'
+export * from './telemetry/index.js'
 export type {
   EmbeddedChallengeOutcome,
   EmbeddedChallengePort
@@ -224,6 +227,7 @@ export type {
   HostedTopupCheckout,
   HostedTopupCheckoutFailure,
   HostedTopupCheckoutResult,
+  QuoteTopupInput,
   TopupCommand,
   TopupCommandOptions,
   TopupDeclined,
@@ -233,12 +237,15 @@ export type {
   TopupInvalidReturnUrl,
   TopupNoPaymentMethod,
   TopupNotAvailable,
+  TopupQuote,
+  TopupQuoteResult,
   TopupResult,
   TopupSucceeded,
   TopupUnsettled
 } from './topup.js'
 export {
   TOPUP_CHECKOUT_ROUTE,
+  TOPUP_QUOTE_ROUTE,
   TOPUP_ROUTE,
   createTopupCommand
 } from './topup.js'

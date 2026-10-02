@@ -50,7 +50,12 @@ const FIREBASE_CONFIG = {
   appId: '1:1:web:1'
 }
 
-function stubCloud(state: FakeWebSessionState) {
+interface CloudOverrides {
+  readonly workspace?: () => Response
+  readonly createSession?: () => Response
+}
+
+function stubCloud(state: FakeWebSessionState, overrides: CloudOverrides = {}) {
   const endpoint = createFakeWebSessionEndpoint({ state })
   const sent: { path: string; workspace: string | null }[] = []
   vi.stubGlobal(
@@ -67,6 +72,16 @@ function stubCloud(state: FakeWebSessionState) {
               : { web_session_probe: true, firebase_config: FIREBASE_CONFIG }
           )
         )
+      }
+      if (pathname === '/api/workspaces/current' && overrides.workspace) {
+        return overrides.workspace()
+      }
+      if (
+        pathname === '/api/auth/session' &&
+        init.method === 'POST' &&
+        overrides.createSession
+      ) {
+        return overrides.createSession()
       }
       if (pathname === '/api/workspaces/current') {
         return new Response(
@@ -87,13 +102,23 @@ function stubCloud(state: FakeWebSessionState) {
 /** The router plus the sign-in page's controller, as `SignInView` wires them. */
 async function arriveAt(path: string) {
   vi.resetModules()
-  const [{ createBillingRouter }, { useSignInController }, auth, returnTo] =
-    await Promise.all([
-      import('@/router'),
-      import('@/auth/useSignInController'),
-      import('@/session/billingWebAuth'),
-      import('@/auth/returnTo')
-    ])
+  const [
+    { createBillingRouter },
+    { useSignInController },
+    auth,
+    returnTo,
+    { billingWebTelemetry }
+  ] = await Promise.all([
+    import('@/router'),
+    import('@/auth/useSignInController'),
+    import('@/session/billingWebAuth'),
+    import('@/auth/returnTo'),
+    import('@/telemetry/billingWebTelemetry')
+  ])
+  const track = vi
+    .spyOn(billingWebTelemetry, 'trackBillingEvent')
+    .mockImplementation(() => undefined)
+  const events = () => track.mock.calls.map(([event]) => event)
   const router = createBillingRouter(createMemoryHistory())
   await router.push(path)
   const signInPage = useSignInController(() => {
@@ -101,7 +126,7 @@ async function arriveAt(path: string) {
       returnTo.safeReturnTo(router.currentRoute.value.query.returnTo)
     )
   }, auth.billingWebSignInPort())
-  return { router, signInPage }
+  return { router, signInPage, events }
 }
 
 beforeEach(() => {
@@ -141,4 +166,137 @@ describe('billing-web with unified_web_session on', () => {
       expect(router.currentRoute.value.fullPath).toBe(CHECKOUT)
     )
   })
+})
+
+describe('billing-web with unified_web_session on, as a funnel', () => {
+  const RECEIVED = {
+    operation: 'web_entry',
+    stage: 'received',
+    outcome: 'pending',
+    intent: 'checkout',
+    product: 'comfyui',
+    has_plan: true
+  }
+
+  it('reports a Cloud session as established, with no sign-in screen', async () => {
+    stubCloud({ kind: 'live', user: fakeWebSessionUser() })
+
+    const { router, signInPage, events } = await arriveAt(CHECKOUT)
+
+    await vi.waitFor(() =>
+      expect(router.currentRoute.value.fullPath).toBe(CHECKOUT)
+    )
+    expect(signInPage.leaving.value).toBe(true)
+    expect(events()).toEqual([
+      RECEIVED,
+      {
+        operation: 'web_session',
+        stage: 'established',
+        outcome: 'pending',
+        origin: 'restored',
+        mode: 'web-session'
+      }
+    ])
+  })
+
+  it('reports a second sign-in as required, then established interactively', async () => {
+    stubCloud({ kind: 'dead', code: 'no_session' })
+
+    const { router, signInPage, events } = await arriveAt(CHECKOUT)
+    await vi.waitFor(() => expect(signInPage.available.value).toBe(true))
+    await signInPage.signInWith('google')
+
+    await vi.waitFor(() =>
+      expect(router.currentRoute.value.fullPath).toBe(CHECKOUT)
+    )
+    expect(events()).toEqual([
+      RECEIVED,
+      {
+        operation: 'web_session',
+        stage: 'signin_required',
+        outcome: 'pending',
+        reason: 'no_session'
+      },
+      {
+        operation: 'web_session',
+        stage: 'established',
+        outcome: 'pending',
+        origin: 'interactive',
+        mode: 'web-session'
+      }
+    ])
+  })
+
+  it('reports a refused workspace as sign-in required and the session as failed with its code', async () => {
+    stubCloud(
+      { kind: 'live', user: fakeWebSessionUser() },
+      {
+        workspace: () =>
+          new Response(
+            JSON.stringify({
+              code: 'workspace_access_denied',
+              message: 'denied'
+            }),
+            { status: 403 }
+          )
+      }
+    )
+
+    const { events } = await arriveAt(CHECKOUT)
+
+    await vi.waitFor(() => expect(events()).toHaveLength(3))
+    expect(events()).toEqual([
+      RECEIVED,
+      {
+        operation: 'web_session',
+        stage: 'signin_required',
+        outcome: 'pending',
+        reason: 'refused'
+      },
+      {
+        operation: 'web_session',
+        stage: 'failed',
+        outcome: 'pending',
+        error_code: 'ACCESS_DENIED'
+      }
+    ])
+  })
+
+  it.for([
+    { name: 'an outage', status: 503, code: 'TOKEN_EXCHANGE_FAILED' },
+    {
+      name: 'a refused credential',
+      status: 401,
+      code: 'INVALID_FIREBASE_TOKEN'
+    }
+  ])(
+    'reports the code of a shared session $name refuses to create',
+    async ({ status, code }) => {
+      stubCloud(
+        { kind: 'dead', code: 'no_session' },
+        { createSession: () => new Response('{}', { status }) }
+      )
+
+      const { signInPage, events } = await arriveAt(CHECKOUT)
+      await vi.waitFor(() => expect(signInPage.available.value).toBe(true))
+      await signInPage.signInWith('google')
+
+      await vi.waitFor(() => expect(events()).toHaveLength(3))
+      expect(events()).toEqual([
+        RECEIVED,
+        {
+          operation: 'web_session',
+          stage: 'signin_required',
+          outcome: 'pending',
+          reason: 'no_session'
+        },
+        {
+          operation: 'web_session',
+          stage: 'failed',
+          outcome: 'pending',
+          error_code: code
+        }
+      ])
+    }
+  )
 })

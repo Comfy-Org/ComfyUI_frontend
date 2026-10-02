@@ -12,10 +12,11 @@ import type {
 } from '@/checkout/checkoutPage'
 import { waitingOn } from '@/checkout/checkoutPage'
 
-/** The code Plan not available shows support: the catalog's verdict on a retired slug, or a link that could not be read. */
+/** The code a link's 404 shows support: the catalog's verdict on a retired slug, or a link that could not be read. */
 const PLAN_UNAVAILABLE_CODE: Readonly<Record<PlanUnavailableReason, string>> = {
   retired: 'PLAN_NOT_FOUND',
   team_stop_missing: 'CHECKOUT_LINK_INVALID',
+  amount_invalid: 'CHECKOUT_LINK_INVALID',
   unreadable: 'CHECKOUT_LINK_INVALID'
 }
 
@@ -51,7 +52,12 @@ const REFUSAL_COPY: Readonly<Record<CapabilityDenialReason, RefusalCopy>> = {
  * whose credits are still landing.
  */
 export type EndingScreen =
-  | { readonly kind: 'success'; readonly receipt?: BillingOperationReceipt }
+  | {
+      readonly kind: 'success'
+      /** A top-up bought credits, so its Success names no plan. */
+      readonly purchase?: 'credits'
+      readonly receipt?: BillingOperationReceipt
+    }
   | {
       readonly kind: 'completed'
       readonly code?: string
@@ -81,6 +87,8 @@ export type EndingScreen =
       readonly scheduled: ScheduledChange
     }
   | { readonly kind: 'plan_unavailable'; readonly code: string }
+  /** A top-up link with no amount to quote: there is no plan to offer instead. */
+  | { readonly kind: 'link_invalid'; readonly code: string }
   | {
       readonly kind: 'load_failed'
       readonly cause: LoadFailure
@@ -98,7 +106,10 @@ export function endingOf(page: CheckoutPage): EndingScreen | undefined {
       return { kind: 'load_failed', cause: page.cause, code: page.code }
     case 'plan_unavailable':
       return {
-        kind: 'plan_unavailable',
+        kind:
+          page.reason === 'amount_invalid'
+            ? 'link_invalid'
+            : 'plan_unavailable',
         code: PLAN_UNAVAILABLE_CODE[page.reason]
       }
     case 'unconfirmed':
@@ -145,22 +156,36 @@ const TERMINAL_KIND = {
   settled: 'already_completed'
 } as const
 
+type SettledOperation = NonNullable<
+  Extract<CheckoutPage, { kind: 'terminal' }>['operation']
+>
+
+function receiptOf(operation: SettledOperation | undefined) {
+  return operation?.phase === 'succeeded' && operation.receipt !== undefined
+    ? { receipt: operation.receipt }
+    : {}
+}
+
+function successEnding(operation: SettledOperation | undefined): EndingScreen {
+  return {
+    kind: 'success',
+    ...(operation?.kind === 'topup' ? { purchase: 'credits' } : {}),
+    ...receiptOf(operation)
+  }
+}
+
 function terminalEnding(
   page: Extract<CheckoutPage, { kind: 'terminal' }>
 ): EndingScreen {
   const { operation } = page
-  const receipt =
-    operation?.phase === 'succeeded' && operation.receipt !== undefined
-      ? { receipt: operation.receipt }
-      : {}
   if (operation !== undefined && isGrantLanding(operation))
-    return { kind: 'received', code: operation.id, ...receipt }
+    return { kind: 'received', code: operation.id, ...receiptOf(operation) }
   if (page.attribution === 'started' || page.attribution === 'returned')
-    return { kind: 'success', ...receipt }
+    return successEnding(operation)
   const kind = TERMINAL_KIND[page.attribution]
   return operation === undefined
     ? { kind }
-    : { kind, code: operation.id, ...receipt }
+    : { kind, code: operation.id, ...receiptOf(operation) }
 }
 
 /**
@@ -209,7 +234,14 @@ function landingRows(receipt: BillingOperationReceipt): ReceiptRow[] {
 export function endingReceipt(screen: EndingScreen): EndingReceipt {
   switch (screen.kind) {
     case 'success':
-      return { namesPlan: true, rows: [], rowsReplaceCode: false }
+      return screen.purchase === 'credits'
+        ? {
+            namesPlan: false,
+            rows:
+              screen.receipt === undefined ? [] : settledRows(screen.receipt),
+            rowsReplaceCode: false
+          }
+        : { namesPlan: true, rows: [], rowsReplaceCode: false }
     case 'completed':
     case 'already_completed': {
       const receipt = screen.receipt

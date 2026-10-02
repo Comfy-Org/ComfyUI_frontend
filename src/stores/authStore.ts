@@ -18,7 +18,10 @@ import { t } from '@/i18n'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch'
-import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
+import {
+  webSessionRequests,
+  webSessionResourceHeader
+} from '@/platform/auth/session/webSessionFetch'
 import { fetchWithUnifiedRemint } from '@/platform/auth/unified/remintRetry'
 import { DISTRIBUTION, isCloud } from '@/platform/distribution/types'
 import { clearOnboardingReplay } from '@/platform/onboarding/onboardingReplay'
@@ -340,6 +343,10 @@ export const useAuthStore = defineStore('auth', () => {
       ? useApiKeyAuthStore().getAuthHeader()
       : await getFirebaseAuthHeader()
 
+  const getCustomerAuthHeader = async (): Promise<Readonly<
+    Record<string, string>
+  > | null> => (await webSessionResourceHeader()) ?? (await getUserAuthHeader())
+
   const currentUserIdentity = (): string | null =>
     sessionUser.value?.id ??
     currentUser.value?.uid ??
@@ -370,6 +377,7 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const getWorkspaceAuthHeader = async (): Promise<AuthHeader | null> => {
     if (flags.unifiedCloudAuthEnabled) {
+      if (await awaitUnifiedMint()) return null
       const token = useWorkspaceAuthStore().getUnifiedToken()
       return token ? { Authorization: `Bearer ${token}` } : null
     }
@@ -489,7 +497,7 @@ export const useAuthStore = defineStore('auth', () => {
       currentUserIdentity() === requestOwner &&
       currentUserCredentialIdentity() === requestCredential
     try {
-      const authHeader = await getUserAuthHeader()
+      const authHeader = await getCustomerAuthHeader()
       if (!authHeader) {
         throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
       }
@@ -545,7 +553,7 @@ export const useAuthStore = defineStore('auth', () => {
     const sessionIdentity = completedUser?.uid ?? currentUserIdentity()
     const authHeader = completedUser
       ? headerFromToken(await completedUser.getIdToken())
-      : await getUserAuthHeader()
+      : await getCustomerAuthHeader()
     if (!authHeader) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
@@ -808,7 +816,7 @@ export const useAuthStore = defineStore('auth', () => {
     requestBodyContent: CreditPurchasePayload
   ): Promise<CreditPurchaseResponse> => {
     const requestOwner = currentUserIdentity()
-    const authHeader = await getUserAuthHeader()
+    const authHeader = await getCustomerAuthHeader()
     if (!authHeader) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
@@ -860,7 +868,7 @@ export const useAuthStore = defineStore('auth', () => {
     targetTier?: BillingPortalTargetTier
   ): Promise<AccessBillingPortalResponse> => {
     const requestOwner = currentUserIdentity()
-    const authHeader = await getUserAuthHeader()
+    const authHeader = await getCustomerAuthHeader()
     if (!authHeader) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }

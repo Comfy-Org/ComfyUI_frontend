@@ -1,3 +1,4 @@
+import { CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE } from '@comfyorg/account-core/billing'
 import type { OverridedMixpanel } from 'mixpanel-browser'
 import { omit } from 'es-toolkit'
 import { watch } from 'vue'
@@ -43,11 +44,7 @@ import type {
 } from '../../types'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import {
-  CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE,
-  OnboardingTourEvents,
-  TelemetryEvents
-} from '../../types'
+import { OnboardingTourEvents, TelemetryEvents } from '../../types'
 import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
 
 const DEFAULT_DISABLED_EVENTS = [
