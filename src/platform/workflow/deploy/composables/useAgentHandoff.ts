@@ -1,7 +1,7 @@
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { t } from '@/i18n'
-import { DISTRIBUTION, isCloud } from '@/platform/distribution/types'
+import { DISTRIBUTION } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import {
@@ -18,7 +18,7 @@ const UNTITLED_WORKFLOW_NAME = 'workflow'
 /**
  * The brief a coding agent gets for the open workflow. Both the inputs and
  * the document are read off the graph at the moment they are asked for, so
- * the file that travels with a Cloud brief is the graph the brief describes.
+ * the file that travels with the brief is the graph the brief describes.
  */
 export function useAgentHandoff() {
   const workflowStore = useWorkflowStore()
@@ -71,8 +71,8 @@ export function useAgentHandoff() {
 
   /**
    * The clipboard write comes first: it needs the click's user activation,
-   * which a download prompt would spend. The Cloud file is written under the
-   * name the brief gives it, without the export filename prompt, for the
+   * which a download prompt would spend. The workflow file, downloaded
+   * everywhere but Desktop, is written under the name the brief gives it, without the export filename prompt, for the
    * same reason.
    */
   async function copyBrief(): Promise<boolean> {
@@ -89,7 +89,7 @@ export function useAgentHandoff() {
         })
         return false
       }
-      if (isCloud) {
+      if (DISTRIBUTION !== 'desktop') {
         downloadBlob(
           inputs.workflowFileName,
           new Blob([JSON.stringify(graph, null, 2)], {

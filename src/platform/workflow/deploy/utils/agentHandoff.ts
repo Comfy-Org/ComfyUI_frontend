@@ -43,7 +43,7 @@ function codeSpan(value: string): string {
 }
 
 /**
- * The name the Cloud brief gives the downloaded workflow file, and the name
+ * The name the brief gives the downloaded workflow file, and the name
  * the file is written under: one value, so the agent looks for the file the
  * browser actually wrote. Backticks and path separators are dropped because
  * they cannot survive both a download name and a code span unchanged.
@@ -91,34 +91,47 @@ function buildName(inputs: BuildInputs): string {
   return `Name the Build ${codeSpan(inputs.workflowName)}.`
 }
 
+function downloadedFile(inputs: BuildInputs): string {
+  return `The browser downloaded the workflow as ${codeSpan(inputs.workflowFileName)}, most likely to the download directory.`
+}
+
+const UPLOAD_YES = `Tell the user that, and wait for a yes before you run it.`
+
 function cloudPath(inputs: BuildInputs): string {
-  return `## Your path: B, from the workflow file
+  return `## Your path: create from the workflow file
 
-This workflow lives in Comfy Cloud, so there is no install to scan. The browser
-downloaded it as ${codeSpan(inputs.workflowFileName)}, most likely to the
-download directory. ${buildName(inputs)}
+This workflow lives in Comfy Cloud, so there is no install to scan.
+${downloadedFile(inputs)} ${buildName(inputs)}
 
-The recipe's import sends the whole workflow JSON to the Comfy builder. Tell the
-user that, and wait for a yes before you run it.`
+The recipe's import sends the whole workflow JSON to the Comfy builder.
+${UPLOAD_YES}`
 }
 
 function localhostPath(inputs: BuildInputs): string {
-  return `## Your path: A, from this install
+  return `## Your path: create from the install, or from the workflow file
 
-ComfyUI runs on this machine, so build from that install; nothing is uploaded
-to start. ${buildName(inputs)}`
+This ComfyUI may run on the machine you are on, or on another one, such as a
+rented GPU server. ${buildName(inputs)}
+
+- When ComfyUI is installed on the machine you are running on, build from that
+  install; nothing is uploaded to start.
+- Otherwise, build from the workflow file. ${downloadedFile(inputs)} The
+  recipe's import sends the whole workflow JSON to the Comfy builder.
+  ${UPLOAD_YES}
+
+When you cannot tell which, ask the user.`
 }
 
 function desktopPath(inputs: BuildInputs): string {
-  return `## Your path: A′, from the Desktop snapshot
+  return `## Your path: create from the Desktop snapshot
 
 This is Comfy Desktop. Its install is the ComfyUI base path Desktop was set up
 with, \`~/Documents/ComfyUI\` unless the user chose another directory; ask when
 it is not there. Use the newest snapshot in its \`.launcher/snapshots\`
 directory. ${buildName(inputs)}
 
-The recipe's import sends the whole snapshot JSON to the Comfy builder. Tell the
-user that, and wait for a yes before you run it.`
+The recipe's import sends the whole snapshot JSON to the Comfy builder.
+${UPLOAD_YES}`
 }
 
 const PATH_BY_DISTRIBUTION: Record<
@@ -176,9 +189,9 @@ listed here, and tell the user about any it does not.`
 function consent(): string {
   return `## Where the user decides
 
-Before anything is pushed or cut, go through the recipe's "Before you cut" with
-the user, and wait for a yes. A yes covers one cut: before every retry, tell the
-user the cause, the exact edit and which cut this is, and wait for a new yes.
+Before the first cut, go through the recipe's "Before you cut" with the user,
+and wait for a yes. After that, fix and re-cut on your own within the recipe's
+limits, and tell the user what each retry changed.
 
 The user means to deploy this Build later, so cut the target the recipe says a
 deployment needs.`

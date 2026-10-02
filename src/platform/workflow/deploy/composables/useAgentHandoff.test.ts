@@ -10,12 +10,9 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
-const distribution = vi.hoisted(
-  (): { DISTRIBUTION: Distribution; isCloud: boolean } => ({
-    DISTRIBUTION: 'cloud',
-    isCloud: true
-  })
-)
+const distribution = vi.hoisted((): { DISTRIBUTION: Distribution } => ({
+  DISTRIBUTION: 'cloud'
+}))
 vi.mock(import('@/platform/distribution/types'), () => distribution)
 
 const copyToClipboard = vi.hoisted(() =>
@@ -51,7 +48,6 @@ function setActiveWorkflow(
 describe('useAgentHandoff', () => {
   beforeEach(() => {
     distribution.DISTRIBUTION = 'cloud'
-    distribution.isCloud = true
   })
 
   it('copies the brief for the workflow open at the click, then downloads that same graph under the name the brief gives', async () => {
@@ -68,7 +64,9 @@ describe('useAgentHandoff', () => {
       { toastOnSuccess: false }
     )
     expect(copyToClipboard).toHaveBeenCalledWith(
-      expect.stringContaining('downloaded it as `portrait-upscale.json`'),
+      expect.stringContaining(
+        'downloaded the workflow as `portrait-upscale.json`'
+      ),
       expect.anything()
     )
     expect(copyToClipboard).toHaveBeenCalledWith(
@@ -100,28 +98,24 @@ describe('useAgentHandoff', () => {
   it.for([
     {
       distribution: 'localhost' as const,
-      recipe: '## Your path: A, from this install',
-      other: '## Your path: A′'
+      path: '## Your path: create from the install, or from the workflow file',
+      downloads: 1
     },
     {
       distribution: 'desktop' as const,
-      recipe: '## Your path: A′, from the Desktop snapshot',
-      other: '## Your path: A,'
+      path: '## Your path: create from the Desktop snapshot',
+      downloads: 0
     }
   ])(
-    'sends $distribution its own recipe and downloads nothing',
-    async ({ distribution: target, recipe, other }) => {
+    'sends $distribution its own path, downloading the workflow $downloads times',
+    async ({ distribution: target, path, downloads }) => {
       distribution.DISTRIBUTION = target
-      distribution.isCloud = false
       setActiveWorkflow()
 
       await expect(useAgentHandoff().copyBrief()).resolves.toBe(true)
 
-      const brief = String(copyToClipboard.mock.lastCall?.[0])
-      expect(brief).toContain(recipe)
-      expect(brief).not.toContain(other)
-      expect(brief).not.toContain('## Your path: B')
-      expect(downloadBlob).not.toHaveBeenCalled()
+      expect(String(copyToClipboard.mock.lastCall?.[0])).toContain(path)
+      expect(downloadBlob).toHaveBeenCalledTimes(downloads)
     }
   )
 
@@ -281,7 +275,7 @@ describe('useAgentHandoff', () => {
     await useAgentHandoff().copyBrief()
 
     expect(copyToClipboard).toHaveBeenCalledWith(
-      expect.stringContaining('downloaded it as `releasev2.json`'),
+      expect.stringContaining('downloaded the workflow as `releasev2.json`'),
       expect.anything()
     )
     expect(vi.mocked(downloadBlob).mock.calls[0][0]).toBe('releasev2.json')
