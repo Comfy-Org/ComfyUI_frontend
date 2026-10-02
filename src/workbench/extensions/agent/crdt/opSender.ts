@@ -361,6 +361,24 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     transmit(inFlight, 0)
   }
 
+  function settleUnsendableAdmission(
+    minted: Op[],
+    workflowId: string | null
+  ): boolean {
+    if (detached) {
+      notifyDetachSettlement({ state: 'undeliverable', ops: minted })
+      return true
+    }
+    if (workflowId === null) {
+      guardedSettlementNotifier('failure_settling_agent_op_sender')({
+        state: 'undeliverable',
+        ops: minted
+      })
+      return true
+    }
+    return false
+  }
+
   function admit(operations: GraphOperation[]): void {
     if (operations.length === 0) return
     const admissionEpoch = ++stateEpoch
@@ -375,20 +393,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       mintWireOps([operation], { actor, baseVersion: baseVersion + index })
     )
     lastMintedVersion = baseVersion + minted.length - 1
-    if (detached) {
-      notifyDetachSettlement({
-        state: 'undeliverable',
-        ops: minted
-      })
-      return
-    }
-    if (workflowId === null) {
-      guardedSettlementNotifier('failure_settling_agent_op_sender')({
-        state: 'undeliverable',
-        ops: minted
-      })
-      return
-    }
+    if (settleUnsendableAdmission(minted, workflowId)) return
     // seal() can synchronously re-enter the sender through its settlement
     // callback. Do not resurrect an aborted admission or append old-workflow
     // ops to state installed by a nested admit().
