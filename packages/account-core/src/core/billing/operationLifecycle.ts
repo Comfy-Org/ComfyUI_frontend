@@ -17,7 +17,11 @@
  * contract is new.
  */
 
-import { BILLING_OPERATION_TELEMETRY_EVENT } from '../../telemetry.js'
+import type {
+  BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT} from '../../telemetry.js';
+import {
+  BILLING_OPERATION_TELEMETRY_EVENT
+} from '../../telemetry.js'
 import type {
   BillingFailure,
   BillingResult,
@@ -90,8 +94,12 @@ export type BillingOperationFailureCategory =
   | 'reconciliation_needed'
   | 'stale_operation'
 
+type BillingOperationTelemetryEventName =
+  | (typeof BILLING_OPERATION_TELEMETRY_EVENT)[keyof typeof BILLING_OPERATION_TELEMETRY_EVENT]
+  | (typeof BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT)[keyof typeof BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT]
+
 export interface BillingOperationTelemetryEvent {
-  readonly name: (typeof BILLING_OPERATION_TELEMETRY_EVENT)[keyof typeof BILLING_OPERATION_TELEMETRY_EVENT]
+  readonly name: BillingOperationTelemetryEventName
   readonly billing_op_id: string
   readonly operation_type: BillingOperationKind
   readonly presentation: BillingPresentation
