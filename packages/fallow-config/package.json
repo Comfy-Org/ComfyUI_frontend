@@ -2,7 +2,7 @@
   "name": "@comfyorg/fallow-config",
   "version": "0.0.1",
   "description": "Shared Comfy Fallow audit policy",
-  "license": "GPL-3.0",
+  "license": "GPL-3.0-only",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Comfy-Org/ComfyUI_frontend.git",
@@ -11,12 +11,7 @@
   "files": [
     "fallow.json"
   ],
-  "type": "module",
   "main": "./fallow.json",
-  "exports": {
-    ".": "./fallow.json",
-    "./package.json": "./package.json"
-  },
   "publishConfig": {
     "access": "public"
   },
