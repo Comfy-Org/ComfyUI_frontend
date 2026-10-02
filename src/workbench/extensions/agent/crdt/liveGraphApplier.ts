@@ -207,9 +207,9 @@ function shapeAtPath(
   let cursor: unknown = root
   for (const [depth, key] of path.entries()) {
     if (cursor === null || typeof cursor !== 'object') return 'unreachable'
-    if (!Object.hasOwn(cursor, String(key)))
+    if (!Object.hasOwn(cursor, key))
       return depth === path.length - 1 ? 'absent' : 'unreachable'
-    cursor = (cursor as Record<string, unknown>)[String(key)]
+    cursor = Reflect.get(cursor, key)
   }
   return valueShape(cursor)
 }
