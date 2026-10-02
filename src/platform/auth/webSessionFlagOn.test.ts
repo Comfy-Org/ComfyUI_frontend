@@ -544,6 +544,7 @@ function installIngest(features: Record<string, boolean> = {}) {
   const ingest = {
     userId: 'user-a',
     csrfToken: 'csrf-1',
+    sessionDown: false,
     refusals: [] as string[],
     mintRefusal: undefined as (() => Response) | undefined,
     mintGate: undefined as Promise<void> | undefined,
@@ -611,14 +612,17 @@ function installIngest(features: Record<string, boolean> = {}) {
     )
   }
 
+  const answerSession = (): Response =>
+    ingest.sessionDown
+      ? jsonResponse({ code: 'unavailable', message: 'down' }, 503)
+      : jsonResponse({
+          ...sessionBody(ingest.userId),
+          csrf_token: ingest.csrfToken
+        })
+
   const respond = (request: ApiRequest, body: unknown): Response => {
     const { path, headers } = request
-    if (path === '/api/auth/session') {
-      return jsonResponse({
-        ...sessionBody(ingest.userId),
-        csrf_token: ingest.csrfToken
-      })
-    }
+    if (path === '/api/auth/session') return answerSession()
     if (path === '/api/auth/token') return mint(body)
     if (path === '/api/workspaces/current') {
       if (ingest.currentWorkspaceDown) return ingest.currentWorkspaceDown()
@@ -757,31 +761,44 @@ describe('cloud API requests on the shared web session', () => {
     {
       name: 'the same user is re-read once and retried once with the fresh token',
       sessionUser: 'user-a',
+      sessionDown: false,
       status: 200,
       tokens: ['csrf-1', 'session', 'csrf-2', 'csrf-2']
     },
     {
-      name: 'a changed user abandons the request',
+      name: 'a changed user abandons the request and the tab follows the new account',
       sessionUser: 'user-b',
+      sessionDown: false,
+      status: 403,
+      tokens: ['csrf-1', 'session', 'csrf-2']
+    },
+    {
+      name: 'a failed re-read abandons the request',
+      sessionUser: 'user-a',
+      sessionDown: true,
       status: 403,
       tokens: ['csrf-1', 'session', 'csrf-1']
     }
-  ])('csrf_invalid: $name', async ({ sessionUser, status, tokens }) => {
-    const ingest = await bootOnSession()
-    ingest.refusals.push('csrf_invalid')
-    ingest.userId = sessionUser
-    ingest.csrfToken = 'csrf-2'
+  ])(
+    'csrf_invalid: $name',
+    async ({ sessionUser, sessionDown, status, tokens }) => {
+      const ingest = await bootOnSession()
+      ingest.refusals.push('csrf_invalid')
+      ingest.userId = sessionUser
+      ingest.sessionDown = sessionDown
+      ingest.csrfToken = 'csrf-2'
 
-    const response = await postPrompt()
-    await postPrompt()
+      const response = await postPrompt()
+      await postPrompt()
 
-    expect(response.status).toBe(status)
-    expect(
-      ingest.requests.map(({ path, headers }) =>
-        path === '/api/auth/session' ? 'session' : headers['x-csrf-token']
-      )
-    ).toEqual(tokens)
-  })
+      expect(response.status).toBe(status)
+      expect(
+        ingest.requests.map(({ path, headers }) =>
+          path === '/api/auth/session' ? 'session' : headers['x-csrf-token']
+        )
+      ).toEqual(tokens)
+    }
+  )
 
   it('workspace_access_denied drops the selection and is never replayed', async () => {
     const ingest = await bootOnSession()
