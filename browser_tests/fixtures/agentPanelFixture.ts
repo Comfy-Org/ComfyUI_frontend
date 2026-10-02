@@ -32,6 +32,8 @@ function agentFeatures(agentFlag: boolean): RemoteConfig {
 interface BootAgentAppOptions {
   /** Extra `/api/settings` entries layered over the panel defaults. */
   settings?: Record<string, unknown>
+  /** Extra authenticated `/api/features` values layered over panel defaults. */
+  features?: Partial<RemoteConfig>
   /** Server definitions, optionally augmented with deterministic test entries. */
   objectInfo?: 'server' | Record<string, ComfyNodeDef>
   /** Preserve existing tests by default; onboarding specs opt into the tour. */
@@ -51,12 +53,13 @@ async function mockAgentBoot(
   {
     agentFlag,
     settings,
+    features,
     objectInfo,
     assets
   }: { agentFlag: boolean } & BootAgentAppOptions
 ): Promise<void> {
   await mockCloudBoot(page, {
-    features: agentFeatures(agentFlag),
+    features: { ...agentFeatures(agentFlag), ...features },
     settings: {
       'Comfy.TutorialCompleted': true,
       'Comfy.RightSidePanel.ShowErrorsTab': false,
