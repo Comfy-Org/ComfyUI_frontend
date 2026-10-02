@@ -328,9 +328,11 @@ describe('getCloudWorkflow', () => {
     expect(row.latest_version).toBe(0)
   })
 
-  it('rejects with the status so a 404 can be told from a refusal', async () => {
-    for (const status of [403, 404, 500]) {
+  it.for([403, 404, 500])(
+    'rejects with status %i so a 404 can be told from a refusal',
+    async (status) => {
       respond(jsonResponse(status, { error: 'nope' }))
+
       await expect(makeClient().getCloudWorkflow('wf-1')).rejects.toMatchObject(
         {
           name: 'AgentApiError',
@@ -338,7 +340,7 @@ describe('getCloudWorkflow', () => {
         }
       )
     }
-  })
+  )
 })
 
 describe('postMessage wire body', () => {
