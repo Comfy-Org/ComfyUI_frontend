@@ -83,7 +83,6 @@ const copy = {
   },
   'tryOn.edit': { en: 'Edit', 'zh-CN': '编辑' },
   'tryOn.again': { en: 'Try again', 'zh-CN': '再试一次' },
-  'tryOn.download': { en: 'Download', 'zh-CN': '下载' },
   'tryOn.alt.person': {
     en: 'A woman in a mustard corduroy jacket on a motel balcony',
     'zh-CN': '汽车旅馆阳台上身穿芥末黄灯芯绒夹克的女士'

@@ -9,6 +9,7 @@ import { vc } from '../../../lib/workshop/virtual-try-on/copy'
 import AppEditorShell from '../app-editor/AppEditorShell.vue'
 import EditorAlert from '../app-editor/EditorAlert.vue'
 import VirtualTryOnDocks from './VirtualTryOnDocks.vue'
+import VirtualTryOnHistory from './VirtualTryOnHistory.vue'
 import VirtualTryOnMain from './VirtualTryOnMain.vue'
 import VirtualTryOnPanel from './VirtualTryOnPanel.vue'
 import VirtualTryOnRun from './VirtualTryOnRun.vue'
@@ -22,8 +23,13 @@ const { locale = 'en', layout = 'd' } = defineProps<{
 }>()
 
 const tryOn = useVirtualTryOn(locale)
-const { phase } = tryOn
+const { phase, person } = tryOn
 const panel = computed(() => layout !== 'e')
+const download = computed(() =>
+  phase.value.kind === 'done'
+    ? { href: phase.value.result.url, name: `try-on-${person.value.name}` }
+    : undefined
+)
 reportStudioBusy(() => phase.value.kind === 'running')
 
 const panelLabels = {
@@ -39,6 +45,7 @@ const panelLabels = {
     :tools-label="vc('tryOn.tools', locale)"
     :panel-labels="panelLabels"
     :panel-dimmed="phase.kind === 'done'"
+    :download
     :repo="workshopAppRepo('virtual-try-on')"
     :locale
     data-testid="virtual-try-on"
@@ -52,6 +59,9 @@ const panelLabels = {
     </template>
     <template #dock>
       <VirtualTryOnDocks :try-on :panel :locale />
+    </template>
+    <template v-if="phase.kind !== 'done'" #history>
+      <VirtualTryOnHistory :try-on :locale />
     </template>
     <template v-if="panel" #panel>
       <VirtualTryOnPanel :try-on :locale />

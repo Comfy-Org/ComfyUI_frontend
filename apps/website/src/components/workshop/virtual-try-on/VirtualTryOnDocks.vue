@@ -21,12 +21,7 @@ const { phase } = tryOn
 </script>
 
 <template>
-  <VirtualTryOnResultDock
-    v-if="phase.kind === 'done'"
-    :try-on
-    :result="phase.result.url"
-    :locale
-  />
+  <VirtualTryOnResultDock v-if="phase.kind === 'done'" :try-on :locale />
   <VirtualTryOnTools v-else-if="panel" :try-on :locale />
   <template v-else>
     <VirtualTryOnTools :try-on :locale />

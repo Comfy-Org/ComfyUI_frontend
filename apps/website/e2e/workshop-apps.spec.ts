@@ -548,6 +548,13 @@ test('tries a garment on the Virtual try-on example from the floating panel', as
     'relaxed'
   )
   await expect(app.getByRole('button', { name: 'Undo' })).toBeEnabled()
+  await expectPanelWidth(panel)
+  await expect(
+    app
+      .getByRole('toolbar', { name: 'Virtual try-on tools' })
+      .getByRole('button')
+      .last()
+  ).toHaveAccessibleName('Redo')
 
   await panel.getByTestId('try-on-run').click()
   await expect(app.getByRole('status')).toContainText('Dressing the photo')
@@ -556,6 +563,7 @@ test('tries a garment on the Virtual try-on example from the floating panel', as
     'href',
     '/images/apps/virtual-try-on/result-flannel.jpg'
   )
+  await expectDownloadBesideGitHub(app)
   const slider = app.getByRole('slider', {
     name: 'Drag to compare the original and the try-on'
   })

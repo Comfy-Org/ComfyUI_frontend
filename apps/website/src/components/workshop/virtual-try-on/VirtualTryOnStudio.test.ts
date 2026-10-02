@@ -42,6 +42,10 @@ describe('VirtualTryOnStudio', () => {
     expect(
       screen.getByRole('img', { name: 'Garment: Breton tee' })
     ).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Download' })).toHaveAttribute(
+      'aria-disabled',
+      'true'
+    )
     expect(screen.getByTestId('try-on-outline')).toHaveAttribute(
       'data-fit',
       'regular'
@@ -72,6 +76,7 @@ describe('VirtualTryOnStudio', () => {
       'download',
       'try-on-motel-balcony.jpg'
     )
+    expect(within(tools()).queryByRole('link')).toBeNull()
     const compare = within(tools()).getByRole('button', { name: 'Compare' })
     expect(compare).toHaveAttribute('aria-pressed', 'true')
     expect(
@@ -90,6 +95,25 @@ describe('VirtualTryOnStudio', () => {
       within(panel()).getByRole('radio', { name: 'Relaxed' })
     ).toBeChecked()
   })
+
+  it.for([
+    { layout: 'd', wide: true, last: 'Fit guide' },
+    { layout: 'd', wide: false, last: 'Fit guide' },
+    { layout: 'e', wide: true, last: 'Try it on 8 credits' }
+  ])(
+    'keeps undo and redo at the right end of the tools in layout $layout (wide: $wide)',
+    ({ layout, wide, last }) => {
+      screenIsWide(wide)
+      open(layout)
+
+      const names = within(tools())
+        .getAllByRole('button')
+        .map(
+          (tool) => tool.getAttribute('aria-label') ?? tool.textContent.trim()
+        )
+      expect(names.slice(-3)).toEqual([last, 'Undo', 'Redo'])
+    }
+  )
 
   it('undoes a garment change and empties the garment card', async () => {
     const user = open()
