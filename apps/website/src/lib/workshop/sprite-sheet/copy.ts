@@ -87,6 +87,7 @@ const copy = {
   'sprite.run': { en: 'Generate sheet', 'zh-CN': '生成精灵图' },
   'sprite.credits': { en: '{n} credits', 'zh-CN': '{n} 积分' },
   'sprite.cancel': { en: 'Cancel', 'zh-CN': '取消' },
+  'sprite.queued': { en: 'Queued', 'zh-CN': '排队中' },
   'sprite.busy.title': {
     en: 'Drawing the frames',
     'zh-CN': '正在绘制帧'

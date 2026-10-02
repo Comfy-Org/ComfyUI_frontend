@@ -27,27 +27,38 @@ export const SPRITE_TRAYS = [
     id: 'animation',
     title: 'sprite.animation',
     content: SpriteSheetAnimation,
-    compact: false
+    compact: false,
+    oneField: true
   },
   {
     id: 'style',
     title: 'sprite.style',
     content: SpriteSheetStyle,
-    compact: true
+    compact: true,
+    oneField: false
   },
   {
     id: 'motion',
     title: 'sprite.motion',
     content: SpriteSheetMotion,
-    compact: true
+    compact: true,
+    oneField: false
   },
-  { id: 'seed', title: 'sprite.seed', content: SpriteSheetSeed, compact: false }
+  {
+    id: 'seed',
+    title: 'sprite.seed',
+    content: SpriteSheetSeed,
+    compact: false,
+    oneField: true
+  }
 ] as const satisfies readonly {
   id: SpriteTray
   title: SpriteCopyKey
   content: Component
   /** Whether a phone's chip may drop the name, the value saying enough. */
   compact: boolean
+  /** Holds one field that the tray's title already names. */
+  oneField: boolean
 }[]
 
 /** The current value of a control, beside its name. */

@@ -7,9 +7,9 @@ import type { Locale } from '../../../i18n/translations'
 import { spc } from '../../../lib/workshop/sprite-sheet/copy'
 import { SPRITE_GRID } from '../../../lib/workshop/sprite-sheet/options'
 import { framePose } from '../../../lib/workshop/sprite-sheet/poses'
+import EditorPickerRow from '../app-editor/EditorPickerRow.vue'
 import SpriteSheetDraftFrame from './SpriteSheetDraftFrame.vue'
 import SpriteSheetMotion from './SpriteSheetMotion.vue'
-import SpriteSheetPickerRow from './SpriteSheetPickerRow.vue'
 import SpriteSheetStyle from './SpriteSheetStyle.vue'
 import SpriteSheetTile from './SpriteSheetTile.vue'
 import { sectionMeta } from './sections'
@@ -32,8 +32,8 @@ const thumbnails = useStyleThumbnails(() => image.value?.url)
 
 <template>
   <div class="flex flex-col gap-0.5">
-    <SpriteSheetPickerRow
-      :title="spc('sprite.style', locale)"
+    <EditorPickerRow
+      :label="spc('sprite.style', locale)"
       :value="sectionMeta('style', sprite, locale)"
       :expanded="tray === 'style'"
       :popup="!inline"
@@ -52,12 +52,12 @@ const thumbnails = useStyleThumbnails(() => image.value?.url)
           "
         />
       </SpriteSheetTile>
-    </SpriteSheetPickerRow>
+    </EditorPickerRow>
     <div v-if="inline && tray === 'style'" class="pt-1 pb-2">
       <SpriteSheetStyle :sprite :locale />
     </div>
-    <SpriteSheetPickerRow
-      :title="spc('sprite.motion', locale)"
+    <EditorPickerRow
+      :label="spc('sprite.motion', locale)"
       :value="sectionMeta('motion', sprite, locale)"
       :expanded="tray === 'motion'"
       :popup="!inline"
@@ -70,7 +70,7 @@ const thumbnails = useStyleThumbnails(() => image.value?.url)
           :pose="framePose(setup.motion, frame, SPRITE_GRID.frames, setup.seed)"
         />
       </SpriteSheetTile>
-    </SpriteSheetPickerRow>
+    </EditorPickerRow>
     <div v-if="inline && tray === 'motion'" class="pt-1 pb-2">
       <SpriteSheetMotion :sprite :locale />
     </div>

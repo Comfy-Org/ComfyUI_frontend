@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useEventListener, useMediaQuery } from '@vueuse/core'
+import { useMediaQuery } from '@vueuse/core'
 import { computed } from 'vue'
 
 import { useResultDownload } from '../../../composables/useResultDownload'
@@ -10,10 +10,12 @@ import { workshopAppRepo } from '../../../lib/workshop/apps'
 import { spc } from '../../../lib/workshop/sprite-sheet/copy'
 import AppEditorShell from '../app-editor/AppEditorShell.vue'
 import EditorAlert from '../app-editor/EditorAlert.vue'
+import { useImagePaste } from '../app-editor/useImagePaste'
 import SpriteSheetDocks from './SpriteSheetDocks.vue'
 import SpriteSheetHistory from './SpriteSheetHistory.vue'
 import SpriteSheetMain from './SpriteSheetMain.vue'
 import SpriteSheetPanel from './SpriteSheetPanel.vue'
+import SpriteSheetPicker from './SpriteSheetPicker.vue'
 import SpriteSheetRun from './SpriteSheetRun.vue'
 import SpriteSheetSummary from './SpriteSheetSummary.vue'
 import SpriteSheetTrays from './SpriteSheetTrays.vue'
@@ -35,14 +37,7 @@ const download = useResultDownload(phase, () => {
 })
 reportStudioBusy(() => phase.value.kind === 'running')
 
-useEventListener('paste', (event: ClipboardEvent) => {
-  const file = [...(event.clipboardData?.files ?? [])].find((pasted) =>
-    pasted.type.startsWith('image/')
-  )
-  if (!file) return
-  event.preventDefault()
-  void sprite.useFile(file)
-})
+useImagePaste(sprite.useFile)
 
 const panelLabels = {
   label: spc('sprite.panel', locale),
@@ -68,7 +63,8 @@ const panelLabels = {
       <EditorAlert v-if="phase.kind === 'failed'">
         {{ spc('sprite.failed', locale) }}
       </EditorAlert>
-      <SpriteSheetTrays v-if="!panel || wide" :sprite :locale />
+      <SpriteSheetTrays v-if="!panel" :sprite :locale />
+      <SpriteSheetPicker v-else-if="wide" :sprite :locale />
     </template>
     <template #dock>
       <SpriteSheetDocks :sprite :panel :locale />

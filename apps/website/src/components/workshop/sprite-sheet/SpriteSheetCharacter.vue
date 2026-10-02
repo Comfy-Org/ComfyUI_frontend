@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ref, useTemplateRef } from 'vue'
-
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { SpriteImage } from '../../../composables/useSpriteSheet'
 import type { Locale } from '../../../i18n/translations'
 import { spc } from '../../../lib/workshop/sprite-sheet/copy'
+import EditorDropZone from '../app-editor/EditorDropZone.vue'
+import EditorUploadSlot from '../app-editor/EditorUploadSlot.vue'
 import { CHECKER } from './checker'
 
 const { image, locale = 'en' } = defineProps<{
@@ -14,38 +14,16 @@ const { image, locale = 'en' } = defineProps<{
 }>()
 
 const emit = defineEmits<{ file: [file: File] }>()
-const picker = useTemplateRef<HTMLInputElement>('picker')
-const dragging = ref(false)
-
-function dropped(event: DragEvent) {
-  dragging.value = false
-  const [file] = event.dataTransfer?.files ?? []
-  if (file?.type.startsWith('image/')) emit('file', file)
-}
-
-function picked(event: Event) {
-  if (!(event.target instanceof HTMLInputElement)) return
-  const [file] = event.target.files ?? []
-  event.target.value = ''
-  if (file?.type.startsWith('image/')) emit('file', file)
-}
 </script>
 
 <template>
-  <section
+  <EditorDropZone
+    role="region"
     :aria-label="spc('sprite.character', locale)"
     :title="spc('sprite.character.drop', locale)"
-    :class="
-      cn(
-        'flex items-center gap-3 rounded-lg px-1 pt-2 pb-3 transition',
-        dragging &&
-          'bg-transparency-white-t8 ring-2 ring-primary-comfy-yellow/50'
-      )
-    "
+    class="flex items-center gap-3 rounded-lg px-1 pt-2 pb-3"
     data-testid="sprite-character"
-    @dragover.prevent="dragging = true"
-    @dragleave="dragging = false"
-    @drop.prevent="dropped"
+    @file="emit('file', $event)"
   >
     <span
       :class="
@@ -65,22 +43,12 @@ function picked(event: Event) {
         image.name
       }}</span>
     </span>
-    <button
-      type="button"
-      :aria-label="spc('sprite.character.changeLabel', locale)"
+    <EditorUploadSlot
+      :label="spc('sprite.character.changeLabel', locale)"
       class="h-7 shrink-0 rounded-full bg-transparency-white-t8 px-3 text-xs text-primary-warm-white transition hover:bg-transparency-white-t20 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none disabled:opacity-40"
-      @click="picker?.click()"
+      @file="emit('file', $event)"
     >
       {{ spc('sprite.character.change', locale) }}
-    </button>
-    <input
-      ref="picker"
-      type="file"
-      accept="image/png,image/jpeg,image/webp"
-      class="sr-only"
-      tabindex="-1"
-      aria-hidden="true"
-      @change="picked"
-    />
-  </section>
+    </EditorUploadSlot>
+  </EditorDropZone>
 </template>

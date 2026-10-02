@@ -80,7 +80,7 @@ describe('SpriteSheetStudio', () => {
       )
     )
     expect(
-      within(panel()).getByRole('button', { name: /Style\s*Toon/ })
+      within(panel()).getByRole('button', { name: 'Style: Toon' })
     ).toHaveAttribute('aria-haspopup', 'dialog')
 
     await generate(user)
