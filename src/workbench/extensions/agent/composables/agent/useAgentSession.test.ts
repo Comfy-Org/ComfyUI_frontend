@@ -706,6 +706,16 @@ describe('useAgentSession (v1 composition root)', () => {
       await vi.waitFor(() => expect(getMessages).toHaveBeenCalledOnce())
       await vi.advanceTimersByTimeAsync(5_000)
       await refused
+      expect(session.entries.value.at(-1)).toMatchObject({
+        role: 'assistant',
+        parts: [
+          {
+            type: 'notice',
+            level: 'error',
+            text: 'Message failed to send: turn in progress'
+          }
+        ]
+      })
       await session.sendMessage('newer')
 
       resolveHistory?.([
