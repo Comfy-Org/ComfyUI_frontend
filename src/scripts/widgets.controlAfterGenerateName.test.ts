@@ -72,10 +72,6 @@ describe('value control widget naming', () => {
   })
 
   it('seats a mode when the caller forwards a name override as the value', () => {
-    // `useIntWidget` derives its `defaultValue` from the same overloaded key,
-    // so a name override reaches here as the control's value. Seating it would
-    // leave `nextValueForLinkedTarget` with no matching case and the target
-    // would never advance.
     const { node, target } = intNode()
     const spec = looseIntSpec({
       control_after_generate: 'Sampler control_after_generate'
