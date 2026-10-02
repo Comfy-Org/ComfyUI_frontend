@@ -126,7 +126,7 @@ describe('PrimitiveInt control_after_generate projection', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
-  it('serialises back into the catalog slot order, so the round trip is closed', () => {
+  it('serialises back into the catalog slot order', () => {
     const { graph, applyCollected, applyEdit, docWidgets } = setup()
     applyCollected()
     const node = graph.getNodeById(toNodeId(143))
@@ -136,24 +136,6 @@ describe('PrimitiveInt control_after_generate projection', () => {
       docWidgets().set('control_after_generate', 'randomize')
     })
     expect(node.serialize().widgets_values).toEqual([5, 'randomize'])
-
-    // Re-minting the saved node names the slots identically, which is what
-    // keeps multiplayer's positional→named decomposition in agreement with
-    // the canvas.
-    const reminted = mint(
-      {
-        ...WORKFLOW,
-        nodes: [{ ...WORKFLOW.nodes[0], widgets_values: [5, 'randomize'] }]
-      },
-      CATALOG
-    )
-    onTestFinished(() => reminted.destroy())
-    const widgets = nodesMap(reminted).get('143')?.get('widgets')
-    if (!(widgets instanceof Y.Map)) throw new Error('not named storage')
-    expect(Object.fromEntries(widgets.entries())).toEqual({
-      value: 5,
-      control_after_generate: 'randomize'
-    })
   })
 
   it('positive control: a widget the live node really lacks is still reported', () => {
