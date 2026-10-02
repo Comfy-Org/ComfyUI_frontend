@@ -78,6 +78,9 @@ export interface FakeBillingClient {
   readonly reportChallengeStarted: Mock<
     BillingClient['lifecycle']['reportChallengeStarted']
   >
+  readonly reportHostedStepOpened: Mock<
+    BillingClient['lifecycle']['reportHostedStepOpened']
+  >
   readonly reportChallengeSettled: Mock<
     BillingClient['lifecycle']['reportChallengeSettled']
   >
@@ -173,6 +176,9 @@ export function createFakeBillingClient(
   const reportChallengeStarted: Mock<
     BillingClient['lifecycle']['reportChallengeStarted']
   > = vi.fn()
+  const reportHostedStepOpened: Mock<
+    BillingClient['lifecycle']['reportHostedStepOpened']
+  > = vi.fn()
   const reportChallengeSettled: Mock<
     BillingClient['lifecycle']['reportChallengeSettled']
   > = vi.fn()
@@ -255,6 +261,7 @@ export function createFakeBillingClient(
       switchPresentation: unusedByHostedSurfaces(
         'lifecycle.switchPresentation'
       ),
+      reportHostedStepOpened,
       reportChallengeStarted,
       reportChallengeSettled,
       get: (id) => operations.get(id),
@@ -337,6 +344,7 @@ export function createFakeBillingClient(
     readPlans,
     readPaymentMethods,
     invalidatePaymentMethods,
+    reportHostedStepOpened,
     reportChallengeStarted,
     reportChallengeSettled,
     previewSubscribe,

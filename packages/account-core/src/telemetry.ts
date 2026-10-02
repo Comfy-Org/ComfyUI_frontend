@@ -23,12 +23,15 @@ export const BILLING_OPERATION_TELEMETRY_EVENT = {
 
 /**
  * Payment friction the lifecycle observes inside one operation: a bank
- * challenge and its verdict, and each retryable decline.
+ * challenge and its verdict, each retryable decline, and a hosted step the
+ * customer was sent to and came back from.
  */
 export const BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT = {
   challengeRequired: 'billing.checkout.challenge_required',
   challengeCompleted: 'billing.checkout.challenge_completed',
-  challengeFailed: 'billing.checkout.challenge_failed'
+  challengeFailed: 'billing.checkout.challenge_failed',
+  redirectStarted: 'billing.checkout.redirect_started',
+  returned: 'billing.checkout.returned'
 } as const
 
 export const AUTH_TELEMETRY_EVENT = {

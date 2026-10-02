@@ -1,5 +1,6 @@
 import type { CapabilityReadBillingEvent } from './capabilityReadEvent.js'
 import type { CheckoutChallengeBillingEvent } from './checkoutChallengeEvent.js'
+import type { CheckoutRedirectBillingEvent } from './checkoutRedirectEvent.js'
 import type { DowngradeToPersonalBillingEvent } from './downgradeToPersonalEvent.js'
 import type { BillingOperationBillingEvent } from './operationEvent.js'
 import type { ResubscribeBillingEvent } from './resubscribeEvent.js'
@@ -29,6 +30,7 @@ export type BillingTelemetryEvent = {
   | WebReturnBillingEvent
   | WebSessionBillingEvent
   | CheckoutChallengeBillingEvent
+  | CheckoutRedirectBillingEvent
 )
 
 type BillingTelemetryEventNameFor<T extends BillingTelemetryEvent> =

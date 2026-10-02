@@ -65,6 +65,11 @@ import {
   validateActionUrl
 } from './operationState.js'
 import type { PaymentFrictionSignal } from './paymentFriction.js'
+import type {
+  CheckoutHostedStep,
+  CheckoutRedirectNavigation
+} from './telemetry/checkoutRedirectEvent.js'
+import type { CheckoutMethodKind } from './telemetry/checkoutJourney.js'
 import { paymentFrictionBetween } from './paymentFriction.js'
 import { selectBillingPresentation } from './presentation.js'
 import { readValidatedBillingResponse } from './sharedRead.js'
@@ -95,22 +100,43 @@ export type BillingOperationFailureCategory =
   | 'reconciliation_needed'
   | 'stale_operation'
 
-type BillingOperationTelemetryEventName =
-  | (typeof BILLING_OPERATION_TELEMETRY_EVENT)[keyof typeof BILLING_OPERATION_TELEMETRY_EVENT]
-  | (typeof BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT)[keyof typeof BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT]
+type HostedStepEventName =
+  | typeof BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT.redirectStarted
+  | typeof BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT.returned
 
-export interface BillingOperationTelemetryEvent {
-  readonly name: BillingOperationTelemetryEventName
+type BillingOperationTelemetryEventName = Exclude<
+  | (typeof BILLING_OPERATION_TELEMETRY_EVENT)[keyof typeof BILLING_OPERATION_TELEMETRY_EVENT]
+  | (typeof BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT)[keyof typeof BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT],
+  HostedStepEventName
+>
+
+/** A hosted step this tab handed the customer to. */
+export interface HostedStepVisit {
+  readonly destination: HostedBillingDestination
+  readonly step: CheckoutHostedStep
+  readonly navigation: CheckoutRedirectNavigation
+  readonly method_kind?: CheckoutMethodKind
+}
+
+interface BillingOperationTelemetryBase {
   readonly billing_op_id: string
   readonly operation_type: BillingOperationKind
   readonly presentation: BillingPresentation
   /** True when this tab reattached to an operation it did not issue. */
   readonly resumed: boolean
-  readonly failure_category?: BillingOperationFailureCategory
-  readonly decline_reason?: BillingDeclineReason
-  /** From the attempt's start, so a resumed operation reports its whole life. */
-  readonly duration_ms?: number
 }
+
+export type BillingOperationTelemetryEvent = BillingOperationTelemetryBase &
+  (
+    | {
+        readonly name: BillingOperationTelemetryEventName
+        readonly failure_category?: BillingOperationFailureCategory
+        readonly decline_reason?: BillingDeclineReason
+        /** From the attempt's start, so a resumed operation reports its whole life. */
+        readonly duration_ms?: number
+      }
+    | (HostedStepVisit & { readonly name: HostedStepEventName })
+  )
 
 export type PresentationSwitchOutcome =
   | 'switched'
@@ -182,6 +208,16 @@ export interface BillingOperationLifecycle {
     operationId: string,
     presentation: BillingPresentation
   ) => PresentationSwitchOutcome
+  /**
+   * The host opened the operation's hosted step. A redirect is remembered in
+   * the pointer, so the page it returns to reports the return; a new tab
+   * reports it on the next wake.
+   */
+  reportHostedStepOpened: (
+    operationId: string,
+    navigation: CheckoutRedirectNavigation,
+    methodKind?: CheckoutMethodKind
+  ) => void
   /** The host began driving the operation's challenge; polling pauses until it settles. */
   reportChallengeStarted: (operationId: string) => void
   reportChallengeSettled: (
@@ -980,6 +1016,7 @@ export function createBillingOperationLifecycle(
     recover,
     wake,
     switchPresentation,
+    reportHostedStepOpened: () => {},
     reportChallengeStarted,
     reportChallengeSettled,
     get: (operationId) => operations.get(operationId)?.state,

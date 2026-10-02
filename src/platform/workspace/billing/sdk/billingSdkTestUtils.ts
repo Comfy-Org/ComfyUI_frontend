@@ -119,6 +119,7 @@ export function fakeBillingSdk() {
     recover: vi.fn(async () => ({ status: 'ok' as const, value: undefined })),
     wake: vi.fn(),
     switchPresentation: vi.fn(() => 'unchanged' as const),
+    reportHostedStepOpened: vi.fn(),
     reportChallengeStarted: vi.fn(),
     reportChallengeSettled: vi.fn(),
     get: (operationId) => snapshot.find((state) => state.id === operationId),

@@ -100,7 +100,7 @@ type CheckoutJourneyPaymentSubmitFailed = {
   error_code?: string
 }
 type CheckoutPaymentRail = 'saved' | 'new' | 'on_file'
-type CheckoutMethodKind = 'card' | 'alipay' | 'other'
+export type CheckoutMethodKind = 'card' | 'alipay' | 'other'
 type CheckoutPromoResult = 'applied' | 'rejected' | 'removed' | 'expired'
 type CheckoutPayBlockedReason = 'reactivation_unconfirmed' | 'promo_unapplied'
 

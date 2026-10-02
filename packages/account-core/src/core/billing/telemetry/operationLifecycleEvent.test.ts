@@ -186,6 +186,60 @@ describe('toBillingTelemetryEvent', () => {
         resumed: false,
         decline_reason: 'card_declined'
       }
+    },
+    {
+      name: 'a hosted step opened, with where it leads and the method',
+      event: {
+        name: 'billing.checkout.redirect_started',
+        billing_op_id: 'op-redirect',
+        operation_type: 'subscription',
+        presentation: 'hosted',
+        resumed: false,
+        destination: 'stripe',
+        step: 'payment_method',
+        navigation: 'redirect',
+        method_kind: 'alipay'
+      },
+      expected: {
+        operation: 'checkout',
+        billing_client: 'sdk',
+        stage: 'redirect_started',
+        outcome: 'pending',
+        operation_type: 'subscription',
+        billing_op_id: 'op-redirect',
+        presentation: 'hosted',
+        resumed: false,
+        destination: 'stripe',
+        step: 'payment_method',
+        navigation: 'redirect',
+        method_kind: 'alipay'
+      }
+    },
+    {
+      name: 'a return from a hosted step, without a method the host never knew',
+      event: {
+        name: 'billing.checkout.returned',
+        billing_op_id: 'op-redirect',
+        operation_type: 'topup',
+        presentation: 'hosted',
+        resumed: true,
+        destination: 'billing_web',
+        step: 'authentication',
+        navigation: 'new_tab'
+      },
+      expected: {
+        operation: 'checkout',
+        billing_client: 'sdk',
+        stage: 'returned',
+        outcome: 'pending',
+        operation_type: 'topup',
+        billing_op_id: 'op-redirect',
+        presentation: 'hosted',
+        resumed: true,
+        destination: 'billing_web',
+        step: 'authentication',
+        navigation: 'new_tab'
+      }
     }
   ])('maps $name', ({ event, expected }) => {
     expect(toBillingTelemetryEvent(event)).toEqual(expected)

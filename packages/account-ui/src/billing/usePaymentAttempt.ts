@@ -12,6 +12,7 @@ import type { Ref } from 'vue'
 import type {
   BillingOperationKind,
   BillingOperationState,
+  CheckoutMethodKind,
   EmbeddedChallengePort,
   HostPaymentStep,
   PaymentProjection,
@@ -43,6 +44,8 @@ export interface PaymentNavigation {
    * that declines one runs it later through `continueVerification`.
    */
   readonly autoContinue?: (state: PendingBillingOperation) => boolean
+  /** The method the customer chose, reported with the hosted step it leads to. */
+  readonly methodKind?: () => CheckoutMethodKind | undefined
 }
 
 export interface PaymentAttempt {
