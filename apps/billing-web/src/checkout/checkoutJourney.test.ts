@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 
 import { readBillingErrorCode } from '@comfyorg/account-core/billing'
 import type {
-  BillingTelemetryFailureCategory,
   CheckoutEntryFlow,
   CheckoutEntrySource,
   PreviewSubscribeResult,
@@ -15,7 +14,6 @@ import type { CheckoutPageEvent } from '@/checkout/checkoutPage'
 import {
   entryFlowOf,
   entrySourceOf,
-  failureCategoryOf,
   methodSelectedPhase,
   previewFailureOfPageEvent,
   previewFailureOfResult,
@@ -54,72 +52,6 @@ describe('entryFlowOf', () => {
     { transition: 'duration_change', expected: 'paid_upgrade' }
   ])('reads a $transition quote as $expected', ({ transition, expected }) => {
     expect(entryFlowOf({ transition_type: transition })).toBe(expected)
-  })
-})
-
-describe('failureCategoryOf', () => {
-  it.for<{
-    name: string
-    failure: { code: string; httpStatus?: number }
-    expected: BillingTelemetryFailureCategory
-  }>([
-    {
-      name: 'a request that never got an answer is a network failure',
-      failure: { code: 'REQUEST_FAILED' },
-      expected: 'network'
-    },
-    {
-      name: 'a request the server answered with an error status is a rejection',
-      failure: { code: 'REQUEST_FAILED', httpStatus: 503 },
-      expected: 'api_rejected'
-    },
-    {
-      name: 'a refusal of the session is a rejection',
-      failure: { code: 'ACCESS_DENIED' },
-      expected: 'api_rejected'
-    },
-    {
-      name: 'a sign-in that lapsed is a rejection',
-      failure: { code: 'NOT_AUTHENTICATED' },
-      expected: 'api_rejected'
-    },
-    {
-      name: 'a plan the server cannot find is a rejection',
-      failure: { code: 'NOT_FOUND' },
-      expected: 'api_rejected'
-    },
-    {
-      name: 'a business conflict is a rejection',
-      failure: { code: 'CONFLICT' },
-      expected: 'api_rejected'
-    },
-    {
-      name: 'an operation the server already holds is a rejection',
-      failure: { code: 'OPERATION_ALREADY_PENDING' },
-      expected: 'api_rejected'
-    },
-    {
-      name: 'a subscription the server cannot change is a rejection',
-      failure: { code: 'NO_ACTIVE_SUBSCRIPTION' },
-      expected: 'api_rejected'
-    },
-    {
-      name: 'a request the contract refuses to send is a validation failure',
-      failure: { code: 'INVALID_REQUEST' },
-      expected: 'validation'
-    },
-    {
-      name: 'a body that breaks the contract is unknown',
-      failure: { code: 'MALFORMED_RESPONSE' },
-      expected: 'unknown'
-    },
-    {
-      name: 'a code nobody has named is unknown',
-      failure: { code: 'A_CODE_NOBODY_HAS_HEARD_OF' },
-      expected: 'unknown'
-    }
-  ])('$name', ({ failure, expected }) => {
-    expect(failureCategoryOf(failure)).toBe(expected)
   })
 })
 

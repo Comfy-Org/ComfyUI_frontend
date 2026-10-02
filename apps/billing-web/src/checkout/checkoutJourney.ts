@@ -1,5 +1,4 @@
 import type {
-  BillingTelemetryFailureCategory,
   CheckoutEntryFlow,
   CheckoutEntrySource,
   CheckoutJourneyPhaseEvent,
@@ -11,6 +10,7 @@ import type { BillingSource } from '@comfyorg/billing-contract'
 import type { CheckoutPageEvent } from '@/checkout/checkoutPage'
 import type { PromoEntry } from '@/checkout/promoEntry'
 import { promoRejectionOf } from '@/checkout/promoEntry'
+import { failureOfCode } from '@/telemetry/attemptTelemetry'
 
 type PreviewReadyPhase = Extract<
   CheckoutJourneyPhaseEvent,
@@ -41,30 +41,6 @@ export function entryFlowOf(
   return quoted.transition_type === 'new_subscription'
     ? 'initial_subscription'
     : 'paid_upgrade'
-}
-
-export function failureCategoryOf({
-  code,
-  httpStatus
-}: {
-  readonly code: string
-  readonly httpStatus?: number
-}): BillingTelemetryFailureCategory {
-  switch (code) {
-    case 'REQUEST_FAILED':
-      return httpStatus === undefined ? 'network' : 'api_rejected'
-    case 'NOT_AUTHENTICATED':
-    case 'ACCESS_DENIED':
-    case 'NOT_FOUND':
-    case 'CONFLICT':
-    case 'OPERATION_ALREADY_PENDING':
-    case 'NO_ACTIVE_SUBSCRIPTION':
-      return 'api_rejected'
-    case 'INVALID_REQUEST':
-      return 'validation'
-    default:
-      return 'unknown'
-  }
 }
 
 export function previewReadyPhase(
@@ -101,7 +77,8 @@ export function previewFailureOfPageEvent(
     case 'unavailable':
       return {
         phase: 'preview_failed',
-        failure_category: failureCategoryOf(event)
+        failure_category: failureOfCode(event.code, event.httpStatus)
+          .failure_category
       }
     case 'notAllowed':
       return QUOTE_REFUSED
@@ -126,7 +103,10 @@ export function previewFailureOfResult(
   if (result.code === 'SUPERSEDED') return undefined
   return {
     phase: 'preview_failed',
-    failure_category: failureCategoryOf(result)
+    failure_category: failureOfCode(
+      result.code,
+      'httpStatus' in result ? result.httpStatus : undefined
+    ).failure_category
   }
 }
 
