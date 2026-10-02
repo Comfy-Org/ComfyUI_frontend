@@ -43,6 +43,8 @@ export function useSubscriptionCredits() {
   const billingContext = useBillingContext()
   const { locale } = useI18n()
 
+  const isLoadingBalance = computed(() => toValue(billingContext.isLoading))
+
   /**
    * A null balance means no read has landed: a page load whose balance request
    * failed leaves it null until a later read succeeds. Formatting that as `0`
@@ -50,9 +52,14 @@ export function useSubscriptionCredits() {
    * so the display figures stay null and the surfaces render an unavailable
    * state instead (FE-3164). A *present* balance with a missing field is still
    * a known zero and still formats as `0`.
+   *
+   * Excludes the window where a read is still in flight: a balance that is
+   * null only because nobody has answered yet is pending, not unavailable, and
+   * calling it unavailable swaps the loading skeletons for a definitive "the
+   * figure is unknown" claim before the first response arrives.
    */
   const isBalanceUnavailable = computed(
-    () => toValue(billingContext.balance) == null
+    () => toValue(billingContext.balance) == null && !isLoadingBalance.value
   )
 
   const totalCredits = computed(() => {
@@ -72,8 +79,6 @@ export function useSubscriptionCredits() {
     if (!balance) return null
     return formatBalance(balance.prepaidBalanceMicros, locale.value)
   })
-
-  const isLoadingBalance = computed(() => toValue(billingContext.isLoading))
 
   const creditsFromMicros = (maybeCents: number | undefined): number =>
     centsToCredits(maybeCents ?? 0)

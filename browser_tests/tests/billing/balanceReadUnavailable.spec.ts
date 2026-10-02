@@ -74,9 +74,11 @@ const mockBillingStatus: BillingStatusResponse = {
 /**
  * Lets a test flip the balance endpoint mid-session. The initial value has to
  * be an option rather than a mutation, because the first read happens while
- * the app boots — which is the state being reproduced.
+ * the app boots — which is the state being reproduced. `delayMs` holds a read
+ * open so the in-flight window is observable, and `count` is what proves a
+ * burst of retry clicks did not become a burst of requests.
  */
-type BalanceReads = { fail: boolean }
+type BalanceReads = { fail: boolean; delayMs: number; count: number }
 
 const test = comfyPageFixture.extend<{
   balanceFailsInitially: boolean
@@ -85,7 +87,7 @@ const test = comfyPageFixture.extend<{
   balanceFailsInitially: [false, { option: true }],
 
   balanceReads: async ({ balanceFailsInitially }, use) => {
-    await use({ fail: balanceFailsInitially })
+    await use({ fail: balanceFailsInitially, delayMs: 0, count: 0 })
   },
 
   page: async ({ page, balanceReads }, use) => {
@@ -158,8 +160,14 @@ const test = comfyPageFixture.extend<{
       currency: 'usd'
     })
     for (const pattern of ['**/api/billing/balance', '**/customers/balance']) {
-      await page.route(pattern, (route) =>
-        balanceReads.fail
+      await page.route(pattern, async (route) => {
+        balanceReads.count += 1
+        if (balanceReads.delayMs > 0) {
+          await new Promise((resolve) =>
+            setTimeout(resolve, balanceReads.delayMs)
+          )
+        }
+        return balanceReads.fail
           ? route.fulfill({
               status: 500,
               contentType: 'application/json',
@@ -170,7 +178,7 @@ const test = comfyPageFixture.extend<{
               contentType: 'application/json',
               body: balanceBody
             })
-      )
+      })
     }
 
     await use(page)
@@ -234,6 +242,47 @@ test.describe(
         await expect(
           popover.getByText(UNAVAILABLE, { exact: true })
         ).toHaveCount(0)
+      })
+
+      // The retry bound no busy state and no concurrency guard, so it looked
+      // inert while it worked and every impatient click started another read.
+      // `fetchBalance` has no request-sequence guard on the legacy rail, so two
+      // concurrent reads can resolve out of order and the older one wins.
+      test('marks the retry busy and coalesces a click burst into one read', async ({
+        comfyPage,
+        balanceReads
+      }) => {
+        const page = comfyPage.page
+        await comfyPage.toast.closeToasts()
+
+        await page.getByTestId(TestIds.user.currentUserButton).click()
+        const popover = page.getByTestId(TestIds.user.currentUserPopover)
+        const retry = popover.getByRole('button', {
+          name: 'Balance unavailable. Retry'
+        })
+        await expect(retry).toBeVisible()
+
+        // Hold the next read open so the in-flight window is observable, and
+        // let it succeed so the burst cannot be absorbed by a second failure.
+        balanceReads.fail = false
+        balanceReads.delayMs = 2000
+        const readsBefore = balanceReads.count
+
+        await retry.click()
+        await expect(retry).toBeDisabled()
+        await expect(retry).toHaveAttribute('aria-busy', 'true')
+
+        // Dispatched rather than user-driven: a real user cannot click a
+        // disabled control, but a programmatic path can, and the in-flight
+        // guard is what has to hold.
+        for (let i = 0; i < 3; i++) {
+          await retry.dispatchEvent('click')
+        }
+
+        await expect(
+          popover.getByText(BALANCE_CREDITS, { exact: true })
+        ).toBeVisible({ timeout: 10_000 })
+        expect(balanceReads.count - readsBefore).toBe(1)
       })
     })
 

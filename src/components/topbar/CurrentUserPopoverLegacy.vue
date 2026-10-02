@@ -163,6 +163,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
+import { UNKNOWN_CREDITS_PLACEHOLDER } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
 import { useTelemetry } from '@/platform/telemetry'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -221,9 +222,15 @@ const subscriptionTierName = computed(() =>
   formatTierName(tier.value, subscription.value?.duration === 'ANNUAL')
 )
 
+// FE-3164: `?? 0` on a missing balance reported a *failed* read as `0` credits,
+// indistinguishable from an empty balance and beside an untouched ledger. This
+// popover is what `CurrentUserButton` renders whenever `showWorkspacePopover`
+// is false, so the same defect survived here after the workspace rail was
+// fixed. No retry control is added — this surface has none to extend.
 const formattedBalance = computed(() => {
+  if (balance.value == null) return UNKNOWN_CREDITS_PLACEHOLDER
   const cents =
-    balance.value?.effectiveBalanceMicros ?? balance.value?.amountMicros ?? 0
+    balance.value.effectiveBalanceMicros ?? balance.value.amountMicros ?? 0
   return formatCreditsFromCents({
     cents,
     locale: locale.value,

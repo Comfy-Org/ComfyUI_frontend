@@ -162,6 +162,27 @@ describe('useSubscriptionCredits', () => {
     })
   })
 
+  describe('isBalanceUnavailable', () => {
+    // A null balance while a read is in flight is pending, not unavailable.
+    // Conflating the two makes the surfaces claim the figure is unknown while
+    // they are still loading it, which unmounts their loading skeletons.
+    it('should stay false while a balance read is in flight', () => {
+      mockBillingBalance = null
+      mockBillingIsLoading = true
+      const { isBalanceUnavailable, totalCredits } = mountComposable()
+      expect(isBalanceUnavailable.value).toBe(false)
+      // The figure is still withheld — only the *claim* waits for the read.
+      expect(totalCredits.value).toBeNull()
+    })
+
+    it('should become true once a read has finished without a balance', () => {
+      mockBillingBalance = null
+      mockBillingIsLoading = false
+      const { isBalanceUnavailable } = mountComposable()
+      expect(isBalanceUnavailable.value).toBe(true)
+    })
+  })
+
   describe('isLoadingBalance', () => {
     it('should reflect billingContext.isLoading', () => {
       mockBillingIsLoading = true

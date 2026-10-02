@@ -2996,6 +2996,7 @@
     "yearlyUsageProgress": "{used} of {total} yearly credits used",
     "balanceUnavailable": "Balance unavailable",
     "balanceUnavailableRetry": "Balance unavailable. Retry",
+    "balanceUnavailableRetryFailed": "Could not read your credit balance. Your credits have not changed — please try again.",
     "additionalCreditsInfo": "About additional credits",
     "additionalCredits": "Additional credits",
     "additionalCreditsInUse": "In use",

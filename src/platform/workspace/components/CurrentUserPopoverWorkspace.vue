@@ -109,6 +109,7 @@
         }"
         variant="muted-textonly"
         size="icon-sm"
+        :loading="isRetryingBalance"
         :aria-label="$t('subscription.balanceUnavailableRetry')"
         data-testid="retry-balance-button"
         @click="handleRetryBalance"
@@ -294,6 +295,8 @@ import { UNKNOWN_CREDITS_PLACEHOLDER } from '@/platform/cloud/subscription/compo
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -353,14 +356,24 @@ const {
 const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
 const subscriptionDialog = useSubscriptionDialog()
 
-const { locale } = useI18n()
+const { locale, t } = useI18n()
+const toastStore = useToastStore()
 const isLoadingBalance = isLoading
 
 // No balance read has landed, so the amount is unknown rather than zero. The
 // previous `?? 0` showed a failed read as `0` coins beside an untouched ledger,
 // which reads as the money being gone (FE-3164).
+//
+// `initState` is the workspace store's lifecycle, not the billing context's, so
+// it goes `ready` while the balance read is still in flight. Without the
+// loading term the retry button rendered beside the loading skeleton — the
+// skeleton and a "Balance unavailable. Retry" control claiming the opposite
+// thing, at the same time, about the same figure.
 const isBalanceUnavailable = computed(
-  () => initState.value === 'ready' && balance.value == null
+  () =>
+    initState.value === 'ready' &&
+    !isLoadingBalance.value &&
+    balance.value == null
 )
 
 const displayedCredits = computed(() => {
@@ -381,7 +394,43 @@ const displayedCredits = computed(() => {
 })
 
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
-const handleRetryBalance = wrapWithErrorHandlingAsync(fetchBalance)
+
+// One read at a time. `authStore.fetchBalance` carries no request-sequence
+// guard, so two concurrent reads can resolve out of order and leave the older
+// response as the displayed balance; the button is also `:loading` while a read
+// is in flight, so the click has visible feedback rather than appearing inert.
+const isRetryingBalance = ref(false)
+let activeBalanceRetry: Promise<void> | null = null
+
+async function retryBalanceRead(): Promise<void> {
+  if (activeBalanceRetry) return
+  isRetryingBalance.value = true
+  activeBalanceRetry = fetchBalance()
+  try {
+    await activeBalanceRetry
+  } finally {
+    activeBalanceRetry = null
+    isRetryingBalance.value = false
+  }
+}
+
+// The default handler toasts `error.message`, and on the legacy rail that
+// message is built from the upstream payment-provider response body — raw
+// upstream text in front of the user. Report the cause, show a fixed string.
+const handleRetryBalance = wrapWithErrorHandlingAsync(
+  retryBalanceRead,
+  (error) => {
+    reportError(error, {
+      surface: 'billing',
+      errorType: 'error_retrying_balance_read'
+    })
+    toastStore.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('subscription.balanceUnavailableRetryFailed')
+    })
+  }
+)
 
 const showPlansAndPricing = canOpenPricingSurface
 // Subscribing is a Cloud-only concept: Local users manage plan/credits

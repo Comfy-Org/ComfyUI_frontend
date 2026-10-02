@@ -39,7 +39,7 @@
         >
         <span
           v-if="showsBalanceUnavailable"
-          class="text-sm text-muted"
+          class="text-sm text-muted @max-[300px]:hidden"
           data-testid="credits-balance-unavailable"
           >{{ $t('subscription.balanceUnavailable') }}</span
         >
@@ -316,6 +316,11 @@ const showsInactivePlanState = computed(() => inactivePlan === true)
 const inactiveCreditsNote = computed(() => {
   if (!isSalesManagedTier(subscription.value?.tier))
     return t('subscription.reactivateToUseCredits')
+  // `prepaidCreditsValue` coerces an unread balance to 0, which would pick the
+  // credits-ended note and assert the money is definitively gone beside a
+  // figure this component is simultaneously rendering as unknown. Read the
+  // nullable formatted value first so the note matches the amount (FE-3164).
+  if (prepaidCredits.value === null) return t('subscription.balanceUnavailable')
   return prepaidCreditsValue.value > 0
     ? t('subscription.salesManagedInactiveCreditsNote')
     : t('subscription.salesManagedCreditsEndedNote')
@@ -390,6 +395,9 @@ const creditPoolTotalCompact = computed(() => {
 // A deliberately zeroed state (unsubscribed, member view, lapsed plan) is a
 // known zero and keeps reading `0`. An unread balance is not, and must not
 // borrow that display — the refresh control beside this figure is the retry.
+// `isBalanceUnavailable` already excludes an in-flight read, which is what
+// keeps this from unmounting the breakdown (and the loading skeletons inside
+// it) before the first response lands.
 const showsBalanceUnavailable = computed(
   () =>
     isBalanceUnavailable.value && !zeroState && !showsInactivePlanState.value

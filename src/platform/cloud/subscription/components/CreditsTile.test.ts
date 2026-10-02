@@ -466,10 +466,44 @@ describe('CreditsTile', () => {
     }
     renderTile()
 
-    expect(screen.getByTestId('credits-total')).toHaveTextContent('0')
+    // Anchored, not a substring: `toHaveTextContent('0')` also passes for a
+    // total of `10`, so it would not catch an implementation that showed the
+    // wrong figure instead of the wrong unknown-vs-zero state.
+    expect(screen.getByTestId('credits-total')).toHaveTextContent(/^0$/)
     expect(
       screen.queryByTestId('credits-balance-unavailable')
     ).not.toBeInTheDocument()
+  })
+
+  // A balance that is null only because the first read has not answered yet is
+  // pending, not unavailable. Claiming unavailable there dropped the breakdown
+  // and with it the loading skeletons inside it, so the tile asserted a
+  // definitive "Balance unavailable" and then popped the section back in.
+  it('withholds the unavailable claim while the first read is in flight', () => {
+    activeProSubscription()
+    state.balance = null
+    state.isLoading = true
+    const { container } = renderTile()
+
+    expect(
+      screen.queryByTestId('credits-balance-unavailable')
+    ).not.toBeInTheDocument()
+    // The breakdown stays mounted, which is what keeps the loading skeletons
+    // inside it (the prepaid figure, the monthly row) reachable at all.
+    expect(container.textContent).toContain('Additional credits')
+    expect(container.textContent).toContain('Used after monthly runs out')
+  })
+
+  it('makes the unavailable claim once the read has finished with no balance', () => {
+    activeProSubscription()
+    state.balance = null
+    state.isLoading = false
+    const { container } = renderTile()
+
+    expect(
+      screen.getByTestId('credits-balance-unavailable')
+    ).toBeInTheDocument()
+    expect(container.textContent).not.toContain('remaining')
   })
 
   it('keeps the deliberate zero state at zero when the balance is unread', () => {
@@ -477,7 +511,7 @@ describe('CreditsTile', () => {
     state.balance = null
     renderTile({ zeroState: true })
 
-    expect(screen.getByTestId('credits-total')).toHaveTextContent('0')
+    expect(screen.getByTestId('credits-total')).toHaveTextContent(/^0$/)
     expect(
       screen.queryByTestId('credits-balance-unavailable')
     ).not.toBeInTheDocument()
@@ -551,6 +585,32 @@ describe('CreditsTile', () => {
       'Plan credits ended with your subscription.'
     )
     expect(screen.queryByText('Add credits')).toBeNull()
+  })
+
+  // The inactive sales-managed branch renders the retained prepaid balance, so
+  // an unread one renders as `—`. The note beside it keyed on the coerced
+  // numeric value, which is 0 for an unread balance — so it asserted the money
+  // was definitively gone next to a figure the same component had just called
+  // unknown. Same false claim about the customer's balance as FE-3164 itself.
+  it('does not call an unread prepaid balance ended on an inactive sales-managed plan', () => {
+    activeProSubscription()
+    state.tier = 'ENTERPRISE'
+    state.subscription = {
+      tier: 'ENTERPRISE',
+      duration: 'MONTHLY',
+      renewalDate: '2026-02-20T12:00:00Z'
+    }
+    state.balance = null
+    const { container } = renderTile({ inactivePlan: true })
+
+    expect(container.textContent).toContain('—')
+    expect(container.textContent).not.toContain(
+      'Plan credits ended with your subscription.'
+    )
+    expect(container.textContent).not.toContain(
+      'Spendable once your plan is restored.'
+    )
+    expect(container.textContent).toContain('Balance unavailable')
   })
 
   it('does not borrow a catalog monthly pool for an Enterprise plan', () => {
