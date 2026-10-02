@@ -424,10 +424,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     }
   }
 
-  function safelyChunkWireOps(
-    ops: Op[],
-    errorType = 'failure_chunking_agent_op_sender'
-  ): Op[][] {
+  function safelyChunkWireOps(ops: Op[], errorType: string): Op[][] {
     try {
       return chunkWireOps(ops)
     } catch (cause) {
@@ -526,6 +523,10 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
           notifyDetachSettlement,
           'failure_chunking_agent_op_sender_teardown'
         )
+        // The listener is inert once detached. Release late-result bookkeeping
+        // even if an injected unsubscribe implementation fails below.
+        staleAnonymousBudget = 0
+        retiredOpIds.clear()
       } finally {
         try {
           unsubscribe()
