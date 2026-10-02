@@ -4,7 +4,6 @@ import type { Locator, Page, WebSocketRoute } from '@playwright/test'
 import type {
   AgentAnswerAccepted,
   AgentCancelAccepted,
-  AgentError,
   AgentMessage,
   AgentPendingAsk,
   AgentTurnAccepted
@@ -17,6 +16,7 @@ import { z } from 'zod'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type { zTurnInProgressError } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { agentTest } from '@e2e/fixtures/agentPanelFixture'
 import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixture'
@@ -51,16 +51,11 @@ export const TURN_IN_PROGRESS_MESSAGE =
  * "re-attached" — a fixture that sends the message alone cannot distinguish a
  * client that reads them from one that does not.
  *
- * `AgentError` types only `error`, because the generated OpenAPI schema for this
- * endpoint does not describe the conflict body; the intersection keeps the
- * shared field checked while still sending what the service really sends.
- * (Filed as an upstream hypothesis for the ingest schema.)
+ * The generated OpenAPI schema does not describe this endpoint's conflict
+ * body, so the fixture consumes the same runtime schema as the client until
+ * that upstream contract includes the response.
  */
-type TurnInProgressBody = AgentError & {
-  type: string
-  active_message_id: string
-  turn_id: string
-}
+type TurnInProgressBody = z.infer<typeof zTurnInProgressError>
 
 const TURN_IN_PROGRESS: TurnInProgressBody = {
   error: TURN_IN_PROGRESS_MESSAGE,
