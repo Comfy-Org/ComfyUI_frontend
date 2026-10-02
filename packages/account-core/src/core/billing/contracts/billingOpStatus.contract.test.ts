@@ -78,28 +78,26 @@ describe('billing operation status contract', () => {
 
   it('normalizes charge breakdown amounts to numbers', () => {
     expect(
-      BillingOpStatusSchema.safeParse(
-        {
-          ...opStatusBody({ status: 'succeeded' }),
-          charge_breakdown: {
-            amount_charged_cents: 1999,
-            currency: 'usd',
-            prorated: true,
-            reasons: [
-              {
-                amount_cents: 500,
-                discount: {
-                  amount_off_cents: 500,
-                  code: 'SAVE',
-                  duration_in_months: 3,
-                  kind: 'promotion'
-                },
-                kind: 'promo_code'
-              }
-            ]
-          }
+      BillingOpStatusSchema.safeParse({
+        ...opStatusBody({ status: 'succeeded' }),
+        charge_breakdown: {
+          amount_charged_cents: 1999,
+          currency: 'usd',
+          prorated: true,
+          reasons: [
+            {
+              amount_cents: 500,
+              discount: {
+                amount_off_cents: 500,
+                code: 'SAVE',
+                duration_in_months: 3,
+                kind: 'promotion'
+              },
+              kind: 'promo_code'
+            }
+          ]
         }
-      )
+      })
     ).toMatchObject({
       success: true,
       data: {
