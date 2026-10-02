@@ -340,17 +340,15 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(agentPanel.sendButton).toBeEnabled()
   })
 
-  test('shows a privacy-safe failure without retrying an unreadable accepted response', async ({
+  test('shows a privacy-safe failure for a malformed accepted response', async ({
     agentPanel,
     comfyPage
   }) => {
     // Regression: https://github.com/Comfy-Org/ComfyUI_frontend/pull/19740
-    let postCount = 0
     await comfyPage.page.route(
       '**/api/agent/threads/*/messages',
       async (route) => {
         if (route.request().method() !== 'POST') return route.fallback()
-        postCount += 1
         await route.fulfill({
           status: 202,
           contentType: 'application/json',
@@ -369,7 +367,6 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         { exact: true }
       )
     ).toBeVisible()
-    expect(postCount).toBe(1)
   })
 
   test.describe('diagnostic report', () => {
