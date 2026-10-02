@@ -38,23 +38,14 @@ const translations = {
   'workshop.catalogue.eyebrow': { en: 'Hub', 'zh-CN': 'Hub' },
   'workshop.catalogue.categories': { en: 'Categories', 'zh-CN': '分类' },
   'workshop.catalogue.show': { en: 'Browse', 'zh-CN': '浏览' },
-  'workshop.space.label': { en: 'Hub spaces', 'zh-CN': 'Hub 空间' },
-  'workshop.space.explore': { en: 'Explore', 'zh-CN': '探索' },
-  'workshop.space.exploreHint': {
-    en: 'Everything in one place',
-    'zh-CN': '一站浏览全部内容'
-  },
-  'workshop.space.create': { en: 'Create', 'zh-CN': '创作' },
   'workshop.space.createHint': {
     en: 'Use a ready-made tool',
     'zh-CN': '使用现成工具'
   },
-  'workshop.space.customize': { en: 'Customize', 'zh-CN': '定制' },
   'workshop.space.customizeHint': {
     en: 'Control the process',
     'zh-CN': '掌控整个流程'
   },
-  'workshop.space.build': { en: 'Build', 'zh-CN': '构建' },
   'workshop.space.buildHint': {
     en: 'Put it in your product with APIs',
     'zh-CN': '通过 API 用在你的产品中'

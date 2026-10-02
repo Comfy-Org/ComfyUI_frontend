@@ -315,13 +315,29 @@ describe('ModelsCatalogue', () => {
     })
 
     it.for([
-      { apps: true, doors: ['/hub/apps/', '/hub/workflows/', '/hub/models/'] },
-      { apps: false, doors: ['/hub/workflows/', '/hub/models/'] }
+      {
+        apps: true,
+        catalogue: 'apps, workflows and models',
+        models: launchModels,
+        doors: ['/hub/apps/', '/hub/workflows/', '/hub/models/']
+      },
+      {
+        apps: false,
+        catalogue: 'workflows and models',
+        models: launchModels,
+        doors: ['/hub/workflows/', '/hub/models/']
+      },
+      {
+        apps: false,
+        catalogue: 'models only',
+        models: launchModels.filter((model) => model.routerId),
+        doors: ['/hub/models/']
+      }
     ])(
-      'ends with a door per format, apps only when they are on: $apps',
-      async ({ apps, doors }) => {
+      'ends with a door per format it holds: $catalogue',
+      async ({ apps, models, doors }) => {
         appsFlag.value = apps
-        renderExplore(launchModels)
+        renderExplore(models)
 
         expect(
           within(await screen.findByTestId('explore-doors'))

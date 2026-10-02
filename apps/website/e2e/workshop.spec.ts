@@ -711,7 +711,7 @@ test.describe('Model playground', () => {
     await nav.getByRole('button', { name: /^Products/ }).click()
     await nav.getByRole('link', { name: /Explore the Hub/ }).click()
     await expect(page).toHaveURL('/hub/')
-    await page.getByTestId('hub-space-build').click()
+    await page.getByTestId('explore-door-models').click()
     await page.getByTestId('workshop-search').fill('Seedream 4.5 Image Edit')
     await page
       .getByTestId('workshop-models-grid')

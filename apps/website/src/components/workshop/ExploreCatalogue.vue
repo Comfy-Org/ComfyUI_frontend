@@ -132,6 +132,10 @@ function clear() {
       @clear="clear"
     />
 
-    <ExploreDoors :apps="apps.length > 0" :locale />
+    <ExploreDoors
+      :apps="apps.length > 0"
+      :workflows="workflows.length > 0"
+      :locale
+    />
   </div>
 </template>

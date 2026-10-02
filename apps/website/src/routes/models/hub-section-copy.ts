@@ -1,4 +1,4 @@
-import type { HubSection } from '../../components/workshop/HubSpaceNav.vue'
+import type { HubSection } from '../../lib/workshop/hub-section'
 
 // Server-rendered only: translations.ts ships whole to every island, so page head copy lives here.
 export const HUB_SECTION_COPY = {

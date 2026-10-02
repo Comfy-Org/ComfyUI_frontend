@@ -5,15 +5,11 @@ export async function observeHubNavigation(page: Page) {
     const observed = {
       frames: 0,
       bannerReappeared: false,
-      spacesDisappeared: false,
       loaderAppeared: false,
-      headerMoved: false,
-      spacesMoved: false
+      headerMoved: false
     }
-    const header = document.querySelector('[aria-label="Main navigation"]')
-    const headerY = header?.getBoundingClientRect().y
-    const spacesY = document
-      .querySelector('[data-testid="hub-space-nav"]')
+    const headerY = document
+      .querySelector('[aria-label="Main navigation"]')
       ?.getBoundingClientRect().y
     let frame: number
     function record() {
@@ -23,9 +19,6 @@ export async function observeHubNavigation(page: Page) {
           .querySelector('[data-slot="announcement-banner"]')
           ?.checkVisibility()
       )
-      observed.spacesDisappeared ||= !document
-        .querySelector('[data-testid="hub-space-nav"]')
-        ?.checkVisibility()
       observed.loaderAppeared ||= Boolean(
         document
           .querySelector(
@@ -37,10 +30,6 @@ export async function observeHubNavigation(page: Page) {
         document
           .querySelector('[aria-label="Main navigation"]')
           ?.getBoundingClientRect().y !== headerY
-      observed.spacesMoved ||=
-        document
-          .querySelector('[data-testid="hub-space-nav"]')
-          ?.getBoundingClientRect().y !== spacesY
       frame = requestAnimationFrame(record)
     }
     record()

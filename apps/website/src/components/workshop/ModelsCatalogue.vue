@@ -12,7 +12,7 @@ import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import BuildApiBand from './BuildApiBand.vue'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
-import type { HubSection } from './HubSpaceNav.vue'
+import type { HubSection } from '../../lib/workshop/hub-section'
 import type { WorkshopPageType } from '../../scripts/workshop-analytics'
 import {
   captureWorkshopEvent,

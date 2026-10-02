@@ -101,10 +101,7 @@ test('lists both apps on the hub apps page, on /hub/apps/ pages', async ({
   await expect(
     page.getByRole('heading', { level: 1, name: 'ComfyUI apps' })
   ).toBeVisible()
-  await expect(page.getByTestId('hub-space-create')).toHaveAttribute(
-    'aria-current',
-    'page'
-  )
+  await expect(page.getByTestId('hub-back')).toHaveAttribute('href', '/hub/')
   const shelf = page.getByTestId('app-shelf')
   const cards = shelf.getByRole('link')
   await expect(cards).toHaveCount(2)

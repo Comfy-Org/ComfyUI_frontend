@@ -6,8 +6,13 @@ import { getRoutes } from '../../config/routes'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
-const { apps, locale = 'en' } = defineProps<{
+const {
+  apps,
+  workflows,
+  locale = 'en'
+} = defineProps<{
   apps: boolean
+  workflows: boolean
   locale?: Locale
 }>()
 
@@ -26,21 +31,23 @@ const appsDoor: Door = {
   title: 'workshop.explore.doorApps',
   hint: 'workshop.explore.appsHint'
 }
-const otherDoors: readonly Door[] = [
-  {
-    id: 'explore-door-workflows',
-    href: routes.hubWorkflows,
-    title: 'workshop.explore.doorWorkflows',
-    hint: 'workshop.explore.workflowsHint'
-  },
-  {
-    id: 'explore-door-models',
-    href: routes.workshop,
-    title: 'workshop.explore.modelsTitle',
-    hint: 'workshop.explore.modelsHint'
-  }
-]
-const doors = computed(() => (apps ? [appsDoor, ...otherDoors] : otherDoors))
+const workflowsDoor: Door = {
+  id: 'explore-door-workflows',
+  href: routes.hubWorkflows,
+  title: 'workshop.explore.doorWorkflows',
+  hint: 'workshop.explore.workflowsHint'
+}
+const modelsDoor: Door = {
+  id: 'explore-door-models',
+  href: routes.workshop,
+  title: 'workshop.explore.modelsTitle',
+  hint: 'workshop.explore.modelsHint'
+}
+const doors = computed(() => [
+  ...(apps ? [appsDoor] : []),
+  ...(workflows ? [workflowsDoor] : []),
+  modelsDoor
+])
 </script>
 
 <template>

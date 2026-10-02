@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { readonly, ref, createSSRApp, h, nextTick } from 'vue'
 import type { Ref } from 'vue'
@@ -18,7 +18,7 @@ import {
   useWorkshopAuthFlag
 } from '../../scripts/posthog'
 import { FORWARD_GRACE_MS, forwardLegacySection } from './forwardLegacySection'
-import type { HubSection } from './HubSpaceNav.vue'
+import type { HubSection } from '../../lib/workshop/hub-section'
 import ModelsPage from './ModelsPage.vue'
 
 vi.mock(import('../../scripts/posthog'))
@@ -120,83 +120,42 @@ describe('Models page entry', () => {
     return screen.findByRole('heading', { name: 'Section heading' })
   }
 
-  const hubSpaces = () =>
-    within(screen.getByRole('navigation', { name: 'Hub spaces' }))
-
   it.for([
-    {
-      flags: 'on',
-      on: true,
-      spaces: [
-        ['Explore', '/hub/'],
-        ['Create', '/hub/apps/'],
-        ['Customize', '/hub/workflows/'],
-        ['Build', '/hub/models/']
-      ]
-    },
-    {
-      flags: 'off',
-      on: false,
-      spaces: [
-        ['Explore', '/hub/'],
-        ['Build', '/hub/models/']
-      ]
-    }
-  ])(
-    'links the hub spaces a visitor can open with apps and workflows $flags',
-    async ({ on, spaces }) => {
-      appsEnabled.value = on
-      workflowsEnabled.value = on
-      await renderSection('models')
-
-      expect(
-        hubSpaces()
-          .getAllByRole('link')
-          .map((link) => [link.textContent.trim(), link.getAttribute('href')])
-      ).toEqual(spaces)
-    }
-  )
-
-  it.for([
-    { section: 'explore', current: 'Explore' },
-    { section: 'apps', current: 'Create' },
-    { section: 'workflows', current: 'Customize' },
-    { section: 'models', current: 'Build' }
+    { section: 'explore', back: false },
+    { section: 'apps', back: true },
+    { section: 'workflows', back: true },
+    { section: 'models', back: true }
   ] as const)(
-    'marks $current as the space of $section',
-    async ({ section, current }) => {
+    'heads $section with the Hub, as a way back only off the landing',
+    async ({ section, back }) => {
       appsEnabled.value = true
       workflowsEnabled.value = true
       await renderSection(section)
 
       expect(
-        hubSpaces().getByRole('link', { current: 'page' })
-      ).toHaveTextContent(current)
+        screen.queryByRole('navigation', { name: 'Hub spaces' })
+      ).toBeNull()
+      expect(
+        screen.queryByRole('link', { name: 'Hub' })?.getAttribute('href')
+      ).toBe(back ? '/hub/' : undefined)
     }
   )
 
-  it('follows the section when the persisted page swaps to another space', async () => {
-    appsEnabled.value = true
+  it('adds the way back when the persisted landing swaps to a section', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn<typeof fetch>().mockResolvedValue(Response.json(workshopPages))
     )
     enabled.value = true
     const { rerender } = render(ModelsPage, {
-      props: { section: 'models', heading: 'Section heading' }
+      props: { section: 'explore', heading: 'Section heading' }
     })
-    const spaces = within(
-      await screen.findByRole('navigation', { name: 'Hub spaces' })
-    )
-    expect(spaces.getByRole('link', { current: 'page' })).toHaveTextContent(
-      'Build'
-    )
+    await screen.findByRole('heading', { name: 'Section heading' })
+    expect(screen.queryByTestId('hub-back')).toBeNull()
 
-    await rerender({ section: 'apps', heading: 'Section heading' })
+    await rerender({ section: 'models', heading: 'Section heading' })
 
-    expect(spaces.getByRole('link', { current: 'page' })).toHaveTextContent(
-      'Create'
-    )
+    expect(screen.getByTestId('hub-back')).toHaveAttribute('href', '/hub/')
   })
 
   it('opens the explore page to visitors without the workshop flag', async () => {
@@ -538,17 +497,21 @@ describe('Models page entry', () => {
     expect(fetchData).not.toHaveBeenCalled()
   })
 
-  it('adds workflows to a loaded catalogue when their flag answers late', async () => {
+  it('adds workflows to the landing when their flag answers late', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn<typeof fetch>().mockResolvedValue(Response.json(workshopPages))
     )
-    render(ModelsPage, { props: { heading: 'Models heading' } })
-    expect(await screen.findByTestId('workshop-search')).toBeTruthy()
-    expect(screen.queryByTestId('hub-space-customize')).toBeNull()
+    render(ModelsPage, {
+      props: { section: 'explore', heading: 'Explore heading' }
+    })
+    const kinds = () =>
+      screen.queryAllByTestId('explore-kind').map((tag) => tag.dataset.kind)
+    await screen.findByTestId('explore-results')
+    expect(kinds()).not.toContain('workflow')
 
     workflowsEnabled.value = true
-    expect(await screen.findByTestId('hub-space-customize')).toBeTruthy()
+    await waitFor(() => expect(kinds()).toContain('workflow'))
   })
 
   it.for([
