@@ -23,7 +23,8 @@ describe('hub model addresses', () => {
       routes.cinematicStudio,
       routes.moveAnything,
       routes.relight,
-      routes.reshoot
+      routes.reshoot,
+      routes.virtualTryOn
     ]).toEqual(hubAppSlugs.map(hubAppHref))
   })
 

@@ -72,6 +72,16 @@ const copy = {
     en: 'Image · Beeble SwitchX',
     'zh-CN': '图像 · Beeble SwitchX'
   },
+  'cinematic.hub.virtualTryOn': { en: 'Virtual try-on', 'zh-CN': '虚拟试穿' },
+  'cinematic.hub.virtualTryOnSummary': {
+    en: 'Put a garment on a person in a photo, in a slim, regular or relaxed fit, and the model keeps their pose and light.',
+    'zh-CN':
+      '为照片中的人物换上一件衣服，可选修身、常规或宽松版型，模型会保留姿势与光线。'
+  },
+  'cinematic.hub.virtualTryOnMeta': {
+    en: 'Image · Kling Virtual Try-On',
+    'zh-CN': '图像 · Kling Virtual Try-On'
+  },
   'cinematic.stage.longWait': {
     en: 'Still going. Some models take about a minute. Nothing is queued; yours already started.',
     'zh-CN': '仍在进行。部分模型需要约一分钟。没有排队，你的任务已经开始。'
