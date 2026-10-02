@@ -100,7 +100,13 @@ test.describe(
           },
           { id: comfyPage.id, coachSeenKey: COACH_SEEN_KEY }
         )
+        const settingsLoaded = page.waitForResponse(
+          (response) =>
+            response.request().method() === 'GET' &&
+            new URL(response.url()).pathname === '/api/settings'
+        )
         await comfyPage.workflow.reloadAndWaitForApp()
+        await settingsLoaded
 
         // Asserted first so a regression reads as "the card came back" rather
         // than as some second-order effect of the card holding the screen.
