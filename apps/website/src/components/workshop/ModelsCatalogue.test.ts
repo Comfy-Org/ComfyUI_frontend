@@ -506,11 +506,11 @@ describe('ModelsCatalogue', () => {
         .getAllByRole('link')
         .map((link) => link.getAttribute('href'))
     ).toEqual([
+      'https://platform.comfy.org/profile/api-keys?onboarding=router',
+      'https://docs.comfy.org/development/comfy-router/quickstart#comfy-router-quickstart',
       '/platform/router/',
       '/platform/comfy-api/',
-      '/platform/',
-      'https://platform.comfy.org/profile/api-keys?onboarding=router',
-      'https://docs.comfy.org/development/comfy-router/quickstart#comfy-router-quickstart'
+      '/platform/'
     ])
   })
 

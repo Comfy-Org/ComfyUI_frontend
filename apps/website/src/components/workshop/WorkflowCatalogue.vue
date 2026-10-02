@@ -196,7 +196,7 @@ function leaveSection() {
       data-testid="workshop-toolbar"
     >
       <div
-        class="flex min-w-0 flex-1 items-center gap-3 max-sm:basis-full sm:min-w-fit sm:justify-end"
+        class="flex min-w-0 flex-1 items-center gap-3 max-sm:basis-full sm:min-w-fit"
       >
         <WorkshopSearchField
           v-model="query"
@@ -204,7 +204,7 @@ function leaveSection() {
           :locale
           kind="workflows"
           compact
-          class="min-w-0 flex-1 sm:max-w-120"
+          class="min-w-0 flex-1"
         />
         <WorkshopFilterMenu
           ref="filterMenu"

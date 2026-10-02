@@ -244,14 +244,14 @@ watch(browseAll, (on) => on && resetFilters())
         class="sticky top-20 z-30 -mx-1 mb-8 flex scroll-mt-20 flex-wrap items-center gap-3 bg-page px-1 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26 lg:scroll-mt-26"
       >
         <div
-          class="flex min-w-0 flex-1 items-center gap-3 max-sm:basis-full sm:min-w-fit sm:justify-end"
+          class="flex min-w-0 flex-1 items-center gap-3 max-sm:basis-full sm:min-w-fit"
         >
           <WorkshopSearchField
             v-model="query"
             :models
             :locale
             compact
-            class="min-w-0 flex-1 sm:max-w-120"
+            class="min-w-0 flex-1"
           />
 
           <div class="flex items-center gap-2" data-testid="workshop-filters">

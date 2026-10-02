@@ -6,11 +6,11 @@ import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { SHELF_CARD } from '../../lib/workshop/card-layout'
 import type { CatalogueApp } from '../../lib/workshop/catalogue-apps'
+import { nameWithoutTask, taskLabelFor } from '../../lib/workshop/task-label'
 import CardRow from './CardRow.vue'
 import ExploreKindTag from './ExploreKindTag.vue'
 import ExploreSeeAll from './ExploreSeeAll.vue'
-import WorkshopAppCard from './WorkshopAppCard.vue'
-import WorkshopModelCard from './WorkshopModelCard.vue'
+import ExploreResultCard from './ExploreResultCard.vue'
 
 const {
   title,
@@ -52,7 +52,12 @@ defineEmits<{ clear: [] }>()
         :key="app.key"
         :class="cn(SHELF_CARD, 'relative')"
       >
-        <WorkshopAppCard :app />
+        <ExploreResultCard
+          :href="app.href"
+          :name="app.name"
+          :detail="app.task"
+          :image="app.image"
+        />
         <ExploreKindTag kind="app" :locale />
       </li>
       <li
@@ -60,7 +65,12 @@ defineEmits<{ clear: [] }>()
         :key="model.slug"
         :class="cn(SHELF_CARD, 'relative')"
       >
-        <WorkshopModelCard :model :locale />
+        <ExploreResultCard
+          :href="model.href"
+          :name="nameWithoutTask(model.name, taskLabelFor(model, locale))"
+          :detail="taskLabelFor(model, locale)"
+          :model
+        />
         <ExploreKindTag
           :kind="model.workflowId ? 'workflow' : 'model'"
           :locale

@@ -61,7 +61,11 @@ const DOORS: readonly Door[] = [
   }
 ]
 
-const TILT = ['-rotate-8', 'rotate-0', 'rotate-8']
+const FAN = [
+  'z-30 rotate-6 group-hover:rotate-8',
+  'z-20 -rotate-6 group-hover:-rotate-8',
+  'z-10 -rotate-18 group-hover:-rotate-24'
+]
 
 const doors = computed(() =>
   DOORS.filter((door) => door.section === 'models' || counts[door.section])
@@ -86,7 +90,18 @@ const doors = computed(() =>
           :data-testid="`explore-door-${door.section}`"
         >
           <span
-            class="absolute top-1/2 right-4 flex -translate-y-1/2 items-center lg:right-6"
+            :class="
+              cn(
+                'absolute top-5 right-5 z-40 grid size-10 place-items-center rounded-full transition-transform duration-200 group-hover:translate-x-0.5',
+                door.arrow
+              )
+            "
+            aria-hidden="true"
+          >
+            <ArrowRight class="size-5" />
+          </span>
+          <span
+            class="absolute right-8 -bottom-8 aspect-3/4 w-20 lg:w-24"
             aria-hidden="true"
           >
             <img
@@ -96,10 +111,8 @@ const doors = computed(() =>
               alt=""
               :class="
                 cn(
-                  'aspect-3/4 w-18 rounded-xl object-cover shadow-xl ring-2 ring-white/30 transition-transform duration-300 select-none not-first:-ml-8 lg:w-24 lg:not-first:-ml-10',
-                  TILT[index],
-                  index === 1 &&
-                    'z-10 -translate-y-2 group-hover:-translate-y-4'
+                  'absolute inset-0 size-full origin-[50%_170%] rounded-xl object-cover shadow-xl ring-2 ring-white/30 transition-transform duration-300 select-none',
+                  FAN[index]
                 )
               "
               data-testid="explore-door-art"
@@ -108,29 +121,14 @@ const doors = computed(() =>
               draggable="false"
             />
           </span>
-          <span
-            class="relative mt-auto flex max-w-3/5 flex-col gap-1 p-6 md:max-w-1/2"
-          >
+          <span class="relative z-40 mt-auto flex max-w-1/2 flex-col gap-1 p-6">
             <span
               class="text-xs font-medium tracking-wide uppercase opacity-70"
             >
               {{ tPlural(door.count, counts[door.section], locale) }}
             </span>
-            <span
-              class="flex items-center gap-3 text-2xl font-medium lg:text-3xl"
-            >
+            <span class="text-2xl font-medium lg:text-3xl">
               {{ t(door.title, locale) }}
-              <span
-                :class="
-                  cn(
-                    'grid size-8 shrink-0 place-items-center rounded-full transition-transform duration-200 group-hover:translate-x-1',
-                    door.arrow
-                  )
-                "
-                aria-hidden="true"
-              >
-                <ArrowRight class="size-4" />
-              </span>
             </span>
             <span class="text-sm opacity-80">
               {{ t(door.hint, locale) }}
