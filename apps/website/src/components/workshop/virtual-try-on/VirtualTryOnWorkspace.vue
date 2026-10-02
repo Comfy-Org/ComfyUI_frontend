@@ -10,7 +10,7 @@ import { mockProgress } from '../../../lib/workshop/virtual-try-on/mock-run'
 import EditorBusy from '../app-editor/EditorBusy.vue'
 import EditorFrame from '../app-editor/EditorFrame.vue'
 import EditorHint from '../app-editor/EditorHint.vue'
-import VirtualTryOnDropZone from './VirtualTryOnDropZone.vue'
+import EditorDropZone from '../app-editor/EditorDropZone.vue'
 import VirtualTryOnGarmentCard from './VirtualTryOnGarmentCard.vue'
 import { personAlt } from './person-alt'
 
@@ -31,7 +31,7 @@ const busy = computed(() => {
   const progress = mockProgress(elapsed)
   return {
     title:
-      progress.stage === 'queued'
+      progress.kind === 'queued'
         ? vc('tryOn.busy.queued', locale)
         : vc('tryOn.busy.running', locale, { percent: progress.percent }),
     detail: vc('tryOn.busy.detail', locale, {
@@ -46,7 +46,7 @@ const busy = computed(() => {
 <template>
   <div class="size-full max-w-5xl">
     <EditorFrame :width="person.width" :height="person.height">
-      <VirtualTryOnDropZone
+      <EditorDropZone
         :disabled="running"
         class="absolute inset-0 rounded-sm"
         data-testid="try-on-person-drop"
@@ -58,7 +58,7 @@ const busy = computed(() => {
           class="size-full rounded-sm object-cover"
           data-testid="try-on-person"
         />
-      </VirtualTryOnDropZone>
+      </EditorDropZone>
       <EditorHint
         v-if="!touched && phase.kind === 'editing'"
         :text="vc('tryOn.hint', locale)"

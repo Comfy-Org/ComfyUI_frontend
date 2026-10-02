@@ -1,3 +1,5 @@
+import type { RunProgress } from '../../../components/workshop/app-editor/run-progress'
+import { clockProgress } from '../../../components/workshop/app-editor/run-progress'
 import { mockJob } from '../mock-job'
 import type { TryOnRequest, TryOnResult } from './contract'
 import type { Area, Point } from './garments'
@@ -34,19 +36,13 @@ export const TRY_ON_PERSON = {
   height: 720
 } as const
 
-export type TryOnProgress =
-  | { readonly stage: 'queued' }
-  | { readonly stage: 'running'; readonly percent: number }
-
 /**
  * How far along a run is after `elapsedMs`. The mock reads it off the
  * clock: queued at first, then running towards 99% until it answers. The
  * real job reports the same two stages.
  */
-export function mockProgress(elapsedMs: number): TryOnProgress {
-  if (elapsedMs < MOCK_QUEUE_MS) return { stage: 'queued' }
-  const share = (elapsedMs - MOCK_QUEUE_MS) / (MOCK_DELAY_MS - MOCK_QUEUE_MS)
-  return { stage: 'running', percent: Math.min(99, Math.floor(share * 100)) }
+export function mockProgress(elapsedMs: number): RunProgress {
+  return clockProgress(elapsedMs, MOCK_DELAY_MS, MOCK_QUEUE_MS)
 }
 
 /**

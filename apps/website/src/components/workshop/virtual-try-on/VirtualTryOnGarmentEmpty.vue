@@ -3,7 +3,7 @@ import { Shirt } from '@lucide/vue'
 
 import type { Locale } from '../../../i18n/translations'
 import { vc } from '../../../lib/workshop/virtual-try-on/copy'
-import EditorFileButton from '../app-editor/EditorFileButton.vue'
+import EditorUploadSlot from '../app-editor/EditorUploadSlot.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const emit = defineEmits<{ file: [file: File] }>()
@@ -21,11 +21,11 @@ const emit = defineEmits<{ file: [file: File] }>()
       class="text-[10px] leading-tight text-primary-warm-gray max-sm:hidden"
       >{{ vc('tryOn.garment.emptyMeta', locale) }}</span
     >
-    <EditorFileButton
+    <EditorUploadSlot
       class="h-7 rounded-full bg-primary-warm-white px-3 text-[11px] font-semibold text-primary-comfy-ink focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
       @file="(file) => emit('file', file)"
     >
       {{ vc('tryOn.garment.choose', locale) }}
-    </EditorFileButton>
+    </EditorUploadSlot>
   </div>
 </template>

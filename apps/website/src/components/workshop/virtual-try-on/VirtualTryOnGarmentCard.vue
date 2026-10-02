@@ -4,8 +4,8 @@ import { RefreshCw, X } from '@lucide/vue'
 import type { VirtualTryOn } from '../../../composables/useVirtualTryOn'
 import type { Locale } from '../../../i18n/translations'
 import { vc } from '../../../lib/workshop/virtual-try-on/copy'
-import EditorFileButton from '../app-editor/EditorFileButton.vue'
-import VirtualTryOnDropZone from './VirtualTryOnDropZone.vue'
+import EditorUploadSlot from '../app-editor/EditorUploadSlot.vue'
+import EditorDropZone from '../app-editor/EditorDropZone.vue'
 import VirtualTryOnGarmentEmpty from './VirtualTryOnGarmentEmpty.vue'
 
 const { tryOn, locale = 'en' } = defineProps<{
@@ -22,7 +22,7 @@ const { garment, phase } = tryOn
     class="absolute top-3 right-3 w-20 sm:w-32"
     data-testid="try-on-garment-card"
   >
-    <VirtualTryOnDropZone
+    <EditorDropZone
       :disabled="phase.kind === 'running'"
       class="rounded-xl"
       @file="tryOn.useGarmentFile"
@@ -45,14 +45,14 @@ const { garment, phase } = tryOn
           }}</span>
         </figcaption>
         <span class="absolute top-1.5 right-1.5 flex gap-1">
-          <EditorFileButton
+          <EditorUploadSlot
             :label="vc('tryOn.garment.replace', locale)"
             :disabled="phase.kind === 'running'"
             class="grid size-6 place-items-center rounded-full bg-primary-comfy-ink/75 text-primary-warm-white transition hover:bg-primary-comfy-ink focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/60 focus-visible:outline-none disabled:opacity-40"
             @file="tryOn.useGarmentFile"
           >
             <RefreshCw class="size-3" aria-hidden="true" />
-          </EditorFileButton>
+          </EditorUploadSlot>
           <button
             type="button"
             :aria-label="vc('tryOn.garment.remove', locale)"
@@ -66,6 +66,6 @@ const { garment, phase } = tryOn
         </span>
       </figure>
       <VirtualTryOnGarmentEmpty v-else :locale @file="tryOn.useGarmentFile" />
-    </VirtualTryOnDropZone>
+    </EditorDropZone>
   </aside>
 </template>

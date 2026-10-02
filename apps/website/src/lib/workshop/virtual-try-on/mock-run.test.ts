@@ -20,11 +20,11 @@ const tryOnRequest = (
 
 describe('mockProgress', () => {
   it.for([
-    { elapsed: 0, expected: { stage: 'queued' } },
-    { elapsed: 400, expected: { stage: 'running', percent: 0 } },
-    { elapsed: 1400, expected: { stage: 'running', percent: 50 } },
-    { elapsed: 9000, expected: { stage: 'running', percent: 99 } }
-  ])('is $expected.stage after $elapsed ms', ({ elapsed, expected }) => {
+    { elapsed: 0, expected: { kind: 'queued' } },
+    { elapsed: 400, expected: { kind: 'running', percent: 0 } },
+    { elapsed: 1400, expected: { kind: 'running', percent: 50 } },
+    { elapsed: 9000, expected: { kind: 'running', percent: 99 } }
+  ])('is $expected.kind after $elapsed ms', ({ elapsed, expected }) => {
     expect(mockProgress(elapsed)).toEqual(expected)
   })
 })

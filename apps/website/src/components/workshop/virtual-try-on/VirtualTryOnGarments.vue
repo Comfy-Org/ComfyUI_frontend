@@ -5,9 +5,9 @@ import { computed } from 'vue'
 import type { VirtualTryOn } from '../../../composables/useVirtualTryOn'
 import type { Locale } from '../../../i18n/translations'
 import { vc } from '../../../lib/workshop/virtual-try-on/copy'
-import EditorFileButton from '../app-editor/EditorFileButton.vue'
+import EditorUploadSlot from '../app-editor/EditorUploadSlot.vue'
 import EditorTiles from '../app-editor/EditorTiles.vue'
-import VirtualTryOnDropZone from './VirtualTryOnDropZone.vue'
+import EditorDropZone from '../app-editor/EditorDropZone.vue'
 
 const { tryOn, locale = 'en' } = defineProps<{
   tryOn: VirtualTryOn
@@ -27,7 +27,7 @@ const picked = computed({
 </script>
 
 <template>
-  <VirtualTryOnDropZone
+  <EditorDropZone
     class="flex flex-col gap-3 rounded-xl pb-1"
     data-testid="try-on-garment-drop"
     @file="tryOn.useGarmentFile"
@@ -36,7 +36,7 @@ const picked = computed({
       v-model="picked"
       :label="vc('tryOn.garment', locale)"
       :options
-      square
+      aspect="square"
     >
       <template #tile="{ option }">
         <img
@@ -46,12 +46,12 @@ const picked = computed({
         />
       </template>
     </EditorTiles>
-    <EditorFileButton
+    <EditorUploadSlot
       class="mx-1 flex h-8 items-center justify-center gap-1.5 rounded-lg border border-dashed border-transparency-white-t20 text-xs text-primary-warm-gray transition hover:border-transparency-white-t40 hover:text-primary-warm-white focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none disabled:opacity-40"
       @file="tryOn.useGarmentFile"
     >
       <Upload class="size-3.5" aria-hidden="true" />
       {{ vc('tryOn.garment.upload', locale) }}
-    </EditorFileButton>
-  </VirtualTryOnDropZone>
+    </EditorUploadSlot>
+  </EditorDropZone>
 </template>
