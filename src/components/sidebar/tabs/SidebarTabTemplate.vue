@@ -23,7 +23,10 @@
           >
             <slot name="tool-buttons" />
           </div>
-          <SidebarTabCloseButton v-if="closable" />
+          <SidebarTabCloseButton
+            v-if="closable"
+            class="relative -top-1 -right-1"
+          />
         </div>
       </div>
       <slot name="header" />
