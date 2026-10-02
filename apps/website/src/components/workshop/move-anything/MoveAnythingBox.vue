@@ -6,6 +6,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Corner, Rect } from '../../../lib/workshop/move-anything/arrange'
 import { nudgeFor } from '../../../lib/workshop/nudge'
+import { rectStyle } from '../app-editor/stage-geometry'
 
 const {
   rect,
@@ -92,15 +93,7 @@ function onKey(event: KeyboardEvent) {
 </script>
 
 <template>
-  <div
-    class="absolute"
-    :style="{
-      left: `${rect.x * 100}%`,
-      top: `${rect.y * 100}%`,
-      width: `${rect.w * 100}%`,
-      height: `${rect.h * 100}%`
-    }"
-  >
+  <div class="absolute" :style="rectStyle(rect)">
     <button
       ref="box"
       type="button"

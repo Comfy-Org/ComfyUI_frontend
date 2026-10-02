@@ -6,8 +6,14 @@ import type { Locale } from '../../../i18n/translations'
 import { lc } from '../../../lib/workshop/relight/copy'
 import EditorMenuButton from '../app-editor/EditorMenuButton.vue'
 
-const { relight, locale = 'en' } = defineProps<{
+const {
+  relight,
+  compact = false,
+  locale = 'en'
+} = defineProps<{
   relight: Relight
+  /** A bare `+` that opens downward, for a section header. */
+  compact?: boolean
   locale?: Locale
 }>()
 
@@ -27,7 +33,9 @@ const kinds = [
     :label="lc('relight.tool.add', locale)"
     :items="kinds"
     :disabled="full || phase.kind === 'running'"
-    up
+    :icon-only="compact"
+    :up="!compact"
+    :end="compact"
     @pick="relight.addLight"
   />
 </template>

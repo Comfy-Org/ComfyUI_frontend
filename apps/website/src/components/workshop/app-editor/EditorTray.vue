@@ -13,7 +13,7 @@ const emit = defineEmits<{ close: [] }>()
   <div
     role="dialog"
     :aria-label="title"
-    class="pointer-events-auto w-full max-w-110 overflow-hidden rounded-2xl border border-transparency-white-t20 bg-primary-comfy-ink-light shadow-xl shadow-black/40"
+    class="pointer-events-auto w-full max-w-110 rounded-2xl border border-transparency-white-t20 bg-primary-comfy-ink-light shadow-xl shadow-black/40"
     @keydown.esc="emit('close')"
   >
     <div
@@ -35,7 +35,7 @@ const emit = defineEmits<{ close: [] }>()
       </span>
     </div>
     <div
-      class="flex max-h-[min(28rem,50svh)] flex-col gap-2 overflow-y-auto p-2.5"
+      class="flex max-h-[min(28rem,50svh)] flex-col gap-2 overflow-y-auto rounded-b-2xl p-2.5"
     >
       <slot />
     </div>

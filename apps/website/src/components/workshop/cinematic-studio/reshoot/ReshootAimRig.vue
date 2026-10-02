@@ -13,7 +13,7 @@ import type { ReshootCopyKey } from '../../../../lib/workshop/cinematic-studio/r
 import InfoTooltip from '@/components/ui/tooltip/InfoTooltip.vue'
 import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
 import type { Locale } from '../../../../i18n/translations'
-import ReshootBarField from './ReshootBarField.vue'
+import EditorSlider from '../../app-editor/EditorSlider.vue'
 import ReshootGlobe from './ReshootGlobe.vue'
 import ReshootZone from './ReshootZone.vue'
 
@@ -69,7 +69,7 @@ const zone = computed(() => cameraZone(camera))
     <ReshootZone :zone class="mx-auto mb-1">
       {{ rc(`reshoot.zone.${zone}`, locale) }}
     </ReshootZone>
-    <ReshootBarField
+    <EditorSlider
       v-for="{ axis, label, format, hint } in MAIN"
       :key="axis"
       :model-value="camera[axis]"
@@ -81,7 +81,7 @@ const zone = computed(() => cameraZone(camera))
       @update:model-value="emit('aim', { [axis]: $event })"
     />
     <div class="flex flex-col gap-2">
-      <ReshootBarField
+      <EditorSlider
         v-for="{ axis, label, format } in MORE"
         :key="axis"
         :model-value="camera[axis]"
