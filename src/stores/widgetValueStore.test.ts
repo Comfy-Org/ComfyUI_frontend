@@ -569,9 +569,9 @@ describe('useWidgetValueStore', () => {
       const store = useWidgetValueStore()
       store.registerWidget(seedA, state('number', 100))
 
-      expect(
-        Reflect.apply(store.setOptions, store, [seedA, undefined])
-      ).toBe(true)
+      expect(Reflect.apply(store.setOptions, store, [seedA, undefined])).toBe(
+        true
+      )
 
       expect(store.getWidget(seedA)?.options).toEqual({})
     })
@@ -586,9 +586,9 @@ describe('useWidgetValueStore', () => {
       expect(store.setOptions(seedA, { hidden: false })).toBe(true)
 
       expect(store.getWidget(seedA)?.options.hidden).toBe(false)
-      expect(
-        store.getWidgetVisibility(seedA)?.suppression.byExtension
-      ).toBe(false)
+      expect(store.getWidgetVisibility(seedA)?.suppression.byExtension).toBe(
+        false
+      )
     })
 
     it('setOptions preserves extension suppression without hidden metadata', () => {

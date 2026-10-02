@@ -336,7 +336,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     const visibility = getWidgetVisibility(widgetId)
     const hidden = state.options.hidden
     const hadDeclaredSurfaces = state.options.surfaces !== undefined
-    state.options = { ...(options ?? {}) }
+    state.options = { ...options }
     if (state.options.hidden === undefined && hidden !== undefined) {
       state.options.hidden = hidden
     }
@@ -344,8 +344,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
       const nextVisibility = deriveWidgetVisibility({
         type: state.type,
         advanced:
-          !hadDeclaredSurfaces &&
-          visibility.surfaces.canvas === 'advanced',
+          !hadDeclaredSurfaces && visibility.surfaces.canvas === 'advanced',
         options: state.options
       })
       if (hidden === undefined && state.options.hidden === undefined) {

@@ -34,7 +34,12 @@ export function createPromotedWidgetStoreProjection(
       return store.getWidget(id)?.options ?? {}
     },
     set options(next) {
-      store.setOptions(id, next)
+      if (!store.setOptions(id, next)) {
+        console.warn(
+          'createPromotedWidgetStoreProjection: ignored options for missing widget',
+          id
+        )
+      }
     },
     get value() {
       return store.getWidget(id)?.value

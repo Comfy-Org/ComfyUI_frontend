@@ -78,7 +78,12 @@ export function promotedInputWidget(input: INodeInputSlot): IBaseWidget | null {
       return store.getWidget(id)?.options ?? {}
     },
     set options(next) {
-      store.setOptions(id, next)
+      if (!store.setOptions(id, next)) {
+        console.warn(
+          'promotedInputWidget: ignored options for missing widget',
+          id
+        )
+      }
     },
     get value() {
       return store.getWidget(id)?.value
