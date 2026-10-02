@@ -301,21 +301,28 @@ const resolveInternalImport = (
     .find((candidate) => sourceFiles.has(candidate))
 }
 
-const suppressionViolations = (filename: string, source: string): Violation[] =>
-  eslintComments(filename, source)
+const suppressionViolations = (
+  filename: string,
+  source: string
+): Violation[] => {
+  const occurrences = new Map<string, number>()
+  return eslintComments(filename, source)
     .filter(disablesArchitectureRule)
-    .map((comment, index) => {
+    .map((comment) => {
       const exceptionId = comment.match(
         /architecture-exception:\s*(DDD-EX-\d{3})/
       )?.[1]
+      const fingerprintBase = exceptionId
+        ? `named-suppression:${exceptionId}:${filename}:${ARCHITECTURE_RULE}`
+        : `anonymous-suppression:${filename}:${ARCHITECTURE_RULE}`
+      const occurrence = (occurrences.get(fingerprintBase) ?? 0) + 1
+      occurrences.set(fingerprintBase, occurrence)
       return {
         ...(exceptionId ? { exceptionId } : {}),
         kind: exceptionId
           ? ('named-suppression' as const)
           : ('anonymous-suppression' as const),
-        fingerprint: exceptionId
-          ? `named-suppression:${exceptionId}:${filename}:${ARCHITECTURE_RULE}#${index + 1}`
-          : `anonymous-suppression:${filename}:${ARCHITECTURE_RULE}#${index + 1}`,
+        fingerprint: `${fingerprintBase}#${occurrence}`,
         detail: exceptionId
           ? `${filename} suppresses ${ARCHITECTURE_RULE} under ${exceptionId}`
           : `${filename} suppresses ${ARCHITECTURE_RULE} without an architecture-exception identifier`,
@@ -323,6 +330,7 @@ const suppressionViolations = (filename: string, source: string): Violation[] =>
         source: filename
       }
     })
+}
 
 const eslintComments = (filename: string, source: string): string[] =>
   scriptBodies(filename, source).flatMap(({ body, kind }) => {

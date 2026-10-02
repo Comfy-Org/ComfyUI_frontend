@@ -340,6 +340,31 @@ describe('censusRepository accounting and suppressions', () => {
     ])
   })
 
+  test('numbers suppression occurrences independently per fingerprint base', () => {
+    const root = createRepository({
+      'src/mixed.ts': [
+        '// eslint-disable-next-line import-x/no-restricted-paths',
+        '// eslint-disable-next-line import-x/no-restricted-paths -- architecture-exception: DDD-EX-001',
+        '// eslint-disable-next-line import-x/no-restricted-paths -- architecture-exception: DDD-EX-002',
+        '// eslint-disable-next-line import-x/no-restricted-paths',
+        '// eslint-disable-next-line import-x/no-restricted-paths -- architecture-exception: DDD-EX-001',
+        'export const mixed = true'
+      ].join('\n')
+    })
+    const census = censusRepository(root, [])
+    expect(
+      census.violations
+        .filter(({ kind }) => kind.endsWith('suppression'))
+        .map(({ fingerprint }) => fingerprint)
+    ).toEqual([
+      'anonymous-suppression:src/mixed.ts:import-x/no-restricted-paths#1',
+      'anonymous-suppression:src/mixed.ts:import-x/no-restricted-paths#2',
+      'named-suppression:DDD-EX-001:src/mixed.ts:import-x/no-restricted-paths#1',
+      'named-suppression:DDD-EX-001:src/mixed.ts:import-x/no-restricted-paths#2',
+      'named-suppression:DDD-EX-002:src/mixed.ts:import-x/no-restricted-paths#1'
+    ])
+  })
+
   test('detects blanket, multiline, and bulk architecture suppressions', () => {
     const root = createRepository({
       'src/suppressions.ts': [
