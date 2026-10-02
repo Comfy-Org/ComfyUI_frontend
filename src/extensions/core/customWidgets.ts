@@ -161,23 +161,14 @@ class StubWidget<T extends WidgetValue> extends BaseWidget {
     name: string,
     protected valueGetter: () => T
   ) {
-    super({
-      name,
-      node,
-      options: {},
-      type: 'hidden',
-      y: 0
-    })
-  }
-  override computeSize(): [number, number] {
-    return [0, -4]
+    super({ name, node, options: {}, type: 'hidden', y: 0 })
   }
   drawWidget() {}
   onClick() {}
   override get value(): T {
     return this.valueGetter()
   }
-  override set value(_) {}
+  override set value(_: T) {}
 }
 function connectedInputsFor(node: LGraphNode, prefix: string = 'autogrow.') {
   return computed(() =>
