@@ -1,0 +1,51 @@
+diff --git a/dist/runtime-core.cjs.js b/dist/runtime-core.cjs.js
+index dd9312c2c21ae517f15e817267312e9b27aed198..d3d7dc0c916fd5f75d66bd0a9e2524c526c02e47 100644
+--- a/dist/runtime-core.cjs.js
++++ b/dist/runtime-core.cjs.js
+@@ -733,7 +733,11 @@ function withDirectives(vnode, directives) {
+   const instance = getComponentPublicInstance(currentRenderingInstance);
+   const bindings = vnode.dirs || (vnode.dirs = []);
+   for (let i = 0; i < directives.length; i++) {
+-    let [dir, value, arg, modifiers = shared.EMPTY_OBJ] = directives[i];
++    const binding = directives[i];
++    let dir = binding[0];
++    const value = binding[1];
++    const arg = binding[2];
++    const modifiers = binding[3] === void 0 ? shared.EMPTY_OBJ : binding[3];
+     if (dir) {
+       if (shared.isFunction(dir)) {
+         dir = {
+diff --git a/dist/runtime-core.cjs.prod.js b/dist/runtime-core.cjs.prod.js
+index 7c1396ae792476c94e9f5fef7ffe0ddac07936ac..dd5bd9b4a9abc5468ae3eed0fd8c6db81d5a0358 100644
+--- a/dist/runtime-core.cjs.prod.js
++++ b/dist/runtime-core.cjs.prod.js
+@@ -337,7 +337,11 @@ function withDirectives(vnode, directives) {
+   const instance = getComponentPublicInstance(currentRenderingInstance);
+   const bindings = vnode.dirs || (vnode.dirs = []);
+   for (let i = 0; i < directives.length; i++) {
+-    let [dir, value, arg, modifiers = shared.EMPTY_OBJ] = directives[i];
++    const binding = directives[i];
++    let dir = binding[0];
++    const value = binding[1];
++    const arg = binding[2];
++    const modifiers = binding[3] === void 0 ? shared.EMPTY_OBJ : binding[3];
+     if (dir) {
+       if (shared.isFunction(dir)) {
+         dir = {
+diff --git a/dist/runtime-core.esm-bundler.js b/dist/runtime-core.esm-bundler.js
+index 9d391a143e9405112e34016b6643bd3a03a59dc9..629101bac5d97faf3f911748f939c4418d44dd6b 100644
+--- a/dist/runtime-core.esm-bundler.js
++++ b/dist/runtime-core.esm-bundler.js
+@@ -736,7 +736,11 @@ function withDirectives(vnode, directives) {
+   const instance = getComponentPublicInstance(currentRenderingInstance);
+   const bindings = vnode.dirs || (vnode.dirs = []);
+   for (let i = 0; i < directives.length; i++) {
+-    let [dir, value, arg, modifiers = EMPTY_OBJ] = directives[i];
++    const binding = directives[i];
++    let dir = binding[0];
++    const value = binding[1];
++    const arg = binding[2];
++    const modifiers = binding[3] === void 0 ? EMPTY_OBJ : binding[3];
+     if (dir) {
+       if (isFunction(dir)) {
+         dir = {

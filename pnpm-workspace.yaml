@@ -200,3 +200,6 @@ overrides:
 minimumReleaseAgeExclude:
   - '@comfyorg/comfyui-desktop-bridge-types@0.2.0'
   - '@comfyorg/comfy-multi-player@0.3.6'
+
+patchedDependencies:
+  '@vue/runtime-core@3.5.41': patches/@vue__runtime-core@3.5.41.patch
