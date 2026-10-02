@@ -492,19 +492,28 @@ describe('error mapping', () => {
     expect(error).toMatchObject({ cause })
   })
 
-  it.for([
-    new TypeError('Failed to fetch'),
-    new DOMException('The operation was aborted', 'AbortError')
-  ])(
-    'preserves transport failure identity after response headers',
-    async (cause) => {
-      const response = jsonResponse(200, [])
-      vi.spyOn(response, 'json').mockRejectedValueOnce(cause)
-      respond(response)
+  it('wraps a body read failure after an accepted POST response', async () => {
+    const cause = new TypeError('Failed to fetch')
+    const response = jsonResponse(202, {})
+    vi.spyOn(response, 'json').mockRejectedValueOnce(cause)
+    respond(response)
 
-      await expect(makeClient().listThreads()).rejects.toBe(cause)
-    }
-  )
+    const error = await makeClient()
+      .postMessage('t1', { content: 'hi' })
+      .catch((caught: unknown) => caught)
+
+    expect(error).toBeInstanceOf(AgentResponseUnreadableError)
+    expect(error).toMatchObject({ cause })
+  })
+
+  it('preserves user-initiated abort identity after response headers', async () => {
+    const cause = new DOMException('The operation was aborted', 'AbortError')
+    const response = jsonResponse(200, [])
+    vi.spyOn(response, 'json').mockRejectedValueOnce(cause)
+    respond(response)
+
+    await expect(makeClient().listThreads()).rejects.toBe(cause)
+  })
 })
 
 describe('Retry-After contract', () => {
