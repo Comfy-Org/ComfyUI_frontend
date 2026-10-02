@@ -141,8 +141,6 @@ test.describe(
       })
 
       await test.step('only the hand edit reached the applier', async () => {
-        // Before the fix each progress write produced its own
-        // `unknown_widget` rejection, which would sit ahead of `applied` here.
         await expect
           .poll(() => hostSocket.humanOpOutcomes().map((o) => o.outcome))
           .toEqual(['applied'])
