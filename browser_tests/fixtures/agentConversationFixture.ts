@@ -733,6 +733,71 @@ export class AgentConversationHarness {
     return this.hostSocket.clientDocFrames()
   }
 
+  /**
+   * Serves and activates another empty document on the same routed socket.
+   * This is the browser-harness equivalent of an agent `switch_tab` result;
+   * it lets lifecycle tests visit two real workflow lineages in one session.
+   */
+  async activateEmptyWorkflow(workflowId: string, name: string): Promise<void> {
+    const seed = structuredClone(this.conversation.workflow.seed)
+    seed.nodes = []
+    seed.links = []
+    seed.groups = []
+    this.hostSocket.addWorkflow(
+      workflowId,
+      new HostDoc(workflowId, seed, this.conversation.workflow.catalog)
+    )
+    const subscribes = this.subscribeCount()
+    this.hostSocket.send({
+      type: 'agent_active_tab',
+      data: { workflow_id: workflowId, name }
+    })
+    await expect(this.topbar.getActiveTab()).toContainText(name)
+    await expect.poll(() => this.subscribeCount()).toBe(subscribes + 1)
+  }
+
+  /** Holds the next subscribe acknowledgement for `workflowId`. */
+  pauseWorkflowSubscribe(workflowId: string): void {
+    this.hostSocket.pauseSubscribes(workflowId)
+  }
+
+  resumeWorkflowSubscribe(workflowId: string): void {
+    this.hostSocket.resumeSubscribe(workflowId)
+  }
+
+  sendDocumentReset(workflowId: string): void {
+    this.hostSocket.send({
+      type: 'doc_reset',
+      data: {
+        v: 1,
+        workflow_id: workflowId,
+        seq: 1,
+        lineage_seq: 1,
+        actor: 'system:test-reset'
+      }
+    })
+  }
+
+  async activateRecordedWorkflowBeforeSubscribeAck(): Promise<void> {
+    const { id, name } = this.conversation.workflow
+    this.pauseWorkflowSubscribe(id)
+    const sent = this.clientDocFrames().filter(
+      (frame) => frame.type === 'doc_subscribe'
+    ).length
+    this.hostSocket.send({
+      type: 'agent_active_tab',
+      data: { workflow_id: id, name }
+    })
+    await expect
+      .poll(
+        () =>
+          this.clientDocFrames().filter(
+            (frame) => frame.type === 'doc_subscribe'
+          ).length
+      )
+      .toBe(sent + 1)
+  }
+
   /** The applier's verdict on every human op the host has judged so far. */
   humanOpOutcomes(): ApplyOutcome[] {
     return this.hostSocket.humanOpOutcomes()
