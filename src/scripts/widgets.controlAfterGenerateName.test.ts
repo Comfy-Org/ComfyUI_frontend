@@ -17,7 +17,6 @@ function intNode() {
   return { node, target }
 }
 
-/** The combo equivalent, which also gets a filter-list widget. */
 function comboNode() {
   const graph = new LGraph()
   const node = new LGraphNode('CheckpointLoaderSimple')
