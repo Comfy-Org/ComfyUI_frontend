@@ -676,8 +676,6 @@ export class LiveGraphApplier {
       this.reported.delete(key)
       return read
     }
-    // The node stays malformed on every later frame; the discriminator reads
-    // the LWW ledger, so pay for it only on the frame that reports.
     if (this.reported.has(key)) return null
     const { classType, valueShapes, producer } = read.discriminate()
     this.reportOnce(
