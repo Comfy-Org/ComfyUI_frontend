@@ -34,6 +34,7 @@ export interface StoryCard {
   category: string
   cover: string
   description: string
+  dateAdded: string
 }
 
 export function toCardProps(entry: {
@@ -45,6 +46,50 @@ export function toCardProps(entry: {
     title: entry.data.title,
     category: entry.data.category,
     cover: entry.data.cover,
-    description: entry.data.description
+    description: entry.data.description,
+    dateAdded: entry.data.dateAdded
   }
+}
+
+export interface WatchStoryCard {
+  slug: string
+  company: string
+  category: string
+  title: string
+  description: string
+  poster: string
+  posterWidth: number
+  posterHeight: number
+  duration?: string
+  uploadDate: string
+}
+
+export type CustomerSort = 'latest' | 'oldest'
+
+interface SearchableCard {
+  title: string
+  category: string
+  description: string
+  company?: string
+}
+
+export function filterCustomerCards<T extends SearchableCard>(
+  cards: readonly T[],
+  query: string,
+  sort: CustomerSort,
+  dateOf: (card: T) => string
+): T[] {
+  const needle = query.trim().toLocaleLowerCase()
+  const matches = needle
+    ? cards.filter((card) =>
+        [card.title, card.category, card.description, card.company ?? '']
+          .join(' ')
+          .toLocaleLowerCase()
+          .includes(needle)
+      )
+    : [...cards]
+  const latestFirst = matches.sort(
+    (a, b) => Date.parse(dateOf(b)) - Date.parse(dateOf(a))
+  )
+  return sort === 'latest' ? latestFirst : latestFirst.reverse()
 }

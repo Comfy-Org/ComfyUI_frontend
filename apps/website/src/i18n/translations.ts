@@ -6058,6 +6058,28 @@ Enterprise`
   },
   'customers.group.watch': { en: 'WATCH', 'zh-CN': '观看' },
   'customers.group.read': { en: 'READ', 'zh-CN': '阅读' },
+  'customers.directory.searchLabel': {
+    en: 'Search customer stories',
+    'zh-CN': '搜索客户故事'
+  },
+  'customers.directory.searchPlaceholder': {
+    en: 'Search by company, title, or description…',
+    'zh-CN': '按公司、标题或描述搜索…'
+  },
+  'customers.directory.formatLabel': { en: 'Format', 'zh-CN': '形式' },
+  'customers.directory.tab.all': { en: 'All', 'zh-CN': '全部' },
+  'customers.directory.tab.watch': { en: 'Watch', 'zh-CN': '观看' },
+  'customers.directory.tab.read': { en: 'Read', 'zh-CN': '阅读' },
+  'customers.directory.sortLabel': {
+    en: 'Sort customer stories',
+    'zh-CN': '客户故事排序'
+  },
+  'customers.directory.sortLatest': { en: 'Latest', 'zh-CN': '最新' },
+  'customers.directory.sortOldest': { en: 'Oldest', 'zh-CN': '最早' },
+  'customers.directory.empty': {
+    en: 'No customer stories match that search yet. Try a broader term.',
+    'zh-CN': '没有符合搜索条件的客户故事。请尝试更宽泛的关键词。'
+  },
   'customers.video.watchStory': { en: 'WATCH STORY', 'zh-CN': '观看故事' },
   'customers.watch.transcript': { en: 'Transcript', 'zh-CN': '文字记录' },
   'customers.watch.readWrittenStory': {

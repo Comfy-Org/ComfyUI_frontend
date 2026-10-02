@@ -9,6 +9,7 @@ export const customerStorySchema = z.strictObject({
   cover: z.url(),
   readMore: z.url().optional(),
   order: z.number().int().nonnegative(),
+  dateAdded: z.iso.date(),
   sections: z.array(z.object({ id: z.string(), label: z.string() }))
 })
 

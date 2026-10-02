@@ -11,6 +11,7 @@ const validFrontmatter = {
   cover:
     'https://media.comfy.org/website/customers/series-entertainment/cover.webp',
   order: 0,
+  dateAdded: '2026-07-01',
   sections: [
     { id: 'intro', label: 'INTRO' },
     { id: 'the-problem', label: 'THE PROBLEM' }
@@ -123,7 +124,8 @@ describe('toCardProps', () => {
       title: validFrontmatter.title,
       category: validFrontmatter.category,
       cover: validFrontmatter.cover,
-      description: validFrontmatter.description
+      description: validFrontmatter.description,
+      dateAdded: validFrontmatter.dateAdded
     })
   })
 })
