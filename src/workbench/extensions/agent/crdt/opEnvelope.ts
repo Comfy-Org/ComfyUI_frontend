@@ -56,14 +56,28 @@ function isBatchable(op: Op): boolean {
   return (BATCHABLE_OPS as readonly string[]).includes(op.op)
 }
 
-function wireSize(op: Op): number {
+/** A minted op with its wire size, measured exactly once at admission. */
+export interface SizedOp {
+  readonly op: Op
+  readonly bytes: number
+}
+
+/**
+ * Serialize an op once to prove it can ride a `doc_ops` frame and learn its
+ * wire size. Throws `TypeError` for anything `JSON.stringify` cannot turn
+ * into a wire object (a cycle in a custom-node value, a `toJSON` that yields
+ * a non-object). Callers reject such an op at admission; nothing downstream
+ * serializes again until the frame itself is encoded.
+ */
+export function measureWireOp(op: Op): SizedOp {
   const json = JSON.stringify(op)
   if (typeof json !== 'string')
     throw new TypeError('Operation did not serialize to JSON')
   if (json.charCodeAt(0) !== 123)
     throw new TypeError('Operation did not serialize to a wire object')
+  const bytes = new TextEncoder().encode(json).length
   if (typeof (op as Op & { toJSON?: unknown }).toJSON !== 'function')
-    return new TextEncoder().encode(json).length
+    return { op, bytes }
   const serialized: unknown = JSON.parse(json)
   if (
     typeof serialized !== 'object' ||
@@ -73,17 +87,18 @@ function wireSize(op: Op): number {
     typeof serialized.op_id !== 'string'
   )
     throw new TypeError('Operation did not serialize to a wire object')
-  return new TextEncoder().encode(json).length
+  return { op, bytes }
 }
 
 /**
- * Split minted ops into wire batches: order-preserving, at most
+ * Split measured ops into wire batches: order-preserving, at most
  * {@link WIRE_MAX_OPS_PER_BATCH} ops and {@link WIRE_MAX_BATCH_BYTES} bytes
  * per batch; every non-batchable op (`clear`) is a batch of one. A single op
  * larger than the byte cap still ships alone — the host, not the chunker,
- * owns rejecting it.
+ * owns rejecting it. Pure arithmetic over sizes measured at admission: it
+ * cannot throw.
  */
-export function chunkWireOps(ops: Op[]): Op[][] {
+export function chunkWireOps(ops: readonly SizedOp[]): Op[][] {
   const batches: Op[][] = []
   let current: Op[] = []
   let currentBytes = 0
@@ -94,11 +109,7 @@ export function chunkWireOps(ops: Op[]): Op[][] {
     currentBytes = 0
   }
 
-  for (const op of ops) {
-    // Validate every operation at the transport boundary, including `clear`.
-    // Non-batchable ops still have to survive the enclosing frame's
-    // JSON.stringify before they can be considered deliverable.
-    const bytes = wireSize(op)
+  for (const { op, bytes } of ops) {
     if (!isBatchable(op)) {
       flush()
       batches.push([op])
