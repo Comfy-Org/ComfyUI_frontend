@@ -11,6 +11,12 @@
 # — both post to the same channel and the release would be announced twice.
 # With the variable unset this job is a no-op on `release: published`, which is
 # the intended state until the Comfy-PR side is retired.
+#
+# SCOPES: `chat:write`, plus `channels:history` for the already-announced check
+# (un-publishing a release re-fires `published` when it is re-published, and
+# release-enforce-latest.yaml does that deliberately). Without
+# `channels:history` the check logs a warning and the job posts anyway, so a
+# missing scope costs a duplicate on a rollback, never a missed release.
 name: 'Release: Slack Changelog'
 
 permissions:
@@ -77,6 +83,9 @@ jobs:
         env:
           RELEASE_JSON: release.json
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          # #frontend. NOT vars.SLACK_FRONTEND_RELEASES_CHANNEL_ID, which the
+          # sibling release workflows use for #frontend-releases — the
+          # changelog stays in #frontend, it just gets shorter.
           SLACK_CHANNEL_ID: ${{ vars.SLACK_FRONTEND_CHANNEL_ID }}
         run: |
           set -euo pipefail

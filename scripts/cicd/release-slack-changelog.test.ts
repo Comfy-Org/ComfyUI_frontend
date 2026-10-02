@@ -13,6 +13,7 @@ import {
   chunkByLines,
   countMergedPullRequests,
   countNewContributors,
+  findAnnouncement,
   createSlackPoster,
   postChangelog,
   readRelease,
@@ -394,6 +395,67 @@ describe('createSlackPoster', () => {
       createSlackPoster('bad', 'C123', { sleep: async () => {} })({ text: 'x' })
     ).rejects.toThrow('invalid_auth')
     expect(calls).toHaveLength(1)
+  })
+})
+
+describe('findAnnouncement', () => {
+  const url =
+    'https://github.com/Comfy-Org/ComfyUI_frontend/releases/tag/v1.56.1'
+
+  it('finds a headline already posted for this release', async () => {
+    const ts = await findAnnouncement(url, async () => ({
+      messages: [
+        { text: 'unrelated chatter', ts: '1.1' },
+        { text: `🎨 <${url}|ComfyUI_frontend v1.56.1> is out.`, ts: '2.2' }
+      ]
+    }))
+
+    expect(ts).toBe('2.2')
+  })
+
+  it('does not match a different release in the same repo', async () => {
+    const ts = await findAnnouncement(url, async () => ({
+      messages: [
+        {
+          text: '🎨 <https://github.com/Comfy-Org/ComfyUI_frontend/releases/tag/v1.56.10|x> is out.',
+          ts: '2.2'
+        }
+      ]
+    }))
+
+    expect(ts).toBeUndefined()
+  })
+
+  it('pages until it runs out of pages', async () => {
+    const cursors: (string | undefined)[] = []
+    const ts = await findAnnouncement(
+      url,
+      async (cursor) => {
+        cursors.push(cursor)
+        return cursors.length < 3
+          ? { messages: [], nextCursor: `c${cursors.length}` }
+          : { messages: [{ text: url, ts: '9.9' }] }
+      },
+      3
+    )
+
+    expect(cursors).toEqual([undefined, 'c1', 'c2'])
+    expect(ts).toBe('9.9')
+  })
+
+  it('stops at maxPages rather than walking the whole channel', async () => {
+    let pages = 0
+    const ts = await findAnnouncement(
+      url,
+      async () => {
+        pages++
+        return { messages: [], nextCursor: 'more' }
+      },
+      2
+    )
+
+    expect(pages).toBe(2)
+    expect(ts).toBeUndefined()
   })
 })
 

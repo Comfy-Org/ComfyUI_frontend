@@ -41,7 +41,10 @@ export interface SlackPoster {
 }
 
 const WHATS_CHANGED = /^##+\s*What's Changed\s*$/im
-const NEXT_SECTION = /^(?:##+\s|\*\*Full Changelog\*\*)/m
+// `^##\s`, not `^##+\s`: GitHub emits `###` category subheadings inside What's
+// Changed when a repo has a .github/release.yml, and ending the section at the
+// first one would drop every entry under it from the counts.
+const NEXT_SECTION = /^(?:##\s|\*\*Full Changelog\*\*)/m
 const NEW_CONTRIBUTORS = /^##+\s*New Contributors\s*$/im
 const PULL_URL = /https:\/\/github\.com\/[^/\s]+\/[^/\s]+\/pull\/(\d+)/g
 
@@ -209,6 +212,49 @@ export async function postChangelog(
   return parent
 }
 
+export interface ChannelMessage {
+  text?: string
+  ts?: string
+}
+
+export interface HistoryPage {
+  messages: ChannelMessage[]
+  nextCursor?: string
+}
+
+/**
+ * Finds an announcement for this release already in the channel.
+ *
+ * Un-publishing a release is deliberate practice here — `release-enforce-latest`
+ * uses it to roll Latest back — and GitHub re-fires `published` on the way
+ * back, so a republish would otherwise post a second headline and a second
+ * full thread. Matching on the release URL rather than the tag because the URL
+ * is what the headline links and cannot collide with a tag mentioned in prose.
+ */
+export async function findAnnouncement(
+  releaseUrl: string,
+  readPage: (cursor?: string) => Promise<HistoryPage>,
+  maxPages = 3
+): Promise<string | undefined> {
+  // Not `includes`: the v1.56.1 URL is a prefix of the v1.56.10 one, so a
+  // substring test would read v1.56.10's announcement as v1.56.1's and
+  // suppress a release that was never posted. The tag has to end where the
+  // URL does — `|` in Slack's <url|label>, or any other non-tag character.
+  const announced = new RegExp(
+    `${releaseUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\w.-])`
+  )
+
+  let cursor: string | undefined
+  for (let page = 0; page < maxPages; page++) {
+    const { messages, nextCursor } = await readPage(cursor)
+    const hit = messages.find((message) => announced.test(message.text ?? ''))
+    if (hit?.ts) return hit.ts
+    if (!nextCursor) return undefined
+    cursor = nextCursor
+  }
+  return undefined
+}
+
 interface SlackResponse {
   ok?: boolean
   ts?: string
@@ -258,7 +304,8 @@ export function createSlackPoster(
       // come before the parse.
       if (response.status === 429) {
         lastError = 'ratelimited'
-        await sleep(retryAfterMs(response))
+        // No point waiting out a Retry-After we will not act on.
+        if (attempt < maxAttempts) await sleep(retryAfterMs(response))
         continue
       }
 
@@ -269,10 +316,42 @@ export function createSlackPoster(
 
       lastError = payload.error ?? `HTTP ${response.status}`
       if (lastError !== 'ratelimited') break
-      await sleep(retryAfterMs(response))
+      if (attempt < maxAttempts) await sleep(retryAfterMs(response))
     }
 
     throw new Error(`Slack rejected chat.postMessage: ${lastError}`)
+  }
+}
+
+interface HistoryResponse {
+  ok?: boolean
+  error?: string
+  messages?: ChannelMessage[]
+  response_metadata?: { next_cursor?: string }
+}
+
+export function createHistoryReader(
+  token: string,
+  channel: string
+): (cursor?: string) => Promise<HistoryPage> {
+  return async (cursor) => {
+    const params = new URLSearchParams({ channel, limit: '200' })
+    if (cursor) params.set('cursor', cursor)
+
+    const response = await fetch(
+      `https://slack.com/api/conversations.history?${params.toString()}`,
+      { headers: { authorization: `Bearer ${token}` } }
+    )
+    const payload = (await response.json()) as HistoryResponse
+    if (!payload.ok) {
+      throw new Error(
+        `Slack rejected conversations.history: ${payload.error ?? response.status}`
+      )
+    }
+    return {
+      messages: payload.messages ?? [],
+      nextCursor: payload.response_metadata?.next_cursor || undefined
+    }
   }
 }
 
@@ -307,7 +386,8 @@ export function readRelease(env: NodeJS.ProcessEnv): ReleaseNotification {
 
 /* c8 ignore start -- CLI entry, exercised by the workflow rather than a unit test */
 async function main(): Promise<void> {
-  const post = buildSlackChangelogPost(readRelease(process.env))
+  const release = readRelease(process.env)
+  const post = buildSlackChangelogPost(release)
 
   if (process.env.DRY_RUN === 'true') {
     console.log(`[headline]\n${post.headline}\n`)
@@ -317,11 +397,32 @@ async function main(): Promise<void> {
     return
   }
 
-  const send = createSlackPoster(
-    process.env.SLACK_BOT_TOKEN ?? '',
-    process.env.SLACK_CHANNEL_ID ?? ''
-  )
-  await postChangelog(post, send)
+  const token = process.env.SLACK_BOT_TOKEN ?? ''
+  const channel = process.env.SLACK_CHANNEL_ID ?? ''
+
+  // Degrades to posting rather than failing: the history read needs
+  // channels:history, which chat:write does not imply, and a silent release is
+  // worse than the duplicate this is here to avoid.
+  const announced = await findAnnouncement(
+    release.htmlUrl,
+    createHistoryReader(token, channel)
+  ).catch((error: unknown) => {
+    console.warn(
+      `Could not check for an existing announcement, posting anyway: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    )
+    return undefined
+  })
+
+  if (announced) {
+    console.log(
+      `${release.tagName} was already announced (ts ${announced}); nothing to do.`
+    )
+    return
+  }
+
+  await postChangelog(post, createSlackPoster(token, channel))
   console.log(
     `Posted ${post.headline.length}-char headline with ${post.replies.length} thread replies.`
   )
