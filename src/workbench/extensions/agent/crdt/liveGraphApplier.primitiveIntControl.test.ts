@@ -42,10 +42,6 @@ class PrimitiveInt extends LGraphNode {
   }
 }
 
-/**
- * What `comfy_cli`'s catalog derives for `PrimitiveInt`: it reads the same
- * `control_after_generate` key as a flag and names the slot canonically.
- */
 const CATALOG: WidgetCatalog = {
   types: { PrimitiveInt: { widget_order: ['value', 'control_after_generate'] } }
 }
