@@ -98,17 +98,8 @@ export type AgentRunModeValue = AgentRunModePreference['mode']
 const SKILL_NAME_MAX = 256
 
 /**
- * A `load_skill` call's skill name, on both the live and the reload path. It
- * is a display label and nothing resolves against it, so an over-long value
- * is clamped rather than rejected: rejecting would cost the caller the whole
- * frame it rides on. On the live path a refused `agent_tool_call` is dropped
- * by `useAgentSession`'s `onRaw`, so the row never settles and keeps
- * shimmering "Loading <skill>"; on the reload path `zAgentMessages` is run
- * through `agentRestClient`'s `request`, which uses `parse`, so one row would
- * throw away the entire thread transcript. Same keep-the-frame choice
- * `zAgentMessageDoneData.usage` makes with `.catch`, and the opposite of
- * `zAgentActiveTabData.node_locator_id`, which is an identity that later code
- * resolves and so must refuse a value it cannot honour.
+ * Display-only, so an over-long name is clamped. Rejecting it would drop
+ * the live frame or the whole persisted transcript.
  */
 const zSkillName = z
   .string()
