@@ -50,8 +50,7 @@ export function sectionMeta(
     face: () => paparazzi.face.value.name,
     star: () => paparazzi.setup.value.celebrity.trim(),
     scene: () => sceneName(paparazzi, locale),
-    seed: () =>
-      pc('paparazzi.seed.value', locale, { n: paparazzi.setup.value.seed })
+    seed: () => String(paparazzi.setup.value.seed)
   } as const satisfies Record<PaparazziTray, () => string>
   return notes[id]()
 }

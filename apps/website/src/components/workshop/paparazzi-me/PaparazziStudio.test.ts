@@ -54,7 +54,7 @@ describe('PaparazziStudio', () => {
         name: 'A paparazzi photo of Nova Reyes: Red carpet'
       })
     ).toHaveAttribute('src', '/images/apps/paparazzi-me/scenes/red-carpet.jpg')
-    expect(sceneRow()).toHaveTextContent('SceneRed carpet')
+    expect(sceneRow()).toHaveAccessibleName('Scene: Red carpet')
 
     await user.click(sceneRow())
     expect(
@@ -82,7 +82,7 @@ describe('PaparazziStudio', () => {
       within(picker()).getByRole('radio', { name: 'Cannes yacht' })
     )
     expect(screen.queryByRole('dialog', { name: 'Pick a scene' })).toBeNull()
-    expect(sceneRow()).toHaveTextContent('SceneCannes yacht')
+    expect(sceneRow()).toHaveAccessibleName('Scene: Cannes yacht')
 
     await user.click(within(panel()).getByRole('button', { name: /Insert me/ }))
     expect(screen.getByRole('status')).toHaveTextContent(
@@ -140,7 +140,7 @@ describe('PaparazziStudio', () => {
       within(panel()).getByRole('button', { name: 'Find photos' })
     ).toBeDisabled()
     await vi.advanceTimersByTimeAsync(1000)
-    expect(sceneRow()).toHaveTextContent('SceneRed carpet')
+    expect(sceneRow()).toHaveAccessibleName('Scene: Red carpet')
     expect(within(panel()).getByTestId('paparazzi-run')).toBeEnabled()
   })
 
@@ -157,7 +157,7 @@ describe('PaparazziStudio', () => {
       within(picker()).getByTestId('paparazzi-scene-input'),
       photo('party.jpg')
     )
-    expect(sceneRow()).toHaveTextContent('SceneYour scene')
+    expect(sceneRow()).toHaveAccessibleName('Scene: Your scene')
     expect(screen.getByRole('img', { name: 'Your scene' })).toHaveAttribute(
       'src',
       'blob:party.jpg'

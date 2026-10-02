@@ -17,13 +17,17 @@ const { pickerOpen } = paparazzi
 </script>
 
 <template>
+  <span class="px-1 text-xs text-primary-warm-gray">{{
+    pc('paparazzi.scene', locale)
+  }}</span>
   <button
     type="button"
     aria-haspopup="dialog"
     :aria-expanded="pickerOpen"
+    :aria-label="`${pc('paparazzi.scene', locale)}: ${sceneName(paparazzi, locale)}`"
     :class="
       cn(
-        'flex h-12 w-full items-center gap-3 rounded-xl px-2 text-left ring-1 ring-transparency-white-t8 transition-colors ring-inset hover:bg-transparency-white-t4 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none disabled:opacity-40',
+        'flex h-12 w-full items-center gap-3 rounded-xl px-1.5 text-left ring-1 ring-transparency-white-t8 transition-colors ring-inset hover:bg-transparency-white-t4 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none disabled:opacity-40',
         pickerOpen && 'bg-transparency-white-t8'
       )
     "
@@ -42,9 +46,6 @@ const { pickerOpen } = paparazzi
       aria-hidden="true"
     >
       <ImageOff class="size-3.5" />
-    </span>
-    <span class="w-12 shrink-0 text-xs text-primary-warm-gray">
-      {{ pc('paparazzi.scene', locale) }}
     </span>
     <span
       class="min-w-0 flex-1 truncate text-sm font-semibold text-primary-warm-white"

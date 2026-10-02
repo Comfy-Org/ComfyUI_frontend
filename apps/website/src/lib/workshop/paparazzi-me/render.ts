@@ -40,55 +40,37 @@ function drawCover(
   ctx.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh)
 }
 
-/** The head cut from the face photo with a soft edge, `size` across. */
-function softHead(face: HTMLImageElement, crop: FaceCrop, size: number) {
-  const head = canvas(size, size)
-  if (!head) return undefined
+/**
+ * The visitor's head and shoulders cut from the face photo with a soft,
+ * oval edge, `height` tall.
+ */
+function portrait(face: HTMLImageElement, crop: FaceCrop, height: number) {
   const side = Math.min(face.naturalWidth, face.naturalHeight) * crop.size
-  head.ctx.drawImage(
+  const sw = side * 1.1
+  const sh = side * 1.6
+  const width = Math.round((height * sw) / sh)
+  const cut = canvas(width, height)
+  if (!cut) return undefined
+  cut.ctx.drawImage(
     face,
-    face.naturalWidth * crop.cx - side / 2,
-    face.naturalHeight * crop.cy - side / 2,
-    side,
-    side,
+    face.naturalWidth * crop.cx - sw / 2,
+    face.naturalHeight * crop.cy - side * 0.5,
+    sw,
+    sh,
     0,
     0,
-    size,
-    size
+    width,
+    height
   )
-  const fade = head.ctx.createRadialGradient(
-    size / 2,
-    size / 2,
-    size * 0.3,
-    size / 2,
-    size / 2,
-    size / 2
-  )
+  cut.ctx.globalCompositeOperation = 'destination-in'
+  cut.ctx.translate(width / 2, height * 0.45)
+  cut.ctx.scale(1, height / width)
+  const fade = cut.ctx.createRadialGradient(0, 0, width * 0.34, 0, 0, width / 2)
   fade.addColorStop(0, 'black')
   fade.addColorStop(1, 'transparent')
-  head.ctx.globalCompositeOperation = 'destination-in'
-  head.ctx.fillStyle = fade
-  head.ctx.fillRect(0, 0, size, size)
-  return head.made
-}
-
-function drawYou(
-  ctx: CanvasRenderingContext2D,
-  head: HTMLCanvasElement | undefined,
-  x: number,
-  h: number
-) {
-  const coat = ctx.createLinearGradient(0, h * 0.4, 0, h)
-  coat.addColorStop(0, 'rgba(24, 22, 26, 0.96)')
-  coat.addColorStop(1, 'rgba(8, 8, 10, 0.98)')
-  ctx.fillStyle = coat
-  ctx.beginPath()
-  ctx.ellipse(x, h * 0.86, h * 0.12, h * 0.46, 0, 0, Math.PI * 2)
-  ctx.fill()
-  if (head) {
-    const size = h * 0.2
-    ctx.drawImage(head, x - size / 2, h * 0.2, size, size)
-  }
+  cut.ctx.fillStyle = fade
+  cut.ctx.fillRect(-width / 2, -width / 2, width, width)
+  return cut.made
 }
 
 function flash(ctx: CanvasRenderingContext2D, x: number, w: number, h: number) {
@@ -123,7 +105,8 @@ export async function renderPaparazziImage(
   if (!shot || !backdrop) return undefined
   const x = w * scene.you
   drawCover(shot.ctx, backdrop, w, h)
-  drawYou(shot.ctx, face && softHead(face, crop, Math.round(h * 0.2)), x, h)
+  const you = face && portrait(face, crop, Math.round(h * 0.26))
+  if (you) shot.ctx.drawImage(you, x - you.width / 2, h * 0.14)
   flash(shot.ctx, x, w, h)
   return new Promise((resolve) =>
     shot.made.toBlob(

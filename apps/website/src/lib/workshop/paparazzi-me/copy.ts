@@ -87,7 +87,6 @@ const copy = {
   },
   'paparazzi.seed': { en: 'Seed', 'zh-CN': '种子' },
   'paparazzi.seed.shuffle': { en: 'New seed', 'zh-CN': '换一个种子' },
-  'paparazzi.seed.value': { en: 'Seed {n}', 'zh-CN': '种子 {n}' },
   'paparazzi.hint': {
     en: 'Pick one of the star’s photos · Drop or paste your face',
     'zh-CN': '选一张明星的照片 · 拖放或粘贴你的照片'
