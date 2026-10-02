@@ -76,6 +76,8 @@
     "feedbackCaption": "フィードバックを共有",
     "focusNode": "キャンバスに表示",
     "focusNodeLabel": "キャンバスに {node} を表示",
+    "freeUseNotice": "BETA期間中、プロンプトとワークフローの実行は無料です。",
+    "freeUseNoticeLabel": "無料利用に関するお知らせ",
     "friend": "あなた",
     "gotIt": "了解",
     "greeting": "こんにちは、{name}さん",
@@ -85,6 +87,7 @@
     "historyCurrent": "現在",
     "historyEarlier": "以前",
     "historyEmpty": "まだ会話はありません",
+    "historyOpenFailed": "開けませんでした。再試行するにはこのチャットを選択してください。",
     "historyToday": "今日",
     "historyYesterday": "昨日",
     "latest": "最新",
@@ -124,6 +127,7 @@
       "upgradePlan": "プランをアップグレード"
     },
     "placeholder": "アイデアを説明し、{'@'}でワークフローを参照、メディアアセットやファイルをドラッグ＆ドロップ、または\nノードに言及",
+    "recoveredTurnFailed": "エージェントはこの応答を完了できませんでした。",
     "reference": "参照",
     "remove": "削除",
     "removeNodeLabel": "{node} の参照を削除",
@@ -192,6 +196,8 @@
     "targetFollowsVisibleWorkflow": "ターゲット、参照ノードを選択するか、メッセージを送信するまで、ターゲットワークフローは表示中のタブに従います。",
     "targetForThisChat": "このチャットのエージェント対象",
     "targetNavigationUnavailable": "このワークフローのターゲットは利用できなくなりました。",
+    "targetWorkflowOpenFailed": "対象のワークフローを開けませんでした。",
+    "targetWorkflowUnavailable": "対象のワークフローは利用できなくなりました。",
     "thinking": "考え中...",
     "title": "Comfy Agent",
     "toolFailedSkill": "{skill} の読み込みに失敗しました",
@@ -5210,11 +5216,7 @@
         "body": "それまでは現在のプランが有効です。",
         "title": "{date} にプランが {plan} に変更されます"
       },
-      "updatePayment": "お支払い方法を更新",
-      "warning": {
-        "bodyNoDate": "前回のお支払いが完了しませんでした。サブスクリプションの一時停止を避けるためにお支払い方法を更新してください。",
-        "title": "支払いが拒否されました"
-      }
+      "updatePayment": "お支払い方法を更新"
     },
     "changeRoleDialog": {
       "demoteConfirm": "メンバーに降格",

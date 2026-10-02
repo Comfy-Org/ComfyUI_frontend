@@ -5842,6 +5842,52 @@
       }
     }
   },
+  "Flux3ImageNode": {
+    "display_name": "Flux 3 Image",
+    "description": "Generates an image with FLUX 3 from a prompt, or edits and combines up to 10 reference images. Refer to the references in the prompt as image 1, image 2, and so on.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "What to generate, or the edit to make. The prompt is interpreted and expanded before generation."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Optional reference images, up to 10 in total, at least 256x256 pixels each."
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "'auto' follows the first reference image, or picks a ratio from the prompt."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Output size at the chosen aspect ratio: 0.75K is about 0.6 megapixels, 1K 1 MP, 1.5K 2.4 MP, 2K 4.2 MP, 4K 16.8 MP."
+      },
+      "grounding": {
+        "name": "grounding",
+        "tooltip": "Let the model research the prompt with web and image search before generating."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "Moderation tolerance, 0 is the strictest."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; FLUX 3 picks its own seed, so actual results are nondeterministic regardless of this value."
+      },
+      "bounding_boxes": {
+        "name": "bounding_boxes",
+        "tooltip": "Optional boxes from Create Bounding Boxes that place objects or text in the output. Positions are relative to the canvas, so give it the output's aspect ratio."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Flux3ImageToVideoNode": {
     "display_name": "Flux 3 Image to Video",
     "description": "Animates 1 to 10 images with FLUX 3. Each image becomes a frame of the clip: one image opens it, two morph from the first to the second, and more are spread across it or pinned to times you choose.",
@@ -7438,15 +7484,15 @@
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "Text description of the desired video. Optional for grok-imagine-video-1.5 when an input image is provided."
+        "tooltip": "Text description of the desired video. Optional for the grok-imagine-video-1.5 models when an input image is provided."
       },
       "resolution": {
         "name": "resolution",
-        "tooltip": "The resolution of the output video. 1080p is only available for grok-imagine-video-1.5."
+        "tooltip": "The resolution of the output video. 1080p is not available for grok-imagine-video."
       },
       "aspect_ratio": {
         "name": "aspect_ratio",
-        "tooltip": "The aspect ratio of the output video."
+        "tooltip": "The aspect ratio of the output video. Ignored when an input image is provided; the video follows the image's aspect ratio."
       },
       "duration": {
         "name": "duration",

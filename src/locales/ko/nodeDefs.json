@@ -5842,6 +5842,52 @@
       }
     }
   },
+  "Flux3ImageNode": {
+    "description": "프롬프트로 FLUX 3 이미지를 생성하거나, 최대 10개의 참조 이미지를 편집하고 결합합니다. 프롬프트에서 참조 이미지는 이미지 1, 이미지 2 등으로 지칭하세요.",
+    "display_name": "Flux 3 이미지",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "'auto'는 첫 번째 참조 이미지를 따르거나 프롬프트에서 비율을 선택합니다."
+      },
+      "bounding_boxes": {
+        "name": "bounding_boxes",
+        "tooltip": "출력에 객체 또는 텍스트를 배치하는 바운딩 박스 생성의 선택 사항 상자입니다. 위치는 캔버스를 기준으로 하므로 출력의 종횡비를 지정하세요."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "grounding": {
+        "name": "grounding",
+        "tooltip": "생성 전에 모델이 웹 및 이미지 검색으로 프롬프트를 조사하도록 합니다."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "선택 사항인 참조 이미지로, 총 최대 10개까지 가능하며 각각 최소 256x256픽셀이어야 합니다."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "생성할 내용 또는 수행할 편집입니다. 프롬프트는 생성 전에 해석되고 확장됩니다."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "선택한 종횡비에서의 출력 크기입니다: 0.75K는 약 0.6메가픽셀, 1K는 1MP, 1.5K는 2.4MP, 2K는 4.2MP, 4K는 16.8MP입니다."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "검열 허용 수준이며, 0이 가장 엄격합니다."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "노드를 다시 실행할지 결정하는 시드입니다. FLUX 3는 자체 시드를 선택하므로 이 값과 관계없이 실제 결과는 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Flux3ImageToVideoNode": {
     "description": "FLUX 3로 1~10장의 이미지를 애니메이션으로 만듭니다. 각 이미지는 clip의 프레임이 됩니다: 한 장은 시작 프레임, 두 장은 처음에서 끝으로 변환, 그 이상은 clip 전체에 분산되거나 사용자가 선택한 시간에 고정됩니다.",
     "display_name": "Flux 3 이미지에서 비디오로",
@@ -7434,7 +7480,7 @@
     "inputs": {
       "aspect_ratio": {
         "name": "종횡비",
-        "tooltip": "출력 비디오의 종횡비입니다."
+        "tooltip": "출력 비디오의 종횡비입니다. 입력 이미지가 제공되면 무시되며, 비디오는 이미지의 종횡비를 따릅니다."
       },
       "control_after_generate": {
         "name": "생성 후 제어"
@@ -7453,11 +7499,11 @@
       },
       "prompt": {
         "name": "프롬프트",
-        "tooltip": "원하는 비디오의 텍스트 설명입니다. 입력 이미지가 제공된 경우 grok-imagine-video-1.5에서는 선택 사항입니다."
+        "tooltip": "원하는 비디오에 대한 텍스트 설명입니다. 입력 이미지가 제공된 경우 grok-imagine-video-1.5 모델에서는 선택 사항입니다."
       },
       "resolution": {
         "name": "해상도",
-        "tooltip": "출력 동영상의 해상도입니다. 1080p는 grok-imagine-video-1.5에서만 사용할 수 있습니다."
+        "tooltip": "출력 비디오의 해상도입니다. grok-imagine-video에서는 1080p를 사용할 수 없습니다."
       },
       "seed": {
         "name": "시드",

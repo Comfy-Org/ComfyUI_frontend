@@ -76,6 +76,8 @@
     "feedbackCaption": "Partager vos commentaires",
     "focusNode": "Afficher sur le canevas",
     "focusNodeLabel": "Afficher {node} sur le canevas",
+    "freeUseNotice": "Les prompts et les exécutions de workflows sont GRATUITS pendant la BÊTA.",
+    "freeUseNoticeLabel": "Avis d’utilisation gratuite",
     "friend": "là",
     "gotIt": "Compris",
     "greeting": "Bonjour {name},",
@@ -85,6 +87,7 @@
     "historyCurrent": "En cours",
     "historyEarlier": "Antérieures",
     "historyEmpty": "Aucune conversation pour le moment",
+    "historyOpenFailed": "Impossible d’ouvrir. Sélectionnez cette discussion pour réessayer.",
     "historyToday": "Aujourd’hui",
     "historyYesterday": "Hier",
     "latest": "Dernier",
@@ -124,6 +127,7 @@
       "upgradePlan": "Passer à un forfait supérieur"
     },
     "placeholder": "Décrivez vos idées, {'@'} pour référencer des workflows, glissez-déposez des ressources multimédias et des fichiers, ou\nmentionnez des nœuds",
+    "recoveredTurnFailed": "L’agent n’a pas pu terminer cette réponse.",
     "reference": "Référence",
     "remove": "Supprimer",
     "removeNodeLabel": "Supprimer la référence à {node}",
@@ -192,6 +196,8 @@
     "targetFollowsVisibleWorkflow": "Le workflow cible suit l’onglet affiché jusqu’à ce que vous choisissiez une cible, des nœuds de référence ou envoyiez un message.",
     "targetForThisChat": "Cible de l’agent pour cette discussion",
     "targetNavigationUnavailable": "Cette cible de workflow n'est plus disponible.",
+    "targetWorkflowOpenFailed": "Impossible d’ouvrir le workflow cible.",
+    "targetWorkflowUnavailable": "Le workflow cible n’est plus disponible.",
     "thinking": "Réflexion...",
     "title": "Comfy Agent",
     "toolFailedSkill": "Échec du chargement de {skill}",
@@ -5210,11 +5216,7 @@
         "body": "Votre forfait actuel reste actif jusque-là.",
         "title": "Votre forfait passe à {plan} le {date}"
       },
-      "updatePayment": "Mettre à jour le paiement",
-      "warning": {
-        "bodyNoDate": "Votre dernier paiement n'a pas abouti. Mettez à jour le paiement pour éviter une pause.",
-        "title": "Paiement refusé"
-      }
+      "updatePayment": "Mettre à jour le paiement"
     },
     "changeRoleDialog": {
       "demoteConfirm": "Rétrograder en membre",

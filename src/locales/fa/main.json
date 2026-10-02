@@ -76,6 +76,8 @@
     "feedbackCaption": "بازخورد خود را به اشتراک بگذارید",
     "focusNode": "نمایش روی بوم",
     "focusNodeLabel": "نمایش {node} روی بوم",
+    "freeUseNotice": "پرامپت‌ها و اجرای workflow در دوره بتا رایگان هستند.",
+    "freeUseNoticeLabel": "اطلاعیه استفاده رایگان",
     "friend": "دوست عزیز",
     "gotIt": "متوجه شدم",
     "greeting": "سلام {name}،",
@@ -85,6 +87,7 @@
     "historyCurrent": "فعلی",
     "historyEarlier": "قدیمی‌تر",
     "historyEmpty": "هنوز گفتگویی وجود ندارد",
+    "historyOpenFailed": "باز نشد. برای تلاش مجدد، این گفت‌وگو را انتخاب کنید.",
     "historyToday": "امروز",
     "historyYesterday": "دیروز",
     "latest": "جدیدترین",
@@ -124,6 +127,7 @@
       "upgradePlan": "ارتقای طرح"
     },
     "placeholder": "ایده‌ها را شرح دهید، {'@'} برای ارجاع به workflowها، دارایی‌های رسانه‌ای و فایل‌ها را بکشید و رها کنید، یا\nnodeها را ذکر کنید",
+    "recoveredTurnFailed": "عامل نتوانست این پاسخ را کامل کند.",
     "reference": "مرجع",
     "remove": "حذف",
     "removeNodeLabel": "حذف ارجاع {node}",
@@ -192,6 +196,8 @@
     "targetFollowsVisibleWorkflow": "workflow هدف تا زمانی که یک هدف انتخاب نکنید، به nodeها ارجاع ندهید یا پیامی ارسال نکنید، از تب قابل‌مشاهده پیروی می‌کند.",
     "targetForThisChat": "هدف ایجنت برای این گفت‌وگو",
     "targetNavigationUnavailable": "این مقصد workflow دیگر در دسترس نیست.",
+    "targetWorkflowOpenFailed": "workflow موردنظر باز نشد.",
+    "targetWorkflowUnavailable": "workflow موردنظر دیگر در دسترس نیست.",
     "thinking": "در حال فکر کردن...",
     "title": "Comfy Agent",
     "toolFailedSkill": "بارگذاری {skill} ناموفق بود",
@@ -5210,11 +5216,7 @@
         "body": "طرح فعلی شما تا آن زمان فعال می‌ماند.",
         "title": "طرح شما در {date} به {plan} تغییر می‌کند"
       },
-      "updatePayment": "به‌روزرسانی پرداخت",
-      "warning": {
-        "bodyNoDate": "آخرین پرداخت شما انجام نشد. برای جلوگیری از توقف، پرداخت را به‌روزرسانی کنید.",
-        "title": "پرداخت ناموفق بود"
-      }
+      "updatePayment": "به‌روزرسانی پرداخت"
     },
     "changeRoleDialog": {
       "demoteConfirm": "تنزل به عضو",

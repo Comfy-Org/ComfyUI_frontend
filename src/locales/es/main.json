@@ -76,6 +76,8 @@
     "feedbackCaption": "Comparte tus comentarios",
     "focusNode": "Mostrar en el lienzo",
     "focusNodeLabel": "Mostrar {node} en el lienzo",
+    "freeUseNotice": "Los prompts y las ejecuciones de flujos de trabajo son GRATIS durante la BETA.",
+    "freeUseNoticeLabel": "Aviso de uso gratuito",
     "friend": "amigo",
     "gotIt": "Entendido",
     "greeting": "Hola {name},",
@@ -85,6 +87,7 @@
     "historyCurrent": "Actual",
     "historyEarlier": "Anteriores",
     "historyEmpty": "Aún no hay conversaciones",
+    "historyOpenFailed": "No se pudo abrir. Selecciona este chat para volver a intentarlo.",
     "historyToday": "Hoy",
     "historyYesterday": "Ayer",
     "latest": "Más reciente",
@@ -124,6 +127,7 @@
       "upgradePlan": "Mejorar plan"
     },
     "placeholder": "Describe ideas, {'@'} para hacer referencia a flujos de trabajo, arrastra recursos multimedia y archivos, o\nmenciona nodos",
+    "recoveredTurnFailed": "El agente no pudo completar esta respuesta.",
     "reference": "Referencia",
     "remove": "Eliminar",
     "removeNodeLabel": "Eliminar la referencia a {node}",
@@ -192,6 +196,8 @@
     "targetFollowsVisibleWorkflow": "El flujo de trabajo de destino sigue la pestaña visible hasta que elijas un destino, nodos de referencia o envíes un mensaje.",
     "targetForThisChat": "Destino del agente para este chat",
     "targetNavigationUnavailable": "Este destino del flujo de trabajo ya no está disponible.",
+    "targetWorkflowOpenFailed": "No se pudo abrir el flujo de trabajo de destino.",
+    "targetWorkflowUnavailable": "El flujo de trabajo de destino ya no está disponible.",
     "thinking": "Pensando...",
     "title": "Comfy Agent",
     "toolFailedSkill": "No se pudo cargar {skill}",
@@ -5210,11 +5216,7 @@
         "body": "Tu plan actual seguirá activo hasta entonces.",
         "title": "Tu plan cambia a {plan} el {date}"
       },
-      "updatePayment": "Actualizar pago",
-      "warning": {
-        "bodyNoDate": "Tu último pago no se realizó correctamente. Actualiza el pago para evitar una pausa.",
-        "title": "Pago rechazado"
-      }
+      "updatePayment": "Actualizar pago"
     },
     "changeRoleDialog": {
       "demoteConfirm": "Degradar a miembro",

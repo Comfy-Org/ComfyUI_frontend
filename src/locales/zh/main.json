@@ -76,6 +76,8 @@
     "feedbackCaption": "分享反馈",
     "focusNode": "在画布上显示",
     "focusNodeLabel": "在画布上显示 {node}",
+    "freeUseNotice": "在测试版期间，提示词和工作流运行均免费。",
+    "freeUseNoticeLabel": "免费使用说明",
     "friend": "您好",
     "gotIt": "知道了",
     "greeting": "你好，{name}，",
@@ -85,6 +87,7 @@
     "historyCurrent": "当前",
     "historyEarlier": "更早",
     "historyEmpty": "暂无对话",
+    "historyOpenFailed": "无法打开。请选择此聊天以重试。",
     "historyToday": "今天",
     "historyYesterday": "昨天",
     "latest": "最新",
@@ -124,6 +127,7 @@
       "upgradePlan": "升级套餐"
     },
     "placeholder": "描述想法，使用 {'@'} 引用工作流，拖入媒体资源和文件，或\n提及节点",
+    "recoveredTurnFailed": "智能体无法完成此回复。",
     "reference": "引用",
     "remove": "移除",
     "removeNodeLabel": "移除 {node} 引用",
@@ -192,6 +196,8 @@
     "targetFollowsVisibleWorkflow": "在您选择目标、引用节点或发送消息之前，目标工作流会跟随当前可见的标签页。",
     "targetForThisChat": "本次聊天的智能体目标",
     "targetNavigationUnavailable": "此工作流目标已不可用。",
+    "targetWorkflowOpenFailed": "无法打开目标工作流。",
+    "targetWorkflowUnavailable": "目标工作流已不可用。",
     "thinking": "思考中...",
     "title": "Comfy Agent",
     "toolFailedSkill": "加载 {skill} 失败",
@@ -5210,11 +5216,7 @@
         "body": "您当前的套餐将在此之前保持有效。",
         "title": "您的套餐将于 {date} 变更为 {plan}"
       },
-      "updatePayment": "更新付款方式",
-      "warning": {
-        "bodyNoDate": "您的上一次付款未成功。请更新付款方式以避免暂停。",
-        "title": "付款被拒绝"
-      }
+      "updatePayment": "更新付款方式"
     },
     "changeRoleDialog": {
       "demoteConfirm": "降级为成员",

@@ -76,6 +76,8 @@
     "feedbackCaption": "مشاركة الملاحظات",
     "focusNode": "إظهار على اللوحة",
     "focusNodeLabel": "إظهار {node} على اللوحة",
+    "freeUseNotice": "المطالبات وتشغيلات سير العمل مجانية خلال المرحلة التجريبية.",
+    "freeUseNoticeLabel": "إشعار الاستخدام المجاني",
     "friend": "مرحبًا",
     "gotIt": "فهمت",
     "greeting": "مرحبًا {name}،",
@@ -85,6 +87,7 @@
     "historyCurrent": "الحالية",
     "historyEarlier": "سابقًا",
     "historyEmpty": "لا توجد محادثات بعد",
+    "historyOpenFailed": "تعذر الفتح. حدّد هذه الدردشة لإعادة المحاولة.",
     "historyToday": "اليوم",
     "historyYesterday": "أمس",
     "latest": "الأحدث",
@@ -124,6 +127,7 @@
       "upgradePlan": "ترقية الخطة"
     },
     "placeholder": "صف الأفكار، واستخدم {'@'} للإشارة إلى سير العمل، واسحب أصول الوسائط والملفات، أو\nاذكر العقد",
+    "recoveredTurnFailed": "تعذر على الوكيل إكمال هذه الاستجابة.",
     "reference": "مرجع",
     "remove": "إزالة",
     "removeNodeLabel": "إزالة مرجع {node}",
@@ -192,6 +196,8 @@
     "targetFollowsVisibleWorkflow": "يتبع سير العمل المستهدف علامة التبويب الظاهرة إلى أن تختار هدفًا أو عُقدًا مرجعية أو ترسل رسالة.",
     "targetForThisChat": "هدف الوكيل لهذه الدردشة",
     "targetNavigationUnavailable": "لم يعد هدف سير العمل هذا متاحًا.",
+    "targetWorkflowOpenFailed": "تعذر فتح سير العمل المستهدف.",
+    "targetWorkflowUnavailable": "لم يعد سير العمل المستهدف متاحًا.",
     "thinking": "جارٍ التفكير...",
     "title": "Comfy Agent",
     "toolFailedSkill": "فشل تحميل {skill}",
@@ -5210,11 +5216,7 @@
         "body": "تظل خطتك الحالية نشطة حتى ذلك الحين.",
         "title": "تتغير خطتك إلى {plan} في {date}"
       },
-      "updatePayment": "تحديث الدفع",
-      "warning": {
-        "bodyNoDate": "لم تتم معالجة آخر دفعة لك. يرجى تحديث الدفع لتجنب الإيقاف.",
-        "title": "تم رفض الدفع"
-      }
+      "updatePayment": "تحديث الدفع"
     },
     "changeRoleDialog": {
       "demoteConfirm": "تخفيض إلى عضو",

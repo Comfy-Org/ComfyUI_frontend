@@ -76,6 +76,8 @@
     "feedbackCaption": "分享意見回饋",
     "focusNode": "在畫布上顯示",
     "focusNodeLabel": "在畫布上顯示 {node}",
+    "freeUseNotice": "在 BETA 期間，提示詞和工作流程執行皆為免費。",
+    "freeUseNoticeLabel": "免費使用通知",
     "friend": "你",
     "gotIt": "知道了",
     "greeting": "你好，{name}，",
@@ -85,6 +87,7 @@
     "historyCurrent": "目前",
     "historyEarlier": "更早",
     "historyEmpty": "尚無對話",
+    "historyOpenFailed": "無法開啟。請選取此聊天以重試。",
     "historyToday": "今天",
     "historyYesterday": "昨天",
     "latest": "最新",
@@ -124,6 +127,7 @@
       "upgradePlan": "升級方案"
     },
     "placeholder": "描述想法、使用 {'@'} 引用工作流程、拖入媒體資產和檔案，或\n提及節點",
+    "recoveredTurnFailed": "代理無法完成此回應。",
     "reference": "參照",
     "remove": "移除",
     "removeNodeLabel": "移除 {node} 參照",
@@ -192,6 +196,8 @@
     "targetFollowsVisibleWorkflow": "在您選擇目標、參考節點或傳送訊息之前，目標工作流程會跟隨目前可見的分頁。",
     "targetForThisChat": "此聊天的代理目標",
     "targetNavigationUnavailable": "此工作流程目標已無法使用。",
+    "targetWorkflowOpenFailed": "無法開啟目標工作流程。",
+    "targetWorkflowUnavailable": "目標工作流程已無法使用。",
     "thinking": "思考中...",
     "title": "Comfy Agent",
     "toolFailedSkill": "無法載入 {skill}",
@@ -5210,11 +5216,7 @@
         "body": "您目前的方案將持續有效至該日期。",
         "title": "您的方案將於 {date} 變更為 {plan}"
       },
-      "updatePayment": "更新付款方式",
-      "warning": {
-        "bodyNoDate": "您的上次付款未成功。請更新付款方式以避免暫停。",
-        "title": "付款失敗"
-      }
+      "updatePayment": "更新付款方式"
     },
     "changeRoleDialog": {
       "demoteConfirm": "降級為成員",
