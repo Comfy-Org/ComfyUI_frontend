@@ -3,6 +3,116 @@
   "domains": [
     {
       "schemaVersion": 1,
+      "id": "image-compare",
+      "capability": "Image compare",
+      "description": "Image comparison presentation, image selection behavior, extension registration, and LiteGraph widget integration.",
+      "expectedFileCount": 7,
+      "modules": [
+        {
+          "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.vue",
+          "role": "presentation"
+        },
+        {
+          "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.test.ts",
+          "role": "presentation"
+        },
+        {
+          "path": "src/renderer/extensions/vueNodes/widgets/composables/useImageCompareImages.ts",
+          "role": "application"
+        },
+        {
+          "path": "src/renderer/extensions/vueNodes/widgets/composables/useImageCompareImages.test.ts",
+          "role": "application"
+        },
+        {
+          "path": "src/renderer/extensions/vueNodes/widgets/composables/useImageCompareWidget.ts",
+          "role": "integration"
+        },
+        {
+          "path": "src/extensions/core/imageCompare.ts",
+          "role": "integration"
+        },
+        {
+          "path": "src/lib/litegraph/src/widgets/ImageCompareWidget.ts",
+          "role": "integration"
+        }
+      ],
+      "publicEntryPoints": [],
+      "owners": ["@jtydhr88", "@Comfy-Org/comfy_frontend_devs"],
+      "allowedDependencies": [],
+      "allowedConsumers": [],
+      "characterizationScenarios": [
+        {
+          "name": "Image selection and compare-widget presentation remain stable",
+          "checks": [
+            "src/renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.test.ts",
+            "src/renderer/extensions/vueNodes/widgets/composables/useImageCompareImages.test.ts"
+          ]
+        }
+      ],
+      "adrs": [],
+      "compatibilityPromises": [
+        "The core extension and LiteGraph widget remain the host integration seams.",
+        "Image selection remains isolated from compare presentation."
+      ],
+      "enforcement": {
+        "deepImports": "baseline",
+        "dependencies": "baseline"
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "image-crop",
+      "capability": "Image crop",
+      "description": "Image-crop presentation, composable behavior, extension registration, and LiteGraph widget integration.",
+      "expectedFileCount": 6,
+      "modules": [
+        {
+          "path": "src/components/imagecrop/**",
+          "role": "presentation"
+        },
+        {
+          "path": "src/composables/useImageCrop.ts",
+          "role": "application"
+        },
+        {
+          "path": "src/composables/useImageCrop.test.ts",
+          "role": "application"
+        },
+        {
+          "path": "src/extensions/core/imageCrop.ts",
+          "role": "integration"
+        },
+        {
+          "path": "src/lib/litegraph/src/widgets/ImageCropWidget.ts",
+          "role": "integration"
+        }
+      ],
+      "publicEntryPoints": [],
+      "owners": ["@jtydhr88", "@Comfy-Org/comfy_frontend_devs"],
+      "allowedDependencies": [],
+      "allowedConsumers": [],
+      "characterizationScenarios": [
+        {
+          "name": "Crop bounds and widget values preserve image-crop behavior",
+          "checks": [
+            "src/components/imagecrop/WidgetImageCrop.test.ts",
+            "src/composables/useImageCrop.test.ts"
+          ]
+        }
+      ],
+      "adrs": [],
+      "compatibilityPromises": [
+        "The core extension and LiteGraph widget remain the host integration seams.",
+        "Crop dimensions and widget values remain covered by characterization tests."
+      ],
+      "enforcement": {
+        "deepImports": "baseline",
+        "dependencies": "baseline"
+      }
+    },
+    {
+      "schemaVersion": 1,
       "id": "mask-editor",
       "capability": "Mask editor",
       "description": "Mask editing UI, drawing operations, editor state, and the core extension contract.",
@@ -70,6 +180,57 @@
       "compatibilityPromises": [
         "The core extension remains the host integration seam for opening the editor.",
         "Image widget values and layer output remain covered by loader and saver characterization tests."
+      ],
+      "enforcement": {
+        "deepImports": "baseline",
+        "dependencies": "baseline"
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "painter",
+      "capability": "Painter",
+      "description": "Painter presentation, drawing behavior, Vue-node adaptation, extension registration, and LiteGraph widget integration.",
+      "expectedFileCount": 7,
+      "modules": [
+        {
+          "path": "src/components/painter/**",
+          "role": "presentation"
+        },
+        {
+          "path": "src/composables/painter/**",
+          "role": "application"
+        },
+        {
+          "path": "src/renderer/extensions/vueNodes/widgets/composables/usePainterWidget.ts",
+          "role": "integration"
+        },
+        {
+          "path": "src/extensions/core/painter.ts",
+          "role": "integration"
+        },
+        {
+          "path": "src/lib/litegraph/src/widgets/PainterWidget.ts",
+          "role": "integration"
+        }
+      ],
+      "publicEntryPoints": [],
+      "owners": ["@jtydhr88", "@Comfy-Org/comfy_frontend_devs"],
+      "allowedDependencies": [],
+      "allowedConsumers": [],
+      "characterizationScenarios": [
+        {
+          "name": "Painter input and drawing operations preserve widget behavior",
+          "checks": [
+            "src/components/painter/WidgetPainter.test.ts",
+            "src/composables/painter/usePainter.test.ts"
+          ]
+        }
+      ],
+      "adrs": [],
+      "compatibilityPromises": [
+        "The core extension, Vue-node adapter, and LiteGraph widget remain integration seams.",
+        "Painter drawing behavior remains covered independently of presentation."
       ],
       "enforcement": {
         "deepImports": "baseline",
@@ -206,10 +367,6 @@
       "exactFingerprints": [
         "deep-import:mask-editor:src/components/builder/AppModeWidgetList.vue->src/composables/maskeditor/useMaskEditor.ts#1",
         "deep-import:mask-editor:src/components/builder/useLoaderDropIndicator.ts->src/composables/maskeditor/useMaskEditorLoader.ts#1",
-        "deep-import:mask-editor:src/composables/painter/usePainter.test.ts->src/composables/maskeditor/StrokeProcessor.ts#1",
-        "deep-import:mask-editor:src/composables/painter/usePainter.ts->src/composables/maskeditor/StrokeProcessor.ts#1",
-        "deep-import:mask-editor:src/composables/painter/usePainter.ts->src/composables/maskeditor/brushUtils.ts#1",
-        "deep-import:mask-editor:src/composables/painter/usePainter.ts->src/extensions/core/maskeditor/types.ts#1",
         "deep-import:mask-editor:src/composables/useCoreCommands.selectOnly.test.ts->src/stores/maskEditorStore.ts#1",
         "deep-import:mask-editor:src/composables/useCoreCommands.ts->src/stores/maskEditorStore.ts#1",
         "deep-import:mask-editor:src/extensions/core/index.ts->src/extensions/core/maskeditor.ts#1",
@@ -263,6 +420,73 @@
         "forbidden-edge:mask-editor->mask-editor:src/composables/maskeditor/useMaskEditor.test.ts->src/components/maskeditor/dialog/TopBarHeader.vue#1",
         "forbidden-edge:mask-editor->mask-editor:src/composables/maskeditor/useMaskEditor.ts->src/components/maskeditor/MaskEditorContent.vue#1",
         "forbidden-edge:mask-editor->mask-editor:src/composables/maskeditor/useMaskEditor.ts->src/components/maskeditor/dialog/TopBarHeader.vue#1"
+      ],
+      "fingerprintPrefixes": []
+    },
+    {
+      "id": "DDD-EX-006",
+      "owner": "@jtydhr88",
+      "rationale": "Image-crop callers predate a declared public entry point.",
+      "sunset": "2027-03-31",
+      "removalCriteria": "Publish focused image-crop entry points and migrate every recorded external caller.",
+      "exactFingerprints": [
+        "deep-import:image-crop:src/composables/video/useCropRatioLock.ts->src/composables/useImageCrop.ts#1",
+        "deep-import:image-crop:src/extensions/core/index.ts->src/extensions/core/imageCrop.ts#1",
+        "deep-import:image-crop:src/lib/litegraph/src/widgets/widgetMap.ts->src/lib/litegraph/src/widgets/ImageCropWidget.ts#1",
+        "deep-import:image-crop:src/renderer/extensions/vueNodes/widgets/registry/widgetRegistry.ts->src/components/imagecrop/WidgetImageCrop.vue#1"
+      ],
+      "fingerprintPrefixes": []
+    },
+    {
+      "id": "DDD-EX-007",
+      "owner": "@jtydhr88",
+      "rationale": "Image-compare callers predate a declared public entry point.",
+      "sunset": "2027-03-31",
+      "removalCriteria": "Publish focused image-compare entry points and migrate every recorded external caller.",
+      "exactFingerprints": [
+        "deep-import:image-compare:src/extensions/core/index.ts->src/extensions/core/imageCompare.ts#1",
+        "deep-import:image-compare:src/lib/litegraph/src/widgets/widgetMap.ts->src/lib/litegraph/src/widgets/ImageCompareWidget.ts#1",
+        "deep-import:image-compare:src/renderer/extensions/vueNodes/widgets/registry/widgetRegistry.ts->src/renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.vue#1",
+        "deep-import:image-compare:src/scripts/widgets.ts->src/renderer/extensions/vueNodes/widgets/composables/useImageCompareWidget.ts#1"
+      ],
+      "fingerprintPrefixes": []
+    },
+    {
+      "id": "DDD-EX-008",
+      "owner": "@jtydhr88",
+      "rationale": "Painter callers predate a declared public entry point.",
+      "sunset": "2027-03-31",
+      "removalCriteria": "Publish focused painter entry points and migrate every recorded external caller.",
+      "exactFingerprints": [
+        "deep-import:painter:src/extensions/core/index.ts->src/extensions/core/painter.ts#1",
+        "deep-import:painter:src/lib/litegraph/src/widgets/widgetMap.ts->src/lib/litegraph/src/widgets/PainterWidget.ts#1",
+        "deep-import:painter:src/renderer/extensions/vueNodes/widgets/registry/widgetRegistry.ts->src/components/painter/WidgetPainter.vue#1",
+        "deep-import:painter:src/scripts/widgets.ts->src/renderer/extensions/vueNodes/widgets/composables/usePainterWidget.ts#1"
+      ],
+      "fingerprintPrefixes": []
+    },
+    {
+      "id": "DDD-EX-009",
+      "owner": "@jtydhr88",
+      "rationale": "The image-crop application composable currently imports presentation while its orchestration boundary is extracted.",
+      "sunset": "2027-03-31",
+      "removalCriteria": "Move image-crop presentation composition out of useImageCrop and remove the characterized dependency occurrence.",
+      "exactFingerprints": [
+        "forbidden-edge:image-crop->image-crop:src/composables/useImageCrop.test.ts->src/components/imagecrop/WidgetImageCrop.vue#1"
+      ],
+      "fingerprintPrefixes": []
+    },
+    {
+      "id": "DDD-EX-010",
+      "owner": "@Comfy-Org/comfy_frontend_devs",
+      "rationale": "Painter application code currently depends directly on mask-editor internals.",
+      "sunset": "2027-03-31",
+      "removalCriteria": "Expose the required stroke-processing contract from the mask-editor boundary and migrate the four characterized painter dependency occurrences.",
+      "exactFingerprints": [
+        "forbidden-edge:painter->mask-editor:src/composables/painter/usePainter.test.ts->src/composables/maskeditor/StrokeProcessor.ts#1",
+        "forbidden-edge:painter->mask-editor:src/composables/painter/usePainter.ts->src/composables/maskeditor/StrokeProcessor.ts#1",
+        "forbidden-edge:painter->mask-editor:src/composables/painter/usePainter.ts->src/composables/maskeditor/brushUtils.ts#1",
+        "forbidden-edge:painter->mask-editor:src/composables/painter/usePainter.ts->src/extensions/core/maskeditor/types.ts#1"
       ],
       "fingerprintPrefixes": []
     }

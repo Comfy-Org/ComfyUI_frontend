@@ -10,6 +10,7 @@ import {
   loadArchitectureConfiguration,
   parseImportSpecifiers,
   runArchitectureCheck,
+  stableJson,
   validateExceptionCoverage
 } from './check'
 
@@ -595,6 +596,24 @@ describe('baseline admission and catalog stability', () => {
     )
     runArchitectureCheck(root, 'update')
     expect(readFileSync(filename, 'utf8')).toBe(before)
+  })
+
+  test('stable JSON uses formatter-compatible owner layouts', () => {
+    expect(stableJson({ owners: ['@one'] })).toContain('"owners": ["@one"]')
+    expect(stableJson({ owners: ['@one', '@two'] })).toContain(
+      '"owners": ["@one", "@two"]'
+    )
+    expect(stableJson({ owners: ['@one', '@two', '@three'] })).toContain(
+      '"owners": ["@one", "@two", "@three"]'
+    )
+    expect(
+      stableJson({
+        owners: [
+          '@Comfy-Org/comfy_frontend_developers_with_a_long_name',
+          '@Comfy-Org/comfy_website_developers_with_a_long_name'
+        ]
+      })
+    ).toContain('"owners": [\n')
   })
 
   test('catalog checks tolerate formatter-only JSON layout changes', () => {

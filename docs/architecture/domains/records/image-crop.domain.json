@@ -1,0 +1,40 @@
+{
+  "$schema": "../domain.schema.json",
+  "schemaVersion": 1,
+  "id": "image-crop",
+  "capability": "Image crop",
+  "description": "Image-crop presentation, composable behavior, extension registration, and LiteGraph widget integration.",
+  "expectedFileCount": 6,
+  "modules": [
+    { "path": "src/components/imagecrop/**", "role": "presentation" },
+    { "path": "src/composables/useImageCrop.ts", "role": "application" },
+    {
+      "path": "src/composables/useImageCrop.test.ts",
+      "role": "application"
+    },
+    { "path": "src/extensions/core/imageCrop.ts", "role": "integration" },
+    {
+      "path": "src/lib/litegraph/src/widgets/ImageCropWidget.ts",
+      "role": "integration"
+    }
+  ],
+  "publicEntryPoints": [],
+  "owners": ["@jtydhr88", "@Comfy-Org/comfy_frontend_devs"],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Crop bounds and widget values preserve image-crop behavior",
+      "checks": [
+        "src/components/imagecrop/WidgetImageCrop.test.ts",
+        "src/composables/useImageCrop.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "The core extension and LiteGraph widget remain the host integration seams.",
+    "Crop dimensions and widget values remain covered by characterization tests."
+  ],
+  "enforcement": { "deepImports": "baseline", "dependencies": "baseline" }
+}
