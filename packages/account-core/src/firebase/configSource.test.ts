@@ -233,4 +233,46 @@ describe('fetchCloudFeatures', () => {
       fetchCloudFeatures('https://cloud.comfy.org', { fetchImpl })
     ).resolves.toEqual({})
   })
+
+  it('reads the PostHog project and the disabled events from the same fetch', async () => {
+    const fetchImpl = jsonFetch({
+      posthog_project_token: 'phc_project',
+      posthog_api_host: 'https://t.comfy.org',
+      telemetry_disabled_events: ['billing.operation.started', 7, null]
+    })
+
+    await expect(
+      fetchCloudFeatures('https://cloud.comfy.org', { fetchImpl })
+    ).resolves.toMatchObject({
+      posthogProjectToken: 'phc_project',
+      posthogApiHost: 'https://t.comfy.org',
+      telemetryDisabledEvents: ['billing.operation.started']
+    })
+  })
+
+  it.for([
+    {
+      name: 'absent',
+      body: {}
+    },
+    {
+      name: 'malformed',
+      body: {
+        posthog_project_token: '',
+        posthog_api_host: 42,
+        telemetry_disabled_events: 'billing.operation.started'
+      }
+    }
+  ])(
+    'offers no PostHog setting when the fields are $name',
+    async ({ body }) => {
+      const features = await fetchCloudFeatures('https://cloud.comfy.org', {
+        fetchImpl: jsonFetch(body)
+      })
+
+      expect(features.posthogProjectToken).toBeUndefined()
+      expect(features.posthogApiHost).toBeUndefined()
+      expect(features.telemetryDisabledEvents).toBeUndefined()
+    }
+  )
 })

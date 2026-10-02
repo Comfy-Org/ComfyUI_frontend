@@ -801,6 +801,28 @@ describe('useWorkflowService', () => {
       expect(workflowStore.activeWorkflow.path).toBe('workflows/retained.json')
     })
 
+    it('does not repaint the retained workflow for a superseded load', async () => {
+      const workflowStore = useWorkflowStore()
+      const retained = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/retained.json'
+      })
+      const superseded = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/superseded.json'
+      })
+      workflowStore.attachWorkflow(retained, 0)
+      workflowStore.attachWorkflow(superseded, 1)
+      workflowStore.activeWorkflow = retained as LoadedComfyWorkflow
+      vi.mocked(app.loadGraphData).mockResolvedValueOnce(undefined)
+
+      await expect(useWorkflowService().openWorkflow(superseded)).resolves.toBe(
+        true
+      )
+
+      expect(app.loadGraphData).toHaveBeenCalledOnce()
+    })
+
     it('serializes rapid workflow opens so the final selection stays active', async () => {
       const workflowStore = useWorkflowStore()
       const first = createWorkflow(null, {

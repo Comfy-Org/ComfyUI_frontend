@@ -321,6 +321,7 @@ export function useTemplateWorkflows() {
         { openSource: 'template' }
       )
       if (loadedWorkflow === false) return 'graph-failed'
+      if (loadedWorkflow === undefined) return 'not-started'
 
       updateTemplateEducation(template?.isPartnerNode, loadedWorkflow)
       await syncCompletedTemplateInputsWithCurrentGraph()

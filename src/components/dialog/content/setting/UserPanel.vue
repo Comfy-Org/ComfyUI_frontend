@@ -45,7 +45,8 @@
               }"
               variant="muted-textonly"
               size="icon-sm"
-              @click="dialogService.showUpdatePasswordDialog()"
+              :aria-label="$t('userSettings.updatePassword')"
+              @click="onUpdatePassword"
             >
               <i class="pi pi-pen-to-square" />
             </Button>
@@ -89,18 +90,24 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
+
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Spinner from '@/components/ui/spinner/Spinner.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useDialogService } from '@/services/dialogService'
 
+const { t } = useI18n()
+const router = useRouter()
 const dialogService = useDialogService()
 const {
   loading,
   isLoggedIn,
   isApiKeyLogin,
   isEmailProvider,
+  needsFirebaseSignIn,
   userDisplayName,
   userEmail,
   userPhotoUrl,
@@ -109,4 +116,24 @@ const {
   handleSignOut,
   handleSignIn
 } = useCurrentUser()
+
+async function onUpdatePassword() {
+  if (!needsFirebaseSignIn.value) {
+    await dialogService.showUpdatePasswordDialog()
+    return
+  }
+  const confirmed = await dialogService.confirm({
+    title: t('auth.reauthRequired.title'),
+    message: t('auth.reauthRequired.message')
+  })
+  if (!confirmed) return
+  const { href } = router.resolve({
+    name: 'cloud-login',
+    query: {
+      switchAccount: 'true',
+      previousFullPath: encodeURIComponent(router.currentRoute.value.fullPath)
+    }
+  })
+  window.location.assign(href)
+}
 </script>

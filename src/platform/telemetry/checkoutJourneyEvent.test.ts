@@ -1,12 +1,11 @@
-import { describe, expect, it } from 'vitest'
-
 import {
   CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE,
   CHECKOUT_JOURNEY_SCHEMA_VERSION,
   getCheckoutJourneyTelemetryEventName,
   getCheckoutJourneyTelemetryEventPayload
-} from './types'
-import type { CheckoutJourneyTelemetryEvent } from './types'
+} from '@comfyorg/account-core/billing'
+import type { CheckoutJourneyTelemetryEvent } from '@comfyorg/account-core/billing'
+import { describe, expect, it } from 'vitest'
 
 const baseContext = {
   checkout_journey_id: 'journey-1',

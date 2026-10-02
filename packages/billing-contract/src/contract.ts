@@ -61,6 +61,36 @@ export function isBillingProduct(
 }
 
 /**
+ * Where in a product the customer asked for billing. A value outside this list
+ * is read as no source.
+ */
+export const BILLING_SOURCES = [
+  'subscription_required',
+  'out_of_credits',
+  'top_up_blocked',
+  'deep_link',
+  'subscribe_to_run',
+  'subscribe_now_button',
+  'upgrade_to_add_credits',
+  'settings_billing_panel',
+  'avatar_menu_plans',
+  'team_members_panel',
+  'invite_member_upsell',
+  'upload_model_upgrade',
+  'team_upgrade_resume',
+  'free_tier_quota',
+  'agent_paywall'
+] as const
+
+export type BillingSource = (typeof BILLING_SOURCES)[number]
+
+export function isBillingSource(
+  value: string | null | undefined
+): value is BillingSource {
+  return BILLING_SOURCES.some((source) => source === value)
+}
+
+/**
  * Which deployment family a return destination belongs to. The backends run
  * three of them, not two, and pair each origin with exactly one family, so a
  * product resolves its return target in the same family its session was

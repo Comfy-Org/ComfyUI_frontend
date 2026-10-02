@@ -1,7 +1,6 @@
 import type { ErrorEvent, EventHint } from '@sentry/vue'
 
-const EXTENSION_TAB_NOT_FOUND_MESSAGE =
-  'Invalid call to runtime.sendMessage(). Tab not found.'
+import { isThirdPartyErrorNoise } from '@comfyorg/shared-frontend-utils/telemetry'
 
 function messageFrom(value: unknown): string | undefined {
   try {
@@ -27,14 +26,6 @@ function exceptionValueFrom(value: unknown): string[] {
   } catch {
     return []
   }
-}
-
-export function isThirdPartyErrorNoise(message?: string): boolean {
-  if (!message) return false
-  const index = message.indexOf(EXTENSION_TAB_NOT_FOUND_MESSAGE)
-  if (index < 0) return false
-  const prefix = message.slice(0, index)
-  return /^(?:Unhandled promise rejection:\s*)?(?:Error:\s*)?$/.test(prefix)
 }
 
 /** Drops a browser-extension messaging failure that the app never emits. */
