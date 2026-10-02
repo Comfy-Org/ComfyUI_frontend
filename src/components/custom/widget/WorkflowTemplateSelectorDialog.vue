@@ -422,6 +422,10 @@
             :alt="activeDetailTitle"
             :get-logo-url="workflowTemplatesStore.getLogoUrl"
             :hover-zoom="0"
+            :is-hovered="detailPreviewHovered"
+            data-testid="detail-preview"
+            @mouseenter="detailPreviewHovered = true"
+            @mouseleave="detailPreviewHovered = false"
           />
         </template>
       </WorkflowTemplateDetail>
@@ -514,6 +518,9 @@ const { onClose: originalOnClose, initialCategory = 'all' } = defineProps<{
 // Track session time for telemetry
 const sessionStartTime = ref<number>(0)
 const templateWasSelected = ref(false)
+// Detail shows one preview with no grid behind it, so this view owns its
+// hover the same way the card grid owns each card's.
+const detailPreviewHovered = ref(false)
 
 onMounted(() => {
   sessionStartTime.value = Date.now()
