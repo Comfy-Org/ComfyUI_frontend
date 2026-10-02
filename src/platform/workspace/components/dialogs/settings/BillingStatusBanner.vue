@@ -153,14 +153,6 @@ interface BannerView {
 
 const bs = 'workspacePanel.billingStatus'
 
-const pausedView = (): BannerView => ({
-  muted: !canManage.value,
-  title: t(`${bs}.paused.title`),
-  body: canManage.value ? t(`${bs}.paused.body`) : t(`${bs}.paused.memberBody`),
-  action: canManage.value ? 'updatePayment' : null,
-  dismissible: false
-})
-
 // Only an https payment page is opened; anything else hides the action.
 function safeInvoiceUrl(value: string | undefined): string | undefined {
   if (!value) return undefined
@@ -171,9 +163,12 @@ function safeInvoiceUrl(value: string | undefined): string | undefined {
   }
 }
 
-// Runs are already blocked on payment_failed; reads as paused until BE-6970.
-const paymentFailedView = (): BannerView => ({
-  ...pausedView(),
+const pausedView = (): BannerView => ({
+  muted: !canManage.value,
+  title: t(`${bs}.paused.title`),
+  body: canManage.value ? t(`${bs}.paused.body`) : t(`${bs}.paused.memberBody`),
+  action: canManage.value ? 'updatePayment' : null,
+  dismissible: false,
   payInvoiceUrl: safeInvoiceUrl(renewalInvoice.value?.hosted_invoice_url)
 })
 
@@ -287,10 +282,10 @@ const planChangeView = (): BannerView | null =>
 
 const banner = computed<BannerView | null>(() => {
   switch (kind.value) {
+    // Runs are already blocked on payment_failed, so it reads as paused.
     case 'paused':
-      return pausedView()
     case 'paymentFailed':
-      return paymentFailedView()
+      return pausedView()
     case 'planEnded':
       return planEndedView()
     case 'outOfCredits':
