@@ -7,7 +7,14 @@ on:
         description: 'Package to publish'
         required: true
         type: 'choice'
-        options: [account-core, account-ui, billing-contract, ingest-types]
+        options:
+          [
+            account-core,
+            account-ui,
+            billing-contract,
+            ingest-types,
+            oxlint-config
+          ]
       version:
         description: 'Version to publish (e.g., 1.0.0-alpha.1)'
         required: true
@@ -74,6 +81,7 @@ jobs:
             account-ui) NPM_NAME='@comfyorg/account-ui' ;;
             billing-contract) NPM_NAME='@comfyorg/billing-contract' ;;
             ingest-types) NPM_NAME='@comfyorg/ingest-types' ;;
+            oxlint-config) NPM_NAME='@comfyorg/oxlint-config' ;;
             *)
               echo "::error title=Unknown package::'$PACKAGE' is not a releasable package" >&2
               exit 1

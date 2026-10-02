@@ -1,0 +1,47 @@
+{
+  "name": "@comfyorg/oxlint-config",
+  "version": "0.1.0-alpha.0",
+  "description": "Shared Comfy native Oxlint import policy",
+  "license": "GPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Comfy-Org/ComfyUI_frontend.git",
+    "directory": "packages/oxlint-config"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    "./imports": "./src/imports.ts",
+    "./imports.json": "./dist/imports.json",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "exports": {
+      "./imports": {
+        "types": "./dist/imports.d.ts",
+        "import": "./dist/imports.js"
+      },
+      "./imports.json": "./dist/imports.json",
+      "./package.json": "./package.json"
+    },
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && node scripts/build.ts",
+    "prepack": "pnpm run build",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "oxlint": "^1.77.0"
+  }
+}
