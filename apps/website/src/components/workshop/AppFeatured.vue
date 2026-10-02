@@ -20,6 +20,7 @@ const { app, locale = 'en' } = defineProps<{
         v-if="app.image"
         :src="app.image"
         alt=""
+        data-testid="app-featured-image"
         class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
         decoding="async"
       />

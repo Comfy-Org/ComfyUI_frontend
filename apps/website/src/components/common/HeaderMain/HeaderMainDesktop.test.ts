@@ -39,6 +39,23 @@ describe('HeaderMainDesktop', () => {
     ).toEqual(['/hub/apps/', '/hub/workflows/', '/hub/models/'])
   })
 
+  it('opens Enterprise as one column with no Resources row', async () => {
+    history.replaceState(null, '', '/pricing')
+    render(HeaderMainDesktop, { props: { workshopInBuild: true } })
+    await userEvent.click(screen.getByRole('button', { name: /^enterprise/i }))
+    const menu = within(await screen.findByTestId('nav-dropdown'))
+
+    expect(
+      (await menu.findAllByRole('link')).map((link) => link.textContent.trim())
+    ).toEqual([
+      'Comfy Enterprise',
+      'Forward Deployed Creatives',
+      'Commercial licensing',
+      'Contact sales'
+    ])
+    expect(menu.queryByText('Resources')).toBeNull()
+  })
+
   it.for([
     { path: '/hub/', active: true },
     { path: '/hub/models/', active: true },

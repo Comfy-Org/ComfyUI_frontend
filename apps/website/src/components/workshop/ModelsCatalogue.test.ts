@@ -228,6 +228,47 @@ describe('ModelsCatalogue', () => {
     }
   )
 
+  it('leaves out explore sections that have nothing to show', async () => {
+    render(ModelsCatalogue, { props: { models: [], section: 'explore' } })
+
+    await screen.findByTestId('explore-catalogue')
+    expect(
+      ['explore-use-cases', 'explore-apps', 'explore-models'].map(
+        (id) => screen.queryByTestId(id) !== null
+      )
+    ).toEqual([false, false, false])
+  })
+
+  it.for([
+    { models: ['Qwen Image Edit'], by: ['By Qwen Image Edit'] },
+    { models: undefined, by: [] }
+  ])(
+    'names the model a use case runs on only when it has one: $models',
+    async ({ models, by }) => {
+      const workflow: WorkshopModel = {
+        type: 'CLOUD',
+        workflowId: 'workflows/change-material',
+        slug: 'workflows/change-material',
+        name: 'Change a material',
+        href: '/hub/workflows/change-material/',
+        workflowCount: 1,
+        capabilities: [],
+        category: 'product',
+        categoryLabel: { en: 'Product', 'zh-CN': '产品' },
+        models,
+        modality: 'image'
+      }
+      render(ModelsCatalogue, {
+        props: { models: [workflow], section: 'explore' }
+      })
+
+      await screen.findByTestId('use-case-card')
+      expect(
+        screen.queryAllByTestId('use-case-by').map((chip) => chip.textContent)
+      ).toEqual(by)
+    }
+  )
+
   it('narrows the explore models to the provider a visitor picks', async () => {
     const user = userEvent.setup()
     const routerModel = (name: string, provider: string): WorkshopModel => ({
@@ -258,6 +299,10 @@ describe('ModelsCatalogue', () => {
       'aria-pressed',
       'true'
     )
+
+    await user.click(screen.getByRole('button', { name: 'All' }))
+
+    expect(names()).toEqual(['alpha', 'beta'])
   })
 
   it('leads the apps page with a featured app and names what is coming', async () => {

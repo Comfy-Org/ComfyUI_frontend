@@ -30,15 +30,15 @@ const mainNavigation = computed(() =>
 const currentPath = useCurrentPath()
 
 function isNavItemActive(navItem: NavItem, path: string): boolean {
-  if (navItem.href) return isHrefActive(navItem.href, path)
+  if (!navItem.columns) return isHrefActive(navItem.href, path)
   const onLeafPage = mainNavigation.value.some(
     (item) => item.href && isHrefActive(item.href, path)
   )
   const hrefs = [
     ...(navItem.featured ? [navItem.featured.cta.href] : []),
-    ...(navItem.columns?.flatMap((column) =>
+    ...navItem.columns.flatMap((column) =>
       column.items.map((item) => item.href)
-    ) ?? [])
+    )
   ]
   return !onLeafPage && hrefs.some((href) => isHrefActive(href, path))
 }
