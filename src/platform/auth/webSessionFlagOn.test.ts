@@ -218,6 +218,11 @@ function installServer(
     session: initial,
     requests: [] as SessionRequest[],
     dropPosts: false,
+    revokeAllStatus: 200,
+    revokeAllRequests: [] as {
+      authorization: string | null
+      csrf: string | null
+    }[],
     featureReads: [] as {
       credentials: RequestCredentials | null
       client: string | null
@@ -253,6 +258,20 @@ function installServer(
     return answerRead()
   }
 
+  const answerRevokeAll = (init: RequestInit | undefined): Response => {
+    const headers = new Headers(init?.headers)
+    server.revokeAllRequests.push({
+      authorization: headers.get('authorization'),
+      csrf: headers.get('x-csrf-token')
+    })
+    if (server.revokeAllStatus !== 200) {
+      const error = { code: 'unavailable', message: 'down' }
+      return jsonResponse(error, server.revokeAllStatus)
+    }
+    server.session = 'revoked'
+    return jsonResponse({ revoked: 2 })
+  }
+
   const answerFeatures = (init: RequestInit | undefined): Response => {
     const client = new Headers(init?.headers).get('x-comfy-client')
     const credentials = init?.credentials ?? null
@@ -275,6 +294,9 @@ function installServer(
       const url = new URL(String(input), location.href)
       const method = (init?.method ?? 'GET').toUpperCase()
       if (url.pathname === '/api/features') return answerFeatures(init)
+      if (url.pathname === '/api/auth/sessions/revoke-all') {
+        return answerRevokeAll(init)
+      }
       if (url.pathname !== '/api/auth/session') {
         return jsonResponse({ id: 'customer-1' }, 201)
       }
@@ -427,6 +449,41 @@ describe('cloud app on the shared web session (unified_web_session on)', () => {
       name: 'session_signed_out_remotely',
       properties: { origin: location.origin }
     })
+  })
+
+  it.for([
+    { name: 'ok revokes every session', status: 200, result: { status: 'ok' } },
+    {
+      name: 'a server failure is returned, not thrown',
+      status: 503,
+      result: { status: 'error', code: 'SESSION_UNAVAILABLE' }
+    }
+  ])('revoke-all: $name', async ({ status, result }) => {
+    const server = installServer({ userId: 'user-a' })
+    server.revokeAllStatus = status
+    await refreshRemoteConfig({ useAuth: false })
+    identity.signIn(USER_A)
+    await useSessionCookie().ensureSessionCookie()
+    const webSession = useCloudWebSessionStore()
+
+    expect(await webSession.revokeAllSessions()).toMatchObject(result)
+    expect(server.revokeAllRequests).toEqual([
+      { authorization: 'Bearer firebase-id-token', csrf: 'csrf-user-a' }
+    ])
+  })
+
+  it('revoke-all sends nothing without a Firebase login to prove identity', async () => {
+    const server = installServer({ userId: 'user-a' })
+    await refreshRemoteConfig({ useAuth: false })
+    await useSessionCookie().ensureSessionCookie()
+    const webSession = useCloudWebSessionStore()
+    expect(webSession.state.phase).toBe('signed_in')
+
+    expect(await webSession.revokeAllSessions()).toMatchObject({
+      status: 'error',
+      code: 'NO_SESSION'
+    })
+    expect(server.revokeAllRequests).toEqual([])
   })
 
   it('resets the tab and tells the user when another account takes the session', async () => {
