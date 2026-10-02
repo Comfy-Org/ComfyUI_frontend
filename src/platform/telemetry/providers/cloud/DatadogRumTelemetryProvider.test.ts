@@ -196,6 +196,24 @@ describe('DatadogRumTelemetryProvider', () => {
     )
   })
 
+  it.for([
+    {
+      name: 'session_bootstrap',
+      properties: { outcome: 'restored', origin: 'https://cloud.comfy.org' }
+    },
+    {
+      name: 'session_signed_out_remotely',
+      properties: { origin: 'https://cloud.comfy.org' }
+    }
+  ] as const)('records the web session event $name as is', (event) => {
+    new DatadogRumTelemetryProvider().trackWebSessionEvent(event)
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      event.name,
+      event.properties
+    )
+  })
+
   it('records image load failures by source', () => {
     new DatadogRumTelemetryProvider().trackImageLoadFailed({
       source: 'node_image_preview'

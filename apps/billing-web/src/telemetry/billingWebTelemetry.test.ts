@@ -356,6 +356,40 @@ describe('trackCheckoutJourneyEvent', () => {
   })
 })
 
+describe('trackWebSessionEvent', () => {
+  it.for([
+    {
+      name: 'session_bootstrap',
+      properties: { outcome: 'restored', origin: 'https://billing.comfy.org' }
+    },
+    {
+      name: 'session_signed_out_remotely',
+      properties: { origin: 'https://billing.comfy.org' }
+    }
+  ] as const)('sends $name to RUM and PostHog as is', async (event) => {
+    vi.mocked(datadogRum.getInitConfiguration).mockReturnValue({
+      clientToken: 'pub',
+      applicationId: 'app'
+    })
+    const telemetry = createBillingWebTelemetry()
+    await telemetry.startPostHog({
+      config: Promise.resolve(CONFIGURED),
+      identity: ref<SessionIdentity>({ kind: 'unknown' })
+    })
+
+    telemetry.trackWebSessionEvent(event)
+
+    expect(datadogRum.addAction).toHaveBeenCalledExactlyOnceWith(
+      event.name,
+      event.properties
+    )
+    expect(posthog.capture).toHaveBeenCalledExactlyOnceWith(
+      event.name,
+      event.properties
+    )
+  })
+})
+
 describe('startPostHog', () => {
   it('turns off every PostHog capture that would carry page text or a full URL', async () => {
     const telemetry = createBillingWebTelemetry()

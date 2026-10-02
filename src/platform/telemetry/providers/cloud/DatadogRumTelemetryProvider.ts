@@ -8,6 +8,7 @@ import type {
   BillingTelemetryEvent,
   CheckoutJourneyTelemetryEvent
 } from '@comfyorg/account-core/billing'
+import type { WebSessionTelemetryEvent } from '@comfyorg/account-core/telemetry'
 // oxlint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
 import { datadogRum } from '@datadog/browser-rum'
 
@@ -66,6 +67,10 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
         : TelemetryEvents.UNIFIED_AUTH_REFRESH_FAILED,
       metadata
     )
+  }
+
+  trackWebSessionEvent(event: WebSessionTelemetryEvent): void {
+    datadogRum.addAction(event.name, event.properties)
   }
 
   trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {

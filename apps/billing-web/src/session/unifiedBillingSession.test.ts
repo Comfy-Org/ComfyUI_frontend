@@ -8,6 +8,7 @@ import type { User } from 'firebase/auth'
 
 import { createWebSessionBillingClient } from '@/session/billingWebClient'
 import { createUnifiedBillingSession } from '@/session/unifiedBillingSession'
+import { billingWebTelemetry } from '@/telemetry/billingWebTelemetry'
 
 const API = 'https://testcloud.comfy.org/api'
 
@@ -79,6 +80,20 @@ const TEAM = new Response(
   })
 )
 
+function trackedWebSessionEvents() {
+  const track = vi
+    .spyOn(billingWebTelemetry, 'trackWebSessionEvent')
+    .mockImplementation(() => undefined)
+  return () => track.mock.calls.map(([event]) => event)
+}
+
+function bootstrapEvent(outcome: string) {
+  return {
+    name: 'session_bootstrap',
+    properties: { outcome, origin: globalThis.location.origin }
+  }
+}
+
 function setup({
   state = LIVE,
   remembered = null as User | null,
@@ -129,6 +144,7 @@ function setup({
 
 describe('billing-web on the shared web session', () => {
   it('signs in from a live session without touching Firebase (SS1)', async () => {
+    const tracked = trackedWebSessionEvents()
     const { session, firebase, sent, paths } = setup({
       workspaceId: 'ws-team'
     })
@@ -137,6 +153,7 @@ describe('billing-web on the shared web session', () => {
     await expect(session.signInPort.loadIdentity()).resolves.toBeUndefined()
 
     expect(firebase.loadFirebase).not.toHaveBeenCalled()
+    expect(tracked()).toEqual([bootstrapEvent('signed_in')])
     expect(paths()).toEqual([
       'GET /api/auth/session',
       'GET /api/workspaces/current'
@@ -170,29 +187,34 @@ describe('billing-web on the shared web session', () => {
       name: 'no session, nothing remembered: sign-in',
       state: { kind: 'dead', code: 'no_session' },
       remembered: null,
-      phase: 'signed-out'
+      phase: 'signed-out',
+      outcome: 'signed_out'
     },
     {
       name: 'expired session, nothing remembered: sign-in',
       state: { kind: 'dead', code: 'session_expired' },
       remembered: null,
-      phase: 'signed-out'
+      phase: 'signed-out',
+      outcome: 'signed_out'
     },
     {
       name: 'no session, a remembered login: silent restore',
       state: { kind: 'dead', code: 'no_session' },
       remembered: 'user-1',
-      phase: 'authenticated'
+      phase: 'authenticated',
+      outcome: 'restored'
     },
     {
       name: 'revoked session: sign-in',
       state: { kind: 'dead', code: 'session_revoked' },
       remembered: 'user-1',
-      phase: 'signed-out'
+      phase: 'signed-out',
+      outcome: 'revoked'
     }
   ] as const)(
     '$name, consulting Firebase only then',
-    async ({ state, remembered, phase }) => {
+    async ({ state, remembered, phase, outcome }) => {
+      const tracked = trackedWebSessionEvents()
       const { session, firebase } = setup({
         state,
         remembered: remembered === null ? null : firebaseUser(remembered)
@@ -201,6 +223,7 @@ describe('billing-web on the shared web session', () => {
       await expect(session.settledPhase()).resolves.toBe(phase)
 
       expect(firebase.loadFirebase).toHaveBeenCalled()
+      expect(tracked()).toEqual([bootstrapEvent(outcome)])
     }
   )
 

@@ -614,6 +614,27 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it.for([
+      {
+        name: 'session_bootstrap',
+        properties: { outcome: 'restored', origin: 'https://cloud.comfy.org' }
+      },
+      {
+        name: 'session_signed_out_remotely',
+        properties: { origin: 'https://cloud.comfy.org' }
+      }
+    ] as const)('captures the web session event $name as is', async (event) => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackWebSessionEvent(event)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        event.name,
+        event.properties
+      )
+    })
+
     it('captures image load failures', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
