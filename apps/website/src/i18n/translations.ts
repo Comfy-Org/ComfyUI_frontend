@@ -60,37 +60,47 @@ const translations = {
     'zh-CN': '通过 API 用在你的产品中'
   },
   'workshop.explore.subtitle': {
-    en: 'Start from a use case, run a ready-made app, or call a model. Everything here runs in your browser.',
+    en: 'What do you want to make? Start from a task or search. Every result says if it is an app, a workflow or a model.',
     'zh-CN':
-      '从一个用例开始、运行现成的应用，或调用模型。这里的一切都在浏览器中运行。'
+      '你想做什么？从一个任务开始，或直接搜索。每个结果都会标明它是应用、工作流还是模型。'
   },
-  'workshop.explore.useCasesTitle': {
-    en: 'Start from a use case',
-    'zh-CN': '从一个用例开始'
+  'workshop.explore.searchLabel': { en: 'Search the Hub', 'zh-CN': '搜索 Hub' },
+  'workshop.explore.searchPlaceholder': {
+    en: 'Try “upscale”, “image to video” or a model name',
+    'zh-CN': '试试“upscale”、“image to video”或模型名称'
   },
-  'workshop.explore.useCasesHint': {
-    en: 'What do you want to make?',
-    'zh-CN': '你想做什么？'
+  'workshop.explore.tasks': { en: 'Tasks', 'zh-CN': '任务' },
+  'workshop.explore.tasksTitle': {
+    en: 'Start from a task',
+    'zh-CN': '从一个任务开始'
   },
-  'workshop.explore.useCasesSeeAll': {
-    en: 'Browse all use cases',
-    'zh-CN': '浏览全部用例'
+  'workshop.explore.popularTitle': {
+    en: 'Popular right now',
+    'zh-CN': '当前热门'
   },
+  'workshop.explore.resultsFor': {
+    en: 'Results for “{query}”',
+    'zh-CN': '“{query}”的结果'
+  },
+  'workshop.explore.empty': {
+    en: 'Nothing matches yet.',
+    'zh-CN': '暂时没有匹配的结果。'
+  },
+  'workshop.explore.clear': { en: 'Clear search', 'zh-CN': '清除搜索' },
   'workshop.explore.workflowPill': { en: 'Workflow', 'zh-CN': '工作流' },
-  'workshop.explore.by': { en: 'By {model}', 'zh-CN': '使用 {model}' },
-  'workshop.explore.appsTitle': {
-    en: 'Ready-made apps',
-    'zh-CN': '现成的应用'
-  },
+  'workshop.explore.kindApp': { en: 'App', 'zh-CN': '应用' },
+  'workshop.explore.kindModel': { en: 'Model', 'zh-CN': '模型' },
+  'workshop.explore.doors': { en: 'Browse by format', 'zh-CN': '按类型浏览' },
+  'workshop.explore.doorApps': { en: 'Apps', 'zh-CN': '应用' },
   'workshop.explore.appsHint': {
     en: 'One job each. No nodes needed.',
     'zh-CN': '每个应用只做一件事，无需节点。'
   },
-  'workshop.explore.appsSeeAll': {
-    en: 'See all apps',
-    'zh-CN': '查看全部应用'
+  'workshop.explore.doorWorkflows': { en: 'Workflows', 'zh-CN': '工作流' },
+  'workshop.explore.workflowsHint': {
+    en: 'Open one, change any step, make it yours.',
+    'zh-CN': '打开一个工作流，修改任意步骤，变成你自己的。'
   },
-  'workshop.explore.comingSoon': { en: 'Coming soon', 'zh-CN': '即将推出' },
   'workshop.explore.modelsTitle': { en: 'Models', 'zh-CN': '模型' },
   'workshop.explore.modelsHint': {
     en: 'Try them here or call them by API.',
@@ -100,8 +110,6 @@ const translations = {
     en: 'See all models',
     'zh-CN': '查看全部模型'
   },
-  'workshop.explore.providers': { en: 'Providers', 'zh-CN': '提供方' },
-  'workshop.explore.allProviders': { en: 'All', 'zh-CN': '全部' },
   'workshop.build.title': {
     en: 'Put it in your product.',
     'zh-CN': '把它用在你的产品中。'

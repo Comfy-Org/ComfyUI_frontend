@@ -186,123 +186,158 @@ describe('ModelsCatalogue', () => {
     expect(screen.queryByRole('link', { name: /Change a material/ })).toBeNull()
   })
 
-  it.for([
-    {
-      apps: 'on',
-      on: true,
-      sections: [
-        ['explore-use-cases', '/hub/workflows/'],
-        ['explore-apps', '/hub/apps/'],
-        ['explore-models', '/hub/models/']
-      ]
-    },
-    {
-      apps: 'off',
-      on: false,
-      sections: [
-        ['explore-use-cases', '/hub/workflows/'],
-        ['explore-models', '/hub/models/']
-      ]
-    }
-  ])(
-    'previews each space on the explore page with apps $apps',
-    async ({ on, sections }) => {
-      appsFlag.value = on
-      render(ModelsCatalogue, {
-        props: { models: launchModels, section: 'explore' }
-      })
-      const explore = await screen.findByTestId('explore-catalogue')
-      const seeAll = /^(See all|Browse all)/
+  describe('explore', () => {
+    const entry = (
+      name: string,
+      kind: 'workflow' | 'model',
+      useCases: WorkshopModel['useCases']
+    ): WorkshopModel =>
+      kind === 'workflow'
+        ? {
+            type: 'CLOUD',
+            workflowId: `workflows/${name}`,
+            slug: `workflows/${name}`,
+            name,
+            href: `/hub/workflows/${name}/`,
+            workflowCount: 1,
+            capabilities: [],
+            useCases
+          }
+        : {
+            routerId: `acme/${name}`,
+            slug: name,
+            name,
+            href: `/hub/models/${name}/`,
+            workflowCount: 0,
+            capabilities: [],
+            useCases
+          }
+    const catalogue = [
+      entry('relight', 'workflow', ['edit-images']),
+      entry('painter', 'model', ['generate-images']),
+      entry('animator', 'model', ['animate-images']),
+      entry('animate-still', 'workflow', ['animate-images'])
+    ]
+    const renderExplore = (models = catalogue) =>
+      render(ModelsCatalogue, { props: { models, section: 'explore' } })
+    const resultNames = () =>
+      within(screen.getByTestId('explore-results'))
+        .queryAllByRole('link')
+        .map((link) => link.getAttribute('href'))
 
+    it('offers a task for each use case it holds, naming the formats behind it', async () => {
+      renderExplore()
+
+      const tasks = await screen.findAllByTestId('explore-task')
       expect(
-        within(explore).getAllByRole('link', { name: seeAll })
-      ).toHaveLength(sections.length)
-      expect(
-        sections.map(([section]) => [
-          section,
-          within(screen.getByTestId(section))
-            .getByRole('link', { name: seeAll })
-            .getAttribute('href')
+        tasks.map((task) => [
+          within(task)
+            .getByText(/images|video/i)
+            .textContent.trim(),
+          within(task)
+            .getAllByTestId('explore-task-kind')
+            .map((kind) => kind.textContent.trim())
         ])
-      ).toEqual(sections)
-    }
-  )
+      ).toEqual([
+        ['Generate images', ['Model']],
+        ['Edit images', ['Workflow']],
+        ['Image to video', ['Workflow', 'Model']]
+      ])
+    })
 
-  it('leaves out explore sections that have nothing to show', async () => {
-    render(ModelsCatalogue, { props: { models: [], section: 'explore' } })
+    it('narrows the results to the task a visitor picks and links to it in the catalogue', async () => {
+      const user = userEvent.setup()
+      renderExplore()
 
-    await screen.findByTestId('explore-catalogue')
-    expect(
-      ['explore-use-cases', 'explore-apps', 'explore-models'].map(
-        (id) => screen.queryByTestId(id) !== null
-      )
-    ).toEqual([false, false, false])
-  })
+      await user.click((await screen.findAllByTestId('explore-task'))[2])
 
-  it.for([
-    { models: ['Qwen Image Edit'], by: ['By Qwen Image Edit'] },
-    { models: undefined, by: [] }
-  ])(
-    'names the model a use case runs on only when it has one: $models',
-    async ({ models, by }) => {
-      const workflow: WorkshopModel = {
-        type: 'CLOUD',
-        workflowId: 'workflows/change-material',
-        slug: 'workflows/change-material',
-        name: 'Change a material',
-        href: '/hub/workflows/change-material/',
-        workflowCount: 1,
-        capabilities: [],
-        category: 'product',
-        categoryLabel: { en: 'Product', 'zh-CN': '产品' },
-        models,
-        modality: 'image'
-      }
-      render(ModelsCatalogue, {
-        props: { models: [workflow], section: 'explore' }
-      })
-
-      await screen.findByTestId('use-case-card')
+      expect(screen.queryByTestId('explore-tasks')).toBeNull()
       expect(
-        screen.queryAllByTestId('use-case-by').map((chip) => chip.textContent)
-      ).toEqual(by)
-    }
-  )
-
-  it('narrows the explore models to the provider a visitor picks', async () => {
-    const user = userEvent.setup()
-    const routerModel = (name: string, provider: string): WorkshopModel => ({
-      routerId: `${provider}/${name}`,
-      slug: name,
-      name,
-      provider,
-      href: `/hub/models/${name}/`,
-      workflowCount: 0,
-      capabilities: [],
-      useCases: ['generate-images']
+        screen.getByRole('heading', { name: 'Image to video' })
+      ).toBeVisible()
+      expect(
+        screen.getByRole('button', { name: 'Image to video' })
+      ).toHaveAttribute('aria-pressed', 'true')
+      expect(resultNames()).toEqual([
+        '/hub/models/?useCase=animate-images',
+        '/hub/workflows/animate-still/',
+        '/hub/models/animator/'
+      ])
     })
-    render(ModelsCatalogue, {
-      props: {
-        models: [routerModel('alpha', 'Acme'), routerModel('beta', 'Zenith')],
-        section: 'explore'
+
+    it.for([
+      {
+        query: 'relight',
+        kinds: ['workflow'],
+        heading: 'Results for “relight”'
+      },
+      { query: 'studio', kinds: ['app'], heading: 'Results for “studio”' },
+      {
+        query: '',
+        kinds: ['app', 'workflow', 'workflow', 'model', 'model'],
+        heading: 'Popular right now'
       }
-    })
-    const names = () =>
-      within(screen.getByTestId('explore-models'))
-        .getAllByTestId('model-card-name')
-        .map((name) => name.textContent)
+    ])(
+      'tags every result with its format: "$query"',
+      async ({ query, kinds, heading }) => {
+        appsFlag.value = true
+        reshootFlag.value = false
+        const user = userEvent.setup()
+        renderExplore([
+          ...catalogue,
+          ...launchModels.filter((m) => m.type === 'APP')
+        ])
 
-    await user.click(await screen.findByRole('button', { name: 'Zenith' }))
+        const search = await screen.findByTestId('explore-search')
+        if (query) await user.type(search, query)
 
-    expect(names()).toEqual(['beta'])
-    expect(screen.getByRole('button', { name: 'Zenith' })).toHaveAttribute(
-      'aria-pressed',
-      'true'
+        expect(screen.getByRole('heading', { name: heading })).toBeVisible()
+        expect(
+          screen.getAllByTestId('explore-kind').map((tag) => tag.dataset.kind)
+        ).toEqual(kinds)
+      }
     )
 
-    await user.click(screen.getByRole('button', { name: 'All' }))
+    it('says when nothing matches and clears back to everything', async () => {
+      const user = userEvent.setup()
+      renderExplore()
 
-    expect(names()).toEqual(['alpha', 'beta'])
+      await user.type(await screen.findByTestId('explore-search'), 'zzz')
+      expect(screen.getByTestId('explore-empty')).toBeVisible()
+
+      await user.click(screen.getByRole('button', { name: 'Clear search' }))
+
+      expect(screen.getByTestId('explore-search')).toHaveValue('')
+      expect(screen.getByTestId('explore-tasks')).toBeVisible()
+      expect(
+        screen.getByRole('heading', { name: 'Popular right now' })
+      ).toBeVisible()
+    })
+
+    it.for([
+      { apps: true, doors: ['/hub/apps/', '/hub/workflows/', '/hub/models/'] },
+      { apps: false, doors: ['/hub/workflows/', '/hub/models/'] }
+    ])(
+      'ends with a door per format, apps only when they are on: $apps',
+      async ({ apps, doors }) => {
+        appsFlag.value = apps
+        renderExplore(launchModels)
+
+        expect(
+          within(await screen.findByTestId('explore-doors'))
+            .getAllByRole('link')
+            .map((link) => link.getAttribute('href'))
+        ).toEqual(doors)
+      }
+    )
+
+    it('shows only the doors when the catalogue is empty', async () => {
+      renderExplore([])
+
+      await screen.findByTestId('explore-doors')
+      expect(screen.queryByTestId('explore-tasks')).toBeNull()
+      expect(screen.queryByTestId('explore-results')).toBeNull()
+    })
   })
 
   it('leads the apps page with a featured app and names what is coming', async () => {

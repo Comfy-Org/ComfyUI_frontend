@@ -120,7 +120,7 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
     {
       from: 'apps',
       to: 'explore',
-      copy: 'Start from a use case'
+      copy: 'What do you want to make?'
     }
   ] as const) {
     test(`the space marker travels from ${from} to ${to} under ${reducedMotion} motion`, async ({

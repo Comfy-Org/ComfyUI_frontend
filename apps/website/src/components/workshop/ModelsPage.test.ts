@@ -209,7 +209,7 @@ describe('Models page entry', () => {
       slots: { fallback: '<h1>Public Models</h1>' }
     })
 
-    expect(await screen.findByTestId('explore-models')).toBeVisible()
+    expect(await screen.findByTestId('explore-results')).toBeVisible()
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
       'Explore heading'
     )
