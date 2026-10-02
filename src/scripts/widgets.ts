@@ -101,11 +101,6 @@ export function updateControlWidgetLabel(widget: IBaseWidget) {
 
 const HAS_EXECUTED = Symbol()
 
-/**
- * The extra mode a combo target gets, pushed into the control's own `values`
- * below. It is not in {@link CONTROL_OPTIONS} because it is frontend-only —
- * `io.ControlAfterGenerate` does not declare it.
- */
 const COMBO_ONLY_CONTROL_MODE = 'increment-wrap'
 
 /**
