@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { ChevronLeft } from '@lucide/vue'
-import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener, useMounted } from '@vueuse/core'
 import { WORKSHOP_INCLUDED } from 'astro:env/client'
 import {
@@ -25,13 +23,10 @@ import {
 } from '../../scripts/posthog'
 
 import type { HubSection } from '../../lib/workshop/hub-section'
-import { getRoutes } from '../../config/routes'
+import HubEyebrow from './HubEyebrow.vue'
 import WorkshopGate from './WorkshopGate.vue'
 import WorkshopLoading from './WorkshopLoading.vue'
-import {
-  workshopEyebrowClass,
-  workshopHeadingClass
-} from './workshopHeadingClasses'
+import { workshopHeadingClass } from './workshopHeadingClasses'
 
 const {
   slug,
@@ -229,26 +224,7 @@ const Content = shallowRef(createContent())
       class="mx-auto max-w-10xl px-6 pt-8 pb-4 max-sm:pt-5 lg:px-8 lg:pt-12 sm:short:pb-3"
     >
       <div class="animate-soft-in">
-        <p v-if="section === 'explore'" :class="workshopEyebrowClass">
-          {{ t('workshop.catalogue.eyebrow', 'en') }}
-        </p>
-        <a
-          v-else
-          :href="getRoutes('en').hubExplore"
-          :class="
-            cn(
-              workshopEyebrowClass,
-              'group inline-flex items-center gap-1 rounded-lg outline-none hover:text-primary-warm-white focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50'
-            )
-          "
-          data-testid="hub-back"
-        >
-          <ChevronLeft
-            class="size-4 transition-transform group-hover:-translate-x-0.5"
-            aria-hidden="true"
-          />
-          {{ t('workshop.catalogue.eyebrow', 'en') }}
-        </a>
+        <HubEyebrow :section />
         <h1 :class="workshopHeadingClass">{{ heading }}</h1>
       </div>
     </div>
