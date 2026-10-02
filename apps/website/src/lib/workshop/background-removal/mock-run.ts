@@ -13,7 +13,8 @@ export const CUTOUT_CREDITS = {
   adjust: 4
 } as const satisfies Record<CutoutMode, number>
 
-const MOCK_DELAY_MS = 2200
+/** How long the mock takes to answer, which its progress counts towards. */
+export const CUTOUT_RUN_MS = 2200
 
 /**
  * Stands in for the Background Removal backend until it exists: waits, then
@@ -26,7 +27,7 @@ export async function runCutout(
   signal: AbortSignal,
   render: CutoutRender = renderCutout
 ): Promise<CutoutResult> {
-  const url = await mockRenderJob(() => render(request), signal, MOCK_DELAY_MS)
+  const url = await mockRenderJob(() => render(request), signal, CUTOUT_RUN_MS)
   return {
     url: url ?? request.imageUrl,
     mode: request.mode,

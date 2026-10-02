@@ -16,6 +16,7 @@ import {
 } from '../../../lib/workshop/background-removal/mask'
 import { elapsedLabel } from '../../../lib/workshop/elapsed'
 import EditorBusy from '../app-editor/EditorBusy.vue'
+import EditorDropZone from '../app-editor/EditorDropZone.vue'
 import EditorFrame from '../app-editor/EditorFrame.vue'
 import EditorHint from '../app-editor/EditorHint.vue'
 import BackgroundRemovalSubject from './BackgroundRemovalSubject.vue'
@@ -55,21 +56,15 @@ const filters = computed(() => {
     foreground: adjust.target === 'foreground' ? filter : 'none'
   }
 })
-
-function drop(event: DragEvent) {
-  const [file] = event.dataTransfer?.files ?? []
-  if (file?.type.startsWith('image/')) void cutout.useFile(file)
-}
 </script>
 
 <template>
   <EditorFrame :width="image.width" :height="image.height">
-    <div
+    <EditorDropZone
       class="relative size-full overflow-hidden rounded-sm select-none"
       style="container-type: inline-size"
       data-testid="background-removal-stage"
-      @dragover.prevent
-      @drop.prevent="drop"
+      @file="cutout.useFile"
     >
       <img
         :src="image.url"
@@ -110,6 +105,6 @@ function drop(event: DragEvent) {
           <BackgroundRemovalSubject :url="image.url" />
         </span>
       </EditorBusy>
-    </div>
+    </EditorDropZone>
   </EditorFrame>
 </template>

@@ -11,9 +11,10 @@ import {
   swatchBackground
 } from '../../../lib/workshop/background-removal/contract'
 import { brc } from '../../../lib/workshop/background-removal/copy'
+import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import EditorChecker from '../app-editor/EditorChecker.vue'
-import CinematicColorPicker from '../cinematic-studio/CinematicColorPicker.vue'
-import CinematicPopover from '../cinematic-studio/CinematicPopover.vue'
+import EditorColorPicker from '../app-editor/EditorColorPicker.vue'
+import EditorPopover from '../app-editor/EditorPopover.vue'
 
 const { cutout, locale = 'en' } = defineProps<{
   cutout: BackgroundRemoval
@@ -92,17 +93,21 @@ const swatchClass = (checked: boolean) =>
         />
       </button>
     </div>
-    <CinematicPopover
+    <EditorPopover
       v-if="picking"
       :title="brc('cutout.swatch.custom', locale)"
-      :locale
+      :close-label="tc('cinematic.picker.close', locale)"
       @close="picking = false"
     >
-      <CinematicColorPicker
+      <EditorColorPicker
         :model-value="customColor"
-        :locale
+        :labels="{
+          shade: tc('cinematic.colors.shade', locale),
+          hue: tc('cinematic.colors.hue', locale),
+          hex: tc('cinematic.colors.hex', locale)
+        }"
         @update:model-value="pickCustom"
       />
-    </CinematicPopover>
+    </EditorPopover>
   </div>
 </template>

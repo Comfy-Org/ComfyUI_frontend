@@ -161,7 +161,9 @@ describe('BackgroundRemovalStudio', () => {
       within(section('Background')).getByRole('radio', { name: 'Replace' })
     )
     const run = within(panel()).getByTestId('background-removal-run')
-    expect(run).toHaveTextContent('Replace background')
+    expect(run).toHaveTextContent(
+      'Describe a background or add a reference image.'
+    )
     expect(run).toBeDisabled()
     expect(
       within(section('Background')).getByText(
@@ -184,6 +186,7 @@ describe('BackgroundRemovalStudio', () => {
       'a terracotta wall'
     )
     expect(run).toBeEnabled()
+    expect(run).toHaveTextContent('Replace background')
     await user.click(run)
 
     expect(vi.mocked(renderCutout)).toHaveBeenCalledWith(
