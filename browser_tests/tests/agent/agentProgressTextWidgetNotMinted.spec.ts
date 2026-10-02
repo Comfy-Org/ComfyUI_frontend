@@ -178,10 +178,21 @@ test.describe(
           ({ nodeId, seed, preview, text }) => {
             const node = window.app!.graph.nodes.find(
               (candidate) => String(candidate.id) === nodeId
-            )!
-            node.widgets!.find((widget) => widget.name === preview)!.value =
-              text
-            node.widgets!.find((widget) => widget.name === 'seed')!.value = seed
+            )
+            const previewWidget = node?.widgets?.find(
+              (widget) => widget.name === preview
+            )
+            const seedWidget = node?.widgets?.find(
+              (widget) => widget.name === 'seed'
+            )
+            if (!previewWidget) {
+              throw new Error(`Expected ${preview} on node ${nodeId}`)
+            }
+            if (!seedWidget) {
+              throw new Error(`Expected a seed widget on node ${nodeId}`)
+            }
+            previewWidget.value = text
+            seedWidget.value = seed
           },
           {
             nodeId: String(NODE_ID),
