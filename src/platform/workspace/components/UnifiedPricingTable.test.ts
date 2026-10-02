@@ -185,7 +185,8 @@ describe('UnifiedPricingTable plan CTA labels', () => {
     expect(screen.queryByRole('button', { name: /^Change to/ })).toBeNull()
   })
 
-  it('marks the current tier on the default view when the duration is unknown', () => {
+  it('marks the current tier on either cycle when the duration is unknown', async () => {
+    const user = userEvent.setup()
     mockSubscription.value = { tier: 'STANDARD', duration: null }
 
     renderComponent()
@@ -193,6 +194,13 @@ describe('UnifiedPricingTable plan CTA labels', () => {
     expect(screen.getByRole('button', { name: 'Current Plan' })).toBeDisabled()
     expect(
       screen.getByRole('button', { name: 'Change to Creator Yearly' })
+    ).toBeTruthy()
+
+    await user.click(screen.getByRole('button', { name: 'Monthly' }))
+
+    expect(screen.getByRole('button', { name: 'Current Plan' })).toBeDisabled()
+    expect(
+      screen.getByRole('button', { name: 'Change to Creator' })
     ).toBeTruthy()
   })
 
@@ -442,7 +450,8 @@ describe('UnifiedPricingTable team plan CTA', () => {
     expect(cta).toBeDisabled()
   })
 
-  it('treats the current team stop as current on either cycle when the duration is unknown', () => {
+  it('treats the current team stop as current on either cycle when the duration is unknown', async () => {
+    const user = userEvent.setup()
     mockSubscription.value = {
       tier: 'TEAM',
       duration: null,
@@ -451,6 +460,10 @@ describe('UnifiedPricingTable team plan CTA', () => {
     mockCurrentTeamCreditStop.value = TEAM_STOP
 
     renderComponent({ initialPlanMode: 'team' })
+
+    expect(screen.getByRole('button', { name: 'Current plan' })).toBeDisabled()
+
+    await user.click(screen.getByRole('button', { name: 'Monthly' }))
 
     expect(screen.getByRole('button', { name: 'Current plan' })).toBeDisabled()
   })

@@ -174,7 +174,10 @@
                 <h3 class="m-0 text-base font-bold text-text-primary">
                   {{ $t('subscription.tiers.free.name') }}
                 </h3>
-                <div class="flex items-baseline gap-1 font-inter">
+                <div
+                  v-if="!isPriceCycleUnknown"
+                  class="flex items-baseline gap-1 font-inter"
+                >
                   <span class="text-2xl font-semibold">{{ displayPrice }}</span>
                   <span class="text-base">{{ priceUnitLabel }}</span>
                 </div>

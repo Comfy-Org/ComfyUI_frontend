@@ -763,6 +763,10 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(screen.queryByText('$2,250')).not.toBeInTheDocument()
     expect(screen.queryByText('$2,000')).not.toBeInTheDocument()
     expect(screen.queryByText('USD / mo')).not.toBeInTheDocument()
+    expect(screen.getByText('Team')).toBeInTheDocument()
+    expect(
+      screen.getByText(`Renews on ${formatPanelDate(RENEWAL_DATE_ISO)}`)
+    ).toBeInTheDocument()
   })
 
   it('falls back to the per-member tier price until stops resolve', () => {

@@ -36,8 +36,12 @@ export function useWorkspacePlanPricing() {
   })
 
   // A paid plan with no reported duration has no knowable per-month price.
+  // Free and Founders Edition prices do not depend on the cycle.
   const isPriceCycleUnknown = computed(
-    () => !subscription.value?.duration && tierKey.value !== 'free'
+    () =>
+      !subscription.value?.duration &&
+      tierKey.value !== 'free' &&
+      tierKey.value !== 'founder'
   )
 
   const subscribedStop = computed(() => {
