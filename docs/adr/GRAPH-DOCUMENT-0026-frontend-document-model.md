@@ -555,6 +555,54 @@ rewrite; multi-view (split editors) and non-workflow document types — the
 model permits both later (the manager, uid, and lifecycle are
 type-agnostic) but nothing here builds them.
 
+## Amendment (2026-10-02): the active-document binding precursor
+
+`useDocumentLifecycleStore`
+(`src/platform/workflow/core/stores/documentLifecycleStore.ts`) is a **precursor
+to Phase 1, not Phase 1**. It exists because the in-app Agent had no owner for
+one fact — which workflow document the shared root graph currently represents —
+and was inferring it from tab paths and serialized workflow state. It owns
+exactly that binding, and the reasons it deviates from Phase 1 are recorded here
+so a later consumer does not assume guarantees it does not give.
+
+What it provides:
+
+- One `{ uid, rootGraphId }` binding for the document on the canvas, retracted
+  when a graph load changes document and published when the load has selected a
+  workflow. Retract and publish both live in
+  `workflowService.beforeLoadNewGraph`/`afterLoadNewGraph`, which is the split
+  Phase 1 names, so all three graph-load entrypoints (`loadGraphData`,
+  `loadApiJson`, `importA1111`) are covered by construction.
+- D3's "graph (re)loads are not document transitions": the retract is gated on
+  document identity change, so undo, redo, and same-document reloads keep their
+  binding. An in-place root-graph id rotation — `LGraph.clear()` from
+  `app.clean()`, which Clear Workflow reaches with no graph load — updates the
+  binding's `rootGraphId` without being a transition.
+- A per-load token (`DocumentTransition`) so a load that finishes after a newer
+  one started can neither publish nor retract on the newer load's behalf.
+  `ChangeTracker.undo` and paste call `loadGraphData` outside the
+  workflow-load queue, so loads do interleave. This is a narrow stand-in for
+  D3's "transitions are serialized", not that rule.
+
+Deviations and deferred requirements:
+
+- **The uid is `ComfyWorkflow.instanceId`, not a session uid minted in `load()`
+  and nulled in `unload()`.** `instanceId` is assigned in a field initializer
+  and survives `unload()`, and `workflowStore.test.ts` pins that stability, so
+  **close/reopen does not mint a new uid** as D1 requires. The agent consumer is
+  unaffected (it resolves through the open tab), but a uid-keyed sidecar built on
+  this store would see a reopened session as the closed one. Mint the real uid
+  before adding one.
+- No lifecycle bus: no `Open`/`PostOpen`/`PreClose`/`Close`/`PostClose`, no
+  forced close from the death paths, no event payload carrying the document type,
+  no synthetic catch-up for late registration, no `registerDocumentSidecar`.
+  An earlier draft of this store shipped a bare subscribe/emit pair with no
+  production subscriber; it was removed rather than landed, because D3 wants
+  typed events, catch-up, and serialized transitions, and a bus shaped before its
+  first consumer would have had to change anyway.
+- No ingress stamping (D2), no key helper, and no `widgetValueStore` /
+  `previewExposureStore` migration.
+
 ## Consequences
 
 ### Positive

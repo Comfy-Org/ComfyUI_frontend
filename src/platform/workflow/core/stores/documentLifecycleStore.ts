@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia'
 import { shallowRef } from 'vue'
 
-import { reportError } from '@/platform/telemetry/reportError'
 import type { RootGraphId } from '@/types/graphScopeId'
 
 export type DocumentUid = string & { readonly __brand: 'DocumentUid' }
@@ -10,101 +9,109 @@ export function toDocumentUid(value: string): DocumentUid {
   return value as DocumentUid
 }
 
+/**
+ * Names one graph load. A load hands its token to `activate`/`invalidate` so a
+ * load that finishes after a newer one started cannot publish or retract on
+ * the newer load's behalf: `loadGraphData` callers such as `ChangeTracker.undo`
+ * bypass the workflow-load queue and interleave freely.
+ */
+export type DocumentTransition = number & {
+  readonly __brand: 'DocumentTransition'
+}
+
 interface ActiveDocumentBinding {
   readonly uid: DocumentUid
   readonly rootGraphId: RootGraphId
 }
 
-type DocumentTransitionEvent =
-  | { readonly phase: 'deactivate'; readonly binding: ActiveDocumentBinding }
-  | { readonly phase: 'activate'; readonly binding: ActiveDocumentBinding }
-
-type DocumentTransitionListener = (event: DocumentTransitionEvent) => void
-
 /**
  * Owns the one fact that the shared canvas cannot answer for itself: which
  * workflow document its root graph currently represents.
+ *
+ * The binding tracks the *live* root graph id, not the id the document was
+ * loaded with. A root graph can rotate in place without any document
+ * transition — `LGraph.clear()` mints a fresh uuid — so a load publishes
+ * through `activate` and an in-place rotation reports through
+ * `rebindActiveRootGraph`.
  */
 export const useDocumentLifecycleStore = defineStore(
   'documentLifecycle',
   () => {
     const activeBinding = shallowRef<ActiveDocumentBinding | null>(null)
-    const listeners = new Set<DocumentTransitionListener>()
+    let latestTransition = 0 as DocumentTransition
 
-    function emit(event: DocumentTransitionEvent): void {
-      for (const listener of listeners) {
-        try {
-          listener(event)
-        } catch (error) {
-          reportError(error, {
-            errorType: 'document_lifecycle_listener_failure',
-            surface: 'graph',
-            tags: { phase: event.phase }
-          })
-        }
-      }
-    }
-
-    function deactivate(): void {
-      const outgoing = activeBinding.value
-      if (outgoing === null) return
-      activeBinding.value = null
-      emit({ phase: 'deactivate', binding: outgoing })
+    function isLatest(transition: DocumentTransition | undefined): boolean {
+      return transition === undefined || transition === latestTransition
     }
 
     /**
-     * Retract the current binding only when a graph load is changing document.
-     * Undo, redo, and same-document reloads retain their binding.
+     * Open a graph load, retracting the current binding unless the load is
+     * staying on the same document. Undo, redo, and same-document reloads keep
+     * their binding; everything else — including an import, which has no
+     * requested document — fails closed until the load publishes.
      */
-    function beginTransition(nextUid: DocumentUid | null): void {
-      if (activeBinding.value?.uid === nextUid) return
-      deactivate()
-    }
-
-    /** Publish a successfully configured live root graph. */
-    function activate(binding: ActiveDocumentBinding): void {
+    function beginTransition(nextUid: DocumentUid | null): DocumentTransition {
+      latestTransition = (latestTransition + 1) as DocumentTransition
       const current = activeBinding.value
-      if (current?.uid === binding.uid) {
-        activeBinding.value = binding
-        return
-      }
-      deactivate()
-      activeBinding.value = binding
-      emit({ phase: 'activate', binding })
+      if (current !== null && current.uid !== nextUid)
+        activeBinding.value = null
+      return latestTransition
     }
 
+    function activate(
+      binding: ActiveDocumentBinding,
+      transition?: DocumentTransition
+    ): void {
+      if (!isLatest(transition)) return
+      activeBinding.value = binding
+    }
+
+    /** Retract the binding for a load that cleared the graph and then failed. */
+    function invalidate(transition?: DocumentTransition): void {
+      if (!isLatest(transition)) return
+      activeBinding.value = null
+    }
+
+    /**
+     * Follow an in-place root graph id rotation on the document already on the
+     * canvas — `app.clean()` from Clear Workflow mints a new root id without
+     * going through a graph load. Not a document transition: the uid is
+     * unchanged, so a stale id here would make every later agent op look like
+     * it targets a foreign graph.
+     */
+    function rebindActiveRootGraph(rootGraphId: RootGraphId): void {
+      const current = activeBinding.value
+      if (current === null || current.rootGraphId === rootGraphId) return
+      activeBinding.value = { uid: current.uid, rootGraphId }
+    }
+
+    // Compare against a non-null binding explicitly: `binding?.uid === uid`
+    // reads as true when *both* sides are undefined, so an undefined uid would
+    // report itself active against no binding at all.
     function isActive(uid: DocumentUid): boolean {
-      return activeBinding.value?.uid === uid
+      const binding = activeBinding.value
+      return binding !== null && binding.uid === uid
     }
 
     function activeRootGraphId(uid: DocumentUid): RootGraphId | null {
-      return isActive(uid) ? (activeBinding.value?.rootGraphId ?? null) : null
-    }
-
-    function subscribe(listener: DocumentTransitionListener): () => void {
-      if (listeners.has(listener)) {
-        reportError('Document lifecycle listener is already registered', {
-          errorType: 'document_lifecycle_duplicate_listener',
-          surface: 'graph'
-        })
-        return () => {}
-      }
-      listeners.add(listener)
-      return () => listeners.delete(listener)
+      const binding = activeBinding.value
+      return binding !== null && binding.uid === uid
+        ? binding.rootGraphId
+        : null
     }
 
     function $reset(): void {
       activeBinding.value = null
-      listeners.clear()
+      latestTransition = 0 as DocumentTransition
     }
 
     return {
-      activeBinding,
       beginTransition,
       activate,
+      invalidate,
+      rebindActiveRootGraph,
       isActive,
       activeRootGraphId,
-      subscribe,
       $reset
     }
   }
