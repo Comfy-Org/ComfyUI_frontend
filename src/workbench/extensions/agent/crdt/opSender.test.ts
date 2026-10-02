@@ -753,6 +753,44 @@ describe('createOpSender', () => {
     localSender.detach()
   })
 
+  it('re-arms settlement failure telemetry after a successful settlement', () => {
+    let shouldFail = true
+    const localSender = createOpSender({
+      sendOps: (workflowId, tab, ops) => {
+        sent.push({ workflowId, tab, ops })
+        return true
+      },
+      onOpsResult: (listener) => {
+        resultListener = listener
+        return vi.fn()
+      },
+      workflowId: () => boundWorkflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: () => {
+        if (shouldFail) throw new Error('listener boom')
+      }
+    })
+
+    for (let id = 1; id <= 3; id++) {
+      localSender.enqueue([addNode(id)])
+      ackInFlight()
+    }
+    expect(reportError).toHaveBeenCalledTimes(3)
+
+    shouldFail = false
+    localSender.enqueue([addNode(4)])
+    ackInFlight()
+    shouldFail = true
+    localSender.enqueue([addNode(5)])
+    ackInFlight()
+
+    expect(reportError).toHaveBeenCalledTimes(4)
+    shouldFail = false
+    localSender.detach()
+  })
+
   it('contains settlement failures when admitting while unbound', () => {
     boundWorkflow = null
     const localSender = createOpSender({
@@ -985,6 +1023,29 @@ describe('createOpSender', () => {
     enqueueCircular(5)
 
     expect(reportError).toHaveBeenCalledTimes(3)
+  })
+
+  it('re-arms chunk failure telemetry after a successful seal', () => {
+    const enqueueCircular = (id: number) => {
+      const operation = addNode(id)
+      const node: AddNodeOperation['node'] & Record<string, unknown> = {
+        ...operation.node
+      }
+      node.circular = node
+      operation.node = node
+      sender.enqueue([operation])
+    }
+
+    enqueueCircular(1)
+    enqueueCircular(2)
+    enqueueCircular(3)
+    expect(reportError).toHaveBeenCalledTimes(3)
+
+    sender.enqueue([addNode(4)])
+    ackInFlight()
+    enqueueCircular(5)
+
+    expect(reportError).toHaveBeenCalledTimes(4)
   })
 
   it('rejects an unserializable non-batchable op before transport', () => {
