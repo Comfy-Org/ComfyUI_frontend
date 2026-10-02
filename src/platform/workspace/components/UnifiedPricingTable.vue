@@ -757,17 +757,13 @@ const isTeamCurrentStopSelected = computed(() => {
 
 // Yearly and monthly at the same credit stop are distinct plans, so toggling
 // the cycle is a change, not the current plan.
-// An unknown duration (null) matches either cycle rather than defaulting to one.
-const subscribedCycle = computed<BillingCycle | null>(() => {
-  const duration = subscription.value?.duration
-  if (!duration) return null
-  return duration === 'MONTHLY' ? 'monthly' : 'yearly'
-})
+const subscribedCycle = computed<BillingCycle>(() =>
+  subscription.value?.duration === 'MONTHLY' ? 'monthly' : 'yearly'
+)
 const isTeamCurrentPlanSelected = computed(
   () =>
     isTeamCurrentStopSelected.value &&
-    (subscribedCycle.value === null ||
-      currentBillingCycle.value === subscribedCycle.value)
+    currentBillingCycle.value === subscribedCycle.value
 )
 
 const teamButtonLabel = computed(() => {
@@ -855,7 +851,6 @@ const isCurrentPlan = (tierKey: CheckoutTierKey): boolean => {
     return plan?.slug === currentPlanSlug.value
   }
   if (!currentTierKey.value) return false
-  if (!subscription.value?.duration) return currentTierKey.value === tierKey
   const selectedIsYearly = currentBillingCycle.value === 'yearly'
   return (
     currentTierKey.value === tierKey &&
