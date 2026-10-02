@@ -85,7 +85,7 @@ describe('readModel3DOutput', () => {
     expect(readModel3DOutput({ result: [{ path: 'a.glb' }] })).toBeNull()
   })
 
-  it.each([
+  it.for<[string, unknown]>([
     ['position', { target: camera.target, zoom: 1, cameraType: 'perspective' }],
     [
       'target',
@@ -103,7 +103,7 @@ describe('readModel3DOutput', () => {
       'cameraType',
       { position: camera.position, target: camera.target, zoom: 1 }
     ]
-  ])('drops a camera state missing %s', (_field, partialCamera) => {
+  ])('drops a camera state missing %s', ([, partialCamera]) => {
     const reported = readModel3DOutput({
       '3d': [{ filename: 'a.glb', subfolder: '', type: 'output' }],
       camera_info: [partialCamera]
@@ -112,19 +112,22 @@ describe('readModel3DOutput', () => {
     expect(reported?.cameraState).toBeUndefined()
   })
 
-  it.each([
+  it.for<[string, unknown]>([
     ['quaternion', 'invalid'],
     ['customUp', { x: 0, y: 1 }],
     ['useCustomUp', 'yes'],
     ['fov', '35']
-  ])('drops a camera state whose optional %s is malformed', (field, value) => {
-    const reported = readModel3DOutput({
-      '3d': [{ filename: 'a.glb', subfolder: '', type: 'output' }],
-      camera_info: [{ ...camera, [field]: value }]
-    })
+  ])(
+    'drops a camera state whose optional %s is malformed',
+    ([field, value]) => {
+      const reported = readModel3DOutput({
+        '3d': [{ filename: 'a.glb', subfolder: '', type: 'output' }],
+        camera_info: [{ ...camera, [field]: value }]
+      })
 
-    expect(reported?.cameraState).toBeUndefined()
-  })
+      expect(reported?.cameraState).toBeUndefined()
+    }
+  )
 
   it('keeps well-formed optional camera fields', () => {
     const quaternion = { x: 0, y: 0, z: 0, w: 1 }
@@ -154,12 +157,34 @@ describe('readModel3DOutput', () => {
     })
   })
 
-  it('rejects a file item whose fields are malformed', () => {
-    expect(
-      readModel3DOutput({ '3d': [{ filename: 'a.glb', subfolder: 7 }] })
-    ).toBeNull()
-    expect(
-      readModel3DOutput({ '3d': [{ filename: 'a.glb', type: 'nowhere' }] })
-    ).toBeNull()
+  it.for<[string, Record<string, unknown>, string]>([
+    ['an unknown folder type', { type: 'nowhere' }, 'a.glb'],
+    ['a non-string subfolder', { subfolder: 7 }, 'a.glb'],
+    [
+      'an unknown folder next to a subfolder',
+      { subfolder: '3d', type: 'nowhere' },
+      '3d/a.glb'
+    ]
+  ])('still loads the file when its item has %s', ([, fields, filePath]) => {
+    const reported = readModel3DOutput({
+      '3d': [{ filename: 'a.glb', ...fields }]
+    })
+
+    expect(reported).toMatchObject({ filePath, folder: undefined })
+  })
+
+  it('still loads the file when viewer state is not a list', () => {
+    const reported = readModel3DOutput({
+      '3d': [{ filename: 'a.glb', subfolder: '', type: 'output' }],
+      camera_info: camera,
+      model_3d_info: { transform }
+    })
+
+    expect(reported).toEqual({
+      filePath: 'a.glb',
+      folder: 'output',
+      cameraState: undefined,
+      modelTransform: undefined
+    })
   })
 })

@@ -5,7 +5,6 @@ import type {
   LoadFolder,
   Model3DInfo
 } from '@/extensions/core/load3d/interfaces'
-import { zResultItem } from '@/platform/remote/comfyui/execution/types'
 
 export interface Model3DOutput {
   filePath: string
@@ -52,11 +51,19 @@ const zModelTransform = z.object({
 
 const zLoadFolder = z.enum(['output', 'temp'])
 
+const zModel3DItem = z.object({
+  filename: z.string().min(1),
+  subfolder: z.string().optional().catch(undefined),
+  type: zLoadFolder.optional().catch(undefined)
+})
+
+const zOptionalList = z.array(z.unknown()).optional().catch(undefined)
+
 const zModel3DNodeOutput = z.object({
-  '3d': z.array(zResultItem).optional(),
-  camera_info: z.array(z.unknown()).optional(),
-  model_3d_info: z.array(z.unknown()).optional(),
-  result: z.array(z.unknown()).optional()
+  '3d': zOptionalList,
+  camera_info: zOptionalList,
+  model_3d_info: zOptionalList,
+  result: zOptionalList
 })
 
 function parseOptional<T>(schema: z.ZodType<T>, value: unknown): T | undefined {
@@ -69,13 +76,14 @@ export function readModel3DOutput(output: unknown): Model3DOutput | null {
   if (!parsed.success) return null
   const { '3d': items, camera_info, model_3d_info, result } = parsed.data
 
-  const item = items?.[0]
-  if (item?.filename) {
+  const parsedItem = zModel3DItem.safeParse(items?.[0])
+  if (parsedItem.success) {
+    const item = parsedItem.data
     return {
       filePath: item.subfolder
         ? `${item.subfolder}/${item.filename}`
         : item.filename,
-      folder: parseOptional(zLoadFolder, item.type),
+      folder: item.type,
       cameraState: parseOptional(zCameraState, camera_info?.[0]),
       modelTransform: parseOptional(zModelTransform, model_3d_info?.[0])
     }
