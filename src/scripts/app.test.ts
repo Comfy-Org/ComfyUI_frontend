@@ -44,6 +44,10 @@ import {
 } from '@/platform/workflow/management/stores/workflowStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import {
+  toDocumentUid,
+  useDocumentLifecycleStore
+} from '@/platform/workflow/core/stores/documentLifecycleStore'
 import type { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import {
@@ -95,6 +99,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
+import { toRootGraphId } from '@/types/graphScopeId'
 import {
   createTestRootGraph,
   createTestSubgraph,
@@ -276,6 +281,7 @@ describe('ComfyApp', () => {
     mockCanvas = createMockCanvas() as LGraphCanvas
     app.canvas = mockCanvas
     useWorkflowStore().activeWorkflow = null
+    useDocumentLifecycleStore().$reset()
     const temporaryWorkflow = new ComfyWorkflow({
       path: 'workflows/temporary.json',
       modified: 0,
@@ -466,6 +472,68 @@ describe('ComfyApp', () => {
         'workflow-load',
         42
       )
+    })
+
+    it('publishes one lifecycle handoff for a workflow switch', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      const outgoing = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/outgoing.json',
+          modified: 0,
+          size: 0
+        })
+      )
+      const incoming = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/incoming.json',
+          modified: 0,
+          size: 0
+        })
+      )
+      const lifecycle = useDocumentLifecycleStore()
+      lifecycle.activate({
+        uid: toDocumentUid(outgoing.instanceId),
+        rootGraphId: toRootGraphId('outgoing-root')
+      })
+      const listener = vi.fn()
+      lifecycle.subscribe(listener)
+      mockWorkflowService.afterLoadNewGraph.mockImplementation(async () => {
+        useWorkflowStore().activeWorkflow = incoming
+      })
+
+      await app.loadGraphData(createWorkflowGraphData(), false, false, incoming)
+
+      expect(listener.mock.calls.map(([event]) => event.phase)).toEqual([
+        'deactivate',
+        'activate'
+      ])
+      expect(lifecycle.isActive(toDocumentUid(incoming.instanceId))).toBe(true)
+    })
+
+    it('does not publish a lifecycle transition for an undo-style reload', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      const workflow = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/active.json',
+          modified: 0,
+          size: 0
+        })
+      )
+      useWorkflowStore().activeWorkflow = workflow
+      const lifecycle = useDocumentLifecycleStore()
+      lifecycle.activate({
+        uid: toDocumentUid(workflow.instanceId),
+        rootGraphId: toRootGraphId('active-root')
+      })
+      const listener = vi.fn()
+      lifecycle.subscribe(listener)
+
+      await app.loadGraphData(createWorkflowGraphData(), false, false, workflow)
+
+      expect(listener).not.toHaveBeenCalled()
+      expect(lifecycle.isActive(toDocumentUid(workflow.instanceId))).toBe(true)
     })
     it('suppresses the workflow reset for a default clean load', async () => {
       app.canvasElRef.value = document.createElement('canvas')

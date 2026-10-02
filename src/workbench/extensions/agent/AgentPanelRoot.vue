@@ -30,6 +30,10 @@ import type {
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { formatWorkflowSyncErrorDetail } from '@/workbench/extensions/agent/crdt/workflowSyncErrorDetail'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import {
+  toDocumentUid,
+  useDocumentLifecycleStore
+} from '@/platform/workflow/core/stores/documentLifecycleStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -155,6 +159,7 @@ const {
 } = useBillingContext()
 const conversationStore = useAgentConversationStore()
 const history = useAgentChatHistoryStore()
+const documentLifecycle = useDocumentLifecycleStore()
 watch(
   subscription,
   (currentSubscription) => {
@@ -803,11 +808,11 @@ const isSending = computed(
 
 const isBoundWorkflowActive = computed(() => {
   const bound = boundWorkflowId.value
-  const active = workflowStore.activeWorkflow
+  if (bound === null) return false
+  const workflow = boundOrOpenWorkflowFor(bound)
   return (
-    bound !== null &&
-    active !== null &&
-    boundOrOpenWorkflowFor(bound)?.path === active.path
+    workflow !== null &&
+    documentLifecycle.isActive(toDocumentUid(workflow.instanceId))
   )
 })
 
@@ -859,16 +864,13 @@ const {
     }
   }
 )
-// The bound document's serialized root graph id, independent of what is
-// currently on the canvas: `beforeLoadNewGraph` persists the outgoing
-// workflow's `activeState` before the shared renderer graph is rewritten, so
-// this stays the bound workflow's own root id through a tab switch instead of
-// tracking whichever graph the switch is loading.
 function boundRootGraphId(): RootGraphId | null {
   const bound = boundWorkflowId.value
   if (bound === null) return null
-  const id = boundOrOpenWorkflowFor(bound)?.activeState?.id
-  return id === undefined ? null : toRootGraphId(id)
+  const workflow = boundOrOpenWorkflowFor(bound)
+  return workflow === null
+    ? null
+    : documentLifecycle.activeRootGraphId(toDocumentUid(workflow.instanceId))
 }
 const docOpMinter = attachDocOpMinter({
   isEnabled: () => agentPanelStore.enabled,
