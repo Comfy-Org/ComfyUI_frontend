@@ -10,19 +10,21 @@ describe('app catalogue copy', () => {
         'Cinematic Studio',
         'Re-shoot a video',
         'Move anything',
-        'Relight'
+        'Relight',
+        'Paparazzi me'
       ]
     },
     {
       locale: 'zh-CN',
-      names: ['电影工作室', '重拍视频', '随意移动', '重新布光']
+      names: ['电影工作室', '重拍视频', '随意移动', '重新布光', '狗仔偶遇']
     }
   ] as const)('names every app in $locale', ({ locale, names }) => {
     expect([
       ac('studioName', locale),
       ac('reshootName', locale),
       ac('moveAnythingName', locale),
-      ac('relightName', locale)
+      ac('relightName', locale),
+      ac('paparazziMeName', locale)
     ]).toEqual(names)
   })
 })

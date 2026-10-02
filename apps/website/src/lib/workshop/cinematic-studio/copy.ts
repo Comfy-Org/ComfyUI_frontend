@@ -72,6 +72,15 @@ const copy = {
     en: 'Image · Beeble SwitchX',
     'zh-CN': '图像 · Beeble SwitchX'
   },
+  'cinematic.hub.paparazziMe': { en: 'Paparazzi me', 'zh-CN': '狗仔偶遇' },
+  'cinematic.hub.paparazziMeSummary': {
+    en: 'Pick a star and a scene, add your face, and get a flash-lit paparazzi photo of the two of you.',
+    'zh-CN': '选一位明星和一个场景，加上你的脸，生成你们俩的闪光灯狗仔照。'
+  },
+  'cinematic.hub.paparazziMeMeta': {
+    en: 'Image · Nano Banana Pro',
+    'zh-CN': '图像 · Nano Banana Pro'
+  },
   'cinematic.stage.longWait': {
     en: 'Still going. Some models take about a minute. Nothing is queued; yours already started.',
     'zh-CN': '仍在进行。部分模型需要约一分钟。没有排队，你的任务已经开始。'
