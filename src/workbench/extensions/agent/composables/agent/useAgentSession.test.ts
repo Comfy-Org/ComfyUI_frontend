@@ -598,6 +598,105 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(conversation.activeTurnId).toBe('msg-1')
   })
 
+  // FE-1998. Composer gating closes the reload route to a 409, but not a turn
+  // started from a second tab: this client has no local signal, so it offers
+  // Send and the post is refused. Before this change the refusal was terminal
+  // -- a raw server string, no stop control, and no way to tell a working turn
+  // from a dead one.
+  it('re-attaches to the running turn when a send is refused with TURN_IN_PROGRESS', async () => {
+    const conversation = useAgentConversationStore()
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+      .mockRejectedValue(
+        new AgentApiError(
+          'a turn is already in progress for this thread',
+          409,
+          {
+            error: 'a turn is already in progress for this thread',
+            type: 'TURN_IN_PROGRESS',
+            active_message_id: 'msg-2',
+            turn_id: 'turn-2'
+          }
+        )
+      )
+    // The thread as the other client left it: turn 1 settled, turn 2 running.
+    const rest = fakeRest({
+      postMessage,
+      getMessages: vi.fn(
+        async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+          historyRow(2, 'assistant', 'turn-1', 'Done.', 'msg-1'),
+          historyRow(3, 'user', 'turn-2', 'run it again', 'row-3'),
+          {
+            ...historyRow(4, 'assistant', 'turn-2', '', 'msg-2'),
+            content: {},
+            status: 'streaming'
+          }
+        ]
+      )
+    })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+
+    await session.sendMessage('add an audio output node')
+    emit({
+      type: 'agent_message_done',
+      data: { message_id: 'msg-1', thread_id: 'th-1' }
+    })
+    expect(session.isStreaming.value).toBe(false)
+
+    expect(await session.sendMessage('and now add a save node')).toBe(false)
+
+    await vi.waitFor(() => expect(session.isStreaming.value).toBe(true))
+    // The turn the server named, not the one this client had started.
+    expect(conversation.activeTurnId).toBe('msg-2')
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [
+        {
+          type: 'notice',
+          level: 'error',
+          text: 'This chat still has a response running. Wait for it to finish, or stop it, then send again.'
+        }
+      ]
+    })
+  })
+
+  // The discriminator is load-bearing: a 409 from any other endpoint, or one
+  // whose body this client cannot read, must stay an ordinary send failure
+  // rather than trigger a re-read of a thread that is not actually busy.
+  it('leaves a 409 without the TURN_IN_PROGRESS discriminator as a plain failure', async () => {
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockRejectedValue(
+        new AgentApiError('conflict', 409, { error: 'conflict' })
+      )
+    const rest = fakeRest({ postMessage })
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+
+    await session.sendMessage('make a cat')
+
+    expect(rest.getMessages).not.toHaveBeenCalled()
+    expect(session.isStreaming.value).toBe(false)
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [
+        {
+          type: 'notice',
+          level: 'error',
+          text: 'Message failed to send: conflict'
+        }
+      ]
+    })
+  })
+
   // The other half of (b4a): `subscribe()` runs before the GET resolves, and
   // the reopen dropped its background turns, so a done arriving in that window
   // has nowhere to land. Lost, it would leave the restored turn running for
