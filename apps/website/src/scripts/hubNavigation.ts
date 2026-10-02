@@ -82,6 +82,18 @@ function pinToolbar() {
 // keystroke that worked the tab in the first place.
 const PIN_TIMEOUT_MS = 3000
 const READER_SCROLLS = ['wheel', 'touchmove']
+// Enter and Space work the tab itself, so only the keys that scroll end the
+// wait: a reader on a keyboard gets out of it the same way a reader on a
+// wheel does. A drag of the scrollbar still does not, having no event of its
+// own that the pin's own scrolling could be told apart from.
+const SCROLL_KEYS = new Set([
+  'PageUp',
+  'PageDown',
+  'ArrowUp',
+  'ArrowDown',
+  'Home',
+  'End'
+])
 
 function pinWhenReady() {
   const growing = new ResizeObserver(() => retry())
@@ -104,6 +116,13 @@ function pinWhenReady() {
       signal: waiting.signal,
       passive: true
     })
+  document.addEventListener(
+    'keydown',
+    (event) => {
+      if (SCROLL_KEYS.has(event.key)) stop()
+    },
+    { signal: waiting.signal, passive: true }
+  )
   document.addEventListener('astro:before-preparation', stop, {
     signal: waiting.signal
   })
