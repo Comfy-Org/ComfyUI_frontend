@@ -1,5 +1,5 @@
 {
-  "asOf": "2026-10-01T00:00:00Z",
+  "asOf": "2026-10-02T00:00:00Z",
   "source": "comfy-cloud-partner-successes",
   "rows": [
     {
@@ -15,10 +15,34 @@
       "runsCurrent": 13918
     },
     {
+      "model": "gemini-3.1-flash-image",
+      "usersCurrent": 1106,
+      "usersPrevious": 1104,
+      "runsCurrent": 38079
+    },
+    {
       "model": "seedream-5-0-pro-260628",
       "usersCurrent": 673,
       "usersPrevious": 582,
       "runsCurrent": 36281
+    },
+    {
+      "model": "kling-v3",
+      "usersCurrent": 246,
+      "usersPrevious": 208,
+      "runsCurrent": 1736
+    },
+    {
+      "model": "kling-v3-omni",
+      "usersCurrent": 187,
+      "usersPrevious": 177,
+      "runsCurrent": 1424
+    },
+    {
+      "model": "flux-2-pro",
+      "usersCurrent": 159,
+      "usersPrevious": 151,
+      "runsCurrent": 2269
     },
     {
       "model": "hy-image-v3.5-preview",
@@ -33,16 +57,10 @@
       "runsCurrent": 2317
     },
     {
-      "model": "meshy-7.1",
-      "usersCurrent": 76,
-      "usersPrevious": 22,
-      "runsCurrent": 288
-    },
-    {
-      "model": "kling-v3",
-      "usersCurrent": 246,
-      "usersPrevious": 208,
-      "runsCurrent": 1736
+      "model": "eleven_v3",
+      "usersCurrent": 86,
+      "usersPrevious": 51,
+      "runsCurrent": 1084
     },
     {
       "model": "eleven_sfx_v2",
@@ -51,28 +69,10 @@
       "runsCurrent": 1438
     },
     {
-      "model": "eleven_v3",
-      "usersCurrent": 86,
-      "usersPrevious": 51,
-      "runsCurrent": 1084
-    },
-    {
-      "model": "flux-2-pro",
-      "usersCurrent": 159,
-      "usersPrevious": 151,
-      "runsCurrent": 2269
-    },
-    {
-      "model": "kling-v3-omni",
-      "usersCurrent": 187,
-      "usersPrevious": 177,
-      "runsCurrent": 1424
-    },
-    {
-      "model": "gemini-3.1-flash-image",
-      "usersCurrent": 1106,
-      "usersPrevious": 1104,
-      "runsCurrent": 38079
+      "model": "meshy-7.1",
+      "usersCurrent": 76,
+      "usersPrevious": 22,
+      "runsCurrent": 288
     }
   ]
 }
