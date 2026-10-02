@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ChevronLeft, ChevronRight } from '@lucide/vue'
+import { cn } from '@comfyorg/tailwind-utils'
 import {
   computed,
   nextTick,
@@ -252,7 +253,7 @@ watch(browseAll, (on) => on && resetFilters())
             :models
             :locale
             compact
-            class="min-w-0 flex-1 sm:max-w-120"
+            :class="cn('min-w-0 flex-1', !inSection && 'sm:max-w-120')"
           />
 
           <div class="flex items-center gap-2" data-testid="workshop-filters">

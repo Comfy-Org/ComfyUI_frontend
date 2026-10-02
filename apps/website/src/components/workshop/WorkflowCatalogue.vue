@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ChevronLeft, ChevronRight } from '@lucide/vue'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 import type { ComponentExposed } from 'vue-component-type-helpers'
 
@@ -205,7 +206,7 @@ function leaveSection() {
           :locale
           kind="workflows"
           compact
-          class="min-w-0 flex-1 sm:max-w-120"
+          :class="cn('min-w-0 flex-1', !browseAll && 'sm:max-w-120')"
         />
         <WorkshopFilterMenu
           ref="filterMenu"
