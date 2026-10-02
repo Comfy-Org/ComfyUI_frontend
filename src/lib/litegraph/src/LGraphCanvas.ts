@@ -35,7 +35,7 @@ import {
   applyParentSizedCanvasStyle,
   applyViewport,
   measureViewport,
-  normalizeDpr
+  readBrowserDpr
 } from '@/renderer/core/canvas/canvasViewport'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
@@ -2213,7 +2213,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.bgcanvas = document.createElement('canvas')
     this.bgcanvas.width = this.canvas.width
     this.bgcanvas.height = this.canvas.height
-    this.dpr = normalizeDpr(window.devicePixelRatio)
+    this.dpr = readBrowserDpr()
 
     const ctx = element.getContext('2d')
     if (ctx == null) {
@@ -4880,15 +4880,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * centers the camera on a given node
    */
   centerOnNode(node: LGraphNode): void {
-    const dpi = this.dpr
+    const { dpr } = this
     this.ds.offset[0] =
       -node.pos[0] -
       node.size[0] * 0.5 +
-      (this.canvas.width * 0.5) / (this.ds.scale * dpi)
+      (this.canvas.width * 0.5) / (this.ds.scale * dpr)
     this.ds.offset[1] =
       -node.pos[1] -
       node.size[1] * 0.5 +
-      (this.canvas.height * 0.5) / (this.ds.scale * dpi)
+      (this.canvas.height * 0.5) / (this.ds.scale * dpr)
     this.setDirty(true, true)
   }
 
@@ -5148,13 +5148,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         : undefined
       this.drawBackCanvas(false, nodesInFrameOrder, nodesGraph)
     } else {
-      const scale = this.dpr
+      const { dpr } = this
       ctx.drawImage(
         this.bgcanvas,
         0,
         0,
-        this.bgcanvas.width / scale,
-        this.bgcanvas.height / scale
+        this.bgcanvas.width / dpr,
+        this.bgcanvas.height / dpr
       )
     }
     const graphAfterBackground = this.graph
@@ -5562,9 +5562,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     // reset in case of error
     if (!this.viewport) {
-      const scale = this.dpr
+      const { dpr } = this
       ctx.restore()
-      ctx.setTransform(scale, 0, 0, scale, 0, 0)
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     }
 
     if (this.graph) {

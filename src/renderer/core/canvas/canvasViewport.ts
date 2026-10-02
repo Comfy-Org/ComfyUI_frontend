@@ -40,6 +40,12 @@ function normalizeDpr(rawDpr: number): number {
   return rawDpr > 0 && Number.isFinite(rawDpr) ? Math.max(rawDpr, 1) : 1
 }
 
+function readBrowserDpr(): number {
+  return typeof window === 'undefined'
+    ? 1
+    : normalizeDpr(window.devicePixelRatio)
+}
+
 function measureViewport(
   cssWidth: number,
   cssHeight: number,
@@ -59,15 +65,11 @@ function measureViewport(
 
 function measureViewportFromElement(
   element: HTMLCanvasElement,
-  rawDpr?: number
+  rawDpr = window.devicePixelRatio
 ): CanvasViewport {
   const initialRect = element.getBoundingClientRect()
   if (initialRect.width === 0 || initialRect.height === 0) {
-    return measureViewport(
-      initialRect.width,
-      initialRect.height,
-      rawDpr ?? window.devicePixelRatio
-    )
+    return measureViewport(initialRect.width, initialRect.height, rawDpr)
   }
 
   const previousViewport = appliedViewportByCanvas.get(element)
@@ -79,7 +81,7 @@ function measureViewportFromElement(
     return measureViewport(
       previousViewport.cssWidth,
       previousViewport.cssHeight,
-      rawDpr ?? window.devicePixelRatio
+      rawDpr
     )
   }
 
@@ -97,7 +99,7 @@ function measureViewportFromElement(
   const width = cssRect.width || previousViewport?.cssWidth || initialRect.width
   const height =
     cssRect.height || previousViewport?.cssHeight || initialRect.height
-  return measureViewport(width, height, rawDpr ?? window.devicePixelRatio)
+  return measureViewport(width, height, rawDpr)
 }
 
 function applyViewport(
@@ -145,7 +147,7 @@ function applyViewport(
 }
 
 export {
-  normalizeDpr,
+  readBrowserDpr,
   measureViewport,
   measureViewportFromElement,
   applyParentSizedCanvasStyle,

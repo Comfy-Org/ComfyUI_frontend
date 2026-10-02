@@ -43,13 +43,13 @@ export function queryRenderedLinkSegmentsAtPoint(
       ctx,
       canvas.dpr
     )
-    const dpi = canvas.dpr
+    const { dpr } = canvas
     for (const segment of renderedPaths) {
       const layoutId =
         segment instanceof Reroute ? layoutHit?.rerouteId : layoutHit?.linkId
       if (
         segment.id === layoutId ||
-        (segment.path && ctx.isPointInStroke(segment.path, x * dpi, y * dpi))
+        (segment.path && ctx.isPointInStroke(segment.path, x * dpr, y * dpr))
       ) {
         hits.add(segment)
       }

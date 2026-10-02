@@ -7,7 +7,7 @@ import { toGroupId } from '@/types/groupId'
 import { toNodeId } from '@/types/nodeId'
 import type { GroupId } from '@/types/groupId'
 import { reportError } from '@/platform/telemetry/reportError'
-import { normalizeDpr } from '@/renderer/core/canvas/canvasViewport'
+import { readBrowserDpr } from '@/renderer/core/canvas/canvasViewport'
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 import { toRerouteId } from '@/types/rerouteId'
 import type { UUID } from '@/utils/uuid'
@@ -627,13 +627,13 @@ class LayoutStoreImpl {
    * @param dpr Device pixel ratio used to map the CSS-space point into the
    *   canvas's device-pixel-scaled stroke space. Pass the active
    *   `LGraphCanvas.dpr` so this hit-test agrees with `processMouseDown`'s
-   *   `isPointInStroke` fallback. Falls back to `window.devicePixelRatio`
+   *   `isPointInStroke` fallback. Defaults to the normalized browser DPR
    *   for legacy callers without a canvas reference.
    */
   queryLinkSegmentAtPoint(
     point: Point,
     ctx?: CanvasRenderingContext2D,
-    dpr?: number
+    dpr = readBrowserDpr()
   ): { linkId: LinkId; rerouteId: RerouteId | null } | null {
     // Determine tolerance from current canvas state (if available)
     // - Use the caller-provided ctx.lineWidth (LGraphCanvas sets this to connections_width + padding)
@@ -664,15 +664,10 @@ class LayoutStoreImpl {
       if (!segmentLayout) continue
 
       if (ctx) {
-        const dpi =
-          dpr ??
-          (typeof window === 'undefined'
-            ? 1
-            : normalizeDpr(window.devicePixelRatio))
         const hit = ctx.isPointInStroke(
           segmentLayout.path,
-          point.x * dpi,
-          point.y * dpi
+          point.x * dpr,
+          point.y * dpr
         )
 
         if (hit) {

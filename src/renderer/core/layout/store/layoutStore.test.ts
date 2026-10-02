@@ -6,7 +6,6 @@ import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
-import type { RerouteId } from '@/types/rerouteId'
 import { createUuidv4 } from '@/utils/uuid'
 import type { UUID } from '@/utils/uuid'
 
@@ -1069,113 +1068,58 @@ describe('layoutStore content-size performance contract', () => {
 describe('layoutStore queryLinkSegmentAtPoint DPR threading', () => {
   beforeEach(() => {
     layoutStore.resetForTests()
-  })
-
-  // Minimal Path2D stub — happy-dom does not implement Path2D, but the store
-  // only stores it and passes it back to ctx.isPointInStroke (which we mock).
-  const stubPath = fromPartial<Path2D>({})
-
-  const seedSegment = (
-    linkId = toLinkId(1),
-    rerouteId: RerouteId | null = null
-  ) => {
-    layoutStore.updateLinkSegmentLayout(linkId, rerouteId, {
-      path: stubPath,
+    layoutStore.updateLinkSegmentLayout(toLinkId(1), null, {
+      path: new Path2D(),
       bounds: { x: 0, y: 0, width: 100, height: 100 },
       centerPos: { x: 50, y: 50 }
     })
-    return { linkId, rerouteId }
+  })
+
+  function strokeHitOnlyAt(x: number, y: number) {
+    return fromPartial<CanvasRenderingContext2D>({
+      lineWidth: 17,
+      isPointInStroke: (_path: Path2D, hitX: number, hitY: number) =>
+        hitX === x && hitY === y
+    })
   }
 
-  const makeCtx = (hitX: number, hitY: number) => {
-    const isPointInStroke = vi.fn(
-      (_path: Path2D, x: number, y: number) => x === hitX && y === hitY
-    )
-    return {
-      ctx: fromPartial<CanvasRenderingContext2D>({
-        lineWidth: 17,
-        isPointInStroke
-      }),
-      isPointInStroke
-    }
-  }
-
-  it('uses caller-supplied dpr to scale the stroke hit-test point', () => {
-    const { linkId } = seedSegment()
-    const { ctx } = makeCtx(25, 25)
-
-    const hit = layoutStore.queryLinkSegmentAtPoint({ x: 50, y: 50 }, ctx, 0.5)
-    const miss = layoutStore.queryLinkSegmentAtPoint({ x: 50, y: 50 }, ctx, 1)
-
-    expect(hit).toEqual({ linkId, rerouteId: null })
-    expect(miss).toBeNull()
+  it('scales the CSS-space point by the caller-supplied dpr', () => {
+    expect(
+      layoutStore.queryLinkSegmentAtPoint(
+        { x: 50, y: 50 },
+        strokeHitOnlyAt(25, 25),
+        0.5
+      )
+    ).toEqual({ linkId: toLinkId(1), rerouteId: null })
   })
 
-  it('falls back to window.devicePixelRatio when dpr is omitted', () => {
-    seedSegment()
-    const { ctx } = makeCtx(100, 100)
-
-    const originalDpr = window.devicePixelRatio
-    Object.defineProperty(window, 'devicePixelRatio', {
-      configurable: true,
-      value: 2
-    })
-    try {
-      const hit = layoutStore.queryLinkSegmentAtPoint({ x: 50, y: 50 }, ctx)
-      const miss = layoutStore.queryLinkSegmentAtPoint({ x: 50, y: 50 }, ctx, 1)
-
-      expect(hit).toEqual({ linkId: toLinkId(1), rerouteId: null })
-      expect(miss).toBeNull()
-    } finally {
-      Object.defineProperty(window, 'devicePixelRatio', {
-        configurable: true,
-        value: originalDpr
-      })
+  it.for([
+    {
+      name: 'the browser DPR',
+      global: 'devicePixelRatio',
+      value: 2,
+      hitAt: 100
+    },
+    {
+      name: 'a sub-1 browser DPR clamped to 1',
+      global: 'devicePixelRatio',
+      value: 0.5,
+      hitAt: 50
+    },
+    {
+      name: 'DPR 1 without a window',
+      global: 'window',
+      value: undefined,
+      hitAt: 50
     }
-  })
+  ])('falls back to $name when dpr is omitted', ({ global, value, hitAt }) => {
+    vi.stubGlobal(global, value)
 
-  it('clamps the window DPR fallback to one', () => {
-    seedSegment()
-    const { ctx } = makeCtx(50, 50)
-
-    const originalDpr = window.devicePixelRatio
-    Object.defineProperty(window, 'devicePixelRatio', {
-      configurable: true,
-      value: 0.5
-    })
-    try {
-      const hit = layoutStore.queryLinkSegmentAtPoint({ x: 50, y: 50 }, ctx)
-      const miss = layoutStore.queryLinkSegmentAtPoint({ x: 50, y: 50 }, ctx, 2)
-
-      expect(hit).toEqual({ linkId: toLinkId(1), rerouteId: null })
-      expect(miss).toBeNull()
-    } finally {
-      Object.defineProperty(window, 'devicePixelRatio', {
-        configurable: true,
-        value: originalDpr
-      })
-    }
-  })
-
-  it('falls back to DPR 1 when rendered without a window', () => {
-    seedSegment()
-    const { ctx } = makeCtx(50, 50)
-    const windowDescriptor = Object.getOwnPropertyDescriptor(
-      globalThis,
-      'window'
-    )
-
-    Reflect.deleteProperty(globalThis, 'window')
-    try {
-      const hit = layoutStore.queryLinkSegmentAtPoint({ x: 50, y: 50 }, ctx)
-      const miss = layoutStore.queryLinkSegmentAtPoint({ x: 50, y: 50 }, ctx, 2)
-
-      expect(hit).toEqual({ linkId: toLinkId(1), rerouteId: null })
-      expect(miss).toBeNull()
-    } finally {
-      if (windowDescriptor) {
-        Object.defineProperty(globalThis, 'window', windowDescriptor)
-      }
-    }
+    expect(
+      layoutStore.queryLinkSegmentAtPoint(
+        { x: 50, y: 50 },
+        strokeHitOnlyAt(hitAt, hitAt)
+      )
+    ).toEqual({ linkId: toLinkId(1), rerouteId: null })
   })
 })
