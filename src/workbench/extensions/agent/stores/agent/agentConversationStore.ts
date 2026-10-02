@@ -158,13 +158,18 @@ function finishWithPersistedParts(
   persistedParts: AssistantMessage['parts'] | undefined
 ): void {
   if (persistedParts === undefined) {
-    message.parts = message.parts
-      .filter((part) => part.type !== 'runApproval')
-      .map((part) =>
-        'state' in part && part.state === 'streaming'
-          ? { ...part, state: 'done' }
-          : part
-      )
+    message.parts = message.parts.filter((part) => part.type !== 'runApproval')
+    for (const part of message.parts) {
+      if (!('state' in part) || part.state !== 'streaming') continue
+      if (part.type === 'tool') {
+        // A successful tool can still be waiting for canvas catch-up. Keep
+        // that transport-owned state live; only clamp calls that never
+        // received an outcome.
+        if (part.ok !== undefined) continue
+        part.ok = false
+      }
+      part.state = 'done'
+    }
     return
   }
   message.parts = interleaveLocalParts(
