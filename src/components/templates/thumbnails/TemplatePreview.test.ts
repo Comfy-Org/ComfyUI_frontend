@@ -79,7 +79,6 @@ describe('TemplatePreview', () => {
     {
       name: 'hoverDissolve',
       overrides: { thumbnailVariant: 'hoverDissolve' as const },
-      // Dissolve stacks a base and an overlay image; the default renders one.
       assert: () =>
         expect(screen.getAllByAltText('Workflow preview')).toHaveLength(2)
     },

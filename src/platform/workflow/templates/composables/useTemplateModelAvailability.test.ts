@@ -84,7 +84,6 @@ describe('useTemplateModelAvailability', () => {
     // The real action populates the registry; awaiting it is what lets the
     // referenced folder resolve as Loaded.
     vi.mocked(modelStore.loadModelFolders).mockImplementation(async () => {
-      // Resolve on a later tick so skipping the await is observable.
       await Promise.resolve()
       modelStore.modelFolders = [folder('checkpoints', ResourceState.Loaded)]
       return true
