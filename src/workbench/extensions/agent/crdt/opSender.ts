@@ -21,11 +21,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 
 import type { DocOpsResult } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
-import {
-  chunkWireOps,
-  mintWireOps,
-  WIRE_MAX_OPS_PER_BATCH
-} from './opEnvelope'
+import { chunkWireOps, mintWireOps, WIRE_MAX_OPS_PER_BATCH } from './opEnvelope'
 
 const SEND_RETRY_LIMIT = 5
 const SEND_RETRY_INTERVAL_MS = 500
@@ -582,13 +578,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       if (interrupted) settleInterruptedSeal(ops, interrupted)
       else insertSealChunks(chunks, workflowId, insertionIndex)
     } catch (cause) {
-      recoverSeal(
-        cause,
-        workflowId,
-        ops,
-        sealAbortGeneration,
-        insertionIndex
-      )
+      recoverSeal(cause, workflowId, ops, sealAbortGeneration, insertionIndex)
     } finally {
       sealing--
     }
