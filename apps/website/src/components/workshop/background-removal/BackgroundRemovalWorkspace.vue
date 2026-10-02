@@ -5,7 +5,10 @@ import { computed } from 'vue'
 import type { BackgroundRemoval } from '../../../composables/useBackgroundRemoval'
 import type { EditorImage } from '../../../composables/useEditorImage'
 import type { Locale } from '../../../i18n/translations'
-import { adjustFilter } from '../../../lib/workshop/background-removal/contract'
+import {
+  adjustFilter,
+  blurBleed
+} from '../../../lib/workshop/background-removal/contract'
 import { brc } from '../../../lib/workshop/background-removal/copy'
 import {
   CUTOUT_EXAMPLE,
@@ -45,7 +48,9 @@ const filters = computed(() => {
     mode === 'adjust'
       ? adjustFilter(adjust, (share) => `${share * 100}cqw`)
       : 'none'
+  const bleed = mode === 'adjust' ? blurBleed(adjust) : 1
   return {
+    scale: bleed === 1 ? undefined : `scale(${bleed})`,
     background: adjust.target === 'background' ? filter : 'none',
     foreground: adjust.target === 'foreground' ? filter : 'none'
   }
@@ -75,7 +80,7 @@ function drop(event: DragEvent) {
         "
         draggable="false"
         class="size-full object-cover"
-        :style="{ filter: filters.background }"
+        :style="{ filter: filters.background, transform: filters.scale }"
       />
       <img
         v-if="setup.mode === 'adjust'"

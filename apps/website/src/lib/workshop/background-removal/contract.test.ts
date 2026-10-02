@@ -5,6 +5,7 @@ import {
   DEFAULT_ADJUST,
   DEFAULT_SETUP,
   adjustFilter,
+  blurBleed,
   backgroundSwatch,
   cutoutFileName,
   cutoutRequest,
@@ -70,6 +71,19 @@ describe('adjustFilter', () => {
       'blur(15px) grayscale(30%) sepia(10%) brightness(120%) contrast(80%) saturate(0%)'
     )
   })
+})
+
+describe('blurBleed', () => {
+  it.for([
+    { target: 'background', blur: 0, bleed: 1 },
+    { target: 'foreground', blur: 100, bleed: 1 },
+    { target: 'background', blur: 50, bleed: 1.06 }
+  ] as const)(
+    'scales a $target blurred $blur by $bleed',
+    ({ target, blur, bleed }) => {
+      expect(blurBleed({ ...DEFAULT_ADJUST, target, blur })).toBeCloseTo(bleed)
+    }
+  )
 })
 
 describe('missingInput', () => {

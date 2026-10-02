@@ -1,6 +1,6 @@
 import { loadImage } from '../relight/render-image'
 import type { CutoutRequest } from './contract'
-import { FORMAT_TYPES, adjustFilter } from './contract'
+import { FORMAT_TYPES, adjustFilter, blurBleed } from './contract'
 import {
   CUTOUT_EXAMPLE,
   UPLOAD_SOLID,
@@ -97,7 +97,14 @@ async function drawBackground(
         request.adjust,
         (share) => `${share * width}px`
       )
-    context.drawImage(photo, 0, 0, width, height)
+    const bleed = blurBleed(request.adjust)
+    context.drawImage(
+      photo,
+      (width * (1 - bleed)) / 2,
+      (height * (1 - bleed)) / 2,
+      width * bleed,
+      height * bleed
+    )
     context.filter = 'none'
     return 'subject'
   }

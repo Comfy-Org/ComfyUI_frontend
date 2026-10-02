@@ -44,9 +44,10 @@ function openPicker() {
 
 const swatchClass = (checked: boolean) =>
   cn(
-    'relative aspect-square w-full overflow-hidden rounded-lg ring-1 ring-transparency-white-t8 transition ring-inset hover:ring-transparency-white-t20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-comfy-yellow/70 disabled:opacity-40',
-    checked &&
-      'ring-2 ring-primary-warm-white ring-offset-2 ring-offset-primary-comfy-ink-light hover:ring-primary-warm-white'
+    'relative aspect-square w-full overflow-hidden rounded-lg transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-comfy-yellow/70 disabled:opacity-40',
+    checked
+      ? 'ring-2 ring-primary-warm-white ring-offset-2 ring-offset-primary-comfy-ink-light'
+      : 'ring-1 ring-transparency-white-t8 ring-inset hover:ring-transparency-white-t20'
   )
 </script>
 

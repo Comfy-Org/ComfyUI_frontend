@@ -135,6 +135,16 @@ export function adjustFilter(
 }
 
 /**
+ * How much a blurred background is scaled up so its blurred edge stays
+ * outside the frame instead of fading in from the border.
+ */
+export function blurBleed(adjust: AdjustSetup): number {
+  return adjust.target === 'background' && adjust.blur > 0
+    ? 1 + (adjust.blur / 100) * MAX_BLUR * 4
+    : 1
+}
+
+/**
  * Why a setup cannot run yet, or undefined when it can: Replace needs a
  * description or a reference picture.
  */
