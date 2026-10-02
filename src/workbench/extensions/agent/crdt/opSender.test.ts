@@ -88,6 +88,13 @@ function addNode(id: number): AddNodeOperation {
   }
 }
 
+function enqueueNodeBacklog(
+  sender: ReturnType<typeof createOpSender>,
+  count: number
+): void {
+  for (let id = 0; id < count; id++) sender.enqueue([addNode(id)])
+}
+
 function disconnect(linkId: number): GraphOperation {
   return { op: 'disconnect', link_id: linkId, to_node: 2, to_slot: 0 }
 }
@@ -285,6 +292,42 @@ describe('createOpSender', () => {
     expect(sent).toHaveLength(2)
     expect(sent[1].workflowId).toBe('wf-2')
     expect(settled[0].state).toBe('unconfirmed')
+  })
+
+  it('drains 20,000 queued batches after unbinding without overflowing the stack', () => {
+    enqueueNodeBacklog(sender, 20_000)
+    boundWorkflow = null
+
+    expect(() => sender.abortIfUnbound()).not.toThrow()
+    expect(settled).toHaveLength(20_000)
+    expect(settled[0].state).toBe('unconfirmed')
+    expect(
+      settled.slice(1).every(({ state }) => state === 'undeliverable')
+    ).toBe(true)
+    expect(
+      new Set(settled.flatMap((outcome) => outcome.ops.map((op) => op.op_id)))
+        .size
+    ).toBe(20_000)
+    expect(sender.pending()).toBe(0)
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('drains an old-workflow backlog before sending the next workflow batch', () => {
+    enqueueNodeBacklog(sender, 20_000)
+    boundWorkflow = 'wf-2'
+    sender.enqueue([addNode(20_000)])
+
+    expect(() => sender.abortIfUnbound()).not.toThrow()
+    expect(settled).toHaveLength(20_000)
+    expect(sent).toHaveLength(2)
+    expect(sent[1].workflowId).toBe('wf-2')
+    expect(sent[1].ops[0]).toMatchObject({ node_id: 20_000 })
+    expect(sender.pending()).toBe(1)
+
+    ackInFlight()
+    expect(settled).toHaveLength(20_001)
+    expect(settled.at(-1)?.state).toBe('acknowledged')
+    expect(sender.pending()).toBe(0)
   })
 
   it('abortIfUnbound cascades through every queued batch minted for the dead workflow, synchronously', () => {
@@ -703,6 +746,51 @@ describe('createOpSender', () => {
     ackInFlight()
 
     expect(reportError).toHaveBeenCalledTimes(3)
+
+    vi.advanceTimersByTime(60_000)
+    localSender.enqueue([addNode(6)])
+    ackInFlight()
+    expect(reportError).toHaveBeenCalledTimes(4)
+    localSender.detach()
+  })
+
+  it('keeps settlement telemetry bounded across intermittent successes', () => {
+    let shouldFail = true
+    const localSender = createOpSender({
+      sendOps: (workflowId, tab, ops) => {
+        sent.push({ workflowId, tab, ops })
+        return true
+      },
+      onOpsResult: (listener) => {
+        resultListener = listener
+        return vi.fn()
+      },
+      workflowId: () => boundWorkflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: () => {
+        if (shouldFail) throw new Error('listener boom')
+      }
+    })
+
+    localSender.enqueue([addNode(1)])
+    ackInFlight()
+    localSender.enqueue([addNode(2)])
+    ackInFlight()
+    localSender.enqueue([addNode(3)])
+    ackInFlight()
+    expect(reportError).toHaveBeenCalledTimes(3)
+
+    shouldFail = false
+    localSender.enqueue([addNode(4)])
+    ackInFlight()
+    shouldFail = true
+    localSender.enqueue([addNode(5)])
+    ackInFlight()
+
+    expect(reportError).toHaveBeenCalledTimes(3)
+    shouldFail = false
     localSender.detach()
   })
 
@@ -920,6 +1008,53 @@ describe('createOpSender', () => {
     )
   })
 
+  it('bounds repeated chunk failure telemetry for one sender', () => {
+    const enqueueCircular = (id: number) => {
+      const operation = addNode(id)
+      const node: AddNodeOperation['node'] & Record<string, unknown> = {
+        ...operation.node
+      }
+      node.circular = node
+      operation.node = node
+      sender.enqueue([operation])
+    }
+
+    enqueueCircular(1)
+    enqueueCircular(2)
+    enqueueCircular(3)
+    enqueueCircular(4)
+    enqueueCircular(5)
+
+    expect(reportError).toHaveBeenCalledTimes(3)
+  })
+
+  it('keeps chunk telemetry bounded across successful seals and re-arms by time', () => {
+    const enqueueCircular = (id: number) => {
+      const operation = addNode(id)
+      const node: AddNodeOperation['node'] & Record<string, unknown> = {
+        ...operation.node
+      }
+      node.circular = node
+      operation.node = node
+      sender.enqueue([operation])
+    }
+
+    enqueueCircular(1)
+    enqueueCircular(2)
+    enqueueCircular(3)
+    expect(reportError).toHaveBeenCalledTimes(3)
+
+    sender.enqueue([addNode(4)])
+    ackInFlight()
+    enqueueCircular(5)
+
+    expect(reportError).toHaveBeenCalledTimes(3)
+
+    vi.advanceTimersByTime(60_000)
+    enqueueCircular(6)
+    expect(reportError).toHaveBeenCalledTimes(4)
+  })
+
   it('rejects an unserializable non-batchable op before transport', () => {
     const clear = {
       op: 'clear',
@@ -966,6 +1101,160 @@ describe('createOpSender', () => {
       { state: 'undeliverable', nodeIds: [1] },
       { state: 'undeliverable', nodeIds: [2] }
     ])
+    localSender.detach()
+  })
+
+  it('does not restore an admission across abortAll before same-workflow fresh work', () => {
+    const circularNode = addNode(1)
+    const node: AddNodeOperation['node'] & Record<string, unknown> = {
+      ...circularNode.node
+    }
+    node.circular = node
+    circularNode.node = node
+    const localSettled: BatchOutcome[] = []
+    const localSent: Op[][] = []
+    let workflow = 'wf-old'
+    const localSender = createOpSender({
+      sendOps: (_workflowId, _tab, ops) => {
+        localSent.push(ops)
+        return true
+      },
+      onOpsResult: () => vi.fn(),
+      workflowId: () => workflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: (outcome) => {
+        localSettled.push(outcome)
+        if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 1)) {
+          localSender.abortAll()
+          localSender.admit([addNode(3)])
+        }
+      }
+    })
+    localSender.admit([circularNode])
+    workflow = 'wf-new'
+
+    localSender.admit([addNode(2)])
+    localSender.flush()
+
+    expect(localSent).toHaveLength(1)
+    expect(
+      localSent[0].map((op) => ('node_id' in op ? op.node_id : null))
+    ).toEqual([3])
+    expect(localSender.pending()).toBe(1)
+    expect(localSettled.map(summarizeSettlement)).toEqual([
+      { state: 'undeliverable', nodeIds: [1] },
+      { state: 'undeliverable', nodeIds: [2] }
+    ])
+    localSender.detach()
+  })
+
+  it('keeps a nested admission separate when sealing reenters admit', () => {
+    const circularNode = addNode(1)
+    const node: AddNodeOperation['node'] & Record<string, unknown> = {
+      ...circularNode.node
+    }
+    node.circular = node
+    circularNode.node = node
+    const localSettled: BatchOutcome[] = []
+    let workflow = 'wf-old'
+    const localSender = createOpSender({
+      sendOps: (workflowId, tab, ops) => {
+        sent.push({ workflowId, tab, ops })
+        return true
+      },
+      onOpsResult: () => vi.fn(),
+      workflowId: () => workflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: (outcome) => {
+        localSettled.push(outcome)
+        if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 1)) {
+          workflow = 'wf-nested'
+          localSender.admit([addNode(3)])
+        }
+      }
+    })
+    localSender.admit([circularNode])
+    workflow = 'wf-new'
+
+    localSender.admit([addNode(2)])
+    localSender.flush()
+
+    expect(sent).toHaveLength(1)
+    expect(sent[0].workflowId).toBe('wf-nested')
+    expect(
+      sent[0].ops.map((op) => ('node_id' in op ? op.node_id : null))
+    ).toEqual([3])
+    expect(localSettled.map(summarizeSettlement)).toEqual([
+      { state: 'undeliverable', nodeIds: [1] },
+      { state: 'undeliverable', nodeIds: [2] }
+    ])
+    localSender.detach()
+  })
+
+  it('preserves outer-before-inner order for same-workflow reentrant admission', () => {
+    const circularNode = addNode(1)
+    const node: AddNodeOperation['node'] & Record<string, unknown> = {
+      ...circularNode.node
+    }
+    node.circular = node
+    circularNode.node = node
+    let workflow = 'wf-old'
+    const localSender = createOpSender({
+      sendOps: (workflowId, tab, ops) => {
+        sent.push({ workflowId, tab, ops })
+        return true
+      },
+      onOpsResult: () => vi.fn(),
+      workflowId: () => workflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: (outcome) => {
+        if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 1))
+          localSender.admit([addNode(3)])
+      }
+    })
+    localSender.admit([circularNode])
+    workflow = 'wf-new'
+
+    localSender.admit([addNode(2)])
+    localSender.flush()
+
+    expect(sent).toHaveLength(1)
+    expect(sent[0].workflowId).toBe('wf-new')
+    expect(
+      sent[0].ops.map((op) => ('node_id' in op ? op.node_id : null))
+    ).toEqual([2, 3])
+    localSender.detach()
+  })
+
+  it('contains a large malformed admission without argument spread overflow', () => {
+    const operations = Array.from({ length: 140_000 }, (_, id) => addNode(id))
+    let serializations = 0
+    operations[0].node = {
+      ...operations[0].node,
+      toJSON() {
+        serializations++
+        if (serializations >= 3) throw new Error('stateful toJSON failed')
+        return { id: 0, type: 'TestNode' }
+      }
+    }
+    const circularNode = operations.at(-1)!
+    const node: AddNodeOperation['node'] & Record<string, unknown> = {
+      ...circularNode.node
+    }
+    node.circular = node
+    circularNode.node = node
+
+    sender.admit([addNode(-1)])
+    expect(() => sender.admit(operations)).not.toThrow()
+
+    expect(() => sender.flush()).not.toThrow()
+    expect(settled.at(-1)?.state).toBe('undeliverable')
   })
 
   it('queues the valid prefix before an invalid suffix settlement detaches', () => {
