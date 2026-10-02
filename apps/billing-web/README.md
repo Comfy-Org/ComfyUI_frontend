@@ -156,6 +156,27 @@ refuses storage still reports once per page load.
   "Return to" link). The countdown that closes a finished checkout's tab is
   not a click and reports nothing.
 
+### Checkout journey events
+
+Both checkouts report the cloud app's `billing.checkout.<phase>` journey through
+`billingWebTelemetry.trackCheckoutJourneyEvent`, stamped with
+`billing_surface: 'billing_web'` and a `ui_mode` of `embedded` or `full_page`,
+so the funnel compares per surface. The journey id is the entry link's
+`correlation_id`, or a fresh one for a link that carries none, and
+`payment_intent_source` on `entered` is the link's `source`. `preview_ready` and `preview_failed` report each quote
+once; a refused capability, plan or quote names a bounded `denial_reason` or
+`error_code`. The payment form's `payment_element_*` and `payment_submit_*`
+phases pass through as the form reports them, `submitted` fires on each Pay that
+goes ahead, and `operation_linked` carries the operation that Pay issued, never
+one the checkout recovered. `method_selected` names the rail (`saved`, `new`,
+`on_file`) and the method kind (`card`, `alipay`, `other`) just before
+`submitted`. `promo` reports `applied`, `rejected`, `removed` or `expired`, with
+`prefilled` when the entry link carried the code, and `pay_blocked` reports a
+full-page Pay held back by an unticked consent or an unapplied code. The
+embedded checkout disables Pay under those guards, so it reports no blocked
+press. `entry_flow` is the quote's, so it reads `unknown` on `entered`. No event
+carries a promo code, an email, a URL, a client secret or a provider id.
+
 ## Commands
 
 Run these commands from the repository root:

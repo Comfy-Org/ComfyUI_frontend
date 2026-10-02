@@ -1,7 +1,9 @@
+import type { CapabilityDenialReason } from '../capabilityDenials.js'
 import type {
   BillingTelemetryErrorCode,
   BillingTelemetryFailureCategory
 } from './stages.js'
+import type { PaymentIntentSource } from './vocabulary.js'
 
 /**
  * Checkout-journey lifecycle events for the embedded-checkout rollout.
@@ -16,7 +18,7 @@ export const CHECKOUT_JOURNEY_SCHEMA_VERSION = 1
 
 export type CheckoutJourneyArm = 'control' | 'treatment'
 export type CheckoutAssignmentStatus = 'resolved' | 'unavailable'
-export type CheckoutUiMode = 'embedded' | 'hosted' | 'unknown'
+export type CheckoutUiMode = 'embedded' | 'full_page' | 'hosted' | 'unknown'
 export type CheckoutEntryFlow =
   | 'initial_subscription'
   | 'paid_upgrade'
@@ -60,15 +62,23 @@ export type CheckoutJourneyContext = {
   billing_op_id?: string
 } & CheckoutJourneyAssignment
 
-type CheckoutJourneyEntered = { phase: 'entered' }
+type CheckoutJourneyEntered = {
+  phase: 'entered'
+  /** The click-time entry the link carried, at the shared source grain. */
+  payment_intent_source?: PaymentIntentSource
+}
 type CheckoutJourneyPreviewReady = {
   phase: 'preview_ready'
   preview_revision?: string
 }
+/** Refusals the checkout names itself, beside the codes the billing events share. */
+type CheckoutPreviewErrorCode = 'quote_not_allowed' | 'plan_unavailable'
 type CheckoutJourneyPreviewFailed = {
   phase: 'preview_failed'
   failure_category: BillingTelemetryFailureCategory
-  error_code?: BillingTelemetryErrorCode
+  error_code?: BillingTelemetryErrorCode | CheckoutPreviewErrorCode
+  /** Why the capabilities read refused this checkout. */
+  denial_reason?: CapabilityDenialReason
   preview_revision?: string
 }
 type CheckoutJourneyPaymentElementReady = {
@@ -89,6 +99,26 @@ type CheckoutJourneyPaymentSubmitFailed = {
   submit_phase: CheckoutSubmitPhase
   error_code?: string
 }
+type CheckoutPaymentRail = 'saved' | 'new' | 'on_file'
+type CheckoutMethodKind = 'card' | 'alipay' | 'other'
+type CheckoutPromoResult = 'applied' | 'rejected' | 'removed' | 'expired'
+type CheckoutPayBlockedReason = 'reactivation_unconfirmed' | 'promo_unapplied'
+
+type CheckoutJourneyMethodSelected = {
+  phase: 'method_selected'
+  rail: CheckoutPaymentRail
+  method_kind?: CheckoutMethodKind
+}
+type CheckoutJourneyPromo = {
+  phase: 'promo'
+  result: CheckoutPromoResult
+  /** Whether the entry link carried the code; the code itself is never reported. */
+  prefilled: boolean
+}
+type CheckoutJourneyPayBlocked = {
+  phase: 'pay_blocked'
+  reason: CheckoutPayBlockedReason
+}
 type CheckoutJourneySubmitted = { phase: 'submitted' }
 type CheckoutJourneyOperationLinked = {
   phase: 'operation_linked'
@@ -103,6 +133,9 @@ export type CheckoutJourneyPhaseEvent =
   | CheckoutJourneyPaymentElementFailed
   | CheckoutJourneyPaymentSubmitAttempted
   | CheckoutJourneyPaymentSubmitFailed
+  | CheckoutJourneyMethodSelected
+  | CheckoutJourneyPromo
+  | CheckoutJourneyPayBlocked
   | CheckoutJourneySubmitted
   | CheckoutJourneyOperationLinked
 
@@ -130,6 +163,9 @@ export const CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE: Record<
   payment_element_failed: 'billing.checkout.payment_element_failed',
   payment_submit_attempted: 'billing.checkout.payment_submit_attempted',
   payment_submit_failed: 'billing.checkout.payment_submit_failed',
+  method_selected: 'billing.checkout.method_selected',
+  promo: 'billing.checkout.promo',
+  pay_blocked: 'billing.checkout.pay_blocked',
   submitted: 'billing.checkout.submitted',
   operation_linked: 'billing.checkout.operation_linked'
 }
@@ -140,9 +176,7 @@ export function getCheckoutJourneyTelemetryEventName(
   return CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE[event.phase]
 }
 
-export function getCheckoutJourneyTelemetryEventPayload(
-  event: CheckoutJourneyTelemetryEvent
-) {
+function getContextPayload(event: CheckoutJourneyTelemetryEvent) {
   return {
     schema_version: CHECKOUT_JOURNEY_SCHEMA_VERSION,
     phase: event.phase,
@@ -157,7 +191,12 @@ export function getCheckoutJourneyTelemetryEventPayload(
     ...(event.ui_mode !== undefined && { ui_mode: event.ui_mode }),
     ...(event.billing_op_id !== undefined && {
       billing_op_id: event.billing_op_id
-    }),
+    })
+  }
+}
+
+function getPreviewPayload(event: CheckoutJourneyPhaseEvent) {
+  return {
     ...('preview_revision' in event &&
       event.preview_revision !== undefined && {
         preview_revision: event.preview_revision
@@ -167,9 +206,44 @@ export function getCheckoutJourneyTelemetryEventPayload(
     }),
     ...('error_code' in event &&
       event.error_code !== undefined && { error_code: event.error_code }),
+    ...('denial_reason' in event &&
+      event.denial_reason !== undefined && {
+        denial_reason: event.denial_reason
+      })
+  }
+}
+
+function getPaymentFormPayload(event: CheckoutJourneyPhaseEvent) {
+  return {
     ...('element' in event && { element: event.element }),
     ...('element_phase' in event && { element_phase: event.element_phase }),
     ...('submit_phase' in event && { submit_phase: event.submit_phase })
+  }
+}
+
+function getChoicePayload(event: CheckoutJourneyPhaseEvent) {
+  return {
+    ...('payment_intent_source' in event &&
+      event.payment_intent_source !== undefined && {
+        payment_intent_source: event.payment_intent_source
+      }),
+    ...('rail' in event && { rail: event.rail }),
+    ...('method_kind' in event &&
+      event.method_kind !== undefined && { method_kind: event.method_kind }),
+    ...('result' in event && { result: event.result }),
+    ...('prefilled' in event && { prefilled: event.prefilled }),
+    ...('reason' in event && { reason: event.reason })
+  }
+}
+
+export function getCheckoutJourneyTelemetryEventPayload(
+  event: CheckoutJourneyTelemetryEvent
+) {
+  return {
+    ...getContextPayload(event),
+    ...getPreviewPayload(event),
+    ...getPaymentFormPayload(event),
+    ...getChoicePayload(event)
   }
 }
 
