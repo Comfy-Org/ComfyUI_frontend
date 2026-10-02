@@ -1,0 +1,158 @@
+<!-- Which developer-platform deployment this browser runs on, and the list
+     it may pick from (FE-2434). Each row is a deployment with the Release it
+     runs now; a pick follows the deployment when its owner updates it. Sits under the workspace selector in the user
+     popover. Renders nothing until a listing answers, when the account is
+     outside the rollout, and when loading fails with no listing to show; a
+     reload keeps the last listing on screen until it answers, and a listing
+     that answered stays shown when a newer load fails or never answers.
+     Shows the workspace's default deployment when an owner set one (BE-17480):
+     a browser with no pick of its own follows it, and an owner sets or
+     clears it from the panel's footer. -->
+<template>
+  <div v-if="isVisible" class="relative" data-testid="deployment-switcher">
+    <button
+      ref="trigger"
+      type="button"
+      class="flex w-full cursor-pointer appearance-none items-center justify-between rounded-lg border-0 bg-transparent px-4 py-2 text-left hover:bg-secondary-background-hover disabled:cursor-wait"
+      :aria-expanded="isOpen"
+      aria-haspopup="menu"
+      aria-controls="deployment-switcher-panel"
+      :disabled="isSwitching"
+      data-testid="deployment-switcher-trigger"
+      @click="isOpen = !isOpen"
+      @keydown.escape.stop="isOpen = false"
+    >
+      <div class="flex w-0 flex-1 items-center gap-2">
+        <i
+          class="icon-[lucide--package] size-4 shrink-0 text-muted-foreground"
+        />
+        <div class="flex min-w-0 flex-1 flex-col">
+          <span class="text-xs text-muted-foreground">
+            {{ $t('deploymentSwitcher.runningOn') }}
+          </span>
+          <span
+            class="truncate text-sm text-base-foreground"
+            data-testid="deployment-switcher-current"
+          >
+            {{ currentLabel }}
+          </span>
+          <span
+            v-if="showsFollowing"
+            class="text-xs text-muted-foreground"
+            data-testid="deployment-switcher-following"
+          >
+            {{ $t('deploymentSwitcher.workspaceDefault') }}
+          </span>
+        </div>
+      </div>
+      <i class="pi pi-chevron-down shrink-0 text-sm text-muted-foreground" />
+    </button>
+
+    <div
+      v-if="isOpen"
+      id="deployment-switcher-panel"
+      ref="panel"
+      role="menu"
+      class="absolute top-0 right-full z-10 mr-4 flex max-h-96 w-80 flex-col overflow-hidden rounded-lg border border-border-default bg-base-background shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
+      data-testid="deployment-switcher-panel"
+    >
+      <div
+        class="flex scrollbar-custom min-h-0 flex-1 flex-col overflow-y-auto"
+      >
+        <DeploymentSwitcherList @choose="choose" @follow="follow" />
+      </div>
+      <DeploymentSwitcherOwnerFooter
+        v-if="canSetDefault"
+        :default-label="defaultDeploymentId === null ? null : defaultLabel"
+        :can-set-picked="canSetPicked"
+        :disabled="isSwitching"
+        @set-default="changeDefault(pickedDeploymentId)"
+        @clear-default="changeDefault(null)"
+      />
+      <div
+        class="shrink-0 border-t border-border-default px-4 py-2 text-xs text-muted-foreground"
+      >
+        {{ $t('deploymentSwitcher.reloadNote') }}
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { onClickOutside } from '@vueuse/core'
+import { storeToRefs } from 'pinia'
+import { computed, onMounted, ref, useTemplateRef } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import DeploymentSwitcherOwnerFooter from '@/platform/workspace/components/DeploymentSwitcherOwnerFooter.vue'
+import DeploymentSwitcherList from '@/platform/workspace/components/DeploymentSwitcherList.vue'
+import { useDeploymentLabels } from '@/platform/workspace/composables/useDeploymentLabels'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+
+const { t } = useI18n()
+const store = useDeploymentPickStore()
+const {
+  pickedDeploymentId,
+  defaultDeploymentId,
+  followsWorkspace,
+  canSetDefault,
+  isVisible,
+  isSwitching
+} = storeToRefs(store)
+
+const isOpen = ref(false)
+const trigger = useTemplateRef('trigger')
+const panel = useTemplateRef('panel')
+
+onClickOutside(
+  panel,
+  () => {
+    isOpen.value = false
+  },
+  { ignore: [trigger] }
+)
+
+onMounted(() => {
+  void store.load()
+})
+
+const { currentLabel, defaultLabel } = useDeploymentLabels()
+
+const hasDefault = computed(() => defaultDeploymentId.value !== null)
+/** No pick of its own, so this browser runs on the workspace default. */
+const showsFollowing = computed(
+  () => followsWorkspace.value && hasDefault.value
+)
+const canSetPicked = computed(
+  () =>
+    pickedDeploymentId.value !== null &&
+    pickedDeploymentId.value !== defaultDeploymentId.value
+)
+
+function report(summary: string, refusal: string | null) {
+  if (refusal === null) return
+  isOpen.value = false
+  useToastStore().add({
+    severity: 'error',
+    summary,
+    detail: refusal,
+    life: 8000
+  })
+}
+
+async function choose(deploymentId: string | null) {
+  report(t('deploymentSwitcher.failedToSwitch'), await store.pick(deploymentId))
+}
+
+async function follow() {
+  report(t('deploymentSwitcher.failedToSwitch'), await store.followWorkspace())
+}
+
+async function changeDefault(deploymentId: string | null) {
+  report(
+    t('deploymentSwitcher.failedToSetDefault'),
+    await store.setDefault(deploymentId)
+  )
+}
+</script>

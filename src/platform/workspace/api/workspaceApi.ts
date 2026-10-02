@@ -21,7 +21,7 @@ import type {
   PaymentPortalRequest,
   PaymentPortalResponse,
   PendingInvite,
-  PickWorkspaceReleaseRequest,
+  PickWorkspaceDeploymentRequest,
   Plan,
   PreviewSubscribeRequest,
   PreviewSubscribeResponse,
@@ -41,8 +41,7 @@ import type {
   TeamCreditStops,
   TeamCreditStopSummary,
   UpdateWorkspaceRequest,
-  WorkspaceRelease,
-  WorkspaceReleaseList,
+  WorkspaceDeploymentList,
   WorkspaceWithRole
 } from '@comfyorg/ingest-types'
 import {
@@ -100,8 +99,6 @@ export type { SubscriptionDuration }
 export type { WorkspaceWithRole }
 export type { ListWorkspacesResponse }
 export type { CurrentWorkspaceResponse }
-export type { WorkspaceRelease }
-export type { WorkspaceReleaseList }
 export type { Plan }
 export type { BillingPlansResponse }
 export type { TeamCreditStops }
@@ -290,16 +287,18 @@ export const workspaceApi = {
   },
 
   /**
-   * List the developer-platform Releases this browser may pick, and which
-   * one it picked. 403 when the account is outside the rollout.
-   * GET /api/workspaces/:id/releases
+   * List the developer-platform deployments this browser may pick, each
+   * with the Release it runs now, and which one it picked. 403 when the account is outside the rollout.
+   * GET /api/workspaces/:id/deployments
    */
-  async listReleases(workspaceId: WorkspaceId): Promise<WorkspaceReleaseList> {
-    const headers = await getAuthHeaderOrThrow()
+  async listDeployments(
+    workspaceId: WorkspaceId
+  ): Promise<WorkspaceDeploymentList> {
+    const auth = await requestAuth()
     try {
-      const response = await workspaceApiClient.get<WorkspaceReleaseList>(
-        workspaceApiUrl(`/workspaces/${workspaceId}/releases`),
-        { headers }
+      const response = await workspaceApiClient.get<WorkspaceDeploymentList>(
+        workspaceApiUrl(`/workspaces/${workspaceId}/deployments`),
+        auth
       )
       return response.data
     } catch (err) {
@@ -308,20 +307,21 @@ export const workspaceApi = {
   },
 
   /**
-   * Pick the Release this browser runs on. The pick is a cookie on the
+   * Pick the deployment this browser runs on; it follows the deployment's
+   * updates to new Releases. The pick is a cookie on the
    * response; nothing about the workspace changes.
-   * PUT /api/workspaces/:id/release
+   * PUT /api/workspaces/:id/deployment
    */
-  async pickRelease(
+  async pickDeployment(
     workspaceId: WorkspaceId,
-    payload: PickWorkspaceReleaseRequest
+    payload: PickWorkspaceDeploymentRequest
   ): Promise<void> {
-    const headers = await getAuthHeaderOrThrow()
+    const auth = await requestAuth()
     try {
       await workspaceApiClient.put(
-        workspaceApiUrl(`/workspaces/${workspaceId}/release`),
+        workspaceApiUrl(`/workspaces/${workspaceId}/deployment`),
         payload,
-        { headers }
+        auth
       )
     } catch (err) {
       handleAxiosError(err)
@@ -331,19 +331,19 @@ export const workspaceApi = {
   /**
    * Clear the pick: this browser runs on Comfy Cloud, or with
    * `follow: 'workspace'` on whatever the workspace says (its default
-   * Release, or Comfy Cloud when it has none).
-   * DELETE /api/workspaces/:id/release
+   * deployment, or Comfy Cloud when it has none).
+   * DELETE /api/workspaces/:id/deployment
    */
-  async clearRelease(
+  async clearDeployment(
     workspaceId: WorkspaceId,
     options: { follow?: 'workspace' } = {}
   ): Promise<void> {
-    const headers = await getAuthHeaderOrThrow()
+    const auth = await requestAuth()
     try {
       await workspaceApiClient.delete(
-        workspaceApiUrl(`/workspaces/${workspaceId}/release`),
+        workspaceApiUrl(`/workspaces/${workspaceId}/deployment`),
         {
-          headers,
+          ...auth,
           params: options.follow ? { follow: options.follow } : undefined
         }
       )
@@ -353,20 +353,20 @@ export const workspaceApi = {
   },
 
   /**
-   * Set the Release members of the workspace run on when their browser has
+   * Set the deployment members of the workspace run on when their browser has
    * no pick of its own (BE-17480). Owner only.
-   * PUT /api/workspaces/:id/default-release
+   * PUT /api/workspaces/:id/default-deployment
    */
-  async setDefaultRelease(
+  async setDefaultDeployment(
     workspaceId: WorkspaceId,
-    payload: PickWorkspaceReleaseRequest
+    payload: PickWorkspaceDeploymentRequest
   ): Promise<void> {
-    const headers = await getAuthHeaderOrThrow()
+    const auth = await requestAuth()
     try {
       await workspaceApiClient.put(
-        workspaceApiUrl(`/workspaces/${workspaceId}/default-release`),
+        workspaceApiUrl(`/workspaces/${workspaceId}/default-deployment`),
         payload,
-        { headers }
+        auth
       )
     } catch (err) {
       handleAxiosError(err)
@@ -374,16 +374,16 @@ export const workspaceApi = {
   },
 
   /**
-   * Clear the workspace's default Release; members with no pick are back on
+   * Clear the workspace's default deployment; members with no pick are back on
    * Comfy Cloud. Owner only.
-   * DELETE /api/workspaces/:id/default-release
+   * DELETE /api/workspaces/:id/default-deployment
    */
-  async clearDefaultRelease(workspaceId: WorkspaceId): Promise<void> {
-    const headers = await getAuthHeaderOrThrow()
+  async clearDefaultDeployment(workspaceId: WorkspaceId): Promise<void> {
+    const auth = await requestAuth()
     try {
       await workspaceApiClient.delete(
-        workspaceApiUrl(`/workspaces/${workspaceId}/default-release`),
-        { headers }
+        workspaceApiUrl(`/workspaces/${workspaceId}/default-deployment`),
+        auth
       )
     } catch (err) {
       handleAxiosError(err)
