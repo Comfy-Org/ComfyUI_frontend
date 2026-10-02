@@ -401,6 +401,22 @@ describe('CreditsTile', () => {
     expect(container.textContent).toContain('253,200 left of 253,200')
   })
 
+  it('shows no credit pool total or allowance bar when the duration is unknown', () => {
+    state.canAccessSubscriptionFeatures = true
+    state.subscription = {
+      tier: 'PRO',
+      duration: null,
+      renewalDate: '2026-02-20T12:00:00Z'
+    }
+    state.balance = {
+      amountMicros: 120000,
+      cloudCreditBalanceMicros: 120000
+    }
+    const { container } = renderTile()
+    expect(container.textContent).not.toContain('left of')
+    expect(screen.queryByRole('progressbar')).toBeNull()
+  })
+
   it('formats the renewal date in the local timezone, not UTC', () => {
     activeProSubscription()
     expect(renderTile().container.textContent).toContain('Refills Feb 20')

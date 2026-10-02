@@ -281,7 +281,14 @@ const isAnnualBilling = computed(
   () => subscription.value?.duration === 'ANNUAL'
 )
 
+// Paid plan with no reported duration: the allowance cycle is unknown, so no
+// total is shown rather than guessing monthly. Free has no duration by design.
+const isDurationUnknown = computed(
+  () => !subscription.value?.duration && tierKey.value !== 'free'
+)
+
 const creditPoolTotalCredits = computed<number | null>(() => {
+  if (isDurationUnknown.value) return null
   const monthlyCredits =
     currentTeamCreditStop.value?.credits_monthly ??
     (isSalesManagedTier(subscription.value?.tier)

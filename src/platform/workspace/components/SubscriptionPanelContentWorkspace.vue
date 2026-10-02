@@ -231,7 +231,7 @@
                   />
                 </div>
                 <div
-                  v-if="!isNonCatalogPlan"
+                  v-if="!isNonCatalogPlan && !isPriceCycleUnknown"
                   class="flex items-baseline gap-1 font-inter"
                 >
                   <span class="text-2xl font-semibold">{{ displayPrice }}</span>
@@ -484,7 +484,8 @@ const {
 const { showPricingTable } = useSubscriptionDialog()
 
 const { isResubscribing, handleResubscribe } = useResubscribe()
-const { displayPrice, priceUnitLabel } = useWorkspacePlanPricing()
+const { displayPrice, priceUnitLabel, isPriceCycleUnknown } =
+  useWorkspacePlanPricing()
 const { menuEntries } = useWorkspaceMenuItems()
 
 const isSubscriptionEnded = computed(() => {

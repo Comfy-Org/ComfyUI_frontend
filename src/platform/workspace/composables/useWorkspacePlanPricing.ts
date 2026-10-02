@@ -35,6 +35,11 @@ export function useWorkspacePlanPricing() {
     return toTierKey(tier) ?? 'standard'
   })
 
+  // A paid plan with no reported duration has no knowable per-month price.
+  const isPriceCycleUnknown = computed(
+    () => !subscription.value?.duration && tierKey.value !== 'free'
+  )
+
   const subscribedStop = computed(() => {
     if (!isTeamPlan.value) return null
     const id = currentTeamCreditStop.value?.id
@@ -78,6 +83,7 @@ export function useWorkspacePlanPricing() {
   })
 
   return {
+    isPriceCycleUnknown,
     displayPrice,
     priceUnitLabel
   }
