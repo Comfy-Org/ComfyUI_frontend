@@ -68,12 +68,12 @@ Node ID reminting policy is defined by
 ### Amendment (2026-10-01, PR 19717): serialized widget identity — DRAFT, NOT RATIFIED
 
 > **This amendment is a draft and does not govern.** It is written by the author
-> of PR 19717 to record a decision the code in that PR already makes, so the
-> decision can be accepted or rejected explicitly rather than inferred from a
-> merge. It needs a maintainer's ratification before it has any force. If it is
-> rejected, the correct outcome is to drop `widgets_values_ordered` from that PR
-> and report the unrenameable-duplicate case loudly instead; see the alternative
-> below.
+> of PR 19717 to record how the frontend follows the occurrence-aware widget
+> identity already established by `@comfyorg/comfy-multi-player` schema v5, so
+> that compatibility can be accepted or rejected explicitly rather than
+> inferred from a merge. It needs a frontend maintainer's ratification before it
+> has any force in this repository. See the alternative below for what rejecting
+> that compatibility requires.
 
 **The cost this revisits.** "Two widgets on one node cannot share a name" is
 listed above as an accepted cost of name-keyed identity, and
@@ -95,6 +95,13 @@ earlier widget's value.
 | ------------------- | -------------------------------------------------------------------------------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | Runtime identity    | `WidgetId` = `graphId:nodeId:name`                                               | Yes, and still does          | `widgetValueStore`, every `WidgetId` consumer                                                                     |
 | Serialized identity | `(name, occurrence)`, zero-based among the serializable widgets sharing the name | No                           | `widgets_values_ordered` only — its reader, its writer, and `@comfyorg/comfy-multi-player` schema v5 `set_widget` |
+
+This is not a frontend-only identity design. The shared document host already
+uses `(name, occurrence)` for widget storage, projection, and `set_widget`
+operations under schema v5 ([comfy-multi-player PR
+266](https://github.com/Comfy-Org/comfy-multi-player/pull/266)). Cloud and local
+run that same applier. The frontend field is the serialized boundary that lets
+the canvas preserve and restore the identity the document host already uses.
 
 The accepted cost above is unchanged for the runtime key. What changes is that
 the duplicate pair is no longer only a thing the renamer tries to prevent: when
@@ -123,11 +130,14 @@ workflow's JSON is unchanged, and the reader
 (`readOrderedWidgetValues`, `src/lib/litegraph/src/utils/widgetIdentity.ts`) is a
 validation boundary that degrades one node rather than failing a load.
 
-**The alternative, if this is rejected.** Drop the field, and make
-`ensureUniqueWidgetNames` returning `false` a loud, user-visible report rather
-than a console warning, accepting that the earlier widget's value is lost. That
-is a smaller change and a worse product outcome; it is written here because the
-choice between the two belongs to a maintainer, not to the PR.
+**The alternative, if this is rejected.** Rejection means choosing an explicit
+frontend/document-host incompatibility: either revise the shared schema before
+the frontend consumes it, or define an adapter and a loss policy for
+occurrence-aware values received from the document host. Merely dropping
+`widgets_values_ordered` and reporting `ensureUniqueWidgetNames` failures would
+leave the cloud/local applier able to address state the canvas cannot restore,
+so it is not an architecture-neutral smaller route. The choice belongs to a
+frontend maintainer, not to the PR author.
 
 ## Context
 
