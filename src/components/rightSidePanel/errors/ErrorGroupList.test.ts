@@ -11,6 +11,10 @@ import { testI18n } from '@/components/searchbox/v2/__test__/testUtils'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
+import {
+  createTestCanvasElement,
+  createTestDragAndScale
+} from '@/utils/__tests__/canvasTestUtils'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
@@ -146,14 +150,13 @@ function renderList(pinia: Pinia) {
 }
 
 function createCanvasFixture(pinia: Pinia, graph = ROOT_GRAPH) {
-  const canvasElement = document.createElement('canvas')
-  canvasElement.width = 900
-  canvasElement.height = 700
   const canvas = fromPartial<LGraphCanvas>({
     graph,
     read_only: false,
     subgraph: undefined,
-    canvas: canvasElement,
+    canvas: createTestCanvasElement({ width: 900, height: 700 }),
+    dpr: 1,
+    ds: createTestDragAndScale(900, 700),
     animateToBounds: vi.fn()
   })
   canvas.setGraph = vi.fn((nextGraph) => {
