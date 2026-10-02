@@ -1,15 +1,31 @@
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { reportError } from '@/platform/telemetry/reportError'
+import { api } from '@/scripts/api'
 
 import type { ExtensionLoadFailure } from './extensionService'
 import {
   importCustomExtension,
   reportExtensionLoadFailures,
-  shouldLoadExtension
+  shouldLoadExtension,
+  useExtensionService
 } from './extensionService'
 
 vi.mock(import('@/platform/telemetry/reportError'))
+
+// The loader-level cases below need `loadExtensions` to run end to end, which
+// takes exactly two stubs. The core extension entry point is one: importing it
+// pulls in the whole core extension tree, and that is what kept this path
+// untested and left the wiring between the import and the report unpinned.
+vi.mock(import('@/extensions/core/index'), () => ({}))
+
+// `api.getExtensions` is the other, stubbed per case on the real module rather
+// than by mocking it — mocking `@/scripts/api` breaks `@/scripts/app`, which
+// this service imports and which registers api listeners while it is still
+// being evaluated. `fileURL` therefore stays real too, so the custom imports
+// below reject on a path with no module behind it exactly as the standalone
+// cases do. The stores come from the global testing Pinia.
 
 describe('shouldLoadExtension', () => {
   it.for(['/extensions/cloud/rum.js', '/extensions/cloud/sentry.js'])(
@@ -40,6 +56,11 @@ describe('shouldLoadExtension', () => {
 const BROKEN = '/extensions/comfyui-broken/main.js'
 
 describe('importCustomExtension', () => {
+  beforeEach(() => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+  })
+
   it('returns the failing path and its error instead of throwing', async () => {
     const failure = await importCustomExtension(BROKEN)
 
@@ -51,12 +72,17 @@ describe('importCustomExtension', () => {
     expect(failure.error.message).toContain(BROKEN)
   })
 
-  it('does not report per extension', async () => {
+  it('does not report or log per extension', async () => {
     // One systemic failure rejects the whole list at once, and off cloud each
     // report would occupy a slot in reportError's 25-entry pending buffer.
     await importCustomExtension(BROKEN)
 
     expect(reportError).not.toHaveBeenCalled()
+    // The console line this catch used to write is what the batch report
+    // replaced. Asserting its absence here, and not only on the batch, is what
+    // stops the duplicate emission coming back where it actually lived.
+    expect(console.error).not.toHaveBeenCalled()
+    expect(console.warn).not.toHaveBeenCalled()
   })
 })
 
@@ -133,5 +159,61 @@ describe('reportExtensionLoadFailures', () => {
 
     expect(console.error).not.toHaveBeenCalled()
     expect(console.warn).not.toHaveBeenCalled()
+  })
+})
+
+describe('loadExtensions', () => {
+  beforeEach(() => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+  })
+
+  it('reports every failing custom import as one aggregate', async () => {
+    // The pieces are covered above in isolation, which leaves the wiring
+    // between them unpinned: dropping the reportExtensionLoadFailures call, or
+    // passing it the wrong half of the outcomes, loses every failure silently
+    // and no assertion above notices.
+    vi.spyOn(api, 'getExtensions').mockResolvedValue([
+      '/extensions/pack-a/main.js',
+      '/extensions/pack-b/main.js'
+    ])
+
+    await useExtensionService().loadExtensions()
+
+    expect(reportError).toHaveBeenCalledOnce()
+    const [cause, options] = vi.mocked(reportError).mock.calls[0]
+    assert(cause instanceof Error)
+    expect(cause.message).toBe(
+      'Error loading 2 extension(s): /extensions/pack-a/main.js, /extensions/pack-b/main.js'
+    )
+    expect(options.tags).toMatchObject({ failed_extension_count: 2 })
+  })
+
+  it('stays silent when every custom import resolves', async () => {
+    // Nothing the backend lists resolves in this environment, so an empty list
+    // is what proves the report is driven by failures rather than emitted on
+    // every load.
+    vi.spyOn(api, 'getExtensions').mockResolvedValue([])
+
+    await useExtensionService().loadExtensions()
+
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('times the core and custom imports as separate subphases', async () => {
+    // Keeps the instrumentation itself under test: bootstrapTracer.test.ts
+    // pins how the tracer nests spans, but nothing pinned that this loader is
+    // the thing that opens these two.
+    const settle = vi.spyOn(bootstrapTracer, 'settle')
+    vi.spyOn(api, 'getExtensions').mockResolvedValue([
+      '/extensions/pack-a/main.js'
+    ])
+
+    await useExtensionService().loadExtensions()
+
+    expect(settle.mock.calls.map(([phase]) => phase)).toEqual([
+      'bootstrap/extensions-load-core',
+      'bootstrap/extensions-load-custom'
+    ])
   })
 })
