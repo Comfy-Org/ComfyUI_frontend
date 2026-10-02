@@ -119,10 +119,16 @@ const settings = {
   'vue-i18n': {
     localeDir: [
       {
-        pattern: './src/locales/**/*.json',
+        pattern: './src/locales/en/main.json',
         localeKey: 'path',
         localePattern:
           /^\.?\/?src\/locales\/(?<locale>[A-Za-z0-9-]+)\/.+\.json$/
+      },
+      // src/i18n.ts nests the collect-i18n outputs under commands, settings and
+      // nodeDefs; the plugin has no namespace option, so this module mirrors it.
+      {
+        pattern: './scripts/i18n/eslint-generated-messages.js',
+        localeKey: 'key'
       }
     ],
     messageSyntaxVersion: '^9.0.0'
@@ -583,25 +589,6 @@ export default defineConfig([
     files: ['src/**/*.{ts,mts,vue}'],
     rules: {
       '@intlify/vue-i18n/no-missing-keys': 'error'
-    }
-  },
-  // i18n.ts nests the collect-i18n outputs under commands/settings/nodeDefs,
-  // but the plugin flat-merges every localeDir file, so static references into
-  // a generated namespace never resolve. These files reference nothing else;
-  // elsewhere the exemption is line-scoped. Namespacing the generated files at
-  // generation time would retire this entirely.
-  {
-    files: [
-      'src/components/graph/selectionToolbox/BypassButton.vue',
-      'src/components/graph/selectionToolbox/ConfigureSubgraph.vue',
-      'src/components/graph/selectionToolbox/ConvertToSubgraphButton.vue',
-      'src/components/graph/selectionToolbox/DeleteButton.vue',
-      'src/components/graph/selectionToolbox/Load3DViewerButton.vue',
-      'src/components/graph/selectionToolbox/MaskEditorButton.vue',
-      'src/components/graph/selectionToolbox/SaveToSubgraphLibrary.vue'
-    ],
-    rules: {
-      '@intlify/vue-i18n/no-missing-keys': 'off'
     }
   },
   // billing-web keeps a single hand-authored catalog of its own, so it gets the
