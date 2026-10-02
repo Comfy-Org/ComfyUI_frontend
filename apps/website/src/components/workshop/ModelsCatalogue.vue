@@ -10,6 +10,7 @@ import type {
 } from '../../config/models-catalogue'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import BuildApiBand from './BuildApiBand.vue'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
 import type { HubSection } from './HubSpaceNav.vue'
 import type { WorkshopPageType } from '../../scripts/workshop-analytics'
@@ -136,14 +137,16 @@ whenever(
     :models="routerModels"
     :locale
   />
-  <WorkshopModelsGrid
-    v-else-if="section === 'models'"
-    v-model:browse-all="browseAll"
-    :models="routerModels"
-    :initial-search
-    :locale
-    @section="inSection = $event"
-  />
+  <template v-else-if="section === 'models'">
+    <BuildApiBand v-if="!inSection" :locale />
+    <WorkshopModelsGrid
+      v-model:browse-all="browseAll"
+      :models="routerModels"
+      :initial-search
+      :locale
+      @section="inSection = $event"
+    />
+  </template>
   <WorkflowCatalogue
     v-else-if="section === 'workflows'"
     v-model:browse-all="browseAll"

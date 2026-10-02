@@ -8,6 +8,9 @@ const copy = {
   apps: { en: 'Apps', 'zh-CN': '应用' },
   allApps: { en: 'All apps', 'zh-CN': '全部应用' },
   browseAllApps: { en: 'Browse all apps', 'zh-CN': '浏览全部应用' },
+  featured: { en: 'Featured app', 'zh-CN': '精选应用' },
+  tryFree: { en: 'Try it free', 'zh-CN': '免费试用' },
+  comingSoon: { en: 'Coming soon', 'zh-CN': '即将推出' },
   studioName: { en: 'Cinematic Studio', 'zh-CN': '电影工作室' },
   studioTask: {
     en: 'Direct your shot like a film set',

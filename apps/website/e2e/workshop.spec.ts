@@ -95,6 +95,7 @@ test.describe('Models catalog', () => {
     const href = await page
       .getByTestId('featured-slide-link')
       .getAttribute('href')
+    await card.scrollIntoViewIfNeeded()
     const [bars, area] = [await strip.boundingBox(), await card.boundingBox()]
     if (!href || !bars || !area)
       throw new Error('Featured banner is not laid out')
@@ -703,10 +704,12 @@ test.describe('Model playground', () => {
       page.getByRole('textbox', { name: 'Prompt', exact: true })
     ).toHaveValue(prompt)
 
-    await page
-      .getByRole('navigation', { name: 'Main navigation', exact: true })
-      .getByRole('link', { name: 'Hub', exact: true })
-      .click()
+    const nav = page.getByRole('navigation', {
+      name: 'Main navigation',
+      exact: true
+    })
+    await nav.getByRole('button', { name: /^Products/ }).click()
+    await nav.getByRole('link', { name: /Explore the Hub/ }).click()
     await expect(page).toHaveURL('/hub/')
     await page.getByTestId('hub-space-build').click()
     await page.getByTestId('workshop-search').fill('Seedream 4.5 Image Edit')

@@ -60,11 +60,81 @@ const translations = {
     'zh-CN': '通过 API 用在你的产品中'
   },
   'workshop.explore.subtitle': {
-    en: 'Apps, workflows and models from Comfy. Run them here, open them in ComfyUI, or call them by API.',
+    en: 'Start from a use case, run a ready-made app, or call a model. Everything here runs in your browser.',
     'zh-CN':
-      '来自 Comfy 的应用、工作流和模型。可在此运行、在 ComfyUI 中打开，或通过 API 调用。'
+      '从一个用例开始、运行现成的应用，或调用模型。这里的一切都在浏览器中运行。'
   },
-  'workshop.explore.seeAll': { en: 'See all', 'zh-CN': '查看全部' },
+  'workshop.explore.useCasesTitle': {
+    en: 'Start from a use case',
+    'zh-CN': '从一个用例开始'
+  },
+  'workshop.explore.useCasesHint': {
+    en: 'What do you want to make?',
+    'zh-CN': '你想做什么？'
+  },
+  'workshop.explore.useCasesSeeAll': {
+    en: 'Browse all use cases',
+    'zh-CN': '浏览全部用例'
+  },
+  'workshop.explore.workflowPill': { en: 'Workflow', 'zh-CN': '工作流' },
+  'workshop.explore.by': { en: 'By {model}', 'zh-CN': '使用 {model}' },
+  'workshop.explore.appsTitle': {
+    en: 'Ready-made apps',
+    'zh-CN': '现成的应用'
+  },
+  'workshop.explore.appsHint': {
+    en: 'One job each. No nodes needed.',
+    'zh-CN': '每个应用只做一件事，无需节点。'
+  },
+  'workshop.explore.appsSeeAll': {
+    en: 'See all apps',
+    'zh-CN': '查看全部应用'
+  },
+  'workshop.explore.comingSoon': { en: 'Coming soon', 'zh-CN': '即将推出' },
+  'workshop.explore.modelsTitle': { en: 'Models', 'zh-CN': '模型' },
+  'workshop.explore.modelsHint': {
+    en: 'Try them here or call them by API.',
+    'zh-CN': '在这里试用，或通过 API 调用。'
+  },
+  'workshop.explore.modelsSeeAll': {
+    en: 'See all models',
+    'zh-CN': '查看全部模型'
+  },
+  'workshop.explore.providers': { en: 'Providers', 'zh-CN': '提供方' },
+  'workshop.explore.allProviders': { en: 'All', 'zh-CN': '全部' },
+  'workshop.build.title': {
+    en: 'Put it in your product.',
+    'zh-CN': '把它用在你的产品中。'
+  },
+  'workshop.build.body': {
+    en: 'Call any model with Comfy Router, or run a workflow with Comfy API. Keys and usage live on Developer Platform.',
+    'zh-CN':
+      '用 Comfy Router 调用任意模型，或用 Comfy API 运行工作流。密钥和用量在开发者平台管理。'
+  },
+  'workshop.build.routerTitle': { en: 'Comfy Router', 'zh-CN': 'Comfy Router' },
+  'workshop.build.routerBody': {
+    en: 'Call any model below with one API key.',
+    'zh-CN': '用一个 API 密钥调用下面的任意模型。'
+  },
+  'workshop.build.apiTitle': { en: 'Comfy API', 'zh-CN': 'Comfy API' },
+  'workshop.build.apiBody': {
+    en: 'Run any Hub workflow as an endpoint.',
+    'zh-CN': '把任意 Hub 工作流作为端点运行。'
+  },
+  'workshop.build.platformTitle': {
+    en: 'Developer Platform',
+    'zh-CN': '开发者平台'
+  },
+  'workshop.build.platformBody': {
+    en: 'API keys, usage and deploys.',
+    'zh-CN': 'API 密钥、用量和部署。'
+  },
+  'workshop.build.getKey': { en: 'Get an API key', 'zh-CN': '获取 API 密钥' },
+  'workshop.build.docs': { en: 'Docs', 'zh-CN': '文档' },
+  'workshop.build.snippetLabel': {
+    en: 'Example request to Comfy Router',
+    'zh-CN': 'Comfy Router 请求示例'
+  },
   'workshop.catalogue.workflowsSubtitle': {
     en: 'Turn your ideas into finished results with multi-step workflows powered by AI models.',
     'zh-CN': '用由 AI 模型驱动的多步骤工作流，把你的想法变成完成的作品。'
@@ -9615,8 +9685,32 @@ Enterprise`
 
   // Workshop – header account + nav
   'nav.workshop': { en: 'Hub', 'zh-CN': 'Hub' },
-  'nav.comfyWorkshop': { en: 'Browse Models', 'zh-CN': '浏览模型' },
   'nav.cinematicStudio': { en: 'Cinematic Studio', 'zh-CN': '电影工作室' },
+  'nav.hubFeaturedAlt': {
+    en: 'A neon-lit street scene made in Cinematic Studio',
+    'zh-CN': '用电影工作室制作的霓虹街景'
+  },
+  'nav.hubFeaturedDescription': {
+    en: 'Apps, workflows and models, ready to run',
+    'zh-CN': '应用、工作流和模型，随时可运行'
+  },
+  'nav.hubFeaturedCta': { en: 'Explore the Hub', 'zh-CN': '探索 Hub' },
+  'nav.colCreate': { en: 'Create', 'zh-CN': '创作' },
+  'nav.colCustomize': { en: 'Customize', 'zh-CN': '定制' },
+  'nav.colBuild': { en: 'Build', 'zh-CN': '构建' },
+  'nav.hubApps': { en: 'Apps', 'zh-CN': '应用' },
+  'nav.hubWorkflows': { en: 'Workflows', 'zh-CN': '工作流' },
+  'nav.hubModels': { en: 'Models', 'zh-CN': '模型' },
+  'nav.hubTag': { en: 'Hub', 'zh-CN': 'Hub' },
+  'nav.serverlessApi': { en: 'Serverless API', 'zh-CN': '无服务器 API' },
+  'nav.builds': { en: 'Builds', 'zh-CN': 'Builds' },
+  'nav.comfySdks': { en: 'Comfy SDKs', 'zh-CN': 'Comfy SDK' },
+  'nav.enterprise': { en: 'Enterprise', 'zh-CN': '企业版' },
+  'nav.commercialLicensing': {
+    en: 'Commercial licensing',
+    'zh-CN': '商业授权'
+  },
+  'nav.contactSales': { en: 'Contact sales', 'zh-CN': '联系销售' },
   'nav.signIn': { en: 'Sign in', 'zh-CN': '登录' },
   'nav.signOut': { en: 'Log out', 'zh-CN': '退出登录' },
   'nav.accountMenu': { en: 'Account menu', 'zh-CN': '账户菜单' },

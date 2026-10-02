@@ -8,10 +8,13 @@ export type NavColumnItem = {
   href: string
   badge?: 'new' | 'beta'
   external?: boolean
+  hub?: boolean
 }
 
 export type NavColumn = {
   header: string
+  description?: string
+  placement?: 'footer'
   items: NavColumnItem[]
 }
 
@@ -20,6 +23,8 @@ export type NavFeatured = {
   videoSrc?: string
   imageAlt?: string
   title: string
+  description?: string
+  showOnMobile?: boolean
   cta: {
     label: string
     ariaLabel?: string
@@ -48,90 +53,146 @@ export function getMainNavigation(
   workshopInBuild = false
 ): NavItem[] {
   const routes = getRoutes(locale)
-  const modelsEntry: NavItem[] = workshopInBuild
-    ? [
-        {
-          label: t('nav.workshop', locale),
-          href: routes.hubExplore,
-          badge: 'new'
-        }
-      ]
-    : []
-  const productEntry: NavColumnItem[] = workshopInBuild
-    ? [
-        {
-          label: t('nav.comfyWorkshop', locale),
-          href: routes.workshop,
-          badge: 'new'
-        }
-      ]
-    : []
+  const inHub = <T>(items: T[]) => (workshopInBuild ? items : [])
+  const hubFeatured: NavFeatured = {
+    imageSrc: '/images/cinematic-studio/neon-street.jpg',
+    imageAlt: t('nav.hubFeaturedAlt', locale),
+    title: t('nav.workshop', locale),
+    description: t('nav.hubFeaturedDescription', locale),
+    showOnMobile: true,
+    cta: { label: t('nav.hubFeaturedCta', locale), href: routes.hubExplore }
+  }
+  const releaseFeatured: NavFeatured = {
+    imageSrc: 'https://media.comfy.org/website/gemini-omni/card-5.webp',
+    videoSrc: 'https://media.comfy.org/website/gemini-omni/card-5.webm',
+    imageAlt: t('nav.featuredProductsAlt', locale),
+    title: t('nav.featuredProductsTitle', locale),
+    cta: {
+      label: t('nav.featuredProductsCta', locale),
+      ariaLabel: t('nav.featuredProductsCtaAria', locale),
+      href: routes.geminiOmni
+    }
+  }
   return [
-    ...modelsEntry,
     {
       label: t('nav.products', locale),
       badge: 'new',
-      featured: {
-        imageSrc: 'https://media.comfy.org/website/gemini-omni/card-5.webp',
-        videoSrc: 'https://media.comfy.org/website/gemini-omni/card-5.webm',
-        imageAlt: t('nav.featuredProductsAlt', locale),
-        title: t('nav.featuredProductsTitle', locale),
-        cta: {
-          label: t('nav.featuredProductsCta', locale),
-          ariaLabel: t('nav.featuredProductsCtaAria', locale),
-          href: routes.geminiOmni
-        }
-      },
+      featured: workshopInBuild ? hubFeatured : releaseFeatured,
       columns: [
         {
-          header: t('nav.products', locale),
+          header: t('nav.colCreate', locale),
+          description: t('workshop.space.createHint', locale),
           items: [
-            ...productEntry,
+            ...inHub([
+              {
+                label: t('nav.hubApps', locale),
+                href: routes.hubApps,
+                hub: true
+              },
+              {
+                label: t('nav.cinematicStudio', locale),
+                href: routes.cinematicStudio,
+                badge: 'new' as const
+              }
+            ]),
+            { label: t('nav.comfyCloud', locale), href: routes.cloud }
+          ]
+        },
+        {
+          header: t('nav.colCustomize', locale),
+          description: t('workshop.space.customizeHint', locale),
+          items: [
+            ...inHub([
+              {
+                label: t('nav.hubWorkflows', locale),
+                href: routes.hubWorkflows,
+                hub: true
+              }
+            ]),
             { label: t('nav.comfyLocal', locale), href: routes.download },
-            { label: t('nav.comfyCloud', locale), href: routes.cloud },
+            {
+              label: t('nav.comfyAgent', locale),
+              href: routes.agent,
+              badge: 'new'
+            }
+          ]
+        },
+        {
+          header: t('nav.colBuild', locale),
+          description: t('workshop.space.buildHint', locale),
+          items: [
+            ...(workshopInBuild
+              ? [
+                  {
+                    label: t('nav.hubModels', locale),
+                    href: routes.workshop,
+                    hub: true
+                  }
+                ]
+              : [
+                  {
+                    label: t('nav.supportedModels', locale),
+                    href: routes.models
+                  }
+                ]),
             {
               label: t('nav.developerPlatform', locale),
               href: routes.platform,
               badge: 'new'
             },
             {
+              label: t('nav.serverlessApi', locale),
+              href: routes.platformComfyApi
+            },
+            {
               label: t('nav.comfyRouter', locale),
               href: routes.platformRouter,
               badge: 'new'
             },
-            {
-              label: t('nav.comfyEnterprise', locale),
-              href: routes.enterprise
-            },
+            { label: t('nav.builds', locale), href: routes.platformBuilder },
             {
               label: t('nav.managedBuilds', locale),
               href: routes.managedBuilds
-            }
+            },
+            { label: t('nav.mcpServer', locale), href: routes.mcp },
+            { label: t('nav.comfyCli', locale), href: routes.cli }
           ]
         },
         {
-          header: t('nav.colFeatures', locale),
+          header: t('nav.resources', locale),
+          placement: 'footer',
           items: [
-            { label: t('nav.mcpServer', locale), href: routes.mcp },
-            {
-              label: t('nav.comfyAgent', locale),
-              href: routes.agent,
-              badge: 'new'
-            },
-            {
-              label: t('nav.comfyCli', locale),
-              href: routes.cli
-            },
-            // TODO: no page yet — re-enable when landing pages ship
-            // { label: t('nav.appMode', locale), href: '#' },
-            // { label: t('nav.agentSkills', locale), href: '#' },
-            { label: t('nav.launches', locale), href: routes.launches },
-            { label: t('nav.supportedModels', locale), href: routes.models },
             {
               label: t('nav.docs', locale),
               href: externalLinks.docs,
               external: true
-            }
+            },
+            {
+              label: t('nav.comfySdks', locale),
+              href: externalLinks.docsSdk,
+              external: true
+            },
+            { label: t('nav.launches', locale), href: routes.launches }
+          ]
+        }
+      ]
+    },
+    {
+      label: t('nav.enterprise', locale),
+      columns: [
+        {
+          header: t('nav.enterprise', locale),
+          items: [
+            {
+              label: t('nav.comfyEnterprise', locale),
+              href: routes.enterprise
+            },
+            { label: t('nav.fdct', locale), href: routes.fdct },
+            {
+              label: t('nav.commercialLicensing', locale),
+              href: routes.minimaxLicense
+            },
+            { label: t('nav.contactSales', locale), href: routes.contact }
           ]
         }
       ]

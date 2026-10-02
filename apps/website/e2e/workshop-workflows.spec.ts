@@ -465,6 +465,7 @@ for (const { width, half, path } of tabletToolbars) {
     await page.goto(path)
     const toolbar = page.getByTestId('workshop-toolbar')
     await expect(toolbar.getByTestId('workshop-search')).toBeVisible()
+    await toolbar.scrollIntoViewIfNeeded()
     for (const control of [
       toolbar.getByTestId('workshop-search'),
       toolbar.getByTestId('workshop-filter'),

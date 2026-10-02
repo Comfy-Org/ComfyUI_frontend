@@ -73,9 +73,14 @@ test('shows model content without Run when PostHog is unavailable', async ({
 }) => {
   const accountRequests = recordAccountRequests(context)
   await page.goto('/')
-  await expect(
-    page.getByRole('link', { name: 'Hub', exact: true })
-  ).toHaveCount(0)
+  await page
+    .getByTestId('desktop-nav-links')
+    .getByRole('button', { name: /^Products/ })
+    .click()
+  await expect(page.getByTestId('nav-dropdown')).toBeVisible()
+  await expect(page.getByRole('link', { name: /Explore the Hub/ })).toHaveCount(
+    0
+  )
   await expect(page.getByTestId('model-discovery')).toHaveCount(0)
   await expect(
     page.getByRole('link', { name: 'Sign in', exact: true })

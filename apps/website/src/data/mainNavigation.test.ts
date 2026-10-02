@@ -6,32 +6,40 @@ import { getMainNavigation } from './mainNavigation'
 
 describe('getMainNavigation', () => {
   it.for(['en', 'zh-CN', 'ja'] as const)(
-    'gates both catalogue navigation entries for %s',
+    'gates every Hub entry for %s',
     (locale) => {
       const links = (enabled: boolean) =>
         getMainNavigation(locale, enabled).flatMap((item) =>
           item.columns
-            ? item.columns.flatMap((column) =>
-                column.items.map((entry) => entry.href)
-              )
+            ? [
+                ...(item.featured ? [item.featured.cta.href] : []),
+                ...item.columns.flatMap((column) =>
+                  column.items.map((entry) => entry.href)
+                )
+              ]
             : [item.href]
         )
-      const { hubExplore, workshop } = getRoutes(locale)
-      expect([hubExplore, workshop]).toEqual(['/hub/', '/hub/models/'])
-      for (const catalogue of [hubExplore, workshop]) {
-        expect(links(false)).not.toContain(catalogue)
-        expect(links(true)).toContain(catalogue)
-      }
+      const { hubExplore, hubApps, hubWorkflows, workshop } = getRoutes(locale)
+      const hub = [hubExplore, hubApps, hubWorkflows, workshop]
+      expect(hub).toEqual([
+        '/hub/',
+        '/hub/apps/',
+        '/hub/workflows/',
+        '/hub/models/'
+      ])
+      expect(links(false)).toEqual(
+        expect.not.arrayContaining([expect.stringMatching(/^\/hub\//)])
+      )
+      expect(links(true)).toEqual(expect.arrayContaining(hub))
     }
   )
   it('includes a Products entry linking to Enterprise Managed Builds', () => {
     const productsItem = getMainNavigation('en').find(
       (item) => item.label === 'Products'
     )
-    const productsColumn = productsItem?.columns?.[0]
-    const managedBuildsEntry = productsColumn?.items.find(
-      (item) => item.href === getRoutes('en').managedBuilds
-    )
+    const managedBuildsEntry = productsItem?.columns
+      ?.flatMap((column) => column.items)
+      .find((item) => item.href === getRoutes('en').managedBuilds)
 
     expect(managedBuildsEntry).toMatchObject({
       label: 'Managed Builds',
@@ -43,9 +51,9 @@ describe('getMainNavigation', () => {
     'marks the developer products as new, never beta, for %s',
     (locale) => {
       const routes = getRoutes(locale)
-      const products = getMainNavigation(locale).find(
-        (item) => item.label === t('nav.products', locale)
-      )?.columns?.[0].items
+      const products = getMainNavigation(locale)
+        .find((item) => item.label === t('nav.products', locale))
+        ?.columns?.flatMap((column) => column.items)
       const badgeOf = (href: string) => {
         const entry = products?.find((item) => item.href === href)
         expect(entry).toBeDefined()
@@ -57,6 +65,35 @@ describe('getMainNavigation', () => {
       expect(badgeOf(routes.managedBuilds)).toBeUndefined()
     }
   )
+
+  it('groups Products by the Hub intents, with Resources as a footer', () => {
+    const products = getMainNavigation('en', true).find(
+      (item) => item.label === 'Products'
+    )
+
+    expect(
+      products?.columns?.map(({ header, placement }) => [header, placement])
+    ).toEqual([
+      ['Create', undefined],
+      ['Customize', undefined],
+      ['Build', undefined],
+      ['Resources', 'footer']
+    ])
+    expect(products?.featured?.cta).toMatchObject({
+      label: 'Explore the Hub',
+      href: '/hub/'
+    })
+  })
+
+  it('opens an Enterprise menu after Products', () => {
+    expect(getMainNavigation('en').map((item) => item.label)).toEqual([
+      'Products',
+      'Enterprise',
+      'Pricing',
+      'Community',
+      'Company'
+    ])
+  })
 
   const featuredCards = [
     {

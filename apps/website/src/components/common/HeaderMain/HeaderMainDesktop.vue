@@ -35,13 +35,13 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
   const onLeafPage = mainNavigation.value.some(
     (item) => item.href && isHrefActive(item.href, path)
   )
-  return (
-    !onLeafPage &&
-    (navItem.columns?.some((column) =>
-      column.items.some((item) => isHrefActive(item.href, path))
-    ) ??
-      false)
-  )
+  const hrefs = [
+    ...(navItem.featured ? [navItem.featured.cta.href] : []),
+    ...(navItem.columns?.flatMap((column) =>
+      column.items.map((item) => item.href)
+    ) ?? [])
+  ]
+  return !onLeafPage && hrefs.some((href) => isHrefActive(href, path))
 }
 </script>
 
@@ -69,13 +69,33 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
                 v-if="navItem.featured"
                 :featured="navItem.featured"
               />
-              <NavColumn
-                v-for="column in navItem.columns"
-                :key="column.header"
-                :column="column"
-                :locale="locale"
-                :current-path="currentPath"
-              />
+              <li class="flex flex-col gap-8">
+                <ul class="flex gap-16">
+                  <NavColumn
+                    v-for="column in navItem.columns.filter(
+                      (column) => column.placement !== 'footer'
+                    )"
+                    :key="column.header"
+                    :column="column"
+                    :locale="locale"
+                    :current-path="currentPath"
+                  />
+                </ul>
+                <ul
+                  v-if="navItem.columns.some((c) => c.placement === 'footer')"
+                  class="border-t border-transparency-white-t8 pt-4"
+                >
+                  <NavColumn
+                    v-for="column in navItem.columns.filter(
+                      (column) => column.placement === 'footer'
+                    )"
+                    :key="column.header"
+                    :column="column"
+                    :locale="locale"
+                    :current-path="currentPath"
+                  />
+                </ul>
+              </li>
             </ul>
           </NavigationMenuContent>
         </template>

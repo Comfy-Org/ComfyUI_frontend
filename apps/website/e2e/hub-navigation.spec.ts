@@ -120,7 +120,7 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
     {
       from: 'apps',
       to: 'explore',
-      copy: 'Apps, workflows and models from Comfy'
+      copy: 'Start from a use case'
     }
   ] as const) {
     test(`the space marker travels from ${from} to ${to} under ${reducedMotion} motion`, async ({
@@ -296,7 +296,7 @@ for (const { section, destination, query, filter } of [
   })
 }
 
-test('the mobile menu closes and reopens after its Hub link navigates', async ({
+test('the mobile menu closes and reopens after its Explore the Hub link navigates', async ({
   page
 }) => {
   await page.setViewportSize({ width: 390, height: 900 })
@@ -306,7 +306,8 @@ test('the mobile menu closes and reopens after its Hub link navigates', async ({
   await toggle.click()
   const menu = page.getByRole('dialog', { name: 'Menu' })
   await expect(menu).toBeVisible()
-  await menu.getByRole('link', { name: /^Hub\b/ }).click()
+  await menu.getByRole('button', { name: /^Products/ }).click()
+  await menu.getByRole('link', { name: 'Explore the Hub' }).click()
   await expect(page).toHaveURL('/hub/')
   await expect(menu).toBeHidden()
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(

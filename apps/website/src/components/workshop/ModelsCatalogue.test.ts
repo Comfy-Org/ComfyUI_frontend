@@ -190,42 +190,116 @@ describe('ModelsCatalogue', () => {
     {
       apps: 'on',
       on: true,
-      spaces: [
-        ['explore-create', '/hub/apps/'],
-        ['explore-customize', '/hub/workflows/'],
-        ['explore-build', '/hub/models/']
+      sections: [
+        ['explore-use-cases', '/hub/workflows/'],
+        ['explore-apps', '/hub/apps/'],
+        ['explore-models', '/hub/models/']
       ]
     },
     {
       apps: 'off',
       on: false,
-      spaces: [
-        ['explore-customize', '/hub/workflows/'],
-        ['explore-build', '/hub/models/']
+      sections: [
+        ['explore-use-cases', '/hub/workflows/'],
+        ['explore-models', '/hub/models/']
       ]
     }
   ])(
     'previews each space on the explore page with apps $apps',
-    async ({ on, spaces }) => {
+    async ({ on, sections }) => {
       appsFlag.value = on
       render(ModelsCatalogue, {
         props: { models: launchModels, section: 'explore' }
       })
       const explore = await screen.findByTestId('explore-catalogue')
+      const seeAll = /^(See all|Browse all)/
 
       expect(
-        within(explore).getAllByRole('link', { name: /^See all/ })
-      ).toHaveLength(spaces.length)
+        within(explore).getAllByRole('link', { name: seeAll })
+      ).toHaveLength(sections.length)
       expect(
-        spaces.map(([space]) => [
-          space,
-          within(screen.getByTestId(space))
-            .getByRole('link', { name: /^See all/ })
+        sections.map(([section]) => [
+          section,
+          within(screen.getByTestId(section))
+            .getByRole('link', { name: seeAll })
             .getAttribute('href')
         ])
-      ).toEqual(spaces)
+      ).toEqual(sections)
     }
   )
+
+  it('narrows the explore models to the provider a visitor picks', async () => {
+    const user = userEvent.setup()
+    const routerModel = (name: string, provider: string): WorkshopModel => ({
+      routerId: `${provider}/${name}`,
+      slug: name,
+      name,
+      provider,
+      href: `/hub/models/${name}/`,
+      workflowCount: 0,
+      capabilities: [],
+      useCases: ['generate-images']
+    })
+    render(ModelsCatalogue, {
+      props: {
+        models: [routerModel('alpha', 'Acme'), routerModel('beta', 'Zenith')],
+        section: 'explore'
+      }
+    })
+    const names = () =>
+      within(screen.getByTestId('explore-models'))
+        .getAllByTestId('model-card-name')
+        .map((name) => name.textContent)
+
+    await user.click(await screen.findByRole('button', { name: 'Zenith' }))
+
+    expect(names()).toEqual(['beta'])
+    expect(screen.getByRole('button', { name: 'Zenith' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
+  })
+
+  it('leads the apps page with a featured app and names what is coming', async () => {
+    render(ModelsCatalogue, {
+      props: { models: launchModels, section: 'apps' }
+    })
+
+    expect(await screen.findByTestId('app-featured')).toHaveAttribute(
+      'href',
+      '/hub/apps/cinematic-studio/'
+    )
+    expect(screen.getByTestId('app-coming-soon')).toHaveTextContent(
+      /Virtual try-on.*Hand product swap.*Background removal.*Sprite sheet generator/
+    )
+  })
+
+  it('opens the models page with the API paths and a key link', async () => {
+    render(ModelsCatalogue, {
+      props: { models: launchModels, section: 'models' }
+    })
+
+    expect(
+      within(await screen.findByTestId('build-api-band'))
+        .getAllByRole('link')
+        .map((link) => link.getAttribute('href'))
+    ).toEqual([
+      '/platform/router/',
+      '/platform/comfy-api/',
+      '/platform/',
+      'https://platform.comfy.org/profile/api-keys?onboarding=router',
+      'https://docs.comfy.org/development/comfy-router/quickstart#comfy-router-quickstart'
+    ])
+  })
+
+  it('keeps the API paths off the workflows page', async () => {
+    render(ModelsCatalogue, {
+      props: { models: launchModels, section: 'workflows' }
+    })
+
+    await screen.findByTestId('workflow-catalogue')
+    expect(screen.queryByTestId('build-api-band')).toBeNull()
+  })
 
   it('lists the catalogue apps in the apps section, each on its own page', async () => {
     render(ModelsCatalogue, {

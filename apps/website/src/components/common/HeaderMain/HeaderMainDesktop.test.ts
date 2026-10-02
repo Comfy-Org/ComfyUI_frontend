@@ -1,36 +1,51 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
-import { nextTick } from 'vue'
 
 import HeaderMainDesktop from './HeaderMainDesktop.vue'
 
-async function modelsLink(path: string) {
+async function openProducts(path: string, workshopInBuild: boolean) {
   history.replaceState(null, '', path)
-  render(HeaderMainDesktop, { props: { workshopInBuild: true } })
-  await nextTick()
-  return screen.getByRole('link', { name: /^Hub\b/i })
+  render(HeaderMainDesktop, { props: { workshopInBuild } })
+  const products = screen.getByRole('button', { name: /^products/i })
+  await userEvent.click(products)
+  return products
 }
 
 describe('HeaderMainDesktop', () => {
-  it('does not add Hub navigation without a build opt-in', () => {
-    render(HeaderMainDesktop)
-    expect(screen.queryByRole('link', { name: /^Hub\b/i })).toBeNull()
-  })
-  it('renders the Hub leaf link with its NEW badge', async () => {
-    const link = await modelsLink('/pricing')
-    expect(link.getAttribute('href')).toBe('/hub/')
-    expect(link.textContent).toMatch(/new/i)
-    expect(link.getAttribute('data-active')).toBeNull()
+  it('keeps the Hub out of Products without a build opt-in', async () => {
+    await openProducts('/pricing', false)
+    const menu = within(await screen.findByTestId('nav-dropdown'))
+
+    const links = await menu.findAllByRole('link')
+    expect(links.map((link) => link.getAttribute('href'))).not.toEqual(
+      expect.arrayContaining([expect.stringMatching(/^\/hub\//)])
+    )
   })
 
-  it('marks the leaf link active on its own page', async () => {
-    const link = await modelsLink('/hub/')
-    expect(link.getAttribute('data-active')).not.toBeNull()
+  it('opens every Hub space from Products', async () => {
+    await openProducts('/pricing', true)
+    const menu = within(await screen.findByTestId('nav-dropdown'))
+
+    expect(
+      await menu.findByRole('link', { name: /explore the hub/i })
+    ).toHaveAttribute('href', '/hub/')
+    expect(
+      ['Apps', 'Workflows', 'Models'].map((name) =>
+        menu
+          .getByRole('link', { name: new RegExp(`^${name}\\s*Hub$`) })
+          .getAttribute('href')
+      )
+    ).toEqual(['/hub/apps/', '/hub/workflows/', '/hub/models/'])
   })
 
-  it('keeps Products inactive on the Hub page it also links to', async () => {
-    await modelsLink('/hub/')
-    const products = screen.getByRole('button', { name: /products/i })
-    expect(products.getAttribute('data-active')).toBeNull()
+  it.for([
+    { path: '/hub/', active: true },
+    { path: '/hub/models/', active: true },
+    { path: '/pricing', active: false }
+  ])('marks Products active on $path: $active', async ({ path, active }) => {
+    const products = await openProducts(path, true)
+
+    expect(products.hasAttribute('data-active')).toBe(active)
   })
 })
