@@ -18,7 +18,6 @@ uniform sampler2D uHeight;
 uniform vec2 uTexel;
 uniform float uAspect;
 uniform vec2 uCenter;
-uniform float uLightMap;
 uniform float uRemove;
 uniform vec3 uAmbient;
 uniform float uReflect;
@@ -118,15 +117,13 @@ void main() {
     shine += color.rgb * energy * pow(max(dot(n, halfway), 0.0), 40.0) * uReflect;
   }
   vec3 lit = albedo * (1.0 - remove) + albedo * light * 2.0 + shine * 0.5;
-  vec3 shown = uLightMap > 0.5 ? light * 0.45 + shine * 0.5 : lit;
-  vec3 color = sqrt(shown / (1.0 + shown * 0.2));
+  vec3 color = sqrt(lit / (1.0 + lit * 0.2));
   color = (color - 0.5) * uContrast + 0.5;
   color += (grain(gl_FragCoord.xy) - 0.5) * uGrain;
   gl_FragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
 }`
 
 interface RelightDrawOptions {
-  readonly lightMap?: boolean
   /** A generated image's finish: a touch more contrast, and grain. */
   readonly finish?: { readonly contrast: number; readonly grain: number }
   readonly seed?: number
@@ -231,10 +228,9 @@ export function createRelightRenderer(
       gl.uniform2f(at('uTexel'), 1 / height.width, 1 / height.height)
       gl.uniform2f(at('uCenter'), height.center[0], height.center[1])
     },
-    draw(uniforms, { lightMap = false, finish, seed = 0 } = {}) {
+    draw(uniforms, { finish, seed = 0 } = {}) {
       gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight)
       gl.uniform1f(at('uAspect'), aspect)
-      gl.uniform1f(at('uLightMap'), lightMap ? 1 : 0)
       gl.uniform1f(at('uRemove'), uniforms.remove)
       gl.uniform3fv(at('uAmbient'), uniforms.ambient)
       gl.uniform1f(at('uReflect'), uniforms.reflections)

@@ -11,6 +11,7 @@ function renderRun(
     block?: boolean
     progress?: RunProgress
     missing?: string
+    missingHint?: string
     disabled?: boolean
   } = {}
 ) {
@@ -61,6 +62,17 @@ describe('EditorRun', () => {
       expect(screen.queryByText('8 credits')).toBeNull()
     }
   )
+
+  it('puts the full sentence in the tooltip when the label is short', () => {
+    renderRun({
+      missing: 'Add a garment',
+      missingHint: 'Upload a garment photo to try on.'
+    })
+
+    expect(
+      screen.getByRole('button', { name: 'Add a garment' })
+    ).toHaveAttribute('title', 'Upload a garment photo to try on.')
+  })
 
   it('keeps the credits on a button disabled for another reason', () => {
     renderRun({ disabled: true })

@@ -355,8 +355,8 @@ describe('RelightStudio', () => {
   )
 
   it.for([
-    { layout: 'd', wide: true, last: 'Light handles' },
-    { layout: 'd', wide: false, last: 'Light handles' },
+    { layout: 'd', wide: true, last: 'Light map' },
+    { layout: 'd', wide: false, last: 'Light map' },
     { layout: 'e', wide: true, last: 'Relight 20 credits' }
   ])(
     'keeps undo and redo at the right end of the tools in layout $layout (wide: $wide)',
@@ -444,19 +444,94 @@ describe('RelightStudio', () => {
     expect(screen.getByRole('button', { name: /^Warm key\./ })).toBeVisible()
   })
 
-  it('shows the light map from the Scene section', async () => {
+  it('shows the light map over the photo, hidden from the tools, its own button or the Scene section', async () => {
     const user = await openExample()
+    const map = () => screen.queryByRole('group', { name: 'Light map' })
+    const tool = within(
+      screen.getByRole('toolbar', { name: 'Relight tools' })
+    ).getByRole('button', { name: 'Light map' })
+    expect(map()).toBeVisible()
+    expect(tool).toHaveAttribute('aria-pressed', 'true')
+    expect(
+      within(map()!)
+        .getAllByRole('slider')
+        .map((dot) => dot.getAttribute('aria-label'))
+    ).toEqual([
+      'Cool fill, top view',
+      'Warm key, top view',
+      'Cool fill, side view',
+      'Warm key, side view'
+    ])
+
+    await user.click(tool)
+    expect(map()).toBeNull()
     await user.click(within(panel()).getByRole('button', { name: /^Scene/ }))
     const toggle = within(section('Scene')).getByRole('switch', {
       name: 'Show light map'
     })
+    expect(toggle).toHaveAttribute('aria-checked', 'false')
 
     await user.click(toggle)
+    expect(map()).toBeVisible()
+    await user.click(
+      within(map()!).getByRole('button', { name: 'Hide light map' })
+    )
+    expect(map()).toBeNull()
+    expect(toggle).toHaveAttribute('aria-checked', 'false')
 
-    expect(toggle).toHaveAttribute('aria-checked', 'true')
-    expect(
-      within(screen.getByTestId('relight-stage')).getByTestId('relight-preview')
-    ).toBeVisible()
+    await user.click(tool)
+    await user.click(screen.getByRole('button', { name: 'Compare' }))
+    expect(map()).toBeNull()
+    expect(tool).toBeDisabled()
+  })
+
+  it('turns and raises a light from the light map, selecting it', async () => {
+    const user = await openExample()
+    const map = screen.getByRole('group', { name: 'Light map' })
+    const top = within(map).getByRole('slider', { name: 'Warm key, top view' })
+    const side = within(map).getByRole('slider', {
+      name: 'Warm key, side view'
+    })
+    const around = Number(top.getAttribute('aria-valuenow'))
+    const height = Number(side.getAttribute('aria-valuenow'))
+
+    top.focus()
+    await user.keyboard('{ArrowRight}')
+    expect(Number(top.getAttribute('aria-valuenow'))).toBeCloseTo(
+      around + 5,
+      -0.5
+    )
+    side.focus()
+    await user.keyboard('{ArrowUp}')
+    expect(Number(side.getAttribute('aria-valuenow'))).toBeCloseTo(
+      height + 5,
+      -0.5
+    )
+    expect(side).toHaveAttribute(
+      'aria-valuetext',
+      `${side.getAttribute('aria-valuenow')}° up`
+    )
+    expect(undo()).toBeEnabled()
+
+    await user.click(
+      within(map).getByRole('slider', { name: 'Cool fill, top view' })
+    )
+    expect(expandedRows()).toEqual([expect.stringMatching(/^Cool fill/)])
+  })
+
+  it('folds the light map to a chip on phones', async () => {
+    screenIsWide(false)
+    const user = await openExample()
+    const map = screen.getByRole('group', { name: 'Light map' })
+    expect(within(map).queryAllByRole('slider')).toHaveLength(0)
+
+    await user.click(within(map).getByRole('button', { name: 'Light map' }))
+    expect(within(map).getAllByRole('slider')).toHaveLength(4)
+
+    await user.click(
+      within(map).getByRole('button', { name: 'Collapse light map' })
+    )
+    expect(within(map).queryAllByRole('slider')).toHaveLength(0)
   })
 
   it('hides the light handles', async () => {
