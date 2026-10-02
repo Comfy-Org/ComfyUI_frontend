@@ -26,6 +26,7 @@ import { chunkWireOps, mintWireOps, WIRE_MAX_OPS_PER_BATCH } from './opEnvelope'
 const SEND_RETRY_LIMIT = 5
 const SEND_RETRY_INTERVAL_MS = 500
 const RESULT_TIMEOUT_MS = 10_000
+const LINEAGE_WAIT_TIMEOUT_MS = 30_000
 const FAILURE_REPORT_WINDOW_MS = 60_000
 
 /**
@@ -209,9 +210,14 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     if (batch === null || result.failed?.code !== 'pre_mint') return false
     const opId = result.failed.op_id
     if (opId === undefined || !batch.opIds.has(opId)) return false
+    if (batch.waitingForLineage) return true
     if (batch.timer) clearTimeout(batch.timer)
-    batch.timer = null
     batch.waitingForLineage = true
+    batch.timer = setTimeout(() => {
+      if (inFlight !== batch || !batch.waitingForLineage) return
+      retire(batch, 0)
+      settle({ state: 'unconfirmed', ops: batch.ops })
+    }, LINEAGE_WAIT_TIMEOUT_MS)
     return true
   }
 
@@ -758,6 +764,8 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     },
     resumeAfterLineage() {
       if (!inFlight?.waitingForLineage) return
+      if (inFlight.timer) clearTimeout(inFlight.timer)
+      inFlight.timer = null
       inFlight.waitingForLineage = false
       transmit(inFlight, 0)
     },

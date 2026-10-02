@@ -234,6 +234,58 @@ describe('createOpSender', () => {
     expect(sent[2].ops[0].base_version).toBe(43)
   })
 
+  it('settles a pre-mint batch after a bounded lineage wait without extending the deadline for duplicates', () => {
+    sender.enqueue([addNode(1)])
+    sender.enqueue([addNode(2)])
+    const preMintResult: OpsResultView = {
+      ok: false,
+      applied: [],
+      skipped: [],
+      failed: {
+        index: 0,
+        op_id: sent[0].ops[0].op_id,
+        code: 'pre_mint',
+        message: 'workflow document is not ready; retry after doc_reset'
+      }
+    }
+
+    resultListener?.(preMintResult)
+    vi.advanceTimersByTime(20_000)
+    resultListener?.(preMintResult)
+    vi.advanceTimersByTime(10_000)
+
+    expect(settled.map(summarizeSettlement)).toEqual([
+      { state: 'unconfirmed', nodeIds: [1] }
+    ])
+    expect(sent.map(({ ops }) => nodeIdsOf(ops))).toEqual([[1], [2]])
+  })
+
+  it('cancels the lineage-wait timeout before retransmitting', () => {
+    sender.enqueue([addNode(1)])
+    const preMintResult: OpsResultView = {
+      ok: false,
+      applied: [],
+      skipped: [],
+      failed: {
+        index: 0,
+        op_id: sent[0].ops[0].op_id,
+        code: 'pre_mint',
+        message: 'workflow document is not ready; retry after doc_reset'
+      }
+    }
+
+    resultListener?.(preMintResult)
+    sender.resumeAfterLineage()
+
+    expect(vi.getTimerCount()).toBe(1)
+
+    ackInFlight()
+    vi.advanceTimersByTime(30_000)
+
+    expect(sent).toHaveLength(2)
+    expect(settled.map((outcome) => outcome.state)).toEqual(['acknowledged'])
+  })
+
   it('serializes batches: the next sends only after the result settles the first', () => {
     sender.enqueue([addNode(1)])
     sender.enqueue([addNode(2)])
