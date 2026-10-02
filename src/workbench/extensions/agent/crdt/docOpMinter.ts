@@ -145,20 +145,6 @@ function nodeKey(graphId: string, nodeId: NodeId): string {
   return `${graphId}:${String(nodeId)}`
 }
 
-/**
- * The live node a widget intent names, or null when this canvas holds none.
- *
- * Node ids are unique across a root graph and its subgraphs, so a root-keyed
- * intent for an interior node resolves through the hierarchy.
- */
-function widgetOwnerOf(
-  graph: LGraph,
-  event: IntentOf<'set_widget'>
-): LGraphNode | null {
-  const eventGraph = reachableIntentGraph(graph, event.graphId)
-  return eventGraph ? findNodeInHierarchy(eventGraph, event.nodeId) : null
-}
-
 /** The graph an intent names, when this canvas still renders it. */
 function reachableIntentGraph(
   graph: LGraph,
@@ -203,7 +189,7 @@ function routedWidgetOperation(
     value: event.value,
     old: event.previous
   } as const
-  const owningGraphId = node?.graph?.id ?? owningGraphIdOf(graph, event)
+  const owningGraphId = node?.graph?.id ?? event.graphId
   if (owningGraphId === rootGraphId) return operation
   const subgraphNodePath = findSubgraphNodePathById(graph, owningGraphId)
   if (subgraphNodePath === null || subgraphNodePath.length === 0) {
@@ -253,17 +239,6 @@ function withoutCancelledAdd(
         return true
     }
   })
-}
-
-/**
- * The graph that owns the written widget's node. The widget store keys every
- * widget by ROOT graph id (`BaseWidget.setNodeId`), so a live interior write
- * arrives naming the root; node ids are unique across a root graph and its
- * subgraphs, so the node itself names its owner.
- */
-function owningGraphIdOf(graph: LGraph, event: IntentOf<'set_widget'>): string {
-  if (event.graphId !== graph.id) return event.graphId
-  return findNodeInHierarchy(graph, event.nodeId)?.graph?.id ?? graph.id
 }
 
 /**
@@ -377,7 +352,10 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     if (pendingAdds.has(nodeKey(event.graphId, event.nodeId))) return
     const graph = deps.getGraph()
     if (!graph) return
-    const owner = widgetOwnerOf(graph, event)
+    const eventGraph = reachableIntentGraph(graph, event.graphId)
+    const owner = eventGraph
+      ? findNodeInHierarchy(eventGraph, event.nodeId)
+      : null
     if (!isValueWidgetWrite(owner, event)) return
     const rootGraphId = deps.boundRootGraphId() ?? graph.id
     const operation = routedWidgetOperation(graph, rootGraphId, event, owner)
