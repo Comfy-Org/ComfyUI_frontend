@@ -183,7 +183,7 @@ test('a held discount and an entered code read as rows, with no Subtotal the quo
 
 const YEARLY_CHECKOUT = entryPath('checkout', { plan: 'creator_yearly' })
 
-test('a monthly to yearly switch reads its renewal date and struck-through list price from the quote', async ({
+test('a monthly to yearly switch reads its renewal date and struck-through monthly list price from the quote', async ({
   page,
   cloud,
   signIn
@@ -195,12 +195,12 @@ test('a monthly to yearly switch reads its renewal date and struck-through list 
     'Switch to Creator Yearly · Personal',
     '$268.80 USD',
     'Creator Yearly$268.80',
-    '$268.80 $336 /yr, billed yearly',
+    '$22.40 $28 /mo × 12 months, billed yearly',
     'Renews at $268.80 on September 30, 2027',
     "This month's credits stay valid until October 30, 2026"
   ])
   const summary = page.getByRole('region', { name: 'Order summary' })
-  await expect(summary.locator('s')).toHaveText('$336')
+  await expect(summary.locator('s')).toHaveText('$28')
   await expect(summary).not.toContainText('Subtotal')
 })
 

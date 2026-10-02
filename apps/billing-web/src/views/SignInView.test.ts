@@ -8,6 +8,7 @@ import type { SignInState } from '@/auth/signInState'
 import { recordBillingEntry } from '@/entry/billingEntry'
 import { createBillingI18n } from '@/i18n'
 import { createBillingRouter } from '@/router'
+import { trackedBillingEvents } from '@/test/trackedBillingEvents'
 import SignInView from '@/views/SignInView.vue'
 
 const h = vi.hoisted(() => ({
@@ -267,6 +268,33 @@ describe('SignInView', () => {
       ).not.toBeInTheDocument()
     }
   )
+
+  it('reports a click on the way back to the app', async () => {
+    h.initialState = {
+      step: 'signedIn',
+      origin: 'interactive',
+      mintFailed: true
+    }
+    h.sessionFailureCode = 'ACCESS_DENIED'
+    const sent = trackedBillingEvents()
+    document.addEventListener('click', (event) => event.preventDefault(), {
+      once: true
+    })
+    await renderSignIn(REFUSED_ENTRY)
+
+    await userEvent.click(
+      screen.getByRole('link', { name: 'Return to ComfyUI' })
+    )
+
+    expect(sent()).toStrictEqual([
+      {
+        operation: 'web_return',
+        stage: 'clicked',
+        outcome: 'pending',
+        control: 'host_link'
+      }
+    ])
+  })
 
   it.for([
     { code: 'NOT_AUTHENTICATED', path: REFUSED_ENTRY },
