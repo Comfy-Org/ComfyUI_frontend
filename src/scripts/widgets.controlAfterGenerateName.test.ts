@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { InputSpec } from '@/schemas/nodeDefSchema'
+import type { InputSpec, IntInputSpec } from '@/schemas/nodeDefSchema'
 import { CONTROL_OPTIONS } from '@/types/simplifiedWidget'
 import {
   addValueControlWidget,
@@ -28,8 +28,10 @@ function comboNode() {
   return { node, target }
 }
 
+const intSpec = (options: IntInputSpec[1]): InputSpec => ['INT', options]
+
 /** Loose on purpose: `InputSpec` cannot express a group-node name override. */
-const intSpec = (options: Record<string, unknown>) =>
+const looseIntSpec = (options: Record<string, unknown>) =>
   ['INT', options] as InputSpec
 
 describe('value control widget naming', () => {
@@ -85,7 +87,9 @@ describe('value control widget naming', () => {
       'randomize',
       undefined,
       undefined,
-      intSpec({ control_after_generate: 'Sampler control_after_generate' })
+      looseIntSpec({
+        control_after_generate: 'Sampler control_after_generate'
+      })
     )
 
     expect(control.name).toBe('Sampler control_after_generate')
@@ -97,7 +101,7 @@ describe('value control widget naming', () => {
     // leave `nextValueForLinkedTarget` with no matching case and the target
     // would never advance.
     const { node, target } = intNode()
-    const spec = intSpec({
+    const spec = looseIntSpec({
       control_after_generate: 'Sampler control_after_generate'
     })
 
@@ -123,7 +127,10 @@ describe('value control widget naming', () => {
       'fixed',
       undefined,
       undefined,
-      intSpec({ control_after_generate: '  ', control_prefix: 'Sampler' })
+      looseIntSpec({
+        control_after_generate: '  ',
+        control_prefix: 'Sampler'
+      })
     )
 
     expect(control.name).toBe('Sampler control_after_generate')
@@ -202,7 +209,7 @@ describe('value control widget naming', () => {
         target,
         mode,
         undefined,
-        intSpec({ control_after_generate: mode })
+        looseIntSpec({ control_after_generate: mode })
       )
 
       expect(control.name).toBe('control_after_generate')
