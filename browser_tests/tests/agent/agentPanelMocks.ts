@@ -349,15 +349,46 @@ async function mockAgentBoot(
     r.fulfill(jsonRoute({ assets: [] }))
   )
 
+  const storedSettings: Record<string, unknown> = {
+    'Comfy.TutorialCompleted': true,
+    'Comfy.RightSidePanel.ShowErrorsTab': false,
+    ...(vueNodes && { 'Comfy.VueNodes.Enabled': true }),
+    ...initialSettings
+  }
   await mockCloudBootRoutes(page, {
     features: { ...agentFeatures(agentFlagEnabled), ...initialFeatureFlags },
-    settings: {
-      'Comfy.TutorialCompleted': true,
-      'Comfy.RightSidePanel.ShowErrorsTab': false,
-      ...(vueNodes && { 'Comfy.VueNodes.Enabled': true }),
-      ...initialSettings
-    },
+    settings: storedSettings,
     objectInfo
+  })
+  // `/api/settings` is where cloud keeps per-account UI state: ingest stores the
+  // map on the user row, so a write from one browser profile is what the next one
+  // reads. The boot mock serves a frozen snapshot and has no handler for a
+  // single-setting write at all, which leaves a POST falling through to whatever
+  // backend the dev server is pointed at - so nothing a spec persists this way
+  // can be observed, and a reload reads the snapshot back. Both routes are
+  // registered after the boot mock so this handler wins.
+  const settingsResponse = (body: unknown) => ({
+    ...jsonRoute(body),
+    status: 200
+  })
+  await page.route('**/api/settings', (route) => {
+    const request = route.request()
+    if (request.method() === 'POST')
+      Object.assign(storedSettings, request.postDataJSON())
+    return route.fulfill(settingsResponse(storedSettings))
+  })
+  await page.route('**/api/settings/*', (route) => {
+    const request = route.request()
+    const id = decodeURIComponent(
+      new URL(request.url()).pathname.split('/settings/')[1] ?? ''
+    )
+    if (request.method() === 'POST') storedSettings[id] = request.postDataJSON()
+    else if (!(id in storedSettings))
+      return route.fulfill({
+        ...jsonRoute({ code: 'NOT_FOUND', message: 'Setting is not set' }),
+        status: 404
+      })
+    return route.fulfill(settingsResponse(storedSettings[id]))
   })
   let savedWorkflow: UserDataFullInfo | undefined
   let savedContent: string | undefined
