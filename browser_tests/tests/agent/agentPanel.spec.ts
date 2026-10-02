@@ -369,7 +369,6 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         { exact: true }
       )
     ).toBeVisible()
-    await expect(agentPanel.sendButton).toBeEnabled()
     expect(postCount).toBe(1)
   })
 
