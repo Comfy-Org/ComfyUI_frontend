@@ -1,32 +1,14 @@
-interface StubPathMethods {
-  moveTo: Path2D['moveTo']
-  lineTo: Path2D['lineTo']
-  bezierCurveTo: Path2D['bezierCurveTo']
-  quadraticCurveTo: Path2D['quadraticCurveTo']
-  arc: Path2D['arc']
+import { vi } from 'vitest'
+
+/** Spy-backed stand-in for Path2D, which happy-dom does not implement. */
+export class StubPath2D {
+  readonly moveTo = vi.fn<Path2D['moveTo']>()
+  readonly lineTo = vi.fn<Path2D['lineTo']>()
+  readonly bezierCurveTo = vi.fn<Path2D['bezierCurveTo']>()
+  readonly quadraticCurveTo = vi.fn<Path2D['quadraticCurveTo']>()
 }
 
-/** Recording stand-in for Path2D, which happy-dom does not implement. */
-export class StubPath2D implements StubPathMethods {
-  calls: Array<{ method: string; args: unknown[] }> = []
-
-  moveTo(...args: unknown[]): void {
-    this.calls.push({ method: 'moveTo', args })
-  }
-
-  lineTo(...args: unknown[]): void {
-    this.calls.push({ method: 'lineTo', args })
-  }
-
-  bezierCurveTo(...args: unknown[]): void {
-    this.calls.push({ method: 'bezierCurveTo', args })
-  }
-
-  quadraticCurveTo(...args: unknown[]): void {
-    this.calls.push({ method: 'quadraticCurveTo', args })
-  }
-
-  arc(...args: unknown[]): void {
-    this.calls.push({ method: 'arc', args })
-  }
+export function asStubPath(path: Path2D): StubPath2D {
+  if (path instanceof StubPath2D) return path
+  throw new TypeError('Expected the global Path2D test stub')
 }
