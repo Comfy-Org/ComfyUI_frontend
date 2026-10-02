@@ -1007,15 +1007,26 @@ function useSubscriptionInternal() {
     }
   })
 
+  // Web-session billing reads need the workspace the gate selects after sign-in.
+  const awaitingSessionWorkspace = computed(
+    () => !!authStore.sessionUser && !workspaceStore.activeWorkspaceId
+  )
+
   watch(
     () =>
-      [authStore.isInitialized, isLoggedIn.value, authStore.userId] as const,
-    async ([authInitialized, loggedIn]) => {
+      [
+        authStore.isInitialized,
+        isLoggedIn.value,
+        authStore.userId,
+        awaitingSessionWorkspace.value
+      ] as const,
+    async ([authInitialized, loggedIn, , awaitingWorkspace]) => {
       if (!authInitialized) {
         return
       }
 
       if (loggedIn && isCloud) {
+        if (awaitingWorkspace) return
         try {
           if (hasOwnedPendingCheckoutAttempt()) {
             await recoverPendingSubscriptionCheckout('bootstrap')
