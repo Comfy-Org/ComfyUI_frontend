@@ -233,17 +233,17 @@ const Content = shallowRef(createContent())
   <template v-if="!slug">
     <div
       v-if="heading && catalogueView !== 'denied'"
-      data-testid="workshop-heading"
-      :class="
-        inSection
-          ? 'sr-only'
-          : 'mx-auto max-w-10xl animate-soft-in px-6 pt-8 pb-4 max-sm:pt-5 lg:px-8 lg:pt-12 sm:short:pb-3'
-      "
+      class="mx-auto max-w-10xl px-6 pt-8 max-sm:pt-5 lg:px-8 lg:pt-12"
     >
-      <p :class="workshopEyebrowClass">
-        {{ t('workshop.catalogue.eyebrow', 'en') }}
-      </p>
-      <h1 :class="workshopHeadingClass">{{ heading }}</h1>
+      <div
+        data-testid="workshop-heading"
+        :class="inSection ? 'sr-only' : 'animate-soft-in pb-4 sm:short:pb-3'"
+      >
+        <p :class="workshopEyebrowClass">
+          {{ t('workshop.catalogue.eyebrow', 'en') }}
+        </p>
+        <h1 :class="workshopHeadingClass">{{ heading }}</h1>
+      </div>
     </div>
     <component :is="Content" v-if="catalogueView === 'granted'" />
     <WorkshopLoading
