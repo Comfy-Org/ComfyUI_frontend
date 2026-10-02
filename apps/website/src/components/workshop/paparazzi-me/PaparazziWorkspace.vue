@@ -6,9 +6,9 @@ import type { PaparazziMe } from '../../../composables/usePaparazziMe'
 import type { Locale } from '../../../i18n/translations'
 import { elapsedLabel } from '../../../lib/workshop/elapsed'
 import { pc } from '../../../lib/workshop/paparazzi-me/copy'
+import { PAPARAZZI_RUN_MS } from '../../../lib/workshop/paparazzi-me/mock-run'
 import EditorBusy from '../app-editor/EditorBusy.vue'
 import EditorHint from '../app-editor/EditorHint.vue'
-import PaparazziFaceCard from './PaparazziFaceCard.vue'
 import PaparazziStage from './PaparazziStage.vue'
 import { sceneName } from './sections'
 
@@ -17,34 +17,42 @@ const { paparazzi, locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
 
-const { setup, phase, touched } = paparazzi
-const now = useNow({ interval: 1000 })
-const detail = computed(() =>
-  phase.value.kind === 'running'
-    ? pc('paparazzi.busy.detail', locale, {
-        time: elapsedLabel(now.value.getTime() - phase.value.startedAt),
-        name: setup.value.celebrity.trim(),
-        scene: sceneName(setup.value, locale)
-      })
-    : ''
-)
+const { setup, phase, search, touched } = paparazzi
+const now = useNow({ interval: 250 })
+
+/** Where the run is: the look-up, the queue, then a share of the render. */
+const busy = computed(() => {
+  const current = phase.value
+  if (current.kind !== 'running') return undefined
+  const elapsed = Math.max(0, now.value.getTime() - current.startedAt)
+  const percent = Math.min(99, Math.round((elapsed / PAPARAZZI_RUN_MS) * 100))
+  const title =
+    search.value.kind === 'searching'
+      ? pc('paparazzi.busy.searching', locale)
+      : percent < 10
+        ? pc('paparazzi.busy.queued', locale)
+        : pc('paparazzi.busy.running', locale, { n: percent })
+  return {
+    title,
+    detail: pc('paparazzi.busy.detail', locale, {
+      time: elapsedLabel(elapsed),
+      name: setup.value.celebrity.trim(),
+      scene: sceneName(paparazzi, locale)
+    })
+  }
+})
 </script>
 
 <template>
-  <PaparazziStage :paparazzi :running="phase.kind === 'running'" :locale>
-    <PaparazziFaceCard
-      :paparazzi
-      :disabled="phase.kind === 'running'"
-      :locale
-    />
+  <PaparazziStage :paparazzi :locale>
     <EditorHint
       v-if="!touched && phase.kind === 'editing'"
       :text="pc('paparazzi.hint', locale)"
     />
     <EditorBusy
-      v-if="phase.kind === 'running'"
-      :title="pc('paparazzi.busy.title', locale)"
-      :detail
+      v-if="busy"
+      :title="busy.title"
+      :detail="busy.detail"
       :cancel-label="pc('paparazzi.cancel', locale)"
       @cancel="paparazzi.cancel"
     />

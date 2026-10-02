@@ -2,23 +2,26 @@ import { tryOnScopeDispose } from '@vueuse/core'
 import { computed, ref, shallowRef } from 'vue'
 
 import { imageSize } from '../lib/workshop/image-size'
-import type { PaparazziResult } from '../lib/workshop/paparazzi-me/contract'
+import type {
+  PaparazziResult,
+  PaparazziSearch,
+  SceneCandidate
+} from '../lib/workshop/paparazzi-me/contract'
 import { paparazziRequest } from '../lib/workshop/paparazzi-me/contract'
 import {
   PAPARAZZI_EXAMPLE,
   runPaparazzi
 } from '../lib/workshop/paparazzi-me/mock-run'
-import type {
-  PaparazziSetup,
-  SceneId
-} from '../lib/workshop/paparazzi-me/setup'
+import { lookUp, searchScenes } from '../lib/workshop/paparazzi-me/mock-search'
+import type { PaparazziSetup } from '../lib/workshop/paparazzi-me/setup'
 import {
   DEFAULT_SETUP,
   hasCelebrity,
   nextSeed
 } from '../lib/workshop/paparazzi-me/setup'
+import { useCinematicPopover } from './useCinematicPopover'
 
-export interface PaparazziFace {
+export interface PaparazziImage {
   readonly url: string
   readonly name: string
   readonly width: number
@@ -31,31 +34,73 @@ type PaparazziPhase =
   | { readonly kind: 'done'; readonly result: PaparazziResult }
   | { readonly kind: 'failed' }
 
-export type PaparazziTray = 'star' | 'scene' | 'resolution' | 'advanced'
+type SceneSearch =
+  | { readonly kind: 'idle' }
+  | { readonly kind: 'searching'; readonly query: string }
+  | ({ readonly kind: 'found'; readonly query: string } & PaparazziSearch)
+  | { readonly kind: 'failed'; readonly query: string }
+
+export type PaparazziTray = 'face' | 'star' | 'scene' | 'seed'
+
+function queryOf(celebrity: string): string {
+  return celebrity.trim().toLowerCase()
+}
 
 /**
  * Paparazzi me's page state, opened on the worked example so it demos at
- * once. The run itself is `runPaparazzi`, mocked for now.
+ * once: the example face, the example star looked up, her red-carpet photo
+ * picked. The look-up and the run are mocked for now.
  */
 export function usePaparazziMe() {
-  const face = shallowRef<PaparazziFace | undefined>(PAPARAZZI_EXAMPLE)
+  const found = new Map<string, PaparazziSearch>([
+    [queryOf(DEFAULT_SETUP.celebrity), lookUp(DEFAULT_SETUP.celebrity)]
+  ])
+  const face = shallowRef<PaparazziImage>(PAPARAZZI_EXAMPLE)
+  const ownScene = shallowRef<PaparazziImage>()
   const setup = shallowRef<PaparazziSetup>(DEFAULT_SETUP)
   const past = shallowRef<PaparazziSetup[]>([])
   const future = shallowRef<PaparazziSetup[]>([])
   const phase = shallowRef<PaparazziPhase>({ kind: 'editing' })
+  const search = shallowRef<SceneSearch>({
+    kind: 'found',
+    query: queryOf(DEFAULT_SETUP.celebrity),
+    ...lookUp(DEFAULT_SETUP.celebrity)
+  })
   const tray = ref<PaparazziTray>()
+  const picker = useCinematicPopover<'scene'>()
   const compare = ref(false)
   const touched = ref(false)
+  const ownUrls = new Set<string>()
   let lastEdit: string | undefined
-  let ownUrl: string | undefined
   let picks = 0
   let run: AbortController | undefined
+  let looking: AbortController | undefined
+  let pending = Promise.resolve()
 
-  const canRun = computed(
+  const candidates = computed<readonly SceneCandidate[]>(() =>
+    search.value.kind === 'found' ? search.value.candidates : []
+  )
+  const candidate = computed(
     () =>
-      phase.value.kind !== 'running' &&
-      Boolean(face.value) &&
-      hasCelebrity(setup.value)
+      candidates.value.find(({ token }) => token === setup.value.sceneToken) ??
+      candidates.value.at(0)
+  )
+  const usingOwnScene = computed(
+    () => setup.value.ownScene && Boolean(ownScene.value)
+  )
+  /** The scene photo the stage shows and the run puts the visitor in. */
+  const scene = computed(() => {
+    if (usingOwnScene.value && ownScene.value)
+      return { kind: 'own', image: ownScene.value } as const
+    return candidate.value
+      ? ({ kind: 'found', candidate: candidate.value } as const)
+      : undefined
+  })
+  const missingStar = computed(
+    () => !usingOwnScene.value && !hasCelebrity(setup.value.celebrity)
+  )
+  const canRun = computed(
+    () => phase.value.kind !== 'running' && !missingStar.value
   )
 
   function leaveResult(next: PaparazziPhase) {
@@ -65,40 +110,25 @@ export function usePaparazziMe() {
     phase.value = next
   }
 
-  function releaseOwnUrl() {
-    if (ownUrl) URL.revokeObjectURL(ownUrl)
-    ownUrl = undefined
-  }
-
-  function showFace(next: PaparazziFace | undefined) {
+  function stopRun() {
     run?.abort()
+    run = undefined
     leaveResult({ kind: 'editing' })
-    face.value = next
-    touched.value = true
   }
 
-  function useExample() {
-    picks += 1
-    showFace(PAPARAZZI_EXAMPLE)
-    releaseOwnUrl()
+  /** Shows the look-up already made for the setup's star, if any. */
+  function syncSearch() {
+    const query = queryOf(setup.value.celebrity)
+    const current = search.value
+    if (current.kind !== 'idle' && current.query === query) return
+    looking?.abort()
+    const known = found.get(query)
+    search.value = known ? { kind: 'found', query, ...known } : { kind: 'idle' }
   }
 
-  async function useFile(file: File) {
-    picks += 1
-    const pick = picks
-    const url = URL.createObjectURL(file)
-    const size = await imageSize(url)
-    if (pick === picks && size) {
-      showFace({ url, name: file.name, ...size })
-      releaseOwnUrl()
-      ownUrl = url
-    } else URL.revokeObjectURL(url)
-  }
-
-  function removeFace() {
-    picks += 1
-    showFace(undefined)
-    releaseOwnUrl()
+  function apply(next: PaparazziSetup) {
+    setup.value = next
+    syncSearch()
   }
 
   /** Changes the setup; edits that share a `key` in a row undo as one. */
@@ -109,15 +139,80 @@ export function usePaparazziMe() {
       future.value = []
     }
     lastEdit = key
-    setup.value = { ...setup.value, ...patch }
+    apply({ ...setup.value, ...patch })
   }
 
-  function pickScene(scene: SceneId) {
-    change({ scene, sceneOverride: '' })
+  async function lookUpStar(celebrity: string, query: string) {
+    const controller = new AbortController()
+    looking = controller
+    search.value = { kind: 'searching', query }
+    try {
+      const answer = await searchScenes(celebrity, controller.signal)
+      found.set(query, answer)
+      if (looking === controller)
+        search.value = { kind: 'found', query, ...answer }
+    } catch {
+      if (looking === controller && !controller.signal.aborted)
+        search.value = { kind: 'failed', query }
+    }
   }
 
-  function shuffle() {
-    change({ seed: nextSeed(setup.value.seed) })
+  /** Looks the setup's star up, unless that look-up is done or under way. */
+  function findScenes(): Promise<void> {
+    const celebrity = setup.value.celebrity
+    const query = queryOf(celebrity)
+    const current = search.value
+    const settled =
+      (current.kind === 'searching' || current.kind === 'found') &&
+      current.query === query
+    if (!hasCelebrity(celebrity)) return Promise.resolve()
+    if (settled) return pending
+    looking?.abort()
+    pending = lookUpStar(celebrity, query)
+    return pending
+  }
+
+  function pickScene(token: string) {
+    change({ sceneToken: token, ownScene: false })
+  }
+
+  function pickOwnScene() {
+    if (ownScene.value) change({ ownScene: true })
+  }
+
+  function release(image: PaparazziImage | undefined) {
+    if (image && ownUrls.delete(image.url)) URL.revokeObjectURL(image.url)
+  }
+
+  async function readImage(file: File): Promise<PaparazziImage | undefined> {
+    picks += 1
+    const pick = picks
+    const url = URL.createObjectURL(file)
+    const size = await imageSize(url)
+    if (pick === picks && size) {
+      ownUrls.add(url)
+      return { url, name: file.name, ...size }
+    }
+    URL.revokeObjectURL(url)
+    return undefined
+  }
+
+  async function useFaceFile(file: File) {
+    const image = await readImage(file)
+    if (!image) return
+    stopRun()
+    release(face.value)
+    face.value = image
+    touched.value = true
+  }
+
+  async function useSceneFile(file: File) {
+    const image = await readImage(file)
+    if (!image) return
+    stopRun()
+    release(ownScene.value)
+    ownScene.value = image
+    change({ ownScene: true })
   }
 
   function undo() {
@@ -125,7 +220,7 @@ export function usePaparazziMe() {
     if (!previous) return
     future.value = [setup.value, ...future.value]
     past.value = past.value.slice(0, -1)
-    setup.value = previous
+    apply(previous)
     lastEdit = undefined
   }
 
@@ -134,20 +229,30 @@ export function usePaparazziMe() {
     if (!next) return
     past.value = [...past.value, setup.value]
     future.value = future.value.slice(1)
-    setup.value = next
+    apply(next)
     lastEdit = undefined
   }
 
+  /** The scene for the request, looking the star up first when needed. */
+  async function sceneForRun() {
+    if (usingOwnScene.value && ownScene.value)
+      return { upload: ownScene.value.url }
+    await findScenes()
+    return candidate.value && { token: candidate.value.token }
+  }
+
   async function snap() {
-    const current = face.value
-    if (!current || !canRun.value) return
+    if (!canRun.value) return
     tray.value = undefined
+    picker.close()
     const controller = new AbortController()
     run = controller
     leaveResult({ kind: 'running', startedAt: Date.now() })
     try {
+      const target = await sceneForRun()
+      if (run !== controller) return
       const result = await runPaparazzi(
-        paparazziRequest(current.url, setup.value),
+        paparazziRequest(face.value.url, setup.value, target),
         controller.signal
       )
       if (run === controller) {
@@ -162,14 +267,12 @@ export function usePaparazziMe() {
 
   /** Another take: the next seed, run straight away. */
   function retry() {
-    shuffle()
+    change({ seed: nextSeed(setup.value.seed) })
     void snap()
   }
 
   function cancel() {
-    run?.abort()
-    run = undefined
-    phase.value = { kind: 'editing' }
+    stopRun()
   }
 
   function edit() {
@@ -180,36 +283,50 @@ export function usePaparazziMe() {
     tray.value = tray.value === next ? undefined : next
   }
 
+  function openPicker() {
+    void findScenes()
+    picker.toggle('scene')
+  }
+
   tryOnScopeDispose(() => {
     run?.abort()
+    looking?.abort()
     picks += 1
     leaveResult({ kind: 'editing' })
-    releaseOwnUrl()
+    ownUrls.forEach((url) => URL.revokeObjectURL(url))
   })
 
   return {
     face,
+    ownScene,
     setup,
     phase,
+    search,
+    candidates,
+    scene,
     tray,
+    pickerOpen: computed(() => picker.open.value === 'scene'),
     compare,
     touched,
     canRun,
+    missingStar,
     canUndo: computed(() => past.value.length > 0),
     canRedo: computed(() => future.value.length > 0),
-    useExample,
-    useFile,
-    removeFace,
     change,
+    findScenes,
     pickScene,
-    shuffle,
+    pickOwnScene,
+    useFaceFile,
+    useSceneFile,
     undo,
     redo,
     snap,
     retry,
     cancel,
     edit,
-    toggleTray
+    toggleTray,
+    openPicker,
+    closePicker: picker.close
   }
 }
 

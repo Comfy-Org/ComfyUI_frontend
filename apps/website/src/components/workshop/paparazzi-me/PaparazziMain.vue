@@ -4,26 +4,33 @@ import { computed } from 'vue'
 import type { PaparazziMe } from '../../../composables/usePaparazziMe'
 import type { Locale } from '../../../i18n/translations'
 import { pc } from '../../../lib/workshop/paparazzi-me/copy'
-import { PAPARAZZI_EXAMPLE } from '../../../lib/workshop/paparazzi-me/mock-run'
 import { outputSize } from '../../../lib/workshop/paparazzi-me/setup'
 import EditorResult from '../app-editor/EditorResult.vue'
 import PaparazziWorkspace from './PaparazziWorkspace.vue'
+import { sceneName } from './sections'
 
 const { paparazzi, locale = 'en' } = defineProps<{
   paparazzi: PaparazziMe
   locale?: Locale
 }>()
 
-const { face, setup, phase, compare } = paparazzi
+const { setup, phase, scene, compare } = paparazzi
 const size = computed(() => outputSize(setup.value.resolution))
+const before = computed(() => {
+  const current = scene.value
+  if (!current) return undefined
+  return current.kind === 'own'
+    ? current.image.url
+    : current.candidate.place.url
+})
 const labels = computed(() => ({
   resultAlt: pc('paparazzi.alt.result', locale, {
     name: setup.value.celebrity.trim()
   }),
-  originalAlt:
-    face.value?.url === PAPARAZZI_EXAMPLE.url
-      ? pc('paparazzi.face.alt.example', locale)
-      : (face.value?.name ?? ''),
+  originalAlt: pc('paparazzi.alt.scene', locale, {
+    name: setup.value.celebrity.trim(),
+    scene: sceneName(paparazzi, locale)
+  }),
   original: pc('paparazzi.view.original', locale),
   result: pc('paparazzi.view.result', locale),
   slider: pc('paparazzi.compare', locale)
@@ -32,10 +39,10 @@ const labels = computed(() => ({
 
 <template>
   <EditorResult
-    v-if="face && phase.kind === 'done'"
-    :before="face.url"
+    v-if="phase.kind === 'done'"
+    :before="before ?? phase.result.url"
     :after="phase.result.url"
-    :view="compare ? 'compare' : 'result'"
+    :view="compare && before ? 'compare' : 'result'"
     :width="size.width"
     :height="size.height"
     :labels

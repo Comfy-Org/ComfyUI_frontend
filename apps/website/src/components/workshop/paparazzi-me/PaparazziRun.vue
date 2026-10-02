@@ -15,17 +15,24 @@ const {
   locale?: Locale
 }>()
 
-const { phase, canRun, face } = paparazzi
+const { phase, canRun, missingStar } = paparazzi
 </script>
 
 <template>
+  <p
+    v-if="block && missingStar"
+    class="pb-2 text-center text-[11px] text-primary-warm-gray"
+    data-testid="paparazzi-missing"
+  >
+    {{ pc('paparazzi.needsStar', locale) }}
+  </p>
   <EditorRun
     :label="pc('paparazzi.run', locale)"
     :credits="pc('paparazzi.credits', locale, { n: PAPARAZZI_CREDITS })"
     :cancel-label="pc('paparazzi.cancel', locale)"
     :running="phase.kind === 'running'"
     :disabled="!canRun"
-    :title="face ? undefined : pc('paparazzi.needsFace', locale)"
+    :title="missingStar ? pc('paparazzi.needsStar', locale) : undefined"
     :block
     data-testid="paparazzi-run"
     @run="paparazzi.snap"

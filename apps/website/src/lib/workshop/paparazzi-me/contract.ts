@@ -1,17 +1,35 @@
-import type { PaparazziSetup, Resolution, SceneId } from './setup'
-import { isCustomScene } from './setup'
+import type { ScenePlace } from './scenes'
+import type { PaparazziSetup, Resolution } from './setup'
 
 /**
- * What the Paparazzi me backend receives for one run. The face is the
- * visitor's photo; the star is only a name, looked up server side.
+ * One looked-up paparazzi photo of the star. The backend's
+ * `GET /api/paparazzi/search?q=` answers `{ provider, candidates }`, each
+ * candidate a `token` and a `title`, its picture served by
+ * `/api/paparazzi/scene?token=`. The mock names the place instead.
+ */
+export interface SceneCandidate {
+  readonly token: string
+  readonly place: ScenePlace
+}
+
+export interface PaparazziSearch {
+  /** Who the photos come from, shown as "from <provider>". */
+  readonly provider: string
+  readonly candidates: readonly SceneCandidate[]
+}
+
+/**
+ * The multipart fields of `POST /api/run/paparazzi-me`, one for one. The
+ * images are URLs here; the real call sends their files under the same keys.
  */
 export interface PaparazziRequest {
-  readonly faceUrl: string
+  /** "Your face". */
+  readonly user: string
   readonly celebrity: string
-  /** The preset picked, or `custom` when the visitor wrote their own. */
-  readonly scene: SceneId | 'custom'
-  /** The scene in words: the preset's description or the visitor's text. */
-  readonly sceneDescription: string
+  /** The candidate picked, sent only when no scene was uploaded. */
+  readonly sceneToken?: string
+  /** "Scene override": the visitor's own scene, which beats the look-up. */
+  readonly scene?: string
   readonly resolution: Resolution
   readonly seed: number
 }
@@ -21,32 +39,18 @@ export interface PaparazziResult {
   readonly seed: number
 }
 
-const SCENE_DESCRIPTIONS = {
-  'red-carpet':
-    'on the red carpet at a film premiere, a step-and-repeat wall and velvet ropes behind',
-  'street-night':
-    'on a city street at night, leaving a restaurant, wet pavement and street lamps',
-  cafe: 'at a pavement café table in the afternoon, cups and a window behind',
-  airport:
-    'walking through an airport terminal with luggage, big windows behind'
-} as const satisfies Record<SceneId, string>
-
-function sceneDescription(setup: PaparazziSetup): string {
-  return isCustomScene(setup)
-    ? setup.sceneOverride.trim()
-    : SCENE_DESCRIPTIONS[setup.scene]
-}
-
-/** The request for a face photo and a setup. */
+/** The request for a face, a setup and the scene it points at. */
 export function paparazziRequest(
-  faceUrl: string,
-  setup: PaparazziSetup
+  user: string,
+  setup: PaparazziSetup,
+  scene: { readonly token: string } | { readonly upload: string } | undefined
 ): PaparazziRequest {
   return {
-    faceUrl,
+    user,
     celebrity: setup.celebrity.trim(),
-    scene: isCustomScene(setup) ? 'custom' : setup.scene,
-    sceneDescription: sceneDescription(setup),
+    ...(scene && 'upload' in scene
+      ? { scene: scene.upload }
+      : scene && { sceneToken: scene.token }),
     resolution: setup.resolution,
     seed: setup.seed
   }

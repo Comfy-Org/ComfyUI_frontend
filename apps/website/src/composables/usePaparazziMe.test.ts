@@ -4,11 +4,15 @@ import { effectScope } from 'vue'
 
 import { PAPARAZZI_EXAMPLE } from '../lib/workshop/paparazzi-me/mock-run'
 import { renderPaparazziImage } from '../lib/workshop/paparazzi-me/render'
+import { SCENE_PLACES } from '../lib/workshop/paparazzi-me/scenes'
 import { DEFAULT_SETUP, nextSeed } from '../lib/workshop/paparazzi-me/setup'
 import { usePaparazziMe } from './usePaparazziMe'
 
 vi.mock(import('../lib/workshop/paparazzi-me/render'), () => ({
   renderPaparazziImage: vi.fn(() => Promise.resolve(undefined))
+}))
+vi.mock(import('../lib/workshop/image-size'), () => ({
+  imageSize: vi.fn(() => Promise.resolve({ width: 900, height: 600 }))
 }))
 
 let scope: EffectScope
@@ -19,14 +23,19 @@ function start() {
   return paparazzi
 }
 
-async function finish(paparazzi: ReturnType<typeof usePaparazziMe>) {
-  const run = paparazzi.snap()
+async function settle(work: Promise<unknown> = Promise.resolve()) {
   await vi.runAllTimersAsync()
-  await run
+  await work
 }
+
+const photo = (name: string) => new File(['x'], name, { type: 'image/jpeg' })
 
 beforeEach(() => {
   vi.useFakeTimers()
+  vi.spyOn(URL, 'createObjectURL').mockImplementation(
+    (file) => `blob:${file instanceof File ? file.name : 'shot'}`
+  )
+  vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
   scope = effectScope()
 })
 
@@ -35,70 +44,67 @@ afterEach(() => {
 })
 
 describe('usePaparazziMe', () => {
-  it('opens on the worked example, ready to run', () => {
+  it('opens on the worked example: the star looked up, her first photo picked', () => {
     const paparazzi = start()
     expect(paparazzi.face.value).toBe(PAPARAZZI_EXAMPLE)
     expect(paparazzi.setup.value).toEqual(DEFAULT_SETUP)
+    expect(paparazzi.candidates.value).toHaveLength(SCENE_PLACES.length)
+    expect(paparazzi.scene.value).toMatchObject({
+      kind: 'found',
+      candidate: { place: SCENE_PLACES[0] }
+    })
     expect(paparazzi.canRun.value).toBe(true)
-    expect(paparazzi.touched.value).toBe(false)
   })
 
-  it('undoes a run of typing as one step, and a scene pick as another', () => {
+  it('looks a new star up, and finds the earlier one again on undo', async () => {
     const paparazzi = start()
-    paparazzi.change({ celebrity: 'O' }, 'celebrity')
-    paparazzi.change({ celebrity: 'Or' }, 'celebrity')
-    paparazzi.change({ sceneOverride: 'a rooftop' }, 'override')
-    paparazzi.pickScene('cafe')
+    paparazzi.change({ celebrity: 'Orion' }, 'celebrity')
+    paparazzi.change({ celebrity: 'Orion Vale' }, 'celebrity')
+    expect(paparazzi.search.value.kind).toBe('idle')
+    expect(paparazzi.scene.value).toBeUndefined()
 
-    expect(paparazzi.setup.value).toMatchObject({
-      celebrity: 'Or',
-      scene: 'cafe',
-      sceneOverride: ''
+    const search = paparazzi.findScenes()
+    expect(paparazzi.search.value.kind).toBe('searching')
+    await settle(search)
+    paparazzi.pickScene('orion-vale/yacht')
+    expect(paparazzi.scene.value).toMatchObject({
+      candidate: { token: 'orion-vale/yacht' }
     })
-    paparazzi.undo()
-    expect(paparazzi.setup.value.sceneOverride).toBe('a rooftop')
+
     paparazzi.undo()
     paparazzi.undo()
     expect(paparazzi.setup.value).toEqual(DEFAULT_SETUP)
-    expect(paparazzi.canUndo.value).toBe(false)
+    expect(paparazzi.search.value.kind).toBe('found')
     paparazzi.redo()
-    expect(paparazzi.setup.value.celebrity).toBe('Or')
-    expect(paparazzi.touched.value).toBe(true)
+    expect(paparazzi.search.value).toMatchObject({
+      kind: 'found',
+      query: 'orion vale'
+    })
   })
 
   it.for([
-    { name: 'without a face', act: 'remove', canRun: false },
-    { name: 'with a one-letter star', act: 'short', canRun: false },
-    { name: 'with the face back', act: 'example', canRun: true }
-  ] as const)('can run $name: $canRun', ({ act, canRun }) => {
-    const paparazzi = start()
-    paparazzi.removeFace()
-    if (act === 'short') {
-      paparazzi.useExample()
-      paparazzi.change({ celebrity: 'N' })
+    { name: 'a one-letter star', celebrity: 'N', own: false, canRun: false },
+    { name: 'a star', celebrity: 'Nova Reyes', own: false, canRun: true },
+    {
+      name: 'its own scene and no star',
+      celebrity: '',
+      own: true,
+      canRun: true
     }
-    if (act === 'example') paparazzi.useExample()
+  ])('can run with $name: $canRun', async ({ celebrity, own, canRun }) => {
+    const paparazzi = start()
+    paparazzi.change({ celebrity })
+    if (own) await paparazzi.useSceneFile(photo('party.jpg'))
     expect(paparazzi.canRun.value).toBe(canRun)
+    expect(paparazzi.missingStar.value).toBe(!canRun)
   })
 
-  it('sends the face, the star and the scene, then shows the result', async () => {
+  it('runs the worked example to its prepared photo', async () => {
     const paparazzi = start()
-    paparazzi.change({ celebrity: ' Sable Quinn ' })
-    paparazzi.pickScene('airport')
-
     const run = paparazzi.snap()
     expect(paparazzi.phase.value.kind).toBe('running')
-    await vi.runAllTimersAsync()
-    await run
+    await settle(run)
 
-    expect(vi.mocked(renderPaparazziImage)).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        faceUrl: PAPARAZZI_EXAMPLE.url,
-        celebrity: 'Sable Quinn',
-        scene: 'airport'
-      }),
-      PAPARAZZI_EXAMPLE.crop
-    )
     expect(paparazzi.phase.value).toEqual({
       kind: 'done',
       result: {
@@ -108,14 +114,52 @@ describe('usePaparazziMe', () => {
     })
   })
 
+  it('looks the star up before running when nobody searched yet', async () => {
+    const paparazzi = start()
+    paparazzi.change({ celebrity: 'Sable Quinn' })
+
+    await settle(paparazzi.snap())
+
+    expect(paparazzi.search.value.kind).toBe('found')
+    expect(vi.mocked(renderPaparazziImage)).toHaveBeenLastCalledWith(
+      SCENE_PLACES[0],
+      PAPARAZZI_EXAMPLE.url,
+      PAPARAZZI_EXAMPLE.crop,
+      '2K'
+    )
+    expect(paparazzi.phase.value).toMatchObject({
+      kind: 'done',
+      result: { url: SCENE_PLACES[0].url }
+    })
+  })
+
+  it('puts an uploaded face in an uploaded scene', async () => {
+    const paparazzi = start()
+    await paparazzi.useFaceFile(photo('me.jpg'))
+    await paparazzi.useSceneFile(photo('party.jpg'))
+    expect(paparazzi.scene.value).toMatchObject({ kind: 'own' })
+
+    await settle(paparazzi.snap())
+
+    expect(vi.mocked(renderPaparazziImage)).toHaveBeenLastCalledWith(
+      { url: 'blob:party.jpg', you: 0.3 },
+      'blob:me.jpg',
+      expect.anything(),
+      '2K'
+    )
+    paparazzi.pickScene('nova-reyes/gym')
+    expect(paparazzi.scene.value).toMatchObject({ kind: 'found' })
+    paparazzi.pickOwnScene()
+    expect(paparazzi.scene.value).toMatchObject({ kind: 'own' })
+  })
+
   it('takes another shot on the next seed', async () => {
     const paparazzi = start()
-    await finish(paparazzi)
+    await settle(paparazzi.snap())
 
     paparazzi.retry()
-    await vi.runAllTimersAsync()
+    await settle()
 
-    expect(paparazzi.setup.value.seed).toBe(nextSeed(DEFAULT_SETUP.seed))
     expect(paparazzi.phase.value).toMatchObject({
       kind: 'done',
       result: { seed: nextSeed(DEFAULT_SETUP.seed) }
@@ -126,12 +170,12 @@ describe('usePaparazziMe', () => {
     const paparazzi = start()
     void paparazzi.snap()
     paparazzi.cancel()
-    await vi.runAllTimersAsync()
+    await settle()
     expect(paparazzi.phase.value.kind).toBe('editing')
 
-    await finish(paparazzi)
-    paparazzi.removeFace()
+    await settle(paparazzi.snap())
+    await paparazzi.useFaceFile(photo('me.jpg'))
     expect(paparazzi.phase.value.kind).toBe('editing')
-    expect(paparazzi.face.value).toBeUndefined()
+    expect(paparazzi.face.value.name).toBe('me.jpg')
   })
 })

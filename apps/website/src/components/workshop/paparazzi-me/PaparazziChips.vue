@@ -17,11 +17,8 @@ const { tray, phase } = paparazzi
 </script>
 
 <template>
-  <EditorDivider />
   <EditorChip
-    v-for="section in PAPARAZZI_SECTIONS.filter(
-      ({ id }) => id !== 'resolution'
-    )"
+    v-for="section in PAPARAZZI_SECTIONS"
     :key="section.id"
     :label="pc(section.title, locale)"
     :value="sectionMeta(section.id, paparazzi, locale)"

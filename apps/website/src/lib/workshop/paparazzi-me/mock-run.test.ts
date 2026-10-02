@@ -1,17 +1,28 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { paparazziRequest } from './contract'
+import type { PaparazziRequest } from './contract'
 import type { PaparazziRender } from './mock-run'
-import { PAPARAZZI_EXAMPLE, faceCrop, runPaparazzi } from './mock-run'
-import type { PaparazziSetup } from './setup'
-import { DEFAULT_SETUP, SCENE_IDS } from './setup'
+import {
+  EXAMPLE_SCENE_TOKEN,
+  PAPARAZZI_EXAMPLE,
+  runPaparazzi
+} from './mock-run'
+import { SCENE_PLACES } from './scenes'
 
 vi.mock(import('./render'), () => ({
   renderPaparazziImage: vi.fn(() => Promise.resolve(undefined))
 }))
 
-const request = (faceUrl: string, setup: Partial<PaparazziSetup> = {}) =>
-  paparazziRequest(faceUrl, { ...DEFAULT_SETUP, seed: 42, ...setup })
+const [redCarpet, beach] = SCENE_PLACES
+
+const request = (fields: Partial<PaparazziRequest> = {}): PaparazziRequest => ({
+  user: PAPARAZZI_EXAMPLE.url,
+  celebrity: 'Nova Reyes',
+  sceneToken: EXAMPLE_SCENE_TOKEN,
+  resolution: '2K',
+  seed: 42,
+  ...fields
+})
 
 async function finish(run: Promise<unknown>) {
   await vi.runAllTimersAsync()
@@ -19,67 +30,63 @@ async function finish(run: Promise<unknown>) {
 }
 
 describe('runPaparazzi', () => {
-  it.for(SCENE_IDS)(
-    'answers the example in the %s scene with its example photo',
-    async (scene) => {
-      vi.useFakeTimers()
-      const render = vi.fn<PaparazziRender>()
+  it('answers the worked example with its prepared photo', async () => {
+    vi.useFakeTimers()
+    const render = vi.fn<PaparazziRender>()
 
-      const run = runPaparazzi(
-        request(PAPARAZZI_EXAMPLE.url, { scene }),
-        new AbortController().signal,
-        render
-      )
-
-      await expect(finish(run)).resolves.toEqual({
-        url: `/images/apps/paparazzi-me/result-${scene}.jpg`,
-        seed: 42
-      })
-      expect(render).not.toHaveBeenCalled()
-    }
-  )
+    await expect(
+      finish(runPaparazzi(request(), new AbortController().signal, render))
+    ).resolves.toEqual({
+      url: '/images/apps/paparazzi-me/example-result.jpg',
+      seed: 42
+    })
+    expect(render).not.toHaveBeenCalled()
+  })
 
   it.for([
     {
-      name: 'draws the example face with another star',
+      name: 'stands the face in another candidate',
+      fields: { sceneToken: 'nova-reyes/beach' },
+      scene: beach,
       rendered: 'blob:shot',
-      url: PAPARAZZI_EXAMPLE.url,
-      setup: { celebrity: 'Sable Quinn' },
-      expected: 'blob:shot'
+      url: 'blob:shot'
     },
     {
-      name: 'draws the example in a scene of its own',
+      name: 'stands an upload in the first candidate before a look-up',
+      fields: { user: 'blob:face', sceneToken: undefined },
+      scene: redCarpet,
       rendered: 'blob:shot',
-      url: PAPARAZZI_EXAMPLE.url,
-      setup: { sceneOverride: 'on a yacht' },
-      expected: 'blob:shot'
+      url: 'blob:shot'
     },
     {
-      name: 'falls back to the example shot where it cannot draw',
-      rendered: undefined,
-      url: PAPARAZZI_EXAMPLE.url,
-      setup: { celebrity: 'Sable Quinn' },
-      expected: '/images/apps/paparazzi-me/example-result.jpg'
+      name: 'uses the uploaded scene over the token',
+      fields: { scene: 'blob:scene' },
+      scene: { url: 'blob:scene', you: 0.3 },
+      rendered: 'blob:shot',
+      url: 'blob:shot'
     },
     {
-      name: 'falls back to the face itself for an upload',
+      name: 'falls back to the scene photo where it cannot draw',
+      fields: { celebrity: 'Sable Quinn', sceneToken: 'sable-quinn/beach' },
+      scene: beach,
       rendered: undefined,
-      url: 'blob:face',
-      setup: {},
-      expected: 'blob:face'
+      url: beach.url
     }
-  ])('$name', async ({ rendered, url, setup, expected }) => {
+  ])('$name', async ({ fields, scene, rendered, url }) => {
     vi.useFakeTimers()
     const render = vi.fn<PaparazziRender>(() => Promise.resolve(rendered))
 
-    const run = runPaparazzi(
-      request(url, setup),
-      new AbortController().signal,
-      render
+    await expect(
+      finish(
+        runPaparazzi(request(fields), new AbortController().signal, render)
+      )
+    ).resolves.toEqual({ url, seed: 42 })
+    expect(render).toHaveBeenCalledWith(
+      scene,
+      request(fields).user,
+      expect.objectContaining({ cx: expect.any(Number) }),
+      '2K'
     )
-
-    await expect(finish(run)).resolves.toEqual({ url: expected, seed: 42 })
-    expect(render).toHaveBeenCalledWith(request(url, setup), faceCrop(url))
   })
 
   it('releases a rendered photo when the run is cancelled', async () => {
@@ -87,8 +94,10 @@ describe('runPaparazzi', () => {
     const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
     const controller = new AbortController()
 
-    const run = runPaparazzi(request('blob:face'), controller.signal, () =>
-      Promise.resolve('blob:shot')
+    const run = runPaparazzi(
+      request({ user: 'blob:face' }),
+      controller.signal,
+      () => Promise.resolve('blob:shot')
     )
     controller.abort()
 

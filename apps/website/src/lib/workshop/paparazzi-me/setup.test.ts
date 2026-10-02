@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  DEFAULT_SETUP,
   MAX_SEED,
   hasCelebrity,
   matchStars,
@@ -40,7 +39,7 @@ describe('hasCelebrity', () => {
     { celebrity: ' A ', ok: false },
     { celebrity: 'Al', ok: true }
   ])('accepts "$celebrity": $ok', ({ celebrity, ok }) => {
-    expect(hasCelebrity({ ...DEFAULT_SETUP, celebrity })).toBe(ok)
+    expect(hasCelebrity(celebrity)).toBe(ok)
   })
 })
 

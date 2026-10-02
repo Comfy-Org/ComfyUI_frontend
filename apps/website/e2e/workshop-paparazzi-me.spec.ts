@@ -29,25 +29,37 @@ test('closes Paparazzi me while its flag is off', async ({ page, context }) => {
   await expect(page.getByTestId('paparazzi-me')).toHaveCount(0)
 })
 
-test('snaps the Paparazzi me example from the floating panel', async ({
+test('inserts the Paparazzi me example into a picked scene from the panel', async ({
   page,
   context
 }) => {
   await mockFlags(context, true)
   await page.goto('/hub/apps/paparazzi-me/')
   const app = page.getByTestId('paparazzi-me')
-  await expect(
-    app.getByRole('region', { name: 'Your face' }).getByRole('img')
-  ).toBeVisible()
   const panel = app.getByRole('complementary', { name: 'Paparazzi settings' })
+  expect(await panel.boundingBox()).toMatchObject({ width: 280 })
+  await expect(
+    app.getByRole('img', {
+      name: 'A paparazzi photo of Nova Reyes: Red carpet'
+    })
+  ).toBeVisible()
 
   const name = panel.getByRole('combobox', { name: 'Star’s name' })
   await name.fill('Sable')
   await panel.getByRole('option', { name: /Sable Quinn/ }).click()
   await expect(name).toHaveValue('Sable Quinn')
-  await panel.getByRole('radio', { name: 'Street at night' }).click()
-  await expect(app.getByRole('button', { name: 'Undo' })).toBeEnabled()
-  expect(await panel.boundingBox()).toMatchObject({ width: 280 })
+  const row = panel.getByTestId('paparazzi-scene-row')
+  await expect(row).toContainText('Red carpet')
+
+  await row.click()
+  const picker = app.getByRole('dialog', { name: 'Pick a scene' })
+  await expect(picker.getByRole('radio')).toHaveCount(9)
+  const pickerBox = await picker.boundingBox()
+  const panelBox = await panel.boundingBox()
+  expect(pickerBox?.x).toBeGreaterThan((panelBox?.x ?? 0) + 280)
+  await picker.getByRole('radio', { name: 'Hotel exit' }).click()
+  await expect(picker).toBeHidden()
+  await expect(row).toContainText('Hotel exit')
   await expect(
     app
       .getByRole('toolbar', { name: 'Paparazzi tools' })
@@ -56,16 +68,14 @@ test('snaps the Paparazzi me example from the floating panel', async ({
   ).toHaveAccessibleName('Redo')
 
   await panel.getByTestId('paparazzi-run').click()
-  await expect(app.getByRole('status')).toContainText('Developing the shot')
+  await expect(app.getByRole('status')).toContainText('Sable Quinn, Hotel exit')
   const download = app.getByRole('link', { name: 'Download' })
   await expect(download).toHaveAttribute('href', /^blob:/)
-  expect((await download.boundingBox())?.y).toBe(
-    (await app.getByText('GitHub · Coming soon').boundingBox())?.y
-  )
+  await expect(download).toHaveAttribute('download', /^paparazzi-me-\d+\.jpg$/)
   await app.getByRole('button', { name: 'Compare' }).click()
   await expect(
     app.getByRole('slider', {
-      name: 'Drag to compare your photo and the paparazzi shot'
+      name: 'Drag to compare the paparazzi photo and your shot'
     })
   ).toBeVisible()
 
@@ -73,7 +83,7 @@ test('snaps the Paparazzi me example from the floating panel', async ({
   await expect(name).toHaveValue('Sable Quinn')
 })
 
-test('snaps from the Paparazzi me bottom sheet on phones @mobile', async ({
+test('inserts the example from the Paparazzi me bottom sheet on phones @mobile', async ({
   page,
   context
 }) => {
@@ -84,16 +94,17 @@ test('snaps from the Paparazzi me bottom sheet on phones @mobile', async ({
   await sheet
     .getByRole('button', { name: 'Nova Reyes · Red carpet · 2K' })
     .click()
-  await sheet.getByRole('radio', { name: 'Airport' }).click()
+  await sheet.getByTestId('paparazzi-scene-row').click()
+  await app
+    .getByRole('dialog', { name: 'Pick a scene' })
+    .getByRole('radio', { name: 'Red carpet' })
+    .click()
   await sheet.getByRole('button', { name: 'Hide settings' }).click()
-  await expect(
-    sheet.getByRole('button', { name: 'Nova Reyes · Airport · 2K' })
-  ).toBeVisible()
 
   await sheet.getByTestId('paparazzi-run').click()
   await expect(app.getByRole('link', { name: 'Download' })).toHaveAttribute(
     'href',
-    '/images/apps/paparazzi-me/result-airport.jpg'
+    '/images/apps/paparazzi-me/example-result.jpg'
   )
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth - window.innerWidth

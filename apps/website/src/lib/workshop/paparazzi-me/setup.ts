@@ -1,20 +1,5 @@
 import type { PaparazziCopyKey } from './copy'
 
-export const SCENE_IDS = [
-  'red-carpet',
-  'street-night',
-  'cafe',
-  'airport'
-] as const
-export type SceneId = (typeof SCENE_IDS)[number]
-
-export const SCENE_LABELS = {
-  'red-carpet': 'paparazzi.scene.redCarpet',
-  'street-night': 'paparazzi.scene.streetNight',
-  cafe: 'paparazzi.scene.cafe',
-  airport: 'paparazzi.scene.airport'
-} as const satisfies Record<SceneId, PaparazziCopyKey>
-
 export const RESOLUTIONS = ['1K', '2K', '4K'] as const
 export type Resolution = (typeof RESOLUTIONS)[number]
 
@@ -29,9 +14,10 @@ export function outputSize(resolution: Resolution) {
 /** Everything undo and redo cover. */
 export interface PaparazziSetup {
   readonly celebrity: string
-  readonly scene: SceneId
-  /** Free text that replaces the preset scene when it is not blank. */
-  readonly sceneOverride: string
+  /** The looked-up photo picked; the first one when unset. */
+  readonly sceneToken?: string
+  /** The visitor's own scene photo overrides the looked-up ones. */
+  readonly ownScene: boolean
   readonly resolution: Resolution
   readonly seed: number
 }
@@ -41,8 +27,7 @@ export const MAX_SEED = 2_147_483_647
 
 export const DEFAULT_SETUP: PaparazziSetup = {
   celebrity: 'Nova Reyes',
-  scene: 'red-carpet',
-  sceneOverride: '',
+  ownScene: false,
   resolution: '2K',
   seed: 1207
 }
@@ -67,12 +52,8 @@ export function matchStars(query: string): readonly Star[] {
   )
 }
 
-export function isCustomScene(setup: PaparazziSetup): boolean {
-  return setup.sceneOverride.trim().length > 0
-}
-
-export function hasCelebrity(setup: PaparazziSetup): boolean {
-  return setup.celebrity.trim().length >= MIN_CELEBRITY_LENGTH
+export function hasCelebrity(celebrity: string): boolean {
+  return celebrity.trim().length >= MIN_CELEBRITY_LENGTH
 }
 
 /** The seed after `seed`: the same walk every time, never zero. */

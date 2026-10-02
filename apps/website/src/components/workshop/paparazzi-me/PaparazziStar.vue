@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Search } from '@lucide/vue'
+import { ArrowRight, Search } from '@lucide/vue'
 import { computed, ref, useId } from 'vue'
 
 import type { PaparazziMe } from '../../../composables/usePaparazziMe'
@@ -18,7 +18,7 @@ const { paparazzi, locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
 
-const { setup } = paparazzi
+const { setup, search } = paparazzi
 const id = useId()
 const open = ref(false)
 const active = ref(0)
@@ -28,10 +28,12 @@ const suggestions = computed(() =>
     ? STARS
     : matchStars(query.value)
 )
-const note = computed(() => {
-  if (!hasCelebrity(setup.value)) return pc('paparazzi.star.short', locale)
-  return suggestions.value.length ? '' : pc('paparazzi.star.none', locale)
-})
+const note = computed(() =>
+  hasCelebrity(query.value)
+    ? pc('paparazzi.star.hint', locale)
+    : pc('paparazzi.star.short', locale)
+)
+const searching = computed(() => search.value.kind === 'searching')
 const expanded = computed(() => open.value && suggestions.value.length > 0)
 
 function type(event: Event) {
@@ -44,6 +46,7 @@ function type(event: Event) {
 function pick(star: Star) {
   paparazzi.change({ celebrity: star.name })
   open.value = false
+  void paparazzi.findScenes()
 }
 
 function move(step: number) {
@@ -55,6 +58,8 @@ function move(step: number) {
 function choose() {
   const star = suggestions.value[active.value]
   if (expanded.value && star) pick(star)
+  else void paparazzi.findScenes()
+  open.value = false
 }
 </script>
 
@@ -79,7 +84,7 @@ function choose() {
         :aria-controls="`${id}-list`"
         :aria-activedescendant="expanded ? `${id}-${active}` : undefined"
         :placeholder="pc('paparazzi.star.placeholder', locale)"
-        class="h-9 w-full rounded-lg bg-transparency-white-t4 pr-2.5 pl-8 text-[13px] text-primary-warm-white placeholder:text-primary-warm-gray/60 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none disabled:opacity-40"
+        class="h-9 w-full rounded-lg bg-transparency-white-t4 pr-10 pl-8 text-[13px] text-primary-warm-white placeholder:text-primary-warm-gray/60 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none disabled:opacity-40"
         @input="type"
         @focus="open = true"
         @blur="open = false"
@@ -88,6 +93,20 @@ function choose() {
         @keydown.enter.prevent="choose"
         @keydown.esc="open = false"
       />
+      <button
+        type="button"
+        :aria-label="pc('paparazzi.star.find', locale)"
+        :disabled="!hasCelebrity(query) || searching"
+        class="absolute top-1/2 right-1 grid size-7 -translate-y-1/2 place-items-center rounded-md text-primary-warm-gray transition hover:bg-transparency-white-t8 hover:text-primary-warm-white focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none disabled:opacity-40"
+        @click="paparazzi.findScenes"
+      >
+        <span
+          v-if="searching"
+          class="size-3.5 rounded-full border-2 border-transparency-white-t20 border-t-primary-comfy-yellow motion-safe:animate-spin"
+          aria-hidden="true"
+        />
+        <ArrowRight v-else class="size-3.5" aria-hidden="true" />
+      </button>
     </div>
     <ul
       v-show="expanded"

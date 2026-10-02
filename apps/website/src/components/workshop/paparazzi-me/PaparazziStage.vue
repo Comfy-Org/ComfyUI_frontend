@@ -1,65 +1,55 @@
 <script setup lang="ts">
+import { ImageOff } from '@lucide/vue'
 import { computed } from 'vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
 import type { PaparazziMe } from '../../../composables/usePaparazziMe'
-import { usePaparazziPreview } from '../../../composables/usePaparazziPreview'
 import type { Locale } from '../../../i18n/translations'
 import { pc } from '../../../lib/workshop/paparazzi-me/copy'
 import EditorFrame from '../app-editor/EditorFrame.vue'
-import PaparazziSceneArt from './PaparazziSceneArt.vue'
 import { sceneName } from './sections'
 
-const {
-  paparazzi,
-  running,
-  locale = 'en'
-} = defineProps<{
+const { paparazzi, locale = 'en' } = defineProps<{
   paparazzi: PaparazziMe
-  running: boolean
   locale?: Locale
 }>()
 
-const { face, setup } = paparazzi
-const preview = usePaparazziPreview(
-  () => face.value,
-  () => setup.value
-)
+const { scene, setup } = paparazzi
+const photo = computed(() => {
+  const current = scene.value
+  if (!current) return undefined
+  return current.kind === 'own'
+    ? current.image
+    : { url: current.candidate.place.url, width: 3, height: 2 }
+})
 const alt = computed(() =>
-  pc('paparazzi.alt.preview', locale, {
-    name: setup.value.celebrity.trim(),
-    scene: sceneName(setup.value, locale)
-  })
+  scene.value?.kind === 'own'
+    ? pc('paparazzi.scene.own', locale)
+    : pc('paparazzi.alt.scene', locale, {
+        name: setup.value.celebrity.trim(),
+        scene: sceneName(paparazzi, locale)
+      })
 )
 </script>
 
 <template>
-  <EditorFrame :width="3" :height="2">
-    <div class="relative size-full" data-testid="paparazzi-stage">
+  <EditorFrame :width="photo?.width ?? 3" :height="photo?.height ?? 2">
+    <div
+      class="relative size-full overflow-hidden rounded-sm bg-primary-comfy-ink-light shadow-2xl shadow-black/50"
+      data-testid="paparazzi-stage"
+    >
+      <img
+        v-if="photo"
+        :src="photo.url"
+        :alt
+        draggable="false"
+        class="size-full object-cover"
+      />
       <div
-        class="absolute inset-0 overflow-hidden rounded-sm bg-primary-comfy-ink-light shadow-2xl shadow-black/50"
+        v-else
+        class="flex size-full flex-col items-center justify-center gap-2 text-sm text-primary-warm-gray"
       >
-        <img
-          v-if="preview"
-          :src="preview"
-          :alt
-          draggable="false"
-          class="size-full object-cover"
-          data-testid="paparazzi-preview"
-        />
-        <div v-else role="img" :aria-label="alt" class="size-full">
-          <PaparazziSceneArt :scene="setup.scene" />
-        </div>
-        <span
-          :class="
-            cn(
-              'pointer-events-none absolute inset-0 bg-radial from-primary-warm-white/70 via-primary-warm-white/10 to-transparent opacity-0 transition-opacity',
-              running && 'opacity-100 motion-safe:animate-pulse'
-            )
-          "
-          aria-hidden="true"
-        />
+        <ImageOff class="size-6" aria-hidden="true" />
+        {{ pc('paparazzi.scene.idle', locale) }}
       </div>
       <slot />
     </div>

@@ -21,7 +21,7 @@ const labels = {
   <EditorHistory
     :can-undo
     :can-redo
-    :disabled="phase.kind === 'running'"
+    :disabled="phase.kind === 'running' || phase.kind === 'done'"
     :labels
     @undo="paparazzi.undo"
     @redo="paparazzi.redo"

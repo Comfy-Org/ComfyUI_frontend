@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useEventListener } from '@vueuse/core'
 import { computed } from 'vue'
 
 import { usePaparazziMe } from '../../../composables/usePaparazziMe'
@@ -14,6 +15,7 @@ import PaparazziHistory from './PaparazziHistory.vue'
 import PaparazziMain from './PaparazziMain.vue'
 import PaparazziPanel from './PaparazziPanel.vue'
 import PaparazziRun from './PaparazziRun.vue'
+import PaparazziScenePicker from './PaparazziScenePicker.vue'
 import PaparazziSummary from './PaparazziSummary.vue'
 import PaparazziTrays from './PaparazziTrays.vue'
 
@@ -24,13 +26,22 @@ const { locale = 'en', layout = 'd' } = defineProps<{
 }>()
 
 const paparazzi = usePaparazziMe()
-const { phase } = paparazzi
+const { phase, pickerOpen } = paparazzi
 const panel = computed(() => layout !== 'e')
 const download = useResultDownload(
   phase,
   ({ result }) => `paparazzi-me-${result.seed}.jpg`
 )
 reportStudioBusy(() => phase.value.kind === 'running')
+
+useEventListener('paste', (event: ClipboardEvent) => {
+  const file = [...(event.clipboardData?.files ?? [])].find((pasted) =>
+    pasted.type.startsWith('image/')
+  )
+  if (!file || phase.value.kind === 'running') return
+  event.preventDefault()
+  void paparazzi.useFaceFile(file)
+})
 
 const panelLabels = {
   label: pc('paparazzi.panel', locale),
@@ -56,11 +67,12 @@ const panelLabels = {
         {{ pc('paparazzi.failed', locale) }}
       </EditorAlert>
       <PaparazziTrays v-if="!panel" :paparazzi :locale />
+      <PaparazziScenePicker v-if="panel && pickerOpen" :paparazzi :locale />
     </template>
     <template #dock>
       <PaparazziDocks :paparazzi :panel :locale />
     </template>
-    <template v-if="phase.kind !== 'done'" #history>
+    <template #history>
       <PaparazziHistory :paparazzi :locale />
     </template>
     <template v-if="panel" #panel>

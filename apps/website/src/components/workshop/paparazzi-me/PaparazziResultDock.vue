@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ChevronLeft, Columns2, RefreshCw } from '@lucide/vue'
+import { ChevronLeft, RefreshCw } from '@lucide/vue'
 
 import type { PaparazziMe } from '../../../composables/usePaparazziMe'
 import type { Locale } from '../../../i18n/translations'
 import { pc } from '../../../lib/workshop/paparazzi-me/copy'
+import EditorCompareToggle from '../app-editor/EditorCompareToggle.vue'
 import EditorDivider from '../app-editor/EditorDivider.vue'
 import EditorTool from '../app-editor/EditorTool.vue'
 
@@ -16,11 +17,10 @@ const { compare } = paparazzi
 </script>
 
 <template>
-  <EditorTool
-    :icon="Columns2"
+  <EditorCompareToggle
+    v-model="compare"
     :label="pc('paparazzi.view.compare', locale)"
-    :pressed="compare"
-    @click="compare = !compare"
+    :locale
   />
   <EditorDivider />
   <EditorTool
