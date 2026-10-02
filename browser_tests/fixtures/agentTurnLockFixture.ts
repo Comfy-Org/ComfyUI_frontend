@@ -4,6 +4,7 @@ import type { Locator, Page, WebSocketRoute } from '@playwright/test'
 import type {
   AgentAnswerAccepted,
   AgentCancelAccepted,
+  AgentError,
   AgentMessage,
   AgentPendingAsk,
   AgentTurnAccepted
@@ -31,33 +32,28 @@ const zAnswerRequest = z.object({ selected: z.array(z.string()) })
 
 const THREAD_ID = 'b9d0a2a1-0f2c-4f1a-9a5e-6b0f4f2c1d77'
 const TURN_ID = '2dd4f367-3399-4cb4-8127-547f531c289a'
-/** The turn another client started on the same thread — see `lockThreadElsewhere`. */
 const FOREIGN_TURN_ID = 'd3f2b1c0-8a4e-4d6f-9b11-0c7a5e2f4318'
 const WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-000000000001'
 const BACKGROUND_THREAD_TITLE = 'Audio workflow'
 const OTHER_THREAD_ID = '4ccb6603-4bbc-49e2-8b7d-b985230285e3'
 const OTHER_THREAD_TITLE = 'Earlier workflow'
 
-/**
- * Verbatim from `services/agent/server/agent_handler.go`, which answers a post
- * to a thread whose assistant row is still `streaming` with HTTP 409 and this
- * body.
- */
+/** The verbatim `error` message in `rejectTurnInProgress`'s HTTP 409 body. */
 export const TURN_IN_PROGRESS_MESSAGE =
   'a turn is already in progress for this thread'
 
 /**
  * The whole 409 body, not just its message. `rejectTurnInProgress` sends a
  * `type` discriminator plus the ids of the turn holding the thread (cloud
- * #8275), and those three fields are the client's only route from "refused" to
- * "re-attached" — a fixture that sends the message alone cannot distinguish a
- * client that reads them from one that does not.
+ * #8275). The discriminator is what makes the client re-read the thread, and
+ * `active_message_id` is how it confirms it adopted the named turn; a fixture
+ * that sends the message alone exercises neither.
  *
  * The generated OpenAPI schema does not describe this endpoint's conflict
  * body, so the fixture consumes the same runtime schema as the client until
  * that upstream contract includes the response.
  */
-type TurnInProgressBody = z.infer<typeof zTurnInProgressError>
+type TurnInProgressBody = AgentError & z.infer<typeof zTurnInProgressError>
 
 const TURN_IN_PROGRESS: TurnInProgressBody = {
   error: TURN_IN_PROGRESS_MESSAGE,
@@ -190,12 +186,6 @@ function deferred(): Deferred {
 class TurnLockServer {
   private streaming = false
   private prompt = ''
-  /**
-   * The prompt of a turn started by a *different* client on this same thread,
-   * when one holds the lock. Tracked apart from `prompt` because this browser
-   * never posted it: it exists in the transcript and in the active-turn guard,
-   * and nowhere in this client's own state.
-   */
   private foreignPrompt: string | undefined
   private rejected = 0
   private posts = 0
@@ -418,8 +408,6 @@ class TurnLockServer {
 
   rejectPost(): TurnInProgressBody {
     this.rejected++
-    // The ids name whichever turn actually holds the thread, as the server's
-    // own `ThreadActiveTurn` lookup does.
     return this.foreignPrompt === undefined
       ? TURN_IN_PROGRESS
       : {
@@ -543,9 +531,7 @@ export class AgentTurnLockHarness {
   public readonly workingRow: Locator
   public readonly liveProgressRow: Locator
   public readonly userBubbles: Locator
-  /** The notice a send refused by the active-turn guard leaves behind. */
   public readonly turnInProgressNotice: Locator
-  /** The raw server string the pre-fix client rendered instead. */
   public readonly rawRefusalText: Locator
   private readonly entryButton: Locator
   private readonly dock: Locator
@@ -698,11 +684,6 @@ export class AgentTurnLockHarness {
     this.server.completeTurn()
   }
 
-  /**
-   * Locks the thread from outside this browser, so the next send is refused by
-   * the server's active-turn guard while this client's composer still offers
-   * Send. See `TurnLockServer.lockThreadElsewhere`.
-   */
   lockThreadFromAnotherClient(prompt: string): void {
     this.server.lockThreadElsewhere(prompt)
   }
