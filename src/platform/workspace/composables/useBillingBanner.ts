@@ -221,7 +221,7 @@ function useBillingBannerInternal() {
   })
 
   useEventListener(window, 'focus', () => {
-    if (kind.value !== 'paymentFailed') return
+    if (kind.value !== 'paymentFailed' && kind.value !== 'paused') return
     void Promise.allSettled([fetchStatus(), fetchBalance()])
   })
 
