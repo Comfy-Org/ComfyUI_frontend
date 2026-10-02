@@ -26,8 +26,9 @@ latest check and last successful generation.
 
 Run `pnpm --filter @comfyorg/website format` from the repository root to format
 the website, or `pnpm --filter @comfyorg/website format:check` to check it. CI
-runs every workspace's format check with `pnpm -r --include-workspace-root`. Pre-commit formats staged Astro files after
-ESLint fixes.
+runs every workspace's format check with
+`pnpm -r --include-workspace-root format:check`. Pre-commit formats staged
+Astro files after ESLint fixes.
 
 Astro files use Prettier with the official Astro plugin; other formats continue
 to use Oxfmt. The website's `.prettierrc.json` matches the repository's style

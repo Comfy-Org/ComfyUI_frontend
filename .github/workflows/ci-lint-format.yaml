@@ -81,7 +81,7 @@ jobs:
           echo "Please run these commands locally and push the changes:"
           echo "  pnpm lint:fix"
           echo "  pnpm stylelint:fix"
-          echo "  pnpm format"
+          echo "  pnpm -r --include-workspace-root format"
           echo ""
           echo "Or set up pre-commit hooks to automatically format on every commit:"
           echo "  pnpm prepare"
