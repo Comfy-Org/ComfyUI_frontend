@@ -1422,6 +1422,45 @@ describe('createOpSender', () => {
     localSender.detach()
   })
 
+  it('resumes a pump requested during workflow-change sealing', () => {
+    const localSent: Op[][] = []
+    let workflow = 'wf-old'
+    const localSender = createOpSender({
+      sendOps: (_workflowId, _tab, ops) => {
+        localSent.push(ops)
+        return true
+      },
+      onOpsResult: () => vi.fn(),
+      workflowId: () => workflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: vi.fn()
+    })
+    const outer = addNode(1)
+    let reentered = false
+    outer.node = {
+      ...outer.node,
+      toJSON() {
+        if (!reentered) {
+          reentered = true
+          localSender.enqueue([addNode(3)])
+        }
+        return { id: 1, type: 'TestNode' }
+      }
+    }
+    localSender.admit([outer])
+    workflow = 'wf-new'
+
+    localSender.admit([addNode(2)])
+
+    expect(localSent).toHaveLength(1)
+    expect('node_id' in localSent[0][0] ? localSent[0][0].node_id : null).toBe(
+      1
+    )
+    localSender.detach()
+  })
+
   it('contains a large malformed admission without argument spread overflow', () => {
     const operations = Array.from({ length: 140_000 }, (_, id) => addNode(id))
     let serializations = 0
@@ -1445,6 +1484,7 @@ describe('createOpSender', () => {
 
     expect(() => sender.flush()).not.toThrow()
     expect(settled.at(-1)?.state).toBe('undeliverable')
+    expect(settled.every((outcome) => outcome.ops.length <= 256)).toBe(true)
   })
 
   it('queues the valid prefix before an invalid suffix settlement detaches', () => {
