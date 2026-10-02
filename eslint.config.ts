@@ -577,6 +577,54 @@ export default defineConfig([
       'vue/no-v-html': 'error'
     }
   },
+  // Scoped to src: localeDir is src/locales, and apps/billing-web and
+  // apps/website ship their own messages.
+  {
+    files: ['src/**/*.{ts,mts,vue}'],
+    rules: {
+      '@intlify/vue-i18n/no-missing-keys': 'error'
+    }
+  },
+  // i18n.ts nests the collect-i18n outputs under commands/settings/nodeDefs,
+  // but the plugin flat-merges every localeDir file, so static references into
+  // a generated namespace never resolve. These files reference nothing else;
+  // elsewhere the exemption is line-scoped. Namespacing the generated files at
+  // generation time would retire this entirely.
+  {
+    files: [
+      'src/components/graph/selectionToolbox/BypassButton.vue',
+      'src/components/graph/selectionToolbox/ConfigureSubgraph.vue',
+      'src/components/graph/selectionToolbox/ConvertToSubgraphButton.vue',
+      'src/components/graph/selectionToolbox/DeleteButton.vue',
+      'src/components/graph/selectionToolbox/Load3DViewerButton.vue',
+      'src/components/graph/selectionToolbox/MaskEditorButton.vue',
+      'src/components/graph/selectionToolbox/SaveToSubgraphLibrary.vue'
+    ],
+    rules: {
+      '@intlify/vue-i18n/no-missing-keys': 'off'
+    }
+  },
+  // billing-web keeps a single hand-authored catalog of its own, so it gets the
+  // rule with localeDir repointed at it.
+  {
+    files: ['apps/billing-web/**/*.{ts,mts,vue}'],
+    settings: {
+      'vue-i18n': {
+        localeDir: [
+          {
+            pattern: './apps/billing-web/src/locales/**/*.json',
+            localeKey: 'path',
+            localePattern:
+              /^\.?\/?apps\/billing-web\/src\/locales\/(?<locale>[A-Za-z0-9-]+)\/.+\.json$/
+          }
+        ],
+        messageSyntaxVersion: '^9.0.0'
+      }
+    },
+    rules: {
+      '@intlify/vue-i18n/no-missing-keys': 'error'
+    }
+  },
   // Astro exposes virtual modules (astro:content, astro:assets, ...) that the
   // TypeScript resolver cannot see but are valid at build time.
   {

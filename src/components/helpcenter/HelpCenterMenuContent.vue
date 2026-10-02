@@ -285,6 +285,7 @@ const moreItems = computed<MenuItem[]>(() => {
     {
       key: 'replay-onboarding',
       type: 'item',
+      // eslint-disable-next-line @intlify/vue-i18n/no-missing-keys
       label: t('commands.Comfy_Onboarding_Replay.label'),
       visible: isDevMode.value,
       action: () => {
