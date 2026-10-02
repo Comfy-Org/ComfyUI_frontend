@@ -8,7 +8,7 @@ This package contains JSON only; Fallow resolves it natively.
 Install the preset and the tested CLI version:
 
 ```sh
-npm install --save-dev --save-exact @comfyorg/fallow-config@0.1.0 fallow@3.24.1
+npm install --save-dev --save-exact @comfyorg/fallow-config@0.0.1 fallow@3.24.1
 ```
 
 Add `extends` to the repository's existing `.fallowrc.jsonc`:
@@ -45,6 +45,6 @@ into clean npm consumers offline, and exercise the installed preset with the
 pinned Fallow CLI.
 
 Publish through the repository's **Publish Package** workflow after merge to
-`main`, selecting `fallow-config`, version `0.1.0`, and dist-tag `latest`.
+`main`, selecting `fallow-config`, version `0.0.1`, and dist-tag `latest`.
 The first release needs that manual dispatch; subsequent version bumps use the
 existing **Version Bump Package** and release-label merge workflow.
