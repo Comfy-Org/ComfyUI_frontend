@@ -87,7 +87,13 @@ export interface OpSender {
    * call closes the open group, these ops are sealed into the queue at the
    * position they were admitted at — ahead of what the nested call enqueued,
    * with their original `op_id`s — rather than dropped. Delivery the nested
-   * call requested is held until then, so mint order reaches the wire intact.
+   * call requested is held until then, so mint order reaches the wire intact
+   * PER DOCUMENT, which is the order the stamp contract is defined over. It is
+   * not globally intact: the group this admission sealed is by construction
+   * another workflow's (an admission for the SAME workflow never seals), and
+   * that group queues behind these later-minted ops because the insertion index
+   * is taken before the seal. Two documents' ops have no causal relation, so
+   * only the cross-document transport order is affected.
    */
   admit(operations: GraphOperation[]): void
   /** Seal the open admission group into wire batches and start delivery. */
@@ -783,9 +789,16 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     abortAll() {
       stateEpoch++
       abortGeneration++
-      // A doc_reset breaks lineage: every cursor is against a document that no
-      // longer exists, so the next mint restarts from the new doc's sequence.
-      lastMintedVersions.clear()
+      // A doc_reset breaks the lineage of the BOUND document only — the
+      // follower dispatches this under an `isCurrentWorkflow` guard — so only
+      // that cursor is against a document that no longer exists and only it
+      // restarts from the new doc's sequence. Clearing the whole map would
+      // discard the high-water mark of every other doc visited this session,
+      // and returning to one of those before its observed sequence catches up
+      // would then re-mint a counter this actor already used there, which is
+      // the stamp collision this map exists to prevent.
+      const resetWorkflowId = deps.workflowId()
+      if (resetWorkflowId !== null) lastMintedVersions.delete(resetWorkflowId)
       drainOutstanding(
         guardedSettlementNotifier('failure_settling_agent_op_sender_abort'),
         'failure_chunking_agent_op_sender_abort'

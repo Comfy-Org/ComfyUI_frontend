@@ -196,6 +196,36 @@ describe('createOpSender', () => {
     expect(sent[1].ops[0].base_version).toBe(41)
   })
 
+  it('a document reset restarts only the reset document, not every workflow visited', () => {
+    sender.admit([addNode(1)])
+    sender.admit([addNode(2)])
+    sender.flush()
+    // The reset lands on wf-2, which is what the follower is bound to: it is
+    // dispatched under an isCurrentWorkflow guard, so no other doc's lineage
+    // broke and no other doc's high-water mark may be discarded.
+    boundWorkflow = 'wf-2'
+    sender.admit([addNode(3)])
+    sender.abortAll()
+    sender.admit([addNode(4)])
+    // Back on wf-1 before its re-subscribe is acknowledged.
+    boundWorkflow = WORKFLOW
+    observedSequence = 0
+    sender.admit([addNode(5)])
+
+    // wf-2's lineage broke, so it restarts at the new document's sequence.
+    // wf-1's did not, so node 5 mints past node 2 rather than at the
+    // not-yet-acknowledged 0.
+    expect(
+      sender.pendingOps().map(({ workflowId, ops }) => ({
+        workflowId,
+        versions: ops.map((op) => op.base_version)
+      }))
+    ).toEqual([
+      { workflowId: 'wf-2', versions: [41] },
+      { workflowId: WORKFLOW, versions: [43] }
+    ])
+  })
+
   it('an admission taken while unbound leaves the bound workflow its own counter', () => {
     sender.admit([addNode(1)])
     boundWorkflow = null
