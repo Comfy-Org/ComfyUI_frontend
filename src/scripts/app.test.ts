@@ -108,6 +108,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
+import type { RootGraphId } from '@/types/graphScopeId'
 import { toRootGraphId } from '@/types/graphScopeId'
 import {
   createTestRootGraph,
@@ -261,6 +262,21 @@ function markLoaded(workflow: ComfyWorkflow): LoadedComfyWorkflow {
   workflow.content = '{}'
   workflow.originalContent = '{}'
   return workflow as LoadedComfyWorkflow
+}
+
+/**
+ * Seed the binding a completed load for the presented document would publish.
+ * `activate` requires the token of a live transition, so open one for the
+ * document already on the pointer — which keeps the binding rather than
+ * retracting it, exactly as a same-document load does.
+ */
+function publishActiveBinding(rootGraphId: RootGraphId): void {
+  const lifecycle = useDocumentLifecycleStore()
+  const active = useWorkflowStore().activeWorkflow
+  lifecycle.activate(
+    rootGraphId,
+    lifecycle.beginTransition(active ? toDocumentUid(active.instanceId) : null)
+  )
 }
 
 function createWorkflowGraphData(): ComfyWorkflowJSON {
@@ -569,10 +585,7 @@ describe('ComfyApp', () => {
       )
       useWorkflowStore().activeWorkflow = outgoing
       const lifecycle = useDocumentLifecycleStore()
-      lifecycle.activate({
-        uid: toDocumentUid(outgoing.instanceId),
-        rootGraphId: toRootGraphId('outgoing-root')
-      })
+      publishActiveBinding(toRootGraphId('outgoing-root'))
       const midLoad = sampleLifecycleAt('beforeConfigureGraph', () =>
         lifecycle.isActive(toDocumentUid(outgoing.instanceId))
       )
@@ -602,7 +615,7 @@ describe('ComfyApp', () => {
       useWorkflowStore().activeWorkflow = workflow
       const uid = toDocumentUid(workflow.instanceId)
       const lifecycle = useDocumentLifecycleStore()
-      lifecycle.activate({ uid, rootGraphId: toRootGraphId('active-root') })
+      publishActiveBinding(toRootGraphId('active-root'))
       const midLoad = sampleLifecycleAt('beforeConfigureGraph', () =>
         lifecycle.isActive(uid)
       )
@@ -631,7 +644,7 @@ describe('ComfyApp', () => {
       useWorkflowStore().activeWorkflow = workflow
       const uid = toDocumentUid(workflow.instanceId)
       const lifecycle = useDocumentLifecycleStore()
-      lifecycle.activate({ uid, rootGraphId: toRootGraphId('same-root') })
+      publishActiveBinding(toRootGraphId('same-root'))
       const midLoad = sampleLifecycleAt('beforeConfigureGraph', () =>
         lifecycle.isActive(uid)
       )
@@ -672,7 +685,7 @@ describe('ComfyApp', () => {
       useWorkflowStore().activeWorkflow = workflow
       const uid = toDocumentUid(workflow.instanceId)
       const lifecycle = useDocumentLifecycleStore()
-      lifecycle.activate({ uid, rootGraphId: toRootGraphId('reloaded-root') })
+      publishActiveBinding(toRootGraphId('reloaded-root'))
       const midLoad = sampleLifecycleAt('beforeConfigureGraph', () =>
         lifecycle.isActive(uid)
       )
@@ -714,7 +727,7 @@ describe('ComfyApp', () => {
       useWorkflowStore().activeWorkflow = workflow
       const uid = toDocumentUid(workflow.instanceId)
       const lifecycle = useDocumentLifecycleStore()
-      lifecycle.activate({ uid, rootGraphId: toRootGraphId('doomed-root') })
+      publishActiveBinding(toRootGraphId('doomed-root'))
       vi.spyOn(graph, 'configure').mockImplementation(() => {
         throw new Error('corrupt workflow')
       })
@@ -746,7 +759,7 @@ describe('ComfyApp', () => {
       useWorkflowStore().activeWorkflow = workflow
       const uid = toDocumentUid(workflow.instanceId)
       const lifecycle = useDocumentLifecycleStore()
-      lifecycle.activate({ uid, rootGraphId: toRootGraphId('survivor-root') })
+      publishActiveBinding(toRootGraphId('survivor-root'))
       // A `beforeConfigureGraph` extension hook throwing: inside the try, but
       // before `configure`, and with `clean: false` nothing cleared the graph.
       mockExtensionService.invokeExtensionsAsync.mockImplementation(
@@ -781,10 +794,13 @@ describe('ComfyApp', () => {
           size: 0
         })
       )
+      // Clear Workflow acts on the presented document, which is what the
+      // lifecycle store resolves the binding's identity against.
+      useWorkflowStore().activeWorkflow = workflow
       const uid = toDocumentUid(workflow.instanceId)
       const idBeforeClear = graph.id
       const lifecycle = useDocumentLifecycleStore()
-      lifecycle.activate({ uid, rootGraphId: toRootGraphId(idBeforeClear) })
+      publishActiveBinding(toRootGraphId(idBeforeClear))
 
       // What `Comfy.ClearWorkflow` and the legacy Clear button do: no graph
       // load, but `LGraph.clear()` mints a fresh root graph id.
@@ -3254,10 +3270,7 @@ describe('ComfyApp', () => {
       useWorkflowStore().activeWorkflow = previous
       const previousUid = toDocumentUid(previous.instanceId)
       const lifecycle = useDocumentLifecycleStore()
-      lifecycle.activate({
-        uid: previousUid,
-        rootGraphId: toRootGraphId(graph.id)
-      })
+      publishActiveBinding(toRootGraphId(graph.id))
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
         parameters: 'positive\nNegative prompt: negative\nSteps: 20'
       })
@@ -3273,8 +3286,9 @@ describe('ComfyApp', () => {
       expect(lifecycle.isActive(previousUid)).toBe(false)
       const imported = useWorkflowStore().activeWorkflow
       expect(imported).not.toBe(previous)
+      assert.exists(imported)
       expect(
-        lifecycle.activeRootGraphId(toDocumentUid(imported!.instanceId))
+        lifecycle.activeRootGraphId(toDocumentUid(imported.instanceId))
       ).toBe(toRootGraphId(graph.id))
     })
 
@@ -3293,10 +3307,7 @@ describe('ComfyApp', () => {
       useWorkflowStore().activeWorkflow = previous
       const previousUid = toDocumentUid(previous.instanceId)
       const lifecycle = useDocumentLifecycleStore()
-      lifecycle.activate({
-        uid: previousUid,
-        rootGraphId: toRootGraphId(graph.id)
-      })
+      publishActiveBinding(toRootGraphId(graph.id))
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
         parameters: 'positive\nNegative prompt: negative\nSteps: 20'
       })
@@ -3568,10 +3579,7 @@ describe('ComfyApp', () => {
       useWorkflowStore().activeWorkflow = previous
       const previousUid = toDocumentUid(previous.instanceId)
       const lifecycle = useDocumentLifecycleStore()
-      lifecycle.activate({
-        uid: previousUid,
-        rootGraphId: toRootGraphId(graph.id)
-      })
+      publishActiveBinding(toRootGraphId(graph.id))
 
       await app.loadApiJson({}, 'api-import')
 
@@ -3580,8 +3588,9 @@ describe('ComfyApp', () => {
       expect(lifecycle.isActive(previousUid)).toBe(false)
       const imported = useWorkflowStore().activeWorkflow
       expect(imported).not.toBe(previous)
+      assert.exists(imported)
       expect(
-        lifecycle.activeRootGraphId(toDocumentUid(imported!.instanceId))
+        lifecycle.activeRootGraphId(toDocumentUid(imported.instanceId))
       ).toBe(toRootGraphId(graph.id))
     })
   })

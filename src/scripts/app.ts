@@ -1192,10 +1192,6 @@ export class ComfyApp implements IComfyApp {
       silentAssetErrors = false,
       workflowNavigationId
     } = options
-    // Opens the document-lifecycle transition this load closes below, and
-    // retracts the active binding unless the load is staying on the same
-    // document. The token ties both outcomes to *this* load: `ChangeTracker`
-    // undo and paste bypass `queueWorkflowLoad`, so loads interleave.
     const transition = useWorkflowService().beforeLoadNewGraph(
       clean,
       workflow,
@@ -1374,13 +1370,10 @@ export class ComfyApp implements IComfyApp {
       // suppression/loading-state a `beforeLoadGraph` listener opened for
       // this load, since nothing ever notifies it the load ended.
       await this.reportGraphLoadFailure(error)
-      // Fail closed only if the graph actually went away: with `clean`, the
-      // `clean()` above already took the previous graph off the canvas, so a
-      // same-document reload that kept its binding is now pointing at a cleared
-      // graph. Without it the previous workflow is still on screen and still
-      // the bound document, and retracting would silence the agent for a
-      // workflow the user can see.
-      if (clean) useDocumentLifecycleStore().invalidate(transition)
+      // Only if the graph actually went away: without `clean` the previous
+      // workflow is still on screen and still the bound document, and
+      // retracting would silence the agent for a workflow the user can see.
+      if (clean) useDocumentLifecycleStore().invalidate()
       void useSubgraphNavigationStore().updateHash(
         'workflow-load',
         workflowNavigationId
@@ -1494,9 +1487,7 @@ export class ComfyApp implements IComfyApp {
         }
       } catch (error) {
         await this.reportGraphLoadFailure(error)
-        // Unconditional here: `configure` has already rewritten the shared root
-        // graph, so whatever is on the canvas is neither workflow.
-        useDocumentLifecycleStore().invalidate(transition)
+        useDocumentLifecycleStore().invalidate()
         // Resolves rather than throws: the close/replacement guards read this outcome.
         return false
       }
@@ -2185,8 +2176,6 @@ export class ComfyApp implements IComfyApp {
 
     // Use parameters strictly as the final fallback
     if (parameters && typeof parameters === 'string') {
-      // An A1111 import always replaces the live graph, so it has no requested
-      // document and fails closed until `afterLoadNewGraph` publishes.
       let transition: DocumentTransition | undefined
       const outcome = await importA1111(
         this.rootGraph,
@@ -2370,8 +2359,6 @@ export class ComfyApp implements IComfyApp {
     options: { deferWarnings?: boolean } = {}
   ): Promise<void> {
     // false: no workflow load follows to republish the hash.
-    // No requested document: an API JSON import always replaces the live graph,
-    // so it fails closed until `afterLoadNewGraph` publishes.
     const transition = useWorkflowService().beforeLoadNewGraph(false)
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
     this.canvas.setGraph(this.rootGraph)
@@ -2725,10 +2712,7 @@ export class ComfyApp implements IComfyApp {
     if (!this.canvas.subgraph) {
       this.rootGraph.clear()
       ensureNonZeroUuid(this.rootGraph)
-      // `LGraph.clear()` mints a fresh root graph id. Clear Workflow reaches
-      // here without a graph load, so nothing else republishes the binding and
-      // the agent would refuse every later op on the bound document as
-      // targeting a foreign graph.
+      // Clear Workflow rotates the active document's root graph id in place.
       useDocumentLifecycleStore().rebindActiveRootGraph(
         toRootGraphId(this.rootGraph.id)
       )
