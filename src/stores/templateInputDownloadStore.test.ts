@@ -39,4 +39,72 @@ describe('useTemplateInputDownloadStore', () => {
     expect(store.downloads).toEqual([])
     expect(store.previewRevision('subject.png')).toBe(1)
   })
+  it.for(['error', 'cancelled'] as const)(
+    'drops a download that ends as %s',
+    (status) => {
+      const store = useTemplateInputDownloadStore()
+
+      store.updateProgress(progress('downloading', 0.4))
+      expect(store.downloads).toHaveLength(1)
+
+      store.updateProgress(progress(status, 0.4))
+      expect(store.downloads).toEqual([])
+      expect(store.blockingFilenames).toEqual(new Set())
+    }
+  )
+
+  it.for([
+    { name: 'above one', value: 2 },
+    { name: 'below zero', value: -1 },
+    { name: 'not finite', value: Number.NaN }
+  ])('reports a progress $name as unknown', ({ value }) => {
+    const store = useTemplateInputDownloadStore()
+
+    store.updateProgress(progress('downloading', value))
+
+    expect(store.downloads[0].progress).toBeNull()
+  })
+
+  it('tracks concurrent downloads separately', () => {
+    const store = useTemplateInputDownloadStore()
+
+    store.updateProgress(progress('downloading', 0.2))
+    store.updateProgress({
+      ...progress('downloading', 0.8),
+      downloadId: 'download-2',
+      filename: 'backdrop.png'
+    })
+
+    expect(store.downloads).toHaveLength(2)
+    expect(store.blockingFilenames).toEqual(
+      new Set(['subject.png', 'backdrop.png'])
+    )
+  })
+
+  it('forgets everything on clear', () => {
+    const store = useTemplateInputDownloadStore()
+
+    store.updateProgress(progress('completed', 1))
+    expect(store.previewRevision('subject.png')).toBe(1)
+
+    store.clear()
+
+    expect(store.downloads).toEqual([])
+    expect(store.previewRevision('subject.png')).toBe(0)
+  })
+
+  it('does not resurrect a download after its graph sync completed', () => {
+    const store = useTemplateInputDownloadStore()
+
+    store.updateProgress(progress('completed', 1))
+    store.completeGraphSync(['subject.png'])
+    expect(store.downloads).toEqual([])
+
+    // A duplicate completion must not put the row back into a blocking state
+    // that nothing would clear a second time.
+    store.updateProgress(progress('completed', 1))
+
+    expect(store.downloads).toEqual([])
+    expect(store.blockingFilenames).toEqual(new Set())
+  })
 })

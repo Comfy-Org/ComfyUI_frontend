@@ -181,6 +181,40 @@ describe('LinearControls', () => {
     overlayMock.overlayTitle = 'Required input missing'
   })
 
+  it('shows an indeterminate bar when a download reports no progress', () => {
+    useTemplateInputDownloadStore().updateProgress({
+      downloadId: 'download-1',
+      filename: missingMediaCandidate.name,
+      progress: null as unknown as number,
+      status: 'downloading',
+      templateInputs: [{ templateId: 'template-a', assetId: 'asset-a' }]
+    })
+
+    renderControls({ missingResource: 'media' })
+
+    const status = screen.getByTestId('linear-input-download-status')
+    expect(within(status).getByRole('progressbar')).not.toHaveAttribute(
+      'aria-valuenow'
+    )
+    expect(screen.getByRole('button', { name: 'Run' })).toBeDisabled()
+  })
+
+  it('reports finalizing once a download completes, with Run still blocked', () => {
+    useTemplateInputDownloadStore().updateProgress({
+      downloadId: 'download-1',
+      filename: missingMediaCandidate.name,
+      progress: 1,
+      status: 'completed',
+      templateInputs: [{ templateId: 'template-a', assetId: 'asset-a' }]
+    })
+
+    renderControls({ missingResource: 'media' })
+
+    const status = screen.getByTestId('linear-input-download-status')
+    expect(status).toHaveTextContent('Preparing downloaded starter inputs')
+    expect(screen.getByRole('button', { name: 'Run' })).toBeDisabled()
+  })
+
   it('shows required template input progress and blocks Run until graph hydration', () => {
     useTemplateInputDownloadStore().updateProgress({
       downloadId: 'download-1',
