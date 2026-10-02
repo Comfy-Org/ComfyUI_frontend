@@ -1,4 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
+import { applyOps, mint, project } from '@comfyorg/comfy-multi-player'
+import type { InsertWorkflowOp } from '@comfyorg/comfy-multi-player'
+import { isPlainObject } from 'es-toolkit'
 
 import type {
   AgentThreadListResponse,
@@ -8,7 +11,15 @@ import type {
 } from '@comfyorg/ingest-types'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import type { Mocked } from 'vitest'
 import { computed, defineComponent, h, nextTick, reactive, ref } from 'vue'
 import type { Ref } from 'vue'
@@ -27,8 +38,17 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyW
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
-import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import {
+  LGraph,
+  LGraphCanvas,
+  LGraphGroup,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
+import {
+  createTestRootGraph,
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 
@@ -6207,6 +6227,174 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(
       useAgentWorkflowTabBindingStore().tabPathFor('wf-closed-unsaved')
     ).toBe(recovered?.path)
+    expect(useToastStore().messagesToAdd).toHaveLength(0)
+    expect(useWorkflowService().saveWorkflowAs).not.toHaveBeenCalled()
+  })
+
+  it('recovers a closed Agent workflow with string group IDs in a subgraph from chat history', async () => {
+    vi.mocked(validateComfyWorkflow).mockReset()
+    const viewed = makeTab('wf-viewed')
+    const blueprint = createTestRootGraph(
+      'a01f9532-0eb9-4770-a70d-3c6e9c5d455c'
+    )
+    const subgraph = createTestSubgraph({
+      rootGraph: blueprint,
+      name: 'Detail subgraph',
+      nodeCount: 1
+    })
+    blueprint.subgraphs.set(subgraph.id, subgraph)
+    blueprint.add(createTestSubgraphNode(subgraph, { id: 7 }))
+    const group = new LGraphGroup('Detail pass')
+    group.configure({
+      id: 0,
+      title: 'Detail pass',
+      bounding: [10, 20, 300, 200],
+      color: '#334455'
+    })
+    subgraph.add(group)
+    const { nodes, ...serialized } = blueprint.serialize()
+    const catalog = { types: {} }
+    const doc = mint(
+      {
+        version: 0.4,
+        last_node_id: 0,
+        last_link_id: 0,
+        nodes: [],
+        links: []
+      },
+      catalog
+    )
+    onTestFinished(() => doc.destroy())
+    const insert: InsertWorkflowOp = {
+      op_id: 'd67b35ea8e1546ee997ef6fa2f21a0f1',
+      actor: 'agent:test',
+      base_version: 1,
+      stamp: [1, 'agent:test'],
+      op: 'insert_workflow',
+      workflow: JSON.parse(
+        JSON.stringify({
+          ...serialized,
+          nodes: nodes.map(({ flags, ...node }) => ({
+            ...node,
+            flags: { ...flags }
+          }))
+        } satisfies InsertWorkflowOp['workflow'])
+      )
+    }
+    expect(applyOps(doc, [insert], catalog).outcomes).toEqual([
+      { op_id: insert.op_id, outcome: 'applied' }
+    ])
+    const insertedGraph = project(doc, catalog)
+    expect(insertedGraph).toMatchObject({
+      definitions: {
+        subgraphs: [{ groups: [{ id: expect.any(Number) }] }]
+      }
+    })
+    const insertedDefinition = insertedGraph.definitions?.subgraphs?.[0]
+    assert(isPlainObject(insertedDefinition))
+    const insertedGroups = insertedDefinition.groups
+    assert(Array.isArray(insertedGroups))
+    const insertedGroup = insertedGroups[0]
+    assert(isPlainObject(insertedGroup))
+    const legacyGroupId = `insert:${insert.op_id}:root/definition:${encodeURIComponent(JSON.stringify(subgraph.id))}:group:${encodeURIComponent(JSON.stringify(group.id))}`
+    const recoveredGraph = {
+      ...insertedGraph,
+      definitions: {
+        ...insertedGraph.definitions,
+        subgraphs: [
+          {
+            ...insertedDefinition,
+            groups: [{ ...insertedGroup, id: legacyGroupId }]
+          }
+        ]
+      }
+    }
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.includes('/agent/draft'))
+          return json(200, { content: recoveredGraph, version: 4 })
+        if (url.includes('/workflows/wf-closed-unsaved'))
+          return json(200, cloudWorkflowRow('wf-closed-unsaved', 'Nebula pass'))
+        if (url.includes('/messages'))
+          return json(200, [
+            {
+              id: 'history-user',
+              thread_id: 'th-history',
+              seq: 1,
+              role: 'user',
+              status: 'complete',
+              turn_id: 'history-turn',
+              workflow_id: 'wf-closed-unsaved',
+              content: { text: 'Continue the closed workflow' }
+            }
+          ] satisfies AgentMessages)
+        if (url.includes('/workflows'))
+          return json(200, {
+            data: [],
+            pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+          })
+        return json(
+          200,
+          agentThreadList([
+            agentThread({
+              id: 'th-history',
+              title: 'Earlier chat',
+              last_message_at: '2026-09-25T00:00:00Z'
+            })
+          ])
+        )
+      })
+    )
+
+    renderWithSelectedTarget()
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Earlier chat' })
+    )
+
+    await screen.findByTestId('user-message-bubble')
+    expect(reportError).not.toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'agent_draft_validation_failed' })
+    )
+    await vi.waitFor(() =>
+      expect(useAgentPanelStore().selectedWorkflow?.filename).toBe(
+        'Nebula pass'
+      )
+    )
+    const recovered = useAgentPanelStore().selectedWorkflow
+    assert.exists(recovered)
+    expect(recovered).not.toBe(viewed)
+    expect(recovered).toMatchObject({
+      filename: 'Nebula pass',
+      isTemporary: true,
+      activeState: {
+        definitions: {
+          subgraphs: [
+            {
+              name: 'Detail subgraph',
+              groups: [
+                {
+                  title: 'Detail pass',
+                  bounding: [10, 20, 300, 200],
+                  color: '#334455'
+                }
+              ]
+            }
+          ]
+        }
+      }
+    })
+    expect(recovered.activeState?.nodes).toEqual(recoveredGraph.nodes)
+    expect(workflowStore.activeWorkflow?.path).toBe(recovered.path)
+    expect(
+      useAgentWorkflowTabBindingStore().tabPathFor('wf-closed-unsaved')
+    ).toBe(recovered.path)
     expect(useToastStore().messagesToAdd).toHaveLength(0)
     expect(useWorkflowService().saveWorkflowAs).not.toHaveBeenCalled()
   })

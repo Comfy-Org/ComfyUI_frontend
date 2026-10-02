@@ -494,6 +494,7 @@ overrides:
   sharp@^0.34.0: ^0.35.0
 
 patchedDependencies:
+  '@comfyorg/comfy-multi-player@0.3.6': da11aa4e623758ff0add223b05d17e0594aae7984c4b16b4add9e409dda98eb4
   '@total-typescript/shoehorn@0.1.2': 8860f8e380c137bc50b1976516d562675229ce1e5b436bb48c7daf65a3dbec15
 
 importers:
@@ -517,7 +518,7 @@ importers:
         version: link:packages/billing-contract
       '@comfyorg/comfy-multi-player':
         specifier: 'catalog:'
-        version: 0.3.6
+        version: 0.3.6(patch_hash=da11aa4e623758ff0add223b05d17e0594aae7984c4b16b4add9e409dda98eb4)
       '@comfyorg/comfyui-desktop-bridge-types':
         specifier: 'catalog:'
         version: 0.2.0
@@ -10643,7 +10644,7 @@ snapshots:
       fast-wrap-ansi: 0.2.2
       sisteransi: 1.0.5
 
-  '@comfyorg/comfy-multi-player@0.3.6':
+  '@comfyorg/comfy-multi-player@0.3.6(patch_hash=da11aa4e623758ff0add223b05d17e0594aae7984c4b16b4add9e409dda98eb4)':
     dependencies:
       yjs: 13.6.32
 

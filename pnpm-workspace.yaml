@@ -213,4 +213,5 @@ minimumReleaseAgeExclude:
   - '@comfyorg/comfy-multi-player@0.3.6'
 
 patchedDependencies:
+  '@comfyorg/comfy-multi-player@0.3.6': patches/@comfyorg__comfy-multi-player@0.3.6.patch
   '@total-typescript/shoehorn@0.1.2': patches/@total-typescript__shoehorn@0.1.2.patch

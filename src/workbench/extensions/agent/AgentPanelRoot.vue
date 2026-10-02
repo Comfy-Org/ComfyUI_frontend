@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import './agentPanel.css'
 
+import { normalizeLegacyWorkflowGroupIds } from '@comfyorg/comfy-multi-player'
 import type { GetFeaturesResponse } from '@comfyorg/ingest-types'
 import { useClipboard } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
@@ -382,13 +383,16 @@ async function recoverWorkflow(
   ])
   const filename = agentTabFilename(name)
   if (filename === undefined) return null
-  const graph = await validateComfyWorkflow(content, (details) => {
-    reportError(new Error(details), {
-      surface: 'agent',
-      errorType: 'agent_draft_validation_failed',
-      tags: { workflow_id: workflowId }
-    })
-  })
+  const graph = await validateComfyWorkflow(
+    normalizeLegacyWorkflowGroupIds(content),
+    (details) => {
+      reportError(new Error(details), {
+        surface: 'agent',
+        errorType: 'agent_draft_validation_failed',
+        tags: { workflow_id: workflowId }
+      })
+    }
+  )
   return graph === null
     ? null
     : workflowStore.createNewTemporary(filename, graph)
