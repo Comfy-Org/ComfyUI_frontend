@@ -216,6 +216,39 @@ describe('deriveBuildInputs', () => {
     expect(inputs.nodePacks).toEqual([])
   })
 
+  it('keeps the valid nodes of a subgraph that also holds a malformed one', () => {
+    const inputs = deriveBuildInputs(
+      {
+        nodes: [{ id: 1, type: 'outer' }],
+        definitions: {
+          subgraphs: [
+            {
+              id: 'outer',
+              name: 'outer',
+              inputNode: null,
+              outputNode: null,
+              nodes: [
+                {
+                  id: 9,
+                  type: 'KSampler',
+                  properties: { cnr_id: 'comfyui-kjnodes', ver: '1.1.4' }
+                },
+                { id: 10 },
+                { id: 11, type: 'VAEDecode' }
+              ]
+            }
+          ]
+        }
+      },
+      workflow
+    )
+
+    expect(inputs.nodeClasses).toEqual(['KSampler', 'VAEDecode'])
+    expect(inputs.nodePacks).toEqual([
+      { id: 'comfyui-kjnodes', versions: ['1.1.4'] }
+    ])
+  })
+
   it('leaves out a subgraph definition the graph no longer uses', () => {
     const inputs = deriveBuildInputs(
       {

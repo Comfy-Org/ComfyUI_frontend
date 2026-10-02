@@ -84,6 +84,34 @@ function parseNodes(nodes: readonly unknown[]): FlattenableWorkflowNode[] {
   })
 }
 
+const zSubgraphShape = z
+  .object({
+    nodes: z.array(z.unknown()).catch([]),
+    definitions: z
+      .object({ subgraphs: z.array(z.unknown()).catch([]) })
+      .optional()
+      .catch(undefined)
+  })
+  .passthrough()
+
+/**
+ * A subgraph definition with its malformed nodes dropped, nested definitions
+ * included, so one bad node does not discard its valid siblings: the shared
+ * flattening guard rejects a definition whole when any node is malformed.
+ */
+function withWellFormedNodes(definition: unknown): unknown {
+  const parsed = zSubgraphShape.safeParse(definition)
+  if (!parsed.success) return definition
+  const { nodes, definitions } = parsed.data
+  return {
+    ...parsed.data,
+    nodes: parseNodes(nodes),
+    ...(definitions && {
+      definitions: { subgraphs: definitions.subgraphs.map(withWellFormedNodes) }
+    })
+  }
+}
+
 const zWorkflowShape = z.object({
   nodes: z.array(z.unknown()).catch([]),
   definitions: z
@@ -104,7 +132,7 @@ function workflowParts(graph: unknown): {
   if (!parsed.success) return { roots: [], subgraphs: [] }
   return {
     roots: parseNodes(parsed.data.nodes),
-    subgraphs: parsed.data.definitions.subgraphs
+    subgraphs: parsed.data.definitions.subgraphs.map(withWellFormedNodes)
   }
 }
 
