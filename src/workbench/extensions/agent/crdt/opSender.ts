@@ -368,10 +368,9 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       })
       return
     }
-    if (open?.workflowId !== workflowId) seal()
     // seal() can synchronously settle a malformed admission. Consumers may
     // detach from that callback, so never recreate live state afterwards.
-    if (detached) {
+    if (open?.workflowId !== workflowId && seal()) {
       notifyDetachSettlement({ state: 'undeliverable', ops: minted })
       return
     }
@@ -379,8 +378,8 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     else open = { workflowId, ops: minted }
   }
 
-  function seal(): void {
-    if (!open) return
+  function seal(): boolean {
+    if (!open) return detached
     const { workflowId, ops } = open
     open = null
     try {
@@ -420,6 +419,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
           ops: rejected
         })
     }
+    return detached
   }
 
   function safelyChunkWireOps(ops: Op[], errorType: string): Op[][] {

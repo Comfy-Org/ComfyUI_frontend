@@ -891,7 +891,7 @@ describe('createOpSender', () => {
         if (serializations >= 3) throw new Error('stateful toJSON failed')
         return { id: 1, type: 'TestNode' }
       }
-    } as AddNodeOperation['node']
+    }
     const circularNode = addNode(2)
     const node: AddNodeOperation['node'] & Record<string, unknown> = {
       ...circularNode.node
