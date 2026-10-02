@@ -252,6 +252,132 @@ describe('parseBillingEntry', () => {
   })
 })
 
+describe('the source a product names', () => {
+  it.for([
+    'subscribe_to_run',
+    'settings_billing_panel',
+    'agent_paywall'
+  ] as const)('round-trips %s beside the journey it continues', (source) => {
+    const input = { ...BASE_INPUT, source, correlationId: 'journey-1' }
+    const url = entryUrl(input)
+
+    expect(url.searchParams.get('source')).toBe(source)
+    expect(parseBillingEntry(url)).toEqual({
+      status: 'ok',
+      entry: {
+        version: 'v1',
+        intent: 'checkout',
+        product: 'platform',
+        returnTo: 'platform_account',
+        correlationId: 'journey-1',
+        source
+      }
+    })
+  })
+
+  it.for(BILLING_INTENTS)(
+    'round-trips a source beside the journey on the %s intent',
+    (intent) => {
+      const url = entryUrl({
+        ...BASE_INPUT,
+        intent,
+        source: 'out_of_credits',
+        correlationId: 'journey-1'
+      })
+
+      expect(parseBillingEntry(url)).toEqual({
+        status: 'ok',
+        entry: {
+          version: 'v1',
+          intent,
+          product: 'platform',
+          returnTo: 'platform_account',
+          correlationId: 'journey-1',
+          source: 'out_of_credits'
+        }
+      })
+    }
+  )
+
+  it('round-trips a source and the journey beside a top-up amount', () => {
+    const url = entryUrl({
+      ...BASE_INPUT,
+      intent: 'top-up',
+      amountCents: 2500,
+      source: 'out_of_credits',
+      correlationId: 'journey-1'
+    })
+
+    expect(url.searchParams.get('source')).toBe('out_of_credits')
+    expect(url.searchParams.get('amount_cents')).toBe('2500')
+    expect(parseBillingEntry(url)).toEqual({
+      status: 'ok',
+      entry: {
+        version: 'v1',
+        intent: 'top-up',
+        product: 'platform',
+        returnTo: 'platform_account',
+        correlationId: 'journey-1',
+        amountCents: 2500,
+        source: 'out_of_credits'
+      }
+    })
+  })
+
+  it('keeps a top-up link and its amount when the source is outside the shared list', () => {
+    const url =
+      '/v1/top-up?product=platform&return_to=platform_account&amount_cents=2500&source=newsletter'
+
+    expect(parseBillingEntry(url)).toEqual({
+      status: 'ok',
+      entry: {
+        version: 'v1',
+        intent: 'top-up',
+        product: 'platform',
+        returnTo: 'platform_account',
+        amountCents: 2500
+      }
+    })
+  })
+
+  const UNREADABLE_SOURCES = [
+    ['a value outside the shared list', 'newsletter'],
+    ['a URL', 'https://attacker.example/steal?card=4242'],
+    ['free text', 'jane@example.com paid with 4242'],
+    ['an empty value', ''],
+    ['an inherited property name', 'constructor'],
+    ['a listed value in the wrong case', 'Agent_Paywall']
+  ] as const
+
+  it.for(UNREADABLE_SOURCES)(
+    'leaves %s off the link it builds',
+    ([, source]) => {
+      const input = { ...BASE_INPUT, source }
+
+      expect(entryUrl(input).search).toBe(
+        '?product=platform&return_to=platform_account'
+      )
+    }
+  )
+
+  it.for(UNREADABLE_SOURCES)(
+    'keeps a link that arrives with %s and reads no source from it',
+    ([, source]) => {
+      const url = `/v1/checkout?product=platform&return_to=platform_account&source=${encodeURIComponent(source)}`
+
+      expect(parseBillingEntry(url)).toEqual({
+        status: 'ok',
+        entry: {
+          version: 'v1',
+          intent: 'checkout',
+          product: 'platform',
+          returnTo: 'platform_account'
+        }
+      })
+    }
+  )
+})
+
 describe('the workspace query parameter', () => {
   it('is the same name the auth SDK reads and writes', () => {
     const workspaceField = OPTIONAL_ENTRY_FIELDS.find(

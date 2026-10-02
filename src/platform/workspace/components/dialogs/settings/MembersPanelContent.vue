@@ -210,9 +210,27 @@
         </div>
       </div>
     </div>
+    <div v-if="isPlanEnded" class="flex shrink-0 items-center gap-1 pt-2 pb-6">
+      <p class="text-sm text-muted-foreground">
+        {{ $t('workspacePanel.members.planEndedFooter') }}
+      </p>
+      <Button
+        v-if="permissions.canManageSubscription"
+        variant="muted-textonly"
+        size="sm"
+        class="text-sm text-base-foreground"
+        @click="isSalesManagedPlan ? handleContactSales() : showTeamPlans()"
+      >
+        {{
+          isSalesManagedPlan
+            ? $t('workspacePanel.members.contactSales')
+            : $t('workspacePanel.members.resubscribe')
+        }}
+      </Button>
+    </div>
     <!-- Need More Members Footer -->
     <div
-      v-if="hasMemberSeats && membersLoaded"
+      v-else-if="hasMemberSeats && membersLoaded"
       class="flex shrink-0 items-center gap-1 pt-2 pb-6"
     >
       <p class="text-sm text-muted-foreground">
@@ -335,8 +353,8 @@ function handleContactUs() {
   window.open(TEAM_PLAN_REQUEST_URL, '_blank', 'noopener,noreferrer')
 }
 
-// The ended-banner action: a sales-managed plan's route back is the
-// enterprise page, not the team-plan request form the footer link uses.
+// The ended banner and footer action: a sales-managed plan's route back is the
+// enterprise page, not the team-plan request form the Contact us link uses.
 function handleContactSales() {
   window.open(ENTERPRISE_URL, '_blank', 'noopener,noreferrer')
 }

@@ -19,8 +19,7 @@ import {
   zPreviewSubscribeResponse,
   zResubscribeResponse,
   zSubscribeRequest,
-  zSubscribeResponse,
-  zSubscriptionDiscount
+  zSubscribeResponse
 } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
@@ -40,6 +39,7 @@ import type {
 import { validateActionUrl } from './operationState.js'
 import { readValidatedBillingResponse } from './sharedRead.js'
 import type { BillingStatusReader } from './status.js'
+import { SubscriptionDiscountSchema } from './subscriptionDiscount.js'
 import { wireCents } from './wireCents.js'
 
 export const SUBSCRIBE_ROUTE = '/billing/subscribe'
@@ -116,6 +116,8 @@ const PlanInfoSchema = zPreviewPlanInfo.extend({
   credits_cents: wireCents,
   price_cents: wireCents,
   list_price_cents: wireCents.optional(),
+  monthly_list_price_cents: wireCents.optional(),
+  monthly_price_cents: wireCents.optional(),
   seat_summary: zPreviewPlanInfo.shape.seat_summary.extend({
     total_cost_cents: wireCents,
     total_credits_cents: wireCents
@@ -131,16 +133,11 @@ const PreviewSchema = zPreviewSubscribeResponse.extend({
   renewal_amount_cents: wireCents.optional(),
   subtotal_cents: wireCents.optional(),
   balance_applied_cents: wireCents.optional(),
+  proration_remaining_cents: wireCents.optional(),
+  proration_unused_cents: wireCents.optional(),
   current_plan: PlanInfoSchema.optional(),
   new_plan: PlanInfoSchema,
-  discounts: z
-    .array(
-      zSubscriptionDiscount.extend({
-        amount_off_cents: wireCents.optional(),
-        duration_in_months: wireCents.optional()
-      })
-    )
-    .optional()
+  discounts: z.array(SubscriptionDiscountSchema).optional()
 })
 
 /**
