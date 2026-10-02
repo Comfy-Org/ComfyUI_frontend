@@ -298,6 +298,49 @@ describe('ModelsCatalogue', () => {
       }
     )
 
+    it('narrows by a task chip and widens back with All', async () => {
+      const user = userEvent.setup()
+      renderExplore()
+      const chips = within(await screen.findByRole('group', { name: 'Tasks' }))
+
+      await user.click(chips.getByRole('button', { name: 'Edit images' }))
+
+      expect(screen.getByRole('heading', { name: 'Edit images' })).toBeVisible()
+      expect(resultNames()).toEqual([
+        '/hub/models/?useCase=edit-images',
+        '/hub/workflows/relight/'
+      ])
+
+      await user.click(chips.getByRole('button', { name: 'All' }))
+
+      expect(screen.getByTestId('explore-tasks')).toBeVisible()
+      expect(
+        screen.getByRole('heading', { name: 'Popular right now' })
+      ).toBeVisible()
+    })
+
+    it.for([
+      { covers: 'an image over a video', withImage: true, media: 'IMG' },
+      { covers: 'a video without an image', withImage: false, media: 'VIDEO' }
+    ])('covers a task with $covers', async ({ withImage, media }) => {
+      const withThumb = (
+        name: string,
+        thumbnail: WorkshopModel['thumbnail']
+      ): WorkshopModel => ({
+        ...entry(name, 'model', ['generate-images']),
+        thumbnail
+      })
+      renderExplore([
+        withThumb('moving', { url: '/clip.mp4', kind: 'video' }),
+        ...(withImage
+          ? [withThumb('still', { url: '/still.webp', kind: 'image' })]
+          : [])
+      ])
+
+      const tile = await screen.findByTestId('explore-task')
+      expect(within(tile).getByTestId('model-card-media').tagName).toBe(media)
+    })
+
     it('says when nothing matches and clears back to everything', async () => {
       const user = userEvent.setup()
       renderExplore()
