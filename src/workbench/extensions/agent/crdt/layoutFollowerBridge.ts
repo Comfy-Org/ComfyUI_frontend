@@ -296,15 +296,8 @@ export class LayoutFollowerBridge extends EventTarget {
    * @returns whether the frame left the transport.
    */
   reseed(workflowId: string, workflow: Record<string, unknown>): boolean {
-    const expectedSeq = this.reseedExpectedSeq
-    if (
-      workflowId === this.reseedEligibleWorkflowId &&
-      workflowId === this.desiredWorkflowId &&
-      workflowId !== this.reseedBlockedWorkflowId &&
-      expectedSeq !== null &&
-      Number.isSafeInteger(expectedSeq) &&
-      expectedSeq > 0
-    ) {
+    const expectedSeq = this.reseedSequenceFor(workflowId)
+    if (expectedSeq !== null) {
       this.reseedEligibleWorkflowId = null
       this.reseedExpectedSeq = null
     } else {
@@ -323,14 +316,21 @@ export class LayoutFollowerBridge extends EventTarget {
 
   /** Whether the host supplied a valid, current, unconsumed refusal token. */
   canReseed(workflowId: string): boolean {
+    return this.reseedSequenceFor(workflowId) !== null
+  }
+
+  private reseedSequenceFor(workflowId: string): number | null {
+    const expectedSeq = this.reseedExpectedSeq
     return (
       workflowId === this.reseedEligibleWorkflowId &&
       workflowId === this.desiredWorkflowId &&
       workflowId !== this.reseedBlockedWorkflowId &&
-      this.reseedExpectedSeq !== null &&
-      Number.isSafeInteger(this.reseedExpectedSeq) &&
-      this.reseedExpectedSeq > 0
+      expectedSeq !== null &&
+      Number.isSafeInteger(expectedSeq) &&
+      expectedSeq > 0
     )
+      ? expectedSeq
+      : null
   }
 
   sendHumanOps(tab: string, ops: DocOp[]): void {

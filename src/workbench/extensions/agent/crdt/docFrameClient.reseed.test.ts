@@ -177,6 +177,76 @@ describe('layout follower bridge: stale-schema reseed', () => {
     expect(transport.frames('doc_reseed')).toHaveLength(1)
   })
 
+  it('releases the post-reset block after subscribe confirmation', () => {
+    const { transport, bridge } = refusedBridge()
+    bridge.reseed('wf-1', canvas)
+    transport.receive('doc_reseed_result', {
+      v: 1,
+      workflow_id: 'wf-1',
+      ok: true,
+      seq: 8,
+      outcome: 'reseeded'
+    })
+    transport.receive('doc_subscribed', {
+      v: 1,
+      workflow_id: 'wf-1',
+      ok: true,
+      seq: 8
+    })
+    bridge.resubscribe()
+    transport.receive('doc_subscribed', {
+      v: 1,
+      workflow_id: 'wf-1',
+      ok: false,
+      code: STALE_SCHEMA_RESEED_REQUIRED,
+      expected_seq: 9
+    })
+
+    expect(bridge.canReseed('wf-1')).toBe(true)
+  })
+
+  it('releases the post-reset block after reconnect', () => {
+    const { transport, bridge } = refusedBridge()
+    bridge.reseed('wf-1', canvas)
+    transport.receive('doc_reseed_result', {
+      v: 1,
+      workflow_id: 'wf-1',
+      ok: true,
+      seq: 8
+    })
+    bridge.reconnect()
+    transport.receive('doc_subscribed', {
+      v: 1,
+      workflow_id: 'wf-1',
+      ok: false,
+      code: STALE_SCHEMA_RESEED_REQUIRED,
+      expected_seq: 9
+    })
+
+    expect(bridge.canReseed('wf-1')).toBe(true)
+  })
+
+  it('releases the post-reset block after retarget', () => {
+    const { transport, bridge } = refusedBridge()
+    bridge.reseed('wf-1', canvas)
+    transport.receive('doc_reseed_result', {
+      v: 1,
+      workflow_id: 'wf-1',
+      ok: true,
+      seq: 8
+    })
+    bridge.subscribe('wf-2')
+    transport.receive('doc_subscribed', {
+      v: 1,
+      workflow_id: 'wf-2',
+      ok: false,
+      code: STALE_SCHEMA_RESEED_REQUIRED,
+      expected_seq: 1
+    })
+
+    expect(bridge.canReseed('wf-2')).toBe(true)
+  })
+
   it.for([undefined, 0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY])(
     'does not arm reseed for an invalid expected sequence: %s',
     (expectedSeq) => {
