@@ -97,6 +97,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { ENTERPRISE_URL } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useBillingBanner } from '@/platform/workspace/composables/useBillingBanner'
+import type { BillingBannerKind } from '@/platform/workspace/composables/useBillingBanner'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { usePlanEnded } from '@/platform/workspace/composables/usePlanEnded'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
@@ -280,24 +281,19 @@ const planChangeView = (): BannerView | null =>
       }
     : null
 
-const banner = computed<BannerView | null>(() => {
-  switch (kind.value) {
-    // Runs are already blocked on payment_failed, so it reads as paused.
-    case 'paused':
-    case 'paymentFailed':
-      return pausedView()
-    case 'planEnded':
-      return planEndedView()
-    case 'outOfCredits':
-      return outOfCreditsView()
-    case 'ending':
-      return endingView()
-    case 'planChange':
-      return planChangeView()
-    default:
-      return null
-  }
-})
+// Runs are already blocked on payment_failed, so it reads as paused.
+const bannerViews: Record<BillingBannerKind, () => BannerView | null> = {
+  paused: pausedView,
+  paymentFailed: pausedView,
+  planEnded: planEndedView,
+  outOfCredits: outOfCreditsView,
+  ending: endingView,
+  planChange: planChangeView
+}
+
+const banner = computed<BannerView | null>(() =>
+  kind.value ? bannerViews[kind.value]() : null
+)
 
 function handleAddCredits() {
   void dialogService.showTopUpCreditsDialog()
