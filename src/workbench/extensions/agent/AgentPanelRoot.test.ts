@@ -8,7 +8,7 @@ import type {
 } from '@comfyorg/ingest-types'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Mocked } from 'vitest'
 import {
   computed,
@@ -20,7 +20,7 @@ import {
   ref,
   watch
 } from 'vue'
-import type { EffectScope, Ref } from 'vue'
+import type { Ref } from 'vue'
 import { useClipboard } from '@vueuse/core'
 
 vi.mock(import('firebase/auth'))
@@ -298,8 +298,6 @@ function syncFakeSelection() {
   setCanvasSelection([...(canvasStore.canvas?.selectedItems ?? [])])
 }
 
-let documentLifecycleMirror: EffectScope | undefined
-
 /**
  * Read through the nullable base contract: `LoadedComfyWorkflow` declares
  * `activeState` non-null by an unchecked cast, and `addTab` really does leave
@@ -310,26 +308,28 @@ function seededRootGraphId(workflow: ComfyWorkflow): string | undefined {
 }
 
 /**
- * The app publishes the active document binding at the end of a completed
- * `loadGraphData` (`workflowService.afterLoadNewGraph`); this harness switches
- * tabs by assigning `workflowStore.activeWorkflow` directly. Mirror the publish
- * so the panel's consumers see a canvas that actually has a document on it.
+ * The app publishes the active document's root graph id at the end of a
+ * completed `loadGraphData` (`workflowService.afterLoadNewGraph`); this harness
+ * switches tabs by assigning `workflowStore.activeWorkflow` directly, which in
+ * the app is a pointer move with no graph load. Which document is presented
+ * therefore needs no mirroring — the lifecycle store reads the pointer this
+ * harness already sets — but the root graph id does, because this harness does
+ * not model the canvas graph.
  *
- * The binding's root graph id is the workflow's own serialized id, which is
- * what `rootGraph.configure()` adopts on a real load. Nothing mirrors *later*
+ * The published root graph id is the workflow's own serialized id, which is what
+ * `rootGraph.configure()` adopts on a real load. Nothing mirrors *later*
  * mutations of `activeState.id`: following those was the behaviour the
  * lifecycle store replaces, so a test that needs an in-place rotation drives
  * `rebindActiveRootGraph` the way `app.clean()` does.
  *
  * A tab the test did not seed an `activeState.id` for still gets a distinct
- * synthetic one. In the app a live root graph always has a uuid; this harness
- * does not model the canvas graph, and publishing nothing would read as "no
- * document is on the canvas" and silence the follower.
+ * synthetic one. In the app a live root graph always has a uuid; publishing
+ * nothing would read as "no document is on the canvas" and silence the
+ * follower.
  */
-function startDocumentLifecycleMirror(): void {
-  documentLifecycleMirror?.stop()
-  documentLifecycleMirror = effectScope(true)
-  documentLifecycleMirror.run(() => {
+function startDocumentLifecycleMirror(): () => void {
+  const scope = effectScope(true)
+  scope.run(() => {
     watch(
       () => workflowStore.activeWorkflow,
       (active) => {
@@ -342,19 +342,15 @@ function startDocumentLifecycleMirror(): void {
         const transition = lifecycle.beginTransition(uid)
         const seeded = seededRootGraphId(active)
         lifecycle.activate(
-          { uid, rootGraphId: toRootGraphId(seeded ?? `live-root-${uid}`) },
+          toRootGraphId(seeded ?? `live-root-${uid}`),
           transition
         )
       },
       { flush: 'sync' }
     )
   })
+  return () => scope.stop()
 }
-
-afterEach(() => {
-  documentLifecycleMirror?.stop()
-  documentLifecycleMirror = undefined
-})
 
 beforeEach(() => {
   let clientMessageIds = 0
@@ -476,7 +472,7 @@ beforeEach(() => {
 
   workflowStore.activeWorkflow = null
   useDocumentLifecycleStore().$reset()
-  startDocumentLifecycleMirror()
+  const stopDocumentLifecycleMirror = startDocumentLifecycleMirror()
   setCanvasSelection([])
   canvasStore.currentGraph = null
   appMock.graph.nodes = []
@@ -515,6 +511,7 @@ beforeEach(() => {
   paywallBilling.fetchStatus.mockReset().mockResolvedValue(undefined)
   paywallHasFunds.value = false
   paywallAgentHasFunds.value = undefined
+  return stopDocumentLifecycleMirror
 })
 
 const zAgentWsEventForTest = (raw: unknown): AgentChatEvent =>

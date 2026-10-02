@@ -674,10 +674,10 @@ export const useWorkflowService = () => {
    * resolves conservatively to the active document and is retracted late, by
    * the publish that names a different uid.
    */
-  const resolveRequestedDocumentUid = (
+  function resolveRequestedDocumentUid(
     requestedDocument: string | ComfyWorkflow | null,
     incomingId?: string
-  ) => {
+  ) {
     if (requestedDocument instanceof ComfyWorkflow) {
       return toDocumentUid(requestedDocument.instanceId)
     }
@@ -728,9 +728,6 @@ export const useWorkflowService = () => {
     requestedDocument: string | ComfyWorkflow | null = null,
     incomingId?: string
   ): DocumentTransition => {
-    // Retract first: everything below runs while the outgoing graph is still on
-    // the canvas, but `app.clean()` is next and the agent must not treat the
-    // cleared graph as its bound document.
     const transition = useDocumentLifecycleStore().beginTransition(
       resolveRequestedDocumentUid(requestedDocument, incomingId)
     )
@@ -784,16 +781,17 @@ export const useWorkflowService = () => {
     transition?: DocumentTransition
   ) => {
     await activateLoadedWorkflow(value, workflowData, shareId)
-    // Publish the workflow this load actually selected, against the root graph
-    // it is now bound to: `activateLoadedWorkflow` may have adopted a minted id
-    // (`adoptRootGraphId`) or reused a different workflow than `value` named.
+    // Publish the root graph this load settled on — `activateLoadedWorkflow` may
+    // have adopted a minted id (`adoptRootGraphId`) — but only once a workflow
+    // is presented: a load that selected none leaves the binding retracted.
+    // Which document that is comes from the active pointer at read time, not
+    // from a uid captured here; see `documentLifecycleStore`.
+    // No transition means no load opened one, so there is nothing this publish
+    // could be ordered against: stay retracted rather than write unordered.
     const activated = useWorkspaceStore().workflow.activeWorkflow
-    if (activated && app.isGraphReady) {
+    if (activated && app.isGraphReady && transition !== undefined) {
       useDocumentLifecycleStore().activate(
-        {
-          uid: toDocumentUid(activated.instanceId),
-          rootGraphId: toRootGraphId(app.rootGraph.id)
-        },
+        toRootGraphId(app.rootGraph.id),
         transition
       )
     }

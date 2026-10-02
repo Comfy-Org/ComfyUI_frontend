@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { shallowRef } from 'vue'
 
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { RootGraphId } from '@/types/graphScopeId'
 
 export type DocumentUid = string & { readonly __brand: 'DocumentUid' }
@@ -10,103 +11,129 @@ export function toDocumentUid(value: string): DocumentUid {
 }
 
 /**
- * Names one graph load. A load hands its token to `activate`/`invalidate` so a
- * load that finishes after a newer one started cannot publish or retract on
- * the newer load's behalf: `loadGraphData` callers such as `ChangeTracker.undo`
- * bypass the workflow-load queue and interleave freely.
+ * Names one graph load. A load hands its token to `activate` or `invalidate` so
+ * those calls cannot publish on a newer load's behalf: `loadGraphData` callers
+ * such as `ChangeTracker.undo` bypass the workflow-load queue, so loads can
+ * interleave and mutate the shared graph. The token does not serialize or cancel
+ * those mutations — a superseded load still rewrites the canvas — so a stale
+ * token means the binding can no longer be trusted, not that nothing happened.
  */
 export type DocumentTransition = number & {
   readonly __brand: 'DocumentTransition'
 }
 
-interface ActiveDocumentBinding {
-  readonly uid: DocumentUid
-  readonly rootGraphId: RootGraphId
-}
-
 /**
- * Owns the one fact that the shared canvas cannot answer for itself: which
- * workflow document its root graph currently represents.
+ * Owns the one fact that the shared canvas cannot answer for itself: which root
+ * graph the presented document is on, and when there is no valid answer yet.
  *
- * The binding tracks the *live* root graph id, not the id the document was
- * loaded with. A root graph can rotate in place without any document
- * transition — `LGraph.clear()` mints a fresh uuid — so a load publishes
- * through `activate` and an in-place rotation reports through
- * `rebindActiveRootGraph`.
+ * It deliberately does **not** own which document is presented. `activeWorkflow`
+ * already owns that, and it moves without a graph load: `openWorkflow` on the
+ * workflow store activates a tab by moving that pointer, which is the path a
+ * reopen from persistence takes, so a different document is presented while the
+ * canvas graph stands still. A uid snapshotted at load completion goes stale
+ * there with no event that could correct it, and the stale snapshot wins — which
+ * silenced the agent's follower after a close/reopen
+ * (`browser_tests/tests/agent/agentCloseReopenRemoteDelete.spec.ts`). So
+ * identity is read live from the active pointer, and only the root graph id is
+ * stored.
+ *
+ * The root graph id cannot be read off `app.rootGraph.id` instead, which is why
+ * this store exists at all: mid-load the canvas already holds the incoming
+ * graph while the active pointer still names the outgoing document, and after a
+ * failed load it holds neither. The stored id is published by the load that
+ * succeeded, and follows an in-place rotation — `LGraph.clear()` mints a fresh
+ * uuid with no document transition — through `rebindActiveRootGraph`.
  */
 export const useDocumentLifecycleStore = defineStore(
   'documentLifecycle',
   () => {
-    const activeBinding = shallowRef<ActiveDocumentBinding | null>(null)
+    const activeRootGraph = shallowRef<RootGraphId | null>(null)
     let latestTransition = 0 as DocumentTransition
 
-    function isLatest(transition: DocumentTransition | undefined): boolean {
-      return transition === undefined || transition === latestTransition
+    function isLatest(transition: DocumentTransition): boolean {
+      return transition === latestTransition
+    }
+
+    /**
+     * The document currently presented on the canvas, per the active pointer,
+     * or `undefined` when nothing is presented.
+     */
+    function presentedUid(): DocumentUid | undefined {
+      const active = useWorkflowStore().activeWorkflow
+      return active ? toDocumentUid(active.instanceId) : undefined
     }
 
     /**
      * Open a graph load, retracting the current binding unless the load is
-     * staying on the same document. Undo, redo, and same-document reloads keep
-     * their binding; everything else — including an import, which has no
-     * requested document — fails closed until the load publishes.
+     * staying on the document already presented. Undo, redo, and same-document
+     * reloads keep their binding; everything else — including an import, which
+     * has no requested document — fails closed until the load publishes.
      */
     function beginTransition(nextUid: DocumentUid | null): DocumentTransition {
       latestTransition = (latestTransition + 1) as DocumentTransition
-      const current = activeBinding.value
-      if (current !== null && current.uid !== nextUid)
-        activeBinding.value = null
+      // Compared against the live pointer, not against the last published uid:
+      // the pointer has not moved yet at `beforeLoadNewGraph`, so it is the
+      // outgoing document, and it is the only reading that cannot be stale.
+      // `?? null` so "nothing presented, nothing requested" is not a change.
+      if ((presentedUid() ?? null) !== nextUid) activeRootGraph.value = null
       return latestTransition
     }
 
+    /**
+     * Publish the root graph the load settled the presented document onto.
+     *
+     * A superseded load retracts instead of publishing. It cannot publish — a
+     * newer load already did — but it has by now run `clean()` and `configure()`
+     * on the shared graph, so the newer load's published id no longer names
+     * what is on the canvas either. Neither answer is true, so there is none.
+     */
     function activate(
-      binding: ActiveDocumentBinding,
-      transition?: DocumentTransition
+      rootGraphId: RootGraphId,
+      transition: DocumentTransition
     ): void {
-      if (!isLatest(transition)) return
-      activeBinding.value = binding
+      activeRootGraph.value = isLatest(transition) ? rootGraphId : null
     }
 
-    /** Retract the binding for a load that cleared the graph and then failed. */
-    function invalidate(transition?: DocumentTransition): void {
-      if (!isLatest(transition)) return
-      activeBinding.value = null
+    /**
+     * Retract the binding for a load that cleared the graph and then failed.
+     *
+     * Takes no token, unlike `activate`. A superseded load reaching here has
+     * cleared the shared graph as well, so there is no reading of the
+     * interleaving under which the current binding is still true — which is the
+     * same reason `activate` retracts on a stale token.
+     */
+    function invalidate(): void {
+      activeRootGraph.value = null
     }
 
     /**
      * Follow an in-place root graph id rotation on the document already on the
      * canvas — `app.clean()` from Clear Workflow mints a new root id without
-     * going through a graph load. Not a document transition: the uid is
-     * unchanged, so a stale id here would make every later agent op look like
-     * it targets a foreign graph.
+     * going through a graph load. Not a document transition, so it must not
+     * publish on its own: a stale id here would make every later agent op look
+     * like it targets a foreign graph, but reviving a retracted binding would
+     * hand the agent a graph no load ever vouched for.
      */
     function rebindActiveRootGraph(rootGraphId: RootGraphId): void {
-      const current = activeBinding.value
-      if (current === null || current.rootGraphId === rootGraphId) return
-      activeBinding.value = { uid: current.uid, rootGraphId }
+      if (activeRootGraph.value === null) return
+      activeRootGraph.value = rootGraphId
     }
 
-    // Both queries take `undefined` because a consumer asks about a workflow,
-    // not about a uid it already has: a workflow carrying no session uid must
-    // answer "not active" rather than match nothing-is-bound. Hence the
-    // explicit non-null binding check — `binding?.uid === uid` reads as true
-    // when *both* sides are undefined, which fails open into the agent's
-    // cross-graph guard.
+    // `undefined` must not match an absent pointer: on its own
+    // `presentedUid() === uid` is true when both sides are undefined.
     function isActive(uid: DocumentUid | undefined): boolean {
-      const binding = activeBinding.value
-      return binding !== null && binding.uid === uid
+      return activeRootGraphId(uid) !== null
     }
 
     function activeRootGraphId(
       uid: DocumentUid | undefined
     ): RootGraphId | null {
-      const binding = activeBinding.value
-      return binding !== null && binding.uid === uid
-        ? binding.rootGraphId
-        : null
+      if (uid === undefined) return null
+      return presentedUid() === uid ? activeRootGraph.value : null
     }
 
     function $reset(): void {
-      activeBinding.value = null
+      activeRootGraph.value = null
       latestTransition = 0 as DocumentTransition
     }
 

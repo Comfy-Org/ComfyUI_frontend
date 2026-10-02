@@ -806,9 +806,6 @@ const isSending = computed(
   () => sessionIsSending.value || composerStore.submission?.phase === 'pending'
 )
 
-// The bound document is the one on the canvas exactly when the lifecycle store
-// reports a live root graph for its session, so activeness falls out of the id
-// lookup `boundRootGraphId()` (below) already does.
 const isBoundWorkflowActive = computed(() => boundRootGraphId() !== null)
 
 // The CRDT follower is the inbound content channel: subscribes to the
@@ -859,11 +856,9 @@ const {
     }
   }
 )
-// The live root graph the bound document is currently on, or null when another
-// document holds the canvas. `useDocumentLifecycleStore` owns this: it follows
-// an in-place id rotation (`LGraph.clear()` from Clear Workflow) without
-// treating it as a document change, and it reports nothing while a load is in
-// flight, so the minter's cross-graph guard can never read a stale id.
+// The root graph id the store holds for the bound document, or null when the
+// binding names another document. `useDocumentLifecycleStore` resolves that
+// against the active pointer, so a tab activated without a graph load moves it.
 function boundRootGraphId(): RootGraphId | null {
   const bound = boundWorkflowId.value
   if (bound === null) return null
