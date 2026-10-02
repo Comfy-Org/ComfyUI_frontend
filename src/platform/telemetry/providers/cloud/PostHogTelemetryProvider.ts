@@ -9,6 +9,7 @@ import type {
   BillingTelemetryEvent,
   CheckoutJourneyTelemetryEvent
 } from '@comfyorg/account-core/billing'
+import type { WebSessionTelemetryEvent } from '@comfyorg/account-core/telemetry'
 import type { PostHog } from 'posthog-js'
 import { watch } from 'vue'
 import type { WatchStopHandle } from 'vue'
@@ -440,6 +441,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
         : TelemetryEvents.UNIFIED_AUTH_REFRESH_FAILED,
       metadata
     )
+  }
+
+  trackWebSessionEvent(event: WebSessionTelemetryEvent): void {
+    this.trackEvent(event.name, event.properties)
   }
 
   trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {

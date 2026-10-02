@@ -19,6 +19,7 @@ import type {
 } from '@comfyorg/account-core/billing'
 import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
 import { createRequestAuthorizer } from '@comfyorg/account-core/requestAuth'
+import { webSessionTelemetryHooks } from '@comfyorg/account-core/telemetry'
 import type { SessionErrorCode } from '@comfyorg/account-core/session'
 import type {
   WebSession,
@@ -37,6 +38,7 @@ import type {
   SignInPort
 } from '@/auth/useSignInController'
 import type { BillingWebSessionPhase } from '@/router'
+import { billingWebTelemetry } from '@/telemetry/billingWebTelemetry'
 
 export interface UnifiedBillingSessionDeps {
   /** Ingest API root, e.g. `https://cloud.comfy.org/api`. */
@@ -112,7 +114,8 @@ export function createUnifiedBillingSession(deps: UnifiedBillingSessionDeps) {
           (await (await firebaseUser())?.getIdToken()) ?? null,
         signOutLocally: async () => (await deps.loadFirebase())?.signOut()
       }
-    }
+    },
+    ...webSessionTelemetryHooks(billingWebTelemetry.trackWebSessionEvent)
   })
   const authorize = createRequestAuthorizer({
     getWorkspaceToken: () =>

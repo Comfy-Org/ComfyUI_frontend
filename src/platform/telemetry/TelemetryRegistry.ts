@@ -2,6 +2,7 @@ import type {
   BillingTelemetryEvent,
   CheckoutJourneyTelemetryEvent
 } from '@comfyorg/account-core/billing'
+import type { WebSessionTelemetryEvent } from '@comfyorg/account-core/telemetry'
 import type {
   AddCreditsClickMetadata,
   AgentAttachButtonClickedMetadata,
@@ -131,6 +132,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackUnifiedAuthRefresh(metadata: UnifiedAuthRefreshMetadata): void {
     this.dispatch((provider) => provider.trackUnifiedAuthRefresh?.(metadata))
+  }
+
+  trackWebSessionEvent(event: WebSessionTelemetryEvent): void {
+    this.dispatch((provider) => provider.trackWebSessionEvent?.(event))
   }
 
   trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {

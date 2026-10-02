@@ -26,6 +26,7 @@ import {
 } from '@comfyorg/account-core/sessionTokenMint'
 import { readWebSession } from '@comfyorg/account-core/webSession'
 import { createWebSessionIdentity } from '@comfyorg/account-core/webSessionIdentity'
+import { webSessionTelemetryHooks } from '@comfyorg/account-core/telemetry'
 import {
   createWebCrossTabRefreshPort,
   createWebVisibilityPort
@@ -47,6 +48,7 @@ import {
   provideWebSessionRequests,
   WebSessionTokenError
 } from '@/platform/auth/session/webSessionFetch'
+import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -150,6 +152,9 @@ function createCloudIdentity(): WebSessionIdentity {
     },
     origin: window.location.origin,
     onAccountChanged: resetForAccountChange,
+    ...webSessionTelemetryHooks((event) =>
+      useTelemetry()?.trackWebSessionEvent(event)
+    ),
     ...(visibility && {
       heartbeat: { visibility, ...(crossTab && { crossTab }) }
     })

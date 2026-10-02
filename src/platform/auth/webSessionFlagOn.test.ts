@@ -38,6 +38,7 @@ import {
   webSessionResourceHeader,
   webSessionSend
 } from '@/platform/auth/session/webSessionFetch'
+import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
@@ -363,40 +364,69 @@ describe('cloud app on the shared web session (unified_web_session on)', () => {
       name: '200 for the remembered user signs in as is',
       session: { userId: 'user-a' },
       requests: ['GET'],
-      signsOutLocally: false
+      signsOutLocally: false,
+      outcome: 'signed_in'
     },
     {
       name: '200 for another user signs the remembered login out',
       session: { userId: 'user-b' },
       requests: ['GET'],
-      signsOutLocally: true
+      signsOutLocally: true,
+      outcome: 'signed_in'
     },
     {
       name: '401 session_revoked signs out and never restores',
       session: 'revoked',
       requests: ['GET'],
-      signsOutLocally: true
+      signsOutLocally: true,
+      outcome: 'revoked'
     },
     {
       name: '401 no_session restores once from the remembered login',
       session: 'none',
       requests: ['GET', 'POST', 'GET'],
-      signsOutLocally: false
+      signsOutLocally: false,
+      outcome: 'restored'
     }
   ] satisfies {
     name: string
     session: ServerSession
     requests: string[]
     signsOutLocally: boolean
-  }[])('boot: $name', async ({ session, requests, signsOutLocally }) => {
-    const server = installServer(session)
+    outcome: string
+  }[])(
+    'boot: $name',
+    async ({ session, requests, signsOutLocally, outcome }) => {
+      const server = installServer(session)
+      await refreshRemoteConfig({ useAuth: false })
+      identity.signIn(USER_A)
+
+      await useSessionCookie().ensureSessionCookie()
+
+      expect(methodsOf(server.requests)).toEqual(requests)
+      expect(firebaseSignOut).toHaveBeenCalledTimes(signsOutLocally ? 1 : 0)
+      expect(
+        useTelemetry()?.trackWebSessionEvent
+      ).toHaveBeenCalledExactlyOnceWith({
+        name: 'session_bootstrap',
+        properties: { outcome, origin: location.origin }
+      })
+    }
+  )
+
+  it('reports a session revoked under a signed-in tab as signed out remotely', async () => {
+    const server = installServer({ userId: 'user-a' })
     await refreshRemoteConfig({ useAuth: false })
     identity.signIn(USER_A)
-
     await useSessionCookie().ensureSessionCookie()
 
-    expect(methodsOf(server.requests)).toEqual(requests)
-    expect(firebaseSignOut).toHaveBeenCalledTimes(signsOutLocally ? 1 : 0)
+    server.session = 'revoked'
+    await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
+
+    expect(useTelemetry()?.trackWebSessionEvent).toHaveBeenLastCalledWith({
+      name: 'session_signed_out_remotely',
+      properties: { origin: location.origin }
+    })
   })
 
   it('resets the tab and tells the user when another account takes the session', async () => {
