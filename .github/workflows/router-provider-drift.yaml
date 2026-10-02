@@ -30,4 +30,4 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Compare checked-in coverage with published sources
-        run: pnpm exec tsx scripts/routerProviderDrift.ts
+        run: pnpm --filter @comfyorg/website exec tsx scripts/routerProviderDrift.ts

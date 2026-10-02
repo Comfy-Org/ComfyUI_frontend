@@ -5,7 +5,7 @@ import {
   ROUTER_COMFY_ONLY_PREVIEW,
   ROUTER_PROVIDER_COVERAGE,
   ROUTER_SERVING_PROVIDERS
-} from '../apps/website/src/config/router-providers'
+} from '../src/config/router-providers'
 
 const DOCS_ORIGIN = 'https://docs.comfy.org'
 const ROUTER_DOCS = `${DOCS_ORIGIN}/development/comfy-router`
