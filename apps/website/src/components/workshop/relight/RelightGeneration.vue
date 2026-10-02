@@ -36,7 +36,6 @@ const areas = computed(() => [
     "
   />
   <EditorSlider
-    wide
     :model-value="setup.generation.strength"
     :label="lc('relight.generation.strength', locale)"
     unit="%"
