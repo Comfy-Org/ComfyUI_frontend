@@ -20,11 +20,11 @@ export type ActivityRow = ToolRow | ThinkingRow
 function isSameToolStep(
   previous: ActivityRow | undefined,
   part: ToolPart
-): previous is ToolRow {
+): boolean {
   return (
     previous?.kind === 'tool' &&
     previous.name === part.name &&
-    previous.skill === part.skill
+    (part.name !== 'load_skill' || previous.skill === part.skill)
   )
 }
 
@@ -45,10 +45,10 @@ export function foldActivity(parts: readonly ActivityPart[]): ActivityRow[] {
       continue
     }
     const previous = rows.at(-1)
-    if (isSameToolStep(previous, part)) {
+    if (isSameToolStep(previous, part) && previous?.kind === 'tool') {
       previous.count += 1
       if (part.state === 'streaming') previous.state = 'streaming'
-      if (part.ok === false) previous.ok = false
+      if (part.ok !== undefined) previous.ok = part.ok
     } else {
       rows.push({
         kind: 'tool',

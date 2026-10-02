@@ -162,6 +162,7 @@ function parseToolCallEntry(
       tool_call_id: true,
       tool_name: true,
       status: true,
+      skill: true,
       duration_ms: true
     })
     .safeParse(entry)
@@ -171,6 +172,7 @@ function parseToolCallEntry(
     tool_call_id: toolCallId,
     tool_name: toolName,
     status,
+    skill,
     duration_ms: rawDuration
   } = parsed.data
   const state = toolCallPartState(status, isLive)
@@ -191,6 +193,7 @@ function parseToolCallEntry(
     name: toolName,
     state,
     ...(ok !== undefined ? { ok } : {}),
+    ...(skill ? { skill } : {}),
     ...(durationMs !== undefined ? { durationMs } : {})
   }
 }
