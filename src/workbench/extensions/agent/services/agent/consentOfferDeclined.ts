@@ -26,7 +26,7 @@ export async function consentOfferDeclined(): Promise<boolean> {
   } catch {
     return false
   }
-  return  settingStore.get(AGENT_CONSENT_OFFER_DECLINED_SETTING_ID)
+  return settingStore.get(AGENT_CONSENT_OFFER_DECLINED_SETTING_ID)
 }
 
 /**
