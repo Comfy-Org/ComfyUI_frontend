@@ -62,6 +62,33 @@ export async function installUnrenameableDuplicatePair(
   }, values)
 }
 
+/**
+ * Overwrites a saved workflow in place, through the app's own userdata client
+ * so the next open reads it back from the real store.
+ *
+ * Used to hand the reload a document whose positional register disagrees with
+ * `widgets_values_ordered`. A document this app wrote can never disagree —
+ * `widgets_values` and `widgets_values_ordered` are built from one walk of the
+ * same widget list — so a case that reloads its own save cannot tell an ordered
+ * restore from a positional one.
+ */
+export async function overwriteStoredWorkflow(
+  comfyPage: ComfyPage,
+  workflowName: string,
+  workflow: unknown
+): Promise<void> {
+  await comfyPage.page.evaluate(
+    async ({ file, content }) => {
+      await window.app!.api.storeUserData(file, content, {
+        overwrite: true,
+        stringify: true,
+        throwOnError: true
+      })
+    },
+    { file: `workflows/${workflowName}.json`, content: workflow }
+  )
+}
+
 export async function writeWidgetValues(
   comfyPage: ComfyPage,
   nodeId: string,
