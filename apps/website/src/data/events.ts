@@ -456,6 +456,70 @@ const events: readonly ComfyEvent[] = [
     }
   },
   {
+    id: 'dev-platform-challenge-build-night',
+    category: 'meetup',
+    organizer: 'comfy',
+    coords: { lat: 37.7749, lng: -122.4194 },
+    // TODO: start time and venue are not set (luma.com is unreachable from
+    // this session) and there is no event image yet; add a time, endDateTime,
+    // and media once the card art is uploaded to media.comfy.org.
+    title: {
+      en: 'Open Call: ComfyUI Dev Platform Challenge Build Night',
+      'zh-CN': '公开征集：ComfyUI 开发者平台挑战赛创作之夜'
+    },
+    description: {
+      en: 'An in-person build night in San Francisco for the ComfyUI Dev Platform Challenge. Register on Luma.',
+      'zh-CN':
+        '在旧金山举办的线下创作之夜，围绕 ComfyUI 开发者平台挑战赛展开。请通过 Luma 报名。'
+    },
+    location: { en: 'San Francisco, CA', 'zh-CN': '美国加州旧金山' },
+    dateLabel: {
+      en: 'October 13, 2026 · San Francisco',
+      'zh-CN': '2026年10月13日 · 旧金山'
+    },
+    startDateTime: '2026-10-13',
+    link: {
+      href: {
+        en: 'https://luma.com/5mydmvu6',
+        'zh-CN': 'https://luma.com/5mydmvu6'
+      },
+      newTab: true
+    },
+    ctaLabel: { en: 'RSVP', 'zh-CN': '报名' }
+  },
+  {
+    id: 'codex-build-night-agents-everywhere',
+    category: 'meetup',
+    organizer: 'comfy',
+    coords: { lat: 37.7749, lng: -122.4194 },
+    // TODO: start time and venue are not set (luma.com is unreachable from
+    // this session) and there is no event image yet; add a time, endDateTime,
+    // and media once the card art is uploaded to media.comfy.org.
+    title: {
+      en: 'Codex Build Night: Agents Everywhere',
+      'zh-CN': 'Codex 创作之夜：无处不在的 Agent'
+    },
+    description: {
+      en: 'An in-person build night in San Francisco on building with agents. Register on Luma.',
+      'zh-CN':
+        '在旧金山举办的线下创作之夜，主题是使用 Agent 进行构建。请通过 Luma 报名。'
+    },
+    location: { en: 'San Francisco, CA', 'zh-CN': '美国加州旧金山' },
+    dateLabel: {
+      en: 'October 8, 2026 · San Francisco',
+      'zh-CN': '2026年10月8日 · 旧金山'
+    },
+    startDateTime: '2026-10-08',
+    link: {
+      href: {
+        en: 'https://luma.com/afl6lugb',
+        'zh-CN': 'https://luma.com/afl6lugb'
+      },
+      newTab: true
+    },
+    ctaLabel: { en: 'RSVP', 'zh-CN': '报名' }
+  },
+  {
     id: 'sf-tech-week-tool-panel',
     category: 'meetup',
     organizer: 'partner',
