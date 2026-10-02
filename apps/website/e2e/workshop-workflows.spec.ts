@@ -637,25 +637,19 @@ test('a workflow card gives every name two rows and keeps its tag', async ({
   await expect(cards.first()).toBeVisible()
   // The two rows are reserved whether the name fills them or not, so the tags
   // below them line up across the grid and nothing moves on hover.
-  const rows = await cards.evaluateAll((all) =>
-    all.map((card) => {
-      const name = card.querySelector('[data-testid="model-card-name"]')
-      if (!name) return 0
-      return Math.round(
+  const names = cards.getByTestId('model-card-name')
+  const rows = await names.evaluateAll((all) =>
+    all.map((name) =>
+      Math.round(
         name.clientHeight / Number.parseFloat(getComputedStyle(name).lineHeight)
       )
-    })
+    )
   )
   expect([...new Set(rows)]).toEqual([2])
 
-  const names = await cards.evaluateAll((all) =>
-    all.map(
-      (card) =>
-        card.querySelector('[data-testid="model-card-name"]')?.textContent ?? ''
-    )
-  )
+  const shown = await names.allTextContents()
   const card = cards.nth(
-    names.indexOf(names.reduce((a, b) => (b.length > a.length ? b : a), ''))
+    shown.indexOf(shown.reduce((a, b) => (b.length > a.length ? b : a), ''))
   )
   const resting = await card.boundingBox()
   await expect(card.getByTestId('model-card-task')).toBeVisible()
@@ -682,13 +676,13 @@ test('every workflow card carries its whole name, not a shortened one', async ({
   await expect(cards.first()).toBeVisible()
   // The card drops a trailing task from a product name. A workflow is named
   // with a sentence, so the name it shows must be the name it has.
-  const shortened = await cards.evaluateAll((all) =>
-    all.flatMap((card) => {
-      const name = card.querySelector('[data-testid="model-card-name"]')
-      const whole = name?.getAttribute('title') ?? ''
-      const shown = name?.textContent.trim() ?? ''
-      return shown === whole ? [] : [`${whole} -> ${shown}`]
-    })
+  const names = cards.getByTestId('model-card-name')
+  const shown = await names.allTextContents()
+  const whole = await Promise.all(
+    (await names.all()).map((name) => name.getAttribute('title'))
+  )
+  const shortened = shown.flatMap((text, index) =>
+    text.trim() === whole[index] ? [] : [`${whole[index]} -> ${text.trim()}`]
   )
   expect(shortened).toEqual([])
 })
