@@ -23,14 +23,31 @@ import SpriteSheetStyle from './SpriteSheetStyle.vue'
  * every one as a tray.
  */
 export const SPRITE_TRAYS = [
-  { id: 'animation', title: 'sprite.animation', content: SpriteSheetAnimation },
-  { id: 'style', title: 'sprite.style', content: SpriteSheetStyle },
-  { id: 'motion', title: 'sprite.motion', content: SpriteSheetMotion },
-  { id: 'seed', title: 'sprite.seed', content: SpriteSheetSeed }
+  {
+    id: 'animation',
+    title: 'sprite.animation',
+    content: SpriteSheetAnimation,
+    compact: false
+  },
+  {
+    id: 'style',
+    title: 'sprite.style',
+    content: SpriteSheetStyle,
+    compact: true
+  },
+  {
+    id: 'motion',
+    title: 'sprite.motion',
+    content: SpriteSheetMotion,
+    compact: true
+  },
+  { id: 'seed', title: 'sprite.seed', content: SpriteSheetSeed, compact: false }
 ] as const satisfies readonly {
   id: SpriteTray
   title: SpriteCopyKey
   content: Component
+  /** Whether a phone's chip may drop the name, the value saying enough. */
+  compact: boolean
 }[]
 
 /** The current value of a control, beside its name. */

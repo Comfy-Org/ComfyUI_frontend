@@ -23,7 +23,7 @@ const { tray, phase } = sprite
     :value="sectionMeta(section.id, sprite, locale)"
     :expanded="tray === section.id"
     :disabled="phase.kind === 'running'"
-    compact
+    :compact="section.compact"
     @click="sprite.toggleTray(section.id)"
   />
   <EditorDivider class="max-sm:hidden" />
