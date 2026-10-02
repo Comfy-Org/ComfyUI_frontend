@@ -70,6 +70,38 @@ Configure these per deployment (see `.env_example`):
 | `VITE_BILLING_ENV`            | no       | Backend family: `production`, `staging` or `test`. Unset or misspelt resolves to `test`, so a misconfigured deployment cannot reach production Cloud. It selects the Cloud origin (`https://cloud.comfy.org`, `https://stagingcloud.comfy.org`, `https://testcloud.comfy.org`), whose `/api/features` names this deployment's Firebase project. Only needed when the deployment hostname isn't one of the three below — `billing.comfy.org`, `stagingbilling.comfy.org` and `testbilling.comfy.org` self-detect their family and need no override. |
 | `VITE_STRIPE_PUBLISHABLE_KEY` | no       | Stripe publishable key for the same family. Without it the checkout surface reports that payment is unavailable and takes no card: there is no hosted-page fallback on `/v1/checkout`. The portal-driven steps (payment methods, invoices) are unaffected, since they open the provider's own hosted portal and need no key.                                                                                                                                                                                                                       |
 
+## Telemetry
+
+Datadog RUM reports to the Cloud app's RUM application as the
+`comfy-billing-web` service. Only the three billing hosts report, each under
+the Cloud family's `env` (`prod-v2`, `stg-v2`, `test-v2`); previews and local
+builds send nothing. `version` is the build's commit, from
+`FRONTEND_COMMIT_HASH` or `git rev-parse HEAD`. Trace headers are off, since
+every Cloud call is cross-origin. Before an event leaves the page, URLs lose
+their query and fragment, and error text and clicked element text lose emails,
+tokens and client secrets. RUM cannot rewrite an error's causes, so an error
+whose cause carries such text is dropped. No deployment setting is needed.
+
+The RUM user is the signed-in user's opaque id, the one the Cloud app sets and
+PostHog identifies here, and nothing else: no email, no name. It follows the
+same session as PostHog, so a refused or still-resolving session sets and
+clears nothing, and only the sign-out of a user set here clears it.
+
+PostHog joins the Cloud app's project with the token, host and
+`telemetry_disabled_events` that the Cloud origin's `/api/features` returns, on
+the same fetch that names the Firebase project. Its identity cookie is shared
+with every `*.comfy.org` page: it identifies the signed-in user unless the
+cookie already names them, starts fresh when it names someone else, and resets
+only when the user identified here signs out. It keeps
+`person_profiles: 'identified_only'`; the server's `posthog_config` overrides
+are not applied here. Session recording, web vitals, heatmaps, dead clicks,
+exception capture and external scripts are off, and the promo code and Stripe
+return parameters are masked wherever PostHog stores a URL, its cookie
+included. Its `before_send` strips the same PII keys as the Cloud app and drops
+every URL's query and fragment. Billing events go through
+`billingWebTelemetry.trackBillingEvent`, which stamps
+`billing_surface: 'billing_web'` and sends to both sinks.
+
 ## Commands
 
 Run these commands from the repository root:
@@ -236,12 +268,12 @@ violation is logged in the browser console and blocks nothing, so a missing
 origin surfaces during review instead of as a payment that silently fails in
 production. The allowlist names what the app actually loads:
 
-| Directive     | Origins                                                                                                    | For                                                     |
-| ------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| `script-src`  | `js.stripe.com`, `challenges.cloudflare.com`, `apis.google.com`                                            | Stripe.js, Turnstile, the Firebase popup sign-in helper |
-| `connect-src` | the three Cloud origins, `api.stripe.com`, the Firebase identity and token endpoints, the two auth domains | billing reads and commands, Elements, sign-in           |
-| `frame-src`   | `js.stripe.com`, `hooks.stripe.com`, `challenges.cloudflare.com`, the two auth domains, `apis.google.com`  | Elements, 3DS, Turnstile, the Firebase auth iframe      |
-| `style-src`   | `'self' 'unsafe-inline'`                                                                                   | Vue-managed inline styles                               |
+| Directive     | Origins                                                                                                                                                            | For                                                         |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------- |
+| `script-src`  | `js.stripe.com`, `challenges.cloudflare.com`, `apis.google.com`                                                                                                    | Stripe.js, Turnstile, the Firebase popup sign-in helper     |
+| `connect-src` | the three Cloud origins, `api.stripe.com`, the Firebase identity and token endpoints, the two auth domains, the Datadog RUM intake, the PostHog host `t.comfy.org` | billing reads and commands, Elements, sign-in, RUM, PostHog |
+| `frame-src`   | `js.stripe.com`, `hooks.stripe.com`, `challenges.cloudflare.com`, the two auth domains, `apis.google.com`                                                          | Elements, 3DS, Turnstile, the Firebase auth iframe          |
+| `style-src`   | `'self' 'unsafe-inline'`                                                                                                                                           | Vue-managed inline styles                                   |
 
 The two auth domains are `dreamboothy.firebaseapp.com` (production) and
 `dreamboothy-dev.firebaseapp.com` (staging and test), the projects the three
