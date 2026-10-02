@@ -113,9 +113,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 vi.mock(
   import('@/platform/workflow/templates/composables/useTemplateWorkflows'),
   () => ({
-    // Asserted to the real return type: the dialog consumes a handful of
-    // members, and spelling out the rest would pin the test to production
-    // internals. The module-level check still catches a renamed export.
     useTemplateWorkflows: () =>
       ({
         getTemplateDescription: mocks.getTemplateDescription,
@@ -322,7 +319,6 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
     const detail = await screen.findByRole('article', {
       name: fixtures.template.title
     })
-    // Before the metadata settles the row describes the model without a size.
     expect(
       within(detail).getByText(/^Checkpoint · Used by Active loader$/)
     ).toBeInTheDocument()
@@ -365,18 +361,14 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
       name: fixtures.template.title
     })
 
-    // The row still describes the model from local inventory; only its size
-    // is missing, and the view stays operable.
     await waitFor(() => {
       expect(
         within(detail).getByText(/^Checkpoint · Used by Active loader$/)
       ).toBeInTheDocument()
     })
-    // Detail is still mounted and did not fall back to the list.
     expect(detail).toBeInTheDocument()
     expect(mocks.openPreparedWorkflowTemplate).not.toHaveBeenCalled()
 
-    // An abort is an expected outcome of navigating away, not a fault.
     if (reports) {
       expect(mocks.reportError).toHaveBeenCalledOnce()
     } else {
@@ -391,8 +383,6 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
     const detail = await screen.findByRole('article', {
       name: fixtures.template.title
     })
-    // Detail renders one preview with no grid behind it, so this view owns the
-    // hover state the card grid owns for each card.
     const preview = within(detail).getByTestId('detail-preview')
     expect(preview).toHaveAttribute('data-hovered', 'false')
 
@@ -446,8 +436,6 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
     mocks.resolveAvailability.mockResolvedValue([
       { model: fixtures.activeModel, status: 'installed' }
     ])
-    // The first open leaves the picker mounted, so the pending flag has to
-    // clear or nothing can be opened again.
     mocks.openPreparedWorkflowTemplate.mockResolvedValueOnce('not-started')
     renderDialog()
     await clickTemplateCard()
@@ -482,7 +470,6 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
       expect(mocks.resolveAvailability).toHaveBeenCalledOnce()
     })
 
-    // Detail does not exist yet, so only the in-flight slot holds the handle.
     await user.click(screen.getByRole('button', { name: 'Popular' }))
     resolveAvailability?.([{ model: fixtures.activeModel, status: 'missing' }])
     await waitFor(() => {
