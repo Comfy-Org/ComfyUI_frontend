@@ -98,11 +98,16 @@ type PreviewVariant =
   | 'personal-new'
   | null
 
+const BILLING_PORTAL_ORIGINS = new Set([
+  'https://billing.stripe.com',
+  'https://checkout.comfy.org'
+])
+
 function parseBillingPortalUrl(url: unknown): URL | null {
   if (typeof url !== 'string') return null
   try {
     const portalUrl = new URL(url)
-    return portalUrl.origin === 'https://billing.stripe.com' ? portalUrl : null
+    return BILLING_PORTAL_ORIGINS.has(portalUrl.origin) ? portalUrl : null
   } catch {
     return null
   }
