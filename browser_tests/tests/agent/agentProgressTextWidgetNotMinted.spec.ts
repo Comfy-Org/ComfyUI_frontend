@@ -208,8 +208,6 @@ test.describe(
           .poll(() => hostSocket.humanOpOutcomes().map((o) => o.outcome))
           .toEqual(['applied'])
 
-        // It landed in the shared document, rather than merely surviving on
-        // a canvas the document disagrees with.
         expect(
           host.projection().nodes.find((node) => node.id === NODE_ID)
             ?.widgets_values
