@@ -25,7 +25,6 @@ const {
   scene,
   selected,
   comparing,
-  lightMap,
   handles,
   locale = 'en'
 } = defineProps<{
@@ -35,7 +34,6 @@ const {
   scene: RelightScene
   selected?: string
   comparing: boolean
-  lightMap: boolean
   handles: boolean
   locale?: Locale
 }>()
@@ -103,7 +101,6 @@ function nudge(light: Light, dx: number, dy: number) {
         :lights
         :masks
         :scene
-        :light-map
         :style="comparing ? { clipPath: `inset(0 0 0 ${split}%)` } : undefined"
       />
       <div

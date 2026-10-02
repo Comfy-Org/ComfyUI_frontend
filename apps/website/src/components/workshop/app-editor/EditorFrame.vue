@@ -2,6 +2,7 @@
 import { inject, onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue'
 
 import { EDITOR_ZOOM } from '../../../composables/useEditorZoom'
+import { fittedSize } from './stage-geometry'
 import { zoomTransform } from './zoom'
 
 const { width, height } = defineProps<{ width: number; height: number }>()
@@ -28,8 +29,7 @@ watch(
       data-testid="editor-frame"
       class="relative mx-auto origin-top-left"
       :style="{
-        width: `min(100cqw, calc(100cqh * ${width || 3} / ${height || 2}))`,
-        aspectRatio: `${width || 3} / ${height || 2}`,
+        ...fittedSize(width, height),
         transform: zoom && zoomTransform(zoom.view.value)
       }"
     >
