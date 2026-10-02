@@ -20,40 +20,42 @@ export const HAND_EXAMPLE = {
   url: `${DIR}/hand.jpg`,
   name: 'hand-holding-can.jpg',
   width: 1200,
-  height: 900,
+  height: 896,
   /** Around the plain white can the hand holds. */
-  region: { x: 0.3917, y: 0.2756, w: 0.1833, h: 0.4511 } satisfies Rect,
-  /** The photo without the can, for the mock to draw a product into. */
-  plate: `${DIR}/hand-plate.jpg`,
-  /** The hand alone, drawn back over the product so the fingers wrap it. */
-  grip: `${DIR}/hand-grip.png`
+  region: { x: 0.4333, y: 0.279, w: 0.1833, h: 0.4688 } satisfies Rect
 } as const
 
 export const EXAMPLE_PRODUCTS = [
   {
     id: 'can',
     label: 'swap.product.can',
-    url: `${DIR}/product-can.png`,
-    name: 'sparkling-can.png',
-    width: 240,
-    height: 515
+    url: `${DIR}/product-can.jpg`,
+    name: 'sparkling-can.jpg',
+    width: 381,
+    height: 640,
+    result: `${DIR}/result-can.jpg`
   },
   {
     id: 'serum',
     label: 'swap.product.serum',
-    url: `${DIR}/product-serum.png`,
-    name: 'serum-bottle.png',
-    width: 200,
-    height: 584
+    url: `${DIR}/product-serum.jpg`,
+    name: 'serum-bottle.jpg',
+    width: 228,
+    height: 640,
+    result: `${DIR}/result-serum.jpg`
   },
   {
     id: 'tube',
     label: 'swap.product.tube',
-    url: `${DIR}/product-tube.png`,
-    name: 'hand-cream.png',
-    width: 204,
-    height: 588
+    url: `${DIR}/product-tube.jpg`,
+    name: 'hand-cream.jpg',
+    width: 294,
+    height: 640,
+    result: `${DIR}/result-tube.jpg`
   }
-] as const satisfies readonly SwapProduct[]
+] as const satisfies readonly (SwapProduct & {
+  /** The example hand photo holding this product, ready for the mock. */
+  readonly result: string
+})[]
 
 export const OWN_PRODUCT_ID = 'own'

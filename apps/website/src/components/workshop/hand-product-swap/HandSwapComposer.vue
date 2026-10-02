@@ -4,7 +4,6 @@ import type { Locale } from '../../../i18n/translations'
 import { hc } from '../../../lib/workshop/hand-product-swap/copy'
 import EditorChip from '../app-editor/EditorChip.vue'
 import EditorDivider from '../app-editor/EditorDivider.vue'
-import HandSwapHistory from './HandSwapHistory.vue'
 import HandSwapResolution from './HandSwapResolution.vue'
 import HandSwapRun from './HandSwapRun.vue'
 import HandSwapTools from './HandSwapTools.vue'
@@ -20,8 +19,6 @@ const { tray, phase } = swap
 
 <template>
   <HandSwapTools :swap :locale />
-  <EditorDivider />
-  <HandSwapHistory :swap :locale />
   <EditorDivider />
   <EditorChip
     v-for="section in SWAP_SECTIONS.filter(({ id }) => id !== 'resolution')"

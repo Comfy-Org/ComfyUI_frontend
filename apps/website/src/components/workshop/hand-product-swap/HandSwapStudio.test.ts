@@ -45,6 +45,10 @@ describe('HandSwapStudio', () => {
   it('swaps the product from the floating panel, then compares the result', async () => {
     const user = await openExample()
     expect(within(tools()).getByRole('button', { name: 'Undo' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Download' })).toHaveAttribute(
+      'aria-disabled',
+      'true'
+    )
     expect(
       within(section('Product')).getByRole('button', { name: /Product/ })
     ).toHaveTextContent('Can')
@@ -73,9 +77,13 @@ describe('HandSwapStudio', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Serum · 4K')
     await vi.advanceTimersByTimeAsync(3000)
 
-    expect(
-      await screen.findByRole('link', { name: 'Download' })
-    ).toHaveAttribute('download', 'swapped-hand-holding-can.jpg')
+    const download = await screen.findByRole('link', { name: 'Download' })
+    expect(download).toHaveAttribute('download', 'swapped-hand-holding-can.jpg')
+    expect(download).toHaveAttribute(
+      'href',
+      '/images/apps/hand-product-swap/result-serum.jpg'
+    )
+    expect(within(tools()).queryByRole('link')).toBeNull()
     const compare = within(tools()).getByRole('button', { name: 'Compare' })
     expect(compare).toHaveAttribute('aria-pressed', 'true')
     expect(
@@ -91,6 +99,25 @@ describe('HandSwapStudio', () => {
     await user.click(within(tools()).getByRole('button', { name: 'Edit' }))
     expect(box()).toBeVisible()
   })
+
+  it.for([
+    { layout: 'd', wide: true, last: 'Reset box' },
+    { layout: 'd', wide: false, last: 'Reset box' },
+    { layout: 'e', wide: true, last: 'Swap product 14 credits' }
+  ])(
+    'keeps undo and redo at the right end of the tools in layout $layout (wide: $wide)',
+    async ({ layout, wide, last }) => {
+      screenIsWide(wide)
+      await openExample(layout)
+
+      const names = within(tools())
+        .getAllByRole('button')
+        .map(
+          (tool) => tool.getAttribute('aria-label') ?? tool.textContent.trim()
+        )
+      expect(names.slice(-3)).toEqual([last, 'Undo', 'Redo'])
+    }
+  )
 
   it('nudges the box with the arrow keys and undoes it', async () => {
     const user = await openExample()
@@ -139,7 +166,7 @@ describe('HandSwapStudio', () => {
       within(tools()).getByRole('button', { name: 'Resolution: 2K' })
     )
     await user.click(
-      screen.getByRole('menuitemradio', { name: '1K 1024 × 768 px' })
+      screen.getByRole('menuitemradio', { name: '1K 1024 × 765 px' })
     )
     expect(
       within(tools()).getByRole('button', { name: 'Resolution: 1K' })

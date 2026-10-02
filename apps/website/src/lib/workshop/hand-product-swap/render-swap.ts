@@ -1,7 +1,6 @@
 import { loadImage } from '../relight/render-image'
 import type { HandSwapRequest } from './contract'
 import { clearWhiteBackdrop } from './cutout'
-import { HAND_EXAMPLE } from './examples'
 import { gripRect } from './placement'
 
 const MAX_EDGE = 2048
@@ -38,18 +37,14 @@ function toBlob(canvas: HTMLCanvasElement): Promise<Blob | null> {
 
 /**
  * The request's product drawn into its hand photo, as an object URL the
- * caller revokes, or undefined where an image does not load. On the worked
- * example the product goes onto the photo without its can and the hand is
- * drawn back over it, so the fingers wrap the new product.
+ * caller revokes, or undefined where an image does not load.
  */
 export async function renderSwapImage(
   request: HandSwapRequest
 ): Promise<string | undefined> {
-  const example = request.handImageUrl === HAND_EXAMPLE.url
-  const [base, product, grip] = await Promise.all([
-    loadImage(example ? HAND_EXAMPLE.plate : request.handImageUrl),
-    loadImage(request.productImageUrl),
-    example ? loadImage(HAND_EXAMPLE.grip) : Promise.resolve(undefined)
+  const [base, product] = await Promise.all([
+    loadImage(request.handImageUrl),
+    loadImage(request.productImageUrl)
   ])
   if (!base || !product) return undefined
   const scale = Math.min(
@@ -87,7 +82,6 @@ export async function renderSwapImage(
   context.fill()
   context.restore()
   context.drawImage(productLayer(product), x, y, w, h)
-  if (grip) context.drawImage(grip, 0, 0, width, height)
   const blob = await toBlob(canvas)
   return blob ? URL.createObjectURL(blob) : undefined
 }

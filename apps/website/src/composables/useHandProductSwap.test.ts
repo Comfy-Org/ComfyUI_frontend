@@ -67,9 +67,30 @@ describe('useHandProductSwap', () => {
     expect(swap.setup.value.region.x).toBe(0.2)
   })
 
-  it('sends the region, product, resolution and seed, then shows the result', async () => {
+  it.for([
+    { product: 'can', result: 'result-can.jpg' },
+    { product: 'serum', result: 'result-serum.jpg' },
+    { product: 'tube', result: 'result-tube.jpg' }
+  ])(
+    'shows the example photo of the hand holding the $product',
+    async ({ product, result }) => {
+      const swap = start()
+      swap.pickProduct(product)
+      await finish(swap)
+
+      expect(swap.phase.value).toEqual({
+        kind: 'done',
+        result: { url: `/images/apps/hand-product-swap/${result}`, seed: 42 }
+      })
+      expect(vi.mocked(renderSwapImage)).not.toHaveBeenCalled()
+    }
+  )
+
+  it('sends the region, product, resolution and seed of an uploaded product to the drawing', async () => {
     const swap = start()
-    swap.pickProduct('tube')
+    await swap.useProductFile(
+      new File(['x'], 'bottle.png', { type: 'image/png' })
+    )
     swap.resolution.value = '4K'
     swap.seed.value = 9
     await finish(swap)
@@ -77,11 +98,11 @@ describe('useHandProductSwap', () => {
     expect(vi.mocked(renderSwapImage)).toHaveBeenLastCalledWith(
       expect.objectContaining({
         handImageUrl: HAND_EXAMPLE.url,
-        productImageUrl: '/images/apps/hand-product-swap/product-tube.png',
+        productImageUrl: 'blob:upload',
         region: HAND_EXAMPLE.region,
         resolution: '4K',
         width: 4096,
-        height: 3072,
+        height: 3058,
         seed: 9
       })
     )
@@ -92,7 +113,7 @@ describe('useHandProductSwap', () => {
 
     swap.edit()
     expect(swap.phase.value.kind).toBe('editing')
-    expect(swap.productName.value).toBe('Cream')
+    expect(swap.productName.value).toBe('bottle.png')
   })
 
   it('cancels a run and keeps editing', async () => {

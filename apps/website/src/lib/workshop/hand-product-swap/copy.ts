@@ -95,7 +95,6 @@ const copy = {
   'swap.view.result': { en: 'Result', 'zh-CN': '结果' },
   'swap.edit': { en: 'Edit', 'zh-CN': '编辑' },
   'swap.again': { en: 'Try again', 'zh-CN': '再试一次' },
-  'swap.download': { en: 'Download', 'zh-CN': '下载' },
   'swap.alt.example': {
     en: 'A hand holding a plain white can against a beige backdrop',
     'zh-CN': '一只手在米色背景前握着一个白色罐子'

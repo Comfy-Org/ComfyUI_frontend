@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 
 import { useHandProductSwap } from '../../../composables/useHandProductSwap'
+import { useResultDownload } from '../../../composables/useResultDownload'
 import { reportStudioBusy } from '../../../composables/useStudioSwitchGuard'
 import type { Locale } from '../../../i18n/translations'
 import { workshopAppRepo } from '../../../lib/workshop/apps'
@@ -9,6 +10,7 @@ import { hc } from '../../../lib/workshop/hand-product-swap/copy'
 import AppEditorShell from '../app-editor/AppEditorShell.vue'
 import EditorAlert from '../app-editor/EditorAlert.vue'
 import HandSwapDocks from './HandSwapDocks.vue'
+import HandSwapHistory from './HandSwapHistory.vue'
 import HandSwapMain from './HandSwapMain.vue'
 import HandSwapPanel from './HandSwapPanel.vue'
 import HandSwapRun from './HandSwapRun.vue'
@@ -24,6 +26,10 @@ const { locale = 'en', layout = 'd' } = defineProps<{
 const swap = useHandProductSwap(locale)
 const { hand, phase } = swap
 const panel = computed(() => layout !== 'e')
+const download = useResultDownload(
+  phase,
+  () => hand.value && `swapped-${hand.value.name}`
+)
 reportStudioBusy(() => phase.value.kind === 'running')
 
 const panelLabels = {
@@ -39,6 +45,7 @@ const panelLabels = {
     :tools-label="hc('swap.tools', locale)"
     :panel-labels="panelLabels"
     :panel-dimmed="phase.kind === 'done'"
+    :download
     :repo="workshopAppRepo('hand-product-swap')"
     :locale
     data-testid="hand-product-swap"
@@ -53,6 +60,9 @@ const panelLabels = {
     </template>
     <template #dock>
       <HandSwapDocks :swap :panel :locale />
+    </template>
+    <template v-if="phase.kind !== 'done'" #history>
+      <HandSwapHistory :swap :locale />
     </template>
     <template v-if="panel && hand" #panel>
       <HandSwapPanel :hand :swap :locale />

@@ -528,34 +528,41 @@ test('closes Hand product swap while its flag is off', async ({
   await expect(page.getByTestId('hand-product-swap')).toHaveCount(0)
 })
 
-test('swaps the product in the Hand product swap example and compares the result', async ({
-  page,
-  context
-}) => {
+async function openHandSwapExample(page: Page, context: BrowserContext) {
   await mockFlags(context, { apps: true, workflows: false })
   await page.goto('/hub/apps/hand-product-swap/')
   const app = page.getByTestId('hand-product-swap')
   await expect(app.getByTestId('swap-empty')).toBeVisible()
-
   await app.getByRole('button', { name: 'Try the example' }).click()
   const panel = app.getByRole('complementary', {
     name: 'Hand product swap settings'
   })
+  return { app, panel }
+}
+
+test('swaps the product in the Hand product swap example and compares the result', async ({
+  page,
+  context
+}) => {
+  const { app, panel } = await openHandSwapExample(page, context)
+  await expectPanelWidth(panel)
   await panel.getByRole('radio', { name: 'Serum' }).click()
   await panel.getByRole('button', { name: 'Resolution: 2K' }).click()
   await page.getByRole('menuitemradio', { name: /^1K/ }).click()
   const box = app.getByRole('button', { name: /^Where the product goes/ })
   await box.focus()
   await page.keyboard.press('Shift+ArrowLeft')
-  await expect(box).toHaveAttribute('style', /left: 34\.1/)
+  await expect(box).toHaveAttribute('style', /left: 38\.3/)
+  const tools = app.getByRole('toolbar', { name: 'Hand product swap tools' })
+  await expect(tools.getByRole('button').last()).toHaveAccessibleName('Redo')
 
   await panel.getByTestId('swap-run').click()
   await expect(app.getByRole('status')).toContainText('Swapping the product')
   await expect(app.getByRole('link', { name: 'Download' })).toHaveAttribute(
     'href',
-    /^blob:/
+    '/images/apps/hand-product-swap/result-serum.jpg'
   )
-  const tools = app.getByRole('toolbar', { name: 'Hand product swap tools' })
+  await expectDownloadBesideGitHub(app)
   await expect(tools.getByRole('button', { name: 'Compare' })).toHaveAttribute(
     'aria-pressed',
     'true'
@@ -568,7 +575,43 @@ test('swaps the product in the Hand product swap example and compares the result
   await expect(split).toHaveValue('51')
 
   await tools.getByRole('button', { name: 'Edit' }).click()
-  await expect(box).toHaveAttribute('style', /left: 34\.1/)
+  await expect(box).toHaveAttribute('style', /left: 38\.3/)
+})
+
+for (const { product, result } of [
+  { product: 'Can', result: 'result-can.jpg' },
+  { product: 'Serum', result: 'result-serum.jpg' },
+  { product: 'Cream', result: 'result-tube.jpg' }
+])
+  test(`answers the Hand product swap example holding the ${product} with its example photo`, async ({
+    page,
+    context
+  }) => {
+    const { app, panel } = await openHandSwapExample(page, context)
+    await panel.getByRole('radio', { name: product }).click()
+    await panel.getByTestId('swap-run').click()
+    await expect(app.getByRole('link', { name: 'Download' })).toHaveAttribute(
+      'href',
+      `/images/apps/hand-product-swap/${result}`
+    )
+  })
+
+test('draws an uploaded product into the Hand product swap example', async ({
+  page,
+  context
+}) => {
+  const { app, panel } = await openHandSwapExample(page, context)
+  await panel
+    .getByTestId('swap-product-input')
+    .setInputFiles('public/images/apps/hand-product-swap/product-can.jpg')
+  await expect(
+    panel.getByRole('radio', { name: 'Your product' })
+  ).toHaveAttribute('aria-checked', 'true')
+  await panel.getByTestId('swap-run').click()
+  await expect(app.getByRole('link', { name: 'Download' })).toHaveAttribute(
+    'href',
+    /^blob:/
+  )
 })
 
 test('sends an old catalogue link for the Apps tab to the hub apps page', async ({

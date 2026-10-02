@@ -123,15 +123,8 @@ function finish() {
         :src="product.url"
         alt=""
         draggable="false"
-        class="pointer-events-none absolute object-fill opacity-55"
+        class="pointer-events-none absolute object-fill opacity-55 mix-blend-multiply"
         :style="ghost"
-      />
-      <img
-        v-if="!sketch && hand.url === HAND_EXAMPLE.url"
-        :src="HAND_EXAMPLE.grip"
-        alt=""
-        draggable="false"
-        class="pointer-events-none absolute inset-0 size-full"
       />
       <HandSwapBox
         v-if="!sketch"

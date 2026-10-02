@@ -23,7 +23,7 @@ const emit = defineEmits<{ pick: [] }>()
     <span
       :class="
         cn(
-          'relative block aspect-square w-full rounded-lg bg-[radial-gradient(circle_at_50%_40%,var(--color-transparency-white-t8),var(--color-transparency-white-t4))] ring-1 ring-transparency-white-t8 transition group-hover:ring-transparency-white-t20 group-focus-visible:ring-2 group-focus-visible:ring-primary-comfy-yellow/60',
+          'relative block aspect-square w-full overflow-hidden rounded-lg bg-white ring-1 ring-transparency-white-t8 transition group-hover:ring-transparency-white-t20 group-focus-visible:ring-2 group-focus-visible:ring-primary-comfy-yellow/60',
           selected &&
             'ring-2 ring-primary-warm-white group-hover:ring-primary-warm-white'
         )
@@ -33,7 +33,7 @@ const emit = defineEmits<{ pick: [] }>()
         :src="product.url"
         alt=""
         draggable="false"
-        class="absolute inset-0 m-auto max-h-[78%] max-w-[78%] object-contain drop-shadow-md"
+        class="absolute inset-0 m-auto max-h-[86%] max-w-[86%] object-contain mix-blend-multiply"
       />
     </span>
     <span
