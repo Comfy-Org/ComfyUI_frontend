@@ -22,6 +22,20 @@ test.describe(
         agentConversation.vueNodes.getNodeLocator(nodeId)
       ).toBeVisible()
       await expect.poll(() => agentConversation.hostNodeIds()).toContain(nodeId)
+      await expect
+        .poll(
+          () =>
+            agentConversation
+              .clientDocFrames()
+              .filter((frame) => frame.type === 'doc_ops').length
+        )
+        .toBe(2)
+
+      const [firstAttempt, retry] = agentConversation
+        .clientDocFrames()
+        .filter((frame) => frame.type === 'doc_ops')
+      expect(firstAttempt.opIds).not.toHaveLength(0)
+      expect(retry.opIds).toEqual(firstAttempt.opIds)
 
       const subscribes = agentConversation.subscribeCount()
       await agentConversation.reloadWithoutLocalWorkflow()

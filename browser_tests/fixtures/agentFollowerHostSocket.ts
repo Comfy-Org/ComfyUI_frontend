@@ -228,8 +228,13 @@ export class AgentFollowerHostSocket {
       this.judgeHumanOps(frame.opsResult)
       return true
     }
+    const refusal = this.preMintResult(frame.opsResult)
+    if (refusal === null) {
+      this.send(this.invalidFrameResult())
+      return true
+    }
     this.preMintRefused = true
-    this.send(this.preMintResult(frame.opsResult))
+    this.send(refusal)
     this.send({
       type: 'doc_reset',
       data: {
@@ -358,9 +363,8 @@ export class AgentFollowerHostSocket {
     }
   }
 
-  private preMintResult(opsResult: ParsedWireBatch): HostFrame {
-    if (!opsResult.ok || opsResult.ops.length === 0)
-      return this.invalidFrameResult()
+  private preMintResult(opsResult: ParsedWireBatch): HostFrame | null {
+    if (!opsResult.ok || opsResult.ops.length === 0) return null
     return {
       type: 'doc_ops_result',
       data: {
