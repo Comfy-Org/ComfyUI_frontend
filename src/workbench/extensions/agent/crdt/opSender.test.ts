@@ -287,6 +287,48 @@ describe('createOpSender', () => {
     expect(settled[0].state).toBe('unconfirmed')
   })
 
+  it('drains 20,000 queued batches after unbinding without overflowing the stack', () => {
+    sender.enqueue([addNode(0)])
+    for (let index = 1; index < 20_000; index++) {
+      sender.enqueue([addNode(index)])
+    }
+    boundWorkflow = null
+
+    expect(() => sender.abortIfUnbound()).not.toThrow()
+    expect(settled).toHaveLength(20_000)
+    expect(settled[0].state).toBe('unconfirmed')
+    expect(
+      settled.slice(1).every(({ state }) => state === 'undeliverable')
+    ).toBe(true)
+    expect(
+      new Set(settled.flatMap((outcome) => outcome.ops.map((op) => op.op_id)))
+        .size
+    ).toBe(20_000)
+    expect(sender.pending()).toBe(0)
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('drains an old-workflow backlog before sending the next workflow batch', () => {
+    sender.enqueue([addNode(0)])
+    for (let index = 1; index < 20_000; index++) {
+      sender.enqueue([addNode(index)])
+    }
+    boundWorkflow = 'wf-2'
+    sender.enqueue([addNode(20_000)])
+
+    expect(() => sender.abortIfUnbound()).not.toThrow()
+    expect(settled).toHaveLength(20_000)
+    expect(sent).toHaveLength(2)
+    expect(sent[1].workflowId).toBe('wf-2')
+    expect(sent[1].ops[0]).toMatchObject({ node_id: 20_000 })
+    expect(sender.pending()).toBe(1)
+
+    ackInFlight()
+    expect(settled).toHaveLength(20_001)
+    expect(settled.at(-1)?.state).toBe('acknowledged')
+    expect(sender.pending()).toBe(0)
+  })
+
   it('abortIfUnbound cascades through every queued batch minted for the dead workflow, synchronously', () => {
     sender.enqueue([addNode(1)])
     sender.enqueue([addNode(2)])
