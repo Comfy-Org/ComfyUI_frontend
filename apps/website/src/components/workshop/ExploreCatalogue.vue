@@ -37,12 +37,7 @@ const {
 
 const routes = getRoutes(locale)
 const useCases = computed(() =>
-  sortWorkshopModels(workflows, 'popular')
-    .filter(
-      (model): model is WorkflowWorkshopModel =>
-        model.type === 'CLOUD' || model.type === 'SERVERLESS'
-    )
-    .slice(0, USE_CASES)
+  sortWorkshopModels(workflows, 'popular').slice(0, USE_CASES)
 )
 const popularModels = computed(() => sortWorkshopModels(models, 'popular'))
 const providers = computed(() =>
