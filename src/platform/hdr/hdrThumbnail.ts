@@ -1,6 +1,5 @@
 import { compress, encode } from '@monogrid/gainmap-js/encode'
 import { encodeJPEGMetadata } from '@monogrid/gainmap-js/libultrahdr'
-import { withTimeout } from 'es-toolkit'
 import * as THREE from 'three'
 
 import { gamutToSrgbMatrix } from '@/platform/hdr/colorGamut'
@@ -9,7 +8,6 @@ import { loadHdrTexture, makeReader } from '@/platform/hdr/hdrTextureLoader'
 import { HDR_VIEWER_VERTEX_SHADER } from '@/platform/hdr/hdrViewerShader'
 
 const THUMBNAIL_SIZE = 256
-const RENDER_TIMEOUT_MS = 30_000
 const EXPOSURE_PERCENTILE = 0.99
 const MAX_CONTENT_BOOST = 16
 const JPEG_QUALITY = 0.9
@@ -28,14 +26,14 @@ void main() {
 }
 `
 
-let queue: Promise<unknown> = Promise.resolve()
-
-export function renderHdrThumbnail(url: string, filename: string) {
-  const run = queue.then(() =>
-    withTimeout(() => render(url, filename), RENDER_TIMEOUT_MS)
-  )
-  queue = run.catch(() => null)
-  return run
+self.onmessage = async ({
+  data: { url, filename }
+}: MessageEvent<{ url: string; filename: string }>) => {
+  try {
+    self.postMessage(await render(url, filename))
+  } catch (error) {
+    self.postMessage(error)
+  }
 }
 
 function exposureGain(texture: THREE.DataTexture): number {
@@ -88,7 +86,11 @@ async function render(url: string, filename: string): Promise<Blob> {
   const width = Math.max(1, Math.round(texture.image.width * scale))
   const height = Math.max(1, Math.round(texture.image.height * scale))
 
-  const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false })
+  const renderer = new THREE.WebGLRenderer({
+    canvas: new OffscreenCanvas(1, 1),
+    antialias: false,
+    alpha: false
+  })
   const target = new THREE.WebGLRenderTarget(width, height, {
     type: THREE.FloatType
   })

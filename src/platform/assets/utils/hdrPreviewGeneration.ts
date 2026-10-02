@@ -7,14 +7,43 @@ import { reportError } from '@/platform/telemetry/reportError'
 import type { PagedList } from '@/utils/pagedList'
 import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 
+const RENDER_TIMEOUT_MS = 30_000
+
+let queue: Promise<unknown> = Promise.resolve()
+
+function renderHdrThumbnail(url: string, filename: string) {
+  const run = queue.then(() => renderInWorker(url, filename))
+  queue = run.catch(() => null)
+  return run
+}
+
+function renderInWorker(url: string, filename: string) {
+  const worker = new Worker(
+    new URL('../../hdr/hdrThumbnail.ts', import.meta.url),
+    { type: 'module' }
+  )
+  return new Promise<Blob>((resolve, reject) => {
+    setTimeout(
+      () => reject(new Error('HDR thumbnail timed out')),
+      RENDER_TIMEOUT_MS
+    )
+    worker.onmessage = ({ data }) =>
+      data instanceof Blob ? resolve(data) : reject(data)
+    worker.onerror = reject
+    worker.postMessage({ url: new URL(url, location.href).href, filename })
+  }).finally(() => worker.terminate())
+}
+
 async function generatePreview(asset: AssetItem, list: PagedList<AssetItem>) {
   try {
-    const { renderHdrThumbnail } = await import('@/platform/hdr/hdrThumbnail')
     const blob = await renderHdrThumbnail(getAssetFileUrl(asset), asset.name)
     await attachPreview(asset, blob)
     await list.invalidate()
   } catch (error) {
-    reportError(error, { errorType: 'error_generating_asset_preview' })
+    reportError(error, {
+      errorType: 'error_generating_asset_preview',
+      surface: 'assets'
+    })
   }
 }
 

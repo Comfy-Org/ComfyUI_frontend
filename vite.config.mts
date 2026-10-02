@@ -732,11 +732,6 @@ export default defineConfig({
               priority: 15
             },
             {
-              name: 'vendor-gainmap',
-              test: /[\\/]node_modules[\\/]@monogrid[\\/]gainmap-js[\\/]/,
-              priority: 15
-            },
-            {
               name: 'vendor-tiptap',
               test: /[\\/]node_modules[\\/]@tiptap[\\/]/,
               priority: 15
