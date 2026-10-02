@@ -736,7 +736,7 @@ describe('attachDocOpMinter', () => {
   })
 
   // The one interior divergence that is INVISIBLE. `LGraph.clear` emits its
-  // intent only `if (this.isRootGraph)` (`LGraph.ts:821`), so an interior clear
+  // intent only `if (this.isRootGraph)` (`LGraph.ts:839`), so an interior clear
   // never reaches the minter at all: no wire op AND no `reportError`. The other
   // five interior actions at least surface a refusal, which is how they were
   // measured on production; this one would diverge the bound document with
@@ -748,10 +748,16 @@ describe('attachDocOpMinter', () => {
     await afterFlush()
     minted.length = 0
     vi.mocked(reportError).mockClear()
+    expect(subgraph.nodes).toContain(interior)
 
     subgraph.clear()
     await afterFlush()
 
+    // The divergence this pins has two halves and both are asserted: the local
+    // graph really did change, and nothing observable left the minter. Without
+    // the first assertion the other two would hold just as well for a clear
+    // that did nothing at all, which is not what is being pinned.
+    expect(subgraph.nodes).toEqual([])
     expect(minted).toEqual([])
     expect(vi.mocked(reportError)).not.toHaveBeenCalled()
   })
