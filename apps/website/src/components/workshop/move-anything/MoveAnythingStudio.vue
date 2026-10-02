@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 
 import type { MoveView } from '../../../composables/useMoveAnything'
 import { useMoveAnything } from '../../../composables/useMoveAnything'
+import { useResultDownload } from '../../../composables/useResultDownload'
 import { reportStudioBusy } from '../../../composables/useStudioSwitchGuard'
 import type { Locale } from '../../../i18n/translations'
 import { workshopAppRepo } from '../../../lib/workshop/apps'
@@ -26,10 +27,9 @@ const move = useMoveAnything(locale)
 const { image, phase } = move
 const view = ref<MoveView>('compare')
 const panel = computed(() => layout !== 'e')
-const download = computed(() =>
-  image.value && phase.value.kind === 'done'
-    ? { href: phase.value.result.url, name: `moved-${image.value.name}` }
-    : undefined
+const download = useResultDownload(
+  phase,
+  () => image.value && `moved-${image.value.name}`
 )
 reportStudioBusy(() => phase.value.kind === 'moving')
 
