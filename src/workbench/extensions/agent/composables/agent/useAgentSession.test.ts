@@ -1753,7 +1753,9 @@ describe('useAgentSession (v1 composition root)', () => {
 
     const parkedOnApproval = async () => {
       const answerAsk = vi.fn(
-        async (): Promise<AgentAnswerAccepted> => ({ status: 'answered' })
+        async (): Promise<AgentAnswerAccepted> => ({
+          status: 'answered'
+        })
       )
       const rest = fakeRest({ answerAsk })
       const events = fakeEvents()
@@ -2253,7 +2255,12 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.entries.value.at(-1)).toMatchObject({
       role: 'assistant',
       parts: [
-        { type: 'notice', level: 'error', text: message, retryAfterSeconds: 30 }
+        {
+          type: 'notice',
+          level: 'error',
+          text: message,
+          retryAfterSeconds: 30
+        }
       ]
     })
   })
@@ -3279,7 +3286,45 @@ describe('useAgentSession (v1 composition root)', () => {
     await vi.waitFor(() => expect(session.isStreaming.value).toBe(false))
     const assistant = session.entries.value.at(-1)
     assert(assistant?.role === 'assistant')
-    expect(assistant.parts).toEqual([])
+    expect(assistant.parts).toEqual([
+      {
+        type: 'notice',
+        level: 'error',
+        text: 'The agent could not complete this response.'
+      }
+    ])
+  })
+
+  it('an empty interrupted row preserves the locally streamed reply', async () => {
+    const interruptedWithoutParts = {
+      ...historyRow(2, 'assistant', 'msg-1', '', 'msg-1'),
+      content: {},
+      status: 'interrupted' as const
+    }
+    const rest = fakeRest({
+      getMessages: vi.fn(
+        async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'msg-1', 'go'),
+          interruptedWithoutParts
+        ]
+      )
+    })
+    const { source, emit, status } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    status(true)
+
+    await session.sendMessage('go')
+    emit(delta('msg-1', 'partial local answer'))
+    status(false)
+    status(true)
+
+    await vi.waitFor(() => expect(session.isStreaming.value).toBe(false))
+    const assistant = session.entries.value.at(-1)
+    assert(assistant?.role === 'assistant')
+    expect(assistant.parts).toEqual([
+      { type: 'text', text: 'partial local answer', state: 'done' }
+    ])
   })
 
   it('(g6) a row still streaming on the first check is polled with backoff until it goes terminal', async () => {
@@ -3553,7 +3598,11 @@ describe('useAgentSession (v1 composition root)', () => {
     })
     const { source, emit, status } = fakeEvents()
     const onThreadActivated = vi.fn()
-    const session = useAgentSession({ rest, events: source, onThreadActivated })
+    const session = useAgentSession({
+      rest,
+      events: source,
+      onThreadActivated
+    })
     session.start()
     status(true)
     session.bindWorkflow('wf-1')
@@ -5170,7 +5219,11 @@ describe('useAgentSession (v1 composition root)', () => {
     emit(
       wire({
         type: 'agent_active_tab',
-        data: { workflow_id: 'wf-9', name: 'Video test', thread_id: 'th-OTHER' }
+        data: {
+          workflow_id: 'wf-9',
+          name: 'Video test',
+          thread_id: 'th-OTHER'
+        }
       })
     )
     expect(activeTab).not.toHaveBeenCalled()

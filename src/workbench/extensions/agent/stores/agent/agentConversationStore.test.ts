@@ -449,7 +449,10 @@ describe('useAgentConversationStore', () => {
     store.hydrate([
       historyRow(1, 'user', 'turn-a', 'go', 'u1'),
       historyRow(2, 'assistant', 'turn-a', 'partial', 't1'),
-      { ...historyRow(3, 'assistant', 'turn-a', '', 't2'), status: 'streaming' }
+      {
+        ...historyRow(3, 'assistant', 'turn-a', '', 't2'),
+        status: 'streaming'
+      }
     ])
     store.resumeBackgroundTurn()
 
@@ -689,7 +692,10 @@ describe('useAgentConversationStore', () => {
 
     store.hydrate([
       historyRow(1, 'user', 'turn-a', 'go', 'u1'),
-      { ...historyRow(2, 'assistant', 'turn-a', '', 't3'), status: 'streaming' }
+      {
+        ...historyRow(2, 'assistant', 'turn-a', '', 't3'),
+        status: 'streaming'
+      }
     ])
     expect(store.activeTurnId).toBe('t3')
     store.ingest(done('t3'))
@@ -1720,7 +1726,42 @@ describe('useAgentConversationStore', () => {
 
     expect(store.messages[0].parts).toMatchObject([
       { type: 'text', text: 'partial', state: 'done' },
-      { type: 'tool', name: 'add_node', state: 'done' }
+      { type: 'tool', name: 'add_node', state: 'done', ok: false }
+    ])
+  })
+
+  it('drops a provisional draft before preserving an empty successful row', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.ingest(
+      chat({
+        type: 'agent_message_draft',
+        data: { text: 'provisional', message_id: 't1', thread_id: 'th' }
+      })
+    )
+
+    store.settleTurn({ threadId: 'th', messageId: T1 }, undefined)
+
+    expect(store.messages[0].parts).toEqual([])
+  })
+
+  it('keeps a successful tool pending until canvas catch-up after background settlement', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.setCanvasSyncGate(() => true)
+    store.startTurn(T1)
+    store.ingest(toolCall('t1', 'add_node', 'success'))
+    store.stashActiveTurn()
+
+    store.settleTurn({ threadId: 'th', messageId: T1 }, undefined)
+
+    expect(store.messages[0].parts).toMatchObject([
+      { type: 'tool', name: 'add_node', state: 'streaming', ok: true }
+    ])
+    store.notifyCanvasCaughtUp()
+    expect(store.messages[0].parts).toMatchObject([
+      { type: 'tool', name: 'add_node', state: 'done', ok: true }
     ])
   })
 
