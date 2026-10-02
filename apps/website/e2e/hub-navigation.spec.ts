@@ -227,11 +227,18 @@ for (const { width, from, to } of [
     )
     await page.getByRole('button', { name: 'Close', exact: true }).click()
 
+    const toolbar = page.getByTestId('workshop-toolbar')
     const tabs = page.getByTestId('catalogue-tabs')
-    await page.evaluate(() => window.scrollTo(0, 1400))
+    await expect(page.getByTestId('workshop-model-card').first()).toBeVisible()
+    // Far enough down that the toolbar has left the page and stuck under the
+    // header, which is the state the reader is in when a tab is a jump.
+    const stuck = await toolbar.evaluate((element) =>
+      Number.parseFloat(getComputedStyle(element).top)
+    )
+    await page.evaluate(() => window.scrollBy(0, 1200))
     await expect
-      .poll(() => page.evaluate(() => Math.round(window.scrollY)))
-      .toBe(1400)
+      .poll(async () => (await toolbar.boundingBox())?.y)
+      .toBeCloseTo(stuck, 0)
     const pinned = (await tabs.boundingBox())?.y
     expect(pinned).toBeDefined()
 

@@ -20,10 +20,33 @@ const TOOLBAR = '#hub-toolbar'
  * Pinned, its distance from the top of the window is its own `top`.
  */
 function stickyToolbar() {
-  const toolbar = document.querySelector(TOOLBAR)
+  const toolbar = document.querySelector<HTMLElement>(TOOLBAR)
   if (!toolbar) return undefined
   const offset = Number.parseFloat(getComputedStyle(toolbar).top)
   return Number.isFinite(offset) ? { toolbar, offset } : undefined
+}
+
+/** Where the page has to sit for the toolbar to be pinned rather than in flow. */
+function pinnedScroll() {
+  const sticky = stickyToolbar()
+  if (!sticky) return undefined
+  let top = 0
+  // Sticky clamps the painted box, so the flow position is what can be read
+  // the same whether the page is already scrolled or not.
+  for (
+    let node: HTMLElement | null = sticky.toolbar;
+    node;
+    node = node.offsetParent instanceof HTMLElement ? node.offsetParent : null
+  )
+    top += node.offsetTop
+  return top - sticky.offset
+}
+
+function pinToolbar() {
+  const target = pinnedScroll()
+  if (target === undefined) return false
+  window.scrollTo(0, target)
+  return Math.round(window.scrollY) === Math.round(target)
 }
 
 let toolbarWasPinned = false
@@ -73,11 +96,18 @@ document.addEventListener('astro:before-swap', (event) => {
 document.addEventListener('astro:after-swap', () => {
   if (!toolbarWasPinned) return
   toolbarWasPinned = false
-  window.scrollTo(0, 0)
-  const sticky = stickyToolbar()
-  if (sticky)
-    window.scrollTo(
-      0,
-      sticky.toolbar.getBoundingClientRect().top - sticky.offset
-    )
+  if (pinToolbar()) return
+  // The incoming listing renders after the swap: until it does there is no
+  // toolbar to pin and the page can be too short to hold the scroll.
+  const growing = new ResizeObserver(() => {
+    if (pinToolbar()) growing.disconnect()
+  })
+  growing.observe(document.documentElement)
+  document.addEventListener(
+    'astro:before-preparation',
+    () => growing.disconnect(),
+    {
+      once: true
+    }
+  )
 })
