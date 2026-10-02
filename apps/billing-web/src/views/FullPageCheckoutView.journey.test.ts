@@ -318,8 +318,13 @@ describe('the full-page checkout journey', () => {
   ])('$name', async ({ options, arrange, path, last }) => {
     await renderCheckout(options, arrange, path)
 
-    await waitFor(() => expect(journey()).toHaveLength(2))
-    expect(journeyNames()[0]).toBe('billing.checkout.entered')
+    await waitFor(() =>
+      expect(journeyNames()).toEqual([
+        'billing.checkout.entered',
+        'billing.checkout.preview_failed',
+        'billing.checkout.ended'
+      ])
+    )
     expect(journey()[1]).toMatchObject(last)
   })
 
@@ -416,7 +421,8 @@ describe('the full-page checkout journey', () => {
         'billing.checkout.payment_submit_attempted',
         'billing.checkout.method_selected',
         'billing.checkout.submitted',
-        'billing.checkout.operation_linked'
+        'billing.checkout.operation_linked',
+        'billing.checkout.ended'
       ])
     )
     const [, , , , , submitted, linked] = journey()

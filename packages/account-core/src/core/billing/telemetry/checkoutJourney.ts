@@ -140,12 +140,7 @@ type CheckoutJourneyProgressEvent =
   | CheckoutJourneyOperationLinked
 
 /** How the customer left: the page went away, or a control of this page led out. */
-export type CheckoutExit =
-  | 'page_exit'
-  | 'back'
-  | 'close'
-  | 'host_link'
-  | 'view_plans'
+export type CheckoutExit = 'page_exit' | 'back' | 'close' | 'host_link'
 /** The ending screens of the full-page checkout. */
 export type CheckoutEndingKind =
   | 'success'

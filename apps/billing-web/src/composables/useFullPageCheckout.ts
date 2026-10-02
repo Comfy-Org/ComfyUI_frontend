@@ -1,4 +1,8 @@
-import { tryOnScopeDispose, useIntervalFn } from '@vueuse/core'
+import {
+  tryOnScopeDispose,
+  useEventListener,
+  useIntervalFn
+} from '@vueuse/core'
 import { computed, shallowReadonly, shallowRef, watch } from 'vue'
 
 import {
@@ -37,9 +41,11 @@ import {
   needsConsent,
   railAcceptsPay,
   reduceCheckoutPage,
-  settledPlanSource
+  settledPlanSource,
+  submitPhaseOf
 } from '@/checkout/checkoutPage'
 import { methodKindOf } from '@/checkout/checkoutJourney'
+import { endingOf } from '@/checkout/endingScreen'
 import { pricingTableUrl } from '@/checkout/cloudLinks'
 import { createOperationChannel } from '@/checkout/operationChannel'
 import { promoEntryLive, promoRejectionOf } from '@/checkout/promoEntry'
@@ -205,8 +211,12 @@ export function useFullPageCheckout() {
    * reopens only a challenge that stays on this page (below), and anything
    * else waits for Complete verification.
    */
+  let handedToHostedStep = false
   const checkout = useCheckout({
-    openUrl: (url) => window.location.assign(url),
+    openUrl: (url) => {
+      handedToHostedStep = true
+      window.location.assign(url)
+    },
     navigationMode: 'redirect',
     challengePort,
     autoContinue: () => submitting.value,
@@ -579,6 +589,33 @@ export function useFullPageCheckout() {
 
   const { returnLink, openedByScript, close } = useCheckoutExit(page)
 
+  watch(
+    () => endingOf(page.value)?.kind,
+    (kind) => {
+      if (kind === undefined) return
+      const current = page.value
+      journey.ended(
+        kind,
+        current.kind === 'terminal' ? current.attribution : undefined
+      )
+    },
+    { immediate: true }
+  )
+
+  /** A page handed to a hosted step or a method's own site has not been abandoned. */
+  function leftForPayment() {
+    const current = page.value
+    return (
+      handedToHostedStep ||
+      (current.kind === 'capture' &&
+        submitPhaseOf(current).kind === 'redirecting')
+    )
+  }
+
+  useEventListener(window, 'pagehide', () => {
+    if (!leftForPayment()) journey.abandoned('page_exit')
+  })
+
   /**
    * The live catalog, on the Team tab when the link asked for a team plan:
    * one the quote named without its stop, or a link that carries a stop.
@@ -735,6 +772,7 @@ export function useFullPageCheckout() {
     viewPlansLink,
     openedByScript,
     close,
+    abandon: journey.abandoned,
     retryLoad,
     onPaymentPhase,
     savedMethods: saved.methods,
