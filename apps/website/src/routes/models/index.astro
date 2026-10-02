@@ -35,14 +35,18 @@ const directory = modelsByProvider(workshopModels, t('workshop.filter.other'))
         class="flex cursor-pointer list-none items-center gap-3 rounded-2xl px-6 py-5 text-primary-warm-white transition-colors hover:text-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 max-sm:px-4 [&::-webkit-details-marker]:hidden"
         data-testid="models-directory-toggle"
       >
-        <h2 id="models-directory-heading" class="text-xl font-medium">
-          {t('workshop.catalogue.directory')}
-        </h2>
-        <span class="text-sm text-primary-warm-gray tabular-nums">
-          {t('workshop.catalogue.directoryCount', 'en', {
-            count: workshopModels.length
-          })}
-        </span>
+        <div
+          class="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-center sm:gap-3"
+        >
+          <h2 id="models-directory-heading" class="text-xl font-medium">
+            {t('workshop.catalogue.directory')}
+          </h2>
+          <span class="text-sm text-primary-warm-gray tabular-nums">
+            {t('workshop.catalogue.directoryCount', 'en', {
+              count: workshopModels.length
+            })}
+          </span>
+        </div>
         <svg
           class="ml-auto size-5 shrink-0 transition-transform duration-200 group-open:rotate-180"
           viewBox="0 0 24 24"
