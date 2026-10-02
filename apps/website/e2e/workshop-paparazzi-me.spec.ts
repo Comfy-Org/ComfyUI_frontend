@@ -52,7 +52,7 @@ test('snaps the Paparazzi me example from the floating panel', async ({
   await expect(app.getByRole('status')).toContainText('Developing the shot')
   await expect(app.getByRole('link', { name: 'Download' })).toHaveAttribute(
     'href',
-    /^(blob:|\/images\/apps\/paparazzi-me\/example-result\.jpg)/
+    /^blob:/
   )
   await app.getByRole('button', { name: 'Compare' }).click()
   await expect(
@@ -83,7 +83,10 @@ test('snaps from the Paparazzi me bottom sheet on phones @mobile', async ({
   ).toBeVisible()
 
   await sheet.getByTestId('paparazzi-run').click()
-  await expect(app.getByRole('link', { name: 'Download' })).toBeVisible()
+  await expect(app.getByRole('link', { name: 'Download' })).toHaveAttribute(
+    'href',
+    '/images/apps/paparazzi-me/result-airport.jpg'
+  )
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth - window.innerWidth
   )

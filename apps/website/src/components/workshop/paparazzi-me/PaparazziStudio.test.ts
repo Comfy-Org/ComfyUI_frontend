@@ -65,7 +65,7 @@ describe('PaparazziStudio', () => {
 
     expect(
       await screen.findByRole('link', { name: 'Download' })
-    ).toHaveAttribute('href', '/images/apps/paparazzi-me/example-result.jpg')
+    ).toHaveAttribute('href', '/images/apps/paparazzi-me/result-cafe.jpg')
     expect(
       screen.getByRole('img', {
         name: 'A paparazzi photo of you next to Nova Reyes'
