@@ -209,6 +209,23 @@ function mergeAdjacentTextParts(
   return merged
 }
 
+function terminalRecoveryParts(
+  rows: AgentMessages
+): AssistantMessage['parts'] | undefined {
+  const parts = mergeAdjacentTextParts(
+    normalizeAgentTranscript(rows).messages[0]?.parts ?? []
+  )
+  if (parts.length > 0) return parts
+  if (rows.every((row) => row.status !== 'error')) return undefined
+  return [
+    {
+      type: 'notice',
+      level: 'error',
+      text: i18n.global.t('agent.recoveredTurnFailed')
+    }
+  ]
+}
+
 /**
  * The status source reports its current state synchronously on subscribe
  * (see agentEventSource.onStatus), so the first callback is a snapshot, not a
@@ -1737,10 +1754,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
         .sort((a, b) => a.seq - b.seq)
       if (rows.some((row) => !isTerminalTurnStatus(row.status)))
         return { kind: 'streaming' }
-      const parts = mergeAdjacentTextParts(
-        normalizeAgentTranscript(rows).messages[0]?.parts ?? []
-      )
-      return { kind: 'terminal', parts: parts.length === 0 ? undefined : parts }
+      return {
+        kind: 'terminal',
+        parts: terminalRecoveryParts(rows)
+      }
     } catch (error) {
       if (signal.aborted) throw error
       return turnOutcomeFromError(error)

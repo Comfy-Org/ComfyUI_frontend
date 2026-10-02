@@ -231,7 +231,13 @@ guard.
 - Remote edits get undo, `isModified`, extension callbacks
   (`onAdded`, `onRemoved`, `onConnectionsChange`, `onConfigure`,
   `onWidgetChanged`), autogrow, and slot realignment without follower code,
-  because they run the same code a human edit runs.
+  because they run the same code a human edit runs. One exception, found in
+  production: a dynamic input slot the host grew (`connect` with a `grow`
+  payload) has no live counterpart, and autogrow is driven by
+  `onConnectionsChange` on a slot that already exists, so there is no connect
+  to trigger it and the link resolved to slot `-1`. The applier grows the
+  group itself before connecting (`growAutogrowInput`), the read-leg mirror of
+  the grow op `docOpMinter.mintConnect` already mints on the write leg.
 - Litegraph and the stores carry no agent-specific hooks; the agent extension
   is deletable without touching them.
 - One shared apply/render path means shared fixes and tests protect all four
