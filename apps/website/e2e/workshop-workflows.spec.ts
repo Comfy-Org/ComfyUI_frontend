@@ -624,7 +624,7 @@ test('the examples belong to the playground, not to Details or API', async ({
   await expect(examples).toBeVisible()
 })
 
-test('a hovered workflow card spends its tag line only on a name that is cut off', async ({
+test('a workflow card gives every name two rows and keeps its tag', async ({
   page,
   context
 }) => {
@@ -635,41 +635,34 @@ test('a hovered workflow card spends its tag line only on a name that is cut off
     '[data-testid="workshop-model-card"][data-kind="workflow"]'
   )
   await expect(cards.first()).toBeVisible()
-  // Only a name the single line already cuts off can show the hover doing
-  // anything, so the test picks one the catalogue is clipping — and one it is
-  // not, which must keep its tag.
-  const [clipped, whole] = await cards.evaluateAll((all) => {
-    const clips = (card: Element) => {
+  // The two rows are reserved whether the name fills them or not, so the tags
+  // below them line up across the grid and nothing moves on hover.
+  const rows = await cards.evaluateAll((all) =>
+    all.map((card) => {
       const name = card.querySelector('[data-testid="model-card-name"]')
-      return !!name && name.scrollHeight > name.clientHeight
-    }
-    return [all.findIndex(clips), all.findIndex((card) => !clips(card))]
-  })
-  expect(clipped, 'no workflow name is long enough to clip').toBeGreaterThan(-1)
-  expect(whole, 'every workflow name clips').toBeGreaterThan(-1)
-
-  const fits = cards.nth(whole)
-  await fits.hover()
-  await expect(fits.getByTestId('model-card-task')).toBeVisible()
-
-  const card = cards.nth(clipped)
-  const name = card.getByTestId('model-card-name')
-  const linesOfName = () =>
-    name.evaluate((element) =>
-      Math.round(
-        element.clientHeight /
-          Number.parseFloat(getComputedStyle(element).lineHeight)
+      if (!name) return 0
+      return Math.round(
+        name.clientHeight / Number.parseFloat(getComputedStyle(name).lineHeight)
       )
-    )
+    })
+  )
+  expect([...new Set(rows)]).toEqual([2])
 
-  await expect(card.getByTestId('model-card-task')).toBeVisible()
-  expect(await linesOfName()).toBe(1)
+  const names = await cards.evaluateAll((all) =>
+    all.map(
+      (card) =>
+        card.querySelector('[data-testid="model-card-name"]')?.textContent ?? ''
+    )
+  )
+  const card = cards.nth(
+    names.indexOf(names.reduce((a, b) => (b.length > a.length ? b : a), ''))
+  )
   const resting = await card.boundingBox()
+  await expect(card.getByTestId('model-card-task')).toBeVisible()
 
   await card.hover()
 
-  await expect(card.getByTestId('model-card-task')).toBeHidden()
-  await expect(async () => expect(await linesOfName()).toBe(2)).toPass()
+  await expect(card.getByTestId('model-card-task')).toBeVisible()
   expect((await card.boundingBox())?.height).toBeCloseTo(
     resting?.height ?? 0,
     0
