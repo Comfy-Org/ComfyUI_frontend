@@ -119,7 +119,6 @@ test.describe(
       const { hostSocket } = rig
 
       await test.step('stream three progress ticks into the ephemeral widget', async () => {
-        // Each tick writes `$$node-text-preview` through its real setter.
         await streamProgress(page, hostSocket, PROGRESS_TEXT)
         await streamProgress(page, hostSocket, LATER_PROGRESS_TEXT)
         await streamProgress(page, hostSocket, 'Status: Done')
