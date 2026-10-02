@@ -111,15 +111,6 @@ export type PaymentPortalResult =
   | { readonly status: 'ok'; readonly value: { readonly url: string } }
   | BillingFailure
 
-/**
- * The generated schema coerces every int64 to a `bigint`, which no caller can
- * add to a price or hand to a currency formatter — and the generated *type*
- * for the same field is a `number`. Money on this route is bounded to cents
- * well inside the JavaScript-safe range, so the cents are read as numbers, the
- * way `capabilities` reads `revision` — as whole units of currency that
- * survive arithmetic, since these amounts are displayed as prices and
- * confirmed as charges.
- */
 const PlanInfoSchema = zPreviewPlanInfo.extend({
   credits_cents: centsSchema,
   list_price_cents: centsSchema.optional(),
