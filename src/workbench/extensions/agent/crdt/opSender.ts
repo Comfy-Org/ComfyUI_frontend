@@ -194,10 +194,6 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     { reports: number; startedAt: number }
   >()
   const MAX_CHUNK_FAILURE_REPORTS = 3
-  // Bounded so a long session switching between many docs cannot grow the
-  // cursor map without limit. Evicting the least recently minted workflow only
-  // falls back to the follower's observed sequence for that doc.
-  const MAX_TRACKED_MINT_CURSORS = 64
 
   /**
    * The counter the next op for `workflowId` mints at: at least the follower's
@@ -213,14 +209,20 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       : Math.max(observed, lastMinted + 1)
   }
 
+  /**
+   * Kept for every workflow this actor has minted against, for this sender's
+   * whole life: no eviction policy is safe here. A `subscribe` resets the
+   * follower's observed sequence to 0 until `doc_subscribed` acks it, so an
+   * edit made in that window mints against 0 and the cursor is the ONLY thing
+   * keeping it past this actor's last stamp for that doc. Dropping a cursor
+   * therefore does not "fall back to the observed sequence" — it hands a
+   * re-bound workflow a counter it has already used, which is the stamp
+   * collision this cursor exists to prevent. A retained cursor can only ever
+   * raise a stamp (`Math.max`), never lower one, so retention is the safe
+   * direction; the cost is one number per edited workflow per page session.
+   */
   function rememberMintedVersion(workflowId: string, version: number): void {
-    // Re-insert so iteration order is least-recently-minted first.
-    lastMintedVersions.delete(workflowId)
     lastMintedVersions.set(workflowId, version)
-    if (lastMintedVersions.size > MAX_TRACKED_MINT_CURSORS) {
-      const oldest = lastMintedVersions.keys().next()
-      if (!oldest.done) lastMintedVersions.delete(oldest.value)
-    }
   }
 
   function releasePumpDeferral(): void {

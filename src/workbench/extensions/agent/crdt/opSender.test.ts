@@ -118,6 +118,7 @@ describe('createOpSender', () => {
   let transportUp: boolean
   let transportThrows: boolean
   let boundWorkflow: string | null
+  let observedSequence: number
   let sender: ReturnType<typeof createOpSender>
   const unsubscribe = vi.fn(() => {
     resultListener = null
@@ -140,6 +141,7 @@ describe('createOpSender', () => {
     transportUp = true
     transportThrows = false
     boundWorkflow = WORKFLOW
+    observedSequence = 41
     sender = createOpSender({
       sendOps: (workflowId, tab, ops) => {
         if (transportThrows) throw new Error('frame serialization failed')
@@ -154,7 +156,7 @@ describe('createOpSender', () => {
       workflowId: () => boundWorkflow,
       tab: TAB,
       actor: () => ACTOR,
-      baseVersion: () => 41,
+      baseVersion: () => observedSequence,
       onBatchSettled: (outcome) => settled.push(outcome)
     })
   })
@@ -232,14 +234,31 @@ describe('createOpSender', () => {
       { workflowId: 'wf-2', versions: [41] },
       { workflowId: WORKFLOW, versions: [42] }
     ])
-    const perWorkflow = new Map<string, number[]>()
-    for (const { workflowId, versions } of minted)
-      perWorkflow.set(workflowId, [
-        ...(perWorkflow.get(workflowId) ?? []),
-        ...versions
-      ])
-    for (const versions of perWorkflow.values())
-      expect(new Set(versions).size).toBe(versions.length)
+  })
+
+  it('keeps a workflow its counter while a re-subscribe has not been acknowledged', () => {
+    sender.admit([addNode(1)])
+    sender.admit([addNode(2)])
+    // Switching docs re-subscribes, and a subscribe resets the follower's
+    // observed sequence until `doc_subscribed` acks it. A human edit landing in
+    // that window has nothing but this doc's own cursor to mint past.
+    boundWorkflow = 'wf-2'
+    observedSequence = 0
+    sender.admit([addNode(3)])
+    boundWorkflow = WORKFLOW
+    sender.admit([addNode(4)])
+    sender.flush()
+
+    expect(
+      sender.pendingOps().map(({ workflowId, ops }) => ({
+        workflowId,
+        versions: ops.map((op) => op.base_version)
+      }))
+    ).toEqual([
+      { workflowId: WORKFLOW, versions: [41, 42] },
+      { workflowId: 'wf-2', versions: [0] },
+      { workflowId: WORKFLOW, versions: [43] }
+    ])
   })
 
   it('serializes batches: the next sends only after the result settles the first', () => {
