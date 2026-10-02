@@ -2,9 +2,23 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { isCloud } from '@/platform/distribution/types'
+import {
+  UNKNOWN_ERROR_CODE,
+  parseErrorResponse
+} from '@/platform/remote/comfyui/errors'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
+
+export class SessionCookieError extends Error {
+  constructor(
+    message: string,
+    public readonly code?: string
+  ) {
+    super(message)
+    this.name = 'SessionCookieError'
+  }
+}
 
 interface InFlightCreateSession {
   ownerUid: string | null
@@ -34,12 +48,6 @@ export const useSessionCookie = () => {
     })
   }
 
-  const readSessionError = async (response: Response): Promise<string> => {
-    const errorData: unknown = await response.json().catch(() => null)
-    const message = (errorData as { message?: unknown } | null)?.message
-    return typeof message === 'string' ? message : response.statusText
-  }
-
   const getSessionHeaderOrThrow = async (): Promise<Record<string, string>> => {
     const authStore = useAuthStore()
     const firebaseToken = await authStore.getIdToken()
@@ -64,7 +72,11 @@ export const useSessionCookie = () => {
     const response = await createSessionWithHeader(authHeader)
 
     if (!response.ok) {
-      throw new Error(await readSessionError(response))
+      const { code, message } = await parseErrorResponse(response)
+      throw new SessionCookieError(
+        message,
+        code === UNKNOWN_ERROR_CODE ? undefined : code
+      )
     }
   }
 
@@ -171,7 +183,11 @@ export const useSessionCookie = () => {
           })
 
           if (!response.ok) {
-            throw new Error(await readSessionError(response))
+            const { code, message } = await parseErrorResponse(response)
+            throw new SessionCookieError(
+              message,
+              code === UNKNOWN_ERROR_CODE ? undefined : code
+            )
           }
           confirmedSessionOwnerUid = null
         })
