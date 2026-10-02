@@ -3343,6 +3343,41 @@ describe('useAgentSession (v1 composition root)', () => {
     await vi.waitFor(() => expect(rest.getMessages).toHaveBeenCalledTimes(1))
   })
 
+  it('keeps a successor recovery registered when an aborted job settles', async () => {
+    const recoverySignals: AbortSignal[] = []
+    const getMessages = vi.fn<AgentRestClient['getMessages']>(
+      (_threadId, { signal } = {}) => {
+        assert.exists(signal)
+        recoverySignals.push(signal)
+        return new Promise<AgentMessages>((_, reject) => {
+          signal.addEventListener('abort', () => reject(signal.reason))
+        })
+      }
+    )
+    const rest = fakeRest({ getMessages })
+    const events = fakeEvents()
+    const session = useAgentSession({ rest, events: events.source })
+    session.start()
+    events.status(true)
+
+    await session.sendMessage('go')
+    events.emit(delta('msg-1', 'partial'))
+    events.status(false)
+    events.status(true)
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledTimes(1))
+
+    session.stop()
+    session.start({ restore: false })
+    events.status(false)
+    events.status(true)
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledTimes(2))
+    await Promise.resolve()
+
+    session.stop()
+    expect(recoverySignals).toHaveLength(2)
+    expect(recoverySignals[1].aborted).toBe(true)
+  })
+
   it('(g8) a recovery result landing after the session stopped touches nothing', async () => {
     const pendingHistory: Array<(rows: AgentMessages) => void> = []
     let deliveredResponses = 0
