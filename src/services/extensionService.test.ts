@@ -200,6 +200,31 @@ describe('loadExtensions', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
+  it('skips the extensions the filter rejects instead of importing them', async () => {
+    // `shouldLoadExtension` is covered in isolation above, which leaves the
+    // same wiring gap the reporting call had: deleting the `.filter(...)` from
+    // `loadExtensions` keeps every standalone case green. A core path is the
+    // lever because that branch of the filter does not depend on the build —
+    // `__DISTRIBUTION__` is `localhost` under vitest, so the cloud-inlined
+    // branch cannot be reached from here. Importing a core extension twice is
+    // the bug the skip exists to prevent: they already arrive through the core
+    // entry point.
+    vi.spyOn(api, 'getExtensions').mockResolvedValue([
+      '/extensions/core/foo.js',
+      '/extensions/pack-a/main.js'
+    ])
+
+    await useExtensionService().loadExtensions()
+
+    const [cause] = vi.mocked(reportError).mock.calls[0]
+    assert(cause instanceof Error)
+    // One failure, not two: the core path was never imported, so it never
+    // reached the report.
+    expect(cause.message).toBe(
+      'Error loading 1 extension(s): /extensions/pack-a/main.js'
+    )
+  })
+
   it('times the core and custom imports as separate subphases', async () => {
     // Keeps the instrumentation itself under test: bootstrapTracer.test.ts
     // pins how the tracer nests spans, but nothing pinned that this loader is

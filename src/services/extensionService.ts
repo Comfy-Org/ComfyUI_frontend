@@ -51,8 +51,11 @@ export interface ExtensionLoadFailure {
  * silently crowd out every later error in the session. The batch is reported
  * once, by `reportExtensionLoadFailures`.
  *
- * Exported for the rejected-import test: `loadExtensions` also imports the
- * whole core extension entry point, which a unit test cannot pull in.
+ * Exported so the rejected-import path has a direct seam: calling this gives a
+ * real unresolvable dynamic import without the rest of a load. `loadExtensions`
+ * is also driven end to end in the tests — it imports the whole core extension
+ * entry point, which takes a stub (`vi.mock('@/extensions/core/index')`) but is
+ * not the barrier it was once described as.
  */
 export async function importCustomExtension(
   ext: string
