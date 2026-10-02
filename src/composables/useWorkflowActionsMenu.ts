@@ -39,8 +39,7 @@ interface AddItemOptions {
   visible?: boolean
   disabled?: boolean
   prependSeparator?: boolean
-  isNew?: boolean
-  badge?: string
+  newItemBadge?: string
 }
 
 export function useWorkflowActionsMenu(
@@ -86,14 +85,15 @@ export function useWorkflowActionsMenu(
       visible = true,
       disabled = false,
       prependSeparator = false,
-      isNew = false,
-      badge = isNew ? t('g.experimental') : undefined
+      newItemBadge
     }: AddItemOptions) => {
       if (prependSeparator && visible) items.push({ separator: true })
       const item: WorkflowMenuAction = { id, label, icon, command, disabled }
       if (!visible) item.visible = false
-      if (isNew) item.isNew = true
-      if (badge) item.badge = badge
+      if (newItemBadge) {
+        item.isNew = true
+        item.badge = newItemBadge
+      }
       items.push(item)
     }
 
@@ -211,8 +211,7 @@ export function useWorkflowActionsMenu(
         await openDeployToComfyApiDialog().catch(toastErrorHandler)
       },
       visible: isRoot,
-      isNew: true,
-      badge: t('g.new')
+      newItemBadge: t('g.new')
     })
 
     addItem({
@@ -222,7 +221,7 @@ export function useWorkflowActionsMenu(
       command: toggleLinear,
       visible: showAppModeItems && !isLinearMode,
       prependSeparator: true,
-      isNew: true
+      newItemBadge: t('g.experimental')
     })
 
     addItem({
@@ -267,7 +266,7 @@ export function useWorkflowActionsMenu(
         enterBuilder()
       },
       visible: showAppModeItems,
-      isNew: true
+      newItemBadge: t('g.experimental')
     })
 
     addItem({

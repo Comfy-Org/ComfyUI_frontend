@@ -1,4 +1,3 @@
-import type { Settings } from '@/platform/settings/types'
 import { zGlobalSettingValue } from '@comfyorg/ingest-types/zod'
 import type { Page, Route, WebSocketRoute } from '@playwright/test'
 
@@ -10,6 +9,7 @@ import type {
 } from '@comfyorg/ingest-types'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { DEPLOY_ACTION_SEEN_SETTINGS } from '@e2e/fixtures/constants/workflowActions'
 
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
@@ -355,9 +355,7 @@ async function mockAgentBoot(
     settings: {
       'Comfy.TutorialCompleted': true,
       'Comfy.RightSidePanel.ShowErrorsTab': false,
-      ...({
-        'Comfy.WorkflowActions.SeenItems': ['deploy-as-api']
-      } satisfies Partial<Settings>),
+      ...DEPLOY_ACTION_SEEN_SETTINGS,
       ...(vueNodes && { 'Comfy.VueNodes.Enabled': true }),
       ...initialSettings
     },

@@ -1,4 +1,3 @@
-import type { Settings } from '@/platform/settings/types'
 import type { Page, Route } from '@playwright/test'
 
 import type {
@@ -19,6 +18,7 @@ import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/age
 
 import { cloudAppFixture, waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { DEPLOY_ACTION_SEEN_SETTINGS } from '@e2e/fixtures/constants/workflowActions'
 import {
   AGENT_COMPOSER_THREAD_ID,
   agentComposerRunMode,
@@ -73,9 +73,7 @@ async function mockAgentBoot(
     features: agentFeatures(agentFlag),
     settings: {
       'Comfy.TutorialCompleted': true,
-      ...({
-        'Comfy.WorkflowActions.SeenItems': ['deploy-as-api']
-      } satisfies Partial<Settings>),
+      ...DEPLOY_ACTION_SEEN_SETTINGS,
       'Comfy.RightSidePanel.ShowErrorsTab': false,
       ...settings,
       ...((vueNodes || cloudAppFixture.info().tags.includes('@vue-nodes')) && {

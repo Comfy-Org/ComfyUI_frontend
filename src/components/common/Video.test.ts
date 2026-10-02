@@ -7,7 +7,7 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { i18n } from '@/i18n'
 
-import LoopingVideo from './LoopingVideo.vue'
+import Video from './Video.vue'
 
 vi.mock(import('@vueuse/core'), { spy: true })
 
@@ -15,8 +15,8 @@ const WEBM = 'https://example.test/clip.webm'
 const MP4 = 'https://example.test/clip.mp4'
 const POSTER = 'https://example.test/clip.jpg'
 
-function renderVideo(props: ComponentProps<typeof LoopingVideo> = {}) {
-  render(LoopingVideo, {
+function renderVideo(props: ComponentProps<typeof Video> = {}) {
+  render(Video, {
     props,
     attrs: { 'data-testid': 'clip' },
     slots: { fallback: '<p>No video</p>' },
@@ -28,13 +28,19 @@ function sources() {
   return [...screen.getByTestId('clip').querySelectorAll('source')]
 }
 
-describe('LoopingVideo', () => {
+describe('Video', () => {
   afterEach(() => {
     vi.mocked(usePreferredReducedMotion).mockRestore()
   })
 
-  it('offers the webm first and the mp4 second, over the poster', () => {
-    renderVideo({ webmSrc: WEBM, mp4Src: MP4, posterSrc: POSTER })
+  it('offers its sources in order over the poster', () => {
+    renderVideo({
+      sources: [
+        { src: WEBM, type: 'video/webm' },
+        { src: MP4, type: 'video/mp4' }
+      ],
+      posterSrc: POSTER
+    })
 
     expect(screen.getByTestId('clip')).toHaveAttribute('poster', POSTER)
     expect(
@@ -46,7 +52,12 @@ describe('LoopingVideo', () => {
   })
 
   it('keeps playing the mp4 when the webm fails, and falls back once the mp4 fails too', async () => {
-    renderVideo({ webmSrc: WEBM, mp4Src: MP4 })
+    renderVideo({
+      sources: [
+        { src: WEBM, type: 'video/webm' },
+        { src: MP4, type: 'video/mp4' }
+      ]
+    })
     const [webm, mp4] = sources()
 
     await fireEvent.error(webm)
@@ -65,7 +76,7 @@ describe('LoopingVideo', () => {
   })
 
   it('falls back as soon as the webm fails when there is no mp4', async () => {
-    renderVideo({ webmSrc: WEBM })
+    renderVideo({ sources: [{ src: WEBM, type: 'video/webm' }] })
 
     await fireEvent.error(sources()[0])
 
@@ -82,7 +93,10 @@ describe('LoopingVideo', () => {
         computed(() => preference)
       )
 
-      renderVideo({ webmSrc: WEBM })
+      renderVideo({
+        sources: [{ src: WEBM, type: 'video/webm' }],
+        autoplay: true
+      })
 
       expect(screen.getByTestId('clip')).toHaveProperty('autoplay', autoplay)
     }
@@ -93,7 +107,10 @@ describe('LoopingVideo', () => {
     vi.mocked(usePreferredReducedMotion).mockReturnValue(
       computed(() => preference.value)
     )
-    renderVideo({ webmSrc: WEBM })
+    renderVideo({
+      sources: [{ src: WEBM, type: 'video/webm' }],
+      autoplay: true
+    })
     const video = screen.getByTestId<HTMLVideoElement>('clip')
     await video.play()
     expect(video.paused).toBe(false)
@@ -104,15 +121,18 @@ describe('LoopingVideo', () => {
     expect(video.paused).toBe(true)
   })
 
-  it('offers no playback control unless it is pausable', () => {
-    renderVideo({ webmSrc: WEBM })
+  it('offers no playback control unless requested', () => {
+    renderVideo({ sources: [{ src: WEBM, type: 'video/webm' }] })
 
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
   it('pauses and resumes from its control', async () => {
     const user = userEvent.setup()
-    renderVideo({ webmSrc: WEBM, pausable: true })
+    renderVideo({
+      sources: [{ src: WEBM, type: 'video/webm' }],
+      playbackControl: true
+    })
     const video = screen.getByTestId<HTMLVideoElement>('clip')
 
     await user.click(screen.getByRole('button', { name: 'Play' }))
@@ -121,5 +141,14 @@ describe('LoopingVideo', () => {
     await user.click(screen.getByRole('button', { name: 'Pause' }))
     expect(video.paused).toBe(true)
     expect(screen.getByRole('button', { name: 'Play' })).toBeInTheDocument()
+  })
+
+  it.for([false, true])('sets looping to $0 when requested', (loop) => {
+    renderVideo({
+      sources: [{ src: WEBM, type: 'video/webm' }],
+      loop
+    })
+
+    expect(screen.getByTestId('clip')).toHaveProperty('loop', loop)
   })
 })

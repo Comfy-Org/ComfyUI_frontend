@@ -1,27 +1,27 @@
 <template>
-  <div v-if="webmSrc && !failed" class="relative">
+  <div v-if="sources.length && !failed" class="relative">
     <video
       ref="video"
       v-bind="$attrs"
       :poster="posterSrc || undefined"
-      :autoplay="motionAllowed"
-      muted
-      loop
-      playsinline
+      :autoplay="shouldAutoplay"
+      :muted
+      :loop
+      :playsinline="playsInline"
       @play="playing = true"
       @pause="playing = false"
       @error="failed = true"
     >
-      <source :src="webmSrc" type="video/webm" @error="failed = !mp4Src" />
       <source
-        v-if="mp4Src"
-        :src="mp4Src"
-        type="video/mp4"
-        @error="failed = true"
+        v-for="(source, index) in sources"
+        :key="source.src"
+        :src="source.src"
+        :type="source.type"
+        @error="failed = index === sources.length - 1"
       />
     </video>
     <Button
-      v-if="pausable"
+      v-if="playbackControl"
       variant="overlay-white"
       size="icon"
       class="absolute right-3 bottom-3"
@@ -44,15 +44,21 @@ import { computed, ref, useTemplateRef, watchEffect } from 'vue'
 import Button from '@/components/ui/button/Button.vue'
 
 const {
-  webmSrc = '',
-  mp4Src = '',
+  sources = [],
   posterSrc = '',
-  pausable = false
+  autoplay = false,
+  muted = false,
+  loop = false,
+  playsInline = false,
+  playbackControl = false
 } = defineProps<{
-  webmSrc?: string
-  mp4Src?: string
+  sources?: Array<{ src: string; type: string }>
   posterSrc?: string
-  pausable?: boolean
+  autoplay?: boolean
+  muted?: boolean
+  loop?: boolean
+  playsInline?: boolean
+  playbackControl?: boolean
 }>()
 
 defineOptions({ inheritAttrs: false })
@@ -62,10 +68,12 @@ const failed = ref(false)
 const playing = ref(false)
 
 const reducedMotion = usePreferredReducedMotion()
-const motionAllowed = computed(() => reducedMotion.value !== 'reduce')
+const shouldAutoplay = computed(
+  () => autoplay && reducedMotion.value !== 'reduce'
+)
 
 watchEffect(() => {
-  if (!motionAllowed.value) video.value?.pause()
+  if (autoplay && !shouldAutoplay.value) video.value?.pause()
 })
 
 function togglePlayback() {
