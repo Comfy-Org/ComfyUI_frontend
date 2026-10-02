@@ -1,5 +1,13 @@
 import { expect } from '@playwright/test'
 
+import type {
+  AgentMessage,
+  AgentThreadListResponse
+} from '@comfyorg/ingest-types'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+
 import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
 import {
   BARE_DIGEST,
@@ -11,7 +19,10 @@ import {
   sendTurn,
   serveHistory
 } from '@e2e/fixtures/helpers/agentAttachmentRehydration'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+
+const THREAD_KEY = StorageKeys.agentThread('personal')
 
 /** PM-1643 / PM-717 item 3: persisted attachment presentation after reload. */
 test.describe.configure({ timeout: 120_000 })
@@ -122,5 +133,122 @@ test(
     await expect(
       reopened.getByRole('img', { name: 'Beach photo.png', exact: true })
     ).toBeVisible({ timeout: 10_000 })
+  }
+)
+
+/**
+ * PM-1149 with PM-1776's settled liveness decision: switching away while a
+ * turn is streaming must not duplicate its user row or lose its attachment,
+ * and returning must still present the server-owned turn as live.
+ */
+test(
+  'resumes a thread left mid-turn once, with its attachment',
+  { tag: ['@cloud', '@agent', '@ui'] },
+  async ({ page, promptHistory, workflowSelection }) => {
+    const serverTurnId = 'e2e-server-turn'
+    const otherThreadId = 'e2e-other-thread'
+    const liveTurnId = '1dda6c2a-fdc5-45c3-b499-000000000001'
+    let attachmentThreadId = ''
+
+    await page.route(`**/view?filename=${BARE_DIGEST}&type=input`, (route) =>
+      route.fulfill({ path: assetPath('image64x64.webp') })
+    )
+    await page.route('**/api/agent/threads', (route) => {
+      const listed = [
+        { id: attachmentThreadId, title: 'Attachment thread' },
+        { id: otherThreadId, title: 'Other thread' }
+      ].filter((thread) => thread.id !== '')
+      const threads: AgentThreadListResponse = {
+        threads: listed.map(({ id, title }) => ({
+          id,
+          title,
+          preview: '',
+          workflow_id: '',
+          status: 'active',
+          message_count: 0,
+          created_at: '2026-09-11T10:00:00Z',
+          updated_at: '2026-09-11T10:00:00Z',
+          last_message_at: '2026-09-11T10:00:00Z'
+        })),
+        pagination: {
+          offset: 0,
+          limit: 100,
+          total: listed.length,
+          has_more: false
+        }
+      }
+      return route.fulfill(jsonRoute(threads))
+    })
+    await page.route('**/api/agent/threads/*/messages', (route) => {
+      if (route.request().method() !== 'GET') return route.fallback()
+      const threadId = new URL(route.request().url()).pathname
+        .split('/')
+        .at(-2)!
+      const posted = promptHistory.requests.at(0)
+      if (threadId === otherThreadId || !posted)
+        return route.fulfill(jsonRoute([]))
+      const messages: AgentMessage[] = [
+        {
+          id: 'e2e-server-user-row',
+          thread_id: threadId,
+          turn_id: serverTurnId,
+          seq: 1,
+          role: 'user',
+          status: 'complete',
+          content: resolvedImageRefs(posted)
+        },
+        {
+          id: liveTurnId,
+          thread_id: threadId,
+          turn_id: serverTurnId,
+          seq: 2,
+          role: 'assistant',
+          status: 'streaming',
+          content: {}
+        }
+      ]
+      return route.fulfill(jsonRoute(messages))
+    })
+
+    const panel = await openAgentPanel(page, workflowSelection)
+    await dropLibraryAsset(page, panel, {
+      displayName: 'Beach photo.png',
+      ref: BARE_DIGEST,
+      kind: 'image'
+    })
+    await sendTurn(panel, 'upscale this')
+    await expect.poll(() => promptHistory.requests.length).toBe(1)
+    await expect(panel.getByTestId('reply-image-preview')).toHaveCount(1)
+    attachmentThreadId =
+      (await page.evaluate((key) => localStorage.getItem(key), THREAD_KEY)) ??
+      ''
+    expect(attachmentThreadId).not.toBe('')
+
+    const openHistory = () =>
+      panel
+        .getByRole('button', { name: enMessages.agent.showChatHistory })
+        .click()
+
+    await openHistory()
+    await panel.getByRole('button', { name: 'Other thread' }).click()
+    await expect(panel.getByTestId('user-message-bubble')).toHaveCount(0)
+
+    await openHistory()
+    await panel.getByRole('button', { name: 'Attachment thread' }).click()
+
+    await expect(panel.getByTestId('reply-image-preview')).toHaveCount(1)
+    await expect(panel.getByTestId('user-message-bubble')).toHaveCount(1)
+    await expect(panel.getByTestId('user-message-bubble')).toContainText(
+      'upscale this'
+    )
+    await expect(
+      panel.getByRole('img', { name: 'Beach photo.png', exact: true })
+    ).toBeVisible()
+    await expect(
+      panel.getByRole('button', { name: enMessages.agent.stop, exact: true })
+    ).toBeVisible()
+    await expect(
+      panel.getByRole('button', { name: enMessages.agent.send, exact: true })
+    ).toHaveCount(0)
   }
 )
