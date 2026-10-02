@@ -28,10 +28,31 @@ if [ -n "$merge_head" ]; then
     exit 1
   fi
 
+  # With no stash there is also no revert, and lint-staged stages its tasks'
+  # output even when a later task fails. So a --write or --fix task that ran
+  # before a failing typecheck would leave its rewrite in the merge index of a
+  # commit git then rejects. Snapshot the index first and put it back by hand:
+  # restoring a tree leaves MERGE_HEAD and the merge's conflict state alone,
+  # which is exactly what a stash pop does not. The refusal above is what makes
+  # the worktree half lossless - every lint target is already identical in the
+  # index and the worktree, so checking them out can only undo a task's write.
+  pre_hook_tree=$(git write-tree 2>/dev/null || true)
+
   # --diff="..." and not --diff "...": the value starts with a dash, and the
   # option takes an optional argument, so the space form is read as a bare
   # --diff followed by an unknown --cached option.
-  pnpm exec lint-staged --diff="--cached $merge_head"
+  lint_status=0
+  pnpm exec lint-staged --diff="--cached $merge_head" || lint_status=$?
+  if [ "$lint_status" -ne 0 ]; then
+    if [ -n "$pre_hook_tree" ]; then
+      git read-tree "$pre_hook_tree"
+      if [ -n "$lint_target" ]; then
+        printf '%s\n' "$lint_target" | git checkout-index -f --stdin
+      fi
+      printf 'pre-commit: restored the merge index and worktree; merge kept.\n' >&2
+    fi
+    exit "$lint_status"
+  fi
 else
   pnpm exec lint-staged
 fi

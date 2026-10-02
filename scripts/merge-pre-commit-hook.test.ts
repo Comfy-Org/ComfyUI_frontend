@@ -28,6 +28,8 @@ const UNSTAGED_WORK = 'work in progress the developer did not stage'
 
 /** Files the formatter stub appends to, one absolute path per line. */
 const RECEIVED_LOG = 'received-files.log'
+/** Files the linter stub was handed, one absolute path per line. */
+const LINTED_LOG = 'linted-files.log'
 
 const FORMATTER = `import { appendFileSync, readFileSync, writeFileSync } from 'node:fs'
 
@@ -44,11 +46,32 @@ for (const file of files) {
 }
 `
 
+// The real config puts rewriting tasks (oxfmt --write, oxlint/eslint --fix)
+// ahead of the typecheck that can fail, so the stubs mirror that order: a
+// formatter that rewrites its targets, then a linter that can reject them.
+const LINTER = `import { appendFileSync } from 'node:fs'
+
+appendFileSync(
+  process.env.LINTED_FILES_LOG,
+  process.argv.slice(2).join('\\n') + '\\n'
+)
+
+if (process.env.LINTER_EXIT_CODE) {
+  process.exit(Number(process.env.LINTER_EXIT_CODE))
+}
+`
+
 const LINT_STAGED_CONFIG = `import path from 'node:path'
 
 const formatter = path.join(import.meta.dirname, 'formatter.mjs')
+const linter = path.join(import.meta.dirname, 'linter.mjs')
 
-export default { '*.ts': \`"\${process.execPath}" "\${formatter}"\` }
+export default {
+  '*.ts': [
+    \`"\${process.execPath}" "\${formatter}"\`,
+    \`"\${process.execPath}" "\${linter}"\`
+  ]
+}
 `
 
 // `pnpm exec lint-staged` reaches the real lint-staged; the hook's other two
@@ -60,6 +83,16 @@ if [ "$1" = "exec" ] && [ "$2" = "lint-staged" ]; then
 fi
 exit 0
 `
+
+const loggedBasenames = (logPath: string) =>
+  [
+    ...new Set(
+      readFileSync(logPath, 'utf8')
+        .split('\n')
+        .filter(Boolean)
+        .map((line) => path.basename(line))
+    )
+  ].sort()
 
 const hermeticGitEnv = {
   GIT_CONFIG_GLOBAL: '/dev/null',
@@ -73,17 +106,21 @@ const hermeticGitEnv = {
 interface MergeRepoOptions {
   /** Leave an unstaged edit in the worktree copy of `branchOnly.ts`. */
   unstagedEdit?: boolean
-  /** Make every lint-staged task fail with this exit code. */
+  /** Fail in the formatter, before anything has been rewritten. */
   formatterExitCode?: number
+  /** Fail in the linter, after the formatter has rewritten its targets. */
+  linterExitCode?: number
 }
 
 function createMergeInProgress({
   unstagedEdit = false,
-  formatterExitCode
+  formatterExitCode,
+  linterExitCode
 }: MergeRepoOptions = {}) {
   const dir = mkdtempSync(path.join(tmpdir(), 'merge-pre-commit-'))
   const binDir = path.join(dir, 'stub-bin')
   const receivedLog = path.join(dir, RECEIVED_LOG)
+  const lintedLog = path.join(dir, LINTED_LOG)
 
   const git = (...args: string[]) =>
     execFileSync('git', args, {
@@ -99,9 +136,11 @@ function createMergeInProgress({
   writeFileSync(path.join(binDir, 'pnpm'), PNPM_STUB)
   chmodSync(path.join(binDir, 'pnpm'), 0o755)
   write(RECEIVED_LOG, '')
+  write(LINTED_LOG, '')
 
   git('init', '-q', '-b', 'main')
   write('formatter.mjs', FORMATTER)
+  write('linter.mjs', LINTER)
   write('.lintstagedrc.mjs', LINT_STAGED_CONFIG)
   write('shared.ts', 'export const shared = "base"\n')
   write('branchOnly.ts', 'export const branchOnly = "base"\n')
@@ -156,16 +195,10 @@ function createMergeInProgress({
     staged: (file: string) => git('show', `:${file}`),
     worktree: (file: string) =>
       readFileSync(path.join(dir, file), 'utf8').trim(),
-    /** Basenames the lint-staged tasks actually received, sorted. */
-    received: () =>
-      [
-        ...new Set(
-          readFileSync(receivedLog, 'utf8')
-            .split('\n')
-            .filter(Boolean)
-            .map((line) => path.basename(line))
-        )
-      ].sort(),
+    /** Basenames the rewriting task actually received, sorted. */
+    received: () => loggedBasenames(receivedLog),
+    /** Basenames the task downstream of the rewrite received, sorted. */
+    linted: () => loggedBasenames(lintedLog),
     runHook: () =>
       spawnSync('bash', [hookPath], {
         cwd: dir,
@@ -177,9 +210,13 @@ function createMergeInProgress({
           NODE_BIN: process.execPath,
           LINT_STAGED_BIN,
           RECEIVED_FILES_LOG: receivedLog,
+          LINTED_FILES_LOG: lintedLog,
           ...(formatterExitCode === undefined
             ? {}
-            : { FORMATTER_EXIT_CODE: String(formatterExitCode) })
+            : { FORMATTER_EXIT_CODE: String(formatterExitCode) }),
+          ...(linterExitCode === undefined
+            ? {}
+            : { LINTER_EXIT_CODE: String(linterExitCode) })
         }
       })
   }
@@ -233,6 +270,29 @@ describe.skipIf(process.platform === 'win32')(
       expect(repo.staged('branchOnly.ts')).not.toContain(UNSTAGED_WORK)
       expect(repo.worktree('branchOnly.ts')).toContain(UNSTAGED_WORK)
       expect(repo.indexTree()).toBe(indexTree)
+      expect(repo.mergeHead()).toBe(mergeHead)
+    })
+
+    it('undoes a rewrite when a later task rejects the commit', () => {
+      const repo = openMergeInProgress({ linterExitCode: 1 })
+      const mergeHead = repo.mergeHead()
+      const indexTree = repo.indexTree()
+      const resolved = repo.worktree('shared.ts')
+
+      const result = repo.runHook()
+
+      expect(result.status).not.toBe(0)
+      // Not vacuous: the formatter received every lint target and the linter
+      // only runs after it, so each target really was rewritten on disk before
+      // the failure. lint-staged has no stash in --diff mode and stages its
+      // tasks' output regardless, so the rewrite reaches the index unless the
+      // hook puts it back.
+      const targets = ['branchOnly.ts', 'resolvedUpstream.ts', 'shared.ts']
+      expect(repo.received()).toEqual(targets)
+      expect(repo.linted()).toEqual(targets)
+      expect(repo.indexTree()).toBe(indexTree)
+      expect(repo.staged('shared.ts')).not.toContain(FORMAT_MARKER)
+      expect(repo.worktree('shared.ts')).toBe(resolved)
       expect(repo.mergeHead()).toBe(mergeHead)
     })
 
