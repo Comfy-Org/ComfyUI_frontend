@@ -269,6 +269,75 @@ describe('HostTelemetrySink', () => {
       }
     },
     {
+      name: TelemetryEvents.AGENT_STARTER_PROMPT_CLICKED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentStarterPromptClicked({
+          prompt_id: 'slot_4',
+          prompt_index: 3,
+          prompt_count: 5,
+          prompt_text_hash: 'deadbeef',
+          locale: 'en',
+          click_id: 'click-1',
+          draft_was_empty: false
+        }),
+      properties: {
+        prompt_id: 'slot_4',
+        prompt_index: 3,
+        prompt_count: 5,
+        prompt_text_hash: 'deadbeef',
+        locale: 'en',
+        click_id: 'click-1',
+        draft_was_empty: false
+      }
+    },
+    {
+      name: TelemetryEvents.AGENT_FREE_USE_NOTICE,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentFreeUseNotice({
+          action: 'dismissed',
+          placement: 'top-banner'
+        }),
+      properties: { action: 'dismissed', placement: 'top-banner' }
+    },
+    {
+      name: TelemetryEvents.AGENT_FREE_USE_EXPOSURE,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentFreeUseExposure({
+          placement: 'control',
+          '$feature/agent-free-use-message-placement': 'control'
+        }),
+      properties: {
+        placement: 'control',
+        '$feature/agent-free-use-message-placement': 'control'
+      }
+    },
+    {
+      name: TelemetryEvents.AGENT_CONSENT_SHOWN,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentConsentShown({ trigger: 'first_load' }),
+      properties: { trigger: 'first_load' }
+    },
+    {
+      name: TelemetryEvents.AGENT_CONSENT_RESOLVED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentConsentResolved({
+          decision: 'dismissed',
+          save_error_shown: true
+        }),
+      properties: { decision: 'dismissed', save_error_shown: true }
+    },
+    {
+      name: TelemetryEvents.AGENT_ONBOARDING_SHOWN,
+      track: (sink: HostTelemetrySink) => sink.trackAgentOnboardingShown(),
+      properties: undefined
+    },
+    {
+      name: TelemetryEvents.AGENT_ONBOARDING_STEP,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentOnboardingStep({ step: 4, action: 'finish' }),
+      properties: { step: 4, action: 'finish' }
+    },
+    {
       name: TelemetryEvents.AGENT_NODE_TAGGED,
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentNodeTagged({ source: 'mention_picker' }),

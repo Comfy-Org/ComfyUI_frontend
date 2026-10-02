@@ -28,9 +28,11 @@ vi.mock(import('firebase/auth'))
 vi.mock<unknown>(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 import { i18n } from '@/i18n'
+import { useTelemetry } from '@/platform/telemetry'
 import type { AgentConsentTrigger } from '@/platform/telemetry/types'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { setupInlinePromptEditorDom } from './components/agent/composer/inlinePromptEditorTestSetup'
+import { useFreeUsePlacement } from './experiments/freeUsePlacement'
 
 setupInlinePromptEditorDom()
 
@@ -88,6 +90,9 @@ vi.mock<unknown>(import('./composables/agent/useAgentConsent'), () => ({
 vi.mock<unknown>(import('@/composables/canvas/useFocusNode'), () => ({
   useFocusNode: () => ({ focusNodeInstance })
 }))
+
+vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('./experiments/freeUsePlacement'), { spy: true })
 
 const ws = vi.hoisted(() => {
   type Listener = (event: { detail?: unknown }) => void
@@ -252,6 +257,7 @@ const telemetry = vi.hoisted(() => ({
   trackAgentCloseButtonClicked: vi.fn(),
   trackAgentPanelOpened: vi.fn(),
   trackAgentPanelClosed: vi.fn(),
+  trackAgentFreeUseNotice: vi.fn(),
   trackAgentPaywallShown: vi.fn(),
   trackAgentPaywallCtaClicked: vi.fn(),
   trackAddApiCreditButtonClicked: vi.fn(),
@@ -554,6 +560,25 @@ describe('AgentPanelRoot first-use experience', () => {
 
     expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('forwards free-use notice telemetry with its rendered placement', async () => {
+    vi.mocked(useFreeUsePlacement).mockReturnValueOnce(
+      fromPartial({ variant: ref('top-banner') })
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const notice = await screen.findByRole('note', {
+      name: 'Free use notice'
+    })
+    await userEvent.click(
+      within(notice).getByRole('button', { name: 'Dismiss' })
+    )
+
+    expect(useTelemetry()!.trackAgentFreeUseNotice).toHaveBeenCalledWith({
+      action: 'dismissed',
+      placement: 'top-banner'
+    })
   })
 })
 
