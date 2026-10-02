@@ -19,10 +19,14 @@ const {
   overlayImageSrc: string
   alt: string
   getLogoUrl: (provider: string) => string
+  /**
+   * Set by a parent that already tracks hover, as the card grid does. Left
+   * out, the preview detects its own hover - which is what the detail view
+   * relies on, since it renders a single preview with no grid state.
+   */
   isHovered?: boolean
   hoverZoom?: number
 }>()
-
 const previewElement = useTemplateRef<HTMLElement>('previewElement')
 const internalHovered = useElementHover(previewElement)
 const hovered = computed(() => isHovered ?? internalHovered.value)
