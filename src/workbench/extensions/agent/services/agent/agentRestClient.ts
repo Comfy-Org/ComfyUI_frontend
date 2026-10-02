@@ -342,8 +342,7 @@ export function createAgentRestClient() {
   async function request<T>(
     route: string,
     init: Parameters<typeof api.fetchApi>[1],
-    schema: z.ZodType<T>,
-    acceptedBodyFailure = false
+    schema: z.ZodType<T>
   ): Promise<T> {
     const response = await api.fetchApi(route, init)
     if (!response.ok) throw await toApiError(response)
@@ -351,12 +350,7 @@ export function createAgentRestClient() {
     try {
       payload = await response.json()
     } catch (error) {
-      const name =
-        typeof error === 'object' && error !== null && 'name' in error
-          ? error.name
-          : undefined
-      if (name === 'AbortError') throw error
-      if (!acceptedBodyFailure && name !== 'SyntaxError') throw error
+      if (!(error instanceof SyntaxError)) throw error
       throw new AgentResponseUnreadableError(error)
     }
     return schema.parse(payload)
@@ -393,8 +387,7 @@ export function createAgentRestClient() {
     return request(
       `/agent/threads/${encodeURIComponent(threadId)}/messages`,
       jsonInit('POST', body),
-      zAgentTurnAccepted,
-      true
+      zAgentTurnAccepted
     )
   }
 
