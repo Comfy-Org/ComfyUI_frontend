@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import { useResultDownload } from '../../../composables/useResultDownload'
 import { reportStudioBusy } from '../../../composables/useStudioSwitchGuard'
 import { useVirtualTryOn } from '../../../composables/useVirtualTryOn'
 import type { Locale } from '../../../i18n/translations'
@@ -25,11 +26,7 @@ const { locale = 'en', layout = 'd' } = defineProps<{
 const tryOn = useVirtualTryOn(locale)
 const { phase, person } = tryOn
 const panel = computed(() => layout !== 'e')
-const download = computed(() =>
-  phase.value.kind === 'done'
-    ? { href: phase.value.result.url, name: `try-on-${person.value.name}` }
-    : undefined
-)
+const download = useResultDownload(phase, () => `try-on-${person.value.name}`)
 reportStudioBusy(() => phase.value.kind === 'running')
 
 const panelLabels = {
