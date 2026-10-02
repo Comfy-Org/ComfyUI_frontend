@@ -60,6 +60,15 @@ function wireSize(op: Op): number {
   const json = JSON.stringify(op)
   if (typeof json !== 'string')
     throw new TypeError('Operation did not serialize to JSON')
+  const serialized: unknown = JSON.parse(json)
+  if (
+    typeof serialized !== 'object' ||
+    serialized === null ||
+    Array.isArray(serialized) ||
+    !('op_id' in serialized) ||
+    typeof serialized.op_id !== 'string'
+  )
+    throw new TypeError('Operation did not serialize to a wire object')
   return new TextEncoder().encode(json).length
 }
 
