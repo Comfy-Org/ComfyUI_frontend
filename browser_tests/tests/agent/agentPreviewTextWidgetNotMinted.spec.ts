@@ -168,9 +168,6 @@ test.describe(
       })
 
       await test.step('only the hand edit reached the applier', async () => {
-        // Before the fix the preview write produced
-        // `widget 'preview_text' not found on PreviewAny`, which would sit
-        // ahead of `applied` here.
         await expect
           .poll(() => hostSocket.humanOpOutcomes().map((o) => o.outcome))
           .toEqual(['applied'])
