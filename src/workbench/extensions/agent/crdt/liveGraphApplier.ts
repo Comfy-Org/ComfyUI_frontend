@@ -235,8 +235,10 @@ function nodeProducer(doc: Y.Doc, id: string): NodeProducer {
   } catch {
     return { origin: 'unreadable' }
   }
-  const stamp = stamps[JSON.stringify(['node', id])]
-  if (!Array.isArray(stamp)) return { origin: 'unstamped' }
+  const key = JSON.stringify(['node', id])
+  if (!Object.hasOwn(stamps, key)) return { origin: 'unstamped' }
+  const stamp = stamps[key]
+  if (!Array.isArray(stamp)) return { origin: 'unreadable' }
   const [version, actor, opId]: unknown[] = stamp
   if (typeof version !== 'number' || typeof opId !== 'string')
     return { origin: 'unreadable' }

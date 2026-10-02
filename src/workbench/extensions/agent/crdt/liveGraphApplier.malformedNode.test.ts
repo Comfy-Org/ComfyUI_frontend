@@ -162,6 +162,23 @@ describe('LiveGraphApplier malformed node report', () => {
     })
   })
 
+  it('reports a malformed producer stamp as unreadable', () => {
+    const { doc, applyCollected } = setup({
+      nodes: [sinkNode({ name: 'image', link: null })],
+      links: []
+    })
+    doc
+      .getMap('__stamps')
+      .set(JSON.stringify(['node', String(NODE_ID)]), 'malformed')
+
+    applyCollected()
+
+    const [, options] = onlyReport()
+    expect(options).toMatchObject({
+      context: { producer: { origin: 'unreadable' } }
+    })
+  })
+
   it('reports a node that stays malformed once, not once per frame that reads it', () => {
     const { doc, collector, applier, applyCollected } = setup({
       nodes: [sinkNode({ name: 'image', link: null })],
