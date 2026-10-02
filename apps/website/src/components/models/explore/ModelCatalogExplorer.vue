@@ -4,6 +4,7 @@ import { useEventListener } from '@vueuse/core'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import ModelExploreGrid from './ModelExploreGrid.vue'
+import ModelCatalogResults from './ModelCatalogResults.vue'
 import type { CardWorkflowItem } from './ModelExploreCard.vue'
 import ModelCollectionHeader from './ModelCollectionHeader.vue'
 import SearchField from './ModelSearchField.vue'
@@ -176,30 +177,32 @@ function syncUrl(replace = false) {
   if (replace) window.history.replaceState({}, '', url)
   else window.history.pushState({}, '', url)
 }
+function accessFromUrl(value: string | null): ModelAccessFilter {
+  return value === 'open' || value === 'partner' ? value : 'all'
+}
+function categoryFromUrl(
+  value: string | null,
+  accessFilter: ModelAccessFilter
+): 'all' | ModelCategory {
+  if (accessFilter !== 'all') return 'all'
+  const matched = categoryOptions.find(
+    (option) => option.value === value
+  )?.value
+  if (!matched || matched === 'open' || matched === 'partner') return 'all'
+  return matched
+}
 function readUrl() {
   const params = new URLSearchParams(window.location.search)
-  const accessParam = params.get('access')
-  const categoryParam = categoryOptions.find(
-    (option) => option.value === params.get('category')
-  )?.value
-  access.value =
-    accessParam === 'open' || accessParam === 'partner' ? accessParam : 'all'
-  category.value =
-    access.value === 'all' &&
-    categoryParam &&
-    categoryParam !== 'open' &&
-    categoryParam !== 'partner'
-      ? categoryParam
-      : 'all'
+  access.value = accessFromUrl(params.get('access'))
+  category.value = categoryFromUrl(params.get('category'), access.value)
   searchQuery.value = params.get('q') ?? ''
   latestOnly.value =
     Boolean(latestCollection) && params.get('collection') === 'latest'
   trendingExpanded.value = params.get('collection') === 'trending'
   showAll.value =
-    !latestOnly.value &&
-    (showCatalogByDefault ||
-      params.get('catalog') === 'all' ||
-      params.get('view') === 'all')
+    showCatalogByDefault ||
+    params.get('catalog') === 'all' ||
+    params.get('view') === 'all'
   visibleCount.value = RESULTS_PER_PAGE
   if (!showCatalogOnFilter) syncUrl(true)
 }
@@ -243,40 +246,51 @@ function toWorkflowItem(model: ModelExploreCatalogItem): CardWorkflowItem {
     .slice(0, 2)
     .map((modelCategory) => categoryLabels.value.get(modelCategory))
     .filter((label): label is string => label !== undefined)
-  if (catalogCardVariant === 'hub') {
-    const fixture = catalogCardModels.find(
-      (entry) =>
-        entry.href.replace(/\/$/, '') === model.href.replace(/\/$/, '') ||
-        entry.name.toLowerCase() === model.title.toLowerCase()
-    )
-    if (fixture)
-      return {
-        ...toDefaultWorkflowItem(fixture),
-        id: model.slug,
-        href: model.href,
-        taskLabel: fixture.taskLabel ?? categoryTags[0],
-        description: undefined,
-        media: model.thumbnailUrl
-          ? { type: 'image', src: model.thumbnailUrl, alt: '' }
-          : toDefaultWorkflowItem(fixture).media
-      }
+  if (catalogCardVariant === 'hub') return toCatalogHubItem(model, categoryTags)
+  return toCompactCatalogItem(model, categoryTags)
+}
+
+function toCatalogHubItem(
+  model: ModelExploreCatalogItem,
+  categoryTags: string[]
+): CardWorkflowItem {
+  const fixture = catalogCardModels.find(
+    (entry) =>
+      entry.href.replace(/\/$/, '') === model.href.replace(/\/$/, '') ||
+      entry.name.toLowerCase() === model.title.toLowerCase()
+  )
+  if (fixture)
     return {
+      ...toDefaultWorkflowItem(fixture),
       id: model.slug,
-      title: model.title,
       href: model.href,
-      target: '_self',
-      provider: model.title,
-      taskLabel: categoryTags[0],
-      capabilities: categoryTags.slice(1),
-      statusBadges:
-        model.directory !== 'partner_nodes' && openWeightsBadgeLabel
-          ? [{ type: 'open-weights', label: openWeightsBadgeLabel }]
-          : [],
+      taskLabel: fixture.taskLabel ?? categoryTags[0],
+      description: undefined,
       media: model.thumbnailUrl
         ? { type: 'image', src: model.thumbnailUrl, alt: '' }
-        : { type: 'placeholder', alt: '' }
+        : toDefaultWorkflowItem(fixture).media
     }
+  return {
+    id: model.slug,
+    title: model.title,
+    href: model.href,
+    target: '_self',
+    provider: model.title,
+    taskLabel: categoryTags[0],
+    capabilities: categoryTags.slice(1),
+    statusBadges:
+      model.directory !== 'partner_nodes' && openWeightsBadgeLabel
+        ? [{ type: 'open-weights', label: openWeightsBadgeLabel }]
+        : [],
+    media: model.thumbnailUrl
+      ? { type: 'image', src: model.thumbnailUrl, alt: '' }
+      : { type: 'placeholder', alt: '' }
   }
+}
+function toCompactCatalogItem(
+  model: ModelExploreCatalogItem,
+  categoryTags: string[]
+): CardWorkflowItem {
   return {
     id: model.slug,
     title: model.title,
@@ -428,32 +442,16 @@ const latestEntries = computed(() =>
     :aria-labelledby="catalogLabel ? 'model-catalog-heading' : undefined"
     :class="resultsClass"
   >
-    <ModelCollectionHeader
-      v-if="catalogLabel"
-      heading-id="model-catalog-heading"
-      :label="catalogLabel"
-    />
-    <p
-      v-if="isEmpty"
-      class="py-4 text-center text-base font-light text-content-secondary"
-    >
-      {{ emptyLabel }}
-    </p>
-    <ModelExploreGrid
-      v-else
+    <ModelCatalogResults
+      :catalog-label="catalogLabel"
+      :is-empty="isEmpty"
+      :empty-label="emptyLabel"
       :entries="displayEntries"
       :variant="catalogCardVariant"
-      :class="cn(catalogLabel && 'mt-7')"
+      :has-more-results="hasMoreResults"
+      :show-more-label="showMoreLabel"
+      @load-more="visibleCount += RESULTS_PER_PAGE"
     />
-    <div v-if="hasMoreResults" class="mt-8 flex justify-center">
-      <button
-        type="button"
-        class="inline-flex h-10 cursor-pointer items-center justify-center rounded-2xl border border-brand px-12 text-sm font-semibold tracking-wider text-brand uppercase transition-colors hover:bg-brand hover:text-page"
-        @click="visibleCount += RESULTS_PER_PAGE"
-      >
-        {{ showMoreLabel }}
-      </button>
-    </div>
   </section>
   <section
     v-if="latestCollection && !isActive"
