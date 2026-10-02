@@ -82,7 +82,7 @@ export class AgentPanel {
     })
     this.nodeSelectionBanner = page.getByTestId('node-selection-mode-banner')
     this.activityRows = this.root
-      .getByTestId('agent-activity-trace')
+      .getByTestId(TestIds.agent.activityTrace)
       .getByRole('listitem')
   }
 
