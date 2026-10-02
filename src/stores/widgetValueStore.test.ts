@@ -591,6 +591,19 @@ describe('useWidgetValueStore', () => {
       ).toBe(false)
     })
 
+    it('setOptions preserves extension suppression without hidden metadata', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(seedA, state('converted-widget', 100))
+      const visibility = store.getWidgetVisibility(seedA)
+      expect(visibility).toBeDefined()
+      if (!visibility) throw new Error('Expected registered widget visibility')
+      visibility.suppression.byExtension = true
+
+      expect(store.setOptions(seedA, { max: 10 })).toBe(true)
+
+      expect(visibility.suppression.byExtension).toBe(true)
+    })
+
     it('maps legacy option updates to the visibility component', () => {
       const store = useWidgetValueStore()
       store.registerWidget(seedA, state('number', 100))

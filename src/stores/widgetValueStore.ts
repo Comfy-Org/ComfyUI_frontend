@@ -345,6 +345,10 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
         advanced: visibility.surfaces.canvas === 'advanced',
         options: state.options
       })
+      if (hidden === undefined && state.options.hidden === undefined) {
+        nextVisibility.suppression.byExtension =
+          visibility.suppression.byExtension
+      }
       Object.assign(visibility.surfaces, nextVisibility.surfaces)
       visibility.suppression.byExtension =
         nextVisibility.suppression.byExtension
