@@ -99,7 +99,6 @@ const copy = {
   },
   'sprite.edit': { en: 'Edit', 'zh-CN': '编辑' },
   'sprite.again': { en: 'Try again', 'zh-CN': '再试一次' },
-  'sprite.download': { en: 'Download', 'zh-CN': '下载' },
   'sprite.close': { en: 'Close', 'zh-CN': '关闭' },
   'sprite.alt.example': {
     en: 'A cartoon fox explorer in a blue tunic and teal scarf',

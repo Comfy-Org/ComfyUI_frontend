@@ -51,6 +51,10 @@ async function makeSheet(user: ReturnType<typeof userEvent.setup>) {
 describe('SpriteSheetStudio', () => {
   it('picks a style and a motion from the panel, then makes the sheet', async () => {
     const user = await openExample()
+    expect(screen.getByRole('button', { name: 'Download' })).toHaveAttribute(
+      'aria-disabled',
+      'true'
+    )
     const style = within(panel()).getByRole('region', { name: 'Style' })
     const motion = within(panel()).getByRole('region', { name: 'Motion' })
 
@@ -67,6 +71,7 @@ describe('SpriteSheetStudio', () => {
       'href',
       'blob:sheet'
     )
+    expect(within(tools()).queryByRole('link')).toBeNull()
     expect(screen.getByRole('img', { name: /8 frames of Jump in Toon/ })).toBe(
       screen.getByTestId('sprite-sheet-result')
     )
@@ -95,6 +100,25 @@ describe('SpriteSheetStudio', () => {
       })
     ).toBeInTheDocument()
   })
+
+  it.for([
+    { layout: 'd', wide: true, last: 'Onion skin' },
+    { layout: 'd', wide: false, last: 'Onion skin' },
+    { layout: 'e', wide: true, last: 'Make sheet 30 credits' }
+  ])(
+    'keeps undo and redo at the right end of the tools in layout $layout (wide: $wide)',
+    async ({ layout, wide, last }) => {
+      screenIsWide(wide)
+      await openExample(layout)
+
+      const names = within(tools())
+        .getAllByRole('button')
+        .map(
+          (tool) => tool.getAttribute('aria-label') ?? tool.textContent.trim()
+        )
+      expect(names.slice(-3)).toEqual([last, 'Undo', 'Redo'])
+    }
+  )
 
   it('undoes a style change from the control pill', async () => {
     const user = await openExample()

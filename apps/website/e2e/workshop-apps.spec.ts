@@ -539,6 +539,13 @@ test('makes a sprite sheet of the example from the floating panel', async ({
   await panel.getByRole('radio', { name: 'Jump' }).click()
   await expect(app.getByRole('button', { name: 'Undo' })).toBeEnabled()
   await expect(app.getByTestId('sprite-preview')).toBeVisible()
+  await expectPanelWidth(panel)
+  await expect(
+    app
+      .getByRole('toolbar', { name: 'Sprite sheet tools' })
+      .getByRole('button')
+      .last()
+  ).toHaveAccessibleName('Redo')
 
   await panel.getByTestId('sprite-run').click()
   await expect(app.getByRole('status')).toContainText('Drawing the frames')
@@ -546,6 +553,7 @@ test('makes a sprite sheet of the example from the floating panel', async ({
     'href',
     /^blob:/
   )
+  await expectDownloadBesideGitHub(app)
   await expect(app.getByTestId('sprite-sheet-result')).toBeVisible()
 
   const tools = app.getByRole('toolbar', { name: 'Sprite sheet tools' })

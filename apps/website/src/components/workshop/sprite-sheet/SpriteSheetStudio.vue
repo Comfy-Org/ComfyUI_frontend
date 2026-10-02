@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import { useResultDownload } from '../../../composables/useResultDownload'
 import { useSpriteSheet } from '../../../composables/useSpriteSheet'
 import { reportStudioBusy } from '../../../composables/useStudioSwitchGuard'
 import type { Locale } from '../../../i18n/translations'
@@ -9,6 +10,7 @@ import { spc } from '../../../lib/workshop/sprite-sheet/copy'
 import AppEditorShell from '../app-editor/AppEditorShell.vue'
 import EditorAlert from '../app-editor/EditorAlert.vue'
 import SpriteSheetDocks from './SpriteSheetDocks.vue'
+import SpriteSheetHistory from './SpriteSheetHistory.vue'
 import SpriteSheetMain from './SpriteSheetMain.vue'
 import SpriteSheetPanel from './SpriteSheetPanel.vue'
 import SpriteSheetRun from './SpriteSheetRun.vue'
@@ -22,8 +24,13 @@ const { locale = 'en', layout = 'd' } = defineProps<{
 }>()
 
 const sprite = useSpriteSheet()
-const { image, phase } = sprite
+const { image, phase, setup } = sprite
 const panel = computed(() => layout !== 'e')
+const download = useResultDownload(
+  phase,
+  () =>
+    `${(image.value?.name ?? 'sprite').replace(/\.\w+$/, '')}-${setup.value.motion}-sheet.png`
+)
 reportStudioBusy(() => phase.value.kind === 'running')
 
 const panelLabels = {
@@ -39,6 +46,7 @@ const panelLabels = {
     :tools-label="spc('sprite.tools', locale)"
     :panel-labels="panelLabels"
     :panel-dimmed="phase.kind === 'done'"
+    :download
     :repo="workshopAppRepo('sprite-sheet')"
     :locale
     data-testid="sprite-sheet"
@@ -53,6 +61,9 @@ const panelLabels = {
     </template>
     <template #dock>
       <SpriteSheetDocks :sprite :panel :locale />
+    </template>
+    <template v-if="phase.kind !== 'done'" #history>
+      <SpriteSheetHistory :sprite :locale />
     </template>
     <template v-if="panel && image" #panel>
       <SpriteSheetPanel :sprite :locale />
