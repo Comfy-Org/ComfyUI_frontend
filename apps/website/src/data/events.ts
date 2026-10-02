@@ -461,8 +461,7 @@ const events: readonly ComfyEvent[] = [
     organizer: 'partner',
     coords: { lat: 37.7749, lng: -122.4194 },
     // TODO: start time and venue are not set (luma.com is unreachable from
-    // this session) and there is no event image yet; add a time, endDateTime,
-    // and media once the card art is uploaded to media.comfy.org.
+    // this session); add a time and endDateTime from the Luma page.
     title: {
       en: 'Open Call: ComfyUI Dev Platform Challenge Build Night',
       'zh-CN': '公开征集：ComfyUI 开发者平台挑战赛创作之夜'
@@ -485,7 +484,17 @@ const events: readonly ComfyEvent[] = [
       },
       newTab: true
     },
-    ctaLabel: { en: 'RSVP', 'zh-CN': '报名' }
+    ctaLabel: { en: 'RSVP', 'zh-CN': '报名' },
+    // TODO: temporarily hosted via GitHub attachment; migrate to
+    // media.comfy.org and switch to eventImage() when available.
+    media: {
+      type: 'image',
+      src: 'https://github.com/user-attachments/assets/f58091d4-909e-44e2-b0bc-5499a8f2b468',
+      alt: {
+        en: 'Open Call: ComfyUI Dev Platform Challenge Build Night',
+        'zh-CN': '公开征集：ComfyUI 开发者平台挑战赛创作之夜'
+      }
+    }
   },
   {
     id: 'codex-build-night-agents-everywhere',
@@ -493,8 +502,7 @@ const events: readonly ComfyEvent[] = [
     organizer: 'partner',
     coords: { lat: 37.7749, lng: -122.4194 },
     // TODO: start time and venue are not set (luma.com is unreachable from
-    // this session) and there is no event image yet; add a time, endDateTime,
-    // and media once the card art is uploaded to media.comfy.org.
+    // this session); add a time and endDateTime from the Luma page.
     title: {
       en: 'Codex Build Night: Agents Everywhere',
       'zh-CN': 'Codex 创作之夜：无处不在的 Agent'
@@ -517,7 +525,17 @@ const events: readonly ComfyEvent[] = [
       },
       newTab: true
     },
-    ctaLabel: { en: 'RSVP', 'zh-CN': '报名' }
+    ctaLabel: { en: 'RSVP', 'zh-CN': '报名' },
+    // TODO: temporarily hosted via GitHub attachment; migrate to
+    // media.comfy.org and switch to eventImage() when available.
+    media: {
+      type: 'image',
+      src: 'https://github.com/user-attachments/assets/049b928c-2366-4f47-8f8d-108133723658',
+      alt: {
+        en: 'Codex Build Night: Agents Everywhere',
+        'zh-CN': 'Codex 创作之夜：无处不在的 Agent'
+      }
+    }
   },
   {
     id: 'sf-tech-week-tool-panel',
