@@ -135,14 +135,44 @@ describe('PaparazziStudio', () => {
     expect(within(panel()).getByTestId('paparazzi-run')).toBeEnabled()
   })
 
-  it('snaps from the bottom composer, a tray per setting', async () => {
+  it('picks the resolution and a new seed in the closed panel sections', async () => {
+    const user = open()
+    await user.click(
+      within(section('Resolution')).getByRole('button', { name: /^Resolution/ })
+    )
+    await user.click(
+      within(section('Resolution')).getByRole('button', {
+        name: 'Resolution: 2K'
+      })
+    )
+    await user.click(
+      screen.getByRole('menuitemradio', { name: '4K 4096 × 2731 px' })
+    )
+    expect(
+      within(section('Resolution')).getByRole('button', {
+        name: 'Resolution: 4K'
+      })
+    ).toBeVisible()
+
+    await user.click(
+      within(section('Advanced')).getByRole('button', { name: /^Advanced/ })
+    )
+    vi.spyOn(Math, 'random').mockReturnValue(0.5)
+    await user.click(
+      within(section('Advanced')).getByRole('button', { name: 'New seed' })
+    )
+    expect(
+      within(section('Advanced')).getByRole('spinbutton', { name: 'Seed' })
+    ).toHaveValue(500_000_000)
+  })
+
+  it('snaps from the bottom composer, with Resolution as a pill', async () => {
     const user = open('e')
     expect(screen.queryByRole('complementary')).toBeNull()
 
-    await user.click(screen.getByRole('button', { name: /^Resolution/ }))
-    const tray = screen.getByRole('dialog', { name: 'Resolution' })
-    await user.click(within(tray).getByRole('radio', { name: '4K' }))
-    expect(within(tray).getByText('4096 × 2731 px')).toBeVisible()
+    await user.click(screen.getByRole('button', { name: 'Resolution: 2K' }))
+    await user.click(screen.getByRole('menuitemradio', { name: /^4K/ }))
+    expect(screen.getByRole('button', { name: 'Resolution: 4K' })).toBeVisible()
 
     await user.click(screen.getByTestId('paparazzi-run'))
     expect(screen.queryByRole('dialog')).toBeNull()

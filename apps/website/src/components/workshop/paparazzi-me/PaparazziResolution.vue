@@ -9,30 +9,36 @@ import {
   RESOLUTIONS,
   outputSize
 } from '../../../lib/workshop/paparazzi-me/setup'
-import EditorSegmented from '../app-editor/EditorSegmented.vue'
+import EditorOutput from '../app-editor/EditorOutput.vue'
 
-const { paparazzi, locale = 'en' } = defineProps<{
+const {
+  paparazzi,
+  locale = 'en',
+  composer = false
+} = defineProps<{
   paparazzi: PaparazziMe
   locale?: Locale
+  composer?: boolean
 }>()
 
-const { setup } = paparazzi
-const options = RESOLUTIONS.map((id) => ({ id, label: id }))
+const { setup, phase } = paparazzi
+const options = RESOLUTIONS.map((id) => ({
+  id,
+  label: id,
+  detail: pc('paparazzi.resolution.size', locale, outputSize(id))
+}))
 const resolution = computed({
   get: () => setup.value.resolution,
   set: (next: Resolution) => paparazzi.change({ resolution: next })
 })
-const size = computed(() => outputSize(setup.value.resolution))
 </script>
 
 <template>
-  <EditorSegmented
+  <EditorOutput
     v-model="resolution"
-    :label="pc('paparazzi.resolution', locale)"
+    :heading="pc('paparazzi.resolution', locale)"
     :options
-    fill
+    :composer
+    :disabled="composer && phase.kind === 'running'"
   />
-  <p class="px-1 text-[11px] text-primary-warm-gray tabular-nums">
-    {{ pc('paparazzi.resolution.size', locale, size) }}
-  </p>
 </template>

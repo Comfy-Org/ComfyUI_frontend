@@ -51,6 +51,7 @@ const copy = {
   },
   'paparazzi.advanced': { en: 'Advanced', 'zh-CN': '高级' },
   'paparazzi.seed': { en: 'Seed', 'zh-CN': '种子' },
+  'paparazzi.seed.shuffle': { en: 'New seed', 'zh-CN': '换一个种子' },
   'paparazzi.seed.value': { en: 'Seed {n}', 'zh-CN': '种子 {n}' },
   'paparazzi.face': { en: 'Your face', 'zh-CN': '你的脸' },
   'paparazzi.face.replace': { en: 'Replace your face', 'zh-CN': '更换照片' },
