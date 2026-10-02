@@ -144,6 +144,10 @@ function noteAuthoritativePendingCancellation(download: AssetDownload) {
   }
 }
 
+function resultValue<T>(value: T | undefined, fallback: T | undefined) {
+  return value === undefined ? fallback : value
+}
+
 function createReconciledDownloadMessage(
   download: AssetDownload,
   task: TaskResponse
@@ -152,16 +156,38 @@ function createReconciledDownloadMessage(
   // A completed download needs a valid result (or an asset id already learned
   // from the socket) before it can be recorded as a completed asset.
   if (task.status === 'completed' && !result && !download.assetId) return
+  const assetId = resultValue(result?.asset_id, download.assetId)
+  const assetName = result?.filename ?? download.assetName
+  const bytesDownloaded = result?.bytes_downloaded ?? download.bytesDownloaded
+  const error = resultValue(task.error_message, result?.error)
   return {
     task_id: download.taskId,
-    asset_id: result?.asset_id ?? download.assetId,
-    asset_name: result?.filename ?? download.assetName,
+    asset_id: assetId,
+    asset_name: assetName,
     bytes_total: download.bytesTotal,
-    bytes_downloaded: result?.bytes_downloaded ?? download.bytesDownloaded,
+    bytes_downloaded: bytesDownloaded,
     progress: task.status === 'completed' ? 100 : download.progress,
     status: task.status,
-    error: task.error_message ?? result?.error
+    error
   }
+}
+
+function canCancelDownload(
+  download: AssetDownload | undefined,
+  isCancelling: boolean
+) {
+  if (!download || isCancelling) return false
+  return activeStatuses.has(download.status) || download.status === 'failed'
+}
+
+function isSettledDownload(download: AssetDownload) {
+  return download.status === 'completed' || download.status === 'cancelled'
+}
+
+function beginPendingCancellation(download: AssetDownload) {
+  download.status = 'cancellation_pending'
+  download.cancellationReconcileAttempts = 0
+  download.lastUpdate = Date.now()
 }
 
 export const useAssetDownloadStore = defineStore('assetDownload', () => {
@@ -340,11 +366,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
 
   async function cancelDownload(taskId: TaskId): Promise<TaskResult<boolean>> {
     const download = downloads.value.get(taskId)
-    if (
-      cancellingTaskIds.value.has(taskId) ||
-      !download ||
-      !(activeStatuses.has(download.status) || download.status === 'failed')
-    ) {
+    if (!canCancelDownload(download, cancellingTaskIds.value.has(taskId))) {
       return { ok: true, value: false }
     }
     cancellingTaskIds.value.add(taskId)
@@ -353,20 +375,15 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
       if (!result.ok) return result
 
       const current = downloads.value.get(taskId)
-      if (
-        !current ||
-        current.status === 'completed' ||
-        current.status === 'cancelled'
-      ) {
+      if (!current) return { ok: true, value: false }
+      if (isSettledDownload(current)) {
         return { ok: true, value: result.value === 'cancelling' }
       }
 
       // A DELETE 404 can mean the cancellation route is unavailable, not that
       // the task is gone. Re-read the task before deciding how to settle it.
       if (result.value === 'missing') {
-        current.status = 'cancellation_pending'
-        current.cancellationReconcileAttempts = 0
-        current.lastUpdate = Date.now()
+        beginPendingCancellation(current)
         await reconcileDownload(current)
         return { ok: true, value: false }
       }
@@ -378,9 +395,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
         return { ok: true, value: false }
       }
 
-      current.status = 'cancellation_pending'
-      current.cancellationReconcileAttempts = 0
-      current.lastUpdate = Date.now()
+      beginPendingCancellation(current)
       return { ok: true, value: true }
     } finally {
       cancellingTaskIds.value.delete(taskId)
