@@ -675,6 +675,17 @@ export class AgentTurnLockHarness {
     this.push(ws, FOREIGN_TURN_DONE_EVENT)
   }
 
+  async waitForForeignTurnCancellation(): Promise<void> {
+    const request = await this.page.waitForRequest(
+      '**/api/agent/threads/*/messages/*/cancel'
+    )
+    const segments = new URL(request.url()).pathname
+      .split('/')
+      .map(decodeURIComponent)
+    expect(request.method()).toBe('POST')
+    expect(segments[segments.indexOf('messages') + 1]).toBe(FOREIGN_TURN_ID)
+  }
+
   finishTurnOnServer(): void {
     this.server.completeTurn()
   }

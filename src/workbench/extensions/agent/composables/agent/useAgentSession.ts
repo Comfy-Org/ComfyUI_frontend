@@ -1150,25 +1150,30 @@ export function useAgentSession(deps: AgentSessionDeps) {
     threadAtSend: string,
     generation: number
   ): Promise<boolean> {
-    if (parseTurnInProgress(error) === undefined) return false
+    const conflict = parseTurnInProgress(error)
+    if (conflict === undefined) return false
     // 'new' is the sentinel for a thread the server had not minted yet, and a
     // thread that does not exist cannot already be busy.
     if (threadAtSend === 'new') return false
     const reattachGeneration = ++refusedTurnReattachGeneration
+    const isCurrentReattachment = () =>
+      reattachGeneration === refusedTurnReattachGeneration &&
+      generation === loadGeneration &&
+      ownedGeneration === sessionGeneration &&
+      conversationStore.threadId === threadAtSend
     const reattached = await Promise.race([
-      hydrateFromServer(
-        threadAtSend,
-        () =>
-          reattachGeneration === refusedTurnReattachGeneration &&
-          generation === loadGeneration &&
-          ownedGeneration === sessionGeneration &&
-          conversationStore.threadId === threadAtSend
-      ),
+      hydrateFromServer(threadAtSend, isCurrentReattachment),
       new Promise<void>((resolve) => setTimeout(resolve, RECONCILE_TIMEOUT_MS))
     ])
+    const activeTurnId = conversationStore.activeTurnId
+    const adoptedActiveTurn =
+      isCurrentReattachment() &&
+      activeTurnId !== null &&
+      (conflict.activeMessageId === undefined ||
+        activeTurnId === conflict.activeMessageId)
     if (reattachGeneration === refusedTurnReattachGeneration)
       refusedTurnReattachGeneration++
-    if (reattached === true) stopPendingActiveTurn()
+    if (adoptedActiveTurn) stopPendingActiveTurn()
     return reattached === true && conversationStore.activeTurnId !== null
   }
 

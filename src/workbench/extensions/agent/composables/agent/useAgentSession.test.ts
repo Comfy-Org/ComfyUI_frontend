@@ -3206,7 +3206,15 @@ describe('useAgentSession (v1 composition root)', () => {
       )
     })
     const { source, emit } = fakeEvents()
-    const session = useAgentSession({ rest, events: source })
+    const session = useAgentSession({
+      rest,
+      events: source,
+      workflow: {
+        current: () => undefined,
+        adopted: vi.fn(),
+        restored: async () => false
+      }
+    })
     session.start()
     await session.sendMessage('first')
     emit(done('msg-1'))
