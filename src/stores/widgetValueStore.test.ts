@@ -565,6 +565,17 @@ describe('useWidgetValueStore', () => {
       expect(store.getWidget(seedA)?.options).toEqual({ max: 10 })
     })
 
+    it('setOptions normalizes nullish legacy assignments', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(seedA, state('number', 100))
+
+      expect(
+        Reflect.apply(store.setOptions, store, [seedA, undefined])
+      ).toBe(true)
+
+      expect(store.getWidget(seedA)?.options).toEqual({})
+    })
+
     it('maps legacy option updates to the visibility component', () => {
       const store = useWidgetValueStore()
       store.registerWidget(seedA, state('number', 100))
