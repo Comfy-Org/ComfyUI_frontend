@@ -96,32 +96,15 @@ beforeEach(() => {
 })
 
 describe('PrimitiveInt control_after_generate projection', () => {
-  it('stores the widgets by name, so the named branch is the branch under test', () => {
-    const { docWidgets } = setup()
-
-    expect([...docWidgets().keys()].sort()).toEqual([
-      'control_after_generate',
-      'value'
-    ])
-  })
-
-  it('creates the live control widget under the name the document uses', () => {
-    const { graph, applyCollected } = setup()
-
-    applyCollected()
-
-    const node = graph.getNodeById(toNodeId(143))
-    expect(node?.widgets?.map((widget) => widget.name)).toEqual([
-      'value',
-      'control_after_generate'
-    ])
-  })
-
   it('applies the catch-up frame to the control widget, not to a default', () => {
     // `createNode` keys the named record by *live* widget name, so a
     // disagreement here silently keeps the constructor default and emits no
     // telemetry at all — a second, quieter face of the same defect.
-    const { graph, applyCollected } = setup()
+    const { graph, applyCollected, docWidgets } = setup()
+    expect(Object.fromEntries(docWidgets().entries())).toEqual({
+      value: 5,
+      control_after_generate: 'increment'
+    })
 
     applyCollected()
 
