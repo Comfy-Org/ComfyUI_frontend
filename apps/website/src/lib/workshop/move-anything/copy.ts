@@ -26,6 +26,10 @@ const copy = {
     en: 'Drag to move · Corners to resize · Arrow keys to nudge',
     'zh-CN': '拖动以移动 · 拖动角落调整大小 · 方向键微调'
   },
+  'move.hint.pick': {
+    en: 'Drag a thing to move it',
+    'zh-CN': '拖动物体即可移动'
+  },
   'move.hint.smart': {
     en: 'Click a thing to select it',
     'zh-CN': '点击物体即可选中'

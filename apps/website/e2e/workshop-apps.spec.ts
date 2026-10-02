@@ -40,16 +40,14 @@ async function mockFlags(
   )
 }
 
-async function smartSelectKitten(page: Page) {
+async function openDetectedExample(page: Page) {
   const app = page.getByTestId('move-anything')
-  const stage = app.getByTestId('move-stage')
-  const box = await stage.boundingBox()
-  if (!box) throw new Error('no stage')
-  await stage.click({ position: { x: box.width * 0.2, y: box.height * 0.5 } })
+  await app.getByRole('button', { name: 'Try the example' }).click()
   await expect(app.getByRole('status')).toContainText('Detecting')
   const kitten = app.getByRole('button', { name: /^Orange kitten\./ })
   await expect(kitten).toBeVisible()
-  await expect(app.getByTestId('move-outline')).toHaveCount(1)
+  await expect(app.getByTestId('move-outline')).toHaveCount(3)
+  await expect(app.getByText('Drag a thing to move it')).toBeVisible()
   return kitten
 }
 
@@ -191,13 +189,11 @@ test('moves a thing from the Move anything side panel and shows the result', asy
   const generate = app.getByTestId('move-generate')
   await expect(generate).toHaveCount(0)
 
-  await app.getByRole('button', { name: 'Try the example' }).click()
+  const kitten = await openDetectedExample(page)
   await expect(
     app.getByRole('complementary', { name: 'Move anything settings' })
   ).toContainText('kitten.jpg')
   await expect(generate).toBeDisabled()
-  await expect(app.getByText('Click a thing to select it')).toBeVisible()
-  const kitten = await smartSelectKitten(page)
   await kitten.focus()
   await page.keyboard.press('Shift+ArrowRight')
   await expect(generate).toHaveText(/Move 1 object/)
@@ -222,13 +218,12 @@ test('moves a thing from the Move anything bottom composer', async ({
   await mockFlags(context, { apps: true, workflows: false })
   await page.goto('/hub/apps/move-anything/?ux=e')
   const app = page.getByTestId('move-anything')
-  await app.getByRole('button', { name: 'Try the example' }).click()
+  const kitten = await openDetectedExample(page)
   await expect(app.getByRole('complementary')).toHaveCount(0)
 
-  const kitten = await smartSelectKitten(page)
   await app.getByRole('button', { name: /Objects/ }).click()
   const tray = app.getByRole('dialog', { name: 'Objects' })
-  await expect(tray).toContainText('1 of 4')
+  await expect(tray).toContainText('3 of 4')
   await kitten.focus()
   await page.keyboard.press('Shift+ArrowRight')
   const generate = app
@@ -246,14 +241,13 @@ test('moves a thing from the Move anything bottom sheet on phones @mobile', asyn
   await mockFlags(context, { apps: true, workflows: false })
   await page.goto('/hub/apps/move-anything/')
   const app = page.getByTestId('move-anything')
-  await app.getByRole('button', { name: 'Try the example' }).click()
+  const kitten = await openDetectedExample(page)
   const sheet = app.getByRole('complementary', {
     name: 'Move anything settings'
   })
   await expect(
-    sheet.getByRole('button', { name: '0 objects · 0 moved · Fast' })
+    sheet.getByRole('button', { name: '3 objects · 0 moved · Fast' })
   ).toBeVisible()
-  const kitten = await smartSelectKitten(page)
   await kitten.focus()
   await page.keyboard.press('Shift+ArrowRight')
   const generate = sheet.getByTestId('move-generate')

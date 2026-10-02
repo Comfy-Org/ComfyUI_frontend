@@ -35,7 +35,7 @@ const {
   objects: readonly MoveObject[]
   tool: MoveTool
   selected?: string
-  detecting?: { x: number; y: number }
+  detecting?: readonly { x: number; y: number }[]
   locale?: Locale
 }>()
 
@@ -176,7 +176,7 @@ const boxStyle = (rect: Rect) => ({
       />
       <MoveAnythingDetecting
         v-if="detecting"
-        :at="detecting"
+        :points="detecting"
         :label="mc('move.detecting', locale)"
       />
       <slot />

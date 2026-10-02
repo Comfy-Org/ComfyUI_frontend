@@ -39,7 +39,10 @@ export type MoveTool = 'move' | 'smart' | 'box'
 export type MoveTray = 'objects' | 'quality'
 export type MoveView = 'compare' | 'result' | 'original'
 
+type StagePoint = { readonly x: number; readonly y: number }
+
 const DETECT_MS = 500
+const SCAN_MS = 700
 
 /** Move anything's page state. The run itself is `runMove`, mocked for now. */
 export function useMoveAnything(locale: Locale = 'en') {
@@ -54,7 +57,7 @@ export function useMoveAnything(locale: Locale = 'en') {
   const seed = ref(42)
   const prompt = ref('')
   const selected = ref<string>()
-  const detecting = ref<{ x: number; y: number }>()
+  const detecting = shallowRef<readonly StagePoint[]>()
   let detect: ReturnType<typeof setTimeout> | undefined
   let ownUrl: string | undefined
   let pendingUrl: string | undefined
@@ -88,6 +91,7 @@ export function useMoveAnything(locale: Locale = 'en') {
     pendingUrl = undefined
     releaseOwnUrl()
     reset(MOVE_EXAMPLE)
+    scanExample()
   }
 
   async function useFile(file: File) {
@@ -154,10 +158,34 @@ export function useMoveAnything(locale: Locale = 'en') {
     )
   }
 
+  const detected = (shape: KnownShape, i: number): MoveObject => {
+    const from = boundsOf(shape.points)
+    return {
+      id: `d${i}`,
+      label: mc(shape.label, locale),
+      from,
+      to: from,
+      mask: { path: outlinePath(shape.points) }
+    }
+  }
+
+  /** Mocks detecting every known thing in the example, as its starting state. */
+  function scanExample() {
+    detecting.value = EXAMPLE_SHAPES.map(({ points }) => {
+      const { x, y, w, h } = boundsOf(points)
+      return { x: x + w / 2, y: y + h / 2 }
+    })
+    detect = setTimeout(() => {
+      detecting.value = undefined
+      objects.value = EXAMPLE_SHAPES.map(detected)
+      tool.value = 'move'
+    }, SCAN_MS)
+  }
+
   /** Mocks detecting the thing under a click, then outlines and adds it. */
-  function smartSelect(point: { x: number; y: number }) {
+  function smartSelect(point: StagePoint) {
     if (full.value || detecting.value) return
-    detecting.value = point
+    detecting.value = [point]
     detect = setTimeout(() => {
       detecting.value = undefined
       const at = [point.x, point.y] as const
@@ -172,6 +200,7 @@ export function useMoveAnything(locale: Locale = 'en') {
 
   /** Adds the thing inside a drawn box, snapped to a known outline if one fits. */
   function boxSelect(box: Rect) {
+    if (detecting.value) return
     const shape = shapeForBox(knownShapes(), box)
     if (shape) addShape(shape)
     else addOutline(box, roundedBoxPath(box, aspect()))

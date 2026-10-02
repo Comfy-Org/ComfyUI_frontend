@@ -27,6 +27,10 @@ const HINTS = {
   smart: 'move.hint.smart',
   box: 'move.hint.box'
 } as const
+const hint = () =>
+  tool.value === 'move' && !selected.value
+    ? 'move.hint.pick'
+    : HINTS[tool.value]
 const touched = ref(false)
 watch([tool, () => image], () => (touched.value = false))
 
@@ -70,7 +74,7 @@ function busyDetail() {
     >
       <EditorHint
         v-if="!touched && !detecting && phase.kind === 'arranging'"
-        :text="mc(HINTS[tool], locale)"
+        :text="mc(hint(), locale)"
       />
     </MoveAnythingStage>
     <EditorBusy
