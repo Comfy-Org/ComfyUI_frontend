@@ -35,30 +35,8 @@ const looseIntSpec = (options: Record<string, unknown>) =>
   ['INT', options] as InputSpec
 
 describe('value control widget naming', () => {
-  it('reads a ControlAfterGenerate mode as the mode, not as the widget name', () => {
-    // `comfy_extras/nodes_primitive.py` declares
-    // `control_after_generate=io.ControlAfterGenerate.fixed`.
-    const { node, target } = intNode()
-
-    const control = addValueControlWidget(
-      node,
-      target,
-      'fixed',
-      undefined,
-      undefined,
-      intSpec({ control_after_generate: 'fixed' })
-    )
-
-    expect(control.name).toBe('control_after_generate')
-    expect(control.value).toBe('fixed')
-    expect(node.widgets?.map((widget) => widget.name)).toEqual([
-      'value',
-      'control_after_generate'
-    ])
-  })
-
-  it.for(['increment', 'decrement', 'randomize'] as const)(
-    'reads the %s mode as the mode too',
+  it.for(['fixed', 'increment', 'decrement', 'randomize'] as const)(
+    'reads the %s mode as the mode, not as the widget name',
     (mode) => {
       const { node, target } = intNode()
 
