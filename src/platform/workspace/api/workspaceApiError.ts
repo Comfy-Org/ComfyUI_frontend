@@ -1,4 +1,4 @@
-import type { BillingFailure } from '@/platform/telemetry/types'
+import type { BillingTelemetryFailure } from '@comfyorg/account-core/billing'
 
 /**
  * A leaf module, so a subclass can be declared wherever the class is needed
@@ -10,7 +10,7 @@ export class WorkspaceApiError extends Error {
     public readonly status?: number,
     public readonly code?: string,
     /** For a failure `status` cannot classify, such as a billing SDK refusal. */
-    public readonly failureCategory?: BillingFailure['failure_category']
+    public readonly failureCategory?: BillingTelemetryFailure['failure_category']
   ) {
     super(message)
     this.name = 'WorkspaceApiError'

@@ -99,8 +99,62 @@ exception capture and external scripts are off, and the promo code and Stripe
 return parameters are masked wherever PostHog stores a URL, its cookie
 included. Its `before_send` strips the same PII keys as the Cloud app and drops
 every URL's query and fragment. Billing events go through
-`billingWebTelemetry.trackBillingEvent`, which stamps
-`billing_surface: 'billing_web'` and sends to both sinks.
+`billingWebTelemetry.trackBillingEvent`, which takes a `BillingTelemetryEvent`
+from `@comfyorg/account-core/billing`, keeps only its allowlisted fields,
+stamps `billing_surface: 'billing_web'` and sends to both sinks.
+
+### Attempt and operation events
+
+The SDK's operation lifecycle reports through `toBillingTelemetryEvent` from
+`@comfyorg/account-core/billing`, the one mapper the Cloud app uses too:
+`billing.operation.started`, `.succeeded`, `.failed` and `.timeout`, with
+`billing_client: 'sdk'`, for every operation this tab issues or recovers
+(subscribe, resubscribe, cancel and top-up). A recovered operation reports
+`resumed: true`. A refusal before the server issues an operation has no
+operation to report, so it is not on this stream.
+
+A subscribe or plan change reports its own lifecycle on both checkouts:
+`billing.subscription_checkout.intent` and `.started` at the pay press,
+immediately before the request, then one `.succeeded` or `.failed`. The
+terminal carries `billing_op_id` once the server issued one. A refusal before
+that (validation, a 4xx or 5xx, no connection, an operation already pending, a
+stale quote) fails with a bounded `failure_category` and `error_code`, never
+the server's words. The server asking for the reactivation consent keeps the
+same attempt open, and a retry after a terminal starts a new one.
+`checkout_ui` names the checkout, `embedded` or `full_page`.
+
+### Entry, session and return events
+
+These are client journey events: they carry `outcome: 'pending'` and never
+claim an operation result. Each is reported once per tab, not per navigation:
+`trackOncePerTab` remembers what the tab has reported in `sessionStorage`, so a
+route change, the sign-in redirect and a reload send nothing more. A tab that
+refuses storage still reports once per page load.
+
+- `billing.web_entry.received`: an entry link was admitted. Carries `intent`,
+  `product`, `has_plan`, and the link's `payment_intent_source` and
+  `correlation_id` (the Cloud journey id) when it has them.
+- `billing.web_entry.rejected`: the link could not be used; `error_code` is the
+  entry parser's code.
+- `billing.web_entry.bounced`: billing web sent the customer back to the host
+  (`pricing_link`, `planless_checkout`) or replaced a checkout's `return_to`
+  (`return_target_rewritten`); `to` is the return target or `pricing_table`.
+- `billing.web_session.signin_required`: the sign-in page opened on a session
+  that is signed out (`no_session`) or refused (`refused`). Counting these
+  against `received` is the second sign-in the shared web session removes.
+- `billing.web_session.established`: a session became usable. `origin` is
+  `interactive` once the customer signed in on this page, otherwise `restored`;
+  `mode` is `session-client` or `web-session`.
+- `billing.web_session.failed`: a session could not be established; `error_code`
+  is a `SessionErrorCode`, reported once per code. Creating the shared session
+  reports `INVALID_FIREBASE_TOKEN` for a refused credential and
+  `TOKEN_EXCHANGE_FAILED` for any other failure.
+- `billing.web_return.clicked`: the customer clicked a way back to the host. It
+  is sent on each click, not once per tab. `control` is `back` (a checkout's
+  back arrow or Back button), `close` (the embedded checkout frame's close),
+  `success_close` (the Close of a finished checkout) or `host_link` (a surface's
+  "Return to" link). The countdown that closes a finished checkout's tab is
+  not a click and reports nothing.
 
 ## Commands
 

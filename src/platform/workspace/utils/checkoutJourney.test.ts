@@ -1,6 +1,5 @@
+import type { CheckoutEntrySource } from '@comfyorg/account-core/billing'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import type { CheckoutEntrySource } from '@/platform/telemetry/types'
 
 import {
   bindOperationToCheckoutJourney,
