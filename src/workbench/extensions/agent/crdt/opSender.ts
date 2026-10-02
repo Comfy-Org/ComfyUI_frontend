@@ -528,6 +528,11 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       try {
         chunkWireOps([op])
       } catch {
+        const interrupted = sealInterruption(sealAbortGeneration)
+        if (interrupted) {
+          settleInterruptedSeal(ops, interrupted)
+          return
+        }
         rejectedFrom = index
         break
       }

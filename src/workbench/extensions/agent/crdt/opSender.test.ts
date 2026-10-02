@@ -1319,6 +1319,58 @@ describe('createOpSender', () => {
     localSender.flush()
 
     expect(localSettled.map((outcome) => outcome.ops.length)).toEqual([256, 44])
+    expect(localSettled.every((outcome) => outcome.state === 'undeliverable')).toBe(
+      true
+    )
+    expect(
+      localSettled
+        .flatMap((outcome) => outcome.ops)
+        .map((op) => ('node_id' in op ? op.node_id : null))
+    ).toEqual(Array.from({ length: 300 }, (_, id) => id))
+    expect(localSender.pending()).toBe(0)
+    localSender.detach()
+  })
+
+  it('does not rechunk a prefix after serialization aborts and throws', () => {
+    const localSettled: BatchOutcome[] = []
+    const localSender = createOpSender({
+      sendOps: () => true,
+      onOpsResult: () => vi.fn(),
+      workflowId: () => WORKFLOW,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: (outcome) => localSettled.push(outcome)
+    })
+    const first = addNode(1)
+    let firstSerializations = 0
+    first.node = {
+      ...first.node,
+      toJSON() {
+        firstSerializations++
+        return { id: 1, type: 'TestNode' }
+      }
+    }
+    const second = addNode(2)
+    let aborted = false
+    second.node = {
+      ...second.node,
+      toJSON() {
+        if (!aborted) {
+          aborted = true
+          localSender.abortAll()
+        }
+        throw new Error('serialization boom')
+      }
+    }
+
+    localSender.admit([first, second])
+    localSender.flush()
+
+    expect(firstSerializations).toBe(2)
+    expect(localSettled).toHaveLength(1)
+    expect(localSettled[0].state).toBe('undeliverable')
+    expect(localSettled[0].ops).toHaveLength(2)
     expect(localSender.pending()).toBe(0)
     localSender.detach()
   })
