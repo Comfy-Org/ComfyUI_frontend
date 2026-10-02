@@ -17,9 +17,8 @@
  * contract is new.
  */
 
-import type {
-  BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT} from '../../telemetry.js';
 import {
+  BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT,
   BILLING_OPERATION_TELEMETRY_EVENT
 } from '../../telemetry.js'
 import type {
@@ -65,6 +64,8 @@ import {
   reduceBillingOperation,
   validateActionUrl
 } from './operationState.js'
+import type { PaymentFrictionSignal } from './paymentFriction.js'
+import { paymentFrictionBetween } from './paymentFriction.js'
 import { selectBillingPresentation } from './presentation.js'
 import { readValidatedBillingResponse } from './sharedRead.js'
 import type { BillingStatusData, BillingStatusReader } from './status.js'
@@ -319,6 +320,14 @@ function failureCategoryFor(
   }
 }
 
+const FRICTION_EVENT_NAME = {
+  challenge_required:
+    BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT.challengeRequired,
+  challenge_completed:
+    BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT.challengeCompleted,
+  challenge_failed: BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT.challengeFailed
+} as const satisfies Record<PaymentFrictionSignal['stage'], string>
+
 /** The pause is this tab's own challenge on screen; a hosted page never pauses. */
 function isDrivingChallenge(state: PendingBillingOperation): boolean {
   return (
@@ -398,10 +407,31 @@ export function createBillingOperationLifecycle(
     })
   }
 
+  function emitFrictionTelemetry(
+    record: OperationRecord,
+    before: BillingOperationState | undefined
+  ) {
+    const state = record.state
+    for (const signal of paymentFrictionBetween(before, state)) {
+      onTelemetry?.({
+        name: FRICTION_EVENT_NAME[signal.stage],
+        billing_op_id: state.id,
+        operation_type: state.kind,
+        presentation: state.presentation,
+        resumed: record.resumed,
+        ...('declineReason' in signal && signal.declineReason !== undefined
+          ? { decline_reason: signal.declineReason }
+          : {})
+      })
+    }
+  }
+
   function dispatch(record: OperationRecord, event: BillingOperationEvent) {
-    const next = reduceBillingOperation(record.state, event)
-    if (next === record.state) return
+    const before = record.state
+    const next = reduceBillingOperation(before, event)
+    if (next === before) return
     record.state = next
+    emitFrictionTelemetry(record, before)
     if (isTerminal(next)) {
       stopTimer(record)
       pointers.settle(next)
@@ -574,6 +604,7 @@ export function createBillingOperationLifecycle(
       presentation: input.presentation,
       resumed: input.resumed
     })
+    emitFrictionTelemetry(record, undefined)
     startObserving(record, input, state)
     return record
   }

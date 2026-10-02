@@ -18,6 +18,7 @@ import type {
   SubscribeInput
 } from '@comfyorg/account-core/billing'
 import {
+  BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT,
   BILLING_OPERATION_TELEMETRY_EVENT,
   toBillingTelemetryEvent,
   validateActionUrl
@@ -94,6 +95,14 @@ const PROGRESS_SUMMARY = {
   }
 } as const satisfies Record<string, Record<ProgressToastKind, string>>
 type ToastMessage = Parameters<ReturnType<typeof useToastStore>['add']>[0]
+
+const FRICTION_EVENT_NAMES: ReadonlySet<string> = new Set(
+  Object.values(BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT)
+)
+
+function isFrictionEvent(event: BillingOperationTelemetryEvent): boolean {
+  return FRICTION_EVENT_NAMES.has(event.name)
+}
 
 async function loadChallengePort(): Promise<EmbeddedChallengePort | undefined> {
   const publishableKey = resolveStripePublishableKey()
@@ -242,7 +251,12 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   // forwarded, since only the lifecycle holds the operation's id, category
   // and timing. A command no caller announced — a resubscribe, a checkout
   // that reports nothing — is reported at both ends by the lifecycle.
+  // Friction inside an operation has no other reporter, so it always goes.
   function reportTelemetry(event: BillingOperationTelemetryEvent) {
+    if (isFrictionEvent(event)) {
+      useTelemetry()?.trackBillingEvent(toBillingTelemetryEvent(event))
+      return
+    }
     if (event.operation_type === 'topup' && !event.resumed) return
     const started = event.name === BILLING_OPERATION_TELEMETRY_EVENT.started
     if (started && event.resumed) resumedOperations.add(event.billing_op_id)
