@@ -166,8 +166,6 @@ describe('value control widget naming', () => {
   it.for(['randomize', 'increment-wrap'] as const)(
     'names the combo control canonically when the spec carries the %s mode',
     (mode) => {
-      // `useComboWidget` calls `addValueControlWidgets` directly, so the name
-      // resolution inside `getName` is the only guard on that path.
       const { node, target } = comboNode()
 
       const [control, filter] = addValueControlWidgets(
