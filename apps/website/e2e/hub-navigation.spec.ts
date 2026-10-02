@@ -1,3 +1,4 @@
+import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
@@ -212,18 +213,31 @@ for (const width of [1440, 390]) {
   })
 }
 
-for (const { section, destination, query, filter } of [
+// Inside a category the tabs give up the row to the category's own title, so
+// the way to another hub section starts by leaving the category. A use case
+// opens one on models; a workflow category filter does not.
+async function leaveCategory(page: Page, inCategory: boolean) {
+  const tabs = page.getByTestId('catalogue-tab-models')
+  await expect(tabs).toHaveCount(inCategory ? 0 : 1)
+  if (!inCategory) return
+  await page.getByTestId('section-back').click()
+  await expect(tabs).toBeVisible()
+}
+
+for (const { section, destination, query, filter, inCategory } of [
   {
     section: 'models',
     destination: 'workflows',
     query: 'kling',
-    filter: 'useCase=generate-images'
+    filter: 'useCase=generate-images',
+    inCategory: true
   },
   {
     section: 'workflows',
     destination: 'models',
     query: 'material',
-    filter: 'category=product'
+    filter: 'category=product',
+    inCategory: false
   }
 ]) {
   test(`the active ${section} tab resets its URL filters, including history`, async ({
@@ -235,6 +249,7 @@ for (const { section, destination, query, filter } of [
     const count = page.getByTestId('workshop-filter-count')
     await expect(search).toHaveValue(query)
     await expect(count).toHaveText('1')
+    await leaveCategory(page, inCategory)
     await page.getByTestId(`catalogue-tab-${section}`).click()
     await expect(page).toHaveURL(`/hub/${section}/`)
     await expect(search).toHaveValue('')
@@ -258,6 +273,7 @@ for (const { section, destination, query, filter } of [
     await page.goto(filtered)
     await expect(search).toHaveValue(query)
     await expect(count).toHaveText('1')
+    await leaveCategory(page, inCategory)
     await page.getByTestId(`catalogue-tab-${destination}`).click()
     await expect(page).toHaveURL(`/hub/${destination}/`)
     await expect(search).toHaveValue('')
