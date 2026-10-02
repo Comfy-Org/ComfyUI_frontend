@@ -506,6 +506,15 @@ describe('error mapping', () => {
     expect(error).toMatchObject({ cause })
   })
 
+  it('preserves transport failure identity for an idempotent read', async () => {
+    const cause = new TypeError('Failed to fetch')
+    const response = jsonResponse(200, [])
+    vi.spyOn(response, 'json').mockRejectedValueOnce(cause)
+    respond(response)
+
+    await expect(makeClient().listThreads()).rejects.toBe(cause)
+  })
+
   it('preserves user-initiated abort identity after response headers', async () => {
     const cause = new DOMException('The operation was aborted', 'AbortError')
     const response = jsonResponse(200, [])
