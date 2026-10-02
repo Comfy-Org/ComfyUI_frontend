@@ -163,9 +163,6 @@ describe('value control widget naming', () => {
     expect(control.name).toBe('Sampler control_after_generate')
   })
 
-  // `increment-wrap` is combo-only: `addValueControlWidgets` pushes it into
-  // the control's own `values` when the target is a combo, so it is a mode
-  // even though the schema enum does not list it.
   it.for(['randomize', 'increment-wrap'] as const)(
     'names the combo control canonically when the spec carries the %s mode',
     (mode) => {
