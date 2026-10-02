@@ -1,5 +1,5 @@
 /**
- * Packs the four publishable packages, installs the tarballs into a throwaway
+ * Packs the publishable packages, installs the tarballs into a throwaway
  * npm project alongside their declared peers, and proves the published shape
  * from there: plain node imports every built entry and constructs a session
  * client, and tsc under nodenext resolves a type and a value from each entry
@@ -64,7 +64,8 @@ const PUBLISHED_PACKAGES = [
   'account-core',
   'account-ui',
   'billing-contract',
-  'ingest-types'
+  'ingest-types',
+  'oxlint-config'
 ]
 
 function readWorkspaceManifest(dir: string): WorkspaceManifest {
@@ -127,7 +128,9 @@ function packOrFail(dir: string, destination: string): PackedPublishable {
 }
 
 const NODE_CONSUMER_SOURCE = `
-import { existsSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
+import { existsSync, writeFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createSessionClient } from '@comfyorg/account-core/session'
 import { createTestIdentity } from '@comfyorg/account-core/testing'
@@ -177,6 +180,32 @@ if (typeof zExchangeTokenResponse.parse !== 'function') {
 }
 console.log('@comfyorg/ingest-types/zod: imported under node')
 
+const oxlintCli = join(
+  dirname(fileURLToPath(import.meta.resolve('oxlint/package.json'))),
+  'bin/oxlint'
+)
+const importsConfig = fileURLToPath(
+  import.meta.resolve('@comfyorg/oxlint-config/imports.json')
+)
+writeFileSync('.oxlintrc.json', JSON.stringify({ extends: [importsConfig] }))
+for (const [source, expected] of [
+  ['import { ref, type Ref } from "vue"; export const value: Ref<string> = ref("")', 1],
+  ['import { ref } from "vue"; import type { Ref } from "vue"; export const value: Ref<string> = ref("")', 0]
+]) {
+  writeFileSync('importsProbe.ts', source)
+  const result = spawnSync(
+    process.execPath,
+    [oxlintCli, '--config', '.oxlintrc.json', '--format=json', 'importsProbe.ts'],
+    { encoding: 'utf8' }
+  )
+  if (result.error) throw result.error
+  const hasRule = result.stdout.includes('import(consistent-type-specifier-style)')
+  if (result.status !== expected || hasRule !== (expected === 1)) {
+    throw new Error('Packed Oxlint preset did not enforce separate type imports: ' + result.stdout + result.stderr)
+  }
+}
+console.log('@comfyorg/oxlint-config: packed JSON enforced import policy')
+
 for (const name of PACKAGES) {
   const { default: manifest } = await import(\`\${name}/package.json\`, {
     with: { type: 'json' }
@@ -202,6 +231,10 @@ for (const name of PACKAGES) {
 `
 
 const TYPED_CONSUMER_SOURCE = `
+import sharedImports from '@comfyorg/oxlint-config/imports'
+import sharedImportsJson from '@comfyorg/oxlint-config/imports.json' with { type: 'json' }
+void sharedImports
+void sharedImportsJson
 import type { OperationHandle } from '@comfyorg/account-core/boundedOperation'
 import { createBoundedOperation } from '@comfyorg/account-core/boundedOperation'
 import type { AccountUser, SessionSnapshot } from '@comfyorg/account-core/session'
@@ -464,6 +497,7 @@ function main(): void {
         '--moduleResolution',
         'nodenext',
         '--strict',
+        '--resolveJsonModule',
         'consumer.ts'
       ],
       { cwd: consumerDir, stdio: 'inherit' }
