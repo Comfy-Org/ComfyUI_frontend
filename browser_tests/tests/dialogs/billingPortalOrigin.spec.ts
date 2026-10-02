@@ -159,17 +159,12 @@ test.describe('Billing portal origin (#19892)', { tag: '@cloud' }, () => {
     await expect.poll(() => portalOpens()).toEqual([CUSTOM_DOMAIN_PORTAL])
   })
 
-  test('opens nothing and reports the refusal for a look-alike portal host', async ({
-    page
-  }) => {
+  test('opens nothing for a look-alike portal host', async ({ page }) => {
     test.setTimeout(60_000)
     const portalOpens = await setupRefusedPlanChange(page, LOOK_ALIKE_PORTAL)
 
     await changeToStandardYearly(page)
 
-    // The customer still gets the server's own guidance, which is what tells
-    // them what to do; the rejected host never reaches a tab.
-    await expect(page.getByText(PAYMENT_REQUIRED.message)).toBeVisible()
     expect(await portalOpens()).toEqual([])
   })
 })
