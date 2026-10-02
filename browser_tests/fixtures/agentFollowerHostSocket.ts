@@ -160,12 +160,7 @@ export class AgentFollowerHostSocket {
     this.socket.send(JSON.stringify(frame))
   }
 
-  /**
-   * Emits a BINARY ComfyUI frame on the shared `/ws` — the preview image,
-   * progress-text and preview-3d payloads `api.ts` decodes from an
-   * `ArrayBuffer` rather than JSON. The caller owns the frame's layout,
-   * since each `eventType` has its own.
-   */
+  /** Emits a binary ComfyUI execution frame on the shared `/ws`. */
   sendExecutionBinary(frame: Buffer): void {
     if (!this.socket) throw new Error('the app has not opened /ws yet')
     this.socket.send(frame)
