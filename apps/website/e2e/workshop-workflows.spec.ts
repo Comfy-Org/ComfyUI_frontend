@@ -629,7 +629,7 @@ test('the examples belong to the playground, not to Details or API', async ({
   await expect(examples).toBeVisible()
 })
 
-test('a hovered workflow card spends its tag line only on a name that is cut off', async ({
+test('a workflow card spends the tag line on its name', async ({
   page,
   context
 }) => {
@@ -640,43 +640,57 @@ test('a hovered workflow card spends its tag line only on a name that is cut off
     '[data-testid="workshop-model-card"][data-kind="workflow"]'
   )
   await expect(cards.first()).toBeVisible()
-  // Only a name the single line already cuts off can show the hover doing
-  // anything, so the test picks one the catalogue is clipping — and one it is
-  // not, which must keep its tag.
-  const [clipped, whole] = await cards.evaluateAll((all) => {
-    const clips = (card: Element) => {
-      const name = card.querySelector('[data-testid="model-card-name"]')
-      return !!name && name.scrollHeight > name.clientHeight
-    }
-    return [all.findIndex(clips), all.findIndex((card) => !clips(card))]
-  })
-  expect(clipped, 'no workflow name is long enough to clip').toBeGreaterThan(-1)
-  expect(whole, 'every workflow name clips').toBeGreaterThan(-1)
-
-  const fits = cards.nth(whole)
-  await fits.hover()
-  await expect(fits.getByTestId('model-card-task')).toBeVisible()
-
-  const card = cards.nth(clipped)
-  const name = card.getByTestId('model-card-name')
-  const linesOfName = () =>
-    name.evaluate((element) =>
+  const names = cards.getByTestId('model-card-name')
+  // Clipping is what the two rows are there to prevent, and the text the card
+  // carries cannot see it: a clamped name still reads whole out of the DOM.
+  const clipped = await names.evaluateAll(
+    (all) => all.filter((name) => name.scrollHeight > name.clientHeight).length
+  )
+  expect(clipped).toBe(0)
+  // The rows are reserved whether the name fills them or not, so the cards
+  // line up across the grid.
+  const rows = await names.evaluateAll((all) =>
+    all.map((name) =>
       Math.round(
-        element.clientHeight /
-          Number.parseFloat(getComputedStyle(element).lineHeight)
+        name.clientHeight / Number.parseFloat(getComputedStyle(name).lineHeight)
       )
     )
-
-  await expect(card.getByTestId('model-card-task')).toBeVisible()
-  expect(await linesOfName()).toBe(1)
-  const resting = await card.boundingBox()
-
-  await card.hover()
-
-  await expect(card.getByTestId('model-card-task')).toBeHidden()
-  await expect(async () => expect(await linesOfName()).toBe(2)).toPass()
-  expect((await card.boundingBox())?.height).toBeCloseTo(
-    resting?.height ?? 0,
-    0
   )
+  expect([...new Set(rows)]).toEqual([2])
+
+  // The heading above the row already names the kind, so the card does not
+  // repeat it under a name that needed the room.
+  await expect(cards.getByTestId('model-card-task')).toHaveCount(0)
+
+  // Searching takes the headings away, and with them the only other place the
+  // kind is written, so there every card carries its tag again.
+  await page.goto('/hub/workflows/?q=video')
+  await expect(cards.first()).toBeVisible()
+  const found = await cards.count()
+  expect(found).toBeGreaterThan(0)
+  await expect(cards.getByTestId('model-card-task')).toHaveCount(found)
+})
+
+test('every workflow card carries its whole name, not a shortened one', async ({
+  page,
+  context
+}) => {
+  await mockWorkflowVisibility(context, true)
+  await page.goto('/hub/workflows/')
+
+  const cards = page.locator(
+    '[data-testid="workshop-model-card"][data-kind="workflow"]'
+  )
+  await expect(cards.first()).toBeVisible()
+  // The card drops a trailing task from a product name. A workflow is named
+  // with a sentence, so the name it shows must be the name it has.
+  const names = cards.getByTestId('model-card-name')
+  const shown = await names.allTextContents()
+  const whole = await Promise.all(
+    (await names.all()).map((name) => name.getAttribute('title'))
+  )
+  const shortened = shown.flatMap((text, index) =>
+    text.trim() === whole[index] ? [] : [`${whole[index]} -> ${text.trim()}`]
+  )
+  expect(shortened).toEqual([])
 })

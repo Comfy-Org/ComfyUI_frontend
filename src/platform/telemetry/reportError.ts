@@ -4,17 +4,11 @@ import { datadogRum } from '@datadog/browser-rum'
 import { captureException, isEnabled as isSentryEnabled } from '@sentry/vue'
 
 import type { ComfyDesktop2TelemetryProperties } from '@comfyorg/comfyui-desktop-bridge-types'
+import { REPORTED_ERROR_PREFIX } from '@comfyorg/shared-frontend-utils/telemetry'
 
 import { isCloud } from '@/platform/distribution/types'
 import { isHostTelemetryEnabled } from '@/platform/telemetry/hostTelemetryEnabled'
 import { toError } from '@/utils/errorUtil'
-
-/**
- * Marks the console line `reportError()` writes for every report. RUM collects
- * `console.error` on its own, so `datadogRumBeforeSend` matches on this to drop
- * the untagged console copy of a failure it already received tagged.
- */
-export const REPORTED_ERROR_PREFIX = '[Reported error]: '
 
 export type Surface =
   | 'agent'

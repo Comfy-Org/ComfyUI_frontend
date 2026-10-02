@@ -95,6 +95,10 @@ export interface WebSessionRequests {
   readonly workspaceToken: (
     scope: WebSessionRequestScope
   ) => Promise<SessionTokenResult>
+  /** Mints past the cached token, for a token the server just refused; never rejects. */
+  readonly remintWorkspaceToken: (
+    scope: WebSessionRequestScope
+  ) => Promise<SessionTokenResult>
   /** Bearer headers for a service other than ingest; mints on first use. Rejects with WebSessionTokenError. */
   readonly authorizeResource: (
     scope: WebSessionRequestScope

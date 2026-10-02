@@ -728,8 +728,23 @@ describe('buildSummaryLedger server-reported fields', () => {
     name: string
     discount: Partial<Discount>
     duration: Plan['duration']
+    transition?: SubscriptionPreview['transition_type']
     subline?: string
   }>([
+    {
+      name: 'a once coupon on a monthly plan change',
+      discount: { duration: 'once' },
+      duration: 'MONTHLY',
+      transition: 'upgrade',
+      subline: 'This payment only'
+    },
+    {
+      name: 'a once coupon on a yearly plan change',
+      discount: { duration: 'once' },
+      duration: 'ANNUAL',
+      transition: 'duration_change',
+      subline: 'First year'
+    },
     {
       name: 'a once coupon on a yearly plan',
       discount: { duration: 'once' },
@@ -771,9 +786,9 @@ describe('buildSummaryLedger server-reported fields', () => {
     }
   ])(
     'bounds a discount row by its term: $name',
-    ({ discount, duration, subline }) => {
+    ({ discount, duration, transition = 'new_subscription', subline }) => {
       const { discounts } = ledgerOf({
-        transition_type: 'new_subscription',
+        transition_type: transition,
         amount_due_cents: 604_800,
         cost_today_cents: 756_000,
         new_plan: planOf('TEAM', duration, 756_000),
@@ -837,23 +852,55 @@ describe('buildSummaryLedger server-reported fields', () => {
     }
   )
 
-  it('keeps the plain rate when the list price is the price', () => {
+  it.for<{
+    name: string
+    extra: Partial<Plan>
+    rate: Pick<SummaryLedger['items'][number], 'comparedRate' | 'sublines'>
+  }>([
+    {
+      name: 'reads a yearly rate in the monthly figures the server sent',
+      extra: {
+        list_price_cents: 840_000,
+        monthly_price_cents: 63_000,
+        monthly_list_price_cents: 70_000
+      },
+      rate: {
+        comparedRate: {
+          keypath: 'checkout.fullPage.summary.item.comparedYearlyMonthly',
+          amount: '$630',
+          listAmount: '$700'
+        },
+        sublines: []
+      }
+    },
+    {
+      name: 'states a yearly monthly rate plainly when no list price came with it',
+      extra: { monthly_price_cents: 63_000 },
+      rate: { sublines: ['$630 /mo × 12 months, billed yearly'] }
+    },
+    {
+      name: 'strikes through any list price the server sent, even one at the price',
+      extra: { list_price_cents: 756_000 },
+      rate: {
+        comparedRate: {
+          keypath: 'checkout.fullPage.summary.item.comparedYearly',
+          amount: '$7,560',
+          listAmount: '$7,560'
+        },
+        sublines: []
+      }
+    }
+  ])('$name', ({ extra, rate }) => {
     const [item] = ledgerOf({
       transition_type: 'new_subscription',
       amount_due_cents: 756_000,
       cost_today_cents: 756_000,
       credits_today_cents: 0,
       credits_next_period_cents: 0,
-      new_plan: planOf('TEAM', 'ANNUAL', 756_000, {
-        list_price_cents: 756_000
-      })
+      new_plan: planOf('TEAM', 'ANNUAL', 756_000, extra)
     }).items
 
-    expect(item).toEqual({
-      label: 'Team Plan',
-      amount: '$7,560.00',
-      sublines: ['Billed yearly']
-    })
+    expect(item).toEqual({ label: 'Team Plan', amount: '$7,560.00', ...rate })
   })
 
   const PRORATED_OVER_BALANCE: Partial<SubscriptionPreview> = {

@@ -20,6 +20,7 @@ import { i18n } from '@/i18n'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { setupInlinePromptEditorDom } from './components/agent/composer/inlinePromptEditorTestSetup'
+import { useFreeUsePlacement } from './experiments/freeUsePlacement'
 
 setupInlinePromptEditorDom()
 
@@ -61,11 +62,14 @@ import {
 } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import {
-  createMockCanvasRenderingContext2D,
   createMockLoadedWorkflow,
   createMockChangeTracker,
   createMockLGraphNode
 } from '@/utils/__tests__/litegraphTestUtils'
+import {
+  createMockCanvasRenderingContext2D,
+  createTestDragAndScale
+} from '@/utils/__tests__/canvasTestUtils'
 
 const getServerFeature = vi.hoisted(() =>
   vi.fn((_name: string, defaultValue?: unknown) => defaultValue)
@@ -87,6 +91,7 @@ vi.mock<unknown>(import('@/composables/canvas/useFocusNode'), () => ({
 }))
 
 vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('./experiments/freeUsePlacement'), { spy: true })
 
 const ws = vi.hoisted(() => {
   type Listener = (event: { detail?: unknown }) => void
@@ -598,6 +603,25 @@ describe('AgentPanelRoot first-use experience', () => {
 
     expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('forwards free-use notice telemetry with its rendered placement', async () => {
+    vi.mocked(useFreeUsePlacement).mockReturnValueOnce(
+      fromPartial({ variant: ref('top-banner') })
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const notice = await screen.findByRole('note', {
+      name: 'Free use notice'
+    })
+    await userEvent.click(
+      within(notice).getByRole('button', { name: 'Dismiss' })
+    )
+
+    expect(useTelemetry()!.trackAgentFreeUseNotice).toHaveBeenCalledWith({
+      action: 'dismissed',
+      placement: 'top-banner'
+    })
   })
 })
 
@@ -2136,7 +2160,8 @@ function setupNodeSelectionCanvas() {
     deselect,
     deselectAll,
     animateToBounds: vi.fn(),
-    canvas: canvasElement
+    canvas: canvasElement,
+    ds: createTestDragAndScale(900, 700)
   }
   appMock.canvas = canvas
   canvasStore.canvas = fromPartial(canvas)

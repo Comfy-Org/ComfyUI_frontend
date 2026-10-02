@@ -5,7 +5,8 @@ import type {
   BillingPlansResponse,
   BillingStatusResponse,
   PreviewSubscribeResponse,
-  SavedPaymentMethod
+  SavedPaymentMethod,
+  TopupQuoteResponse
 } from '@comfyorg/ingest-types'
 
 import { E2E_USER } from './env'
@@ -18,6 +19,7 @@ export interface CloudScenario {
   plans: BillingPlansResponse
   paymentMethods: SavedPaymentMethod[]
   preview: PreviewSubscribeResponse
+  topupQuote: TopupQuoteResponse
   operations: Record<string, BillingOpStatusResponse>
   /** `billing_web_checkout_ui`, answered only to an authenticated `/features` read, as the real Cloud does. */
   checkoutUi?: string
@@ -201,6 +203,11 @@ export function defaultScenario(): CloudScenario {
         }
       }
     },
+    topupQuote: {
+      amount_cents: 2500,
+      credits: 5275,
+      expires_at: '2027-09-30T12:00:00.000Z'
+    },
     operations: {}
   }
 }
@@ -224,7 +231,7 @@ const CREATOR_YEARLY = {
  * The default Creator Monthly subscriber switching to Creator Yearly, quoted
  * as the real Cloud quotes it: the reset to yearly charges in full today,
  * carries no proration instant, and reports the yearly renewal date, the
- * plan's list price and the pre-discount subtotal.
+ * plan's list price, its monthly figures and the pre-discount subtotal.
  */
 export function switchToYearly(scenario: CloudScenario): void {
   const monthly = scenario.plans.plans[0]
@@ -260,6 +267,8 @@ export function switchToYearly(scenario: CloudScenario): void {
       duration: CREATOR_YEARLY.duration,
       price_cents: CREATOR_YEARLY.price_cents,
       list_price_cents: 33_600,
+      monthly_price_cents: 2240,
+      monthly_list_price_cents: 2800,
       credits_cents: CREATOR_YEARLY.credits_cents,
       seat_summary: CREATOR_YEARLY.seat_summary
     }
