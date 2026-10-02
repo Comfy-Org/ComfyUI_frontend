@@ -9,7 +9,11 @@ import { useTelemetry } from '@/platform/telemetry'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 
-import { useFreeUsePlacement } from './freeUsePlacement'
+import {
+  FREE_USE_PLACEMENT_FLAG,
+  useFreeUsePlacement
+} from './freeUsePlacement'
+import type { FreeUseVariant } from './freeUsePlacement'
 
 vi.mock(import('@/platform/remoteConfig/remoteConfig'))
 vi.mock(import('@/platform/telemetry'))
@@ -40,10 +44,8 @@ describe('useFreeUsePlacement', () => {
   })
 
   it.for([undefined, 'unknown'])('keeps control for %s', async (value) => {
-    const flag =
-      'agent-free-use-message-placement' satisfies keyof typeof remoteConfig.value
     remoteConfig.value = {
-      [flag]: value as (typeof remoteConfig.value)[typeof flag]
+      [FREE_USE_PLACEMENT_FLAG]: value as FreeUseVariant | undefined
     }
     authenticatedRemoteConfigState.value = 'authenticated'
     const { variant } = useFreeUsePlacement()
