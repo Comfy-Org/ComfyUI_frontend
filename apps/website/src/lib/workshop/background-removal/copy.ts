@@ -34,11 +34,14 @@ const copy = {
   'cutout.background.lilac': { en: 'Lilac', 'zh-CN': '淡紫色' },
   'cutout.format': { en: 'Format', 'zh-CN': '格式' },
   'cutout.format.png': { en: 'PNG', 'zh-CN': 'PNG' },
+  'cutout.format.png.detail': { en: 'Lossless', 'zh-CN': '无损' },
   'cutout.format.webp': { en: 'WebP', 'zh-CN': 'WebP' },
+  'cutout.format.webp.detail': { en: 'Smaller file', 'zh-CN': '文件更小' },
   'cutout.advanced': { en: 'Advanced', 'zh-CN': '高级' },
   'cutout.advanced.value': { en: 'Edge {n}%', 'zh-CN': '边缘 {n}%' },
   'cutout.edge': { en: 'Edge softness', 'zh-CN': '边缘柔和度' },
   'cutout.seed': { en: 'Seed', 'zh-CN': '种子' },
+  'cutout.seed.shuffle': { en: 'New seed', 'zh-CN': '换一个种子' },
   'cutout.summary': {
     en: '{background} · {format}',
     'zh-CN': '{background} · {format}'

@@ -53,7 +53,10 @@ describe('BackgroundRemovalStudio', () => {
 
     await user.click(tile('Lilac'))
     await user.click(
-      within(section('Format')).getByRole('radio', { name: 'WebP' })
+      within(section('Format')).getByRole('button', { name: 'Format: PNG' })
+    )
+    await user.click(
+      screen.getByRole('menuitemradio', { name: 'WebP Smaller file' })
     )
     expect(
       within(panel()).getByRole('button', { name: /^Background\s*Lilac/ })
@@ -116,9 +119,16 @@ describe('BackgroundRemovalStudio', () => {
     ).toBeVisible()
     await user.click(undo())
     expect(edge).toHaveValue('20')
-    expect(
-      within(section('Advanced')).getByRole('spinbutton', { name: 'Seed' })
-    ).toHaveValue(42)
+    const seed = within(section('Advanced')).getByRole('spinbutton', {
+      name: 'Seed'
+    })
+    expect(seed).toHaveValue(42)
+
+    vi.spyOn(Math, 'random').mockReturnValue(0.5)
+    await user.click(
+      within(section('Advanced')).getByRole('button', { name: 'New seed' })
+    )
+    expect(seed).toHaveValue(500_000_000)
   })
 
   it('shows the hint on the photo until a setting is touched', async () => {

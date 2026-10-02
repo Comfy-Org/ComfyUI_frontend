@@ -2,7 +2,7 @@
 import type { BackgroundRemoval } from '../../../composables/useBackgroundRemoval'
 import type { Locale } from '../../../i18n/translations'
 import { brc } from '../../../lib/workshop/background-removal/copy'
-import EditorNumberField from '../app-editor/EditorNumberField.vue'
+import EditorSeedField from '../app-editor/EditorSeedField.vue'
 import EditorSlider from '../app-editor/EditorSlider.vue'
 
 const { cutout, locale = 'en' } = defineProps<{
@@ -22,9 +22,10 @@ const { setup } = cutout
       (edgeSoftness) => cutout.update({ edgeSoftness }, 'edge')
     "
   />
-  <EditorNumberField
+  <EditorSeedField
     :model-value="setup.seed"
     :label="brc('cutout.seed', locale)"
+    :shuffle-label="brc('cutout.seed.shuffle', locale)"
     @update:model-value="(seed) => cutout.update({ seed }, 'seed')"
   />
 </template>

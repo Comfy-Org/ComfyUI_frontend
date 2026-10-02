@@ -46,7 +46,8 @@ test('removes the background of the example from the floating panel', async ({
     name: 'Background Removal settings'
   })
   await panel.getByRole('radio', { name: 'Lilac' }).click()
-  await panel.getByRole('radio', { name: 'WebP' }).click()
+  await panel.getByRole('button', { name: 'Format: PNG' }).click()
+  await page.getByRole('menuitemradio', { name: /^WebP/ }).click()
   await expect(app.getByRole('button', { name: 'Undo' })).toBeEnabled()
 
   await panel.getByTestId('background-removal-run').click()
@@ -80,10 +81,12 @@ test('removes the background from the bottom composer', async ({
     .getByRole('dialog', { name: 'Background' })
     .getByRole('radio', { name: 'White' })
     .click()
+  await app.getByRole('button', { name: 'Format: PNG' }).click()
+  await page.getByRole('menuitemradio', { name: /^WebP/ }).click()
   await app.getByTestId('background-removal-run').click()
   await expect(app.getByRole('link', { name: 'Download' })).toHaveAttribute(
     'download',
-    'potted-plant-cutout.png'
+    'potted-plant-cutout.webp'
   )
 })
 
