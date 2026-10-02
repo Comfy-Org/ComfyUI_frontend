@@ -4486,7 +4486,7 @@ describe('AgentPanelRoot a11y id guard', () => {
   // class) reached main unnoticed because the fast suite never asserted the id
   // count. Assert the document-level count, not a getBy* query, so a second
   // copy of the id fails loudly here instead of only in the Playwright suite
-  // (agentPanelLifecycle.spec.ts, still test.fixme pending FE #16919).
+  // (agentPanelLifecycle.spec.ts, re-enabled in #17132).
   it('renders exactly one #agent-panel-title on the success path', async () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
