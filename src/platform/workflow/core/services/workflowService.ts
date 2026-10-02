@@ -16,6 +16,11 @@ import {
   getLegacyWorkflowId
 } from '@/platform/workflow/core/utils/workflowId'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
+import type { DocumentTransition } from '@/platform/workflow/core/stores/documentLifecycleStore'
+import {
+  toDocumentUid,
+  useDocumentLifecycleStore
+} from '@/platform/workflow/core/stores/documentLifecycleStore'
 import {
   ComfyWorkflow,
   useWorkflowStore
@@ -43,6 +48,7 @@ import {
   appendWorkflowJsonExt,
   generateUUID
 } from '@/utils/formatUtil'
+import { toRootGraphId } from '@/types/graphScopeId'
 import type { AppMode } from '@/utils/appMode'
 import type { UUID } from '@/utils/uuid'
 import { ensureNonZeroUuid, zeroUuid } from '@/utils/uuid'
@@ -653,6 +659,54 @@ export const useWorkflowService = () => {
   }
 
   /**
+   * The document uid a graph load will land on when it reuses the currently
+   * active document, or `null` when the load is replacing it.
+   *
+   * This mirrors `activateLoadedWorkflow`'s reuse rule, which is why it lives
+   * beside it: a load that will create a fresh temporary workflow must retract
+   * the outgoing binding before the shared graph is cleared, and a load that
+   * stays on the same document must not (undo/redo and same-document reloads
+   * run this same path — ADR-GRAPH-DOCUMENT-0026 D3, "graph (re)loads are not
+   * document transitions").
+   *
+   * `incomingId` is the identity carried by the data being loaded, when the
+   * caller already has it. Without it, a same-path load of *different* content
+   * resolves conservatively to the active document and is retracted late, by
+   * the publish that names a different uid.
+   */
+  const resolveRequestedDocumentUid = (
+    requestedDocument: string | ComfyWorkflow | null,
+    incomingId?: string
+  ) => {
+    if (requestedDocument instanceof ComfyWorkflow) {
+      return toDocumentUid(requestedDocument.instanceId)
+    }
+    if (typeof requestedDocument !== 'string' || requestedDocument === '') {
+      return null
+    }
+    // Use workspaceStore here as it is patched in unit tests.
+    const workflowStore = useWorkspaceStore().workflow
+    const activeWorkflow = workflowStore.activeWorkflow
+    const fullPath = ComfyWorkflow.basePath + appendJsonExt(requestedDocument)
+    if (!activeWorkflow || activeWorkflow.path !== fullPath) return null
+    if (
+      incomingId !== undefined &&
+      !activeWorkflow.isTemporary &&
+      // Through `activeStateFallbackId` so the read goes via the nullable base
+      // contract: `LoadedComfyWorkflow.activeState` is declared non-null by an
+      // unchecked cast over a getter that still returns null (SEN-5).
+      !areWorkflowIdsEquivalent(
+        activeStateFallbackId(activeWorkflow),
+        incomingId,
+        activeWorkflow.legacyId
+      )
+    ) {
+      return null
+    }
+    return toDocumentUid(activeWorkflow.instanceId)
+  }
+
+  /**
    * This method is called before loading a new graph.
    * There are 3 major functions that loads a new graph to the graph editor:
    * 1. loadGraphData
@@ -660,9 +714,26 @@ export const useWorkflowService = () => {
    * 3. importA1111
    *
    * This function is used to save the current workflow states before loading
-   * a new graph.
+   * a new graph, and to open the document-lifecycle transition the matching
+   * `afterLoadNewGraph` closes. It returns that transition so the caller can
+   * hand it back, which is what keeps an interleaved load from publishing or
+   * retracting on a newer load's behalf.
+   *
+   * `requestedDocument` is the workflow the load is for, in the same shape
+   * `afterLoadNewGraph` takes it. The two import paths pass nothing: they
+   * always replace the live graph, so they always fail closed.
    */
-  const beforeLoadNewGraph = (suppressWorkflowReset = true) => {
+  const beforeLoadNewGraph = (
+    suppressWorkflowReset = true,
+    requestedDocument: string | ComfyWorkflow | null = null,
+    incomingId?: string
+  ): DocumentTransition => {
+    // Retract first: everything below runs while the outgoing graph is still on
+    // the canvas, but `app.clean()` is next and the agent must not treat the
+    // cleared graph as its bound document.
+    const transition = useDocumentLifecycleStore().beginTransition(
+      resolveRequestedDocumentUid(requestedDocument, incomingId)
+    )
     // Use workspaceStore here as it is patched in unit tests.
     const workflowStore = useWorkspaceStore().workflow
     const activeWorkflow = workflowStore.activeWorkflow
@@ -691,6 +762,7 @@ export const useWorkflowService = () => {
       // Save subgraph viewport before the canvas gets overwritten
       useSubgraphNavigationStore().saveCurrentViewport(suppressWorkflowReset)
     }
+    return transition
   }
 
   /**
@@ -703,13 +775,28 @@ export const useWorkflowService = () => {
    *
    * @param value The value to set as the active workflow.
    * @param workflowData The initial workflow data loaded to the graph editor.
+   * @param transition The token `beforeLoadNewGraph` returned for this load.
    */
   const afterLoadNewGraph = async (
     value: string | ComfyWorkflow | null,
     workflowData: ComfyWorkflowJSON,
-    shareId?: string
+    shareId?: string,
+    transition?: DocumentTransition
   ) => {
     await activateLoadedWorkflow(value, workflowData, shareId)
+    // Publish the workflow this load actually selected, against the root graph
+    // it is now bound to: `activateLoadedWorkflow` may have adopted a minted id
+    // (`adoptRootGraphId`) or reused a different workflow than `value` named.
+    const activated = useWorkspaceStore().workflow.activeWorkflow
+    if (activated && app.isGraphReady) {
+      useDocumentLifecycleStore().activate(
+        {
+          uid: toDocumentUid(activated.instanceId),
+          rootGraphId: toRootGraphId(app.rootGraph.id)
+        },
+        transition
+      )
+    }
     useNodeOutputStore().restorePreviewsForWorkflow(
       useWorkspaceStore().workflow.activeWorkflow?.path
     )
