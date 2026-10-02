@@ -106,8 +106,6 @@ describe('modelRequirements', () => {
     })
 
     it('returns nothing when properties.models is not an array', () => {
-      // Workflow JSON is user supplied. A string has a truthy length, so it
-      // passes a length-only guard and reaches .filter, which throws.
       const node = {
         type: 'SomeNode',
         widgets_values: ['model_a.safetensors'],

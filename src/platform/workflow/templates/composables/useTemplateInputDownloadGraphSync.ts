@@ -35,9 +35,7 @@ function createTemplateInputDownloadGraphSync({
       await refreshGraphBindings(matched)
     } catch (error) {
       reportError(error)
-      // The rebind failed, and its caller has already released these from the
-      // download store. Holding them here would keep matching them on every
-      // later sync without anything able to retry, so drop them.
+      // Nothing can retry these, and the caller has already released them.
       for (const filename of matched) completedInputNames.delete(filename)
       return
     }
@@ -64,9 +62,8 @@ function createTemplateInputDownloadGraphSync({
       return inFlight
     }
 
-    // Reruns are awaited as part of this promise. Scheduling them separately
-    // let the promise resolve before the graph had been reconciled, so a
-    // caller could report a template as open against stale bindings.
+    // Reruns must stay inside this awaited block: a caller treats resolution
+    // as "the graph matches the downloads".
     const trackedRun = (async () => {
       await flushCurrentGraph()
       while (rerunRequested && !isDisposed()) {

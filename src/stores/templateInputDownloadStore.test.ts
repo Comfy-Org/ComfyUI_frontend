@@ -100,8 +100,6 @@ describe('useTemplateInputDownloadStore', () => {
     store.completeGraphSync(['subject.png'])
     expect(store.downloads).toEqual([])
 
-    // A duplicate completion must not put the row back into a blocking state
-    // that nothing would clear a second time.
     store.updateProgress(progress('completed', 1))
 
     expect(store.downloads).toEqual([])

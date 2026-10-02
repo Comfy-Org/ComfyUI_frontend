@@ -45,14 +45,12 @@ describe('template input download graph sync', () => {
     })
     await vi.waitFor(() => expect(refreshGraphBindings).toHaveBeenCalledOnce())
 
-    // A second input lands while the first rebind is still running.
     sync.handleProgress(completed('b.png'))
     void sync.syncCurrentGraph()
     first.resolve()
     await Promise.resolve()
     await Promise.resolve()
 
-    // The returned promise must not settle before the rerun has reconciled.
     expect(settled).toBe(false)
     await vi.waitFor(() =>
       expect(refreshGraphBindings).toHaveBeenCalledTimes(2)
@@ -84,7 +82,6 @@ describe('template input download graph sync', () => {
     expect(reportError).toHaveBeenCalledOnce()
     expect(refreshGraphBindings).toHaveBeenCalledOnce()
 
-    // The name must not be retried forever with nothing able to clear it.
     await sync.syncCurrentGraph()
     expect(refreshGraphBindings).toHaveBeenCalledOnce()
     sync.dispose()

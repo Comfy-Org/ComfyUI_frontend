@@ -527,7 +527,6 @@ describe('useTemplateWorkflows', () => {
   it('does not open a template when the endpoint reports an HTTP failure', async () => {
     const { loader } = mountTemplateWorkflows()
     mockWorkflowTemplatesStore.isLoaded = true
-    // A loadable body behind a failing status: only the status check can reject it
     vi.mocked(fetch).mockResolvedValueOnce(
       new Response(JSON.stringify(loadableWorkflow), { status: 404 })
     )
@@ -630,8 +629,6 @@ describe('useTemplateWorkflows', () => {
   it('rejects a legacy workflow whose nodes cannot be instantiated', async () => {
     const { loader } = mountTemplateWorkflows()
     mockWorkflowTemplatesStore.isLoaded = true
-    // The old pass-through forwarded this to loadGraphData; the legacy
-    // contract now requires the id and type that LGraph.configure reads.
     vi.mocked(fetch).mockResolvedValueOnce(
       Response.json({ version: 0.4, nodes: [{}] })
     )
