@@ -24,8 +24,8 @@ import {
   createSessionTokenMint,
   SessionTokenError
 } from '@comfyorg/account-core/sessionTokenMint'
-import { readWebSession } from '@comfyorg/account-core/webSession'
 import { createWebSessionIdentity } from '@comfyorg/account-core/webSessionIdentity'
+import { webSessionTelemetryHooks } from '@comfyorg/account-core/telemetry'
 import {
   createWebCrossTabRefreshPort,
   createWebVisibilityPort
@@ -47,6 +47,7 @@ import {
   provideWebSessionRequests,
   WebSessionTokenError
 } from '@/platform/auth/session/webSessionFetch'
+import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -150,6 +151,9 @@ function createCloudIdentity(): WebSessionIdentity {
     },
     origin: window.location.origin,
     onAccountChanged: resetForAccountChange,
+    ...webSessionTelemetryHooks((event) =>
+      useTelemetry()?.trackWebSessionEvent(event)
+    ),
     ...(visibility && {
       heartbeat: { visibility, ...(crossTab && { crossTab }) }
     })
@@ -168,7 +172,6 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
   let decidedForRequests: Promise<void> = Promise.resolve()
   let reconnectTimer: ReturnType<typeof setTimeout> | undefined
   let pendingSignIn: InteractiveSignIn | null = null
-  let reread: WebSession | null = null
   let releaseRequests = () => {}
   const state = shallowRef<WebSessionIdentityState>({ phase: 'idle' })
   const signedInUser = computed(() =>
@@ -244,7 +247,6 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     const session = createCloudIdentity()
     identity = session
     session.subscribe((next) => {
-      reread = null
       state.value = next
     })
     const mint = createSessionTokenMint({
@@ -319,8 +321,7 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
 
   function currentSession(): WebSession | undefined {
     const state = identity?.getState()
-    if (state?.phase !== 'signed_in') return undefined
-    return reread?.user.id === state.session.user.id ? reread : state.session
+    return state?.phase === 'signed_in' ? state.session : undefined
   }
 
   /** The epoch moves on every account change, so it pins the scope's user. */
@@ -370,15 +371,13 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     }
   }
 
-  async function rereadFor(
+  async function refreshFor(
     scope: WebSessionRequestScope
   ): Promise<WebSessionRequestScope | undefined> {
-    const result = await readWebSession(sessionOptions(), {
-      expectedUserId: scope.session.user.id
-    })
-    if (result.status !== 'ok' || identity?.getEpoch() !== scope.epoch) return
-    reread = result.session
-    return { ...scope, session: result.session }
+    const next = await identity?.refresh(scope.session.user.id)
+    if (next?.phase !== 'signed_in' || next.session === scope.session) return
+    if (identity?.getEpoch() !== scope.epoch) return
+    return { ...scope, session: next.session }
   }
 
   function send(
@@ -389,7 +388,7 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
   ): Promise<Response> {
     return fetchOnWebSession(url, init, scope, {
       authorize,
-      reread: rereadFor,
+      refresh: refreshFor,
       workspaceDenied: (workspaceId) =>
         useWorkspaceAuthStore().dropDeniedWorkspace(workspaceId)
     })
