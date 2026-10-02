@@ -5842,6 +5842,52 @@
       }
     }
   },
+  "Flux3ImageNode": {
+    "description": "Génère une image avec FLUX 3 à partir d’une invite, ou modifie et combine jusqu’à 10 images de référence. Faites référence aux images dans l’invite sous les noms image 1, image 2, etc.",
+    "display_name": "Flux 3 Image",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "« auto » suit la première image de référence ou choisit un ratio à partir de l’invite."
+      },
+      "bounding_boxes": {
+        "name": "bounding_boxes",
+        "tooltip": "Zones facultatives de Create Bounding Boxes qui placent des objets ou du texte dans la sortie. Les positions sont relatives au canevas ; indiquez donc le format d’image de sortie."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "grounding": {
+        "name": "grounding",
+        "tooltip": "Permet au modèle d’effectuer des recherches Web et d’images sur l’invite avant de générer."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Images de référence facultatives, jusqu’à 10 au total, d’au moins 256x256 pixels chacune."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Ce qu’il faut générer ou la modification à effectuer. L’invite est interprétée et développée avant la génération."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Taille de sortie selon le format d’image sélectionné : 0.75K correspond à environ 0,6 mégapixel, 1K à 1 MP, 1.5K à 2,4 MP, 2K à 4,2 MP, 4K à 16,8 MP."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "Tolérance de modération ; 0 est le niveau le plus strict."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed permettant de déterminer si le nœud doit être réexécuté ; FLUX 3 choisit sa propre seed, les résultats réels sont donc non déterministes quelle que soit cette valeur."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Flux3ImageToVideoNode": {
     "description": "Anime de 1 à 10 images avec FLUX 3. Chaque image devient une image du clip : une image l’ouvre, deux font une morphose de la première à la seconde, et plus sont réparties dans le clip ou fixées à des moments choisis.",
     "display_name": "Flux 3 Image vers Vidéo",
@@ -7434,7 +7480,7 @@
     "inputs": {
       "aspect_ratio": {
         "name": "rapport d'aspect",
-        "tooltip": "Le rapport d'aspect de la vidéo générée."
+        "tooltip": "Format d’image de la vidéo de sortie. Ignoré lorsqu’une image d’entrée est fournie ; la vidéo suit le format d’image de celle-ci."
       },
       "control_after_generate": {
         "name": "contrôle après génération"
@@ -7453,11 +7499,11 @@
       },
       "prompt": {
         "name": "invite",
-        "tooltip": "Description textuelle de la vidéo souhaitée. Facultative pour grok-imagine-video-1.5 lorsqu’une image d’entrée est fournie."
+        "tooltip": "Description textuelle de la vidéo souhaitée. Facultatif pour les modèles grok-imagine-video-1.5 lorsqu’une image d’entrée est fournie."
       },
       "resolution": {
         "name": "résolution",
-        "tooltip": "La résolution de la vidéo de sortie. Le 1080p est uniquement disponible pour grok-imagine-video-1.5."
+        "tooltip": "Résolution de la vidéo de sortie. La résolution 1080p n’est pas disponible pour grok-imagine-video."
       },
       "seed": {
         "name": "graine",

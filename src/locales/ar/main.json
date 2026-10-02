@@ -67,6 +67,8 @@
     "feedbackCaption": "إرسال ملاحظات",
     "focusNode": "إظهار على اللوحة",
     "focusNodeLabel": "إظهار {node} على اللوحة",
+    "freeUseNotice": "المطالبات وتشغيلات سير العمل مجانية خلال المرحلة التجريبية.",
+    "freeUseNoticeLabel": "إشعار الاستخدام المجاني",
     "friend": "مرحبًا",
     "gotIt": "فهمت",
     "greeting": "مرحبًا {name}،",
@@ -114,6 +116,7 @@
       "upgradePlan": "ترقية الخطة"
     },
     "placeholder": "صف أفكارك، {'@'} للإشارة إلى سير العمل، اسحب أصل وسائط وملفات، أو\nاذكر العُقد",
+    "recoveredTurnFailed": "تعذّر على الوكيل إكمال هذه الاستجابة.",
     "reference": "مرجع",
     "remove": "إزالة",
     "removeNodeLabel": "إزالة مرجع {node}",

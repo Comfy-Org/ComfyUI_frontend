@@ -67,6 +67,8 @@
     "feedbackCaption": "Condividi feedback",
     "focusNode": "Mostra sul canvas",
     "focusNodeLabel": "Mostra {node} sul canvas",
+    "freeUseNotice": "I prompt e le esecuzioni dei workflow sono GRATUITI durante la BETA.",
+    "freeUseNoticeLabel": "Avviso di utilizzo gratuito",
     "friend": "amico",
     "gotIt": "Ho capito",
     "greeting": "Ciao {name},",
@@ -114,6 +116,7 @@
       "upgradePlan": "Aggiorna piano"
     },
     "placeholder": "Descrivi le idee, {'@'} per fare riferimento ai workflow, trascina risorse multimediali e file oppure\nmenziona nodi",
+    "recoveredTurnFailed": "L'agente non è riuscito a completare questa risposta.",
     "reference": "Riferimento",
     "remove": "Rimuovi",
     "removeNodeLabel": "Rimuovi il riferimento a {node}",

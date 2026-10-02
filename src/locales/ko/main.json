@@ -67,6 +67,8 @@
     "feedbackCaption": "피드백 공유",
     "focusNode": "캔버스에 표시",
     "focusNodeLabel": "캔버스에 {node} 표시",
+    "freeUseNotice": "BETA 기간 동안 프롬프트 및 워크플로 실행은 무료입니다.",
+    "freeUseNoticeLabel": "무료 사용 안내",
     "friend": "안녕하세요",
     "gotIt": "알겠습니다",
     "greeting": "안녕하세요, {name}님,",
@@ -114,6 +116,7 @@
       "upgradePlan": "요금제 업그레이드"
     },
     "placeholder": "아이디어를 설명하고, {'@'}로 워크플로를 참조하거나, 미디어 에셋과 파일을 끌어다 놓거나,\n노드를 언급하세요",
+    "recoveredTurnFailed": "에이전트가 이 응답을 완료하지 못했습니다.",
     "reference": "참조",
     "remove": "제거",
     "removeNodeLabel": "{node} 참조 제거",

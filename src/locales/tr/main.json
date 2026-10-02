@@ -67,6 +67,8 @@
     "feedbackCaption": "Geri bildirim paylaş",
     "focusNode": "Tuvalde göster",
     "focusNodeLabel": "{node} öğesini tuvalde göster",
+    "freeUseNotice": "İstemler ve iş akışı çalıştırmaları BETA süresince ÜCRETSİZDİR.",
+    "freeUseNoticeLabel": "Ücretsiz kullanım bildirimi",
     "friend": "orada",
     "gotIt": "Anladım",
     "greeting": "Merhaba {name},",
@@ -114,6 +116,7 @@
       "upgradePlan": "Planı yükselt"
     },
     "placeholder": "Fikirlerinizi açıklayın, iş akışlarına başvurmak için {'@'} yazın, medya varlıklarını ve dosyaları sürükleyip bırakın veya\ndüğümlerden bahsedin",
+    "recoveredTurnFailed": "Aracı bu yanıtı tamamlayamadı.",
     "reference": "Referans",
     "remove": "Kaldır",
     "removeNodeLabel": "{node} referansını kaldır",

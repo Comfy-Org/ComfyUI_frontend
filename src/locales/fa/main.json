@@ -67,6 +67,8 @@
     "feedbackCaption": "ارسال بازخورد",
     "focusNode": "نمایش روی بوم",
     "focusNodeLabel": "نمایش {node} روی بوم",
+    "freeUseNotice": "پرامپت‌ها و اجرای workflow در دوره بتا رایگان هستند.",
+    "freeUseNoticeLabel": "اطلاعیه استفاده رایگان",
     "friend": "دوست عزیز",
     "gotIt": "متوجه شدم",
     "greeting": "سلام {name}،",
@@ -114,6 +116,7 @@
       "upgradePlan": "ارتقای طرح"
     },
     "placeholder": "ایده‌ها را توضیح دهید، برای ارجاع به workflowها {'@'} را وارد کنید، دارایی‌های رسانه‌ای و فایل‌ها را بکشید و رها کنید، یا\nاز nodeها نام ببرید",
+    "recoveredTurnFailed": "عامل نتوانست این پاسخ را تکمیل کند.",
     "reference": "ارجاع",
     "remove": "حذف",
     "removeNodeLabel": "حذف ارجاع {node}",

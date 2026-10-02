@@ -67,6 +67,8 @@
     "feedbackCaption": "שליחת משוב",
     "focusNode": "הצג בקנבס",
     "focusNodeLabel": "הצג את {node} בקנבס",
+    "freeUseNotice": "פרומפטים והרצות של תהליכי עבודה הם בחינם במהלך תקופת הבטא.",
+    "freeUseNoticeLabel": "הודעת שימוש חופשי",
     "friend": "שם",
     "gotIt": "הבנתי",
     "greeting": "שלום {name},",
@@ -114,6 +116,7 @@
       "upgradePlan": "שדרוג התוכנית"
     },
     "placeholder": "תארו רעיונות, {'@'} להפניה לתהליכי עבודה, גררו נכסי מדיה וקבצים, או\nאזכרו צמתים",
+    "recoveredTurnFailed": "הסוכן לא הצליח להשלים תגובה זו.",
     "reference": "הפניה",
     "remove": "הסר",
     "removeNodeLabel": "הסר את ההפניה ל־{node}",
