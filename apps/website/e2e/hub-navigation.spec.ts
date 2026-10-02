@@ -212,6 +212,61 @@ for (const width of [1440, 390]) {
   })
 }
 
+for (const { width, from, to } of [
+  { width: 1440, from: 'workflows', to: 'models' },
+  { width: 390, from: 'models', to: 'workflows' }
+] as const) {
+  test(`${from} to ${to} at ${width}px leaves the tabs where the reader clicked them`, async ({
+    page
+  }) => {
+    await page.setViewportSize({ width, height: 900 })
+    await page.goto(`/hub/${from}/`)
+    await expect(page.getByTestId(`catalogue-tab-${from}`)).toHaveAttribute(
+      'aria-current',
+      'page'
+    )
+    await page.getByRole('button', { name: 'Close', exact: true }).click()
+
+    const tabs = page.getByTestId('catalogue-tabs')
+    await page.evaluate(() => window.scrollTo(0, 1400))
+    await expect
+      .poll(() => page.evaluate(() => Math.round(window.scrollY)))
+      .toBe(1400)
+    const pinned = (await tabs.boundingBox())?.y
+    expect(pinned).toBeDefined()
+
+    await page.getByTestId(`catalogue-tab-${to}`).click()
+    await expect(page).toHaveURL(`/hub/${to}/`)
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+      `ComfyUI ${to}`
+    )
+
+    // The listing swaps under a control the reader is pointing at, so the
+    // control holds its place and the new listing starts beneath it. Landing
+    // at the top of the page would drop the tabs out from under the pointer.
+    await expect
+      .poll(async () => (await tabs.boundingBox())?.y)
+      .toBeCloseTo(pinned ?? 0, 0)
+    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
+  })
+}
+
+test('switching tabs from the top of the page stays at the top', async ({
+  page
+}) => {
+  await page.goto('/hub/workflows/')
+  await expect(page.getByTestId('catalogue-tab-workflows')).toHaveAttribute(
+    'aria-current',
+    'page'
+  )
+  await page.getByTestId('catalogue-tab-models').click()
+  await expect(page).toHaveURL('/hub/models/')
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+    'ComfyUI models'
+  )
+  expect(await page.evaluate(() => window.scrollY)).toBe(0)
+})
+
 for (const { section, destination, query, filter } of [
   {
     section: 'models',

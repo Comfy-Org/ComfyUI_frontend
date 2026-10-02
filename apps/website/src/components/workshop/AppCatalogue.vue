@@ -49,6 +49,7 @@ const hasMore = computed(() => apps.length > ROW_LIMIT)
       </h2>
     </template>
     <div
+      id="hub-toolbar"
       class="sticky top-20 z-30 -mx-1 mb-8 flex flex-wrap items-center gap-3 bg-page px-1 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26"
       data-testid="workshop-toolbar"
     >

@@ -13,6 +13,21 @@ const catalogues: Readonly<
   [routes.hubApps]: loadAppCatalogue
 }
 
+const TOOLBAR = '#hub-toolbar'
+
+/**
+ * The catalogue toolbar sticks under the header once the page scrolls past it.
+ * Pinned, its distance from the top of the window is its own `top`.
+ */
+function stickyToolbar() {
+  const toolbar = document.querySelector(TOOLBAR)
+  if (!toolbar) return undefined
+  const offset = Number.parseFloat(getComputedStyle(toolbar).top)
+  return Number.isFinite(offset) ? { toolbar, offset } : undefined
+}
+
+let toolbarWasPinned = false
+
 function isHubNavigation(from: URL, to: URL) {
   return (
     from.origin === to.origin &&
@@ -22,7 +37,16 @@ function isHubNavigation(from: URL, to: URL) {
 }
 
 document.addEventListener('astro:before-preparation', (event) => {
-  if (!isHubNavigation(event.from, event.to)) return
+  const hub = isHubNavigation(event.from, event.to)
+  const sticky = stickyToolbar()
+  // Back and forward restore their own scroll, so only a tab click carries one.
+  toolbarWasPinned =
+    hub &&
+    event.direction === 'forward' &&
+    sticky !== undefined &&
+    sticky.toolbar.getBoundingClientRect().top <= sticky.offset + 1
+
+  if (!hub) return
   const prepare = event.loader
   event.loader = async () => {
     await Promise.all([
@@ -40,4 +64,20 @@ document.addEventListener('astro:before-swap', (event) => {
     return
   void event.viewTransition.ready.catch(() => undefined)
   event.viewTransition.skipTransition()
+})
+
+// A tab swaps the listing under a control the reader just clicked, so the
+// control stays where it was and the new listing starts beneath it. Restoring
+// the old scroll instead would land in the middle of a listing of another
+// length; the top of the page would move the tabs out from under the pointer.
+document.addEventListener('astro:after-swap', () => {
+  if (!toolbarWasPinned) return
+  toolbarWasPinned = false
+  window.scrollTo(0, 0)
+  const sticky = stickyToolbar()
+  if (sticky)
+    window.scrollTo(
+      0,
+      sticky.toolbar.getBoundingClientRect().top - sticky.offset
+    )
 })
