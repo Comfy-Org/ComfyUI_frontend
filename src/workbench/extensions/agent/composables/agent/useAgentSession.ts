@@ -369,21 +369,18 @@ function disownsWorkflow(error: unknown): boolean {
  *
  * The ids are read but deliberately not required (see `zTurnInProgressError`):
  * recognising the conflict is what lets this client re-read the thread and
- * re-attach, and that re-read is keyed on the thread, not on the turn. The ids
- * are returned so a caller can tell afterwards whether it adopted the turn the
- * server actually named.
+ * re-attach, and that re-read is keyed on the thread, not on the turn. The
+ * active message id is returned so a caller can tell afterwards whether it
+ * adopted the turn the server actually named.
  */
 function parseTurnInProgress(
   error: unknown
-): { activeMessageId?: string; turnId?: string } | undefined {
+): { activeMessageId?: string } | undefined {
   if (!(error instanceof AgentApiError) || error.status !== 409)
     return undefined
   const parsed = zTurnInProgressError.safeParse(error.body)
   if (!parsed.success) return undefined
-  return {
-    activeMessageId: parsed.data.active_message_id,
-    turnId: parsed.data.turn_id
-  }
+  return { activeMessageId: parsed.data.active_message_id }
 }
 
 export function useAgentSession(deps: AgentSessionDeps) {
@@ -1027,15 +1024,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (pendingStop !== null) void stopTurn(pendingStop.method)
   }
 
-  /**
-   * The notice text for a send that failed for a reason admission does not own.
-   *
-   * A refused-because-busy send is the one failure whose cause is already on
-   * screen: `reattachRefusedTurn` has put the running turn back in the composer,
-   * so the raw server string ("a turn is already in progress for this thread")
-   * would be describing the Stop button the user is now looking at. The typed
-   * copy names the recovery instead.
-   */
   function sendFailureNotice(error: unknown, reattached: boolean): string {
     if (reattached) return i18n.global.t('agent.sendTurnInProgress')
     const message = error instanceof Error ? error.message : String(error)
@@ -1138,9 +1126,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
    * Bounded on the same reasoning as `reconcileSnapshotTurn`: `performSend`
    * awaits this and the composer sits in `sending` until it returns, so an
    * unbounded await would let a slow workflow restore hold the one control the
-   * user needs. If the bound wins, the in-flight hydrate can still land later
-   * and replace `messages`, which costs the notice below but not the Stop
-   * control — the re-attach is the part that matters.
+   * user needs. If the bound wins before the transcript lands, the reattachment
+   * is invalidated and the late snapshot is discarded; if it wins after, the
+   * turn is already adopted and only the restore is outstanding.
+   *
+   * Returns whether the turn the server named is now this session's active turn,
+   * which is the single answer both the pending Stop and the caller's notice
+   * read. `hydrateFromServer` installs the snapshot before awaiting the workflow
+   * restore, so its own result says nothing about whether the re-attach
+   * happened.
    *
    * A failed re-read reports itself through `handleHistoryLoadError` and still
    * leaves the original refusal for the caller to record.
@@ -1161,7 +1155,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       generation === loadGeneration &&
       ownedGeneration === sessionGeneration &&
       conversationStore.threadId === threadAtSend
-    const reattached = await Promise.race([
+    await Promise.race([
       hydrateFromServer(threadAtSend, isCurrentReattachment),
       new Promise<void>((resolve) => setTimeout(resolve, RECONCILE_TIMEOUT_MS))
     ])
@@ -1174,7 +1168,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (reattachGeneration === refusedTurnReattachGeneration)
       refusedTurnReattachGeneration++
     if (adoptedActiveTurn) stopPendingActiveTurn()
-    return reattached === true && conversationStore.activeTurnId !== null
+    return adoptedActiveTurn
   }
 
   async function performSend(

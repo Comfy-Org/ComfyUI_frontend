@@ -587,11 +587,6 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(conversation.activeTurnId).toBe('msg-1')
   })
 
-  // FE-1998. Composer gating closes the reload route to a 409, but not a turn
-  // started from a second tab: this client has no local signal, so it offers
-  // Send and the post is refused. Before this change the refusal was terminal
-  // -- a raw server string, no stop control, and no way to tell a working turn
-  // from a dead one.
   it('re-attaches to the running turn when a send is refused with TURN_IN_PROGRESS', async () => {
     const conversation = useAgentConversationStore()
     const postMessage = vi
@@ -611,7 +606,6 @@ describe('useAgentSession (v1 composition root)', () => {
           }
         )
       )
-    // The thread as the other client left it: turn 1 settled, turn 2 running.
     const rest = fakeRest({
       postMessage,
       getMessages: vi.fn(
@@ -3232,6 +3226,16 @@ describe('useAgentSession (v1 composition root)', () => {
     await refused
 
     expect(cancelMessage).toHaveBeenCalledExactlyOnceWith('th-1', 'msg-2')
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [
+        {
+          type: 'notice',
+          level: 'error',
+          text: 'This chat still has a response running. Wait for it to finish, or stop it, then send again.'
+        }
+      ]
+    })
   })
 
   it('clears a pending stop when the send fails before adopting a turn', async () => {
