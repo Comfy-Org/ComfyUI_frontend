@@ -51,7 +51,15 @@ test(
   'shows a mode-valued control under its canonical name',
   { tag: ['@node', '@widget'] },
   async ({ comfyPage }) => {
-    await comfyPage.nodeOps.addNode(NODE_TYPE)
+    const probe = await comfyPage.nodeOps.addNode(NODE_TYPE)
+    // A newly created node lands at the litegraph default position, whose title
+    // bar sits above the canvas origin. The default workflow decides where that
+    // origin is: the production graph pans the view to `[416, 110]`, but the
+    // legacy graph every CI e2e build uses (VITE_USE_LEGACY_DEFAULT_GRAPH) keeps
+    // it at `[0, 0]`, which puts the title at y = -5 and makes the selecting
+    // click miss the viewport entirely. Centre the view on the node so the
+    // selection does not depend on which default workflow was built in.
+    await probe.centerOnNode()
     await comfyPage.nodeOps.selectNodes(['Primitive Int Mode Name Probe'])
     await comfyPage.actionbar.propertiesButton.click()
 
