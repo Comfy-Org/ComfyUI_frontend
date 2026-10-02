@@ -8,13 +8,20 @@ import type {
   IWidgetOptions
 } from '@/lib/litegraph/src/types/widgets'
 import { IS_CONTROL_WIDGET } from '@/scripts/controlWidgetMarker'
-import { CONTROL_OPTIONS, isControlOption } from '@/scripts/valueControl'
-import type { ControlOptions } from '@/scripts/valueControl'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 
-export { CONTROL_OPTIONS }
-export type { ControlOptions }
+export const CONTROL_OPTIONS = [
+  'fixed',
+  'increment',
+  'decrement',
+  'randomize'
+] as const
+export type ControlOptions = (typeof CONTROL_OPTIONS)[number]
+
+export function isControlOption(value: unknown): value is ControlOptions {
+  return CONTROL_OPTIONS.some((option) => option === value)
+}
 
 /** Valid types for widget values */
 export type WidgetValue = string | number | boolean | object | undefined | null

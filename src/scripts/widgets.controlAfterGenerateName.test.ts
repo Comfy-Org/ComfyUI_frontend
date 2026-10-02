@@ -30,7 +30,10 @@ function comboNode() {
 
 const intSpec = (options: IntInputSpec[1]): InputSpec => ['INT', options]
 
-/** Loose on purpose: `InputSpec` cannot express a group-node name override. */
+/**
+ * Loose on purpose: `InputSpec` cannot express a group-node name override or
+ * the combo-only `increment-wrap` mode.
+ */
 const looseIntSpec = (options: Record<string, unknown>) =>
   ['INT', options] as InputSpec
 
@@ -87,6 +90,14 @@ describe('value control widget naming', () => {
     )
 
     expect(control.value).toBe('randomize')
+  })
+
+  it('keeps a default mode an extension passes that is not a known mode', () => {
+    const { node, target } = intNode()
+
+    const [control] = addValueControlWidgets(node, target, 'Fixed')
+
+    expect(control.value).toBe('Fixed')
   })
 
   it('treats a blank name override as absent', () => {

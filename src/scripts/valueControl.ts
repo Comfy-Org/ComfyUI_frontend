@@ -4,20 +4,9 @@ import type {
   IComboWidget
 } from '@/lib/litegraph/src/types/widgets'
 import { findComboValueIndex } from '@/lib/litegraph/src/utils/widget'
+import { CONTROL_OPTIONS } from '@/types/simplifiedWidget'
 
 import { IS_CONTROL_WIDGET } from './controlWidgetMarker'
-
-export const CONTROL_OPTIONS = [
-  'fixed',
-  'increment',
-  'decrement',
-  'randomize'
-] as const
-export type ControlOptions = (typeof CONTROL_OPTIONS)[number]
-
-export function isControlOption(value: unknown): value is ControlOptions {
-  return CONTROL_OPTIONS.some((option) => option === value)
-}
 
 const VALUE_CONTROL_MODES = [...CONTROL_OPTIONS, 'increment-wrap'] as const
 type ValueControlMode = (typeof VALUE_CONTROL_MODES)[number]

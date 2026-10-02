@@ -47,7 +47,6 @@ const CATALOG: WidgetCatalog = {
 }
 const CONTEXT = { actor: 'agent:test', opIds: ['op-1'] }
 
-/** A file-loaded `PrimitiveInt`, the shape both production traces carried. */
 const WORKFLOW: WorkflowJSON = {
   nodes: [
     {
