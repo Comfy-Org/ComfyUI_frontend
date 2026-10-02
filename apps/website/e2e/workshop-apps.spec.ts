@@ -15,6 +15,7 @@ async function mockFlags(
     workflows: boolean
     auth?: boolean
     reshoot?: boolean
+    moveAnything?: boolean
   }
 ) {
   await context.route('**/t.comfy.org/**', (route) =>
@@ -27,6 +28,7 @@ async function mockFlags(
               'workshop-apps-enabled': flags.apps,
               'workshop-workflows-enabled': flags.workflows,
               'workshop-reshoot-app-enabled': flags.reshoot ?? true,
+              'workshop-move-anything-app-enabled': flags.moveAnything ?? true,
               ...(flags.auth ? { 'workshop-auth': true } : {})
             },
             featureFlagPayloads: {}
@@ -92,7 +94,7 @@ test('keeps Cinematic Studio closed on the workflows flag alone', async ({
   await expect(page.getByTestId('cinematic')).toHaveCount(0)
 })
 
-test('lists both apps on the hub apps page, on /hub/apps/ pages', async ({
+test('lists every app on the hub apps page, on /hub/apps/ pages', async ({
   page,
   context
 }) => {
@@ -107,12 +109,13 @@ test('lists both apps on the hub apps page, on /hub/apps/ pages', async ({
   )
   const shelf = page.getByTestId('app-shelf')
   const cards = shelf.getByRole('link')
-  await expect(cards).toHaveCount(2)
+  await expect(cards).toHaveCount(3)
   await expect(cards.nth(0)).toHaveAttribute(
     'href',
     '/hub/apps/cinematic-studio/'
   )
   await expect(cards.nth(1)).toHaveAttribute('href', '/hub/apps/reshoot/')
+  await expect(cards.nth(2)).toHaveAttribute('href', '/hub/apps/move-anything/')
   await expect(
     page.getByRole('button', { name: /Browse all apps/ })
   ).toHaveCount(0)
@@ -125,11 +128,12 @@ test('hides Re-shoot from the hub apps page and closes its page while its flag i
   await mockFlags(context, { apps: true, workflows: false, reshoot: false })
   await page.goto('/hub/apps/')
   const cards = page.getByTestId('app-shelf').getByRole('link')
-  await expect(cards).toHaveCount(1)
-  await expect(cards.first()).toHaveAttribute(
+  await expect(cards).toHaveCount(2)
+  await expect(cards.nth(0)).toHaveAttribute(
     'href',
     '/hub/apps/cinematic-studio/'
   )
+  await expect(cards.nth(1)).toHaveAttribute('href', '/hub/apps/move-anything/')
 
   await page.goto('/hub/apps/reshoot/')
   await expect(page.getByText('Cinematic Studio is not open yet')).toBeVisible()
@@ -143,6 +147,51 @@ test('opens Re-shoot once its flag is on', async ({ page, context }) => {
   await expect(page.getByText('Cinematic Studio is not open yet')).toHaveCount(
     0
   )
+})
+
+test('closes Move anything while its flag is off', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, {
+    apps: true,
+    workflows: false,
+    moveAnything: false
+  })
+  await page.goto('/hub/apps/move-anything/')
+  await expect(page.getByText('Cinematic Studio is not open yet')).toBeVisible()
+  await expect(page.getByTestId('move-anything')).toHaveCount(0)
+})
+
+test('moves a thing in the Move anything example and shows the result', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/hub/apps/move-anything/')
+  const app = page.getByTestId('move-anything')
+  await expect(app.getByTestId('move-empty')).toBeVisible()
+  const generate = app.getByTestId('move-generate')
+  await expect(generate).toHaveCount(0)
+
+  await app.getByRole('button', { name: 'Try the example' }).click()
+  await expect(generate).toBeDisabled()
+  const kitten = app.getByRole('button', { name: /^Orange kitten\./ })
+  await kitten.focus()
+  await page.keyboard.press('Shift+ArrowRight')
+  await expect(generate).toHaveText(/Move 1 object/)
+
+  await generate.click()
+  await expect(app.getByRole('status')).toContainText('Making the move')
+  await expect(app.getByRole('link', { name: 'Download' })).toBeVisible()
+  await expect(
+    app.getByRole('slider', {
+      name: 'Drag to compare the original and the new image'
+    })
+  ).toBeVisible()
+
+  await app.getByRole('button', { name: 'Edit arrangement' }).click()
+  await expect(generate).toHaveText(/Move 1 object/)
 })
 
 test('sends an old catalogue link for the Apps tab to the hub apps page', async ({

@@ -17,6 +17,7 @@ import {
   useWorkshopEnabled
 } from '../../../scripts/posthog'
 import { rc } from '../../../lib/workshop/cinematic-studio/reshoot-copy'
+import { mc } from '../../../lib/workshop/move-anything/copy'
 import RunLeaveDialog from '../RunLeaveDialog.vue'
 import WorkshopGate from '../WorkshopGate.vue'
 import CinematicAppsHub from './CinematicAppsHub.vue'
@@ -24,6 +25,7 @@ import CinematicScenarioMenu from './CinematicScenarioMenu.vue'
 import CinematicStudio from './CinematicStudio.vue'
 import CinematicStudioPanel from './CinematicStudioPanel.vue'
 import ReshootStudio from './reshoot/ReshootStudio.vue'
+import MoveAnythingStudio from '../move-anything/MoveAnythingStudio.vue'
 import { isWorkshopModelShown } from '../../../scripts/workshop-model-flags'
 
 const {
@@ -46,7 +48,7 @@ const LAYOUTS = [
   { id: 'hub', label: 'cinematic.ux.hub' }
 ] as const
 
-const APPS = ['studio', 'reshoot'] as const
+const APPS = ['studio', 'reshoot', 'move-anything'] as const
 const reviewing = WORKSHOP_DEPLOY_ENV !== 'production'
 
 const appsEnabled = useWorkshopAppsEnabled()
@@ -88,7 +90,8 @@ const layoutOptions = computed(() =>
 const appOptions = computed(() =>
   [
     { id: 'studio', label: tc('cinematic.title', locale) },
-    { id: 'reshoot', label: rc('reshoot.title', locale) }
+    { id: 'reshoot', label: rc('reshoot.title', locale) },
+    { id: 'move-anything', label: mc('move.title', locale) }
   ].filter((option) =>
     shownApps.value.some((candidate) => candidate.appId === option.id)
   )
@@ -156,6 +159,7 @@ function pickApp(id: string) {
   <WorkshopGate :allowed="studioEnabled">
     <CinematicAppsHub v-if="layout === 'hub'" :models="shownApps" :locale />
     <ReshootStudio v-else-if="app === 'reshoot'" :locale />
+    <MoveAnythingStudio v-else-if="app === 'move-anything'" :locale />
     <CinematicStudioPanel
       v-else-if="layout === 'd'"
       :models
