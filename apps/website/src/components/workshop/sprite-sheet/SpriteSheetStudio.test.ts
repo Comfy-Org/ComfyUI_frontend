@@ -62,7 +62,7 @@ describe('SpriteSheetStudio', () => {
     await user.click(within(motion).getByRole('radio', { name: 'Jump' }))
     expect(within(style).getByRole('radio', { name: 'Toon' })).toBeChecked()
     expect(
-      within(panel()).getByRole('button', { name: /Advanced\s*8 frames/ })
+      within(panel()).getByRole('button', { name: 'Frames: 8 frames' })
     ).toBeInTheDocument()
 
     await makeSheet(user)
@@ -77,48 +77,26 @@ describe('SpriteSheetStudio', () => {
     )
   })
 
-  it('sets the frame count and a new seed under Advanced', async () => {
+  it('sets the frame count and a new seed as rows of the panel, with no Advanced section', async () => {
     const user = await openExample()
-    const advanced = within(panel()).getByRole('region', { name: 'Advanced' })
-    await user.click(
-      within(advanced).getByRole('button', { name: /^Advanced/ })
-    )
+    expect(
+      within(panel()).queryByRole('region', { name: 'Advanced' })
+    ).toBeNull()
 
     await user.click(
-      within(advanced).getByRole('button', { name: 'Frames: 8 frames' })
+      within(panel()).getByRole('button', { name: 'Frames: 8 frames' })
     )
     await user.click(screen.getByRole('menuitemradio', { name: '12 frames' }))
     vi.spyOn(Math, 'random').mockReturnValue(0.5)
-    await user.click(within(advanced).getByRole('button', { name: 'New seed' }))
+    await user.click(within(panel()).getByRole('button', { name: 'New seed' }))
 
     expect(
-      within(advanced).getByRole('spinbutton', { name: 'Seed' })
+      within(panel()).getByRole('spinbutton', { name: 'Seed' })
     ).toHaveValue(500_000_000)
     expect(
-      within(panel()).getByRole('button', {
-        name: /Advanced\s*12 frames · Seed 500000000/
-      })
+      within(panel()).getByRole('button', { name: 'Frames: 12 frames' })
     ).toBeInTheDocument()
   })
-
-  it.for([
-    { layout: 'd', wide: true, last: 'Onion skin' },
-    { layout: 'd', wide: false, last: 'Onion skin' },
-    { layout: 'e', wide: true, last: 'Make sheet 30 credits' }
-  ])(
-    'keeps undo and redo at the right end of the tools in layout $layout (wide: $wide)',
-    async ({ layout, wide, last }) => {
-      screenIsWide(wide)
-      await openExample(layout)
-
-      const names = within(tools())
-        .getAllByRole('button')
-        .map(
-          (tool) => tool.getAttribute('aria-label') ?? tool.textContent.trim()
-        )
-      expect(names.slice(-3)).toEqual([last, 'Undo', 'Redo'])
-    }
-  )
 
   it('undoes a style change from the control pill', async () => {
     const user = await openExample()

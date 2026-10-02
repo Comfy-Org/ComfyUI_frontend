@@ -38,6 +38,7 @@ const seed = computed({
     :heading="spc('sprite.frames', locale)"
     :options="counts"
     :icon="GalleryHorizontal"
+    :label="spc('sprite.frames', locale)"
   />
   <EditorSeedField
     v-model="seed"
