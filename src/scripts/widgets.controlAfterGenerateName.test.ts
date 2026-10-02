@@ -28,13 +28,7 @@ function comboNode() {
   return { node, target }
 }
 
-/**
- * `['INT', options]`, the V1 spec shape the widget constructors receive. The
- * options bag stays loose on purpose: the group-node name override is not
- * declarable on `zIntInputOptions` (which types the key as the
- * `ControlAfterGenerate` enum), because `groupNode.ts` injects that form at
- * runtime rather than reading it from `object_info`.
- */
+/** Loose on purpose: `InputSpec` cannot express a group-node name override. */
 const intSpec = (options: Record<string, unknown>) =>
   ['INT', options] as InputSpec
 
