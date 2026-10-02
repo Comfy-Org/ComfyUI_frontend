@@ -42,7 +42,9 @@ export function useCheckoutJourney(uiMode: 'embedded' | 'full_page') {
   let presses = 0
   let linkingPress: number | undefined
   let billingOpId: string | undefined
-  let lastPhase: Exclude<CheckoutJourneyPhase, 'abandoned' | 'ended'> | undefined
+  let lastPhase:
+    | Exclude<CheckoutJourneyPhase, 'abandoned' | 'ended'>
+    | undefined
   let lastEnding: CheckoutEndingKind | undefined
   let left = false
 
