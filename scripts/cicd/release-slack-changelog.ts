@@ -140,7 +140,8 @@ function plural(count: number, noun: string): string {
 function buildHeadline(
   release: ReleaseNotification,
   pullRequests: number,
-  contributors: number
+  contributors: number,
+  hasNotes: boolean
 ): string {
   const name = `${release.repo.split('/').pop() ?? release.repo} ${release.tagName}`
   const link = `<${release.htmlUrl}|${escapeSlackText(name)}>`
@@ -155,7 +156,7 @@ function buildHeadline(
     ? `🎨 ${link} ${kind} — ${counts.join(', ')}.`
     : `🎨 ${link} ${kind}.`
 
-  return `${lead} Full changelog in this thread.`
+  return hasNotes ? `${lead} Full changelog in this thread.` : lead
 }
 
 export function buildSlackChangelogPost(
@@ -165,7 +166,8 @@ export function buildSlackChangelogPost(
   const headline = buildHeadline(
     release,
     countMergedPullRequests(body),
-    countNewContributors(body)
+    countNewContributors(body),
+    body !== ''
   )
   const replies = body
     ? chunkByLines(toSlackMrkdwn(body), SLACK_CHUNK_CHAR_LIMIT)

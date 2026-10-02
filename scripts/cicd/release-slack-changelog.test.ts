@@ -208,6 +208,15 @@ describe('buildSlackChangelogPost', () => {
     expect(headline).toContain('is out.')
     expect(replies).toEqual(['_No release notes._'])
   })
+
+  it('does not promise a changelog the thread cannot deliver', () => {
+    expect(
+      buildSlackChangelogPost(release({ body: '' })).headline
+    ).not.toContain('Full changelog')
+    expect(buildSlackChangelogPost(release()).headline).toContain(
+      'Full changelog in this thread.'
+    )
+  })
 })
 
 describe('postChangelog', () => {

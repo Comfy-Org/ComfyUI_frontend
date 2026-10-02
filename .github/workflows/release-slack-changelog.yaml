@@ -41,8 +41,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      # ref: main is load-bearing, not tidiness. A `release` event runs at
+      # refs/tags/<tag>, and most tags here are cut from a core/* release
+      # branch — v1.54.12, v1.54.11, v1.53.10 and friends are reachable only
+      # from core/1.54 or core/1.53, never from main. An unpinned checkout
+      # would land on a commit where this workflow's own script does not
+      # exist and announce nothing for roughly three quarters of releases.
+      # Same reason release-enforce-latest.yaml pins main. The job reads the
+      # release over the API and needs no release-branch content.
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          ref: main
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
