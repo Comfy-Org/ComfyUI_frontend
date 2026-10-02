@@ -70,6 +70,10 @@ const copy = {
   },
   'cutout.replace.count.short': { en: '×{n}', 'zh-CN': '×{n}' },
   'cutout.replace.missing': {
+    en: 'Add a prompt or reference',
+    'zh-CN': '请输入描述或添加参考图'
+  },
+  'cutout.replace.missing.full': {
     en: 'Describe a background or add a reference image.',
     'zh-CN': '请描述背景或添加参考图。'
   },

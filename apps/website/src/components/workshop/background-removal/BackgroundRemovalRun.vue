@@ -40,6 +40,7 @@ const progress = computed(() =>
     :progress
     :disabled="!canRun"
     :missing="missing ? brc('cutout.replace.missing', locale) : undefined"
+    :missing-hint="brc('cutout.replace.missing.full', locale)"
     :block
     data-testid="background-removal-run"
     @run="cutout.removeBackground"

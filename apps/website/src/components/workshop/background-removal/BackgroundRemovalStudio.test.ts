@@ -161,15 +161,15 @@ describe('BackgroundRemovalStudio', () => {
       within(section('Background')).getByRole('radio', { name: 'Replace' })
     )
     const run = within(panel()).getByTestId('background-removal-run')
-    expect(run).toHaveTextContent(
+    expect(run).toHaveTextContent('Add a prompt or reference')
+    expect(run).toHaveAttribute(
+      'title',
       'Describe a background or add a reference image.'
     )
     expect(run).toBeDisabled()
     expect(
-      within(section('Background')).getByText(
-        'Describe a background or add a reference image.'
-      )
-    ).toBeVisible()
+      within(section('Background')).queryByText(/Add a prompt or reference/)
+    ).toBeNull()
     const seed = within(panel()).getByRole('spinbutton', { name: 'Seed' })
     expect(section('Background')).not.toContainElement(seed)
 

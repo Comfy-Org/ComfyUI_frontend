@@ -15,9 +15,8 @@ const { cutout, locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
 
-const { setup, missing } = cutout
+const { setup } = cutout
 const promptId = useId()
-const missingId = useId()
 const models = REPLACE_MODELS.map(({ id }) => ({
   id,
   label: modelName(id, locale)
@@ -56,7 +55,6 @@ function onPrompt(event: Event) {
           :value="setup.replace.prompt"
           rows="3"
           :placeholder="brc('cutout.replace.placeholder', locale)"
-          :aria-describedby="missing ? missingId : undefined"
           class="min-h-18 flex-1 resize-none bg-transparent pt-1 text-xs text-primary-warm-white placeholder:text-primary-warm-gray/70 focus-visible:outline-none disabled:opacity-40"
           @input="onPrompt"
         />
@@ -75,12 +73,5 @@ function onPrompt(event: Event) {
         >
       </div>
     </div>
-    <p
-      v-if="missing"
-      :id="missingId"
-      class="m-0 text-[11px] text-primary-warm-gray"
-    >
-      {{ brc('cutout.replace.missing', locale) }}
-    </p>
   </div>
 </template>

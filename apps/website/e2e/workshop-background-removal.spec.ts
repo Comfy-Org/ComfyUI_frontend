@@ -88,6 +88,12 @@ test('replaces the background of the example with a described one', async ({
     'title',
     'Describe a background or add a reference image.'
   )
+  await expect(run).toHaveText('Add a prompt or reference')
+  const label = run.locator('span').first()
+  expect(
+    await label.evaluate((span) => span.scrollWidth <= span.clientWidth)
+  ).toBe(true)
+  await expect(panel.getByText('Add a prompt or reference')).toHaveCount(1)
   await expect(panel.getByRole('spinbutton', { name: 'Seed' })).toBeVisible()
 
   await panel
