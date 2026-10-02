@@ -22,6 +22,8 @@ type StopPrice = TeamCreditStops['stops'][number]['monthly']
  * Nothing is filtered, ranked or priced here.
  */
 function projectPlan(plan: DecodedPlan): Plan | undefined {
+  const credits =
+    plan.credits === undefined ? undefined : asSafeNumber(plan.credits)
   const credits_cents = asSafeNumber(plan.credits_cents)
   const max_seats = asSafeNumber(plan.max_seats)
   const price_cents = asSafeNumber(plan.price_cents)
@@ -30,6 +32,7 @@ function projectPlan(plan: DecodedPlan): Plan | undefined {
     plan.seat_summary.total_credits_cents
   )
   if (
+    (plan.credits !== undefined && credits === undefined) ||
     credits_cents === undefined ||
     max_seats === undefined ||
     price_cents === undefined ||
@@ -39,6 +42,7 @@ function projectPlan(plan: DecodedPlan): Plan | undefined {
     return undefined
   return {
     ...plan,
+    ...(credits === undefined ? {} : { credits }),
     credits_cents,
     max_seats,
     price_cents,
