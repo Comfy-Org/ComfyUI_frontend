@@ -82,18 +82,11 @@ export interface OpSender {
    * starting transport delivery. Consecutive admissions for one workflow
    * share the group until `flush()` seals it.
    *
-   * An admission for another workflow seals the open group first, and custom
-   * serialization can re-enter the sender from inside that seal. If the nested
-   * call closes the open group, these ops are sealed into the queue at the
-   * position they were admitted at — ahead of what the nested call enqueued,
-   * with their original `op_id`s — rather than dropped. Delivery the nested
-   * call requested is held until then, so mint order reaches the wire intact
-   * PER DOCUMENT, which is the order the stamp contract is defined over. It is
-   * not globally intact: the group this admission sealed is by construction
-   * another workflow's (an admission for the SAME workflow never seals), and
-   * that group queues behind these later-minted ops because the insertion index
-   * is taken before the seal. Two documents' ops have no causal relation, so
-   * only the cross-document transport order is affected.
+   *
+   * If custom serialization re-enters and closes the open group, these ops are
+   * sealed at the queue position they were admitted at, keeping their
+   * `op_id`s, and delivery waits until they are placed. Mint order is
+   * preserved per document, not across documents.
    */
   admit(operations: GraphOperation[]): void
   /** Seal the open admission group into wire batches and start delivery. */
