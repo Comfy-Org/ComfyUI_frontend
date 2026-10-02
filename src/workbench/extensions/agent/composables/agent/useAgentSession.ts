@@ -115,7 +115,7 @@ const TURN_RECOVERY_DELAYS_MS = [0, 1000, 2000, 4000, 8000, 16000]
 const TURN_RECOVERY_DEADLINE_MS = 60_000
 
 type TurnOutcome =
-  | { kind: 'terminal'; parts: AssistantMessage['parts'] }
+  | { kind: 'terminal'; parts: AssistantMessage['parts'] | undefined }
   | { kind: 'thread-missing' }
   | { kind: 'streaming' }
   | { kind: 'error'; message: string }
@@ -781,7 +781,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         reportError(error, { errorType: 'failure_recovering_agent_turn' })
     } finally {
       clearTimeout(deadline)
-      recoveringTurns.delete(key)
+      if (recoveringTurns.get(key) === recovery) recoveringTurns.delete(key)
     }
   }
 
@@ -874,7 +874,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       const parts = mergeAdjacentTextParts(
         normalizeAgentTranscript(rows).messages[0]?.parts ?? []
       )
-      return { kind: 'terminal', parts }
+      return { kind: 'terminal', parts: parts.length === 0 ? undefined : parts }
     } catch (error) {
       if (signal.aborted) throw error
       return turnOutcomeFromError(error)
