@@ -16,6 +16,7 @@ import { getErrorMessage, toError } from '@/utils/errorUtil'
 
 interface CancellationFallbackOptions {
   flowAlreadyOpened?: boolean
+  flowAlreadyConfirmed?: boolean
   isScopeCurrent?: () => boolean
 }
 
@@ -154,10 +155,14 @@ async function fallBackAfterSessionFailure(
   isScopeCurrent: () => boolean,
   cancelReport: ReturnType<typeof createCancelFlowReporter>
 ): Promise<void> {
+  cancelReport.sessionFailed()
   const fallback = await showCancellationFallback(
     showFallback,
     isScopeCurrent,
-    { flowAlreadyOpened: true },
+    {
+      flowAlreadyOpened: true,
+      flowAlreadyConfirmed: cancelReport.hasConfirmed()
+    },
     { stage: 'session', error }
   )
   if (fallback === 'failed') cancelReport.failed('rendering')

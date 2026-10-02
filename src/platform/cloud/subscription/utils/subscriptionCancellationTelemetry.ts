@@ -39,18 +39,19 @@ export function getSubscriptionCancellationMetadata({
 
 /**
  * Reports a cancel flow as billing events. Once the customer confirms, the flow
- * is no longer abandoned. When the confirmed cancel becomes an operation, its
- * `billing.operation.*` events also own any failure, so `failed` is reported
- * only for a flow that has no operation.
+ * is no longer abandoned. While a confirmed cancel is expected to become an
+ * operation, its `billing.operation.*` events also own any failure, so `failed`
+ * is reported only for a flow that has no operation expected.
  */
 export function createCancelFlowReporter(
   telemetry: TelemetryDispatcher | null,
   getPlan: () => Pick<
     SubscriptionCancellationMetadataOptions,
     'duration' | 'tier'
-  >
+  >,
+  options: { confirmed?: boolean } = {}
 ) {
-  let confirmed = false
+  let confirmed = options.confirmed ?? false
   let operationFollows = false
   const plan = () => {
     const { duration, tier } = getPlan()
@@ -72,6 +73,10 @@ export function createCancelFlowReporter(
     confirmed(options: { operationFollows: boolean }) {
       confirmed = true
       operationFollows = options.operationFollows
+    },
+    hasConfirmed: () => confirmed,
+    sessionFailed() {
+      operationFollows = false
     },
     abandoned() {
       if (confirmed) return

@@ -67,10 +67,12 @@ import { getErrorMessage } from '@/utils/errorUtil'
 const {
   cancelAt,
   flowAlreadyOpened = false,
+  flowAlreadyConfirmed = false,
   isScopeCurrent = () => true
 } = defineProps<{
   cancelAt?: string
   flowAlreadyOpened?: boolean
+  flowAlreadyConfirmed?: boolean
   isScopeCurrent?: () => boolean
 }>()
 
@@ -87,10 +89,14 @@ const telemetry = useTelemetry()
 const isLoading = ref(false)
 const didCancelSucceed = ref(false)
 const didScopeAbort = ref(false)
-const cancelReport = createCancelFlowReporter(telemetry, () => ({
-  duration: subscription.value?.duration,
-  tier: tier.value
-}))
+const cancelReport = createCancelFlowReporter(
+  telemetry,
+  () => ({
+    duration: subscription.value?.duration,
+    tier: tier.value
+  }),
+  { confirmed: flowAlreadyConfirmed }
+)
 
 function cancellationMetadata() {
   return getSubscriptionCancellationMetadata({
