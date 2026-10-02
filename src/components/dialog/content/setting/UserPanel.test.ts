@@ -5,8 +5,12 @@ import { computed, defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
+import type { WebSessionCommandResult } from '@comfyorg/account-core/webSession'
+
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogService } from '@/services/dialogService'
 
 import UserPanel from './UserPanel.vue'
@@ -98,5 +102,72 @@ describe('UserPanel update password', () => {
 
     expect(useDialogService().showUpdatePasswordDialog).not.toHaveBeenCalled()
     expect(location.assign).not.toHaveBeenCalled()
+  })
+})
+
+describe('UserPanel sign out of all devices', () => {
+  const signOutEverywhere = { name: 'Sign out of all devices' }
+
+  function onWebSession(revokeAll: WebSessionCommandResult) {
+    const webSession = useCloudWebSessionStore()
+    vi.spyOn(webSession, 'isActive').mockReturnValue(true)
+    return vi
+      .spyOn(webSession, 'revokeAllSessions')
+      .mockResolvedValue(revokeAll)
+  }
+
+  it.for([
+    { name: 'the web session is off', sessionOn: false, firebaseLogin: true },
+    {
+      name: 'the tab has no Firebase login to prove identity',
+      sessionOn: true,
+      firebaseLogin: false
+    }
+  ])('renders nothing when $name', async ({ sessionOn, firebaseLogin }) => {
+    signInAsEmailUser({ hasFirebaseLogin: firebaseLogin })
+    vi.spyOn(useCloudWebSessionStore(), 'isActive').mockReturnValue(sessionOn)
+    await renderPanel()
+
+    expect(screen.getByRole('button', { name: 'Log Out' })).toBeVisible()
+    expect(screen.queryByRole('button', signOutEverywhere)).toBeNull()
+  })
+
+  it('revokes every session once, then signs this tab out', async () => {
+    signInAsEmailUser({ hasFirebaseLogin: true })
+    const revokeAll = onWebSession({ status: 'ok' })
+    await renderPanel()
+
+    await userEvent.click(screen.getByRole('button', signOutEverywhere))
+
+    expect(revokeAll).toHaveBeenCalledOnce()
+    expect(useCurrentUser().handleSignOut).toHaveBeenCalledOnce()
+    expect(useToastStore().messagesToAdd).toEqual([
+      expect.objectContaining({
+        severity: 'success',
+        summary: 'Signed out of all devices'
+      })
+    ])
+  })
+
+  it('keeps the user signed in and shows why when the revoke fails', async () => {
+    signInAsEmailUser({ hasFirebaseLogin: true })
+    onWebSession({
+      status: 'error',
+      code: 'SESSION_UNAVAILABLE',
+      retryable: true
+    })
+    await renderPanel()
+
+    await userEvent.click(screen.getByRole('button', signOutEverywhere))
+
+    expect(useCurrentUser().handleSignOut).not.toHaveBeenCalled()
+    expect(useToastStore().messagesToAdd).toEqual([
+      expect.objectContaining({
+        severity: 'error',
+        summary: "Couldn't sign out of all devices",
+        detail: enMessages.auth.webSession.token.unavailable
+      })
+    ])
+    expect(screen.getByRole('button', signOutEverywhere)).toBeEnabled()
   })
 })

@@ -2721,6 +2721,12 @@
       "signOutAnyway": "Sign out anyway",
       "saveFailed": "Sign-out cancelled because saving \"{workflow}\" failed."
     },
+    "signOutEverywhere": {
+      "action": "Sign out of all devices",
+      "success": "Signed out of all devices",
+      "successDetail": "Every device signed in to your account has been signed out.",
+      "failed": "Couldn't sign out of all devices"
+    },
     "accountChanged": {
       "title": "Account changed",
       "detail": "Another tab or Comfy site signed in as {email}, so this page was reset."
