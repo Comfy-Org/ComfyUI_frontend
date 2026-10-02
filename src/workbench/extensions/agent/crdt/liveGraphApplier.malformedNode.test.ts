@@ -4,7 +4,6 @@ import type {
   WidgetCatalog,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
-import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -112,7 +111,7 @@ describe('LiveGraphApplier malformed node report', () => {
 
   it('names the stamping operation, and the actor kind without its user segments', () => {
     const { graph, doc, collector, applier } = setup({ nodes: [], links: [] })
-    const add = fromPartial<Op>({
+    const add = {
       op: 'add_node',
       op_id: 'malformed-add'.padEnd(32, '0'),
       actor: HUMAN_ACTOR,
@@ -122,7 +121,7 @@ describe('LiveGraphApplier malformed node report', () => {
       class_type: 'TestSink',
       pos: [400, 0],
       node: sinkNode({ name: 'image', type: null })
-    })
+    } satisfies Op
     expect(applyOps(doc, [add], CATALOG).outcomes).toEqual([
       { op_id: add.op_id, outcome: 'applied' }
     ])
