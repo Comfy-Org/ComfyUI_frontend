@@ -227,6 +227,11 @@ const copy = {
     en: 'GitHub · Coming soon',
     'zh-CN': 'GitHub · 即将推出'
   },
+  'cinematic.download': { en: 'Download', 'zh-CN': '下载' },
+  'cinematic.download.locked': {
+    en: 'Run to download',
+    'zh-CN': '运行后即可下载'
+  },
   'cinematic.meta.description': {
     en: 'Direct cinematic stills: pick the camera, shot, light, film and grade, then run any image model through the Comfy Router.',
     'zh-CN':

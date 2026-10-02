@@ -115,7 +115,6 @@ const copy = {
   'move.view.original': { en: 'Original', 'zh-CN': '原图' },
   'move.edit': { en: 'Edit arrangement', 'zh-CN': '编辑摆放' },
   'move.again': { en: 'Try again', 'zh-CN': '再试一次' },
-  'move.download': { en: 'Download', 'zh-CN': '下载' },
   'move.compare': {
     en: 'Drag to compare the original and the new image',
     'zh-CN': '拖动以对比原图与新图'

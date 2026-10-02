@@ -11,7 +11,6 @@ import { mc } from '../../../lib/workshop/move-anything/copy'
 import EditorChip from '../app-editor/EditorChip.vue'
 import EditorDivider from '../app-editor/EditorDivider.vue'
 import EditorTool from '../app-editor/EditorTool.vue'
-import MoveAnythingHistory from './MoveAnythingHistory.vue'
 import MoveAnythingQuality from './MoveAnythingQuality.vue'
 import MoveAnythingRun from './MoveAnythingRun.vue'
 import { MOVE_TOOLS } from './tools'
@@ -58,8 +57,6 @@ function onChange(event: Event) {
     :disabled="locked()"
     @click="emit('tool', option.id)"
   />
-  <EditorDivider />
-  <MoveAnythingHistory :move :locale />
   <EditorDivider />
   <EditorChip
     :value="image?.name ?? mc('move.image', locale)"

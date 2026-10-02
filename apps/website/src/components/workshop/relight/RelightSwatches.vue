@@ -26,9 +26,13 @@ function onPick(event: Event) {
 </script>
 
 <template>
-  <div class="flex h-8 items-center justify-between gap-3 px-1">
-    <span class="text-xs text-primary-warm-gray">{{ label }}</span>
-    <div role="radiogroup" :aria-label="label" class="flex items-center gap-2">
+  <div class="flex h-8 items-center justify-between gap-2 px-1">
+    <span class="truncate text-xs text-primary-warm-gray">{{ label }}</span>
+    <div
+      role="radiogroup"
+      :aria-label="label"
+      class="flex shrink-0 items-center gap-1.5"
+    >
       <button
         v-for="swatch in LIGHT_COLORS"
         :key="swatch.hex"

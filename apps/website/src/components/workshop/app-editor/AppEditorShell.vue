@@ -11,6 +11,7 @@ import { t } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import AppRepoLink from '../cinematic-studio/AppRepoLink.vue'
 import EditorDock from './EditorDock.vue'
+import EditorDownload from './EditorDownload.vue'
 import EditorFloatingPanel from './EditorFloatingPanel.vue'
 
 const {
@@ -20,6 +21,7 @@ const {
   showDock = true,
   panelLabels,
   panelDimmed = false,
+  download,
   locale = 'en'
 } = defineProps<{
   title: string
@@ -29,6 +31,8 @@ const {
   /** Names the floating panel shown when the `panel` slot is filled. */
   panelLabels?: { label: string; expand: string; collapse: string }
   panelDimmed?: boolean
+  /** The result to download from the header, once there is one. */
+  download?: { href: string; name: string }
   locale?: Locale
 }>()
 
@@ -90,6 +94,7 @@ const dockOverSheet = () => floating() && !wide.value && !panelDimmed
         </div>
         <span class="flex-1" />
         <div class="pointer-events-auto flex items-center gap-2">
+          <EditorDownload :file="download" :locale />
           <AppRepoLink :repo :locale class="max-lg:hidden" />
         </div>
       </header>
@@ -105,6 +110,9 @@ const dockOverSheet = () => floating() && !wide.value && !panelDimmed
         <slot name="tray" />
         <EditorDock v-if="showDock && !dockOverSheet()" :label="toolsLabel">
           <slot name="dock" />
+          <template v-if="$slots.history" #history>
+            <slot name="history" />
+          </template>
         </EditorDock>
       </div>
       <EditorFloatingPanel
@@ -116,6 +124,9 @@ const dockOverSheet = () => floating() && !wide.value && !panelDimmed
         <template v-if="showDock && dockOverSheet()" #above>
           <EditorDock :label="toolsLabel">
             <slot name="dock" />
+            <template v-if="$slots.history" #history>
+              <slot name="history" />
+            </template>
           </EditorDock>
         </template>
         <slot name="panel" />
