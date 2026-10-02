@@ -198,7 +198,7 @@ export function deriveUpcomingEvents(
 ): readonly ComfyEvent[] {
   return events
     .filter((event) => eventStatus(event, now) === 'upcoming')
-    .sort((a, b) => Date.parse(a.startDateTime) - Date.parse(b.startDateTime))
+    .sort((a, b) => Date.parse(b.startDateTime) - Date.parse(a.startDateTime))
 }
 
 export function derivePastEvents(
@@ -458,7 +458,7 @@ const events: readonly ComfyEvent[] = [
   {
     id: 'dev-platform-challenge-build-night',
     category: 'meetup',
-    organizer: 'comfy',
+    organizer: 'partner',
     coords: { lat: 37.7749, lng: -122.4194 },
     // TODO: start time and venue are not set (luma.com is unreachable from
     // this session) and there is no event image yet; add a time, endDateTime,
@@ -490,7 +490,7 @@ const events: readonly ComfyEvent[] = [
   {
     id: 'codex-build-night-agents-everywhere',
     category: 'meetup',
-    organizer: 'comfy',
+    organizer: 'partner',
     coords: { lat: 37.7749, lng: -122.4194 },
     // TODO: start time and venue are not set (luma.com is unreachable from
     // this session) and there is no event image yet; add a time, endDateTime,

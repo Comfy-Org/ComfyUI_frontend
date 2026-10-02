@@ -63,38 +63,22 @@ const matchesSearch = (event: ComfyEvent, query: string) =>
 
 // The agenda contract restated from the raw data. Month keys are the event's
 // own written month — the ISO strings carry the event's offset, so their
-// leading YYYY-MM already is that month. Upcoming months ascend then past
-// months descend; rows inside an upcoming month ascend by start, inside a
-// past month they descend. A month counts as upcoming while any of its
-// events does.
+// leading YYYY-MM already is that month. Months descend, upcoming and past
+// alike, and rows inside each month descend by start.
 function expectedAgendaMonths(): { key: string; eventIds: string[] }[] {
-  const upcomingIds = new Set(upcomingEvents.map((event) => event.id))
   const byMonth = new Map<string, ComfyEvent[]>()
   for (const event of directoryEvents) {
     const key = event.startDateTime.slice(0, 7)
     byMonth.set(key, [...(byMonth.get(key) ?? []), event])
   }
-  const byStart = (a: ComfyEvent, b: ComfyEvent) =>
-    Date.parse(a.startDateTime) - Date.parse(b.startDateTime)
-  const months = [...byMonth.entries()].map(([key, events]) => ({
-    key,
-    upcoming: events.some((event) => upcomingIds.has(event.id)),
-    events: [...events]
-  }))
-  for (const month of months) {
-    month.events.sort(month.upcoming ? byStart : (a, b) => byStart(b, a))
-  }
-  return [
-    ...months
-      .filter((month) => month.upcoming)
-      .sort((a, b) => a.key.localeCompare(b.key)),
-    ...months
-      .filter((month) => !month.upcoming)
-      .sort((a, b) => b.key.localeCompare(a.key))
-  ].map(({ key, events }) => ({
-    key,
-    eventIds: events.map((event) => event.id)
-  }))
+  const latestFirst = (a: ComfyEvent, b: ComfyEvent) =>
+    Date.parse(b.startDateTime) - Date.parse(a.startDateTime)
+  return [...byMonth.entries()]
+    .map(([key, events]) => ({
+      key,
+      eventIds: [...events].sort(latestFirst).map((event) => event.id)
+    }))
+    .sort((a, b) => b.key.localeCompare(a.key))
 }
 
 // Month headings are localized by Intl, not by an i18n key.
@@ -591,8 +575,7 @@ test.describe('Events page — desktop @smoke', () => {
     await expect(rows).toHaveCount(directoryEvents.length)
     await expect(section.locator('.leaflet-container')).toHaveCount(0)
 
-    // The grouping and its upcoming-ascending-then-past-descending month
-    // order, checked against a restatement built from the raw event data.
+    // The grouping and its descending month order, checked against a restatement built from the raw event data.
     const expectedMonths = expectedAgendaMonths()
     const headings = agenda.locator('[data-month]')
     await expect(headings).toHaveCount(expectedMonths.length)
