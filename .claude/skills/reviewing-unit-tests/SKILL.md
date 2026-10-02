@@ -11,11 +11,25 @@ Review for behavior and current repo rules, not motion. Compare to authoritative
 
 ## Review Workflow
 
-1. Identify the test type: component, store, composable, util, or bugfix regression.
-2. Name the behavior the test proves. If you cannot say it in one sentence, request changes.
-3. Open the authoritative doc section before judging structure.
-4. Scan the red flags below.
-5. State the verdict first. Name the failure mode. Cite the doc or rule.
+1. Inventory shared test utilities before reading the diff. See "Inventory Before Reading".
+2. Identify the test type: component, store, composable, util, or bugfix regression.
+3. Name the behavior the test proves. If you cannot say it in one sentence, request changes.
+4. Open the authoritative doc section before judging structure.
+5. Scan the red flags below.
+6. State the verdict first. Name the failure mode. Cite the doc or rule.
+
+### Inventory Before Reading
+
+List the shared factories, global stubs, and reuse rules before judging any setup in the diff:
+
+```bash
+rg --files src | rg 'TestUtils\.ts$'
+rg -n -i '\breuse|instead of hand-rolling' docs/testing/*.md
+```
+
+Also read [`vitest.setup.ts`](../../../vitest.setup.ts) for global stubs and polyfills.
+
+A stub for a missing global (`Path2D`, `ResizeObserver`, canvas `getContext`) repeated in two or more test files is a finding. It belongs in the shared setup or a shared util, not per file.
 
 ## Source of Truth / Precedence
 
@@ -37,15 +51,16 @@ Apply these repo-specific clarifications:
 
 ## 30-Second Red Flags
 
-| If you see...                                                                             | Failure mode                    | Default action                                                |
-| ----------------------------------------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------- |
-| New `@vue/test-utils` import in a new component test                                      | legacy test API                 | Request changes                                               |
-| `vi.mock('vue-i18n', ...)`                                                                | mocked i18n                     | Request changes                                               |
-| `as any`, `@ts-expect-error`, `as Mock`, `as ReturnType<typeof vi.fn>`, `as unknown as X` | unnecessary cast or type escape | Request changes unless the author proves no safer type exists |
-| `getXMock()`, renamed wrapper, or helper that only returns a mocked value                 | alias-by-renaming               | Request changes                                               |
-| `beforeEach` recreates the return object for a module-mocked composable or service        | shared mock setup drift         | Request changes                                               |
-| Assertions only check defaults, mock plumbing, or CSS hooks                               | non-behavioral test             | Request changes                                               |
-| Bugfix test has no proof it fails on pre-fix code                                         | unproven regression             | Request changes                                               |
+| If you see...                                                                                                                                                                                              | Failure mode                    | Default action                                                |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------- |
+| New `@vue/test-utils` import in a new component test                                                                                                                                                       | legacy test API                 | Request changes                                               |
+| `vi.mock('vue-i18n', ...)`                                                                                                                                                                                 | mocked i18n                     | Request changes                                               |
+| `as any`, `@ts-expect-error`, `as Mock`, `as ReturnType<typeof vi.fn>`, `as unknown as X`                                                                                                                  | unnecessary cast or type escape | Request changes unless the author proves no safer type exists |
+| `getXMock()`, renamed wrapper, or helper that only returns a mocked value                                                                                                                                  | alias-by-renaming               | Request changes                                               |
+| `beforeEach` recreates the return object for a module-mocked composable or service                                                                                                                         | shared mock setup drift         | Request changes                                               |
+| Assertions only check defaults, mock plumbing, or CSS hooks                                                                                                                                                | non-behavioral test             | Request changes                                               |
+| Bugfix test has no proof it fails on pre-fix code                                                                                                                                                          | unproven regression             | Request changes                                               |
+| Hand-rolled canvas/graph/node/subgraph/workflow fixture or mock when [`litegraphTestUtils.ts`](../../../src/utils/__tests__/litegraphTestUtils.ts) or another matching `*TestUtils.ts` already provides it | duplicated fixture              | Request changes, point at the shared factory                  |
 
 ## Rationalization Table
 
@@ -138,13 +153,14 @@ A regression test that never proves red does not pin the bug.
 
 ## Quick Reference
 
-| When you see...                     | Read this                                                                                                                                                                                         |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| New `vi.mock(...)` for a composable | [`docs/testing/unit-testing.md`](../../../docs/testing/unit-testing.md) -> "Mocking Composables with Reactive State"                                                                              |
-| New store test or store mock        | [`docs/testing/vitest-patterns.md`](../../../docs/testing/vitest-patterns.md) setup + [`docs/testing/store-testing.md`](../../../docs/testing/store-testing.md)                                   |
-| New component test                  | Top note in [`docs/testing/component-testing.md`](../../../docs/testing/component-testing.md)                                                                                                     |
-| `vue-i18n` in a component test      | [`docs/testing/vitest-patterns.md`](../../../docs/testing/vitest-patterns.md) + [`src/components/searchbox/v2/__test__/testUtils.ts`](../../../src/components/searchbox/v2/__test__/testUtils.ts) |
-| Cast around a mock                  | [`docs/guidance/typescript.md`](../../../docs/guidance/typescript.md) -> "Type Assertion Hierarchy"                                                                                               |
+| When you see...                            | Read this                                                                                                                                                                                                   |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| New `vi.mock(...)` for a composable        | [`docs/testing/unit-testing.md`](../../../docs/testing/unit-testing.md) -> "Mocking Composables with Reactive State"                                                                                        |
+| New store test or store mock               | [`docs/testing/vitest-patterns.md`](../../../docs/testing/vitest-patterns.md) setup + [`docs/testing/store-testing.md`](../../../docs/testing/store-testing.md)                                             |
+| New component test                         | Top note in [`docs/testing/component-testing.md`](../../../docs/testing/component-testing.md)                                                                                                               |
+| `vue-i18n` in a component test             | [`docs/testing/vitest-patterns.md`](../../../docs/testing/vitest-patterns.md) + [`src/components/searchbox/v2/__test__/testUtils.ts`](../../../src/components/searchbox/v2/__test__/testUtils.ts)           |
+| New LiteGraph node/canvas/graph test setup | [`docs/testing/litegraph-testing.md`](../../../docs/testing/litegraph-testing.md) -> "Shared Factories" + [`src/utils/__tests__/litegraphTestUtils.ts`](../../../src/utils/__tests__/litegraphTestUtils.ts) |
+| Cast around a mock                         | [`docs/guidance/typescript.md`](../../../docs/guidance/typescript.md) -> "Type Assertion Hierarchy"                                                                                                         |
 
 ## Key Files to Read
 
@@ -154,4 +170,6 @@ A regression test that never proves red does not pin the bug.
 | Store testing patterns               | [`docs/testing/store-testing.md`](../../../docs/testing/store-testing.md)                                         |
 | Repo-wide Vitest setup defaults      | [`docs/testing/vitest-patterns.md`](../../../docs/testing/vitest-patterns.md)                                     |
 | Component testing rule for new tests | [`docs/testing/component-testing.md`](../../../docs/testing/component-testing.md)                                 |
+| LiteGraph test patterns              | [`docs/testing/litegraph-testing.md`](../../../docs/testing/litegraph-testing.md)                                 |
+| Shared LiteGraph factories           | [`src/utils/__tests__/litegraphTestUtils.ts`](../../../src/utils/__tests__/litegraphTestUtils.ts)                 |
 | Real i18n setup                      | [`src/components/searchbox/v2/__test__/testUtils.ts`](../../../src/components/searchbox/v2/__test__/testUtils.ts) |
