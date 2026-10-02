@@ -567,13 +567,20 @@ test('@mobile keeps the catalogue tabs in place from one hub page to the next', 
     .toBeLessThan(200)
   const before = await workflows.boundingBox()
 
+  // The tabs mark themselves current as soon as they render, which is before
+  // the incoming listing is there to be pinned under them, so the place they
+  // come to rest is what has to be waited for.
   await workflows.click()
   await expect(workflows).toHaveAttribute('aria-current', 'page')
-  expect((await workflows.boundingBox())?.y).toBeCloseTo(before?.y ?? 0, 0)
+  await expect
+    .poll(async () => (await workflows.boundingBox())?.y)
+    .toBeCloseTo(before?.y ?? 0, 0)
 
   await models.click()
   await expect(models).toHaveAttribute('aria-current', 'page')
-  expect((await models.boundingBox())?.y).toBeCloseTo(before?.y ?? 0, 0)
+  await expect
+    .poll(async () => (await models.boundingBox())?.y)
+    .toBeCloseTo(before?.y ?? 0, 0)
 })
 
 test('@mobile stretches the catalogue tabs across the toolbar on a phone', async ({

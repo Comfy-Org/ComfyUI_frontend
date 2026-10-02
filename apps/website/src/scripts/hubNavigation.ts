@@ -4,6 +4,8 @@ import {
   loadWorkflowCatalogue
 } from '../lib/workshop/catalogue-components'
 
+import { HUB_TOOLBAR_ID } from './hubToolbar'
+
 const routes = getRoutes('en')
 const catalogues: Readonly<
   Record<string, (() => Promise<unknown>) | undefined>
@@ -13,7 +15,7 @@ const catalogues: Readonly<
   [routes.hubApps]: loadAppCatalogue
 }
 
-const TOOLBAR = '#hub-toolbar'
+const TOOLBAR = `#${HUB_TOOLBAR_ID}`
 
 /**
  * The catalogue toolbar sticks under the header once the page scrolls past it.
@@ -54,26 +56,49 @@ function toolbarIsPinned() {
 function pinToolbar() {
   const target = pinnedScroll()
   if (target === undefined) return false
-  window.scrollTo(0, target)
-  return Math.round(window.scrollY) === Math.round(target)
+  // A toolbar whose flow position is already above its own sticky offset is
+  // pinned wherever the page stands, and a scroll offset snaps to a device
+  // pixel, so the landing is read with a pixel of slack rather than exactly.
+  const reachable = Math.max(target, 0)
+  window.scrollTo(0, reachable)
+  return Math.abs(window.scrollY - reachable) <= 1
 }
 
 // The incoming listing renders after the swap: until it does there is no
 // toolbar to pin, and the page can be too short to hold the scroll. One
 // observer waits for it to arrive, the other for the page to grow under it.
+// A listing that fails to load, or one too short to hold the scroll, would
+// leave them watching every mutation for the life of the page, so the wait
+// ends either way: on the next navigation, on time, or on the reader taking
+// the page somewhere themselves — which is a scroll, never the tap or the
+// keystroke that worked the tab in the first place.
+const PIN_TIMEOUT_MS = 3000
+const READER_SCROLLS = ['wheel', 'touchmove']
+
 function pinWhenReady() {
   const growing = new ResizeObserver(() => retry())
   const mounting = new MutationObserver(() => retry())
-  const stop = () => {
+  const waiting = new AbortController()
+  const deadline = setTimeout(stop, PIN_TIMEOUT_MS)
+  function stop() {
+    clearTimeout(deadline)
     growing.disconnect()
     mounting.disconnect()
+    waiting.abort()
   }
   function retry() {
     if (pinToolbar()) stop()
   }
   growing.observe(document.documentElement)
   mounting.observe(document.body, { childList: true, subtree: true })
-  document.addEventListener('astro:before-preparation', stop, { once: true })
+  for (const reader of READER_SCROLLS)
+    document.addEventListener(reader, stop, {
+      signal: waiting.signal,
+      passive: true
+    })
+  document.addEventListener('astro:before-preparation', stop, {
+    signal: waiting.signal
+  })
 }
 
 /**

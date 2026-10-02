@@ -214,6 +214,7 @@ for (const width of [1440, 390]) {
 
 for (const { width, from, to } of [
   { width: 1440, from: 'workflows', to: 'models' },
+  { width: 1440, from: 'workflows', to: 'apps' },
   { width: 390, from: 'models', to: 'workflows' }
 ] as const) {
   test(`${from} to ${to} at ${width}px leaves the tabs where the reader clicked them`, async ({
@@ -255,6 +256,19 @@ for (const { width, from, to } of [
       .poll(async () => (await tabs.boundingBox())?.y)
       .toBeCloseTo(pinned ?? 0, 0)
     expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
+
+    // A pinned toolbar reads the same anywhere further down the new listing,
+    // so pinned alone would also pass for a scroll measured against the page
+    // the reader left — and the two sections hold their toolbar at different
+    // heights. The page sits at the first scroll that pins it, so handing a
+    // few pixels back puts the toolbar into the flow again.
+    const landed = await toolbar.evaluate((element) =>
+      Number.parseFloat(getComputedStyle(element).top)
+    )
+    await page.evaluate(() => window.scrollBy(0, -4))
+    await expect
+      .poll(async () => (await toolbar.boundingBox())?.y)
+      .toBeGreaterThan(landed + 2)
   })
 }
 
