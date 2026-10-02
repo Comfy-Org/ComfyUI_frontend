@@ -34,6 +34,54 @@ to use Oxfmt. The website's `.prettierrc.json` matches the repository's style
 and preserves whitespace around inline HTML elements. The Astro editor
 extension also reads this configuration.
 
+## Localization
+
+The site ships English, Simplified Chinese (`zh-CN`) and Japanese (`ja`).
+Catalogs live in `src/locales/<locale>/*.json` in the same nested JSON layout
+and [vue-i18n message syntax](https://vue-i18n.intlify.dev/guide/essentials/syntax)
+as the application's `src/locales/` at the repository root:
+
+- Named placeholders: `"Show {n} models"`, filled with
+  `t('workshop.search.show', { n }, { locale })`.
+- Plural forms separated by `|`: `"{count} node | {count} nodes"`, picked with
+  `t('cloudNodesLaunch.models.nodeCount', { count }, { locale, plural: count })`.
+- The characters `{`, `}`, `@` and `|` are message syntax, so literal ones are
+  written as `{'{'}`, `{'}'}`, `{'@'}` and `{'|'}`.
+
+`src/i18n/translations.ts` configures vue-i18n and exports its public translation
+API. Astro middleware binds `Astro.locals.t` to the request locale. In Vue and
+TypeScript, bind once with `translationsFor(locale).t`; each locale has its own
+composer because the site renders locales concurrently. Missing messages fall
+back to English. The catalog test compiles every message and checks that each
+English message has Chinese copy.
+
+`main.json` is the catalog for each locale. Keep feature copy grouped under a
+nested feature key.
+
+Add new English copy to the English catalog; translated copy lives in the
+matching file under each locale. Every English message requires a Chinese
+entry; the catalog tests check completeness without using English fallback.
+Catalog files use two-space JSON indentation and a final newline. Legal and
+content pages render their sections in the order they appear in the catalog, so
+keep `en/main.json` in document order and never sort its keys.
+
+### English-only copy
+
+Affiliate terms, Terms of Service (`tos`), and the Enterprise MSA are
+legal-reviewed English documents on English-only routes.
+Do not translate or publish localized versions until legal approves them;
+an unreviewed translation can diverge from the governing English text.
+Their Chinese catalog entries intentionally repeat English, except the two
+translated affiliate page labels. The MiniMax professional license intake
+embeds an English-only HubSpot form and also intentionally repeats English.
+Desktop privacy (`desktop_privacy`) also intentionally repeats the governing
+English copy in its Chinese catalog. This is a catalog exemption: the
+`/zh-CN/privacy/desktop` route exists and renders those English entries.
+All these ranges must remain exempt from automatic translation until an
+approved translation is available. The page headers and
+`LOCALE_INVARIANT_ROUTE_KEYS` document the English-only route policies;
+desktop privacy retains its localized route.
+
 ## Ashby careers integration
 
 `/careers` and `/zh-CN/careers` are rendered from Ashby's public job board

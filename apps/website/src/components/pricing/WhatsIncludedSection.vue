@@ -2,11 +2,12 @@
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { Clock } from '@lucide/vue'
 
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import SafeRichText from '@/components/common/SafeRichTextContent'
 import CheckIcon from '../icons/CheckIcon.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 interface IncludedFeature {
   titleKey: TranslationKey
@@ -71,7 +72,7 @@ const features: IncludedFeature[] = [
         <h2
           class="text-3xl/tight font-light whitespace-pre-line text-primary-comfy-canvas"
         >
-          {{ t('pricing.included.heading', locale) }}
+          {{ t('pricing.included.heading') }}
         </h2>
       </div>
 
@@ -97,12 +98,12 @@ const features: IncludedFeature[] = [
               class="mt-0.5 size-4 shrink-0 text-primary-comfy-yellow"
             />
             <p class="text-sm font-medium text-primary-comfy-canvas">
-              {{ t(feature.titleKey, locale) }}
+              {{ t(feature.titleKey) }}
               <span
                 v-if="feature.isComingSoon"
                 class="block text-primary-comfy-canvas/55"
               >
-                {{ t('pricing.included.comingSoon', locale) }}
+                {{ t('pricing.included.comingSoon') }}
               </span>
             </p>
           </div>
@@ -110,7 +111,7 @@ const features: IncludedFeature[] = [
           <SafeRichText
             as="p"
             class="mt-3 text-sm/relaxed text-primary-comfy-canvas/55 lg:mt-0"
-            :html="t(feature.descriptionKey, locale)"
+            :html="t(feature.descriptionKey)"
           />
         </div>
       </div>

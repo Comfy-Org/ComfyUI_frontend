@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import { externalLinks } from '../../config/routes'
 import BrandButton from '../common/BrandButton.vue'
 import HeroHeadline from './HeroHeadline.vue'
@@ -8,6 +8,7 @@ import HeroGraph from './HeroGraph.vue'
 import HeroMobileFlow from './HeroMobileFlow.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 </script>
 
 <template>
@@ -26,7 +27,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
         variant="outline"
         class="font-bold uppercase"
       >
-        {{ t('hero.getStartedFree', locale) }}
+        {{ t('hero.getStartedFree') }}
       </BrandButton>
     </div>
   </section>
