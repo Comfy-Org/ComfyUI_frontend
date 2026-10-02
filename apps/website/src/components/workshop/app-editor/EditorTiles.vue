@@ -30,7 +30,11 @@ const {
   upload?: { label: string; caption?: string; inputTestId?: string }
 }>()
 
-const emit = defineEmits<{ upload: [file: File] }>()
+const emit = defineEmits<{
+  upload: [file: File]
+  /** Every click on a tile, the picked one included. */
+  pick: [id: T]
+}>()
 
 const GRID = {
   2: 'grid-cols-2 gap-x-4 gap-y-5',
@@ -39,6 +43,11 @@ const GRID = {
 } as const
 const value = defineModel<T>()
 const large = columns === 2
+
+function pick(id: T) {
+  value.value = id
+  emit('pick', id)
+}
 </script>
 
 <template>
@@ -70,7 +79,7 @@ const large = columns === 2
         :checked="value === option.id"
         :aspect
         :large
-        @pick="value = option.id"
+        @pick="pick(option.id)"
       >
         <slot name="tile" :option />
       </EditorTile>
