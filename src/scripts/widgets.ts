@@ -113,28 +113,9 @@ function isValueControlMode(value: unknown): value is string {
 }
 
 /**
- * The `control_after_generate` key of an input spec carries two unrelated
- * meanings, and the value's type alone no longer separates them:
- *
- * - a **name override** for the control widget — group nodes emit
- *   `` `${prefix}control_after_generate` `` so a flattened node's controls stay
- *   distinct (`groupNode.ts`), and
- * - the control's **default mode**, because core declares it as the V3
- *   `io.ControlAfterGenerate` enum, which is a `str` Enum and therefore
- *   serialises into `object_info` as its own value — `"fixed"` on
- *   `PrimitiveInt` (`comfy_extras/nodes_primitive.py`) and `SeedNode`
- *   (`comfy_extras/nodes_seed.py`).
- *
- * Reading a mode as a name produced a live widget literally named `fixed`,
- * while every other reader of the same key treats it as a flag and keeps the
- * canonical slot name: the widget catalog's `widget_order`, saved workflows,
- * `app.ts`'s `PrimitiveNode` value coercion, and the agent's shared document.
- * The caller already passes the mode through as the widget's default value, so
- * a mode here is never also a name.
- *
- * Returns `undefined` — "not a name" — for a mode and for a blank string, so
- * the caller falls through to `control_prefix` or the canonical name rather
- * than creating a widget with an empty name.
+ * `control_after_generate` is either a group-node widget name override or a
+ * control mode that core's `io.ControlAfterGenerate` enum serialises into
+ * `object_info`. Only a non-blank string that is not a mode is a name.
  */
 function controlAfterGenerateNameOverride(value: unknown): string | undefined {
   if (typeof value !== 'string' || value.trim() === '') return undefined
