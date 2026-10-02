@@ -601,6 +601,53 @@ describe('ComfyApp', () => {
       expect(midLoad.value).toBe(false)
     })
 
+    it('keeps the binding for a same-document reload named by path', async () => {
+      await useRealWorkflowService()
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      const documentId = '33333333-3333-4333-8333-333333333333'
+      const workflow = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/reloaded.json',
+          modified: 0,
+          size: 0
+        })
+      )
+      workflow.changeTracker.activeState = {
+        ...createWorkflowGraphData(),
+        id: documentId
+      }
+      useWorkflowStore().activeWorkflow = workflow
+      const uid = toDocumentUid(workflow.instanceId)
+      const lifecycle = useDocumentLifecycleStore()
+      lifecycle.activate({ uid, rootGraphId: toRootGraphId('reloaded-root') })
+      const midLoad = sampleLifecycleAt('beforeConfigureGraph', () =>
+        lifecycle.isActive(uid)
+      )
+
+      // The string branch of the identity resolution, which callers that name
+      // an open tab by path take. `'reloaded'` has to be expanded back to
+      // `workflows/reloaded.json` before the id check can see that this is the
+      // document already on the canvas.
+      await app.loadGraphData(
+        { ...createWorkflowGraphData(), id: documentId },
+        true,
+        false,
+        'reloaded'
+      )
+
+      // Retracting here would be a false retract/publish pair for a document
+      // that never left the canvas, which stops the agent's follower and
+      // minters mid-reload. Asserted mid-load rather than on the final
+      // binding: resolving a *string* to an already-open tab goes through the
+      // workflow lookup, which this harness does not populate, so the publish
+      // lands on a fresh temporary document and says nothing about the retract
+      // decision this test is about.
+      expect(midLoad.value).toBe(true)
+    })
+
     it('fails closed when a load clears the graph and then fails', async () => {
       await useRealWorkflowService()
       app.canvasElRef.value = document.createElement('canvas')
