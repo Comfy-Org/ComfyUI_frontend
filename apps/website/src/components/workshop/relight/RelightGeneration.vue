@@ -5,7 +5,6 @@ import { computed } from 'vue'
 import type { Relight } from '../../../composables/useRelight'
 import type { Locale } from '../../../i18n/translations'
 import { lc } from '../../../lib/workshop/relight/copy'
-import EditorSeedField from '../app-editor/EditorSeedField.vue'
 import EditorSelect from '../app-editor/EditorSelect.vue'
 import EditorSlider from '../app-editor/EditorSlider.vue'
 import EditorTextArea from '../app-editor/EditorTextArea.vue'
@@ -59,14 +58,6 @@ const areas = computed(() => [
         :label="lc('relight.generation.area', locale)"
         :options="areas"
         @update:model-value="(area) => relight.updateGeneration({ area })"
-      />
-      <EditorSeedField
-        :model-value="setup.generation.seed"
-        :label="lc('relight.generation.seed', locale)"
-        :shuffle-label="lc('relight.generation.shuffle', locale)"
-        @update:model-value="
-          (seed) => relight.updateGeneration({ seed }, 'seed')
-        "
       />
     </div>
   </details>

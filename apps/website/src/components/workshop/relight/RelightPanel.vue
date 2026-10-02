@@ -3,6 +3,8 @@ import type { Relight } from '../../../composables/useRelight'
 import type { Locale } from '../../../i18n/translations'
 import { lc } from '../../../lib/workshop/relight/copy'
 import EditorCollapsible from '../app-editor/EditorCollapsible.vue'
+import EditorPanelRow from '../app-editor/EditorPanelRow.vue'
+import RelightSeed from './RelightSeed.vue'
 import RelightTools from './RelightTools.vue'
 import { RELIGHT_SECTIONS, sectionMeta } from './sections'
 
@@ -32,5 +34,8 @@ const { phase } = relight
       </template>
       <component :is="section.content" :relight :locale />
     </EditorCollapsible>
+    <EditorPanelRow>
+      <RelightSeed :relight :locale />
+    </EditorPanelRow>
   </fieldset>
 </template>

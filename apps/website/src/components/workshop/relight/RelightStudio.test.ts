@@ -371,6 +371,50 @@ describe('RelightStudio', () => {
     }
   )
 
+  it('keeps the seed as a row of the panel, outside Generation', async () => {
+    await openExample()
+    expect(
+      within(panel()).getByRole('button', { name: /^Generation/ })
+    ).toHaveAttribute('aria-expanded', 'false')
+    expect(
+      within(panel()).getByRole('spinbutton', { name: 'Seed' })
+    ).toBeVisible()
+  })
+
+  it("keeps the seed in the bottom composer's Generation tray", async () => {
+    const user = await openExample('e')
+    await user.click(screen.getByRole('button', { name: /^Generation/ }))
+    expect(
+      within(screen.getByRole('dialog', { name: 'Generation' })).getByRole(
+        'spinbutton',
+        { name: 'Seed' }
+      )
+    ).toBeVisible()
+  })
+
+  it('zooms the photo from the zoom control and the + - 0 keys, but not while typing', async () => {
+    const user = await openExample()
+    const fit = () => screen.getByTestId('editor-zoom-fit')
+    expect(fit()).toHaveTextContent('100%')
+
+    await user.click(screen.getByRole('button', { name: 'Zoom in' }))
+    expect(fit()).toHaveTextContent('125%')
+    expect(fit()).toHaveAccessibleName('Fit to screen, now 125%')
+    await user.keyboard('-')
+    await user.keyboard('-')
+    expect(fit()).toHaveTextContent('80%')
+    await user.keyboard('0')
+    expect(fit()).toHaveTextContent('100%')
+
+    await user.click(within(panel()).getByRole('spinbutton', { name: 'Seed' }))
+    await user.keyboard('+')
+    expect(fit()).toHaveTextContent('100%')
+    await user.click(fit())
+    expect(screen.getByTestId('editor-frame')).toHaveStyle({
+      transform: 'translate(0px, 0px) scale(1)'
+    })
+  })
+
   it('splits the photo into original and relit while Compare is on', async () => {
     const user = await openExample()
     const tools = screen.getByRole('toolbar', { name: 'Relight tools' })
