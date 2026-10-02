@@ -107,6 +107,28 @@ describe('agentWorkflowTabBindingStore', () => {
     expect(bindings.matchesWorkflow('wf-abandoned', restored)).toBe(true)
   })
 
+  it('does not let an empty document id claim a restored draft binding', async () => {
+    seedBindings({
+      'wf-abandoned': {
+        tabPath: DEFAULT_PATH,
+        graphId: DRAFT_GRAPH_ID,
+        confirmedAt: Date.now()
+      }
+    })
+    const workflows = useWorkflowStore()
+    const bindings = useAgentWorkflowTabBindingStore()
+    const impostor = workflows.createTemporary('Unsaved Workflow.json', {
+      ...blankGraph,
+      id: ''
+    })
+    workflows.openWorkflowsInBackground({ right: [impostor.path] })
+    await nextTick()
+
+    expect(bindings.tabPathFor('wf-abandoned')).toBeUndefined()
+    expect(bindings.workflowIdFor(DEFAULT_PATH)).toBeUndefined()
+    expect(bindings.matchesWorkflow('wf-abandoned', impostor)).toBe(false)
+  })
+
   it('adopts two restored drafts that share a base name independently', async () => {
     seedBindings({
       'wf-first': {
