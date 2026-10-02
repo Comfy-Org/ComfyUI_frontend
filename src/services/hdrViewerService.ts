@@ -1,6 +1,6 @@
 import { defineAsyncComponent } from 'vue'
 
-import { LOAD3D_VIEWER_CONTENT_CLASS } from '@/components/load3d/load3dViewerDialog'
+import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/components/load3d/load3dViewerDialog'
 import { t } from '@/i18n'
 import { useDialogStore } from '@/stores/dialogStore'
 import {
@@ -19,11 +19,6 @@ export function openHdrViewer(url: string) {
     title: getImageFilenameFromUrl(fullResUrl) ?? t('hdrViewer.title'),
     component: HdrViewerContent,
     props: { imageUrl: fullResUrl },
-    dialogComponentProps: {
-      renderer: 'reka',
-      size: 'full',
-      contentClass: LOAD3D_VIEWER_CONTENT_CLASS,
-      maximizable: true
-    }
+    dialogComponentProps: LOAD3D_VIEWER_DIALOG_PROPS
   })
 }

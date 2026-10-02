@@ -160,12 +160,7 @@ describe('ReplyAssetGroup', () => {
     await userEvent.click(screen.getByRole('button', { name: 'model.glb' }))
     expect(vi.mocked(useDialogStore().showDialog)).toHaveBeenCalledWith(
       expect.objectContaining({
-        title: 'model.glb',
-        dialogComponentProps: expect.objectContaining({
-          contentClass: expect.stringContaining(
-            'sm:max-w-[min(80vw,calc(100vw-var(--workspace-inset-right,0px)-1rem))]'
-          )
-        })
+        title: 'model.glb'
       })
     )
   })

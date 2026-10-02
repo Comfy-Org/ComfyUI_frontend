@@ -2,7 +2,7 @@
 import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { LOAD3D_VIEWER_CONTENT_CLASS } from '@/components/load3d/load3dViewerDialog'
+import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/components/load3d/load3dViewerDialog'
 import Button from '@/components/ui/button/Button.vue'
 import {
   findOutputAsset,
@@ -126,10 +126,7 @@ function inspect(asset: ReplyAsset): void {
       component: Load3dViewerContent,
       props: { modelUrl: asset.url },
       dialogComponentProps: {
-        renderer: 'reka',
-        size: 'full',
-        contentClass: LOAD3D_VIEWER_CONTENT_CLASS,
-        maximizable: true,
+        ...LOAD3D_VIEWER_DIALOG_PROPS,
         onClose: () => refreshModelThumbnail(asset)
       }
     })

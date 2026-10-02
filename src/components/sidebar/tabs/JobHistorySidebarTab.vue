@@ -84,7 +84,7 @@
 import { computed, defineAsyncComponent, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { LOAD3D_VIEWER_CONTENT_CLASS } from '@/components/load3d/load3dViewerDialog'
+import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/components/load3d/load3dViewerDialog'
 import JobFilterActions from '@/components/queue/job/JobFilterActions.vue'
 import JobAssetsList from '@/components/queue/job/JobAssetsList.vue'
 import JobContextMenu from '@/components/queue/job/JobContextMenu.vue'
@@ -202,12 +202,7 @@ const onViewItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
       props: {
         modelUrl: previewOutput.url || ''
       },
-      dialogComponentProps: {
-        renderer: 'reka',
-        size: 'full',
-        contentClass: LOAD3D_VIEWER_CONTENT_CLASS,
-        maximizable: true
-      }
+      dialogComponentProps: LOAD3D_VIEWER_DIALOG_PROPS
     })
     return
   }

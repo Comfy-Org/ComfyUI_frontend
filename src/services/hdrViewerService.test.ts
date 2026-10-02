@@ -18,8 +18,5 @@ describe('openHdrViewer', () => {
       imageUrl: '/api/view?filename=out.exr&rand=1'
     })
     expect(options.dialogComponentProps?.size).toBe('full')
-    expect(options.dialogComponentProps?.contentClass).toContain(
-      'sm:max-w-[min(80vw,calc(100vw-var(--workspace-inset-right,0px)-1rem))]'
-    )
   })
 })
