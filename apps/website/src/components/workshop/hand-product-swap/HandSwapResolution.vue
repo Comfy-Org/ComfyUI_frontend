@@ -41,6 +41,7 @@ const options = computed(() =>
     v-model="resolution"
     :heading="hc('swap.resolution', locale)"
     :options
+    :label="hc('swap.resolution', locale)"
     :composer
     :disabled="composer && phase.kind === 'running'"
   />

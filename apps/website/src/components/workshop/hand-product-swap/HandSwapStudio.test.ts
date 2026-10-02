@@ -57,9 +57,7 @@ describe('HandSwapStudio', () => {
       within(section('Product')).getByRole('radio', { name: 'Serum' })
     )
     await user.click(
-      within(section('Resolution')).getByRole('button', {
-        name: 'Resolution: 2K'
-      })
+      within(panel()).getByRole('button', { name: 'Resolution: 2K' })
     )
     await user.click(screen.getByRole('menuitemradio', { name: /^4K/ }))
     expect(
@@ -130,27 +128,21 @@ describe('HandSwapStudio', () => {
     expect(parseFloat(box().style.left)).toBeCloseTo(left)
   })
 
-  it('keeps a shuffleable seed in a closed Advanced section that shows it', async () => {
+  it('keeps a shuffleable seed as a row of the panel, with no Advanced section', async () => {
     const user = await openExample()
-    const advanced = within(section('Advanced')).getByRole('button', {
-      name: /Advanced/
-    })
-    expect(advanced).toHaveAttribute('aria-expanded', 'false')
-    expect(advanced).toHaveTextContent('Seed 42')
+    expect(
+      within(panel()).queryByRole('region', { name: 'Advanced' })
+    ).toBeNull()
+    const seed = within(panel()).getByRole('spinbutton', { name: 'Seed' })
+    expect(seed).toHaveValue(42)
 
-    await user.click(advanced)
-    const seed = within(section('Advanced')).getByRole('spinbutton', {
-      name: 'Seed'
-    })
     await user.clear(seed)
     await user.type(seed, '7')
     await user.tab()
-    expect(advanced).toHaveTextContent('Seed 7')
+    expect(seed).toHaveValue(7)
 
     vi.spyOn(Math, 'random').mockReturnValue(0.25)
-    await user.click(
-      within(section('Advanced')).getByRole('button', { name: 'New seed' })
-    )
+    await user.click(within(panel()).getByRole('button', { name: 'New seed' }))
     expect(seed).toHaveValue(250_000_000)
   })
 
