@@ -27,9 +27,9 @@ All other rule severities and thresholds retain Fallow 3.24.1's defaults.
 Pin the CLI in both package scripts and CI actions to preserve those defaults.
 
 The preset uses `.fallow-baselines/{dead-code,health,dupes}.json` in the consuming
-repository. Baseline contents stay in that repository. Fallow 3.24.1 replaces the
-entire `audit` object when a local config supplies one; repeat the gate and all
-three paths together if a consumer needs different baseline locations.
+repository. Baseline contents stay in that repository. Fallow 3.24.1 deep-merges
+local `audit` fields over the preset; overriding one baseline path inherits the
+gate and the other baseline paths.
 The three baseline files must exist; installing this package does not create or
 refresh them.
 
