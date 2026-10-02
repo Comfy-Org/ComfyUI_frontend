@@ -8,7 +8,6 @@ import {
   addValueControlWidgets
 } from '@/scripts/widgets'
 
-/** A node left as the int widget constructor leaves it, before the control. */
 function intNode() {
   const graph = new LGraph()
   const node = new LGraphNode('PrimitiveInt')
