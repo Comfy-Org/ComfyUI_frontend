@@ -28,7 +28,6 @@ export const BACKGROUND_SWATCHES = [
   { id: 'navy', color: '#26324a' },
   { id: 'ink', color: '#1c1b1f' }
 ] as const satisfies readonly { id: string; color: string | null }[]
-export type SwatchId = (typeof BACKGROUND_SWATCHES)[number]['id']
 
 export function swatchBackground(color: string | null): CutoutBackground {
   return color ? { kind: 'color', color } : { kind: 'transparent' }
@@ -76,7 +75,7 @@ export const ADJUST_FILTERS = [
   { id: 'contrast', max: 200, unit: '%' },
   { id: 'saturation', max: 200, unit: '%' }
 ] as const
-export type AdjustFilter = (typeof ADJUST_FILTERS)[number]['id']
+type AdjustFilter = (typeof ADJUST_FILTERS)[number]['id']
 
 export type AdjustSetup = {
   readonly target: AdjustTarget
@@ -113,7 +112,7 @@ export const DEFAULT_SETUP: CutoutSetup = {
 }
 
 /** At 100, Blur softens by this share of the photo's width. */
-export const MAX_BLUR = 0.03
+const MAX_BLUR = 0.03
 
 /**
  * Adjust's values as a CSS filter, the same string for the live preview

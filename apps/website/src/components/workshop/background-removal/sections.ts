@@ -50,7 +50,7 @@ export const CUTOUT_SECTIONS = [
 }[]
 
 /** A Remove background's name: its swatch, or the custom colour's hex. */
-export function backgroundName(background: CutoutBackground, locale: Locale) {
+function backgroundName(background: CutoutBackground, locale: Locale) {
   const swatch = backgroundSwatch(background)
   if (swatch) return brc(`cutout.swatch.${swatch.id}`, locale)
   return background.kind === 'color' ? background.color.toUpperCase() : ''
