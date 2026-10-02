@@ -309,7 +309,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     return true
   }
 
-  function start(): void {
+  function start({ restore = true }: { restore?: boolean } = {}): void {
     ownedGeneration = ++sessionGeneration
     connection = 'initial'
     const surviving = conversationStore.threadId
@@ -329,6 +329,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
     unsubscribe = events.subscribe(onRaw)
     if (events.onStatus) unsubscribeStatus = events.onStatus(onStatus)
+    if (!restore) return
     if (surviving !== null) {
       const generation = ++loadGeneration
       const isCurrent = () =>
