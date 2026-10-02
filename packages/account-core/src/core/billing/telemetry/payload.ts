@@ -33,6 +33,7 @@ export const BILLING_PAYLOAD_FIELD_HANDLING = {
   billing_op_id: 'optional',
   checkout_attempt_id: 'optional',
   checkout_type: 'optional',
+  checkout_ui: 'optional',
   cycle: 'optional',
   decline_reason: 'optional',
   duration_ms: 'optional',

@@ -61,6 +61,10 @@ import { awaitBillingWebStripeKey } from '@/config/stripeKey'
 import { useBillingEntry } from '@/entry/billingEntry'
 import { useBillingWebSession } from '@/session/billingWebSession'
 import { createDeferredStripeChallengePort } from '@/session/stripeChallengePort'
+import {
+  checkoutAttemptOf,
+  createSubscriptionCheckoutTelemetry
+} from '@/telemetry/subscriptionCheckoutTelemetry'
 
 /**
  * What Pay charges: a new method's token, a saved method, or the method on
@@ -205,6 +209,7 @@ export function useFullPageCheckout() {
     challengePort,
     autoContinue: () => submitting.value
   })
+  const attempts = createSubscriptionCheckoutTelemetry({ ui: 'full_page' })
 
   /** A page sent back to resolving by the lifecycle reads its capture again. */
   function dispatch(event: CheckoutPageEvent) {
@@ -702,7 +707,9 @@ export function useFullPageCheckout() {
       type: 'paySubmitted',
       ...(redirectMethod === undefined ? {} : { redirectMethod })
     })
-    const result = await checkout.subscribe(requestFor(planned, quoted, choice))
+    const result = await attempts.run(checkoutAttemptOf(quoted, arrival), () =>
+      checkout.subscribe(requestFor(planned, quoted, choice))
+    )
     if (mine !== payGeneration) return
     await settle(payVerdictOf(result), planned)
   }

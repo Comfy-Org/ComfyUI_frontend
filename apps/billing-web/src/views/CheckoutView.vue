@@ -60,6 +60,10 @@ import { useBillingEntry } from '@/entry/billingEntry'
 import { returnToHost } from '@/entry/returnToHost'
 import { createDeferredStripeChallengePort } from '@/session/stripeChallengePort'
 import { useWorkspaceInvites } from '@/session/workspaceInvites'
+import {
+  checkoutAttemptOf,
+  createSubscriptionCheckoutTelemetry
+} from '@/telemetry/subscriptionCheckoutTelemetry'
 import { reportReturnClicked } from '@/telemetry/webReturnTelemetry'
 
 const { locale, t } = useI18n()
@@ -98,6 +102,8 @@ const checkout = useCheckout({
   // Deferred: reads the key at challenge time, not this setup's snapshot.
   challengePort: createDeferredStripeChallengePort(awaitBillingWebStripeKey)
 })
+
+const attempts = createSubscriptionCheckoutTelemetry({ ui: 'embedded' })
 
 const quotedPlan = ref<string | undefined>()
 const quotedTeamCreditStopId = ref<string | undefined>()
@@ -511,20 +517,25 @@ function reportMethodSelected(choice: PaymentChoice) {
 
 async function pay(choice: PaymentChoice) {
   const quoted = preview.value
-  if (planSlug.value === undefined || !quoted || loading.value) return
+  const slug = planSlug.value
+  if (slug === undefined || !quoted || loading.value) return
   submitFailure.value = undefined
   reportMethodSelected(choice)
   journey.submitted()
-  const result = await checkout.subscribe(
-    buildSubscribeRequest(
-      {
-        planSlug: planSlug.value,
-        teamCreditStopId: teamCreditStopId.value,
-        returnUrl: resultUrl()
-      },
-      quoted,
-      choice
-    )
+  const result = await attempts.run(
+    checkoutAttemptOf(quoted, entry.value),
+    () =>
+      checkout.subscribe(
+        buildSubscribeRequest(
+          {
+            planSlug: slug,
+            teamCreditStopId: teamCreditStopId.value,
+            returnUrl: resultUrl()
+          },
+          quoted,
+          choice
+        )
+      )
   )
   if (result.status === 'ok') return
   if (result.code === 'REACTIVATION_CONFIRMATION_REQUIRED') {

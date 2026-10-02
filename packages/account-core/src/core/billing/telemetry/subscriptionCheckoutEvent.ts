@@ -1,5 +1,6 @@
 import type { SubscribeResponse } from '@comfyorg/ingest-types'
 
+import type { BillingDeclineReason } from '../operationState.js'
 import type {
   BillingCheckoutReceived,
   BillingFailed,
@@ -16,6 +17,9 @@ import type {
   SubscriptionCheckoutType
 } from './vocabulary.js'
 
+/** The two checkouts billing web serves; the cloud app's events name neither. */
+export type SubscriptionCheckoutUi = 'embedded' | 'full_page'
+
 export type SubscriptionCheckoutBillingEvent = {
   operation: 'subscription_checkout'
   billing_op_id?: string
@@ -23,6 +27,7 @@ export type SubscriptionCheckoutBillingEvent = {
   tier?: SubscriptionCheckoutTier
   cycle?: BillingCycle
   checkout_type?: SubscriptionCheckoutType
+  checkout_ui?: SubscriptionCheckoutUi
   payment_intent_source?: PaymentIntentSource
   /**
    * Client-observed end-to-end wall time from this attempt's canonical
@@ -35,6 +40,6 @@ export type SubscriptionCheckoutBillingEvent = {
   | BillingRequestSent
   | BillingStarted
   | BillingRecoveredSucceeded
-  | BillingFailed
+  | (BillingFailed & { decline_reason?: BillingDeclineReason })
   | BillingTimedOut
 )

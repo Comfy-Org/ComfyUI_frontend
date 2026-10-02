@@ -79,6 +79,46 @@ describe('the billing event payload for a surface', () => {
   )
 })
 
+describe('the billing web checkout failure payload', () => {
+  it('keeps the checkout it happened in, the decline and the error code, and no raw detail', () => {
+    const event = {
+      operation: 'subscription_checkout',
+      stage: 'failed',
+      outcome: 'failure',
+      billing_client: 'sdk',
+      checkout_ui: 'full_page',
+      tier: 'creator',
+      cycle: 'monthly',
+      checkout_type: 'new',
+      payment_intent_source: 'subscribe_now_button',
+      failure_category: 'provider_decline',
+      decline_reason: 'insufficient_funds',
+      error_code: 'quote_stale',
+      billing_op_id: 'op_1',
+      duration_ms: 1800,
+      server_message: 'Stripe: card_declined for cus_123'
+    } satisfies BillingTelemetryEvent & Record<string, string | number>
+
+    expect(getBillingWebTelemetryEventPayload(event)).toStrictEqual({
+      operation: 'subscription_checkout',
+      stage: 'failed',
+      outcome: 'failure',
+      billing_client: 'sdk',
+      checkout_ui: 'full_page',
+      tier: 'creator',
+      cycle: 'monthly',
+      checkout_type: 'new',
+      payment_intent_source: 'subscribe_now_button',
+      failure_category: 'provider_decline',
+      decline_reason: 'insufficient_funds',
+      error_code: 'quote_stale',
+      billing_op_id: 'op_1',
+      duration_ms: 1800,
+      billing_surface: 'billing_web'
+    })
+  })
+})
+
 describe('the billing payload allowlist', () => {
   it('handles every field a billing event can carry', () => {
     const handled: BillingPayloadFieldHandling = BILLING_PAYLOAD_FIELD_HANDLING
