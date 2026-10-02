@@ -199,7 +199,8 @@ for (const [source, expected] of [
     { encoding: 'utf8' }
   )
   if (result.error) throw result.error
-  if (result.status !== expected) {
+  const hasRule = result.stdout.includes('import(consistent-type-specifier-style)')
+  if (result.status !== expected || hasRule !== (expected === 1)) {
     throw new Error('Packed Oxlint preset did not enforce separate type imports: ' + result.stdout + result.stderr)
   }
 }
