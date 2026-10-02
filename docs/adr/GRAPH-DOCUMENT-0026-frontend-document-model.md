@@ -575,19 +575,19 @@ What it provides:
   hooks — this is not yet the Phase 1 split of graph-load work from
   document-transition work.
 - It does **not** own which document is presented, and deliberately so.
-  `workflowStore.activeWorkflow` already owns that, and activation is not
-  confined to the graph-load entrypoints: `workflowStore.openWorkflow` activates
-  a tab by moving the pointer with no graph load at all, which is the path a
-  reopen from persistence takes. A uid captured at load completion therefore goes
-  stale with no event that could correct it, and the stale capture wins — it
-  silenced the agent's CRDT follower after a close/reopen, resurrecting a node
-  the host had deleted
+  `workflowStore.activeWorkflow` already owns that, and a uid captured at load
+  completion is a second copy that can disagree with it. It did: after a
+  close/reopen through the e2e helper `openPersistedWorkflow`, which moves the
+  pointer with no graph load, the captured uid no longer matched the pointer and
+  the agent's CRDT follower never resubscribed
   (`browser_tests/tests/agent/agentCloseReopenRemoteDelete.spec.ts`). So the
   binding's identity half is read live from the active pointer, and only the root
   graph id is stored. That id is the part the canvas genuinely cannot answer:
   mid-load `app.rootGraph.id` is already the incoming graph's while the pointer
   still names the outgoing document, and after a failed load it is neither
-  document's.
+  document's. In the app the pointer moves only inside
+  `activateLoadedWorkflow`, during a load; a pointer-only activation would bind
+  the newly presented document to the graph still on the canvas.
 - D3's "graph (re)loads are not document transitions": the retract is gated on
   document identity change, so undo, redo, and same-document reloads keep their
   binding. An in-place root-graph id rotation — `LGraph.clear()` from
