@@ -1,13 +1,11 @@
 import type { ComputedRef, Ref } from 'vue'
-import { computed, ref, unref, watch } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'
-import { useDeployToComfyApiGate } from '@/platform/workflow/deploy/composables/useDeployToComfyApiGate'
-import type { DeployGateState } from '@/platform/workflow/deploy/composables/useDeployToComfyApiGate'
 import { openShareDialog } from '@/platform/workflow/sharing/composables/lazyShareDialog'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -31,13 +29,6 @@ interface WorkflowActionsMenuOptions {
   includeDelete?: boolean
   /** Override the workflow to operate on. If not provided, uses activeWorkflow. */
   workflow?: Ref<ComfyWorkflow | null> | ComputedRef<ComfyWorkflow | null>
-  /**
-   * Whether the host's menu is open. While it is, an already-visible row that
-   * comes and goes with an account flag is never removed; a menu awaiting the
-   * current account's answer may still add it on a yes. A row whose account
-   * loses access stays in place, disabled, until the menu closes.
-   */
-  isOpen?: Readonly<Ref<boolean>>
 }
 
 interface AddItemOptions {
@@ -52,37 +43,11 @@ interface AddItemOptions {
   badge?: string
 }
 
-interface DeployRow {
-  shown: boolean
-  generation: number | undefined
-}
-
-function isDeployAllowed(gate: DeployGateState): boolean {
-  return gate.status === 'answered' && gate.enabled
-}
-
-/**
- * Closed, the deploy row follows the gate. Open, it only changes when an
- * answer arrives for an account generation the menu has not seen, and then
- * only to add the row on a yes: a same-account flag change never moves it,
- * and a row already shown stays until the menu closes.
- */
-function nextDeployRow(
-  row: DeployRow,
-  open: boolean,
-  gate: DeployGateState
-): DeployRow {
-  const generation = gate.status === 'answered' ? gate.generation : undefined
-  if (!open) return { shown: isDeployAllowed(gate), generation }
-  if (generation === undefined || generation === row.generation) return row
-  return { shown: row.shown || isDeployAllowed(gate), generation }
-}
-
 export function useWorkflowActionsMenu(
   startRename: () => void,
   options: WorkflowActionsMenuOptions = {}
 ) {
-  const { isRoot = true, includeDelete = true, workflow, isOpen } = options
+  const { isRoot = true, includeDelete = true, workflow } = options
   const { t } = useI18n()
   const workflowStore = useWorkflowStore()
   const workflowService = useWorkflowService()
@@ -91,23 +56,6 @@ export function useWorkflowActionsMenu(
   const subgraphStore = useSubgraphStore()
   const menuItemStore = useMenuItemStore()
   const { flags } = useFeatureFlags()
-  const deployGate = useDeployToComfyApiGate()
-  const deployAllowed = computed(() => isDeployAllowed(deployGate.state.value))
-  const deployRow = ref(
-    nextDeployRow(
-      { shown: false, generation: undefined },
-      false,
-      deployGate.state.value
-    )
-  )
-  watch(
-    [() => isOpen?.value ?? false, deployGate.state],
-    ([open, gate], [wasOpen]) => {
-      deployRow.value = nextDeployRow(deployRow.value, open, gate)
-      if (open && (!wasOpen || gate.status === 'awaiting')) deployGate.check()
-    }
-  )
-  if (!isOpen) deployGate.check()
   const appModeStore = useAppModeStore()
   const { enterBuilder, pruneLinearData } = appModeStore
   const { toastErrorHandler } = useErrorHandling()
@@ -259,13 +207,10 @@ export function useWorkflowActionsMenu(
       label: t('deployToComfyApi.buttonLabel'),
       icon: 'icon-[lucide--rocket]',
       command: async () => {
-        if (!deployAllowed.value) return
         await ensureWorkflowActive(targetWorkflow.value)
-        if (!unref(deployAllowed)) return
         await openDeployToComfyApiDialog().catch(toastErrorHandler)
       },
-      visible: isRoot && deployRow.value.shown,
-      disabled: !deployAllowed.value,
+      visible: isRoot,
       isNew: true,
       badge: t('g.new')
     })
