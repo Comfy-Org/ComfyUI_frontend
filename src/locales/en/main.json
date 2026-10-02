@@ -29,6 +29,7 @@
     "chartLowercase": "chart",
     "file": "file",
     "selectedFile": "Selected file",
+    "selected": "Selected",
     "none": "None",
     "markdown": "markdown",
     "content": "content",
@@ -2511,6 +2512,7 @@
     "pleaseSelectNodesToGroup": "Please select the nodes (or other groups) to create a group for",
     "emptyCanvas": "Empty canvas",
     "fileUploadFailed": "File upload failed",
+    "extraResourcesUploadFailed": "Extra resources upload failed",
     "fileTooLarge": "File too large ({size} MB). Maximum supported size is {maxSize} MB",
     "unableToGetModelFilePath": "Unable to get model file path",
     "couldNotDetermineFileType": "Could not determine file type",
@@ -4087,7 +4089,8 @@
       "complete": "Download complete",
       "failed": "Download failed",
       "inProgress": "Downloading {assetName}..."
-    }
+    },
+    "downloadFailed": "Failed to download {name}"
   },
   "mediaAsset": {
     "assetDelete": {
