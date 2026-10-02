@@ -19,8 +19,7 @@ import {
   zPreviewSubscribeResponse,
   zResubscribeResponse,
   zSubscribeRequest,
-  zSubscribeResponse,
-  zSubscriptionDiscount
+  zSubscribeResponse
 } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
@@ -28,6 +27,10 @@ import type { BillingFailure, BillingTransport } from './billingContracts.js'
 import { matchesServerCode } from './billingContracts.js'
 import type { CapabilitiesReader } from './capabilities.js'
 import type { CreditsReader } from './credits.js'
+import {
+  centsSchema,
+  subscriptionDiscountSchema
+} from './moneySchemas.js'
 import type {
   BillingOperationLifecycle,
   IssuedBillingOperation
@@ -120,41 +123,32 @@ export type PaymentPortalResult =
  * survive arithmetic, since these amounts are displayed as prices and
  * confirmed as charges.
  */
-const cents = z.number().int().safe()
-
 const PlanInfoSchema = zPreviewPlanInfo.extend({
-  credits_cents: cents,
-  list_price_cents: cents.optional(),
-  monthly_list_price_cents: cents.optional(),
-  monthly_price_cents: cents.optional(),
-  price_cents: cents,
+  credits_cents: centsSchema,
+  list_price_cents: centsSchema.optional(),
+  monthly_list_price_cents: centsSchema.optional(),
+  monthly_price_cents: centsSchema.optional(),
+  price_cents: centsSchema,
   seat_summary: zPreviewPlanInfo.shape.seat_summary.extend({
-    total_cost_cents: cents,
-    total_credits_cents: cents
+    total_cost_cents: centsSchema,
+    total_credits_cents: centsSchema
   })
 })
 
 const PreviewSchema = zPreviewSubscribeResponse.extend({
-  amount_due_cents: cents.optional(),
-  balance_applied_cents: cents.optional(),
-  cost_next_period_cents: cents,
-  cost_today_cents: cents,
-  credits_next_period_cents: cents,
-  credits_today_cents: cents,
-  proration_remaining_cents: cents.optional(),
-  proration_unused_cents: cents.optional(),
-  renewal_amount_cents: cents.optional(),
-  subtotal_cents: cents.optional(),
+  amount_due_cents: centsSchema.optional(),
+  balance_applied_cents: centsSchema.optional(),
+  cost_next_period_cents: centsSchema,
+  cost_today_cents: centsSchema,
+  credits_next_period_cents: centsSchema,
+  credits_today_cents: centsSchema,
+  proration_remaining_cents: centsSchema.optional(),
+  proration_unused_cents: centsSchema.optional(),
+  renewal_amount_cents: centsSchema.optional(),
+  subtotal_cents: centsSchema.optional(),
   current_plan: PlanInfoSchema.optional(),
   new_plan: PlanInfoSchema,
-  discounts: z
-    .array(
-      zSubscriptionDiscount.extend({
-        amount_off_cents: cents.optional(),
-        duration_in_months: z.number().int().safe().optional()
-      })
-    )
-    .optional()
+  discounts: z.array(subscriptionDiscountSchema).optional()
 })
 
 /**
