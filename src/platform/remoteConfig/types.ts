@@ -110,6 +110,7 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   manager_survey_url?: string
   linear_toggle_enabled?: boolean
   'agent-in-app-experience'?: boolean
+  'agent-free-use-message-placement'?: string
   partner_node_governance_enabled?: boolean
   /** Kill switch for the local partner-nodes run gate; defaults on client-side. */
   partner_run_gate_enabled?: boolean
