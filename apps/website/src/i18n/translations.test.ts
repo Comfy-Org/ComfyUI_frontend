@@ -81,6 +81,18 @@ describe('site translations', () => {
   })
 
   it.for([
+    ['en', '42 models'],
+    ['zh-CN', '42 个模型'],
+    ['ja', '42 models']
+  ] as const)('renders the model directory count in %s', ([locale, text]) => {
+    expect(
+      translationsFor(locale).t('workshop.catalogue.directoryCount', {
+        count: 42
+      })
+    ).toBe(text)
+  })
+
+  it.for([
     { locale: 'en', count: 1, expected: '1 node' },
     { locale: 'en', count: 2, expected: '2 nodes' },
     { locale: 'zh-CN', count: 2, expected: '2 个节点' }
