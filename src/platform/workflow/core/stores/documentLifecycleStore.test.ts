@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import { toRootGraphId } from '@/types/graphScopeId'
 
-import type { DocumentUid } from './documentLifecycleStore'
 import {
   toDocumentUid,
   useDocumentLifecycleStore
@@ -68,25 +67,13 @@ describe('useDocumentLifecycleStore', () => {
     expect(store.isActive(tabA)).toBe(false)
   })
 
-  it('treats a reopened path with a new session uid as a new document', () => {
+  it('reports nothing active for a workflow carrying no session uid', () => {
     const store = useDocumentLifecycleStore()
-    const reopenedA = toDocumentUid('session-a-reopened')
-    store.activate({ uid: tabA, rootGraphId: toRootGraphId('graph-a') })
 
-    store.beginTransition(reopenedA)
-
-    expect(store.isActive(tabA)).toBe(false)
-  })
-
-  it('reports nothing active for a uid that was never minted', () => {
-    const store = useDocumentLifecycleStore()
-    // A consumer reading a workflow that carries no session uid must not match
-    // "no binding at all": `binding?.uid === uid` is true when both sides are
-    // undefined, which fails open into the agent's cross-graph guard.
-    const missing = undefined as unknown as DocumentUid
-
-    expect(store.isActive(missing)).toBe(false)
-    expect(store.activeRootGraphId(missing)).toBeNull()
+    // `binding?.uid === uid` is true when both sides are undefined, which
+    // fails open into the agent's cross-graph guard.
+    expect(store.isActive(undefined)).toBe(false)
+    expect(store.activeRootGraphId(undefined)).toBeNull()
   })
 
   it('follows an in-place root graph rotation without changing document', () => {

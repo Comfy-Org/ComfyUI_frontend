@@ -85,15 +85,20 @@ export const useDocumentLifecycleStore = defineStore(
       activeBinding.value = { uid: current.uid, rootGraphId }
     }
 
-    // Compare against a non-null binding explicitly: `binding?.uid === uid`
-    // reads as true when *both* sides are undefined, so an undefined uid would
-    // report itself active against no binding at all.
-    function isActive(uid: DocumentUid): boolean {
+    // Both queries take `undefined` because a consumer asks about a workflow,
+    // not about a uid it already has: a workflow carrying no session uid must
+    // answer "not active" rather than match nothing-is-bound. Hence the
+    // explicit non-null binding check — `binding?.uid === uid` reads as true
+    // when *both* sides are undefined, which fails open into the agent's
+    // cross-graph guard.
+    function isActive(uid: DocumentUid | undefined): boolean {
       const binding = activeBinding.value
       return binding !== null && binding.uid === uid
     }
 
-    function activeRootGraphId(uid: DocumentUid): RootGraphId | null {
+    function activeRootGraphId(
+      uid: DocumentUid | undefined
+    ): RootGraphId | null {
       const binding = activeBinding.value
       return binding !== null && binding.uid === uid
         ? binding.rootGraphId
