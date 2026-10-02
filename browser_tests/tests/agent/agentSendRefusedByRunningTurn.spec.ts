@@ -49,6 +49,7 @@ test.describe(
         await expect(turnLock.stopButton).toBeVisible({ timeout: 20_000 })
         await expect(turnLock.sendButton).toHaveCount(0)
         await expect(turnLock.liveProgressRow).toBeVisible()
+        await expect(turnLock.panel.getByText('run it again')).toBeVisible()
         // The notice names the recovery; the raw server string described a
         // control the user is already looking at.
         await expect(turnLock.turnInProgressNotice).toBeVisible()
@@ -57,6 +58,7 @@ test.describe(
 
       await test.step('stopping it unlocks the composer and the retry is accepted', async () => {
         await turnLock.stopButton.click()
+        turnLock.finishForeignTurn(live)
 
         await expect(turnLock.sendButton).toBeVisible({ timeout: 40_000 })
         await turnLock.composer.fill('and now add a save node')

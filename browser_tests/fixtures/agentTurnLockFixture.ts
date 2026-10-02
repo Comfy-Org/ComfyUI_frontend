@@ -105,6 +105,11 @@ export const TURN_DONE_EVENT: AgentWsEvent = {
   data: { message_id: TURN_ID, thread_id: THREAD_ID }
 }
 
+const FOREIGN_TURN_DONE_EVENT: AgentWsEvent = {
+  type: 'agent_message_done',
+  data: { message_id: FOREIGN_TURN_ID, thread_id: THREAD_ID }
+}
+
 const RUN_APPROVAL_ASK_ID = `${TURN_ID}:call-run-workflow`
 
 /**
@@ -315,7 +320,7 @@ class TurnLockServer {
         content: { text: this.prompt }
       }
     ]
-    if (!this.streaming) {
+    if (!this.streaming || this.foreignPrompt !== undefined) {
       rows.push(
         {
           id: TURN_ID,
@@ -666,6 +671,11 @@ export class AgentTurnLockHarness {
   finishTurn(ws: WebSocketRoute): void {
     this.server.completeTurn()
     this.push(ws, TURN_DONE_EVENT)
+  }
+
+  finishForeignTurn(ws: WebSocketRoute): void {
+    this.server.completeTurn()
+    this.push(ws, FOREIGN_TURN_DONE_EVENT)
   }
 
   finishTurnOnServer(): void {
