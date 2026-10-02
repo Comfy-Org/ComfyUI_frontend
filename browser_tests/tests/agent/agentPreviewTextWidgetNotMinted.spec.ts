@@ -122,11 +122,6 @@ const rigConfig = {
   workflowId: WORKFLOW_ID
 }
 
-/**
- * One real `executed` frame carrying text output, which is what drives
- * `PreviewAny.onExecuted` → `updateTextPreviewWidgets` → the preview widget's
- * value setter.
- */
 function sendTextOutput(
   hostSocket: AgentFollowerHostSocket,
   text: string
