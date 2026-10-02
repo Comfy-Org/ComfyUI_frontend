@@ -15,6 +15,8 @@
  *   bootstrap/settings             | ~0.2 s    (parallel, non-blocking)
  *   bootstrap/workflows            | ~0.3 s    (parallel, non-blocking)
  *   bootstrap/extensions-load      | ~0.5 s    (fetch + import /extensions JS)
+ *   bootstrap/extensions-load-core | subset of extensions-load (core import)
+ *   bootstrap/extensions-load-custom | subset of extensions-load (backend extensions)
  *   bootstrap/extensions-init      | ~0.3 s    (extension.init() hooks)
  *   bootstrap/object-info          | ~0.7 s    (GET /api/object_info)
  *   bootstrap/extensions           | ~0.5 s    (addCustomNodeDefs + registerCustomNodes)
@@ -62,6 +64,8 @@ const BOOTSTRAP_PHASES = {
     'settings',
     'workflows',
     'extensions-load',
+    'extensions-load-core',
+    'extensions-load-custom',
     'extensions-init',
     'object-info',
     'extensions',
