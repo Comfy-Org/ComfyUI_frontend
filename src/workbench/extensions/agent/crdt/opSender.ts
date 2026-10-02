@@ -471,12 +471,8 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       stateEpoch++
       return true
     }
-    // The nested call closed the open group (or retargeted it at another doc),
-    // so there is nothing left to merge into — but this sender is live, is not
-    // aborted, and these ops are still addressed to a doc. Dropping them here
-    // discarded a human edit the user had already made. Seal them at the queue
-    // position they held when they were admitted instead: ahead of whatever the
-    // nested call enqueued, carrying their original op ids.
+    // The nested call closed or retargeted the open group: seal these ops at
+    // their admitted position, ahead of what the nested call enqueued.
     sealGroup(
       { workflowId: admissionTarget, ops: minted },
       admissionInsertionIndex
