@@ -13,7 +13,7 @@ const { tryOn, locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
 
-const { person, phase, view } = tryOn
+const { person, phase, comparing } = tryOn
 const labels = computed(() => ({
   resultAlt: vc('tryOn.alt.result', locale),
   originalAlt: personAlt(person.value, locale),
@@ -28,7 +28,7 @@ const labels = computed(() => ({
     v-if="phase.kind === 'done'"
     :before="person.url"
     :after="phase.result.url"
-    :view
+    :view="comparing ? 'compare' : 'result'"
     :width="person.width"
     :height="person.height"
     :labels

@@ -1,5 +1,4 @@
-export const TRY_ON_FITS = ['slim', 'regular', 'relaxed'] as const
-export type TryOnFit = (typeof TRY_ON_FITS)[number]
+import type { TryOnFit } from './contract'
 
 /** A point on the photo, 0 to 1 across and down. */
 export interface Point {

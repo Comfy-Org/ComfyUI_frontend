@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import type { TryOnFit, TryOnRequest } from './contract'
 import { EXAMPLE_GARMENTS, UPLOAD_FABRIC } from './garments'
 import type { TryOnRender } from './mock-run'
-import { TRY_ON_PERSON, runTryOn, tryOnRequest, tryOnScene } from './mock-run'
+import { TRY_ON_PERSON, mockProgress, runTryOn, tryOnScene } from './mock-run'
 
 vi.mock(import('./render-image'), () => ({
   renderTryOn: vi.fn(() => Promise.resolve(undefined))
@@ -10,14 +11,21 @@ vi.mock(import('./render-image'), () => ({
 
 const breton = EXAMPLE_GARMENTS[0]
 
-describe('tryOnRequest', () => {
-  it('sends the person, the garment, the fit and the seed', () => {
-    expect(tryOnRequest(TRY_ON_PERSON.url, breton.url, 'relaxed', 7)).toEqual({
-      personImageUrl: '/images/apps/virtual-try-on/person.jpg',
-      garmentImageUrl: '/images/apps/virtual-try-on/garment-breton.jpg',
-      fit: 'relaxed',
-      seed: 7
-    })
+const tryOnRequest = (
+  person: string,
+  garment: string,
+  fit: TryOnFit,
+  seed: number
+): TryOnRequest => ({ person, garment, fit, seed })
+
+describe('mockProgress', () => {
+  it.for([
+    { elapsed: 0, expected: { stage: 'queued' } },
+    { elapsed: 400, expected: { stage: 'running', percent: 0 } },
+    { elapsed: 1400, expected: { stage: 'running', percent: 50 } },
+    { elapsed: 9000, expected: { stage: 'running', percent: 99 } }
+  ])('is $expected.stage after $elapsed ms', ({ elapsed, expected }) => {
+    expect(mockProgress(elapsed)).toEqual(expected)
   })
 })
 

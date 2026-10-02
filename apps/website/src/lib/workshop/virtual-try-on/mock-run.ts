@@ -1,5 +1,6 @@
 import { mockJob } from '../mock-job'
-import type { Area, Point, TryOnFit } from './garments'
+import type { TryOnRequest, TryOnResult } from './contract'
+import type { Area, Point } from './garments'
 import {
   EXAMPLE_GARMENTS,
   EXAMPLE_TORSO,
@@ -8,21 +9,6 @@ import {
   fittedOutline
 } from './garments'
 import { renderTryOn } from './render-image'
-
-/** What the Virtual try-on backend receives for one run. */
-export interface TryOnRequest {
-  /** The photo of the person to dress. */
-  readonly personImageUrl: string
-  /** A photo of the garment alone, flat lay or product shot. */
-  readonly garmentImageUrl: string
-  readonly fit: TryOnFit
-  readonly seed: number
-}
-
-export interface TryOnResult {
-  readonly url: string
-  readonly seed: number
-}
 
 /** Where the mock draws the garment and which part of it is cloth. */
 export interface TryOnScene {
@@ -39,6 +25,7 @@ export type TryOnRender = (
 export const TRY_ON_CREDITS = 8
 
 const MOCK_DELAY_MS = 2400
+const MOCK_QUEUE_MS = 400
 
 export const TRY_ON_PERSON = {
   url: '/images/apps/virtual-try-on/person.jpg',
@@ -47,13 +34,19 @@ export const TRY_ON_PERSON = {
   height: 720
 } as const
 
-export function tryOnRequest(
-  personImageUrl: string,
-  garmentImageUrl: string,
-  fit: TryOnFit,
-  seed: number
-): TryOnRequest {
-  return { personImageUrl, garmentImageUrl, fit, seed }
+export type TryOnProgress =
+  | { readonly stage: 'queued' }
+  | { readonly stage: 'running'; readonly percent: number }
+
+/**
+ * How far along a run is after `elapsedMs`. The mock reads it off the
+ * clock: queued at first, then running towards 99% until it answers. The
+ * real job reports the same two stages.
+ */
+export function mockProgress(elapsedMs: number): TryOnProgress {
+  if (elapsedMs < MOCK_QUEUE_MS) return { stage: 'queued' }
+  const share = (elapsedMs - MOCK_QUEUE_MS) / (MOCK_DELAY_MS - MOCK_QUEUE_MS)
+  return { stage: 'running', percent: Math.min(99, Math.floor(share * 100)) }
 }
 
 /**
@@ -63,9 +56,9 @@ export function tryOnRequest(
  */
 export function tryOnScene(request: TryOnRequest): TryOnScene {
   const torso =
-    request.personImageUrl === TRY_ON_PERSON.url ? EXAMPLE_TORSO : UPLOAD_TORSO
+    request.person === TRY_ON_PERSON.url ? EXAMPLE_TORSO : UPLOAD_TORSO
   const example = EXAMPLE_GARMENTS.find(
-    (garment) => garment.url === request.garmentImageUrl
+    (garment) => garment.url === request.garment
   )
   return {
     outline: fittedOutline(torso, request.fit),
@@ -75,9 +68,9 @@ export function tryOnScene(request: TryOnRequest): TryOnScene {
 
 /** The example photo of the example person wearing an example garment. */
 function preparedResult(request: TryOnRequest): string | undefined {
-  if (request.personImageUrl !== TRY_ON_PERSON.url) return undefined
+  if (request.person !== TRY_ON_PERSON.url) return undefined
   const example = EXAMPLE_GARMENTS.find(
-    (garment) => garment.url === request.garmentImageUrl
+    (garment) => garment.url === request.garment
   )
   return example && `/images/apps/virtual-try-on/result-${example.id}.jpg`
 }
@@ -104,6 +97,6 @@ export async function runTryOn(
     void rendered?.then((url) => url && URL.revokeObjectURL(url))
     throw error
   }
-  const url = prepared ?? (await rendered) ?? request.personImageUrl
+  const url = prepared ?? (await rendered) ?? request.person
   return { url, seed: request.seed }
 }

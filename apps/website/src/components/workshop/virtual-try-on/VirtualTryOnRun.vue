@@ -15,12 +15,12 @@ const {
   locale?: Locale
 }>()
 
-const { phase, canRun, garment } = tryOn
+const { phase, canRun, missing } = tryOn
 </script>
 
 <template>
   <EditorRun
-    :label="vc(garment ? 'tryOn.run' : 'tryOn.run.idle', locale)"
+    :label="vc(missing ? 'tryOn.run.missing' : 'tryOn.run', locale)"
     :credits="vc('tryOn.credits', locale, { n: TRY_ON_CREDITS })"
     :cancel-label="vc('tryOn.cancel', locale)"
     :running="phase.kind === 'running'"

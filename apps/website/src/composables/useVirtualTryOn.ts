@@ -3,20 +3,20 @@ import { computed, ref, shallowRef } from 'vue'
 
 import type { Locale } from '../i18n/translations'
 import { imageSize } from '../lib/workshop/image-size'
-import { vc } from '../lib/workshop/virtual-try-on/copy'
 import type {
   TryOnFit,
-  TryOnGarment
-} from '../lib/workshop/virtual-try-on/garments'
+  TryOnResult
+} from '../lib/workshop/virtual-try-on/contract'
+import { DEFAULT_FIT } from '../lib/workshop/virtual-try-on/contract'
+import { vc } from '../lib/workshop/virtual-try-on/copy'
+import type { TryOnGarment } from '../lib/workshop/virtual-try-on/garments'
 import {
   EXAMPLE_GARMENTS,
   UPLOAD_FABRIC
 } from '../lib/workshop/virtual-try-on/garments'
-import type { TryOnResult } from '../lib/workshop/virtual-try-on/mock-run'
 import {
   TRY_ON_PERSON,
-  runTryOn,
-  tryOnRequest
+  runTryOn
 } from '../lib/workshop/virtual-try-on/mock-run'
 
 export interface TryOnImage {
@@ -39,10 +39,9 @@ type TryOnPhase =
   | { readonly kind: 'done'; readonly result: TryOnResult }
   | { readonly kind: 'failed' }
 
-export type TryOnTray = 'garment' | 'fit' | 'advanced'
-type TryOnView = 'compare' | 'result'
+export type TryOnTray = 'garment' | 'fit' | 'seed'
 
-const START: Omit<TryOnSetup, 'garment'> = { fit: 'regular', seed: 7 }
+const START: Omit<TryOnSetup, 'garment'> = { fit: DEFAULT_FIT, seed: 7 }
 
 /** Virtual try-on's page state. The run itself is `runTryOn`, mocked. */
 export function useVirtualTryOn(locale: Locale = 'en') {
@@ -56,8 +55,7 @@ export function useVirtualTryOn(locale: Locale = 'en') {
   const future = shallowRef<TryOnSetup[]>([])
   const phase = shallowRef<TryOnPhase>({ kind: 'editing' })
   const tray = ref<TryOnTray>()
-  const view = ref<TryOnView>('compare')
-  const guide = ref(true)
+  const comparing = ref(false)
   const uploads: string[] = []
   let lastEdit: string | undefined
   let pendingPerson: string | undefined
@@ -70,8 +68,10 @@ export function useVirtualTryOn(locale: Locale = 'en') {
       ? [...examples, current]
       : examples
   })
+  /** The input the run still needs; the example person is always there. */
+  const missing = computed(() => (garment.value ? undefined : 'garment'))
   const canRun = computed(
-    () => phase.value.kind !== 'running' && Boolean(garment.value)
+    () => phase.value.kind !== 'running' && !missing.value
   )
 
   function leaveResult(next: TryOnPhase) {
@@ -100,6 +100,7 @@ export function useVirtualTryOn(locale: Locale = 'en') {
   }
 
   async function usePersonFile(file: File) {
+    if (!file.type.startsWith('image/')) return
     const url = URL.createObjectURL(file)
     pendingPerson = url
     const size = await imageSize(url)
@@ -166,11 +167,10 @@ export function useVirtualTryOn(locale: Locale = 'en') {
     const { fit, seed } = setup.value
     try {
       const result = await runTryOn(
-        tryOnRequest(person.value.url, current.url, fit, seed),
+        { person: person.value.url, garment: current.url, fit, seed },
         controller.signal
       )
       if (run === controller) {
-        view.value = 'compare'
         phase.value = { kind: 'done', result }
       } else if (result.url.startsWith('blob:')) URL.revokeObjectURL(result.url)
     } catch {
@@ -207,8 +207,8 @@ export function useVirtualTryOn(locale: Locale = 'en') {
     garments,
     phase,
     tray,
-    view,
-    guide,
+    comparing,
+    missing,
     canRun,
     canUndo: computed(() => past.value.length > 0),
     canRedo: computed(() => future.value.length > 0),

@@ -3,6 +3,7 @@ import type { VirtualTryOn } from '../../../composables/useVirtualTryOn'
 import type { Locale } from '../../../i18n/translations'
 import { vc } from '../../../lib/workshop/virtual-try-on/copy'
 import EditorFileButton from '../app-editor/EditorFileButton.vue'
+import VirtualTryOnDropZone from './VirtualTryOnDropZone.vue'
 
 const { tryOn, locale = 'en' } = defineProps<{
   tryOn: VirtualTryOn
@@ -13,7 +14,11 @@ const { person } = tryOn
 </script>
 
 <template>
-  <div class="flex items-center gap-3 px-1 pt-2 pb-3">
+  <VirtualTryOnDropZone
+    class="flex items-center gap-3 rounded-xl px-1 pt-2 pb-3"
+    data-testid="try-on-person-row"
+    @file="tryOn.usePersonFile"
+  >
     <img :src="person.url" alt="" class="size-10 rounded-lg object-cover" />
     <span class="flex min-w-0 flex-1 flex-col">
       <span class="text-[11px] text-primary-warm-gray">{{
@@ -30,5 +35,5 @@ const { person } = tryOn
     >
       {{ vc('tryOn.person.change', locale) }}
     </EditorFileButton>
-  </div>
+  </VirtualTryOnDropZone>
 </template>

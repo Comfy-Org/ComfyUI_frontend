@@ -618,10 +618,7 @@ test('tries a garment on the Virtual try-on example from the floating panel', as
 
   await panel.getByRole('radio', { name: 'Flannel shirt' }).click()
   await panel.getByRole('radio', { name: 'Relaxed' }).click()
-  await expect(app.getByTestId('try-on-outline')).toHaveAttribute(
-    'data-fit',
-    'relaxed'
-  )
+  await expect(panel.getByRole('radio', { name: 'Relaxed' })).toBeChecked()
   await expect(app.getByRole('button', { name: 'Undo' })).toBeEnabled()
   await expectPanelWidth(panel)
   await expect(
@@ -632,7 +629,7 @@ test('tries a garment on the Virtual try-on example from the floating panel', as
   ).toHaveAccessibleName('Redo')
 
   await panel.getByTestId('try-on-run').click()
-  await expect(app.getByRole('status')).toContainText('Dressing the photo')
+  await expect(app.getByRole('status')).toContainText(/Queued|Trying it on/)
   const download = app.getByRole('link', { name: 'Download' })
   await expect(download).toHaveAttribute(
     'href',
@@ -642,12 +639,14 @@ test('tries a garment on the Virtual try-on example from the floating panel', as
   const slider = app.getByRole('slider', {
     name: 'Drag to compare the original and the try-on'
   })
+  const tools = app.getByRole('toolbar', { name: 'Virtual try-on tools' })
+  const compare = tools.getByRole('button', { name: 'Compare' })
+  await expect(slider).toBeHidden()
+  await compare.click()
   await slider.focus()
   await page.keyboard.press('ArrowLeft')
   await expect(slider).toHaveValue('49')
-
-  const tools = app.getByRole('toolbar', { name: 'Virtual try-on tools' })
-  await tools.getByRole('button', { name: 'Compare' }).click()
+  await compare.click()
   await expect(slider).toBeHidden()
   await tools.getByRole('button', { name: 'Edit' }).click()
   await expect(panel.getByRole('radio', { name: 'Relaxed' })).toBeChecked()
@@ -662,6 +661,52 @@ test('tries a garment on the Virtual try-on example from the floating panel', as
   ).toBeVisible()
   await panel.getByTestId('try-on-run').click()
   await expect(download).toHaveAttribute('href', /^blob:/)
+})
+
+test('takes a Virtual try-on garment dropped on the picker or pasted, and names what is missing', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/hub/apps/virtual-try-on/')
+  const app = page.getByTestId('virtual-try-on')
+  const panel = app.getByRole('complementary', {
+    name: 'Virtual try-on settings'
+  })
+  const run = panel.getByTestId('try-on-run')
+
+  await app.getByRole('button', { name: 'Remove garment' }).click()
+  await expect(run).toBeDisabled()
+  await expect(run).toHaveText('Upload a garment')
+
+  const garment = (name: string) =>
+    page.evaluateHandle(async (name) => {
+      const response = await fetch(
+        '/images/apps/virtual-try-on/garment-knit.jpg'
+      )
+      const data = new DataTransfer()
+      data.items.add(
+        new File([await response.blob()], name, { type: 'image/jpeg' })
+      )
+      return data
+    }, name)
+  await panel
+    .getByTestId('try-on-garment-drop')
+    .dispatchEvent('drop', { dataTransfer: await garment('dropped.jpg') })
+  await expect(
+    app.getByRole('img', { name: 'Garment: dropped.jpg' })
+  ).toBeVisible()
+  await expect(run).toContainText('Try it on')
+
+  const pasted = await garment('pasted.jpg')
+  await page.evaluate(
+    (clipboardData) =>
+      window.dispatchEvent(new ClipboardEvent('paste', { clipboardData })),
+    pasted
+  )
+  await expect(
+    app.getByRole('img', { name: 'Garment: pasted.jpg' })
+  ).toBeVisible()
 })
 
 test('tries a garment on from the Virtual try-on bottom sheet on phones @mobile', async ({

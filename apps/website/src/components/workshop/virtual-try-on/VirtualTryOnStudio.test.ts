@@ -1,11 +1,16 @@
-import { render, screen, within } from '@testing-library/vue'
+import { fireEvent, render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import type { UserEvent } from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import VirtualTryOnStudio from './VirtualTryOnStudio.vue'
 
 vi.mock(import('../../../lib/workshop/virtual-try-on/render-image'), () => ({
   renderTryOn: vi.fn(() => Promise.resolve(undefined))
+}))
+
+vi.mock(import('../../../lib/workshop/image-size'), () => ({
+  imageSize: vi.fn(() => Promise.resolve({ width: 600, height: 800 }))
 }))
 
 function screenIsWide(wide: boolean) {
@@ -46,10 +51,9 @@ describe('VirtualTryOnStudio', () => {
       'aria-disabled',
       'true'
     )
-    expect(screen.getByTestId('try-on-outline')).toHaveAttribute(
-      'data-fit',
-      'regular'
-    )
+    expect(
+      within(panel()).getByRole('radio', { name: 'Regular' })
+    ).toBeChecked()
 
     await user.click(
       within(panel()).getByRole('radio', { name: 'Flannel shirt' })
@@ -58,19 +62,14 @@ describe('VirtualTryOnStudio', () => {
     expect(
       screen.getByRole('img', { name: 'Garment: Flannel shirt' })
     ).toBeVisible()
-    expect(screen.getByTestId('try-on-outline')).toHaveAttribute(
-      'data-fit',
-      'relaxed'
-    )
-    expect(
-      within(panel()).getByRole('region', { name: 'Fit' })
-    ).toHaveTextContent('Relaxed')
 
     await user.click(within(panel()).getByTestId('try-on-run'))
-    expect(screen.getByRole('status')).toHaveTextContent(
-      '0:00 · Flannel shirt, Relaxed fit'
-    )
-    await vi.advanceTimersByTimeAsync(3000)
+    const status = screen.getByRole('status')
+    expect(status).toHaveTextContent('Queued…')
+    expect(status).toHaveTextContent('0:00 · Flannel shirt, Relaxed fit')
+    await vi.advanceTimersByTimeAsync(1400)
+    expect(status).toHaveTextContent(/Trying it on · \d+%/)
+    await vi.advanceTimersByTimeAsync(1600)
 
     expect(screen.getByRole('link', { name: 'Download' })).toHaveAttribute(
       'download',
@@ -78,17 +77,17 @@ describe('VirtualTryOnStudio', () => {
     )
     expect(within(tools()).queryByRole('link')).toBeNull()
     const compare = within(tools()).getByRole('button', { name: 'Compare' })
-    expect(compare).toHaveAttribute('aria-pressed', 'true')
+    expect(compare).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.queryByRole('slider')).toBeNull()
+    expect(
+      screen.getByRole('img', { name: 'The photo with the garment tried on' })
+    ).toHaveAttribute('src', '/images/apps/virtual-try-on/result-flannel.jpg')
+    await user.click(compare)
     expect(
       screen.getByRole('slider', {
         name: 'Drag to compare the original and the try-on'
       })
     ).toBeVisible()
-    await user.click(compare)
-    expect(screen.queryByRole('slider')).toBeNull()
-    expect(
-      screen.getByRole('img', { name: 'The photo with the garment tried on' })
-    ).toHaveAttribute('src', '/images/apps/virtual-try-on/result-flannel.jpg')
 
     await user.click(within(tools()).getByRole('button', { name: 'Edit' }))
     expect(
@@ -97,12 +96,12 @@ describe('VirtualTryOnStudio', () => {
   })
 
   it.for([
-    { layout: 'd', wide: true, last: 'Fit guide' },
-    { layout: 'd', wide: false, last: 'Fit guide' },
-    { layout: 'e', wide: true, last: 'Try it on 8 credits' }
+    { layout: 'd', wide: true, tools: ['Undo', 'Redo'] },
+    { layout: 'd', wide: false, tools: ['Undo', 'Redo'] },
+    { layout: 'e', wide: true, tools: ['Try it on 8 credits', 'Undo', 'Redo'] }
   ])(
     'keeps undo and redo at the right end of the tools in layout $layout (wide: $wide)',
-    ({ layout, wide, last }) => {
+    ({ layout, wide, tools: expected }) => {
       screenIsWide(wide)
       open(layout)
 
@@ -111,7 +110,7 @@ describe('VirtualTryOnStudio', () => {
         .map(
           (tool) => tool.getAttribute('aria-label') ?? tool.textContent.trim()
         )
-      expect(names.slice(-3)).toEqual([last, 'Undo', 'Redo'])
+      expect(names.slice(-expected.length)).toEqual(expected)
     }
   )
 
@@ -125,12 +124,70 @@ describe('VirtualTryOnStudio', () => {
 
     await user.click(screen.getByRole('button', { name: 'Remove garment' }))
     const card = screen.getByRole('complementary', { name: 'Garment' })
-    expect(card).toHaveTextContent('Drop a garment photo')
-    expect(within(panel()).getByTestId('try-on-run')).toBeDisabled()
-    expect(screen.queryByTestId('try-on-outline')).toBeNull()
+    expect(card).toHaveTextContent('Drop or paste a garment photo')
+    const run = within(panel()).getByTestId('try-on-run')
+    expect(run).toBeDisabled()
+    expect(run).toHaveTextContent('Upload a garment')
   })
 
-  it('keeps a shuffleable seed as a row of the panel, with no Advanced section', async () => {
+  it.for([
+    {
+      name: 'pastes a garment from the clipboard',
+      send: (data: DataTransfer, user: UserEvent) => user.paste(data)
+    },
+    {
+      name: 'drops a garment on the garment picker',
+      send: (data: DataTransfer) =>
+        fireEvent.drop(screen.getByTestId('try-on-garment-drop'), {
+          dataTransfer: data
+        })
+    },
+    {
+      name: 'drops a garment on the garment card',
+      send: (data: DataTransfer) =>
+        fireEvent.drop(
+          screen.getByRole('img', { name: 'Garment: Breton tee' }),
+          { dataTransfer: data }
+        )
+    }
+  ])('$name', async ({ send }) => {
+    const user = open()
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:shirt')
+    const data = new DataTransfer()
+    data.items.add(new File(['x'], 'shirt.png', { type: 'image/png' }))
+
+    await send(data, user)
+
+    expect(
+      screen.getByRole('img', { name: 'Garment: shirt.png' })
+    ).toHaveAttribute('src', 'blob:shirt')
+    expect(
+      within(panel()).getByRole('radio', { name: 'shirt.png' })
+    ).toBeChecked()
+  })
+
+  it.for([
+    { name: 'the photo', target: () => screen.getByTestId('try-on-person') },
+    {
+      name: 'the person row',
+      target: () => within(panel()).getByTestId('try-on-person-row')
+    }
+  ])('drops a person on $name', async ({ target }) => {
+    open()
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:me')
+    const data = new DataTransfer()
+    data.items.add(new File(['x'], 'me.jpg', { type: 'image/jpeg' }))
+
+    await fireEvent.drop(target(), { dataTransfer: data })
+
+    expect(await screen.findByRole('img', { name: 'me.jpg' })).toHaveAttribute(
+      'src',
+      'blob:me'
+    )
+    expect(within(panel()).getByText('me.jpg')).toBeVisible()
+  })
+
+  it('keeps a shuffleable seed as a row of the panel', async () => {
     const user = open()
     const seed = within(panel()).getByRole('spinbutton', { name: 'Seed' })
     expect(seed).toHaveValue(7)
@@ -164,7 +221,7 @@ describe('VirtualTryOnStudio', () => {
     screenIsWide(false)
     const user = open()
     const sheet = panel()
-    expect(within(sheet).queryByRole('region', { name: 'Fit' })).toBeNull()
+    expect(within(sheet).queryByRole('radiogroup', { name: 'Fit' })).toBeNull()
 
     await user.click(
       within(sheet).getByRole('button', { name: 'Breton tee · Regular fit' })

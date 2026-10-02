@@ -7,36 +7,22 @@ import type {
 import type { Locale } from '../../../i18n/translations'
 import type { TryOnCopyKey } from '../../../lib/workshop/virtual-try-on/copy'
 import { vc } from '../../../lib/workshop/virtual-try-on/copy'
-import VirtualTryOnAdvanced from './VirtualTryOnAdvanced.vue'
 import VirtualTryOnFit from './VirtualTryOnFit.vue'
 import VirtualTryOnGarments from './VirtualTryOnGarments.vue'
+import VirtualTryOnSeed from './VirtualTryOnSeed.vue'
 
-/**
- * Virtual try-on's controls in panel order. In the side panel each is a
- * collapsible section; in the bottom composer each opens as a tray.
- */
+/** Virtual try-on's controls as the bottom composer's chips and trays. */
 export const TRY_ON_SECTIONS = [
-  {
-    id: 'garment',
-    title: 'tryOn.garment',
-    content: VirtualTryOnGarments,
-    open: true
-  },
-  { id: 'fit', title: 'tryOn.fit', content: VirtualTryOnFit, open: true },
-  {
-    id: 'advanced',
-    title: 'tryOn.advanced',
-    content: VirtualTryOnAdvanced,
-    open: false
-  }
+  { id: 'garment', title: 'tryOn.garment', content: VirtualTryOnGarments },
+  { id: 'fit', title: 'tryOn.fit', content: VirtualTryOnFit },
+  { id: 'seed', title: 'tryOn.seed', content: VirtualTryOnSeed }
 ] as const satisfies readonly {
   id: TryOnTray
   title: TryOnCopyKey
   content: Component
-  open: boolean
 }[]
 
-/** The current value beside a section's title, so a closed one says it. */
+/** The current value beside a control's name, so a closed one says it. */
 export function sectionMeta(
   id: TryOnTray,
   tryOn: VirtualTryOn,
@@ -46,7 +32,7 @@ export function sectionMeta(
   if (id === 'garment')
     return garment.value?.name ?? vc('tryOn.garment.none', locale)
   if (id === 'fit') return vc(`tryOn.fit.${setup.value.fit}`, locale)
-  return vc('tryOn.advanced.summary', locale, { n: setup.value.seed })
+  return String(setup.value.seed)
 }
 
 /** The one-line summary of the whole setup, for the collapsed phone sheet. */

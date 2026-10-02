@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ChevronLeft, Columns2, RefreshCw } from '@lucide/vue'
+import { ChevronLeft, RefreshCw } from '@lucide/vue'
 
 import type { VirtualTryOn } from '../../../composables/useVirtualTryOn'
 import type { Locale } from '../../../i18n/translations'
 import { vc } from '../../../lib/workshop/virtual-try-on/copy'
+import EditorCompareToggle from '../app-editor/EditorCompareToggle.vue'
 import EditorDivider from '../app-editor/EditorDivider.vue'
 import EditorTool from '../app-editor/EditorTool.vue'
 
@@ -12,15 +13,14 @@ const { tryOn, locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
 
-const { view } = tryOn
+const { comparing } = tryOn
 </script>
 
 <template>
-  <EditorTool
-    :icon="Columns2"
+  <EditorCompareToggle
+    v-model="comparing"
     :label="vc('tryOn.view.compare', locale)"
-    :pressed="view === 'compare'"
-    @click="view = view === 'compare' ? 'result' : 'compare'"
+    :locale
   />
   <EditorDivider />
   <EditorTool

@@ -68,6 +68,7 @@ describe('useVirtualTryOn', () => {
     const tryOn = start()
     tryOn.removeGarment()
     expect(tryOn.canRun.value).toBe(false)
+    expect(tryOn.missing.value).toBe('garment')
 
     tryOn.useGarmentFile(shirt())
     expect(tryOn.garment.value).toMatchObject({
@@ -81,12 +82,19 @@ describe('useVirtualTryOn', () => {
       'shirt.png'
     ])
     expect(tryOn.canRun.value).toBe(true)
+    expect(tryOn.missing.value).toBeUndefined()
   })
 
-  it('runs a try-on, lands on the compare view, then goes back to editing', async () => {
+  it('ignores a file that is not an image', () => {
+    const tryOn = start()
+    tryOn.useGarmentFile(new File(['x'], 'notes.txt', { type: 'text/plain' }))
+    expect(tryOn.garment.value?.name).toBe('Breton tee')
+  })
+
+  it('runs a try-on, keeps the chosen view, then goes back to editing', async () => {
     const tryOn = start()
     tryOn.setFit('relaxed')
-    tryOn.view.value = 'result'
+    tryOn.comparing.value = true
 
     const run = tryOn.tryOn()
     expect(tryOn.phase.value.kind).toBe('running')
@@ -98,7 +106,7 @@ describe('useVirtualTryOn', () => {
       kind: 'done',
       result: { url: '/images/apps/virtual-try-on/result-breton.jpg', seed: 7 }
     })
-    expect(tryOn.view.value).toBe('compare')
+    expect(tryOn.comparing.value).toBe(true)
     tryOn.edit()
     expect(tryOn.phase.value.kind).toBe('editing')
     expect(tryOn.setup.value.fit).toBe('relaxed')

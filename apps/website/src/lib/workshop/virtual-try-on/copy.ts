@@ -12,10 +12,9 @@ const copy = {
   'tryOn.history': { en: 'History', 'zh-CN': '历史记录' },
   'tryOn.tool.undo': { en: 'Undo', 'zh-CN': '撤销' },
   'tryOn.tool.redo': { en: 'Redo', 'zh-CN': '重做' },
-  'tryOn.tool.guide': { en: 'Fit guide', 'zh-CN': '版型参考线' },
   'tryOn.hint': {
-    en: 'Pick a garment and a fit, then try it on',
-    'zh-CN': '选择一件衣服和版型，然后试穿'
+    en: 'Pick, drop or paste a garment, choose a fit, then try it on',
+    'zh-CN': '选择、拖入或粘贴一件服装，选好版型，然后试穿'
   },
   'tryOn.person': { en: 'Person', 'zh-CN': '人物' },
   'tryOn.person.change': { en: 'Change', 'zh-CN': '更换' },
@@ -34,8 +33,8 @@ const copy = {
   'tryOn.garment.remove': { en: 'Remove garment', 'zh-CN': '移除服装' },
   'tryOn.garment.yours': { en: 'Your garment', 'zh-CN': '你的服装' },
   'tryOn.garment.empty': {
-    en: 'Drop a garment photo',
-    'zh-CN': '拖入服装照片'
+    en: 'Drop or paste a garment photo',
+    'zh-CN': '拖入或粘贴服装照片'
   },
   'tryOn.garment.emptyMeta': {
     en: 'A flat lay or product shot works best',
@@ -49,10 +48,8 @@ const copy = {
   'tryOn.fit.slim': { en: 'Slim', 'zh-CN': '修身' },
   'tryOn.fit.regular': { en: 'Regular', 'zh-CN': '常规' },
   'tryOn.fit.relaxed': { en: 'Relaxed', 'zh-CN': '宽松' },
-  'tryOn.advanced': { en: 'Advanced', 'zh-CN': '高级' },
   'tryOn.seed': { en: 'Seed', 'zh-CN': '种子' },
   'tryOn.seed.shuffle': { en: 'New seed', 'zh-CN': '换一个种子' },
-  'tryOn.advanced.summary': { en: 'Seed {n}', 'zh-CN': '种子 {n}' },
   'tryOn.summary': {
     en: '{garment} · {fit} fit',
     'zh-CN': '{garment} · {fit}版型'
@@ -62,10 +59,14 @@ const copy = {
     'zh-CN': '添加一件要试穿的服装'
   },
   'tryOn.run': { en: 'Try it on', 'zh-CN': '开始试穿' },
-  'tryOn.run.idle': { en: 'Add a garment first', 'zh-CN': '请先添加服装' },
+  'tryOn.run.missing': { en: 'Upload a garment', 'zh-CN': '请上传服装' },
   'tryOn.credits': { en: '{n} credits', 'zh-CN': '{n} 积分' },
   'tryOn.cancel': { en: 'Cancel', 'zh-CN': '取消' },
-  'tryOn.busy.title': { en: 'Dressing the photo…', 'zh-CN': '正在试穿…' },
+  'tryOn.busy.queued': { en: 'Queued…', 'zh-CN': '排队中…' },
+  'tryOn.busy.running': {
+    en: 'Trying it on · {percent}%',
+    'zh-CN': '正在试穿 · {percent}%'
+  },
   'tryOn.busy.detail': {
     en: '{time} · {garment}, {fit} fit',
     'zh-CN': '{time} · {garment}，{fit}版型'

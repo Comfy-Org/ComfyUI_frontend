@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import type { VirtualTryOn } from '../../../composables/useVirtualTryOn'
 import type { Locale } from '../../../i18n/translations'
-import EditorDivider from '../app-editor/EditorDivider.vue'
 import VirtualTryOnComposer from './VirtualTryOnComposer.vue'
 import VirtualTryOnResultDock from './VirtualTryOnResultDock.vue'
-import VirtualTryOnTools from './VirtualTryOnTools.vue'
 
 const {
   tryOn,
@@ -22,10 +20,5 @@ const { phase } = tryOn
 
 <template>
   <VirtualTryOnResultDock v-if="phase.kind === 'done'" :try-on :locale />
-  <VirtualTryOnTools v-else-if="panel" :try-on :locale />
-  <template v-else>
-    <VirtualTryOnTools :try-on :locale />
-    <EditorDivider />
-    <VirtualTryOnComposer :try-on :locale />
-  </template>
+  <VirtualTryOnComposer v-else-if="!panel" :try-on :locale />
 </template>

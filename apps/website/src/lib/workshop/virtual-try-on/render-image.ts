@@ -1,7 +1,8 @@
 import { dressPixels } from './composite'
 import { outlinePath } from './garments'
 import type { Area } from './garments'
-import type { TryOnRequest, TryOnScene } from './mock-run'
+import type { TryOnRequest } from './contract'
+import type { TryOnScene } from './mock-run'
 
 const MAX_EDGE = 1600
 const TILE_WIDTH = 0.16
@@ -74,8 +75,8 @@ export async function renderTryOn(
   scene: TryOnScene
 ): Promise<string | undefined> {
   const [person, garment] = await Promise.all([
-    loadImage(request.personImageUrl),
-    loadImage(request.garmentImageUrl)
+    loadImage(request.person),
+    loadImage(request.garment)
   ])
   if (!person || !garment) return undefined
   const scale = Math.min(

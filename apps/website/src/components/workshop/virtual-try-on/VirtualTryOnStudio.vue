@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useEventListener } from '@vueuse/core'
 import { computed } from 'vue'
 
 import { useResultDownload } from '../../../composables/useResultDownload'
@@ -7,6 +8,7 @@ import { useVirtualTryOn } from '../../../composables/useVirtualTryOn'
 import type { Locale } from '../../../i18n/translations'
 import { workshopAppRepo } from '../../../lib/workshop/apps'
 import { vc } from '../../../lib/workshop/virtual-try-on/copy'
+import { imageFileOf } from '../../../lib/workshop/virtual-try-on/image-transfer'
 import AppEditorShell from '../app-editor/AppEditorShell.vue'
 import EditorAlert from '../app-editor/EditorAlert.vue'
 import VirtualTryOnDocks from './VirtualTryOnDocks.vue'
@@ -28,6 +30,13 @@ const { phase, person } = tryOn
 const panel = computed(() => layout !== 'e')
 const download = useResultDownload(phase, () => `try-on-${person.value.name}`)
 reportStudioBusy(() => phase.value.kind === 'running')
+useEventListener('paste', (event: ClipboardEvent) => {
+  const file = imageFileOf(event.clipboardData)
+  if (!file || phase.value.kind === 'running') return
+  event.preventDefault()
+  tryOn.edit()
+  tryOn.useGarmentFile(file)
+})
 
 const panelLabels = {
   label: vc('tryOn.panel', locale),

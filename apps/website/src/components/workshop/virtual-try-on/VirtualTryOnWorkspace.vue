@@ -6,11 +6,12 @@ import type { VirtualTryOn } from '../../../composables/useVirtualTryOn'
 import type { Locale } from '../../../i18n/translations'
 import { elapsedLabel } from '../../../lib/workshop/elapsed'
 import { vc } from '../../../lib/workshop/virtual-try-on/copy'
+import { mockProgress } from '../../../lib/workshop/virtual-try-on/mock-run'
 import EditorBusy from '../app-editor/EditorBusy.vue'
 import EditorFrame from '../app-editor/EditorFrame.vue'
 import EditorHint from '../app-editor/EditorHint.vue'
+import VirtualTryOnDropZone from './VirtualTryOnDropZone.vue'
 import VirtualTryOnGarmentCard from './VirtualTryOnGarmentCard.vue'
-import VirtualTryOnOutline from './VirtualTryOnOutline.vue'
 import { personAlt } from './person-alt'
 
 const { tryOn, locale = 'en' } = defineProps<{
@@ -18,45 +19,54 @@ const { tryOn, locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
 
-const { person, setup, garment, phase, guide } = tryOn
+const { person, setup, garment, phase } = tryOn
 const touched = ref(false)
 watch([setup, person], () => (touched.value = true))
 
 const running = computed(() => phase.value.kind === 'running')
-const now = useNow({ interval: 1000 })
-const detail = computed(() =>
-  phase.value.kind === 'running'
-    ? vc('tryOn.busy.detail', locale, {
-        time: elapsedLabel(now.value.getTime() - phase.value.startedAt),
-        garment: garment.value?.name ?? '',
-        fit: vc(`tryOn.fit.${setup.value.fit}`, locale)
-      })
-    : ''
-)
+const now = useNow({ interval: 200 })
+const busy = computed(() => {
+  if (phase.value.kind !== 'running') return undefined
+  const elapsed = now.value.getTime() - phase.value.startedAt
+  const progress = mockProgress(elapsed)
+  return {
+    title:
+      progress.stage === 'queued'
+        ? vc('tryOn.busy.queued', locale)
+        : vc('tryOn.busy.running', locale, { percent: progress.percent }),
+    detail: vc('tryOn.busy.detail', locale, {
+      time: elapsedLabel(elapsed),
+      garment: garment.value?.name ?? '',
+      fit: vc(`tryOn.fit.${setup.value.fit}`, locale)
+    })
+  }
+})
 </script>
 
 <template>
   <div class="size-full max-w-5xl">
     <EditorFrame :width="person.width" :height="person.height">
-      <img
-        :src="person.url"
-        :alt="personAlt(person, locale)"
-        class="size-full rounded-sm object-cover"
-        data-testid="try-on-person"
-      />
-      <VirtualTryOnOutline
-        v-if="guide && garment && !running"
-        :person="person.url"
-        :fit="setup.fit"
-      />
+      <VirtualTryOnDropZone
+        :disabled="running"
+        class="absolute inset-0 rounded-sm"
+        data-testid="try-on-person-drop"
+        @file="tryOn.usePersonFile"
+      >
+        <img
+          :src="person.url"
+          :alt="personAlt(person, locale)"
+          class="size-full rounded-sm object-cover"
+          data-testid="try-on-person"
+        />
+      </VirtualTryOnDropZone>
       <EditorHint
         v-if="!touched && phase.kind === 'editing'"
         :text="vc('tryOn.hint', locale)"
       />
       <EditorBusy
-        v-if="running"
-        :title="vc('tryOn.busy.title', locale)"
-        :detail
+        v-if="busy"
+        :title="busy.title"
+        :detail="busy.detail"
         :cancel-label="vc('tryOn.cancel', locale)"
         @cancel="tryOn.cancel"
       />
