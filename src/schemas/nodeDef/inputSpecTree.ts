@@ -49,6 +49,7 @@ function warnSpecDrift(
   reportedSpecDrift.add(location)
 
   reportError(new Error('Unable to parse dynamic node input specification'), {
+    surface: 'graph',
     errorType: 'error_parsing_node_input_spec',
     tags: {
       failure_kind: 'degraded',

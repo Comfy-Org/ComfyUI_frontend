@@ -26,7 +26,7 @@ function runtimeCloudEnv(env: unknown): string | undefined {
   return undefined
 }
 
-const WORKSHOP_CLOUD_ENV: WorkshopCloudEnv = resolveWorkshopCloudEnv(
+export const WORKSHOP_CLOUD_ENV: WorkshopCloudEnv = resolveWorkshopCloudEnv(
   runtimeCloudEnv(import.meta.env) ??
     (typeof process === 'undefined'
       ? undefined
@@ -50,6 +50,11 @@ export const WORKSHOP_CLOUD_BASE_URL = CLOUD_BASE_URLS[WORKSHOP_CLOUD_ENV]
 
 export const WORKSHOP_CREDITS_URL = new URL(
   '/?settings=plan-credits',
+  WORKSHOP_CLOUD_BASE_URL
+).href
+
+export const WORKSHOP_SUBSCRIPTION_URL = new URL(
+  '/?pricing=1',
   WORKSHOP_CLOUD_BASE_URL
 ).href
 

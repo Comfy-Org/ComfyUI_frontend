@@ -3,6 +3,7 @@ import { useMounted } from '@vueuse/core'
 import { computed, onScopeDispose, ref, useTemplateRef, watch } from 'vue'
 
 import type { WorkflowWorkshopModelDetail } from '../../config/models-catalogue'
+import type { SnippetLanguage } from '../../config/models-snippets'
 import {
   initialWorkshopPageState,
   workshopExampleState
@@ -16,6 +17,7 @@ import {
   workflowNoticeKey,
   workflowStatusKey
 } from '../../config/workshop-workflow-presentation'
+import { requestWorkshopBuyCreditsAutomatically } from '../../config/workshop-buy-credits'
 import { refreshWorkshopCredits } from '../../config/workshop-credits'
 import { useWorkshopModelBalance } from '../../config/workshop-model-balance'
 import { useWorkshopSession } from '../../config/workshop-session-state'
@@ -108,6 +110,20 @@ watch([section, enabled, workflowsEnabled], ([active, enabled, workflows]) => {
   if (enabled && workflows && active === 'api')
     captureWorkshopEvent({ name: 'api_viewed', properties: modelAnalytics })
 })
+function captureApiKeyClick() {
+  if (enabled.value && workflowsEnabled.value)
+    captureWorkshopEvent({
+      name: 'api_key_clicked',
+      properties: modelAnalytics
+    })
+}
+function captureSnippetCopy(language: SnippetLanguage) {
+  if (enabled.value && workflowsEnabled.value)
+    captureWorkshopEvent({
+      name: 'api_snippet_copied',
+      properties: { ...modelAnalytics, snippet_language: language }
+    })
+}
 const busy = computed(() =>
   ['preparing', 'active', 'interrupted'].includes(state.value.phase)
 )
@@ -155,7 +171,10 @@ watch(
     state.value.error.code === 'insufficient_credits',
   (refused) => {
     refusal.value = refused ? { credits: credits.value } : undefined
-    if (refused) void refreshWorkshopCredits({ force: true })
+    if (!refused) return
+    if (session.value?.role === 'owner')
+      requestWorkshopBuyCreditsAutomatically()
+    void refreshWorkshopCredits({ force: true })
   }
 )
 watch(credits, (known) => {
@@ -346,10 +365,16 @@ function start() {
     role="tabpanel"
     aria-labelledby="workflow-tab-api"
   >
-    <WorkflowApi :model="model" :values="values" />
+    <WorkflowApi
+      :model="model"
+      :values="values"
+      @get-key="captureApiKeyClick"
+      @copy="captureSnippetCopy"
+    />
   </div>
   <section
     v-if="model.examples.length"
+    v-show="section === 'playground'"
     class="mt-14"
     aria-labelledby="workflow-examples-heading"
   >

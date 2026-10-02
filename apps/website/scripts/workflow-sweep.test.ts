@@ -36,7 +36,7 @@ describe('workflow page sweep', () => {
       {
         slug: 'workflows/change-material',
         kind: 'page',
-        url: 'https://comfy.org/models/workflows/change-material/'
+        url: 'https://comfy.org/hub/workflows/change-material/'
       }
     ])
     expect(

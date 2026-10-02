@@ -64,8 +64,8 @@ const relatedVideo = customerVideoForStory(storySlug(entry.id))
 >
   <BreadcrumbBar
     crumbs={[
-      { label: homeLabel, href: '/zh-CN' },
-      { label: collectionLabel, href: '/zh-CN/customers' },
+      { label: homeLabel, href: '/zh-CN/' },
+      { label: collectionLabel, href: '/zh-CN/customers/' },
       { label: entry.data.title }
     ]}
     label={t('ui.breadcrumb', locale)}
@@ -79,7 +79,7 @@ const relatedVideo = customerVideoForStory(storySlug(entry.id))
   <CustomerArticle entry={entry} locale="zh-CN" />
   {relatedVideo && <div class="mx-auto max-w-9xl px-6 pb-10 lg:px-16">
     <a
-      href={`/customers/videos/${relatedVideo.slug}`}
+      href={`/customers/videos/${relatedVideo.slug}/`}
       class="text-sm font-semibold tracking-wide text-primary-comfy-yellow uppercase hover:underline"
     >
       {t('customers.article.watchVideo', locale)}
@@ -88,7 +88,7 @@ const relatedVideo = customerVideoForStory(storySlug(entry.id))
   <WhatsNextSection
     title={next.data.title}
     image={next.data.cover}
-    href={`/zh-CN/customers/${storySlug(next.id)}`}
+    href={`/zh-CN/customers/${storySlug(next.id)}/`}
     locale="zh-CN"
   />
 </BaseLayout>

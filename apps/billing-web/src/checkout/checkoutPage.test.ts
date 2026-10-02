@@ -1,4 +1,5 @@
 import type {
+  BillingOperationReceipt,
   BillingOperationState,
   PendingBillingOperation
 } from '@comfyorg/account-core/billing'
@@ -11,11 +12,13 @@ import type {
   PaymentTab,
   RailView,
   SavedArrival,
+  SettledPlan,
   SubmitPhase,
   WaitingOn
 } from '@/checkout/checkoutPage'
 import {
   RESOLVING,
+  awaitingServer,
   challengeToReopen,
   isChallengeReopenable,
   isLocked,
@@ -23,6 +26,7 @@ import {
   railAcceptsPay,
   railView,
   reduceCheckoutPage,
+  settledPlanSource,
   submitPhaseOf,
   waitingOn
 } from '@/checkout/checkoutPage'
@@ -41,6 +45,13 @@ const quoted = (
   method: 'collect',
   saved,
   reactivation
+})
+const unkeyed = (saved: SavedArrival): CheckoutPageEvent => ({
+  type: 'quoted',
+  method: 'collect',
+  saved,
+  element: 'failed',
+  reactivation: false
 })
 const quotedOnFile: CheckoutPageEvent = {
   type: 'quoted',
@@ -371,6 +382,21 @@ describe('railView', () => {
       }
     },
     {
+      name: '370-15519: no Stripe key and no saved method',
+      events: [unkeyed(0)],
+      expected: { kind: 'column_error' }
+    },
+    {
+      name: '370-15519: no Stripe key beside saved methods keeps Saved live',
+      events: [unkeyed(2)],
+      expected: {
+        kind: 'tabs',
+        tab: 'saved',
+        element: 'failed',
+        saved: 'ready'
+      }
+    },
+    {
       name: 'both rails down',
       events: [quoted('failed'), failed],
       expected: { kind: 'column_error' }
@@ -547,6 +573,12 @@ describe('reduceCheckoutPage after Pay', () => {
     )
   })
 
+  it('holds the keep-subscription tick while a Pay is in flight', () => {
+    const sent = replay([quoted(0, true), ready, tick(true), submitted])
+
+    expect(reduceCheckoutPage(sent, tick(false))).toBe(sent)
+  })
+
   it.for<{ name: string; event: CheckoutPageEvent }>([
     { name: 'a decline', event: declined },
     { name: 'a new Pay', event: submitted },
@@ -612,6 +644,7 @@ const changed = (
   ...(outcome === undefined ? {} : { outcome })
 })
 const settledOnTheSpot: CheckoutPageEvent = { type: 'paySettled' }
+const notAllowed: CheckoutPageEvent = { type: 'notAllowed' }
 const declinedElsewhere: OperationOutcome = {
   kind: 'declined',
   reason: 'card_declined',
@@ -652,13 +685,18 @@ describe('reduceCheckoutPage reconciliation', () => {
       expected: { kind: 'capture', outcome: declinedElsewhere }
     },
     {
-      name: 'a success found on mount is Already completed, unattributed',
-      events: [reconciled(succeededOperation()), quoted(0)],
+      name: 'a success found on mount that the quote refuses again is Already completed, unattributed',
+      events: [reconciled(succeededOperation()), notAllowed],
       expected: {
         kind: 'terminal',
         operation: succeededOperation(),
         attribution: 'settled'
       }
+    },
+    {
+      name: 'a success found on mount gives way to a quote that can be paid',
+      events: [reconciled(succeededOperation()), quoted(0)],
+      expected: collect('loading')
     },
     {
       name: 'a failure found on mount opens capture on its card',
@@ -813,6 +851,7 @@ describe('reduceCheckoutPage reconciliation', () => {
       name: 'a terminal is sticky against a later re-read',
       events: [
         reconciled(succeededOperation()),
+        notAllowed,
         reconciled(undefined),
         reconciled(pendingOperation())
       ],
@@ -1089,9 +1128,222 @@ describe('reduceCheckoutPage endings', () => {
       from: replay([planUnavailable]),
       event: tryAgain
     },
-    { name: 'a quote over unconfirmed', from: UNCONFIRMED, event: quoted(0) }
+    { name: 'a quote over unconfirmed', from: UNCONFIRMED, event: quoted(0) },
+    {
+      name: 'a refused quote over capture',
+      from: collect('ready'),
+      event: notAllowed
+    },
+    {
+      name: 'a refused quote over unconfirmed',
+      from: UNCONFIRMED,
+      event: notAllowed
+    }
   ])('ignores $name', ({ from, event }) => {
     expect(reduceCheckoutPage(from, event)).toBe(from)
+  })
+})
+
+describe("reduceCheckoutPage over this tab's own operation", () => {
+  const awaited = <T extends BillingOperationState>(operation: T): T => ({
+    ...operation,
+    awaitedHere: true
+  })
+  const PRO: SettledPlan = {
+    tier: 'PRO',
+    duration: 'MONTHLY',
+    price_cents: 5000n
+  }
+  const RETURNED: CheckoutPage = {
+    kind: 'terminal',
+    operation: awaited(succeededOperation()),
+    attribution: 'returned'
+  }
+  const RECEIPT_PLAN = { slug: 'pro_monthly', duration: 'MONTHLY' } as const
+  const withReceipt = (receipt: BillingOperationReceipt) => ({
+    ...succeededOperation(),
+    receipt
+  })
+
+  it.for<{
+    name: string
+    events: CheckoutPageEvent[]
+    expected: CheckoutPage
+  }>([
+    {
+      name: 'a quote the server refuses, with nothing of this tab settled, is Checkout not available',
+      events: [reconciled(undefined), notAllowed],
+      expected: { kind: 'refused', reason: 'unspecified' }
+    },
+    {
+      name: 'its own payment found settled on a return is Success, whatever the quote says',
+      events: [reconciled(awaited(succeededOperation())), quoted(0)],
+      expected: RETURNED
+    },
+    {
+      name: 'its own payment still settling on a return resolves forward to Success',
+      events: [
+        reconciled(awaited(settlingOperation())),
+        changed(awaited(succeededOperation()))
+      ],
+      expected: RETURNED
+    },
+    {
+      name: 'its own payment the server could not confirm resolves forward to Success',
+      events: [
+        reconciled(awaited(parkedForAHuman())),
+        changed(awaited(succeededOperation()))
+      ],
+      expected: RETURNED
+    },
+    {
+      name: 'unconfirmed resolves forward to Payment received',
+      events: [reconciled(parkedForAHuman()), changed(receivedOperation())],
+      expected: { kind: 'waiting', operation: receivedOperation() }
+    },
+    {
+      name: "Success over its own returned payment takes the server's plan",
+      events: [
+        reconciled(awaited(succeededOperation())),
+        { type: 'settledPlanRead', plan: PRO }
+      ],
+      expected: { ...RETURNED, plan: PRO }
+    },
+    {
+      name: "a plan read over this page's own Pay changes nothing",
+      events: [
+        ...live,
+        submitted,
+        changed(succeededOperation()),
+        { type: 'settledPlanRead', plan: PRO }
+      ],
+      expected: {
+        kind: 'terminal',
+        operation: succeededOperation(),
+        attribution: 'started'
+      }
+    },
+    {
+      name: 'Already completed takes the plan the catalog lists for its receipt',
+      events: [
+        reconciled(withReceipt({ plan: RECEIPT_PLAN })),
+        notAllowed,
+        { type: 'settledPlanRead', plan: PRO }
+      ],
+      expected: {
+        kind: 'terminal',
+        operation: withReceipt({ plan: RECEIPT_PLAN }),
+        attribution: 'settled',
+        plan: PRO
+      }
+    },
+    {
+      name: 'a success whose credits were landing takes the read that reports them',
+      events: [
+        reconciled(awaited(withReceipt({ amountChargedCents: 3250 }))),
+        reconciled(
+          awaited(withReceipt({ amountChargedCents: 3250, creditsAdded: 6858 }))
+        )
+      ],
+      expected: {
+        ...RETURNED,
+        operation: awaited(
+          withReceipt({ amountChargedCents: 3250, creditsAdded: 6858 })
+        )
+      }
+    },
+    {
+      name: 'a success keeps its operation over a read of a different one',
+      events: [
+        reconciled(awaited(succeededOperation())),
+        reconciled(succeededOperation('op_other'))
+      ],
+      expected: RETURNED
+    }
+  ])('$name', ({ events, expected }) => {
+    expect(replay(events)).toEqual(expected)
+  })
+})
+
+describe('settled payments the page reads on its own', () => {
+  const PLAN = { slug: 'pro_monthly', duration: 'MONTHLY' } as const
+  const settled = (receipt?: BillingOperationReceipt) => ({
+    ...succeededOperation('op_1'),
+    ...(receipt === undefined ? {} : { receipt })
+  })
+
+  it.for<{ name: string; page: CheckoutPage; awaiting: boolean }>([
+    {
+      name: 'an outcome parked for a human',
+      page: { kind: 'unconfirmed', operationId: 'op_1' },
+      awaiting: true
+    },
+    {
+      name: 'a success whose credits are still landing',
+      page: {
+        kind: 'terminal',
+        operation: settled({ amountChargedCents: 5000 }),
+        attribution: 'settled'
+      },
+      awaiting: true
+    },
+    {
+      name: 'a success whose credits landed',
+      page: {
+        kind: 'terminal',
+        operation: settled({ amountChargedCents: 5000, creditsAdded: 10 }),
+        attribution: 'settled'
+      },
+      awaiting: false
+    },
+    {
+      name: 'a success with no receipt',
+      page: { kind: 'terminal', attribution: 'started' },
+      awaiting: false
+    }
+  ])('re-reads $name: $awaiting', ({ page, awaiting }) => {
+    expect(awaitingServer(page)).toBe(awaiting)
+  })
+
+  it.for<{
+    name: string
+    page: CheckoutPage
+    source: ReturnType<typeof settledPlanSource>
+  }>([
+    {
+      name: 'the plan a settled receipt names',
+      page: {
+        kind: 'terminal',
+        operation: settled({ plan: PLAN }),
+        attribution: 'settled'
+      },
+      source: { key: 'receipt:pro_monthly', receiptSlug: 'pro_monthly' }
+    },
+    {
+      name: "the status's plan for a returned payment with no receipt plan",
+      page: {
+        kind: 'terminal',
+        operation: settled(),
+        attribution: 'returned'
+      },
+      source: { key: 'status' }
+    },
+    {
+      name: 'nothing for a settled payment with no receipt plan',
+      page: { kind: 'terminal', operation: settled(), attribution: 'settled' },
+      source: undefined
+    },
+    {
+      name: "nothing for this page's own Pay, which its quote names",
+      page: {
+        kind: 'terminal',
+        operation: settled({ plan: PLAN }),
+        attribution: 'started'
+      },
+      source: undefined
+    }
+  ])('reads $name', ({ page, source }) => {
+    expect(settledPlanSource(page)).toEqual(source)
   })
 })
 
@@ -1170,6 +1422,71 @@ const capturing = (
   rail: { method: 'collect', element: 'ready', saved: 'none', tab: 'new' },
   reactivation: 'not_required',
   attempt
+})
+
+describe('reduceCheckoutPage waiting under a locked form', () => {
+  it.for<{ name: string; events: CheckoutPageEvent[]; expected: CheckoutPage }>(
+    [
+      {
+        name: 'money found on arrival takes the card rail the quote asks for',
+        events: [reconciled(challengedOperation()), quoted(0)],
+        expected: {
+          kind: 'waiting',
+          operation: challengedOperation(),
+          rail: {
+            method: 'collect',
+            element: 'loading',
+            saved: 'none',
+            tab: 'new'
+          }
+        }
+      },
+      {
+        name: 'a plan change found in flight takes the method on file',
+        events: [reconciled(challengedOperation()), quotedOnFile],
+        expected: {
+          kind: 'waiting',
+          operation: challengedOperation(),
+          rail: { method: 'on_file' }
+        }
+      },
+      {
+        name: 'the rail stays as the operation moves',
+        events: [
+          reconciled(challengedOperation()),
+          quoted(1),
+          changed(settlingOperation())
+        ],
+        expected: {
+          kind: 'waiting',
+          operation: settlingOperation(),
+          rail: {
+            method: 'collect',
+            element: 'loading',
+            saved: 'ready',
+            tab: 'saved'
+          }
+        }
+      },
+      {
+        name: "another tab's money keeps this tab's form under the lock",
+        events: [...live, reconciled(challengedOperation())],
+        expected: {
+          kind: 'waiting',
+          operation: challengedOperation(),
+          sibling: true,
+          rail: {
+            method: 'collect',
+            element: 'ready',
+            saved: 'none',
+            tab: 'new'
+          }
+        }
+      }
+    ]
+  )('$name', ({ events, expected }) => {
+    expect(replay(events)).toEqual(expected)
+  })
 })
 
 describe('submitPhaseOf', () => {

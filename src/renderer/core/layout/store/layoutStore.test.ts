@@ -390,6 +390,7 @@ describe('layoutStore CRDT operations', () => {
     }
     for (const scope of ['geometry', 'global', 'node'] as const) {
       expect(mockReportError).toHaveBeenCalledWith(errors[scope], {
+        surface: 'platform',
         errorType: 'canvas_layout_listener_failed',
         tags: {
           failure_kind: 'caught_unexpected',

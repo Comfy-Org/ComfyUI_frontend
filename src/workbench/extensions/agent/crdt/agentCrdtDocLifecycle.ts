@@ -411,6 +411,7 @@ export class AgentCrdtDocLifecycle {
       { level: 'warn' }
     )
     reportError(new Error(`agent doc subscribe permanently refused: ${code}`), {
+      surface: 'agent',
       errorType: 'failure_confirming_agent_doc_subscribe',
       level: 'warning',
       tags: { feature_area: 'agent', operation: 'sync', outcome: 'gave_up' }
@@ -430,6 +431,7 @@ export class AgentCrdtDocLifecycle {
     reportError(
       new Error('agent doc subscribe was sent but never acknowledged'),
       {
+        surface: 'agent',
         errorType: 'failure_confirming_agent_doc_subscribe',
         level: 'warning',
         tags: { feature_area: 'agent', operation: 'sync', outcome: 'gave_up' }

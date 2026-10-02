@@ -52,7 +52,9 @@ const mockMembers = {
         subscriptionPlan: null,
         subscriptionTier: 'PRO',
         members,
-        pendingInvites: []
+        pendingInvites: [],
+        membersLoaded: true,
+        pendingInvitesLoaded: true
       }
     ]
     workspaceStore.activeWorkspaceId = 'workspace-one'
@@ -312,7 +314,8 @@ describe('useDowngradeToPersonal', () => {
         {
           returnUrl: 'https://platform.test/payment/success',
           cancelUrl: 'https://platform.test/payment/failed',
-          confirmReactivation: false
+          confirmReactivation: false,
+          attemptStartedAt: expect.any(Number)
         }
       )
     })
@@ -351,7 +354,8 @@ describe('useDowngradeToPersonal', () => {
         {
           returnUrl: 'https://platform.test/payment/success',
           cancelUrl: 'https://platform.test/payment/failed',
-          confirmReactivation: true
+          confirmReactivation: true,
+          attemptStartedAt: expect.any(Number)
         }
       )
     })
@@ -467,7 +471,8 @@ describe('useDowngradeToPersonal', () => {
         {
           returnUrl: 'https://platform.test/payment/success',
           cancelUrl: 'https://platform.test/payment/failed',
-          confirmReactivation: false
+          confirmReactivation: false,
+          attemptStartedAt: expect.any(Number)
         }
       )
     })
@@ -493,7 +498,8 @@ describe('useDowngradeToPersonal', () => {
         {
           returnUrl: 'https://platform.test/payment/success',
           cancelUrl: 'https://platform.test/payment/failed',
-          confirmReactivation: false
+          confirmReactivation: false,
+          attemptStartedAt: expect.any(Number)
         }
       )
     })

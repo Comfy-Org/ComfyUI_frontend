@@ -13,7 +13,11 @@ export interface KeepSubscriptionConsent {
   readonly copy: KeepSubscriptionCopy
 }
 
-const { consent } = defineProps<{ consent: KeepSubscriptionConsent }>()
+const { consent, locked = false } = defineProps<{
+  consent: KeepSubscriptionConsent
+  /** Money is on its way: the tick it was sent with stands. */
+  locked?: boolean
+}>()
 
 const emit = defineEmits<{ confirm: [confirmed: boolean] }>()
 
@@ -47,12 +51,20 @@ watch(
       {{ consent.copy.title }}
     </p>
     <p class="m-0 text-sm/5 text-muted-foreground">{{ consent.copy.body }}</p>
-    <label class="flex cursor-pointer items-start gap-2 py-0.5">
+    <label
+      :class="
+        cn(
+          'flex items-start gap-2 py-0.5',
+          locked ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+        )
+      "
+    >
       <input
         ref="box"
         type="checkbox"
         class="peer sr-only"
         :checked="consent.state === 'confirmed'"
+        :disabled="locked"
         :aria-invalid="consent.state === 'invalid'"
         :aria-describedby="consent.state === 'invalid' ? errorId : undefined"
         @change="emit('confirm', ($event.target as HTMLInputElement).checked)"
@@ -60,7 +72,7 @@ watch(
       <span
         :class="
           cn(
-            'mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-sm border border-border-default text-transparent transition-colors',
+            'mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-sm border border-muted-foreground text-transparent transition-colors',
             'peer-focus-visible:ring-2 peer-focus-visible:ring-base-foreground peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-tertiary-background',
             'peer-checked:border-base-foreground peer-checked:bg-base-foreground peer-checked:text-base-background',
             'peer-aria-invalid:border-coral-500 peer-aria-invalid:ring-3 peer-aria-invalid:ring-coral-500/40'

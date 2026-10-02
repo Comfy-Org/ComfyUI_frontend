@@ -1,4 +1,5 @@
 import type { Modality, WorkshopModel } from '../config/models-catalogue'
+import type { SnippetLanguage } from '../config/models-snippets'
 import type { RunFailure, RunOutput } from '../config/workshop-run'
 import type {
   FieldErrorCode,
@@ -84,8 +85,12 @@ export type WorkshopAnalyticsEvent =
       properties: { model_count: number; page_type?: WorkshopPageType }
     }
   | {
-      name: 'model_viewed' | 'api_viewed'
+      name: 'model_viewed' | 'api_viewed' | 'api_key_clicked'
       properties: WorkshopModelAnalytics
+    }
+  | {
+      name: 'api_snippet_copied'
+      properties: WorkshopModelAnalytics & { snippet_language: SnippetLanguage }
     }
   | {
       name: 'run_validation_failed'
@@ -131,14 +136,16 @@ export type WorkshopAnalyticsEvent =
     }
   | {
       name: 'checkout_failed'
-      properties: {
-        attempt_id?: string
-        user_id: string
-        workspace_id: string
-        stage: WorkshopCheckoutFailureStage
-        http_status?: number
-        error_code?: WorkshopCheckoutErrorCode
-      }
+      properties:
+        | {
+            attempt_id?: string
+            user_id: string
+            workspace_id: string
+            stage: WorkshopCheckoutFailureStage
+            http_status?: number
+            error_code?: WorkshopCheckoutErrorCode
+          }
+        | { stage: 'no_owner_scope' }
     }
   | {
       name: 'output_download_clicked'

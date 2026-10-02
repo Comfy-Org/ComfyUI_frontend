@@ -15,7 +15,6 @@ import KeepSubscriptionNotice from '@/components/fullPage/KeepSubscriptionNotice
 
 /** What the last Pay left, and the consent a plan set to end needs, around the button. */
 export interface PayContext {
-  readonly failure?: string
   readonly outcome?: Exclude<InlineOutcome, { kind: 'reconciling' }>
   readonly consent?: KeepSubscriptionConsent
 }
@@ -25,17 +24,25 @@ const {
   loading = false,
   phase,
   canCancel = false,
-  failure,
+  locked = false,
+  reopening = false,
   outcome,
-  consent
+  consent,
+  purchase = 'plan'
 } = defineProps<
   PayContext & {
+    /** A top-up buys credits once, so it authorizes no recurring charge. */
+    purchase?: 'plan' | 'credits'
     disabled: boolean
     loading?: boolean
     /** The submit area's phase; only the visible pay action carries one, so the page has one live region. */
     phase?: SubmitPhase
     /** Cancel payment renders only once the server can cancel a pending payment. */
     canCancel?: boolean
+    /** Money is on its way, so the consent it was sent with stands. */
+    locked?: boolean
+    /** The page is re-opening the challenge on its own; offering it too would flash. */
+    reopening?: boolean
   }
 >()
 
@@ -48,9 +55,34 @@ const emit = defineEmits<{
 
 const { t, te } = useI18n()
 
+/** A plan authorizes a charge each period; a top-up authorizes one. */
+const PURCHASE_COPY = {
+  plan: {
+    pay: 'checkout.payAndSubscribe',
+    agreement: 'checkout.fullPage.terms.agreement'
+  },
+  credits: {
+    pay: 'checkout.fullPage.payForCredits',
+    agreement: 'checkout.fullPage.terms.agreementOnce'
+  }
+} as const
+
+const payLabel = computed(() => t(PURCHASE_COPY[purchase].pay))
+
+const terms = computed(() => ({
+  agreement: t(PURCHASE_COPY[purchase].agreement, {
+    terms: '{terms}',
+    privacy: '{privacy}'
+  }),
+  terms: t('checkout.fullPage.terms.terms'),
+  privacyPolicy: t('checkout.fullPage.terms.privacyPolicy')
+}))
+
 /** Support is for a payment that failed; a notice over a fresh price is not one. */
 const supportLink = computed(() =>
-  outcome !== undefined && 'operationId' in outcome
+  outcome !== undefined &&
+  ('operationId' in outcome ||
+    (outcome.kind === 'processing_error' && 'code' in outcome))
     ? supportLinkFor(outcome)
     : undefined
 )
@@ -83,9 +115,12 @@ const challenge = computed(() =>
   phase?.kind === 'challenge' ? phase.operation : undefined
 )
 
-/** A challenge the page is not showing turns Pay into the one way back to it. */
+/** A challenge the page is not showing, and is not about to, turns Pay into the one way back to it. */
 const reopenable = computed(
-  () => challenge.value !== undefined && isChallengeReopenable(challenge.value)
+  () =>
+    !reopening &&
+    challenge.value !== undefined &&
+    isChallengeReopenable(challenge.value)
 )
 
 const PRIMARY_BUTTON =
@@ -102,16 +137,10 @@ const SECONDARY_BUTTON =
       :key="`${outcome.kind}:${'operationId' in outcome ? outcome.operationId : ''}`"
       :outcome
     />
-    <p
-      v-if="failure"
-      role="alert"
-      class="m-0 text-sm text-destructive-background"
-    >
-      {{ failure }}
-    </p>
     <KeepSubscriptionNotice
       v-if="consent"
       :consent
+      :locked
       @confirm="emit('confirmReactivation', $event)"
     />
     <div class="flex flex-col gap-4">
@@ -151,7 +180,7 @@ const SECONDARY_BUTTON =
           aria-hidden="true"
         />
         <span :class="cn(loading && 'sr-only')">
-          {{ t('checkout.payAndSubscribe') }}
+          {{ payLabel }}
         </span>
       </button>
       <button
@@ -174,16 +203,7 @@ const SECONDARY_BUTTON =
       >
         {{ t('checkout.fullPage.outcome.contactSupport') }}
       </a>
-      <CheckoutTermsNote
-        :copy="{
-          agreement: t('checkout.fullPage.terms.agreement', {
-            terms: '{terms}',
-            privacy: '{privacy}'
-          }),
-          terms: t('checkout.fullPage.terms.terms'),
-          privacyPolicy: t('checkout.fullPage.terms.privacyPolicy')
-        }"
-      />
+      <CheckoutTermsNote :copy="terms" />
     </div>
   </div>
 </template>

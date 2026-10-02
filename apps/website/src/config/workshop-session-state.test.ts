@@ -397,6 +397,26 @@ describe('useWorkshopSession', () => {
     ).toBeGreaterThan(deactivationsBefore)
   })
 
+  it('stops the session on request without dropping the stored credential, and can start again', async () => {
+    const s = await bootSession()
+    publish(authenticatedSnapshot())
+    await vi.waitFor(() => expect(s.session.value).toEqual(okSession))
+    const mod = await import('./workshop-session-state')
+
+    mod.stopWorkshopSession()
+
+    expect(workshopIdentity.deactivate).toHaveBeenCalled()
+    expect(s.session.value).toBeUndefined()
+    expect(workshopSessionClient.clearStoredCredential).not.toHaveBeenCalled()
+    publish(authenticatedSnapshot())
+    expect(s.session.value).toBeUndefined()
+
+    mod.useWorkshopSession()
+    await vi.waitFor(() =>
+      expect(workshopIdentity.activate).toHaveBeenCalledTimes(2)
+    )
+  })
+
   it('allows remembered-workspace restoration after the flag settles off and turns on again', async () => {
     const s = await bootSession()
     publish(authenticatedSnapshot())

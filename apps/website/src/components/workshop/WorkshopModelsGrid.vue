@@ -36,13 +36,19 @@ import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 import FeaturedBanner from './FeaturedBanner.vue'
+import { CARD_GRID } from '../../lib/workshop/card-layout'
 import { modelSlides } from '../../lib/workshop/featured-slides'
 import WorkshopSearchField from './WorkshopSearchField.vue'
 import WorkshopSections from './WorkshopSections.vue'
 import WorkshopSortMenu from './WorkshopSortMenu.vue'
 
-const { models, locale = 'en' } = defineProps<{
+const {
+  models,
+  initialSearch,
+  locale = 'en'
+} = defineProps<{
   models: readonly WorkshopModel[]
+  initialSearch?: string
   locale?: Locale
 }>()
 
@@ -58,8 +64,8 @@ const openedShelf = computed(() => shelfOf(selectedUseCases.value))
 const browseAll = defineModel<boolean>('browseAll', { default: false })
 let scrollReady = false
 
-function readAddress() {
-  const initial = parseCatalogSearch(location.search)
+function readAddress(search: string) {
+  const initial = parseCatalogSearch(search)
   query.value = initial.query ?? ''
   selectedUseCases.value = openedUseCases(initial.useCase ?? 'all')
   legacyModalities.value = [...initial.modalities]
@@ -73,11 +79,11 @@ function readAddress() {
 function onPageShow(event: PageTransitionEvent) {
   if (!event.persisted) return
   browseAll.value = false
-  readAddress()
+  readAddress(location.search)
 }
 
 onMounted(() => {
-  readAddress()
+  readAddress(initialSearch ?? location.search)
   window.addEventListener('pageshow', onPageShow)
   void nextTick(() => {
     scrollReady = true
@@ -200,7 +206,7 @@ function rememberModel(
   event: MouseEvent,
   shelf = openedShelf.value
 ) {
-  rememberShelfOnClick(shelf, model.href, event)
+  if (model.href) rememberShelfOnClick(shelf, model.href, event)
 }
 
 watch(browseAll, (on) => on && resetFilters())
@@ -221,7 +227,7 @@ watch(browseAll, (on) => on && resetFilters())
       </button>
 
       <!-- scroll-mt tracks the nav height; the toolbar's is lower because its py-4 absorbs the difference -->
-      <h1
+      <h2
         v-if="inSection"
         ref="heading"
         class="mt-3 mb-4 scroll-mt-24 text-3xl font-bold text-primary-warm-white sm:text-4xl lg:scroll-mt-32"
@@ -230,7 +236,7 @@ watch(browseAll, (on) => on && resetFilters())
         <span class="text-base font-normal text-primary-warm-gray tabular-nums">
           {{ visible.length }}
         </span>
-      </h1>
+      </h2>
 
       <div
         ref="toolbar"
@@ -299,7 +305,7 @@ watch(browseAll, (on) => on && resetFilters())
             {{ t('workshop.models.heading', locale) }}
           </h2>
           <ul
-            class="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+            :class="CARD_GRID"
             aria-labelledby="workshop-models-heading"
             data-testid="workshop-models-grid"
           >

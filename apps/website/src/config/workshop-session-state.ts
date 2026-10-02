@@ -265,6 +265,15 @@ function start(): void {
   })
 }
 
+export function stopWorkshopSession(): void {
+  operation.abandon()
+  stopListeners()
+  restoredForUid = undefined
+  // PENDING also idles credits, which follow this snapshot's settled state.
+  snapshot.value = PENDING
+  lifecycle.stop()
+}
+
 async function signOut(): Promise<void> {
   const { signOutWorkshop } = await import('./workshop-firebase')
   await signOutWorkshop()

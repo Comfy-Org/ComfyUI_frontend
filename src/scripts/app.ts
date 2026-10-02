@@ -23,7 +23,7 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import { snapPoint } from '@/lib/litegraph/src/measure'
-import type { Vector2 } from '@/lib/litegraph/src/litegraph'
+import type { ISerialisedGraph, Vector2 } from '@/lib/litegraph/src/litegraph'
 import type {
   IBaseWidget,
   TWidgetValue
@@ -759,6 +759,7 @@ export class ComfyApp {
         if (files.length === 0) {
           if (event.dataTransfer?.types.includes(MIME_ASSET_INFO)) {
             reportError(new Error('Dropped asset card yielded no file'), {
+              surface: 'graph',
               errorType: 'asset_drop_load_failure'
             })
             useToastStore().addAlert(t('toastMessages.assetDropFailed'))
@@ -1519,8 +1520,7 @@ export class ComfyApp {
     let resourceScanLoadCompleted = false
     try {
       try {
-        // @ts-expect-error Discrepancies between zod and litegraph - in progress
-        this.rootGraph.configure(graphData)
+        this.rootGraph.configure(graphData as ISerialisedGraph)
 
         // Save original renderer version before scaling (it gets modified during scaling)
         const originalMainGraphRenderer =
@@ -2207,7 +2207,10 @@ export class ComfyApp {
             })
           } catch (err) {
             console.error('Failed to load API prompt:', err)
-            reportError(err, { errorType: 'api_prompt_load_failure' })
+            reportError(err, {
+              surface: 'graph',
+              errorType: 'api_prompt_load_failure'
+            })
             this.showErrorOnFileLoad(file)
           }
           return
@@ -2563,7 +2566,19 @@ export class ComfyApp {
                 value
               ) as TWidgetValue
               widget.value = widgetValue
-              widget.callback?.(widgetValue)
+              try {
+                widget.callback?.(widgetValue)
+              } catch (error) {
+                reportError(error, {
+                  surface: 'graph',
+                  errorType: 'failure_invoking_api_workflow_widget_callback',
+                  tags: {
+                    node_type: targetNode.type,
+                    widget_name: input
+                  },
+                  context: { fileName }
+                })
+              }
               return true
             }
             if (!applyWidgetValue()) unresolvedInputs.push(applyWidgetValue)

@@ -115,6 +115,14 @@ describe('agentRestClient route + method', () => {
     expect(init.method).toBe('GET')
   })
 
+  it('getMessages forwards the caller abort signal to the request', async () => {
+    respond(jsonResponse(200, []))
+    const { signal } = new AbortController()
+    await makeClient().getMessages('t7', { signal })
+
+    expect(lastCall().init.signal).toBe(signal)
+  })
+
   it('gets and puts the run-mode preference using the API contract', async () => {
     const preference = { mode: 'auto_limited' as const, credit_limit: 25 }
     const client: AgentRestClient = createAgentRestClient()
@@ -376,6 +384,15 @@ describe('success response parsing', () => {
 })
 
 describe('error mapping', () => {
+  it.for(['', '   '])(
+    'gives a status-bearing message when the supplied message is %j',
+    (message) => {
+      expect(new AgentApiError(message, 500, undefined).message).toBe(
+        'Agent request failed (HTTP 500)'
+      )
+    }
+  )
+
   it('maps a plain-string error body to its message with the status and parsed body', async () => {
     respond(jsonResponse(409, { error: 'turn is not running' }))
 
@@ -441,6 +458,19 @@ describe('error mapping', () => {
     expect(error.body).toBeUndefined()
   })
 
+  it('falls back to the HTTP status when the response has no error text', async () => {
+    respond(new Response('', { status: 503 }))
+
+    const error = await makeClient()
+      .getMessages('t1')
+      .catch((caught: unknown) => caught)
+
+    expect(error).toBeInstanceOf(AgentApiError)
+    expect((error as AgentApiError).message).toBe(
+      'Agent request failed (HTTP 503)'
+    )
+  })
+
   it('throws zod when a success body violates the response schema (anti-drift)', async () => {
     respond(jsonResponse(200, { wrong: 'shape' }))
 
@@ -452,7 +482,7 @@ describe('error mapping', () => {
     expect(error).not.toBeInstanceOf(AgentApiError)
   })
 
-  it('distinguishes a truncated 2xx body from a rejected request', async () => {
+  it('keeps a genuinely unreadable POST response distinct without exposing its route', async () => {
     respond(
       new Response('{"message_id":"m1","thread_', {
         status: 202,
@@ -466,7 +496,22 @@ describe('error mapping', () => {
 
     expect(error).toBeInstanceOf(AgentResponseUnreadableError)
     expect(error).not.toBeInstanceOf(AgentApiError)
+    expect((error as Error).message).toBe('Unreadable agent response body')
   })
+
+  it.for([
+    new TypeError('Failed to fetch'),
+    new DOMException('The operation was aborted', 'AbortError')
+  ])(
+    'preserves transport failure identity after response headers',
+    async (cause) => {
+      const response = jsonResponse(200, [])
+      vi.spyOn(response, 'json').mockRejectedValueOnce(cause)
+      respond(response)
+
+      await expect(makeClient().listThreads()).rejects.toBe(cause)
+    }
+  )
 })
 
 describe('Retry-After contract', () => {

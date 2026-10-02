@@ -8,7 +8,10 @@ import {
   EventType,
   useCustomerEventsService
 } from '@/services/customerEventsService'
-import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
+import {
+  WebSessionTokenError,
+  webSessionResourceHeader
+} from '@/platform/auth/session/webSessionFetch'
 import { useAuthStore } from '@/stores/authStore'
 import type { AuthHeader } from '@/types/authTypes'
 
@@ -174,20 +177,26 @@ describe('useCustomerEventsService', () => {
       }
     )
 
-    it('reports a failed mint and stops loading', async () => {
+    it('keeps the mint error message and hides its code', async () => {
       vi.mocked(webSessionResourceHeader).mockRejectedValue(
-        new SessionTokenError({
-          status: 'error',
-          code: 'SESSION_REVOKED',
-          retryable: false
-        })
+        new WebSessionTokenError(
+          new SessionTokenError({
+            status: 'error',
+            code: 'SESSION_REVOKED',
+            retryable: false
+          }),
+          'Your session ended. Sign in again to continue.'
+        )
       )
       vi.mocked(axios.isAxiosError).mockReturnValue(false)
 
       const result = await service.getMyEvents()
 
       expect(result).toBeNull()
-      expect(service.error.value).toContain('SESSION_REVOKED')
+      expect(service.error.value).toContain(
+        'Your session ended. Sign in again to continue.'
+      )
+      expect(service.error.value).not.toContain('SESSION_REVOKED')
       expect(service.isLoading.value).toBe(false)
       expect(mockAxiosInstance.get).not.toHaveBeenCalled()
     })

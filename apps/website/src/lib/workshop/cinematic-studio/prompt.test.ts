@@ -12,7 +12,6 @@ const brief = (overrides: Partial<CinematicBrief> = {}): CinematicBrief => ({
   direction: AUTO_DIRECTION,
   enhance: false,
   cast: false,
-  palette: false,
   ...overrides
 })
 
@@ -31,15 +30,10 @@ describe('cinematicPrompt', () => {
     )
   })
 
-  it.for([
-    [{ cast: true }, 'Keep the character from reference image 1.'],
-    [{ palette: true }, 'Match the color palette of reference image 1.'],
-    [
-      { cast: true, palette: true },
-      'Match the color palette of reference image 2.'
-    ]
-  ] as const)('numbers references in upload order: %o', ([refs, expected]) => {
-    expect(cinematicPrompt(brief(refs))).toContain(expected)
+  it('keeps the character from the one reference image', () => {
+    expect(cinematicPrompt(brief({ cast: true }))).toContain(
+      'Keep the character from reference image 1.'
+    )
   })
 
   it('keeps only the camera parts that were chosen', () => {

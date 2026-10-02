@@ -252,6 +252,84 @@ test('312-9930: coming back from Alipay without paying stays on the checkout and
   expect(subscribeRequests(cloud)).toHaveLength(0)
 })
 
+test('312-9930: an Alipay checkout restored from the back-forward cache loads afresh and offers Complete verification', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.paymentMethods = []
+  scriptOperation(cloud)
+  await holdChallenge(page)
+  await page.addInitScript((redirectTo) => {
+    const [entry] = performance.getEntriesByType('navigation')
+    const reloaded =
+      entry instanceof PerformanceNavigationTiming && entry.type === 'reload'
+    Object.assign(window, {
+      __e2eStripeMethodType: 'alipay',
+      ...(reloaded ? { __e2eStripeRedirectTo: redirectTo } : {})
+    })
+  }, PORTAL_URL)
+  await signIn(CHECKOUT)
+  await payButton(page).click()
+  await expect
+    .poll(() => nextActionCalls(page))
+    .toEqual([{ clientSecret: CLIENT_SECRET }])
+  await expect(footnote(page)).toHaveText(REDIRECTING)
+
+  cloud.scenario.status = {
+    ...cloud.scenario.status,
+    pending_billing_op_id: OPERATION,
+    pending_billing_op_type: 'subscription',
+    payment_intent_client_secret: CLIENT_SECRET
+  }
+  await page.evaluate(() => {
+    const event = new Event('pageshow')
+    Object.defineProperty(event, 'persisted', { value: true })
+    window.dispatchEvent(event)
+  })
+
+  await expect(completeVerification(page)).toBeEnabled()
+  await expect(footnote(page)).toHaveText(PHASE_A)
+  expect(await nextActionCalls(page)).toEqual([])
+  expect(subscribeRequests(cloud)).toHaveLength(1)
+})
+
+test('340-12967: a reload during Phase A shows the locked form, never Complete verification, while the challenge re-opens', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.paymentMethods = []
+  cloud.scenario.status = {
+    ...cloud.scenario.status,
+    pending_billing_op_id: OPERATION,
+    pending_billing_op_type: 'subscription',
+    payment_intent_client_secret: CLIENT_SECRET
+  }
+  scriptOperation(cloud)
+  await holdChallenge(page)
+  await page.addInitScript(() => {
+    const offered = { seen: false }
+    Object.assign(window, { __e2eVerifyOffered: offered })
+    new MutationObserver(() => {
+      for (const button of document.querySelectorAll('button'))
+        if (button.textContent.includes('Complete verification'))
+          offered.seen = true
+    }).observe(document, { subtree: true, childList: true })
+  })
+  await signIn(CHECKOUT)
+
+  await expect
+    .poll(() => nextActionCalls(page))
+    .toEqual([{ clientSecret: CLIENT_SECRET }])
+  await expect(footnote(page)).toHaveText(PHASE_A)
+  await expect(page.getByTestId('checkout-skeleton')).toHaveCount(0)
+  await expect(page.getByTestId('checkout-waiting')).not.toHaveAttribute(
+    'aria-busy'
+  )
+  expect(await page.evaluate('window.__e2eVerifyOffered.seen')).toBe(false)
+})
+
 test('340-13834: coming back from an Alipay payment the server ended unpaid opens capture on Payment not completed, never a decline', async ({
   page,
   cloud,
@@ -307,6 +385,44 @@ test('447-6886: a redirect method shows the pre-money line, never Phase B, and l
     confirmation_token: 'ctok_e2e_fake',
     return_url: expect.stringMatching(/\/v1\/checkout\?/)
   })
+})
+
+test('coming back from Alipay after its own payment went through is Success, naming the plan the server now lists', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.paymentMethods = []
+  const moveOperation = scriptOperation(cloud)
+  await page.addInitScript((redirectTo) => {
+    Object.assign(window, {
+      __e2eStripeMethodType: 'alipay',
+      __e2eStripeRedirectTo: redirectTo
+    })
+  }, PORTAL_URL)
+  await signIn(CHECKOUT)
+  await payButton(page).click()
+  await expect(page).toHaveURL(PORTAL_URL)
+
+  moveOperation(succeededOperation(OPERATION))
+  cloud.scenario.status = {
+    ...cloud.scenario.status,
+    plan_slug: 'pro_monthly',
+    subscription_tier: 'PRO'
+  }
+  cloud.scenario.preview = { ...cloud.scenario.preview, allowed: false }
+  await page.goBack()
+
+  await expect(
+    page.getByRole('heading', { name: "You're all set" })
+  ).toBeVisible()
+  const plan = page.getByTestId('checkout-ending-plan')
+  await expect(plan).toContainText('Pro')
+  await expect(plan).toContainText('$50.00')
+  await expect(
+    page.getByRole('heading', { name: 'Already completed' })
+  ).toBeHidden()
+  expect(subscribeRequests(cloud)).toHaveLength(1)
 })
 
 test('446-10925: coming back from the provider is a fresh mount on Phase B, then the terminal', async ({

@@ -10,7 +10,10 @@ import { useTimeoutFn } from '@vueuse/core'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { BillingDeclineReason } from '@comfyorg/account-core/billing'
+import type {
+  BillingDeclineReason,
+  WebReturnControl
+} from '@comfyorg/account-core/billing'
 import {
   awaitsHostedAction,
   declineDetailKey,
@@ -56,6 +59,11 @@ import { useBillingEntry } from '@/entry/billingEntry'
 import { returnToHost } from '@/entry/returnToHost'
 import { createDeferredStripeChallengePort } from '@/session/stripeChallengePort'
 import { useWorkspaceInvites } from '@/session/workspaceInvites'
+import {
+  checkoutAttemptOf,
+  createSubscriptionCheckoutTelemetry
+} from '@/telemetry/subscriptionCheckoutTelemetry'
+import { reportReturnClicked } from '@/telemetry/webReturnTelemetry'
 
 const { locale, t } = useI18n()
 const { coded, refusal } = useHostedCopy()
@@ -91,6 +99,8 @@ const checkout = useCheckout({
   // Deferred: reads the key at challenge time, not this setup's snapshot.
   challengePort: createDeferredStripeChallengePort(awaitBillingWebStripeKey)
 })
+
+const attempts = createSubscriptionCheckoutTelemetry({ ui: 'embedded' })
 
 const quotedPlan = ref<string | undefined>()
 const quotedTeamCreditStopId = ref<string | undefined>()
@@ -484,18 +494,23 @@ function resultUrl(): string | undefined {
 
 async function pay(choice: PaymentChoice) {
   const quoted = preview.value
-  if (planSlug.value === undefined || !quoted || loading.value) return
+  const slug = planSlug.value
+  if (slug === undefined || !quoted || loading.value) return
   submitFailure.value = undefined
-  const result = await checkout.subscribe(
-    buildSubscribeRequest(
-      {
-        planSlug: planSlug.value,
-        teamCreditStopId: teamCreditStopId.value,
-        returnUrl: resultUrl()
-      },
-      quoted,
-      choice
-    )
+  const result = await attempts.run(
+    checkoutAttemptOf(quoted, entry.value),
+    () =>
+      checkout.subscribe(
+        buildSubscribeRequest(
+          {
+            planSlug: slug,
+            teamCreditStopId: teamCreditStopId.value,
+            returnUrl: resultUrl()
+          },
+          quoted,
+          choice
+        )
+      )
   )
   if (result.status === 'ok') return
   if (result.code === 'REACTIVATION_CONFIRMATION_REQUIRED') {
@@ -524,9 +539,11 @@ function payWithoutCard() {
   )
 }
 
-function leaveForHost() {
+function leaveForHost(control: WebReturnControl) {
   const href = returnLink.value
-  if (href !== undefined) returnToHost(href)
+  if (href === undefined) return
+  reportReturnClicked(control)
+  returnToHost(href)
 }
 </script>
 
@@ -551,7 +568,7 @@ function leaveForHost() {
           v-if="returnLink"
           type="button"
           class="mt-4 cursor-pointer text-sm text-base-foreground underline underline-offset-4"
-          @click="leaveForHost"
+          @click="leaveForHost('back')"
         >
           {{ t('checkout.back') }}
         </button>
@@ -560,7 +577,7 @@ function leaveForHost() {
         <CheckoutFrame
           :step="frameStep"
           :close-label="t('checkout.close')"
-          @close="leaveForHost"
+          @close="leaveForHost('close')"
         >
           <CheckoutTeamSuccess
             v-if="succeeded"
@@ -576,7 +593,7 @@ function leaveForHost() {
             :invites
             @invited="readSeats"
             @invites-failed="inviteFailure = $event"
-            @close="leaveForHost"
+            @close="leaveForHost('success_close')"
           />
           <CheckoutSubscribeConfirm
             v-else-if="isNewSubscription"
@@ -604,7 +621,7 @@ function leaveForHost() {
             @confirm-payment="pay({ confirmationToken: $event })"
             @apply-promotion-code="applyPromotionCode"
             @invalidate-quote="quoteIsCurrent = false"
-            @back="leaveForHost"
+            @back="leaveForHost('back')"
           />
           <CheckoutTransitionConfirm
             v-else
@@ -627,7 +644,7 @@ function leaveForHost() {
             @confirm="pay({ confirmReactivation: $event })"
             @apply-promotion-code="applyPromotionCode"
             @invalidate-quote="quoteIsCurrent = false"
-            @back="leaveForHost"
+            @back="leaveForHost('back')"
           />
         </CheckoutFrame>
       </template>
