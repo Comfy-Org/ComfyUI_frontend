@@ -1,9 +1,20 @@
 <script setup lang="ts">
 import { X } from '@lucide/vue'
 
-const { title, closeLabel } = defineProps<{
+import { cn } from '@comfyorg/tailwind-utils'
+
+const {
+  title,
+  closeLabel,
+  fieldLabel = true
+} = defineProps<{
   title: string
   closeLabel: string
+  /**
+   * Shows the label of the field inside. Off for a tray holding one field
+   * its title already names; the label stays for screen readers.
+   */
+  fieldLabel?: boolean
 }>()
 
 const emit = defineEmits<{ close: [] }>()
@@ -13,7 +24,12 @@ const emit = defineEmits<{ close: [] }>()
   <div
     role="dialog"
     :aria-label="title"
-    class="pointer-events-auto w-full max-w-110 rounded-2xl border border-transparency-white-t20 bg-primary-comfy-ink-light shadow-xl shadow-black/40"
+    :class="
+      cn(
+        'pointer-events-auto w-full max-w-110 rounded-2xl border border-transparency-white-t20 bg-primary-comfy-ink-light shadow-xl shadow-black/40',
+        !fieldLabel && '**:data-field-label:sr-only'
+      )
+    "
     @keydown.esc="emit('close')"
   >
     <div
