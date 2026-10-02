@@ -29,7 +29,7 @@ import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import { createUuidv4 } from '@/utils/uuid'
 
-import { attachDocOpMinter } from './docOpMinter'
+import { attachDocOpMinter, wireNodeSnapshot } from './docOpMinter'
 import type { DocOpMinter, DocOpMinterDeps } from './docOpMinter'
 import type { GraphOperation } from './graphOperations'
 import { readDocSlotNames } from './liveGraphApplier'
@@ -695,7 +695,7 @@ describe('attachDocOpMinter', () => {
     )
     expect(stored).toBeDefined()
     stored!.serialize = false
-    widget.serialize = undefined
+    delete widget.serialize
 
     emitGraphIntent({
       type: 'set_widget',
@@ -708,6 +708,19 @@ describe('attachDocOpMinter', () => {
     await afterFlush()
 
     expect(minted).toEqual([])
+  })
+
+  it('uses the same store fallback when filtering an add-node snapshot', () => {
+    const { source } = seedGraph(graph)
+    const widget = source.widgets![0]
+    const stored = useWidgetValueStore().getWidget(
+      widgetId(graph.id, source.id, widget.name)
+    )
+    expect(stored).toBeDefined()
+    stored!.serialize = false
+    delete widget.serialize
+
+    expect(wireNodeSnapshot(source)?.widgets_values).toEqual({})
   })
 
   it('does not mint an active-graph widget write without a live widget', async () => {

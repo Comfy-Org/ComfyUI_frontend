@@ -118,17 +118,37 @@ function valueWidgetsOnly(
   const filtered: Record<string, unknown> = {}
   for (const [name, value] of Object.entries(named)) {
     const widget = node.widgets?.find((candidate) => candidate.name === name)
-    if (isValueWidget(widget)) filtered[name] = value
+    const rootGraphId = node.graph?.rootGraph.id
+    const stored = rootGraphId
+      ? useWidgetValueStore().getWidget(widgetId(rootGraphId, node.id, name))
+      : undefined
+    if (isValueWidget(widget, stored)) filtered[name] = value
   }
   return filtered
 }
 
-function isValueWidget(widget: IBaseWidget | undefined): boolean {
-  return (
-    widget !== undefined &&
-    widget.type !== 'button' &&
-    widget.serialize !== false
-  )
+function isValueWidget(
+  widget: IBaseWidget | undefined,
+  stored?: { type: string; serialize?: boolean }
+): boolean {
+  if (!widget && !stored) return false
+  if (widgetType(widget, stored) === 'button') return false
+  return widgetSerialize(widget, stored) !== false
+}
+
+function widgetType(
+  widget: IBaseWidget | undefined,
+  stored?: { type: string }
+): string | undefined {
+  return widget ? widget.type : stored?.type
+}
+
+function widgetSerialize(
+  widget: IBaseWidget | undefined,
+  stored?: { serialize?: boolean }
+): boolean | undefined {
+  if (!widget) return stored?.serialize
+  return 'serialize' in widget ? widget.serialize : stored?.serialize
 }
 
 function nodeKey(graphId: string, nodeId: NodeId): string {
@@ -152,10 +172,12 @@ function isPersistedWidgetIntent(
   )
   if (!widget) return false
   const stored = useWidgetValueStore().getWidget(
-    widgetId(event.graphId, event.nodeId, event.name)
+    widgetId(node.graph!.rootGraph.id, event.nodeId, event.name)
   )
-  if ((widget.serialize ?? stored?.serialize) === false) return false
-  return node.isVirtualNode || widget.type !== 'button'
+  return (
+    isValueWidget(widget, stored) ||
+    (node.isVirtualNode === true && widget.type === 'button')
+  )
 }
 
 type WidgetIntentValidation =
@@ -171,7 +193,7 @@ function validateWidgetIntent(
     const stored = useWidgetValueStore().getWidget(
       widgetId(event.graphId, event.nodeId, event.name)
     )
-    return stored && stored.type !== 'button' && stored.serialize !== false
+    return isValueWidget(undefined, stored)
       ? { kind: 'validated' }
       : { kind: 'drop' }
   }
