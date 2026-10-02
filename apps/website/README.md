@@ -24,9 +24,9 @@ latest check and last successful generation.
 
 ## Formatting
 
-Run `pnpm format:astro` from the repository root to format Astro files, or
-`pnpm format:astro:check` to check them. Both are included in the root format
-commands and shared CI checks. Pre-commit formats staged Astro files after
+Run `pnpm --filter @comfyorg/website format` from the repository root to format
+the website, or `pnpm --filter @comfyorg/website format:check` to check it. CI
+runs every workspace's format check with `pnpm -r --include-workspace-root`. Pre-commit formats staged Astro files after
 ESLint fixes.
 
 Astro files use Prettier with the official Astro plugin; other formats continue

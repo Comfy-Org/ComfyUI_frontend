@@ -16,6 +16,8 @@
     "./urlSafety": "./src/urlSafety.ts"
   },
   "scripts": {
+    "format": "oxfmt --write",
+    "format:check": "oxfmt --check",
     "test": "vitest run",
     "typecheck": "tsx ../../scripts/vue-tsc-native.ts --noEmit"
   },
