@@ -1,7 +1,8 @@
 import {
   linksMap,
   nodesMap,
-  OPAQUE_WIDGETS_KEY
+  OPAQUE_WIDGETS_KEY,
+  readStamps
 } from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
 import { z } from 'zod'
@@ -173,8 +174,110 @@ const zDocNodeFields = zComfyNode
     properties: z.record(zNodeProperty.optional()).optional()
   })
 
+/**
+ * What produced a document node, read from the LWW ledger (`__stamps`), which
+ * is the only durable record of per-op attribution.
+ *
+ * `operation` means an op wrote the node and the stamp names it; `import` means
+ * no stamp exists for the node, which `mint()` is the only way to reach — it
+ * seeds the whole document at bootstrap and stamps nothing.
+ *
+ * `actorKind` is the actor's *kind* segment and nothing else. The actor grammar
+ * is `agent:<thread>:<turn>` / `human:<user>:<tab>`, so the remaining segments
+ * carry a user identifier and must not leave the client; the kind is what
+ * discriminates the producer family, and `opId` already joins this report to
+ * the op record for anyone who needs more.
+ */
+interface NodeProducer {
+  origin: 'operation' | 'import' | 'unreadable'
+  actorKind?: 'agent' | 'human' | 'unknown'
+  opId?: string
+  version?: number
+}
+
+/**
+ * What a malformed node needs to be actionable, beyond the issue text. Read
+ * lazily because a node stays malformed for every later frame that touches it
+ * while the report fires once, and `readStamps` copies the whole LWW ledger.
+ */
+interface MalformedNodeDiscriminator {
+  /** Node class (`class_type`) when the document holds a usable one. */
+  classType?: string
+  /**
+   * Per-issue `path code shape`, where `shape` describes the received value's
+   * *type* and never its content. `zDocSlot.type` is a union, and zod collapses
+   * every union failure to the constant message `Invalid input`, so the issue
+   * text alone cannot tell an absent slot type from `null`, `true`, `[]` or an
+   * object — which is what made the production report unactionable.
+   */
+  valueShapes: string
+  producer: NodeProducer
+}
+
 interface MalformedDocNode {
   malformed: string
+  discriminate(): MalformedNodeDiscriminator
+}
+
+/** The received value's type, never its content. */
+function valueShape(value: unknown): string {
+  if (value === null) return 'null'
+  if (Array.isArray(value)) return `array:${value.length}`
+  if (typeof value === 'object') return `object:${Object.keys(value).length}`
+  return typeof value
+}
+
+/** `absent` when the path's own key is missing, so it is not read as `undefined`. */
+function shapeAtPath(
+  root: unknown,
+  path: readonly (string | number)[]
+): string {
+  let cursor: unknown = root
+  for (const [depth, key] of path.entries()) {
+    if (cursor === null || typeof cursor !== 'object') return 'unreachable'
+    if (!Object.hasOwn(cursor, String(key)))
+      return depth === path.length - 1 ? 'absent' : 'unreachable'
+    cursor = (cursor as Record<string, unknown>)[String(key)]
+  }
+  return valueShape(cursor)
+}
+
+function issueShapes(fields: unknown, error: z.ZodError): string {
+  return error.issues
+    .map(
+      (issue) =>
+        `${issue.path.join('.')} ${issue.code} ${shapeAtPath(fields, issue.path)}`
+    )
+    .join('; ')
+}
+
+function actorKind(actor: unknown): NodeProducer['actorKind'] {
+  const kind = typeof actor === 'string' ? actor.split(':', 1)[0] : ''
+  return kind === 'agent' || kind === 'human' ? kind : 'unknown'
+}
+
+/**
+ * Reads the node's own LWW stamp, `[base_version, actor, op_id]`. Only called
+ * on the malformed branch: `readStamps` copies the whole ledger, and it refuses
+ * a document whose schema version the pinned package cannot read — which must
+ * cost the attribution, not the whole report.
+ */
+function nodeProducer(doc: Y.Doc, id: string): NodeProducer {
+  let stamps: Readonly<Record<string, unknown>>
+  try {
+    stamps = readStamps(doc)
+  } catch {
+    return { origin: 'unreadable' }
+  }
+  const stamp = stamps[JSON.stringify(['node', id])]
+  if (!Array.isArray(stamp)) return { origin: 'import' }
+  const [version, actor, opId] = stamp as unknown[]
+  return {
+    origin: 'operation',
+    actorKind: actorKind(actor),
+    opId: typeof opId === 'string' ? opId : undefined,
+    version: typeof version === 'number' ? version : undefined
+  }
 }
 
 function readDocNode(
@@ -198,10 +301,16 @@ function readDocNode(
   })
   const parsed = zDocNodeFields.safeParse(fields)
   if (!parsed.success) {
+    const { error } = parsed
     return {
-      malformed: parsed.error.issues
+      malformed: error.issues
         .map((issue) => `${issue.path.join('.')} ${issue.message}`)
-        .join('; ')
+        .join('; '),
+      discriminate: () => ({
+        classType: typeof fields.type === 'string' ? fields.type : undefined,
+        valueShapes: issueShapes(fields, error),
+        producer: nodeProducer(doc, id)
+      })
     }
   }
   const {
@@ -592,15 +701,20 @@ export class LiveGraphApplier {
   private readDocNode(doc: Y.Doc, id: string): DocNode | null {
     const read = readDocNode(doc, id)
     if (read === null) return null
+    const key = `node-shape:${id}`
     if (!('malformed' in read)) {
-      this.reported.delete(`node-shape:${id}`)
+      this.reported.delete(key)
       return read
     }
+    // The node stays malformed on every later frame; the discriminator reads
+    // the LWW ledger, so pay for it only on the frame that reports.
+    if (this.reported.has(key)) return null
+    const { classType, valueShapes, producer } = read.discriminate()
     this.reportOnce(
-      `node-shape:${id}`,
-      `Document node ${id} is malformed: ${read.malformed}`,
+      key,
+      `Document node ${id} (${classType ?? 'unknown class'}) is malformed: ${read.malformed}`,
       'agent_graph_node_malformed',
-      { nodeId: id, issues: read.malformed }
+      { nodeId: id, issues: read.malformed, classType, valueShapes, producer }
     )
     return null
   }

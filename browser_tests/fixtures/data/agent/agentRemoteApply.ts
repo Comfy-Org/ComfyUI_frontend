@@ -26,9 +26,10 @@ export const AGENT_NODE_IDS = [
 ] as const
 
 /** Laid out in a row, the way a batched agent build places a group. */
-export function addLoadImageNode(
+function addNodeWithInputs(
   nodeId: number,
-  index: number
+  index: number,
+  inputs: readonly unknown[]
 ): RecordedGraphOperation {
   const pos = [120 + index * 260, 140]
   return {
@@ -42,7 +43,7 @@ export function addLoadImageNode(
       type: LOAD_IMAGE_TYPE,
       flags: {},
       order: index,
-      inputs: [],
+      inputs,
       outputs: [],
       properties: {},
       widgets_values: [`agent-${index + 1}.png`, 'image']
@@ -50,6 +51,26 @@ export function addLoadImageNode(
     node_id: nodeId,
     class_type: LOAD_IMAGE_TYPE
   }
+}
+
+export function addLoadImageNode(
+  nodeId: number,
+  index: number
+): RecordedGraphOperation {
+  return addNodeWithInputs(nodeId, index, [])
+}
+
+/**
+ * The same node with one input slot that carries no `type`, which is the
+ * document shape production reported as `inputs.<n>.type Invalid input`
+ * (PM-1913). Both `mint` and `applyOps` accept it, so the shared document
+ * holds the node and only the follower's read-time schema refuses it.
+ */
+export function addMalformedSlotNode(
+  nodeId: number,
+  index: number
+): RecordedGraphOperation {
+  return addNodeWithInputs(nodeId, index, [{ name: 'image', link: null }])
 }
 
 /** The five-node build the golden path asks for, in one batch. */
