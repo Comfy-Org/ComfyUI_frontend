@@ -691,10 +691,16 @@ describe('createOpSender', () => {
       }
     })
 
-    for (const id of [1, 2, 3, 4, 5]) {
-      localSender.enqueue([addNode(id)])
-      ackInFlight()
-    }
+    localSender.enqueue([addNode(1)])
+    ackInFlight()
+    localSender.enqueue([addNode(2)])
+    ackInFlight()
+    localSender.enqueue([addNode(3)])
+    ackInFlight()
+    localSender.enqueue([addNode(4)])
+    ackInFlight()
+    localSender.enqueue([addNode(5)])
+    ackInFlight()
 
     expect(reportError).toHaveBeenCalledTimes(3)
     localSender.detach()
