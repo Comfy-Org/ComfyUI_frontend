@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { Columns2, Crosshair } from '@lucide/vue'
+import { Crosshair } from '@lucide/vue'
 
 import type { Relight } from '../../../composables/useRelight'
 import type { Locale } from '../../../i18n/translations'
 import { lc } from '../../../lib/workshop/relight/copy'
+import EditorCompareToggle from '../app-editor/EditorCompareToggle.vue'
 import EditorTool from '../app-editor/EditorTool.vue'
 
 const { relight, locale = 'en' } = defineProps<{
@@ -15,11 +16,9 @@ const { comparing, handles } = relight
 </script>
 
 <template>
-  <EditorTool
-    :icon="Columns2"
+  <EditorCompareToggle
+    v-model="comparing"
     :label="lc('relight.view.compare', locale)"
-    :pressed="comparing"
-    @click="comparing = !comparing"
   />
   <EditorTool
     :icon="Crosshair"

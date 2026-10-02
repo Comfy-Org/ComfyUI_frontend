@@ -312,32 +312,33 @@ describe('MoveAnythingStudio', () => {
     expect(kitten()).toHaveFocus()
   })
 
-  it('keeps the scene description and a shuffleable seed under Advanced', async () => {
+  it('shows quality and a shuffleable seed as rows of the panel, and the scene description under Advanced', async () => {
     screenIsWide(true)
     const user = await openExample()
+    const seed = within(panel()).getByRole('spinbutton', { name: 'Seed' })
+    expect(seed).toHaveValue(42)
     expect(
-      within(panel()).queryByRole('spinbutton', { name: 'Seed' })
+      within(panel()).getByRole('button', { name: 'Quality: Fast' })
+    ).toBeVisible()
+    expect(
+      within(panel()).queryByRole('region', { name: 'Quality' })
+    ).toBeNull()
+    expect(
+      within(panel()).queryByRole('textbox', {
+        name: 'Describe the scene (optional)'
+      })
     ).toBeNull()
 
-    await user.click(within(panel()).getByRole('button', { name: /^Advanced/ }))
+    vi.spyOn(Math, 'random').mockReturnValue(0.5)
+    await user.click(within(panel()).getByRole('button', { name: 'New seed' }))
+    expect(seed).toHaveValue(500_000_000)
 
-    expect(
-      within(panel()).getByRole('spinbutton', { name: 'Seed' })
-    ).toHaveValue(42)
+    await user.click(within(panel()).getByRole('button', { name: 'Advanced' }))
     expect(
       within(panel()).getByRole('textbox', {
         name: 'Describe the scene (optional)'
       })
     ).toHaveValue('')
-
-    vi.spyOn(Math, 'random').mockReturnValue(0.5)
-    await user.click(within(panel()).getByRole('button', { name: 'New seed' }))
-    expect(
-      within(panel()).getByRole('spinbutton', { name: 'Seed' })
-    ).toHaveValue(500_000_000)
-    expect(
-      within(panel()).getByRole('button', { name: /^Advanced/ })
-    ).toHaveTextContent('Seed 500000000')
   })
 
   it('opens on phones as a sheet with a one-line summary and the run button', async () => {

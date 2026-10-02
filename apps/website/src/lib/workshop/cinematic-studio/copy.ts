@@ -237,6 +237,16 @@ const copy = {
     'zh-CN': 'GitHub · 即将推出'
   },
   'cinematic.download': { en: 'Download', 'zh-CN': '下载' },
+  'cinematic.zoom': { en: 'Zoom', 'zh-CN': '缩放' },
+  'cinematic.zoom.in': { en: 'Zoom in', 'zh-CN': '放大' },
+  'cinematic.zoom.out': { en: 'Zoom out', 'zh-CN': '缩小' },
+  'cinematic.zoom.fit': {
+    en: 'Fit to screen, now {n}%',
+    'zh-CN': '适应屏幕，当前 {n}%'
+  },
+  'cinematic.compare': { en: 'Compare', 'zh-CN': '对比' },
+  'cinematic.compare.before': { en: 'Before', 'zh-CN': '之前' },
+  'cinematic.compare.after': { en: 'After', 'zh-CN': '之后' },
   'cinematic.download.locked': {
     en: 'Run to download',
     'zh-CN': '运行后即可下载'
