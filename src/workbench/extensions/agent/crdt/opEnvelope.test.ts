@@ -146,9 +146,14 @@ describe('chunkWireOps', () => {
     )
   })
 
-  it.for([null, 42, 'not-an-operation', []])(
-    'rejects an op whose toJSON returns %j',
-    (serialized) => {
+  it.for([
+    { label: 'null', serialized: null },
+    { label: 'a number', serialized: 42 },
+    { label: 'a string', serialized: 'not-an-operation' },
+    { label: 'an array', serialized: [] }
+  ])(
+    'rejects an op whose toJSON returns $label',
+    ({ serialized }: { serialized: unknown }) => {
       const [op] = mintWireOps([addNode(1)], MINT)
       Object.assign(op, { toJSON: () => serialized })
 
