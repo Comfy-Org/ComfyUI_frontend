@@ -223,7 +223,7 @@ function issueShapes(fields: unknown, error: z.ZodError): string {
     .join('; ')
 }
 
-function actorKind(actor: unknown): NodeProducer['actorKind'] {
+function actorKind(actor: unknown): ActorKind {
   const kind = typeof actor === 'string' ? actor.split(':', 1)[0] : ''
   return kind === 'agent' || kind === 'human' ? kind : 'unknown'
 }
