@@ -753,7 +753,7 @@ describe('createOpSender', () => {
     localSender.detach()
   })
 
-  it('re-arms settlement failure telemetry after a successful settlement', () => {
+  it('keeps settlement telemetry bounded across intermittent successes', () => {
     let shouldFail = true
     const localSender = createOpSender({
       sendOps: (workflowId, tab, ops) => {
@@ -786,7 +786,7 @@ describe('createOpSender', () => {
     localSender.enqueue([addNode(5)])
     ackInFlight()
 
-    expect(reportError).toHaveBeenCalledTimes(4)
+    expect(reportError).toHaveBeenCalledTimes(3)
     shouldFail = false
     localSender.detach()
   })
@@ -1025,7 +1025,7 @@ describe('createOpSender', () => {
     expect(reportError).toHaveBeenCalledTimes(3)
   })
 
-  it('re-arms chunk failure telemetry after a successful seal', () => {
+  it('keeps chunk telemetry bounded across successful seals and re-arms by time', () => {
     const enqueueCircular = (id: number) => {
       const operation = addNode(id)
       const node: AddNodeOperation['node'] & Record<string, unknown> = {
@@ -1045,6 +1045,10 @@ describe('createOpSender', () => {
     ackInFlight()
     enqueueCircular(5)
 
+    expect(reportError).toHaveBeenCalledTimes(3)
+
+    vi.advanceTimersByTime(60_000)
+    enqueueCircular(6)
     expect(reportError).toHaveBeenCalledTimes(4)
   })
 
@@ -1175,8 +1179,54 @@ describe('createOpSender', () => {
     localSender.detach()
   })
 
+  it('preserves outer-before-inner order for same-workflow reentrant admission', () => {
+    const circularNode = addNode(1)
+    const node: AddNodeOperation['node'] & Record<string, unknown> = {
+      ...circularNode.node
+    }
+    node.circular = node
+    circularNode.node = node
+    let workflow = 'wf-old'
+    const localSender = createOpSender({
+      sendOps: (workflowId, tab, ops) => {
+        sent.push({ workflowId, tab, ops })
+        return true
+      },
+      onOpsResult: () => vi.fn(),
+      workflowId: () => workflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: (outcome) => {
+        if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 1))
+          localSender.admit([addNode(3)])
+      }
+    })
+    localSender.admit([circularNode])
+    workflow = 'wf-new'
+
+    localSender.admit([addNode(2)])
+    localSender.flush()
+
+    expect(sent).toHaveLength(1)
+    expect(sent[0].workflowId).toBe('wf-new')
+    expect(
+      sent[0].ops.map((op) => ('node_id' in op ? op.node_id : null))
+    ).toEqual([2, 3])
+    localSender.detach()
+  })
+
   it('contains a large malformed admission without argument spread overflow', () => {
-    const operations = Array.from({ length: 70_000 }, (_, id) => addNode(id))
+    const operations = Array.from({ length: 140_000 }, (_, id) => addNode(id))
+    let serializations = 0
+    operations[0].node = {
+      ...operations[0].node,
+      toJSON() {
+        serializations++
+        if (serializations >= 3) throw new Error('stateful toJSON failed')
+        return { id: 0, type: 'TestNode' }
+      }
+    }
     const circularNode = operations.at(-1)!
     const node: AddNodeOperation['node'] & Record<string, unknown> = {
       ...circularNode.node
@@ -1184,7 +1234,8 @@ describe('createOpSender', () => {
     node.circular = node
     circularNode.node = node
 
-    sender.admit(operations)
+    sender.admit([addNode(-1)])
+    expect(() => sender.admit(operations)).not.toThrow()
 
     expect(() => sender.flush()).not.toThrow()
     expect(settled.at(-1)?.state).toBe('undeliverable')
