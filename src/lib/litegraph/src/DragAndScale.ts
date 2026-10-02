@@ -181,7 +181,8 @@ export class DragAndScale {
   }
 
   /**
-   * Fits the view to the specified bounds.
+   * Fits the view to the specified bounds. No-ops when the canvas backing
+   * store has zero width or height.
    * @param bounds The bounds to fit the view to, defined by a rectangle.
    */
   fitToBounds(
@@ -196,6 +197,7 @@ export class DragAndScale {
         : [this.element.width, this.element.height]
     const cw = width / window.devicePixelRatio
     const ch = height / window.devicePixelRatio
+    if (!(cw > 0) || !(ch > 0)) return
     let targetScale = this.scale
 
     if (zoom > 0) {

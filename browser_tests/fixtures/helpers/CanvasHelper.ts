@@ -202,6 +202,11 @@ export class CanvasHelper {
     )
   }
 
+  /** Backing-store width of the canvas element; 0 while App Mode hides it. */
+  async getElementWidth(): Promise<number> {
+    return this.page.evaluate(() => window.app!.canvasEl.width)
+  }
+
   async waitForViewToSettle(): Promise<void> {
     await this.page.waitForFunction(
       () =>
