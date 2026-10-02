@@ -14,13 +14,22 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
 import { useDialogService } from '@/services/dialogService'
+import { useAuthStore } from '@/stores/authStore'
 
 import UserPanel from './UserPanel.vue'
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/platform/distribution/types'), () => ({
+  DISTRIBUTION: 'cloud' as const,
+  isCloud: true,
+  isDesktop: false,
+  isNightly: false
+}))
 vi.mock(import('@/platform/auth/firebaseIdentity'), () => ({
   firebaseIdentity: fromPartial<FirebaseIdentity>({
     onUserChanged: () => () => {},
@@ -121,7 +130,17 @@ describe('UserPanel sign out of all devices', () => {
 
   beforeEach(() => {
     vi.spyOn(api, 'reconnectSocket').mockResolvedValue()
+    vi.spyOn(useAuthStore(), 'logout').mockResolvedValue()
+    vi.stubGlobal('location', { href: '/' })
   })
+
+  function withUnsavedWorkflow() {
+    const workflow = fromPartial<ComfyWorkflow>({
+      path: 'a.json',
+      isModified: true
+    })
+    Object.assign(useWorkflowStore(), { modifiedWorkflows: [workflow] })
+  }
 
   const signedInSession: WebSessionIdentityState = {
     phase: 'signed_in',
@@ -183,13 +202,48 @@ describe('UserPanel sign out of all devices', () => {
     await userEvent.click(screen.getByRole('button', signOutEverywhere))
 
     expect(revokeAll).toHaveBeenCalledOnce()
-    expect(useCurrentUser().handleSignOut).toHaveBeenCalledOnce()
-    expect(useToastStore().messagesToAdd).toEqual([
+    expect(useAuthStore().logout).toHaveBeenCalledOnce()
+    expect(revokeAll.mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(useAuthStore().logout).mock.invocationCallOrder[0]
+    )
+    expect(useToastStore().messagesToAdd).toContainEqual(
       expect.objectContaining({
         severity: 'success',
         summary: 'Signed out of all devices'
       })
-    ])
+    )
+  })
+
+  it('asks about unsaved work before revoking anything', async () => {
+    signInAsEmailUser({ hasFirebaseLogin: true })
+    withUnsavedWorkflow()
+    vi.mocked(useDialogService().confirm).mockResolvedValue(false)
+    const revokeAll = onWebSession({ status: 'ok' })
+    await renderPanel()
+
+    await userEvent.click(screen.getByRole('button', signOutEverywhere))
+
+    expect(useDialogService().confirm).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Unsaved Changes' })
+    )
+    expect(
+      vi.mocked(useDialogService().confirm).mock.invocationCallOrder[0]
+    ).toBeLessThan(revokeAll.mock.invocationCallOrder[0])
+    expect(useAuthStore().logout).toHaveBeenCalledOnce()
+  })
+
+  it('sends no revoke and stays signed in when the unsaved-work prompt is cancelled', async () => {
+    signInAsEmailUser({ hasFirebaseLogin: true })
+    withUnsavedWorkflow()
+    vi.mocked(useDialogService().confirm).mockResolvedValue(null)
+    const revokeAll = onWebSession({ status: 'ok' })
+    await renderPanel()
+
+    await userEvent.click(screen.getByRole('button', signOutEverywhere))
+
+    expect(revokeAll).not.toHaveBeenCalled()
+    expect(useAuthStore().logout).not.toHaveBeenCalled()
+    expect(useToastStore().messagesToAdd).toEqual([])
   })
 
   it('keeps the user signed in and shows why when the revoke fails', async () => {
@@ -203,7 +257,7 @@ describe('UserPanel sign out of all devices', () => {
 
     await userEvent.click(screen.getByRole('button', signOutEverywhere))
 
-    expect(useCurrentUser().handleSignOut).not.toHaveBeenCalled()
+    expect(useAuthStore().logout).not.toHaveBeenCalled()
     expect(useToastStore().messagesToAdd).toEqual([
       expect.objectContaining({
         severity: 'error',
