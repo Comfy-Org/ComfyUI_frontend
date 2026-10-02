@@ -102,6 +102,9 @@ every URL's query and fragment. Billing events go through
 `billingWebTelemetry.trackBillingEvent`, which takes a `BillingTelemetryEvent`
 from `@comfyorg/account-core/billing`, keeps only its allowlisted fields,
 stamps `billing_surface: 'billing_web'` and sends to both sinks.
+PostHog adds `$feature/<flag>` to an event only once this origin has loaded
+the flags, so billing events wait for that load, at most three seconds,
+before they reach PostHog. The rollout cohort tiles split on those flags.
 
 ### Attempt and operation events
 
