@@ -17,6 +17,17 @@ import type {
 } from '../../types/workflowReference'
 import type { useAgentWorkflowResolver } from './useAgentWorkflowResolver'
 
+/**
+ * What a restoration attempt resolved to: a tab to reopen (`target: null`
+ * leaves `openRestoredWorkflow` to look one up after a catalog sync), a target
+ * the server says is gone, or a restoration another selection has already
+ * overtaken.
+ */
+type RestorationOutcome =
+  | { outcome: 'open'; target: ComfyWorkflow | null }
+  | { outcome: 'deleted' }
+  | { outcome: 'superseded' }
+
 interface WorkflowSelectionOptions {
   resolver: ReturnType<typeof useAgentWorkflowResolver>
   canSelectTarget: () => boolean
@@ -54,7 +65,9 @@ export function useAgentWorkflowSelection({
     boundOrOpenWorkflowFor,
     cachedOpenWorkflowFor,
     storedWorkflowFor,
-    isCloudWorkflowListed
+    isCloudWorkflowListed,
+    isCloudListingComplete,
+    cloudWorkflowLifecycle
   } = resolver
   const editableWorkflowId = computed(() =>
     selectedTarget.value ? cloudIdFor(selectedTarget.value) : undefined
@@ -215,29 +228,61 @@ export function useAgentWorkflowSelection({
   }
 
   /**
-   * Whether a listing that came back without `workflowId` proves the workflow
-   * is gone, given whatever `local` tab still answers for it. A successful
-   * listing omitting a *saved* workflow does prove it, even when a stale local
-   * binding still names a tab; a failed listing stays a retryable restoration
-   * failure.
+   * Whether a successful listing that came back without `workflowId` is
+   * evidence about it at all. It is not when the walk gave up early: a partial
+   * index explains nothing about the pages it never read.
+   */
+  function completeListingOmits(listed: boolean, workflowId: string): boolean {
+    return (
+      listed && isCloudListingComplete() && !isCloudWorkflowListed(workflowId)
+    )
+  }
+
+  /**
+   * Resolves the tab a restored chat should reopen, or decides that its target
+   * is gone. A failed listing stays a retryable restoration failure rather than
+   * a verdict.
    *
-   * It proves nothing about an unsaved one. `GET /api/workflows` excludes
+   * `GET /api/workflows` cannot answer this on its own. It excludes
    * version-less rows on purpose — those are the agent's own working copies,
    * hidden from the user's list until a save or run promotes them (cloud
    * `common/workflow/repository.go`, whose `List` filters on
-   * `LatestVersionIDNotNil`). So the listing can only testify about a workflow
-   * it could have carried, and a draft tab this chat still owns is focused
-   * instead of declared unavailable. `matchesWorkflow` admits a temporary tab
-   * only as the id's verified owner, so this cannot hand a chat someone else's
-   * unsaved tab that merely occupies the same default path.
+   * `LatestVersionIDNotNil`) — and it is a snapshot a concurrent save can
+   * outrun. So when something local still answers for the id, the omission is
+   * taken to the one read that *is* authoritative: `GET /api/workflows/{id}`,
+   * which excludes soft-deleted rows but not version-less ones, so a live draft
+   * answers 200 and a deleted workflow 404.
+   *
+   * That is deliberately not a test of the local tab's own `isTemporary` flag.
+   * A flag on local userdata cannot distinguish "never promoted" from
+   * "promoted by a run, then deleted" — a run promotes the cloud row while the
+   * tab stays temporary — and reading it after the listing resolves also loses
+   * a save that landed while the listing was in flight. Both of those are
+   * answered by asking about the id instead of inferring from the tab.
+   *
+   * With no local owner the omission still ends the chase: there is nothing to
+   * focus, so the target is unavailable whether the row was deleted or merely
+   * unlisted, and the saved-workflow stale-binding policy is unchanged.
+   * `matchesWorkflow` admits a temporary tab only as the id's verified owner,
+   * so none of this can hand a chat someone else's unsaved tab that merely
+   * occupies the same default path.
    */
-  function listingProvesDeletion(
-    listed: boolean,
+  async function resolveRestorationTarget(
     workflowId: string,
-    local: ComfyWorkflow | null
-  ): boolean {
-    if (!listed || isCloudWorkflowListed(workflowId)) return false
-    return local === null || !local.isTemporary
+    isCurrent: () => boolean
+  ): Promise<RestorationOutcome> {
+    const listed = await refreshCloudWorkflowIds()
+    if (!isCurrent()) return { outcome: 'superseded' }
+    const target =
+      boundOrOpenWorkflowFor(workflowId) ?? storedWorkflowFor(workflowId)
+    if (!completeListingOmits(listed, workflowId))
+      return { outcome: 'open', target }
+    if (target === null) return { outcome: 'deleted' }
+    const lifecycle = await cloudWorkflowLifecycle(workflowId)
+    if (!isCurrent()) return { outcome: 'superseded' }
+    return lifecycle === 'gone'
+      ? { outcome: 'deleted' }
+      : { outcome: 'open', target }
   }
 
   async function onWorkflowRestored(
@@ -254,18 +299,16 @@ export function useAgentWorkflowSelection({
       isSessionCurrent() &&
       canRestoreWorkflow.value
     if (workflowId === undefined) return true
-    let target = cachedOpenWorkflowFor(workflowId)
-    if (target === null) {
-      const listed = await refreshCloudWorkflowIds()
-      if (!isCurrent()) return false
-      target =
-        boundOrOpenWorkflowFor(workflowId) ?? storedWorkflowFor(workflowId)
-      if (listingProvesDeletion(listed, workflowId, target)) {
-        panelStore.markWorkflowTargetUnavailable()
-        return true
-      }
+    const cached = cachedOpenWorkflowFor(workflowId)
+    if (cached !== null)
+      return openRestoredWorkflow(cached, workflowId, isCurrent)
+    const resolved = await resolveRestorationTarget(workflowId, isCurrent)
+    if (resolved.outcome === 'superseded') return false
+    if (resolved.outcome === 'deleted') {
+      panelStore.markWorkflowTargetUnavailable()
+      return true
     }
-    return openRestoredWorkflow(target, workflowId, isCurrent)
+    return openRestoredWorkflow(resolved.target, workflowId, isCurrent)
   }
 
   async function openRestoredWorkflow(
