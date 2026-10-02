@@ -88,7 +88,7 @@ describe('LiveGraphApplier malformed node report', () => {
     expect(nodesMap(doc).get('149')?.toJSON().inputs).toEqual([slot])
   })
 
-  it.for([
+  it.for<[Record<string, unknown>, string]>([
     [{ name: 'image' }, 'absent'],
     [{ name: 'image', type: undefined }, 'undefined'],
     [{ name: 'image', type: null }, 'null'],
@@ -96,7 +96,7 @@ describe('LiveGraphApplier malformed node report', () => {
     [{ name: 'image', type: [] }, 'array:0'],
     [{ name: 'image', type: {} }, 'object:0'],
     [{ name: 'image', type: { name: 'IMAGE' } }, 'object:1']
-  ] as [Record<string, unknown>, string][])(
+  ])(
     'separates %o, which zod collapses to one message, as %s',
     ([slot, shape]) => {
       const { applyCollected } = setup({ nodes: [sinkNode(slot)], links: [] })
