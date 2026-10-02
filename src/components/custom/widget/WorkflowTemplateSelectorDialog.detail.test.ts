@@ -6,6 +6,11 @@ import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
+import type { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
+import type { resolveTemplateModelMetadata } from '@/platform/workflow/templates/utils/templateModelMetadata'
+import type { useTemplateFiltering } from '@/composables/useTemplateFiltering'
+import type { useLazyPagination } from '@/composables/useLazyPagination'
+import type { useTelemetry } from '@/platform/telemetry'
 import type { ResolvedTemplateModelAvailability } from '@/platform/workflow/templates/utils/templateModelAvailability'
 
 const fixtures = vi.hoisted(() => {
@@ -90,7 +95,7 @@ const mocks = vi.hoisted(() => ({
   trackTemplateLibraryClosed: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return runtime.isCloud
   },
@@ -99,23 +104,27 @@ vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock<unknown>(
+vi.mock(
   import('@/platform/workflow/templates/composables/useTemplateWorkflows'),
   () => ({
-    useTemplateWorkflows: () => ({
-      getTemplateDescription: mocks.getTemplateDescription,
-      getTemplateThumbnailUrl: mocks.getTemplateThumbnailUrl,
-      getTemplateTitle: mocks.getTemplateTitle,
-      loadTemplates: mocks.loadTemplates,
-      loadingTemplateId: computed(() => null),
-      openPreparedWorkflowTemplate: mocks.openPreparedWorkflowTemplate,
-      prepareWorkflowTemplate: mocks.prepareWorkflowTemplate,
-      discardPreparedWorkflowTemplate: mocks.discardPreparedWorkflowTemplate
-    })
+    // Asserted to the real return type: the dialog consumes a handful of
+    // members, and spelling out the rest would pin the test to production
+    // internals. The module-level check still catches a renamed export.
+    useTemplateWorkflows: () =>
+      ({
+        getTemplateDescription: mocks.getTemplateDescription,
+        getTemplateThumbnailUrl: mocks.getTemplateThumbnailUrl,
+        getTemplateTitle: mocks.getTemplateTitle,
+        loadTemplates: mocks.loadTemplates,
+        loadingTemplateId: computed(() => null),
+        openPreparedWorkflowTemplate: mocks.openPreparedWorkflowTemplate,
+        prepareWorkflowTemplate: mocks.prepareWorkflowTemplate,
+        discardPreparedWorkflowTemplate: mocks.discardPreparedWorkflowTemplate
+      }) as unknown as ReturnType<typeof useTemplateWorkflows>
   })
 )
 
-vi.mock<unknown>(
+vi.mock(
   import('@/platform/workflow/templates/composables/useTemplateModelAvailability'),
   () => ({
     useTemplateModelAvailability: () => ({
@@ -124,15 +133,16 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(
+vi.mock(
   import('@/platform/workflow/templates/utils/templateModelMetadata'),
   () => ({
-    resolveTemplateModelMetadata: mocks.resolveTemplateModelMetadata
+    resolveTemplateModelMetadata:
+      mocks.resolveTemplateModelMetadata as unknown as typeof resolveTemplateModelMetadata
   })
 )
 
-vi.mock<unknown>(import('@/composables/useTemplateFiltering'), () => ({
-  useTemplateFiltering: (templates: {
+vi.mock(import('@/composables/useTemplateFiltering'), () => ({
+  useTemplateFiltering: ((templates: {
     value: (typeof fixtures.template)[]
   }) => {
     const searchQuery = ref('')
@@ -158,27 +168,28 @@ vi.mock<unknown>(import('@/composables/useTemplateFiltering'), () => ({
       totalCount: computed(() => templates.value.length),
       resetFilters: vi.fn()
     }
-  }
+  }) as unknown as typeof useTemplateFiltering
 }))
 
-vi.mock<unknown>(import('@/composables/useLazyPagination'), () => ({
-  useLazyPagination: (items: { value: unknown[] }) => ({
+vi.mock(import('@/composables/useLazyPagination'), () => ({
+  useLazyPagination: ((items: { value: unknown[] }) => ({
     paginatedItems: items,
     isLoading: ref(false),
     hasMoreItems: computed(() => false),
     loadNextPage: vi.fn(async () => {}),
     reset: vi.fn()
-  })
+  })) as unknown as typeof useLazyPagination
 }))
 
-vi.mock<unknown>(import('@/composables/useIntersectionObserver'), () => ({
+vi.mock(import('@/composables/useIntersectionObserver'), () => ({
   useIntersectionObserver: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackTemplateLibraryClosed: mocks.trackTemplateLibraryClosed
-  })
+vi.mock(import('@/platform/telemetry'), () => ({
+  useTelemetry: () =>
+    ({
+      trackTemplateLibraryClosed: mocks.trackTemplateLibraryClosed
+    }) as unknown as ReturnType<typeof useTelemetry>
 }))
 
 import WorkflowTemplateSelectorDialog from './WorkflowTemplateSelectorDialog.vue'
