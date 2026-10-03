@@ -117,7 +117,6 @@ export type {
   BillingBalanceResponse,
   BillingCapabilities,
   BillingCapabilitiesResponse,
-  BillingCapabilityDenials,
   BillingCapabilityRolloutDefaults,
   BillingCapabilityScope,
   BillingCompanyDetailsResponse,
