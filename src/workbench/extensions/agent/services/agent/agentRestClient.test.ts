@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
 
@@ -64,10 +64,6 @@ const turnAccepted = {
   thread_id: 't1',
   workflow_id: 'w1'
 }
-
-beforeEach(() => {
-  vi.mocked(api.fetchApi).mockReset()
-})
 
 describe('agentRestClient route + method', () => {
   it('postMessage targets the literal "new" thread path to open a thread', async () => {

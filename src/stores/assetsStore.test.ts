@@ -833,14 +833,8 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
   })
 
   describe('updateAssetTags partial-failure compensation', () => {
-    let consoleSpy: ReturnType<typeof vi.spyOn>
-
     beforeEach(() => {
-      consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    })
-
-    afterEach(() => {
-      consoleSpy.mockRestore()
+      vi.spyOn(console, 'error').mockImplementation(() => {})
     })
 
     it('re-adds removed tags when add fails so cache and server converge', async () => {
