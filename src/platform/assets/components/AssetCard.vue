@@ -156,10 +156,16 @@ import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { asset, interactive, focused } = defineProps<{
+const {
+  asset,
+  interactive,
+  focused,
+  requireNodeProvider = false
+} = defineProps<{
   asset: AssetDisplayItem
   interactive?: boolean
   focused?: boolean
+  requireNodeProvider?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -195,7 +201,9 @@ const formattedDate = computed(() =>
 const isNewlyImported = computed(() => isDownloadedThisSession(asset.id))
 
 const showAssetOptions = computed(() => !(asset.is_immutable ?? true))
-const canUseAsset = computed(() => canCreateNodeForAsset(asset))
+const canUseAsset = computed(
+  () => !requireNodeProvider || canCreateNodeForAsset(asset)
+)
 const useDisabledReason = computed(() =>
   canUseAsset.value ? undefined : t('assetBrowser.useDisabledNoProvider')
 )

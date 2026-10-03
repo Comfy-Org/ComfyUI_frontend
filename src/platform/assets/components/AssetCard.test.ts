@@ -50,7 +50,10 @@ function createDisplayAsset(
   })
 }
 
-function renderCard(asset: AssetDisplayItem) {
+function renderCard(
+  asset: AssetDisplayItem,
+  { requireNodeProvider = false }: { requireNodeProvider?: boolean } = {}
+) {
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
@@ -59,7 +62,7 @@ function renderCard(asset: AssetDisplayItem) {
     fallbackWarn: false
   })
   return render(AssetCard, {
-    props: { asset, interactive: true },
+    props: { asset, interactive: true, requireNodeProvider },
     global: {
       plugins: [i18n],
       stubs: {
@@ -87,11 +90,23 @@ beforeEach(() => {
 })
 
 describe('AssetCard', () => {
-  it('exposes and blocks Use when the asset has no node provider', async () => {
+  it('allows widget assignment without a node provider', async () => {
     const user = userEvent.setup()
     mockCanCreateNodeForAsset.mockReturnValue(false)
 
     const { emitted } = renderCard(createDisplayAsset())
+    await user.click(screen.getByRole('button', { name: 'g.use' }))
+
+    expect(emitted()).toHaveProperty('select')
+  })
+
+  it('exposes and blocks node creation when the asset has no provider', async () => {
+    const user = userEvent.setup()
+    mockCanCreateNodeForAsset.mockReturnValue(false)
+
+    const { emitted } = renderCard(createDisplayAsset(), {
+      requireNodeProvider: true
+    })
     const useButton = screen.getByRole('button', {
       name: 'g.use: assetBrowser.useDisabledNoProvider'
     })
