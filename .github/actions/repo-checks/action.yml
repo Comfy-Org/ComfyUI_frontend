@@ -14,7 +14,9 @@ runs:
 
     - name: Verify locale integrity
       shell: bash
-      run: pnpm locale:check
+      run: |
+        pnpm locale:check
+        pnpm locale:website:check
 
     - name: Verify ADR naming and index
       shell: bash
