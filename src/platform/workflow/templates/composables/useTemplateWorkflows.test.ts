@@ -26,7 +26,9 @@ vi.mock('@/scripts/api', () => ({
 // loadGraphData resolves to the workflow it activated; the education card
 // binds to that, so the mock returns a per-test workflow object.
 const { mockLoadedWorkflow } = vi.hoisted(
-  (): { mockLoadedWorkflow: { value: { key: string } | undefined } } => ({
+  (): {
+    mockLoadedWorkflow: { value: { key: string } | boolean | undefined }
+  } => ({
     mockLoadedWorkflow: {
       value: { key: 'loaded-template' }
     }
@@ -381,12 +383,28 @@ describe('useTemplateWorkflows', () => {
     const { loadWorkflowTemplate } = useTemplateWorkflows()
     mockWorkflowTemplatesStore.isLoaded = true
     mockWorkflowTemplatesStore.enhancedTemplates.push(enhancedTemplate(true))
-    mockLoadedWorkflow.value = undefined
+    // `true` is what loadGraphData returns when the load completed but
+    // activated no workflow (`return activatedWorkflow ?? true`). `undefined`
+    // now means the load never started, which is a different outcome and
+    // deliberately leaves the card alone.
+    mockLoadedWorkflow.value = true
 
     await loadWorkflowTemplate('template1', 'default')
 
     expect(mockRequestCard).not.toHaveBeenCalled()
     expect(mockDismissCard).toHaveBeenCalled()
+  })
+
+  it('leaves the card alone when the load never started', async () => {
+    const { loadWorkflowTemplate } = useTemplateWorkflows()
+    mockWorkflowTemplatesStore.isLoaded = true
+    mockWorkflowTemplatesStore.enhancedTemplates.push(enhancedTemplate(true))
+    mockLoadedWorkflow.value = undefined
+
+    await loadWorkflowTemplate('template1', 'default')
+
+    expect(mockRequestCard).not.toHaveBeenCalled()
+    expect(mockDismissCard).not.toHaveBeenCalled()
   })
 
   it('binds to the workflow this load activated, resolved by loadGraphData', async () => {
