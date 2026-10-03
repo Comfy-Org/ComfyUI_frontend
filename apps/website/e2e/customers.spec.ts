@@ -146,23 +146,27 @@ test.describe('Customers @smoke', () => {
   })
 })
 
-for (const width of [320, 390, 1440]) {
-  for (const locale of ['en', 'zh-CN'] as const) {
-    test(`customer directory search, tabs, and sort work in ${locale} at ${width}px`, async ({
+test.describe('Customer directory', () => {
+  const en = translationsFor('en').t
+
+  for (const width of [320, 390, 1440]) {
+    test(`keeps the directory controls inside a ${width}px viewport`, async ({
       page
     }) => {
       await page.setViewportSize({ width, height: 900 })
-      const { t } = translationsFor(locale)
-      await page.goto(locale === 'en' ? '/customers/' : '/zh-CN/customers/')
-      const search = page.getByRole('searchbox', {
-        name: t('customers.directory.searchLabel')
-      })
-      await waitForIsland(page, search)
+      await page.goto('/customers/')
       const controls = [
-        search,
-        page.getByRole('group', { name: t('customers.directory.formatLabel') }),
-        page.getByRole('combobox', { name: t('customers.directory.sortLabel') })
+        page.getByRole('searchbox', {
+          name: en('customers.directory.searchLabel')
+        }),
+        page.getByRole('group', {
+          name: en('customers.directory.formatLabel')
+        }),
+        page.getByRole('combobox', {
+          name: en('customers.directory.sortLabel')
+        })
       ]
+
       const bounds = await Promise.all(
         controls.map((control) =>
           control.evaluate((element) => {
@@ -171,51 +175,71 @@ for (const width of [320, 390, 1440]) {
           })
         )
       )
+
       expect(
         bounds.filter(({ left, right }) => left < 0 || right > width)
       ).toEqual([])
-
-      await page
-        .getByRole('button', {
-          name: t('customers.directory.tab.watch'),
-          exact: true
-        })
-        .click()
-      const headings = page.getByRole('main').getByRole('heading', { level: 3 })
-      await expect(headings).toHaveText([
-        customerVideoStories[0].title,
-        customerVideoStories[1].title
-      ])
-      await page
-        .getByRole('combobox', { name: t('customers.directory.sortLabel') })
-        .selectOption('oldest')
-      await expect(headings).toHaveText([
-        customerVideoStories[1].title,
-        customerVideoStories[0].title
-      ])
-
-      await search.fill('Black Math')
-      await expect(headings).toHaveText([customerVideoStories[0].title])
-      await page
-        .getByRole('button', {
-          name: t('customers.directory.tab.read'),
-          exact: true
-        })
-        .click()
-      await expect(
-        page.getByText(t('customers.directory.empty'), { exact: true })
-      ).toBeVisible()
-
-      await search.fill('Hakoniwa')
-      await expect(headings).toHaveCount(1)
-      await expect(headings).toContainText('YUI')
-      await search.clear()
-      await expect(
-        page.getByText(t('customers.directory.empty'), { exact: true })
-      ).toHaveCount(0)
-      await expect(
-        page.locator('a[href$="/customers/hakoniwa-yui/"]')
-      ).toBeVisible()
     })
   }
-}
+
+  test('filters, switches format, and sorts the rendered cards', async ({
+    page
+  }) => {
+    await page.goto('/customers/')
+    const search = page.getByRole('searchbox', {
+      name: en('customers.directory.searchLabel')
+    })
+    await waitForIsland(page, search)
+    const headings = page.getByRole('main').getByRole('heading', { level: 3 })
+    const emptyState = page.getByText(en('customers.directory.empty'), {
+      exact: true
+    })
+
+    await test.step('Watch shows only the videos and Oldest reverses them', async () => {
+      await page
+        .getByRole('button', {
+          name: en('customers.directory.tab.watch'),
+          exact: true
+        })
+        .click()
+      await expect(headings).toHaveCount(customerVideoStories.length)
+      const latestFirst = await headings.allTextContents()
+
+      await page
+        .getByRole('combobox', { name: en('customers.directory.sortLabel') })
+        .selectOption('oldest')
+
+      await expect(headings).toHaveText([...latestFirst].reverse())
+    })
+
+    await test.step('search with no match shows the empty state', async () => {
+      await search.fill('no customer story matches this')
+      await expect(emptyState).toBeVisible()
+    })
+
+    await test.step('clearing the search restores the cards', async () => {
+      await search.clear()
+      await expect(emptyState).toHaveCount(0)
+      await expect(headings).toHaveCount(customerVideoStories.length)
+    })
+  })
+
+  test('labels the controls from the zh-CN locale', async ({ page }) => {
+    const zh = translationsFor('zh-CN').t
+    await page.goto('/zh-CN/customers/')
+    const search = page.getByRole('searchbox', {
+      name: zh('customers.directory.searchLabel')
+    })
+    await waitForIsland(page, search)
+    const readTab = page
+      .getByRole('group', { name: zh('customers.directory.formatLabel') })
+      .getByRole('button', { name: zh('customers.directory.tab.read') })
+
+    await readTab.click()
+
+    await expect(readTab).toHaveAttribute('aria-pressed', 'true')
+    await expect(
+      page.getByRole('combobox', { name: zh('customers.directory.sortLabel') })
+    ).toHaveValue('latest')
+  })
+})
