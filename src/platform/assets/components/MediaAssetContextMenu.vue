@@ -1,25 +1,19 @@
 <template>
   <ContextMenu
+    :id="contextMenuId"
     ref="contextMenu"
     :model="contextMenuItems"
-    :pt="{
-      root: {
-        id: contextMenuId,
-        class: cn(
-          'rounded-lg',
-          'bg-secondary-background text-base-foreground',
-          'shadow-lg'
-        )
-      }
-    }"
+    :class="
+      cn(
+        'rounded-lg',
+        'bg-secondary-background text-base-foreground',
+        'shadow-lg'
+      )
+    "
     @hide="onMenuHide"
   >
-    <template #item="{ item, props }">
-      <Button
-        variant="secondary"
-        class="w-full justify-start"
-        v-bind="props.action"
-      >
+    <template #item="{ item }">
+      <Button variant="secondary" class="w-full justify-start">
         <i v-if="item.icon" :class="item.icon" class="size-4" />
         <span>{{
           typeof item.label === 'function' ? item.label() : (item.label ?? '')
@@ -30,12 +24,12 @@
 </template>
 
 <script setup lang="ts">
-import ContextMenu from 'primevue/contextmenu'
-import type { MenuItem } from 'primevue/menuitem'
 import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
+import type { MenuItem } from '@/components/ui/menu/types'
 import { useDismissableOverlay } from '@/composables/useDismissableOverlay'
 import { isCloud } from '@/platform/distribution/types'
 import { supportsWorkflowMetadata } from '@/platform/workflow/utils/workflowExtractionUtil'

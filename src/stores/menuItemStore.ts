@@ -1,18 +1,25 @@
 import { whenever } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import type { MenuItem } from 'primevue/menuitem'
 import { ref } from 'vue'
 
+import type { MenuItem, MenuItemAction } from '@/components/ui/menu/types'
 import { CORE_MENU_COMMANDS } from '@/constants/coreMenuCommands'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { ComfyExtension } from '@/types/comfy'
 
 import { useCommandStore } from './commandStore'
 
+export interface CommandMenuItem extends MenuItemAction {
+  commandId: string
+  parentPath?: string
+}
+
+export type AppMenuItem = MenuItem | CommandMenuItem
+
 export const useMenuItemStore = defineStore('menuItem', () => {
   const canvasStore = useCanvasStore()
   const commandStore = useCommandStore()
-  const menuItems = ref<MenuItem[]>([])
+  const menuItems = ref<AppMenuItem[]>([])
   const menuItemHasActiveStateChildren = ref<Record<string, boolean>>({})
   const hasSeenLinear = ref(false)
 
@@ -22,15 +29,18 @@ export const useMenuItemStore = defineStore('menuItem', () => {
     { immediate: true, once: true }
   )
 
-  const registerMenuGroup = (path: string[], items: MenuItem[]) => {
+  const registerMenuGroup = (path: string[], items: AppMenuItem[]) => {
     let currentLevel = menuItems.value
 
     // Traverse the path, creating nodes if necessary
     for (let i = 0; i < path.length; i++) {
       const segment = path[i]
-      let found = currentLevel.find((item) => item.label === segment)
+      const foundIndex = currentLevel.findIndex(
+        (item) => item.label === segment
+      )
+      let found = currentLevel[foundIndex]
 
-      if (!found) {
+      if (foundIndex === -1) {
         // Create a new node if it doesn't exist
         found = {
           label: segment,
@@ -40,9 +50,10 @@ export const useMenuItemStore = defineStore('menuItem', () => {
         currentLevel.push(found)
       }
 
-      // Ensure the found item has an 'items' array
       if (!found.items) {
-        found.items = []
+        const { checked, command, separator, ...metadata } = found
+        found = { ...metadata, items: [] }
+        currentLevel[foundIndex] = found
       }
 
       // Move to the next level
@@ -61,18 +72,23 @@ export const useMenuItemStore = defineStore('menuItem', () => {
     const parentPath = path.join('.')
     if (!menuItemHasActiveStateChildren.value[parentPath]) {
       menuItemHasActiveStateChildren.value[parentPath] = items.some(
-        (item) => item.comfyCommand?.active
+        (item) => item.checked !== undefined
       )
     }
   }
-  function commandIdToMenuItem(commandId: string, path?: string[]): MenuItem {
+  function commandIdToMenuItem(
+    commandId: string,
+    path?: string[]
+  ): CommandMenuItem {
     const command = commandStore.getCommand(commandId)
     return {
       command: () => commandStore.execute(command.id),
       label: command.menubarLabel,
       icon: command.icon,
       tooltip: command.tooltip,
-      comfyCommand: command,
+      commandId: command.id,
+      checked: command.active,
+      shortcut: () => command.keybinding?.combo.toString(),
       parentPath: path?.join('.')
     }
   }

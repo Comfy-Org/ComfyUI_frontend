@@ -29,16 +29,27 @@
         <h2 class="mb-4 text-2xl font-semibold">
           {{ $t('g.devices') }}
         </h2>
-        <TabView v-if="stats.devices.length > 1">
-          <TabPanel
+        <Tabs
+          v-if="stats.devices.length > 1"
+          :default-value="String(stats.devices[0].index)"
+        >
+          <TabsList class="mb-4 gap-1 border-b border-interface-stroke">
+            <TabsTrigger
+              v-for="device in stats.devices"
+              :key="device.index"
+              :value="String(device.index)"
+            >
+              {{ device.name }}
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent
             v-for="device in stats.devices"
             :key="device.index"
-            :header="device.name"
-            :value="device.index"
+            :value="String(device.index)"
           >
-            <DeviceInfo :device />
-          </TabPanel>
-        </TabView>
+            <DeviceInfo :device="device" />
+          </TabsContent>
+        </Tabs>
         <DeviceInfo v-else :device="stats.devices[0]" />
       </div>
     </template>
@@ -46,8 +57,6 @@
 </template>
 
 <script setup lang="ts">
-import TabPanel from 'primevue/tabpanel'
-import TabView from 'primevue/tabview'
 import { computed } from 'vue'
 
 import DeviceInfo from '@/components/common/DeviceInfo.vue'
@@ -57,6 +66,10 @@ import {
   systemStatsColumns
 } from '@/components/common/systemStatsColumns'
 import Button from '@/components/ui/button/Button.vue'
+import Tabs from '@/components/ui/tabs/Tabs.vue'
+import TabsContent from '@/components/ui/tabs/TabsContent.vue'
+import TabsList from '@/components/ui/tabs/TabsList.vue'
+import TabsTrigger from '@/components/ui/tabs/TabsTrigger.vue'
 import { useCopySystemInfo } from '@/composables/useCopySystemInfo'
 import type { SystemStats } from '@/platform/remote/comfyui/types'
 import { cn } from '@comfyorg/tailwind-utils'

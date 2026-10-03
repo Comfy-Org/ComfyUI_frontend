@@ -451,7 +451,7 @@ jobs:
     needs: [changes, setup, preflight]
     if: ${{ !cancelled() && needs.preflight.result == 'success' && github.event_name == 'pull_request' && needs.changes.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     container:
       image: ghcr.io/comfy-org/comfyui-ci-container:0.0.27
       credentials:

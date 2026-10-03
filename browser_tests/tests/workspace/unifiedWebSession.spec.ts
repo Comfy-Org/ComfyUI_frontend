@@ -227,10 +227,9 @@ test.describe('Unified web session', { tag: '@cloud' }, () => {
       expect(page.url()).not.toContain('/cloud/login')
 
       await comfyPage.toast.closeToasts()
-      await page.keyboard.press('Escape')
-      await page.getByRole('button', { name: 'Current user' }).click()
+      await comfyPage.currentUserPopover.open()
       await expect(page.getByText(CLOUD_SELF_EMAIL)).toBeVisible()
-      await page.keyboard.press('Escape')
+      await comfyPage.currentUserPopover.close()
 
       const promptRequest = page.waitForRequest(isPromptPost)
       await comfyPage.workflow.loadWorkflow('default')

@@ -1,53 +1,49 @@
 <template>
-  <div
-    ref="wrapperRef"
-    v-tooltip.bottom="{
-      value: tooltipText,
-      showDelay: 512
-    }"
-    :data-testid="`subgraph-breadcrumb-item-${item.key}`"
-    :data-active="isActive ? '' : undefined"
-    draggable="false"
-    :class="
-      cn('p-breadcrumb-item-link flex h-8 cursor-pointer items-center px-2', {
-        'gap-1': isActive,
-        'p-breadcrumb-item-link-menu-visible': menu?.overlayVisible,
-        'p-breadcrumb-item-link-icon-visible': isActive,
-        'active-breadcrumb-item': isActive
-      })
-    "
-    @click="handleClick"
-  >
-    <i
-      v-if="hasMissingNodes && isRoot"
-      data-testid="subgraph-breadcrumb-missing-nodes-icon"
-      class="icon-[lucide--triangle-alert] text-warning-background"
-    />
-    <span class="p-breadcrumb-item-label max-w-72 px-2">{{ item.label }}</span>
-    <Badge
-      v-if="item.isBlueprint"
-      data-testid="subgraph-breadcrumb-blueprint-tag"
-      severity="primary"
-    >
-      {{ t('breadcrumbsMenu.blueprint') }}
-    </Badge>
-    <i v-if="isActive" class="pi pi-angle-down text-2xs"></i>
-  </div>
   <Menu
-    v-if="isActive || isRoot"
-    ref="menu"
-    :model="menuItems"
-    :popup="true"
-    :pt="{
-      root: {
-        'data-testid': `subgraph-breadcrumb-menu-${item.key}`,
-        style: 'background-color: var(--comfy-menu-bg)'
-      },
-      itemLink: {
-        class: 'py-2'
-      }
-    }"
-  />
+    :open="menuOpen"
+    :items="menuItems"
+    :data-testid="`subgraph-breadcrumb-menu-${item.key}`"
+    @update:open="menuOpen = Boolean($event && isActive && !isEditing)"
+  >
+    <template #trigger>
+      <div
+        ref="wrapperRef"
+        v-tooltip.bottom="{
+          value: tooltipText,
+          showDelay: 512
+        }"
+        :data-testid="`subgraph-breadcrumb-item-${item.key}`"
+        :data-active="isActive ? '' : undefined"
+        draggable="false"
+        :class="
+          cn(
+            'p-breadcrumb-item-link flex h-8 cursor-pointer items-center overflow-hidden px-2 select-none',
+            isActive &&
+              'p-breadcrumb-item-link-icon-visible gap-1 text-text-primary',
+            menuOpen && 'p-breadcrumb-item-link-menu-visible'
+          )
+        "
+        @click="handleClick"
+      >
+        <i
+          v-if="hasMissingNodes && isRoot"
+          data-testid="subgraph-breadcrumb-missing-nodes-icon"
+          class="icon-[lucide--triangle-alert] text-warning-background"
+        />
+        <span class="p-breadcrumb-item-label max-w-72 truncate px-2">
+          {{ item.label }}
+        </span>
+        <Badge
+          v-if="item.isBlueprint"
+          data-testid="subgraph-breadcrumb-blueprint-tag"
+          severity="primary"
+        >
+          {{ t('breadcrumbsMenu.blueprint') }}
+        </Badge>
+        <i v-if="isActive" class="pi pi-angle-down text-2xs"></i>
+      </div>
+    </template>
+  </Menu>
   <Input
     v-if="isEditing"
     ref="itemInputRef"
@@ -63,14 +59,13 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import type { MenuState } from 'primevue/menu'
-import Menu from 'primevue/menu'
-import type { MenuItem } from 'primevue/menuitem'
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Badge from '@/components/ui/badge/Badge.vue'
 import Input from '@/components/ui/input/Input.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
+import type { MenuItemAction } from '@/components/ui/menu/types'
 import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
@@ -86,8 +81,13 @@ import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { ensureWorkflowSuffix, getWorkflowSuffix } from '@/utils/formatUtil'
 import { graphHasMissingNodes } from '@/workbench/extensions/manager/utils/graphHasMissingNodes'
 
+export interface BreadcrumbItem extends MenuItemAction {
+  isBlueprint?: boolean
+  updateTitle?: (title: string) => void
+}
+
 interface Props {
-  item: MenuItem
+  item: BreadcrumbItem
   isActive?: boolean
 }
 
@@ -101,7 +101,7 @@ const hasMissingNodes = computed(
 )
 
 const { t } = useI18n()
-const menu = ref<InstanceType<typeof Menu> & MenuState>()
+const menuOpen = ref(false)
 const dialogService = useDialogService()
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
@@ -174,16 +174,14 @@ const handleClick = (event: MouseEvent) => {
   }
 
   if (event.detail === 1) {
-    if (isActive) {
-      menu.value?.toggle(event)
-    } else {
+    if (!isActive) {
       item.command?.({ item: item, originalEvent: event })
     }
   } else if (isActive && event.detail === 2) {
-    menu.value?.hide()
+    menuOpen.value = false
     event.stopPropagation()
     event.preventDefault()
-    startRename()
+    void nextTick(startRename)
   }
 }
 
@@ -195,24 +193,3 @@ const inputBlur = async (doRename: boolean) => {
   isEditing.value = false
 }
 </script>
-
-<style scoped>
-.p-breadcrumb-item-link,
-.p-breadcrumb-item-icon {
-  user-select: none;
-}
-
-.p-breadcrumb-item-link {
-  overflow: hidden;
-}
-
-.p-breadcrumb-item-label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.active-breadcrumb-item {
-  color: var(--text-primary);
-}
-</style>

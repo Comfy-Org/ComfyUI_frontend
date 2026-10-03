@@ -1,9 +1,8 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
 import AudioPreviewPlayer from '@/renderer/extensions/vueNodes/widgets/components/audio/AudioPreviewPlayer.vue'
 
 const mockToastAdd = vi.fn()
@@ -30,19 +29,40 @@ function renderPlayer(modelValue?: string) {
   return render(AudioPreviewPlayer, {
     props: {
       modelValue,
-      hideWhenEmpty: false
+      hideWhenEmpty: false,
+      showOptionsButton: true
     },
     global: {
       plugins: [i18n],
-      components: { Button },
-      stubs: {
-        TieredMenu: true
-      }
+      directives: { tooltip: () => {} }
     }
   })
 }
 
 describe('AudioPreviewPlayer', () => {
+  it('changes playback speed through the options menu', async () => {
+    renderPlayer('http://example.com/audio.mp3')
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('button', { name: 'g.moreOptions' }))
+    await screen.findByRole('menuitem', { name: 'g.playbackSpeed' })
+    await user.keyboard('{ArrowDown}{ArrowRight}{End}')
+    const doubleSpeed = await screen.findByRole('menuitemcheckbox', {
+      name: 'g.2x'
+    })
+    await waitFor(() => expect(doubleSpeed).toHaveFocus())
+    await user.keyboard('{Enter}')
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('menuitemcheckbox', { name: 'g.2x' })
+      ).toBeChecked()
+    )
+    expect(
+      screen.getByRole('menuitemcheckbox', { name: 'g.1x' })
+    ).not.toBeChecked()
+  })
+
   describe('download button', () => {
     it('shows download button when audio is loaded', () => {
       renderPlayer('http://example.com/audio.mp3')

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -85,5 +85,64 @@ describe('SearchAutocomplete', () => {
       await user.click(screen.getByText('my-extension'))
       expect(onSelect).toHaveBeenCalledWith({ id: 1, query: 'my-extension' })
     })
+  })
+
+  it('opens empty-query suggestions on focus and reports keyboard highlight', async () => {
+    const onHighlight = vi.fn()
+    const user = userEvent.setup()
+    render(SearchAutocomplete, {
+      global: { plugins: [i18n] },
+      props: {
+        modelValue: '',
+        suggestions: ['foo', 'bar'],
+        openOnFocus: true,
+        onHighlight
+      }
+    })
+
+    const input = screen.getByRole('combobox')
+    await user.click(input)
+    expect(await screen.findByRole('option', { name: 'foo' })).toBeVisible()
+    await waitFor(() => expect(onHighlight).toHaveBeenCalledWith('foo'))
+    onHighlight.mockClear()
+
+    await user.keyboard('{ArrowDown}')
+    await waitFor(() => expect(onHighlight).toHaveBeenCalledWith('bar'))
+  })
+
+  it('does not select an option when Enter is pressed during composition', async () => {
+    const onSelect = vi.fn()
+    const onUpdateModelValue = vi.fn()
+    const user = userEvent.setup()
+    render(SearchAutocomplete, {
+      global: { plugins: [i18n] },
+      props: {
+        modelValue: '',
+        suggestions: ['foo'],
+        openOnFocus: true,
+        onSelect,
+        'onUpdate:modelValue': onUpdateModelValue
+      }
+    })
+
+    const input = screen.getByRole('combobox')
+    await user.click(input)
+    await screen.findByRole('option', { name: 'foo' })
+    await user.keyboard('{ArrowDown}')
+    await fireEvent.compositionStart(input)
+    await user.keyboard('{Enter}')
+
+    expect(input).toHaveValue('')
+    expect(onUpdateModelValue).not.toHaveBeenCalled()
+    expect(onSelect).not.toHaveBeenCalled()
+
+    await fireEvent.compositionEnd(input)
+    await user.click(input)
+    await screen.findByRole('option', { name: 'foo' })
+    await user.keyboard('{Home}')
+    await user.keyboard('{Enter}')
+
+    expect(onUpdateModelValue).toHaveBeenCalledWith('foo')
+    expect(onSelect).toHaveBeenCalledWith('foo')
   })
 })

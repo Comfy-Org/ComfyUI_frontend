@@ -20,7 +20,7 @@ test.describe(
 
     async function expectShapePopoverVisible(comfyPage: ComfyPage) {
       const popover = comfyPage.page
-        .locator('.p-popover')
+        .getByRole('menu')
         .filter({ hasText: 'Default' })
       await expect(popover).toBeVisible()
       await expect(popover).toContainText('Box')
@@ -37,11 +37,10 @@ test.describe(
     }) => {
       await comfyPage.page.setViewportSize({ width: 1280, height: 900 })
       const menu = await openMoreOptionsMenu(comfyPage, 'KSampler')
-      const rootList = menu.locator(':scope > ul')
 
       await expect
-        .poll(() => rootList.evaluate((el) => getComputedStyle(el).overflowY))
-        .toBe('visible')
+        .poll(() => menu.evaluate((el) => el.scrollHeight <= el.clientHeight))
+        .toBe(true)
 
       await menu.getByRole('menuitem', { name: 'Shape' }).click()
       await expectShapePopoverVisible(comfyPage)
@@ -57,6 +56,17 @@ test.describe(
       await shapeItem.scrollIntoViewIfNeeded()
       await shapeItem.click()
       await expectShapePopoverVisible(comfyPage)
+    })
+
+    test('Color submenu items render their color swatches', async ({
+      comfyPage
+    }) => {
+      await openMoreOptionsMenu(comfyPage, 'KSampler')
+      const submenu = await comfyPage.contextMenu.openColorSubmenu()
+
+      await expect(
+        comfyPage.contextMenu.colorSwatch('Blue', submenu)
+      ).toBeVisible()
     })
   }
 )
