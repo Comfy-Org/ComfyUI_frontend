@@ -175,7 +175,7 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
       await expect(
         toast.getByText('Cancelled', { exact: true }).first()
       ).toBeVisible()
-      await expect(toast.getByRole('button', { name: 'Close' })).toBeHidden()
+      await expect(toast.getByRole('button', { name: 'Close' })).toBeVisible()
     })
 
     await test.step('keep the terminal backend state rendered', async () => {
@@ -238,7 +238,7 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
       await expect(
         toast.getByText('Cancelled', { exact: true }).first()
       ).toBeVisible()
-      await expect(toast.getByRole('button', { name: 'Close' })).toBeHidden()
+      await expect(toast.getByRole('button', { name: 'Close' })).toBeVisible()
     })
 
     await test.step('settle the cancellation once the task lookup 404s', async () => {
