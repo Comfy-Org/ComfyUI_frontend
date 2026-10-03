@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
+import { assetService } from '@/platform/assets/services/assetService'
 import type { TaskResponse } from '@/platform/tasks/services/taskService'
 import type { AssetExportWsMessage } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
@@ -14,6 +15,10 @@ const eventHandler = vi.hoisted(() => {
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
+    api_base: '',
+    apiURL(this: { api_base: string }, route: string) {
+      return new URL(`${this.api_base}${route}`, location.origin).toString()
+    },
     fetchApi: vi.fn(),
     addEventListener: vi.fn((_event: string, handler: ExportEventHandler) => {
       eventHandler.current = handler
@@ -177,5 +182,42 @@ describe('useAssetExportStore polling', () => {
     // `downloadTriggered` false and downloads the archive a second time.
     expect(store.hasExports).toBe(false)
     expect(assetService.getExportDownloadUrl).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('assetExportStore triggerDownload', () => {
+  it.for([
+    {
+      name: 'a server-relative URL under the API base',
+      url: '/api/view?filename=e.zip&type=temp&subfolder=exports',
+      expected:
+        'http://localhost:3000/comfy/api/view?filename=e.zip&type=temp&subfolder=exports'
+    },
+    {
+      name: 'an absolute signed URL unchanged',
+      url: 'https://storage.example.com/exports/e.zip?signature=abc',
+      expected: 'https://storage.example.com/exports/e.zip?signature=abc'
+    }
+  ])('downloads $name', async ({ url, expected }) => {
+    const originalBase = api.api_base
+    api.api_base = '/comfy'
+    onTestFinished(() => {
+      api.api_base = originalBase
+    })
+    vi.mocked(assetService.getExportDownloadUrl).mockResolvedValue({ url })
+    const clickedHrefs: string[] = []
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(
+      function (this: HTMLAnchorElement) {
+        clickedHrefs.push(this.href)
+      }
+    )
+    const store = useAssetExportStore()
+    store.trackExport('task-1')
+    const [exportJob] = store.exportList
+    exportJob.exportName = 'e.zip'
+
+    await store.triggerDownload(exportJob)
+
+    expect(clickedHrefs).toEqual([expected])
   })
 })

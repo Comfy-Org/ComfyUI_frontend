@@ -8,7 +8,11 @@ import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
+import type { ResultItem } from '@/schemas/apiSchema'
 import ImagePreview from '@/renderer/extensions/vueNodes/components/ImagePreview.vue'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { resolveNode } from '@/utils/litegraphUtil'
 
 // Mock downloadFile to avoid DOM errors
 vi.mock('@/base/common/downloadUtil', () => ({
@@ -26,6 +30,8 @@ vi.mock('@/platform/telemetry', () => ({
   })
 }))
 
+vi.mock(import('@/utils/litegraphUtil'), { spy: true })
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -34,6 +40,7 @@ const i18n = createI18n({
       g: {
         editOrMaskImage: 'Edit or mask image',
         downloadImage: 'Download image',
+        downloadImages: 'Download images',
         removeImage: 'Remove image',
         viewImageOfTotal: 'View image {index} of {total}',
         imagePreview:
@@ -64,16 +71,17 @@ describe('ImagePreview', () => {
     ]
   }
 
-  function renderImagePreview(props = {}) {
+  function renderImagePreview(props = {}, nodeOutputs?: ResultItem[]) {
+    const pinia = createTestingPinia({ createSpy: vi.fn })
+    if (nodeOutputs) {
+      vi.mocked(useNodeOutputStore(pinia).getNodeOutputs).mockReturnValue({
+        images: nodeOutputs
+      })
+    }
     return render(ImagePreview, {
       props: { ...defaultProps, ...props },
       global: {
-        plugins: [
-          createTestingPinia({
-            createSpy: vi.fn
-          }),
-          i18n
-        ],
+        plugins: [pinia, i18n],
         stubs: {
           'i-lucide:venetian-mask': true,
           'i-lucide:download': true,
@@ -95,6 +103,66 @@ describe('ImagePreview', () => {
     const { container } = renderImagePreview({ imageUrls: [] })
 
     expect(container.querySelector('.image-preview')).not.toBeInTheDocument()
+  })
+
+  it.for([
+    {
+      name: 'a node with several saved outputs',
+      props: { nodeId: '1' },
+      images: [{ filename: 'test1.png' }, { filename: 'test2.png' }],
+      expected: 1
+    },
+    {
+      name: 'a node with a single saved output',
+      props: { nodeId: '1' },
+      images: [{ filename: 'test1.png' }],
+      expected: 0
+    },
+    {
+      name: 'previews that are not saved outputs',
+      props: { nodeId: '1' },
+      images: [],
+      expected: 0
+    },
+    {
+      name: 'images without a node',
+      props: {},
+      images: [{ filename: 'test1.png' }, { filename: 'test2.png' }],
+      expected: 0
+    }
+  ] satisfies {
+    name: string
+    props: { nodeId?: string }
+    images: ResultItem[]
+    expected: number
+  }[])(
+    'offers downloading all images in the grid for $name',
+    ({ props, images, expected }) => {
+      vi.mocked(resolveNode).mockReturnValue(createMockLGraphNode({ id: 1 }))
+      renderImagePreview(props, images)
+
+      expect(
+        screen.queryAllByRole('button', { name: 'Download images' })
+      ).toHaveLength(expected)
+    }
+  )
+
+  it('offers only the single image download in gallery view', async () => {
+    vi.mocked(resolveNode).mockReturnValue(createMockLGraphNode({ id: 1 }))
+    vi.spyOn(useNodeOutputStore(), 'getNodeOutputs').mockReturnValue({
+      images: [{ filename: 'test1.png' }, { filename: 'test2.png' }]
+    })
+    renderImagePreview({ nodeId: '1' })
+    const user = userEvent.setup()
+
+    await switchToGallery(user)
+
+    expect(
+      screen.getByRole('button', { name: 'Download image' })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Download images' })
+    ).not.toBeInTheDocument()
   })
 
   it('offers the HDR viewer instead of an <img> for exr outputs', () => {
