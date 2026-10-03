@@ -702,7 +702,7 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('a follower_replaced for the same workflow with no preceding doc_reset (e.g. a resubscribe swap) still rebinds and clears applied state', () => {
+  it('a follower_replaced with no preceding doc_reset rebinds the replacement follower and clears applied state', () => {
     const { unmount, status } = mountFollower('wf-1')
     expect(projectionState.bind).toHaveBeenCalledTimes(1)
 
@@ -712,8 +712,8 @@ describe('useAgentCrdtFollower', () => {
 
     // No doc_reset precedes this: unlike the reset-then-replace flow above,
     // there is no armed replacement for this workflow to reuse. A bare
-    // resubscribe swap must still rebind to the new follower object and
-    // clear applied state on its own, without arming a lineage replacement.
+    // bare replacement must still rebind to the new follower object and clear
+    // applied state on its own, without arming a lineage replacement.
     const replacementFollower = {
       updatesApplied: 0,
       doc: { getMap: () => ({ toJSON: () => ({}) }) }
