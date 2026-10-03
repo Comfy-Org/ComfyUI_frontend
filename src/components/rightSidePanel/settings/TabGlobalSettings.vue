@@ -76,31 +76,6 @@ const showConnectedLinks = computed({
   }
 })
 
-const advancedParametersTooltip = computed(() =>
-  // eslint-disable-next-line @intlify/vue-i18n/no-missing-keys
-  t('settings.Comfy_Node_AlwaysShowAdvancedWidgets.tooltip')
-)
-
-const toolboxTooltip = computed(() =>
-  // eslint-disable-next-line @intlify/vue-i18n/no-missing-keys
-  t('settings.Comfy_Canvas_SelectionToolbox.tooltip')
-)
-
-const nodes2Tooltip = computed(() =>
-  // eslint-disable-next-line @intlify/vue-i18n/no-missing-keys
-  t('settings.Comfy_VueNodes_Enabled.tooltip')
-)
-
-const snapToGridTooltip = computed(() =>
-  // eslint-disable-next-line @intlify/vue-i18n/no-missing-keys
-  t('settings.pysssss_SnapToGrid.tooltip')
-)
-
-const connectedLinksTooltip = computed(() =>
-  // eslint-disable-next-line @intlify/vue-i18n/no-missing-keys
-  t('settings.Comfy_LinkRenderMode.tooltip')
-)
-
 const GRID_SIZE_MIN = 1
 const GRID_SIZE_MAX = 100
 const GRID_SIZE_STEP = 1
@@ -126,17 +101,17 @@ function openFullSettings() {
         <FieldSwitch
           v-model="showAdvancedParameters"
           :label="t('rightSidePanel.globalSettings.showAdvanced')"
-          :tooltip="advancedParametersTooltip"
+          :tooltip="t('settings.Comfy_Node_AlwaysShowAdvancedWidgets.tooltip')"
         />
         <FieldSwitch
           v-model="showToolbox"
           :label="t('rightSidePanel.globalSettings.showToolbox')"
-          :tooltip="toolboxTooltip"
+          :tooltip="t('settings.Comfy_Canvas_SelectionToolbox.tooltip')"
         />
         <FieldSwitch
           v-model="nodes2Enabled"
           :label="t('rightSidePanel.globalSettings.nodes2')"
-          :tooltip="nodes2Tooltip"
+          :tooltip="t('settings.Comfy_VueNodes_Enabled.tooltip')"
         />
       </div>
     </PropertiesAccordionItem>
@@ -179,7 +154,7 @@ function openFullSettings() {
         <FieldSwitch
           v-model="snapToGrid"
           :label="t('rightSidePanel.globalSettings.snapNodesToGrid')"
-          :tooltip="snapToGridTooltip"
+          :tooltip="t('settings.pysssss_SnapToGrid.tooltip')"
         />
       </div>
     </PropertiesAccordionItem>
@@ -203,7 +178,7 @@ function openFullSettings() {
         <FieldSwitch
           v-model="showConnectedLinks"
           :label="t('rightSidePanel.globalSettings.showConnectedLinks')"
-          :tooltip="connectedLinksTooltip"
+          :tooltip="t('settings.Comfy_LinkRenderMode.tooltip')"
         />
       </div>
     </PropertiesAccordionItem>
