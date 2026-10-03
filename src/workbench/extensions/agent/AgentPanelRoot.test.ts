@@ -67,7 +67,6 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { registerTour } from '@/platform/onboarding/onboardingTours'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { createTestDragAndScale } from '@/utils/__tests__/canvasTestUtils'
 import {
   createMockLoadedWorkflow,
   createMockChangeTracker,

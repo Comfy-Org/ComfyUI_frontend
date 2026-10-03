@@ -23,7 +23,6 @@ import type {
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@/types/nodeId'
-import { createTestDragAndScale } from '@/utils/__tests__/canvasTestUtils'
 
 import ErrorGroupList from './ErrorGroupList.vue'
 

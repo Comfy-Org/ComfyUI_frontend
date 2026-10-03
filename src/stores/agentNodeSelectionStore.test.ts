@@ -6,7 +6,6 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { createTestDragAndScale } from '@/utils/__tests__/canvasTestUtils'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import { createTestDragAndScale } from '@/utils/__tests__/canvasTestUtils'
 
 const dialogStack = vi.hoisted(() => [] as unknown[])
 
