@@ -302,10 +302,13 @@ const facts = computed(() => [
               </button>
             </div>
             <CopyTextButton
+              v-for="option in SNIPPET_LANGUAGES"
+              v-show="language === option"
+              :key="option"
               :value="snippet"
               :label="t('workshop.api.copy')"
               :copied-label="t('workshop.api.copied')"
-              @click="emit('copy', language)"
+              @copied="emit('copy', option)"
             />
           </div>
           <p

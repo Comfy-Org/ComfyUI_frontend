@@ -34,7 +34,11 @@ const { model, values } = defineProps<{
   model: WorkflowWorkshopModelDetail
   values: FormValues
 }>()
-const emit = defineEmits<{ copy: [language: SnippetLanguage]; getKey: [] }>()
+const emit = defineEmits<{
+  copy: [language: SnippetLanguage]
+  getKey: []
+  download: []
+}>()
 const { session } = useWorkshopSession()
 const keyHref = computed(() =>
   workspaceLinkedHref(
@@ -86,6 +90,7 @@ function downloadGraph() {
   anchor.href = url
   anchor.download = graphFile
   anchor.click()
+  emit('download')
   setTimeout(() => URL.revokeObjectURL(url), OBJECT_URL_LIFETIME_MS)
 }
 const hasMedia = initialWorkshopPageState(model).schema.some((field) =>
@@ -216,10 +221,13 @@ const facts = computed(() => {
               </button>
             </div>
             <CopyTextButton
+              v-for="option in SNIPPET_LANGUAGES"
+              v-show="language === option"
+              :key="option"
               :value="code"
               :label="t('workshop.api.copy')"
               :copied-label="t('workshop.api.copied')"
-              @click="emit('copy', language)"
+              @copied="emit('copy', option)"
             />
           </div>
           <pre

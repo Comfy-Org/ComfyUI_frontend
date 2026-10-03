@@ -22,6 +22,7 @@ const {
 }>()
 
 const template = computed(() => model.workflow.template)
+const emit = defineEmits<{ download: [] }>()
 // What the workflow makes, hung in the node that hands it back. The samples
 // beneath it are results too, so there is no before to hang at the way in, and
 // a node cannot play a video.
@@ -131,6 +132,7 @@ const facts = computed(() => {
               download
               variant="outline"
               class="h-auto min-h-11 max-w-full whitespace-normal"
+              @click="emit('download')"
               >{{ t('workshop.workflow.download') }}</Button
             >
           </div>

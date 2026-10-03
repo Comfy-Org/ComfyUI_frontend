@@ -397,16 +397,19 @@ Hex/Snowflake remains the downstream warehouse analysis layer.
 
 All event names below have the prefix `website:workshop_`:
 
-| Event                     | When it fires                                                                  |
-| ------------------------- | ------------------------------------------------------------------------------ |
-| `catalogue_viewed`        | Once per page mount, after the catalogue becomes visible.                      |
-| `model_viewed`            | Once per page mount, after a model page becomes visible.                       |
-| `api_viewed`              | The user opens a model's API tab.                                              |
-| `run_validation_failed`   | Local form validation rejects a Run action.                                    |
-| `run_started`             | A validated Run action begins, including uploads and credential refresh.       |
-| `run_finished`            | The attempt succeeds, fails, or is cancelled, with `status` and `duration_ms`. |
-| `checkout_failed`         | A top-up attempt fails during balance, credential, or checkout setup.          |
-| `output_download_clicked` | The user requests an output download.                                          |
+| Event                       | When it fires                                                                  |
+| --------------------------- | ------------------------------------------------------------------------------ |
+| `catalogue_viewed`          | Once per page mount, after the catalogue becomes visible.                      |
+| `model_viewed`              | Once per page mount, after a model page becomes visible.                       |
+| `api_viewed`                | The user opens a model's API tab.                                              |
+| `api_key_clicked`           | The user follows Get API key; this is not key creation.                        |
+| `api_snippet_copied`        | A snippet is written to the clipboard successfully (`copy_result=success`).    |
+| `workflow_download_clicked` | The user requests workflow JSON or an API graph from a Hub detail page.        |
+| `run_validation_failed`     | Local form validation rejects a Run action.                                    |
+| `run_started`               | A validated Run action begins, including uploads and credential refresh.       |
+| `run_finished`              | The attempt succeeds, fails, or is cancelled, with `status` and `duration_ms`. |
+| `checkout_failed`           | A top-up attempt fails during balance, credential, or checkout setup.          |
+| `output_download_clicked`   | The user requests an output download.                                          |
 
 The basic funnel is catalogue view → model view → run started → run finished
 with `status=succeeded` → output download clicked. Model events include slug,
@@ -421,6 +424,28 @@ Retries get new attempt IDs even when they reuse a Router idempotency key.
 Cancellation describes the browser stopping its wait, not a billing outcome.
 Downloads measure clicks, not completed transfers. These events contain no
 prompts, form values, filenames, media URLs, output contents, or credentials.
+
+Developer-intent events carry `page_type` (`model`, `workflow`, or `app`) and
+`model_slug`; app events also carry `app_slug`. Workflow downloads carry
+`download_format` (`workflow_json` or `api_graph`) and `entry_point`
+(`model_clone`, `workflow_preview`, or `api_tab`), plus `workflow_id` when
+available. They do not require a run or sign-in, so download-only workflows
+are included. Re-shoot output downloads carry `output_source` (`example` or
+`generated`) so example clips can be excluded from generated-output engagement.
+
+Historical `api_snippet_copied` events recorded button clicks. Filter on
+`copy_result=success` for confirmed copies after this instrumentation ships;
+unmarked historical events cannot be upgraded to confirmed copies. Dashboard
+copy metrics still using autocapture should migrate to this explicit event
+without adding both sources together. These events measure intent and Hub
+engagement, not external API activation.
+
+Platform key-creation attribution, persistence through sign-in, cross-surface
+identity validation, and distinguishing external API requests from Hub runs
+require platform/backend work outside this website. The existing
+`onboarding=models&model=<slug>` link remains compatible with the platform;
+this frontend change does not make key-creation attribution durable or backfill
+older untyped events.
 
 ### Which Cloud the Workshop talks to
 

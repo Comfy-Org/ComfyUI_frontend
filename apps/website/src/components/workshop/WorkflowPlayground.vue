@@ -121,7 +121,22 @@ function captureSnippetCopy(language: SnippetLanguage) {
   if (enabled.value && workflowsEnabled.value)
     captureWorkshopEvent({
       name: 'api_snippet_copied',
-      properties: { ...modelAnalytics, snippet_language: language }
+      properties: {
+        ...modelAnalytics,
+        snippet_language: language,
+        copy_result: 'success'
+      }
+    })
+}
+function captureWorkflowDownload(format: 'workflow_json' | 'api_graph') {
+  if (enabled.value && workflowsEnabled.value)
+    captureWorkshopEvent({
+      name: 'workflow_download_clicked',
+      properties: {
+        ...modelAnalytics,
+        download_format: format,
+        entry_point: format === 'api_graph' ? 'api_tab' : 'workflow_preview'
+      }
     })
 }
 const busy = computed(() =>
@@ -358,6 +373,7 @@ function start() {
     :active="section === 'workflow'"
     :model="model"
     :cloud-href="cloudHref"
+    @download="captureWorkflowDownload('workflow_json')"
   />
   <div
     v-show="section === 'api'"
@@ -370,6 +386,7 @@ function start() {
       :values="values"
       @get-key="captureApiKeyClick"
       @copy="captureSnippetCopy"
+      @download="captureWorkflowDownload('api_graph')"
     />
   </div>
   <section

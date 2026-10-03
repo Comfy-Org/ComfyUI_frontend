@@ -72,6 +72,62 @@ function session(role: WorkshopSession['role']): WorkshopSession {
 }
 
 describe('WorkflowPlayground analytics', () => {
+  it.for([
+    {
+      section: 'Details',
+      action: 'Download workflow JSON',
+      format: 'workflow_json',
+      entry: 'workflow_preview'
+    },
+    {
+      section: 'API',
+      action: 'Download the API graph',
+      format: 'api_graph',
+      entry: 'api_tab'
+    }
+  ])(
+    'attributes the $format download to its workflow',
+    async ({ section, action, format, entry }) => {
+      const model = workflowDetailsBySlug.get(
+        'workflows/animate-reference-sheet'
+      )
+      assert(model)
+      vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
+      vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(
+        readonly(ref(true))
+      )
+      vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:graph')
+      vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => Response.error())
+      )
+      render(WorkflowPlayground, {
+        props: { model: markRaw(model), scope: 'anonymous' }
+      })
+      const visitor = userEvent.setup()
+      await visitor.click(screen.getByRole('tab', { name: section }))
+      const download = screen.getByRole(
+        format === 'api_graph' ? 'button' : 'link',
+        { name: action }
+      )
+      download.addEventListener('click', (event) => event.preventDefault(), {
+        once: true
+      })
+      await visitor.click(download)
+      expect(captureWorkshopEvent).toHaveBeenLastCalledWith({
+        name: 'workflow_download_clicked',
+        properties: expect.objectContaining({
+          model_slug: model.slug,
+          page_type: 'workflow',
+          workflow_id: model.workflowId,
+          download_format: format,
+          entry_point: entry
+        })
+      })
+    }
+  )
+
   it('reports page and API visits under Models event names with workflow attribution after access is enabled', async () => {
     const model = workflowDetailsBySlug.get('workflows/remove-background')
     assert(model)
@@ -148,7 +204,8 @@ describe('WorkflowPlayground API tab analytics', () => {
         model_slug: model.slug,
         page_type: 'workflow',
         workflow_id: model.workflowId,
-        snippet_language: 'python'
+        snippet_language: 'python',
+        copy_result: 'success'
       })
     })
   })

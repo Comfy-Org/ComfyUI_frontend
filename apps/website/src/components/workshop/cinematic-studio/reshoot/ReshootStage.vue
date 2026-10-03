@@ -112,6 +112,7 @@ const fileName = computed(
         class="max-lg:order-first"
         :href
         :file-name="fileName"
+        :output-source="finished?.id === 'example' ? 'example' : 'generated'"
         :locale
         @reuse="emit('reuse')"
       />
