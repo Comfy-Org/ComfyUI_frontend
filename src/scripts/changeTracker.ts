@@ -252,14 +252,46 @@ function reportInactiveTrackerCall(method: string, workflowPath: string) {
 
 export class ChangeTracker {
   static MAX_HISTORY = 50
+  /** Number of graph loads currently inside their suppression window. */
+  private static graphLoadDepth = 0
+
   /**
    * Guard flag to prevent captureCanvasState from running during loadGraphData.
    * Between rootGraph.configure() and afterLoadNewGraph(), the rootGraph
    * contains the NEW workflow's data while activeWorkflow still points to
    * the OLD workflow. Any captureCanvasState call in that window would
    * serialize the wrong graph into the old workflow's activeState, corrupting it.
+   *
+   * Reads as a boolean, but is held by count rather than by assignment: loads
+   * overlap, and a single shared boolean let a superseded older load's
+   * `finally` end the newer load's suppression window.
+   * @see {@link beginGraphLoad}
    */
-  static isLoadingGraph = false
+  static get isLoadingGraph(): boolean {
+    return ChangeTracker.graphLoadDepth > 0
+  }
+
+  static set isLoadingGraph(value: boolean) {
+    ChangeTracker.graphLoadDepth = value ? 1 : 0
+  }
+
+  /**
+   * Open a suppression window for one graph load.
+   * @returns A function that closes this load's window and no other's. Safe to
+   * call more than once.
+   */
+  static beginGraphLoad(): () => void {
+    ChangeTracker.graphLoadDepth++
+    let closed = false
+    return () => {
+      if (closed) return
+      closed = true
+      ChangeTracker.graphLoadDepth = Math.max(
+        0,
+        ChangeTracker.graphLoadDepth - 1
+      )
+    }
+  }
   /**
    * The active state of the workflow.
    */

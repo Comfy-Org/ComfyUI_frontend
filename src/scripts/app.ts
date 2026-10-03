@@ -1299,6 +1299,28 @@ export class ComfyApp {
     await useExtensionService().invokeExtensionsAsync('onGraphLoadError', error)
   }
 
+  /**
+   * Whether `loadId` still owns the graph. A newer load that has committed its
+   * graph owns everything downstream of that commit, so an older load resuming
+   * from an await must not mutate state, bind a workflow, or frame the canvas.
+   */
+  private ownsGraphLoad(loadId: number): boolean {
+    return loadId >= this.committedGraphLoadSequence
+  }
+
+  /**
+   * End a superseded load the way a failed one ends: notify `onGraphLoadError`
+   * so any loading state a `beforeLoadGraph` listener opened for this load is
+   * closed out. Resolves rather than throws; callers return its result.
+   */
+  private async rejectSupersededGraphLoad(): Promise<undefined> {
+    await useExtensionService().invokeExtensionsAsync(
+      'onGraphLoadError',
+      new DOMException('Graph load superseded by a newer load', 'AbortError')
+    )
+    return undefined
+  }
+
   async loadGraphData(
     graphData?: ComfyWorkflowJSON,
     clean: boolean = true,
@@ -1328,6 +1350,15 @@ export class ComfyApp {
     } = options
     useWorkflowService().beforeLoadNewGraph(clean)
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+
+    // `beforeLoadGraph` listeners can await for as long as they like, and a
+    // newer load can commit its graph while this one is suspended there. Every
+    // statement below this point is destructive — aborting in-flight asset
+    // verification, clearing the missing-resource stores, `canvas.setGraph()`
+    // and `clean()` all erase live state. The later supersession check at the
+    // `configure` boundary is too late to stop that, so a superseded load used
+    // to wipe the newer committed graph and only then report itself stale.
+    if (!this.ownsGraphLoad(loadId)) return this.rejectSupersededGraphLoad()
 
     let reset_invalid_values = false
     const missingNodeTypes: MissingNodeType[] = []
@@ -1523,21 +1554,16 @@ export class ComfyApp {
       }
     }
 
-    ChangeTracker.isLoadingGraph = true
+    // Scoped rather than assigned: overlapping loads each hold their own
+    // suppression window, so this load's `finally` cannot end another's.
+    const endGraphLoadSuppression = ChangeTracker.beginGraphLoad()
     let activatedWorkflow: LoadedComfyWorkflow | undefined
     let reconcileResourceErrors: (() => void) | undefined
     let resourceScanLoadCompleted = false
     try {
       try {
-        if (loadId < this.committedGraphLoadSequence) {
-          await useExtensionService().invokeExtensionsAsync(
-            'onGraphLoadError',
-            new DOMException(
-              'Graph load superseded by a newer load',
-              'AbortError'
-            )
-          )
-          return undefined
+        if (!this.ownsGraphLoad(loadId)) {
+          return await this.rejectSupersededGraphLoad()
         }
 
         this.rootGraph.configure(graphData as ISerialisedGraph)
@@ -1663,6 +1689,15 @@ export class ComfyApp {
         missingNodeTypes
       )
 
+      // Ownership is committed once, before this hook. Everything after it is
+      // graph-derived: the telemetry payload, and `afterLoadNewGraph` binding
+      // `workflow` to `rootGraph.serialize()`. A newer load that committed
+      // while this hook awaited owns the live graph, so continuing would
+      // serialize the newer graph into this load's older workflow.
+      if (!this.ownsGraphLoad(loadId)) {
+        return await this.rejectSupersededGraphLoad()
+      }
+
       const effectiveShareId =
         shareId ??
         (workflow instanceof ComfyWorkflow ? workflow.shareId : undefined)
@@ -1683,6 +1718,13 @@ export class ComfyApp {
         effectiveShareId
       )
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+
+      // Same reason again: the asset pipelines below scan `this.rootGraph`, and
+      // their results are reported against this load's workflow.
+      if (!this.ownsGraphLoad(loadId)) {
+        return await this.rejectSupersededGraphLoad()
+      }
+
       // Capture the workflow this load activated before the asset-scan awaits
       // below can hand control back and let the user switch to another one.
       activatedWorkflow = useWorkflowStore().activeWorkflow ?? undefined
@@ -1733,6 +1775,13 @@ export class ComfyApp {
         })
       }
 
+      // Both asset pipelines await the network. A newer load that committed
+      // while they ran owns the warnings surface and the canvas, and will post
+      // its own; this load's results describe a graph that is no longer live.
+      if (!this.ownsGraphLoad(loadId)) {
+        return await this.rejectSupersededGraphLoad()
+      }
+
       if (!deferWarnings) {
         useWorkflowService().showPendingWarnings(undefined, {
           silent: silentAssetErrors
@@ -1750,9 +1799,14 @@ export class ComfyApp {
         'workflow-load',
         workflowNavigationId
       )
-      ChangeTracker.isLoadingGraph = false
-      // The retirement watcher skips transitions made during the load.
-      useExecutionErrorStore().retireResolvedMissingNodePromptError()
+      endGraphLoadSuppression()
+      // The retirement watcher skips transitions made during the load, so the
+      // catch-up runs here — but only once the last overlapping load has
+      // closed its window. Running it while a newer load is still configuring
+      // retires that load's errors before it has recorded them.
+      if (!ChangeTracker.isLoadingGraph) {
+        useExecutionErrorStore().retireResolvedMissingNodePromptError()
+      }
       reconcileResourceErrors?.()
     }
   }

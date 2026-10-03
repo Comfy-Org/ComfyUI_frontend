@@ -46,6 +46,7 @@ import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import {
   createTestCanvasElement,
   createTestDragAndScale,
@@ -709,6 +710,94 @@ describe('ComfyApp', () => {
         (hook) => hook === 'afterConfigureGraph' || hook === 'onGraphLoadError'
       )
       expect(closed).toHaveLength(opened.length)
+    })
+
+    it('does not destroy the newer committed graph when a superseded load resumes', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      const setGraph = vi.fn()
+      Reflect.set(mockCanvas, 'setGraph', setGraph)
+      const clean = vi.spyOn(app, 'clean').mockImplementation(() => {})
+      let releaseOlderLoad!: () => void
+      const olderLoadBlocked = new Promise<void>((resolve) => {
+        releaseOlderLoad = resolve
+      })
+      vi.when(mockExtensionService.invokeExtensionsAsync)
+        .calledWith('beforeLoadGraph')
+        .thenReturnOnce(olderLoadBlocked)
+
+      const olderLoad = app.loadGraphData(createWorkflowGraphData(), true)
+      await app.loadGraphData(createWorkflowGraphData(), true)
+      setGraph.mockClear()
+      clean.mockClear()
+      releaseOlderLoad()
+      await expect(olderLoad).resolves.toBeUndefined()
+
+      // Both of these erase the graph the newer load just committed, and the
+      // supersession check used to sit downstream of them.
+      expect(setGraph).not.toHaveBeenCalled()
+      expect(clean).not.toHaveBeenCalled()
+    })
+
+    it('does not bind an older load’s workflow to a newer load’s graph', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      let releaseOlderLoad!: () => void
+      const olderLoadBlocked = new Promise<void>((resolve) => {
+        releaseOlderLoad = resolve
+      })
+      // The older load commits, then suspends inside a lifecycle hook that
+      // runs after the point where its ownership was last checked.
+      vi.when(mockExtensionService.invokeExtensionsAsync)
+        .calledWith('afterConfigureGraph', expect.anything())
+        .thenReturnOnce(olderLoadBlocked)
+
+      const olderLoad = app.loadGraphData(createWorkflowGraphData(), false)
+      await app.loadGraphData(createWorkflowGraphData(), false)
+      releaseOlderLoad()
+      await expect(olderLoad).resolves.toBeUndefined()
+
+      // Only the newer load may bind a workflow to the live graph.
+      expect(mockWorkflowService.afterLoadNewGraph).toHaveBeenCalledOnce()
+    })
+
+    it('keeps a newer load’s suppression window open when a superseded load returns', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      ChangeTracker.isLoadingGraph = false
+      onTestFinished(() => {
+        ChangeTracker.isLoadingGraph = false
+      })
+      const releaseScan: Array<() => void> = []
+      vi.mocked(runMissingModelPipeline).mockImplementation(async () => {
+        await new Promise<void>((resolve) => releaseScan.push(resolve))
+        return { missingModels: [], confirmedCandidates: [] }
+      })
+      vi.spyOn(
+        missingMediaPipeline,
+        'runMissingMediaPipeline'
+      ).mockResolvedValue(undefined)
+
+      // The older load owns the graph when it reaches its asset scan, and
+      // suspends there.
+      const olderLoad = app.loadGraphData(createWorkflowGraphData(), false)
+      await vi.waitFor(() => expect(releaseScan).toHaveLength(1))
+      // A newer load then commits and suspends on its own scan, so both are
+      // inside a suppression window at once.
+      const newerLoad = app.loadGraphData(createWorkflowGraphData(), false)
+      await vi.waitFor(() => expect(releaseScan).toHaveLength(2))
+
+      releaseScan[0]()
+      await olderLoad
+
+      // A single shared boolean let the superseded load's `finally` end the
+      // newer load's suppression window, un-gating change capture and error
+      // retirement while the newer load was still mid-flight.
+      expect(ChangeTracker.isLoadingGraph).toBe(true)
+
+      releaseScan[1]()
+      await newerLoad
+      expect(ChangeTracker.isLoadingGraph).toBe(false)
     })
 
     it('lets an older valid load commit when its newer replacement fails', async () => {
