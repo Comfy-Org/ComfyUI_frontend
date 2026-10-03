@@ -782,37 +782,40 @@ describe(assetService.getAssetModels, () => {
     ])
   })
 
-  it('resolves hierarchical bare tags on model-type backends', async () => {
-    fetchApiMock.mockResolvedValueOnce(
-      buildAssetListResponse([
-        validAsset({
-          id: 'uncovered',
-          name: 'uncovered.safetensors',
-          tags: ['models', 'LLM/checkpoints']
-        })
-      ])
-    )
+  it.for([
+    {
+      name: 'resolves a covered asset by its bare tag on legacy backends',
+      modelTypeMode: false,
+      tags: ['models', 'model_type:LLM', 'LLM/checkpoints'],
+      expected: [{ name: 'chatglm3.safetensors', pathIndex: 0 }]
+    },
+    {
+      name: 'resolves an uncovered asset on model-type backends',
+      modelTypeMode: true,
+      tags: ['models', 'LLM/checkpoints'],
+      expected: [{ name: 'chatglm3.safetensors', pathIndex: 0 }]
+    },
+    {
+      name: 'keeps covered assets exact on model-type backends',
+      modelTypeMode: true,
+      tags: ['models', 'model_type:LLM', 'LLM/checkpoints'],
+      expected: []
+    }
+  ])(
+    '$name for a hierarchical query',
+    async ({ modelTypeMode, tags, expected }) => {
+      vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = modelTypeMode
+      fetchApiMock.mockResolvedValueOnce(
+        buildAssetListResponse([
+          validAsset({ id: 'chatglm3', name: 'chatglm3.safetensors', tags })
+        ])
+      )
 
-    const models = await assetService.getAssetModels('LLM/checkpoints')
+      const models = await assetService.getAssetModels('LLM/checkpoints')
 
-    expect(models).toEqual([{ name: 'uncovered.safetensors', pathIndex: 0 }])
-  })
-
-  it('keeps model-type categories exact for a hierarchical query', async () => {
-    fetchApiMock.mockResolvedValueOnce(
-      buildAssetListResponse([
-        validAsset({
-          id: 'retagged',
-          name: 'chatglm3-checkpoint.safetensors',
-          tags: ['models', 'model_type:LLM', 'LLM/checkpoints']
-        })
-      ])
-    )
-
-    const models = await assetService.getAssetModels('LLM/checkpoints')
-
-    expect(models).toEqual([])
-  })
+      expect(models).toEqual(expected)
+    }
+  )
 })
 
 describe(assetService.onModelsScanned, () => {
