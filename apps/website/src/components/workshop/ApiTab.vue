@@ -4,7 +4,6 @@ import { computed, ref, watch } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
-import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
 import { apiKeysLink, externalLinks } from '../../config/routes'
 import type { FileValue, FormValues } from '../../config/workshop-playground'
 import { schemaForModel } from '../../config/workshop-playground'
@@ -29,6 +28,7 @@ import type { CodeLang } from '../../lib/highlight'
 import ApiFacts from './ApiFacts.vue'
 import HighlightedCode from './HighlightedCode.vue'
 import SectionHeading from './SectionHeading.vue'
+import SnippetCopyButton from './SnippetCopyButton.vue'
 
 const {
   contract,
@@ -301,14 +301,12 @@ const facts = computed(() => [
                 {{ languageLabel[option] }}
               </button>
             </div>
-            <CopyTextButton
-              v-for="option in SNIPPET_LANGUAGES"
-              v-show="language === option"
-              :key="option"
+            <SnippetCopyButton
+              :language="language"
               :value="snippet"
               :label="t('workshop.api.copy')"
               :copied-label="t('workshop.api.copied')"
-              @copied="emit('copy', option)"
+              @copied="emit('copy', $event)"
             />
           </div>
           <p
