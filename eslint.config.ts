@@ -10,20 +10,22 @@ import {
   SelectorKind
 } from 'eslint-plugin-better-tailwindcss/api/types'
 import { createTypeScriptImportResolver } from 'eslint-import-resolver-typescript'
-import { importX } from 'eslint-plugin-import-x'
-import oxlint from 'eslint-plugin-oxlint'
 // eslint-config-prettier disables ESLint rules that conflict with formatters (oxfmt)
-import eslintConfigPrettier from 'eslint-config-prettier'
 import unusedImports from 'eslint-plugin-unused-imports'
-import pluginVue from 'eslint-plugin-vue'
 import type { ESLint } from 'eslint'
 import { defineConfig } from 'eslint/config'
 import globals from 'globals'
 import {
-  configs as tseslintConfigs,
-  parser as tseslintParser
-} from 'typescript-eslint'
-import vueParser from 'vue-eslint-parser'
+  importX,
+  oxlint,
+  prettier as eslintConfigPrettier,
+  vue as pluginVue,
+  vueParser,
+  typescript,
+  imports,
+  vueTemplates
+} from '@comfyorg/code-quality/eslint'
+
 import path from 'node:path'
 
 import {
@@ -32,6 +34,7 @@ import {
   templateFiles
 } from './scripts/eslintScope.ts'
 
+const { configs: tseslintConfigs, parser: tseslintParser } = typescript
 const extraFileExtensions = ['.vue']
 
 // Only utilities that resolve a theme token are checked, so a class like
@@ -306,7 +309,7 @@ export default defineConfig([
           '@typescript-eslint/no-explicit-any': 'off',
           '@typescript-eslint/no-unused-vars': 'off',
           '@typescript-eslint/prefer-as-const': 'off',
-          '@typescript-eslint/consistent-type-imports': 'error',
+          ...imports().rules,
           'vue/no-v-html': 'off',
           // Prohibit dark-theme: and dark: prefixes
           'vue/no-restricted-class': ['error', '/^dark(-theme)?:/'],
@@ -318,7 +321,7 @@ export default defineConfig([
           'vue/no-useless-mustaches': 'error',
           'vue/no-useless-v-bind': 'error',
           'vue/no-unused-emit-declarations': 'error',
-          'vue/no-use-v-else-with-v-for': 'error',
+          ...vueTemplates.rules,
           'vue/one-component-per-file': 'error',
           'vue/require-default-prop': 'off', // TODO: fix -- this one is very worthwhile
 

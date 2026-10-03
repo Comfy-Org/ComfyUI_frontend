@@ -1,10 +1,14 @@
 import { execFileSync, spawnSync } from 'node:child_process'
 import path from 'node:path'
+import { createRequire } from 'node:module'
 
 import { isEslintFile } from './eslintScope'
 
-const oxlintEntry = path.resolve('node_modules/oxlint/bin/oxlint')
-const eslintEntry = path.resolve('node_modules/eslint/bin/eslint.js')
+const require = createRequire(import.meta.url)
+const qualityEntry = path.join(
+  path.dirname(require.resolve('@comfyorg/code-quality/package.json')),
+  'dist/cli.js'
+)
 
 const changedFiles = execFileSync(
   'git',
@@ -20,20 +24,24 @@ if (oxlintFiles.length > 0 || eslintFiles.length > 0) {
   const fix = process.argv.includes('--fix') ? ['--fix'] : []
   const oxlintStatus =
     oxlintFiles.length > 0
-      ? run(oxlintEntry, ['--type-aware', ...fix, ...oxlintFiles])
+      ? run('oxlint', ['--type-aware', ...fix, ...oxlintFiles])
       : 0
   const eslintStatus =
     eslintFiles.length > 0
-      ? run(eslintEntry, ['--cache', ...fix, ...eslintFiles])
+      ? run('eslint', ['--cache', ...fix, ...eslintFiles])
       : 0
   process.exit(Math.max(oxlintStatus, eslintStatus))
 }
 
-function run(entry: string, args: string[]): number {
-  const result = spawnSync(process.execPath, [entry, ...args], {
-    stdio: 'inherit',
-    windowsHide: true
-  })
+function run(tool: 'oxlint' | 'eslint', args: string[]): number {
+  const result = spawnSync(
+    process.execPath,
+    [qualityEntry, 'exec', tool, ...args],
+    {
+      stdio: 'inherit',
+      windowsHide: true
+    }
+  )
   if (result.error) throw result.error
   return result.status ?? 1
 }

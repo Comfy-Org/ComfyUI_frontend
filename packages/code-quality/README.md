@@ -71,7 +71,7 @@ This explicit native command can write a baseline; `audit` never does.
 - `@comfyorg/code-quality/format`: named `frontend` (Oxfmt) and `platform`
   (Prettier) profiles. For example, in `prettier.config.mjs`:
   `export { platform as default } from '@comfyorg/code-quality/format'`.
-  Oxfmt also supports an `.oxfmtrc.mjs` exporting `frontend`; spread it to add
+  Oxfmt also supports an `oxfmt.config.ts` exporting `frontend`; spread it to add
   local `ignorePatterns`. Ignore files stay in the consumer.
 
 Nuxt consumers keep `withNuxt` and its generated configuration. Import shared
@@ -102,6 +102,6 @@ alpha. Consumers commit exact manifest and lockfile updates together; roll back
 by reverting that update and reinstalling the lockfile. A successful tarball test
 is not proof of registry publication or Platform adoption.
 
-Last measured: 2026-10-02 23:35 PDT. Fourteen tests pass; in-process coverage is
-44.26% lines. Subprocess CLI paths and the native engines are exercised by the
+Last measured: 2026-10-02 23:48 PDT. Fourteen tests pass; in-process coverage is
+39.13% lines. Subprocess CLI paths and the native engines are exercised by the
 installed-command smoke tests and are not included in that coverage total.
