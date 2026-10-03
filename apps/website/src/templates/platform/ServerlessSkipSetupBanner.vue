@@ -6,9 +6,10 @@ import { computed } from 'vue'
 
 import { deployPromptFor } from '../../config/deploy-prompt'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 // Shares the exact prompt the "Ship in minutes" terminal above already
 // copies, so the two CTAs on this page can never drift apart.
@@ -27,10 +28,10 @@ const { copy, copied } = useClipboard({
     >
       <div>
         <p class="text-lg font-bold text-primary-warm-white">
-          {{ t('platform.serverlessSkipSetup.heading', locale) }}
+          {{ t('platform.serverlessSkipSetup.heading') }}
         </p>
         <p class="mt-1 text-sm text-primary-warm-white/60">
-          {{ t('platform.serverlessSkipSetup.subtitle', locale) }}
+          {{ t('platform.serverlessSkipSetup.subtitle') }}
         </p>
       </div>
       <button
@@ -43,21 +44,20 @@ const { copy, copied } = useClipboard({
             :class="cn('[grid-area:1/1]', copied && 'invisible')"
             aria-hidden="true"
           >
-            {{ t('platform.serverlessSkipSetup.copyPrompt', locale) }}
+            {{ t('platform.serverlessSkipSetup.copyPrompt') }}
           </span>
           <span
             :class="cn('[grid-area:1/1]', !copied && 'invisible')"
             aria-hidden="true"
           >
-            {{ t('platform.serverlessSkipSetup.copied', locale) }}
+            {{ t('platform.serverlessSkipSetup.copied') }}
           </span>
           <span class="sr-only">
             {{
               t(
                 copied
                   ? 'platform.serverlessSkipSetup.copied'
-                  : 'platform.serverlessSkipSetup.copyPrompt',
-                locale
+                  : 'platform.serverlessSkipSetup.copyPrompt'
               )
             }}
           </span>

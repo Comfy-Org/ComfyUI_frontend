@@ -526,12 +526,14 @@ export const useDialogService = () => {
     }
     if (!canTopUp.value) return
 
+    // Unknown never selects the legacy content, which buys credits directly.
+    const isWorkspaceRail = type.value !== 'legacy'
+
     return dialogStore.showDialog({
       key: 'top-up-credits',
-      component:
-        type.value === 'workspace'
-          ? TopUpCreditsDialogContentWorkspace
-          : TopUpCreditsDialogContentLegacy,
+      component: isWorkspaceRail
+        ? TopUpCreditsDialogContentWorkspace
+        : TopUpCreditsDialogContentLegacy,
       props: options,
       dialogComponentProps: {
         renderer: 'reka',

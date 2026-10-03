@@ -5,6 +5,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
 import { DatadogRumTelemetryProvider } from '@/platform/telemetry/providers/cloud/DatadogRumTelemetryProvider'
 import { useDialogStore } from '@/stores/dialogStore'
+import TopUpCreditsDialogContentWorkspace from '@/platform/workspace/components/TopUpCreditsDialogContentWorkspace.vue'
 /**
  * showTopUpCreditsDialog routes the paired server capabilities to purchase,
  * subscription, or read-only contact-admin UI.
@@ -185,6 +186,18 @@ describe('showTopUpCreditsDialog', () => {
       isInsufficientCredits: true,
       source: 'agent_paywall'
     })
+  })
+
+  it('opens the workspace content, never the legacy one, while routing is unknown', async () => {
+    useBillingContext().type = computed(() => 'unknown')
+
+    await useDialogService().showTopUpCreditsDialog({
+      isInsufficientCredits: true,
+      source: 'agent_paywall'
+    })
+
+    const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
+    expect(args.component).toBe(TopUpCreditsDialogContentWorkspace)
   })
 
   it('passes the surface to the legacy rail content too', async () => {

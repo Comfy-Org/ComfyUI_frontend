@@ -42,7 +42,10 @@ import { useDialogService } from '@/services/dialogService'
 import { toTierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { operations } from '@/types/comfyRegistryTypes'
-import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
+import {
+  isWorkspaceBillingRequiredError,
+  parseErrorResponse
+} from '@/platform/remote/comfyui/errors'
 import {
   PENDING_SUBSCRIPTION_CHECKOUT_EVENT,
   PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
@@ -585,25 +588,29 @@ function useSubscriptionInternal() {
       shouldWatchCancellation: isSubscriptionEnabled
     })
 
-  const openBillingPortal = wrapWithErrorHandlingAsync(
-    async (target: BillingPortalTarget) => {
-      const portal = createBillingPortalReporter(telemetry, target)
-      let opened: boolean
-      try {
-        opened = await accessBillingPortalDirect()
-      } catch (error) {
-        portal.failed(error, 'legacy')
-        throw error
-      }
-      if (opened) portal.opened('legacy')
-      else portal.blocked('legacy')
-      return opened
-    },
-    reportError
-  )
+  const openBillingPortal = async (target: BillingPortalTarget) => {
+    const portal = createBillingPortalReporter(telemetry, target)
+    let opened: boolean
+    try {
+      opened = await accessBillingPortalDirect()
+    } catch (error) {
+      portal.failed(error, 'legacy')
+      throw error
+    }
+    if (opened) portal.opened('legacy')
+    else portal.blocked('legacy')
+    return opened
+  }
 
   const manageSubscription = async () => {
-    const didOpenPortal = await openBillingPortal('manage_subscription')
+    let didOpenPortal: boolean | undefined
+    try {
+      didOpenPortal = await openBillingPortal('manage_subscription')
+    } catch (err) {
+      // The legacy billing adapter recovers from a rail-mismatch refusal.
+      if (isWorkspaceBillingRequiredError(err)) throw err
+      reportError(err)
+    }
     if (!didOpenPortal) {
       return
     }
@@ -627,9 +634,9 @@ function useSubscriptionInternal() {
     window.open('https://docs.comfy.org', '_blank')
   }
 
-  const handleInvoiceHistory = async () => {
+  const handleInvoiceHistory = wrapWithErrorHandlingAsync(async () => {
     await openBillingPortal('invoices')
-  }
+  }, reportError)
 
   type PendingCheckoutRecoverySource =
     | 'bootstrap'
@@ -1096,12 +1103,13 @@ function useSubscriptionInternal() {
       )
 
       if (!response.ok) {
-        const { message } = await parseErrorResponse(response)
+        const { message, code } = await parseErrorResponse(response)
         throw new AuthStoreError(
           t('toastMessages.failedToInitiateSubscription', {
             error: message
           }),
-          response.status
+          response.status,
+          code
         )
       }
 
@@ -1129,6 +1137,7 @@ function useSubscriptionInternal() {
     subscribe,
     subscribeDirect,
     fetchStatus,
+    fetchStatusDirect: fetchSubscriptionStatus,
     showSubscriptionDialog,
     manageSubscription,
     requireActiveSubscription,

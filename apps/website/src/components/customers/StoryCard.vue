@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import type { StoryCard } from '../../utils/customers'
 
 const { story, locale = 'en' } = defineProps<{
   story: StoryCard
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const prefix = locale === 'zh-CN' ? '/zh-CN' : ''
 </script>
@@ -49,7 +50,7 @@ const prefix = locale === 'zh-CN' ? '/zh-CN' : ''
           <img src="/icons/arrow-right.svg" alt="" class="ml-0.5 size-3" />
         </span>
         <span class="text-primary-comfy-canvas">
-          {{ t('customers.story.viewArticle', locale) }}
+          {{ t('customers.story.viewArticle') }}
         </span>
       </div>
     </div>

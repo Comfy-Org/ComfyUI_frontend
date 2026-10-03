@@ -34,7 +34,7 @@ const {
   mockLocalStorage,
   mockReportTelemetryError,
   mockReportError,
-  mockAccessBillingPortal
+  mockAccessBillingPortalDirect
 } = await vi.hoisted(async () => {
   const { ref } = await import('vue')
   const mockIsLoggedIn = ref(false)
@@ -47,7 +47,7 @@ const {
 
     mockReportTelemetryError: vi.fn(),
     mockReportError: vi.fn(),
-    mockAccessBillingPortal: vi.fn(),
+    mockAccessBillingPortalDirect: vi.fn(),
     mockGetCheckoutAttribution: vi.fn(() => ({
       im_ref: 'impact-click-001',
       utm_source: 'impact'
@@ -128,7 +128,7 @@ vi.mock<unknown>(import('@/platform/telemetry/reportError'), () => ({
 vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
   useAuthActions: vi.fn(() => ({
     reportError: mockReportError,
-    accessBillingPortalDirect: mockAccessBillingPortal
+    accessBillingPortalDirect: mockAccessBillingPortalDirect
   }))
 }))
 
@@ -243,7 +243,7 @@ beforeEach(() => {
   vi.mocked(useAuthStore().fetchWithCustomerRecovery).mockImplementation(
     (input, init) => fetch(input, init)
   )
-  mockAccessBillingPortal.mockResolvedValue(true)
+  mockAccessBillingPortalDirect.mockResolvedValue(true)
 })
 
 describe('useSubscription', () => {
@@ -2775,7 +2775,7 @@ describe('useSubscription', () => {
       ])(
         'reports $action as a failed open when the tab is blocked',
         async ({ action, target }) => {
-          mockAccessBillingPortal.mockResolvedValueOnce(false)
+          mockAccessBillingPortalDirect.mockResolvedValueOnce(false)
 
           await useSubscriptionWithScope()[action]()
           leaveAndReturn()
@@ -2796,11 +2796,11 @@ describe('useSubscription', () => {
 
       it('reports a refused portal request as a failed open and still reports the error', async () => {
         const refusal = new AuthStoreError('Portal refused', 500)
-        mockAccessBillingPortal.mockRejectedValueOnce(refusal)
+        mockAccessBillingPortalDirect.mockRejectedValueOnce(refusal)
 
         await expect(
           useSubscriptionWithScope().manageSubscription()
-        ).rejects.toBe(refusal)
+        ).resolves.toBeUndefined()
 
         expect(portalEvents()).toEqual([
           {
@@ -2814,13 +2814,55 @@ describe('useSubscription', () => {
         ])
         expect(mockReportError).toHaveBeenCalledWith(refusal)
       })
+
+      it('reports a rail-mismatch refusal as a failed open and leaves recovery to the adapter', async () => {
+        const refusal = new AuthStoreError(
+          'refused',
+          409,
+          'WORKSPACE_BILLING_REQUIRED'
+        )
+        mockAccessBillingPortalDirect.mockRejectedValueOnce(refusal)
+
+        await expect(
+          useSubscriptionWithScope().manageSubscription()
+        ).rejects.toBe(refusal)
+
+        expect(portalEvents()).toMatchObject([
+          {
+            operation: 'portal',
+            stage: 'failed',
+            target: 'manage_subscription'
+          }
+        ])
+        expect(mockReportError).not.toHaveBeenCalled()
+      })
+    })
+
+    it('rethrows a rail-mismatch refusal from the billing portal', async () => {
+      const refusal = new AuthStoreError(
+        'refused',
+        409,
+        'WORKSPACE_BILLING_REQUIRED'
+      )
+      mockAccessBillingPortalDirect.mockRejectedValueOnce(refusal)
+      const { manageSubscription } = useSubscriptionWithScope()
+
+      await expect(manageSubscription()).rejects.toBe(refusal)
+      expect(mockReportError).not.toHaveBeenCalled()
+    })
+
+    it('reports other billing portal failures instead of throwing', async () => {
+      const failure = new Error('portal down')
+      mockAccessBillingPortalDirect.mockRejectedValueOnce(failure)
+      const { manageSubscription } = useSubscriptionWithScope()
+
+      await expect(manageSubscription()).resolves.toBeUndefined()
+      expect(mockReportError).toHaveBeenCalledWith(failure)
     })
 
     it('does not start cancellation watching when the billing portal does not open', async () => {
       useCurrentUser().isLoggedIn = computed(() => true)
-      vi.mocked(
-        useAuthActions().accessBillingPortalDirect
-      ).mockResolvedValueOnce(false)
+      mockAccessBillingPortalDirect.mockResolvedValueOnce(false)
 
       mockGetBillingStatus.mockResolvedValue({
         is_active: true,
