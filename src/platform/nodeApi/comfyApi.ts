@@ -65,6 +65,7 @@ type ComfyApiHost = {
     options: WorkflowOpenOptions
   ) => Promise<void>
   refreshDefinitions?: () => Promise<void>
+  getWorkflowName?: () => string | undefined
 }
 
 /**
@@ -166,6 +167,7 @@ const CAPABILITIES: ReadonlyMap<string, string> = new Map([
   ['node.fileDrop', '2.0'],
   ['workflow.open', '2.0'],
   ['workflow.open.new', '2.0'],
+  ['workflow.name', '2.0'],
   ['workflow.textReplacements', '2.0'],
   ['execution.node', '2.0'],
   ['defs.typeCompatibility', '2.0'],
@@ -374,7 +376,8 @@ function buildMajor(
   openWorkflow?: (
     data: WorkflowData,
     options: WorkflowOpenOptions
-  ) => Promise<void>
+  ) => Promise<void>,
+  getWorkflowName?: () => string | undefined
 ): Comfy {
   const graph = createGraphApi(
     getGraph,
@@ -395,7 +398,12 @@ function buildMajor(
   const ui = createUiHandle()
   const commands = createCommandsApi()
   const backend = createBackendApi()
-  const workflow = createWorkflowApi(getGraph, openWorkflow, currentDocumentId)
+  const workflow = createWorkflowApi(
+    getGraph,
+    openWorkflow,
+    currentDocumentId,
+    getWorkflowName
+  )
   const definitionScopes = new WeakMap<LGraph, GraphHandle>()
   const capabilities = new Map(CAPABILITIES)
   if (!openWorkflow) {
@@ -538,7 +546,8 @@ export function createComfyApi(
         getGraph,
         forMajor,
         defs,
-        host.openWorkflow
+        host.openWorkflow,
+        host.getWorkflowName
       )
       byMajor.set(requested, instance)
     }

@@ -3070,6 +3070,11 @@ interface WorkflowHandle {
    * contents of the very document that is still current.
    */
   documentId(): string | undefined
+  /**
+   * The active workflow's display filename, without exposing its user-data
+   * path. Undefined before a workflow document is active.
+   */
+  name(): string | undefined
 }
 
 // ─── the published entry point ───────────────────────────────

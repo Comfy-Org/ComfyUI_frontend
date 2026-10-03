@@ -34,6 +34,11 @@ export interface WorkflowHandle {
    * contents of the very document that is still current.
    */
   documentId(): string | undefined
+  /**
+   * The active workflow's display filename, without exposing its user-data
+   * path. Undefined before a workflow document is active.
+   */
+  name(): string | undefined
 }
 
 export function createWorkflowApi(
@@ -42,7 +47,8 @@ export function createWorkflowApi(
     data: WorkflowData,
     options: WorkflowOpenOptions
   ) => Promise<void>,
-  getDocumentId?: () => string | undefined
+  getDocumentId?: () => string | undefined,
+  getName?: () => string | undefined
 ): WorkflowHandle {
   return Object.freeze({
     async open(data: WorkflowData, options?: WorkflowOpenOptions) {
@@ -72,6 +78,9 @@ export function createWorkflowApi(
     },
     documentId() {
       return getDocumentId?.()
+    },
+    name() {
+      return getName?.()
     }
   })
 }

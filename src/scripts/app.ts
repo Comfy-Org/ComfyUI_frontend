@@ -1036,6 +1036,8 @@ export class ComfyApp {
           await workflowStore.closeWorkflow(createdWorkflow)
         }
       },
+      getWorkflowName: () =>
+        useWorkspaceStore().workflow.activeWorkflow?.fullFilename,
       refreshDefinitions: () => this.refreshComboInNodes()
     })
     await installSecureNodesHost({

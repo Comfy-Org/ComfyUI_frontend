@@ -25,6 +25,30 @@ describe('WorkflowHandle.documentId', () => {
   })
 })
 
+describe('WorkflowHandle.name', () => {
+  it('returns the host-provided display filename without a path', () => {
+    const api = createWorkflowApi(
+      noGraph,
+      undefined,
+      undefined,
+      () => 'Portrait workflow.json'
+    )
+
+    expect(api.name()).toBe('Portrait workflow.json')
+  })
+
+  it('is undefined until the host has an active workflow', () => {
+    const api = createWorkflowApi(
+      noGraph,
+      undefined,
+      undefined,
+      () => undefined
+    )
+
+    expect(api.name()).toBeUndefined()
+  })
+})
+
 describe('WorkflowHandle.open', () => {
   it.for([null, [], 'workflow'])(
     'rejects invalid workflow data',
