@@ -60,6 +60,7 @@ export interface ClientDocFrame {
   /** `op:node_id` per op for a `doc_ops` frame; empty otherwise. */
   ops: string[]
   opIds: string[]
+  baseVersions: number[]
 }
 
 interface ParsedClientDocFrame {
@@ -104,15 +105,21 @@ function parseClientDocFrame(
 
 /** Routed `/ws` host shared by black-box Agent follower fixtures. */
 export class AgentFollowerHostSocket {
+  private readonly hosts = new Map<string, HostDoc>()
+  private readonly pausedSubscribes = new Set<string>()
+  private readonly pendingSubscribes = new Map<string, string>()
   private refuseReason: string | null = null
   private refusalsLeft = 0
   private refusedSubscribes = 0
 
   private socket: WebSocketRoute | null = null
-  private subscribes = 0
+  private readonly subscribes = new Map<string, number>()
   private readonly createdAt = Date.now()
   private readonly clientFrames: ClientDocFrame[] = []
-  private readonly heldBatches: WireOpEnvelope[][] = []
+  private readonly heldBatches: Array<{
+    workflowId: string
+    ops: WireOpEnvelope[]
+  }> = []
   private readonly humanOutcomes: ApplyOutcome[] = []
   private resolveSubscribed: (() => void) | null = null
   private readonly subscribed = new Promise<void>((resolve) => {
@@ -122,10 +129,31 @@ export class AgentFollowerHostSocket {
   constructor(
     private readonly page: Page,
     private readonly workflowId: string,
-    private readonly host: HostDoc,
+    host: HostDoc,
     private readonly socketSid: string,
     private readonly humanOpsHost: HumanOpsHost = 'hold'
-  ) {}
+  ) {
+    this.hosts.set(workflowId, host)
+  }
+
+  /** Adds another semantic document served by this routed socket. */
+  addWorkflow(workflowId: string, host: HostDoc): void {
+    this.hosts.set(workflowId, host)
+  }
+
+  /** Holds the next subscribe response so a test can exercise the pre-ack window. */
+  pauseSubscribes(workflowId: string): void {
+    this.pausedSubscribes.add(workflowId)
+  }
+
+  /** Releases a subscribe held by {@link pauseSubscribes}. */
+  resumeSubscribe(workflowId: string): void {
+    this.pausedSubscribes.delete(workflowId)
+    const stateVector = this.pendingSubscribes.get(workflowId)
+    if (stateVector === undefined) return
+    this.pendingSubscribes.delete(workflowId)
+    this.answerSubscribe(workflowId, stateVector)
+  }
 
   async install(): Promise<void> {
     await this.page.routeWebSocket(/\/ws/, (socket) => {
@@ -184,7 +212,7 @@ export class AgentFollowerHostSocket {
     const frame = parseClientDocFrame(raw)
     if (!frame) return
     this.recordClientFrame(frame)
-    if (frame.workflowId !== this.workflowId) {
+    if (frame.workflowId === null || !this.hosts.has(frame.workflowId)) {
       this.rejectForeignOps(frame)
       return
     }
@@ -198,22 +226,34 @@ export class AgentFollowerHostSocket {
       type: frame.type,
       workflowId: frame.workflowId,
       ops: ops.map((op) => opLabel(op)),
-      opIds: ops.map((op) => op.op_id)
+      opIds: ops.map((op) => op.op_id),
+      baseVersions: ops.flatMap((op) =>
+        'base_version' in op && typeof op.base_version === 'number'
+          ? [op.base_version]
+          : []
+      )
     })
   }
 
   /** Dispatches a frame already confirmed to target this host's workflow. */
   private routeClientDocFrame(frame: ParsedClientDocFrame): void {
     if (frame.type === 'doc_subscribe' && frame.stateVector !== null) {
-      this.answerSubscribe(frame.stateVector)
+      if (this.pausedSubscribes.has(frame.workflowId!)) {
+        this.pendingSubscribes.set(frame.workflowId!, frame.stateVector)
+        return
+      }
+      this.answerSubscribe(frame.workflowId!, frame.stateVector)
       return
     }
     if (frame.type === 'doc_ops' && this.humanOpsHost === 'apply') {
-      this.judgeHumanOps(frame.opsResult)
+      this.judgeHumanOps(frame.workflowId!, frame.opsResult)
       return
     }
     if (frame.type === 'doc_ops' && frame.opsResult.ok) {
-      this.heldBatches.push(frame.opsResult.ops)
+      this.heldBatches.push({
+        workflowId: frame.workflowId!,
+        ops: frame.opsResult.ops
+      })
     }
   }
 
@@ -225,7 +265,7 @@ export class AgentFollowerHostSocket {
    * applier alone skips the relay gate and records no outcome.
    */
   heldClientOps(): WireOpEnvelope[] {
-    return this.heldBatches.flat()
+    return this.heldBatches.flatMap(({ ops }) => ops)
   }
 
   /**
@@ -239,8 +279,8 @@ export class AgentFollowerHostSocket {
   releaseHeldClientOps(): WireOpEnvelope[] {
     const batch = this.heldBatches.shift()
     if (!batch) return []
-    this.judgeHumanOps({ ok: true, ops: batch })
-    return batch
+    this.judgeHumanOps(batch.workflowId, { ok: true, ops: batch.ops })
+    return batch.ops
   }
 
   /**
@@ -260,19 +300,25 @@ export class AgentFollowerHostSocket {
     this.refusalsLeft = times
   }
 
-  private answerSubscribe(stateVector: string): void {
+  private answerSubscribe(workflowId: string, stateVector: string): void {
+    const host = this.hosts.get(workflowId)
+    if (!host) return
     if (this.refuseReason !== null && this.refusalsLeft > 0) {
       this.refusalsLeft -= 1
       this.refusedSubscribes += 1
-      this.send(this.host.subscribeRefused(this.refuseReason))
-      this.subscribes += 1
+      this.send(host.subscribeRefused(this.refuseReason))
+      this.recordSubscribe(workflowId)
       this.resolveSubscribed?.()
       return
     }
-    this.send(this.host.subscribed())
-    this.send(this.host.catchUp(stateVector))
-    this.subscribes += 1
+    this.send(host.subscribed())
+    this.send(host.catchUp(stateVector))
+    this.recordSubscribe(workflowId)
     this.resolveSubscribed?.()
+  }
+
+  private recordSubscribe(workflowId: string): void {
+    this.subscribes.set(workflowId, this.subscribeCount(workflowId) + 1)
   }
 
   /** Subscribes this host turned away, so a retry ladder can be asserted. */
@@ -285,16 +331,18 @@ export class AgentFollowerHostSocket {
   // A batch that failed the envelope check, or that cleared it but is empty
   // or carries a duplicate `op_id`, never reaches the applier at all — the
   // relay itself rejects that frame as `invalid_frame` earlier.
-  private judgeHumanOps(opsResult: ParsedWireBatch): void {
+  private judgeHumanOps(workflowId: string, opsResult: ParsedWireBatch): void {
     if (!opsResult.ok) {
-      this.send(this.invalidFrameResult())
+      this.send(this.invalidFrameResult(workflowId))
       return
     }
     if (!isValidDocOpsBatch(opsResult.ops)) {
-      this.send(this.invalidFrameResult())
+      this.send(this.invalidFrameResult(workflowId))
       return
     }
-    const { result, update, outcomes } = this.host.applyWire(opsResult.ops)
+    const host = this.hosts.get(workflowId)
+    if (!host) return
+    const { result, update, outcomes } = host.applyWire(opsResult.ops)
     this.humanOutcomes.push(...outcomes)
     this.send(result)
     if (update) this.send(update)
@@ -319,12 +367,12 @@ export class AgentFollowerHostSocket {
     })
   }
 
-  private invalidFrameResult(): HostFrame {
+  private invalidFrameResult(workflowId: string): HostFrame {
     return {
       type: 'doc_ops_result',
       data: {
         v: DOC_PROTOCOL_VERSION,
-        workflow_id: this.workflowId,
+        workflow_id: workflowId,
         ok: false,
         code: 'invalid_frame',
         message: 'doc_ops frame was not structurally valid'
@@ -333,8 +381,12 @@ export class AgentFollowerHostSocket {
   }
 
   /** Rises once per follower subscribe, after the catch-up frame was sent. */
-  subscribeCount(): number {
-    return this.subscribes
+  subscribeCount(workflowId?: string): number {
+    if (workflowId !== undefined) return this.subscribes.get(workflowId) ?? 0
+    return [...this.subscribes.values()].reduce(
+      (total, count) => total + count,
+      0
+    )
   }
 
   async disconnect(): Promise<void> {
