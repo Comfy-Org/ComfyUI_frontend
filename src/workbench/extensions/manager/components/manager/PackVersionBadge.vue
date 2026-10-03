@@ -37,7 +37,7 @@
 </template>
 
 <script setup lang="ts">
-import Popover from '@/components/ui/popover/PopoverOverlay.vue'
+import Popover from '@/components/common/ImperativePopover.vue'
 import { valid as validSemver } from 'semver'
 import { computed, ref, watch } from 'vue'
 

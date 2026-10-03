@@ -86,7 +86,7 @@
 </template>
 
 <script setup lang="ts">
-import Popover from '@/components/ui/popover/PopoverOverlay.vue'
+import Popover from '@/components/common/ImperativePopover.vue'
 import type { ComponentPublicInstance } from 'vue'
 import { computed, nextTick, ref } from 'vue'
 

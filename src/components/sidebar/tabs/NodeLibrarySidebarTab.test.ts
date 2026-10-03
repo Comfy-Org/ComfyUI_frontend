@@ -107,7 +107,7 @@ vi.mock<unknown>(import('@/components/searchbox/NodeSearchFilter.vue'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/components/ui/popover/PopoverOverlay.vue'), () => ({
+vi.mock<unknown>(import('@/components/common/ImperativePopover.vue'), () => ({
   default: {
     name: 'Popover',
     template: '<div><slot /></div>',

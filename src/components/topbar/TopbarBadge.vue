@@ -22,16 +22,12 @@
           aria-hidden="true"
           :class="badgeIconClass"
         />
-        <div
-          v-if="
-            displayMode === 'compact' ? showLabel : badge.label && !iconClass
-          "
-          :class="labelClasses"
-        >
+        <div v-if="triggerShowsLabel" :class="labelClasses">
           {{ badge.label }}
         </div>
         <div
-          v-else-if="displayMode === 'icon-only' && !iconClass"
+          v-else-if="!iconClass"
+          data-testid="badge-dot"
           class="size-2 shrink-0 rounded-full"
           :class="dotClasses"
         />
@@ -126,6 +122,14 @@ const showLabel = computed(() => {
       word.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '').startsWith(needle)
     )
 })
+
+const triggerShowsLabel = computed(() =>
+  Boolean(
+    displayMode === 'compact'
+      ? showLabel.value
+      : badge.label && !iconClass.value
+  )
+)
 
 const labelClasses =
   'shrink-0 rounded-full border border-border-default px-2 py-0.5 text-xs text-muted-foreground'

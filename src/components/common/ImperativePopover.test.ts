@@ -4,18 +4,18 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
-import PopoverOverlay from './PopoverOverlay.vue'
+import ImperativePopover from './ImperativePopover.vue'
 
 let openModal: HTMLElement | undefined
 
 function renderPopover(withOutside = false) {
   render({
-    components: { PopoverOverlay },
+    components: { ImperativePopover },
     data: () => ({ withOutside }),
     template: `
         <button @click="$refs.popover.toggle($event)">Open</button>
         <button v-if="withOutside">Outside</button>
-        <PopoverOverlay ref="popover"><button>Content</button></PopoverOverlay>
+        <ImperativePopover ref="popover"><button>Content</button></ImperativePopover>
       `
   })
 }
@@ -27,7 +27,7 @@ afterEach(() => {
   }
 })
 
-describe('PopoverOverlay', () => {
+describe('ImperativePopover', () => {
   it('opens at its target and dismisses with Escape', async () => {
     renderPopover()
     const user = userEvent.setup({ pointerEventsCheck: 0 })
@@ -38,6 +38,29 @@ describe('PopoverOverlay', () => {
     await user.keyboard('{Escape}')
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
     expect(screen.getByRole('button', { name: 'Open' })).toHaveFocus()
+  })
+
+  it('returns focus after an imperative close', async () => {
+    const popover = ref<InstanceType<typeof ImperativePopover>>()
+    render(
+      defineComponent({
+        components: { ImperativePopover },
+        setup: () => ({ popover }),
+        template: `
+          <button @click="popover.show($event)">Open</button>
+          <ImperativePopover ref="popover"><button>Content</button></ImperativePopover>
+        `
+      })
+    )
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    const trigger = screen.getByRole('button', { name: 'Open' })
+
+    await user.click(trigger)
+    expect(await screen.findByRole('dialog')).toBeVisible()
+    popover.value?.hide()
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+
+    expect(trigger).toHaveFocus()
   })
 
   it('dismisses on an outside press', async () => {
@@ -51,6 +74,66 @@ describe('PopoverOverlay', () => {
       target: screen.getByRole('button', { name: 'Outside', hidden: true })
     })
     expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('stays open after outside interaction when not dismissable', async () => {
+    render({
+      components: { ImperativePopover },
+      template: `
+        <button @click="$refs.popover.show($event)">Open</button>
+        <button>Outside</button>
+        <ImperativePopover ref="popover" :dismissable="false">
+          <button>Content</button>
+        </ImperativePopover>
+      `
+    })
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+
+    await user.click(screen.getByRole('button', { name: 'Open' }))
+    expect(await screen.findByRole('dialog')).toBeVisible()
+    await user.click(screen.getByRole('button', { name: 'Outside' }))
+
+    expect(screen.getByRole('dialog')).toBeVisible()
+  })
+
+  it('keeps focus outside when focus dismisses it', async () => {
+    renderPopover(true)
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    const outside = screen.getByRole('button', {
+      name: 'Outside',
+      hidden: true
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Open' }))
+    expect(await screen.findByRole('dialog')).toBeVisible()
+    outside.focus()
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(outside).toHaveFocus()
+  })
+
+  it('does not move focus into content when opened by hover', async () => {
+    const popover = ref<InstanceType<typeof ImperativePopover>>()
+    render(
+      defineComponent({
+        components: { ImperativePopover },
+        setup: () => ({ popover }),
+        template: `
+          <input aria-label="Editing" />
+          <button @mouseenter="popover.show($event)">Open</button>
+          <ImperativePopover ref="popover"><button>Content</button></ImperativePopover>
+        `
+      })
+    )
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    const input = screen.getByRole('textbox', { name: 'Editing' })
+    input.focus()
+
+    await user.hover(screen.getByRole('button', { name: 'Open' }))
+    expect(await screen.findByRole('dialog')).toBeVisible()
+    await nextTick()
+
+    expect(input).toHaveFocus()
   })
 
   it('opens above a registered modal', async () => {
@@ -78,10 +161,10 @@ describe('PopoverOverlay', () => {
       }
     )
     render({
-      components: { PopoverOverlay },
+      components: { ImperativePopover },
       template: `
         <button @click="$refs.popover.toggle($event)">Open</button>
-        <PopoverOverlay ref="popover"><div>Content</div></PopoverOverlay>
+        <ImperativePopover ref="popover"><div>Content</div></ImperativePopover>
       `
     })
     const user = userEvent.setup({ pointerEventsCheck: 0 })
@@ -95,14 +178,14 @@ describe('PopoverOverlay', () => {
   })
 
   it('does not open when hidden before the queued show completes', async () => {
-    const popover = ref<InstanceType<typeof PopoverOverlay>>()
+    const popover = ref<InstanceType<typeof ImperativePopover>>()
     render(
       defineComponent({
-        components: { PopoverOverlay },
+        components: { ImperativePopover },
         setup: () => ({ popover }),
         template: `
           <button>Open</button>
-          <PopoverOverlay ref="popover">Popover content</PopoverOverlay>
+          <ImperativePopover ref="popover">Popover content</ImperativePopover>
         `
       })
     )
@@ -117,16 +200,16 @@ describe('PopoverOverlay', () => {
   })
 
   it('closes when an anchor ancestor scrolls', async () => {
-    const popover = ref<InstanceType<typeof PopoverOverlay>>()
+    const popover = ref<InstanceType<typeof ImperativePopover>>()
     render(
       defineComponent({
-        components: { PopoverOverlay },
+        components: { ImperativePopover },
         setup: () => ({ popover }),
         template: `
           <div data-testid="scroller">
             <button>Open</button>
           </div>
-          <PopoverOverlay ref="popover">Popover content</PopoverOverlay>
+          <ImperativePopover ref="popover">Popover content</ImperativePopover>
         `
       })
     )

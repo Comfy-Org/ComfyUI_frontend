@@ -44,10 +44,7 @@ function setOpen(value: boolean) {
 }
 
 function show(event: Event) {
-  anchor.value = getMenuAnchor(event, {
-    target: 'current-or-event',
-    verticalEdge: 'top'
-  })
+  anchor.value = getMenuAnchor(event, 'context')
   if (!visible.value) {
     setOpen(true)
     return

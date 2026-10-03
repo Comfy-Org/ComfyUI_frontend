@@ -90,6 +90,15 @@ describe('TopbarBadge', () => {
       const trigger = screen.getByRole('button', { name: 'Comfy Cloud' })
       expect(trigger).toHaveAccessibleName('Comfy Cloud')
     })
+
+    it('renders a fallback dot when its label is contained in the text', () => {
+      renderTopbarBadge(
+        { text: 'Preview Environment', label: 'PREVIEW', icon: undefined },
+        'compact'
+      )
+
+      expect(screen.getByTestId('badge-dot')).toBeInTheDocument()
+    })
   })
 
   describe('icon-only display mode', () => {

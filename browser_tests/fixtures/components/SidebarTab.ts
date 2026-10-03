@@ -1,6 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
+import type { ComfyMouse } from '@e2e/fixtures/ComfyMouse'
 import type { WorkspaceStore } from '@e2e/types/globals'
 import { TestIds } from '@e2e/fixtures/selectors'
 
@@ -9,6 +10,7 @@ export class SidebarTab {
   public readonly selectedTabButton: Locator
   public readonly panelHeader: Locator
   public readonly closeButton: Locator
+  public readonly panel: Locator
 
   constructor(
     public readonly page: Page,
@@ -19,6 +21,7 @@ export class SidebarTab {
       page.locator('.side-bar-button-selected')
     )
     const panel = page.locator('.sidebar-content-container')
+    this.panel = page.getByRole('complementary')
     this.panelHeader = panel.locator('.comfy-vue-side-bar-header')
     this.closeButton = panel.getByTestId(TestIds.sidebar.closeButton)
   }
@@ -31,6 +34,24 @@ export class SidebarTab {
   }
   async close() {
     await this.tabButton.click()
+  }
+
+  async resize(comfyMouse: ComfyMouse, deltaX: number, startOffset = 0) {
+    const gutter = this.page.getByRole('separator').first()
+    await expect(gutter).toBeVisible()
+    const box = await gutter.boundingBox()
+    if (!box) throw new Error('Sidebar gutter has no bounding box')
+    const from = {
+      x: box.x + box.width / 2 + startOffset,
+      y: box.y + box.height / 2
+    }
+    await comfyMouse.dragAndDrop(
+      from,
+      { x: from.x + deltaX, y: from.y },
+      {
+        steps: 10
+      }
+    )
   }
 }
 

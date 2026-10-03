@@ -69,8 +69,8 @@ import Button from 'primevue/button'
 import { computed, onBeforeUnmount, onMounted, onUpdated, ref } from 'vue'
 
 import SubgraphBreadcrumbItem from '@/components/breadcrumb/SubgraphBreadcrumbItem.vue'
+import type { BreadcrumbItem } from '@/components/breadcrumb/SubgraphBreadcrumbItem.vue'
 import WorkflowActionsDropdown from '@/components/common/WorkflowActionsDropdown.vue'
-import type { MenuItem } from '@/components/ui/menu/types'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -116,28 +116,30 @@ const home = computed(() => ({
 }))
 
 const items = computed(() => {
-  const items = navigationStore.navigationStack.map<MenuItem>((subgraph) => ({
-    label: subgraph.name,
-    key: `subgraph-${subgraph.id}`,
-    command: () => {
-      useTelemetry()?.trackUiButtonClicked({
-        button_id: 'breadcrumb_subgraph_item_selected',
-        element_group: 'breadcrumb'
-      })
-      const canvas = canvasStore.getCanvas()
-      if (!canvas.graph) throw new TypeError('Canvas has no graph')
+  const items = navigationStore.navigationStack.map<BreadcrumbItem>(
+    (subgraph) => ({
+      label: subgraph.name,
+      key: `subgraph-${subgraph.id}`,
+      command: () => {
+        useTelemetry()?.trackUiButtonClicked({
+          button_id: 'breadcrumb_subgraph_item_selected',
+          element_group: 'breadcrumb'
+        })
+        const canvas = canvasStore.getCanvas()
+        if (!canvas.graph) throw new TypeError('Canvas has no graph')
 
-      canvas.setGraph(subgraph)
-    },
-    updateTitle: (title: string) => {
-      const rootGraph = canvasStore.getCanvas().graph?.rootGraph
-      if (!rootGraph) return
+        canvas.setGraph(subgraph)
+      },
+      updateTitle: (title: string) => {
+        const rootGraph = canvasStore.getCanvas().graph?.rootGraph
+        if (!rootGraph) return
 
-      forEachSubgraphNode(rootGraph, subgraph.id, (node) => {
-        node.title = title
-      })
-    }
-  }))
+        forEachSubgraphNode(rootGraph, subgraph.id, (node) => {
+          node.title = title
+        })
+      }
+    })
+  )
 
   return [home.value, ...items]
 })

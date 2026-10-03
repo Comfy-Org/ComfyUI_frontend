@@ -301,6 +301,15 @@ test.describe('Workflow tabs', () => {
       await expect(scrollRight).toBeEnabled()
       await scrollLeft.dispatchEvent('mouseup')
       await expect.poll(() => topbar.getActiveTabName()).toBe(activeTabName)
+
+      await test.step('Keyboard overflow menu opens below its trigger', async () => {
+        await topbar.openWorkflowOverflowMenu()
+        await expect(async () => {
+          const gap = await topbar.getWorkflowOverflowMenuGap()
+          expect(gap).toBeGreaterThanOrEqual(0)
+          expect(gap).toBeLessThan(10)
+        }).toPass({ timeout: 5000 })
+      })
     }
   )
 

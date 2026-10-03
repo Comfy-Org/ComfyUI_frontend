@@ -8,13 +8,14 @@
     :data-testid="`subgraph-breadcrumb-item-${item.key}`"
     :data-active="isActive ? '' : undefined"
     draggable="false"
-    class="p-breadcrumb-item-link flex h-8 cursor-pointer items-center overflow-hidden px-2 select-none"
-    :class="{
-      'gap-1': isActive,
-      'p-breadcrumb-item-link-menu-visible': menu?.visible,
-      'p-breadcrumb-item-link-icon-visible': isActive,
-      'text-text-primary': isActive
-    }"
+    :class="
+      cn(
+        'p-breadcrumb-item-link flex h-8 cursor-pointer items-center overflow-hidden px-2 select-none',
+        isActive &&
+          'p-breadcrumb-item-link-icon-visible gap-1 text-text-primary',
+        menu?.visible && 'p-breadcrumb-item-link-menu-visible'
+      )
+    "
     @click="handleClick"
   >
     <i
@@ -54,13 +55,14 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Badge from '@/components/ui/badge/Badge.vue'
 import Input from '@/components/ui/input/Input.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
-import type { MenuItem } from '@/components/ui/menu/types'
+import type { MenuItemAction } from '@/components/ui/menu/types'
 import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
@@ -76,8 +78,13 @@ import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { ensureWorkflowSuffix, getWorkflowSuffix } from '@/utils/formatUtil'
 import { graphHasMissingNodes } from '@/workbench/extensions/manager/utils/graphHasMissingNodes'
 
+export interface BreadcrumbItem extends MenuItemAction {
+  isBlueprint?: boolean
+  updateTitle?: (title: string) => void
+}
+
 interface Props {
-  item: MenuItem
+  item: BreadcrumbItem
   isActive?: boolean
 }
 

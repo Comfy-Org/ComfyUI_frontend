@@ -65,8 +65,7 @@ export function useTreeFolderOperations<T>(
       command: () => {
         if (targetNode) addFolderCommand(targetNode)
       },
-      visible: !!targetNode && !targetNode.leaf && !!targetNode.handleAddFolder,
-      isAsync: false
+      visible: !!targetNode && !targetNode.leaf && !!targetNode.handleAddFolder
     }
   }
 

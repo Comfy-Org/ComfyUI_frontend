@@ -58,6 +58,77 @@ describe('Menu', () => {
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
   })
 
+  it('resolves class getters on actions and submenu triggers', async () => {
+    render(
+      defineComponent({
+        components: { Menu },
+        setup() {
+          const menu = ref<InstanceType<typeof Menu>>()
+          return { menu }
+        },
+        template: `
+          <button @click="menu?.show($event)">Open</button>
+          <Menu
+            ref="menu"
+            :model="[
+              { label: 'Action', class: () => 'action-class' },
+              {
+                label: 'Submenu',
+                class: () => 'submenu-class',
+                items: [{ label: 'Child' }]
+              }
+            ]"
+          />
+        `
+      })
+    )
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+
+    await user.click(screen.getByRole('button', { name: 'Open' }))
+
+    expect(await screen.findByRole('menuitem', { name: 'Action' })).toHaveClass(
+      'action-class'
+    )
+    expect(screen.getByRole('menuitem', { name: 'Submenu' })).toHaveClass(
+      'submenu-class'
+    )
+  })
+
+  it('updates checked state and shortcut getters without dismissing the menu', async () => {
+    const checked = ref(false)
+    const shortcut = ref('Ctrl+G')
+    render(
+      defineComponent({
+        components: { Menu },
+        setup() {
+          const menu = ref<InstanceType<typeof Menu>>()
+          return { menu, checked, shortcut }
+        },
+        template: `
+          <button @click="menu?.show($event)">Open</button>
+          <Menu ref="menu" :model="[{
+            label: 'Grid',
+            checked: () => checked,
+            shortcut: () => shortcut,
+            command: () => { checked = !checked }
+          }]" />
+        `
+      })
+    )
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    await user.click(screen.getByRole('button', { name: 'Open' }))
+    const item = await screen.findByRole('menuitemcheckbox', { name: 'Grid' })
+    expect(item).not.toBeChecked()
+    expect(item).toHaveTextContent('Ctrl+G')
+
+    await user.click(item)
+    shortcut.value = 'Alt+G'
+
+    await waitFor(() => expect(item).toBeChecked())
+    expect(item).toBeVisible()
+    expect(item).toHaveTextContent('Alt+G')
+  })
+
   it('reopens when internal state outlives rendered content', async () => {
     render(
       defineComponent({

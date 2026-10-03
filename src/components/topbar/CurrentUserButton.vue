@@ -58,7 +58,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import Popover from '@/components/ui/popover/PopoverOverlay.vue'
+import Popover from '@/components/common/ImperativePopover.vue'
 import Skeleton from 'primevue/skeleton'
 import { computed, defineAsyncComponent, ref } from 'vue'
 

@@ -46,6 +46,7 @@ const focusTarget = ref<HTMLElement>()
 const anchorRect = ref({ left: 0, top: 0, width: 0, height: 0 })
 const content = ref<InstanceType<typeof PopoverContent>>()
 const contentStyle = useModalLiftedZIndex(open)
+const returnFocusOnClose = ref(false)
 let showRequest = 0
 
 function setOpen(value: boolean) {
@@ -62,16 +63,18 @@ function show(event: Event, target?: EventTarget | null) {
       : event.target
   const eventTarget = target ?? sourceTarget
   if (!(eventTarget instanceof HTMLElement)) return
-  focusTarget.value = [
+  const openedByHover = [
     'mouseenter',
     'mouseover',
     'pointerenter',
     'pointerover'
   ].includes(event.type)
+  focusTarget.value = openedByHover
     ? undefined
     : sourceTarget instanceof HTMLElement
       ? sourceTarget
       : eventTarget
+  returnFocusOnClose.value = !openedByHover
   anchor.value = eventTarget
   const rect = eventTarget.getBoundingClientRect()
   anchorRect.value = {
@@ -88,6 +91,7 @@ function show(event: Event, target?: EventTarget | null) {
 
 function hide() {
   showRequest++
+  returnFocusOnClose.value = Boolean(focusTarget.value)
   setOpen(false)
 }
 
@@ -121,12 +125,18 @@ function onInteractOutside(event: FocusOutsideEvent | PointerDownOutsideEvent) {
     (target instanceof Node && anchor.value?.contains(target))
   ) {
     event.preventDefault()
+  } else {
+    returnFocusOnClose.value = false
   }
+}
+
+function onOpenAutoFocus(event: Event) {
+  if (!focusTarget.value) event.preventDefault()
 }
 
 function onCloseAutoFocus(event: Event) {
   event.preventDefault()
-  focusTarget.value?.focus()
+  if (returnFocusOnClose.value) focusTarget.value?.focus()
 }
 
 defineExpose({ show, hide, toggle, container: content, open })
@@ -165,6 +175,7 @@ defineExpose({ show, hide, toggle, container: content, open })
           )
         "
         @escape-key-down="!closeOnEscape && $event.preventDefault()"
+        @open-auto-focus="onOpenAutoFocus"
         @close-auto-focus="onCloseAutoFocus"
         @interact-outside="onInteractOutside"
       >

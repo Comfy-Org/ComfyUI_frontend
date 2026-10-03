@@ -37,10 +37,7 @@ const visible = open
 const contentStyle = useModalLiftedZIndex(open)
 
 function show(event: Event) {
-  anchor.value = getMenuAnchor(event, {
-    target: 'current',
-    verticalEdge: 'bottom'
-  })
+  anchor.value = getMenuAnchor(event, 'dropdown')
   window.clearTimeout(showTimer.value)
   open.value = false
   const request = ++showRequest.value

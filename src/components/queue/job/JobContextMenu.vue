@@ -39,7 +39,7 @@
 </template>
 
 <script setup lang="ts">
-import Popover from '@/components/ui/popover/PopoverOverlay.vue'
+import Popover from '@/components/common/ImperativePopover.vue'
 import { nextTick, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'

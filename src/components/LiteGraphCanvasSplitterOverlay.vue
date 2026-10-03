@@ -24,7 +24,6 @@
           <SplitterGroup
             :key="splitterRefreshKey"
             class="pointer-events-none border-none bg-transparent"
-            @pointerdown.capture="onResizeStart"
             @keydown.capture="onResizeStart"
             @keyup="onResizeEnd"
             @layout="saveMainSplitterLayout"
@@ -71,7 +70,7 @@
                   sidebarLocation === 'left' && 'bg-interface-stroke/50'
                 )
               "
-              @dragging="(dragging) => !dragging && onResizeEnd()"
+              @dragging="onResizeDragging($event, 'first-side-panel')"
             />
 
             <SplitterPanel
@@ -143,7 +142,7 @@
                   sidebarLocation === 'right' && 'bg-interface-stroke/50'
                 )
               "
-              @dragging="(dragging) => !dragging && onResizeEnd()"
+              @dragging="onResizeDragging($event, 'last-side-panel')"
             />
             <SplitterPanel
               v-if="lastPanelShown"
@@ -198,12 +197,8 @@ import { useI18n } from 'vue-i18n'
 import SplitterGroup from '@/components/ui/splitter/SplitterGroup.vue'
 import SplitterPanel from '@/components/ui/splitter/SplitterPanel.vue'
 import SplitterResizeHandle from '@/components/ui/splitter/SplitterResizeHandle.vue'
-import {
-  loadSplitterSizes,
-  saveSplitterSizes
-} from '@/components/ui/splitter/persistence'
-import { usePanelSizing } from '@/components/ui/splitter/usePanelSizing'
 import { useAppMode } from '@/composables/useAppMode'
+import { usePanelSizing } from '@/composables/usePanelSizing'
 import {
   BUILDER_MIN_SIZE,
   CENTER_PANEL_MIN_WIDTH,
@@ -219,6 +214,10 @@ import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import {
+  loadSplitterSizes,
+  saveSplitterSizes
+} from '@/utils/splitterPersistence'
 import { savedPanelPercent } from '@/utils/splitterWidthUtil'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
@@ -401,6 +400,7 @@ const {
   layoutKey,
   panelRefs,
   onResizeStart,
+  onResizeDragging,
   onResizeEnd
 } = usePanelSizing(
   [

@@ -39,7 +39,7 @@
         v-bind="props.action"
         :href="item.url"
         target="_blank"
-        :class="typeof item.class === 'function' ? item.class() : item.class"
+        :class="toValue(item.class)"
         @mousedown="handleZoomMouseDown(item, $event)"
         @click="handleItemClick(item, $event)"
       >
@@ -47,26 +47,31 @@
           v-if="hasActiveStateSiblings(item)"
           data-testid="menu-item-indicator"
           class="icon-[lucide--check] size-4"
-          :class="{ invisible: !item.comfyCommand?.active?.() }"
+          :class="{ invisible: !toValue(item.checked) }"
         />
         <span
           v-else-if="
-            item.icon && item.comfyCommand?.id !== 'Comfy.NewBlankWorkflow'
+            item.icon &&
+            (!isCommandMenuItem(item) ||
+              item.commandId !== 'Comfy.NewBlankWorkflow')
           "
           class="size-4"
           :class="item.icon"
         />
         <span class="text-nowrap">{{ item.label }}</span>
         <i
-          v-if="item.comfyCommand?.id === 'Comfy.NewBlankWorkflow'"
+          v-if="
+            isCommandMenuItem(item) &&
+            item.commandId === 'Comfy.NewBlankWorkflow'
+          "
           class="ml-auto"
           :class="item.icon"
         />
         <span
-          v-if="item?.comfyCommand?.keybinding"
+          v-if="toValue(item.shortcut)"
           class="ml-auto rounded-sm border border-border-default bg-interface-menu-component-surface-hovered p-1 text-xs text-nowrap text-muted"
         >
-          {{ item.comfyCommand.keybinding.combo.toString() }}
+          {{ toValue(item.shortcut) }}
         </span>
         <i
           v-if="item.items"
@@ -92,7 +97,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, toValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -109,6 +114,7 @@ import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useCommandStore } from '@/stores/commandStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
+import type { AppMenuItem, CommandMenuItem } from '@/stores/menuItemStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { whileMouseDown } from '@/utils/mouseDownUtil'
@@ -140,7 +146,7 @@ function onLogoMenuClick(event: MouseEvent) {
   menuRef.value?.toggle(event)
 }
 
-const translateMenuItem = (item: MenuItem): MenuItem => {
+const translateMenuItem = (item: AppMenuItem): AppMenuItem => {
   const label = typeof item.label === 'function' ? item.label() : item.label
   const translatedLabel = label
     ? t(`menuLabels.${normalizeI18nKey(label)}`, label)
@@ -167,13 +173,12 @@ const showManageExtensions = async () => {
 }
 
 const themeMenuItems = computed(() => {
-  return colorPaletteStore.palettes.map((palette) => ({
+  return colorPaletteStore.palettes.map<CommandMenuItem>((palette) => ({
     key: `theme-${palette.id}`,
     label: palette.name,
     parentPath: 'theme',
-    comfyCommand: {
-      active: () => colorPaletteStore.activePaletteId === palette.id
-    },
+    commandId: `theme-${palette.id}`,
+    checked: () => colorPaletteStore.activePaletteId === palette.id,
     command: async () => {
       await colorPaletteService.loadColorPalette(palette.id)
     }
@@ -222,7 +227,7 @@ const extraMenuItems = computed<MenuItem[]>(() => [
 
 const menuSeparator: MenuItem = { separator: true }
 
-const translatedItems = computed<MenuItem[]>(() => {
+const translatedItems = computed<AppMenuItem[]>(() => {
   const items = menuItemStore.menuItems.map(translateMenuItem)
   let helpIndex = items.findIndex((item) => item.key === 'Help')
   let helpItem: MenuItem | undefined
@@ -249,16 +254,20 @@ const translatedItems = computed<MenuItem[]>(() => {
   return items
 })
 
+const isCommandMenuItem = (item: MenuItem): item is CommandMenuItem =>
+  'commandId' in item
+
 const isZoomCommand = (item: MenuItem) => {
   return (
-    item.comfyCommand?.id === 'Comfy.Canvas.ZoomIn' ||
-    item.comfyCommand?.id === 'Comfy.Canvas.ZoomOut'
+    isCommandMenuItem(item) &&
+    (item.commandId === 'Comfy.Canvas.ZoomIn' ||
+      item.commandId === 'Comfy.Canvas.ZoomOut')
   )
 }
 
 const handleZoomMouseDown = (item: MenuItem, event: MouseEvent) => {
   if (!isZoomCommand(item)) return
-  const commandId = item.comfyCommand?.id
+  const commandId = isCommandMenuItem(item) ? item.commandId : undefined
   if (commandId) {
     whileMouseDown(
       event,
@@ -272,10 +281,10 @@ const handleZoomMouseDown = (item: MenuItem, event: MouseEvent) => {
 
 const handleItemClick = (item: MenuItem, event: MouseEvent) => {
   // Prevent the menu from closing for zoom commands or commands that have active state
-  if (isZoomCommand(item) || item.comfyCommand?.active) {
+  if (isZoomCommand(item) || item.checked !== undefined) {
     event.preventDefault()
     event.stopPropagation()
-    if (item.comfyCommand?.active) {
+    if (item.checked !== undefined) {
       item.command?.({
         item,
         originalEvent: event
@@ -288,6 +297,7 @@ const handleItemClick = (item: MenuItem, event: MouseEvent) => {
 const hasActiveStateSiblings = (item: MenuItem): boolean => {
   // Check if this item has siblings with active state (either from store or theme items)
   return Boolean(
+    isCommandMenuItem(item) &&
     item.parentPath &&
     (item.parentPath === 'theme' ||
       menuItemStore.menuItemHasActiveStateChildren[item.parentPath])
