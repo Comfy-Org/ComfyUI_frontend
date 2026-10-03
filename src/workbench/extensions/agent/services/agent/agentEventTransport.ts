@@ -89,8 +89,8 @@ export interface AgentEventTransport {
   dispose: () => void
 }
 
-function updateSkill(part: ToolPart, skill: string | undefined): void {
-  if (skill !== undefined) part.skill = skill
+function updateSkill(part: ToolPart, skill: string | null | undefined): void {
+  if (skill) part.skill = skill
 }
 
 export function createAgentEventTransport(
