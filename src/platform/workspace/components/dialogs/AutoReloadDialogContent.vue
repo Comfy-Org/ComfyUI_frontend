@@ -164,6 +164,7 @@ import {
   useAutoReload
 } from '@/platform/workspace/composables/useAutoReload'
 import AutoReloadAmountField from '@/platform/workspace/components/dialogs/AutoReloadAmountField.vue'
+import { parseAmountInput } from '@/platform/workspace/components/dialogs/autoReloadNumberInput'
 import { useAutoReloadAccess } from '@/platform/workspace/composables/useAutoReloadAccess'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -200,53 +201,6 @@ function fmtUsd(cents: number) {
   })
 }
 
-function normalizeLocaleDigits(raw: string) {
-  let normalized = raw
-  const digitFormat = new Intl.NumberFormat(locale.value, {
-    useGrouping: false
-  })
-  for (let digit = 0; digit <= 9; digit++) {
-    normalized = normalized.split(digitFormat.format(digit)).join(String(digit))
-  }
-  return normalized
-}
-
-function parseWholeNumber(raw: string) {
-  const trimmed = raw.trim()
-  if (trimmed === '') return { value: 0, invalid: false }
-
-  const numberFormat = new Intl.NumberFormat(locale.value, {
-    maximumFractionDigits: 0
-  })
-  const group = numberFormat
-    .formatToParts(12_345)
-    .find((part) => part.type === 'group')?.value
-  const localized = normalizeLocaleDigits(trimmed)
-  const ungrouped = group ? localized.split(group).join('') : localized
-
-  if (!/^\d+$/.test(ungrouped)) return { value: 0, invalid: true }
-
-  const value = Number(ungrouped)
-  if (!Number.isSafeInteger(value)) return { value: 0, invalid: true }
-
-  if (group && localized.includes(group)) {
-    const canonicalGrouped = normalizeLocaleDigits(numberFormat.format(value))
-    if (canonicalGrouped !== localized) return { value: 0, invalid: true }
-  }
-
-  return { value, invalid: false }
-}
-
-function normalizeInput(raw: string, convert: (value: number) => number) {
-  const parsed = parseWholeNumber(raw)
-  if (parsed.invalid) return parsed
-
-  const value = convert(parsed.value)
-  return Number.isSafeInteger(value) && value >= 0
-    ? { value, invalid: false }
-    : { value: 0, invalid: true }
-}
-
 const thresholdModel = ref(
   thresholdCredits.value === 0 ? '' : fmtInt(thresholdCredits.value)
 )
@@ -266,14 +220,18 @@ function inputValue(event: Event) {
 
 function onThresholdInput(event: Event) {
   thresholdModel.value = inputValue(event)
-  const parsed = normalizeInput(thresholdModel.value, (value) => value)
+  const parsed = parseAmountInput(
+    thresholdModel.value,
+    locale.value,
+    (value) => value
+  )
   thresholdCredits.value = parsed.value
   thresholdInputInvalid.value = parsed.invalid
 }
 
 function onReloadInput(event: Event) {
   reloadModel.value = inputValue(event)
-  const parsed = normalizeInput(reloadModel.value, (value) =>
+  const parsed = parseAmountInput(reloadModel.value, locale.value, (value) =>
     unit.value === 'credits' ? value : usdToCredits(value)
   )
   reloadCredits.value = parsed.value
@@ -282,7 +240,7 @@ function onReloadInput(event: Event) {
 
 function onBudgetInput(event: Event) {
   budgetModel.value = inputValue(event)
-  const parsed = normalizeInput(budgetModel.value, (value) =>
+  const parsed = parseAmountInput(budgetModel.value, locale.value, (value) =>
     unit.value === 'credits' ? creditsToCents(value) : usdToCents(value)
   )
   budgetCents.value = parsed.value

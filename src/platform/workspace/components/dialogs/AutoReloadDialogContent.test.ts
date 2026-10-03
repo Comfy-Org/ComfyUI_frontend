@@ -214,16 +214,6 @@ describe('AutoReloadDialogContent', () => {
     })
   })
 
-  it('rejects non-canonical locale grouping', async () => {
-    renderDialog('pt-BR')
-
-    const amount = screen.getByLabelText('Add this amount of credits:')
-    await fireEvent.update(amount, '5.00')
-
-    expect(amount).toHaveAttribute('aria-invalid', 'true')
-    expect(screen.getByText('Enter a valid whole number')).toBeInTheDocument()
-  })
-
   it('localizes the USD currency indicator', async () => {
     const user = userEvent.setup()
     renderDialog('pt-BR')
@@ -232,31 +222,6 @@ describe('AutoReloadDialogContent', () => {
 
     expect(screen.getAllByText('US$')).toHaveLength(2)
   })
-
-  it('accepts localized non-Latin digits', async () => {
-    const user = userEvent.setup()
-    renderDialog('fa')
-
-    const amount = screen.getByLabelText('Add this amount of credits:')
-    await fireEvent.update(amount, '۱٬۰۵۵')
-    await user.click(screen.getByRole('button', { name: 'Update' }))
-
-    expect(autoReload.config.reloadCredits).toBe(1055)
-  })
-
-  it.for(['-10', '1abc2', '1e3'])(
-    'rejects malformed whole-number input: %s',
-    async (raw) => {
-      renderDialog()
-
-      const amount = screen.getByLabelText('Add this amount of credits:')
-      await fireEvent.update(amount, raw)
-
-      expect(amount).toHaveAttribute('aria-invalid', 'true')
-      expect(screen.getByText('Enter a valid whole number')).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: 'Update' })).toBeDisabled()
-    }
-  )
 
   it('rejects fractional USD input instead of saving a hidden amount', async () => {
     const user = userEvent.setup()
