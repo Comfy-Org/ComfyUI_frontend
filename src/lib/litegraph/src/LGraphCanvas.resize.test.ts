@@ -56,4 +56,32 @@ describe('LGraphCanvas.resize', () => {
       1200
     ])
   })
+
+  it('keeps explicit dimensions in CSS pixels rather than letting the backing store size the layout', () => {
+    const { canvas } = createParentSizedCanvas()
+
+    canvas.resize(800, 600)
+
+    const { style, width, height } = canvas.canvas
+    expect([style.width, style.height, width, height]).toEqual([
+      '800px',
+      '600px',
+      1600,
+      1200
+    ])
+  })
+
+  it('recomputes the LOD threshold when a resize changes DPR', () => {
+    const { canvas } = createParentSizedCanvas()
+    vi.stubGlobal('devicePixelRatio', 1)
+    canvas.resize(800, 600)
+    canvas.ds.scale = 0.4
+    canvas.ds.computeVisibleArea(undefined)
+    expect(canvas.low_quality).toBe(true)
+
+    vi.stubGlobal('devicePixelRatio', 4)
+    canvas.resize(800, 600)
+
+    expect(canvas.low_quality).toBe(false)
+  })
 })
