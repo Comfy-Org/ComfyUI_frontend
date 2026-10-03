@@ -93,6 +93,14 @@ interface QueuePromptRequestBody {
   client_id: string
   prompt: ComfyApiWorkflow
   partial_execution_targets?: NodeExecutionId[]
+  /**
+   * Opaque key/values the server echoes on every JSON WebSocket message sent
+   * while this prompt runs. `workflow_id` is the only key the frontend relies
+   * on; the server never interprets the contents. Omitted when the workflow
+   * has no id, and capped by the server at 256 bytes.
+   */
+  workflow_metadata?: Record<string, string>
+
   extra_data: {
     extra_pnginfo: {
       workflow: ComfyWorkflowJSON
@@ -1305,6 +1313,7 @@ export class ComfyApi extends EventTarget {
       ...(options?.partialExecutionTargets && {
         partial_execution_targets: options.partialExecutionTargets
       }),
+      ...(workflow.id && { workflow_metadata: { workflow_id: workflow.id } }),
       extra_data: {
         auth_token_comfy_org: this.authToken,
         api_key_comfy_org: this.apiKey,
