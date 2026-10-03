@@ -3,11 +3,14 @@
  * own Pay, a revisit after the money settled, a bank capture that is still
  * settling, a refusal, a stale plan link and a checkout that could not load.
  */
+import type { BillingOpChargeBreakdown } from '@comfyorg/ingest-types'
 import type { Locator, Page } from '@playwright/test'
 
 import type { MockCloud } from './fixtures/cloud'
+import { PORTAL_URL } from './fixtures/env'
 import {
   capabilitiesWith,
+  challengeRequiredOperation,
   pendingOperation,
   succeededOperation
 } from './fixtures/scenario'
@@ -134,11 +137,44 @@ test('77-4068: a Pay that goes through counts the credits the server says it add
 
 const paidToday = (page: Page) => page.getByTestId('checkout-ending-paid-today')
 
-test('758-15763: a Pay under a promo code keeps the plan rate on Success and lists the code, then what was paid today', async ({
+function chargedWith(cloud: MockCloud, breakdown: BillingOpChargeBreakdown) {
+  cloud.scenario.operations.op_subscribe = {
+    ...succeededOperation('op_subscribe'),
+    amount_charged_cents: breakdown.amount_charged_cents,
+    credits_added: 10_000,
+    plan: RECEIPT_PLAN,
+    charge_breakdown: breakdown
+  }
+}
+
+const LAUNCH_PROMO = {
+  kind: 'promo_code',
+  amount_cents: 1000,
+  discount: {
+    kind: 'promotion',
+    code: 'LAUNCH20',
+    name: 'Launch 20%',
+    duration: 'once',
+    term: 'first_month'
+  }
+} as const
+
+const LAUNCH_PROMO_ON_A_CHANGE = {
+  ...LAUNCH_PROMO,
+  discount: { ...LAUNCH_PROMO.discount, term: 'this_payment' }
+} as const
+
+test('758-15763: a Pay under a promo code keeps the plan rate on Success and lists the reasons the server reported, then what was paid today', async ({
   page,
   cloud,
   signIn
 }) => {
+  chargedWith(cloud, {
+    amount_charged_cents: 3750,
+    currency: 'usd',
+    prorated: false,
+    reasons: [LAUNCH_PROMO, { kind: 'account_balance', amount_cents: 250 }]
+  })
   cloud.scenario.preview = {
     ...cloud.scenario.preview,
     amount_due_cents: 4000,
@@ -149,7 +185,8 @@ test('758-15763: a Pay under a promo code keeps the plan rate on Success and lis
         code: 'LAUNCH20',
         name: 'Launch 20%',
         amount_off_cents: 1000,
-        duration: 'once'
+        duration: 'once',
+        term: 'first_month'
       }
     ]
   }
@@ -160,15 +197,21 @@ test('758-15763: a Pay under a promo code keeps the plan rate on Success and lis
   const card = page.getByTestId('checkout-ending-plan')
   await expect(card).toContainText('$50.00')
   await expect(paidToday(page)).toHaveText(
-    /Launch 20%\s*−\$10\.00\s*First month\s*Paid today\s*\$40\.00/
+    /Launch 20%\s*−\$10\.00\s*First month\s*Account balance\s*−\$2\.50\s*Credit already on your account\s*Paid today\s*\$37\.50/
   )
 })
 
-test('a one-time code on a monthly plan change reads This payment only, on the summary and on Success', async ({
+test('a one-time code on a monthly plan change reads This payment only on the summary and on Success', async ({
   page,
   cloud,
   signIn
 }) => {
+  chargedWith(cloud, {
+    amount_charged_cents: 4000,
+    currency: 'usd',
+    prorated: false,
+    reasons: [LAUNCH_PROMO_ON_A_CHANGE]
+  })
   const preview = cloud.scenario.preview
   cloud.scenario.preview = {
     ...preview,
@@ -181,7 +224,8 @@ test('a one-time code on a monthly plan change reads This payment only, on the s
         code: 'LAUNCH20',
         name: 'Launch 20%',
         amount_off_cents: 1000,
-        duration: 'once'
+        duration: 'once',
+        term: 'this_payment'
       }
     ],
     current_plan: {
@@ -207,6 +251,12 @@ test('765-15713: a prorated upgrade reads Paid today and why, without itemizing 
   cloud,
   signIn
 }) => {
+  chargedWith(cloud, {
+    amount_charged_cents: 3250,
+    currency: 'usd',
+    prorated: true,
+    reasons: []
+  })
   const preview = cloud.scenario.preview
   cloud.scenario.preview = {
     ...preview,
@@ -230,6 +280,40 @@ test('765-15713: a prorated upgrade reads Paid today and why, without itemizing 
   await expect(heading(page, "You're all set")).toBeVisible()
   await expect(paidToday(page)).toHaveText(
     /^\s*Paid today\s*\$32\.50\s*Prorated for the rest of this billing period\s*$/
+  )
+})
+
+test('a payment settled after a return from the provider lists the reasons its operation reports', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.operations.op_subscribe = challengeRequiredOperation(
+    'op_subscribe',
+    'pi_e2e_secret'
+  )
+  await page.addInitScript((redirectTo) => {
+    Object.assign(window, {
+      __e2eStripeMethodType: 'alipay',
+      __e2eStripeRedirectTo: redirectTo
+    })
+  }, PORTAL_URL)
+  await signIn(CHECKOUT)
+  await payButton(page).click()
+  await expect(page).toHaveURL(PORTAL_URL)
+
+  chargedWith(cloud, {
+    amount_charged_cents: 4000,
+    currency: 'usd',
+    prorated: false,
+    reasons: [LAUNCH_PROMO]
+  })
+  settleOnServer(cloud)
+  await page.goBack()
+
+  await expect(heading(page, "You're all set")).toBeVisible()
+  await expect(paidToday(page)).toHaveText(
+    /Launch 20%\s*−\$10\.00\s*First month\s*Paid today\s*\$40\.00/
   )
 })
 

@@ -5,7 +5,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { AspectRatio } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import { translationsFor } from '../../../i18n/translations'
 import type { CinematicVideoCapabilities } from '../../../lib/workshop/cinematic-studio/video'
 import { resolutionLabel } from '../../../lib/workshop/cinematic-studio/video'
 import { framedStyle } from './aspect-style'
@@ -17,6 +17,7 @@ const { video, locale = 'en' } = defineProps<{
   video: CinematicVideoCapabilities
   locale?: Locale
 }>()
+const { t: tc } = translationsFor(locale)
 
 const aspect = defineModel<AspectRatio>('aspect', { required: true })
 const duration = defineModel<number | undefined>('duration')
@@ -45,14 +46,14 @@ const triggerClass =
 <template>
   <div
     role="group"
-    :aria-label="tc('cinematic.section.output', locale)"
+    :aria-label="tc('cinematic.section.output')"
     :class="cn('grid gap-2', video.audioField ? 'grid-cols-4' : 'grid-cols-3')"
   >
     <CinematicMenu
       v-if="aspectOptions.length"
       v-model="aspectValue"
       :options="aspectOptions"
-      :heading="tc('cinematic.video.aspect', locale)"
+      :heading="tc('cinematic.video.aspect')"
       side="bottom"
       tooltip
       :trigger-class
@@ -73,7 +74,7 @@ const triggerClass =
       v-if="resolutionOptions.length"
       v-model="resolutionValue"
       :options="resolutionOptions"
-      :heading="tc('cinematic.video.resolution', locale)"
+      :heading="tc('cinematic.video.resolution')"
       side="bottom"
       tooltip
       :trigger-class
@@ -91,7 +92,7 @@ const triggerClass =
       v-if="durationOptions.length"
       v-model="durationValue"
       :options="durationOptions"
-      :heading="tc('cinematic.video.duration', locale)"
+      :heading="tc('cinematic.video.duration')"
       side="bottom"
       tooltip
       :trigger-class
@@ -105,19 +106,18 @@ const triggerClass =
     </CinematicMenu>
     <CinematicTooltip
       v-if="video.audioField"
-      :heading="tc('cinematic.video.audio', locale)"
-      :text="`${tc('cinematic.video.audioHint', locale)} ${tc(
+      :heading="tc('cinematic.video.audio')"
+      :text="`${tc('cinematic.video.audioHint')} ${tc(
         durationOptions.length
           ? 'cinematic.video.oneClip'
-          : 'cinematic.video.modelDecides',
-        locale
+          : 'cinematic.video.modelDecides'
       )}`"
     >
       <button
         type="button"
         role="switch"
         :aria-checked="audio"
-        :aria-label="tc('cinematic.video.audio', locale)"
+        :aria-label="tc('cinematic.video.audio')"
         :class="
           cn(
             'flex items-center rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50',
@@ -137,10 +137,7 @@ const triggerClass =
         />
         <span class="text-xs font-semibold tracking-wide uppercase">
           {{
-            tc(
-              audio ? 'cinematic.video.audioOn' : 'cinematic.video.audioOff',
-              locale
-            )
+            tc(audio ? 'cinematic.video.audioOn' : 'cinematic.video.audioOff')
           }}
         </span>
       </button>

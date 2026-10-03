@@ -74,11 +74,13 @@ export type BillingPortalTargetTier = NonNullable<
 
 export class AuthStoreError extends Error {
   readonly status: number | undefined
+  readonly code: string | undefined
 
-  constructor(message: string, status?: number) {
+  constructor(message: string, status?: number, code?: string) {
     super(message)
     this.name = 'AuthStoreError'
     this.status = status
+    this.code = code
   }
 }
 
@@ -377,6 +379,7 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const getWorkspaceAuthHeader = async (): Promise<AuthHeader | null> => {
     if (flags.unifiedCloudAuthEnabled) {
+      if (await awaitUnifiedMint()) return null
       const token = useWorkspaceAuthStore().getUnifiedToken()
       return token ? { Authorization: `Bearer ${token}` } : null
     }
@@ -843,13 +846,14 @@ export const useAuthStore = defineStore('auth', () => {
     )
 
     if (!response.ok) {
-      const { message } = await parseErrorResponse(response)
+      const { message, code } = await parseErrorResponse(response)
       assertIdentityUnchanged(requestOwner)
       throw new AuthStoreError(
         t('toastMessages.failedToInitiateCreditPurchase', {
           error: message
         }),
-        response.status
+        response.status,
+        code
       )
     }
 
@@ -887,12 +891,14 @@ export const useAuthStore = defineStore('auth', () => {
     )
 
     if (!response.ok) {
-      const { message } = await parseErrorResponse(response)
+      const { message, code } = await parseErrorResponse(response)
       assertIdentityUnchanged(requestOwner)
       throw new AuthStoreError(
         t('toastMessages.failedToAccessBillingPortal', {
           error: message
-        })
+        }),
+        response.status,
+        code
       )
     }
 

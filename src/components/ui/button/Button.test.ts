@@ -38,7 +38,7 @@ describe('Button', () => {
     const button = screen.getByRole('button', { name: 'Submit' })
     expect(button).toBeDisabled()
     expect(button).toHaveAttribute('aria-busy', 'true')
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue spinner icon has no accessible role
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue spinner icon has no accessible role
     expect(container.querySelector('.pi-spin')).toBeInTheDocument()
   })
 
@@ -71,7 +71,7 @@ describe('Button', () => {
       slots: { default: 'Link' }
     })
 
-    // eslint-disable-next-line testing-library/no-node-access -- root element tag is the contract under test
+    // oxlint-disable-next-line testing-library/no-node-access -- root element tag is the contract under test
     const root = container.firstElementChild
     expect(root?.tagName).toBe('A')
   })

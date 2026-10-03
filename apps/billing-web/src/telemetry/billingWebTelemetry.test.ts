@@ -4,6 +4,10 @@ import type { CaptureResult } from 'posthog-js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
+import type {
+  BillingTelemetryEvent,
+  CheckoutJourneyTelemetryEvent
+} from '@comfyorg/account-core/billing'
 import type { CloudTelemetryConfig } from '@comfyorg/account-core/firebase'
 
 import type { SessionIdentity } from '@/telemetry/billingWebTelemetry'
@@ -20,6 +24,20 @@ vi.mock(import('posthog-js'))
 const CONFIGURED: CloudTelemetryConfig = {
   posthogProjectToken: 'phc_project',
   posthogApiHost: 'https://t.comfy.org'
+}
+
+const STARTED: BillingTelemetryEvent = {
+  operation: 'operation',
+  stage: 'started',
+  outcome: 'pending',
+  operation_type: 'subscription'
+}
+
+const SUCCEEDED: BillingTelemetryEvent = {
+  operation: 'operation',
+  stage: 'succeeded',
+  outcome: 'success',
+  operation_type: 'subscription'
 }
 
 function deferredConfig() {
@@ -51,16 +69,28 @@ function fakeIdentityCookie(identifiedAs?: string) {
   })
 }
 
+/** PostHog's own flag load, which stamps `$feature/<flag>` on every later capture. */
+function fakeFlagLoad() {
+  const loaded: Array<() => void> = []
+  vi.mocked(posthog.onFeatureFlags).mockImplementation((callback) => {
+    loaded.push(() => callback([], {}))
+    return () => {}
+  })
+  return { finish: () => loaded.forEach((notify) => notify()) }
+}
+
+beforeEach(() => {
+  vi.mocked(posthog.onFeatureFlags).mockImplementation((callback) => {
+    callback([], {})
+    return () => {}
+  })
+})
+
 describe('trackBillingEvent', () => {
   it('reports nothing, and never throws, before any sink is running', () => {
     const telemetry = createBillingWebTelemetry()
 
-    expect(() =>
-      telemetry.trackBillingEvent('billing.operation.started', {
-        operation: 'operation',
-        stage: 'started'
-      })
-    ).not.toThrow()
+    expect(() => telemetry.trackBillingEvent(STARTED)).not.toThrow()
     expect(datadogRum.addAction).not.toHaveBeenCalled()
     expect(posthog.capture).not.toHaveBeenCalled()
   })
@@ -76,16 +106,19 @@ describe('trackBillingEvent', () => {
       identity: ref<SessionIdentity>({ kind: 'unknown' })
     })
 
-    telemetry.trackBillingEvent('billing.operation.started', {
-      operation: 'operation',
-      stage: 'started',
+    const claimingCloudApp = {
+      ...STARTED,
       billing_op_id: 'op_1',
       billing_surface: 'cloud_app'
-    })
+    }
+
+    telemetry.trackBillingEvent(claimingCloudApp)
 
     const stamped = {
       operation: 'operation',
       stage: 'started',
+      outcome: 'pending',
+      operation_type: 'subscription',
       billing_op_id: 'op_1',
       billing_surface: 'billing_web'
     }
@@ -99,6 +132,82 @@ describe('trackBillingEvent', () => {
     )
   })
 
+  it.for<{ event: BillingTelemetryEvent; name: string }>([
+    { event: STARTED, name: 'billing.operation.started' },
+    {
+      event: {
+        operation: 'topup',
+        stage: 'failed',
+        outcome: 'failure',
+        failure_category: 'network'
+      },
+      name: 'billing.topup.failed'
+    },
+    {
+      event: {
+        operation: 'capability_read',
+        stage: 'succeeded',
+        outcome: 'success'
+      },
+      name: 'billing.capability_read.succeeded'
+    }
+  ])(
+    'names the event after its operation and stage as $name',
+    async ({ event, name }) => {
+      const telemetry = createBillingWebTelemetry()
+      await telemetry.startPostHog({
+        config: Promise.resolve(CONFIGURED),
+        identity: ref<SessionIdentity>({ kind: 'unknown' })
+      })
+
+      telemetry.trackBillingEvent(event)
+
+      expect(posthog.capture).toHaveBeenCalledExactlyOnceWith(
+        name,
+        expect.objectContaining({ billing_surface: 'billing_web' })
+      )
+    }
+  )
+
+  it('reports only the fields the billing contract allowlists', async () => {
+    vi.mocked(datadogRum.getInitConfiguration).mockReturnValue({
+      clientToken: 'pub',
+      applicationId: 'app'
+    })
+    const telemetry = createBillingWebTelemetry()
+    await telemetry.startPostHog({
+      config: Promise.resolve(CONFIGURED),
+      identity: ref<SessionIdentity>({ kind: 'unknown' })
+    })
+
+    const carryingPrivateFields = {
+      ...STARTED,
+      billing_op_id: 'op_1',
+      email: 'ada@example.com',
+      client_secret: 'pi_1_secret_2',
+      return_url: 'https://billing.comfy.org/v1/result?promo=SPRING'
+    }
+
+    telemetry.trackBillingEvent(carryingPrivateFields)
+
+    const reported = {
+      operation: 'operation',
+      stage: 'started',
+      outcome: 'pending',
+      operation_type: 'subscription',
+      billing_op_id: 'op_1',
+      billing_surface: 'billing_web'
+    }
+    expect(datadogRum.addAction).toHaveBeenCalledWith(
+      'billing.operation.started',
+      reported
+    )
+    expect(posthog.capture).toHaveBeenCalledWith(
+      'billing.operation.started',
+      reported
+    )
+  })
+
   it('delivers an event tracked while PostHog loads once it is ready', async () => {
     const config = deferredConfig()
     const telemetry = createBillingWebTelemetry()
@@ -107,21 +216,14 @@ describe('trackBillingEvent', () => {
       identity: ref<SessionIdentity>({ kind: 'unknown' })
     })
 
-    telemetry.trackBillingEvent('billing.web_entry.opened', {
-      operation: 'web_entry',
-      stage: 'opened'
-    })
+    telemetry.trackBillingEvent(STARTED)
     expect(posthog.capture).not.toHaveBeenCalled()
     config.resolve(CONFIGURED)
     await started
 
     expect(posthog.capture).toHaveBeenCalledExactlyOnceWith(
-      'billing.web_entry.opened',
-      {
-        operation: 'web_entry',
-        stage: 'opened',
-        billing_surface: 'billing_web'
-      }
+      'billing.operation.started',
+      { ...STARTED, billing_surface: 'billing_web' }
     )
   })
 
@@ -133,10 +235,7 @@ describe('trackBillingEvent', () => {
       identity: ref<SessionIdentity>({ kind: 'unknown' })
     })
 
-    telemetry.trackBillingEvent('billing.web_entry.opened', {
-      operation: 'web_entry',
-      stage: 'opened'
-    })
+    telemetry.trackBillingEvent(STARTED)
     config.resolve({})
     await started
 
@@ -154,14 +253,8 @@ describe('trackBillingEvent', () => {
       identity: ref<SessionIdentity>({ kind: 'unknown' })
     })
 
-    telemetry.trackBillingEvent('billing.operation.started', {
-      operation: 'operation',
-      stage: 'started'
-    })
-    telemetry.trackBillingEvent('billing.operation.succeeded', {
-      operation: 'operation',
-      stage: 'succeeded'
-    })
+    telemetry.trackBillingEvent(STARTED)
+    telemetry.trackBillingEvent(SUCCEEDED)
 
     expect(vi.mocked(posthog.capture).mock.calls.map(([name]) => name)).toEqual(
       ['billing.operation.succeeded']
@@ -185,12 +278,7 @@ describe('trackBillingEvent', () => {
       identity: ref<SessionIdentity>({ kind: 'unknown' })
     })
 
-    expect(() =>
-      telemetry.trackBillingEvent('billing.operation.started', {
-        operation: 'operation',
-        stage: 'started'
-      })
-    ).not.toThrow()
+    expect(() => telemetry.trackBillingEvent(STARTED)).not.toThrow()
   })
 
   it('still sends the PostHog copy when RUM fails', async () => {
@@ -207,12 +295,136 @@ describe('trackBillingEvent', () => {
       identity: ref<SessionIdentity>({ kind: 'unknown' })
     })
 
-    telemetry.trackBillingEvent('billing.operation.started', {
-      operation: 'operation',
-      stage: 'started'
-    })
+    telemetry.trackBillingEvent(STARTED)
 
     expect(posthog.capture).toHaveBeenCalledOnce()
+  })
+})
+
+describe('trackCheckoutJourneyEvent', () => {
+  const ENTERED: CheckoutJourneyTelemetryEvent = {
+    phase: 'entered',
+    checkout_journey_id: 'journey-1',
+    checkout_entered_at: '2026-10-01T00:00:00.000Z',
+    assignment_status: 'unavailable',
+    entry_flow: 'unknown',
+    entry_source: 'agent_paywall',
+    payment_intent_source: 'agent_paywall',
+    ui_mode: 'full_page'
+  }
+
+  it('sends a journey phase under its wire name, stamped with the billing web surface and carrying only the journey payload', async () => {
+    vi.mocked(datadogRum.getInitConfiguration).mockReturnValue({
+      clientToken: 'pub',
+      applicationId: 'app'
+    })
+    const telemetry = createBillingWebTelemetry()
+    await telemetry.startPostHog({
+      config: Promise.resolve(CONFIGURED),
+      identity: ref<SessionIdentity>({ kind: 'unknown' })
+    })
+
+    const carryingPrivateFields = {
+      ...ENTERED,
+      email: 'ada@example.com',
+      billing_surface: 'cloud_app'
+    }
+
+    telemetry.trackCheckoutJourneyEvent(carryingPrivateFields)
+
+    const reported = {
+      schema_version: 1,
+      phase: 'entered',
+      checkout_journey_id: 'journey-1',
+      checkout_entered_at: '2026-10-01T00:00:00.000Z',
+      assignment_status: 'unavailable',
+      entry_flow: 'unknown',
+      entry_source: 'agent_paywall',
+      payment_intent_source: 'agent_paywall',
+      ui_mode: 'full_page',
+      billing_surface: 'billing_web'
+    }
+    expect(datadogRum.addAction).toHaveBeenCalledWith(
+      'billing.checkout.entered',
+      reported
+    )
+    expect(posthog.capture).toHaveBeenCalledWith(
+      'billing.checkout.entered',
+      reported
+    )
+  })
+
+  it('sends an abandoned checkout to PostHog by beacon, since the page is going away', async () => {
+    const telemetry = createBillingWebTelemetry()
+    await telemetry.startPostHog({
+      config: Promise.resolve(CONFIGURED),
+      identity: ref<SessionIdentity>({ kind: 'unknown' })
+    })
+
+    telemetry.trackCheckoutJourneyEvent({
+      ...ENTERED,
+      phase: 'abandoned',
+      last_phase: 'entered',
+      exit: 'page_exit'
+    })
+
+    expect(posthog.capture).toHaveBeenCalledExactlyOnceWith(
+      'billing.checkout.abandoned',
+      expect.objectContaining({ last_phase: 'entered', exit: 'page_exit' }),
+      { transport: 'sendBeacon' }
+    )
+  })
+
+  it('holds back the journey phases the backend switched off, and only those', async () => {
+    const telemetry = createBillingWebTelemetry()
+    await telemetry.startPostHog({
+      config: Promise.resolve({
+        ...CONFIGURED,
+        telemetryDisabledEvents: ['billing.checkout.entered']
+      }),
+      identity: ref<SessionIdentity>({ kind: 'unknown' })
+    })
+
+    telemetry.trackCheckoutJourneyEvent(ENTERED)
+    telemetry.trackCheckoutJourneyEvent({ ...ENTERED, phase: 'submitted' })
+
+    expect(vi.mocked(posthog.capture).mock.calls.map(([name]) => name)).toEqual(
+      ['billing.checkout.submitted']
+    )
+  })
+})
+
+describe('trackWebSessionEvent', () => {
+  it.for([
+    {
+      name: 'session_bootstrap',
+      properties: { outcome: 'restored', origin: 'https://billing.comfy.org' }
+    },
+    {
+      name: 'session_signed_out_remotely',
+      properties: { origin: 'https://billing.comfy.org' }
+    }
+  ] as const)('sends $name to RUM and PostHog as is', async (event) => {
+    vi.mocked(datadogRum.getInitConfiguration).mockReturnValue({
+      clientToken: 'pub',
+      applicationId: 'app'
+    })
+    const telemetry = createBillingWebTelemetry()
+    await telemetry.startPostHog({
+      config: Promise.resolve(CONFIGURED),
+      identity: ref<SessionIdentity>({ kind: 'unknown' })
+    })
+
+    telemetry.trackWebSessionEvent(event)
+
+    expect(datadogRum.addAction).toHaveBeenCalledExactlyOnceWith(
+      event.name,
+      event.properties
+    )
+    expect(posthog.capture).toHaveBeenCalledExactlyOnceWith(
+      event.name,
+      event.properties
+    )
   })
 })
 
@@ -325,6 +537,46 @@ describe('startPostHog', () => {
     })
   })
 
+  it('holds events until PostHog has loaded the flags, so each carries the rollout cohort', async () => {
+    const flags = fakeFlagLoad()
+    const telemetry = createBillingWebTelemetry()
+    const started = telemetry.startPostHog({
+      config: Promise.resolve(CONFIGURED),
+      identity: ref<SessionIdentity>({ kind: 'unknown' })
+    })
+
+    telemetry.trackBillingEvent(STARTED)
+    await vi.waitFor(() => expect(posthog.init).toHaveBeenCalled())
+    telemetry.trackBillingEvent(SUCCEEDED)
+    expect(posthog.capture).not.toHaveBeenCalled()
+
+    flags.finish()
+    await started
+
+    expect(vi.mocked(posthog.capture).mock.calls.map(([name]) => name)).toEqual(
+      ['billing.operation.started', 'billing.operation.succeeded']
+    )
+  })
+
+  it('still delivers, after a bounded wait, when the flags never load', async () => {
+    vi.useFakeTimers()
+    fakeFlagLoad()
+    const telemetry = createBillingWebTelemetry()
+    const started = telemetry.startPostHog({
+      config: Promise.resolve(CONFIGURED),
+      identity: ref<SessionIdentity>({ kind: 'unknown' })
+    })
+
+    telemetry.trackBillingEvent(STARTED)
+    await vi.runAllTimersAsync()
+    await started
+
+    expect(posthog.capture).toHaveBeenCalledExactlyOnceWith(
+      'billing.operation.started',
+      { ...STARTED, billing_surface: 'billing_web' }
+    )
+  })
+
   it('stays silent, without rejecting, when PostHog fails to start', async () => {
     vi.mocked(posthog.init).mockImplementation(() => {
       throw new Error('PostHog failed to load')
@@ -337,10 +589,7 @@ describe('startPostHog', () => {
         identity: ref<SessionIdentity>({ kind: 'unknown' })
       })
     ).resolves.toBeUndefined()
-    telemetry.trackBillingEvent('billing.operation.started', {
-      operation: 'operation',
-      stage: 'started'
-    })
+    telemetry.trackBillingEvent(STARTED)
 
     expect(posthog.capture).not.toHaveBeenCalled()
   })
@@ -617,10 +866,7 @@ describe('RUM user', () => {
 
     identity.value = { kind: 'signed_in', userId: 'user_1' }
     await nextTick()
-    telemetry.trackBillingEvent('billing.operation.started', {
-      operation: 'operation',
-      stage: 'started'
-    })
+    telemetry.trackBillingEvent(STARTED)
 
     expect(datadogRum.setUserProperty).not.toHaveBeenCalled()
     expect(datadogRum.setGlobalContext).not.toHaveBeenCalled()
@@ -628,11 +874,7 @@ describe('RUM user', () => {
     expect(datadogRum.setAccount).not.toHaveBeenCalled()
     expect(datadogRum.addAction).toHaveBeenCalledExactlyOnceWith(
       'billing.operation.started',
-      {
-        operation: 'operation',
-        stage: 'started',
-        billing_surface: 'billing_web'
-      }
+      { ...STARTED, billing_surface: 'billing_web' }
     )
   })
 
