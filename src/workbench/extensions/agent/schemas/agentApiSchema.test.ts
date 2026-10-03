@@ -8,7 +8,6 @@ import {
   zAgentError,
   zAgentMessage,
   zAgentMessages,
-  zPersistedToolCallSummary,
   zAgentTurnAccepted,
   zAgentWsEvent
 } from './agentApiSchema'
@@ -147,36 +146,6 @@ describe('agentApiSchema contract subtleties', () => {
 
     assert(parsed.type === 'agent_tool_call')
     expect(parsed.data.skill).toBe(`${'a'.repeat(255)}😀`)
-  })
-
-  it('keeps a whole transcript readable when one persisted skill is over-long', () => {
-    const parsed = zAgentMessages.parse([
-      {
-        id: 'row-1',
-        thread_id: 't1',
-        turn_id: 'turn-a',
-        seq: 1,
-        role: 'assistant',
-        status: 'complete',
-        content: {
-          text: 'Done',
-          tool_calls: [
-            {
-              id: 'audit-row-uuid-1',
-              tool_call_id: 'call-1',
-              tool_name: 'load_skill',
-              status: 'success',
-              skill: 'a'.repeat(300)
-            }
-          ]
-        }
-      }
-    ])
-
-    const toolCall = zPersistedToolCallSummary.parse(
-      parsed[0].content?.tool_calls?.[0]
-    )
-    expect(toolCall.skill).toBe('a'.repeat(256))
   })
 
   it('accepts agent_message_done with usage null (cancelled turn)', () => {

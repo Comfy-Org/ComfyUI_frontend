@@ -276,6 +276,29 @@ describe('normalizeAgentTranscript', () => {
     )
   })
 
+  it('clamps an over-long persisted skill while restoring the transcript', () => {
+    const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
+    message.content = {
+      tool_calls: [
+        {
+          id: 'audit-row-uuid-1',
+          tool_call_id: 'call-1',
+          tool_name: 'load_skill',
+          status: 'success',
+          skill: 'a'.repeat(300)
+        }
+      ]
+    }
+
+    const parsed = zAgentMessages.parse([message])
+
+    expect(normalizeAgentTranscript(parsed).messages[0].parts[0]).toMatchObject(
+      {
+        skill: 'a'.repeat(256)
+      }
+    )
+  })
+
   it('retains a persisted tool call with a null skill', () => {
     const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
     message.content = {
