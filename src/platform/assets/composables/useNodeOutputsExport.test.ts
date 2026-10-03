@@ -222,7 +222,6 @@ describe('useNodeOutputsExport', () => {
     await vi.waitFor(() => {
       expect(reportError).toHaveBeenCalledWith(failure, {
         errorType: 'error_exporting_assets',
-        surface: 'assets',
         context: { count: 2 }
       })
     })

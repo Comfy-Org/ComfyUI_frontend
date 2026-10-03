@@ -30,7 +30,6 @@ export function useAssetZipExport() {
     } catch (error) {
       reportError(error, {
         errorType: 'error_exporting_assets',
-        surface: 'assets',
         context: { count: fileCount }
       })
       toast.add({
