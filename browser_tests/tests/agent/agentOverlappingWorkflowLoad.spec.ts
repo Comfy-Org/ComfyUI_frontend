@@ -4,20 +4,6 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 
 import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 
-/**
- * Regression for https://github.com/Comfy-Org/ComfyUI_frontend/issues/19971:
- * "Reject a superseded graph load before its first destructive store/canvas
- * mutation" and "Re-check graph-load ownership after awaited lifecycle hooks".
- *
- * `loadGraphData` awaits `beforeLoadGraph` and then immediately clears the
- * canvas and the resource stores, but it did not compare its own load id with
- * the committed one until well after that. So when two loads overlap — the
- * user switching workflows faster than the first load resolves, or any
- * extension holding `beforeLoadGraph` open — the older load woke up, erased
- * the graph the newer load had already committed, and only then reported
- * itself superseded. The canvas was left holding the workflow the user had
- * navigated away from, or nothing at all.
- */
 const STALL_EXTENSION = 'e2e.op329.stallBeforeLoadGraph'
 
 function noteWorkflow(title: string): ComfyWorkflowJSON {
@@ -46,6 +32,7 @@ function noteWorkflow(title: string): ComfyWorkflowJSON {
   }
 }
 
+// Regression for https://github.com/Comfy-Org/ComfyUI_frontend/issues/19971
 test.describe(
   'Overlapping workflow loads',
   { tag: ['@cloud', '@agent', '@vue-nodes'] },
@@ -77,10 +64,8 @@ test.describe(
               }
             })
 
-            const olderLoad = window.app!.loadGraphData(older as never)
-            const newerLoad = window.app!.loadGraphData(newer as never)
-            // The newer load runs to completion and commits its graph while
-            // the older one is still parked inside `beforeLoadGraph`.
+            const olderLoad = window.app!.loadGraphData(older)
+            const newerLoad = window.app!.loadGraphData(newer)
             await newerLoad
             release()
             await olderLoad
@@ -102,13 +87,6 @@ test.describe(
       })
     })
 
-    /**
-     * The same defect in the sibling entry point. An API-JSON import awaits the
-     * same `beforeLoadGraph` hook and then runs the same destructive
-     * `setGraph()`/`clean()` pair, but took no part in the ownership sequence
-     * `loadGraphData` commits to — so it both erased a newer committed graph
-     * and could itself be erased by a load that was still suspended.
-     */
     test('the newer workflow survives a superseded API JSON import', async ({
       comfyPage,
       agentPanel
@@ -140,9 +118,7 @@ test.describe(
               apiPrompt,
               'superseded-api-prompt.json'
             )
-            // The workflow load commits while the import is parked inside
-            // `beforeLoadGraph`, before the import has touched the canvas.
-            await window.app!.loadGraphData(newer as never)
+            await window.app!.loadGraphData(newer)
             release()
             await apiImport
           },

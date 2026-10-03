@@ -121,12 +121,6 @@ export class DragAndScale {
     visible_area.resizeBottomRight(endx, endy)
   }
 
-  /**
-   * Record the applied CSS viewport size. A non-positive size is not a usable
-   * viewport, so it clears the cache rather than being stored: every consumer
-   * rejects a zero rectangle, and the measurement fallbacks below can still
-   * find a real size.
-   */
   setViewportSize(width: number, height: number): void {
     this.viewportSize =
       width > 0 &&
@@ -137,15 +131,12 @@ export class DragAndScale {
         : undefined
   }
 
-  /** Discard the cached viewport size, e.g. because the element was replaced. */
   invalidateViewportSize(): void {
     this.viewportSize = undefined
   }
 
   getViewportSize(): [number, number] {
     const cached = this.viewportSize
-    // Return a copy: callers mutate the rectangles they are handed, and the
-    // cache is read by every hit test and framing operation.
     if (cached) return [cached[0], cached[1]]
 
     const rect = this.element.getBoundingClientRect()

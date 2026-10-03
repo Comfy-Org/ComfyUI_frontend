@@ -75,15 +75,10 @@ describe('LGraphCanvas.resize', () => {
     const { canvas } = createParentSizedCanvas()
     vi.stubGlobal('devicePixelRatio', 1)
     canvas.resize(800, 600)
-    // A zoom level below the DPR-1 readability threshold (8 / (14 * √1)).
     canvas.ds.scale = 0.4
     canvas.ds.computeVisibleArea(undefined)
     expect(canvas.low_quality).toBe(true)
 
-    // Moving to a high-DPR display raises readability, so the same zoom is
-    // now above the threshold (8 / (14 * √4)) and should render at full
-    // quality. The threshold derives from DPR, so applying one has to
-    // recompute it.
     vi.stubGlobal('devicePixelRatio', 4)
     canvas.resize(800, 600)
 

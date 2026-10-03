@@ -13,9 +13,6 @@ describe('DragAndScale viewport size cache', () => {
   })
 
   it('does not cache an unusable viewport size', () => {
-    // A hidden or not-yet-laid-out canvas measures 0x0. Caching that makes
-    // every later fit a silent no-op, because fitting rejects an empty
-    // rectangle — so fall back to measuring the element instead.
     const ds = new DragAndScale(
       createTestCanvasElement({ width: 800, height: 600 })
     )

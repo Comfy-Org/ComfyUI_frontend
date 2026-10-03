@@ -733,8 +733,6 @@ describe('ComfyApp', () => {
       releaseOlderLoad()
       await expect(olderLoad).resolves.toBeUndefined()
 
-      // Both of these erase the graph the newer load just committed, and the
-      // supersession check used to sit downstream of them.
       expect(setGraph).not.toHaveBeenCalled()
       expect(clean).not.toHaveBeenCalled()
     })
@@ -746,8 +744,6 @@ describe('ComfyApp', () => {
       const olderLoadBlocked = new Promise<void>((resolve) => {
         releaseOlderLoad = resolve
       })
-      // The older load commits, then suspends inside a lifecycle hook that
-      // runs after the point where its ownership was last checked.
       vi.when(mockExtensionService.invokeExtensionsAsync)
         .calledWith('afterConfigureGraph', expect.anything())
         .thenReturnOnce(olderLoadBlocked)
@@ -757,7 +753,6 @@ describe('ComfyApp', () => {
       releaseOlderLoad()
       await expect(olderLoad).resolves.toBeUndefined()
 
-      // Only the newer load may bind a workflow to the live graph.
       expect(mockWorkflowService.afterLoadNewGraph).toHaveBeenCalledOnce()
     })
 
@@ -778,21 +773,14 @@ describe('ComfyApp', () => {
         'runMissingMediaPipeline'
       ).mockResolvedValue(undefined)
 
-      // The older load owns the graph when it reaches its asset scan, and
-      // suspends there.
       const olderLoad = app.loadGraphData(createWorkflowGraphData(), false)
       await vi.waitFor(() => expect(releaseScan).toHaveLength(1))
-      // A newer load then commits and suspends on its own scan, so both are
-      // inside a suppression window at once.
       const newerLoad = app.loadGraphData(createWorkflowGraphData(), false)
       await vi.waitFor(() => expect(releaseScan).toHaveLength(2))
 
       releaseScan[0]()
       await olderLoad
 
-      // A single shared boolean let the superseded load's `finally` end the
-      // newer load's suppression window, un-gating change capture and error
-      // retirement while the newer load was still mid-flight.
       expect(ChangeTracker.isLoadingGraph).toBe(true)
 
       releaseScan[1]()
@@ -807,11 +795,6 @@ describe('ComfyApp', () => {
       onTestFinished(() => {
         ChangeTracker.isLoadingGraph = false
       })
-      // Asserted as a call rather than as retired state: `recordPromptError`
-      // does not persist a missing-node error while a suppression window is
-      // open, which is the only moment this test can seed one, so there is no
-      // error to watch survive. The mutation sweep is what keeps this honest
-      // — reverting the `!ChangeTracker.isLoadingGraph` guard turns it red.
       const retireErrors = vi.spyOn(
         useExecutionErrorStore(),
         'retireResolvedMissingNodePromptError'
@@ -834,19 +817,13 @@ describe('ComfyApp', () => {
       releaseScan[0]()
       await olderLoad
 
-      // The older load's scan results describe a graph that is no longer
-      // live, and the newer load owns the warnings surface and will post its
-      // own.
       expect(mockWorkflowService.showPendingWarnings).not.toHaveBeenCalled()
-      // Retiring here would clear errors the newer load is still mid-flight
-      // over, before it has had the chance to record its own.
       expect(retireErrors).not.toHaveBeenCalled()
 
       releaseScan[1]()
       await newerLoad
 
       expect(mockWorkflowService.showPendingWarnings).toHaveBeenCalledOnce()
-      // Once the last window closes, the catch-up runs exactly once.
       expect(retireErrors).toHaveBeenCalledOnce()
     })
 
@@ -865,15 +842,11 @@ describe('ComfyApp', () => {
       const olderLoadBlocked = new Promise<void>((resolve) => {
         releaseOlderLoad = resolve
       })
-      // The older load commits and clears the `afterConfigureGraph` gate,
-      // then suspends in the last hook before the asset pipelines.
       vi.when(mockExtensionService.invokeExtensionsAsync)
         .calledWith('afterLoadGraph')
         .thenReturnOnce(olderLoadBlocked)
 
       const olderLoad = app.loadGraphData(createWorkflowGraphData(), false)
-      // `thenReturnOnce` blocks whichever load reaches the hook first, so wait
-      // for the older one to get there before starting its replacement.
       await vi.waitFor(() =>
         expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
           'afterLoadGraph'
@@ -883,8 +856,6 @@ describe('ComfyApp', () => {
       releaseOlderLoad()
       await expect(olderLoad).resolves.toBeUndefined()
 
-      // Both pipelines scan `rootGraph` and report against the load's own
-      // workflow, so only the load that owns the live graph may run them.
       expect(runMissingModelPipeline).toHaveBeenCalledOnce()
     })
 
@@ -897,10 +868,6 @@ describe('ComfyApp', () => {
       const olderLoadBlocked = new Promise<void>((resolve) => {
         releaseOlderLoad = resolve
       })
-      // The gates at `beforeLoadGraph` and at `configure` are not adjacent:
-      // `validateWorkflow`, this hook and `nodeReplacementStore.load()` all
-      // await between them, so a load that owned the graph at the first gate
-      // can lose it before reaching the second.
       vi.when(mockExtensionService.invokeExtensionsAsync)
         .calledWith(
           'beforeConfigureGraph',
@@ -922,8 +889,6 @@ describe('ComfyApp', () => {
       releaseOlderLoad()
       await expect(olderLoad).resolves.toBeUndefined()
 
-      // Configuring here would overwrite the graph the newer load committed
-      // with this load's older workflow.
       expect(configure).not.toHaveBeenCalled()
     })
 
@@ -2950,8 +2915,6 @@ describe('ComfyApp', () => {
         .calledWith('beforeLoadGraph')
         .thenReturnOnce(importBlocked)
 
-      // The import suspends in the same `beforeLoadGraph` hook `loadGraphData`
-      // awaits, and then clears the graph just as destructively.
       const apiImport = app.loadApiJson({}, 'superseded.json')
       await app.loadGraphData(createWorkflowGraphData(), true)
       const survivor = markerNode()
@@ -2980,9 +2943,6 @@ describe('ComfyApp', () => {
         .calledWith('beforeLoadGraph')
         .thenReturnOnce(olderLoadBlocked)
 
-      // The other direction of the same hole: an import that commits while a
-      // workflow load is suspended is invisible to the load's ownership check,
-      // so the load resumes believing it still owns the graph.
       const olderLoad = app.loadGraphData(createWorkflowGraphData(), true)
       await app.loadApiJson({}, 'committed.json')
       const survivor = markerNode()
@@ -3007,8 +2967,6 @@ describe('ComfyApp', () => {
       const replacementsBlocked = new Promise<void>((resolve) => {
         releaseReplacements = resolve
       })
-      // The replacement manifest is fetched between this import's first
-      // ownership gate and the block that creates its nodes.
       vi.spyOn(useNodeReplacementStore(), 'load').mockReturnValueOnce(
         replacementsBlocked
       )
@@ -3037,8 +2995,6 @@ describe('ComfyApp', () => {
       const importBlocked = new Promise<void>((resolve) => {
         releaseImport = resolve
       })
-      // The import has already built its graph and claimed ownership, then
-      // suspends in the last hook before it binds a workflow.
       vi.when(mockExtensionService.invokeExtensionsAsync)
         .calledWith('afterConfigureGraph', expect.anything())
         .thenReturnOnce(importBlocked)
@@ -3055,8 +3011,6 @@ describe('ComfyApp', () => {
       releaseImport()
       await apiImport
 
-      // `afterLoadNewGraph` serializes the live graph into the workflow it is
-      // given, and the live graph is the newer load's.
       expect(mockWorkflowService.afterLoadNewGraph).not.toHaveBeenCalled()
     })
 
@@ -3090,9 +3044,6 @@ describe('ComfyApp', () => {
       releaseEmbeddings()
       await a1111Import
 
-      // The import's pre-clear hook clears this store in a `finally`, so an
-      // import that lost the graph during the embeddings fetch has to refuse
-      // before that hook starts, not only before the clear.
       expect(missingNodesStore.missingNodesError?.nodeTypes).toEqual([
         'NewerLoadMissingNode'
       ])
@@ -3109,8 +3060,6 @@ describe('ComfyApp', () => {
       const beforeLoadBlocked = new Promise<void>((resolve) => {
         releaseBeforeLoad = resolve
       })
-      // The import owns the graph when its hook starts and loses it part-way
-      // through, so the gate at the top of the hook cannot catch this one.
       vi.when(mockExtensionService.invokeExtensionsAsync)
         .calledWith('beforeLoadGraph')
         .thenReturnOnce(beforeLoadBlocked)
@@ -3240,8 +3189,6 @@ describe('ComfyApp', () => {
         }
       )
 
-      // The workflow load suspends first and so consumes the blocked hook; the
-      // import that follows it runs through and claims the graph.
       const olderLoad = app.loadGraphData(createWorkflowGraphData(), true)
       await app.handleFile(createTestFile('a1111.png', 'image/png'))
       vi.mocked(mockCanvas.setGraph).mockClear()
@@ -3264,8 +3211,6 @@ describe('ComfyApp', () => {
       const embeddingsBlocked = new Promise<void>((resolve) => {
         releaseEmbeddings = resolve
       })
-      // Mirrors the real `importA1111`: it awaits the embeddings endpoint, then
-      // the pre-clear hook, and only then clears the graph and builds into it.
       mockImportA1111.mockImplementation(
         async (importGraph, _parameters, beforeGraphClear) => {
           await embeddingsBlocked
@@ -3285,8 +3230,6 @@ describe('ComfyApp', () => {
       releaseEmbeddings()
       await a1111Import
 
-      // `graph.clear()` is unconditional once the hook resolves, so refusing
-      // inside the hook is the last point that leaves the newer graph intact.
       expect(graph.getNodeById(survivor.id)).toBe(survivor)
       expect(mockWorkflowService.afterLoadNewGraph).toHaveBeenCalledOnce()
     })

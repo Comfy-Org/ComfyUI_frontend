@@ -1047,11 +1047,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     return this._dpr
   }
 
-  /**
-   * Applying a new DPR changes the zoom level at which text stops being
-   * readable, so the LOD threshold is derived here rather than left for a
-   * caller to remember.
-   */
   set dpr(value: number) {
     if (this._dpr === value) return
     this._dpr = value
@@ -2211,7 +2206,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // maybe detach events from old_canvas
     this.canvas = element
     this.ds.element = element
-    // The cached CSS viewport describes the outgoing element, not this one.
     this.ds.invalidateViewportSize()
     this.pointer.element = element
 
@@ -6702,10 +6696,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       height = parent.offsetHeight
     }
 
-    // Explicit dimensions are CSS pixels, exactly as the parent fallback is.
-    // Without pinning them the backing store alone drives layout, so a
-    // `resize(800, 600)` at DPR 2 lays the canvas out at 1600x1200 while every
-    // viewport consumer believes it is 800x600.
     applyLogicalCanvasStyle(this.canvas, width ?? 0, height ?? 0)
 
     const viewport = measureViewport(

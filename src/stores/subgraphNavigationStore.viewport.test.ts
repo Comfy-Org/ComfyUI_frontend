@@ -224,24 +224,17 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
         mockGraph._nodes = []
       })
 
-      // First visit to A while hidden: no cached viewport, so a fit is queued.
       mockCanvas.subgraph = { id: 'sub-a' } as never
       store.restoreViewport('sub-a')
 
-      // Navigate away to an already-visited B. A cache hit applies the cached
-      // viewport and returns, leaving A's queued fit in the scheduler.
       store.viewportCache.set(':sub-b', { scale: 1, offset: [0, 0] })
       mockCanvas.subgraph = { id: 'sub-b' } as never
       store.restoreViewport('sub-b')
 
-      // Back to A, now cached too, so this is also a cache hit.
       mockCanvas.subgraph = { id: 'sub-a' } as never
       store.viewportCache.set(':sub-a', { scale: 3, offset: [11, 22] })
       store.restoreViewport('sub-a')
 
-      // The canvas becomes visible. The fit queued for A's first visit names
-      // the graph that is active again, so a graph-id-only ownership test
-      // makes it current and it clobbers the restore.
       setCanvasVisible(mockCanvas.canvas, true)
       useCanvasScheduler().flush()
 
