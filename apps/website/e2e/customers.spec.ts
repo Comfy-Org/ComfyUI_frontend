@@ -163,14 +163,17 @@ for (const width of [320, 390, 1440]) {
         page.getByRole('group', { name: t('customers.directory.formatLabel') }),
         page.getByRole('combobox', { name: t('customers.directory.sortLabel') })
       ]
-      for (const control of controls) {
-        const bounds = await control.evaluate((element) => {
-          const { left, right } = element.getBoundingClientRect()
-          return { left, right }
-        })
-        expect(bounds.left).toBeGreaterThanOrEqual(0)
-        expect(bounds.right).toBeLessThanOrEqual(width)
-      }
+      const bounds = await Promise.all(
+        controls.map((control) =>
+          control.evaluate((element) => {
+            const { left, right } = element.getBoundingClientRect()
+            return { left, right }
+          })
+        )
+      )
+      expect(
+        bounds.filter(({ left, right }) => left < 0 || right > width)
+      ).toEqual([])
 
       await page
         .getByRole('button', {
