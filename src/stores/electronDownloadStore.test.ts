@@ -112,6 +112,20 @@ describe('useElectronDownloadStore progress observation', () => {
     expect(store.inProgressDownloads).toHaveLength(1)
   })
 
+  it('keeps live progress that arrived before a delayed snapshot', async () => {
+    const snapshot = deferred<DownloadState[]>()
+    downloadManager.getAllDownloads.mockReturnValueOnce(snapshot.promise)
+    const store = useElectronDownloadStore()
+
+    // Live first, snapshot second: the snapshot describes an older moment and
+    // must not move the download backwards.
+    emitProgress(progressUpdate({ progress: 0.9 }))
+    snapshot.resolve([downloadState({ receivedBytes: 1 })])
+    await vi.waitFor(() => expect(store.downloads).toHaveLength(1))
+
+    expect(store.downloads[0]?.progress).toBe(0.9)
+  })
+
   it('installs the live listener before awaiting the restored snapshot', () => {
     downloadManager.getAllDownloads.mockReturnValueOnce(
       deferred<DownloadState[]>().promise

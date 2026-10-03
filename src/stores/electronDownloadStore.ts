@@ -55,33 +55,50 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
     for (const listener of progressListeners) listener(download)
   }
 
-  function installProgressListener() {
+  function applyProgress(data: ElectronDownload) {
+    if (!findByUrl(data.url)) {
+      downloads.value.push(data)
+    }
+
+    const download = findByUrl(data.url)
+
+    if (download) {
+      download.progress = data.progress
+      download.receivedBytes = undefined
+      download.totalBytes = undefined
+      download.status = data.status
+      download.filename = data.filename
+      download.savePath = data.savePath
+      notifyProgressListeners(download)
+    }
+  }
+
+  /** `defer` may hold an event back; returning true means it took ownership. */
+  function installProgressListener(
+    defer?: (download: ElectronDownload) => boolean
+  ) {
     if (!DownloadManager || isProgressListenerInstalled) return
 
     isProgressListenerInstalled = true
     DownloadManager.onDownloadProgress((data) => {
-      if (!findByUrl(data.url)) {
-        downloads.value.push(data)
-      }
-
-      const download = findByUrl(data.url)
-
-      if (download) {
-        download.progress = data.progress
-        download.receivedBytes = undefined
-        download.totalBytes = undefined
-        download.status = data.status
-        download.filename = data.filename
-        download.savePath = data.savePath
-        notifyProgressListeners(download)
-      }
+      if (defer?.(data)) return
+      applyProgress(data)
     })
   }
 
   const initialize = async () => {
     if (!isDesktop || !DownloadManager) return
 
-    installProgressListener()
+    // Listen immediately so no live event is missed, but hold them back until
+    // the snapshot has been applied: the snapshot describes an older moment,
+    // so replaying afterwards is what keeps a download from moving backwards.
+    const live = new Map<string, ElectronDownload>()
+    let restored = false
+    installProgressListener((download) => {
+      if (restored) return false
+      live.set(download.url, download)
+      return true
+    })
 
     try {
       const allDownloads = await DownloadManager.getAllDownloads()
@@ -91,15 +108,17 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
         const existing = findByUrl(normalizedDownload.url)
         if (existing) {
           Object.assign(existing, normalizedDownload)
-          notifyProgressListeners(existing)
         } else {
           downloads.value.push(normalizedDownload)
-          notifyProgressListeners(normalizedDownload)
         }
       }
     } catch {
-      return
+      // A missing snapshot must not keep live progress from being observed.
     }
+
+    restored = true
+    for (const download of live.values()) applyProgress(download)
+    live.clear()
   }
 
   function subscribeToDownloadProgress(

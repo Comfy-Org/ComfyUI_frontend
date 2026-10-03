@@ -14,6 +14,7 @@ import {
 } from '@/platform/workflow/templates/utils/templateModelDownloadState'
 import type {
   TemplateModelDownloadEvent,
+  TemplateModelDownloadHostEvent,
   TemplateModelDownloadState
 } from '@/platform/workflow/templates/utils/templateModelDownloadState'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
@@ -30,7 +31,12 @@ type SubscribeLegacyProgress = (
 ) => () => void
 
 type TemplateModelRowDownloadDependencies = {
-  loadFolderPaths: () => Promise<FolderPaths>
+  /**
+   * Resolved before the owner mounts, so a dispatch never waits on a lookup
+   * that could finish after the owner is gone. Empty for hosts that resolve
+   * their own directories.
+   */
+  folderPaths: FolderPaths
   dispatchDownload?: (
     model: ModelWithUrl,
     paths: FolderPaths,
@@ -89,7 +95,7 @@ function downloadFraction(
 function terminalDesktopEvent(
   status: 'completed' | 'error' | 'cancelled',
   attempt: number
-): TemplateModelDownloadEvent {
+): TemplateModelDownloadHostEvent {
   return {
     type: status === 'completed' ? 'completed' : status,
     attempt
@@ -99,7 +105,7 @@ function terminalDesktopEvent(
 function desktopProgressEvent(
   progress: ComfyDownloadProgress,
   attempt: number
-): TemplateModelDownloadEvent {
+): TemplateModelDownloadHostEvent {
   switch (progress.status) {
     case 'pending':
       return { type: 'started', attempt }
@@ -137,7 +143,7 @@ function validLegacyFraction(value: number | undefined): number | null {
 function legacyProgressEvent(
   download: ElectronDownload,
   attempt: number
-): TemplateModelDownloadEvent | null {
+): TemplateModelDownloadHostEvent | null {
   switch (download.status) {
     case DownloadStatus.PENDING:
       return { type: 'started', attempt }
@@ -166,7 +172,7 @@ function legacyProgressEvent(
 }
 
 export function useTemplateModelRowDownloads({
-  loadFolderPaths,
+  folderPaths,
   dispatchDownload = dispatchModelDownload,
   subscribeDesktopProgress = subscribeToDesktopProgress,
   subscribeLegacyProgress = subscribeToLegacyProgress
@@ -174,6 +180,14 @@ export function useTemplateModelRowDownloads({
   const states = shallowReactive(new Map<string, TemplateModelDownloadState>())
   const models = new Map<string, ModelWithUrl>()
   const nativeActivityAttempts = new Map<string, number>()
+  /**
+   * The desktop job id observed carrying this row's current attempt. Native
+   * payloads are stamped with whatever the row says now, so the stamp cannot
+   * tell a live stream from an abandoned one; the job id can. Bound by
+   * non-terminal activity only, so an abandoned stream's terminal event
+   * cannot claim a fresh attempt.
+   */
+  const nativeJobs = new Map<string, { attempt: number; jobId: string }>()
 
   function identityFor(model: ModelWithUrl): string {
     return getTemplateModelDownloadIdentity(model)
@@ -187,6 +201,7 @@ export function useTemplateModelRowDownloads({
       models.set(identity, model)
       states.set(identity, initial)
       nativeActivityAttempts.delete(identity)
+      nativeJobs.delete(identity)
       return initial
     }
 
@@ -230,15 +245,17 @@ export function useTemplateModelRowDownloads({
 
   function applyNativeEvent(
     model: ModelWithUrl,
-    event: TemplateModelDownloadEvent
+    event: TemplateModelDownloadHostEvent,
+    jobId?: string
   ): void {
     const identity = identityFor(model)
+    if (jobId !== undefined && !acceptsJob(identity, event, jobId)) return
     if (event.type === 'started' || event.type === 'progress') {
       nativeActivityAttempts.set(identity, event.attempt)
     } else if (
-      (event.type === 'completed' ||
-        event.type === 'error' ||
-        event.type === 'cancelled') &&
+      // Everything else is terminal. A retry only ends on a stream that was
+      // seen running; attempt 1 is exempt because a transfer can finish
+      // without ever reporting progress.
       event.attempt > 1 &&
       nativeActivityAttempts.get(identity) !== event.attempt
     ) {
@@ -246,6 +263,29 @@ export function useTemplateModelRowDownloads({
     }
 
     applyEvent(model, event)
+  }
+
+  /**
+   * Decides whether an identified job may speak for this row's attempt.
+   * Non-terminal activity claims the attempt if nothing else holds it;
+   * a terminal event is only honoured from the job that made that claim.
+   */
+  function acceptsJob(
+    identity: string,
+    event: TemplateModelDownloadHostEvent,
+    jobId: string
+  ): boolean {
+    const bound = nativeJobs.get(identity)
+    const claimant =
+      bound !== undefined && bound.attempt === event.attempt
+        ? bound.jobId
+        : undefined
+    if (event.type === 'started' || event.type === 'progress') {
+      if (claimant !== undefined) return claimant === jobId
+      nativeJobs.set(identity, { attempt: event.attempt, jobId })
+      return true
+    }
+    return claimant === jobId
   }
 
   function forMatchingModels(
@@ -266,28 +306,26 @@ export function useTemplateModelRowDownloads({
 
   const stopDesktopProgress = subscribeDesktopProgress((progress) => {
     forMatchingModels(progress, (model, attempt) => {
-      applyNativeEvent(model, desktopProgressEvent(progress, attempt))
+      applyNativeEvent(
+        model,
+        desktopProgressEvent(progress, attempt),
+        progress.id
+      )
     })
   })
-  const stopLegacyProgress = subscribeLegacyProgress((download) => {
-    forMatchingModels(download, (model, attempt) => {
-      const event = legacyProgressEvent(download, attempt)
-      if (event) applyNativeEvent(model, event)
-    })
-  })
+  let stopLegacyProgress: (() => void) | undefined
 
-  function isCurrentQueuedAttempt(
-    model: ModelWithUrl,
-    attempt: number
-  ): boolean {
-    const identity = identityFor(model)
-    const currentModel = models.get(identity)
-    const currentState = states.get(identity)
-    return (
-      currentModel?.url === model.url &&
-      currentState?.status === 'queued' &&
-      currentState.attempt === attempt
-    )
+  /**
+   * Desktop2 never reaches the legacy host, so its store and subscription are
+   * only constructed once a dispatch actually lands there.
+   */
+  function ensureLegacyProgress(): void {
+    stopLegacyProgress ??= subscribeLegacyProgress((download) => {
+      forMatchingModels(download, (model, attempt) => {
+        const event = legacyProgressEvent(download, attempt)
+        if (event) applyNativeEvent(model, event)
+      })
+    })
   }
 
   function fail(model: ModelWithUrl, attempt: number): void {
@@ -297,54 +335,40 @@ export function useTemplateModelRowDownloads({
   function handleOutcome(
     model: ModelWithUrl,
     attempt: number,
-    outcome: ModelDownloadDispatchOutcome,
-    canLoadFolderPaths: boolean
+    outcome: ModelDownloadDispatchOutcome
   ): void {
     switch (outcome.status) {
       case 'host-requested':
+        if (outcome.host === 'electron') ensureLegacyProgress()
         applyEvent(model, { type: 'started', attempt })
-        void outcome.hostResult.catch(() => fail(model, attempt))
+        // A resolved `false` is a refusal, not an acknowledgement: the sibling
+        // `openModelAccessPage` documents the same convention on this bridge.
+        // Without this the row sits in `starting` with nothing coming.
+        void outcome.hostResult.then(
+          (accepted) => {
+            if (!accepted) fail(model, attempt)
+          },
+          () => fail(model, attempt)
+        )
         return
       case 'browser-requested':
       case 'dispatch-failed':
         fail(model, attempt)
         return
       case 'not-dispatched':
-        if (
-          outcome.reason !== 'missing-directory-path' ||
-          !canLoadFolderPaths
-        ) {
-          fail(model, attempt)
-          return
-        }
-        void loadFolderPaths().then(
-          (paths) => {
-            if (isCurrentQueuedAttempt(model, attempt)) {
-              dispatch(model, attempt, paths, false)
-            }
-          },
-          () => {
-            if (isCurrentQueuedAttempt(model, attempt)) fail(model, attempt)
-          }
-        )
+        fail(model, attempt)
         return
       default:
         return outcome satisfies never
     }
   }
 
-  function dispatch(
-    model: ModelWithUrl,
-    attempt: number,
-    paths: FolderPaths,
-    canLoadFolderPaths: boolean
-  ): void {
+  function dispatch(model: ModelWithUrl, attempt: number): void {
     try {
       handleOutcome(
         model,
         attempt,
-        dispatchDownload(model, paths, { revealLegacyDownload: false }),
-        canLoadFolderPaths
+        dispatchDownload(model, folderPaths, { revealLegacyDownload: false })
       )
     } catch {
       fail(model, attempt)
@@ -360,7 +384,7 @@ export function useTemplateModelRowDownloads({
     if (queued === current) return
 
     states.set(identity, queued)
-    dispatch(model, queued.attempt, {}, true)
+    dispatch(model, queued.attempt)
   }
 
   let disposed = false
@@ -368,7 +392,7 @@ export function useTemplateModelRowDownloads({
     if (disposed) return
     disposed = true
     stopDesktopProgress()
-    stopLegacyProgress()
+    stopLegacyProgress?.()
   }
 
   return { stateFor, request, dispose }

@@ -21,8 +21,8 @@ export type TemplateModelDownloadState =
       reason: TemplateModelDownloadFailureReason
     }
 
-export type TemplateModelDownloadEvent =
-  | { type: 'request' }
+/** Every event a host reports, all of which name the attempt they describe. */
+export type TemplateModelDownloadHostEvent =
   | { type: 'started'; attempt: number }
   | {
       type: 'progress'
@@ -34,6 +34,10 @@ export type TemplateModelDownloadEvent =
     }
   | { type: 'completed'; attempt: number }
   | { type: TemplateModelDownloadFailureReason; attempt: number }
+
+export type TemplateModelDownloadEvent =
+  | { type: 'request' }
+  | TemplateModelDownloadHostEvent
 
 export function createTemplateModelDownloadState(): TemplateModelDownloadState {
   return { status: 'idle', attempt: 0 }
