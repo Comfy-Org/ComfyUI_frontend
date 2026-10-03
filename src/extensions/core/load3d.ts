@@ -107,21 +107,19 @@ async function handleModelUpload(files: FileList, node: LGraphNode) {
 
     useLoad3d(node).waitForLoad3d(async (load3d) => {
       try {
-        await load3d.loadModel(modelUrl)
+        const outcome = await load3d.loadModel(modelUrl)
+        if (outcome !== 'loaded') return
+        if (modelWidget) {
+          if (!modelWidget.options.values?.includes(uploadPath)) {
+            modelWidget.options.values?.push(uploadPath)
+          }
+          modelWidget.value = uploadPath
+        }
+        markLoad3dSceneDirty(node)
       } catch {
         useToastStore().addAlert(t('toastMessages.failedToLoadModel'))
       }
     })
-
-    if (uploadPath && modelWidget) {
-      if (!modelWidget.options.values?.includes(uploadPath)) {
-        modelWidget.options.values?.push(uploadPath)
-      }
-
-      modelWidget.value = uploadPath
-    }
-
-    markLoad3dSceneDirty(node)
   } catch (error) {
     console.error('Model upload failed:', error)
     useToastStore().addAlert(t('toastMessages.fileUploadFailed'))

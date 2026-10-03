@@ -2,7 +2,7 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 
-import type { useLoad3d } from '@/composables/useLoad3d'
+import type { Load3dCachedOutput, useLoad3d } from '@/composables/useLoad3d'
 import type { CameraState } from '@/extensions/core/load3d/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -147,10 +147,37 @@ vi.mock(import('@/lib/litegraph/src/litegraph'), () => ({
 
 await import('@/extensions/core/load3d')
 const load3DExt = capture.getExtension('Comfy.Load3D')
+
+async function getLoad3DWidget() {
+  if (!load3DExt.getCustomWidgets) {
+    throw new Error('Expected custom Load3D widgets')
+  }
+  return (await load3DExt.getCustomWidgets(app)).LOAD_3D
+}
 const preview3DExt = capture.getExtension('Comfy.Preview3D')
 const preview3DAdvancedExt = capture.getExtension('Comfy.Preview3DAdvanced')
 const save3DAdvancedExt = capture.getExtension('Comfy.Save3DAdvanced')
 const registeredExtensionCount = registerExtensionMock.mock.calls.length
+
+async function uploadModelThroughWidget(node: LGraphNode): Promise<void> {
+  const createElement = document.createElement.bind(document)
+  const fileInputs: HTMLInputElement[] = []
+  vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+    const element = createElement(tag)
+    if (element instanceof HTMLInputElement) fileInputs.push(element)
+    return element
+  })
+
+  ;(await getLoad3DWidget())(node, 'model_file', ['LOAD_3D', {}], app)
+  const modelInput = fileInputs.at(0)
+  if (!modelInput) throw new Error('Expected a model file input')
+  Object.defineProperty(modelInput, 'files', {
+    value: [new File(['x'], 'model.glb')]
+  })
+  if (!modelInput.onchange) throw new Error('Expected a change handler')
+  await modelInput.onchange(new Event('change'))
+  await flush()
+}
 
 interface FakeWidget {
   name: string
@@ -531,12 +558,7 @@ describe('Comfy.Load3D.getCustomWidgets LOAD_3D', () => {
     const node = makeLoad3DNode()
     const addWidget = node.addWidget as ReturnType<typeof vi.fn>
 
-    ;(await load3DExt.getCustomWidgets!(app)).LOAD_3D(
-      node,
-      'model_file',
-      ['LOAD_3D', {}],
-      app
-    )
+    ;(await getLoad3DWidget())(node, 'model_file', ['LOAD_3D', {}], app)
 
     const buttonNames = addWidget.mock.calls
       .filter(([type]) => type === 'button')
@@ -557,31 +579,61 @@ describe('Comfy.Load3D.getCustomWidgets LOAD_3D', () => {
     )
     const utilsModule = await import('@/extensions/core/load3d/Load3dUtils')
     vi.mocked(utilsModule.default.uploadFile).mockResolvedValue('model.glb')
-    const createElement = document.createElement.bind(document)
-    const fileInputs: HTMLInputElement[] = []
-    vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
-      const element = createElement(tag)
-      if (element instanceof HTMLInputElement) fileInputs.push(element)
-      return element
-    })
-
-    ;(await load3DExt.getCustomWidgets!(app)).LOAD_3D(
-      node,
-      'model_file',
-      ['LOAD_3D', {}],
-      app
-    )
-    const [modelInput] = fileInputs
-    Object.defineProperty(modelInput, 'files', {
-      value: [new File(['x'], 'model.glb')]
-    })
-    await modelInput.onchange!(new Event('change'))
-    await flush()
+    await uploadModelThroughWidget(node)
 
     expect(load3d.loadModel).toHaveBeenCalledWith('/api/view')
     expect(useToastStore().addAlert).toHaveBeenCalledWith(
       'toastMessages.failedToLoadModel'
     )
+  })
+
+  it('does not commit an upload superseded before loading', async () => {
+    const node = makeLoad3DNode()
+    const load3d = {
+      ...makeLoad3dMock(),
+      loadModel: vi.fn().mockResolvedValue('cancelled')
+    }
+    waitForLoad3dMock.mockImplementation((cb: (l: typeof load3d) => void) =>
+      cb(load3d)
+    )
+    const utilsModule = await import('@/extensions/core/load3d/Load3dUtils')
+    vi.mocked(utilsModule.default.uploadFile).mockResolvedValue('model.glb')
+    await uploadModelThroughWidget(node)
+
+    expect(
+      node.widgets?.find((widget) => widget.name === 'model_file')?.value
+    ).toBe('')
+  })
+
+  it('commits a successfully loaded upload and marks the scene dirty', async () => {
+    const node = makeLoad3DNode()
+    const load3d = {
+      ...makeLoad3dMock(),
+      loadModel: vi.fn().mockResolvedValue('loaded')
+    }
+    waitForLoad3dMock.mockImplementation((cb: (l: typeof load3d) => void) =>
+      cb(load3d)
+    )
+    const utilsModule = await import('@/extensions/core/load3d/Load3dUtils')
+    vi.mocked(utilsModule.default.uploadFile).mockResolvedValue('model.glb')
+    const useLoad3dModule = await import('@/composables/useLoad3d')
+    const cachedOutput: Load3dCachedOutput = {
+      image: '',
+      mask: '',
+      normal: '',
+      camera_info: null,
+      recording: '',
+      model_3d_info: []
+    }
+    useLoad3dModule.setLoad3dOutputCache(node, cachedOutput, 0)
+    expect(useLoad3dModule.isLoad3dSceneDirty(node)).toBe(false)
+
+    await uploadModelThroughWidget(node)
+
+    expect(
+      node.widgets?.find((widget) => widget.name === 'model_file')?.value
+    ).toBe('model.glb')
+    expect(useLoad3dModule.isLoad3dSceneDirty(node)).toBe(true)
   })
 
   it('skips upload and clear buttons when the node has no model_file widget (e.g. Preview3DAdvanced)', async () => {
@@ -595,12 +647,7 @@ describe('Comfy.Load3D.getCustomWidgets LOAD_3D', () => {
     })
     const addWidget = node.addWidget as ReturnType<typeof vi.fn>
 
-    ;(await load3DExt.getCustomWidgets!(app)).LOAD_3D(
-      node,
-      'model_file',
-      ['LOAD_3D', {}],
-      app
-    )
+    ;(await getLoad3DWidget())(node, 'model_file', ['LOAD_3D', {}], app)
 
     const buttonCalls = addWidget.mock.calls.filter(
       ([type]) => type === 'button'

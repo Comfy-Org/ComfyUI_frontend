@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
 import { useDialogStore } from '@/stores/dialogStore'
+import type { ModelThumbnailResult } from '@/components/load3d/modelThumbnail'
 
 import type { ReplyAsset } from '../../../utils/replyAssets'
 import ReplyAssetGroup from './ReplyAssetGroup.vue'
@@ -22,7 +23,7 @@ vi.mock<unknown>(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
 }))
 
 const generateModelThumbnail = vi.hoisted(() =>
-  vi.fn(async (): Promise<string | null> => null)
+  vi.fn(async (): Promise<ModelThumbnailResult> => ({ status: 'failed' }))
 )
 vi.mock(import('@/components/load3d/modelThumbnail'), () => ({
   generateModelThumbnail
@@ -80,7 +81,7 @@ describe('ReplyAssetGroup', () => {
     isAssetPreviewSupported.mockReset().mockReturnValue(false)
     findServerPreviewUrl.mockReset().mockResolvedValue(null)
     findOutputAsset.mockReset().mockResolvedValue(undefined)
-    generateModelThumbnail.mockReset().mockResolvedValue(null)
+    generateModelThumbnail.mockReset().mockResolvedValue({ status: 'failed' })
   })
 
   it('T-09 / PM-652 / FE-1326 renders image and video previews inline', () => {
@@ -236,7 +237,10 @@ describe('ReplyAssetGroup', () => {
 
   it('generates a thumbnail offscreen when the server has none', async () => {
     isAssetPreviewSupported.mockReturnValue(true)
-    generateModelThumbnail.mockResolvedValue('data:image/png;base64,gen')
+    generateModelThumbnail.mockResolvedValue({
+      status: 'rendered',
+      dataUrl: 'data:image/png;base64,gen'
+    })
     renderGroup([model])
 
     const thumb = await screen.findByRole('img', { name: 'mesh.glb' })

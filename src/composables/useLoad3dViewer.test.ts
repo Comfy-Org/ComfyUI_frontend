@@ -124,7 +124,7 @@ describe('useLoad3dViewer', () => {
       forceRender: vi.fn(),
       remove: vi.fn(),
       setTargetSize: vi.fn(),
-      loadModel: vi.fn().mockResolvedValue(true),
+      loadModel: vi.fn().mockResolvedValue('loaded'),
       captureThumbnail: vi.fn().mockResolvedValue('data:image/png;base64,x'),
       setCameraState: vi.fn(),
       addEventListener: vi.fn(),
@@ -629,7 +629,7 @@ describe('useLoad3dViewer', () => {
       vi.mocked(Load3dUtils.uploadFile).mockResolvedValueOnce(
         '3d/superseded.glb'
       )
-      vi.mocked(mockLoad3d.loadModel!).mockResolvedValueOnce(false)
+      vi.mocked(mockLoad3d.loadModel!).mockResolvedValueOnce('cancelled')
       const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
       await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
@@ -869,15 +869,15 @@ describe('useLoad3dViewer', () => {
     })
 
     it('completes viewer setup when a concurrent call supersedes the first load', async () => {
-      let settleFirstLoad!: (accepted: boolean) => void
+      let settleFirstLoad!: (outcome: 'cancelled') => void
       vi.mocked(mockLoad3d.loadModel!)
         .mockImplementationOnce(
           () =>
-            new Promise<boolean>((resolve) => {
+            new Promise<'cancelled'>((resolve) => {
               settleFirstLoad = resolve
             })
         )
-        .mockResolvedValueOnce(true)
+        .mockResolvedValueOnce('loaded')
       const viewer = useLoad3dViewer()
       const containerRef = document.createElement('div')
 
@@ -886,7 +886,7 @@ describe('useLoad3dViewer', () => {
         containerRef,
         'b.glb'
       )
-      settleFirstLoad(false)
+      settleFirstLoad('cancelled')
       await Promise.all([first, replacement])
 
       expect(createLoad3d).toHaveBeenCalledTimes(1)
