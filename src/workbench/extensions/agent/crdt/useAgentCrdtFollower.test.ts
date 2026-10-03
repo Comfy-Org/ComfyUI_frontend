@@ -715,7 +715,7 @@ describe('useAgentCrdtFollower', () => {
     // replacement must still rebind to the new follower object and clear
     // applied state on its own, without arming a lineage replacement.
     const replacementFollower = {
-      updatesApplied: 0,
+      updatesApplied: 7,
       doc: { getMap: () => ({ toJSON: () => ({}) }) }
     }
     bridge().follower = replacementFollower
@@ -726,6 +726,9 @@ describe('useAgentCrdtFollower', () => {
     expect(projectionState.bind).toHaveBeenCalledTimes(2)
     expect(projectionState.bind.mock.lastCall?.[0]).toBe('wf-1')
     expect(projectionState.bind.mock.lastCall?.[1]).toBe(replacementFollower)
+    expect(
+      projectionState.discardPending.mock.invocationCallOrder[0]
+    ).toBeLessThan(projectionState.bind.mock.invocationCallOrder[1])
     expect(projectionState.replaceOnNextFrame).not.toHaveBeenCalled()
     unmount()
   })
