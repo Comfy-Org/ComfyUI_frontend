@@ -305,8 +305,6 @@ describe('GraphView - reconnect wiring', () => {
       templateInputs: []
     })
 
-    // A failed rebind must still release the transfer, or Run stays behind a
-    // permanent finalizing state.
     await waitFor(() => {
       expect(templateInputMock.completeGraphSync).toHaveBeenCalledWith([
         'subject.png'

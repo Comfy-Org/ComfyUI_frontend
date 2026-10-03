@@ -358,7 +358,6 @@ export function useTemplateModelRowDownloads({
         applyEvent(model, { type: 'started', attempt })
         // A resolved `false` is a refusal, not an acknowledgement: the sibling
         // `openModelAccessPage` documents the same convention on this bridge.
-        // Without this the row sits in `starting` with nothing coming.
         void outcome.hostResult.then(
           (accepted) => {
             if (!accepted) fail(model, attempt)

@@ -93,9 +93,8 @@ describe('template input download graph sync', () => {
         })
       : (sync.dispose(), null)
 
-    // Fail the first attempt so the name survives and the rerun has work:
-    // only the disposal guard stops it from refreshing a graph it no longer
-    // owns.
+    // Fail the first attempt so the name survives and the rerun has work to
+    // do; without that the guard never runs and this case proves nothing.
     first.reject(new Error('reload failed'))
     await inFlight
 
@@ -121,8 +120,7 @@ describe('template input download graph sync', () => {
     await sync.syncCurrentGraph()
     expect(reportError).toHaveBeenCalledOnce()
 
-    // The file is on disk, so a transient reload failure must not be the end
-    // of it - the next sync rebinds, and only then is the name cleared.
+    // Cleared only once a rebind succeeds.
     await sync.syncCurrentGraph()
     await sync.syncCurrentGraph()
     expect(refreshGraphBindings).toHaveBeenCalledTimes(2)

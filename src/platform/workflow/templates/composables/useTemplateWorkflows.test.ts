@@ -448,8 +448,6 @@ describe('useTemplateWorkflows', () => {
     await loadWorkflowTemplate('template1', 'default')
     await flushPromises()
 
-    // A download that finished before this graph existed has to be rebound
-    // once it does.
     expect(
       mockGraphSync.syncCompletedTemplateInputsWithCurrentGraph
     ).toHaveBeenCalledOnce()
