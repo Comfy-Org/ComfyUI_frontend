@@ -236,6 +236,7 @@ export const API_MEMBERS: ReadonlySet<string> = new Set([
   'onRejected',
   'onRemoved',
   'onResized',
+  'onSelectionChanged',
   'onSerialize',
   'onUnplacedLink',
   'onViewportChanged',

@@ -235,6 +235,15 @@ interface Comfy {
     options?: NodeChangeOptions
   ): Unsubscribe
   /**
+   * The selected graph nodes changed.
+   *
+   * The list is the complete current node selection in the visible graph.
+   * Groups and reroutes are renderer details and are intentionally omitted.
+   */
+  onSelectionChanged(
+    listener: (nodes: readonly NodeHandle[]) => void
+  ): Unsubscribe
+  /**
    * The application has finished starting: canvas, settings and graph all
    * exist, and node definitions are registered.
    *

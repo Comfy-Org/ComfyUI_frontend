@@ -119,6 +119,7 @@ import { mayRun } from '@/platform/nodeApi/queueHandle'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { provideGraphLoadingState } from '@/platform/nodeApi/defsRegistry'
 import { installNodeChangeBridge } from '@/renderer/core/canvas/nodeChangeBridge'
+import { installSelectionBridge } from '@/renderer/core/canvas/selectionBridge'
 import { installUnplacedLinkBridge } from '@/renderer/core/canvas/unplacedLinkBridge'
 import { installNodeMoveBridge } from '@/renderer/core/layout/nodeMoveBridge'
 import { useSubgraphStore } from '@/stores/subgraphStore'
@@ -1011,6 +1012,7 @@ export class ComfyApp {
     // pack subscribing to onNodeMoved at module scope throws otherwise.
     installNodeMoveBridge()
     installNodeChangeBridge()
+    installSelectionBridge()
     // Which the API cannot see for itself: ChangeTracker lives up here.
     provideGraphLoadingState(() => ChangeTracker.isLoadingGraph)
     installComfyApi(() => useCanvasStore().currentGraph, {

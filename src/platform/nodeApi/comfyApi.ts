@@ -34,6 +34,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { currentDocumentId, onAppReady, onWorkflowLoaded } from './appReady'
 import { createNodeChangeObserver } from './nodeChanges'
 import type { NodeChangeEvent, NodeChangeOptions } from './nodeChanges'
+import { createSelectionObserver } from './selection'
 import { createModelsApi } from './modelsHandle'
 import type { ModelsHandle } from './modelsHandle'
 import { createQueueApi } from './queueHandle'
@@ -146,6 +147,7 @@ const CAPABILITIES: ReadonlyMap<string, string> = new Map([
   ['slots.localizedName', '2.0'],
   ['slots.connectedType', '2.0'],
   ['graph.selection', '2.0'],
+  ['graph.selectionChanged', '2.0'],
   ['node.connectVeto', '2.0'],
   ['node.menu', '2.0'],
   ['settings', '2.0'],
@@ -315,6 +317,15 @@ export interface Comfy {
     options?: NodeChangeOptions
   ): Unsubscribe
   /**
+   * The selected graph nodes changed.
+   *
+   * The list is the complete current node selection in the visible graph.
+   * Groups and reroutes are renderer details and are intentionally omitted.
+   */
+  onSelectionChanged(
+    listener: (nodes: readonly NodeHandle[]) => void
+  ): Unsubscribe
+  /**
    * The application has finished starting: canvas, settings and graph all
    * exist, and node definitions are registered.
    *
@@ -478,6 +489,7 @@ function buildMajor(
     onNodeDragEnd: createNodeDragEndObserver((id) => graph.node(id)),
     onViewportChanged: createViewportObserver(),
     onNodeChanged: createNodeChangeObserver(nodeIn),
+    onSelectionChanged: createSelectionObserver((id) => graph.node(id)),
     onReady: onAppReady,
     queue: createQueueApi(getGraph),
     executingNode: () => {
