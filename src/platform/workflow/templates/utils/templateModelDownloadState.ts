@@ -1,3 +1,5 @@
+import { getModelFileKey } from '@/platform/workflow/core/utils/modelRequirements'
+
 type TemplateModelDownloadActivity = 'active' | 'paused'
 
 type TemplateModelDownloadFailureReason = 'error' | 'cancelled'
@@ -50,7 +52,7 @@ export function getTemplateModelDownloadIdentity({
   name: string
   directory: string
 }): string {
-  return JSON.stringify([name, directory])
+  return getModelFileKey({ name, directory })
 }
 
 function requestDownload(

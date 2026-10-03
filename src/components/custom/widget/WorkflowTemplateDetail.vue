@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, useId } from 'vue'
+import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import WorkflowTemplateDetailGroup from '@/components/custom/widget/WorkflowTemplateDetailGroup.vue'
@@ -12,7 +12,8 @@ const {
   groups,
   cloudUrl,
   isPartnerNode = false,
-  openPending = false
+  openPending = false,
+  modelSetupState = 'none'
 } = defineProps<{
   title: string
   description: string
@@ -20,10 +21,17 @@ const {
   cloudUrl?: string
   isPartnerNode?: boolean
   openPending?: boolean
+  /**
+   * 'resolving' until the parent knows what is missing, then 'downloadable'
+   * only if something is. Availability is never known while resolving, so the
+   * two cannot be combined.
+   */
+  modelSetupState?: 'none' | 'resolving' | 'downloadable'
 }>()
 
 const emit = defineEmits<{
   'open-template': []
+  'download-models-and-open': []
   'download-model': [rowId: string]
 }>()
 
@@ -32,6 +40,7 @@ const detailRoot = ref<HTMLElement | null>(null)
 const detailId = useId()
 const cloudTitleId = `${detailId}-cloud-title`
 const groupTitleId = (groupId: string) => `${detailId}-group-${groupId}`
+const offerDownloadAndOpen = computed(() => modelSetupState !== 'none')
 
 defineExpose({
   focus: () => detailRoot.value?.focus()
@@ -41,6 +50,7 @@ defineExpose({
 <template>
   <article
     ref="detailRoot"
+    data-testid="template-workflow-detail"
     :aria-label="title"
     tabindex="-1"
     class="@container/template-detail flex size-full min-h-0 flex-1 flex-col overflow-hidden bg-base-background text-base-foreground"
@@ -125,15 +135,35 @@ defineExpose({
     </div>
 
     <footer
-      class="flex min-h-15 shrink-0 items-center justify-end border-t border-border-subtle px-6 py-4"
+      class="flex min-h-15 shrink-0 flex-wrap items-center justify-end gap-3 border-t border-border-subtle px-6 py-4"
     >
+      <Button
+        v-if="offerDownloadAndOpen"
+        variant="outline"
+        size="sm"
+        :disabled="openPending"
+        @click="emit('open-template')"
+      >
+        {{ t('templateWorkflows.detail.openNow') }}
+      </Button>
       <Button
         variant="inverted"
         size="sm"
         :loading="openPending"
-        @click="emit('open-template')"
+        :disabled="modelSetupState === 'resolving'"
+        @click="
+          offerDownloadAndOpen
+            ? emit('download-models-and-open')
+            : emit('open-template')
+        "
       >
-        {{ t('templateWorkflows.detail.openTemplate') }}
+        {{
+          t(
+            offerDownloadAndOpen
+              ? 'templateWorkflows.detail.downloadModelsAndOpen'
+              : 'templateWorkflows.detail.openNow'
+          )
+        }}
       </Button>
     </footer>
   </article>

@@ -12,6 +12,8 @@ import type { resolveTemplateModelMetadata } from '@/platform/workflow/templates
 import type { useTemplateFiltering } from '@/composables/useTemplateFiltering'
 import type { useLazyPagination } from '@/composables/useLazyPagination'
 import type { ResolvedTemplateModelAvailability } from '@/platform/workflow/templates/utils/templateModelAvailability'
+import type { TemplateModelDownloadState } from '@/platform/workflow/templates/utils/templateModelDownloadState'
+import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 const fixtures = vi.hoisted(() => {
   const activeModel = {
@@ -23,6 +25,21 @@ const fixtures = vi.hoisted(() => {
     name: 'bypassed-model.safetensors',
     directory: 'loras',
     url: 'https://example.com/bypassed-model.safetensors'
+  }
+  const failedModel = {
+    name: 'failed-model.safetensors',
+    directory: 'checkpoints',
+    url: 'https://example.com/failed-model.safetensors'
+  }
+  const activeDownloadModel = {
+    name: 'downloading-model.safetensors',
+    directory: 'checkpoints',
+    url: 'https://example.com/downloading-model.safetensors'
+  }
+  const doneModel = {
+    name: 'done-model.safetensors',
+    directory: 'checkpoints',
+    url: 'https://example.com/done-model.safetensors'
   }
   const template = {
     name: 'starter-detail',
@@ -55,14 +72,30 @@ const fixtures = vi.hoisted(() => {
             mode: 4,
             properties: { models: [bypassedModel] },
             widgets_values: [bypassedModel.name]
-          }
+          },
+          ...[failedModel, activeDownloadModel, doneModel].map(
+            (model, index) => ({
+              id: index + 3,
+              type: 'CheckpointLoaderSimple',
+              properties: { models: [model] },
+              widgets_values: [model.name]
+            })
+          )
         ],
         links: []
       }
     }
   }
 
-  return { activeModel, bypassedModel, prepared, template }
+  return {
+    activeDownloadModel,
+    activeModel,
+    bypassedModel,
+    doneModel,
+    failedModel,
+    prepared,
+    template
+  }
 })
 
 const runtime = vi.hoisted(() => ({ isCloud: false, isDesktop: true }))
@@ -73,6 +106,7 @@ const mocks = vi.hoisted(() => ({
   ),
   getTemplateThumbnailUrl: vi.fn(() => '/thumbnail.webp'),
   getTemplateTitle: vi.fn((template: { title: string }) => template.title),
+  isModelDownloadable: vi.fn(() => true),
   loadTemplates: vi.fn(async () => true),
   onClose: vi.fn(),
   discardPreparedWorkflowTemplate: vi.fn(),
@@ -87,16 +121,24 @@ const mocks = vi.hoisted(() => ({
     async () => ({
       status: 'completed',
       entries: [
-        {
-          model: fixtures.activeModel,
-          fileSize: 1024,
-          gatedRepoUrl: null
-        }
-      ]
+        fixtures.activeModel,
+        fixtures.failedModel,
+        fixtures.activeDownloadModel,
+        fixtures.doneModel
+      ].map((model) => ({ model, fileSize: 1024, gatedRepoUrl: null }))
     })
   ),
+  rowDownloadDispose: vi.fn(),
+  rowDownloadRequest: vi.fn(),
+  rowDownloadStateFor: vi.fn<(model: ModelFile) => TemplateModelDownloadState>(
+    () => ({ status: 'idle', attempt: 0 })
+  ),
   trackTemplateLibraryClosed: vi.fn(),
-  reportError: vi.fn()
+  reportError: vi.fn(),
+  modelDownloadNeedsFolderPaths: vi.fn(() => true),
+  loadFolderPathsOnce: vi.fn(async () => ({
+    checkpoints: ['/models/checkpoints']
+  }))
 }))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -106,6 +148,15 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   get isDesktop() {
     return runtime.isDesktop
   }
+}))
+
+vi.mock(import('@/platform/missingModel/missingModelDownload'), () => ({
+  isModelDownloadable: mocks.isModelDownloadable,
+  modelDownloadNeedsFolderPaths: mocks.modelDownloadNeedsFolderPaths
+}))
+
+vi.mock(import('@/platform/missingModel/folderPathCache'), () => ({
+  loadFolderPathsOnce: mocks.loadFolderPathsOnce
 }))
 
 vi.mock(
@@ -139,6 +190,17 @@ vi.mock(
   () => ({
     useTemplateModelAvailability: () => ({
       resolveAvailability: mocks.resolveAvailability
+    })
+  })
+)
+
+vi.mock(
+  import('@/platform/workflow/templates/composables/useTemplateModelRowDownloads'),
+  () => ({
+    useTemplateModelRowDownloads: () => ({
+      dispose: mocks.rowDownloadDispose,
+      request: mocks.rowDownloadRequest,
+      stateFor: mocks.rowDownloadStateFor
     })
   })
 )
@@ -254,6 +316,11 @@ async function clickTemplateCard() {
   return { card, user }
 }
 
+async function clickTemplateCardAfterRender() {
+  renderDialog()
+  return clickTemplateCard()
+}
+
 describe('WorkflowTemplateSelectorDialog detail routing', () => {
   beforeEach(() => {
     const workflowTemplatesStore = useWorkflowTemplatesStore()
@@ -300,6 +367,89 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
     expect(
       within(requirements).queryByText(fixtures.bypassedModel.name)
     ).not.toBeInTheDocument()
+  })
+
+  it('keeps an individual model download inside the mounted Detail', async () => {
+    const { user } = await clickTemplateCardAfterRender()
+
+    await user.click(
+      await screen.findByRole('button', {
+        name: `Download ${fixtures.activeModel.name}`
+      })
+    )
+
+    expect(mocks.rowDownloadRequest).toHaveBeenCalledWith(fixtures.activeModel)
+    expect(
+      screen.getByRole('article', { name: fixtures.template.title })
+    ).toBeInTheDocument()
+    expect(mocks.openPreparedWorkflowTemplate).not.toHaveBeenCalled()
+  })
+
+  it('keeps Open now passive for idle models', async () => {
+    const { user } = await clickTemplateCardAfterRender()
+    await user.click(await screen.findByRole('button', { name: 'Open now' }))
+
+    await waitFor(() => {
+      expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledOnce()
+    })
+    expect(mocks.prepareWorkflowTemplate).toHaveBeenCalledOnce()
+    expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledWith(
+      fixtures.prepared
+    )
+    expect(mocks.rowDownloadRequest).not.toHaveBeenCalled()
+  })
+
+  it('starts eligible rows before Download models & open opens the workflow', async () => {
+    mocks.resolveAvailability.mockResolvedValueOnce(
+      [
+        fixtures.activeModel,
+        fixtures.failedModel,
+        fixtures.activeDownloadModel,
+        fixtures.doneModel
+      ].map((model) => ({ model, status: 'missing' as const }))
+    )
+    mocks.rowDownloadStateFor.mockImplementation((model) => {
+      if (model.name === fixtures.failedModel.name) {
+        return {
+          status: 'failed' as const,
+          attempt: 1,
+          reason: 'error' as const
+        }
+      }
+      if (model.name === fixtures.activeDownloadModel.name) {
+        return {
+          status: 'downloading' as const,
+          attempt: 1,
+          activity: 'active' as const,
+          receivedBytes: 1,
+          totalBytes: 2,
+          fraction: 0.5
+        }
+      }
+      if (model.name === fixtures.doneModel.name) {
+        return { status: 'done' as const, attempt: 1 }
+      }
+      return { status: 'idle' as const, attempt: 0 }
+    })
+    const { user } = await clickTemplateCardAfterRender()
+    await user.click(
+      await screen.findByRole('button', { name: 'Download models & open' })
+    )
+
+    await waitFor(() => {
+      expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledOnce()
+    })
+    expect(mocks.prepareWorkflowTemplate).toHaveBeenCalledOnce()
+    expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledWith(
+      fixtures.prepared
+    )
+    expect(mocks.rowDownloadRequest.mock.calls).toEqual([
+      [fixtures.activeModel],
+      [fixtures.failedModel]
+    ])
+    expect(mocks.rowDownloadRequest.mock.invocationCallOrder[1]).toBeLessThan(
+      mocks.openPreparedWorkflowTemplate.mock.invocationCallOrder[0]
+    )
   })
 
   it('applies the resolved model size to the visible row', async () => {

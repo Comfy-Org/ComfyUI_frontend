@@ -191,6 +191,7 @@ export function useTemplateModelRowDownloads({
   subscribeDesktopProgress = subscribeToDesktopProgress,
   subscribeLegacyProgress = subscribeToLegacyProgress
 }: TemplateModelRowDownloadDependencies) {
+  let disposed = false
   const states = shallowReactive(new Map<string, TemplateModelDownloadState>())
   const models = new Map<string, ModelWithUrl>()
   const nativeActivityAttempts = new Map<string, number>()
@@ -389,6 +390,7 @@ export function useTemplateModelRowDownloads({
   }
 
   function request(model: ModelWithUrl): void {
+    if (disposed) return
     const identity = identityFor(model)
     const current = initializeState(model)
     const queued = reduceTemplateModelDownloadState(current, {
@@ -400,7 +402,6 @@ export function useTemplateModelRowDownloads({
     dispatch(model, queued.attempt)
   }
 
-  let disposed = false
   function dispose(): void {
     if (disposed) return
     disposed = true

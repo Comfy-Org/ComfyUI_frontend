@@ -123,6 +123,18 @@ export function isModelDownloadable(model: ModelWithUrl): boolean {
   return true
 }
 
+/**
+ * True when a dispatch would take the Electron path, which is the only one that
+ * needs a resolved `savePath`: the desktop2 bridge takes the logical directory
+ * name and decides where to write, and a browser opens the URL instead.
+ */
+export function modelDownloadNeedsFolderPaths(): boolean {
+  const desktop2Bridge = window.__comfyDesktop2
+  const isRemote =
+    desktop2Bridge?.isRemote?.() ?? window.__comfyDesktop2Remote ?? false
+  return isDesktop && !(desktop2Bridge?.downloadModel && !isRemote)
+}
+
 export function dispatchModelDownload(
   model: ModelWithUrl,
   paths: Record<string, string[]>,
