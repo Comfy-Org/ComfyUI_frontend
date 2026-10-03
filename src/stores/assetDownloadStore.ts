@@ -324,7 +324,11 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
       }
 
       const message = createReconciledDownloadMessage(download, task)
-      if (!message) return
+      if (!message) {
+        download.lastUpdate = Date.now()
+        noteAuthoritativePendingCancellation(download)
+        return
+      }
       handleAssetDownload(
         new CustomEvent('asset_download', {
           detail: message

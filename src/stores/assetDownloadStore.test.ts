@@ -700,6 +700,30 @@ describe('useAssetDownloadStore', () => {
       expect(store.finishedDownloads).toHaveLength(0)
     })
 
+    it('bounds pending cancellation reconciliation for malformed completed results', async () => {
+      const store = useAssetDownloadStore()
+      vi.mocked(taskService.cancelTask).mockResolvedValue({
+        ok: true,
+        value: 'cancelling'
+      })
+      vi.mocked(taskService.getTask).mockResolvedValue({
+        ok: true,
+        value: createTaskResponse({
+          result: { filename: 'model.safetensors' }
+        })
+      })
+      dispatch(
+        createDownloadMessage({ status: 'running', asset_id: undefined })
+      )
+
+      await store.cancelDownload('task-123')
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      expect(taskService.getTask).toHaveBeenCalledTimes(6)
+      expect(store.finishedDownloads[0].status).toBe('cancelled')
+      expect(store.hasPendingCancellation).toBe(false)
+    })
+
     it('still accepts an authoritative completion after a bounded cancellation', async () => {
       const store = useAssetDownloadStore()
       store.trackDownload('task-123', 'checkpoints', 'model.safetensors')
