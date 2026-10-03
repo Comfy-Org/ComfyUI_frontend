@@ -887,12 +887,26 @@ export const useExecutionStore = defineStore('execution', () => {
 
   /**
    * Clears the active job if the server's queue snapshot doesn't list it.
-   * Used after WS reconnect to recover from stale state when a job finished
-   * during the disconnect window.
+   * Recovers from a dropped terminal WS message, after a reconnect or on a
+   * routine queue refresh. Pass `snapshotRequestedAt` (performance.now()
+   * taken before the queue fetch) so a job whose `execution_start` arrived
+   * while the fetch was in flight is not mistaken for stale: the snapshot
+   * predates the job, so its absence proves nothing.
    */
-  function clearActiveJobIfStale(activeJobIds: Set<JobId>) {
+  function clearActiveJobIfStale(
+    activeJobIds: Set<JobId>,
+    snapshotRequestedAt?: number
+  ) {
     const id = activeJobId.value
-    if (id && !activeJobIds.has(id)) resetExecutionState(id)
+    if (!id || activeJobIds.has(id)) return
+    const startedAt = queuedJobs.value[id]?.executionStartedAt
+    if (
+      snapshotRequestedAt !== undefined &&
+      startedAt !== undefined &&
+      startedAt >= snapshotRequestedAt
+    )
+      return
+    resetExecutionState(id)
   }
 
   function isJobInitializing(jobId: JobId | number | undefined): boolean {
