@@ -15,6 +15,7 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import {
   createTestSubgraph,
   createTestSubgraphNode
@@ -861,6 +862,31 @@ describe('attachDocOpMinter', () => {
     delete widget.serialize
 
     expect(wireNodeSnapshot(source)?.widgets_values).toEqual({})
+  })
+
+  it('omits doc-internal incarnation storage from an imported missing-node snapshot', () => {
+    const node = new LGraphNode('Missing ImageScaleToTotalPixels')
+    const imported: ISerialisedNode = {
+      id: 41,
+      type: 'ImageScaleToTotalPixels',
+      pos: [10, 20],
+      size: [240, 120],
+      flags: {},
+      order: 0,
+      mode: 0
+    }
+    node.last_serialization = Object.assign(imported, {
+      __incarnation: '0',
+      extension_payload: { owner: 'custom-node' }
+    })
+
+    expect(wireNodeSnapshot(node)).toEqual(
+      expect.objectContaining({
+        type: 'ImageScaleToTotalPixels',
+        extension_payload: { owner: 'custom-node' }
+      })
+    )
+    expect(wireNodeSnapshot(node)).not.toHaveProperty('__incarnation')
   })
 
   it('does not mint an active-graph widget write without a live widget', async () => {
