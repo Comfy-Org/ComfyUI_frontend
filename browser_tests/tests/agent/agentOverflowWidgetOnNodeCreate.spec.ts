@@ -199,7 +199,7 @@ test.describe(
       // the preceding position not to be blanked while applying the alias.
       await expect(
         node.getByRole('spinbutton', { name: 'mode.a' })
-      ).toHaveValue(/\d+/)
+      ).toHaveValue(/^(80|91)$/)
     })
   }
 )
