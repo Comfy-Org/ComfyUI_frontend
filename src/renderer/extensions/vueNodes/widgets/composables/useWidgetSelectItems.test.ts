@@ -882,7 +882,7 @@ describe('useWidgetSelectItems', () => {
       expect(dropdownItems.value[0].name).toBe('plain.glb [output]')
     })
 
-    it('does not prefix the subfolder for non-mesh kinds even when present', async () => {
+    it('prefixes the subfolder for non-mesh kinds too', async () => {
       mockMediaAssets.items.value = [
         fromPartial({
           id: 'asset-image-1',
@@ -893,6 +893,66 @@ describe('useWidgetSelectItems', () => {
             jobId: 'job-image',
             nodeId: '9',
             subfolder: 'sub'
+          }
+        })
+      ]
+
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => [],
+          modelValue: ref(undefined),
+          assetKind: () => 'image' as const
+        })
+      )
+      filterSelected.value = 'outputs'
+      await nextTick()
+
+      expect(dropdownItems.value).toHaveLength(1)
+      expect(dropdownItems.value[0].name).toBe('sub/photo.png [output]')
+    })
+  })
+
+  describe('output asset temp filtering', () => {
+    it('excludes preview/compare outputs served from temp/, not output/', async () => {
+      mockMediaAssets.items.value = [
+        fromPartial({
+          id: 'asset-temp-1',
+          name: 'ComfyUI_temp_abcde_00001_.png',
+          preview_url:
+            '/api/view?filename=ComfyUI_temp_abcde_00001_.png&type=temp&subfolder=',
+          tags: ['output'],
+          user_metadata: {
+            jobId: 'job-temp',
+            nodeId: '10',
+            subfolder: ''
+          }
+        })
+      ]
+
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => [],
+          modelValue: ref(undefined),
+          assetKind: () => 'image' as const
+        })
+      )
+      filterSelected.value = 'outputs'
+      await nextTick()
+
+      expect(dropdownItems.value).toHaveLength(0)
+    })
+
+    it('still includes real output assets whose preview_url has no type param', async () => {
+      mockMediaAssets.items.value = [
+        fromPartial({
+          id: 'asset-output-1',
+          name: 'photo.png',
+          preview_url: '/api/view?filename=photo.png',
+          tags: ['output'],
+          user_metadata: {
+            jobId: 'job-output',
+            nodeId: '11',
+            subfolder: ''
           }
         })
       ]
