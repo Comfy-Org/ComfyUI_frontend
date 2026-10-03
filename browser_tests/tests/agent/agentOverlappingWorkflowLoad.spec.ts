@@ -101,5 +101,74 @@ test.describe(
         await expect(vueNodes.getNodeByTitle('older workflow')).toHaveCount(0)
       })
     })
+
+    /**
+     * The same defect in the sibling entry point. An API-JSON import awaits the
+     * same `beforeLoadGraph` hook and then runs the same destructive
+     * `setGraph()`/`clean()` pair, but took no part in the ownership sequence
+     * `loadGraphData` commits to — so it both erased a newer committed graph
+     * and could itself be erased by a load that was still suspended.
+     */
+    test('the newer workflow survives a superseded API JSON import', async ({
+      comfyPage,
+      agentPanel
+    }) => {
+      test.setTimeout(60_000)
+      const { page, vueNodes } = comfyPage
+
+      await agentPanel.open()
+      await vueNodes.setEnabled(true)
+
+      await test.step('hold an API JSON import open, then load a workflow', async () => {
+        await page.evaluate(
+          async ([extensionName, apiPrompt, newer]) => {
+            let release!: () => void
+            const held = new Promise<void>((resolve) => {
+              release = resolve
+            })
+            let holdNext = true
+            window.app!.registerExtension({
+              name: extensionName,
+              beforeLoadGraph: async () => {
+                if (!holdNext) return
+                holdNext = false
+                await held
+              }
+            })
+
+            const apiImport = window.app!.loadApiJson(
+              apiPrompt,
+              'superseded-api-prompt.json'
+            )
+            // The workflow load commits while the import is parked inside
+            // `beforeLoadGraph`, before the import has touched the canvas.
+            await window.app!.loadGraphData(newer as never)
+            release()
+            await apiImport
+          },
+          [
+            `${STALL_EXTENSION}.apiJson`,
+            {
+              '1': {
+                class_type: 'EmptyLatentImage',
+                inputs: {},
+                _meta: { title: 'superseded api import' }
+              }
+            },
+            noteWorkflow('newer workflow')
+          ] as const
+        )
+      })
+
+      await test.step('the canvas still shows the newer workflow', async () => {
+        await expect(vueNodes.nodes).toHaveCount(1)
+        await expect(
+          vueNodes.getNodeByTitle('newer workflow').first()
+        ).toBeVisible()
+        await expect(
+          vueNodes.getNodeByTitle('superseded api import')
+        ).toHaveCount(0)
+      })
+    })
   }
 )

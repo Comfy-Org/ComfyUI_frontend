@@ -2929,6 +2929,291 @@ describe('ComfyApp', () => {
     )
   })
 
+  describe('graph-load ownership across the import paths', () => {
+    function markerNode(): LGraphNode {
+      const node = new LGraphNode('marker', 'marker')
+      node.id = toNodeId('marker')
+      return node
+    }
+
+    it('does not let a superseded API JSON import erase the newer graph', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      const clean = vi.spyOn(app, 'clean').mockImplementation(() => {})
+      let releaseImport!: () => void
+      const importBlocked = new Promise<void>((resolve) => {
+        releaseImport = resolve
+      })
+      vi.when(mockExtensionService.invokeExtensionsAsync)
+        .calledWith('beforeLoadGraph')
+        .thenReturnOnce(importBlocked)
+
+      // The import suspends in the same `beforeLoadGraph` hook `loadGraphData`
+      // awaits, and then clears the graph just as destructively.
+      const apiImport = app.loadApiJson({}, 'superseded.json')
+      await app.loadGraphData(createWorkflowGraphData(), true)
+      const survivor = markerNode()
+      graph.add(survivor)
+      vi.mocked(mockCanvas.setGraph).mockClear()
+      clean.mockClear()
+      releaseImport()
+      await apiImport
+
+      expect(mockCanvas.setGraph).not.toHaveBeenCalled()
+      expect(clean).not.toHaveBeenCalled()
+      expect(graph.getNodeById(survivor.id)).toBe(survivor)
+    })
+
+    it('does not let a load still awaiting its hooks erase a committed API JSON import', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      const clean = vi.spyOn(app, 'clean').mockImplementation(() => {})
+      let releaseOlderLoad!: () => void
+      const olderLoadBlocked = new Promise<void>((resolve) => {
+        releaseOlderLoad = resolve
+      })
+      vi.when(mockExtensionService.invokeExtensionsAsync)
+        .calledWith('beforeLoadGraph')
+        .thenReturnOnce(olderLoadBlocked)
+
+      // The other direction of the same hole: an import that commits while a
+      // workflow load is suspended is invisible to the load's ownership check,
+      // so the load resumes believing it still owns the graph.
+      const olderLoad = app.loadGraphData(createWorkflowGraphData(), true)
+      await app.loadApiJson({}, 'committed.json')
+      const survivor = markerNode()
+      graph.add(survivor)
+      vi.mocked(mockCanvas.setGraph).mockClear()
+      clean.mockClear()
+      releaseOlderLoad()
+      await olderLoad
+
+      expect(mockCanvas.setGraph).not.toHaveBeenCalled()
+      expect(clean).not.toHaveBeenCalled()
+      expect(graph.getNodeById(survivor.id)).toBe(survivor)
+    })
+
+    it('does not add a superseded API JSON import’s nodes to the newer graph', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      vi.spyOn(app, 'clean').mockImplementation(() => {})
+      let releaseReplacements!: () => void
+      const replacementsBlocked = new Promise<void>((resolve) => {
+        releaseReplacements = resolve
+      })
+      // The replacement manifest is fetched between this import's first
+      // ownership gate and the block that creates its nodes.
+      vi.spyOn(useNodeReplacementStore(), 'load').mockReturnValueOnce(
+        replacementsBlocked
+      )
+
+      const apiImport = app.loadApiJson(
+        { '1': { class_type: 'KSampler', inputs: {} } },
+        'superseded.json'
+      )
+      await vi.waitFor(() =>
+        expect(useNodeReplacementStore().load).toHaveBeenCalled()
+      )
+      await app.loadGraphData(createWorkflowGraphData(), true)
+      releaseReplacements()
+      await apiImport
+
+      expect(graph.nodes).toHaveLength(0)
+    })
+
+    it('does not bind a superseded API JSON import’s workflow to the newer graph', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      vi.spyOn(app, 'clean').mockImplementation(() => {})
+      let releaseImport!: () => void
+      const importBlocked = new Promise<void>((resolve) => {
+        releaseImport = resolve
+      })
+      // The import has already built its graph and claimed ownership, then
+      // suspends in the last hook before it binds a workflow.
+      vi.when(mockExtensionService.invokeExtensionsAsync)
+        .calledWith('afterConfigureGraph', expect.anything())
+        .thenReturnOnce(importBlocked)
+
+      const apiImport = app.loadApiJson({}, 'superseded.json')
+      await vi.waitFor(() =>
+        expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+          'afterConfigureGraph',
+          expect.anything()
+        )
+      )
+      await app.loadGraphData(createWorkflowGraphData(), true)
+      mockWorkflowService.afterLoadNewGraph.mockClear()
+      releaseImport()
+      await apiImport
+
+      // `afterLoadNewGraph` serializes the live graph into the workflow it is
+      // given, and the live graph is the newer load's.
+      expect(mockWorkflowService.afterLoadNewGraph).not.toHaveBeenCalled()
+    })
+
+    it('does not let a superseded A1111 import clear the newer load’s missing nodes', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+        parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+      })
+      let releaseEmbeddings!: () => void
+      const embeddingsBlocked = new Promise<void>((resolve) => {
+        releaseEmbeddings = resolve
+      })
+      mockImportA1111.mockImplementation(
+        async (importGraph, _parameters, beforeGraphClear) => {
+          await embeddingsBlocked
+          await beforeGraphClear?.()
+          importGraph.clear()
+          return 'imported'
+        }
+      )
+
+      const a1111Import = app.handleFile(
+        createTestFile('a1111.png', 'image/png')
+      )
+      await vi.waitFor(() => expect(mockImportA1111).toHaveBeenCalled())
+      await app.loadGraphData(createWorkflowGraphData(), true)
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes(['NewerLoadMissingNode'])
+      releaseEmbeddings()
+      await a1111Import
+
+      // The import's pre-clear hook clears this store in a `finally`, so an
+      // import that lost the graph during the embeddings fetch has to refuse
+      // before that hook starts, not only before the clear.
+      expect(missingNodesStore.missingNodesError?.nodeTypes).toEqual([
+        'NewerLoadMissingNode'
+      ])
+    })
+
+    it('does not let an A1111 import superseded inside beforeLoadGraph clear the newer graph', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+        parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+      })
+      let releaseBeforeLoad!: () => void
+      const beforeLoadBlocked = new Promise<void>((resolve) => {
+        releaseBeforeLoad = resolve
+      })
+      // The import owns the graph when its hook starts and loses it part-way
+      // through, so the gate at the top of the hook cannot catch this one.
+      vi.when(mockExtensionService.invokeExtensionsAsync)
+        .calledWith('beforeLoadGraph')
+        .thenReturnOnce(beforeLoadBlocked)
+      mockImportA1111.mockImplementation(
+        async (importGraph, _parameters, beforeGraphClear) => {
+          await beforeGraphClear?.()
+          importGraph.clear()
+          return 'imported'
+        }
+      )
+
+      const a1111Import = app.handleFile(
+        createTestFile('a1111.png', 'image/png')
+      )
+      await vi.waitFor(() =>
+        expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+          'beforeLoadGraph'
+        )
+      )
+      await app.loadGraphData(createWorkflowGraphData(), true)
+      const survivor = markerNode()
+      graph.add(survivor)
+      releaseBeforeLoad()
+      await a1111Import
+
+      expect(graph.getNodeById(survivor.id)).toBe(survivor)
+    })
+
+    it('does not let a load still awaiting its hooks erase a committed A1111 import', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+        parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+      })
+      const clean = vi.spyOn(app, 'clean').mockImplementation(() => {})
+      let releaseOlderLoad!: () => void
+      const olderLoadBlocked = new Promise<void>((resolve) => {
+        releaseOlderLoad = resolve
+      })
+      vi.when(mockExtensionService.invokeExtensionsAsync)
+        .calledWith('beforeLoadGraph')
+        .thenReturnOnce(olderLoadBlocked)
+      mockImportA1111.mockImplementation(
+        async (importGraph, _parameters, beforeGraphClear) => {
+          await beforeGraphClear?.()
+          importGraph.clear()
+          return 'imported'
+        }
+      )
+
+      // The workflow load suspends first and so consumes the blocked hook; the
+      // import that follows it runs through and claims the graph.
+      const olderLoad = app.loadGraphData(createWorkflowGraphData(), true)
+      await app.handleFile(createTestFile('a1111.png', 'image/png'))
+      vi.mocked(mockCanvas.setGraph).mockClear()
+      clean.mockClear()
+      releaseOlderLoad()
+      await olderLoad
+
+      expect(mockCanvas.setGraph).not.toHaveBeenCalled()
+      expect(clean).not.toHaveBeenCalled()
+    })
+
+    it('does not let a superseded A1111 import clear the newer graph', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+        parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+      })
+      let releaseEmbeddings!: () => void
+      const embeddingsBlocked = new Promise<void>((resolve) => {
+        releaseEmbeddings = resolve
+      })
+      // Mirrors the real `importA1111`: it awaits the embeddings endpoint, then
+      // the pre-clear hook, and only then clears the graph and builds into it.
+      mockImportA1111.mockImplementation(
+        async (importGraph, _parameters, beforeGraphClear) => {
+          await embeddingsBlocked
+          await beforeGraphClear?.()
+          importGraph.clear()
+          return 'imported'
+        }
+      )
+
+      const a1111Import = app.handleFile(
+        createTestFile('a1111.png', 'image/png')
+      )
+      await vi.waitFor(() => expect(mockImportA1111).toHaveBeenCalled())
+      await app.loadGraphData(createWorkflowGraphData(), true)
+      const survivor = markerNode()
+      graph.add(survivor)
+      releaseEmbeddings()
+      await a1111Import
+
+      // `graph.clear()` is unconditional once the hook resolves, so refusing
+      // inside the hook is the last point that leaves the newer graph intact.
+      expect(graph.getNodeById(survivor.id)).toBe(survivor)
+      expect(mockWorkflowService.afterLoadNewGraph).toHaveBeenCalledOnce()
+    })
+  })
+
   describe('clean', () => {
     it('clears missing node packs when the graph is discarded', () => {
       const graph = new LGraph()

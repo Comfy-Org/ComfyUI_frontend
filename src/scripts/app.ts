@@ -166,7 +166,8 @@ import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 import { PromptExecutionError, api } from './api'
 import type { ComfyApi } from './api'
 import { defaultGraph } from './defaultGraph'
-import { importA1111 } from './pnginfo'
+import { importA1111 } from './pnginfo';
+import type { A1111ImportOutcome } from './pnginfo';
 import { applyPromotedWidgetControl } from './promotedWidgetControl'
 import { $el, ComfyUI } from './ui'
 import { ComfyAppMenu } from './ui/menu/index'
@@ -301,6 +302,19 @@ function createNodeOutputsMutationView(
       return deleted
     }
   })
+}
+
+/**
+ * Thrown out of an import's pre-clear hook when a newer graph load has already
+ * committed, because that hook's only way to stop the clear that follows it is
+ * to not return. A private class rather than an `AbortError` so that an
+ * extension aborting its own `beforeLoadGraph` cannot be read as supersession.
+ */
+class SupersededGraphLoad extends Error {
+  constructor() {
+    super('Graph load superseded by a newer load')
+    this.name = 'SupersededGraphLoad'
+  }
 }
 
 export class ComfyApp {
@@ -1309,6 +1323,19 @@ export class ComfyApp {
   }
 
   /**
+   * Claim the graph for `loadId`, so any load or import still suspended in an
+   * earlier hook sees itself as superseded. Every path that builds a graph
+   * commits through here, which is what makes the three of them one sequence
+   * rather than three that cannot see each other.
+   */
+  private commitGraphLoad(loadId: number): void {
+    this.committedGraphLoadSequence = Math.max(
+      loadId,
+      this.committedGraphLoadSequence
+    )
+  }
+
+  /**
    * End a superseded load the way a failed one ends: notify `onGraphLoadError`
    * so any loading state a `beforeLoadGraph` listener opened for this load is
    * closed out. Resolves rather than throws; callers return its result.
@@ -1584,10 +1611,7 @@ export class ComfyApp {
           )
         }
 
-        this.committedGraphLoadSequence = Math.max(
-          loadId,
-          this.committedGraphLoadSequence
-        )
+        this.commitGraphLoad(loadId)
         const preservesPendingCamera =
           !restore_view &&
           workflow !== null &&
@@ -2324,10 +2348,15 @@ export class ComfyApp {
 
     // Use parameters strictly as the final fallback
     if (parameters && typeof parameters === 'string') {
-      const outcome = await importA1111(
-        this.rootGraph,
-        parameters,
-        async () => {
+      // An A1111 import is a graph load too, and a slower one than most: it
+      // awaits the embeddings endpoint before its pre-clear hook runs, and the
+      // hook awaits `beforeLoadGraph` after that.
+      const loadId = ++this.graphLoadSequence
+      let outcome: A1111ImportOutcome
+      try {
+        outcome = await importA1111(this.rootGraph, parameters, async () => {
+          // `importA1111` awaited the embeddings endpoint to get here.
+          if (!this.ownsGraphLoad(loadId)) throw new SupersededGraphLoad()
           try {
             // false: final destination; no later load republishes the hash.
             useWorkflowService().beforeLoadNewGraph(false)
@@ -2335,9 +2364,21 @@ export class ComfyApp {
           } finally {
             useMissingNodesErrorStore().setMissingNodeTypes([])
           }
+          // `graph.clear()` is unconditional once this hook resolves, so
+          // throwing out of it is the only way to stop the clear — and the
+          // last point at which a superseded import leaves the newer graph
+          // intact. Nothing has mutated the graph yet when this throws.
+          if (!this.ownsGraphLoad(loadId)) throw new SupersededGraphLoad()
           this.canvas.setGraph(this.rootGraph)
-        }
-      )
+          // Claimed here rather than after the import returns: everything
+          // `importA1111` does from this point on is synchronous.
+          this.commitGraphLoad(loadId)
+        })
+      } catch (error) {
+        if (!(error instanceof SupersededGraphLoad)) throw error
+        await this.rejectSupersededGraphLoad()
+        return
+      }
       switch (outcome) {
         case 'core-nodes-unavailable':
           useToastStore().addAlert(t('toastMessages.a1111CoreNodesUnavailable'))
@@ -2505,9 +2546,22 @@ export class ComfyApp {
     fileName: string,
     options: { deferWarnings?: boolean } = {}
   ): Promise<void> {
+    // An API-JSON import is a graph load: it awaits the same `beforeLoadGraph`
+    // hook, then calls the same destructive `setGraph()`/`clean()` pair, and
+    // ends by binding a workflow to `rootGraph.serialize()`. It therefore takes
+    // its ownership from the same sequence `loadGraphData` uses, rather than
+    // being invisible to it in both directions.
+    const loadId = ++this.graphLoadSequence
     // false: no workflow load follows to republish the hash.
     useWorkflowService().beforeLoadNewGraph(false)
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+
+    // A newer load can commit while that hook awaits; `setGraph()` and
+    // `clean()` would then erase the graph it just committed.
+    if (!this.ownsGraphLoad(loadId)) {
+      await this.rejectSupersededGraphLoad()
+      return
+    }
     this.canvas.setGraph(this.rootGraph)
     withGraphIntentSource('load', () => this.clean())
 
@@ -2534,6 +2588,13 @@ export class ComfyApp {
     const missingNodeTypes: MissingNodeType[] = []
     const nodeReplacementStore = useNodeReplacementStore()
     await nodeReplacementStore.load()
+
+    // The replacement manifest is fetched, and the block below adds this
+    // import's nodes to whatever graph is live.
+    if (!this.ownsGraphLoad(loadId)) {
+      await this.rejectSupersededGraphLoad()
+      return
+    }
     withGraphIntentSource('load', () => {
       for (const id of ids) {
         const data = apiData[id]
@@ -2704,12 +2765,25 @@ export class ComfyApp {
       app.rootGraph.arrange()
     })
 
+    // The graph is built, which is this path's equivalent of `configure`
+    // returning: claim it so a `loadGraphData` still suspended in its own
+    // `beforeLoadGraph` cannot resume and wipe this import.
+    this.commitGraphLoad(loadId)
+
     // Intentionally no beforeConfigureGraph: API JSON builds nodes directly
     // and never passes a ComfyWorkflowJSON through the configure stage.
     await useExtensionService().invokeExtensionsAsync(
       'afterConfigureGraph',
       missingNodeTypes
     )
+
+    // Same reason as in `loadGraphData`: `afterLoadNewGraph` binds `fileName`
+    // to `rootGraph.serialize()`, so a newer load that committed while that
+    // hook awaited would be serialized into this import's workflow.
+    if (!this.ownsGraphLoad(loadId)) {
+      await this.rejectSupersededGraphLoad()
+      return
+    }
     await useWorkflowService().afterLoadNewGraph(
       fileName,
       this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
