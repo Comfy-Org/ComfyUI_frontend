@@ -73,7 +73,7 @@ describe('foldActivity', () => {
     const rows = foldActivity([
       tool('add_node', true, 100),
       { type: 'tool', callId: 'c2', name: 'add_node', state: 'streaming' },
-      tool('add_node', false, 100)
+      tool('add_node', false, 101)
     ])
 
     expect(rows[0]).toMatchObject({ count: 3, ok: false, state: 'streaming' })
@@ -82,7 +82,7 @@ describe('foldActivity', () => {
   it('retains the settled outcome when the latest retry is still streaming', () => {
     const rows = foldActivity([
       tool('add_node', true, 100),
-      tool('add_node', false, 100),
+      tool('add_node', false, 101),
       { type: 'tool', callId: 'c2', name: 'add_node', state: 'streaming' }
     ])
 
