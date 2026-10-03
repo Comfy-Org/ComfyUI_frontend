@@ -712,7 +712,7 @@ describe('useAgentCrdtFollower', () => {
 
     // No doc_reset precedes this: unlike the reset-then-replace flow above,
     // there is no armed replacement for this workflow to reuse. A bare
-    // bare replacement must still rebind to the new follower object and clear
+    // replacement must still rebind to the new follower object and clear
     // applied state on its own, without arming a lineage replacement.
     const replacementFollower = {
       updatesApplied: 0,
@@ -724,10 +724,8 @@ describe('useAgentCrdtFollower', () => {
     expect(status().updatesApplied).toBe(0)
     expect(projectionState.discardPending).toHaveBeenLastCalledWith('wf-1')
     expect(projectionState.bind).toHaveBeenCalledTimes(2)
-    expect(projectionState.bind).toHaveBeenLastCalledWith(
-      'wf-1',
-      replacementFollower
-    )
+    expect(projectionState.bind.mock.lastCall?.[0]).toBe('wf-1')
+    expect(projectionState.bind.mock.lastCall?.[1]).toBe(replacementFollower)
     expect(projectionState.replaceOnNextFrame).not.toHaveBeenCalled()
     unmount()
   })
