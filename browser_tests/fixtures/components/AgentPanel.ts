@@ -29,6 +29,8 @@ export class AgentPanel {
   public readonly creditsExhaustedPaywall: Locator
   public readonly workSummary: Locator
   public readonly nodeSelectionBanner: Locator
+  public readonly replyAssetTiles: Locator
+  public readonly replyAssetThumbnails: Locator
   public readonly activityRows: Locator
 
   constructor(private readonly page: Page) {
@@ -81,6 +83,10 @@ export class AgentPanel {
       name: new RegExp(`^${escapeRegExp(enMessages.agent.worked)}`)
     })
     this.nodeSelectionBanner = page.getByTestId('node-selection-mode-banner')
+    this.replyAssetTiles = this.root.getByRole('button', { name: /^mesh-\d+$/ })
+    this.replyAssetThumbnails = this.root.getByRole('img', {
+      name: /^mesh-\d+/
+    })
     this.activityRows = this.root
       .getByTestId(TestIds.agent.activityTrace)
       .getByRole('listitem')
