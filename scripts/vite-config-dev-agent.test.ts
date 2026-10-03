@@ -48,7 +48,7 @@ describe('dev agent proxy transport', () => {
     { DEV_AGENT_DATA_DIR: '/tmp/comfy-agent' }
   ])('requires both target and a token source: %j', (env) => {
     expect(() => createDevAgentConfig(env)).toThrow(
-      'DEV_AGENT_URL and DEV_AGENT_SESSION_TOKEN must be configured together'
+      'DEV_AGENT_URL needs exactly one token source, and a token source needs DEV_AGENT_URL'
     )
   })
 

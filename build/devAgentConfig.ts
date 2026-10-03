@@ -44,14 +44,14 @@ export function createDevAgentConfig(env: NodeJS.ProcessEnv) {
 
   if (Boolean(url) !== Boolean(sessionToken || dataDir)) {
     throw new Error(
-      'DEV_AGENT_URL and DEV_AGENT_SESSION_TOKEN must be configured together. ' +
-        "Set DEV_AGENT_DATA_DIR instead of DEV_AGENT_SESSION_TOKEN to read the agent's current token from its agent.json."
+      'DEV_AGENT_URL needs exactly one token source, and a token source needs DEV_AGENT_URL. ' +
+        "Set DEV_AGENT_SESSION_TOKEN for a token that will not change, or DEV_AGENT_DATA_DIR to read the agent's current token from its agent.json."
     )
   }
 
   if (env.VITE_AGENT_STANDALONE === 'true' && !url) {
     throw new Error(
-      'VITE_AGENT_STANDALONE requires DEV_AGENT_URL and DEV_AGENT_SESSION_TOKEN; start via scripts/dev-agent-integration.ts.'
+      'VITE_AGENT_STANDALONE requires DEV_AGENT_URL plus a token source; start via scripts/dev-agent-integration.ts.'
     )
   }
 
