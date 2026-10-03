@@ -52,7 +52,15 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
     downloads.value.find((download) => url === download.url)
 
   function notifyProgressListeners(download: ElectronDownload) {
-    for (const listener of progressListeners) listener(download)
+    for (const listener of progressListeners) {
+      // Isolated so one throwing subscriber cannot stop the others, or
+      // abandon a replay partway through.
+      try {
+        listener(download)
+      } catch (error) {
+        console.error('Electron download progress listener failed:', error)
+      }
+    }
   }
 
   function applyProgress(data: ElectronDownload) {
