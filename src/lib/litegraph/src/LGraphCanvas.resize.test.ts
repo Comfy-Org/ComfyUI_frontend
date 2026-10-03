@@ -56,4 +56,37 @@ describe('LGraphCanvas.resize', () => {
       1200
     ])
   })
+
+  it('keeps explicit dimensions in CSS pixels rather than letting the backing store size the layout', () => {
+    const { canvas } = createParentSizedCanvas()
+
+    canvas.resize(800, 600)
+
+    const { style, width, height } = canvas.canvas
+    expect([style.width, style.height, width, height]).toEqual([
+      '800px',
+      '600px',
+      1600,
+      1200
+    ])
+  })
+
+  it('recomputes the LOD threshold when a resize changes DPR', () => {
+    const { canvas } = createParentSizedCanvas()
+    vi.stubGlobal('devicePixelRatio', 1)
+    canvas.resize(800, 600)
+    // A zoom level below the DPR-1 readability threshold (8 / (14 * √1)).
+    canvas.ds.scale = 0.4
+    canvas.ds.computeVisibleArea(undefined)
+    expect(canvas.low_quality).toBe(true)
+
+    // Moving to a high-DPR display raises readability, so the same zoom is
+    // now above the threshold (8 / (14 * √4)) and should render at full
+    // quality. The threshold derives from DPR, so applying one has to
+    // recompute it.
+    vi.stubGlobal('devicePixelRatio', 4)
+    canvas.resize(800, 600)
+
+    expect(canvas.low_quality).toBe(false)
+  })
 })

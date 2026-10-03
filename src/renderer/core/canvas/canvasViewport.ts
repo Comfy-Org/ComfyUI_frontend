@@ -16,12 +16,50 @@ const autoSizedStyleByCanvas = new WeakMap<
   HTMLCanvasElement,
   { width?: string; height?: string }
 >()
+/**
+ * DPR the 2D context transform of each canvas was last scaled by. Assigning
+ * `width` or `height` resets a 2D context to the identity transform, so this
+ * is the only reliable record of whether the DPR transform is still applied.
+ */
+const appliedContextDprByCanvas = new WeakMap<HTMLCanvasElement, number>()
 
-function applyParentSizedCanvasStyle(
+/**
+ * Forget the DPR transform recorded for a canvas, because something assigned
+ * its backing-store dimensions and so reset its 2D context.
+ */
+function invalidateCanvasContextTransform(canvas: HTMLCanvasElement): void {
+  appliedContextDprByCanvas.delete(canvas)
+}
+
+/**
+ * Pin the canvas's CSS box to its logical size, so layout follows the logical
+ * viewport rather than the DPR-scaled backing store. Applies to both the
+ * parent-derived fallback size and an explicit `resize(width, height)`;
+ * declines when the caller or a stylesheet already owns the box.
+ */
+function applyLogicalCanvasStyle(
   canvas: HTMLCanvasElement,
   width: number,
   height: number
 ): void {
+  // A degenerate measurement is never worth pinning: a 0x0 parent measured
+  // during mount would freeze the canvas at zero inline pixels, and the
+  // caller's own sizing would have been correct all along.
+  if (!(width > 0) || !(height > 0)) return
+
+  // CSS already laying the canvas out at exactly this size means a class or
+  // stylesheet rule owns the box (the app canvas is `absolute inset-0
+  // size-full`). Inline pixels would replace a live rule with a snapshot and
+  // stop the canvas following its parent.
+  const rect = canvas.getBoundingClientRect()
+  if (
+    Math.abs(rect.width - width) < 1 &&
+    Math.abs(rect.height - height) < 1 &&
+    rect.width > 0 &&
+    rect.height > 0
+  )
+    return
+
   const { style } = canvas
   const previousStyle = autoSizedStyleByCanvas.get(canvas) ?? {}
   const nextStyle: { width?: string; height?: string } = {}
@@ -95,11 +133,49 @@ function measureViewportFromElement(
   } finally {
     element.width = savedWidth
     element.height = savedHeight
+    // Restoring the backing store leaves the 2D context at the identity
+    // transform, so the DPR scale has to be re-applied even when the applied
+    // viewport is about to come back byte-identical.
+    invalidateCanvasContextTransform(element)
   }
   const width = cssRect.width || previousViewport?.cssWidth || initialRect.width
   const height =
     cssRect.height || previousViewport?.cssHeight || initialRect.height
   return measureViewport(width, height, rawDpr)
+}
+
+/**
+ * Size one canvas's backing store to `viewport` and leave its 2D context
+ * scaled by the applied DPR.
+ *
+ * Both are one concern because they share one mechanism: assigning `width` or
+ * `height` resets the context to the identity transform. So a size change
+ * always costs a re-scale, and a DPR-only change has to force a reset before
+ * scaling, since `scale()` multiplies the existing transform.
+ */
+function applySurfaceViewport(
+  canvas: HTMLCanvasElement,
+  viewport: CanvasViewport
+): void {
+  const { physicalWidth, physicalHeight, dpr } = viewport
+  let contextReset = false
+  if (canvas.width !== physicalWidth) {
+    canvas.width = physicalWidth
+    contextReset = true
+  }
+  if (canvas.height !== physicalHeight) {
+    canvas.height = physicalHeight
+    contextReset = true
+  }
+  if (contextReset) invalidateCanvasContextTransform(canvas)
+
+  if (appliedContextDprByCanvas.get(canvas) === dpr) return
+
+  // The transform is unknown or wrong while the backing store already matches,
+  // so reassign one dimension purely to return the context to identity.
+  if (!contextReset) canvas.width = physicalWidth
+  canvas.getContext('2d')?.scale(dpr, dpr)
+  appliedContextDprByCanvas.set(canvas, dpr)
 }
 
 function applyViewport(
@@ -108,34 +184,8 @@ function applyViewport(
   bg: HTMLCanvasElement,
   consumer?: CanvasViewportConsumer
 ): CanvasViewport {
-  const previousForegroundViewport = appliedViewportByCanvas.get(fg)
-  const foregroundChanged =
-    fg.width !== viewport.physicalWidth ||
-    fg.height !== viewport.physicalHeight ||
-    previousForegroundViewport?.dpr !== viewport.dpr
-  if (
-    fg.width !== viewport.physicalWidth ||
-    previousForegroundViewport?.dpr !== viewport.dpr
-  )
-    fg.width = viewport.physicalWidth
-  if (fg.height !== viewport.physicalHeight) fg.height = viewport.physicalHeight
-  if (foregroundChanged) fg.getContext('2d')?.scale(viewport.dpr, viewport.dpr)
-  if (bg !== fg) {
-    const previousBackgroundViewport = appliedViewportByCanvas.get(bg)
-    const backgroundChanged =
-      bg.width !== viewport.physicalWidth ||
-      bg.height !== viewport.physicalHeight ||
-      previousBackgroundViewport?.dpr !== viewport.dpr
-    if (
-      bg.width !== viewport.physicalWidth ||
-      previousBackgroundViewport?.dpr !== viewport.dpr
-    )
-      bg.width = viewport.physicalWidth
-    if (bg.height !== viewport.physicalHeight)
-      bg.height = viewport.physicalHeight
-    if (backgroundChanged)
-      bg.getContext('2d')?.scale(viewport.dpr, viewport.dpr)
-  }
+  applySurfaceViewport(fg, viewport)
+  if (bg !== fg) applySurfaceViewport(bg, viewport)
 
   appliedViewportByCanvas.set(fg, viewport)
   appliedViewportByCanvas.set(bg, viewport)
@@ -150,6 +200,6 @@ export {
   readBrowserDpr,
   measureViewport,
   measureViewportFromElement,
-  applyParentSizedCanvasStyle,
+  applyLogicalCanvasStyle,
   applyViewport
 }
