@@ -49,6 +49,14 @@ interface LoadPersistedWorkflowOptions {
   fallbackToLatestDraft?: boolean
 }
 
+function deleteDistinctPayload(
+  scope: StorageScope,
+  key: string,
+  preservedKey: string
+): void {
+  if (key !== preservedKey) deletePayload(scope, key)
+}
+
 export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
   const indexCacheByScope = ref<Record<string, DraftIndexV2>>({})
 
@@ -285,12 +293,10 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
 
         if (!persistIndex(result.index)) {
           indexCacheByScope.value[scope] = index
-          deletePayload(scope, result.newKey)
+          deleteDistinctPayload(scope, result.newKey, result.oldKey)
           return
         }
-        if (result.oldKey !== result.newKey) {
-          deletePayload(scope, result.oldKey)
-        }
+        deleteDistinctPayload(scope, result.oldKey, result.newKey)
       }
     }
   }

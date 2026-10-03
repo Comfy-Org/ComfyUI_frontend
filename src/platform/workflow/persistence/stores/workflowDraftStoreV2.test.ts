@@ -471,6 +471,22 @@ describe('workflowDraftStoreV2', () => {
       })
     })
 
+    it('keeps the original payload when a same-key move cannot persist its index', () => {
+      const store = useWorkflowDraftStoreV2()
+      store.saveDraft('workflows/same.json', '{"data":"test"}', {
+        name: 'old',
+        isTemporary: true
+      })
+      withQuotaMock((key) => key === INDEX_KEY)
+
+      store.moveDraft('workflows/same.json', 'workflows/same.json', 'new')
+
+      expect(store.getDraft('workflows/same.json')).toMatchObject({
+        name: 'old',
+        data: '{"data":"test"}'
+      })
+    })
+
     it('removes the copied payload when the moved index cannot be persisted', () => {
       const store = useWorkflowDraftStoreV2()
       store.saveDraft('workflows/old.json', '{"data":"test"}', {
