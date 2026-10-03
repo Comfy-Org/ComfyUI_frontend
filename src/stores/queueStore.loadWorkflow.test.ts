@@ -8,6 +8,7 @@ import type {
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyApp } from '@/scripts/app'
 import * as jobOutputCache from '@/services/jobOutputCache'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { TaskItemImpl } from '@/stores/queueStore'
 
 vi.mock('@/services/extensionService', () => ({
@@ -99,6 +100,23 @@ describe('TaskItemImpl.loadWorkflow - workflow fetching', () => {
 
     expect(jobOutputCache.getJobDetail).toHaveBeenCalledWith('test-job-id')
     expect(mockApp.loadGraphData).toHaveBeenCalledWith(mockWorkflow)
+  })
+
+  it('does not install outputs when the workflow load is superseded', async () => {
+    const job = createHistoryJob('test-job-id')
+    const task = new TaskItemImpl(job)
+    vi.spyOn(jobOutputCache, 'getJobDetail').mockResolvedValue(
+      mockJobDetail as JobDetail
+    )
+    vi.mocked(mockApp.loadGraphData).mockResolvedValue(undefined)
+    const setNodeOutputs = vi.spyOn(
+      useNodeOutputStore(),
+      'setNodeOutputsByExecutionId'
+    )
+
+    await task.loadWorkflow(mockApp)
+
+    expect(setNodeOutputs).not.toHaveBeenCalled()
   })
 
   it('should not load workflow when fetch returns undefined', async () => {
