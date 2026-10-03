@@ -254,6 +254,21 @@ export async function verifyMediaCandidates(
 
   if (signal?.aborted) return
 
+  markPendingCandidates(pending, inputAssets, generatedAssets, {
+    isCloud,
+    pathOptions
+  })
+}
+
+function markPendingCandidates(
+  pending: MissingMediaCandidate[],
+  inputAssets: readonly AssetItem[] | null,
+  generatedAssets: readonly AssetItem[] | null,
+  {
+    isCloud,
+    pathOptions
+  }: { isCloud: boolean; pathOptions: { allowCompactSuffix: boolean } }
+) {
   const inputAssetIdentifiers = new Set<string>()
   const outputAssetIdentifiers = new Set<string>()
   const outputAssetHashIdentifiers = new Set<string>()
@@ -270,11 +285,7 @@ export async function verifyMediaCandidates(
   )
 
   for (const candidate of pending) {
-    const type = getAnnotatedMediaPathTypeForDetection(
-      candidate.name,
-      pathOptions
-    )
-    const isOutputCandidate = type === 'output'
+    const isOutputCandidate = isGeneratedCandidate(candidate, pathOptions)
     if ((isOutputCandidate ? generatedAssets : inputAssets) === null) continue
     const identifiers = isOutputCandidate
       ? outputAssetIdentifiers
