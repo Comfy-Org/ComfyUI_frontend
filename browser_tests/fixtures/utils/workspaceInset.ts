@@ -72,7 +72,7 @@ export async function expectDialogEntersOnScreen(
   page: Page,
   contentClass: string
 ): Promise<void> {
-  const excursionPx = await page.evaluate(async (cls) => {
+  const { excursionPx, observed } = await page.evaluate(async (cls) => {
     const key = 'enter-animation-probe'
     window.app!.extensionManager.dialog.showLayoutDialog({
       key,
@@ -82,10 +82,12 @@ export async function expectDialogEntersOnScreen(
     })
     const startedAt = performance.now()
     let worst = 0
+    let observed = false
     await new Promise<void>((resolve) => {
       const sample = () => {
         const element = document.querySelector(`[data-dialog-key="${key}"]`)
         if (element) {
+          observed = true
           const { left, right } = element.getBoundingClientRect()
           worst = Math.max(worst, -left, right - window.innerWidth)
         }
@@ -94,9 +96,12 @@ export async function expectDialogEntersOnScreen(
       }
       requestAnimationFrame(sample)
     })
-    return worst
+    return { excursionPx: worst, observed }
   }, contentClass)
 
+  comfyExpect(observed, 'dialog was mounted during entrance sampling').toBe(
+    true
+  )
   comfyExpect(
     excursionPx,
     'pixels the dialog left the viewport while opening'
