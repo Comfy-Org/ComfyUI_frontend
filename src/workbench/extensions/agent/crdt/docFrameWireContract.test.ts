@@ -3,22 +3,76 @@ import { describe, expect, it } from 'vitest'
 
 import { encodeBase64, parseServerDocFrame } from './docFrameClient'
 
-const docUpdateFrame = (update_b64: string) => ({
-  type: 'doc_update',
-  data: { v: 1, workflow_id: 'wf-1', seq: 1, update_b64 }
-})
+function docUpdateFrame(update_b64: string) {
+  return {
+    type: 'doc_update',
+    data: {
+      v: 1,
+      workflow_id: 'wf-1',
+      seq: 1,
+      lineage_seq: 1,
+      update_b64
+    }
+  }
+}
 
-const wellFormedFrames = [
-  docUpdateFrame(encodeBase64(Uint8Array.of(1, 2, 3))),
-  { type: 'doc_reset', data: { v: 1, workflow_id: 'wf-1', seq: 7 } }
+const representativeFrames = [
+  {
+    wire: docUpdateFrame(encodeBase64(Uint8Array.of(1, 2, 3))),
+    parsedType: 'doc_update'
+  },
+  {
+    wire: {
+      type: 'doc_reset',
+      data: { v: 1, workflow_id: 'wf-1', seq: 7, lineage_seq: 2 }
+    },
+    parsedType: 'doc_reset'
+  },
+  {
+    wire: {
+      type: 'doc_ops_result',
+      data: {
+        v: 1,
+        workflow_id: 'wf-1',
+        ok: false,
+        seq: 8,
+        applied: ['op-1'],
+        skipped: ['op-3'],
+        failed: { index: 1, op_id: 'op-2', code: 'invalid', message: 'bad op' }
+      }
+    },
+    parsedType: 'doc_ops_result'
+  }
 ]
 
 describe('doc frame wire contract', () => {
-  it('parses every frame the authoritative ingest schema accepts', () => {
-    for (const frame of wellFormedFrames) {
-      expect(zServerDocFrame.safeParse(frame).success).toBe(true)
-      expect(parseServerDocFrame(frame)).not.toBeNull()
+  it.for(representativeFrames)(
+    'parses representative generated $parsedType frames',
+    ({ wire, parsedType }) => {
+      expect(zServerDocFrame.safeParse(wire).success).toBe(true)
+      expect(parseServerDocFrame(wire)).toMatchObject({ type: parsedType })
     }
+  )
+
+  it('maps the generated doc_ops_result failed field at the adapter boundary', () => {
+    const frame = representativeFrames[2].wire
+
+    expect(parseServerDocFrame(frame)).toEqual({
+      type: 'doc_ops_result',
+      data: {
+        workflowId: 'wf-1',
+        ok: false,
+        seq: 8,
+        applied: ['op-1'],
+        skipped: ['op-3'],
+        failed: {
+          index: 1,
+          op_id: 'op-2',
+          code: 'invalid',
+          message: 'bad op'
+        }
+      }
+    })
   })
 
   it.for(['not base64!', 'AQE', 'AQ==    ', 'AQB=', 'AR=='])(

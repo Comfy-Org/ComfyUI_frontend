@@ -1,7 +1,8 @@
 # In-App Agent doc-frame type-generation contract
 
-The CRDT doc-frame wire contract is owned by Comfy Cloud's ingest service. The frontend consumes it
-as a generated artifact and does not maintain a second protocol definition.
+The CRDT doc-frame wire contract is owned by Comfy Cloud's ingest service. The frontend consumes its
+generated types and schemas, then applies stricter runtime validation in a handwritten adapter before
+exposing frontend domain objects.
 
 ## Contract
 
@@ -9,7 +10,7 @@ as a generated artifact and does not maintain a second protocol definition.
 cloud services/ingest/openapi.yaml          (authority)
         ├──▶ cloud common/websocket/docframes  (generated Go models)
         └──▶ packages/ingest-types             (generated TS types + Zod schemas)
-                 └──▶ src/workbench/extensions/agent/crdt
+                 └──▶ docFrameClient.ts       (validation + domain adapter)
 ```
 
 - `ServerDocFrame`, `DocUpdateFrame`/`DocUpdateData`, `DocResetFrame`/`DocResetData`,
@@ -22,14 +23,18 @@ cloud services/ingest/openapi.yaml          (authority)
   that mapping must remain at the adapter boundary.
 - Generated types describe the `{type,data}` bytes; they do not implement CRDT application,
   authority, or mutation semantics.
+- `parseServerDocFrame` deliberately validates constraints that generated Zod cannot express and
+  maps snake-case wire fields to frontend domain names. Its compatibility tests bind representative
+  generated frames to that adapter; they do not claim that the handwritten parser accepts every
+  value admitted by the generated schema.
 
 ## Validation the generated schema cannot provide
 
-`update_b64` is declared `type: string` with a base64 `contentEncoding` annotation. Both OpenAPI
-and the Zod schema generated from it treat that annotation as documentation, so neither rejects a
-malformed payload. Cloud validates base64 in code (`validateB64` in `common/websocket/messages`),
-and the frontend does the same in `parseServerDocFrame`. Schema conformance is therefore necessary
-but not sufficient, and `docFrameWireContract.test.ts` pins both halves.
+`update_b64` is an unconstrained string in the authoritative OpenAPI contract, so its generated Zod
+schema also accepts malformed payloads. Cloud validates base64 in code (`validateB64` in
+`common/websocket/messages`), and the frontend does the same in `parseServerDocFrame`. Schema
+conformance is therefore necessary but not sufficient, and `docFrameWireContract.test.ts` pins both
+halves.
 
 ## References
 
