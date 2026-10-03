@@ -17,8 +17,8 @@ export type PaymentFrictionSignal =
  * What one transition of a pending operation put in the customer's way: a
  * challenge first required under a client secret, this tab's verdict on it,
  * or a retryable decline with a reason the operation did not hold before.
- * A decline the server reports for a challenge this tab already saw fail is
- * the same failure, so it is not reported twice.
+ * The first decline the server reports for a challenge this tab already saw
+ * fail is the same failure, so it is not reported twice.
  */
 export function paymentFrictionBetween(
   before: BillingOperationState | undefined,
@@ -53,7 +53,9 @@ function declineSignals(
   const reason = after.declineReason
   if (reason === undefined || reason === before?.declineReason) return []
   const echoesFailedChallenge =
-    after.presentation === 'embedded' && after.challenge?.status === 'failed'
+    after.presentation === 'embedded' &&
+    after.challenge?.status === 'failed' &&
+    before?.declineReason === undefined
   return echoesFailedChallenge
     ? []
     : [{ stage: 'challenge_failed', declineReason: reason }]

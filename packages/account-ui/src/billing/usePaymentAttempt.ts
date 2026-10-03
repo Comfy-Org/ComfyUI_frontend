@@ -74,6 +74,18 @@ function continuationKey(
     : undefined
 }
 
+/** A non-card method finishes its challenge on the provider's site. */
+function leavesForProvider(
+  state: PendingBillingOperation,
+  method: CheckoutMethodKind | undefined
+): boolean {
+  return (
+    state.challenge?.status === 'required' &&
+    method !== undefined &&
+    method !== 'card'
+  )
+}
+
 export function usePaymentAttempt(
   kind: BillingOperationKind,
   client: Pick<BillingClient, 'lifecycle'>,
@@ -101,31 +113,36 @@ export function usePaymentAttempt(
     projectPaymentStep(operation.value, hostStep.value)
   )
 
+  function openHostedStep(
+    state: PendingBillingOperation,
+    method: CheckoutMethodKind | undefined
+  ) {
+    if (state.actionUrl === undefined) return
+    client.lifecycle.reportHostedStepOpened(
+      state.id,
+      navigationMode === 'redirect' ? 'redirect' : 'new_tab',
+      method
+    )
+    openUrl(state.actionUrl, navigationMode)
+  }
+
+  function driveChallenge(
+    state: PendingBillingOperation,
+    method: CheckoutMethodKind | undefined
+  ) {
+    if (challengePort === undefined) return
+    if (leavesForProvider(state, method)) {
+      client.lifecycle.reportHostedStepOpened(state.id, 'redirect', method)
+    }
+    void driveEmbeddedChallenge(client.lifecycle, state.id, challengePort)
+  }
+
   function continueVerification() {
     const state = operation.value
     if (state?.phase !== 'pending') return
     const method = methodKind()
-    if (state.presentation === 'hosted') {
-      if (state.actionUrl !== undefined) {
-        client.lifecycle.reportHostedStepOpened(
-          state.id,
-          navigationMode === 'redirect' ? 'redirect' : 'new_tab',
-          method
-        )
-        openUrl(state.actionUrl, navigationMode)
-      }
-      return
-    }
-    if (challengePort === undefined) return
-    // A non-card method finishes its challenge on the provider's site.
-    if (
-      state.challenge?.status === 'required' &&
-      method !== undefined &&
-      method !== 'card'
-    ) {
-      client.lifecycle.reportHostedStepOpened(state.id, 'redirect', method)
-    }
-    void driveEmbeddedChallenge(client.lifecycle, state.id, challengePort)
+    if (state.presentation === 'hosted') openHostedStep(state, method)
+    else driveChallenge(state, method)
   }
 
   // Once per continuation the server offers; a resumed operation is not
