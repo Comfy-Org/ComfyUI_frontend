@@ -24,6 +24,9 @@ test.describe(
       await panel.root
         .getByRole('button', { name: enMessages.agent.send })
         .click()
+      await expect(
+        panel.root.getByText(enMessages.agent.thinking).first()
+      ).toBeVisible()
       await inputOrderHost.waitForSubscribe()
       inputOrderHost.send({
         type: 'agent_message_done',
