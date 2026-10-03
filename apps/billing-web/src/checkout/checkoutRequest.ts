@@ -68,8 +68,8 @@ export interface PaymentChoice {
   readonly confirmReactivation?: boolean
 }
 
-/** A new method other than a card authenticates on its own site, so the page leaves while it pays. */
-export function paysOnOwnSite({ methodType }: PaymentChoice): boolean {
+/** A method other than a card authenticates on its own site, so the page leaves while it pays. */
+export function paysOnOwnSite(methodType: string | undefined): boolean {
   return methodType !== undefined && methodType !== 'card'
 }
 

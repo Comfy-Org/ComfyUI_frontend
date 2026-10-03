@@ -521,11 +521,12 @@ function selectedRailOf(choice: PaymentChoice) {
   return choice.savedPaymentMethodId !== undefined ? 'saved' : 'on_file'
 }
 
-function reportMethodSelected(choice: PaymentChoice) {
-  const savedType = methods.value?.find(
-    ({ id }) => id === choice.savedPaymentMethodId
-  )?.type
-  journey.methodSelected(selectedRailOf(choice), choice.methodType ?? savedType)
+/** The chosen method's type: the form names a new one, and a saved one is read from the loaded methods. */
+function methodTypeOf(choice: PaymentChoice): string | undefined {
+  return (
+    choice.methodType ??
+    methods.value?.find(({ id }) => id === choice.savedPaymentMethodId)?.type
+  )
 }
 
 async function pay(choice: PaymentChoice) {
@@ -533,9 +534,10 @@ async function pay(choice: PaymentChoice) {
   const slug = planSlug.value
   if (slug === undefined || !quoted || loading.value) return
   submitFailure.value = undefined
-  reportMethodSelected(choice)
+  const methodType = methodTypeOf(choice)
+  journey.methodSelected(selectedRailOf(choice), methodType)
   const press = journey.submitted()
-  payingOnOwnSite = paysOnOwnSite(choice)
+  payingOnOwnSite = paysOnOwnSite(methodType)
   let result: SubscriptionCommandResult
   try {
     result = await attempts.run(checkoutAttemptOf(quoted, entry.value), () =>

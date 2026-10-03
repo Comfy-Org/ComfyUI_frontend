@@ -1,6 +1,5 @@
 import { previewOf } from '@/test/fakeBillingClient'
 
-import type { PaymentChoice } from './checkoutRequest'
 import {
   buildSubscribeRequest,
   paysOnOwnSite,
@@ -127,34 +126,12 @@ describe('buildSubscribeRequest', () => {
 })
 
 describe('paysOnOwnSite', () => {
-  it.for<{ name: string; choice: PaymentChoice; away: boolean }>([
-    {
-      name: 'a new Alipay account',
-      choice: { confirmationToken: 'ctoken_1', methodType: 'alipay' },
-      away: true
-    },
-    {
-      name: 'a new method of any other non-card type',
-      choice: { confirmationToken: 'ctoken_1', methodType: 'sepa_debit' },
-      away: true
-    },
-    {
-      name: 'a new card',
-      choice: { confirmationToken: 'ctoken_1', methodType: 'card' },
-      away: false
-    },
-    {
-      name: 'a method the form could not name',
-      choice: { confirmationToken: 'ctoken_1' },
-      away: false
-    },
-    {
-      name: 'a saved method',
-      choice: { savedPaymentMethodId: 'pm_visa' },
-      away: false
-    },
-    { name: 'the method on file', choice: {}, away: false }
-  ])('says $name pays on its own site: $away', ({ choice, away }) => {
-    expect(paysOnOwnSite(choice)).toBe(away)
+  it.for<{ name: string; methodType: string | undefined; away: boolean }>([
+    { name: 'an Alipay account', methodType: 'alipay', away: true },
+    { name: 'any other non-card method', methodType: 'sepa_debit', away: true },
+    { name: 'a card', methodType: 'card', away: false },
+    { name: 'a method nobody named', methodType: undefined, away: false }
+  ])('says $name pays on its own site: $away', ({ methodType, away }) => {
+    expect(paysOnOwnSite(methodType)).toBe(away)
   })
 })
