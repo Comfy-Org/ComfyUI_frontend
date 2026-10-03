@@ -6701,7 +6701,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       height = parent.offsetHeight
     }
 
-    applyLogicalCanvasStyle(this.canvas, width ?? 0, height ?? 0)
+    const bitmapDiscarded = applyLogicalCanvasStyle(
+      this.canvas,
+      width ?? 0,
+      height ?? 0
+    )
 
     const viewport = measureViewport(
       width ?? 0,
@@ -6709,7 +6713,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       window.devicePixelRatio
     )
 
+    // A discarded bitmap has to be repainted even when nothing resized, or the
+    // canvas stays blank until something else happens to mark it dirty.
     if (
+      !bitmapDiscarded &&
       this.canvas.width === viewport.physicalWidth &&
       this.canvas.height === viewport.physicalHeight &&
       this.bgcanvas.width === viewport.physicalWidth &&

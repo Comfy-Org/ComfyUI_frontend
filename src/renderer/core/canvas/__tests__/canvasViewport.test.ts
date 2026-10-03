@@ -298,14 +298,31 @@ describe('applyLogicalCanvasStyle', () => {
     ])
   })
 
-  it('reuses the stylesheet verdict instead of reprobing an unchanged canvas', () => {
-    const canvas = createTestCanvasElement({ cssSize: [800, 600] })
-    applyLogicalCanvasStyle(canvas, 800, 600)
+  it('does not probe a canvas whose layout box differs from its backing store', () => {
+    // The steady state of a stylesheet-sized canvas above DPR 1: the box cannot
+    // be coming from attributes it does not match, so no probe is needed.
+    const canvas = createTestCanvasElement({
+      width: 1600,
+      height: 1200,
+      cssSize: [800, 600]
+    })
     const backingStoreWrites = vi.spyOn(canvas, 'width', 'set')
 
-    applyLogicalCanvasStyle(canvas, 800, 600)
+    const bitmapDiscarded = applyLogicalCanvasStyle(canvas, 800, 600)
 
     expect(backingStoreWrites).not.toHaveBeenCalled()
+    expect(bitmapDiscarded).toBe(false)
     expect([canvas.style.width, canvas.style.height]).toEqual(['', ''])
+  })
+
+  it('reports a discarded bitmap when the ambiguous case had to be probed', () => {
+    const sizedByStylesheet = createTestCanvasElement({ cssSize: [800, 600] })
+    const sizedByAttributes = createTestCanvasElement()
+    setIntrinsicCanvasLayout(sizedByAttributes)
+
+    expect([
+      applyLogicalCanvasStyle(sizedByStylesheet, 800, 600),
+      applyLogicalCanvasStyle(sizedByAttributes, 800, 600)
+    ]).toEqual([true, true])
   })
 })

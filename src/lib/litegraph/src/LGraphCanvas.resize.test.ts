@@ -91,6 +91,29 @@ describe('LGraphCanvas.resize', () => {
     ])
   })
 
+  it('repaints when the sizing probe discarded the bitmap but nothing resized', () => {
+    vi.stubGlobal('devicePixelRatio', 1)
+    const { canvas } = createParentSizedCanvas()
+    // A stylesheet-sized canvas at DPR 1, so its backing store already matches
+    // its layout box: the ambiguous case that has to be probed, with no size
+    // change afterwards to force a redraw on its own.
+    vi.spyOn(canvas.canvas, 'getBoundingClientRect').mockReturnValue(
+      new DOMRect(0, 0, 800, 600)
+    )
+    canvas.canvas.width = 800
+    canvas.canvas.height = 600
+    canvas.dirty_canvas = false
+    canvas.dirty_bgcanvas = false
+
+    canvas.resize()
+
+    expect([canvas.dirty_canvas, canvas.dirty_bgcanvas]).toEqual([true, true])
+    expect([canvas.canvas.style.width, canvas.canvas.style.height]).toEqual([
+      '',
+      ''
+    ])
+  })
+
   it('recomputes the LOD threshold when a resize changes DPR', () => {
     const { canvas } = createParentSizedCanvas()
     vi.stubGlobal('devicePixelRatio', 1)

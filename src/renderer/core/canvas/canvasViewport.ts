@@ -21,7 +21,6 @@ const autoSizedStyleByCanvas = new WeakMap<
   HTMLCanvasElement,
   { width?: string; height?: string }
 >()
-const stylesheetSizeByCanvas = new WeakMap<HTMLCanvasElement, Size>()
 
 /**
  * Sets the context transform to the applied DPR outright, so it neither
@@ -68,55 +67,69 @@ function matchesRequestedSize(
   )
 }
 
-/** Whether CSS, rather than the backing-store attributes, gives `rect`. */
-function isSizedByCss(canvas: HTMLCanvasElement, rect: Size): boolean {
-  // Probing forces a reflow and clears the bitmap, so reuse the verdict while
-  // the box is unchanged. A canvas that stops being sized by CSS resizes doing
-  // so, which invalidates the entry.
-  const cached = stylesheetSizeByCanvas.get(canvas)
-  if (cached?.width === rect.width && cached.height === rect.height) return true
-
-  const probed = probeCssSize(canvas)
-  if (!(probed.width > 0) || !(probed.height > 0)) {
-    stylesheetSizeByCanvas.delete(canvas)
-    return false
-  }
-  stylesheetSizeByCanvas.set(canvas, probed)
-  return true
+interface SizeOwnership {
+  /** Whether something other than the backing-store attributes owns the size. */
+  readonly independent: boolean
+  /** Whether answering the question discarded the canvas bitmap. */
+  readonly probed: boolean
 }
 
 /**
  * Whether the canvas already lays out at `width` x `height` for a reason other
  * than its own backing-store attributes, and so must keep its current sizing.
  *
- * A layout box that merely matches is not enough to tell: a stylesheet-sized
- * canvas and an `auto`-sized one whose attributes happen to agree look
- * identical until {@link applyViewport} writes DPR-scaled attributes, at which
- * point only the latter's layout box grows with them.
+ * A layout box that merely matches the request is not enough to tell: a
+ * stylesheet-sized canvas and an `auto`-sized one whose attributes happen to
+ * agree look identical until {@link applyViewport} writes DPR-scaled
+ * attributes, at which point only the latter's layout box grows with them.
  */
-function hasIndependentLogicalSize(
+function readSizeOwnership(
   canvas: HTMLCanvasElement,
+  rect: Size,
   width: number,
   height: number
-): boolean {
-  const rect = canvas.getBoundingClientRect()
-  if (!matchesRequestedSize(rect, width, height)) return false
+): SizeOwnership {
+  if (!matchesRequestedSize(rect, width, height))
+    return { independent: false, probed: false }
 
   // Inline dimensions already decouple the layout box from the backing store,
-  // whether this function pinned them or the caller did.
+  // whether this module pinned them or the caller did.
   const { style } = canvas
-  if (style.width && style.height) return true
+  if (style.width && style.height) return { independent: true, probed: false }
 
-  return isSizedByCss(canvas, rect)
+  // A layout box that differs from the backing-store attributes cannot be
+  // coming from them, so something else already owns the size. This is the
+  // steady state of a stylesheet-sized canvas at a DPR above one, and settling
+  // it here is what keeps the destructive probe below rare.
+  if (canvas.width !== rect.width || canvas.height !== rect.height)
+    return { independent: true, probed: false }
+
+  // Equal is the ambiguous case. Only an `auto`-sized box collapses when the
+  // attributes go away, and finding that out costs the bitmap.
+  const probed = probeCssSize(canvas)
+  return { independent: probed.width > 0 && probed.height > 0, probed: true }
 }
 
+/**
+ * Pins the canvas's logical CSS size, unless something else already owns it.
+ *
+ * @returns whether deciding that discarded the canvas bitmap. A caller that
+ * skips work when nothing resized must still repaint when this is true.
+ */
 function applyLogicalCanvasStyle(
   canvas: HTMLCanvasElement,
   width: number,
   height: number
-): void {
-  if (!(width > 0) || !(height > 0)) return
-  if (hasIndependentLogicalSize(canvas, width, height)) return
+): boolean {
+  if (!(width > 0) || !(height > 0)) return false
+
+  const { independent, probed } = readSizeOwnership(
+    canvas,
+    canvas.getBoundingClientRect(),
+    width,
+    height
+  )
+  if (independent) return probed
 
   const { style } = canvas
   const previousStyle = autoSizedStyleByCanvas.get(canvas) ?? {}
@@ -130,6 +143,7 @@ function applyLogicalCanvasStyle(
     nextStyle.height = style.height
   }
   autoSizedStyleByCanvas.set(canvas, nextStyle)
+  return probed
 }
 
 function normalizeDpr(rawDpr: number): number {
