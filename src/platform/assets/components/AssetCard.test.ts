@@ -3,12 +3,21 @@ import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 
+import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import AssetCard from '@/platform/assets/components/AssetCard.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
+
+const { mockCanCreateNodeForAsset } = vi.hoisted(() => ({
+  mockCanCreateNodeForAsset: vi.fn(() => true)
+}))
+
+vi.mock(import('@/platform/assets/utils/resolveModelNodeFromAsset'), () => ({
+  canCreateNodeForAsset: mockCanCreateNodeForAsset
+}))
 
 vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
@@ -66,6 +75,7 @@ function renderCard(asset: AssetDisplayItem) {
 }
 
 beforeEach(() => {
+  mockCanCreateNodeForAsset.mockReturnValue(true)
   vi.mocked(useSettingStore().get).mockImplementation(() => 0)
   vi.mocked(useAssetDownloadStore().isDownloadedThisSession).mockImplementation(
     () => false
@@ -77,6 +87,20 @@ beforeEach(() => {
 })
 
 describe('AssetCard', () => {
+  it('exposes and blocks Use when the asset has no node provider', async () => {
+    const user = userEvent.setup()
+    mockCanCreateNodeForAsset.mockReturnValue(false)
+
+    const { emitted } = renderCard(createDisplayAsset())
+    const useButton = screen.getByRole('button', {
+      name: 'g.use: assetBrowser.useDisabledNoProvider'
+    })
+
+    expect(useButton).toHaveAttribute('aria-disabled', 'true')
+    await user.click(useButton)
+    expect(emitted()).not.toHaveProperty('select')
+  })
+
   describe('FE-228: filename rendering', () => {
     it('renders the human-readable filename instead of hash when asset.name equals hash', () => {
       const asset = createDisplayAsset()

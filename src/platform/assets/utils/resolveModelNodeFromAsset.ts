@@ -28,6 +28,23 @@ interface ResolvedModelNode {
 
 type Result<T, E> = { success: true; value: T } | { success: false; error: E }
 
+/** Whether the loaded node registry can create a loader for this asset. */
+export function canCreateNodeForAsset(asset: AssetItem): boolean {
+  const { flags } = useFeatureFlags()
+  const candidates = getAssetNodeCategoryCandidates(
+    asset,
+    flags.supportsModelTypeTags
+  )
+  const modelToNodeStore = useModelToNodeStore()
+
+  modelToNodeStore.registerDefaults()
+  if (!modelToNodeStore.isReady) return true
+
+  return candidates.some(
+    (category) => modelToNodeStore.getNodeProvider(category) !== undefined
+  )
+}
+
 /**
  * Resolves an asset item to the node provider and filename needed to add a
  * model loader node. Validation failures return error results rather than

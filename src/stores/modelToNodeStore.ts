@@ -24,6 +24,7 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
   const modelToNodeMap = ref<Partial<Record<string, ModelNodeProvider[]>>>({})
   const nodeDefStore = useNodeDefStore()
   const haveDefaultsLoaded = ref(false)
+  const isReady = computed(() => haveDefaultsLoaded.value)
 
   /** Internal computed for reactive caching of registered node types */
   const registeredNodeTypes = computed<Record<string, string>>(() => {
@@ -161,6 +162,7 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
 
   return {
     modelToNodeMap,
+    isReady,
     getRegisteredNodeTypes,
     getCategoryForNodeType,
     getNodeProvider,

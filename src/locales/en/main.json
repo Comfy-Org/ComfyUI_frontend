@@ -3916,6 +3916,7 @@
   "cloudSurvey_steps_source": "How did you find us?",
   "cloudSurvey_steps_source_social": "Which platform?",
   "assetBrowser": {
+    "useDisabledNoProvider": "This model type is not supported yet",
     "allCategory": "All {category}",
     "allModels": "All Models",
     "byType": "By type",
