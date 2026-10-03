@@ -288,7 +288,9 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
           deletePayload(scope, result.newKey)
           return
         }
-        deletePayload(scope, result.oldKey)
+        if (result.oldKey !== result.newKey) {
+          deletePayload(scope, result.oldKey)
+        }
       }
     }
   }

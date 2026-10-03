@@ -456,6 +456,21 @@ describe('workflowDraftStoreV2', () => {
       )
     })
 
+    it('keeps the payload when moving a draft onto the same key', () => {
+      const store = useWorkflowDraftStoreV2()
+      store.saveDraft('workflows/same.json', '{"data":"test"}', {
+        name: 'old',
+        isTemporary: true
+      })
+
+      store.moveDraft('workflows/same.json', 'workflows/same.json', 'new')
+
+      expect(store.getDraft('workflows/same.json')).toMatchObject({
+        name: 'new',
+        data: '{"data":"test"}'
+      })
+    })
+
     it('removes the copied payload when the moved index cannot be persisted', () => {
       const store = useWorkflowDraftStoreV2()
       store.saveDraft('workflows/old.json', '{"data":"test"}', {
