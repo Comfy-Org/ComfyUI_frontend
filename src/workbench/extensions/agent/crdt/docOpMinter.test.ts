@@ -873,6 +873,31 @@ describe('attachDocOpMinter', () => {
     expect(minted).toEqual([])
   })
 
+  it('uses the store type when the live widget leaves it undefined', async () => {
+    const { source } = seedGraph(graph)
+    const button = source.widgets![1]
+    const stored = useWidgetValueStore().getWidget(
+      widgetId(graph.id, source.id, button.name)
+    )
+    assert.exists(stored)
+    expect(stored.type).toBe('button')
+    // @ts-expect-error -- `type` is required on IBaseWidget, so only a
+    // non-conforming runtime object reaches this state; that is the point.
+    button.type = undefined
+
+    emitGraphIntent({
+      type: 'set_widget',
+      graphId: graph.id,
+      nodeId: source.id,
+      name: 'upload',
+      value: 'clicked',
+      previous: 'button-slot'
+    })
+    await afterFlush()
+
+    expect(minted).toEqual([])
+  })
+
   it('uses the same store fallback when filtering an add-node snapshot', () => {
     const { source } = seedGraph(graph)
     const widget = source.widgets![0]
