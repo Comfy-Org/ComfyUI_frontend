@@ -474,6 +474,7 @@ describe('curated model inputs', () => {
     })
     expect(fields.has('callback_url')).toBe(false)
     expect(fields.has('model')).toBe(false)
+    expect(fields.has('draft')).toBe(false)
     const example = object.parse(contract.inputSchema.example)
     for (const change of [
       { duration: '5' },

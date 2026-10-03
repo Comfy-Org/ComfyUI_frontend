@@ -38,7 +38,16 @@ const scenarios = [
     models: ['wavespeed--seedvr2-image--edit-images'],
     field: 'image',
     inputField: 'image-upload',
-    result: { output: ['https://storage.example/output.png'] }
+    // The finished Wavespeed prediction (seedvr2's authored output schema).
+    result: {
+      code: 200,
+      message: 'success',
+      data: {
+        id: 'prediction-1',
+        status: 'completed',
+        outputs: ['https://storage.example/output.png']
+      }
+    }
   }
 ]
 const availability = workshopModelAvailabilitySchema.parse(

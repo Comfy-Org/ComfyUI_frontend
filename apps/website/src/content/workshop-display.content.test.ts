@@ -22,6 +22,7 @@ import {
   workflowCatalog
 } from '../config/workshop-workflow-catalog'
 import { hubModelSlugs } from '../config/hub-models'
+import { isWorkshopModelDisabled } from '../config/workshop-model-availability'
 
 const here = import.meta.dirname
 const display = workshopDisplayEntriesSchema.parse(
@@ -74,9 +75,14 @@ describe('the display overlay against the catalog', () => {
       const routerId = routerAliasById.get(id)?.routerId ?? id
       expect(detail?.routerId).toBe(routerId)
       expect(detail?.slug.startsWith(`${catalogEntry.slug}--`)).toBe(true)
-      expect(detail?.href).toBe(
-        `/hub/models/${hubModelSlugs.get(detail?.slug ?? '')}/`
-      )
+      // A disabled page (MiniMax H3 awaits its publish review) has no
+      // /hub/models URL row yet.
+      if (isWorkshopModelDisabled(detail?.slug ?? ''))
+        expect(detail?.href).toBeUndefined()
+      else
+        expect(detail?.href).toBe(
+          `/hub/models/${hubModelSlugs.get(detail?.slug ?? '')}/`
+        )
       if (detail?.execution) expect(detail.execution.id).toBe(routerId)
     }
   )
