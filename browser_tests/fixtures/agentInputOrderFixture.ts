@@ -46,10 +46,9 @@ export const test = agentTest.extend<{
     })
 
     await mockWorkflowPersistence(page, workflowId)
-    // The canvas starts one revision behind the host, not level with it: the
-    // spec's final values must be wrong here so that landing them is proof
-    // the subscribe catch-up reached node 2 rather than proof that the
-    // fixture already held them. See `staleCanvasSeed`.
+    // `staleCanvasSeed`, not `seed`: the canvas starts one revision behind
+    // the host so that the values the spec asserts after catch-up are wrong
+    // here first.
     await loadSeedIntoActiveTab(page, staleCanvasSeed)
 
     await use(socket)

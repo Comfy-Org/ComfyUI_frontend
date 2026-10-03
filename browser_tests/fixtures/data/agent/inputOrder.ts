@@ -91,7 +91,6 @@ const HOST_SOURCE_VALUES: SourceValues = {
   prompt: 'Keep the reference framing'
 }
 
-/** Node 2's `ref_image_size` in the host document. */
 const HOST_REF_IMAGE_SIZE = 'max'
 
 /**
@@ -100,7 +99,6 @@ const HOST_REF_IMAGE_SIZE = 'max'
  */
 const HOST_ORIGIN_SLOT = { 276: 0, 277: 1, 275: 2 } as const
 
-/** Node 1's widget values on the stale canvas, unequal to the host's. */
 const STALE_SOURCE_VALUES: SourceValues = {
   width: 512,
   height: 512,
@@ -108,7 +106,6 @@ const STALE_SOURCE_VALUES: SourceValues = {
   prompt: 'Stale local framing'
 }
 
-/** Node 2's `ref_image_size` on the stale canvas. */
 const STALE_REF_IMAGE_SIZE = 'match'
 
 /**
@@ -122,140 +119,131 @@ const STALE_ORIGIN_SLOT = { 276: 1, 277: 2, 275: 0 } as const
 
 type DimensionLinkId = keyof typeof HOST_ORIGIN_SLOT
 
-type LinkTuple = [
-  id: number,
-  originNode: number,
-  originSlot: number,
-  targetNode: number,
-  targetSlot: number,
-  type: string
-]
-
-const sourceWidgetsValues = (values: SourceValues) => [
-  values.width,
-  values.height,
-  values.length,
-  values.prompt
-]
-
-// Reduced saved-workflow topology from PR #17221, not a recorded Agent turn.
-export const seed: WorkflowJSON = {
-  nodes: [
-    {
-      id: 1,
-      type: source.name,
-      pos: [30, 80],
-      size: [260, 320],
-      flags: {},
-      order: 0,
-      mode: 0,
-      inputs: [],
-      outputs: [
-        { name: 'width', type: 'INT', links: [276] },
-        { name: 'height', type: 'INT', links: [277] },
-        { name: 'length', type: 'INT', links: [275] },
-        { name: 'prompt', type: 'STRING', links: [279] },
-        { name: 'image_a', type: 'IMAGE', links: [278] },
-        { name: 'image_b', type: 'IMAGE', links: [282] }
-      ],
-      properties: {},
-      widgets_values: sourceWidgetsValues(HOST_SOURCE_VALUES)
-    },
-    {
-      id: 2,
-      type: target.name,
-      pos: [340, 80],
-      size: [280, 320],
-      flags: {},
-      order: 1,
-      mode: 0,
-      inputs: [
-        { name: 'ref_images.ref_image_0', type: 'IMAGE', link: 278 },
-        { name: 'ref_images.ref_image_1', type: 'IMAGE', link: 282 },
-        { name: 'ref_images.ref_image_2', type: 'IMAGE', link: null },
-        {
-          name: 'prompt',
-          type: 'STRING',
-          widget: { name: 'prompt' },
-          link: 279
-        },
-        { name: 'width', type: 'INT', widget: { name: 'width' }, link: 276 },
-        { name: 'height', type: 'INT', widget: { name: 'height' }, link: 277 },
-        { name: 'length', type: 'INT', widget: { name: 'length' }, link: 275 }
-      ],
-      outputs: [],
-      properties: {},
-      widgets_values: [
-        'Unconnected prompt fallback',
-        640,
-        480,
-        24,
-        HOST_REF_IMAGE_SIZE
-      ]
-    }
-  ],
-  links: [
-    [276, 1, HOST_ORIGIN_SLOT[276], 2, 4, 'INT'],
-    [277, 1, HOST_ORIGIN_SLOT[277], 2, 5, 'INT'],
-    [275, 1, HOST_ORIGIN_SLOT[275], 2, 6, 'INT'],
-    [279, 1, 3, 2, 3, 'STRING'],
-    [278, 1, 4, 2, 0, 'IMAGE'],
-    [282, 1, 5, 2, 1, 'IMAGE']
-  ],
-  groups: [],
-  config: {},
-  extra: {},
-  version: 0.4
-}
-
-function isDimensionLink(id: number): id is DimensionLinkId {
-  return Object.hasOwn(STALE_ORIGIN_SLOT, id)
-}
-
-function rotateDimensionOrigins(links: readonly unknown[]): LinkTuple[] {
-  return (links as readonly LinkTuple[]).map(
-    ([id, originNode, originSlot, ...rest]): LinkTuple => [
-      id,
-      originNode,
-      isDimensionLink(id) ? STALE_ORIGIN_SLOT[id] : originSlot,
-      ...rest
-    ]
-  )
-}
+const DIMENSION_LINK_IDS = [276, 277, 275] as const
 
 /**
- * The revision the tab already holds when the host's catch-up arrives: the
- * same saved topology, one revision behind on every value the spec asserts.
+ * One revision of the saved workflow, built from the three things the two
+ * revisions disagree about. Both are built this way so neither can drift
+ * structurally against the other: only `values`, `originSlot` and
+ * `refImageSize` differ.
+ *
+ * Reduced saved-workflow topology from PR #17221, not a recorded Agent turn.
+ */
+function buildSeed(
+  values: SourceValues,
+  originSlot: Record<DimensionLinkId, number>,
+  refImageSize: string
+): WorkflowJSON {
+  const dimensionLinksFrom = (slot: number) =>
+    DIMENSION_LINK_IDS.filter((id) => originSlot[id] === slot)
+  return {
+    nodes: [
+      {
+        id: 1,
+        type: source.name,
+        pos: [30, 80],
+        size: [260, 320],
+        flags: {},
+        order: 0,
+        mode: 0,
+        inputs: [],
+        outputs: [
+          { name: 'width', type: 'INT', links: dimensionLinksFrom(0) },
+          { name: 'height', type: 'INT', links: dimensionLinksFrom(1) },
+          { name: 'length', type: 'INT', links: dimensionLinksFrom(2) },
+          { name: 'prompt', type: 'STRING', links: [279] },
+          { name: 'image_a', type: 'IMAGE', links: [278] },
+          { name: 'image_b', type: 'IMAGE', links: [282] }
+        ],
+        properties: {},
+        widgets_values: [
+          values.width,
+          values.height,
+          values.length,
+          values.prompt
+        ]
+      },
+      {
+        id: 2,
+        type: target.name,
+        pos: [340, 80],
+        size: [280, 320],
+        flags: {},
+        order: 1,
+        mode: 0,
+        inputs: [
+          { name: 'ref_images.ref_image_0', type: 'IMAGE', link: 278 },
+          { name: 'ref_images.ref_image_1', type: 'IMAGE', link: 282 },
+          { name: 'ref_images.ref_image_2', type: 'IMAGE', link: null },
+          {
+            name: 'prompt',
+            type: 'STRING',
+            widget: { name: 'prompt' },
+            link: 279
+          },
+          { name: 'width', type: 'INT', widget: { name: 'width' }, link: 276 },
+          {
+            name: 'height',
+            type: 'INT',
+            widget: { name: 'height' },
+            link: 277
+          },
+          {
+            name: 'length',
+            type: 'INT',
+            widget: { name: 'length' },
+            link: 275
+          }
+        ],
+        outputs: [],
+        properties: {},
+        widgets_values: [
+          'Unconnected prompt fallback',
+          640,
+          480,
+          24,
+          refImageSize
+        ]
+      }
+    ],
+    links: [
+      [276, 1, originSlot[276], 2, 4, 'INT'],
+      [277, 1, originSlot[277], 2, 5, 'INT'],
+      [275, 1, originSlot[275], 2, 6, 'INT'],
+      [279, 1, 3, 2, 3, 'STRING'],
+      [278, 1, 4, 2, 0, 'IMAGE'],
+      [282, 1, 5, 2, 1, 'IMAGE']
+    ],
+    groups: [],
+    config: {},
+    extra: {},
+    version: 0.4
+  }
+}
+
+/** The revision the host document is minted from. */
+export const seed: WorkflowJSON = buildSeed(
+  HOST_SOURCE_VALUES,
+  HOST_ORIGIN_SLOT,
+  HOST_REF_IMAGE_SIZE
+)
+
+/**
+ * The revision the tab already holds when the host's catch-up arrives.
  *
  * Without this divergence the fixture would load the host's own seed onto the
- * canvas, every final assertion would already be true before `doc_subscribe`
- * was answered, and a follower that started skipping catch-up over nodes the
- * graph already holds would leave the spec green. Keeping the two apart is
- * what makes those assertions evidence that catch-up reached the canvas.
+ * canvas, the spec's visible-value and binding assertions would already be
+ * true before `doc_subscribe` was answered, and a follower that started
+ * skipping catch-up over nodes the graph already holds would leave the spec
+ * green. Node 2's `prompt` and `ref_images` bindings are deliberately the
+ * same in both revisions: the divergence is node 1's widget values, node 2's
+ * `ref_image_size`, and the three rotated dimension origins.
  */
-export const staleCanvasSeed: WorkflowJSON = (() => {
-  const stale = structuredClone(seed)
-  const links = rotateDimensionOrigins(stale.links)
-  stale.links = links
-  const [sourceNode, targetNode] = stale.nodes
-  sourceNode.outputs = (sourceNode.outputs as { name: string }[]).map(
-    (output, slot) => ({
-      ...output,
-      links: links
-        .filter((link) => link[1] === 1 && link[2] === slot)
-        .map(([id]) => id)
-    })
-  )
-  sourceNode.widgets_values = sourceWidgetsValues(STALE_SOURCE_VALUES)
-  targetNode.widgets_values = [
-    'Unconnected prompt fallback',
-    640,
-    480,
-    24,
-    STALE_REF_IMAGE_SIZE
-  ]
-  return stale
-})()
+export const staleCanvasSeed: WorkflowJSON = buildSeed(
+  STALE_SOURCE_VALUES,
+  STALE_ORIGIN_SLOT,
+  STALE_REF_IMAGE_SIZE
+)
 
 function expectedPrompt(
   values: SourceValues,

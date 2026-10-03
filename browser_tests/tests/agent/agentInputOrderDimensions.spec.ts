@@ -1,4 +1,3 @@
-import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -15,30 +14,6 @@ import {
 } from '@e2e/fixtures/data/agent/inputOrder'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 
-/** Node id → serialized execution inputs, as `/api/prompt` would receive them. */
-function serializedInputs(page: Page) {
-  return page.evaluate(async () =>
-    Object.fromEntries(
-      Object.entries((await window.app!.graphToPrompt()).output).map(
-        ([id, node]) => [id, node.inputs]
-      )
-    )
-  )
-}
-
-/**
- * Node 2's inputs that must change when the host's catch-up lands. The three
- * dimensions are the regression itself; `ref_image_size` is a value no
- * binding feeds, so it separates "the frame arrived" from "the bindings were
- * recomputed".
- */
-const DIVERGENT_TARGET_INPUTS = [
-  'width',
-  'height',
-  'length',
-  'ref_image_size'
-] as const
-
 test.describe(
   'Agent follower input mapping after saved autogrow inputs',
   { tag: ['@cloud', '@agent', '@vue-nodes'] },
@@ -48,16 +23,42 @@ test.describe(
       inputOrderHost
     }) => {
       // The premise every assertion below rests on: the canvas the fixture
-      // loaded disagrees with the host document on each value this spec goes
-      // on to assert. An edit that collapsed the two would make those
-      // assertions true before any frame arrived, so it fails here instead of
-      // passing vacuously there.
+      // loaded disagrees with the host document on node 1's widget values,
+      // on each of node 2's three dimension bindings, and on its
+      // `ref_image_size`. An edit that collapsed any one of those would make
+      // the matching assertion true before a frame arrived, so it fails here
+      // instead of passing vacuously there.
+      // Destructured because `length` here is one of node 2's input names,
+      // and `expect(x.length)` reads to the Playwright lint rule as an
+      // array-length assertion.
+      const {
+        width: staleWidth,
+        height: staleHeight,
+        length: staleLength,
+        ref_image_size: staleRefImageSize
+      } = staleCanvasPrompt['2']
+      const {
+        width: hostWidth,
+        height: hostHeight,
+        length: hostLength,
+        ref_image_size: hostRefImageSize
+      } = hostPrompt['2']
       expect(staleCanvasPrompt['1']).not.toEqual(hostPrompt['1'])
-      for (const input of DIVERGENT_TARGET_INPUTS) {
-        expect(staleCanvasPrompt['2'][input]).not.toEqual(
-          hostPrompt['2'][input]
+      expect(staleWidth).not.toEqual(hostWidth)
+      expect(staleHeight).not.toEqual(hostHeight)
+      expect(staleLength).not.toEqual(hostLength)
+      expect(staleRefImageSize).not.toEqual(hostRefImageSize)
+
+      // Node id → serialized execution inputs, as `/api/prompt` would
+      // receive them.
+      const executionInputs = () =>
+        page.evaluate(async () =>
+          Object.fromEntries(
+            Object.entries((await window.app!.graphToPrompt()).output).map(
+              ([id, node]) => [id, node.inputs]
+            )
+          )
         )
-      }
 
       const nodes = new VueNodeHelpers(page)
       const source = nodes.getNodeLocator('1')
@@ -81,9 +82,7 @@ test.describe(
         await expect(
           target.getByRole('combobox', { name: 'ref_image_size', exact: true })
         ).toHaveText(staleVisibleValues.refImageSize)
-        await expect
-          .poll(() => serializedInputs(page))
-          .toEqual(staleCanvasPrompt)
+        await expect.poll(executionInputs).toEqual(staleCanvasPrompt)
       })
 
       await test.step('host answers the subscribe with its catch-up', async () => {
@@ -120,7 +119,7 @@ test.describe(
       })
 
       await test.step('host bindings reach the execution payload', async () => {
-        await expect.poll(() => serializedInputs(page)).toEqual(hostPrompt)
+        await expect.poll(executionInputs).toEqual(hostPrompt)
 
         await expect
           .poll(() =>
