@@ -1898,6 +1898,93 @@ describe('hosted redirect telemetry', () => {
     expect(redirectsOf(reloaded.telemetry)).toEqual([])
   })
 
+  function challengeWithPaymentPage(id: string) {
+    return httpOk(
+      opStatus({
+        id,
+        authentication_state: 'requires_action',
+        payment_intent_client_secret: 'pi_secret',
+        action_url: PAYMENT_PAGE
+      })
+    )
+  }
+
+  it('still reports the return after the operation switched presentation on the way out', async () => {
+    const storage = memoryStorage()
+    const left = harness({
+      storage,
+      embedded: true,
+      answers: [challengeWithPaymentPage('op-1')]
+    })
+    await left.lifecycle.begin(
+      'topup',
+      issued({ operationId: 'op-1', clientSecret: 'pi_secret' })
+    )
+    await flush()
+    left.lifecycle.reportHostedStepOpened('op-1', 'redirect', 'card')
+    expect(left.lifecycle.switchPresentation('op-1', 'hosted')).toBe('switched')
+    left.lifecycle.dispose()
+
+    const back = harness({
+      storage,
+      status: statusSnapshot({
+        pending_billing_op_id: 'op-1',
+        pending_billing_op_type: 'topup'
+      })
+    })
+    await back.lifecycle.recover()
+
+    expect(redirectsOf(back.telemetry)).toEqual([
+      {
+        name: 'billing.checkout.returned',
+        billing_op_id: 'op-1',
+        operation_type: 'topup',
+        presentation: 'hosted',
+        resumed: true,
+        destination: 'stripe',
+        step: 'authentication',
+        navigation: 'redirect',
+        method_kind: 'card'
+      }
+    ])
+  })
+
+  it('reports no return for an operation that never redirected, though another one did', async () => {
+    const storage = memoryStorage()
+    const left = harness({
+      storage,
+      embedded: true,
+      answers: [
+        challengeWithPaymentPage('op-2'),
+        challengeWithPaymentPage('op-1')
+      ]
+    })
+    await left.lifecycle.begin(
+      'subscription',
+      issued({ operationId: 'op-2', clientSecret: 'pi_secret' })
+    )
+    await flush()
+    await left.lifecycle.begin(
+      'topup',
+      issued({ operationId: 'op-1', clientSecret: 'pi_secret' })
+    )
+    await flush()
+    left.lifecycle.reportHostedStepOpened('op-1', 'redirect')
+    expect(left.lifecycle.switchPresentation('op-2', 'hosted')).toBe('switched')
+    left.lifecycle.dispose()
+
+    const back = harness({
+      storage,
+      status: statusSnapshot({
+        pending_billing_op_id: 'op-2',
+        pending_billing_op_type: 'subscription'
+      })
+    })
+    await back.lifecycle.recover()
+
+    expect(redirectsOf(back.telemetry)).toEqual([])
+  })
+
   it('reports the return once when the customer comes back to this tab from a new one', async () => {
     const { lifecycle, telemetry } = harness({
       answers: [httpOk(opStatus({ action_url: PAYMENT_PAGE }))]
