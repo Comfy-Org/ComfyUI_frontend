@@ -2,7 +2,8 @@ import { expect } from '@playwright/test'
 
 import type {
   AgentMessage,
-  AgentThreadListResponse
+  AgentThreadListResponse,
+  AgentTurnAccepted
 } from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -147,7 +148,7 @@ test(
   async ({ page, promptHistory, workflowSelection }) => {
     const serverTurnId = 'e2e-server-turn'
     const otherThreadId = 'e2e-other-thread'
-    const liveTurnId = '1dda6c2a-fdc5-45c3-b499-000000000001'
+    let liveTurnId = ''
     let attachmentThreadId = ''
 
     await page.route(`**/view?filename=${BARE_DIGEST}&type=input`, (route) =>
@@ -185,7 +186,7 @@ test(
         .split('/')
         .at(-2)!
       const posted = promptHistory.requests.at(0)
-      if (threadId === otherThreadId || !posted)
+      if (threadId !== attachmentThreadId || !posted)
         return route.fulfill(jsonRoute([]))
       const messages: AgentMessage[] = [
         {
@@ -216,13 +217,25 @@ test(
       ref: BARE_DIGEST,
       kind: 'image'
     })
+    const turnAccepted = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        /\/api\/agent\/threads\/[^/]+\/messages$/.test(
+          new URL(response.url()).pathname
+        )
+    )
     await sendTurn(panel, 'upscale this')
+    const accepted = (await (await turnAccepted).json()) as AgentTurnAccepted
+    liveTurnId = accepted.message_id
     await expect.poll(() => promptHistory.requests.length).toBe(1)
     await expect(panel.getByTestId('reply-image-preview')).toHaveCount(1)
-    attachmentThreadId =
-      (await page.evaluate((key) => localStorage.getItem(key), THREAD_KEY)) ??
-      ''
-    expect(attachmentThreadId).not.toBe('')
+    await expect
+      .poll(() => page.evaluate((key) => localStorage.getItem(key), THREAD_KEY))
+      .not.toBeNull()
+    attachmentThreadId = (await page.evaluate(
+      (key) => localStorage.getItem(key),
+      THREAD_KEY
+    ))!
 
     const openHistory = () =>
       panel
@@ -230,20 +243,29 @@ test(
         .click()
 
     await openHistory()
-    await panel.getByRole('button', { name: 'Other thread' }).click()
-    await expect(panel.getByTestId('user-message-bubble')).toHaveCount(0)
+    await panel
+      .getByRole('button', { name: 'Other thread', exact: true })
+      .click()
+    await expect(
+      panel.getByRole('button', { name: enMessages.agent.send, exact: true })
+    ).toBeVisible()
 
     await openHistory()
-    await panel.getByRole('button', { name: 'Attachment thread' }).click()
+    await panel
+      .getByRole('button', { name: 'Attachment thread', exact: true })
+      .click()
 
     await expect(panel.getByTestId('reply-image-preview')).toHaveCount(1)
     await expect(panel.getByTestId('user-message-bubble')).toHaveCount(1)
     await expect(panel.getByTestId('user-message-bubble')).toContainText(
       'upscale this'
     )
-    await expect(
-      panel.getByRole('img', { name: 'Beach photo.png', exact: true })
-    ).toBeVisible()
+    const attachment = panel.getByRole('img', {
+      name: 'Beach photo.png',
+      exact: true
+    })
+    await expect(attachment).toBeVisible()
+    await expect(attachment).toHaveJSProperty('naturalWidth', 64)
     await expect(
       panel.getByRole('button', { name: enMessages.agent.stop, exact: true })
     ).toBeVisible()
