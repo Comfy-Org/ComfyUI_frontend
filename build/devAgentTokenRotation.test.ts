@@ -178,6 +178,13 @@ async function upgradeThroughProxy(server: ViteDevServer): Promise<number> {
   })
 }
 
+/**
+ * A cross-origin `/api/agent/events` upgrade, which the proxy must refuse *and*
+ * must not deliver upstream. Resolves when the client's own leg is finished —
+ * which is not yet proof of anything, because the proxy destroys the inbound
+ * socket long before its upstream connection reaches the agent. The caller
+ * supplies the barrier.
+ */
 async function rejectCrossOriginUpgrade(server: ViteDevServer): Promise<void> {
   await new Promise<void>((done, fail) => {
     const req = request(`${devServerUrl(server)}/api/agent/events`, {
@@ -201,7 +208,6 @@ async function rejectCrossOriginUpgrade(server: ViteDevServer): Promise<void> {
     req.on('error', done)
     req.end()
   })
-  await new Promise<void>((done) => setImmediate(done))
 }
 
 describe('dev agent proxy across an agent restart', () => {
@@ -341,7 +347,35 @@ describe('dev agent proxy across an agent restart', () => {
       expect(status).toBe(403)
 
       await rejectCrossOriginUpgrade(server)
-      expect(agent.upgradeAuthorizations).toEqual([])
+      // The barrier. A legitimate upgrade, dispatched after the rejected one
+      // was already written upstream, and answered only once it has reached
+      // the agent — so a forwarded upgrade is recorded before this one is.
+      // Draining the microtask queue instead proved nothing: the proxy's
+      // upstream connection has not reached the agent by then, so the
+      // assertion below passed with `proxyReq.destroy()` removed.
+      expect(await upgradeThroughProxy(server)).toBe(101)
+      expect(agent.upgradeAuthorizations).toEqual([
+        `Bearer ${agent.currentToken}`
+      ])
+    }
+  )
+
+  // The same rejection in static mode, which is where the credential is the
+  // thing that leaks: a static token rides on the proxy's own headers, so a
+  // forwarded upgrade carries it. In discovery mode the destroyed socket
+  // already suppresses `authorize`, so a leak there delivers the request
+  // without the token — a weaker failure than the one the guard exists for.
+  it(
+    'keeps a static credential off a cross-origin upgrade',
+    { timeout: 60_000 },
+    async () => {
+      const { agent, server } = await bringUpPair('static')
+
+      await rejectCrossOriginUpgrade(server)
+      expect(await upgradeThroughProxy(server)).toBe(101)
+      expect(agent.upgradeAuthorizations).toEqual([
+        `Bearer ${agent.currentToken}`
+      ])
     }
   )
 
