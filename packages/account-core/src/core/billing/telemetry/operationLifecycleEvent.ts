@@ -4,6 +4,7 @@ import {
 } from '../../../telemetry.js'
 import type { BillingOperationTelemetryEvent } from '../operationLifecycle.js'
 import type { BillingTelemetryEvent } from './billingTelemetryEvent.js'
+import type { PaymentIntentSource } from './vocabulary.js'
 
 /**
  * The lifecycle's event onto the poller's `billing.operation.*` stages, so
@@ -11,7 +12,8 @@ import type { BillingTelemetryEvent } from './billingTelemetryEvent.js'
  * `resumed`. Friction inside the operation maps onto `billing.checkout.*`.
  */
 export function toBillingTelemetryEvent(
-  event: BillingOperationTelemetryEvent
+  event: BillingOperationTelemetryEvent,
+  paymentIntentSource?: PaymentIntentSource
 ): BillingTelemetryEvent {
   const friction = {
     operation: 'checkout',
@@ -47,6 +49,9 @@ export function toBillingTelemetryEvent(
     billing_op_id: event.billing_op_id,
     presentation: event.presentation,
     resumed: event.resumed,
+    ...(paymentIntentSource === undefined
+      ? {}
+      : { payment_intent_source: paymentIntentSource }),
     ...('duration_ms' in event && event.duration_ms !== undefined
       ? { duration_ms: event.duration_ms }
       : {})

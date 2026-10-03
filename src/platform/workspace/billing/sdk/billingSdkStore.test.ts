@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -12,6 +12,11 @@ import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
+import {
+  bindOperationToCheckoutJourney,
+  clearCheckoutJourney,
+  resolveCheckoutJourney
+} from '@/platform/workspace/utils/checkoutJourney'
 import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -74,6 +79,11 @@ beforeEach(() => {
     return harness.sdk
   })
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
+})
+
+afterEach(() => {
+  clearCheckoutJourney()
+  sessionStorage.clear()
 })
 
 function startedEvent(resumed: boolean) {
@@ -292,6 +302,34 @@ describe('useBillingSdkStore', () => {
       })
     )
     expect(harness.sdk.driveChallenge).toHaveBeenCalledTimes(2)
+  })
+
+  it('reports the source of the journey a reattached operation is bound to', () => {
+    resolveCheckoutJourney({
+      actorUid: 'user-1',
+      workspaceId: 'ws-1',
+      entryFlow: 'topup',
+      entrySource: 'settings_billing',
+      paymentIntentSource: 'avatar_menu_plans',
+      assignment: { status: 'unavailable' }
+    })
+    bindOperationToCheckoutJourney('op-1')
+    useBillingSdkStore()
+
+    options.onTelemetry({
+      ...startedEvent(true),
+      name: 'billing.operation.succeeded',
+      duration_ms: 1200
+    })
+
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operation: 'operation',
+        stage: 'succeeded',
+        billing_op_id: 'op-1',
+        payment_intent_source: 'avatar_menu_plans'
+      })
+    )
   })
 
   it('finishes a reattached top-up the way the poller did', async () => {
@@ -820,11 +858,11 @@ describe('useBillingSdkStore subscription commands', () => {
   })
 
   it.for([
-    { page: 'opened', window: {} as Window, reported: [['op-1', 'new_tab']] },
-    { page: 'had blocked', window: null, reported: [] }
+    { page: 'opened', opened: window, reported: [['op-1', 'new_tab']] },
+    { page: 'had blocked', opened: null, reported: [] }
   ])(
     'reports to the lifecycle a hosted page it $page in a new tab',
-    ({ window: opened, reported }) => {
+    ({ opened, reported }) => {
       vi.spyOn(window, 'open').mockReturnValue(opened)
       useBillingSdkStore()
 

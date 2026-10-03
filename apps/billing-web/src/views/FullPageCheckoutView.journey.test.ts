@@ -876,17 +876,63 @@ describe('the full-page checkout exits and endings', () => {
     }
   )
 
-  it('reports no abandon for a page that left for a payment method of its own site', async () => {
+  async function payWithAlipayHeld() {
     const fake = await renderCheckout()
     await screen.findByText('Subscribe to Creator Plan · Acme Team')
     fake.subscribe.mockImplementation(() => new Promise(() => {}))
     reportPhase({ phase: 'payment_element_ready', element: 'payment' })
     form.emit('confirm', 'ctoken_1', 'alipay')
     await waitFor(() => expect(fake.subscribe).toHaveBeenCalled())
+    return fake
+  }
+
+  it('reports an abandon for a page that closes while its Alipay request is still pending', async () => {
+    await payWithAlipayHeld()
+
+    leavePage()
+
+    expect(exitsOf()).toEqual([
+      expect.objectContaining({ last_phase: 'submitted', exit: 'page_exit' })
+    ])
+  })
+
+  it('reports no abandon for a page whose Alipay challenge took it to the provider', async () => {
+    const fake = await payWithAlipayHeld()
+    fake.publishOperation({
+      ...pendingOperation('op_3ds'),
+      authenticationState: 'requires_action',
+      challenge: { clientSecret: 'cs', status: 'in_progress' }
+    })
+    await nextTick()
 
     leavePage()
 
     expect(exitsOf()).toEqual([])
+  })
+
+  it('reports an abandon after an ending the customer retried past', async () => {
+    await renderCheckout({}, (fake) =>
+      fake.readCapabilities.mockResolvedValueOnce({
+        status: 'error',
+        code: 'REQUEST_FAILED'
+      })
+    )
+    await waitFor(() =>
+      expect(journeyNames()).toContain('billing.checkout.ended')
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+    await waitFor(() =>
+      expect(journeyNames()).toContain('billing.checkout.preview_ready')
+    )
+
+    leavePage()
+
+    expect(exitsOf()).toEqual([
+      expect.objectContaining({
+        last_phase: 'preview_ready',
+        exit: 'page_exit'
+      })
+    ])
   })
 
   it('reports the ending its own payment reached, and no abandon after it', async () => {

@@ -26,6 +26,8 @@ import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useTelemetry } from '@/platform/telemetry'
+import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
+import { DatadogRumTelemetryProvider } from '@/platform/telemetry/providers/cloud/DatadogRumTelemetryProvider'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -41,6 +43,11 @@ import TopUpCreditsDialogContentWorkspace from './TopUpCreditsDialogContentWorks
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 const mockReportError = vi.hoisted(() => vi.fn())
+const mockRumAddAction = vi.hoisted(() => vi.fn())
+
+vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
+  datadogRum: { addAction: mockRumAddAction }
+}))
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
@@ -265,7 +272,9 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'topup',
         stage: 'started',
-        outcome: 'pending'
+        outcome: 'pending',
+        amount_cents: 5000,
+        amount_preset: '50'
       })
     )
     expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
@@ -274,6 +283,89 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       outcome: 'pending',
       operation_type: 'topup'
     })
+  })
+
+  it.for([
+    {
+      name: 'a preset',
+      choose: async (user: ReturnType<typeof userEvent.setup>) => {
+        await user.click(screen.getByRole('button', { name: '$25' }))
+      },
+      pay: 'Pay $25.00',
+      reported: { amount_cents: 2500, amount_preset: '25' }
+    },
+    {
+      name: 'a typed amount',
+      choose: async (user: ReturnType<typeof userEvent.setup>) => {
+        const payInput = screen.getByRole('spinbutton', {
+          name: 'Amount (USD)'
+        })
+        await user.tripleClick(payInput)
+        await user.keyboard('75{Enter}')
+      },
+      pay: 'Pay $75.00',
+      reported: { amount_cents: 7500, amount_preset: 'custom' }
+    },
+    {
+      name: 'a typed amount that equals a preset',
+      choose: async (user: ReturnType<typeof userEvent.setup>) => {
+        const payInput = screen.getByRole('spinbutton', {
+          name: 'Amount (USD)'
+        })
+        await user.tripleClick(payInput)
+        await user.keyboard('100{Enter}')
+      },
+      pay: 'Pay $100.00',
+      reported: { amount_cents: 10000, amount_preset: 'custom' }
+    }
+  ])(
+    'reports the amount and the preset of $name on the started event',
+    async ({ choose, pay, reported }) => {
+      vi.mocked(mockBillingContext().topup).mockResolvedValue(
+        topupResponse('pending')
+      )
+      renderDialog({ source: 'deep_link' })
+
+      await choose(userEvent.setup())
+      await clickAddCredits()
+      await userEvent.click(screen.getByRole('button', { name: pay }))
+
+      await waitFor(() =>
+        expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
+          operation: 'topup',
+          stage: 'started',
+          outcome: 'pending',
+          payment_intent_source: 'deep_link',
+          ...reported
+        })
+      )
+    }
+  )
+
+  it('reaches Datadog with the amount, the preset and the source', async () => {
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(new DatadogRumTelemetryProvider())
+    vi.mocked(useTelemetry).mockReturnValue(registry)
+    vi.mocked(mockBillingContext().topup).mockResolvedValue(
+      topupResponse('pending')
+    )
+    renderDialog({ source: 'avatar_menu_plans' })
+
+    await userEvent.click(screen.getByRole('button', { name: '$25' }))
+    await clickAddCredits()
+    await userEvent.click(screen.getByRole('button', { name: 'Pay $25.00' }))
+
+    await waitFor(() =>
+      expect(mockRumAddAction).toHaveBeenCalledWith('billing.topup.started', {
+        operation: 'topup',
+        stage: 'started',
+        outcome: 'pending',
+        payment_intent_source: 'avatar_menu_plans',
+        amount_cents: 2500,
+        amount_preset: '25',
+        billing_surface: 'cloud_app'
+      })
+    )
   })
 
   it('attributes the topup journey to the surface that opened the dialog', async () => {
@@ -287,6 +379,17 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
           entry_source: 'agent_paywall'
         })
       )
+    )
+  })
+
+  it('keeps the surface on the journey so an operation recovered after reload can report it', async () => {
+    renderDialog({ source: 'deep_link' })
+
+    await waitFor(() =>
+      expect(getActiveCheckoutJourney()).toMatchObject({
+        entry_source: 'settings_billing',
+        payment_intent_source: 'deep_link'
+      })
     )
   })
 

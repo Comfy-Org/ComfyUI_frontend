@@ -22,6 +22,7 @@ export type {
   CheckoutHostedStep,
   CheckoutRedirectNavigation
 } from './checkoutRedirectEvent.js'
+export type { BillingPortalTarget } from './portalEvent.js'
 export type { SubscriptionCheckoutUi } from './subscriptionCheckoutEvent.js'
 export type {
   WebEntryBillingEvent,
@@ -62,6 +63,8 @@ export {
   getCheckoutJourneyTelemetryEventPayload,
   getCloudAppCheckoutJourneyTelemetryEventPayload
 } from './checkoutJourney.js'
+export type { TopupAmountPreset } from './topupEvent.js'
+export { getTopupAmountPreset, TOPUP_AMOUNT_PRESETS_USD } from './topupEvent.js'
 export type {
   BillingCycle,
   BillingTierKey,

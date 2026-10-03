@@ -168,6 +168,11 @@ export function useCheckoutJourney(uiMode: 'embedded' | 'full_page') {
     })
   }
 
+  /** The checkout left its ending for a retry, so the journey is open again. */
+  function resumed() {
+    lastEnding = undefined
+  }
+
   /** The customer left a journey no ending resolved; only the first way out counts. */
   function abandoned(exit: CheckoutExit) {
     if (left || lastEnding !== undefined || lastPhase === undefined) return
@@ -179,6 +184,7 @@ export function useCheckoutJourney(uiMode: 'embedded' | 'full_page') {
     enter,
     track,
     ended,
+    resumed,
     abandoned,
     submitted,
     submitSettled,
