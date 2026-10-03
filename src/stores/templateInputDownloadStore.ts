@@ -1,7 +1,4 @@
-import type {
-  ComfyTemplateInputDownloadProgress,
-  ComfyTemplateInputReference
-} from '@comfyorg/comfyui-desktop-bridge-types'
+import type { ComfyTemplateInputDownloadProgress } from '@comfyorg/comfyui-desktop-bridge-types'
 import { defineStore } from 'pinia'
 import { computed, shallowReactive } from 'vue'
 
@@ -10,7 +7,6 @@ interface TrackedTemplateInputDownload {
   filename: string
   progress: number | null
   status: 'pending' | 'downloading' | 'paused' | 'completed'
-  templateInputs: readonly ComfyTemplateInputReference[]
 }
 
 function normalizeProgress(progress: number): number | null {
@@ -34,7 +30,7 @@ export const useTemplateInputDownloadStore = defineStore(
     )
 
     function updateProgress(progress: ComfyTemplateInputDownloadProgress) {
-      const { downloadId, filename, status, templateInputs } = progress
+      const { downloadId, filename, status } = progress
       if (status === 'error' || status === 'cancelled') {
         downloadsById.delete(downloadId)
         return
@@ -53,8 +49,7 @@ export const useTemplateInputDownloadStore = defineStore(
         downloadId,
         filename,
         progress: normalizeProgress(progress.progress),
-        status,
-        templateInputs
+        status
       })
     }
 

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useTimeout } from '@vueuse/core'
+import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
 import { computed, ref, toValue, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -241,8 +242,12 @@ function replayAppModeTour() {
           class="block h-1 overflow-hidden rounded-full bg-secondary-background"
         >
           <span
-            class="block h-full rounded-full bg-primary-background transition-[width]"
-            :class="inputDownloadProgress === null && 'w-1/3 animate-pulse'"
+            :class="
+              cn(
+                'block h-full rounded-full bg-primary-background transition-[width]',
+                inputDownloadProgress === null && 'w-1/3 animate-pulse'
+              )
+            "
             :style="
               inputDownloadProgress === null
                 ? undefined

@@ -18,8 +18,9 @@ function asset(
     assetId,
     filename: `${assetId}.png`,
     mediaType: 'image',
+    previewUrl: `/previews/${assetId}.png`,
     availability
-  } as ComfyTemplateInputAsset
+  }
 }
 
 function bridge(overrides: Partial<ComfyDesktop2Bridge>): ComfyDesktop2Bridge {
@@ -30,10 +31,15 @@ type DownloadInput = NonNullable<
   ComfyDesktop2Bridge['downloadTemplateInputAsset']
 >
 
-const accepted = {
+const accepted: ComfyTemplateInputAssetDownloadResult = {
   status: 'accepted',
-  download: { downloadId: 'd1', filename: 'a.png', progress: 0 }
-} as ComfyTemplateInputAssetDownloadResult
+  download: {
+    downloadId: 'd1',
+    filename: 'a.png',
+    progress: 0,
+    status: 'pending'
+  }
+}
 
 function downloadStub(
   impl?: Parameters<typeof vi.fn<DownloadInput>>[0]
@@ -73,7 +79,7 @@ describe('resolveTemplateInputAssets', () => {
     await expect(
       resolveTemplateInputAssets('t1', () =>
         bridge({
-          getTemplateInputAssets: vi.fn(async () => undefined as never)
+          getTemplateInputAssets: vi.fn(async () => null)
         })
       )
     ).resolves.toEqual([])

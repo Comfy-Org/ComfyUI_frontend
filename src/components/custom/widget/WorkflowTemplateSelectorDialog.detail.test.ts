@@ -119,7 +119,11 @@ const mocks = vi.hoisted(() => ({
   ),
   getTemplateThumbnailUrl: vi.fn(() => '/thumbnail.webp'),
   getTemplateTitle: vi.fn((template: { title: string }) => template.title),
-  getTemplateInputAssets: vi.fn(async () => [fixtures.inputAsset]),
+  getTemplateInputAssets: vi.fn(
+    async (): Promise<(typeof fixtures.inputAsset)[] | null> => [
+      fixtures.inputAsset
+    ]
+  ),
   isModelDownloadable: vi.fn(() => true),
   loadTemplates: vi.fn(async () => true),
   downloadTemplateInputAsset: vi.fn(async () => ({
@@ -422,9 +426,9 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
 
   it.for([
     { name: 'the bridge lists none', assets: [] },
-    { name: 'the bridge answers nullish', assets: undefined }
+    { name: 'the bridge answers nullish', assets: null }
   ])('omits the input inventory when $name', async ({ assets }) => {
-    mocks.getTemplateInputAssets.mockResolvedValueOnce(assets as never)
+    mocks.getTemplateInputAssets.mockResolvedValueOnce(assets)
     await clickTemplateCardAfterRender()
 
     const requirements = await screen.findByRole('region', {

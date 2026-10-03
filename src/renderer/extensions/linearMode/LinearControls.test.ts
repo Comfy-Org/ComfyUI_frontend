@@ -185,7 +185,7 @@ describe('LinearControls', () => {
     useTemplateInputDownloadStore().updateProgress({
       downloadId: 'download-1',
       filename: missingMediaCandidate.name,
-      progress: null as unknown as number,
+      progress: Number.NaN,
       status: 'downloading',
       templateInputs: [{ templateId: 'template-a', assetId: 'asset-a' }]
     })
