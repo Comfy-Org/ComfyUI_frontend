@@ -40,13 +40,13 @@ describe('useBillingRouting', () => {
     mockActiveWorkspaceBillingRail.value = null
   })
 
-  it('uses legacy billing off Cloud until a workspace context loads', () => {
+  it('is unknown off Cloud until a workspace context loads', () => {
     mockIsCloud.value = false
     mockActiveWorkspace.value = null
 
     const { type, shouldUseWorkspaceBilling } = useBillingRouting()
 
-    expect(type.value).toBe('legacy')
+    expect(type.value).toBe('unknown')
     expect(shouldUseWorkspaceBilling.value).toBe(false)
   })
 
@@ -108,11 +108,20 @@ describe('useBillingRouting', () => {
     expect(shouldUseWorkspaceBilling.value).toBe(true)
   })
 
-  it('defaults to legacy while the workspace has not loaded', () => {
+  it('is unknown while the workspace has not loaded, then resolves', () => {
     mockActiveWorkspace.value = null
 
     const { type } = useBillingRouting()
+    expect(type.value).toBe('unknown')
 
+    mockActiveWorkspaceBillingRail.value = 'legacy_stripe'
+    mockActiveWorkspace.value = personal
     expect(type.value).toBe('legacy')
+
+    mockActiveWorkspace.value = null
+    expect(type.value).toBe('unknown')
+
+    mockActiveWorkspace.value = team
+    expect(type.value).toBe('workspace')
   })
 })

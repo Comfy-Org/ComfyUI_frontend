@@ -2645,6 +2645,7 @@
       "cloudNewUser": "New to Comfy?",
       "cloudSignUp": "Sign up here",
       "freeRunsSuffix": "to get {count} free run. | to get {count} free runs.",
+      "freeRunsSuffixGoogle": "with Google to get {count} free run. | with Google to get {count} free runs.",
       "emailLabel": "Email",
       "emailPlaceholder": "Enter your email",
       "passwordLabel": "Password",
@@ -2720,6 +2721,12 @@
       "unsavedChangesMessage": "You have unsaved changes that will be lost when you sign out. Do you want to continue?",
       "signOutAnyway": "Sign out anyway",
       "saveFailed": "Sign-out cancelled because saving \"{workflow}\" failed."
+    },
+    "signOutEverywhere": {
+      "action": "Sign out of all devices",
+      "success": "Signed out of all devices",
+      "successDetail": "Every device signed in to your account has been signed out.",
+      "failed": "Couldn't sign out of all devices"
     },
     "accountChanged": {
       "title": "Account changed",

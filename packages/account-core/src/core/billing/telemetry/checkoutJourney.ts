@@ -1,4 +1,5 @@
 import type { CapabilityDenialReason } from '../capabilityDenials.js'
+import type { BillingSurface } from './billingTelemetryEvent.js'
 import type {
   BillingTelemetryErrorCode,
   BillingTelemetryFailureCategory
@@ -301,3 +302,13 @@ export function getCheckoutJourneyTelemetryEventPayload(
 export type CheckoutJourneyTelemetryEventPayload = ReturnType<
   typeof getCheckoutJourneyTelemetryEventPayload
 >
+
+/** Only the cloud build registers the sinks that call this. */
+export function getCloudAppCheckoutJourneyTelemetryEventPayload(
+  event: CheckoutJourneyTelemetryEvent
+): CheckoutJourneyTelemetryEventPayload & { billing_surface: BillingSurface } {
+  return {
+    ...getCheckoutJourneyTelemetryEventPayload(event),
+    billing_surface: 'cloud_app'
+  }
+}
