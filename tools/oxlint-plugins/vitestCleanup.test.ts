@@ -257,10 +257,52 @@ LiteGraph.unregisterNodeType()
 LiteGraph.clearRegisteredTypes()
 `
 
-function expectReportsAt(output: string, lines: readonly number[]) {
+const mockInstanceFixture = `import { afterAll, afterEach, beforeAll, beforeEach, it, vi } from 'vitest'
+
+const mock = vi.fn()
+const other = vi.fn()
+
+afterEach(() => mock.mockRestore())
+afterAll(() => {
+  mock.mockClear()
+})
+beforeAll(() => vi.mocked(mock).mockReset())
+beforeEach(() => {
+  other.mockClear()
+  mock.mockReset().mockReturnValue(2)
+  render()
+  other.mockClear()
+})
+beforeEach(() => mock?.mockClear())
+beforeEach(() => mock.mockClear())
+beforeEach(() => {
+  mock.mockReturnValue(1)
+  mock.mockReset()
+})
+beforeEach(() => {
+  mock.mockReturnValue(1)
+  mock.mockRestore()
+})
+it('allows per-mock cleanup in tests', () => {
+  mock.mockClear()
+  mock.mockReset()
+  mock.mockRestore()
+})
+afterEach(() => {
+  const helper = () => mock.mockClear()
+  helper()
+})
+function render() {}
+`
+
+function expectReportsAt(
+  output: string,
+  lines: readonly number[],
+  file = 'invalid.test.ts'
+) {
   const plainOutput = stripVTControlCharacters(output)
   for (const line of lines) {
-    expect(plainOutput).toContain(`invalid.test.ts:${line}:`)
+    expect(plainOutput).toContain(`${file}:${line}:`)
   }
 }
 
@@ -272,6 +314,10 @@ describe('Vitest cleanup rules', () => {
     workDir = mkdtempSync(path.join(tmpdir(), 'comfy-vitest-cleanup-'))
     writeFileSync(path.join(workDir, 'invalid.test.ts'), invalidFixture)
     writeFileSync(path.join(workDir, 'litegraph.test.ts'), liteGraphFixture)
+    writeFileSync(
+      path.join(workDir, 'mock-instance.test.ts'),
+      mockInstanceFixture
+    )
     writeFileSync(path.join(workDir, 'unrelated.test.ts'), unrelatedFixture)
     writeFileSync(path.join(workDir, 'playwright.spec.ts'), invalidFixture)
     writeFileSync(
@@ -300,6 +346,7 @@ describe('Vitest cleanup rules', () => {
         path.join(workDir, '.oxlintrc.json'),
         'invalid.test.ts',
         'litegraph.test.ts',
+        'mock-instance.test.ts',
         'unrelated.test.ts',
         'playwright.spec.ts'
       ],
@@ -352,6 +399,11 @@ describe('Vitest cleanup rules', () => {
 
   it('reports stubs and spies installed at module scope or in beforeAll', () => {
     expectReportsAt(output, [73, 74, 75, 76, 77, 80, 131, 136, 137, 138])
+  })
+
+  it('reports per-mock cleanup in hooks unless beforeEach setup ran first', () => {
+    expect(output.match(/resets and restores every mock/g)).toHaveLength(7)
+    expectReportsAt(output, [6, 8, 10, 12, 13, 17, 18], 'mock-instance.test.ts')
   })
 
   it('reports persistent LiteGraph registrations and redundant cleanup', () => {

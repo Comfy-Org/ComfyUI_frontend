@@ -25,9 +25,7 @@ function mockInstance(overrides: Record<string, unknown> = {}) {
 
 describe('generateModelThumbnail', () => {
   beforeEach(() => {
-    createLoad3d.mockReset()
-    isAssetPreviewSupported.mockReset().mockReturnValue(false)
-    persistThumbnail.mockReset()
+    isAssetPreviewSupported.mockReturnValue(false)
   })
 
   it('renders offscreen, returns the data url, and disposes the instance', async () => {

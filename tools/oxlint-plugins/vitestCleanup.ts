@@ -5,6 +5,11 @@ const REDUNDANT_CLEANUP_METHODS = new Set([
   'unstubAllEnvs',
   'unstubAllGlobals'
 ])
+const REDUNDANT_MOCK_INSTANCE_CLEANUP_METHODS = new Set([
+  'mockClear',
+  'mockReset',
+  'mockRestore'
+])
 const REDUNDANT_TIMER_CLEANUP_METHODS = new Set([
   'clearAllTimers',
   'useRealTimers'
@@ -17,6 +22,8 @@ const REDUNDANT_LITEGRAPH_CLEANUP_METHODS = new Set([
 const MODULE_SCOPE_MOCK_METHODS = new Set(['spyOn', 'stubGlobal'])
 const PARTIAL_MOCK_METHODS = new Set(['doMock', 'mock'])
 const AFTER_EACH_IMPORTS = new Set(['afterEach'])
+const BEFORE_EACH_IMPORTS = new Set(['beforeEach'])
+const NON_BEFORE_EACH_HOOKS = new Set(['afterAll', 'afterEach', 'beforeAll'])
 const BEFORE_TEST_IMPORTS = new Set(['beforeAll', 'describe', 'suite'])
 const SUITE_CALLBACK_MODIFIERS = new Set([
   'concurrent',
@@ -100,6 +107,16 @@ interface FunctionExpression extends Node {
     | 'FunctionDeclaration'
     | 'FunctionExpression'
   readonly params: readonly Node[]
+}
+
+interface ExpressionStatement extends Node {
+  readonly type: 'ExpressionStatement'
+  readonly expression: Expression
+}
+
+interface BlockStatement extends Node {
+  readonly type: 'BlockStatement'
+  readonly body: readonly Node[]
 }
 
 function isImportExpression(node: Node | undefined): node is ImportExpression {
@@ -426,10 +443,66 @@ function runsBeforeTests(context: RuleContext, node: CallExpression): boolean {
   )
 }
 
+function calledMemberName(node: Node | undefined): string | undefined {
+  if (node?.type !== 'CallExpression') return
+  const member = asMemberExpression((node as CallExpression).callee)
+  return member && staticMemberName(member)
+}
+
+function isMockInstanceCleanup(statement: Node): boolean {
+  if (statement.type !== 'ExpressionStatement') return false
+  const methodName = calledMemberName(
+    unwrapChain((statement as ExpressionStatement).expression)
+  )
+  return (
+    methodName !== undefined &&
+    REDUNDANT_MOCK_INSTANCE_CLEANUP_METHODS.has(methodName)
+  )
+}
+
+function precedesBeforeEachSetup(
+  context: RuleContext,
+  node: CallExpression
+): boolean {
+  const ancestors = context.sourceCode.getAncestors(node)
+  const boundaryIndex = enclosingExecutionBoundaryIndex(ancestors)
+  const body = ancestors.at(boundaryIndex + 1)
+  if (body?.type !== 'BlockStatement') return true
+  const statements = (body as BlockStatement).body
+  const statementIndex = statements.findIndex(
+    (statement) => statement === ancestors[boundaryIndex + 2]
+  )
+  return statements.slice(0, statementIndex).every(isMockInstanceCleanup)
+}
+
+function isRedundantMockInstanceCleanup(
+  context: RuleContext,
+  node: CallExpression
+): boolean {
+  return (
+    runsDirectlyInVitestCallback(context, node, NON_BEFORE_EACH_HOOKS) ||
+    (runsDirectlyInVitestCallback(context, node, BEFORE_EACH_IMPORTS) &&
+      precedesBeforeEachSetup(context, node))
+  )
+}
+
 export const noRedundantVitestCleanup = {
   create(context: RuleContext) {
     return {
       CallExpression(node: CallExpression) {
+        const mockMethodName = calledMemberName(node)
+        if (
+          mockMethodName &&
+          REDUNDANT_MOCK_INSTANCE_CLEANUP_METHODS.has(mockMethodName) &&
+          isRedundantMockInstanceCleanup(context, node)
+        ) {
+          context.report({
+            node,
+            message: `.${mockMethodName}() is redundant in a Vitest hook because the project test setup resets and restores every mock before each test.`
+          })
+          return
+        }
+
         const methodName = vitestMethodName(context, node)
         if (
           !methodName ||

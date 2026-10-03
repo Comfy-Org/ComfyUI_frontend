@@ -1095,7 +1095,6 @@ describe('useFeatureFlags', () => {
 
   describe('session override precedence', () => {
     afterEach(() => {
-      vi.mocked(getSessionOverride).mockReset()
       vi.mocked(distributionTypes).isCloud = false
       vi.mocked(distributionTypes).isNightly = false
       remoteConfigState.value = 'unloaded'

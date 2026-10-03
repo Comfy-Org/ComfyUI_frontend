@@ -95,7 +95,6 @@ describe('useUploadModelWizard', () => {
   }
 
   afterEach(() => {
-    vi.mocked(api.getServerFeature).mockReset()
     for (const app of mountedApps.splice(0)) {
       app.unmount()
     }
