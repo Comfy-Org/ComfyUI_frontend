@@ -6,7 +6,7 @@
  * every way out leads back there. A hosted continuation redirects this tab
  * and comes back on `/v1/result`.
  */
-import { useTimeoutFn } from '@vueuse/core'
+import { useEventListener, useTimeoutFn } from '@vueuse/core'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -39,6 +39,7 @@ import {
   buildReturnUrl
 } from '@comfyorg/billing-contract'
 
+import { quoteFailureEndingOf } from '@/checkout/checkoutJourney'
 import type { PaymentChoice } from '@/checkout/checkoutRequest'
 import {
   buildSubscribeRequest,
@@ -97,8 +98,15 @@ const { lifecycle, status } = useBillingClient<'lifecycle' | 'status'>(
   undefined
 )
 
+/** A page handed to a hosted step or a method's own site has not been abandoned. */
+let handedToHostedStep = false
+let payingOnOwnSite = false
+
 const checkout = useCheckout({
-  openUrl: (url) => window.location.assign(url),
+  openUrl: (url) => {
+    handedToHostedStep = true
+    window.location.assign(url)
+  },
   navigationMode: 'redirect',
   // Deferred: reads the key at challenge time, not this setup's snapshot.
   challengePort: createDeferredStripeChallengePort(awaitBillingWebStripeKey)
@@ -133,6 +141,8 @@ async function quotePlan(
   if (call === latestQuoteCall) {
     if (promotionCode === undefined) journey.quoted(result)
     else journey.promoQuoted(result, promotionCode)
+    if (failure.value && !preview.value)
+      journey.ended(quoteFailureEndingOf(failure.value), undefined)
   }
   return result
 }
@@ -416,6 +426,7 @@ watch(
     if (!settled || submitting || id === announcedSuccess.value) return
     announcedSuccess.value = id
     const result = checkout.result.value
+    journey.ended('success', result?.status === 'ok' ? 'started' : 'followed')
     const tookPayment =
       result?.status !== 'ok' || result.value.issuedStatus !== 'subscribed'
     if (tookPayment) showSuccessToast()
@@ -523,6 +534,8 @@ async function pay(choice: PaymentChoice) {
   submitFailure.value = undefined
   reportMethodSelected(choice)
   const press = journey.submitted()
+  payingOnOwnSite =
+    choice.methodType !== undefined && choice.methodType !== 'card'
   let result: SubscriptionCommandResult
   try {
     result = await attempts.run(checkoutAttemptOf(quoted, entry.value), () =>
@@ -539,6 +552,7 @@ async function pay(choice: PaymentChoice) {
       )
     )
   } finally {
+    payingOnOwnSite = false
     journey.submitSettled(press)
   }
   if (result.status === 'ok') return
@@ -572,8 +586,13 @@ function leaveForHost(control: WebReturnControl) {
   const href = returnLink.value
   if (href === undefined) return
   reportReturnClicked(control)
+  if (control !== 'success_close') journey.abandoned(control)
   returnToHost(href)
 }
+
+useEventListener(window, 'pagehide', () => {
+  if (!handedToHostedStep && !payingOnOwnSite) journey.abandoned('page_exit')
+})
 </script>
 
 <template>

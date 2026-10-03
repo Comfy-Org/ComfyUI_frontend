@@ -922,6 +922,21 @@ describe('the embedded checkout exits and endings', () => {
     expect(exitsOf()).toEqual([])
   })
 
+  it('reports a success this page recovered rather than paid as followed', async () => {
+    await renderCheckout(CHECKOUT_PATH, {
+      recover: { status: 'ok', value: succeededOperation('op_old') }
+    })
+
+    await screen.findByRole('heading', { name: "You're all set" })
+    await waitFor(() => expect(endingsOf()).toHaveLength(1))
+
+    expect(endingsOf()[0]).toMatchObject({
+      ending_kind: 'success',
+      attribution: 'followed'
+    })
+    expect(endingsOf()[0]).not.toHaveProperty('billing_op_id')
+  })
+
   it.for<{
     name: string
     preview: PreviewSubscribeResult

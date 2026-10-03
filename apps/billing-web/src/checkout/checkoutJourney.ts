@@ -1,10 +1,13 @@
 import type {
+  CheckoutEndingKind,
   CheckoutEntryFlow,
   CheckoutEntrySource,
   CheckoutJourneyPhaseEvent,
   PreviewSubscribeResult,
+  SubscriptionCommandFailure,
   SubscriptionPreview
 } from '@comfyorg/account-core/billing'
+import { matchesServerCode } from '@comfyorg/account-core/billing'
 import type { BillingSource } from '@comfyorg/billing-contract'
 
 import type { CheckoutPageEvent } from '@/checkout/checkoutPage'
@@ -108,6 +111,16 @@ export function previewFailureOfResult(
       'httpStatus' in result ? result.httpStatus : undefined
     ).failure_category
   }
+}
+
+/** The full-page ending the embedded checkout's quote failure screen stands for. */
+export function quoteFailureEndingOf(
+  failure: SubscriptionCommandFailure
+): CheckoutEndingKind {
+  if (failure.code === 'ACCESS_DENIED') return 'refused'
+  return 'serverCode' in failure && matchesServerCode(failure, 'INVALID_PLAN')
+    ? 'plan_unavailable'
+    : 'load_failed'
 }
 
 type MethodSelectedPhase = Extract<
