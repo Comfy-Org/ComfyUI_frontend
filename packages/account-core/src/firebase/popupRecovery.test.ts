@@ -24,12 +24,13 @@ vi.mock<unknown>(import('firebase/auth'), async () => {
 })
 
 it.for([
-  { signIn: 'signInWithGoogle', anotherIdentity: false },
-  { signIn: 'signInWithGitHub', anotherIdentity: false },
-  { signIn: 'signInWithGitHub', anotherIdentity: true }
+  { signIn: 'signInWithGoogle', anotherIdentity: false, anotherApp: false },
+  { signIn: 'signInWithGitHub', anotherIdentity: false, anotherApp: false },
+  { signIn: 'signInWithGitHub', anotherIdentity: true, anotherApp: false },
+  { signIn: 'signInWithGitHub', anotherIdentity: true, anotherApp: true }
 ] as const)(
-  'keeps a delayed Google SDK failure recoverable on $signIn with another identity: $anotherIdentity',
-  async ({ signIn, anotherIdentity }, { onTestFinished }) => {
+  'keeps a delayed Google SDK failure recoverable on $signIn with another identity: $anotherIdentity and another app: $anotherApp',
+  async ({ signIn, anotherIdentity, anotherApp }, { onTestFinished }) => {
     vi.useRealTimers()
     const app = initializeApp(
       {
@@ -53,11 +54,20 @@ it.for([
       persistence: inMemoryPersistence,
       popupRedirectResolver: watchedPopupRedirectResolver
     })
+    const otherApp = initializeApp(app.options, 'popup-recovery-other')
+    onTestFinished(async () => await deleteApp(otherApp))
+    const otherAuth = initializeAuth(otherApp, {
+      persistence: inMemoryPersistence,
+      popupRedirectResolver: watchedPopupRedirectResolver
+    })
     const identity = createFirebaseIdentity({ auth, watchPopupSignIn: true })
     const repeatIdentity = anotherIdentity
-      ? createFirebaseIdentity({ auth, watchPopupSignIn: true })
+      ? createFirebaseIdentity({
+          auth: anotherApp ? otherAuth : auth,
+          watchPopupSignIn: true
+        })
       : identity
-    await auth.authStateReady()
+    await Promise.all([auth.authStateReady(), otherAuth.authStateReady()])
 
     const first = identity.signInWithGoogle().catch((error: unknown) => error)
     await vi.waitFor(() => {
