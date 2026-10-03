@@ -807,6 +807,11 @@ describe('ComfyApp', () => {
       onTestFinished(() => {
         ChangeTracker.isLoadingGraph = false
       })
+      // Asserted as a call rather than as retired state: `recordPromptError`
+      // does not persist a missing-node error while a suppression window is
+      // open, which is the only moment this test can seed one, so there is no
+      // error to watch survive. The mutation sweep is what keeps this honest
+      // — reverting the `!ChangeTracker.isLoadingGraph` guard turns it red.
       const retireErrors = vi.spyOn(
         useExecutionErrorStore(),
         'retireResolvedMissingNodePromptError'
@@ -833,15 +838,15 @@ describe('ComfyApp', () => {
       // live, and the newer load owns the warnings surface and will post its
       // own.
       expect(mockWorkflowService.showPendingWarnings).not.toHaveBeenCalled()
-      // The retirement catch-up has to wait for the last overlapping window:
-      // running it here retires the newer load's errors before it has
-      // recorded them.
+      // Retiring here would clear errors the newer load is still mid-flight
+      // over, before it has had the chance to record its own.
       expect(retireErrors).not.toHaveBeenCalled()
 
       releaseScan[1]()
       await newerLoad
 
       expect(mockWorkflowService.showPendingWarnings).toHaveBeenCalledOnce()
+      // Once the last window closes, the catch-up runs exactly once.
       expect(retireErrors).toHaveBeenCalledOnce()
     })
 
