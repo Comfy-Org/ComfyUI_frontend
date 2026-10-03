@@ -551,7 +551,10 @@ export class LiveGraphApplier {
         surface: 'agent',
         errorType: 'agent_graph_apply_failed',
         tags: { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
-        context: { actor: context.actor, opIds: [...context.opIds] }
+        context: {
+          actorKind: actorKind(context.actor),
+          opIds: [...context.opIds]
+        }
       })
     }
   }
