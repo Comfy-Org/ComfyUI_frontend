@@ -31,7 +31,7 @@ export function createCanvasScheduler(): CanvasScheduler {
 
   function isVisible(element: HTMLCanvasElement | undefined): boolean {
     return (
-      element?.offsetParent != null &&
+      element?.isConnected === true &&
       element.offsetWidth > 0 &&
       element.offsetHeight > 0
     )

@@ -29,6 +29,18 @@ describe('createCanvasScheduler', () => {
     expect(run).toHaveBeenCalledOnce()
   })
 
+  it('treats a fixed-position canvas as visible without an offset parent', () => {
+    const run = vi.fn()
+    Object.defineProperty(storeCanvas, 'offsetParent', {
+      configurable: true,
+      value: null
+    })
+
+    createCanvasScheduler().schedule({ run })
+
+    expect(run).toHaveBeenCalledOnce()
+  })
+
   it('checks the operation canvas rather than the store canvas', () => {
     const run = vi.fn()
     setCanvasVisible(storeCanvas, false)
