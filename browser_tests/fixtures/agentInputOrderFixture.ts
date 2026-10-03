@@ -11,10 +11,13 @@ import {
   messageId,
   objectInfo,
   seed,
+  staleCanvasSeed,
   threadId,
   workflowId
 } from '@e2e/fixtures/data/agent/inputOrder'
 import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
+
+const SOCKET_SID = '6a80fd06-c647-4b17-9f68-202366e468d8'
 
 export const test = agentTest.extend<{
   inputOrderHost: AgentFollowerHostSocket
@@ -25,7 +28,7 @@ export const test = agentTest.extend<{
       page,
       workflowId,
       host,
-      '6a80fd06-c647-4b17-9f68-202366e468d8'
+      SOCKET_SID
     )
     await socket.install()
 
@@ -35,16 +38,19 @@ export const test = agentTest.extend<{
       workflow_id: workflowId
     })
 
+    // `bootAgentApp` turns Vue nodes on for the `@vue-nodes` tag this spec
+    // carries, so only the canvas-info overlay has to be set here.
     await bootAgentApp(page, true, {
       objectInfo,
-      settings: {
-        'Comfy.VueNodes.Enabled': true,
-        'Comfy.Graph.CanvasInfo': false
-      }
+      settings: { 'Comfy.Graph.CanvasInfo': false }
     })
 
     await mockWorkflowPersistence(page, workflowId)
-    await loadSeedIntoActiveTab(page, seed)
+    // The canvas starts one revision behind the host, not level with it: the
+    // spec's final values must be wrong here so that landing them is proof
+    // the subscribe catch-up reached node 2 rather than proof that the
+    // fixture already held them. See `staleCanvasSeed`.
+    await loadSeedIntoActiveTab(page, staleCanvasSeed)
 
     await use(socket)
   }
