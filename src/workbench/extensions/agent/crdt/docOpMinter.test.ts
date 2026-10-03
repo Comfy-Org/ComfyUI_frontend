@@ -881,9 +881,12 @@ describe('attachDocOpMinter', () => {
     )
     assert.exists(stored)
     expect(stored.type).toBe('button')
-    // @ts-expect-error -- `type` is required on IBaseWidget, so only a
-    // non-conforming runtime object reaches this state; that is the point.
-    button.type = undefined
+    // `type` is required on `IBaseWidget`, so only a non-conforming runtime
+    // object reaches this state — which is the point: the guard has to answer
+    // for one anyway. Assigned through `Object.assign` rather than a
+    // suppression, since the subject here is runtime fallback and not a
+    // compiler diagnostic.
+    Object.assign(button, { type: undefined })
 
     emitGraphIntent({
       type: 'set_widget',
