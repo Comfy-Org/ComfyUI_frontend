@@ -4,12 +4,14 @@ name: 'CI: Tests Unit'
 on:
   push:
     branches: [main, master, dev*, core/*, desktop/*]
-  pull_request:
-    branches-ignore: [wip/*, draft/*, temp/*]
-  merge_group:
+  workflow_call:
+    secrets:
+      CODECOV_TOKEN:
+        required: false
+  workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-unit-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -18,16 +20,24 @@ jobs:
     permissions:
       contents: read
     outputs:
-      should-run: ${{ steps.changes.outputs.should-run }}
+      should-run: ${{ steps.changes.outputs.should-run-unit }}
     steps:
       - uses: actions/checkout@v7
       - id: changes
         uses: ./.github/actions/changes-filter
+        with:
+          # `test` is emitted whatever the verdict, so a candidate with no
+          # unit-relevant changes can skip the shards without stalling the queue.
+          evaluate-candidate: 'true'
 
-  test:
+  test-shards:
     needs: changes
     if: ${{ needs.changes.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
 
     steps:
       - uses: actions/checkout@v7
@@ -36,7 +46,76 @@ jobs:
         uses: ./.github/actions/setup-frontend
 
       - name: Run Vitest tests with coverage
-        run: pnpm test:coverage
+        env:
+          VITEST_SHARD: ${{ matrix.shard }}/${{ strategy.job-total }}
+        run: pnpm test:coverage --shard="$VITEST_SHARD" --reporter=default --reporter=blob
+
+      - name: Upload shard report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: unit-shard-${{ matrix.shard }}
+          path: .vitest/blob/*.json
+          include-hidden-files: true
+          retention-days: 1
+          if-no-files-found: error
+
+  test-packages:
+    needs: changes
+    if: ${{ needs.changes.outputs.should-run == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Run package unit tests with coverage
+        run: |
+          pnpm --recursive --no-sort --workspace-concurrency=2 --no-bail \
+            --filter @comfyorg/account-core \
+            --filter @comfyorg/account-ui \
+            --filter @comfyorg/billing-contract \
+            --filter @comfyorg/object-info-parser \
+            --filter @comfyorg/shared-frontend-utils \
+            --filter @comfyorg/design-system \
+            exec vitest run --coverage --maxWorkers=3
+
+      - name: Upload package coverage
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: unit-package-coverage
+          path: packages/*/coverage/lcov.info
+          retention-days: 1
+          if-no-files-found: error
+
+  test-report:
+    needs: [test-shards, test-packages]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Download shard reports
+        uses: actions/download-artifact@v8
+        with:
+          pattern: unit-shard-*
+          path: .vitest/blob
+          merge-multiple: true
+
+      - name: Download package coverage
+        uses: actions/download-artifact@v8
+        with:
+          name: unit-package-coverage
+          path: packages
+
+      - name: Merge reports and check coverage thresholds
+        run: pnpm test:coverage --merge-reports=.vitest/blob
 
       - name: Upload unit coverage artifact
         if: always() && github.event_name == 'push'
@@ -51,7 +130,28 @@ jobs:
         if: always()
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
-          files: coverage/lcov.info
+          files: coverage/lcov.info,packages/account-core/coverage/lcov.info,packages/account-ui/coverage/lcov.info,packages/billing-contract/coverage/lcov.info,packages/object-info-parser/coverage/lcov.info,packages/shared-frontend-utils/coverage/lcov.info,packages/design-system/coverage/lcov.info
           flags: unit
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
+
+  test:
+    if: ${{ always() }}
+    needs: [changes, test-shards, test-packages, test-report]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check unit test results
+        env:
+          CHANGES: ${{ needs.changes.result }}
+          SHOULD_RUN: ${{ needs.changes.outputs.should-run }}
+          SHARDS: ${{ needs.test-shards.result }}
+          PACKAGES: ${{ needs.test-packages.result }}
+          REPORT: ${{ needs.test-report.result }}
+        run: |
+          echo "changes=$CHANGES should_run=$SHOULD_RUN shards=$SHARDS packages=$PACKAGES report=$REPORT"
+          [[ "$CHANGES" == "success" ]] || exit 1
+          if [[ "$SHOULD_RUN" == "false" ]]; then
+            [[ "$SHARDS" == "skipped" && "$PACKAGES" == "skipped" && "$REPORT" == "skipped" ]]
+          else
+            [[ "$SHOULD_RUN" == "true" && "$SHARDS" == "success" && "$PACKAGES" == "success" && "$REPORT" == "success" ]]
+          fi

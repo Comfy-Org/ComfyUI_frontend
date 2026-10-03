@@ -1,28 +1,19 @@
-import { setActivePinia } from 'pinia'
 import { fromAny } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { nextTick, ref } from 'vue'
 
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
-import { createTestingPinia } from '@pinia/testing'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { NodeLayout } from '@/renderer/core/layout/types'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 import { createNodeState } from '@/utils/__tests__/litegraphTestUtils'
 
-const forwardEventToCanvasMock = vi.fn()
-
 // Mock the dependencies
-vi.mock('@/renderer/core/canvas/useCanvasInteractions', () => ({
-  useCanvasInteractions: () => ({
-    forwardEventToCanvas: forwardEventToCanvasMock,
-    shouldHandleNodePointerEvents: ref(true)
-  })
-}))
+vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))
 
-vi.mock('@/renderer/extensions/vueNodes/layout/useNodeDrag', () => {
+vi.mock(import('@/renderer/extensions/vueNodes/layout/useNodeDrag'), () => {
   const startDrag = vi.fn()
   const handleDrag = vi.fn()
   const endDrag = vi.fn()
@@ -35,8 +26,8 @@ vi.mock('@/renderer/extensions/vueNodes/layout/useNodeDrag', () => {
   }
 })
 
-vi.mock(
-  '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers',
+vi.mock<unknown>(
+  import('@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'),
   () => {
     const handleNodeSelect = vi.fn()
     const deselectNode = vi.fn()
@@ -73,7 +64,7 @@ const mockData = vi.hoisted(() => {
   return { fakeNodeLayout }
 })
 
-vi.mock('@/renderer/core/layout/store/layoutStore', () => {
+vi.mock<unknown>(import('@/renderer/core/layout/store/layoutStore'), () => {
   const isDraggingVueNodes = ref(false)
   const isResizingVueNodes = ref(false)
   const fakeNodeLayoutRef = ref(mockData.fakeNodeLayout)
@@ -116,10 +107,6 @@ const createMouseEvent = (
 }
 
 describe('useNodePointerInteractions', () => {
-  beforeEach(async () => {
-    setActivePinia(createTestingPinia())
-  })
-
   it('should only start drag on left-click', async () => {
     const { handleNodeSelect } = useNodeEventHandlers()
     const { startDrag } = useNodeDrag()

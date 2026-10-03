@@ -61,8 +61,7 @@ Every value must be a real range. If you see `catalog:`, you used the wrong tool
 
 ## Scaffolding the workflows
 
-Copy the four-workflow set from an existing package — `design-system` and
-`desktop-ui` are the references:
+Copy the four-workflow set from an existing package such as `design-system`:
 
 | Workflow                      | Role                                                    |
 | ----------------------------- | ------------------------------------------------------- |

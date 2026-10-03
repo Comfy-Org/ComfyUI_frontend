@@ -76,6 +76,7 @@ export class PropertiesPanelHelper {
     )
 
     const rows = this.sectionWidgetRows
+    await rows.nth(fromIndex).scrollIntoViewIfNeeded()
     const from = await rows.nth(fromIndex).boundingBox()
     const to = await rows.nth(toIndex).boundingBox()
     if (!from || !to) throw new Error('widget row not visible')
@@ -88,14 +89,24 @@ export class PropertiesPanelHelper {
 
     await mouse.move(from.x + from.width / 2, from.y + grabOffsetY)
     await mouse.down()
-    await mouse.move(to.x + to.width / 2, dropY, {
-      steps: 20
-    })
-    await mouse.up()
+    try {
+      await expect(rows.nth(fromIndex)).toHaveClass(/\bis-draggable\b/)
+      await mouse.move(to.x + to.width / 2, dropY, {
+        steps: 20
+      })
+      await expect
+        .poll(async () => {
+          await mouse.move(to.x + to.width / 2, dropY)
+          return rows.nth(toIndex).getAttribute('data-is-toggled')
+        })
+        .toBe('')
+    } finally {
+      await mouse.up()
+    }
   }
 
   get errorsTabIcon(): Locator {
-    return this.root.locator('nav i[class*="lucide--octagon-alert"]')
+    return this.errorsTab.getByTestId('panel-tab-icon')
   }
 
   get viewAllSettingsButton(): Locator {

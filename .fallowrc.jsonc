@@ -1,15 +1,39 @@
 {
-  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/v2.104.0/schema.json",
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/v3.24.1/schema.json",
 
-  // Entry points fallow cannot infer. These files are roots (run by package.json
-  // scripts / CI / tool CLIs / Storybook), not imported from the app graph.
+  // Runtime entry points fallow cannot infer.
   "entry": [
-    "src/main.ts",
+    // Astro injects these routes when WORKSHOP_IN_BUILD is enabled.
+    "apps/website/src/routes/models/*.{astro,ts}",
     "index.html",
-    "scripts/**/*.{js,ts}",
-    "apps/website/src/scripts/**/*.ts",
-    "**/.storybook/{main,preview}.ts",
-    "packages/ingest-types/openapi-ts.config.ts"
+    "src/main.ts"
+  ],
+
+  // Keep tooling and test roots reachable without treating their imports as
+  // production runtime dependencies.
+  "framework": [
+    {
+      "name": "comfyui-support-entry-points",
+      "enablers": ["fallow"],
+      "entryPoints": [
+        "**/.storybook/{main,preview}.ts",
+        "apps/website/src/scripts/**/*.ts",
+        "packages/ingest-types/openapi-ts.config.ts",
+        "scripts/**/*.{js,ts}"
+      ],
+      "entryPointRole": "support"
+    },
+    {
+      "name": "comfyui-test-entry-points",
+      "enablers": ["@playwright/test"],
+      "entryPoints": [
+        "apps/website/src/**/__mocks__/**/*.ts",
+        "browser_tests/global{Setup,Teardown}.ts",
+        "playwright.session.config.ts",
+        "src/**/__mocks__/**/*.ts"
+      ],
+      "entryPointRole": "test"
+    }
   ],
 
   "ignorePatterns": [
@@ -30,30 +54,8 @@
     // stylelint customSyntax (.stylelintrc.json) respectively.
     "eslint-plugin-playwright",
     "postcss-html",
-    // Vite path aliases to local locale bundles in apps/desktop-ui; virtual
-    // packages, not installable npm deps.
-    "@frontend-locales/ar",
-    "@frontend-locales/en",
-    "@frontend-locales/es",
-    "@frontend-locales/fr",
-    "@frontend-locales/ja",
-    "@frontend-locales/ko",
-    "@frontend-locales/pt-BR",
-    "@frontend-locales/ru",
-    "@frontend-locales/tr",
-    "@frontend-locales/zh",
-    "@frontend-locales/zh-TW",
-    // Declared in the root manifest and provided to the apps/desktop-ui sub-app
-    // via pnpm hoisting. Real (benign) phantom deps; tracked for follow-up
-    // cleanup into apps/desktop-ui/package.json.
-    "@pinia/testing",
-    "@testing-library/jest-dom",
-    "@testing-library/user-event",
-    "@testing-library/vue",
-    "@xterm/addon-fit",
-    "@xterm/addon-serialize",
-    "@xterm/xterm",
-    "es-toolkit"
+    // Executed by models-snippets.test.ts inside the generated Node examples.
+    "mime-types"
   ],
 
   "ignoreUnresolvedImports": [
@@ -65,7 +67,7 @@
 
   "ignoreExports": [
     // Public extension API surface, deliberately exported for the 40+ custom-node
-    // ecosystem (ADR 0003 / 0008). No internal importer by design.
+    // ecosystem (ADR-LAYOUT / ADR-ECS). No internal importer by design.
     { "file": "src/types/index.ts", "exports": ["*"] },
     { "file": "src/lib/litegraph/src/litegraph.ts", "exports": ["*"] },
     { "file": "src/scripts/ui/menu/index.ts", "exports": ["*"] },
@@ -121,6 +123,11 @@
     {
       "file": "apps/website/src/data/gallery.ts",
       "exports": ["getGalleryItemById"]
+    },
+    // Vitest automock: mirrors the real module's exports by design.
+    {
+      "file": "apps/website/src/config/__mocks__/workshop-session-state.ts",
+      "exports": ["*"]
     }
   ],
 
@@ -147,5 +154,7 @@
     "dupesBaseline": ".fallow-baselines/dupes.json"
   },
 
-  "rules": {}
+  "rules": {
+    "dev-dependencies-in-production": "error"
+  }
 }

@@ -5,9 +5,10 @@
 // CollectionPage + ItemList of the event detail pages, plus an Event node per
 // dated upcoming event.
 import BaseLayout from '../../layouts/BaseLayout.astro'
+import EventsDirectorySection from './EventsDirectorySection.vue'
 import EventsHeroSection from './EventsHeroSection.vue'
+import HostEventSection from './HostEventSection.vue'
 import PastEventsSection from './PastEventsSection.vue'
-import UpcomingEventsSection from './UpcomingEventsSection.vue'
 import { localizeHref } from '../../config/routes'
 import {
   eventJsonLdNode,
@@ -15,21 +16,26 @@ import {
   upcomingEvents,
   watchablePastEvents
 } from '../../data/events'
-import { t } from '../../i18n/translations'
 import type { JsonLdNode } from '../../utils/jsonLd'
-import { absoluteUrl, itemListNode, jsonLdId, pageContext } from '../../utils/jsonLd'
+import {
+  absoluteUrl,
+  itemListNode,
+  jsonLdId,
+  pageContext
+} from '../../utils/jsonLd'
 
 const { siteUrl, locale, url } = pageContext(
   Astro.site,
   Astro.url.pathname,
   Astro.currentLocale
 )
+const { t } = Astro.locals
 
 const eventList = itemListNode(
   url,
-  t('events.past.title', locale),
+  t('events.past.title'),
   watchablePastEvents.map((event) => ({
-    name: event.title[locale],
+    name: event.title[locale] || event.title.en,
     url: absoluteUrl(Astro.site, localizeHref(eventPath(event), locale))
   }))
 )
@@ -40,22 +46,23 @@ const upcomingEventNodes: JsonLdNode[] = upcomingEvents.map((event) =>
 
 const breadcrumbs = [
   {
-    name: t('breadcrumb.home', locale),
+    name: t('breadcrumb.home'),
     url: absoluteUrl(Astro.site, localizeHref('/', locale))
   },
-  { name: t('breadcrumb.events', locale) }
+  { name: t('breadcrumb.events') }
 ]
 ---
 
 <BaseLayout
-  title={t('events.page.title', locale)}
-  description={t('events.page.description', locale)}
+  title={t('events.page.title')}
+  description={t('events.page.description')}
   pageType="CollectionPage"
   mainEntityId={jsonLdId(url, 'itemlist')}
   breadcrumbs={breadcrumbs}
   extraJsonLd={[eventList, ...upcomingEventNodes]}
 >
   <EventsHeroSection locale={locale} client:load />
-  <UpcomingEventsSection locale={locale} client:visible />
+  <EventsDirectorySection locale={locale} client:visible />
+  <HostEventSection locale={locale} client:visible />
   <PastEventsSection locale={locale} client:visible />
 </BaseLayout>

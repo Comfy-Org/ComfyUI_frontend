@@ -12,31 +12,38 @@
  * 3. Check dist/assets/*.js files contain no tracking code
  */
 
+import {
+  AUTH_TELEMETRY_EVENT,
+  SESSION_TELEMETRY_EVENT
+} from '@comfyorg/account-core/telemetry'
+import type {
+  BillingTelemetryEvent,
+  BillingTelemetryEventName,
+  CheckoutJourneyTelemetryEvent,
+  CheckoutJourneyTelemetryEventName,
+  CheckoutJourneyTelemetryEventPayload,
+  ResubscribeSource,
+  SubscriptionCheckoutTier,
+  SubscriptionCheckoutType
+} from '@comfyorg/account-core/billing'
+import { BILLING_TELEMETRY_EVENTS } from '@comfyorg/account-core/billing'
+import type { BillingSource } from '@comfyorg/billing-contract'
+import type { AgentRunMode } from '@comfyorg/ingest-types'
+import type {
+  AuthErrorMetadata,
+  AuthFlowAction,
+  AuthMethod,
+  WebSessionTelemetryEvent
+} from '@comfyorg/account-core/telemetry'
+import type { SessionRefreshOutcome } from '@comfyorg/account-core/session'
+
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
-import type { AuditLog } from '@/services/customerEventsService'
 import type { AppMode } from '@/utils/appMode'
 
-export type AuthMethod = 'email' | 'google' | 'github'
+export type { AuthMethod }
 
-export type PaymentIntentSource =
-  | 'subscription_required'
-  | 'out_of_credits'
-  | 'top_up_blocked'
-  | 'deep_link'
-  | 'subscribe_to_run'
-  | 'subscribe_now_button'
-  | 'upgrade_to_add_credits'
-  | 'settings_billing_panel'
-  | 'avatar_menu_plans'
-  | 'team_members_panel'
-  | 'invite_member_upsell'
-  | 'upload_model_upgrade'
-  | 'team_upgrade_resume'
-  | 'free_tier_quota'
-
-export type SubscriptionCheckoutType = 'new' | 'change'
-export type SubscriptionCheckoutTier = TierKey | 'team'
+export type PaymentIntentSource = BillingSource
 
 /**
  * Authentication metadata for sign-up tracking
@@ -53,22 +60,7 @@ export interface AuthMetadata {
   utm_campaign?: string
 }
 
-export type AuthFlowAction =
-  | 'email_sign_in'
-  | 'email_sign_up'
-  | 'google_sign_in'
-  | 'google_sign_up'
-  | 'github_sign_in'
-  | 'github_sign_up'
-  | 'password_reset'
-
-/**
- * Metadata for failed authentication attempts
- */
-export interface AuthErrorMetadata {
-  error_code: string
-  auth_action: AuthFlowAction
-}
+export type { AuthErrorMetadata, AuthFlowAction }
 
 export type UnifiedAuthRetryFailureReason =
   | 'missing_bearer'
@@ -76,12 +68,94 @@ export type UnifiedAuthRetryFailureReason =
   | 'remint_failed'
   | 'retry_rejected'
   | 'retry_request_failed'
+  | 'token_unavailable'
 
 export interface UnifiedAuthRetryMetadata {
-  transport: 'axios' | 'fetch'
+  transport: 'axios' | 'fetch' | 'ws'
   outcome: 'succeeded' | 'failed'
   final_status?: number
   failure_reason?: UnifiedAuthRetryFailureReason
+}
+
+export type UnifiedAuthRefreshOutcome = SessionRefreshOutcome
+
+/**
+ * Outcome of one proactive unified Cloud-JWT refresh attempt. This lifecycle
+ * drives session-cookie rotation, so a dead refresh chain breaks every
+ * cookie-authenticated <img>/media load (FE-1595).
+ */
+export interface UnifiedAuthRefreshMetadata {
+  outcome: UnifiedAuthRefreshOutcome
+  retry_count?: number
+}
+
+/**
+ * One failed image preview. An `<img>` error event reports no status, so
+ * everything past `source` is reconstructed by `describeImageLoadFailure()`:
+ * `status` comes from re-requesting the URL once, the rest from the URL and the
+ * page. Fields are optional because a probe that was capped, blocked or never
+ * applicable must still produce a report — a missing field is a real outcome,
+ * recorded in `probe_outcome` rather than guessed at.
+ */
+export interface ImageLoadFailureMetadata {
+  /**
+   * Which surface failed. `node_image_preview` is the Vue node renderer;
+   * `canvas_node_image` / `canvas_node_video` are the litegraph canvas previews
+   * that every user gets by default, since `Comfy.VueNodes.Enabled` is off
+   * unless App Builder turns it on. Splitting on this is what keeps a rate
+   * measured on one renderer from being read as the rate for everyone.
+   */
+  source: 'node_image_preview' | 'canvas_node_image' | 'canvas_node_video'
+  /** Load attempts made before giving up, including the first. */
+  attempts?: number
+  /** True when the load timed out rather than erroring — a stall, not a rejection. */
+  timed_out?: boolean
+  /** HTTP status of the follow-up probe. Absent unless `probe_outcome` is `probed`. */
+  status?: number
+  probe_outcome?:
+    | 'probed'
+    | 'probe_failed'
+    | 'probe_timeout'
+    | 'probe_capped'
+    | 'probe_blocked'
+    | 'probe_redirected'
+    | 'probe_abandoned'
+    | 'invalid_src'
+  /** `/api/view?type=` — separates an expired output from a missing upload. */
+  resource_kind?: 'output' | 'input' | 'temp' | 'unspecified' | 'not_api_view'
+  /** Filename shape only; never the filename, which is user-authored. */
+  filename_kind?: 'content_hash' | 'template' | 'named' | 'none'
+  /** Time since this page loaded. Auth-expiry failures skew old; 404s do not. */
+  page_age_ms?: number
+  online?: boolean
+  same_origin?: boolean
+}
+
+/**
+ * One row per session describing how long startup took and where the time
+ * went. `total_ms` is measured from navigation start, so it is directly
+ * comparable to what a user experiences and can be percentiled across sessions
+ * without joining per-phase events.
+ *
+ * `outcome` keeps the bad sessions in the data:
+ * - `completed` — the loading screen came down normally.
+ * - `failed` — startup threw; the loading screen came down anyway.
+ * - `timed_out` — startup was still running at the watchdog deadline. Emitted
+ *   *in addition to* whichever terminal row eventually follows, so a load that
+ *   hangs is counted even when it never finishes. `pending` names the phases
+ *   still open, which is where the session is stuck.
+ *
+ * Without the `timed_out` row the sessions users complain about are precisely
+ * the ones absent from the data.
+ */
+export interface BootstrapCompleteMetadata {
+  total_ms: number
+  outcome: 'completed' | 'failed' | 'timed_out'
+  phase_count: number
+  /** Per-phase durations, keyed `<namespace>/<phase>` (e.g. `bootstrap/object-info`). */
+  phases: Record<string, number>
+  /** Phases still running when this row was emitted. Only set for `timed_out`. */
+  pending?: string[]
 }
 
 /**
@@ -194,6 +268,8 @@ export interface RunButtonProperties {
   view_mode: AppMode
   is_app_mode: boolean
   dock_state: ActionbarDockState
+  /** Whether the agent panel was open when the run was submitted. */
+  agent_panel_open: boolean
 }
 
 /**
@@ -410,6 +486,7 @@ export interface TemplateLibraryClosedMetadata {
  */
 export interface PageVisibilityMetadata {
   visibility_state: 'visible' | 'hidden'
+  agent_panel_open: boolean
 }
 
 /**
@@ -524,6 +601,437 @@ export interface UiButtonClickMetadata {
 }
 
 /**
+ * In-App Agent message rating metadata (PM-98). `vote` is null when the user retracts a
+ * prior thumb, which the eval pipeline records as a retraction rather than dropping.
+ */
+export interface AgentMessageFeedbackMetadata extends Record<string, unknown> {
+  message_id: string
+  turn_id: string
+  vote: 'up' | 'down' | null
+  workflow_id: string | null
+}
+
+export type AgentPanelCloseSource =
+  | 'close_button'
+  | 'workflow_switch'
+  | 'topbar_button'
+  | 'pagehide'
+export interface AgentPanelOpenedMetadata extends Record<string, unknown> {
+  source: 'restored' | 'topbar_button' | 'automatic_consent' | 'activation'
+}
+export type AgentConsentNotOfferedReason =
+  | 'first_run_screen'
+  | 'tour_active'
+  | 'dialog_open'
+  | 'boot_undecided'
+  | 'storage_unavailable'
+export interface AgentConsentNotOfferedMetadata extends Record<
+  string,
+  unknown
+> {
+  reason: AgentConsentNotOfferedReason
+}
+/**
+ * Why an automatic consent offer ended without either making the offer or
+ * naming a surface that is holding it.
+ *
+ * `AgentConsentNotOfferedReason` covers the deferrals: a surface is in the way,
+ * it is named, and the offer is retried when that surface clears. Everything
+ * here is the other kind of ending - the attempt stopped for a reason of its
+ * own. Some of those endings are correct (the offer was not needed) and some
+ * are losses (it was owed and did not happen), so **a query over this event
+ * must split by `exit`; a total is not a quantity.**
+ *
+ * Correctly not needed: `consent_already_accepted`, `card_already_seen`,
+ * `already_offered`.
+ * Owed and not made: everything else.
+ *
+ * There is deliberately no value for "the agent flag is off". Every exit here
+ * is downstream of that check, so reporting it would emit once per page load
+ * for everyone outside the rollout - a count of exposure rather than of the
+ * mechanism - and the flag is already on every event as
+ * `$feature/agent-in-app-experience`.
+ *
+ * The `request` stage is the one place these endings are *countable*: see
+ * `AgentConsentOfferStage`. Every other stage reports the presence of an
+ * ending once per page load, so counts are comparable within one
+ * (`stage`, `exit`) pair and never across stages.
+ */
+export type AgentConsentOfferExit =
+  /** No Comfy account is signed in. */
+  | 'signed_out'
+  /** Signed in, but the account has not resolved to a user id yet. */
+  | 'account_unresolved'
+  /** No active workspace id yet, and no switch is in progress. */
+  | 'workspace_unresolved'
+  /** A workspace switch is in progress, so the consent scope is moving. */
+  | 'workspace_switching'
+  /** The stored consent read has not settled, so consent is unknown. */
+  | 'consent_unresolved'
+  /** The stored consent read rejected. */
+  | 'consent_read_failed'
+  /** Consent is already stored for this scope, so no card is needed. */
+  | 'consent_already_accepted'
+  /** Another offer attempt for this page load has not finished. */
+  | 'offer_in_flight'
+  /** The card has already been on screen for this scope this page load. */
+  | 'card_already_seen'
+  /** Panel activation owns consent timing, so the automatic offer is dropped. */
+  | 'activation_opened_panel'
+  /** The one-shot auto-show key for this scope is already burned. */
+  | 'already_offered'
+  /** The first-run startup probe rejected. */
+  | 'startup_probe_failed'
+  /**
+   * The consent scope moved while it was being resolved - a different account,
+   * a workspace transition, or a switch that started - so the read that would
+   * have decided whether to ask was never made. `request` stage only.
+   */
+  | 'scope_changed_before_read'
+  /**
+   * Resolving the consent scope raised. The account or the workspace went away
+   * between the offer decision and the request. `request` stage only.
+   */
+  | 'scope_probe_failed'
+  /**
+   * The consent scope moved while the stored-consent read was in flight, so the
+   * answer that came back belonged to a scope that is no longer current.
+   * `request` stage only.
+   */
+  | 'scope_changed_after_read'
+  /**
+   * The card was asked for and the dialog closed before it rendered, so there
+   * is no `agent_consent_shown` and no outcome to record against one. `request`
+   * stage only.
+   */
+  | 'card_closed_before_mount'
+/**
+ * Which link in the offer chain exited. The same condition is checked at more
+ * than one of these - the pair (`exit`, `stage`) is what identifies a single
+ * exit in the code, so neither property is readable on its own.
+ */
+export type AgentConsentOfferStage =
+  /** `loadConsentIfEligible` - before the consent read, or on its result. */
+  | 'load'
+  /** Waiting on the first-run startup decision. */
+  | 'startup'
+  /** `offerConsentUnprompted` - the offer attempt itself. */
+  | 'offer'
+  /**
+   * The consent request itself - `requestConsentForCurrentUser` and the card
+   * lifecycle in `showConsentDialog` - after the chain has decided to ask.
+   *
+   * The only stage that is **not** deduplicated, because it cannot inflate:
+   * the automatic path reaches it at most once per consent scope per page load
+   * (the one-shot auto-show key is burned first) and the button path reaches it
+   * once per click, so a repeat here is a repeated attempt rather than a
+   * measure of how long the tab was open.
+   */
+  | 'request'
+export interface AgentConsentOfferExitedMetadata extends Record<
+  string,
+  unknown
+> {
+  exit: AgentConsentOfferExit
+  stage: AgentConsentOfferStage
+  /**
+   * Whether a hold was armed at the moment of the exit, i.e. whether this page
+   * load still has a queued retry. False on an owed-and-not-made exit means the
+   * offer is gone for this page load with nothing scheduled to bring it back.
+   *
+   * Two qualifications, both from the `request` stage. It is **structurally
+   * false** there: the offer drops the hold immediately before requesting, and
+   * the only thing that re-arms it is the `canShow` hook, which runs after
+   * every `request` exit. And the hold is not the only wake-up - `withConsent`
+   * settling re-drives the chain when the identity changed - so on the two
+   * `scope_changed_*` exits a retry does happen, by a mechanism this property
+   * does not describe.
+   */
+  retry_armed: boolean
+  /**
+   * Which surface asked. Set **only** at the `request` stage, which is the one
+   * stage reachable from the topbar button as well as the automatic offer;
+   * every other stage is inside `offerConsentUnprompted` and automatic by
+   * construction. A query about automatic offers must therefore either restrict
+   * to `stage != 'request'` or filter `trigger = 'first_load'` - counting the
+   * `request` stage unsplit mixes a user-initiated click into the automatic
+   * denominator.
+   */
+  trigger?: AgentConsentTrigger
+}
+export type AgentOnboardingNotShownMetadata =
+  | { reason: 'app_mode' | 'tour_active' }
+  | { reason: 'target_missing'; step: number }
+export interface AgentPanelClosedMetadata extends Record<string, unknown> {
+  source: AgentPanelCloseSource
+  open_duration_ms: number | null
+}
+export interface AgentEntryButtonClickedMetadata extends Record<
+  string,
+  unknown
+> {
+  resulting_state: 'opened' | 'closed'
+}
+export type AgentConsentTrigger =
+  | 'first_load'
+  | 'button_click'
+  | 'first_message'
+export interface AgentConsentShownMetadata extends Record<string, unknown> {
+  trigger: AgentConsentTrigger
+}
+/**
+ * How a consent card that was on screen ended, plus the moment consent becomes
+ * stored. It used to carry only the two deciding values, which left a card that
+ * was shown and then went quiet covering three different endings at once - a
+ * dismissal, an acceptance whose save did not stick, and a signed-out
+ * acceptance whose sign-in was abandoned. Those are now named, and
+ * `save_error_shown` separates giving up after a failed save from walking away.
+ *
+ * **Only `accepted` means consent is stored.** That was this event's whole
+ * meaning before the other values existed, so any query that counted it as "a
+ * decision that stuck" must now filter `decision = 'accepted'`, and one that
+ * wants "the user answered" wants `decision in ('accepted', 'rejected')`.
+ *
+ * **The pairing with `agent_consent_shown`, exactly.** For a signed-in user -
+ * the whole cloud population - every impression ends in exactly one of these,
+ * so an impression with no outcome is a defect rather than a dismissal. In the
+ * signed-out (local) flow the card is only the first half: it ends at
+ * `accepted_pending_sign_in`, and `accepted` follows separately if the sign-in
+ * and the real save land. So `accepted` is the one value that is not always the
+ * card's own ending, which is how it keeps meaning "consent is stored".
+ */
+export type AgentConsentDecision =
+  /** Accepted, and the acceptance is durably stored. */
+  | 'accepted'
+  /** Declined on the card. Nothing is stored; the card can be offered again. */
+  | 'rejected'
+  /**
+   * Closed without deciding - Escape, the overlay mask, or a programmatic close
+   * such as navigation. Distinguishing this from `accept_not_persisted` is the
+   * difference between the user walking away and the product failing them.
+   */
+  | 'dismissed'
+  /**
+   * Accepted, and the write did not stick without raising: the scope moved
+   * mid-save or the workspace auth header was gone. The user believes they
+   * consented and no consent exists.
+   */
+  | 'accept_not_persisted'
+  /**
+   * Accepted the card in the signed-out flow, where the card is only the first
+   * half: a sign-in and a real save still have to land before consent exists,
+   * and they report `accepted` themselves when they do. So this value with no
+   * later `accepted` is an abandoned sign-in, which is the third case this
+   * event could not previously name.
+   */
+  | 'accepted_pending_sign_in'
+export interface AgentConsentResolvedMetadata extends Record<string, unknown> {
+  decision: AgentConsentDecision
+  /**
+   * Whether the card had already shown a save error when it reached this
+   * outcome. A raised save leaves the card open and retryable, so its ending is
+   * one of the values above rather than an outcome of its own - this is what
+   * tells "dismissed after the save failed" from "dismissed without trying",
+   * and marks an `accepted` that only landed on a retry.
+   */
+  save_error_shown: boolean
+}
+export type AgentOnboardingAction = 'next' | 'finish' | 'skip'
+/**
+ * `step` is 1-based and matches the "Step N of M" indicator on the card.
+ * `finish` marks completion, so the gap from `agent_onboarding_shown` is the
+ * onboarding time.
+ */
+export interface AgentOnboardingStepMetadata extends Record<string, unknown> {
+  step: number
+  action: AgentOnboardingAction
+}
+/**
+ * Where the composer's text came from, by the affordance that put it there:
+ * `suggestion` is an empty-state suggestion chip, `edited` is an earlier prompt
+ * reopened through the conversation's edit action, and `typed` is everything
+ * the user wrote themselves. Each send falls into exactly one — a chip the user
+ * then reworded stays `suggestion`, because the chip is still what it came from.
+ */
+export type AgentInputMethod = 'typed' | 'suggestion' | 'edited'
+/**
+ * A starter prompt by the slot it occupies in the empty state, not by the text
+ * it shows: the copy is owned elsewhere and changes without the funnel
+ * changing. `unregistered` means the rendered set is larger than this union —
+ * a prompt was appended to either English distribution list without a matching
+ * entry in `starterPrompts.ts`, so that extra chip reads as an unmapped slot.
+ */
+export type AgentStarterPromptId =
+  | 'slot_1'
+  | 'slot_2'
+  | 'slot_3'
+  | 'slot_4'
+  | 'slot_5'
+  | 'unregistered'
+/**
+ * Where the free-use notice was placed, for the DES-1221 placement experiment.
+ *
+ * Deliberately the PostHog variant keys verbatim: the analysis joins this property to
+ * `$feature/agent-free-use-message-placement`, and a translation layer between
+ * the two is one more place for the arms to drift apart.
+ */
+export type AgentFreeUsePlacement =
+  | 'top-banner'
+  | 'near-composer'
+  | 'above-input'
+  | 'inside-input'
+export interface AgentFreeUseExposureMetadata extends Record<string, unknown> {
+  placement: 'control' | AgentFreeUsePlacement
+  '$feature/agent-free-use-message-placement': 'control' | AgentFreeUsePlacement
+}
+/**
+ * Interactions with the notice itself. The experiment's primary outcome and
+ * guardrails are all read off events that already exist — `agent_panel_opened`,
+ * `agent_message_sent`, `agent_panel_closed`, node edits and run events — split
+ * by the PostHog variant property. This event adds only what those cannot say:
+ * whether the notice was actually on screen in its assigned arm, and what the
+ * viewer did with it.
+ */
+export interface AgentFreeUseNoticeMetadata extends Record<string, unknown> {
+  action: 'shown' | 'dismissed' | 'learn_more_clicked'
+  placement: AgentFreeUsePlacement
+}
+export interface AgentStarterPromptClickedMetadata extends Record<
+  string,
+  unknown
+> {
+  prompt_id: AgentStarterPromptId
+  /** Slot position, so a reorder is visible rather than silently re-labelling. */
+  prompt_index: number
+  /** Size of the rendered set, so a set that grew or shrank is visible too. */
+  prompt_count: number
+  /**
+   * FNV-1a of the *displayed* text, 8 hex chars. Here so a copy change under a
+   * stable `prompt_id` is detectable — without it, a before/after read cannot
+   * tell a better slot from a rewritten one. Not the text itself (job `Don't`
+   * #3), and not reversible.
+   */
+  prompt_text_hash: string
+  /** The i18n locale that produced `prompt_text_hash`; two locales are two hashes of one prompt. */
+  locale: string
+  /**
+   * Minted per click. Carried onto every `app:agent_message_sent` attempt
+   * attributable to this click as `starter_prompt_click_id`. Retries mint a
+   * new `client_message_id` but retain this id, so click conversion must count
+   * distinct `starter_prompt_click_id` values rather than send events. A click
+   * with no matching send attempt never converted.
+   */
+  click_id: string
+  /**
+   * Whether the composer was empty when the chip was clicked. Inserting
+   * appends, so `false` means the submitted text is a mix of this prompt and
+   * something else — do not read those as a clean per-prompt outcome.
+   */
+  draft_was_empty: boolean
+}
+export interface AgentMessageSentMetadata extends Record<string, unknown> {
+  attachment_count: number
+  node_tag_count: number
+  /**
+   * The thread the message was posted into, `null` when it starts a new one —
+   * the backend mints that id in its acknowledgement, after this event fires.
+   */
+  thread_id: string | null
+  /** The targeted workflow's cloud id, `null` when the tab has none yet. */
+  workflow_id: string | null
+  /**
+   * Minted client-side, one per send attempt, so duplicate deliveries of this
+   * event collapse onto one message. A retry after a failed send is a new
+   * attempt and gets a new id. The backend does not receive it yet — the turn
+   * POST contract carries no client id — so it dedups within the frontend
+   * stream rather than joining to the backend turn; `thread_id` is the join
+   * today.
+   */
+  client_message_id: string
+  input_method: AgentInputMethod
+  /**
+   * Which starter prompt supplied this draft, `null` when none did. The last
+   * chip clicked before the send wins, because inserting appends and the send
+   * is one message. Starter-prompt suggestions always carry a non-null ID and
+   * use `input_method: 'suggestion'`.
+   */
+  starter_prompt_id: AgentStarterPromptId | null
+  /** `click_id` of the `app:agent_starter_prompt_clicked` this send came from, `null` when typed. */
+  starter_prompt_click_id: string | null
+}
+export interface AgentNodeTaggedMetadata extends Record<string, unknown> {
+  source: 'mention_picker'
+}
+export interface AgentAttachButtonClickedMetadata extends Record<
+  string,
+  unknown
+> {
+  method: 'menu' | 'drag_drop' | 'paste'
+}
+export interface AgentWorkflowAppliedMetadata extends Record<string, unknown> {
+  workflow_id: string
+  target: 'active_tab_switch' | 'active_tab_open'
+}
+export type AgentStopMethod = 'button' | 'escape'
+export interface AgentStopClickedMetadata extends Record<string, unknown> {
+  method: AgentStopMethod
+  turn_id: string
+  turn_elapsed_ms: number | null
+}
+export type AgentWorkflowBindSource =
+  | 'active_tab'
+  | 'selector_chip'
+  | 'minted'
+  | 'restored'
+export interface AgentWorkflowBoundMetadata extends Record<string, unknown> {
+  thread_id: string
+  workflow_id: string
+  prev_workflow_id: string | null
+  bind_source: AgentWorkflowBindSource
+}
+export interface AgentRunApprovalShownMetadata extends Record<string, unknown> {
+  turn_id: string
+  workflow_id: string | null
+}
+export type AgentRunApprovalDecision = 'run' | 'cancel' | 'open_workflow'
+export interface AgentRunApprovalResolvedMetadata extends Record<
+  string,
+  unknown
+> {
+  decision: AgentRunApprovalDecision
+  time_to_decide_ms: number
+}
+export interface AgentRunModeChangedMetadata extends Record<string, unknown> {
+  from: AgentRunMode['mode']
+  to: AgentRunMode['mode']
+}
+export type AgentThreadStartSource =
+  | 'new_chat_button'
+  | 'first_open'
+  | 'history_select'
+  | 'history_delete'
+export interface AgentThreadStartedMetadata extends Record<string, unknown> {
+  source: AgentThreadStartSource
+}
+
+export type AgentErrorClass =
+  | 'request_failed'
+  | 'malformed_stream_event'
+  | 'cancel_failed'
+  | 'history_load_failed'
+  | 'ask_answer_failed'
+  | 'thread_list_load_failed'
+  | 'workflow_open_failed'
+export interface AgentErrorMetadata extends Record<string, unknown> {
+  error_class: AgentErrorClass
+  failure_stage: 'pre_acceptance' | 'post_acceptance'
+  retryable: boolean
+  turn_accepted: boolean
+  /** `none` is a failure the user was never shown. */
+  ui_treatment: 'inline_notice' | 'error_overlay' | 'toast' | 'none'
+}
+
+/**
  * Widget (input/parameter) favorite toggle tracking metadata.
  * Used to measure discoverability of the right side panel favoriting feature.
  */
@@ -533,6 +1041,22 @@ export interface WidgetFavoriteToggledMetadata {
   widget_type: string
   is_favorited: boolean
   source: 'right_side_panel'
+}
+
+/**
+ * Fired once per duplicate link dropped during workflow load, when the loser
+ * has a *different origin* from the survivor — i.e. a connection the file
+ * recorded is silently discarded, not merely a redundant same-origin copy.
+ * Cloud cannot see the accompanying `console.warn`, so this is the only
+ * signal that a load lost a link. The survivor follows an authoritative
+ * serialized reference: `input.link` for node inputs, `linkIds` priority
+ * order for subgraph boundaries, and document order otherwise. `target`
+ * names the contested input slot.
+ */
+export interface LinkDedupDropMetadata {
+  droppedLinkId: number
+  survivorLinkId: number
+  target: string
 }
 
 /**
@@ -643,6 +1167,43 @@ export interface AddCreditsClickMetadata {
     | 'avatar_menu'
     | 'settings_billing_panel'
     | 'deep_link'
+    | 'agent_paywall'
+}
+
+export type AgentPaywallReason =
+  | 'no_funds'
+  | 'subscription_inactive'
+  | 'member_cannot_pay'
+  | 'sales_managed'
+  | 'unknown'
+
+/**
+ * Which moment put the paywall in front of the user. The two are not
+ * interchangeable and collapsing them made the funnel unreadable:
+ *
+ * - `refused_send` is reactive — a turn POST came back 402/`no_funds`, so the
+ *   user had to compose and send a message to discover they could not.
+ * - `credits_exhausted` is standing — the client already knows the workspace
+ *   has no funds and says so beside the composer, without a refusal first.
+ *
+ * Reported because `app:agent_paywall_shown` alone cannot tell a rise in
+ * impressions caused by the standing surface from one caused by more users
+ * being refused. Without the split, "the paywall is showing more" is
+ * ambiguous between the fix working and the product getting worse.
+ */
+export type AgentPaywallSurface = 'refused_send' | 'credits_exhausted'
+
+export interface AgentPaywallShownMetadata {
+  reason: AgentPaywallReason
+  surface: AgentPaywallSurface
+}
+
+export type AgentPaywallCta = 'subscribe' | 'add_credits' | 'upgrade'
+
+export interface AgentPaywallCtaMetadata {
+  cta: AgentPaywallCta
+  /** The surface whose impression this click follows. */
+  surface: AgentPaywallSurface
 }
 
 export interface SubscriptionCancellationMetadata {
@@ -661,7 +1222,7 @@ export interface SubscriptionCancellationMetadata {
 }
 
 export interface ResubscribeClickMetadata {
-  source: 'pricing_dialog' | 'settings_billing_panel'
+  source: ResubscribeSource
   /** Why the pricing dialog was opened, when the click came from one. */
   payment_intent_source?: PaymentIntentSource
 }
@@ -714,6 +1275,7 @@ export interface SubscriptionSuccessMetadata extends Record<string, unknown> {
   operation?: 'resubscribe'
   /** The click-time source, carried through so the terminal event can report it. */
   resubscribe_source?: ResubscribeClickMetadata['source']
+  recovery_outcome?: 'late_success'
 }
 
 export interface WorkspaceInviteMetadata extends Record<string, unknown> {
@@ -727,173 +1289,10 @@ export interface WorkspaceInviteFailedMetadata extends Record<string, unknown> {
   failed_count: number
 }
 
-type BillingFailureCategory =
-  | 'validation'
-  | 'network'
-  | 'api_rejected'
-  | 'provider_decline'
-  | 'redirect'
-  | 'poll_timeout'
-  | 'stale_operation'
-  | 'rendering'
-  | 'unknown'
-
-type BillingErrorCode =
-  | 'downgrade_not_allowed'
-  | 'member_removal_failed'
-  | 'missing_checkout_response'
-  | 'missing_payment_method_url'
-  | 'payment_popup_blocked'
-  | 'reactivation_not_confirmed'
-  | 'reactivation_amount_changed'
-
-export interface BillingFailure {
-  failure_category: BillingFailureCategory
-  error_code?: BillingErrorCode
-}
-
-type BillingStarted = {
-  stage: 'started'
-  outcome: 'pending'
-}
-
-type BillingSucceeded = {
-  stage: 'succeeded'
-  outcome: 'success'
-}
-
-type BillingFailed = BillingFailure & {
-  stage: 'failed'
-  outcome: 'failure'
-}
-
-type BillingTimedOut = {
-  stage: 'timeout'
-  outcome: 'failure'
-  failure_category: 'poll_timeout'
-}
-
-type SubscriptionCheckoutBillingEvent = {
-  operation: 'subscription_checkout'
-  billing_op_id?: string
-  tier?: SubscriptionCheckoutTier
-  cycle?: BillingCycle
-  checkout_type?: SubscriptionCheckoutType
-  payment_intent_source?: PaymentIntentSource
-  /**
-   * Client-observed end-to-end wall time from this attempt's canonical
-   * `started` event through to this terminal event.
-   */
-  duration_ms?: number
-} & (BillingStarted | BillingSucceeded | BillingFailed)
-
-type BillingOperationBillingEvent = {
-  operation: 'operation'
-  /** Absent when the initiating call itself failed, before the backend returned one to poll. */
-  billing_op_id?: string
-  operation_type: 'subscription' | 'topup' | 'cancel'
-  tier?: SubscriptionCheckoutTier
-  cycle?: BillingCycle
-  checkout_type?: SubscriptionCheckoutType
-  payment_intent_source?: PaymentIntentSource
-  /**
-   * Client-observed end-to-end wall time from this attempt's canonical
-   * `started` event through to this terminal event, including the
-   * initiating API call's latency (not just the poll-observation window).
-   * On `timeout` this is how long the client watched, not the operation's
-   * true duration.
-   */
-  duration_ms?: number
-} & (BillingStarted | BillingSucceeded | BillingFailed | BillingTimedOut)
-
-type ResubscribeBillingEvent = {
-  operation: 'resubscribe'
-  source: ResubscribeClickMetadata['source']
-  payment_intent_source?: PaymentIntentSource
-  duration_ms?: number
-} & (BillingStarted | BillingSucceeded | BillingFailed)
-
-type TopupBillingEvent = {
-  operation: 'topup'
-  billing_op_id?: string
-  /**
-   * Client-observed end-to-end wall time from this attempt's canonical
-   * `started` event through to this terminal event.
-   */
-  duration_ms?: number
-} & (BillingStarted | BillingSucceeded | BillingFailed)
-
-type DowngradeToPersonalBillingEvent = {
-  operation: 'downgrade_to_personal'
-  member_removal_count: number
-  member_removal_failures: number
-  target_tier?: TierKey
-  /**
-   * Client-observed end-to-end wall time from this attempt's canonical
-   * `started` event through to this terminal event.
-   */
-  duration_ms?: number
-} & (BillingStarted | BillingSucceeded | BillingFailed)
-
-export type BillingTelemetryEvent =
-  | SubscriptionCheckoutBillingEvent
-  | BillingOperationBillingEvent
-  | ResubscribeBillingEvent
-  | TopupBillingEvent
-  | DowngradeToPersonalBillingEvent
-
-type BillingTelemetryEventNameFor<T extends BillingTelemetryEvent> =
-  T extends BillingTelemetryEvent
-    ? `billing.${T['operation']}.${T['stage']}`
-    : never
-
-export type BillingTelemetryEventName =
-  BillingTelemetryEventNameFor<BillingTelemetryEvent>
-
-export function getBillingTelemetryEventName(
-  event: BillingTelemetryEvent
-): BillingTelemetryEventName {
-  return `billing.${event.operation}.${event.stage}` as BillingTelemetryEventName
-}
-
-export function getBillingTelemetryEventPayload(event: BillingTelemetryEvent) {
-  return {
-    operation: event.operation,
-    stage: event.stage,
-    outcome: event.outcome,
-    ...('billing_op_id' in event &&
-      event.billing_op_id !== undefined && {
-        billing_op_id: event.billing_op_id
-      }),
-    ...('operation_type' in event && {
-      operation_type: event.operation_type
-    }),
-    ...('tier' in event && event.tier !== undefined && { tier: event.tier }),
-    ...('cycle' in event &&
-      event.cycle !== undefined && { cycle: event.cycle }),
-    ...('checkout_type' in event &&
-      event.checkout_type !== undefined && {
-        checkout_type: event.checkout_type
-      }),
-    ...('payment_intent_source' in event &&
-      event.payment_intent_source !== undefined && {
-        payment_intent_source: event.payment_intent_source
-      }),
-    ...('source' in event && { source: event.source }),
-    ...('failure_category' in event && {
-      failure_category: event.failure_category
-    }),
-    ...('error_code' in event &&
-      event.error_code !== undefined && { error_code: event.error_code }),
-    ...('member_removal_count' in event && {
-      member_removal_count: event.member_removal_count,
-      member_removal_failures: event.member_removal_failures
-    }),
-    ...('target_tier' in event &&
-      event.target_tier !== undefined && { target_tier: event.target_tier }),
-    ...('duration_ms' in event &&
-      event.duration_ms !== undefined && { duration_ms: event.duration_ms })
-  }
+export interface FetchTimeoutMetadata {
+  route: string
+  method: string
+  timeout_ms: number
 }
 
 /**
@@ -901,12 +1300,18 @@ export function getBillingTelemetryEventPayload(event: BillingTelemetryEvent) {
  * All methods are optional - providers only implement what they need.
  */
 export interface TelemetryProvider {
+  trackFeatureFlagEvaluation?(key: string, value: unknown): void
+
   // Authentication flow events
   trackSignupOpened?(): void
   trackAuth?(metadata: AuthMetadata): void
   trackAuthFailed?(metadata: AuthErrorMetadata): void
   trackUnifiedAuthRetry?(metadata: UnifiedAuthRetryMetadata): void
+  trackUnifiedAuthRefresh?(metadata: UnifiedAuthRefreshMetadata): void
+  trackWebSessionEvent?(event: WebSessionTelemetryEvent): void
+  trackImageLoadFailed?(metadata: ImageLoadFailureMetadata): void
   trackUserLoggedIn?(): void
+  trackBootstrapComplete?(metadata: BootstrapCompleteMetadata): void
 
   // Subscription flow events
   trackSubscription?(
@@ -932,10 +1337,11 @@ export interface TelemetryProvider {
 
   trackBillingEvent?(event: BillingTelemetryEvent): void
 
-  // Credit top-up tracking (composition with internal utilities)
-  startTopupTracking?(): void
-  checkForCompletedTopup?(events: AuditLog[] | undefined | null): boolean
-  clearTopupTracking?(): void
+  /** Emit a checkout-journey lifecycle event to this provider. */
+  trackCheckoutJourneyEvent?(event: CheckoutJourneyTelemetryEvent): void
+
+  trackAgentPaywallShown?(metadata: AgentPaywallShownMetadata): void
+  trackAgentPaywallCtaClicked?(metadata: AgentPaywallCtaMetadata): void
 
   // Survey flow events
   trackSurvey?(stage: 'opened' | 'submitted', responses?: SurveyResponses): void
@@ -1010,6 +1416,40 @@ export interface TelemetryProvider {
   // Generic UI button click events
   trackUiButtonClicked?(metadata: UiButtonClickMetadata): void
 
+  // In-App Agent message rating (PM-98)
+  trackAgentMessageFeedback?(metadata: AgentMessageFeedbackMetadata): void
+  trackAgentPanelOpened?(metadata: AgentPanelOpenedMetadata): void
+  trackAgentPanelClosed?(metadata: AgentPanelClosedMetadata): void
+  trackAgentEntryButtonClicked?(metadata: AgentEntryButtonClickedMetadata): void
+  trackAgentCloseButtonClicked?(): void
+  trackAgentConsentShown?(metadata: AgentConsentShownMetadata): void
+  trackAgentConsentResolved?(metadata: AgentConsentResolvedMetadata): void
+  trackAgentOnboardingShown?(): void
+  trackAgentOnboardingStep?(metadata: AgentOnboardingStepMetadata): void
+  trackAgentMessageSent?(metadata: AgentMessageSentMetadata): void
+  trackAgentStarterPromptClicked?(
+    metadata: AgentStarterPromptClickedMetadata
+  ): void
+  trackAgentFreeUseNotice?(metadata: AgentFreeUseNoticeMetadata): void
+  trackAgentFreeUseExposure?(metadata: AgentFreeUseExposureMetadata): void
+  trackAgentNodeTagged?(metadata: AgentNodeTaggedMetadata): void
+  trackAgentAttachButtonClicked?(
+    metadata: AgentAttachButtonClickedMetadata
+  ): void
+  trackAgentWorkflowApplied?(metadata: AgentWorkflowAppliedMetadata): void
+  trackAgentError?(metadata: AgentErrorMetadata): void
+  trackAgentStopClicked?(metadata: AgentStopClickedMetadata): void
+  trackAgentWorkflowBound?(metadata: AgentWorkflowBoundMetadata): void
+  trackAgentRunApprovalShown?(metadata: AgentRunApprovalShownMetadata): void
+  trackAgentRunApprovalResolved?(
+    metadata: AgentRunApprovalResolvedMetadata
+  ): void
+  trackAgentRunModeChanged?(metadata: AgentRunModeChangedMetadata): void
+  trackAgentThreadStarted?(metadata: AgentThreadStartedMetadata): void
+  trackAgentConsentNotOffered?(metadata: AgentConsentNotOfferedMetadata): void
+  trackAgentConsentOfferExited?(metadata: AgentConsentOfferExitedMetadata): void
+  trackAgentOnboardingNotShown?(metadata: AgentOnboardingNotShownMetadata): void
+
   // Right side panel widget favorite events
   trackWidgetFavoriteToggled?(metadata: WidgetFavoriteToggledMetadata): void
 
@@ -1021,8 +1461,14 @@ export interface TelemetryProvider {
     metadata: NamedValuesShadowDiffSummaryMetadata
   ): void
 
+  // Link deduplication diagnostics
+  trackLinkDedupDrop?(metadata: LinkDedupDropMetadata): void
+
   // Page view tracking
   trackPageView?(pageName: string, properties?: PageViewMetadata): void
+
+  // Network error events
+  trackFetchTimeout?(metadata: FetchTimeoutMetadata): void
 }
 
 /**
@@ -1041,12 +1487,16 @@ export type TelemetryDispatcher = Required<TelemetryProvider>
  */
 export const TelemetryEvents = {
   // Authentication Flow
-  USER_SIGN_UP_OPENED: 'app:user_sign_up_opened',
-  USER_AUTH_COMPLETED: 'app:user_auth_completed',
-  USER_AUTH_FAILED: 'app:user_auth_failed',
+  USER_SIGN_UP_OPENED: AUTH_TELEMETRY_EVENT.signUpOpened,
+  USER_AUTH_COMPLETED: AUTH_TELEMETRY_EVENT.authCompleted,
+  USER_AUTH_FAILED: AUTH_TELEMETRY_EVENT.authFailed,
   USER_LOGGED_IN: 'app:user_logged_in',
   UNIFIED_AUTH_RETRY_SUCCEEDED: 'auth.unified.request_retry.succeeded',
   UNIFIED_AUTH_RETRY_FAILED: 'auth.unified.request_retry.failed',
+  UNIFIED_AUTH_REFRESH_SUCCEEDED: SESSION_TELEMETRY_EVENT.refreshSucceeded,
+  UNIFIED_AUTH_REFRESH_FAILED: SESSION_TELEMETRY_EVENT.refreshFailed,
+  IMAGE_LOAD_FAILED: 'app:image_load_failed',
+  BOOTSTRAP_COMPLETE: 'app:bootstrap_complete',
 
   // Subscription Flow
   RUN_BUTTON_CLICKED: 'app:run_button_click',
@@ -1067,27 +1517,11 @@ export const TelemetryEvents = {
   WORKSPACE_INVITE_FAILED: 'app:workspace_invite_failed',
   BEGIN_CHECKOUT: 'begin_checkout',
 
+  AGENT_PAYWALL_SHOWN: 'app:agent_paywall_shown',
+  AGENT_PAYWALL_CTA_CLICKED: 'app:agent_paywall_cta_clicked',
+
   // Canonical Billing Lifecycle
-  BILLING_SUBSCRIPTION_CHECKOUT_STARTED:
-    'billing.subscription_checkout.started',
-  BILLING_SUBSCRIPTION_CHECKOUT_SUCCEEDED:
-    'billing.subscription_checkout.succeeded',
-  BILLING_SUBSCRIPTION_CHECKOUT_FAILED: 'billing.subscription_checkout.failed',
-  BILLING_OPERATION_STARTED: 'billing.operation.started',
-  BILLING_OPERATION_SUCCEEDED: 'billing.operation.succeeded',
-  BILLING_OPERATION_FAILED: 'billing.operation.failed',
-  BILLING_OPERATION_TIMEOUT: 'billing.operation.timeout',
-  BILLING_RESUBSCRIBE_STARTED: 'billing.resubscribe.started',
-  BILLING_RESUBSCRIBE_SUCCEEDED: 'billing.resubscribe.succeeded',
-  BILLING_RESUBSCRIBE_FAILED: 'billing.resubscribe.failed',
-  BILLING_TOPUP_STARTED: 'billing.topup.started',
-  BILLING_TOPUP_SUCCEEDED: 'billing.topup.succeeded',
-  BILLING_TOPUP_FAILED: 'billing.topup.failed',
-  BILLING_DOWNGRADE_TO_PERSONAL_STARTED:
-    'billing.downgrade_to_personal.started',
-  BILLING_DOWNGRADE_TO_PERSONAL_SUCCEEDED:
-    'billing.downgrade_to_personal.succeeded',
-  BILLING_DOWNGRADE_TO_PERSONAL_FAILED: 'billing.downgrade_to_personal.failed',
+  ...BILLING_TELEMETRY_EVENTS,
 
   // Onboarding Survey
   USER_SURVEY_OPENED: 'app:user_survey_opened',
@@ -1159,6 +1593,34 @@ export const TelemetryEvents = {
   // Generic UI Button Click
   UI_BUTTON_CLICKED: 'app:ui_button_clicked',
 
+  // In-App Agent
+  AGENT_MESSAGE_FEEDBACK: 'app:agent_message_feedback',
+  AGENT_PANEL_OPENED: 'app:agent_panel_opened',
+  AGENT_PANEL_CLOSED: 'app:agent_panel_closed',
+  AGENT_ENTRY_BUTTON_CLICKED: 'app:agent_entry_button_clicked',
+  AGENT_CLOSE_BUTTON_CLICKED: 'app:agent_close_button_clicked',
+  AGENT_CONSENT_SHOWN: 'app:agent_consent_shown',
+  AGENT_CONSENT_RESOLVED: 'app:agent_consent_resolved',
+  AGENT_ONBOARDING_SHOWN: 'app:agent_onboarding_shown',
+  AGENT_ONBOARDING_STEP: 'app:agent_onboarding_step',
+  AGENT_MESSAGE_SENT: 'app:agent_message_sent',
+  AGENT_STARTER_PROMPT_CLICKED: 'app:agent_starter_prompt_clicked',
+  AGENT_FREE_USE_NOTICE: 'app:agent_free_use_notice',
+  AGENT_FREE_USE_EXPOSURE: 'app:agent_free_use_exposure',
+  AGENT_NODE_TAGGED: 'app:agent_node_tagged',
+  AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',
+  AGENT_WORKFLOW_APPLIED: 'app:agent_workflow_applied',
+  AGENT_ERROR: 'app:agent_error',
+  AGENT_STOP_CLICKED: 'app:agent_stop_clicked',
+  AGENT_WORKFLOW_BOUND: 'app:agent_workflow_bound',
+  AGENT_RUN_APPROVAL_SHOWN: 'app:agent_run_approval_shown',
+  AGENT_RUN_APPROVAL_RESOLVED: 'app:agent_run_approval_resolved',
+  AGENT_RUN_MODE_CHANGED: 'app:agent_run_mode_changed',
+  AGENT_THREAD_STARTED: 'app:agent_thread_started',
+  AGENT_CONSENT_NOT_OFFERED: 'app:agent_consent_not_offered',
+  AGENT_CONSENT_OFFER_EXITED: 'app:agent_consent_offer_exited',
+  AGENT_ONBOARDING_NOT_SHOWN: 'app:agent_onboarding_not_shown',
+
   // Right Side Panel Widget Favorites
   WIDGET_FAVORITE_TOGGLED: 'app:widget_favorite_toggled',
 
@@ -1166,12 +1628,21 @@ export const TelemetryEvents = {
   NAMED_VALUES_SHADOW_DIFF_MISMATCH: 'app:named_values_shadow_diff_mismatch',
   NAMED_VALUES_SHADOW_DIFF_SUMMARY: 'app:named_values_shadow_diff_summary',
 
+  // Link deduplication diagnostics
+  LINK_DEDUP_DROP: 'app:link_dedup_drop',
+
   // Page View
-  PAGE_VIEW: 'app:page_view'
+  PAGE_VIEW: 'app:page_view',
+
+  // Network
+  FETCH_TIMEOUT: 'app:fetch_timeout'
 } as const
 
 export type TelemetryEventName =
-  (typeof TelemetryEvents)[keyof typeof TelemetryEvents]
+  | (typeof TelemetryEvents)[keyof typeof TelemetryEvents]
+  | BillingTelemetryEventName
+  | CheckoutJourneyTelemetryEventName
+  | WebSessionTelemetryEvent['name']
 
 export const OnboardingTourEvents: Record<
   OnboardingTourStage,
@@ -1222,6 +1693,10 @@ export type TelemetryEventProperties =
   | OnboardingTourMetadata
   | AuthErrorMetadata
   | UnifiedAuthRetryMetadata
+  | UnifiedAuthRefreshMetadata
+  | WebSessionTelemetryEvent['properties']
+  | ImageLoadFailureMetadata
+  | BootstrapCompleteMetadata
   | SurveyResponses
   | TemplateMetadata
   | ExecutionContext
@@ -1245,6 +1720,7 @@ export type TelemetryEventProperties =
   | WidgetFavoriteToggledMetadata
   | NamedValuesShadowDiffMismatchMetadata
   | NamedValuesShadowDiffSummaryMetadata
+  | LinkDedupDropMetadata
   | HelpCenterOpenedMetadata
   | HelpResourceClickedMetadata
   | HelpCenterClosedMetadata
@@ -1258,3 +1734,7 @@ export type TelemetryEventProperties =
   | SubscriptionSuccessMetadata
   | WorkspaceInviteFailedMetadata
   | BillingTelemetryEvent
+  | CheckoutJourneyTelemetryEventPayload
+  | AgentPaywallShownMetadata
+  | AgentPaywallCtaMetadata
+  | FetchTimeoutMetadata

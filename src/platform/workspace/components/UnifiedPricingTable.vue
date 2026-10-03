@@ -3,15 +3,16 @@
     <!-- Plan-scope toggle (personal vs team PLAN on one workspace): sits directly
          on top of the content area — outside it, attached with no gap (DES QA). -->
     <div class="flex justify-center">
-      <SelectButton
-        v-model="planMode"
-        :options="planScopeOptions"
-        option-label="label"
-        option-value="value"
-        :allow-empty="false"
-        unstyled
-        :pt="planScopeButtonPt"
-      />
+      <ToggleGroup v-model="planMode" type="single" :allow-empty="false">
+        <ToggleGroupItem
+          v-for="option in planScopeOptions"
+          :key="option.value"
+          :value="option.value"
+          class="h-8 rounded-b-none bg-base-background px-4 text-base-foreground opacity-50 hover:opacity-100 data-[state=on]:opacity-100"
+        >
+          {{ option.label }}
+        </ToggleGroupItem>
+      </ToggleGroup>
     </div>
 
     <!-- Content well: a borderless base-background area (DES-197 "Personal Plan,
@@ -60,16 +61,18 @@
       <!-- Billing-cycle toggle: drives both the personal tier cards and the
            team credit slider (team monthly halves the yearly discount). -->
       <div class="flex justify-center">
-        <SelectButton
+        <ToggleGroup
           v-model="currentBillingCycle"
-          :options="billingCycleOptions"
-          option-label="label"
-          option-value="value"
+          type="single"
           :allow-empty="false"
-          unstyled
-          :pt="toggleButtonPt"
+          class="rounded-lg bg-secondary-background p-1.5"
         >
-          <template #option="{ option }">
+          <ToggleGroupItem
+            v-for="option in billingCycleOptions"
+            :key="option.value"
+            :value="option.value"
+            class="h-8 min-w-44 px-5 data-[state=on]:bg-base-foreground data-[state=on]:text-base-background"
+          >
             <div class="flex items-center gap-2">
               <span>{{ option.label }}</span>
               <div
@@ -83,8 +86,8 @@
                 }}
               </div>
             </div>
-          </template>
-        </SelectButton>
+          </ToggleGroupItem>
+        </ToggleGroup>
       </div>
 
       <!-- PERSONAL PLANS: tier cards (data-driven via the billing facade,
@@ -171,16 +174,16 @@
                 <span
                   class="font-inter text-sm/normal font-bold text-base-foreground tabular-nums"
                 >
-                  {{ n(tier.pricing.credits) }}
+                  {{ n(creditsForTier(tier)) }}
                 </span>
                 <span class="text-sm text-muted-foreground">
-                  {{ t('subscription.monthlyCredits') }}
+                  {{ t(creditsLabelKey) }}
                 </span>
               </div>
               <span class="text-sm text-muted-foreground">
                 {{
                   t('subscription.videoEstimate', {
-                    count: n(tier.pricing.videoEstimate)
+                    count: n(videoEstimateForTier(tier))
                   })
                 }}
               </span>
@@ -249,10 +252,10 @@
                   <span
                     class="font-inter text-sm/normal font-bold text-base-foreground tabular-nums"
                   >
-                    {{ n(teamCredits) }}
+                    {{ n(teamCreditsForCurrentCycle) }}
                   </span>
                   <span class="text-sm text-muted-foreground">
-                    {{ t('subscription.monthlyCredits') }}
+                    {{ t(creditsLabelKey) }}
                   </span>
                 </div>
                 <span class="text-sm text-muted-foreground">
@@ -355,68 +358,89 @@
       </div>
     </div>
 
-    <!-- Footnote: template caveat + contact / pricing links -->
-    <I18nT
-      keypath="subscription.pricingBlurb"
-      tag="p"
-      class="m-0 mt-auto pt-4 text-center text-sm text-text-secondary"
-    >
-      <template #seeDetails>
-        <a
-          :href="VIDEO_TEMPLATE_URL"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
-        >
-          {{ t('subscription.pricingBlurbSeeDetails') }}
-        </a>
-      </template>
-      <template #questions>
-        <a
-          :href="QUESTIONS_URL"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
-        >
-          {{ t('subscription.pricingBlurbQuestions') }}
-        </a>
-      </template>
-      <template #enterpriseDiscussions>
-        <a
-          :href="ENTERPRISE_URL"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
-        >
-          {{ t('subscription.pricingBlurbEnterprise') }}
-        </a>
-      </template>
-      <template #clickHere>
-        <a
-          :href="PRICING_URL"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
-        >
-          {{ t('subscription.pricingBlurbClickHere') }}
-        </a>
-      </template>
-    </I18nT>
+    <div class="mt-auto flex min-h-14 items-center justify-center pt-4">
+      <div
+        v-if="showScheduledPlanChange"
+        role="status"
+        class="flex items-center gap-2 rounded-full bg-base-foreground px-3 py-1.5 text-sm text-base-background"
+      >
+        <i
+          class="icon-[lucide--info] size-4 shrink-0 bg-base-background"
+          aria-hidden="true"
+        />
+        <span>
+          {{
+            t('subscription.scheduledChangeNotice', {
+              plan: scheduledPlanChange.planName.value,
+              date: scheduledPlanChange.formattedDate.value
+            })
+          }}
+        </span>
+      </div>
+      <I18nT
+        v-else
+        keypath="subscription.pricingBlurb"
+        tag="p"
+        class="m-0 text-center text-sm text-text-secondary"
+      >
+        <template #seeDetails>
+          <a
+            :href="VIDEO_TEMPLATE_URL"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
+          >
+            {{ t('subscription.pricingBlurbSeeDetails') }}
+          </a>
+        </template>
+        <template #questions>
+          <a
+            :href="QUESTIONS_URL"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
+          >
+            {{ t('subscription.pricingBlurbQuestions') }}
+          </a>
+        </template>
+        <template #enterpriseDiscussions>
+          <a
+            :href="ENTERPRISE_URL"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
+          >
+            {{ t('subscription.pricingBlurbEnterprise') }}
+          </a>
+        </template>
+        <template #clickHere>
+          <a
+            :href="PRICING_URL"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
+          >
+            {{ t('subscription.pricingBlurbClickHere') }}
+          </a>
+        </template>
+      </I18nT>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import SelectButton from 'primevue/selectbutton'
-import type { ToggleButtonPassThroughMethodOptions } from 'primevue/togglebutton'
 import { computed, onMounted, ref, watch } from 'vue'
 import { I18nT, useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import CreditSlider from '@/components/ui/credit-slider/CreditSlider.vue'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import {
+  ENTERPRISE_URL,
   TIER_PRICING,
+  amountForBillingCycle,
   hasActivePaidPlan,
   toTierKey
 } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -427,14 +451,19 @@ import type {
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
 import {
-  DEFAULT_TEAM_PLAN_STOP_INDEX,
-  TEAM_PLAN_CREDIT_STOPS,
   getStopDiscountedMonthlyUsd,
   mapApiTeamCreditStops
+} from '@comfyorg/account-ui/billing/catalog'
+import {
+  DEFAULT_TEAM_PLAN_STOP_INDEX,
+  TEAM_PLAN_CREDIT_STOPS
 } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
+import { isCloud } from '@/platform/distribution/types'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useScheduledPlanChange } from '@/platform/workspace/composables/useScheduledPlanChange'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
@@ -466,7 +495,41 @@ const emit = defineEmits<{
 }>()
 
 const { t, n } = useI18n()
+const capabilities = useBillingCapabilities()
 const { permissions } = useWorkspaceUI()
+
+// Every CTA here resolves to a billing write the server authorizes on its own,
+// so each catalog asks whether any write that reaches it is permitted instead of
+// mapping each card to one capability itself — that mapping is policy, and the
+// response carries no plan dimension to derive it from. An unresolved snapshot
+// is not a denial: the CTA stays live and the checkout endpoint answers, the
+// same trade canOpenPricingSurface and canTopUp already make.
+//
+// The team catalog is not reachable by downgrading to personal, so its gate
+// stops at the three writes that do reach it.
+const lifecycleActionPermitted = computed(() => {
+  if (!isCloud) return permissions.value.canManageSubscription
+  if (!capabilities.snapshotAuthoritative.value) return true
+  return (
+    capabilities.canSubscribeSelfServe.value ||
+    capabilities.canChangeSeats.value ||
+    capabilities.canReactivate.value
+  )
+})
+
+// Read on its own by the plan-scope toggle, which offers or withholds the whole
+// personal catalog rather than one CTA, so it keeps its own capability.
+const canDowngradeToPersonal = computed(() => {
+  if (!isCloud) return permissions.value.canDowngradeToPersonal
+  if (!capabilities.snapshotAuthoritative.value) return true
+  return capabilities.canDowngradeToPersonal.value
+})
+
+// A personal card is reachable by one further write the team catalog has no
+// counterpart for: leaving a team plan.
+const personalPlanActionPermitted = computed(
+  () => lifecycleActionPermitted.value || canDowngradeToPersonal.value
+)
 
 const planMode = ref<'personal' | 'team'>(initialPlanMode)
 
@@ -476,8 +539,7 @@ const VIDEO_TEMPLATE_URL =
 
 /** External footnote destinations — rendered as real links (open in a new tab). */
 const QUESTIONS_URL = 'https://portal.usepylon.com/comfy-org/forms/question'
-const ENTERPRISE_URL = 'https://www.comfy.org/enterprise'
-const PRICING_URL = 'https://www.comfy.org/pricing'
+const PRICING_URL = 'https://comfy.org/cloud/pricing/'
 
 /** Videos-per-credit ratio is constant across tiers; reuse it for the team
  *  plan's template-based estimate until the BE carries a team figure. */
@@ -503,49 +565,6 @@ interface PricingTierConfig {
   featuresHeader: string
   features: string[]
   isPopular?: boolean
-}
-
-// Billing-cycle toggle: the active option is a solid white pill (DES-197).
-const toggleButtonPt = {
-  root: {
-    class: 'flex gap-1 bg-secondary-background rounded-lg p-1.5'
-  },
-  pcToggleButton: {
-    root: ({ context }: ToggleButtonPassThroughMethodOptions) => ({
-      class: [
-        // min-w keeps Yearly (with its discount badge) and Monthly the same
-        // width so the active pill doesn't resize when toggling (DES QA).
-        'h-8 min-w-44 px-5 rounded-md transition-colors cursor-pointer border-none outline-none ring-0 text-sm font-medium flex items-center justify-center',
-        context.active
-          ? 'bg-base-foreground text-base-background'
-          : 'bg-transparent text-muted-foreground hover:bg-secondary-background-hover'
-      ]
-    }),
-    label: { class: 'flex items-center gap-2 ' }
-  }
-}
-
-// Plan-scope toggle (For Personal / For Teams): active is a subtle raised pill,
-// not the solid white of the billing toggle (DES-197 2951:592113).
-const planScopeButtonPt = {
-  // No pill container (DES "Plan Type Tabs" 2812:818371 has no bg) — just the
-  // tabs, so the active base-background tab sits flush on top of the content area.
-  root: {
-    class: 'flex gap-1'
-  },
-  pcToggleButton: {
-    root: ({ context }: ToggleButtonPassThroughMethodOptions) => ({
-      class: [
-        'h-8 px-4 rounded-t-md transition cursor-pointer border-none outline-none ring-0 text-sm font-medium flex items-center justify-center',
-        // Inactive tab is the active tab at half opacity (DES QA) — same fill
-        // and text, faded as one, not a separate muted colour.
-        context.active
-          ? 'bg-base-background text-base-foreground'
-          : 'bg-base-background text-base-foreground opacity-50 hover:opacity-100'
-      ]
-    }),
-    label: { class: 'flex items-center gap-2' }
-  }
 }
 
 const allPlanScopeOptions: PlanScopeOption[] = [
@@ -614,7 +633,7 @@ const {
 } = useBillingContext()
 
 const canSelectPersonalPlan = computed(
-  () => !isTeamPlan.value || permissions.value.canDowngradeToPersonal
+  () => !isTeamPlan.value || canDowngradeToPersonal.value
 )
 
 const planScopeOptions = computed(() =>
@@ -634,12 +653,31 @@ watch(
 const { teamCreditStops } = useBillingPlans()
 
 const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
+const scheduledPlanChange = useScheduledPlanChange()
+const showScheduledPlanChange = computed(
+  () => scheduledPlanChange.isDisplayable.value && !isCancelled.value
+)
 
 // An ended subscription still reports its plan slug and tier, so the plan it
 // held must not read as current — it is buyable again.
 const isEnded = computed(() => subscriptionStatus.value === 'ended')
 
+// An active current plan has nothing to transition to, which describes the card
+// rather than the actor's permission — so it stays a client-side check while
+// permission comes from lifecycleActionPermitted.
+const offersTransition = (isCurrent: boolean): boolean =>
+  !isCurrent || isCancelled.value
+
 const currentBillingCycle = ref<BillingCycle>('yearly')
+
+const isYearly = computed(() => currentBillingCycle.value === 'yearly')
+
+const amountForCurrentCycle = (monthlyAmount: number) =>
+  amountForBillingCycle(monthlyAmount, isYearly.value)
+
+const creditsLabelKey = computed(() =>
+  isYearly.value ? 'subscription.yearlyCredits' : 'subscription.monthlyCredits'
+)
 
 // Team credit stops: backend-sourced when the API supplies them, otherwise the
 // hardcoded DES-197 fallback so OSS / pre-deploy still renders. Always non-empty
@@ -668,9 +706,11 @@ const selectedTeamStop = computed(
     teamStops.value.find((stop) => stop.usd === teamUsd.value) ??
     defaultTeamStop.value
 )
-const teamCredits = computed(() => selectedTeamStop.value.credits)
+const teamCreditsForCurrentCycle = computed(() =>
+  amountForCurrentCycle(selectedTeamStop.value.credits)
+)
 const teamVideoEstimate = computed(() =>
-  Math.round(teamCredits.value * VIDEO_PER_CREDIT)
+  Math.round(teamCreditsForCurrentCycle.value * VIDEO_PER_CREDIT)
 )
 
 // The team's currently-subscribed stop (null when on no team plan). Matched to
@@ -742,13 +782,16 @@ const teamButtonLabel = computed(() => {
   return t('subscription.teamPlan.changePlan')
 })
 
+// `isTeamCurrentPlanSelected` compares the slider against a stop an ended
+// subscription still reports, so it only means "current plan" while the team
+// plan is live — the same exclusion `isCurrentPlan` makes via `isEnded`.
 const isTeamButtonDisabled = computed(
   () =>
-    !permissions.value.canManageSubscription ||
     isLoading ||
-    (isTeamSubscribed.value &&
-      isTeamCurrentPlanSelected.value &&
-      !isCancelled.value)
+    !offersTransition(
+      isTeamSubscribed.value && isTeamCurrentPlanSelected.value
+    ) ||
+    !lifecycleActionPermitted.value
 )
 
 // A subscriber moving off their current plan is a prorated change rather than a
@@ -780,6 +823,15 @@ function getPriceFromApi(tier: PricingTierConfig): number | null {
   return currentBillingCycle.value === 'yearly' ? price / 12 : price
 }
 
+const creditsForTier = (tier: PricingTierConfig): number =>
+  getApiPlanForTier(tier.key, currentBillingCycle.value)?.credits ??
+  amountForCurrentCycle(tier.pricing.credits)
+
+const videoEstimateForTier = (tier: PricingTierConfig): number =>
+  Math.round(
+    creditsForTier(tier) * (tier.pricing.videoEstimate / tier.pricing.credits)
+  )
+
 const currentAccountTier = computed(() =>
   subscription.value?.tier && !isEnded.value ? subscription.value.tier : null
 )
@@ -806,6 +858,12 @@ const isCurrentPlan = (tierKey: CheckoutTierKey): boolean => {
   )
 }
 
+function isScheduledDestination(tierKey: CheckoutTierKey): boolean {
+  const slug = scheduledPlanChange.scheduledChange.value?.plan_slug
+  if (!slug) return false
+  return getApiPlanForTier(tierKey, currentBillingCycle.value)?.slug === slug
+}
+
 const getButtonLabel = (tier: PricingTierConfig): string => {
   const planName =
     currentBillingCycle.value === 'yearly'
@@ -816,6 +874,12 @@ const getButtonLabel = (tier: PricingTierConfig): string => {
     return isCancelled.value
       ? t('subscription.resubscribeTo', { plan: planName })
       : t('subscription.currentPlan')
+  }
+
+  if (showScheduledPlanChange.value && isScheduledDestination(tier.key)) {
+    return t('subscription.scheduledForDate', {
+      date: scheduledPlanChange.formattedDate.value
+    })
   }
 
   return hasActivePaidPlan(currentAccountTier.value)
@@ -833,23 +897,18 @@ const getButtonSeverity = (
   return 'secondary'
 }
 
-const isButtonDisabled = (tier: PricingTierConfig): boolean => {
-  if (
-    isLoading ||
-    !permissions.value.canManageSubscription ||
-    !canSelectPersonalPlan.value
-  )
-    return true
-  if (isCurrentPlan(tier.key)) {
-    return !isCancelled.value
-  }
-  return false
-}
+const canUsePersonalPlanAction = (tierKey: CheckoutTierKey): boolean =>
+  canSelectPersonalPlan.value &&
+  offersTransition(isCurrentPlan(tierKey)) &&
+  personalPlanActionPermitted.value
+
+const isButtonDisabled = (tier: PricingTierConfig): boolean =>
+  isLoading || !canUsePersonalPlanAction(tier.key)
 
 const getButtonTextClass = (tier: PricingTierConfig): string =>
   tier.key === 'creator'
     ? 'font-inter text-sm font-bold leading-normal text-base-background'
-    : 'font-inter text-sm font-bold leading-normal text-primary-foreground'
+    : 'font-inter text-sm font-bold leading-normal text-base-foreground'
 
 const getPrice = (tier: PricingTierConfig): number =>
   getPriceFromApi(tier) ?? tier.pricing[currentBillingCycle.value]
@@ -865,12 +924,7 @@ const getAnnualTotal = (tier: PricingTierConfig): number => {
 }
 
 function handleSubscribe(tierKey: CheckoutTierKey) {
-  if (
-    isLoading ||
-    !permissions.value.canManageSubscription ||
-    !canSelectPersonalPlan.value
-  )
-    return
+  if (isLoading || !canUsePersonalPlanAction(tierKey)) return
   if (isCurrentPlan(tierKey)) {
     if (isCancelled.value) {
       emit('resubscribe')

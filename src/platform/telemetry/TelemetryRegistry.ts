@@ -1,11 +1,40 @@
-import type { AuditLog } from '@/services/customerEventsService'
-
+import type {
+  BillingTelemetryEvent,
+  CheckoutJourneyTelemetryEvent
+} from '@comfyorg/account-core/billing'
+import type { WebSessionTelemetryEvent } from '@comfyorg/account-core/telemetry'
 import type {
   AddCreditsClickMetadata,
+  AgentAttachButtonClickedMetadata,
+  AgentConsentNotOfferedMetadata,
+  AgentConsentOfferExitedMetadata,
+  AgentConsentResolvedMetadata,
+  AgentConsentShownMetadata,
+  AgentPaywallCtaMetadata,
+  AgentPaywallShownMetadata,
+  AgentEntryButtonClickedMetadata,
+  AgentErrorMetadata,
+  AgentFreeUseExposureMetadata,
+  AgentFreeUseNoticeMetadata,
+  AgentMessageSentMetadata,
+  AgentMessageFeedbackMetadata,
+  AgentNodeTaggedMetadata,
+  AgentOnboardingNotShownMetadata,
+  AgentOnboardingStepMetadata,
+  AgentPanelClosedMetadata,
+  AgentPanelOpenedMetadata,
+  AgentRunApprovalResolvedMetadata,
+  AgentRunApprovalShownMetadata,
+  AgentRunModeChangedMetadata,
+  AgentStarterPromptClickedMetadata,
+  AgentStopClickedMetadata,
+  AgentThreadStartedMetadata,
+  AgentWorkflowBoundMetadata,
+  AgentWorkflowAppliedMetadata,
   AuthErrorMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
-  BillingTelemetryEvent,
+  BootstrapCompleteMetadata,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ExecutionErrorMetadata,
@@ -14,6 +43,8 @@ import type {
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
+  ImageLoadFailureMetadata,
+  LinkDedupDropMetadata,
   NamedValuesShadowDiffMismatchMetadata,
   NamedValuesShadowDiffSummaryMetadata,
   NodeAddedMetadata,
@@ -42,11 +73,13 @@ import type {
   TabCountMetadata,
   TelemetryDispatcher,
   TelemetryProvider,
+  FetchTimeoutMetadata,
   TemplateFilterMetadata,
   TemplateLibraryClosedMetadata,
   TemplateLibraryMetadata,
   TemplateMetadata,
   UiButtonClickMetadata,
+  UnifiedAuthRefreshMetadata,
   UnifiedAuthRetryMetadata,
   WidgetFavoriteToggledMetadata,
   WorkflowCreatedMetadata,
@@ -95,6 +128,29 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackUnifiedAuthRetry(metadata: UnifiedAuthRetryMetadata): void {
     this.dispatch((provider) => provider.trackUnifiedAuthRetry?.(metadata))
+  }
+
+  trackUnifiedAuthRefresh(metadata: UnifiedAuthRefreshMetadata): void {
+    this.dispatch((provider) => provider.trackUnifiedAuthRefresh?.(metadata))
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  trackWebSessionEvent(event: WebSessionTelemetryEvent): void {
+    this.dispatch((provider) => provider.trackWebSessionEvent?.(event))
+  }
+
+  trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
+    this.dispatch((provider) => provider.trackImageLoadFailed?.(metadata))
+  }
+
+  trackBootstrapComplete(metadata: BootstrapCompleteMetadata): void {
+    this.dispatch((provider) => provider.trackBootstrapComplete?.(metadata))
+  }
+
+  trackFeatureFlagEvaluation(key: string, value: unknown): void {
+    this.dispatch((provider) =>
+      provider.trackFeatureFlagEvaluation?.(key, value)
+    )
   }
 
   trackUserLoggedIn(): void {
@@ -165,27 +221,22 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackBillingEvent?.(event))
   }
 
+  trackCheckoutJourneyEvent(event: CheckoutJourneyTelemetryEvent): void {
+    this.dispatch((provider) => provider.trackCheckoutJourneyEvent?.(event))
+  }
+
+  trackAgentPaywallShown(metadata: AgentPaywallShownMetadata): void {
+    this.dispatch((provider) => provider.trackAgentPaywallShown?.(metadata))
+  }
+
+  trackAgentPaywallCtaClicked(metadata: AgentPaywallCtaMetadata): void {
+    this.dispatch((provider) =>
+      provider.trackAgentPaywallCtaClicked?.(metadata)
+    )
+  }
+
   trackRunButton(properties: RunButtonProperties): void {
     this.dispatch((provider) => provider.trackRunButton?.(properties))
-  }
-
-  startTopupTracking(): void {
-    this.dispatch((provider) => provider.startTopupTracking?.())
-  }
-
-  checkForCompletedTopup(events: AuditLog[] | undefined | null): boolean {
-    return this.providers.some((provider) => {
-      try {
-        return provider.checkForCompletedTopup?.(events) ?? false
-      } catch (error) {
-        console.error('[Telemetry] Provider dispatch failed', error)
-        return false
-      }
-    })
-  }
-
-  clearTopupTracking(): void {
-    this.dispatch((provider) => provider.clearTopupTracking?.())
   }
 
   trackSurvey(
@@ -337,6 +388,139 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackUiButtonClicked?.(metadata))
   }
 
+  trackAgentMessageFeedback(metadata: AgentMessageFeedbackMetadata): void {
+    this.dispatch((provider) => provider.trackAgentMessageFeedback?.(metadata))
+  }
+
+  trackAgentPanelOpened(metadata: AgentPanelOpenedMetadata): void {
+    this.dispatch((provider) => provider.trackAgentPanelOpened?.(metadata))
+  }
+
+  trackAgentPanelClosed(metadata: AgentPanelClosedMetadata): void {
+    this.dispatch((provider) => provider.trackAgentPanelClosed?.(metadata))
+  }
+
+  trackAgentEntryButtonClicked(
+    metadata: AgentEntryButtonClickedMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentEntryButtonClicked?.(metadata)
+    )
+  }
+
+  trackAgentCloseButtonClicked(): void {
+    this.dispatch((provider) => provider.trackAgentCloseButtonClicked?.())
+  }
+
+  trackAgentConsentShown(metadata: AgentConsentShownMetadata): void {
+    this.dispatch((provider) => provider.trackAgentConsentShown?.(metadata))
+  }
+
+  trackAgentConsentResolved(metadata: AgentConsentResolvedMetadata): void {
+    this.dispatch((provider) => provider.trackAgentConsentResolved?.(metadata))
+  }
+
+  trackAgentOnboardingShown(): void {
+    this.dispatch((provider) => provider.trackAgentOnboardingShown?.())
+  }
+
+  trackAgentOnboardingStep(metadata: AgentOnboardingStepMetadata): void {
+    this.dispatch((provider) => provider.trackAgentOnboardingStep?.(metadata))
+  }
+
+  trackAgentMessageSent(metadata: AgentMessageSentMetadata): void {
+    this.dispatch((provider) => provider.trackAgentMessageSent?.(metadata))
+  }
+
+  trackAgentStarterPromptClicked(
+    metadata: AgentStarterPromptClickedMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentStarterPromptClicked?.(metadata)
+    )
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  trackAgentFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {
+    this.dispatch((provider) => provider.trackAgentFreeUseNotice?.(metadata))
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  trackAgentFreeUseExposure(metadata: AgentFreeUseExposureMetadata): void {
+    this.dispatch((provider) => provider.trackAgentFreeUseExposure?.(metadata))
+  }
+
+  trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {
+    this.dispatch((provider) => provider.trackAgentNodeTagged?.(metadata))
+  }
+
+  trackAgentAttachButtonClicked(
+    metadata: AgentAttachButtonClickedMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentAttachButtonClicked?.(metadata)
+    )
+  }
+
+  trackAgentWorkflowApplied(metadata: AgentWorkflowAppliedMetadata): void {
+    this.dispatch((provider) => provider.trackAgentWorkflowApplied?.(metadata))
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  trackAgentError(metadata: AgentErrorMetadata): void {
+    this.dispatch((provider) => provider.trackAgentError?.(metadata))
+  }
+
+  trackAgentStopClicked(metadata: AgentStopClickedMetadata): void {
+    this.dispatch((provider) => provider.trackAgentStopClicked?.(metadata))
+  }
+
+  trackAgentWorkflowBound(metadata: AgentWorkflowBoundMetadata): void {
+    this.dispatch((provider) => provider.trackAgentWorkflowBound?.(metadata))
+  }
+
+  trackAgentRunApprovalShown(metadata: AgentRunApprovalShownMetadata): void {
+    this.dispatch((provider) => provider.trackAgentRunApprovalShown?.(metadata))
+  }
+
+  trackAgentRunApprovalResolved(
+    metadata: AgentRunApprovalResolvedMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentRunApprovalResolved?.(metadata)
+    )
+  }
+
+  trackAgentRunModeChanged(metadata: AgentRunModeChangedMetadata): void {
+    this.dispatch((provider) => provider.trackAgentRunModeChanged?.(metadata))
+  }
+
+  trackAgentThreadStarted(metadata: AgentThreadStartedMetadata): void {
+    this.dispatch((provider) => provider.trackAgentThreadStarted?.(metadata))
+  }
+
+  trackAgentConsentNotOffered(metadata: AgentConsentNotOfferedMetadata): void {
+    this.dispatch((provider) =>
+      provider.trackAgentConsentNotOffered?.(metadata)
+    )
+  }
+
+  trackAgentConsentOfferExited(
+    metadata: AgentConsentOfferExitedMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentConsentOfferExited?.(metadata)
+    )
+  }
+
+  trackAgentOnboardingNotShown(
+    metadata: AgentOnboardingNotShownMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentOnboardingNotShown?.(metadata)
+    )
+  }
+
   trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {
     this.dispatch((provider) => provider.trackWidgetFavoriteToggled?.(metadata))
   }
@@ -357,7 +541,15 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     )
   }
 
+  trackLinkDedupDrop(metadata: LinkDedupDropMetadata): void {
+    this.dispatch((provider) => provider.trackLinkDedupDrop?.(metadata))
+  }
+
   trackPageView(pageName: string, properties?: PageViewMetadata): void {
     this.dispatch((provider) => provider.trackPageView?.(pageName, properties))
+  }
+
+  trackFetchTimeout(metadata: FetchTimeoutMetadata): void {
+    this.dispatch((provider) => provider.trackFetchTimeout?.(metadata))
   }
 }

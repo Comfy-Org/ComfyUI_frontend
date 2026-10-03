@@ -13,7 +13,8 @@ import { localizeHref } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import type { CalendarEvent } from '../../utils/calendar'
 
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
+import { isUrlUnderPath, previousEntryUrl } from '../../utils/previousEntry'
 
 const {
   title,
@@ -29,6 +30,7 @@ const {
   calendarEvent?: CalendarEvent
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const dialogEl = useTemplateRef<HTMLDialogElement>('dialogEl')
 
@@ -37,27 +39,12 @@ const embedUrl = computed(
     `https://www.youtube-nocookie.com/embed/${youtubeVideoId}?autoplay=1&rel=0`
 )
 
-// Prefer the Navigation API's previous same-origin entry; referrer is a
-// fallback for browsers without it and is often stripped.
-const previousEntryUrl = () => {
-  const nav = window.navigation
-  if (nav) return nav.entries()[nav.currentEntry.index - 1]?.url ?? null
-  return document.referrer || null
-}
-
-const cameFromDirectory = () => {
-  const previous = previousEntryUrl()
-  if (!previous) return false
-  try {
-    const url = new URL(previous)
-    return (
-      url.origin === location.origin &&
-      url.pathname.startsWith(localizeHref('/events', locale))
-    )
-  } catch {
-    return false
-  }
-}
+const cameFromDirectory = () =>
+  isUrlUnderPath(
+    previousEntryUrl(window.navigation, document.referrer),
+    location.origin,
+    localizeHref('/events', locale)
+  )
 
 const closeDialog = () => {
   // Navigation replaces the document; skip restoring the locked scroll.
@@ -65,7 +52,7 @@ const closeDialog = () => {
   if (cameFromDirectory() && history.length > 1) {
     history.back()
   } else {
-    location.assign(localizeHref('/events', locale))
+    location.assign(localizeHref('/events/', locale))
   }
 }
 
@@ -98,18 +85,18 @@ onUnmounted(() => {
     @cancel.prevent="closeDialog"
   >
     <button
-      :aria-label="t('events.videoDialog.close', locale)"
-      class="border-primary-comfy-yellow hover:bg-primary-comfy-yellow group absolute top-8 right-10 z-10 flex size-10 cursor-pointer items-center justify-center rounded-2xl border-2 bg-primary-comfy-ink transition-colors lg:right-26"
+      :aria-label="t('events.videoDialog.close')"
+      class="group absolute top-8 right-10 z-10 flex size-10 cursor-pointer items-center justify-center rounded-2xl border-2 border-primary-comfy-yellow bg-primary-comfy-ink transition-colors hover:bg-primary-comfy-yellow lg:right-26"
       @click="closeDialog"
     >
       <span
-        class="bg-primary-comfy-yellow size-5 transition-colors group-hover:bg-primary-comfy-ink"
+        class="size-5 bg-primary-comfy-yellow transition-colors group-hover:bg-primary-comfy-ink"
         style="mask: url('/icons/close.svg') center / contain no-repeat"
       />
     </button>
 
     <div
-      class="border-primary-comfy-yellow rounded-5xl w-full max-w-7xl overflow-hidden border-2 bg-primary-comfy-ink p-3 lg:p-4"
+      class="w-full max-w-7xl overflow-hidden rounded-5xl border-2 border-primary-comfy-yellow bg-primary-comfy-ink p-3 lg:p-4"
     >
       <div class="aspect-video w-full overflow-hidden rounded-3xl">
         <iframe

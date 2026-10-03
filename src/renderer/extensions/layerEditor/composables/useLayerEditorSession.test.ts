@@ -23,6 +23,7 @@ import type {
   RasterData
 } from '@/renderer/extensions/layerEditor/engine/node'
 
+import { reorderDropIndex } from './layerPanelDnd'
 import { useLayerEditorSession } from './useLayerEditorSession'
 
 class FakeCompositor implements Compositor {
@@ -38,10 +39,10 @@ class FakeCompositor implements Compositor {
   }
   freeTarget() {}
   targetTexture(): WebGLTexture {
-    return {} as WebGLTexture
+    return {}
   }
   upload(): WebGLTexture {
-    return {} as WebGLTexture
+    return {}
   }
   readback(): ImageData {
     return {
@@ -159,13 +160,16 @@ function fakeCanvas(w: number, h: number): HTMLCanvasElement {
   return c
 }
 
-const IMAGE_SIZES: Record<string, [number, number]> = {
+const IMAGE_SIZES: Partial<Record<string, [number, number]>> = {
   'a.png': [64, 48],
   'b.png': [32, 32],
   'c.png': [40, 80]
 }
 
-function makeSession(initResult = true) {
+function makeSession(
+  initResult = true,
+  alphaSampler?: (canvas: HTMLCanvasElement, x: number, y: number) => number
+) {
   const compositor = new FakeCompositor()
   compositor.initResult = initResult
   const session = useLayerEditorSession({
@@ -174,7 +178,8 @@ function makeSession(initResult = true) {
       const size = IMAGE_SIZES[url]
       if (!size) throw new Error(`unknown image: ${url}`)
       return fakeCanvas(size[0], size[1])
-    }
+    },
+    alphaSampler
   })
   return { session, compositor }
 }
@@ -364,6 +369,60 @@ describe('useLayerEditorSession', () => {
       expect(session.layers.value[0].kind).toBe('fill')
     })
 
+    it('moveLayerTo drops a layer at an explicit index and undoes', async () => {
+      const { session } = await loadedSession()
+      const [, b] = session.imageLayers.value
+
+      session.moveLayerTo(b.id, 1)
+      expect(session.imageLayers.value.map((n) => n.name)).toEqual(['B', 'A'])
+
+      session.undo()
+      expect(session.imageLayers.value.map((n) => n.name)).toEqual(['A', 'B'])
+    })
+
+    it('drag-drop math lands the dragged layer around the target in both directions', async () => {
+      const { session } = makeSession()
+      await session.loadImages(['a.png', 'b.png', 'c.png'], ['A', 'B', 'C'])
+      const names = () => session.imageLayers.value.map((n) => n.name)
+      const idOf = (name: string) =>
+        session.imageLayers.value.find((n) => n.name === name)!.id
+      const drop = (
+        dragged: string,
+        target: string,
+        pos: 'above' | 'below'
+      ) => {
+        const toIndex = reorderDropIndex(
+          session.imageLayers.value.map((n) => n.id),
+          idOf(target),
+          pos,
+          1
+        )
+        session.moveLayerTo(idOf(dragged), toIndex!)
+      }
+
+      drop('A', 'C', 'above')
+      expect(names()).toEqual(['B', 'C', 'A'])
+
+      drop('A', 'B', 'below')
+      expect(names()).toEqual(['A', 'B', 'C'])
+
+      drop('C', 'B', 'below')
+      expect(names()).toEqual(['A', 'C', 'B'])
+
+      drop('A', 'B', 'below')
+      expect(names()).toEqual(['C', 'A', 'B'])
+    })
+
+    it('moveLayerTo refuses to drop below the background fill', async () => {
+      const { session } = await loadedSession()
+      const [a] = session.imageLayers.value
+
+      session.moveLayerTo(a.id, 0)
+
+      expect(session.imageLayers.value.map((n) => n.name)).toEqual(['A', 'B'])
+      expect(session.layers.value[0].kind).toBe('fill')
+    })
+
     it('never swallows Escape so the dialog close stays reachable', async () => {
       const { session } = await loadedSession()
       const preventDefault = vi.fn()
@@ -423,6 +482,65 @@ describe('useLayerEditorSession', () => {
       expect(session.canUndo.value).toBe(true)
       session.undo()
       expect(top.transform.x).toBe(0)
+    })
+
+    it('clicking an overlapping upper layer selects it while a lower layer is selected', async () => {
+      const { session } = await loadedSession()
+      session.setElements(makeElements())
+      await flushFrames()
+      const [a, b] = session.imageLayers.value
+      session.setActiveNode(a.id)
+
+      session.onPointerDown(pointer({ clientX: 10, clientY: 10 }))
+      session.onPointerUp(pointer({ clientX: 10, clientY: 10 }))
+
+      expect(session.activeNodeId.value).toBe(b.id)
+    })
+
+    it('re-picks the layer on top when the selection is transparent under the click', async () => {
+      const { session } = makeSession(true, (canvas) =>
+        canvas.width === 64 ? 0 : 1
+      )
+      await session.loadImages(['a.png', 'b.png'], ['A', 'B'])
+      session.setElements(makeElements())
+      await flushFrames()
+      const [a, b] = session.imageLayers.value
+      session.setActiveNode(a.id)
+
+      session.onPointerDown(pointer({ clientX: 10, clientY: 10 }))
+      session.onPointerUp(pointer({ clientX: 10, clientY: 10 }))
+
+      expect(session.activeNodeId.value).toBe(b.id)
+    })
+
+    it('clicks fall through transparent pixels to the layer below', async () => {
+      const { session } = makeSession(true, (canvas) =>
+        canvas.width === 32 ? 0 : 1
+      )
+      await session.loadImages(['a.png', 'b.png'], ['A', 'B'])
+      session.setElements(makeElements())
+      session.setActiveNode(null)
+      await flushFrames()
+      const [a] = session.imageLayers.value
+
+      session.onPointerDown(pointer({ clientX: 10, clientY: 10 }))
+      session.onPointerUp(pointer({ clientX: 10, clientY: 10 }))
+
+      expect(session.activeNodeId.value).toBe(a.id)
+    })
+
+    it('gizmo handles win over re-picking even on transparent pixels', async () => {
+      const { session } = makeSession(true, () => 0)
+      await session.loadImages(['a.png', 'b.png'], ['A', 'B'])
+      session.setElements(makeElements())
+      await flushFrames()
+      const [, b] = session.imageLayers.value
+      session.setActiveNode(b.id)
+
+      session.onPointerDown(pointer({ clientX: 0, clientY: 0 }))
+      session.onPointerUp(pointer({ clientX: 0, clientY: 0 }))
+
+      expect(session.selectedNodeIds.value).toEqual([b.id])
     })
 
     it('clears the selection on empty-space click', async () => {
@@ -805,11 +923,11 @@ describe('useLayerEditorSession', () => {
       top.mask = mask
 
       session.flipLayer(top.id, 'v')
-      expect(top.mask?.contentId).not.toBe(maskContentId)
-      expect(session.content.get(top.mask?.contentId ?? '')?.width).toBe(32)
+      expect(top.mask.contentId).not.toBe(maskContentId)
+      expect(session.content.get(top.mask.contentId)?.width).toBe(32)
 
       session.undo()
-      expect(top.mask?.contentId).toBe(maskContentId)
+      expect(top.mask.contentId).toBe(maskContentId)
     })
 
     it('tracks flip parity per axis and layer, toggling back on double flip', async () => {

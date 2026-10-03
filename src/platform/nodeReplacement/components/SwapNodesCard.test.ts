@@ -1,12 +1,12 @@
+import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createTestingPinia } from '@pinia/testing'
 import PrimeVue from 'primevue/config'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { SwapNodeGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
 
-vi.mock('./SwapNodeGroupRow.vue', () => ({
+vi.mock<unknown>(import('./SwapNodeGroupRow.vue'), () => ({
   default: {
     name: 'SwapNodeGroupRow',
     template:
@@ -45,7 +45,7 @@ function mountCard(
       ...(callbacks?.onReplace ? { onReplace: callbacks.onReplace } : {})
     },
     global: {
-      plugins: [createTestingPinia({ createSpy: vi.fn }), PrimeVue]
+      plugins: [getActivePinia()!, PrimeVue]
     }
   })
 }
@@ -54,26 +54,26 @@ describe('SwapNodesCard', () => {
   describe('Rendering', () => {
     it('renders correct number of SwapNodeGroupRow components', () => {
       const { container } = mountCard({ swapNodeGroups: makeGroups(3) })
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       expect(container.querySelectorAll('.swap-row')).toHaveLength(3)
     })
 
     it('renders zero rows when swapNodeGroups is empty', () => {
       const { container } = mountCard({ swapNodeGroups: [] })
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       expect(container.querySelectorAll('.swap-row')).toHaveLength(0)
     })
 
     it('renders one row when swapNodeGroups has one entry', () => {
       const { container } = mountCard({ swapNodeGroups: makeGroups(1) })
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       expect(container.querySelectorAll('.swap-row')).toHaveLength(1)
     })
 
     it('passes group prop to children', () => {
       const groups = makeGroups(1)
       const { container } = mountCard({ swapNodeGroups: groups })
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const row = container.querySelector('.swap-row')
       expect(row!.getAttribute('data-group-type')).toBe(groups[0].type)
     })

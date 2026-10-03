@@ -56,12 +56,10 @@ async function expectReferenceBadge(group: Locator, count: number) {
 }
 
 test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.settings.setSetting(
-      'Comfy.RightSidePanel.ShowErrorsTab',
-      true
-    )
+  test.use({
+    initialSettings: {
+      'Comfy.RightSidePanel.ShowErrorsTab': true
+    }
   })
 
   test.describe('Missing nodes', () => {
@@ -313,13 +311,13 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       await expect(
         strip,
         'The strip count is scoped to the selection, diverging from the global reference badge'
-      ).toContainText('1 error')
+      ).toContainText('1 issue')
 
       await comfyPage.canvas.click()
       await expect(
         strip,
         'Deselecting swaps the always-visible strip back to the summary'
-      ).toContainText('2 nodes — 1 error')
+      ).toContainText('2 nodes — 1 item')
       await expectReferenceBadge(missingModelGroup, 2)
     })
   })
@@ -421,12 +419,12 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
         TestIds.propertiesPanel.selectionContextStrip
       )
       await expect(strip).toBeVisible()
-      await expect(strip).toContainText('1 error')
+      await expect(strip).toContainText('1 issue')
       await expect(mediaRows).toHaveCount(2)
 
       await comfyPage.canvas.click({ position: { x: 400, y: 600 } })
       // Deselecting swaps the always-visible strip back to the summary
-      await expect(strip).toContainText('2 nodes — 2 errors')
+      await expect(strip).toContainText('2 nodes — 2 items')
       await expect(mediaRows).toHaveCount(2)
     })
   })
@@ -451,7 +449,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       )
       await expect(missingNodeCard).toBeVisible()
       await expect(mediaRow).toBeVisible()
-      await expect(strip).toContainText('2 nodes — 2 errors')
+      await expect(strip).toContainText('2 nodes — 2 items')
 
       const mediaNode = await comfyPage.nodeOps.getNodeRefById('10')
       // The node sits near the canvas top where overlays intercept clicks
@@ -463,14 +461,14 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       await expect(missingNodeCard).toBeHidden()
       await expect(mediaRow).toBeVisible()
       await expect(mediaRow).toHaveAttribute('aria-current', 'true')
-      await expect(strip).toContainText('1 error')
+      await expect(strip).toContainText('1 issue')
 
       await comfyPage.canvas.click({ position: { x: 400, y: 600 } })
       // Emphasis ends: the collapsed group re-expands and the strip
       // returns to the workflow summary
       await expect(missingNodeCard).toBeVisible()
       await expect(mediaRow).not.toHaveAttribute('aria-current', 'true')
-      await expect(strip).toContainText('2 nodes — 2 errors')
+      await expect(strip).toContainText('2 nodes — 2 items')
     })
   })
 
@@ -609,7 +607,6 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       'Changing an OSS legacy promoted model clears a nested subgraph error',
       { tag: ['@canvas', '@widget', '@subgraph'] },
       async ({ comfyPage }) => {
-        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
         await loadPromotedMissingModelAndOpenErrorsTab(
           comfyPage,
           NESTED_PROMOTED_MISSING_MODEL_WORKFLOW,
@@ -634,7 +631,6 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
           comfyPage,
           NESTED_PROMOTED_MISSING_MODEL_WORKFLOW.workflowName
         )
-        await comfyPage.vueNodes.waitForNodes()
 
         const missingModelGroup = comfyPage.page.getByTestId(
           TestIds.dialogs.missingModelsGroup
@@ -690,8 +686,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
             },
             { subgraphNodeIdToEnter: '2', nodeTitle: 'Load Checkpoint' }
           ],
-          RESOLVED_PROMOTED_MODEL_NAME,
-          FAKE_MODEL_NAME
+          RESOLVED_PROMOTED_MODEL_NAME
         )
       }
     )
@@ -879,6 +874,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       await expect(errorsTab).toBeHidden()
 
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
+      await subgraphNode.centerOnNode()
       await subgraphNode.navigateIntoSubgraph()
 
       await expect(errorsTab).toBeHidden()
@@ -886,11 +882,14 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
   })
 
   test.describe('Workflow switching', () => {
+    test.use({
+      initialSettings: {
+        'Comfy.RightSidePanel.ShowErrorsTab': true,
+        'Comfy.Workflow.WorkflowTabsPosition': 'Sidebar'
+      }
+    })
+
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting(
-        'Comfy.Workflow.WorkflowTabsPosition',
-        'Sidebar'
-      )
       await comfyPage.menu.workflowsTab.open()
     })
 

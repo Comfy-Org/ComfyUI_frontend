@@ -1,25 +1,25 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { nextTick } from 'vue'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import { useLitegraphService } from '@/services/litegraphService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
 import { app } from '@/scripts/app'
 import {
   useSubgraphNavigationStore,
   VIEWPORT_CACHE_MAX_SIZE
 } from '@/stores/subgraphNavigationStore'
+import {
+  createTestCanvasElement,
+  setCanvasVisible
+} from '@/utils/__tests__/canvasTestUtils'
 
-const { mockSetDirty, mockFitView, mockRequestSlotSyncAll } = vi.hoisted(
-  () => ({
-    mockSetDirty: vi.fn(),
-    mockFitView: vi.fn(),
-    mockRequestSlotSyncAll: vi.fn()
-  })
-)
-
-vi.mock('@/scripts/app', () => {
+vi.mock<unknown>(import('@/scripts/app'), () => {
   const mockCanvas = {
+    canvas: undefined as unknown,
     subgraph: undefined as unknown,
     graph: undefined as unknown,
     ds: {
@@ -31,7 +31,7 @@ vi.mock('@/scripts/app', () => {
       computeVisibleArea: vi.fn()
     },
     viewport: [0, 0, 1000, 1000],
-    setDirty: mockSetDirty,
+    setDirty: vi.fn(),
     get empty() {
       return true
     }
@@ -42,7 +42,10 @@ vi.mock('@/scripts/app', () => {
     nodes: [],
     subgraphs: new Map(),
     getNodeById: vi.fn(),
-    id: 'root'
+    id: 'root',
+    get rootGraph() {
+      return mockGraph
+    }
   }
 
   mockCanvas.graph = mockGraph
@@ -51,40 +54,24 @@ vi.mock('@/scripts/app', () => {
     app: {
       graph: mockGraph,
       rootGraph: mockGraph,
-      canvas: mockCanvas
+      rootGraphOrUndefined: mockGraph,
+      canvas: mockCanvas,
+      canvasOrUndefined: mockCanvas
     }
   }
 })
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({
-    getCanvas: () => app.canvas
-  })
-}))
-vi.mock('@vueuse/router', () => ({ useRouteHash: vi.fn() }))
+vi.mock(import('@vueuse/router'), () => ({ useRouteHash: vi.fn() }))
 
-vi.mock('@/services/litegraphService', () => ({
-  useLitegraphService: () => ({ fitView: mockFitView })
-}))
-
-vi.mock(
-  '@/renderer/extensions/vueNodes/composables/useSlotElementTracking',
-  () => ({
-    requestSlotLayoutSyncForAllNodes: mockRequestSlotSyncAll
-  })
-)
+vi.mock(import('@/services/litegraphService'))
 
 const mockCanvas = app.canvas
 
-let rafCallbacks: FrameRequestCallback[] = []
-
 describe('useSubgraphNavigationStore - Viewport Persistence', () => {
   beforeEach(() => {
-    rafCallbacks = []
-    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
-      rafCallbacks.push(cb)
-      return rafCallbacks.length
-    })
+    useCanvasStore().canvas = app.canvas
+    vi.mocked(useCanvasStore().getCanvas).mockImplementation(() => app.canvas)
+    mockCanvas.canvas = createTestCanvasElement({ visible: true })
     mockCanvas.subgraph = undefined
     mockCanvas.graph = app.graph
     mockCanvas.ds.scale = 1
@@ -162,23 +149,22 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
 
       expect(mockCanvas.ds.scale).toBe(2.5)
       expect(mockCanvas.ds.offset).toEqual([150, 250])
-      expect(mockSetDirty).toHaveBeenCalledWith(true, true)
+      expect(mockCanvas.setDirty).toHaveBeenCalledWith(true, true)
     })
 
-    it('does not mutate canvas synchronously on cache miss', () => {
+    it('queues a cache-miss fit while the canvas is hidden', () => {
       const store = useSubgraphNavigationStore()
+      setCanvasVisible(mockCanvas.canvas, false)
       mockCanvas.ds.scale = 1
       mockCanvas.ds.offset = [0, 0]
-      mockSetDirty.mockClear()
+      vi.mocked(mockCanvas.setDirty).mockClear()
 
       store.restoreViewport('non-existent')
 
-      // Should not change canvas synchronously
       expect(mockCanvas.ds.scale).toBe(1)
       expect(mockCanvas.ds.offset).toEqual([0, 0])
-      expect(mockSetDirty).not.toHaveBeenCalled()
-      // But should have scheduled a rAF
-      expect(rafCallbacks).toHaveLength(1)
+      expect(mockCanvas.setDirty).not.toHaveBeenCalled()
+      expect(useLitegraphService().fitView).not.toHaveBeenCalled()
     })
 
     it('calls fitView on cache miss when graph has nodes', () => {
@@ -191,12 +177,7 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
 
       store.restoreViewport('root')
 
-      expect(mockFitView).not.toHaveBeenCalled()
-      expect(rafCallbacks).toHaveLength(1)
-
-      rafCallbacks[0](performance.now())
-
-      expect(mockFitView).toHaveBeenCalledOnce()
+      expect(useLitegraphService().fitView).toHaveBeenCalledOnce()
 
       mockGraph.nodes = []
       mockGraph._nodes = []
@@ -212,13 +193,10 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
 
       store.restoreViewport('root')
 
-      expect(rafCallbacks).toHaveLength(1)
-      rafCallbacks[0](performance.now())
-
-      expect(mockFitView).not.toHaveBeenCalled()
+      expect(useLitegraphService().fitView).not.toHaveBeenCalled()
     })
 
-    it('re-syncs all slot layouts on the frame after fitView', () => {
+    it('fits the first visit synchronously when the canvas is ready', () => {
       const store = useSubgraphNavigationStore()
       store.viewportCache.delete(':root')
 
@@ -227,57 +205,25 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       mockGraph._nodes = mockGraph.nodes
 
       store.restoreViewport('root')
-      expect(rafCallbacks).toHaveLength(1)
 
-      // Outer RAF runs fitView and schedules the inner RAF
-      rafCallbacks[0](performance.now())
-      expect(mockFitView).toHaveBeenCalledOnce()
-      expect(mockRequestSlotSyncAll).not.toHaveBeenCalled()
-      expect(rafCallbacks).toHaveLength(2)
-
-      // Inner RAF re-syncs slots after fitView's transform has been applied
-      rafCallbacks[1](performance.now())
-      expect(mockRequestSlotSyncAll).toHaveBeenCalledOnce()
+      expect(useLitegraphService().fitView).toHaveBeenCalledOnce()
 
       mockGraph.nodes = []
       mockGraph._nodes = []
     })
 
-    it('skips slot re-sync if active graph changed between fitView and inner RAF', () => {
+    it('skips a queued fit if the active graph changes while hidden', () => {
       const store = useSubgraphNavigationStore()
       store.viewportCache.delete(':root')
-
-      const mockGraph = app.graph as { nodes: unknown[]; _nodes: unknown[] }
-      mockGraph.nodes = [{ pos: [0, 0], size: [100, 100] }]
-      mockGraph._nodes = mockGraph.nodes
+      setCanvasVisible(mockCanvas.canvas, false)
 
       store.restoreViewport('root')
-      rafCallbacks[0](performance.now())
-      expect(mockFitView).toHaveBeenCalledOnce()
 
-      // User navigated away before the inner RAF fired
       mockCanvas.subgraph = { id: 'different-graph' } as never
-      rafCallbacks[1](performance.now())
+      setCanvasVisible(mockCanvas.canvas, true)
+      useCanvasScheduler().flush()
 
-      expect(mockRequestSlotSyncAll).not.toHaveBeenCalled()
-
-      mockGraph.nodes = []
-      mockGraph._nodes = []
-    })
-
-    it('skips fitView if active graph changed before rAF fires', () => {
-      const store = useSubgraphNavigationStore()
-      store.viewportCache.delete(':root')
-
-      store.restoreViewport('root')
-      expect(rafCallbacks).toHaveLength(1)
-
-      // Simulate graph switching away before rAF fires
-      mockCanvas.subgraph = { id: 'different-graph' } as never
-
-      rafCallbacks[0](performance.now())
-
-      expect(mockFitView).not.toHaveBeenCalled()
+      expect(useLitegraphService().fitView).not.toHaveBeenCalled()
     })
   })
 
@@ -404,13 +350,13 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
 
       mockCanvas.ds.scale = 99
       mockCanvas.ds.offset = [999, 999]
-      mockSetDirty.mockClear()
+      vi.mocked(mockCanvas.setDirty).mockClear()
 
       navigationStore.restoreViewport('sub-0')
 
       expect(mockCanvas.ds.scale).toBe(99)
       expect(mockCanvas.ds.offset).toEqual([999, 999])
-      expect(mockSetDirty).not.toHaveBeenCalled()
+      expect(mockCanvas.setDirty).not.toHaveBeenCalled()
     })
   })
 })

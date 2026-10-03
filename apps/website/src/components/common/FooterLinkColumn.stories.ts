@@ -23,7 +23,7 @@ export const Default: Story = {
     links: [
       { label: 'Desktop', href: '/download' },
       { label: 'Cloud', href: '/cloud' },
-      { label: 'API', href: '/api' },
+      { label: 'Platform', href: '/platform' },
       { label: 'Enterprise', href: '/enterprise' }
     ]
   }

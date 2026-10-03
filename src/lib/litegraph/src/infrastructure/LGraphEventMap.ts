@@ -92,3 +92,7 @@ export interface LGraphEventMap {
 export type NodeLifecycleEvent = CustomEvent<
   LGraphEventMap['node:added' | 'node:removed']
 >
+
+export type NodeBeforeRemovedEvent = CustomEvent<
+  LGraphEventMap['node:before-removed']
+>

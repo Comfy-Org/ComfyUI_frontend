@@ -1,10 +1,22 @@
 import type { Page } from '@playwright/test'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { NodeId } from '@/types/nodeId'
 
 export class BAD_DO_NOT_DO_THIS_LegacyApiHelper {
   constructor(private readonly page: Page) {}
+
+  addNodeWithMountedHiddenAriaDialog() {
+    return this.page.evaluate(() => {
+      const node = window.LiteGraph!.createNode(
+        'DevToolsNodeWithHiddenAriaDialog'
+      )
+      if (!node) {
+        throw new Error('DevToolsNodeWithHiddenAriaDialog is not registered')
+      }
+      window.app!.graph.add(node)
+    })
+  }
 
   disconnectInputByAssigningNull(nodeType: string, inputIndex: number) {
     return this.page.evaluate(
@@ -29,13 +41,15 @@ export class BAD_DO_NOT_DO_THIS_LegacyApiHelper {
         if (!node) throw new Error(`${nodeType} not found`)
 
         const links = node.outputs[outputIndex].links!
+        const hadRemovedLink = links.length > 0
+        const hadRetainedLink = links.length > 1
         const removedLink = links[0]
         const retainedLink = links[1]
         links.splice(0, 1)
 
         return {
-          removed: removedLink != null && !graph.links.has(removedLink),
-          retained: retainedLink != null && graph.links.has(retainedLink),
+          removed: hadRemovedLink && !graph.links.has(removedLink),
+          retained: hadRetainedLink && graph.links.has(retainedLink),
           viewSynchronized: links.length === 1 && links[0] === retainedLink
         }
       },
@@ -50,9 +64,11 @@ export class BAD_DO_NOT_DO_THIS_LegacyApiHelper {
         const node = graph.nodes.find((node) => node.type === nodeType)
         if (!node) throw new Error(`${nodeType} not found`)
 
-        const link = node.outputs[outputIndex].links![0]
+        const links = node.outputs[outputIndex].links!
+        const hadLink = links.length > 0
+        const link = links[0]
         node.outputs[outputIndex].links = []
-        return link != null && !graph.links.has(link)
+        return hadLink && !graph.links.has(link)
       },
       [nodeType, outputIndex] as const
     )
@@ -138,6 +154,78 @@ export class BAD_DO_NOT_DO_THIS_LegacyApiHelper {
     )
   }
 
+  replaceAndTrimInputsLikePromptChain(nodeType: string) {
+    return this.page.evaluate((nodeType) => {
+      const graph = window.app!.graph
+      const node = graph.nodes.find((node) => node.type === nodeType)
+      if (!node) throw new Error(`${nodeType} not found`)
+
+      const originalLinks = node.inputs.map((input) => input.link)
+      for (const [index, input] of node.inputs.entries()) {
+        input.name = `inputs.in_${index}`
+      }
+      const lastInput = node.inputs.at(-1)
+      if (!lastInput) throw new Error(`${nodeType} has no inputs`)
+      node.inputs.push({
+        ...lastInput,
+        name: `inputs.in_${node.inputs.length}`,
+        link: null
+      })
+
+      for (const [index, input] of node.inputs.entries()) {
+        input.label = input.link == null ? 'in' : 'PromptChain'
+        node.inputs[index] = { ...input }
+      }
+
+      const autogrowInputs = node.inputs.filter((input) =>
+        input.name.startsWith('inputs.in_')
+      )
+      const lastConnected = autogrowInputs.findLastIndex(
+        (input) => input.link != null
+      )
+      const keepCount = Math.max(1, lastConnected + 2)
+      for (const input of autogrowInputs.slice(keepCount)) {
+        const index = node.inputs.indexOf(input)
+        if (index !== -1) node.inputs.splice(index, 1)
+      }
+
+      return {
+        inputCount: node.inputs.length,
+        preservedLinks: originalLinks.filter(
+          (link, index) =>
+            link != null &&
+            node.inputs[index]?.link === link &&
+            graph.links.has(link)
+        ).length
+      }
+    }, nodeType)
+  }
+
+  replaceInputsWithMappedCopiesLikeGjjVideoCombine(nodeType: string) {
+    return this.page.evaluate((nodeType) => {
+      const graph = window.app!.graph
+      const node = graph.nodes.find((node) => node.type === nodeType)
+      if (!node) throw new Error(`${nodeType} not found`)
+
+      const originalLinks = node.inputs.map((input) => input.link)
+      const originalInputCount = node.inputs.length
+      node.inputs = node.inputs.map((input, index) => ({
+        ...input,
+        slot_index: index
+      }))
+
+      return {
+        inputCountPreserved: node.inputs.length === originalInputCount,
+        preservedLinks: originalLinks.filter(
+          (link, index) =>
+            link != null &&
+            node.inputs[index]?.link === link &&
+            graph.links.has(link)
+        ).length
+      }
+    }, nodeType)
+  }
+
   moveFirstNodeByMutatingPositionX(nodeId: NodeId, offset: number) {
     return this.page.evaluate(
       ([nodeId, offset]) => {
@@ -185,13 +273,60 @@ export class BAD_DO_NOT_DO_THIS_LegacyApiHelper {
     }, nodeId)
   }
 
+  spreadCopyLinkTopology(nodeType: string, outputIndex: number) {
+    return this.page.evaluate(
+      ([nodeType, outputIndex]) => {
+        const graph = window.app!.graph
+        const node = graph.nodes.find((node) => node.type === nodeType)
+        if (!node) throw new Error(`${nodeType} not found`)
+
+        const linkId = node.outputs[outputIndex].links?.[0]
+        if (linkId == null) {
+          throw new Error(`${nodeType} output ${outputIndex} has no link`)
+        }
+        const link = graph.links.get(linkId)
+        if (!link) throw new Error(`Link ${linkId} not found`)
+
+        // oxlint-disable-next-line no-misused-spread -- spreading an LLink is what this legacy pattern reproduces
+        const copy: Partial<LLink> = { ...link }
+        return {
+          ownKeys: Object.keys(copy).sort(),
+          id: copy.id,
+          type: copy.type,
+          origin_id: copy.origin_id,
+          origin_slot: copy.origin_slot,
+          target_id: copy.target_id,
+          target_slot: copy.target_slot,
+          parentId: copy.parentId
+        }
+      },
+      [nodeType, outputIndex] as const
+    )
+  }
+
+  getOwnEnumerableShellKeys(nodeType: string) {
+    return this.page.evaluate((nodeType) => {
+      const node = window.app!.graph.nodes.find(
+        (node) => node.type === nodeType
+      )
+      if (!node) throw new Error(`${nodeType} not found`)
+
+      return {
+        ownKeys: Object.keys(node).sort(),
+        hasOwnInputs: Object.hasOwn(node, 'inputs'),
+        hasOwnOutputs: Object.hasOwn(node, 'outputs'),
+        hasOwnWidgets: Object.hasOwn(node, 'widgets'),
+        hasOwnProperties: Object.hasOwn(node, 'properties'),
+        hasOwnBoxcolor: Object.hasOwn(node, 'boxcolor')
+      }
+    }, nodeType)
+  }
+
   growNodeByMutatingSizeAfterLoadingPreview(nodeId: NodeId) {
     return this.page.evaluate(
       ([nodeId, imageSource]) =>
         new Promise<void>((resolve, reject) => {
-          const node = window.app!.graph.getNodeById(nodeId) as
-            | (LGraphNode & { imgs?: HTMLImageElement[] })
-            | null
+          const node = window.app!.graph.getNodeById(nodeId)
           if (!node) throw new Error(`Node ${nodeId} not found`)
 
           const image = new Image()

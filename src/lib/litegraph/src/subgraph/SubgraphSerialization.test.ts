@@ -8,6 +8,7 @@ import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
+import { omit } from 'es-toolkit'
 import { afterEach, assert, beforeEach, describe, expect, it } from 'vitest'
 
 import { duplicateSubgraphNodeIds } from '@/lib/litegraph/src/__fixtures__/duplicateSubgraphNodeIds'
@@ -22,8 +23,10 @@ import {
 
 import { toLinkId } from '@/types/linkId'
 import { toNodeId, UNASSIGNED_NODE_ID } from '@/types/nodeId'
+import { createUuidv4 } from '@/utils/uuid'
 import {
   createTestSubgraph,
+  createTestSubgraphData,
   createTestSubgraphNode,
   resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
@@ -45,6 +48,28 @@ afterEach(() => {
 })
 
 describe('SubgraphSerialization - Basic Serialization', () => {
+  it('rekeys a registered subgraph and preserves its interface', () => {
+    const root = new LGraph()
+    const subgraph = createTestSubgraph({ rootGraph: root, name: 'Stored' })
+    root.subgraphs.set(subgraph.id, subgraph)
+
+    expect(root.subgraphs.get(subgraph.id)).toBe(subgraph)
+
+    const previousId = subgraph.id
+    subgraph.id = createUuidv4()
+    const input = subgraph.addInput('input', 'number')
+    const output = subgraph.addOutput('output', 'number')
+    expect(subgraph.name).toBe('Stored')
+    expect(subgraph.inputs).toEqual([input])
+    expect(subgraph.outputs).toEqual([output])
+
+    expect(() => {
+      subgraph.id = createUuidv4()
+    }).not.toThrow()
+    expect(root.subgraphs.get(subgraph.id)).toBe(subgraph)
+    expect(root.subgraphs.has(previousId)).toBe(false)
+  })
+
   it('should save and load simple subgraphs', () => {
     const original = createTestSubgraph({
       name: 'Simple Test',
@@ -251,65 +276,42 @@ describe('SubgraphSerialization - Version Compatibility', () => {
   })
 
   it('should load version 1.0+ format', () => {
-    const modernFormat = {
-      version: 1, // Number as expected by current implementation
+    const modernFormat = createTestSubgraphData({
       id: 'test-modern-id',
       name: 'Modern Subgraph',
-      nodes: [],
-      links: {},
-      groups: [],
-      config: {},
-      definitions: { subgraphs: [] },
       inputs: [{ id: 'input-id', name: 'modern_input', type: 'number' }],
       outputs: [{ id: 'output-id', name: 'modern_output', type: 'string' }],
-      inputNode: {
-        id: LEGACY_SUBGRAPH_INPUT_ID,
-        bounding: [0, 0, 120, 60]
-      },
-      outputNode: {
-        id: LEGACY_SUBGRAPH_OUTPUT_ID,
-        bounding: [300, 0, 120, 60]
-      },
-      widgets: []
-    }
+      inputNode: { id: LEGACY_SUBGRAPH_INPUT_ID, bounding: [0, 0, 120, 60] },
+      outputNode: { id: LEGACY_SUBGRAPH_OUTPUT_ID, bounding: [300, 0, 120, 60] }
+    })
 
     expect(() => {
-      // @ts-expect-error Type mismatch in ExportedSubgraph format
       const subgraph = new Subgraph(new LGraph(), modernFormat)
       expect(subgraph.name).toBe('Modern Subgraph')
-      expect(subgraph.inputs.length).toBe(1)
-      expect(subgraph.outputs.length).toBe(1)
+      expect(subgraph.inputs).toHaveLength(1)
+      expect(subgraph.outputs).toHaveLength(1)
       expect(subgraph.inputNode.id).toBe(SUBGRAPH_INPUT_ID)
       expect(subgraph.outputNode.id).toBe(SUBGRAPH_OUTPUT_ID)
     }).not.toThrow()
   })
 
   it('should handle missing fields gracefully', () => {
-    const incompleteFormat = {
-      version: 1,
-      id: 'incomplete-id',
-      name: 'Incomplete Subgraph',
-      nodes: [],
-      links: {},
-      groups: [],
-      config: {},
-      definitions: { subgraphs: [] },
-      inputNode: {
-        id: LEGACY_SUBGRAPH_INPUT_ID,
-        bounding: [0, 0, 120, 60]
-      },
-      outputNode: {
-        id: LEGACY_SUBGRAPH_OUTPUT_ID,
-        bounding: [300, 0, 120, 60]
-      }
-      // Missing optional: inputs, outputs, widgets
-    }
+    const incompleteFormat = omit(
+      createTestSubgraphData({
+        id: 'incomplete-id',
+        name: 'Incomplete Subgraph',
+        inputNode: { id: LEGACY_SUBGRAPH_INPUT_ID, bounding: [0, 0, 120, 60] },
+        outputNode: {
+          id: LEGACY_SUBGRAPH_OUTPUT_ID,
+          bounding: [300, 0, 120, 60]
+        }
+      }),
+      ['inputs', 'outputs', 'widgets']
+    )
 
     expect(() => {
-      // @ts-expect-error Type mismatch in ExportedSubgraph format
       const subgraph = new Subgraph(new LGraph(), incompleteFormat)
       expect(subgraph.name).toBe('Incomplete Subgraph')
-      // Should have default empty arrays
       expect(Array.isArray(subgraph.inputs)).toBe(true)
       expect(Array.isArray(subgraph.outputs)).toBe(true)
       expect(subgraph.inputNode.id).toBe(SUBGRAPH_INPUT_ID)
@@ -319,31 +321,20 @@ describe('SubgraphSerialization - Version Compatibility', () => {
 
   it('should consider future-proofing', () => {
     const futureFormat = {
-      version: 2, // Future version (number)
-      id: 'future-id',
-      name: 'Future Subgraph',
-      nodes: [],
-      links: {},
-      groups: [],
-      config: {},
-      definitions: { subgraphs: [] },
-      inputs: [],
-      outputs: [],
-      inputNode: {
-        id: LEGACY_SUBGRAPH_INPUT_ID,
-        bounding: [0, 0, 120, 60]
-      },
-      outputNode: {
-        id: LEGACY_SUBGRAPH_OUTPUT_ID,
-        bounding: [300, 0, 120, 60]
-      },
-      widgets: [],
-      futureFeature: 'unknown_data' // Unknown future field
+      ...createTestSubgraphData({
+        id: 'future-id',
+        name: 'Future Subgraph',
+        inputNode: { id: LEGACY_SUBGRAPH_INPUT_ID, bounding: [0, 0, 120, 60] },
+        outputNode: {
+          id: LEGACY_SUBGRAPH_OUTPUT_ID,
+          bounding: [300, 0, 120, 60]
+        }
+      }),
+      version: 2 as 1,
+      futureFeature: 'unknown_data'
     }
 
-    // Should handle future format gracefully
     expect(() => {
-      // @ts-expect-error Type mismatch in ExportedSubgraph format
       const subgraph = new Subgraph(new LGraph(), futureFormat)
       expect(subgraph.name).toBe('Future Subgraph')
       expect(subgraph.inputNode.id).toBe(SUBGRAPH_INPUT_ID)
@@ -551,6 +542,8 @@ describe('SubgraphSerialization - Data Integrity', () => {
     data.links!.push({ ...data.links![0], id: rejectedId })
     data.outputs![0].linkIds = [rejectedId]
     const original = structuredClone(data)
+    const expectedLinkId = link.id
+    subgraph.clear()
 
     const restored = createTestSubgraph({
       rootGraph: subgraph.rootGraph,
@@ -558,14 +551,14 @@ describe('SubgraphSerialization - Data Integrity', () => {
     })
     restored.configure(data)
 
-    expect(restored.outputs[0].linkIds).toEqual([link.id])
+    expect(restored.outputs[0].linkIds).toEqual([expectedLinkId])
     expect(data).toEqual(original)
   })
 
   it('deduplicates duplicate subgraph node IDs while keeping root nodes canonical', () => {
     const graph = new LGraph()
     const data = structuredClone(duplicateSubgraphNodeIds)
-    const expectedRootIds = data.nodes.map((node) => Number(node.id))
+    const expectedRootIds = data.nodes.map((node) => node.id)
     graph.configure(data)
 
     const rootIds = graph.nodes.map((node) => Number(node.id))
@@ -593,18 +586,20 @@ describe('SubgraphSerialization - Data Integrity', () => {
     const subgraphB = graph.subgraphs.get(DUPLICATE_ID_SUBGRAPH_B)!
     const subgraphBIds = new Set(subgraphB.nodes.map((node) => String(node.id)))
 
-    const rootProxyWidgetsA = graph.getNodeById(toNodeId(102))?.properties
-      ?.proxyWidgets
+    const rootNodeA = graph.getNodeById(toNodeId(102))
+    if (!rootNodeA) throw new Error('Missing root node 102')
+    const rootProxyWidgetsA = rootNodeA.properties.proxyWidgets
     expect(Array.isArray(rootProxyWidgetsA)).toBe(true)
     for (const entry of rootProxyWidgetsA as string[][]) {
-      expect(subgraphAIds.has(String(entry[0]))).toBe(true)
+      expect(subgraphAIds.has(entry[0])).toBe(true)
     }
 
-    const rootProxyWidgetsB = graph.getNodeById(toNodeId(103))?.properties
-      ?.proxyWidgets
+    const rootNodeB = graph.getNodeById(toNodeId(103))
+    if (!rootNodeB) throw new Error('Missing root node 103')
+    const rootProxyWidgetsB = rootNodeB.properties.proxyWidgets
     expect(Array.isArray(rootProxyWidgetsB)).toBe(true)
     for (const entry of rootProxyWidgetsB as string[][]) {
-      expect(subgraphBIds.has(String(entry[0]))).toBe(true)
+      expect(subgraphBIds.has(entry[0])).toBe(true)
     }
 
     for (const [, link] of subgraphB.links) {

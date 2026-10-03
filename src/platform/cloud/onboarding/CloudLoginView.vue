@@ -16,12 +16,10 @@
       >
         {{ t('auth.login.cloudSignUp') }}
       </RouterLink>
-      <span>
-        {{ ' ' + t('auth.login.freeRunsSuffix', { count: 5 }) }}
-      </span>
+      <span v-if="freeRunsSuffix">{{ ' ' + freeRunsSuffix }}</span>
     </p>
 
-    <Message v-if="!isSecureContext" severity="warn" class="mt-4 w-full">
+    <Message v-if="!isSecureContext" severity="warning" class="mt-4 w-full">
       {{ t('auth.login.insecureContextWarning') }}
     </Message>
 
@@ -60,20 +58,31 @@
 </template>
 
 <script setup lang="ts">
-import Message from 'primevue/message'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute } from 'vue-router'
 
+import Message from '@/components/ui/message/Message.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import CloudSignInForm from '@/platform/cloud/onboarding/components/CloudSignInForm.vue'
 import CloudSocialAuthButtons from '@/platform/cloud/onboarding/components/CloudSocialAuthButtons.vue'
 import { useCloudAuthPage } from '@/platform/cloud/onboarding/composables/useCloudAuthPage'
 import { CLOUD_AUTH_LINK_BUTTON_CLASS } from '@/platform/cloud/onboarding/constants/authClasses'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { SignInData } from '@/schemas/signInSchema'
 
 const { t } = useI18n()
 const route = useRoute()
 const authActions = useAuthActions()
+
+const freeRunsSuffix = computed(() => {
+  const offer = remoteConfig.value.free_tier_offer
+  if (!offer) return null
+  const key = offer.requires_google_sign_in
+    ? 'auth.login.freeRunsSuffixGoogle'
+    : 'auth.login.freeRunsSuffix'
+  return t(key, { count: offer.job_allowance })
+})
 
 const {
   authError,

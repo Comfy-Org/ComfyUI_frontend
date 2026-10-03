@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -34,10 +32,6 @@ function mockCanvasContext() {
 }
 
 describe('ecosystem slot patterns', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   describe('duck-typed slots wrapped by _setConcreteSlots', () => {
     it('renders a connected duck-typed input in collapsed mode', () => {
       const { source, target } = createSourceAndTarget()
@@ -61,6 +55,23 @@ describe('ecosystem slot patterns', () => {
       expect(target.inputs[0]).toBeInstanceOf(NodeInputSlot)
       expect((target.inputs[0] as NodeInputSlot).isConnected).toBe(true)
     })
+  })
+
+  it('preserves native callback array mutation semantics', () => {
+    const node = new LGraphNode('n')
+    node.addInput('first', 'INT')
+    node.addInput('second', 'INT')
+    const inputs = node.inputs
+    const visited: string[] = []
+
+    inputs.forEach((input, index, callbackInputs) => {
+      expect(callbackInputs).toBe(inputs)
+      if (index === 0) callbackInputs[1] = duckInputSlot()
+      visited.push(input.name)
+    })
+
+    expect(visited).toEqual(['first', 'in'])
+    expect(node.inputs[1]).toBe(inputs[1])
   })
 
   describe("input literals without a 'link' key", () => {

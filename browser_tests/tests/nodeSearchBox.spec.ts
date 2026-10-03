@@ -14,24 +14,14 @@ async function waitForSearchInsertion(
     .toBe(initialNodeCount + 1)
 }
 
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-})
-
 test.describe('Node search box', { tag: '@node' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.LinkRelease.Action',
-      'search box'
-    )
-    await comfyPage.settings.setSetting(
-      'Comfy.LinkRelease.ActionShift',
-      'search box'
-    )
-    await comfyPage.settings.setSetting(
-      'Comfy.NodeSearchBoxImpl',
-      'v1 (legacy)'
-    )
+  test.use({
+    initialSettings: {
+      'Comfy.UseNewMenu': 'Disabled',
+      'Comfy.LinkRelease.Action': 'search box',
+      'Comfy.LinkRelease.ActionShift': 'search box',
+      'Comfy.NodeSearchBoxImpl': 'v1 (legacy)'
+    }
   })
 
   test(`Can trigger on empty canvas double click`, async ({ comfyPage }) => {
@@ -55,6 +45,7 @@ test.describe('Node search box', { tag: '@node' }, () => {
     comfyPage
   }) => {
     // Start fresh to test new user behavior
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup({ clearStorage: true })
     // Simulate new user with 1.24.1+ installed version
     await comfyPage.settings.setSetting('Comfy.InstalledVersion', '1.24.1')
@@ -129,7 +120,7 @@ test.describe('Node search box', { tag: '@node' }, () => {
       const initialNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
       await comfyPage.canvasOps.disconnectEdge()
       await expect(comfyPage.searchBox.input).toHaveCount(1)
-      await comfyPage.page.locator('.p-chip-remove-icon').click()
+      await comfyPage.searchBox.removeFilter(0)
       await comfyPage.searchBox.fillAndSelectFirstNode('KSampler', {
         exact: true
       })
@@ -196,19 +187,92 @@ test.describe('Node search box', { tag: '@node' }, () => {
       await expectFilterChips(comfyPage, ['MODEL'])
     })
 
+    for (const { key, target } of [
+      { key: 'Tab', target: 'Add' },
+      { key: 'Shift+Tab', target: 'Input Type' }
+    ]) {
+      test(`${key} leaves the filter dropdown for ${target}`, async ({
+        comfyPage
+      }) => {
+        await comfyPage.searchBox.filterButton.click()
+        const panel = comfyPage.searchBox.filterSelectionPanel
+        await panel.selectFilterType('Input Type')
+        await panel.root
+          .getByRole('button', { name: 'Single-select dropdown' })
+          .click()
+        const search = comfyPage.page.getByRole('combobox', {
+          name: 'Search',
+          exact: true
+        })
+        await expect(search).toBeFocused()
+
+        await search.press(key)
+
+        await expect(search).toBeHidden()
+        await expect(
+          panel.root.getByRole('button', { name: target, exact: true })
+        ).toBeFocused()
+      })
+    }
+
     test('Outer click dismisses filter panel but keeps search box visible', async ({
       comfyPage
     }) => {
       await comfyPage.searchBox.filterButton.click()
       const panel = comfyPage.searchBox.filterSelectionPanel
       await panel.header.waitFor({ state: 'visible' })
-      await comfyPage.page.keyboard.press('Escape')
+      await comfyPage.page
+        .locator('.p-dialog-mask')
+        .filter({ has: panel.header })
+        .click({ position: { x: 10, y: 10 } })
 
       // Verify the filter selection panel is hidden
       await expect(panel.header).toBeHidden()
 
       // Verify the node search dialog is still visible
       await expect(comfyPage.searchBox.input).toBeVisible()
+    })
+
+    test.describe('Escape dismissal', () => {
+      test.beforeEach(async ({ comfyPage }) => {
+        await comfyPage.searchBox.filterButton.click()
+        await expect(
+          comfyPage.searchBox.filterSelectionPanel.root.getByRole('button', {
+            name: 'Close'
+          })
+        ).toBeFocused()
+      })
+
+      test('keeps search open when the filter has keyboard focus', async ({
+        comfyPage
+      }) => {
+        await comfyPage.page.keyboard.press('Escape')
+
+        await expect(
+          comfyPage.searchBox.filterSelectionPanel.header
+        ).toBeHidden()
+        await expect(comfyPage.searchBox.input).toBeVisible()
+        await expect(comfyPage.searchBox.input).toBeFocused()
+      })
+
+      test('keeps search open after clicking the filter heading', async ({
+        comfyPage
+      }) => {
+        await comfyPage.searchBox.filterSelectionPanel.root
+          .getByRole('heading', { name: 'Add node filter condition' })
+          .click()
+        await comfyPage.page.keyboard.press('Escape')
+
+        await expect(
+          comfyPage.searchBox.filterSelectionPanel.header
+        ).toBeHidden()
+        await expect(comfyPage.searchBox.input).toBeVisible()
+        await expect(comfyPage.searchBox.input).toBeFocused()
+
+        await comfyPage.searchBox.filterButton.focus()
+        await comfyPage.page.keyboard.press('Escape')
+        await expect(comfyPage.searchBox.input).toBeHidden()
+      })
     })
 
     test('Can add multiple filters', async ({ comfyPage }) => {
@@ -278,19 +342,13 @@ test.describe('Node search box', { tag: '@node' }, () => {
 })
 
 test.describe('Release context menu', { tag: '@node' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.LinkRelease.Action',
-      'context menu'
-    )
-    await comfyPage.settings.setSetting(
-      'Comfy.LinkRelease.ActionShift',
-      'search box'
-    )
-    await comfyPage.settings.setSetting(
-      'Comfy.NodeSearchBoxImpl',
-      'v1 (legacy)'
-    )
+  test.use({
+    initialSettings: {
+      'Comfy.UseNewMenu': 'Disabled',
+      'Comfy.LinkRelease.Action': 'context menu',
+      'Comfy.LinkRelease.ActionShift': 'search box',
+      'Comfy.NodeSearchBoxImpl': 'v1 (legacy)'
+    }
   })
 
   test(
@@ -333,6 +391,7 @@ test.describe('Release context menu', { tag: '@node' }, () => {
     comfyPage
   }) => {
     // Start fresh to test existing user behavior
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup({ clearStorage: true })
     // Simulate existing user with pre-1.24.1 version
     await comfyPage.settings.setSetting('Comfy.InstalledVersion', '1.23.0')
@@ -353,6 +412,7 @@ test.describe('Release context menu', { tag: '@node' }, () => {
     comfyPage
   }) => {
     // Start fresh and simulate new user who should get search box by default
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup({ clearStorage: true })
     await comfyPage.settings.setSetting('Comfy.InstalledVersion', '1.24.1')
     // But explicitly set to context menu (overriding versioned default)

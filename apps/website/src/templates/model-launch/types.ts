@@ -34,6 +34,10 @@ export interface ModelLaunchHero {
   // Still stand-in for the hero frame, for pages announcing a model whose
   // launch footage does not exist yet. Ignored once videoSrc is set.
   placeholderImageSrc?: string
+  // Overlay pages without videoSrc only: spins the extruded Comfy C above the
+  // copy and shows this image through its body. A flat C stands in until
+  // WebGL is ready and for reduced-motion visitors.
+  logoMaskImageSrc?: string
   // Still shown instead of the video below the 768px breakpoint, so phones
   // never fetch videoSrc. Opt-in: pages that omit it keep playing the video
   // at every viewport size, as they did before this field existed.
@@ -144,7 +148,8 @@ export interface ModelLaunchClosingCta {
 interface ModelLaunchStep {
   id: string
   title: LocalizedText
-  description: LocalizedText
+  // Optional: a step can be a title on its own, with no supporting line.
+  description?: LocalizedText
 }
 
 export interface ModelLaunchSteps {
@@ -153,6 +158,27 @@ export interface ModelLaunchSteps {
   items: readonly ModelLaunchStep[]
   primaryCta?: ModelLaunchCta
   secondaryCta?: ModelLaunchCta
+}
+
+interface ModelLaunchComparisonColumn {
+  id: string
+  label: LocalizedText
+}
+
+interface ModelLaunchComparisonRow {
+  id: string
+  label: LocalizedText
+  // One cell per column, in `columns` order.
+  cells: readonly LocalizedText[]
+}
+
+// A feature/tier comparison table, e.g. Professional vs Enterprise on
+// /minimax/license. The first column holds the row labels; `columns` are the
+// remaining headers.
+export interface ModelLaunchComparison {
+  headingKey: TranslationKey
+  columns: readonly ModelLaunchComparisonColumn[]
+  rows: readonly ModelLaunchComparisonRow[]
 }
 
 export interface ModelLaunchRunOptions {
@@ -179,6 +205,7 @@ export type ModelLaunchSection =
   | 'gallery'
   | 'audioGallery'
   | 'steps'
+  | 'comparison'
   | 'pricing'
   | 'faq'
   | 'closingCta'
@@ -193,6 +220,7 @@ export const DEFAULT_SECTION_ORDER: readonly ModelLaunchSection[] = [
   'pricing',
   'faq',
   'steps',
+  'comparison',
   'closingCta'
 ]
 
@@ -209,6 +237,7 @@ export interface ModelLaunchPage {
   pricing?: ModelLaunchPricing
   faq?: ModelLaunchFaqSection
   steps?: ModelLaunchSteps
+  comparison?: ModelLaunchComparison
   // Pages that end on a steps CTA row do not need a separate closing CTA.
   closingCta?: ModelLaunchClosingCta
   // Reorders the optional body sections for this page only. Defaults to

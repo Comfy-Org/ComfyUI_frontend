@@ -11,7 +11,7 @@
         <i class="icon-[lucide--refresh-cw] size-4" />
       </Button>
       <Button
-        v-if="!usesAssetApi"
+        v-if="!flags.assetsEnabled"
         v-tooltip.bottom="$t('g.loadAllFolders')"
         variant="muted-textonly"
         size="icon"
@@ -49,7 +49,6 @@
     <template #body>
       <ElectronDownloadItems v-if="isDesktop" />
 
-      <Divider type="dashed" class="m-2" />
       <TreeExplorer
         v-model:expanded-keys="expandedKeys"
         class="model-lib-tree-explorer"
@@ -66,7 +65,6 @@
 </template>
 
 <script setup lang="ts">
-import { Divider } from 'primevue'
 import { computed, onMounted, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -78,6 +76,7 @@ import ElectronDownloadItems from '@/components/sidebar/tabs/modelLibrary/Electr
 import ModelTreeLeaf from '@/components/sidebar/tabs/modelLibrary/ModelTreeLeaf.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { startModelLoaderDrag } from '@/composables/node/startModelNodeDragFromAsset'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -94,9 +93,7 @@ const modelToNodeStore = useModelToNodeStore()
 const settingStore = useSettingStore()
 const toastStore = useToastStore()
 const { t } = useI18n()
-const usesAssetApi = computed(() =>
-  settingStore.get('Comfy.Assets.UseAssetAPI')
-)
+const { flags } = useFeatureFlags()
 const assetDownloadStore = useAssetDownloadStore()
 const searchBoxRef = ref()
 const searchQuery = ref<string>('')
@@ -277,12 +274,19 @@ onMounted(async () => {
   // loading is cheap and keeps search and folder badges complete from the
   // start; AutoLoadAll remains the opt-in for the request-per-folder legacy path.
   if (
-    usesAssetApi.value ||
+    flags.assetsEnabled ||
     settingStore.get('Comfy.ModelLibrary.AutoLoadAll')
   ) {
     await withLoadFailureToast(() => modelStore.loadModels())
   }
 })
+
+watch(
+  () => flags.assetsEnabled,
+  async (enabled) => {
+    if (enabled) await withLoadFailureToast(() => modelStore.loadModels())
+  }
+)
 </script>
 
 <style scoped>

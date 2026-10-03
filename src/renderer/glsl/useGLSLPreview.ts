@@ -4,7 +4,6 @@ import { computed, effectScope, onScopeDispose, ref, toValue, watch } from 'vue'
 import type { ComputedRef, EffectScope, MaybeRefOrGetter, Ref } from 'vue'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
-import type { UUID } from '@/utils/uuid'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -159,18 +158,16 @@ function createInnerPreview(
     const graph = node?.graph
     if (!graph) return null
     const rootGraph = graph.rootGraph
-    if (!rootGraph || graph === rootGraph) return null
+    if (graph === rootGraph) return null
 
     return (
-      rootGraph._nodes?.find(
+      rootGraph._nodes.find(
         (n) => n.isSubgraphNode() && n.subgraph === graph
       ) ?? null
     )
   })()
 
-  const graphId = computed(
-    () => nodeRef.value?.graph?.rootGraph?.id as UUID | undefined
-  )
+  const graphId = computed(() => nodeRef.value?.graph?.rootGraph.id)
 
   const nodeId = computed(() => {
     const id = nodeRef.value?.id
@@ -249,7 +246,7 @@ function createInnerPreview(
     const node = nodeRef.value
     const inner = innerGLSLNode
     if (!node?.isSubgraphNode() || !inner) return null
-    return extractUniformSources(inner, node.subgraph as Subgraph, node)
+    return extractUniformSources(inner, node.subgraph, node)
   })
 
   const { floatValues, intValues, boolValues, curveValues } = useGLSLUniforms(
@@ -330,7 +327,7 @@ function createInnerPreview(
     const custom = customResolution.value
     if (custom) return custom
 
-    const img = images[0]
+    const img = images.at(0)
     if (img) {
       const w = img instanceof ImageBitmap ? img.width : img.naturalWidth
       const h = img instanceof ImageBitmap ? img.height : img.naturalHeight
@@ -341,6 +338,7 @@ function createInnerPreview(
   }
 
   let disposed = false
+  const isDisposed = (): boolean => disposed
   let lastRendererConfig: GLSLRendererConfig | null = null
 
   function revokePreview(): void {
@@ -442,7 +440,7 @@ function createInnerPreview(
       r.render()
 
       const blob = await r.toBlob()
-      if (requestId !== renderRequestId || disposed) return
+      if (requestId !== renderRequestId || isDisposed()) return
       const blobUrl = createSharedObjectUrl(blob)
       try {
         const inner = innerGLSLNode

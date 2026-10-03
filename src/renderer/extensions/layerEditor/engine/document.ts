@@ -29,7 +29,7 @@ export function walk(
   for (const child of root.children) {
     const recurse = fn(child, root, depth)
     if (recurse !== false && child.kind === 'group') {
-      walk(child as GroupData, fn, depth + 1)
+      walk(child, fn, depth + 1)
     }
   }
 }

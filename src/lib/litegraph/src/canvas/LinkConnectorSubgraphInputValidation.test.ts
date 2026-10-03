@@ -1,6 +1,4 @@
 // TODO: Fix these tests after migration
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -20,10 +18,8 @@ import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
 import { createTestSubgraph } from '../subgraph/__fixtures__/subgraphHelpers'
-import {
-  createMockCanvasPointerEvent,
-  createMockNodeInputSlot
-} from '@/utils/__tests__/litegraphTestUtils'
+import { createMockNodeInputSlot } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasPointerEvent } from '@/utils/__tests__/canvasTestUtils'
 
 type MockPointerEvent = CanvasPointerEvent
 type MockRenderLink = ToOutputRenderLink
@@ -33,7 +29,6 @@ describe('LinkConnector SubgraphInput connection validation', () => {
   const mockSetConnectingLinks = vi.fn()
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     connector = new LinkConnector(mockSetConnectingLinks)
   })
   describe('Link disconnection validation', () => {

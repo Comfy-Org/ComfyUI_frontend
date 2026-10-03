@@ -6,7 +6,7 @@ import { computed, ref, useSlots } from 'vue'
 
 import { pricingPlans } from '../../data/pricingPlans'
 import type { BillingCycle, PricingPlan } from '../../data/pricingPlans'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import Badge from '../ui/badge/Badge.vue'
 import Button from '../ui/button/Button.vue'
 import ToggleGroup from '../ui/toggle-group/ToggleGroup.vue'
@@ -27,7 +27,11 @@ const {
   locale?: Locale
   headingLevel?: 'h1' | 'h2'
   defaultBillingCycle?: BillingCycle
+  teamInviteMembersKey?: TranslationKey
+  enterpriseCtaKey?: TranslationKey
+  enterpriseCtaHref?: string
 }>()
+const { t } = translationsFor(locale)
 
 const slots = useSlots()
 
@@ -51,8 +55,30 @@ function originalPriceFor(plan: PricingPlan): string | undefined {
   return billingPeriod.value === 'yearly' &&
     plan.yearlyPriceKey &&
     plan.priceKey
-    ? t(plan.priceKey, locale)
+    ? t(plan.priceKey)
     : undefined
+}
+
+function showsYearlyCredits(plan: PricingPlan): boolean {
+  return billingPeriod.value === 'yearly' && plan.yearlyCreditsKey !== undefined
+}
+
+function displayCreditsKey(plan: PricingPlan): TranslationKey | undefined {
+  return showsYearlyCredits(plan) ? plan.yearlyCreditsKey : plan.creditsKey
+}
+
+function displayEstimateKey(plan: PricingPlan): TranslationKey | undefined {
+  return showsYearlyCredits(plan) && plan.yearlyEstimateKey
+    ? plan.yearlyEstimateKey
+    : plan.estimateKey
+}
+
+function creditsLabelFor(plan: PricingPlan): string {
+  return t(
+    showsYearlyCredits(plan)
+      ? 'pricing.creditsLabelYearly'
+      : 'pricing.creditsLabel'
+  )
 }
 
 const planCards = computed(() =>
@@ -60,27 +86,28 @@ const planCards = computed(() =>
     plan,
     priceKey: displayPriceKey(plan),
     originalPrice: originalPriceFor(plan),
-    yearlyTotal: plan.yearlyTotalKey
-      ? t(plan.yearlyTotalKey, locale)
-      : undefined,
+    yearlyTotal: plan.yearlyTotalKey ? t(plan.yearlyTotalKey) : undefined,
+    creditsKey: displayCreditsKey(plan),
+    creditsLabel: creditsLabelFor(plan),
+    estimateKey: displayEstimateKey(plan),
     features: plan.features
   }))
 )
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-4 py-16 lg:px-20 lg:py-14">
+  <section class="mx-auto max-w-9xl px-4 py-16 lg:px-20 lg:py-14">
     <div class="mx-auto mb-8 max-w-3xl text-center lg:mb-10">
       <component
         :is="headingLevel"
         class="font-formula text-4xl font-light text-primary-comfy-canvas lg:text-5xl"
       >
-        {{ t('pricing.title', locale) }}
+        {{ t('pricing.title') }}
       </component>
       <p
         class="mx-auto mt-3 max-w-xl text-base text-pretty text-primary-comfy-canvas"
       >
-        {{ t('pricing.subtitle', locale) }}
+        {{ t('pricing.subtitle') }}
       </p>
     </div>
 
@@ -94,17 +121,13 @@ const planCards = computed(() =>
           value="monthly"
           class="min-w-40 text-2xs sm:min-w-48 sm:text-xs"
         >
-          <span class="ppformula-text-center">{{
-            t('pricing.period.monthly', locale)
-          }}</span>
+          <span class="inline-block">{{ t('pricing.period.monthly') }}</span>
         </ToggleGroupItem>
         <ToggleGroupItem
           value="yearly"
           class="min-w-40 text-2xs sm:min-w-48 sm:text-xs"
         >
-          <span class="ppformula-text-center">{{
-            t('pricing.period.yearly', locale)
-          }}</span>
+          <span class="inline-block">{{ t('pricing.period.yearly') }}</span>
         </ToggleGroupItem>
       </ToggleGroup>
     </div>
@@ -114,7 +137,7 @@ const planCards = computed(() =>
     <div
       :class="
         cn(
-          'rounded-5xl bg-transparency-white-t4 grid gap-2 p-2 max-lg:mx-auto max-lg:max-w-lg',
+          'grid gap-2 rounded-5xl bg-transparency-white-t4 p-2 max-lg:mx-auto max-lg:max-w-lg',
           pricingPlans.length === 4 ? 'lg:grid-cols-4' : 'lg:grid-cols-3'
         )
       "
@@ -125,6 +148,9 @@ const planCards = computed(() =>
           priceKey,
           originalPrice,
           yearlyTotal,
+          creditsKey,
+          creditsLabel,
+          estimateKey,
           features
         } in planCards"
         :key="plan.id"
@@ -132,18 +158,18 @@ const planCards = computed(() =>
       >
         <div class="flex items-center gap-4">
           <PricingPlanLabel
-            :label="t(plan.labelKey, locale)"
-            class="ppformula-text-center text-base uppercase"
+            :label="t(plan.labelKey)"
+            class="inline-block text-base uppercase"
           />
           <Badge v-if="plan.isPopular" variant="callout" size="xs">
-            {{ t('pricing.badge.popular', locale) }}</Badge
+            {{ t('pricing.badge.popular') }}</Badge
           >
         </div>
 
         <PricingPrice
           v-if="priceKey"
-          :price="t(priceKey, locale)"
-          :period="t('pricing.plan.period', locale)"
+          :price="t(priceKey)"
+          :period="t('pricing.plan.period')"
           :original-price="originalPrice"
           :billing-period="billingPeriod"
           :yearly-total="yearlyTotal"
@@ -155,10 +181,10 @@ const planCards = computed(() =>
         </div>
 
         <PricingCredits
-          v-if="plan.creditsKey"
-          :credits="t(plan.creditsKey, locale)"
-          :label="t('pricing.creditsLabel', locale)"
-          :estimate-key="plan.estimateKey"
+          v-if="creditsKey"
+          :credits="t(creditsKey)"
+          :label="creditsLabel"
+          :estimate-key="estimateKey"
           :locale
         />
 
@@ -168,22 +194,28 @@ const planCards = computed(() =>
             variant="outline"
             class="w-full text-center"
           >
-            {{ t(plan.ctaKey, locale) }}
+            {{ t(plan.ctaKey) }}
           </Button>
         </div>
       </PricingCard>
 
-      <PricingTeamCard :billing-period="billingPeriod" :locale />
+      <PricingTeamCard
+        :billing-period="billingPeriod"
+        :invite-members-key="teamInviteMembersKey"
+        :locale
+      />
 
       <PricingContactBand
         label-key="pricing.enterprise.label"
         description-key="pricing.enterprise.description"
+        :cta-key="enterpriseCtaKey"
+        :href="enterpriseCtaHref"
         :locale
       />
     </div>
 
     <p class="mt-12 text-xs text-primary-comfy-canvas/70">
-      {{ t('pricing.footnote', locale) }}
+      {{ t('pricing.footnote') }}
     </p>
   </section>
 </template>

@@ -2,6 +2,7 @@
   <section
     class="flex min-h-0 grow flex-col gap-6 overflow-auto"
     aria-labelledby="partner-node-access-title"
+    @scroll="handlePanelScroll"
   >
     <h2 id="partner-node-access-title" class="sr-only">
       {{ $t('workspacePanel.partnerNodes.title') }}
@@ -11,7 +12,7 @@
       class="flex items-start gap-4 rounded-2xl border border-interface-stroke p-4 font-inter"
     >
       <span class="shrink-0" @click.prevent="requestAccessModeToggle">
-        <ToggleSwitch
+        <Switch
           :model-value="!isRestricted"
           readonly
           :disabled="!isGated && (!canEditPolicy || isSaving)"
@@ -291,7 +292,7 @@
                 role="cell"
                 class="flex h-8 items-center justify-end justify-self-end"
               >
-                <ToggleSwitch
+                <Switch
                   v-if="isRestricted"
                   :model-value="provider.enabled"
                   :disabled="isSaving || !canEditPolicy"
@@ -357,24 +358,27 @@
 </template>
 
 <script setup lang="ts">
+import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
 import { storeToRefs } from 'pinia'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { MenuItem } from 'primevue/menuitem'
-import ToggleSwitch from 'primevue/toggleswitch'
 
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import Button from '@/components/ui/button/Button.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import Switch from '@/components/ui/switch/Switch.vue'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { getProviderIcon, getProviderName } from '@/utils/categoryUtil'
 import { cn } from '@comfyorg/tailwind-utils'
+
+const { handlePanelScroll } = useSettingsHeaderCollapse()
 
 const governanceStore = usePartnerNodeGovernanceStore()
 const { governedWorkspaceId, isSaving, policy, providers, status } =
@@ -608,7 +612,7 @@ function requestAccessModeToggle() {
 }
 
 function openEnterprisePage() {
-  window.open('https://www.comfy.org/enterprise', '_blank')
+  window.open('https://comfy.org/cloud/enterprise/', '_blank')
 }
 
 function confirmEnterpriseUpsell() {

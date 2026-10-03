@@ -1,0 +1,45 @@
+import type { Model } from '../config/models'
+import { translationsFor } from '../i18n/translations'
+import type { Locale } from '../i18n/translations'
+
+function isCloudOnly(model: Model): boolean {
+  return !model.huggingFaceUrl
+}
+
+export function getWhatIsDescription(
+  model: Model,
+  dirDesc: string,
+  locale: Locale = 'en'
+): string {
+  const { t } = translationsFor(locale)
+  return t(
+    isCloudOnly(model)
+      ? 'models.faq.whatIs.cloudAnswer'
+      : 'models.faq.whatIs.localAnswer',
+    {
+      name: model.displayName,
+      description: dirDesc,
+      count: model.workflowCount
+    }
+  )
+}
+
+export function getPageDescription(model: Model): string {
+  if (isCloudOnly(model)) {
+    return `Run ${model.displayName} in ComfyUI. ${model.workflowCount} community workflow templates and step-by-step tutorials.`
+  }
+  return `Run ${model.displayName} in ComfyUI with full parameter control. ${model.workflowCount} community workflow templates, step-by-step tutorials, and free local inference.`
+}
+
+export function getFaqPricingAnswer(
+  model: Model,
+  locale: Locale = 'en'
+): string {
+  const { t } = translationsFor(locale)
+  return t(
+    isCloudOnly(model)
+      ? 'models.faq.isFree.cloudAnswer'
+      : 'models.faq.isFree.localAnswer',
+    { name: model.displayName }
+  )
+}

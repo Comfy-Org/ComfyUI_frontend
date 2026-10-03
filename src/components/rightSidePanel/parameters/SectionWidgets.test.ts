@@ -1,8 +1,11 @@
-import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -13,43 +16,20 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { toNodeId } from '@/types/nodeId'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 
 import SectionWidgets from './SectionWidgets.vue'
 
-const { mockGetInputSpecForWidget, mockTrackUiButtonClicked } = vi.hoisted(
-  () => ({
-    mockGetInputSpecForWidget: vi.fn(),
-    mockTrackUiButtonClicked: vi.fn()
-  })
-)
-
 const setDirty = vi.fn()
 const getNodeById = vi.fn()
 const animateToBounds = vi.fn()
-const selectedItems: unknown[] = []
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({
-    canvas: { setDirty, graph: { getNodeById }, animateToBounds },
-    selectedItems
-  })
-}))
-
-vi.mock('@/stores/nodeDefStore', () => ({
-  useNodeDefStore: () => ({
-    getInputSpecForWidget: mockGetInputSpecForWidget
-  })
-}))
-
-vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: () => ({
-    trackUiButtonClicked: mockTrackUiButtonClicked
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 const WidgetItemStub = defineComponent({
   inheritAttrs: false,
@@ -112,7 +92,7 @@ function createHostWithPromotedModel(): {
     promoteValueWidgetViaSubgraphInput(host, sourceNode, sourceWidget).ok
   ).toBe(true)
 
-  const promotedWidget = host.widgets?.find(
+  const promotedWidget = host.widgets.find(
     (widget) => widget.name === sourceWidget.name
   )
   if (!promotedWidget) throw new Error('Expected promoted widget')
@@ -135,7 +115,15 @@ function createHostWithPromotedModel(): {
 
 describe('SectionWidgets', () => {
   beforeEach(() => {
-    selectedItems.length = 0
+    useCanvasStore().canvas = fromPartial({
+      setDirty,
+      graph: fromPartial({
+        id: 'root',
+        rootGraph: { id: 'root' },
+        getNodeById
+      }),
+      animateToBounds
+    })
   })
 
   it('clears promoted widget validation by source and missing model by host', async () => {
@@ -157,7 +145,6 @@ describe('SectionWidgets', () => {
       global: {
         plugins: [i18n],
         stubs: {
-          Button: true,
           WidgetItem: WidgetItemStub,
           PropertiesAccordionItem: PropertiesAccordionItemStub
         }
@@ -248,7 +235,9 @@ describe('SectionWidgets', () => {
 
     await user.click(screen.getByRole('button', { name: 'Locate' }))
 
-    expect(mockTrackUiButtonClicked).toHaveBeenCalledExactlyOnceWith({
+    expect(
+      useTelemetry()?.trackUiButtonClicked
+    ).toHaveBeenCalledExactlyOnceWith({
       button_id: 'right_side_panel_locate_node_clicked',
       element_group: 'right_side_panel_nodes'
     })
@@ -258,7 +247,8 @@ describe('SectionWidgets', () => {
 
   it('tracks and resets all widgets when the Reset all button is clicked', async () => {
     const { node, widget } = createSimpleNodeWithWidget()
-    mockGetInputSpecForWidget.mockReturnValue({
+    vi.mocked(useNodeDefStore().getInputSpecForWidget).mockReturnValue({
+      name: widget.name,
       type: 'COMBO',
       default: 'default_model.safetensors'
     })
@@ -279,7 +269,9 @@ describe('SectionWidgets', () => {
 
     await user.click(screen.getByRole('button', { name: 'Reset all' }))
 
-    expect(mockTrackUiButtonClicked).toHaveBeenCalledExactlyOnceWith({
+    expect(
+      useTelemetry()?.trackUiButtonClicked
+    ).toHaveBeenCalledExactlyOnceWith({
       button_id: 'right_side_panel_reset_all_parameters_clicked',
       element_group: 'right_side_panel_nodes'
     })

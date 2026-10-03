@@ -1,3 +1,4 @@
+import type { BillingTelemetryFailure } from '@comfyorg/account-core/billing'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 
@@ -8,20 +9,20 @@ import { t } from '@/i18n'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import { toTierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
+import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import type { BillingFailure } from '@/platform/telemetry/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
-import type {
-  PreviewSubscribeResponse,
-  SubscribeResponse
-} from '@/platform/workspace/api/workspaceApi'
+import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
+import type { SettledSubscribeResponse } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
+import { SettledOperationError } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 export interface DowngradeToPersonalResult {
   preview: PreviewSubscribeResponse
-  response: SubscribeResponse
+  response: SettledSubscribeResponse
 }
 
 export interface DowngradePreview {
@@ -74,6 +75,7 @@ export function useDowngradeToPersonal() {
   const billingOperationStore = useBillingOperationStore()
   const { userEmail } = useCurrentUser()
   const { permissions } = useWorkspaceUI()
+  const { canDowngradeToPersonal } = useBillingCapabilities()
   const telemetry = useTelemetry()
   let activeTelemetryAttempt: DowngradeTelemetryAttempt | undefined
 
@@ -89,7 +91,11 @@ export function useDowngradeToPersonal() {
   const hasOtherMembers = computed(() => removableMembers.value.length > 0)
 
   function ensureCanDowngrade(): void {
-    if (!permissions.value.canDowngradeToPersonal) {
+    if (
+      !(isCloud
+        ? canDowngradeToPersonal.value
+        : permissions.value.canDowngradeToPersonal)
+    ) {
       throw new Error(t('subscription.downgrade.notAllowed'))
     }
   }
@@ -121,9 +127,7 @@ export function useDowngradeToPersonal() {
     // isInitialized (status + balance + plans): a balance/plans failure must
     // not permanently force reactivation onto an otherwise-valid, active
     // subscription. Mirrors the same fix in the transition preview component.
-    return (
-      subscription.value === null || (subscription.value?.isCancelled ?? false)
-    )
+    return subscription.value === null || subscription.value.isCancelled
   }
 
   /** Read-only preview so a caller can decide whether to collect reactivation
@@ -162,7 +166,7 @@ export function useDowngradeToPersonal() {
       memberRemovalCount: membersToRemove.length,
       memberRemovalFailures: 0
     }
-    let telemetryFailure: BillingFailure | undefined
+    let telemetryFailure: BillingTelemetryFailure | undefined
 
     if (!activeTelemetryAttempt) {
       activeTelemetryAttempt = telemetryAttempt
@@ -175,7 +179,7 @@ export function useDowngradeToPersonal() {
       })
     }
 
-    function trackSucceeded() {
+    function trackSucceeded(operationObserved: boolean) {
       const now = Date.now()
       telemetry?.trackBillingEvent({
         operation: 'downgrade_to_personal',
@@ -196,6 +200,7 @@ export function useDowngradeToPersonal() {
         checkout_type: 'change',
         duration_ms: now - telemetryAttempt.checkoutStartedAt
       })
+      if (operationObserved) return
       telemetry?.trackBillingEvent({
         operation: 'operation',
         stage: 'succeeded',
@@ -220,11 +225,14 @@ export function useDowngradeToPersonal() {
         )
       }
       ensureCanDowngrade()
-      telemetryAttempt.targetTier = preview.new_plan?.tier
-        ? (toTierKey(preview.new_plan.tier) ?? undefined)
+      const newPlan = Object.hasOwn(preview, 'new_plan')
+        ? preview.new_plan
         : undefined
-      telemetryAttempt.targetCycle = preview.new_plan
-        ? preview.new_plan.duration === 'ANNUAL'
+      telemetryAttempt.targetTier = newPlan?.tier
+        ? (toTierKey(newPlan.tier) ?? undefined)
+        : undefined
+      telemetryAttempt.targetCycle = newPlan
+        ? newPlan.duration === 'ANNUAL'
           ? 'yearly'
           : 'monthly'
         : undefined
@@ -284,13 +292,14 @@ export function useDowngradeToPersonal() {
           checkout_type: 'change'
         })
       }
-      let response: SubscribeResponse | void
+      let response: SettledSubscribeResponse | void
       try {
         response = await subscribe(planSlug, {
           returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
           cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`,
           confirmReactivation,
-          ...(preview.proration_at && { prorationAt: preview.proration_at })
+          ...(preview.proration_at && { prorationAt: preview.proration_at }),
+          attemptStartedAt: telemetryAttempt.checkoutStartedAt
         })
       } catch (error) {
         if (
@@ -370,7 +379,7 @@ export function useDowngradeToPersonal() {
         return null
       }
 
-      trackSucceeded()
+      trackSucceeded(response.operationObserved === true)
       activeTelemetryAttempt = undefined
       return { preview, response }
     } catch (error) {
@@ -405,17 +414,19 @@ export function useDowngradeToPersonal() {
           ...failure,
           duration_ms: now - telemetryAttempt.checkoutStartedAt
         })
-        telemetry?.trackBillingEvent({
-          operation: 'operation',
-          stage: 'failed',
-          outcome: 'failure',
-          operation_type: 'subscription',
-          tier: telemetryAttempt.targetTier,
-          cycle: telemetryAttempt.targetCycle,
-          checkout_type: 'change',
-          ...failure,
-          duration_ms: now - telemetryAttempt.checkoutStartedAt
-        })
+        if (!(error instanceof SettledOperationError)) {
+          telemetry?.trackBillingEvent({
+            operation: 'operation',
+            stage: 'failed',
+            outcome: 'failure',
+            operation_type: 'subscription',
+            tier: telemetryAttempt.targetTier,
+            cycle: telemetryAttempt.targetCycle,
+            checkout_type: 'change',
+            ...failure,
+            duration_ms: now - telemetryAttempt.checkoutStartedAt
+          })
+        }
       }
       activeTelemetryAttempt = undefined
       throw error

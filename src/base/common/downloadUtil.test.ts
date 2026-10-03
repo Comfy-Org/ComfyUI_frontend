@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   downloadFile,
+  downloadFileAsBlob,
   extractFilenameFromContentDisposition,
   openFileInNewTab
 } from '@/base/common/downloadUtil'
@@ -12,19 +13,16 @@ const { mockIsCloud } = vi.hoisted(() => ({
   mockIsCloud: { value: false }
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
-  get isCloud() {
-    return mockIsCloud.value
-  }
-}))
+vi.mock(
+  import('@/platform/distribution/types'), // oxlint-disable-line comfy/no-restricted-paths
+  () => ({
+    get isCloud() {
+      return mockIsCloud.value
+    }
+  })
+)
 
-vi.mock('@/i18n', () => ({
-  t: (key: string) => key
-}))
-
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: vi.fn(() => ({ addAlert: vi.fn() }))
-}))
+vi.mock(import('@/i18n'))
 
 let createObjectURLSpy: MockInstance<typeof URL.createObjectURL>
 let revokeObjectURLSpy: MockInstance<typeof URL.revokeObjectURL>
@@ -307,6 +305,37 @@ describe('downloadUtil', () => {
       await blobPromise
       await Promise.resolve()
       expect(mockLink.download).toBe('my-fallback.png')
+    })
+  })
+
+  describe('downloadFileAsBlob', () => {
+    it('rejects a non-OK response without starting a download', async () => {
+      const fetchFile = vi
+        .fn<(url: string) => Promise<Response>>()
+        .mockResolvedValue(new Response(null, { status: 503 }))
+
+      await expect(
+        downloadFileAsBlob('/api/asset', {
+          filename: 'asset.png',
+          fetch: fetchFile
+        })
+      ).rejects.toThrow('Failed to fetch /api/asset: 503')
+      expect(mockLink.click).not.toHaveBeenCalled()
+    })
+
+    it('propagates a rejected fetch without starting a download', async () => {
+      const networkError = new Error('network unavailable')
+      const fetchFile = vi
+        .fn<(url: string) => Promise<Response>>()
+        .mockRejectedValue(networkError)
+
+      await expect(
+        downloadFileAsBlob('/api/asset', {
+          filename: 'asset.png',
+          fetch: fetchFile
+        })
+      ).rejects.toBe(networkError)
+      expect(mockLink.click).not.toHaveBeenCalled()
     })
   })
 

@@ -1,9 +1,6 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { setActivePinia } from 'pinia'
-import PrimeVue from 'primevue/config'
-import InputText from 'primevue/inputtext'
 import { describe, expect, it, vi } from 'vitest'
 
 import { toNodeId } from '@/types/nodeId'
@@ -13,7 +10,7 @@ import { createI18n } from 'vue-i18n'
 import type { NodeState } from '@/types/nodeState'
 import enMessages from '@/locales/en/main.json'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { Settings } from '@/schemas/apiSchema'
+import type { Settings } from '@/platform/settings/types'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 
@@ -28,12 +25,12 @@ const makeNodeData = (overrides: Partial<NodeState> = {}): NodeState => ({
   type: 'KSampler',
   mode: 0,
   flags: { collapsed: false },
-  ...overrides
+  ...overrides,
+  properties: overrides.properties ?? {}
 })
 
 const setupMockStores = () => {
-  const pinia = createTestingPinia({ stubActions: false })
-  setActivePinia(pinia)
+  const pinia = getActivePinia()!
 
   const settingStore = useSettingStore()
   const nodeDefStore = useNodeDefStore()
@@ -103,8 +100,7 @@ const createGlobalConfig = () => {
   return {
     tooltipDirective,
     global: {
-      plugins: [PrimeVue, i18n, pinia],
-      components: { InputText },
+      plugins: [i18n, pinia],
       directives: {
         tooltip: tooltipDirective
       }
@@ -158,7 +154,7 @@ describe('NodeHeader.vue', () => {
     })
 
     // Enter edit mode
-    // eslint-disable-next-line testing-library/prefer-user-event
+    // oxlint-disable-next-line testing-library/prefer-user-event
     await fireEvent.dblClick(screen.getByTestId('node-header-1'))
 
     // Edit and confirm
@@ -175,7 +171,7 @@ describe('NodeHeader.vue', () => {
       nodeData: makeNodeData({ title: 'KeepMe' })
     })
 
-    // eslint-disable-next-line testing-library/prefer-user-event
+    // oxlint-disable-next-line testing-library/prefer-user-event
     await fireEvent.dblClick(screen.getByTestId('node-header-1'))
     const input = screen.getByTestId('node-title-input')
     await user.clear(input)
@@ -190,7 +186,7 @@ describe('NodeHeader.vue', () => {
   it('renders correct chevron icon based on collapsed prop', async () => {
     const { rerender } = renderHeader({ collapsed: false })
     const collapseButton = screen.getByTestId('node-collapse-button')
-    // eslint-disable-next-line testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-node-access
     const expandedIcon = collapseButton.querySelector('i')!
     expect(expandedIcon.classList).not.toContain('-rotate-90')
 
@@ -198,7 +194,7 @@ describe('NodeHeader.vue', () => {
       nodeData: makeNodeData(),
       collapsed: true
     })
-    // eslint-disable-next-line testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-node-access
     const collapsedIcon = collapseButton.querySelector('i')!
     expect(collapsedIcon.classList).toContain('-rotate-90')
   })
@@ -220,7 +216,7 @@ describe('NodeHeader.vue', () => {
 
       tooltipDirective.updated.mockClear()
 
-      // eslint-disable-next-line testing-library/prefer-user-event
+      // oxlint-disable-next-line testing-library/prefer-user-event
       await fireEvent.dblClick(screen.getByTestId('node-header-1'))
 
       expect(tooltipDirective.updated).toHaveBeenCalled()

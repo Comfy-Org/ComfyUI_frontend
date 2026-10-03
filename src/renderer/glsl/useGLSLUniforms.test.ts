@@ -14,7 +14,7 @@ const { createPromotedHostWidgetIdLookup } = vi.hoisted(() => ({
   createPromotedHostWidgetIdLookup: vi.fn()
 }))
 
-vi.mock('@/core/graph/subgraph/promotionUtils', () => ({
+vi.mock(import('@/core/graph/subgraph/promotionUtils'), () => ({
   createPromotedHostWidgetIdLookup
 }))
 

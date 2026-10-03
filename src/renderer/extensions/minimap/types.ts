@@ -4,11 +4,14 @@
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { NodeId } from '@/types/nodeId'
 
+import type { ResolvedMinimapNodeDecoration } from '@/platform/canvas/minimapDecorationRegistry'
+
 /**
  * Minimal interface for what the minimap needs from the canvas
  */
 export interface MinimapCanvas {
   canvas: HTMLCanvasElement
+  dpr: number
   ds: {
     scale: number
     offset: [number, number]
@@ -28,6 +31,8 @@ export interface MinimapRenderContext {
   settings: MinimapRenderSettings
   width: number
   height: number
+  decorations?: readonly ResolvedMinimapNodeDecoration[]
+  now?: number
 }
 
 interface MinimapRenderSettings {

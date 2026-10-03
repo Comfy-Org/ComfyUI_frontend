@@ -1,0 +1,115 @@
+<script setup lang="ts">
+import { Download } from '@lucide/vue'
+import { nextTick } from 'vue'
+
+import { cn } from '@comfyorg/tailwind-utils'
+
+import type { Take } from '../../../lib/workshop/cinematic-studio/reel'
+import { isUnpaid } from '../../../lib/workshop/cinematic-studio/reel'
+import type { Locale } from '../../../i18n/translations'
+import { translationsFor } from '../../../i18n/translations'
+import { studioAnalytics } from '../../../lib/workshop/cinematic-studio/analytics'
+import { captureWorkshopEvent } from '../../../scripts/posthog'
+
+const {
+  current,
+  siblings,
+  modelName,
+  takePicker = true,
+  locale = 'en'
+} = defineProps<{
+  current: Take
+  siblings: readonly Take[]
+  modelName: string
+  takePicker?: boolean
+  locale?: Locale
+}>()
+const { t } = translationsFor(locale)
+
+const emit = defineEmits<{ select: [id: string] }>()
+
+function captureDownload() {
+  if (current.status !== 'done') return
+  captureWorkshopEvent({
+    name: 'output_download_clicked',
+    properties: {
+      ...studioAnalytics(current.modelSlug),
+      output_kind: current.output.kind
+    }
+  })
+}
+
+const STEPS: Readonly<Record<string, number>> = {
+  ArrowRight: 1,
+  ArrowDown: 1,
+  ArrowLeft: -1,
+  ArrowUp: -1
+}
+
+async function onKeydown(event: KeyboardEvent) {
+  const step = STEPS[event.key]
+  const group = event.currentTarget
+  if (!step || !(group instanceof HTMLElement)) return
+  event.preventDefault()
+  const index = siblings.findIndex((take) => take.id === current.id)
+  const next = (index + step + siblings.length) % siblings.length
+  emit('select', siblings[next].id)
+  await nextTick()
+  group.querySelectorAll<HTMLElement>('[role="radio"]')[next]?.focus()
+}
+</script>
+
+<template>
+  <div class="flex max-w-full min-w-0 items-center gap-2.5">
+    <span class="shrink-0 text-sm font-semibold text-primary-warm-white">
+      {{ t('cinematic.stage.shot', { number: current.shot }) }}
+    </span>
+    <div
+      v-if="takePicker && siblings.length > 1"
+      role="radiogroup"
+      :aria-label="t('cinematic.stage.takes')"
+      class="flex gap-1"
+      @keydown="onKeydown"
+    >
+      <button
+        v-for="take in siblings"
+        :key="take.id"
+        type="button"
+        role="radio"
+        :aria-checked="take.id === current.id"
+        :tabindex="take.id === current.id ? 0 : -1"
+        :aria-description="
+          isUnpaid(take) ? t('cinematic.state.noCredits') : undefined
+        "
+        :class="
+          cn(
+            'grid size-6 place-items-center rounded-md text-xs font-medium',
+            take.id === current.id
+              ? 'bg-primary-warm-white text-primary-comfy-ink'
+              : 'text-primary-warm-gray hover:bg-transparency-white-t8',
+            isUnpaid(take) &&
+              take.id !== current.id &&
+              'text-primary-comfy-yellow ring-1 ring-primary-comfy-yellow/35 ring-inset'
+          )
+        "
+        @click="emit('select', take.id)"
+      >
+        {{ take.letter }}
+      </button>
+    </div>
+    <span class="truncate text-sm text-primary-warm-gray">
+      {{ modelName }} · {{ current.aspect }}
+    </span>
+    <a
+      v-if="current.status === 'done'"
+      :href="current.output.url"
+      :download="current.output.fileName"
+      class="grid size-8 shrink-0 place-items-center rounded-lg text-primary-comfy-canvas hover:bg-transparency-white-t8"
+      :aria-label="t('cinematic.stage.download')"
+      :title="t('workshop.output.expires')"
+      @click="captureDownload"
+    >
+      <Download class="size-4" aria-hidden="true" />
+    </a>
+  </div>
+</template>

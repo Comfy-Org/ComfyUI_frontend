@@ -1,4 +1,5 @@
 #!/usr/bin/env tsx
+import { randomUUID } from 'node:crypto'
 import {
   chmodSync,
   existsSync,
@@ -11,11 +12,11 @@ import {
 } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { pathToFileURL } from 'node:url'
 import { parseArgs } from 'node:util'
 
 import { applyEdits, modify, parse } from 'jsonc-parser'
 import type { FormattingOptions, ParseError } from 'jsonc-parser'
+import { isMainModule } from '../isMainModule'
 
 type SettingValue = boolean | string
 type Tool = 'amp' | 'claude' | 'codex'
@@ -82,13 +83,13 @@ function parseSettings(content: string): Record<string, unknown> {
 
 function writeSettings(path: string, content: string) {
   mkdirSync(dirname(path), { recursive: true })
-  const temporaryPath = `${path}.${process.pid}.tmp`
-  const mode = existsSync(path) ? statSync(path).mode : undefined
+  const temporaryPath = `${path}.${randomUUID()}.tmp`
+  const mode = existsSync(path) ? statSync(path).mode & 0o777 : 0o600
 
   try {
-    writeFileSync(temporaryPath, content, { mode })
+    writeFileSync(temporaryPath, content, { flag: 'wx', mode })
     renameSync(temporaryPath, path)
-    if (mode !== undefined) chmodSync(path, mode)
+    chmodSync(path, mode)
   } finally {
     rmSync(temporaryPath, { force: true })
   }
@@ -169,4 +170,4 @@ function main() {
   if (results.some(({ outcome }) => outcome === 'error')) process.exitCode = 1
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) main()
+if (isMainModule(import.meta.url)) main()

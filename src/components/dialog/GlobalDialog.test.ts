@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import BuilderSaveDialogContent from '@/components/builder/BuilderSaveDialogContent.vue'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import {
   onRekaFocusOutside,
@@ -17,8 +18,8 @@ import SetMemberCreditLimitDialogContent from '@/platform/workspace/components/d
 import SubscriptionRequiredDialogContentUnified from '@/platform/workspace/components/SubscriptionRequiredDialogContentUnified.vue'
 import { useDialogStore } from '@/stores/dialogStore'
 
-vi.mock(
-  '@/platform/workspace/composables/useSubscriptionCheckout',
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useSubscriptionCheckout'),
   async () => {
     const { computed, ref } = await import('vue')
 
@@ -31,10 +32,16 @@ vi.mock(
         isResubscribing: ref(false),
         previewData: ref(null),
         reactivationRequired: ref(false),
+        quoteIsCurrent: ref(false),
+        savedPaymentMethods: ref([]),
+        selectedSavedPaymentMethodId: ref(null),
         selectedTierKey: ref(null),
         selectedTeamStop: ref(null),
         selectedBillingCycle: ref('yearly'),
         activeCheckoutActionUrl: ref(null),
+        authenticationState: ref(null),
+        authenticationError: ref(null),
+        reconciliationOperationId: ref(null),
         isPolling: ref(false),
         isTeamCheckout: computed(() => false),
         previewVariant: computed(() => null),
@@ -45,6 +52,10 @@ vi.mock(
         handleAddCreditCard: vi.fn(),
         handleConfirmTransition: vi.fn(),
         handleTeamSubscribe: vi.fn(),
+        handleSubscriptionPayment: vi.fn(),
+        handleTeamSubscriptionPayment: vi.fn(),
+        applyPromotionCode: vi.fn(),
+        invalidateQuote: vi.fn(),
         handleResubscribe: vi.fn()
       })
     }
@@ -59,7 +70,17 @@ const i18n = createI18n({
       g: {
         cancel: 'Cancel',
         close: 'Close',
-        maximizeDialog: 'Maximize'
+        maximizeDialog: 'Maximize',
+        save: 'Save'
+      },
+      builderToolbar: {
+        app: 'App',
+        appDescription: 'Opens as an app by default',
+        defaultViewLabel: 'By default, this workflow will open as:',
+        filename: 'Filename',
+        nodeGraph: 'Node graph',
+        nodeGraphDescription: 'Opens as node graph by default',
+        saveAs: 'Save as'
       },
       workspacePanel: {
         members: {
@@ -250,6 +271,28 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
     ).toBeInTheDocument()
   })
 
+  it('opens the save dialog with an accessible name and description', async () => {
+    const warn = vi.spyOn(console, 'warn')
+    mountDialog()
+    const store = useDialogStore()
+
+    store.showDialog({
+      key: 'builder-save',
+      component: BuilderSaveDialogContent,
+      props: { defaultFilename: 'workflow.json' },
+      dialogComponentProps: {
+        renderer: 'reka',
+        headless: true,
+        useAutomaticLabeling: true
+      }
+    })
+
+    const dialog = await screen.findByRole('dialog', { name: 'Save as' })
+    expect(dialog).toHaveAccessibleDescription('Filename')
+    expect(screen.getByLabelText('Filename')).toHaveFocus()
+    expect(warn).not.toHaveBeenCalled()
+  })
+
   it('closes the dialog on Escape by default', async () => {
     mountDialog()
     const store = useDialogStore()
@@ -303,13 +346,13 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
 
     await screen.findByRole('dialog')
 
-    // eslint-disable-next-line testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-node-access
     const header = screen.getByText('Section classes').parentElement
     expect(header?.classList.contains('p-2')).toBe(true)
     // twMerge drops the default header padding in favor of headerClass
     expect(header?.classList.contains('px-4')).toBe(false)
 
-    // eslint-disable-next-line testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-node-access
     const body = screen.getByTestId('body').parentElement
     expect(body?.classList.contains('p-0')).toBe(true)
     expect(body?.classList.contains('px-4')).toBe(false)

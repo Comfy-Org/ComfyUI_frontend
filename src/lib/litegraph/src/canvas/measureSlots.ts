@@ -12,7 +12,6 @@ export function getNodeInputOnPos(
   y: number
 ): { index: number; input: INodeInputSlot; pos: Point } | undefined {
   const { inputs } = node
-  if (!inputs) return
 
   for (const [index, input] of inputs.entries()) {
     const pos = node.getInputPos(index)
@@ -20,7 +19,7 @@ export function getNodeInputOnPos(
     // TODO: Find a cheap way to measure text, and do it on node label change instead of here
     // Input icon width + text approximation
     const nameLength =
-      input.label?.length ?? input.localized_name?.length ?? input.name?.length
+      input.label?.length ?? input.localized_name?.length ?? input.name.length
     const width = 20 + (nameLength || 3) * 7
 
     if (isInRectangle(x, y, pos[0] - 10, pos[1] - 10, width, 20)) {
@@ -35,7 +34,6 @@ export function getNodeOutputOnPos(
   y: number
 ): { index: number; output: INodeOutputSlot; pos: Point } | undefined {
   const { outputs } = node
-  if (!outputs) return
 
   for (const [index, output] of outputs.entries()) {
     const pos = node.getOutputPos(index)

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '../../i18n/translations'
 import type { PlanFeatureGroup } from './PricingPlanFeatureList.vue'
 import { computed, ref } from 'vue'
 
@@ -10,7 +10,7 @@ import {
   formatTeamCreditsShort,
   teamCreditTiers
 } from '../../data/teamCreditTiers'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import Button from '../ui/button/Button.vue'
 import Slider from '../ui/slider/Slider.vue'
 import PricingCard from './PricingCard.vue'
@@ -19,10 +19,16 @@ import PricingPlanFeatureList from './PricingPlanFeatureList.vue'
 import PricingPlanLabel from './PricingPlanLabel.vue'
 import PricingPrice from './PricingPrice.vue'
 
-const { locale = 'en', billingPeriod } = defineProps<{
+const {
+  locale = 'en',
+  billingPeriod,
+  inviteMembersKey = 'pricing.feature.inviteMembers'
+} = defineProps<{
   billingPeriod: 'monthly' | 'yearly'
   locale?: Locale
+  inviteMembersKey?: TranslationKey
 }>()
+const { t } = translationsFor(locale)
 
 const teamCreditTierIndex = ref<number[]>([2])
 
@@ -34,6 +40,25 @@ const selectedTeamPrice = computed(() => {
   return billingPeriod === 'yearly' ? tier.yearlyPrice : tier.monthlyPrice
 })
 
+const MONTHS_PER_YEAR = 12
+
+const amountForBillingPeriod = (monthlyAmount: number) =>
+  billingPeriod === 'yearly' ? monthlyAmount * MONTHS_PER_YEAR : monthlyAmount
+
+const teamCredits = computed(() =>
+  amountForBillingPeriod(selectedTeamTier.value.credits)
+)
+const teamVideos = computed(() =>
+  amountForBillingPeriod(selectedTeamTier.value.videos)
+)
+const teamCreditsLabel = computed(() =>
+  t(
+    billingPeriod === 'yearly'
+      ? 'pricing.creditsLabelYearly'
+      : 'pricing.creditsLabel'
+  )
+)
+
 function fmtPrice(n: number): string {
   return `$${n.toLocaleString('en-US')}`
 }
@@ -43,16 +68,17 @@ const teamSaving = computed<string | undefined>(() => {
   const discounted = selectedTeamPrice.value
   if (base === discounted) return undefined
   const pct = Math.round(((base - discounted) / base) * 1000) / 10
-  return t('pricing.savePercent', locale)
-    .replace('{pct}', String(pct))
-    .replace('{amount}', fmtPrice(base - discounted))
+  return t('pricing.savePercent', {
+    pct,
+    amount: fmtPrice(base - discounted)
+  })
 })
 
-const featureGroups: PlanFeatureGroup[] = [
+const featureGroups = computed<PlanFeatureGroup[]>(() => [
   {
     titleKey: 'pricing.plan.team.everythingInProPlus',
     features: [
-      { text: 'pricing.feature.inviteMembers' },
+      { text: inviteMembersKey },
       { text: 'pricing.feature.concurrentWorkflows' },
       { text: 'pricing.feature.sharedCreditPool' },
       { text: 'pricing.feature.roleBasedPermissions' }
@@ -65,7 +91,7 @@ const featureGroups: PlanFeatureGroup[] = [
       { text: 'pricing.plan.team.projects', status: 'coming' }
     ]
   }
-]
+])
 
 const ctaHref = computed(() =>
   subscribeUrl(
@@ -83,15 +109,15 @@ const ctaHref = computed(() =>
         <div
           class="flex flex-col items-start gap-2 lg:flex-row lg:items-center lg:gap-4"
         >
-          <PricingPlanLabel :label="t('pricing.plan.team.label', locale)" />
+          <PricingPlanLabel :label="t('pricing.plan.team.label')" />
           <p class="text-sm text-primary-warm-gray">
-            {{ t('pricing.team.description', locale) }}
+            {{ t('pricing.team.description') }}
           </p>
         </div>
 
         <PricingPrice
           :price="fmtPrice(selectedTeamPrice)"
-          :period="t('pricing.plan.period', locale)"
+          :period="t('pricing.plan.period')"
           :original-price="
             selectedTeamTier.basePrice !== selectedTeamPrice
               ? fmtPrice(selectedTeamTier.basePrice)
@@ -111,8 +137,8 @@ const ctaHref = computed(() =>
             :max="teamCreditTiers.length - 1"
             :step="1"
             :ticks="teamCreditTiers.length"
-            :thumb-label="t('pricing.team.sliderLabel', locale)"
-            :thumb-value-text="`${selectedTeamTier.credits.toLocaleString('en-US')} ${t('pricing.creditsLabel', locale)}, ${fmtPrice(selectedTeamPrice)} ${t('pricing.plan.period', locale)}`"
+            :thumb-label="t('pricing.team.sliderLabel')"
+            :thumb-value-text="`${teamCredits.toLocaleString('en-US')} ${teamCreditsLabel}, ${fmtPrice(selectedTeamPrice)} ${t('pricing.plan.period')}`"
           >
             <template #tick="{ index, active }">
               <CreditsIcon
@@ -137,10 +163,10 @@ const ctaHref = computed(() =>
         </div>
 
         <PricingCredits
-          :credits="selectedTeamTier.credits.toLocaleString('en-US')"
-          :label="t('pricing.creditsLabel', locale)"
+          :credits="teamCredits.toLocaleString('en-US')"
+          :label="teamCreditsLabel"
           estimate-key="pricing.team.videosEstimate"
-          :estimate-count="selectedTeamTier.videos.toLocaleString('en-US')"
+          :estimate-count="teamVideos.toLocaleString('en-US')"
           :locale
         />
       </div>
@@ -150,7 +176,7 @@ const ctaHref = computed(() =>
 
         <div class="mt-8">
           <Button :href="ctaHref" class="w-full" variant="outline">
-            {{ t('pricing.plan.team.cta', locale) }}
+            {{ t('pricing.plan.team.cta') }}
           </Button>
         </div>
       </div>

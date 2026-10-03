@@ -11,10 +11,10 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Slider from '@/components/ui/slider/Slider.vue'
+import { getStopDiscountedMonthlyUsd } from '@comfyorg/account-ui/billing/catalog'
 import {
   DEFAULT_TEAM_PLAN_STOP_INDEX,
-  TEAM_PLAN_CREDIT_STOPS,
-  getStopDiscountedMonthlyUsd
+  TEAM_PLAN_CREDIT_STOPS
 } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { CreditStop } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 

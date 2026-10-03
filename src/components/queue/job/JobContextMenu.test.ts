@@ -49,18 +49,6 @@ const popoverStub = defineComponent({
   `
 })
 
-const buttonStub = {
-  props: {
-    disabled: { type: Boolean, default: false },
-    ariaLabel: { type: String, default: undefined }
-  },
-  template: `
-    <button :disabled="disabled" :aria-label="ariaLabel">
-      <slot />
-    </button>
-  `
-}
-
 type MenuHandle = { open: (e: Event) => Promise<void>; hide: () => void }
 
 const createEntries = (): MenuEntry[] => [
@@ -98,7 +86,7 @@ function renderMenu(entries: MenuEntry[], onAction?: ReturnType<typeof vi.fn>) {
   const { unmount } = render(Wrapper, {
     props: { onAction: actionSpy },
     global: {
-      stubs: { Popover: popoverStub, Button: buttonStub }
+      stubs: { Popover: popoverStub }
     }
   })
 
@@ -172,7 +160,7 @@ describe('JobContextMenu', () => {
     await nextTick()
     expect(screen.getByTestId('popover')).toBeInTheDocument()
 
-    // eslint-disable-next-line testing-library/prefer-user-event
+    // oxlint-disable-next-line testing-library/prefer-user-event
     await fireEvent.pointerDown(outside)
     await nextTick()
 
@@ -191,7 +179,7 @@ describe('JobContextMenu', () => {
     await nextTick()
     expect(screen.getByTestId('popover')).toBeInTheDocument()
 
-    // eslint-disable-next-line testing-library/prefer-user-event
+    // oxlint-disable-next-line testing-library/prefer-user-event
     await fireEvent.pointerDown(trigger)
     await nextTick()
     expect(screen.getByTestId('popover')).toBeInTheDocument()

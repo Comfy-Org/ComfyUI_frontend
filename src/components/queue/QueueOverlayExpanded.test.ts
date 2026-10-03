@@ -5,17 +5,11 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { JobListItem } from '@/composables/queue/useJobList'
 
-vi.mock('@/composables/queue/useJobMenu', () => ({
+vi.mock<unknown>(import('@/composables/queue/useJobMenu'), () => ({
   useJobMenu: () => ({ jobMenuEntries: [] })
 }))
 
-vi.mock('@/composables/useErrorHandling', () => ({
-  useErrorHandling: () => ({
-    wrapWithErrorHandlingAsync: <T extends (...args: never[]) => unknown>(
-      fn: T
-    ) => fn
-  })
-}))
+vi.mock(import('@/composables/useErrorHandling'))
 
 import QueueOverlayExpanded from '@/components/queue/QueueOverlayExpanded.vue'
 
@@ -79,7 +73,7 @@ describe('QueueOverlayExpanded', () => {
       props: defaultProps,
       global: { stubs }
     })
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('.job-assets-list-stub')).toBeTruthy()
   })
 

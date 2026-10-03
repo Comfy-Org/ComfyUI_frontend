@@ -11,7 +11,6 @@ export function useViewErrorsInGraph() {
     canvasStore.linearMode = false
     if (canvasStore.canvas) {
       canvasStore.canvas.deselectAll()
-      canvasStore.updateSelectedItems()
     }
 
     rightSidePanelStore.openPanel('errors')

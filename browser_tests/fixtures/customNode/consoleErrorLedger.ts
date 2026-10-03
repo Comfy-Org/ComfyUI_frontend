@@ -160,16 +160,6 @@ const CONSOLE_ERROR_ALLOWLIST: Record<string, AllowlistRule[]> = {
         'make the audio loader tolerate an unavailable configured value and remove this entry'
     }
   ],
-  'ComfyUI_Fill-Nodes': [
-    {
-      id: 'fill-empty-metadata-node',
-      pattern:
-        /Failed to load resource.*404.*https:\/\/api\.comfy\.org\/comfy-nodes\/\/node/,
-      reason: 'pack metadata lookup requests an empty node name on creation',
-      restore:
-        'skip metadata requests without a node name and remove this entry'
-    }
-  ],
   ComfyUI_LayerStyle_Advance: [
     {
       id: 'duplicate-color-overlay',

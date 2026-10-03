@@ -2,10 +2,14 @@ import { describe, expect, it } from 'vitest'
 
 import type { ComfyEvent } from './events'
 import {
+  deriveDirectoryEvents,
   deriveFeaturedEvents,
   derivePastEvents,
   deriveUpcomingEvents,
+  directoryEvents,
   eventJsonLdNode,
+  eventOgImage,
+  eventVideoThumbnail,
   eventStatus,
   pastEvents,
   toCalendarEvent,
@@ -40,14 +44,32 @@ describe('toCalendarEvent', () => {
     })
   })
 
+  it('falls back to English for empty localized fields and links', () => {
+    const event: ComfyEvent = {
+      ...baseEvent,
+      title: { ...baseEvent.title, 'zh-CN': '' },
+      description: { ...baseEvent.description, 'zh-CN': '' },
+      location: { ...baseEvent.location!, 'zh-CN': '' },
+      link: {
+        href: { ...baseEvent.link!.href, 'zh-CN': '' }
+      }
+    }
+
+    expect(toCalendarEvent(event, 'zh-CN')).toMatchObject({
+      title: 'Test Event',
+      description: 'A livestream.\n\nhttps://comfy.org/launches',
+      location: 'Online'
+    })
+  })
+
   it('links events that have their own page to that page', () => {
     const event: ComfyEvent = { ...baseEvent, liveVideoId: 'abc123' }
 
     expect(toCalendarEvent(event, 'en').description).toBe(
-      'A livestream.\n\nhttps://comfy.org/events/test-event'
+      'A livestream.\n\nhttps://comfy.org/events/test-event/'
     )
     expect(toCalendarEvent(event, 'zh-CN').description).toBe(
-      '直播。\n\nhttps://comfy.org/zh-CN/events/test-event'
+      '直播。\n\nhttps://comfy.org/zh-CN/events/test-event/'
     )
   })
 
@@ -142,6 +164,15 @@ describe('event list derivation', () => {
       'older'
     ])
   })
+
+  it('lists the whole directory latest-first', () => {
+    expect(deriveDirectoryEvents(list).map((event) => event.id)).toEqual([
+      'later',
+      'sooner',
+      'done',
+      'older'
+    ])
+  })
 })
 
 describe('deriveFeaturedEvents', () => {
@@ -182,8 +213,8 @@ describe('deriveFeaturedEvents', () => {
   it('links slides to the event page when the event has one', () => {
     const [past, upcoming] = deriveFeaturedEvents(list, now)
 
-    expect(past.href?.en).toBe('/events/first-slide')
-    expect(upcoming.href?.en).toBe('/events/second-slide')
+    expect(past.href?.en).toBe('/events/first-slide/')
+    expect(upcoming.href?.en).toBe('/events/second-slide/')
     expect(upcoming.autoplayMs).toBe(5000)
     expect(upcoming.showTitle).toBe(false)
   })
@@ -228,12 +259,181 @@ describe('eventJsonLdNode', () => {
       location: { '@type': 'Place', name: 'San Francisco' }
     })
   })
+
+  it('falls back to English for empty localized links and venue names', () => {
+    const onlineEvent: ComfyEvent = {
+      ...baseEvent,
+      link: { href: { ...baseEvent.link!.href, en: '/english', 'zh-CN': '' } }
+    }
+    const offlineEvent: ComfyEvent = {
+      ...baseEvent,
+      location: { en: 'San Francisco', 'zh-CN': '' }
+    }
+    const zhInput = { ...input, locale: 'zh-CN' as const }
+
+    expect(eventJsonLdNode(onlineEvent, zhInput).location).toMatchObject({
+      '@type': 'VirtualLocation',
+      url: 'https://comfy.org/english/'
+    })
+    expect(eventJsonLdNode(offlineEvent, zhInput).location).toMatchObject({
+      '@type': 'Place',
+      name: 'San Francisco'
+    })
+  })
+})
+
+describe('nyc-creative-ai-september-forum event entry', () => {
+  const event = directoryEvents.find(
+    (candidate) => candidate.id === 'nyc-creative-ai-september-forum'
+  )
+
+  it('exists with the expected core fields', () => {
+    expect(event).toMatchObject({
+      category: 'meetup',
+      organizer: 'community',
+      title: { en: 'ZeroSpace: NYC Creative AI September Forum' },
+      location: { en: 'New York, NY' },
+      startDateTime: '2026-09-22T18:00:00-04:00',
+      endDateTime: '2026-09-22T21:00:00-04:00',
+      link: { href: { en: 'https://luma.com/of64wqdr' } }
+    })
+  })
+})
+
+describe('Tech Week panel event thumbnails', () => {
+  it.for([
+    {
+      id: 'sf-tech-week-tool-panel',
+      src: 'https://github.com/user-attachments/assets/07c6b3bf-9aa3-49b7-b8ad-1b4300802473'
+    },
+    {
+      id: 'la-tech-week-tool-panel',
+      src: 'https://github.com/user-attachments/assets/916211b0-5da9-4c91-b817-bc898a36cfca'
+    }
+  ])('$id uses its supplied thumbnail', ({ id, src }) => {
+    const event = directoryEvents.find((candidate) => candidate.id === id)
+
+    expect(event?.media?.src).toBe(src)
+  })
 })
 
 describe('site event data', () => {
+  it('contains one canonical October 1 Developer Platform event', () => {
+    const matches = directoryEvents.filter(
+      (event) =>
+        event.title.en ===
+        'Comfy Developer Platform: Building with Comfy API & Comfy Router'
+    )
+
+    expect(matches.map((event) => event.id)).toEqual(['dev-platform-oct-1'])
+  })
+
   it('has unique event ids', () => {
     const ids = [...upcomingEvents, ...pastEvents].map((event) => event.id)
 
     expect(new Set(ids).size).toBe(ids.length)
+  })
+
+  // The directory's organizer filter drops any event that carries no
+  // organizer, so an unlabelled event is unreachable from that select.
+  it('labels every event with an organizer', () => {
+    for (const event of directoryEvents) {
+      expect({ id: event.id, missing: event.organizer === undefined }).toEqual({
+        id: event.id,
+        missing: false
+      })
+    }
+  })
+
+  // Marketing asked for no dashes anywhere in the events copy, in either
+  // locale. This guards the whole rendered surface rather than the strings
+  // that happened to have one when the request came in.
+  it('keeps em and en dashes out of every rendered string', () => {
+    const dash = /[\u2012-\u2015\u2212]/
+    for (const event of directoryEvents) {
+      for (const locale of ['en', 'zh-CN'] as const) {
+        const strings = [
+          event.title[locale],
+          event.description[locale],
+          event.location?.[locale],
+          event.dateLabel?.[locale]
+        ]
+        for (const value of strings) {
+          if (value) {
+            expect({
+              event: `${event.id}.${locale}`,
+              hasDash: dash.test(value)
+            }).toEqual({ event: `${event.id}.${locale}`, hasDash: false })
+          }
+        }
+      }
+    }
+  })
+
+  // The map view pins every event that has coords, so a virtual event with
+  // coords would render a bogus pin.
+  it('gives coords only to in-person events, within valid ranges', () => {
+    for (const event of directoryEvents) {
+      if (event.location?.en === 'Online') {
+        expect({ id: event.id, coords: event.coords }).toEqual({
+          id: event.id,
+          coords: undefined
+        })
+      }
+      if (event.coords) {
+        expect({
+          id: event.id,
+          validLatitude: Math.abs(event.coords.lat) <= 90,
+          validLongitude: Math.abs(event.coords.lng) <= 180
+        }).toEqual({
+          id: event.id,
+          validLatitude: true,
+          validLongitude: true
+        })
+      }
+    }
+  })
+})
+
+describe('eventOgImage', () => {
+  const alt = { en: 'Card', 'zh-CN': '卡片' }
+
+  it.for([
+    [
+      'an image',
+      { type: 'image', src: 'https://cdn/card.png', alt },
+      'https://cdn/card.png'
+    ],
+    [
+      'a video poster',
+      {
+        type: 'video',
+        src: 'https://cdn/clip.mp4',
+        alt,
+        poster: 'https://cdn/still.png'
+      },
+      'https://cdn/still.png'
+    ],
+    [
+      'nothing for a video without a poster',
+      { type: 'video', src: 'https://cdn/clip.mp4', alt },
+      undefined
+    ],
+    ['nothing without media', undefined, undefined]
+  ] as const)('returns %s', ([, media, expected]) => {
+    expect(eventOgImage({ ...baseEvent, media })).toBe(expected)
+  })
+})
+
+describe('eventVideoThumbnail', () => {
+  it('falls back to the default card for a video without a poster', () => {
+    const media = {
+      type: 'video',
+      src: 'https://cdn/clip.mp4',
+      alt: { en: 'Clip', 'zh-CN': '片段' }
+    } as const
+    expect(eventVideoThumbnail({ ...baseEvent, media })).toBe(
+      'https://media.comfy.org/website/comfy.webp'
+    )
   })
 })

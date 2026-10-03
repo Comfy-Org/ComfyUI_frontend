@@ -41,14 +41,6 @@ async function runOnBackgroundTab(
 }
 
 test.describe('Workflow tab status indicator', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.Workflow.WorkflowTabsPosition',
-      'Topbar'
-    )
-    await comfyPage.setup()
-  })
-
   test('replaces the running indicator with completed when the job finishes', async ({
     comfyPage,
     getWebSocket
@@ -81,12 +73,7 @@ test.describe('Workflow tab status indicator', () => {
 
     exec.executionError(jobId, KSAMPLER_NODE, 'boom')
 
-    // The error opens a modal dialog that aria-hides the rest of the app
-    // (focus trap), taking the tab out of the accessibility tree. Dismiss it
-    // so the badge is reachable by role.
     const errorDialog = comfyPage.page.getByTestId(TestIds.dialogs.errorDialog)
-    await expect(errorDialog).toBeVisible()
-    await comfyPage.page.keyboard.press('Escape')
     await expect(errorDialog).toBeHidden()
 
     await expect(
