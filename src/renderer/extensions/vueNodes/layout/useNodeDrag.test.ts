@@ -2,6 +2,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import * as VueUse from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick, ref, watch } from 'vue'
 
 import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
@@ -93,6 +94,7 @@ function pointerEvent(clientX: number, clientY: number): PointerEvent {
 }
 
 beforeEach(() => {
+  Object.assign(layoutStore, { isDraggingVueNodes: ref(false) })
   vi.mocked(layoutStore.getNodeLayout).mockImplementation(
     (_rootGraphId, nodeId) => {
       const layout = testState.nodeLayouts.get(nodeId)
@@ -261,6 +263,32 @@ describe('useNodeDrag', () => {
       ],
       { source: LayoutSource.Vue }
     )
+  })
+
+  it('cancels pending movement when dragging is interrupted', async () => {
+    Object.assign(useCanvasStore(), { selectedNodeIds: new Set([node1]) })
+    testState.nodeLayouts.set('1', {
+      position: { x: 50, y: 80 },
+      size: { width: 180, height: 110 }
+    })
+    vi.mocked(VueUse.whenever).mockImplementationOnce((source, callback) =>
+      watch(source, (value, oldValue, onCleanup) => {
+        if (value) callback(value, oldValue, onCleanup)
+      })
+    )
+    const { startDrag, handleDrag } = useNodeDrag()
+    layoutStore.isDraggingVueNodes.value = true
+    await nextTick()
+    startDrag(pointerEvent(5, 10), node1)
+    handleDrag(pointerEvent(25, 30), node1)
+
+    layoutStore.isDraggingVueNodes.value = false
+    await nextTick()
+
+    expect(testState.cancelAnimationFrame).toHaveBeenCalledWith(1)
+    expect(testState.mutationFns.batchMoveNodes).not.toHaveBeenCalled()
+    handleDrag(pointerEvent(45, 50), node1)
+    expect(testState.mutationFns.batchMoveNodes).not.toHaveBeenCalled()
   })
 })
 

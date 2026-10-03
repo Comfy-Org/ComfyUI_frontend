@@ -16,6 +16,7 @@ import {
   idleGesture,
   reduceGesture
 } from '@/lib/litegraph/src/canvas/reduceGesture'
+import { watchGestureInterrupts } from '@/lib/litegraph/src/canvas/watchGestureInterrupts'
 import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
@@ -45,6 +46,7 @@ export function useNodePointerInteractions(
 
   let gesture: GestureState = idleGesture
   let press: Press | null = null
+  let stopWatchingInterrupts: (() => void) | undefined
 
   function canDrag() {
     return !toValue(nodeStateRef).flags.pinned
@@ -66,10 +68,17 @@ export function useNodePointerInteractions(
   }
 
   function clearPress() {
-    if (press?.captureTarget?.hasPointerCapture(press.pointerId)) {
-      press.captureTarget.releasePointerCapture(press.pointerId)
-    }
+    stopWatchingInterrupts?.()
+    stopWatchingInterrupts = undefined
+    const completedPress = press
     press = null
+    if (
+      completedPress?.captureTarget?.hasPointerCapture(completedPress.pointerId)
+    ) {
+      completedPress.captureTarget.releasePointerCapture(
+        completedPress.pointerId
+      )
+    }
   }
 
   function cancel(event: PointerEvent) {
@@ -78,6 +87,10 @@ export function useNodePointerInteractions(
     } finally {
       layoutStore.isDraggingVueNodes.value = false
     }
+  }
+
+  function cancelPress() {
+    if (press) cancel(press.event)
   }
 
   function selectNode(activePress: Press, sticky = false) {
@@ -172,6 +185,11 @@ export function useNodePointerInteractions(
       dragStarted: false,
       captureTarget
     }
+    stopWatchingInterrupts = watchGestureInterrupts(
+      captureTarget,
+      event.pointerId,
+      cancelPress
+    )
     dispatch(
       {
         type: 'down',
@@ -215,12 +233,13 @@ export function useNodePointerInteractions(
   }
 
   function onContextmenu(event: MouseEvent) {
-    if (gesture.phase !== 'dragging' || !press) return
+    if (gesture.phase !== 'dragging') return
     event.preventDefault()
-    cancel(press.event)
+    cancelPress()
   }
 
   onScopeDispose(() => {
+    cancelPress()
     layoutStore.isDraggingVueNodes.value = false
     clearPress()
   })
