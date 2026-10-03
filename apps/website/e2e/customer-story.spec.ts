@@ -6,12 +6,15 @@ for (const prefix of ['', '/zh-CN']) {
   test(`YUI story opens with its film and keeps its directory cover (${prefix || 'en'}) @smoke`, async ({
     page
   }) => {
-    const coverRequest = page.waitForRequest(
-      'https://media.comfy.org/website/customers/hakoniwa-yui/cover.webp'
-    )
     await page.goto(`${prefix}/customers/`)
-    await coverRequest
     const story = page.locator(`a[href="${prefix}/customers/hakoniwa-yui/"]`)
+    const cover = story.getByTestId('customer-story-cover')
+    await cover.scrollIntoViewIfNeeded()
+    await expect(cover).toBeVisible()
+    await expect(cover).toHaveCSS(
+      'background-image',
+      'url("https://media.comfy.org/website/customers/hakoniwa-yui/cover.webp")'
+    )
     await story.click()
     await expect(page).toHaveURL(`${prefix}/customers/hakoniwa-yui/`)
     await expect(page.getByRole('heading', { level: 1 })).toContainText('YUI')
