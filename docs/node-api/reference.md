@@ -615,17 +615,22 @@ icon, optional label/tooltip, and `run(event)`. Their `ChromeItemHandle` can
 
 - `url(route): string`
 - `assetUrl(route): string`
+- `ownUrl(route): string`
+- `ownFetch(route, init?): Promise<Response>`
 - `sessionId(): string | undefined`
 - `on(event, listener): Unsubscribe`
 - `fetch(route, init?): Promise<Response>`
 
 ### `WorkflowHandle`
 
-- `open(data: WorkflowData): Promise<void>`
+- `open(data: WorkflowData, options?: WorkflowOpenOptions): Promise<void>`
 - `applyTextReplacements(value: string): string`
 - `documentId(): string | undefined`
 
 `WorkflowData` is parsed workflow JSON represented as a readonly record.
+`WorkflowOpenOptions` defaults `mode` to `replace`. `new` opens a separate
+workflow tab. Its optional `name` is a bounded display name, never a path, and
+is accepted only with `mode: 'new'`.
 `documentId()` is a process-local identity minted each time a workflow finishes
 loading. It changes when the document is replaced, even by a second load of the
 same file, and is absent before the first workflow load.
@@ -652,17 +657,18 @@ This block is generated from `CAPABILITIES` in `comfyApi.ts`.
 `defs.inputValues`, `defs.localizedInputNames`, `defs.typeCompatibility`,
 `execution.node`, `graph.nodes`, `graph.selection`,
 `interaction.nodeDragEnd`, `interaction.nodeMoved`, `interaction.state`,
-`node.changeScope`, `node.connectVeto`, `node.fileDrop`, `node.geometry`,
-`node.menu`, `node.onPreview`, `node.onSerialize`, `node.resolve`,
-`node.sizeConstraints`, `queue.disableAutoQueue`, `queue.settings`,
-`serialization.control`, `settings`, `slots.connect`, `slots.connectedType`,
-`slots.dynamic`, `slots.identity`, `slots.layout`, `slots.localizedName`,
-`slots.moveLinks`, `slots.resolvedSource`, `slots.retype`,
-`slots.widgetConfig`, `storage`, `supply.outputs`, `supply.resolved`,
-`system.monitor`, `ui.sidebarTab`, `viewport.changed`, `widgets.canvas`,
-`widgets.create`, `widgets.height`, `widgets.hidden`, `widgets.linked`,
-`widgets.mount`, `widgets.reorder`, `widgets.textInteraction`,
-`widgets.typeContext`, `workflow.open`, `workflow.textReplacements`.
+`models.sidecar`, `node.changeScope`, `node.connectVeto`, `node.fileDrop`,
+`node.geometry`, `node.menu`, `node.onPreview`, `node.onSerialize`,
+`node.resolve`, `node.sizeConstraints`, `queue.disableAutoQueue`,
+`queue.settings`, `serialization.control`, `settings`, `slots.connect`,
+`slots.connectedType`, `slots.dynamic`, `slots.identity`, `slots.layout`,
+`slots.localizedName`, `slots.moveLinks`, `slots.resolvedSource`,
+`slots.retype`, `slots.widgetConfig`, `storage`, `supply.outputs`,
+`supply.resolved`, `system.monitor`, `ui.sidebarTab`, `viewport.changed`,
+`widgets.canvas`, `widgets.create`, `widgets.height`, `widgets.hidden`,
+`widgets.linked`, `widgets.mount`, `widgets.reorder`,
+`widgets.textInteraction`, `widgets.typeContext`, `workflow.open`,
+`workflow.open.new`, `workflow.textReplacements`.
 <!-- node-api-capabilities:end -->
 
 Use `comfy.capabilities()` at runtime. The generated block exists for discovery

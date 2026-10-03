@@ -52,7 +52,52 @@ describe('WorkflowHandle.open', () => {
 
     await api.open(workflow)
 
-    expect(openWorkflow).toHaveBeenCalledWith(workflow)
+    expect(openWorkflow).toHaveBeenCalledWith(workflow, { mode: 'replace' })
+  })
+
+  it('delegates a separately named workflow document', async () => {
+    const openWorkflow = vi.fn(() => Promise.resolve())
+    const api = createWorkflowApi(noGraph, openWorkflow)
+    const workflow = { nodes: [] }
+
+    await api.open(workflow, { mode: 'new', name: 'Recovered snapshot' })
+
+    expect(openWorkflow).toHaveBeenCalledWith(workflow, {
+      mode: 'new',
+      name: 'Recovered snapshot'
+    })
+  })
+
+  it.for([
+    { options: null, message: /must be an object/ },
+    { options: [], message: /must be an object/ },
+    { options: { mode: 'append' }, message: /mode must be/ },
+    {
+      options: { mode: 'replace', name: 'Renamed' },
+      message: /requires mode new/
+    },
+    { options: { mode: 'new', name: '' }, message: /bounded display name/ },
+    {
+      options: { mode: 'new', name: '../escape' },
+      message: /bounded display name/
+    },
+    {
+      options: { mode: 'new', name: 'folder\\escape' },
+      message: /bounded display name/
+    },
+    {
+      options: { mode: 'new', name: `x${'a'.repeat(128)}` },
+      message: /bounded display name/
+    },
+    { options: { mode: 'new', extra: true }, message: /unknown field/ }
+  ])('rejects invalid workflow options %#', async ({ options, message }) => {
+    const openWorkflow = vi.fn(() => Promise.resolve())
+    const api = createWorkflowApi(noGraph, openWorkflow)
+
+    await expect(
+      Reflect.apply(api.open, api, [{ nodes: [] }, options]) as Promise<void>
+    ).rejects.toThrow(message)
+    expect(openWorkflow).not.toHaveBeenCalled()
   })
 })
 

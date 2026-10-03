@@ -104,3 +104,14 @@ describe('fetch', () => {
     expect(() => backend.fetch('my-pack/items')).toThrow(/must start with/)
   })
 })
+
+describe('pack-owned routes', () => {
+  it('fails closed when no secure pack identity is available', () => {
+    const backend = createBackendApi()
+
+    expect(() => backend.ownUrl('/items')).toThrow(/Secure Nodes pack sandbox/)
+    expect(() => backend.ownFetch('/items')).toThrow(
+      /Secure Nodes pack sandbox/
+    )
+  })
+})

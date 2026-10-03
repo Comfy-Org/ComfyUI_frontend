@@ -40,6 +40,16 @@ export interface BackendHandle {
    */
   assetUrl(route: string): string
   /**
+   * Builds the private URL for a route declared by this Secure Nodes pack.
+   * The route is pack-relative and must start with `/`.
+   */
+  ownUrl(route: string): string
+  /**
+   * Calls a route declared by this Secure Nodes pack with host credentials.
+   * The route is pack-relative and must start with `/`.
+   */
+  ownFetch(route: string, init?: RequestInit): Promise<Response>
+  /**
    * Identifies this frontend connection to a pack's own backend route.
    * Undefined until the backend establishes the connection; do not persist it.
    */
@@ -80,6 +90,18 @@ export function createBackendApi(): BackendHandle {
         )
       }
       return api.fileURL(route)
+    },
+
+    ownUrl() {
+      throw new ComfyApiError(
+        'Pack-owned routes are available only inside a Secure Nodes pack sandbox.'
+      )
+    },
+
+    ownFetch() {
+      throw new ComfyApiError(
+        'Pack-owned routes are available only inside a Secure Nodes pack sandbox.'
+      )
     },
 
     sessionId() {

@@ -320,6 +320,65 @@ describe('ComfyApp', () => {
         else window.comfy = previousComfy
       }
     })
+
+    it('opens new-mode API workflows in a distinct temporary document', async () => {
+      const previousComfy = window.comfy
+      delete window.comfy
+      for (const id of [
+        'comfyui-body-top',
+        'comfyui-body-left',
+        'comfyui-body-right',
+        'comfyui-body-bottom',
+        'graph-canvas-container'
+      ]) {
+        const element = document.createElement('div')
+        element.id = id
+        document.body.append(element)
+      }
+      const workflowStore = useWorkflowStore()
+      const active = fromPartial<LoadedComfyWorkflow>({
+        path: 'workflows/current.json'
+      })
+      const created = fromPartial<ComfyWorkflow>({
+        path: 'workflows/Recovered snapshot.json'
+      })
+      workflowStore.activeWorkflow = active
+      const createNew = vi
+        .spyOn(workflowStore, 'createNewTemporary')
+        .mockReturnValue(created)
+      const load = vi
+        .spyOn(app, 'loadGraphData')
+        .mockResolvedValue(created as LoadedComfyWorkflow)
+      const stopAfterExtensionLoad = new Error('Stop after extension load')
+      const replacement = createWorkflowGraphData()
+      const separate = createWorkflowGraphData()
+      mockExtensionService.loadExtensions.mockImplementationOnce(async () => {
+        await window.comfy!.workflow.open(replacement)
+        await window.comfy!.workflow.open(separate, {
+          mode: 'new',
+          name: 'Recovered snapshot'
+        })
+        throw stopAfterExtensionLoad
+      })
+
+      try {
+        await expect(app.setup(document.createElement('canvas'))).rejects.toBe(
+          stopAfterExtensionLoad
+        )
+        expect(createNew).toHaveBeenCalledWith(
+          'Recovered snapshot.json',
+          separate
+        )
+        expect(load).toHaveBeenNthCalledWith(1, replacement, true, true, active)
+        expect(load).toHaveBeenNthCalledWith(2, separate, true, true, created)
+      } finally {
+        load.mockRestore()
+        createNew.mockRestore()
+        resetComfyApi()
+        if (previousComfy === undefined) delete window.comfy
+        else window.comfy = previousComfy
+      }
+    })
   })
 
   describe('loadGraphData', () => {

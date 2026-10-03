@@ -10,7 +10,7 @@ import { useCanvasPositionConversion } from '@/composables/element/useCanvasPosi
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { setBackendNodeText, st, t } from '@/i18n'
-import { normalizeI18nKey } from '@/utils/formatUtil'
+import { appendJsonExt, normalizeI18nKey } from '@/utils/formatUtil'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import { createMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
@@ -1014,8 +1014,25 @@ export class ComfyApp {
     // Which the API cannot see for itself: ChangeTracker lives up here.
     provideGraphLoadingState(() => ChangeTracker.isLoadingGraph)
     installComfyApi(() => useCanvasStore().currentGraph, {
-      openWorkflow: async (data) => {
-        await this.loadGraphData(data as ComfyWorkflowJSON)
+      openWorkflow: async (data, options) => {
+        const workflowStore = useWorkspaceStore().workflow
+        let createdWorkflow: ComfyWorkflow | undefined
+        const workflow =
+          options.mode === 'new'
+            ? (createdWorkflow = workflowStore.createNewTemporary(
+                options.name ? appendJsonExt(options.name) : undefined,
+                data as ComfyWorkflowJSON
+              ))
+            : workflowStore.activeWorkflow
+        const loaded = await this.loadGraphData(
+          data as ComfyWorkflowJSON,
+          true,
+          true,
+          workflow
+        )
+        if (loaded === false && createdWorkflow) {
+          await workflowStore.closeWorkflow(createdWorkflow)
+        }
       },
       refreshDefinitions: () => this.refreshComboInNodes()
     })

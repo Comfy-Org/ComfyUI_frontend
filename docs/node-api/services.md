@@ -240,6 +240,21 @@ route is API-relative and must start with `/`.
 `backend.url(route)` builds the absolute API URL but does not attach credentials
 to a later plain `fetch()`. Prefer `backend.fetch()` for API requests.
 
+### Pack-owned declared routes
+
+Secure Nodes packs call routes from their own `secure-nodes.json` declaration
+without knowing or constructing the host's private route base:
+
+```js
+const response = await comfy.backend.ownFetch('/presets')
+const streamUrl = comfy.backend.ownUrl('/preview')
+```
+
+Both paths are relative to the calling pack and must begin with `/`. The host
+binds the request to that pack's route namespace. These methods fail when the
+pack has no declared routes and are unavailable outside a Secure Nodes pack
+sandbox.
+
 ### Static host files
 
 ```js
@@ -294,6 +309,20 @@ await comfy.workflow.open(data)
 
 This replaces the current document and is therefore an explicit user-facing
 action. Validate or confirm untrusted input before calling it.
+
+To preserve the active document and open a separate workflow tab, request
+`new` mode:
+
+```js
+await comfy.workflow.open(data, {
+  mode: 'new',
+  name: 'Recovered snapshot'
+})
+```
+
+The mode defaults to `replace`. `name` is optional in `new` mode, is limited to
+128 Unicode code points and 512 UTF-8 bytes, and is a display name only. It
+cannot contain path separators or be used with `replace` mode.
 
 Expand the host's workflow text tokens against the active root graph:
 

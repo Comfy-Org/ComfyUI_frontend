@@ -43,6 +43,7 @@ describe('comfy API root', () => {
       expect(api().supports('slots.identity')).toBe(true)
       expect(api().supports('widgets.typeContext')).toBe(true)
       expect(api().supports('workflow.open')).toBe(false)
+      expect(api().supports('workflow.open.new')).toBe(false)
       expect(api().supports('slots.widgetConfig')).toBe(true)
       expect(api().supports('slots.layout')).toBe(true)
       expect(api().supports('slots.localizedName')).toBe(true)
@@ -62,7 +63,9 @@ describe('comfy API root', () => {
       })
 
       expect(comfy.supports('workflow.open')).toBe(true)
+      expect(comfy.supports('workflow.open.new')).toBe(true)
       expect(comfy.capabilities()).toContain('workflow.open')
+      expect(comfy.capabilities()).toContain('workflow.open.new')
     })
 
     it('returns false for unknown capabilities instead of throwing', () => {
@@ -190,7 +193,7 @@ describe('comfy API root', () => {
       await comfy.workflow.open(workflow)
 
       expect(openWorkflow).toHaveBeenCalledOnce()
-      expect(openWorkflow).toHaveBeenCalledWith(workflow)
+      expect(openWorkflow).toHaveBeenCalledWith(workflow, { mode: 'replace' })
     })
 
     it('rejects non-object workflow data before reaching the host', async () => {

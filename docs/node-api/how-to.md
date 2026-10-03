@@ -1117,16 +1117,27 @@ Use `backend.fetch()` rather than plain `fetch(backend.url(...))` when the
 request needs host credentials. Use `new URL('./asset.css', import.meta.url)`
 for a file shipped beside the current module.
 
+For a route declared by the current Secure Nodes pack, use
+`backend.ownFetch('/route')` or `backend.ownUrl('/route')`. The host supplies the
+private pack namespace; do not construct `/ext/...` paths yourself.
+
 ### How do I load a workflow or store pack documents?
 
 ```js
 await comfy.workflow.open(parsedWorkflow)
+
+await comfy.workflow.open(anotherWorkflow, {
+  mode: 'new',
+  name: 'Experiment 2'
+})
 
 await comfy.storage.set('MyPack.presets/portrait', JSON.stringify(preset))
 const saved = await comfy.storage.get('MyPack.presets/portrait')
 ```
 
 `workflow.open()` replaces `app.loadGraphData()` for an explicit user action.
+It replaces the active workflow by default. `mode: 'new'` opens a separate tab;
+its optional bounded `name` is a display label, not a filesystem path.
 `comfy.storage` replaces direct user-data APIs or `localStorage` for named
 server-side presets, prompts, and templates.
 

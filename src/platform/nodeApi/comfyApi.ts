@@ -50,10 +50,17 @@ import type { SystemHandle } from './systemHandle'
 import type { UiHandle } from './uiHandle'
 import type { NodeHandle } from './nodeHandle'
 import { createWorkflowApi } from './workflowHandle'
-import type { WorkflowData, WorkflowHandle } from './workflowHandle'
+import type {
+  WorkflowData,
+  WorkflowHandle,
+  WorkflowOpenOptions
+} from './workflowHandle'
 
 type ComfyApiHost = {
-  openWorkflow?: (data: WorkflowData) => Promise<void>
+  openWorkflow?: (
+    data: WorkflowData,
+    options: WorkflowOpenOptions
+  ) => Promise<void>
   refreshDefinitions?: () => Promise<void>
 }
 
@@ -153,6 +160,7 @@ const CAPABILITIES: ReadonlyMap<string, string> = new Map([
   ['node.changeScope', '2.0'],
   ['node.fileDrop', '2.0'],
   ['workflow.open', '2.0'],
+  ['workflow.open.new', '2.0'],
   ['workflow.textReplacements', '2.0'],
   ['execution.node', '2.0'],
   ['defs.typeCompatibility', '2.0'],
@@ -347,7 +355,10 @@ function buildMajor(
   getGraph: () => LGraph | null | undefined,
   forMajor: (m: number) => Comfy,
   defs: ReturnType<typeof createDefRegistry>,
-  openWorkflow?: (data: WorkflowData) => Promise<void>
+  openWorkflow?: (
+    data: WorkflowData,
+    options: WorkflowOpenOptions
+  ) => Promise<void>
 ): Comfy {
   const graph = createGraphApi(
     getGraph,
@@ -370,7 +381,10 @@ function buildMajor(
   const workflow = createWorkflowApi(getGraph, openWorkflow, currentDocumentId)
   const definitionScopes = new WeakMap<LGraph, GraphHandle>()
   const capabilities = new Map(CAPABILITIES)
-  if (!openWorkflow) capabilities.delete('workflow.open')
+  if (!openWorkflow) {
+    capabilities.delete('workflow.open')
+    capabilities.delete('workflow.open.new')
+  }
 
   function handleForDefinitionNode(node: LGraphNode): NodeHandle {
     const owner = node.graph

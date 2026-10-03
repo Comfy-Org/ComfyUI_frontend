@@ -245,6 +245,8 @@ export const API_MEMBERS: ReadonlySet<string> = new Set([
   'output',
   'outputIndex',
   'outputs',
+  'ownFetch',
+  'ownUrl',
   'panBy',
   'peerIndex',
   'peerNodeId',

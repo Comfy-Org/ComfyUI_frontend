@@ -34,6 +34,16 @@ interface BackendHandle {
    */
   assetUrl(route: string): string
   /**
+   * Builds the private URL for a route declared by this Secure Nodes pack.
+   * The route is pack-relative and must start with `/`.
+   */
+  ownUrl(route: string): string
+  /**
+   * Calls a route declared by this Secure Nodes pack with host credentials.
+   * The route is pack-relative and must start with `/`.
+   */
+  ownFetch(route: string, init?: RequestInit): Promise<Response>
+  /**
    * Identifies this frontend connection to a pack's own backend route.
    * Undefined until the backend establishes the connection; do not persist it.
    */
@@ -2995,9 +3005,16 @@ interface WidgetTypeDef {
 /** Parsed ComfyUI workflow JSON. */
 type WorkflowData = Readonly<Record<string, unknown>>
 
+interface WorkflowOpenOptions {
+  /** Replace the active document, or open a separate workflow tab. */
+  readonly mode?: 'replace' | 'new'
+  /** Display name for a new workflow. It is not a filesystem path. */
+  readonly name?: string
+}
+
 interface WorkflowHandle {
-  /** Replaces the active document with parsed ComfyUI workflow JSON. */
-  open(data: WorkflowData): Promise<void>
+  /** Opens parsed ComfyUI workflow JSON, replacing the active document by default. */
+  open(data: WorkflowData, options?: WorkflowOpenOptions): Promise<void>
   /** Expands the active document's `%date:...%` and `%Node.widget%` tokens. */
   applyTextReplacements(value: string): string
   /**

@@ -7,9 +7,16 @@ import { ComfyApiError } from './errors'
 /** Parsed ComfyUI workflow JSON. */
 export type WorkflowData = Readonly<Record<string, unknown>>
 
+export interface WorkflowOpenOptions {
+  /** Replace the active document, or open a separate workflow tab. */
+  readonly mode?: 'replace' | 'new'
+  /** Display name for a new workflow. It is not a filesystem path. */
+  readonly name?: string
+}
+
 export interface WorkflowHandle {
-  /** Replaces the active document with parsed ComfyUI workflow JSON. */
-  open(data: WorkflowData): Promise<void>
+  /** Opens parsed ComfyUI workflow JSON, replacing the active document by default. */
+  open(data: WorkflowData, options?: WorkflowOpenOptions): Promise<void>
   /** Expands the active document's `%date:...%` and `%Node.widget%` tokens. */
   applyTextReplacements(value: string): string
   /**
@@ -31,11 +38,14 @@ export interface WorkflowHandle {
 
 export function createWorkflowApi(
   getGraph: () => LGraph | null | undefined,
-  openWorkflow?: (data: WorkflowData) => Promise<void>,
+  openWorkflow?: (
+    data: WorkflowData,
+    options: WorkflowOpenOptions
+  ) => Promise<void>,
   getDocumentId?: () => string | undefined
 ): WorkflowHandle {
   return Object.freeze({
-    async open(data: WorkflowData) {
+    async open(data: WorkflowData, options?: WorkflowOpenOptions) {
       if (
         extensionValue(data) == null ||
         typeof data !== 'object' ||
@@ -48,7 +58,8 @@ export function createWorkflowApi(
           'Workflow loading is not connected to the host.'
         )
       }
-      await openWorkflow(data)
+      const normalizedOptions = normalizeOpenOptions(options)
+      await openWorkflow(data, normalizedOptions)
     },
     applyTextReplacements(value: string) {
       const graph = getGraph()?.rootGraph
@@ -63,4 +74,53 @@ export function createWorkflowApi(
       return getDocumentId?.()
     }
   })
+}
+
+function normalizeOpenOptions(
+  options: WorkflowOpenOptions | undefined
+): WorkflowOpenOptions {
+  if (options === undefined) return { mode: 'replace' }
+  const value: unknown = extensionValue(options)
+  if (value == null || typeof value !== 'object' || Array.isArray(value)) {
+    throw new ComfyApiError('Workflow open options must be an object.')
+  }
+  const record = value as Record<string, unknown>
+  if (Object.keys(record).some((key) => key !== 'mode' && key !== 'name')) {
+    throw new ComfyApiError('Workflow open options contain an unknown field.')
+  }
+  const mode = record.mode ?? 'replace'
+  if (mode !== 'replace' && mode !== 'new') {
+    throw new ComfyApiError("Workflow open mode must be 'replace' or 'new'.")
+  }
+  if (record.name === undefined) return { mode }
+  if (mode !== 'new') {
+    throw new ComfyApiError('A workflow name requires mode new.')
+  }
+  if (!isBoundedWorkflowName(record.name)) {
+    throw new ComfyApiError(
+      'Workflow name must be a bounded display name without path separators.'
+    )
+  }
+  return { mode, name: record.name }
+}
+
+function isBoundedWorkflowName(value: unknown): value is string {
+  if (
+    typeof value !== 'string' ||
+    value !== value.trim() ||
+    value.length === 0 ||
+    Array.from(value).length > 128 ||
+    new TextEncoder().encode(value).byteLength > 512 ||
+    value === '.' ||
+    value === '..' ||
+    value.includes('/') ||
+    value.includes('\\')
+  ) {
+    return false
+  }
+  for (const character of value) {
+    const code = character.charCodeAt(0)
+    if (code < 32 || code === 127) return false
+  }
+  return true
 }
