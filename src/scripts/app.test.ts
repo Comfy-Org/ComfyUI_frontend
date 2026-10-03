@@ -3139,6 +3139,84 @@ describe('ComfyApp', () => {
       expect(graph.getNodeById(survivor.id)).toBe(survivor)
     })
 
+    it('does not let an A1111 import superseded inside beforeLoadGraph clear the newer load’s missing nodes', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+        parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+      })
+      let releaseBeforeLoad!: () => void
+      const beforeLoadBlocked = new Promise<void>((resolve) => {
+        releaseBeforeLoad = resolve
+      })
+      vi.when(mockExtensionService.invokeExtensionsAsync)
+        .calledWith('beforeLoadGraph')
+        .thenReturnOnce(beforeLoadBlocked)
+      mockImportA1111.mockImplementation(
+        async (_importGraph, _parameters, beforeGraphClear) => {
+          await beforeGraphClear?.()
+          return 'imported'
+        }
+      )
+
+      const a1111Import = app.handleFile(
+        createTestFile('a1111.png', 'image/png')
+      )
+      await vi.waitFor(() =>
+        expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+          'beforeLoadGraph'
+        )
+      )
+      await app.loadGraphData(createWorkflowGraphData(), true)
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes(['NewerLoadMissingNode'])
+      releaseBeforeLoad()
+      await a1111Import
+
+      expect(missingNodesStore.missingNodesError?.nodeTypes).toEqual([
+        'NewerLoadMissingNode'
+      ])
+    })
+
+    it('does not bind a superseded A1111 import’s workflow to the newer graph', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+        parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+      })
+      let releaseAfterConfigure!: () => void
+      const afterConfigureBlocked = new Promise<void>((resolve) => {
+        releaseAfterConfigure = resolve
+      })
+      vi.when(mockExtensionService.invokeExtensionsAsync)
+        .calledWith('afterConfigureGraph', expect.anything())
+        .thenReturnOnce(afterConfigureBlocked)
+      mockImportA1111.mockImplementation(
+        async (_importGraph, _parameters, beforeGraphClear) => {
+          await beforeGraphClear?.()
+          return 'imported'
+        }
+      )
+
+      const a1111Import = app.handleFile(
+        createTestFile('a1111.png', 'image/png')
+      )
+      await vi.waitFor(() =>
+        expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+          'afterConfigureGraph',
+          expect.anything()
+        )
+      )
+      await app.loadGraphData(createWorkflowGraphData(), true)
+      mockWorkflowService.afterLoadNewGraph.mockClear()
+      releaseAfterConfigure()
+      await a1111Import
+
+      expect(mockWorkflowService.afterLoadNewGraph).not.toHaveBeenCalled()
+    })
+
     it('does not let a load still awaiting its hooks erase a committed A1111 import', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       const graph = new LGraph()

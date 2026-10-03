@@ -2362,7 +2362,9 @@ export class ComfyApp {
             useWorkflowService().beforeLoadNewGraph(false)
             await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
           } finally {
-            useMissingNodesErrorStore().setMissingNodeTypes([])
+            if (this.ownsGraphLoad(loadId)) {
+              useMissingNodesErrorStore().setMissingNodeTypes([])
+            }
           }
           // `graph.clear()` is unconditional once this hook resolves, so
           // throwing out of it is the only way to stop the clear — and the
@@ -2408,6 +2410,10 @@ export class ComfyApp {
         'afterConfigureGraph',
         []
       )
+      if (!this.ownsGraphLoad(loadId)) {
+        await this.rejectSupersededGraphLoad()
+        return
+      }
       await useWorkflowService().afterLoadNewGraph(
         fileName,
         this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
