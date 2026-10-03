@@ -448,7 +448,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     attachments?: SentAttachment[],
     tags?: SentTag[],
     workflowReferences?: WorkflowReference[],
-    selectionWorkflowId?: () => string | undefined
+    selectionWorkflowId?: () => string | undefined,
+    clientMessageId?: string
   ): Promise<AgentTurnAccepted> {
     const input = buildPostInput(
       threadId,
@@ -458,7 +459,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       attachments,
       tags,
       workflowReferences,
-      selectionWorkflowId
+      selectionWorkflowId,
+      clientMessageId
     )
     if (wfContext?.id === undefined) return rest.postMessage(threadId, input)
     return rest.postMessage(threadId, { ...input, workflowId: wfContext.id })
@@ -472,7 +474,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     attachments?: SentAttachment[],
     tags?: SentTag[],
     workflowReferences?: WorkflowReference[],
-    selectionWorkflowId?: () => string | undefined
+    selectionWorkflowId?: () => string | undefined,
+    clientMessageId?: string
   ): PostMessageInput {
     const draft = workflow?.draft?.(origin)
     const unboundTarget = isUnboundTarget(wfContext, boundWorkflowId.value)
@@ -489,6 +492,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
       ),
       selection: selectedNodes(tags, selectedWorkflowId),
       attachments: attachments?.map((attachment) => attachment.ref),
+      // Carried through untouched so the server can echo it onto
+      // agent_turn_started: it is the same id this send reports on its own
+      // app:agent_message_sent event, and the only value that can appear on both
+      // sides of the message -> turn step.
+      clientMessageId,
       ...buildTargetFields(threadId, wfContext, draft, unboundTarget)
     }
   }
@@ -707,7 +715,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     attachments?: SentAttachment[],
     tags?: SentTag[],
     workflowReferences?: WorkflowReference[],
-    selectionWorkflowId?: () => string | undefined
+    selectionWorkflowId?: () => string | undefined,
+    clientMessageId?: string
   ): Promise<boolean> {
     const generation = loadGeneration
     const threadAtSend = conversationStore.threadId ?? 'new'
@@ -735,7 +744,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
         attachments,
         tags,
         workflowReferences,
-        selectionWorkflowId
+        selectionWorkflowId,
+        clientMessageId
       )
       accepted = true
       // Navigation invalidates the originating submission before advancing the
@@ -772,7 +782,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     attachments?: SentAttachment[],
     tags?: SentTag[],
     workflowReferences?: WorkflowReference[],
-    selectionWorkflowId?: () => string | undefined
+    selectionWorkflowId?: () => string | undefined,
+    clientMessageId?: string
   ): Promise<boolean> {
     if (sending.value) {
       conversationStore.recordFailedSend(
@@ -791,7 +802,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
         attachments,
         tags,
         workflowReferences,
-        selectionWorkflowId
+        selectionWorkflowId,
+        clientMessageId
       )
     } finally {
       sending.value = false
