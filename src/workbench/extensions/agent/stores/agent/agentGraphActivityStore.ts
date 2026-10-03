@@ -75,7 +75,7 @@ export const useAgentGraphActivityStore = defineStore(
       { immediate: true }
     )
     watch(
-      () => canvasStore.canvas?.graph,
+      () => canvasStore.currentGraph,
       (graph, _previous, onCleanup) => {
         if (!graph?.events) return
         const events = graph.events as EventTarget

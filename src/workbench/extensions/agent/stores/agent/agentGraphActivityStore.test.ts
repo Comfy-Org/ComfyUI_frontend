@@ -172,16 +172,23 @@ describe('agentGraphActivityStore', () => {
     expect(activity.state).toEqual({ phase: 'idle' })
   })
 
-  it('forgets nodes removed while no panel is mounted', () => {
-    const events = new EventTarget()
-    useCanvasStore().canvas = fromPartial({ graph: { events } })
+  it('forgets nodes removed after the active graph changes', async () => {
+    const rootEvents = new EventTarget()
+    const subgraphEvents = new EventTarget()
+    const canvasStore = useCanvasStore()
+    canvasStore.canvas = fromPartial({ graph: { events: rootEvents } })
+    await nextTick()
+    canvasStore.currentGraph = fromPartial({ events: rootEvents })
+    useSettingStore().settingValues['Comfy.Minimap.Visible'] = true
     const activity = useAgentGraphActivityStore()
     activity.recordMaterialized(
       { workflowId: 'wf-1', rootGraphId: ROOT_GRAPH_ID },
       [toNodeId(1), toNodeId(2)]
     )
 
-    events.dispatchEvent(
+    canvasStore.currentGraph = fromPartial({ events: subgraphEvents })
+    await nextTick()
+    subgraphEvents.dispatchEvent(
       new CustomEvent('node:removed', { detail: { node: { id: 1 } } })
     )
 
