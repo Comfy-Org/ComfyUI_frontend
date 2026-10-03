@@ -3,7 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { AssetItem, ModelBrowserAsset } from '@comfyorg/assets-core/schema'
-import { resolveModelNodeFromAsset } from '@/platform/assets/integration/resolveModelNodeFromAsset'
+import {
+  canCreateNodeForAsset,
+  resolveModelNodeFromAsset
+} from '@/platform/assets/integration/resolveModelNodeFromAsset'
 
 const mockGetNodeProvider = vi.fn()
 
@@ -49,6 +52,18 @@ beforeEach(() => {
   vi.mocked(useModelToNodeStore().getNodeProvider).mockImplementation(
     mockGetNodeProvider
   )
+})
+
+describe('canCreateNodeForAsset', () => {
+  it('rejects an asset with no usable category before the registry is ready', () => {
+    expect(canCreateNodeForAsset(createMockAsset({ tags: ['models'] }))).toBe(
+      false
+    )
+  })
+
+  it('fails open while node definitions are unavailable', () => {
+    expect(canCreateNodeForAsset(createMockAsset())).toBe(true)
+  })
 })
 
 describe('resolveModelNodeFromAsset', () => {
