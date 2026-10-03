@@ -61,13 +61,16 @@ describe('CustomersDirectory', () => {
       tab: 'Read',
       titles: ['Moment Factory projection mapping', 'Ubisoft CHORD']
     }
-  ])('shows only $tab stories on the $tab tab', async ({ tab, titles }) => {
-    const user = renderDirectory()
+  ] as const)(
+    'shows only $tab stories on the $tab tab',
+    async ({ tab, titles }) => {
+      const user = renderDirectory()
 
-    await user.click(screen.getByRole('button', { name: tab }))
+      await user.click(screen.getByRole('button', { name: tab }))
 
-    expect(headingTitles()).toEqual(titles)
-  })
+      expect(headingTitles()).toEqual(titles)
+    }
+  )
 
   it('narrows stories to those matching the search', async () => {
     const user = renderDirectory()
@@ -92,7 +95,7 @@ describe('CustomersDirectory', () => {
   it('sorts Watch stories by upload date in both directions', async () => {
     const laterStory: WatchStoryCard = {
       ...watchStories[0],
-      slug: 'later-film',
+      slug: 'silverside-ai',
       title: 'Later film',
       uploadDate: '2026-05-01T00:00:00+00:00'
     }
@@ -116,6 +119,6 @@ describe('CustomersDirectory', () => {
 
     await user.type(screen.getByRole('searchbox'), 'zzz')
 
-    expect(screen.getByText(/No customer stories match/)).toBeTruthy()
+    expect(screen.getByText(/No customer stories match/)).toBeInTheDocument()
   })
 })

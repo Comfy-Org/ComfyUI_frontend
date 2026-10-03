@@ -1,6 +1,7 @@
 import type { CollectionEntry } from 'astro:content'
 
 import type { CustomerStoryFrontmatter } from '../content/customers.schema'
+import type { CustomerVideoStory } from '../data/customerVideos'
 
 export type CustomerStoryEntry = CollectionEntry<'customers'>
 
@@ -51,18 +52,18 @@ export function toCardProps(entry: {
   }
 }
 
-export interface WatchStoryCard {
-  slug: string
-  company: string
-  category: string
-  title: string
-  description: string
-  poster: string
-  posterWidth: number
-  posterHeight: number
-  duration?: string
-  uploadDate: string
-}
+export type WatchStoryCard = Pick<
+  CustomerVideoStory,
+  | 'slug'
+  | 'company'
+  | 'category'
+  | 'title'
+  | 'description'
+  | 'poster'
+  | 'posterWidth'
+  | 'posterHeight'
+  | 'uploadDate'
+> & { duration?: string }
 
 export type CustomerSort = 'latest' | 'oldest'
 
@@ -73,17 +74,18 @@ interface SearchableCard {
   company?: string
 }
 
-export function filterCustomerCards<T extends SearchableCard>(
+export function filterAndSortCustomerCards<T extends SearchableCard>(
   cards: readonly T[],
   query: string,
   sort: CustomerSort,
   dateOf: (card: T) => string
 ): T[] {
-  const needle = query.trim().toLocaleLowerCase()
+  const needle = query.trim().replace(/\s+/g, ' ').toLocaleLowerCase()
   const matches = needle
     ? cards.filter((card) =>
         [card.title, card.category, card.description, card.company ?? '']
           .join(' ')
+          .replace(/\s+/g, ' ')
           .toLocaleLowerCase()
           .includes(needle)
       )

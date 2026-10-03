@@ -3265,7 +3265,7 @@
     },
     "directory": {
       "searchLabel": "Search customer stories",
-      "searchPlaceholder": "Search by company, title, or description…",
+      "searchPlaceholder": "Search by company, title, category, or description…",
       "formatLabel": "Format",
       "tab": {
         "all": "All",
@@ -3275,7 +3275,7 @@
       "sortLabel": "Sort customer stories",
       "sortLatest": "Latest",
       "sortOldest": "Oldest",
-      "empty": "No customer stories match that search yet. Try a broader term."
+      "empty": "No customer stories match those filters yet. Try a broader search."
     }
   },
   "contact": {

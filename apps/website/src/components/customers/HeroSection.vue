@@ -32,19 +32,19 @@ function handleLogoLoad() {
     <div
       class="flex flex-col items-center text-center lg:flex-row lg:items-center lg:text-left"
     >
-      <div ref="logoRef" class="hidden lg:order-1 lg:block lg:w-1/3">
+      <div ref="logoRef" class="hidden lg:block lg:w-1/3">
         <img
           src="https://media.comfy.org/website/customers/c-projection.webp"
           alt="Comfy 3D logo"
           width="1568"
           height="1763"
-          class="mx-auto h-auto w-full max-w-md lg:aspect-1568/1480 lg:max-w-none lg:object-cover lg:object-top"
+          class="aspect-1568/1480 h-auto w-full object-cover object-top"
           @load="handleLogoLoad"
         />
       </div>
 
       <div
-        class="order-1 flex flex-col items-center px-6 lg:order-2 lg:w-2/3 lg:items-start lg:pr-16 lg:pl-12"
+        class="flex flex-col items-center px-6 lg:w-2/3 lg:items-start lg:pr-16 lg:pl-12"
       >
         <SectionLabel ref="labelRef">
           {{ t('customers.hero.label') }}

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { customerStorySchema } from '../content/customers.schema'
 import {
-  filterCustomerCards,
+  filterAndSortCustomerCards,
   nextStory,
   sortStories,
   storySlug,
@@ -136,7 +136,44 @@ describe('toCardProps', () => {
   })
 })
 
-describe('filterCustomerCards', () => {
+describe('filterAndSortCustomerCards', () => {
+  it.for([
+    { field: 'title', query: 'projection', titles: ['Projection mapping'] },
+    { field: 'category', query: 'public art', titles: ['Projection mapping'] },
+    { field: 'company', query: 'black math', titles: ['Studio film'] },
+    { field: 'description', query: 'material', titles: ['Studio film'] },
+    {
+      field: 'spaced company',
+      query: ' Black \t Math ',
+      titles: ['Studio film']
+    }
+  ] as const)('matches the $field', ({ query, titles }) => {
+    const cards = [
+      {
+        title: 'Projection mapping',
+        category: 'PUBLIC ART',
+        description: 'Domes and facades.',
+        date: '2026-07-01'
+      },
+      {
+        title: 'Studio film',
+        category: 'CASE STUDY',
+        description: 'Material generation.',
+        company: 'Black Math',
+        date: '2026-07-01'
+      }
+    ]
+
+    const results = filterAndSortCustomerCards(
+      cards,
+      query,
+      'latest',
+      (card) => card.date
+    )
+
+    expect(results.map((card) => card.title)).toEqual(titles)
+  })
+
   it.for([
     { sort: 'latest', titles: ['new', 'tie-a', 'tie-b', 'old'] },
     { sort: 'oldest', titles: ['old', 'tie-a', 'tie-b', 'new'] }
@@ -151,7 +188,12 @@ describe('filterCustomerCards', () => {
       ].map((card) => ({ ...card, category: 'STORY', description: '' }))
       const original = [...cards]
 
-      const results = filterCustomerCards(cards, '', sort, (card) => card.date)
+      const results = filterAndSortCustomerCards(
+        cards,
+        '',
+        sort,
+        (card) => card.date
+      )
 
       expect(results.map((card) => card.title)).toEqual(titles)
       expect(cards).toEqual(original)
