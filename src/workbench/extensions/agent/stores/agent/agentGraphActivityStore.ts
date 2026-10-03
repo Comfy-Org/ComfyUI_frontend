@@ -42,7 +42,7 @@ export const useAgentGraphActivityStore = defineStore(
 
     watch(
       state,
-      (activity) => {
+      (activity, previousActivity) => {
         if (activity.phase === 'idle') {
           minimapLayer.replace([])
           return
@@ -60,6 +60,7 @@ export const useAgentGraphActivityStore = defineStore(
         )
         if (
           activity.phase === 'running' &&
+          previousActivity?.phase !== 'running' &&
           !settingStore.get('Comfy.Minimap.Visible')
         )
           void settingStore

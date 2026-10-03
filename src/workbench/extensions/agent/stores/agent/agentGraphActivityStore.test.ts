@@ -4,11 +4,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // oxlint-disable-next-line comfy/no-restricted-paths -- exercise the production store's graph-removal subscription at its renderer boundary.
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 
 import { toTurnId } from '../../schemas/agentApiSchema'
 import { useAgentGraphActivityStore } from './agentGraphActivityStore'
+import { nextTick } from 'vue'
 
 const ROOT_GRAPH_ID = toRootGraphId('graph-1')
 const TURN_1 = toTurnId('turn-1')
@@ -56,6 +58,28 @@ describe('agentGraphActivityStore', () => {
     })
     activity.resetWorkflow('wf-1')
     expect(activity.state).toEqual({ phase: 'idle' })
+  })
+
+  it('does not override a manual minimap hide during a running turn', async () => {
+    const settings = useSettingStore()
+    settings.settingValues['Comfy.Minimap.Visible'] = false
+    const setSetting = vi.spyOn(settings, 'set').mockResolvedValue()
+    const activity = useAgentGraphActivityStore()
+
+    activity.recordMaterialized(
+      { workflowId: 'wf-1', rootGraphId: ROOT_GRAPH_ID },
+      [toNodeId(1)]
+    )
+    await nextTick()
+
+    settings.settingValues['Comfy.Minimap.Visible'] = false
+    activity.recordMaterialized(
+      { workflowId: 'wf-1', rootGraphId: ROOT_GRAPH_ID },
+      [toNodeId(2)]
+    )
+    await nextTick()
+
+    expect(setSetting).toHaveBeenCalledTimes(1)
   })
 
   it('treats an idle dip followed by activity as the same turn', () => {
