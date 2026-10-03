@@ -6,7 +6,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import { getRoutes } from '../../config/routes'
 import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t, tPlural } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import type { HubDoor } from '../../lib/workshop/explore-art'
 
 const {
@@ -18,6 +18,7 @@ const {
   art?: Partial<Record<HubDoor, readonly string[]>>
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const routes = getRoutes(locale)
 
@@ -73,10 +74,7 @@ const doors = computed(() =>
 </script>
 
 <template>
-  <nav
-    :aria-label="t('workshop.explore.doors', locale)"
-    data-testid="explore-doors"
-  >
+  <nav :aria-label="t('workshop.explore.doors')" data-testid="explore-doors">
     <ul class="grid grid-cols-1 gap-5 md:auto-cols-fr md:grid-flow-col">
       <li v-for="door in doors" :key="door.section">
         <a
@@ -125,13 +123,13 @@ const doors = computed(() =>
             <span
               class="text-xs font-medium tracking-wide uppercase opacity-70"
             >
-              {{ tPlural(door.count, counts[door.section], locale) }}
+              {{ t(door.count, counts[door.section]) }}
             </span>
             <span class="text-2xl font-medium lg:text-3xl">
-              {{ t(door.title, locale) }}
+              {{ t(door.title) }}
             </span>
             <span class="text-sm opacity-80">
-              {{ t(door.hint, locale) }}
+              {{ t(door.hint) }}
             </span>
           </span>
         </a>

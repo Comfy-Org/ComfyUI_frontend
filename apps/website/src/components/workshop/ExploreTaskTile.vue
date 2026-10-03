@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { UseCase, WorkshopModel } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
 
 const {
@@ -15,6 +15,7 @@ const {
   kinds: readonly string[]
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 defineEmits<{ select: [] }>()
 </script>
@@ -54,7 +55,7 @@ defineEmits<{ select: [] }>()
     />
     <span class="absolute inset-x-0 bottom-0 flex flex-col gap-1.5 p-5">
       <span class="text-xl/tight font-medium text-primary-warm-white">
-        {{ t(useCaseLabelKey[useCase], locale) }}
+        {{ t(useCaseLabelKey[useCase]) }}
       </span>
       <span
         class="flex items-center gap-2 text-xs tracking-wide text-primary-warm-white/70 uppercase"

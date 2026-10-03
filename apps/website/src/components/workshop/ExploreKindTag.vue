@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 
 type Kind = 'app' | 'workflow' | 'model'
 
 const { kind, locale = 'en' } = defineProps<{ kind: Kind; locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 const labels: Record<Kind, TranslationKey> = {
   app: 'workshop.explore.kindApp',
@@ -19,6 +20,6 @@ const labels: Record<Kind, TranslationKey> = {
     data-testid="explore-kind"
     :data-kind="kind"
   >
-    {{ t(labels[kind], locale) }}
+    {{ t(labels[kind]) }}
   </span>
 </template>

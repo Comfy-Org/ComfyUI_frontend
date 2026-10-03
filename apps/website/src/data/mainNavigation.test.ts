@@ -49,7 +49,7 @@ describe('getMainNavigation', () => {
     (locale) => {
       const routes = getRoutes(locale)
       const products = getMainNavigation(locale)
-        .find((item) => item.label === t('nav.products', locale))
+        .find((item) => item.label === t('nav.products', {}, { locale }))
         ?.columns?.flatMap((column) => column.items)
       const badgeOf = (href: string) => {
         const entry = products?.find((item) => item.href === href)

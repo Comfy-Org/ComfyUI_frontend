@@ -2,6 +2,7 @@
   <SidebarTabTemplate
     ref="panelRef"
     :title="isInFolderView ? '' : $t('sideToolbar.mediaAssets.title')"
+    :closable
     v-bind="$attrs"
   >
     <template #alt-title>
@@ -248,6 +249,8 @@ const Load3dViewerContent = defineAsyncComponent(
 )
 
 const { t } = useI18n()
+
+const { closable = true } = defineProps<{ closable?: boolean }>()
 
 const emit = defineEmits<{ assetSelected: [asset: AssetItem] }>()
 

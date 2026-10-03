@@ -393,7 +393,6 @@ export default defineConfig([
         }
       },
 
-      // The website app is a marketing site with no vue-i18n setup
       {
         files: ['apps/website/**/*.vue'],
         rules: {

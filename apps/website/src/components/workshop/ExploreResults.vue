@@ -3,7 +3,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { WorkshopModel } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import { SHELF_CARD } from '../../lib/workshop/card-layout'
 import type { CatalogueApp } from '../../lib/workshop/catalogue-apps'
 import { nameWithoutTask, taskLabelFor } from '../../lib/workshop/task-label'
@@ -25,6 +25,7 @@ const {
   seeAllHref?: string
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 defineEmits<{ clear: [] }>()
 </script>
@@ -44,7 +45,7 @@ defineEmits<{ clear: [] }>()
         <ExploreSeeAll
           v-if="seeAllHref && results.length"
           :href="seeAllHref"
-          :label="t('workshop.explore.modelsSeeAll', locale)"
+          :label="t('workshop.explore.modelsSeeAll')"
         />
       </template>
       <li
@@ -89,14 +90,14 @@ defineEmits<{ clear: [] }>()
         data-testid="explore-empty"
       >
         <p class="text-base text-content-secondary">
-          {{ t('workshop.explore.empty', locale) }}
+          {{ t('workshop.explore.empty') }}
         </p>
         <button
           type="button"
           class="cursor-pointer rounded-lg text-sm font-medium text-primary-comfy-yellow outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
           @click="$emit('clear')"
         >
-          {{ t('workshop.explore.clear', locale) }}
+          {{ t('workshop.explore.clear') }}
         </button>
       </div>
     </template>

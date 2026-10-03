@@ -5,7 +5,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { DirectionGroup } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import { translationsFor } from '../../../i18n/translations'
 import CinematicCheckBadge from './CinematicCheckBadge.vue'
 
 const {
@@ -17,6 +17,7 @@ const {
   selected: string
   locale?: Locale
 }>()
+const { t: tc } = translationsFor(locale)
 
 const emit = defineEmits<{ choose: [id: string] }>()
 </script>
@@ -24,7 +25,7 @@ const emit = defineEmits<{ choose: [id: string] }>()
 <template>
   <div
     role="radiogroup"
-    :aria-label="tc(group.title, locale)"
+    :aria-label="tc(group.title)"
     class="grid grid-cols-2 gap-x-4 gap-y-5"
   >
     <slot />
@@ -71,7 +72,7 @@ const emit = defineEmits<{ choose: [id: string] }>()
         <span
           class="truncate px-1 text-sm text-primary-comfy-canvas group-hover:text-primary-warm-white"
         >
-          {{ tc(option.label, locale) }}
+          {{ tc(option.label) }}
         </span>
       </button>
       <slot v-if="index === 0" name="row" />

@@ -4,10 +4,45 @@
  * every host. The package never calls a telemetry API itself; call sites
  * stay host-specific.
  */
+import type {
+  WebSessionBootstrapEvent,
+  WebSessionIdentityOptions
+} from './core/webSessionIdentity.js'
+
 export const SESSION_TELEMETRY_EVENT = {
   refreshSucceeded: 'auth.unified.refresh.succeeded',
-  refreshFailed: 'auth.unified.refresh.failed'
+  refreshFailed: 'auth.unified.refresh.failed',
+  bootstrap: 'session_bootstrap',
+  signedOutRemotely: 'session_signed_out_remotely'
 } as const
+
+export type WebSessionTelemetryEvent =
+  | {
+      readonly name: typeof SESSION_TELEMETRY_EVENT.bootstrap
+      readonly properties: WebSessionBootstrapEvent
+    }
+  | {
+      readonly name: typeof SESSION_TELEMETRY_EVENT.signedOutRemotely
+      readonly properties: { readonly origin: string }
+    }
+
+/** The web-session identity's telemetry hooks, routed to one host sink. */
+export function webSessionTelemetryHooks(
+  track: (event: WebSessionTelemetryEvent) => void
+): Pick<WebSessionIdentityOptions, 'onBootstrap' | 'onSignedOutRemotely'> {
+  return {
+    onBootstrap: ({ outcome, origin }) =>
+      track({
+        name: SESSION_TELEMETRY_EVENT.bootstrap,
+        properties: { outcome, origin }
+      }),
+    onSignedOutRemotely: ({ origin }) =>
+      track({
+        name: SESSION_TELEMETRY_EVENT.signedOutRemotely,
+        properties: { origin }
+      })
+  }
+}
 
 /**
  * The cloud app's `billing.operation.*` events, emitted by the billing
@@ -19,6 +54,16 @@ export const BILLING_OPERATION_TELEMETRY_EVENT = {
   succeeded: 'billing.operation.succeeded',
   failed: 'billing.operation.failed',
   timeout: 'billing.operation.timeout'
+} as const
+
+/**
+ * Payment friction the lifecycle observes inside one operation: a bank
+ * challenge and its verdict, and each retryable decline.
+ */
+export const BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT = {
+  challengeRequired: 'billing.checkout.challenge_required',
+  challengeCompleted: 'billing.checkout.challenge_completed',
+  challengeFailed: 'billing.checkout.challenge_failed'
 } as const
 
 export const AUTH_TELEMETRY_EVENT = {

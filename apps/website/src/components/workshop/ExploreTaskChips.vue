@@ -3,13 +3,14 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { UseCase } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
 
 const { useCases, locale = 'en' } = defineProps<{
   useCases: readonly UseCase[]
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const useCase = defineModel<UseCase | 'all'>({ required: true })
 
@@ -26,7 +27,7 @@ const chipClass = (active: boolean) =>
   <div
     class="flex flex-wrap gap-2"
     role="group"
-    :aria-label="t('workshop.explore.tasks', locale)"
+    :aria-label="t('workshop.explore.tasks')"
   >
     <button
       type="button"
@@ -34,7 +35,7 @@ const chipClass = (active: boolean) =>
       :aria-pressed="useCase === 'all'"
       @click="useCase = 'all'"
     >
-      {{ t(useCaseLabelKey.all, locale) }}
+      {{ t(useCaseLabelKey.all) }}
     </button>
     <span
       class="mx-1 h-6 w-px self-center bg-transparency-white-t20"
@@ -48,7 +49,7 @@ const chipClass = (active: boolean) =>
       :aria-pressed="useCase === value"
       @click="useCase = value"
     >
-      {{ t(useCaseLabelKey[value], locale) }}
+      {{ t(useCaseLabelKey[value]) }}
     </button>
   </div>
 </template>

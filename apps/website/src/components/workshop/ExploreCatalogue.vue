@@ -15,7 +15,7 @@ import {
 } from '../../config/models-catalogue'
 import { getRoutes } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import type { CatalogueApp } from '../../lib/workshop/catalogue-apps'
 import { DOOR_ART, TASK_ART } from '../../lib/workshop/explore-art'
 import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
@@ -41,6 +41,7 @@ const {
   models: readonly WorkshopModel[]
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const routes = getRoutes(locale)
 const query = ref('')
@@ -62,10 +63,10 @@ const coverOf = (
 }
 const kindsOf = (items: readonly WorkshopModel[]) => [
   ...(items.some((item) => item.workflowId)
-    ? [t('workshop.explore.workflowPill', locale)]
+    ? [t('workshop.explore.workflowPill')]
     : []),
   ...(items.some((item) => item.routerId)
-    ? [t('workshop.explore.kindModel', locale)]
+    ? [t('workshop.explore.kindModel')]
     : [])
 ]
 const tasks = computed(() =>
@@ -123,11 +124,11 @@ const results = computed(() =>
 
 const resultsTitle = computed(() => {
   if (needle.value)
-    return t('workshop.explore.resultsFor', locale, {
+    return t('workshop.explore.resultsFor', {
       query: query.value.trim()
     })
-  if (useCase.value !== 'all') return t(useCaseLabelKey[useCase.value], locale)
-  return t('workshop.explore.popularTitle', locale)
+  if (useCase.value !== 'all') return t(useCaseLabelKey[useCase.value])
+  return t('workshop.explore.popularTitle')
 })
 const seeAllHref = computed(() =>
   filtered.value
@@ -166,7 +167,7 @@ function clear() {
           id="explore-tasks"
           class="text-xl font-medium text-primary-warm-white"
         >
-          {{ t('workshop.explore.tasksTitle', locale) }}
+          {{ t('workshop.explore.tasksTitle') }}
         </h2>
         <ExploreTaskChips
           v-model="useCase"

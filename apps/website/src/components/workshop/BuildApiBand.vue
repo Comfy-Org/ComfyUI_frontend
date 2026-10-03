@@ -3,9 +3,10 @@ import { ArrowUpRight, KeyRound, Route, Workflow } from '@lucide/vue'
 
 import { apiKeysLink, externalLinks, getRoutes } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 const routes = getRoutes(locale)
 const PATHS = [
@@ -51,10 +52,10 @@ const SNIPPET = `curl https://api.comfy.org/v2/models/{provider}/{model} \\
           id="build-api-title"
           class="text-3xl font-light text-primary-warm-white lg:text-4xl"
         >
-          {{ t('workshop.build.title', locale) }}
+          {{ t('workshop.build.title') }}
         </h2>
         <p class="max-w-md text-base text-content-secondary">
-          {{ t('workshop.build.body', locale) }}
+          {{ t('workshop.build.body') }}
         </p>
         <div class="flex flex-wrap gap-3">
           <a
@@ -62,7 +63,7 @@ const SNIPPET = `curl https://api.comfy.org/v2/models/{provider}/{model} \\
             class="inline-flex h-11 items-center rounded-2xl bg-primary-comfy-yellow px-6 text-sm font-bold text-primary-comfy-ink transition-colors outline-none hover:bg-primary-comfy-yellow/90 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
             data-testid="build-api-key"
           >
-            {{ t('workshop.build.getKey', locale) }}
+            {{ t('workshop.build.getKey') }}
           </a>
           <a
             :href="externalLinks.docsComfyRouter"
@@ -70,7 +71,7 @@ const SNIPPET = `curl https://api.comfy.org/v2/models/{provider}/{model} \\
             rel="noopener noreferrer"
             class="inline-flex h-11 items-center gap-1 rounded-2xl border border-transparency-white-t20 px-6 text-sm font-medium text-primary-warm-white transition-colors outline-none hover:border-primary-warm-gray focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
           >
-            {{ t('workshop.build.docs', locale) }}
+            {{ t('workshop.build.docs') }}
             <ArrowUpRight class="size-4" aria-hidden="true" />
           </a>
         </div>
@@ -88,7 +89,7 @@ const SNIPPET = `curl https://api.comfy.org/v2/models/{provider}/{model} \\
         </div>
         <pre
           class="overflow-x-auto p-5 font-mono text-xs/6 text-content-secondary"
-          :aria-label="t('workshop.build.snippetLabel', locale)"
+          :aria-label="t('workshop.build.snippetLabel')"
         ><code>{{ SNIPPET }}</code></pre>
       </div>
     </div>
@@ -106,10 +107,10 @@ const SNIPPET = `curl https://api.comfy.org/v2/models/{provider}/{model} \\
           </span>
           <span class="flex min-w-0 flex-1 flex-col gap-1">
             <span class="text-base font-medium text-content-bright">
-              {{ t(path.title, locale) }}
+              {{ t(path.title) }}
             </span>
             <span class="text-sm text-content-secondary">
-              {{ t(path.body, locale) }}
+              {{ t(path.body) }}
             </span>
           </span>
           <ArrowUpRight

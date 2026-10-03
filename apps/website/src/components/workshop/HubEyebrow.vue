@@ -13,7 +13,7 @@ const { section } = defineProps<{ section: HubSection }>()
 
 <template>
   <p v-if="section === 'explore'" :class="workshopEyebrowClass">
-    {{ t('workshop.catalogue.eyebrow', 'en') }}
+    {{ t('workshop.catalogue.eyebrow') }}
   </p>
   <a
     v-else
@@ -30,6 +30,6 @@ const { section } = defineProps<{ section: HubSection }>()
       class="size-4 transition-transform group-hover:-translate-x-0.5"
       aria-hidden="true"
     />
-    {{ t('workshop.catalogue.eyebrow', 'en') }}
+    {{ t('workshop.catalogue.eyebrow') }}
   </a>
 </template>

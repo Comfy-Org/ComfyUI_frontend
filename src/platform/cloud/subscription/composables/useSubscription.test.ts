@@ -1,6 +1,6 @@
 import { useDialogService } from '@/services/dialogService'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useAuthStore } from '@/stores/authStore'
+import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, effectScope } from 'vue'
 
@@ -34,7 +34,8 @@ const {
   mockLocalStorage,
   mockReportTelemetryError,
   mockReportError,
-  mockAccessBillingPortal
+  mockAccessBillingPortal,
+  mockAccessBillingPortalDirect
 } = await vi.hoisted(async () => {
   const { ref } = await import('vue')
   const mockIsLoggedIn = ref(false)
@@ -48,6 +49,7 @@ const {
     mockReportTelemetryError: vi.fn(),
     mockReportError: vi.fn(),
     mockAccessBillingPortal: vi.fn(),
+    mockAccessBillingPortalDirect: vi.fn(),
     mockGetCheckoutAttribution: vi.fn(() => ({
       im_ref: 'impact-click-001',
       utm_source: 'impact'
@@ -128,7 +130,8 @@ vi.mock<unknown>(import('@/platform/telemetry/reportError'), () => ({
 vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
   useAuthActions: vi.fn(() => ({
     reportError: mockReportError,
-    accessBillingPortal: mockAccessBillingPortal
+    accessBillingPortal: mockAccessBillingPortal,
+    accessBillingPortalDirect: mockAccessBillingPortalDirect
   }))
 }))
 
@@ -244,6 +247,7 @@ beforeEach(() => {
     (input, init) => fetch(input, init)
   )
   mockAccessBillingPortal.mockResolvedValue(true)
+  mockAccessBillingPortalDirect.mockResolvedValue(true)
 })
 
 describe('useSubscription', () => {
@@ -2506,6 +2510,105 @@ describe('useSubscription', () => {
     })
   })
 
+  describe('boot read before a workspace is selected', () => {
+    const SESSION_USER = { id: 'user-123', email: 'user@example.com' }
+    const flushPromises = () => new Promise((resolve) => setTimeout(resolve))
+
+    beforeEach(() => {
+      railState.rail = { readStatus: mockReadStatus }
+      mockReadStatus.mockImplementation(async () =>
+        useTeamWorkspaceStore().activeWorkspaceId
+          ? { status: 'ok', value: buildStatus() }
+          : { status: 'error', code: 'NOT_AUTHENTICATED' }
+      )
+      Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
+    })
+
+    afterEach(() => {
+      Object.assign(useAuthStore(), { sessionUser: undefined })
+    })
+
+    it('waits on a web session until the workspace is selected', async () => {
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+      Object.assign(useAuthStore(), { sessionUser: SESSION_USER })
+      mockIsLoggedIn.value = true
+
+      const { subscriptionStatus, isInitialized } = useSubscriptionWithScope()
+      await flushPromises()
+
+      expect(mockReadStatus).not.toHaveBeenCalled()
+      expect(isInitialized.value).toBe(false)
+
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-123'
+      })
+      await flushPromises()
+
+      expect(mockReadStatus).toHaveBeenCalledOnce()
+      expect(subscriptionStatus.value).toEqual(buildStatus())
+      expect(isInitialized.value).toBe(true)
+      expect(consoleError).not.toHaveBeenCalled()
+    })
+
+    it('recovers a pending checkout on a web session only once the workspace is selected', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-session-boot',
+          started_at_ms: Date.now(),
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+      let resolveRead!: (
+        result: Awaited<ReturnType<BillingReadRail['readStatus']>>
+      ) => void
+      mockReadStatus.mockReturnValue(
+        new Promise((resolve) => {
+          resolveRead = resolve
+        })
+      )
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      Object.assign(useAuthStore(), { sessionUser: SESSION_USER })
+      mockIsLoggedIn.value = true
+
+      const { subscriptionStatus, isInitialized } = useSubscriptionWithScope()
+      window.dispatchEvent(new Event('pageshow'))
+      await flushPromises()
+
+      expect(mockReadStatus).not.toHaveBeenCalled()
+
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-123'
+      })
+      await flushPromises()
+
+      expect(mockReadStatus).toHaveBeenCalledOnce()
+      expect(isInitialized.value).toBe(false)
+
+      resolveRead({ status: 'ok', value: buildStatus() })
+      await flushPromises()
+
+      expect(subscriptionStatus.value).toEqual(buildStatus())
+      expect(isInitialized.value).toBe(true)
+    })
+
+    it('reads at once without a web session, as before', async () => {
+      mockReadStatus.mockResolvedValue({ status: 'ok', value: buildStatus() })
+      mockIsLoggedIn.value = true
+
+      const { subscriptionStatus, isInitialized } = useSubscriptionWithScope()
+      await flushPromises()
+
+      expect(mockReadStatus).toHaveBeenCalledOnce()
+      expect(subscriptionStatus.value).toEqual(buildStatus())
+      expect(isInitialized.value).toBe(true)
+    })
+  })
+
   describe('requireActiveSubscription', () => {
     it('should not show dialog when subscription is active', async () => {
       mockGetBillingStatus.mockResolvedValue({
@@ -2620,14 +2723,34 @@ describe('useSubscription', () => {
 
       await manageSubscription()
 
-      expect(useAuthActions().accessBillingPortal).toHaveBeenCalled()
+      expect(useAuthActions().accessBillingPortalDirect).toHaveBeenCalled()
+    })
+
+    it('rethrows a rail-mismatch refusal from the billing portal', async () => {
+      const refusal = new AuthStoreError(
+        'refused',
+        409,
+        'WORKSPACE_BILLING_REQUIRED'
+      )
+      mockAccessBillingPortalDirect.mockRejectedValueOnce(refusal)
+      const { manageSubscription } = useSubscriptionWithScope()
+
+      await expect(manageSubscription()).rejects.toBe(refusal)
+      expect(mockReportError).not.toHaveBeenCalled()
+    })
+
+    it('reports other billing portal failures instead of throwing', async () => {
+      const failure = new Error('portal down')
+      mockAccessBillingPortalDirect.mockRejectedValueOnce(failure)
+      const { manageSubscription } = useSubscriptionWithScope()
+
+      await expect(manageSubscription()).resolves.toBeUndefined()
+      expect(mockReportError).toHaveBeenCalledWith(failure)
     })
 
     it('does not start cancellation watching when the billing portal does not open', async () => {
       useCurrentUser().isLoggedIn = computed(() => true)
-      vi.mocked(useAuthActions().accessBillingPortal).mockResolvedValueOnce(
-        false
-      )
+      mockAccessBillingPortalDirect.mockResolvedValueOnce(false)
 
       mockGetBillingStatus.mockResolvedValue({
         is_active: true,

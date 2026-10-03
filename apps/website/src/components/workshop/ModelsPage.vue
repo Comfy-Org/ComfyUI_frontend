@@ -14,7 +14,7 @@ import type { FunctionalComponent } from 'vue'
 import { isWorkflowSlug } from '../../config/models-catalogue'
 import { fetchModelsCatalogue } from '../../config/models-catalogue-data'
 import { useWorkshopSession } from '../../config/workshop-session-state'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import {
   useWorkshopAppsEnabled,
   useWorkshopEnabled,
@@ -28,6 +28,7 @@ import WorkshopGate from './WorkshopGate.vue'
 import WorkshopLoading from './WorkshopLoading.vue'
 import { workshopHeadingClass } from './workshopHeadingClasses'
 
+const { t } = translationsFor('en')
 const {
   slug,
   workflowId,
@@ -40,7 +41,7 @@ const {
   section?: HubSection
 }>()
 
-const loadingLabel = t('workshop.load.pending', 'en')
+const loadingLabel = t('workshop.load.pending')
 const isWorkflow = computed(() => (slug ? isWorkflowSlug(slug) : false))
 const mounted = useMounted()
 const catalogueRevision = shallowRef(0)
@@ -138,7 +139,7 @@ const LoadError: FunctionalComponent<{ error?: unknown }> = () =>
       'data-testid': 'models-load-error'
     },
     [
-      h('p', { class: 'text-lg' }, t('workshop.load.failed', 'en')),
+      h('p', { class: 'text-lg' }, t('workshop.load.failed')),
       h(
         'button',
         {
@@ -150,7 +151,7 @@ const LoadError: FunctionalComponent<{ error?: unknown }> = () =>
             Content.value = createContent()
           }
         },
-        t('workshop.error.retry', 'en')
+        t('workshop.error.retry')
       )
     ]
   )

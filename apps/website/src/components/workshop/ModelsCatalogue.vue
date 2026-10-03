@@ -9,7 +9,7 @@ import type {
   WorkshopModel
 } from '../../config/models-catalogue'
 import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import BuildApiBand from './BuildApiBand.vue'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
 import type { HubSection } from '../../lib/workshop/hub-section'
@@ -44,6 +44,7 @@ const {
   locale?: Locale
   section?: HubSection
 }>()
+const { t } = translationsFor(locale)
 
 const inSection = ref(false)
 // A category replaces the page's own heading and the switch between
@@ -131,7 +132,7 @@ whenever(
         "
         :aria-hidden="tab !== section"
       >
-        {{ t(subtitle, locale) }}
+        {{ t(subtitle) }}
       </p>
     </div>
   </div>

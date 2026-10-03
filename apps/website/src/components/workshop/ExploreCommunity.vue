@@ -3,7 +3,7 @@ import { externalLinks, getRoutes } from '../../config/routes'
 import type { GalleryItem } from '../../data/gallery'
 import { visibleGalleryItems } from '../../data/gallery'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import GalleryItemAttribution from '../gallery/GalleryItemAttribution.vue'
 
 const POSTS = 16
@@ -12,6 +12,7 @@ const { items = visibleGalleryItems, locale = 'en' } = defineProps<{
   items?: readonly GalleryItem[]
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const gallery = getRoutes(locale).gallery
 const posts = items.slice(0, POSTS)
@@ -28,16 +29,16 @@ const posts = items.slice(0, POSTS)
     >
       <div class="flex max-w-xl flex-col gap-2">
         <p class="text-sm font-medium text-primary-comfy-yellow">
-          {{ t('workshop.explore.communityTitle', locale) }}
+          {{ t('workshop.explore.communityTitle') }}
         </p>
         <h2
           id="explore-community"
           class="text-3xl/tight font-light text-primary-warm-white"
         >
-          {{ t('workshop.explore.communityHeading', locale) }}
+          {{ t('workshop.explore.communityHeading') }}
         </h2>
         <p class="text-sm text-content-secondary">
-          {{ t('workshop.explore.communityBody', locale) }}
+          {{ t('workshop.explore.communityBody') }}
         </p>
       </div>
       <div class="flex flex-wrap gap-2">
@@ -45,7 +46,7 @@ const posts = items.slice(0, POSTS)
           :href="gallery"
           class="rounded-xl bg-primary-comfy-yellow px-4 py-2 text-sm font-medium text-primary-comfy-ink outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
         >
-          {{ t('workshop.explore.communityExplore', locale) }}
+          {{ t('workshop.explore.communityExplore') }}
         </a>
         <a
           :href="externalLinks.gallerySubmit"
@@ -53,7 +54,7 @@ const posts = items.slice(0, POSTS)
           rel="noopener noreferrer"
           class="rounded-xl border border-transparency-white-t20 px-4 py-2 text-sm font-medium text-primary-warm-white outline-none hover:bg-hub-surface-hover focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
         >
-          {{ t('workshop.explore.communityShare', locale) }}
+          {{ t('workshop.explore.communityShare') }}
         </a>
       </div>
     </div>
