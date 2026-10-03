@@ -24,8 +24,9 @@ export class ModelNodeProvider {
 export const useModelToNodeStore = defineStore('modelToNode', () => {
   const modelToNodeMap = ref<Partial<Record<string, ModelNodeProvider[]>>>({})
   const nodeDefStore = useNodeDefStore()
-  const haveDefaultsLoaded = ref(false)
-  const isReady = computed(() => haveDefaultsLoaded.value)
+  const isReady = computed(
+    () => Object.keys(nodeDefStore.nodeDefsByName).length > 0
+  )
 
   const registeredNodeTypes = computed<
     Partial<Record<string, string | RegExp>>
@@ -160,16 +161,22 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
   }
 
   function registerDefaults() {
-    if (haveDefaultsLoaded.value) {
-      return
-    }
     if (Object.keys(nodeDefStore.nodeDefsByName).length === 0) {
       return
     }
-    haveDefaultsLoaded.value = true
 
     for (const [modelType, nodeClass, key] of MODEL_NODE_MAPPINGS) {
-      quickRegister(modelType, nodeClass, key)
+      if (!Object.hasOwn(nodeDefStore.nodeDefsByName, nodeClass)) continue
+      const nodeDef = nodeDefStore.nodeDefsByName[nodeClass]
+
+      const providers = (modelToNodeMap.value[modelType] ??= [])
+      const alreadyRegistered = providers.some(
+        (provider) =>
+          provider.nodeDef.name === nodeDef.name && provider.key === key
+      )
+      if (!alreadyRegistered) {
+        providers.push(new ModelNodeProvider(nodeDef, key))
+      }
     }
   }
 
