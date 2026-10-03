@@ -45,6 +45,7 @@ export function buildKSamplerError(
  */
 export class ExecutionHelper {
   private jobCounter = 0
+  private workflowId: string | undefined
   private readonly completedJobs: RawJobListItem[] = []
   private readonly page: ComfyPage['page']
   private readonly command: ComfyPage['command']
@@ -67,6 +68,33 @@ export class ExecutionHelper {
       )
     }
     return this.ws
+  }
+
+  /**
+   * Stamp `workflow_id` on every JSON frame sent inside `fn`, the way core's
+   * `send_sync` spreads a prompt's `workflow_metadata` onto outgoing messages.
+   * Leave `workflowId` undefined to emit frames the way a core build without
+   * that support does — the legacy backend profile.
+   */
+  withWorkflowId<T>(workflowId: string | undefined, fn: () => T): T {
+    const previous = this.workflowId
+    this.workflowId = workflowId
+    try {
+      return fn()
+    } finally {
+      this.workflowId = previous
+    }
+  }
+
+  /**
+   * Metadata first so a frame's own fields always win on collision, matching
+   * core's `{**workflow_metadata, **data}`.
+   */
+  private emit(type: string, data: Record<string, unknown>): void {
+    const payload = this.workflowId
+      ? { workflow_id: this.workflowId, ...data }
+      : data
+    this.requireWs().send(JSON.stringify({ type, data: payload }))
   }
 
   /**
@@ -168,22 +196,12 @@ export class ExecutionHelper {
 
   /** Send `execution_start` WS event. */
   executionStart(jobId: string): void {
-    this.requireWs().send(
-      JSON.stringify({
-        type: 'execution_start',
-        data: { prompt_id: jobId, timestamp: Date.now() }
-      })
-    )
+    this.emit('execution_start', { prompt_id: jobId, timestamp: Date.now() })
   }
 
   /** Send `executing` WS event to signal which node is currently running. */
   executing(jobId: string, nodeId: string | null): void {
-    this.requireWs().send(
-      JSON.stringify({
-        type: 'executing',
-        data: { prompt_id: jobId, node: nodeId }
-      })
-    )
+    this.emit('executing', { prompt_id: jobId, node: nodeId })
   }
 
   /** Send `executed` WS event with node output. */
@@ -192,45 +210,30 @@ export class ExecutionHelper {
     nodeId: string,
     output: Record<string, unknown> | null | undefined
   ): void {
-    this.requireWs().send(
-      JSON.stringify({
-        type: 'executed',
-        data: {
-          prompt_id: jobId,
-          node: nodeId,
-          display_node: nodeId,
-          output
-        }
-      })
-    )
+    this.emit('executed', {
+      prompt_id: jobId,
+      node: nodeId,
+      display_node: nodeId,
+      output
+    })
   }
 
   /** Send `execution_success` WS event. */
   executionSuccess(jobId: string): void {
-    this.requireWs().send(
-      JSON.stringify({
-        type: 'execution_success',
-        data: { prompt_id: jobId, timestamp: Date.now() }
-      })
-    )
+    this.emit('execution_success', { prompt_id: jobId, timestamp: Date.now() })
   }
 
   /** Send `execution_error` WS event. */
   executionError(jobId: string, nodeId: string, message: string): void {
-    this.requireWs().send(
-      JSON.stringify({
-        type: 'execution_error',
-        data: {
-          prompt_id: jobId,
-          timestamp: Date.now(),
-          node_id: nodeId,
-          node_type: 'Unknown',
-          exception_message: message,
-          exception_type: 'RuntimeError',
-          traceback: []
-        }
-      })
-    )
+    this.emit('execution_error', {
+      prompt_id: jobId,
+      timestamp: Date.now(),
+      node_id: nodeId,
+      node_type: 'Unknown',
+      exception_message: message,
+      exception_type: 'RuntimeError',
+      traceback: []
+    })
   }
 
   /** Send `execution_error` WS event carrying cloud validation node errors. */
@@ -257,28 +260,18 @@ export class ExecutionHelper {
 
   /** Send `execution_interrupted` WS event (user-initiated stop). */
   executionInterrupted(jobId: string, nodeId: string): void {
-    this.requireWs().send(
-      JSON.stringify({
-        type: 'execution_interrupted',
-        data: {
-          prompt_id: jobId,
-          timestamp: Date.now(),
-          node_id: nodeId,
-          node_type: 'Unknown',
-          executed: []
-        }
-      })
-    )
+    this.emit('execution_interrupted', {
+      prompt_id: jobId,
+      timestamp: Date.now(),
+      node_id: nodeId,
+      node_type: 'Unknown',
+      executed: []
+    })
   }
 
   /** Send `progress` WS event. */
   progress(jobId: string, nodeId: string, value: number, max: number): void {
-    this.requireWs().send(
-      JSON.stringify({
-        type: 'progress',
-        data: { prompt_id: jobId, node: nodeId, value, max }
-      })
-    )
+    this.emit('progress', { prompt_id: jobId, node: nodeId, value, max })
   }
 
   /**
@@ -301,12 +294,7 @@ export class ExecutionHelper {
 
   /** Send `progress_state` WS event with per-node execution state. */
   progressState(jobId: string, nodes: Record<string, NodeProgressState>): void {
-    this.requireWs().send(
-      JSON.stringify({
-        type: 'progress_state',
-        data: { prompt_id: jobId, nodes }
-      })
-    )
+    this.emit('progress_state', { prompt_id: jobId, nodes })
   }
 
   /**
@@ -339,7 +327,11 @@ export class ExecutionHelper {
     this.status(0)
   }
 
-  /** Send `status` WS event to update queue count. */
+  /**
+   * Send `status` WS event to update queue count. Deliberately NOT stamped with
+   * `workflow_id`: core exempts `status` because one server-wide socket serves
+   * every workflow, so a queue frame has no single owner.
+   */
   status(queueRemaining: number): void {
     this.requireWs().send(
       JSON.stringify({
