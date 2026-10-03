@@ -13,6 +13,7 @@ import type {
   ApplyMode,
   FrameChanges,
   LiveGraphApplierDeps,
+  NodeChange,
   RemoteApplyContext
 } from './liveGraphApplier'
 import { LocalWidgetWrites } from './localWidgetWrites'
@@ -21,6 +22,7 @@ import { changesForRejectedOps } from './rejectedOpChanges'
 interface BoundTarget {
   follower: FollowerDoc
   collector: DocChangeCollector
+  reportedPendingNodes: Map<string, NodeChange>
 }
 
 /** Document node entries one frame added and removed. */
@@ -48,6 +50,16 @@ function docNodeDelta(changes: FrameChanges): DocNodeDelta {
     else if (change === 'delete') removed.push(id)
   }
   return { added, removed }
+}
+
+function pendingNodeDelta(target: BoundTarget, changes: FrameChanges) {
+  const frameNodes = new Map(
+    [...changes.nodes].filter(
+      ([id, change]) => target.reportedPendingNodes.get(id) !== change
+    )
+  )
+  target.reportedPendingNodes = new Map(changes.nodes)
+  return docNodeDelta({ ...changes, nodes: frameNodes })
 }
 
 /**
@@ -101,7 +113,8 @@ export class AgentCrdtProjection {
     this.unbind(workflowId)
     this.targets.set(workflowId, {
       follower,
-      collector: new DocChangeCollector(follower.doc)
+      collector: new DocChangeCollector(follower.doc),
+      reportedPendingNodes: new Map()
     })
   }
 
@@ -119,9 +132,12 @@ export class AgentCrdtProjection {
   applyFrame(update: DocUpdate): FrameOutcome {
     const target = this.targets.get(update.workflowId)
     if (!target) return { applied: false, nodes: EMPTY_DELTA }
-    if (!this.getGraph())
-      return { applied: false, nodes: docNodeDelta(target.collector.peek()) }
+    if (!this.getGraph()) {
+      const changes = target.collector.peek()
+      return { applied: false, nodes: pendingNodeDelta(target, changes) }
+    }
     const changes = target.collector.take()
+    target.reportedPendingNodes.clear()
     const { createdNodeIds, failureCount } = this.apply(
       update.workflowId,
       target,
@@ -148,6 +164,7 @@ export class AgentCrdtProjection {
   applyCollected(workflowId: string): NodeId[] {
     const target = this.targets.get(workflowId)
     if (!target || !this.getGraph()) return []
+    target.reportedPendingNodes.clear()
     return this.apply(
       workflowId,
       target,
@@ -182,6 +199,7 @@ export class AgentCrdtProjection {
    */
   replaceOnNextFrame(workflowId: string): void {
     this.targets.get(workflowId)?.collector.discard()
+    this.targets.get(workflowId)?.reportedPendingNodes.clear()
     this.replacedLineages.add(workflowId)
     this.localWrites.clear()
   }
@@ -199,6 +217,7 @@ export class AgentCrdtProjection {
     const target = this.targets.get(workflowId)
     if (!target) return EMPTY_DELTA
     const changes = target.collector.take()
+    target.reportedPendingNodes.clear()
     this.localWrites.settleAgainst((nodeId, widget) =>
       readDocWidgetValue(target.follower.doc, nodeId, widget)
     )
