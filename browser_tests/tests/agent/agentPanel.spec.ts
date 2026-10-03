@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 
 import type { WebSocketRoute } from '@playwright/test'
-import { expect, mergeTests } from '@playwright/test'
+import { errors, expect, mergeTests } from '@playwright/test'
 
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
@@ -247,6 +247,57 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     ).toBeVisible()
     await expect(agentPanel.composer).toHaveText(prompt)
     await expect(agentPanel.sendButton).toBeEnabled()
+  })
+
+  test('shows a privacy-safe failure without retrying an unreadable accepted response', async ({
+    agentPanel,
+    comfyPage
+  }) => {
+    // Regression: https://github.com/Comfy-Org/ComfyUI_frontend/pull/19740
+    let postCount = 0
+    await comfyPage.page.route(
+      '**/api/agent/threads/*/messages',
+      async (route) => {
+        if (route.request().method() !== 'POST') return route.fallback()
+        postCount += 1
+        await route.fulfill({
+          status: 202,
+          contentType: 'application/json',
+          body: 'not-json'
+        })
+      }
+    )
+    await agentPanel.open()
+    await agentPanel.selectWorkflow()
+
+    await agentPanel.sendMessage('Build a product photo workflow')
+
+    await expect(
+      agentPanel.root.getByText(
+        `${enMessages.agent.sendFailed}: Unreadable agent response body`,
+        { exact: true }
+      )
+    ).toBeVisible()
+    // Reading the counter once, at the instant the notice renders, would also
+    // pass if a duplicate send landed a tick later - which is the whole
+    // regression. So hold the window open past the notice and require that no
+    // second POST arrives, the way Actionbar's prompt-request helper proves
+    // the absence of a further prompt.
+    const resend = await comfyPage.page
+      .waitForRequest(
+        (request) =>
+          request.method() === 'POST' &&
+          /\/api\/agent\/threads\/[^/]+\/messages$/.test(request.url()),
+        { timeout: 2_000 }
+      )
+      .then(() => 'resent' as const)
+      .catch((error: unknown) => {
+        if (error instanceof errors.TimeoutError) return 'none' as const
+        throw error
+      })
+
+    expect(resend).toBe('none')
+    expect(postCount).toBe(1)
   })
 
   test('keeps the standing paywall in sync across turn completion and panel close', async ({

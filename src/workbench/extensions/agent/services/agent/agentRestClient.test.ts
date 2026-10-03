@@ -426,7 +426,7 @@ describe('error mapping', () => {
     expect(error).not.toBeInstanceOf(AgentApiError)
   })
 
-  it('distinguishes a truncated 2xx body from a rejected request', async () => {
+  it('keeps a genuinely unreadable POST response distinct without exposing its route', async () => {
     respond(
       new Response('{"message_id":"m1","thread_', {
         status: 202,
@@ -440,6 +440,107 @@ describe('error mapping', () => {
 
     expect(error).toBeInstanceOf(AgentResponseUnreadableError)
     expect(error).not.toBeInstanceOf(AgentApiError)
+    expect((error as Error).message).toBe('Unreadable agent response body')
+  })
+
+  it.for([
+    new TypeError('Failed to fetch'),
+    new DOMException('The operation was aborted', 'AbortError')
+  ])(
+    'preserves transport failure identity after response headers',
+    async (cause) => {
+      const response = jsonResponse(200, [])
+      vi.spyOn(response, 'json').mockRejectedValueOnce(cause)
+      respond(response)
+
+      await expect(makeClient().listThreads()).rejects.toBe(cause)
+    }
+  )
+
+  it.for([
+    new TypeError('Failed to read response body'),
+    new DOMException('The operation was aborted', 'AbortError')
+  ])(
+    'classifies a POST body transport failure as an unreadable accepted response',
+    async (cause) => {
+      const response = jsonResponse(202, { message_id: 'm1' })
+      vi.spyOn(response, 'json').mockRejectedValueOnce(cause)
+      respond(response)
+
+      const error = await makeClient()
+        .postMessage('t1', { content: 'hi' })
+        .catch((e: unknown) => e)
+
+      expect(error).toBeInstanceOf(AgentResponseUnreadableError)
+      expect((error as Error).cause).toBe(cause)
+    }
+  )
+
+  // `reportError` forwards `cause` to Sentry's linked-error chain, to Datadog
+  // (which copies `cause` onto the error it sends) and to the console, and V8
+  // quotes the parsed text in a `JSON.parse` message - the whole body when it
+  // is short, a window around the offending position otherwise. An
+  // unsanitised cause therefore carries response-body content off the client.
+  //
+  // Each row asserts the engine really does quote `leaks` before asserting
+  // that the wrapped error does not, so the day V8 stops quoting bodies this
+  // fails loudly instead of passing vacuously.
+  it.for([
+    {
+      label: 'the whole short body',
+      body: 'not-json t-7f3a9c',
+      leaks: 't-7f3a9c'
+    },
+    {
+      label: 'a window around the offending position',
+      body: '{"message_id":"m1","t-7f3a9c":@@@}',
+      leaks: 't-7f3a9c'
+    }
+  ])(
+    'keeps the response body out of the error chain when the parser quotes $label',
+    async ({ body, leaks }) => {
+      const unsanitised = await new Response(body)
+        .json()
+        .then(() => undefined)
+        .catch((e: unknown) => e as Error)
+      expect(unsanitised?.message).toContain(leaks)
+
+      respond(
+        new Response(body, {
+          status: 202,
+          headers: { 'Content-Type': 'application/json' }
+        })
+      )
+
+      const error = (await makeClient()
+        .postMessage('t1', { content: 'hi' })
+        .catch((e: unknown) => e)) as Error
+
+      expect(error).toBeInstanceOf(AgentResponseUnreadableError)
+      const cause = error.cause as Error
+      expect(cause.name).toBe('SyntaxError')
+      const chain = [error.message, cause.message, cause.stack ?? ''].join('\n')
+      expect(chain).not.toContain(leaks)
+    }
+  )
+
+  // `instanceof` is realm-sensitive, so a `Response` from an
+  // extension-patched `fetch` or an iframe context rejects with that realm's
+  // `SyntaxError` and must not lose the unreadable-body classification.
+  it('classifies a cross-realm parse failure as an unreadable response', async () => {
+    const crossRealm = Object.assign(new Error('Unexpected token'), {
+      name: 'SyntaxError'
+    })
+    const response = jsonResponse(200, [])
+    vi.spyOn(response, 'json').mockRejectedValueOnce(crossRealm)
+    respond(response)
+
+    const error = await makeClient()
+      .listThreads()
+      .catch((e: unknown) => e)
+
+    expect(crossRealm).not.toBeInstanceOf(SyntaxError)
+    expect(error).toBeInstanceOf(AgentResponseUnreadableError)
   })
 })
 

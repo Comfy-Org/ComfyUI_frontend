@@ -49,10 +49,49 @@ export class AgentApiError extends Error {
 }
 
 export class AgentResponseUnreadableError extends Error {
-  constructor(route: string, cause: unknown) {
-    super(`Unreadable agent response body from ${route}`, { cause })
+  constructor(cause: unknown) {
+    super('Unreadable agent response body', { cause })
     this.name = 'AgentResponseUnreadableError'
   }
+}
+
+/**
+ * A JSON parse failure, including one raised in another realm.
+ *
+ * `instanceof` alone is realm-sensitive: a `Response` handed over by an
+ * extension-patched `fetch`, a preload script or an iframe context parses
+ * against that realm's `SyntaxError`, so the check fails and a genuinely
+ * malformed body gets reclassified as a transport failure - which on an
+ * already-accepted turn is exactly the retryable-looking misread
+ * `AgentResponseUnreadableError` exists to prevent. The `name` fallback keeps
+ * the classification intact across realms.
+ */
+function isJsonSyntaxError(error: unknown): error is Error {
+  return (
+    error instanceof SyntaxError ||
+    (error instanceof Error && error.name === 'SyntaxError')
+  )
+}
+
+/**
+ * The parse failure with its body excerpt dropped.
+ *
+ * V8 embeds a window of the parsed text in a `JSON.parse` `SyntaxError`
+ * message - `Unexpected token 'o', "not-json" is not valid JSON`, and
+ * `...","secret":@@@}"` for a failure mid-body - and `reportError` forwards an
+ * error's `cause` to Sentry's linked-error chain, to Datadog (which copies
+ * `cause` onto the error it sends) and to the console. Retaining that message
+ * would carry response-body content off the client, which is the same leak
+ * dropping the route from this error's own message was meant to close. The
+ * parser's `name` is the triage signal, so only it survives; a transport
+ * cause (`TypeError`, `AbortError`) is kept verbatim because its message is a
+ * fixed browser string, never body content.
+ */
+function withoutBodyExcerpt(error: unknown): unknown {
+  if (!isJsonSyntaxError(error)) return error
+  const sanitized = new Error('Response body was not valid JSON')
+  sanitized.name = error.name
+  return sanitized
 }
 
 export type OpenTabsSnapshot = Pick<
@@ -378,7 +417,12 @@ export function createAgentRestClient() {
     try {
       payload = await response.json()
     } catch (error) {
-      throw new AgentResponseUnreadableError(route, error)
+      // Once a non-idempotent request has received successful response
+      // headers, any body-read failure is an unreadable acknowledgement. The
+      // server may already have accepted and billed the turn, so exposing the
+      // raw transport error would incorrectly make it eligible for retry.
+      if (init?.method !== 'POST' && !isJsonSyntaxError(error)) throw error
+      throw new AgentResponseUnreadableError(withoutBodyExcerpt(error))
     }
     return schema.parse(payload)
   }
