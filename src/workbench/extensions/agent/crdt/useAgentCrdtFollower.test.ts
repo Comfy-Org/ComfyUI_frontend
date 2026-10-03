@@ -1089,6 +1089,32 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
+    it('reports an actorless remote frame without exposing actor identity', () => {
+      const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 9,
+        opIds: ['op-join']
+      })
+
+      expect(
+        telemetryState.trackAgentGraphProjection
+      ).toHaveBeenCalledExactlyOnceWith({
+        op_id: 'op-join',
+        op_count: 1,
+        sequence: 9,
+        stage: 'applied',
+        added_count: 0,
+        removed_count: 0,
+        apply_failure_count: 0
+      })
+      expect(telemetryState.trackAgentGraphProjection).not.toHaveBeenCalledWith(
+        expect.objectContaining({ actor: expect.anything() })
+      )
+      unmount()
+    })
+
     it('counts a frame the projection had no binding for as skipped', () => {
       projectionState.applyFrame.mockReturnValueOnce(
         projectionState.notApplied()
@@ -1167,6 +1193,32 @@ describe('useAgentCrdtFollower', () => {
       )
       unmount()
     })
+
+    it.for(['doc_reset', 'follower_replaced'])(
+      'does not report stale pending metadata after %s discards it',
+      async (discardEvent) => {
+        const graph = shallowRef<LGraph | null>(null)
+        const { unmount } = mountFollower('wf-1', true, () => graph.value)
+        projectionState.applyFrame.mockReturnValueOnce(
+          projectionState.notApplied({ added: ['3'], removed: [] })
+        )
+
+        dispatchFrame('doc_update', {
+          workflowId: 'wf-1',
+          seq: 9,
+          actor: 'agent:thread:turn'
+        })
+        telemetryState.trackAgentGraphProjection.mockClear()
+
+        dispatchFrame(discardEvent, { workflowId: 'wf-1' })
+        graph.value = fakeGraph
+        await nextTick()
+
+        expect(projectionState.applyCollected).toHaveBeenCalledWith('wf-1')
+        expect(telemetryState.trackAgentGraphProjection).not.toHaveBeenCalled()
+        unmount()
+      }
+    )
 
     it('does not apply for a graph that appears while the target is inactive', async () => {
       const graph = shallowRef<LGraph | null>(null)

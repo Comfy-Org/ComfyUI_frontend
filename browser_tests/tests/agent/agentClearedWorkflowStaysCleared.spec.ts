@@ -132,7 +132,11 @@ test.describe(
     // absent to removed without a render in between and the positive control
     // below would be asserting a node the app was never given time to mount.
     // Replaying the recorded gaps puts a rendered checkpoint between them.
-    test.use({ conversationCase: CASE, replayTiming: 'recorded' })
+    test.use({
+      conversationCase: CASE,
+      replayTiming: 'recorded',
+      telemetryEnabled: true
+    })
 
     test.beforeEach(async ({ page }) => enableCrdtDebugPanel(page))
 
