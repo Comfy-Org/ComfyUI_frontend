@@ -1,5 +1,3 @@
-import type { ComfyCommandImpl } from '@/stores/commandStore'
-
 export interface MenuItemCommandEvent {
   originalEvent: Event
   item: MenuItem
@@ -16,24 +14,17 @@ interface MenuItemMetadata {
   class?: string | (() => string)
   tooltip?: string
   new?: boolean
-  comfyCommand?: Partial<ComfyCommandImpl>
-  parentPath?: string
-  isAsync?: boolean
-  updateTitle?: (title: string) => void
-  isBlueprint?: boolean
-  shortcut?: string
-  color?: string
-  isShapeSubmenuItem?: boolean
+  shortcut?: string | (() => string | undefined)
 }
 
-interface MenuItemSeparator extends MenuItemMetadata {
+export interface MenuItemSeparator extends MenuItemMetadata {
   separator: true
   command?: never
   items?: never
   checked?: never
 }
 
-interface MenuItemSubmenu extends MenuItemMetadata {
+export interface MenuItemSubmenu extends MenuItemMetadata {
   separator?: false
   items: MenuItem[]
   command?: never
@@ -44,7 +35,7 @@ export interface MenuItemAction extends MenuItemMetadata {
   separator?: false
   items?: never
   command?: (event: MenuItemCommandEvent) => unknown
-  checked?: boolean
+  checked?: boolean | (() => boolean)
 }
 
 export type MenuItem = MenuItemSeparator | MenuItemSubmenu | MenuItemAction

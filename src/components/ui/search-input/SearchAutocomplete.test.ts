@@ -103,9 +103,11 @@ describe('SearchAutocomplete', () => {
     const input = screen.getByRole('combobox')
     await user.click(input)
     expect(await screen.findByRole('option', { name: 'foo' })).toBeVisible()
+    await waitFor(() => expect(onHighlight).toHaveBeenCalledWith('foo'))
+    onHighlight.mockClear()
 
     await user.keyboard('{ArrowDown}')
-    await waitFor(() => expect(onHighlight).toHaveBeenCalledWith('foo'))
+    await waitFor(() => expect(onHighlight).toHaveBeenCalledWith('bar'))
   })
 
   it('does not select an option when Enter is pressed during composition', async () => {

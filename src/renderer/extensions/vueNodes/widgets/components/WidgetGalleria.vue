@@ -19,6 +19,7 @@ import type { IGalleriaWidget } from '@/lib/litegraph/src/types/widgets'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetGalleriaCarousel from './WidgetGalleriaCarousel.vue'
+import type { GalleryCarouselImage } from './WidgetGalleriaCarousel.vue'
 
 type GalleryValue = NonNullable<IGalleriaWidget['value']>
 type GalleryWidgetOptions = IGalleriaWidget['options']
@@ -31,20 +32,21 @@ const { widget } = defineProps<{
 
 const activeIndex = ref(0)
 
-const galleryImages = computed(() => {
+const galleryImages = computed<GalleryCarouselImage[]>(() => {
   if (!value.value || !Array.isArray(value.value)) return []
 
   return value.value
     .filter((item) => item !== null && item !== undefined)
     .map((item) => {
       if (typeof item === 'string') {
-        return {
-          itemImageSrc: item,
-          thumbnailImageSrc: item,
-          alt: undefined
-        }
+        return { src: item, thumbnailSrc: item }
       }
-      return item ?? {}
+      return {
+        src: item.itemImageSrc || item.src || '',
+        thumbnailSrc:
+          item.thumbnailImageSrc || item.itemImageSrc || item.src || undefined,
+        alt: item.alt
+      }
     })
 })
 

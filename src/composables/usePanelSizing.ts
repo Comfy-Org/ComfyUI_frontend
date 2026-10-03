@@ -87,15 +87,28 @@ export function usePanelSizing(
   )
   let gesture:
     | {
-        handle: Element
-        panels: {
-          index: number
-          element: HTMLElement
-          width: number
-          key: string
-        }[]
+        index: number
+        element: HTMLElement
+        width: number
+        key: string
       }
     | undefined
+
+  function capturePanel(panelId: string) {
+    if (gesture) return
+    const element = document.querySelector(`[data-panel-id="${panelId}"]`)
+    if (!(element instanceof HTMLElement)) return
+    const index = stored.findIndex((panel) => panel.id === panelId)
+    if (index < 0) return
+    const panel = stored[index]
+    if (!toValue(panel.visible)) return
+    gesture = {
+      index,
+      element,
+      width: element.getBoundingClientRect().width,
+      key: toValue(panel.storageKey)
+    }
+  }
 
   function onResizeStart(event: Event) {
     const handle =
@@ -104,44 +117,40 @@ export function usePanelSizing(
             '[data-panel-resize-handle-id][data-orientation="horizontal"]'
           )
         : null
-    if (!handle || gesture?.handle === handle) return
+    if (!handle || gesture) return
     const adjacent = [handle.previousElementSibling, handle.nextElementSibling]
-    gesture = {
-      handle,
-      panels: stored.flatMap((panel, index) => {
-        if (!toValue(panel.visible)) return []
-        const element = adjacent.find(
-          (el) => el?.getAttribute('data-panel-id') === panel.id
-        )
-        return element instanceof HTMLElement
-          ? [
-              {
-                index,
-                element,
-                width: element.getBoundingClientRect().width,
-                key: toValue(panel.storageKey)
-              }
-            ]
-          : []
-      })
-    }
+    const panel = stored.find(({ id }) =>
+      adjacent.some((element) => element?.getAttribute('data-panel-id') === id)
+    )
+    if (panel) capturePanel(panel.id)
+  }
+
+  function onResizeDragging(dragging: boolean, panelId: string) {
+    if (dragging) capturePanel(panelId)
+    else onResizeEnd()
   }
 
   function onResizeEnd() {
-    for (const start of gesture?.panels ?? []) {
-      const panel = stored[start.index]
-      const width = start.element.getBoundingClientRect().width
-      if (
-        start.element.isConnected &&
-        width > 0 &&
-        width !== start.width &&
-        toValue(panel.storageKey) === start.key
-      ) {
-        panel.width.value = width
-      }
+    if (!gesture) return
+    const panel = stored[gesture.index]
+    const width = gesture.element.getBoundingClientRect().width
+    if (
+      gesture.element.isConnected &&
+      width > 0 &&
+      width !== gesture.width &&
+      toValue(panel.storageKey) === gesture.key
+    ) {
+      panel.width.value = width
     }
     gesture = undefined
   }
 
-  return { sizes, layoutKey, panelRefs, onResizeStart, onResizeEnd }
+  return {
+    sizes,
+    layoutKey,
+    panelRefs,
+    onResizeStart,
+    onResizeDragging,
+    onResizeEnd
+  }
 }

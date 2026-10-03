@@ -8,6 +8,7 @@ import Menu from './Menu.vue'
 const meta: Meta<typeof Menu> = {
   title: 'Components/Menu',
   component: Menu,
+  tags: ['autodocs'],
   args: {
     model: [
       { label: 'Open', icon: 'icon-[lucide--folder-open]' },

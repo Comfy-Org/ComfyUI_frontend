@@ -25,20 +25,6 @@ test.describe('Sidebar splitter width independence', () => {
     await comfyPage.nextFrame()
   }
 
-  async function dragGutter(comfyPage: ComfyPage, deltaX: number) {
-    const gutter = comfyPage.page.getByRole('separator').first()
-    await expect(gutter).toBeVisible()
-    await expect.poll(() => gutter.boundingBox()).not.toBeNull()
-    const box = (await gutter.boundingBox())!
-    const centerX = box.x + box.width / 2
-    const centerY = box.y + box.height / 2
-    await comfyPage.page.mouse.move(centerX, centerY)
-    await comfyPage.page.mouse.down()
-    await comfyPage.page.mouse.move(centerX + deltaX, centerY, { steps: 10 })
-    await comfyPage.page.mouse.up()
-    await comfyPage.nextFrame()
-  }
-
   async function openSidebarAt(
     comfyPage: ComfyPage,
     location: 'left' | 'right'
@@ -48,12 +34,40 @@ test.describe('Sidebar splitter width independence', () => {
     await comfyPage.menu.nodeLibraryTab.open()
   }
 
+  test('persists a resize started in the gutter margin after reload and reopen', async ({
+    comfyMouse,
+    comfyPage
+  }) => {
+    await openSidebarAt(comfyPage, 'left')
+    const sidebar = comfyPage.menu.nodeLibraryTab.panel
+    const initialWidth = (await sidebar.boundingBox())?.width ?? 0
+
+    await comfyPage.menu.nodeLibraryTab.resize(comfyMouse, 80, -4)
+    await expect
+      .poll(async () => (await sidebar.boundingBox())?.width ?? 0)
+      .toBeGreaterThan(initialWidth + 40)
+    const resizedWidth = (await sidebar.boundingBox())?.width ?? 0
+
+    await comfyPage.workflow.reloadAndWaitForApp()
+    await comfyPage.menu.nodeLibraryTab.open()
+    await expect
+      .poll(async () => (await sidebar.boundingBox())?.width ?? 0)
+      .toBeCloseTo(resizedWidth, 0)
+
+    await comfyPage.menu.nodeLibraryTab.close()
+    await comfyPage.menu.nodeLibraryTab.open()
+    await expect
+      .poll(async () => (await sidebar.boundingBox())?.width ?? 0)
+      .toBeCloseTo(resizedWidth, 0)
+  })
+
   test('keeps sidebar search state and pixel width when the viewport resizes', async ({
+    comfyMouse,
     comfyPage
   }) => {
     await comfyPage.page.setViewportSize({ width: 1400, height: 900 })
     await openSidebarAt(comfyPage, 'left')
-    await dragGutter(comfyPage, 80)
+    await comfyPage.menu.nodeLibraryTab.resize(comfyMouse, 80)
     const sidebar = comfyPage.page.getByRole('complementary', {
       name: enMessages.sideToolbar.sidebar
     })
@@ -72,11 +86,12 @@ test.describe('Sidebar splitter width independence', () => {
   })
 
   test('left and right sidebars use separate localStorage keys', async ({
+    comfyMouse,
     comfyPage
   }) => {
     // Open sidebar on the left and resize it
     await openSidebarAt(comfyPage, 'left')
-    await dragGutter(comfyPage, 100)
+    await comfyPage.menu.nodeLibraryTab.resize(comfyMouse, 100)
 
     // Read the sidebar panel width after resize
     const leftSidebar = comfyPage.page.locator('.side-bar-panel').first()
@@ -101,10 +116,13 @@ test.describe('Sidebar splitter width independence', () => {
       .toBeGreaterThan(50)
   })
 
-  test('localStorage keys include sidebar location', async ({ comfyPage }) => {
+  test('localStorage keys include sidebar location', async ({
+    comfyMouse,
+    comfyPage
+  }) => {
     // Open sidebar on the left and resize
     await openSidebarAt(comfyPage, 'left')
-    await dragGutter(comfyPage, 50)
+    await comfyPage.menu.nodeLibraryTab.resize(comfyMouse, 50)
 
     // Left-only sidebar should use the legacy key (no location suffix)
     await expect
@@ -116,7 +134,7 @@ test.describe('Sidebar splitter width independence', () => {
     // Switch to right and resize
     await comfyPage.menu.nodeLibraryTab.close()
     await openSidebarAt(comfyPage, 'right')
-    await dragGutter(comfyPage, -50)
+    await comfyPage.menu.nodeLibraryTab.resize(comfyMouse, -50)
 
     // Right sidebar should use a different key with location suffix
     await expect
@@ -136,10 +154,11 @@ test.describe('Sidebar splitter width independence', () => {
   })
 
   test('normalized panel sizes sum to approximately 100%', async ({
+    comfyMouse,
     comfyPage
   }) => {
     await openSidebarAt(comfyPage, 'left')
-    await dragGutter(comfyPage, 80)
+    await comfyPage.menu.nodeLibraryTab.resize(comfyMouse, 80)
 
     // Check that saved sizes sum to ~100%
     const getSidebarSizes = () =>

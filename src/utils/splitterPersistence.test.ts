@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { loadSplitterSizes, saveSplitterSizes } from './persistence'
+import { loadSplitterSizes, saveSplitterSizes } from './splitterPersistence'
 
-describe('Splitter', () => {
+describe('splitter persistence', () => {
   it('round-trips persisted panel sizes', () => {
     saveSplitterSizes('linear-view-splitter', [25, 75])
 

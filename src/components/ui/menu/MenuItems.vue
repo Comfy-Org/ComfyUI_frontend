@@ -76,7 +76,7 @@ const visibleItems = computed(() =>
       <DropdownMenuSubTrigger
         :aria-label="toValue(item.label)"
         :disabled="toValue(item.disabled) || item.items.length === 0"
-        :class="cn(itemClass, item.class)"
+        :class="cn(itemClass, toValue(item.class))"
       >
         <ReuseItemContent :item :has-submenu="true" />
       </DropdownMenuSubTrigger>

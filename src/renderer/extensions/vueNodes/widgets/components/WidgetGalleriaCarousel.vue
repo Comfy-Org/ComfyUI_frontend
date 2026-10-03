@@ -7,7 +7,7 @@
     <div class="relative flex items-center justify-center">
       <img
         v-if="activeItem"
-        :src="itemSrc(activeItem)"
+        :src="activeItem.src"
         :alt="itemAlt(activeItem, activeIndex)"
         class="h-auto max-h-64 w-full object-contain"
       />
@@ -55,7 +55,7 @@
       <div class="flex min-w-max items-center justify-center gap-1">
         <button
           v-for="(image, index) in images"
-          :key="`${itemThumbnail(image)}-${index}`"
+          :key="`${image.thumbnailSrc ?? image.src}-${index}`"
           type="button"
           :class="
             cn(
@@ -68,8 +68,8 @@
           @click="select(index)"
         >
           <img
-            :src="itemThumbnail(image)"
-            :alt="thumbnailAlt(image, index)"
+            :src="image.thumbnailSrc ?? image.src"
+            :alt="thumbnailImageAlt(image, index)"
             class="size-full rounded-lg object-cover"
           />
         </button>
@@ -86,10 +86,12 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
-import type {
-  GalleriaImage,
-  GalleriaWidgetOptions
-} from '@/lib/litegraph/src/types/widgets'
+
+export interface GalleryCarouselImage {
+  src: string
+  thumbnailSrc?: string
+  alt?: string
+}
 
 const {
   images,
@@ -98,15 +100,14 @@ const {
   circular = false,
   autoPlay = false,
   transitionInterval = 4000
-} = defineProps<
-  Pick<
-    GalleriaWidgetOptions,
-    'circular' | 'autoPlay' | 'transitionInterval' | 'showThumbnails'
-  > & {
-    images: GalleriaImage[]
-    showNavButtons?: GalleriaWidgetOptions['showItemNavigators']
-  }
->()
+} = defineProps<{
+  images: GalleryCarouselImage[]
+  showThumbnails?: boolean
+  showNavButtons?: boolean
+  circular?: boolean
+  autoPlay?: boolean
+  transitionInterval?: number
+}>()
 
 const activeIndex = defineModel<number>('activeIndex', { default: 0 })
 const { t } = useI18n()
@@ -121,22 +122,21 @@ const nextDisabled = computed(
 const navButtonClass =
   'absolute top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-full border-0 bg-secondary-background/80 text-base-foreground transition-colors hover:bg-secondary-background disabled:pointer-events-none disabled:opacity-40'
 
-function itemSrc(image: GalleriaImage) {
-  return image.itemImageSrc || image.src || ''
-}
-
-function itemThumbnail(image: GalleriaImage) {
-  return image.thumbnailImageSrc || image.itemImageSrc || image.src || ''
-}
-
-function itemAlt(image: GalleriaImage, index: number) {
+function itemAlt(image: GalleryCarouselImage, index: number) {
   return (
     image.alt ||
     t('g.galleryImagePosition', { index: index + 1, total: images.length })
   )
 }
 
-function thumbnailAlt(image: GalleriaImage, index: number) {
+function thumbnailAlt(image: GalleryCarouselImage, index: number) {
+  const position = { index: index + 1, total: images.length }
+  return image.alt
+    ? t('g.galleryThumbnailLabel', { alt: image.alt, ...position })
+    : t('g.galleryThumbnailPosition', position)
+}
+
+function thumbnailImageAlt(image: GalleryCarouselImage, index: number) {
   return (
     image.alt ||
     t('g.galleryThumbnailPosition', {

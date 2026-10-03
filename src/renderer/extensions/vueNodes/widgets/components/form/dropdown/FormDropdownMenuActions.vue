@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Popover from '@/components/ui/popover/PopoverOverlay.vue'
+import Popover from '@/components/common/ImperativePopover.vue'
 import { ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 

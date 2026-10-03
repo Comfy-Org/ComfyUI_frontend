@@ -13,6 +13,7 @@ export class Topbar {
   readonly tabs: Locator
   readonly integratedTabBarActions: Locator
   readonly menuRootList: Locator
+  readonly workflowOverflowButton: Locator
 
   constructor(public readonly page: Page) {
     this.menuLocator = page.locator('.comfy-command-menu')
@@ -24,6 +25,11 @@ export class Topbar {
     this.integratedTabBarActions = this.workflowTabs.getByTestId(
       TestIds.topbar.integratedTabBarActions
     )
+    this.workflowOverflowButton = this.workflowTabs.getByRole('button', {
+      name: 'More workflows',
+      exact: true,
+      includeHidden: true
+    })
   }
 
   async getTabNames(): Promise<string[]> {
@@ -38,10 +44,12 @@ export class Topbar {
    * Get a menu item by its label, optionally within a specific parent container
    */
   getMenuItem(itemLabel: string, parent?: Locator): Locator {
-    return (parent ?? this.menuLocator).getByRole('menuitem', {
-      name: itemLabel,
-      exact: true
-    })
+    const menu = parent ?? this.menuLocator
+    const options = { name: itemLabel, exact: true }
+    return menu
+      .getByRole('menuitem', options)
+      .or(menu.getByRole('menuitemcheckbox', options))
+      .or(menu.getByRole('menuitemradio', options))
   }
 
   /**
@@ -169,6 +177,21 @@ export class Topbar {
     await expect(
       this.page.locator('.workflow-popover-fade').filter({ visible: true })
     ).toHaveCount(0)
+  }
+
+  async openWorkflowOverflowMenu() {
+    await this.workflowOverflowButton.focus()
+    await this.workflowOverflowButton.press('Enter')
+    await this.page.getByRole('menu').waitFor({ state: 'visible' })
+  }
+
+  async getWorkflowOverflowMenuGap() {
+    const [triggerBox, menuBox] = await Promise.all([
+      this.workflowOverflowButton.boundingBox(),
+      this.page.getByRole('menu').boundingBox()
+    ])
+    if (!triggerBox || !menuBox) throw new Error('Workflow menu is not visible')
+    return menuBox.y - (triggerBox.y + triggerBox.height)
   }
 
   async openTopbarMenu() {
@@ -301,10 +324,7 @@ export class Topbar {
 
     for (let i = 1; i < path.length; i++) {
       const commandName = path[i]
-      const menuItem = submenu.getByRole('menuitem', {
-        name: commandName,
-        exact: true
-      })
+      const menuItem = this.getMenuItem(commandName, submenu)
       await menuItem.waitFor({ state: 'visible' })
 
       // For the last item, click it

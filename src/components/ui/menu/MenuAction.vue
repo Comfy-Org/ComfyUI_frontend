@@ -27,10 +27,7 @@ function select(event: Event) {
     event.preventDefault()
     return
   }
-  if (
-    !legacyCheckedRole &&
-    (item.checked !== undefined || item.comfyCommand?.active)
-  ) {
+  if (!legacyCheckedRole && item.checked !== undefined) {
     event.preventDefault()
     void item.command({ originalEvent: event, item })
     return
@@ -53,14 +50,17 @@ function select(event: Event) {
     :class="
       cn(
         itemClass,
-        item.class,
+        toValue(item.class),
         item.tooltip && toValue(item.disabled) && 'pointer-events-auto'
       )
     "
     v-bind="
       legacyCheckedRole && item.checked !== undefined
-        ? { role: 'menuitemradio', 'aria-checked': Boolean(item.checked) }
-        : { modelValue: item.checked }
+        ? {
+            role: 'menuitemradio',
+            'aria-checked': Boolean(toValue(item.checked))
+          }
+        : { modelValue: toValue(item.checked) }
     "
     @select="select"
   >

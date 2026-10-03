@@ -23,6 +23,7 @@ const i18n = createI18n({
         galleryThumbnail: 'Gallery thumbnail',
         galleryImagePosition: 'Gallery image {index} of {total}',
         galleryThumbnailPosition: 'Gallery thumbnail {index} of {total}',
+        galleryThumbnailLabel: '{alt}, gallery thumbnail {index} of {total}',
         previousImage: 'Previous image',
         nextImage: 'Next image',
         playGallery: 'Play gallery',
@@ -135,6 +136,41 @@ describe('WidgetGalleria', () => {
     expect(
       screen.getByRole('img', { name: 'Gallery image 3 of 3' })
     ).toHaveAttribute('src', images[2])
+  })
+
+  it('includes positions in thumbnail names when custom alts are duplicated', () => {
+    const value: GalleriaImage[] = [
+      { src: images[0], alt: 'Preview' },
+      { src: images[1], alt: 'Preview' }
+    ]
+
+    renderGallery(value)
+
+    expect(
+      screen.getByRole('button', {
+        name: 'Preview, gallery thumbnail 1 of 2'
+      })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', {
+        name: 'Preview, gallery thumbnail 2 of 2'
+      })
+    ).toBeInTheDocument()
+    expect(screen.getAllByRole('img', { name: 'Preview' })).toHaveLength(3)
+  })
+
+  it('clamps the active image when the image list shrinks', async () => {
+    const user = userEvent.setup()
+    const gallery = renderGallery(images)
+
+    await user.click(
+      screen.getByRole('button', { name: 'Gallery thumbnail 3 of 3' })
+    )
+    await gallery.rerender({ modelValue: images.slice(0, 2) })
+
+    expect(
+      screen.getByRole('img', { name: 'Gallery image 2 of 2' })
+    ).toHaveAttribute('src', images[1])
   })
 
   it('wraps navigation when circular mode is enabled', async () => {
@@ -251,6 +287,7 @@ describe('WidgetGalleria', () => {
             galleryImage: 'Image',
             galleryImagePosition: '{total} images, number {index}',
             galleryThumbnailPosition: '{total} previews, number {index}',
+            galleryThumbnailLabel: '{alt}; {total} previews, number {index}',
             previousImage: 'Previous',
             nextImage: 'Next'
           }

@@ -163,7 +163,7 @@
 <script setup lang="ts">
 import { useLocalStorage } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import Popover from '@/components/ui/popover/PopoverOverlay.vue'
+import Popover from '@/components/common/ImperativePopover.vue'
 import type { Ref } from 'vue'
 import {
   computed,

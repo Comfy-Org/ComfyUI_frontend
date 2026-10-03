@@ -50,6 +50,7 @@
     "galleryImage": "Gallery image",
     "galleryThumbnail": "Gallery thumbnail",
     "galleryImagePosition": "Gallery image {index} of {total}",
+    "galleryThumbnailLabel": "{alt}, gallery thumbnail {index} of {total}",
     "galleryThumbnailPosition": "Gallery thumbnail {index} of {total}",
     "previousImage": "Previous image",
     "nextImage": "Next image",

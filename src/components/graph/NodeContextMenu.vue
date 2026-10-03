@@ -8,16 +8,16 @@
     <template #item="{ item, props, hasSubmenu }">
       <a v-bind="props.action" class="flex items-center gap-2 px-3 py-1.5">
         <span
-          v-if="item.color"
+          v-if="getItemColor(item)"
           class="size-5 rounded-full border border-border-default"
-          :style="{ backgroundColor: item.color }"
+          :style="{ backgroundColor: getItemColor(item) }"
         />
         <i v-else-if="item.icon" :class="cn(item.icon, 'size-4')" />
         <i
           v-else-if="item.checked"
           class="icon-[lucide--check] size-4 shrink-0"
         />
-        <span v-else-if="item.isShapeSubmenuItem" class="w-4 shrink-0" />
+        <span v-else-if="isShapeSubmenuItem(item)" class="w-4 shrink-0" />
         <span class="flex-1">{{ item.label }}</span>
         <span
           v-if="item.shortcut"
@@ -40,7 +40,12 @@ import { useElementBounding, useRafFn } from '@vueuse/core'
 import { computed, onMounted, onUnmounted, ref, watchEffect } from 'vue'
 
 import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
-import type { MenuItem } from '@/components/ui/menu/types'
+import type {
+  MenuItem,
+  MenuItemAction,
+  MenuItemSeparator,
+  MenuItemSubmenu
+} from '@/components/ui/menu/types'
 import {
   registerNodeOptionsInstance,
   useMoreOptionsMenu
@@ -55,6 +60,30 @@ const isOpen = ref(false)
 const { menuOptions, bump } = useMoreOptionsMenu()
 const { getCurrentShape } = useNodeCustomization()
 const canvasStore = useCanvasStore()
+
+interface NodeMenuMetadata {
+  color?: string
+  isShapeSubmenuItem?: boolean
+}
+
+type NodeMenuAction = MenuItemAction & NodeMenuMetadata
+
+type NodeMenuSubmenu = Omit<MenuItemSubmenu, 'items'> &
+  NodeMenuMetadata & {
+    items: NodeMenuItem[]
+  }
+
+type NodeMenuItem = MenuItemSeparator | NodeMenuAction | NodeMenuSubmenu
+
+function getItemColor(item: MenuItem): string | undefined {
+  return 'color' in item && typeof item.color === 'string'
+    ? item.color
+    : undefined
+}
+
+function isShapeSubmenuItem(item: MenuItem): boolean {
+  return 'isShapeSubmenuItem' in item && item.isShapeSubmenuItem === true
+}
 
 // World position (canvas coordinates) where menu was opened
 const worldPosition = ref({ x: 0, y: 0 })
@@ -113,7 +142,7 @@ watchEffect(() => {
   }
 })
 
-function convertToMenuItem(option: MenuOption): MenuItem {
+function convertToMenuItem(option: MenuOption): NodeMenuItem {
   if (option.type === 'divider') return { separator: true }
 
   if (option.hasSubmenu && option.submenu) {

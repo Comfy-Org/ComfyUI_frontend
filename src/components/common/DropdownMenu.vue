@@ -7,9 +7,10 @@ import {
   DropdownMenuTrigger
 } from 'reka-ui'
 import { computed, ref, toValue } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-import DropdownItem from '@/components/common/DropdownItem.vue'
 import Button from '@/components/ui/button/Button.vue'
+import MenuItems from '@/components/ui/menu/MenuItems.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
 import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -50,6 +51,7 @@ const contentClass = computed(() =>
 
 const open = ref(false)
 const contentStyle = useModalLiftedZIndex(open)
+const { t } = useI18n()
 </script>
 
 <template>
@@ -72,14 +74,34 @@ const contentStyle = useModalLiftedZIndex(open)
         :style="contentStyle"
       >
         <slot :item-class>
-          <DropdownItem
-            v-for="(item, index) in entries ?? []"
-            :key="toValue(item.label) ?? index"
+          <MenuItems
+            :items="entries ?? []"
             :item-class
             :content-class
             :content-style
-            :item
-          />
+            disable-commandless
+            legacy-checked-role
+            separator-class="m-1 h-px bg-border-subtle"
+          >
+            <template #item="{ item, hasSubmenu }">
+              <i v-if="item.icon" :class="item.icon" class="size-5 shrink-0" />
+              <div class="mr-auto truncate">{{ toValue(item.label) }}</div>
+              <i
+                v-if="hasSubmenu"
+                class="ml-auto icon-[lucide--chevron-right]"
+              />
+              <i
+                v-else-if="toValue(item.checked)"
+                class="icon-[lucide--check] shrink-0"
+              />
+              <div
+                v-else-if="item.new"
+                class="flex shrink-0 items-center rounded-full bg-primary-background px-1 text-2xs leading-none font-bold"
+              >
+                {{ t('contextMenu.new') }}
+              </div>
+            </template>
+          </MenuItems>
         </slot>
         <DropdownMenuArrow class="fill-base-background stroke-border-subtle" />
       </DropdownMenuContent>

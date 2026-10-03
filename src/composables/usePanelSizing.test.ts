@@ -35,11 +35,11 @@ async function setupSizing({ left = 400, right = 200, total = 1000 } = {}) {
       return sizing
     },
     template: `
-      <div @pointerdown.capture="onResizeStart" @pointerup="onResizeEnd" @keydown.capture="onResizeStart" @keyup="onResizeEnd">
+      <div @pointerup="onResizeEnd" @keydown.capture="onResizeStart" @keyup="onResizeEnd">
         <div data-panel-id="left" data-testid="left" />
         <button data-panel-resize-handle-id="left-handle" data-orientation="horizontal">Left handle</button>
         <div />
-        <button data-panel-resize-handle-id="right-handle" data-orientation="horizontal">Right handle</button>
+        <button data-panel-resize-handle-id="right-handle" data-orientation="horizontal" @pointerdown="onResizeDragging(true, 'right')">Right handle</button>
         <div data-panel-id="right" data-testid="right" />
         <output data-testid="sizes">{{ sizes }}</output>
       </div>
