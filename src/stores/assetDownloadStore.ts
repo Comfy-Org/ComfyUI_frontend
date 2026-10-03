@@ -368,6 +368,17 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     }
   }
 
+  function clearDismissibleDownloads() {
+    for (const download of downloadList.value) {
+      if (
+        isDownloadFinished(download.status) ||
+        download.status === 'cancellation_pending'
+      ) {
+        downloads.value.delete(download.taskId)
+      }
+    }
+  }
+
   async function cancelDownload(taskId: TaskId): Promise<TaskResult<boolean>> {
     const download = downloads.value.get(taskId)
     if (!canCancelDownload(download, cancellingTaskIds.value.has(taskId))) {
@@ -418,6 +429,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     trackDownload,
     cancellingTaskIds,
     cancelDownload,
+    clearDismissibleDownloads,
     clearFinishedDownloads,
     isDownloadedThisSession,
     acknowledgeAsset

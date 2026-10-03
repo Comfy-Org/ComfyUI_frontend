@@ -93,7 +93,7 @@ const activeFilterLabel = computed(() => {
 })
 
 function closeDialog() {
-  assetDownloadStore.clearFinishedDownloads()
+  assetDownloadStore.clearDismissibleDownloads()
   isExpanded.value = false
 }
 
