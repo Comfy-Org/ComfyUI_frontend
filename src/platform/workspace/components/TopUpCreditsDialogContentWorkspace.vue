@@ -298,10 +298,7 @@
 </template>
 
 <script setup lang="ts">
-import type {
-  BillingOperationTerminal,
-  CheckoutJourneyPhaseEvent
-} from '@comfyorg/account-core/billing'
+import type { BillingOperationTerminal } from '@comfyorg/account-core/billing'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -335,10 +332,12 @@ import {
   getActiveCheckoutJourney,
   resolveCheckoutAssignment,
   resolveCheckoutJourney,
-  resolveEntrySource,
-  toCheckoutJourneyContext
+  resolveEntrySource
 } from '@/platform/workspace/utils/checkoutJourney'
-import type { CheckoutJourneyRecord } from '@/platform/workspace/utils/checkoutJourney'
+import {
+  trackCheckoutJourneyPhase,
+  useCheckoutJourneyExit
+} from '@/platform/workspace/utils/checkoutJourneyTelemetry'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -360,16 +359,6 @@ const { canTopUp } = useBillingCapabilities()
 
 const workspaceStore = useTeamWorkspaceStore()
 
-function emitTopupJourneyPhase(
-  record: CheckoutJourneyRecord,
-  phase: CheckoutJourneyPhaseEvent
-): void {
-  telemetry?.trackCheckoutJourneyEvent({
-    ...toCheckoutJourneyContext(record),
-    ...phase
-  })
-}
-
 function enterTopupJourney(): void {
   const workspaceId = workspaceStore.activeWorkspaceId
   const ownerUid = useAuthStore().userId
@@ -386,10 +375,11 @@ function enterTopupJourney(): void {
   })
   if (resolved.status === 'blocked' || resolved.resumed) return
 
-  emitTopupJourneyPhase(resolved.record, { phase: 'entered' })
+  trackCheckoutJourneyPhase(resolved.record, { phase: 'entered' })
 }
 
 onMounted(enterTopupJourney)
+useCheckoutJourneyExit()
 const {
   isAddingCredits,
   topupOperation,
@@ -628,7 +618,7 @@ async function handleBuy() {
 
     const submittingJourney = getActiveCheckoutJourney()
     if (submittingJourney) {
-      emitTopupJourneyPhase(submittingJourney, { phase: 'submitted' })
+      trackCheckoutJourneyPhase(submittingJourney, { phase: 'submitted' })
     }
 
     const amountCents = payAmount.value * 100
@@ -654,7 +644,7 @@ async function handleBuy() {
         response.billing_op_id
       )
       if (linkedJourney) {
-        emitTopupJourneyPhase(linkedJourney, {
+        trackCheckoutJourneyPhase(linkedJourney, {
           phase: 'operation_linked',
           billing_op_id: response.billing_op_id
         })

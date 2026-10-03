@@ -1,6 +1,5 @@
 import type {
   CheckoutEntryFlow,
-  CheckoutJourneyPhaseEvent,
   SubscriptionCheckoutType
 } from '@comfyorg/account-core/billing'
 import { useToast } from 'primevue/usetoast'
@@ -48,10 +47,14 @@ import {
   getActiveCheckoutJourney,
   resolveCheckoutAssignment,
   resolveCheckoutJourney,
-  resolveEntrySource,
-  toCheckoutJourneyContext
+  resolveEntrySource
 } from '@/platform/workspace/utils/checkoutJourney'
 import type { CheckoutJourneyRecord } from '@/platform/workspace/utils/checkoutJourney'
+import {
+  handOffCheckoutJourney,
+  trackCheckoutJourneyPhase,
+  useCheckoutJourneyExit
+} from '@/platform/workspace/utils/checkoutJourneyTelemetry'
 import {
   clearPendingSubscriptionCheckoutIfTerminal,
   savePendingSubscriptionCheckout
@@ -200,6 +203,7 @@ export function useSubscriptionCheckout(
   // The payment-recovery toast is sticky and can outlive this checkout;
   // drop it with the checkout rather than leave a button for a dead context.
   onScopeDispose(() => toast.removeGroup('payment-recovery'))
+  useCheckoutJourneyExit()
   // Some legacy-rail status reads cannot expose a scheduled cancellation even
   // though the subscribe authority can see it in Stripe. Once that authority
   // rejects an unconfirmed change, keep the consent screen in reactivation
@@ -339,7 +343,7 @@ export function useSubscriptionCheckout(
       // same quote must not emit another preview_ready.
       if (revision === undefined || revision !== lastEmittedPreviewRevision) {
         lastEmittedPreviewRevision = revision
-        emitCheckoutJourneyPhase(journey, {
+        trackCheckoutJourneyPhase(journey, {
           phase: 'preview_ready',
           ...(revision !== undefined && { preview_revision: revision })
         })
@@ -898,6 +902,7 @@ export function useSubscriptionCheckout(
           journeyId: enteredJourney?.journey_id
         })
       ) {
+        handOffCheckoutJourney()
         emit('close', false)
         return
       }
@@ -913,7 +918,7 @@ export function useSubscriptionCheckout(
       if (!response || !response.allowed) {
         const journey = getActiveCheckoutJourney()
         if (journey) {
-          emitCheckoutJourneyPhase(journey, {
+          trackCheckoutJourneyPhase(journey, {
             phase: 'preview_failed',
             failure_category: 'unknown'
           })
@@ -935,7 +940,7 @@ export function useSubscriptionCheckout(
       if (await recoverOutstandingPayment(error)) return
       const journey = getActiveCheckoutJourney()
       if (journey) {
-        emitCheckoutJourneyPhase(journey, {
+        trackCheckoutJourneyPhase(journey, {
           phase: 'preview_failed',
           failure_category: categorizeBillingApiError(error)
         })
@@ -1003,6 +1008,7 @@ export function useSubscriptionCheckout(
         journeyId: enteredJourney?.journey_id
       })
     ) {
+      handOffCheckoutJourney()
       emit('close', false)
       return
     }
@@ -1194,7 +1200,7 @@ export function useSubscriptionCheckout(
       }
       const submittingJourney = getActiveCheckoutJourney()
       if (submittingJourney) {
-        emitCheckoutJourneyPhase(submittingJourney, { phase: 'submitted' })
+        trackCheckoutJourneyPhase(submittingJourney, { phase: 'submitted' })
       }
       const response = await subscribe(planSlug, {
         ...(embeddedCheckoutEnabled &&
@@ -1384,16 +1390,6 @@ export function useSubscriptionCheckout(
       : 'initial_subscription'
   }
 
-  function emitCheckoutJourneyPhase(
-    record: CheckoutJourneyRecord,
-    phase: CheckoutJourneyPhaseEvent
-  ): void {
-    telemetry?.trackCheckoutJourneyEvent({
-      ...toCheckoutJourneyContext(record),
-      ...phase
-    })
-  }
-
   function enterCheckoutJourney(intent: string): CheckoutJourneyRecord | null {
     const workspaceId = workspaceStore.activeWorkspaceId
     const ownerUid = useAuthStore().userId
@@ -1419,7 +1415,7 @@ export function useSubscriptionCheckout(
     if (resolved.status === 'blocked') return null
 
     if (!resolved.resumed) {
-      emitCheckoutJourneyPhase(resolved.record, { phase: 'entered' })
+      trackCheckoutJourneyPhase(resolved.record, { phase: 'entered' })
     }
     return resolved.record
   }
@@ -1438,7 +1434,7 @@ export function useSubscriptionCheckout(
     }
     const linked = bindOperationToCheckoutJourney(billingOpId)
     if (linked) {
-      emitCheckoutJourneyPhase(linked, {
+      trackCheckoutJourneyPhase(linked, {
         phase: 'operation_linked',
         billing_op_id: billingOpId
       })
@@ -1776,7 +1772,7 @@ export function useSubscriptionCheckout(
       }
       const submittingJourney = getActiveCheckoutJourney()
       if (submittingJourney) {
-        emitCheckoutJourneyPhase(submittingJourney, { phase: 'submitted' })
+        trackCheckoutJourneyPhase(submittingJourney, { phase: 'submitted' })
       }
       const response = await subscribe(planSlug, {
         ...(embeddedCheckoutEnabled &&
