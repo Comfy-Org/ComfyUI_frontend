@@ -210,6 +210,24 @@ describe('useAssetDownloadStore', () => {
       expect(store.finishedDownloads[0].status).toBe('completed')
       expect(store.lastCompletedDownload?.modelType).toBe('checkpoints')
     })
+
+    it('ignores late progress while cancellation is pending', async () => {
+      const store = useAssetDownloadStore()
+      vi.mocked(taskService.cancelTask).mockResolvedValue({
+        ok: true,
+        value: 'cancelling'
+      })
+      dispatch(createDownloadMessage({ status: 'running', progress: 25 }))
+
+      await store.cancelDownload('task-123')
+      dispatch(createDownloadMessage({ status: 'running', progress: 50 }))
+
+      expect(store.downloadList[0]).toMatchObject({
+        status: 'cancellation_pending',
+        progress: 25,
+        cancellationReconcileAttempts: 0
+      })
+    })
   })
 
   describe('cancelDownload', () => {

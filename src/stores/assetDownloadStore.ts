@@ -31,13 +31,17 @@ const recheckableStatuses = new Set<AssetDownloadStatus>([
   'cancellation_pending'
 ])
 const reconcilableTaskStatuses = new Set<TaskStatus>([
+  'completed',
+  'failed',
+  'cancelled'
+])
+const wireTaskStatuses = new Set<string>([
   'created',
   'running',
   'completed',
   'failed',
   'cancelled'
 ])
-const wireTaskStatuses = new Set<string>(reconcilableTaskStatuses)
 
 function isDownloadActive(status: AssetDownloadStatus) {
   return activeStatuses.has(status)
