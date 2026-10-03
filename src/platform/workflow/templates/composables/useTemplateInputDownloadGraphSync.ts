@@ -80,11 +80,7 @@ function createTemplateInputDownloadGraphSync({
 
   function handleProgress(progress: ComfyTemplateInputDownloadProgress) {
     if (progress.status !== 'completed') return
-    markCompleted(progress.filename)
-  }
-
-  function markCompleted(filename: string) {
-    completedInputNames.add(filename)
+    completedInputNames.add(progress.filename)
     scheduleSync()
   }
 
@@ -92,7 +88,7 @@ function createTemplateInputDownloadGraphSync({
     disposed = true
   }
 
-  return { handleProgress, markCompleted, syncCurrentGraph, dispose }
+  return { handleProgress, syncCurrentGraph, dispose }
 }
 
 type TemplateInputDownloadGraphSync = ReturnType<
@@ -120,13 +116,4 @@ export function startTemplateInputDownloadGraphSync(
 
 export function syncCompletedTemplateInputsWithCurrentGraph(): Promise<void> {
   return activeGraphSync?.syncCurrentGraph() ?? Promise.resolve()
-}
-
-/**
- * For a file the host reports as already on disk. That answer carries no
- * download, so no progress event ever arrives for it, and without this the
- * widget stays flagged as missing until some later sync happens to run.
- */
-export function noteTemplateInputAlreadyPresent(filename: string): void {
-  activeGraphSync?.markCompleted(filename)
 }
