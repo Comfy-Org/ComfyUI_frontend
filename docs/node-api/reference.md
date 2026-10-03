@@ -53,6 +53,7 @@ See [Registration, lifecycle, and globals](./registration.md).
 | `backend`  | `BackendHandle`  | [Services](./services.md#backend-urls-requests-and-events)       |
 | `workflow` | `WorkflowHandle` | [Services](./services.md#workflow-service)                       |
 | `system`   | `SystemHandle`   | [Services](./services.md#system-monitoring)                      |
+| `models`   | `ModelsHandle`   | [Services](./services.md#model-catalogues-and-sidecars)          |
 
 ### Lifecycle and observation
 
@@ -546,6 +547,17 @@ as the supplier's output, a literal, or one of the supplier's forwarded inputs.
 See [Execution and resolution](./execution.md#frontend-only-nodes).
 
 ## Application service handles
+
+### `ModelsHandle`
+
+| Member        | Signature                                                                                              |
+| ------------- | ------------------------------------------------------------------------------------------------------ |
+| `list`        | `(folder: ModelFolder) => Promise<string[]>`                                                           |
+| `readSidecar` | `(folder: ModelFolder, modelName: string, suffix: ModelSidecarSuffix) => Promise<string \| undefined>` |
+
+`ModelFolder` is the closed union `checkpoints`, `clip`, `clip_vision`,
+`controlnet`, `diffusion_models`, `loras`, `text_encoders`, `unet`,
+`upscale_models`, and `vae`. `ModelSidecarSuffix` is `.md` or `.txt`.
 
 ### `SettingsHandle`
 

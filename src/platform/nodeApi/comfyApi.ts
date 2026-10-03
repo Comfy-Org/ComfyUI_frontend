@@ -34,6 +34,8 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { currentDocumentId, onAppReady, onWorkflowLoaded } from './appReady'
 import { createNodeChangeObserver } from './nodeChanges'
 import type { NodeChangeEvent, NodeChangeOptions } from './nodeChanges'
+import { createModelsApi } from './modelsHandle'
+import type { ModelsHandle } from './modelsHandle'
 import { createQueueApi } from './queueHandle'
 import type { QueueHandle } from './queueHandle'
 import type { Unsubscribe } from './widgetHandle'
@@ -151,6 +153,7 @@ const CAPABILITIES: ReadonlyMap<string, string> = new Map([
   ['commands.playSound', '2.0'],
   ['backend', '2.0'],
   ['storage', '2.0'],
+  ['models.sidecar', '2.0'],
   ['system.monitor', '2.0'],
   ['ui.sidebarTab', '2.0'],
   ['viewport.changed', '2.0'],
@@ -243,6 +246,8 @@ export interface Comfy {
    * between machines.
    */
   readonly storage: StorageHandle
+  /** Registered model names and bounded adjacent text metadata. */
+  readonly models: ModelsHandle
   /** Bounded, host-sampled hardware metrics. */
   readonly system: SystemHandle
   /** The sanctioned slice of app chrome — sidebar tabs. */
@@ -374,6 +379,7 @@ function buildMajor(
   )
   const settings = createSettingsApi()
   const storage = createStorageApi()
+  const models = createModelsApi()
   const system = createSystemApi()
   const ui = createUiHandle()
   const commands = createCommandsApi()
@@ -461,6 +467,7 @@ function buildMajor(
     graph,
     settings,
     storage,
+    models,
     system,
     ui,
     commands,

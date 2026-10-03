@@ -284,6 +284,21 @@ Event payloads are `unknown` because a pack owns its own event schema. Validate
 before use. The session ID can be `undefined` until the backend connection is
 established and must not be persisted.
 
+## Model catalogues and sidecars
+
+`comfy.models` exposes registered logical model names without revealing server
+paths. The folder argument is restricted to the published `ModelFolder` union:
+
+```js
+const loras = await comfy.models.list('loras')
+const notes = await comfy.models.readSidecar('loras', loras[0], '.md')
+```
+
+`readSidecar()` accepts only `.md` and `.txt`, returns `undefined` when the
+registered model has no matching sidecar, and returns at most 64 KiB of UTF-8
+text. It cannot read arbitrary paths or write model files. Use `comfy.storage`
+for content authored or edited by a user.
+
 ## System monitoring
 
 Read one validated hardware snapshot from the host:

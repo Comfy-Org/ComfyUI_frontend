@@ -166,6 +166,8 @@ interface Comfy {
    * between machines.
    */
   readonly storage: StorageHandle
+  /** Registered model names and bounded adjacent text metadata. */
+  readonly models: ModelsHandle
   /** Bounded, host-sampled hardware metrics. */
   readonly system: SystemHandle
   /** The sanctioned slice of app chrome — sidebar tabs. */
@@ -1167,6 +1169,33 @@ interface GroupHandle {
 interface NodeMoveEvent {
   readonly node: NodeHandle
   readonly position: { readonly x: number; readonly y: number }
+}
+
+// ─── modelsHandle.ts ─────────────────────────────────────────────
+
+type ModelFolder =
+  | 'checkpoints'
+  | 'clip'
+  | 'clip_vision'
+  | 'controlnet'
+  | 'diffusion_models'
+  | 'loras'
+  | 'text_encoders'
+  | 'unet'
+  | 'upscale_models'
+  | 'vae'
+
+type ModelSidecarSuffix = '.md' | '.txt'
+
+interface ModelsHandle {
+  /** Lists registered logical names without exposing model paths. */
+  list(folder: ModelFolder): Promise<string[]>
+  /** Reads a bounded UTF-8 sidecar next to a registered model. */
+  readSidecar(
+    folder: ModelFolder,
+    modelName: string,
+    suffix: ModelSidecarSuffix
+  ): Promise<string | undefined>
 }
 
 // ─── nodeChanges.ts ──────────────────────────────────────────────
