@@ -63,7 +63,48 @@ describe('template input download graph sync', () => {
     sync.dispose()
   })
 
-  it('stops matching an input whose rebind failed', async () => {
+  it.for([
+    { name: 'the view disposed', replace: false },
+    { name: 'a replacement sync took over', replace: true }
+  ])('abandons a queued rerun once $name', async ({ replace }) => {
+    const first = deferred<void>()
+    const refreshGraphBindings = vi
+      .fn<(names: string[]) => Promise<void>>()
+      .mockReturnValueOnce(first.promise)
+      .mockResolvedValue(undefined)
+    const referenced = new Set(['a.png'])
+    const sync = startTemplateInputDownloadGraphSync({
+      getReferencedInputNames: () => referenced,
+      refreshGraphBindings,
+      reportError: vi.fn()
+    })
+
+    sync.handleProgress(completed('a.png'))
+    const inFlight = sync.syncCurrentGraph()
+    void sync.syncCurrentGraph()
+
+    // Starting a replacement disposes the previous sync, so both paths leave
+    // the queued rerun with no graph it is entitled to refresh.
+    const replacement = replace
+      ? startTemplateInputDownloadGraphSync({
+          getReferencedInputNames: () => referenced,
+          refreshGraphBindings: vi.fn(async () => undefined),
+          reportError: vi.fn()
+        })
+      : (sync.dispose(), null)
+
+    // Fail the first attempt so the name survives and the rerun has work:
+    // only the disposal guard stops it from refreshing a graph it no longer
+    // owns.
+    first.reject(new Error('reload failed'))
+    await inFlight
+
+    expect(refreshGraphBindings).toHaveBeenCalledOnce()
+    replacement?.dispose()
+    sync.dispose()
+  })
+
+  it('retries an input whose rebind failed on the next sync', async () => {
     const reportError = vi.fn()
     const refreshGraphBindings = vi
       .fn<(names: string[]) => Promise<void>>()
@@ -78,12 +119,13 @@ describe('template input download graph sync', () => {
 
     sync.handleProgress(completed('a.png'))
     await sync.syncCurrentGraph()
-
     expect(reportError).toHaveBeenCalledOnce()
-    expect(refreshGraphBindings).toHaveBeenCalledOnce()
 
+    // The file is on disk, so a transient reload failure must not be the end
+    // of it - the next sync rebinds, and only then is the name cleared.
     await sync.syncCurrentGraph()
-    expect(refreshGraphBindings).toHaveBeenCalledOnce()
+    await sync.syncCurrentGraph()
+    expect(refreshGraphBindings).toHaveBeenCalledTimes(2)
     sync.dispose()
   })
 })

@@ -6,6 +6,7 @@ import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
 import type * as DistributionTypes from '@/platform/distribution/types'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
+import { app } from '@/scripts/app'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
@@ -280,6 +281,38 @@ describe('GraphView - reconnect wiring', () => {
     expect(templateInputMock.completeGraphSync).toHaveBeenCalledWith([
       'subject.png'
     ])
+  })
+
+  it('releases a completed template input when the graph refresh fails', async () => {
+    distribution.isDesktop = true
+    Object.defineProperty(window, '__comfyDesktop2', {
+      configurable: true,
+      value: {
+        isRemote: () => false,
+        onTemplateInputDownloadProgress: templateInputMock.subscribeProgress
+      }
+    })
+    vi.mocked(app.reloadNodeDefs).mockRejectedValueOnce(
+      new Error('reload failed')
+    )
+    render(GraphView, { global: { plugins: [i18n] } })
+
+    templateInputMock.subscribeProgress.mock.calls[0]?.[0]({
+      downloadId: 'download-1',
+      filename: 'subject.png',
+      progress: 1,
+      status: 'completed',
+      templateInputs: []
+    })
+
+    // A failed rebind must still release the transfer, or Run stays behind a
+    // permanent finalizing state.
+    await waitFor(() => {
+      expect(templateInputMock.completeGraphSync).toHaveBeenCalledWith([
+        'subject.png'
+      ])
+    })
+    expect(templateInputMock.refreshBindings).not.toHaveBeenCalled()
   })
 })
 

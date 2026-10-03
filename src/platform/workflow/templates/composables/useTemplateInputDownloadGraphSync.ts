@@ -34,9 +34,10 @@ function createTemplateInputDownloadGraphSync({
     try {
       await refreshGraphBindings(matched)
     } catch (error) {
+      // Keep the names: the files are on disk, and the next sync - another
+      // completion or another template opening - is the only thing that can
+      // rebind them.
       reportError(error)
-      // Nothing can retry these, and the caller has already released them.
-      for (const filename of matched) completedInputNames.delete(filename)
       return
     }
 
@@ -62,8 +63,8 @@ function createTemplateInputDownloadGraphSync({
       return inFlight
     }
 
-    // Reruns must stay inside this awaited block: a caller treats resolution
-    // as "the graph matches the downloads".
+    // Reruns stay inside this awaited block so callers do not continue before
+    // every requested refresh attempt has settled.
     const trackedRun = (async () => {
       await flushCurrentGraph()
       while (rerunRequested && !isDisposed()) {
