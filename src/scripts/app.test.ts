@@ -547,6 +547,34 @@ describe('ComfyApp', () => {
       expect(closed).toHaveLength(opened.length)
     })
 
+    it('does not clean the committed graph when an older load resumes', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      const clear = vi.spyOn(graph, 'clear')
+      let releaseFirstLoad!: () => void
+      const firstLoadBlocked = new Promise<void>((resolve) => {
+        releaseFirstLoad = resolve
+      })
+      let firstBeforeLoad = true
+      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+        async (hook) => {
+          if (hook === 'beforeLoadGraph' && firstBeforeLoad) {
+            firstBeforeLoad = false
+            await firstLoadBlocked
+          }
+        }
+      )
+
+      const olderLoad = app.loadGraphData(createWorkflowGraphData())
+      await app.loadGraphData(createWorkflowGraphData())
+      clear.mockClear()
+      releaseFirstLoad()
+      await olderLoad
+
+      expect(clear).not.toHaveBeenCalled()
+    })
+
     it('lets an older valid load commit when its newer replacement fails', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())
