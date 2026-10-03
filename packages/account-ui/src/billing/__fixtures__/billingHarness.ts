@@ -7,6 +7,7 @@ import { vi } from 'vitest'
 
 import type {
   BillingHttpResponse,
+  BillingOperationTelemetryEvent,
   BillingOpStatus,
   BillingRequest,
   BillingResult,
@@ -239,11 +240,13 @@ export function createBillingHarness(options: HarnessOptions = {}) {
   const plans = createPlansReader(readerOptions)
   const paymentMethods = createPaymentMethodsReader(readerOptions)
   const events = createBillingEventsReader(readerOptions)
+  const telemetry: BillingOperationTelemetryEvent[] = []
   const lifecycle = createBillingOperationLifecycle({
     transport,
     scopeSource,
     statusReader,
-    embeddedCheckoutAvailable: () => options.embedded === true
+    embeddedCheckoutAvailable: () => options.embedded === true,
+    onTelemetry: (event) => telemetry.push(event)
   })
   let attempts = 0
   const idempotencyKey = () => `key-${++attempts}`
@@ -308,6 +311,7 @@ export function createBillingHarness(options: HarnessOptions = {}) {
     calls,
     answer,
     routes,
+    telemetry,
     /** Moves the host to another workspace, as the switcher does. */
     moveToWorkspace: (id: string) =>
       host.moveTo({ id, name: 'Team', type: 'team' })

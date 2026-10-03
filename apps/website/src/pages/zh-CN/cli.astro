@@ -12,7 +12,6 @@ import HowItWorksSection from '../../templates/cli/HowItWorksSection.vue'
 import FAQSection from '../../templates/cli/FAQSection.vue'
 import { cliPageJsonLd } from '../../templates/cli/jsonLd'
 import { cliModelCards } from '../../templates/cli/modelCards'
-import { t } from '../../i18n/translations'
 import { absoluteUrl, pageContext } from '../../utils/jsonLd'
 
 const { siteUrl, locale, url } = pageContext(
@@ -24,12 +23,15 @@ const { softwareId, nodes: cliJsonLd } = cliPageJsonLd(siteUrl, url, locale)
 ---
 
 <BaseLayout
-  title={t('cli.meta.title', 'zh-CN')}
-  description={t('cli.meta.description', 'zh-CN')}
+  title={Astro.locals.t('cli.meta.title')}
+  description={Astro.locals.t('cli.meta.description')}
   mainEntityId={softwareId}
   breadcrumbs={[
-    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
-    { name: t('breadcrumb.cli', locale) }
+    {
+      name: Astro.locals.t('breadcrumb.home'),
+      url: absoluteUrl(Astro.site, '/')
+    },
+    { name: Astro.locals.t('breadcrumb.cli') }
   ]}
   extraJsonLd={cliJsonLd}
   ogImage="https://media.comfy.org/website/cli/og-v2.jpg"

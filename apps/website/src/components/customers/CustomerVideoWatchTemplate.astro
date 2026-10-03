@@ -19,7 +19,6 @@ import {
   otherCustomerVideoStories
 } from '../../data/customerVideos'
 import { fetchTranscript } from '../../lib/videoTranscript'
-import { t } from '../../i18n/translations'
 import {
   absoluteUrl,
   jsonLdId,
@@ -32,6 +31,7 @@ interface Props {
 }
 
 const { story } = Astro.props
+const { t } = Astro.locals
 
 const { siteUrl, locale, url } = pageContext(
   Astro.site,
@@ -67,8 +67,8 @@ const transcript = story.captions[0]
   ? await fetchTranscript(story.captions[0].src)
   : []
 
-const homeLabel = t('breadcrumb.home', locale)
-const collectionLabel = t('nav.customerStories', locale)
+const homeLabel = t('breadcrumb.home')
+const collectionLabel = t('nav.customerStories')
 ---
 
 <BaseLayout
@@ -89,7 +89,7 @@ const collectionLabel = t('nav.customerStories', locale)
       { label: collectionLabel, href: routes.customers },
       { label: story.title }
     ]}
-    label={t('ui.breadcrumb', locale)}
+    label={t('ui.breadcrumb')}
   />
   <CustomerWatchPage
     story={story}
@@ -104,7 +104,7 @@ const collectionLabel = t('nav.customerStories', locale)
       image={nextStory.poster}
       href={customerVideoPath(nextStory.slug)}
       locale={locale}
-      ctaLabel={t('customers.video.watchStory', locale)}
+      ctaLabel={t('customers.video.watchStory')}
     />
   )}
 </BaseLayout>

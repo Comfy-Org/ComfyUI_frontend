@@ -5,13 +5,14 @@ import type {
 } from '../../config/workshop-detail'
 import { defaultWorkshopValues } from '../../config/workshop-detail'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import WorkshopField from './WorkshopField.vue'
 
 const { model, locale = 'en' } = defineProps<{
   model: WorkshopDetailModel
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 // Defaulted, because the page renders this island with `model` alone —
 // Astro's Vue shim types a component from `defineProps`, so `modelValue`
 // cannot be passed from `.astro` at all. The form therefore seeds itself
@@ -27,7 +28,7 @@ if (Object.keys(values.value).length === 0) {
     class="rounded-2xl border border-primary-comfy-canvas/10 bg-primary-comfy-canvas/5 p-6"
   >
     <h2 class="text-xl font-semibold text-primary-comfy-canvas">
-      {{ t('workshop.model.inputs', locale) }}
+      {{ t('workshop.model.inputs') }}
     </h2>
     <form class="mt-6 flex flex-col gap-6" @submit.prevent>
       <WorkshopField
@@ -42,7 +43,7 @@ if (Object.keys(values.value).length === 0) {
         disabled
         class="mt-2 rounded-full bg-primary-comfy-yellow px-5 py-3 font-medium text-primary-comfy-ink opacity-50"
       >
-        {{ t('workshop.model.runNext', locale) }}
+        {{ t('workshop.model.runNext') }}
       </button>
     </form>
   </section>

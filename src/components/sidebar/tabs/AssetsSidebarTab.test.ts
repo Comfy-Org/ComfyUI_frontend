@@ -91,6 +91,7 @@ const i18n = createI18n({
       g: { copyJobId: 'Copy Job ID' },
       sideToolbar: {
         backToAssets: 'Back to all assets',
+        closeSidebar: 'Close sidebar',
         mediaAssets: { title: 'Media Assets' },
         labels: { generated: 'Generated', imported: 'Imported' }
       }
@@ -123,7 +124,7 @@ const assetsGridStub = {
   `
 }
 
-function renderTab() {
+function renderTab({ realTemplate = false } = {}) {
   return render(AssetsSidebarTab, {
     global: {
       plugins: [i18n],
@@ -131,7 +132,7 @@ function renderTab() {
         tooltip: {}
       },
       stubs: {
-        SidebarTabTemplate: sidebarTabTemplateStub,
+        ...(realTemplate ? {} : { SidebarTabTemplate: sidebarTabTemplateStub }),
         AssetsSidebarGridView: assetsGridStub,
         AssetsSidebarListView: true,
         MediaAssetFilterBar: true,
@@ -187,6 +188,12 @@ describe('AssetsSidebarTab folder navigation', () => {
     ).not.toBeInTheDocument()
     expect(screen.queryByText('multi-output-job')).not.toBeInTheDocument()
   })
+})
+
+it('shows the sidebar close button when mounted as a sidebar tab', () => {
+  renderTab({ realTemplate: true })
+
+  expect(screen.getByRole('button', { name: 'Close sidebar' })).toBeVisible()
 })
 
 describe('AssetsSidebarTab tab panel', () => {

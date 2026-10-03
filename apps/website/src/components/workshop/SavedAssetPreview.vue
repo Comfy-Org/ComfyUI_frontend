@@ -7,7 +7,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { downloadOutput } from '../../config/workshop-output-download'
 import { savedAssetFileName } from '../../lib/workshop/saved-assets'
 import type { SavedAssetTile } from '../../lib/workshop/saved-assets'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import type { Locale } from '../../i18n/translations'
 import SavedAssetMedia from './SavedAssetMedia.vue'
 import SavedAssetPager from './SavedAssetPager.vue'
@@ -28,6 +28,7 @@ const {
   cancelFailed?: boolean
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const emit = defineEmits<{ close: []; cancel: []; step: [delta: number] }>()
 
@@ -59,8 +60,7 @@ const downloadLabel = computed(() =>
   t(
     downloadFailed.value
       ? 'workshop.output.openOriginal'
-      : 'workshop.output.download',
-    locale
+      : 'workshop.output.download'
   )
 )
 
@@ -110,11 +110,11 @@ function touchEnd(event: TouchEvent) {
         @touchend.passive="touchEnd"
       >
         <DialogTitle class="sr-only">
-          {{ t('workshop.assets.title', locale) }}
+          {{ t('workshop.assets.title') }}
         </DialogTitle>
         <button
           type="button"
-          :aria-label="t('workshop.output.collapse', locale)"
+          :aria-label="t('workshop.output.collapse')"
           class="absolute top-6 right-6 grid size-8 cursor-pointer place-items-center rounded-lg bg-primary-comfy-ink/70 text-primary-warm-white transition-colors hover:text-primary-comfy-yellow"
           data-testid="saved-asset-close"
           @click="emit('close')"
@@ -127,7 +127,7 @@ function touchEnd(event: TouchEvent) {
             :kind="media.kind"
             :url="media.url"
             :asset-id="media.assetId"
-            :alt="t('workshop.assets.title', locale)"
+            :alt="t('workshop.assets.title')"
             controls
             class="max-h-[80dvh] w-auto max-w-full rounded-2xl object-contain"
           />
@@ -160,14 +160,14 @@ function touchEnd(event: TouchEvent) {
             aria-hidden="true"
           />
           <p class="text-sm text-primary-warm-white">
-            {{ t('workshop.assets.generating', locale) }}
+            {{ t('workshop.assets.generating') }}
           </p>
           <p
             v-if="cancelFailed"
             role="alert"
             class="text-xs text-primary-comfy-red"
           >
-            {{ t('workshop.assets.cancelError', locale) }}
+            {{ t('workshop.assets.cancelError') }}
           </p>
           <Button
             variant="outline"
@@ -175,7 +175,7 @@ function touchEnd(event: TouchEvent) {
             :disabled="cancelling"
             @click="emit('cancel')"
           >
-            {{ t('workshop.run.cancel', locale) }}
+            {{ t('workshop.run.cancel') }}
           </Button>
         </template>
 
@@ -185,11 +185,11 @@ function touchEnd(event: TouchEvent) {
           class="max-w-sm text-center text-sm text-primary-warm-white"
           data-testid="saved-asset-not-saved"
         >
-          {{ t('workshop.assets.notSaved', locale) }}
+          {{ t('workshop.assets.notSaved') }}
         </p>
 
         <p v-else role="status" class="text-sm text-primary-warm-gray">
-          {{ t('workshop.assets.loadingMedia', locale) }}
+          {{ t('workshop.assets.loadingMedia') }}
         </p>
       </DialogContent>
     </DialogPortal>

@@ -17,8 +17,7 @@ import { requestWorkshopBuyCredits } from '../../../config/workshop-buy-credits'
 import { leaveForSignIn } from '../../../config/workshop-return'
 import type { StudioGate } from '../../../lib/workshop/cinematic-studio/gate'
 import type { Locale } from '../../../i18n/translations'
-import { t } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import { translationsFor } from '../../../i18n/translations'
 
 const {
   gate,
@@ -39,6 +38,7 @@ const {
   wide?: boolean
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const emit = defineEmits<{ generate: []; cancel: [] }>()
 
@@ -52,8 +52,7 @@ const switchLabel = computed(() =>
   t(
     personal.pending.value
       ? 'workshop.run.preparingSession'
-      : 'workshop.run.switchPersonal',
-    locale
+      : 'workshop.run.switchPersonal'
   )
 )
 </script>
@@ -66,7 +65,7 @@ const switchLabel = computed(() =>
     :class="buttonClass"
     @click="leaveForSignIn($event, signInHref)"
   >
-    {{ t('workshop.run.signIn', locale) }}
+    {{ t('workshop.run.signIn') }}
   </Button>
   <Button
     v-else-if="gate === 'pending'"
@@ -74,7 +73,7 @@ const switchLabel = computed(() =>
     :class="buttonClass"
     data-testid="cinematic-generate"
   >
-    {{ tc('cinematic.output.checking', locale) }}
+    {{ t('cinematic.output.checking') }}
   </Button>
   <Button
     v-else-if="rendering"
@@ -82,7 +81,7 @@ const switchLabel = computed(() =>
     :class="buttonClass"
     @click="emit('cancel')"
   >
-    {{ tc('cinematic.output.cancel', locale) }}
+    {{ t('cinematic.output.cancel') }}
   </Button>
   <TooltipProvider v-else :delay-duration="150">
     <TooltipRoot :disabled="!tooltip">
@@ -93,7 +92,7 @@ const switchLabel = computed(() =>
           :aria-description="note"
           @click="requestWorkshopBuyCredits"
         >
-          {{ t('workshop.run.buyCredits', locale) }}
+          {{ t('workshop.run.buyCredits') }}
         </Button>
         <Button
           v-else-if="gate === 'memberNoCredits'"
@@ -112,7 +111,7 @@ const switchLabel = computed(() =>
             data-testid="cinematic-generate"
             @click="emit('generate')"
           >
-            {{ tc('cinematic.output.generate', locale) }}
+            {{ t('cinematic.output.generate') }}
           </Button>
         </span>
       </TooltipTrigger>
@@ -132,6 +131,6 @@ const switchLabel = computed(() =>
     role="alert"
     class="text-xs text-primary-comfy-red"
   >
-    {{ t('nav.workspaceSwitchError', locale) }}
+    {{ t('nav.workspaceSwitchError') }}
   </p>
 </template>

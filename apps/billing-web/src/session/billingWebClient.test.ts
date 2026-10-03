@@ -252,6 +252,36 @@ describe('SDK operation telemetry', () => {
     }
   )
 
+  it('reports a retryable decline inside an issued operation, as the SDK on billing web', async () => {
+    stubBillingRoutes({
+      status: 'pending',
+      authentication_state: 'failed_retryable',
+      decline_reason: 'card_declined'
+    })
+    const client = createBillingWebClient(authenticatedSession())
+    onTestFinished(() => disposeBillingClient(client))
+
+    await client.lifecycle.begin('subscription', issueOperation)
+
+    await vi.waitFor(() =>
+      expect(datadogRum.addAction).toHaveBeenCalledWith(
+        'billing.checkout.challenge_failed',
+        {
+          operation: 'checkout',
+          stage: 'challenge_failed',
+          outcome: 'pending',
+          operation_type: 'subscription',
+          billing_op_id: 'op_1',
+          presentation: 'hosted',
+          resumed: false,
+          decline_reason: 'card_declined',
+          billing_client: 'sdk',
+          billing_surface: 'billing_web'
+        }
+      )
+    )
+  })
+
   it.for<{
     name: string
     run: (client: BillingClient) => Promise<unknown>
