@@ -185,6 +185,11 @@ export class Topbar {
     await this.page.getByRole('menu').waitFor({ state: 'visible' })
   }
 
+  async closeWorkflowOverflowMenu() {
+    await this.page.keyboard.press('Escape')
+    await this.page.getByRole('menu').waitFor({ state: 'hidden' })
+  }
+
   async getWorkflowOverflowMenuGap() {
     const [triggerBox, menuBox] = await Promise.all([
       this.workflowOverflowButton.boundingBox(),

@@ -21,12 +21,11 @@ defineOptions({ name: 'MenuItems' })
 
 type ItemSlotProps = {
   item: MenuItem
-  props: { action: Record<string, never> }
   hasSubmenu: boolean
 }
 
 const [DefineItemContent, ReuseItemContent] =
-  createReusableTemplate<Omit<ItemSlotProps, 'props'>>()
+  createReusableTemplate<ItemSlotProps>()
 
 const {
   contentClass = menuContentClass,
@@ -61,9 +60,9 @@ const visibleItems = computed(() =>
     <component
       :is="itemContent"
       v-if="itemContent"
-      v-bind="{ item, props: { action: {} }, hasSubmenu }"
+      v-bind="{ item, hasSubmenu }"
     />
-    <slot v-else name="item" :item :props="{ action: {} }" :has-submenu>
+    <slot v-else name="item" :item :has-submenu>
       <MenuItemContent :item :has-submenu />
     </slot>
   </DefineItemContent>

@@ -1,42 +1,40 @@
 <template>
-  <button
-    v-tooltip="{
-      value: t('sideToolbar.labels.menu'),
-      showDelay: 300,
-      hideDelay: 300
-    }"
-    data-testid="comfy-menu-button"
-    type="button"
-    :aria-label="t('sideToolbar.labels.menu')"
-    :aria-expanded="menuRef?.visible"
-    aria-haspopup="menu"
-    :class="
-      cn(
-        'flex h-(--sidebar-item-height) w-(--sidebar-width) shrink-0 cursor-pointer flex-col items-center justify-center border-none bg-transparent p-2 transition-colors hover:bg-interface-panel-hover-surface',
-        menuRef?.visible &&
-          'bg-interface-panel-selected-surface hover:bg-interface-panel-selected-surface'
-      )
-    "
-    @click="onLogoMenuClick($event)"
-  >
-    <div class="grid place-items-center-safe gap-0.5">
-      <i
-        class="col-span-full row-span-full icon-[lucide--chevron-down] size-3 translate-x-4 text-muted-foreground"
-      />
-      <ComfyLogo
-        alt="ComfyUI Logo"
-        class="comfyui-logo col-span-full row-span-full size-4.5"
-        mode="fill"
-      />
-    </div>
-  </button>
-
-  <Menu ref="menuRef" :model="translatedItems" class="comfy-command-menu">
-    <template #item="{ item, props }">
+  <Menu :items="translatedItems" class="comfy-command-menu">
+    <template #trigger="{ open }">
+      <button
+        v-tooltip="{
+          value: t('sideToolbar.labels.menu'),
+          showDelay: 300,
+          hideDelay: 300
+        }"
+        data-testid="comfy-menu-button"
+        type="button"
+        :aria-label="t('sideToolbar.labels.menu')"
+        :class="
+          cn(
+            'flex h-(--sidebar-item-height) w-(--sidebar-width) shrink-0 cursor-pointer flex-col items-center justify-center border-none bg-transparent p-2 transition-colors hover:bg-interface-panel-hover-surface',
+            open &&
+              'bg-interface-panel-selected-surface hover:bg-interface-panel-selected-surface'
+          )
+        "
+        @click="onLogoMenuClick"
+      >
+        <div class="grid place-items-center-safe gap-0.5">
+          <i
+            class="col-span-full row-span-full icon-[lucide--chevron-down] size-3 translate-x-4 text-muted-foreground"
+          />
+          <ComfyLogo
+            alt="ComfyUI Logo"
+            class="comfyui-logo col-span-full row-span-full size-4.5"
+            mode="fill"
+          />
+        </div>
+      </button>
+    </template>
+    <template #item="{ item }">
       <a
         v-if="item.key !== 'nodes-2.0-toggle'"
         class="flex w-full items-center gap-2 px-4 py-2"
-        v-bind="props.action"
         :href="item.url"
         target="_blank"
         :class="toValue(item.class)"
@@ -86,7 +84,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, toValue } from 'vue'
+import { computed, toValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -119,20 +117,17 @@ const settingsDialog = useSettingsDialog()
 const managerState = useManagerState()
 const settingStore = useSettingStore()
 
-const menuRef = ref<InstanceType<typeof Menu> | null>(null)
-
 const nodes2Enabled = computed(
   () => settingStore.get('Comfy.VueNodes.Enabled') ?? false
 )
 
 const telemetry = useTelemetry()
 
-function onLogoMenuClick(event: MouseEvent) {
+function onLogoMenuClick() {
   telemetry?.trackUiButtonClicked({
     button_id: 'sidebar_comfy_menu_opened',
     element_group: 'sidebar'
   })
-  menuRef.value?.toggle(event)
 }
 
 const translateMenuItem = (item: AppMenuItem): AppMenuItem => {

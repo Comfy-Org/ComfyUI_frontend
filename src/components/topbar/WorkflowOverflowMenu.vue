@@ -1,16 +1,17 @@
 <template>
   <div class="shrink-0 self-center">
-    <Button
-      v-tooltip="{ value: $t('g.moreWorkflows'), showDelay: 300 }"
-      class="rounded-lg"
-      variant="muted-textonly"
-      size="icon"
-      :aria-label="$t('g.moreWorkflows')"
-      @click="menu?.toggle($event)"
-    >
-      <i class="pi pi-ellipsis-h" />
-    </Button>
-    <Menu ref="menu" :model="menuItems" class="max-h-[40vh] overflow-auto">
+    <Menu :items="menuItems" class="max-h-[40vh] overflow-auto">
+      <template #trigger>
+        <Button
+          v-tooltip="{ value: $t('g.moreWorkflows'), showDelay: 300 }"
+          class="rounded-lg"
+          variant="muted-textonly"
+          size="icon"
+          :aria-label="$t('g.moreWorkflows')"
+        >
+          <i class="pi pi-ellipsis-h" />
+        </Button>
+      </template>
       <template #item="{ item }">
         <i v-if="item.icon" :class="item.icon" />
         <WorkflowAgentTargetIndicator
@@ -24,7 +25,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
@@ -38,7 +39,6 @@ const props = defineProps<{
   activeWorkflow: ComfyWorkflow | null
 }>()
 
-const menu = ref<InstanceType<typeof Menu> | null>(null)
 const workflowService = useWorkflowService()
 
 const menuItems = computed(() =>

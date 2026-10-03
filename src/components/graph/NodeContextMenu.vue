@@ -5,8 +5,8 @@
     @show="onMenuShow"
     @hide="onMenuHide"
   >
-    <template #item="{ item, props, hasSubmenu }">
-      <a v-bind="props.action" class="flex items-center gap-2 px-3 py-1.5">
+    <template #item="{ item, hasSubmenu }">
+      <div class="flex items-center gap-2 px-3 py-1.5">
         <span
           v-if="getItemColor(item)"
           class="size-5 rounded-full border border-border-default"
@@ -29,7 +29,7 @@
           v-if="hasSubmenu"
           class="icon-[lucide--chevron-right] size-4 opacity-60"
         />
-      </a>
+      </div>
     </template>
   </ContextMenu>
 </template>

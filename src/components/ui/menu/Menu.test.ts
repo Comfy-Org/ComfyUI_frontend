@@ -14,17 +14,10 @@ describe('Menu', () => {
     'renders a $kind label, runs a command, and dismisses with Escape',
     async ({ label }) => {
       const command = vi.fn()
-      render(
-        defineComponent({
-          components: { Menu },
-          setup() {
-            const menu = ref<InstanceType<typeof Menu>>()
-            return { command, label, menu }
-          },
-          template:
-            '<button @click="menu?.show($event)">Open</button><Menu ref="menu" :model="[{ label, command }]" />'
-        })
-      )
+      render(Menu, {
+        props: { items: [{ label, command }] },
+        slots: { trigger: '<button>Open</button>' }
+      })
       const user = userEvent.setup({ pointerEventsCheck: 0 })
 
       await user.click(screen.getByRole('button', { name: 'Open' }))
@@ -40,48 +33,34 @@ describe('Menu', () => {
     }
   )
 
-  it('cancels an opening request when hidden in the same event', async () => {
-    render(
-      defineComponent({
-        components: { Menu },
-        setup() {
-          const menu = ref<InstanceType<typeof Menu>>()
-          return { menu }
-        },
-        template:
-          '<button @click="menu?.show($event); menu?.hide()">Open then hide</button><Menu ref="menu" :model="[{ label: \'Run\' }]" />'
-      })
-    )
-    const user = userEvent.setup({ pointerEventsCheck: 0 })
+  it('closes when its owner changes the open state', async () => {
+    const { rerender } = render(Menu, {
+      props: { items: [{ label: 'Run' }], open: true },
+      slots: { trigger: '<button>Open</button>' }
+    })
+    await screen.findByRole('menu')
 
-    await user.click(screen.getByRole('button', { name: 'Open then hide' }))
-    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    await rerender({ open: false })
+
+    await waitFor(() =>
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    )
   })
 
   it('resolves class getters on actions and submenu triggers', async () => {
-    render(
-      defineComponent({
-        components: { Menu },
-        setup() {
-          const menu = ref<InstanceType<typeof Menu>>()
-          return { menu }
-        },
-        template: `
-          <button @click="menu?.show($event)">Open</button>
-          <Menu
-            ref="menu"
-            :model="[
-              { label: 'Action', class: () => 'action-class' },
-              {
-                label: 'Submenu',
-                class: () => 'submenu-class',
-                items: [{ label: 'Child' }]
-              }
-            ]"
-          />
-        `
-      })
-    )
+    render(Menu, {
+      props: {
+        items: [
+          { label: 'Action', class: () => 'action-class' },
+          {
+            label: 'Submenu',
+            class: () => 'submenu-class',
+            items: [{ label: 'Child' }]
+          }
+        ]
+      },
+      slots: { trigger: '<button>Open</button>' }
+    })
     const user = userEvent.setup({ pointerEventsCheck: 0 })
 
     await user.click(screen.getByRole('button', { name: 'Open' }))
@@ -97,24 +76,21 @@ describe('Menu', () => {
   it('updates checked state and shortcut getters without dismissing the menu', async () => {
     const checked = ref(false)
     const shortcut = ref('Ctrl+G')
-    render(
-      defineComponent({
-        components: { Menu },
-        setup() {
-          const menu = ref<InstanceType<typeof Menu>>()
-          return { menu, checked, shortcut }
-        },
-        template: `
-          <button @click="menu?.show($event)">Open</button>
-          <Menu ref="menu" :model="[{
+    render(Menu, {
+      props: {
+        items: [
+          {
             label: 'Grid',
-            checked: () => checked,
-            shortcut: () => shortcut,
-            command: () => { checked = !checked }
-          }]" />
-        `
-      })
-    )
+            checked: () => checked.value,
+            shortcut: () => shortcut.value,
+            command: () => {
+              checked.value = !checked.value
+            }
+          }
+        ]
+      },
+      slots: { trigger: '<button>Open</button>' }
+    })
     const user = userEvent.setup({ pointerEventsCheck: 0 })
     await user.click(screen.getByRole('button', { name: 'Open' }))
     const item = await screen.findByRole('menuitemcheckbox', { name: 'Grid' })
@@ -129,23 +105,20 @@ describe('Menu', () => {
     expect(item).toHaveTextContent('Alt+G')
   })
 
-  it('reopens when internal state outlives rendered content', async () => {
-    render(
-      defineComponent({
-        components: { Menu },
-        setup() {
-          const menu = ref<InstanceType<typeof Menu>>()
-          return { menu }
-        },
-        template:
-          '<button @click="menu?.show($event)">Open</button><Menu ref="menu" :model="[{ label: \'Run\' }]" />'
-      })
-    )
+  it('toggles closed and reopens from its trigger', async () => {
+    render(Menu, {
+      props: { items: [{ label: 'Run' }] },
+      slots: { trigger: '<button>Open</button>' }
+    })
     const user = userEvent.setup({ pointerEventsCheck: 0 })
     const trigger = screen.getByRole('button', { name: 'Open' })
 
     await user.click(trigger)
     await screen.findByRole('menu')
+    await user.click(trigger)
+    await waitFor(() =>
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    )
     await user.click(trigger)
     expect(await screen.findByRole('menuitem', { name: 'Run' })).toBeVisible()
   })
