@@ -68,6 +68,24 @@ describe('the portal events', () => {
         outcome: 'pending',
         target: 'manage_subscription'
       }
+    },
+    {
+      name: 'the portal opening to recover a failed payment',
+      event: {
+        operation: 'portal',
+        stage: 'opened',
+        outcome: 'pending',
+        target: 'payment_recovery',
+        billing_client: 'legacy'
+      },
+      eventName: 'billing.portal.opened',
+      payload: {
+        operation: 'portal',
+        stage: 'opened',
+        outcome: 'pending',
+        target: 'payment_recovery',
+        billing_client: 'legacy'
+      }
     }
   ])('names and reports $name', ({ event, eventName, payload }) => {
     expect(getBillingTelemetryEventName(event)).toBe(eventName)
