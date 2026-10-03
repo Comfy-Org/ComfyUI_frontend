@@ -10,7 +10,9 @@ describe('ServerlessScaleSection', () => {
 
     for (const n of [1, 2, 3] as const) {
       expect(
-        screen.getByText(t(`platform.serverlessScale.${n}.title`, 'en'))
+        screen.getByText(
+          t(`platform.serverlessScale.${n}.title`, {}, { locale: 'en' })
+        )
       ).toBeTruthy()
     }
   })

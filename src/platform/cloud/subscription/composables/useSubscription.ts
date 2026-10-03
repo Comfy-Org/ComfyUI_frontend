@@ -39,7 +39,10 @@ import { useDialogService } from '@/services/dialogService'
 import { toTierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { operations } from '@/types/comfyRegistryTypes'
-import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
+import {
+  isWorkspaceBillingRequiredError,
+  parseErrorResponse
+} from '@/platform/remote/comfyui/errors'
 import {
   PENDING_SUBSCRIPTION_CHECKOUT_EVENT,
   PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
@@ -113,7 +116,8 @@ function useSubscriptionInternal() {
 
     return subscriptionStatus.value?.is_active ?? false
   })
-  const { reportError, accessBillingPortal } = useAuthActions()
+  const { reportError, accessBillingPortal, accessBillingPortalDirect } =
+    useAuthActions()
   const { showSubscriptionRequiredDialog } = useDialogService()
 
   const authStore = useAuthStore()
@@ -122,6 +126,11 @@ function useSubscriptionInternal() {
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
   const { isLoggedIn } = useCurrentUser()
+
+  // Web-session billing reads need the workspace the gate selects after sign-in.
+  const awaitingSessionWorkspace = computed(
+    () => !!authStore.sessionUser && !workspaceStore.activeWorkspaceId
+  )
 
   const isCancelled = computed(() => {
     return !!subscriptionStatus.value?.cancel_at
@@ -578,7 +587,14 @@ function useSubscriptionInternal() {
     })
 
   const manageSubscription = async () => {
-    const didOpenPortal = await accessBillingPortal()
+    let didOpenPortal: boolean | undefined
+    try {
+      didOpenPortal = await accessBillingPortalDirect()
+    } catch (err) {
+      // The legacy billing adapter recovers from a rail-mismatch refusal.
+      if (isWorkspaceBillingRequiredError(err)) throw err
+      reportError(err)
+    }
     if (!didOpenPortal) {
       return
     }
@@ -614,7 +630,10 @@ function useSubscriptionInternal() {
     | 'deadline'
 
   const canRecoverPendingCheckout = () =>
-    isCloud && isLoggedIn.value && hasOwnedPendingCheckoutAttempt()
+    isCloud &&
+    isLoggedIn.value &&
+    !awaitingSessionWorkspace.value &&
+    hasOwnedPendingCheckoutAttempt()
 
   const hasOwnedPendingCheckoutAttempt = () => {
     const attempt = getPendingSubscriptionCheckoutAttempt()
@@ -837,9 +856,16 @@ function useSubscriptionInternal() {
   }
 
   watch(
-    () => [authStore.userId, workspaceStore.activeWorkspaceId] as const,
-    ([ownerId, workspaceId]) => {
+    () =>
+      [
+        authStore.userId,
+        workspaceStore.activeWorkspaceId,
+        awaitingSessionWorkspace.value
+      ] as const,
+    ([ownerId, workspaceId], [, , wasAwaitingWorkspace]) => {
       observeStatusScope(ownerId ?? null, workspaceId)
+      // The bootstrap watcher reads for the session's first workspace.
+      if (wasAwaitingWorkspace) return
       if (
         workspaceId &&
         hasPendingSubscriptionCheckoutAttempt() &&
@@ -1009,13 +1035,19 @@ function useSubscriptionInternal() {
 
   watch(
     () =>
-      [authStore.isInitialized, isLoggedIn.value, authStore.userId] as const,
-    async ([authInitialized, loggedIn]) => {
+      [
+        authStore.isInitialized,
+        isLoggedIn.value,
+        authStore.userId,
+        awaitingSessionWorkspace.value
+      ] as const,
+    async ([authInitialized, loggedIn, , awaitingWorkspace]) => {
       if (!authInitialized) {
         return
       }
 
       if (loggedIn && isCloud) {
+        if (awaitingWorkspace) return
         try {
           if (hasOwnedPendingCheckoutAttempt()) {
             await recoverPendingSubscriptionCheckout('bootstrap')
@@ -1055,12 +1087,13 @@ function useSubscriptionInternal() {
       )
 
       if (!response.ok) {
-        const { message } = await parseErrorResponse(response)
+        const { message, code } = await parseErrorResponse(response)
         throw new AuthStoreError(
           t('toastMessages.failedToInitiateSubscription', {
             error: message
           }),
-          response.status
+          response.status,
+          code
         )
       }
 
@@ -1088,6 +1121,7 @@ function useSubscriptionInternal() {
     subscribe,
     subscribeDirect,
     fetchStatus,
+    fetchStatusDirect: fetchSubscriptionStatus,
     showSubscriptionDialog,
     manageSubscription,
     requireActiveSubscription,

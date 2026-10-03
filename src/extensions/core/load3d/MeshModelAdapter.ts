@@ -1,3 +1,10 @@
+import {
+  hasNgonEncoding,
+  isBinaryFbx,
+  matchFbxPolygons,
+  ngonEncodedFaceSizes,
+  readFbxPolygons
+} from '@comfyorg/quad-wireframe-three'
 import * as THREE from 'three'
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
@@ -14,6 +21,7 @@ import type {
   ModelLoadContext,
   ModelLoadResult
 } from './ModelAdapter'
+import { registerFaceSizes } from './quadWireframe/faceSizesRegistry'
 
 export class MeshModelAdapter implements ModelAdapter {
   readonly kind = 'mesh' as const
@@ -45,13 +53,14 @@ export class MeshModelAdapter implements ModelAdapter {
   async load(
     ctx: ModelLoadContext,
     path: string,
-    filename: string
+    filename: string,
+    fetchBytes?: () => Promise<ArrayBuffer>
   ): Promise<ModelLoadResult | null> {
     const extension = filename.split('.').pop()?.toLowerCase()
     const object = await (extension === 'stl'
       ? this.loadSTL(ctx, path, filename)
       : extension === 'fbx'
-        ? this.loadFBX(ctx, path, filename)
+        ? this.loadFBX(ctx, path, filename, fetchBytes)
         : extension === 'obj'
           ? this.loadOBJ(ctx, path, filename)
           : extension === 'gltf' || extension === 'glb'
@@ -79,18 +88,25 @@ export class MeshModelAdapter implements ModelAdapter {
   private async loadFBX(
     ctx: ModelLoadContext,
     path: string,
-    filename: string
+    filename: string,
+    fetchBytes?: () => Promise<ArrayBuffer>
   ): Promise<THREE.Object3D> {
     this.fbxLoader.setPath(path)
-    const fbxModel = await this.fbxLoader.loadAsync(filename)
+    const bytes = fetchBytes ? await fetchBytes() : null
+    const fbxModel = bytes
+      ? this.fbxLoader.parse(bytes, path)
+      : await this.fbxLoader.loadAsync(filename)
     ctx.setOriginalModel(fbxModel)
 
+    const polygons = bytes && isBinaryFbx(bytes) ? readFbxPolygons(bytes) : []
     fbxModel.traverse((child) => {
       if (child instanceof THREE.Mesh) {
         ctx.registerOriginalMaterial(child, child.material)
         if (child instanceof THREE.SkinnedMesh) {
           child.frustumCulled = false
         }
+        const faceSizes = matchFbxPolygons(polygons, child.geometry)
+        if (faceSizes) registerFaceSizes(child.geometry, faceSizes)
       }
     })
 
@@ -147,6 +163,12 @@ export class MeshModelAdapter implements ModelAdapter {
         ctx.registerOriginalMaterial(child, child.material)
         if (child instanceof THREE.SkinnedMesh) {
           child.frustumCulled = false
+        }
+        if (hasNgonEncoding(child)) {
+          registerFaceSizes(
+            child.geometry,
+            ngonEncodedFaceSizes(child.geometry)
+          )
         }
       }
     })

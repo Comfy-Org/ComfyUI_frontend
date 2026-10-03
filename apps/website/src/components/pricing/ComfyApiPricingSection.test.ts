@@ -10,12 +10,12 @@ describe('ComfyApiPricingSection', () => {
 
     expect(
       screen.getByRole('heading', {
-        name: t('pricing.comfyApi.heading', 'en')
+        name: t('pricing.comfyApi.heading', {}, { locale: 'en' })
       })
     ).toBeTruthy()
     expect(
       screen.queryByRole('heading', {
-        name: t('platform.pricing.heading', 'en')
+        name: t('platform.pricing.heading', {}, { locale: 'en' })
       })
     ).toBeNull()
   })
@@ -25,7 +25,9 @@ describe('ComfyApiPricingSection', () => {
 
     expect(screen.getAllByText('RTX PRO 6000').length).toBeGreaterThan(0)
     expect(
-      screen.getAllByText(t('pricing.comfyApi.metric.releases', 'en')).length
+      screen.getAllByText(
+        t('pricing.comfyApi.metric.releases', {}, { locale: 'en' })
+      ).length
     ).toBeGreaterThan(0)
   })
 
@@ -34,7 +36,7 @@ describe('ComfyApiPricingSection', () => {
 
     expect(
       screen.queryByRole('link', {
-        name: t('pricing.comfyApi.learnMore', 'en')
+        name: t('pricing.comfyApi.learnMore', {}, { locale: 'en' })
       })
     ).toBeNull()
   })
@@ -45,7 +47,9 @@ describe('ComfyApiPricingSection', () => {
     })
 
     expect(
-      screen.getByRole('link', { name: t('pricing.comfyApi.learnMore', 'en') })
+      screen.getByRole('link', {
+        name: t('pricing.comfyApi.learnMore', {}, { locale: 'en' })
+      })
     ).toHaveAttribute('href', '/platform/comfy-api/')
   })
 
@@ -56,7 +60,7 @@ describe('ComfyApiPricingSection', () => {
 
     expect(
       screen.getByRole('link', {
-        name: t('pricing.comfyApi.learnMore', 'zh-CN')
+        name: t('pricing.comfyApi.learnMore', {}, { locale: 'zh-CN' })
       })
     ).toHaveAttribute('href', '/zh-CN/platform/comfy-api/')
   })

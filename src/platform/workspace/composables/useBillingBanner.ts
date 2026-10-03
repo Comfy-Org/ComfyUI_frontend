@@ -74,14 +74,14 @@ const PERSONAL_RECOVERY_TIERS: ReadonlySet<SubscriptionTier> = new Set([
   'FOUNDERS_EDITION'
 ])
 
-// Payment recovery reaches personal workspaces too; only paused stays
-// team-shaped. Its rollout gate is independent of billing control.
+// Payment recovery reaches personal workspaces too. Its rollout gate is
+// independent of billing control.
 function derivePaymentRecoveryBanner(
   inputs: BillingBannerInputs
 ): BillingBannerKind | null {
   if (!inputs.v1PaymentRecovery) return null
   if (!inputs.isTeamPlan && !inputs.isKnownPersonalTier) return null
-  if (inputs.isTeamPlan && inputs.billingStatus === 'paused') return 'paused'
+  if (inputs.billingStatus === 'paused') return 'paused'
   if (inputs.billingStatus === 'payment_failed') return 'paymentFailed'
   return null
 }
@@ -221,7 +221,7 @@ function useBillingBannerInternal() {
   })
 
   useEventListener(window, 'focus', () => {
-    if (kind.value !== 'paymentFailed') return
+    if (kind.value !== 'paymentFailed' && kind.value !== 'paused') return
     void Promise.allSettled([fetchStatus(), fetchBalance()])
   })
 

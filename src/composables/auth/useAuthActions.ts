@@ -106,58 +106,66 @@ export const useAuthActions = () => {
     }
   }
 
-  const logout = wrapWithErrorHandlingAsync(async () => {
-    if (isCloud) {
-      const workflowStore = useWorkflowStore()
-      const modifiedWorkflows = workflowStore.modifiedWorkflows
-      if (modifiedWorkflows.length > 0) {
-        const dialogService = useDialogService()
-        const confirmed = await dialogService.confirm({
-          title: t('auth.signOut.unsavedChangesTitle'),
-          message: t('auth.signOut.unsavedChangesMessage'),
-          type: 'dirtyClose',
-          denyLabel: t('auth.signOut.signOutAnyway')
-        })
-        if (confirmed === null) return
+  /** `beforeSignOut` runs once unsaved work is settled; false keeps the user signed in. */
+  const logout = wrapWithErrorHandlingAsync(
+    async ({
+      beforeSignOut
+    }: { beforeSignOut?: () => Promise<boolean> } = {}) => {
+      if (isCloud) {
+        const workflowStore = useWorkflowStore()
+        const modifiedWorkflows = workflowStore.modifiedWorkflows
+        if (modifiedWorkflows.length > 0) {
+          const dialogService = useDialogService()
+          const confirmed = await dialogService.confirm({
+            title: t('auth.signOut.unsavedChangesTitle'),
+            message: t('auth.signOut.unsavedChangesMessage'),
+            type: 'dirtyClose',
+            denyLabel: t('auth.signOut.signOutAnyway')
+          })
+          if (confirmed === null) return
 
-        if (confirmed) {
-          const workflowService = useWorkflowService()
-          for (const workflow of modifiedWorkflows) {
-            try {
-              const saved = await workflowService.saveWorkflow(workflow)
-              if (!saved) return
-            } catch {
-              throw new Error(
-                t('auth.signOut.saveFailed', { workflow: workflow.path })
-              )
+          if (confirmed) {
+            const workflowService = useWorkflowService()
+            for (const workflow of modifiedWorkflows) {
+              try {
+                const saved = await workflowService.saveWorkflow(workflow)
+                if (!saved) return
+              } catch {
+                throw new Error(
+                  t('auth.signOut.saveFailed', { workflow: workflow.path })
+                )
+              }
             }
           }
         }
       }
-    }
 
-    await authStore.logout()
-    if (isCloud) {
-      prepareWorkflowLogoutTransition()
-      clearAllWorkspaceStorage()
-    }
+      if (beforeSignOut && !(await beforeSignOut())) return
 
-    toastStore.add({
-      severity: 'success',
-      summary: t('auth.signOut.success'),
-      detail: t('auth.signOut.successDetail'),
-      life: 5000
-    })
-
-    if (isCloud) {
-      try {
-        window.location.href = '/cloud/login'
-      } catch {
-        // needed for local development until we bring in cloud login pages.
-        window.location.reload()
+      await authStore.logout()
+      if (isCloud) {
+        prepareWorkflowLogoutTransition()
+        clearAllWorkspaceStorage()
       }
-    }
-  }, reportError)
+
+      toastStore.add({
+        severity: 'success',
+        summary: t('auth.signOut.success'),
+        detail: t('auth.signOut.successDetail'),
+        life: 5000
+      })
+
+      if (isCloud) {
+        try {
+          window.location.href = '/cloud/login'
+        } catch {
+          // needed for local development until we bring in cloud login pages.
+          window.location.reload()
+        }
+      }
+    },
+    reportError
+  )
 
   const sendPasswordReset = wrapWithErrorHandlingAsync(
     async (email: string) => {

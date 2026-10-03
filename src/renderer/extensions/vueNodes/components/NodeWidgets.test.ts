@@ -1,7 +1,7 @@
 import { getActivePinia } from 'pinia'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-/* eslint-disable testing-library/no-container */
-/* eslint-disable testing-library/no-node-access */
+/* oxlint-disable testing-library/no-container */
+/* oxlint-disable testing-library/no-node-access */
 import { render } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
