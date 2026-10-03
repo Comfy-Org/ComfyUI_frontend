@@ -71,6 +71,7 @@
         :loading="isLoading"
         :focused-asset-id="focusedAsset?.id"
         :empty-message
+        :require-node-provider="props.nodeType === undefined"
         @asset-focus="handleAssetFocus"
         @asset-select="handleAssetSelectAndEmit"
         @asset-deleted="refreshAssets"
