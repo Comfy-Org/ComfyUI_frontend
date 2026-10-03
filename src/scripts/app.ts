@@ -1311,6 +1311,14 @@ export class ComfyApp {
   ): Promise<LoadedComfyWorkflow | boolean | undefined> {
     const canvasScheduler = useCanvasScheduler()
     const loadId = ++this.graphLoadSequence
+    const abortIfSuperseded = async () => {
+      if (loadId >= this.committedGraphLoadSequence) return false
+      await useExtensionService().invokeExtensionsAsync(
+        'onGraphLoadError',
+        new DOMException('Graph load superseded by a newer load', 'AbortError')
+      )
+      return true
+    }
 
     const {
       checkForRerouteMigration = false,
@@ -1324,13 +1332,7 @@ export class ComfyApp {
     useWorkflowService().beforeLoadNewGraph(clean !== false)
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
 
-    if (loadId < this.committedGraphLoadSequence) {
-      await useExtensionService().invokeExtensionsAsync(
-        'onGraphLoadError',
-        new DOMException('Graph load superseded by a newer load', 'AbortError')
-      )
-      return undefined
-    }
+    if (await abortIfSuperseded()) return undefined
 
     let reset_invalid_values = false
     const missingNodeTypes: MissingNodeType[] = []
@@ -1375,6 +1377,7 @@ export class ComfyApp {
       if (useSettingStore().get('Comfy.Validation.Workflows')) {
         const { graphData: validatedGraphData } =
           await useWorkflowValidation().validateWorkflow(graphData)
+        if (await abortIfSuperseded()) return undefined
 
         // If the validation failed, use the original graph data.
         // Ideally we should not block users from loading the workflow.
@@ -1402,9 +1405,11 @@ export class ComfyApp {
         graphData,
         missingNodeTypes
       )
+      if (await abortIfSuperseded()) return undefined
 
       const nodeReplacementStore = useNodeReplacementStore()
       await nodeReplacementStore.load()
+      if (await abortIfSuperseded()) return undefined
 
       // Collect missing node types from all nodes (root + subgraphs)
       const collectMissingNodes = (
@@ -1637,6 +1642,7 @@ export class ComfyApp {
         'afterConfigureGraph',
         missingNodeTypes
       )
+      if (await abortIfSuperseded()) return undefined
 
       const effectiveShareId =
         shareId ??
@@ -1657,7 +1663,9 @@ export class ComfyApp {
         this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
         effectiveShareId
       )
+      if (await abortIfSuperseded()) return undefined
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+      if (await abortIfSuperseded()) return undefined
       // Capture the workflow this load activated before the asset-scan awaits
       // below can hand control back and let the user switch to another one.
       activatedWorkflow = useWorkflowStore().activeWorkflow ?? undefined
@@ -1681,11 +1689,13 @@ export class ComfyApp {
           missingNodeTypes: activeMissingNodeTypes,
           silent: silentAssetErrors
         })
+        if (await abortIfSuperseded()) return undefined
 
         await runMissingMediaPipeline({
           rootGraph: this.rootGraph,
           silent: silentAssetErrors
         })
+        if (await abortIfSuperseded()) return undefined
       }
 
       if (!deferWarnings) {
