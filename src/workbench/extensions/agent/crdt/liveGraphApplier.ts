@@ -589,6 +589,7 @@ export class LiveGraphApplier {
         this.reported.delete(`definition:${definition.id}`)
         continue
       }
+      this.failureCount += 1
       if (this.reported.has(`definition:${definition.id}`)) continue
       this.reported.add(`definition:${definition.id}`)
       reportError(failure, {
