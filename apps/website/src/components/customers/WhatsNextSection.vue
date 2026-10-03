@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Locale, TranslationKey } from '../../i18n/translations'
 
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import GlassCard from '../common/GlassCard.vue'
 
 const {
@@ -19,12 +19,13 @@ const {
    * wording so existing callers are unaffected. */
   ctaLabel?: string
 }>()
+const { t } = translationsFor(locale)
 </script>
 
 <template>
   <section class="px-4 py-16 lg:px-20 lg:py-24">
     <h2 class="mb-10 text-2xl font-light text-primary-comfy-canvas lg:text-3xl">
-      {{ t('customers.story.whatsNext' as TranslationKey, locale) }}
+      {{ t('customers.story.whatsNext' as TranslationKey) }}
     </h2>
 
     <GlassCard
@@ -52,12 +53,9 @@ const {
             <span class="text-lg font-bold">›</span>
           </span>
           <span
-            class="ppformula-text-center inline-block text-sm font-semibold tracking-wider text-primary-comfy-canvas uppercase"
+            class="inline-block text-sm font-semibold tracking-wider text-primary-comfy-canvas uppercase"
           >
-            {{
-              ctaLabel ??
-              t('customers.story.viewArticle' as TranslationKey, locale)
-            }}
+            {{ ctaLabel ?? t('customers.story.viewArticle' as TranslationKey) }}
           </span>
         </a>
       </div>

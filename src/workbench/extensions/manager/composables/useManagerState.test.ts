@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -12,6 +12,13 @@ import {
 
 // Mock dependencies that are not stores
 vi.mock(import('@/i18n'))
+
+const distribution = vi.hoisted(() => ({ isCloud: false }))
+vi.mock(import('@/platform/distribution/types'), () => ({
+  get isCloud() {
+    return distribution.isCloud
+  }
+}))
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
@@ -414,6 +421,46 @@ describe('useManagerState', () => {
 
       const managerState = useManagerState()
       expect(managerState.shouldShowManagerButtons.value).toBe(true)
+    })
+
+    it.for([
+      { argv: ['python', 'main.py'], expected: false },
+      { argv: ['python', 'main.py', '--enable-manager'], expected: true }
+    ])(
+      'shouldShowExtensionsButton follows manager availability off cloud ($argv)',
+      ({ argv, expected }) => {
+        systemStatsStore.$patch({
+          systemStats: systemStatsFixture(argv),
+          isInitialized: true
+        })
+        vi.mocked(api.getClientFeatureFlags).mockReturnValue({
+          supports_manager_v4_ui: true
+        })
+        mockServerFeatures({ supports_v4: true, supports_csrf_post: true })
+
+        expect(useManagerState().shouldShowExtensionsButton.value).toBe(
+          expected
+        )
+      }
+    )
+
+    it('shouldShowExtensionsButton stays true on cloud while Manager is unavailable', () => {
+      distribution.isCloud = true
+      onTestFinished(() => {
+        distribution.isCloud = false
+      })
+      systemStatsStore.$patch({
+        systemStats: systemStatsFixture(['python', 'main.py']),
+        isInitialized: true
+      })
+      vi.mocked(api.getClientFeatureFlags).mockReturnValue({
+        supports_manager_v4_ui: true
+      })
+      mockServerFeatures({ supports_v4: true, supports_csrf_post: true })
+
+      const managerState = useManagerState()
+      expect(managerState.shouldShowManagerButtons.value).toBe(false)
+      expect(managerState.shouldShowExtensionsButton.value).toBe(true)
     })
   })
 })

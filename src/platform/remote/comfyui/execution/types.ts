@@ -1,6 +1,7 @@
 import type { PromptInfo } from '@comfyorg/ingest-types'
 import { z } from 'zod'
 import { zNodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { TaskStatus } from '@/platform/tasks/services/taskService'
 import { resultItemType } from '@/schemas/resultItemTypeSchema'
 
 export type JobId = string
@@ -9,7 +10,8 @@ export const zResultItem = z.object({
   filename: z.string().optional(),
   subfolder: z.string().optional(),
   type: resultItemType.optional(),
-  display_name: z.string().optional()
+  display_name: z.string().optional(),
+  id: z.string().optional()
 })
 export type ResultItem = z.infer<typeof zResultItem>
 // Uses .passthrough() because custom nodes can output arbitrary keys.
@@ -117,14 +119,13 @@ export interface LogsRawResponse {
   entries: LogEntry[]
 }
 export type FeatureFlagsWsMessage = Record<string, unknown>
-type AssetTaskStatus = 'created' | 'running' | 'completed' | 'failed'
 export interface AssetDownloadWsMessage {
   task_id: string
   asset_name: string
   bytes_total: number
   bytes_downloaded: number
   progress: number
-  status: AssetTaskStatus
+  status: TaskStatus
   asset_id?: string
   error?: string
 }
@@ -137,7 +138,7 @@ export interface AssetExportWsMessage {
   bytes_total: number
   bytes_processed: number
   progress: number
-  status: AssetTaskStatus
+  status: Exclude<TaskStatus, 'cancelled'>
   error?: string
 }
 

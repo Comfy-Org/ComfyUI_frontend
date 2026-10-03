@@ -1,0 +1,404 @@
+<script setup lang="ts">
+import { useMounted } from '@vueuse/core'
+import { computed, onScopeDispose, ref, useTemplateRef, watch } from 'vue'
+
+import type { WorkflowWorkshopModelDetail } from '../../config/models-catalogue'
+import type { SnippetLanguage } from '../../config/models-snippets'
+import {
+  initialWorkshopPageState,
+  workshopExampleState
+} from '../../config/workshop-page-state'
+import {
+  restoreFormValues,
+  urlUploadField
+} from '../../config/workshop-playground'
+import { WorkshopWorkflowError } from '../../config/workshop-workflow-api'
+import {
+  workflowNoticeKey,
+  workflowStatusKey
+} from '../../config/workshop-workflow-presentation'
+import { requestWorkshopBuyCreditsAutomatically } from '../../config/workshop-buy-credits'
+import { refreshWorkshopCredits } from '../../config/workshop-credits'
+import { useWorkshopModelBalance } from '../../config/workshop-model-balance'
+import { useWorkshopSession } from '../../config/workshop-session-state'
+import type { WorkflowCreditsRefusal } from '../../lib/workshop/workflow-credits-gate'
+import {
+  withRefusalBaseline,
+  workflowCreditsGate
+} from '../../lib/workshop/workflow-credits-gate'
+import { panelSaysRefusal } from '../../lib/workshop/workflow-refusal'
+import { useStickyFooterScrollPadding } from '../../composables/useStickyFooterScrollPadding'
+import { useTablist } from '../../composables/useTablist'
+import { useWorkflowFormDraft } from '../../composables/useWorkflowFormDraft'
+import { useWorkflowRun } from '../../composables/useWorkflowRun'
+import { t } from '../../i18n/translations'
+import {
+  captureWorkshopEvent,
+  useWorkshopEnabled,
+  useWorkshopWorkflowsEnabled
+} from '../../scripts/posthog'
+import { workshopModelAnalytics } from '../../scripts/workshop-analytics'
+import { sameFormValues } from '../../lib/workshop/form-values'
+import ExampleReplaceDialog from './ExampleReplaceDialog.vue'
+import PlaygroundForm from './PlaygroundForm.vue'
+import WorkflowResults from './WorkflowResults.vue'
+import WorkflowCreditsGuard from './WorkflowCreditsGuard.vue'
+import WorkflowRunControls from './WorkflowRunControls.vue'
+import WorkflowPreview from './WorkflowPreview.vue'
+import WorkflowApi from './WorkflowApi.vue'
+import WorkflowExampleCard from './WorkflowExampleCard.vue'
+
+const { model, scope, cloudHref } = defineProps<{
+  model: WorkflowWorkshopModelDetail
+  scope: string
+  cloudHref?: string
+}>()
+const emit = defineEmits<{ recovery: [active: boolean] }>()
+const sections = ['playground', 'workflow', 'api'] as const
+const section = ref<(typeof sections)[number]>('playground')
+const { onKeydown } = useTablist(() => sections, section)
+const footer = useTemplateRef<HTMLElement>('footer')
+useStickyFooterScrollPadding(footer, () => section.value === 'playground')
+const sectionLabels = {
+  playground: 'workshop.model.tabs.playground',
+  workflow: 'workshop.model.tabs.details',
+  api: 'workshop.model.tabs.api'
+} as const
+const initial = initialWorkshopPageState(model)
+const values = ref(initial.values)
+const settledValues = ref(initial.values)
+const selectedExample = ref(0)
+const replacing = ref<number>()
+const schema = computed(() => initial.schema)
+const workflow = useWorkflowRun(model, scope, (inputs) => {
+  values.value = {
+    ...values.value,
+    ...restoreFormValues(
+      initial.schema.filter(
+        (field) => field.kind !== 'file' && !urlUploadField(field)
+      ),
+      inputs
+    )
+  }
+})
+const { state, observation, signedIn, identitySettled } = workflow
+watch(
+  () => 'record' in state.value,
+  (active) => emit('recovery', active)
+)
+onScopeDispose(() => emit('recovery', false))
+const draft = useWorkflowFormDraft(
+  model.slug,
+  scope,
+  schema,
+  values,
+  ref(false)
+)
+const enabled = useWorkshopEnabled()
+const workflowsEnabled = useWorkshopWorkflowsEnabled()
+const mounted = useMounted()
+const modelAnalytics = workshopModelAnalytics(model)
+watch(
+  () => mounted.value && enabled.value && workflowsEnabled.value,
+  (visible) => {
+    if (visible)
+      captureWorkshopEvent({ name: 'model_viewed', properties: modelAnalytics })
+  },
+  { once: true }
+)
+watch([section, enabled, workflowsEnabled], ([active, enabled, workflows]) => {
+  if (enabled && workflows && active === 'api')
+    captureWorkshopEvent({ name: 'api_viewed', properties: modelAnalytics })
+})
+function captureApiKeyClick() {
+  if (enabled.value && workflowsEnabled.value)
+    captureWorkshopEvent({
+      name: 'api_key_clicked',
+      properties: modelAnalytics
+    })
+}
+function captureSnippetCopy(language: SnippetLanguage) {
+  if (enabled.value && workflowsEnabled.value)
+    captureWorkshopEvent({
+      name: 'api_snippet_copied',
+      properties: { ...modelAnalytics, snippet_language: language }
+    })
+}
+const busy = computed(() =>
+  ['preparing', 'active', 'interrupted'].includes(state.value.phase)
+)
+const admissionPaused = computed(
+  () => !enabled.value || !workflowsEnabled.value
+)
+const formDisabled = computed(
+  () => !identitySettled.value || busy.value || draft.pending.value
+)
+const selectedRunId = computed(() => observation.value?.run.id)
+const canStart = computed(
+  () =>
+    signedIn.value &&
+    !admissionPaused.value &&
+    model.type === 'CLOUD' &&
+    !busy.value &&
+    !draft.pending.value
+)
+const cancelRequested = computed(
+  () => 'record' in state.value && state.value.record.cancelRequested
+)
+const error = computed(() =>
+  'error' in state.value
+    ? state.value.error
+    : observation.value?.run.state === 'failed'
+      ? new WorkshopWorkflowError('execution_failed')
+      : undefined
+)
+const fieldErrors = computed(() => error.value?.fieldErrors ?? {})
+// What is left for this page to say is what the panel does not carry.
+const refusalSaidHere = computed(() =>
+  error.value && !panelSaysRefusal(state.value)
+    ? t(workflowNoticeKey(state.value, error.value))
+    : undefined
+)
+const { session } = useWorkshopSession()
+const balance = useWorkshopModelBalance(session)
+const credits = computed(() =>
+  balance.value.status === 'ok' ? balance.value.credits : undefined
+)
+const refusal = ref<WorkflowCreditsRefusal>()
+watch(
+  () =>
+    state.value.phase === 'failed' &&
+    state.value.error.code === 'insufficient_credits',
+  (refused) => {
+    refusal.value = refused ? { credits: credits.value } : undefined
+    if (!refused) return
+    if (session.value?.role === 'owner')
+      requestWorkshopBuyCreditsAutomatically()
+    void refreshWorkshopCredits({ force: true })
+  }
+)
+watch(credits, (known) => {
+  refusal.value = withRefusalBaseline(refusal.value, known)
+})
+const creditsGate = computed(() =>
+  signedIn.value
+    ? workflowCreditsGate({
+        busy: busy.value,
+        member: session.value?.role === 'member',
+        credits: credits.value,
+        refusal: refusal.value
+      })
+    : 'run'
+)
+const statusLabel = computed(() => {
+  if (cancelRequested.value && busy.value)
+    return t('workshop.workflow.cancelling')
+  if (state.value.phase === 'preparing') return t('workshop.workflow.preparing')
+  if (state.value.phase === 'interrupted')
+    return t('workshop.workflow.interrupted')
+  return observation.value
+    ? t(workflowStatusKey(observation.value.run))
+    : t('workshop.workflow.submitting')
+})
+
+function tabIndex(item: (typeof sections)[number]): number {
+  return section.value === item ? 0 : -1
+}
+
+function selectExample(index: number) {
+  const example = initial.examples[index]
+  if (!example || formDisabled.value) return
+  if (
+    !example.sampleOnly &&
+    !sameFormValues(values.value, settledValues.value)
+  ) {
+    replacing.value = index
+    return
+  }
+  applyExample(index)
+}
+
+function applyExample(index: number) {
+  const example = initial.examples[index]
+  if (!example || formDisabled.value) return
+  if (!example.sampleOnly) {
+    values.value = workshopExampleState(model, example).values
+    settledValues.value = values.value
+  }
+  replacing.value = undefined
+  selectedExample.value = index
+  workflow.dismiss()
+  section.value = 'playground'
+}
+
+function updateExampleDialog(open: boolean) {
+  if (!open) replacing.value = undefined
+}
+
+function confirmExample() {
+  if (replacing.value !== undefined) applyExample(replacing.value)
+}
+
+function start() {
+  if (!canStart.value) return
+  void workflow.start(values.value)
+}
+</script>
+
+<template>
+  <div
+    role="tablist"
+    :aria-label="t('workshop.workflow.sections')"
+    class="mb-6 flex gap-7 border-b border-transparency-white-t8"
+    @keydown="onKeydown"
+  >
+    <button
+      v-for="item in sections"
+      :id="`workflow-tab-${item}`"
+      :key="item"
+      type="button"
+      role="tab"
+      :aria-selected="section === item"
+      :aria-controls="`workflow-panel-${item}`"
+      :tabindex="tabIndex(item)"
+      class="min-h-12 cursor-pointer border-b-2 border-transparent px-1 text-sm font-bold tracking-wider text-primary-warm-gray uppercase transition-colors hover:text-primary-warm-white aria-selected:border-primary-comfy-yellow aria-selected:text-primary-warm-white"
+      @click="section = item"
+    >
+      {{ t(sectionLabels[item]) }}
+    </button>
+  </div>
+  <div
+    v-show="section === 'playground'"
+    id="workflow-panel-playground"
+    role="tabpanel"
+    aria-labelledby="workflow-tab-playground"
+    class="grid gap-8 lg:grid-cols-12"
+  >
+    <section
+      class="flex min-w-0 flex-col rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4 lg:col-span-5"
+      aria-labelledby="workflow-inputs-heading"
+    >
+      <form class="flex min-h-full flex-col" @submit.prevent="start">
+        <h2
+          id="workflow-inputs-heading"
+          class="border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
+        >
+          {{ t('workshop.input.title') }}
+        </h2>
+        <div class="space-y-6 p-5">
+          <PlaygroundForm
+            v-model="values"
+            :schema="initial.schema"
+            :errors="fieldErrors"
+            :disabled="formDisabled"
+          />
+          <p
+            v-if="draft.restoreFailed.value"
+            role="alert"
+            class="text-sm text-primary-warm-gray"
+          >
+            {{ t('workshop.form.draftRestoreFailed') }}
+          </p>
+        </div>
+        <div
+          ref="footer"
+          class="sticky bottom-0 z-10 mt-auto space-y-3 rounded-b-2xl border-t border-transparency-white-t8 bg-page/85 p-3 backdrop-blur-sm"
+          data-testid="workflow-run-footer"
+        >
+          <p
+            v-if="admissionPaused"
+            role="status"
+            class="text-sm text-primary-warm-gray"
+          >
+            {{ t('workshop.workflow.paused') }}
+          </p>
+          <p
+            v-if="refusalSaidHere"
+            role="alert"
+            class="text-sm text-primary-comfy-red"
+          >
+            {{ refusalSaidHere }}
+          </p>
+          <WorkflowCreditsGuard
+            :gate="creditsGate"
+            :workspace-name="session?.workspace.name"
+          >
+            <WorkflowRunControls
+              :state="state"
+              :signed-in="signedIn"
+              :can-start="canStart"
+              :status-label="statusLabel"
+              @resume="workflow.resume()"
+              @cancel="workflow.cancel()"
+              @dismiss="workflow.dismiss()"
+            />
+          </WorkflowCreditsGuard>
+        </div>
+      </form>
+    </section>
+    <div class="space-y-4 lg:sticky lg:top-24 lg:col-span-7">
+      <WorkflowResults
+        :key="selectedRunId"
+        :model="model"
+        :state="state"
+        :example-index="selectedExample"
+        :busy="busy"
+        :status-label="statusLabel"
+        :can-start="canStart"
+        :refresh-output="workflow.refreshOutput"
+        :analytics="workflow.analytics.value"
+        :visible="section === 'playground'"
+        @retry="start"
+        @retry-delivery="workflow.retryDelivery()"
+      />
+    </div>
+  </div>
+  <WorkflowPreview
+    v-show="section === 'workflow'"
+    :active="section === 'workflow'"
+    :model="model"
+    :cloud-href="cloudHref"
+  />
+  <div
+    v-show="section === 'api'"
+    id="workflow-panel-api"
+    role="tabpanel"
+    aria-labelledby="workflow-tab-api"
+  >
+    <WorkflowApi
+      :model="model"
+      :values="values"
+      @get-key="captureApiKeyClick"
+      @copy="captureSnippetCopy"
+    />
+  </div>
+  <section
+    v-if="model.examples.length"
+    v-show="section === 'playground'"
+    class="mt-14"
+    aria-labelledby="workflow-examples-heading"
+  >
+    <h2
+      id="workflow-examples-heading"
+      class="mb-5 text-sm font-bold text-primary-warm-white"
+    >
+      {{ t('workshop.examples.start') }}
+    </h2>
+    <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <WorkflowExampleCard
+        v-for="(example, index) in model.examples"
+        :key="example.name"
+        :example
+        :chosen="selectedExample === index"
+        :poster="model.thumbnailUrl"
+        :disabled="formDisabled"
+        @open="selectExample(index)"
+      />
+    </div>
+  </section>
+  <ExampleReplaceDialog
+    :open="replacing !== undefined"
+    @update:open="updateExampleDialog"
+    @replace="confirmExample"
+  />
+</template>

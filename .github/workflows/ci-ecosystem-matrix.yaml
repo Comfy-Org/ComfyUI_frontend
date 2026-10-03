@@ -28,8 +28,7 @@ on:
   # Required workflows must emit their aggregate check for every candidate.
   # A paths filter would leave unrelated PRs and merge-queue commits waiting
   # forever for a check GitHub never creates.
-  pull_request:
-  merge_group:
+  workflow_call:
   # Refreshes the corpus and writes the baseline every relevant PR measures.
   # Actions cache scoping means only a default-branch run can produce an entry
   # that other branches restore.
@@ -63,7 +62,7 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
-      should-run: ${{ github.event_name == 'pull_request' && github.event.pull_request.changed_files >= 3000 || steps.changes.outputs.should-run }}
+      should-run: ${{ github.event_name == 'pull_request' && github.event.pull_request.changed_files >= 3000 || steps.changes.outputs.should-run-source }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7

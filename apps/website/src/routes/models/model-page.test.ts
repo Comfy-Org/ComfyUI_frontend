@@ -9,8 +9,9 @@ const mocks = vi.hoisted(() => ({
   successor: vi.fn(),
   price: vi.fn()
 }))
-vi.mock(import('../../config/workshop-router-content'), () => ({
-  getRouterWorkshopModelDetail: mocks.lookup
+vi.mock(import('../../config/workshop-page-content'), () => ({
+  getWorkshopPageDetail: mocks.lookup,
+  workshopPages: []
 }))
 vi.mock(import('../../config/workshop-related'), () => ({
   relatedModels: mocks.related
@@ -98,6 +99,31 @@ describe('Models route preparation', () => {
     }
   )
 
+  it('shows only capability tags, in their original order', async () => {
+    mocks.lookup.mockReturnValue({
+      ...model,
+      name: 'FLUX 2 Max Text-to-Image',
+      provider: 'Black Forest Labs',
+      capabilities: [
+        'bfl',
+        'flux',
+        'high-detail',
+        'flux-2',
+        'text-to-image',
+        'premium'
+      ]
+    })
+
+    const page = await prepareModelPage(model.slug)
+
+    if (page.kind !== 'page') throw new Error('Expected canonical page')
+    expect(page.tags.map((tag) => tag.label)).toEqual([
+      'high-detail',
+      'text-to-image',
+      'premium'
+    ])
+  })
+
   it('uses a provider heading only when every related card has that provider', async () => {
     mocks.related.mockReturnValue([{ ...model, slug: 'related' }])
     expect(await prepareModelPage(model.slug)).toHaveProperty(
@@ -125,6 +151,16 @@ describe('Models route preparation', () => {
     })
     expect(mocks.successor).toHaveBeenCalledWith('new-model')
   })
+
+  it.for(['old-alias', model.slug])(
+    'fails the build when %s resolves to a model with no page',
+    async (slug) => {
+      mocks.lookup.mockReturnValue({ ...model, href: undefined })
+      await expect(prepareModelPage(slug)).rejects.toThrow(
+        `Models route ${slug} resolved to ${model.slug}, which has no page`
+      )
+    }
+  )
 
   it('fails an unknown or missing route explicitly', async () => {
     mocks.lookup.mockReturnValue(undefined)

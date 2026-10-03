@@ -24,10 +24,10 @@ import { isValidUuid } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 import {
-  createMockCanvas,
   createMockChangeTracker,
   createMockLGraphNode
 } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvas } from '@/utils/__tests__/canvasTestUtils'
 
 // Add mock for api at the top of the file
 vi.mock<unknown>(import('@/scripts/api'), () => ({
@@ -375,7 +375,7 @@ describe('useWorkflowStore', () => {
       const workflow = store.getWorkflowByPath('workflows/a.json')!
       const draftGraph = JSON.parse(defaultGraphJSON)
       draftGraph.extra = {
-        ...(draftGraph.extra ?? {}),
+        ...draftGraph.extra,
         draftMarker: 'v2'
       }
 
@@ -406,7 +406,7 @@ describe('useWorkflowStore', () => {
       const workflow = store.getWorkflowByPath('workflows/a.json')!
       const draftGraph = JSON.parse(defaultGraphJSON)
       draftGraph.extra = {
-        ...(draftGraph.extra ?? {}),
+        ...draftGraph.extra,
         draftMarker: 'stale-v2'
       }
       const draftStore = saveV2Draft(workflow.path, {

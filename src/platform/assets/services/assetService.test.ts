@@ -1,4 +1,3 @@
-import type { ComfyApp } from '@/scripts/app'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -34,10 +33,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   }
 }))
 
-vi.mock(import('@/i18n'), () => ({
-  t: (key: string) => key,
-  st: vi.fn((_key: string, fallback: string) => fallback)
-}))
+vi.mock(import('@/i18n'))
 
 const fetchApiMock = vi.mocked(api.fetchApi)
 
@@ -208,6 +204,28 @@ describe(assetService.getAssetMetadata, () => {
           encodeURIComponent('https://example.com/foo bar?x=1')
       )
     )
+  })
+})
+
+describe(assetService.getInputAssetsIncludingPublic, () => {
+  beforeEach(() => {
+    assetService.invalidateInputAssetsIncludingPublic()
+  })
+
+  it('keeps hash-only assets whose file_path and display_name are null', async () => {
+    const hashOnlyAsset = validAsset({
+      id: 'hash-only-input',
+      name: 'fe746_photo.png',
+      tags: ['input'],
+      hash: 'blake3:fe746',
+      file_path: null,
+      display_name: null
+    })
+    fetchApiMock.mockResolvedValueOnce(buildAssetListResponse([hashOnlyAsset]))
+
+    const assets = await assetService.getInputAssetsIncludingPublic()
+
+    expect(assets).toEqual([hashOnlyAsset])
   })
 })
 
@@ -1177,7 +1195,4 @@ describe(assetService.getAssetsForNodeType, () => {
   })
 })
 
-vi.mock(import('@/scripts/app'), async () => {
-  const { fromPartial } = await import('@total-typescript/shoehorn')
-  return { app: fromPartial<ComfyApp>({}) }
-})
+vi.mock(import('@/scripts/app'))

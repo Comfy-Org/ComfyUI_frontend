@@ -14,20 +14,58 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  lint-pr:
+    if: github.event_name == 'pull_request'
+    uses: ./.github/workflows/ci-lint-format.yaml
+    permissions:
+      contents: write
+      pull-requests: write
+    secrets:
+      PR_GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
+
+  lint-queue:
+    if: github.event_name == 'merge_group'
+    uses: ./.github/workflows/ci-lint-format-queue.yaml
+    permissions:
+      contents: read
+
+  fallow:
+    if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
+    uses: ./.github/workflows/ci-fallow.yaml
+    permissions:
+      contents: read
+      pull-requests: write
+
+  lint-and-format:
+    needs: [lint-pr, lint-queue]
+    if: ${{ always() && (github.event_name == 'pull_request' || github.event_name == 'merge_group') }}
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Check candidate lint result
+        env:
+          RESULT: ${{ github.event_name == 'pull_request' && needs.lint-pr.result || needs.lint-queue.result }}
+        run: test "$RESULT" = success
+
   changes:
     runs-on: ubuntu-latest
     permissions:
       contents: read
     outputs:
-      should-run: ${{ steps.changes.outputs.should-run }}
+      should-run: ${{ steps.changes.outputs.should-run-e2e }}
+      should-build: ${{ steps.changes.outputs.should-run-e2e == 'true' || ((github.event_name == 'pull_request' || github.event_name == 'merge_group') && steps.changes.outputs.should-run-unit == 'true') }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - id: changes
         uses: ./.github/actions/changes-filter
+        with:
+          # e2e-status is emitted whatever the verdict, so a candidate with no
+          # e2e-relevant changes can skip the suites without stalling the queue.
+          evaluate-candidate: 'true'
 
   setup:
     needs: changes
-    if: ${{ needs.changes.outputs.should-run == 'true' }}
+    if: ${{ needs.changes.outputs.should-build == 'true' }}
     runs-on: ubuntu-latest
     env:
       EXPECTED_FRONTEND_COMMIT: ${{ github.sha }}
@@ -74,13 +112,69 @@ jobs:
         with:
           expected_commit: ${{ github.sha }}
 
+  preflight:
+    needs: [changes, setup, lint-and-format, fallow]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Require successful prerequisites
+        env:
+          EVENT: ${{ github.event_name }}
+          CHANGES: ${{ needs.changes.result }}
+          SHOULD_BUILD: ${{ needs.changes.outputs.should-build }}
+          BUILD: ${{ needs.setup.result }}
+          LINT: ${{ needs.lint-and-format.result }}
+          FALLOW: ${{ needs.fallow.result }}
+        run: |
+          test "$CHANGES" = success
+          case "$SHOULD_BUILD:$BUILD" in
+            true:success | false:skipped) ;;
+            *) echo "::error::Build prerequisite did not pass: $SHOULD_BUILD:$BUILD"; exit 1 ;;
+          esac
+          case "$EVENT" in
+            pull_request | merge_group)
+              test "$LINT" = success && test "$FALLOW" = success ;;
+          esac
+
+  unit:
+    needs: preflight
+    if: ${{ !cancelled() && needs.preflight.result == 'success' && (github.event_name == 'pull_request' || github.event_name == 'merge_group') }}
+    uses: ./.github/workflows/ci-tests-unit.yaml
+    permissions:
+      contents: read
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  test:
+    needs: [preflight, unit]
+    if: ${{ always() && (github.event_name == 'pull_request' || github.event_name == 'merge_group') }}
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Check unit result
+        env:
+          PREFLIGHT: ${{ needs.preflight.result }}
+          UNIT: ${{ needs.unit.result }}
+        run: test "$PREFLIGHT" = success && test "$UNIT" = success
+
+  ecosystem:
+    needs: preflight
+    if: ${{ !cancelled() && needs.preflight.result == 'success' && (github.event_name == 'pull_request' || github.event_name == 'merge_group') }}
+    uses: ./.github/workflows/ci-ecosystem-matrix.yaml
+    permissions:
+      contents: read
+      pull-requests: write
+      actions: write
+
   # Sharded chromium tests
   playwright-tests-chromium-sharded:
-    needs: setup
+    needs: [changes, setup, preflight]
+    if: ${{ !cancelled() && needs.preflight.result == 'success' && needs.changes.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     container:
-      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.22
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.27
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -137,13 +231,65 @@ jobs:
           # completeness signal the packager needs.
           if-no-files-found: error
 
+  # Sharded cloud tests: the cloud project alone ran longer than any chromium
+  # shard, so it was the critical path of every merge-group entry.
+  playwright-tests-cloud-sharded:
+    needs: [changes, setup, preflight]
+    if: ${{ !cancelled() && needs.preflight.result == 'success' && needs.changes.outputs.should-run == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    container:
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.27
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    permissions:
+      contents: read
+      packages: read
+    strategy:
+      fail-fast: false
+      matrix:
+        shardIndex: [1, 2, 3, 4]
+        shardTotal: [4]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Download built frontend
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: frontend-dist-cloud
+          path: dist/
+
+      - name: Start ComfyUI server
+        uses: ./.github/actions/start-comfyui-server
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          node_cache: 'false'
+
+      - name: Run Playwright tests (cloud, Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
+        id: playwright
+        run: pnpm exec playwright test --project=cloud --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+        env:
+          PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
+
+      - name: Upload blob report
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        if: ${{ !cancelled() }}
+        with:
+          name: blob-report-cloud-${{ matrix.shardIndex }}
+          path: blob-report/
+          retention-days: 1
+
   playwright-tests:
     # Ideally, each shard runs test in 6 minutes, but allow up to 30 minutes
     timeout-minutes: 30
-    needs: setup
+    needs: [changes, setup, preflight]
+    if: ${{ !cancelled() && needs.preflight.result == 'success' && needs.changes.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.22
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.27
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -160,8 +306,6 @@ jobs:
             artifact: frontend-dist
           - browser: mobile-chrome
             artifact: frontend-dist
-          - browser: cloud
-            artifact: frontend-dist-cloud
           - browser: mobile-safari
             artifact: frontend-dist-cloud
           - browser: desktop
@@ -209,9 +353,19 @@ jobs:
 
   # Merge sharded test reports (no container needed - only runs CLI)
   merge-reports:
-    needs: [changes, playwright-tests-chromium-sharded]
+    needs:
+      [
+        changes,
+        preflight,
+        playwright-tests-chromium-sharded,
+        playwright-tests-cloud-sharded
+      ]
     runs-on: ubuntu-latest
-    if: ${{ !cancelled() && needs.changes.outputs.should-run == 'true' }}
+    if: ${{ !cancelled() && needs.preflight.result == 'success' && needs.changes.outputs.should-run == 'true' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [chromium, cloud]
     steps:
       - name: Install pnpm
         uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
@@ -222,7 +376,7 @@ jobs:
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           path: ./all-blob-reports
-          pattern: blob-report-chromium-*
+          pattern: blob-report-${{ matrix.project }}-*
           merge-multiple: true
 
       - name: Merge into HTML Report
@@ -236,7 +390,7 @@ jobs:
       - name: Upload HTML report
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
-          name: playwright-report-chromium
+          name: playwright-report-${{ matrix.project }}
           path: ./playwright-report/
           retention-days: 30
 
@@ -248,7 +402,9 @@ jobs:
     needs:
       [
         changes,
+        preflight,
         playwright-tests-chromium-sharded,
+        playwright-tests-cloud-sharded,
         playwright-tests,
         playwright-video-new-tests
       ]
@@ -256,25 +412,29 @@ jobs:
     steps:
       - name: Check E2E results
         env:
+          PREFLIGHT: ${{ needs.preflight.result }}
           CHANGES: ${{ needs.changes.result }}
           SHOULD_RUN: ${{ needs.changes.outputs.should-run }}
           SHARDED: ${{ needs.playwright-tests-chromium-sharded.result }}
+          CLOUD: ${{ needs.playwright-tests-cloud-sharded.result }}
           BROWSERS: ${{ needs.playwright-tests.result }}
           VIDEO: ${{ needs.playwright-video-new-tests.result }}
         run: |
-          echo "changes=$CHANGES should_run=$SHOULD_RUN sharded=$SHARDED browsers=$BROWSERS video=$VIDEO"
+          echo "changes=$CHANGES should_run=$SHOULD_RUN sharded=$SHARDED cloud=$CLOUD browsers=$BROWSERS video=$VIDEO"
+          [[ "$PREFLIGHT" != "success" ]] && echo "CI prerequisites did not pass ($PREFLIGHT)" && exit 1
           [[ "$CHANGES" != "success" ]] && echo "changes gate did not complete ($CHANGES)" && exit 1
           [[ "$SHOULD_RUN" != "true" ]] && echo "E2E skipped" && exit 0
-          [[ "$SHARDED" == "failure" || "$BROWSERS" == "failure" || "$VIDEO" == "failure" ]] && echo "E2E failed" && exit 1
-          [[ "$SHARDED" == "cancelled" || "$BROWSERS" == "cancelled" || "$VIDEO" == "cancelled" ]] && echo "E2E cancelled, not failed" && exit 1
-          [[ "$SHARDED" != "success" || "$BROWSERS" != "success" || ( "$VIDEO" != "success" && "$VIDEO" != "skipped" ) ]] && echo "E2E failed" && exit 1
+          [[ "$SHARDED" == "failure" || "$CLOUD" == "failure" || "$BROWSERS" == "failure" || "$VIDEO" == "failure" ]] && echo "E2E failed" && exit 1
+          [[ "$SHARDED" == "cancelled" || "$CLOUD" == "cancelled" || "$BROWSERS" == "cancelled" || "$VIDEO" == "cancelled" ]] && echo "E2E cancelled, not failed" && exit 1
+          [[ "$SHARDED" != "success" || "$CLOUD" != "success" || "$BROWSERS" != "success" || ( "$VIDEO" != "success" && "$VIDEO" != "skipped" ) ]] && echo "E2E failed" && exit 1
           echo "E2E passed"
 
   upload-e2e-coverage:
-    needs: [changes, playwright-tests-chromium-sharded]
+    needs: [changes, preflight, playwright-tests-chromium-sharded]
     if: >-
       ${{
         always() &&
+        needs.preflight.result == 'success' &&
         needs.changes.outputs.should-run == 'true' &&
         needs.playwright-tests-chromium-sharded.result != 'cancelled'
       }}
@@ -288,12 +448,12 @@ jobs:
 
   # Records video only for tests newly added in this PR, to keep cost bounded.
   playwright-video-new-tests:
-    needs: setup
-    if: ${{ github.event_name == 'pull_request' }}
+    needs: [changes, setup, preflight]
+    if: ${{ !cancelled() && needs.preflight.result == 'success' && github.event_name == 'pull_request' && needs.changes.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     container:
-      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.22
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.27
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -542,13 +702,15 @@ jobs:
 
   # Post starting section into the unified PR report comment
   comment-on-pr-start:
-    needs: changes
+    needs: [changes, preflight]
     runs-on: ubuntu-latest
     concurrency:
       group: pr-comment-${{ github.event.pull_request.number }}
       cancel-in-progress: false
     if: >-
       ${{
+        !cancelled() &&
+        needs.preflight.result == 'success' &&
         needs.changes.outputs.should-run == 'true' &&
         github.event_name == 'pull_request' &&
         github.event.pull_request.head.repo.fork == false &&
@@ -571,7 +733,13 @@ jobs:
   # Deploy and upsert final playwright section
   deploy-and-comment:
     needs:
-      [changes, playwright-tests, merge-reports, playwright-video-new-tests]
+      [
+        changes,
+        preflight,
+        playwright-tests,
+        merge-reports,
+        playwright-video-new-tests
+      ]
     runs-on: ubuntu-latest
     concurrency:
       group: pr-comment-${{ github.event.pull_request.number }}
@@ -579,6 +747,7 @@ jobs:
     if: >-
       ${{
         always() &&
+        needs.preflight.result == 'success' &&
         needs.changes.outputs.should-run == 'true' &&
         github.event_name == 'pull_request' &&
         github.event.pull_request.head.repo.fork == false &&

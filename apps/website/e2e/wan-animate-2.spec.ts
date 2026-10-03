@@ -9,12 +9,16 @@ import { test } from './fixtures/blockExternalMedia'
 
 const PATH = '/wan-animate-2'
 const ZH_PATH = '/zh-CN/wan-animate-2'
-const HERO_TITLE = t('wanAnimate2.hero.title', 'en')
-const HERO_PRIMARY = t('wanAnimate2.hero.primaryCta', 'en')
+const HERO_TITLE = t('wanAnimate2.hero.title', {}, { locale: 'en' })
+const HERO_PRIMARY = t('wanAnimate2.hero.primaryCta', {}, { locale: 'en' })
 const MODELS_ROUTE = getRoutes('en').models
-const STEPS_HEADING = t('wanAnimate2.steps.heading', 'en')
-const REVIEWS_HEADING = t('wanAnimate2.reviews.heading', 'en')
-const HIGHLIGHT_CTA = t('wanAnimate2.reviews.highlightCta', 'en')
+const STEPS_HEADING = t('wanAnimate2.steps.heading', {}, { locale: 'en' })
+const REVIEWS_HEADING = t('wanAnimate2.reviews.heading', {}, { locale: 'en' })
+const HIGHLIGHT_CTA = t(
+  'wanAnimate2.reviews.highlightCta',
+  {},
+  { locale: 'en' }
+)
 const MCP_ROUTE = getRoutes('en').mcp
 const FIRST_REVIEW = creatorReviews[0]
 const HERO_PRIMARY_CTA: ModelLaunchCta | undefined =
@@ -58,8 +62,12 @@ test.describe('Wan Animate 2 page — link targets', () => {
 
   test('breadcrumb trail links to the models catalog', async ({ page }) => {
     const modelsCrumb = page
-      .getByRole('navigation', { name: t('ui.breadcrumb', 'en') })
-      .getByRole('link', { name: t('models.breadcrumb.models', 'en') })
+      .getByRole('navigation', {
+        name: t('ui.breadcrumb', {}, { locale: 'en' })
+      })
+      .getByRole('link', {
+        name: t('models.breadcrumb.models', {}, { locale: 'en' })
+      })
     await expect(modelsCrumb).toHaveAttribute('href', MODELS_ROUTE)
   })
 
@@ -81,7 +89,9 @@ test.describe('Wan Animate 2 page — link targets', () => {
   // rather than just empty, and that no stray hub link came back with it.
   test('ships no gallery and no Try Workflows CTA', async ({ page }) => {
     await expect(
-      page.getByRole('button', { name: t('modelLaunch.copyPrompt', 'en') })
+      page.getByRole('button', {
+        name: t('modelLaunch.copyPrompt', {}, { locale: 'en' })
+      })
     ).toHaveCount(0)
     // Named explicitly so the diff records exactly which clips were pulled. The
     // hero also lives under /wan-animate-2/, so a path-wide check would match it.
@@ -104,9 +114,9 @@ test.describe('Wan Animate 2 page — link targets', () => {
   })
 
   test('footer links back to this page', async ({ page }) => {
-    const footerLink = page
-      .locator('footer')
-      .getByRole('link', { name: t('footer.wanAnimate2', 'en') })
+    const footerLink = page.locator('footer').getByRole('link', {
+      name: t('footer.wanAnimate2', {}, { locale: 'en' })
+    })
     await expect(footerLink).toHaveAttribute(
       'href',
       getRoutes('en').wanAnimate2
@@ -138,8 +148,10 @@ test.describe('Wan Animate 2 page — interactions', () => {
 
     const hasFaqNode = await page.evaluate(() =>
       Array.from(
-        document.querySelectorAll('script[type="application/ld+json"]')
-      ).some((s) => (s.textContent ?? '').includes('FAQPage'))
+        document.querySelectorAll<HTMLScriptElement>(
+          'script[type="application/ld+json"]'
+        )
+      ).some((s) => s.text.includes('FAQPage'))
     )
     expect(hasFaqNode).toBe(false)
   })
@@ -154,13 +166,13 @@ test.describe('Wan Animate 2 page — zh-CN', () => {
     await expect(
       page.getByRole('heading', {
         level: 1,
-        name: t('wanAnimate2.hero.title', 'zh-CN')
+        name: t('wanAnimate2.hero.title', {}, { locale: 'zh-CN' })
       })
     ).toBeVisible()
 
-    const footerLink = page
-      .locator('footer')
-      .getByRole('link', { name: t('footer.wanAnimate2', 'zh-CN') })
+    const footerLink = page.locator('footer').getByRole('link', {
+      name: t('footer.wanAnimate2', {}, { locale: 'zh-CN' })
+    })
     await expect(footerLink).toHaveAttribute(
       'href',
       getRoutes('zh-CN').wanAnimate2

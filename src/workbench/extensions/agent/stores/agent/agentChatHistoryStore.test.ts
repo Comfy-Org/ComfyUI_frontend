@@ -1,10 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+
 import type { ChatSession } from './agentChatHistoryStore'
 import {
   groupSessionsByRecency,
   useAgentChatHistoryStore
 } from './agentChatHistoryStore'
+
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 const NOW = new Date(2026, 2, 15, 12, 0, 0).getTime()
 const DAY = 86_400_000
@@ -59,6 +63,7 @@ describe('groupSessionsByRecency', () => {
 describe('useAgentChatHistoryStore', () => {
   beforeEach(() => {
     localStorage.clear()
+    sessionStorage.clear()
   })
 
   it('overlays a rename onto the grouped list and titleFor', () => {
@@ -119,6 +124,62 @@ describe('useAgentChatHistoryStore', () => {
     store.remove('b')
 
     expect(store.activeId).toBe('a')
+  })
+
+  it('restores titles and tombstones only from the current scope', () => {
+    sessionStorage.setItem(
+      'Comfy.Workspace.Current',
+      JSON.stringify({ type: 'team', id: 'workspace-b' })
+    )
+    localStorage.setItem(
+      StorageKeys.agentChatTitles('workspace-b'),
+      JSON.stringify({ a: 'Scoped title' })
+    )
+    localStorage.setItem(
+      StorageKeys.agentDeletedThreads('workspace-b'),
+      JSON.stringify(['deleted'])
+    )
+    localStorage.setItem(
+      'Comfy.Agent.ChatTitles',
+      JSON.stringify({ a: 'Legacy title' })
+    )
+    localStorage.setItem(
+      'Comfy.Agent.DeletedThreads',
+      JSON.stringify(['visible'])
+    )
+
+    const store = useAgentChatHistoryStore()
+    store.replaceAll([
+      session('a', 1),
+      session('deleted', 2),
+      session('visible', 3)
+    ])
+
+    expect(store.titleFor('a')).toBe('Scoped title')
+    expect(store.sessions.map(({ id }) => id)).toEqual(['a', 'visible'])
+    expect(localStorage.getItem('Comfy.Agent.ChatTitles')).toBeNull()
+    expect(localStorage.getItem('Comfy.Agent.DeletedThreads')).toBeNull()
+  })
+
+  it('does not apply titles or tombstones from another workspace', () => {
+    sessionStorage.setItem(
+      'Comfy.Workspace.Current',
+      JSON.stringify({ type: 'team', id: 'workspace-b' })
+    )
+    localStorage.setItem(
+      StorageKeys.agentChatTitles('workspace-a'),
+      JSON.stringify({ a: 'Workspace A title' })
+    )
+    localStorage.setItem(
+      StorageKeys.agentDeletedThreads('workspace-a'),
+      JSON.stringify(['a'])
+    )
+
+    const store = useAgentChatHistoryStore()
+    store.replaceAll([session('a', 1)])
+
+    expect(store.titleFor('a')).toBeUndefined()
+    expect(store.sessions.map(({ id }) => id)).toEqual(['a'])
   })
 
   it('removes a session with no server request', () => {

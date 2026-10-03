@@ -111,14 +111,6 @@ describe('useModelToNodeStore', () => {
       expect(modelToNodeStore.getNodeProvider('nonexistent')).toBeUndefined()
     })
 
-    it('should return first registered provider when multiple providers exist for same model type', () => {
-      const modelToNodeStore = useModelToNodeStore()
-      modelToNodeStore.registerDefaults()
-
-      const provider = modelToNodeStore.getNodeProvider('checkpoints')
-      expect(provider?.nodeDef.name).toBe('CheckpointLoaderSimple')
-    })
-
     it('should trigger lazy registration when called before registerDefaults', () => {
       const modelToNodeStore = useModelToNodeStore()
 

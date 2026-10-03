@@ -33,7 +33,7 @@
  *
  *   await bootstrapTracer.settle('bootstrap/object-info', () => this.getNodeDefs())
  */
-// eslint-disable-next-line no-restricted-imports -- startup telemetry must publish before the registry exists
+// oxlint-disable-next-line no-restricted-imports -- startup telemetry must publish before the registry exists
 import { datadogRum } from '@datadog/browser-rum'
 
 import { isCloud } from '@/platform/distribution/types'
@@ -168,7 +168,7 @@ export class BootstrapTracer {
     if (this._completed) return
     this._completed = true
     clearTimeout(this._watchdog)
-    for (const phase of [...this._spans.keys()]) this._stopPhase(phase)
+    for (const phase of Array.from(this._spans.keys())) this._stopPhase(phase)
     this._report(outcome)
   }
 

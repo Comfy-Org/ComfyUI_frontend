@@ -1,38 +1,49 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { defineComponent, ref } from 'vue'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import Checkbox from './Checkbox.vue'
 
 describe('Checkbox', () => {
-  it('updates its checked state when activated', async () => {
-    const Harness = defineComponent({
-      components: { Checkbox },
-      setup() {
-        return { checked: ref(false) }
-      },
-      template: '<Checkbox v-model="checked" aria-label="Select node" />'
-    })
-    render(Harness)
-    const checkbox = screen.getByRole('checkbox', { name: 'Select node' })
+  it('exposes its state and requests the opposite value when activated', async () => {
+    const user = userEvent.setup()
+    const onUpdate = vi.fn()
 
-    expect(checkbox).not.toBeChecked()
-    await userEvent.click(checkbox)
-    expect(checkbox).toBeChecked()
-  })
-
-  it('does not update when disabled', async () => {
     render(Checkbox, {
       props: {
         modelValue: false,
-        disabled: true
+        'onUpdate:modelValue': onUpdate
       },
-      attrs: { 'aria-label': 'Select node' }
+      attrs: { 'aria-label': 'Show links' }
     })
-    const checkbox = screen.getByRole('checkbox', { name: 'Select node' })
 
-    await userEvent.click(checkbox)
-    expect(checkbox).not.toBeChecked()
+    const control = screen.getByRole('checkbox', { name: 'Show links' })
+    expect(control).not.toBeChecked()
+
+    await user.tab()
+    await user.keyboard('[Space]')
+
+    expect(onUpdate).toHaveBeenCalledWith(true)
+  })
+
+  it('prevents interaction while disabled', async () => {
+    const user = userEvent.setup()
+    const onUpdate = vi.fn()
+
+    render(Checkbox, {
+      props: {
+        disabled: true,
+        modelValue: true,
+        'onUpdate:modelValue': onUpdate
+      },
+      attrs: { 'aria-label': 'Show links' }
+    })
+
+    const control = screen.getByRole('checkbox', { name: 'Show links' })
+    expect(control).toBeDisabled()
+
+    await user.click(control)
+
+    expect(onUpdate).not.toHaveBeenCalled()
   })
 })

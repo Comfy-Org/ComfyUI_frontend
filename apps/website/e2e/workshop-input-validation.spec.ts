@@ -4,6 +4,7 @@ import type { Page } from '@playwright/test'
 
 import { test } from './fixtures/modelsAccount'
 import { workshopModelAvailabilitySchema } from '../src/config/workshop-model-availability-schema'
+import { hubModelHref } from '../src/config/hub-models'
 
 const availability = workshopModelAvailabilitySchema.parse(
   JSON.parse(
@@ -15,7 +16,7 @@ const availability = workshopModelAvailabilitySchema.parse(
 )
 
 async function openModel(page: Page, slug: string): Promise<boolean> {
-  const response = await page.goto(`/models/${slug}/`)
+  const response = await page.goto(hubModelHref(slug))
   if (availability[slug]?.disabled) {
     expect(response?.status()).toBe(404)
     return false
@@ -119,7 +120,7 @@ test('Seedream rejects incompatible layer settings and clears the error when cor
   await expect(page.getByTestId('error-size')).toHaveCount(0)
 })
 
-test('Kling reads source duration before upload and runs after a shorter video is selected', async ({
+test('Kling checks source video metadata before upload and runs with valid input', async ({
   page,
   context
 }, testInfo) => {
@@ -192,6 +193,14 @@ test('Kling reads source duration before upload and runs after a shorter video i
     .getByRole('button', { name: 'Remove validation-16s.mp4' })
     .click()
   await input.setInputFiles('e2e/assets/placeholder.webm')
+  await page.getByTestId('run-button').click()
+  await expect(page.getByTestId('error-video_url')).toHaveText(
+    'Use a video between 700 and 4553 pixels wide.'
+  )
+  expect(submitted).toEqual([])
+  expect(uploads).toEqual([])
+  await source.getByRole('button', { name: 'Remove placeholder.webm' }).click()
+  await input.setInputFiles('e2e/assets/validation-700px.webm')
   await page.getByTestId('run-button').click()
   await expect(page.getByTestId('playground-output')).toHaveAttribute(
     'data-state',

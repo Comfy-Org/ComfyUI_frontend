@@ -22,7 +22,7 @@ describe('useCaseLabelKey', () => {
 
     for (const [useCase, key] of expected) {
       expect(useCaseLabelKey[useCase]).toBe(key)
-      expect(t(useCaseLabelKey[useCase], 'en')).not.toBe('')
+      expect(t(useCaseLabelKey[useCase], {}, { locale: 'en' })).not.toBe('')
     }
   })
 })

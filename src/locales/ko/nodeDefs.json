@@ -1486,6 +1486,25 @@
       }
     }
   },
+  "ByteDance2DraftToFinalVideoNode": {
+    "description": "Seedance 2.5 초안의 1080p 최종 비디오를 렌더링합니다. 최종본은 초안의 장면과 모션을 유지하고, 프롬프트, 참조 이미지, 길이, 종횡비 및 오디오 설정을 재사용합니다.",
+    "display_name": "ByteDance Seedance 2.5 초안에서 최종 비디오",
+    "inputs": {
+      "draft_task_id": {
+        "name": "draft_task_id",
+        "tooltip": "Seedance 2.5 Draft 모델로 실행한 Seedance 2.5 노드의 draft_task_id 출력 또는 붙여넣은 초안 작업 ID입니다. 해당 노드의 시드 제어를 고정으로 설정하세요. 그렇지 않으면 다음 실행에서 검토한 초안을 재사용하는 대신 새 초안이 생성됩니다. 초안은 생성 후 7일 동안 렌더링할 수 있습니다."
+      },
+      "watermark": {
+        "name": "워터마크",
+        "tooltip": "비디오에 워터마크를 추가할지 여부입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "Seedance 2.0을 사용하여 첫 프레임 이미지와 선택적인 마지막 프레임 이미지로 비디오를 생성합니다.",
     "display_name": "ByteDance Seedance 2.0 첫-마지막 프레임에서 비디오 생성",
@@ -1511,7 +1530,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "최신 모델, 최대 30초 동영상 및 mp4/mov 출력에는 Seedance 2.5를 사용합니다. 최고 품질 및 4k에는 Seedance 2.0, 속도 최적화에는 Fast, 가장 빠르고 저렴한 생성에는 Mini를 사용합니다."
+        "tooltip": "최신 모델, 최대 30초 비디오 및 mp4/mov 출력을 위해서는 Seedance 2.5를 사용합니다. 빠른 480p 미리보기와 Seedance 2.5 Draft to Final Video 노드에서 1080p 최종본을 렌더링하는 draft_task_id를 위해서는 Seedance 2.5 Draft를 사용합니다. 최고 품질 및 4k를 위해서는 Seedance 2.0을 사용합니다. 속도 최적화를 위해서는 Fast를 사용합니다. 가장 빠르고 저렴한 생성을 위해서는 Mini를 사용합니다."
       },
       "model_duration": {
         "name": "duration"
@@ -1540,6 +1559,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Seedance 2.5 Draft 실행의 작업 ID입니다. 1080p 최종본을 렌더링하려면 Seedance 2.5 Draft to Final Video 노드에 연결하세요."
       }
     }
   },
@@ -1552,7 +1575,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "최신 모델, 최대 30초 동영상 및 mp4/mov 출력에는 Seedance 2.5를 사용합니다. 최고 품질 및 4k에는 Seedance 2.0, 속도 최적화에는 Fast, 가장 빠르고 저렴한 생성에는 Mini를 사용합니다."
+        "tooltip": "최신 모델, 최대 30초 비디오 및 mp4/mov 출력을 위해서는 Seedance 2.5를 사용합니다. 빠른 480p 미리보기와 Seedance 2.5 Draft to Final Video 노드에서 1080p 최종본을 렌더링하는 draft_task_id를 위해서는 Seedance 2.5 Draft를 사용합니다. 최고 품질 및 4k를 위해서는 Seedance 2.0을 사용합니다. 속도 최적화를 위해서는 Fast를 사용합니다. 가장 빠르고 저렴한 생성을 위해서는 Mini를 사용합니다."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -1605,7 +1628,7 @@
       },
       "model": {
         "name": "모델",
-        "tooltip": "최신 모델, 최대 30초 동영상 및 mp4/mov 출력에는 Seedance 2.5를 사용합니다. 최고 품질 및 4k에는 Seedance 2.0, 속도 최적화에는 Fast, 가장 빠르고 저렴한 생성에는 Mini를 사용합니다."
+        "tooltip": "최신 모델, 최대 30초 비디오 및 mp4/mov 출력을 위해서는 Seedance 2.5를 사용합니다. 빠른 480p 미리보기와 Seedance 2.5 Draft to Final Video 노드에서 1080p 최종본을 렌더링하는 draft_task_id를 위해서는 Seedance 2.5 Draft를 사용합니다. 최고 품질 및 4k를 위해서는 Seedance 2.0을 사용합니다. 속도 최적화를 위해서는 Fast를 사용합니다. 가장 빠르고 저렴한 생성을 위해서는 Mini를 사용합니다."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -1646,6 +1669,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Seedance 2.5 Draft 실행의 작업 ID입니다. 1080p 최종본을 렌더링하려면 Seedance 2.5 Draft to Final Video 노드에 연결하세요."
       }
     }
   },
@@ -1658,7 +1685,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.5는 최신 모델, 최대 30초 동영상 및 mp4/mov 출력을 지원합니다. Seedance 2.0은 최고 품질 및 4K용입니다. Fast는 속도 최적화용이며, Mini는 가장 빠르고 비용이 가장 낮은 생성용입니다."
+        "tooltip": "최신 모델, 최대 30초 비디오 및 mp4/mov 출력을 위해서는 Seedance 2.5를 사용합니다. 빠른 480p 미리보기와 Seedance 2.5 Draft to Final Video 노드에서 1080p 최종본을 렌더링하는 draft_task_id를 위해서는 Seedance 2.5 Draft를 사용합니다. 최고 품질 및 4k를 위해서는 Seedance 2.0을 사용합니다. 속도 최적화를 위해서는 Fast를 사용합니다. 가장 빠르고 저렴한 생성을 위해서는 Mini를 사용합니다."
       },
       "model_duration": {
         "name": "duration"
@@ -1690,6 +1717,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Seedance 2.5 Draft 실행의 작업 ID입니다. 1080p 최종본을 렌더링하려면 Seedance 2.5 Draft to Final Video 노드에 연결하세요."
       }
     }
   },
@@ -1932,7 +1963,7 @@
   },
   "ByteDanceSeedreamLayerSeparationNode": {
     "description": "이미지를 배경 플레이트와 최대 16개의 재배치 가능한 투명 레이어로 분해합니다. 각 레이어는 쌓이는 순서, 바운딩 박스, 이름, 설명을 가집니다.",
-    "display_name": "ByteDance Seedream 5.0 Pro 레이어 분리",
+    "display_name": "ByteDance Seedream 5.0 Pro 레이어 분리 (레거시)",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -1990,6 +2021,62 @@
       "5": {
         "name": "layer_stack",
         "tooltip": "Create Layered Image에서 편집 가능한 레이어 문서: 기본 플레이트와 각 요소가 이름이 지정된 타이트 크롭 레이어로, 실제 위치와 쌓이는 순서로 포함됩니다. 바로 연결하거나 Add Layer로 확장할 수 있습니다."
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNodeV2": {
+    "description": "이미지를 배경 플레이트와 재배치 가능한 투명 레이어 최대 16개로 분해합니다. 각 레이어에는 쌓임 순서, 경계 상자, 이름 및 설명이 포함됩니다.",
+    "display_name": "ByteDance Seedream 5.0 레이어 분리",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "model_crop_layers": {
+        "name": "crop_layers"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_prompt_optimization": {
+        "name": "prompt_optimization"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_size": {
+        "name": "크기"
+      },
+      "model_watermark": {
+        "name": "워터마크"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "레이어가 쌓이는 기본 이미지(배경 플레이트)입니다."
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "기본 이미지의 투명도입니다(1 = 투명, LoadImage 규칙). 현재는 항상 완전히 불투명합니다."
+      },
+      "2": {
+        "name": "레이어",
+        "tooltip": "아래에서 위 순서로 정렬된 투명 레이어입니다. 전체 캔버스 모드: 경계 상자 위치에 맞춰 검은색 기본 이미지 크기 캔버스 위에 배치됩니다. 최소 크기 모드: 경계 상자에 맞게 자르고, 왼쪽 위를 기준점으로 하며, 가장 큰 레이어 크기에 맞춰 패딩됩니다."
+      },
+      "3": {
+        "name": "마스크",
+        "tooltip": "레이어 배치와 인덱스가 일치하는 레이어별 투명도입니다(1 = 투명, LoadImage 규칙). ImageCompositeMasked 스타일 합성에는 먼저 InvertMask를 추가하세요."
+      },
+      "4": {
+        "name": "경계 상자",
+        "tooltip": "레이어별 배치 상자이며 레이어 배치와 인덱스가 일치합니다(레이어별 배치를 다시 구성하려면 둘 다와 masks를 Layers From Bounding Boxes에 입력): {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}. content_rect = [left, top, width, height]는 자체 프레임 내 레이어 콘텐츠 영역이며, 상자 위치에 해당 오프셋을 더한 위치에 캔버스에 배치됩니다."
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "Create Layered Image용으로 바로 편집할 수 있는 레이어 문서입니다. 기본 플레이트와 각 요소가 실제 위치 및 쌓임 순서에 따라 이름이 지정된 긴밀히 자른 자체 레이어로 구성됩니다. 직접 연결하거나 Add Layer로 확장하세요."
       }
     }
   },
@@ -7676,6 +7763,67 @@
       }
     }
   },
+  "HeyGenImageToVideoNode": {
+    "description": "HeyGen Video 1.0을 사용하여 이미지에 동기화된 대화와 사운드를 적용해 비디오로 애니메이션화합니다. 이미지는 첫 번째 프레임으로 사용됩니다.",
+    "display_name": "HeyGen Video 1.0 이미지-비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "model_duration": {
+        "name": "길이"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenReferenceToVideoNode": {
+    "description": "HeyGen Video 1.0을 사용하여 텍스트 프롬프트로부터 동기화된 대화와 사운드가 포함된 비디오를 생성합니다. 선택적으로 최대 12개의 참조 이미지, 비디오 및 오디오 클립을 연결하고 프롬프트에서 {'@'}Image1, {'@'}Video1, {'@'}Audio1로 언급할 수 있습니다.",
+    "display_name": "HeyGen Video 1.0 참조-비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "길이"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenTalkingPhotoNode": {
     "description": "사람의 이미지를 입 모양이 동기화된 토킹 비디오(헤이젠 아바타 IV)로 애니메이션화합니다. 텍스트 스크립트나 직접 녹음한 오디오로 구동할 수 있습니다.",
     "display_name": "HeyGen 토킹 포토",
@@ -7955,6 +8103,87 @@
       }
     }
   },
+  "HunyuanImageEditApi": {
+    "description": "Tencent의 Hunyuan Image 모델을 사용하여 텍스트 프롬프트의 안내에 따라 최대 5장의 참조 이미지를 편집하거나 결합합니다.",
+    "display_name": "Tencent HY Image: 편집",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "사용할 모델입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "높이"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_reference_detail": {
+        "name": "reference_detail"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_watermark": {
+        "name": "워터마크"
+      },
+      "model_width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageTextToImageApi": {
+    "description": "Tencent의 Hunyuan Image 모델을 사용하여 텍스트 프롬프트로부터 이미지를 생성합니다.",
+    "display_name": "Tencent HY Image: 텍스트를 이미지로",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "사용할 모델입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "높이"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_watermark": {
+        "name": "워터마크"
+      },
+      "model_width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanImageToVideo",
     "inputs": {
@@ -8208,6 +8437,42 @@
       }
     }
   },
+  "IdeogramEditApi": {
+    "description": "Ideogram 4.5를 사용하여 텍스트 프롬프트의 안내에 따라 최대 5개의 이미지를 편집하거나 결합합니다. 전체 이미지를 다시 렌더링하며 크기나 가로세로비를 변경할 수 있습니다. 수정하지 않은 픽셀을 그대로 유지하려면 Ideogram 4.5 Precise Edit을 사용하세요.",
+    "display_name": "Ideogram 4.5 편집",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "사용할 모델입니다."
+      },
+      "model_height": {
+        "name": "높이"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_quality": {
+        "name": "품질"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_size": {
+        "name": "크기"
+      },
+      "model_width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramPImage": {
     "description": "Ideogram의 빠른 텍스트-투-이미지 모델인 P-Image를 사용하여 이미지를 생성합니다. 강력한 타이포그래피와 포토리얼리즘을 제공하며, 정확한 텍스트, 색상 및 레이아웃을 위한 Ideogram 4.0 구조화 JSON 캡션을 지원합니다.",
     "display_name": "Ideogram & Pruna P-Image",
@@ -8247,6 +8512,70 @@
       "1": {
         "name": "final_prompt",
         "tooltip": "실제로 이미지가 생성된 프롬프트(프롬프트 업샘플링이 실행된 경우 재작성된 구조화 캡션, 아니면 입력한 프롬프트). prompt_upsampling을 OFF로 하고 동일한 시드로 다시 입력하면 이 이미지를 재현할 수 있습니다."
+      }
+    }
+  },
+  "IdeogramPreciseEditApi": {
+    "description": "Ideogram 4.5 정밀 편집을 사용하여 텍스트 프롬프트의 안내에 따라 이미지를 편집합니다. 프롬프트에서 요청한 부분만 변경되고, 수정하지 않은 픽셀은 동일하게 유지되며 출력은 이미지 1의 크기를 유지합니다(약 4MP를 초과하는 이미지는 먼저 축소됨). 최대 4개의 참조 이미지를 허용합니다.",
+    "display_name": "Ideogram 4.5 정밀 편집",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "사용할 모델입니다."
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_quality": {
+        "name": "품질"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramTextToImageApi": {
+    "description": "Ideogram 4.5를 사용하여 텍스트 프롬프트로 이미지를 생성합니다.",
+    "display_name": "Ideogram 4.5 텍스트-이미지",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "사용할 모델입니다."
+      },
+      "model_magic_prompt": {
+        "name": "magic_prompt"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_quality": {
+        "name": "품질"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_size": {
+        "name": "크기"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "최종 프롬프트",
+        "tooltip": "이미지가 생성된 기반이 되는 구조화된 캡션입니다. magic_prompt를 'off'로 설정하고 동일한 시드와 함께 다시 입력하면 이미지를 재현할 수 있습니다."
       }
     }
   },
@@ -8410,12 +8739,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "sRGB, 선형 Rec.709, HDR(Rec.2020 HLG), HDR PQ(Rec.2020 PQ) 간에 변환합니다. 선형 1.0은 sRGB와 동일한 203니트 기준 백색을 사용하며, HLG는 1000니트 기준 디스플레이를 사용합니다. 선형 출력 및 선형-HDR 변환은 톤 매핑 없이 확장 값을 유지합니다. SDR 출력 및 PQ-HLG 변환은 배치 전체에서 초과 휘도를 톤 매핑하고 색역 밖의 색상을 압축합니다. 변환은 float32로 계산되며 중간 device 및 dtype을 반환합니다. 스트레이트 알파에는 색상 변환이 적용되지 않습니다.",
+    "description": "sRGB, 선형 Rec.709, HDR (Rec.2020 HLG), HDR PQ (Rec.2020 PQ), HDR LogC3 및 HDR ACEScct를 변환합니다. LogC3는 Rec.709 원색과 [0, 1]로 제한된 코드를 사용하는 EI 800 곡선을 사용합니다. ACEScct는 AP1 원색과 D60 백색점을 사용하며, D65로 Bradford 적응을 적용합니다. EXR 저장을 위해 LogC3 또는 ACEScct를 선형으로 변환하세요. 선형 1.0은 sRGB와 동일한 203니트 기준 백색을 사용하며, HLG는 1000니트 기준 디스플레이를 사용합니다. 선형 및 ACEScct 출력은 확장 값을 유지합니다. 선형에서 HDR로의 변환은 톤 매핑 없이 하이라이트를 유지하며, HLG 및 PQ 출력은 음수 채널을 클리핑합니다. SDR 출력 및 PQ에서 HLG로의 변환은 배치 전체에서 초과 휘도를 톤 매핑하고 색역 밖 색상을 압축합니다. 변환은 float32로 계산되며 중간 디바이스와 dtype을 반환합니다. 스트레이트 알파에는 색상 변환이 적용되지 않습니다.",
     "display_name": "이미지 색 공간 변환",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "출력 픽셀의 색 공간입니다. 저장 노드도 동일한 색 공간으로 설정하세요."
+        "tooltip": "출력 픽셀의 색 공간입니다. 저장 노드를 이와 동일한 색 공간으로 설정하세요. EXR로 저장하기 전에는 LogC3 또는 ACEScct를 선형으로 변환하고, 비디오로 저장하기 전에는 sRGB/HDR/HDR PQ로 변환하세요."
       },
       "image": {
         "name": "image"
@@ -16812,7 +17141,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "모델이 답변하기 전에 수행하는 추론의 정도입니다. 'default'는 모델이 선택하도록 둡니다. 지원되는 수준은 모델별로 다릅니다: GPT-6 Astra는 low-max, GPT-5.6은 none-max (minimal 없음), GPT-5.5는 none-xhigh, GPT-5.5 Pro는 medium-xhigh, GPT-5는 minimal-high, o-series는 low-high; GPT-4.1은 추론을 지원하지 않습니다. 지원되지 않는 수준은 요청이 전송되기 전에 거부됩니다."
+        "tooltip": "모델이 답변하기 전에 얼마나 추론할지 설정합니다. 'default'는 선택을 모델에 맡깁니다. 지원되는 수준은 모델별로 다릅니다: GPT-6 Astra는 low-max, GPT-6 Sol/Luna 및 GPT-5.6은 none-max(minimal 제외), GPT-5.5는 none-xhigh, GPT-5.5 Pro는 medium-xhigh, GPT-5는 minimal-high, o-series는 low-high를 지원하며, GPT-4.1은 추론 기능이 없습니다. 지원되지 않는 수준은 요청이 전송되기 전에 거부됩니다."
       },
       "truncation": {
         "name": "트렁케이션",
@@ -16972,40 +17301,6 @@
       "file": {
         "name": "파일",
         "tooltip": "모델의 컨텍스트로 포함할 입력 파일. 현재는 텍스트(.txt) 및 PDF(.pdf) 파일만 허용됩니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIVideoSora2": {
-    "description": "OpenAI 비디오 및 오디오 생성.",
-    "display_name": "OpenAI Sora - 비디오",
-    "inputs": {
-      "control_after_generate": {
-        "name": "생성 후 제어"
-      },
-      "duration": {
-        "name": "지속 시간"
-      },
-      "image": {
-        "name": "이미지"
-      },
-      "model": {
-        "name": "모델"
-      },
-      "prompt": {
-        "name": "프롬프트",
-        "tooltip": "안내 텍스트; 입력 이미지가 있을 경우 비워둘 수 있습니다."
-      },
-      "seed": {
-        "name": "시드",
-        "tooltip": "노드 재실행 여부를 결정하는 시드; 실제 결과는 시드와 관계없이 비결정적입니다."
-      },
-      "size": {
-        "name": "크기"
       }
     },
     "outputs": {
@@ -18366,6 +18661,10 @@
       "model_top_p": {
         "name": "top_p"
       },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "그리기 전에 모델이 수행하는 추론의 양입니다. 수준이 높을수록 세부 묘사가 개선되지만 더 많은 토큰이 소모됩니다. Arrow 2 모델에서만 사용됩니다."
+      },
       "seed": {
         "name": "seed",
         "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
@@ -18404,6 +18703,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "원하는 SVG 출력에 대한 텍스트 설명입니다."
+      },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "그리기 전에 모델이 수행하는 추론의 양입니다. 수준이 높을수록 세부 묘사가 개선되지만 더 많은 토큰이 소모됩니다. Arrow 2 모델에서만 사용됩니다."
       },
       "reference_images": {
         "name": "reference_images",
@@ -18445,6 +18748,9 @@
   "QwenImageDiffsynthControlnet": {
     "display_name": "QwenImageDiffsynthControlnet",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
       "image": {
         "name": "이미지"
       },
@@ -18456,6 +18762,9 @@
       },
       "model_patch": {
         "name": "모델 패치"
+      },
+      "start_percent": {
+        "name": "start_percent"
       },
       "strength": {
         "name": "강도"
@@ -19075,7 +19384,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "생성에 사용할 모델입니다. recraftv4_styles 모델은 일관된 스타일의 생성을 위해 설계되었으며 항상 style_id 또는 style_references가 필요합니다."
+        "tooltip": "생성에 사용할 모델입니다. recraftv4_styles 모델은 일관된 스타일의 생성을 위해 설계되었으며 항상 style_id 또는 style_references가 필요합니다. recraftv4_1_flash는 가장 빠르고 저렴한 모델이며 스타일을 전혀 지원하지 않습니다."
       },
       "model_size": {
         "name": "size"
@@ -23799,6 +24108,30 @@
       }
     }
   },
+  "TextEncodeMingImageEdit": {
+    "display_name": "텍스트 인코드 Ming 이미지 편집",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "선택 사항인 참조 이미지입니다. 텍스트 인코더에서 인식하며, 깨끗한 프레임으로 latent 시퀀스에 추가됩니다. 이후 이미지는 첫 번째 이미지 크기에 맞게 조정되며, 샘플링된 latent는 해당 크기와 일치해야 합니다."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "VAE가 없으면 이미지는 비전 타워를 통해서만 텍스트 인코더를 조건화합니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeQwenImage21": {
     "display_name": "텍스트 인코드 Qwen Image 2.1",
     "inputs": {
@@ -23968,6 +24301,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "모델의 채팅 템플릿에서 시스템 프롬프트를 대체합니다. 기본 템플릿을 사용하지 않을 때는 무시됩니다."
+      },
       "thinking": {
         "name": "생각 중",
         "tooltip": "모델이 지원하는 경우 생각 모드로 작동합니다."
@@ -23984,6 +24321,10 @@
     "outputs": {
       "0": {
         "name": "생성된 텍스트",
+        "tooltip": null
+      },
+      "1": {
+        "name": "사고 과정",
         "tooltip": null
       }
     }
@@ -24034,6 +24375,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "모델의 채팅 템플릿에서 시스템 프롬프트를 대체합니다. 기본 템플릿을 사용하지 않을 때는 무시됩니다."
+      },
       "thinking": {
         "name": "생각 중",
         "tooltip": "모델이 지원하는 경우 생각 모드로 작동합니다."
@@ -24050,6 +24395,10 @@
     "outputs": {
       "0": {
         "name": "생성된 텍스트",
+        "tooltip": null
+      },
+      "1": {
+        "name": "사고 과정",
         "tooltip": null
       }
     }
@@ -28628,6 +28977,10 @@
       "positive": {
         "name": "긍정 조건"
       },
+      "ref_pad_image": {
+        "name": "ref_pad_image",
+        "tooltip": "이미지 조건화의 패딩 프레임을 회색 대신 이 이미지로 채워, 프레임을 고정하지 않고 정체성을 유지합니다(SVI 방식의 드리프트 방지 패딩이며, ID-V2V 등의 모델에서 사용됨)."
+      },
       "start_image": {
         "name": "시작 이미지"
       },
@@ -29608,8 +29961,12 @@
     }
   },
   "ZImageFunControlnet": {
-    "display_name": "ZImageFunControlnet",
+    "description": "Load Model Patch로 로드한 Z-Image 또는 Qwen Image 2.1 Fun ControlNet을 적용합니다.",
+    "display_name": "Fun ControlNet 적용",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
       "image": {
         "name": "이미지"
       },
@@ -29624,6 +29981,9 @@
       },
       "model_patch": {
         "name": "모델 패치"
+      },
+      "start_percent": {
+        "name": "start_percent"
       },
       "strength": {
         "name": "강도"
