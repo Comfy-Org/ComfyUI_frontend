@@ -5842,6 +5842,52 @@
       }
     }
   },
+  "Flux3ImageNode": {
+    "description": "プロンプトからFLUX 3で画像を生成するか、最大10枚の参照画像を編集・組み合わせます。プロンプト内では、参照画像をimage 1、image 2などとして指定してください。",
+    "display_name": "Flux 3 Image",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "'auto'では、最初の参照画像に従うか、プロンプトから比率を選択します。"
+      },
+      "bounding_boxes": {
+        "name": "bounding_boxes",
+        "tooltip": "出力内にオブジェクトまたはテキストを配置する、Create Bounding Boxesからの任意のボックス。位置はキャンバスを基準とするため、出力のアスペクト比を指定してください。"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "grounding": {
+        "name": "grounding",
+        "tooltip": "生成前に、モデルがウェブ検索と画像検索でプロンプトを調査できるようにします。"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "任意の参照画像。合計最大10枚で、各画像は最低256x256ピクセル必要です。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "生成する内容、または行う編集。プロンプトは生成前に解釈・拡張されます。"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "選択したアスペクト比での出力サイズ：0.75Kは約0.6メガピクセル、1Kは1 MP、1.5Kは2.4 MP、2Kは4.2 MP、4Kは16.8 MPです。"
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "モデレーションの許容度。0が最も厳格です。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "ノードを再実行するかどうかを決定するシード。FLUX 3は独自のシードを選択するため、この値にかかわらず実際の結果は非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Flux3ImageToVideoNode": {
     "description": "1枚から10枚の画像をFLUX 3でアニメーション化します。各画像がclipのフレームになります：1枚ならオープニング、2枚なら最初から最後へモーフィング、3枚以上はclip全体に分散または指定したタイミングに固定されます。",
     "display_name": "Flux 3 画像から動画へ",
@@ -7434,7 +7480,7 @@
     "inputs": {
       "aspect_ratio": {
         "name": "アスペクト比",
-        "tooltip": "出力動画のアスペクト比。"
+        "tooltip": "出力動画のアスペクト比。入力画像が指定されている場合は無視され、動画は画像のアスペクト比に従います。"
       },
       "control_after_generate": {
         "name": "生成後の制御"
@@ -7453,11 +7499,11 @@
       },
       "prompt": {
         "name": "プロンプト",
-        "tooltip": "目的の動画のテキスト説明。入力画像が指定されている場合、grok-imagine-video-1.5 では省略可能です。"
+        "tooltip": "目的の動画のテキスト説明。入力画像が指定されている場合、grok-imagine-video-1.5モデルでは任意です。"
       },
       "resolution": {
         "name": "解像度",
-        "tooltip": "出力動画の解像度。1080pはgrok-imagine-video-1.5でのみ利用できます。"
+        "tooltip": "出力動画の解像度。grok-imagine-videoでは1080pは利用できません。"
       },
       "seed": {
         "name": "シード値",
@@ -18481,8 +18527,8 @@
   "PrimitiveInt": {
     "display_name": "整数",
     "inputs": {
-      "fixed": {
-        "name": "生成後に制御"
+      "control_after_generate": {
+        "name": "生成後の制御"
       },
       "value": {
         "name": "値"
@@ -22372,8 +22418,8 @@
   "SeedNode": {
     "display_name": "シード",
     "inputs": {
-      "fixed": {
-        "name": "生成後に制御"
+      "control_after_generate": {
+        "name": "生成後の制御"
       },
       "seed": {
         "name": "シード"

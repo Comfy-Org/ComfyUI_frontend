@@ -5842,6 +5842,52 @@
       }
     }
   },
+  "Flux3ImageNode": {
+    "description": "Genera un'immagine con FLUX 3 a partire da un prompt, oppure modifica e combina fino a 10 immagini di riferimento. Fai riferimento alle immagini nel prompt come immagine 1, immagine 2 e così via.",
+    "display_name": "Immagine Flux 3",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "'auto' segue la prima immagine di riferimento oppure seleziona un rapporto dal prompt."
+      },
+      "bounding_boxes": {
+        "name": "bounding_boxes",
+        "tooltip": "Riquadri facoltativi da Crea riquadri di delimitazione che posizionano oggetti o testo nell'output. Le posizioni sono relative alla tela, quindi imposta il rapporto d'aspetto dell'output."
+      },
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "grounding": {
+        "name": "grounding",
+        "tooltip": "Consenti al modello di effettuare ricerche sul prompt tramite ricerca web e di immagini prima di generare."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Immagini di riferimento facoltative, fino a 10 in totale, di almeno 256x256 pixel ciascuna."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Cosa generare o la modifica da apportare. Il prompt viene interpretato ed espanso prima della generazione."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Dimensione dell'output con il rapporto d'aspetto scelto: 0.75K corrisponde a circa 0,6 megapixel, 1K a 1 MP, 1.5K a 2,4 MP, 2K a 4,2 MP, 4K a 16,8 MP."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "Tolleranza della moderazione; 0 è l'impostazione più restrittiva."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed per determinare se il nodo deve essere rieseguito; FLUX 3 sceglie il proprio seed, quindi i risultati effettivi non sono deterministici indipendentemente da questo valore."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Flux3ImageToVideoNode": {
     "description": "Anima da 1 a 10 immagini con FLUX 3. Ogni immagine diventa un fotogramma del clip: una immagine lo apre, due fanno una transizione dalla prima alla seconda, e più immagini vengono distribuite nel clip o fissate ai tempi che scegli.",
     "display_name": "Flux 3 Da Immagine a Video",
@@ -7434,7 +7480,7 @@
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio",
-        "tooltip": "Il rapporto d'aspetto del video in output."
+        "tooltip": "Il rapporto d'aspetto del video di output. Ignorato quando viene fornita un'immagine di input; il video segue il rapporto d'aspetto dell'immagine."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -7453,11 +7499,11 @@
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "Descrizione testuale del video desiderato. Opzionale per grok-imagine-video-1.5 quando viene fornita un'immagine di input."
+        "tooltip": "Descrizione testuale del video desiderato. Facoltativa per i modelli grok-imagine-video-1.5 quando viene fornita un'immagine di input."
       },
       "resolution": {
         "name": "resolution",
-        "tooltip": "La risoluzione del video in output. 1080p è disponibile solo per grok-imagine-video-1.5."
+        "tooltip": "La risoluzione del video di output. 1080p non è disponibile per grok-imagine-video."
       },
       "seed": {
         "name": "seed",
@@ -18481,7 +18527,7 @@
   "PrimitiveInt": {
     "display_name": "Intero",
     "inputs": {
-      "fixed": {
+      "control_after_generate": {
         "name": "controllo dopo la generazione"
       },
       "value": {
@@ -22372,8 +22418,8 @@
   "SeedNode": {
     "display_name": "Seed",
     "inputs": {
-      "fixed": {
-        "name": "controlla dopo la generazione"
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
       },
       "seed": {
         "name": "seed"

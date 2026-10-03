@@ -5842,6 +5842,52 @@
       }
     }
   },
+  "Flux3ImageNode": {
+    "description": "使用 FLUX 3 根據提示詞生成圖片，或編輯並結合最多 10 張參考圖片。在提示詞中請將參考圖片稱為圖片 1、圖片 2，以此類推。",
+    "display_name": "Flux 3 圖片",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "長寬比",
+        "tooltip": "「auto」會依照第一張參考圖片，或從提示詞中選擇長寬比。"
+      },
+      "bounding_boxes": {
+        "name": "邊界框",
+        "tooltip": "選用的方框，來自「建立邊界框」，可在輸出中放置物件或文字。位置是相對於畫布，因此請提供輸出的長寬比。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "grounding": {
+        "name": "依據查證",
+        "tooltip": "讓模型在生成前透過網路與圖片搜尋研究提示詞。"
+      },
+      "images": {
+        "name": "圖片",
+        "tooltip": "選用的參考圖片，最多共 10 張，每張至少為 256×256 像素。"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "要生成的內容，或要進行的編輯。提示詞會在生成前經過解讀與擴充。"
+      },
+      "resolution": {
+        "name": "解析度",
+        "tooltip": "所選長寬比下的輸出尺寸：0.75K 約為 60 萬像素，1K 為 100 萬像素，1.5K 為 240 萬像素，2K 為 420 萬像素，4K 為 1,680 萬像素。"
+      },
+      "safety_tolerance": {
+        "name": "安全容忍度",
+        "tooltip": "內容審核容忍度，0 為最嚴格。"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "用於決定節點是否應重新執行的種子；FLUX 3 會自行選擇種子，因此無論此值為何，實際結果皆不具決定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Flux3ImageToVideoNode": {
     "description": "使用 FLUX 3 將 1 到 10 張圖像製作成動畫。每張圖像成為影片的一個畫格：一張圖像作為開頭，兩張圖像則從第一張變形到第二張，更多圖像則平均分布或依你選擇的時間點固定。",
     "display_name": "Flux 3 圖像轉影片",
@@ -7434,7 +7480,7 @@
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio",
-        "tooltip": "輸出影片的長寬比。"
+        "tooltip": "輸出影片的長寬比。提供輸入圖片時會忽略此設定；影片會依照圖片的長寬比。"
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -7453,11 +7499,11 @@
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "所需影片的文字描述。提供輸入圖像時，grok-imagine-video-1.5 可不填。"
+        "tooltip": "所需影片的文字描述。提供輸入圖片時，grok-imagine-video-1.5 模型可不填寫。"
       },
       "resolution": {
         "name": "resolution",
-        "tooltip": "輸出影片的解析度。1080p 僅適用於 grok-imagine-video-1.5。"
+        "tooltip": "輸出影片的解析度。grok-imagine-video 不支援 1080p。"
       },
       "seed": {
         "name": "seed",
@@ -18481,7 +18527,7 @@
   "PrimitiveInt": {
     "display_name": "整數",
     "inputs": {
-      "fixed": {
+      "control_after_generate": {
         "name": "生成後控制"
       },
       "value": {
@@ -22372,8 +22418,8 @@
   "SeedNode": {
     "display_name": "種子",
     "inputs": {
-      "fixed": {
-        "name": "生成後鎖定"
+      "control_after_generate": {
+        "name": "生成後控制"
       },
       "seed": {
         "name": "種子"

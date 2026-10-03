@@ -5842,6 +5842,52 @@
       }
     }
   },
+  "Flux3ImageNode": {
+    "description": "Bir istemden FLUX 3 ile görüntü oluşturur veya en fazla 10 referans görüntüyü düzenler ve birleştirir. İstemde referanslara görüntü 1, görüntü 2 vb. olarak atıfta bulunun.",
+    "display_name": "Flux 3 Görüntü",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "en_boy_oranı",
+        "tooltip": "'auto', ilk referans görüntüyü izler veya istemden bir oran seçer."
+      },
+      "bounding_boxes": {
+        "name": "sınırlayıcı_kutular",
+        "tooltip": "Çıktıda nesneleri veya metni konumlandıran, Create Bounding Boxes'tan gelen isteğe bağlı kutular. Konumlar tuvale göredir; bu nedenle ona çıktının en-boy oranını verin."
+      },
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol et"
+      },
+      "grounding": {
+        "name": "temellendirme",
+        "tooltip": "Modelin, oluşturmadan önce istemi web ve görüntü aramasıyla araştırmasına izin verin."
+      },
+      "images": {
+        "name": "görüntüler",
+        "tooltip": "İsteğe bağlı referans görüntüleri; toplamda en fazla 10 adet ve her biri en az 256x256 piksel."
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "Ne oluşturulacağı veya yapılacak düzenleme. İstem, oluşturmadan önce yorumlanır ve genişletilir."
+      },
+      "resolution": {
+        "name": "çözünürlük",
+        "tooltip": "Seçilen en-boy oranındaki çıktı boyutu: 0.75K yaklaşık 0,6 megapiksel, 1K 1 MP, 1.5K 2,4 MP, 2K 4,2 MP, 4K 16,8 MP'dir."
+      },
+      "safety_tolerance": {
+        "name": "güvenlik_toleransı",
+        "tooltip": "Denetleme toleransı; 0 en katı düzeydir."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Düğümün yeniden çalıştırılıp çalıştırılmayacağını belirleyen tohum; FLUX 3 kendi tohumunu seçtiğinden, bu değer ne olursa olsun gerçek sonuçlar deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Flux3ImageToVideoNode": {
     "description": "1 ila 10 görseli FLUX 3 ile canlandırır. Her görsel, clip'in bir karesi olur: bir görsel açılışı yapar, iki görsel ilkinden ikincisine geçiş yapar, daha fazlası ise clip boyunca yayılır veya seçtiğiniz zamanlara sabitlenir.",
     "display_name": "Flux 3 Görselden Videoya",
@@ -7434,7 +7480,7 @@
     "inputs": {
       "aspect_ratio": {
         "name": "en boy oranı",
-        "tooltip": "Çıktı videonun en boy oranı."
+        "tooltip": "Çıktı videosunun en-boy oranı. Bir giriş görüntüsü sağlandığında yok sayılır; video görüntünün en-boy oranını izler."
       },
       "control_after_generate": {
         "name": "oluşturduktan sonra kontrol et"
@@ -7453,11 +7499,11 @@
       },
       "prompt": {
         "name": "istem",
-        "tooltip": "İstenen videonun metin açıklaması. Bir giriş görseli sağlandığında grok-imagine-video-1.5 için isteğe bağlıdır."
+        "tooltip": "İstenen videonun metin açıklaması. Bir giriş görüntüsü sağlandığında grok-imagine-video-1.5 modelleri için isteğe bağlıdır."
       },
       "resolution": {
         "name": "çözünürlük",
-        "tooltip": "Çıktı videosunun çözünürlüğü. 1080p yalnızca grok-imagine-video-1.5 için kullanılabilir."
+        "tooltip": "Çıktı videosunun çözünürlüğü. grok-imagine-video için 1080p kullanılamaz."
       },
       "seed": {
         "name": "tohum",
@@ -18481,8 +18527,8 @@
   "PrimitiveInt": {
     "display_name": "Int",
     "inputs": {
-      "fixed": {
-        "name": "oluşturduktan sonra kontrol et"
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol et"
       },
       "value": {
         "name": "değer"
@@ -22372,8 +22418,8 @@
   "SeedNode": {
     "display_name": "Tohum",
     "inputs": {
-      "fixed": {
-        "name": "oluşturduktan sonra kontrol et"
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol et"
       },
       "seed": {
         "name": "tohum"

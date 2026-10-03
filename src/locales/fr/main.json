@@ -75,6 +75,8 @@
     "feedbackCaption": "Partager vos commentaires",
     "focusNode": "Afficher sur le canevas",
     "focusNodeLabel": "Afficher {node} sur le canevas",
+    "freeUseNotice": "Les prompts et les exécutions de workflows sont GRATUITS pendant la BÊTA.",
+    "freeUseNoticeLabel": "Avis d'utilisation gratuite",
     "friend": "là",
     "gotIt": "Compris",
     "greeting": "Bonjour {name},",
@@ -124,12 +126,16 @@
       "upgradePlan": "Passer à un forfait supérieur"
     },
     "placeholder": "Décrivez vos idées, {'@'} pour référencer des workflows, glissez-déposez des ressources multimédias et des fichiers, ou\nmentionnez des nœuds",
+    "recoveredTurnFailed": "L'agent n'a pas pu terminer cette réponse.",
     "reference": "Référence",
     "remove": "Supprimer",
     "removeNodeLabel": "Supprimer la référence à {node}",
     "removeWorkflowReference": "Supprimer la référence à {name}",
     "retryAfterSeconds": "Vous pourrez réessayer dans {seconds}s.",
     "runApproval": {
+      "answerFailed": "Impossible d'envoyer votre réponse. Rechargez la page et réessayez.",
+      "answerSuperseded": "Cette demande a déjà reçu une réponse ailleurs ; cette réponse a donc été utilisée à la place de la vôtre.",
+      "answerUncertain": "Impossible de confirmer que votre réponse est parvenue à l'agent. Elle a peut-être tout de même été appliquée — rechargez la page pour voir où en est la situation.",
       "cancel": "Annuler",
       "lead": "Cet outil souhaite exécuter le workflow :",
       "leadBound": "Cet outil souhaite exécuter ce workflow.",
@@ -196,8 +202,11 @@
     "targetWorkflowUnavailable": "Le workflow cible n'est plus disponible.",
     "thinking": "Réflexion...",
     "title": "Comfy Agent",
+    "toolFailedSkill": "Échec du chargement de {skill}",
     "toolForgettingPreference": "Oubli d’une préférence",
     "toolForgotPreference": "A oublié une préférence",
+    "toolLoadedSkill": "{skill} chargé",
+    "toolLoadingSkill": "Chargement de {skill}",
     "toolOpenedNewTab": "A ouvert un nouvel onglet",
     "toolOpeningNewTab": "Ouverture d’un nouvel onglet",
     "toolSavedPreference": "A enregistré une préférence",
@@ -464,6 +473,7 @@
       "generic": "Une erreur s'est produite lors de votre connexion. Veuillez réessayer.",
       "signupBlocked": "Nous ne pouvons pas créer votre compte pour le moment. Veuillez réessayer plus tard. Si le problème persiste, contactez support@comfy.org."
     },
+    "hidePassword": "Masquer le mot de passe",
     "login": {
       "andText": "et",
       "backToGithubLogin": "S'inscrire avec Github à la place",
@@ -480,6 +490,7 @@
       "forgotPassword": "Mot de passe oublié?",
       "forgotPasswordError": "Échec de l'envoi de l'e-mail de réinitialisation du mot de passe",
       "freeRunsSuffix": "pour obtenir {count} exécution gratuite. | pour obtenir {count} exécutions gratuites.",
+      "freeRunsSuffixGoogle": "avec Google pour obtenir {count} exécution gratuite. | avec Google pour obtenir {count} exécutions gratuites.",
       "freeTierBadge": "Éligible à l’offre gratuite",
       "freeTierDescription": "Inscrivez-vous avec Google pour obtenir {credits} crédits gratuits chaque mois. Aucune carte requise.",
       "freeTierDescriptionGeneric": "Inscrivez-vous avec Google pour obtenir des crédits gratuits chaque mois. Aucune carte requise.",
@@ -524,6 +535,7 @@
       "message": "Pour des raisons de sécurité, cette action nécessite que vous vous reconnectiez. Souhaitez-vous continuer ?",
       "title": "Réauthentification requise"
     },
+    "showPassword": "Afficher le mot de passe",
     "signOut": {
       "saveFailed": "Déconnexion annulée car l’enregistrement de « {workflow} » a échoué.",
       "signOut": "Se déconnecter",
@@ -2195,6 +2207,7 @@
     "usageHint": "Conseil d'utilisation",
     "use": "Utiliser",
     "user": "Utilisateur",
+    "validate": "Valider",
     "versionMismatchWarning": "Avertissement de compatibilité de version",
     "versionMismatchWarningMessage": "{warning} : {detail} Consultez https://docs.comfy.org/installation/update_comfyui#common-update-issues pour les instructions de mise à jour.",
     "videoFailedToLoad": "Échec du chargement de la vidéo",
@@ -4256,6 +4269,7 @@
     "assets": "Ressources",
     "backToAssets": "Retour à toutes les ressources",
     "browseTemplates": "Parcourir les modèles d'exemple",
+    "closeSidebar": "Fermer la barre latérale",
     "downloads": "Téléchargements",
     "folderView": {
       "errorDetail": "Impossible de récupérer les sorties pour ce travail. Veuillez réessayer.",
@@ -5246,37 +5260,46 @@
     },
     "billingStatus": {
       "ending": {
-        "body": "Les membres conservent un accès complet jusque-là. Reprenez votre abonnement pour conserver vos crédits partagés et vos places.",
+        "body": "Les membres conservent un accès complet jusque-là. Reprenez votre forfait pour conserver les crédits partagés de votre équipe.",
+        "contactSales": "Contacter le service commercial",
         "enterpriseBody": "Les membres conservent un accès complet jusque-là. Contactez notre équipe commerciale pour le prolonger.",
         "enterpriseTitle": "Votre forfait Enterprise prend fin le {date}",
-        "reactivate": "Reprendre l’abonnement",
+        "memberBody": "Vous pouvez exécuter des workflows jusque-là.",
+        "reactivate": "Reprendre le forfait",
         "title": "Votre forfait d'équipe se termine le {date}"
       },
       "outOfCredits": {
         "addCredits": "Ajouter des crédits",
-        "body": "Votre équipe a utilisé tous ses crédits. Ajoutez des crédits pour continuer à générer ou attendez le rechargement des crédits le {date}.",
-        "bodyNoDate": "Votre équipe a utilisé tous ses crédits. Ajoutez des crédits pour continuer à générer.",
+        "body": "Votre équipe a utilisé tous ses crédits. Ajoutez des crédits ou attendez qu'ils soient renouvelés le {date}.",
+        "bodyNoDate": "Votre équipe a utilisé tous ses crédits. Ajoutez des crédits.",
         "dismiss": "Ignorer",
-        "memberBody": "Votre équipe a utilisé tous ses crédits. Les administrateurs de votre espace de travail doivent ajouter des crédits pour continuer à générer.",
-        "title": "Plus de crédits",
-        "upgradeBody": "Passez à une formule supérieure pour ajouter des crédits et continuer à générer."
+        "memberBody": "Votre équipe a utilisé tous ses crédits. Demandez au propriétaire de votre espace de travail d'ajouter des crédits ou attendez qu'ils soient renouvelés le {date}.",
+        "memberBodyNoDate": "Votre équipe a utilisé tous ses crédits. Demandez au propriétaire de votre espace de travail d'ajouter des crédits.",
+        "title": "Plus de crédits"
       },
       "paused": {
         "body": "L'abonnement de cet espace de travail est en pause. Mettez à jour le paiement pour reprendre.",
         "memberBody": "L'abonnement de cet espace de travail est en pause. Les administrateurs de votre espace de travail doivent mettre à jour le mode de paiement.",
+        "personalBody": "Votre abonnement est suspendu. Mettez à jour votre mode de paiement pour le reprendre.",
+        "personalPaymentFailedBody": "Votre paiement n'a pas abouti. Mettez à jour votre mode de paiement pour reprendre.",
         "title": "Abonnement en pause"
       },
       "payInvoice": "Payer la facture",
       "planChange": {
         "body": "Votre forfait actuel reste actif jusque-là.",
-        "title": "Votre forfait passe à {plan} le {date}"
+        "title": "Votre forfait passe à {plan} le {date}."
       },
-      "updatePayment": "Mettre à jour le paiement",
-      "warning": {
-        "bodyNoDate": "Votre dernier paiement n'a pas abouti. Mettez à jour le paiement pour éviter une pause.",
-        "bodyWithAmount": "Votre paiement de {amount} n'a pas pu être traité. Payez la facture ou mettez à jour le moyen de paiement pour éviter une interruption.",
-        "title": "Paiement refusé"
-      }
+      "planEnded": {
+        "enterpriseBody": "Contactez le service commercial pour commencer un nouveau forfait Enterprise.",
+        "enterpriseTitle": "Votre forfait Enterprise a pris fin le {date}",
+        "planTitle": "Votre forfait a pris fin le {date}",
+        "salesBody": "Contactez le service commercial pour commencer un nouveau forfait.",
+        "salesMemberBody": "Demandez au propriétaire de votre espace de travail de contacter le service commercial.",
+        "teamBody": "Réabonnez-vous pour exécuter des workflows et bénéficier à nouveau de crédits partagés.",
+        "teamMemberBody": "Demandez au propriétaire de votre espace de travail de se réabonner.",
+        "teamTitle": "Le forfait de votre équipe a pris fin le {date}"
+      },
+      "updatePayment": "Mettre à jour le paiement"
     },
     "changeRoleDialog": {
       "demoteConfirm": "Rétrograder en membre",
@@ -5397,6 +5420,7 @@
       "noMembers": "Aucun membre",
       "noMembersMatch": "Aucun membre ne correspond à « {query} »",
       "pendingInvitesCount": "{count} invitation en attente | {count} invitations en attente",
+      "planEndedFooter": "Votre forfait a pris fin, vous ne pouvez donc pas ajouter de nouveaux membres.",
       "reactivateTeam": "Réactiver l'offre Équipe",
       "resubscribe": "Se réabonner",
       "searchPlaceholder": "Rechercher...",
@@ -5528,6 +5552,7 @@
     "hideMinimap": "Masquer la mini-carte",
     "label": "Contrôles de zoom",
     "showMinimap": "Afficher la mini-carte",
+    "zoomPercentage": "Pourcentage de zoom",
     "zoomToFit": "Ajuster à l'écran"
   }
 }
