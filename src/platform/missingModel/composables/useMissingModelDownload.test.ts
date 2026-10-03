@@ -1,3 +1,5 @@
+import { api } from '@/scripts/api'
+import { useMissingModelDownloadStore } from '@/platform/missingModel/missingModelDownloadStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type * as MissingModelDownload from '@/platform/missingModel/missingModelDownload'
@@ -144,3 +146,30 @@ describe('useMissingModelDownload', () => {
     expect(mocks.openGatedRepoPage).not.toHaveBeenCalled()
   })
 })
+
+it.for([false, true])(
+  'preserves native Desktop downloads and routes remote=%s to the backend',
+  (remote) => {
+    vi.spyOn(api, 'getServerFeature').mockReturnValue(true)
+    const start = vi
+      .spyOn(useMissingModelDownloadStore(), 'start')
+      .mockResolvedValue()
+    window.__comfyDesktop2 = {
+      isRemote: () => remote,
+      downloadModel: vi.fn().mockResolvedValue(undefined)
+    }
+    const model = {
+      name: 'model.safetensors',
+      directory: 'checkpoints',
+      url: downloadUrl
+    }
+    useMissingModelDownload().downloadMissingModels([model])
+    if (remote) {
+      expect(start).toHaveBeenCalledWith([model])
+      expect(mocks.downloadModel).not.toHaveBeenCalled()
+    } else {
+      expect(start).not.toHaveBeenCalled()
+      expect(mocks.downloadModel).toHaveBeenCalled()
+    }
+  }
+)

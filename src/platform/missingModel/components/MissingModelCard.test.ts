@@ -13,10 +13,13 @@ import type {
 } from '@/platform/missingModel/types'
 import { downloadModel } from '@/platform/missingModel/missingModelDownload'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { api } from '@/scripts/api'
+import { downloadMissingModels } from '@/platform/remote/comfyui/modelDownload'
 
 const mockDownloadModel = vi.mocked(downloadModel)
 
 vi.mock(import('@/platform/missingModel/missingModelDownload'), { spy: true })
+vi.mock(import('@/platform/remote/comfyui/modelDownload'), { spy: true })
 
 vi.mock<unknown>(import('./MissingModelRow.vue'), () => ({
   default: {
@@ -163,6 +166,50 @@ describe('MissingModelCard', () => {
     i18n.global.setLocaleMessage('en', enMessages)
     mockIsCloud.value = true
     mockDownloadModel.mockResolvedValue(undefined)
+  })
+
+  it('keeps the token across panel remounts and removes it on request', async () => {
+    mockIsCloud.value = false
+    vi.spyOn(api, 'getServerFeature').mockReturnValue(true)
+    vi.mocked(downloadMissingModels).mockResolvedValue({
+      ok: false,
+      error: new Error('Connection lost')
+    })
+    const storage = vi.spyOn(Storage.prototype, 'setItem')
+    const props = {
+      missingModelGroups: [makeGroup({ withDownloadUrls: true })]
+    }
+    const mounted = mountCard(props)
+    await userEvent.click(screen.getByText('Hugging Face access'))
+    const input = screen.getByLabelText('Hugging Face read token')
+    expect(input).toHaveAttribute('type', 'password')
+    await userEvent.type(input, 'hf_session')
+    await userEvent.click(screen.getByRole('button', { name: 'Use token' }))
+    expect(input).toHaveValue('')
+    expect(screen.getByText('Token provided')).toBeVisible()
+    mounted.unmount()
+    mountCard(props)
+    await userEvent.click(screen.getByText('Hugging Face access'))
+    expect(screen.getByText('Token provided')).toBeVisible()
+    await userEvent.click(screen.getByRole('button', { name: 'Download all' }))
+    expect(downloadMissingModels).toHaveBeenLastCalledWith(
+      expect.any(Array),
+      expect.any(String),
+      expect.any(String),
+      'hf_session'
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Remove token' }))
+    expect(screen.queryByText('Token provided')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Download all' }))
+    expect(downloadMissingModels).toHaveBeenLastCalledWith(
+      expect.any(Array),
+      expect.any(String),
+      expect.any(String),
+      ''
+    )
+    expect(
+      storage.mock.calls.some(([, value]) => value.includes('hf_session'))
+    ).toBe(false)
   })
 
   describe('Rendering & Props', () => {
