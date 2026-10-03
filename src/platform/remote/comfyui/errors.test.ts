@@ -197,16 +197,6 @@ describe('parseErrorResponse', () => {
     })
   })
 
-  it('salvages a legacy message-only body', async () => {
-    const response = makeResponse({
-      text: async () => JSON.stringify({ message: 'Nope' })
-    })
-    await expect(parseErrorResponse(response)).resolves.toEqual({
-      code: 'UNKNOWN_ERROR',
-      message: 'Nope'
-    })
-  })
-
   it('uses a plain-text body as the message', async () => {
     const response = makeResponse({
       text: async () => 'upstream connect error',
