@@ -491,23 +491,17 @@ function createAssetService() {
   async function getAssetModels(folder: string): Promise<ModelFile[]> {
     const buckets = await loadModelBuckets()
     const folderSegments = folder.split('/')
-    let assets = buckets.get(folder)
-
-    // Legacy tags are bucketed by their top-level segment, while node widgets
-    // can retain a more specific category path from the object-info mapping.
-    // model_type tags use their complete value as the authoritative key.
-    while (!assets && folderSegments.length > 1) {
-      folderSegments.pop()
-      assets = buckets.get(folderSegments.join('/'))
-    }
-
-    if (assets && folderSegments.length < folder.split('/').length) {
-      assets = assets.filter((asset) =>
-        asset.tags.some(
-          (tag) => tag === folder || tag.startsWith(`${folder}/`)
-        )
-      )
-    }
+    const fallbackAssets =
+      folderSegments.length > 1
+        ? buckets
+            .get(folderSegments[0])
+            ?.filter((asset) =>
+              asset.tags.some(
+                (tag) => tag === folder || tag.startsWith(`${folder}/`)
+              )
+            )
+        : undefined
+    const assets = buckets.get(folder) ?? fallbackAssets
 
     return (assets ?? []).map((asset) => ({
       // `loader_path` is the category-relative path the loader widget expects
