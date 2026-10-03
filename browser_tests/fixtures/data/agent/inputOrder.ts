@@ -266,7 +266,6 @@ function expectedPrompt(
   }
 }
 
-/** What `graphToPrompt()` emits for the stale canvas, before any catch-up. */
 export const staleCanvasPrompt = expectedPrompt(
   STALE_SOURCE_VALUES,
   STALE_ORIGIN_SLOT,
