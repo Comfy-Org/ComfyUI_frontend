@@ -1,3 +1,5 @@
+*                                               @Comfy-Org/comfy_frontend_devs @Comfy-Org/comfy-standard-approver
+
 # Renderer extensions — fallback owner.
 # CODEOWNERS is last-match-wins, so this stays above the per-feature blocks
 # below and they continue to take precedence.
@@ -69,10 +71,12 @@
 # Model-to-node mappings (cloud team)
 /src/platform/assets/mappings/                    @deepme987 @Comfy-Org/comfy_frontend_devs
 
+# Public API types
+/packages/ingest-types/                          @Comfy-Org/comfy_frontend_devs
+/packages/registry-types/                        @Comfy-Org/comfy_frontend_devs
+
 # Billing and account boundary - see ADR-AUTH-BILLING-0032.
-# The billing half only. The account layer's session and identity paths are
-# deliberately unlisted until their owner claims them; until then a change
-# crossing that side of the boundary still has no required reviewer.
+/packages/account-core/src/core/                 @Comfy-Org/comfy_frontend_devs
 /packages/account-core/src/core/billing/               @dante01yoon @Comfy-Org/comfy_frontend_devs
 /apps/billing-web/                                @dante01yoon @Comfy-Org/comfy_frontend_devs
 /apps/website/src/lib/workshop/                   @dante01yoon @Comfy-Org/comfy_website_devs
@@ -86,9 +90,8 @@
 # and never satisfy a required-review rule. The entries below therefore list only
 # reviewers who currently have write access.
 #
-# Scoped to the per-language directories on purpose - /src/locales/en/ is left
-# unowned so ordinary feature PRs that add English keys do not trigger a review
-# request. Only changes to an actual translation route here.
+# Scoped to the per-language directories so English keys use the repo-wide
+# default owners. Only changes to an actual translation route here.
 #
 # Pending (needs a write grant before adding, otherwise the line is inert):
 #   /src/locales/it/     @PorkItaly              (#13880)
