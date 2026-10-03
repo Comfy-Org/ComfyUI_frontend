@@ -109,7 +109,6 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
     return findProvidersWithFallback(modelType)?.[0]
   }
 
-  /** Check the current registry without triggering default registration. */
   function hasNodeProvider(modelType: unknown): boolean {
     return (
       typeof modelType === 'string' &&
