@@ -57,11 +57,15 @@ const TRANSITION_TYPES = [
 /** Every amount the quote can carry, each one the host formats as money. */
 const MONEY_FIELDS = [
   'amount_due_cents',
+  'balance_applied_cents',
   'cost_next_period_cents',
   'cost_today_cents',
   'credits_next_period_cents',
   'credits_today_cents',
-  'renewal_amount_cents'
+  'proration_remaining_cents',
+  'proration_unused_cents',
+  'renewal_amount_cents',
+  'subtotal_cents'
 ] as const satisfies readonly (keyof PreviewResponseBody)[]
 
 const INT64_MIN = -9223372036854775808n
