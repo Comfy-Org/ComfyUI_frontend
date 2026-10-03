@@ -9,6 +9,8 @@ import { createI18n } from 'vue-i18n'
 import * as runGateModule from '@/composables/billing/usePartnerNodesRunGate'
 import * as partnerNodesInGraphModule from '@/composables/node/usePartnerNodesInGraph'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { api } from '@/scripts/api'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
@@ -110,6 +112,49 @@ describe('PartnerNodesEducationCard', () => {
 
     await userEvent.click(screen.getByTestId('partner-nodes-education-dismiss'))
     expect(screen.queryByTestId(CARD_TESTID)).not.toBeInTheDocument()
+  })
+
+  it('stays closed on later paid template loads once the user closes it', async () => {
+    const storeSetting = vi
+      .spyOn(api, 'storeSetting')
+      .mockResolvedValue(new Response())
+    renderCard()
+    loadPaidTemplate('paid-wf')
+    await nextTick()
+
+    await userEvent.click(screen.getByTestId('partner-nodes-education-dismiss'))
+    expect(storeSetting).toHaveBeenCalledWith(
+      'Comfy.PartnerNodesEducation.Dismissed',
+      true
+    )
+    loadPaidTemplate('another-paid-wf')
+    await nextTick()
+    expect(screen.queryByTestId(CARD_TESTID)).not.toBeInTheDocument()
+  })
+
+  it('stays hidden for a user who closed it in an earlier session', async () => {
+    useSettingStore().settingValues['Comfy.PartnerNodesEducation.Dismissed'] =
+      true
+    renderCard()
+
+    loadPaidTemplate('paid-wf')
+    await nextTick()
+    expect(screen.queryByTestId(CARD_TESTID)).not.toBeInTheDocument()
+  })
+
+  it('still shows on the next paid template load after a workflow switch retired it', async () => {
+    renderCard()
+    loadPaidTemplate('paid-wf')
+    await nextTick()
+    setActiveWorkflow('other-wf')
+    await nextTick()
+
+    loadPaidTemplate('another-paid-wf')
+    await nextTick()
+    expect(
+      screen.getByTestId(CARD_TESTID),
+      'only an explicit close may suppress the card for good'
+    ).toBeInTheDocument()
   })
 
   it('survives partner nodes registering after the request (template load)', async () => {
