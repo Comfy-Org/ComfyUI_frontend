@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -41,6 +41,16 @@ describe('agent discovery token', () => {
     expect(readAgentDiscoveryToken(dataDir)).toBe('first')
     await publish(JSON.stringify({ port: 6286, token: 'second', pid: 43 }))
     expect(readAgentDiscoveryToken(dataDir)).toBe('second')
+  })
+
+  it('ignores a discovery path that is not a regular file', async () => {
+    await mkdir(join(dataDir, AGENT_DISCOVERY_FILE))
+    expect(readAgentDiscoveryToken(dataDir)).toBeUndefined()
+  })
+
+  it('ignores an oversized discovery file', async () => {
+    await publish(' '.repeat(16 * 1024 + 1))
+    expect(readAgentDiscoveryToken(dataDir)).toBeUndefined()
   })
 
   it.for([

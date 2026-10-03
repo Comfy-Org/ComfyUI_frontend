@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
 /**
@@ -8,6 +8,7 @@ import { join } from 'node:path'
  * and a rename.
  */
 export const AGENT_DISCOVERY_FILE = 'agent.json'
+const MAX_AGENT_DISCOVERY_FILE_SIZE = 16 * 1024
 const MAX_AGENT_DISCOVERY_TOKEN_LENGTH = 4096
 
 /**
@@ -36,9 +37,17 @@ const MAX_AGENT_DISCOVERY_TOKEN_LENGTH = 4096
  * forwarded: its message quotes the input, and the input is a live credential.
  */
 export function readAgentDiscoveryToken(dataDir: string): string | undefined {
+  const discoveryPath = join(dataDir, AGENT_DISCOVERY_FILE)
   let raw: string
   try {
-    raw = readFileSync(join(dataDir, AGENT_DISCOVERY_FILE), 'utf8')
+    const discoveryFile = statSync(discoveryPath)
+    if (
+      !discoveryFile.isFile() ||
+      discoveryFile.size > MAX_AGENT_DISCOVERY_FILE_SIZE
+    ) {
+      return undefined
+    }
+    raw = readFileSync(discoveryPath, 'utf8')
   } catch {
     return undefined
   }
