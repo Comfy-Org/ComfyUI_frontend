@@ -1,8 +1,14 @@
-import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { render, screen, within } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { defineComponent, markRaw } from 'vue'
+import { computed, defineComponent, h, markRaw, ref } from 'vue'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+
+import { testI18n } from '@/components/searchbox/v2/__test__/testUtils'
+import WidgetDynamicGroupRow from '@/renderer/extensions/vueNodes/widgets/components/WidgetDynamicGroupRow.vue'
+import WidgetButton from '@/renderer/extensions/vueNodes/widgets/components/WidgetButton.vue'
+import WidgetSelectDefault from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDefault.vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -193,6 +199,95 @@ describe('WidgetGrid', () => {
     expect(screen.getByTestId('widget-control')).toBeVisible()
     expect(screen.queryByText('prompt')).not.toBeInTheDocument()
   })
+
+  it.for([0, 1])(
+    'identifies repeated fields and restores keyboard focus after deletion with min = %s',
+    async (min) => {
+      const user = userEvent.setup()
+      const rows = ref(['A', 'B', 'C'])
+      const items = computed<WidgetGridItem[]>(() => [
+        ...rows.value.flatMap((id, index) => [
+          {
+            renderKey: `${id}-header`,
+            visible: true,
+            simplified: {
+              name: `loras.${index}`,
+              type: 'dynamic_group_row',
+              value: undefined,
+              label: `LoRA #${index + 1}`,
+              options: { disabled: rows.value.length <= min },
+              callback: () => {
+                rows.value = rows.value.filter((row) => row !== id)
+              }
+            },
+            vueComponent: markRaw(WidgetDynamicGroupRow)
+          },
+          {
+            renderKey: `${id}-model`,
+            visible: true,
+            simplified: {
+              name: `loras.${index}.model`,
+              type: 'combo',
+              value: id,
+              label: 'Model',
+              options: { values: ['A', 'B', 'C'] }
+            },
+            vueComponent: markRaw(WidgetSelectDefault)
+          }
+        ]),
+        {
+          renderKey: 'add',
+          visible: true,
+          simplified: {
+            name: 'loras.$add',
+            type: 'button',
+            value: undefined,
+            label: 'Add LoRA'
+          },
+          vueComponent: markRaw(WidgetButton)
+        }
+      ])
+      const Host = defineComponent({
+        setup: () => () =>
+          h(WidgetGrid, {
+            processedWidgets: items.value,
+            nodeType: 'TestNode',
+            syncLayout: false
+          })
+      })
+      render(Host, {
+        global: {
+          plugins: [testI18n],
+          directives: { tooltip: {} },
+          stubs: { AppInput: AppInputStub, InputSlot: InputSlotStub }
+        }
+      })
+
+      for (const index of [1, 2, 3]) {
+        const group = screen.getByRole('group', { name: `LoRA #${index}` })
+        expect(
+          within(group).getByRole('combobox', { name: 'Model' })
+        ).toBeInTheDocument()
+      }
+      screen.getByRole('button', { name: 'Remove LoRA #2' }).focus()
+      await user.keyboard('{Enter}')
+      expect(
+        screen.getByRole('button', { name: 'Remove LoRA #2' })
+      ).toHaveFocus()
+      expect(
+        screen.queryByRole('group', { name: 'LoRA #3' })
+      ).not.toBeInTheDocument()
+      await user.keyboard('{Enter}')
+      if (min === 0) {
+        expect(
+          screen.getByRole('button', { name: 'Remove LoRA #1' })
+        ).toHaveFocus()
+        await user.keyboard('{Enter}')
+      }
+      expect(screen.getByRole('button', { name: 'Add LoRA' })).toHaveFocus()
+      expect(screen.queryAllByRole('group')).toHaveLength(min)
+    }
+  )
 
   it('renders hidden converted widgets as input sockets without controls', () => {
     render(WidgetGrid, {
